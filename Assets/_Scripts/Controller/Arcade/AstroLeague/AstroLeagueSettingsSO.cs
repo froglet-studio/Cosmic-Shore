@@ -138,10 +138,10 @@ namespace CosmicShore.Gameplay
         [Tooltip("TOTAL prisms in the lining, distributed evenly over the court's summed edge length - " +
                  "FIXED across shapes and intensities so the lining's volume budget (count x prism " +
                  "volume) stays deterministic. The Astro League Cell Config's phase-volume thresholds " +
-                 "are raised by exactly that budget (96 x 62.5 = 6000) - retune them together. " +
+                 "are raised by exactly that budget (240 x 62.5 = 15000) - retune them together. " +
                  "Collider budget: each lining prism holds an always-on convex MeshCollider (the " +
-                 "engaged shield octahedron) that collider-LOD cannot reclaim - keep this modest.")]
-        public int edgePrismCount = 96;
+                 "engaged stellated shield) that collider-LOD cannot reclaim - keep this bounded.")]
+        public int edgePrismCount = 240;
 
         [Tooltip("Lining prism TargetScale (long Z axis laid ALONG the edge). Volume = x*y*z; total " +
                  "lining volume = edgePrismCount x that volume. Change either and retune the cell " +

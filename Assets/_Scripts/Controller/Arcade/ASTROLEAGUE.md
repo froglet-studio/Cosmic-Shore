@@ -311,29 +311,32 @@ is shape-agnostic and unchanged).
 
 ## Super-Shielded Edge Lining
 
-Every court, at every intensity, is rimmed with a lining of **SUPER-SHIELDED neutral
-prisms** — invulnerable structure marking the arena's edges. `AstroLeagueBoundary.CollectEdgePaths`
-derives the edge geometry from the same source as the walls and the cage mesh (polytope hull edges;
-cylinder cap rims; three latitude rings for the edge-less sphere; NotchedRing uses its outer court),
-and `AstroLeagueArena.RebuildEdgeLining` walks the summed edge length laying a **fixed total count**
-(`settings.edgePrismCount`, default 96) of `PrismKind.SuperShielded`, `Domains.Blue` prisms through
-the standard `BoostRingBuilder.LayOne` pooled path (`prismSpawnChannel` — the PrismFactory channel,
-wired in-scene). Long axis along the edge, inset `edgePrismInset × scale` toward the play side.
+Every court, at every intensity, is rimmed with a dense lining of **SUPER-SHIELDED neutral
+prisms** — invulnerable structure marking the arena's edges, each wearing the **stellated
+octahedron** (Stella Octangula — the Skim Race track look; `PrismStateManager.ActivateSuperShield`
+now engages `PrismStellatedOctahedronShield` with the opaque team material, and `DeactivateShields`
+reverses it). `AstroLeagueBoundary.CollectEdgePaths` derives the edge geometry from the same source
+as the walls and the cage mesh (polytope hull edges; cylinder cap rims; three latitude rings for the
+edge-less sphere; NotchedRing uses its outer court), and `AstroLeagueArena.RebuildEdgeLining` walks
+the summed edge length laying a **fixed total count** (`settings.edgePrismCount`, default 240 —
+≈20-unit spacing on the doubled intensity-1 box) of `PrismKind.SuperShielded`, `Domains.Blue` prisms
+through the standard `BoostRingBuilder.LayOne` pooled path (`prismSpawnChannel` — the PrismFactory
+channel, wired in-scene). Long axis along the edge, inset `edgePrismInset × scale` toward the play side.
 
 - **Deterministic volume budget.** Count and prism scale are FIXED across shapes/intensities
-  (spacing scales with the arena), so lining volume = `96 × vol(2.5·2.5·10) = 6000` exactly. The
-  Astro League Cell Config's phase-volume thresholds are raised by that budget (Restless 6400/6300,
-  Frenzy 7500/7200) — change either side and retune the other (`Docs/ECOSYSTEM.md §14`).
+  (spacing scales with the arena), so lining volume = `240 × vol(2.5·2.5·10) = 15000` exactly. The
+  Astro League Cell Config's phase-volume thresholds are raised by that budget (Restless
+  15400/15300, Frenzy 16500/16200) — change either side and retune the other (`Docs/ECOSYSTEM.md §14`).
 - **Volume-only cell binding.** Super-shielded structure binds to the cell like fauna bodies:
   counted in `LiveVolume`, excluded from targeting grids / per-domain counts / `DominantDomain` /
   prey signals (`PrismSpatialIndex.ComputeEnvironmentMass`; re-filed on shield transitions via
   `UpdateShieldState`). A permanent neutral lining can never sway node control or bait fauna.
 - **Ball + fauna ignore it.** The ball's prism scan skips super-shielded prisms entirely (never
   popped, never eaten, no drag); fauna already skip shielded prey. Vessels DO collide with the
-  lining's shield octahedra — the rim is physically real.
-- **Collider budget:** +96 always-on convex MeshColliders per peer (the engaged shield swaps off
-  the LOD-cullable BoxCollider). Static, bounded by `edgePrismCount` — keep it modest. Zero new
-  physics queries.
+  lining's stellated shields — the rim is physically real.
+- **Collider budget:** +240 always-on convex MeshColliders per peer (the engaged stellated shield
+  swaps off the LOD-cullable BoxCollider). Static, bounded by `edgePrismCount`; precedent: the Skim
+  Race track super-shields its entire spawned track the same way. Zero new physics queries.
 - **Continuity/mass:** lining prisms bloom in via the pooled spawn; the only removal is the
   animated `Damage` teardown on an arena rebuild (late-arriving match config on a client).
 
@@ -488,10 +491,10 @@ atmospheric/territorial — including the boundary surface itself — lives on t
     nominal-leaf 16), so the legacy count×16 derivation set the ladder ~5–8× too high: the gauge
     barely moved and fauna never left Calm. The gameplay window is **Restless +400 / Frenzy
     +1500 volume of trail mass** — but the super-shielded edge lining is a permanent
-    **structural floor of exactly 6000 volume** (`edgePrismCount 96 × vol(2.5·2.5·10)`; it
+    **structural floor of exactly 15000 volume** (`edgePrismCount 240 × vol(2.5·2.5·10)`; it
     counts in `LiveVolume` per "volume is the spine" while binding volume-only for every other
-    signal, see `Docs/ECOSYSTEM.md §14`), so the config sets `RestlessEnterVolume 6400` /
-    `Exit 6300` and `FrenzyEnterVolume 7500` / `Exit 7200` — identical gameplay headroom above
+    signal, see `Docs/ECOSYSTEM.md §14`), so the config sets `RestlessEnterVolume 15400` /
+    `Exit 15300` and `FrenzyEnterVolume 16500` / `Exit 16200` — identical gameplay headroom above
     the floor. **Change the lining budget and these thresholds together.** The **count** fields
     (`Restless 500`, `Frenzy 1500`) remain the perf backstop (the volume-only lining never
     enters `LiveBlockCount`). `SpawnProfile.FaunaFoodFloor = 5` (nominal prisms → 80

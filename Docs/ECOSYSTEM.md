@@ -923,8 +923,8 @@ environment mass).
 **The phase ladder keeps its pure measure — biomes budget for structure in config.**
 Rather than carving structure out of `LiveVolume` (which would fork the spine's measure),
 the biome that lays a known structural budget raises its `PhaseThresholds` volume fields
-by exactly that budget. Astro League: lining = `edgePrismCount 96 × vol(2.5·2.5·10) =
-6000`, so `Astro League Cell Config` runs Restless 6400/6300 and Frenzy 7500/7200
+by exactly that budget. Astro League: lining = `edgePrismCount 240 × vol(2.5·2.5·10) =
+15000`, so `Astro League Cell Config` runs Restless 15400/15300 and Frenzy 16500/16200
 (gameplay headroom above the floor identical to the pre-lining 400/300 · 1500/1200).
 Count backstops are untouched — volume-only mass never enters `LiveBlockCount`.
 
@@ -932,8 +932,16 @@ Count backstops are untouched — volume-only mass never enters `LiveBlockCount`
   and is only ever removed by the animated `Damage` teardown (arena rebuild); no decay.
 - **No domain asymmetry.** The lining is `Domains.Blue` (the neutral-entity sentinel) and
   excluded from control reads — it cannot tint fauna spawns.
+- **The super-shield state IS the stellated octahedron.**
+  `PrismStateManager.ActivateSuperShield` engages `PrismStellatedOctahedronShield` (the
+  Stella Octangula, the Skim Race track look) with the OPAQUE team material — the
+  transparent super-shield material hid the stellation — and `DeactivateShields`
+  disengages it, so the state machine stays the single reversible shield path
+  (`PrismKinds` remarks updated). The component is added lazily on first engage; only
+  super-shielded prisms pay its mesh cost.
 - **Collider budget.** Each super-shielded prism carries an always-on convex MeshCollider
-  (shield octahedron) that collider-LOD cannot reclaim — the lining is capped by
-  `AstroLeagueSettingsSO.edgePrismCount` (96) and must stay modest; zero new physics
+  (the engaged stellation) that collider-LOD cannot reclaim — the lining is capped by
+  `AstroLeagueSettingsSO.edgePrismCount` (240; precedent: the Skim Race track
+  super-shields its whole spawned track) and must stay bounded; zero new physics
   queries (the ball resolves prisms via `PrismSpatialIndex.QuerySphere` and skips
   super-shielded entirely).
