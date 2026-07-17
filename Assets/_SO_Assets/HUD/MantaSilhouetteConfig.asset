@@ -24,7 +24,6 @@ MonoBehaviour:
   gapMultiplier: 2.4
   columnGapMultiplier: 1.3
   useDomainPaletteColors: 1
-  domainPalette: {fileID: 11400000, guid: d202844a3d86d1240bae99b182e573d3, type: 2}
   enableDangerVisual: 1
   dangerBlockPrefab: {fileID: 5776304996075792891, guid: aad956930fb933f4b82b992b1bc2b773,
     type: 3}

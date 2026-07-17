@@ -21,6 +21,14 @@ namespace CosmicShore.Gameplay
         public Color GetDomainUIColor(Domains domain) =>
             ColorSet != null ? ColorSet.GetDomainUIColor(domain) : Color.gray;
 
+        /// <summary>
+        /// Null-safe accessor for the translucent per-domain UI accent
+        /// (see <see cref="SO_ColorSet.GetDomainUIAccentColor"/>) used by the Maelstrom cards and
+        /// Connecting-panel rank. Neutral gray if no ColorSet is wired.
+        /// </summary>
+        public Color GetDomainUIAccentColor(Domains domain) =>
+            ColorSet != null ? ColorSet.GetDomainUIAccentColor(domain) : Color.gray;
+
         public void SetBackgroundColor(Camera mainCamera)
         {
             if (mainCamera == null)

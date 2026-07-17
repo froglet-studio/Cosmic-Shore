@@ -273,10 +273,13 @@ end-game cinematic was removed; `EndGameSequencer` now just raises the scoreboar
   punch, counter roll, color flash, countdown, HUD fade, and scoreboard
   entrance/banner timings + `useUnscaledTime`. Per Config Separation, tuning
   lives here, not on per-widget SerializeFields.
-- **Domain → color** resolution order: `ThemeManagerData.ColorSet`
-  (`TryGetColorSetByDomain`) → `DomainColorPaletteSO` → `MiniGameHUDView.domainColors`
-  (white fallback). The end-game `Scoreboard` additionally has hardcoded
-  `*TeamBannerColor` fallbacks. Three paths today → unify (`REFACTOR.md` R5).
+- **Domain → color** resolves from the ONE source: `ThemeManagerData.ColorSet`
+  (`SO_ColorSet`). Flat scoring UI uses `GetDomainUIColor` (= `TrailHighlightColor`);
+  the Maelstrom cards / Connecting-panel rank use the named accent role
+  `GetDomainUIAccentColor` (= `DomainColorSet.UIAccentColor`, a deliberately
+  brighter translucent tint that falls back to `GetDomainUIColor` when
+  unauthored). The former parallel `DomainColorPaletteSO` is deleted
+  (`REFACTOR.md` R5).
 
 ---
 

@@ -28,7 +28,9 @@ namespace CosmicShore.Gameplay
     ///   • <b>Summary panel</b> (summaryRoot) - winning-domain banner + the final domain ranking, with
     ///     host-only Play Again / Main Menu.
     ///
-    /// Domain colours come from a <see cref="DomainColorPaletteSO"/> (no Graphic arrays). Runs on every
+    /// Domain colours come from the live theme's per-domain UI accent
+    /// (<see cref="SO_ColorSet.GetDomainUIAccentColor"/> via <c>gameData.ThemeManagerData</c> - no
+    /// Graphic arrays, no parallel palette asset). Runs on every
     /// peer; only the host drives transitions. Roster/history are read from the persistent
     /// <see cref="TournamentDataSO"/> (the scene is UI-only, so <c>gameData.Players/Results</c> are cleared).
     /// </summary>
@@ -40,8 +42,6 @@ namespace CosmicShore.Gameplay
         [Tooltip("Networked ready-up + countdown. Optional: without it the countdown still ticks/auto-starts " +
                  "locally (host) for panel testing.")]
         [SerializeField] TournamentLobbyNetwork lobbyNetwork;
-        [Tooltip("Palette mapping Domain → colour (Assets/_SO_Assets/DomainColorPalette.asset).")]
-        [SerializeField] DomainColorPaletteSO palette;
 
         [Header("Shared")]
         [SerializeField] TMP_Text titleText;
@@ -55,7 +55,7 @@ namespace CosmicShore.Gameplay
         [Tooltip("Subtitle - auto-filled \"First domain to N points wins\", where N is the Maelstrom " +
                  "win target from Tools > Cosmic Shore > End Game Conditions (TournamentDataSO.EffectiveWinTarget).")]
         [SerializeField] TMP_Text raceRuleText;
-        [Tooltip("\"LEADING DOMAIN : JADE\" (domain name coloured from the palette).")]
+        [Tooltip("\"LEADING DOMAIN : JADE\" (domain name coloured from the theme accent).")]
         [SerializeField] TMP_Text leadingDomainText;
 
         [Header("Active - round scroll")]
@@ -214,7 +214,7 @@ namespace CosmicShore.Gameplay
                 if (includePreviewWhenEmpty)
                 {
                     var preview = Instantiate(roundCardPrefab, historyContent);
-                    preview.SetupPreview(1, OrderRoster(BuildActiveRoster()), ResolveAvatar, _ => 0);
+                    preview.SetupPreview(1, OrderRoster(BuildActiveRoster()), ResolveAvatar, _ => 0, DomainColor);
                 }
                 return;
             }
@@ -236,7 +236,7 @@ namespace CosmicShore.Gameplay
 
                 var asOf = new Dictionary<Domains, int>(running);
                 var card = Instantiate(roundCardPrefab, historyContent);
-                card.Setup(rec, ResolveAvatar, d => asOf.TryGetValue(d, out int v) ? v : 0,
+                card.Setup(rec, ResolveAvatar, d => asOf.TryGetValue(d, out int v) ? v : 0, DomainColor,
                            isCurrent: i == history.Count - 1);
             }
         }
@@ -358,7 +358,7 @@ namespace CosmicShore.Gameplay
                 var s = roster[i];
                 var card = Instantiate(summaryCardPrefab, summaryCardContainer);
                 card.transform.localScale = i == 0 ? Vector3.one : Vector3.one * 0.9f;
-                card.Setup(s.Name, ResolveAvatar(s), s.Domain, StandingPoints(s.Domain));
+                card.Setup(s.Name, ResolveAvatar(s), s.Domain, StandingPoints(s.Domain), DomainColor(s.Domain));
                 card.PlayEntrance(i);
             }
         }
@@ -466,11 +466,10 @@ namespace CosmicShore.Gameplay
             return sorted.Count > 0 ? sorted[0].Domain : Domains.Blue;
         }
 
-        // Domain colour from the palette (falls back to the theme tint, then grey).
+        // Domain colour from the live theme's UI accent (SO_ColorSet.GetDomainUIAccentColor), grey when unwired.
         Color DomainColor(Domains domain)
         {
-            if (palette) return palette.Get(domain);
-            if (gameData != null && gameData.ThemeManagerData != null) return gameData.ThemeManagerData.GetDomainUIColor(domain);
+            if (gameData != null && gameData.ThemeManagerData != null) return gameData.ThemeManagerData.GetDomainUIAccentColor(domain);
             return Color.gray;
         }
 
