@@ -30,6 +30,26 @@ namespace CosmicShore.Gameplay
 
         public void Configure(LifeformMatrixToyDefinitionSO definition) => _def = definition;
 
+        protected override void OnInitialized()
+        {
+            // Findability: the tuning bench wears the four element colours as small orbiting
+            // moons so it reads as "the elements toy" from across the cell, and logs its spot.
+            var elements = new[] { Element.Charge, Element.Mass, Element.Space, Element.Time };
+            for (int i = 0; i < elements.Length; i++)
+            {
+                float a = i / (float)elements.Length * Mathf.PI * 2f;
+                var moon = ToyFactory.AddSphereBody(transform,
+                    Mathf.Max(0.5f, _def.StationRadius * 0.35f), _def.ElementColor(elements[i]));
+                moon.name = $"Moon_{elements[i]}";
+                moon.transform.localPosition =
+                    new Vector3(Mathf.Cos(a), 0.25f * ((i % 2 == 0) ? 1f : -1f), Mathf.Sin(a)) * 2.2f;
+                moon.transform.localScale = Vector3.one * 0.5f;
+            }
+
+            CSDebug.Log($"[LifeformMatrix] Toy placed at {transform.position} " +
+                        $"(look for the sphere with four element-coloured moons).");
+        }
+
         protected override void OnActivated(IVesselStatus localVessel)
         {
             // Toggle: a pass builds the menagerie; another pass clears everything.
