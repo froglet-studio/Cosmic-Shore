@@ -723,17 +723,49 @@ namespace CosmicShore.Gameplay
         /// </summary>
         private void BindCell(int index, Prism prism, Vector3 position)
         {
-            // Fauna bodies are VOLUME, not environment: they feed the cell's
-            // per-domain volume sums ("volume is the spine" - all prisms count,
-            // whatever their source) but stay out of the targeting grids and
-            // prism counts (see the remarks above).
-            bool environmentMass = !(prism is HealthPrism bodyPrism && bodyPrism.ResolveOwnerFauna() != null);
+            bool environmentMass = ComputeEnvironmentMass(prism);
             var cell = Cell.FindCellContaining(position);
             _cells[index] = cell;
             // Pass the slot index explicitly: during Register the caller hasn't
             // stored the returned id on prism.SpatialIndexId yet, so Cell.AddBlock
             // could not resolve it from the prism.
             if (cell) cell.AddBlock(prism, environmentMass, index);
+        }
+
+        /// <summary>
+        /// Environment-mass classification for the cell density view. Two prism kinds bind
+        /// VOLUME-ONLY - they feed the cell's volume accounting ("volume is the spine": ALL
+        /// prisms count) but stay out of the targeting grids, per-domain counts, control and
+        /// prey signals:
+        ///   - FAUNA BODIES (see the BindCell remarks): a forager swarm must not read as its
+        ///     own mass concentration, nor seed herbivores against inedible "prey".
+        ///   - SUPER-SHIELDED structure (e.g. the Astro League edge lining): fully invulnerable
+        ///     mass no force can consume. The same "never lead fauna to mass they cannot eat"
+        ///     rule applies, and permanent neutral structure must not sway DominantDomain or
+        ///     the prey-volume signal.
+        /// Super-shield state is applied AFTER spawn (post-bloom), so UpdateShieldState re-files
+        /// the classification on every engage/disengage - the Register-time read alone would be
+        /// stale.
+        /// </summary>
+        static bool ComputeEnvironmentMass(Prism prism)
+        {
+            if (prism is HealthPrism bodyPrism && bodyPrism.ResolveOwnerFauna() != null) return false;
+            if (prism && prism.prismProperties != null && prism.prismProperties.IsSuperShielded) return false;
+            return true;
+        }
+
+        /// <summary>
+        /// Re-file a prism with its bound cell after a state change that alters its
+        /// environment-mass classification (super-shield engage/disengage). RemoveBlock +
+        /// AddBlock are idempotent/tolerant by design, so this is safe for any state.
+        /// </summary>
+        private void RefileCellClassification(int index)
+        {
+            var cell = _cells[index];
+            var prism = _prisms[index];
+            if (!cell || prism == null) return;
+            cell.RemoveBlock(prism, index);
+            cell.AddBlock(prism, ComputeEnvironmentMass(prism), index);
         }
 
         /// <summary>
@@ -1223,11 +1255,18 @@ namespace CosmicShore.Gameplay
             if (!_spatial.IsCreated) return;
             if (index < 0 || index >= _highWaterMark) return;
             var s = _spatial[index];
+            bool wasSuperShielded = (s.Flags & PrismFlags.IsSuperShielded) != 0;
             // Clear shield bits, then set
             s.Flags = (byte)(s.Flags & ~(PrismFlags.IsShielded | PrismFlags.IsSuperShielded));
             if (shielded) s.Flags |= PrismFlags.IsShielded;
             if (superShielded) s.Flags |= PrismFlags.IsSuperShielded;
             _spatial[index] = s;
+
+            // A super-shield transition flips the prism between environment mass and volume-only
+            // structure (see ComputeEnvironmentMass) - re-file it with its bound cell so the
+            // targeting grids, per-domain counts and control reads stay truthful.
+            if (wasSuperShielded != superShielded)
+                RefileCellClassification(index);
         }
 
         public void UpdateDomain(int index, int domain)

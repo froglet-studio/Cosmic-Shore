@@ -901,3 +901,39 @@ cell centre now hold the nucleus claim (fauna can't graze the core), and exterio
 gyroid fringes are grazed domain-blind. If a biome's equilibrium shifts too far
 toward stripped exteriors, the levers are the same as §6.2 (per-species caps,
 reproduction knobs) — never decay.
+
+## 14. Super-shielded structure binds volume-only (July 2026, Astro League edge lining)
+
+Astro League lines its court edges with **super-shielded (fully invulnerable) neutral
+prisms** — permanent structure no active force can consume (`Prism.Damage`/`Consume`
+no-op on super-shielded mass; ways to break it may come later). That surfaced a signal
+question the fauna-body precedent already answered: mass that **cannot be contested**
+must not drive the signals that are *about* contestable mass.
+
+**The rule (in `PrismSpatialIndex.ComputeEnvironmentMass`, one classification for both
+streams):** fauna bodies AND super-shielded prisms bind to their cell **VOLUME-ONLY** —
+they feed `Cell.LiveVolume` ("volume is the spine": ALL prisms count, unchanged) but stay
+out of the targeting grids, per-domain counts, `DominantDomain`/nucleus-claim reads and
+the prey-volume signal. Fauna are never led to mass they cannot eat, and a permanent
+neutral lining can never sway node control. Super-shield state is applied post-bloom, so
+`PrismSpatialIndex.UpdateShieldState` re-files the cell classification on every
+engage/disengage transition (a popped super shield returns the prism to ordinary
+environment mass).
+
+**The phase ladder keeps its pure measure — biomes budget for structure in config.**
+Rather than carving structure out of `LiveVolume` (which would fork the spine's measure),
+the biome that lays a known structural budget raises its `PhaseThresholds` volume fields
+by exactly that budget. Astro League: lining = `edgePrismCount 96 × vol(2.5·2.5·10) =
+6000`, so `Astro League Cell Config` runs Restless 6400/6300 and Frenzy 7500/7200
+(gameplay headroom above the floor identical to the pre-lining 400/300 · 1500/1200).
+Count backstops are untouched — volume-only mass never enters `LiveBlockCount`.
+
+- **Mass is conserved — unchanged.** The lining blooms in via the standard pooled spawn
+  and is only ever removed by the animated `Damage` teardown (arena rebuild); no decay.
+- **No domain asymmetry.** The lining is `Domains.Blue` (the neutral-entity sentinel) and
+  excluded from control reads — it cannot tint fauna spawns.
+- **Collider budget.** Each super-shielded prism carries an always-on convex MeshCollider
+  (shield octahedron) that collider-LOD cannot reclaim — the lining is capped by
+  `AstroLeagueSettingsSO.edgePrismCount` (96) and must stay modest; zero new physics
+  queries (the ball resolves prisms via `PrismSpatialIndex.QuerySphere` and skips
+  super-shielded entirely).
