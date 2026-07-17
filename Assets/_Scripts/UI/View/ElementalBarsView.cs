@@ -89,6 +89,13 @@ namespace CosmicShore.UI
 
         public bool IsBuilt => _built;
 
+        /// <summary>
+        /// Whether debuff haptics may fire from this view. SilhouetteController
+        /// sets this from IVesselStatus.IsLocalUser — the view exists on every
+        /// vessel, but only the locally-piloted one may buzz the device.
+        /// </summary>
+        public bool HapticsAllowed { get; set; } = true;
+
         private const int PetalCount = ElementalBarsConfigSO.PetalCount;
         private const int MinLevel   = ElementalBarsConfigSO.MinLevel;
         private const int MaxLevel   = ElementalBarsConfigSO.MaxLevel;
@@ -342,7 +349,7 @@ namespace CosmicShore.UI
             int level = _currentLevels[idx];
             ElementalBarsConfigSO.DistributePetalValues(level, _tmpVals);
 
-            if (level < previousLevel && config.hapticOnDebuff)
+            if (level < previousLevel && config.hapticOnDebuff && HapticsAllowed)
                 HapticController.PlayConstant(config.debuffHapticAmplitude, config.debuffHapticFrequency, config.debuffHapticDuration);
 
             var oldVals = _petalValues[idx];

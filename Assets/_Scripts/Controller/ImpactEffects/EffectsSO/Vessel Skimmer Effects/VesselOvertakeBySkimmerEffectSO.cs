@@ -68,8 +68,10 @@ namespace CosmicShore.Gameplay
                 return;
             _lastEffectTime[rs] = now;
 
-            // Haptic feedback
-            HapticController.PlayConstant(hapticAmplitude, hapticFrequency, hapticDuration);
+            // Haptic feedback — only when the overtaken vessel is the one in the
+            // local player's hands (the audio below is gated the same way).
+            if (overtakenStatus.IsLocalUser)
+                HapticController.PlayConstant(hapticAmplitude, hapticFrequency, hapticDuration);
 
             // Allies are buffed, opponents debuffed - both as temporary, decaying effects.
             bool isAlly = overtakenStatus.Domain == impacteeVessel.VesselStatus.Domain;

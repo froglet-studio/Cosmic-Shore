@@ -324,6 +324,18 @@ namespace CosmicShore.Core
             "→ FMOD migration; turn off once all slots are filled.")]
         bool warnOnUnwiredCategory = true;
 
+        [Header("Audio-Matched Haptics")]
+        [SerializeField, Tooltip(
+            "Optional AudioHapticsConfigSO override. Left empty, the " +
+            "orchestrator loads Resources/AudioHapticsConfig, and falls back " +
+            "to code defaults baked from the FMOD project's source audio — " +
+            "the system is fully functional with zero wiring. Haptics fire " +
+            "with each SFX category and a continuous bed follows the metered " +
+            "SFX bus; both are gated by GameSetting.HapticsEnabled/Level " +
+            "(deliberately independent of the SFX mute, so sound-off players " +
+            "still feel the game).")]
+        ScriptableObjects.AudioHapticsConfigSO hapticsConfig;
+
         public AudioSource MusicSource1 { get => musicSource1; set => musicSource1 = value; }
         public AudioSource MusicSource2 { get => musicSource2; set => musicSource2 = value; }
 
@@ -355,6 +367,11 @@ namespace CosmicShore.Core
 
         public bool MusicEnabled { get { return musicEnabled; } }
         public bool SFXEnabled { get { return sfxEnabled; } }
+
+        /// <summary>The FMOD bus every SFX event routes through — also the signal source for the continuous haptic bed.</summary>
+        public string SfxBusPath => sfxBusPath;
+
+        AudioHapticsOrchestrator _haptics;
         #endregion
 
         void Awake()
@@ -391,6 +408,21 @@ namespace CosmicShore.Core
             // The FMOD bus may not be loaded the instant Start runs; apply once
             // it resolves so the SFX slider takes effect on first frame too.
             StartCoroutine(ApplySfxBusWhenReady());
+
+            EnsureHapticsOrchestrator();
+        }
+
+        /// <summary>
+        /// Hosts the audio-matched haptics orchestrator on this persistent
+        /// GameObject so haptics live exactly as long as the audio service —
+        /// no scene wiring required.
+        /// </summary>
+        void EnsureHapticsOrchestrator()
+        {
+            if (_haptics != null) return;
+            if (!TryGetComponent(out _haptics))
+                _haptics = gameObject.AddComponent<AudioHapticsOrchestrator>();
+            _haptics.Configure(hapticsConfig, gameSetting);
         }
 
         void OnEnable()
@@ -543,6 +575,7 @@ namespace CosmicShore.Core
 
             if (MenuAudioEvents.TryGetValue(category, out var reference) && !reference.IsNull)
             {
+                _haptics?.PlayMenuTransient(category);
                 PlaySFXEvent(reference);
                 return;
             }
@@ -586,6 +619,19 @@ namespace CosmicShore.Core
             if (GameplaySFXEvents.TryGetValue(category, out var reference) && !reference.IsNull)
             {
                 if (!PassesGameplaySFXThrottle(category)) return;
+
+                // Haptic first: the vibrator has its own actuation latency, so
+                // firing it at the same call the FMOD one-shot starts gives the
+                // best perceived sync. Gain mirrors the per-category audio
+                // attenuation; spatial events additionally fall off with
+                // listener distance inside the orchestrator. Deliberately NOT
+                // scaled by the SFX slider — haptics have their own setting.
+                if (_haptics != null)
+                {
+                    float hapticGain = GetCategoryVolumeScale(category);
+                    if (spatial) _haptics.PlayGameplayTransient(category, worldPosition, hapticGain);
+                    else _haptics.PlayGameplayTransient(category, hapticGain);
+                }
 
                 float volume = ResolveFMODSFXVolume() * GetCategoryVolumeScale(category);
                 FMODOneShotVolumeHelper.PlaySFXOneShot(reference, spatial ? worldPosition : Vector3.zero, volume);
@@ -633,12 +679,14 @@ namespace CosmicShore.Core
 
         public void PlaySFXClip(AudioClip audioClip, AudioSource sfxSource)
         {
+            _haptics?.PlayLegacyClip(audioClip);
             sfxSource.volume = SFXVolume;
             sfxSource.PlayOneShot(audioClip);
         }
 
         public void PlaySFXClip(AudioClip audioClip)
         {
+            _haptics?.PlayLegacyClip(audioClip);
             sfxSource.volume = SFXVolume;
             sfxSource.PlayOneShot(audioClip);
         }

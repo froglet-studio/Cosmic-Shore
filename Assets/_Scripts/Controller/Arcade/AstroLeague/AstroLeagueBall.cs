@@ -967,7 +967,7 @@ namespace CosmicShore.Gameplay
         {
             EmitBurst(position, Vector3.up, settings.goalParticleBurst);
             ShakeCamera(settings.goalShakeIntensity, settings.goalShakeDuration, position);
-            HapticController.PlayHaptic(HapticType.MineCollision);
+            HapticController.PlayHaptic(HapticType.MineCollision, position);
         }
 
         /// <summary>
@@ -980,7 +980,8 @@ namespace CosmicShore.Gameplay
             TriggerFlash(intensity * 0.6f);
             EmitBurst(position, normal, (int)(settings.impactParticleBurst * 0.5f * Mathf.Max(0.4f, intensity)));
             ShakeCamera(settings.strikeShakeIntensity * intensity * 0.35f, settings.strikeShakeDuration, position);
-            HapticController.PlayHaptic(HapticType.ShipCollision);
+            // Distance-attenuated: a carom across the arena is a murmur, not a slam on every peer.
+            HapticController.PlayHaptic(HapticType.ShipCollision, position);
         }
 
         void TriggerFlash(float intensity) =>

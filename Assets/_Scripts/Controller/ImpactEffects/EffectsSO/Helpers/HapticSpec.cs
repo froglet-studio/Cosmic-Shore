@@ -11,7 +11,10 @@ namespace CosmicShore.Gameplay
         public void PlayIfManual(IVesselStatus status)
         {
             if (status == null) return;
-            if (!status.AutoPilotEnabled)
+            // Only the locally-piloted vessel may buzz this device — without the
+            // IsLocalUser gate, a REMOTE human's collisions (autopilot off) leak
+            // haptics onto every peer's hands.
+            if (!status.AutoPilotEnabled && status.IsLocalUser)
                 HapticController.PlayHaptic(_type);
         }
     }
