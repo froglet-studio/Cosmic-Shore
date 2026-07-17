@@ -11,7 +11,7 @@ namespace CosmicShore.Gameplay
         {
             var skimmerVesselStatus = impactor.Skimmer.VesselStatus;
             // Local pilot only — a remote player's skim must not buzz this device.
-            if (skimmerVesselStatus.AutoPilotEnabled || !skimmerVesselStatus.IsLocalUser) return;
+            if (!HapticController.IsLocalHumanPilot(skimmerVesselStatus)) return;
 
             var hapticScale = impactor.CombinedWeight / 3;
             // Routed into the orchestrator's continuous bed: the per-frame call

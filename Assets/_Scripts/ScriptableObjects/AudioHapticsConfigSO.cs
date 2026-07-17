@@ -162,6 +162,15 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("Envelope analysis settings used for legacy AudioClips (window, budget, transient detection). Fixed at code defaults; exposed here only for the master duration cap.")]
         [Min(0.2f)] public float legacyClipMaxSeconds = 1.5f;
 
+        [Tooltip("Gain on legacy-AudioClip haptics (no per-category authoring exists for arbitrary clips).")]
+        [Range(0f, 1f)] public float legacyClipGain = 0.6f;
+
+        [Tooltip("Arbitration priority for legacy-AudioClip haptics.")]
+        [Range(0, 100)] public int legacyClipPriority = 45;
+
+        [Tooltip("Minimum seconds between two haptics of the same legacy AudioClip.")]
+        [Min(0f)] public float legacyClipCooldown = 0.1f;
+
         HapticTransientArbiter.Settings _cachedArbiterSettings;
         bool _arbiterSettingsCached;
 
@@ -189,6 +198,8 @@ namespace CosmicShore.ScriptableObjects
             _arbiterSettingsCached = false;
             bedFftWindowSize = Mathf.ClosestPowerOfTwo(Mathf.Clamp(bedFftWindowSize, 128, 4096));
             spatialCutoffDistance = Mathf.Max(spatialCutoffDistance, spatialFullStrengthDistance + 1f);
+            // Chunks must outlive the cadence or the Android bed stutters with gaps.
+            androidChunkClipSeconds = Mathf.Max(androidChunkClipSeconds, androidChunkIntervalSeconds + 0.05f);
         }
 
         /// <summary>Finds the spec for a gameplay category; null when absent (caller falls back to baked defaults).</summary>

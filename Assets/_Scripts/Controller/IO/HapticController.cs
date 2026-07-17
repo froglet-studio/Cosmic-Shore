@@ -2,6 +2,7 @@ using CosmicShore.Core;
 using CosmicShore.Utility;
 using Lofelt.NiceVibrations;
 using Reflex.Attributes;
+using Unity.Netcode;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -34,6 +35,31 @@ namespace CosmicShore.Gameplay
         static GameSetting s_gameSetting;
 
         void Awake() => s_gameSetting = injectedGameSetting;
+
+        /// <summary>
+        /// Whether this vessel belongs to the human holding THIS device — the
+        /// gate for every vessel-attributed haptic. Networked sessions use
+        /// IsLocalUser (owner + non-AI). The non-networked single-player path
+        /// (PlayerSpawner) never network-spawns its Players, so IsLocalUser is
+        /// structurally false there — but no remote humans can exist either, so
+        /// any non-AI player IS the local human.
+        /// </summary>
+        public static bool IsLocalPlayerVessel(IVesselStatus status)
+        {
+            var player = status?.Player;
+            if (player == null) return false;
+            if (player.IsLocalUser) return true;
+            bool networkSpawned = player is NetworkBehaviour networkBehaviour && networkBehaviour.IsSpawned;
+            return !networkSpawned && !player.IsInitializedAsAI;
+        }
+
+        /// <summary>
+        /// <see cref="IsLocalPlayerVessel"/> plus manual control — for haptics
+        /// that should only fire while the player is actually flying the vessel
+        /// (collision/skim feedback), not while it drifts on autopilot.
+        /// </summary>
+        public static bool IsLocalHumanPilot(IVesselStatus status)
+            => status != null && !status.AutoPilotEnabled && IsLocalPlayerVessel(status);
 
         /// <summary>
         /// Plays the audio-matched haptic for a gameplay haptic type at full

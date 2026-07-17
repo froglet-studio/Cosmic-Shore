@@ -10,11 +10,12 @@ namespace CosmicShore.Gameplay
 
         public void PlayIfManual(IVesselStatus status)
         {
-            if (status == null) return;
-            // Only the locally-piloted vessel may buzz this device — without the
-            // IsLocalUser gate, a REMOTE human's collisions (autopilot off) leak
-            // haptics onto every peer's hands.
-            if (!status.AutoPilotEnabled && status.IsLocalUser)
+            // Only the vessel the local human is actively flying may buzz this
+            // device — without the identity gate, a REMOTE human's collisions
+            // (autopilot off) leak haptics onto every peer's hands. The helper
+            // also covers the non-networked single-player spawn path, where
+            // IsLocalUser alone is structurally false.
+            if (HapticController.IsLocalHumanPilot(status))
                 HapticController.PlayHaptic(_type);
         }
     }

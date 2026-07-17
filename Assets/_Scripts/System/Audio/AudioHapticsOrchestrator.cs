@@ -62,10 +62,6 @@ namespace CosmicShore.Core
         const int MenuKeyOffset = 1000;
         const int LegacyClipKeyOffset = unchecked((int)0x80000000);
 
-        // Mixing constants for the legacy AudioClip path (no authored spec exists for arbitrary clips).
-        const float LegacyClipGain = 0.6f;
-        const int LegacyClipPriority = 45;
-        const float LegacyClipCooldown = 0.1f;
 
         AudioHapticsConfigSO _config;
         GameSetting _gameSetting;
@@ -249,10 +245,10 @@ namespace CosmicShore.Core
             var request = new HapticTransientArbiter.Request
             {
                 CategoryKey = LegacyClipKeyOffset | (clip.GetInstanceID() & 0x7FFFFFFF),
-                Priority = LegacyClipPriority,
-                Strength = Mathf.Clamp01(gain * LegacyClipGain * _config.transientMasterGain),
+                Priority = _config.legacyClipPriority,
+                Strength = Mathf.Clamp01(gain * _config.legacyClipGain * _config.transientMasterGain),
                 Duration = pattern.Duration,
-                CooldownSeconds = LegacyClipCooldown,
+                CooldownSeconds = _config.legacyClipCooldown,
             };
             AdmitAndPlay(request, pattern);
         }
@@ -270,7 +266,13 @@ namespace CosmicShore.Core
 
             amplitude = Mathf.Clamp01(amplitude);
             frequency = Mathf.Clamp01(frequency);
-            float until = Now + Mathf.Max(0f, duration);
+
+            // Android's chunked bed only samples pulses at chunk ticks — a pulse
+            // shorter than the cadence could expire unheard between ticks.
+            float minDuration = ResolveBedMode() == BedMode.Chunked
+                ? _config.androidChunkIntervalSeconds + 0.02f
+                : 0f;
+            float until = Now + Mathf.Max(minDuration, Mathf.Max(0f, duration));
 
             // Prefer an expired slot; otherwise replace the weakest active slot
             // this pulse outranks. Weaker than all four actives → dropped.

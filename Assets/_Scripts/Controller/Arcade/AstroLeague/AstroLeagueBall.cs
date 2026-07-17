@@ -967,7 +967,9 @@ namespace CosmicShore.Gameplay
         {
             EmitBurst(position, Vector3.up, settings.goalParticleBurst);
             ShakeCamera(settings.goalShakeIntensity, settings.goalShakeDuration, position);
-            HapticController.PlayHaptic(HapticType.MineCollision, position);
+            // Deliberately NOT distance-attenuated: a goal is a match-wide moment
+            // every peer must feel at full strength, like the replicated shake.
+            HapticController.PlayHaptic(HapticType.MineCollision);
         }
 
         /// <summary>

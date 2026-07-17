@@ -257,9 +257,12 @@ namespace CosmicShore.Gameplay
                 elementBars = CreateDefaultElementBars();
             if (!elementBars) return;
 
-            // Every vessel gets the flower display, but only the local pilot's
-            // debuffs may vibrate this device.
-            elementBars.HapticsAllowed = _status?.IsLocalUser ?? true;
+            // Every vessel gets the flower display, but only the local player's
+            // vessel may vibrate this device on debuffs. Null status keeps the
+            // view's permissive default (matches pre-gate behavior for
+            // standalone/test usage).
+            if (_status != null)
+                elementBars.HapticsAllowed = HapticController.IsLocalPlayerVessel(_status);
 
             elementBars.Build();
 
