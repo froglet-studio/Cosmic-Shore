@@ -4,6 +4,12 @@
 **Companion doc:** `Docs/CODEBASE_OUTLINE.md` (branch `claude/game-codebase-outline-yqkz47`) — the whole-game
 atlas whose per-area observations seeded this audit's hypotheses.
 
+> **This is the evidence base.** The working documents are `GARRETT.md` (decision sheet D1-D21 +
+> owner items), `YASH.md` (systems engineering programs Y0-Y8), and `SHOMBITH.md` (UI
+> consolidation + tooling S0-S5). The zero-risk deletion wave described in §4 Wave 1 has been
+> partially executed on this branch (commit `16cc36e8`) — re-verify remaining claims at the
+> moment of change; line numbers drift.
+
 **What this is.** A measured inventory of the codebase's *unification debt*, in three classes:
 
 - **(A) Vestigial cleanup** — a unification already happened and won, but the losing generation's
