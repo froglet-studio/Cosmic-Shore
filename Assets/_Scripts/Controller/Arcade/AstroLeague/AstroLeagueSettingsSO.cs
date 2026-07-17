@@ -181,6 +181,12 @@ namespace CosmicShore.Gameplay
                  "tiny recording into extreme slow-mo.")]
         public float goalReplayMinPlaybackSpeed = 0.3f;
 
+        [Tooltip("Replay-camera follow offset from the ghost ball, in the ghost's local frame (the " +
+                 "ghost faces its direction of travel, so -Z trails the shot). World units at " +
+                 "intensity 1 - scaled by the arena scale so the framing reads the same on every " +
+                 "court. The ball is ~14 units across at 2x, so keep this well back.")]
+        public Vector3 goalReplayCameraOffset = new(0f, 28f, -90f);
+
         [Header("Vessel Recoil (juice)")]
         [Tooltip("Backward velocity (units/sec) added to a vessel when it strikes the ball, a subtle " +
                  "'bounce off' juice. DEFAULT 0 (OFF): anti-clip is already guaranteed by the ball's own " +

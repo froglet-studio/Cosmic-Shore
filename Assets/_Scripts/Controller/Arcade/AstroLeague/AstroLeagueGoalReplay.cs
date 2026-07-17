@@ -39,6 +39,7 @@ namespace CosmicShore.Gameplay
         GameObject _ghostRoot;
         Transform _ghostVisual;
         Vector3 _ghostVisualScale;
+        float _arenaScale = 1f;
         CancellationTokenSource _playCts;
 
         /// <summary>True while a ghost playback is on screen (recording pauses meanwhile).</summary>
@@ -86,11 +87,13 @@ namespace CosmicShore.Gameplay
         /// <paramref name="windowSeconds"/> (the celebration + kickoff-freeze span). Playback speed
         /// derives from the recording length (slow-mo for short recordings, floored by settings);
         /// the gameplay camera is restored when playback finishes or on <see cref="Stop"/>.
+        /// <paramref name="arenaScale"/> sizes the replay-camera offset with the court.
         /// </summary>
-        public void Play(float windowSeconds)
+        public void Play(float windowSeconds, float arenaScale = 1f)
         {
             if (IsPlaying || _count < 2 || _ball == null || _settings == null) return;
 
+            _arenaScale = Mathf.Max(0.01f, arenaScale);
             _playCts = new CancellationTokenSource();
             PlayAsync(windowSeconds, _playCts.Token).Forget();
         }
@@ -119,7 +122,15 @@ namespace CosmicShore.Gameplay
                 float speed = Mathf.Max(_settings.goalReplayMinPlaybackSpeed, span / playWindow);
 
                 BuildGhost(flight[0]);
-                _cameraManager?.SetupReplayCameraFollow(_ghostRoot.transform);
+                // Aim the ghost (and so the chase camera) down the shot from frame one.
+                Vector3 firstTravel = flight[1].Position - flight[0].Position;
+                if (firstTravel.sqrMagnitude > 0.0001f)
+                    _ghostRoot.transform.rotation = Quaternion.LookRotation(firstTravel.normalized, Vector3.up);
+
+                // The ghost is not a vessel - supply the replay framing explicitly, scaled with
+                // the court so the shot reads the same at every intensity.
+                _cameraManager?.SetupReplayCameraFollow(_ghostRoot.transform,
+                    _settings.goalReplayCameraOffset * _arenaScale);
 
                 // Bloom the ghost in (continuity - nothing pops in), then retrace the shot.
                 await ScaleGhostAsync(Vector3.zero, _ghostVisualScale, 0.25f, token);
@@ -142,10 +153,16 @@ namespace CosmicShore.Gameplay
                     Vector3 travel = (b.Position - a.Position) / dt;
 
                     _ghostRoot.transform.position = position;
-                    // Root faces the direction of travel so the follow camera trails the shot;
+                    // Root faces the direction of travel so the follow camera trails the shot -
+                    // SMOOTHED, so a wall bank doesn't whip the chase camera around instantly;
                     // the recorded tumble spins the visual child, never the camera.
                     if (travel.sqrMagnitude > 0.01f)
-                        _ghostRoot.transform.rotation = Quaternion.LookRotation(travel.normalized, Vector3.up);
+                    {
+                        var travelRot = Quaternion.LookRotation(travel.normalized, Vector3.up);
+                        _ghostRoot.transform.rotation = Quaternion.Slerp(
+                            _ghostRoot.transform.rotation, travelRot,
+                            1f - Mathf.Exp(-5f * Time.unscaledDeltaTime));
+                    }
                     if (_ghostVisual != null)
                         _ghostVisual.rotation = Quaternion.SlerpUnclamped(a.Rotation, b.Rotation, t);
 

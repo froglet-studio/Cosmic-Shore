@@ -824,7 +824,7 @@ namespace CosmicShore.Gameplay
             // The goal replay fills the reset window on the replay camera; it restores the
             // gameplay camera when playback ends (or at kickoff GO, whichever lands first).
             if (settings.goalReplayEnabled && goalReplay != null)
-                goalReplay.Play(resetWindow);
+                goalReplay.Play(resetWindow, _currentScale);
         }
 
         /// <summary>

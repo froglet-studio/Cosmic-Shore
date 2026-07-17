@@ -196,7 +196,7 @@ namespace CosmicShore.Gameplay
         /// Unlike <see cref="SetupEndCameraFollow"/> the target needs no VesselCameraCustomizer
         /// (a replay ghost is not a vessel); one is applied when present.
         /// </summary>
-        public void SetupReplayCameraFollow(Transform followTarget)
+        public void SetupReplayCameraFollow(Transform followTarget, Vector3? followOffset = null)
         {
             if (endCamera == null || followTarget == null) return;
             if (!gameObject.activeInHierarchy) gameObject.SetActive(true);
@@ -204,6 +204,11 @@ namespace CosmicShore.Gameplay
             endCamera.SetFollowTarget(followTarget);
             if (followTarget.TryGetComponent(out VesselCameraCustomizer customizer))
                 customizer.Configure(endCamera);
+            // A non-vessel target (a replay ghost) has no customizer to size the framing, so the
+            // caller supplies the follow offset explicitly - the end camera otherwise keeps
+            // whatever offset its last vessel target left behind (far too close for a ball).
+            if (followOffset.HasValue)
+                endCamera.SetFollowOffset(followOffset.Value);
 
             endCamera.SnapToTarget();
             SetEndCameraActive();
