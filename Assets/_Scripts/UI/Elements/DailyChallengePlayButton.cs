@@ -7,7 +7,7 @@ namespace CosmicShore.UI
     {
         void Start()
         {
-            // Daily Challenge is not yet available — disable the button
+            // Daily Challenge is not yet available - disable the button
             var button = GetComponent<Button>();
             if (button)
                 button.interactable = false;
@@ -15,7 +15,7 @@ namespace CosmicShore.UI
 
         public void Play()
         {
-            // Disabled — daily challenge coming soon
+            // Disabled - daily challenge coming soon
         }
     }
 }

@@ -42,6 +42,10 @@ namespace CosmicShore.Gameplay
             if (!_redirectActive)
             {
                 var cell = cellData.Cell;
+                // Cell-less modes (Menu_Main lava-lamp / freestyle, some minigames) have no
+                // active Cell. The toggle is bundled on the drift input, so without this guard
+                // every left-stick drift threw a NullReferenceException.
+                if (cell == null) return;
                 Vector3 highDensityPosition = cell.GetExplosionTarget(so.Domain);
                 shardFieldBus.BroadcastPointAtPosition(highDensityPosition);
                 _redirectActive = true;

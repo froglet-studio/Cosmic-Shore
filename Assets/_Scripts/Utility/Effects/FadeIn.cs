@@ -3,13 +3,27 @@ using UnityEngine;
 
 namespace CosmicShore.Utility
 {
+    /// <summary>
+    /// Fades a renderer in by driving its shader's _opacity through a
+    /// MaterialPropertyBlock — no material clone, no per-frame GetComponent.
+    /// The override is cleared once the fade completes so material swaps
+    /// (crystal activation, domain changes) always show their authored opacity.
+    /// </summary>
     public class FadeIn : MonoBehaviour
     {
+        static readonly int OpacityID = Shader.PropertyToID("_opacity");
+
         [SerializeField] float fadeInRate;
 
         Renderer _renderer;
-        Material material;
+        MaterialPropertyBlock _mpb;
         Coroutine fadeInCoroutine;
+
+        void Awake()
+        {
+            _renderer = GetComponent<Renderer>();
+            _mpb = new MaterialPropertyBlock();
+        }
 
         void Start()
         {
@@ -24,17 +38,12 @@ namespace CosmicShore.Utility
             StartFadeIn();
         }
 
-        void OnDestroy()
-        {
-            if (material) Destroy(material);
-        }
-
         public void StartFadeIn()
         {
-            if (!material) return;
-
-            // Set the opacity to zero before starting the coroutine so there is no delay in the start of the effect
-            material.SetFloat("_opacity", 0f);
+            // Zero the opacity before starting the coroutine so there is no
+            // one-frame flash at full opacity.
+            _mpb.SetFloat(OpacityID, 0f);
+            _renderer.SetPropertyBlock(_mpb);
 
             if (fadeInCoroutine != null)
                 StopCoroutine(fadeInCoroutine);
@@ -51,8 +60,14 @@ namespace CosmicShore.Utility
                 yield return null;
                 fadeInRate *= 1.00f + Time.deltaTime;
                 opacity += fadeInRate;
-                material.SetFloat("_opacity", opacity);
+                _mpb.SetFloat(OpacityID, opacity);
+                _renderer.SetPropertyBlock(_mpb);
             }
+
+            // Drop the override so the material's own opacity wins from here on.
+            _mpb.Clear();
+            _renderer.SetPropertyBlock(_mpb);
+            fadeInCoroutine = null;
         }
     }
 }

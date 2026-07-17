@@ -8,7 +8,7 @@ namespace CosmicShore.Editor
     /// One-shot editor tool: removes AudioSource components from all crystal
     /// prefabs in Assets/_Prefabs/Environment/.
     ///
-    /// Crystal.PlayExplosionAudio() no longer uses per-prefab AudioSources —
+    /// Crystal.PlayExplosionAudio() no longer uses per-prefab AudioSources -
     /// it fires an FMOD one-shot via AudioSystem.PlayGameplaySFX(category, position)
     /// instead. Run this tool once after pulling this change to clean up the
     /// dead components from all prefabs.
@@ -64,7 +64,7 @@ namespace CosmicShore.Editor
             }
             else
             {
-                Debug.Log("[StripCrystalAudioSourceTool] No crystal prefabs with AudioSource found — nothing to remove.");
+                Debug.Log("[StripCrystalAudioSourceTool] No crystal prefabs with AudioSource found - nothing to remove.");
             }
 
             if (skipped.Count > 0)

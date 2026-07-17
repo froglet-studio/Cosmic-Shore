@@ -35,7 +35,7 @@ namespace CosmicShore.Gameplay
         [Tooltip("Only used when FormatType = Custom. Use {0} as the value placeholder.")]
         public string CustomFormat = "{0}";
 
-        // Runtime — not serialized, resets each play session automatically
+        // Runtime - not serialized, resets each play session automatically
         // because SOs are reloaded fresh in a build and reset on domain reload in editor.
         [NonSerialized] private float _currentValue;
 
@@ -78,7 +78,7 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Reset the cached value — call this when a new match begins.
+        /// Reset the cached value - call this when a new match begins.
         /// </summary>
         public void Reset() => _currentValue = 0f;
     }

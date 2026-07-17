@@ -21,7 +21,7 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField] Crystal space;
         [SerializeField] Crystal time;
 
-        // The four droppable elements — Element also has None and Omni, which are NOT valid
+        // The four droppable elements - Element also has None and Omni, which are NOT valid
         // lifeform powerup elements.
         static readonly Element[] Elemental = { Element.Charge, Element.Mass, Element.Space, Element.Time };
 

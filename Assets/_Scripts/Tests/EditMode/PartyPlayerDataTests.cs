@@ -5,14 +5,14 @@ using CosmicShore.ScriptableObjects;
 namespace CosmicShore.Tests
 {
     /// <summary>
-    /// PartyPlayerData Tests — Validates the immutable player identity struct.
+    /// PartyPlayerData Tests - Validates the immutable player identity struct.
     ///
     /// WHY THIS MATTERS:
     /// PartyPlayerData is the payload for all party SOAP events (join, leave, kick,
     /// invite). It's used as the element type in ScriptableList and compared via
     /// Equals() for duplicate detection. If Equals only compares by PlayerId (by
     /// design), that needs to be tested. If it compared by all fields, two instances
-    /// of the same player with different display names would not match — breaking
+    /// of the same player with different display names would not match - breaking
     /// party member removal.
     /// </summary>
     [TestFixture]
@@ -42,7 +42,7 @@ namespace CosmicShore.Tests
 
         #endregion
 
-        #region Equality — By PlayerId Only
+        #region Equality - By PlayerId Only
 
         [Test]
         public void Equals_SamePlayerId_ReturnsTrue()
@@ -56,7 +56,7 @@ namespace CosmicShore.Tests
         [Test]
         public void Equals_SamePlayerId_DifferentDisplayName_StillTrue()
         {
-            // Equality is by PlayerId only — display name may change.
+            // Equality is by PlayerId only - display name may change.
             var a = new PartyPlayerData("id1", "Alice", 1);
             var b = new PartyPlayerData("id1", "Alice_Updated", 2);
 
@@ -136,7 +136,7 @@ namespace CosmicShore.Tests
         public void Struct_Immutability_ReadOnlyProperties()
         {
             // PartyPlayerData uses private backing fields with get-only properties.
-            // This test simply verifies it can be constructed and read — no mutators exist.
+            // This test simply verifies it can be constructed and read - no mutators exist.
             var data = new PartyPlayerData("id99", "Captain", 7);
 
             Assert.AreEqual("id99", data.PlayerId);

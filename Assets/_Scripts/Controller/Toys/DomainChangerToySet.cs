@@ -7,7 +7,7 @@ namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// Domain-changer toy set. Shows one toy per team colour you are NOT currently on (Jade/Ruby/Gold
-    /// minus current — always two in a 3-domain session). Each toy is tinted the domain it will turn
+    /// minus current - always two in a 3-domain session). Each toy is tinted the domain it will turn
     /// you into; flying through it requests that domain, and the toy then flips to the domain you just
     /// left. Domain changes route through the server-authoritative <c>Player.RequestSetDomain_ServerRpc</c>.
     /// </summary>
@@ -43,7 +43,11 @@ namespace CosmicShore.Gameplay
         {
             ClearChildren(slot.BodyHolder);
             Color c = DomainColor(slot.Option);
-            ToyFactory.AddSphereBody(slot.BodyHolder, BodyRadius, c);
+            // Shared trail-changer shape language: a cone in the domain's PRISM material, apex
+            // pointing the way you fly through (local +Z faces the ring centre) - the same shape
+            // the painting toy's stroke gates wear, so each teaches the other.
+            ToyFactory.AddConeBody(slot.BodyHolder, BodyRadius * 0.95f, BodyRadius * 2.6f, c,
+                ToyFactory.DomainPrismMaterial(Context, slot.Option));
             if (slot.Label)
             {
                 slot.Label.text = LabelFor(slot.Option);
@@ -51,17 +55,6 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        Color DomainColor(Domains d)
-        {
-            var tm = Context.GameData ? Context.GameData.ThemeManagerData : null;
-            if (tm) return tm.GetDomainUIColor(d);
-            return d switch
-            {
-                Domains.Jade => new Color(0.15f, 0.95f, 0.55f),
-                Domains.Ruby => new Color(1.00f, 0.20f, 0.45f),
-                Domains.Gold => new Color(1.00f, 0.80f, 0.15f),
-                _ => Color.gray,
-            };
-        }
+        Color DomainColor(Domains d) => ToyFactory.DomainAccentColor(Context, d);
     }
 }

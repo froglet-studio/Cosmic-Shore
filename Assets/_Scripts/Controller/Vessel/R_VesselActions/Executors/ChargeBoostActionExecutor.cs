@@ -2,6 +2,7 @@ using System;
 using System.Threading;
 using CosmicShore.Core;
 using Cysharp.Threading.Tasks;
+using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using Obvious.Soap;
 using Reflex.Attributes;
@@ -199,11 +200,20 @@ namespace CosmicShore.Gameplay
         float BoostMultiplierFrom(ChargeBoostActionSO so, float rawUnits)
         {
             float t = (so.MaxNormalizedCharge > 0f) ? Mathf.Clamp01(rawUnits / so.MaxNormalizedCharge) : 0f;
-            return 1f + (so.MaxBoostMultiplier - 1f) * t;
+            // Element → parameter (Charge → peak blast strength). Anchored at 1x at resting level;
+            // a fully-charged Charge element makes Dolphin's signature discharge hit harder.
+            float chargeMul = _status?.ElementalAbilityHandler.Multiplier(Element.Charge) ?? 1f;
+            float peakBoost = 1f + (so.MaxBoostMultiplier - 1f) * chargeMul;
+            return 1f + (peakBoost - 1f) * t;
         }
 
+        // Element → parameter (Time → charge rate). Anchored at 1x at resting level; a high Time
+        // element fills the charge meter faster, so the dart threads gaps into a blast sooner.
         float ChargePerSecond(ChargeBoostActionSO so)
-            => (so.ChargeTimeToFull > 0f) ? (so.MaxNormalizedCharge / so.ChargeTimeToFull) : so.MaxNormalizedCharge;
+        {
+            float baseRate = (so.ChargeTimeToFull > 0f) ? (so.MaxNormalizedCharge / so.ChargeTimeToFull) : so.MaxNormalizedCharge;
+            return baseRate * (_status?.ElementalAbilityHandler.Multiplier(Element.Time) ?? 1f);
+        }
 
         float DischargePerSecond(ChargeBoostActionSO so)
             => (so.DischargeTimeToEmpty > 0f) ? (so.MaxNormalizedCharge / so.DischargeTimeToEmpty) : so.MaxNormalizedCharge;

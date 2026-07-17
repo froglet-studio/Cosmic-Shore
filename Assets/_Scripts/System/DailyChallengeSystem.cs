@@ -144,14 +144,14 @@ namespace CosmicShore.Core
 
             if (Arcade.Instance == null)
             {
-                CSDebug.LogWarning("[DailyChallengeSystem] Arcade singleton not available — skipping daily game setup.");
+                CSDebug.LogWarning("[DailyChallengeSystem] Arcade singleton not available - skipping daily game setup.");
                 return;
             }
 
             DailyGame = Arcade.Instance.GetTrainingGameByMode(dailyChallenge.GameMode);
             if (DailyGame == null)
             {
-                CSDebug.LogWarning($"[DailyChallengeSystem] No training game found for mode {dailyChallenge.GameMode} — skipping resource setup.");
+                CSDebug.LogWarning($"[DailyChallengeSystem] No training game found for mode {dailyChallenge.GameMode} - skipping resource setup.");
                 return;
             }
 
@@ -168,14 +168,14 @@ namespace CosmicShore.Core
             // and the failure bubbles up into the auth → menu flow.
             if (Arcade.Instance == null || Arcade.Instance.TrainingGames == null)
             {
-                CSDebug.LogWarning("[DailyChallengeSystem] Arcade or TrainingGames not ready — daily challenge unavailable.");
+                CSDebug.LogWarning("[DailyChallengeSystem] Arcade or TrainingGames not ready - daily challenge unavailable.");
                 return false;
             }
 
             var trainingGames = Arcade.Instance.TrainingGames.Games;
             if (trainingGames == null || trainingGames.Count == 0)
             {
-                CSDebug.LogWarning("[DailyChallengeSystem] Training game list is empty — daily challenge unavailable.");
+                CSDebug.LogWarning("[DailyChallengeSystem] Training game list is empty - daily challenge unavailable.");
                 return false;
             }
 

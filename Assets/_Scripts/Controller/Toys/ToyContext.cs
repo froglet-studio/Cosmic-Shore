@@ -8,7 +8,7 @@ namespace CosmicShore.Gameplay
     /// <summary>
     /// Shared runtime references handed to every <see cref="Toy"/> at creation. Toys are
     /// built at runtime via <c>new GameObject</c>, so Reflex <c>[Inject]</c> does not run on
-    /// them — the <see cref="ToyboxController"/> owns the injected dependencies and passes
+    /// them - the <see cref="ToyboxController"/> owns the injected dependencies and passes
     /// them down through this context instead.
     /// </summary>
     public sealed class ToyContext

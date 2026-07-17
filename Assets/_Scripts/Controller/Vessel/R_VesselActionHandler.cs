@@ -13,8 +13,23 @@ namespace CosmicShore.Gameplay
 {
     public class R_VesselActionHandler : NetworkBehaviour
     {
+        /// <summary>
+        /// Replicated elemental unlock bits (bit = 1 &lt;&lt; ((int)element - 1) for
+        /// Charge/Mass/Space/Time). Owner-write: the owning machine's
+        /// R_VesselElementalAbilityHandler derives unlock state from its own ResourceSystem
+        /// (element levels themselves never replicate) and publishes it here so every peer
+        /// resolves outcome-affecting upgrades (piercing / shielded prisms / domain-sparing
+        /// explosions) identically — divergent unlock state would desync the conserved
+        /// prismscape. Lives on this NetworkBehaviour because VesselStatus is deliberately a
+        /// plain MonoBehaviour.
+        /// </summary>
+        public NetworkVariable<byte> NetElementUnlocks = new(
+            0,
+            NetworkVariableReadPermission.Everyone,
+            NetworkVariableWritePermission.Owner);
+
         [Header("Executors")]
-        [SerializeField] ActionExecutorRegistry _executors;   
+        [SerializeField] ActionExecutorRegistry _executors;
 
         [Header("Action mappings")]
         [SerializeField] List<InputEventShipActionMapping> _inputEventShipActions;
@@ -67,7 +82,7 @@ namespace CosmicShore.Gameplay
             UnsubscribeFromInputEvents();
 
             // During scene teardown the Player may already be destroyed.
-            // The event lives on the Player, so it's GC'd with it — skip the unsubscribe.
+            // The event lives on the Player, so it's GC'd with it - skip the unsubscribe.
             if (_subscribedToInputPaused && vesselStatus?.Player is UnityEngine.Object obj && obj != null)
             {
                 vesselStatus.InputStatus.OnToggleInputPaused -= OnToggleInputPaused;
@@ -157,6 +172,10 @@ namespace CosmicShore.Gameplay
             {
                 InputDeviceType.Touch   => _touchOverrideActions,
                 InputDeviceType.Gamepad => _gamepadOverrideActions,
+                // DualMouse raises the same independent LeftStick/RightStick trigger events as the
+                // gamepad, so it shares the gamepad's per-trigger override mapping. Vessels with no
+                // gamepad overrides fall through to the shared mapping exactly as before.
+                InputDeviceType.DualMouse => _gamepadOverrideActions,
                 _                       => null
             };
         }

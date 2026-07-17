@@ -6,7 +6,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
 {
     /// <summary>
     /// Runtime companion for the Sweep tab's Manual session: while you play, it captures
-    /// errors/exceptions/asserts and the moments you mark (F8), with near-zero overhead — just a
+    /// errors/exceptions/asserts and the moments you mark (F8), with near-zero overhead - just a
     /// log callback plus a smoothed fps average. Frame stats are recorded separately by
     /// <see cref="PerformanceBenchmarkRunner"/>; this only adds the error log + marks that get
     /// folded into the saved report via <see cref="FillReport"/>.

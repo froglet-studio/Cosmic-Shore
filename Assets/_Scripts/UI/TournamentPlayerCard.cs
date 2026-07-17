@@ -7,7 +7,7 @@ using UnityEngine.UI;
 namespace CosmicShore.UI
 {
     /// <summary>
-    /// <b>Player Data Card</b> — one player's row inside a <see cref="TournamentRoundCard"/>: avatar +
+    /// <b>Player Data Card</b> - one player's row inside a <see cref="TournamentRoundCard"/>: avatar +
     /// name, the player's <b>Round Score</b> (their result that round) and <b>Total Score</b> (their
     /// domain's cumulative tournament points, as-of that round). The background image is tinted to the
     /// player's domain via the <see cref="DomainColorPaletteSO"/>.
@@ -38,7 +38,7 @@ namespace CosmicShore.UI
             if (nameText) nameText.text = playerName;
             SetAvatar(avatar);
 
-            // Cards emit the FULL labelled text ("Round Score : 6") — don't add a separate static label.
+            // Cards emit the FULL labelled text ("Round Score : 6") - don't add a separate static label.
             bool hasRound = !string.IsNullOrEmpty(roundScore);
             if (roundScoreText) roundScoreText.text = hasRound ? $"Round Score : {roundScore}" : string.Empty;
             if (roundScoreRoot) roundScoreRoot.SetActive(hasRound);

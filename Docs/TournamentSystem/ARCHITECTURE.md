@@ -35,8 +35,10 @@ One session plays a **randomized lineup** drawn from the competitive domain game
 (HexRace 33), Joust (34), Crystal Capture (35)**. Each game the host draws a random pool mode (no
 immediate repeat) **and** a random intensity in `[1..X]` (X = the lobby-chosen intensity ceiling),
 so a higher intensity widens the variety (`3 modes × X` "experiences", L1=3 … L4=12). After each
-game the active **domains** are ranked and earn **placement crystals** by domain place
-(1st = 2, 2nd = 1, 3rd = 0; `PointsByPlace`, configurable). The cumulative **per-domain** total is
+game the active **domains** are ranked **by team total** (the mode rule's summed metric — see §3)
+and earn **placement crystals** by domain place (1st = 2, 2nd = 1, 3rd = 0; `PointsByPlace`,
+configurable — the **last**-placed domain always earns the table's last entry, 0, so a 2-domain
+game pays `{2,0}`: losing never pays toward the race target). The cumulative **per-domain** total is
 the leaderboard, and the session is a **race to `WinTarget` (6)** crystals — the first domain to
 reach it wins, with a hard **`MaxGames` (7)** cap so a stalemate still ends. It appears as a normal
 card in the Arcade panel (`GameModes.Tournament = 36`; the card's `DisplayName` is "Shuffle").
@@ -83,9 +85,14 @@ A static `Instance` lets scene MonoBehaviours reach it (mirrors `PartyInviteCont
 - **Standings are network-free.** On `gameData.OnMiniGameEnd`, **every peer** folds the
   already-synced `gameData.Results` (the ranked per-player `List<ScoreResult>`) into
   `TournamentDataSO` via `RecordResults` — identical inputs → identical standings, no extra RPC.
-  `RecordResults` reduces the per-player ranks to **per-domain** placement: each domain's place =
-  its best (lowest) player `Rank`, domains ordered by that (ties → enum order Jade→Ruby→Gold), then
-  awarded `{2,1,0}`. Recording happens *before* the next load's `ResetRuntimeData` clears `Results`.
+  Domain placement is the mode rule's **team-total order**
+  (`ScoringRuleSO.ResolvePlacementOrder` — domains by summed metric, ties → enum order
+  Jade→Ruby→Gold; the same aggregation that ends the turn and picks `WinnerDomain`), computed from
+  the still-synced `RoundStatsList` and passed in by the controller. The results-only reduction
+  (each domain's place = its best player `Rank`) survives **only as a fallback** — it mis-placed
+  teams whenever a losing team's player tied the top individual score (the 2v2 "Scurry" 17-vs-20
+  regression). Places award `{2,1,0}` via `PointsForPlacement` (last place always earns the last
+  entry, 0). Recording happens *before* the next load's `ResetRuntimeData` clears `Results`.
 - **Only the host drives progression** (`BeginFirstGame` / `AdvanceToNextGame` /
   `RestartTournament`): it draws a random `(mode, intensity ∈ [1..X])`, sets the per-game intensity
   on `gameData.SelectedIntensity`, then `SyncFromArcadeGame(mode) + InvokeGameLaunch()`. Clients
@@ -144,12 +151,16 @@ Score (highest first), matching the leaderboard.
 **Crystal reward (real wallet).** The placement crystals are also *real currency*: on each game's
 Scoreboard, `AwardCrystalsToLocalPlayer` credits the **local** human's wallet
 (`PlayerDataService.AddCrystals`, source `"shuffle_placement"`) with their domain's per-game `{2,1,0}`,
-read from the injected `TournamentDataSO.CrystalsForDomain(gameData.Results, localDomain)` (computed
-from the synced `Results`, so it's order-independent — and a plain data-container read, **not** a
-static `TournamentController.Instance` reach-through). Each peer credits only its own local player,
-once per game (AI have no wallet); a 3rd-place domain earns 0. The per-player score cards show the same
-per-domain badge via `CardCrystalReward`. Gated on `IsTournamentMode` — outside a shuffle the Scoreboard
-keeps its original winner-only flat `winnerCrystalReward`.
+read from the injected `TournamentDataSO.CrystalsForDomain(gameData.Results, localDomain,
+placement)` — `placement` being the mode rule's team-total order (`ResolvePlacementOrder`) computed
+once per show, so the badge/wallet match the standings fold exactly (a plain data-container read,
+**not** a static `TournamentController.Instance` reach-through). Each peer credits only its own local
+player, once per game (AI have no wallet); the **last**-placed domain earns 0 (so the 2-domain loser
+gets nothing, and 3rd of 3 gets nothing). The wallet write is wrapped in a try/catch: a
+`PlayerDataService` hiccup degrades to a logged lost reward, never a missing end-game screen. The
+per-player score cards show the same per-domain badge via `CardCrystalReward`. Gated on
+`IsTournamentMode` — outside a shuffle the Scoreboard keeps its original winner-only flat
+`winnerCrystalReward`.
 
 **Between-game summary overlay (SOAP — reuses the splash status surface).** `SceneTransitionManager`
 owns **only** fades — it holds no UI text. The splash already has a SOLID/SOAP text view,
@@ -208,7 +219,10 @@ keeps it), `TournamentAINames`, `Standings` (a `List<TournamentDomainStanding>` 
 `Domains`**, not player). Key methods: `RecordResults(results)` (per-domain fold + `GamesPlayed++`,
 see §3), `IsShuffleComplete` (race target reached or game cap hit — drives summary vs next game),
 `BuildSortedStandings()` (points desc, tiebreak best placement, then domain enum order Jade→Ruby→Gold),
-`ResetRuntime()`. Edit-mode coverage: `Assets/_Scripts/Tests/EditMode/TournamentDataSOTests.cs`.
+`PointsForPlacement(place, count)` (last place always earns the table's last entry — 0),
+`ResetRuntime()`. `RecordResults` takes an optional `domainPlacementOrder` — the mode rule's
+team-total order from `ScoringRuleSO.ResolvePlacementOrder`, passed by the controller (rank-derived
+fallback otherwise). Edit-mode coverage: `Assets/_Scripts/Tests/EditMode/TournamentDataSOTests.cs`.
 
 ## 6. File index
 

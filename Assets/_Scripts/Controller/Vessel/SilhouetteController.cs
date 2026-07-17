@@ -54,6 +54,7 @@ namespace CosmicShore.Gameplay
             }
 
             TrySubscribeResources();
+            TrySubscribeElementBars();
 
             //flower explosion
             VesselExplosionByCrystalEffectSO.OnMantaFlowerExplosion += HandleMantaFlowerExplosion;
@@ -160,7 +161,7 @@ namespace CosmicShore.Gameplay
             try { isDanger = prism.prismProperties != null && prism.prismProperties.IsDangerous; } catch { }
 
             // Domain (and danger) tint now come from the same theme ColorSet the
-            // vessels and prisms use (R5) — danger maps to the shared EnvironmentColors.Danger.
+            // vessels and prisms use (R5) - danger maps to the shared EnvironmentColors.Danger.
             var colorSet = gameData != null && gameData.ThemeManagerData != null
                 ? gameData.ThemeManagerData.ColorSet
                 : null;
@@ -225,20 +226,51 @@ namespace CosmicShore.Gameplay
                 _resources.OnElementLevelChange -= HandleElementLevelChanged;
         }
 
+        // OnDisable detaches the element-level handler, so OnEnable must re-attach it
+        // (mirroring TrySubscribeResources) — otherwise a disable/enable cycle leaves
+        // the petal flowers frozen while the energy UI keeps updating. Re-seeds levels
+        // because they may have changed while disabled (SetLevel early-outs on no-change).
+        void TrySubscribeElementBars()
+        {
+            if (_resources == null || !elementBars) return;
+            TryUnsubscribeElementBars();
+            _resources.OnElementLevelChange += HandleElementLevelChanged;
+            SeedElementBarLevels();
+        }
+
+        void SeedElementBarLevels()
+        {
+            elementBars.SetLevel(Element.Charge, _resources.GetLevel(Element.Charge));
+            elementBars.SetLevel(Element.Mass, _resources.GetLevel(Element.Mass));
+            elementBars.SetLevel(Element.Space, _resources.GetLevel(Element.Space));
+            elementBars.SetLevel(Element.Time, _resources.GetLevel(Element.Time));
+        }
+
         void InitializeElementBars()
         {
+            // The element flower display is a REQUIRED system on every vessel: when the
+            // prefab doesn't author an ElementalBarsView, create one on the vessel's HUD
+            // canvas. The view self-populates its four default bindings and the shared
+            // ElementalBarsConfig stamps the fleet-standard placement, so no per-vessel
+            // wiring is needed. Vessels with an authored view (Squirrel, Sparrow) keep it.
+            if (!elementBars)
+                elementBars = CreateDefaultElementBars();
             if (!elementBars) return;
+
             elementBars.Build();
 
-            if (_resources != null)
-            {
-                _resources.OnElementLevelChange += HandleElementLevelChanged;
+            TrySubscribeElementBars();
+        }
 
-                elementBars.SetLevel(Element.Charge, _resources.GetLevel(Element.Charge));
-                elementBars.SetLevel(Element.Mass, _resources.GetLevel(Element.Mass));
-                elementBars.SetLevel(Element.Space, _resources.GetLevel(Element.Space));
-                elementBars.SetLevel(Element.Time, _resources.GetLevel(Element.Time));
-            }
+        ElementalBarsView CreateDefaultElementBars()
+        {
+            var canvas = GetComponentInChildren<Canvas>(true);
+            if (!canvas) return null; // no HUD surface on this vessel — nothing to show on
+
+            var go = new GameObject("ElementalBars (auto)", typeof(RectTransform));
+            var rt = (RectTransform)go.transform;
+            rt.SetParent(canvas.transform, false);
+            return go.AddComponent<ElementalBarsView>();
         }
 
         void HandleElementLevelChanged(Element element, int level)

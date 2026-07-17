@@ -12,13 +12,19 @@ namespace CosmicShore.Gameplay
         [SerializeField] float driftDamping = 0f;
         [SerializeField] bool isSharpDrifting;
 
+        [Tooltip("Plays the drift start/end one-shots. Disable on a secondary drift tier that is " +
+                 "bound to the same trigger as the primary tier (e.g. the Squirrel's analog drift " +
+                 "stacks single + sharp on one trigger) so the SFX isn't played twice.")]
+        [SerializeField] bool playDriftSfx = true;
+
         [SerializeField] ScriptableEventNoParam OnDriftingStarted;
         [SerializeField] ScriptableEventNoParam OnDoubleDriftingStarted;
         [SerializeField] ScriptableEventNoParam OnDriftEnded;
 
         public override void StartAction(ActionExecutorRegistry execs, IVesselStatus vesselStatus)
         {
-            execs.AudioSystem.PlayGameplaySFX(GameplaySFXCategory.DriftStart);
+            if (playDriftSfx)
+                execs.AudioSystem.PlayGameplaySFX(GameplaySFXCategory.DriftStart);
             var t = vesselStatus.VesselTransformer;
             t.BeginDrift(Mult, driftDamping, isSharpDrifting);
             vesselStatus.IsDrifting = true;
@@ -38,12 +44,13 @@ namespace CosmicShore.Gameplay
 
         public override void StopAction(ActionExecutorRegistry execs, IVesselStatus vesselStatus)
         {
-            execs.AudioSystem.PlayGameplaySFX(GameplaySFXCategory.DriftEnd);
+            if (playDriftSfx)
+                execs.AudioSystem.PlayGameplaySFX(GameplaySFXCategory.DriftEnd);
             var t = vesselStatus.VesselTransformer;
             t.EndDrift(isSharpDrifting);
             vesselStatus.IsDrifting = t.IsDriftActive;
 
-            // See StartAction — only the local owner raises the drift HUD event.
+            // See StartAction - only the local owner raises the drift HUD event.
             if (!vesselStatus.IsLocalUser) return;
             OnDriftEnded.Raise();
         }

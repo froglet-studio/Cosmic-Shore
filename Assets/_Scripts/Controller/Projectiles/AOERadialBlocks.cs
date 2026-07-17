@@ -60,8 +60,15 @@ namespace CosmicShore.Gameplay
         {
             try
             {
-                // FIRST: Run the conic explosion visuals from parent
-                base.ExplodeAsync(ct).Forget();
+                // CREATION-ONLY: the skyburst's destructive work is the spherical
+                // AOEExplosion the detonator spawns alongside this object. Running the
+                // parent's conic sweep here as well produced a SECOND destructive
+                // explosion whose live trigger collider kept re-hitting / re-shielding
+                // prisms — including the radial blocks laid below — for the full
+                // ExplosionDuration (authored 50 s on the skyburst prefab: the
+                // "explosion that never resolves"). This object now only deposits the
+                // radial prism rays, then retires.
+                DisableConicExplosion();
 
                 // wait: primary delay + secondary delay
                 float wait = Mathf.Max(0f, ExplosionDelay) + Mathf.Max(0f, SecondaryExplosionDelay);
@@ -74,7 +81,7 @@ namespace CosmicShore.Gameplay
                 for (int ray = 0; ray < numberOfRays; ray++)
                 {
                     ct.ThrowIfCancellationRequested();
-                    if (!this) return; // guard against base conic animation destroying gameObject
+                    if (!this) return;
 
                     Trail trail = new Trail();
                     trails.Add(trail);
@@ -84,11 +91,33 @@ namespace CosmicShore.Gameplay
                     // Small frame delay to distribute work
                     await UniTask.Yield(PlayerLoopTiming.Update, ct);
                 }
+
+                // All rays deposited. Block growth is owned by the prisms themselves
+                // (Prism.Initialize bloom + a detached static fallback grower), so the
+                // spawner can go away. Initialize reparented us under the runtime
+                // coneContainer — destroy that so nothing leaks.
+                if (this)
+                    Destroy(coneContainer ? coneContainer : gameObject);
             }
             catch (OperationCanceledException)
             {
                 // Explosion cancelled
             }
+        }
+
+        /// <summary>
+        /// Kills the inherited destructive-explosion machinery: the trigger collider and
+        /// impactor (so nothing gets re-hit or re-shielded) and the cone sweep visual.
+        /// The base ExplodeAsync is never run, so nothing scales or animates either.
+        /// </summary>
+        private void DisableConicExplosion()
+        {
+            if (TryGetComponent<SphereCollider>(out var triggerCollider))
+                triggerCollider.enabled = false;
+            if (TryGetComponent<ExplosionImpactor>(out var impactor))
+                impactor.enabled = false;
+            if (TryGetComponent<MeshRenderer>(out var coneVisual))
+                coneVisual.enabled = false;
         }
 
         // ----------------------------------------------------------------------

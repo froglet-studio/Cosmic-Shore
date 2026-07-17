@@ -8,7 +8,7 @@ namespace CosmicShore.Core
     /// <summary>
     /// Device-local settings store for Display, Graphics, and the CPU/simulation "Performance" tab.
     /// Sibling to <see cref="GameSetting"/> (which owns the cloud-roaming audio/input prefs); this
-    /// one is PlayerPrefs-only by design — resolution / quality / framerate are per-device and must
+    /// one is PlayerPrefs-only by design - resolution / quality / framerate are per-device and must
     /// not roam. Auto-instantiating <see cref="SingletonPersistent{T}"/>, so it needs no DI wiring.
     ///
     /// On first run it seeds from <see cref="SettingsAutoDetector"/>; thereafter it loads the saved

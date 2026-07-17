@@ -19,7 +19,7 @@ namespace CosmicShore.Gameplay
 
         [Inject] private PlayerDataService _injectedPlayerDataService;
 
-        // Fallback to static singleton — Netcode-spawned Players (host's own player)
+        // Fallback to static singleton - Netcode-spawned Players (host's own player)
         // bypass Reflex's auto-injection since they're instantiated by NetworkManager,
         // not Instantiate() inside an injected scope.
         private PlayerDataService playerDataService
@@ -60,7 +60,7 @@ namespace CosmicShore.Gameplay
         /// configured <see cref="GameDataSO.RequestedDomainCount"/>; out-of-range picks
         /// are rejected silently.
         /// </summary>
-        [ServerRpc] // RequireOwnership = true is the default — only the player's owner may request
+        [ServerRpc] // RequireOwnership = true is the default - only the player's owner may request
         public void RequestSetDomain_ServerRpc(Domains domain)
         {
             using var _ = CosmicShore.Utility.PerformanceBenchmark.NetMarkers.RpcDispatch.Auto();
@@ -122,7 +122,7 @@ namespace CosmicShore.Gameplay
         public bool IsNetworkOwner => IsSpawned && IsOwner;
         public bool IsNetworkClient => IsSpawned && !IsOwner;
         // No offline single-player: every session is a Relay host (solo or party). The local user
-        // is the owner of a non-AI Player on this machine — AI shares the host's OwnerClientId, so
+        // is the owner of a non-AI Player on this machine - AI shares the host's OwnerClientId, so
         // it is still excluded (IsMultiplayerOwner == IsSpawned && IsOwner && !IsInitializedAsAI).
         public bool IsLocalUser => IsMultiplayerOwner;
        
@@ -164,7 +164,7 @@ namespace CosmicShore.Gameplay
             AvatarId = NetAvatarId.Value;
             Vessel = vessel;
 
-            // RoundStats.Domain is a LOCAL mirror of the player's domain on EVERY peer —
+            // RoundStats.Domain is a LOCAL mirror of the player's domain on EVERY peer -
             // Player.NetDomain is the single networked source (RoundStats.n_Domain is retired). Set
             // it on clients too, so a client's own RoundStats.Domain is correct immediately instead
             // of via a lagging second replication.
@@ -180,7 +180,7 @@ namespace CosmicShore.Gameplay
 
         public override void OnNetworkSpawn()
         {
-            CSDebug.Log($"<color=#00FF00>[FLOW-4] [Player] OnNetworkSpawn — OwnerClientId={OwnerClientId}, NetworkObjectId={NetworkObjectId}, IsOwner={IsOwner}, IsServer={IsServer}</color>");
+            CSDebug.Log($"<color=#00FF00>[FLOW-4] [Player] OnNetworkSpawn - OwnerClientId={OwnerClientId}, NetworkObjectId={NetworkObjectId}, IsOwner={IsOwner}, IsServer={IsServer}</color>");
             base.OnNetworkSpawn();
 
             // Add to game data early so ServerPlayerVesselInitializer can find us.
@@ -210,7 +210,7 @@ namespace CosmicShore.Gameplay
             // --- Owner writes (owner-perm vars: NetName, NetAvatarId, NetDefaultVesselType) ---
             // Only the local human player writes profile data here.
             // AI players share the host's OwnerClientId (IsOwner=true) but must NOT
-            // overwrite their names with the human's profile — the AI spawner sets their
+            // overwrite their names with the human's profile - the AI spawner sets their
             // names separately after spawn. IsLocalUser filters out AI via !IsInitializedAsAI.
             if (IsLocalUser)
             {
@@ -267,7 +267,7 @@ namespace CosmicShore.Gameplay
                 gameData.OnPlayerNetworkSpawnedUlong.Raise(OwnerClientId);
             }
 
-            CSDebug.Log($"<color=#00FF00>[FLOW-4] [Player] OnNetworkSpawn DONE — Name={NetName.Value}, VesselType={NetDefaultVesselType.Value}, Domain={NetDomain.Value}, IsAI={NetIsAI.Value}, SpawnEventRaised={_spawnEventRaised}</color>");
+            CSDebug.Log($"<color=#00FF00>[FLOW-4] [Player] OnNetworkSpawn DONE - Name={NetName.Value}, VesselType={NetDefaultVesselType.Value}, Domain={NetDomain.Value}, IsAI={NetIsAI.Value}, SpawnEventRaised={_spawnEventRaised}</color>");
 
             InputController.Initialize();
         }
@@ -293,7 +293,7 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Fires when the cloud profile finishes loading after Player has already spawned.
         /// Updates NetName/NetAvatarId so the in-game name matches the menu username.
-        /// Only the owner writes to these NetworkVariables — other clients read via replication.
+        /// Only the owner writes to these NetworkVariables - other clients read via replication.
         /// </summary>
         private void HandleProfileLoadedAfterSpawn(PlayerProfileData profile)
         {
@@ -324,7 +324,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public void PrepareForNewScene()
         {
-            CSDebug.Log($"<color=#00FF00>[FLOW-4] [Player] PrepareForNewScene — OwnerClientId={OwnerClientId}, NetworkObjectId={NetworkObjectId}, IsOwner={IsOwner}</color>");
+            CSDebug.Log($"<color=#00FF00>[FLOW-4] [Player] PrepareForNewScene - OwnerClientId={OwnerClientId}, NetworkObjectId={NetworkObjectId}, IsOwner={IsOwner}</color>");
             // Clear stale references from previous scene.
             // Vessels have destroyWithScene=true and are already destroyed.
             Vessel = null;
@@ -332,7 +332,7 @@ namespace CosmicShore.Gameplay
             VesselNetId = 0;
 
             // Sever stale per-stats event subscriptions left by the previous scene
-            // BEFORE Cleanup() writes zeros — otherwise the zeroing setters raise
+            // BEFORE Cleanup() writes zeros - otherwise the zeroing setters raise
             // into destroyed subscribers (a mid-turn exit skips their turn-end
             // cleanup, and their teardown unsubscribes via RoundStatsList, which
             // ResetRuntimeData already cleared). See Docs/ScoringSystem/BUGS.md B15.
@@ -406,7 +406,7 @@ namespace CosmicShore.Gameplay
             if (Vessel == null)
             {
                 CSDebug.LogWarning($"[Player] StartPlayer called on '{Name}' (NetObjId={NetworkObjectId}) " +
-                                 "but Vessel is null — vessel pair not yet initialized. Skipping.");
+                                 "but Vessel is null - vessel pair not yet initialized. Skipping.");
                 return;
             }
 
@@ -462,7 +462,7 @@ namespace CosmicShore.Gameplay
         {
             Domain = newValue;
 
-            // RoundStats.Domain is a LOCAL mirror derived from Player.NetDomain — the single
+            // RoundStats.Domain is a LOCAL mirror derived from Player.NetDomain - the single
             // authoritative networked domain source (RoundStats.n_Domain is retired). Update it on
             // EVERY peer here so all consumers (scoreboards, end-game, GameFeedAPI colorers) stay
             // correct across initial picks, modal re-picks, and rerolls, without a second
@@ -479,6 +479,19 @@ namespace CosmicShore.Gameplay
         void OnNetNameValueChanged(FixedString128Bytes previousValue, FixedString128Bytes newValue)
         {
             Name = newValue.ToString();
+
+            // Keep the RoundStats identity mirror live. A mid-session rename
+            // (menu profile edit -> HandleProfileLoadedAfterSpawn on the owner)
+            // replicates NetName to every peer and lands here; without this the
+            // scoreboard/HUD identity stays stale until the next scene's
+            // pair-init re-sync (InitializeForMultiplayerMode). On the server
+            // the setter also replicates RoundStats.n_Name to all peers;
+            // on clients it refreshes the local mirror. TryGetComponent (not the
+            // GetOrAdd-backed property) so this never adds a NetworkBehaviour to
+            // an already-spawned NetworkObject.
+            if (TryGetComponent<RoundStats>(out var stats))
+                stats.Name = Name;
+
             TryRaiseDeferredSpawnEvent();
         }
 
@@ -503,7 +516,7 @@ namespace CosmicShore.Gameplay
 
         void OnNetVesselIdChanged(ulong previousValue, ulong newValue)
         {
-            CSDebug.Log($"<color=#FF00FF>[PLAYER] OnNetVesselIdChanged '{Name}' — prev={previousValue}, new={newValue}, IsServer={IsServer}, IsOwner={IsOwner}</color>");
+            CSDebug.Log($"<color=#FF00FF>[PLAYER] OnNetVesselIdChanged '{Name}' - prev={previousValue}, new={newValue}, IsServer={IsServer}, IsOwner={IsOwner}</color>");
             VesselNetId = newValue;
             if (newValue == 0)
             {

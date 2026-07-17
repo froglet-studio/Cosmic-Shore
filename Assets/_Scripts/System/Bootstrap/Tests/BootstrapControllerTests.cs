@@ -71,13 +71,13 @@ namespace CosmicShore.Core
 
         #endregion
 
-        #region Awake — Persistent Root
+        #region Awake - Persistent Root
 
         [Test]
         public void Awake_NoPersistentRoot_UsesSelf()
         {
             var go = new GameObject("TestAppManager");
-            // Don't set _persistentRoot — Awake will use transform as fallback.
+            // Don't set _persistentRoot - Awake will use transform as fallback.
             var manager = go.AddComponent<AppManager>();
 
             // Verify the persistent root field was set to the manager's own transform.
@@ -117,7 +117,7 @@ namespace CosmicShore.Core
 
         #endregion
 
-        #region Awake — Re-entry Guard
+        #region Awake - Re-entry Guard
 
         [Test]
         public void Awake_WhenAlreadyBootstrapped_DestroysGameObject()
@@ -227,7 +227,7 @@ namespace CosmicShore.Core
             bool fired = false;
             AppManager.OnBootstrapComplete += () => fired = true;
 
-            // Just verifying subscription works — the event won't fire without the full async flow.
+            // Just verifying subscription works - the event won't fire without the full async flow.
             Assert.IsFalse(fired);
 
             // Clean up.

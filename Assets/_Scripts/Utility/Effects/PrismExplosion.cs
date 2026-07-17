@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
+using CosmicShore.ECS;
 using CosmicShore.Gameplay;
 using CosmicShore.Utility;
 
@@ -32,6 +34,8 @@ namespace CosmicShore.Utility
         private static readonly int VelocityID = Shader.PropertyToID("_Velocity");
         private static readonly int ExplosionAmountID = Shader.PropertyToID("_ExplosionAmount");
         private static readonly int OpacityID = Shader.PropertyToID("_Opacity");
+        private static readonly int BrightColorID = Shader.PropertyToID("_BrightColor");
+        private static readonly int DarkColorID = Shader.PropertyToID("_DarkColor");
 
         // State exposed to PrismEffectsManager for batched updates
         internal Vector3 InitialPosition { get; private set; }
@@ -41,6 +45,56 @@ namespace CosmicShore.Utility
         internal float MaxDuration => 5f;
         internal bool IsActive { get; private set; }
         internal MeshRenderer Renderer => _renderer;
+
+        // --- Instanced rendering (Entities Graphics companion entity) -----------
+        // Mirrors the prism path: the MeshRenderer stays disabled and a companion
+        // entity carrying _Velocity/_ExplosionAmount/_Opacity overrides draws in
+        // its place, so 64 simultaneous explosions cost one instanced batch.
+        internal PrismRenderHandle RenderHandle;
+        MeshFilter _meshFilter;
+        Color _pendingBrightColor = Color.white;
+        Color _pendingDarkColor = Color.black;
+        bool _hasPendingTeamColors;
+
+        internal bool UsesEntityRenderPath => PrismRenderService.IsHandleUsable(in RenderHandle);
+
+        void EnsureRenderEntity()
+        {
+            if (PrismRenderService.IsHandleUsable(in RenderHandle)) return;
+            if (_renderer == null) return;
+            if (_meshFilter == null || _meshFilter.sharedMesh == null || _renderer.sharedMaterial == null) return;
+            RenderHandle = PrismRenderService.Create(
+                _meshFilter.sharedMesh, _renderer.sharedMaterial,
+                transform.localToWorldMatrix, gameObject.layer,
+                PrismRenderOverrideSet.Explosion);
+        }
+
+        /// <summary>Team colors from PrismFactory.ConfigureForTeam — stored and
+        /// applied at TriggerExplosion to whichever render path is active.</summary>
+        public void SetTeamColors(Color bright, Color dark)
+        {
+            _pendingBrightColor = bright;
+            _pendingDarkColor = dark;
+            _hasPendingTeamColors = true;
+        }
+
+        /// <summary>Pushes the (pool-positioned, factory-scaled) transform to the entity.</summary>
+        internal void SyncRenderTransform()
+        {
+            if (!PrismRenderService.IsHandleUsable(in RenderHandle)) return;
+            PrismRenderService.SetTransform(in RenderHandle, transform.localToWorldMatrix);
+        }
+
+        /// <summary>First-animated-frame show, called by PrismEffectsManager (the
+        /// visual stays hidden until real values are applied to avoid a one-frame
+        /// flash of the unanimated mesh — same contract as the legacy path).</summary>
+        internal void EnableVisual()
+        {
+            if (UsesEntityRenderPath)
+                PrismRenderService.SetVisible(in RenderHandle, true);
+            else if (_renderer != null && !_renderer.enabled)
+                _renderer.enabled = true;
+        }
 
 #if UNITY_EDITOR
         private void OnValidate()
@@ -54,22 +108,39 @@ namespace CosmicShore.Utility
         {
             if (_renderer == null)
                 _renderer = GetComponent<MeshRenderer>();
+            _meshFilter = GetComponent<MeshFilter>();
 
             _mpb = new MaterialPropertyBlock();
 
-            // Start with renderer disabled — only PrismEffectsManager should enable it
+            // Start with renderer disabled - only PrismEffectsManager should enable it
             // during active animation. This prevents pool-retrieved objects from flashing.
             if (_renderer != null)
                 _renderer.enabled = false;
         }
 
+        // Enabled-instance registry for PrismEffectsManager's zombie audit — replaces the
+        // periodic FindObjectsByType full-scene scans (a recurring dev-build profiler spike).
+        internal static readonly List<PrismExplosion> EnabledInstances = new();
+
+        private void OnEnable() => EnabledInstances.Add(this);
+
         private void OnDisable()
         {
+            EnabledInstances.Remove(this);
+
             if (IsActive)
             {
                 IsActive = false;
                 PrismEffectsManager.Instance?.UnregisterExplosion(this);
             }
+
+            if (PrismRenderService.IsHandleUsable(in RenderHandle))
+                PrismRenderService.SetVisible(in RenderHandle, false);
+
+            // Parity with the MPB clear below: a pool reuse that skips
+            // ConfigureForTeam must show material defaults, not the previous
+            // team's palette.
+            _hasPendingTeamColors = false;
 
             if (_renderer != null)
             {
@@ -82,6 +153,11 @@ namespace CosmicShore.Utility
                     _renderer.SetPropertyBlock(_mpb);
                 }
             }
+        }
+
+        private void OnDestroy()
+        {
+            PrismRenderService.Destroy(ref RenderHandle);
         }
 
         /// <summary>
@@ -110,18 +186,43 @@ namespace CosmicShore.Utility
             Elapsed = 0f;
             IsActive = true;
 
-            // Set ALL animated shader properties to their initial values so
-            // we never fall back to the material's baked defaults
-            // (ExplodingBlockMaterial has _ExplosionAmount: 20.7 which looks fully exploded)
-            _renderer.GetPropertyBlock(_mpb);
-            _mpb.SetVector(VelocityID, velocity);
-            _mpb.SetFloat(ExplosionAmountID, 0f);
-            _mpb.SetFloat(OpacityID, 1f);
-            _renderer.SetPropertyBlock(_mpb);
+            EnsureRenderEntity();
+            if (UsesEntityRenderPath)
+            {
+                // Entity path: initial shader params + team colors on the
+                // companion entity; stays hidden until the manager's first frame.
+                SyncRenderTransform();
+                PrismRenderService.SetExplosionParams(in RenderHandle,
+                    new Unity.Mathematics.float3(velocity.x, velocity.y, velocity.z), 0f, 1f);
+                if (_hasPendingTeamColors)
+                {
+                    PrismRenderService.SetTeamColors(in RenderHandle,
+                        PrismRenderService.ToFloat4(_pendingBrightColor),
+                        PrismRenderService.ToFloat4(_pendingDarkColor));
+                }
+                PrismRenderService.SetVisible(in RenderHandle, false);
+                _renderer.enabled = false;
+            }
+            else
+            {
+                // Legacy path. Set ALL animated shader properties to their initial
+                // values so we never fall back to the material's baked defaults
+                // (ExplodingBlockMaterial has _ExplosionAmount: 20.7 which looks fully exploded)
+                _renderer.GetPropertyBlock(_mpb);
+                _mpb.SetVector(VelocityID, velocity);
+                _mpb.SetFloat(ExplosionAmountID, 0f);
+                _mpb.SetFloat(OpacityID, 1f);
+                if (_hasPendingTeamColors)
+                {
+                    _mpb.SetColor(BrightColorID, _pendingBrightColor);
+                    _mpb.SetColor(DarkColorID, _pendingDarkColor);
+                }
+                _renderer.SetPropertyBlock(_mpb);
 
-            // Keep renderer disabled until PrismEffectsManager applies the first animated
-            // frame. The manager will set renderer.enabled = true once real values are applied.
-            _renderer.enabled = false;
+                // Keep renderer disabled until PrismEffectsManager applies the first animated
+                // frame. The manager will set renderer.enabled = true once real values are applied.
+                _renderer.enabled = false;
+            }
 
             // Register with batched manager for frame updates (auto-creates if not in scene)
             PrismEffectsManager.EnsureInstance().RegisterExplosion(this);
@@ -148,9 +249,12 @@ namespace CosmicShore.Utility
                 PrismEffectsManager.Instance?.UnregisterExplosion(this);
             }
 
+            if (PrismRenderService.IsHandleUsable(in RenderHandle))
+                PrismRenderService.SetVisible(in RenderHandle, false);
+
             if (_renderer != null)
             {
-                // Disable renderer — only PrismEffectsManager should enable it during
+                // Disable renderer - only PrismEffectsManager should enable it during
                 // active animation. Leaving it enabled here caused undistorted sphere
                 // flashes when OnReturnToPool was null or pool deactivation was delayed.
                 _renderer.enabled = false;

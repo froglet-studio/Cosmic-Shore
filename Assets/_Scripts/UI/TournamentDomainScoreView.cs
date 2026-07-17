@@ -7,7 +7,7 @@ using UnityEngine.UI;
 namespace CosmicShore.UI
 {
     /// <summary>
-    /// One domain's standing row for the summary rank panel — place, domain name, points. The
+    /// One domain's standing row for the summary rank panel - place, domain name, points. The
     /// background image tints to the domain via the <see cref="DomainColorPaletteSO"/>.
     /// </summary>
     public class TournamentDomainScoreView : MonoBehaviour

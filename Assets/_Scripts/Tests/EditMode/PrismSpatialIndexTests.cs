@@ -2,7 +2,9 @@
 using System.Collections.Generic;
 using System.Reflection;
 using NUnit.Framework;
+using Unity.Collections;
 using UnityEngine;
+using CosmicShore.Data;
 using CosmicShore.Gameplay;
 
 namespace CosmicShore.Tests
@@ -46,7 +48,7 @@ namespace CosmicShore.Tests
                 if (go) Object.DestroyImmediate(go);
             _spawned.Clear();
 
-            // Dispose the persistent NativeArrays — OnDestroy doesn't run for
+            // Dispose the persistent NativeArrays - OnDestroy doesn't run for
             // regular scripts in edit mode, and leaked Persistent allocations
             // spam the console across test runs.
             typeof(PrismSpatialIndex)
@@ -203,7 +205,7 @@ namespace CosmicShore.Tests
         public void QuerySphere_SkipsDestroyedManagedRefs()
         {
             // A prism destroyed without Unregister (no lifecycle callbacks in
-            // edit mode) leaves a fake-null managed ref — queries must skip it
+            // edit mode) leaves a fake-null managed ref - queries must skip it
             // rather than hand callers a dead object.
             var prism = SpawnRegisteredPrism(Vector3.zero);
             Object.DestroyImmediate(prism.gameObject);
@@ -255,7 +257,7 @@ namespace CosmicShore.Tests
 
             Assert.DoesNotThrow(() => _index.ForwardDomainChangeToCell(-1));
             Assert.DoesNotThrow(() => _index.ForwardDomainChangeToCell(9999));
-            // Valid slot, but no cell bound (open space) — must be a clean no-op.
+            // Valid slot, but no cell bound (open space) - must be a clean no-op.
             Assert.DoesNotThrow(() => _index.ForwardDomainChangeToCell(prism.SpatialIndexId));
         }
 
@@ -275,6 +277,155 @@ namespace CosmicShore.Tests
             _index.Unregister(prism.SpatialIndexId);
             Assert.IsFalse(_index.IsAnyPrismWithin(Vector3.zero, 10f));
             Assert.AreEqual(0, _index.QuerySphere(Vector3.zero, 10f, _results));
+        }
+
+        // ---- Cell-volume summation view (CellVolumeSumJob) -------------------
+        // Binding is normally written only by Cell.AddBlock/RemoveBlock; edit mode
+        // has no live cells, so these tests drive SetCellBinding/UpdateCellVolume
+        // directly to lock down the job's filter + accumulation semantics.
+
+        float[] NewResults() => new float[PrismSpatialIndex.CellVolumeResultCount];
+
+        Prism SpawnBoundPrism(Vector3 position, short cellId, bool envMass, Domains domain, float volume)
+        {
+            var prism = SpawnRegisteredPrism(position);
+            _index.SetCellBinding(prism.SpatialIndexId, cellId, envMass, domain);
+            _index.UpdateCellVolume(prism.SpatialIndexId, volume);
+            return prism;
+        }
+
+        [Test]
+        public void SumCellVolumes_SumsOnlyTheBoundCell_ByDomainSlot()
+        {
+            SpawnBoundPrism(Vector3.zero, 7, true, Domains.Jade, 10f);
+            SpawnBoundPrism(new Vector3(5f, 0f, 0f), 7, true, Domains.Ruby, 20f);
+            SpawnBoundPrism(new Vector3(10f, 0f, 0f), 8, true, Domains.Jade, 40f); // other cell
+            SpawnRegisteredPrism(new Vector3(15f, 0f, 0f));                        // unbound
+
+            var results = NewResults();
+            Assert.IsTrue(_index.SumCellVolumes(7, Vector3.zero, 0f, results));
+
+            Assert.AreEqual(10f, results[PrismSpatialIndex.CellVolumeBySlot + 0], 1e-4f); // Jade
+            Assert.AreEqual(20f, results[PrismSpatialIndex.CellVolumeBySlot + 1], 1e-4f); // Ruby
+            Assert.AreEqual(30f, results[PrismSpatialIndex.CellVolumeTotal], 1e-4f);
+            Assert.AreEqual(30f, results[PrismSpatialIndex.CellEnvVolumeTotal], 1e-4f);
+            // No nucleus zone → the whole cell is the feeding ground.
+            Assert.AreEqual(30f, results[PrismSpatialIndex.CellExteriorEnvVolumeTotal], 1e-4f);
+
+            Assert.IsTrue(_index.SumCellVolumes(8, Vector3.zero, 0f, results));
+            Assert.AreEqual(40f, results[PrismSpatialIndex.CellVolumeTotal], 1e-4f);
+        }
+
+        [Test]
+        public void SumCellVolumes_FaunaBody_IsVolumeOnly()
+        {
+            SpawnBoundPrism(Vector3.zero, 7, false, Domains.Gold, 12f); // fauna body
+
+            var results = NewResults();
+            _index.SumCellVolumes(7, Vector3.zero, 0f, results);
+
+            Assert.AreEqual(12f, results[PrismSpatialIndex.CellVolumeBySlot + 2], 1e-4f);
+            Assert.AreEqual(12f, results[PrismSpatialIndex.CellVolumeTotal], 1e-4f);
+            Assert.AreEqual(0f, results[PrismSpatialIndex.CellEnvVolumeTotal], 1e-4f,
+                "Fauna bodies feed volume but must not read as environment mass.");
+            Assert.AreEqual(0f, results[PrismSpatialIndex.CellExteriorEnvVolumeTotal], 1e-4f);
+        }
+
+        [Test]
+        public void SumCellVolumes_SplitsEnvironmentMassAcrossTheNucleusBoundary()
+        {
+            SpawnBoundPrism(new Vector3(2f, 0f, 0f), 7, true, Domains.Jade, 10f);   // inside r=5
+            SpawnBoundPrism(new Vector3(50f, 0f, 0f), 7, true, Domains.Ruby, 20f);  // outside
+
+            var results = NewResults();
+            _index.SumCellVolumes(7, Vector3.zero, 25f, results); // radiusSqr = 5²
+
+            Assert.AreEqual(10f, results[PrismSpatialIndex.CellNucleusEnvVolumeBySlot + 0], 1e-4f,
+                "Interior environment mass is the territorial claim.");
+            Assert.AreEqual(0f, results[PrismSpatialIndex.CellNucleusEnvVolumeBySlot + 1], 1e-4f);
+            Assert.AreEqual(20f, results[PrismSpatialIndex.CellExteriorEnvVolumeTotal], 1e-4f,
+                "Exterior environment mass is the contested feeding ground.");
+            Assert.AreEqual(30f, results[PrismSpatialIndex.CellEnvVolumeTotal], 1e-4f);
+        }
+
+        [Test]
+        public void SumCellVolumes_ExcludesDestroyed_AndFreedSlots()
+        {
+            var prism = SpawnBoundPrism(Vector3.zero, 7, true, Domains.Jade, 10f);
+            var results = NewResults();
+
+            _index.MarkDestroyed(prism.SpatialIndexId);
+            _index.SumCellVolumes(7, Vector3.zero, 0f, results);
+            Assert.AreEqual(0f, results[PrismSpatialIndex.CellVolumeTotal], 1e-4f,
+                "Destroyed mass weighs nothing.");
+
+            _index.MarkRestored(prism.SpatialIndexId);
+            _index.SumCellVolumes(7, Vector3.zero, 0f, results);
+            Assert.AreEqual(10f, results[PrismSpatialIndex.CellVolumeTotal], 1e-4f,
+                "Restored mass weighs again (binding was set manually — no cells in edit mode).");
+
+            _index.Unregister(prism.SpatialIndexId);
+            _index.SumCellVolumes(7, Vector3.zero, 0f, results);
+            Assert.AreEqual(0f, results[PrismSpatialIndex.CellVolumeTotal], 1e-4f,
+                "A freed slot must not keep contributing through the free-list window.");
+        }
+
+        [Test]
+        public void ClearCellBinding_OnlyReleasesTheOwningCell()
+        {
+            var prism = SpawnBoundPrism(Vector3.zero, 7, true, Domains.Jade, 10f);
+            var results = NewResults();
+
+            _index.ClearCellBinding(prism.SpatialIndexId, 8); // not the owner — no-op
+            _index.SumCellVolumes(7, Vector3.zero, 0f, results);
+            Assert.AreEqual(10f, results[PrismSpatialIndex.CellVolumeTotal], 1e-4f);
+
+            _index.ClearCellBinding(prism.SpatialIndexId, 7);
+            _index.SumCellVolumes(7, Vector3.zero, 0f, results);
+            Assert.AreEqual(0f, results[PrismSpatialIndex.CellVolumeTotal], 1e-4f);
+        }
+
+        [Test]
+        public void TryScheduleCellVolumeSum_MatchesSyncResults()
+        {
+            // The async path (snapshot + worker-thread job) must produce exactly
+            // the sums the sync .Run() path does — same job, point-in-time copy.
+            SpawnBoundPrism(new Vector3(2f, 0f, 0f), 7, true, Domains.Jade, 10f);   // inside r=5 nucleus
+            SpawnBoundPrism(new Vector3(50f, 0f, 0f), 7, true, Domains.Ruby, 20f);  // outside
+            SpawnBoundPrism(new Vector3(60f, 0f, 0f), 7, false, Domains.Gold, 30f); // fauna body
+
+            var sync = NewResults();
+            Assert.IsTrue(_index.SumCellVolumes(7, Vector3.zero, 25f, sync));
+
+            var native = new NativeArray<float>(PrismSpatialIndex.CellVolumeResultCount, Allocator.Persistent);
+            try
+            {
+                Assert.IsTrue(_index.TryScheduleCellVolumeSum(7, Vector3.zero, 25f, native, out var handle));
+                handle.Complete();
+                for (int i = 0; i < PrismSpatialIndex.CellVolumeResultCount; i++)
+                    Assert.AreEqual(sync[i], native[i], 1e-4f, $"result slot {i} diverged between sync and async paths");
+            }
+            finally
+            {
+                native.Dispose();
+            }
+        }
+
+        [Test]
+        public void ClearAllCellBindings_ReleasesEveryBindingOfThatCellOnly()
+        {
+            SpawnBoundPrism(Vector3.zero, 7, true, Domains.Jade, 10f);
+            SpawnBoundPrism(new Vector3(5f, 0f, 0f), 7, false, Domains.Ruby, 20f);
+            SpawnBoundPrism(new Vector3(10f, 0f, 0f), 8, true, Domains.Gold, 40f);
+
+            _index.ClearAllCellBindings(7);
+
+            var results = NewResults();
+            _index.SumCellVolumes(7, Vector3.zero, 0f, results);
+            Assert.AreEqual(0f, results[PrismSpatialIndex.CellVolumeTotal], 1e-4f);
+            _index.SumCellVolumes(8, Vector3.zero, 0f, results);
+            Assert.AreEqual(40f, results[PrismSpatialIndex.CellVolumeTotal], 1e-4f,
+                "Another cell's bindings must survive the bulk clear.");
         }
     }
 }

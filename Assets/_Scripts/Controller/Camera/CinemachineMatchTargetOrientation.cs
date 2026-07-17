@@ -12,7 +12,7 @@ namespace CosmicShore.Gameplay
     /// Operates at the Aim pipeline stage: CinemachineFollow handles position (Body),
     /// then this extension computes orientation from the resulting camera position.
     /// During CinemachineBrain blends, the Brain interpolates between vCam CameraStates
-    /// so transitions remain smooth — and because the look direction shifts naturally
+    /// so transitions remain smooth - and because the look direction shifts naturally
     /// as position interpolates, rotation and position transition simultaneously.
     /// </summary>
     [AddComponentMenu("")] // Added programmatically by MainMenuCameraController

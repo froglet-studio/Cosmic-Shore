@@ -12,7 +12,7 @@ namespace CosmicShore.Gameplay
     public class MultiplayerJoustController : MultiplayerDomainGamesController
     {
         [Header("Scoring")]
-        [Tooltip("Drag JoustScoringRule.asset — the per-mode scoring strategy (winner, scores, results).")]
+        [Tooltip("Drag JoustScoringRule.asset - the per-mode scoring strategy (winner, scores, results).")]
         [SerializeField] ScoringRuleSO rule;
 
         private bool _finalResultsSent;
@@ -64,7 +64,7 @@ namespace CosmicShore.Gameplay
             Domains winningDomain = rule.ResolveWinner(gameData);
 
             // Representative winner-name = best individual contributor on the winning
-            // domain. Used for the WinnerName legacy field (display strings only —
+            // domain. Used for the WinnerName legacy field (display strings only -
             // VICTORY/DEFEAT attribution is via WinnerDomain).
             var winnerRep = winningDomain == Domains.Blue
                 ? null
@@ -148,7 +148,7 @@ namespace CosmicShore.Gameplay
                 stat.Domain          = (Domains)domains[i];
             }
 
-            // Authoritative winner — written to gameData, consumed by EndGameControllers
+            // Authoritative winner - written to gameData, consumed by EndGameControllers
             // OnWinnerCalculated (below) is the "results ready" signal.
             gameData.WinnerName = winnerName.ToString();
             gameData.WinnerDomain = (Domains)winnerDomain;
@@ -165,7 +165,7 @@ namespace CosmicShore.Gameplay
         }
 
         // ── Replay ───────────────────────────────────────────────────────
-        // OnResetForReplayCustom removed — Joust uses UseSceneReloadForReplay = true, which
+        // OnResetForReplayCustom removed - Joust uses UseSceneReloadForReplay = true, which
         // performs a full network scene reload. _finalResultsSent / _winningDomain and all
         // per-player stats are re-initialized fresh via OnNetworkSpawn + a rebuilt RoundStatsList.
     }

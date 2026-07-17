@@ -8,12 +8,12 @@ namespace CosmicShore.Gameplay
     /// <summary>
     /// Per-mode scoring strategy expressed as a ScriptableObject. One concrete asset per mode
     /// (HexRace / Joust / Crystal Capture) is dragged onto that mode's controller, which
-    /// publishes it to <see cref="GameDataSO.ScoringRule"/>. Every shared scoring consumer —
+    /// publishes it to <see cref="GameDataSO.ScoringRule"/>. Every shared scoring consumer -
     /// the network turn monitor (end condition + remaining), and (from later commits) the HUD,
-    /// scoreboard and end-game cinematic — asks the rule instead of carrying per-mode forks.
+    /// scoreboard and end-game cinematic - asks the rule instead of carrying per-mode forks.
     ///
     /// STATELESS: these assets are shared singletons, so a rule must be a pure function of the
-    /// <see cref="GameDataSO"/> passed in — no per-game fields. The mode chooses its metric and
+    /// <see cref="GameDataSO"/> passed in - no per-game fields. The mode chooses its metric and
     /// golf/points style here; per-player formatting lives in the concrete rule (SRP).
     /// </summary>
     public abstract class ScoringRuleSO : ScriptableObject
@@ -28,7 +28,7 @@ namespace CosmicShore.Gameplay
         public ScoringMetric Metric => metric;
         public bool GolfRules => golfRules;
 
-        /// <summary>The metric value for one player — what the HUD card shows.</summary>
+        /// <summary>The metric value for one player - what the HUD card shows.</summary>
         public int LiveMetric(IRoundStats stats) => ScoringMetrics.Read(stats, metric);
 
         /// <summary>Remaining metric for a domain to reach the target (0 when met or for non-target modes).</summary>
@@ -64,6 +64,39 @@ namespace CosmicShore.Gameplay
             return best;
         }
 
+        /// <summary>
+        /// Full per-DOMAIN finishing order for the current game - the generalization of
+        /// <see cref="ResolveWinner"/> to every place, ordered by summed metric (descending),
+        /// ties broken by enum order (Jade → Ruby → Gold) so identical inputs resolve
+        /// identically on every machine. Element 0 == <see cref="ResolveWinner"/>'s pick.
+        /// Ranks every domain that actually fielded players (read from the synced
+        /// <see cref="GameDataSO.RoundStatsList"/>), so it is valid on every peer once the
+        /// mode's final-score ClientRpc has run. The Tournament/Shuffle fold and the
+        /// Scoreboard's placement-crystal reward consume this - TEAM totals decide domain
+        /// placement, never an individual player's rank.
+        /// </summary>
+        public virtual List<Domains> ResolvePlacementOrder(GameDataSO gameData)
+        {
+            var ordered = new List<Domains>();
+            var list = gameData != null ? gameData.RoundStatsList : null;
+            if (list == null) return ordered;
+
+            for (int i = 0; i < list.Count; i++)
+            {
+                var stats = list[i];
+                if (stats == null || stats.Domain == Domains.Blue) continue;   // Blue = no-team sentinel
+                if (!ordered.Contains(stats.Domain)) ordered.Add(stats.Domain);
+            }
+
+            ordered.Sort((a, b) =>
+            {
+                int bySum = ScoringMetrics.SumByDomain(gameData, metric, b)
+                    .CompareTo(ScoringMetrics.SumByDomain(gameData, metric, a));
+                return bySum != 0 ? bySum : ((int)a).CompareTo((int)b);
+            });
+            return ordered;
+        }
+
         /// <summary>Writes each player's <c>IRoundStats.Score</c> for the final ranking.</summary>
         public abstract void AssignScores(GameDataSO gameData, Domains winner, float finishTime);
 
@@ -77,7 +110,7 @@ namespace CosmicShore.Gameplay
         protected virtual int TargetCount(GameDataSO gameData) => 0;
 
         /// <summary>
-        /// Absolute gap between the winning domain's metric sum and the best losing domain's —
+        /// Absolute gap between the winning domain's metric sum and the best losing domain's -
         /// the "WON/LOST BY N" figure for the reveal.
         /// </summary>
         protected int DomainDelta(GameDataSO gameData)

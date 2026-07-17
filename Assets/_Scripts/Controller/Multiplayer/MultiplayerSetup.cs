@@ -40,7 +40,7 @@ namespace CosmicShore.Gameplay
         {
             if (authenticationDataVariable == null)
             {
-                CSDebug.LogError("[MultiplayerSetup] authenticationDataVariable was not injected — check AppManager DI registration.");
+                CSDebug.LogError("[MultiplayerSetup] authenticationDataVariable was not injected - check AppManager DI registration.");
                 return;
             }
 
@@ -122,7 +122,7 @@ namespace CosmicShore.Gameplay
                 if (nm == null)
                 {
                     Debug.LogError("<color=#FF0000>[FLOW-1] [MultiplayerSetup] NetworkManager.Singleton is NULL!</color>");
-                    CSDebug.LogError("[MultiplayerSetup] NetworkManager.Singleton is null — it should exist from the Bootstrap scene.");
+                    CSDebug.LogError("[MultiplayerSetup] NetworkManager.Singleton is null - it should exist from the Bootstrap scene.");
                     return;
                 }
 
@@ -163,7 +163,7 @@ namespace CosmicShore.Gameplay
                         var tagKey = tags != null && tags.Length > 0 ? string.Join("-", tags) : "clone";
                         ushort port = (ushort)(7778 + (ushort)(Math.Abs(tagKey.GetHashCode()) % 100));
                         transport.SetConnectionData("127.0.0.1", port, "0.0.0.0");
-                        CSDebug.Log($"[MultiplayerSetup] MPPM clone '{tagKey}' — local host port {port}.");
+                        CSDebug.Log($"[MultiplayerSetup] MPPM clone '{tagKey}' - local host port {port}.");
                     }
                 }
 #endif
@@ -192,7 +192,7 @@ namespace CosmicShore.Gameplay
         private async UniTaskVoid ExecuteMultiplayerSetup()
         {
             // If a party session was already handed off (from the invite/party system),
-            // skip shutdown and matchmaking — the Relay transport is already active
+            // skip shutdown and matchmaking - the Relay transport is already active
             // and both host and client are connected through it.
             if (gameData.ActiveSession != null)
             {
@@ -238,14 +238,14 @@ namespace CosmicShore.Gameplay
                 }
                 catch (SessionException sx)
                 {
-                    CSDebug.LogWarning($"[MultiplayerSetup] Join failed for {s.Id}: {sx.Message} — trying next.");
+                    CSDebug.LogWarning($"[MultiplayerSetup] Join failed for {s.Id}: {sx.Message} - trying next.");
                     if (IsRateLimitException(sx))
                         await UniTask.Delay(RATE_LIMIT_BASE_DELAY_MS);
                     continue;
                 }
                 catch (Exception ex)
                 {
-                    CSDebug.LogWarning($"[MultiplayerSetup] Unexpected join error for {s.Id}: {ex.Message} — trying next.");
+                    CSDebug.LogWarning($"[MultiplayerSetup] Unexpected join error for {s.Id}: {ex.Message} - trying next.");
                     continue;
                 }
             }
@@ -289,7 +289,7 @@ namespace CosmicShore.Gameplay
                 catch (Exception e) when (attempt < RATE_LIMIT_MAX_RETRIES && IsRateLimitException(e))
                 {
                     int delay = RATE_LIMIT_BASE_DELAY_MS * (1 << attempt);
-                    CSDebug.LogWarning($"[MultiplayerSetup] Rate limited on CreateSession — retry {attempt + 1}/{RATE_LIMIT_MAX_RETRIES} in {delay}ms");
+                    CSDebug.LogWarning($"[MultiplayerSetup] Rate limited on CreateSession - retry {attempt + 1}/{RATE_LIMIT_MAX_RETRIES} in {delay}ms");
                     await UniTask.Delay(delay);
                 }
             }
@@ -334,7 +334,7 @@ namespace CosmicShore.Gameplay
                 catch (Exception e) when (attempt < RATE_LIMIT_MAX_RETRIES && IsRateLimitException(e))
                 {
                     int delay = RATE_LIMIT_BASE_DELAY_MS * (1 << attempt);
-                    CSDebug.LogWarning($"[MultiplayerSetup] Rate limited on QuerySessions — retry {attempt + 1}/{RATE_LIMIT_MAX_RETRIES} in {delay}ms");
+                    CSDebug.LogWarning($"[MultiplayerSetup] Rate limited on QuerySessions - retry {attempt + 1}/{RATE_LIMIT_MAX_RETRIES} in {delay}ms");
                     await UniTask.Delay(delay);
                 }
             }
@@ -374,7 +374,7 @@ namespace CosmicShore.Gameplay
 
             if (clientId == networkManager.LocalClientId)
             {
-                CSDebug.Log("[MultiplayerSetup] Host left/disconnected — bouncing to solo menu.");
+                CSDebug.Log("[MultiplayerSetup] Host left/disconnected - bouncing to solo menu.");
                 // Host-loss recovery: re-establish our OWN solo host in Menu_Main (works
                 // from the lava-lamp menu AND any game scene). Routed through the proven
                 // self-rescue instead of gameData.InvokeOnSessionEnded() →
@@ -418,7 +418,7 @@ namespace CosmicShore.Gameplay
         {
             try
             {
-                CSDebug.LogWarning("[Net] Transport failure — bouncing to solo menu.");
+                CSDebug.LogWarning("[Net] Transport failure - bouncing to solo menu.");
 
                 // Same self-rescue as host-loss: tear down, shut down NM, reload Menu_Main,
                 // and recreate our OWN solo host (EnsurePartySessionAsync). The legacy path

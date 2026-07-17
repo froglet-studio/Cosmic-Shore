@@ -13,7 +13,7 @@ namespace CosmicShore.UI
 
         void Start()
         {
-            // Daily Challenge is not yet available — disable interaction
+            // Daily Challenge is not yet available - disable interaction
             if (TimeRemaining)
                 TimeRemaining.text = "COMING SOON";
 

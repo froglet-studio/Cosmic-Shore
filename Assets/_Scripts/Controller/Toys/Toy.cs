@@ -14,8 +14,8 @@ namespace CosmicShore.Gameplay
     /// / <c>ShapeSign</c>): a trigger collider + <c>GetComponentInParent&lt;VesselStatus&gt;</c>
     /// detection. Adds local-user gating, freestyle-only gating, continuity-law bloom-in, and
     /// an <b>exit-gated</b> re-arm so the toy can never fire again until the local vessel has
-    /// physically flown clear of it. That exit gate — plus the slow <see cref="regrowDuration"/>
-    /// re-grow used when a swap toy flips — is what stops a swap toy from immediately switching
+    /// physically flown clear of it. That exit gate - plus the slow <see cref="regrowDuration"/>
+    /// re-grow used when a swap toy flips - is what stops a swap toy from immediately switching
     /// you back before you can escape it.
     /// </summary>
     [RequireComponent(typeof(Collider))]
@@ -31,8 +31,8 @@ namespace CosmicShore.Gameplay
         float regrowDuration = 5f;
 
         [SerializeField, Tooltip("The local vessel must travel beyond triggerRadius × this before the " +
-                                 "toy re-arms. >1 adds hysteresis so hovering on the boundary — or a " +
-                                 "vessel that re-spawns right inside the toy after a swap — doesn't " +
+                                 "toy re-arms. >1 adds hysteresis so hovering on the boundary - or a " +
+                                 "vessel that re-spawns right inside the toy after a swap - doesn't " +
                                  "immediately re-trigger it.")]
         float exitRadiusMultiplier = 1.35f;
 
@@ -115,7 +115,11 @@ namespace CosmicShore.Gameplay
             // can't fire until that vessel flies clear.
         }
 
-        void Update()
+        // Virtual so subclasses that need their own per-frame work (e.g. PaintingToy's choice-gate
+        // cleanup) EXTEND rather than shadow it - Unity invokes only the most-derived Update(), so
+        // a hiding declaration in a subclass would silently disable the exit-gated re-arm below and
+        // the toy would never fire. Overrides must call base.Update().
+        protected virtual void Update()
         {
             Tick(); // runs every frame regardless of arm state (the re-arm check below early-outs)
 
@@ -139,6 +143,18 @@ namespace CosmicShore.Gameplay
 
             _armed = false; // Update() re-arms only after the vessel has flown clear again.
             _activating = true;
+            ActivateDeferred(vessel).Forget();
+        }
+
+        /// <summary>
+        /// Toy effects run on the next Update tick, NOT inside the physics trigger callback:
+        /// they reach deep (domain RPC → vessel re-theme → HUD pool rebuilds, networked vessel
+        /// swaps), and a swath of engine APIs (DestroyImmediate among them) is illegal during
+        /// physics/animation/render callbacks. One frame of deferral is imperceptible.
+        /// </summary>
+        async UniTaskVoid ActivateDeferred(IVesselStatus vessel)
+        {
+            await UniTask.Yield(PlayerLoopTiming.Update, this.GetCancellationTokenOnDestroy());
             try { OnActivated(vessel); }
             finally { _activating = false; }
         }
@@ -146,7 +162,7 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// True when the local vessel is confirmed to be well outside this toy's trigger volume
         /// (beyond <see cref="exitRadiusMultiplier"/>× the trigger radius). Returns false when the
-        /// vessel is null / mid-swap / destroyed, so the toy stays disarmed until it can be sure —
+        /// vessel is null / mid-swap / destroyed, so the toy stays disarmed until it can be sure -
         /// this is what makes the exit gate robust across a swap's despawn/respawn (which fires no
         /// <c>OnTriggerExit</c>).
         /// </summary>
@@ -172,13 +188,17 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Resolve the colliding object to the LOCAL player's vessel. Never lets a remote (or
-        /// AI/autopilot in a party) vessel trip this client's toy.
+        /// AI/autopilot in a party) vessel trip this client's toy. Shared by every toy trigger
+        /// (gates, ride milestones) - one rule, one implementation.
         /// </summary>
-        static bool TryGetLocalVessel(Collider other, out IVesselStatus vessel)
+        internal static bool TryGetLocalVessel(Collider other, out IVesselStatus vessel)
         {
             vessel = null;
             var status = other.GetComponentInParent<VesselStatus>();
             if (!status) return false;
+            // A freshly spawned hull (mid vessel-swap) has no Player yet - IsLocalUser would
+            // dereference it inside a physics callback.
+            if (status.Player == null) return false;
             IVesselStatus iv = status;
             if (!iv.IsLocalUser) return false;
             vessel = iv;

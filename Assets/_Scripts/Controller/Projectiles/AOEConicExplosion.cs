@@ -71,7 +71,7 @@ namespace CosmicShore.Gameplay
                 float elapsed = 0f;
 
                 var sphereCol = GetComponent<SphereCollider>();
-                float maxScaleMag = MaxScaleVector.magnitude; // invariant for this explosion — hoist out of the per-frame loop
+                float maxScaleMag = MaxScaleVector.magnitude; // invariant for this explosion - hoist out of the per-frame loop
 
                 while (elapsed < ExplosionDuration)
                 {

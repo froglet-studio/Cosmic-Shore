@@ -1,6 +1,7 @@
 using System;
 using System.Threading;
 using UnityEngine;
+using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using Obvious.Soap;
 using Cysharp.Threading.Tasks;
@@ -201,7 +202,10 @@ namespace CosmicShore.Gameplay
             if (_status.IsTranslationRestricted) return;
 
             float speedFactor = Mathf.Pow(1f + Mathf.Max(0f, _status.Speed) * 0.01f, _so.SpeedExp);
-            float yawPerSec = _so.MaxYawDegPerSec * Mathf.Max(0.0f, _so.SpeedScale) * speedFactor;
+            // Element → parameter (Space → handling/turn rate). Anchored at 1x at resting level;
+            // the ray banks harder as the pilot's Space element rises with crystals.
+            float spaceMul = _status?.ElementalAbilityHandler.Multiplier(Element.Space) ?? 1f;
+            float yawPerSec = _so.MaxYawDegPerSec * spaceMul * Mathf.Max(0.0f, _so.SpeedScale) * speedFactor;
 
             float signed = yawPerSec * (int)_so.Steer;
             float deltaAngle = signed * intensity01 * Time.deltaTime;

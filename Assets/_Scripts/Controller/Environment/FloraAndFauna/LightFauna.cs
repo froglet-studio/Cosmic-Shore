@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using CosmicShore.Utility;
@@ -17,6 +18,27 @@ namespace CosmicShore.Gameplay
 
         [Header("Data")]
         [SerializeField] private LightFaunaDataSO data;
+
+        [Tooltip("Upper bound on prisms this fauna consumes per FRAME. The behavior tick still " +
+                 "finds every edible prism in range, but the death cascade each consume triggers " +
+                 "(pool release, VFX activation, spindle teardown, cell volume updates) drains at " +
+                 "this rate over the following frames instead of landing in one. Pacing only — " +
+                 "the meal plan is re-derived from the live scan every tick, so nothing is ever " +
+                 "lost or duplicated and grazing throughput (the food web's population regulator) " +
+                 "is unchanged; a dense cluster visibly melts instead of popping in a single " +
+                 "frame. 0 or less = unpaced legacy burst.")]
+        [SerializeField] int maxConsumesPerFrame = 8;
+
+        // Edible prisms found by the behavior tick, drained at maxConsumesPerFrame.
+        // REBUILT each tick (cleared before the scan): LightFauna can tick every
+        // few frames at Frenzy cadence — unlike Boid's ~1.5s — so carrying the
+        // queue across ticks would re-enqueue every still-live prism as a
+        // duplicate, and a dead-dupe backlog would burn drain budget while fresh
+        // meals starve behind it. Entries are also re-validated at drain time
+        // (destroyed / domain-stolen / owner-died can all change inside the
+        // pacing window). Same drain pattern as Boid._pendingMeals — see
+        // Docs/ECOSYSTEM.md (consume pacing).
+        readonly Queue<Prism> _pendingMeals = new();
 
         private Vector3 currentVelocity;
         private Vector3 desiredDirection;
@@ -53,11 +75,11 @@ namespace CosmicShore.Gameplay
             // start at local scale 0 and only grow to their authored target scale
             // when Prism.Initialize fires the scale animator. LifeForm does this
             // automatically via BindEmbeddedParts, but LightFauna does NOT extend
-            // LifeForm — without this step the brittlestar / shark renders as a
+            // LifeForm - without this step the brittlestar / shark renders as a
             // cluster of invisible prisms. Recolor to the fauna's domain first,
             // then kick off the growth animation. LifeForm is intentionally not
             // assigned so these body prisms don't register with Cell as
-            // consumable targets. The cache also powers NotifyBodyPrismsMoved —
+            // consumable targets. The cache also powers NotifyBodyPrismsMoved -
             // the per-frame spatial-index position sync for a moving body.
             var bodyPrisms = CacheBodyPrisms();
             for (int i = 0; i < bodyPrisms.Length; i++)
@@ -84,19 +106,22 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Death = wither, never a pop. The sealed <see cref="Fauna.Die"/> has already dropped
         /// this creature's elemental crystal (mass conserved); here the body withers from its
-        /// extremities inward so it FADES out of existence rather than vanishing — the
+        /// extremities inward so it FADES out of existence rather than vanishing - the
         /// platform-wide continuity rule. Only the husk is removed, after the body is gone.
         /// </summary>
         protected override void OnDeath(string killerName = "")
         {
             if (_withering) return;
             _withering = true;
+            // Uneaten queued meals stay in the world (mass conserved) — a dead
+            // fauna just stops being their eater.
+            _pendingMeals.Clear();
             currentVelocity = Vector3.zero;
 
             if (isActiveAndEnabled && gameObject.activeInHierarchy)
                 StartCoroutine(WitherCoroutine());
             else
-                RemoveHusk(); // can't animate while inactive (scene teardown) — remove directly
+                RemoveHusk(); // can't animate while inactive (scene teardown) - remove directly
         }
 
         void RemoveHusk()
@@ -110,7 +135,7 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Collapses the body one spindle ring at a time, FARTHEST-from-centre first, so the
         /// creature visibly withers inward (a shark's fins / a brittlestar's arms evaporate
-        /// before the core body — emergent from geometry, no per-prefab special-casing). Reuses
+        /// before the core body - emergent from geometry, no per-prefab special-casing). Reuses
         /// the same <see cref="Spindle.ForceWither"/> evaporation flora use on death; a body
         /// with no spindle structure falls back to suctioning its prisms inward. Honors the
         /// continuity rule (nothing disappears instantly), then removes the spent husk.
@@ -137,7 +162,7 @@ namespace CosmicShore.Gameplay
             }
             else
             {
-                // No spindle structure (e.g. a single-prism body) — suction the body prisms
+                // No spindle structure (e.g. a single-prism body) - suction the body prisms
                 // inward toward the centre so the body still leaves continuously, not instantly.
                 var prisms = GetComponentsInChildren<HealthPrism>(true)
                     .Where(p => p)
@@ -198,7 +223,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Nearest live, non-immune herbivore in the host cell's fauna registry.
-        /// O(live fauna) per behavior tick — the registry is small (bounded by the
+        /// O(live fauna) per behavior tick - the registry is small (bounded by the
         /// per-species MaxLivePopulation caps).
         /// </summary>
         bool TryFindNearestPreyFauna(out Vector3 position)
@@ -243,9 +268,9 @@ namespace CosmicShore.Gameplay
             // Phase-driven goal. Each phase swaps the goal source rather than killing/spawning
             // systems, so the same fauna instance can transition through aggression levels
             // as the cell's phase changes around it.
-            //   Calm:     aggression 0 — head toward crystal
-            //   Restless: aggression 1 — head toward nearest opposing-color centroid
-            //   Frenzy:   aggression 2 — head toward nearest centroid (any domain)
+            //   Calm:     aggression 0 - head toward crystal
+            //   Restless: aggression 1 - head toward nearest opposing-color centroid
+            //   Frenzy:   aggression 2 - head toward nearest centroid (any domain)
             var phase = cell ? cell.Phase : CellPhase.Calm;
             Goal = phase switch
             {
@@ -256,8 +281,17 @@ namespace CosmicShore.Gameplay
                        : (cell ? cell.transform.position : transform.position),
             };
 
+            // Voracious exterior: with a nucleus control zone, mass outside the
+            // nucleus is prey at EVERY phase - even a Calm herbivore hunts the
+            // densest sensed exterior region instead of idling at the crystal
+            // (the grids only hold exterior mass in such cells; aggression still
+            // scales cadence/radius/speed).
+            if (phase == CellPhase.Calm && cell != null &&
+                cell.HasNucleusControlZone && cell.HasSensedExteriorMass)
+                Goal = cell.GetDensestRegionAnyDomain();
+
             // Predators hunt PREY, not mass: seek the nearest live herbivore the cell
-            // senses (Cell.LiveFauna — the fauna analogue of the prism density grid).
+            // senses (Cell.LiveFauna - the fauna analogue of the prism density grid).
             // Replaces the v1 approximation where predators converged on prism-density
             // centroids and only met herbivores incidentally. Skips predation-immune
             // newborns so a shark doesn't camp a fresh birth; with no herbivores alive
@@ -292,8 +326,8 @@ namespace CosmicShore.Gameplay
             bool dropFriendlyAvoidance = phase >= CellPhase.Frenzy;
 
             // --- Non-prism populations (vessels) via physics --------------------
-            // Prism layers are masked out: that whole population — trail/flora
-            // prisms AND other fauna's body HealthPrisms — comes from the spatial
+            // Prism layers are masked out: that whole population - trail/flora
+            // prisms AND other fauna's body HealthPrisms - comes from the spatial
             // index below, so the broadphase no longer wades through thousands of
             // prism colliders (which also used to truncate ships out of the
             // 256-slot scratch in dense fields).
@@ -319,11 +353,17 @@ namespace CosmicShore.Gameplay
             // --- Prism populations via the spatial index -------------------------
             // Snapshot of live prisms in range (Fauna.PrismScratch). Entries can be
             // consumed/predated by our own side effects mid-loop, so each is
-            // re-checked — the same contract collider snapshots had.
+            // re-checked - the same contract collider snapshots had.
             var spatialIndex = PrismSpatialIndex.EnsureInstance();
             int prismCount = spatialIndex != null && spatialIndex.IsAvailable
                 ? spatialIndex.QuerySphere(transform.position, detectionRadius, PrismScratch)
                 : 0;
+
+            // Re-derive the meal plan from this tick's live scan. Clearing loses
+            // nothing — anything still edible and in range is re-found below —
+            // and carrying entries across ticks would duplicate them (see the
+            // _pendingMeals comment).
+            _pendingMeals.Clear();
 
             for (int pi = 0; pi < prismCount; pi++)
             {
@@ -336,18 +376,21 @@ namespace CosmicShore.Gameplay
 
                 // Predator diet: hunt herbivore fauna. Another creature's body shows up
                 // here as its child HealthPrisms, so walk up to the owning Fauna (only
-                // HealthPrisms can be fauna bodies — plain prisms skip the walk). We match
+                // HealthPrisms can be fauna bodies - plain prisms skip the walk). We match
                 // the Fauna BASE (not LightFauna) so a predator eats ANY herbivore species
-                // — LightFauna (brittlestar) and Boid (tadpole) alike. The creature is the
+                // - LightFauna (brittlestar) and Boid (tadpole) alike. The creature is the
                 // nearest Fauna ancestor of its body prisms, so managers (also Fauna,
                 // but with no body in the scene) are never returned. A predator's own body
                 // resolves to `this` and is skipped; other predators (Diet != Herbivore)
                 // are neighbors, not prey, so predators don't cannibalize. Predation
-                // ignores domain — it is a diet relationship, not a team fight — so
+                // ignores domain - it is a diet relationship, not a team fight - so
                 // predators always have prey even in a single-domain cell.
-                if (diet == FaunaDiet.Predator && prism is HealthPrism)
+                if (diet == FaunaDiet.Predator && prism is HealthPrism preyBody)
                 {
-                    var prey = prism.GetComponentInParent<Fauna>();
+                    // Stamped owner (field read) instead of a GetComponentInParent walk
+                    // per neighbor per tick; the walk-and-backfill fallback preserves
+                    // the nearest-Fauna-ancestor semantics for unstamped species.
+                    var prey = preyBody.ResolveOwnerFauna();
                     if (prey && prey != this && prey.Diet == FaunaDiet.Herbivore)
                     {
                         neighborCount++;
@@ -355,13 +398,13 @@ namespace CosmicShore.Gameplay
                             separation += diff / sqr;
 
                         // Predated() respects the prey's post-spawn immunity window and
-                        // returns false if the prey couldn't be eaten — only feed on a real kill.
+                        // returns false if the prey couldn't be eaten - only feed on a real kill.
                         if (prey.IsAlivePrey && sqr < consumeRadiusSqr && prey.Predated(PLAYER_NAME))
                             NotifyFed();
                         continue;
                     }
                     // Not prey (flora / another predator's body): predators don't eat
-                    // prism mass, so fall through for separation only — the consume
+                    // prism mass, so fall through for separation only - the consume
                     // calls below are gated to Herbivore.
                 }
 
@@ -375,23 +418,43 @@ namespace CosmicShore.Gameplay
                     if (sqr < separationRadiusSqr && !(dropFriendlyAvoidance && sameDomain))
                         separation += diff / sqr;
 
-                    // Herbivores eat opposing-domain plant/trail mass; predators never eat prisms.
-                    if (diet == FaunaDiet.Herbivore && sqr < consumeRadiusSqr && otherHealthBlock.LifeForm && otherHealthBlock.LifeForm.domain != domain)
+                    // Herbivores eat plant/trail mass; predators never eat prisms.
+                    // The diet rule is spatialized through Cell.IsPreyForHerbivore:
+                    // in a cell with a nucleus control zone, exterior mass is
+                    // voraciously edible regardless of domain while nucleus-interior
+                    // mass (the territorial claim) is never consumed; without a
+                    // nucleus the legacy opposing-domain rule applies. (Fauna bodies
+                    // never reach this branch - their body prisms carry no LifeForm.)
+                    if (diet == FaunaDiet.Herbivore && sqr < consumeRadiusSqr && otherHealthBlock.LifeForm &&
+                        (cell != null
+                            ? cell.IsPreyForHerbivore(otherHealthBlock.transform.position, domain, otherHealthBlock.LifeForm.domain)
+                            : otherHealthBlock.LifeForm.domain != domain))
                     {
-                        otherHealthBlock.Consume(transform, domain, PLAYER_NAME, true, true);
-                        NotifyFed();
+                        if (maxConsumesPerFrame > 0)
+                            _pendingMeals.Enqueue(otherHealthBlock);
+                        else
+                            EatPrism(otherHealthBlock); // unpaced legacy burst
                     }
 
                     continue;
                 }
 
-                // Handle blocks
-                if (diet == FaunaDiet.Herbivore && prism.Domain != domain && sqr < consumeRadiusSqr)
+                // Handle blocks (trail prisms) - same spatialized diet rule as above.
+                if (diet == FaunaDiet.Herbivore && sqr < consumeRadiusSqr &&
+                    (cell != null
+                        ? cell.IsPreyForHerbivore(prism.transform.position, domain, prism.Domain)
+                        : prism.Domain != domain))
                 {
-                    prism.Consume(transform, domain, PLAYER_NAME, true, true);
-                    NotifyFed();
+                    if (maxConsumesPerFrame > 0)
+                        _pendingMeals.Enqueue(prism);
+                    else
+                        EatPrism(prism); // unpaced legacy burst
                 }
             }
+
+            // Eat the first slice in the tick frame itself so sparse grazing is
+            // frame-identical to the old inline path; Update() drains the rest.
+            DrainPendingMeals();
 
             averageSpeed = neighborCount > 0
                 ? (averageSpeed > 0 ? averageSpeed / neighborCount : currentVelocity.magnitude)
@@ -414,10 +477,64 @@ namespace CosmicShore.Gameplay
                 desiredRotation = transform.rotation;
         }
 
+        /// <summary>
+        /// Consumes up to maxConsumesPerFrame queued meals. Called once from the
+        /// behavior tick (first slice lands in the tick frame) and then from
+        /// Update() until the queue empties or the next tick rebuilds it. Only
+        /// ACTUAL consumes spend budget — entries invalidated inside the pacing
+        /// window (eaten by a flockmate, domain stolen) are skipped for free, so
+        /// stale entries can never throttle real grazing throughput.
+        /// </summary>
+        void DrainPendingMeals()
+        {
+            int budget = maxConsumesPerFrame;
+            while (budget > 0 && _pendingMeals.Count > 0)
+            {
+                if (EatPrism(_pendingMeals.Dequeue()))
+                    budget--;
+            }
+        }
+
+        /// <summary>
+        /// The consume half of the old inline scan, with the scan's edibility
+        /// predicate re-checked — inside the pacing window a flockmate may have
+        /// eaten the prism (destroyed), its domain may have been stolen to ours,
+        /// or its owning lifeform may have died. Returns true only when a
+        /// consume was actually issued.
+        /// </summary>
+        bool EatPrism(Prism prism)
+        {
+            if (_withering || !prism || prism.destroyed) return false;
+
+            if (prism is HealthPrism healthBlock)
+            {
+                // Same spatialized predicate as the scan (Cell.IsPreyForHerbivore):
+                // with a nucleus control zone, exterior mass is edible regardless of
+                // domain; otherwise only opposing-domain lifeform mass is edible.
+                if (!healthBlock.LifeForm) return false;
+                if (!(cell != null
+                        ? cell.IsPreyForHerbivore(healthBlock.transform.position, domain, healthBlock.LifeForm.domain)
+                        : healthBlock.LifeForm.domain != domain)) return false;
+                healthBlock.Consume(transform, domain, PLAYER_NAME, true, true);
+                NotifyFed();
+                return true;
+            }
+
+            if (!(cell != null
+                    ? cell.IsPreyForHerbivore(prism.transform.position, domain, prism.Domain)
+                    : prism.Domain != domain)) return false;
+            prism.Consume(transform, domain, PLAYER_NAME, true, true);
+            NotifyFed();
+            return true;
+        }
+
         void Update()
         {
+            if (!_withering && _pendingMeals.Count > 0)
+                DrainPendingMeals();
+
             transform.position += currentVelocity * Time.deltaTime;
-            // Movers contract: the body prisms are registered mass — keep their
+            // Movers contract: the body prisms are registered mass - keep their
             // stored index positions tracking the swimming creature.
             NotifyBodyPrismsMoved();
 

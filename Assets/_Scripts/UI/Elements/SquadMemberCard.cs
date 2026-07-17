@@ -30,7 +30,7 @@ namespace CosmicShore.UI
 
         public void SetShip(SO_Vessel ship)
         {
-            // Captain system removed from vessels — Port/squad screen is inactive.
+            // Captain system removed from vessels - Port/squad screen is inactive.
         }
 
         /// <summary>

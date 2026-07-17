@@ -3,32 +3,32 @@
 // Arcs radiate from impact points and expand outward as jagged lightning bolts.
 //
 // Inputs:
-//   float3 ObjectPosition  — object-space vertex/fragment position
-//   float3 ObjectNormal    — object-space normal
-//   float3 ViewDirOS       — object-space view direction (camera - vertex)
+//   float3 ObjectPosition  - object-space vertex/fragment position
+//   float3 ObjectNormal    - object-space normal
+//   float3 ViewDirOS       - object-space view direction (camera - vertex)
 //
 // Outputs:
-//   float3 EmissionColor   — additive emission RGB
-//   float  Alpha           — transparency
+//   float3 EmissionColor   - additive emission RGB
+//   float  Alpha           - transparency
 //
 // Properties set via MaterialPropertyBlock from ForcefieldCrackleController.cs:
 //
 // Impact data (per-frame):
-//   float4 _ImpactPositions[16]  — xyz = unit-sphere direction, w = elapsed time
-//   float4 _ImpactParams[16]     — x = intensity, y = angular radius, z = max lifetime
-//   int    _ImpactCount           — active impact count
+//   float4 _ImpactPositions[16]  - xyz = unit-sphere direction, w = elapsed time
+//   float4 _ImpactParams[16]     - x = intensity, y = angular radius, z = max lifetime
+//   int    _ImpactCount           - active impact count
 //
 // Visual params (set from controller serialized fields):
-//   float4 _CrackleColorA        — core arc color (hot center)
-//   float4 _CrackleColorB        — outer glow color (halo)
-//   float4 _FresnelRimColor      — ambient rim glow color
-//   float  _ArcDensity           — number of arc branches (1–20, default 8)
-//   float  _ArcSharpness         — how thin/sharp the arcs are (0.01–0.5, default 0.06)
-//   float  _RingThickness        — wavefront band width (0.05–1, default 0.4)
-//   float  _CenterFillAmount     — center glow amount (0–1, default 0.15)
-//   float  _RippleSpeed          — expansion speed multiplier (0.2–3, default 1)
-//   float  _FresnelRimIntensity  — rim glow strength (0–0.5, default 0.08)
-//   float  _FresnelRimPower      — fresnel exponent (1–8, default 3)
+//   float4 _CrackleColorA        - core arc color (hot center)
+//   float4 _CrackleColorB        - outer glow color (halo)
+//   float4 _FresnelRimColor      - ambient rim glow color
+//   float  _ArcDensity           - number of arc branches (1–20, default 8)
+//   float  _ArcSharpness         - how thin/sharp the arcs are (0.01–0.5, default 0.06)
+//   float  _RingThickness        - wavefront band width (0.05–1, default 0.4)
+//   float  _CenterFillAmount     - center glow amount (0–1, default 0.15)
+//   float  _RippleSpeed          - expansion speed multiplier (0.2–3, default 1)
+//   float  _FresnelRimIntensity  - rim glow strength (0–0.5, default 0.08)
+//   float  _FresnelRimPower      - fresnel exponent (1–8, default 3)
 
 #ifndef FORCEFIELD_CRACKLE_INCLUDED
 #define FORCEFIELD_CRACKLE_INCLUDED
@@ -94,7 +94,7 @@ void ForcefieldCrackle_float(
 
     float3 fragDir = normalize(ObjectPosition);
 
-    // Fresnel rim — proper view-dependent calculation
+    // Fresnel rim - proper view-dependent calculation
     float3 N = normalize(ObjectNormal);
     float3 V = normalize(ViewDirOS);
     float NdotV = saturate(dot(N, V));
@@ -152,7 +152,7 @@ void ForcefieldCrackle_float(
         // Clip beyond the wavefront + margin
         waveBand *= step(angle, wavefrontAngle + ringWidth * 0.2);
 
-        // Center glow — bright flash at impact origin
+        // Center glow - bright flash at impact origin
         float centerGlow = smoothstep(angularRadius * 3.14159 * _CenterFillAmount, 0, angle)
                          * (1.0 - lifeRatio * lifeRatio);
 

@@ -28,7 +28,7 @@ namespace CosmicShore.Gameplay
                  "When set, overrides random selection for that intensity.")]
         [SerializeField] SpawnableBase[] spawnableByIntensity;
 
-        // Legacy fields — kept for backward compatibility with scenes serialized before
+        // Legacy fields - kept for backward compatibility with scenes serialized before
         // the WeightedSpawnable refactor. Migrated to weightedSegments at startup.
         [SerializeField, HideInInspector] List<SpawnableBase> spawnableSegments;
         [SerializeField, HideInInspector] List<float> spawnSegmentWeights;
@@ -145,7 +145,7 @@ namespace CosmicShore.Gameplay
 
             NormalizeWeights();
 
-            Debug.Log($"[SegmentSpawner] Initialize — Seed={Seed}, weightedSegments={weightedSegments.Count}, guaranteed={guaranteedSpawnables.Count}, NumberOfSegments={NumberOfSegments}");
+            Debug.Log($"[SegmentSpawner] Initialize - Seed={Seed}, weightedSegments={weightedSegments.Count}, guaranteed={guaranteedSpawnables.Count}, NumberOfSegments={NumberOfSegments}");
 
             int currentIntensity = intensityLevelData ? intensityLevelData.Value : 1;
 
@@ -170,7 +170,7 @@ namespace CosmicShore.Gameplay
             }
 
             // Spawn guaranteed shapes (all of them, every time).
-            // These keep their inspector-configured domain — shape-drawing shapes
+            // These keep their inspector-configured domain - shape-drawing shapes
             // intentionally have per-shape domains set in the editor.
             for (int i = 0; i < guaranteedSpawnables.Count; i++)
             {
@@ -193,7 +193,7 @@ namespace CosmicShore.Gameplay
         /// the prism prefabs.
         ///
         /// Uses <c>GetComponentsInChildren&lt;Prism&gt;</c> rather than walking
-        /// trail.TrailList — some spawnables ship prisms via nested
+        /// trail.TrailList - some spawnables ship prisms via nested
         /// PrefabInstance children (e.g. Manta Prism contains a Rhino Prism
         /// child), and we want every renderable prism shielded regardless of
         /// trail registration.
