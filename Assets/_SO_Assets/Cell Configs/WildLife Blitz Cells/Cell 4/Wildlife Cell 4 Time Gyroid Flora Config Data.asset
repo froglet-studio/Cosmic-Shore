@@ -12,9 +12,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a32a297a7606432885f4d3e1f83bea9a, type: 3}
   m_Name: Wildlife Cell 4 Time Gyroid Flora Config Data
   m_EditorClassIdentifier: 
-  FloraPrefab: {fileID: 8186157953239024492, guid: 98e540e086dd56a4e8f214a4fe73767e,
+  FloraPrefab: {fileID: 8186157953239024492, guid: a84d160ac0bcaf94da22c5368e4d3962,
     type: 3}
   SpawnProbability: 0.005095851
   InitialSpawnCount: 2
   OverrideDefaultPlantPeriod: 1
   NewPlantPeriod: 9999999
+  Element: 4
+  Variant:
+    Enabled: 1
+    LeafSize: {x: 9, y: 3.4, z: 1.5}
+    GrowPeriod: 0.15
+    ShieldPeriod: 0
+    MaxTotalSpawnedObjects: 1000
+    PlantRadiusCellFraction: 0.2
+  InitialLevel: 1
+  LeafScalePerLevel: 1.15
+  CrystalScalePerLevel: 1.2

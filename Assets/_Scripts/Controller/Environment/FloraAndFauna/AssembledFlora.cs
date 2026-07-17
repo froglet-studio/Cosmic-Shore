@@ -59,6 +59,15 @@ namespace CosmicShore.Gameplay
                  "over a few frames of the 3s grow period — pacing only, throughput preserved.")]
         [SerializeField, Min(1)] int maxSpawnsPerFrame = 1;
 
+        /// <summary>Assembled layer of the variant expression: the live-prism budget
+        /// (Mass gyroid 1500 / Space 800 - the per-element density identity).</summary>
+        public override void ApplyVariantTuning(FloraVariantTuning tuning)
+        {
+            base.ApplyVariantTuning(tuning);
+            if (tuning == null) return;
+            if (tuning.MaxTotalSpawnedObjects >= 0) maxTotalSpawnedObjects = tuning.MaxTotalSpawnedObjects;
+        }
+
         // A growth decision made at the grow tick, executed by the per-frame drain.
         // The site is already claimed (GetGrowthInfo → TryReserve), which is what
         // makes the deferred Instantiate safe against siblings growing into it.
@@ -344,9 +353,17 @@ namespace CosmicShore.Gameplay
             // Disperse across the cell (fraction of membrane radius - see Flora base)
             // instead of the old hard-coded 200m huddle around the crystal. Dispersed,
             // domain-coherent flora clusters are what give fauna schools of different
-            // domains genuinely different anti-domain density targets.
-            float radius = ResolvePlantRadius(legacyRadius: 200f);
-            transform.position = cellData.CrystalTransform.position + radius * Random.onUnitSphere;
+            // domains genuinely different anti-domain density targets. A pinned position
+            // (the Lifeform Matrix toy's spawn-here stations) wins over dispersal.
+            if (TryGetPlantPositionOverride(out var pinned))
+            {
+                transform.position = pinned;
+            }
+            else
+            {
+                float radius = ResolvePlantRadius(legacyRadius: 200f);
+                transform.position = cellData.CrystalTransform.position + radius * Random.onUnitSphere;
+            }
         }
 
         public Assembler CreateNewAssembler()

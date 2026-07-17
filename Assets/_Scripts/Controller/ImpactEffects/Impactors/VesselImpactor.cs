@@ -75,6 +75,18 @@ namespace CosmicShore.Gameplay
 
                 case ElementalCrystalImpactor elementalCrystalImpactee:
                 {
+                    // A LIVING lifeform's embedded crystal (its heart) is a JOUST surface, not a
+                    // pickup: skip the collect chain and run the lifeform-crystal effects instead
+                    // (e.g. Squirrel Space-5 Crystal Joust). Local-only - the ecosystem sim is local.
+                    if (elementalCrystalImpactee.Crystal && elementalCrystalImpactee.Crystal.IsEmbedded)
+                    {
+                        if (!TryLatchCrystalImpact(elementalCrystalImpactee.Crystal)) break;
+                        if (!DoesEffectExist(vesselImpactorDataContainerSO.VesselLifeformCrystalEffects)) break;
+                        foreach (var effect in vesselImpactorDataContainerSO.VesselLifeformCrystalEffects)
+                            effect.Execute(this, elementalCrystalImpactee.Crystal);
+                        break;
+                    }
+
                     if (!TryLatchCrystalImpact(elementalCrystalImpactee.Crystal)) break;
                     audioSystem?.PlayGameplaySFX(GameplaySFXCategory.CrystalCollect, transform.position);
                     var data = CrystalImpactData.FromCrystal(elementalCrystalImpactee.Crystal);

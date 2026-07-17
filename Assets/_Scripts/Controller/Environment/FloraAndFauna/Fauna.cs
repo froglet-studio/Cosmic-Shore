@@ -128,6 +128,24 @@ namespace CosmicShore.Gameplay
                 host.RegisterLiveFauna(this);
                 lineageRegistered = true;
             }
+
+            // Elemental contract: the species config may define the ELEMENT as data (one base
+            // prefab, 20 data-defined variants) - re-provision the heart to that element if the
+            // prefab-authored crystal disagrees - apply the variant's expression (behavior /
+            // body / audio deltas that used to force a prefab variant per element), and seed the
+            // spawn LEVEL (spawns AT size, nothing pops mid-life). Tuning runs BEFORE SetLevel so
+            // the level curve grows from the variant's base scale.
+            if (config)
+            {
+                if (config.Element != Element.None)
+                {
+                    crystal = LifeFormCrystal.EnsureElementalCrystal(this, config.Element);
+                    if (crystal) crystal.SetEmbeddedIn(this);
+                }
+                if (config.Variant is { Enabled: true })
+                    ApplyVariantTuning(config.Variant);
+                SetLevel(config.InitialLevel, animate: false);
+            }
         }
 
         void TryReproduce()
@@ -182,6 +200,186 @@ namespace CosmicShore.Gameplay
         // --- ILifeFormEntity ---
         public Domains Domain => domain;
         public GameObject GetGameObject() => gameObject;
+
+        // --- Elemental contract (element x level - one base prefab, 20 data-defined variants) ---
+
+        /// <summary>Level cap for every lifeform (the 4 elements x 5 levels contract).</summary>
+        public const int MaxLifeformLevel = 5;
+
+        /// <summary>The element this creature carries - single source: its crystal (the heart).</summary>
+        public Element Element => crystal ? crystal.crystalProperties.Element : Element.None;
+
+        /// <summary>This creature's level, 1..MaxLifeformLevel. Scales body + crystal via the species config.</summary>
+        public int Level { get; private set; } = 1;
+
+        /// <summary>Current travel speed (world units/s). Mobile subclasses (Boid, LightFauna)
+        /// override with their live velocity; manager/rooted fauna read as stationary.</summary>
+        public virtual float CurrentSpeed => 0f;
+
+        /// <summary>A faster vessel jousted this creature's heart - routes through Predated
+        /// (idempotent, immunity-respecting) so it withers and drops its crystal.</summary>
+        public bool Jousted(string killerName) => Predated(killerName);
+
+        Vector3 _levelBaseScale = Vector3.one;   // root scale at level 1 (captured on first level apply)
+        float _crystalBaseScale = 1f;            // crystal local scale at level 1
+        bool _levelBaseCaptured;
+        Coroutine _levelGrowRoutine;
+
+        float BodyScalePerLevel => sourceConfig ? sourceConfig.BodyScalePerLevel : 1.15f;
+        float CrystalScalePerLevel => sourceConfig ? sourceConfig.CrystalScalePerLevel : 1.2f;
+        float LevelGrowSeconds => sourceConfig ? sourceConfig.LevelGrowSeconds : 1f;
+
+        /// <summary>
+        /// Raises this creature's level by one (clamped at <see cref="MaxLifeformLevel"/>),
+        /// GROWING the body and its embedded crystal over LevelGrowSeconds - the continuity law:
+        /// a level-up blooms, it never pops. Returns false at the cap (callers skip their juice).
+        /// Raised in-world by active forces (e.g. an own-domain Crystal Joust).
+        /// </summary>
+        public bool LevelUp()
+        {
+            if (Level >= MaxLifeformLevel) return false;
+            SetLevel(Level + 1, animate: true);
+            return true;
+        }
+
+        /// <summary>Applies a level directly (spawn-time seeding animates nothing - it spawns AT size).</summary>
+        protected void SetLevel(int level, bool animate)
+        {
+            level = Mathf.Clamp(level, 1, MaxLifeformLevel);
+            if (!_levelBaseCaptured)
+            {
+                _levelBaseScale = transform.localScale;
+                if (crystal) _crystalBaseScale = crystal.transform.localScale.x;
+                _levelBaseCaptured = true;
+            }
+
+            Level = level;
+            Vector3 targetScale = _levelBaseScale * Mathf.Pow(BodyScalePerLevel, Level - 1);
+
+            if (!animate || !isActiveAndEnabled)
+            {
+                transform.localScale = targetScale;
+            }
+            else
+            {
+                if (_levelGrowRoutine != null) StopCoroutine(_levelGrowRoutine);
+                _levelGrowRoutine = StartCoroutine(GrowToScale(targetScale, LevelGrowSeconds));
+            }
+
+            // The heart grows with the level so the eventual death drop is a bigger powerup
+            // (crystal value reads lossyScale live at collect time - mass rewarded). The crystal
+            // is a child of the root, so divide the body growth back out of its LOCAL target.
+            if (crystal)
+            {
+                // The body grows by pow(BodyScalePerLevel, L-1), so the crystal's LOCAL target is
+                // its world target divided by the body growth (it lands at the world size wanted).
+                float worldTarget = _crystalBaseScale * Mathf.Pow(CrystalScalePerLevel, Level - 1);
+                float localTarget = worldTarget / Mathf.Pow(BodyScalePerLevel, Level - 1);
+                if (animate && isActiveAndEnabled && crystal.gameObject.activeInHierarchy)
+                    StartCoroutine(GrowCrystalWithPop(localTarget, LevelGrowSeconds));
+                else
+                    crystal.transform.localScale = Vector3.one * localTarget;
+            }
+        }
+
+        /// <summary>
+        /// Applies the config's per-variant expression - the deltas that used to force a prefab
+        /// variant per element (see FaunaVariantTuning). The base handles what every fauna has:
+        /// body scale, spindle material, starvation, forager-agnostic survival; Boid layers the
+        /// flocking numbers on top. Runs at AssignLineage, BEFORE the level curve seeds, and
+        /// before the creature is visible-established (spawn-time - continuity is not violated).
+        /// </summary>
+        public virtual void ApplyVariantTuning(FaunaVariantTuning tuning)
+        {
+            if (tuning == null) return;
+
+            if (tuning.BaseBodyScale > 0f)
+                transform.localScale = Vector3.one * tuning.BaseBodyScale;
+
+            if (tuning.StarvationSeconds >= 0f)
+                starvationSeconds = tuning.StarvationSeconds;
+
+            // Per-element body PRISM shape: retarget every body HealthPrism's TargetScale (the
+            // bloom target - PrismScaleManager animates toward it, so a post-Initialize retarget
+            // still grows continuously, never pops).
+            if (tuning.BodyPrismScale != Vector3.zero)
+            {
+                foreach (var hp in GetComponentsInChildren<HealthPrism>(true))
+                    if (hp) hp.TargetScale = tuning.BodyPrismScale;
+            }
+
+            // Per-element body look: swap the spindle renderers' shared material (never
+            // renderer.material - that clones). Crystal models keep their own materials.
+            if (tuning.BodyMaterial)
+            {
+                foreach (var sp in GetComponentsInChildren<Spindle>(true))
+                {
+                    if (sp && sp.TryGetComponent<Renderer>(out var rend))
+                        rend.sharedMaterial = tuning.BodyMaterial;
+                }
+            }
+
+            // Per-element audio loop: retarget the FMOD emitter before its ObjectStart play
+            // (AssignLineage runs in the spawn call, ahead of the emitter's Start). An empty
+            // reference with OverrideAudio on silences the loop (the Space tadpole is silent).
+            var emitter = tuning.OverrideAudio
+                ? GetComponentInChildren<FMODUnity.StudioEventEmitter>(true)
+                : null;
+            if (emitter)
+            {
+                emitter.EventReference = tuning.AudioLoopEvent;
+                if (tuning.AudioMinDistance >= 0f || tuning.AudioMaxDistance >= 0f)
+                {
+                    emitter.OverrideAttenuation = true;
+                    if (tuning.AudioMinDistance >= 0f) emitter.OverrideMinDistance = tuning.AudioMinDistance;
+                    if (tuning.AudioMaxDistance >= 0f) emitter.OverrideMaxDistance = tuning.AudioMaxDistance;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Level-up crystal growth with an OVERSHOOT pop: the heart flares past its new size in
+        /// the first quarter of the animation, then settles - readable at flight speed, where a
+        /// plain 20%-over-a-second ease is too subtle to notice. Still continuous (never pops in).
+        /// </summary>
+        IEnumerator GrowCrystalWithPop(float localTarget, float seconds)
+        {
+            if (!crystal) yield break;
+            var t = crystal.transform;
+            float start = t.localScale.x;
+            float flare = localTarget * 1.6f;
+            float flareTime = Mathf.Max(0.05f, seconds * 0.25f);
+            float settleTime = Mathf.Max(0.05f, seconds - flareTime);
+
+            for (float e = 0f; e < flareTime; e += Time.deltaTime)
+            {
+                if (!crystal) yield break;
+                t.localScale = Vector3.one * Mathf.Lerp(start, flare, e / flareTime);
+                yield return null;
+            }
+            for (float e = 0f; e < settleTime; e += Time.deltaTime)
+            {
+                if (!crystal) yield break;
+                float u = e / settleTime;
+                t.localScale = Vector3.one * Mathf.Lerp(flare, localTarget, u * u * (3f - 2f * u));
+                yield return null;
+            }
+            if (crystal) t.localScale = Vector3.one * localTarget;
+        }
+
+        IEnumerator GrowToScale(Vector3 target, float seconds)
+        {
+            Vector3 start = transform.localScale;
+            float t = 0f;
+            while (t < 1f)
+            {
+                t += Time.deltaTime / Mathf.Max(0.05f, seconds);
+                transform.localScale = Vector3.Lerp(start, target, Mathf.Clamp01(t));
+                NotifyBodyPrismsMoved(); // keep the spatial index honest while the body grows
+                yield return null;
+            }
+            _levelGrowRoutine = null;
+        }
 
         // Prefer the explicit host cell (set by Initialize/AssignLineage). The
         // cellData runtime SO is a SHARED asset holding only the LAST cell that

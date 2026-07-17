@@ -51,6 +51,30 @@ namespace CosmicShore.Gameplay
         Vector3 desiredDirection;
         Quaternion desiredRotation;
 
+        /// <summary>Live travel speed - the joust's "must be moving faster" comparison reads this.</summary>
+        public override float CurrentSpeed => currentVelocity.magnitude;
+
+        /// <summary>
+        /// Layer the Boid flocking/feeding numbers of the config's variant expression on top of
+        /// the base (scale / material / starvation / audio). Sentinel -1 keeps the prefab value;
+        /// Forager is a tri-state. This is what lets ONE tadpole prefab express the authored
+        /// Mass/Space/Time behavior differences as data (see FaunaVariantTuning).
+        /// </summary>
+        public override void ApplyVariantTuning(FaunaVariantTuning tuning)
+        {
+            base.ApplyVariantTuning(tuning);
+            if (tuning == null) return;
+
+            if (tuning.CohesionRadius >= 0f) cohesionRadius = tuning.CohesionRadius;
+            if (tuning.BehaviorUpdateRate >= 0f) behaviorUpdateRate = tuning.BehaviorUpdateRate;
+            if (tuning.TrailBlockInteractionRadius >= 0f) trailBlockInteractionRadius = tuning.TrailBlockInteractionRadius;
+            if (tuning.GoalWeight >= 0f) goalWeight = tuning.GoalWeight;
+            if (tuning.MinSpeed >= 0f) minSpeed = tuning.MinSpeed;
+            if (tuning.MaxSpeed >= 0f) maxSpeed = Mathf.Max(tuning.MaxSpeed, minSpeed);
+            if (tuning.Forager != FaunaVariantTuning.TriState.KeepPrefab)
+                forager = tuning.Forager == FaunaVariantTuning.TriState.On;
+        }
+
         public bool isKilled = false;
         bool isTraveling = false;
         bool isAttached = false;
@@ -129,6 +153,10 @@ namespace CosmicShore.Gameplay
             // authored crystal if present (validator-enforced fast path) or provisions one;
             // the sealed Fauna.Die drops it on any death path (predation / forager starvation).
             crystal = LifeFormCrystal.EnsureElementalCrystal(this);
+            // The crystal is this creature's HEART while it lives: joustable by vessels
+            // (Squirrel Space-5 withers via Predated) but never skim-collectable until
+            // death drops it. Cleared by ActivateCrystal in the sealed Die path.
+            if (crystal) crystal.SetEmbeddedIn(this);
 
             currentVelocity = transform.forward * Random.Range(minSpeed, Mathf.Max(minSpeed, maxSpeed));
             float initialDelay = normalizedIndex * behaviorUpdateRate;

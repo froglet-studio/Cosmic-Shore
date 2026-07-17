@@ -328,7 +328,7 @@ namespace CosmicShore.Gameplay
                     if (!cfg || !cfg.FloraPrefab) continue;
                     // Canonical cell spawn: random playable domain, Initialize(cell), Register. Flora
                     // re-disperses within the membrane in its own Plant(), so cell-centre spawn is fine.
-                    CellLifeSpawnerBase.SpawnFlora(cell, cfg.FloraPrefab, null);
+                    CellLifeSpawnerBase.SpawnFlora(cell, cfg.FloraPrefab, null, cfg);
                 }
             }
 

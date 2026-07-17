@@ -78,7 +78,7 @@ namespace CosmicShore.Gameplay
                 // and the food web (fauna grazing) is the only down-force. Replaces the
                 // old scored-volume ceiling (~0 in Menu_Main, so it never bounded planting).
                 if (host && host.FloraPlantingEnabled)
-                    SpawnFlora(host, floraCfg.FloraPrefab, excluded);
+                    SpawnFlora(host, floraCfg.FloraPrefab, excluded, floraCfg);
 
                 // Spread instantiation across frames. WaitForSeconds when an interval
                 // is configured; otherwise yield a single frame so a large InitialSpawnCount
@@ -104,7 +104,7 @@ namespace CosmicShore.Gameplay
 
                 if (!host) yield break;
                 if (host.FloraPlantingEnabled)
-                    SpawnFlora(host, floraCfg.FloraPrefab, excluded);
+                    SpawnFlora(host, floraCfg.FloraPrefab, excluded, floraCfg);
             }
         }
 

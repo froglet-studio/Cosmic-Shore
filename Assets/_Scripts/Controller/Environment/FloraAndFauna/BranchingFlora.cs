@@ -195,6 +195,13 @@ namespace CosmicShore.Gameplay
 
         public override void Plant()
         {
+            // A pinned position (the Lifeform Matrix toy's spawn-here stations) wins over dispersal.
+            if (TryGetPlantPositionOverride(out var pinned))
+            {
+                transform.position = pinned;
+                return;
+            }
+
             if (plantAroundCrystal)
             {
                 // Disperse across the cell (fraction of membrane radius - see Flora base)

@@ -10,12 +10,16 @@ using System.Linq;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Applies elemental buffs to losing players based on their score difference from the leader.
-    /// Attach to minigame scene alongside the minigame controller. Assign a comeback profile
-    /// to configure per-vessel, per-element weights.
+    /// REQUIRED component of every party game: buffs trailing players by their team's score
+    /// deficit behind first place. ALL FOUR elements rise EQUALLY - the per-game strength is
+    /// `SO_ArcadeGame.ComebackRatePerScoreDeficit` (synced to every machine via
+    /// GameDataSO.ComebackRatePerScoreDeficit): bonusLevels = deficit x rate. The comeback
+    /// layer can never lift an element above level 10 (ResourceSystem.ComebackCeiling).
     ///
-    /// Operates only in the 0.0–1.5 normalized range (levels 0–15). The first 5 base pips
-    /// (levels -5 to 0) are reserved for the overtake impact effect and are never touched here.
+    /// Scene-authored instances keep their authored score-source settings; a scene without one
+    /// gets it auto-created by MultiplayerMiniGameControllerBase (EnsureExists) with per-mode
+    /// defaults. The optional comeback profile only seeds per-vessel INITIAL levels now - the
+    /// old per-vessel/per-element weights are retired (equal-elements is the law).
     /// </summary>
     public class ElementalComebackSystem : MonoBehaviour
     {
@@ -32,8 +36,45 @@ namespace CosmicShore.Gameplay
         }
 
         [Header("Config")]
+        [Tooltip("Optional: only per-vessel INITIAL levels are read from the profile now. The " +
+                 "comeback strength itself comes from the game's ComebackRatePerScoreDeficit " +
+                 "and applies to all four elements equally.")]
         [SerializeField] SO_ElementalComebackProfile comebackProfile;
         [Inject] GameDataSO gameData;
+
+        /// <summary>
+        /// Guarantees a party-game scene has the comeback system (the REQUIRED-component rule).
+        /// A scene-authored instance is respected as-is; otherwise one is added to the host
+        /// (Reflex injection has already run for scene objects, so the added instance receives
+        /// gameData directly) and configured with per-mode score-source defaults.
+        /// </summary>
+        public static ElementalComebackSystem EnsureExists(GameObject host, GameDataSO gameData)
+        {
+            var existing = FindFirstObjectByType<ElementalComebackSystem>(FindObjectsInactive.Include);
+            if (existing)
+            {
+                existing.gameData ??= gameData;
+                return existing;
+            }
+
+            var system = host.AddComponent<ElementalComebackSystem>();
+            system.gameData = gameData;
+            switch (gameData ? gameData.GameMode : GameModes.Random)
+            {
+                case GameModes.HexRace: // Score is elapsed time - crystals are the honest stat
+                    system.differenceSource = ScoreDifferenceSource.CrystalsCollected;
+                    break;
+                case GameModes.AstroLeague:
+                    system.differenceSource = ScoreDifferenceSource.Goals;
+                    break;
+                default:
+                    system.differenceSource = ScoreDifferenceSource.Score;
+                    break;
+            }
+            CSDebug.Log($"[ElementalComebackSystem] Auto-created for {gameData?.GameMode} " +
+                        $"(source={system.differenceSource}, rate={gameData?.ComebackRatePerScoreDeficit ?? 0f}).");
+            return system;
+        }
 
         [Header("Scoring")]
         [Tooltip("Which stat drives the comeback calculation")]
@@ -70,8 +111,7 @@ namespace CosmicShore.Gameplay
                 CSDebug.LogError("[ElementalComebackSystem] GameDataSO is not assigned!");
                 return;
             }
-            if (comebackProfile == null)
-                CSDebug.LogWarning("[ElementalComebackSystem] No comeback profile assigned. System will be inactive.");
+            // Profile is optional now (initial-levels only) - the system runs without one.
 
             gameData.OnMiniGameTurnStarted.OnRaised += OnTurnStarted;
             gameData.OnMiniGameTurnEnd.OnRaised += OnTurnEnded;
@@ -93,14 +133,14 @@ namespace CosmicShore.Gameplay
         {
             if (debugLogging)
                 CSDebug.Log($"[ElementalComebackSystem] OnTurnStarted fired. " +
-                          $"Profile={(comebackProfile != null ? comebackProfile.name : "NULL")}, " +
+                          $"Rate={gameData.ComebackRatePerScoreDeficit}, " +
                           $"Players={gameData.Players?.Count ?? 0}, " +
                           $"Source={differenceSource}");
 
-            if (comebackProfile == null) return;
-
             _isActive = true;
             ResetComebackAudioTimestamps();
+
+            if (comebackProfile == null) return; // profile only seeds optional initial levels
 
             foreach (var player in gameData.Players)
             {
@@ -153,7 +193,7 @@ namespace CosmicShore.Gameplay
 
         void Update()
         {
-            if (!_isActive || comebackProfile == null) return;
+            if (!_isActive) return;
 
             if (Time.time - _lastUpdateTime < updateInterval) return;
 
@@ -167,6 +207,8 @@ namespace CosmicShore.Gameplay
             if (players == null || players.Count < 2) return;
 
             float leaderValue = GetLeaderValue();
+            float rate = gameData.ComebackRatePerScoreDeficit;
+            if (rate <= 0f) return; // this game opted out of comeback
 
             for (int p = 0; p < players.Count; p++)
             {
@@ -177,20 +219,21 @@ namespace CosmicShore.Gameplay
                 float playerValue = GetPlayerValue(player);
                 float scoreDiff = CalculateScoreDifference(leaderValue, playerValue);
 
-                var vesselType = player.Vessel.VesselStatus.VesselType;
-                var config = comebackProfile.GetConfig(vesselType);
+                // ALL FOUR elements rise EQUALLY - the game's authored rate is the only dial.
+                // The ResourceSystem caps the comeback contribution so it can never lift an
+                // element above level 10 (earned progression alone reaches the overcharge band).
+                float bonusLevels = scoreDiff * rate;
+                float normalizedBonus = Mathf.Max(0f, bonusLevels / 10f);
 
                 bool isLocalPlayer = player.IsLocalUser;
                 for (int i = 0; i < AllElements.Length; i++)
                 {
                     var element = AllElements[i];
-                    float weight = config.GetWeight(element);
-                    float bonusLevels = scoreDiff * weight;
 
                     // Composited through the ResourceSystem's comeback-modifier layer instead
                     // of overwriting the base level - mid-turn crystal gains (AdjustLevel)
                     // persist underneath the comeback bonus instead of being erased each tick.
-                    rs.SetComebackModifier(element, Mathf.Max(0f, bonusLevels / 10f));
+                    rs.SetComebackModifier(element, normalizedBonus);
 
                     // Fire comeback audio for the local player when a buff activates,
                     // gated by per-element cooldown so it doesn't fire every tick.
@@ -206,8 +249,9 @@ namespace CosmicShore.Gameplay
                 }
 
                 if (debugLogging)
-                    CSDebug.Log($"[ElementalComebackSystem] {player.Name} ({vesselType}): " +
-                              $"value={playerValue:F1}, leader={leaderValue:F1}, diff={scoreDiff:F1} → " +
+                    CSDebug.Log($"[ElementalComebackSystem] {player.Name}: " +
+                              $"value={playerValue:F1}, leader={leaderValue:F1}, diff={scoreDiff:F1}, " +
+                              $"bonus={bonusLevels:F1} → " +
                               $"M={rs.GetLevel(Element.Mass)} C={rs.GetLevel(Element.Charge)} " +
                               $"S={rs.GetLevel(Element.Space)} T={rs.GetLevel(Element.Time)}");
             }

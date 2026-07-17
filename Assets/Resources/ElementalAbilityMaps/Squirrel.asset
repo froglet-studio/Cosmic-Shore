@@ -15,48 +15,61 @@ MonoBehaviour:
   vesselClass: 6
   entries:
   - Element: 1
-    AbilityLabel: (open design slot)
-    AbilityDescription: Charge mapping not yet designed for the Squirrel.
+    AbilityLabel: Skimming
+    AbilityDescription: Charge raises the boost energy gained per prism-skimmer
+      collision (map multiplier, read live per hit in SkimmerBoostPrismEffectSO);
+      at level 5 danger prisms grant the 10x energy bonus (below it they pay base
+      energy - the bonus is earned, no longer always on).
     Input: 0
-    MultiplierAtFullLevel: 1
-    MinMultiplier: 1
+    MultiplierAtFullLevel: 2
+    MinMultiplier: 0.25
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: 
-    UpgradeDescription: 
+    UpgradeLabel: Live Wire
+    UpgradeDescription: Danger prisms grant 10x boost energy when skimmed.
   - Element: 2
-    AbilityLabel: (open design slot)
-    AbilityDescription: Mass mapping not yet designed for the Squirrel.
-    Input: 0
+    AbilityLabel: Trail Volume
+    AbilityDescription: Mass raises the VOLUME of each trail prism laid (authored
+      on the prism controller's trailVolume ElementalFloat, 1 -> 2.5 at level 10,
+      cube root per axis; generic map multiplier stays 1.0 to avoid double-dipping);
+      at level 5 trail prisms arrive shielded.
+    Input: 12
     MultiplierAtFullLevel: 1
     MinMultiplier: 1
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: 
-    UpgradeDescription: 
+    UpgradeLabel: Heavy Trail
+    UpgradeDescription: Trail prisms arrive shielded (one-hit ablative armor).
   - Element: 3
-    AbilityLabel: (open design slot)
-    AbilityDescription: Space mapping not yet designed for the Squirrel.
+    AbilityLabel: Skimmer Reach
+    AbilityDescription: Space grows the skimmer sphere (authored on the skimmer's
+      Scale ElementalFloat, 15 -> 30 at level 10, evaluated live; generic map
+      multiplier stays 1.0 to avoid double-dipping). BASE joust (no upgrade
+      needed) - joust any lifeform's crystal while moving faster than it to
+      wither opposing-domain creatures; at level 5 the joust also SHEPHERDS
+      allies - own-domain lifeforms level up instead.
     Input: 0
     MultiplierAtFullLevel: 1
     MinMultiplier: 1
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: 
-    UpgradeDescription: 
+    UpgradeLabel: Shepherd
+    UpgradeDescription: Jousting an ally lifeform's crystal levels it up (body
+      and crystal grow, max level 5) instead of doing nothing.
   - Element: 4
-    AbilityLabel: Top Speed
-    AbilityDescription: Time raises the racer's base throttle (authored on the
-      transformer's ThrottleScalerMultiplier, 1 at resting to 2.5 at level 10,
-      evaluated live per frame).
-    Input: 0
+    AbilityLabel: Boost Ring
+    AbilityDescription: Time shortens the boost-ring cooldown (authored on
+      SquirrelTubeActionSO.cooldownMultiplierAtFullTime, x0.5 at level 10; the
+      generic map Time multiplier stays 1.0 because VesselTransformer consumes it
+      for boost speed); at level 5 each deploy lays a second ring.
+    Input: 11
     MultiplierAtFullLevel: 1
     MinMultiplier: 1
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: 
-    UpgradeDescription: 
+    UpgradeLabel: Twin Rings
+    UpgradeDescription: The boost ring deploys with a second ring.

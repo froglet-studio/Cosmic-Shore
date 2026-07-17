@@ -1,5 +1,6 @@
 using System.Collections;
 using CosmicShore.Gameplay;
+using CosmicShore.Utility;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -29,6 +30,21 @@ namespace CosmicShore.Gameplay
         public abstract void Grow();
         public abstract void Plant();
 
+        // Optional pinned planting spot. Plant() implementations normally disperse the flora
+        // across the cell; a caller that needs it to root at a KNOWN spot (the Lifeform Matrix
+        // toy's spawn-here stations) sets this before Initialize and Plant() honors it.
+        Vector3? _plantPositionOverride;
+
+        /// <summary>Pin where this flora plants itself. Call before Initialize.</summary>
+        public void SetPlantPositionOverride(Vector3 position) => _plantPositionOverride = position;
+
+        /// <summary>True (with the spot) when a caller pinned the planting position.</summary>
+        protected bool TryGetPlantPositionOverride(out Vector3 position)
+        {
+            position = _plantPositionOverride ?? default;
+            return _plantPositionOverride.HasValue;
+        }
+
         /// <summary>
         /// Planting radius for <see cref="Plant"/>: a fraction of the owning cell's
         /// membrane radius when configured (disperses flora across the whole cell),
@@ -40,6 +56,39 @@ namespace CosmicShore.Gameplay
             if (plantRadiusCellFraction > 0f && cell && cell.MembraneRadius > 0f)
                 return cell.MembraneRadius * plantRadiusCellFraction;
             return legacyRadius;
+        }
+
+        /// <summary>
+        /// Flora layer of the variant expression: the per-element leaf PRISM shape, growth
+        /// tempo, and planting radius (the fields that differ between the four GyroidFlora
+        /// prefabs). Runs before Initialize, so every leaf grows to the variant's size.
+        /// </summary>
+        public override void ApplyVariantTuning(FloraVariantTuning tuning)
+        {
+            base.ApplyVariantTuning(tuning);
+            if (tuning == null) return;
+
+            if (tuning.LeafSize != Vector3.zero) leafSize = tuning.LeafSize;
+            if (tuning.GrowPeriod >= 0f) growPeriod = tuning.GrowPeriod;
+            if (tuning.PlantRadiusCellFraction >= 0f)
+                plantRadiusCellFraction = Mathf.Clamp01(tuning.PlantRadiusCellFraction);
+        }
+
+        /// <summary>Flora level: leaf prisms grow with the level (crystal handled by base).</summary>
+        public override void ApplyLevel(int level, float bodyScalePerLevel, float crystalScalePerLevel)
+        {
+            base.ApplyLevel(level, bodyScalePerLevel, crystalScalePerLevel);
+            if (Level > 1)
+                leafSize *= Mathf.Pow(Mathf.Max(1f, bodyScalePerLevel), Level - 1);
+        }
+
+        /// <summary>In-world level-up: future leaves grow a step too (existing leaves keep their
+        /// size - growth flows through the normal spawn channel, nothing is re-scaled in place).</summary>
+        public override bool LevelUp()
+        {
+            if (!base.LevelUp()) return false;
+            leafSize *= BodyScalePerLevel;
+            return true;
         }
 
         public override void AddHealthBlock(HealthPrism healthPrism)

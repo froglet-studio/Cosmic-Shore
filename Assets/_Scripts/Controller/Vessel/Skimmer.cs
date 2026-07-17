@@ -90,10 +90,15 @@ namespace CosmicShore.Gameplay
             isResizingScale = false;
         }
         
+        // SPACE -> skimmer reach: Scale is authored as an ElementalFloat on the vessel prefab
+        // (the Squirrel maps it to Space, 15 -> 30). EvaluateLive is the unified read path for
+        // per-vessel component floats - same math as the bound event path, but it also works
+        // when the reflection binding was never wired (see ElementalFloat.EvaluateLive).
         void ApplyScaleIfChanged()
         {
-            if (_appliedScale == Scale.Value) return;
-            _appliedScale = Scale.Value;
+            float liveScale = Scale.EvaluateLive(VesselStatus);
+            if (_appliedScale == liveScale) return;
+            _appliedScale = liveScale;
             transform.localScale = Vector3.one * _appliedScale;
         }
 
