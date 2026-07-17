@@ -50,8 +50,15 @@ namespace CosmicShore.Gameplay
 
             Vector3 position = crystal ? crystal.transform.localPosition : Vector3.zero;
             float scale = crystal ? crystal.transform.localScale.x : 0f;
+            SkimmerCrystalEffectSO[] authoredEffects = null;
             if (crystal)
             {
+                // The authored crystal carries the collection components (impactor + collider) as
+                // inspector overrides; the set's standalone prefabs do not. Capture the effects so
+                // the replacement stays skim-collectable with the same payoff.
+                var authoredImpactor = crystal.GetComponentInChildren<ElementalCrystalImpactor>(true);
+                if (authoredImpactor) authoredEffects = authoredImpactor.CollectionEffects;
+
                 // Deactivate BEFORE the deferred Destroy so same-frame GetComponentInChildren
                 // lookups (e.g. LifeForm.Initialize's crystal fetch) find the replacement, not
                 // the dying authored crystal.
@@ -62,7 +69,28 @@ namespace CosmicShore.Gameplay
             var provisioned = Object.Instantiate(prefab, owner.transform);
             provisioned.transform.localPosition = position;
             if (scale > 0f) provisioned.transform.localScale = Vector3.one * scale;
+            WireCollection(provisioned, authoredEffects, set);
             return provisioned;
+        }
+
+        /// <summary>
+        /// Makes a runtime-provisioned crystal skim-collectable. The standalone elemental prefabs
+        /// in ElementalCrystalSet carry no collection components (lifeform prefabs author them as
+        /// inspector overrides), so every provisioned crystal gets the impactor + ImpactCollider
+        /// pair wired here - same pattern as the conveyor toy's pickups. Effects come from the
+        /// replaced authored crystal when there was one, else from the set's defaults.
+        /// </summary>
+        static void WireCollection(Crystal provisioned, SkimmerCrystalEffectSO[] authoredEffects, ElementalCrystalSetSO set)
+        {
+            if (!provisioned || provisioned.GetComponentInChildren<ElementalCrystalImpactor>(true))
+                return;
+
+            var impactor = provisioned.gameObject.AddComponent<ElementalCrystalImpactor>();
+            impactor.Crystal = provisioned;
+            var effects = authoredEffects is { Length: > 0 } ? authoredEffects : set ? set.CollectionEffects : null;
+            if (effects is { Length: > 0 })
+                impactor.SetCollectionEffects(effects);
+            provisioned.gameObject.AddComponent<ImpactCollider>().SetImpactor(impactor);
         }
 
         public static Crystal EnsureElementalCrystal(Component owner)
@@ -104,7 +132,9 @@ namespace CosmicShore.Gameplay
 
             CSDebug.LogWarning($"[LifeFormCrystal] {owner.name} had no elemental crystal; provisioning a " +
                 $"'{fallbackElement}' crystal so it drops a powerup. Author one on the prefab to fix.");
-            return Object.Instantiate(prefab, owner.transform);
+            var provisioned = Object.Instantiate(prefab, owner.transform);
+            WireCollection(provisioned, null, set);
+            return provisioned;
         }
     }
 }
