@@ -181,11 +181,20 @@ namespace CosmicShore.Gameplay
                  "tiny recording into extreme slow-mo.")]
         public float goalReplayMinPlaybackSpeed = 0.3f;
 
-        [Tooltip("Replay-camera follow offset from the ghost ball, in the ghost's local frame (the " +
-                 "ghost faces its direction of travel, so -Z trails the shot). World units at " +
-                 "intensity 1 - scaled by the arena scale so the framing reads the same on every " +
-                 "court. The ball is ~14 units across at 2x, so keep this well back.")]
-        public Vector3 goalReplayCameraOffset = new(0f, 28f, -90f);
+        [Tooltip("Broadcast framing margin: the replay camera sits at a FIXED vantage beside the " +
+                 "recorded flight, far enough back that the whole shot fits the field of view times " +
+                 "this margin (1 = exact fit, higher = wider establishing shot), and PANS to track " +
+                 "the ghost rather than chasing it.")]
+        public float goalReplayFramingMargin = 1.35f;
+
+        [Tooltip("Elevation of the broadcast vantage above the flight's centroid, as a fraction of " +
+                 "the vantage distance (0 = level with the play, higher = more of a stadium " +
+                 "high-camera look).")]
+        [Range(0f, 1f)] public float goalReplayVantageElevation = 0.35f;
+
+        [Tooltip("How quickly the replay camera pans to keep the ghost in frame (higher = tighter " +
+                 "tracking, lower = lazier broadcast pan that lets the ball lead the frame).")]
+        public float goalReplayPanSpeed = 3.5f;
 
         [Header("Vessel Recoil (juice)")]
         [Tooltip("Backward velocity (units/sec) added to a vessel when it strikes the ball, a subtle " +

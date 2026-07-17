@@ -191,29 +191,27 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Point the end camera at an arbitrary follow target and make it live - the shared
-        /// "replay camera" for modes that replay a moment (e.g. Astro League goal replays).
-        /// Unlike <see cref="SetupEndCameraFollow"/> the target needs no VesselCameraCustomizer
-        /// (a replay ghost is not a vessel); one is applied when present.
+        /// Activate the end camera as a MANUALLY-DRIVEN replay camera - the shared "replay
+        /// camera" for modes that replay a moment (e.g. Astro League goal replays: a fixed
+        /// broadcast vantage that PANS to the action rather than chasing it). The follow target
+        /// is cleared so <see cref="CustomCameraController"/>'s own follow loop leaves the
+        /// transform alone; the caller poses the returned rig transform every frame and calls
+        /// <see cref="RestoreGameplayCamera"/> when done. Returns null when no end camera exists.
         /// </summary>
-        public void SetupReplayCameraFollow(Transform followTarget, Vector3? followOffset = null)
+        public Transform BeginManualReplayCamera()
         {
-            if (endCamera == null || followTarget == null) return;
+            if (endCamera == null) return null;
             if (!gameObject.activeInHierarchy) gameObject.SetActive(true);
 
-            endCamera.SetFollowTarget(followTarget);
-            if (followTarget.TryGetComponent(out VesselCameraCustomizer customizer))
-                customizer.Configure(endCamera);
-            // A non-vessel target (a replay ghost) has no customizer to size the framing, so the
-            // caller supplies the follow offset explicitly - the end camera otherwise keeps
-            // whatever offset its last vessel target left behind (far too close for a ball).
-            if (followOffset.HasValue)
-                endCamera.SetFollowOffset(followOffset.Value);
-
-            endCamera.SnapToTarget();
+            endCamera.SetFollowTarget(null);
             SetEndCameraActive();
             ApplyCameraGraphicsSettings();
+            return endCamera.transform;
         }
+
+        /// <summary>Vertical field of view of the replay/end camera (fit-the-shot framing math).</summary>
+        public float ReplayCameraFieldOfView =>
+            endCamera != null && endCamera.Camera != null ? endCamera.Camera.fieldOfView : 60f;
 
         /// <summary>
         /// Return from the replay/end camera to the gameplay follow camera (which still holds its

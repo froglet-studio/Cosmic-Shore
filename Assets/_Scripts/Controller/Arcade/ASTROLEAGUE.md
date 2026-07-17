@@ -37,7 +37,7 @@ Joust / Crystal Capture — solo play is just a party of one plus AI backfill.
 | `AstroLeagueGoal` | Accurate goal detector (server-gated): per-tick polls the ball for a genuine INWARD crossing of the goal-line plane WITHIN the mouth circle (no fat-trigger false positives, teleport-guarded); reports to `AstroLeagueController.HandleGoalServer` — attribution lives in the controller |
 | `AstroLeagueArena` | Runtime **gameplay-only** HyperSea stadium, built identically on every peer (no networking): a **court play boundary that IS the Cell's nucleus** (the arena builds an `AstroLeagueBoundary` at `settings`-driven scaled dimensions and the ball reflects off its walls — no collider; this replaced six invisible BoxCollider walls, −6 colliders), portal goal rings with ball-proximity anticipation flare, and a midfield/kickoff center ring. The boundary **shape is pluggable per intensity** (see "Court Geometry" below) — flat polytope faces BANK the ball; the legacy sphere focuses it. **Owns no environment dressing** — the boundary read is the Cell's `MembranePrefab`, the drifting motes are the Cell's `CytoplasmPrefab`, and the boundary/core is the Cell's `NucleusPrefab` morphed to the court shape (a bespoke edge cage + plankton particle system were removed; see `Docs/ECOSYSTEM_MASTERPLAN.md §5.1`) |
 | `AstroLeagueBoundary` | The court geometry the ball bounces off (plain C# object, built per intensity on every peer). Every ricochet polytope (box, octagonal/hexagonal prism, beveled box, octahedron) is a **convex polytope = a list of inward face-planes**, so one generic `Contain` reflects the ball off each violated plane — flat faces preserve the wall-PARALLEL velocity (the bank), only the perpendicular flips, exactly like billiards/air-hockey/Rocket-League boards. Sphere + Cylinder keep an analytic curved branch (Sphere = the legacy center-focusing baseline). **NotchedRing** layers a central torus OBSTACLE (the ball bounces off its OUTSIDE, with an angular notch) inside a chosen outer court — a center choke point. The same geometry drives `BuildVisualMesh()` (outer hull + notched torus, double-sided), so the nucleus **cage silhouette IS the wall the ball hits** |
-| `AstroLeagueGoalReplay` | Per-peer goal replay: records the (replicated) ball flight into a ring buffer every FixedUpdate; on a goal plays a visual-only GHOST ball retracing the shot on the shared END camera (the "replay camera" — `CameraManager.SetupReplayCameraFollow`) while the real arena resets behind it. Ghost blooms in / shrinks out (continuity law); recording cleared at every kickoff GO. Added at runtime by the controller — no scene wiring |
+| `AstroLeagueGoalReplay` | Per-peer goal replay: records the (replicated) ball flight into a ring buffer every FixedUpdate; on a goal plays a visual-only GHOST ball retracing the shot on the shared END camera (the "replay camera" — `CameraManager.BeginManualReplayCamera`) while the real arena resets behind it. BROADCAST framing: the camera holds a fixed vantage beside the whole flight (elevated, pulled back to fit the FOV) and PANS to the action — it never chases the ball. Ghost blooms in / shrinks out (continuity law); recording cleared at every kickoff GO. Added at runtime by the controller — no scene wiring |
 | `AstroLeagueSettingsSO` | All tunables |
 | `AstroLeagueScoringRuleSO` | Scoring strategy: mercy-rule end condition over per-domain `GoalsScored` sums, Score = personal goals, "WON BY N GOALS" reveal |
 
@@ -358,10 +358,13 @@ channel, wired in-scene). Long axis along the edge, inset `edgePrismInset × sca
    `AstroLeagueGoalReplay` continuously records the replicated ball flight (ring buffer,
    `goalReplayRecordSeconds`, recording gated off while hidden/frozen) and on the goal spawns a
    visual-only ghost ball (`AstroLeagueBall.DressReplayGhost` — same icosphere, same material +
-   frozen scorer-tint property block, matching trail) that retraces the shot. The shared END
-   camera follows it (`CameraManager.SetupReplayCameraFollow` — the "replay camera"; the ghost
-   ROOT faces the direction of travel so the recorded tumble spins only the visual child, never
-   the camera). Playback speed is fitted to the celebration + kickoff-freeze window
+   frozen scorer-tint property block, matching trail) that retraces the shot. **Broadcast
+   framing**: `CameraManager.BeginManualReplayCamera` hands the end-camera rig over with no
+   follow target, and the replay poses it at a FIXED vantage beside the flight — perpendicular
+   to the shot line, elevated by `goalReplayVantageElevation`, pulled back so the whole flight
+   fits the FOV × `goalReplayFramingMargin` — then only PANS (`goalReplayPanSpeed`-smoothed
+   look-at) to track the ghost, like a stadium camera operator; it never chases the ball at a
+   fixed distance. Playback speed is fitted to the celebration + kickoff-freeze window
    (`goalReplayWindowFraction`, floored by `goalReplayMinPlaybackSpeed` — short recordings play
    in slow-mo). The ghost blooms in and shrinks out (continuity), and the gameplay camera is
    restored when playback ends, at kickoff GO, or at match end — whichever lands first. The
