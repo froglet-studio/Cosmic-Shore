@@ -124,7 +124,7 @@ Do not snapshot domain at component-creation time. Either subscribe to `Player.N
 - **Camera**: Cinemachine 3.1.2 with per-vessel `CameraSettingsSO` assets
 - **VFX**: VFX Graph 17.0.4, custom HLSL shaders, Shader Graph
 - **Input**: Unity Input System 1.14.2 with strategy pattern (`IInputStrategy` → platform-specific implementations)
-- **Audio**: Wwise integration
+- **Audio**: FMOD Studio integration (`Assets/Plugins/FMOD`)
 - **Haptics**: NiceVibrations for mobile haptic feedback
 - **Animation**: Timeline 1.8.9, DOTween for procedural animation
 - **DI**: Reflex (`com.gustavopsantos.reflex` 14.1.0) for dependency injection
@@ -164,7 +164,7 @@ Assets/
 │   │   ├── Instrumentation/   # AnalyticsServiceFacade (UGS Analytics, single writer)
 │   │   ├── Runtime/           # Dialogue runtime (DialogueManager, models, views, helpers)
 │   │   ├── RewindSystem/      # Rewind/replay functionality
-│   │   ├── Audio/             # Wwise audio management
+│   │   ├── Audio/             # FMOD audio management (AudioSystem, Jukebox)
 │   │   ├── LoadOut/           # Vessel loadout configuration
 │   │   ├── CallToAction/      # Promotional/CTA system
 │   │   ├── Squads/            # Squad management
@@ -206,13 +206,12 @@ Assets/
 ├── _Graphics/, _Models/, _Audio/, _Animations/
 ├── FTUE/                      # First-Time User Experience / Tutorial system
 ├── Plugins/                   # Obvious.Soap, Demigiant (DOTween), NativeShare, etc.
-├── Wwise/                     # Audio middleware
 ├── PlayFabSDK/                # Backend SDK (legacy)
 ├── NiceVibrations/            # Haptic feedback
 └── SerializeInterface/        # Custom [RequireInterface] attribute support
 ```
 
-Note: A vestigial `_Scripts/Game/` directory exists containing only non-code assets (compute shaders, input action mappings, material files, and the `PRISM_PERFORMANCE_AUDIT.md`). All C# code has been reorganized into the directories listed above.
+Note: A vestigial `_Scripts/Game/` directory exists containing mostly non-code assets (compute shaders, input action mappings, material files, and the `PRISM_PERFORMANCE_AUDIT.md`) plus two live scripts pending relocation (`Game/Environment/CapsuleMembrane.cs` + `CapsuleMembraneAnimationSO.cs`, consumed by `Cell`). All other C# code has been reorganized into the directories listed above.
 
 ### Assembly Definitions
 

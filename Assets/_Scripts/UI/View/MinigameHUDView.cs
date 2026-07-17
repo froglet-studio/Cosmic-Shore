@@ -7,7 +7,7 @@ using Cysharp.Threading.Tasks;
 
 namespace CosmicShore.UI
 {
-    public class MiniGameHUDView : MonoBehaviour, IMiniGameHUDView
+    public class MiniGameHUDView : MonoBehaviour
     {
         [Header("Common Elements")]
         [SerializeField] private TMP_Text scoreDisplay;
