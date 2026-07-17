@@ -141,6 +141,7 @@ namespace CosmicShore.Gameplay
                 flora.ApplyElement(config.Element);
                 if (config.Variant is { Enabled: true })
                     flora.ApplyVariantTuning(config.Variant);
+                flora.ApplyLevel(config.InitialLevel, config.LeafScalePerLevel, config.CrystalScalePerLevel);
             }
 
             flora.Initialize(host);

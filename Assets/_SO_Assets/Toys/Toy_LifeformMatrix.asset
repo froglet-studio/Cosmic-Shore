@@ -1,0 +1,41 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9d40b1a2f3c64e21a7e88b5c02d9137e, type: 3}
+  m_Name: Toy_LifeformMatrix
+  m_EditorClassIdentifier:
+  id: lifeform-matrix
+  displayName: Lifeform Matrix
+  description: The ecology tuning bench. Fly through for the menagerie; fly a species
+    for its 4-element x {1,3,5}-level variant matrix; fly a variant to spawn it live.
+  unlockedByDefault: 1
+  placementAngleDegrees: -1
+  accentColor: {r: 0.75, g: 1, b: 0.85, a: 1}
+  faunaSpecies:
+  - Name: Tadpole
+    ElementConfigs:
+    - {fileID: 11400000, guid: ede43cd3ab5943c58c646065c1f57a1f, type: 2}
+    - {fileID: 11400000, guid: 28c9a96388684fa0b3b10b9dbea56c70, type: 2}
+    - {fileID: 11400000, guid: 72fa98519b534214b89e9c29c44b89da, type: 2}
+    - {fileID: 11400000, guid: 62a30981533145a5b66304c04e7c50e0, type: 2}
+  floraSpecies:
+  - Name: Gyroid
+    ElementConfigs:
+    - {fileID: 11400000, guid: a343fb01cc5b439ca5fa66beacf1a817, type: 2}
+    - {fileID: 11400000, guid: bcb09b7b37a24707a3934db2bf658d5f, type: 2}
+    - {fileID: 11400000, guid: 016e18462b534f838d81604470e4962e, type: 2}
+    - {fileID: 11400000, guid: f27c9fe8e43d4c8bb0c7ea84c9f8050d, type: 2}
+  stationSpacing: 45
+  stationRadius: 6
+  chargeColor: {r: 1, g: 0.85, b: 0.25, a: 1}
+  massColor: {r: 0.95, g: 0.35, b: 0.3, a: 1}
+  spaceColor: {r: 0.45, g: 0.55, b: 1, a: 1}
+  timeColor: {r: 0.4, g: 0.95, b: 0.55, a: 1}

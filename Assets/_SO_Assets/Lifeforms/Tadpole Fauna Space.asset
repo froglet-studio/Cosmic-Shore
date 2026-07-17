@@ -10,35 +10,35 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c778cfbe4dfc4c5c8401e40c17802311, type: 3}
-  m_Name: Nucleus Rush Tadpole Fauna Config Data
-  m_EditorClassIdentifier: 
+  m_Name: Tadpole Fauna Space
+  m_EditorClassIdentifier:
   FaunaPrefab: {fileID: 5945480239701989318, guid: c7fd418d426de8740ac888dcc23a5d24, type: 3}
-  InitialSpawnCount: 6
-  PopulationSize: 6
+  InitialSpawnCount: 4
+  PopulationSize: 4
   SpawnProbability: 1
-  FeedsPerOffspring: 0
+  FeedsPerOffspring: 20
   OffspringPerBirth: 1
-  ReproductionCooldownSeconds: 6
-  MaxLivePopulation: 24
-  Element: 2
+  ReproductionCooldownSeconds: 10
+  MaxLivePopulation: 6
+  Element: 3
   InitialLevel: 1
   BodyScalePerLevel: 1.15
   CrystalScalePerLevel: 1.2
   LevelGrowSeconds: 1
   Variant:
     Enabled: 1
-    BaseBodyScale: 0.4
-    BodyPrismScale: {x: 0.8, y: 0.8, z: 7}
-    BodyMaterial: {fileID: 2100000, guid: 5140ec1c42866e849927f442d5965f7f, type: 2}
-    StarvationSeconds: 90
-    Forager: 1
-    CohesionRadius: 50
-    BehaviorUpdateRate: 1.5
-    TrailBlockInteractionRadius: 45
-    GoalWeight: 3
+    BaseBodyScale: 0.7
+    BodyPrismScale: {x: 0, y: 0, z: 0}
+    BodyMaterial: {fileID: 0}
+    StarvationSeconds: 30
+    Forager: 2
+    CohesionRadius: 20
+    BehaviorUpdateRate: 3
+    TrailBlockInteractionRadius: 15
+    GoalWeight: 0.3
     MinSpeed: 10
     MaxSpeed: 15
-    OverrideAudio: 0
+    OverrideAudio: 1
     AudioLoopEvent:
       Guid:
         Data1: 0

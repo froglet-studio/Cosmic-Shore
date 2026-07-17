@@ -59,6 +59,14 @@ namespace CosmicShore.Gameplay
                 plantRadiusCellFraction = Mathf.Clamp01(tuning.PlantRadiusCellFraction);
         }
 
+        /// <summary>Flora level: leaf prisms grow with the level (crystal handled by base).</summary>
+        public override void ApplyLevel(int level, float bodyScalePerLevel, float crystalScalePerLevel)
+        {
+            base.ApplyLevel(level, bodyScalePerLevel, crystalScalePerLevel);
+            if (Level > 1)
+                leafSize *= Mathf.Pow(Mathf.Max(1f, bodyScalePerLevel), Level - 1);
+        }
+
         public override void AddHealthBlock(HealthPrism healthPrism)
         {
             base.AddHealthBlock(healthPrism);

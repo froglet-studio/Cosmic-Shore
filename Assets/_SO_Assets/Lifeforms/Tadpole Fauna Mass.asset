@@ -10,16 +10,16 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c778cfbe4dfc4c5c8401e40c17802311, type: 3}
-  m_Name: Nucleus Rush Tadpole Fauna Config Data
-  m_EditorClassIdentifier: 
+  m_Name: Tadpole Fauna Mass
+  m_EditorClassIdentifier:
   FaunaPrefab: {fileID: 5945480239701989318, guid: c7fd418d426de8740ac888dcc23a5d24, type: 3}
-  InitialSpawnCount: 6
-  PopulationSize: 6
+  InitialSpawnCount: 4
+  PopulationSize: 4
   SpawnProbability: 1
-  FeedsPerOffspring: 0
+  FeedsPerOffspring: 20
   OffspringPerBirth: 1
-  ReproductionCooldownSeconds: 6
-  MaxLivePopulation: 24
+  ReproductionCooldownSeconds: 10
+  MaxLivePopulation: 6
   Element: 2
   InitialLevel: 1
   BodyScalePerLevel: 1.15
@@ -38,13 +38,13 @@ MonoBehaviour:
     GoalWeight: 3
     MinSpeed: 10
     MaxSpeed: 15
-    OverrideAudio: 0
+    OverrideAudio: 1
     AudioLoopEvent:
       Guid:
-        Data1: 0
-        Data2: 0
-        Data3: 0
-        Data4: 0
-      Path: 
-    AudioMinDistance: -1
-    AudioMaxDistance: -1
+        Data1: 1044849638
+        Data2: 1177312314
+        Data3: -1512459876
+        Data4: 120375605
+      Path: event:/SFX/Loops/Mass Tadpole
+    AudioMinDistance: 0
+    AudioMaxDistance: 200

@@ -49,9 +49,20 @@ namespace CosmicShore.Gameplay
         /// <summary>Elemental contract: the element this lifeform carries (its crystal's element).</summary>
         public Element Element => crystal ? crystal.crystalProperties.Element : Element.None;
 
-        /// <summary>Elemental contract: flora level. Fixed at 1 until flora leveling lands
-        /// (the contract exists so every lifeform answers element x level - see ILifeFormEntity).</summary>
-        public int Level => 1;
+        /// <summary>Elemental contract: this lifeform's level (1..5), seeded from config at spawn.</summary>
+        public int Level { get; protected set; } = 1;
+
+        /// <summary>
+        /// Elemental contract: seeds the spawn level. Base scales the crystal (level 5 always
+        /// carries, and drops, the largest crystal); Flora also scales its leaf prisms. Call
+        /// BEFORE Initialize - it spawns AT size, nothing pops mid-life.
+        /// </summary>
+        public virtual void ApplyLevel(int level, float bodyScalePerLevel, float crystalScalePerLevel)
+        {
+            Level = Mathf.Clamp(level, 1, 5);
+            if (crystal && Level > 1)
+                crystal.transform.localScale *= Mathf.Pow(Mathf.Max(1f, crystalScalePerLevel), Level - 1);
+        }
 
         /// <summary>
         /// Elemental contract: provisions this lifeform's crystal to EXACTLY the given element

@@ -28,6 +28,17 @@ namespace CosmicShore.Utility
                  "fields that differ between the authored Charge/Mass/Space/Time GyroidFlora " +
                  "prefabs. Leave Enabled off to keep the prefab as authored.")]
         public FloraVariantTuning Variant = new();
+
+        [Tooltip("Level (1..5) this flora spawns at - scales the leaf prisms and the crystal " +
+                 "below (level 5 always carries, and drops, the largest crystal).")]
+        [Range(1, 5)] public int InitialLevel = 1;
+
+        [Tooltip("Leaf prism scale multiplier per level above 1.")]
+        [Min(1f)] public float LeafScalePerLevel = 1.15f;
+
+        [Tooltip("Crystal scale multiplier per level above 1 - the death-drop powerup grows " +
+                 "with level (mass rewarded, still conserved).")]
+        [Min(1f)] public float CrystalScalePerLevel = 1.2f;
     }
 
     /// <summary>

@@ -267,7 +267,32 @@ radius) → `AssembledFlora` (prism budget) layer the fields where they live.
 
 **Level → crystal size.** `CrystalScalePerLevel` makes the level curve monotone in the
 heart: level 1 = authored size, level 5 = ×(CrystalScalePerLevel)⁴ (≈2.07× at the 1.2
-default) — the level-5 creature always carries, and drops, the largest crystal.
+default) — the level-5 creature always carries, and drops, the largest crystal. Flora
+level the same way (`FloraConfigurationSO.InitialLevel` + `LeafScalePerLevel` /
+`CrystalScalePerLevel`, applied via `LifeForm.ApplyLevel` before Initialize).
+
+**Unification (SHIPPED) — one base prefab per species, variants are config.** The
+per-element prefab variants were retired: `TadPoleFauna.prefab` (formerly
+MassTadPoleFauna) and `GyroidFlora.prefab` (formerly MassGyroidFlora) are the single
+base prefabs; Space/Time tadpoles, Charge/Space/Time gyroids, and the unused
+TimeTadpolePopulation were deleted with every reference migrated (the variant prefabs
+were literal copies sharing fileIDs, so guid swaps were reference-safe). The canonical
+per-element configs live in `Assets/_SO_Assets/Lifeforms/` (Tadpole Fauna
+Charge/Mass/Space/Time + Gyroid Flora Charge/Mass/Space/Time — Charge tadpole is NEW
+and untuned, authored from the Space baseline); the existing Cell Config assets carry
+their element's Variant block explicitly. Legacy note: the drone-population prefabs
+(BoidManager path) now all spawn the base tadpole - per-element identity there awaits
+that system's own config pass.
+
+**Lifeform Matrix toy (the tuning bench).** `Toy_LifeformMatrix` (in the freestyle
+toybox): fly through it → a station per species blooms in; fly a species → its variant
+matrix (4 element columns × level rows {1, 3, 5} — the extremes and middle of the 4×5
+contract; station spheres tinted per element and sized by level); fly a variant → that
+exact lifeform spawns live into the containing cell through the canonical spawn paths
+on a runtime clone of its config (assets never mutated; spawns are ordinary food-web
+citizens). Files: `LifeformMatrixToyDefinitionSO`, `LifeformMatrixToy` (+ station).
+Collider impact: transient trigger spheres only (species count + ≤12), Menu freestyle
+only, torn down with the matrix.
 
 ---
 
