@@ -123,7 +123,7 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
-            int aiCount = gameData.RequestedAIBackfillCount;
+            int aiCount = ResolveAICount();
             Debug.Log($"<color=#FF00FF>[FLOW-5AI] [ServerVesselInitWithAI] SpawnAIs — aiCount={aiCount}, domainCount={gameData.RequestedDomainCount}, counts={string.Join(", ", counts)}</color>");
             if (aiCount <= 0)
             {
@@ -163,8 +163,11 @@ namespace CosmicShore.Gameplay
                     ? profiles[i].Name
                     : hasTemplate ? aiInitializeDatas[i].PlayerName : $"AI {i + 1}";
 
-                var aiDomain = GetBalancedDomain(counts);
-                counts[aiDomain]++;
+                var aiDomain = ResolveAIDomain(counts);
+                // counts is seeded only from ActiveDomains (Jade/Ruby/Gold) — a domain
+                // outside that set (e.g. Friction hunters using Domains.Blue) won't have
+                // an entry yet, so increment safely rather than assuming the key exists.
+                counts[aiDomain] = counts.GetValueOrDefault(aiDomain) + 1;
 
                 aiPlayer.NetDefaultVesselType.Value = aiVesselType;
                 aiPlayer.NetName.Value = aiName;
@@ -190,12 +193,34 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// How many AI to spawn. Default: team-balancing backfill (desired total
+        /// players minus humans present). Friction overrides this with a fixed
+        /// per-intensity hunter roster instead.
+        /// </summary>
+        protected virtual int ResolveAICount() => gameData.RequestedAIBackfillCount;
+
+        /// <summary>
+        /// Which domain a newly-spawned AI joins. Default: the standard team-balancing
+        /// pick. Friction overrides this to always return <see cref="Domains.Blue"/>
+        /// (the "no specific team" sentinel) since hunters aren't allied with any human
+        /// team — this also makes <see cref="AIPilot"/>'s same-domain skip in
+        /// UpdatePlayerTarget naturally exclude hunters from targeting each other.
+        /// </summary>
+        protected virtual Domains ResolveAIDomain(Dictionary<Domains, int> counts) => GetBalancedDomain(counts);
+
+        /// <summary>
+        /// AI skill level (0-1) fed into AIPilot.ConfigureForGameMode. Default: scales
+        /// with selected intensity. Friction overrides this with its own 4-level curve.
+        /// </summary>
+        protected virtual float ResolveAISkill() => Mathf.Clamp01(gameData.SelectedIntensity.Value * 0.25f);
+
+        /// <summary>
         /// Returns the active domain with the fewest players. Ties are broken
         /// deterministically by <see cref="GameDataSO.ActiveDomains"/> enum order
         /// (Jade → Ruby → Gold), so identical inputs produce identical AI
         /// distributions across machines without needing a shared RNG seed.
         /// </summary>
-        static Domains GetBalancedDomain(Dictionary<Domains, int> counts)
+        protected static Domains GetBalancedDomain(Dictionary<Domains, int> counts)
         {
             int min = int.MaxValue;
             foreach (var v in counts.Values)
@@ -385,8 +410,8 @@ namespace CosmicShore.Gameplay
             var aiPilot = aiVesselNO.GetComponentInChildren<AIPilot>();
             if (aiPilot == null) return;
 
-            bool shouldSeekPlayers = gameData.GameMode == GameModes.MultiplayerJoust;
-            float skill = Mathf.Clamp01(gameData.SelectedIntensity.Value * 0.25f);
+            bool shouldSeekPlayers = gameData.GameMode is GameModes.MultiplayerJoust or GameModes.Friction;
+            float skill = ResolveAISkill();
             aiPilot.ConfigureForGameMode(gameData, shouldSeekPlayers, skill);
         }
     }

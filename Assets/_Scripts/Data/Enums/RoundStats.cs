@@ -41,6 +41,8 @@ namespace CosmicShore.Data
 
         public event Action<IRoundStats> OnSkimmerShipCollisionsChanged;
         public event Action<IRoundStats> OnJoustCollisionChanged;
+        public event Action<IRoundStats> OnLivesChanged;
+        public event Action<IRoundStats> OnEliminatedChanged;
 
         public event Action<IRoundStats> OnFullSpeedStraightAbilityActiveTimeChanged;
         public event Action<IRoundStats> OnRightStickAbilityActiveTimeChanged;
@@ -67,6 +69,8 @@ namespace CosmicShore.Data
         int _crystalsCollectedLocal, _omniCrystalsCollectedLocal, _elementalCrystalsCollectedLocal;
         float _chargeCrystalValueLocal, _massCrystalValueLocal, _spaceCrystalValueLocal, _timeCrystalValueLocal;
         int _skimmerShipCollisionsLocal, _joustCollisionsLocal;
+        int _livesLocal;
+        bool _isEliminatedLocal;
 
         float _fullSpeedStraightAbilityActiveTimeLocal,
             _rightStickAbilityActiveTimeLocal,
@@ -157,6 +161,12 @@ namespace CosmicShore.Data
             new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
 
         readonly NetworkVariable<int> n_JoustCollisions =
+            new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
+
+        readonly NetworkVariable<int> n_Lives =
+            new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
+
+        readonly NetworkVariable<bool> n_IsEliminated =
             new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
 
         readonly NetworkVariable<float> n_FullSpeedStraightAbilityActiveTime =
@@ -538,6 +548,32 @@ namespace CosmicShore.Data
             }
         }
 
+        public int Lives
+        {
+            get => _livesLocal;
+            set
+            {
+                _livesLocal = value;
+                if (IsSpawned && IsServer) n_Lives.Value = value;
+
+                if (!IsSpawned)
+                    RaiseSpecific(OnLivesChanged);
+            }
+        }
+
+        public bool IsEliminated
+        {
+            get => _isEliminatedLocal;
+            set
+            {
+                _isEliminatedLocal = value;
+                if (IsSpawned && IsServer) n_IsEliminated.Value = value;
+
+                if (!IsSpawned)
+                    RaiseSpecific(OnEliminatedChanged);
+            }
+        }
+
         public float FullSpeedStraightAbilityActiveTime
         {
             get => _fullSpeedStraightAbilityActiveTimeLocal;
@@ -670,6 +706,8 @@ namespace CosmicShore.Data
 
             _skimmerShipCollisionsLocal = n_SkimmerShipCollisions.Value;
             _joustCollisionsLocal       = n_JoustCollisions.Value;
+            _livesLocal                 = n_Lives.Value;
+            _isEliminatedLocal          = n_IsEliminated.Value;
 
             _fullSpeedStraightAbilityActiveTimeLocal = n_FullSpeedStraightAbilityActiveTime.Value;
             _rightStickAbilityActiveTimeLocal        = n_RightStickAbilityActiveTime.Value;
@@ -830,6 +868,18 @@ namespace CosmicShore.Data
                 // only clients need the replication-driven event.
                 if (!IsServer)
                     RaiseSpecific(OnJoustCollisionChanged);
+            };
+
+            n_Lives.OnValueChanged += (_, v) =>
+            {
+                _livesLocal = v;
+                RaiseSpecific(OnLivesChanged);
+            };
+
+            n_IsEliminated.OnValueChanged += (_, v) =>
+            {
+                _isEliminatedLocal = v;
+                RaiseSpecific(OnEliminatedChanged);
             };
 
             n_FullSpeedStraightAbilityActiveTime.OnValueChanged += (_, v) =>

@@ -6,7 +6,7 @@ namespace CosmicShore.Gameplay
 {
     public class TimeBasedTurnMonitor : TurnMonitor
     {
-        [SerializeField] float duration;
+        [SerializeField] protected float duration;
         float elapsedTime;
 
         public float ElapsedTime => elapsedTime;
