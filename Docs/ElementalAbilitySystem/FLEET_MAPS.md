@@ -16,6 +16,14 @@ executor, replicated unlock bits, no new fundamentals).
 - **Level economy (vessel-agnostic):** element levels rise by collecting the elemental
   crystals dropped by lifeforms (the adjust effect rides the crystal side), plus comeback
   bonuses. No per-vessel wiring involved.
+- **Comeback (REQUIRED in every party game):** `ElementalComebackSystem` is auto-created by
+  `MultiplayerMiniGameControllerBase` when a scene lacks one. ALL FOUR elements rise EQUALLY
+  by `deficit × SO_ArcadeGame.ComebackRatePerScoreDeficit` (the per-game dial, synced to
+  clients via `GameDataSO`; deficit = first-place team aggregate minus yours in the mode's
+  scoring stat). The comeback layer can never lift an element above level 10
+  (`ResourceSystem.ComebackCeiling`) — earned progression alone reaches the overcharge band.
+  The old per-vessel/per-element profile weights are retired; the profile only seeds
+  optional initial levels.
 - **Quantitative scaling (map-driven):** every executor call site now reads
   `ElementalAbilityHandler.Multiplier(element)`, tuned by the vessel's
   `Resources/ElementalAbilityMaps/{Vessel}.asset`. The former hardcoded `atFull` literals
