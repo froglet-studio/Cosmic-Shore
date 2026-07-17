@@ -65,6 +65,16 @@ namespace CosmicShore.Gameplay
         [Tooltip("How far from the cell centre each predator's den point lands (random " +
                  "direction, rolled once at spawn) — spreads the solitary hunters apart.")]
         [Min(0f)] public float territoryAnchorDistance = 400f;
+        [Tooltip("Predators hunt in PULSES: a hunt window opens every this many seconds " +
+                 "(0 = always hunting, legacy). Outside the window the predator drops its " +
+                 "target and cruises its territory — it neither pursues nor devours, so " +
+                 "even prey swimming into its jaws survives. Guarantees herbivores " +
+                 "grazing time between attacks. Each predator's cycle starts with a REST " +
+                 "stretch at spawn (layered on the prey's own spawn immunity).")]
+        [Min(0f)] public float huntIntervalSeconds = 20f;
+        [Tooltip("How long each hunt window lasts (clamped to the interval). With the " +
+                 "defaults 20/10 a predator alternates 10s resting / 10s hunting.")]
+        [Min(0f)] public float huntDurationSeconds = 10f;
 
         [Header("Death (wither)")]
         [Tooltip("Continuity rule — nothing pops out of existence. On death the body withers " +

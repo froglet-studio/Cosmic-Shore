@@ -41,6 +41,25 @@ namespace CosmicShore.Gameplay
         Transform _mouth;           // suction sink at the danger-prism centroid
         Vector3 _territoryAnchor;   // this predator's den — fixed at spawn (tiger-shark territoriality)
         bool _hasTerritory;
+        float _huntCycleAnchor;     // hunt-pulse clock zero — set at Initialize so the cycle starts RESTING
+
+        /// <summary>
+        /// Hunt pulses: true while this predator's periodic hunt window is open.
+        /// Pure clock math (one Mathf.Repeat), no state, no coroutine. The anchor is
+        /// set at Initialize so the cycle opens with the REST stretch — a freshly
+        /// spawned predator cruises before its first attack (layered on the prey's
+        /// own spawn immunity). interval 0 = always hunting (legacy).
+        /// </summary>
+        bool IsHuntWindow
+        {
+            get
+            {
+                float interval = data.huntIntervalSeconds;
+                if (interval <= 0f) return true;
+                float duration = Mathf.Min(data.huntDurationSeconds, interval);
+                return Mathf.Repeat(Time.time - _huntCycleAnchor, interval) < duration;
+            }
+        }
 
         [HideInInspector] public float Phase;
 
@@ -93,6 +112,11 @@ namespace CosmicShore.Gameplay
             if (diet == FaunaDiet.Predator)
             {
                 InitializeMouth();
+
+                // Start the hunt-pulse cycle in its REST stretch: with the anchor set
+                // one hunt-duration in the past, the clock sits just past the window,
+                // so the first hunt opens (interval - duration) seconds from now.
+                _huntCycleAnchor = Time.time - Mathf.Min(data.huntDurationSeconds, data.huntIntervalSeconds);
 
                 // Tiger-shark territoriality: roll the den once, at spawn. Random
                 // direction from the cell centre spreads concurrent predators apart
@@ -394,11 +418,15 @@ namespace CosmicShore.Gameplay
             // every frame between ticks, and the mouth check devours it in range.
             if (diet == FaunaDiet.Predator)
             {
-                _targetPrey = FindNearestPreyFauna();
+                // Hunt pulses: outside the window the predator carries no target — it
+                // cruises its territory without pursuing or feeding, guaranteeing the
+                // herbivores grazing time between attacks.
+                _targetPrey = IsHuntWindow ? FindNearestPreyFauna() : null;
                 if (_targetPrey) Goal = _targetPrey.transform.position;
-                // Empty patch: patrol the den instead of roaming the shared density goal —
-                // a territorial predator stays out of other predators' territories, so a
-                // distant herbivore group faces at most the one shark whose patch it's in.
+                // Empty patch (or resting): patrol the den instead of roaming the shared
+                // density goal — a territorial predator stays out of other predators'
+                // territories, so a distant herbivore group faces at most the one shark
+                // whose patch it's in.
                 else if (_hasTerritory) Goal = _territoryAnchor;
             }
 
@@ -762,6 +790,15 @@ namespace CosmicShore.Gameplay
         /// </summary>
         void UpdateHunting()
         {
+            // Hunt pulses: the window can close mid-chase — break off immediately.
+            // While resting the predator neither homes nor devours, so even prey
+            // swimming straight into its jaws survives until the next window.
+            if (!IsHuntWindow)
+            {
+                _targetPrey = null;
+                return;
+            }
+
             if (_targetPrey && !_targetPrey.IsAlivePrey)
                 _targetPrey = null;
 

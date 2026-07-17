@@ -640,6 +640,21 @@ observation of v3.1):
   creature parked at a buildup eats mouthful after mouthful — it feeds more
   than it swims — resuming roaming only when the local patch is clear.
 
+**v3.3 — predator hunt pulses** (sharks still dominated even split into
+hemispheres): predators now hunt in **periodic windows**
+(`LightFaunaDataSO.huntIntervalSeconds` / `huntDurationSeconds`, default
+20/10 → alternating 10s rest / 10s hunt; interval 0 = always hunting,
+legacy). Outside the window the predator carries **no prey target** — no
+targeting, no pursuit boost, no per-frame homing, and the mouth is closed
+(`TryDevourPreyAtMouth` skipped), so even prey swimming straight into its
+jaws survives until the next window; it just cruises its territory. The
+window can close mid-chase (breaks off immediately). Implementation is pure
+clock math — one `Mathf.Repeat` per check, no state, no coroutine — and each
+predator's cycle starts with the REST stretch at spawn, layered on the
+prey's spawn immunity. Starvation still applies across rest windows, so a
+predator that can't convert its hunt windows into kills thins out — the
+duty cycle caps predation *rate*, the food web still owns population.
+
 ---
 
 ## 8. Build order
