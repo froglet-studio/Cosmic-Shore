@@ -1126,6 +1126,7 @@ MonoBehaviour:
   wallThickness: 4
   goalRingRadius: 26
   ball: {fileID: 1700000057}
+  prismSpawnChannel: {fileID: 11400000, guid: 765004a68c88ffb439febbdf47d892db, type: 2}
 --- !u!1 &1700000010
 GameObject:
   m_ObjectHideFlags: 0

@@ -46,6 +46,17 @@ namespace CosmicShore.Gameplay
         [SerializeField] List<Transform> teamSpawns;
 
         [Inject] AudioSystem audioSystem;
+        [Inject] CameraManager cameraManager;
+
+        // Per-peer goal replay (records the replicated ball flight; plays a ghost on the replay
+        // camera while the arena resets). Added at runtime in OnNetworkSpawn - no scene wiring.
+        AstroLeagueGoalReplay goalReplay;
+
+        // Attribution identity for the goal-reset prism sweep (matches the ball's attacker name).
+        const string FieldResetAttacker = "Astro League";
+
+        // Reusable buffer for the goal-reset prism sweep (per-peer local prism copies).
+        static readonly List<Prism> s_fieldClearBuffer = new(512);
 
         // Intensity scaling: base (authored) positions captured at spawn, multiplied by the scale.
         readonly List<Vector3> _baseGoalLocalPos = new();
@@ -105,6 +116,10 @@ namespace CosmicShore.Gameplay
             matchCts = new CancellationTokenSource();
 
             CaptureBaseLayout();
+
+            // Every peer records + replays locally (the ball trajectory is already replicated).
+            if (goalReplay == null) goalReplay = gameObject.AddComponent<AstroLeagueGoalReplay>();
+            goalReplay.Configure(ball, settings, cameraManager);
 
             if (IsServer)
             {
@@ -170,15 +185,17 @@ namespace CosmicShore.Gameplay
                     _baseSpawnLocalPos.Add(t != null ? t.localPosition : Vector3.zero);
         }
 
-        /// <summary>Arena/ball/layout scale: 1x at intensity 1, ramping to intensityScaleAtMax at the top.</summary>
+        /// <summary>
+        /// Arena/ball/layout scale for the selected intensity - the per-intensity table on the
+        /// settings asset (default doubles the intensity-1 court to 2x), with the legacy even
+        /// ramp as its fallback.
+        /// </summary>
         float ScaleForIntensity()
         {
-            int maxLevel = Mathf.Max(2, settings.maxIntensityLevel);
             int intensity = gameData.SelectedIntensity != null
-                ? Mathf.Clamp(gameData.SelectedIntensity.Value, 1, maxLevel)
+                ? Mathf.Max(1, gameData.SelectedIntensity.Value)
                 : 1;
-            float t = (intensity - 1f) / (maxLevel - 1f);
-            return Mathf.Lerp(1f, Mathf.Max(1f, settings.intensityScaleAtMax), t);
+            return settings.ScaleForIntensity(intensity);
         }
 
         /// <summary>Court geometry for the selected intensity - one ricochet test shape per level.</summary>
@@ -645,7 +662,14 @@ namespace CosmicShore.Gameplay
         /// name within each domain) so all peers compute identical lines without extra sync.
         /// </summary>
         [ClientRpc]
-        void ParkVesselsForKickoff_ClientRpc()
+        void ParkVesselsForKickoff_ClientRpc() => ParkOwnedVesselsForKickoff();
+
+        /// <summary>
+        /// Park every vessel this peer owns on its team's kickoff line, speed ZEROED - kickoffs
+        /// (and the on-goal arena reset that precedes them) start from rest. Idempotent, so the
+        /// goal-reset park and the kickoff re-park can both run in one celebration window.
+        /// </summary>
+        void ParkOwnedVesselsForKickoff()
         {
             foreach (var player in gameData.Players)
             {
@@ -657,6 +681,10 @@ namespace CosmicShore.Gameplay
                 if (!ownedHere) continue;
 
                 player.SetPoseOfVessel(ComputeKickoffPose(player));
+                // Zero the speed on the OWNING peer's transformer directly (motion replicates
+                // owner-authoritatively, same as RecoilVessel) - IVessel.SetInitialSpeed routes
+                // through a ClientRpc, which a client peer cannot send.
+                player.Vessel.VesselStatus?.VesselTransformer?.SetInitialSpeed(0f);
             }
         }
 
@@ -755,8 +783,18 @@ namespace CosmicShore.Gameplay
         // ── Announcer ClientRpcs (play the shared AudioSystem cue on every peer) ──
 
         [ClientRpc]
-        void AnnounceKickoffGo_ClientRpc() =>
+        void AnnounceKickoffGo_ClientRpc()
+        {
             audioSystem?.PlayGameplaySFX(GameplaySFXCategory.SpeedBurst);
+
+            // The replay must never bleed into live play, and a fresh rally must never replay a
+            // pre-reset flight: stop the ghost (restores the gameplay camera) and forget the recording.
+            if (goalReplay != null)
+            {
+                goalReplay.Stop();
+                goalReplay.ClearRecording();
+            }
+        }
 
         [ClientRpc]
         void AnnounceGoal_ClientRpc(FixedString64Bytes scorerName, int scoringDomain) =>
@@ -771,6 +809,82 @@ namespace CosmicShore.Gameplay
             bool solo = nm == null || !nm.IsListening || nm.ConnectedClientsIds.Count <= 1;
             if (solo)
                 RunCelebrationSlowMoAsync().Forget();
+
+            // On-goal arena reset, on every peer, behind the goal replay: park the vessels this
+            // peer owns with speed zeroed and sweep the field prisms clean (per-peer local copies).
+            // The kickoff re-park before GO is idempotent on top of this.
+            float resetWindow = settings.celebrationSeconds + settings.kickoffFreezeSeconds;
+            if (settings.goalResetsArena)
+            {
+                ParkOwnedVesselsForKickoff();
+                if (matchCts != null)
+                    ClearFieldPrismsAsync(matchCts.Token).Forget();
+            }
+
+            // The goal replay fills the reset window on the replay camera; it restores the
+            // gameplay camera when playback ends (or at kickoff GO, whichever lands first).
+            if (settings.goalReplayEnabled && goalReplay != null)
+                goalReplay.Play(resetWindow, _currentScale);
+        }
+
+        /// <summary>
+        /// Local, per-peer: sweep the accumulated FIELD prisms off the pitch with the canonical
+        /// animated Damage path - never a raw Destroy (continuity law; the per-frame VFX cap in
+        /// PrismEffectsManager paces the burst). Staggered center-out over goalPrismClearSeconds
+        /// so the field visibly washes clean behind the goal replay. Skips invulnerable
+        /// super-shielded structure (the arena edge lining) and fauna body prisms - the food web
+        /// is not part of the pitch reset (no imposed death; fauna die by starvation/predation
+        /// only). Prisms are per-peer GameObjects, so each peer clears its own copies - no RPC.
+        /// </summary>
+        async UniTaskVoid ClearFieldPrismsAsync(CancellationToken token)
+        {
+            var index = PrismSpatialIndex.Instance;
+            if (index == null || arena == null) return;
+
+            float radius = (arena.Boundary != null ? arena.Boundary.MaxExtent : 400f * _currentScale) * 1.25f;
+            Vector3 center = arena.Center;
+            index.QuerySphere(center, radius, s_fieldClearBuffer);
+            if (s_fieldClearBuffer.Count == 0) return;
+
+            // Center-out wave: the clear reads as washing outward from the pitch center.
+            s_fieldClearBuffer.Sort((a, b) =>
+            {
+                float da = a != null ? (a.transform.position - center).sqrMagnitude : float.MaxValue;
+                float db = b != null ? (b.transform.position - center).sqrMagnitude : float.MaxValue;
+                return da.CompareTo(db);
+            });
+
+            int total = s_fieldClearBuffer.Count;
+            float duration = Mathf.Max(0.1f, settings.goalPrismClearSeconds);
+            float start = Time.unscaledTime;
+            int cleared = 0;
+
+            try
+            {
+                while (cleared < total)
+                {
+                    token.ThrowIfCancellationRequested();
+
+                    float progress = Mathf.Clamp01((Time.unscaledTime - start) / duration);
+                    int target = Mathf.CeilToInt(progress * total);
+                    for (; cleared < target; cleared++)
+                    {
+                        var prism = s_fieldClearBuffer[cleared];
+                        if (prism == null || prism.destroyed) continue;
+                        if (prism.prismProperties != null && prism.prismProperties.IsSuperShielded) continue;
+                        if (prism is HealthPrism body && body.ResolveOwnerFauna() != null) continue;
+                        prism.Damage(Vector3.zero, Domains.Blue, FieldResetAttacker, devastate: true);
+                    }
+
+                    if (progress >= 1f) break;
+                    await UniTask.Yield(PlayerLoopTiming.Update);
+                }
+            }
+            catch (OperationCanceledException) { /* scene teardown mid-sweep */ }
+            finally
+            {
+                s_fieldClearBuffer.Clear();
+            }
         }
 
         async UniTaskVoid RunCelebrationSlowMoAsync()
@@ -800,7 +914,11 @@ namespace CosmicShore.Gameplay
             audioSystem?.PlayGameplaySFX(GameplaySFXCategory.ComebackCharge);
 
         [ClientRpc]
-        void AnnounceMatchFinished_ClientRpc(int winnerDomain) =>
+        void AnnounceMatchFinished_ClientRpc(int winnerDomain)
+        {
             audioSystem?.PlayGameplaySFX(GameplaySFXCategory.GameEnd);
+            // A ghost still on screen would fight the winner banner + end-game cinematic.
+            goalReplay?.Stop();
+        }
     }
 }

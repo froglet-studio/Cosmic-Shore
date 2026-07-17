@@ -190,6 +190,40 @@ namespace CosmicShore.Gameplay
             _themeManagerData.SetBackgroundColor(Camera.main);
         }
 
+        /// <summary>
+        /// Activate the end camera as a MANUALLY-DRIVEN replay camera - the shared "replay
+        /// camera" for modes that replay a moment (e.g. Astro League goal replays: a fixed
+        /// broadcast vantage that PANS to the action rather than chasing it). The follow target
+        /// is cleared so <see cref="CustomCameraController"/>'s own follow loop leaves the
+        /// transform alone; the caller poses the returned rig transform every frame and calls
+        /// <see cref="RestoreGameplayCamera"/> when done. Returns null when no end camera exists.
+        /// </summary>
+        public Transform BeginManualReplayCamera()
+        {
+            if (endCamera == null) return null;
+            if (!gameObject.activeInHierarchy) gameObject.SetActive(true);
+
+            endCamera.SetFollowTarget(null);
+            SetEndCameraActive();
+            ApplyCameraGraphicsSettings();
+            return endCamera.transform;
+        }
+
+        /// <summary>Vertical field of view of the replay/end camera (fit-the-shot framing math).</summary>
+        public float ReplayCameraFieldOfView =>
+            endCamera != null && endCamera.Camera != null ? endCamera.Camera.fieldOfView : 60f;
+
+        /// <summary>
+        /// Return from the replay/end camera to the gameplay follow camera (which still holds its
+        /// vessel follow target), snapped so no stale replay framing bleeds into play.
+        /// </summary>
+        public void RestoreGameplayCamera()
+        {
+            if (_playerFollowTarget == null) return;
+            SetCloseCameraActive();
+            SnapPlayerCameraToTarget();
+        }
+
         public void SetMainMenuCameraActive()
         {
             if (mainMenuCamera != null)
