@@ -32,23 +32,49 @@ namespace CosmicShore.Gameplay
 
         protected override void OnInitialized()
         {
-            // Findability: the tuning bench wears the four element colours as small orbiting
-            // moons so it reads as "the elements toy" from across the cell, and logs its spot.
+            // Findability + identity: the tuning bench wears the four element CRYSTAL MODELS
+            // as orbiting moons - elements have SHAPE signatures, not colour signatures
+            // (colour belongs to domains) - and logs its spot.
             var elements = new[] { Element.Charge, Element.Mass, Element.Space, Element.Time };
             for (int i = 0; i < elements.Length; i++)
             {
                 float a = i / (float)elements.Length * Mathf.PI * 2f;
-                var moon = ToyFactory.AddSphereBody(transform,
-                    Mathf.Max(0.5f, _def.StationRadius * 0.35f), _def.ElementColor(elements[i]));
+                var moon = AddElementCrystalVisual(transform, elements[i], 0.35f);
+                if (!moon) continue;
                 moon.name = $"Moon_{elements[i]}";
                 moon.transform.localPosition =
                     new Vector3(Mathf.Cos(a), 0.25f * ((i % 2 == 0) ? 1f : -1f), Mathf.Sin(a)) * 2.2f;
-                moon.transform.localScale = Vector3.one * 0.5f;
             }
 
             CSDebug.Log($"[LifeformMatrix] Toy placed at {transform.position} " +
-                        $"(look for the sphere with four element-coloured moons).");
+                        $"(the sphere orbited by the four element crystals).");
         }
+
+        /// <summary>
+        /// Pure-visual clone of an element's crystal MODEL (the element's canonical in-world
+        /// shape signature) - just the model subtree, no Crystal behaviour, registry entry, or
+        /// collider. Scale is relative to the model's authored scale.
+        /// </summary>
+        static GameObject AddElementCrystalVisual(Transform parent, Element element, float scale)
+        {
+            var set = ElementalCrystalSetSO.Load();
+            var prefab = set ? set.GetPrefab(element) : null;
+            var models = prefab ? prefab.CrystalModels : null;
+            var source = models is { Count: > 0 } ? models[0]?.model : null;
+            if (!source) return null;
+
+            var visual = Instantiate(source, parent, false);
+            visual.SetActive(true);
+            visual.transform.localPosition = Vector3.zero;
+            visual.transform.localScale = source.transform.localScale * scale;
+            return visual;
+        }
+
+        // The player flies AT the matrix and keeps flying: each successive matrix sits at a
+        // FURTHER radius from the cell centre, so a pass through one layer carries you toward
+        // the next instead of back through the previous one. The toy faces the cell centre,
+        // so outward is -forward.
+        Vector3 Outward => -transform.forward;
 
         protected override void OnActivated(IVesselStatus localVessel)
         {
@@ -84,7 +110,9 @@ namespace CosmicShore.Gameplay
             _speciesGrid.transform.SetParent(transform.parent, true);
 
             float spacing = _def.StationSpacing;
-            Vector3 origin = transform.position + transform.up * spacing;
+            // One layer OUTWARD from the toy (away from the cell centre): fly through the toy,
+            // keep flying, and the species row is directly ahead.
+            Vector3 origin = transform.position + Outward * (spacing * 1.5f);
             Vector3 right = transform.right;
 
             int index = 0;
@@ -125,8 +153,11 @@ namespace CosmicShore.Gameplay
             _variantGrid.transform.SetParent(transform.parent, true);
 
             float spacing = _def.StationSpacing;
-            // The variant matrix hangs above the species row so both stay flyable.
-            Vector3 origin = transform.position + transform.up * (spacing * 2.5f);
+            // A further layer OUTWARD than the species row: fly through a species, keep
+            // flying, and its variant matrix is directly ahead at a larger radius from the
+            // cell centre - each pass carries you toward the next layer, never back through
+            // the previous one.
+            Vector3 origin = transform.position + Outward * (spacing * 3.5f);
             Vector3 right = transform.right;
             Vector3 up = transform.up;
 
@@ -143,12 +174,15 @@ namespace CosmicShore.Gameplay
                     int level = TestLevels[row];
                     Vector3 pos = origin
                                   + right * (spacing * (col - (elements.Length - 1) * 0.5f))
-                                  + up * (spacing * row);
+                                  + up * (spacing * (row - (TestLevels.Length - 1) * 0.5f));
 
-                    // Level telegraph: the station itself grows with level - 5 reads biggest.
+                    // Element identity = the crystal's SHAPE; level telegraph = its SIZE
+                    // (level 5 reads biggest before you touch it).
                     float radius = _def.StationRadius * (1f + 0.35f * (level - 1));
                     var station = CreateStation(_variantGrid.transform, pos,
-                        $"{speciesName} · {element} {level}", radius, _def.ElementColor(element));
+                        $"{speciesName} · {element} {level}", radius, Definition.AccentColor,
+                        bodySphere: false);
+                    AddElementCrystalVisual(station.transform, element, 0.6f + 0.4f * (level - 1) * 0.5f);
 
                     int capturedLevel = level;
                     if (faunaCfg)
@@ -178,7 +212,9 @@ namespace CosmicShore.Gameplay
 
         void SpawnFaunaVariant(FaunaConfigurationSO config, int level, Vector3 position)
         {
-            var cell = Cell.FindCellContaining(position);
+            // Outward-layered stations can sit beyond the membrane - resolve the cell from the
+            // TOY's position (always inside) and spawn the creature at the station.
+            var cell = Cell.FindCellContaining(transform.position);
             if (!cell)
             {
                 CSDebug.LogWarning("[LifeformMatrix] No cell contains the station - cannot spawn fauna.");
@@ -199,7 +235,7 @@ namespace CosmicShore.Gameplay
 
         void SpawnFloraVariant(FloraConfigurationSO config, int level, Vector3 position)
         {
-            var cell = Cell.FindCellContaining(position);
+            var cell = Cell.FindCellContaining(transform.position);
             if (!cell)
             {
                 CSDebug.LogWarning("[LifeformMatrix] No cell contains the station - cannot spawn flora.");
@@ -216,10 +252,11 @@ namespace CosmicShore.Gameplay
         // ── Stations ─────────────────────────────────────────────────────────
 
         LifeformMatrixStation CreateStation(Transform parent, Vector3 position, string label,
-            float radius, Color accent)
+            float radius, Color accent, bool bodySphere = true)
         {
             var go = ToyFactory.CreateBareRoot(label, parent, position, transform.position, radius * 1.6f);
-            ToyFactory.AddSphereBody(go.transform, radius, accent);
+            if (bodySphere)
+                ToyFactory.AddSphereBody(go.transform, radius, accent);
             ToyFactory.AddLabel(go.transform, label, accent, radius * 1.9f);
 
             var station = go.AddComponent<LifeformMatrixStation>();

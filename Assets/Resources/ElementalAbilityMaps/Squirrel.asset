@@ -46,17 +46,19 @@ MonoBehaviour:
     AbilityLabel: Skimmer Reach
     AbilityDescription: Space grows the skimmer sphere (authored on the skimmer's
       Scale ElementalFloat, 15 -> 30 at level 10, evaluated live; generic map
-      multiplier stays 1.0 to avoid double-dipping); at level 5 jousting a living
-      lifeform's crystal withers the creature like starvation.
+      multiplier stays 1.0 to avoid double-dipping). BASE joust (no upgrade
+      needed) - joust any lifeform's crystal while moving faster than it to
+      wither opposing-domain creatures; at level 5 the joust also SHEPHERDS
+      allies - own-domain lifeforms level up instead.
     Input: 0
     MultiplierAtFullLevel: 1
     MinMultiplier: 1
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: Crystal Joust
-    UpgradeDescription: Joust a lifeform's crystal to wither it - the creature
-      dies like starvation and drops its elemental crystal.
+    UpgradeLabel: Shepherd
+    UpgradeDescription: Jousting an ally lifeform's crystal levels it up (body
+      and crystal grow, max level 5) instead of doing nothing.
   - Element: 4
     AbilityLabel: Boost Ring
     AbilityDescription: Time shortens the boost-ring cooldown (authored on

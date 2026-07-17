@@ -50,25 +50,14 @@ namespace CosmicShore.ScriptableObjects
                                           "scale with level so level 5 reads biggest).")]
         float stationRadius = 6f;
 
-        [Header("Element accents")]
-        [SerializeField] Color chargeColor = new(1f, 0.85f, 0.25f);
-        [SerializeField] Color massColor = new(0.95f, 0.35f, 0.3f);
-        [SerializeField] Color spaceColor = new(0.45f, 0.55f, 1f);
-        [SerializeField] Color timeColor = new(0.4f, 0.95f, 0.55f);
+        // NOTE: elements have SHAPE signatures, not colour signatures (colour belongs to
+        // DOMAINS). Stations identify their element with the element's crystal MODEL - the
+        // canonical in-world shape signature - never with a per-element tint.
 
         public FaunaSpecies[] Fauna => faunaSpecies;
         public FloraSpecies[] Flora => floraSpecies;
         public float StationSpacing => stationSpacing;
         public float StationRadius => stationRadius;
-
-        public Color ElementColor(CosmicShore.Data.Element element) => element switch
-        {
-            CosmicShore.Data.Element.Charge => chargeColor,
-            CosmicShore.Data.Element.Mass => massColor,
-            CosmicShore.Data.Element.Space => spaceColor,
-            CosmicShore.Data.Element.Time => timeColor,
-            _ => Color.white,
-        };
 
         public override void Spawn(Transform parent, ToyPlacement placement, ToyContext context)
         {

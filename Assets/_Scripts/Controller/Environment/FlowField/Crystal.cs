@@ -51,24 +51,25 @@ namespace CosmicShore.Gameplay
         public bool IsExploding { get; private set; }
 
         // ── Embedded lifeform heart ──────────────────────────────────────────
-        // While a fauna is alive its elemental crystal rides INSIDE the body (the heart).
-        // SetEmbeddedIn enables the crystal's collider so a vessel can JOUST the heart
-        // (the Squirrel's Space level-5 upgrade withers the creature through Fauna.Predated),
-        // while the impact chain gates on IsEmbedded so an embedded heart is never skim-
-        // collected or treated as a free-floating pickup. ActivateCrystal (death) clears it -
-        // the crystal then drops as the normal collectible powerup (mass conserved).
+        // While a lifeform is alive its elemental crystal rides INSIDE the body (the heart).
+        // SetEmbeddedIn enables the crystal's collider so a vessel can JOUST the heart (the
+        // Squirrel's joust: destroys opposing-domain lifeforms when moving faster; its Space
+        // level-5 upgrade levels up allies instead), while the impact chain gates on IsEmbedded
+        // so an embedded heart is never skim-collected or treated as a free-floating pickup.
+        // ActivateCrystal (death) clears it - the crystal then drops as the normal collectible
+        // powerup (mass conserved).
 
-        /// <summary>The living fauna this crystal is embedded in; null once dropped/free.</summary>
-        public Fauna EmbeddedIn { get; private set; }
+        /// <summary>The living lifeform (flora or fauna) this crystal is embedded in; null once dropped/free.</summary>
+        public ILifeFormEntity EmbeddedIn { get; private set; }
 
         /// <summary>True while this crystal is a living lifeform's heart (not yet dropped).</summary>
         public bool IsEmbedded => EmbeddedIn != null;
 
         /// <summary>
-        /// Marks this crystal as a living fauna's heart and enables its collider so vessels can
-        /// joust it. Called by concrete fauna right after LifeFormCrystal.EnsureElementalCrystal.
+        /// Marks this crystal as a living lifeform's heart and enables its collider so vessels
+        /// can joust it. Called by lifeforms right after LifeFormCrystal.EnsureElementalCrystal.
         /// </summary>
-        public void SetEmbeddedIn(Fauna owner)
+        public void SetEmbeddedIn(ILifeFormEntity owner)
         {
             EmbeddedIn = owner;
             var col = GetComponent<SphereCollider>();

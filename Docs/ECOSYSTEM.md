@@ -211,20 +211,26 @@ flowchart LR
 Every arrow is implemented: spawn (seeding), reproduction (births from feeds),
 starvation, and predation all run through the same `Fauna` base.
 
-**Vessel predation & husbandry — the Crystal Joust (Squirrel Space-5).** A living fauna's
-elemental crystal is its **heart**: `Crystal.SetEmbeddedIn(fauna)` (called by
-`LightFauna`/`Boid` right after `LifeFormCrystal.EnsureElementalCrystal`) enables the
-heart's SphereCollider so a vessel can JOUST it. The embedded heart is never a pickup —
-skim-collect and skimmer vacuum both gate on `Crystal.IsEmbedded` — and the vessel-side
-chain routes to the container's `VesselLifeformCrystalEffects` instead of the collect
-chain. The Squirrel's `VesselWitherLifeformByCrystalEffectSO` (gated per-impact on its
-live Space level-5 upgrade) branches on domain: an **opposing-domain** creature is
-predated — `Fauna.Predated(playerName)`, an ACTIVE force through the sealed `Fauna.Die`,
-withering from the extremities inward and dropping its crystal exactly like starvation
-(mass conserved, continuity honored, post-spawn immunity respected) — while an
-**own-domain** creature is NOURISHED: `Fauna.LevelUp()` grows body + heart one level.
-Collider cost: **+1 active SphereCollider per live fauna** (bounded by each species'
-`MaxLivePopulation`).
+**Vessel predation & husbandry — the Crystal Joust (Squirrel).** Every living lifeform's
+elemental crystal is its **heart**: `Crystal.SetEmbeddedIn(lifeform)` (fauna wire it in
+`LightFauna`/`Boid` after `LifeFormCrystal.EnsureElementalCrystal`; flora in
+`LifeForm.Initialize`) enables the heart's SphereCollider so a vessel can JOUST it. The
+embedded heart is never a pickup — skim-collect and skimmer vacuum both gate on
+`Crystal.IsEmbedded` — and the vessel-side chain routes to the container's
+`VesselLifeformCrystalEffects` instead of the collect chain. The Squirrel's
+`VesselWitherLifeformByCrystalEffectSO`:
+- **Speed gate (both branches)**: the joust lands only while the vessel moves FASTER
+  than the lifeform (`ILifeFormEntity.CurrentSpeed` + authored margin). Rooted flora sit
+  at 0 — trivially joustable; fast fauna must genuinely be overtaken.
+- **BASE ability (ungated)**: an **opposing-domain** lifeform is destroyed —
+  `ILifeFormEntity.Jousted` routes fauna through the sealed `Predated→Die` (wither +
+  crystal drop, spawn immunity respected) and flora through `LifeForm.Die` (spindle
+  wither + crystal drop). An ACTIVE force; mass conserved, continuity honored.
+- **Space level-5 'Shepherd' upgrade**: an **own-domain** lifeform is NOURISHED instead —
+  `ILifeFormEntity.LevelUp()` grows body + heart one level (below the unlock an ally
+  joust does nothing; an ally is never killed).
+Collider cost: **+1 active SphereCollider per live lifeform heart** (fauna bounded by
+`MaxLivePopulation`; flora by the profile's spawn counts).
 
 **The lifeform elemental contract (element × level).** Mirroring the vessel contract,
 every lifeform answers `ILifeFormEntity.Element` and `.Level` (1..`Fauna.MaxLifeformLevel`

@@ -12,5 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7be24d91c05a4f30a2d8e6534cf1a7d2, type: 3}
   m_Name: SquirrelVesselWitherLifeformByCrystalEffect
   m_EditorClassIdentifier:
-  gatingElement: 3
+  allyUpgradeElement: 3
+  speedMargin: 1
   onLifeformJousted: {fileID: 11400000, guid: b1b4489f28448cf42b63f4b38789ab90, type: 2}

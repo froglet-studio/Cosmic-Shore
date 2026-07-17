@@ -212,6 +212,14 @@ namespace CosmicShore.Gameplay
         /// <summary>This creature's level, 1..MaxLifeformLevel. Scales body + crystal via the species config.</summary>
         public int Level { get; private set; } = 1;
 
+        /// <summary>Current travel speed (world units/s). Mobile subclasses (Boid, LightFauna)
+        /// override with their live velocity; manager/rooted fauna read as stationary.</summary>
+        public virtual float CurrentSpeed => 0f;
+
+        /// <summary>A faster vessel jousted this creature's heart - routes through Predated
+        /// (idempotent, immunity-respecting) so it withers and drops its crystal.</summary>
+        public bool Jousted(string killerName) => Predated(killerName);
+
         Vector3 _levelBaseScale = Vector3.one;   // root scale at level 1 (captured on first level apply)
         float _crystalBaseScale = 1f;            // crystal local scale at level 1
         bool _levelBaseCaptured;

@@ -41,6 +41,9 @@ namespace CosmicShore.Gameplay
         readonly Queue<Prism> _pendingMeals = new();
 
         private Vector3 currentVelocity;
+
+        /// <summary>Live travel speed - the joust's "must be moving faster" comparison reads this.</summary>
+        public override float CurrentSpeed => currentVelocity.magnitude;
         private Vector3 desiredDirection;
         private Quaternion desiredRotation;
 

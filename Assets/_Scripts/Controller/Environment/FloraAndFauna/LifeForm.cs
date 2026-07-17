@@ -60,8 +60,46 @@ namespace CosmicShore.Gameplay
         public virtual void ApplyLevel(int level, float bodyScalePerLevel, float crystalScalePerLevel)
         {
             Level = Mathf.Clamp(level, 1, 5);
+            _bodyScalePerLevel = Mathf.Max(1f, bodyScalePerLevel);
+            _crystalScalePerLevel = Mathf.Max(1f, crystalScalePerLevel);
             if (crystal && Level > 1)
-                crystal.transform.localScale *= Mathf.Pow(Mathf.Max(1f, crystalScalePerLevel), Level - 1);
+                crystal.transform.localScale *= Mathf.Pow(_crystalScalePerLevel, Level - 1);
+        }
+
+        // Per-level factors remembered from ApplyLevel so in-world LevelUp uses the same curve.
+        float _bodyScalePerLevel = 1.15f;
+        float _crystalScalePerLevel = 1.2f;
+
+        /// <summary>Per-level scale factors (config-seeded); Flora reads them in LevelUp.</summary>
+        protected float BodyScalePerLevel => _bodyScalePerLevel;
+        protected float CrystalScalePerLevel => _crystalScalePerLevel;
+
+        /// <summary>Rooted flora never travel - which makes them trivially joustable.</summary>
+        public float CurrentSpeed => 0f;
+
+        /// <summary>
+        /// A faster vessel jousted this lifeform's heart: dies through the normal death path
+        /// (wither via spindles, crystal drop - mass conserved, continuity honored). Idempotent.
+        /// </summary>
+        public bool Jousted(string killerName)
+        {
+            if (dying || isCleaningUp) return false;
+            dying = true;
+            Die(killerName);
+            return true;
+        }
+
+        /// <summary>
+        /// In-world level-up (the Squirrel Space-5 'Shepherd' joust on an ally). The crystal
+        /// grows a step; Flora also grows future leaves. Capped at level 5.
+        /// </summary>
+        public virtual bool LevelUp()
+        {
+            if (Level >= 5) return false;
+            Level++;
+            if (crystal)
+                crystal.GrowCrystal(1f, crystal.transform.localScale.x * _crystalScalePerLevel);
+            return true;
         }
 
         /// <summary>
@@ -137,6 +175,10 @@ namespace CosmicShore.Gameplay
             spindleTracker = new SpindleTracker();
 
             crystal = GetComponentInChildren<Crystal>();
+            // The crystal is this lifeform's HEART while it lives: joustable by a faster vessel
+            // (destroys opposing-domain lifeforms; Space-5 levels up allies) but never
+            // skim-collectable until death drops it. Cleared by ActivateCrystal in Die.
+            if (crystal) crystal.SetEmbeddedIn(this);
 
             BindEmbeddedParts();
 

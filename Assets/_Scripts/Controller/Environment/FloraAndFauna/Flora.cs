@@ -67,6 +67,15 @@ namespace CosmicShore.Gameplay
                 leafSize *= Mathf.Pow(Mathf.Max(1f, bodyScalePerLevel), Level - 1);
         }
 
+        /// <summary>In-world level-up: future leaves grow a step too (existing leaves keep their
+        /// size - growth flows through the normal spawn channel, nothing is re-scaled in place).</summary>
+        public override bool LevelUp()
+        {
+            if (!base.LevelUp()) return false;
+            leafSize *= BodyScalePerLevel;
+            return true;
+        }
+
         public override void AddHealthBlock(HealthPrism healthPrism)
         {
             base.AddHealthBlock(healthPrism);

@@ -51,6 +51,9 @@ namespace CosmicShore.Gameplay
         Vector3 desiredDirection;
         Quaternion desiredRotation;
 
+        /// <summary>Live travel speed - the joust's "must be moving faster" comparison reads this.</summary>
+        public override float CurrentSpeed => currentVelocity.magnitude;
+
         /// <summary>
         /// Layer the Boid flocking/feeding numbers of the config's variant expression on top of
         /// the base (scale / material / starvation / audio). Sentinel -1 keeps the prefab value;

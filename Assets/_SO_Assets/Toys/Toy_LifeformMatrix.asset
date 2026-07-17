@@ -17,7 +17,7 @@ MonoBehaviour:
   description: The ecology tuning bench. Fly through for the menagerie; fly a species
     for its 4-element x {1,3,5}-level variant matrix; fly a variant to spawn it live.
   unlockedByDefault: 1
-  placementAngleDegrees: -1
+  placementAngleDegrees: 180
   accentColor: {r: 0.75, g: 1, b: 0.85, a: 1}
   faunaSpecies:
   - Name: Tadpole
@@ -35,7 +35,3 @@ MonoBehaviour:
     - {fileID: 11400000, guid: f27c9fe8e43d4c8bb0c7ea84c9f8050d, type: 2}
   stationSpacing: 45
   stationRadius: 6
-  chargeColor: {r: 1, g: 0.85, b: 0.25, a: 1}
-  massColor: {r: 0.95, g: 0.35, b: 0.3, a: 1}
-  spaceColor: {r: 0.45, g: 0.55, b: 1, a: 1}
-  timeColor: {r: 0.4, g: 0.95, b: 0.55, a: 1}

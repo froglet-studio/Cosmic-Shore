@@ -25,5 +25,19 @@ namespace CosmicShore.Gameplay
 
         /// <summary>This lifeform's level, 1..5. Raised in-world (e.g. an own-domain Crystal Joust).</summary>
         int Level { get; }
+
+        /// <summary>This lifeform's current travel speed (world units/s). 0 for rooted flora -
+        /// which is what makes them trivially joustable (the jouster must be moving faster).</summary>
+        float CurrentSpeed { get; }
+
+        /// <summary>
+        /// A vessel jousted this lifeform's embedded crystal (its heart) while moving faster than
+        /// it - the creature withers and dies through its normal death path (crystal drop, mass
+        /// conserved, continuity honored). Returns true only if it actually died to this joust.
+        /// </summary>
+        bool Jousted(string killerName);
+
+        /// <summary>Raise this lifeform's level by one (capped at 5). Returns false at the cap.</summary>
+        bool LevelUp();
     }
 }
