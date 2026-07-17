@@ -111,6 +111,50 @@ namespace CosmicShore.Gameplay
         protected virtual void Start()
         {
             crystalProperties.crystalValue = crystalProperties.fuelAmount * transform.lossyScale.x;
+            ApplyColorSetTint();
+        }
+
+        // ── Color set (single source: SO_ColorSet via the theme container) ───
+        // Crystal prefabs bake placeholder colors into their materials; the LIVE colors come from
+        // the theme's ColorSet so palette tweaks reach every crystal - lifeform hearts/drops,
+        // conveyor pickups, and cell crystals alike. Element identity stays SHAPE (per-element
+        // model); color belongs to the domain (Blue = the neutral set). Applied per-renderer via
+        // MaterialPropertyBlock - never renderer.material clones.
+
+        static MaterialPropertyBlock s_tintBlock;
+
+        /// <summary>Tints all crystal models with the current domain's crystal colors from the
+        /// theme ColorSet. No-op when the theme container or color set is unwired.</summary>
+        protected void ApplyColorSetTint()
+        {
+            if (!_themeManagerData || _themeManagerData.ColorSet == null) return;
+            // Legacy prefabs carry stale ownDomain sentinels (e.g. -1) - anything that isn't a
+            // real domain tints as Blue, the neutral "no team" set.
+            if (!_themeManagerData.ColorSet.TryGetColorSetByDomain(ownDomain, out var colorSet) || colorSet == null)
+                if (!_themeManagerData.ColorSet.TryGetColorSetByDomain(Domains.Blue, out colorSet) || colorSet == null)
+                    return;
+
+            s_tintBlock ??= new MaterialPropertyBlock();
+            foreach (var modelData in crystalModels)
+            {
+                if (modelData?.model == null || !modelData.model.TryGetComponent<Renderer>(out var renderer)) continue;
+                var mat = renderer.sharedMaterial;
+                if (!mat) continue;
+                var props = FindColorPropertyNames(mat);
+                if (props.bright == null) continue;
+
+                renderer.GetPropertyBlock(s_tintBlock);
+                s_tintBlock.SetColor(props.bright, colorSet.BrightCrystalColor);
+                s_tintBlock.SetColor(props.dull, colorSet.DullCrystalColor);
+                renderer.SetPropertyBlock(s_tintBlock);
+            }
+        }
+
+        /// <summary>Clears the tint override on one model so a material color lerp is visible.</summary>
+        static void ClearColorSetTint(GameObject model)
+        {
+            if (model && model.TryGetComponent<Renderer>(out var renderer))
+                renderer.SetPropertyBlock(null);
         }
 
         public void InjectDependencies(CrystalManager cm) => CrystalManager = cm;
@@ -289,6 +333,10 @@ namespace CosmicShore.Gameplay
             if (renderer == null)
                 yield break;
 
+            // The property-block tint would override the animated material colors - drop it for
+            // the lerp; the current domain's tint is reapplied once the material settles.
+            ClearColorSetTint(model);
+
             Material tempMaterial = new Material(renderer.material);
             renderer.material = tempMaterial;
 
@@ -334,6 +382,7 @@ namespace CosmicShore.Gameplay
             }
 
             Destroy(tempMaterial);
+            ApplyColorSetTint();
         }
 
         private static (string bright, string dull) FindColorPropertyNames(Material mat)
