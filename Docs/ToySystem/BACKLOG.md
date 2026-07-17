@@ -257,3 +257,18 @@ teardown). Everything below is remaining polish / not-yet-play-verified.
   speed then eases to the current throttle target — with input paused during the post-swap
   autopilot window it will drift toward `MinimumSpeed`; fine for the seamless-handoff goal, tune
   if a longer hold is wanted.
+
+## Lifeform Matrix follow-ups
+
+- **Charge tadpole is NEW and untuned** (authored from the Space baseline with a Charge
+  crystal) — tune via the matrix, then bake into `Tadpole Fauna Charge.asset`.
+- **Not in the elemental contract yet**: Seaweed (`SpawnableCord`, not a `Flora`), worms
+  (`Worm` is not a `Fauna`), drone populations (BoidManager path — now all spawn the base
+  tadpole; needs its own config pass for per-element identity).
+- **Sparrow (and other vessels') HUD ability-icon bindings** for the shared upgrade-highlight
+  system are unwired (Squirrel only); fill each view's `abilityIcons` in its prefab.
+- **Squirrel HUD tube/energy icons repaint colours per-frame**, so the upgrade highlight
+  reads via scale only there — teach those repaints to respect the highlight tint.
+- **Variant matrix stations beyond the membrane**: layered outward they can cross the
+  membrane; spawns resolve the cell from the toy's position so they work, but station
+  placement could clamp to the membrane radius for tidiness.

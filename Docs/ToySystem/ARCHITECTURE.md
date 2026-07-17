@@ -73,6 +73,20 @@ detection. On top of that base the `Toy` class adds:
 | Toybox registry + unlock state | `Assets/_Scripts/ScriptableObjects/Toys/ToyboxSO.cs` |
 | One-click editor setup | `Assets/_Scripts/Editor/ToyboxSetupTool.cs` |
 
+## Lifeform Matrix (`LifeformMatrixToy` + `LifeformMatrixToyDefinitionSO`)
+
+The **ecology tuning bench** (`Toy_LifeformMatrix.asset`, placement angle 180°). Fly the toy
+(a sphere orbited by the four element crystal MODELS — elements have SHAPE signatures, never
+colours) and the SPECIES matrix blooms one layer OUTWARD from the cell centre: fauna on the
+lower row, flora on the upper (12 species). Fly a species and its VARIANT matrix blooms a
+further layer outward: 4 element columns × level rows {1, 3, 5}, each station wearing the
+element's crystal model sized by level. Fly a variant and a POPULATION of that exact lifeform
+(fauna `PopulationSize` / flora `InitialSpawnCount`) spawns live through the canonical cell
+spawn paths on a runtime CLONE of its per-element config (`_SO_Assets/Lifeforms/`) — flora
+root AT the station via `Flora.SetPlantPositionOverride`. Every spawn logs, including the
+cell's Frenzy growth-freeze state. Layered outward on purpose: the player flies at a matrix
+and keeps flying — each pass carries them toward the next layer, never back through the last.
+
 ## The "swap set" pattern (vessel + domain)
 
 Both the vessel and domain changers are **sets** of toys managed by a shared generic
