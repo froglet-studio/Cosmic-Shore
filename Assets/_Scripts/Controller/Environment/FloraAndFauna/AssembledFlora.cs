@@ -353,9 +353,17 @@ namespace CosmicShore.Gameplay
             // Disperse across the cell (fraction of membrane radius - see Flora base)
             // instead of the old hard-coded 200m huddle around the crystal. Dispersed,
             // domain-coherent flora clusters are what give fauna schools of different
-            // domains genuinely different anti-domain density targets.
-            float radius = ResolvePlantRadius(legacyRadius: 200f);
-            transform.position = cellData.CrystalTransform.position + radius * Random.onUnitSphere;
+            // domains genuinely different anti-domain density targets. A pinned position
+            // (the Lifeform Matrix toy's spawn-here stations) wins over dispersal.
+            if (TryGetPlantPositionOverride(out var pinned))
+            {
+                transform.position = pinned;
+            }
+            else
+            {
+                float radius = ResolvePlantRadius(legacyRadius: 200f);
+                transform.position = cellData.CrystalTransform.position + radius * Random.onUnitSphere;
+            }
         }
 
         public Assembler CreateNewAssembler()

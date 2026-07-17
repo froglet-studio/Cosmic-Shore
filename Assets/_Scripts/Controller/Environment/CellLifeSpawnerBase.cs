@@ -126,12 +126,19 @@ namespace CosmicShore.Gameplay
         }
 
         public static Flora SpawnFlora(Cell host, Flora floraPrefab, Domains? excludedDomain,
-            FloraConfigurationSO config = null)
+            FloraConfigurationSO config = null, Vector3? spawnPosition = null)
         {
             if (!host || !floraPrefab) return null;
 
-            var flora = UnityEngine.Object.Instantiate(floraPrefab, host.transform.position, Quaternion.identity);
+            Vector3 pos = spawnPosition ?? host.transform.position;
+            var flora = UnityEngine.Object.Instantiate(floraPrefab, pos, Quaternion.identity);
             flora.domain = PickRandomDomain(excludedDomain);
+
+            // A caller-specified position PINS the planting spot - Plant() implementations
+            // honor it instead of dispersing the flora across the cell (the Lifeform Matrix
+            // toy roots the spawn where the player triggered it).
+            if (spawnPosition.HasValue)
+                flora.SetPlantPositionOverride(spawnPosition.Value);
 
             // Elemental contract: the config may define the ELEMENT and the variant expression
             // as data (one base prefab, per-element variants from config). Applied BEFORE

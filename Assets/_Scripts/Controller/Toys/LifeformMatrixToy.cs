@@ -231,6 +231,7 @@ namespace CosmicShore.Gameplay
             var fauna = CellLifeSpawnerBase.SpawnFaunaWithDomain(
                 cell, clone.FaunaPrefab, cell.transform.position, domain, position);
             if (fauna) fauna.AssignLineage(cell, clone);
+            CSDebug.Log($"[LifeformMatrix] Spawned {clone.name} ({domain}) at {position} -> {(fauna ? "ok" : "FAILED")}");
         }
 
         void SpawnFloraVariant(FloraConfigurationSO config, int level, Vector3 position)
@@ -246,7 +247,10 @@ namespace CosmicShore.Gameplay
             clone.name = $"{config.name} (L{level})";
             clone.InitialLevel = level;
 
-            CellLifeSpawnerBase.SpawnFlora(cell, clone.FloraPrefab, null, clone);
+            // Root the flora AT the station so the tester sees it grow right where they flew -
+            // Plant() would otherwise disperse it across the cell, invisible from out here.
+            var flora = CellLifeSpawnerBase.SpawnFlora(cell, clone.FloraPrefab, null, clone, position);
+            CSDebug.Log($"[LifeformMatrix] Spawned {clone.name} at {position} -> {(flora ? "ok (grows from one seed prism - watch it build)" : "FAILED")}");
         }
 
         // ── Stations ─────────────────────────────────────────────────────────

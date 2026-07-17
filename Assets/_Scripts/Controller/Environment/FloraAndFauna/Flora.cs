@@ -30,6 +30,21 @@ namespace CosmicShore.Gameplay
         public abstract void Grow();
         public abstract void Plant();
 
+        // Optional pinned planting spot. Plant() implementations normally disperse the flora
+        // across the cell; a caller that needs it to root at a KNOWN spot (the Lifeform Matrix
+        // toy's spawn-here stations) sets this before Initialize and Plant() honors it.
+        Vector3? _plantPositionOverride;
+
+        /// <summary>Pin where this flora plants itself. Call before Initialize.</summary>
+        public void SetPlantPositionOverride(Vector3 position) => _plantPositionOverride = position;
+
+        /// <summary>True (with the spot) when a caller pinned the planting position.</summary>
+        protected bool TryGetPlantPositionOverride(out Vector3 position)
+        {
+            position = _plantPositionOverride ?? default;
+            return _plantPositionOverride.HasValue;
+        }
+
         /// <summary>
         /// Planting radius for <see cref="Plant"/>: a fraction of the owning cell's
         /// membrane radius when configured (disperses flora across the whole cell),
