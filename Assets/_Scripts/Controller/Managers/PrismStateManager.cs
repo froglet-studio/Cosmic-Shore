@@ -24,6 +24,12 @@ namespace CosmicShore.Gameplay
         private PrismTeamManager teamManager;
         private PrismOctahedronShield octahedronShield; // auto-added in Awake so every prism gets the octahedron on shield
 
+        // Stellated octahedron (Stella Octangula) for the SUPER-shield state - the Skim Race
+        // track look. Added LAZILY on the first super-shield engage (its Awake generates the
+        // stellation mesh, a cost most prisms never pay), and disengaged by ApplyNormalState so
+        // a single DeactivateShields() stays the full reverse of every shield state.
+        private PrismStellatedOctahedronShield stellatedShield;
+
         public BlockState CurrentState { get; private set; } = BlockState.Normal;
 
         private void Awake()
@@ -73,17 +79,26 @@ namespace CosmicShore.Gameplay
             PrismTimerManager.EnsureInstance().CancelTimers(this);
 
             prism.prismProperties.IsSuperShielded = true;
+            prism.prismProperties.IsShielded = false;
             prism.prismProperties.IsDangerous = false;
 
+            // Super-shield renders as the STELLATED octahedron (the Skim Race track look), so
+            // keep the OPAQUE team material - the transparent super-shield material renders over
+            // the stellation and hides it (see SegmentSpawner.SuperShieldSpawnedPrisms).
             materialAnimator.UpdateMaterial(
-                _themeManagerData.GetTeamTransparentSuperShieldedBlockMaterial(teamManager.Domain),
-                _themeManagerData.GetTeamSuperShieldedBlockMaterial(teamManager.Domain)
+                _themeManagerData.GetTeamTransparentBlockMaterial(teamManager.Domain),
+                _themeManagerData.GetTeamBlockMaterial(teamManager.Domain)
             );
             CurrentState = BlockState.SuperShielded;
 
-            // Opt-in octahedron shield visual/collider swap. Prisms without
-            // this component keep the legacy material-only supershield.
-            if (octahedronShield != null) octahedronShield.Engage();
+            // Restore the box pose first (a shield→super transition would otherwise let the
+            // lazily-added stellation cache the octahedron mesh as its "original"), then engage
+            // the stellation - lazily added so only super-shielded prisms pay its mesh cost.
+            if (octahedronShield != null) octahedronShield.Disengage();
+            if (stellatedShield == null)
+                stellatedShield = GetComponent<PrismStellatedOctahedronShield>()
+                                  ?? gameObject.AddComponent<PrismStellatedOctahedronShield>();
+            stellatedShield.Engage();
 
             SyncAOERegistryShieldState();
         }
@@ -143,6 +158,7 @@ namespace CosmicShore.Gameplay
             CurrentState = BlockState.Normal;
 
             if (octahedronShield != null) octahedronShield.Disengage();
+            if (stellatedShield != null) stellatedShield.Disengage();
 
             SyncAOERegistryShieldState();
 
