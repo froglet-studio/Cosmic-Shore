@@ -24,7 +24,7 @@ namespace CosmicShore.Tests
     [TestFixture]
     public class MicroscenePatternsTests
     {
-        static readonly int[] Budgets = { 12, 42, 60 };
+        static readonly int[] Budgets = { 12, 42, 60, 100 }; // 100 = the shipped Toy_Conveyor budget
         static readonly int[] Seeds = { 1, 7, 12345 };
         const float Radius = 55f;
         const int MaxCrystals = 3;
@@ -114,13 +114,14 @@ namespace CosmicShore.Tests
             float along = Radius * 1.1f * 1.2f; // 2.2×radius length / 2, small jitter allowance
 
             for (int recipe = 0; recipe < MicroscenePatterns.RecipeCount; recipe++)
-                foreach (int seed in Seeds)
-                    foreach (var p in Plan(recipe, seed).Prisms)
-                    {
-                        Assert.LessOrEqual(Mathf.Abs(p.Point.Position.x), lateral, $"recipe {recipe} seed {seed} x");
-                        Assert.LessOrEqual(Mathf.Abs(p.Point.Position.y), lateral, $"recipe {recipe} seed {seed} y");
-                        Assert.LessOrEqual(Mathf.Abs(p.Point.Position.z), along, $"recipe {recipe} seed {seed} z");
-                    }
+                foreach (int budget in Budgets)
+                    foreach (int seed in Seeds)
+                        foreach (var p in Plan(recipe, seed, budget).Prisms)
+                        {
+                            Assert.LessOrEqual(Mathf.Abs(p.Point.Position.x), lateral, $"recipe {recipe} budget {budget} seed {seed} x");
+                            Assert.LessOrEqual(Mathf.Abs(p.Point.Position.y), lateral, $"recipe {recipe} budget {budget} seed {seed} y");
+                            Assert.LessOrEqual(Mathf.Abs(p.Point.Position.z), along, $"recipe {recipe} budget {budget} seed {seed} z");
+                        }
         }
 
         [Test]

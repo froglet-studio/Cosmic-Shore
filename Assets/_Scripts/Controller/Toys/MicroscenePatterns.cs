@@ -128,7 +128,9 @@ namespace CosmicShore.Gameplay
 
             for (int g = 0; g < gates; g++)
             {
-                float z = Mathf.Lerp(-length * 0.5f, length * 0.5f, gates > 1 ? g / (float)(gates - 1) : 0.5f);
+                // End gates sit inset from the scene ends so a tilted wide hoop (up to ~31° combined
+                // tilt × 28 radius ≈ 14.3 of z-reach) stays inside the advertised scene envelope.
+                float z = Mathf.Lerp(-length * 0.5f + 15f, length * 0.5f - 15f, gates > 1 ? g / (float)(gates - 1) : 0.5f);
                 wander += new Vector3(Range(rng, -wanderStrength, wanderStrength),
                                       Range(rng, -wanderStrength, wanderStrength) * 0.8f, 0f) * radius;
                 wander = Vector3.ClampMagnitude(wander, radius * 0.55f);
@@ -276,7 +278,12 @@ namespace CosmicShore.Gameplay
                     Range(rng, -0.7f, 0.7f) * radius,
                     Range(rng, -0.55f, 0.2f) * radius,
                     Range(rng, -0.5f, 0.5f) * length);
+                // Trunk height is otherwise budget-driven and radius-blind - cap it so root + trunk
+                // + canopy ball stays inside the scene's vertical envelope at large budgets (the
+                // spare points thicken the canopy instead).
                 int trunk = Mathf.Max(2, perTree / 2);
+                int maxTrunk = Mathf.Max(2, Mathf.FloorToInt((radius * 1.05f - root.y - 12f) / segment));
+                trunk = Mathf.Min(trunk, maxTrunk);
 
                 for (int i = 0; i < perTree; i++)
                 {
