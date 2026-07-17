@@ -84,6 +84,7 @@ namespace CosmicShore.Gameplay
             if (_authoredColliderRadius < 0f) _authoredColliderRadius = col.radius;
             col.radius = _authoredColliderRadius * (owner != null ? EmbeddedHeartRadiusMultiplier : 1f);
             col.enabled = owner != null;
+            ApplyColorSetTint(); // heart = blue-white neutral while it lives
         }
 
         // ── Active-crystal registry ──────────────────────────────────────────
@@ -111,6 +112,69 @@ namespace CosmicShore.Gameplay
         protected virtual void Start()
         {
             crystalProperties.crystalValue = crystalProperties.fuelAmount * transform.lossyScale.x;
+            ApplyColorSetTint();
+        }
+
+        // ── Color set (single source: SO_ColorSet via the theme container) ───
+        // Crystal COLOR signals WHO can collect it (element identity is shape, never color):
+        //   • domain crystal (Jade/Ruby/Gold)  → that domain's crystal colors - only it collects
+        //   • embedded lifeform heart          → blue-white neutral (BlueColors) - nobody collects
+        //   • free pickup (drop / omni / cell) → lime CTA (EnvironmentColors) - anyone collects
+        // Applies to omni and all four elemental crystals. Colors come LIVE from the theme's
+        // ColorSet, per-renderer via MaterialPropertyBlock - never renderer.material clones.
+
+        static MaterialPropertyBlock s_tintBlock;
+
+        /// <summary>Tints all crystal models from the theme ColorSet by collectability state
+        /// (see comment above). No-op when the theme container or color set is unwired.</summary>
+        protected void ApplyColorSetTint()
+        {
+            if (!_themeManagerData || _themeManagerData.ColorSet == null) return;
+            var colors = _themeManagerData.ColorSet;
+
+            Color bright, dull;
+            bool domainOwned = ownDomain is Domains.Jade or Domains.Ruby or Domains.Gold;
+            if (domainOwned && colors.TryGetColorSetByDomain(ownDomain, out var domainSet) && domainSet != null)
+            {
+                bright = domainSet.BrightCrystalColor;
+                dull = domainSet.DullCrystalColor;
+            }
+            else if (IsEmbedded)
+            {
+                // A living lifeform's heart: the blue-white neutral range - no domain can take it.
+                if (!colors.TryGetColorSetByDomain(Domains.Blue, out var neutralSet) || neutralSet == null) return;
+                bright = neutralSet.BrightCrystalColor;
+                dull = neutralSet.DullCrystalColor;
+            }
+            else
+            {
+                // Free collectible: the lime CTA - any domain can collect it now.
+                if (colors.EnvironmentColors == null) return;
+                bright = colors.EnvironmentColors.BrightCTA;
+                dull = colors.EnvironmentColors.DarkCTA;
+            }
+
+            s_tintBlock ??= new MaterialPropertyBlock();
+            foreach (var modelData in crystalModels)
+            {
+                if (modelData?.model == null || !modelData.model.TryGetComponent<Renderer>(out var renderer)) continue;
+                var mat = renderer.sharedMaterial;
+                if (!mat) continue;
+                var props = FindColorPropertyNames(mat);
+                if (props.bright == null) continue;
+
+                renderer.GetPropertyBlock(s_tintBlock);
+                s_tintBlock.SetColor(props.bright, bright);
+                s_tintBlock.SetColor(props.dull, dull);
+                renderer.SetPropertyBlock(s_tintBlock);
+            }
+        }
+
+        /// <summary>Clears the tint override on one model so a material color lerp is visible.</summary>
+        static void ClearColorSetTint(GameObject model)
+        {
+            if (model && model.TryGetComponent<Renderer>(out var renderer))
+                renderer.SetPropertyBlock(null);
         }
 
         public void InjectDependencies(CrystalManager cm) => CrystalManager = cm;
@@ -289,6 +353,10 @@ namespace CosmicShore.Gameplay
             if (renderer == null)
                 yield break;
 
+            // The property-block tint would override the animated material colors - drop it for
+            // the lerp; the current domain's tint is reapplied once the material settles.
+            ClearColorSetTint(model);
+
             Material tempMaterial = new Material(renderer.material);
             renderer.material = tempMaterial;
 
@@ -334,6 +402,7 @@ namespace CosmicShore.Gameplay
             }
 
             Destroy(tempMaterial);
+            ApplyColorSetTint();
         }
 
         private static (string bright, string dull) FindColorPropertyNames(Material mat)
