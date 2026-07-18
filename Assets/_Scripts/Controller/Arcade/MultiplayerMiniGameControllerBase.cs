@@ -46,9 +46,16 @@ namespace CosmicShore.Gameplay
                     gameData.SelectedPlayerCount.Value,
                     gameData.RequestedAIBackfillCount,
                     gameData.RequestedDomainCount,
-                    gameData.IsTournamentMode
+                    gameData.IsTournamentMode,
+                    gameData.ComebackRatePerScoreDeficit
                 );
             }
+
+            // REQUIRED for every party game: the elemental comeback system. Scene-authored
+            // instances are respected; a scene that forgot one gets it created and configured
+            // for this game mode (comeback runs locally on every machine, so this executes on
+            // host and clients alike).
+            ElementalComebackSystem.EnsureExists(gameObject, gameData);
 
             InitializeAfterDelay().Forget();
         }
@@ -449,7 +456,7 @@ namespace CosmicShore.Gameplay
         void SyncGameConfigToClients_ClientRpc(
             string sceneName, int gameMode, bool isMultiplayer,
             int vesselClass, int intensity, int playerCount, int aiBackfillCount,
-            int domainCount, bool isTournament)
+            int domainCount, bool isTournament, float comebackRate)
         {
             if (IsServer) return;
 
@@ -462,6 +469,7 @@ namespace CosmicShore.Gameplay
             gameData.RequestedAIBackfillCount = aiBackfillCount;
             gameData.RequestedDomainCount = domainCount;
             gameData.IsTournamentMode = isTournament;
+            gameData.ComebackRatePerScoreDeficit = comebackRate;
         }
     }
 }

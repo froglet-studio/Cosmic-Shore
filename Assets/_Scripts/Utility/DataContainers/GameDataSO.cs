@@ -95,6 +95,15 @@ namespace CosmicShore.Utility
         public int RequestedAIBackfillCount;
 
         /// <summary>
+        /// Levels of ALL FOUR elements a trailing player/team gains per unit of score deficit
+        /// behind first place - this game's comeback strength, authored on SO_ArcadeGame and
+        /// synced from the launch pipeline (host) / config RPC (clients). Read every tick by
+        /// the required ElementalComebackSystem; the comeback layer never lifts an element
+        /// above level 10. 0 = comeback disabled for this game.
+        /// </summary>
+        public float ComebackRatePerScoreDeficit = 1f;
+
+        /// <summary>
         /// Number of domains configured by the host (1-3).
         /// 1 = Jade only, 2 = Jade + Ruby, 3 = Jade + Ruby + Gold.
         /// Used by AI spawning to assign AI to the correct domains and by
@@ -244,6 +253,7 @@ namespace CosmicShore.Utility
             SceneName = game.SceneName;
             GameMode = game.Mode;
             IsMultiplayerMode = game.IsMultiplayer;
+            ComebackRatePerScoreDeficit = game.ComebackRatePerScoreDeficit;
         }
 
         /// <summary>

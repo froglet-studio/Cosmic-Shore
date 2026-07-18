@@ -22,6 +22,49 @@ namespace CosmicShore.Gameplay
     /// </summary>
     public static class LifeFormCrystal
     {
+        /// <summary>
+        /// Elemental-contract path: guarantees the lifeform carries a crystal of EXACTLY this
+        /// element (one base prefab, element defined as data - see FaunaConfigurationSO.Element).
+        /// A prefab-authored crystal of a different element is replaced with the set's prefab for
+        /// the requested one, so the per-element visual model stays correct. None falls back to
+        /// the legacy authored/random path below.
+        /// </summary>
+        public static Crystal EnsureElementalCrystal(Component owner, CosmicShore.Data.Element element)
+        {
+            if (!owner) return null;
+            if (element == CosmicShore.Data.Element.None) return EnsureElementalCrystal(owner);
+
+            var crystal = owner.GetComponentInChildren<Crystal>(true);
+            if (crystal && crystal.crystalProperties.Element == element)
+                return crystal;
+
+            var set = ElementalCrystalSetSO.Load();
+            var prefab = set ? set.GetPrefab(element) : null;
+            if (!prefab)
+            {
+                CSDebug.LogError($"[LifeFormCrystal] {owner.name}: no elemental crystal prefab for " +
+                    $"'{element}' in Resources/{ElementalCrystalSetSO.ResourcePath} - keeping the " +
+                    $"authored crystal so death still drops a powerup.");
+                return EnsureElementalCrystal(owner);
+            }
+
+            Vector3 position = crystal ? crystal.transform.localPosition : Vector3.zero;
+            float scale = crystal ? crystal.transform.localScale.x : 0f;
+            if (crystal)
+            {
+                // Deactivate BEFORE the deferred Destroy so same-frame GetComponentInChildren
+                // lookups (e.g. LifeForm.Initialize's crystal fetch) find the replacement, not
+                // the dying authored crystal.
+                crystal.gameObject.SetActive(false);
+                Object.Destroy(crystal.gameObject);
+            }
+
+            var provisioned = Object.Instantiate(prefab, owner.transform);
+            provisioned.transform.localPosition = position;
+            if (scale > 0f) provisioned.transform.localScale = Vector3.one * scale;
+            return provisioned;
+        }
+
         public static Crystal EnsureElementalCrystal(Component owner)
         {
             if (!owner) return null;

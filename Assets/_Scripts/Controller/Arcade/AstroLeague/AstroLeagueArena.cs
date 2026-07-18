@@ -1,4 +1,7 @@
 using System.Collections.Generic;
+using CosmicShore.Data;
+using CosmicShore.ScriptableObjects;
+using CosmicShore.Utility;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -45,6 +48,10 @@ namespace CosmicShore.Gameplay
         [Header("References")]
         [SerializeField] AstroLeagueBall ball;
 
+        [Tooltip("Prism spawn channel (EventOnSpawnPrismAndReturn) - the standard PrismFactory pooled " +
+                 "path the super-shielded edge lining is laid through on every peer.")]
+        [SerializeField] PrismEventChannelWithReturnSO prismSpawnChannel;
+
         public Vector3 Center => transform.position;
         public float GoalRingRadius => goalRingRadius * _scale;
 
@@ -64,6 +71,10 @@ namespace CosmicShore.Gameplay
         readonly List<GameObject> _generated = new();
         Material jadeRingMaterial;
         Material rubyRingMaterial;
+
+        // Super-shielded edge lining (laid per peer via the PrismFactory channel; see RebuildEdgeLining).
+        readonly List<Prism> _edgePrisms = new();
+        static readonly List<Vector3[]> s_edgePaths = new();
 
         Color JadeColor => settings != null ? settings.jadeGoalColor : new Color(0.15f, 1f, 0.55f, 0.5f);
         Color RubyColor => settings != null ? settings.rubyGoalColor : new Color(1f, 0.22f, 0.35f, 0.5f);
@@ -106,6 +117,8 @@ namespace CosmicShore.Gameplay
                 ringOuter, ringMajor, ringTube, notchCenter, notchHalf);
             if (ball != null) ball.SetBoundary(_boundary);
 
+            RebuildEdgeLining();
+
             if (_centralGoal)
             {
                 // ONE shared goal at center: two back-to-back portals. Push the ball +Z (toward the Ruby
@@ -121,6 +134,105 @@ namespace CosmicShore.Gameplay
                 BuildCenterRing();
             }
             _built = true;
+        }
+
+        // ── Super-shielded edge lining ───────────────────────────────────────
+
+        /// <summary>
+        /// Dress the court's edges with a lining of SUPER-SHIELDED neutral prisms - invulnerable
+        /// structure marking the arena rim at every intensity. A FIXED total count is distributed
+        /// evenly over the summed edge length (spacing scales with the arena), so the lining's
+        /// volume budget (count x prism volume) is deterministic and the Astro League Cell Config's
+        /// phase-volume thresholds can be raised by exactly that budget. Laid per peer through the
+        /// standard PrismFactory channel (prisms are per-peer local, like trail): spawn blooms in,
+        /// removal is the animated Damage path - continuity law, never a raw Destroy. The lining
+        /// binds VOLUME-ONLY to the cell (super-shielded structure never sways control or prey
+        /// signals - see PrismSpatialIndex.ComputeEnvironmentMass), the ball passes through it
+        /// untouched, and fauna never target shielded mass. Idempotent per Build.
+        /// </summary>
+        void RebuildEdgeLining()
+        {
+            ClearEdgeLining();
+            if (!Application.isPlaying || settings == null || !settings.edgePrismsEnabled || _boundary == null)
+                return;
+            if (!prismSpawnChannel)
+            {
+                CSDebug.LogWarning("[AstroLeagueArena] prismSpawnChannel not wired - edge lining skipped.");
+                return;
+            }
+
+            _boundary.CollectEdgePaths(s_edgePaths);
+
+            float totalLength = 0f;
+            foreach (var path in s_edgePaths)
+                for (int i = 1; i < path.Length; i++)
+                    totalLength += Vector3.Distance(path[i - 1], path[i]);
+
+            int count = Mathf.Max(0, settings.edgePrismCount);
+            if (count == 0 || totalLength < 1f) return;
+
+            float spacing = totalLength / count;
+            float inset = settings.edgePrismInset * _scale;
+            int laid = 0;
+
+            // One continuous arc-length walk across ALL edge paths (the carry-over between paths is
+            // what makes the laid total land on edgePrismCount exactly, keeping the volume budget
+            // deterministic), phase-offset by spacing/2 so placements sit off the corners.
+            float distanceToNext = spacing * 0.5f;
+            foreach (var path in s_edgePaths)
+            {
+                for (int i = 1; i < path.Length; i++)
+                {
+                    Vector3 a = path[i - 1];
+                    Vector3 b = path[i];
+                    float segmentLength = Vector3.Distance(a, b);
+                    if (segmentLength < 1e-4f) continue;
+                    Vector3 tangent = (b - a) / segmentLength;
+
+                    float travelled = 0f;
+                    while (travelled + distanceToNext <= segmentLength)
+                    {
+                        travelled += distanceToNext;
+                        distanceToNext = spacing;
+
+                        Vector3 p = a + tangent * travelled; // center-relative
+                        // Inward = toward the arena center, projected off the edge tangent so the
+                        // prism nests against the wall instead of sliding along it.
+                        Vector3 inward = -p - Vector3.Dot(-p, tangent) * tangent;
+                        inward = inward.sqrMagnitude > 1e-6f ? inward.normalized : Vector3.zero;
+
+                        Vector3 worldPos = Center + p + inward * inset;
+                        Quaternion rotation = Quaternion.LookRotation(
+                            tangent, inward == Vector3.zero ? Vector3.up : inward);
+
+                        BoostRingBuilder.LayOne(prismSpawnChannel, worldPos, rotation,
+                            settings.edgePrismScale, PrismKind.SuperShielded, Domains.Blue,
+                            playerName: null, $"AstroLeagueEdge::{laid++}", collected: _edgePrisms);
+                    }
+                    distanceToNext -= segmentLength - travelled;
+                }
+            }
+
+            if (_edgePrisms.Count == 0)
+                CSDebug.LogWarning("[AstroLeagueArena] Edge lining laid no prisms - is the PrismFactory " +
+                                   "listening on the spawn channel yet?");
+        }
+
+        /// <summary>
+        /// Actively remove a previously-laid lining (arena rebuild on a late-arriving match config).
+        /// Shields drop first so the canonical animated Damage teardown can run - mass is conserved
+        /// through the standard explode-out, never a raw Destroy.
+        /// </summary>
+        void ClearEdgeLining()
+        {
+            for (int i = 0; i < _edgePrisms.Count; i++)
+            {
+                var prism = _edgePrisms[i];
+                if (prism == null || prism.destroyed) continue;
+                prism.DeactivateShields();
+                prism.Damage(Vector3.zero, Domains.Blue, string.Empty, devastate: true);
+            }
+            _edgePrisms.Clear();
         }
 
         // ── Goal portals + midfield ──────────────────────────────────────────

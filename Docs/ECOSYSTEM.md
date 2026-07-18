@@ -211,6 +211,95 @@ flowchart LR
 Every arrow is implemented: spawn (seeding), reproduction (births from feeds),
 starvation, and predation all run through the same `Fauna` base.
 
+**Vessel predation & husbandry — the Crystal Joust (Squirrel).** Every living lifeform's
+elemental crystal is its **heart**: `Crystal.SetEmbeddedIn(lifeform)` (fauna wire it in
+`LightFauna`/`Boid` after `LifeFormCrystal.EnsureElementalCrystal`; flora in
+`LifeForm.Initialize`) enables the heart's SphereCollider so a vessel can JOUST it. The
+embedded heart is never a pickup — skim-collect and skimmer vacuum both gate on
+`Crystal.IsEmbedded` — and the vessel-side chain routes to the container's
+`VesselLifeformCrystalEffects` instead of the collect chain. The Squirrel's
+`VesselWitherLifeformByCrystalEffectSO`:
+- **Speed gate (both branches)**: the joust lands only while the vessel moves FASTER
+  than the lifeform (`ILifeFormEntity.CurrentSpeed` + authored margin). Rooted flora sit
+  at 0 — trivially joustable; fast fauna must genuinely be overtaken.
+- **BASE ability (ungated)**: an **opposing-domain** lifeform is destroyed —
+  `ILifeFormEntity.Jousted` routes fauna through the sealed `Predated→Die` (wither +
+  crystal drop, spawn immunity respected) and flora through `LifeForm.Die` (spindle
+  wither + crystal drop). An ACTIVE force; mass conserved, continuity honored.
+- **Space level-5 'Shepherd' upgrade**: an **own-domain** lifeform is NOURISHED instead —
+  `ILifeFormEntity.LevelUp()` grows body + heart one level (below the unlock an ally
+  joust does nothing; an ally is never killed).
+Collider cost: **+1 active SphereCollider per live lifeform heart** (fauna bounded by
+`MaxLivePopulation`; flora by the profile's spawn counts).
+
+**The lifeform elemental contract (element × level).** Mirroring the vessel contract,
+every lifeform answers `ILifeFormEntity.Element` and `.Level` (1..`Fauna.MaxLifeformLevel`
+= 5): **one base prefab, 20 data-defined variants** (4 elements × 5 levels) instead of a
+prefab per element. The element is data on `FaunaConfigurationSO.Element` — at
+`AssignLineage` the heart is provisioned from `ElementalCrystalSet` for that element
+(`LifeFormCrystal.EnsureElementalCrystal(owner, element)` replaces a disagreeing authored
+crystal; `None` keeps the legacy per-variant-prefab path). Level scales the creature via
+config (`InitialLevel`, `BodyScalePerLevel`, `CrystalScalePerLevel`, `LevelGrowSeconds`):
+spawns arrive AT size; in-world level-ups **grow** over `LevelGrowSeconds` (continuity —
+never a pop) with `NotifyBodyPrismsMoved` keeping the spatial index honest, and the heart
+grows a step per level so a higher-level creature drops a **bigger** elemental powerup on
+death (mass rewarded, still conserved). Flora answer the contract at fixed level 1 until
+flora leveling lands.
+
+**Variant expression (`FaunaVariantTuning` on the config).** The full diff between the
+authored Mass/Space/Time tadpole prefab variants was hoisted into config so one base
+prefab can express all of it as data (sentinels keep the prefab's authored value):
+body scale (0.4/0.7/0.4) · body PRISM target scale (Mass/Time author 0.8×0.8×7 tail
+prisms, Space keeps the spindle default) · spindle body material · starvation seconds
+(90/30/30) · cohesion radius (50/20/20) · behavior tick (1.5/3/3) · graze radius
+(45/15/15) · goal weight (3/0.3/0.3) · speed band (10-15/10-15/15-20) · forager flag
+(on/off/off) · FMOD loop event + attenuation (Mass Tadpole 0-200 / silent / Time
+Tadpole). Applied by `Fauna.ApplyVariantTuning` (base: scale/prism-scale/material/
+starvation/audio) + `Boid.ApplyVariantTuning` (flocking numbers) at `AssignLineage`,
+before the level curve seeds. Population-level knobs (`numberOfBoids`, `spawnRadius` on
+the drone BoidManager population prefabs) stay on that separate system; the spawner path
+already owns them via `PopulationSize`/`MaxLivePopulation`.
+
+**Flora variant expression (`FloraConfigurationSO.Element` + `FloraVariantTuning`).**
+Same move for flora, captured from the real Charge/Mass/Space/Time GyroidFlora diff —
+the per-element identity is largely the PRISM: leaf prism size (9×3.4×1.5 / 7×4.5×3.5 /
+20×1×1 needles / 9×3.4×1.5) · grow period (0.5 / 0.3 / 0.8 / **0.15** — Time grows
+fastest) · shield period (**1** — Charge ships shielded leaves / 0 / 0 / 0) · live-prism
+budget `maxTotalSpawnedObjects` (1000 / **1500** / **800** / 1000) · plant radius
+fraction · crystal element. `CellLifeSpawnerBase.SpawnFlora` now takes the config and
+applies element + tuning BEFORE `Initialize` (leaf size and the crystal lookup are
+consumed there); `LifeForm.ApplyVariantTuning` (shield cadence) → `Flora` (leaf/tempo/
+radius) → `AssembledFlora` (prism budget) layer the fields where they live.
+
+**Level → crystal size.** `CrystalScalePerLevel` makes the level curve monotone in the
+heart: level 1 = authored size, level 5 = ×(CrystalScalePerLevel)⁴ (≈2.07× at the 1.2
+default) — the level-5 creature always carries, and drops, the largest crystal. Flora
+level the same way (`FloraConfigurationSO.InitialLevel` + `LeafScalePerLevel` /
+`CrystalScalePerLevel`, applied via `LifeForm.ApplyLevel` before Initialize).
+
+**Unification (SHIPPED) — one base prefab per species, variants are config.** The
+per-element prefab variants were retired: `TadPoleFauna.prefab` (formerly
+MassTadPoleFauna) and `GyroidFlora.prefab` (formerly MassGyroidFlora) are the single
+base prefabs; Space/Time tadpoles, Charge/Space/Time gyroids, and the unused
+TimeTadpolePopulation were deleted with every reference migrated (the variant prefabs
+were literal copies sharing fileIDs, so guid swaps were reference-safe). The canonical
+per-element configs live in `Assets/_SO_Assets/Lifeforms/` (Tadpole Fauna
+Charge/Mass/Space/Time + Gyroid Flora Charge/Mass/Space/Time — Charge tadpole is NEW
+and untuned, authored from the Space baseline); the existing Cell Config assets carry
+their element's Variant block explicitly. Legacy note: the drone-population prefabs
+(BoidManager path) now all spawn the base tadpole - per-element identity there awaits
+that system's own config pass.
+
+**Lifeform Matrix toy (the tuning bench).** `Toy_LifeformMatrix` (in the freestyle
+toybox): fly through it → a station per species blooms in; fly a species → its variant
+matrix (4 element columns × level rows {1, 3, 5} — the extremes and middle of the 4×5
+contract; station spheres tinted per element and sized by level); fly a variant → that
+exact lifeform spawns live into the containing cell through the canonical spawn paths
+on a runtime clone of its config (assets never mutated; spawns are ordinary food-web
+citizens). Files: `LifeformMatrixToyDefinitionSO`, `LifeformMatrixToy` (+ station).
+Collider impact: transient trigger spheres only (species count + ≤12), Menu freestyle
+only, torn down with the matrix.
+
 ---
 
 ## 4. Part-by-part analysis
@@ -901,3 +990,47 @@ cell centre now hold the nucleus claim (fauna can't graze the core), and exterio
 gyroid fringes are grazed domain-blind. If a biome's equilibrium shifts too far
 toward stripped exteriors, the levers are the same as §6.2 (per-species caps,
 reproduction knobs) — never decay.
+
+## 14. Super-shielded structure binds volume-only (July 2026, Astro League edge lining)
+
+Astro League lines its court edges with **super-shielded (fully invulnerable) neutral
+prisms** — permanent structure no active force can consume (`Prism.Damage`/`Consume`
+no-op on super-shielded mass; ways to break it may come later). That surfaced a signal
+question the fauna-body precedent already answered: mass that **cannot be contested**
+must not drive the signals that are *about* contestable mass.
+
+**The rule (in `PrismSpatialIndex.ComputeEnvironmentMass`, one classification for both
+streams):** fauna bodies AND super-shielded prisms bind to their cell **VOLUME-ONLY** —
+they feed `Cell.LiveVolume` ("volume is the spine": ALL prisms count, unchanged) but stay
+out of the targeting grids, per-domain counts, `DominantDomain`/nucleus-claim reads and
+the prey-volume signal. Fauna are never led to mass they cannot eat, and a permanent
+neutral lining can never sway node control. Super-shield state is applied post-bloom, so
+`PrismSpatialIndex.UpdateShieldState` re-files the cell classification on every
+engage/disengage transition (a popped super shield returns the prism to ordinary
+environment mass).
+
+**The phase ladder keeps its pure measure — biomes budget for structure in config.**
+Rather than carving structure out of `LiveVolume` (which would fork the spine's measure),
+the biome that lays a known structural budget raises its `PhaseThresholds` volume fields
+by exactly that budget. Astro League: lining = `edgePrismCount 240 × vol(2.5·2.5·10) =
+15000`, so `Astro League Cell Config` runs Restless 15400/15300 and Frenzy 16500/16200
+(gameplay headroom above the floor identical to the pre-lining 400/300 · 1500/1200).
+Count backstops are untouched — volume-only mass never enters `LiveBlockCount`.
+
+- **Mass is conserved — unchanged.** The lining blooms in via the standard pooled spawn
+  and is only ever removed by the animated `Damage` teardown (arena rebuild); no decay.
+- **No domain asymmetry.** The lining is `Domains.Blue` (the neutral-entity sentinel) and
+  excluded from control reads — it cannot tint fauna spawns.
+- **The super-shield state IS the stellated octahedron.**
+  `PrismStateManager.ActivateSuperShield` engages `PrismStellatedOctahedronShield` (the
+  Stella Octangula, the Skim Race track look) with the OPAQUE team material — the
+  transparent super-shield material hid the stellation — and `DeactivateShields`
+  disengages it, so the state machine stays the single reversible shield path
+  (`PrismKinds` remarks updated). The component is added lazily on first engage; only
+  super-shielded prisms pay its mesh cost.
+- **Collider budget.** Each super-shielded prism carries an always-on convex MeshCollider
+  (the engaged stellation) that collider-LOD cannot reclaim — the lining is capped by
+  `AstroLeagueSettingsSO.edgePrismCount` (240; precedent: the Skim Race track
+  super-shields its whole spawned track) and must stay bounded; zero new physics
+  queries (the ball resolves prisms via `PrismSpatialIndex.QuerySphere` and skips
+  super-shielded entirely).

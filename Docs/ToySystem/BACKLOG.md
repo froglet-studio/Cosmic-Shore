@@ -210,9 +210,20 @@ teardown). Everything below is remaining polish / not-yet-play-verified.
   `prismBudgetPerScene` (density vs. perf); `turnBreakDegrees` (forward-cone half-angle, 20-80° —
   how sharp a turn re-lays the ribbon straight ahead vs. bends it along the curve; lower snaps to
   your new heading sooner, higher follows longer curves before re-laying).
-- **Recipe art pass.** The 16 `MicroscenePatterns` recipes are procedural (each re-rolls its own
+- **Recipe art pass.** The 40 `MicroscenePatterns` recipes are procedural (each re-rolls its own
   radii/counts/twists/bends per arrival) — tune ranges per recipe, and consider authored recipes
   (a `MicrosceneRecipeSO`) if designers want hand-built set pieces in the shuffle bag.
+- **Diversity pass (shipped).** Recipes stamp structural metadata (`MicroscenePlan.CloseStructure`)
+  and `MicroscenePainter` paints along it: 8 domain schemes over the full triad (per-structure
+  rainbows, flight gradients, pinwheels, stripes, mirrors), 7 kind schemes using danger/shield as
+  palette tools (danger gates/tips, armoured frames, keystone landmarks — shield caps unchanged),
+  scale moods (uniform × long-axis stretch × structure taper, per-axis family jitter), plus 12 new
+  recipes on superstructure-oriented primitives (domes, grottos, torus knots, Möbius rails,
+  rosettes, terrace spirals, banked ribbon chicanes, split tubes, 4 spine×motif Medley composers).
+  In-editor check: ride the belt and confirm most scenes carry structural colour, danger structures
+  read as deliberate hot gates (and slam you on contact — friendly fire is the design), shielded
+  ribs shrug off weapon fire, and mono/plain scenes still occur as breathing room. Tune the
+  `Toy_Conveyor.asset` palette weights to taste.
 - **Belt audio/VFX.** Suction/bloom currently rides scale only; a whoosh SFX
   (`AudioSystem` gameplay SFX) + a faint particle draw toward the anchor would sell the
   conveyor. Consider a soft chime as a new scene finishes blooming.
@@ -257,3 +268,18 @@ teardown). Everything below is remaining polish / not-yet-play-verified.
   speed then eases to the current throttle target — with input paused during the post-swap
   autopilot window it will drift toward `MinimumSpeed`; fine for the seamless-handoff goal, tune
   if a longer hold is wanted.
+
+## Lifeform Matrix follow-ups
+
+- **Charge tadpole is NEW and untuned** (authored from the Space baseline with a Charge
+  crystal) — tune via the matrix, then bake into `Tadpole Fauna Charge.asset`.
+- **Not in the elemental contract yet**: Seaweed (`SpawnableCord`, not a `Flora`), worms
+  (`Worm` is not a `Fauna`), drone populations (BoidManager path — now all spawn the base
+  tadpole; needs its own config pass for per-element identity).
+- **Sparrow (and other vessels') HUD ability-icon bindings** for the shared upgrade-highlight
+  system are unwired (Squirrel only); fill each view's `abilityIcons` in its prefab.
+- **Squirrel HUD tube/energy icons repaint colours per-frame**, so the upgrade highlight
+  reads via scale only there — teach those repaints to respect the highlight tint.
+- **Variant matrix stations beyond the membrane**: layered outward they can cross the
+  membrane; spawns resolve the cell from the toy's position so they work, but station
+  placement could clamp to the membrane radius for tidiness.

@@ -61,7 +61,8 @@ namespace CosmicShore.Gameplay
             if (!isInitialized)
                 return;
             
-            if (skimmer.AllowVaccumCrystal && other.TryGetComponent<Crystal>(out var crystal))
+            if (skimmer.AllowVaccumCrystal && other.TryGetComponent<Crystal>(out var crystal)
+                && !crystal.IsEmbedded) // a living lifeform's heart is never vacuumed out of its body
             {
                 // NEW -> Vaccum logic transferred from skimmer to crystal, to reduce crystal dependency
                 crystal.Vacuum(transform.position, skimmer.VaccumAmount);

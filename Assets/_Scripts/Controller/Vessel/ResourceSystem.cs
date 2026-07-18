@@ -169,13 +169,22 @@ namespace CosmicShore.Gameplay
             ElementalLevels[Element.Time]   = resourceGroup.Time;
         }
 
-        /// <summary>Effective level = base + temporary modifiers + comeback bonus, clamped to range.</summary>
+        // The comeback layer may only FILL an element toward integer level 10 (normalized 1.0)
+        // - it never lifts anyone past it. Earned progression (crystals, effects) can still
+        // reach the overcharge band above 10; charity cannot.
+        const float ComebackCeiling = 1.0f;
+
+        /// <summary>Effective level = base + temporary modifiers + comeback bonus, clamped to range.
+        /// The comeback contribution is capped so it can never raise the effective level above 10.</summary>
         float GetEffectiveLevel(Element element)
         {
             float baseLevel = ElementalLevels.TryGetValue(element, out var b) ? b : 0f;
             float modifier  = _elementModifiers.TryGetValue(element, out var m) ? m : 0f;
             float comeback  = _comebackModifiers.TryGetValue(element, out var c) ? c : 0f;
-            return Mathf.Clamp(baseLevel + modifier + comeback, MinElementalLevel, MaxElementalLevel);
+
+            float earned = baseLevel + modifier;
+            comeback = Mathf.Min(comeback, Mathf.Max(0f, ComebackCeiling - earned));
+            return Mathf.Clamp(earned + comeback, MinElementalLevel, MaxElementalLevel);
         }
 
         public int GetLevel(Element element)

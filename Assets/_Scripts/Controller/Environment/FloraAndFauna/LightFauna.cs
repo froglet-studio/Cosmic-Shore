@@ -41,6 +41,9 @@ namespace CosmicShore.Gameplay
         readonly Queue<Prism> _pendingMeals = new();
 
         private Vector3 currentVelocity;
+
+        /// <summary>Live travel speed - the joust's "must be moving faster" comparison reads this.</summary>
+        public override float CurrentSpeed => currentVelocity.magnitude;
         private Vector3 desiredDirection;
         private Quaternion desiredRotation;
 
@@ -95,6 +98,10 @@ namespace CosmicShore.Gameplay
             // authored crystal if present (validator-enforced fast path) or provisions one;
             // the sealed Fauna.Die drops it on any death path.
             crystal = LifeFormCrystal.EnsureElementalCrystal(this);
+            // The crystal is this creature's HEART while it lives: joustable by vessels
+            // (Squirrel Space-5 withers via Predated) but never skim-collectable until
+            // death drops it. Cleared by ActivateCrystal in the sealed Die path.
+            if (crystal) crystal.SetEmbeddedIn(this);
 
             float minSpeed = Mathf.Max(0f, data.minSpeed);
             float maxSpeed = Mathf.Max(minSpeed, data.maxSpeed);

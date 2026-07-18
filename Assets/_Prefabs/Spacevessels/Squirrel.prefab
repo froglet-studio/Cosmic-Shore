@@ -8754,7 +8754,7 @@ MonoBehaviour:
   DefaultMinimumSpeed: 0
   DefaultThrottleScaler: 60
   ThrottleScalerMultiplier:
-    Enabled: 1
+    Enabled: 0
     Value: 1
     Min: 1
     Max: 2.5
@@ -8787,6 +8787,13 @@ MonoBehaviour:
   maxBlockScale: 5
   waitTillOutsideSkimmer: 0
   shielded: 0
+  trailVolume:
+    Enabled: 1
+    Value: 1
+    Min: 1
+    Max: 2.5
+    element: 2
+  massUpgradeShieldsTrail: 1
   offset: 0
   Gap: 18.5
   MinimumGap: 18.5
@@ -14215,9 +14222,22 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 42ea7ca85d2643f3acf399c76f93c8c4, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
   highlights: []
+  abilityIcons:
+  - element: 1
+    icon: {fileID: 300298224612433471}
+  - element: 2
+    icon: {fileID: 4781807749356232023}
+  - element: 3
+    icon: {fileID: 5495516597718641097}
+  - element: 4
+    icon: {fileID: 5327051082964489230}
+  upgradeHighlightColor: {r: 1, g: 0.85, b: 0.3, a: 1}
+  upgradeHighlightScale: 1.15
+  upgradePunchScale: 1.35
+  upgradePunchDuration: 0.35
   animSettings: {fileID: 0}
   boostFill: {fileID: 300298224612433471}
   colorLerpSpeed: 4

@@ -26,3 +26,5 @@ MonoBehaviour:
   vesselSpaceCrystalEffects: []
   vesselTimeCrystalEffects: []
   vesselSkimmerEffects: []
+  vesselLifeformCrystalEffects:
+  - {fileID: 11400000, guid: 5c8e02f4b7d1483f9a63d5e8210c47ab, type: 2}
