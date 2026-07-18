@@ -24,6 +24,20 @@ perf branches).
   editor: quest track renders beyond mode 0, intensity gating works, quest-complete toast fires.
   THEN delete the whole `MIgration_Prefabs (DELETE LATER)/` folder (9 prefabs, zero external
   refs — AUDIT §1.6/§1.9). *Risk: low. Player-visible payoff: the quest chain comes alive.*
+  - **Verified plan (2026-07-18, guid-grep re-check — all AUDIT claims held; one correction).**
+    Script guid `541692fb0a8f1b6478f85df5b78951a7` has exactly ONE content hit (the orphaned
+    prefab); all 9 migration-folder prefab guids have ZERO external refs (none cross-reference
+    each other either). **Correction:** the source prefab does NOT serialize `progressionConfig`
+    — wire only `questList` (`5eee61facaac4bb46b9e9892512f74cb` → `GameModeQuestList.asset`) +
+    `gameData` (`b35f33752bb10a44cb5033b5670f50aa` → `Runtime GameData.asset`), leave
+    `progressionConfig: {fileID: 0}` (code lazily creates a default; sibling
+    `ParticipationXpAwarder` is wired identically). Mount target: `Bootstrap.unity` GameObject
+    `PlayerDataService` fileID `&483927156` (add 5th component after ParticipationXpAwarder
+    `483927160`, mirroring its block shape). The service is self-contained (own singleton guard,
+    `SetParent(null)` + `DontDestroyOnLoad` in Awake, Reflex `[Inject] UGSDataService` +
+    `[Inject] AnalyticsServiceFacade` — same proven pattern as the co-located PlayerDataService).
+    6 null-guarded runtime consumers + LogControlWindow (editor) light up on mount;
+    `QuestTrackView.cs` behavior confirmed (null Instance ⇒ only quest 0 unlocked).
 - **Y0.2 De-wire the legacy `NetworkScoreTracker` from Joust + Crystal Capture scenes.** It fires
   a duplicate `SortRoundStats`+`InvokeWinnerCalculated` 500 ms after the authoritative RPC, and
   Joust's instance has `golfRules:0` on a golf mode (AUDIT §0.1/§2.1). Before removing, replace
@@ -31,10 +45,38 @@ perf branches).
   `rule.Remaining`/metric in the HUD. Verify: mid-turn score still ticks; end-game results
   identical on host + client; no second winner event (watch `EndGameSequencer`).
   *Risk: medium (touches live score display) — verify in MPPM.*
+  - **Verified plan (2026-07-18, guid-grep re-check — all AUDIT claims held; design decided).**
+    Tracker guid `7cf9c7929c7c484faf5a985004c9caee` lives in 6 scenes; in scope only Joust
+    (block `&1628508336`, `golfRules:0`, Mode 2 TimePlayed) and CC (block `&1628508336`,
+    `golfRules:0`, Mode 7 CrystalsCollected), both enabled on the "Game" GO beside the migrated
+    controllers. Removal is pure: zero `GetComponent<NetworkScoreTracker>` hits, zero serialized
+    refs to the component's fileID beyond the GO's own m_Component list; UGS reporting is
+    independent (`JoustStatsReporter`/`CrystalCaptureStatsReporter` fire on `OnMiniGameEnd` and
+    read post-RPC values). **Load-bearing mechanic (RoundStats.cs `Score` setter):** a spawned
+    client's local write does NOT fire `OnScoreChanged` — the centerline event reaches peers only
+    via server write → `n_Score` replication. (Corollary: HexRace clients tick from the server's
+    `TimePlayedScoring` loop, not from `HexRaceScoreTracker.Update`'s local write.) The
+    replacement feed must therefore be a **server-side write**. **Decided design — in-controller
+    feeds** (scene edits become pure deletions; the Y1.2 hoist later absorbs the code with no
+    second round of scene surgery): Joust — server-only 0.25 s UniTask loop (destroy-linked CTS,
+    `IsTurnRunning`-guarded, live `RoundStatsList` re-read each tick, no cached stats refs)
+    writing `Time.time - gameData.TurnStartTime` (the exact winner-finishTime expression,
+    `MultiplayerJoustController.CalculateJoustScores_Server`) into every RoundStats; CC —
+    server-only per-stats `OnCrystalsCollectedChanged` subscription writing
+    `rule.LiveMetric(stats)`, with B15 own-record teardown (turn end + `OnNetworkDespawn` +
+    `OnDestroy`; precedent: `NetworkCrystalCollisionTurnMonitor._subscribedStats`). No
+    `OnClickToMainMenu` subscription needed. Turn-start roster snapshot suffices for CC (server
+    roster complete before any turn). The 4 other tracker scenes (WildlifeBlitz co-op,
+    CellularDuel MP, Freestyle MP, 2v2CoOpVsAI) are legacy-primary — Y1.1 scope, do not touch
+    under Y0.2; class deletion is Y1.5. Note: removing a NetworkBehaviour shifts NB indices on
+    that NetworkObject — safe same-build, don't mix builds across peers.
 - **Y0.3 Touch inverts `[default-ok D9]`.** Minimal fix now (add the inversion block to
   `TouchInputStrategy.Reparameterize`, mirroring `GamepadInputStrategy.cs:182-202`) — or skip and
   let Y3 fix it by construction if you're starting Y3 immediately. If D9 says "deliberate
   exemption," document it in the strategy instead.
+  - **Verified (2026-07-18):** claim re-confirmed on current bleeding-edge — Gamepad, Keyboard,
+    and DualMouse strategies all apply `InvertYEnabled`/`InvertThrottleEnabled` post-calc;
+    `TouchInputStrategy.Reparameterize` (line ~286) contains neither. Fix remains as described.
 
 ## Y1 — Scoring unification program `[default-ok, but D21 hard-gates Y1.4]`
 
