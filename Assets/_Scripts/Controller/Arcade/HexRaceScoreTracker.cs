@@ -128,7 +128,7 @@ namespace CosmicShore.Gameplay
             }
 
             // Server handles final scoring and winner detection via
-            // OnTurnEndedCustom → SyncFinalScores_ClientRpc.
+            // OnTurnEndedCustom → the base SyncFinalResults template.
             // This tracker only records elapsed time and reports UGS stats.
         }
 

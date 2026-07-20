@@ -3,7 +3,6 @@ using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.UI;
 using CosmicShore.Utility;
-using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -25,17 +24,14 @@ namespace CosmicShore.Gameplay
     /// representative RoundStats' GoalsScored (NetworkVariable - replicates to every
     /// peer; domain sums ride the base controller's domain-sum NetworkVariables), and
     /// NucleusRushWaveTurnMonitor ends the turn when a domain reaches the target.
-    /// End-game runs the HexRace/Joust/CrystalCapture SyncFinalScores pattern.
+    /// End-game runs the shared MultiplayerDomainGamesController.SyncFinalResults template.
     /// </summary>
     public class NucleusRushController : MultiplayerDomainGamesController
     {
         [Header("Nucleus Rush")]
-        [Tooltip("Drag NucleusRushScoringRule.asset - the per-mode scoring strategy (winner, scores, results).")]
-        [SerializeField] ScoringRuleSO rule;
         [Tooltip("Drag Event_OnFaunaWaveSpawned.asset - the cell runtime's fauna wave channel this mode scores from.")]
         [SerializeField] ScriptableEventFaunaWave onFaunaWaveSpawned;
 
-        bool _finalResultsSent;
         bool _turnActive;
 
         protected override bool UseGolfRules => false;
@@ -44,17 +40,15 @@ namespace CosmicShore.Gameplay
         // accumulated trail mass don't fully reset in place (HexRace/CC precedent).
         protected override bool UseSceneReloadForReplay => true;
 
-        // End-game runs through OnTurnEndedCustom → SyncFinalScores_ClientRpc; suppress
-        // the base turn→round→game flow so we don't get a duplicate InvokeWinnerCalculated.
+        // End-game runs through OnTurnEndedCustom → the base SyncFinalResults template;
+        // suppress the base turn→round→game flow so we don't get a duplicate InvokeWinnerCalculated.
         protected override bool HasEndGame => false;
 
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
-            gameData.ScoringRule = rule;
             numberOfRounds = 1;
             numberOfTurnsPerRound = 1;
-            _finalResultsSent = false;
             _turnActive = false;
 
             onFaunaWaveSpawned.OnRaised += HandleFaunaWave;
@@ -102,7 +96,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         void HandleFaunaWave(FaunaWaveData wave)
         {
-            if (!IsServer || !_turnActive || _finalResultsSent) return;
+            if (!IsServer || !_turnActive || FinalResultsSent) return;
             if (!wave.NucleusControlled || wave.Domain == Domains.Blue) return;
 
             // Credit the brood to a representative player on the claiming domain -
@@ -125,101 +119,23 @@ namespace CosmicShore.Gameplay
             GameFeedAPI.Post($"<b>{d}</b> brood hatched - {broodSum}/{target}", d, GameFeedType.Generic);
         }
 
-        // ── Server-authoritative game end (HexRace/Joust/CC pattern) ─────
+        // ── Server-authoritative game end (shared SyncFinalResults template) ─────
 
         /// <summary>
         /// Server-side winner detection. Called from SyncTurnEnd_ClientRpc BEFORE
-        /// ExecuteServerTurnEnd → SetupNewRound, so _finalResultsSent is set in time
-        /// to suppress the Ready button.
+        /// ExecuteServerTurnEnd → SetupNewRound, so FinalResultsSent latches in time
+        /// to suppress the Ready button. Score assignment, roster snapshot, and the
+        /// canonical results tail are owned by the base SyncFinalResults template.
         /// </summary>
         protected override void OnTurnEndedCustom()
         {
             base.OnTurnEndedCustom();
-            if (!IsServer || _finalResultsSent) return;
-            if (gameData.RoundStatsList == null || gameData.RoundStatsList.Count == 0) return;
+            if (!IsServer || FinalResultsSent) return;
 
             var winningDomain = rule.ResolveWinner(gameData);
             if (winningDomain == Domains.Blue) return;
 
-            var winnerRep = gameData.RoundStatsList
-                .Where(s => s.Domain == winningDomain)
-                .OrderByDescending(s => s.GoalsScored)
-                .FirstOrDefault();
-            if (winnerRep == null) return;
-
-            rule.AssignScores(gameData, winningDomain, 0f);
-
-            gameData.SortRoundStats(UseGolfRules);
-            gameData.CalculateDomainStats(UseGolfRules);
-
-            _finalResultsSent = true;
-            SyncFinalScoresSnapshot(winnerRep.Name, winningDomain);
-        }
-
-        /// <summary>
-        /// Suppress the base flow's SetupNewRound when the game just ended
-        /// (HasEndGame=false routes ExecuteServerRoundEnd back here otherwise).
-        /// </summary>
-        protected override void SetupNewRound()
-        {
-            if (_finalResultsSent) return;
-            base.SetupNewRound();
-        }
-
-        void SyncFinalScoresSnapshot(string winnerName, Domains winnerDomain)
-        {
-            var statsList = gameData.RoundStatsList;
-            int count = statsList.Count;
-
-            var nameArray = new FixedString64Bytes[count];
-            var scoreArray = new float[count];
-            var domainArray = new int[count];
-            var broodsArray = new int[count];
-
-            for (int i = 0; i < count; i++)
-            {
-                nameArray[i] = new FixedString64Bytes(statsList[i].Name);
-                scoreArray[i] = statsList[i].Score;
-                domainArray[i] = (int)statsList[i].Domain;
-                broodsArray[i] = statsList[i].GoalsScored;
-            }
-
-            SyncFinalScores_ClientRpc(nameArray, scoreArray, domainArray, broodsArray,
-                new FixedString64Bytes(winnerName), (int)winnerDomain);
-        }
-
-        [ClientRpc]
-        void SyncFinalScores_ClientRpc(
-            FixedString64Bytes[] names,
-            float[] scores,
-            int[] domains,
-            int[] broods,
-            FixedString64Bytes winnerName,
-            int winnerDomain)
-        {
-            for (int i = 0; i < names.Length; i++)
-            {
-                string sName = names[i].ToString();
-                var stat = gameData.RoundStatsList.FirstOrDefault(s => s.Name == sName);
-                if (stat == null)
-                {
-                    CSDebug.LogError($"[NucleusRush] Client could not match RoundStats for '{sName}'. " +
-                                   $"Available: {string.Join(", ", gameData.RoundStatsList.Select(s => $"'{s.Name}'"))}");
-                    continue;
-                }
-                stat.Score = scores[i];
-                stat.Domain = (Domains)domains[i];
-                stat.GoalsScored = broods[i];
-            }
-
-            gameData.WinnerName = winnerName.ToString();
-            gameData.WinnerDomain = (Domains)winnerDomain;
-
-            gameData.SortRoundStats(UseGolfRules);
-            gameData.CalculateDomainStats(UseGolfRules);
-            gameData.SetResults(rule.BuildResults(gameData));
-            gameData.InvokeWinnerCalculated();
-            gameData.InvokeMiniGameEnd();
+            SyncFinalResults(winningDomain, 0f);
         }
 
         // ── Replay ───────────────────────────────────────────────────────
@@ -227,7 +143,6 @@ namespace CosmicShore.Gameplay
         protected override void OnResetForReplayCustom()
         {
             base.OnResetForReplayCustom();
-            _finalResultsSent = false;
 
             foreach (var s in gameData.RoundStatsList)
             {

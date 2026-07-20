@@ -152,14 +152,16 @@ namespace CosmicShore.Gameplay
         {
             if (!IsServer)
                 return;
-                
+
             // Server activates players and starts turn
+            Debug.Log($"<color=#00CED1>[FLOW-9] [MultiplayerMiniGameBase] OnCountdownTimerEnded (server) - activating players. Players={gameData.Players.Count}, RoundStats={gameData.RoundStatsList.Count}</color>");
             OnCountdownTimerEnded_ClientRpc();
         }
-        
+
         [ClientRpc]
         void OnCountdownTimerEnded_ClientRpc()
         {
+            Debug.Log("<color=#00CED1>[FLOW-9] [MultiplayerMiniGameBase] OnCountdownTimerEnded_ClientRpc - SetPlayersActive + StartTurn</color>");
             gameData.SetPlayersActive();
             gameData.StartTurn();
             EnsureLocalHumanCanMove();

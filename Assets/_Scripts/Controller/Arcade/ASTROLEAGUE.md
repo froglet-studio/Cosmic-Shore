@@ -31,7 +31,7 @@ Joust / Crystal Capture — solo play is just a party of one plus AI backfill.
 
 | Class | Role |
 |---|---|
-| `AstroLeagueController` | Match director (server-authoritative): kickoffs, goal attribution, celebrations, golden-goal overtime, winner banner, AI striker arming, final-score sync (HexRace/Joust/CC `SyncFinalScores_ClientRpc` pattern) |
+| `AstroLeagueController` | Match director (server-authoritative): kickoffs, goal attribution, celebrations, golden-goal overtime, winner banner, AI striker arming, final-score sync (HexRace/Joust/CC `SyncFinalResults_ClientRpc (shared MultiplayerDomainGamesController tail)` pattern) |
 | `AstroLeagueBall` | Server-simulated billiard payload (`NetworkBehaviour`). Server owns a real non-kinematic rigidbody with full **angular dynamics**; clients dead-reckon from replicated position + velocity + **angular velocity** NetworkVariables (the kinematic replica free-spins so the faceted icosphere's tumble shows everywhere). Vessel hits are a **momentum-conserving elastic bounce off the moving hull** (off-center → spin) and the ball can never clip a vessel. Carries the **last-striker's domain** (`n_LastHitDomain`) which drives the ball tint and the selective prism interaction (own color → pass through + shield; opposing unshielded → slow by mass + destroy; opposing shielded → unshield + leave). The ball bounces elastically only off the **court boundary (`AstroLeagueBoundary`) and vessels**, never off prisms. Strike velocity comes from server-side per-vessel transform sampling (vessels are transform-driven, so rigidbody velocity and remote `VesselStatus.Speed` are useless). Impact juice replicates via ClientRpc |
 | `AstroLeagueMatchMonitor` | `TurnMonitor` match clock, server-authoritative ("M:SS"/"OT" pushed by ClientRpc on the shared display channel). Pauses during celebrations; the controller decides full-time vs overtime; turn ends only on `ForceEnd()` |
 | `AstroLeagueGoal` | Accurate goal detector (server-gated): per-tick polls the ball for a genuine INWARD crossing of the goal-line plane WITHIN the mouth circle (no fat-trigger false positives, teleport-guarded); reports to `AstroLeagueController.HandleGoalServer` — attribution lives in the controller |
@@ -66,7 +66,7 @@ Clock expires           tied + goldenGoalOvertime → OVERTIME (sudden death, "O
                         else → FinishMatch(rule.ResolveWinner)
 FinishMatch             winner banner (real time) → matchMonitor.ForceEnd()
                         → OnTurnEndedCustom (server): AssignScores + Sort +
-                        CalculateDomainStats → SyncFinalScores_ClientRpc
+                        CalculateDomainStats → SyncFinalResults_ClientRpc (shared MultiplayerDomainGamesController tail)
                         → WinnerName/WinnerDomain/Results on every peer
                         → InvokeWinnerCalculated + InvokeMiniGameEnd → shared
                         end-game cinematic + scoreboard

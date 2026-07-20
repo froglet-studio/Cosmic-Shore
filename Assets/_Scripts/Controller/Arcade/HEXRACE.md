@@ -266,8 +266,8 @@ TurnMonitorController.CheckEndOfTurn()  [server, every frame]
 │   │           │   └─ stats.Score = GolfScoreSentinels.EncodeHexRaceLoserScore(target - ScoringMetrics.SumByDomain(gameData, Crystals, stats.Domain))  // 10000 + crystals-left
 │   │           ├─ gameData.SortRoundStats(UseGolfRules: true)
 │   │           ├─ gameData.CalculateDomainStats(UseGolfRules: true)
-│   │           └─ SyncFinalScoresSnapshot(winnerName)
-│   │               └─ SyncFinalScores_ClientRpc(names[], scores[], domains[], crystals[], winnerName)
+│   │           └─ SyncFinalResults(winnerName)
+│   │               └─ SyncFinalResults_ClientRpc (shared MultiplayerDomainGamesController tail)(names[], scores[], domains[], crystals[], winnerName)
 │   │                   ├─ Update all RoundStats on all clients
 │   │                   ├─ gameData.WinnerName = winnerName
 │   │                   ├─ gameData.InvokeWinnerCalculated()
@@ -298,7 +298,7 @@ Golf rules (`UseGolfRules = true`): Lower score = higher rank. Winner always ran
 
 ### 9. End Game (Scoreboard)
 
-There is no end-game cinematic. When the race ends, `EndGameSequencer` halts the vessels, plays the GameEnd SFX, and raises `OnShowGameEndScreen` — the signal the **`Scoreboard`** (and `LifeForm` ecology cleanup) already listen for. The `Scoreboard` is the sole end-game UI: a `"{DOMAIN} VICTORY"` banner plus one ranked `PlayerScoreCard` per player. Card order and text come from `HexRaceScoringRuleSO` (`Results`) — winners show race time (mm:ss), losers show crystals remaining. Server authority is unchanged: `WinnerName`/`WinnerDomain` are set by `SyncFinalScores_ClientRpc`.
+There is no end-game cinematic. When the race ends, `EndGameSequencer` halts the vessels, plays the GameEnd SFX, and raises `OnShowGameEndScreen` — the signal the **`Scoreboard`** (and `LifeForm` ecology cleanup) already listen for. The `Scoreboard` is the sole end-game UI: a `"{DOMAIN} VICTORY"` banner plus one ranked `PlayerScoreCard` per player. Card order and text come from `HexRaceScoringRuleSO` (`Results`) — winners show race time (mm:ss), losers show crystals remaining. Server authority is unchanged: `WinnerName`/`WinnerDomain` are set by `SyncFinalResults_ClientRpc (shared MultiplayerDomainGamesController tail)`.
 
 The old animated per-player `VICTORY`/`DEFEAT` reveal belonged to the removed cinematic. `HexRaceScoringRuleSO.BuildReveal` is retained but currently unconsumed.
 
@@ -378,7 +378,7 @@ Post-Reload (via InitializeAfterDelay):
 |---|---|---|---|
 | `HexRaceController._netTrackSeed` | Server | `NetworkVariable<int>` | Deterministic track seed — all clients spawn identical track |
 | `NetworkCrystalCollisionTurnMonitor._netCrystalCollisions` | Server | `NetworkVariable<int>` | Crystal target synced to all clients; `OnValueChanged` writes to `gameData.CrystalTargetCount` |
-| `gameData.WinnerName` | Server (via `SyncFinalScores_ClientRpc`) | `string` (non-serialized field) | Authoritative winner identity; non-empty signals "results ready" |
+| `gameData.WinnerName` | Server (via `SyncFinalResults_ClientRpc (shared MultiplayerDomainGamesController tail)`) | `string` (non-serialized field) | Authoritative winner identity; non-empty signals "results ready" |
 | `gameData.CrystalTargetCount` | Server (via `_netCrystalCollisions.OnValueChanged`) | `int` (non-serialized field) | Crystal target readable by any system (controller, HUD, end game) |
 
 ## Stats & Telemetry
@@ -439,7 +439,7 @@ ugsStatsManager.ReportHexRaceStats(
 
 1. **No separate singleplayer scene**: The original `MultiplayerHexRace` concept was consolidated into a single scene. All games run through Netcode regardless of player count. Solo games run as a host with AI-spawned opponents.
 
-2. **Server-authoritative winner detection**: Winner detection runs entirely on the server via `OnTurnEndedCustom()`, which fires when `SyncTurnEnd_ClientRpc` is sent to all clients. The server finds the first **domain** whose summed CrystalsCollected reaches the target (Jade → Ruby → Gold tie-break), picks the best individual contributor on that domain as the representative `WinnerName`, sets `_raceEnded=true`, calculates all scores, and broadcasts via `SyncFinalScores_ClientRpc`. `HexRaceScoreTracker` only handles local elapsed-time tracking and UGS stats reporting — it does not participate in winner determination.
+2. **Server-authoritative winner detection**: Winner detection runs entirely on the server via `OnTurnEndedCustom()`, which fires when `SyncTurnEnd_ClientRpc` is sent to all clients. The server finds the first **domain** whose summed CrystalsCollected reaches the target (Jade → Ruby → Gold tie-break), picks the best individual contributor on that domain as the representative `WinnerName`, sets `_raceEnded=true`, calculates all scores, and broadcasts via `SyncFinalResults_ClientRpc (shared MultiplayerDomainGamesController tail)`. `HexRaceScoreTracker` only handles local elapsed-time tracking and UGS stats reporting — it does not participate in winner determination.
 
 3. **Deterministic track**: All clients must produce identical tracks from the same seed + intensity. The `SegmentSpawner` uses `Random.InitState(seed)` before spawning to ensure determinism.
 
@@ -447,7 +447,7 @@ ugsStatsManager.ReportHexRaceStats(
 
 5. **Comeback mechanics**: The `ElementalComebackSystem` is critical for competitive balance — it buffs losing players proportionally to their crystal deficit, preventing runaway victories. Configured via `SO_ElementalComebackProfile` with per-vessel, per-element weights.
 
-6. **HasEndGame=false + SetupNewRound suppression**: `HexRaceController` sets `HasEndGame => false` to prevent the base controller's turn→round→game flow from calling `SyncGameEnd_ClientRpc` (which would duplicate `InvokeMiniGameEnd`). HexRace handles end-game entirely through `OnTurnEndedCustom()` → `SyncFinalScores_ClientRpc()`. Since `HasEndGame=false` causes `ExecuteServerRoundEnd` to call `SetupNewRound()` instead of `ExecuteServerGameEnd()`, `HexRaceController` also overrides `SetupNewRound()` to return immediately when `_raceEnded=true`, preventing the Ready button from reappearing.
+6. **HasEndGame=false + SetupNewRound suppression**: `HexRaceController` sets `HasEndGame => false` to prevent the base controller's turn→round→game flow from calling `SyncGameEnd_ClientRpc` (which would duplicate `InvokeMiniGameEnd`). HexRace handles end-game entirely through `OnTurnEndedCustom()` → `SyncFinalResults_ClientRpc (shared MultiplayerDomainGamesController tail)()`. Since `HasEndGame=false` causes `ExecuteServerRoundEnd` to call `SetupNewRound()` instead of `ExecuteServerGameEnd()`, `HexRaceController` also overrides `SetupNewRound()` to return immediately when `_raceEnded=true`, preventing the Ready button from reappearing.
 
 7. **Unified TurnMonitorController**: The scene uses a single `TurnMonitorController` class that orchestrates all turn monitors. It handles both singleplayer (`OnEnable`) and multiplayer (`OnNetworkSpawn`) lifecycle automatically. The turn monitor subclasses (e.g., `NetworkCrystalCollisionTurnMonitor`) handle their own network sync internally.
 

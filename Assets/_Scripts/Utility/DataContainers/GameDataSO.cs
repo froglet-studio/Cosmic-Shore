@@ -145,8 +145,8 @@ namespace CosmicShore.Utility
         }
 
         /// <summary>
-        /// Server-authoritative winner name, written by game controllers in their
-        /// SyncFinalScores_ClientRpc. Read by EndGameControllers after OnWinnerCalculated fires.
+        /// Server-authoritative winner name, written by the domain controllers' shared
+        /// SyncFinalResults tail. Read by EndGameControllers after OnWinnerCalculated fires.
         /// Reset automatically in <see cref="ResetRuntimeData"/> and <see cref="ResetRuntimeDataForReplay"/>.
         /// </summary>
         [NonSerialized] public string WinnerName = "";

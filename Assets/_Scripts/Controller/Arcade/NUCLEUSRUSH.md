@@ -63,7 +63,7 @@ NucleusRushWaveTurnMonitor.CheckForEndOfTurn       rule.IsObjectiveReached: any 
               │                                    domain's brood sum ≥ GoalTargetCount
               ▼
 OnTurnEndedCustom (server) → AssignScores + Sort + CalculateDomainStats
-  → SyncFinalScores_ClientRpc → WinnerName/WinnerDomain/Results on every peer
+  → SyncFinalResults_ClientRpc (shared MultiplayerDomainGamesController tail) → WinnerName/WinnerDomain/Results on every peer
   → InvokeWinnerCalculated + InvokeMiniGameEnd → shared end-game + scoreboard
 ```
 
