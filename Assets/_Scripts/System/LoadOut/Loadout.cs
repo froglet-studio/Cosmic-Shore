@@ -11,6 +11,12 @@ namespace CosmicShore.Core
         public int PlayerCount;
         public VesselClassType VesselType;
         public GameModes GameMode;
+        /// <summary>
+        /// TOMBSTONE (2026-07-20): the solo/multiplayer split is retired - every game runs
+        /// the networked single-host model, so callers now always pass true. Kept only
+        /// because the bool is part of the persisted loadout / cloud-save schema
+        /// (LoadoutCloudData.IsMultiplayer); do not branch on it.
+        /// </summary>
         public bool IsMultiplayer;
 
         /// <summary>

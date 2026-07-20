@@ -13,7 +13,6 @@ MonoBehaviour:
   m_Name: ArcadeGameMultiplayerCellularDuel
   m_EditorClassIdentifier: 
   Mode: 29
-  IsMultiplayer: 1
   DisplayName: Online Duel for the Cell
   Description: Engage in a tug-of-war to gain control over the contested cell. Player
     with the most mass wins.

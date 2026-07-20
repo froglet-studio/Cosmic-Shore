@@ -13,7 +13,6 @@ MonoBehaviour:
   m_Name: ArcadeGameHexRace
   m_EditorClassIdentifier: 
   Mode: 33
-  IsMultiplayer: 1
   DisplayName: Skim Race
   Description: Find the fastest path to the crystal by skimming trails for a speed
     boost.

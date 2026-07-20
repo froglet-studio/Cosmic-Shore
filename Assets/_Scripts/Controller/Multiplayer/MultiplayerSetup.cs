@@ -1,10 +1,7 @@
 using System;
-using System.Linq;
-using System.Collections.Generic;
 using UnityEngine;
 using Cysharp.Threading.Tasks;
 using Unity.Netcode;
-using Unity.Services.Authentication;
 using Unity.Services.Multiplayer;
 using CosmicShore.Utility;
 using Reflex.Attributes;
@@ -17,9 +14,6 @@ namespace CosmicShore.Gameplay
 {
     public class MultiplayerSetup : MonoBehaviour
     {
-        const string PLAYER_NAME_PROPERTY_KEY = "playerName";
-        const string GAME_MODE_PROPERTY_KEY   = "gameMode";
-        const string MAX_PLAYERS_PROPERTY_KEY = "maxPlayers";
 
         [Inject] GameDataSO gameData;
         [Inject] AuthenticationDataVariable authenticationDataVariable;
@@ -28,13 +22,6 @@ namespace CosmicShore.Gameplay
         private NetworkManager networkManager;
         private bool _hostStartInProgress;
 
-        private const int RATE_LIMIT_MAX_RETRIES = 3;
-        private const int RATE_LIMIT_BASE_DELAY_MS = 2000;
-
-        private static bool IsRateLimitException(Exception e)
-        {
-            return e.Message != null && e.Message.Contains("Too Many Requests");
-        }
 
         private void Start()
         {
@@ -74,22 +61,11 @@ namespace CosmicShore.Gameplay
 
         void OnAuthenticationSignedIn()
         {
-            OnAuthenticationSignedInAsync().Forget();
-        }
-
-        async UniTaskVoid OnAuthenticationSignedInAsync()
-        {
+            // Host startup is all sign-in needs. The legacy matchmaking path that used to
+            // hang off an IsMultiplayerMode gate here (query/join/create UGS sessions by
+            // gameMode) is retired: the eager per-user Relay party session
+            // (HostConnectionService) IS the session for every game, solo included.
             EnsureHostStarted();
-
-            if (gameData.IsMultiplayerMode)
-            {
-                // DestroyPlayerAndVessel() was removed here because it races with
-                // ServerPlayerVesselInitializerWithAI.SpawnAIs(). Both run during
-                // scene Start(): SpawnAIs() adds AI to gameData.Players, then this
-                // method destroys them. Scene-transition cleanup already happens via
-                // SceneLoader.LoadSceneAsync() → ResetRuntimeData() + destroyWithScene.
-                ExecuteMultiplayerSetup().Forget();
-            }
         }
 
         /// <summary>
@@ -176,157 +152,6 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        private async UniTaskVoid ExecuteMultiplayerSetup()
-        {
-            // If a party session was already handed off (from the invite/party system),
-            // skip shutdown and matchmaking - the Relay transport is already active
-            // and both host and client are connected through it.
-            if (gameData.ActiveSession != null)
-            {
-                CSDebug.Log($"[MultiplayerSetup] Using existing party session {gameData.ActiveSession.Id}");
-                gameData.InvokeSessionStarted();
-                return;
-            }
-
-            // Shutdown the local host before creating a Relay-based multiplayer session.
-            // This is the single intentional transition from local to Relay transport.
-            if (networkManager != null && networkManager.IsListening)
-            {
-                networkManager.Shutdown();
-                await UniTask.WaitUntil(() => !networkManager.IsListening);
-            }
-
-            // Query sessions for this game mode & player count
-            var sessions = await QuerySessions();
-
-            // Filter to sessions that look joinable
-            var candidates = sessions?
-                .Where(IsJoinableSessionInfo)
-                .OrderBy(s => s.Created) // older first; tweak if you like
-                .ToList() ?? new List<ISessionInfo>();
-
-            // Try to join the first joinable; if race-filled, keep trying others
-            if (candidates.Count > 0 && await TryJoinFirstAvailable(candidates))
-                return;
-
-            // Nothing joinable → create a fresh host session
-            await StartSessionAsHost();
-        }
-
-        // Try join loop that handles race conditions (session fills between query and join)
-        private async UniTask<bool> TryJoinFirstAvailable(IList<ISessionInfo> candidates)
-        {
-            foreach (var s in candidates)
-            {
-                try
-                {
-                    await JoinSessionAsClientById(s.Id);
-                    return true;
-                }
-                catch (SessionException sx)
-                {
-                    CSDebug.LogWarning($"[MultiplayerSetup] Join failed for {s.Id}: {sx.Message} - trying next.");
-                    if (IsRateLimitException(sx))
-                        await UniTask.Delay(RATE_LIMIT_BASE_DELAY_MS);
-                    continue;
-                }
-                catch (Exception ex)
-                {
-                    CSDebug.LogWarning($"[MultiplayerSetup] Unexpected join error for {s.Id}: {ex.Message} - trying next.");
-                    continue;
-                }
-            }
-            return false;
-        }
-
-        // Decide if a session is joinable based on info
-        private bool IsJoinableSessionInfo(ISessionInfo info)
-        {
-            if (info == null) return false;
-
-            // Defensive: prefer sessions that are not private/locked and have room
-            var hasRoom   = (info.MaxPlayers > 0) && (info.AvailableSlots > 0);
-            var notLocked = !info.IsLocked;
-            var notPrivate= !info.HasPassword;
-
-            return hasRoom && notLocked && notPrivate;
-        }
-
-        private async UniTask StartSessionAsHost()
-        {
-            var playerProperties  = await GetPlayerProperties();
-            var sessionProperties = GetSessionProperties();
-
-            var sessionOpts = new SessionOptions
-            {
-                MaxPlayers        = gameData.SelectedPlayerCount.Value,
-                IsLocked          = false,
-                IsPrivate         = false,
-                PlayerProperties  = playerProperties,
-                SessionProperties = sessionProperties
-            }.WithRelayNetwork();
-
-            for (int attempt = 0; ; attempt++)
-            {
-                try
-                {
-                    gameData.ActiveSession = await MultiplayerService.Instance.CreateSessionAsync(sessionOpts);
-                    break;
-                }
-                catch (Exception e) when (attempt < RATE_LIMIT_MAX_RETRIES && IsRateLimitException(e))
-                {
-                    int delay = RATE_LIMIT_BASE_DELAY_MS * (1 << attempt);
-                    CSDebug.LogWarning($"[MultiplayerSetup] Rate limited on CreateSession - retry {attempt + 1}/{RATE_LIMIT_MAX_RETRIES} in {delay}ms");
-                    await UniTask.Delay(delay);
-                }
-            }
-
-            gameData.InvokeSessionStarted();
-            CSDebug.Log($"[MultiplayerSetup] Created session {gameData.ActiveSession.Id} with GameMode = {gameData.GameMode}");
-        }
-
-        private async UniTask JoinSessionAsClientById(string sessionId)
-        {
-            var playerProperties = await GetPlayerProperties();
-
-            var joinOpts = new JoinSessionOptions
-            {
-                PlayerProperties = playerProperties
-            };
-
-            CSDebug.Log($"[MultiplayerSetup] Joining session {sessionId}");
-            gameData.ActiveSession = await MultiplayerService.Instance.JoinSessionByIdAsync(sessionId, joinOpts);
-        }
-
-        // --------------------------
-        // Query Sessions (filtered by GameMode)
-        // --------------------------
-        private async UniTask<IList<ISessionInfo>> QuerySessions()
-        {
-            var gameModeString = gameData.GameMode.ToString();
-            var maxPlayers     = gameData.SelectedPlayerCount.Value.ToString();
-
-            var queryOptions = new QuerySessionsOptions();
-            queryOptions.FilterOptions.Add(new FilterOption(FilterField.StringIndex1, gameModeString, FilterOperation.Equal));
-            queryOptions.FilterOptions.Add(new FilterOption(FilterField.StringIndex2, maxPlayers,     FilterOperation.Equal));
-
-            for (int attempt = 0; ; attempt++)
-            {
-                try
-                {
-                    var results = await MultiplayerService.Instance.QuerySessionsAsync(queryOptions);
-                    CSDebug.Log($"[MultiplayerSetup] Queried {results.Sessions.Count} sessions for GameMode {gameModeString}");
-                    return results.Sessions;
-                }
-                catch (Exception e) when (attempt < RATE_LIMIT_MAX_RETRIES && IsRateLimitException(e))
-                {
-                    int delay = RATE_LIMIT_BASE_DELAY_MS * (1 << attempt);
-                    CSDebug.LogWarning($"[MultiplayerSetup] Rate limited on QuerySessions - retry {attempt + 1}/{RATE_LIMIT_MAX_RETRIES} in {delay}ms");
-                    await UniTask.Delay(delay);
-                }
-            }
-        }
-
         // --------------------------
         // NGO Connection Hooks
         // --------------------------
@@ -372,30 +197,6 @@ namespace CosmicShore.Gameplay
                 else
                     gameData.InvokeOnSessionEnded(); // fallback: legacy path
             }
-        }
-
-        // --------------------------
-        // Player Properties
-        // --------------------------
-        private async UniTask<Dictionary<string, PlayerProperty>> GetPlayerProperties()
-        {
-            var playerName = await AuthenticationService.Instance.GetPlayerNameAsync();
-
-            return new Dictionary<string, PlayerProperty>
-            {
-                { PLAYER_NAME_PROPERTY_KEY, new PlayerProperty(playerName, VisibilityPropertyOptions.Member) },
-            };
-        }
-
-        private Dictionary<string, SessionProperty> GetSessionProperties()
-        {
-            string gameMode   = gameData.GameMode.ToString();
-            string maxPlayers = gameData.SelectedPlayerCount.Value.ToString();
-            return new Dictionary<string, SessionProperty>
-            {
-                { GAME_MODE_PROPERTY_KEY,   new SessionProperty(gameMode,   VisibilityPropertyOptions.Public, PropertyIndex.String1) },
-                { MAX_PLAYERS_PROPERTY_KEY, new SessionProperty(maxPlayers, VisibilityPropertyOptions.Public, PropertyIndex.String2) }
-            };
         }
 
         // --------------------------

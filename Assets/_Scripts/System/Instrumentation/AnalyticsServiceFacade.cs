@@ -418,7 +418,11 @@ namespace CosmicShore.Core
             { "vessel_class", _gameData.selectedVesselClass.Value.ToString() },
             { "player_count", _gameData.SelectedPlayerCount.Value },
             { "ai_count", _gameData.RequestedAIBackfillCount },
-            { "is_multiplayer", _gameData.IsMultiplayerMode }
+            // More than one connected human this session (AI backfill doesn't count).
+            // Metric meaning changed 2026-07-20: was the retired IsMultiplayerMode config
+            // flag; every game now runs the networked single-host model.
+            { "is_multiplayer", Unity.Netcode.NetworkManager.Singleton != null
+                && Unity.Netcode.NetworkManager.Singleton.ConnectedClientsIds.Count > 1 }
         };
 
         #endregion

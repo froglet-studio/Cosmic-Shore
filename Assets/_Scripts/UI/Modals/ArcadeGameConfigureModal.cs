@@ -586,7 +586,7 @@ namespace CosmicShore.UI
             // 2) saved loadout vessel type
             if (!chosen && _selectedGame)
             {
-                var loadout   = LoadoutSystem.LoadGameLoadout(_selectedGame.Mode, _selectedGame.IsMultiplayer).Loadout;
+                var loadout   = LoadoutSystem.LoadGameLoadout(_selectedGame.Mode, isMultiplayer: true).Loadout;
                 var loadoutVT = loadout.VesselType;
 
                 if (loadoutVT != VesselClassType.Random)
@@ -1323,7 +1323,7 @@ namespace CosmicShore.UI
             gameData.RequestedDomainCount = config.DomainCount;
 
             Debug.Log($"<color=#FFD700>[FLOW-2] [ArcadeConfigModal] SyncAllGameDataForLaunch - " +
-                      $"Scene={selectedGame.SceneName}, Mode={selectedGame.Mode}, IsMultiplayer={selectedGame.IsMultiplayer}, " +
+                      $"Scene={selectedGame.SceneName}, Mode={selectedGame.Mode}, " +
                       $"HumanCount={humanCount}, ConfigPlayerCount={config.PlayerCount}, " +
                       $"AIBackfill={gameData.RequestedAIBackfillCount}, " +
                       $"Vessel={gameData.selectedVesselClass.Value}, Intensity={gameData.SelectedIntensity.Value}</color>");

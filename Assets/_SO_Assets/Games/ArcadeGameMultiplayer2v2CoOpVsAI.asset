@@ -13,7 +13,6 @@ MonoBehaviour:
   m_Name: ArcadeGameMultiplayer2v2CoOpVsAI
   m_EditorClassIdentifier: 
   Mode: 30
-  IsMultiplayer: 1
   DisplayName: Online 2v2 CoOp vs AI
   Description: Engage in a tug-of-war with friend against two AI vessels to gain
     control over the contested cell. Player with the most mass wins.

@@ -13,7 +13,6 @@ MonoBehaviour:
   m_Name: ArcadeGameBlockBandit
   m_EditorClassIdentifier: 
   Mode: 5
-  IsMultiplayer: 0
   DisplayName: Block Bandit
   Description: Dodge, weave, and pilfer your way to the next biome. Whoever steals
     the most along the way wins.

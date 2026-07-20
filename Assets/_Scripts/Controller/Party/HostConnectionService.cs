@@ -1857,7 +1857,7 @@ namespace CosmicShore.Gameplay
         {
             if (_gameData == null) return string.Empty;
             if (IsOnMenuScene()) return string.Empty;
-            if (!_gameData.IsMultiplayerMode) return string.Empty;
+            // Every in-game scene advertises its match name - solo is just a party of one.
             return _gameData.GameMode.ToString();
         }
 

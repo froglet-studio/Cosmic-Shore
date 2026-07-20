@@ -73,8 +73,11 @@ The shared hub. **SOAP events** (all `ScriptableEventNoParam`):
   once sorted).
 - `LocalRoundStats` — the local player's stats.
 - `WinnerName`, `WinnerDomain` — server-authoritative result.
-- `IsGolfRules` (get/private set), `RequestedDomainCount` (=3),
-  `IsMultiplayerMode` **[legacy — see §8]**.
+- `IsGolfRules` (get/private set), `RequestedDomainCount` (=3).
+  (`IsMultiplayerMode` retired 2026-07-20 — see §8.)
+- `HasNoWinner` — true when the authoritative end explicitly declared no winner
+  (Blue broadcast, e.g. co-op DNF); read by `EndGameSequencer`/`Scoreboard`
+  so derive-a-winner fallbacks never credit a DNF (BUGS.md B17).
 - **Server-synced per-domain metric sums** (BUGS.md B9 / "Approach B"):
   `GetDomainMetricSum(d)` / `SetDomainMetricSum(d, v)` + `OnDomainMetricSumsChanged`.
   The server computes each domain's metric sum and replicates it; clients display it
@@ -211,10 +214,13 @@ mode-agnostic consumer of `gameData.Results` (R10). The crystal reward is the sc
   avatar (`SO_ProfileIconList` humans / `SO_AIProfileList` AI), `+N` crystal reward on the
   winner, and `AwardCrystalsIfLocalWinner` if the local player won. Order/primary/secondary
   all come from the rule — no per-mode formatting here.
-- Banner domain = `gameData.WinnerDomain` (falls back to `Results[0].Domain`).
-- `ConfigureLobbyButtons`: host/single-player see **Main Menu + Play Again**;
-  non-host clients see **Leave Lobby**. **[legacy dependency]** gated on
-  `IsMultiplayerMode` (§8).
+- Banner domain = `gameData.WinnerDomain` (falls back to `Results[0].Domain`) —
+  unless `gameData.HasNoWinner`, which renders the neutral `SetNoWinnerBanner()`
+  ("GAME OVER", Blue tint) instead of crediting a domain (BUGS.md B17).
+- `ConfigureLobbyButtons`: forks on **`NetworkManager.IsServer`** (host sees
+  **Main Menu + Play Again**; non-host clients see **Leave Lobby**; tournament
+  swaps in the host-only Continue). It does NOT read the retired
+  `IsMultiplayerMode` (§8) — an earlier revision of this doc mislabeled that.
 - The old per-mode `SortPlayers` / `DetermineWinnerDomain` / `FormatPlayerScore` /
   `FormatSecondaryStat` / `SetBannerForDomain` virtuals were removed (R10) — the rule
   produces all of it.
@@ -307,52 +313,20 @@ scoring data is already RPC-synced; the goal is to delete the
 single-player/multiplayer **fork** so solo-host and online render identically
 (domain-aggregated, RPC-synced).
 
-**`IsMultiplayerMode` fork map (measured 2026-07-20 on the working tree — the
-UI forks the old map listed in `Scoreboard`/`PauseMenu` are GONE; verify with a
-fresh grep before executing R1):**
+**EXECUTED 2026-07-20 (owner-resolved D21 — solo modes retired, solo = party-of-one
+host).** `GameDataSO.IsMultiplayerMode` and `SO_Game.IsMultiplayer` are deleted.
+What each fork-site became:
 
-| Class | File:line | Use |
-|---|---|---|
-| **Behavioral read** | `Controller/Multiplayer/MultiplayerSetup.cs:84` | session gate: `if (IsMultiplayerMode)` decides shutdown-local-host + create/join a UGS Relay game session vs staying on the menu host |
-| **Behavioral read** | `Controller/Party/HostConnectionService.cs:1860` | presence: non-MP games return an empty activity string (friends see no in-game detail for solo modes) |
-| RPC round-trip | `Controller/Arcade/MultiplayerMiniGameControllerBase.cs:43` (read → ClientRpc arg) + `:467` (client write) | `SyncGameConfigToClients_ClientRpc` mirrors the host's flag onto clients |
-| Diagnostic read | `System/SceneLoader.cs:139` | log line only |
-| Diagnostic read | `System/Instrumentation/AnalyticsServiceFacade.cs:421` | `is_multiplayer` analytics payload field |
-| Write | `Controller/Managers/Arcade.cs:66,107,162` | legacy launcher writes; `:107` sets `isMultiplayer && SelectedPlayerCount > 1` (a 1-player game is marked non-MP) — `Arcade.Instance` is null today (AUDIT §0.1); fate = D2/Y4.3 |
-| Write | `Controller/Arcade/Tournament/TournamentController.cs:377` | forces `true` for every shuffle leg |
-| Write | `Controller/Settings/BenchmarkSceneLauncher.cs:42` | forces `false` for the benchmark scene (D16) |
-| Write | `Utility/DataContainers/GameDataSO.cs:255` | set from `SO_ArcadeGame.IsMultiplayer` at launch config |
-| Write | `Utility/DataContainers/GameDataSO.cs:444` | reset to `false` in `ResetRuntimeData` |
+| Former site | Resolution |
+|---|---|
+| `MultiplayerSetup` sign-in session gate | DELETED along with the whole legacy query/join/create matchmaking path it guarded (`ExecuteMultiplayerSetup` + helpers) — provably dead: `AppManager.ConfigureGameData` runs `ResetAllData()` before sign-in, so the flag was always false at the gate, and the eager per-user Relay party session (`HostConnectionService`) is the session for every game |
+| `HostConnectionService.ResolveCurrentMatchName` presence guard | dropped — every in-game scene advertises its match name (friends now see solo games too; intentional change) |
+| `SyncGameConfigToClients_ClientRpc` round-trip | `isMultiplayer` arg + client write removed |
+| `SceneLoader` launch log | field dropped from the log line |
+| Analytics `is_multiplayer` payload | now `NetworkManager.ConnectedClientsIds.Count > 1` at report time (metric meaning change: "more than one connected human", AI backfill excluded) |
+| Writes (`TournamentController`, `BenchmarkSceneLauncher`, `Arcade.cs` dead launcher, `GameDataSO.SyncFromArcadeGame` + `ResetAllData`) | deleted with the flag |
+| `Loadout.IsMultiplayer` / `LoadoutCloudData.IsMultiplayer` | KEPT as documented tombstones (persisted cloud-save schema); callers pass constant `true`; never branch on them |
 
-(Declaration: `GameDataSO.cs:74`. `Arcade.cs:129` is `SO_Game.IsMultiplayerModes(gameMode)` —
-a different symbol, not the flag.)
-
-**Replacement-signal design note (Y1.4, for D21 sign-off):**
-
-- `MultiplayerSetup.cs:84` (session gate) — replace with **requested-session
-  semantics**: the launch config should carry an explicit "needs a shared UGS
-  game session" intent. Concrete signal: `HostConnectionDataSO.PartyMembers.Count > 1`
-  (a party of humans needs Relay) — the session exists FOR the extra humans, so
-  the party human count is the truth the boolean was approximating. Per R1/Q1
-  guidance this is domain data, not a player-count boolean read at game time.
-- `HostConnectionService.cs:1860` (presence) — replace with
-  **ApplicationState + party context**: publish in-game presence detail whenever
-  `ApplicationState == InGame`, with the party-session id already carried by
-  `FriendPresenceActivity.PartySessionId`. Whether the mode was "multiplayer"
-  is irrelevant to friends; what matters is joinability, which the party session
-  id already encodes.
-- RPC round-trip — dissolves once the two behavioral reads are gone: the flag
-  no longer needs mirroring; drop the ClientRpc arg + client write with the flag.
-- Diagnostic reads — `SceneLoader` log: delete with the flag. Analytics
-  `is_multiplayer`: replace the payload value with
-  `NetworkManager.ConnectedClientsIds.Count > 1` at report time (the actually-true
-  fact analytics wants).
-- Writes — all become dead once no reads remain; delete with the flag
-  (`Arcade.cs`'s writes fall under D2/Y4.3 regardless).
-
-**Execution stays hard-gated on D21** (`GARRETT.md`): approve the two
-replacement signals above, then R1 ships one fork-site (or small group) per
-commit per `REFACTOR.md` R1.
 
 ---
 

@@ -13,7 +13,6 @@ MonoBehaviour:
   m_Name: ArcadeGameAstroLeague
   m_EditorClassIdentifier: 
   Mode: 37
-  IsMultiplayer: 1
   DisplayName: Astro League
   Description: Hypersea soccer. Drift into the payload and slam it through the enemy
     portal. First to five, golden goal if it's tied. Welcome to the league.

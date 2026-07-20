@@ -13,7 +13,6 @@ MonoBehaviour:
   m_Name: ArcadeGameMultiplayerCrystalCapture
   m_EditorClassIdentifier: 
   Mode: 35
-  IsMultiplayer: 1
   DisplayName: Scurry
   Description: Capture all crystals as fast as you can
   IconActive: {fileID: 21300000, guid: ff915aad644c07144a1d02cc4723b015, type: 3}

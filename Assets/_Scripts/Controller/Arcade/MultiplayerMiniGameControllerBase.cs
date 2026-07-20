@@ -40,7 +40,6 @@ namespace CosmicShore.Gameplay
                 SyncGameConfigToClients_ClientRpc(
                     gameData.SceneName,
                     (int)gameData.GameMode,
-                    gameData.IsMultiplayerMode,
                     (int)gameData.selectedVesselClass.Value,
                     gameData.SelectedIntensity.Value,
                     gameData.SelectedPlayerCount.Value,
@@ -456,7 +455,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         [ClientRpc]
         void SyncGameConfigToClients_ClientRpc(
-            string sceneName, int gameMode, bool isMultiplayer,
+            string sceneName, int gameMode,
             int vesselClass, int intensity, int playerCount, int aiBackfillCount,
             int domainCount, bool isTournament, float comebackRate)
         {
@@ -464,7 +463,6 @@ namespace CosmicShore.Gameplay
 
             gameData.SceneName = sceneName;
             gameData.GameMode = (GameModes)gameMode;
-            gameData.IsMultiplayerMode = isMultiplayer;
             gameData.selectedVesselClass.Value = (VesselClassType)vesselClass;
             gameData.SelectedIntensity.Value = intensity;
             gameData.SelectedPlayerCount.Value = playerCount;

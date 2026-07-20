@@ -71,7 +71,6 @@ namespace CosmicShore.Utility
         public bool IsDailyChallenge;
         public bool IsTraining;
         public bool IsMission;
-        public bool IsMultiplayerMode;
 
         /// <summary>
         /// True while a Tournament session is in progress (set by
@@ -263,7 +262,6 @@ namespace CosmicShore.Utility
 
             SceneName = game.SceneName;
             GameMode = game.Mode;
-            IsMultiplayerMode = game.IsMultiplayer;
             ComebackRatePerScoreDeficit = game.ComebackRatePerScoreDeficit;
         }
 
@@ -454,7 +452,6 @@ namespace CosmicShore.Utility
         public void ResetAllData()
         {
             GameMode = GameModes.Random;
-            IsMultiplayerMode = false;
             // ActiveSession is intentionally NOT reset here. Under the "Always
             // InParty" model the field is the single source of truth for the
             // live UGS Relay session reference (shared with HCS via
