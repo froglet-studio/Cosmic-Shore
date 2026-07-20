@@ -16,5 +16,13 @@ namespace CosmicShore.Data
         Goals = 4,
         /// <summary>Trail volume the player laid (truncated to int). Freestyle's live feed.</summary>
         VolumeCreated = 5,
+        /// <summary>
+        /// Total volume churn the player caused: created + hostile destroyed + friendly
+        /// destroyed (truncated to int) - the CellularDuel-family composite (the legacy
+        /// tracker summed the same three strategies at multiplier 1). Composite metrics
+        /// cannot be written back through <c>ScoringMetrics.Write</c>; their components
+        /// each replicate via their own RoundStats NetworkVariables.
+        /// </summary>
+        VolumeActivity = 6,
     }
 }
