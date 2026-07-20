@@ -11,13 +11,15 @@ namespace CosmicShore.Gameplay
     /// The turn ends (<c>RampagePrismTurnMonitor</c>) when an active domain's summed
     /// <see cref="IRoundStats.HostilePrismsDestroyed"/> reaches the target
     /// (<see cref="GameDataSO.PrismTargetCount"/>, authored via Tools &gt; Cosmic Shore &gt;
-    /// End Game Conditions); the winning domain is the highest destruction sum. Each player's
-    /// score IS their hostile-prism count - higher is better. Scoring mass = ALL environment
+    /// End Game Conditions); the winning domain is the highest destruction sum. Golf-timed
+    /// like HexRace/Crystal Capture: winning-domain players score their FINISH TIME (the
+    /// end-game score they display); losing players a sentinel encoding their team's remaining
+    /// prisms, so the scoreboard shows the winners' time and each losing team's prisms left
+    /// (individual prisms smashed on the secondary line). Scoring mass = ALL environment
     /// mass (flora/fauna, any color - StatsManager classifies non-roster-owned prisms hostile)
     /// plus OTHER domains' player-laid trails; your own/teammates' trails never score (the
     /// roster domain check filters them), so lay-and-shatter farming is worthless by
-    /// construction. Results rank TEAM-major, matching Crystal Capture: every winning-domain
-    /// player above every losing-domain player, domains by summed prisms destroyed.
+    /// construction.
     /// </summary>
     [CreateAssetMenu(menuName = "ScriptableObjects/Scoring Rules/Rampage", fileName = "RampageScoringRule")]
     public class RampageScoringRuleSO : ScoringRuleSO
@@ -51,40 +53,39 @@ namespace CosmicShore.Gameplay
 
         public override void AssignScores(GameDataSO gameData, Domains winner, float finishTime)
         {
+            // Same sentinel scheme as every time-based golf mode (GolfScoreSentinels is the
+            // single source of truth; the "HexRace" naming is legacy - the encoding is shared).
             foreach (var stats in gameData.RoundStatsList)
-                stats.Score = stats.HostilePrismsDestroyed;
+                stats.Score = stats.Domain == winner
+                    ? finishTime
+                    : GolfScoreSentinels.EncodeHexRaceLoserScore(Remaining(gameData, stats.Domain));
         }
 
         public override List<ScoreResult> BuildResults(GameDataSO gameData)
         {
-            // TEAM-major: domains by their placement (summed prisms destroyed, the same order
-            // the Tournament fold + placement crystals use), then teammates by individual
-            // count. Name is the final tiebreak so every peer produces an identical list even
-            // when two players tie (List order alone is not identical across peers).
-            var placement = ResolvePlacementOrder(gameData);
+            // Golf order = TEAM-major by construction: finish times (winners) below every loser
+            // sentinel, loser sentinels ordered by team deficit. Individual prisms smashed
+            // order teammates; name is the final tiebreak so every peer builds an identical list.
             var ordered = gameData.RoundStatsList
-                .OrderBy(s => { int i = placement.IndexOf(s.Domain); return i < 0 ? int.MaxValue : i; })
-                .ThenByDescending(s => s.Score)
+                .OrderBy(s => s.Score)
+                .ThenByDescending(s => s.HostilePrismsDestroyed)
                 .ThenBy(s => s.Name, System.StringComparer.Ordinal);
 
             var rows = ordered.Select(s => new ScoreResultBuilder.Row(
                 s.Name,
                 s.Domain,
                 s.Score,
-                $"{(int)s.Score} Prisms Smashed",
-                null)).ToList();
+                GolfScoreSentinels.IsFinishTime(s.Score)
+                    ? ScoreResultBuilder.FormatTime(s.Score)
+                    : $"{Remaining(gameData, s.Domain)} Prisms Left",
+                $"{LiveMetric(s)} Prisms")).ToList();
 
             return ScoreResultBuilder.BuildRanked(rows);
         }
 
-        public override ScoreReveal BuildReveal(GameDataSO gameData, IRoundStats localStats, bool didWin)
-        {
-            int diff = DomainDelta(gameData);
-            return new ScoreReveal(
-                didWin ? "VICTORY" : "DEFEAT",
-                $"{(didWin ? "WON" : "LOST")} BY {diff} PRISM{(diff == 1 ? "" : "S")}",
-                (int)localStats.Score,
-                false);
-        }
+        public override ScoreReveal BuildReveal(GameDataSO gameData, IRoundStats localStats, bool didWin) =>
+            didWin
+                ? new ScoreReveal("VICTORY", "RAMPAGE TIME", (int)localStats.Score, true)
+                : new ScoreReveal("DEFEAT", "PRISMS LEFT", Remaining(gameData, localStats.Domain), false);
     }
 }

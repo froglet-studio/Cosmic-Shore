@@ -30,9 +30,9 @@ MonoBehaviour:
   PhaseThresholds:
     RestlessEnter: 700
     RestlessExit: 500
-    FrenzyEnter: 3600
-    FrenzyExit: 3000
+    FrenzyEnter: 2000
+    FrenzyExit: 1600
     RestlessEnterVolume: 11200
     RestlessExitVolume: 8000
-    FrenzyEnterVolume: 57600
-    FrenzyExitVolume: 48000
+    FrenzyEnterVolume: 32000
+    FrenzyExitVolume: 25600

@@ -94,8 +94,13 @@ namespace CosmicShore.Core
             }
             else if (mode == GameModes.MultiplayerCrystalCapture)
             {
+                // Golf since the finish-time scoring change: Score is the winners' match time
+                // (losers report nothing - CrystalCaptureStatsReporter is winner-only), so best
+                // = fastest. NOTE: cloud values recorded before the change were crystal COUNTS
+                // (~20) and will shadow real times until the bucket is cleared server-side.
                 _cachedProfile.CrystalCaptureStats.HighScores.TryGetValue(key, out int ccBest);
-                return Mathf.Max(ccBest, currentSessionScore);
+                if (ccBest <= 0) return currentSessionScore;
+                return currentSessionScore >= GolfScoreSentinels.DnfThreshold ? ccBest : Mathf.Min(ccBest, currentSessionScore);
             }
 
             return currentSessionScore;

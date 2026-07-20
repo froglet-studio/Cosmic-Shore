@@ -35,8 +35,10 @@ Simple destructive fun — fly hard, smash mass, watch the counter fall.
   clone of `MultiplayerCrystalCaptureController` (1 round / 1 turn, HasEndGame=false,
   server winner detection in `OnTurnEndedCustom`, snapshot `SyncFinalScores_ClientRpc`)
 - **Scoring**: `RampageScoringRuleSO` (`metric = ScoringMetric.PrismsDestroyed`,
-  points not golf) — `TargetCount => GameDataSO.PrismTargetCount`; per-player
-  `Score = HostilePrismsDestroyed`; TEAM-major results like Scurry
+  golf-timed like HexRace/Scurry) — `TargetCount => GameDataSO.PrismTargetCount`;
+  winning-domain players `Score = finish time` (displayed mm:ss:cs), losers the
+  `GolfScoreSentinels` remaining-prisms sentinel (displayed "N Prisms Left", with
+  individual prisms smashed on the secondary line); TEAM-major by construction
 - **Turn monitor**: `RampagePrismTurnMonitor` — resolves the prism target from
   `EndConditionOverridesSO.GetRampagePrismTarget()` at StartMonitor (default **100**,
   Tools ▸ Cosmic Shore ▸ End Game Conditions — never a per-scene field), syncs it via
@@ -72,7 +74,9 @@ ScoringMetrics.Read(stats, PrismsDestroyed) → SumByDomain
               │  turn end
               ▼
 RampageController.OnTurnEndedCustom                [server]
-  ├─ rule.ResolveWinner / AssignScores (Score = HostilePrismsDestroyed)
+  ├─ rule.ResolveWinner / AssignScores
+  │    winners: Score = finish time (Time.time - TurnStartTime)
+  │    losers:  Score = DnfThreshold + team prisms remaining
   └─ SyncFinalScores_ClientRpc → WinnerName/WinnerDomain, Results, MiniGameEnd
 ```
 
@@ -80,17 +84,23 @@ RampageController.OnTurnEndedCustom                [server]
 
 `_SO_Assets/Cell Configs/Rampage Cell/`:
 
-- **Rampage Cell Config** — Blob-class membrane/cytoplasm/nucleus, Blob phase
-  thresholds (Restless 700/500, Frenzy 3600/3000; volume bands 11200/8000 and
-  57600/48000). Standard collider-LOD by phase; **no new colliders or physics
-  queries** — scoring rides the existing StatsManager SOAP channel, and a match
-  *removes* ~100+ prisms, so Rampage sits below the Blob collider envelope.
+- **Rampage Cell Config** — Blob-class membrane/cytoplasm/nucleus. Restless
+  thresholds match Blob (700/500; volume 11200/8000); the **Frenzy gate is the
+  arena's prism cap: 2000 prisms** (enter 2000 / exit 1600; volume 32000/25600 at
+  the nominal 16 vol/prism). Flora planting pauses at Frenzy, so the prismscape
+  never grows past ~2000 prisms + player trails — an emergent stock cap (growth
+  gate, never a culler; mass stays conserved). Destruction drops the count below
+  the exit band and growth resumes. Standard collider-LOD by phase; **no new
+  colliders or physics queries** — scoring rides the existing StatsManager SOAP
+  channel, and the 2000 cap keeps worst-case active prisms well below the Blob
+  envelope (3600).
 - **Rampage Spawn Profile** — flora-rich: the four Blob flora species (Mass/Time/
   Space Gyroids + SchwarzP), plus tadpole + shark fauna (grazer + predator food
   web; both drop elemental crystals on death — skimmable powerups mid-rampage).
-  Flora stock is gated by the Frenzy phase threshold (`FrenzyEnterVolume 57600` —
-  planting pauses at Frenzy, resumes below `FrenzyExitVolume`; the profile's
-  `FloraSpawnVolumeCeiling` field is legacy-inert). Species configs are referenced
+  Flora stock is gated by the Frenzy phase threshold (the 2000-prism arena cap:
+  `FrenzyEnterVolume 32000` — planting pauses at Frenzy, resumes below
+  `FrenzyExitVolume 25600`; the profile's `FloraSpawnVolumeCeiling` field is
+  legacy-inert). Species configs are referenced
   from the Blob folder (read-only species definitions); fork per-cell copies only
   when Rampage needs its own tuning deltas.
 
@@ -138,7 +148,7 @@ lands at game end in this mode, so the Score source would be inert live).
 | Asset | Notes |
 |---|---|
 | `ArcadeGameRampage.asset` | `Mode 2`, `IsMultiplayer 1`, players 1–4, Sparrow/Rhino/Dolphin, `SceneName MinigameRampage`, comeback rate 0.2 |
-| `RampageScoringRule.asset` | `metric 5 (PrismsDestroyed)`, `golfRules 0` |
+| `RampageScoringRule.asset` | `metric 5 (PrismsDestroyed)`, `golfRules 1` (finish-time scoring) |
 | `MinigameRampage.unity` | cloned from `MinigameNucleusRush.unity`; in `EditorBuildSettings` |
 | `Rampage Cell Config.asset` / `Rampage Spawn Profile.asset` | flora-rich Blob-class arena |
 | `GameLists/OrganicRematchGames.asset` | Rampage added (party-games list) |

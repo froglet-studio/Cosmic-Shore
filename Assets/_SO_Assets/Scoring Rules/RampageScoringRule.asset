@@ -13,4 +13,4 @@ MonoBehaviour:
   m_Name: RampageScoringRule
   m_EditorClassIdentifier:
   metric: 5
-  golfRules: 0
+  golfRules: 1

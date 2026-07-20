@@ -24,7 +24,9 @@ namespace CosmicShore.Gameplay
 
         private bool _finalResultsSent;
 
-        protected override bool UseGolfRules => false;
+        // Golf: winners carry their finish time, losers a DnfThreshold+remaining sentinel
+        // (see RampageScoringRuleSO.AssignScores) - lower is better, like HexRace.
+        protected override bool UseGolfRules => true;
         protected override bool UseSceneReloadForReplay => true;
 
         // Rampage handles end-game through OnTurnEndedCustom (server-side winner detection) →
@@ -67,9 +69,11 @@ namespace CosmicShore.Gameplay
                 .FirstOrDefault();
             if (winnerRep == null) return;
 
-            // Per-player Score = hostile-prism count (the rule owns this); domain aggregation
-            // in CalculateDomainStats determines team standing.
-            rule.AssignScores(gameData, winningDomain, 0f);
+            // Winners score the match time (Time.time - TurnStartTime, the server's turn
+            // clock); losers the remaining-prisms sentinel. The rule owns the encoding;
+            // the snapshot RPC replicates the final Scores so clients rebuild identically.
+            float finishTime = Mathf.Max(0f, Time.time - gameData.TurnStartTime);
+            rule.AssignScores(gameData, winningDomain, finishTime);
 
             gameData.SortRoundStats(UseGolfRules);
             gameData.CalculateDomainStats(UseGolfRules);
