@@ -33,6 +33,12 @@ namespace CosmicShore.Gameplay
         /// inspector overrides; runtime spawns - e.g. the conveyor toy's pickups - cannot).
         /// </summary>
         internal void SetCollectionEffects(SkimmerCrystalEffectSO[] effects) => elementalCrystalShipEffects = effects;
+
+        /// <summary>
+        /// The authored collection effects, readable so runtime crystal replacement (e.g.
+        /// LifeFormCrystal's element-contract provisioning) can carry them onto the new crystal.
+        /// </summary>
+        internal SkimmerCrystalEffectSO[] CollectionEffects => elementalCrystalShipEffects;
         
         void OnEnable() 
         {
