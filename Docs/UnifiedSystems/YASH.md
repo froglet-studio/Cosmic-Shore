@@ -80,6 +80,44 @@ perf branches).
 
 ## Y1 — Scoring unification program `[default-ok, but D21 hard-gates Y1.4]`
 
+> **STATUS (2026-07-20, executed on `claude/unified-yash-refactor-9sc0ws`):** Y1 executed with
+> Y1.2 hoisted FIRST (engineering call: the 5 migrated modes verify the hoist as a pure refactor,
+> then Y1.1's migrations onboard onto the template instead of hand-copying tails that Y1.2 would
+> immediately delete). Commits: `a77b3917` Y1.2 hoist (SyncFinalResults template + shared ClientRpc
+> tail in `MultiplayerDomainGamesController`; shadowed countdown RPC + dead EndGame override
+> deleted; 5 controllers converted; 3 adversarial review passes clean — one accepted delta: Joust's
+> representative WinnerName now credits the top jouster, telemetry-only). `2366ecd5` Y1.1
+> Freestyle (ScoringMetric.VolumeCreated + FreestyleScoringRuleSO sandbox rule + server feed;
+> tracker de-wired). `b2453bf9` Y1.1 MP CellularDuel (ScoringMetric.VolumeActivity composite +
+> CellularDuelScoringRuleSO; 2-round-aware SyncFinalResults; latch-guarded vessel swap; tracker
+> de-wired). `468e1229` Y1.1 SP CellularDuel (shares the duel rule asset; SP EndGame runs the rule
+> tail — fixes the missing CalculateDomainStats drift for this mode). `11ccc36e` Y1.1 SP
+> WildlifeBlitz (standalone WildlifeBlitzScoreKeeper off the tracker family + golf
+> WildlifeBlitzScoringRuleSO; explicit Winner* writes AFTER SetResults — the derive would show
+> VICTORY on a DNF). `1ac6a181` Y1.3 (ObjectiveTurnMonitor base: sealed rule end-check +
+> RaiseRemainingUI + B15 lifecycle by type incl. sealed OnDestroy + optional NetworkVariable
+> target leg; dead non-network Crystal/Joust bases collapsed into the network classes — zero
+> scene edits). `aa172c9d` Y1.4 doc-only (fork map refreshed + D21 replacement-signal note;
+> EXECUTION still hard-gated on D21). `a4728138` Y1.5 scoped (two verified-dead blitz classes
+> deleted; family deletion blocked — see Y1.5 note below).
+>
+> **Y1.1 dead stacks skipped (owner default):** co-op WildlifeBlitz (32) and 2v2CoOpVsAI (30) are
+> player-UNREACHABLE — their SO_ArcadeGame assets are in NO game list; the co-op scene runs a
+> `MultiplayerCellularDuelController` leftover (`MultiplayerWildlifeBlitzMiniGame` was an orphan,
+> now deleted); 2v2 has no controller class (scene carries `MultiplayerDomainGamesController`
+> directly). Their scenes keep their `NetworkScoreTracker`s; the co-op scene's end-game is inert
+> under the duel controller's `HasEndGame=false` (unreachable content). Fate = **D3** (prune or
+> revive + re-list). Consequence: `HasEndGame` cannot be sealed in the domain base until 2v2's
+> fate resolves (it relies on the legacy `SyncGameEnd` path).
+>
+> **Y1.5 remaining blockers:** `NetworkScoreTracker` wired in Joust + CC (Y0.2 — documented, not
+> executed, owner decision) and the two dead-stack scenes (D3); offline `ScoreTracker` in the two
+> Recording Studio tool scenes; `SinglePlayerWildlifeBlitzScoreTracker` wired in the out-of-build
+> `BenchmarkStressTest.unity` (D16); `HexRaceScoreTracker` deliberately retained (still extends
+> `BaseScoreTracker`); `ScoringModes` + `BaseScoring` strategies referenced by
+> `BaseScoreTracker.CreateScoring`. Unblock order: Y0.2 + D3 + D16 + a HexRaceScoreTracker
+> de-basing, then the family falls in one commit.
+
 The declared target: one always-networked, domain-aggregated scoring path (REFACTOR.md). Order:
 
 1. **Y1.1** Migrate the legacy-primary modes onto `ScoringRuleSO`: CellularDuel (SP+MP),
