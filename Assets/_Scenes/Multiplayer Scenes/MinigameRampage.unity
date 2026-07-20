@@ -1031,22 +1031,22 @@ MonoBehaviour:
   aiPlayerPrefab: {fileID: -3803897320145675891, guid: 0a8653be5d331c5449d3130cef596493,
     type: 3}
   aiInitializeDatas:
-  - vesselClass: 6
+  - vesselClass: 11
     PlayerName: AI 0
     AvatarId: 0
     IsAI: 1
     AllowSpawning: 1
-  - vesselClass: 6
+  - vesselClass: 3
     PlayerName: AI 1
     AvatarId: 1
     IsAI: 1
     AllowSpawning: 1
-  - vesselClass: 6
+  - vesselClass: 2
     PlayerName: AI 2
     AvatarId: 2
     IsAI: 1
     AllowSpawning: 1
-  - vesselClass: 6
+  - vesselClass: 11
     PlayerName: AI 3
     AvatarId: 3
     IsAI: 1

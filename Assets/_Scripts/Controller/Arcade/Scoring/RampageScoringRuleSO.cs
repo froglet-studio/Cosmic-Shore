@@ -12,8 +12,10 @@ namespace CosmicShore.Gameplay
     /// <see cref="IRoundStats.HostilePrismsDestroyed"/> reaches the target
     /// (<see cref="GameDataSO.PrismTargetCount"/>, authored via Tools &gt; Cosmic Shore &gt;
     /// End Game Conditions); the winning domain is the highest destruction sum. Each player's
-    /// score IS their hostile-prism count - higher is better. Only OTHER domains' mass scores
-    /// (metric reads HostilePrismsDestroyed), so shattering your own trail is worthless by
+    /// score IS their hostile-prism count - higher is better. Scoring mass = ALL environment
+    /// mass (flora/fauna, any color - StatsManager classifies non-roster-owned prisms hostile)
+    /// plus OTHER domains' player-laid trails; your own/teammates' trails never score (the
+    /// roster domain check filters them), so lay-and-shatter farming is worthless by
     /// construction. Results rank TEAM-major, matching Crystal Capture: every winning-domain
     /// player above every losing-domain player, domains by summed prisms destroyed.
     /// </summary>

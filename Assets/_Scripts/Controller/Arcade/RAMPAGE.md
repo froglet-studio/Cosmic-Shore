@@ -6,10 +6,14 @@ Rampage is the **destructive analog of Crystal Capture ("Scurry")**: a multiplay
 party game where every domain races to be the first to DESTROY the prism target.
 Simple destructive fun — fly hard, smash mass, watch the counter fall.
 
-- **Only hostile mass scores.** The metric is `IRoundStats.HostilePrismsDestroyed` —
-  prisms belonging to **another** domain (environment flora seeded in the other two
-  colors, opponents' trails, opposing fauna health-prisms). Shattering your own
-  trail is worthless *by construction*, so there is no lay-and-smash farming loop.
+- **Only hostile mass scores.** The metric is `IRoundStats.HostilePrismsDestroyed`.
+  "Hostile" means everything except your own team's **player-laid** mass: ALL
+  environment mass scores regardless of color (flora and fauna carry non-roster
+  owner names — `DefaultPlayer`/`FaunaPrefab` — so `StatsManager` classifies their
+  destruction hostile), and opponents' trails score; your own and your teammates'
+  trails never do (trails ARE rostered, so the domain check filters them).
+  Shattering your own trail is worthless *by construction*, so there is no
+  lay-and-smash farming loop — but every wild prism in the arena is fair game.
 - **Destruction is the sanctioned mass sink.** The conserved-mass law says prisms are
   removed only by an *active* force — vessel abilities or fauna consumption. Rampage
   is that law played as a sport: every scoring act is a vessel ability consuming mass.
@@ -57,8 +61,8 @@ Vessel ability destroys a prism (gun / missile / AOE / ram)
               ▼
 StatsManager.PrismDestroyed                        [server-only via _allowRecord]
   ├─ attacker.BlocksDestroyed++ / TotalVolumeDestroyed += v
-  ├─ same-domain?  → Friendly… stats (NEVER scores)
-  └─ cross-domain? → HostilePrismsDestroyed++      (NetworkVariable → all peers)
+  ├─ victim rostered + same domain? → Friendly… stats (NEVER scores: own/teammate trails)
+  └─ else (other domain OR environment) → HostilePrismsDestroyed++  (NetworkVariable → peers)
               │
               ▼
 ScoringMetrics.Read(stats, PrismsDestroyed) → SumByDomain
@@ -82,11 +86,13 @@ RampageController.OnTurnEndedCustom                [server]
   queries** — scoring rides the existing StatsManager SOAP channel, and a match
   *removes* ~100+ prisms, so Rampage sits below the Blob collider envelope.
 - **Rampage Spawn Profile** — flora-rich: the four Blob flora species (Mass/Time/
-  Space Gyroids + SchwarzP) with `FloraSpawnVolumeCeiling 12000`, plus tadpole +
-  shark fauna (grazer + predator food web; both drop elemental crystals on death —
-  skimmable powerups mid-rampage). Species configs are referenced from the Blob
-  folder (read-only species definitions); fork per-cell copies only when Rampage
-  needs its own tuning deltas.
+  Space Gyroids + SchwarzP), plus tadpole + shark fauna (grazer + predator food
+  web; both drop elemental crystals on death — skimmable powerups mid-rampage).
+  Flora stock is gated by the Frenzy phase threshold (`FrenzyEnterVolume 57600` —
+  planting pauses at Frenzy, resumes below `FrenzyExitVolume`; the profile's
+  `FloraSpawnVolumeCeiling` field is legacy-inert). Species configs are referenced
+  from the Blob folder (read-only species definitions); fork per-cell copies only
+  when Rampage needs its own tuning deltas.
 
 ## End condition
 
@@ -105,9 +111,10 @@ lands at game end in this mode, so the Score source would be inert live).
 
 ## Strategy surface (why it's a race, not a grind)
 
-- **Target choice is the skill.** Dense enemy flora clusters score fastest; opposing
-  trails score too and simultaneously deny the opponent skim/boost infrastructure.
-  Your own domain's third of the environment is dead weight — route around it.
+- **Target choice is the skill.** Dense flora clusters score fastest (any color —
+  environment mass is bounty for everyone); opposing trails score too and
+  simultaneously deny the opponent skim/boost infrastructure. Only your own
+  team's trails are dead weight.
 - **Destruction feeds the enemy comeback.** Pull far ahead and the trailing domains
   get all-element buffs (stronger AOE, faster) — rubber-banding without scripting.
 - **Fauna are jackpots with teeth.** Opposing fauna are multi-prism bodies worth
@@ -138,10 +145,17 @@ lands at game end in this mode, so the Score source would be inert live).
 
 ## Known limitations / follow-ups
 
-- **Legacy training asset**: `SO_TrainingGame_Rampage.asset` (TrainingGames list)
-  still references this game with pre-rework score requirements (10000+). The
-  training/daily-challenge surface predates the multiplayer rework and its scenes;
-  its Rampage rewards need re-tuning to prism counts if that surface returns.
+- **Legacy training asset**: `SO_TrainingGame_Rampage.asset` was **de-listed** from
+  `TrainingGames.asset` (the daily-challenge pool) and Rhino's hangar training
+  slots (repointed to WildlifeBlitz, matching Sparrow) — `Arcade.LaunchTrainingGame`
+  launches scenes unconfigured (no GameMode/player-count/backfill), which is wrong
+  for a multiplayer mode. The training SO itself remains on disk with pre-rework
+  score tiers (10000+); re-tune to prism counts if that surface returns.
+- **Menu unlock**: `Rampage(2)` was added to `ProgressionConfig.asset`
+  `alwaysUnlockedModes` (previously only Tournament 36) so the card is clickable
+  on fresh accounts. Astro League(37)/Brood Rush(38) are NOT in that list — they
+  rely on account progression state; align them deliberately if they should be
+  always-open too.
 - **No objective-arrow provider**: like Brood Rush, `MiniGameHUD.
   CreateObjectiveProviderForGameMode` has no Rampage case (there is no single
   objective point to point at — the arena is the objective).
