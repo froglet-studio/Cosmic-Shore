@@ -7,41 +7,67 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Wildlife Blitz (single-player scene): golf. Mid-turn, the local player's Score is
-    /// the blitz composite (hostile volume + weighted kills + weighted crystals, fed by
-    /// WildlifeBlitzScoreKeeper) racing the cell's CellEndGameScore threshold
-    /// (SingleplayerWildlifeBlitzTurnMonitor). At game end the LOCAL player's Score
-    /// becomes their finish time on a win or the DNF sentinel on a loss - the convention
-    /// carried by AssignScores: a non-Blue winner means the local player won and
-    /// finishTime is their clear time; Blue means the blitz timed out.
-    /// The end condition is the monitor's Score-threshold check, so
-    /// <see cref="IsObjectiveReached"/> never fires.
+    /// Wildlife Blitz: co-op-vs-environment, golf. Mid-turn, every player's Score is their
+    /// blitz composite (hostile volume + weighted kills + weighted crystals, fed
+    /// server-side by WildlifeBlitzScoreKeeper) and the TEAM's summed composite races the
+    /// cell's CellEndGameScore threshold (published into
+    /// <see cref="GameDataSO.GoalTargetCount"/> by WildlifeBlitzObjectiveTurnMonitor).
+    /// <see cref="IsObjectiveReached"/> fires when the team sum reaches the target - the
+    /// cell is cleared and every teammate's Score becomes the shared clear time; if the
+    /// clock runs out first the controller ends the game with a Blue (no-winner) DNF and
+    /// every teammate gets the DNF sentinel.
     /// </summary>
     [CreateAssetMenu(menuName = "ScriptableObjects/Scoring Rules/WildlifeBlitz", fileName = "WildlifeBlitzScoringRule")]
     public class WildlifeBlitzScoringRuleSO : ScoringRuleSO
     {
         public const float DnfScore = 999f;
 
+        protected override int TargetCount(GameDataSO gameData) => gameData.GoalTargetCount;
+
         public override bool IsObjectiveReached(GameDataSO gameData, out Domains winner)
         {
-            // The SP blitz monitor ends the turn on the Score threshold (win) or the
-            // clock (loss); the rule only formats the outcome.
             winner = Domains.Blue;
-            return false;
+            int target = TargetCount(gameData);
+            if (target <= 0) return false;
+
+            float teamSum = 0f;
+            IRoundStats first = null;
+            foreach (var stats in gameData.RoundStatsList)
+            {
+                if (stats == null) continue;
+                first ??= stats;
+                teamSum += stats.Score;
+            }
+
+            if (first == null || teamSum < target) return false;
+
+            // Co-op: the whole roster shares one domain (DomainAssigner's co-op path).
+            winner = first.Domain;
+            return true;
+        }
+
+        public override int Remaining(GameDataSO gameData, Domains domain)
+        {
+            // The blitz objective is the TEAM Score sum, not a per-domain metric.
+            float teamSum = 0f;
+            foreach (var stats in gameData.RoundStatsList)
+                if (stats != null) teamSum += stats.Score;
+            return Mathf.Max(0, TargetCount(gameData) - (int)teamSum);
         }
 
         public override void AssignScores(GameDataSO gameData, Domains winner, float finishTime)
         {
-            var local = gameData.LocalRoundStats;
-            if (local == null) return;
-            local.Score = winner != Domains.Blue ? finishTime : DnfScore;
+            // Win: the whole team shares the clear time. Loss (Blue): everyone DNFs.
+            float finalScore = winner != Domains.Blue ? finishTime : DnfScore;
+            foreach (var stats in gameData.RoundStatsList)
+                if (stats != null) stats.Score = finalScore;
         }
 
         public override List<ScoreResult> BuildResults(GameDataSO gameData)
         {
-            // Golf: finish time ascending; DNF (and any AI composite scores, which are
-            // never finalized in the solo blitz) sort behind a real clear time.
+            // Golf: finish time ascending; DNF sorts behind any real clear time.
             var ordered = gameData.RoundStatsList
+                .Where(s => s != null)
                 .OrderBy(s => s.Score)
                 .ThenBy(s => s.Name, System.StringComparer.Ordinal);
 

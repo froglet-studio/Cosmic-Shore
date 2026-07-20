@@ -115,6 +115,8 @@ namespace CosmicShore.Gameplay
         /// calls are no-ops. Modes call this from <see cref="OnTurnEndedCustom"/> once their
         /// winning domain is known; <paramref name="finishTime"/> feeds golf-style
         /// <see cref="ScoringRuleSO.AssignScores"/> (pass 0 for points modes).
+        /// A <see cref="Domains.Blue"/> winner is a valid NO-WINNER end (e.g. a co-op DNF):
+        /// results still broadcast, with no representative name and DEFEAT attribution.
         /// </summary>
         protected void SyncFinalResults(Domains winnerDomain, float finishTime)
         {
@@ -125,8 +127,8 @@ namespace CosmicShore.Gameplay
 
             // Representative winner-name resolves before AssignScores mutates Score
             // (LiveMetric is Score-independent, but keep the read upfront for clarity).
-            string winnerName = ResolveWinnerRepresentativeName(winnerDomain);
-            if (string.IsNullOrEmpty(winnerName)) return; // no roster entry on the winning domain
+            string winnerName = winnerDomain == Domains.Blue ? "" : ResolveWinnerRepresentativeName(winnerDomain);
+            if (winnerDomain != Domains.Blue && string.IsNullOrEmpty(winnerName)) return; // no roster entry on the winning domain
 
             Debug.Log($"<color=#00CED1>[FLOW-10] [{GetType().Name}] Final results - domain {winnerDomain} wins ('{winnerName}', finishTime={finishTime:F2}). Broadcasting.</color>");
             FinalResultsSent = true;
@@ -196,14 +198,17 @@ namespace CosmicShore.Gameplay
                 ScoringMetrics.Write(stat, rule.Metric, metricValues[i]);
             }
 
-            // Authoritative winner - written to gameData, consumed by EndGameControllers.
+            gameData.SortRoundStats(UseGolfRules);
+            gameData.CalculateDomainStats(UseGolfRules);
+            gameData.SetResults(rule.BuildResults(gameData));
+
+            // Authoritative winner - written AFTER SetResults so the explicit values always
+            // win: SetResults derives Winner* from Results[0] when unset, which would credit
+            // a roster row on a no-winner (Blue) end and flip a DNF into VICTORY.
             // OnWinnerCalculated (below) is the "results ready" signal.
             gameData.WinnerName = winnerName.ToString();
             gameData.WinnerDomain = (Domains)winnerDomain;
 
-            gameData.SortRoundStats(UseGolfRules);
-            gameData.CalculateDomainStats(UseGolfRules);
-            gameData.SetResults(rule.BuildResults(gameData));
             gameData.InvokeWinnerCalculated();
             gameData.InvokeMiniGameEnd();
         }

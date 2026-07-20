@@ -1,5 +1,7 @@
+using System.Collections.Generic;
 using Obvious.Soap;
 using Reflex.Attributes;
+using Unity.Netcode;
 using UnityEngine;
 using CosmicShore.Core;
 using CosmicShore.Data;
@@ -8,14 +10,17 @@ using CosmicShore.Utility;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Wildlife Blitz score keeper (single-player scene) - the standalone successor of
-    /// SinglePlayerWildlifeBlitzScoreTracker, off the legacy BaseScoreTracker family.
-    /// Owns the blitz composite: the local player's Score is recomputed absolutely on
-    /// every scoring event as hostileVolume + kills*killPoints + crystals*crystalPoints
-    /// (the same weights the legacy scoringConfigs carried: volume x1, kills x5,
-    /// crystals x20). The SingleplayerWildlifeBlitzTurnMonitor races this Score against
-    /// the cell's CellEndGameScore. UGS stats report on OnMiniGameEnd, AFTER the
-    /// controller's rule-driven EndGame finalized the Score (win time / DNF).
+    /// Wildlife Blitz score keeper - SERVER-AUTHORITATIVE. Every peer's simulation raises
+    /// the local kill/crystal events, but only the server's counts (the NucleusRush
+    /// precedent): the server attributes each event to its player by name and recomputes
+    /// that player's Score absolutely as
+    /// hostileVolume + kills*killPoints + crystals*crystalPoints (the legacy weights:
+    /// volume x1, kills x5, crystals x20). Score replicates to every peer via n_Score,
+    /// driving the centerline HUD; the TEAM sum is the objective the rule watches.
+    /// UGS stats report on OnMiniGameEnd, AFTER the controller's rule-driven end
+    /// finalized the Score (clear time / DNF), on every peer for its own local player.
+    /// B15 (Docs/ScoringSystem/BUGS.md): per-stats subscriptions detach off the keeper's
+    /// own record list, never gameData.RoundStatsList, with an OnDisable safety net.
     /// </summary>
     public class WildlifeBlitzScoreKeeper : MonoBehaviour
     {
@@ -31,17 +36,22 @@ namespace CosmicShore.Gameplay
         [Inject] GameDataSO gameData;
         [Inject] UGSStatsManager ugsStatsManager;
 
-        int _kills;
-        int _crystals;
+        readonly Dictionary<string, int> _kills = new();
+        readonly Dictionary<string, int> _crystals = new();
+        readonly List<IRoundStats> _subscribedStats = new();
         bool _isTracking;
 
-        /// <summary>Total lifeforms killed this game (scoreboard stats + UGS).</summary>
-        public int TotalLifeFormsKilled => _kills;
-        /// <summary>Total elemental crystals collected this game (scoreboard stats + UGS).</summary>
-        public int TotalCrystalsCollected => _crystals;
-        // B15 discipline: remember the one stats record we subscribed to and detach from
-        // THAT record - never by re-reading gameData.LocalRoundStats at teardown time.
-        IRoundStats _subscribedStats;
+        /// <summary>Team total lifeforms killed this game (scoreboard stats + UGS).</summary>
+        public int TotalLifeFormsKilled
+        {
+            get { int t = 0; foreach (var v in _kills.Values) t += v; return t; }
+        }
+
+        /// <summary>Team total elemental crystals collected this game (scoreboard stats + UGS).</summary>
+        public int TotalCrystalsCollected
+        {
+            get { int t = 0; foreach (var v in _crystals.Values) t += v; return t; }
+        }
 
         void OnEnable()
         {
@@ -62,21 +72,31 @@ namespace CosmicShore.Gameplay
             StopTracking();
         }
 
+        static bool IsServerPeer => NetworkManager.Singleton != null && NetworkManager.Singleton.IsServer;
+
         public void StartTracking()
         {
             if (_isTracking) return;
 
+            // Every peer counts its own simulation's kill/crystal events (display totals +
+            // its own UGS report - the fidelity the solo version had). Only the SERVER
+            // writes Score: a spawned RoundStats suppresses local raises anyway, so only
+            // server writes reach the HUDs (via n_Score replication) and the objective.
             LifeForm.OnLifeFormDeath += OnLifeFormKilled;
             ElementalCrystalImpactor.OnCrystalCollected += OnCrystalCollected;
 
-            if (_subscribedStats == null && gameData.LocalRoundStats != null)
+            if (IsServerPeer)
             {
-                _subscribedStats = gameData.LocalRoundStats;
-                _subscribedStats.OnHostileVolumeDestroyedChanged += OnHostileVolumeChanged;
+                foreach (var stats in gameData.RoundStatsList)
+                {
+                    if (stats == null || _subscribedStats.Contains(stats)) continue;
+                    stats.OnHostileVolumeDestroyedChanged += OnHostileVolumeChanged;
+                    _subscribedStats.Add(stats);
+                }
             }
 
             _isTracking = true;
-            CSDebug.Log("[WildlifeBlitzScoreKeeper] Started Tracking");
+            CSDebug.Log($"[WildlifeBlitzScoreKeeper] Started Tracking (server={IsServerPeer})");
         }
 
         public void StopTracking()
@@ -86,11 +106,12 @@ namespace CosmicShore.Gameplay
             LifeForm.OnLifeFormDeath -= OnLifeFormKilled;
             ElementalCrystalImpactor.OnCrystalCollected -= OnCrystalCollected;
 
-            if (_subscribedStats != null)
+            foreach (var stats in _subscribedStats)
             {
-                _subscribedStats.OnHostileVolumeDestroyedChanged -= OnHostileVolumeChanged;
-                _subscribedStats = null;
+                if (stats == null) continue;
+                stats.OnHostileVolumeDestroyedChanged -= OnHostileVolumeChanged;
             }
+            _subscribedStats.Clear();
 
             _isTracking = false;
             CSDebug.Log("[WildlifeBlitzScoreKeeper] Stopped Tracking");
@@ -98,42 +119,59 @@ namespace CosmicShore.Gameplay
 
         void OnLifeFormKilled(string playerName, int cellId)
         {
-            _kills++;
-            RecomputeScore();
+            _kills[playerName] = _kills.GetValueOrDefault(playerName) + 1;
+            RecomputeScore(playerName);
         }
 
         void OnCrystalCollected(string playerName)
         {
-            _crystals++;
-            RecomputeScore();
+            _crystals[playerName] = _crystals.GetValueOrDefault(playerName) + 1;
+            RecomputeScore(playerName);
         }
 
-        void OnHostileVolumeChanged(IRoundStats stats) => RecomputeScore();
+        void OnHostileVolumeChanged(IRoundStats stats) => RecomputeScore(stats);
+
+        void RecomputeScore(string playerName)
+        {
+            foreach (var stats in gameData.RoundStatsList)
+            {
+                if (stats != null && stats.Name == playerName)
+                {
+                    RecomputeScore(stats);
+                    return;
+                }
+            }
+        }
 
         /// <summary>
-        /// Absolute recompute - idempotent, replacing the legacy mix of incremental
-        /// AddScore writes and strategy-sum overwrites that raced each other.
+        /// Absolute per-player recompute - idempotent; the composite always reflects the
+        /// player's current stats + attributed kills/crystals. Server-only write.
         /// </summary>
-        void RecomputeScore()
+        void RecomputeScore(IRoundStats stats)
         {
-            var local = gameData.LocalRoundStats;
-            if (local == null) return;
-            local.Score = local.HostileVolumeDestroyed + _kills * killPoints + _crystals * crystalPoints;
+            if (!IsServerPeer) return;
+            stats.Score = stats.HostileVolumeDestroyed
+                          + _kills.GetValueOrDefault(stats.Name) * killPoints
+                          + _crystals.GetValueOrDefault(stats.Name) * crystalPoints;
             if (eventOnScoreChanged) eventOnScoreChanged.Raise();
         }
 
         public void ResetScores()
         {
-            _kills = 0;
-            _crystals = 0;
-            if (gameData?.LocalRoundStats != null) gameData.LocalRoundStats.Score = 0;
+            _kills.Clear();
+            _crystals.Clear();
+            if (IsServerPeer)
+            {
+                foreach (var stats in gameData.RoundStatsList)
+                    if (stats != null) stats.Score = 0;
+            }
             if (eventOnScoreChanged) eventOnScoreChanged.Raise();
         }
 
         /// <summary>
-        /// UGS reporting on OnMiniGameEnd - the controller's rule-driven EndGame has
-        /// already finalized the local Score (win time / DNF sentinel) by the time this
-        /// fires, mirroring the Joust/CrystalCapture reporter pattern.
+        /// UGS reporting on OnMiniGameEnd - the controller's rule-driven end has already
+        /// finalized every Score (clear time / DNF) by the time this fires. Runs on every
+        /// peer for its own local player (mirroring the Joust/CC reporter pattern).
         /// </summary>
         void ReportStats()
         {
@@ -142,8 +180,8 @@ namespace CosmicShore.Gameplay
             ugsStatsManager.ReportBlitzStats(
                 GameModes.WildlifeBlitz,
                 gameData.SelectedIntensity.Value,
-                _crystals,
-                _kills,
+                TotalCrystalsCollected,
+                TotalLifeFormsKilled,
                 (int)gameData.LocalRoundStats.Score
             );
 
