@@ -151,6 +151,11 @@ controller today). Gate: YASH Y2. **[hard-gate]**
 (`MultiplayerSetup.cs:84` session gate; `HostConnectionService.cs:1860` presence). REFACTOR.md Q1
 requires sign-off on the replacement signals (party human count / requested-session semantics /
 ApplicationState). Approve the concrete signals when Yash's Y1.4 design note lands. **[hard-gate]**
+→ **The Y1.4 design note has landed:** `Docs/ScoringSystem/ARCHITECTURE.md` §8 now carries the
+refreshed (measured 2026-07-20) fork map + the per-site replacement proposals — session gate →
+`HostConnectionDataSO.PartyMembers.Count > 1`; presence → ApplicationState==InGame + the
+party-session id already in `FriendPresenceActivity`. Mark this decision to unblock R1/Y1.4
+execution.
 
 ---
 
