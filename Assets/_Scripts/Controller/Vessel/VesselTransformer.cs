@@ -415,10 +415,8 @@ public class VesselTransformer : MonoBehaviour
                 transform.forward) * accumulatedRotation;
         }
 
-        protected virtual void MoveShip()
+        protected float CurrentBoostAmount()
         {
-            if (VesselStatus == null || InputStatus == null) return;
-
             float boostAmount = 1f;
             if (VesselStatus.IsBoosting)
                 // TIME → boost speed: scaled by the vessel's live Time level via its
@@ -429,10 +427,36 @@ public class VesselTransformer : MonoBehaviour
             if (VesselStatus.IsChargedBoostDischarging)
                 boostAmount *= VesselStatus.ChargedBoostCharge;
 
+            return boostAmount;
+        }
+
+        /// <summary>The steady-state cruise speed the smoothed `speed` field is easing toward
+        /// this frame — throttle × boost + minimum. Single source of the formula for both the
+        /// per-frame lerp and <see cref="SnapSpeedToThrottleTarget"/>.</summary>
+        protected virtual float ComputeThrottleTarget()
+            => InputStatus.XDiff * ThrottleScaler * ThrottleScalerMultiplier.EvaluateLive(VesselStatus) * CurrentBoostAmount()
+               + MinimumSpeed;
+
+        /// <summary>Snap the smoothed cruise speed straight UP to the current throttle target,
+        /// skipping the ease-in lerp. Used by gear-style boosts (e.g. the Rhino's
+        /// full-speed-straight gearing) where each gear engage should read as a discrete
+        /// jerk forward, not a ramp. Never lowers speed — if the vessel is already moving
+        /// faster than the target (e.g. gear 1 re-engaging right after a top-gear run),
+        /// deceleration eases through the normal smoothing instead of a backward jolt.</summary>
+        public void SnapSpeedToThrottleTarget()
+        {
+            if (VesselStatus == null || InputStatus == null) return;
+            speed = Mathf.Max(speed, ComputeThrottleTarget());
+        }
+
+        protected virtual void MoveShip()
+        {
+            if (VesselStatus == null || InputStatus == null) return;
+
             // Smooth throttle speed calculation
             speed = Mathf.Lerp(
                 speed,
-                InputStatus.XDiff * ThrottleScaler * ThrottleScalerMultiplier.EvaluateLive(VesselStatus) * boostAmount + MinimumSpeed,
+                ComputeThrottleTarget(),
                 LERP_AMOUNT * Time.deltaTime);
 
             // Modifiers scale this frame's output speed only. Multiplying into the

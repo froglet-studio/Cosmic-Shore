@@ -723,6 +723,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _executors:
   - {fileID: 6994424773851051839}
+  - {fileID: 4245733341990092852}
 --- !u!1 &2131910783175408860
 GameObject:
   m_ObjectHideFlags: 0
@@ -1477,6 +1478,7 @@ GameObject:
   m_Component:
   - component: {fileID: 3748225512178651457}
   - component: {fileID: 6994424773851051839}
+  - component: {fileID: 4245733341990092852}
   m_Layer: 0
   m_Name: GrowTrailActionRegistry
   m_TagString: Untagged
@@ -1513,6 +1515,19 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   controller: {fileID: 874579555101021522}
   OnMiniGameTurnEnd: {fileID: 11400000, guid: 91ea9101389ea884babdf61e446ced27, type: 2}
+--- !u!114 &4245733341990092852
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4542496298761173984}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8687dafee5a64e0f9121e36b44fba9a3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  OnMiniGameTurnEnd: {fileID: 11400000, guid: 498a06d44bde9184f985c938c803b2a1, type: 2}
 --- !u!1 &5049999404910512676
 GameObject:
   m_ObjectHideFlags: 0
@@ -2596,7 +2611,7 @@ MonoBehaviour:
   _inputEventShipActions:
   - InputEvent: 0
     ShipActions:
-    - {fileID: 11400000, guid: 8346bd7ce3239e541830985234265532, type: 2}
+    - {fileID: 11400000, guid: cb9bc8a3724a4a67a3656d7df507b2cb, type: 2}
     - {fileID: 11400000, guid: 0c9c1d521f39e7048b82825ae4fce5bc, type: 2}
   _resourceEventClassActions: []
   _touchActionOverrides: []
