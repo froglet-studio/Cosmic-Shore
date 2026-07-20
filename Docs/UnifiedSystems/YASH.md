@@ -141,16 +141,36 @@ The declared target: one always-networked, domain-aggregated scoring path (REFAC
    strategies once Y1.1 lands (the three throwing stubs + enum IDs 3-6 are already gone).
    R10-D (server-ordered results) per `RANKING_SYNC_PLAN.md` while you're in the sync path.
 
-## Y2 — Spawn/controller spine `[hard-gate D19; sequence after Y1.1, needs D16 resolved]`
+## Y2 — Spawn/controller spine — **EXECUTED 2026-07-20** (owner resolved D19/D16/D21/D3; solo modes retired outright)
 
-Port MinigameCellularDuel + MinigameWildlifeBlitz to the HexRace single-scene model
-(`MultiplayerMiniGameControllerBase` subclass + `ServerPlayerVesselInitializerWithAI`;
-`MultiplayerCellularDuelController` already exists as the duel twin). Then delete: `PlayerSpawner`,
-`VesselSpawner`, `PlayerSpawnerAdapterBase`, `MiniGamePlayerSpawnerAdapter`, the
-`Player and Vessel Spawner` prefab, `Player.InitializeForSinglePlayerMode`, and the
-`SinglePlayerMiniGameControllerBase` branch. Collapse the base so one server path owns the
-lifecycle (note the measured drift: base `EndGame` lacks `CalculateDomainStats`). *Risk: highest
-in this doc — full MPPM regression (PartySystem TESTS S-series) + solo-host runs of both modes.*
+Shipped as the solo-retirement program (commits C1–C7 on `claude/unified-yash-refactor-9sc0ws`),
+going further than originally scoped — the owner's direction "solo modes are just multiplayer
+game modes with one party member as host" retired the entire solo axis:
+
+- **C1** Cellular Duel consolidated onto mode 29 (SP scene/controller/card deleted; MP scene
+  gained `ServerPlayerVesselInitializerWithAI` + spawn points + `MinDomainsAllowed: 2`).
+- **C2** Wildlife Blitz (26) converted in place to the networked single-host model:
+  `MultiplayerWildlifeBlitzController` (domain-games spine) + `WildlifeBlitzObjectiveTurnMonitor`
+  + server-authoritative `WildlifeBlitzScoreKeeper`; scene moved to Multiplayer Scenes with the
+  network stack; shared-tail hardening (Blue/DNF ends + Winner*-after-SetResults) + B17 fixed
+  via `GameDataSO.HasNoWinner`.
+- **C3** Benchmark rebuilt on the converted-blitz pattern (`SandboxBenchmarkController` re-parented
+  onto the MP spine, auto-start, no monitors, in Build Settings) — resolves D16.
+- **C4** SP path deleted: `PlayerSpawner`, `VesselSpawner`, `PlayerSpawnerAdapterBase`,
+  `MiniGamePlayerSpawnerAdapter`, the `Player and Vessel Spawner` prefab,
+  `SinglePlayerMiniGameControllerBase` branch, `Player.InitializeForSinglePlayerMode`, the
+  legacy `VesselSelectionPanelController`, and the base's local `EndTurn`/`EndRound`/`EndGame`
+  limbs (the noted `CalculateDomainStats` drift died with them — the MP path owns the lifecycle).
+- **C5** `GameDataSO.IsMultiplayerMode` + `SO_Game.IsMultiplayer` retired (11 sites; the
+  `MultiplayerSetup` matchmaking path deleted whole; per-site table in
+  `Docs/ScoringSystem/ARCHITECTURE.md` §8) — resolves D21.
+- **C6** Dead solo content deleted (23 scene-less cards, 4 orphaned lists, mode-32 stack,
+  Singleplayer Scenes folder; retired enum IDs annotated do-not-reuse) — executes D3 as
+  delete-outright per owner.
+- **C7** Docs sweep (this note, SCENES.md, CLAUDE.md, GARRETT.md annotations).
+
+Remaining verification: the MPPM regression runs listed in the program's test guide (solo-as-host
+duel + blitz, 2-human runs, HexRace/Joust regression, Settings → Run Benchmark).
 
 ## Y3 — Input pipeline template `[default-ok D9/D12]`
 

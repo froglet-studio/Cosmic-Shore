@@ -31,7 +31,7 @@ These come from the project owner and govern **every** item below:
 
 ## Open design questions (agree before coding)
 
-### Q1 — Unify on the always-networked model; retire `IsMultiplayerMode`
+### Q1 — ✅ RESOLVED by owner 2026-07-20: solo modes retired outright; flag deleted (see R1)
 The game always runs as a network host, so a solo game is host + AI. We want
 solo-host and online to render scores through the **identical**
 domain-aggregated, RPC-synced path. Before writing code we must agree, per
@@ -52,13 +52,15 @@ Output of this discussion becomes item **R1**.
 
 ## Backlog (sequenced)
 
-### R1 — 🔴 [discuss-first] Remove `IsMultiplayerMode` forking → unified path
-Route all scoring/lobby/cinematic behavior through the always-networked host
-model; drive per-site behavior off concrete signals (§8) and delete the flag.
-Works *through* the **Domain + scoring** fundamentals (consolidation, not a new
-system). **Touches** winner calc, score sync, HUD layout selection, lobby
-buttons — gated on **Q1** sign-off. Ship in small steps (one fork site / small
-group per commit).
+### R1 — ✅ EXECUTED 2026-07-20 — `IsMultiplayerMode` deleted (solo-retirement program C5)
+The owner's decision dissolved the discuss-first question: solo modes no longer
+exist (solo = party-of-one host), so the flag distinguished nothing and was
+deleted rather than replaced. `SO_Game.IsMultiplayer` died with it; the
+`MultiplayerSetup` matchmaking path it gated was deleted whole (provably dead);
+presence advertises every in-game scene; analytics reads
+`ConnectedClientsIds.Count > 1` at report time. Per-site resolution table:
+`ARCHITECTURE.md` §8. Solo-host lobby buttons fork on `NetworkManager.IsServer`
+(the solo host owns Play Again / Main Menu — never "Leave Lobby").
 
 ### R2 — 🟢 Deduplicate the score-text animation (DRY) — incl. R2b (entrance)
 `PlayCounterRoll` / `PlayScorePunch` / `PlayColorFlash` / entrance were
@@ -210,9 +212,11 @@ Sequence **with R1** (unified always-networked path) — both touch the scoring 
   vessel podium (`EndGameVesselDisplayManager`) still ranked by a local descending-`Score` sort
   (golf-inverted → showed the loser 1st in HexRace). It now reads `gameData.Results` too (BUGS.md
   B7); that was the last end-game surface re-deriving rank locally.
-- 🟡 **C** (R1) — partially advanced: `IsLocalUser` → `IsMultiplayerOwner` (commit `10e541fc`, no
-  offline single-player branch). Still open: remove the `IsMultiplayerMode` scoring branches
-  (`Scoreboard.cs:147,454`) and retire `DomainStatsList[0]` as a winner source.
+- ✅ **C** (R1) — complete: `IsLocalUser` → `IsMultiplayerOwner` (commit `10e541fc`), and the
+  `IsMultiplayerMode` flag itself deleted 2026-07-20 (solo-retirement C5 — the Scoreboard
+  branches were already gone by then). `DomainStatsList[0]`-as-winner-source survives only as
+  the legacy fallback in `EndGameSequencer.DidLocalPlayerWin` for modes that never write
+  `WinnerDomain`, now guarded by `GameDataSO.HasNoWinner` (B17).
 - 🔴 **D** (next session) — **server-ORDERED results sync**: the rows are still re-SORTED on every
   peer (`SyncFinalScores_ClientRpc` → `rule.BuildResults` over the local `RoundStatsList`), so tied
   rows order differently host vs client. Sort once on the server, ship rows in rank order (+ the

@@ -149,7 +149,7 @@ Assets/
 │   │   ├── Animation/         # Per-vessel animation controllers
 │   │   ├── Camera/            # CustomCameraController, CameraSettingsSO, ICameraController
 │   │   ├── Multiplayer/       # Netcode: ServerPlayerVesselInitializer (+ WithAI, Menu variants), ClientPlayerVesselInitializer, MultiplayerSetup, MenuCrystalClickHandler, DomainAssigner, NetworkStatsManager
-│   │   ├── Player/            # Player (NetworkBehaviour), PlayerSpawner, IPlayer, PlayerSpawnerAdapterBase, MiniGamePlayerSpawnerAdapter
+│   │   ├── Player/            # Player (NetworkBehaviour), IPlayer, RoundStats
 │   │   ├── Prisms/            # PrismFactory
 │   │   ├── Assemblers/        # Gyroid/wall assembly systems
 │   │   ├── Party/             # HostConnectionService, PartyInviteController, FriendsInitializer
@@ -238,16 +238,12 @@ See `Docs/SCENES.md` for the full scene and game mode reference. Summary below.
 | **Authentication** | 1 | Auth UI, cached session check, NetworkManager host start |
 | **Menu_Main** | 2 | Main menu with networked autopilot vessel, screen navigation |
 
-#### Single-Player Game Scenes
-
-| Scene | Game Mode | Controller |
-|---|---|---|
-| `MinigameCellularDuel` | `CellularDuel (8)` | `SinglePlayerCellularDuelController` |
-| `MinigameWildlifeBlitz` | `WildlifeBlitz (26)` | `SinglePlayerWildlifeBlitzController` |
-
-All in `Assets/_Scenes/Singleplayer Scenes/`.
-
 #### Multiplayer Game Scenes
+
+There are no single-player scenes: **solo play is a multiplayer game whose party is one
+host** (eager Relay session + AI backfill via `ServerPlayerVesselInitializerWithAI`).
+The former `Singleplayer Scenes/` folder is gone; `SplashScreen.unity` lives at
+`Assets/_Scenes/`.
 
 | Scene | Game Mode | Controller |
 |---|---|---|
@@ -256,9 +252,10 @@ All in `Assets/_Scenes/Singleplayer Scenes/`.
 | `MinigameCrystalCaptureMultiplayer_Gameplay` | `MultiplayerCrystalCapture (35)` | `MultiplayerCrystalCaptureController` |
 | `MinigameDuelForCellMultiplayer_Gameplay` | `MultiplayerCellularDuel (29)` | `MultiplayerCellularDuelController` |
 | `MinigameJoust_Gameplay` | `MultiplayerJoust (34)` | `MultiplayerJoustController` |
-| `MinigameWildlifeBlitzMultuplayerCoOp` | `MultiplayerWildlifeBlitzGame (32)` | `MultiplayerWildlifeBlitzMiniGame` |
 | `MinigameAstroLeague` | `AstroLeague (36)` | `AstroLeagueController` |
 | `MinigameNucleusRush` | `NucleusRush (38)` | `NucleusRushController` |
+| `MinigameWildlifeBlitz` | `WildlifeBlitz (26)` | `MultiplayerWildlifeBlitzController` |
+| `BenchmarkStressTest` | (Settings → Run Benchmark; `WildlifeBlitz` mode) | `SandboxBenchmarkController` |
 | `ArcadeGameMultiplayer2v2CoOpVsAI` | `Multiplayer2v2CoOpVsAI (30)` | Domain games variant |
 
 All in `Assets/_Scenes/Multiplayer Scenes/`.
@@ -273,7 +270,7 @@ All in `Assets/_Scenes/Multiplayer Scenes/`.
 
 38 game modes with explicit numeric IDs (highest is `NucleusRush(38)`; IDs 7 and 31 are skipped). Single-player: `Elimination(1)` through `ProtectMission(27)`. Multiplayer: `MultiplayerFreestyle(28)`, `MultiplayerCellularDuel(29)`, `Multiplayer2v2CoOpVsAI(30)`, `MultiplayerWildlifeBlitzGame(32)`, `HexRace(33)`, `MultiplayerJoust(34)`, `MultiplayerCrystalCapture(35)`, `AstroLeague(37)`, `NucleusRush(38)`. Meta-mode: `Tournament(36)` — the session-level meta that chains HexRace → Joust → Crystal Capture back-to-back via sequential `Single` loads (see `Docs/TournamentSystem/ARCHITECTURE.md`). `AstroLeague(37)` is hypersea soccer (a standalone domain minigame, see `_Scripts/Controller/Arcade/ASTROLEAGUE.md`). `NucleusRush(38)` (display name "Brood Rush") is the nucleus-control fauna-wave race (see `_Scripts/Controller/Arcade/NUCLEUSRUSH.md`). Meta sentinel: `Random(0)`. Note: IDs 7 and 31 are skipped — 7 was the retired standalone arcade Freestyle game (freestyle now lives in Menu_Main as the lava lamp; see "Lava-Lamp Mode"), 31 was never assigned. Do not reuse either ID.
 
-Many single-player modes (1-6, 9-25, 27) reference scenes that no longer exist on disk — their `SO_ArcadeGame` assets still exist and appear in the Arcade UI, but launching them would fail.
+Solo modes were retired 2026-07-20: their scene-less `SO_ArcadeGame` cards are deleted and the retired enum IDs (1-6, 8-25, 27, 32) are kept only for serialized-int stability (annotated do-not-reuse in `GameModes.cs`). `WildlifeBlitz (26)` lives on as the networked single-host co-op blitz; `CellularDuel` play lives on as `MultiplayerCellularDuel (29)`.
 
 #### Controller Hierarchy
 
@@ -281,17 +278,10 @@ Many single-player modes (1-6, 9-25, 27) reference scenes that no longer exist o
 MiniGameControllerBase (abstract, NetworkBehaviour)
 │   Template Method: rounds → turns → countdown → gameplay → end
 │
-├── SinglePlayerMiniGameControllerBase (abstract)
-│   ├── SinglePlayerCellularDuelController — vessel swap on turn end
-│   ├── SinglePlayerSlipnStrideController  — procedural course with intensity scaling
-│   ├── SinglePlayerWildlifeBlitzController — blitz scoring
-│   └── WildlifeBlitzMiniGame             — minimal variant
-│
 └── MultiplayerMiniGameControllerBase (abstract, NetworkBehaviour)
     │   Server-authoritative turn/round/game flow via ClientRpc
     │
     ├── MultiplayerFreestyleController     — sandbox, per-player activation
-    ├── MultiplayerWildlifeBlitzMiniGame    — co-op, own ready-sync
     │
     └── MultiplayerDomainGamesController
         ├── HexRaceController              — crystal race, deterministic track, golf scoring
@@ -299,8 +289,14 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
         ├── MultiplayerCellularDuelController — vessel ownership swap between rounds
         ├── MultiplayerCrystalCaptureController — minimal (1 round, 1 turn)
         ├── AstroLeagueController             — hypersea soccer, server-simulated ball, golden goal
-        └── NucleusRushController             — nucleus-control fauna-wave race, brood scoring
+        ├── NucleusRushController             — nucleus-control fauna-wave race, brood scoring
+        └── MultiplayerWildlifeBlitzController — co-op clear-the-cell vs clock (golf: clear time / DNF)
+            └── SandboxBenchmarkController — endless auto-start benchmark (no monitors)
 ```
+
+The single-player controller branch (`SinglePlayerMiniGameControllerBase` + subclasses)
+and the non-networked spawn path (`PlayerSpawner`/`VesselSpawner`/spawner adapters) were
+deleted 2026-07-20 — every mode runs the networked single-host model.
 
 #### Game Launch Pipeline
 
@@ -323,7 +319,7 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
 | `PartySystem/` | `Docs/` | Party (Relay) layer: `ARCHITECTURE.md` (locked design, investigation Q&A, error-handling matrix, exit criteria), `REFACTOR.md` (active backlog + deferred items + per-commit protocol), `BUGS.md`, `TESTS.md`, `TODOS.md`. EAGER per-user Relay session is the locked design. |
 | `PresenceSystem/` | `Docs/` | Presence-lobby (discovery) layer: `ARCHITECTURE.md`, `REFACTOR.md`, `BUGS.md`, `TESTS.md`, `TODOS.md`. Lobby-only UGS session, coexists with NetworkManager. |
 | `NetworkDiagnostics/` | `Docs/` | NetDiag overlay: `ARCHITECTURE.md` (NetworkMonitor + `NetworkDiagnostics` helper, classification rules), `TESTS.md` (Tests A-E), `TODOS.md`. |
-| `ScoringSystem/` | `Docs/` | Scoring system (in-game score HUD + final scoreboard): `ARCHITECTURE.md` (shared data layer, event dispatch, per-mode override table, target = one unified networked scoring path), `REFACTOR.md` (sequenced backlog + ground rules: SOAP/observer/SOLID/DRY/KISS, retire `IsMultiplayerMode`), `BUGS.md`, `TESTS.md`. |
+| `ScoringSystem/` | `Docs/` | Scoring system (in-game score HUD + final scoreboard): `ARCHITECTURE.md` (shared data layer, event dispatch, per-mode override table, target = one unified networked scoring path), `REFACTOR.md` (sequenced backlog + ground rules: SOAP/observer/SOLID/DRY/KISS; `IsMultiplayerMode` retired 2026-07-20), `BUGS.md`, `TESTS.md`. |
 | `TournamentSystem/` | `Docs/` | Tournament mode (`GameModes.Tournament = 36`): `ARCHITECTURE.md` — session-level meta chaining the three domain minigames (HexRace → Joust → Crystal Capture) via sequential `Single` loads; network-free standings folded from the synced `GameDataSO.Results` by the persistent `TournamentController`; host-only Continue→hub→Summary end-game flow (summary-vs-hub keyed off the authoritative `IsShuffleComplete`, race-to-6); `TournamentDataSO` data + file index. |
 | `ToySystem/` | `Docs/` | Freestyle **Toy** system (the new `Toy` fundamental): `ARCHITECTURE.md` — world-space interactive stations the local vessel flies into (no score, no end condition), placed near the Cell membrane in Menu_Main. Four toys: three via a shared `SwapToySetCoordinator<T>` "flip-set" (each toy is the option it switches you to; the used one flips to your previous option) — Vessel Changer (mini ship models via `VesselModelBuilder`, reuses `RequestSwap` + restores freestyle control), Domain Changer (two toys tinted the domains you're not, `RequestSetDomain_ServerRpc`), and the "Connect the Dots" Painting toy — a gallery of painting stations (`PaintingToyDefinitionSO` → one `PaintingToy` per `PaintingDefinitionSO`), each running a multi-stroke, multi-domain `PaintingRunner`: per-stroke start gates recolour the trail via `RequestSetDomain_ServerRpc`, pen-up between strokes via `VesselPrismController.SetSpawnerPaused`, shared trail-toy shape language (cones = trail-on pointing at the next point — also worn by the Domain Changer; jacks = stroke-end trail-off; both in the domain prism material), stroke progress AND per-prism drawing state resume across vessel swaps/game modes/sessions (`PaintingProgressStore` + `PaintingPrismStore`, saved prisms regrow via the PrismFactory channel), completion SHARE/REPAINT gates with a self-contained WebGL share export (`PaintingShareExporter` + NativeShare), a 16-painting gallery (on-ramp Star → Rainbow → Saturn → Taj Mahal, then 12 grandiose non-planar constructions — Torus Knot, Buckyball, Double Helix, Nautilus, Lotus, Rose, Spiral Galaxy, Phoenix, Almighty Mountain, Starry Night, Lion's Head, Peacock — composed from `PaintingStrokeToolkit`: deterministic curves + a divergence-free curl "3D-impressionist" field; stroke order is computed at runtime by `OrderForFlightContinuity` — each stroke starts near the previous stroke's end, domain-contiguous, curvier strokes deferred on near-ties) — plus the **Wanderway microscene conveyor** (`ConveyorToy` + `MicrosceneConveyor` + `Microscene` + `MicroscenePatterns` + `MicroscenePainter`): an on/off toggle toy that streams a speed-scaled field of ~7 procedurally-varied microscenes (40 recipes: gate runs, tunnels, orchards, menageries, shingled domes, torus knots, Möbius rails, banked ribbon chicanes, spine×motif "Medley" composers, …) ahead of your flight path anywhere you fly, recycling the scene farthest behind into a fresh arrangement ahead — a *closed* system that transports a fixed stock of conserved prisms (suction-out → bloom-in), paints every scene structurally from the full domain triad (per-structure rainbows, gradients, pinwheels) with danger/shielded/supershielded prisms as capped palette tools, lays skimmable elemental crystals, and releases flora/fauna into the containing cell as ordinary citizens. `ToyboxSO` registry + deferred unlock-state hook; `ToyboxController` self-wires (Resources/default fallback); `Tools > Cosmic Shore > Setup Freestyle Toybox` authors assets + wires the scene. **Second pass (shipped):** `VesselModelBuilder` hull-filters the skimmer sphere + paints an opaque domain-tinted preview material (all six ships render, not just Rhino); `Toy` re-arms only after the vessel flies clear + the flipped toy re-grows slowly (can't switch you back before you escape); a vessel swap keeps your domain (`ReInitializePair` re-syncs `Player.Domain` from `NetDomain` before repaint) and inherits pose + speed (`IVessel.SetInitialSpeed`) and re-shows the HUD (`OnPlayerPairInitialized`); mini ships recolour on any domain change (`SwapToySetCoordinator.OnTick`); gamepad **Start** exits freestyle and `EventSystem.sendNavigationEvents` is off in freestyle so the pad stops double-driving the UI. `BACKLOG.md` tracks per-toy follow-up (own branches) + known limitations. |
 | `ShuffleSystem/` | `Docs/` | **"Maelstrom" is the player-facing display name of Tournament mode** (the docs folder keeps the legacy "Shuffle" name) — the `ArcadeGameTournament.asset` card carries `DisplayName = "Maelstrom"`. It is **not** a separate mode: code/data/enum stay **Tournament** (`GameModes.Tournament = 36`); the scene file was renamed to `Maelstrom.unity` in the v2 rework. `ARCHITECTURE.md` is a **pointer** to `TournamentSystem/ARCHITECTURE.md`; the former Shuffle-specific behavior deltas (randomized lineup, per-domain `{2,1,0}` scoring + crystal-wallet credit, race-to-6) are now **shipped**. |
@@ -793,8 +789,6 @@ ServerPlayerVesselInitializer (MonoBehaviour + NetcodeHooks)
 ClientPlayerVesselInitializer (NetworkBehaviour)
 └── Used by all ServerPlayerVesselInitializer variants
 
-PlayerSpawner / VesselSpawner (single-player, non-networked path)
-└── PlayerSpawnerAdapterBase → MiniGamePlayerSpawnerAdapter, VolumeTestPlayerSpawnerAdapter
 ```
 
 **Player (`NetworkBehaviour`) NetworkVariables:**
@@ -882,19 +876,6 @@ None(0) → Initializing(1) → Ready(2) → LaunchingGame(3)
 - `Initializing → Ready`: `OnClientReady` SOAP event (autopilot vessel spawned and active)
 - `Ready → LaunchingGame`: `OnLaunchGame` SOAP event (player selected a game mode)
 
-**Single-player spawning path** (arcade/campaign, non-networked):
-
-```
-MiniGamePlayerSpawnerAdapter.InitializeGame() [on OnInitializeGame]
-  ├─ PlayerSpawner.SpawnPlayerAndShip(data):
-  │   ├─ Instantiate player prefab + DI inject
-  │   ├─ VesselSpawner.SpawnShip(vesselClass) → Instantiate + DI inject
-  │   ├─ player.InitializeForSinglePlayerMode(data, vessel)
-  │   └─ vessel.Initialize(player)
-  ├─ gameData.AddPlayer(player)
-  └─ SpawnDefaultPlayersAndAddToGameData() (AI opponents)
-```
-
 #### Key Files — Player Spawning
 
 | Role | File | Location |
@@ -908,10 +889,6 @@ MiniGamePlayerSpawnerAdapter.InitializeGame() [on OnInitializeGame]
 | Team assignment | `DomainAssigner.cs` | `_Scripts/Controller/Multiplayer/` |
 | Player NetworkBehaviour | `Player.cs` | `_Scripts/Controller/Player/` |
 | Player interface | `IPlayer.cs` | `_Scripts/Controller/Player/` |
-| Single-player spawner | `PlayerSpawner.cs` | `_Scripts/Controller/Player/` |
-| Single-player adapter base | `PlayerSpawnerAdapterBase.cs` | `_Scripts/Controller/Player/` |
-| Arcade spawn adapter | `MiniGamePlayerSpawnerAdapter.cs` | `_Scripts/Controller/Player/` |
-| Vessel instantiation | `VesselSpawner.cs` | `_Scripts/Controller/Vessel/` |
 | Vessel prefab mapping | `VesselPrefabContainer.cs` | `_Scripts/ScriptableObjects/SOAP/` |
 | NetcodeHooks adapter | `NetcodeHooks.cs` | `_Scripts/Utility/Network/` |
 | Game data + SOAP events | `GameDataSO.cs` | `_Scripts/Utility/DataContainers/` |
@@ -1367,7 +1344,6 @@ ArcadeGameConfigureModal.OnStartGameClicked()
   ├─ SyncAllGameDataForLaunch():
   │   ├─ gameData.SceneName = "MinigameHexRace"
   │   ├─ gameData.GameMode = GameModes.HexRace
-  │   ├─ gameData.IsMultiplayerMode = true
   │   ├─ gameData.SelectedPlayerCount = humanCount
   │   └─ gameData.RequestedAIBackfillCount = max(0, config.PlayerCount - humanCount)
   └─ gameData.InvokeGameLaunch() → OnLaunchGame SOAP event
@@ -1551,7 +1527,7 @@ Lava-lamp mode hosts freestyle gameplay directly in Menu_Main: the autopilot ves
 
 - **Individual panels, not GameCanvas prefab**: Extract needed UI panels as scene-level objects under "Game UI" — do not instantiate the full `GameCanvas.prefab`. The GameCanvas prefab bundles a `Canvas` + `CanvasScaler` + `GraphicRaycaster` root that would conflict with Menu_Main's existing Canvas.
 - **Reuse existing SOAP pipeline**: `MenuCrystalClickHandler` already toggles autopilot↔freestyle with CanvasGroup fading. "Game UI" `CanvasGroup` is already wired into its `freestyleCanvasGroups[]` array. `MainMenuController` already has `MainMenuState.Freestyle`. No new states or SOAP events needed.
-- **Network-aware vessel selection**: Use `MenuVesselSelectionPanelController` (not the singleplayer `VesselSelectionPanelController`) — it delegates vessel swaps to `MenuServerPlayerVesselInitializer` via the Netcode despawn/spawn/RPC pipeline so changes replicate to all clients.
+- **Network-aware vessel selection**: Use `MenuVesselSelectionPanelController` — it delegates vessel swaps to `MenuServerPlayerVesselInitializer` via the Netcode despawn/spawn/RPC pipeline so changes replicate to all clients. (The legacy singleplayer `VesselSelectionPanelController` was deleted with the SP path.)
 - **Phased rollout**: Phase 1 (core HUD + vessel selection), Phase 2 (shape drawing), Phase 3 (scoring).
 
 #### Current "Game UI" Container
@@ -1647,14 +1623,11 @@ HUD prefab variants at `_Prefabs/UI Elements/VesselHUD/` (e.g., `MantaHUDVariant
 
 #### Vessel Selection Panel (Network-Aware)
 
-The Vessel Selection Panel in Menu_Main already uses `MenuVesselSelectionPanelController` (network-aware). For reference, here is how it differs from the singleplayer variant:
-
-| Aspect | Singleplayer (`VesselSelectionPanelController`) | Menu (`MenuVesselSelectionPanelController`) |
-|---|---|---|
-| Vessel swap | `VesselSpawner.SpawnShip()` — local instantiate | `MenuServerPlayerVesselInitializer.RequestSwap()` — Netcode pipeline |
-| Multiplayer | Not supported | Replicates to all clients |
-| Autopilot | Snapshots & restores AI/input state | Restores freestyle control after swap delay |
-| References | `VesselSpawner`, `ThemeManagerDataContainerSO` | `MenuServerPlayerVesselInitializer`, `MenuCrystalClickHandler`, `MenuFreestyleEventsContainerSO` |
+The Vessel Selection Panel in Menu_Main uses `MenuVesselSelectionPanelController`
+(network-aware): vessel swaps go through `MenuServerPlayerVesselInitializer.RequestSwap()`
+(Netcode despawn/spawn pipeline, replicates to all clients) and freestyle control is
+restored after the swap delay. The legacy singleplayer variant
+(`VesselSelectionPanelController` + `VesselSpawner`) was deleted with the SP path.
 
 The panel opens from a button in the freestyle HUD. While open, the vessel flies on autopilot. On "Resume", if a different vessel is selected, it requests a network swap and waits `restoreFreestyleDelayMs` (600ms) before restoring player control.
 
@@ -1688,7 +1661,7 @@ Player taps freestyle button
 
 The `Scoreboard` component is present but hidden in basic lava-lamp mode. It subscribes to `OnShowGameEndScreen` to show and `OnResetForReplay` to hide. Since no game controller raises `OnShowGameEndScreen` during basic freestyle, the scoreboard stays inactive.
 
-When scoring is enabled (Phase 3), a game controller can raise `OnShowGameEndScreen` to display results. The scoreboard supports both `SinglePlayerView` and `MultiplayerView` automatically based on `gameData.IsMultiplayerMode`.
+When scoring is enabled (Phase 3), a game controller can raise `OnShowGameEndScreen` to display results. The scoreboard renders the per-player card layout from `gameData.Results` (solo play renders as a single card - `IsMultiplayerMode` is retired).
 
 #### Phase 2: Shape Drawing (Deferred)
 
@@ -1739,7 +1712,6 @@ For lava-lamp scoring, set `isAIAvailable=true` on MiniGameHUD and ensure `gameD
 | Vessel HUD reparenting bridge | `VesselHUD.cs` (class: `ShipHUD`) | `_Scripts/Controller/Vessel/` |
 | Freestyle SOAP events container | `MenuFreestyleEventsContainerSO.cs` | `_Scripts/ScriptableObjects/` |
 | Shape drawing manager (Phase 2) | `ShapeDrawingManager.cs` | `_Scripts/Controller/Environment/MiniGameObjects/` |
-| Vessel selection (singleplayer, legacy) | `VesselSelectionPanelController.cs` | `_Scripts/UI/` |
 | VesselHUD prefab variants | `*HUDVariant.prefab` | `_Prefabs/UI Elements/VesselHUD/` |
 | PlayerScoreCard prefab | `PlayerScoreCard.prefab` | `_Prefabs/UI Elements/In Game/` |
 
@@ -1805,10 +1777,10 @@ All game code lives under `CosmicShore.*` with 8 primary namespaces:
 | Camera | `CustomCameraController`, `VesselCameraCustomizer`, `CameraSettingsSO`, `ICameraController`, `ICameraConfigurator` | `_Scripts/Controller/Camera/` |
 | Vessel HUD | `IVesselHUDController`, `IVesselHUDView`, per-vessel controllers & views (Sparrow, Squirrel, Serpent, Manta, Rhino, Dolphin) | `_Scripts/UI/Controller/`, `_Scripts/UI/View/`, `_Scripts/UI/Interfaces/` |
 | Elemental bars | `ElementalBarsView` (5-petal flower per element), `ElementalBarsConfigSO` (shared colour/sprite/juice spec), `SilhouetteController` (per-vessel driver), `ElementalPetalBarWirer` (editor setup) | `_Scripts/UI/View/`, `_Scripts/ScriptableObjects/`, `_Scripts/Controller/Vessel/`, `_Scripts/Editor/` |
-| Arcade games | `MiniGameControllerBase`, `SinglePlayerMiniGameControllerBase`, `MultiplayerMiniGameControllerBase`, `CompositeScoring` | `_Scripts/Controller/Arcade/` |
+| Arcade games | `MiniGameControllerBase`, `MultiplayerMiniGameControllerBase`, `MultiplayerDomainGamesController`, `ScoringRuleSO` family | `_Scripts/Controller/Arcade/` |
 | Resource system | `ResourceSystem`, `R_VesselActionHandler`, `R_VesselElementStatsHandler` | `_Scripts/Controller/Vessel/` |
 | Object pooling | `GenericPoolManager` (Unity `ObjectPool<T>` with async buffer maintenance) | `_Scripts/Utility/PoolsAndBuffers/` |
-| Player system | `Player` (NetworkBehaviour, `IPlayer`), `PlayerSpawner`, `PlayerSpawnerAdapterBase`, `MiniGamePlayerSpawnerAdapter`, `VolumeTestPlayerSpawnerAdapter` | `_Scripts/Controller/Player/` |
+| Player system | `Player` (NetworkBehaviour, `IPlayer`), `RoundStats` | `_Scripts/Controller/Player/` |
 | Menu navigation | `ScreenSwitcher`, `IScreen`, `ModalWindowManager`, `ProfileDisplayWidget`, `NavLink`/`NavGroup` | `_Scripts/UI/`, `_Scripts/UI/Interfaces/`, `_Scripts/UI/Elements/`, `_Scripts/UI/Modals/` |
 | Freestyle toys | `Toy` (base world-trigger; bloom, local-user + freestyle gating, exit-gated re-arm), `SwapToy` + `SwapToySetCoordinator<T>` (a set of toys showing "the options you're not on", each flips to your previous option on use), `VesselChangerToySet` (mini ship models via `VesselModelBuilder`, reuses `RequestSwap` + restores freestyle control after swap), `DomainChangerToySet` (two toys tinted the domains you're not, `RequestSetDomain_ServerRpc`), `PaintingToy` + `PaintingRunner` (multi-stroke multi-domain connect-the-dots: domain gates, pen-up, cone/jack stroke markers in prism material, resumable progress) + `PaintingDefinitionSO`/`PaintingPresetLibrary`/`PaintingStrokeToolkit` (stroke data + 16 grandiose 3D presets + the curl-field stroke library + Star/Rainbow/Saturn/Taj Mahal generators; runtime flight-continuity stroke ordering via `OrderForFlightContinuity`) + `PaintingProgressStore`/`PaintingPrismStore` (local JSON progress + per-prism drawing state, regrown on return) + `PaintingShareExporter` (self-contained WebGL HTML → NativeShare), `ConveyorToy` + `MicrosceneConveyor` + `Microscene` + `MicroscenePatterns` + `MicroscenePainter` (Wanderway: on/off toggle streaming a speed-scaled field of procedurally-varied microscenes — 40 recipes incl. spine×motif Medley composers — ahead of the vessel, structurally painted across the full domain triad with capped danger/shield accents; a closed conveyor of conserved prisms + skimmable crystals + cell-released lifeforms), `ToyboxController` (places sets near the membrane), `ToyboxSO`/`ToyDefinitionSO` (registry + deferred unlock state), `ToyboxSetupTool` (editor) | `_Scripts/Controller/Toys/`, `_Scripts/ScriptableObjects/Toys/`, `_Scripts/Editor/` |
 | Menu screens | `HomeScreen`, `ArcadeScreen`, `StoreScreen`, `HangarScreen`, `LeaderboardsMenu`, `EpisodeScreen` | `_Scripts/UI/Screens/` |
