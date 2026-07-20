@@ -14,5 +14,9 @@ namespace CosmicShore.Data
         ElementalCrystals = 2,
         Jousts = 3,
         Goals = 4,
+        // Rampage: prisms of ANOTHER domain's mass destroyed (reads
+        // IRoundStats.HostilePrismsDestroyed - own/teammate prisms never score,
+        // so laying-then-shattering your own trail is worthless by construction).
+        PrismsDestroyed = 5,
     }
 }

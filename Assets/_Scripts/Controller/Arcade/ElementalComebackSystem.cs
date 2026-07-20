@@ -27,12 +27,15 @@ namespace CosmicShore.Gameplay
         /// Which stat to use when calculating who is ahead/behind.
         /// HexRace tracks elapsed time as Score (same for everyone) so use CrystalsCollected.
         /// CrystalCapture uses Score directly. AstroLeague uses GoalsScored.
+        /// Rampage uses PrismsDestroyed (Score is only assigned at game end, so the Score
+        /// source would be dead during live play).
         /// </summary>
         public enum ScoreDifferenceSource
         {
             Score,
             CrystalsCollected,
             Goals,
+            PrismsDestroyed,
         }
 
         [Header("Config")]
@@ -66,6 +69,9 @@ namespace CosmicShore.Gameplay
                     break;
                 case GameModes.AstroLeague:
                     system.differenceSource = ScoreDifferenceSource.Goals;
+                    break;
+                case GameModes.Rampage: // Score lands only at game end - destruction is the live stat
+                    system.differenceSource = ScoreDifferenceSource.PrismsDestroyed;
                     break;
                 default:
                     system.differenceSource = ScoreDifferenceSource.Score;
@@ -311,6 +317,8 @@ namespace CosmicShore.Gameplay
                     return gameData.SumCrystalsCollectedByDomain(domain);
                 case ScoreDifferenceSource.Goals:
                     return ScoringMetrics.SumByDomain(gameData, ScoringMetric.Goals, domain);
+                case ScoreDifferenceSource.PrismsDestroyed:
+                    return ScoringMetrics.SumByDomain(gameData, ScoringMetric.PrismsDestroyed, domain);
                 case ScoreDifferenceSource.Score:
                     float sum = 0f;
                     var list = gameData.RoundStatsList;
@@ -331,6 +339,7 @@ namespace CosmicShore.Gameplay
             {
                 ScoreDifferenceSource.CrystalsCollected => true,
                 ScoreDifferenceSource.Goals => true,
+                ScoreDifferenceSource.PrismsDestroyed => true,
                 ScoreDifferenceSource.Score => !useGolfRules,
                 _ => !useGolfRules
             };

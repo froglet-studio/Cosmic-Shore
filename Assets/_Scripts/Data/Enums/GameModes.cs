@@ -6,6 +6,10 @@ namespace CosmicShore.Data
     {
         Random = 0,
         Elimination = 1,
+        // Rampage (2): multiplayer destruction race - the destructive analog of
+        // Crystal Capture/"Scurry". Race to destroy the hostile-prism target first.
+        // (Repurposed from the legacy single-player arcade entry, whose scene never
+        // shipped.) See _Scripts/Controller/Arcade/RAMPAGE.md.
         Rampage = 2,
         Darts = 3,
         ShootingGallery = 4,

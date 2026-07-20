@@ -28,6 +28,9 @@ at runtime via `Resources.Load`.
   - **Brood Rush (Nucleus Rush)** — `0` → `EndConditionOverridesSO.DefaultNucleusRushWaveTarget` (3):
     claimed fauna waves a domain needs to win (resolved by `NucleusRushWaveTurnMonitor.StartMonitor`
     → `GameDataSO.GoalTargetCount`, synced by NetworkVariable).
+  - **Rampage** — `0` → `EndConditionOverridesSO.DefaultRampagePrismTarget` (100): hostile prisms
+    (another domain's mass) a domain must destroy to win (resolved by
+    `RampagePrismTurnMonitor.StartMonitor` → `GameDataSO.PrismTargetCount`, synced by NetworkVariable).
   - **Maelstrom** — `0` → `EndConditionOverridesSO.DefaultMaelstromWinTarget` (6). This is the
     "race to N" win target: the first DOMAIN whose cumulative `{2,1,0}` placement points reach it
     wins the shuffle. NOT a per-turn count — it ends the whole tournament.
@@ -67,13 +70,14 @@ networking.
 
 1. Unity → **Tools ▸ Cosmic Shore ▸ End Game Conditions** (auto-creates the asset on first open).
 2. Set **HexRace — Crystal Count**, **Crystal Capture — Crystal Count**, **Joust — Joust Count**,
-   **Maelstrom — Win Target (points)**, and/or **Brood Rush — Wave Target** (fauna waves a domain
+   **Maelstrom — Win Target (points)**, **Rampage — Prism Target** (hostile prisms a domain must
+   destroy to win), and/or **Brood Rush — Wave Target** (fauna waves a domain
    must claim to win Nucleus Rush; one wave per 30s spawn cycle). Leave `0` for auto/default. The window shows the
    effective value and saves on edit.
 3. Commit `Assets/Resources/EndConditionOverrides.asset` (and its `.meta`).
 
 Defaults shipped (match the pre-tool scene/asset values, so behavior is unchanged until edited):
-HexRace `0` (auto), Crystal Capture `20`, Joust `3`, Maelstrom `6`, Brood Rush `3`.
+HexRace `0` (auto), Crystal Capture `20`, Joust `3`, Maelstrom `6`, Brood Rush `3`, Rampage `100`.
 
 ## Live vs. Build values (don't ship a test config)
 

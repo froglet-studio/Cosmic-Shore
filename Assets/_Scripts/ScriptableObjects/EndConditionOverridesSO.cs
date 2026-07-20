@@ -43,6 +43,9 @@ namespace CosmicShore.ScriptableObjects
         /// <summary>Nucleus Rush (Brood Rush) wave target used when <see cref="nucleusRushWaveTarget"/> is 0 (auto/default).</summary>
         public const int DefaultNucleusRushWaveTarget = 3;
 
+        /// <summary>Rampage hostile-prism target used when <see cref="rampagePrismTarget"/> is 0 (auto/default).</summary>
+        public const int DefaultRampagePrismTarget = 100;
+
         [Header("Live counts - used at runtime. 0 = auto/default (edit via Tools > Cosmic Shore > End Game Conditions)")]
         [Tooltip("HexRace crystals to end the race. 0 = auto-calc from the track waypoints.")]
         [Min(0)] public int hexRaceCrystalCount = 0;
@@ -61,12 +64,17 @@ namespace CosmicShore.ScriptableObjects
                  "wave every 30s spawn cycle, so 3 ≈ a 1.5–2.5 minute match). 0 = default (3).")]
         [Min(0)] public int nucleusRushWaveTarget = 3;
 
+        [Tooltip("Rampage: hostile prisms (another domain's mass) a domain must destroy to win " +
+                 "(race to N). 0 = default (100).")]
+        [Min(0)] public int rampagePrismTarget = 100;
+
         [Header("Build baseline - what a shipping build uses. Set via the tool's \"Set Build Values\" button.")]
         [Min(0)] public int hexRaceCrystalCountBuild = 0;
         [Min(0)] public int crystalCaptureCrystalCountBuild = 20;
         [Min(0)] public int joustCountBuild = 3;
         [Min(0)] public int maelstromWinTargetBuild = 6;
         [Min(0)] public int nucleusRushWaveTargetBuild = 3;
+        [Min(0)] public int rampagePrismTargetBuild = 100;
 
         [Tooltip("When on, a build first copies the Build baseline onto the Live counts, so test values are never shipped.")]
         public bool autoRestoreBuildValuesBeforeBuild = true;
@@ -117,13 +125,20 @@ namespace CosmicShore.ScriptableObjects
         /// </summary>
         public int GetNucleusRushWaveTarget() => nucleusRushWaveTarget > 0 ? nucleusRushWaveTarget : DefaultNucleusRushWaveTarget;
 
+        /// <summary>
+        /// Rampage prism target ("race to N" hostile prisms destroyed): the configured value
+        /// when &gt; 0, otherwise <see cref="DefaultRampagePrismTarget"/>.
+        /// </summary>
+        public int GetRampagePrismTarget() => rampagePrismTarget > 0 ? rampagePrismTarget : DefaultRampagePrismTarget;
+
         /// <summary>True when every Live count (used at runtime) already equals its Build baseline.</summary>
         public bool LiveMatchesBuild =>
             hexRaceCrystalCount == hexRaceCrystalCountBuild &&
             crystalCaptureCrystalCount == crystalCaptureCrystalCountBuild &&
             joustCount == joustCountBuild &&
             maelstromWinTarget == maelstromWinTargetBuild &&
-            nucleusRushWaveTarget == nucleusRushWaveTargetBuild;
+            nucleusRushWaveTarget == nucleusRushWaveTargetBuild &&
+            rampagePrismTarget == rampagePrismTargetBuild;
 
         /// <summary>Copy the Build baseline onto the Live counts (build → live) - used by the build auto-restore.</summary>
         public void ApplyBuildValues()
@@ -133,6 +148,7 @@ namespace CosmicShore.ScriptableObjects
             joustCount = joustCountBuild;
             maelstromWinTarget = maelstromWinTargetBuild;
             nucleusRushWaveTarget = nucleusRushWaveTargetBuild;
+            rampagePrismTarget = rampagePrismTargetBuild;
         }
 
         /// <summary>Snapshot the current Live counts as the Build baseline (live → build) - used by "Set Build Values".</summary>
@@ -143,6 +159,7 @@ namespace CosmicShore.ScriptableObjects
             joustCountBuild = joustCount;
             maelstromWinTargetBuild = maelstromWinTarget;
             nucleusRushWaveTargetBuild = nucleusRushWaveTarget;
+            rampagePrismTargetBuild = rampagePrismTarget;
         }
     }
 }

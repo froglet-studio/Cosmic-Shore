@@ -11,8 +11,9 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe040efad3307fb449b6b72ad15362da, type: 3}
   m_Name: ArcadeGameRampage
-  m_EditorClassIdentifier: 
+  m_EditorClassIdentifier:
   Mode: 2
+  IsMultiplayer: 1
   DisplayName: Rampage
   Description: Break, smash, and obliterate your way through the course, leaving
     a trail of galactic mayhem. Only the most devastating will emerge victorious.
@@ -28,9 +29,10 @@ MonoBehaviour:
   - {fileID: 11400000, guid: ec97e344adb08f847a8f7649ab79088e, type: 2}
   - {fileID: 11400000, guid: c0f30e9f09616874780edc0a375ce686, type: 2}
   MinPlayersAllowed: 1
-  MaxPlayersAllowed: 1
+  MaxPlayersAllowed: 4
   MinIntensity: 1
   MaxIntensity: 4
   CallToActionTargetType: 404
   ViewUserAction: 0
   PlayUserAction: 0
+  ComebackRatePerScoreDeficit: 0.2
