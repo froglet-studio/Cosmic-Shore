@@ -40,6 +40,7 @@ namespace CosmicShore.Gameplay
         readonly Dictionary<string, int> _crystals = new();
         readonly List<IRoundStats> _subscribedStats = new();
         bool _isTracking;
+        bool _gameEventsSubscribed;
 
         /// <summary>Team total lifeforms killed this game (scoreboard stats + UGS).</summary>
         public int TotalLifeFormsKilled
@@ -53,22 +54,28 @@ namespace CosmicShore.Gameplay
             get { int t = 0; foreach (var v in _crystals.Values) t += v; return t; }
         }
 
-        void OnEnable()
+        // Reflex populates [Inject] fields after Awake/OnEnable on scene load, so the
+        // OnEnable attempt can see a null gameData - retry in Start with a dedup guard
+        // (the Cell.cs deferred-subscription precedent).
+        void OnEnable() => TrySubscribeGameEvents();
+        void Start() => TrySubscribeGameEvents();
+
+        void TrySubscribeGameEvents()
         {
-            if (gameData != null)
-            {
-                gameData.OnMiniGameEnd.OnRaised += ReportStats;
-                gameData.OnResetForReplay.OnRaised += ResetScores;
-            }
+            if (_gameEventsSubscribed || gameData == null) return;
+            gameData.OnMiniGameEnd.OnRaised += ReportStats;
+            gameData.OnResetForReplay.OnRaised += ResetScores;
+            _gameEventsSubscribed = true;
         }
 
         void OnDisable()
         {
-            if (gameData != null)
+            if (_gameEventsSubscribed && gameData != null)
             {
                 gameData.OnMiniGameEnd.OnRaised -= ReportStats;
                 gameData.OnResetForReplay.OnRaised -= ResetScores;
             }
+            _gameEventsSubscribed = false;
             StopTracking();
         }
 

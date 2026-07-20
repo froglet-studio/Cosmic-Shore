@@ -208,6 +208,7 @@ namespace CosmicShore.Gameplay
             // OnWinnerCalculated (below) is the "results ready" signal.
             gameData.WinnerName = winnerName.ToString();
             gameData.WinnerDomain = (Domains)winnerDomain;
+            gameData.HasNoWinner = (Domains)winnerDomain == Domains.Blue;
 
             gameData.InvokeWinnerCalculated();
             gameData.InvokeMiniGameEnd();

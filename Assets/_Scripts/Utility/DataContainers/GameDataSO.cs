@@ -160,6 +160,17 @@ namespace CosmicShore.Utility
         [NonSerialized] public Domains WinnerDomain = Domains.Blue;
 
         /// <summary>
+        /// True when the authoritative end EXPLICITLY declared no winner (a
+        /// <see cref="Domains.Blue"/> broadcast from the domain controllers' SyncFinalResults
+        /// tail - e.g. a co-op DNF). Distinguishes an intentional no-winner end from the
+        /// legacy "Winner* never written" state: end-game surfaces (EndGameSequencer,
+        /// Scoreboard) keep their derive-a-winner fallbacks for legacy modes but must treat
+        /// this flag as "nobody won" (DEFEAT reveal, neutral banner).
+        /// Reset alongside <see cref="WinnerName"/>.
+        /// </summary>
+        [NonSerialized] public bool HasNoWinner;
+
+        /// <summary>
         /// Single source of truth for the final ranked results (per-player, sorted, with
         /// 1-based <see cref="ScoreResult.Rank"/>). Produced once per game end by the mode:
         /// server-side in networked modes (and assembled identically on each client from the
@@ -373,6 +384,7 @@ namespace CosmicShore.Utility
             LocalRoundStats = null;
             WinnerName = "";
             WinnerDomain = Domains.Blue;
+            HasNoWinner = false;
             Results.Clear();
             CrystalTargetCount = 0;
             JoustTargetCount = 0;
@@ -417,6 +429,7 @@ namespace CosmicShore.Utility
             _playerSpawnPoseList.Clear();
             WinnerName = "";
             WinnerDomain = Domains.Blue;
+            HasNoWinner = false;
             Results.Clear();
             CrystalTargetCount = 0;
             JoustTargetCount = 0;

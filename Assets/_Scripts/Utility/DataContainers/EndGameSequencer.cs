@@ -150,6 +150,10 @@ namespace CosmicShore.Utility
         {
             if (gameData == null || gameData.LocalPlayer == null) return false;
 
+            // An authoritative no-winner end (co-op DNF: WinnerDomain broadcast as Blue)
+            // is a loss for everyone - never fall through to the derive-a-winner path.
+            if (gameData.HasNoWinner) return false;
+
             // Domain modes set WinnerDomain authoritatively.
             if (gameData.WinnerDomain != Domains.Blue)
                 return gameData.LocalPlayer.Domain == gameData.WinnerDomain;
