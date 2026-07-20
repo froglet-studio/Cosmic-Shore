@@ -5,6 +5,14 @@ namespace CosmicShore.Data
     public enum GameModes
     {
         Random = 0,
+        // ── RETIRED SOLO IDS — DO NOT REUSE ─────────────────────────────────
+        // Solo modes were retired 2026-07-20 (solo = a multiplayer game whose
+        // party is one host). IDs 1-6, 8-25, and 27 kept their enum members so
+        // the serialized ints inside the kept-but-dormant training/mission
+        // assets (SO_TrainingGame_*, SO_Mission_Protect) stay stable, but their
+        // SO_ArcadeGame cards and scenes are deleted. CellularDuel(8) play lives
+        // on as MultiplayerCellularDuel(29); WildlifeBlitz(26) is LIVE (the
+        // networked single-host co-op blitz). Do not reuse any retired ID.
         Elimination = 1,
         Rampage = 2,
         Darts = 3,
@@ -37,6 +45,10 @@ namespace CosmicShore.Data
         MultiplayerFreestyle = 28,
         MultiplayerCellularDuel = 29,
         Multiplayer2v2CoOpVsAI = 30,
+        // 32 retired 2026-07-20: the separate co-op blitz stack (scene + card)
+        // was deleted - WildlifeBlitz(26) IS the networked co-op blitz now.
+        // Member kept for serialized-int stability; do not reuse. (31 stays
+        // reserved - never assigned.)
         MultiplayerWildlifeBlitzGame = 32,
         HexRace = 33,
         MultiplayerJoust = 34,
