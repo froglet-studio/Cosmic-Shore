@@ -6,7 +6,7 @@ namespace CosmicShore.UI
     public class WildlifeBlitzStatsProvider : ScoreboardStatsProvider
     {
         [Header("Dependencies")]
-        [SerializeField] SinglePlayerWildlifeBlitzScoreTracker scoreTracker;
+        [SerializeField] WildlifeBlitzScoreKeeper scoreTracker;
 
         [Header("Icons")]
         [SerializeField] Sprite lifeFormIcon;
@@ -18,27 +18,19 @@ namespace CosmicShore.UI
 
             if (!scoreTracker) return list;
 
-            var lifeFormScoring = scoreTracker.GetScoring<LifeFormsKilledScoring>();
-            if (lifeFormScoring != null)
+            list.Add(new StatData
             {
-                list.Add(new StatData 
-                { 
-                    Label = "Life Forms", 
-                    Value = lifeFormScoring.GetTotalLifeFormsKilled().ToString(),
-                    Icon = lifeFormIcon // Passing the reference
-                });
-            }
+                Label = "Life Forms",
+                Value = scoreTracker.TotalLifeFormsKilled.ToString(),
+                Icon = lifeFormIcon
+            });
 
-            var crystalScoring = scoreTracker.GetScoring<ElementalCrystalsCollectedBlitzScoring>();
-            if (crystalScoring != null)
+            list.Add(new StatData
             {
-                list.Add(new StatData 
-                { 
-                    Label = "Crystals", 
-                    Value = crystalScoring.GetTotalCrystalsCollected().ToString(),
-                    Icon = crystalIcon 
-                });
-            }
+                Label = "Crystals",
+                Value = scoreTracker.TotalCrystalsCollected.ToString(),
+                Icon = crystalIcon
+            });
 
             return list;
         }
