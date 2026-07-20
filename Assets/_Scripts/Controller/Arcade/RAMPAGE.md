@@ -86,14 +86,18 @@ RampageController.OnTurnEndedCustom                [server]
 
 - **Rampage Cell Config** — Blob-class membrane/cytoplasm/nucleus. Restless
   thresholds match Blob (700/500; volume 11200/8000); the **Frenzy gate is the
-  arena's prism cap: 2000 prisms** (enter 2000 / exit 1600; volume 32000/25600 at
-  the nominal 16 vol/prism). Flora planting pauses at Frenzy, so the prismscape
-  never grows past ~2000 prisms + player trails — an emergent stock cap (growth
-  gate, never a culler; mass stays conserved). Destruction drops the count below
-  the exit band and growth resumes. Standard collider-LOD by phase; **no new
-  colliders or physics queries** — scoring rides the existing StatsManager SOAP
-  channel, and the 2000 cap keeps worst-case active prisms well below the Blob
-  envelope (3600).
+  arena's prism cap: 10000 prisms** (enter 10000 / exit 8000; volume
+  160000/128000 at the nominal 16 vol/prism). Flora planting pauses at Frenzy, so
+  the prismscape never grows past ~10000 prisms + player trails — an emergent
+  stock cap (growth gate, never a culler; mass stays conserved). Destruction
+  drops the count below the exit band and growth resumes. **Collider-budget
+  note:** 10000 is ~2.8× the Blob envelope (3600) and well above the masterplan's
+  ≤1500 active-collider target — deliberate design headroom for the demolition
+  arena. Mitigations: collider-LOD by phase, Burst density-grid fauna queries
+  (no new physics queries — scoring rides the StatsManager SOAP channel), and
+  the mode's whole verb actively removes mass. Watch the collider/prism
+  telemetry (DiagnosticsHUD / Benchmark tool) on device; the gate is one number
+  in the cell config if it needs to come down.
 - **Rampage Spawn Profile** — flora-rich: the four Blob flora species (Mass/Time/
   Space Gyroids + SchwarzP), plus tadpole + shark fauna (grazer + predator food
   web; both drop elemental crystals on death — skimmable powerups mid-rampage).
