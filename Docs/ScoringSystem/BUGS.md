@@ -398,6 +398,26 @@ Files: `_Scripts/Controller/ImpactEffects/EffectsSO/Vessel Skimmer Effects/Vesse
 `_Scripts/Controller/ImpactEffects/Impactors/VesselImpactor.cs`,
 `_Scripts/Controller/ImpactEffects/Impactors/SkimmerImpactor.cs`.
 
+### B17 — 🔴 SP Wildlife Blitz DNF loss: reveal header says VICTORY (pre-existing, surfaced by Y1.1 review)
+
+**Symptom:** lose the solo blitz (clock runs out, cell uncleared) - the scoreboard state is
+correct (no winner credited; DNF row), but the EndGameSequencer reveal header shows VICTORY.
+
+**Root cause:** `EndGameSequencer.DidLocalPlayerWin()` falls back to
+`gameData.IsLocalDomainWinner(...)` when `WinnerDomain == Blue`, and `IsLocalDomainWinner`
+matches the local domain against `DomainStatsList` - which always contains the local player's
+domain in a solo game, so the fallback returns true. `Domains.Blue` is overloaded: "not set"
+vs "explicitly nobody won" are indistinguishable to the sequencer. The legacy blitz tracker
+behaved identically (it also ran `CalculateDomainStats` before `InvokeWinnerCalculated`), so
+this is NOT a Y1.1 regression - but the Y1.1 blitz migration's explicit `WinnerDomain = Blue`
+write fixes only the scoreboard banner derivation, not this reveal fallback.
+
+**Fix direction (pick one, cross-mode change - verify against freestyle + all domain modes):**
+(a) a distinct "nobody won" signal (e.g. `gameData.HasWinnerResult` bool set by the end-game
+paths) that the sequencer prefers over the Blue fallback; or (b) drop the
+`IsLocalDomainWinner` fallback once every mode authoritatively writes `WinnerDomain`
+(post-Y1.1 all LIVE modes do; the fallback exists for legacy modes that never set it).
+
 ---
 
 B1–B4, B6, B7, B8 fixed (verify only — B6 also warrants a visual position check).
@@ -413,4 +433,4 @@ end flow) fixed & verified in engine 2026-06-12 — regression steps in `TESTS.m
 T15. B5 remains scheduled into **R10** (the unified ranked `ScoreResult` list
 dissolves it). B16 (ghost joust toasts / unrecorded client-observed jousts) fixed
 2026-07-16 — code-complete, engine verification pending (see B16's verification
-steps). No other open read-through findings remain.
+steps). B17 (blitz DNF reveal header) is OPEN - pre-existing, logged 2026-07-20 during the Y1.1 adversarial review. No other open read-through findings remain.
