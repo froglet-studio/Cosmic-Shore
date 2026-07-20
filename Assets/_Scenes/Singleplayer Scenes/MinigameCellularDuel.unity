@@ -3930,7 +3930,6 @@ GameObject:
   - component: {fileID: 1527998410}
   - component: {fileID: 1527998414}
   - component: {fileID: 1527998411}
-  - component: {fileID: 1527998408}
   - component: {fileID: 1527998409}
   - component: {fileID: 1527998413}
   - component: {fileID: 1527998415}
@@ -3943,29 +3942,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1527998408
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1527998405}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8a8eb12f3db145b49948825ed7a796cc, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  ShowTopMostFoldoutHeaderGroup: 1
-  OnClickToMainMenu: {fileID: 11400000, guid: 7a1182f4329e5d645ad474c11a633a3e, type: 2}
-  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
-  golfRules: 0
-  scoringConfigs:
-  - Mode: 1
-    Multiplier: 1
-  - Mode: 0
-    Multiplier: 1
-  - Mode: 11
-    Multiplier: 1
 --- !u!114 &1527998409
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4019,6 +3995,7 @@ MonoBehaviour:
   gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   _onToggleReadyButton: {fileID: 11400000, guid: 49189b231ecf3ab4ea602699f3401cf2,
     type: 2}
+  rule: {fileID: 11400000, guid: a16023312eaa4242bc781ab66aa6aa8f, type: 2}
 --- !u!114 &1527998413
 MonoBehaviour:
   m_ObjectHideFlags: 0
