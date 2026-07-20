@@ -100,17 +100,21 @@ the in-scene **Benchmark**, which measures real frame cost via the author's
 
 ## Benchmark scene
 
-- **The scene:** `BenchmarkStressTest.unity` (Singleplayer Scenes) is committed to the repo and
-  registered in Build Settings — there is exactly ONE and it is never re-created (the one-shot
-  creation tool has been removed). It was originally cloned from `MinigameWildlifeBlitz`
-  (preserving NetworkObjects, ContainerScope, Cell + RandomLifeSpawner, crystal manager, camera);
-  its Cell now runs the menu's Blob Cell Config on all four intensity slots.
+- **The scene:** `BenchmarkStressTest.unity` (Multiplayer Scenes) is committed to the repo and
+  registered in Build Settings (enabled) — there is exactly ONE and it is never re-created (the
+  one-shot creation tool has been removed). It is a structural copy of the converted
+  `MinigameWildlifeBlitz` scene (networked single-host model: NetworkObject + NetcodeHooks +
+  `ClientPlayerVesselInitializer` + `ServerPlayerVesselInitializerWithAI`, ContainerScope, Cell +
+  RandomLifeSpawner, `NetworkCrystalManager`, camera) with its Cell running the Blob Cell Config on
+  all four intensity slots, 8 spawn points, 8 Squirrel AI templates, and NO turn monitors.
 - **Launch:** Settings → Run Benchmark calls `BenchmarkSceneLauncher.LaunchBenchmark()` → sets
-  `GameDataSO` (Squirrel, single-player, WildlifeBlitz mode) → `InvokeGameLaunch()` → the always-on
-  host loads it via Netcode scene management (the Relay just idles for a single-player scene).
-- **Endless + flyable:** `SandboxBenchmarkController` (`HasEndGame=false`) auto-activates players;
-  the human flies a Squirrel, AI Squirrels fly via the same `StartPlayer→ToggleAIPilot` path
-  WildlifeBlitz uses. No win condition (no TurnMonitor).
+  `GameDataSO` (Squirrel, WildlifeBlitz mode, `RequestedAIBackfillCount` = graphics-settings AI
+  crowd) → `InvokeGameLaunch()` → the always-on host loads it via Netcode scene management, the
+  same single-host path every mode uses (solo = party of one).
+- **Endless + flyable:** `SandboxBenchmarkController` (extends `MultiplayerWildlifeBlitzController`;
+  no monitors wired so the turn never ends) auto-begins via its `SetupNewTurn` override — no Ready
+  click; the human flies a Squirrel, AI Squirrels spawn via `ServerPlayerVesselInitializerWithAI`
+  backfill. The blitz score keeper still feeds the live HUD score; no win condition.
 - **Gradual spawn (no single-frame spike):** the existing `RandomLifeSpawner` already frame-spreads
   spawns via `yield return null` / `WaitForSeconds` (it has a comment about fixing a ~48% spike that
   way). A high-density benchmark `SpawnProfileSO` raises counts/lowers intervals — **production only,
