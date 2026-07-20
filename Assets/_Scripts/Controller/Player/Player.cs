@@ -126,24 +126,6 @@ namespace CosmicShore.Gameplay
         // it is still excluded (IsMultiplayerOwner == IsSpawned && IsOwner && !IsInitializedAsAI).
         public bool IsLocalUser => IsMultiplayerOwner;
        
-        IPlayer.InitializeData InitializeData;
-        
-        public void InitializeForSinglePlayerMode(IPlayer.InitializeData data, IVessel vessel)
-        {
-            InitializeData = data;
-            IsInitializedAsAI = InitializeData.IsAI;
-            // Single-player & legacy menu spawns default to Jade. Multiplayer overrides
-            // via NetDomain (server-write) before the vessel is initialized.
-            Domain = Domains.Jade;
-            Name = InitializeData.PlayerName;
-            AvatarId = InitializeData.AvatarId;
-            InputController.Initialize();
-            ToggleInputPause(true);
-            Vessel = vessel;
-            RoundStats.Name = Name;
-            RoundStats.Domain = Domain;
-        }
-
         /// <summary>
         /// TODO -> A temp way to initialize in multiplayer, try for better approach.
         /// </summary>
