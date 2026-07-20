@@ -208,7 +208,7 @@ namespace CosmicShore.Utility
 
         /// <summary>
         /// The resolved joust-collision target for the current session - the per-domain
-        /// joust sum that ends a Joust turn. Published by <see cref="JoustCollisionTurnMonitor"/>
+        /// joust sum that ends a Joust turn. Published by <see cref="NetworkJoustCollisionTurnMonitor"/>
         /// in StartMonitor on every peer (a scene constant, identical across clients). Read by
         /// the Joust controller to format the "N Jousts Left" loser line into
         /// <see cref="ScoreResult.ScoreText"/>. Reset in <see cref="ResetRuntimeData"/> and

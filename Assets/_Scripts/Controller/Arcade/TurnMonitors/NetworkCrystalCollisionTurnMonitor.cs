@@ -1,115 +1,89 @@
 // NetworkCrystalCollisionTurnMonitor.cs
-using System.Collections.Generic;
 using CosmicShore.Data;
-using Unity.Netcode;
+using CosmicShore.ScriptableObjects;
 using UnityEngine;
 using CosmicShore.Utility;
 
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Network-aware crystal collection turn monitor. After <c>base.StartMonitor()</c>
-    /// resolves the crystal target (from inspector override, waypoints, or default),
-    /// this subclass syncs it to all clients via NetworkVariable and publishes it
-    /// to <see cref="GameDataSO.CrystalTargetCount"/> so any system can read it.
+    /// Crystal objective monitor (HexRace + Crystal Capture). Resolves the crystal target
+    /// at <see cref="StartMonitor"/> from <see cref="EndConditionOverridesSO"/>
+    /// (Tools &gt; Cosmic Shore &gt; End Game Conditions; 0 = auto from waypoints, else 39 -
+    /// never a per-scene field), syncs it to all clients via the base target leg into
+    /// <see cref="GameDataSO.CrystalTargetCount"/>, and shows the local player's DOMAIN
+    /// crystal deficit. End condition, remaining display, and the B15 subscription
+    /// lifecycle come from <see cref="ObjectiveTurnMonitor"/>.
     /// </summary>
-    public class NetworkCrystalCollisionTurnMonitor : CrystalCollisionTurnMonitor
+    public class NetworkCrystalCollisionTurnMonitor : ObjectiveTurnMonitor
     {
-        private readonly NetworkVariable<int> _netCrystalCollisions = new NetworkVariable<int>(0);
+        // The RESOLVED crystal target for this turn - set in StartMonitor. Intentionally
+        // NOT a [SerializeField]: end-game counts are authored only via the tool, never
+        // per-scene. Do not re-add [SerializeField] here (see /EndGameConditions skill).
+        protected int CrystalCollisions;
 
-        // Stats this monitor actually subscribed to. Unsubscription must run off THIS
-        // list, never gameData.RoundStatsList: on a mid-turn scene exit, SceneLoader's
-        // ResetRuntimeData clears the roster BEFORE the old scene's objects are
-        // destroyed, so a list-based unsubscribe loop detaches nothing and the handler
-        // leaks onto the persistent human RoundStats (Docs/ScoringSystem/BUGS.md B15).
-        readonly List<IRoundStats> _subscribedStats = new();
-
-        void OnEnable()
-        {
-            _netCrystalCollisions.OnValueChanged += OnCrystalTargetSynced;
-        }
-
-        void OnDisable()
-        {
-            _netCrystalCollisions.OnValueChanged -= OnCrystalTargetSynced;
-        }
-
-        /// <summary>
-        /// Fires on all clients when the server writes to <c>_netCrystalCollisions</c>.
-        /// Keeps <see cref="GameDataSO.CrystalTargetCount"/> in sync across all machines.
-        /// </summary>
-        void OnCrystalTargetSynced(int previousValue, int newValue)
-        {
-            if (newValue > 0)
-                gameData.CrystalTargetCount = newValue;
-        }
+        [Header("Optional Configuration")]
+        [SerializeField] SpawnableWaypointTrack optionalEnvironment;
+        [SerializeField] int optionalLaps = 4;
 
         public override void StartMonitor()
         {
-            // Base resolves the target: CrystalCollisions (inspector) > waypoints > 39
+            CrystalCollisions = GetCrystalCollisionCount();
+
+            // Every player's crystal event drives the DOMAIN-sum display (not just the
+            // local player's own count). B15 bookkeeping is the base's.
+            SubscribeRoster();
+            RaiseRemainingUI();
+
             base.StartMonitor();
 
-            // Subscribe to every player's crystal-changed event so the HUD displays the
-            // up-to-date DOMAIN sum (not just the local player's count). Base only
-            // wires the local player; teammates' collections would otherwise stay invisible.
-            foreach (var stats in gameData.RoundStatsList)
-            {
-                if (stats == null || _subscribedStats.Contains(stats)) continue;
-                stats.OnCrystalsCollectedChanged += OnAnyCrystalChanged;
-                _subscribedStats.Add(stats);
-            }
-
-            if (!IsServer) return;
-
-            _netCrystalCollisions.Value = CrystalCollisions;
-            gameData.CrystalTargetCount = CrystalCollisions;
-
-            CSDebug.Log($"[NetworkCrystalMonitor] Server set crystal target: {CrystalCollisions} " +
-                      $"(intensity={gameData.SelectedIntensity.Value})");
+            SyncTarget(CrystalCollisions);
+            if (IsServer)
+                CSDebug.Log($"[NetworkCrystalMonitor] Server set crystal target: {CrystalCollisions} " +
+                            $"(intensity={gameData.SelectedIntensity.Value})");
         }
 
-        public override void StopMonitor()
+        protected override void PublishTarget(int value) => gameData.CrystalTargetCount = value;
+
+        protected override void AttachStatsHandlers(IRoundStats stats) =>
+            stats.OnCrystalsCollectedChanged += OnAnyCrystalChanged;
+
+        protected override void DetachStatsHandlers(IRoundStats stats) =>
+            stats.OnCrystalsCollectedChanged -= OnAnyCrystalChanged;
+
+        void OnAnyCrystalChanged(IRoundStats _) => RaiseRemainingUI();
+
+        /// <summary>
+        /// The LOCAL PLAYER'S individual remaining count (target - own crystals) - the
+        /// HexRaceScoreTracker's end-of-race win check reads this (individual semantics,
+        /// distinct from the domain-deficit display).
+        /// </summary>
+        public string GetRemainingCrystalsCountToCollect()
         {
-            foreach (var stats in _subscribedStats)
-            {
-                if (stats == null) continue;
-                stats.OnCrystalsCollectedChanged -= OnAnyCrystalChanged;
-            }
-            _subscribedStats.Clear();
-            base.StopMonitor();
+            if (!gameData.TryGetLocalPlayerStats(out IPlayer _, out IRoundStats ownStats) || ownStats == null)
+                return CrystalCollisions.ToString();
+            return Mathf.Max(0, CrystalCollisions - ownStats.CrystalsCollected).ToString();
         }
 
-        public override void OnDestroy()
+        /// <summary>
+        /// Target resolution: the End Game Conditions tool is the authority
+        /// (Resources/EndConditionOverrides; keyed by GameMode so HexRace and Crystal
+        /// Capture stay independent). 0 there means auto: waypoints x laps, else 39.
+        /// </summary>
+        protected int GetCrystalCollisionCount()
         {
-            // Safety net for destruction paths that bypass StopMonitor - detaching
-            // from the persistent RoundStats must never depend on the turn ending.
-            StopMonitor();
-            base.OnDestroy();
+            int autoCalc = ComputeAutoCalcCount();
+            var overrides = EndConditionOverridesSO.Instance;
+            return overrides != null ? overrides.GetCrystalCount(gameData.GameMode, autoCalc) : autoCalc;
         }
 
-        void OnAnyCrystalChanged(IRoundStats _) => UpdateCrystalsRemainingUI();
-
-        public override bool CheckForEndOfTurn()
+        int ComputeAutoCalcCount()
         {
-            if (!IsServer) return false;
+            if (optionalEnvironment)
+                return optionalEnvironment.waypoints[optionalEnvironment.intensityLevel - 1].positions.Count * optionalLaps;
 
-            // End condition delegated to the mode's ScoringRule. HexRace and Crystal Capture
-            // both end when an active domain's summed metric reaches the target; the trigger is
-            // per-team so AI and human teammates finish the objective together.
-            return gameData.ScoringRule.IsObjectiveReached(gameData, out _);
-        }
-
-        protected override void UpdateCrystalsRemainingUI()
-        {
-            // Remaining is the LOCAL PLAYER'S DOMAIN deficit (the rule owns target + sum), so
-            // the HUD reflects the team objective rather than a single ship. A null local
-            // player resolves to Domains.Blue (sum 0 → full target remaining), matching the
-            // previous behavior.
-            int remaining = gameData.ScoringRule.Remaining(
-                gameData, gameData.LocalPlayer?.Domain ?? Domains.Blue);
-
-            if (onUpdateTurnMonitorDisplay)
-                onUpdateTurnMonitorDisplay.Raise(remaining.ToString());
+            CSDebug.LogWarning($"[NetworkCrystalMonitor] No crystal count configured for {gameObject.name} and no waypoints. Defaulting to 39.");
+            return 39;
         }
     }
 }

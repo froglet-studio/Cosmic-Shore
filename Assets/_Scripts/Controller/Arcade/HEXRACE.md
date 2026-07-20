@@ -443,7 +443,7 @@ ugsStatsManager.ReportHexRaceStats(
 
 3. **Deterministic track**: All clients must produce identical tracks from the same seed + intensity. The `SegmentSpawner` uses `Random.InitState(seed)` before spawning to ensure determinism.
 
-4. **Crystal target resolution**: The crystal target is resolved by `CrystalCollisionTurnMonitor.GetCrystalCollisionCount()` in priority order: (1) inspector `CrystalCollisions` field if non-zero, (2) `SpawnableWaypointTrack` waypoint count × laps, (3) default 39. The resolved target is synced to all clients via `NetworkCrystalCollisionTurnMonitor._netCrystalCollisions` NetworkVariable and published to `gameData.CrystalTargetCount`.
+4. **Crystal target resolution**: The crystal target is resolved by `NetworkCrystalCollisionTurnMonitor.GetCrystalCollisionCount()` in priority order: (1) inspector `CrystalCollisions` field if non-zero, (2) `SpawnableWaypointTrack` waypoint count × laps, (3) default 39. The resolved target is synced to all clients via `NetworkCrystalCollisionTurnMonitor._netCrystalCollisions` NetworkVariable and published to `gameData.CrystalTargetCount`.
 
 5. **Comeback mechanics**: The `ElementalComebackSystem` is critical for competitive balance — it buffs losing players proportionally to their crystal deficit, preventing runaway victories. Configured via `SO_ElementalComebackProfile` with per-vessel, per-element weights.
 

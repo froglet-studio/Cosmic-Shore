@@ -18,8 +18,10 @@ at runtime via `Resources.Load`.
 ## The rule (do not break this)
 
 - **There are NO per-scene inspector fields for these counts.** The old
-  `CrystalCollisionTurnMonitor.CrystalCollisions` and `JoustCollisionTurnMonitor.collisionsNeeded`
-  `[SerializeField]`s were removed on purpose. **Do not re-add `[SerializeField]` to them** — they
+  `CrystalCollisions` and `collisionsNeeded` `[SerializeField]`s (now plain fields on
+  `NetworkCrystalCollisionTurnMonitor` / `NetworkJoustCollisionTurnMonitor` - the non-network
+  base classes were collapsed into them under `ObjectiveTurnMonitor`, Y1.3) were removed on
+  purpose. **Do not re-add `[SerializeField]` to them** — they
   are now plain internal fields that just hold the *resolved* value. If you want a count changed,
   change it in the tool, not in a scene.
 - **`0` = auto/default, `> 0` = explicit count** (same semantic the old field had, moved into the tool):
@@ -42,8 +44,8 @@ at runtime via `Resources.Load`.
 EndConditionOverridesSO (Resources/EndConditionOverrides.asset)   ← edited by the Tools window
         │  GetCrystalCount(mode, autoCalc) / GetJoustCount() / GetMaelstromWinTarget()
         ▼
-CrystalCollisionTurnMonitor.GetCrystalCollisionCount()   → resolves CrystalCollisions (HexRace, Crystal Capture)
-JoustCollisionTurnMonitor.StartMonitor()                 → resolves collisionsNeeded (Joust)
+NetworkCrystalCollisionTurnMonitor.GetCrystalCollisionCount() → resolves CrystalCollisions (HexRace, Crystal Capture)
+NetworkJoustCollisionTurnMonitor.StartMonitor()               → resolves collisionsNeeded (Joust)
 TournamentController.StartTournamentInternal()           → TournamentDataSO.ResolveWinTarget(...) (Maelstrom)
         │  (0 in the tool → waypoint auto-calc / default 3 / default 6)
         ▼
@@ -109,8 +111,8 @@ build restore.
 | Config asset (committed) | `Assets/Resources/EndConditionOverrides.asset` |
 | Editor window (the menu) | `Assets/_Scripts/Editor/EndConditionOverridesWindow.cs` |
 | Build-time auto-restore | `Assets/_Scripts/Editor/EndConditionBuildRestore.cs` |
-| Crystal modes read it here | `Assets/_Scripts/Controller/Arcade/TurnMonitors/CrystalCollisionTurnMonitor.cs` (`GetCrystalCollisionCount`) |
-| Joust reads it here | `Assets/_Scripts/Controller/Arcade/TurnMonitors/JoustCollisionTurnMonitor.cs` (`StartMonitor`) |
+| Crystal modes read it here | `Assets/_Scripts/Controller/Arcade/TurnMonitors/NetworkCrystalCollisionTurnMonitor.cs` (`GetCrystalCollisionCount`) |
+| Joust reads it here | `Assets/_Scripts/Controller/Arcade/TurnMonitors/NetworkJoustCollisionTurnMonitor.cs` (`StartMonitor`) |
 | Maelstrom resolves it here | `Assets/_Scripts/Controller/Arcade/Tournament/TournamentController.cs` (`StartTournamentInternal` → `ResolveWinTarget`) |
 | Maelstrom reads it here | `Assets/_Scripts/Utility/DataContainers/Tournament/TournamentDataSO.cs` (`EffectiveWinTarget`, `IsShuffleComplete`) |
 | Network sync (unchanged) | `NetworkCrystalCollisionTurnMonitor.cs` (`CrystalTargetCount`), `NetworkJoustCollisionTurnMonitor.cs` (`JoustTargetCount`) |
