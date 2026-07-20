@@ -20,6 +20,7 @@ namespace CosmicShore.Gameplay
             ScoringMetric.ElementalCrystals => stats.ElementalCrystalsCollected,
             ScoringMetric.Jousts            => stats.JoustCollisions,
             ScoringMetric.Goals             => stats.GoalsScored,
+            ScoringMetric.VolumeCreated     => (int)stats.VolumeCreated,
             _                               => 0,
         };
 
@@ -37,6 +38,7 @@ namespace CosmicShore.Gameplay
                 case ScoringMetric.ElementalCrystals: stats.ElementalCrystalsCollected = value; break;
                 case ScoringMetric.Jousts:            stats.JoustCollisions = value; break;
                 case ScoringMetric.Goals:             stats.GoalsScored = value; break;
+                case ScoringMetric.VolumeCreated:     stats.VolumeCreated = value; break;
             }
         }
 

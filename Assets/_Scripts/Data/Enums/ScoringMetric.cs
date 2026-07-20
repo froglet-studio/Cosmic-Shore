@@ -14,5 +14,7 @@ namespace CosmicShore.Data
         ElementalCrystals = 2,
         Jousts = 3,
         Goals = 4,
+        /// <summary>Trail volume the player laid (truncated to int). Freestyle's live feed.</summary>
+        VolumeCreated = 5,
     }
 }
