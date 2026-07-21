@@ -21944,6 +21944,11 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: -1.2
       objectReference: {fileID: 0}
+    - target: {fileID: 2147322684283414723, guid: 0b36fa278f9a30d4c8f44e846674c904,
+        type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
+      value: 
+      objectReference: {fileID: 680554985412321636}
     - target: {fileID: 2323503437897148564, guid: 0b36fa278f9a30d4c8f44e846674c904,
         type: 3}
       propertyPath: m_SizeDelta.x
@@ -23449,6 +23454,11 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: -30.07654
       objectReference: {fileID: 0}
+    - target: {fileID: 4721881186490286332, guid: 0b36fa278f9a30d4c8f44e846674c904,
+        type: 3}
+      propertyPath: activationButtonImage
+      value: 
+      objectReference: {fileID: 0}
     - target: {fileID: 4761935921297856879, guid: 0b36fa278f9a30d4c8f44e846674c904,
         type: 3}
       propertyPath: m_SizeDelta.x
@@ -23848,6 +23858,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_fontSizeMin
       value: 24
+      objectReference: {fileID: 0}
+    - target: {fileID: 5463721288890477254, guid: 0b36fa278f9a30d4c8f44e846674c904,
+        type: 3}
+      propertyPath: m_Alpha
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5465901627763679718, guid: 0b36fa278f9a30d4c8f44e846674c904,
         type: 3}
