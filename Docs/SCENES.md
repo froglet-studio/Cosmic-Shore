@@ -17,8 +17,9 @@ A standalone arcade game called "Freestyle" (`GameModes.Freestyle = 7`,
 vestige of the pre-lava-lamp era and has been removed — do not reintroduce it. Its
 shape-drawing flow (planned for lava-lamp Phase 2) can be recovered from git history;
 the supporting scripts (`ShapeDrawingManager`, `SegmentSpawner`, spawnable shapes)
-remain in the codebase. `MultiplayerFreestyle (28)` is a separate multiplayer sandbox
-game scene and still exists.
+remain in the codebase. The standalone multiplayer sandbox (`MultiplayerFreestyle = 28`)
+was likewise retired 2026-07-21 — the lava lamp is the only freestyle; party members
+fly it together in Menu_Main.
 
 ---
 
@@ -42,7 +43,6 @@ scene and `ServerPlayerVesselInitializerWithAI` backfills AI.
 | Scene | Path | Game Mode | Controller |
 |---|---|---|---|
 | **MinigameHexRace** | `_Scenes/Multiplayer Scenes/` | `HexRace (33)` | `HexRaceController` |
-| **MinigameFreestyleMultiplayer_Gameplay** | `_Scenes/Multiplayer Scenes/` | `MultiplayerFreestyle (28)` | `MultiplayerFreestyleController` |
 | **MinigameCrystalCaptureMultiplayer_Gameplay** | `_Scenes/Multiplayer Scenes/` | `MultiplayerCrystalCapture (35)` | `MultiplayerCrystalCaptureController` |
 | **MinigameDuelForCellMultiplayer_Gameplay** | `_Scenes/Multiplayer Scenes/` | `MultiplayerCellularDuel (29)` | `MultiplayerCellularDuelController` |
 | **MinigameJoust_Gameplay** | `_Scenes/Multiplayer Scenes/` | `MultiplayerJoust (34)` | `MultiplayerJoustController` |
@@ -194,8 +194,6 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
     │   Server-driven turn/round/game flow via ClientRpc synchronization
     │   Replay + Rematch systems via ServerRpc/ClientRpc
     │
-    ├── MultiplayerFreestyleController     — per-player activation, player removal protocol
-    │
     └── MultiplayerDomainGamesController
         │   Ready synchronization: all players must click Ready before countdown
         │   Domain (team) stat calculation on game end
@@ -225,7 +223,7 @@ was deleted 2026-07-20 — solo play runs the multiplayer spine as a party of on
 | 0 | `Random` | Meta | — | — |
 | 1-25, 27 | retired solo IDs | Retired | — | — (cards + scenes deleted 2026-07-20; enum members kept for serialized-int stability — see `GameModes.cs`) |
 | 26 | `WildlifeBlitz` | MP Co-op | MinigameWildlifeBlitz | `MultiplayerWildlifeBlitzController` |
-| 28 | `MultiplayerFreestyle` | MP | MinigameFreestyleMultiplayer_Gameplay | `MultiplayerFreestyleController` |
+| 28 | retired (was the standalone MP freestyle sandbox) | Retired | — | — (freestyle IS the Menu_Main lava lamp) |
 | 29 | `MultiplayerCellularDuel` | MP | MinigameDuelForCellMultiplayer_Gameplay | `MultiplayerCellularDuelController` |
 | 30 | `Multiplayer2v2CoOpVsAI` | MP | ArcadeGameMultiplayer2v2CoOpVsAI | Variant |
 | 32 | retired (was the separate co-op blitz) | Retired | — | — (26 IS the networked co-op blitz) |
@@ -370,28 +368,6 @@ Hypersea soccer (Rocket League-inspired) — two domains slam a server-simulated
 - Server-authoritative ball (`AstroLeagueBall` NetworkVariables + client dead reckoning), goal attribution by last non-defending striker (own goals credit the opponent)
 - `UseSceneReloadForReplay => true`
 - AI strikers via `AIPilot.SetExternalTargetProvider` (billiard approach behind the ball)
-
-### Multiplayer Freestyle
-
-**Scene**: `MinigameFreestyleMultiplayer_Gameplay.unity`
-**Controller**: `MultiplayerFreestyleController`
-**Base**: `MultiplayerMiniGameControllerBase` (NOT domain games)
-
-Lobby/freestyle sandbox mode. Open-ended multiplayer flying with per-player activation.
-
-**Key features**:
-- No scoring, no natural end (`numberOfRounds = int.MaxValue`)
-- Per-player countdown activation (each player starts individually, not synchronized)
-- Player removal protocol: removes player data from all clients before leaving the session
-- Subscribes to `OnClientReady` to handle late-joining clients
-
-### Multiplayer Wildlife Blitz Co-op
-
-**Scene**: `MinigameWildlifeBlitzMultuplayerCoOp.unity`
-**Controller**: `MultiplayerWildlifeBlitzMiniGame`
-**Base**: `MultiplayerMiniGameControllerBase` (NOT domain games)
-
-Co-op wildlife blitz with its own ready synchronization pattern.
 
 **Key features**:
 - Own ready-sync pattern (not via `MultiplayerDomainGamesController`)
@@ -542,7 +518,6 @@ All scene names are centralized in `SceneNameListSO` (`Assets/_Scripts/Utility/D
 | `BootstrapScene` | `"Bootstrap"` |
 | `AuthenticationScene` | `"Authentication"` |
 | `MainMenuScene` | `"Menu_Main"` |
-| `MultiplayerScene` | `"MinigameFreestyleMultiplayer_Gameplay"` |
 
 Game scene names are stored in `SO_ArcadeGame.SceneName` assets, not in `SceneNameListSO`.
 
@@ -576,7 +551,6 @@ Game scene names are stored in `SO_ArcadeGame.SceneName` assets, not in `SceneNa
 | Crystal Capture | `MultiplayerCrystalCaptureController.cs` | `_Scripts/Controller/Arcade/` |
 | Astro League | `AstroLeagueController.cs` | `_Scripts/Controller/Arcade/AstroLeague/` |
 | Nucleus Rush (Brood Rush) | `NucleusRushController.cs` | `_Scripts/Controller/Arcade/` |
-| Freestyle (MP) | `MultiplayerFreestyleController.cs` | `_Scripts/Controller/Arcade/` |
 | Wildlife Blitz (co-op) | `MultiplayerWildlifeBlitzController.cs` | `_Scripts/Controller/Arcade/` |
 | Benchmark (endless) | `SandboxBenchmarkController.cs` | `_Scripts/Controller/Arcade/` |
 | Countdown timer | `CountdownTimer.cs` | `_Scripts/Controller/Arcade/` |

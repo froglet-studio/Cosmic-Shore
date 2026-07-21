@@ -50,7 +50,7 @@ namespace CosmicShore.Data
         PlayGameMultipass = 425,
         PlayGameMazeRunner = 426,
         PlayGameWildlifeBlitz = 427,
-        PlayGameMultiplayerFreestyle = 428,
+        PlayGameMultiplayerFreestyle = 428, // retired with the standalone freestyle game (2026-07-21) - do not reuse
         PlayGameMultiplayerDuelForCell = 429,
         PlayGameMultiplayerWildlifeBlitzGame = 430,
         PlayGameHexRace = 431,

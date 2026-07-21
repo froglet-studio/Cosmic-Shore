@@ -248,7 +248,6 @@ The former `Singleplayer Scenes/` folder is gone; `SplashScreen.unity` lives at
 | Scene | Game Mode | Controller |
 |---|---|---|
 | `MinigameHexRace` | `HexRace (33)` | `HexRaceController` |
-| `MinigameFreestyleMultiplayer_Gameplay` | `MultiplayerFreestyle (28)` | `MultiplayerFreestyleController` |
 | `MinigameCrystalCaptureMultiplayer_Gameplay` | `MultiplayerCrystalCapture (35)` | `MultiplayerCrystalCaptureController` |
 | `MinigameDuelForCellMultiplayer_Gameplay` | `MultiplayerCellularDuel (29)` | `MultiplayerCellularDuelController` |
 | `MinigameJoust_Gameplay` | `MultiplayerJoust (34)` | `MultiplayerJoustController` |
@@ -268,7 +267,7 @@ All in `Assets/_Scenes/Multiplayer Scenes/`.
 
 #### GameModes Enum (`Assets/_Scripts/Data/Enums/GameModes.cs`)
 
-38 game modes with explicit numeric IDs (highest is `NucleusRush(38)`; IDs 7 and 31 are skipped). Single-player: `Elimination(1)` through `ProtectMission(27)`. Multiplayer: `MultiplayerFreestyle(28)`, `MultiplayerCellularDuel(29)`, `Multiplayer2v2CoOpVsAI(30)`, `MultiplayerWildlifeBlitzGame(32)`, `HexRace(33)`, `MultiplayerJoust(34)`, `MultiplayerCrystalCapture(35)`, `AstroLeague(37)`, `NucleusRush(38)`. Meta-mode: `Tournament(36)` — the session-level meta that chains HexRace → Joust → Crystal Capture back-to-back via sequential `Single` loads (see `Docs/TournamentSystem/ARCHITECTURE.md`). `AstroLeague(37)` is hypersea soccer (a standalone domain minigame, see `_Scripts/Controller/Arcade/ASTROLEAGUE.md`). `NucleusRush(38)` (display name "Brood Rush") is the nucleus-control fauna-wave race (see `_Scripts/Controller/Arcade/NUCLEUSRUSH.md`). Meta sentinel: `Random(0)`. Note: IDs 7 and 31 are skipped — 7 was the retired standalone arcade Freestyle game (freestyle now lives in Menu_Main as the lava lamp; see "Lava-Lamp Mode"), 31 was never assigned. Do not reuse either ID.
+38 game modes with explicit numeric IDs (highest is `NucleusRush(38)`; IDs 7 and 31 are skipped). Single-player: `Elimination(1)` through `ProtectMission(27)`. Multiplayer: `MultiplayerCellularDuel(29)`, `Multiplayer2v2CoOpVsAI(30)`, `MultiplayerWildlifeBlitzGame(32)`, `HexRace(33)`, `MultiplayerJoust(34)`, `MultiplayerCrystalCapture(35)`, `AstroLeague(37)`, `NucleusRush(38)`. Meta-mode: `Tournament(36)` — the session-level meta that chains HexRace → Joust → Crystal Capture back-to-back via sequential `Single` loads (see `Docs/TournamentSystem/ARCHITECTURE.md`). `AstroLeague(37)` is hypersea soccer (a standalone domain minigame, see `_Scripts/Controller/Arcade/ASTROLEAGUE.md`). `NucleusRush(38)` (display name "Brood Rush") is the nucleus-control fauna-wave race (see `_Scripts/Controller/Arcade/NUCLEUSRUSH.md`). Meta sentinel: `Random(0)`. Note: IDs 7 and 31 are skipped — 7 was the retired standalone arcade Freestyle game, 31 was never assigned. `MultiplayerFreestyle(28)` was retired 2026-07-21: freestyle lives ONLY in Menu_Main as the lava lamp (see "Lava-Lamp Mode"); the standalone sandbox scene/controller/card are deleted. Do not reuse any of these IDs.
 
 Solo modes were retired 2026-07-20: their scene-less `SO_ArcadeGame` cards are deleted and the retired enum IDs (1-6, 8-25, 27, 32) are kept only for serialized-int stability (annotated do-not-reuse in `GameModes.cs`). `WildlifeBlitz (26)` lives on as the networked single-host co-op blitz; `CellularDuel` play lives on as `MultiplayerCellularDuel (29)`.
 
@@ -280,8 +279,6 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
 │
 └── MultiplayerMiniGameControllerBase (abstract, NetworkBehaviour)
     │   Server-authoritative turn/round/game flow via ClientRpc
-    │
-    ├── MultiplayerFreestyleController     — sandbox, per-player activation
     │
     └── MultiplayerDomainGamesController
         ├── HexRaceController              — crystal race, deterministic track, golf scoring
@@ -1519,7 +1516,7 @@ public interface IScreen
 
 ### Lava-Lamp Mode (Menu Freestyle Merge)
 
-**Naming: "lava lamp" and "freestyle" are the same thing.** When viewed from the menu (autopilot vessels drifting behind the UI) it is called the *lava lamp*; when the player takes control and flies it is called *freestyle*. One system, two names. The old standalone arcade game named "Freestyle" (`GameModes.Freestyle = 7`, `MinigameFreestyle.unity`, `SinglePlayerFreestyleController`) was a vestige of the pre-lava-lamp era and has been removed — do not reintroduce it. `MultiplayerFreestyle (28)` is a separate multiplayer sandbox game and still exists.
+**Naming: "lava lamp" and "freestyle" are the same thing.** When viewed from the menu (autopilot vessels drifting behind the UI) it is called the *lava lamp*; when the player takes control and flies it is called *freestyle*. One system, two names. BOTH standalone freestyle games are retired and must not be reintroduced: the old arcade "Freestyle" (`GameModes.Freestyle = 7`) and the standalone multiplayer sandbox (`MultiplayerFreestyle = 28`, deleted 2026-07-21). The lava lamp is the only freestyle — party members fly it together in Menu_Main.
 
 Lava-lamp mode hosts freestyle gameplay directly in Menu_Main: the autopilot vessel becomes playable when the player enters freestyle mode. Game UI panels (MiniGameHUD, Scoreboard, Vessel Selection, Vessel HUDs, PlayerScoreCards, EndShapeDetailHUD) live under Menu_Main's "Game UI" container and fade in/out with the freestyle toggle.
 

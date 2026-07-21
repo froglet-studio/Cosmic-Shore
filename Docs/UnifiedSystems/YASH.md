@@ -121,7 +121,8 @@ perf branches).
 The declared target: one always-networked, domain-aggregated scoring path (REFACTOR.md). Order:
 
 1. **Y1.1** Migrate the legacy-primary modes onto `ScoringRuleSO`: CellularDuel (SP+MP),
-   WildlifeBlitz (SP + co-op), MultiplayerFreestyle, 2v2CoOpVsAI. Author rules per mode; wire
+   WildlifeBlitz (SP + co-op), MultiplayerFreestyle (since retired 2026-07-21 — the lava lamp
+   is the only freestyle), 2v2CoOpVsAI. Author rules per mode; wire
    `IsObjectiveReached`/`AssignScores`/`BuildResults`; keep `EndConditionOverrides.asset`
    authoring intact (the `EndGameConditions` editor window remains the source of end-condition
    counts — do not reintroduce per-scene inspector fields).

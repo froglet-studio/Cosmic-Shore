@@ -42,6 +42,10 @@ namespace CosmicShore.Data
         MazeRunner = 25,
         WildlifeBlitz = 26,
         ProtectMission = 27,
+        // 28 retired 2026-07-21: the standalone MultiplayerFreestyle sandbox game
+        // (scene + controller + card) was deleted - freestyle IS the Menu_Main
+        // lava lamp now (see CLAUDE.md "Lava-Lamp Mode"). Member kept for
+        // serialized-int stability; do not reuse.
         MultiplayerFreestyle = 28,
         MultiplayerCellularDuel = 29,
         Multiplayer2v2CoOpVsAI = 30,
