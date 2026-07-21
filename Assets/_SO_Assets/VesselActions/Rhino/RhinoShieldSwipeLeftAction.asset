@@ -20,5 +20,5 @@ MonoBehaviour:
   swipeOutSeconds: 0.18
   settleSeconds: 0.22
   returnSeconds: 0.3
-  cameraYawDegrees: 45
-  cameraRollDegrees: 45
+  cameraYawDegrees: 15
+  cameraRollDegrees: 10

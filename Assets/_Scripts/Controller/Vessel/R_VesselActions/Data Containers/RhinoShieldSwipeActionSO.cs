@@ -42,14 +42,14 @@ namespace CosmicShore.Gameplay
         [SerializeField] float returnSeconds = 0.3f;
 
         [Header("Camera (local pilot only)")]
-        [Tooltip("Camera yaw at the stance; rotates over the full swipe so it meets the sword as it settles.")]
-        [SerializeField] float cameraYawDegrees = 45f;
+        [Tooltip("Camera yaw at the stance; rotates over the full swipe so it meets the sword as it settles. Playtest tuned well below the sword's 45 - full-match reads as overtuned.")]
+        [SerializeField] float cameraYawDegrees = 15f;
         [Tooltip("Camera roll at the stance. Set 0 to keep the horizon level.")]
-        [SerializeField] float cameraRollDegrees = 45f;
+        [SerializeField] float cameraRollDegrees = 10f;
 
-        /// <summary>+1 for a right swipe, -1 for a left swipe. Yaw uses this sign directly
-        /// (positive about up = nose right); roll uses the negated sign (negative about
-        /// forward = counterclockwise from the pilot's seat in Unity's left-handed space).</summary>
+        /// <summary>+1 for a right swipe, -1 for a left swipe. Both axes use this sign
+        /// directly: positive about up = nose right, and positive about forward =
+        /// counterclockwise from the pilot's seat (AngleAxis(+90, forward) maps right to up).</summary>
         public float DirectionSign => direction == SwipeDirection.Right ? 1f : -1f;
 
         public float SwipeYawDegrees => swipeYawDegrees;

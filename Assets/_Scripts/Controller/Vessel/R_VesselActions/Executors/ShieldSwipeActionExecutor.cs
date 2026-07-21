@@ -37,6 +37,11 @@ namespace CosmicShore.Gameplay
         float _camRoll;
         float _activeSign; // +1 right stance, -1 left stance, 0 idle
 
+        // Which triggers are physically held (set on Begin, cleared on End per direction),
+        // so releasing the stance-owning trigger can hand the stance to the other one.
+        RhinoShieldSwipeActionSO _heldRightSO;
+        RhinoShieldSwipeActionSO _heldLeftSO;
+
         void OnEnable()
         {
             if (OnMiniGameTurnEnd) OnMiniGameTurnEnd.OnRaised += OnTurnEndOfMiniGame;
@@ -49,6 +54,51 @@ namespace CosmicShore.Gameplay
         }
 
         void OnTurnEndOfMiniGame() => ResetImmediate();
+
+        void Update()
+        {
+            if (_activeSign == 0f || _status == null || !_status.IsLocalUser) return;
+
+            // The release edge can be lost mid-hold: a gamepad disconnect swaps input
+            // strategies with no release synthesis, and exiting menu freestyle pauses
+            // input before the release is processed. Watch the physical trigger for the
+            // local pilot and recenter once it is no longer down. Remote peers don't
+            // poll - their stance ends via the owner's replicated stop event.
+            if (!_status.AutoPilotEnabled && ActiveTriggerStillDown()) return;
+
+            var so = _activeSign > 0f ? _heldRightSO : _heldLeftSO;
+            _heldRightSO = null;
+            _heldLeftSO = null;
+            _activeSign = 0f;
+
+            if (so)
+            {
+                RestartAnimation(out var token);
+                RunReturnAsync(so, token).Forget();
+            }
+            else
+            {
+                ResetImmediate();
+            }
+        }
+
+        bool ActiveTriggerStillDown()
+        {
+            var input = _status.InputStatus;
+            if (input == null) return false;
+
+            // Only trigger-writing devices can have begun a swipe. A strategy swap (pad
+            // disconnect -> keyboard) leaves the analogs frozen at their last held value,
+            // so a non-trigger device counts as released, not as still-held.
+            if (input.ActiveInputDevice is not (InputDeviceType.Gamepad or InputDeviceType.DualMouse))
+                return false;
+
+            // Same deadzone the gamepad strategy uses for its press/release edges.
+            const float deadzone = 0.05f;
+            return _activeSign > 0f
+                ? input.RightTriggerAnalog > deadzone
+                : input.LeftTriggerAnalog > deadzone;
+        }
 
         public override void Initialize(IVesselStatus shipStatus)
         {
@@ -64,8 +114,18 @@ namespace CosmicShore.Gameplay
             if (!shieldRoot || !so) return;
             CaptureBasePose();
 
+            if (so.DirectionSign > 0f) _heldRightSO = so;
+            else _heldLeftSO = so;
+
             _activeSign = so.DirectionSign;
-            _camera = ResolveCamera();
+
+            // The active controller can change between swipes (death cam, replay cam);
+            // a stale offset on the previous controller would persist forever.
+            var camera = ResolveCamera();
+            if (_camera && !ReferenceEquals(_camera, camera))
+                _camera.SetRotationOffset(Quaternion.identity);
+            _camera = camera;
+
             RestartAnimation(out var token);
             RunSwipeAsync(so, so.DirectionSign, token).Forget();
         }
@@ -75,9 +135,22 @@ namespace CosmicShore.Gameplay
             _status ??= status;
             if (!shieldRoot || !so) return;
 
-            // Only the trigger that owns the current stance returns the sword to center;
+            bool isRight = so.DirectionSign > 0f;
+            if (isRight) _heldRightSO = null;
+            else _heldLeftSO = null;
+
+            // Only the trigger that owns the current stance moves the sword;
             // a release of the other trigger after a cross-swipe is a no-op.
             if (_activeSign == 0f || !Mathf.Approximately(_activeSign, so.DirectionSign)) return;
+
+            // If the opposite trigger is still held it takes the stance back
+            // instead of the sword snapping to center under a held trigger.
+            var fallback = isRight ? _heldLeftSO : _heldRightSO;
+            if (fallback)
+            {
+                BeginSwipe(fallback, status);
+                return;
+            }
 
             _activeSign = 0f;
             RestartAnimation(out var token);
@@ -91,14 +164,15 @@ namespace CosmicShore.Gameplay
                 float startYaw = _yaw, startRoll = _roll;
                 float startCamYaw = _camYaw, startCamRoll = _camRoll;
 
-                // Rightward yaw is positive about up; counterclockwise roll (from the
-                // pilot's seat) is negative about forward - so roll takes the negated sign.
+                // Rightward yaw is positive about up. Counterclockwise roll (from the
+                // pilot's seat) is POSITIVE about forward - AngleAxis(+90, forward) maps
+                // right to up - so roll takes the same sign as yaw.
                 float peakYaw = sign * so.SwipeYawDegrees;
-                float peakRoll = -sign * so.SwipeRollDegrees;
+                float peakRoll = sign * so.SwipeRollDegrees;
                 float restYaw = sign * so.RestYawDegrees;
-                float restRoll = -sign * so.RestRollDegrees;
+                float restRoll = sign * so.RestRollDegrees;
                 float camYawTarget = sign * so.CameraYawDegrees;
-                float camRollTarget = -sign * so.CameraRollDegrees;
+                float camRollTarget = sign * so.CameraRollDegrees;
 
                 float outDur = Mathf.Max(0.01f, so.SwipeOutSeconds);
                 float settleDur = Mathf.Max(0.01f, so.SettleSeconds);
@@ -250,6 +324,8 @@ namespace CosmicShore.Gameplay
             _camYaw = 0f;
             _camRoll = 0f;
             _activeSign = 0f;
+            _heldRightSO = null;
+            _heldLeftSO = null;
 
             if (_baseCaptured && shieldRoot)
             {
