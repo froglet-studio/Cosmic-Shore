@@ -8,11 +8,10 @@ namespace CosmicShore.Gameplay
     /// <summary>
     /// Runs the Rhino shield swipe: pivots the shield capsule about its parent's origin
     /// through the swipe arc (rotation and mount position together, so the sword carves a
-    /// real arc through space instead of spinning in place), and tweens a camera rotation
-    /// offset for the local pilot that arrives at the stance exactly when the sword settles.
-    /// The camera offset is eased here rather than by the controller because FixedCamera
-    /// vessels apply rotation unsmoothed. Only scale is driven on this transform elsewhere
-    /// (ShieldSkimmerScaleDriver), so rotation/position are ours to animate.
+    /// real arc through space instead of spinning in place). Holding the trigger holds the
+    /// full sweep angle; releasing returns the sword to center. Only scale is driven on
+    /// this transform elsewhere (ShieldSkimmerScaleDriver), so rotation/position are ours
+    /// to animate.
     /// </summary>
     public sealed class ShieldSwipeActionExecutor : ShipActionExecutorBase
     {
@@ -24,7 +23,6 @@ namespace CosmicShore.Gameplay
         [SerializeField] ScriptableEventNoParam OnMiniGameTurnEnd;
 
         IVesselStatus _status;
-        CustomCameraController _camera;
         CancellationTokenSource _animCts;
 
         Vector3 _baseLocalPos;
@@ -33,8 +31,6 @@ namespace CosmicShore.Gameplay
 
         float _yaw;        // current sweep offsets (degrees) in the shield parent's frame
         float _roll;
-        float _camYaw;     // current camera offsets (degrees), camera-local
-        float _camRoll;
         float _activeSign; // +1 right stance, -1 left stance, 0 idle
 
         // Which triggers are physically held (set on Begin, cleared on End per direction),
@@ -119,13 +115,6 @@ namespace CosmicShore.Gameplay
 
             _activeSign = so.DirectionSign;
 
-            // The active controller can change between swipes (death cam, replay cam);
-            // a stale offset on the previous controller would persist forever.
-            var camera = ResolveCamera();
-            if (_camera && !ReferenceEquals(_camera, camera))
-                _camera.SetRotationOffset(Quaternion.identity);
-            _camera = camera;
-
             RestartAnimation(out var token);
             RunSwipeAsync(so, so.DirectionSign, token).Forget();
         }
@@ -162,54 +151,29 @@ namespace CosmicShore.Gameplay
             try
             {
                 float startYaw = _yaw, startRoll = _roll;
-                float startCamYaw = _camYaw, startCamRoll = _camRoll;
 
                 // Rightward yaw is positive about up. Counterclockwise roll (from the
                 // pilot's seat) is POSITIVE about forward - AngleAxis(+90, forward) maps
                 // right to up - so roll takes the same sign as yaw.
-                float peakYaw = sign * so.SwipeYawDegrees;
-                float peakRoll = sign * so.SwipeRollDegrees;
-                float restYaw = sign * so.RestYawDegrees;
-                float restRoll = sign * so.RestRollDegrees;
-                float camYawTarget = sign * so.CameraYawDegrees;
-                float camRollTarget = sign * so.CameraRollDegrees;
+                float targetYaw = sign * so.SwipeYawDegrees;
+                float targetRoll = sign * so.SwipeRollDegrees;
 
-                float outDur = Mathf.Max(0.01f, so.SwipeOutSeconds);
-                float settleDur = Mathf.Max(0.01f, so.SettleSeconds);
-                float total = outDur + settleDur;
-
+                float duration = Mathf.Max(0.01f, so.SwipeOutSeconds);
                 float elapsed = 0f;
-                while (elapsed < total)
+                while (elapsed < duration)
                 {
                     elapsed += Time.deltaTime;
-                    if (elapsed < outDur)
-                    {
-                        float t = SmoothStep01(elapsed / outDur);
-                        _yaw = Mathf.Lerp(startYaw, peakYaw, t);
-                        _roll = Mathf.Lerp(startRoll, peakRoll, t);
-                    }
-                    else
-                    {
-                        float t = SmoothStep01((elapsed - outDur) / settleDur);
-                        _yaw = Mathf.Lerp(peakYaw, restYaw, t);
-                        _roll = Mathf.Lerp(peakRoll, restRoll, t);
-                    }
-
-                    float camT = SmoothStep01(elapsed / total);
-                    _camYaw = Mathf.Lerp(startCamYaw, camYawTarget, camT);
-                    _camRoll = Mathf.Lerp(startCamRoll, camRollTarget, camT);
-
+                    float t = SmoothStep01(elapsed / duration);
+                    _yaw = Mathf.Lerp(startYaw, targetYaw, t);
+                    _roll = Mathf.Lerp(startRoll, targetRoll, t);
                     ApplyShieldPose();
-                    ApplyCameraOffset();
                     await UniTask.Yield(PlayerLoopTiming.Update, ct);
                 }
 
-                _yaw = restYaw;
-                _roll = restRoll;
-                _camYaw = camYawTarget;
-                _camRoll = camRollTarget;
+                // Held at the full sweep angle until the trigger is released.
+                _yaw = targetYaw;
+                _roll = targetRoll;
                 ApplyShieldPose();
-                ApplyCameraOffset();
             }
             catch (System.OperationCanceledException) { }
         }
@@ -219,7 +183,6 @@ namespace CosmicShore.Gameplay
             try
             {
                 float startYaw = _yaw, startRoll = _roll;
-                float startCamYaw = _camYaw, startCamRoll = _camRoll;
                 float duration = Mathf.Max(0.01f, so.ReturnSeconds);
 
                 float elapsed = 0f;
@@ -229,20 +192,13 @@ namespace CosmicShore.Gameplay
                     float t = SmoothStep01(elapsed / duration);
                     _yaw = Mathf.Lerp(startYaw, 0f, t);
                     _roll = Mathf.Lerp(startRoll, 0f, t);
-                    _camYaw = Mathf.Lerp(startCamYaw, 0f, t);
-                    _camRoll = Mathf.Lerp(startCamRoll, 0f, t);
-
                     ApplyShieldPose();
-                    ApplyCameraOffset();
                     await UniTask.Yield(PlayerLoopTiming.Update, ct);
                 }
 
                 _yaw = 0f;
                 _roll = 0f;
-                _camYaw = 0f;
-                _camRoll = 0f;
                 ApplyShieldPose();
-                ClearCameraOffset();
             }
             catch (System.OperationCanceledException) { }
         }
@@ -261,41 +217,6 @@ namespace CosmicShore.Gameplay
             var sweep = Quaternion.AngleAxis(_yaw, Vector3.up) * Quaternion.AngleAxis(_roll, Vector3.forward);
             shieldRoot.localRotation = sweep * _baseLocalRot;
             shieldRoot.localPosition = sweep * _baseLocalPos;
-        }
-
-        void ApplyCameraOffset()
-        {
-            if (!_camera) return;
-            _camera.SetRotationOffset(
-                Quaternion.AngleAxis(_camYaw, Vector3.up) * Quaternion.AngleAxis(_camRoll, Vector3.forward));
-        }
-
-        void ClearCameraOffset()
-        {
-            if (_camera) _camera.SetRotationOffset(Quaternion.identity);
-            _camera = null;
-        }
-
-        CustomCameraController ResolveCamera()
-        {
-            // Actions replay on every peer; the sword sweep must run everywhere (the
-            // capsule is a live collider) but only the local pilot's camera may move.
-            if (_status == null || !_status.IsLocalUser || _status.AutoPilotEnabled) return null;
-            if (!IsLocalCameraTarget()) return null;
-            return CameraManager.Instance?.GetActiveController() as CustomCameraController;
-        }
-
-        bool IsLocalCameraTarget()
-        {
-            if (_status == null) return false;
-
-            var cm = CameraManager.Instance;
-            if (cm == null) return false;
-
-            var follow = cm.PlayerFollowTarget;
-            var shipTransform = _status.ShipTransform;
-            var cameraTarget = _status.CameraFollowTarget ?? shipTransform;
-            return follow == shipTransform || follow == cameraTarget;
         }
 
         void ResolveShieldRoot()
@@ -321,8 +242,6 @@ namespace CosmicShore.Gameplay
 
             _yaw = 0f;
             _roll = 0f;
-            _camYaw = 0f;
-            _camRoll = 0f;
             _activeSign = 0f;
             _heldRightSO = null;
             _heldLeftSO = null;
@@ -332,7 +251,6 @@ namespace CosmicShore.Gameplay
                 shieldRoot.localRotation = _baseLocalRot;
                 shieldRoot.localPosition = _baseLocalPos;
             }
-            ClearCameraOffset();
         }
 
         static float SmoothStep01(float t)
