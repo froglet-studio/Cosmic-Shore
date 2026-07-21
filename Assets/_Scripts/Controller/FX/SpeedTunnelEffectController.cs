@@ -1,4 +1,3 @@
-using CosmicShore.Core;
 using Reflex.Attributes;
 using UnityEngine;
 
@@ -47,6 +46,7 @@ namespace CosmicShore.Gameplay
         float _effect01;
         bool _applied;
         Camera _appliedCamera;
+        float _homeFov;
 
         void Awake()
         {
@@ -87,7 +87,13 @@ namespace CosmicShore.Gameplay
 
             if (cam != null && !cam.orthographic)
             {
-                cam.fieldOfView = BaseFov() + fovBoost * t;
+                // Home = whatever FOV the camera is ACTUALLY running with the moment the
+                // effect takes over — the effect modulates from there and returns there,
+                // never snapping the vessel onto some other default.
+                if (cam != _appliedCamera)
+                    _homeFov = cam.fieldOfView;
+
+                cam.fieldOfView = _homeFov + fovBoost * t;
                 _appliedCamera = cam;
             }
             else
@@ -110,10 +116,10 @@ namespace CosmicShore.Gameplay
             PostProcessing?.SetSpeedTunnelPanini(0f);
         }
 
-        static void RestoreFov(Camera cam)
+        void RestoreFov(Camera cam)
         {
             if (!cam.orthographic)
-                cam.fieldOfView = BaseFov();
+                cam.fieldOfView = _homeFov;
         }
 
         PostProcessingManager PostProcessing =>
@@ -128,13 +134,5 @@ namespace CosmicShore.Gameplay
             return (manager.GetActiveController() as CustomCameraController)?.Camera;
         }
 
-        /// <summary>Read the player's configured FOV live each frame (the same source the
-        /// settings panel applies), so a mid-boost settings change never bakes a stale base
-        /// into the effect.</summary>
-        static float BaseFov()
-        {
-            var settings = DisplayGraphicsSettings.Instance;
-            return settings != null ? settings.Current.FieldOfView : 60f;
-        }
     }
 }
