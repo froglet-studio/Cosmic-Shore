@@ -52,6 +52,7 @@ game scene and still exists.
 | **MinigameWildlifeBlitzMultuplayerCoOp** | `_Scenes/Multiplayer Scenes/` | `MultiplayerWildlifeBlitzGame (32)` | `MultiplayerWildlifeBlitzMiniGame` |
 | **MinigameAstroLeague** | `_Scenes/Multiplayer Scenes/` | `AstroLeague (37)` | `AstroLeagueController` |
 | **MinigameNucleusRush** | `_Scenes/Multiplayer Scenes/` | `NucleusRush (38)` | `NucleusRushController` |
+| **MinigameRampage** | `_Scenes/Multiplayer Scenes/` | `Rampage (2)` | `RampageController` |
 | **ArcadeGameMultiplayer2v2CoOpVsAI** | `_Scenes/Multiplayer Scenes/` | `Multiplayer2v2CoOpVsAI (30)` | Variant of domain games controller |
 | **MinigameTournamentMultuplayer** | `_Scenes/Multiplayer Scenes/` | Tournament variant | Multi-round tournament format |
 
@@ -217,7 +218,8 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
         ├── MultiplayerCellularDuelController — vessel ownership swap between rounds
         ├── MultiplayerCrystalCaptureController — minimal subclass (1 round, 1 turn)
         ├── AstroLeagueController             — hypersea soccer, server-simulated ball, golden goal
-        └── NucleusRushController             — nucleus-control fauna-wave race, brood scoring
+        ├── NucleusRushController             — nucleus-control fauna-wave race, brood scoring
+        └── RampageController                 — destruction race (Scurry's destructive analog), prisms-destroyed scoring
 ```
 
 ---
@@ -230,7 +232,7 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
 |---|---|---|---|---|
 | 0 | `Random` | Meta | — | — |
 | 1 | `Elimination` | SP Arcade | Shared | Scene-configured |
-| 2 | `Rampage` | SP Arcade | Shared | Scene-configured |
+| 2 | `Rampage` | MP | MinigameRampage | `RampageController` (repurposed from legacy SP arcade; destruction race — see `RAMPAGE.md`) |
 | 3 | `Darts` | SP Arcade | Shared | Scene-configured |
 | 4 | `ShootingGallery` | SP Arcade | Shared | Scene-configured |
 | 5 | `BlockBandit` | SP Arcade | Shared | Scene-configured |
@@ -265,7 +267,7 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
 | 37 | `AstroLeague` | MP | MinigameAstroLeague | `AstroLeagueController` |
 | 38 | `NucleusRush` | MP | MinigameNucleusRush | `NucleusRushController` |
 
-Note: IDs 7 and 31 are skipped in the enum. 31 was never assigned; 7 was the retired standalone arcade Freestyle game (freestyle now lives in Menu_Main as the lava lamp — see the naming note at the top of this document). Many single-player arcade modes (1-6, 9-25, 27) share scenes configured by `SO_ArcadeGame` assets rather than having dedicated scene files; they use the same underlying scene infrastructure with different turn monitors, scoring, and environment configurations.
+Note: IDs 7 and 31 are skipped in the enum. 31 was never assigned; 7 was the retired standalone arcade Freestyle game (freestyle now lives in Menu_Main as the lava lamp — see the naming note at the top of this document). Many single-player arcade modes (1, 3-6, 9-25, 27) share scenes configured by `SO_ArcadeGame` assets rather than having dedicated scene files; they use the same underlying scene infrastructure with different turn monitors, scoring, and environment configurations. `Rampage(2)` left this set — it is now a multiplayer destruction race with its own `MinigameRampage` scene (see `_Scripts/Controller/Arcade/RAMPAGE.md`).
 
 ---
 
@@ -630,6 +632,7 @@ Game scene names are stored in `SO_ArcadeGame.SceneName` assets, not in `SceneNa
 | Crystal Capture | `MultiplayerCrystalCaptureController.cs` | `_Scripts/Controller/Arcade/` |
 | Astro League | `AstroLeagueController.cs` | `_Scripts/Controller/Arcade/AstroLeague/` |
 | Nucleus Rush (Brood Rush) | `NucleusRushController.cs` | `_Scripts/Controller/Arcade/` |
+| Rampage | `RampageController.cs` | `_Scripts/Controller/Arcade/` |
 | Freestyle (MP) | `MultiplayerFreestyleController.cs` | `_Scripts/Controller/Arcade/` |
 | Wildlife Blitz (MP) | `MultiplayerWildlifeBlitzMiniGame.cs` | `_Scripts/Controller/Arcade/` |
 | Cellular Duel (SP) | `SinglePlayerCellularDuelController.cs` | `_Scripts/Controller/Arcade/` |
