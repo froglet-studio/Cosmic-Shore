@@ -56,7 +56,7 @@ namespace CosmicShore.Gameplay
 
         protected override void MoveShip()
         {
-            speed = Mathf.Lerp(speed, ComputeThrottleTarget(), LERP_AMOUNT * Time.deltaTime);
+            AdvanceSpeed(ComputeThrottleTarget());
 
             // Scale the output speed only - see VesselTransformer.MoveShip: multiplying
             // into the persistent smoothed `speed` field compounds per frame and

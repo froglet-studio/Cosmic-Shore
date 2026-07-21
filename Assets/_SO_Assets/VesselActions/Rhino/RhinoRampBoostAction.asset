@@ -10,17 +10,9 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 2e2aa3c7a9df459f875cb52dfc5a2fff, type: 3}
-  m_Name: RhinoGearBoostAction
+  m_Name: RhinoRampBoostAction
   m_EditorClassIdentifier:
-  gears:
-  - Multiplier: 1.75
-    SecondsToNext: 1.5
-  - Multiplier: 2.5
-    SecondsToNext: 1.5
-  - Multiplier: 3.25
-    SecondsToNext: 1.5
-  - Multiplier: 4
-    SecondsToNext: 0
-  shiftKickSpeed: 10
-  shiftKickSeconds: 0.4
-  shiftSFX: 19
+  maxBoostMultiplier: 4
+  accelerationPerSecond: 40
+  returnPerSecond: 400
+  engageSFX: 13

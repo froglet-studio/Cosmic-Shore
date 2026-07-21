@@ -169,6 +169,7 @@ public class VesselTransformer : MonoBehaviour
             ThrottleScaler = DefaultThrottleScaler;
             speed = 0f;
             throttleMultiplier = 1f;
+            _speedTrackingRate = 0f;
 
             // Rotation - reset to face forward
             accumulatedRotation = Quaternion.identity;
@@ -430,23 +431,39 @@ public class VesselTransformer : MonoBehaviour
             return boostAmount;
         }
 
-        /// <summary>The steady-state cruise speed the smoothed `speed` field is easing toward
-        /// this frame — throttle × boost + minimum. Single source of the formula for both the
-        /// per-frame lerp and <see cref="SnapSpeedToThrottleTarget"/>.</summary>
+        /// <summary>The steady-state cruise speed the smoothed `speed` field is moving toward
+        /// this frame — throttle × boost + minimum. Single source of the formula for
+        /// <see cref="AdvanceSpeed"/> in every transformer.</summary>
         protected virtual float ComputeThrottleTarget()
             => InputStatus.XDiff * ThrottleScaler * ThrottleScalerMultiplier.EvaluateLive(VesselStatus) * CurrentBoostAmount()
                + MinimumSpeed;
 
-        /// <summary>Snap the smoothed cruise speed straight UP to the current throttle target,
-        /// skipping the ease-in lerp. Used by gear-style boosts (e.g. the Rhino's
-        /// full-speed-straight gearing) where each gear engage should read as a discrete
-        /// jerk forward, not a ramp. Never lowers speed — if the vessel is already moving
-        /// faster than the target (e.g. gear 1 re-engaging right after a top-gear run),
-        /// deceleration eases through the normal smoothing instead of a backward jolt.</summary>
-        public void SnapSpeedToThrottleTarget()
+        float _speedTrackingRate;
+
+        /// <summary>Put the cruise speed into constant-rate tracking: instead of the default
+        /// exponential lerp, speed moves toward the throttle target at a fixed
+        /// <paramref name="unitsPerSecond"/> — a linear ramp with a steady, readable slope.
+        /// Used by ramp boosts (e.g. the Rhino's full-speed-straight run) for constant
+        /// acceleration up and, with a higher rate, the fast return down after release.
+        /// Auto-reverts to the normal smoothing once the speed lands on the target.</summary>
+        public void SetSpeedTrackingRate(float unitsPerSecond)
+            => _speedTrackingRate = Mathf.Max(0f, unitsPerSecond);
+
+        /// <summary>Advance the smoothed cruise speed one frame toward
+        /// <paramref name="target"/> — constant-rate while a tracking rate is set
+        /// (see <see cref="SetSpeedTrackingRate"/>), exponential lerp otherwise.</summary>
+        protected void AdvanceSpeed(float target)
         {
-            if (VesselStatus == null || InputStatus == null) return;
-            speed = Mathf.Max(speed, ComputeThrottleTarget());
+            if (_speedTrackingRate > 0f)
+            {
+                speed = Mathf.MoveTowards(speed, target, _speedTrackingRate * Time.deltaTime);
+                if (Mathf.Approximately(speed, target))
+                    _speedTrackingRate = 0f;
+            }
+            else
+            {
+                speed = Mathf.Lerp(speed, target, LERP_AMOUNT * Time.deltaTime);
+            }
         }
 
         protected virtual void MoveShip()
@@ -454,10 +471,7 @@ public class VesselTransformer : MonoBehaviour
             if (VesselStatus == null || InputStatus == null) return;
 
             // Smooth throttle speed calculation
-            speed = Mathf.Lerp(
-                speed,
-                ComputeThrottleTarget(),
-                LERP_AMOUNT * Time.deltaTime);
+            AdvanceSpeed(ComputeThrottleTarget());
 
             // Modifiers scale this frame's output speed only. Multiplying into the
             // persistent smoothed `speed` field compounds the modifier every frame,
