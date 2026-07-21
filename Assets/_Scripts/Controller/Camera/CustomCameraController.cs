@@ -30,6 +30,10 @@ namespace CosmicShore.Gameplay
         private float _shakeDuration;
         private float _shakeIntensity;
 
+        // Camera-local rotation offset composed onto the follow look rotation each frame
+        // (e.g. the Rhino shield-swipe stance).
+        private Quaternion _externalRotationOffset = Quaternion.identity;
+
         private void Awake()
         {
             Camera = GetComponent<Camera>();
@@ -60,7 +64,7 @@ namespace CosmicShore.Gameplay
             {
                 transform.position = desiredPos;
                 if (SafeLookRotation.TryGet(_followTarget.position - transform.position, _followTarget.up, out var snapRot, this, logError: false))
-                    transform.rotation = snapRot;
+                    transform.rotation = snapRot * _externalRotationOffset;
                 _velocity = Vector3.zero;
                 _lateralDominance = 0f;
                 _lastTargetPos = _followTarget.position;
@@ -97,6 +101,8 @@ namespace CosmicShore.Gameplay
 
             if (!SafeLookRotation.TryGet(_followTarget.position - transform.position, _followTarget.up, out var targetRot, this, logError: false))
                 targetRot = transform.rotation;
+            else
+                targetRot *= _externalRotationOffset;
 
             if (_disableRotationLerp)
             {
@@ -177,11 +183,18 @@ namespace CosmicShore.Gameplay
             transform.position = _followTarget.position + _followTarget.rotation * _followOffset;
 
             if (SafeLookRotation.TryGet(_followTarget.position - transform.position, _followTarget.up, out var targetRot, this, logError: false))
-                transform.rotation = targetRot;
+                transform.rotation = targetRot * _externalRotationOffset;
 
             _lastTargetPos = _followTarget.position;
             _velocity = Vector3.zero;
         }
+
+        /// <summary>
+        /// Sets a camera-local rotation offset composed onto the follow look rotation every
+        /// frame (including snaps). The caller owns easing - tween the value passed in and
+        /// set identity to clear; FixedCamera vessels apply rotation unsmoothed.
+        /// </summary>
+        public void SetRotationOffset(Quaternion offset) => _externalRotationOffset = offset;
 
         public void Activate()
         {
