@@ -87,6 +87,7 @@ GameObject:
   - component: {fileID: 1068071787418995986}
   - component: {fileID: 1773153070339645991}
   - component: {fileID: 3700214229781796632}
+  - component: {fileID: 827806304035478543}
   m_Layer: 0
   m_Name: DangerRingsButton
   m_TagString: Untagged
@@ -1115,6 +1116,7 @@ GameObject:
   - component: {fileID: 5209682439943302948}
   - component: {fileID: 942661710182389468}
   - component: {fileID: 1602370027617312480}
+  - component: {fileID: 459413229671741206}
   m_Layer: 0
   m_Name: ShieldRingsButton
   m_TagString: Untagged
@@ -4401,6 +4403,7 @@ GameObject:
   - component: {fileID: 1464261413475468741}
   - component: {fileID: 1309962761015364259}
   - component: {fileID: 5464818344219521414}
+  - component: {fileID: 111707763514982213}
   m_Layer: 0
   m_Name: OverheatButton
   m_TagString: Untagged
@@ -9934,6 +9937,7 @@ GameObject:
   - component: {fileID: 74479554985130211}
   - component: {fileID: 4528404569073482364}
   - component: {fileID: 5726959592629988228}
+  - component: {fileID: 380793480192090556}
   m_Layer: 0
   m_Name: DriftButton
   m_TagString: Untagged
@@ -14259,6 +14263,8 @@ MonoBehaviour:
   tubeCooldownIcon: {fileID: 5327051082964489230}
   tubeCoolingColor: {r: 1, g: 1, b: 1, a: 0.3}
   tubeReadyColor: {r: 1, g: 1, b: 1, a: 1}
+  overheatIcon: {fileID: 5383472264305212357}
+  overheatHighlight: {fileID: 3768443310543164010}
   iconPunchDuration: 0.25
   iconPunchScale: 1.4
   colorTweenDuration: 0.35
@@ -17027,3 +17033,51 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!114 &111707763514982213
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3025221864097352924}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b78d5cc573d04ae59803b3da818d557d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &380793480192090556
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6744437363404699704}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b78d5cc573d04ae59803b3da818d557d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &827806304035478543
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 82157072676110182}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b78d5cc573d04ae59803b3da818d557d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &459413229671741206
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 779934165483524190}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b78d5cc573d04ae59803b3da818d557d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
