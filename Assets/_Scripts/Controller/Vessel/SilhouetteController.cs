@@ -95,6 +95,16 @@ namespace CosmicShore.Gameplay
             }
 
             InitializeElementBars();
+
+            // Holo icon accent: the same per-domain UI accent role the Maelstrom cards use
+            // (SO_ColorSet.GetDomainUIAccentColor) - one colour source, S0.1.
+            if (view && _status != null)
+            {
+                var accent = gameData != null && gameData.ThemeManagerData != null
+                    ? gameData.ThemeManagerData.GetDomainUIAccentColor(_status.Domain)
+                    : Color.white;
+                view.ApplyHoloStyle(accent);
+            }
         }
 
         void TrySubscribeResources()

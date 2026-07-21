@@ -27,3 +27,5 @@ MonoBehaviour:
   enableDangerVisual: 0
   dangerBlockPrefab: {fileID: 0}
   dangerColor: {r: 1, g: 0.25, b: 0.2, a: 0.78431374}
+  enableHoloStyle: 1
+  holoMaterial: {fileID: 2100000, guid: 4b321ec4c36e43ee8498b41105898e8d, type: 2}

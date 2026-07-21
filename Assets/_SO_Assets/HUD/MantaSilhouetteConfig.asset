@@ -28,3 +28,5 @@ MonoBehaviour:
   dangerBlockPrefab: {fileID: 5776304996075792891, guid: aad956930fb933f4b82b992b1bc2b773,
     type: 3}
   dangerColor: {r: 1, g: 0.25, b: 0.2, a: 0.78431374}
+  enableHoloStyle: 1
+  holoMaterial: {fileID: 2100000, guid: 4b321ec4c36e43ee8498b41105898e8d, type: 2}

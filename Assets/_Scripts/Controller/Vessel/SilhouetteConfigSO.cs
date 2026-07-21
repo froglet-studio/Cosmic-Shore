@@ -39,5 +39,14 @@ namespace CosmicShore.Gameplay
         public bool       enableDangerVisual = true;
         public GameObject dangerBlockPrefab;       // optional: UI prefab to swap sprite from
         public Color      dangerColor = new Color(1f, 0.25f, 0.2f); // UI tint during danger (alpha is respected)
+
+        // Holographic silhouette-icon treatment (CosmicShore/UI/SilhouetteHolo) - domain-tinted
+        // body, pulsing edge rim, scanline shimmer. Look parameters live ON THE MATERIAL (one
+        // asset for every vessel, per Config Separation); only the domain accent is per-instance.
+        [Header("Holo icon treatment")]
+        [Tooltip("Apply the holographic material to the silhouette icon images.")]
+        public bool enableHoloStyle = true;
+        [Tooltip("The shared SilhouetteHolo material. Unassigned = plain sprite look.")]
+        public Material holoMaterial;
     }
 }
