@@ -43,20 +43,22 @@ namespace CosmicShore.Gameplay
                  "(teleports, resets); keep it high so the visual matches the speed.")]
         [SerializeField] float responsiveness = 12f;
 
-        VesselStatus _status;
+        IVesselStatus _status;
         float _effect01;
         bool _applied;
         Camera _appliedCamera;
 
         void Awake()
         {
-            TryGetComponent(out _status);
+            _status = GetComponent<VesselStatus>();
         }
 
         void LateUpdate()
         {
+            // IsLocalUser / IsInitializedAsAI are IVesselStatus default members that read
+            // through Player — null until the player-vessel pair is initialized.
             float target01 = 0f;
-            if (_status != null && _status.IsLocalUser && !_status.IsInitializedAsAI)
+            if (_status is { Player: not null } && _status.IsLocalUser && !_status.IsInitializedAsAI)
                 target01 = Mathf.InverseLerp(minEffectSpeed, maxEffectSpeed, _status.Speed);
 
             _effect01 = Mathf.Lerp(_effect01, target01, 1f - Mathf.Exp(-responsiveness * Time.deltaTime));
