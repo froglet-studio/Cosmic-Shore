@@ -981,6 +981,8 @@ MonoBehaviour:
   countdownTimer: {fileID: 778382903}
   _onToggleReadyButton: {fileID: 11400000, guid: 49189b231ecf3ab4ea602699f3401cf2, type: 2}
   rule: {fileID: 11400000, guid: 7d1bfbd4091c4a12a12c730553bf293a, type: 2}
+  arenaCell: {fileID: 1700000065}
+  aiRetargetSeconds: 1.5
 --- !u!114 &1628508400
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1031,7 +1033,7 @@ MonoBehaviour:
   aiPlayerPrefab: {fileID: -3803897320145675891, guid: 0a8653be5d331c5449d3130cef596493,
     type: 3}
   aiInitializeDatas:
-  - vesselClass: 11
+  - vesselClass: 3
     PlayerName: AI 0
     AvatarId: 0
     IsAI: 1
@@ -1041,12 +1043,12 @@ MonoBehaviour:
     AvatarId: 1
     IsAI: 1
     AllowSpawning: 1
-  - vesselClass: 2
+  - vesselClass: 3
     PlayerName: AI 2
     AvatarId: 2
     IsAI: 1
     AllowSpawning: 1
-  - vesselClass: 11
+  - vesselClass: 3
     PlayerName: AI 3
     AvatarId: 3
     IsAI: 1

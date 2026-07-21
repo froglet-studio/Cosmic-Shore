@@ -47,6 +47,13 @@ Simple destructive fun — fly hard, smash mass, watch the counter fall.
 - **Domains**: free-for-all like Scurry (`MinDomainsAllowed`/`MaxDomainsAllowed`
   defaults 1/3); players 1–4 with AI backfill
 - **Vessels**: Sparrow (guns + missiles), Rhino (ram), Dolphin
+- **AI opponents**: all-Rhino mass hunters. The scene's four AI backfill templates
+  spawn Rhinos, and `RampageController.ArmMassHunters()` (server, at countdown end
+  — mirroring Astro League's `ArmStrikers`) points each `AIPilot` at
+  `Cell.GetExplosionTarget(aiDomain)` — the densest region of mass hostile to the
+  AI's domain, the same density-grid query aggression-1 fauna use (no physics
+  queries). Ram-through-the-cluster destroys it, so the AI genuinely races. The
+  Burst grid query is sampled every `aiRetargetSeconds` (1.5s), not per frame.
 - **Config**: `_SO_Assets/Games/ArcadeGameRampage.asset` (registered in
   `GameLists/OrganicRematchGames.asset` + the pre-existing arcade lists)
 

@@ -22,6 +22,15 @@ namespace CosmicShore.Gameplay
         [Tooltip("Drag RampageScoringRule.asset - the per-mode scoring strategy (winner, scores, results).")]
         [SerializeField] ScoringRuleSO rule;
 
+        [Header("AI")]
+        [Tooltip("The arena cell whose density grids the AI hunts - each AI's target is the " +
+                 "densest region of mass HOSTILE to its domain (the same query aggression-1 " +
+                 "fauna use), so the Rhino's ram scores on contact.")]
+        [SerializeField] Cell arenaCell;
+        [Tooltip("Seconds between AI mass-target refreshes. FindDensestRegion runs a Burst job, " +
+                 "so pilots sample on this cadence and fly at the cached point between samples.")]
+        [SerializeField, Min(0.25f)] float aiRetargetSeconds = 1.5f;
+
         private bool _finalResultsSent;
 
         // Golf: winners carry their finish time, losers a DnfThreshold+remaining sentinel
@@ -42,6 +51,45 @@ namespace CosmicShore.Gameplay
             numberOfRounds = 1;
             numberOfTurnsPerRound = 1;
             _finalResultsSent = false;
+        }
+
+        // ── AI mass hunters (server) ──────────────────────────────────────
+
+        protected override void OnCountdownTimerEnded()
+        {
+            if (!IsServer) return;
+            base.OnCountdownTimerEnded(); // ClientRpc: SetPlayersActive + StartTurn
+            ArmMassHunters();
+        }
+
+        /// <summary>
+        /// Points every AI pilot at the densest region of mass HOSTILE to its domain -
+        /// <see cref="Cell.GetExplosionTarget"/>, the same density-grid query aggression-1
+        /// fauna use (no physics queries, no parallel spatial store - see
+        /// Docs/SPATIAL_INDEX.md). Ramming through the cluster destroys it, so the AI
+        /// genuinely competes in the race. Mirrors Astro League's ArmStrikers pattern.
+        /// </summary>
+        void ArmMassHunters()
+        {
+            foreach (var p in gameData.Players)
+            {
+                if (p == null || !p.IsInitializedAsAI) continue;
+                var pilot = p.Vessel?.VesselStatus?.AIPilot;
+                if (pilot == null) continue;
+
+                var captured = p;
+                Vector3 cached = captured.Vessel.Transform.position;
+                float nextSample = 0f;
+                pilot.SetExternalTargetProvider(() =>
+                {
+                    if (arenaCell != null && Time.time >= nextSample)
+                    {
+                        nextSample = Time.time + aiRetargetSeconds;
+                        cached = arenaCell.GetExplosionTarget(captured.Domain);
+                    }
+                    return cached;
+                });
+            }
         }
 
         // ── Server-authoritative game end ─────────────────────────────────
