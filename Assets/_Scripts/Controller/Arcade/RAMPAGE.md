@@ -40,7 +40,7 @@ Simple destructive fun — fly hard, smash mass, watch the counter fall.
   `GolfScoreSentinels` remaining-prisms sentinel (displayed "N Prisms Left", with
   individual prisms smashed on the secondary line); TEAM-major by construction
 - **Turn monitor**: `RampagePrismTurnMonitor` — resolves the prism target from
-  `EndConditionOverridesSO.GetRampagePrismTarget()` at StartMonitor (default **100**,
+  `EndConditionOverridesSO.GetRampagePrismTarget()` at StartMonitor (default **2000**,
   Tools ▸ Cosmic Shore ▸ End Game Conditions — never a per-scene field), syncs it via
   NetworkVariable → `GameDataSO.PrismTargetCount`, ends the turn via
   `rule.IsObjectiveReached`
@@ -101,9 +101,9 @@ RampageController.OnTurnEndedCustom                [server]
 - **Rampage Spawn Profile** — flora-rich: the four Blob flora species (Mass/Time/
   Space Gyroids + SchwarzP), plus tadpole + shark fauna (grazer + predator food
   web; both drop elemental crystals on death — skimmable powerups mid-rampage).
-  Flora stock is gated by the Frenzy phase threshold (the 2000-prism arena cap:
-  `FrenzyEnterVolume 32000` — planting pauses at Frenzy, resumes below
-  `FrenzyExitVolume 25600`; the profile's `FloraSpawnVolumeCeiling` field is
+  Flora stock is gated by the Frenzy phase threshold (the 10000-prism arena cap:
+  `FrenzyEnterVolume 160000` — planting pauses at Frenzy, resumes below
+  `FrenzyExitVolume 128000`; the profile's `FloraSpawnVolumeCeiling` field is
   legacy-inert). Species configs are referenced
   from the Blob folder (read-only species definitions); fork per-cell copies only
   when Rampage needs its own tuning deltas.
@@ -111,15 +111,15 @@ RampageController.OnTurnEndedCustom                [server]
 ## End condition
 
 Authored ONLY through **Tools ▸ Cosmic Shore ▸ End Game Conditions**
-(`EndConditionOverridesSO.rampagePrismTarget`, 0 = default 100). Applies wherever
+(`EndConditionOverridesSO.rampagePrismTarget`, 0 = default 2000). Applies wherever
 the mode runs. Live/Build split + build auto-restore work like every other mode.
 
 ## Comeback
 
-`ArcadeGameRampage.asset` sets `ComebackRatePerScoreDeficit: 0.2` (not the default
-1.0): prism deficits run ~5× larger than Scurry's crystal deficits (target 100 vs
-20), so 0.2 keeps the buff curve proportionate — a ~50-prism team deficit maxes the
-comeback ceiling the way a ~10-crystal deficit does in Scurry. The scene-authored
+`ArcadeGameRampage.asset` sets `ComebackRatePerScoreDeficit: 0.01` (not the default
+1.0): prism deficits run ~100× larger than Scurry's crystal deficits (target 2000 vs
+20), so 0.01 keeps the buff curve proportionate — a ~1000-prism team deficit maxes
+the comeback ceiling the way a ~10-crystal deficit does in Scurry. The scene-authored
 `ElementalComebackSystem` uses `ScoreDifferenceSource.PrismsDestroyed` (Score only
 lands at game end in this mode, so the Score source would be inert live).
 
@@ -143,7 +143,7 @@ lands at game end in this mode, so the Score source would be inert live).
 | `ScoringMetric` | `PrismsDestroyed = 5` |
 | `ScoringMetrics.Read` | `PrismsDestroyed => stats.HostilePrismsDestroyed` |
 | `GameDataSO` | `PrismTargetCount` (+ both runtime resets) |
-| `EndConditionOverridesSO` (+ window + asset) | `rampagePrismTarget` live/build/getter, default 100 |
+| `EndConditionOverridesSO` (+ window + asset) | `rampagePrismTarget` live/build/getter, default 2000 |
 | `ElementalComebackSystem` | `ScoreDifferenceSource.PrismsDestroyed` + `GameModes.Rampage` default-source case |
 | `GameModes` | doc comment on the repurposed `Rampage = 2` |
 

@@ -28,7 +28,7 @@ at runtime via `Resources.Load`.
   - **Brood Rush (Nucleus Rush)** — `0` → `EndConditionOverridesSO.DefaultNucleusRushWaveTarget` (3):
     claimed fauna waves a domain needs to win (resolved by `NucleusRushWaveTurnMonitor.StartMonitor`
     → `GameDataSO.GoalTargetCount`, synced by NetworkVariable).
-  - **Rampage** — `0` → `EndConditionOverridesSO.DefaultRampagePrismTarget` (100): hostile prisms
+  - **Rampage** — `0` → `EndConditionOverridesSO.DefaultRampagePrismTarget` (2000): hostile prisms
     (another domain's mass) a domain must destroy to win (resolved by
     `RampagePrismTurnMonitor.StartMonitor` → `GameDataSO.PrismTargetCount`, synced by NetworkVariable).
   - **Maelstrom** — `0` → `EndConditionOverridesSO.DefaultMaelstromWinTarget` (6). This is the
@@ -77,7 +77,7 @@ networking.
 3. Commit `Assets/Resources/EndConditionOverrides.asset` (and its `.meta`).
 
 Defaults shipped (match the pre-tool scene/asset values, so behavior is unchanged until edited):
-HexRace `0` (auto), Crystal Capture `20`, Joust `3`, Maelstrom `6`, Brood Rush `3`, Rampage `100`.
+HexRace `0` (auto), Crystal Capture `20`, Joust `3`, Maelstrom `6`, Brood Rush `3`, Rampage `2000`.
 
 ## Live vs. Build values (don't ship a test config)
 

@@ -7,7 +7,7 @@ namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// Turn monitor for Rampage. The prism TARGET - how many hostile prisms
-    /// (another domain's mass) a domain must destroy to win (default 100) - is
+    /// (another domain's mass) a domain must destroy to win (default 2000) - is
     /// resolved at <see cref="StartMonitor"/> from <see cref="EndConditionOverridesSO"/>
     /// (Tools &gt; Cosmic Shore &gt; End Game Conditions; never a per-scene field),
     /// synced to every client via NetworkVariable, and published to
