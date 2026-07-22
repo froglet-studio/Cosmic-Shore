@@ -536,7 +536,7 @@ foragers, which is counterproductive to that scene's trail-cleanup perf goal.
   shortcut). Predation-immune newborns are skipped so a shark doesn't camp a fresh
   birth. With no herbivores alive, the predator falls back to the shared
   phase-based density goal (roams plausibly, then starves). Herbivores still swarm
-  opposing-mass density.
+  opposing-mass density. **v3 layers intentional consumption on top — see §7.3.**
 - **Spawn gating (by diet):** `RandomLifeSpawner` seeds a herbivore species when
   `OpposingVolume >= FaunaFoodFloor × 16` (prism prey, in volume) and a predator species when
   `GetLiveHerbivoreCount() >= FaunaFoodFloor` (real food, not the old prism-mass
@@ -628,6 +628,147 @@ cleared.
 > 5. **Net perf.** Fauna cost CPU (per-tick `OverlapSphere` per creature). Test
 >    whether trail savings beat fauna cost: start modest and profile before/after;
 >    scale `PopulationSize` only if net-positive.
+
+### 7.3 Intentional consumption & the mouth-driven predator (v3)
+
+Consumption is no longer an instant vacuum inside a radius — both diets now *act
+out* their feeding, using the systems that already exist (the suction implosion,
+the danger prisms, `Cell.LiveFauna`). No new colliders; tunables live on
+`LightFaunaDataSO` (brittlestar/shark) and the `Boid` prefab (tadpole).
+
+**Herbivores (brittlestar `LightFauna`, tadpole `Boid` forager) — approach →
+face → suction → watch:**
+- The behavior tick only **selects** the nearest edible prism (same edibility
+  rules as before, factored into `IsEdibleForHerbivore` / `IsEdibleForForager`);
+  the creature then steers toward it.
+- Feeding starts only once inside the **minimum feeding distance**
+  (`consumeRadius` / `trailBlockInteractionRadius`) — the creature never has to
+  be right on the prisms. There it brakes to a hover and **turns to face the
+  meal**; the suction begins only within `feedingFacingAngle`.
+- One bite = the faced prism plus edible prisms within `feedingClusterRadius`
+  (capped by `maxClusterBites`), all imploding toward the creature — a
+  deliberate mouthful instead of a radius-wide vacuum, at comparable throughput.
+- The creature **holds facing for `consumeHoldSeconds`** (default 2s = the
+  suction shader's travel time) so it visibly watches its meal all the way in.
+
+**Predators (shark `LightFauna`) — pursue → strike at the mouth → devour:**
+- The tick-selected nearest prey is held as a live reference; per-frame homing
+  (`pursuitAgility`) tracks the fleeing target between ticks and
+  `pursuitSpeedMultiplier` makes the chase read as a chase. Separation from
+  environment prisms (flora/trails) still applies each tick — the shark
+  maneuvers around obstacles — but **prey bodies never repel the predator**.
+- The **mouth** is a lightweight transform at the danger-prism centroid, created
+  at Initialize. **Attack range = `attackRange`** (flat world units; default 15
+  ≈ the shark's danger-prism length — a tuning starting point, not a derived
+  value).
+- Every frame the predator checks the cell's small `LiveFauna` registry: any
+  live, non-immune herbivore within attack range of the mouth is devoured. Pure
+  math, no physics, no contact — the kill is deterministic, and the danger
+  prisms are **never disturbed by prey being eaten** while staying fully
+  vulnerable to vessels/projectiles (they're ordinary body HealthPrisms; all
+  fauna diets already exclude fauna bodies).
+- Devoured prey **breaks apart**: `Predated(name, mouth)` routes the sealed
+  crystal-dropping `Die`, then the body prisms suction (implode) **into the
+  mouth**, nearest-first, a few per frame — the suction sink follows the
+  swimming shark. Residual structure (spindles) evaporates via `CheckForLife`;
+  starvation deaths keep the classic extremities-first wither.
+
+**v3.1 — territorial predators + herbivore breathing room** (sharks were too
+effective; herbivores got eaten before they could graze). Three levers, all
+O(1) per tick:
+- **Tiger-shark territoriality** (`LightFaunaDataSO.territoryRadius` /
+  `territoryAnchorDistance`; 0 = legacy cell-wide hunting): each predator rolls
+  a fixed **den** point at spawn (random direction × anchor distance from the
+  cell centre — spreads the 2-3 concurrent sharks apart with zero
+  coordination). Prey selection keys off distance to the DEN and ignores prey
+  outside the territory; an empty patch means **patrolling home**, not roaming
+  the shared density goal — so any herbivore group faces at most one predator
+  and distant groups feed unmolested. Same single registry loop as before.
+  The per-frame mouth check is unchanged — a shark still eats anything that
+  swims into its jaws.
+- **Centre focus** (`FaunaConfigurationSO.CenterFocusBias`, per-deployment,
+  default 0): lerps the herbivore/forager roaming goal toward the cell centre
+  so the species lingers on the central canopy (the gyroids around the
+  nucleus). Edibility untouched — a nucleus claim stays protected. Blob
+  brittlestar + tadpole run 0.35; **leave 0 on far-ranging deployments** (the
+  Skim Race cleanup swarm must reach the whole track).
+- **Herbivore spawn-point ring** (`SpawnProfileSO.HerbivoreSpawnPointCount` /
+  `HerbivoreSpawnRadius`; 0-1 = legacy densest-mass spawn): successive
+  herbivore waves rotate between N points spaced evenly on a circle around the
+  cell centre (equidistant from each other and the centre), so each new group
+  gets its own feeding ground and a head start before a territorial predator's
+  patch reaches it. Computed once per 30s wave; predators keep the
+  densest-mass spawn. Blob runs 3 points at radius 400.
+
+**v3.2 — polar predator ring + feeding-consistency fixes** (from in-editor
+observation of v3.1):
+- **Predator spawn ring** (`SpawnProfileSO.PredatorSpawnPointCount` /
+  `PredatorSpawnRadius`; 0 = legacy): a VERTICAL circle starting at +Y,
+  orthogonal to the equatorial herbivore ring — 2 points sit exactly on the
+  poles. While active, at most **one predator spawns per interval**
+  (alternating points), and each predator's **den lands in the hemisphere it
+  spawned in** (the random den direction is mirrored if it points into the
+  opposite half — one dot product at spawn). Blob runs 2 points at radius 600.
+- **Boid dash oscillation (BUG, fixed):** the forager dash was a binary 10×
+  whenever the goal was beyond the interaction radius, re-checked only once
+  per 1.5s behavior tick — at dash speed a tadpole covered ~200+ units per
+  tick, overshot the goal, reversed at 10×, and oscillated rapidly across it
+  without ever settling into feeding range (observed as "back-and-forth
+  between two distant points, never engaging mass"). Now **arrival-capped**:
+  dash speed ≤ distance/tick, decelerating smoothly on approach (one sqrt per
+  tick). Tadpole feeding distance (`trailBlockInteractionRadius`) also tuned
+  45 → 20 on the prefab.
+- **Brittlestar "swims past its food" (fixed):** flora are HealthPrisms, and
+  ALL HealthPrisms within `separationRadius` (70) repelled the brittlestar —
+  including edible ones — while feeding required closing to `consumeRadius`
+  (40); approach geometry decided whether it ever ate. Now **edible prisms
+  attract and never repel** (one edibility check per prism decides both
+  roles; non-edible mass — own canopy, nucleus claim, fauna bodies — still
+  separates). Plus **mouthful chaining**: when a suction hold ends, one small
+  index query re-targets the nearest edible still inside feeding range, so a
+  creature parked at a buildup eats mouthful after mouthful — it feeds more
+  than it swims — resuming roaming only when the local patch is clear.
+
+**v3.3 — predator hunt pulses** (sharks still dominated even split into
+hemispheres): predators now hunt in **periodic windows**
+(`LightFaunaDataSO.huntIntervalSeconds` / `huntDurationSeconds`, default
+20/10 → alternating 10s rest / 10s hunt; interval 0 = always hunting,
+legacy). Outside the window the predator carries **no prey target** — no
+targeting, no pursuit boost, no per-frame homing, and the mouth is closed
+(`TryDevourPreyAtMouth` skipped), so even prey swimming straight into its
+jaws survives until the next window; it just cruises its territory. The
+window can close mid-chase (breaks off immediately). Implementation is pure
+clock math — one `Mathf.Repeat` per check, no state, no coroutine — and each
+predator's cycle starts with the REST stretch at spawn, layered on the
+prey's spawn immunity. Starvation still applies across rest windows, so a
+predator that can't convert its hunt windows into kills thins out — the
+duty cycle caps predation *rate*, the food web still owns population.
+**Presentation:** `SharkJawDriver` (on the prefab's `Shark_model`) blends the
+two mouth MultiAimConstraint weights 0 (closed, FBX pose) ↔ 1 (open, aimed at
+`MawTarget`) from `LightFauna.IsActivelyHunting` — the mouth yawns open in
+0.6s entering a hunt window, eases shut in 1.8s on rest/wither. The rig
+already evaluated every frame, so the only added cost is one float compare
+per frame while settled.
+
+**Two consume models coexist (merge reconciliation, read before touching either
+`LightFauna` or `Boid`).** bleeding-edge landed a frame-paced *grazing queue*
+(`maxConsumesPerFrame` / `_pendingMeals` / `EatPrism` / `DrainPendingMeals`)
+that spreads a consume/damage cascade across frames so a dense cluster melts
+instead of popping. The intentional-feeding model above (approach → face →
+bounded mouthful → hold) is already frame-bounded by `maxClusterBites` + the
+facing hold, so the two would double-drive consumption if both ran. Resolution:
+- **`LightFauna` (brittlestar + shark)** uses intentional feeding / mouth-devour
+  ONLY — the grazing queue is intentionally absent here (a brittlestar eats
+  mouthfuls; a shark devours at the mouth). Do not re-add `_pendingMeals` to
+  `LightFauna`.
+- **`Boid` (tadpole forager)** uses intentional feeding for the FORAGER path;
+  the paced queue survives ONLY on the non-forager **drone** combat path (its
+  `Damage` cascade can hit many prisms at once and still wants pacing).
+- Shared bleeding-edge wins kept on both: `HealthPrism.ResolveOwnerFauna`
+  stamping (no per-neighbor `GetComponentInParent`), cached attribution
+  strings, the elemental-contract crystal + `FaunaVariantTuning` (which is why
+  the tadpole's `trailBlockInteractionRadius = 20` lives in the Blob tadpole
+  config's `Variant`, not just the prefab).
 
 ---
 
