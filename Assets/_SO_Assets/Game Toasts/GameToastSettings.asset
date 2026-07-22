@@ -15,10 +15,10 @@ MonoBehaviour:
   slideInDuration: 0.25
   slideInOffset: 120
   slideInEase: 9
-  ageAfterSeconds: 6
-  agedAlpha: 0.45
+  ageAfterSeconds: 3
+  agedAlpha: 0
   ageFadeDuration: 1
-  maxRetainedEntries: 40
+  maxRetainedEntries: 5
   autoScrollToBottom: 1
   stickToBottomThreshold: 0.05
   useUnscaledTime: 1

@@ -16,7 +16,7 @@ MonoBehaviour:
   toasts:
   - situation: 20
     messageTemplate: '{0} overtook {1}'
-    tintWithDomainColor: 0
+    tintWithDomainColor: 1
     useDomainColoredNames: 1
     alpha: 1
     isIdleHint: 0
@@ -24,7 +24,7 @@ MonoBehaviour:
     idleSeconds: 60
     repeatWhileIdle: 1
   - situation: 21
-    messageTemplate: '<b>{0}</b> is the race leader'
+    messageTemplate: <b>{0}</b> is the race leader
     tintWithDomainColor: 1
     useDomainColoredNames: 0
     alpha: 1
@@ -33,7 +33,7 @@ MonoBehaviour:
     idleSeconds: 60
     repeatWhileIdle: 1
   - situation: 30
-    messageTemplate: 'Comeback system is on'
+    messageTemplate: Comeback system is on
     tintWithDomainColor: 0
     useDomainColoredNames: 0
     alpha: 0.9
