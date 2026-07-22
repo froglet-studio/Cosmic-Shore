@@ -12,10 +12,11 @@ namespace CosmicShore.Gameplay
     /// at the 8 cube corners.
     ///
     /// States:
-    ///   Unshielded:        BoxCollider active, authored prism mesh visible,
+    ///   Unshielded:        authored BoxCollider (trigger) active, authored prism mesh visible,
     ///                      mass = ρ · 8·a·b·c
-    ///   Super-shielded:    MeshCollider (convex) with stellated mesh,
-    ///                      stellation mesh visible,
+    ///   Super-shielded:    authored BoxCollider (trigger) STAYS the collider (a convex-mesh
+    ///                      trigger is invisible to trigger skimmers; the primitive box is what
+    ///                      both trigger and solid impactors detect), stellation mesh visible,
     ///                      mass = ρ · 108·a·b·c (exactly 13.5× box mass by default,
     ///                      3× the inscribed octahedron shield's mass)
     ///
@@ -263,7 +264,7 @@ namespace CosmicShore.Gameplay
             else
             {
                 _isEngaging = true;
-                DisableCollidersDuringMorph();
+                KeepGameplayColliderDuringMorph();
                 UpdateEngageMesh(engageCurve.Evaluate(_engageT));
             }
         }
@@ -396,21 +397,22 @@ namespace CosmicShore.Gameplay
             if (meshFilter != null)
                 meshFilter.sharedMesh = _stellatedMesh;
 
+            // COLLISION stays on the authored PRIMITIVE trigger box - super-shield only
+            // changes the LOOK (stellated mesh, above) and mass, never the collider. A convex
+            // MeshCollider can't serve both skimmer families at once: as a SOLID it is invisible
+            // to solid impactors like the Rhino shield-swipe (solid-vs-solid fires nothing); as a
+            // TRIGGER it is invisible to TRIGGER colliders (Unity/PhysX does not report a
+            // convex-mesh trigger to another trigger), which is every vessel's kinematic-RB
+            // trigger skimmer sphere - so the swap made skims "not register" on the Skim Race /
+            // Astro League lining. The authored box is a PRIMITIVE trigger, which BOTH see
+            // (trigger-vs-trigger works for primitives; solid-vs-trigger works) - exactly how
+            // unshielded prisms already skim for everyone. It's also LOD-cullable and needs no
+            // convex cook. (True stellated containment is still available via IsPointInsideShield.)
             if (boxCollider != null)
-                boxCollider.enabled = false;
+                boxCollider.enabled = true;
 
-            EnsureShieldMeshCollider();
             if (shieldMeshCollider != null)
-            {
-                shieldMeshCollider.sharedMesh = _stellatedMesh;
-                // Convex is required for Rigidbody interaction. Note: the
-                // stellation is non-convex, so Unity will compute a convex
-                // hull approximation (≈ the bounding cube). For accurate
-                // gameplay containment use IsPointInsideShield, which does
-                // the true tetrahedral-union check.
-                shieldMeshCollider.convex = true;
-                shieldMeshCollider.enabled = true;
-            }
+                shieldMeshCollider.enabled = false;
 
             if (rb != null)
                 rb.mass = _shieldMass;
@@ -445,17 +447,16 @@ namespace CosmicShore.Gameplay
             ApplyMaterialOverride(shielded: false);
         }
 
-        private void DisableCollidersDuringMorph()
+        // Keep the prism interactive through the ~engageDuration bloom. Previously this
+        // disabled BOTH colliders, so a super-shielding prism went completely collider-less
+        // for the whole morph - a skimmer/vessel passing during that window touched nothing.
+        // The authored box stays in whatever state it already holds (never force-enabled, so
+        // the spawn-wait / LOD cull still own it); we only make sure the legacy shield mesh
+        // collider (if a prefab still carries one) is off, since the shield keeps the box as
+        // its collider and never enables the mesh.
+        private void KeepGameplayColliderDuringMorph()
         {
-            if (boxCollider != null) boxCollider.enabled = false;
             if (shieldMeshCollider != null) shieldMeshCollider.enabled = false;
-        }
-
-        private void EnsureShieldMeshCollider()
-        {
-            if (shieldMeshCollider != null) return;
-            shieldMeshCollider = gameObject.AddComponent<MeshCollider>();
-            shieldMeshCollider.convex = true;
         }
 
         private void ApplyMaterialOverride(bool shielded)
