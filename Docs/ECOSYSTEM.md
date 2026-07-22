@@ -750,6 +750,26 @@ two mouth MultiAimConstraint weights 0 (closed, FBX pose) ↔ 1 (open, aimed at
 already evaluated every frame, so the only added cost is one float compare
 per frame while settled.
 
+**Two consume models coexist (merge reconciliation, read before touching either
+`LightFauna` or `Boid`).** bleeding-edge landed a frame-paced *grazing queue*
+(`maxConsumesPerFrame` / `_pendingMeals` / `EatPrism` / `DrainPendingMeals`)
+that spreads a consume/damage cascade across frames so a dense cluster melts
+instead of popping. The intentional-feeding model above (approach → face →
+bounded mouthful → hold) is already frame-bounded by `maxClusterBites` + the
+facing hold, so the two would double-drive consumption if both ran. Resolution:
+- **`LightFauna` (brittlestar + shark)** uses intentional feeding / mouth-devour
+  ONLY — the grazing queue is intentionally absent here (a brittlestar eats
+  mouthfuls; a shark devours at the mouth). Do not re-add `_pendingMeals` to
+  `LightFauna`.
+- **`Boid` (tadpole forager)** uses intentional feeding for the FORAGER path;
+  the paced queue survives ONLY on the non-forager **drone** combat path (its
+  `Damage` cascade can hit many prisms at once and still wants pacing).
+- Shared bleeding-edge wins kept on both: `HealthPrism.ResolveOwnerFauna`
+  stamping (no per-neighbor `GetComponentInParent`), cached attribution
+  strings, the elemental-contract crystal + `FaunaVariantTuning` (which is why
+  the tadpole's `trailBlockInteractionRadius = 20` lives in the Blob tadpole
+  config's `Variant`, not just the prefab).
+
 ---
 
 ## 8. Build order
