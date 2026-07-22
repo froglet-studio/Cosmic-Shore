@@ -149,6 +149,17 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public void SetSpawnerPaused(bool paused) => trailPenUp = paused;
 
+        /// <summary>Current pen state (mirrored to peers by <see cref="VesselController"/>'s n_TrailPenUp).</summary>
+        public bool IsSpawnerPaused => trailPenUp;
+
+        /// <summary>
+        /// Whole-trail shield override (the prefab-authored <see cref="shielded"/> flag, exposed for
+        /// modes that assign per-player trail identities - e.g. Fake Artist's shielded brushes).
+        /// Rides the existing pre-Initialize flag path so prisms arrive shielded at birth.
+        /// Set it identically on every peer's copy of the vessel (trails are per-peer simulations).
+        /// </summary>
+        public void SetTrailShielded(bool value) => shielded = value;
+
         public void ToggleBlockWaitTime(bool extended)
         {
             waitTime = extended ? defaultWaitTime * 3f : defaultWaitTime;

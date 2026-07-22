@@ -40,6 +40,12 @@ namespace CosmicShore.Gameplay
         readonly NetworkVariable<Quaternion> n_BlockRotation = new(writePerm: NetworkVariableWritePermission.Owner);
         readonly NetworkVariable<bool> n_IsTranslationRestricted =
             new(writePerm: NetworkVariableWritePermission.Owner);
+        // Trail pen-up (VesselPrismController.SetSpawnerPaused) is a LOCAL flag, but every
+        // peer simulates every vessel's trail from replicated kinematics - without this
+        // mirror, a remote peer keeps laying prisms while the owner holds the pen up
+        // (visible today as painting-toy stroke gaps missing on party clients, and fatal
+        // for the Fake Artist minigame where all peers must see the same strokes).
+        readonly NetworkVariable<bool> n_TrailPenUp = new(writePerm: NetworkVariableWritePermission.Owner);
         
         public ulong PlayerNetId { get; private set; }
         public ulong VesselNetId => NetworkObjectId;
@@ -85,6 +91,7 @@ namespace CosmicShore.Gameplay
                 n_Speed.Value = VesselStatus.Speed;
                 n_Course.Value = VesselStatus.Course;
                 n_BlockRotation.Value = VesselStatus.blockRotation;
+                n_TrailPenUp.Value = VesselStatus.VesselPrismController.IsSpawnerPaused;
                 CosmicShore.Utility.PerformanceBenchmark.NetMarkers.CountNetVarDirty(3);
             }
         }
@@ -356,21 +363,27 @@ namespace CosmicShore.Gameplay
         void OnCourseChanged(Vector3 previousValue, Vector3 newValue) => VesselStatus.Course = newValue;
         void OnBlockRotationChanged(Quaternion previousValue, Quaternion newValue) => VesselStatus.blockRotation = newValue;
         void OnIsTranslationRestrictedValueChanged(bool previousValue, bool newValue) => VesselStatus.IsTranslationRestricted = newValue;
-        
+        void OnTrailPenUpChanged(bool previousValue, bool newValue) => VesselStatus.VesselPrismController.SetSpawnerPaused(newValue);
+
         void SubscribeToNetworkVariables()
         {
             n_Speed.OnValueChanged += OnSpeedChanged;
             n_Course.OnValueChanged += OnCourseChanged;
             n_BlockRotation.OnValueChanged += OnBlockRotationChanged;
             n_IsTranslationRestricted.OnValueChanged += OnIsTranslationRestrictedValueChanged;
+            n_TrailPenUp.OnValueChanged += OnTrailPenUpChanged;
+            // Late-join/pair-swap catch-up: apply the current replicated pen state (the
+            // OnValueChanged callback only fires on future deltas).
+            VesselStatus.VesselPrismController.SetSpawnerPaused(n_TrailPenUp.Value);
         }
-        
+
         void UnsubscribeFromNetworkVariables()
         {
             n_Speed.OnValueChanged -= OnSpeedChanged;
             n_Course.OnValueChanged -= OnCourseChanged;
             n_BlockRotation.OnValueChanged -= OnBlockRotationChanged;
             n_IsTranslationRestricted.OnValueChanged -= OnIsTranslationRestrictedValueChanged;
+            n_TrailPenUp.OnValueChanged -= OnTrailPenUpChanged;
         }
         
         void ToggleStationaryMode(bool enable) =>
