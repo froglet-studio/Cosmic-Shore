@@ -11252,7 +11252,6 @@ GameObject:
   - component: {fileID: 8859118550345700281}
   - component: {fileID: 8016081660815249918}
   - component: {fileID: 6784047252906387310}
-  - component: {fileID: 7019457103973619641}
   m_Layer: 5
   m_Name: NotificationUI
   m_TagString: Untagged
@@ -11317,22 +11316,6 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
---- !u!114 &7019457103973619641
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6951571561766501278}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4d8046e5bcbe4fb9b94ffb6314eeaada, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  feedChannel: {fileID: 11400000, guid: 9e4151d947b14932b1f4e5ef38fc9bb2, type: 2}
-  settings: {fileID: 11400000, guid: 1b63dfbbc0894c8eb0dd7fddde2d3c47, type: 2}
-  entryPrefab: {fileID: 0}
-  contentContainer: {fileID: 8859118550345700281}
 --- !u!1 &6966111978323070031
 GameObject:
   m_ObjectHideFlags: 0

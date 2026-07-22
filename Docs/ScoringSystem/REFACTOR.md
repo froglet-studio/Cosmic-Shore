@@ -118,7 +118,9 @@ is teal and Ruby magenta — banner/cards now match the vessels on screen.
 sources outside the scoring UI were migrated to `ThemeManagerData.ColorSet` too.
 Game feed: `GameEventFeed` resolves via injected `gameData`; the static
 `GameFeedAPI` hardcoded dict is replaced by an `SO_ColorSet` handed to it by
-`ThemeManager` at game start. Vessel HUD: `SquirrelVesselHUDController` and
+`ThemeManager` at game start. (The feed has since been superseded by the
+config-driven toast system — `GameToastAPI` / `GameToastController` in
+`_Scripts/UI/GameToastSystem/` — which inherits the same single-source rule.) Vessel HUD: `SquirrelVesselHUDController` and
 `SilhouetteController` `[Inject] GameDataSO` and resolve via `GetDomainUIColor`
 (silhouette danger → shared `EnvironmentColors.Danger`); their `DomainColorPaletteSO`
 fields (`domainColors`, `SilhouetteConfigSO.domainPalette`) were removed.

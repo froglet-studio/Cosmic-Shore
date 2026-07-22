@@ -25,9 +25,9 @@ namespace CosmicShore.Gameplay
                 { Domains.Blue,  BlueTeamMaterialSet },
             };
 
-            // Hand the ColorSet to the static game-feed API so it colors joust messages
+            // Hand the ColorSet to the static game-toast API so it colors domain names
             // from the same single source the vessels and prisms use (R5).
-            GameFeedAPI.ColorSet = _dataContainer.ColorSet;
+            GameToastAPI.ColorSet = _dataContainer.ColorSet;
         }
 
         SO_MaterialSet GenerateDomainMaterialSet(DomainColorSet colorSet, string domainName)

@@ -9,13 +9,16 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 66e0283a295245a28744d5b76e853fcb, type: 3}
-  m_Name: GameFeedSettings
-  m_EditorClassIdentifier:
+  m_Script: {fileID: 11500000, guid: 7f7aaca952d4446698533a46d9e92584, type: 3}
+  m_Name: GameToastSettings
+  m_EditorClassIdentifier: 
   slideInDuration: 0.25
-  slideInOffset: 200
-  slideInEase: 27
-  holdDuration: 3
-  fadeOutDuration: 0.5
-  maxVisibleEntries: 6
+  slideInOffset: 120
+  slideInEase: 9
+  ageAfterSeconds: 6
+  agedAlpha: 0.45
+  ageFadeDuration: 1
+  maxRetainedEntries: 40
+  autoScrollToBottom: 1
+  stickToBottomThreshold: 0.05
   useUnscaledTime: 1

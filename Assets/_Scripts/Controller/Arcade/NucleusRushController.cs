@@ -122,7 +122,8 @@ namespace CosmicShore.Gameplay
         void AnnounceWaveScored_ClientRpc(int domain, int broodSum, int target)
         {
             var d = (Domains)domain;
-            GameFeedAPI.Post($"<b>{d}</b> brood hatched - {broodSum}/{target}", d, GameFeedType.Generic);
+            GameToastAPI.Post(GameToastSituation.BroodWaveScored, d,
+                d.ToString(), broodSum.ToString(), target.ToString());
         }
 
         // ── Server-authoritative game end (HexRace/Joust/CC pattern) ─────
