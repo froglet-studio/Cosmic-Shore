@@ -129,11 +129,16 @@ namespace CosmicShore.UI
 
             _rootRT = (RectTransform)transform;
 
-            // Fleet-wide standard placement: the flowers are a required, uniform display on
-            // every vessel — the shared config stamps the container's rect so no vessel's
-            // HUD authoring can drift the layout (per-vessel uniqueness lives in the
-            // ElementalAbilityMapSO parameters/upgrades, never in the display).
-            if (config.enforceStandardPlacement)
+            // Fleet-wide standard placement applies ONLY to runtime-built widgets: when every
+            // flower container is authored in the prefab (the baked/authored state), the
+            // designer's container rect is the source of truth and the config must not stamp
+            // over it on play. Unauthored/auto-created widgets still get the standard rect so
+            // a vessel can never silently ship with the display in a random spot.
+            bool allFlowersAuthored = true;
+            for (int i = 0; i < bars.Length; i++)
+                if (!bars[i].petalRoot) { allFlowersAuthored = false; break; }
+
+            if (config.enforceStandardPlacement && !allFlowersAuthored)
             {
                 _rootRT.anchorMin        = config.standardAnchorMin;
                 _rootRT.anchorMax        = config.standardAnchorMax;
