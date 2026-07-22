@@ -36,10 +36,11 @@ namespace CosmicShore.UI
         [SerializeField] private Color tubeCoolingColor = new Color(1f, 1f, 1f, 0.3f);
         [Tooltip("Colour of the tube cooldown icon once ready (fill == 1).")]
         [SerializeField] private Color tubeReadyColor = Color.white;
-        [Tooltip("Breathing scale amplitude of the tube icon while ready (0 disables the idle pulse).")]
-        [SerializeField, Range(0f, 0.5f)] private float tubeReadyPulseAmount = 0.08f;
-        [Tooltip("Seconds per half-breath of the ready pulse.")]
-        [SerializeField, Min(0.05f)] private float tubeReadyPulseDuration = 0.8f;
+        [Tooltip("How far (px) the missile icon sits sunk below rest while the tube reloads - it " +
+                 "rises home as the cooldown recovers, then slams into place when ready.")]
+        [SerializeField, Min(0f)] private float tubeLoadDropOffset = 14f;
+        [Tooltip("Flash colour the instant the tube slams home fully loaded.")]
+        [SerializeField] private Color tubeSlamFlashColor = Color.white;
 
         [Header("Overheat")]
         [Tooltip("The overheat button's icon image (child 'Icon' of OverheatButton).")]
@@ -79,14 +80,15 @@ namespace CosmicShore.UI
         private Tween _impactScaleTween;
         private Tween _impactColorTween;
         private Tween _boostScaleTween;
-        private Tween _tubeReadyPulseTween;
-        private Tween _tubeReadyPopTween;
+        private Tween _tubeSlamScaleTween;
+        private Tween _tubeSlamColorTween;
         private Tween _overheatThrobTween;
         private Tween _overheatIconColorTween;
 
         private Vector3 _driftIconOriginalScale;
         private Vector3 _impactIconOriginalScale;
         private Vector3 _tubeIconOriginalScale = Vector3.one;
+        private Vector2 _tubeIconRestAnchoredPos;
         private Vector3 _overheatIconOriginalScale = Vector3.one;
         private Color _driftIconOriginalColor;
         private Color _overheatIconOriginalColor = Color.white;
@@ -114,11 +116,13 @@ namespace CosmicShore.UI
 
             if (tubeCooldownIcon)
             {
-                // Repurposed as a radial cooldown fill: start ready (full + bright).
-                tubeCooldownIcon.type = Image.Type.Filled;
-                tubeCooldownIcon.fillAmount = 1f;
+                // Start ready (loaded + bright). The image keeps its authored type: a Filled
+                // sprite additionally shows the radial wipe; a plain sprite relies on the
+                // sink-and-rise loading motion alone.
+                if (tubeCooldownIcon.type == Image.Type.Filled) tubeCooldownIcon.fillAmount = 1f;
                 tubeCooldownIcon.color = tubeReadyColor;
                 _tubeIconOriginalScale = tubeCooldownIcon.rectTransform.localScale;
+                _tubeIconRestAnchoredPos = tubeCooldownIcon.rectTransform.anchoredPosition;
                 _tubeWasReady = true;
             }
 
@@ -302,57 +306,63 @@ namespace CosmicShore.UI
             if (!tubeCooldownIcon) return;
 
             ready01 = Mathf.Clamp01(ready01);
-            tubeCooldownIcon.fillAmount = ready01;
-            tubeCooldownIcon.color = Color.Lerp(tubeCoolingColor, tubeReadyColor, ready01);
-
             bool isReady = ready01 >= 0.999f;
+            var rt = tubeCooldownIcon.rectTransform;
+
+            if (tubeCooldownIcon.type == Image.Type.Filled)
+                tubeCooldownIcon.fillAmount = ready01;
+
+            // While the slam flash owns the icon colour, leave it alone.
+            if (_tubeSlamColorTween == null)
+                tubeCooldownIcon.color = Color.Lerp(tubeCoolingColor, tubeReadyColor, ready01);
+
             if (isReady && !_tubeWasReady)
-                JuiceTubeReady();
-            else if (!isReady && _tubeWasReady)
-                StopTubeReadyJuice();
+            {
+                JuiceTubeSlamHome();
+            }
+            else if (!isReady)
+            {
+                if (_tubeWasReady)   // just fired: the tube ejects - drop the missile to the reload seat
+                {
+                    _tubeSlamScaleTween?.Kill();
+                    _tubeSlamColorTween?.Kill();
+                    rt.localScale = _tubeIconOriginalScale;
+                }
+
+                // Reloading: the missile rises from its sunk seat toward rest as the tube loads.
+                rt.anchoredPosition = _tubeIconRestAnchoredPos + Vector2.down * (tubeLoadDropOffset * (1f - ready01));
+            }
+
             _tubeWasReady = isReady;
         }
 
-        // Recharge complete: punch the icon, then settle into a slow "ready" breathing pulse so the
-        // available ability keeps a live read without shouting.
-        private void JuiceTubeReady()
+        // Fully loaded: the missile slams home - snap to rest, overshoot punch, bright flash.
+        private void JuiceTubeSlamHome()
         {
             var rt = tubeCooldownIcon.rectTransform;
 
-            _tubeReadyPulseTween?.Kill();
-            _tubeReadyPopTween?.Kill();
+            _tubeSlamScaleTween?.Kill();
+            rt.anchoredPosition = _tubeIconRestAnchoredPos;
             rt.localScale = _tubeIconOriginalScale;
-
-            _tubeReadyPopTween = rt
+            _tubeSlamScaleTween = rt
                 .DOScale(_tubeIconOriginalScale * iconPunchScale, iconPunchDuration * 0.3f)
                 .SetEase(Ease.OutQuad)
                 .SetLink(tubeCooldownIcon.gameObject)
                 .OnComplete(() =>
                 {
-                    _tubeReadyPopTween = rt
+                    _tubeSlamScaleTween = rt
                         .DOScale(_tubeIconOriginalScale, iconPunchDuration * 0.7f)
                         .SetEase(Ease.OutBounce)
-                        .SetLink(tubeCooldownIcon.gameObject)
-                        .OnComplete(StartTubeReadyPulse);
+                        .SetLink(tubeCooldownIcon.gameObject);
                 });
-        }
 
-        private void StartTubeReadyPulse()
-        {
-            if (tubeReadyPulseAmount <= 0f || !tubeCooldownIcon) return;
-            _tubeReadyPulseTween?.Kill();
-            _tubeReadyPulseTween = tubeCooldownIcon.rectTransform
-                .DOScale(_tubeIconOriginalScale * (1f + tubeReadyPulseAmount), tubeReadyPulseDuration)
-                .SetEase(Ease.InOutSine)
-                .SetLoops(-1, LoopType.Yoyo)
-                .SetLink(tubeCooldownIcon.gameObject);
-        }
-
-        private void StopTubeReadyJuice()
-        {
-            _tubeReadyPulseTween?.Kill();
-            _tubeReadyPopTween?.Kill();
-            if (tubeCooldownIcon) tubeCooldownIcon.rectTransform.localScale = _tubeIconOriginalScale;
+            _tubeSlamColorTween?.Kill();
+            tubeCooldownIcon.color = tubeSlamFlashColor;
+            _tubeSlamColorTween = tubeCooldownIcon
+                .DOColor(tubeReadyColor, colorTweenDuration)
+                .SetEase(Ease.OutQuad)
+                .SetLink(tubeCooldownIcon.gameObject)
+                .OnKill(() => _tubeSlamColorTween = null);
         }
 
         // ---------------------------------------------------------------
@@ -428,8 +438,8 @@ namespace CosmicShore.UI
             _impactScaleTween?.Kill();
             _impactColorTween?.Kill();
             _boostScaleTween?.Kill();
-            _tubeReadyPulseTween?.Kill();
-            _tubeReadyPopTween?.Kill();
+            _tubeSlamScaleTween?.Kill();
+            _tubeSlamColorTween?.Kill();
             _overheatThrobTween?.Kill();
             _overheatIconColorTween?.Kill();
         }
