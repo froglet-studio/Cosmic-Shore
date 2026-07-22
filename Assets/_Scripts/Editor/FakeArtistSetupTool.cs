@@ -238,25 +238,9 @@ namespace CosmicShore.Editor
             }
             var gameGO = monitorController.gameObject;
 
-            // Capture the template's serialized references before removing its components.
-            var oldController = gameGO.GetComponentInChildren<NucleusRushController>(true);
-            var oldMonitor = gameGO.GetComponentInChildren<NucleusRushWaveTurnMonitor>(true);
-
-            Object countdownTimer = null, toggleReadyEvent = null, gameDataAsset = null, displayEvent = null;
-            if (oldController != null)
-            {
-                var so = new SerializedObject(oldController);
-                countdownTimer = so.FindProperty("countdownTimer")?.objectReferenceValue;
-                toggleReadyEvent = so.FindProperty("_onToggleReadyButton")?.objectReferenceValue;
-            }
-            if (oldMonitor != null)
-            {
-                var so = new SerializedObject(oldMonitor);
-                gameDataAsset = so.FindProperty("gameData")?.objectReferenceValue;
-                displayEvent = so.FindProperty("onUpdateTurnMonitorDisplay")?.objectReferenceValue;
-            }
-
-            // Mode components: add ours first, then remove the template's.
+            // Mode components: ensure ours exist (they may already, if the scene was
+            // authored directly - the committed MinigameFakeArtist.unity already carries
+            // the swapped components; a fresh clone of MinigameNucleusRush does not).
             var controller = gameGO.GetComponent<FakeArtistController>();
             if (controller == null)
             {
@@ -269,6 +253,20 @@ namespace CosmicShore.Editor
                 monitor = gameGO.AddComponent<FakeArtistTurnMonitor>();
                 summary.Add("Added FakeArtistTurnMonitor.");
             }
+
+            // Capture base-class wiring (countdown timer, ready-button event, monitor
+            // gameData/display) from whichever component currently carries it: the old
+            // NucleusRush template on a fresh clone, ELSE the already-swapped FakeArtist
+            // component on the committed scene. Falling back to the live component (and the
+            // SetIfNotNull writes below) makes this idempotent - a re-run never blanks out
+            // a good reference by reading from a component that no longer exists.
+            var oldController = gameGO.GetComponentInChildren<NucleusRushController>(true);
+            var oldMonitor = gameGO.GetComponentInChildren<NucleusRushWaveTurnMonitor>(true);
+
+            var countdownTimer = ReadRef(oldController, "countdownTimer") ?? ReadRef(controller, "countdownTimer");
+            var toggleReadyEvent = ReadRef(oldController, "_onToggleReadyButton") ?? ReadRef(controller, "_onToggleReadyButton");
+            var gameDataAsset = ReadRef(oldMonitor, "gameData") ?? ReadRef(monitor, "gameData");
+            var displayEvent = ReadRef(oldMonitor, "onUpdateTurnMonitorDisplay") ?? ReadRef(monitor, "onUpdateTurnMonitorDisplay");
 
             if (oldController != null) { Object.DestroyImmediate(oldController); summary.Add("Removed NucleusRushController."); }
             if (oldMonitor != null) { Object.DestroyImmediate(oldMonitor); summary.Add("Removed NucleusRushWaveTurnMonitor."); }
@@ -289,15 +287,13 @@ namespace CosmicShore.Editor
                 summary.Add("Removed the Cell (Fake Artist v1 is cell-less - see FAKEARTIST.md).");
             }
 
-            // Controller wiring.
+            // Controller wiring (never overwrite a good ref with null - SetIfNotNull).
             {
                 var so = new SerializedObject(controller);
                 so.FindProperty("rule").objectReferenceValue = rule;
                 so.FindProperty("config").objectReferenceValue = config;
-                if (so.FindProperty("countdownTimer") != null)
-                    so.FindProperty("countdownTimer").objectReferenceValue = countdownTimer;
-                if (so.FindProperty("_onToggleReadyButton") != null)
-                    so.FindProperty("_onToggleReadyButton").objectReferenceValue = toggleReadyEvent;
+                SetIfNotNull(so, "countdownTimer", countdownTimer);
+                SetIfNotNull(so, "_onToggleReadyButton", toggleReadyEvent);
                 so.ApplyModifiedPropertiesWithoutUndo();
             }
 
@@ -305,10 +301,8 @@ namespace CosmicShore.Editor
             {
                 var so = new SerializedObject(monitor);
                 so.FindProperty("controller").objectReferenceValue = controller;
-                if (so.FindProperty("gameData") != null)
-                    so.FindProperty("gameData").objectReferenceValue = gameDataAsset;
-                if (so.FindProperty("onUpdateTurnMonitorDisplay") != null)
-                    so.FindProperty("onUpdateTurnMonitorDisplay").objectReferenceValue = displayEvent;
+                SetIfNotNull(so, "gameData", gameDataAsset);
+                SetIfNotNull(so, "onUpdateTurnMonitorDisplay", displayEvent);
                 so.ApplyModifiedPropertiesWithoutUndo();
             }
 
@@ -413,6 +407,22 @@ namespace CosmicShore.Editor
             scenes.Add(new EditorBuildSettingsScene(ScenePath, true));
             EditorBuildSettings.scenes = scenes.ToArray();
             summary.Add("Scene added to Build Settings.");
+        }
+
+        /// <summary>Reads a serialized object-reference field from a component (null-safe on both).</summary>
+        static Object ReadRef(Component component, string propName)
+        {
+            if (component == null) return null;
+            var prop = new SerializedObject(component).FindProperty(propName);
+            return prop != null ? prop.objectReferenceValue : null;
+        }
+
+        /// <summary>Assigns a serialized object-reference field only when we have a real value to write.</summary>
+        static void SetIfNotNull(SerializedObject so, string propName, Object value)
+        {
+            if (value == null) return;
+            var prop = so.FindProperty(propName);
+            if (prop != null) prop.objectReferenceValue = value;
         }
 
         static void EnsureFolder(string path)
