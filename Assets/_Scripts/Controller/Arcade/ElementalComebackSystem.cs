@@ -26,13 +26,17 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Which stat to use when calculating who is ahead/behind.
         /// HexRace tracks elapsed time as Score (same for everyone) so use CrystalsCollected.
-        /// CrystalCapture uses Score directly. AstroLeague uses GoalsScored.
+        /// CrystalCapture also uses CrystalsCollected and Rampage PrismsDestroyed - in the
+        /// finish-time-scored modes Score is only assigned at game end (winners a time,
+        /// losers a sentinel), so the Score source would be dead during live play.
+        /// AstroLeague uses GoalsScored.
         /// </summary>
         public enum ScoreDifferenceSource
         {
             Score,
             CrystalsCollected,
             Goals,
+            PrismsDestroyed,
         }
 
         [Header("Config")]
@@ -62,10 +66,14 @@ namespace CosmicShore.Gameplay
             switch (gameData ? gameData.GameMode : GameModes.Random)
             {
                 case GameModes.HexRace: // Score is elapsed time - crystals are the honest stat
+                case GameModes.MultiplayerCrystalCapture: // Score lands only at game end (time/sentinel)
                     system.differenceSource = ScoreDifferenceSource.CrystalsCollected;
                     break;
                 case GameModes.AstroLeague:
                     system.differenceSource = ScoreDifferenceSource.Goals;
+                    break;
+                case GameModes.Rampage: // Score lands only at game end - destruction is the live stat
+                    system.differenceSource = ScoreDifferenceSource.PrismsDestroyed;
                     break;
                 default:
                     system.differenceSource = ScoreDifferenceSource.Score;
@@ -311,6 +319,8 @@ namespace CosmicShore.Gameplay
                     return gameData.SumCrystalsCollectedByDomain(domain);
                 case ScoreDifferenceSource.Goals:
                     return ScoringMetrics.SumByDomain(gameData, ScoringMetric.Goals, domain);
+                case ScoreDifferenceSource.PrismsDestroyed:
+                    return ScoringMetrics.SumByDomain(gameData, ScoringMetric.PrismsDestroyed, domain);
                 case ScoreDifferenceSource.Score:
                     float sum = 0f;
                     var list = gameData.RoundStatsList;
@@ -331,6 +341,7 @@ namespace CosmicShore.Gameplay
             {
                 ScoreDifferenceSource.CrystalsCollected => true,
                 ScoreDifferenceSource.Goals => true,
+                ScoreDifferenceSource.PrismsDestroyed => true,
                 ScoreDifferenceSource.Score => !useGolfRules,
                 _ => !useGolfRules
             };

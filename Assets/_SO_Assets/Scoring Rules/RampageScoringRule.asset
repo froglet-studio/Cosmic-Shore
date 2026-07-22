@@ -9,8 +9,8 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b8b7fc9bcac9463e913bd9dbd3ce26f6, type: 3}
-  m_Name: CrystalCaptureScoringRule
+  m_Script: {fileID: 11500000, guid: 40ef63ee1026423ba516a589260bffc6, type: 3}
+  m_Name: RampageScoringRule
   m_EditorClassIdentifier:
-  metric: 0
+  metric: 5
   golfRules: 1
