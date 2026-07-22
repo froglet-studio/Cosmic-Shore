@@ -3351,8 +3351,8 @@ MonoBehaviour:
   joustFlashColor: {r: 1, g: 0, b: 0, a: 1}
   crystalFlashColor: {r: 0.4, g: 0.9, b: 1, a: 1}
   tubeCooldownIcon: {fileID: 8778855275387912087}
-  tubeCoolingColor: {r: 1, g: 1, b: 1, a: 0.3}
-  tubeReadyColor: {r: 1, g: 1, b: 1, a: 1}
+  tubeCoolingColor: {r: 0.5, g: 0.5, b: 0.55, a: 0.9}
+  tubeReadyColor: {r: 1, g: 0.2, b: 0.2, a: 1}
   tubeReadyPulseAmount: 0.08
   tubeReadyPulseDuration: 0.8
   overheatIcon: {fileID: 6559234619875545904}
@@ -3364,8 +3364,8 @@ MonoBehaviour:
   iconPunchDuration: 0.25
   iconPunchScale: 1.4
   colorTweenDuration: 0.35
-  driftRotationAngle: 15
-  driftRotationDuration: 0.2
+  driftRotationAngle: 45
+  driftRotationDuration: 0.45
 --- !u!114 &6826158076559928004
 MonoBehaviour:
   m_ObjectHideFlags: 0
