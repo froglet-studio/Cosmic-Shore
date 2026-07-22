@@ -443,6 +443,24 @@ while the blooms are in flight. No score, no end condition; every belt advance i
 player's own motion (no timers). Exiting freestyle makes the belt dormant; toggling it off stops the
 flow — either way its scenes stay in the world.
 
+**Visibility guards — the transport itself is invisible.** The belt should read as a world that is
+simply *there*, never as props spawning and despawning in view, so two gates constrain where the
+continuity transitions may run:
+- **Placement floor** (`minPlacementDistance`, default 140 u) — a scene never blooms in closer than
+  this to the vessel. Near-fill (`≥ firstSceneDistance`) and extend already target far ahead; this is
+  the hard floor (squared compare) that also covers degenerate geometry, so a structure never
+  materialises in the player's face. Keep it at or below `firstSceneDistance` so it never fights
+  normal near-fill.
+- **Off-screen removal** (`offscreenMargin`, default 40 u) — a scene is only reclaimed (suctioned
+  away at its old anchor) once its whole body — a `sceneRadius + offscreenMargin` sphere — lies
+  **fully outside the player camera's view frustum** (`GeometryUtility.CalculateFrustumPlanes`,
+  non-allocating overload; a straddling sphere counts as *visible* and is left alone). The suction is
+  therefore never watched; the bloom then happens far ahead at the new pose. If every pooled scene is
+  on screen the belt simply idles — placing nothing — until the player's motion pushes a scene out of
+  view, at which point the field self-heals. Camera-less fallback (rare): a scene clearly behind the
+  flight course, which the follow camera cannot see. The pool still *fills* to `poolSize` regardless
+  (new placements don't remove anything), so this gate only ever throttles recycling, never growth.
+
 **Ecosystem invariants (this toy is ecology-adjacent — all hold by construction):**
 
 - *Continuity of existence* — prisms grow in via their own `PrismScaleAnimator`; crystals
@@ -466,10 +484,11 @@ flow — either way its scenes stay in the world.
   `poolSize × prismBudgetPerScene` prisms (default 10 × 42 = 420 BoxColliders + ≤3 crystal
   triggers per scene + 1 toy trigger, well under the ~1,500/cell target); distant scenes are
   collider-LOD-culled by `PrismColliderLodManager` automatically. **Shielded / supershielded**
-  prisms swap their BoxCollider for an always-on convex MeshCollider that LOD can't reclaim, so the
-  palette caps them (`MaxShielded = 3`, `MaxSuperShielded = 1` per scene, low scheme weights) —
-  worst case ≈ 40 MeshColliders across a full pool, realistic steady state a handful. Danger prisms
-  keep the cheap cullable BoxCollider. The belt roams freely — mass
+  prisms now KEEP their authored cullable `BoxCollider` trigger (the octahedron / stellation is a
+  look-only change — no convex MeshCollider, no convex cook), so they cost the same as any other
+  prism and LOD reclaims them normally; the palette caps (`MaxShielded = 3`, `MaxSuperShielded = 1`
+  per scene, low scheme weights) now bound spawn variety, not a collider-cost floor. Danger prisms
+  likewise keep the cheap cullable BoxCollider. The belt roams freely — mass
   laid inside a cell registers with that cell's volume/grids as usual; mass laid in open space
   is ordinary registered prism mass with no cell binding (same as any open-space track). The
   conveyor adds **zero physics queries** — placement is pure arithmetic.

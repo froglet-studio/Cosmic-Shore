@@ -9,12 +9,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4eb9850c809e42d49325ef8cb002e8f3, type: 3}
-  m_Name: IncrementalBoostAction
+  m_Script: {fileID: 11500000, guid: 9c9f0edf05ea30da01ed7031534f5017, type: 3}
+  m_Name: RhinoShieldSwipeLeftAction
   m_EditorClassIdentifier: 
-  maxBoostMultiplier: 2
-  drainPerSecond: 0.25
-  tickSeconds: 0.1
-  boostResourceIndex: 0
-  scaleMultiplierWithAmount: 1
-  verbose: 1
+  direction: 1

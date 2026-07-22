@@ -62,7 +62,7 @@ MonoBehaviour:
   cohesionRadius: 50
   behaviorUpdateRate: 1.5
   separationRadius: 15
-  trailBlockInteractionRadius: 45
+  trailBlockInteractionRadius: 20
   separationWeight: 12
   alignmentWeight: 2
   cohesionWeight: 1

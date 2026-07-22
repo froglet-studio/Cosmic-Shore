@@ -228,6 +228,17 @@ namespace CosmicShore.Utility
         [NonSerialized] public int GoalTargetCount;
 
         /// <summary>
+        /// The resolved hostile-prism destruction target for the current Rampage session -
+        /// the per-domain <see cref="IRoundStats.HostilePrismsDestroyed"/> sum that ends the
+        /// turn. Published by <see cref="RampagePrismTurnMonitor"/> in StartMonitor (server),
+        /// synced to clients via NetworkVariable.OnValueChanged. Read by
+        /// <see cref="CosmicShore.Gameplay.RampageScoringRuleSO"/> for the end condition and
+        /// the "remaining" readout. Reset in <see cref="ResetRuntimeData"/> and
+        /// <see cref="ResetRuntimeDataForReplay"/>.
+        /// </summary>
+        [NonSerialized] public int PrismTargetCount;
+
+        /// <summary>
         /// The active scoring strategy for the current mode, published by the mode's controller
         /// in OnNetworkSpawn (drag the matching <see cref="CosmicShore.Gameplay.ScoringRuleSO"/>
         /// asset onto the controller). Read by the network turn monitors for the end condition
@@ -377,6 +388,7 @@ namespace CosmicShore.Utility
             CrystalTargetCount = 0;
             JoustTargetCount = 0;
             GoalTargetCount = 0;
+            PrismTargetCount = 0;
             System.Array.Clear(_domainMetricSums, 0, _domainMetricSums.Length);
             // Note: RequestedAIBackfillCount and RequestedDomainCount are intentionally
             // NOT reset here. They are pre-launch config values set by
@@ -421,6 +433,7 @@ namespace CosmicShore.Utility
             CrystalTargetCount = 0;
             JoustTargetCount = 0;
             GoalTargetCount = 0;
+            PrismTargetCount = 0;
             System.Array.Clear(_domainMetricSums, 0, _domainMetricSums.Length);
         }
 

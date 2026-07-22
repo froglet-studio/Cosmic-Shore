@@ -27,6 +27,11 @@ namespace CosmicShore.Gameplay
         public int MaxCrystalsPerScene = 3;
         public bool LifeformScenes = true;
         public int Seed;
+
+        // Visibility guards (see MicrosceneConveyor): the player must never watch a scene bloom in
+        // on top of them, nor watch one suction away.
+        public float MinPlacementDistance = 140f;
+        public float OffscreenMargin = 40f;
     }
 
     /// <summary>
@@ -57,6 +62,17 @@ namespace CosmicShore.Gameplay
     /// farthest-first recycle candidates that rebuild ahead. A scene mid-recycle claims its
     /// destination slot immediately (<see cref="Microscene.PendingAnchor"/>) so the rebuild never
     /// piles several scenes onto the same point while the blooms are in flight.
+    ///
+    /// Two visibility guards keep the transport itself invisible - the belt should read as a world
+    /// that is simply THERE, never as props being spawned and despawned in view:
+    ///   • PLACEMENT never blooms a scene closer than <see cref="ConveyorConfig.MinPlacementDistance"/>
+    ///     to the player - structures arrive at a respectful distance ahead, never in your face.
+    ///   • REMOVAL only reclaims a scene the player CANNOT currently see. The recycle's first half
+    ///     suctions the container to a point at its OLD anchor; that anchor must lie fully outside
+    ///     the camera frustum (by <see cref="ConveyorConfig.OffscreenMargin"/>) before the belt will
+    ///     touch it, so a scene is never watched vanishing. As the player flies on, passed scenes
+    ///     fall out of view and become reclaimable - the belt self-heals without ever popping in view
+    ///     (and simply idles, placing nothing, if every pooled scene is on screen).
     ///
     /// Toy-faithful: no score, no end condition, no timers - every belt advance is driven by the
     /// player's own motion. The Wanderway toy toggles the belt on/off; exiting freestyle just
@@ -182,6 +198,13 @@ namespace CosmicShore.Gameplay
                 return; // a full ribbon already reaches ahead on this heading
             }
 
+            // PLACEMENT GATE: never bloom a scene closer than MinPlacementDistance to the player.
+            // Near-fill (>= firstDist) and extend (off the frontier tip) already target far ahead;
+            // this is the hard floor that also covers any degenerate geometry, so a structure never
+            // materialises in the player's face. Squared compare - no sqrt.
+            float minPlaceSqr = _cfg.MinPlacementDistance * _cfg.MinPlacementDistance;
+            if ((target - playerPos).sqrMagnitude < minPlaceSqr) return;
+
             Pose pose = new(target, Quaternion.LookRotation(course, UpFor(course)));
 
             if (_scenes.Count < _cfg.PoolSize)
@@ -259,6 +282,15 @@ namespace CosmicShore.Gameplay
                                    && Vector3.Dot(rel.normalized, course) >= leadCos && along <= lookahead * 1.5f;
                 bool justPassed = along <= 0f && along > -recycleBehind;
                 if (aheadInCone || justPassed) continue; // still part of the ride - leave it be
+
+                // REMOVAL GATE: only reclaim a scene the player CANNOT currently see. The recycle's
+                // first half suctions the container to a point AT THIS ANCHOR - if that were on
+                // screen the player would watch a scene vanish (forbidden). Requiring the anchor to
+                // sit fully outside the view frustum guarantees the suction is invisible; the bloom
+                // then happens far ahead at the new pose. A fully on-screen field simply yields no
+                // candidate and the belt idles until motion pushes something out of view.
+                if (!IsSceneOffScreen(scene.Anchor, playerPos, course)) continue;
+
                 if (dist <= farthest) continue;
 
                 farthest = dist;
@@ -331,6 +363,52 @@ namespace CosmicShore.Gameplay
             foreach (var scene in _scenes)
                 if (scene && scene.Busy) busy++;
             return busy;
+        }
+
+        // ── Off-screen test (a removal must never be visible) ────────────────
+
+        Camera _cam;
+        readonly Plane[] _frustumPlanes = new Plane[6];
+
+        /// <summary>
+        /// True when the whole scene - a <see cref="ConveyorConfig.SceneRadius"/> + margin sphere at
+        /// <paramref name="anchor"/> - lies completely outside the player camera's view frustum, the
+        /// only state in which its suction-to-a-point recycle is safe to run unseen. Uses the
+        /// non-allocating frustum-planes overload; the <see cref="ConveyorConfig.OffscreenMargin"/>
+        /// buffers against the player turning slightly while the container shrinks. Camera-less
+        /// fallback (rare): a scene clearly BEHIND the flight course is never on screen, since the
+        /// follow camera trails the vessel along that course.
+        /// </summary>
+        bool IsSceneOffScreen(Vector3 anchor, Vector3 playerPos, Vector3 course)
+        {
+            float radius = _cfg.SceneRadius + Mathf.Max(0f, _cfg.OffscreenMargin);
+
+            var cam = ResolveCamera();
+            if (cam)
+            {
+                GeometryUtility.CalculateFrustumPlanes(cam, _frustumPlanes);
+                // Unity's frustum-plane normals point INWARD. If the bounding sphere sits fully on
+                // the OUTSIDE half-space of ANY plane (near / far / left / right / top / bottom), the
+                // scene is wholly outside the frustum -> not visible. Conservative in the safe
+                // direction: a sphere straddling a plane counts as visible, so we refuse to recycle.
+                for (int i = 0; i < _frustumPlanes.Length; i++)
+                    if (_frustumPlanes[i].GetDistanceToPoint(anchor) < -radius)
+                        return true;
+                return false;
+            }
+
+            return Vector3.Dot(anchor - playerPos, course) < -radius;
+        }
+
+        /// <summary>
+        /// The player camera, cached and re-resolved only when the cached one dies (scene loads,
+        /// vessel swaps). <see cref="Camera.main"/> tag-searches, so it must not run every tick - the
+        /// same pattern as the toy labels' <c>BillboardLabel</c>.
+        /// </summary>
+        Camera ResolveCamera()
+        {
+            if (!_cam) _cam = Camera.main;
+            return _cam;
         }
     }
 }

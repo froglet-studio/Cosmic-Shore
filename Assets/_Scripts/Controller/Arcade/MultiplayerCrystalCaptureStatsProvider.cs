@@ -30,12 +30,24 @@ namespace CosmicShore.Gameplay
             var localStats = gameData.RoundStatsList?.FirstOrDefault(s => s.Name == localName);
             if (localStats == null) return stats;
 
+            // Score no longer carries the crystal count (winners = finish time, losers =
+            // remaining sentinel) - read the stat itself.
             stats.Add(new StatData
             {
                 Label = "Crystals Collected",
-                Value = ((int)localStats.Score).ToString(),
+                Value = localStats.CrystalsCollected.ToString(),
                 Icon = crystalIcon
             });
+
+            if (GolfScoreSentinels.IsFinishTime(localStats.Score))
+            {
+                stats.Add(new StatData
+                {
+                    Label = "Capture Time",
+                    Value = ScoreResultBuilder.FormatTime(localStats.Score),
+                    Icon = null
+                });
+            }
 
             if (localStats.OmniCrystalsCollected > 0)
             {
