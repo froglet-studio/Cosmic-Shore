@@ -714,8 +714,14 @@ namespace CosmicShore.Gameplay
                 // One snapshot for "any trigger was on" — restore routes to whichever
                 // collider the CURRENT shield state designates, so a shield engage or
                 // disengage that happened while far (e.g. AOE) is honored on un-cull.
+                // Morphing counts as ON: both triggers are intentionally off only for
+                // the duration of the engage bloom, which always settles into a
+                // collider-on state — without this a cull landing inside the ~0.35s
+                // morph window snapshots false and the un-cull strands the prism with
+                // no trigger at all (permanently unpoppable shield).
                 _colliderBeforeLodCull = blockCollider.enabled ||
-                    (_shieldProxyCollider && _shieldProxyCollider.enabled);
+                    (_shieldProxyCollider && _shieldProxyCollider.enabled) ||
+                    _shieldColliderState == ShieldColliderState.Morphing;
                 blockCollider.enabled = false;
                 if (_shieldProxyCollider) _shieldProxyCollider.enabled = false;
             }
@@ -760,6 +766,14 @@ namespace CosmicShore.Gameplay
         public BoxCollider AuthoredCollider => blockCollider;
 
         /// <summary>
+        /// The shield AABB proxy collider, or null if no shield has ever engaged on
+        /// this prism. Exposed so external collider restores (e.g. the turret anchor
+        /// path's enable-all) can SKIP it — the proxy is shield-owned and must never
+        /// be lifecycle-enabled.
+        /// </summary>
+        public Collider ShieldProxyCollider => _shieldProxyCollider;
+
+        /// <summary>
         /// Called by the shield components ONLY. Selects which collider represents
         /// the prism (authored box / none while morphing / AABB proxy) and installs
         /// the narrowphase gate. Composes with destruction, the LOD cull, and the
@@ -773,7 +787,7 @@ namespace CosmicShore.Gameplay
             ActiveShieldGate = state == ShieldColliderState.Engaged ? gate : null;
 
             if (state == ShieldColliderState.Engaged)
-                EnsureShieldProxyCollider(shieldScale);
+                ApplyShieldProxyGeometry(shieldScale);
 
             bool overlayOwnsCollider = destroyed || _lodCulled || !_colliderLifecycleReady;
 
@@ -803,17 +817,25 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        void EnsureShieldProxyCollider(float shieldScale)
+        /// <summary>
+        /// Creates the proxy on first use and (re)applies its geometry on EVERY
+        /// engage — one proxy serves both shield tiers, so the size must track the
+        /// engaging tier's shieldScale rather than being pinned by whichever tier
+        /// engaged first, and stay honest if the authored geometry was re-cached.
+        /// </summary>
+        void ApplyShieldProxyGeometry(float shieldScale)
         {
-            if (_shieldProxyCollider || !blockCollider) return;
-            var proxy = gameObject.AddComponent<BoxCollider>();
-            proxy.center = blockCollider.center;
+            if (!blockCollider) return;
+            if (!_shieldProxyCollider)
+            {
+                _shieldProxyCollider = gameObject.AddComponent<BoxCollider>();
+                _shieldProxyCollider.enabled = false;
+            }
+            _shieldProxyCollider.center = blockCollider.center;
             // Authored size — blockCollider.size is animated by HoldColliderAtFullSize.
             var baseSize = _authoredColliderSizeCached ? _authoredColliderSize : blockCollider.size;
-            proxy.size = baseSize * shieldScale;
-            proxy.isTrigger = blockCollider.isTrigger;
-            proxy.enabled = false;
-            _shieldProxyCollider = proxy;
+            _shieldProxyCollider.size = baseSize * shieldScale;
+            _shieldProxyCollider.isTrigger = blockCollider.isTrigger;
         }
 
         public float CurrentVolume

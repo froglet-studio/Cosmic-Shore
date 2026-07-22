@@ -79,11 +79,15 @@ namespace CosmicShore.Gameplay
         //    sigma = SqrSweetSpot / 2.355f;
         //}
 
-        void OnTriggerStay(Collider other)
+        protected override void OnTriggerStay(Collider other)
         {
+            // Base re-tests pending shield-narrowphase contacts (a private Stay here
+            // would HIDE the base method — Unity only calls the most-derived one).
+            base.OnTriggerStay(other);
+
             if (!isInitialized)
                 return;
-            
+
             if (skimmer.AllowVaccumCrystal && other.TryGetComponent<Crystal>(out var crystal)
                 && !crystal.IsEmbedded) // a living lifeform's heart is never vacuumed out of its body
             {
@@ -131,8 +135,11 @@ namespace CosmicShore.Gameplay
         //    minMaturePrismSqrDistance = Mathf.Infinity;
         //}
 
-        void OnTriggerExit(Collider other)
+        protected override void OnTriggerExit(Collider other)
         {
+            // Base drops pending shield-narrowphase contacts for this pair.
+            base.OnTriggerExit(other);
+
             if (!isInitialized)
                 return;
 

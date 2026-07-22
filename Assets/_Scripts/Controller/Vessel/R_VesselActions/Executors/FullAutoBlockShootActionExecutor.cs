@@ -299,8 +299,15 @@ namespace CosmicShore.Gameplay
                 if (reactivateCollidersAtEnd && prism && prism.gameObject.activeInHierarchy)
                 {
                     var rootColliders = prism.GetComponents<Collider>();
+                    var shieldProxy = prism.ShieldProxyCollider;
                     foreach (var col in rootColliders)
+                    {
+                        // The shield AABB proxy is shield-owned — enabling it here
+                        // would create an un-gated 3x-oversized trigger from a
+                        // previous pool life. Prism.SetShieldColliderState owns it.
+                        if (col == shieldProxy) continue;
                         col.enabled = true;
+                    }
                 }
 
                 if (childProjectile && childProjectile.gameObject.activeInHierarchy)

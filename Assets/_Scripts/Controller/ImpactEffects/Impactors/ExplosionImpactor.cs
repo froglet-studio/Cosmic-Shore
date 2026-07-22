@@ -26,6 +26,12 @@ namespace CosmicShore.Gameplay
 
         public bool IsBatchProcessing => _useBatchProcessing;
 
+        // Explosions are volumetric, not surface contacts: the shield AABB proxy's
+        // over-cover is the correct containment read for an expanding blast, and
+        // gating would break the super-shield blocks-the-explosion contract on this
+        // legacy physics path (the batch path is center-based and ungated too).
+        protected override bool UsesShieldNarrowphase => false;
+
         /// <summary>
         /// When true, BeginBatchProcessing() is a no-op - forces Physics OnTriggerEnter
         /// for all collisions. Used by AOEBenchmarkOverlay for A/B comparison.

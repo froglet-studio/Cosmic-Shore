@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Unity.Netcode;
 using Unity.Profiling;
 using UnityEngine;
@@ -30,6 +31,41 @@ namespace CosmicShore.Gameplay
         ProfilerMarker _acceptMarker;
         bool _acceptMarkerInit;
 
+        // Own collider, lazily cached for the shield-narrowphase test point (one
+        // typed lookup per component lifetime — same budget rule as the marker).
+        Collider _ownCollider;
+        bool _ownColliderInit;
+
+        // Colliders whose Enter was rejected by the shield narrowphase. The proxy
+        // AABB over-covers the true shield surface and PhysX fires Enter only once
+        // per overlap episode, so rejected pairs are re-tested every OnTriggerStay
+        // until they cross the analytic surface or the overlap ends — otherwise a
+        // corner/notch approach that later reaches the real shield would be lost
+        // and shielded prisms would be intangible to most trajectories. Lazily
+        // allocated; empty for every impactor not currently grazing a shield AABB.
+        List<Collider> _pendingShieldContacts;
+
+        /// <summary>
+        /// Impactors that are volumetric rather than surface-contact (AOE
+        /// explosions) opt out — for them the AABB over-cover is the correct
+        /// containment read, and gating would break the super-shield
+        /// blocks-the-explosion contract on the legacy physics path.
+        /// </summary>
+        protected virtual bool UsesShieldNarrowphase => true;
+
+        Collider OwnCollider
+        {
+            get
+            {
+                if (!_ownColliderInit)
+                {
+                    _ownColliderInit = true;
+                    _ownCollider = GetComponent<Collider>();
+                }
+                return _ownCollider;
+            }
+        }
+
         protected virtual void OnTriggerEnter(Collider other)
         {
             if (!isInitialized)
@@ -44,22 +80,47 @@ namespace CosmicShore.Gameplay
             if (!other.TryGetComponent(out ImpactCollider impacteeCollider))
                 return;
 
-            // Shield narrowphase: an engaged prism shield's PhysX trigger is its box
-            // AABB proxy, so a contact can land in the AABB's corner/notch regions
-            // outside the true octahedron/stellation surface. Reject those with the
-            // shield's analytic containment test (a few linear forms — cheaper than
-            // the convex MeshCollider narrowphase this replaced). Checked in both
-            // directions: the impactee's shield (their proxy fired our trigger) and
-            // our own (we are a shielded prism receiving a toucher).
-            if (impacteeCollider.Impactor is PrismImpactor prismImpactee)
+            if (UsesShieldNarrowphase && !ShieldNarrowphasePasses(other, impacteeCollider.Impactor))
             {
-                var gate = prismImpactee.Prism != null ? prismImpactee.Prism.ActiveShieldGate : null;
-                if (gate != null && !gate.ContainsWorldPoint(other.ClosestPoint(transform.position)))
-                    return;
+                // Not (yet) touching the true shield surface — keep the pair and
+                // re-test in OnTriggerStay as the overlap deepens.
+                _pendingShieldContacts ??= new List<Collider>(4);
+                if (!_pendingShieldContacts.Contains(other))
+                    _pendingShieldContacts.Add(other);
+                return;
             }
-            if (!PassesOwnShieldNarrowphase(other))
+
+            DispatchImpact(impacteeCollider);
+        }
+
+        protected virtual void OnTriggerStay(Collider other)
+        {
+            // Hot path for every persisting overlap — bail on the common case first.
+            if (_pendingShieldContacts == null || _pendingShieldContacts.Count == 0)
+                return;
+            if (!_pendingShieldContacts.Contains(other))
                 return;
 
+            if (!other.TryGetComponent(out ImpactCollider impacteeCollider))
+            {
+                _pendingShieldContacts.Remove(other);
+                return;
+            }
+
+            if (!ShieldNarrowphasePasses(other, impacteeCollider.Impactor))
+                return; // still in the over-cover region — keep waiting
+
+            _pendingShieldContacts.Remove(other);
+            DispatchImpact(impacteeCollider);
+        }
+
+        protected virtual void OnTriggerExit(Collider other)
+        {
+            _pendingShieldContacts?.Remove(other);
+        }
+
+        void DispatchImpact(ImpactCollider impacteeCollider)
+        {
             if (!_acceptMarkerInit)
             {
                 _acceptMarkerInit = true;
@@ -67,6 +128,37 @@ namespace CosmicShore.Gameplay
             }
             using (_acceptMarker.Auto())
                 AcceptImpactee(impacteeCollider.Impactor);
+        }
+
+        /// <summary>
+        /// Shield narrowphase: an engaged prism shield's PhysX trigger is its box
+        /// AABB proxy, so a contact can start in the AABB's corner/notch regions
+        /// outside the true octahedron/stellation surface. Both directions use the
+        /// SAME conceptual test point — the point on the TOUCHER's collider nearest
+        /// the shield's center — so the two halves of one physical impact agree:
+        /// the impactee direction tests our own collider against their shield, and
+        /// the self direction (we are the shielded prism) tests the toucher against
+        /// ours via <see cref="PassesOwnShieldNarrowphase"/>.
+        /// </summary>
+        bool ShieldNarrowphasePasses(Collider other, IImpactor impactee)
+        {
+            if (impactee is PrismImpactor prismImpactee)
+            {
+                var prism = prismImpactee.Prism;
+                var gate = prism != null ? prism.ActiveShieldGate : null;
+                if (gate != null)
+                {
+                    var own = OwnCollider;
+                    // other IS the shield's AABB proxy — its bounds center is the
+                    // shield center. Fall back to our pivot for collider-less GOs.
+                    Vector3 testPoint = own != null
+                        ? own.ClosestPoint(other.bounds.center)
+                        : transform.position;
+                    if (!gate.ContainsWorldPoint(testPoint))
+                        return false;
+                }
+            }
+            return PassesOwnShieldNarrowphase(other);
         }
 
         /// <summary>
