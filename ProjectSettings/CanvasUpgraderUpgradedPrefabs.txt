@@ -8,6 +8,7 @@
 9b3e72c1f8a04d7d8b6c5e4a1c2d3e4f Assets/_Prefabs/UI Elements/In Game/DomainScorePanel.prefab
 b11bf89b1ccfe234e811c025b88bc21e Assets/_Prefabs/UI Elements/In Game/PlayerScoreEntry.prefab
 ba84a682b21a0a742974715e5d7432b5 Assets/_Prefabs/UI Elements/In Game/PlayerScoreCard.prefab
+c1572db06ad4244469ad3f25d86940b8 Assets/_Prefabs/UI Elements/VesselHUD/SquirrelHUDVariant.prefab
 cd63e74244ceca240a435734402e496f Assets/_Prefabs/MaelStrom/MaelStromPlayerScoreCardContainer.prefab
 dcf433f2806495a44931709616d958d9 Assets/_Prefabs/MaelStrom/MaelstromSummaryScoreCardContainer.prefab
 e261e06b3ac934846b48f7122bb7f961 Assets/_Prefabs/UI Elements/Panels/Stats_Row_UI.prefab
