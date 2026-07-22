@@ -235,3 +235,42 @@ collider (`ImpactorBase.ColliderReachesShell`):
 Cost: the non-sphere narrowphase is now 2 `ClosestPoint` + 2 margin evals (was 1+1), only for shielded
 contacts with a non-sphere toucher. Still needs the in-editor pass: confirm the hull now catches at the
 octahedron/stella tips and does not over-reach in open space.
+
+### 7.3 Two root causes of "hull clips through the tips" — analytic OBB overlap (implemented)
+
+The §7.2 support-sample fix was still wrong on two counts, both fixed here:
+
+- **The toucher collider lives on CHILD GameObjects.** `VesselImpactor` sits on the vessel ROOT (with the
+  kinematic Rigidbody); the hull `BoxCollider`s are on children (the Squirrel has two). `ImpactorBase`
+  cached a single same-GO collider via `TryGetComponent` → `null` → `ColliderReachesShell` fell through to
+  the `c == null` single-point (pivot) fallback and the shape test never ran. Now `ImpactorBase` caches the
+  impactor's collider **SET** — `GetComponents<Collider>()` on its own GO, else `GetComponentsInChildren`
+  (compound hulls) — and `PassesShieldGate` dispatches if **ANY** collider reaches the shell (logical OR,
+  via `AnyColliderReachesShell`). The pivot fallback is kept only when the impactor has no collider at all.
+- **The two-point support sample false-rejected ~18% of rotated-OBB tip overlaps.** `ColliderReachesShell`
+  now routes a `BoxCollider` toucher through `IShieldContainmentGate.OverlapsWorldBox` — an **exact analytic
+  OBB-vs-shell overlap** (Separating-Axis Test run in the shell's normalized frame). `SphereCollider` keeps
+  the exact `SignedMarginSphere`; any other convex/mesh collider is approximated by its world-AABB OBB
+  (conservative over-cover). `threshold` maps to the shell `inflate` (normalized units, `inflate = −threshold`;
+  0 = exact containment/pop, a negative grazing threshold grows the shell). `PrismImpactor`'s self-side path
+  routes the incoming `other` through the same helper, so it is shape-aware for free.
+
+**SAT axes (both derived complete for polytope-vs-OBB):**
+- **Octahedron** (`OctahedronMeshGenerator.OverlapsBoxNormalized`, shell = L1 unit ball): 4 octahedron face
+  normals `(±1,±1,±1)` non-antipodal — `(1,1,1),(1,-1,-1),(-1,1,-1),(-1,-1,1)`; 3 box face normals
+  `e1×e2, e2×e3, e3×e1`; 18 edge crosses = 6 octahedron edge dirs
+  `{(1,-1,0),(1,1,0),(1,0,-1),(1,0,1),(0,1,-1),(0,1,1)}` × `{e1,e2,e3}`. Octahedron projected half-width on
+  axis `a` = `max(|a.x|,|a.y|,|a.z|)` (L1-ball support). 25 axes.
+- **Stella** (`StellatedOctahedronMeshGenerator.OverlapsBoxNormalized`, shell = union of two tetrahedra):
+  overlap = box-overlaps-TetA **OR** box-overlaps-TetB; per-tet SAT with axes = 4 tet face normals (the form
+  coeff vectors `(1,1,1),(1,-1,-1),(-1,1,-1),(-1,-1,1)`) + 3 box face normals + 18 edge crosses (6 tet edge
+  dirs `{(0,1,1),(1,0,1),(1,1,0),(1,-1,0),(1,0,-1),(0,1,-1)}` × `{e1,e2,e3}`). TetA verts `(1,1,1),(1,-1,-1),
+  (-1,1,-1),(-1,-1,1)`; TetB verts the other four cube corners.
+
+The world box → normalized frame mapping reuses `SignedMargin`'s frame exactly: `centerN =
+Scale(InverseTransformPoint(worldCenter) − _center, shellInv)`, `e_i = Scale(InverseTransformVector(worldAxis_i),
+shellInv)` — so the box becomes a general parallelepiped and the SAT handles the shell's non-uniform per-axis
+scaling. Verified against an independent exact ground truth (half-space feasibility by vertex enumeration) in
+`scratch_sat_reference.py`: 0 disagreements over ~12k overlap + ~3.2k non-overlap cases per shape, plus a
+spike-tip landmark (stella hits, octahedron misses without inflate) and inflate monotonicity. **Still gated on
+the §6 in-editor pass** (this is geometry-verified, not play-tested).

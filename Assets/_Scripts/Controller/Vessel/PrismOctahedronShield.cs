@@ -397,6 +397,26 @@ namespace CosmicShore.Gameplay
         /// <summary>Inside or on the interaction shell surface.</summary>
         public bool ContainsWorldPoint(Vector3 worldPoint) => SignedMargin(worldPoint) >= 0f;
 
+        /// <summary>
+        /// Exact octahedron-vs-OBB overlap. Maps the world box into the same
+        /// normalized shell frame that <see cref="SignedMargin"/> uses (points via
+        /// InverseTransformPoint − _center, half-edge vectors via InverseTransformVector,
+        /// both scaled by the shell inverses), then runs the octahedron SAT.
+        /// </summary>
+        public bool OverlapsWorldBox(Vector3 worldCenter, Vector3 worldAxisX, Vector3 worldAxisY,
+            Vector3 worldAxisZ, float inflate)
+        {
+            Vector3 centerN = ToNormalized(transform.InverseTransformPoint(worldCenter) - _center);
+            Vector3 e1 = ToNormalized(transform.InverseTransformVector(worldAxisX));
+            Vector3 e2 = ToNormalized(transform.InverseTransformVector(worldAxisY));
+            Vector3 e3 = ToNormalized(transform.InverseTransformVector(worldAxisZ));
+            return OctahedronMeshGenerator.OverlapsBoxNormalized(centerN, e1, e2, e3, inflate);
+        }
+
+        // Scale a local-frame vector by the per-axis shell inverses into normalized coords.
+        private Vector3 ToNormalized(Vector3 local) =>
+            new Vector3(local.x * _shellInvA, local.y * _shellInvB, local.z * _shellInvC);
+
         // --- Transition driver -----------------------------------------------
 
         /// <summary>

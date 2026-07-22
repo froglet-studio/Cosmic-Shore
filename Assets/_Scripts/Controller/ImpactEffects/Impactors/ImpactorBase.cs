@@ -72,23 +72,31 @@ namespace CosmicShore.Gameplay
         // allocated: most impactors never meet a shielded prism.
         Dictionary<Collider, PendingShieldContact> _pendingShieldContacts;
 
-        // This impactor's own trigger collider — the "toucher" whose nearest approach
-        // to a shielded prism the narrowphase measures. On the toucher's OnTrigger
-        // callback `other` is the prism's OWN (enlarged) box, so measuring `other`
-        // returns the prism centre (deep inside the shell) and defeats the gate; probe
-        // from this collider instead. Lazily resolved once.
-        Collider _ownCollider;
-        bool _ownColliderLookedUp;
-        Collider OwnCollider
+        // This impactor's own trigger collider SET — the "touchers" whose overlap with a
+        // shielded prism the narrowphase measures. On a toucher's OnTrigger callback
+        // `other` is the prism's OWN (enlarged) box, so measuring `other` returns the
+        // prism centre (deep inside the shell) and defeats the gate; probe from these
+        // colliders instead. The impactor's collider often lives on CHILD GameObjects
+        // (e.g. VesselImpactor sits on the vessel ROOT with the kinematic Rigidbody,
+        // while the hull BoxColliders are on children — the Squirrel has two), so a
+        // same-GO-only lookup returns null and defeats the whole shape test. Prefer
+        // collider(s) on this GO; else fall back to the compound hull in children.
+        // Lazily resolved once.
+        Collider[] _ownColliders;
+        bool _ownCollidersLookedUp;
+        Collider[] OwnColliders
         {
             get
             {
-                if (!_ownColliderLookedUp)
+                if (!_ownCollidersLookedUp)
                 {
-                    _ownColliderLookedUp = true;
-                    TryGetComponent(out _ownCollider);
+                    _ownCollidersLookedUp = true;
+                    var own = GetComponents<Collider>();
+                    _ownColliders = (own != null && own.Length > 0)
+                        ? own
+                        : GetComponentsInChildren<Collider>(true);
                 }
-                return _ownCollider;
+                return _ownColliders;
             }
         }
 
@@ -225,24 +233,52 @@ namespace CosmicShore.Gameplay
             if (gate == null)
                 return true; // unshielded: the box IS the shape
 
-            // THIS impactor's collider is the toucher; test it against the
-            // impactee prism's shell.
-            return ColliderReachesShell(OwnCollider, gate, prism.transform.position,
+            // THIS impactor's collider(s) are the touchers; dispatch if ANY of them
+            // reaches the impactee prism's shell (logical OR — a compound hull is one
+            // toucher made of several boxes).
+            return AnyColliderReachesShell(OwnColliders, gate, prism.transform.position,
                 ShieldMarginThreshold, transform.position);
+        }
+
+        /// <summary>
+        /// OR over an impactor's collider SET: dispatch if ANY collider reaches the shell.
+        /// A compound hull can be several colliders (the Squirrel's two boxes); the
+        /// impactor touches the shell if any piece does. Falls back to the single
+        /// pivot-point test ONLY when the set holds no live collider at all.
+        /// </summary>
+        protected static bool AnyColliderReachesShell(Collider[] colliders, IShieldContainmentGate gate,
+            Vector3 prismCentre, float threshold, Vector3 fallbackPoint)
+        {
+            bool sawCollider = false;
+            if (colliders != null)
+            {
+                for (int i = 0; i < colliders.Length; i++)
+                {
+                    var c = colliders[i];
+                    if (c == null)
+                        continue;
+                    sawCollider = true;
+                    if (ColliderReachesShell(c, gate, prismCentre, threshold, fallbackPoint))
+                        return true;
+                }
+            }
+
+            // No collider exists at all — measure from the impactor's pivot.
+            return sawCollider ? false : gate.SignedMargin(fallbackPoint) >= threshold;
         }
 
         /// <summary>
         /// Shape-aware "does collider <paramref name="c"/> reach the shell
         /// <paramref name="gate"/> within <paramref name="threshold"/>" test — the
         /// analytic equivalent of a convex octahedron/stella mesh collider.
-        /// A SphereCollider uses the exact sphere-vs-shell margin. Any other
-        /// convex/primitive collider takes the MAX shell margin over two SUPPORT
-        /// points: its farthest point toward the shell interior
-        /// (<see cref="IShieldContainmentGate.ShellInwardNormal"/> — this is what
-        /// catches the thin tips) and its nearest point to the prism centre (the
-        /// deep-body case). A single centre-facing sample misses the tips, which is
-        /// why hulls clipped straight through them. ClosestPoint requires a
-        /// primitive or CONVEX collider (the gameplay case).
+        /// A SphereCollider uses the exact sphere-vs-shell margin. A BoxCollider uses
+        /// the exact analytic OBB-vs-shell overlap (Separating-Axis Test) — no
+        /// false-reject at the thin tips, unlike the old two-point support sample that
+        /// let hulls clip straight through. Any other convex/primitive collider is
+        /// approximated by its world-AABB OBB (conservative over-cover). The
+        /// <paramref name="threshold"/> maps to the shell inflate in normalized units
+        /// (inflate = −threshold): threshold 0 ⇒ exact containment/pop, a negative
+        /// grazing threshold ⇒ the shell is grown by that magnitude.
         /// </summary>
         protected static bool ColliderReachesShell(Collider c, IShieldContainmentGate gate,
             Vector3 prismCentre, float threshold, Vector3 fallbackPoint)
@@ -258,15 +294,29 @@ namespace CosmicShore.Gameplay
                 return gate.SignedMarginSphere(wc, r) >= threshold;
             }
 
-            // Convex/primitive hull: MAX margin over the support toward the shell
-            // interior (catches the thin tips) and the nearest point to the centre
-            // (deep body). ClosestPoint(centre + inward·big) is the support point.
-            Vector3 centre = c.bounds.center;
-            Vector3 inward = gate.ShellInwardNormal(centre);
-            float margin = Mathf.Max(
-                gate.SignedMargin(c.ClosestPoint(centre + inward * 1000f)),
-                gate.SignedMargin(c.ClosestPoint(prismCentre)));
-            return margin >= threshold;
+            // Shell inflate (normalized units): 0 = exact containment/pop; a negative
+            // grazing threshold grows the shell by its magnitude.
+            float inflate = -threshold;
+
+            if (c is BoxCollider bc)
+            {
+                Transform t = bc.transform;
+                Vector3 worldCenter = t.TransformPoint(bc.center);
+                Vector3 axX = t.TransformVector(new Vector3(bc.size.x * 0.5f, 0f, 0f));
+                Vector3 axY = t.TransformVector(new Vector3(0f, bc.size.y * 0.5f, 0f));
+                Vector3 axZ = t.TransformVector(new Vector3(0f, 0f, bc.size.z * 0.5f));
+                return gate.OverlapsWorldBox(worldCenter, axX, axY, axZ, inflate);
+            }
+
+            // Any other convex/primitive (or non-convex mesh) collider: approximate as
+            // its world-AABB OBB. Conservative — over-covers the true hull, the safe
+            // direction (never a skim dead zone). ClosestPoint isn't usable for a
+            // general shape, and the AABB SAT still catches the thin tips.
+            Bounds b = c.bounds;
+            Vector3 ext = b.extents;
+            return gate.OverlapsWorldBox(b.center,
+                new Vector3(ext.x, 0f, 0f), new Vector3(0f, ext.y, 0f), new Vector3(0f, 0f, ext.z),
+                inflate);
         }
 
         void ParkPendingContact(Collider other, ImpactCollider impacteeCollider, PrismImpactor impacteePrism)
