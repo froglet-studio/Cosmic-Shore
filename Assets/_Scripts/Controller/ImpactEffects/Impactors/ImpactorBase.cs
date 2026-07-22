@@ -27,15 +27,17 @@ namespace CosmicShore.Gameplay
         // --- Shielded-prism narrowphase (Collision LOD analytic tier) --------
         // A shielded prism's broadphase box is resized to over-cover its visible
         // shell, so entering the box is no longer proof of touching the shell.
-        // Dispatch is gated on the shell's signed margin; each impactor picks its
-        // threshold: 0 = must reach the surface (pop/damage), negative = a grazing
-        // proximity band (skim). See Docs/CollisionLOD/DESIGN.md §2/§3.6.
+        // Dispatch is gated on the shell's signed margin. Sphere touchers (the
+        // skimmer sphere included) are measured with the sphere-vs-shell margin,
+        // so "sphere reaches the shell" (margin >= 0) is the one condition for
+        // both skim and pop — no per-impactor grazing band needed.
+        // See Docs/CollisionLOD/DESIGN.md §2/§3.6/§7.
 
         /// <summary>
         /// Minimum shell signed margin (normalized shell units) at which this
-        /// impactor dispatches against a shielded prism. 0 = containment
-        /// (reached the surface); SkimmerImpactor overrides with a negative
-        /// grazing band.
+        /// impactor dispatches against a shielded prism. Default 0 = containment
+        /// (the toucher — sphere-aware for SphereCollider touchers — reaches the
+        /// shell surface).
         /// </summary>
         protected virtual float ShieldMarginThreshold => 0f;
 
@@ -46,6 +48,15 @@ namespace CosmicShore.Gameplay
         /// PrismImpactor overrides to test its own Prism.ActiveShieldGate.
         /// </summary>
         protected virtual bool PassesOwnShieldNarrowphase(Collider other) => true;
+
+        /// <summary>
+        /// Whether THIS impactor currently has an engaged shell of its own (only a
+        /// shielded prism does; base = false). Used to DROP a self-side parked
+        /// contact when the shell is popped/withdrawn since parking — mirrors the
+        /// impactee-side gate-null drop so a pop can't destroy the freshly
+        /// unshielded prism in its own tick via a parked corner contact.
+        /// </summary>
+        protected virtual bool HasOwnShieldGate => false;
 
         struct PendingShieldContact
         {
@@ -146,12 +157,42 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
-            bool passes = pending.ImpacteePrism != null
-                ? PassesShieldGate(pending.ImpacteePrism)
-                : PassesOwnShieldNarrowphase(other);
+            if (pending.ImpacteePrism != null)
+            {
+                // Impactee-side parked contact: only dispatch while the shell
+                // that parked it is still engaged. If the gate went null the
+                // shell was popped/withdrawn since parking (possibly by this
+                // very swing, mid-callback) — DROP the contact instead of
+                // dispatching it as a plain-box hit, which would destroy the
+                // freshly-unshielded prism in the same tick as the pop. A
+                // genuine hit on the restored authored box produces its own
+                // fresh OnTriggerEnter. See Docs/CollisionLOD/DESIGN.md §7.
+                var prism = pending.ImpacteePrism.Prism;
+                if (prism == null || prism.ActiveShieldGate == null)
+                {
+                    _pendingShieldContacts.Remove(other);
+                    return;
+                }
 
-            if (!passes)
-                return;
+                if (!PassesShieldGate(pending.ImpacteePrism))
+                    return;
+            }
+            else
+            {
+                // Self-side parked contact: THIS prism's shell parked it. If the
+                // shell is gone now (popped/withdrawn since parking, possibly this
+                // very swing), DROP — mirrors the impactee-side gate-null drop so
+                // the pop can't destroy the freshly-unshielded prism in its tick
+                // via a corner contact that never reached the shell.
+                if (!HasOwnShieldGate)
+                {
+                    _pendingShieldContacts.Remove(other);
+                    return;
+                }
+
+                if (!PassesOwnShieldNarrowphase(other))
+                    return;
+            }
 
             _pendingShieldContacts.Remove(other);
             DispatchAccept(pending.ImpacteeCollider);
@@ -168,8 +209,11 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// True when the contact may dispatch against the impactee prism: the
-        /// prism has no engaged shell, or the contact's closest point to the
-        /// prism center is within this impactor's margin threshold of the shell.
+        /// prism has no engaged shell, or this impactor's toucher reaches the
+        /// shell within this impactor's margin threshold. Sphere touchers use
+        /// the sphere-vs-shell margin (centre + radius × world gradient) —
+        /// a ClosestPoint sample toward the prism centre under-measures
+        /// tangential grazes and creates skim dead zones.
         /// </summary>
         bool PassesShieldGate(PrismImpactor prismImpactee)
         {
@@ -179,12 +223,26 @@ namespace CosmicShore.Gameplay
 
             var gate = prism.ActiveShieldGate;
             if (gate == null)
-                return true; // unshielded (or shell dropped while parked): the box IS the shape
+                return true; // unshielded: the box IS the shape
 
-            // Probe from THIS impactor's OWN collider — the toucher's nearest approach
-            // to the prism centre. Measuring the prism's own box (the `other` that
-            // entered our trigger) would return the centre and evaluate the margin
-            // deep inside the shell (~+1), so the gate would never bite.
+            // Sphere touchers (skimmer sphere, other sphere triggers): gate on
+            // the analytic sphere-vs-shell margin at the sphere's WORLD centre
+            // and WORLD radius — "sphere reaches the shell" — rather than a
+            // point sampled toward the prism centre.
+            if (OwnCollider is SphereCollider sc)
+            {
+                Vector3 worldCentre = sc.transform.TransformPoint(sc.center);
+                Vector3 ls = sc.transform.lossyScale;
+                float worldRadius = sc.radius * Mathf.Max(Mathf.Abs(ls.x),
+                    Mathf.Max(Mathf.Abs(ls.y), Mathf.Abs(ls.z)));
+                return gate.SignedMarginSphere(worldCentre, worldRadius) >= ShieldMarginThreshold;
+            }
+
+            // Non-sphere touchers: probe from THIS impactor's OWN collider — the
+            // toucher's nearest approach to the prism centre. Measuring the
+            // prism's own box (the `other` that entered our trigger) would return
+            // the centre and evaluate the margin deep inside the shell (~+1), so
+            // the gate would never bite.
             var probe = OwnCollider != null
                 ? OwnCollider.ClosestPoint(prism.transform.position)
                 : transform.position;

@@ -18,6 +18,16 @@ namespace CosmicShore.Gameplay
         /// </summary>
         float SignedMargin(Vector3 worldPoint);
 
+        /// <summary>
+        /// Signed margin of a WORLD sphere vs the engaged shell surface:
+        /// the point margin at the sphere's centre plus the radius scaled by
+        /// the shell margin's world-space gradient magnitude. ≥ 0 means the
+        /// sphere reaches the shell. Conservative (over-estimates) across
+        /// octant/facet boundaries — the safe direction: it never creates a
+        /// skim dead zone. See Docs/CollisionLOD/DESIGN.md §7.
+        /// </summary>
+        float SignedMarginSphere(Vector3 worldCentre, float worldRadius);
+
         /// <summary>Convenience: inside or on the surface (SignedMargin ≥ 0).</summary>
         bool ContainsWorldPoint(Vector3 worldPoint);
     }

@@ -364,6 +364,25 @@ namespace CosmicShore.Gameplay
             return StellatedOctahedronMeshGenerator.SignedMarginLocal(local, _shellInvA, _shellInvB, _shellInvC);
         }
 
+        /// <summary>
+        /// Signed margin of a WORLD sphere vs the interaction shell: the point
+        /// margin at the centre plus the radius scaled by the shell margin's
+        /// world-space gradient magnitude (every stella linear form has per-axis
+        /// coefficients of magnitude 1, so the world gradient is the Euclidean
+        /// norm of the shell inverses divided by |lossyScale| — identical to the
+        /// octahedron's). ≥ 0 means the sphere reaches the shell. Conservative
+        /// across facet boundaries — never creates a skim dead zone.
+        /// </summary>
+        public float SignedMarginSphere(Vector3 worldCentre, float worldRadius)
+        {
+            Vector3 s = transform.lossyScale;
+            float gx = _shellInvA / Mathf.Max(1e-6f, Mathf.Abs(s.x));
+            float gy = _shellInvB / Mathf.Max(1e-6f, Mathf.Abs(s.y));
+            float gz = _shellInvC / Mathf.Max(1e-6f, Mathf.Abs(s.z));
+            float gradWorld = Mathf.Sqrt(gx * gx + gy * gy + gz * gz);
+            return SignedMargin(worldCentre) + worldRadius * gradWorld;
+        }
+
         /// <summary>Inside or on the interaction shell surface.</summary>
         public bool ContainsWorldPoint(Vector3 worldPoint) => SignedMargin(worldPoint) >= 0f;
 

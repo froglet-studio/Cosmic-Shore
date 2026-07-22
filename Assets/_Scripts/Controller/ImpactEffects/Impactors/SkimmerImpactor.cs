@@ -31,16 +31,14 @@ namespace CosmicShore.Gameplay
         public override Domains OwnDomain => Skimmer.Domain;
         protected override bool isInitialized => Skimmer.IsInitialized;
 
-        [Header("Shielded-prism narrowphase")]
-        [Tooltip("Grazing proximity band, in normalized shell units, within which a shielded prism's shell counts as skimmed. Skimming is a proximity interaction — the skimmer rides NEAR the shell — so dispatch is gated on margin >= -band rather than containment.")]
-        [SerializeField] private float _skimBand = 0.35f;
-
-        /// <summary>
-        /// Skims dispatch within a grazing band around the shell rather than on
-        /// containment — the exact case a containment-only gate cannot express
-        /// (Docs/CollisionLOD/DESIGN.md §2 "Per-interaction threshold").
-        /// </summary>
-        protected override float ShieldMarginThreshold => -_skimBand;
+        // Shielded-prism narrowphase: no ShieldMarginThreshold override. The base
+        // gate measures this skimmer's trigger SPHERE against the shell
+        // (IShieldContainmentGate.SignedMarginSphere), so the default threshold 0
+        // — "sphere reaches the shell" — is the correct condition for both skim
+        // (graze) and pop (the pop dispatches via this skimmer's damage effect,
+        // so they necessarily share one threshold). The former negative grazing
+        // band existed only to compensate for a point probe that under-measured
+        // tangential grazes. See Docs/CollisionLOD/DESIGN.md §7.
 
         // runtime state (moved from Skimmer)
         readonly Dictionary<string, float> _skimStartTimes = new();
@@ -93,7 +91,7 @@ namespace CosmicShore.Gameplay
         protected override void OnTriggerStay(Collider other)
         {
             // Base first: re-tests contacts parked outside a shielded prism's
-            // shell and dispatches once they graze into the skim band.
+            // shell and dispatches once the skimmer sphere reaches the shell.
             base.OnTriggerStay(other);
 
             if (!isInitialized)

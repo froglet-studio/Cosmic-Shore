@@ -39,6 +39,10 @@ namespace CosmicShore.Gameplay
             return gate.SignedMargin(other.ClosestPoint(transform.position)) >= ShieldMarginThreshold;
         }
 
+        // True only while this prism's shell is engaged — lets ImpactorBase drop a
+        // self-side parked contact if the shell pops/withdraws before it dispatches.
+        protected override bool HasOwnShieldGate => Prism != null && Prism.ActiveShieldGate != null;
+
 
         protected override void AcceptImpactee(IImpactor impactee)
         {    

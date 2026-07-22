@@ -188,3 +188,26 @@ Two fable-5 adversarial rounds against the working tree. Confirmed done vs open:
 **Reality:** the merged #617 (authored-size shielded skimming) is the working baseline. Shell-precision
 adds a sphere-vs-shell metric, a threshold/feel choice, and PhysX-timing handling that can only be
 **confirmed in-editor** — it is not a headless-verifiable change.
+
+### 7.1 Resolution (implemented)
+
+All of §7 is implemented on this branch:
+
+- **Sphere-vs-shell margin** — `IShieldContainmentGate.SignedMarginSphere(centre, R) = SignedMargin(centre)
+  + R·√((invA/sx)² + (invB/sy)² + (invC/sz)²)` on both shells; `ImpactorBase.PassesShieldGate` gates
+  `SphereCollider` touchers on it (world centre + world radius). Conservative across octant/facet seams
+  (fires slightly early, never a dead zone).
+- **Unified threshold 0** — the skimmer's `ShieldMarginThreshold` override and `_skimBand` are gone; skim
+  and pop both fire when the sphere reaches the shell (pop no longer triggers in thin air).
+- **Same-tick pop-then-destroy** — `OnTriggerStay` drops a parked contact whose shell went null since
+  parking, on BOTH the impactee-side (`pending.ImpacteePrism.ActiveShieldGate == null`) and the self-side
+  (`HasOwnShieldGate == false`) — a pop cannot destroy the freshly-unshielded prism in its own tick via a
+  corner contact that never reached the shell.
+- **One-swing pop+destroy** — left **emergent** (no bespoke post-pop grace): a swing that reaches through a
+  popped shell hits the prism; a graze pops only. Revisit only if the editor feel-check wants a beat.
+
+**Verification status:** implemented and reviewed by inspection (the fable-5 adversarial verifier hit its
+usage limit mid-run, so the final pass was manual). Not compiled or play-tested here. The §6 in-editor
+checklist is the gate — pay special attention to skim reach vs the visible shell, pop landing on the
+shell (not early/late), the stella (non-convex) inter-spike gaps, and whether one swing popping AND
+killing feels right.
