@@ -70,8 +70,12 @@ namespace CosmicShore.Gameplay
         bool _running;
         bool _penHeld;              // true while this guide is holding the pen up
 
-        readonly List<Transform> _bloomers = new();
-        readonly List<GameObject> _dotMarkers = new();   // markers of the CURRENT stroke, index-aligned with its dots
+        // Markers of the CURRENT stroke, index-aligned with its dots (retired entries -> null).
+        readonly List<GameObject> _dotMarkers = new();
+        // Per-marker animation target: each marker eases toward its stored scale (bloom-in
+        // to full for the current dot, to DimmedDotScale for the rest) - a single shared
+        // bloomer target would drag dimmed dots back to full size.
+        readonly Dictionary<Transform, float> _markerTargets = new();
         Transform _objectiveAnchor;
 
         /// <summary>
@@ -139,18 +143,7 @@ namespace CosmicShore.Gameplay
 
         void Update()
         {
-            // Bloom-in for freshly spawned markers.
-            for (int i = _bloomers.Count - 1; i >= 0; i--)
-            {
-                var t = _bloomers[i];
-                if (t == null) { _bloomers.RemoveAt(i); continue; }
-                t.localScale = Vector3.Lerp(t.localScale, Vector3.one, Time.deltaTime * BloomLerpSpeed);
-                if ((t.localScale - Vector3.one).sqrMagnitude < 0.0004f)
-                {
-                    t.localScale = Vector3.one;
-                    _bloomers.RemoveAt(i);
-                }
-            }
+            AnimateMarkers();
 
             if (!_running || IsFinished) return;
 
@@ -236,11 +229,22 @@ namespace CosmicShore.Gameplay
                     ToyFactory.AddJackBody(root.transform, ringR * 0.45f, _accent, _prismMaterial);
 
                 root.transform.localScale = Vector3.zero;
-                _bloomers.Add(root.transform);
                 _dotMarkers.Add(root);
             }
 
             HighlightCurrentDot();
+        }
+
+        /// <summary>Eases every live marker toward its stored target scale (continuity of motion).</summary>
+        void AnimateMarkers()
+        {
+            foreach (var marker in _dotMarkers)
+            {
+                if (marker == null) continue;
+                var t = marker.transform;
+                float target = _markerTargets.TryGetValue(t, out var s) ? s : 1f;
+                t.localScale = Vector3.Lerp(t.localScale, Vector3.one * target, Time.deltaTime * BloomLerpSpeed);
+            }
         }
 
         void HighlightCurrentDot()
@@ -249,11 +253,7 @@ namespace CosmicShore.Gameplay
             {
                 var marker = _dotMarkers[i];
                 if (marker == null) continue;
-                float scale = i == _dotIndex ? 1f : DimmedDotScale;
-                // Retarget the bloom instead of snapping (continuity of motion).
-                var t = marker.transform;
-                if (!_bloomers.Contains(t)) _bloomers.Add(t);
-                t.localScale = Vector3.Min(t.localScale, Vector3.one * scale);
+                _markerTargets[marker.transform] = i == _dotIndex ? 1f : DimmedDotScale;
             }
         }
 
@@ -264,7 +264,7 @@ namespace CosmicShore.Gameplay
             _dotMarkers[dotIndex] = null;
             if (marker != null)
             {
-                _bloomers.Remove(marker.transform);
+                _markerTargets.Remove(marker.transform);
                 ToyFactory.ScaleOutAndDestroy(marker, MarkerDespawnSeconds).Forget();
             }
         }
@@ -275,7 +275,7 @@ namespace CosmicShore.Gameplay
             {
                 if (_dotMarkers[i] != null)
                 {
-                    _bloomers.Remove(_dotMarkers[i].transform);
+                    _markerTargets.Remove(_dotMarkers[i].transform);
                     ToyFactory.ScaleOutAndDestroy(_dotMarkers[i], MarkerDespawnSeconds).Forget();
                 }
             }

@@ -67,6 +67,10 @@ namespace CosmicShore.Gameplay
 
         public override bool CheckForEndOfTurn()
         {
+            // Server-only: TurnMonitorController.Update and TurnMonitor.Update both poll
+            // this on every peer; a client ending the turn locally would desync the flow.
+            // (The controller's round phase machine also runs server-only, but gate here
+            // too, matching every other monitor.)
             if (!IsServer) return false;
             return controller != null && controller.IsRoundResolved;
         }

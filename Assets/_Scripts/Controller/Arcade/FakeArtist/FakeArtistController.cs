@@ -54,6 +54,7 @@ namespace CosmicShore.Gameplay
         readonly Dictionary<string, int> _points = new();
         readonly Dictionary<string, int> _imposterCounts = new();
         readonly Dictionary<string, int> _strokesDone = new();
+        readonly Dictionary<string, int> _strokesDealt = new(); // actual strokes each player got this round
         readonly Dictionary<string, FakeArtistScorer.Answers> _votes = new();
         string _imposterName = string.Empty;
         PaintingPreset _preset;
@@ -321,6 +322,7 @@ namespace CosmicShore.Gameplay
             // Per-player world-space dots; the fake artist's strokes degrade to start+end.
             _dealtDots = new Vector3[_roster.Count][][];
             _strokesDone.Clear();
+            _strokesDealt.Clear();
             _votes.Clear();
             for (int p = 0; p < _roster.Count; p++)
             {
@@ -338,6 +340,10 @@ namespace CosmicShore.Gameplay
                     _dealtDots[p][s] = world.ToArray();
                 }
                 _strokesDone[_roster[p]] = 0;
+                // Actual strokes dealt - usually StrokesPerPlayer, but a preset with too
+                // little total path can under-deliver; AllPaintersFinished keys off this
+                // so a short-changed player doesn't stall the phase until the timer.
+                _strokesDealt[_roster[p]] = bundle.Count;
             }
 
             _phase = RoundPhase.Drawing;
@@ -456,7 +462,8 @@ namespace CosmicShore.Gameplay
             if (_phase != RoundPhase.Drawing) return;
             var player = FindHumanPlayerByClientId(rpcParams.Receive.SenderClientId);
             if (player == null || !_strokesDone.ContainsKey(player.Name)) return;
-            _strokesDone[player.Name] = Mathf.Min(_strokesDone[player.Name] + 1, config.StrokesPerPlayer);
+            int dealt = _strokesDealt.TryGetValue(player.Name, out var d) ? d : config.StrokesPerPlayer;
+            _strokesDone[player.Name] = Mathf.Min(_strokesDone[player.Name] + 1, dealt);
         }
 
         void HandleTurnStartedAllPeers()
@@ -495,7 +502,8 @@ namespace CosmicShore.Gameplay
         {
             foreach (var name in _roster)
             {
-                if (!_strokesDone.TryGetValue(name, out int done) || done < config.StrokesPerPlayer)
+                int dealt = _strokesDealt.TryGetValue(name, out var d) ? d : config.StrokesPerPlayer;
+                if (!_strokesDone.TryGetValue(name, out int done) || done < dealt)
                     return false;
             }
             return true;
@@ -730,9 +738,10 @@ namespace CosmicShore.Gameplay
                         if (dot >= strokes[stroke].Length)
                         {
                             pen.SetSpawnerPaused(true);  // pen-up between strokes
+                            int aiDealt = _strokesDealt.TryGetValue(name, out var dealtCount)
+                                ? dealtCount : config.StrokesPerPlayer;
                             _strokesDone[name] = Mathf.Min(
-                                (_strokesDone.TryGetValue(name, out int v) ? v : 0) + 1,
-                                config.StrokesPerPlayer);
+                                (_strokesDone.TryGetValue(name, out int v) ? v : 0) + 1, aiDealt);
                             stroke++;
                             dot = 0;
                             if (stroke >= strokes.Length)

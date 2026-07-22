@@ -92,7 +92,7 @@ namespace CosmicShore.Gameplay
                 n_Course.Value = VesselStatus.Course;
                 n_BlockRotation.Value = VesselStatus.blockRotation;
                 n_TrailPenUp.Value = VesselStatus.VesselPrismController.IsSpawnerPaused;
-                CosmicShore.Utility.PerformanceBenchmark.NetMarkers.CountNetVarDirty(3);
+                CosmicShore.Utility.PerformanceBenchmark.NetMarkers.CountNetVarDirty(4);
             }
         }
 
