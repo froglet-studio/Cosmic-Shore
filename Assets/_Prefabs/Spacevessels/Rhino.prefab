@@ -90,6 +90,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fc766772d5459db71a1c792a127f2e48, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  config: {fileID: 11400000, guid: 2c351e381977b8fe987125acf055e8f4, type: 2}
   shieldRoot: {fileID: 282447970148362685}
   OnMiniGameTurnEnd: {fileID: 11400000, guid: 498a06d44bde9184f985c938c803b2a1, type: 2}
 --- !u!1 &284393576699141201
@@ -12804,12 +12805,12 @@ PrefabInstance:
     - target: {fileID: 1504465195520757127, guid: c8d5df1098821194eb69eec4c965548e,
         type: 3}
       propertyPath: m_LocalRotation.w
-      value: 0.93410754
+      value: 0.98480775
       objectReference: {fileID: 0}
     - target: {fileID: 1504465195520757127, guid: c8d5df1098821194eb69eec4c965548e,
         type: 3}
       propertyPath: m_LocalRotation.x
-      value: 0.35699156
+      value: 0.17364818
       objectReference: {fileID: 0}
     - target: {fileID: 1504465195520757127, guid: c8d5df1098821194eb69eec4c965548e,
         type: 3}

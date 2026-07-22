@@ -13,7 +13,3 @@ MonoBehaviour:
   m_Name: RhinoShieldSwipeRightAction
   m_EditorClassIdentifier: 
   direction: 0
-  swipeYawDegrees: 90
-  swipeRollDegrees: 90
-  swipeOutSeconds: 0.18
-  returnSeconds: 0.3

@@ -9,7 +9,11 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9c9f0edf05ea30da01ed7031534f5017, type: 3}
-  m_Name: RhinoShieldSwipeLeftAction
+  m_Script: {fileID: 11500000, guid: 421c626b40af5b0c93baab872b5f80e1, type: 3}
+  m_Name: RhinoShieldSwipeConfig
   m_EditorClassIdentifier: 
-  direction: 1
+  swipeYawDegrees: 90
+  swipeRollDegrees: 90
+  chopPitchDegrees: 65
+  swipeOutSeconds: 0.18
+  returnSeconds: 0.3

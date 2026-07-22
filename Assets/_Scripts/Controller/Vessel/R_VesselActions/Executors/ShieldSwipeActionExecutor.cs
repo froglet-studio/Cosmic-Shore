@@ -1,20 +1,27 @@
-using System.Threading;
-using Cysharp.Threading.Tasks;
+using CosmicShore.Utility;
 using Obvious.Soap;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Runs the Rhino shield swipe: pivots the shield capsule about its parent's origin
-    /// through the swipe arc (rotation and mount position together, so the sword carves a
-    /// real arc through space instead of spinning in place). Holding the trigger holds the
-    /// full sweep angle; releasing returns the sword to center. Only scale is driven on
-    /// this transform elsewhere (ShieldSkimmerScaleDriver), so rotation/position are ours
-    /// to animate.
+    /// Drives the Rhino shield swipe from the analog triggers, reparameterized like the
+    /// Manta's turn boost: the DIFFERENCE (right - left) sweeps the sword laterally
+    /// through yaw+roll (full pulls are the +/-1 stances) and the SUM pitches it down
+    /// (both triggers = centered but fully down; a single full pull chops halfway). The
+    /// sword pivots about its parent's origin - rotation and mount position together -
+    /// so it carves a real arc through space. The raised rest pose is whatever the
+    /// skimmer transform is authored to in the prefab. For inputs without analog
+    /// triggers (remote peers replaying the owner's events, touch bindings), the
+    /// press/release events drive the same rig at full deflection. Only scale is driven
+    /// on this transform elsewhere (ShieldSkimmerScaleDriver), so rotation/position are
+    /// ours to animate.
     /// </summary>
     public sealed class ShieldSwipeActionExecutor : ShipActionExecutorBase
     {
+        [Header("Config")]
+        [SerializeField] RhinoShieldSwipeConfigSO config;
+
         [Header("References")]
         [Tooltip("The shield/sword transform to sweep (the ForceFieldSkimmer root). Falls back to the near-field skimmer.")]
         [SerializeField] Transform shieldRoot;
@@ -22,21 +29,20 @@ namespace CosmicShore.Gameplay
         [Header("Events")]
         [SerializeField] ScriptableEventNoParam OnMiniGameTurnEnd;
 
+        // Same deadzone the gamepad strategy uses for its press/release edges.
+        const float TriggerDeadzone = 0.05f;
+
         IVesselStatus _status;
-        CancellationTokenSource _animCts;
 
         Vector3 _baseLocalPos;
         Quaternion _baseLocalRot;
         bool _baseCaptured;
 
-        float _yaw;        // current sweep offsets (degrees) in the shield parent's frame
-        float _roll;
-        float _activeSign; // +1 right stance, -1 left stance, 0 idle
-
-        // Which triggers are physically held (set on Begin, cleared on End per direction),
-        // so releasing the stance-owning trigger can hand the stance to the other one.
-        RhinoShieldSwipeActionSO _heldRightSO;
-        RhinoShieldSwipeActionSO _heldLeftSO;
+        float _diff;       // smoothed swipe control: -1 (left stance) .. +1 (right stance)
+        float _sum;        // smoothed chop control: 0 (raised rest) .. 2 (full chop)
+        float _activeSign; // event-driven stance (+1/-1/0) for non-analog inputs
+        bool _rightHeld;   // event-side per-direction held state (cross-swipe handoff)
+        bool _leftHeld;
 
         void OnEnable()
         {
@@ -51,212 +57,151 @@ namespace CosmicShore.Gameplay
 
         void OnTurnEndOfMiniGame() => ResetImmediate();
 
-        void Update()
-        {
-            if (_activeSign == 0f || _status == null || !_status.IsLocalUser) return;
-
-            // The release edge can be lost mid-hold: a gamepad disconnect swaps input
-            // strategies with no release synthesis, and exiting menu freestyle pauses
-            // input before the release is processed. Watch the physical trigger for the
-            // local pilot and recenter once it is no longer down. Remote peers don't
-            // poll - their stance ends via the owner's replicated stop event.
-            if (!_status.AutoPilotEnabled && ActiveTriggerStillDown()) return;
-
-            var so = _activeSign > 0f ? _heldRightSO : _heldLeftSO;
-            _heldRightSO = null;
-            _heldLeftSO = null;
-            _activeSign = 0f;
-
-            if (so)
-            {
-                RestartAnimation(out var token);
-                RunReturnAsync(so, token).Forget();
-            }
-            else
-            {
-                ResetImmediate();
-            }
-        }
-
-        bool ActiveTriggerStillDown()
-        {
-            var input = _status.InputStatus;
-            if (input == null) return false;
-
-            // Only trigger-writing devices can have begun a swipe. A strategy swap (pad
-            // disconnect -> keyboard) leaves the analogs frozen at their last held value,
-            // so a non-trigger device counts as released, not as still-held.
-            if (input.ActiveInputDevice is not (InputDeviceType.Gamepad or InputDeviceType.DualMouse))
-                return false;
-
-            // Same deadzone the gamepad strategy uses for its press/release edges.
-            const float deadzone = 0.05f;
-            return _activeSign > 0f
-                ? input.RightTriggerAnalog > deadzone
-                : input.LeftTriggerAnalog > deadzone;
-        }
-
         public override void Initialize(IVesselStatus shipStatus)
         {
             _status = shipStatus;
-            ResolveShieldRoot();
-            CaptureBasePose();
+            if (!config)
+                CSDebug.LogError($"[{nameof(ShieldSwipeActionExecutor)}] No {nameof(RhinoShieldSwipeConfigSO)} wired on '{name}' - the shield swipe will not run.");
+            EnsureShieldRoot();
+        }
+
+        void Update()
+        {
+            if (_status == null || !config) return;
+            if (!EnsureShieldRoot()) return;
+
+            float diffTarget, sumTarget;
+            if (IsLocalAnalogPilot(out var input))
+            {
+                float lt = ApplyDeadzone(input.LeftTriggerAnalog);
+                float rt = ApplyDeadzone(input.RightTriggerAnalog);
+                diffTarget = rt - lt;
+                sumTarget = rt + lt;
+            }
+            else
+            {
+                // Event-driven stance: remote peers replaying the owner's press/release,
+                // and binary local devices. A press mirrors a full single-trigger pull -
+                // full difference, half chop. If autopilot took over mid-hold (menu
+                // freestyle exit) the release edge never arrives, so drop the stance.
+                if (_activeSign != 0f && _status.IsLocalUser && _status.AutoPilotEnabled)
+                    ClearStance();
+                diffTarget = _activeSign;
+                sumTarget = _activeSign != 0f ? 1f : 0f;
+            }
+
+            if (_diff == 0f && _sum == 0f && diffTarget == 0f && sumTarget == 0f) return;
+
+            _diff = Drive(_diff, diffTarget);
+            _sum = Drive(_sum, sumTarget);
+            ApplyShieldPose();
+        }
+
+        /// <summary>
+        /// Analog control only exists for the local pilot - triggers don't replicate.
+        /// Remote peers and AI fall through to the event-driven stance.
+        /// </summary>
+        bool IsLocalAnalogPilot(out IInputStatus input)
+        {
+            input = null;
+            if (_status == null || !_status.IsLocalUser || _status.AutoPilotEnabled) return false;
+            input = _status.InputStatus;
+            if (input == null) return false;
+            return input.ActiveInputDevice is InputDeviceType.Gamepad or InputDeviceType.DualMouse;
         }
 
         public void BeginSwipe(RhinoShieldSwipeActionSO so, IVesselStatus status)
         {
             _status ??= status;
-            ResolveShieldRoot();
-            if (!shieldRoot || !so) return;
-            CaptureBasePose();
+            if (!so) return;
 
-            if (so.DirectionSign > 0f) _heldRightSO = so;
-            else _heldLeftSO = so;
+            // The analog drive owns the pose on this machine; the event still replicated
+            // to peers before reaching this executor, which is all it needs to do here.
+            if (IsLocalAnalogPilot(out _)) return;
 
+            if (so.DirectionSign > 0f) _rightHeld = true;
+            else _leftHeld = true;
             _activeSign = so.DirectionSign;
-
-            RestartAnimation(out var token);
-            RunSwipeAsync(so, so.DirectionSign, token).Forget();
         }
 
         public void EndSwipe(RhinoShieldSwipeActionSO so, IVesselStatus status)
         {
             _status ??= status;
-            if (!shieldRoot || !so) return;
+            if (!so) return;
+            if (IsLocalAnalogPilot(out _)) return;
 
             bool isRight = so.DirectionSign > 0f;
-            if (isRight) _heldRightSO = null;
-            else _heldLeftSO = null;
+            if (isRight) _rightHeld = false;
+            else _leftHeld = false;
 
-            // Only the trigger that owns the current stance moves the sword;
-            // a release of the other trigger after a cross-swipe is a no-op.
+            // Only the stance-owning trigger moves the sword; if the opposite trigger is
+            // still held it takes the stance back instead of the sword recentering.
             if (_activeSign == 0f || !Mathf.Approximately(_activeSign, so.DirectionSign)) return;
-
-            // If the opposite trigger is still held it takes the stance back
-            // instead of the sword snapping to center under a held trigger.
-            var fallback = isRight ? _heldLeftSO : _heldRightSO;
-            if (fallback)
-            {
-                BeginSwipe(fallback, status);
-                return;
-            }
-
-            _activeSign = 0f;
-            RestartAnimation(out var token);
-            RunReturnAsync(so, token).Forget();
+            _activeSign = (isRight ? _leftHeld : _rightHeld) ? -so.DirectionSign : 0f;
         }
 
-        async UniTaskVoid RunSwipeAsync(RhinoShieldSwipeActionSO so, float sign, CancellationToken ct)
+        float Drive(float current, float target)
         {
-            try
-            {
-                float startYaw = _yaw, startRoll = _roll;
-
-                // Rightward yaw is positive about up. Counterclockwise roll (from the
-                // pilot's seat) is POSITIVE about forward - AngleAxis(+90, forward) maps
-                // right to up - so roll takes the same sign as yaw.
-                float targetYaw = sign * so.SwipeYawDegrees;
-                float targetRoll = sign * so.SwipeRollDegrees;
-
-                float duration = Mathf.Max(0.01f, so.SwipeOutSeconds);
-                float elapsed = 0f;
-                while (elapsed < duration)
-                {
-                    elapsed += Time.deltaTime;
-                    float t = SmoothStep01(elapsed / duration);
-                    _yaw = Mathf.Lerp(startYaw, targetYaw, t);
-                    _roll = Mathf.Lerp(startRoll, targetRoll, t);
-                    ApplyShieldPose();
-                    await UniTask.Yield(PlayerLoopTiming.Update, ct);
-                }
-
-                // Held at the full sweep angle until the trigger is released.
-                _yaw = targetYaw;
-                _roll = targetRoll;
-                ApplyShieldPose();
-            }
-            catch (System.OperationCanceledException) { }
+            // Full single-trigger travel (1 unit) takes swipeOutSeconds on the way out,
+            // returnSeconds on the way back - and doubles as the swing animation for
+            // binary inputs, whose targets snap.
+            bool attacking = Mathf.Abs(target) > Mathf.Abs(current);
+            float seconds = Mathf.Max(0.01f, attacking ? config.SwipeOutSeconds : config.ReturnSeconds);
+            return Mathf.MoveTowards(current, target, Time.deltaTime / seconds);
         }
 
-        async UniTaskVoid RunReturnAsync(RhinoShieldSwipeActionSO so, CancellationToken ct)
-        {
-            try
-            {
-                float startYaw = _yaw, startRoll = _roll;
-                float duration = Mathf.Max(0.01f, so.ReturnSeconds);
-
-                float elapsed = 0f;
-                while (elapsed < duration)
-                {
-                    elapsed += Time.deltaTime;
-                    float t = SmoothStep01(elapsed / duration);
-                    _yaw = Mathf.Lerp(startYaw, 0f, t);
-                    _roll = Mathf.Lerp(startRoll, 0f, t);
-                    ApplyShieldPose();
-                    await UniTask.Yield(PlayerLoopTiming.Update, ct);
-                }
-
-                _yaw = 0f;
-                _roll = 0f;
-                ApplyShieldPose();
-            }
-            catch (System.OperationCanceledException) { }
-        }
-
-        void RestartAnimation(out CancellationToken token)
-        {
-            _animCts?.Cancel();
-            _animCts?.Dispose();
-            _animCts = CancellationTokenSource.CreateLinkedTokenSource(this.GetCancellationTokenOnDestroy());
-            token = _animCts.Token;
-        }
+        static float ApplyDeadzone(float value) => value < TriggerDeadzone ? 0f : value;
 
         void ApplyShieldPose()
         {
-            if (!shieldRoot) return;
-            var sweep = Quaternion.AngleAxis(_yaw, Vector3.up) * Quaternion.AngleAxis(_roll, Vector3.forward);
+            float yaw = _diff * config.SwipeYawDegrees;
+            float roll = _diff * config.SwipeRollDegrees;
+            float pitch = 0.5f * _sum * config.ChopPitchDegrees;
+
+            // Pitch innermost so the chop lowers the blade in front first and the
+            // yaw/roll swipe then carries the lowered blade around the vessel. With
+            // both triggers pulled (difference 0) this is a pure straight-down chop.
+            var sweep = Quaternion.AngleAxis(yaw, Vector3.up)
+                      * Quaternion.AngleAxis(roll, Vector3.forward)
+                      * Quaternion.AngleAxis(pitch, Vector3.right);
             shieldRoot.localRotation = sweep * _baseLocalRot;
             shieldRoot.localPosition = sweep * _baseLocalPos;
         }
 
-        void ResolveShieldRoot()
+        void ClearStance()
+        {
+            _activeSign = 0f;
+            _rightHeld = false;
+            _leftHeld = false;
+        }
+
+        bool EnsureShieldRoot()
         {
             if (!shieldRoot && _status?.NearFieldSkimmer)
                 shieldRoot = _status.NearFieldSkimmer.transform;
-        }
+            if (!shieldRoot) return false;
 
-        void CaptureBasePose()
-        {
-            if (_baseCaptured || !shieldRoot) return;
-            _baseLocalPos = shieldRoot.localPosition;
-            _baseLocalRot = shieldRoot.localRotation;
-            _baseCaptured = true;
+            if (!_baseCaptured)
+            {
+                _baseLocalPos = shieldRoot.localPosition;
+                _baseLocalRot = shieldRoot.localRotation;
+                _baseCaptured = true;
+            }
+            return true;
         }
 
         // Never leave a half-applied swipe behind (pooling / vessel swap / turn end).
         void ResetImmediate()
         {
-            _animCts?.Cancel();
-            _animCts?.Dispose();
-            _animCts = null;
-
-            _yaw = 0f;
-            _roll = 0f;
-            _activeSign = 0f;
-            _heldRightSO = null;
-            _heldLeftSO = null;
+            _diff = 0f;
+            _sum = 0f;
+            ClearStance();
 
             if (_baseCaptured && shieldRoot)
             {
                 shieldRoot.localRotation = _baseLocalRot;
                 shieldRoot.localPosition = _baseLocalPos;
             }
-        }
-
-        static float SmoothStep01(float t)
-        {
-            t = Mathf.Clamp01(t);
-            return t * t * (3f - 2f * t);
         }
     }
 }
