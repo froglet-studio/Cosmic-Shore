@@ -262,6 +262,11 @@ public class VesselTransformer : MonoBehaviour
         /// </summary>
         public void BeginDrift(float rotMult, float dampTarget, bool isSharp)
         {
+            // TEMPORARY [DRIFT-DIAG]: remove after the Scurry drift investigation.
+            CSDebug.Log($"[DRIFT-DIAG] BeginDrift sharp={isSharp} mult={rotMult} damp={dampTarget} " +
+                        $"vessel={VesselStatus?.Name} active={isActive} stationary={VesselStatus?.IsStationary} " +
+                        $"restricted={VesselStatus?.IsTranslationRestricted} triggerSum={GetTriggerSum():F2}");
+
             _driftEaseOutPending = false;
 
             if (!_hasDriftBase)
