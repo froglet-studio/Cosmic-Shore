@@ -44,6 +44,14 @@ namespace CosmicShore.Gameplay
         float _huntCycleAnchor;     // hunt-pulse clock zero — set at Initialize so the cycle starts RESTING
 
         /// <summary>
+        /// True while this predator is alive and inside its hunt window — the
+        /// aggression state, exposed for presentation (the jaw rig opens the mouth
+        /// while hunting). False for herbivores, withering bodies, and rest stretches.
+        /// </summary>
+        public bool IsActivelyHunting =>
+            diet == FaunaDiet.Predator && !_withering && data && IsHuntWindow;
+
+        /// <summary>
         /// Hunt pulses: true while this predator's periodic hunt window is open.
         /// Pure clock math (one Mathf.Repeat), no state, no coroutine. The anchor is
         /// set at Initialize so the cycle opens with the REST stretch — a freshly

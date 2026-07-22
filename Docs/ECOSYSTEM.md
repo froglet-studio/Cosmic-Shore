@@ -654,6 +654,12 @@ predator's cycle starts with the REST stretch at spawn, layered on the
 prey's spawn immunity. Starvation still applies across rest windows, so a
 predator that can't convert its hunt windows into kills thins out — the
 duty cycle caps predation *rate*, the food web still owns population.
+**Presentation:** `SharkJawDriver` (on the prefab's `Shark_model`) blends the
+two mouth MultiAimConstraint weights 0 (closed, FBX pose) ↔ 1 (open, aimed at
+`MawTarget`) from `LightFauna.IsActivelyHunting` — the mouth yawns open in
+0.6s entering a hunt window, eases shut in 1.8s on rest/wither. The rig
+already evaluated every frame, so the only added cost is one float compare
+per frame while settled.
 
 ---
 
