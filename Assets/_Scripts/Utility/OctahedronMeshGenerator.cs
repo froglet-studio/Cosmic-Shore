@@ -220,20 +220,47 @@ namespace CosmicShore.Utility
         }
 
         /// <summary>
-        /// Branchless containment test for a point in local space relative to
-        /// the circumscribing octahedron. Uses the L1-norm inequality
+        /// Signed margin of a point in local space relative to the
+        /// circumscribing octahedron, from the L1-norm inequality
         ///   |x|·invA + |y|·invB + |z|·invC ≤ 1
         /// where invA/B/C = 1 / (shieldScale · halfExtent).
+        ///
+        /// Returns 1 − (|x|·invA + |y|·invB + |z|·invC):
+        ///   &gt; 0 inside, 0 on the surface, &lt; 0 outside (normalized;
+        ///   magnitude ∝ distance to the surface).
         ///
         /// Precompute the inverses once per prism and reuse - this is the
         /// fast path for gameplay overlap checks without a MeshCollider.
         /// </summary>
-        public static bool ContainsPointLocal(Vector3 localPoint, float invA, float invB, float invC)
+        public static float SignedMarginLocal(Vector3 localPoint, float invA, float invB, float invC)
         {
             float sum = Mathf.Abs(localPoint.x) * invA
                       + Mathf.Abs(localPoint.y) * invB
                       + Mathf.Abs(localPoint.z) * invC;
-            return sum <= 1f;
+            return 1f - sum;
+        }
+
+        /// <summary>
+        /// Convenience overload taking raw half-extents. Prefer the precomputed
+        /// inverse overload inside hot loops.
+        /// </summary>
+        public static float SignedMarginLocal(Vector3 localPoint, Vector3 halfExtents, float shieldScale = CIRCUMSCRIBING_SCALE)
+        {
+            float invA = 1f / (shieldScale * halfExtents.x);
+            float invB = 1f / (shieldScale * halfExtents.y);
+            float invC = 1f / (shieldScale * halfExtents.z);
+            return SignedMarginLocal(localPoint, invA, invB, invC);
+        }
+
+        /// <summary>
+        /// Branchless containment test for a point in local space relative to
+        /// the circumscribing octahedron. Defined as
+        /// <see cref="SignedMarginLocal(Vector3, float, float, float)"/> ≥ 0
+        /// so margin and containment share one source of truth.
+        /// </summary>
+        public static bool ContainsPointLocal(Vector3 localPoint, float invA, float invB, float invC)
+        {
+            return SignedMarginLocal(localPoint, invA, invB, invC) >= 0f;
         }
 
         /// <summary>
@@ -246,6 +273,86 @@ namespace CosmicShore.Utility
             float invB = 1f / (shieldScale * halfExtents.y);
             float invC = 1f / (shieldScale * halfExtents.z);
             return ContainsPointLocal(localPoint, invA, invB, invC);
+        }
+
+        // --- Analytic OBB overlap (Separating-Axis Test, normalized frame) ----
+
+        // The 6 octahedron edge directions (each shared by opposite edges), reused as
+        // SAT edge axes crossed with the box edges. These are also the octahedron's
+        // silhouette edges: axis-vertex to axis-vertex.
+        static readonly Vector3[] s_octEdgeDirs =
+        {
+            new Vector3(1f, -1f,  0f), new Vector3(1f, 1f, 0f),
+            new Vector3(1f,  0f, -1f), new Vector3(1f, 0f, 1f),
+            new Vector3(0f,  1f, -1f), new Vector3(0f, 1f, 1f),
+        };
+
+        // The 4 octahedron face-normal directions (one per non-antipodal octant).
+        static readonly Vector3[] s_octFaceNormals =
+        {
+            new Vector3( 1f,  1f,  1f), new Vector3( 1f, -1f, -1f),
+            new Vector3(-1f,  1f, -1f), new Vector3(-1f, -1f,  1f),
+        };
+
+        /// <summary>
+        /// Separating-Axis Test between the circumscribing octahedron (as the L1 unit
+        /// ball {|u|+|v|+|w| ≤ 1} in the shell's NORMALIZED frame, centered at the
+        /// origin) and an oriented box given IN THAT SAME normalized frame by its
+        /// center <paramref name="centerN"/> and half-edge vectors
+        /// <paramref name="e1"/>/<paramref name="e2"/>/<paramref name="e3"/> (the box
+        /// is a general parallelepiped here — the shell's per-axis scaling need not be
+        /// uniform). <paramref name="inflate"/> grows the octahedron's projected radius
+        /// (normalized units) for a grazing band. Returns true when they overlap.
+        ///
+        /// Candidate axes (25): 4 octahedron face normals, 3 box face normals
+        /// (e_i × e_j), and 18 edge crosses (6 octahedron edge dirs × 3 box edges).
+        /// For each axis a, the octahedron's projected half-width is max(|a.x|,|a.y|,|a.z|)
+        /// (the L1-ball support = L∞ norm of a); separated iff the box's projection
+        /// interval clears ±(octRadius + inflate). No separating axis ⇒ overlap.
+        /// </summary>
+        public static bool OverlapsBoxNormalized(Vector3 centerN, Vector3 e1, Vector3 e2, Vector3 e3, float inflate)
+        {
+            const float eps = 1e-12f;
+
+            // (a) 4 octahedron face normals.
+            for (int i = 0; i < s_octFaceNormals.Length; i++)
+                if (SeparatedOnAxis(s_octFaceNormals[i], centerN, e1, e2, e3, inflate, eps))
+                    return false;
+
+            // (b) 3 box face normals.
+            if (SeparatedOnAxis(Vector3.Cross(e1, e2), centerN, e1, e2, e3, inflate, eps)) return false;
+            if (SeparatedOnAxis(Vector3.Cross(e2, e3), centerN, e1, e2, e3, inflate, eps)) return false;
+            if (SeparatedOnAxis(Vector3.Cross(e3, e1), centerN, e1, e2, e3, inflate, eps)) return false;
+
+            // (c) 18 edge crosses.
+            for (int i = 0; i < s_octEdgeDirs.Length; i++)
+            {
+                Vector3 oe = s_octEdgeDirs[i];
+                if (SeparatedOnAxis(Vector3.Cross(oe, e1), centerN, e1, e2, e3, inflate, eps)) return false;
+                if (SeparatedOnAxis(Vector3.Cross(oe, e2), centerN, e1, e2, e3, inflate, eps)) return false;
+                if (SeparatedOnAxis(Vector3.Cross(oe, e3), centerN, e1, e2, e3, inflate, eps)) return false;
+            }
+
+            return true; // no separating axis found
+        }
+
+        // True if axis `a` separates the origin-centered octahedron (L1 unit ball,
+        // support = L∞ norm of a) from the OBB (center + span e1,e2,e3), with the
+        // octahedron radius grown by `inflate`. Degenerate axes (|a|≈0) never separate.
+        static bool SeparatedOnAxis(Vector3 a, Vector3 centerN, Vector3 e1, Vector3 e2, Vector3 e3,
+            float inflate, float eps)
+        {
+            if (a.sqrMagnitude < eps) return false;
+
+            float octR = Mathf.Max(Mathf.Abs(a.x), Mathf.Max(Mathf.Abs(a.y), Mathf.Abs(a.z))) + inflate;
+
+            float cProj = Vector3.Dot(a, centerN);
+            float boxR = Mathf.Abs(Vector3.Dot(a, e1))
+                       + Mathf.Abs(Vector3.Dot(a, e2))
+                       + Mathf.Abs(Vector3.Dot(a, e3));
+
+            // Box interval [cProj - boxR, cProj + boxR]; octahedron interval [-octR, octR].
+            return (cProj - boxR) > octR || (cProj + boxR) < -octR;
         }
     }
 }

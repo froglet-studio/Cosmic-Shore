@@ -132,6 +132,23 @@ namespace CosmicShore.Gameplay
         public float Volume => scaleAnimator?.GetCurrentVolume() ?? .001f;
         public BlockState CurrentState => stateManager?.CurrentState ?? BlockState.Normal;
 
+        /// <summary>
+        /// Analytic containment gate of the currently ENGAGED shield shell
+        /// (octahedron / stellated octahedron), or null when unshielded / still
+        /// morphing. Published by the shield component when its engage settles,
+        /// cleared on disengage and on pool return. Read by the impact dispatch
+        /// narrowphase (ImpactorBase) to refine the enlarged shielded broadphase
+        /// box down to the visible shell. See Docs/CollisionLOD/DESIGN.md §3.5.
+        /// </summary>
+        public IShieldContainmentGate ActiveShieldGate { get; private set; }
+
+        /// <summary>
+        /// Wired from the shield engage-settle / disengage sites only
+        /// (PrismOctahedronShield / PrismStellatedOctahedronShield pose
+        /// application). Pass null to clear.
+        /// </summary>
+        internal void SetActiveShieldGate(IShieldContainmentGate gate) => ActiveShieldGate = gate;
+
         public Vector3 MaxScale
         {
             get => scaleAnimator?.MaxScale ?? Vector3.one * 10f;
@@ -1010,6 +1027,11 @@ namespace CosmicShore.Gameplay
                 PrismSpatialIndex.Instance?.Unregister(SpatialIndexId);
                 SpatialIndexId = -1;
             }
+
+            // Pool return must never carry a live shield gate into the next life —
+            // the shield's own OnDisable also clears it via its unshielded pose,
+            // but component OnDisable order is undefined, so clear here too.
+            ActiveShieldGate = null;
 
             // The companion entity is not tied to GameObject activation — hide it
             // explicitly so a pooled prism can't keep drawing while it waits for

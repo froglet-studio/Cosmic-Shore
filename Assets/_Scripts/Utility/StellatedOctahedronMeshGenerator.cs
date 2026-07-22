@@ -245,28 +245,31 @@ namespace CosmicShore.Utility
         }
 
         /// <summary>
-        /// Branchless containment test for a point in local space relative to
-        /// the stellated octahedron. The stellation is the union of two
-        /// tetrahedra, and a point is inside the union iff it lies in either.
+        /// Signed margin of a point in local space relative to the stellated
+        /// octahedron. The stellation is the union of two tetrahedra, and a
+        /// point is inside the union iff it lies in either.
         ///
         /// In normalized local coords (u, v, w) = (x·invA, y·invB, z·invC),
         /// Tet A's 4 face planes correspond to linear forms ε·(u,v,w) where
         /// ε ∈ { (+,+,+), (+,-,-), (-,+,-), (-,-,+) }, each constrained to ≥ -1.
         /// Tet B's planes are the negations of Tet A's, equivalent to the same
         /// 4 forms constrained to ≤ +1. So the same 4 dot products serve both
-        /// containment checks:
+        /// margins:
         ///
-        ///   inside Tet A:        min(f1,f2,f3,f4) ≥ -1
-        ///   inside Tet B:        max(f1,f2,f3,f4) ≤ +1
-        ///   inside super-shield: either holds
+        ///   Tet A margin:        min(f1,f2,f3,f4) + 1
+        ///   Tet B margin:        1 − max(f1,f2,f3,f4)
+        ///   union (super-shield) margin: max of the two
         ///
-        /// Cost: 4 linear forms + min/max + 2 compares - comparable to a box
-        /// AABB and cheaper than a full convex collision check.
+        /// Returns &gt; 0 inside, 0 on the surface, &lt; 0 outside (normalized;
+        /// magnitude ∝ distance to the surface).
+        ///
+        /// Cost: 4 linear forms + min/max - comparable to a box AABB and
+        /// cheaper than a full convex collision check.
         ///
         /// Precompute the inverses once per prism and reuse - this is the
         /// fast path for gameplay overlap checks without a MeshCollider.
         /// </summary>
-        public static bool ContainsPointLocal(Vector3 localPoint, float invA, float invB, float invC)
+        public static float SignedMarginLocal(Vector3 localPoint, float invA, float invB, float invC)
         {
             float u = localPoint.x * invA;
             float v = localPoint.y * invB;
@@ -281,8 +284,31 @@ namespace CosmicShore.Utility
             float minF = Mathf.Min(Mathf.Min(f1, f2), Mathf.Min(f3, f4));
             float maxF = Mathf.Max(Mathf.Max(f1, f2), Mathf.Max(f3, f4));
 
-            // Inside iff inside Tet A (min ≥ -1) OR inside Tet B (max ≤ +1).
-            return minF >= -1f || maxF <= 1f;
+            // Union margin: the better of Tet A's (minF + 1) and Tet B's (1 − maxF).
+            return Mathf.Max(minF + 1f, 1f - maxF);
+        }
+
+        /// <summary>
+        /// Convenience overload taking raw half-extents. Prefer the precomputed
+        /// inverse overload inside hot loops.
+        /// </summary>
+        public static float SignedMarginLocal(Vector3 localPoint, Vector3 halfExtents, float shieldScale = CIRCUMSCRIBING_SCALE)
+        {
+            float invA = 1f / (shieldScale * halfExtents.x);
+            float invB = 1f / (shieldScale * halfExtents.y);
+            float invC = 1f / (shieldScale * halfExtents.z);
+            return SignedMarginLocal(localPoint, invA, invB, invC);
+        }
+
+        /// <summary>
+        /// Branchless containment test for a point in local space relative to
+        /// the stellated octahedron. Defined as
+        /// <see cref="SignedMarginLocal(Vector3, float, float, float)"/> ≥ 0
+        /// so margin and containment share one source of truth.
+        /// </summary>
+        public static bool ContainsPointLocal(Vector3 localPoint, float invA, float invB, float invC)
+        {
+            return SignedMarginLocal(localPoint, invA, invB, invC) >= 0f;
         }
 
         /// <summary>
@@ -295,6 +321,110 @@ namespace CosmicShore.Utility
             float invB = 1f / (shieldScale * halfExtents.y);
             float invC = 1f / (shieldScale * halfExtents.z);
             return ContainsPointLocal(localPoint, invA, invB, invC);
+        }
+
+        // --- Analytic OBB overlap (Separating-Axis Test, normalized frame) ----
+
+        // Tet A: 4 alternating cube corners in the shell's normalized frame.
+        static readonly Vector3[] s_tetA =
+        {
+            new Vector3( 1f,  1f,  1f), new Vector3( 1f, -1f, -1f),
+            new Vector3(-1f,  1f, -1f), new Vector3(-1f, -1f,  1f),
+        };
+
+        // Tet B: the other 4 cube corners.
+        static readonly Vector3[] s_tetB =
+        {
+            new Vector3(-1f, -1f, -1f), new Vector3(-1f,  1f,  1f),
+            new Vector3( 1f, -1f,  1f), new Vector3( 1f,  1f, -1f),
+        };
+
+        // The 4 tetrahedron face-normal directions (the 4 linear-form coefficient
+        // vectors); identical for both tets (Tet B's planes are Tet A's negated).
+        static readonly Vector3[] s_tetFaceNormals =
+        {
+            new Vector3( 1f,  1f,  1f), new Vector3( 1f, -1f, -1f),
+            new Vector3(-1f,  1f, -1f), new Vector3(-1f, -1f,  1f),
+        };
+
+        // The 6 tetrahedron edge directions (shared by both tets, and identical to the
+        // octahedron edge dirs — the tet edges are the octahedron's silhouette edges).
+        static readonly Vector3[] s_tetEdgeDirs =
+        {
+            new Vector3(0f, 1f,  1f), new Vector3(1f, 0f,  1f), new Vector3(1f, 1f, 0f),
+            new Vector3(1f, -1f, 0f), new Vector3(1f, 0f, -1f), new Vector3(0f, 1f, -1f),
+        };
+
+        /// <summary>
+        /// Separating-Axis Test between the stellated octahedron (as the UNION of two
+        /// tetrahedra in the shell's NORMALIZED frame) and an oriented box given IN THAT
+        /// SAME frame by its center <paramref name="centerN"/> and half-edge vectors
+        /// <paramref name="e1"/>/<paramref name="e2"/>/<paramref name="e3"/> (a general
+        /// parallelepiped). The box overlaps the stella iff it overlaps EITHER tetrahedron,
+        /// so SAT is run per tet and OR'd. <paramref name="inflate"/> grows each tet's
+        /// projection interval (normalized units) for a grazing band. Returns true on overlap.
+        ///
+        /// Per-tet candidate axes (25): 4 tet face normals, 3 box face normals (e_i × e_j),
+        /// and 18 edge crosses (6 tet edge dirs × 3 box edges).
+        /// </summary>
+        public static bool OverlapsBoxNormalized(Vector3 centerN, Vector3 e1, Vector3 e2, Vector3 e3, float inflate)
+        {
+            return OverlapsTet(s_tetA, centerN, e1, e2, e3, inflate)
+                || OverlapsTet(s_tetB, centerN, e1, e2, e3, inflate);
+        }
+
+        // SAT between one tetrahedron (its 4 normalized vertices) and the OBB.
+        static bool OverlapsTet(Vector3[] tetVerts, Vector3 centerN, Vector3 e1, Vector3 e2, Vector3 e3, float inflate)
+        {
+            const float eps = 1e-12f;
+
+            // (a) 4 tet face normals.
+            for (int i = 0; i < s_tetFaceNormals.Length; i++)
+                if (SeparatedOnAxis(s_tetFaceNormals[i], tetVerts, centerN, e1, e2, e3, inflate, eps))
+                    return false;
+
+            // (b) 3 box face normals.
+            if (SeparatedOnAxis(Vector3.Cross(e1, e2), tetVerts, centerN, e1, e2, e3, inflate, eps)) return false;
+            if (SeparatedOnAxis(Vector3.Cross(e2, e3), tetVerts, centerN, e1, e2, e3, inflate, eps)) return false;
+            if (SeparatedOnAxis(Vector3.Cross(e3, e1), tetVerts, centerN, e1, e2, e3, inflate, eps)) return false;
+
+            // (c) 18 edge crosses.
+            for (int i = 0; i < s_tetEdgeDirs.Length; i++)
+            {
+                Vector3 te = s_tetEdgeDirs[i];
+                if (SeparatedOnAxis(Vector3.Cross(te, e1), tetVerts, centerN, e1, e2, e3, inflate, eps)) return false;
+                if (SeparatedOnAxis(Vector3.Cross(te, e2), tetVerts, centerN, e1, e2, e3, inflate, eps)) return false;
+                if (SeparatedOnAxis(Vector3.Cross(te, e3), tetVerts, centerN, e1, e2, e3, inflate, eps)) return false;
+            }
+
+            return true; // no separating axis ⇒ this tet overlaps the box
+        }
+
+        // True if axis `a` separates the tetrahedron (projected over its 4 verts, grown
+        // by `inflate`) from the OBB (center + span e1,e2,e3). Degenerate axes never separate.
+        static bool SeparatedOnAxis(Vector3 a, Vector3[] tetVerts, Vector3 centerN,
+            Vector3 e1, Vector3 e2, Vector3 e3, float inflate, float eps)
+        {
+            if (a.sqrMagnitude < eps) return false;
+
+            // Tetrahedron projection interval [tMin, tMax], grown by inflate.
+            float tMin = float.PositiveInfinity, tMax = float.NegativeInfinity;
+            for (int i = 0; i < tetVerts.Length; i++)
+            {
+                float p = Vector3.Dot(a, tetVerts[i]);
+                if (p < tMin) tMin = p;
+                if (p > tMax) tMax = p;
+            }
+            tMin -= inflate;
+            tMax += inflate;
+
+            // Box projection interval [cProj - boxR, cProj + boxR].
+            float cProj = Vector3.Dot(a, centerN);
+            float boxR = Mathf.Abs(Vector3.Dot(a, e1))
+                       + Mathf.Abs(Vector3.Dot(a, e2))
+                       + Mathf.Abs(Vector3.Dot(a, e3));
+
+            return (cProj - boxR) > tMax || (cProj + boxR) < tMin;
         }
     }
 }

@@ -31,6 +31,15 @@ namespace CosmicShore.Gameplay
         public override Domains OwnDomain => Skimmer.Domain;
         protected override bool isInitialized => Skimmer.IsInitialized;
 
+        // Shielded-prism narrowphase: no ShieldMarginThreshold override. The base
+        // gate measures this skimmer's trigger SPHERE against the shell
+        // (IShieldContainmentGate.SignedMarginSphere), so the default threshold 0
+        // — "sphere reaches the shell" — is the correct condition for both skim
+        // (graze) and pop (the pop dispatches via this skimmer's damage effect,
+        // so they necessarily share one threshold). The former negative grazing
+        // band existed only to compensate for a point probe that under-measured
+        // tangential grazes. See Docs/CollisionLOD/DESIGN.md §7.
+
         // runtime state (moved from Skimmer)
         readonly Dictionary<string, float> _skimStartTimes = new();
         //private int ActivelySkimmingBlockCount;
@@ -79,11 +88,15 @@ namespace CosmicShore.Gameplay
         //    sigma = SqrSweetSpot / 2.355f;
         //}
 
-        void OnTriggerStay(Collider other)
+        protected override void OnTriggerStay(Collider other)
         {
+            // Base first: re-tests contacts parked outside a shielded prism's
+            // shell and dispatches once the skimmer sphere reaches the shell.
+            base.OnTriggerStay(other);
+
             if (!isInitialized)
                 return;
-            
+
             if (skimmer.AllowVaccumCrystal && other.TryGetComponent<Crystal>(out var crystal)
                 && !crystal.IsEmbedded) // a living lifeform's heart is never vacuumed out of its body
             {
@@ -131,8 +144,11 @@ namespace CosmicShore.Gameplay
         //    minMaturePrismSqrDistance = Mathf.Infinity;
         //}
 
-        void OnTriggerExit(Collider other)
+        protected override void OnTriggerExit(Collider other)
         {
+            // Base first: drops any contact still parked outside the shell.
+            base.OnTriggerExit(other);
+
             if (!isInitialized)
                 return;
 
