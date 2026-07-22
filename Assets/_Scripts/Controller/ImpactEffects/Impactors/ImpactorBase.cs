@@ -90,6 +90,9 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
+            // A stale pending entry for this collider (missed Exit on a prior
+            // overlap episode) must not double-dispatch via the next Stay.
+            _pendingShieldContacts?.Remove(other);
             DispatchImpact(impacteeCollider);
         }
 
@@ -117,6 +120,13 @@ namespace CosmicShore.Gameplay
         protected virtual void OnTriggerExit(Collider other)
         {
             _pendingShieldContacts?.Remove(other);
+        }
+
+        protected virtual void OnDisable()
+        {
+            // Overlap episodes end with the component — never carry pending
+            // shield contacts across a disable (pooling, scene teardown).
+            _pendingShieldContacts?.Clear();
         }
 
         void DispatchImpact(ImpactCollider impacteeCollider)
