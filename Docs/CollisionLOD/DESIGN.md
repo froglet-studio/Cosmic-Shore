@@ -153,3 +153,38 @@ few shielded prisms actually near a focus.
    back → restores.
 5. **No pop-then-destroy under a lingering swipe**; **no skim dead-zone** in the AABB corners.
 6. Profiler: no regression in `Physics.SendEvents` / `*.AcceptImpactee` around dense shielded mass.
+
+## 7. Re-verify findings (round 2) — status & open items
+
+Two fable-5 adversarial rounds against the working tree. Confirmed done vs open:
+
+- **[done] Lifecycle / compile** — collider is resize-only (the four `enabled = true` pose
+  writes removed; `enabled` owned by spawn window + collider-LOD + destruction); `ActiveShieldGate`
+  cleared on withdraw + `OnDisable`; `SignedMargin`/interface/overrides compile. Verified exhaustively.
+- **[done] Stella union math** — `max(minF+1, 1−maxF)` derived + landmark-checked equivalent to the
+  old boolean.
+- **[open — needs sphere metric] Skim precision** — the impactee-side probe now uses this impactor's
+  own collider, but `Collider.ClosestPoint(prismCentre)` samples the sphere point toward the prism
+  *centre*, not its nearest approach to the *shell*, so tangential grazes under-measure → dead zones
+  (elongated prisms; worst on the non-convex stella, where a spike grazes through an inter-spike gap).
+  **Fix:** `IShieldContainmentGate.SignedMarginSphere(worldCentre, worldRadius)` = `SignedMargin(centre)
+  + worldRadius · |shell gradient in world|` (octahedron: per-octant L1 gradient via lossyScale; stella:
+  per linear form, max over the two tetrahedra); use it when the toucher is a `SphereCollider`. The
+  metric is approximate and **must be tuned/confirmed in-editor**.
+- **[open — threshold] Pop dispatches via the skimmer's damage effect** (`RhinoSkimmerDamagePrismEffectSO`
+  → `Prism.Damage`), so skim (graze) and pop (reach shell) share the skimmer's one threshold — a −band
+  threshold pops the shield ~0.35 normalized units *outside* the shell. With a proper sphere margin,
+  **threshold 0** unifies both at "sphere reaches shell" and removes the band (no per-effect threshold
+  needed) — needs editor feel-check.
+- **[open — PhysX race] Same-tick pop-then-destroy** — a contact parked in the enlarged box, when the
+  pop clears the gate mid-callback, re-tests with `gate==null` → dispatches as a plain-box hit → destroy.
+  **Fix:** in `OnTriggerStay`, drop a parked contact whose prism gate went null (don't dispatch — a real
+  hit re-fires `OnTriggerEnter`).
+- **[open — GAMEPLAY FORK] One-swing pop+destroy** — the pop shrinks the box 3×→1×, so the sword exits
+  and the swing's follow-through re-enters the 1× box → destroy in the *same* swing. Bleeding-edge
+  popped-only per swing (the 1× box stayed overlapped). Whether one swing may pop AND destroy is a
+  feel decision (accept it, or add a short post-pop grace against the popper).
+
+**Reality:** the merged #617 (authored-size shielded skimming) is the working baseline. Shell-precision
+adds a sphere-vs-shell metric, a threshold/feel choice, and PhysX-timing handling that can only be
+**confirmed in-editor** — it is not a headless-verifiable change.
