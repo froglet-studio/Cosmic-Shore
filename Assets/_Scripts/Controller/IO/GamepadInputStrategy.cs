@@ -10,16 +10,20 @@ namespace CosmicShore.Gameplay
     {
         private const float TriggerDeadzone = 0.05f;
 
-        // Worn/miscalibrated triggers can REST well above zero (field repro: an Xbox
-        // pad resting at L=0.38). A rest value above TriggerDeadzone makes the edge
-        // detector read the trigger as permanently held - the press edge never fires
-        // and trigger-bound actions (e.g. the Squirrel's drift) go dead, while the
-        // analog intensity idles non-zero. Track the minimum observed raw value per
-        // trigger as its resting baseline and remap [baseline..1] onto [0..1] so
-        // edges and analog behave as on a healthy pad. Min-tracking self-corrects if
-        // the trigger happens to be held when the strategy activates.
+        // Trigger rest calibration. Triggers do not universally rest at zero: worn or
+        // miscalibrated springs drift upward, and some DirectInput-style pads map a
+        // trigger to an axis that rests mid-range by design. Any rest value above
+        // TriggerDeadzone makes the absolute edge detector read the trigger as
+        // permanently held - the press edge never fires and trigger-bound actions
+        // (e.g. the Squirrel's drift) go dead, while the analog intensity idles
+        // non-zero. Track the minimum observed raw value per trigger as its resting
+        // baseline and remap [baseline..1] onto [0..1] so edges and analog behave
+        // identically on every pad (a trigger resting at zero latches baseline 0 and
+        // passes through unchanged). Min-tracking self-corrects if the trigger
+        // happens to be held during calibration; a device change re-calibrates.
         private float _leftTriggerRestBaseline = 1f;
         private float _rightTriggerRestBaseline = 1f;
+        private Gamepad _calibratedPad;
 
         static float RemapFromRest(float raw, float rest) =>
             rest >= 0.99f ? 0f : Mathf.Clamp01((raw - rest) / (1f - rest));
@@ -39,21 +43,10 @@ namespace CosmicShore.Gameplay
             ResetInput();
         }
 
-        // TEMPORARY [DRIFT-DIAG]: remove after the Scurry drift investigation.
-        private float _diagNextRawLogTime;
-
         public override void OnStrategyActivated()
         {
             base.OnStrategyActivated();
             inputStatus.ActiveInputDevice = InputDeviceType.Gamepad;
-
-            // Re-calibrate on (re)activation - the active pad may have changed.
-            _leftTriggerRestBaseline = 1f;
-            _rightTriggerRestBaseline = 1f;
-
-            // TEMPORARY [DRIFT-DIAG]: remove after the Scurry drift investigation.
-            CSDebug.Log($"[DRIFT-DIAG] GamepadStrategy ACTIVATED pad='{Gamepad.current?.displayName}' " +
-                        $"type={Gamepad.current?.GetType().Name} allGamepads={Gamepad.all.Count}");
         }
 
         public override void ProcessInput()
@@ -126,7 +119,14 @@ namespace CosmicShore.Gameplay
             // This gives full analog range (0-1) for drift scaling while keeping
             // binary event compatibility for button-style triggers (which snap 0/1).
             // Values are measured from the trigger's calibrated resting baseline (see
-            // RemapFromRest) so a drifting trigger can't read as permanently held.
+            // RemapFromRest) so a non-zero-resting trigger can't read as permanently held.
+            if (!ReferenceEquals(_calibratedPad, Gamepad.current))
+            {
+                _calibratedPad = Gamepad.current;
+                _leftTriggerRestBaseline = 1f;
+                _rightTriggerRestBaseline = 1f;
+            }
+
             float leftTriggerRaw = Gamepad.current.leftTrigger.ReadValue();
             float rightTriggerRaw = Gamepad.current.rightTrigger.ReadValue();
 
@@ -138,17 +138,6 @@ namespace CosmicShore.Gameplay
 
             inputStatus.LeftTriggerAnalog = leftTriggerValue;
             inputStatus.RightTriggerAnalog = rightTriggerValue;
-
-            // TEMPORARY [DRIFT-DIAG]: remove after the Scurry drift investigation.
-            // Logs at most once per second, only while a trigger physically reads non-zero.
-            if ((leftTriggerRaw > 0.01f || rightTriggerRaw > 0.01f)
-                && Time.unscaledTime >= _diagNextRawLogTime)
-            {
-                _diagNextRawLogTime = Time.unscaledTime + 1f;
-                CSDebug.Log($"[DRIFT-DIAG] RawTrigger L={leftTriggerValue:F2} (raw={leftTriggerRaw:F2} rest={_leftTriggerRestBaseline:F2}) " +
-                            $"R={rightTriggerValue:F2} (raw={rightTriggerRaw:F2} rest={_rightTriggerRestBaseline:F2}) " +
-                            $"pad='{Gamepad.current.displayName}' type={Gamepad.current.GetType().Name}");
-            }
 
             bool leftActive = leftTriggerValue > TriggerDeadzone;
             bool rightActive = rightTriggerValue > TriggerDeadzone;

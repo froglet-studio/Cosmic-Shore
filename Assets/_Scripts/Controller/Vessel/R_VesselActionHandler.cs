@@ -64,16 +64,26 @@ namespace CosmicShore.Gameplay
         IVesselStatus vesselStatus;
         bool _subscribedToInputPaused;
 
+        // Idempotence guard: subscription is requested from two independent paths for the
+        // local vessel (VesselController.Initialize and the input-unpause replay through
+        // OnToggleInputPaused). Without the guard the delegates stack and every button
+        // event dispatches its actions twice (double RPCs, double Start/StopAction).
+        bool _buttonEventsSubscribed;
+
         void SubscribeToInputEvents()
         {
+            if (_buttonEventsSubscribed) return;
             _onButtonPressed.OnRaised  += OnButtonPressed;
             _onButtonReleased.OnRaised += OnButtonReleased;
+            _buttonEventsSubscribed = true;
         }
 
         void UnsubscribeFromInputEvents()
         {
+            if (!_buttonEventsSubscribed) return;
             _onButtonPressed.OnRaised  -= OnButtonPressed;
             _onButtonReleased.OnRaised -= OnButtonReleased;
+            _buttonEventsSubscribed = false;
         }
 
         void OnDisable()
@@ -122,12 +132,6 @@ namespace CosmicShore.Gameplay
 
         public void PerformShipControllerActions(InputEvents controlType)
         {
-            // TEMPORARY [DRIFT-DIAG]: remove after the Scurry drift investigation.
-            CosmicShore.Utility.CSDebug.Log($"[DRIFT-DIAG] Perform({controlType}) vessel={vesselStatus?.Name}/{vesselStatus?.PlayerName} " +
-                        $"muted={IsInputMuted(controlType)} hasAction={HasAction(controlType)} " +
-                        $"device={vesselStatus?.InputStatus?.ActiveInputDevice} " +
-                        $"overrides={(GetActiveOverrides() == null ? "none" : "device")} baseMapCount={_shipControlActions.Count}");
-
             if (IsInputMuted(controlType)) return;
             if (!HasAction(controlType)) return;
 
@@ -140,10 +144,6 @@ namespace CosmicShore.Gameplay
 
         public void StopShipControllerActions(InputEvents controlType)
         {
-            // TEMPORARY [DRIFT-DIAG]: remove after the Scurry drift investigation.
-            CosmicShore.Utility.CSDebug.Log($"[DRIFT-DIAG] Stop({controlType}) vessel={vesselStatus?.Name}/{vesselStatus?.PlayerName} " +
-                        $"hasAction={HasAction(controlType)}\n{new System.Diagnostics.StackTrace(1, false)}");
-
             if (!HasAction(controlType)) return;
 
             float duration = 0f;
@@ -202,10 +202,6 @@ namespace CosmicShore.Gameplay
 
         void OnButtonPressed(InputEvents ie)
         {
-            // TEMPORARY [DRIFT-DIAG]: remove after the Scurry drift investigation.
-            CosmicShore.Utility.CSDebug.Log($"[DRIFT-DIAG] OnButtonPressed({ie}) vessel={vesselStatus?.Name}/{vesselStatus?.PlayerName} " +
-                        $"auto={vesselStatus?.AutoPilotEnabled} muted={IsInputMuted(ie)} spawned={IsSpawned} owner={IsOwner}");
-
             if (vesselStatus.AutoPilotEnabled)
                 return;
             if (IsInputMuted(ie)) return;
