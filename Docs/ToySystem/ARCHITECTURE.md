@@ -484,10 +484,11 @@ continuity transitions may run:
   `poolSize × prismBudgetPerScene` prisms (default 10 × 42 = 420 BoxColliders + ≤3 crystal
   triggers per scene + 1 toy trigger, well under the ~1,500/cell target); distant scenes are
   collider-LOD-culled by `PrismColliderLodManager` automatically. **Shielded / supershielded**
-  prisms swap their BoxCollider for an always-on convex MeshCollider that LOD can't reclaim, so the
-  palette caps them (`MaxShielded = 3`, `MaxSuperShielded = 1` per scene, low scheme weights) —
-  worst case ≈ 40 MeshColliders across a full pool, realistic steady state a handful. Danger prisms
-  keep the cheap cullable BoxCollider. The belt roams freely — mass
+  prisms now KEEP their authored cullable `BoxCollider` trigger (the octahedron / stellation is a
+  look-only change — no convex MeshCollider, no convex cook), so they cost the same as any other
+  prism and LOD reclaims them normally; the palette caps (`MaxShielded = 3`, `MaxSuperShielded = 1`
+  per scene, low scheme weights) now bound spawn variety, not a collider-cost floor. Danger prisms
+  likewise keep the cheap cullable BoxCollider. The belt roams freely — mass
   laid inside a cell registers with that cell's volume/grids as usual; mass laid in open space
   is ordinary registered prism mass with no cell binding (same as any open-space track). The
   conveyor adds **zero physics queries** — placement is pure arithmetic.

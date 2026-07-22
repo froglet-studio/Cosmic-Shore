@@ -1169,9 +1169,10 @@ Count backstops are untouched — volume-only mass never enters `LiveBlockCount`
   disengages it, so the state machine stays the single reversible shield path
   (`PrismKinds` remarks updated). The component is added lazily on first engage; only
   super-shielded prisms pay its mesh cost.
-- **Collider budget.** Each super-shielded prism carries an always-on convex MeshCollider
-  (the engaged stellation) that collider-LOD cannot reclaim — the lining is capped by
-  `AstroLeagueSettingsSO.edgePrismCount` (240; precedent: the Skim Race track
-  super-shields its whole spawned track) and must stay bounded; zero new physics
-  queries (the ball resolves prisms via `PrismSpatialIndex.QuerySphere` and skips
-  super-shielded entirely).
+- **Collider budget.** A super-shielded prism keeps its authored primitive `BoxCollider`
+  trigger (the stellation is a look-only change; no convex `MeshCollider`, no convex cook),
+  so it stays collider-LOD-reclaimable like any other prism — the earlier always-on-MeshCollider
+  budget line is gone. The `AstroLeagueSettingsSO.edgePrismCount` cap (240) still bounds the
+  lining as a spawn count, not a collider-cost floor; zero new physics queries (the ball resolves
+  prisms via `PrismSpatialIndex.QuerySphere` and skips super-shielded entirely). Collision is at
+  authored box size for now; shape-precise (stellated) collision is the planned three-LOD follow-up.
