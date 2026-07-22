@@ -62,8 +62,13 @@ player to the win target (default 8) takes the gallery.
   system; deduction rounds shouldn't buff trailing players' vessels. (Source case `Goals`
   registered in `ElementalComebackSystem.EnsureExists` should the rate ever be raised.)
 - **Config**: `_SO_Assets/Games/ArcadeGameFakeArtist.asset`, registered in
-  `GameLists/OrganicRematchGames.asset`; mode tuning on
-  `_SO_Assets/Games/FakeArtistConfig.asset`.
+  `GameLists/OrganicRematchGames.asset` (both the DI list and `GameCard.AllGames` point
+  at it) and unlocked via `ProgressionConfig.asset` `alwaysUnlockedModes` (39); mode
+  tuning on `_SO_Assets/Games/FakeArtistConfig.asset`. **These assets + the scene are
+  committed directly** (not only tool-generated) so the card appears and launches from a
+  fresh checkout — Menu_Main's arcade grid has 12 physical card slots, so the 8th game
+  fills a spare slot with no scene-hierarchy edit. The `Setup Fake Artist Minigame` tool
+  remains the way to *refine* the scene (see limitations).
 
 ## Class Inventory (`_Scripts/Controller/Arcade/FakeArtist/`)
 
@@ -159,14 +164,18 @@ domains in modes with Cell control or domain-aggregated scoring.**
 
 ## Ecology configuration
 
-**Fake Artist v1 is deliberately cell-less** — the setup tool removes the cloned scene's
-Cell and NetworkCrystalManager. Two hard reasons: `Prism.OnTriggerEnter(CellItem)`
-auto-shields touched prisms (corrupting normal-brush identities — the deduction surface),
-and fauna would graze the gallery mid-round (the artwork must survive to the vote). No
-crystals, no flora, no fauna; the environment IS the accumulating painted gallery. If a
-future pass wants membrane/cytoplasm ambience, wire a standard Cell with an empty
-SpawnProfile and no bootstrap crystal (spawner never starts) via the `/ecology` skill —
-do not build a mode-local substitute.
+**Fake Artist v1 runs with no active ecology.** The committed scene keeps the cloned
+NucleusRush **Cell** as an inert membrane (visual boundary) but **removes the
+`NetworkCrystalManager`** — with no bootstrap crystal the Cell's spawner never starts, so
+no crystals, flora, or fauna appear. Two hard reasons this matters:
+`Prism.OnTriggerEnter(CellItem)` auto-shields touched prisms (which would corrupt
+normal-brush identities — the deduction surface), and fauna would graze the gallery
+mid-round (the artwork must survive to the vote). The environment IS the accumulating
+painted gallery. (The `Setup Fake Artist Minigame` tool goes further and removes the Cell
+GameObject entirely; leaving it as inert ambience is an equally valid, lower-risk state.)
+If a future pass wants live cytoplasm ambience, wire a standard Cell with an empty
+SpawnProfile and no bootstrap crystal via the `/ecology` skill — never a mode-local
+substitute.
 
 **Collider-budget impact: ~zero net.** Guide rings/gates/jacks use NO colliders (pure
 distance latching). Painted trail prisms carry the standard per-prism BoxCollider budget —
@@ -215,23 +224,31 @@ Authored ONLY via **Tools ▸ Cosmic Shore ▸ End Game Conditions**
 
 | Asset | Path |
 |---|---|
-| Arcade card | `_SO_Assets/Games/ArcadeGameFakeArtist.asset` (created by the setup tool; registered in `GameLists/OrganicRematchGames.asset`) |
-| Scoring rule | `_SO_Assets/Scoring Rules/FakeArtistScoringRule.asset` (setup tool) |
-| Mode config | `_SO_Assets/Games/FakeArtistConfig.asset` (setup tool) |
-| Scene | `_Scenes/Multiplayer Scenes/MinigameFakeArtist.unity` (setup tool clone of MinigameNucleusRush + component swap; added to Build Settings) |
+| Arcade card | `_SO_Assets/Games/ArcadeGameFakeArtist.asset` (committed; registered in `GameLists/OrganicRematchGames.asset`) |
+| Scoring rule | `_SO_Assets/Scoring Rules/FakeArtistScoringRule.asset` (committed; `metric=Goals`, `golfRules=0`) |
+| Mode config | `_SO_Assets/Games/FakeArtistConfig.asset` (committed) |
+| Scene | `_Scenes/Multiplayer Scenes/MinigameFakeArtist.unity` (committed clone of MinigameNucleusRush + component swap + crystal-manager removal; in Build Settings) |
+| Unlock | `ProgressionConfig.asset` `alwaysUnlockedModes` includes 39 |
 | Win target | `Resources/EndConditionOverrides.asset` → `fakeArtistWinTarget` (default 8) |
 
 ## Known limitations / follow-ups
 
-- **In-editor verification pending (authored headless).** Run **Tools ▸ Cosmic Shore ▸
-  Setup Fake Artist Minigame**, then: (1) open the scene — confirm the component swap,
-  12-point spawn ring, no Cell; (2) MPPM 2-player run — brush colors/shields on both
+- **In-editor verification pending (authored headless).** The card + scene are committed
+  and should appear/launch as-is, but no Unity pass has run. Verify: (1) card visible +
+  clickable in the Arcade grid; (2) MPPM 2-player run — brush colors/shields on both
   peers, pen-up gaps identical on both peers, deal secrecy (client log has no other
-  player's strokes), vote flow, reveal ghost, first-to-8 scoreboard; (3) card visible +
-  launchable from the Arcade grid (check the grid has a free GameCard slot for an 8th
-  game); (4) icons on the card are Brood Rush placeholders — replace.
-- **Mode not in `ProgressionConfig.asset` `alwaysUnlockedModes`** (AstroLeague/NucleusRush
-  precedent) — decide explicitly whether fresh accounts see it.
+  player's strokes), vote flow, reveal ghost, first-to-8 scoreboard.
+- **The committed scene is the minimal clone** (controller/monitor swapped, rule/config
+  wired, crystal manager removed). It still carries NucleusRush's **4 spawn points**
+  (`GetRandomSpawnPose` recycles them, so a 12-player game overlaps spawns) and its
+  **domain-panel in-game HUD** (`MultiplayerHUDView` domain wiring intact → the HUD shows
+  3 domain sums rather than per-player cards; the end-game Scoreboard is already
+  per-player and correct). Run **Tools ▸ Cosmic Shore ▸ Setup Fake Artist Minigame** to
+  refine: it grows the spawn ring to 12, clears the domain-panel wiring for the per-player
+  layout, and removes the Cell entirely. The tool is idempotent — it finds the committed
+  assets and only refines the scene.
+- **Card art is Brood Rush placeholders** (icons + background copied so the card renders);
+  replace with dedicated Fake Artist art.
 - **Scoreboard/feed tint for Fire/Lime players is gray** (shared `GetDomainUIColor`
   fallback). Mode UI uses `FakeArtistBrushes.UIColor`; extending the shared lookup is a
   candidate follow-up.
