@@ -236,6 +236,10 @@ namespace CosmicShore.UI
                     return CreateProviderComponent<JoustObjectiveProvider>("ObjectiveProvider_Joust");
                 case GameModes.AstroLeague:
                     return CreateProviderComponent<AstroLeagueObjectiveProvider>("ObjectiveProvider_AstroLeague");
+                case GameModes.FakeArtist:
+                    // Static relay - the local player's stroke guide registers itself as
+                    // the live provider (guides are created per round, after the HUD).
+                    return FakeArtistStrokeGuide.ObjectiveRelay;
                 default:
                     return null;
             }

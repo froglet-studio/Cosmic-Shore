@@ -75,6 +75,9 @@ namespace CosmicShore.Gameplay
                 case GameModes.Rampage: // Score lands only at game end - destruction is the live stat
                     system.differenceSource = ScoreDifferenceSource.PrismsDestroyed;
                     break;
+                case GameModes.FakeArtist: // Score lands only at game end - points live on GoalsScored
+                    system.differenceSource = ScoreDifferenceSource.Goals;
+                    break;
                 default:
                     system.differenceSource = ScoreDifferenceSource.Score;
                     break;
