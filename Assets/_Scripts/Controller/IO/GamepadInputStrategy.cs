@@ -25,10 +25,17 @@ namespace CosmicShore.Gameplay
             ResetInput();
         }
 
+        // TEMPORARY [DRIFT-DIAG]: remove after the Scurry drift investigation.
+        private float _diagNextRawLogTime;
+
         public override void OnStrategyActivated()
         {
             base.OnStrategyActivated();
             inputStatus.ActiveInputDevice = InputDeviceType.Gamepad;
+
+            // TEMPORARY [DRIFT-DIAG]: remove after the Scurry drift investigation.
+            CSDebug.Log($"[DRIFT-DIAG] GamepadStrategy ACTIVATED pad='{Gamepad.current?.displayName}' " +
+                        $"type={Gamepad.current?.GetType().Name} allGamepads={Gamepad.all.Count}");
         }
 
         public override void ProcessInput()
@@ -105,6 +112,16 @@ namespace CosmicShore.Gameplay
 
             inputStatus.LeftTriggerAnalog = leftTriggerValue;
             inputStatus.RightTriggerAnalog = rightTriggerValue;
+
+            // TEMPORARY [DRIFT-DIAG]: remove after the Scurry drift investigation.
+            // Logs at most once per second, only while a trigger physically reads non-zero.
+            if ((leftTriggerValue > 0.01f || rightTriggerValue > 0.01f)
+                && Time.unscaledTime >= _diagNextRawLogTime)
+            {
+                _diagNextRawLogTime = Time.unscaledTime + 1f;
+                CSDebug.Log($"[DRIFT-DIAG] RawTrigger L={leftTriggerValue:F2} R={rightTriggerValue:F2} " +
+                            $"pad='{Gamepad.current.displayName}' type={Gamepad.current.GetType().Name}");
+            }
 
             bool leftActive = leftTriggerValue > TriggerDeadzone;
             bool rightActive = rightTriggerValue > TriggerDeadzone;

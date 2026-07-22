@@ -264,6 +264,9 @@ namespace CosmicShore.Gameplay
         {
             ResetSmoothingState();
             inputStatus.ActiveInputDevice = InputDeviceType.Keyboard;
+
+            // TEMPORARY [DRIFT-DIAG]: remove after the Scurry drift investigation.
+            CosmicShore.Utility.CSDebug.Log("[DRIFT-DIAG] KeyboardStrategy ACTIVATED (no gamepad detected)");
         }
 
         public override void OnStrategyDeactivated()
