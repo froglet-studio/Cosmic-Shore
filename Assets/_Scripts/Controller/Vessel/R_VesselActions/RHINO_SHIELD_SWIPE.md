@@ -56,6 +56,33 @@ Config knobs (`RhinoShieldSwipeConfig.asset`): `swipeYawDegrees` 90, `swipeRollD
 90, `chopPitchDegrees` 65, `analogSmoothingSeconds` 0.04, `swipeOutSeconds` 0.18,
 `returnSeconds` 0.3.
 
+## Sword dimensions & scale ownership
+
+The sword's silhouette is the authored local scale on the ForceFieldSkimmer instance
+in `Rhino.prefab` — (1.5, 30, 4.8) — and X/Z are **never** scaled at runtime. All
+runtime scaling elongates local Y only (`Skimmer.elongateYOnly`, set on
+`ForceFieldSkimmer Variant.prefab`; spherical skimmers on other vessels keep the
+legacy uniform XYZ path).
+
+Exactly one component writes the sword's scale at runtime:
+
+- **`ShieldSkimmerScaleDriver`** (on `ScaleSkimmerObject`) owns the transform — it
+  sets `Skimmer.HasExternalScaleDriver` in `OnEnable`, which stands the Skimmer's own
+  elemental scale write down. Each frame it tweens world Y between its resting base
+  and `ShieldSkimmerScaleConfig.asset` `maxScale` (120) from the Shield resource
+  (index 1), preserving the authored X/Z via `Skimmer.AuthoredShape`.
+- **SPACE element sets the resting base**: the driver reads
+  `Skimmer.LiveElementalScale` — the Skimmer's `Scale` ElementalFloat, authored on
+  the variant prefab as Space 30 → 50 — as its live `BaseScale`, so Space levels
+  lengthen the sword's resting length and shield growth composes on top. A Space
+  deficit (negative levels) shortens it below 30 via the usual unclamped lerp.
+- `GrowSkimmerActionRegistry` in `Rhino.prefab` is **inactive** — superseded by the
+  driver. Its `GrowSkimmerActionExecutor` still writes uniform XYZ; do not re-enable
+  it on the sword without porting the Y-only path.
+
+`Skimmer.AuthoredShape` is captured in `Awake` (before any writer runs); Unity
+guarantees all Awakes complete before the driver's first `Update` write.
+
 ## Self-impact exclusion (shipped with this feature)
 
 The Rhino's sword capsule permanently overlaps its own hull, and the impact pipeline
@@ -108,3 +135,11 @@ there but a stepped sword falsifies this analysis; 0/1 there confirms the driver
 - **Analog replication**: remote peers see binary swings only. If the analog pose
   should replicate, add owner-write diff/sum NetworkVariables to the executor
   (cheap: 2 floats) instead of widening the event vocabulary.
+- **`GrowSkimmerActionExecutor` uniform stomp**: still writes `Vector3.one * localZ`
+  (flattens any non-uniform skimmer). Inactive on the Rhino; port the
+  `Skimmer.ElongateYOnly` path before reusing it on a sword-shaped skimmer.
+- **Trail wait-time retune check**: `VesselPrismController` `waitTillOutsideSkimmer`
+  reads the sword's `localScale.z`, which the scale fix restored from the inflated
+  uniform 30–120 to the authored 4.8 — fresh Rhino trail prisms arm sooner. Verify
+  the Rhino can't clip its own just-laid trail; if it can, tune the prefab's
+  `waitTime` rather than re-inflating z.

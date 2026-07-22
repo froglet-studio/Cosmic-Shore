@@ -23,6 +23,8 @@ namespace CosmicShore.Gameplay
         [Header("FX / Viz")]
         [SerializeField] bool visible;
         [SerializeField] ElementalFloat Scale = new(1);
+        [Tooltip("Sword-style capsule skimmers (Rhino): preserve the authored local X/Z silhouette and let Scale drive ONLY the local Y length. Leave off for spherical skimmers (uniform XYZ).")]
+        [SerializeField] bool elongateYOnly;
         [SerializeField] NudgeShardPoolManager nudgeShardPoolManager;
         [SerializeField] int markerDistance = 70;
 
@@ -40,7 +42,24 @@ namespace CosmicShore.Gameplay
         float _sweetSpot;
         float _boosterTimer;
         bool isResizingScale;
+        Vector3 _authoredShape;
 
+        /// <summary>Local-space dimensions authored on the prefab, captured before any runtime scale writer runs.</summary>
+        public Vector3 AuthoredShape => _authoredShape;
+
+        /// <summary>True when scale changes elongate only local Y, preserving the authored X/Z (sword capsules).</summary>
+        public bool ElongateYOnly => elongateYOnly;
+
+        /// <summary>Live elemental scale in world units — the resting size an external scale driver should grow from.</summary>
+        public float LiveElementalScale => Scale.EvaluateLive(VesselStatus);
+
+        /// <summary>Set by an external per-frame scale driver (ShieldSkimmerScaleDriver) while it owns this transform's scale.</summary>
+        public bool HasExternalScaleDriver { get; set; }
+
+        void Awake()
+        {
+            _authoredShape = transform.localScale;
+        }
 
         void Update()
         {
@@ -94,12 +113,19 @@ namespace CosmicShore.Gameplay
         // (the Squirrel maps it to Space, 15 -> 30). EvaluateLive is the unified read path for
         // per-vessel component floats - same math as the bound event path, but it also works
         // when the reflection binding was never wired (see ElementalFloat.EvaluateLive).
+        // Sword capsules (elongateYOnly, Rhino) keep the authored X/Z and grow only along Y;
+        // when a ShieldSkimmerScaleDriver owns this transform it reads LiveElementalScale
+        // instead and this method stands down (single writer).
         void ApplyScaleIfChanged()
         {
+            if (HasExternalScaleDriver) return;
+
             float liveScale = Scale.EvaluateLive(VesselStatus);
             if (_appliedScale == liveScale) return;
             _appliedScale = liveScale;
-            transform.localScale = Vector3.one * _appliedScale;
+            transform.localScale = elongateYOnly
+                ? new Vector3(_authoredShape.x, _appliedScale, _authoredShape.z)
+                : Vector3.one * _appliedScale;
         }
 
         void MakeBoosters(Prism prism)
