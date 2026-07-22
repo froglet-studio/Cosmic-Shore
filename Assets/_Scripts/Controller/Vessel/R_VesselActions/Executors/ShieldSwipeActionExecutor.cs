@@ -1,6 +1,7 @@
 using CosmicShore.Utility;
 using Obvious.Soap;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace CosmicShore.Gameplay
 {
@@ -74,8 +75,23 @@ namespace CosmicShore.Gameplay
             bool analog = IsLocalAnalogPilot(out var input);
             if (analog)
             {
-                float lt = ApplyDeadzone(input.LeftTriggerAnalog);
-                float rt = ApplyDeadzone(input.RightTriggerAnalog);
+                // Read the triggers straight off the hardware for the local pose. The
+                // InputStatus trigger properties are NetworkVariable mirrors meant for
+                // replication - going through them puts the whole netvar pipeline
+                // between the finger and the sword. DualMouse has no hardware trigger
+                // axis, so it keeps the mirror (binary 0/1 by design).
+                float lt, rt;
+                var pad = Gamepad.current;
+                if (input.ActiveInputDevice == InputDeviceType.Gamepad && pad != null)
+                {
+                    lt = ApplyDeadzone(pad.leftTrigger.ReadValue());
+                    rt = ApplyDeadzone(pad.rightTrigger.ReadValue());
+                }
+                else
+                {
+                    lt = ApplyDeadzone(input.LeftTriggerAnalog);
+                    rt = ApplyDeadzone(input.RightTriggerAnalog);
+                }
                 diffTarget = rt - lt;
                 sumTarget = rt + lt;
             }
