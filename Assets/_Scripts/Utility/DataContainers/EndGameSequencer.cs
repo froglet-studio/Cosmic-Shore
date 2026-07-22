@@ -150,6 +150,12 @@ namespace CosmicShore.Utility
         {
             if (gameData == null || gameData.LocalPlayer == null) return false;
 
+            // Free-for-all modes (rule.UsesPerPlayerWinner) crown an individual PLAYER -
+            // domain comparison would show VICTORY to everyone sharing the winner's domain.
+            if (gameData.ScoringRule != null && gameData.ScoringRule.UsesPerPlayerWinner)
+                return !string.IsNullOrEmpty(gameData.WinnerName)
+                       && gameData.WinnerName == gameData.LocalPlayer.Name;
+
             // Domain modes set WinnerDomain authoritatively.
             if (gameData.WinnerDomain != Domains.Blue)
                 return gameData.LocalPlayer.Domain == gameData.WinnerDomain;

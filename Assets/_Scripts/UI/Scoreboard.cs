@@ -298,10 +298,21 @@ namespace CosmicShore.UI
             // produce results (freestyle, DuelForCell) fall back to the legacy path.
             if (gameData.Results is { Count: > 0 })
             {
-                var winnerDomain = gameData.WinnerDomain != Domains.Blue
-                    ? gameData.WinnerDomain
-                    : gameData.Results[0].Domain;
-                SetBannerForDomain(winnerDomain);
+                // Free-for-all modes crown an individual player, not a domain - the
+                // "{DOMAIN} VICTORY" banner would be wrong (and FFA brush palettes may
+                // use domains outside the labeled four).
+                if (gameData.ScoringRule != null && gameData.ScoringRule.UsesPerPlayerWinner
+                    && !string.IsNullOrEmpty(gameData.WinnerName))
+                {
+                    SetBannerForPlayer(gameData.WinnerName, gameData.WinnerDomain);
+                }
+                else
+                {
+                    var winnerDomain = gameData.WinnerDomain != Domains.Blue
+                        ? gameData.WinnerDomain
+                        : gameData.Results[0].Domain;
+                    SetBannerForDomain(winnerDomain);
+                }
                 PopulateFromResults(gameData.Results);
                 return;
             }
@@ -376,6 +387,17 @@ namespace CosmicShore.UI
                     ? "GAME OVER"
                     : $"{domainLabel} VICTORY";
             }
+        }
+
+        /// <summary>
+        /// Free-for-all banner: names the individual winner. Tinted by the winner's
+        /// domain when the palette knows it (unknown/synthetic domains render gray via
+        /// GetDomainColor's fallback).
+        /// </summary>
+        protected virtual void SetBannerForPlayer(string winnerName, Domains winnerDomain)
+        {
+            if (BannerImage) BannerImage.color = GetDomainColor(winnerDomain);
+            if (BannerText) BannerText.text = $"{winnerName.ToUpper()} WINS";
         }
 
         void PopulatePlayerCards(List<IRoundStats> orderedStats)

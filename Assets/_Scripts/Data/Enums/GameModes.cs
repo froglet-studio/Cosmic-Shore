@@ -57,5 +57,11 @@ namespace CosmicShore.Data
         // scores a point; first domain to the wave target (default 3) wins. See
         // _Scripts/Controller/Arcade/NUCLEUSRUSH.md.
         NucleusRush = 38,
+        // FakeArtist (39): free-for-all social-deduction painting minigame (3-12
+        // players) built on the Connect-the-Dots painting toy. Everyone draws
+        // assigned strokes of a secret artwork; one player (the fake artist) knows
+        // the subject but gets no ring guides. Vote, score, repeat - first to the
+        // point target (default 8) wins. See _Scripts/Controller/Arcade/FAKEARTIST.md.
+        FakeArtist = 39,
     }
 }

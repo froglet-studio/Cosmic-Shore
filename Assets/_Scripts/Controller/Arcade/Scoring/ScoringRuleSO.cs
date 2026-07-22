@@ -28,6 +28,14 @@ namespace CosmicShore.Gameplay
         public ScoringMetric Metric => metric;
         public bool GolfRules => golfRules;
 
+        /// <summary>
+        /// True for free-for-all modes where the winner is an individual PLAYER
+        /// (<see cref="GameDataSO.WinnerName"/>), not a domain - shared end-game surfaces
+        /// (EndGameSequencer's win check, the Scoreboard banner) branch on this instead of
+        /// comparing domains, because in FFA multiple players can share a domain.
+        /// </summary>
+        public virtual bool UsesPerPlayerWinner => false;
+
         /// <summary>The metric value for one player - what the HUD card shows.</summary>
         public int LiveMetric(IRoundStats stats) => ScoringMetrics.Read(stats, metric);
 
