@@ -42,9 +42,20 @@ player to the win target (default 8) takes the gallery.
 - **Scoring**: `FakeArtistScoringRuleSO`, `metric = ScoringMetric.Goals`, points (not
   golf). PER-PLAYER rule: `UsesPerPlayerWinner => true` switches EndGameSequencer's win
   check and the Scoreboard banner to `WinnerName`. Round tally (`FakeArtistScorer`, values
-  on `FakeArtistConfig.asset`): +1 correct subject, +1 correct accusation, flat −1 to any
-  player accused by ≥1 voter (imposter or not), +4 to the fake artist every round (a
-  caught imposter nets +3). Totals can go negative.
+  on `FakeArtistConfig.asset`): +1 correct subject, +1 for accusing any fake artist, flat
+  −1 to any player accused by ≥1 voter (imposter or not), and the fake-artist reward
+  (base 4) to each fake artist every round. Totals can go negative.
+- **Player-count scaling** (`FakeArtistConfigSO` helpers): strokes-per-player rises in
+  small groups so the total stays ≥ `MinTotalStrokes` (a recognizable picture); a second
+  fake artist is added at `SecondImposterAtPlayers` (default 8); the fake-artist reward
+  scales up with player count (`ImposterRewardFor`, capped at `ImposterRewardMax`).
+- **Round staging**: canvases anchor on a tight phyllotaxis spiral — round 0 on the spawn
+  cluster, later rounds within easy flying distance (`AnchorForRound`). Stroke selection
+  keeps strokes that bend in different directions (`DirectionChanges`) so a fake artist's
+  start→end shortcut reads as wrong. During voting/reveal a gallery camera
+  (`FakeArtistGalleryCam`, the `CameraManager` manual-replay rig) orbits the shared
+  painting and the vote panel drops to the lower third, so players study the creation
+  while answering.
 - **Turn monitor**: `FakeArtistTurnMonitor` resolves the win target from
   `EndConditionOverridesSO.GetFakeArtistWinTarget()` at StartMonitor (never a per-scene
   field), syncs via NetworkVariable → `GameDataSO.GoalTargetCount`, and ends the turn when
@@ -74,9 +85,10 @@ player to the win target (default 8) takes the gallery.
 
 | Class | Role |
 |---|---|
-| `FakeArtistController` | Round phase machine (Idle → Drawing → Voting → Revealing → Resolved), brush table, targeted deal RPCs, vote collection, tally + reveal, first-to-N final sync |
+| `FakeArtistController` | Round phase machine (Idle → Drawing → Voting → Revealing → Resolved), brush table, targeted deal RPCs, 1-2 fake artists, vote collection, tally + reveal, gallery-camera lifecycle, first-to-N final sync |
 | `FakeArtistBrushes` | The 12 trail identities: slot→(paint domain, shielded) table, synthetic Fire `(Domains)5` / Lime `(Domains)6` material-set minting + registration, per-spawn brush integrity (`PrismKinds.Clear` + `ActivateShield`), UI/ribbon colors |
-| `FakeArtistArtworkBuilder` | Pure/deterministic: preset → seeded parametric variation → repartition to exactly `players x strokesPerPlayer` strokes → flight-order deal; ride-dot extraction; golden-angle round anchors; subject-choice building |
+| `FakeArtistArtworkBuilder` | Pure/deterministic: preset → seeded parametric variation (bendier warp) → repartition (drops straightest strokes, keeps multi-bend ones) to exactly `players x strokesPerPlayer` strokes → flight-order deal; ride-dot extraction; phyllotaxis round anchors near the players; `DirectionChanges` metric; subject-choice building |
+| `FakeArtistGalleryCam` | Per-client vote/reveal camera that orbits the shared painting (CameraManager manual-replay rig); restores gameplay camera on stop |
 | `FakeArtistStrokeGuide` | Local player's private guide: ring markers per dot (imposter: start+end only), distance-latch completion (zero colliders), pen up/down, objective-arrow relay |
 | `FakeArtistRevealGhost` | Post-vote whole-artwork LineRenderer blueprint, regenerated locally from (preset, size, seed) — no geometry crosses the wire pre-vote |
 | `FakeArtistVotePanel` | Runtime-built overlay UI: role card, two-question timed vote, imposter waiting card, reveal card; CanvasGroup fades |
