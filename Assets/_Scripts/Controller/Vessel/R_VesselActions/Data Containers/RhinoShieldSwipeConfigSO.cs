@@ -23,15 +23,20 @@ namespace CosmicShore.Gameplay
         [Tooltip("Downward pitch when BOTH triggers are fully pulled. A single full pull reaches half of this.")]
         [SerializeField] float chopPitchDegrees = 65f;
 
-        [Header("Response (seconds)")]
-        [Tooltip("Time for a full single-trigger travel; also smooths binary presses (touch, dual-mouse) into a swing.")]
+        [Header("Analog Tracking")]
+        [Tooltip("Time constant for the pose tracking the physical triggers - the finger is the animation. Keep tiny; it only filters sensor jitter.")]
+        [SerializeField] float analogSmoothingSeconds = 0.04f;
+
+        [Header("Event Swing (binary inputs only: remote replay, touch)")]
+        [Tooltip("Swing-out time for event-driven presses, whose targets snap instead of being pulled.")]
         [SerializeField] float swipeOutSeconds = 0.18f;
-        [Tooltip("Time to travel back as the triggers ease off or release.")]
+        [Tooltip("Return time after an event-driven release.")]
         [SerializeField] float returnSeconds = 0.3f;
 
         public float SwipeYawDegrees => swipeYawDegrees;
         public float SwipeRollDegrees => swipeRollDegrees;
         public float ChopPitchDegrees => chopPitchDegrees;
+        public float AnalogSmoothingSeconds => analogSmoothingSeconds;
         public float SwipeOutSeconds => swipeOutSeconds;
         public float ReturnSeconds => returnSeconds;
     }

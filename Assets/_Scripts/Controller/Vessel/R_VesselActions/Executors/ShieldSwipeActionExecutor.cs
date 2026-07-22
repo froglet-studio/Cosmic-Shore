@@ -71,7 +71,8 @@ namespace CosmicShore.Gameplay
             if (!EnsureShieldRoot()) return;
 
             float diffTarget, sumTarget;
-            if (IsLocalAnalogPilot(out var input))
+            bool analog = IsLocalAnalogPilot(out var input);
+            if (analog)
             {
                 float lt = ApplyDeadzone(input.LeftTriggerAnalog);
                 float rt = ApplyDeadzone(input.RightTriggerAnalog);
@@ -92,8 +93,8 @@ namespace CosmicShore.Gameplay
 
             if (_diff == 0f && _sum == 0f && diffTarget == 0f && sumTarget == 0f) return;
 
-            _diff = Drive(_diff, diffTarget);
-            _sum = Drive(_sum, sumTarget);
+            _diff = Drive(_diff, diffTarget, analog);
+            _sum = Drive(_sum, sumTarget, analog);
             ApplyShieldPose();
         }
 
@@ -140,17 +141,30 @@ namespace CosmicShore.Gameplay
             _activeSign = (isRight ? _leftHeld : _rightHeld) ? -so.DirectionSign : 0f;
         }
 
-        float Drive(float current, float target)
+        float Drive(float current, float target, bool analog)
         {
-            // Full single-trigger travel (1 unit) takes swipeOutSeconds on the way out,
-            // returnSeconds on the way back - and doubles as the swing animation for
-            // binary inputs, whose targets snap.
+            if (analog)
+            {
+                // Position tracking, not an animation - the finger is the tween. The
+                // tiny time constant only filters sensor jitter, so partial pulls hold
+                // partial orientations and the pose follows the trigger continuously.
+                float tau = Mathf.Max(0.001f, config.AnalogSmoothingSeconds);
+                current = Mathf.Lerp(current, target, 1f - Mathf.Exp(-Time.deltaTime / tau));
+                return Mathf.Abs(current - target) < 0.001f ? target : current;
+            }
+
+            // Event-driven targets snap (press/release); rate-limit the travel so a
+            // binary input still reads as a swing: full single-trigger travel (1 unit)
+            // takes swipeOutSeconds out, returnSeconds back.
             bool attacking = Mathf.Abs(target) > Mathf.Abs(current);
             float seconds = Mathf.Max(0.01f, attacking ? config.SwipeOutSeconds : config.ReturnSeconds);
             return Mathf.MoveTowards(current, target, Time.deltaTime / seconds);
         }
 
-        static float ApplyDeadzone(float value) => value < TriggerDeadzone ? 0f : value;
+        // Re-normalized so travel is continuous from 0 at the deadzone edge to 1 at
+        // full pull - a plain cutoff would step the pose at the deadzone boundary.
+        static float ApplyDeadzone(float value) =>
+            value < TriggerDeadzone ? 0f : (value - TriggerDeadzone) / (1f - TriggerDeadzone);
 
         void ApplyShieldPose()
         {

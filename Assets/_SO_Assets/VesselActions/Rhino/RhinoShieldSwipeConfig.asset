@@ -15,5 +15,6 @@ MonoBehaviour:
   swipeYawDegrees: 90
   swipeRollDegrees: 90
   chopPitchDegrees: 65
+  analogSmoothingSeconds: 0.04
   swipeOutSeconds: 0.18
   returnSeconds: 0.3
