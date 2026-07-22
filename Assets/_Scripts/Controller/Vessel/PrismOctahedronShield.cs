@@ -25,7 +25,7 @@ namespace CosmicShore.Gameplay
     /// full physics collider.
     /// </summary>
     [DisallowMultipleComponent]
-    public class PrismOctahedronShield : MonoBehaviour
+    public class PrismOctahedronShield : MonoBehaviour, IShieldContainmentGate
     {
         [Header("Collider Sources")]
         [Tooltip("The authored BoxCollider that defines the unshielded shape. Its center/size drive the octahedron geometry.")]
@@ -72,6 +72,9 @@ namespace CosmicShore.Gameplay
         [Tooltip("Circumscribing scale factor. 3 is the minimum that guarantees all box corners are inside the octahedron.")]
         [SerializeField] private float shieldScale = OctahedronMeshGenerator.CIRCUMSCRIBING_SCALE;
 
+        [Tooltip("Reach of shielded interaction: the shell scale used for the shielded broadphase box resize and the analytic containment gate. Default = the visible shell (circumscribing scale).")]
+        [SerializeField] private float interactionShellScale = OctahedronMeshGenerator.CIRCUMSCRIBING_SCALE;
+
         // --- Runtime state ---------------------------------------------------
 
         private Mesh _originalMesh;
@@ -79,6 +82,13 @@ namespace CosmicShore.Gameplay
         private Mesh _morphMesh;           // reused every frame during engage morph, owned
         private Vector3 _halfExtents;      // from BoxCollider.size * 0.5
         private Vector3 _center;           // from BoxCollider.center
+
+        // Authored (unshielded) BoxCollider size/center, captured ONCE before any
+        // shielded-pose resize — the shielded pose scales the SAME collider, so
+        // re-reading it mid-shield would compound the scale.
+        private Vector3 _authoredSize = Vector3.one;
+        private Vector3 _authoredCenter = Vector3.zero;
+        private bool _authoredCached;
         private float _boxMass;
         private float _shieldMass;
         private Material[] _originalMaterials;
@@ -106,8 +116,12 @@ namespace CosmicShore.Gameplay
         // this GameObject's MeshRenderer (Prism.SetExoticVisualActive).
         private Prism _prism;
 
-        // Precomputed fast-path containment inverses.
+        // Precomputed fast-path containment inverses (visual shell, shieldScale).
         private float _invA, _invB, _invC;
+
+        // Precomputed interaction-shell inverses (interactionShellScale) for the
+        // IShieldContainmentGate narrowphase.
+        private float _shellInvA, _shellInvB, _shellInvC;
 
         public bool IsShielded => _isShielded;
         public float TransitionProgress => _engageT;
@@ -178,14 +192,24 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Re-reads the BoxCollider's size/center. Call this if the box
-        /// dimensions change at runtime (e.g., scaling prisms).
+        /// dimensions change at runtime (e.g., scaling prisms). The AUTHORED
+        /// size/center are only (re)captured while the collider is in its
+        /// unshielded pose — the shielded pose resizes the SAME collider to
+        /// the shell AABB, so re-reading it mid-shield would compound the scale.
         /// </summary>
         public void CacheGeometry()
         {
-            if (boxCollider != null)
+            if (boxCollider != null && !_isShielded && !_isEngaging)
             {
-                _halfExtents = boxCollider.size * 0.5f;
-                _center = boxCollider.center;
+                _authoredSize = boxCollider.size;
+                _authoredCenter = boxCollider.center;
+                _authoredCached = true;
+            }
+
+            if (_authoredCached)
+            {
+                _halfExtents = _authoredSize * 0.5f;
+                _center = _authoredCenter;
             }
             else
             {
@@ -199,6 +223,10 @@ namespace CosmicShore.Gameplay
             _invA = 1f / a;
             _invB = 1f / b;
             _invC = 1f / c;
+
+            _shellInvA = 1f / Mathf.Max(_halfExtents.x * interactionShellScale, 1e-5f);
+            _shellInvB = 1f / Mathf.Max(_halfExtents.y * interactionShellScale, 1e-5f);
+            _shellInvC = 1f / Mathf.Max(_halfExtents.z * interactionShellScale, 1e-5f);
         }
 
         private void ComputeMassTargets()
@@ -312,6 +340,24 @@ namespace CosmicShore.Gameplay
             return OctahedronMeshGenerator.ContainsPointLocal(local, _invA, _invB, _invC);
         }
 
+        // --- IShieldContainmentGate ------------------------------------------
+
+        /// <summary>
+        /// Signed margin of a WORLD point vs the interaction shell
+        /// (interactionShellScale). &gt; 0 inside, 0 on surface, &lt; 0 outside,
+        /// in the shell's normalized metric. Only meaningful while engaged —
+        /// the dispatch narrowphase reads it via <see cref="Prism.ActiveShieldGate"/>,
+        /// which is set on settle and cleared on disengage.
+        /// </summary>
+        public float SignedMargin(Vector3 worldPoint)
+        {
+            Vector3 local = transform.InverseTransformPoint(worldPoint) - _center;
+            return OctahedronMeshGenerator.SignedMarginLocal(local, _shellInvA, _shellInvB, _shellInvC);
+        }
+
+        /// <summary>Inside or on the interaction shell surface.</summary>
+        public bool ContainsWorldPoint(Vector3 worldPoint) => SignedMargin(worldPoint) >= 0f;
+
         // --- Transition driver -----------------------------------------------
 
         /// <summary>
@@ -397,18 +443,29 @@ namespace CosmicShore.Gameplay
             if (meshFilter != null)
                 meshFilter.sharedMesh = _octahedronMesh;
 
-            // COLLISION stays on the authored PRIMITIVE trigger box - the shield only changes
-            // the LOOK (octahedron mesh, above) and mass, never the collider. A convex
-            // MeshCollider can't serve both skimmer families at once: as a SOLID it is invisible
-            // to solid impactors like the Rhino shield-swipe (solid-vs-solid fires nothing); as a
-            // TRIGGER it is invisible to TRIGGER colliders (Unity/PhysX does not report a
-            // convex-mesh trigger to another trigger), which is every vessel's kinematic-RB
-            // trigger skimmer sphere - so the swap made skims "not register" at all. The authored
-            // box is a PRIMITIVE trigger, which BOTH see (trigger-vs-trigger works for primitives;
-            // solid-vs-trigger works) - exactly how unshielded prisms already skim for everyone.
-            // Bonus: the box is LOD-cullable (PrismColliderLodManager) and needs no convex cook.
+            // COLLISION stays on the authored PRIMITIVE trigger box - the shield changes the
+            // LOOK (octahedron mesh, above), the mass, and the box's SIZE — never the collider
+            // component. A convex MeshCollider can't serve both skimmer families at once: as a
+            // SOLID it is invisible to solid impactors like the Rhino shield-swipe (solid-vs-solid
+            // fires nothing); as a TRIGGER it is invisible to TRIGGER colliders (Unity/PhysX does
+            // not report a convex-mesh trigger to another trigger), which is every vessel's
+            // kinematic-RB trigger skimmer sphere - so the swap made skims "not register" at all.
+            // The authored box is a PRIMITIVE trigger, which BOTH see - exactly how unshielded
+            // prisms already skim for everyone. Bonus: the box is LOD-cullable
+            // (PrismColliderLodManager) and needs no convex cook.
+            //
+            // Broadphase over-cover (Docs/CollisionLOD/DESIGN.md §2/§3.4): RESIZE the same box
+            // to the interaction-shell AABB so the trigger covers the visible shell; the analytic
+            // gate below refines contacts down to the octahedron. Never disable/enable or swap
+            // the collider on a state change — resizing an already-overlapping box can only fire
+            // OnTriggerExit (shrink) or a fresh OnTriggerEnter for newly-covered colliders, never
+            // a second Enter for an existing overlap, which is what structurally prevents the
+            // pop-then-destroy bug.
             if (boxCollider != null)
-                boxCollider.enabled = true;
+            {
+                boxCollider.size = _authoredSize * interactionShellScale;
+                boxCollider.center = _authoredCenter;
+            }
 
             if (shieldMeshCollider != null)
                 shieldMeshCollider.enabled = false;
@@ -426,6 +483,10 @@ namespace CosmicShore.Gameplay
             {
                 _prism.SetRenderMeshOverride(_octahedronMesh);
                 _prism.SetExoticVisualActive(false);
+
+                // Shell settled — publish the analytic gate so impact dispatch
+                // refines the enlarged broadphase box down to the octahedron.
+                _prism.SetActiveShieldGate(this);
             }
         }
 
@@ -435,7 +496,14 @@ namespace CosmicShore.Gameplay
                 meshFilter.sharedMesh = _originalMesh;
 
             if (boxCollider != null)
-                boxCollider.enabled = true;
+            {
+                // Restore the authored broadphase box (resize only — never disable/enable).
+                if (_authoredCached)
+                {
+                    boxCollider.size = _authoredSize;
+                    boxCollider.center = _authoredCenter;
+                }
+            }
 
             if (shieldMeshCollider != null)
                 shieldMeshCollider.enabled = false;
@@ -444,6 +512,12 @@ namespace CosmicShore.Gameplay
                 rb.mass = _boxMass;
 
             ApplyMaterialOverride(shielded: false);
+
+            // Shell gone — impacts fall back to the plain box broadphase. Only clear
+            // our own gate (a shield→super transition may have already published the
+            // stellation's gate).
+            if (_prism != null && ReferenceEquals(_prism.ActiveShieldGate, this))
+                _prism.SetActiveShieldGate(null);
         }
 
         // Keep the prism interactive through the ~engageDuration bloom. Previously this

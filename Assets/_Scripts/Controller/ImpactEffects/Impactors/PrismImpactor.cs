@@ -23,7 +23,23 @@ namespace CosmicShore.Gameplay
         {
             Prism ??= GetComponent<Prism>();
         }
-        
+
+        /// <summary>
+        /// Self-side shell narrowphase: when THIS prism has an engaged shield,
+        /// a contact entering its enlarged broadphase box must reach the
+        /// analytic shell (within this impactor's margin threshold) before the
+        /// impact dispatches. See Docs/CollisionLOD/DESIGN.md §3.6.
+        /// </summary>
+        protected override bool PassesOwnShieldNarrowphase(Collider other)
+        {
+            var gate = Prism != null ? Prism.ActiveShieldGate : null;
+            if (gate == null)
+                return true;
+
+            return gate.SignedMargin(other.ClosestPoint(transform.position)) >= ShieldMarginThreshold;
+        }
+
+
         protected override void AcceptImpactee(IImpactor impactee)
         {    
             switch (impactee)

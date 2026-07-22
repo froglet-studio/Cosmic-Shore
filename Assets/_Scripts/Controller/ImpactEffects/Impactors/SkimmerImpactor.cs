@@ -31,6 +31,17 @@ namespace CosmicShore.Gameplay
         public override Domains OwnDomain => Skimmer.Domain;
         protected override bool isInitialized => Skimmer.IsInitialized;
 
+        [Header("Shielded-prism narrowphase")]
+        [Tooltip("Grazing proximity band, in normalized shell units, within which a shielded prism's shell counts as skimmed. Skimming is a proximity interaction — the skimmer rides NEAR the shell — so dispatch is gated on margin >= -band rather than containment.")]
+        [SerializeField] private float _skimBand = 0.35f;
+
+        /// <summary>
+        /// Skims dispatch within a grazing band around the shell rather than on
+        /// containment — the exact case a containment-only gate cannot express
+        /// (Docs/CollisionLOD/DESIGN.md §2 "Per-interaction threshold").
+        /// </summary>
+        protected override float ShieldMarginThreshold => -_skimBand;
+
         // runtime state (moved from Skimmer)
         readonly Dictionary<string, float> _skimStartTimes = new();
         //private int ActivelySkimmingBlockCount;
@@ -79,11 +90,15 @@ namespace CosmicShore.Gameplay
         //    sigma = SqrSweetSpot / 2.355f;
         //}
 
-        void OnTriggerStay(Collider other)
+        protected override void OnTriggerStay(Collider other)
         {
+            // Base first: re-tests contacts parked outside a shielded prism's
+            // shell and dispatches once they graze into the skim band.
+            base.OnTriggerStay(other);
+
             if (!isInitialized)
                 return;
-            
+
             if (skimmer.AllowVaccumCrystal && other.TryGetComponent<Crystal>(out var crystal)
                 && !crystal.IsEmbedded) // a living lifeform's heart is never vacuumed out of its body
             {
@@ -131,8 +146,11 @@ namespace CosmicShore.Gameplay
         //    minMaturePrismSqrDistance = Mathf.Infinity;
         //}
 
-        void OnTriggerExit(Collider other)
+        protected override void OnTriggerExit(Collider other)
         {
+            // Base first: drops any contact still parked outside the shell.
+            base.OnTriggerExit(other);
+
             if (!isInitialized)
                 return;
 

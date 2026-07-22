@@ -245,28 +245,31 @@ namespace CosmicShore.Utility
         }
 
         /// <summary>
-        /// Branchless containment test for a point in local space relative to
-        /// the stellated octahedron. The stellation is the union of two
-        /// tetrahedra, and a point is inside the union iff it lies in either.
+        /// Signed margin of a point in local space relative to the stellated
+        /// octahedron. The stellation is the union of two tetrahedra, and a
+        /// point is inside the union iff it lies in either.
         ///
         /// In normalized local coords (u, v, w) = (x·invA, y·invB, z·invC),
         /// Tet A's 4 face planes correspond to linear forms ε·(u,v,w) where
         /// ε ∈ { (+,+,+), (+,-,-), (-,+,-), (-,-,+) }, each constrained to ≥ -1.
         /// Tet B's planes are the negations of Tet A's, equivalent to the same
         /// 4 forms constrained to ≤ +1. So the same 4 dot products serve both
-        /// containment checks:
+        /// margins:
         ///
-        ///   inside Tet A:        min(f1,f2,f3,f4) ≥ -1
-        ///   inside Tet B:        max(f1,f2,f3,f4) ≤ +1
-        ///   inside super-shield: either holds
+        ///   Tet A margin:        min(f1,f2,f3,f4) + 1
+        ///   Tet B margin:        1 − max(f1,f2,f3,f4)
+        ///   union (super-shield) margin: max of the two
         ///
-        /// Cost: 4 linear forms + min/max + 2 compares - comparable to a box
-        /// AABB and cheaper than a full convex collision check.
+        /// Returns &gt; 0 inside, 0 on the surface, &lt; 0 outside (normalized;
+        /// magnitude ∝ distance to the surface).
+        ///
+        /// Cost: 4 linear forms + min/max - comparable to a box AABB and
+        /// cheaper than a full convex collision check.
         ///
         /// Precompute the inverses once per prism and reuse - this is the
         /// fast path for gameplay overlap checks without a MeshCollider.
         /// </summary>
-        public static bool ContainsPointLocal(Vector3 localPoint, float invA, float invB, float invC)
+        public static float SignedMarginLocal(Vector3 localPoint, float invA, float invB, float invC)
         {
             float u = localPoint.x * invA;
             float v = localPoint.y * invB;
@@ -281,8 +284,31 @@ namespace CosmicShore.Utility
             float minF = Mathf.Min(Mathf.Min(f1, f2), Mathf.Min(f3, f4));
             float maxF = Mathf.Max(Mathf.Max(f1, f2), Mathf.Max(f3, f4));
 
-            // Inside iff inside Tet A (min ≥ -1) OR inside Tet B (max ≤ +1).
-            return minF >= -1f || maxF <= 1f;
+            // Union margin: the better of Tet A's (minF + 1) and Tet B's (1 − maxF).
+            return Mathf.Max(minF + 1f, 1f - maxF);
+        }
+
+        /// <summary>
+        /// Convenience overload taking raw half-extents. Prefer the precomputed
+        /// inverse overload inside hot loops.
+        /// </summary>
+        public static float SignedMarginLocal(Vector3 localPoint, Vector3 halfExtents, float shieldScale = CIRCUMSCRIBING_SCALE)
+        {
+            float invA = 1f / (shieldScale * halfExtents.x);
+            float invB = 1f / (shieldScale * halfExtents.y);
+            float invC = 1f / (shieldScale * halfExtents.z);
+            return SignedMarginLocal(localPoint, invA, invB, invC);
+        }
+
+        /// <summary>
+        /// Branchless containment test for a point in local space relative to
+        /// the stellated octahedron. Defined as
+        /// <see cref="SignedMarginLocal(Vector3, float, float, float)"/> ≥ 0
+        /// so margin and containment share one source of truth.
+        /// </summary>
+        public static bool ContainsPointLocal(Vector3 localPoint, float invA, float invB, float invC)
+        {
+            return SignedMarginLocal(localPoint, invA, invB, invC) >= 0f;
         }
 
         /// <summary>

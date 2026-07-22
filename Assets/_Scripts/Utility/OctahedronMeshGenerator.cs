@@ -220,20 +220,47 @@ namespace CosmicShore.Utility
         }
 
         /// <summary>
-        /// Branchless containment test for a point in local space relative to
-        /// the circumscribing octahedron. Uses the L1-norm inequality
+        /// Signed margin of a point in local space relative to the
+        /// circumscribing octahedron, from the L1-norm inequality
         ///   |x|·invA + |y|·invB + |z|·invC ≤ 1
         /// where invA/B/C = 1 / (shieldScale · halfExtent).
+        ///
+        /// Returns 1 − (|x|·invA + |y|·invB + |z|·invC):
+        ///   &gt; 0 inside, 0 on the surface, &lt; 0 outside (normalized;
+        ///   magnitude ∝ distance to the surface).
         ///
         /// Precompute the inverses once per prism and reuse - this is the
         /// fast path for gameplay overlap checks without a MeshCollider.
         /// </summary>
-        public static bool ContainsPointLocal(Vector3 localPoint, float invA, float invB, float invC)
+        public static float SignedMarginLocal(Vector3 localPoint, float invA, float invB, float invC)
         {
             float sum = Mathf.Abs(localPoint.x) * invA
                       + Mathf.Abs(localPoint.y) * invB
                       + Mathf.Abs(localPoint.z) * invC;
-            return sum <= 1f;
+            return 1f - sum;
+        }
+
+        /// <summary>
+        /// Convenience overload taking raw half-extents. Prefer the precomputed
+        /// inverse overload inside hot loops.
+        /// </summary>
+        public static float SignedMarginLocal(Vector3 localPoint, Vector3 halfExtents, float shieldScale = CIRCUMSCRIBING_SCALE)
+        {
+            float invA = 1f / (shieldScale * halfExtents.x);
+            float invB = 1f / (shieldScale * halfExtents.y);
+            float invC = 1f / (shieldScale * halfExtents.z);
+            return SignedMarginLocal(localPoint, invA, invB, invC);
+        }
+
+        /// <summary>
+        /// Branchless containment test for a point in local space relative to
+        /// the circumscribing octahedron. Defined as
+        /// <see cref="SignedMarginLocal(Vector3, float, float, float)"/> ≥ 0
+        /// so margin and containment share one source of truth.
+        /// </summary>
+        public static bool ContainsPointLocal(Vector3 localPoint, float invA, float invB, float invC)
+        {
+            return SignedMarginLocal(localPoint, invA, invB, invC) >= 0f;
         }
 
         /// <summary>
