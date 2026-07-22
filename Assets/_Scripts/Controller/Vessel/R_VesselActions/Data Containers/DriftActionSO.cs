@@ -23,10 +23,6 @@ namespace CosmicShore.Gameplay
 
         public override void StartAction(ActionExecutorRegistry execs, IVesselStatus vesselStatus)
         {
-            // TEMPORARY [DRIFT-DIAG]: remove after the Scurry drift investigation.
-            CosmicShore.Utility.CSDebug.Log($"[DRIFT-DIAG] DriftStart sharp={isSharpDrifting} vessel={vesselStatus.Name}/{vesselStatus.PlayerName} " +
-                        $"local={vesselStatus.IsLocalUser} lTrig={vesselStatus.InputStatus?.LeftTriggerAnalog:F2} device={vesselStatus.InputStatus?.ActiveInputDevice}");
-
             var t = vesselStatus.VesselTransformer;
             t.BeginDrift(Mult, driftDamping, isSharpDrifting);
             vesselStatus.IsDrifting = true;
@@ -52,10 +48,6 @@ namespace CosmicShore.Gameplay
 
         public override void StopAction(ActionExecutorRegistry execs, IVesselStatus vesselStatus)
         {
-            // TEMPORARY [DRIFT-DIAG]: remove after the Scurry drift investigation.
-            CosmicShore.Utility.CSDebug.Log($"[DRIFT-DIAG] DriftStop sharp={isSharpDrifting} vessel={vesselStatus.Name}/{vesselStatus.PlayerName} " +
-                        $"local={vesselStatus.IsLocalUser} lTrig={vesselStatus.InputStatus?.LeftTriggerAnalog:F2}");
-
             var t = vesselStatus.VesselTransformer;
             t.EndDrift(isSharpDrifting);
             vesselStatus.IsDrifting = t.IsDriftActive;
