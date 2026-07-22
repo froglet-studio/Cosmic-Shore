@@ -252,7 +252,7 @@ namespace CosmicShore.Gameplay
             else
             {
                 _isEngaging = true;
-                DisableCollidersDuringMorph();
+                KeepGameplayColliderDuringMorph();
                 UpdateEngageMesh(engageCurve.Evaluate(_engageT));
                 PrismOctahedronShieldManager.EnsureInstance()?.Register(this);
             }
@@ -404,6 +404,14 @@ namespace CosmicShore.Gameplay
             {
                 shieldMeshCollider.sharedMesh = _octahedronMesh;
                 shieldMeshCollider.convex = true;
+                // Mirror the authored collider's trigger semantics. The prism box is a
+                // TRIGGER (that is the baseline every unshielded prism presents, and the
+                // whole impact/skim system dispatches on OnTrigger*). Leaving this as the
+                // AddComponent default (isTrigger=false) silently turned a shielded prism
+                // into a SOLID collider - diverging from the unshielded baseline and
+                // breaking trigger detection for every non-trigger impactor that touches
+                // it. Convex is set above, so a MeshCollider trigger is valid.
+                shieldMeshCollider.isTrigger = boxCollider == null || boxCollider.isTrigger;
                 shieldMeshCollider.enabled = true;
             }
 
@@ -440,9 +448,15 @@ namespace CosmicShore.Gameplay
             ApplyMaterialOverride(shielded: false);
         }
 
-        private void DisableCollidersDuringMorph()
+        // Keep the prism interactive through the ~engageDuration bloom. Previously this
+        // disabled BOTH colliders, so a shielding prism went completely collider-less for
+        // the whole morph - a skimmer/vessel passing during that window touched nothing.
+        // Instead we leave the authored gameplay collider (the box) in whatever state it
+        // already holds (enabled when mature, still off during the spawn-wait / LOD cull -
+        // we never force it on), and only make sure the settled shield mesh collider isn't
+        // active yet; ApplyShieldedPose swaps to the octahedron mesh once the pose settles.
+        private void KeepGameplayColliderDuringMorph()
         {
-            if (boxCollider != null) boxCollider.enabled = false;
             if (shieldMeshCollider != null) shieldMeshCollider.enabled = false;
         }
 

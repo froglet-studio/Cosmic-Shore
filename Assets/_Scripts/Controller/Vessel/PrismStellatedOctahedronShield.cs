@@ -263,7 +263,7 @@ namespace CosmicShore.Gameplay
             else
             {
                 _isEngaging = true;
-                DisableCollidersDuringMorph();
+                KeepGameplayColliderDuringMorph();
                 UpdateEngageMesh(engageCurve.Evaluate(_engageT));
             }
         }
@@ -409,6 +409,12 @@ namespace CosmicShore.Gameplay
                 // gameplay containment use IsPointInsideShield, which does
                 // the true tetrahedral-union check.
                 shieldMeshCollider.convex = true;
+                // Mirror the authored collider's trigger semantics (the prism box is a
+                // TRIGGER, and the impact/skim system dispatches on OnTrigger*). Without
+                // this the AddComponent default (isTrigger=false) turned a super-shielded
+                // prism into a SOLID collider - e.g. the Skim Race / Astro League stellated
+                // lining stopped presenting as the skimmable trigger every other prism is.
+                shieldMeshCollider.isTrigger = boxCollider == null || boxCollider.isTrigger;
                 shieldMeshCollider.enabled = true;
             }
 
@@ -445,9 +451,15 @@ namespace CosmicShore.Gameplay
             ApplyMaterialOverride(shielded: false);
         }
 
-        private void DisableCollidersDuringMorph()
+        // Keep the prism interactive through the ~engageDuration bloom. Previously this
+        // disabled BOTH colliders, so a super-shielding prism went completely collider-less
+        // for the whole morph - a skimmer/vessel passing during that window touched nothing.
+        // Instead we leave the authored gameplay collider (the box) in whatever state it
+        // already holds (never force-enabling it, so the spawn-wait / LOD cull still own it)
+        // and only make sure the settled shield mesh collider isn't active yet;
+        // ApplyShieldedPose swaps to the stellated mesh once the pose settles.
+        private void KeepGameplayColliderDuringMorph()
         {
-            if (boxCollider != null) boxCollider.enabled = false;
             if (shieldMeshCollider != null) shieldMeshCollider.enabled = false;
         }
 
