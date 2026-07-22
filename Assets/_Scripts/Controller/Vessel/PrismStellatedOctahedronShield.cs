@@ -383,6 +383,48 @@ namespace CosmicShore.Gameplay
             return SignedMargin(worldCentre) + worldRadius * gradWorld;
         }
 
+        /// <summary>
+        /// Inward (toward-interior) unit normal of the stella facet nearest a world
+        /// point. margin = max(minF+1, 1−maxF): inside/near Tet A the binding facet
+        /// is the MIN form (raise it → inward = +its coefficient pattern); nearer
+        /// Tet B it is the MAX form (lower it → inward = −its pattern). Mapped to
+        /// world so the narrowphase can query a hull's support toward the spikes.
+        /// </summary>
+        public Vector3 ShellInwardNormal(Vector3 worldPoint)
+        {
+            Vector3 local = transform.InverseTransformPoint(worldPoint) - _center;
+            float u = local.x * _shellInvA;
+            float v = local.y * _shellInvB;
+            float w = local.z * _shellInvC;
+
+            float f1 =  u + v + w;   // (+,+,+)
+            float f2 =  u - v - w;   // (+,-,-)
+            float f3 = -u + v - w;   // (-,+,-)
+            float f4 = -u - v + w;   // (-,-,+)
+
+            float minF = Mathf.Min(Mathf.Min(f1, f2), Mathf.Min(f3, f4));
+            float maxF = Mathf.Max(Mathf.Max(f1, f2), Mathf.Max(f3, f4));
+
+            Vector3 coeff = minF + 1f >= 1f - maxF
+                ? CoeffOf(minF, f1, f2, f3, f4)
+                : -CoeffOf(maxF, f1, f2, f3, f4);
+
+            Vector3 inwardLocal = new Vector3(coeff.x * _shellInvA, coeff.y * _shellInvB, coeff.z * _shellInvC);
+            Vector3 world = transform.TransformDirection(inwardLocal);
+            return world.sqrMagnitude > 1e-10f
+                ? world.normalized
+                : (transform.TransformPoint(_center) - worldPoint).normalized;
+        }
+
+        // Coefficient pattern (±1 per axis) of whichever linear form equals `target`.
+        private static Vector3 CoeffOf(float target, float f1, float f2, float f3, float f4)
+        {
+            if (target == f1) return new Vector3( 1f,  1f,  1f);
+            if (target == f2) return new Vector3( 1f, -1f, -1f);
+            if (target == f3) return new Vector3(-1f,  1f, -1f);
+            return new Vector3(-1f, -1f,  1f); // f4
+        }
+
         /// <summary>Inside or on the interaction shell surface.</summary>
         public bool ContainsWorldPoint(Vector3 worldPoint) => SignedMargin(worldPoint) >= 0f;
 

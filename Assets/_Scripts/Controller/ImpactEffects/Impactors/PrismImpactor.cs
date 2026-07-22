@@ -36,7 +36,11 @@ namespace CosmicShore.Gameplay
             if (gate == null)
                 return true;
 
-            return gate.SignedMargin(other.ClosestPoint(transform.position)) >= ShieldMarginThreshold;
+            // Same shape-aware test as the impactee side, but the toucher is
+            // `other` and the shell is THIS prism's — so a hull grazing our
+            // octahedron/stella tips is caught, not just a centre-facing point.
+            return ColliderReachesShell(other, gate, transform.position,
+                ShieldMarginThreshold, other.transform.position);
         }
 
         // True only while this prism's shell is engaged — lets ImpactorBase drop a

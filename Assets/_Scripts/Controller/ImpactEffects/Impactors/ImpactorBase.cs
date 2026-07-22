@@ -225,28 +225,48 @@ namespace CosmicShore.Gameplay
             if (gate == null)
                 return true; // unshielded: the box IS the shape
 
-            // Sphere touchers (skimmer sphere, other sphere triggers): gate on
-            // the analytic sphere-vs-shell margin at the sphere's WORLD centre
-            // and WORLD radius — "sphere reaches the shell" — rather than a
-            // point sampled toward the prism centre.
-            if (OwnCollider is SphereCollider sc)
+            // THIS impactor's collider is the toucher; test it against the
+            // impactee prism's shell.
+            return ColliderReachesShell(OwnCollider, gate, prism.transform.position,
+                ShieldMarginThreshold, transform.position);
+        }
+
+        /// <summary>
+        /// Shape-aware "does collider <paramref name="c"/> reach the shell
+        /// <paramref name="gate"/> within <paramref name="threshold"/>" test — the
+        /// analytic equivalent of a convex octahedron/stella mesh collider.
+        /// A SphereCollider uses the exact sphere-vs-shell margin. Any other
+        /// convex/primitive collider takes the MAX shell margin over two SUPPORT
+        /// points: its farthest point toward the shell interior
+        /// (<see cref="IShieldContainmentGate.ShellInwardNormal"/> — this is what
+        /// catches the thin tips) and its nearest point to the prism centre (the
+        /// deep-body case). A single centre-facing sample misses the tips, which is
+        /// why hulls clipped straight through them. ClosestPoint requires a
+        /// primitive or CONVEX collider (the gameplay case).
+        /// </summary>
+        protected static bool ColliderReachesShell(Collider c, IShieldContainmentGate gate,
+            Vector3 prismCentre, float threshold, Vector3 fallbackPoint)
+        {
+            if (c == null)
+                return gate.SignedMargin(fallbackPoint) >= threshold;
+
+            if (c is SphereCollider sc)
             {
-                Vector3 worldCentre = sc.transform.TransformPoint(sc.center);
+                Vector3 wc = sc.transform.TransformPoint(sc.center);
                 Vector3 ls = sc.transform.lossyScale;
-                float worldRadius = sc.radius * Mathf.Max(Mathf.Abs(ls.x),
-                    Mathf.Max(Mathf.Abs(ls.y), Mathf.Abs(ls.z)));
-                return gate.SignedMarginSphere(worldCentre, worldRadius) >= ShieldMarginThreshold;
+                float r = sc.radius * Mathf.Max(Mathf.Abs(ls.x), Mathf.Max(Mathf.Abs(ls.y), Mathf.Abs(ls.z)));
+                return gate.SignedMarginSphere(wc, r) >= threshold;
             }
 
-            // Non-sphere touchers: probe from THIS impactor's OWN collider — the
-            // toucher's nearest approach to the prism centre. Measuring the
-            // prism's own box (the `other` that entered our trigger) would return
-            // the centre and evaluate the margin deep inside the shell (~+1), so
-            // the gate would never bite.
-            var probe = OwnCollider != null
-                ? OwnCollider.ClosestPoint(prism.transform.position)
-                : transform.position;
-            return gate.SignedMargin(probe) >= ShieldMarginThreshold;
+            // Convex/primitive hull: MAX margin over the support toward the shell
+            // interior (catches the thin tips) and the nearest point to the centre
+            // (deep body). ClosestPoint(centre + inward·big) is the support point.
+            Vector3 centre = c.bounds.center;
+            Vector3 inward = gate.ShellInwardNormal(centre);
+            float margin = Mathf.Max(
+                gate.SignedMargin(c.ClosestPoint(centre + inward * 1000f)),
+                gate.SignedMargin(c.ClosestPoint(prismCentre)));
+            return margin >= threshold;
         }
 
         void ParkPendingContact(Collider other, ImpactCollider impacteeCollider, PrismImpactor impacteePrism)

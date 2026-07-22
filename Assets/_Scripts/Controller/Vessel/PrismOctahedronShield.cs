@@ -374,6 +374,26 @@ namespace CosmicShore.Gameplay
             return SignedMargin(worldCentre) + worldRadius * gradWorld;
         }
 
+        /// <summary>
+        /// Inward (toward-interior) unit normal of the octahedron facet nearest a
+        /// world point. In the active octant the L1 face is the plane
+        /// sign(x)·invA·x + sign(y)·invB·y + sign(z)·invC·z = 1, so its inward
+        /// normal (decreasing L1 sum = increasing margin) is the negated coefficient
+        /// vector, mapped to world.
+        /// </summary>
+        public Vector3 ShellInwardNormal(Vector3 worldPoint)
+        {
+            Vector3 local = transform.InverseTransformPoint(worldPoint) - _center;
+            Vector3 inwardLocal = new Vector3(
+                -Mathf.Sign(local.x) * _shellInvA,
+                -Mathf.Sign(local.y) * _shellInvB,
+                -Mathf.Sign(local.z) * _shellInvC);
+            Vector3 world = transform.TransformDirection(inwardLocal);
+            return world.sqrMagnitude > 1e-10f
+                ? world.normalized
+                : (transform.TransformPoint(_center) - worldPoint).normalized;
+        }
+
         /// <summary>Inside or on the interaction shell surface.</summary>
         public bool ContainsWorldPoint(Vector3 worldPoint) => SignedMargin(worldPoint) >= 0f;
 

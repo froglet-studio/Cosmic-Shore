@@ -211,3 +211,27 @@ usage limit mid-run, so the final pass was manual). Not compiled or play-tested 
 checklist is the gate — pay special attention to skim reach vs the visible shell, pop landing on the
 shell (not early/late), the stella (non-convex) inter-spike gaps, and whether one swing popping AND
 killing feels right.
+
+### 7.2 Shape-aware narrowphase (in-editor: hulls clipped through the tips)
+
+First playtest confirmed the 3× box **reach** is live (the `BoxCollider` gizmo encloses the spikes) but a
+**vessel hull clipped straight through the pointy tips** — only the inner region interacted. Cause: the
+non-sphere path gated on a SINGLE point — the collider's nearest approach to the prism *centre*
+(`ClosestPoint(prismCentre)`) — which cannot see the thin octahedron/stella tips or the hull's extended
+body. Only the sphere skimmer path was shape-aware.
+
+Fix — make every collider shape-aware, the analytic equivalent of a convex octahedron/stella mesh
+collider (`ImpactorBase.ColliderReachesShell`):
+- **Sphere** → exact sphere-vs-shell margin (unchanged).
+- **Any other convex/primitive collider** → MAX shell margin over two SUPPORT points: the collider's
+  farthest point toward the shell interior — `ClosestPoint(centre + ShellInwardNormal·big)` — which
+  catches the thin tips, and its nearest point to the prism centre (deep body). New
+  `IShieldContainmentGate.ShellInwardNormal(worldPoint)` returns the inward normal of the nearest facet
+  (octahedron: the octant's negated L1 coefficients; stella: the active linear form's coefficients).
+- Both the impactee-side (`ImpactorBase`) and the self-side (`PrismImpactor`) route through the one helper.
+- Non-convex `MeshCollider` touchers degrade to the centre sample (over-reach, the safe direction) since
+  `Collider.ClosestPoint` requires primitive/convex geometry — gameplay hulls are convex/primitive.
+
+Cost: the non-sphere narrowphase is now 2 `ClosestPoint` + 2 margin evals (was 1+1), only for shielded
+contacts with a non-sphere toucher. Still needs the in-editor pass: confirm the hull now catches at the
+octahedron/stella tips and does not over-reach in open space.
