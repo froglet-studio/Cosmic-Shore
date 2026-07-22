@@ -177,6 +177,11 @@ reach on fine detail, bench/resume via the station, cross-session stroke progres
 - **Full experience (optional).** For a gameplay scene with ecology infra, the original
   `ShapeDrawingManager` (preview cinematic, scoring, reveal, `EndShapeDetailHUD`) remains a
   separate, score-bearing mode — the toy stays scoreless by design.
+  - *Shipped (first instance)*: **Fake Artist** (`GameModes.FakeArtist = 39`), the
+    free-for-all social-deduction painting arcade mode built on `PaintingStrokeToolkit` /
+    `PaintingPresetLibrary` — see `_Scripts/Controller/Arcade/FAKEARTIST.md`. The party-client
+    pen-up desync recorded below is fixed platform-wide by `VesselController.n_TrailPenUp`
+    (added for that mode; the toy benefits for free).
 
 ## Branch: conveyor ("Wanderway") polish
 

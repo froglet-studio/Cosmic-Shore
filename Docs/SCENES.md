@@ -1,6 +1,6 @@
 # Scene & Game Mode Reference
 
-Comprehensive documentation of all Unity scenes, game modes, and their related systems in Cosmic Shore. Last updated June 2026.
+Comprehensive documentation of all Unity scenes, game modes, and their related systems in Cosmic Shore. Last updated July 2026.
 
 ---
 
@@ -53,6 +53,7 @@ game scene and still exists.
 | **MinigameAstroLeague** | `_Scenes/Multiplayer Scenes/` | `AstroLeague (37)` | `AstroLeagueController` |
 | **MinigameNucleusRush** | `_Scenes/Multiplayer Scenes/` | `NucleusRush (38)` | `NucleusRushController` |
 | **MinigameRampage** | `_Scenes/Multiplayer Scenes/` | `Rampage (2)` | `RampageController` |
+| **MinigameFakeArtist** | `_Scenes/Multiplayer Scenes/` | `FakeArtist (39)` | `FakeArtistController` |
 | **ArcadeGameMultiplayer2v2CoOpVsAI** | `_Scenes/Multiplayer Scenes/` | `Multiplayer2v2CoOpVsAI (30)` | Variant of domain games controller |
 | **MinigameTournamentMultuplayer** | `_Scenes/Multiplayer Scenes/` | Tournament variant | Multi-round tournament format |
 
@@ -219,7 +220,8 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
         ├── MultiplayerCrystalCaptureController — minimal subclass (1 round, 1 turn)
         ├── AstroLeagueController             — hypersea soccer, server-simulated ball, golden goal
         ├── NucleusRushController             — nucleus-control fauna-wave race, brood scoring
-        └── RampageController                 — destruction race (Scurry's destructive analog), prisms-destroyed scoring
+        ├── RampageController                 — destruction race (Scurry's destructive analog), prisms-destroyed scoring
+        └── FakeArtistController              — free-for-all social-deduction painting game, per-player points scoring
 ```
 
 ---
@@ -266,6 +268,7 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
 | 35 | `MultiplayerCrystalCapture` | MP | MinigameCrystalCaptureMultiplayer_Gameplay | `MultiplayerCrystalCaptureController` |
 | 37 | `AstroLeague` | MP | MinigameAstroLeague | `AstroLeagueController` |
 | 38 | `NucleusRush` | MP | MinigameNucleusRush | `NucleusRushController` |
+| 39 | `FakeArtist` | MP | MinigameFakeArtist | `FakeArtistController` |
 
 Note: IDs 7 and 31 are skipped in the enum. 31 was never assigned; 7 was the retired standalone arcade Freestyle game (freestyle now lives in Menu_Main as the lava lamp — see the naming note at the top of this document). Many single-player arcade modes (1, 3-6, 9-25, 27) share scenes configured by `SO_ArcadeGame` assets rather than having dedicated scene files; they use the same underlying scene infrastructure with different turn monitors, scoring, and environment configurations. `Rampage(2)` left this set — it is now a multiplayer destruction race with its own `MinigameRampage` scene (see `_Scripts/Controller/Arcade/RAMPAGE.md`).
 
@@ -419,6 +422,23 @@ Hypersea soccer (Rocket League-inspired) — two domains slam a server-simulated
 - `UseSceneReloadForReplay => true`
 - AI strikers via `AIPilot.SetExternalTargetProvider` (billiard approach behind the ball)
 
+### Fake Artist
+
+**Scene**: `MinigameFakeArtist.unity`
+**Controller**: `FakeArtistController`
+**Base**: `MultiplayerDomainGamesController`
+**See also**: `Assets/_Scripts/Controller/Arcade/FAKEARTIST.md`
+
+Free-for-all social-deduction painting party game (3-12 players, everyone on their own team) built on the Connect-the-Dots painting toolkit. Each round every player draws 3 assigned strokes of a secret parametric artwork; one fake artist knows the subject but gets only stroke start/end dots. Everyone else votes on the subject and the imposter; first player to the win target (default 8 points) takes the gallery.
+
+**Key features**:
+- `UseGolfRules => false`; per-PLAYER scoring on `GoalsScored` (`FakeArtistScoringRuleSO.UsesPerPlayerWinner => true`)
+- Unbounded rounds (`numberOfRounds` stays `int.MaxValue`) — ends via first-to-N check in `OnTurnEndedCustom`
+- 12 trail identities: 6 paint colors (4 real domains + synthetic Fire/Lime material sets) x normal/shielded prisms
+- Per-client secrets (stroke deals, imposter role) via targeted ClientRpcs; votes via ServerRpc; reveal regenerated locally from (preset, size, seed)
+- Cell-less by design (fauna would eat the gallery; CellItems auto-shield corrupts brush identity)
+- `UseSceneReloadForReplay => true`; AI painters via `AIPilot.SetExternalTargetProvider` dot-walking closures + server-side pen control
+
 ### Multiplayer Freestyle
 
 **Scene**: `MinigameFreestyleMultiplayer_Gameplay.unity`
@@ -549,6 +569,7 @@ All turn monitors live in `Assets/_Scripts/Controller/Arcade/TurnMonitors/`.
 | Joust | Elapsed time (seconds) | `99999` |
 | Crystal Capture | Crystals collected (higher = better) | Crystals collected |
 | Astro League | Goals scored (higher = better) | Goals scored |
+| Fake Artist | Points (`GoalsScored`, higher = better; can be negative) | Points |
 | Cellular Duel | Standard scoring | Standard scoring |
 
 ---
@@ -633,6 +654,7 @@ Game scene names are stored in `SO_ArcadeGame.SceneName` assets, not in `SceneNa
 | Astro League | `AstroLeagueController.cs` | `_Scripts/Controller/Arcade/AstroLeague/` |
 | Nucleus Rush (Brood Rush) | `NucleusRushController.cs` | `_Scripts/Controller/Arcade/` |
 | Rampage | `RampageController.cs` | `_Scripts/Controller/Arcade/` |
+| Fake Artist | `FakeArtistController.cs` | `_Scripts/Controller/Arcade/FakeArtist/` |
 | Freestyle (MP) | `MultiplayerFreestyleController.cs` | `_Scripts/Controller/Arcade/` |
 | Wildlife Blitz (MP) | `MultiplayerWildlifeBlitzMiniGame.cs` | `_Scripts/Controller/Arcade/` |
 | Cellular Duel (SP) | `SinglePlayerCellularDuelController.cs` | `_Scripts/Controller/Arcade/` |
