@@ -66,6 +66,28 @@ managed; Burst-compiled rows show the job type name.
    #3). Async/sync equivalence test added; sync `SumCellVolumes` kept for
    tests/benchmarks.
 
+4. **Shield colliders off MeshCollider** (`claude/tetrahedral-collider-cost`
+   branch) — engaged shields (octahedron AND stellated super-shield) no
+   longer swap in a convex `MeshCollider`. The PhysX trigger is a shield
+   **AABB proxy `BoxCollider`** (`Prism.SetShieldColliderState`, one proxy
+   serves both tiers), and the exact octahedron/stellation surface is
+   enforced by the analytic narrowphase gate
+   (`IShieldContainmentGate` → `Prism.ActiveShieldGate`, checked both
+   directions in `ImpactorBase.OnTriggerEnter` — 3–4 linear forms, cheaper
+   than the convex narrowphase it replaces; for the stellation the AABB
+   *is* the old convex hull, so broadphase behavior is bit-identical).
+   Closes the documented LOD exemption: `SetColliderCulledByLod` covers the
+   proxy, so **shielded prisms are LOD-cullable** (previously an always-on
+   budget line — AstroLeague's 240-prism lining, Wanderway palette caps,
+   MASS-5 turret). Also fixes the spawn-window wart where a pooled
+   `IsShielded` prism re-enabled its box under the engaged shield collider
+   (double trigger), and completes the centralized-ticking migration:
+   `PrismStellatedOctahedronShield` now ticks via
+   `PrismOctahedronShieldManager` (`IPrismShieldTicker`) instead of a
+   per-instance `Update()`. Collider-budget impact: **negative** — active
+   collider count for shielded prisms unchanged near foci (1 trigger
+   before and after), newly reclaimable far from foci; no convex cooks.
+
 Docs commits `27024bab`/`722f37e1`/`3cc29fb8`/`910b0854` hold the
 per-capture analyses; `Docs/SPATIAL_INDEX.md` documents the summation view
 + its three freshness streams.

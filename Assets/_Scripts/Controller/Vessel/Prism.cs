@@ -12,6 +12,32 @@ using CosmicShore.ECS;
 using System.Linq;
 namespace CosmicShore.Gameplay
 {
+    /// <summary>
+    /// Analytic containment test for an engaged prism shield. Implemented by
+    /// <see cref="PrismOctahedronShield"/> (octahedron, L1 test) and
+    /// <see cref="PrismStellatedOctahedronShield"/> (stellation, 4-linear-form
+    /// tetrahedral-union test). While a shield is engaged, its PhysX trigger is
+    /// the shield's box AABB proxy (see <see cref="Prism.SetShieldColliderState"/>);
+    /// this gate is the narrowphase that rejects contacts landing in the AABB's
+    /// corner/notch regions outside the true shield surface
+    /// (<see cref="ImpactorBase.OnTriggerEnter"/>).
+    /// </summary>
+    public interface IShieldContainmentGate
+    {
+        bool ContainsWorldPoint(Vector3 worldPoint);
+    }
+
+    /// <summary>
+    /// Which collider represents the prism to PhysX, as driven by the shield
+    /// components. Explicit values — Unity serialization drift rule.
+    /// </summary>
+    public enum ShieldColliderState
+    {
+        None = 0,       // unshielded: the authored BoxCollider is the trigger
+        Morphing = 1,   // engage bloom in flight: no collider (matches legacy morph window)
+        Engaged = 2,    // shield settled: the AABB proxy BoxCollider is the trigger
+    }
+
     [RequireComponent(typeof(MaterialPropertyAnimator))]
     [RequireComponent(typeof(PrismScaleAnimator))]
     [RequireComponent(typeof(PrismTeamManager))]
@@ -190,6 +216,9 @@ namespace CosmicShore.Gameplay
 
         private IEnumerator HoldColliderAtFullSizeCoroutine(Action onGrown)
         {
+            // The full-size hold replaces the spawn window (callers defer shield
+            // engage to onGrown, so the shield state is None for its duration).
+            _colliderLifecycleReady = true;
             blockCollider.enabled = true;
 
             while (!destroyed && blockCollider)
@@ -504,6 +533,14 @@ namespace CosmicShore.Gameplay
             if (blockCollider) blockCollider.enabled = false;
             SetRenderVisible(false);
 
+            // Pool-reuse safety: the shield components snap to unshielded in their
+            // OnDisable, but a prism re-initialized without a disable cycle must not
+            // carry a previous life's shield collider state or narrowphase gate.
+            _shieldColliderState = ShieldColliderState.None;
+            ActiveShieldGate = null;
+            if (_shieldProxyCollider) _shieldProxyCollider.enabled = false;
+            _colliderLifecycleReady = false; // spawn window owns the collider again
+
             // Pool-reuse safety: a HoldColliderAtFullSize bloom interrupted by recycle (deactivate
             // stops its coroutine before the restore step) must not leak an inflated collider size
             // into the next use of this instance.
@@ -588,7 +625,13 @@ namespace CosmicShore.Gameplay
             using (s_createVisibilityMarker.Auto())
             {
                 SetRenderVisible(true);
-                blockCollider.enabled = true;
+                // Spawn window over — hand the collider to the lifecycle, routed to
+                // whichever collider the shield state designates (a pooled prism
+                // re-initialized with IsShielded may have settled its shield during
+                // the window; previously that re-enabled the box UNDER the engaged
+                // shield collider, double-triggering).
+                _colliderLifecycleReady = true;
+                ApplyShieldDesignatedCollider();
             }
 
             if (scaleAnimator.TargetScale == Vector3.zero)
@@ -658,7 +701,9 @@ namespace CosmicShore.Gameplay
         /// collider by vessel/projectile proximity. Idempotent; destruction and the
         /// spawn window own the collider outright (a culled prism that gets destroyed
         /// stays collider-off; Restore re-enables directly and the next LOD tick
-        /// re-evaluates).
+        /// re-evaluates). Covers BOTH trigger colliders — the authored box and, while
+        /// a shield is engaged, its AABB proxy — so shielded prisms are LOD-cullable
+        /// (they were not while shields swapped in an always-on convex MeshCollider).
         /// </summary>
         public void SetColliderCulledByLod(bool culled)
         {
@@ -666,18 +711,110 @@ namespace CosmicShore.Gameplay
             if (!blockCollider) return;
             if (culled)
             {
-                _colliderBeforeLodCull = blockCollider.enabled;
+                // One snapshot for "any trigger was on" — restore routes to whichever
+                // collider the CURRENT shield state designates, so a shield engage or
+                // disengage that happened while far (e.g. AOE) is honored on un-cull.
+                _colliderBeforeLodCull = blockCollider.enabled ||
+                    (_shieldProxyCollider && _shieldProxyCollider.enabled);
                 blockCollider.enabled = false;
+                if (_shieldProxyCollider) _shieldProxyCollider.enabled = false;
             }
             else if (!destroyed && _colliderBeforeLodCull)
             {
-                blockCollider.enabled = true;
+                ApplyShieldDesignatedCollider();
             }
             _lodCulled = culled;
         }
 
         /// <summary>True while this prism's collider is enabled (LOD telemetry).</summary>
-        public bool ColliderEnabled => blockCollider && blockCollider.enabled;
+        public bool ColliderEnabled =>
+            (blockCollider && blockCollider.enabled) ||
+            (_shieldProxyCollider && _shieldProxyCollider.enabled);
+
+        // --- Shield collider proxy + narrowphase gate ---------------------------
+        // Engaged shields (octahedron / stellation) no longer swap in a convex
+        // MeshCollider. Their PhysX trigger is a second BoxCollider sized to the
+        // shield's AABB (±s·a, ±s·b, ±s·c) — for the stellation this is exactly the
+        // convex hull PhysX computed anyway, and for the octahedron the over-cover
+        // in the AABB corners is rejected by the analytic narrowphase gate
+        // (ImpactorBase.OnTriggerEnter → ActiveShieldGate). One proxy serves both
+        // shield tiers (same shieldScale, same AABB); it composes with the LOD cull
+        // and destruction overlays above instead of being exempt from them.
+        BoxCollider _shieldProxyCollider;
+        ShieldColliderState _shieldColliderState = ShieldColliderState.None;
+
+        // True once the spawn window (CreateBlockCoroutine) or a full-size hold /
+        // Restore has handed the collider to the lifecycle. Defaults true so
+        // scene-placed prisms that never run Initialize keep working; Initialize
+        // resets it for the pooled path.
+        bool _colliderLifecycleReady = true;
+
+        /// <summary>
+        /// The analytic containment test of the currently ENGAGED shield, or null
+        /// when unshielded/morphing. Read by <see cref="ImpactorBase.OnTriggerEnter"/>
+        /// as the narrowphase over the AABB proxy trigger.
+        /// </summary>
+        public IShieldContainmentGate ActiveShieldGate { get; private set; }
+
+        /// <summary>The authored trigger BoxCollider (never the shield proxy).</summary>
+        public BoxCollider AuthoredCollider => blockCollider;
+
+        /// <summary>
+        /// Called by the shield components ONLY. Selects which collider represents
+        /// the prism (authored box / none while morphing / AABB proxy) and installs
+        /// the narrowphase gate. Composes with destruction, the LOD cull, and the
+        /// spawn window — an overlay that currently owns the collider keeps every
+        /// trigger off, and the un-cull / spawn-window-end / Restore paths route to
+        /// the collider designated here.
+        /// </summary>
+        public void SetShieldColliderState(ShieldColliderState state, IShieldContainmentGate gate, float shieldScale)
+        {
+            _shieldColliderState = state;
+            ActiveShieldGate = state == ShieldColliderState.Engaged ? gate : null;
+
+            if (state == ShieldColliderState.Engaged)
+                EnsureShieldProxyCollider(shieldScale);
+
+            bool overlayOwnsCollider = destroyed || _lodCulled || !_colliderLifecycleReady;
+
+            if (blockCollider)
+                blockCollider.enabled = !overlayOwnsCollider && state == ShieldColliderState.None;
+            if (_shieldProxyCollider)
+                _shieldProxyCollider.enabled = !overlayOwnsCollider && state == ShieldColliderState.Engaged;
+        }
+
+        /// <summary>
+        /// Enables whichever trigger collider the shield state designates (box when
+        /// unshielded, proxy when engaged, none while morphing). Used by the paths
+        /// that hand the collider back to the lifecycle: spawn-window end, LOD
+        /// un-cull, and Restore.
+        /// </summary>
+        void ApplyShieldDesignatedCollider()
+        {
+            switch (_shieldColliderState)
+            {
+                case ShieldColliderState.None:
+                    if (blockCollider) blockCollider.enabled = true;
+                    break;
+                case ShieldColliderState.Engaged:
+                    if (_shieldProxyCollider) _shieldProxyCollider.enabled = true;
+                    break;
+                // Morphing: the shield owns the window; both stay off.
+            }
+        }
+
+        void EnsureShieldProxyCollider(float shieldScale)
+        {
+            if (_shieldProxyCollider || !blockCollider) return;
+            var proxy = gameObject.AddComponent<BoxCollider>();
+            proxy.center = blockCollider.center;
+            // Authored size — blockCollider.size is animated by HoldColliderAtFullSize.
+            var baseSize = _authoredColliderSizeCached ? _authoredColliderSize : blockCollider.size;
+            proxy.size = baseSize * shieldScale;
+            proxy.isTrigger = blockCollider.isTrigger;
+            proxy.enabled = false;
+            _shieldProxyCollider = proxy;
+        }
 
         public float CurrentVolume
         {
@@ -764,6 +901,7 @@ namespace CosmicShore.Gameplay
             }
 
             blockCollider.enabled = false;
+            if (_shieldProxyCollider) _shieldProxyCollider.enabled = false;
             SetRenderVisible(false);
 
             prismProperties.volume = Mathf.Max(scaleAnimator ? scaleAnimator.GetCurrentVolume() : 1f, 1f);
@@ -966,7 +1104,8 @@ namespace CosmicShore.Gameplay
                 // cull below would early-out on _lodCulled==true (and a later restore
                 // would reinstate a stale pre-cull snapshot).
                 _lodCulled = false;
-                blockCollider.enabled = true;
+                _colliderLifecycleReady = true;
+                ApplyShieldDesignatedCollider(); // box, or the shield AABB proxy if still engaged
                 SetRenderVisible(true);
                 destroyed = false;
 

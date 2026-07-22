@@ -114,10 +114,11 @@ Cell owns the environment (lifeforms via the cell's own `SpawnProfile` + canonic
 ## Collider-budget hand-back (HARD GATE)
 
 - **Danger** = same LOD-cullable `BoxCollider` as plain — free.
-- **Shielded / SuperShielded** swap to an **always-on convex `MeshCollider`** the collider-LOD
-  *cannot* reclaim. Mitigated by palette caps: `MaxShielded = 3`, `MaxSuperShielded = 1` per scene,
-  and low scheme weights (~11% of scenes carry any). Worst case across a 10-scene pool ≈ 40
-  MeshColliders; realistic steady state ≈ a handful — well under the ≤~1,500/cell target. The
+- **Shielded / SuperShielded** *(updated)* now use a shield **AABB proxy `BoxCollider`** that the
+  collider-LOD *can* reclaim (`Prism.SetShieldColliderState` + `SetColliderCulledByLod` cover it;
+  exact shield surface via the analytic narrowphase gate — no MeshCollider anywhere). The palette
+  caps (`MaxShielded = 3`, `MaxSuperShielded = 1` per scene, ~11% scheme weights) are retained as
+  gameplay/visual bounds; they are no longer required by the collider budget. The
   `MicroscenePatternsTests` lock the caps.
 - Belt BoxColliders stay pool-bounded (`poolSize × prismBudget` ≈ 420) and collider-LOD-culled.
   Placement remains pure arithmetic — zero added physics queries.

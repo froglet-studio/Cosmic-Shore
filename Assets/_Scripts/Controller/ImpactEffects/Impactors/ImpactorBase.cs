@@ -44,6 +44,22 @@ namespace CosmicShore.Gameplay
             if (!other.TryGetComponent(out ImpactCollider impacteeCollider))
                 return;
 
+            // Shield narrowphase: an engaged prism shield's PhysX trigger is its box
+            // AABB proxy, so a contact can land in the AABB's corner/notch regions
+            // outside the true octahedron/stellation surface. Reject those with the
+            // shield's analytic containment test (a few linear forms — cheaper than
+            // the convex MeshCollider narrowphase this replaced). Checked in both
+            // directions: the impactee's shield (their proxy fired our trigger) and
+            // our own (we are a shielded prism receiving a toucher).
+            if (impacteeCollider.Impactor is PrismImpactor prismImpactee)
+            {
+                var gate = prismImpactee.Prism != null ? prismImpactee.Prism.ActiveShieldGate : null;
+                if (gate != null && !gate.ContainsWorldPoint(other.ClosestPoint(transform.position)))
+                    return;
+            }
+            if (!PassesOwnShieldNarrowphase(other))
+                return;
+
             if (!_acceptMarkerInit)
             {
                 _acceptMarkerInit = true;
@@ -52,5 +68,12 @@ namespace CosmicShore.Gameplay
             using (_acceptMarker.Auto())
                 AcceptImpactee(impacteeCollider.Impactor);
         }
+
+        /// <summary>
+        /// Self-side shield narrowphase — overridden by <see cref="PrismImpactor"/>
+        /// to test the toucher against this prism's engaged shield surface. Default:
+        /// pass (only prisms carry shields).
+        /// </summary>
+        protected virtual bool PassesOwnShieldNarrowphase(Collider other) => true;
     }
 }

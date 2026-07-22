@@ -297,11 +297,13 @@ No Docs/ file records the gun breakage; the only written record was the unmerged
   shield = one-hit ablative armor; steals pop it; **fauna can still eat shielded prisms via
   devastate** — so MASS-5 must grant the *regular* shield, not SuperShield (which nothing in the
   game can remove — an ecosystem freeze vector).
-- **Collider budget**: the shield swap is 1:1 (BoxCollider → convex MeshCollider), but the shield
-  MeshCollider is **exempt from collider-LOD culling** (`Prism.SetColliderCulledByLod` touches
-  only `blockCollider`) — 14 shielded prisms/sec from a MASS-5 turret is a real budget line item.
-  Also `PrismOctahedronShield` is auto-added to every prism with a per-frame `Update` and a
-  per-instance mesh (REPORTED — pre-existing background cost).
+- **Collider budget**: RESOLVED — the shield swap is now BoxCollider → AABB proxy BoxCollider
+  (no MeshCollider), and `Prism.SetColliderCulledByLod` covers BOTH the authored box and the
+  proxy, so shielded prisms are LOD-cullable; the exact shield surface is enforced by the
+  analytic narrowphase gate (`Prism.ActiveShieldGate`). A MASS-5 turret's shielded prisms are
+  no longer an LOD-exempt line item. (`PrismOctahedronShield`'s per-frame `Update` was already
+  centralized into `PrismOctahedronShieldManager` ticking; the stellated variant now ticks
+  through the same manager.)
 
 ### CHARGE → skyburst blast radius · L5 spare own domain
 

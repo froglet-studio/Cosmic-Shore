@@ -168,11 +168,13 @@ attached. The stale "Redirection" ability card is replaced by the turret-stance 
 - **Continuity of existence**: bridging prisms and stretched turret prisms bloom in via the
   standard `Prism.Initialize` path (the current turret pop-in is fixed as a prerequisite);
   shield engage/disengage already animate.
-- **Collider budget**: MASS-5 shielded prisms swap Box→convex Mesh 1:1 (count-neutral), but shield
-  colliders are currently exempt from collider-LOD — either extend `SetColliderCulledByLod` to the
-  shield collider or accept and state the budget line (BACKLOG 2.3). Piercing raises concurrent
-  live projectiles; revisit the full-auto pool `bufferSizeTarget`. The barrel roll adds zero
-  colliders.
+- **Collider budget**: RESOLVED (BACKLOG 2.3) — engaged shields no longer swap in a MeshCollider.
+  The shield's PhysX trigger is an AABB proxy BoxCollider routed through
+  `Prism.SetShieldColliderState`, covered by `SetColliderCulledByLod` like the authored box, with
+  the exact shield surface enforced by the analytic narrowphase gate (`Prism.ActiveShieldGate` in
+  `ImpactorBase.OnTriggerEnter`). MASS-5 shielded prisms are count-neutral AND LOD-cullable.
+  Piercing raises concurrent live projectiles; revisit the full-auto pool `bufferSizeTarget`. The
+  barrel roll adds zero colliders.
 - **Universality**: nothing here is Sparrow-special in the framework — the map SO + handler +
   executor-side reads are the same for all 11 vessels; Sparrow is simply the first authored map.
   The other five flyable vessels' quantitative hunks from the abandoned branch drop into the same

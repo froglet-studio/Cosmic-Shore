@@ -1169,9 +1169,11 @@ Count backstops are untouched — volume-only mass never enters `LiveBlockCount`
   disengages it, so the state machine stays the single reversible shield path
   (`PrismKinds` remarks updated). The component is added lazily on first engage; only
   super-shielded prisms pay its mesh cost.
-- **Collider budget.** Each super-shielded prism carries an always-on convex MeshCollider
-  (the engaged stellation) that collider-LOD cannot reclaim — the lining is capped by
-  `AstroLeagueSettingsSO.edgePrismCount` (240; precedent: the Skim Race track
-  super-shields its whole spawned track) and must stay bounded; zero new physics
-  queries (the ball resolves prisms via `PrismSpatialIndex.QuerySphere` and skips
-  super-shielded entirely).
+- **Collider budget.** *(Updated — shield colliders are now LOD-cullable.)* Engaged
+  shields no longer swap in a convex MeshCollider: the PhysX trigger is a shield AABB
+  proxy BoxCollider that participates in the proximity collider-LOD like any other
+  prism collider (`Prism.SetShieldColliderState`; exact surface enforced by the
+  analytic narrowphase gate). The `AstroLeagueSettingsSO.edgePrismCount` cap (240)
+  stays as a mass/visual bound, but super-shield collider count is no longer an
+  LOD-exempt budget line; zero new physics queries (the ball resolves prisms via
+  `PrismSpatialIndex.QuerySphere` and skips super-shielded entirely).

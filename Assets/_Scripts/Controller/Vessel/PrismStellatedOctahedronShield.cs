@@ -12,12 +12,22 @@ namespace CosmicShore.Gameplay
     /// at the 8 cube corners.
     ///
     /// States:
-    ///   Unshielded:        BoxCollider active, authored prism mesh visible,
-    ///                      mass = ρ · 8·a·b·c
-    ///   Super-shielded:    MeshCollider (convex) with stellated mesh,
-    ///                      stellation mesh visible,
+    ///   Unshielded:        authored BoxCollider is the trigger, authored prism
+    ///                      mesh visible, mass = ρ · 8·a·b·c
+    ///   Super-shielded:    the prism's shield AABB proxy BoxCollider is the
+    ///                      trigger, stellation mesh visible,
     ///                      mass = ρ · 108·a·b·c (exactly 13.5× box mass by default,
     ///                      3× the inscribed octahedron shield's mass)
+    ///
+    /// Collider cost: the AABB proxy (±s·a, ±s·b, ±s·c) is EXACTLY the convex hull
+    /// PhysX used to compute for the non-convex stellation (the 6 octahedron
+    /// vertices sit on the face centers of the spike-tip cube), so the broadphase
+    /// shape is identical to the old convex MeshCollider at BoxCollider cost — and
+    /// the notch over-cover both shapes share is now rejected by the analytic
+    /// 4-linear-form narrowphase gate (<see cref="IShieldContainmentGate"/> /
+    /// <see cref="ImpactorBase.OnTriggerEnter"/>). The proxy participates in the
+    /// proximity collider-LOD like any other prism collider; the old MeshCollider
+    /// was LOD-exempt (the documented always-on budget line).
     ///
     /// Engage: per-face bloom morph - 24 outer faces grow outward from their
     /// centroids.
@@ -25,25 +35,17 @@ namespace CosmicShore.Gameplay
     ///   where each of the 24 faces simultaneously shrinks and flies outward
     ///   along its face normal, mirroring the prism destruction VFX.
     ///
-    /// Fast overlap test: <see cref="IsPointInsideShield"/> uses the
-    /// 4-linear-form tetrahedral check from
-    /// <see cref="StellatedOctahedronMeshGenerator.ContainsPointLocal"/> for
-    /// gameplay queries that don't need a full physics collider.
-    ///
     /// Note on terminology: the existing <see cref="PrismOctahedronShield"/>'s
     /// docstring calls the octahedron state "supershielded"; in the broader
     /// design language used here, "super-shielded" refers specifically to this
     /// stellated state, with the octahedron being merely "shielded".
     /// </summary>
     [DisallowMultipleComponent]
-    public class PrismStellatedOctahedronShield : MonoBehaviour
+    public class PrismStellatedOctahedronShield : MonoBehaviour, IShieldContainmentGate, IPrismShieldTicker
     {
         [Header("Collider Sources")]
         [Tooltip("The authored BoxCollider that defines the unshielded shape. Its center/size drive the stellation geometry.")]
         [SerializeField] private BoxCollider boxCollider;
-
-        [Tooltip("MeshCollider used for the super-shielded state. Auto-created if null. Convex is required for Rigidbody interaction.")]
-        [SerializeField] private MeshCollider shieldMeshCollider;
 
         [Header("Rendering")]
         [Tooltip("MeshFilter whose mesh is swapped between the authored prism mesh and the generated stellation mesh.")]
@@ -130,11 +132,18 @@ namespace CosmicShore.Gameplay
 
         private void Awake()
         {
-            if (boxCollider == null) boxCollider = GetComponent<BoxCollider>();
+            _prism = GetComponent<Prism>();
+            // Prefer the prism's authored collider — this component is added lazily
+            // on the first super-shield engage, by which point the shield AABB proxy
+            // (a second BoxCollider on the same GameObject) may already exist and a
+            // bare GetComponent could grab it.
+            if (boxCollider == null)
+                boxCollider = _prism != null && _prism.AuthoredCollider != null
+                    ? _prism.AuthoredCollider
+                    : GetComponent<BoxCollider>();
             if (meshFilter == null)  meshFilter  = GetComponent<MeshFilter>();
             if (rb == null)          rb          = GetComponent<Rigidbody>();
             _meshRenderer = GetComponent<MeshRenderer>();
-            _prism = GetComponent<Prism>();
 
             CacheGeometry();
 
@@ -146,8 +155,9 @@ namespace CosmicShore.Gameplay
 
             // Settled stellation comes from the shared cache (half-extents are the authored
             // LOCAL collider size), so every same-size super-shielded prism resolves to ONE
-            // mesh - one MeshCollider cook, and settled stellations batch on the instanced
-            // render path. Cache-owned: never destroy it here.
+            // mesh and settled stellations batch on the instanced render path. Render-only —
+            // the physics side is the box AABB proxy, no mesh is ever cooked. Cache-owned:
+            // never destroy it here.
             _stellatedMesh = StellatedOctahedronMeshGenerator.GetSharedShieldMesh(_halfExtents, shieldScale);
             _morphMesh = new Mesh { name = "StellatedOctahedron_SuperShield_Morph" };
             _morphMesh.MarkDynamic();
@@ -159,6 +169,9 @@ namespace CosmicShore.Gameplay
         {
             // Snap to clean state when the GameObject is disabled (e.g. pooled
             // back). Prevents stale visuals on pool reuse.
+            // Stop being ticked the moment we're pooled/disabled (cheap if not registered).
+            PrismOctahedronShieldManager.Instance?.Unregister(this);
+
             if (_isShielded || _isEngaging || _isShattering)
             {
                 _engageT = 0f;
@@ -265,6 +278,7 @@ namespace CosmicShore.Gameplay
                 _isEngaging = true;
                 DisableCollidersDuringMorph();
                 UpdateEngageMesh(engageCurve.Evaluate(_engageT));
+                PrismOctahedronShieldManager.EnsureInstance()?.Register(this);
             }
         }
 
@@ -300,6 +314,7 @@ namespace CosmicShore.Gameplay
             {
                 _shatterT = 0f;
                 _isShattering = true;
+                PrismOctahedronShieldManager.EnsureInstance()?.Register(this);
                 EnsureShatterChild();
                 _shatterRenderer.sharedMaterial =
                     _meshRenderer != null ? _meshRenderer.sharedMaterial : null;
@@ -320,20 +335,38 @@ namespace CosmicShore.Gameplay
             return StellatedOctahedronMeshGenerator.ContainsPointLocal(local, _invA, _invB, _invC);
         }
 
+        /// <summary>
+        /// Narrowphase gate over the engaged shield's AABB proxy trigger — rejects
+        /// contacts in the notches between spikes (outside both tetrahedra).
+        /// Installed on the prism while Engaged (<see cref="Prism.ActiveShieldGate"/>).
+        /// </summary>
+        bool IShieldContainmentGate.ContainsWorldPoint(Vector3 worldPoint) => IsPointInsideShield(worldPoint);
+
         // --- Transition driver -----------------------------------------------
 
-        private void Update()
+        /// <summary>
+        /// Advances any in-progress engage/shatter morph by <paramref name="dt"/>.
+        /// Called by <see cref="PrismOctahedronShieldManager"/> ONLY while this shield
+        /// is registered (i.e. actively transitioning) — idle shields are not ticked,
+        /// completing the centralized-ticking migration for the stellated variant
+        /// (it previously ran its own per-instance Update()).
+        /// </summary>
+        internal bool Tick(float dt)
         {
             if (_isEngaging)
-                DriveEngage();
+                DriveEngage(dt);
 
             if (_isShattering)
-                DriveShatter();
+                DriveShatter(dt);
+
+            return _isEngaging || _isShattering;
         }
 
-        private void DriveEngage()
+        bool IPrismShieldTicker.Tick(float dt) => Tick(dt);
+
+        private void DriveEngage(float dt)
         {
-            float step = engageDuration > 0f ? Time.deltaTime / engageDuration : 1f;
+            float step = engageDuration > 0f ? dt / engageDuration : 1f;
             _engageT = Mathf.Clamp01(_engageT + step);
 
             UpdateEngageMesh(engageCurve.Evaluate(_engageT));
@@ -345,9 +378,9 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        private void DriveShatter()
+        private void DriveShatter(float dt)
         {
-            float step = shatterDuration > 0f ? Time.deltaTime / shatterDuration : 1f;
+            float step = shatterDuration > 0f ? dt / shatterDuration : 1f;
             _shatterT = Mathf.Clamp01(_shatterT + step);
 
             float t = shatterCurve.Evaluate(_shatterT);
@@ -396,21 +429,10 @@ namespace CosmicShore.Gameplay
             if (meshFilter != null)
                 meshFilter.sharedMesh = _stellatedMesh;
 
-            if (boxCollider != null)
-                boxCollider.enabled = false;
-
-            EnsureShieldMeshCollider();
-            if (shieldMeshCollider != null)
-            {
-                shieldMeshCollider.sharedMesh = _stellatedMesh;
-                // Convex is required for Rigidbody interaction. Note: the
-                // stellation is non-convex, so Unity will compute a convex
-                // hull approximation (≈ the bounding cube). For accurate
-                // gameplay containment use IsPointInsideShield, which does
-                // the true tetrahedral-union check.
-                shieldMeshCollider.convex = true;
-                shieldMeshCollider.enabled = true;
-            }
+            // The AABB proxy IS the convex hull PhysX computed for the non-convex
+            // stellation (≈ the spike-tip bounding cube) at BoxCollider cost; the
+            // notch regions are rejected by the analytic narrowphase gate.
+            ApplyColliderState(ShieldColliderState.Engaged);
 
             if (rb != null)
                 rb.mass = _shieldMass;
@@ -433,11 +455,7 @@ namespace CosmicShore.Gameplay
             if (meshFilter != null)
                 meshFilter.sharedMesh = _originalMesh;
 
-            if (boxCollider != null)
-                boxCollider.enabled = true;
-
-            if (shieldMeshCollider != null)
-                shieldMeshCollider.enabled = false;
+            ApplyColliderState(ShieldColliderState.None);
 
             if (rb != null)
                 rb.mass = _boxMass;
@@ -447,15 +465,47 @@ namespace CosmicShore.Gameplay
 
         private void DisableCollidersDuringMorph()
         {
-            if (boxCollider != null) boxCollider.enabled = false;
-            if (shieldMeshCollider != null) shieldMeshCollider.enabled = false;
+            ApplyColliderState(ShieldColliderState.Morphing);
         }
 
-        private void EnsureShieldMeshCollider()
+        /// <summary>
+        /// Routes collider selection through the prism (box / none / AABB proxy) so
+        /// it composes with the LOD cull, destruction, and the spawn window. The
+        /// legacy fallback (tester harness on a bare GameObject with no Prism)
+        /// drives the authored box and a locally-created proxy directly.
+        /// </summary>
+        private void ApplyColliderState(ShieldColliderState state)
         {
-            if (shieldMeshCollider != null) return;
-            shieldMeshCollider = gameObject.AddComponent<MeshCollider>();
-            shieldMeshCollider.convex = true;
+            if (_prism != null)
+            {
+                _prism.SetShieldColliderState(state, this, shieldScale);
+                return;
+            }
+
+            if (boxCollider != null)
+                boxCollider.enabled = state == ShieldColliderState.None;
+            if (state == ShieldColliderState.Engaged)
+            {
+                EnsureLegacyProxyCollider();
+                if (_legacyProxyCollider != null) _legacyProxyCollider.enabled = true;
+            }
+            else if (_legacyProxyCollider != null)
+            {
+                _legacyProxyCollider.enabled = false;
+            }
+        }
+
+        // Legacy-path (no Prism) shield AABB proxy for the tester harness.
+        private BoxCollider _legacyProxyCollider;
+
+        private void EnsureLegacyProxyCollider()
+        {
+            if (_legacyProxyCollider != null) return;
+            _legacyProxyCollider = gameObject.AddComponent<BoxCollider>();
+            _legacyProxyCollider.center = _center;
+            _legacyProxyCollider.size = _halfExtents * 2f * shieldScale;
+            _legacyProxyCollider.isTrigger = boxCollider == null || boxCollider.isTrigger;
+            _legacyProxyCollider.enabled = false;
         }
 
         private void ApplyMaterialOverride(bool shielded)

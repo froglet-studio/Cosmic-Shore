@@ -23,7 +23,19 @@ namespace CosmicShore.Gameplay
         {
             Prism ??= GetComponent<Prism>();
         }
-        
+
+        /// <summary>
+        /// Self-side shield narrowphase: while a shield is engaged, this prism's
+        /// PhysX trigger is the shield's box AABB proxy — reject touchers whose
+        /// nearest point to us lies in the AABB's corner/notch regions outside the
+        /// true octahedron/stellation surface.
+        /// </summary>
+        protected override bool PassesOwnShieldNarrowphase(Collider other)
+        {
+            var gate = Prism != null ? Prism.ActiveShieldGate : null;
+            return gate == null || gate.ContainsWorldPoint(other.ClosestPoint(transform.position));
+        }
+
         protected override void AcceptImpactee(IImpactor impactee)
         {    
             switch (impactee)
