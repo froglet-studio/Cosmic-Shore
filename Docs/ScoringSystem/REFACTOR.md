@@ -122,9 +122,26 @@ Game feed: `GameEventFeed` resolves via injected `gameData`; the static
 `SilhouetteController` `[Inject] GameDataSO` and resolve via `GetDomainUIColor`
 (silhouette danger → shared `EnvironmentColors.Danger`); their `DomainColorPaletteSO`
 fields (`domainColors`, `SilhouetteConfigSO.domainPalette`) were removed.
-`DomainColorPaletteSO` now has **no code consumers** — the class + its `.asset`
-instances can be deleted in a separate cleanup. Net result: every domain color
-(banner, cards, HUD, feed, silhouette, vessels, prisms) reads one `SO_ColorSet`.
+
+**Regression + re-unification (Unified Systems S0.1).** After the paragraph above
+declared `DomainColorPaletteSO` consumer-free, the Maelstrom/Connecting UI shipped
+reading it again (six consumers: `TournamentSceneView` — which *preferred* the
+palette over the theme — `TournamentPlayerCard`, `TournamentSummaryPlayerCard`,
+`TournamentDomainScoreView`, `TournamentRoundCard`, `ConnectingPanelController`).
+Those tints were **intentional** (per `MAELSTROM_REWORK_SPEC.md` v2.1: brighter
+hues, uniform 0.784 alpha for translucent card backgrounds), so rather than
+flattening them they were folded into `SO_ColorSet` as a named role:
+`DomainColorSet.UIAccentColor` + `SO_ColorSet.GetDomainUIAccentColor` (falls back
+to `GetDomainUIColor` when unauthored — alpha 0). All six consumers now read the
+theme (`GameDataSO.ThemeManagerData`), `DomainColorPaletteSO` + its `.asset` are
+**deleted**, and the orphaned `domainPalette`/`domainColorPalette` refs in the 5
+SilhouetteConfig assets + 5 game scenes were stripped. AstroLeague's inline
+palettes went config-side too (`AstroLeagueSettingsSO.goldGoalColor` added;
+`AstroLeagueBall`/`AstroLeagueArena` literals removed). Net result: every domain
+color (banner, cards, HUD, feed, silhouette, vessels, prisms, Maelstrom accent)
+reads one `SO_ColorSet` — the accent's intentional divergence from
+`TrailHighlightColor` is now a *named, authored* role in that single source
+(flagged to Garrett for a look sign-off).
 
 ### R6 — 🟡 Remove the legacy per-player HUD layout
 Once the unified path lands, the domain-panel layout is the only layout. After

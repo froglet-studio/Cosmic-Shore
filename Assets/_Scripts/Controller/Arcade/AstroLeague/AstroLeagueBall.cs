@@ -992,14 +992,15 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        /// <summary>Base hue for a claimed (non-neutral) ball - matches the arena's per-domain palette.</summary>
+        /// <summary>Base hue for a claimed (non-neutral) ball - matches the arena's per-domain palette
+        /// (all three domains config-driven from <see cref="AstroLeagueSettingsSO"/>).</summary>
         Color DomainTint(Domains d)
         {
             switch (d)
             {
                 case Domains.Jade: return settings.jadeGoalColor;
                 case Domains.Ruby: return settings.rubyGoalColor;
-                case Domains.Gold: return new Color(1f, 0.82f, 0.2f, 1f);
+                case Domains.Gold: return settings.goldGoalColor;
                 default: return primaryColor;
             }
         }

@@ -76,8 +76,10 @@ namespace CosmicShore.Gameplay
         readonly List<Prism> _edgePrisms = new();
         static readonly List<Vector3[]> s_edgePaths = new();
 
-        Color JadeColor => settings != null ? settings.jadeGoalColor : new Color(0.15f, 1f, 0.55f, 0.5f);
-        Color RubyColor => settings != null ? settings.rubyGoalColor : new Color(1f, 0.22f, 0.35f, 0.5f);
+        // Goal-portal tints are config-only (AstroLeagueSettingsSO) - no inline palette duplicate.
+        // Gray fallback only fires with no settings wired (a broken scene, not a shipping state).
+        Color JadeColor => settings != null ? settings.jadeGoalColor : Color.gray;
+        Color RubyColor => settings != null ? settings.rubyGoalColor : Color.gray;
 
         /// <summary>
         /// Build (or rebuild) the stadium at the given intensity scale + court shape. Called by the

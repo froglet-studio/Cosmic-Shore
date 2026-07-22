@@ -95,6 +95,16 @@ namespace CosmicShore.Gameplay
             }
 
             InitializeElementBars();
+
+            // Holo icon accent: the same per-domain UI accent role the Maelstrom cards use
+            // (SO_ColorSet.GetDomainUIAccentColor) - one colour source, S0.1.
+            if (view && _status != null)
+            {
+                var accent = gameData != null && gameData.ThemeManagerData != null
+                    ? gameData.ThemeManagerData.GetDomainUIAccentColor(_status.Domain)
+                    : Color.white;
+                view.ApplyHoloStyle(accent);
+            }
         }
 
         void TrySubscribeResources()
@@ -267,6 +277,10 @@ namespace CosmicShore.Gameplay
             var canvas = GetComponentInChildren<Canvas>(true);
             if (!canvas) return null; // no HUD surface on this vessel — nothing to show on
 
+            CSDebug.LogWarning($"[SilhouetteController] '{name}' has no authored ElementalBarsView - " +
+                               "creating one at RUNTIME so the fleet-required display still shows. " +
+                               "Author it into the HUD prefab: Tools > Cosmic Shore > Bake Elemental " +
+                               "Petal Bars Into All Vessel HUDs, then wire it to elementBars.");
             var go = new GameObject("ElementalBars (auto)", typeof(RectTransform));
             var rt = (RectTransform)go.transform;
             rt.SetParent(canvas.transform, false);

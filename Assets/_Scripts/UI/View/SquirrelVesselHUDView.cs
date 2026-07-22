@@ -36,6 +36,24 @@ namespace CosmicShore.UI
         [SerializeField] private Color tubeCoolingColor = new Color(1f, 1f, 1f, 0.3f);
         [Tooltip("Colour of the tube cooldown icon once ready (fill == 1).")]
         [SerializeField] private Color tubeReadyColor = Color.white;
+        [Tooltip("Breathing scale amplitude of the tube icon while ready (0 disables the idle pulse).")]
+        [SerializeField, Range(0f, 0.5f)] private float tubeReadyPulseAmount = 0.08f;
+        [Tooltip("Seconds per half-breath of the ready pulse.")]
+        [SerializeField, Min(0.05f)] private float tubeReadyPulseDuration = 0.8f;
+
+        [Header("Overheat")]
+        [Tooltip("The overheat button's icon image (child 'Icon' of OverheatButton).")]
+        [SerializeField] private Image overheatIcon;
+        [Tooltip("The glow image behind the overheat icon - alpha ramps with heat as a heat gauge.")]
+        [SerializeField] private Image overheatHighlight;
+        [Tooltip("Ember tint the icon and highlight ramp toward as heat builds.")]
+        [SerializeField] private Color overheatHotColor = new Color(1f, 0.45f, 0.15f, 1f);
+        [Tooltip("Flash colour the moment the vessel overheats.")]
+        [SerializeField] private Color overheatFlashColor = new Color(1f, 0.9f, 0.6f, 1f);
+        [Tooltip("Scale throb amplitude of the icon while overheated (danger period).")]
+        [SerializeField, Range(0f, 0.5f)] private float overheatThrobAmount = 0.14f;
+        [Tooltip("Seconds per half-throb while overheated.")]
+        [SerializeField, Min(0.05f)] private float overheatThrobDuration = 0.28f;
 
         [Header("Icon Juice")]
         [Tooltip("Duration for icon scale punch on events")]
@@ -61,10 +79,18 @@ namespace CosmicShore.UI
         private Tween _impactScaleTween;
         private Tween _impactColorTween;
         private Tween _boostScaleTween;
+        private Tween _tubeReadyPulseTween;
+        private Tween _tubeReadyPopTween;
+        private Tween _overheatThrobTween;
+        private Tween _overheatIconColorTween;
 
         private Vector3 _driftIconOriginalScale;
         private Vector3 _impactIconOriginalScale;
+        private Vector3 _tubeIconOriginalScale = Vector3.one;
+        private Vector3 _overheatIconOriginalScale = Vector3.one;
         private Color _driftIconOriginalColor;
+        private Color _overheatIconOriginalColor = Color.white;
+        private bool _tubeWasReady = true;
 
         public override void Initialize()
         {
@@ -92,6 +118,21 @@ namespace CosmicShore.UI
                 tubeCooldownIcon.type = Image.Type.Filled;
                 tubeCooldownIcon.fillAmount = 1f;
                 tubeCooldownIcon.color = tubeReadyColor;
+                _tubeIconOriginalScale = tubeCooldownIcon.rectTransform.localScale;
+                _tubeWasReady = true;
+            }
+
+            if (overheatIcon)
+            {
+                _overheatIconOriginalScale = overheatIcon.rectTransform.localScale;
+                _overheatIconOriginalColor = overheatIcon.color;
+            }
+
+            if (overheatHighlight)
+            {
+                // The highlight doubles as the heat gauge: invisible cold, ember-bright hot.
+                var c = overheatHotColor; c.a = 0f;
+                overheatHighlight.color = c;
             }
         }
 
@@ -158,17 +199,6 @@ namespace CosmicShore.UI
         // ---------------------------------------------------------------
         // Drift icon with juice: rotation + color shift based on direction
         // ---------------------------------------------------------------
-        public void UpdateDriftIcon(bool isDrifting, bool isDoubleDrifting)
-        {
-            if (!driftButtonIcon) return;
-
-            if (isDrifting && isDoubleDrifting)
-                driftButtonIcon.sprite = doubleDriftingSprite;
-            else if (isDrifting)
-                driftButtonIcon.sprite = driftingSprite;
-            else
-                driftButtonIcon.sprite = normalSprite;
-        }
 
         /// <summary>
         /// Enhanced drift juice: rotates icon left/right based on drift direction,
@@ -274,6 +304,119 @@ namespace CosmicShore.UI
             ready01 = Mathf.Clamp01(ready01);
             tubeCooldownIcon.fillAmount = ready01;
             tubeCooldownIcon.color = Color.Lerp(tubeCoolingColor, tubeReadyColor, ready01);
+
+            bool isReady = ready01 >= 0.999f;
+            if (isReady && !_tubeWasReady)
+                JuiceTubeReady();
+            else if (!isReady && _tubeWasReady)
+                StopTubeReadyJuice();
+            _tubeWasReady = isReady;
+        }
+
+        // Recharge complete: punch the icon, then settle into a slow "ready" breathing pulse so the
+        // available ability keeps a live read without shouting.
+        private void JuiceTubeReady()
+        {
+            var rt = tubeCooldownIcon.rectTransform;
+
+            _tubeReadyPulseTween?.Kill();
+            _tubeReadyPopTween?.Kill();
+            rt.localScale = _tubeIconOriginalScale;
+
+            _tubeReadyPopTween = rt
+                .DOScale(_tubeIconOriginalScale * iconPunchScale, iconPunchDuration * 0.3f)
+                .SetEase(Ease.OutQuad)
+                .SetLink(tubeCooldownIcon.gameObject)
+                .OnComplete(() =>
+                {
+                    _tubeReadyPopTween = rt
+                        .DOScale(_tubeIconOriginalScale, iconPunchDuration * 0.7f)
+                        .SetEase(Ease.OutBounce)
+                        .SetLink(tubeCooldownIcon.gameObject)
+                        .OnComplete(StartTubeReadyPulse);
+                });
+        }
+
+        private void StartTubeReadyPulse()
+        {
+            if (tubeReadyPulseAmount <= 0f || !tubeCooldownIcon) return;
+            _tubeReadyPulseTween?.Kill();
+            _tubeReadyPulseTween = tubeCooldownIcon.rectTransform
+                .DOScale(_tubeIconOriginalScale * (1f + tubeReadyPulseAmount), tubeReadyPulseDuration)
+                .SetEase(Ease.InOutSine)
+                .SetLoops(-1, LoopType.Yoyo)
+                .SetLink(tubeCooldownIcon.gameObject);
+        }
+
+        private void StopTubeReadyJuice()
+        {
+            _tubeReadyPulseTween?.Kill();
+            _tubeReadyPopTween?.Kill();
+            if (tubeCooldownIcon) tubeCooldownIcon.rectTransform.localScale = _tubeIconOriginalScale;
+        }
+
+        // ---------------------------------------------------------------
+        // Overheat: the highlight image is a live heat gauge (alpha ramps
+        // with heat), the icon tints toward ember, and the overheated
+        // danger period gets a flash + throb until the heat decays.
+        // ---------------------------------------------------------------
+
+        /// <summary>Per-frame heat drive. heat01: 0 = cold, 1 = at the overheat threshold.</summary>
+        public void SetOverheatHeat(float heat01)
+        {
+            heat01 = Mathf.Clamp01(heat01);
+
+            if (overheatHighlight)
+            {
+                var c = overheatHotColor;
+                c.a = overheatHotColor.a * heat01;
+                overheatHighlight.color = c;
+            }
+
+            // While the flash/throb owns the icon colour, leave it alone.
+            if (overheatIcon && _overheatIconColorTween == null)
+                overheatIcon.color = Color.Lerp(_overheatIconOriginalColor, overheatHotColor, heat01);
+        }
+
+        /// <summary>The vessel just overheated - flash and start the danger throb.</summary>
+        public void JuiceOverheatEngaged()
+        {
+            if (!overheatIcon) return;
+
+            _overheatIconColorTween?.Kill();
+            overheatIcon.color = overheatFlashColor;
+            _overheatIconColorTween = overheatIcon
+                .DOColor(overheatHotColor, colorTweenDuration)
+                .SetEase(Ease.OutQuad)
+                .SetLink(overheatIcon.gameObject)
+                .OnKill(() => _overheatIconColorTween = null);
+
+            _overheatThrobTween?.Kill();
+            overheatIcon.rectTransform.localScale = _overheatIconOriginalScale;
+            _overheatThrobTween = overheatIcon.rectTransform
+                .DOScale(_overheatIconOriginalScale * (1f + overheatThrobAmount), overheatThrobDuration)
+                .SetEase(Ease.InOutSine)
+                .SetLoops(-1, LoopType.Yoyo)
+                .SetLink(overheatIcon.gameObject);
+        }
+
+        /// <summary>Heat fully decayed - settle the icon back to rest with a small relief pop.</summary>
+        public void JuiceOverheatRecovered()
+        {
+            if (!overheatIcon) return;
+
+            _overheatThrobTween?.Kill();
+            _overheatThrobTween = overheatIcon.rectTransform
+                .DOScale(_overheatIconOriginalScale, iconPunchDuration)
+                .SetEase(Ease.OutBack)
+                .SetLink(overheatIcon.gameObject);
+
+            _overheatIconColorTween?.Kill();
+            _overheatIconColorTween = overheatIcon
+                .DOColor(_overheatIconOriginalColor, colorTweenDuration)
+                .SetEase(Ease.OutQuad)
+                .SetLink(overheatIcon.gameObject)
+                .OnKill(() => _overheatIconColorTween = null);
         }
 
         protected override void OnDestroy()
@@ -285,6 +428,10 @@ namespace CosmicShore.UI
             _impactScaleTween?.Kill();
             _impactColorTween?.Kill();
             _boostScaleTween?.Kill();
+            _tubeReadyPulseTween?.Kill();
+            _tubeReadyPopTween?.Kill();
+            _overheatThrobTween?.Kill();
+            _overheatIconColorTween?.Kill();
         }
     }
 }

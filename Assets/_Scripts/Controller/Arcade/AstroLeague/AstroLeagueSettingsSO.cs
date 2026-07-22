@@ -360,5 +360,8 @@ namespace CosmicShore.Gameplay
                  "tune those on the Astro League Cell Config / its prefabs instead.")]
         public Color jadeGoalColor = new(0.15f, 1f, 0.55f, 0.5f);
         public Color rubyGoalColor = new(1f, 0.22f, 0.35f, 0.5f);
+        [Tooltip("Gold's tint in the same per-domain family - no gold goal portal exists, but the ball " +
+                 "tints to the LAST-HIT domain, which can be Gold.")]
+        public Color goldGoalColor = new(1f, 0.82f, 0.2f, 0.5f);
     }
 }

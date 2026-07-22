@@ -6313,12 +6313,6 @@ PrefabInstance:
         type: 3}
     - target: {fileID: 4886571690113359810, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
         type: 3}
-      propertyPath: domainColorPalette
-      value: 
-      objectReference: {fileID: 11400000, guid: d202844a3d86d1240bae99b182e573d3,
-        type: 2}
-    - target: {fileID: 4886571690113359810, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
-        type: 3}
       propertyPath: playerCardContainer
       value: 
       objectReference: {fileID: 1539128694}
