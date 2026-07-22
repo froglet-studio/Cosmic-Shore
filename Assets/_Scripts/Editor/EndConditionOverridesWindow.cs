@@ -5,13 +5,13 @@ using UnityEngine;
 namespace CosmicShore.Editor
 {
     /// <summary>
-    /// Tools &gt; Cosmic Shore &gt; End Game Conditions — the ONE place to set how each mode ends:
+    /// Tools &gt; Cosmic Shore &gt; End Game Conditions - the ONE place to set how each mode ends:
     /// HexRace crystal count, Joust count, and Crystal Capture crystal count. Edits the single
     /// <see cref="EndConditionOverridesSO"/> asset at Assets/Resources/EndConditionOverrides.asset
     /// (auto-created on first open); the turn monitors read it at runtime. There are no per-scene
     /// inspector fields for these anymore. See the <c>/EndGameConditions</c> skill.
     ///
-    /// The Live fields are what the game uses at runtime — lower one to end a mode quickly while
+    /// The Live fields are what the game uses at runtime - lower one to end a mode quickly while
     /// testing. "Set Build Values" snapshots the current Live counts as the Build baseline (shown
     /// above the button). With "Auto-restore build values before build" on, a build first restores
     /// the Live counts to that baseline (<see cref="EndConditionBuildRestore"/>), so a test config is
@@ -69,18 +69,21 @@ namespace CosmicShore.Editor
                 "  • Maelstrom: placement points to win the shuffle (race to N), default " +
                 EndConditionOverridesSO.DefaultMaelstromWinTarget + ".\n" +
                 "  • Brood Rush: claimed fauna waves to win (race to N), default " +
-                EndConditionOverridesSO.DefaultNucleusRushWaveTarget + ".",
+                EndConditionOverridesSO.DefaultNucleusRushWaveTarget + ".\n" +
+                "  • Rampage: hostile prisms destroyed to win (race to N), default " +
+                EndConditionOverridesSO.DefaultRampagePrismTarget + ".",
                 MessageType.Info);
 
             // ---- Live input fields (used at runtime) ----
             EditorGUILayout.Space();
             EditorGUILayout.LabelField("Live values (used at runtime)", EditorStyles.boldLabel);
             EditorGUI.BeginChangeCheck();
-            int hex = Mathf.Max(0, EditorGUILayout.IntField("HexRace — Crystal Count", _config.hexRaceCrystalCount));
-            int cc  = Mathf.Max(0, EditorGUILayout.IntField("Crystal Capture — Crystal Count", _config.crystalCaptureCrystalCount));
-            int jo  = Mathf.Max(0, EditorGUILayout.IntField("Joust — Joust Count", _config.joustCount));
-            int mw  = Mathf.Max(0, EditorGUILayout.IntField("Maelstrom — Win Target (points)", _config.maelstromWinTarget));
-            int nr  = Mathf.Max(0, EditorGUILayout.IntField("Brood Rush — Wave Target", _config.nucleusRushWaveTarget));
+            int hex = Mathf.Max(0, EditorGUILayout.IntField("HexRace - Crystal Count", _config.hexRaceCrystalCount));
+            int cc  = Mathf.Max(0, EditorGUILayout.IntField("Crystal Capture - Crystal Count", _config.crystalCaptureCrystalCount));
+            int jo  = Mathf.Max(0, EditorGUILayout.IntField("Joust - Joust Count", _config.joustCount));
+            int mw  = Mathf.Max(0, EditorGUILayout.IntField("Maelstrom - Win Target (points)", _config.maelstromWinTarget));
+            int nr  = Mathf.Max(0, EditorGUILayout.IntField("Brood Rush - Wave Target", _config.nucleusRushWaveTarget));
+            int ra  = Mathf.Max(0, EditorGUILayout.IntField("Rampage - Prism Target", _config.rampagePrismTarget));
             if (EditorGUI.EndChangeCheck())
                 Persist("Edit End Game Conditions", () =>
                 {
@@ -89,6 +92,7 @@ namespace CosmicShore.Editor
                     _config.joustCount = jo;
                     _config.maelstromWinTarget = mw;
                     _config.nucleusRushWaveTarget = nr;
+                    _config.rampagePrismTarget = ra;
                 });
 
             EditorGUILayout.Space();
@@ -99,6 +103,7 @@ namespace CosmicShore.Editor
             EditorGUILayout.LabelField("Joust", jo > 0 ? jo.ToString() : EndConditionOverridesSO.DefaultJoustCount + " (default)");
             EditorGUILayout.LabelField("Maelstrom", mw > 0 ? mw.ToString() : EndConditionOverridesSO.DefaultMaelstromWinTarget + " (default)");
             EditorGUILayout.LabelField("Brood Rush", nr > 0 ? nr.ToString() : EndConditionOverridesSO.DefaultNucleusRushWaveTarget + " (default)");
+            EditorGUILayout.LabelField("Rampage", ra > 0 ? ra.ToString() : EndConditionOverridesSO.DefaultRampagePrismTarget + " (default)");
             EditorGUI.indentLevel--;
 
             // ---- Build baseline (read-only display + capture button) ----
@@ -132,7 +137,8 @@ namespace CosmicShore.Editor
                    "Crystal Capture: " + Fmt(_config.crystalCaptureCrystalCountBuild, "auto") + "\n" +
                    "Joust: " + Fmt(_config.joustCountBuild, "default " + EndConditionOverridesSO.DefaultJoustCount) + "\n" +
                    "Maelstrom: " + Fmt(_config.maelstromWinTargetBuild, "default " + EndConditionOverridesSO.DefaultMaelstromWinTarget) + "\n" +
-                   "Brood Rush: " + Fmt(_config.nucleusRushWaveTargetBuild, "default " + EndConditionOverridesSO.DefaultNucleusRushWaveTarget);
+                   "Brood Rush: " + Fmt(_config.nucleusRushWaveTargetBuild, "default " + EndConditionOverridesSO.DefaultNucleusRushWaveTarget) + "\n" +
+                   "Rampage: " + Fmt(_config.rampagePrismTargetBuild, "default " + EndConditionOverridesSO.DefaultRampagePrismTarget);
 
             static string Fmt(int value, string zeroMeaning) => value > 0 ? value.ToString() : "0 (" + zeroMeaning + ")";
         }

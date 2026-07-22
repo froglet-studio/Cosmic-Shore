@@ -57,7 +57,8 @@ detection. On top of that base the `Toy` class adds:
 | Painting station (one per painting) | `Assets/_Scripts/Controller/Toys/PaintingToy.cs` |
 | Multi-stroke fly-by-numbers runner | `Assets/_Scripts/Controller/Toys/PaintingRunner.cs` |
 | Painting data (strokes + domains) | `Assets/_Scripts/ScriptableObjects/Toys/PaintingDefinitionSO.cs` |
-| Preset generators (Star…Taj Mahal) | `Assets/_Scripts/Controller/Toys/PaintingPresetLibrary.cs` |
+| Preset generators (Star…Peacock, 16) | `Assets/_Scripts/Controller/Toys/PaintingPresetLibrary.cs` |
+| Sophisticated-stroke library (curves + curl field) | `Assets/_Scripts/Controller/Toys/PaintingStrokeToolkit.cs` |
 | Painting progress persistence | `Assets/_Scripts/Controller/Toys/PaintingProgressStore.cs` |
 | Drawing state (per-prism pose/domain) | `Assets/_Scripts/Controller/Toys/PaintingPrismStore.cs` |
 | Web share export (inline-WebGL viewer) | `Assets/_Scripts/Controller/Toys/PaintingShareExporter.cs` |
@@ -66,11 +67,26 @@ detection. On top of that base the `Toy` class adds:
 | Conveyor belt runner | `Assets/_Scripts/Controller/Toys/MicrosceneConveyor.cs` |
 | One conveyor scene (lay/transport/re-arrange) | `Assets/_Scripts/Controller/Toys/Microscene.cs` |
 | Microscene recipe generators (pure) | `Assets/_Scripts/Controller/Toys/MicroscenePatterns.cs` |
+| Microscene structural painter (domain/kind/scale) | `Assets/_Scripts/Controller/Toys/MicroscenePainter.cs` |
 | Placement + lifecycle | `Assets/_Scripts/Controller/Toys/ToyboxController.cs` |
 | Per-toy config (abstract) | `Assets/_Scripts/ScriptableObjects/Toys/ToyDefinitionSO.cs` |
 | Vessel/Domain/Painting configs | `Assets/_Scripts/ScriptableObjects/Toys/*ToyDefinitionSO.cs` |
 | Toybox registry + unlock state | `Assets/_Scripts/ScriptableObjects/Toys/ToyboxSO.cs` |
 | One-click editor setup | `Assets/_Scripts/Editor/ToyboxSetupTool.cs` |
+
+## Lifeform Matrix (`LifeformMatrixToy` + `LifeformMatrixToyDefinitionSO`)
+
+The **ecology tuning bench** (`Toy_LifeformMatrix.asset`, placement angle 180°). Fly the toy
+(a sphere orbited by the four element crystal MODELS — elements have SHAPE signatures, never
+colours) and the SPECIES matrix blooms one layer OUTWARD from the cell centre: fauna on the
+lower row, flora on the upper (12 species). Fly a species and its VARIANT matrix blooms a
+further layer outward: 4 element columns × level rows {1, 3, 5}, each station wearing the
+element's crystal model sized by level. Fly a variant and a POPULATION of that exact lifeform
+(fauna `PopulationSize` / flora `InitialSpawnCount`) spawns live through the canonical cell
+spawn paths on a runtime CLONE of its per-element config (`_SO_Assets/Lifeforms/`) — flora
+root AT the station via `Flora.SetPlantPositionOverride`. Every spawn logs, including the
+cell's Frenzy growth-freeze state. Layered outward on purpose: the player flies at a matrix
+and keeps flying — each pass carries them toward the next layer, never back through the last.
 
 ## The "swap set" pattern (vessel + domain)
 
@@ -142,21 +158,60 @@ colours you are *not*. Flying through one requests that domain via the server-au
 `Player.RequestSetDomain_ServerRpc` (**never** a client-local write — CLAUDE.md), and the toy
 flips to the colour you just left.
 
-### Painting / Fly-by-Numbers (`PaintingToy` + `PaintingRunner`)
+### Painting / Connect the Dots (`PaintingToy` + `PaintingRunner`)
 
-The painting toy is a **gallery**: `PaintingToyDefinitionSO` spawns one `PaintingToy` station per
-`PaintingDefinitionSO`, fanned around its ring slot, each labelled with the painting's name and
-live progress. A painting is **multi-stroke and multi-domain** — a list of `PaintingStroke`s
-(name, domain, ordered 3D points) flown in author order — and it stands as a fixed, upright
-**monument-in-progress** anchored just outside the toy ring (front facing the ring), not a
-billboard that follows the vessel. The ladder of built-in presets (`PaintingPresetLibrary`):
+The painting toy (player-facing name **"Connect the Dots"**, formerly "Fly by Numbers") is a
+**gallery**: `PaintingToyDefinitionSO` spawns one `PaintingToy` station per `PaintingDefinitionSO`,
+fanned around its ring slot, each labelled with the painting's name and live progress. A painting
+is **multi-stroke and multi-domain** — a list of `PaintingStroke`s (name, domain, ordered 3D
+points) flown in author order — and it stands as a fixed, upright **monument-in-progress** anchored
+just outside the toy ring (front facing the ring), not a billboard that follows the vessel. The
+built-in gallery (`PaintingPresetLibrary`) is a 16-painting ladder: a four-station on-ramp, then a
+dozen **grandiose non-planar constructions** that dwarf the Taj (every one is >20·W of flight, most
+>100 strokes — the Taj is ~55 / 15·W):
 
-| Painting | Size | Strokes | Domains | What it teaches |
+| # | Painting | Size | Strokes | What it is |
 |---|---|---|---|---|
-| Star | 420 | 1 | Gold | the basic trace, big enough to feel real |
-| Rainbow | 700 | 3 | all three | the domain gates, one band per colour |
-| Saturn | 800 | 3 | all three | genuinely 3D flying (tilted rings) |
-| **Taj Mahal** | 1100 | ~55 | all three | the monument: plinth, chamfered body, grand iwan + niches, onion-dome rib cage, 4 chhatris, 4 minarets with balconies, jade reflecting pool + charbagh — hours of flying |
+| 1 | Star | 840 | 1 | the basic trace, big enough to feel real (2× — the warm-up should already feel grand) |
+| 2 | Rainbow | 700 | 3 | the domain gates, one band per colour |
+| 3 | Saturn | 800 | 3 | genuinely 3D flying (tilted rings) |
+| 4 | **Taj Mahal** | 1100 | ~55 | plinth, chamfered body, iwan+niches, onion-dome rib cage, 4 chhatris, 4 minarets, pool + charbagh |
+| 5 | Torus Knot | 1000 | ~19 | the exact (3,2) trefoil as a machine-clean TUBE: 6 rotation-minimizing longitudes (one barber-pole twist), 12 rings, spine |
+| 6 | Buckyball | 1000 | ~62 | exact C60: **12 pentagons + 20 hexagons** (planar faces) + the 30 real 6:6 double bonds as inset dashes |
+| 7 | Double Helix | 900 | ~88 | true B-DNA: pitch/diameter 1.7, 10 bp/turn, 144° grooves, ribboned backbones, purine+pyrimidine pairs, phosphate ticks |
+| 8 | Nautilus | 900 | ~67 | the real shell model: embracing log-spiral whorls, 58 growth-line ribs, tiger striping, the open aperture |
+| 9 | Lotus | 900 | ~76 | the FULL lotus: wide-open outer leaves (Jade) descending through five whorls (10+9+8+6+5) into a closed pure-petal Ruby corolla and Gold bud heart |
+| 10 | Rose | 900 | ~67 | the ENCHANTED rose: a long stem owning two-thirds of the height, two leaflets, sepals curling under a compact wrapped bloom with a furled Gold heart |
+| 11 | Spiral Galaxy | 1200 | ~187 | a TWO-arm grand design at 17° pitch, inclined 22°: dust lanes, old-gold bulge, star streaks flowing along the arms |
+| 12 | Phoenix | 1400 | 260 | **baked from a real sculpture**: the *Striding Eagle* museum scan (threedscans / Saint Louis Art Museum, no restrictions) — 79.7·W of engraving contours + flame-chained feather feature lines |
+| 13 | Almighty Mountain | 1500 | 111 | **baked from real terrain**: the Matterhorn's actual DEM (AWS Terrain Tiles) — elevation contours (Ruby rock / Jade snowline) + Gold ridge polylines |
+| 14 | Starry Night | 1300 | 173 | **baked from the real painting** (v2 retrace): 11 star/moon ring clusters, the double-swirl as two long coherent Jade spirals, 6 Ruby cypress flames, streamlines bent onto an immersive curved canvas with luminance relief |
+| 15 | Lion's Head | 1800 | 124 | **baked from a real sculpture**: the CC0 Temperance Union Lion scan (1896), Squirrel-scaled — engraving contours + 62 mane-curl feature lines (micro-curls under 28u turn radius filtered out) |
+| 16 | Peacock | 1300 | 236 | **baked from a real scan**: YahooJAPAN's peafowl photogrammetry (CC-BY 4.0 — attribution ships in the asset description) — the fanned train, scalloped eye-feather rim, body and legs |
+
+**Gallery stations are miniatures in a wall, not balls in a line.** Each station's body IS its
+painting in miniature (`MiniaturePaintingBuilder`: the ~24 longest strokes, decimated, domain-
+tinted, on a slow turntable) — a sphere only as fallback for stroke-less paintings. The sixteen
+stations arrange as a roughly-square matrix cluster at the toybox slot (columns along the ring
+tangent, rows climbing the off-plane vertical), and the monuments anchor behind their column in
+vertical tiers — a wall of masterpieces. Every toy label (stations, gates, all toys) wears
+`BillboardLabel`, facing the camera each frame so text reads from any approach.
+
+Rows 5–11 are built by composition from **`PaintingStrokeToolkit`** (below); rows 12–16 are
+**baked from real references** by the offline **painting pipeline** (`Tools/PaintingPipeline/` —
+mesh→engraving-stroke converter + painting-flow tracer + asset baker; licences audited in
+`Tools/PaintingPipeline/REFERENCE_MODELS.md`). Baked paintings live as authored `strokes` on the
+`PaintingDefinitionSO` asset — the SO's highest-priority source — so they need zero runtime code
+and their `preset` remains as fallback (fallback catalog descriptions deliberately do NOT claim
+reference provenance — the CC-BY/DEM attributions belong to the baked strokes only). Monument
+anchors come from **proximity-first sphere packing** (`PackMonumentAnchors`, locked by
+`PaintingToyLayoutTests`): each painting occupies its bounding sphere + half `paintingClearance`;
+anchors are chosen from deterministic Fibonacci shells around the slot, nearest valid spot first.
+Pack order is hybrid — the four on-ramp entries first in ladder order (they sit right at the
+stations, Star ≈ 600u), then largest-first so the giants sit at their physical floor (the
+Matterhorn ≈ 2.4km — membrane + its own ~1.5km bounding radius is the floor; a flat wall layout
+had exiled it ~6.5km). No two monuments interpenetrate, nothing pokes through the membrane
+(studio zones may still overlap; `BenchOtherRunners` arbitrates the brush).
 
 How a run plays:
 
@@ -175,11 +230,39 @@ How a run plays:
   the zone, exiting freestyle, benching, or destroying the runner ALWAYS restores it. Pausing
   the spawner is the sanctioned mass-law lever ("not creating mass is allowed; aging it out is
   not") — the painted trail itself is conserved mass, no caps/TTLs.
-- **Guide + marker.** A guide line runs from the vessel to the next point; the marker on it is
-  a faceted crystal spike (flat-shaded, six-sided, in the stroke domain's prism material) that
-  slowly spins about its pointing axis — no pulsing; the calm idle motion (`ToyIdleSpin`)
-  matches the game's other pickups. The advance threshold tightens automatically on
-  fine-detail strokes (minaret balconies) so tight loops must actually be flown.
+- **Checkpoint riding (not vertex-chasing).** A stroke is ridden through SPARSE checkpoints
+  (`PaintingStrokeToolkit.RideCheckpoints`): spaced by arc (≥ max(90u, 8.5% of the painting's
+  bounds diagonal)), never parked on tight curvature (>28° local turn — a hairpin apex is a
+  punishing target at speed; on an all-tight stretch the flattest vertex is used so progress
+  can't stall), with the stroke start (gate) and end (jack) always included. **Closed loops
+  always keep a mid checkpoint near the half-arc** — otherwise a ring's end milestone sits at
+  its own gate and the stroke would complete unridden the moment the gate fires.
+- **Rings, not lines, not cones.** While AWAITING its gate the next stroke's ghost shows faintly
+  (something to aim at); once you are RIDING it the line eases away entirely (continuity law —
+  `_lineFade`, and it eases back in as the dim "done" memory line on completion) — the ride is
+  the milestone RINGS and your own painted trail. Rings are **low-poly flat-shaded tori**
+  (12×6 crystal facets in the domain prism material, slowly spinning so the facets glint —
+  `ToyFactory.AddRingBody`, same shape family as the cone/jack), not line renderings.
+  Each milestone is a ring gate faced along the
+  local flight tangent whose **SphereCollider trigger is scaled to the ring radius** (flying
+  through the ring IS the hit test; a slightly tighter distance check backstops fast physics
+  misses, and all effects run on the Update tick, never in the physics callback — the trigger
+  resolves the local vessel via the shared `Toy.TryGetLocalVessel`, which also guards the
+  null-`Player` window during a mid-stroke vessel swap). The ride ring **never outlives
+  engagement**: leaving the studio zone or exiting freestyle folds it away (and it re-blooms on
+  re-engage) so the lava-lamp autopilot can never drift through it and latch a checkpoint nobody
+  rode. The trail-on **cone** appears only on the stroke's START gate; the final milestone ring
+  carries the trail-off **jack** in its centre. Rings fold away as they're swept and the next
+  blooms in (continuity law). Wayfinding uses the game's **standard `ObjectiveIndicator`** (the
+  edge-of-screen arrow every mode shares, not a bespoke guide line): the runner implements
+  `IObjectiveProvider` via a persistent objective anchor (the gate while awaiting it, the current
+  ride ring while painting — the anchor outlives the ring folding on disengage), and ONE shared
+  arrow is lazily created at the HUD **Canvas root** (the indicator stretches to its parent and
+  clamps to that rect's edges — a mid-hierarchy container is not a full-screen rect and pins the
+  arrow in a corner), routed through `PaintingObjectiveRelay`
+  to whichever runner holds the brush. The arrow hides itself while the target is on screen, so
+  the world rings stay the primary guidance. (The old guide line's perfect-ride glow retired with
+  it; re-express that juice in-world — e.g. ring emission — in the tuning pass.)
 - **Progress, pause, resume.** Progress is stroke-granular. Re-flying the station benches /
   resumes the run ("put the brush down"); progress also persists across sessions
   (`PaintingProgressStore`, the FavoriteSystem `DataAccessor` JSON pattern — completed strokes
@@ -210,16 +293,62 @@ The domain changer and the painting gates deliberately share the cone so meeting
 first sets up expectations for the other. Builders live in `ToyFactory` (`AddConeBody`,
 `AddJackBody`, `AddRingBody`).
 
-#### Authoring rule — order strokes by decreasing radius of curvature
+#### Stroke order — flight continuity first, computed at runtime
 
-Strokes are flown in author order, so **sequence them from the broadest curvature to the
-tightest**: long straight/broad strokes first (pool outlines, plinth rectangles), fine detail
-last (balcony rings, crescents). The painting then doubles as its own difficulty ramp — the
-player warms up on sweeping lines and earns the precision work — and the adaptive per-stroke
-reach (which tightens on short segments) ramps with them. The Taj Mahal preset is the
-reference: pools → plinth → body → arches → dome → chhatris → minaret balconies. Batch
-domains at meaningful architectural boundaries within that ordering (see
-`PaintingPresetLibrary`).
+Authored stroke order is no longer flown verbatim: `PaintingDefinitionSO.EnsureStrokes` passes
+every source (authored, converted, preset) through
+**`PaintingStrokeToolkit.OrderForFlightContinuity`** — a greedy nearest-next-start tour, so
+**each stroke begins near where the previous one ended** (prompter-directed: flight continuity
+takes precedence in the sort). Within a near-tie band (4% of the painting diagonal) the LEAST
+curvy candidate flies first, so fine detail still lands later and the difficulty ramp survives
+as a tiebreak. The order stays **domain-contiguous** (grouped by domain, each group entered at
+its most continuous stroke) so the trail recolours at most once per domain — on the shipped
+gallery this cut stroke-to-stroke transit 27–70% (Phoenix 138k→42k units) and collapsed
+mid-painting recolours (Rose 51→2). Stroke 0 keeps its place (the authored opening + its gate);
+the pass is deterministic, so progress-store stroke indices stay stable across sessions.
+Authors therefore only choose the opening stroke and the stroke *content* — sequencing is the
+runtime's job.
+
+#### The stroke toolkit — where sophisticated strokes come from
+
+The grandiose constructions (rows 5–16 above) are not hand-authored point lists — they are
+composed from **`PaintingStrokeToolkit`** (`Assets/_Scripts/Controller/Toys/`), a pure, deterministic,
+unit-tested geometry library. It answers "where do we pull more sophisticated strokes from?" with
+*math*, not assets:
+
+- **Deterministic PRNG** (`Rng`) — a seedable xorshift, never `UnityEngine.Random`, so every painting
+  regenerates identically (and is testable). Same painting id → same monument every time.
+- **Parametric curve families** — `CatmullRom`, `TorusKnot(p,q)`, `FibonacciSphere`, plus the
+  `TruncatedIcosahedron` / `SoccerBallFaces` graph (exact 60-vertex/90-edge/32-face buckyball).
+  Botanical/terrain helpers: `MidpointRidge` (fractal mountains), `ReflectY` (lake reflections),
+  `FirTree`, `FeatherStroke`, `RadialCurlStroke` (mane/flame strands). Only primitives with a
+  production caller live in the toolkit — the speculative API (helices, phyllotaxis, rose
+  curves…) was pruned in the pre-PR review; compose new primitives when a generator needs them.
+- **The impressionist field** — `CurlNoise` is a divergence-free 3D flow field (curl of a value-noise
+  vector potential; `∇·(∇×Ψ)=0`, so streamlines fill space without converging to a point).
+  `ImpressionistStrokes` integrates short strokes along it whose radii of curvature stochastically
+  fill a region in every direction. **Scope note (quality direction):** random curl fill reads as
+  scribble on *objects*, so the reference-grade rebuilds (rows 5–11) use **structured**
+  surface-following strokes instead — growth lines, veins, bonds, orbital streaks. The curl field
+  remains the right tool for genuinely turbulent subjects (the Van Gogh sky, flame, mist) and for
+  the mane/feather sprays of the representational five, pending their real-model rebuild.
+- **Structure kit (reference-grade rebuilds)** — `MinSegFilter` (dense parametric sampling never
+  emits a degenerate segment), `TransportFrames` (rotation-minimizing frames — tube longitudes that
+  never flip on curves like torus knots), `TubeLongitudes` / `TubeRing` (engineered tube rendering),
+  `SoccerBallDoubleBonds` (C60's 30 hexagon–hexagon 6:6 bonds).
+
+**Invariants every generator upholds** (locked by `Generate` + tests): base plane at y=0
+(`RebaseToGround` runs after every grandiose preset), front toward +Z, only Jade/Ruby/Gold, flyable
+segments (no degenerate or unflyable jumps), genuine non-planarity, and >20·W of flight. Multi-domain
+impressionist fills are **batched by domain** so the trail recolours ≤2× per fill rather than at every
+scattered stroke. Adding a construction = adding a `PaintingPreset` enum value + a generator that
+composes the toolkit; nothing else changes.
+
+**Collider budget / perf.** A painting is drawn by the *vessel's own trail* (conserved mass, no
+caps) — the geometry cost is one `LineRenderer` ghost + one start gate per stroke, created at
+`PaintingRunner.Begin`. The largest pieces (Phoenix 260, Peacock 236) therefore stand up a few hundred
+lightweight LineRenderers; that is the deliberate "hours of flying" ceiling and is tracked in
+`BACKLOG.md` for an in-editor perf pass.
 
 #### Drawing state — the painting survives everything
 
@@ -248,30 +377,43 @@ always works.
 
 Fly through → the belt switches **ON** (the toy flips bright + relabels "flowing — fly through
 to stop"; another pass switches it off) and a field of **microscenes** blooms in ahead of your
-flight path, scene after scene — open-world exploring crossed with an infinite runner. **28
+flight path, scene after scene — open-world exploring crossed with an infinite runner. **40
 recipes** built from a shared geometry vocabulary (`PrismGeometry`): gate runs, helix weaves,
 tunnels, slaloms, starbursts, orchards, meadows, menageries, polygon gates, serpent ribbons,
 colonnades, orbitals, canyons, lattices, comet tails, spiral ramps, archways, vortices (converging
 lines with an open convergence + an inviting crystal), slot corridors (parallel plates with gaps to
-roll through), cube fields, torus gates, pillar halls, turbines, asteroid fields, and living
-plains / groves / aviaries / preserves — each re-rolling its own radii/counts/twists/bends on every
-arrival, so the same recipe never lands the same way twice. The belt **follows you anywhere at any
+roll through), cube fields, torus gates, pillar halls, turbines, asteroid fields, living
+plains / groves / aviaries / preserves, and a batch built on **superstructure-oriented
+surfaces** — shingled domes and grotto vaults, torus-knot chases, Möbius rails, petal rosettes,
+rifled terrace spirals, banked ribbon chicanes (parallel-transport-swept plate decks that roll into
+turns), split tubes (facing curved shell walls), and four **Medley** slots that compose a spine
+(straight / arc / S-curve / helix drift) with alternating motifs (hoops, polygon gates, torus
+rings, shell dishes, blade crosses, clusters) — a combinatorial space no fixed recipe list could
+enumerate. Each recipe re-rolls its own radii/counts/twists/bends on every arrival, so the same
+recipe never lands the same way twice. The belt **follows you anywhere at any
 speed**: effective spacing = `max(sceneSpacing, speed × minSceneIntervalSeconds)` and lookahead =
 `aheadTargetScenes × spacing`, so there is always a field of ~7 structures ahead.
 
-**Geometry vs. theming (why it stays fresh, not chaotic).** A recipe produces pure *shape* only;
-`MicroscenePatterns.ApplyTheming` then themes each scene from a config-authored `MicroscenePalette`
-(`ConveyorToyDefinitionSO`): a **per-scene domain scheme** (mono / banded-by-structure / accented /
-neutral-veined-with-Blue — weighted so most scenes read one coherent colour, never per-prism
-confetti; domains read live each draw so the Domain Changer toy takes effect), a sparse **prism-kind
-scheme** (mostly plain, with occasional **danger** prisms — the Squirrel danger-skim risk/reward —
-and rarer **shielded** / **supershielded** accents, capped for the collider budget), a per-scene
-**scale mood** (grand vs. delicate), and a **crystal mix** (mostly elemental skims, occasional
+**Geometry vs. theming (why it stays fresh, not chaotic).** A recipe produces pure *shape* plus
+**structural metadata** — `MicroscenePlan.CloseStructure()` after each gate/strand/tree/wall stamps
+every point with its substructure id + t-along-path — and `MicroscenePainter` then paints each
+scene from a config-authored `MicroscenePalette` (`ConveyorToyDefinitionSO`). Painting keys off the
+structure, never bare indices: **domain schemes** (mono / per-structure rainbow runs /
+gradient-along-flight / accented / radial pinwheel / candy-stripe / port-starboard mirror /
+neutral-veined-with-Blue) always draw from the **full playable triad** — belt prisms are
+environment mass, not player property, so scenes are never limited to the session's domains;
+**kind schemes** use danger/shield as palette tools (all-plain / danger sprinkle / one whole
+**danger structure** — a gate of fire to thread or deliberately skim for the Squirrel danger
+boost / **danger tips** on arm-and-blade ends / shielded sprinkle / **shielded ribs** armouring
+one frame / a **supershielded keystone** guarding the crystal — shield counts capped for the
+collider budget); **scale moods** reshape whole scenes (uniform grand/delicate × long-axis stretch
+for wiry-vs-chunky × per-structure taper riding the structure-t — with every scale family also
+jittering each axis independently); and a **crystal mix** (mostly elemental skims, occasional
 **omni** jackpots — body-collected fuel + speed buff). "Infinitely fresh" is the cross-product of
-recipe × domain-scheme × kind-scheme × scale-mood × per-arrival geometry roll; coherence comes from
-theming per *scene*, not per prism. Prism lay-down goes through the shared `PrismTrailBuilder` (the
-one canonical Instantiate→…→Initialize primitive, also used by the Spawnable environment system).
-See `Docs/EnvironmentSpawning/UNIFICATION_ASSESSMENT.md`.
+recipe × domain-scheme × kind-scheme × scale-moods × per-arrival geometry roll; coherence comes
+from painting per *structure*, not per prism. Prism lay-down goes through the shared
+`PrismTrailBuilder` (the one canonical Instantiate→…→Initialize primitive, also used by the
+Spawnable environment system). See `Docs/EnvironmentSpawning/UNIFICATION_ASSESSMENT.md`.
 
 **Placement is a connected ribbon that can break and re-lay.** Every scene sits *on* the flight
 line — never scattered laterally (no orthogonal "sphere in front of you"). Each tick the belt scans
@@ -300,6 +442,24 @@ immediately** (`Microscene.PendingAnchor`) so a rebuild never piles several arri
 while the blooms are in flight. No score, no end condition; every belt advance is driven by the
 player's own motion (no timers). Exiting freestyle makes the belt dormant; toggling it off stops the
 flow — either way its scenes stay in the world.
+
+**Visibility guards — the transport itself is invisible.** The belt should read as a world that is
+simply *there*, never as props spawning and despawning in view, so two gates constrain where the
+continuity transitions may run:
+- **Placement floor** (`minPlacementDistance`, default 140 u) — a scene never blooms in closer than
+  this to the vessel. Near-fill (`≥ firstSceneDistance`) and extend already target far ahead; this is
+  the hard floor (squared compare) that also covers degenerate geometry, so a structure never
+  materialises in the player's face. Keep it at or below `firstSceneDistance` so it never fights
+  normal near-fill.
+- **Off-screen removal** (`offscreenMargin`, default 40 u) — a scene is only reclaimed (suctioned
+  away at its old anchor) once its whole body — a `sceneRadius + offscreenMargin` sphere — lies
+  **fully outside the player camera's view frustum** (`GeometryUtility.CalculateFrustumPlanes`,
+  non-allocating overload; a straddling sphere counts as *visible* and is left alone). The suction is
+  therefore never watched; the bloom then happens far ahead at the new pose. If every pooled scene is
+  on screen the belt simply idles — placing nothing — until the player's motion pushes a scene out of
+  view, at which point the field self-heals. Camera-less fallback (rare): a scene clearly behind the
+  flight course, which the follow camera cannot see. The pool still *fills* to `poolSize` regardless
+  (new placements don't remove anything), so this gate only ever throttles recycling, never growth.
 
 **Ecosystem invariants (this toy is ecology-adjacent — all hold by construction):**
 

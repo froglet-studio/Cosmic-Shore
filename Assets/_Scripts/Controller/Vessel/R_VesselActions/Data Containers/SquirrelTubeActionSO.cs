@@ -8,7 +8,7 @@ namespace CosmicShore.Gameplay
     /// prisms</b> straight out in front of the vessel: a long tube of thick danger prisms along the
     /// nose / flight direction so a Squirrel flying straight rockets through the hollow centre and
     /// skims the whole danger wall (10x boost energy per danger skim) while it obstructs everyone
-    /// else — danger prisms slam any vessel body that touches them, friendly fire included (locked
+    /// else - danger prisms slam any vessel body that touches them, friendly fire included (locked
     /// design). No preview; it just places.
     ///
     /// The placement is led by the vessel's speed (<see cref="LeadSeconds"/>) so it appears a fixed
@@ -16,7 +16,7 @@ namespace CosmicShore.Gameplay
     /// same primitive behind the omnicrystal and joust rings): real conserved mass from the dedicated
     /// <b>Boost</b> prism POOL, blooming in (continuity law) with a FULL-SIZE collider from frame 0,
     /// registering with <see cref="PrismSpatialIndex"/>, and only ever removed by an active force
-    /// (skim/ability/fauna) — never a timer. See <c>SQUIRREL_TUBE.md</c>.
+    /// (skim/ability/fauna) - never a timer. See <c>SQUIRREL_TUBE.md</c>.
     /// Everything below is designer-tunable; the <see cref="Radius"/> in particular must be tuned
     /// in-editor so a level-0 Space Skimmer sphere reaches the ring while the vessel body clears it.
     /// </summary>
@@ -45,7 +45,7 @@ namespace CosmicShore.Gameplay
         [SerializeField] private float prismScale = 6f;
 
         [Header("Placement")]
-        [Tooltip("Seconds of travel ahead of the vessel the tube mouth forms — the offset is " +
+        [Tooltip("Seconds of travel ahead of the vessel the tube mouth forms - the offset is " +
                  "speed * leadSeconds, so a faster Squirrel places it further out.")]
         [SerializeField] private float leadSeconds = 1f;
 
@@ -60,6 +60,20 @@ namespace CosmicShore.Gameplay
         [Tooltip("Seconds before the ability can be used again after it forms. Keep it long.")]
         [SerializeField] private float cooldown = 20f;
 
+        [Header("Elemental (Time)")]
+        [Tooltip("TIME -> cooldown: multiplier on Cooldown at Time level 10 (1 at resting level, " +
+                 "extrapolates into the deficit band so debuffed Time LENGTHENS the cooldown). " +
+                 "Authored here - the generic map Time multiplier stays 1.0 because " +
+                 "VesselTransformer already consumes it for boost speed.")]
+        [SerializeField] private float cooldownMultiplierAtFullTime = 0.5f;
+
+        [Tooltip("Floor for the Time cooldown multiplier so overcharge can never zero the cooldown.")]
+        [SerializeField] private float minCooldownMultiplier = 0.35f;
+
+        [Tooltip("TIME level-5 'Twin Rings': extra rings added to the tube while the Time " +
+                 "elemental upgrade is active (per-deploy snapshot).")]
+        [SerializeField] private int upgradeExtraRings = 1;
+
         public bool Danger => danger;
         public float Radius => radius;
         public int Segments => Mathf.Max(3, segments);
@@ -70,6 +84,9 @@ namespace CosmicShore.Gameplay
         public float ForwardOffset => forwardOffset;
         public int SpawnPerFrame => Mathf.Max(1, spawnPerFrame);
         public float Cooldown => Mathf.Max(0f, cooldown);
+        public float CooldownMultiplierAtFullTime => cooldownMultiplierAtFullTime;
+        public float MinCooldownMultiplier => Mathf.Max(0.01f, minCooldownMultiplier);
+        public int UpgradeExtraRings => Mathf.Max(0, upgradeExtraRings);
 
         /// <summary>Total axial length the tube spans, from the first ring to the last.</summary>
         public float Length => (Rings - 1) * RingSpacing;

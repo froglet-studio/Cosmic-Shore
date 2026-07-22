@@ -20,16 +20,16 @@ namespace CosmicShore.Gameplay
         [Header("Data")]
         [Inject] protected GameDataSO gameData;
 
-        [Header("Stat Events — Flight (all vessels)")]
+        [Header("Stat Events - Flight (all vessels)")]
         [SerializeField] private VesselStatEventSO longestDriftStat;
         [SerializeField] private VesselStatEventSO maxBoostTimeStat;
 
-        [Header("Stat Events — Combat (all vessels)")]
+        [Header("Stat Events - Combat (all vessels)")]
         [SerializeField] private VesselStatEventSO prismsDamagedStat;
 
         [Header("Tracking Thresholds")]
         [Tooltip("Minimum BoostMultiplier required while IsBoosting for boost time to count toward Max Boost. " +
-                 "Tune per vessel — e.g. Squirrel's ChargeBoost peaks at 2x, so a 4x threshold would never fire.")]
+                 "Tune per vessel - e.g. Squirrel's ChargeBoost peaks at 2x, so a 4x threshold would never fire.")]
         [SerializeField] private float boostMultiplierThreshold = 1.5f;
 
         // ── Public records ─────────────────────────────────────────────────────
@@ -77,7 +77,7 @@ namespace CosmicShore.Gameplay
             RegisterStat(prismsDamagedStat);
             RegisterStatsExtended();
 
-            Debug.Log($"[VesselTelemetry] {GetType().Name} Awake — " +
+            Debug.Log($"[VesselTelemetry] {GetType().Name} Awake - " +
                 $"registered {_allStats.Count} stat(s), " +
                 $"gameData={(gameData != null ? "OK" : "NULL")}, " +
                 $"drift={(longestDriftStat != null ? "OK" : "NULL")}, " +
@@ -132,7 +132,7 @@ namespace CosmicShore.Gameplay
 
             if (Vessel == null || !Vessel.IsLocalUser)
             {
-                Debug.LogWarning($"[VesselTelemetry] {GetType().Name} HandleTurnStarted — " +
+                Debug.LogWarning($"[VesselTelemetry] {GetType().Name} HandleTurnStarted - " +
                     $"NOT tracking (Vessel={(Vessel != null ? Vessel.VesselType.ToString() : "NULL")}, " +
                     $"IsLocal={Vessel?.IsLocalUser})");
                 IsTracking = false;
@@ -140,7 +140,7 @@ namespace CosmicShore.Gameplay
             }
 
             IsTracking = true;
-            Debug.Log($"[VesselTelemetry] {GetType().Name} HandleTurnStarted — " +
+            Debug.Log($"[VesselTelemetry] {GetType().Name} HandleTurnStarted - " +
                 $"tracking {Vessel.VesselType} for player '{Vessel.PlayerName}', " +
                 $"{_allStats.Count} stat(s) registered");
             OnTurnStartedExtended();
@@ -152,7 +152,7 @@ namespace CosmicShore.Gameplay
             FinalizeInProgressBoost();
             IsTracking = false;
             OnTurnEndedExtended();
-            Debug.Log($"[VesselTelemetry] {GetType().Name} HandleTurnEnded — " +
+            Debug.Log($"[VesselTelemetry] {GetType().Name} HandleTurnEnded - " +
                 $"drift={MaxDriftTime:F2}s, boost={MaxBoostTime:F2}s, prismsDmg={PrismsDamaged}");
         }
 

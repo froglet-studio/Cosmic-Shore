@@ -52,6 +52,30 @@ namespace CosmicShore.Gameplay
         Vector3 desiredDirection;
         Quaternion desiredRotation;
 
+        /// <summary>Live travel speed - the joust's "must be moving faster" comparison reads this.</summary>
+        public override float CurrentSpeed => currentVelocity.magnitude;
+
+        /// <summary>
+        /// Layer the Boid flocking/feeding numbers of the config's variant expression on top of
+        /// the base (scale / material / starvation / audio). Sentinel -1 keeps the prefab value;
+        /// Forager is a tri-state. This is what lets ONE tadpole prefab express the authored
+        /// Mass/Space/Time behavior differences as data (see FaunaVariantTuning).
+        /// </summary>
+        public override void ApplyVariantTuning(FaunaVariantTuning tuning)
+        {
+            base.ApplyVariantTuning(tuning);
+            if (tuning == null) return;
+
+            if (tuning.CohesionRadius >= 0f) cohesionRadius = tuning.CohesionRadius;
+            if (tuning.BehaviorUpdateRate >= 0f) behaviorUpdateRate = tuning.BehaviorUpdateRate;
+            if (tuning.TrailBlockInteractionRadius >= 0f) trailBlockInteractionRadius = tuning.TrailBlockInteractionRadius;
+            if (tuning.GoalWeight >= 0f) goalWeight = tuning.GoalWeight;
+            if (tuning.MinSpeed >= 0f) minSpeed = tuning.MinSpeed;
+            if (tuning.MaxSpeed >= 0f) maxSpeed = Mathf.Max(tuning.MaxSpeed, minSpeed);
+            if (tuning.Forager != FaunaVariantTuning.TriState.KeepPrefab)
+                forager = tuning.Forager == FaunaVariantTuning.TriState.On;
+        }
+
         public bool isKilled = false;
         bool isTraveling = false;
         bool isAttached = false;
@@ -62,7 +86,7 @@ namespace CosmicShore.Gameplay
         [Tooltip("ON = this boid is a food-web FORAGER (tadpole): it feeds when it grazes " +
                  "opposing mass (Explode effect) and starves (despawns) after starvationSeconds " +
                  "without feeding, so the swarm self-limits to available trail/flora prey. " +
-                 "OFF (default) = drone/mound boid (BoidController) — never feeds or starves.")]
+                 "OFF (default) = drone/mound boid (BoidController) - never feeds or starves.")]
         [SerializeField] bool forager = false;
 
         [Header("Intentional Feeding (forager)")]
@@ -94,9 +118,30 @@ namespace CosmicShore.Gameplay
         Vector3 _feedFocusPoint;
         float _feedHoldUntil = -1f;
 
+        [Header("Grazing Pacing (drone combat path)")]
+        [Tooltip("Upper bound on prisms a DRONE boid (non-forager) damages per FRAME. The " +
+                 "behavior tick still finds every edible prism in range, but the death cascade " +
+                 "each hit triggers (implosion VFX, cell volume updates, flora reactions) drains " +
+                 "at this rate over the following frames instead of landing in one. Pacing only - " +
+                 "every queued prism is hit well inside one behavior tick. Foragers do NOT use " +
+                 "this path: they feed through the intentional mouthful sequence above, which is " +
+                 "already frame-bounded by maxClusterBites + the facing hold. 0 = unpaced legacy " +
+                 "burst.")]
+        [SerializeField] int maxConsumesPerFrame = 8;
+
+        // Drone Damage cascade, drained at maxConsumesPerFrame. Entries are re-validated
+        // at drain time (destroyed / shielded / fauna-body can all change inside the
+        // pacing window). Foragers never enqueue here.
+        readonly Queue<Prism> _pendingMeals = new();
+
         BoxCollider blockCollider;
 
         HealthPrism embeddedHealthPrism;
+
+        // Attribution strings for Consume/Damage, cached once - the inline
+        // concat was per-eaten-prism garbage during grazing bursts.
+        string _consumerName;
+        string _damagerName;
 
         public BoidManager BoidManager { get; set; }
         public BoidController BoidController { get; set; }
@@ -118,9 +163,9 @@ namespace CosmicShore.Gameplay
 
             // Initialize the body health prism(s) so they actually render and become a real
             // (consumable) health prism. Like LightFauna's body prisms, they start at local
-            // scale 0 and only grow once Prism.Initialize fires the scale animator — without
+            // scale 0 and only grow once Prism.Initialize fires the scale animator - without
             // this the tadpole has no visible/active health prism. (LightFauna does the same
-            // for the brittlestar/shark body.) The cache also powers NotifyBodyPrismsMoved —
+            // for the brittlestar/shark body.) The cache also powers NotifyBodyPrismsMoved -
             // the per-frame spatial-index position sync for a moving body.
             var bodyPrisms = CacheBodyPrisms();
             for (int i = 0; i < bodyPrisms.Length; i++)
@@ -131,11 +176,18 @@ namespace CosmicShore.Gameplay
                 hp.Initialize("tadpole");
             }
 
+            _consumerName = embeddedHealthPrism.PlayerName + " tadpole";
+            _damagerName = embeddedHealthPrism.PlayerName + " boid";
+
             // Locked invariant: every lifeform carries one elemental crystal it drops as
             // a powerup on death (mass conserved). EnsureElementalCrystal uses the prefab's
             // authored crystal if present (validator-enforced fast path) or provisions one;
             // the sealed Fauna.Die drops it on any death path (predation / forager starvation).
             crystal = LifeFormCrystal.EnsureElementalCrystal(this);
+            // The crystal is this creature's HEART while it lives: joustable by vessels
+            // (Squirrel Space-5 withers via Predated) but never skim-collectable until
+            // death drops it. Cleared by ActivateCrystal in the sealed Die path.
+            if (crystal) crystal.SetEmbeddedIn(this);
 
             currentVelocity = transform.forward * Random.Range(minSpeed, Mathf.Max(minSpeed, maxSpeed));
             float initialDelay = normalizedIndex * behaviorUpdateRate;
@@ -144,7 +196,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Foragers (tadpoles) actively HUNT the biggest mass concentration the cell senses
-        /// — the densest region of environment prisms across the whole density grid —
+        /// - the densest region of environment prisms across the whole density grid -
         /// regardless of aggression level, so they roam to the trail/flora buildup and clean
         /// it instead of sitting at the crystal/spawn. Emergent (reads the density grid),
         /// NOT track-following. `GetDensestRegionAnyDomain` falls back to the cell anchor
@@ -195,7 +247,11 @@ namespace CosmicShore.Gameplay
                 }
 
                 CalculateBehavior();
-                yield return new WaitForSeconds(behaviorUpdateRate);
+                // Jitter the cadence ±10% so boids spawned in the same burst drift
+                // out of phase instead of ticking (and paying their consume
+                // cascades) in the same frame forever - a phase-locked swarm lands
+                // several full behavior ticks on one frame at a regular beat.
+                yield return new WaitForSeconds(behaviorUpdateRate * Random.Range(0.9f, 1.1f));
             }
         }
 
@@ -221,8 +277,8 @@ namespace CosmicShore.Gameplay
             Vector3 blockAttraction = Vector3.zero;
 
             // Squared-distance space: every per-neighbor use of `distance` below is either a
-            // radius threshold or the inverse-square weight diff.normalized/distance — and
-            // diff.normalized/distance == (diff/|diff|)/|diff| == diff/diff.sqrMagnitude — so
+            // radius threshold or the inverse-square weight diff.normalized/distance - and
+            // diff.normalized/distance == (diff/|diff|)/|diff| == diff/diff.sqrMagnitude - so
             // no per-neighbor sqrt is needed. Radii are squared once per behavior tick here.
             float separationRadiusSqr = separationRadius * separationRadius;
             float trailBlockInteractionRadiusSqr = trailBlockInteractionRadius * trailBlockInteractionRadius;
@@ -237,7 +293,7 @@ namespace CosmicShore.Gameplay
 
             // Everything this scan inspects is a registered prism — neighbor boids are
             // sensed through their body HealthPrisms, attraction/grazing targets ARE
-            // prisms — so the whole neighborhood comes from the spatial index
+            // prisms - so the whole neighborhood comes from the spatial index
             // (Fauna.PrismScratch snapshot): no physics broadphase, no per-collider
             // GetComponent, no 256-slot truncation in dense fields. Entries can be
             // consumed by our own side effects mid-loop, so each is re-checked.
@@ -254,8 +310,13 @@ namespace CosmicShore.Gameplay
                 // Ignore our own body prism (if present)
                 if (blockCollider && otherPrism.gameObject == blockCollider.gameObject) continue;
 
-                // Only HealthPrisms can be fauna bodies — plain prisms skip the parent walk.
-                Boid otherBoid = otherPrism is HealthPrism ? otherPrism.GetComponentInParent<Boid>() : null;
+                // Only HealthPrisms can be fauna bodies. Resolve the owner ONCE per
+                // neighbor via the stamped HealthPrism.OwnerFauna (a field read; the
+                // walk-and-backfill fallback covers species that never stamp) - the
+                // old per-neighbor GetComponentInParent<Boid> + <Fauna> walks were
+                // the bulk of this method's self-time in a swarm.
+                Fauna ownerFauna = otherPrism is HealthPrism bodyPrism ? bodyPrism.ResolveOwnerFauna() : null;
+                Boid otherBoid = ownerFauna as Boid;
 
                 Vector3 diff = transform.position - otherPrism.transform.position;
                 float sqr = diff.sqrMagnitude;
@@ -284,7 +345,7 @@ namespace CosmicShore.Gameplay
                     // (herbivores eating fauna is the predator's job — this also keeps a
                     // predator's danger prisms untouchable by its prey), or nucleus-interior
                     // mass (the territorial claim). One rule, shared with the per-frame
-                    // mouthful path: IsEdibleForForager.
+                    // mouthful path and the drone EatPrism recheck: IsEdibleForForager.
                     bool edible = forager
                         ? IsEdibleForForager(otherPrism)
                         : embeddedHealthPrism && otherPrism.Domain != embeddedHealthPrism.Domain;
@@ -325,11 +386,12 @@ namespace CosmicShore.Gameplay
                                                 feedCandidate = otherPrism;
                                             }
                                         }
+                                        // Drone combat: frame-paced Damage cascade (foragers
+                                        // never reach here — they feed through mouthfuls).
+                                        else if (maxConsumesPerFrame > 0)
+                                            _pendingMeals.Enqueue(otherPrism);
                                         else
-                                        {
-                                            otherPrism.Damage(currentVelocity * embeddedHealthPrism.Volume, embeddedHealthPrism.Domain,
-                                                embeddedHealthPrism.PlayerName + " boid", true, true);
-                                        }
+                                            EatPrism(otherPrism); // unpaced legacy burst
                                     }
                                     break;
                             }
@@ -337,6 +399,10 @@ namespace CosmicShore.Gameplay
                     }
                 }
             }
+
+            // Eat the first slice in the tick frame itself so single-prey grazing is
+            // frame-identical to the old inline path; Update() drains the rest.
+            DrainPendingMeals();
 
             int totalBoids = prismCount - 1;
 
@@ -388,10 +454,62 @@ namespace CosmicShore.Gameplay
             desiredRotation = SafeLookRotation.TryGet(currentVelocity, out var desiredRot, this) ? desiredRot : transform.rotation;
         }
 
+        /// <summary>
+        /// Consumes up to maxConsumesPerFrame queued meals. Called once from the
+        /// behavior tick (first slice lands in the tick frame) and then from
+        /// Update() until the queue empties - always well inside one behavior
+        /// cycle, so pacing never reduces what the boid actually eats.
+        /// </summary>
+        void DrainPendingMeals()
+        {
+            int budget = maxConsumesPerFrame;
+            while (budget-- > 0 && _pendingMeals.Count > 0)
+                EatPrism(_pendingMeals.Dequeue());
+        }
+
+        /// <summary>
+        /// The consume/damage half of the old inline Explode effect, with the
+        /// scan's edibility predicate re-checked - inside the pacing window a
+        /// flockmate may have eaten the prism (destroyed), a shield may have
+        /// engaged, or its owner may have changed.
+        /// </summary>
+        void EatPrism(Prism prism)
+        {
+            if (!prism || prism.destroyed || !embeddedHealthPrism) return;
+
+            if (forager)
+            {
+                var pp = prism.prismProperties;
+                bool shielded = pp != null && (pp.IsShielded || pp.IsSuperShielded);
+                bool isFaunaBody = prism is HealthPrism bodyPrism && bodyPrism.ResolveOwnerFauna() != null;
+                if (shielded || isFaunaBody) return;
+                // Nucleus-interior mass is the territorial claim, never forager food -
+                // same check as the scan, re-applied in case the nucleus radius
+                // refreshed inside the pacing window.
+                if (cell != null && cell.IsInsideNucleus(prism.transform.position)) return;
+
+                // Foragers CONSUME (implode toward the tadpole → the suction
+                // shader), matching how LightFauna grazes. devastate:false so a
+                // shielded prism that somehow reaches here only loses its shield,
+                // never gets eaten.
+                prism.Consume(transform, embeddedHealthPrism.Domain, _consumerName, false, true);
+                NotifyFed();
+            }
+            else
+            {
+                if (prism.Domain == embeddedHealthPrism.Domain) return;
+                prism.Damage(currentVelocity * embeddedHealthPrism.Volume, embeddedHealthPrism.Domain,
+                    _damagerName, true, true);
+            }
+        }
+
         protected override void OnDeath(string killerName = "")
         {
             if (isKilled) return;
             isKilled = true;
+            // Uneaten queued prey stays in the world (mass conserved) - a dead
+            // boid just stops being its eater.
+            _pendingMeals.Clear();
             StopAllCoroutines();
             // Continuity rule — nothing pops out of existence. The sealed Fauna.Die already
             // dropped this boid's elemental crystal (mass conserved). Starvation shrinks the
@@ -454,7 +572,7 @@ namespace CosmicShore.Gameplay
 
             // Intentionally a physics query: the mound blocks this hunts for are built
             // by NewBlock WITHOUT Prism.Initialize, so they never register with the
-            // spatial index — their colliders on the dedicated Mound layer are the
+            // spatial index - their colliders on the dedicated Mound layer are the
             // only way to find them (tiny population, narrow layer; physics is fine).
             Collider[] colliders = new Collider[0];
             while (colliders.Length == 0)
@@ -579,7 +697,7 @@ namespace CosmicShore.Gameplay
             _feedTarget = null;
 
             Domains eaterDomain = embeddedHealthPrism ? embeddedHealthPrism.Domain : domain;
-            string eaterName = (embeddedHealthPrism ? embeddedHealthPrism.PlayerName : "") + " tadpole";
+            string eaterName = _consumerName; // cached at Initialize (no per-mouthful concat garbage)
 
             int bites = 0;
             if (IsEdibleForForager(feedTarget))
@@ -622,15 +740,22 @@ namespace CosmicShore.Gameplay
         void Update()
         {
             transform.position += currentVelocity * Time.deltaTime;
-            // Movers contract: the body prism is registered mass — keep its stored
+            // Movers contract: the body prism is registered mass - keep its stored
             // index position tracking the swimming boid.
             NotifyBodyPrismsMoved();
 
+            // Forager: per-frame intentional-feeding driver (approach → face → mouthful →
+            // hold), with a turn boost while it owns the body so the slow boid turn can
+            // reach the facing angle. Drones skip it (they graze via the paced queue below).
             float turnRate = 1f;
             if (forager && !isKilled && UpdateFeeding())
                 turnRate = Mathf.Max(1f, feedingTurnBoost);
 
             transform.rotation = Quaternion.Lerp(transform.rotation, desiredRotation, Time.deltaTime * turnRate);
+
+            // Drone combat: drain the frame-paced Damage cascade (foragers never enqueue).
+            if (!isKilled && _pendingMeals.Count > 0)
+                DrainPendingMeals();
         }
     }
 }

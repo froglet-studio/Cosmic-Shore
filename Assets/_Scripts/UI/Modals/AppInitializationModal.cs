@@ -79,7 +79,7 @@ namespace CosmicShore.UI
                 }
             }
 
-            // Timeout reached — enter offline mode and unblock the menu.
+            // Timeout reached - enter offline mode and unblock the menu.
             InitializingText.text = "Offline Mode";
             CSDebug.LogWarning("Entering Offline Mode");
             StartCoroutine(CloseCoroutine());

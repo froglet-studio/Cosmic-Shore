@@ -8,12 +8,12 @@ using CosmicShore.Utility;
 namespace CosmicShore.Tests
 {
     /// <summary>
-    /// Extended Enum Integrity Tests — Covers additional enums not in the original suite.
+    /// Extended Enum Integrity Tests - Covers additional enums not in the original suite.
     ///
     /// WHY THIS MATTERS:
     /// CaptainLevel maps directly to PlayFab product content types for in-app purchases.
     /// If the integer values shift, players who purchased Upgrade3 could see Upgrade2
-    /// applied to their account — a monetization-breaking bug. CSLogLevel controls
+    /// applied to their account - a monetization-breaking bug. CSLogLevel controls
     /// runtime log filtering, so its values matter for configuration persistence.
     /// </summary>
     [TestFixture]

@@ -4,25 +4,25 @@ using UnityEngine.UI;
 namespace CosmicShore.UI
 {
     /// <summary>
-    /// Procedural hexagonal domain-volume gauge — the universal in-game pause-button
+    /// Procedural hexagonal domain-volume gauge - the universal in-game pause-button
     /// face. Trained as a single recognizable element across the main menu and every
     /// gameplay scene (attached to the "Volume / Pause Button" by MenuMiniGameHUD in
     /// the menu and by MiniGameHUD in gameplay).
     ///
-    /// A pointy-top hexagon split into three fixed 120° sectors — one per playable
-    /// domain — each spanning two of the six edges:
+    /// A pointy-top hexagon split into three fixed 120° sectors - one per playable
+    /// domain - each spanning two of the six edges:
     ///   Jade  → top      (corners 150°, 90°, 30°)
     ///   Ruby  → lower-left  (corners 150°, 210°, 270°)
     ///   Gold  → lower-right (corners 270°, 330°, 30°)
     /// Seams sit at the top-left (150°), bottom (270°) and top-right (30°) vertices.
     ///
     /// Each sector ALWAYS spans its full angular width; volume is shown by RADIAL
-    /// DEPTH — the colored band grows from the outer hexagon edge inward toward the
+    /// DEPTH - the colored band grows from the outer hexagon edge inward toward the
     /// centre as the domain's mass approaches the frenzy threshold. The END of the
     /// wedge (the centre hexagon) is the final Frenzy state.
     ///
-    /// Overlaid on top are CONCENTRIC THRESHOLD RINGS — one per intermediate cell phase
-    /// boundary (Restless; Frenzy itself is the centre / boundary hexagon) — placed at the
+    /// Overlaid on top are CONCENTRIC THRESHOLD RINGS - one per intermediate cell phase
+    /// boundary (Restless; Frenzy itself is the centre / boundary hexagon) - placed at the
     /// radius a wedge reaches when its mass equals that threshold. As a domain's wedge
     /// fills inward it PASSES
     /// THROUGH each ring; a ring DISAPPEARS once a wedge has filled past it, so only the
@@ -60,7 +60,7 @@ namespace CosmicShore.UI
         [Range(0.6f, 1f)] [SerializeField] float ringOuterFrac = 0.98f;
         [Tooltip("Faint background track behind the ring's progress arc. 0 alpha = off.")]
         [SerializeField] Color ringTrackColor = new(1f, 1f, 1f, 0.10f);
-        [Tooltip("Number of arc segments — higher = smoother ring at the cost of more triangles.")]
+        [Tooltip("Number of arc segments - higher = smoother ring at the cost of more triangles.")]
         [Range(12, 128)] [SerializeField] int ringSegments = 64;
 
         [Header("Colors")]
@@ -74,9 +74,9 @@ namespace CosmicShore.UI
         // Each domain's three corner angles, in perimeter order (2 edges per domain).
         static readonly float[][] DomainCornerAngles =
         {
-            new[] { 150f,  90f,  30f }, // 0: Jade  — top
-            new[] { 150f, 210f, 270f }, // 1: Ruby  — lower-left
-            new[] { 270f, 330f,  30f }, // 2: Gold  — lower-right
+            new[] { 150f,  90f,  30f }, // 0: Jade  - top
+            new[] { 150f, 210f, 270f }, // 1: Ruby  - lower-left
+            new[] { 270f, 330f,  30f }, // 2: Gold  - lower-right
         };
 
         // State pushed by the controller.
@@ -92,7 +92,7 @@ namespace CosmicShore.UI
         /// Canvas batch rebuild every frame once the values settle.
         ///
         /// <paramref name="thresholdFracs"/> are the cell's phase enter thresholds as a
-        /// fraction of RabidEnter (ascending) — where to draw the concentric rings the
+        /// fraction of RabidEnter (ascending) - where to draw the concentric rings the
         /// wedges pass through. Pass an empty/null array to draw no rings.
         /// </summary>
         public void SetState(float fillJade, float fillRuby, float fillGold,
@@ -149,7 +149,7 @@ namespace CosmicShore.UI
             float centerR = R * centerHexFrac;
             float minThick = R * minBandThicknessFrac;
 
-            // 1) Faint boundary hexagon ring — the frenzy extent marker.
+            // 1) Faint boundary hexagon ring - the frenzy extent marker.
             if (boundaryThicknessFrac > 0f)
                 AddHexRing(vh, c, R, R - R * boundaryThicknessFrac, boundaryColor);
 
@@ -168,7 +168,7 @@ namespace CosmicShore.UI
 
             // 3) Concentric phase-threshold rings the wedges pass through. Each ring sits
             //    at the radius a wedge reaches when its mass equals that threshold. A ring
-            //    DISAPPEARS once the leading wedge has filled past it — so only the
+            //    DISAPPEARS once the leading wedge has filled past it - so only the
             //    upcoming thresholds are drawn, reducing visual competition with the
             //    colored wedges. "Which domain" still reads off the wedge extending past
             //    where the ring used to be.
@@ -182,14 +182,14 @@ namespace CosmicShore.UI
                 AddHexRing(vh, c, ringR, ringR - ringThick, thresholdRingColor);
             }
 
-            // 4) Centre hexagon — tinted by the dominant domain (who leads on volume).
+            // 4) Centre hexagon - tinted by the dominant domain (who leads on volume).
             Color centerColor = (_dominant >= 0 && _dominant < 3) ? _domainColor[_dominant] : neutralCenterColor;
             AddHexFill(vh, c, centerR, centerColor);
 
             // 5) Spawn-cycle ring around the outside. Empty background track + a
             //    progress arc starting at the top and sweeping clockwise. The arc
             //    is tinted by the DOMINANT domain because every periodic fauna
-            //    spawn produces the leader's color — when the arc completes a
+            //    spawn produces the leader's color - when the arc completes a
             //    full revolution, a new pack of that color spawns.
             float ringInner = R * Mathf.Min(ringInnerFrac, ringOuterFrac);
             float ringOuter = R * Mathf.Max(ringInnerFrac, ringOuterFrac);

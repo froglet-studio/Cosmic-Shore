@@ -66,9 +66,9 @@ All shipped on the branch; see `ARCHITECTURE.md` § "Status & follow-up" for the
   body. Confirm it reads clearly; consider using the prism/hull look for stronger identity.
 - **Layout.** Two toys fanned by `anglePerToyDeg` around one slot — tune spacing.
 
-## Branch: painting ("fly by numbers") polish
+## Branch: painting ("Connect the Dots") polish
 
-Shipped in the fly-by-numbers enhancement: multi-stroke multi-domain paintings
+Shipped in the connect-the-dots enhancement: multi-stroke multi-domain paintings
 (`PaintingDefinitionSO` + `PaintingPresetLibrary`: Star / Rainbow / Saturn / **Taj Mahal**),
 world-anchored upright monuments, per-stroke domain start gates
 (`RequestSetDomain_ServerRpc`), pen-up between strokes
@@ -77,9 +77,9 @@ reach on fine detail, bench/resume via the station, cross-session stroke progres
 (`PaintingProgressStore`), completion celebration, and a per-station progress label.
 `MenuShapePainter` (single-stroke, billboarded, one colour) was removed. Remaining polish:
 
-- **In-editor tuning pass.** Gallery fan spacing (`anglePerToyDeg`), `paintingClearance`,
-  preset sizes vs. the lava-lamp play area, gate ring radius, ghost alphas, celebration
-  timing — all first-guess values.
+- **In-editor tuning pass.** `paintingClearance` (drives the width-aware monument pitches),
+  preset sizes vs. the lava-lamp play area, gate/milestone ring radii, ghost alphas,
+  celebration timing — all first-guess values.
 - **Cross-session prisms — RESOLVED.** The drawing state (per-prism pose/size/domain) is now
   saved per completed stroke (`PaintingPrismStore`) and regrown through the normal
   `PrismFactory` channel on return — across vessel swaps, other paintings, game modes, and
@@ -93,9 +93,37 @@ reach on fine detail, bench/resume via the station, cross-session stroke progres
 - **Feedback juice.** Waypoint-collect VFX, gate-pass SFX/haptics (AudioSystem gameplay SFX +
   NiceVibrations — the framework-wide audio item below), a subtle beam from station to its
   monument so ownership reads at a glance.
-- **More paintings.** The preset library composes easily (arcs/rects/circles/meridians) —
-  candidates: Great Wave, rocket, pagoda, Colosseum. Any `ShapeDefinition` already converts
-  via `sourceShape` (pen-up gaps become strokes, now honored).
+- **More paintings — SHIPPED (12 grandiose 3D constructions), then QUALITY-REBUILT.** After the
+  prompter's review ("less symbolic, more realistic, properly proportioned — pull from reference
+  material, not first principles"), the seven mathematically-real forms were rebuilt at
+  **reference grade** from published parametrizations, and ALL random curl-noise scribble was
+  removed from them: Nautilus (embracing-whorl shell model + 58 growth-line ribs), Lotus (real
+  Nelumbo: lily pads, obovate petal whorls, stamens, seed pod), Rose (recurved petal rims → furled
+  heart, sepals), Double Helix (true B-DNA: pitch/diameter 1.7, 10 bp/turn, ribboned backbones),
+  Torus Knot (engineered tube on rotation-minimizing frames), Buckyball (C60 + its 30 real 6:6
+  double bonds), Spiral Galaxy (two-arm grand design, dust lanes, arm-following star streaks,
+  22° inclination). Anatomy counts are locked by `ReferenceRebuilds_KeepTheirAnatomy`.
+  **All five representational subjects are now baked from real references** via the offline
+  pipeline (`Tools/PaintingPipeline/`, licences audited in `REFERENCE_MODELS.md`): **Lion's
+  Head** (CC0 Temperance Union Lion scan), **Starry Night** (v2 retrace of the painting's own
+  brush flow), **Phoenix** (threedscans Striding Eagle, no restrictions), **Peacock**
+  (YahooJAPAN Peafowl — CC-BY 4.0, attribution ships in the asset description AND must appear
+  in the game credits), and **Almighty Mountain** (the real Matterhorn DEM via AWS Terrain
+  Tiles — attribution line in `Tools/PaintingPipeline/README.md` must ship in the credits
+  screen). Extra baked-painting candidates from the same haul: the Medici Riccardi Horse Head
+  and the Glycon serpent (both threedscans, no restrictions). Remaining procedural candidates:
+  Great Wave, pagoda, Colosseum.
+- **Perf / in-editor pass for the big paintings** (review-verified, deferred by design). Two
+  structural costs confirmed by the pre-PR review: (1) `PaintingRunner.Begin` eagerly creates one
+  ghost `LineRenderer` per stroke — Phoenix (260) and Peacock (236) keep 200+ lightweight
+  LineRenderers alive for the whole run (the property-write storms are transient: bloom 1.4s,
+  celebrate 3s, bench fades) — candidates: merge Pending strokes into one renderer per domain, or
+  a stream-in window around the active stroke; (2) `PaintingToyDefinitionSO.Spawn` synchronously
+  runs `EnsureStrokes` + `MiniaturePaintingBuilder` for all 16 paintings on the toybox-spawn frame
+  in Menu_Main — the 11 procedural presets regenerate there (baked assets skip generation) —
+  candidate: amortize one painting per frame via UniTask, and cache `BuildDefaultGallery`
+  statically so the empty-list fallback stops regenerating per spawn. Both want profiler numbers
+  on mobile before restructuring (CLAUDE.md: profile first).
 - **Reviewed and deliberately deferred** (from the enhancement's review pass): coalesce the
   per-stroke synchronous saves (`DataAccessor` full-file JSON writes at each stroke boundary —
   both the small progress file and the growing `PaintingPrismStore` drawing-state file; the
@@ -106,6 +134,46 @@ reach on fine detail, bench/resume via the station, cross-session stroke progres
   `SwapToySetCoordinator.Layout` into one helper; unify the LineRenderer config duplicated
   by `ShapeDrawingManager.ConfigureLineRenderer` with `ToyFactory.CreateLine` (touches the
   shape-drawing system, so it belongs in its own change).
+- **Reviewed and deliberately deferred (pre-PR review pass).** Verified findings fixed in that
+  pass: closed-loop instant-complete, disengaged-milestone latch, milestone-trigger NRE during
+  vessel swap (shared null-guarded `Toy.TryGetLocalVessel`), benched-gate forever-lerp, ridden
+  line now eases out/in (continuity law), monument layout now width-aware, six asset YAML
+  descriptions quoted, dead toolkit API pruned, `TorusKnotPreset` reuses `Tk.TorusKnot`.
+  Deferred with rationale:
+  - *Ride-feel constants in code* (checkpoint spacing `max(90, 0.085·diag)`, 28° turn limit,
+    milestone radius `max(18, reach·1.8)`): derived heuristics, not designer knobs yet —
+    promote to `PaintingToyDefinitionSO` fields when the in-editor tuning pass wants to move
+    them (CLAUDE.md config-separation).
+  - *Perfect-ride juice lost its visual* — the guide line (and its `_rideGlow` brightening) was
+    replaced by the standard `ObjectiveIndicator` per the prompter; re-express the perfect-ride
+    reward as in-world juice (milestone-ring emission/pulse when hugging the curve) in the
+    tuning pass.
+  - *Milestone ring create/destroy per checkpoint*: one small GameObject per ~90u of flight —
+    same lifecycle as gates; pool only if the profiler pass flags it.
+  - *`TrySpawnRestoredPrism` mirrors `VesselPrismController.CreateBlock`* (0.6s collider window
+    literal; skips danger/shield branches + creation events — the event skip is intentional to
+    avoid re-capture): extract a shared post-spawn setup on `VesselPrismController` so restored
+    prisms can't drift from live-painted ones.
+  - *`ToyboxSetupTool.LoadOrCreatePainting` returns existing assets untouched*: catalog edits
+    don't propagate to committed assets on re-run — needs an update-in-place pass (like the
+    tool's `extra` SerializedObject pass for toys) that respects baked strokes.
+  - *Stroke conventions enforced only in the offline baker*: `PaintingDefinitionSO` wants an
+    `OnValidate`/`EnsureStrokes` warning for Blue-domain or degenerate inspector-authored
+    strokes (a Blue stroke currently paints in the player's current colour and records that
+    into `PaintingPrismStore`).
+  - *Fallback/baked identity*: DefaultGalleryCatalog reuses the baked paintingIds, so if the
+    toy's paintings list is ever emptied the procedural fallback resets saved progress on its
+    first write (totalStrokes mismatch, by design). Acceptable while the committed
+    `Toy_Painting.asset` list stays populated; split the ids if that ever changes.
+  - *`BillboardLabel` one-LateUpdate-per-label* (~20 in the full toybox): fold into a single
+    manager iterating a static list if the profiler pass flags it (pole-degeneracy guard is in).
+  - *Toolkit `Rng` vs seeded `System.Random`* (Microscene convention): kept deliberately —
+    xorshift32 is stable across .NET runtimes, `System.Random`'s algorithm is not guaranteed.
+  - *`CatmullRomPoint` duplicates `SpawnableWaypointTrack.CatmullRom`*: unify in a shared math
+    utility in its own change (touches the environment system).
+  - *Phoenix preset fallback*: the flame fill's Ruby branch is dead (seed y-range never crosses
+    the threshold) — all flames come out Gold; harmless (single recolour), fix with the next
+    preset-content pass.
 - **Full experience (optional).** For a gameplay scene with ecology infra, the original
   `ShapeDrawingManager` (preview cinematic, scoring, reveal, `EndShapeDetailHUD`) remains a
   separate, score-bearing mode — the toy stays scoreless by design.
@@ -134,17 +202,40 @@ teardown). Everything below is remaining polish / not-yet-play-verified.
   same rhythm new ones arrive; (5) recipes vary strongly — same recipe should land with
   different radii/twists/counts each time; (6) crystals fade in and are skimmable; menagerie
   fauna spawn in the controlling colour and graze; (7) the autopilot lava-lamp vessel never
-  trips the toy. Watch the `[ECOSIM]` line — belt steady-state adds ~420 prisms max.
+  trips the toy; (8) **you never watch a scene appear in your face or suction away in view** —
+  scenes bloom in only at a distance ahead and a scene is only reclaimed once it is fully off
+  screen (fly straight, then hard-turn and reverse: the old ribbon should wait to recycle until
+  it has left your view, briefly idling rather than popping away). Watch the `[ECOSIM]` line —
+  belt steady-state adds ~420 prisms max.
 - **Tuning dials** (all on `Toy_Conveyor.asset`): `aheadTargetScenes` (field depth, 3-10) +
   `minSceneIntervalSeconds` (seconds of flight between scenes at speed) are the pacing pair;
   `sceneSpacing` / `recycleBehindDistance` are the low-speed floors; `sceneRadius` + per-recipe
   radii vs. vessel + skimmer size; `transitionSeconds` (suction/bloom read); `poolSize` /
   `prismBudgetPerScene` (density vs. perf); `turnBreakDegrees` (forward-cone half-angle, 20-80° —
   how sharp a turn re-lays the ribbon straight ahead vs. bends it along the curve; lower snaps to
-  your new heading sooner, higher follows longer curves before re-laying).
-- **Recipe art pass.** The 16 `MicroscenePatterns` recipes are procedural (each re-rolls its own
+  your new heading sooner, higher follows longer curves before re-laying);
+  `minPlacementDistance` (hard floor on how close a scene may bloom in — keep ≤ `firstSceneDistance`)
+  + `offscreenMargin` (extra padding on the `sceneRadius` bounding sphere that must clear the camera
+  frustum before a scene may recycle — larger = more buffer against turning mid-suction, at the cost
+  of the belt waiting a touch longer for scenes to leave view). By design these can briefly *stall*
+  recycling when the whole field is on screen (near-stationary or mid-U-turn); the belt idles and
+  self-heals as motion pushes scenes out of view — it never pops one away to keep flowing. A future
+  hardening could re-check frustum visibility per-frame *during* the ~`transitionSeconds` suction
+  (today it is gated once at selection, with the margin as the buffer) — not needed at current dials.
+- **Recipe art pass.** The 40 `MicroscenePatterns` recipes are procedural (each re-rolls its own
   radii/counts/twists/bends per arrival) — tune ranges per recipe, and consider authored recipes
   (a `MicrosceneRecipeSO`) if designers want hand-built set pieces in the shuffle bag.
+- **Diversity pass (shipped).** Recipes stamp structural metadata (`MicroscenePlan.CloseStructure`)
+  and `MicroscenePainter` paints along it: 8 domain schemes over the full triad (per-structure
+  rainbows, flight gradients, pinwheels, stripes, mirrors), 7 kind schemes using danger/shield as
+  palette tools (danger gates/tips, armoured frames, keystone landmarks — shield caps unchanged),
+  scale moods (uniform × long-axis stretch × structure taper, per-axis family jitter), plus 12 new
+  recipes on superstructure-oriented primitives (domes, grottos, torus knots, Möbius rails,
+  rosettes, terrace spirals, banked ribbon chicanes, split tubes, 4 spine×motif Medley composers).
+  In-editor check: ride the belt and confirm most scenes carry structural colour, danger structures
+  read as deliberate hot gates (and slam you on contact — friendly fire is the design), shielded
+  ribs shrug off weapon fire, and mono/plain scenes still occur as breathing room. Tune the
+  `Toy_Conveyor.asset` palette weights to taste.
 - **Belt audio/VFX.** Suction/bloom currently rides scale only; a whoosh SFX
   (`AudioSystem` gameplay SFX) + a faint particle draw toward the anchor would sell the
   conveyor. Consider a soft chime as a new scene finishes blooming.
@@ -189,3 +280,18 @@ teardown). Everything below is remaining polish / not-yet-play-verified.
   speed then eases to the current throttle target — with input paused during the post-swap
   autopilot window it will drift toward `MinimumSpeed`; fine for the seamless-handoff goal, tune
   if a longer hold is wanted.
+
+## Lifeform Matrix follow-ups
+
+- **Charge tadpole is NEW and untuned** (authored from the Space baseline with a Charge
+  crystal) — tune via the matrix, then bake into `Tadpole Fauna Charge.asset`.
+- **Not in the elemental contract yet**: Seaweed (`SpawnableCord`, not a `Flora`), worms
+  (`Worm` is not a `Fauna`), drone populations (BoidManager path — now all spawn the base
+  tadpole; needs its own config pass for per-element identity).
+- **Sparrow (and other vessels') HUD ability-icon bindings** for the shared upgrade-highlight
+  system are unwired (Squirrel only); fill each view's `abilityIcons` in its prefab.
+- **Squirrel HUD tube/energy icons repaint colours per-frame**, so the upgrade highlight
+  reads via scale only there — teach those repaints to respect the highlight tint.
+- **Variant matrix stations beyond the membrane**: layered outward they can cross the
+  membrane; spawns resolve the cell from the toy's position so they work, but station
+  placement could clamp to the membrane radius for tidiness.

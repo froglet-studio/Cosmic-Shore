@@ -7,7 +7,7 @@ namespace CosmicShore.Gameplay
     /// Manages the visual and physical transition between a prism's unshielded
     /// box state and its super-shielded stellated octahedron (Stella Octangula)
     /// state. Mirrors <see cref="PrismOctahedronShield"/> but uses the
-    /// stellation — the compound of two interpenetrating tetrahedra whose
+    /// stellation - the compound of two interpenetrating tetrahedra whose
     /// intersection is the octahedron shield and whose union has spike tips
     /// at the 8 cube corners.
     ///
@@ -19,7 +19,7 @@ namespace CosmicShore.Gameplay
     ///                      mass = ρ · 108·a·b·c (exactly 13.5× box mass by default,
     ///                      3× the inscribed octahedron shield's mass)
     ///
-    /// Engage: per-face bloom morph — 24 outer faces grow outward from their
+    /// Engage: per-face bloom morph - 24 outer faces grow outward from their
     /// centroids.
     /// Disengage: box mesh snaps back immediately, then a shatter overlay plays
     ///   where each of the 24 faces simultaneously shrinks and flies outward
@@ -112,6 +112,13 @@ namespace CosmicShore.Gameplay
         private MeshRenderer _shatterRenderer;
         private Mesh _shatterMesh;
 
+        // Owning prism — prisms render through an instanced companion entity, so engage/disengage
+        // must hand rendering between the entity and this GameObject's MeshRenderer
+        // (Prism.SetExoticVisualActive), and the settled stellation is pushed back to the entity
+        // as a render-mesh override. Mirrors PrismOctahedronShield; without this the companion
+        // keeps drawing the plain box and the stellation is invisible.
+        private Prism _prism;
+
         // Precomputed fast-path containment inverses.
         private float _invA, _invB, _invC;
 
@@ -127,6 +134,7 @@ namespace CosmicShore.Gameplay
             if (meshFilter == null)  meshFilter  = GetComponent<MeshFilter>();
             if (rb == null)          rb          = GetComponent<Rigidbody>();
             _meshRenderer = GetComponent<MeshRenderer>();
+            _prism = GetComponent<Prism>();
 
             CacheGeometry();
 
@@ -136,8 +144,11 @@ namespace CosmicShore.Gameplay
             if (_meshRenderer != null)
                 _originalMaterials = _meshRenderer.sharedMaterials;
 
-            // Build the stellation mesh once from the cached half-extents.
-            _stellatedMesh = StellatedOctahedronMeshGenerator.Generate(_halfExtents, shieldScale);
+            // Settled stellation comes from the shared cache (half-extents are the authored
+            // LOCAL collider size), so every same-size super-shielded prism resolves to ONE
+            // mesh - one MeshCollider cook, and settled stellations batch on the instanced
+            // render path. Cache-owned: never destroy it here.
+            _stellatedMesh = StellatedOctahedronMeshGenerator.GetSharedShieldMesh(_halfExtents, shieldScale);
             _morphMesh = new Mesh { name = "StellatedOctahedron_SuperShield_Morph" };
             _morphMesh.MarkDynamic();
 
@@ -158,12 +169,17 @@ namespace CosmicShore.Gameplay
                 if (_stellatedMesh != null)
                     ApplyUnshieldedPose();
                 StopShatter();
+                if (_prism != null)
+                {
+                    _prism.ClearRenderMeshOverride();
+                    _prism.SetExoticVisualActive(false);
+                }
             }
         }
 
         private void OnDestroy()
         {
-            if (_stellatedMesh != null) Destroy(_stellatedMesh);
+            // _stellatedMesh is cache-shared (other shields reference it) - not destroyed here.
             if (_morphMesh != null)     Destroy(_morphMesh);
             if (_shatterMesh != null)   Destroy(_shatterMesh);
             if (_shatterChild != null)  Destroy(_shatterChild);
@@ -234,6 +250,10 @@ namespace CosmicShore.Gameplay
 
             _isShielded = true;
 
+            // The morph mesh is per-prism-unique geometry — render through the
+            // GameObject while the shield blooms (no-op on the legacy path).
+            if (_prism != null) _prism.SetExoticVisualActive(true);
+
             if (instant || engageDuration <= 0f)
             {
                 _engageT = 1f;
@@ -264,6 +284,14 @@ namespace CosmicShore.Gameplay
             // Immediately restore box mesh + colliders so gameplay is unaffected.
             ApplyUnshieldedPose();
 
+            // Box mesh is back — return the entity to the prism mesh and rendering to the
+            // instanced path. The shatter overlay plays on its own child renderer.
+            if (_prism != null)
+            {
+                _prism.ClearRenderMeshOverride();
+                _prism.SetExoticVisualActive(false);
+            }
+
             if (instant || shatterDuration <= 0f)
             {
                 // No overlay needed.
@@ -283,7 +311,7 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Branchless point-in-shield test (world-space input). Only valid
         /// while <see cref="IsShielded"/> is true. Uses the 4-linear-form
-        /// tetrahedral check — a point is inside the stellation iff it lies
+        /// tetrahedral check - a point is inside the stellation iff it lies
         /// in either constituent tetrahedron.
         /// </summary>
         public bool IsPointInsideShield(Vector3 worldPoint)
@@ -388,6 +416,16 @@ namespace CosmicShore.Gameplay
                 rb.mass = _shieldMass;
 
             ApplyMaterialOverride(shielded: true);
+
+            // The settled stellation is static geometry — hand rendering back to the companion
+            // entity with the stellated mesh as its render override (same-size super-shielded
+            // prisms share the look through the instanced path; only the engage morph and the
+            // shatter overlay are per-prism-unique). No-op on the legacy path.
+            if (_prism != null)
+            {
+                _prism.SetRenderMeshOverride(_stellatedMesh);
+                _prism.SetExoticVisualActive(false);
+            }
         }
 
         private void ApplyUnshieldedPose()
@@ -432,7 +470,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Lazily create the shatter overlay child. Only allocated when the
-        /// first disengage actually happens — most prisms are never
+        /// first disengage actually happens - most prisms are never
         /// super-shielded, so most never pay this cost.
         /// </summary>
         private void EnsureShatterChild()

@@ -40,7 +40,7 @@ namespace CosmicShore.Gameplay
             finally
             {
                 // The rings are pooled prisms parented under the Boost pool, so this spawner shell
-                // has nothing left to own once spawning finishes — destroy it instead of leaking an
+                // has nothing left to own once spawning finishes - destroy it instead of leaking an
                 // empty AOE object per hit (same lifecycle as AOEDangerHemisphereBlocks).
                 if (!ct.IsCancellationRequested && this != null)
                     Destroy(gameObject);

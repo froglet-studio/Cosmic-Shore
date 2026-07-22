@@ -4,18 +4,18 @@ using UnityEngine;
 namespace CosmicShore.ScriptableObjects
 {
     /// <summary>
-    /// The microscene conveyor toy — fly through it to start a belt of shuffled, randomized
+    /// The microscene conveyor toy - fly through it to start a belt of shuffled, randomized
     /// microscenes (prism arrangements, elemental-crystal pickups, flora/fauna released into the
     /// cell) blooming in ahead of your flight path. When the pool is populated, the belt recycles
-    /// the scene farthest behind into a fresh arrangement ahead — transport of the same conserved
+    /// the scene farthest behind into a fresh arrangement ahead - transport of the same conserved
     /// mass (suction out → bloom in), never destruction, with shuffle-bag recipe + domain +
     /// rotation variation so the loop doesn't read as a loop. Toy-faithful: no score, no end
-    /// condition, no timers — the belt advances only with the player's own motion.
+    /// condition, no timers - the belt advances only with the player's own motion.
     /// </summary>
     [CreateAssetMenu(fileName = "Toy_Conveyor", menuName = "ScriptableObjects/Toys/Conveyor Toy")]
     public class ConveyorToyDefinitionSO : ToyDefinitionSO
     {
-        [Header("Conveyor — content")]
+        [Header("Conveyor - content")]
         [SerializeField, Tooltip("Prism prefab laid in the scene arrangements (a plain environment prism, " +
                                  "e.g. SpawnablePrism). Environment-owned conserved mass: fauna can graze it, " +
                                  "abilities can break it, the belt only transports it.")]
@@ -26,7 +26,7 @@ namespace CosmicShore.ScriptableObjects
                                  "The skimmer's own authored crystal effects fire regardless.")]
         SkimmerCrystalEffectSO[] crystalCollectionEffects;
 
-        [SerializeField, Tooltip("Omni crystal prefab — the body-collected jackpot (fuel + speed buff, " +
+        [SerializeField, Tooltip("Omni crystal prefab - the body-collected jackpot (fuel + speed buff, " +
                                  "any domain), the richer/rarer reward in the mix. Assets/_Prefabs/" +
                                  "Environment/Crystal.prefab. Optional: unwired → omni slots fall back to " +
                                  "elemental pickups.")]
@@ -35,19 +35,22 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Min(0), Tooltip("Most crystal pickups a single scene can hold.")]
         int maxCrystalsPerScene = 3;
 
-        [SerializeField, Tooltip("Theming palette — per-scene domain distribution (incl. neutral Blue), " +
-                                 "prism-kind accents (danger / shielded / supershielded), scale mood, and " +
-                                 "the elemental/omni crystal mix. Weighted toward coherent scenes with " +
-                                 "occasional spice, never chaotic confetti.")]
+        [SerializeField, Tooltip("Theming palette - structural domain schemes over the full playable " +
+                                 "triad (per-structure rainbows, gradients, pinwheels, stripes, mirrors, " +
+                                 "neutral-Blue veins), prism-kind schemes (danger gates/tips, armoured " +
+                                 "shield frames, keystone landmarks - shield counts capped for the " +
+                                 "collider budget), scale moods (uniform / long-axis stretch / taper), " +
+                                 "and the elemental/omni crystal mix. Painted per structure, never " +
+                                 "per-prism confetti.")]
         MicroscenePalette palette = new();
 
         [SerializeField, Tooltip("Include the living recipes (Meadow flora / Menagerie fauna, released into " +
                                  "the host cell as ordinary citizens). Ignored gracefully when the scene has " +
-                                 "no live Cell — those scenes then carry prisms + crystals only.")]
+                                 "no live Cell - those scenes then carry prisms + crystals only.")]
         bool lifeformScenes = true;
 
-        [Header("Conveyor — belt")]
-        [SerializeField, Min(2), Tooltip("Scenes in the pool. The belt creates this many, then recycles — " +
+        [Header("Conveyor - belt")]
+        [SerializeField, Min(2), Tooltip("Scenes in the pool. The belt creates this many, then recycles - " +
                                          "this bounds the toy's total mass and collider footprint " +
                                          "(poolSize × prismBudget prism colliders). Keep a few above " +
                                          "Ahead Target Scenes so passed scenes have slack before reclaim.")]
@@ -72,7 +75,7 @@ namespace CosmicShore.ScriptableObjects
                                                "times, in scenes. Lookahead distance = this × effective spacing.")]
         int aheadTargetScenes = 7;
 
-        [SerializeField, Min(0.5f), Tooltip("Seconds of flight between scenes at speed — the faster you fly, " +
+        [SerializeField, Min(0.5f), Tooltip("Seconds of flight between scenes at speed - the faster you fly, " +
                                             "the wider scenes space out so the stream stays readable. " +
                                             "Effective spacing = max(Scene Spacing, speed × this).")]
         float minSceneIntervalSeconds = 2f;
@@ -82,7 +85,7 @@ namespace CosmicShore.ScriptableObjects
         float recycleBehindDistance = 250f;
 
         [SerializeField, Min(0.2f), Tooltip("Seconds for each half of the recycle transport (suction out, " +
-                                            "bloom back in) — the visible continuity-law transition. Also bounds " +
+                                            "bloom back in) - the visible continuity-law transition. Also bounds " +
                                             "belt throughput: a full recycle holds its slot for 2× this.")]
         float transitionSeconds = 1.2f;
 
@@ -96,6 +99,22 @@ namespace CosmicShore.ScriptableObjects
 
         [SerializeField, Tooltip("Deterministic seed for recipes/variation. 0 = fresh ride every session.")]
         int seed;
+
+        [Header("Conveyor - visibility guards")]
+        [SerializeField, Min(0f),
+         Tooltip("Hard floor on how close a scene may bloom in, world units from the vessel. The " +
+                 "belt already targets far ahead; this guarantees a structure never materialises in " +
+                 "the player's face even under degenerate geometry. Keep at or below First Scene " +
+                 "Distance so it never fights normal near-fill placement.")]
+        float minPlacementDistance = 140f;
+
+        [SerializeField, Min(0f),
+         Tooltip("Extra world-unit margin added to Scene Radius when deciding a scene is fully off " +
+                 "screen before it may be recycled (suctioned away). A scene is only reclaimed once " +
+                 "this padded sphere lies wholly outside the camera view, so the player never watches " +
+                 "a scene vanish. Larger = more buffer against turning mid-transition; the belt just " +
+                 "waits a touch longer for scenes to leave view.")]
+        float offscreenMargin = 40f;
 
         public override void Spawn(Transform parent, ToyPlacement placement, ToyContext context)
         {
@@ -124,6 +143,8 @@ namespace CosmicShore.ScriptableObjects
             MaxCrystalsPerScene = maxCrystalsPerScene,
             LifeformScenes = lifeformScenes,
             Seed = seed,
+            MinPlacementDistance = minPlacementDistance,
+            OffscreenMargin = offscreenMargin,
         };
 
         /// <summary>Wires a prism prefab on a runtime-synthesised definition (the zero-config default toybox).</summary>

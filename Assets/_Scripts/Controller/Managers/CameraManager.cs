@@ -63,7 +63,7 @@ namespace CosmicShore.Gameplay
 
             // Keep FOV + post-process AA on the managed cameras in sync with the settings panel,
             // live. The cameras are children of this manager (not spawned with the vessel), so this
-            // is the spawn-proof place to apply — no per-camera scene reference needed.
+            // is the spawn-proof place to apply - no per-camera scene reference needed.
             DisplayGraphicsSettings.OnFieldOfViewChanged += HandleCameraGraphicsChanged;
             DisplayGraphicsSettings.OnAnySettingChanged += HandleCameraGraphicsChanged;
         }
@@ -152,7 +152,7 @@ namespace CosmicShore.Gameplay
             _deathCamera?.SetFollowTarget(_playerFollowTarget);
 
             SetCloseCameraActive();
-            // Use the camera we just activated directly — Camera.main can return null in the
+            // Use the camera we just activated directly - Camera.main can return null in the
             // first frame after a scene transition because the tag-based lookup hasn't
             // observed the newly-activated GameObject yet.
             var activeCam = (_playerCamera as CustomCameraController)?.Camera;
@@ -188,6 +188,40 @@ namespace CosmicShore.Gameplay
             SetEndCameraActive();
             ApplyCameraGraphicsSettings();
             _themeManagerData.SetBackgroundColor(Camera.main);
+        }
+
+        /// <summary>
+        /// Activate the end camera as a MANUALLY-DRIVEN replay camera - the shared "replay
+        /// camera" for modes that replay a moment (e.g. Astro League goal replays: a fixed
+        /// broadcast vantage that PANS to the action rather than chasing it). The follow target
+        /// is cleared so <see cref="CustomCameraController"/>'s own follow loop leaves the
+        /// transform alone; the caller poses the returned rig transform every frame and calls
+        /// <see cref="RestoreGameplayCamera"/> when done. Returns null when no end camera exists.
+        /// </summary>
+        public Transform BeginManualReplayCamera()
+        {
+            if (endCamera == null) return null;
+            if (!gameObject.activeInHierarchy) gameObject.SetActive(true);
+
+            endCamera.SetFollowTarget(null);
+            SetEndCameraActive();
+            ApplyCameraGraphicsSettings();
+            return endCamera.transform;
+        }
+
+        /// <summary>Vertical field of view of the replay/end camera (fit-the-shot framing math).</summary>
+        public float ReplayCameraFieldOfView =>
+            endCamera != null && endCamera.Camera != null ? endCamera.Camera.fieldOfView : 60f;
+
+        /// <summary>
+        /// Return from the replay/end camera to the gameplay follow camera (which still holds its
+        /// vessel follow target), snapped so no stale replay framing bleeds into play.
+        /// </summary>
+        public void RestoreGameplayCamera()
+        {
+            if (_playerFollowTarget == null) return;
+            SetCloseCameraActive();
+            SnapPlayerCameraToTarget();
         }
 
         public void SetMainMenuCameraActive()

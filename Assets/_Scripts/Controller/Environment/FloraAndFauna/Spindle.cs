@@ -10,7 +10,33 @@ namespace CosmicShore.Gameplay
     public class Spindle : MonoBehaviour
     {
         private static readonly int PhaseOffsetID = Shader.PropertyToID("_Phase");
-        private MaterialPropertyBlock propertyBlock;
+        private static readonly int DeathAnimationID = Shader.PropertyToID("_DeathAnimation");
+
+        // Condense/evaporate fades write _DeathAnimation through a shared scratch
+        // MaterialPropertyBlock (SetPropertyBlock copies it into the renderer, so one
+        // static scratch serves every spindle). The old path cloned a Material per
+        // animation (new Material + renderer.material — the banned clone pattern) and
+        // Destroyed it after; with dozens of spindles condensing at once that was
+        // constant material create/destroy churn. Trade-off, stated honestly: a clone
+        // kept the renderer SRP-Batcher-compatible (same shader), while an MPB
+        // excludes it for the fade's ~1s duration (see the header comment above) —
+        // the win is zero material churn, at the cost of unbatched draws during
+        // fades. If a capture shows the unbatched fade draws regressing, bucket the
+        // fade into a few shared quantized-fade materials like the phase variants.
+        // Clearing the block on completion (SetPropertyBlock(null)) returns the
+        // spindle to its shared phase-variant material and SRP batching.
+        static MaterialPropertyBlock s_fadeMpb;
+
+        // Spindle sway is desynced with a small set of SHARED phase-variant materials chosen
+        // by world position, NOT a per-renderer MaterialPropertyBlock. A per-renderer MPB
+        // excludes the renderer from the SRP Batcher — that is why hundreds of spindles
+        // (tadpole bodies, gyroid branches) each drew as their own draw call. Every spindle
+        // that lands in the same phase bucket shares one material and batches into a single
+        // draw. Purely cosmetic (animation phase only); cached per base material so the count
+        // is bounded by the handful of distinct spindle materials.
+        const int PhaseVariantCount = 8;
+        static readonly Dictionary<Material, Material[]> PhaseVariants = new();
+        Material _phaseBaseMaterial;   // captured once so pooled reuse never layers variants-on-variants
 
         public Renderer RenderedObject;
         [SerializeField] Spindle parentSpindle;
@@ -21,7 +47,6 @@ namespace CosmicShore.Gameplay
         HashSet<Spindle> spindles = new HashSet<Spindle>();
 
         Material originalMaterial;
-        Material temporaryMaterial;
         Coroutine condenseCoroutine;
 
         bool deregistered;
@@ -59,19 +84,44 @@ namespace CosmicShore.Gameplay
                 yield break;
             }
 
-            propertyBlock = new MaterialPropertyBlock();
-
-            float randomOffset = Random.Range(0f, Mathf.PI * 2f);
-            RenderedObject.GetPropertyBlock(propertyBlock);
-            propertyBlock.SetFloat(PhaseOffsetID, randomOffset);
-            RenderedObject.SetPropertyBlock(propertyBlock);
-
-            originalMaterial = RenderedObject.sharedMaterial;
+            // Desync the sway via a shared phase-variant material (see PhaseVariants) so the
+            // spindle stays SRP-batchable — no per-renderer MaterialPropertyBlock. Capture the
+            // base material once so pooled reuse never layers variants-on-variants.
+            if (_phaseBaseMaterial == null) _phaseBaseMaterial = RenderedObject.sharedMaterial;
+            originalMaterial = GetPhaseVariant(_phaseBaseMaterial, transform.position);
+            RenderedObject.sharedMaterial = originalMaterial;
             condenseCoroutine = StartCoroutine(CondenseCoroutine());
 
             if (LifeForm) LifeForm.AddSpindle(this);
             parentSpindle ??= transform.parent.GetComponentInParent<Spindle>();
             if (parentSpindle) parentSpindle.AddSpindle(this);
+        }
+
+        // A shared material identical to baseMat but with a fixed _Phase, bucketed by world
+        // position: same bucket -> same material -> one SRP batch. Created lazily and cached
+        // per base material, so the total is bounded by the distinct spindle materials in play.
+        static Material GetPhaseVariant(Material baseMat, Vector3 worldPos)
+        {
+            if (baseMat == null) return null;
+
+            // variants[0] == null catches destroyed (fake-null) materials: with Enter Play
+            // Mode Options' domain reload disabled, the static dictionary survives play-mode
+            // exit while its runtime-created materials are destroyed — rebuild in that case.
+            if (!PhaseVariants.TryGetValue(baseMat, out var variants) || variants[0] == null)
+            {
+                variants = new Material[PhaseVariantCount];
+                for (int i = 0; i < PhaseVariantCount; i++)
+                {
+                    variants[i] = new Material(baseMat) { name = $"{baseMat.name}_Phase{i}" };
+                    variants[i].SetFloat(PhaseOffsetID, i / (float)PhaseVariantCount * Mathf.PI * 2f);
+                }
+                PhaseVariants[baseMat] = variants;
+            }
+
+            // Cheap position hash -> stable per-spindle bucket that scatters neighbours.
+            float h = Mathf.Sin(worldPos.x * 12.9898f + worldPos.y * 78.233f + worldPos.z * 37.719f) * 43758.5453f;
+            int idx = (int)((h - Mathf.Floor(h)) * PhaseVariantCount);
+            return variants[Mathf.Clamp(idx, 0, PhaseVariantCount - 1)];
         }
 
         public void AddHealthBlock(HealthPrism healthPrism)
@@ -127,17 +177,21 @@ namespace CosmicShore.Gameplay
 
         void RestoreOriginalMaterial()
         {
-            if (RenderedObject) RenderedObject.material = originalMaterial;
-
-            if (!temporaryMaterial) return;
-            Destroy(temporaryMaterial);
-            temporaryMaterial = null;
+            // Clearing the property block is what restores SRP batching; the shared
+            // phase-variant material itself was never swapped out.
+            if (RenderedObject)
+            {
+                RenderedObject.sharedMaterial = originalMaterial;
+                RenderedObject.SetPropertyBlock(null);
+            }
         }
 
-        void UseTemporaryMaterial()
+        void SetFadeValue(float deathAnimation)
         {
-            temporaryMaterial = new Material(originalMaterial);
-            if (RenderedObject) RenderedObject.material = temporaryMaterial;
+            if (!RenderedObject) return;
+            s_fadeMpb ??= new MaterialPropertyBlock();
+            s_fadeMpb.SetFloat(DeathAnimationID, deathAnimation);
+            RenderedObject.SetPropertyBlock(s_fadeMpb);
         }
 
         IEnumerator EvaporateCoroutine()
@@ -148,17 +202,18 @@ namespace CosmicShore.Gameplay
                 condenseCoroutine = null;
             }
 
-            UseTemporaryMaterial();
-
             float deathAnimation = 0f;
             float animationSpeed = 1f;
             while (deathAnimation < 1f)
             {
                 yield return null;
 
-                if (!temporaryMaterial) yield break;
-
-                temporaryMaterial.SetFloat("_DeathAnimation", deathAnimation);
+                // No early-out when the renderer is gone: SetFadeValue and
+                // RestoreOriginalMaterial null-guard, and the loop MUST run to
+                // completion so DisableSpindle/Destroy below always finalize the
+                // lifecycle — bailing here leaves a dying=true spindle registered
+                // forever and stalls LifeForm.DieCoroutine's empty-tracker wait.
+                SetFadeValue(deathAnimation);
                 deathAnimation += Time.deltaTime * animationSpeed;
             }
 
@@ -181,19 +236,16 @@ namespace CosmicShore.Gameplay
         {
             if (isPermanentlyWithered) yield break;
 
-            UseTemporaryMaterial();
-
             float deathAnimation = 1f;
             float animationSpeed = 1f;
             while (deathAnimation > 0f)
             {
                 if (isPermanentlyWithered) yield break;
-                temporaryMaterial.SetFloat("_DeathAnimation", deathAnimation);
+                SetFadeValue(deathAnimation);
                 deathAnimation -= Time.deltaTime * animationSpeed;
                 yield return null;
             }
 
-            temporaryMaterial.SetFloat("_DeathAnimation", 0);
             RestoreOriginalMaterial();
         }
 
@@ -240,7 +292,7 @@ namespace CosmicShore.Gameplay
 
             deregistered = true;
 
-            // During scene unload, only remove references — don't trigger the death
+            // During scene unload, only remove references - don't trigger the death
             // cascade (CheckForLife/CheckIfDead) which explodes prisms, accesses
             // disposed NativeArrays, and spawns new GameObjects during teardown.
             bool sceneUnloading = !gameObject.scene.isLoaded;

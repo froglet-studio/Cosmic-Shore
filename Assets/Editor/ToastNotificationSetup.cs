@@ -119,7 +119,7 @@ namespace CosmicShore.Editor
 
             EditorGUIUtility.PingObject(prefab);
             Debug.Log("[ToastNotification] Created prefab at " + path +
-                      " — customize visuals here (background, font, size, etc.)");
+                      " - customize visuals here (background, font, size, etc.)");
         }
 
         [MenuItem("Cosmic Shore/Toast Notification/Add Manager To Scene")]

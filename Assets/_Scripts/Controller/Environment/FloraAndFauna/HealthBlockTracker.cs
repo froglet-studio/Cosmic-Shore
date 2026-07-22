@@ -33,7 +33,7 @@ namespace CosmicShore.Gameplay
             // ChangeTeam BEFORE Cell.AddBlock: Cell.AddBlock reads block.Domain to
             // decide which per-domain countGrids the prism belongs in. If AddBlock
             // ran first, it would see the pooled HealthPrism's stale/Blue domain and
-            // bin the prism into the wrong buckets — and the later RemoveBlock,
+            // bin the prism into the wrong buckets - and the later RemoveBlock,
             // using the now-correct domain, would decrement different buckets,
             // leaving phantom counts that drift the anti-domain answer over time.
             // (§2.3.1 in Docs/DENSITY_PARTITIONING_AUDIT.md.)

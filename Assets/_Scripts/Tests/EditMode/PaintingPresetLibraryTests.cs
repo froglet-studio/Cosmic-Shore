@@ -10,7 +10,7 @@ using UnityEngine;
 namespace CosmicShore.Tests
 {
     /// <summary>
-    /// Pure-geometry tests for the fly-by-numbers painting presets and the ShapeDefinition
+    /// Pure-geometry tests for the connect-the-dots painting presets and the ShapeDefinition
     /// converter. These guard the invariants the <see cref="PaintingRunner"/> relies on:
     /// every stroke is flyable (≥2 points), every domain is a real team colour, paintings sit
     /// on their base plane (y ≥ 0), and the Taj Mahal actually is the monumental, three-domain,
@@ -43,7 +43,7 @@ namespace CosmicShore.Tests
             var strokes = PaintingPresetLibrary.Generate(preset, 1000f);
             AssertStrokesWellFormed(strokes);
 
-            // Paintings are authored with their base plane at y=0 — nothing dips below it
+            // Paintings are authored with their base plane at y=0 - nothing dips below it
             // (some, like Saturn, deliberately float above it).
             float minY = strokes.SelectMany(s => s.points).Min(p => p.y);
             Assert.GreaterOrEqual(minY, -1f, "painting dips below its base plane");
@@ -215,6 +215,130 @@ namespace CosmicShore.Tests
             {
                 Object.DestroyImmediate(def);
             }
+        }
+
+        // ── Grandiose 3D constructions ───────────────────────────────────────
+
+        static readonly PaintingPreset[] GrandiosePresets =
+        {
+            PaintingPreset.Nautilus, PaintingPreset.Lotus, PaintingPreset.Rose, PaintingPreset.Buckyball,
+            PaintingPreset.TorusKnot, PaintingPreset.DoubleHelix, PaintingPreset.SpiralGalaxy,
+            PaintingPreset.LionsHead, PaintingPreset.Phoenix, PaintingPreset.Peacock,
+            PaintingPreset.StarryNight, PaintingPreset.BobRossVista,
+        };
+
+        [Test]
+        public void GrandiosePreset_IsWellFormedFlyableAndNonPlanar(
+            [ValueSource(nameof(GrandiosePresets))] PaintingPreset preset)
+        {
+            const float W = 1200f;
+            var strokes = PaintingPresetLibrary.Generate(preset, W);
+            AssertStrokesWellFormed(strokes); // ≥2 pts, named, ONLY Jade/Ruby/Gold
+
+            // Base plane at y=0 - every generator rebases.
+            float minY = strokes.SelectMany(s => s.points).Min(p => p.y);
+            Assert.GreaterOrEqual(minY, -1f, $"{preset} dips below its base plane");
+
+            // Genuinely non-planar: real extent on all three axes (not a billboard).
+            var b = PaintingPresetLibrary.ComputeBounds(strokes);
+            Assert.Greater(b.size.x, 0.05f * W, $"{preset} has no x-extent");
+            Assert.Greater(b.size.y, 0.05f * W, $"{preset} has no y-extent");
+            Assert.Greater(b.size.z, 0.05f * W, $"{preset} is planar - no z-extent");
+
+            // Grandiose: eclipses or matches the Taj Mahal in flight. Reference-grade rebuilds keep
+            // HONEST proportions, so minimums are per-preset - a trefoil tube is 19 elegant strokes,
+            // not 40 padded ones, and a true-scale DNA molecule flies ~14·W.
+            var (minStrokes, minPathW) = preset switch
+            {
+                PaintingPreset.TorusKnot => (18, 30f),
+                PaintingPreset.DoubleHelix => (60, 12f),
+                PaintingPreset.Rose => (50, 15f),
+                PaintingPreset.SpiralGalaxy => (100, 15f),
+                _ => (40, 20f),
+            };
+            Assert.GreaterOrEqual(strokes.Count, minStrokes, $"{preset} is not grandiose enough");
+            Assert.Greater(PaintingPresetLibrary.TotalPathLength(strokes), minPathW * W, $"{preset} is too short");
+
+            // Every segment flyable: no NaN, no degenerate (<0.4u) or unflyable (>0.65·W) jump.
+            foreach (var s in strokes)
+                for (int i = 1; i < s.points.Count; i++)
+                {
+                    Vector3 p = s.points[i];
+                    Assert.IsFalse(float.IsNaN(p.x) || float.IsNaN(p.y) || float.IsNaN(p.z), $"{preset} NaN point");
+                    float seg = Vector3.Distance(s.points[i - 1], p);
+                    Assert.Greater(seg, 0.4f, $"{preset} '{s.name}' has a degenerate segment");
+                    Assert.Less(seg, 0.65f * W, $"{preset} '{s.name}' has an unflyable jump");
+                }
+        }
+
+        [Test]
+        public void GrandiosePreset_IsDeterministic(
+            [ValueSource(nameof(GrandiosePresets))] PaintingPreset preset)
+        {
+            var a = PaintingPresetLibrary.Generate(preset, 1000f);
+            var c = PaintingPresetLibrary.Generate(preset, 1000f);
+            Assert.AreEqual(a.Count, c.Count, $"{preset} stroke count not stable");
+            for (int i = 0; i < a.Count; i++)
+            {
+                Assert.AreEqual(a[i].domain, c[i].domain);
+                Assert.AreEqual(a[i].points.Count, c[i].points.Count);
+                for (int p = 0; p < a[i].points.Count; p++)
+                    Assert.AreEqual(a[i].points[p], c[i].points[p], $"{preset} stroke {i} point {p} not stable");
+            }
+        }
+
+        [Test]
+        public void LionsHead_HasHundredsOfManeStrokes()
+        {
+            var strokes = PaintingPresetLibrary.Generate(PaintingPreset.LionsHead, 1100f);
+            Assert.GreaterOrEqual(strokes.Count(s => s.name.StartsWith("Mane")), 120,
+                "the lion's mane should be built from many curl-field strands");
+        }
+
+        [Test]
+        public void Buckyball_HasTwelvePentagonsTwentyHexagonsThirtyDoubleBonds()
+        {
+            var strokes = PaintingPresetLibrary.Generate(PaintingPreset.Buckyball, 1000f);
+            Assert.AreEqual(12, strokes.Count(s => s.name.StartsWith("Pentagon")), "a soccer ball has 12 pentagons");
+            Assert.AreEqual(20, strokes.Count(s => s.name.StartsWith("Hexagon")), "a soccer ball has 20 hexagons");
+            Assert.AreEqual(30, strokes.Count(s => s.name.StartsWith("Double Bond")),
+                "C60 has exactly 30 hexagon-hexagon (6:6) double bonds");
+        }
+
+        [Test]
+        public void ReferenceRebuilds_KeepTheirAnatomy()
+        {
+            // The reference-grade forms carry their real structural counts - locked so a future tweak
+            // can't silently drop the anatomy that makes them read as real.
+            var nautilus = PaintingPresetLibrary.Generate(PaintingPreset.Nautilus, 900f);
+            Assert.AreEqual(58, nautilus.Count(s => s.name.StartsWith("Growth Line")),
+                "the nautilus reads real because of its growth-line ribs");
+
+            var dna = PaintingPresetLibrary.Generate(PaintingPreset.DoubleHelix, 900f);
+            Assert.AreEqual(4, dna.Count(s => s.name.StartsWith("Backbone")), "two strands, ribboned = 4 helices");
+            Assert.AreEqual(28, dna.Count(s => s.name.EndsWith("Purine")), "10 bp/turn × 2.8 turns");
+
+            var galaxy = PaintingPresetLibrary.Generate(PaintingPreset.SpiralGalaxy, 1200f);
+            Assert.AreEqual(2, galaxy.Count(s => s.name.EndsWith("Dust Lane")), "grand designs have TWO arms");
+
+            // The lotus is petals all the way down: wide-open outer whorls closing to the bud
+            // core (10+9+8+6+5); each petal is an outline + a midrib stroke.
+            var lotus = PaintingPresetLibrary.Generate(PaintingPreset.Lotus, 900f);
+            Assert.AreEqual(38, lotus.Count(s => s.name.Contains("Petal")), "10+9+8+6+5 petals, nothing else");
+            Assert.AreEqual(lotus.Count(s => s.name.Contains("Petal")), lotus.Count(s => s.name.Contains("Rib")));
+
+            // The enchanted rose: long stem + two leaflets + sepals under a compact wrapped bloom.
+            var rose = PaintingPresetLibrary.Generate(PaintingPreset.Rose, 900f);
+            Assert.AreEqual(27, rose.Count(s => s.name.Contains("Petal")), "8+8+6+5 wrapping petals");
+            Assert.AreEqual(1, rose.Count(s => s.name == "Stem"));
+            Assert.AreEqual(2, rose.Count(s => s.name.StartsWith("Leaf ") && !s.name.Contains("Vein")));
+            Assert.AreEqual(5, rose.Count(s => s.name.StartsWith("Sepal")));
+            Assert.AreEqual(1, rose.Count(s => s.name.StartsWith("Furled Heart")));
+            // the stem owns the composition: the bloom sits in the top ~40% of the height
+            var bounds = PaintingPresetLibrary.ComputeBounds(rose);
+            Assert.Greater(bounds.size.y, 0.7f * 900f, "the enchanted rose is tall");
+            Assert.Greater(bounds.size.y, 1.5f * Mathf.Max(bounds.size.x, bounds.size.z),
+                "stem-dominant proportions - much taller than wide");
         }
     }
 }

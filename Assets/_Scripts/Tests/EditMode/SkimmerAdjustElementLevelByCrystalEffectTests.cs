@@ -7,7 +7,7 @@ using CosmicShore.Gameplay;
 namespace CosmicShore.Tests
 {
     /// <summary>
-    /// SkimmerAdjustElementLevelByCrystalEffectSO Tests — Validates the elemental crystal powerup.
+    /// SkimmerAdjustElementLevelByCrystalEffectSO Tests - Validates the elemental crystal powerup.
     ///
     /// WHY THIS MATTERS:
     /// The four elemental crystals (Charge / Mass / Space / Time) are powerups that increase
@@ -88,7 +88,7 @@ namespace CosmicShore.Tests
         [Test]
         public void ComputeLevelGain_IsCappedAtMaxGain()
         {
-            // AssembledFlora grows crystals every spawn cycle — runaway scale must not
+            // AssembledFlora grows crystals every spawn cycle - runaway scale must not
             // grant more than the configured cap.
             Assert.AreEqual(0.5f,
                 SkimmerAdjustElementLevelByCrystalEffectSO.ComputeLevelGain(5f, 0.1f, 0.5f), 0.0001f);
@@ -119,7 +119,7 @@ namespace CosmicShore.Tests
         [Test]
         public void CrystalProperties_AllFourElementalTypes_AreElemental()
         {
-            // Execute() gates on IsElemental — all four powerup crystals must pass it.
+            // Execute() gates on IsElemental - all four powerup crystals must pass it.
             foreach (var element in new[] { Element.Charge, Element.Mass, Element.Space, Element.Time })
             {
                 var properties = new CrystalProperties { Element = element };

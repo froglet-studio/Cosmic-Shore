@@ -58,7 +58,7 @@ namespace CosmicShore.Core
         {
             if (!IsAvailable)
             {
-                Debug.LogWarning($"[UGSCloudSaveProvider] Cannot load '{key}' — not available.");
+                Debug.LogWarning($"[UGSCloudSaveProvider] Cannot load '{key}' - not available.");
                 return null;
             }
 
@@ -78,7 +78,7 @@ namespace CosmicShore.Core
                     catch
                     {
                         // Fallback: a value stored as a JSON string (legacy JsonUtility writes).
-                        // Use Newtonsoft, NOT JsonUtility — JsonUtility silently drops
+                        // Use Newtonsoft, NOT JsonUtility - JsonUtility silently drops
                         // Dictionary<,> fields, which would wipe stats/progression on re-save.
                         var json = item.Value.GetAs<string>();
                         if (!string.IsNullOrEmpty(json))
@@ -98,7 +98,7 @@ namespace CosmicShore.Core
         {
             if (!IsAvailable)
             {
-                // Offline / not signed in — expected. Stay silent; the repository keeps
+                // Offline / not signed in - expected. Stay silent; the repository keeps
                 // the data dirty and the debounce loop retries once we reconnect.
                 return false;
             }
@@ -139,7 +139,7 @@ namespace CosmicShore.Core
             if (!alreadyFailing)
             {
                 _failedKeys.Add(key);
-                // Toast + analytics touch Unity/SOAP state — marshal to main thread.
+                // Toast + analytics touch Unity/SOAP state - marshal to main thread.
                 await MainThreadDispatcher.SwitchToMainThreadAsync();
                 Debug.LogError($"[UGSCloudSaveProvider] Save '{key}' failed after {RetryBackoffMs.Length + 1} attempts: {last?.Message}");
                 ToastNotificationAPI.Show($"Failed to save data: {last?.Message}");

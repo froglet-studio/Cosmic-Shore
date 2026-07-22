@@ -8,7 +8,7 @@ namespace CosmicShore.ScriptableObjects
     /// The player's <b>toybox</b>: the registry of freestyle toys plus per-toy unlock state.
     /// Drives the lava-lamp/freestyle "things to play with" surface in Menu_Main.
     ///
-    /// Unlock <i>conditions</i> are deferred ("figure out unlock order later") — every toy
+    /// Unlock <i>conditions</i> are deferred ("figure out unlock order later") - every toy
     /// currently ships unlocked via <see cref="ToyDefinitionSO.UnlockedByDefault"/>. The
     /// unlock <i>state</i> lives here as a simple id→bool map with a clean
     /// <see cref="SetToyUnlocked"/> hook a future persistence layer can drive (load on
@@ -56,7 +56,7 @@ namespace CosmicShore.ScriptableObjects
         }
 
         /// <summary>
-        /// Unlock or re-lock a toy by id. Persistence is deferred — a future PlayerDataService
+        /// Unlock or re-lock a toy by id. Persistence is deferred - a future PlayerDataService
         /// hook can call this on load, then subscribe to <see cref="OnToyboxChanged"/> to save.
         /// </summary>
         public void SetToyUnlocked(string toyId, bool unlocked)

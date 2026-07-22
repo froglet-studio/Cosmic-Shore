@@ -2,6 +2,7 @@ using System.Collections;
 using CosmicShore.Core;
 using Reflex.Attributes;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 using static CosmicShore.UI.ScreenSwitcher;
 
@@ -57,6 +58,15 @@ namespace CosmicShore.UI
 
         public void ModalWindowIn()
         {
+            // Appshell-owns-the-pad backstop: while the freestyle gate is engaged
+            // (ScreenSwitcher keeps EventSystem.sendNavigationEvents false for the whole
+            // flight), appshell modals must not open at all — regardless of which input
+            // path asked (direct pollers, EventSystem Submit, scene-wired onClick). The
+            // appshell UI is hidden and non-raycastable in freestyle, so there is no
+            // legitimate open; the freestyle pause menu is not a ModalWindowManager.
+            if (!isOn && EventSystem.current && !EventSystem.current.sendNavigationEvents)
+                return;
+
             // Cancel any pending disable from a previous ModalWindowOut
             if (_disableCoroutine != null)
             {

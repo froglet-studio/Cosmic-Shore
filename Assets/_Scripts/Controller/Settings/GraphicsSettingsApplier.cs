@@ -39,7 +39,7 @@ namespace CosmicShore.Core
 
         public static void ApplyQuality(GraphicsSettingsData s)
         {
-            // The preset is the master tier; Custom means individual overrides — don't stomp them.
+            // The preset is the master tier; Custom means individual overrides - don't stomp them.
             if (s.QualityPreset != QualityPresetSetting.Custom)
                 QualitySettings.SetQualityLevel((int)s.QualityPreset, true);
 
@@ -58,14 +58,14 @@ namespace CosmicShore.Core
         public static void ApplyFrameRate(GraphicsSettingsData s)
         {
             QualitySettings.vSyncCount = (int)s.VSync;
-            // With VSync on, targetFrameRate is ignored by Unity — set it anyway so toggling
+            // With VSync on, targetFrameRate is ignored by Unity - set it anyway so toggling
             // VSync off later picks up the intended cap. <= 0 means uncapped.
             Application.targetFrameRate = s.TargetFrameRate <= 0 ? -1 : s.TargetFrameRate;
         }
 
         /// <summary>
         /// Applies the post-process AA modes (FXAA/SMAA/TAA) to a camera. MSAA is intentionally
-        /// NOT set here — it lives on the URP asset and is applied in <see cref="ApplyQuality"/>.
+        /// NOT set here - it lives on the URP asset and is applied in <see cref="ApplyQuality"/>.
         /// Call this whenever a new gameplay camera spawns so the choice follows scene changes.
         /// </summary>
         public static void ApplyCameraAntiAliasing(Camera cam, AntiAliasingSetting aa)

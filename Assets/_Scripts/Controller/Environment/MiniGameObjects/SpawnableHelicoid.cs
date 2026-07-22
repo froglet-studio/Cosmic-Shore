@@ -7,7 +7,7 @@ using System.Linq;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Spawns prisms along a helicoid — the only ruled minimal surface besides the plane.
+    /// Spawns prisms along a helicoid - the only ruled minimal surface besides the plane.
     ///
     /// The helicoid is parameterized as:
     ///   x = v · cos(u)
@@ -15,7 +15,7 @@ namespace CosmicShore.Gameplay
     ///   z = v · sin(u)
     ///
     /// where u is the angular parameter and v is the radial distance from the central axis.
-    /// The result is a sweeping helical ramp — like a spiral staircase made of blocks.
+    /// The result is a sweeping helical ramp - like a spiral staircase made of blocks.
     ///
     /// Multiple interleaved helicoids at angular offsets create parallel ramps that
     /// spiral around each other, offering layered flight paths at different altitudes.
@@ -36,10 +36,10 @@ namespace CosmicShore.Gameplay
         [Tooltip("Total height of the structure.")]
         [SerializeField] float height = 200f;
 
-        [Tooltip("Inner radius — distance from axis where blocks start.")]
+        [Tooltip("Inner radius - distance from axis where blocks start.")]
         [SerializeField] float innerRadius = 8f;
 
-        [Tooltip("Outer radius — distance from axis where blocks end.")]
+        [Tooltip("Outer radius - distance from axis where blocks end.")]
         [SerializeField] float outerRadius = 55f;
 
         [Header("Density")]

@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
+using CosmicShore.ECS;
 using CosmicShore.Gameplay;
 
 namespace CosmicShore.Utility
@@ -27,7 +29,7 @@ namespace CosmicShore.Utility
         private static readonly int ConvergencePointID = Shader.PropertyToID("_Location");
 
         // The live convergence target (the consuming fauna / vessel). The suction sink
-        // FOLLOWS this transform as it keeps moving — a fauna swims a long way during the
+        // FOLLOWS this transform as it keeps moving - a fauna swims a long way during the
         // ~2s implosion, so a position snapshotted at consumption time would suck the
         // prisms toward where the creature WAS, not where it is. Refreshed each frame by
         // PrismEffectsManager via RefreshConvergence(). Held as a reference (not copied to
@@ -45,6 +47,75 @@ namespace CosmicShore.Utility
         internal bool IsActive { get; private set; }
         internal bool IsGrowing { get; private set; }
         internal Renderer Renderer => prismRenderer;
+
+        // --- Instanced rendering (Entities Graphics companion entity) -----------
+        // Companion entity carrying _State/_Location overrides draws in the
+        // renderer's place - swarm-eat implosion storms batch instead of issuing
+        // one draw + SetPass each.
+        internal PrismRenderHandle RenderHandle;
+        MeshFilter _meshFilter;
+        Color _pendingBrightColor = Color.white;
+        Color _pendingDarkColor = Color.black;
+        bool _hasPendingTeamColors;
+
+        internal bool UsesEntityRenderPath => PrismRenderService.IsHandleUsable(in RenderHandle);
+
+        private static readonly int BrightColorID = Shader.PropertyToID("_BrightColor");
+        private static readonly int DarkColorID = Shader.PropertyToID("_DarkColor");
+
+        void EnsureRenderEntity()
+        {
+            if (PrismRenderService.IsHandleUsable(in RenderHandle)) return;
+            if (prismRenderer == null) return;
+            if (_meshFilter == null || _meshFilter.sharedMesh == null || prismRenderer.sharedMaterial == null) return;
+            RenderHandle = PrismRenderService.Create(
+                _meshFilter.sharedMesh, prismRenderer.sharedMaterial,
+                transform.localToWorldMatrix, gameObject.layer,
+                PrismRenderOverrideSet.Implosion);
+        }
+
+        /// <summary>Team colors from PrismFactory.ConfigureForTeam - stored and
+        /// applied at StartImplosion/StartGrow to whichever render path is active.</summary>
+        public void SetTeamColors(Color bright, Color dark)
+        {
+            _pendingBrightColor = bright;
+            _pendingDarkColor = dark;
+            _hasPendingTeamColors = true;
+        }
+
+        /// <summary>Routes initial shader state + visibility to the active render
+        /// path. Implosions are visible from frame zero (progress 0 = whole block).</summary>
+        void ApplyInitialVisualState(float initialState, Vector3 location)
+        {
+            EnsureRenderEntity();
+            if (UsesEntityRenderPath)
+            {
+                PrismRenderService.SetTransform(in RenderHandle, transform.localToWorldMatrix);
+                PrismRenderService.SetImplosionParams(in RenderHandle, initialState,
+                    new Unity.Mathematics.float3(location.x, location.y, location.z));
+                if (_hasPendingTeamColors)
+                {
+                    PrismRenderService.SetTeamColors(in RenderHandle,
+                        PrismRenderService.ToFloat4(_pendingBrightColor),
+                        PrismRenderService.ToFloat4(_pendingDarkColor));
+                }
+                PrismRenderService.SetVisible(in RenderHandle, true);
+                if (prismRenderer != null) prismRenderer.enabled = false;
+            }
+            else
+            {
+                if (prismRenderer != null && !prismRenderer.enabled) prismRenderer.enabled = true;
+                prismRenderer.GetPropertyBlock(mpb);
+                mpb.SetFloat(ImplosionProgressID, initialState);
+                mpb.SetVector(ConvergencePointID, location);
+                if (_hasPendingTeamColors)
+                {
+                    mpb.SetColor(BrightColorID, _pendingBrightColor);
+                    mpb.SetColor(DarkColorID, _pendingDarkColor);
+                }
+                prismRenderer.SetPropertyBlock(mpb);
+            }
+        }
 
         // Wall-clock start time, used by the watchdog. Tracking via Time.time (not the
         // manager-driven Elapsed counter) is robust against state-reset bugs that
@@ -64,12 +135,19 @@ namespace CosmicShore.Utility
         {
             if (!prismRenderer)
                 prismRenderer = GetComponent<Renderer>();
+            _meshFilter = GetComponent<MeshFilter>();
 
             mpb = new MaterialPropertyBlock();
         }
 
+        // Enabled-instance registry for PrismEffectsManager's zombie audit - replaces the
+        // periodic FindObjectsByType full-scene scans (a recurring dev-build profiler spike).
+        internal static readonly List<PrismImplosion> EnabledInstances = new();
+
         private void OnEnable()
         {
+            EnabledInstances.Add(this);
+
             // Backstop the watchdog timer for the case where the pool re-activates
             // a GameObject but the consumer never gets to call StartImplosion (e.g.,
             // an exception in PrismFactory between pool.Get and StartImplosion).
@@ -80,7 +158,9 @@ namespace CosmicShore.Utility
 
         private void OnDisable()
         {
-            // Pool return / scene teardown may bypass CompleteEffect — never carry a target
+            EnabledInstances.Remove(this);
+
+            // Pool return / scene teardown may bypass CompleteEffect - never carry a target
             // reference (possibly a destroyed transform) across pool reuse.
             _convergenceTransform = null;
 
@@ -90,11 +170,24 @@ namespace CosmicShore.Utility
                 PrismEffectsManager.Instance?.UnregisterImplosion(this); // safe: may already be null during teardown
             }
 
+            if (PrismRenderService.IsHandleUsable(in RenderHandle))
+                PrismRenderService.SetVisible(in RenderHandle, false);
+
+            // Parity with the MPB clear below: a pool reuse that skips
+            // ConfigureForTeam must show material defaults, not the previous
+            // team's palette.
+            _hasPendingTeamColors = false;
+
             if (prismRenderer != null && mpb != null)
             {
                 mpb.Clear();
                 prismRenderer.SetPropertyBlock(mpb);
             }
+        }
+
+        private void OnDestroy()
+        {
+            PrismRenderService.Destroy(ref RenderHandle);
         }
 
         // ---------------- API ----------------
@@ -130,11 +223,8 @@ namespace CosmicShore.Utility
             IsActive = true;
             _activatedAtTime = Time.time;
 
-            // Set initial shader state
-            prismRenderer.GetPropertyBlock(mpb);
-            mpb.SetFloat(ImplosionProgressID, 0f);
-            mpb.SetVector(ConvergencePointID, targetPos);
-            prismRenderer.SetPropertyBlock(mpb);
+            // Set initial shader state on the active render path
+            ApplyInitialVisualState(0f, targetPos);
 
             // Register with batched manager for frame updates (auto-creates if not in scene)
             PrismEffectsManager.EnsureInstance().RegisterImplosion(this);
@@ -168,11 +258,8 @@ namespace CosmicShore.Utility
             IsActive = true;
             _activatedAtTime = Time.time;
 
-            // Set initial collapsed state
-            prismRenderer.GetPropertyBlock(mpb);
-            mpb.SetFloat(ImplosionProgressID, 1f);
-            mpb.SetVector(ConvergencePointID, startPosition);
-            prismRenderer.SetPropertyBlock(mpb);
+            // Set initial collapsed state on the active render path
+            ApplyInitialVisualState(1f, startPosition);
 
             // Register with batched manager for frame updates (auto-creates if not in scene)
             PrismEffectsManager.EnsureInstance().RegisterImplosion(this);
@@ -198,7 +285,7 @@ namespace CosmicShore.Utility
         /// Re-read the convergence point from the live target transform. Called once per
         /// frame by PrismEffectsManager before it samples TargetPosition into the job, so
         /// the suction sink tracks the still-moving fauna. One Transform.position read per
-        /// active implosion — the per-frame _Location write to the shader already happens
+        /// active implosion - the per-frame _Location write to the shader already happens
         /// unconditionally, so this is the only marginal cost of following the target.
         /// Fake-null safe: a target destroyed mid-suction leaves TargetPosition at its last
         /// known value.
@@ -223,6 +310,9 @@ namespace CosmicShore.Utility
                 IsActive = false;
                 PrismEffectsManager.Instance?.UnregisterImplosion(this); // safe: may already be null during teardown
             }
+
+            if (PrismRenderService.IsHandleUsable(in RenderHandle))
+                PrismRenderService.SetVisible(in RenderHandle, false);
 
             if (prismRenderer && mpb != null)
             {
@@ -265,7 +355,7 @@ namespace CosmicShore.Utility
             // longer than 2x the configured duration. We deliberately do NOT gate on
             // IsActive because the dominant failure mode is an instance whose IsActive
             // was cleared by OnDisable but whose GameObject was reactivated through
-            // the pool without StartImplosion ever running again — those leak past
+            // the pool without StartImplosion ever running again - those leak past
             // an IsActive-only check. Tracking via Time.time (set in OnEnable as a
             // backstop, refreshed in StartImplosion / StartGrow) is the only signal
             // that survives all the state-reset failure modes.

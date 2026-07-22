@@ -177,7 +177,7 @@ namespace CosmicShore.Gameplay
                 Scale           = targetScale,
                 Velocity        = Vector3.zero,
                 // Joust danger blocks are boost-off surfaces, same purpose as the Squirrel
-                // tube — draw them from the fast-growing, collider-live-on-spawn Boost pool.
+                // tube - draw them from the fast-growing, collider-live-on-spawn Boost pool.
                 PrismType       = PrismType.Boost,
                 TargetTransform = null,
                 OnGrowCompleted = null

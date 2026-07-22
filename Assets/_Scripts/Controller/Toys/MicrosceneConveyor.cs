@@ -27,14 +27,19 @@ namespace CosmicShore.Gameplay
         public int MaxCrystalsPerScene = 3;
         public bool LifeformScenes = true;
         public int Seed;
+
+        // Visibility guards (see MicrosceneConveyor): the player must never watch a scene bloom in
+        // on top of them, nor watch one suction away.
+        public float MinPlacementDistance = 140f;
+        public float OffscreenMargin = 40f;
     }
 
     /// <summary>
     /// The freestyle conveyor-belt runner: keeps a field of <see cref="Microscene"/>s blooming in
-    /// ahead of the local player's flight path — open-world exploring crossed with an infinite
+    /// ahead of the local player's flight path - open-world exploring crossed with an infinite
     /// runner. The belt follows the player ANYWHERE (fast, far, odd deviations included): spacing
     /// and lookahead scale with current speed so there is always a field of scenes ahead, and the
-    /// scene farthest behind clears (suctions up) as new ones arrive — spawn frequency IS the
+    /// scene farthest behind clears (suctions up) as new ones arrive - spawn frequency IS the
     /// clear frequency, because the pool is finite and closed: the same prisms are endlessly
     /// re-arranged, never created or destroyed (fauna grazing on belt prisms is the only sink,
     /// and it's the food web's own active force). Living recipes (meadow/menagerie) release their
@@ -42,13 +47,13 @@ namespace CosmicShore.Gameplay
     /// the belt is pure prisms + crystals.
     ///
     /// Placement is a CONNECTED ribbon that can break and re-lay. Every scene sits on the flight
-    /// line — never scattered laterally (no orthogonal "sphere in front of you"). The belt reads a
+    /// line - never scattered laterally (no orthogonal "sphere in front of you"). The belt reads a
     /// forward cone (half-angle <see cref="ConveyorConfig.TurnBreakDegrees"/>) around the live
     /// course each tick and does one of two things:
-    ///   • NEAR-FILL — if nothing lies just ahead on the current heading (start-up, or a turn just
+    ///   • NEAR-FILL - if nothing lies just ahead on the current heading (start-up, or a turn just
     ///     ejected the near scenes out of the cone), it drops a scene directly ahead at
     ///     firstSceneDistance, so a structure appears in front of the player right after any turn.
-    ///   • EXTEND — otherwise it chains the next scene off the ACTUAL frontmost scene along the
+    ///   • EXTEND - otherwise it chains the next scene off the ACTUAL frontmost scene along the
     ///     current course (tip + course × spacing). Chaining off real mass (not a free-floating
     ///     "head") keeps the ribbon connected and lets it BEND with gentle/moderate turns without
     ///     ever drifting into a parallel path far to the side.
@@ -58,7 +63,18 @@ namespace CosmicShore.Gameplay
     /// destination slot immediately (<see cref="Microscene.PendingAnchor"/>) so the rebuild never
     /// piles several scenes onto the same point while the blooms are in flight.
     ///
-    /// Toy-faithful: no score, no end condition, no timers — every belt advance is driven by the
+    /// Two visibility guards keep the transport itself invisible - the belt should read as a world
+    /// that is simply THERE, never as props being spawned and despawned in view:
+    ///   • PLACEMENT never blooms a scene closer than <see cref="ConveyorConfig.MinPlacementDistance"/>
+    ///     to the player - structures arrive at a respectful distance ahead, never in your face.
+    ///   • REMOVAL only reclaims a scene the player CANNOT currently see. The recycle's first half
+    ///     suctions the container to a point at its OLD anchor; that anchor must lie fully outside
+    ///     the camera frustum (by <see cref="ConveyorConfig.OffscreenMargin"/>) before the belt will
+    ///     touch it, so a scene is never watched vanishing. As the player flies on, passed scenes
+    ///     fall out of view and become reclaimable - the belt self-heals without ever popping in view
+    ///     (and simply idles, placing nothing, if every pooled scene is on screen).
+    ///
+    /// Toy-faithful: no score, no end condition, no timers - every belt advance is driven by the
     /// player's own motion. The Wanderway toy toggles the belt on/off; exiting freestyle just
     /// makes it dormant. Either way its scenes remain part of the world until the toybox tears
     /// down with the scene.
@@ -73,7 +89,7 @@ namespace CosmicShore.Gameplay
         const int MaxConcurrentArrivals = 3;
 
         // A near hole opens (and the belt drops a fresh scene straight ahead) once the nearest scene
-        // on the flight line sits farther than firstDistance + this × spacing — big enough that a
+        // on the flight line sits farther than firstDistance + this × spacing - big enough that a
         // just-placed near scene doesn't immediately re-trigger, small enough that a real gap fills.
         const float NearHoleSpacingFactor = 0.5f;
 
@@ -84,7 +100,6 @@ namespace CosmicShore.Gameplay
 
         readonly List<Microscene> _scenes = new();
         readonly List<int> _recipeBag = new();
-        readonly List<Domains> _domainList = new();
 
         System.Random _rng;
         float _nextTickAt;
@@ -101,7 +116,7 @@ namespace CosmicShore.Gameplay
             _gameData = gameData;
             _rng = cfg.Seed != 0 ? new System.Random(cfg.Seed) : new System.Random(Environment.TickCount);
 
-            // Nothing to seed — the first Update tick sees an empty cone and near-fills a scene
+            // Nothing to seed - the first Update tick sees an empty cone and near-fills a scene
             // directly ahead of the live vessel.
             _running = true;
         }
@@ -118,7 +133,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Stop the flow (fly through the toy again to restart). Existing scenes stay in the
-        /// world — they are conserved mass and released citizens, not toy props to vanish.
+        /// world - they are conserved mass and released citizens, not toy props to vanish.
         /// </summary>
         public void StopBelt() => _running = false;
 
@@ -128,7 +143,7 @@ namespace CosmicShore.Gameplay
             if (Time.unscaledTime < _nextTickAt) return;
             _nextTickAt = Time.unscaledTime + TickSeconds;
 
-            // Dormant while the player is back in the menu / lava lamp — the belt's scenes stay
+            // Dormant while the player is back in the menu / lava lamp - the belt's scenes stay
             // in the world (conserved mass, released citizens), it just stops advancing.
             if (_isFreestyleActive != null && !_isFreestyleActive()) return;
             if (!TryGetVessel(out Vector3 playerPos, out Vector3 course, out float speed)) return;
@@ -145,7 +160,7 @@ namespace CosmicShore.Gameplay
 
             // One scan of the field along the LIVE flight cone: the nearest scene ahead (near-field
             // health) and the frontmost connected scene (the ribbon's tip + how deep it reaches).
-            // Only scenes inside the cone count — a turn ejects the old ribbon out of it, so both
+            // Only scenes inside the cone count - a turn ejects the old ribbon out of it, so both
             // collapse and the belt re-lays straight down the new heading. Effective anchors count a
             // recycling scene's CLAIMED slot so a rebuild never piles arrivals onto one point.
             Microscene tip = null;
@@ -167,7 +182,7 @@ namespace CosmicShore.Gameplay
             if (nearFill)
             {
                 // NEAR-FILL: nothing on the flight line just ahead (start-up, or a turn just ejected
-                // the near scenes) — drop a scene directly ahead on the live course so a structure
+                // the near scenes) - drop a scene directly ahead on the live course so a structure
                 // appears in front of the player. No lateral scatter: it lands on the line.
                 target = playerPos + course * firstDist;
             }
@@ -182,6 +197,13 @@ namespace CosmicShore.Gameplay
             {
                 return; // a full ribbon already reaches ahead on this heading
             }
+
+            // PLACEMENT GATE: never bloom a scene closer than MinPlacementDistance to the player.
+            // Near-fill (>= firstDist) and extend (off the frontier tip) already target far ahead;
+            // this is the hard floor that also covers any degenerate geometry, so a structure never
+            // materialises in the player's face. Squared compare - no sqrt.
+            float minPlaceSqr = _cfg.MinPlacementDistance * _cfg.MinPlacementDistance;
+            if ((target - playerPos).sqrMagnitude < minPlaceSqr) return;
 
             Pose pose = new(target, Quaternion.LookRotation(course, UpFor(course)));
 
@@ -228,7 +250,7 @@ namespace CosmicShore.Gameplay
         bool RecycleFarthestScene(Vector3 playerPos, Vector3 course, float recycleBehind, float lookahead,
             float leadCos, Pose pose, bool nearFill)
         {
-            // Pass 1: reclaim only mass genuinely out of the ride — protect the ribbon ahead (in the
+            // Pass 1: reclaim only mass genuinely out of the ride - protect the ribbon ahead (in the
             // flight cone, what the player is flying toward) and just-passed scenes. This is the
             // steady-state path for every normal flight; a turn's now-lateral leftovers and
             // dropped-behind scenes rebuild ahead, farthest first.
@@ -238,7 +260,7 @@ namespace CosmicShore.Gameplay
 
             // Pass 2 (near-fill only): the near field is empty AND nothing off-cone/behind is
             // reclaimable (e.g. the whole belt bunched far ahead while the player is near-stationary).
-            // Steal the farthest in-cone scene to fill the hole — a surplus far structure is worth
+            // Steal the farthest in-cone scene to fill the hole - a surplus far structure is worth
             // less than one directly in front. EXTEND never steals the ribbon it is flying toward.
             return nearFill && TryRecycleFarthest(playerPos, course, recycleBehind, lookahead, leadCos,
                 pose, protectRibbonAhead: false);
@@ -259,7 +281,16 @@ namespace CosmicShore.Gameplay
                 bool aheadInCone = protectRibbonAhead && along > 0f
                                    && Vector3.Dot(rel.normalized, course) >= leadCos && along <= lookahead * 1.5f;
                 bool justPassed = along <= 0f && along > -recycleBehind;
-                if (aheadInCone || justPassed) continue; // still part of the ride — leave it be
+                if (aheadInCone || justPassed) continue; // still part of the ride - leave it be
+
+                // REMOVAL GATE: only reclaim a scene the player CANNOT currently see. The recycle's
+                // first half suctions the container to a point AT THIS ANCHOR - if that were on
+                // screen the player would watch a scene vanish (forbidden). Requiring the anchor to
+                // sit fully outside the view frustum guarantees the suction is invisible; the bloom
+                // then happens far ahead at the new pose. A fully on-screen field simply yields no
+                // candidate and the belt idles until motion pushes something out of view.
+                if (!IsSceneOffScreen(scene.Anchor, playerPos, course)) continue;
+
                 if (dist <= farthest) continue;
 
                 farthest = dist;
@@ -269,7 +300,7 @@ namespace CosmicShore.Gameplay
             if (!candidate) return false;
 
             var plan = NextPlan();
-            var sceneRng = new System.Random(_rng.Next()); // see PlaceNewScene — per-arrival stream
+            var sceneRng = new System.Random(_rng.Next()); // see PlaceNewScene - per-arrival stream
             candidate.RecycleAsync(plan, pose, sceneRng, _cfg.TransitionSeconds,
                 this.GetCancellationTokenOnDestroy()).Forget();
             return true;
@@ -294,32 +325,16 @@ namespace CosmicShore.Gameplay
             int recipe = _recipeBag[^1];
             _recipeBag.RemoveAt(_recipeBag.Count - 1);
 
-            // Read the live player domains on EVERY draw — never snapshot domain at creation time
-            // (CLAUDE.md ▸ Team Domains): the Domain Changer toy can re-pick mid-freestyle and the
-            // belt should start colouring scenes from the new set immediately. The palette then
-            // distributes them per-prism under a coherent per-scene scheme.
-            _cfg.Palette.PlayableDomains = LivePlayableDomains();
+            // The belt paints from the FULL playable triad, always. Belt prisms are environment
+            // mass, not player property - limiting the palette to the domains present in the
+            // session (the old behaviour) collapsed every solo-freestyle scene to the player's one
+            // colour and starved every multi-domain scheme. The painter's per-scene schemes decide
+            // how the triad lands (alternating gates, gradients, pinwheels, mono…).
+            _cfg.Palette.PlayableDomains = AllPlayableDomains;
             return MicroscenePatterns.Plan(recipe, _rng, _cfg.PrismBudget, _cfg.SceneRadius, _cfg.MaxCrystalsPerScene, _cfg.Palette);
         }
 
-        /// <summary>The live, distinct playable domains in the session (falls back to all three).</summary>
-        Domains[] LivePlayableDomains()
-        {
-            _domainList.Clear();
-            if (_gameData?.Players != null)
-                foreach (var player in _gameData.Players)
-                    if (player != null && player.Domain != Domains.Blue && !_domainList.Contains(player.Domain))
-                        _domainList.Add(player.Domain);
-
-            if (_domainList.Count == 0)
-            {
-                _domainList.Add(Domains.Jade);
-                _domainList.Add(Domains.Ruby);
-                _domainList.Add(Domains.Gold);
-            }
-
-            return _domainList.ToArray();
-        }
+        static readonly Domains[] AllPlayableDomains = { Domains.Jade, Domains.Ruby, Domains.Gold };
 
         // ── Plumbing ─────────────────────────────────────────────────────────
 
@@ -329,7 +344,7 @@ namespace CosmicShore.Gameplay
             course = default;
             speed = 0f;
 
-            // A vessel swap (Vessel Changer toy / selection panel) destroys the pinned vessel —
+            // A vessel swap (Vessel Changer toy / selection panel) destroys the pinned vessel -
             // re-acquire the live local one so the belt follows the new ship instead of
             // freezing until the player re-flies the Wanderway trigger.
             if (_vessel == null || (_vessel is UnityEngine.Object uo && !uo) || _vessel.Vessel == null)
@@ -348,6 +363,52 @@ namespace CosmicShore.Gameplay
             foreach (var scene in _scenes)
                 if (scene && scene.Busy) busy++;
             return busy;
+        }
+
+        // ── Off-screen test (a removal must never be visible) ────────────────
+
+        Camera _cam;
+        readonly Plane[] _frustumPlanes = new Plane[6];
+
+        /// <summary>
+        /// True when the whole scene - a <see cref="ConveyorConfig.SceneRadius"/> + margin sphere at
+        /// <paramref name="anchor"/> - lies completely outside the player camera's view frustum, the
+        /// only state in which its suction-to-a-point recycle is safe to run unseen. Uses the
+        /// non-allocating frustum-planes overload; the <see cref="ConveyorConfig.OffscreenMargin"/>
+        /// buffers against the player turning slightly while the container shrinks. Camera-less
+        /// fallback (rare): a scene clearly BEHIND the flight course is never on screen, since the
+        /// follow camera trails the vessel along that course.
+        /// </summary>
+        bool IsSceneOffScreen(Vector3 anchor, Vector3 playerPos, Vector3 course)
+        {
+            float radius = _cfg.SceneRadius + Mathf.Max(0f, _cfg.OffscreenMargin);
+
+            var cam = ResolveCamera();
+            if (cam)
+            {
+                GeometryUtility.CalculateFrustumPlanes(cam, _frustumPlanes);
+                // Unity's frustum-plane normals point INWARD. If the bounding sphere sits fully on
+                // the OUTSIDE half-space of ANY plane (near / far / left / right / top / bottom), the
+                // scene is wholly outside the frustum -> not visible. Conservative in the safe
+                // direction: a sphere straddling a plane counts as visible, so we refuse to recycle.
+                for (int i = 0; i < _frustumPlanes.Length; i++)
+                    if (_frustumPlanes[i].GetDistanceToPoint(anchor) < -radius)
+                        return true;
+                return false;
+            }
+
+            return Vector3.Dot(anchor - playerPos, course) < -radius;
+        }
+
+        /// <summary>
+        /// The player camera, cached and re-resolved only when the cached one dies (scene loads,
+        /// vessel swaps). <see cref="Camera.main"/> tag-searches, so it must not run every tick - the
+        /// same pattern as the toy labels' <c>BillboardLabel</c>.
+        /// </summary>
+        Camera ResolveCamera()
+        {
+            if (!_cam) _cam = Camera.main;
+            return _cam;
         }
     }
 }

@@ -29,10 +29,10 @@ namespace CosmicShore.UI
         [SerializeField]
         ModalWindowManager settingsModalWindowManager;
 
-        [Tooltip("Replay button — hidden for non-host clients in multiplayer. Leave unassigned if the prefab has no replay button.")]
+        [Tooltip("Replay button - hidden for non-host clients in multiplayer. Leave unassigned if the prefab has no replay button.")]
         [SerializeField] GameObject replayButton;
 
-        [Tooltip("Main Menu button — hidden for non-host clients in multiplayer (the host's return takes the whole party back). Leave unassigned if the prefab has no main menu button.")]
+        [Tooltip("Main Menu button - hidden for non-host clients in multiplayer (the host's return takes the whole party back). Leave unassigned if the prefab has no main menu button.")]
         [SerializeField] GameObject mainMenuButton;
 
         [Tooltip("Game controller for the active scene. Required for the Replay button to work. Wire the scene's MiniGameControllerBase subclass.")]
@@ -57,7 +57,7 @@ namespace CosmicShore.UI
         public void OnClickToggleInvertY() => gameSetting.ChangeInvertYEnabledStatus();
 
         /// <summary>
-        /// Routes the restart through the active MiniGameController — the same path
+        /// Routes the restart through the active MiniGameController - the same path
         /// the scoreboard's Play Again uses. In multiplayer, non-host clients are
         /// filtered out by the controller (and the button is hidden by Show()).
         /// </summary>
@@ -65,7 +65,7 @@ namespace CosmicShore.UI
         {
             if (gameController == null)
             {
-                CSDebug.LogError("[PauseMenu] gameController not assigned — wire the scene's MiniGameControllerBase in the inspector.");
+                CSDebug.LogError("[PauseMenu] gameController not assigned - wire the scene's MiniGameControllerBase in the inspector.");
                 return;
             }
 
@@ -112,7 +112,7 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// Host only — the host's return carries every client back to Menu_Main via
+        /// Host only - the host's return carries every client back to Menu_Main via
         /// the network scene load. Defense in depth: the button is hidden for non-host
         /// clients (ConfigureHostOnlyButtons), but guard the call path too.
         /// </summary>
@@ -121,7 +121,7 @@ namespace CosmicShore.UI
             var nm = NetworkManager.Singleton;
             if (nm == null || !nm.IsServer)
             {
-                CSDebug.LogWarning("[PauseMenu] Main Menu ignored — only the host can return the party to the menu.");
+                CSDebug.LogWarning("[PauseMenu] Main Menu ignored - only the host can return the party to the menu.");
                 return;
             }
 

@@ -12,13 +12,13 @@ using UnityEngine;
 namespace CosmicShore.UI
 {
     /// <summary>
-    /// In-game connecting panel — lives under the MiniGameHUD in every game scene. Shown at the start of
+    /// In-game connecting panel - lives under the MiniGameHUD in every game scene. Shown at the start of
     /// each game, BEFORE the pre-game cinematic:
     ///   • enables its own embedded <see cref="connectingCamera"/> (posed in the prefab) and turns it off
     ///     again when done, so the gameplay camera takes over;
     ///   • animates the "CONNECTING TO SHORE…." status dots (., .., …, …. on a loop);
     ///   • shows the game mode + intensity ("HEX RACE - INTENSITY 4");
-    ///   • in a Maelstrom run, also shows the per-domain rank (each domain coloured) — hidden otherwise.
+    ///   • in a Maelstrom run, also shows the per-domain rank (each domain coloured) - hidden otherwise.
     /// Holds for <see cref="dwellSeconds"/> (2s), then hides. MiniGameHUD awaits <see cref="ShowAsync"/>.
     /// </summary>
     public class ConnectingPanelController : MonoBehaviour

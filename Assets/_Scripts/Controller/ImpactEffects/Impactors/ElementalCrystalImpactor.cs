@@ -23,16 +23,22 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// True once a skimmer has collected this crystal (it is now flying to the vessel and will
-        /// self-destroy). Runtime owners — e.g. the conveyor toy's microscenes — read this so they
+        /// self-destroy). Runtime owners - e.g. the conveyor toy's microscenes - read this so they
         /// stop managing a departing crystal as a live resident.
         /// </summary>
         public bool HasBeenCollected => _hasBeenCollected;
 
         /// <summary>
         /// Wires collection effects on a runtime-added impactor (lifeform prefabs author these as
-        /// inspector overrides; runtime spawns — e.g. the conveyor toy's pickups — cannot).
+        /// inspector overrides; runtime spawns - e.g. the conveyor toy's pickups - cannot).
         /// </summary>
         internal void SetCollectionEffects(SkimmerCrystalEffectSO[] effects) => elementalCrystalShipEffects = effects;
+
+        /// <summary>
+        /// The authored collection effects, readable so runtime crystal replacement (e.g.
+        /// LifeFormCrystal's element-contract provisioning) can carry them onto the new crystal.
+        /// </summary>
+        internal SkimmerCrystalEffectSO[] CollectionEffects => elementalCrystalShipEffects;
         
         void OnEnable() 
         {
@@ -44,6 +50,9 @@ namespace CosmicShore.Gameplay
             if (_hasBeenCollected) return;
             if (isImpacting) return;
             if (Crystal.IsExploding) return;
+            // A living lifeform's embedded heart is joustable (vessel-side chain) but never
+            // skim-collectable - it only becomes a pickup once death drops it (ActivateCrystal).
+            if (Crystal.IsEmbedded) return;
             if (impactee is not SkimmerImpactor skimmerImpactor) return;
 
             isImpacting = true;
@@ -108,7 +117,7 @@ namespace CosmicShore.Gameplay
 
             // Let collect animators (e.g. the Space crystal's blendshape shrink) play out
             // before destroying. Crystals without an animator (Charge / Mass / Time) have
-            // no hide animation, so they are destroyed as soon as they reach the vessel —
+            // no hide animation, so they are destroyed as soon as they reach the vessel -
             // otherwise they linger as full-scale artifacts at the end of the flight.
             float delay = 0f;
             var crystalModels = Crystal.CrystalModels;

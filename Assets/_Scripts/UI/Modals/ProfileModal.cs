@@ -248,7 +248,7 @@ namespace CosmicShore.UI
 
             // Keep the UGS account player name in sync with the Cloud Save display name,
             // otherwise friends see the auto-generated "Pilot9898" format in their friend list
-            // instead of the name the user just set. Fire-and-forget — non-critical.
+            // instead of the name the user just set. Fire-and-forget - non-critical.
             SyncUgsPlayerNameAsync(newName);
 
             CSDebug.Log($"Current player display name: {newName}");

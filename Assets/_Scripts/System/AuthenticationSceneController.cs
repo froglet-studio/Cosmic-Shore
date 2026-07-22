@@ -54,7 +54,7 @@ namespace CosmicShore.Core
         [SerializeField, Tooltip("Seconds to wait for PlayerDataService init after auth.")]
         private float playerDataTimeout = 5f;
 
-        [SerializeField, Tooltip("Hard safety timeout — force-navigates to main menu if everything hangs.")]
+        [SerializeField, Tooltip("Hard safety timeout - force-navigates to main menu if everything hangs.")]
         private float safetyTimeout = 10f;
 
         [SerializeField, Tooltip("Seconds to wait per attempt for HostConnectionService to start the Relay host (minimum 15s). Three attempts are made before giving up.")]
@@ -131,7 +131,7 @@ namespace CosmicShore.Core
                     NavigateToMainMenu();
                 }
             }
-            catch (OperationCanceledException) { /* scene destroyed — expected */ }
+            catch (OperationCanceledException) { /* scene destroyed - expected */ }
             catch (Exception ex)
             {
                 CSDebug.LogWarning($"[AuthScene] Auth flow failed: {ex.Message}. Navigating to main menu.");
@@ -161,7 +161,7 @@ namespace CosmicShore.Core
                 }
             }
 
-            // 3. No cached auth — show UI or auto-login.
+            // 3. No cached auth - show UI or auto-login.
             HideLoading();
             if (authPanel != null)
             {
@@ -169,7 +169,7 @@ namespace CosmicShore.Core
             }
             else
             {
-                CSDebug.LogWarning("[AuthScene] No auth panel in scene — attempting automatic anonymous sign-in.");
+                CSDebug.LogWarning("[AuthScene] No auth panel in scene - attempting automatic anonymous sign-in.");
                 await AttemptAutoSignInAsync(ct);
             }
         }
@@ -428,7 +428,7 @@ namespace CosmicShore.Core
         /// then loads Menu_Main through Netcode.  Retries up to 3 times; each attempt waits
         /// up to <see cref="networkHostTimeout"/> seconds.
         ///
-        /// Keeps the splash overlay opaque until Menu_Main starts loading — the overlay
+        /// Keeps the splash overlay opaque until Menu_Main starts loading - the overlay
         /// stays opaque through the scene transition and is released by
         /// <see cref="SceneLoader.FadeFromSplashOnReady"/> when <c>OnClientReady</c> fires.
         /// </summary>
@@ -459,7 +459,7 @@ namespace CosmicShore.Core
                 {
                     if (attempt < maxAttempts)
                     {
-                        CSDebug.LogWarning($"[AuthScene] Relay session not ready (attempt {attempt}/{maxAttempts}) — retrying HCS init...");
+                        CSDebug.LogWarning($"[AuthScene] Relay session not ready (attempt {attempt}/{maxAttempts}) - retrying HCS init...");
                         var hcs = HostConnectionService.Instance;
                         if (hcs != null)
                             await hcs.EnsurePartySessionAsync().AsMainThread();
@@ -476,7 +476,7 @@ namespace CosmicShore.Core
                 // Auto-retry exhausted. Raise the retry surface via SOAP; the
                 // BootStatusPanel renders it, and HostConnectionService listens
                 // for the retry-requested event and calls EnsurePartySessionAsync.
-                // Resume the wait with no timeout — OnHostConnectionEstablished fires
+                // Resume the wait with no timeout - OnHostConnectionEstablished fires
                 // when manual retry succeeds and the scene load proceeds.
                 bootStatusEvent?.Raise(new BootStatusRequest(BootStatusMode.Retry,
                     "Could not connect. Tap retry."));
@@ -491,7 +491,7 @@ namespace CosmicShore.Core
                     // stays in Retry mode after the session recovers (whether
                     // via a manual tap or the session coming up on its own),
                     // and the orphaned retry button resurfaces on the next
-                    // opaque splash — invite-accept or game launch.
+                    // opaque splash - invite-accept or game launch.
                     ShowLoading("Connected…");
                 }
                 catch (OperationCanceledException)
@@ -511,7 +511,7 @@ namespace CosmicShore.Core
 
         /// <summary>
         /// Resolves when <see cref="HostConnectionDataSO.OnHostConnectionEstablished"/> fires
-        /// AND <see cref="NetworkManager.IsListening"/> is true — confirming the Relay session
+        /// AND <see cref="NetworkManager.IsListening"/> is true - confirming the Relay session
         /// is live and NM is running as host.
         ///
         /// The event fires twice during startup: once at lobby join (NM not yet listening) and

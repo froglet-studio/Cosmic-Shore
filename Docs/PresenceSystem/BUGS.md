@@ -230,6 +230,48 @@ Likely wants more diagnostics first.
 **Evidence.** `HostConnectionService.cs:~945-958, ~964-970, ~1150-1196`;
 `PresenceLobbyService.cs:~204-239 (converge), ~335-350 (property reset)`.
 
+**Fix shipped (2026-07-16, invite-chain Task 4) — MPPM retest required.**
+Owner decision: allow lobby convergence while partied. Implemented as a
+**state-preserving rejoin** plus removal of the convergence pause:
+
+1. `IPresenceLobbyService.LivePropertySource` — a provider hook
+   (`Func<IReadOnlyDictionary<string,string>>`) set once by
+   `HostConnectionService` (`BuildLivePresenceProperties`). Every lobby
+   (re)join path — initial join, reconnect, converge migration — now
+   overlays LIVE values onto the property dict in
+   `PresenceLobbyService.BuildLocalPlayerProperties`: outgoing
+   `invite_payloads` (`InviteService.SerializeAll`), a guest's
+   `joined_party` (current session id when `!IsPartyHost`), and
+   `matchName`. The rejoin no longer wipes in-flight invites or a
+   guest's party advertisement. `accepted_invite` is deliberately NOT
+   preserved (fast-path hint only; the session member sync covers it,
+   and carrying it across rejoins would make stale signals permanent).
+   HCS remains the single writer of the values.
+2. The `inActiveInviteOrParty` pause in `HostConnectionService.RefreshAsync`
+   is **removed** — convergence now runs on its normal throttle even
+   mid-invite / mid-party, so the frozen-split (this bug's scenario:
+   partied players stuck in a non-canonical lobby, third player never
+   receives the invite) self-heals.
+
+**Retest (MPPM):** the B4 TC1 repro (VP1+VP3 partied, VP1 invites VP2),
+plus the invite-chain S10 (member-sent invite) with a deliberately
+split lobby; confirm the pending invite survives a converge migration
+(sender's `invite_payloads` non-empty after "Converged to canonical"
+log) and no B1/B6 stale-index regression from the extra rejoin writes.
+
+**⚠ Repro validity caveat (2026-07-16).** A 4-instance session with
+**untagged** MPPM clones reproduced B4-family symptoms (one-sided rows,
+empty online lists on some clones) whose actual root cause was the
+shared `mppm-clone` auth profile — all untagged clones sign in as ONE
+UGS PlayerId, and each clone's lobby join invalidates the previous
+clone's membership (dead handle → refresh errors → empty lists). Rows
+appeared correct as soon as unique tags were assigned. The original
+B4 TC1 session predates the tag prerequisite
+(`../PartySystem/TESTS.md` § "MPPM prerequisites"), so this entry's
+convergence-freeze hypothesis must be re-confirmed with **tagged** VPs
+before any further B4-specific work — the identity collision may
+account for part or all of the historical symptom.
+
 ---
 
 ## B6 — TC3: `NullReferenceException` (`WrappedLobbyService.GetLobbyAsync`) + empty online/request lists 🟡 (refresh-path noise silenced in MPPM Session 1; TC3 empty-lists symptom untested since fix)

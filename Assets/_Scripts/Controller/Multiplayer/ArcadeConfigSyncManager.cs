@@ -78,11 +78,11 @@ namespace CosmicShore.Gameplay
         ///      validates against the live value from now on.
         ///   2. Resets every human's NetDomain to Jade so GameDetailView opens
         ///      with all chips on the Jade tile across every client.
-        ///   3. Broadcasts OpenConfigOnClients_ClientRpc — clients open modal at
+        ///   3. Broadcasts OpenConfigOnClients_ClientRpc - clients open modal at
         ///      GameDetailView with the back button hidden, tiles outside
         ///      [0..DC-1] dimmed/non-interactable.
         ///
-        /// Idempotent — repeated calls (host spam-clicks Confirm) short-circuit
+        /// Idempotent - repeated calls (host spam-clicks Confirm) short-circuit
         /// at the _isCommitted gate.
         /// </summary>
         public void CommitConfiguration(int gameMode, int intensity, int playerCount,
@@ -111,7 +111,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Called by ArcadeGameConfigureModal on the host when the modal closes
-        /// (back button or cancel — NOT game start). Re-arms the commit guard so
+        /// (back button or cancel - NOT game start). Re-arms the commit guard so
         /// the next configuration session can broadcast.
         /// </summary>
         public void NotifyConfigClosed()
@@ -128,10 +128,10 @@ namespace CosmicShore.Gameplay
             if (IsServer) return; // Host already has the modal open
 
             int subscriberCount = OnConfigOpenedOnClient?.GetInvocationList().Length ?? 0;
-            Debug.Log($"[ArcadeConfigSync] ClientRpc received — gameMode={gameMode}, subscribers={subscriberCount}");
+            Debug.Log($"[ArcadeConfigSync] ClientRpc received - gameMode={gameMode}, subscribers={subscriberCount}");
 
             if (subscriberCount == 0)
-                Debug.LogWarning("[ArcadeConfigSync] No subscribers on OnConfigOpenedOnClient — modal will not open. " +
+                Debug.LogWarning("[ArcadeConfigSync] No subscribers on OnConfigOpenedOnClient - modal will not open. " +
                                  "Is ArcadeGameConfigureModal.OnEnable() running? Is ModalWindows active?");
 
             OnConfigOpenedOnClient?.Invoke(gameMode, intensity, playerCount, maxPlayers, domainCount);
@@ -201,7 +201,7 @@ namespace CosmicShore.Gameplay
 
             if (_readyClients.Count >= _expectedHumanCount)
             {
-                Debug.Log("[ArcadeConfigSync] All players ready — launching game");
+                Debug.Log("[ArcadeConfigSync] All players ready - launching game");
                 AllPlayersReady_ClientRpc();
             }
         }

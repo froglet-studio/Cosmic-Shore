@@ -24,7 +24,7 @@ namespace CosmicShore.Gameplay
     }
 
     /// <summary>
-    /// THE canonical "ring of prisms the skimmer WILL collide with" builder — shared by every
+    /// THE canonical "ring of prisms the skimmer WILL collide with" builder - shared by every
     /// feature that throws a fly-through boost ring around the flight path: the Squirrel
     /// omnicrystal ring (<c>SpawnableRings</c> via <c>AOEShieldedRingSpawner</c>), the joust ring
     /// (<c>SpawnableRings</c> via <c>AOEDangerRingSpawner</c>), and the Squirrel tube ability
@@ -34,10 +34,10 @@ namespace CosmicShore.Gameplay
     ///   1. <b>Full-size collider from frame 0.</b> Every prism comes from the dedicated Boost pool
     ///      (<see cref="PrismType.Boost"/>: waitTime 0, fast bloom) and is put under
     ///      <see cref="Prism.HoldColliderAtFullSize"/>, so its collider covers the full target
-    ///      world size the frame it spawns while the visual blooms in — no speed outruns it.
+    ///      world size the frame it spawns while the visual blooms in - no speed outruns it.
     ///   2. <b>Speed-independent open geometry.</b> Prisms lie with their long side ALONG the ring
-    ///      axis ("up" pointing outward radially) — the wide-open arrangement the old speed-tilted
-    ///      ring only reached when fast — so the centre is always flyable and the wall is always
+    ///      axis ("up" pointing outward radially) - the wide-open arrangement the old speed-tilted
+    ///      ring only reached when fast - so the centre is always flyable and the wall is always
     ///      presented broadside to a skimmer coming down the axis.
     ///
     /// Shielded/SuperShielded kinds are applied only AFTER the bloom completes (via the
@@ -58,7 +58,7 @@ namespace CosmicShore.Gameplay
         {
             if (!channel)
             {
-                CSDebug.LogWarning("[BoostRingBuilder] Prism spawn channel not wired — cannot lay ring.");
+                CSDebug.LogWarning("[BoostRingBuilder] Prism spawn channel not wired - cannot lay ring.");
                 return;
             }
 
@@ -105,7 +105,7 @@ namespace CosmicShore.Gameplay
             if (string.IsNullOrEmpty(playerName)) prism.Initialize(); // environment-owned
             else prism.Initialize(playerName);
 
-            // Danger repaints on the BoxCollider — apply now so the ring reads as a hazard from
+            // Danger repaints on the BoxCollider - apply now so the ring reads as a hazard from
             // frame 0. Shield kinds swap to the transform-scaled octahedron MeshCollider, so they
             // wait for the bloom to finish (the hold guarantees the box footprint until then).
             bool deferredKind = kind is PrismKind.Shielded or PrismKind.SuperShielded;

@@ -160,7 +160,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                 {
                     float kb = s.memorySlopeBytesPerFrame / 1024f;
                     if (kb <= rule.threshold) return false;
-                    finding = $"Allocated memory rising ≈ {kb:F1} KB/frame across the sample — possible leak.";
+                    finding = $"Allocated memory rising ≈ {kb:F1} KB/frame across the sample - possible leak.";
                     break;
                 }
                 case HintRuleType.AvgDrawCalls:
@@ -173,20 +173,20 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                 {
                     if (s.avgGpuFrameTimeMs <= 0.001f) return false;
                     if (s.avgGpuFrameTimeMs <= s.avgCpuFrameTimeMs * rule.threshold) return false;
-                    finding = $"GPU {s.avgGpuFrameTimeMs:F1} ms vs CPU {s.avgCpuFrameTimeMs:F1} ms — GPU-bound.";
+                    finding = $"GPU {s.avgGpuFrameTimeMs:F1} ms vs CPU {s.avgCpuFrameTimeMs:F1} ms - GPU-bound.";
                     break;
                 }
                 case HintRuleType.CpuBound:
                 {
                     if (s.avgCpuFrameTimeMs <= 0.001f) return false;
                     if (s.avgCpuFrameTimeMs <= s.avgGpuFrameTimeMs * rule.threshold) return false;
-                    finding = $"CPU {s.avgCpuFrameTimeMs:F1} ms vs GPU {s.avgGpuFrameTimeMs:F1} ms — CPU-bound.";
+                    finding = $"CPU {s.avgCpuFrameTimeMs:F1} ms vs GPU {s.avgGpuFrameTimeMs:F1} ms - CPU-bound.";
                     break;
                 }
                 case HintRuleType.FrameInstability:
                 {
                     if (s.stdDevFrameTimeMs <= rule.threshold) return false;
-                    finding = $"Frame-time std-dev {s.stdDevFrameTimeMs:F1} ms (threshold {rule.threshold:F0} ms) — hitching.";
+                    finding = $"Frame-time std-dev {s.stdDevFrameTimeMs:F1} ms (threshold {rule.threshold:F0} ms) - hitching.";
                     break;
                 }
                 case HintRuleType.NetcodeSharePercent:
@@ -289,8 +289,8 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             {
                 id = "instability", type = HintRuleType.FrameInstability, threshold = 6f, severity = HintSeverity.Warning,
                 title = "Frame-time instability",
-                fixAdvice = "Frame time varies a lot (visible hitching). Hunt periodic spikes — GC collections, synchronous " +
-                            "loads, pool growth, or burst spawns — and spread or pre-warm them."
+                fixAdvice = "Frame time varies a lot (visible hitching). Hunt periodic spikes - GC collections, synchronous " +
+                            "loads, pool growth, or burst spawns - and spread or pre-warm them."
             },
             new HintRule
             {
@@ -298,7 +298,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                 title = "Netcode-heavy frame",
                 fixAdvice = "Netcode markers dominate a notable share of the frame. Reduce per-frame NetworkVariable writes " +
                             "(send on change / at the network tick, not every frame), trim OnSerialize payloads, and avoid " +
-                            "per-input RPCs — batch or rate-limit them."
+                            "per-input RPCs - batch or rate-limit them."
             },
             new HintRule
             {
@@ -332,7 +332,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             {
                 id = "netcode-spike", type = HintRuleType.SpikeMarkerName, markerPattern = "CSM.Net", severity = HintSeverity.Warning,
                 title = "Netcode spike",
-                fixAdvice = "A netcode marker spiked this frame — usually a burst of spawns/despawns or a large serialize. " +
+                fixAdvice = "A netcode marker spiked this frame - usually a burst of spawns/despawns or a large serialize. " +
                             "Spread spawns across frames, pool networked objects, and shrink serialized payloads."
             },
         };
