@@ -18,16 +18,20 @@ namespace CosmicShore.Gameplay
     /// normal/shielded trails - see <see cref="FakeArtistBrushes"/>).
     ///
     /// Each round (one turn of the base flow): the server generates a parametric
-    /// variation of a preset artwork (never the same twice), deals every player
-    /// <c>StrokesPerPlayer</c> strokes via TARGETED ClientRpcs (per-client secrets - the
-    /// only sanctioned pattern), and picks a fake artist who alone learns the SUBJECT
-    /// but receives only each stroke's start+end dots (no ring guides). Everyone draws
-    /// simultaneously; then everyone but the fake artist answers two questions (what is
-    /// it? who faked it?); the server tallies (<see cref="FakeArtistScorer"/>, values on
-    /// FakeArtistConfig.asset), reveals, and the next round begins on a fresh canvas -
-    /// finished artworks accumulate as a conserved-mass gallery (no culling; scene
-    /// reload on replay is the only sink). First player to the win target (default 8,
-    /// Tools &gt; Cosmic Shore &gt; End Game Conditions) takes the gallery.
+    /// variation of a preset artwork (never the same twice), deals every player their
+    /// strokes via TARGETED ClientRpcs (per-client secrets - the only sanctioned
+    /// pattern), and picks the fake artist(s) - one, or two in large groups - who alone
+    /// learn the SUBJECT but receive only each stroke's start+end dots (no ring guides).
+    /// Player count scales the strokes-per-player (so small groups still draw a
+    /// recognizable picture), the number of fake artists, and the fake-artist reward
+    /// (see <see cref="FakeArtistConfigSO"/>). Everyone draws simultaneously; then everyone
+    /// but the fake artists answers two questions (what is it? who faked it?) while a
+    /// gallery camera frames the shared creation; the server tallies
+    /// (<see cref="FakeArtistScorer"/>, values on FakeArtistConfig.asset), reveals, and the
+    /// next round begins on a fresh canvas near the players - finished artworks accumulate
+    /// as a conserved-mass gallery (no culling; scene reload on replay is the only sink).
+    /// First player to the win target (default 8, Tools &gt; Cosmic Shore &gt; End Game
+    /// Conditions) takes the gallery.
     ///
     /// Server-authoritative throughout: role/deal/vote/tally state lives in plain
     /// server fields; clients only ever see their own secrets. Points ride
@@ -44,6 +48,10 @@ namespace CosmicShore.Gameplay
 
         const float RoleCardSeconds = 7f;
 
+        // The mode's design floor (SO_ArcadeGame.MinPlayersAllowed) - the baseline the
+        // player-count reward scaling measures "extra players" from.
+        const int ModeMinPlayers = 3;
+
         enum RoundPhase { Idle, Drawing, Voting, Revealing, Resolved }
 
         // ── Server round state (never replicated wholesale - secrets stay here) ──
@@ -56,7 +64,8 @@ namespace CosmicShore.Gameplay
         readonly Dictionary<string, int> _strokesDone = new();
         readonly Dictionary<string, int> _strokesDealt = new(); // actual strokes each player got this round
         readonly Dictionary<string, FakeArtistScorer.Answers> _votes = new();
-        string _imposterName = string.Empty;
+        readonly HashSet<string> _imposterNames = new(); // 1-2 fake artists this round
+        int _imposterReward;                              // scaled by player count this round
         PaintingPreset _preset;
         int _seed;
         int _strokeCount;
@@ -64,6 +73,8 @@ namespace CosmicShore.Gameplay
         List<PaintingPreset> _subjectChoices = new();
         Vector3 _artOrigin;
         Quaternion _artRotation = Quaternion.identity;
+        Vector3 _artCenter;    // world center of the round's canvas (for the gallery camera)
+        float _artRadius;
         float _drawDeadline;
         float _voteDeadline;
         float _revealEndTime;
@@ -78,6 +89,7 @@ namespace CosmicShore.Gameplay
         FakeArtistVotePanel _panel;
         FakeArtistStrokeGuide _guide;
         FakeArtistRevealGhost _ghost;
+        FakeArtistGalleryCam _galleryCam;
         bool _localIsImposter;
         int _localRosterIndex = -1;
         ToyContext _toyContext;
@@ -140,6 +152,7 @@ namespace CosmicShore.Gameplay
             if (_panel != null)
                 _panel.VoteSubmitted -= HandleLocalVoteSubmitted;
 
+            StopGalleryCam();
             UnhookAllSpawners();
             ClearAIProviders();
             base.OnNetworkDespawn();
@@ -300,8 +313,9 @@ namespace CosmicShore.Gameplay
                 ApplyBrushDomainOnServer(name);
 
             // Artwork: random preset + fresh seed = a parametric variation nobody has
-            // painted before; stroke count exactly fills the roster.
-            int strokesPerPlayer = config.StrokesPerPlayer;
+            // painted before. Strokes-per-player scales UP in small groups so the total
+            // stays above config.MinTotalStrokes - enough to still tell what it is.
+            int strokesPerPlayer = config.StrokesPerPlayerFor(_roster.Count);
             _preset = FakeArtistArtworkBuilder.SubjectCatalog[_serverRng.Next(FakeArtistArtworkBuilder.SubjectCatalog.Length)];
             _seed = _serverRng.Next();
             _strokeCount = _roster.Count * strokesPerPlayer;
@@ -309,24 +323,39 @@ namespace CosmicShore.Gameplay
             var bundles = FakeArtistArtworkBuilder.Deal(strokes, _roster.Count, strokesPerPlayer);
             FakeArtistArtworkBuilder.AnchorForRound(gameData.RoundsPlayed, config.ArtworkSize, out _artOrigin, out _artRotation);
 
-            // Fake artist: least-often-imposter first, ties broken by server RNG.
-            int minCount = _roster.Min(n => _imposterCounts[n]);
-            var candidates = _roster.Where(n => _imposterCounts[n] == minCount).ToList();
-            _imposterName = candidates[_serverRng.Next(candidates.Count)];
-            _imposterCounts[_imposterName]++;
+            // World center + radius of this canvas, for the vote-time gallery camera.
+            var localBounds = PaintingPresetLibrary.ComputeBounds(strokes);
+            _artCenter = _artOrigin + _artRotation * localBounds.center;
+            _artRadius = Mathf.Max(60f, localBounds.extents.magnitude);
+
+            // Fake artists: 1, or 2 in large groups (config.SecondImposterAtPlayers). Pick
+            // the least-often-imposter each time (fair rotation), ties broken by server RNG.
+            int imposterCount = Mathf.Min(config.ImposterCountFor(_roster.Count), _roster.Count - 1);
+            _imposterReward = config.ImposterRewardFor(_roster.Count, ModeMinPlayers);
+            _imposterNames.Clear();
+            for (int k = 0; k < imposterCount; k++)
+            {
+                var available = _roster.Where(n => !_imposterNames.Contains(n)).ToList();
+                if (available.Count == 0) break;
+                int minCount = available.Min(n => _imposterCounts[n]);
+                var candidates = available.Where(n => _imposterCounts[n] == minCount).ToList();
+                var pick = candidates[_serverRng.Next(candidates.Count)];
+                _imposterNames.Add(pick);
+                _imposterCounts[pick]++;
+            }
 
             // Subject options (correct + decoys, shuffled deterministically).
             _subjectChoices = FakeArtistArtworkBuilder.BuildSubjectChoices(_preset, _seed, config.SubjectChoiceCount);
             _correctSubjectChoice = _subjectChoices.IndexOf(_preset);
 
-            // Per-player world-space dots; the fake artist's strokes degrade to start+end.
+            // Per-player world-space dots; a fake artist's strokes degrade to start+end.
             _dealtDots = new Vector3[_roster.Count][][];
             _strokesDone.Clear();
             _strokesDealt.Clear();
             _votes.Clear();
             for (int p = 0; p < _roster.Count; p++)
             {
-                bool isImposter = _roster[p] == _imposterName;
+                bool isImposter = _imposterNames.Contains(_roster[p]);
                 var bundle = bundles[p];
                 _dealtDots[p] = new Vector3[bundle.Count][];
                 for (int s = 0; s < bundle.Count; s++)
@@ -366,7 +395,7 @@ namespace CosmicShore.Gameplay
                 int rosterIndex = _roster.IndexOf(player.Name);
                 if (rosterIndex < 0) continue;
 
-                bool isImposter = player.Name == _imposterName;
+                bool isImposter = _imposterNames.Contains(player.Name);
                 FlattenDots(_dealtDots[rosterIndex], out var dots, out var counts);
 
                 var brushName = _brushSlots.TryGetValue(player.Name, out int slot)
@@ -378,7 +407,7 @@ namespace CosmicShore.Gameplay
                     Send = new ClientRpcSendParams { TargetClientIds = new[] { client.ClientId } }
                 };
                 DealRound_ClientRpc(
-                    rosterIndex, dots, counts, config.DotReach, isImposter,
+                    rosterIndex, dots, counts, config.DotReach, isImposter, _imposterNames.Count,
                     new FixedString64Bytes(isImposter ? FakeArtistArtworkBuilder.SubjectName(_preset) : string.Empty),
                     new FixedString64Bytes(brushName),
                     target);
@@ -418,11 +447,13 @@ namespace CosmicShore.Gameplay
 
         [ClientRpc]
         void DealRound_ClientRpc(int rosterIndex, Vector3[] dots, int[] dotCounts, float reach,
-            bool isImposter, FixedString64Bytes subject, FixedString64Bytes brushName,
+            bool isImposter, int imposterCount, FixedString64Bytes subject, FixedString64Bytes brushName,
             ClientRpcParams rpcParams = default)
         {
             // Fresh round presentation: the old guide dies here (releasing the pen), the
-            // new one takes it over in the same frame.
+            // new one takes it over in the same frame; the vote-time gallery camera (if any)
+            // hands back to normal gameplay flight.
+            StopGalleryCam();
             if (_guide != null)
                 Destroy(_guide.gameObject);
             _ghost?.FadeOutAndDestroy();
@@ -451,7 +482,7 @@ namespace CosmicShore.Gameplay
             _guide.StrokeCompleted += HandleLocalStrokeCompleted;
             _guide.Begin();
 
-            _panel.ShowRoleCard(isImposter, subject.ToString(), brushName.ToString(), RoleCardSeconds);
+            _panel.ShowRoleCard(isImposter, imposterCount, subject.ToString(), brushName.ToString(), RoleCardSeconds);
         }
 
         void HandleLocalStrokeCompleted(int strokeIndex) => ReportStrokeComplete_ServerRpc();
@@ -509,7 +540,7 @@ namespace CosmicShore.Gameplay
             return true;
         }
 
-        bool AllVotesIn() => _votes.Count >= _roster.Count - 1; // everyone but the fake artist
+        bool AllVotesIn() => _votes.Count >= _roster.Count - _imposterNames.Count; // everyone but the fake artists
 
         void BeginVoting()
         {
@@ -531,14 +562,23 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < _roster.Count; i++)
                 names[i] = new FixedString64Bytes(_roster[i]);
 
-            BeginVote_ClientRpc(subjects, names, config.VoteSeconds);
+            BeginVote_ClientRpc(subjects, names, config.VoteSeconds, _artCenter, _artRadius);
         }
 
         [ClientRpc]
-        void BeginVote_ClientRpc(FixedString64Bytes[] subjectOptions, FixedString64Bytes[] rosterNames, float voteSeconds)
+        void BeginVote_ClientRpc(FixedString64Bytes[] subjectOptions, FixedString64Bytes[] rosterNames,
+            float voteSeconds, Vector3 artCenter, float artRadius)
         {
             _guide?.EndDrawing();
             gameData.LocalPlayer?.InputController?.SetPause(true);
+
+            // Frame the shared creation so everyone studies it while answering, instead of
+            // staring at wherever their own vessel stopped.
+            if (config.GalleryCameraDuringVote)
+            {
+                StopGalleryCam();
+                _galleryCam = FakeArtistGalleryCam.Begin(artCenter, artRadius);
+            }
 
             if (_localIsImposter)
             {
@@ -569,7 +609,7 @@ namespace CosmicShore.Gameplay
             var player = FindHumanPlayerByClientId(rpcParams.Receive.SenderClientId);
             if (player == null) return;
             string name = player.Name;
-            if (name == _imposterName || !_roster.Contains(name) || _votes.ContainsKey(name)) return;
+            if (_imposterNames.Contains(name) || !_roster.Contains(name) || _votes.ContainsKey(name)) return;
 
             if (accusedIndex < 0 || accusedIndex >= _roster.Count || _roster[accusedIndex] == name)
                 accusedIndex = -1;
@@ -581,10 +621,12 @@ namespace CosmicShore.Gameplay
 
         void InjectAIVotes()
         {
+            var imposterIndices = _imposterNames.Select(n => _roster.IndexOf(n)).Where(idx => idx >= 0).ToList();
+
             for (int i = 0; i < _roster.Count; i++)
             {
                 string name = _roster[i];
-                if (name == _imposterName) continue;
+                if (_imposterNames.Contains(name)) continue;
 
                 var player = gameData.Players.FirstOrDefault(p => p != null && p.Name == name);
                 if (player == null || !player.IsInitializedAsAI) continue;
@@ -601,24 +643,25 @@ namespace CosmicShore.Gameplay
                 }
 
                 int accused;
-                if (_serverRng.NextDouble() < config.AICorrectImposterChance)
+                if (imposterIndices.Count > 0 && _serverRng.NextDouble() < config.AICorrectImposterChance)
                 {
-                    accused = _roster.IndexOf(_imposterName);
+                    // Accuse one of the actual fake artists.
+                    accused = imposterIndices[_serverRng.Next(imposterIndices.Count)];
                 }
                 else
                 {
-                    // A "wrong" accusation targets anyone but self and the imposter. In a
-                    // 3-player round no such target exists - the accusation lands on the
-                    // imposter (the only other player).
+                    // A "wrong" accusation targets anyone but self and the fake artists. In a
+                    // 3-player round no such target exists - the accusation lands on a fake
+                    // artist (the only other player).
                     var wrongTargets = new List<int>();
                     for (int c = 0; c < _roster.Count; c++)
                     {
-                        if (c != i && _roster[c] != _imposterName)
+                        if (c != i && !_imposterNames.Contains(_roster[c]))
                             wrongTargets.Add(c);
                     }
                     accused = wrongTargets.Count > 0
                         ? wrongTargets[_serverRng.Next(wrongTargets.Count)]
-                        : _roster.IndexOf(_imposterName);
+                        : (imposterIndices.Count > 0 ? imposterIndices[_serverRng.Next(imposterIndices.Count)] : -1);
                 }
 
                 _votes[name] = new FakeArtistScorer.Answers(subject, accused);
@@ -630,7 +673,7 @@ namespace CosmicShore.Gameplay
             _phase = RoundPhase.Revealing;
             _revealEndTime = Time.time + config.RevealSeconds;
 
-            int imposterIndex = _roster.IndexOf(_imposterName);
+            var imposterIndices = _imposterNames.Select(n => _roster.IndexOf(n)).Where(idx => idx >= 0).ToList();
             var answersByIndex = new Dictionary<int, FakeArtistScorer.Answers>();
             foreach (var kvp in _votes)
             {
@@ -639,10 +682,10 @@ namespace CosmicShore.Gameplay
             }
 
             var deltas = FakeArtistScorer.ScoreRound(
-                _roster.Count, imposterIndex, _correctSubjectChoice, answersByIndex,
+                _roster.Count, imposterIndices, _correctSubjectChoice, answersByIndex,
                 new FakeArtistScorer.Config(
                     config.CorrectSubjectPoints, config.CorrectImposterPoints,
-                    config.GuessedPenalty, config.ImposterReward));
+                    config.GuessedPenalty, _imposterReward));
 
             var names = new FixedString64Bytes[_roster.Count];
             var deltaArr = new int[_roster.Count];
@@ -661,16 +704,17 @@ namespace CosmicShore.Gameplay
                 totals[i] = _points[name];
             }
 
+            var imposterList = string.Join(" & ", _imposterNames);
             RevealRound_ClientRpc(
                 new FixedString64Bytes(FakeArtistArtworkBuilder.SubjectName(_preset)),
-                new FixedString64Bytes(_imposterName),
+                new FixedString64Bytes(imposterList),
                 (int)_preset, config.ArtworkSize, _seed, _strokeCount,
                 _artOrigin, _artRotation,
                 names, deltaArr, totals);
         }
 
         [ClientRpc]
-        void RevealRound_ClientRpc(FixedString64Bytes subject, FixedString64Bytes imposterName,
+        void RevealRound_ClientRpc(FixedString64Bytes subject, FixedString64Bytes imposterNames,
             int preset, float artworkSize, int seed, int strokeCount,
             Vector3 origin, Quaternion rotation,
             FixedString64Bytes[] names, int[] deltas, int[] totals)
@@ -681,18 +725,19 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < names.Length; i++)
                 lines.Add($"{names[i]}  {(deltas[i] >= 0 ? "+" : "")}{deltas[i]}   ({totals[i]})");
 
-            _panel.ShowReveal(subject.ToString(), imposterName.ToString(), lines, config.RevealSeconds);
+            string imposters = imposterNames.ToString();
+            _panel.ShowReveal(subject.ToString(), imposters, lines, config.RevealSeconds);
 
             // The full blueprint blooms over the painted prisms - regenerated locally
             // from (preset, size, seed); no geometry crossed the wire before the vote.
+            // The gallery camera stays up so players watch the answer overlay the creation.
             _ghost?.FadeOutAndDestroy();
             _ghost = FakeArtistRevealGhost.Spawn(
                 (PaintingPreset)preset, artworkSize, seed, strokeCount, origin, rotation, _toyContext);
 
             GameFeedAPI.Post(
-                $"<b>{imposterName}</b> was the fake artist! The subject: <b>{subject}</b>",
-                gameData.Players.FirstOrDefault(p => p != null && p.Name == imposterName.ToString())?.Domain ?? Domains.Blue,
-                GameFeedType.Generic);
+                $"The fake artist{(imposters.Contains("&") ? "s were" : " was")} <b>{imposters}</b>! The subject: <b>{subject}</b>",
+                Domains.Blue, GameFeedType.Generic);
         }
 
         // ══════════════════════════════════════════════════════════════════
@@ -774,6 +819,16 @@ namespace CosmicShore.Gameplay
                     pilot.ClearExternalTargetProvider();
             }
             _armedPilots.Clear();
+        }
+
+        /// <summary>Restore the normal gameplay camera if the gallery camera was up (idempotent).</summary>
+        void StopGalleryCam()
+        {
+            if (_galleryCam != null)
+            {
+                _galleryCam.Stop();
+                _galleryCam = null;
+            }
         }
 
         // ══════════════════════════════════════════════════════════════════
@@ -858,6 +913,8 @@ namespace CosmicShore.Gameplay
             }
 
             _panel?.Hide();
+            // Hand the camera back before EndGameSequencer runs its own end-game flourish.
+            StopGalleryCam();
 
             gameData.WinnerName = winnerName.ToString();
             gameData.WinnerDomain = (Domains)winnerDomain;
@@ -878,6 +935,8 @@ namespace CosmicShore.Gameplay
             _phase = RoundPhase.Idle;
             _points.Clear();
             _imposterCounts.Clear();
+            _imposterNames.Clear();
+            StopGalleryCam();
 
             foreach (var s in gameData.RoundStatsList)
             {

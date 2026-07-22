@@ -71,9 +71,13 @@ namespace CosmicShore.Gameplay
             var cardGO = new GameObject("Card", typeof(RectTransform), typeof(Image), typeof(CanvasGroup));
             _card = (RectTransform)cardGO.transform;
             _card.SetParent(transform, false);
-            _card.anchorMin = new Vector2(0.5f, 0.5f);
-            _card.anchorMax = new Vector2(0.5f, 0.5f);
-            _card.pivot = new Vector2(0.5f, 0.5f);
+            // Anchor to the lower-center and grow UPWARD, so the top ~60% of the screen
+            // stays clear for the gallery camera's view of the shared painting while
+            // players study it and answer.
+            _card.anchorMin = new Vector2(0.5f, 0f);
+            _card.anchorMax = new Vector2(0.5f, 0f);
+            _card.pivot = new Vector2(0.5f, 0f);
+            _card.anchoredPosition = new Vector2(0f, 48f);
             _card.sizeDelta = new Vector2(980f, 100f);
 
             cardGO.GetComponent<Image>().color = CardColor;
@@ -123,7 +127,7 @@ namespace CosmicShore.Gameplay
         // ── Public surface ──────────────────────────────────────────────────
 
         /// <summary>The round-start role card. Auto-hides after <paramref name="seconds"/>.</summary>
-        public void ShowRoleCard(bool isImposter, string subject, string brushName, float seconds)
+        public void ShowRoleCard(bool isImposter, int imposterCount, string subject, string brushName, float seconds)
         {
             ClearCard();
             _voteActive = false;
@@ -134,6 +138,8 @@ namespace CosmicShore.Gameplay
                 AddText($"The subject is  <b>{subject.ToUpper()}</b>", 30f, TextColor);
                 AddText("You know WHAT it is - but your strokes show only where they start and stop.\nImprovise the middle. Blend in. Don't get caught.",
                     22f, TextColor);
+                if (imposterCount > 1)
+                    AddText("You're not alone - there is another fake artist.", 22f, AccentTextColor);
             }
             else
             {

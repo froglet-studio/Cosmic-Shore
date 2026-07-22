@@ -116,19 +116,22 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Deterministic artwork anchor for a round: successive rounds place their canvas
-        /// around a golden-angle ring so finished artworks accumulate as a gallery (mass is
-        /// conserved - nothing is culled between rounds; the scene reload on replay is the
-        /// only sink). Rotation faces the canvas back toward the arena center.
+        /// Deterministic artwork anchor for a round. A phyllotaxis (golden-angle) spiral
+        /// with a tight one-artwork gap tiles successive canvases outward so finished
+        /// artworks accumulate as a gallery (mass is conserved - nothing is culled between
+        /// rounds; the scene reload on replay is the only sink) - but the FIRST canvas sits
+        /// right on the spawn cluster and every round stays within easy flying distance, so
+        /// players don't fly far to reach their strokes. Rotation faces the canvas back
+        /// toward the arena center (round 0 keeps the preset's default +Z facing).
         /// </summary>
         public static void AnchorForRound(int roundIndex, float artSize, out Vector3 origin, out Quaternion rotation)
         {
             const float goldenAngle = 137.50776f;
             float angle = roundIndex * goldenAngle;
-            float radius = artSize * 1.35f + 220f;
+            float radius = artSize * 0.62f * Mathf.Sqrt(Mathf.Max(0, roundIndex));
             var dir = Quaternion.Euler(0f, angle, 0f) * Vector3.forward;
             origin = dir * radius;
-            rotation = Quaternion.LookRotation(-dir, Vector3.up);
+            rotation = radius > 1f ? Quaternion.LookRotation(-dir, Vector3.up) : Quaternion.identity;
         }
 
         // ── Parametric variation ─────────────────────────────────────────────
@@ -140,8 +143,11 @@ namespace CosmicShore.Gameplay
             float yaw = rng.Range(0f, 360f);
             bool mirror = rng.Chance(0.5f);
             float scale = rng.Range(0.85f, 1.1f);
-            float warpAmp = size * rng.Range(0.015f, 0.045f);
-            float warpFreq = 2.2f / Mathf.Max(1f, size);
+            // A slightly stronger curl warp adds gentle S-bends to otherwise clean preset
+            // arcs, so a fake artist flying a stroke's start->end straight line reads as
+            // obviously wrong - but stays mild enough to keep the subject recognizable.
+            float warpAmp = size * rng.Range(0.03f, 0.06f);
+            float warpFreq = 2.6f / Mathf.Max(1f, size);
             int warpSeed = (int)rng.NextUInt();
 
             var rot = Quaternion.Euler(0f, yaw, 0f);
@@ -188,21 +194,24 @@ namespace CosmicShore.Gameplay
                     work[i].points = Tk.EnforceMaxSegment(work[i].points, maxSeg);
             }
 
-            // Too many strokes: drop the shortest (fine detail) until we fit.
+            // Too many strokes: drop the LEAST INTERESTING first - short AND straight
+            // (a single obvious arc). Keeping the strokes that bend in different directions
+            // means the fake artist, who only gets start+end, can't fake them with a clean
+            // arc. interest = arcLength * (1 + directionChanges).
             while (work.Count > target)
             {
-                int shortest = 0;
-                float shortestLen = float.MaxValue;
+                int drop = 0;
+                float lowest = float.MaxValue;
                 for (int i = 0; i < work.Count; i++)
                 {
-                    float len = ArcLength(work[i].points);
-                    if (len < shortestLen)
+                    float interest = ArcLength(work[i].points) * (1 + DirectionChanges(work[i].points));
+                    if (interest < lowest)
                     {
-                        shortestLen = len;
-                        shortest = i;
+                        lowest = interest;
+                        drop = i;
                     }
                 }
-                work.RemoveAt(shortest);
+                work.RemoveAt(drop);
             }
 
             // Too few strokes: split the longest at its arc midpoint until we fit.
@@ -268,6 +277,33 @@ namespace CosmicShore.Gameplay
             for (int i = 1; i < pts.Count; i++)
                 len += Vector3.Distance(pts[i - 1], pts[i]);
             return len;
+        }
+
+        /// <summary>
+        /// How many times the stroke reverses its turn direction (S-curves, zigzags).
+        /// 0 for a straight line or a single clean arc; higher for strokes that bend in
+        /// different directions - which a fake artist (start+end only) can't fake with an
+        /// obvious arc. Uses the turn bivector (cross of successive tangents); a reversal is
+        /// a sign flip between consecutive significant turns.
+        /// </summary>
+        public static int DirectionChanges(IReadOnlyList<Vector3> pts)
+        {
+            if (pts == null || pts.Count < 4) return 0;
+            int changes = 0;
+            var prevTurn = Vector3.zero;
+            bool havePrev = false;
+            for (int i = 1; i < pts.Count - 1; i++)
+            {
+                var a = (pts[i] - pts[i - 1]);
+                var b = (pts[i + 1] - pts[i]);
+                if (a.sqrMagnitude < 1e-6f || b.sqrMagnitude < 1e-6f) continue;
+                var turn = Vector3.Cross(a.normalized, b.normalized);
+                if (turn.magnitude < 0.08f) continue; // near-straight step
+                if (havePrev && Vector3.Dot(turn, prevTurn) < 0f) changes++;
+                prevTurn = turn;
+                havePrev = true;
+            }
+            return changes;
         }
 
         /// <summary>

@@ -13,15 +13,21 @@ MonoBehaviour:
   m_Name: FakeArtistConfig
   m_EditorClassIdentifier:
   ArtworkSize: 600
-  StrokesPerPlayer: 3
   DotReach: 24
+  StrokesPerPlayer: 3
+  MaxStrokesPerPlayer: 6
+  MinTotalStrokes: 15
+  SecondImposterAtPlayers: 8
   DrawSeconds: 150
-  VoteSeconds: 25
+  VoteSeconds: 30
   RevealSeconds: 8
   CorrectSubjectPoints: 1
   CorrectImposterPoints: 1
   GuessedPenalty: -1
   ImposterReward: 4
+  ImposterRewardPlayersPerBonus: 4
+  ImposterRewardMax: 7
   SubjectChoiceCount: 4
+  GalleryCameraDuringVote: 1
   AICorrectSubjectChance: 0.35
   AICorrectImposterChance: 0.3
