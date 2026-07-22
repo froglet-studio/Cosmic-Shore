@@ -34,9 +34,10 @@ namespace CosmicShore.Gameplay
             var localStats = gameData.RoundStatsList.FirstOrDefault(s => s.Name == localName);
             if (localStats == null) return;
 
-            // Winner = index 0 after descending sort (highest crystals first)
-            bool isWinner = gameData.RoundStatsList.Count > 0 &&
-                            gameData.RoundStatsList[0].Name == localName;
+            // Winner = my Score is a real finish time (winning-domain players all carry the
+            // match time; losers carry the DnfThreshold+remaining sentinel). Every winning
+            // teammate reports - per-player best-time tracking, same shape as HexRace.
+            bool isWinner = GolfScoreSentinels.IsFinishTime(localStats.Score);
 
             if (isWinner)
             {

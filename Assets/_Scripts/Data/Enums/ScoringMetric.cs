@@ -14,5 +14,12 @@ namespace CosmicShore.Data
         ElementalCrystals = 2,
         Jousts = 3,
         Goals = 4,
+        // Rampage: hostile prisms destroyed (reads IRoundStats.HostilePrismsDestroyed).
+        // "Hostile" = everything except your own/your teammates' PLAYER-LAID mass:
+        // other domains' trails, plus ALL environment mass (flora/fauna carry
+        // non-roster owner names, so StatsManager classifies them hostile regardless
+        // of color). Laying-then-shattering your own trail is worthless by
+        // construction - trails ARE rostered, so the domain check filters them.
+        PrismsDestroyed = 5,
     }
 }

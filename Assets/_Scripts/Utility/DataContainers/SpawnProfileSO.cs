@@ -52,6 +52,23 @@ namespace CosmicShore.Utility
         [Min(0f)] public float FaunaInitialDelaySeconds;
         [Tooltip("Seconds between each population spawn (within the initial FaunaPrefab batch). 0 = spawn all instantly.")]
         [Min(0f)] public float FaunaSpawnIntervalSeconds;
+        [Tooltip("HERBIVORE spawn-point ring: successive herbivore waves rotate between this " +
+                 "many points spaced evenly on a circle around the cell centre (equidistant " +
+                 "from each other and from the centre), so each new group gets its own feeding " +
+                 "ground — and a head start before a territorial predator's patch reaches it. " +
+                 "0 or 1 = legacy behavior (spawn on the densest sensed mass). Predators are " +
+                 "unaffected (they spawn on the densest mass as before).")]
+        [Min(0)] public int HerbivoreSpawnPointCount = 0;
+        [Tooltip("Radius of the herbivore spawn-point ring (world units from the cell centre).")]
+        [Min(0f)] public float HerbivoreSpawnRadius = 400f;
+        [Tooltip("PREDATOR spawn-point ring, orthogonal to the herbivore ring: points spaced " +
+                 "evenly on a VERTICAL circle (the herbivore ring is equatorial/XZ), starting " +
+                 "at +Y — so 2 points sit exactly on the poles. Solitary predators also spawn " +
+                 "at most ONE per spawn interval while the ring is active, alternating points. " +
+                 "0 = legacy behavior (spawn on the densest sensed mass, no per-interval cap).")]
+        [Min(0)] public int PredatorSpawnPointCount = 0;
+        [Tooltip("Radius of the predator spawn-point ring (world units from the cell centre).")]
+        [Min(0f)] public float PredatorSpawnRadius = 600f;
         public List<FaunaConfigurationSO> SupportedFaunas = new();
         
         public FloraConfigurationSO GetRandomFlora() => SupportedFloras[0];
