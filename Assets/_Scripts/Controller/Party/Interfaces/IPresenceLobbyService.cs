@@ -1,6 +1,6 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // IPresenceLobbyService.cs
-// Contract for the presence lobby — the global player-discovery session.
+// Contract for the presence lobby - the global player-discovery session.
 //
 // KEY CONSTRAINT: implementors must NOT start a NetworkManager or create a
 // Relay allocation.  The presence lobby is a lobby-only UGS session that
@@ -8,6 +8,7 @@
 // IPartySessionService's responsibility.
 // ─────────────────────────────────────────────────────────────────────────────
 
+using System;
 using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
 using Unity.Services.Multiplayer;
@@ -29,8 +30,20 @@ namespace CosmicShore.Gameplay
         ISession ActiveLobby { get; }
 
         /// <summary>
+        /// Optional source of LIVE values for the stateful player properties
+        /// (invite_payloads, joined_party, matchName, ...). When set, every
+        /// lobby (re)join - initial join, reconnect, and the periodic
+        /// <see cref="ConvergeToCanonicalAsync"/> migration - publishes these
+        /// values instead of resetting the keys to empty. Without it, a rejoin
+        /// wipes in-flight invites and a guest's joined_party advertisement
+        /// (Docs/PresenceSystem/BUGS.md B4). Set once by
+        /// <c>HostConnectionService</c>, the single writer of those values.
+        /// </summary>
+        Func<IReadOnlyDictionary<string, string>> LivePropertySource { get; set; }
+
+        /// <summary>
         /// Joins an existing presence lobby or creates one if none exists.
-        /// Safe to call multiple times — returns early if already joined.
+        /// Safe to call multiple times - returns early if already joined.
         /// </summary>
         /// <param name="maxPlayers">
         /// Maximum simultaneous players in the global lobby (typically 100).
@@ -39,7 +52,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Leaves the presence lobby gracefully (delete if host, leave if client).
-        /// Safe to call even if not currently in a lobby — returns immediately.
+        /// Safe to call even if not currently in a lobby - returns immediately.
         /// </summary>
         UniTask LeaveAsync();
 
@@ -55,14 +68,14 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Writes the given set of player properties to the local player's lobby
-        /// record.  Acquires the lobby mutex internally — do NOT call while already
+        /// record.  Acquires the lobby mutex internally - do NOT call while already
         /// holding the mutex.
         /// </summary>
         /// <param name="properties">
         /// Key-value pairs to write (e.g. displayName, invite_payloads).
         /// </param>
         /// <param name="operationName">
-        /// Human-readable name for this write — appears in log output for diagnostics.
+        /// Human-readable name for this write - appears in log output for diagnostics.
         /// </param>
         UniTask SavePropertiesAsync(
             Dictionary<string, PlayerProperty> properties,
@@ -75,7 +88,7 @@ namespace CosmicShore.Gameplay
         ///
         /// <para>
         /// This is appropriate when consecutive refresh errors indicate the
-        /// connection is already broken — calling Leave/Delete would just add more
+        /// connection is already broken - calling Leave/Delete would just add more
         /// failures.  The reconnect path calls <see cref="JoinOrCreateAsync"/>
         /// immediately after to re-establish the lobby.
         /// </para>
@@ -83,8 +96,8 @@ namespace CosmicShore.Gameplay
         void ForceReset();
 
         /// <summary>
-        /// Converges every client onto a single canonical presence lobby — the one
-        /// with the lexicographically smallest session id — healing a
+        /// Converges every client onto a single canonical presence lobby - the one
+        /// with the lexicographically smallest session id - healing a
         /// simultaneous-create split where two clients each created their own lobby
         /// at the same instant (MPPM / near-simultaneous launches) and UGS session
         /// indexing lag let both miss each other on the initial query.

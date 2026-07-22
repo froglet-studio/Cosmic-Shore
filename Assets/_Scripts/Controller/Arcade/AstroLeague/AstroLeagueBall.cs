@@ -19,12 +19,12 @@ namespace CosmicShore.Gameplay
     ///
     /// Vessels move via transform (not rigidbody), so momentum transfer cannot read physics
     /// velocity. The server samples every vessel root's position each FixedUpdate and uses
-    /// the resulting velocity estimate for strikes — this works identically for the host's
+    /// the resulting velocity estimate for strikes - this works identically for the host's
     /// own vessel, replicated client vessels, and AI (VesselStatus.Speed/Course is only
     /// trustworthy on the owning peer, see ResolveStrikerVelocity).
     ///
     /// Impact juice (emission flash, burst particles, distance-scaled camera shake, haptics)
-    /// plays on every peer via ClientRpc. Hitstop is solo-session-only — local timescale
+    /// plays on every peer via ClientRpc. Hitstop is solo-session-only - local timescale
     /// changes desync connected peers.
     /// </summary>
     [RequireComponent(typeof(Rigidbody))]
@@ -36,7 +36,7 @@ namespace CosmicShore.Gameplay
         [SerializeField] GameDataSO gameData;
 
         [Header("Visuals")]
-        [Tooltip("The prism fresnel material (PrismMaterial.mat) — cloned at runtime so the ball " +
+        [Tooltip("The prism fresnel material (PrismMaterial.mat) - cloned at runtime so the ball " +
                  "renders with the same 3D fresnel-rim look as trail prisms. Falls back to the " +
                  "Shader Graphs/BlockGraph shader, then URP/Lit, if unassigned.")]
         [SerializeField] Material prismMaterial;
@@ -85,16 +85,16 @@ namespace CosmicShore.Gameplay
         float _lastSnapshotTime;
 
         // Velocity the ball carries INTO each physics step (captured pre-simulation in
-        // ServerFixedUpdate). OnCollisionEnter runs post-solver, so this is the pre-bounce velocity —
+        // ServerFixedUpdate). OnCollisionEnter runs post-solver, so this is the pre-bounce velocity -
         // used to size the wall-bounce juice by true impact speed (not the just-reflected value).
         Vector3 _velocityBeforePhysics;
 
-        // Server time of the last wall-bounce juice (camera shake / haptic / burst) — rate-limits it so
+        // Server time of the last wall-bounce juice (camera shake / haptic / burst) - rate-limits it so
         // a frictionless ball bouncing or skimming the wall can't spam the camera shake (see HandleWallBounce).
         float _lastWallJuiceTime;
 
-        // Court play boundary (the cell nucleus) — set by AstroLeagueArena.Build via SetBoundary. The
-        // ball is contained by a server-side reflect off the boundary's walls (no collider) — flat
+        // Court play boundary (the cell nucleus) - set by AstroLeagueArena.Build via SetBoundary. The
+        // ball is contained by a server-side reflect off the boundary's walls (no collider) - flat
         // polytope faces BANK the ball (billiards/air-hockey), a sphere focuses it toward center. The
         // shape is chosen per intensity. null means "not set yet" (frozen showpiece pre-kickoff).
         AstroLeagueBoundary _boundary;
@@ -103,7 +103,7 @@ namespace CosmicShore.Gameplay
         readonly Dictionary<Transform, Vector3> _vesselLastPos = new();
         readonly Dictionary<Transform, Vector3> _vesselVelocity = new();
 
-        // Per-vessel-root time of last strike — dedups the hull+trigger double-fire and paces dribble
+        // Per-vessel-root time of last strike - dedups the hull+trigger double-fire and paces dribble
         // taps (see VesselContact). Gated by settings.vesselStrikeCooldown.
         readonly Dictionary<Transform, float> _lastStrikeTime = new();
 
@@ -146,7 +146,7 @@ namespace CosmicShore.Gameplay
             rb = GetComponent<Rigidbody>();
             rb.useGravity = false;
             rb.mass = settings != null ? settings.ballMass : 3f;
-            rb.linearDamping = 0f; // ZERO passive drag — the ball coasts at constant speed (see ServerFixedUpdate)
+            rb.linearDamping = 0f; // ZERO passive drag - the ball coasts at constant speed (see ServerFixedUpdate)
             // Keep angular damping low so spin imparted by off-center strikes persists (momentum
             // conserved), and lift the default 7 rad/s angular-velocity clamp so a hard off-center
             // smack reads as a real tumble on the faceted icosphere.
@@ -165,7 +165,7 @@ namespace CosmicShore.Gameplay
                 staticFriction = 0f
             };
 
-            // The ball NEVER physically collides with prisms — it passes through ALL of them and
+            // The ball NEVER physically collides with prisms - it passes through ALL of them and
             // resolves them by domain via a per-tick spatial scan (ProcessPrismInteractions), which is
             // reliable along the WHOLE path (prism colliders are LOD-culled away from vessels, and a
             // fast ball tunnels past tiny colliders). Excluding the TrailBlocks layer on the ball's own
@@ -190,6 +190,44 @@ namespace CosmicShore.Gameplay
             transform.localScale = _baseScale * Mathf.Max(0.01f, factor);
         }
 
+        /// <summary>
+        /// Dress a visual-only ghost of this ball for the goal replay: same icosphere mesh, same
+        /// shared material with the CURRENT property-block tint (frozen at the goal moment - the
+        /// scorer's domain color), same world scale, and a matching motion trail. No collider, no
+        /// networking - <see cref="AstroLeagueGoalReplay"/> animates the ghost's transform locally.
+        /// </summary>
+        public void DressReplayGhost(MeshFilter ghostMesh, MeshRenderer ghostRenderer, TrailRenderer ghostTrail)
+        {
+            if (ghostMesh != null && meshFilter != null)
+            {
+                ghostMesh.sharedMesh = meshFilter.sharedMesh;
+                ghostMesh.transform.localScale = transform.localScale;
+            }
+
+            if (ghostRenderer != null && ballRenderer != null)
+            {
+                ghostRenderer.sharedMaterial = ballRenderer.sharedMaterial;
+                if (mpb != null) ghostRenderer.SetPropertyBlock(mpb);
+                ghostRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                ghostRenderer.receiveShadows = false;
+            }
+
+            if (ghostTrail != null && trail != null)
+            {
+                ghostTrail.time = 0.35f;
+                ghostTrail.startWidth = trail.startWidth;
+                ghostTrail.endWidth = trail.endWidth;
+                ghostTrail.numCapVertices = trail.numCapVertices;
+                ghostTrail.sharedMaterial = trail.sharedMaterial;
+                ghostTrail.startColor = trail.startColor;
+                ghostTrail.endColor = trail.endColor;
+                ghostTrail.minVertexDistance = trail.minVertexDistance;
+                ghostTrail.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                ghostTrail.receiveShadows = false;
+                ghostTrail.generateLightingData = false;
+            }
+        }
+
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
@@ -201,7 +239,7 @@ namespace CosmicShore.Gameplay
             }
             else
             {
-                // Non-server peers never simulate the ball — kinematic, replication-driven.
+                // Non-server peers never simulate the ball - kinematic, replication-driven.
                 rb.collisionDetectionMode = CollisionDetectionMode.ContinuousSpeculative;
                 rb.isKinematic = true;
                 transform.position = n_Position.Value;
@@ -226,7 +264,7 @@ namespace CosmicShore.Gameplay
             mpb = new MaterialPropertyBlock();
 
             // Swap the authored Sphere mesh for a medium-poly faceted icosphere so the ball's
-            // rotation is legible as it travels — each flat facet catches the fresnel rim
+            // rotation is legible as it travels - each flat facet catches the fresnel rim
             // differently, making the spin readable instead of a uniform glowing ring. Mesh radius
             // matches the SphereCollider, so the visual hull tracks the physics hull at every
             // intensity scale (BallWorldRadius reads lossyScale).
@@ -404,7 +442,7 @@ namespace CosmicShore.Gameplay
                 if (rb.linearVelocity.sqrMagnitude > settings.maxSpeed * settings.maxSpeed)
                     rb.linearVelocity = rb.linearVelocity.normalized * settings.maxSpeed;
 
-                // First-class per-tick prism resolution — shield own / eat+slow opposing / unshield
+                // First-class per-tick prism resolution - shield own / eat+slow opposing / unshield
                 // shielded. The server applies the eaten-mass speed drag here, before replication.
                 ProcessPrismInteractions();
 
@@ -448,7 +486,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Server-side velocity estimation for transform-driven vessels. One pass over the
-        /// roster per physics tick (≤ a handful of vessels) — no per-collision allocation.
+        /// roster per physics tick (≤ a handful of vessels) - no per-collision allocation.
         /// </summary>
         void SampleVesselVelocities()
         {
@@ -486,7 +524,7 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
-            // Anything else is an arena wall — the ball can't collide with prisms at all (excludeLayers
+            // Anything else is an arena wall - the ball can't collide with prisms at all (excludeLayers
             // in Awake), and resolves them by a per-tick spatial scan instead. Perfectly elastic carom:
             // the solver already reflected at bounciness 1, no decay.
             HandleWallBounce(contactPoint, contactNormal);
@@ -494,8 +532,8 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Server: a vessel is STILL overlapping the ball (physics hull). Re-runs VesselContact every
-        /// physics tick so the ball is depenetrated out of the hull continuously — the ball can never
-        /// clip even if the pilot keeps driving into it — and a re-hit lands as soon as the per-vessel
+        /// physics tick so the ball is depenetrated out of the hull continuously - the ball can never
+        /// clip even if the pilot keeps driving into it - and a re-hit lands as soon as the per-vessel
         /// strike cooldown allows (dribbling). Prisms/walls do nothing on Stay (the ball passes through
         /// prisms and bounces cleanly off walls on Enter).
         /// </summary>
@@ -511,11 +549,11 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// FIRST-CLASS per-tick prism resolution — the ball is treated like a player. Every physics
+        /// FIRST-CLASS per-tick prism resolution - the ball is treated like a player. Every physics
         /// tick (on EVERY peer) it sweeps `PrismSpatialIndex.QuerySphere` over the segment it just
         /// travelled and resolves the prisms it overlaps by domain, INDEPENDENT of physics colliders
         /// (the ball excludes the TrailBlocks layer entirely, and prism colliders are LOD-culled away
-        /// from vessels — neither is reliable for a fast ball). This is what makes the ball
+        /// from vessels - neither is reliable for a fast ball). This is what makes the ball
         /// clear/shield trail consistently along its WHOLE path, not just near vessels:
         ///   • SAME color (own trail)              → SHIELD it (if not already). No speed change.
         ///   • OPPOSING + UNSHIELDED (or a NEUTRAL → EAT it: destroy + slow the ball by the prism's
@@ -523,6 +561,8 @@ namespace CosmicShore.Gameplay
         ///                                             The ONLY thing that slows the ball.
         ///   • OPPOSING + SHIELDED                 → UNSHIELD it and LEAVE it standing this visit (the
         ///                                             shield absorbs the pass); a later visit eats it.
+        ///   • SUPER-SHIELDED (any domain)         → UNTOUCHED. Invulnerable structure (the arena's
+        ///                                             edge lining) - never popped, never eaten, no cost.
         /// Prisms are per-peer GameObjects, so each peer resolves its OWN local copies (position-
         /// deterministic). Only the SERVER applies the speed drag; clients get the slowed velocity via
         /// replication and just mirror the shield/destroy on their copies.
@@ -562,10 +602,16 @@ namespace CosmicShore.Gameplay
                 {
                     var prism = _prismQueryBuffer[i];
                     if (prism == null || prism.destroyed) continue;
+
+                    // SUPER-shielded prisms are fully invulnerable structure (Prism.Damage/Consume
+                    // no-op on them - e.g. the arena's edge lining): the ball passes through
+                    // untouched regardless of domain - never unshielded, never eaten, no speed cost.
+                    if (prism.prismProperties.IsSuperShielded) continue;
+
                     _scanInRange.Add(prism);
 
                     bool same = !ballNeutral && prism.Domain == ballDomain;
-                    bool shielded = prism.prismProperties.IsShielded || prism.prismProperties.IsSuperShielded;
+                    bool shielded = prism.prismProperties.IsShielded;
 
                     if (same)
                     {
@@ -579,7 +625,7 @@ namespace CosmicShore.Gameplay
                     }
                     else
                     {
-                        // Opposing + unshielded: eat it — unless we just popped its shield THIS visit.
+                        // Opposing + unshielded: eat it - unless we just popped its shield THIS visit.
                         if (_shieldPoppedThisVisit.Contains(prism)) continue;
                         eatenMass += Mathf.Max(0f, prism.CurrentVolume);
                         prism.Damage(ballVel, ballDomain, BallAttackerName);
@@ -614,7 +660,7 @@ namespace CosmicShore.Gameplay
         /// Server: a wall bounce. Perfectly elastic (the reflection stands, no decay); just bounce juice.
         /// Intensity is the PERPENDICULAR (into-wall) speed, NOT the full speed: a frictionless ball
         /// skimming tangentially along a curved wall pokes through a sliver every tick, so full-speed
-        /// intensity fired the camera shake + haptic CONTINUOUSLY as the ball orbited the wall — a
+        /// intensity fired the camera shake + haptic CONTINUOUSLY as the ball orbited the wall - a
         /// persistent ~25 Hz jitter. A glancing skim now reads as ~0; only a real perpendicular slam
         /// shakes, and a cooldown stops even repeated hard bounces from spamming.
         /// </summary>
@@ -623,7 +669,7 @@ namespace CosmicShore.Gameplay
             float perpSpeed = Mathf.Abs(Vector3.Dot(_velocityBeforePhysics, contactNormal));
             float intensity = Mathf.Clamp01(perpSpeed / settings.maxSpeed);
 
-            if (intensity < settings.wallJuiceMinIntensity) return; // glancing skim — no juice
+            if (intensity < settings.wallJuiceMinIntensity) return; // glancing skim - no juice
             if (Time.time - _lastWallJuiceTime < settings.wallJuiceCooldown) return;
             _lastWallJuiceTime = Time.time;
 
@@ -643,7 +689,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Server: keep the ball inside the court by reflecting its velocity off the boundary walls and
-        /// clamping its position (no collider, no decay) — flat polytope faces preserve the wall-parallel
+        /// clamping its position (no collider, no decay) - flat polytope faces preserve the wall-parallel
         /// component (the bank), curved shapes reflect radially. Runs once per server tick after the
         /// speed cap. Fires the shared wall juice at the contact point on a real bounce.
         /// </summary>
@@ -664,7 +710,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Trigger-collider vessel path (Enter). Serpent and Sparrow have NO non-trigger hull collider,
-        /// so the ball never gets an OnCollisionEnter against them — without this they'd pass straight
+        /// so the ball never gets an OnCollisionEnter against them - without this they'd pass straight
         /// through. Every vessel has at least a trigger collider. The per-vessel strike cooldown dedups
         /// the double-fire on ships that have both a hull and a trigger.
         /// </summary>
@@ -698,15 +744,15 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Server: unified vessel↔ball contact (from both collider paths, Enter AND Stay), layered so
         /// the ball can NEVER clip a vessel and ALWAYS bounces off one:
-        ///   1. Anti-clip — ALWAYS depenetrate the ball out of the hull (EjectBallFromVessel only acts
+        ///   1. Anti-clip - ALWAYS depenetrate the ball out of the hull (EjectBallFromVessel only acts
         ///      while overlapping), every contact frame. The hull can't pass through the ball even if
         ///      the pilot keeps driving in, and even for trigger-only ships with no physics depenetration.
-        ///   2. Elastic bounce — on every frame the ball is moving INTO the vessel (approach &lt; 0), it
+        ///   2. Elastic bounce - on every frame the ball is moving INTO the vessel (approach &lt; 0), it
         ///      bounces off (momentum-conserving moving-paddle reflection) + re-colors + spins. This is
         ///      self-limiting (once it bounces away it stops approaching) and self-deduping (a second
         ///      collider path the same frame sees the ball already separating), so a stationary or
         ///      trigger-only ship still cleanly reflects the ball instead of letting it stick.
-        ///   3. Deliberate-strike extras — the arcade pop, vessel recoil (it bounces off too), and
+        ///   3. Deliberate-strike extras - the arcade pop, vessel recoil (it bounces off too), and
         ///      hitstop are rate-limited per vessel by vesselStrikeCooldown (and gated on minimumHitSpeed)
         ///      so a fast committed hit pops + recoils while continuous dribble contact doesn't spam RPCs.
         /// </summary>
@@ -715,11 +761,11 @@ namespace CosmicShore.Gameplay
             var root = vessel.Transform;
             if (root == null) return;
 
-            EjectBallFromVessel(root); // anti-clip every frame — independent of the bounce/strike gating
+            EjectBallFromVessel(root); // anti-clip every frame - independent of the bounce/strike gating
 
             Vector3 strikerVelocity = ResolveStrikerVelocity(vessel);
 
-            // Only respond when the ball is actually moving INTO the vessel — avoids re-launching a ball
+            // Only respond when the ball is actually moving INTO the vessel - avoids re-launching a ball
             // that has already bounced away (self-limiting) and double-bouncing on the second collider path.
             Vector3 n = (transform.position - contactPoint).normalized;
             if (Vector3.Dot(rb.linearVelocity - strikerVelocity, n) >= 0f) return;
@@ -733,7 +779,7 @@ namespace CosmicShore.Gameplay
             VesselStrike(vessel, contactPoint, strikerVelocity, strikerSpeed, n, deliberate);
         }
 
-        /// <summary>The ball's world-space radius (collider radius × max lossy scale) — tracks intensity scaling.</summary>
+        /// <summary>The ball's world-space radius (collider radius × max lossy scale) - tracks intensity scaling.</summary>
         public float BallWorldRadius()
         {
             var s = transform.lossyScale;
@@ -747,7 +793,7 @@ namespace CosmicShore.Gameplay
         /// Guarantees the ball never overlaps the striking vessel's hull: if the ball center is
         /// closer than (ball radius + vesselClearRadius) to the vessel root, push it straight out
         /// to that distance. With the ≥1x launch speed this keeps the ball ahead of the vessel,
-        /// so the vessel mesh can't clip through it — including the trigger-only ships that have
+        /// so the vessel mesh can't clip through it - including the trigger-only ships that have
         /// no physical depenetration barrier. Server position is republished immediately so peers
         /// see the ejected position without waiting for the next tick.
         /// </summary>
@@ -769,7 +815,7 @@ namespace CosmicShore.Gameplay
         /// are transform-driven, so the hull is treated as an infinite-mass moving paddle: in the
         /// vessel's frame the approaching component of the ball's velocity reflects about the contact
         /// normal (restitution = ballBounciness); transforming back adds the vessel velocity, so a fast
-        /// vessel imparts up to ~2× its speed (the kick) and the ball cleanly bounces off — a stationary
+        /// vessel imparts up to ~2× its speed (the kick) and the ball cleanly bounces off - a stationary
         /// vessel still reflects the ball's own velocity. The off-center contact injects torque → spin,
         /// and the ball re-colors to the striker's domain. Always runs on an approaching contact (the
         /// caller guarantees that). When <paramref name="deliberate"/> (fast hit, off cooldown) it also
@@ -777,7 +823,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         void VesselStrike(IVessel vessel, Vector3 contactPoint, Vector3 strikerVelocity, float strikerSpeed, Vector3 n, bool deliberate)
         {
-            // Re-color the ball to the striker's domain — every bounce counts as the last hit. The
+            // Re-color the ball to the striker's domain - every bounce counts as the last hit. The
             // per-tick prism scan picks up the new same/opposing relationship automatically next tick.
             Domains strikerDomain = vessel.VesselStatus != null ? vessel.VesselStatus.Domain : Domains.Blue;
             if (n_LastHitDomain.Value != strikerDomain)
@@ -817,7 +863,7 @@ namespace CosmicShore.Gameplay
             float finalSpeed = desiredVelocity.magnitude;
             float intensity = Mathf.Clamp01(finalSpeed / settings.maxSpeed);
             // Prisms near the strike are handled by the per-tick ProcessPrismInteractions scan, which
-            // already sees the freshly-set domain — no separate strike-time prism pass needed.
+            // already sees the freshly-set domain - no separate strike-time prism pass needed.
 
             if (!deliberate) return;
 
@@ -862,7 +908,7 @@ namespace CosmicShore.Gameplay
             if (settings == null || ballRenderer == null) return;
 
             // Non-server peers free-spin the kinematic replica from the replicated angular velocity
-            // (the server rigidbody owns the real rotation, interpolated natively). Purely cosmetic —
+            // (the server rigidbody owns the real rotation, interpolated natively). Purely cosmetic -
             // no gameplay reads client rotation, so any dead-reckoned drift is invisible.
             if (IsSpawned && !IsServer && !n_Frozen.Value && !n_Hidden.Value)
             {
@@ -946,14 +992,15 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        /// <summary>Base hue for a claimed (non-neutral) ball — matches the arena's per-domain palette.</summary>
+        /// <summary>Base hue for a claimed (non-neutral) ball - matches the arena's per-domain palette
+        /// (all three domains config-driven from <see cref="AstroLeagueSettingsSO"/>).</summary>
         Color DomainTint(Domains d)
         {
             switch (d)
             {
                 case Domains.Jade: return settings.jadeGoalColor;
                 case Domains.Ruby: return settings.rubyGoalColor;
-                case Domains.Gold: return new Color(1f, 0.82f, 0.2f, 1f);
+                case Domains.Gold: return settings.goldGoalColor;
                 default: return primaryColor;
             }
         }
@@ -971,7 +1018,7 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Every peer: lightweight wall-bounce feedback (perfectly elastic — no prism interaction,
+        /// Every peer: lightweight wall-bounce feedback (perfectly elastic - no prism interaction,
         /// no decay). Half the prism-impact burst/shake so a wall ricochet reads as a clean carom.
         /// </summary>
         [ClientRpc]
@@ -1030,7 +1077,7 @@ namespace CosmicShore.Gameplay
             }
             finally
             {
-                // Restore to known constants, not captured values — a concurrent
+                // Restore to known constants, not captured values - a concurrent
                 // celebration slow-mo must not be clobbered by a stale capture.
                 Time.timeScale = 1f;
                 Time.fixedDeltaTime = baseFixedDelta;
@@ -1042,7 +1089,7 @@ namespace CosmicShore.Gameplay
 
         #region Match control API (server-only, driven by AstroLeagueController)
 
-        /// <summary>Server: detonate at the goal mouth — burst + shake on every peer, then hide until kickoff.</summary>
+        /// <summary>Server: detonate at the goal mouth - burst + shake on every peer, then hide until kickoff.</summary>
         public void DetonateServer()
         {
             if (!IsServer) return;
@@ -1071,7 +1118,7 @@ namespace CosmicShore.Gameplay
             {
                 rb.isKinematic = false;
                 rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
-                // Start the kickoff coast from rest — no stale linear/angular velocity carried
+                // Start the kickoff coast from rest - no stale linear/angular velocity carried
                 // across the freeze (a kinematic body preserves its velocity fields).
                 rb.linearVelocity = Vector3.zero;
                 rb.angularVelocity = Vector3.zero;
@@ -1112,7 +1159,7 @@ namespace CosmicShore.Gameplay
             spawnPosition = worldPosition;
         }
 
-        /// <summary>Server: respawn at the spawn position — visible, frozen, zero velocity, NEUTRAL color again.</summary>
+        /// <summary>Server: respawn at the spawn position - visible, frozen, zero velocity, NEUTRAL color again.</summary>
         public void ResetToCenterServer()
         {
             if (!IsServer) return;

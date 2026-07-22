@@ -7,7 +7,7 @@ namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// Assembles a ranked <see cref="ScoreResult"/> list from raw per-player rows.
-    /// Centralizes the sort + rank so every mode — and both the server and each client —
+    /// Centralizes the sort + rank so every mode - and both the server and each client -
     /// produces an identically ordered list. Each mode supplies its own per-player
     /// <see cref="Row.ScoreText"/>/<see cref="Row.Secondary"/> strings, keeping per-mode
     /// formatting with the mode (SRP). See Docs/ScoringSystem/REFACTOR.md R10.
@@ -35,7 +35,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Orders rows (golf rules: ascending = better; otherwise descending) and assigns
-        /// 1-based ranks. OrderBy is stable, so equal scores keep their input order — which
+        /// 1-based ranks. OrderBy is stable, so equal scores keep their input order - which
         /// is how teammates on the same losing domain tie.
         /// </summary>
         public static List<ScoreResult> Build(IReadOnlyList<Row> rows, bool golfRules)
@@ -66,7 +66,7 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Shared mm:ss:cs formatter for finish-time scores — the single copy that replaces
+        /// Shared mm:ss:cs formatter for finish-time scores - the single copy that replaces
         /// the inline duplicates in the per-mode scoreboards (and the reveal).
         /// </summary>
         public static string FormatTime(float seconds)

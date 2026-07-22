@@ -107,12 +107,12 @@ namespace CosmicShore.UI
                         detailTMP.text = episode.description;
                 }
 
-                // A non-zero priceUsd marks the episode as purchasable "support" — its card
+                // A non-zero priceUsd marks the episode as purchasable "support" - its card
                 // button becomes a web-checkout buy button (always interactable). Otherwise the
                 // button keeps its play semantics (gated by availability / cloud unlock).
                 bool isPurchasable = episode.priceUsd > 0f;
 
-                // Amount / ValueText — price (purchasable), completion, or the free-text amount.
+                // Amount / ValueText - price (purchasable), completion, or the free-text amount.
                 var valueTransform = cardGO.transform.Find("Button/ValueText");
                 if (valueTransform != null)
                 {

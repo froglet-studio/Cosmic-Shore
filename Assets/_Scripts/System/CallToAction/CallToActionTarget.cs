@@ -47,7 +47,7 @@ namespace CosmicShore.Core
 
             if (CallToActionSystem.Instance == null)
             {
-                CSDebug.LogWarning($"{nameof(CallToActionTarget)}: CallToActionSystem.Instance is null — skipping registration. GameObject: {gameObject.name}");
+                CSDebug.LogWarning($"{nameof(CallToActionTarget)}: CallToActionSystem.Instance is null - skipping registration. GameObject: {gameObject.name}");
                 return;
             }
 

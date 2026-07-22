@@ -14,12 +14,12 @@ namespace CosmicShore.Utility
     /// <summary>
     /// End-game reveal coordinator. On <c>GameDataSO.OnWinnerCalculated</c> it:
     ///   1. hands the local vessel a random AI cinematic flourish so it keeps flying
-    ///      (loop / drift / spiral) during the reveal — it is NOT halted,
+    ///      (loop / drift / spiral) during the reveal - it is NOT halted,
     ///   2. plays the GameEnd SFX,
     ///   3. reveals the <c>ScoreRevealToast</c> with a randomized win/lose line
     ///      (<see cref="EndGameMessageSetSO"/>) on the GameOverCounter text,
     ///   4. holds for <see cref="revealDuration"/> seconds,
-    ///   5. raises <c>OnShowGameEndScreen</c> — the signal the <c>Scoreboard</c> (and
+    ///   5. raises <c>OnShowGameEndScreen</c> - the signal the <c>Scoreboard</c> (and
     ///      <c>LifeForm</c> ecology cleanup) already listen for.
     ///
     /// Lives on the <c>EndGameStatsPanel</c> object inside <c>EndGameStatsPanel.prefab</c>,
@@ -37,9 +37,9 @@ namespace CosmicShore.Utility
         [SerializeField] EndGameMessageSetSO messageSet;
 
         [Header("Reveal UI (auto-found by name under the canvas if left empty)")]
-        [Tooltip("CanvasGroup on the ScoreRevealToast — faded in to reveal the toast.")]
+        [Tooltip("CanvasGroup on the ScoreRevealToast - faded in to reveal the toast.")]
         [SerializeField] CanvasGroup toastCanvasGroup;
-        [Tooltip("The GameOverCounter text inside the toast — shows the win/lose line.")]
+        [Tooltip("The GameOverCounter text inside the toast - shows the win/lose line.")]
         [SerializeField] TMP_Text gameOverCounterText;
 
         [Header("Timing")]
@@ -114,9 +114,11 @@ namespace CosmicShore.Utility
 
         IEnumerator RunReveal()
         {
-            // Fail OPEN: whatever happens during the flourish, InvokeShowGameEndScreen MUST
-            // be reached — a throw here would kill the coroutine, the scoreboard would never
-            // appear, and the player would be stranded in the game scene with no way home.
+            // The reveal is cosmetic; the OnShowGameEndScreen raise at the end is NOT — it is the
+            // only path to the Scoreboard, and in a tournament the Scoreboard's host-only Continue
+            // is the only way to advance the party. An exception anywhere in the flourish / SFX /
+            // toast (a coroutine dies on its first unhandled throw) must degrade to a skipped
+            // flourish — never to a finished game with no end-game screen.
             try
             {
                 bool didWin = DidLocalPlayerWin();
@@ -178,8 +180,8 @@ namespace CosmicShore.Utility
 
         /// <summary>
         /// Freezes every vessel EXCEPT the local player's (which flies the flourish), so the
-        /// field is still behind the reveal. Uses IsStationary + SetPause — both reset every
-        /// round (vessels are respawned on scene reload; SetPause is cleared by StartPlayer) —
+        /// field is still behind the reveal. Uses IsStationary + SetPause - both reset every
+        /// round (vessels are respawned on scene reload; SetPause is cleared by StartPlayer) -
         /// so nothing leaks into the next tournament game.
         /// </summary>
         void HaltOtherVessels()
@@ -208,8 +210,8 @@ namespace CosmicShore.Utility
             var status = player?.Vessel?.VesselStatus;
             if (status == null) return;
 
-            // Pause human input so it doesn't fight the AI flourish. Use SetPause — NOT
-            // InputController.enabled = false — because the InputController lives on the
+            // Pause human input so it doesn't fight the AI flourish. Use SetPause - NOT
+            // InputController.enabled = false - because the InputController lives on the
             // PERSISTENT Player object: a disabled component is never re-enabled, so the
             // vessel would stay uncontrollable in the next tournament round. SetPause(true)
             // is the proven menu-autopilot pattern and is reset every round by

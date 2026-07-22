@@ -1,0 +1,18 @@
+15695415ce7889a4f9b99291cc0d79a6 Assets/_Prefabs/UI Elements/ProfileIconButton.prefab
+2d8c7d12373dc3049ba919b74e17f4cb Assets/_Prefabs/UI Elements/Panels/OptionsMenuContent.prefab
+358e11ad6d037a24998bd295142ff242 Assets/_Prefabs/UI Elements/In Game/EndGameStatsPanel.prefab
+35cd70bd7d1798e4db9246fd457b281f Assets/_Prefabs/UI Elements/Main Menu Screens/OnlinePlayerEntry.prefab
+55bd66c06974e224994d5a98bc84d4b4 Assets/_Prefabs/UI Elements/Main Menu Screens/VesselGridPrefab.prefab
+684f37fbb851ac543b0649d877b8cd5d Assets/_Prefabs/UI Elements/Main Menu Screens/QuestLevelPrefab.prefab
+8fbb0cb07812f4948bf9b879bbbdaf62 Assets/_Prefabs/UI Elements/Main Menu Screens/QuestItemPrefab.prefab
+9b3e72c1f8a04d7d8b6c5e4a1c2d3e4f Assets/_Prefabs/UI Elements/In Game/DomainScorePanel.prefab
+b11bf89b1ccfe234e811c025b88bc21e Assets/_Prefabs/UI Elements/In Game/PlayerScoreEntry.prefab
+ba84a682b21a0a742974715e5d7432b5 Assets/_Prefabs/UI Elements/In Game/PlayerScoreCard.prefab
+c1572db06ad4244469ad3f25d86940b8 Assets/_Prefabs/UI Elements/VesselHUD/SquirrelHUDVariant.prefab
+cd63e74244ceca240a435734402e496f Assets/_Prefabs/MaelStrom/MaelStromPlayerScoreCardContainer.prefab
+dcf433f2806495a44931709616d958d9 Assets/_Prefabs/MaelStrom/MaelstromSummaryScoreCardContainer.prefab
+e261e06b3ac934846b48f7122bb7f961 Assets/_Prefabs/UI Elements/Panels/Stats_Row_UI.prefab
+e5bce11a0462ceb468817b6050ccb94b Assets/_Prefabs/UI Elements/Panels/Goodies.prefab
+e6a20a73c884a6a4db213f545e1b0b73 Assets/_Prefabs/UI Elements/In Game/EndgameVesselDisplay.prefab
+e881a908f3acf27409422f3c9bb414eb Assets/_Prefabs/MaelStrom/MaelstormRoundScoreCardBG.prefab
+f93b2dd52fce2754b88f30d5938ad9d6 Assets/_Prefabs/UI Elements/Main Menu Screens/QuestDescriptionPrefab.prefab

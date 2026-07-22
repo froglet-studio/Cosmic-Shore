@@ -211,6 +211,95 @@ flowchart LR
 Every arrow is implemented: spawn (seeding), reproduction (births from feeds),
 starvation, and predation all run through the same `Fauna` base.
 
+**Vessel predation & husbandry — the Crystal Joust (Squirrel).** Every living lifeform's
+elemental crystal is its **heart**: `Crystal.SetEmbeddedIn(lifeform)` (fauna wire it in
+`LightFauna`/`Boid` after `LifeFormCrystal.EnsureElementalCrystal`; flora in
+`LifeForm.Initialize`) enables the heart's SphereCollider so a vessel can JOUST it. The
+embedded heart is never a pickup — skim-collect and skimmer vacuum both gate on
+`Crystal.IsEmbedded` — and the vessel-side chain routes to the container's
+`VesselLifeformCrystalEffects` instead of the collect chain. The Squirrel's
+`VesselWitherLifeformByCrystalEffectSO`:
+- **Speed gate (both branches)**: the joust lands only while the vessel moves FASTER
+  than the lifeform (`ILifeFormEntity.CurrentSpeed` + authored margin). Rooted flora sit
+  at 0 — trivially joustable; fast fauna must genuinely be overtaken.
+- **BASE ability (ungated)**: an **opposing-domain** lifeform is destroyed —
+  `ILifeFormEntity.Jousted` routes fauna through the sealed `Predated→Die` (wither +
+  crystal drop, spawn immunity respected) and flora through `LifeForm.Die` (spindle
+  wither + crystal drop). An ACTIVE force; mass conserved, continuity honored.
+- **Space level-5 'Shepherd' upgrade**: an **own-domain** lifeform is NOURISHED instead —
+  `ILifeFormEntity.LevelUp()` grows body + heart one level (below the unlock an ally
+  joust does nothing; an ally is never killed).
+Collider cost: **+1 active SphereCollider per live lifeform heart** (fauna bounded by
+`MaxLivePopulation`; flora by the profile's spawn counts).
+
+**The lifeform elemental contract (element × level).** Mirroring the vessel contract,
+every lifeform answers `ILifeFormEntity.Element` and `.Level` (1..`Fauna.MaxLifeformLevel`
+= 5): **one base prefab, 20 data-defined variants** (4 elements × 5 levels) instead of a
+prefab per element. The element is data on `FaunaConfigurationSO.Element` — at
+`AssignLineage` the heart is provisioned from `ElementalCrystalSet` for that element
+(`LifeFormCrystal.EnsureElementalCrystal(owner, element)` replaces a disagreeing authored
+crystal; `None` keeps the legacy per-variant-prefab path). Level scales the creature via
+config (`InitialLevel`, `BodyScalePerLevel`, `CrystalScalePerLevel`, `LevelGrowSeconds`):
+spawns arrive AT size; in-world level-ups **grow** over `LevelGrowSeconds` (continuity —
+never a pop) with `NotifyBodyPrismsMoved` keeping the spatial index honest, and the heart
+grows a step per level so a higher-level creature drops a **bigger** elemental powerup on
+death (mass rewarded, still conserved). Flora answer the contract at fixed level 1 until
+flora leveling lands.
+
+**Variant expression (`FaunaVariantTuning` on the config).** The full diff between the
+authored Mass/Space/Time tadpole prefab variants was hoisted into config so one base
+prefab can express all of it as data (sentinels keep the prefab's authored value):
+body scale (0.4/0.7/0.4) · body PRISM target scale (Mass/Time author 0.8×0.8×7 tail
+prisms, Space keeps the spindle default) · spindle body material · starvation seconds
+(90/30/30) · cohesion radius (50/20/20) · behavior tick (1.5/3/3) · graze radius
+(45/15/15) · goal weight (3/0.3/0.3) · speed band (10-15/10-15/15-20) · forager flag
+(on/off/off) · FMOD loop event + attenuation (Mass Tadpole 0-200 / silent / Time
+Tadpole). Applied by `Fauna.ApplyVariantTuning` (base: scale/prism-scale/material/
+starvation/audio) + `Boid.ApplyVariantTuning` (flocking numbers) at `AssignLineage`,
+before the level curve seeds. Population-level knobs (`numberOfBoids`, `spawnRadius` on
+the drone BoidManager population prefabs) stay on that separate system; the spawner path
+already owns them via `PopulationSize`/`MaxLivePopulation`.
+
+**Flora variant expression (`FloraConfigurationSO.Element` + `FloraVariantTuning`).**
+Same move for flora, captured from the real Charge/Mass/Space/Time GyroidFlora diff —
+the per-element identity is largely the PRISM: leaf prism size (9×3.4×1.5 / 7×4.5×3.5 /
+20×1×1 needles / 9×3.4×1.5) · grow period (0.5 / 0.3 / 0.8 / **0.15** — Time grows
+fastest) · shield period (**1** — Charge ships shielded leaves / 0 / 0 / 0) · live-prism
+budget `maxTotalSpawnedObjects` (1000 / **1500** / **800** / 1000) · plant radius
+fraction · crystal element. `CellLifeSpawnerBase.SpawnFlora` now takes the config and
+applies element + tuning BEFORE `Initialize` (leaf size and the crystal lookup are
+consumed there); `LifeForm.ApplyVariantTuning` (shield cadence) → `Flora` (leaf/tempo/
+radius) → `AssembledFlora` (prism budget) layer the fields where they live.
+
+**Level → crystal size.** `CrystalScalePerLevel` makes the level curve monotone in the
+heart: level 1 = authored size, level 5 = ×(CrystalScalePerLevel)⁴ (≈2.07× at the 1.2
+default) — the level-5 creature always carries, and drops, the largest crystal. Flora
+level the same way (`FloraConfigurationSO.InitialLevel` + `LeafScalePerLevel` /
+`CrystalScalePerLevel`, applied via `LifeForm.ApplyLevel` before Initialize).
+
+**Unification (SHIPPED) — one base prefab per species, variants are config.** The
+per-element prefab variants were retired: `TadPoleFauna.prefab` (formerly
+MassTadPoleFauna) and `GyroidFlora.prefab` (formerly MassGyroidFlora) are the single
+base prefabs; Space/Time tadpoles, Charge/Space/Time gyroids, and the unused
+TimeTadpolePopulation were deleted with every reference migrated (the variant prefabs
+were literal copies sharing fileIDs, so guid swaps were reference-safe). The canonical
+per-element configs live in `Assets/_SO_Assets/Lifeforms/` (Tadpole Fauna
+Charge/Mass/Space/Time + Gyroid Flora Charge/Mass/Space/Time — Charge tadpole is NEW
+and untuned, authored from the Space baseline); the existing Cell Config assets carry
+their element's Variant block explicitly. Legacy note: the drone-population prefabs
+(BoidManager path) now all spawn the base tadpole - per-element identity there awaits
+that system's own config pass.
+
+**Lifeform Matrix toy (the tuning bench).** `Toy_LifeformMatrix` (in the freestyle
+toybox): fly through it → a station per species blooms in; fly a species → its variant
+matrix (4 element columns × level rows {1, 3, 5} — the extremes and middle of the 4×5
+contract; station spheres tinted per element and sized by level); fly a variant → that
+exact lifeform spawns live into the containing cell through the canonical spawn paths
+on a runtime clone of its config (assets never mutated; spawns are ordinary food-web
+citizens). Files: `LifeformMatrixToyDefinitionSO`, `LifeformMatrixToy` (+ station).
+Collider impact: transient trigger spheres only (species count + ≤12), Menu freestyle
+only, torn down with the matrix.
+
 ---
 
 ## 4. Part-by-part analysis
@@ -447,7 +536,7 @@ foragers, which is counterproductive to that scene's trail-cleanup perf goal.
   shortcut). Predation-immune newborns are skipped so a shark doesn't camp a fresh
   birth. With no herbivores alive, the predator falls back to the shared
   phase-based density goal (roams plausibly, then starves). Herbivores still swarm
-  opposing-mass density.
+  opposing-mass density. **v3 layers intentional consumption on top — see §7.3.**
 - **Spawn gating (by diet):** `RandomLifeSpawner` seeds a herbivore species when
   `OpposingVolume >= FaunaFoodFloor × 16` (prism prey, in volume) and a predator species when
   `GetLiveHerbivoreCount() >= FaunaFoodFloor` (real food, not the old prism-mass
@@ -539,6 +628,147 @@ cleared.
 > 5. **Net perf.** Fauna cost CPU (per-tick `OverlapSphere` per creature). Test
 >    whether trail savings beat fauna cost: start modest and profile before/after;
 >    scale `PopulationSize` only if net-positive.
+
+### 7.3 Intentional consumption & the mouth-driven predator (v3)
+
+Consumption is no longer an instant vacuum inside a radius — both diets now *act
+out* their feeding, using the systems that already exist (the suction implosion,
+the danger prisms, `Cell.LiveFauna`). No new colliders; tunables live on
+`LightFaunaDataSO` (brittlestar/shark) and the `Boid` prefab (tadpole).
+
+**Herbivores (brittlestar `LightFauna`, tadpole `Boid` forager) — approach →
+face → suction → watch:**
+- The behavior tick only **selects** the nearest edible prism (same edibility
+  rules as before, factored into `IsEdibleForHerbivore` / `IsEdibleForForager`);
+  the creature then steers toward it.
+- Feeding starts only once inside the **minimum feeding distance**
+  (`consumeRadius` / `trailBlockInteractionRadius`) — the creature never has to
+  be right on the prisms. There it brakes to a hover and **turns to face the
+  meal**; the suction begins only within `feedingFacingAngle`.
+- One bite = the faced prism plus edible prisms within `feedingClusterRadius`
+  (capped by `maxClusterBites`), all imploding toward the creature — a
+  deliberate mouthful instead of a radius-wide vacuum, at comparable throughput.
+- The creature **holds facing for `consumeHoldSeconds`** (default 2s = the
+  suction shader's travel time) so it visibly watches its meal all the way in.
+
+**Predators (shark `LightFauna`) — pursue → strike at the mouth → devour:**
+- The tick-selected nearest prey is held as a live reference; per-frame homing
+  (`pursuitAgility`) tracks the fleeing target between ticks and
+  `pursuitSpeedMultiplier` makes the chase read as a chase. Separation from
+  environment prisms (flora/trails) still applies each tick — the shark
+  maneuvers around obstacles — but **prey bodies never repel the predator**.
+- The **mouth** is a lightweight transform at the danger-prism centroid, created
+  at Initialize. **Attack range = `attackRange`** (flat world units; default 15
+  ≈ the shark's danger-prism length — a tuning starting point, not a derived
+  value).
+- Every frame the predator checks the cell's small `LiveFauna` registry: any
+  live, non-immune herbivore within attack range of the mouth is devoured. Pure
+  math, no physics, no contact — the kill is deterministic, and the danger
+  prisms are **never disturbed by prey being eaten** while staying fully
+  vulnerable to vessels/projectiles (they're ordinary body HealthPrisms; all
+  fauna diets already exclude fauna bodies).
+- Devoured prey **breaks apart**: `Predated(name, mouth)` routes the sealed
+  crystal-dropping `Die`, then the body prisms suction (implode) **into the
+  mouth**, nearest-first, a few per frame — the suction sink follows the
+  swimming shark. Residual structure (spindles) evaporates via `CheckForLife`;
+  starvation deaths keep the classic extremities-first wither.
+
+**v3.1 — territorial predators + herbivore breathing room** (sharks were too
+effective; herbivores got eaten before they could graze). Three levers, all
+O(1) per tick:
+- **Tiger-shark territoriality** (`LightFaunaDataSO.territoryRadius` /
+  `territoryAnchorDistance`; 0 = legacy cell-wide hunting): each predator rolls
+  a fixed **den** point at spawn (random direction × anchor distance from the
+  cell centre — spreads the 2-3 concurrent sharks apart with zero
+  coordination). Prey selection keys off distance to the DEN and ignores prey
+  outside the territory; an empty patch means **patrolling home**, not roaming
+  the shared density goal — so any herbivore group faces at most one predator
+  and distant groups feed unmolested. Same single registry loop as before.
+  The per-frame mouth check is unchanged — a shark still eats anything that
+  swims into its jaws.
+- **Centre focus** (`FaunaConfigurationSO.CenterFocusBias`, per-deployment,
+  default 0): lerps the herbivore/forager roaming goal toward the cell centre
+  so the species lingers on the central canopy (the gyroids around the
+  nucleus). Edibility untouched — a nucleus claim stays protected. Blob
+  brittlestar + tadpole run 0.35; **leave 0 on far-ranging deployments** (the
+  Skim Race cleanup swarm must reach the whole track).
+- **Herbivore spawn-point ring** (`SpawnProfileSO.HerbivoreSpawnPointCount` /
+  `HerbivoreSpawnRadius`; 0-1 = legacy densest-mass spawn): successive
+  herbivore waves rotate between N points spaced evenly on a circle around the
+  cell centre (equidistant from each other and the centre), so each new group
+  gets its own feeding ground and a head start before a territorial predator's
+  patch reaches it. Computed once per 30s wave; predators keep the
+  densest-mass spawn. Blob runs 3 points at radius 400.
+
+**v3.2 — polar predator ring + feeding-consistency fixes** (from in-editor
+observation of v3.1):
+- **Predator spawn ring** (`SpawnProfileSO.PredatorSpawnPointCount` /
+  `PredatorSpawnRadius`; 0 = legacy): a VERTICAL circle starting at +Y,
+  orthogonal to the equatorial herbivore ring — 2 points sit exactly on the
+  poles. While active, at most **one predator spawns per interval**
+  (alternating points), and each predator's **den lands in the hemisphere it
+  spawned in** (the random den direction is mirrored if it points into the
+  opposite half — one dot product at spawn). Blob runs 2 points at radius 600.
+- **Boid dash oscillation (BUG, fixed):** the forager dash was a binary 10×
+  whenever the goal was beyond the interaction radius, re-checked only once
+  per 1.5s behavior tick — at dash speed a tadpole covered ~200+ units per
+  tick, overshot the goal, reversed at 10×, and oscillated rapidly across it
+  without ever settling into feeding range (observed as "back-and-forth
+  between two distant points, never engaging mass"). Now **arrival-capped**:
+  dash speed ≤ distance/tick, decelerating smoothly on approach (one sqrt per
+  tick). Tadpole feeding distance (`trailBlockInteractionRadius`) also tuned
+  45 → 20 on the prefab.
+- **Brittlestar "swims past its food" (fixed):** flora are HealthPrisms, and
+  ALL HealthPrisms within `separationRadius` (70) repelled the brittlestar —
+  including edible ones — while feeding required closing to `consumeRadius`
+  (40); approach geometry decided whether it ever ate. Now **edible prisms
+  attract and never repel** (one edibility check per prism decides both
+  roles; non-edible mass — own canopy, nucleus claim, fauna bodies — still
+  separates). Plus **mouthful chaining**: when a suction hold ends, one small
+  index query re-targets the nearest edible still inside feeding range, so a
+  creature parked at a buildup eats mouthful after mouthful — it feeds more
+  than it swims — resuming roaming only when the local patch is clear.
+
+**v3.3 — predator hunt pulses** (sharks still dominated even split into
+hemispheres): predators now hunt in **periodic windows**
+(`LightFaunaDataSO.huntIntervalSeconds` / `huntDurationSeconds`, default
+20/10 → alternating 10s rest / 10s hunt; interval 0 = always hunting,
+legacy). Outside the window the predator carries **no prey target** — no
+targeting, no pursuit boost, no per-frame homing, and the mouth is closed
+(`TryDevourPreyAtMouth` skipped), so even prey swimming straight into its
+jaws survives until the next window; it just cruises its territory. The
+window can close mid-chase (breaks off immediately). Implementation is pure
+clock math — one `Mathf.Repeat` per check, no state, no coroutine — and each
+predator's cycle starts with the REST stretch at spawn, layered on the
+prey's spawn immunity. Starvation still applies across rest windows, so a
+predator that can't convert its hunt windows into kills thins out — the
+duty cycle caps predation *rate*, the food web still owns population.
+**Presentation:** `SharkJawDriver` (on the prefab's `Shark_model`) blends the
+two mouth MultiAimConstraint weights 0 (closed, FBX pose) ↔ 1 (open, aimed at
+`MawTarget`) from `LightFauna.IsActivelyHunting` — the mouth yawns open in
+0.6s entering a hunt window, eases shut in 1.8s on rest/wither. The rig
+already evaluated every frame, so the only added cost is one float compare
+per frame while settled.
+
+**Two consume models coexist (merge reconciliation, read before touching either
+`LightFauna` or `Boid`).** bleeding-edge landed a frame-paced *grazing queue*
+(`maxConsumesPerFrame` / `_pendingMeals` / `EatPrism` / `DrainPendingMeals`)
+that spreads a consume/damage cascade across frames so a dense cluster melts
+instead of popping. The intentional-feeding model above (approach → face →
+bounded mouthful → hold) is already frame-bounded by `maxClusterBites` + the
+facing hold, so the two would double-drive consumption if both ran. Resolution:
+- **`LightFauna` (brittlestar + shark)** uses intentional feeding / mouth-devour
+  ONLY — the grazing queue is intentionally absent here (a brittlestar eats
+  mouthfuls; a shark devours at the mouth). Do not re-add `_pendingMeals` to
+  `LightFauna`.
+- **`Boid` (tadpole forager)** uses intentional feeding for the FORAGER path;
+  the paced queue survives ONLY on the non-forager **drone** combat path (its
+  `Damage` cascade can hit many prisms at once and still wants pacing).
+- Shared bleeding-edge wins kept on both: `HealthPrism.ResolveOwnerFauna`
+  stamping (no per-neighbor `GetComponentInParent`), cached attribution
+  strings, the elemental-contract crystal + `FaunaVariantTuning` (which is why
+  the tadpole's `trailBlockInteractionRadius = 20` lives in the Blob tadpole
+  config's `Variant`, not just the prefab).
 
 ---
 
@@ -788,6 +1018,30 @@ Modeled steady state: ~1200 prisms, ~13 fauna → predicted **~70 fps** (was ~5)
 the gyroids **TAMED** (held ~950–1200, not stripped). `MaxLivePopulation` does
 double duty here: the §6.2 taming dial *and* the per-frame `OverlapSphere` budget.
 
+### Consume pacing (shipped — Boid + LightFauna)
+
+`ReproductionCooldownSeconds` throttles the BIRTH side of a population burst; the
+same idea applied to the CONSUMPTION side is the `_pendingMeals` queue +
+`maxConsumesPerFrame` (serialized, default 8, ≤0 = legacy unpaced burst) on **Boid**
+and **LightFauna**. The behavior tick still *finds* every edible prism in range —
+it just *enqueues* them, and a per-frame drain executes the consumes, re-checking
+the scan's edibility predicate at drain time (destroyed / shielded / domain-stolen
+/ owner-died can all change inside the pacing window; uneaten queued meals on the
+eater's death stay in the world — mass conserved; only ACTUAL consumes spend the
+frame budget, so stale entries never throttle real grazing). **This is pacing,
+NOT a grazing cap**: nothing decided is ever lost — Boid's slow tick (~1.5 s)
+drains its whole queue between ticks, and LightFauna (which can tick every few
+frames at Frenzy cadence) REBUILDS its queue from the live scan each tick, so
+anything undrained is simply re-found. Grazing throughput — the food web's
+population regulator — is unchanged.
+The win is that each consume's death cascade (implosion VFX, pool churn, spindle
+teardown, cell volume updates) lands spread across frames instead of 15+ in one
+(the measured 13.8 ms LightFauna tick): a dense cluster visibly *melts* instead of
+popping in a single frame — which also reads better under the continuity law. Do
+not mistake the queue for a consumption limiter, and do not "fix" a slow-looking
+graze by raising `maxConsumesPerFrame` before checking whether prey density simply
+dropped.
+
 ### The closed loop (agent-runnable, no Unity)
 
 There is no Unity or C# toolchain in the autonomy container, so perf is tuned
@@ -877,3 +1131,48 @@ cell centre now hold the nucleus claim (fauna can't graze the core), and exterio
 gyroid fringes are grazed domain-blind. If a biome's equilibrium shifts too far
 toward stripped exteriors, the levers are the same as §6.2 (per-species caps,
 reproduction knobs) — never decay.
+
+## 14. Super-shielded structure binds volume-only (July 2026, Astro League edge lining)
+
+Astro League lines its court edges with **super-shielded (fully invulnerable) neutral
+prisms** — permanent structure no active force can consume (`Prism.Damage`/`Consume`
+no-op on super-shielded mass; ways to break it may come later). That surfaced a signal
+question the fauna-body precedent already answered: mass that **cannot be contested**
+must not drive the signals that are *about* contestable mass.
+
+**The rule (in `PrismSpatialIndex.ComputeEnvironmentMass`, one classification for both
+streams):** fauna bodies AND super-shielded prisms bind to their cell **VOLUME-ONLY** —
+they feed `Cell.LiveVolume` ("volume is the spine": ALL prisms count, unchanged) but stay
+out of the targeting grids, per-domain counts, `DominantDomain`/nucleus-claim reads and
+the prey-volume signal. Fauna are never led to mass they cannot eat, and a permanent
+neutral lining can never sway node control. Super-shield state is applied post-bloom, so
+`PrismSpatialIndex.UpdateShieldState` re-files the cell classification on every
+engage/disengage transition (a popped super shield returns the prism to ordinary
+environment mass).
+
+**The phase ladder keeps its pure measure — biomes budget for structure in config.**
+Rather than carving structure out of `LiveVolume` (which would fork the spine's measure),
+the biome that lays a known structural budget raises its `PhaseThresholds` volume fields
+by exactly that budget. Astro League: lining = `edgePrismCount 240 × vol(2.5·2.5·10) =
+15000`, so `Astro League Cell Config` runs Restless 15400/15300 and Frenzy 16500/16200
+(gameplay headroom above the floor identical to the pre-lining 400/300 · 1500/1200).
+Count backstops are untouched — volume-only mass never enters `LiveBlockCount`.
+
+- **Mass is conserved — unchanged.** The lining blooms in via the standard pooled spawn
+  and is only ever removed by the animated `Damage` teardown (arena rebuild); no decay.
+- **No domain asymmetry.** The lining is `Domains.Blue` (the neutral-entity sentinel) and
+  excluded from control reads — it cannot tint fauna spawns.
+- **The super-shield state IS the stellated octahedron.**
+  `PrismStateManager.ActivateSuperShield` engages `PrismStellatedOctahedronShield` (the
+  Stella Octangula, the Skim Race track look) with the OPAQUE team material — the
+  transparent super-shield material hid the stellation — and `DeactivateShields`
+  disengages it, so the state machine stays the single reversible shield path
+  (`PrismKinds` remarks updated). The component is added lazily on first engage; only
+  super-shielded prisms pay its mesh cost.
+- **Collider budget.** A super-shielded prism keeps its authored primitive `BoxCollider`
+  trigger (the stellation is a look-only change; no convex `MeshCollider`, no convex cook),
+  so it stays collider-LOD-reclaimable like any other prism — the earlier always-on-MeshCollider
+  budget line is gone. The `AstroLeagueSettingsSO.edgePrismCount` cap (240) still bounds the
+  lining as a spawn count, not a collider-cost floor; zero new physics queries (the ball resolves
+  prisms via `PrismSpatialIndex.QuerySphere` and skips super-shielded entirely). Collision is at
+  authored box size for now; shape-precise (stellated) collision is the planned three-LOD follow-up.

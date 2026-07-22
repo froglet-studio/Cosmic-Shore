@@ -5,17 +5,17 @@ namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// Builds a lightweight, display-only 3D model of a vessel by reading the mesh data directly off
-    /// the ship <b>prefab asset</b> — it never instantiates the gameplay prefab, so none of its
+    /// the ship <b>prefab asset</b> - it never instantiates the gameplay prefab, so none of its
     /// NetworkObject / VesselStatus / controller components ever Awake (no side effects, no collider
     /// LOD registration, no RequireComponent destroy-order problems).
     ///
     /// It extracts only the vessel's <b>hull</b>: the skimmer sphere (a builtin primitive scaled 15–60×),
-    /// trails, jets and VFX are skipped — otherwise the giant skimmer sphere dominates
+    /// trails, jets and VFX are skipped - otherwise the giant skimmer sphere dominates
     /// <see cref="NormalizeToRadius"/> and crushes the real hull to an invisible speck (the bug where
-    /// only Rhino — the one vessel whose skimmer has no builtin sphere — rendered). Inactive / disabled
+    /// only Rhino - the one vessel whose skimmer has no builtin sphere - rendered). Inactive / disabled
     /// renderers are skipped too (e.g. a hidden duplicate skinned mesh authored at a different scale).
     ///
-    /// Skinned meshes are shown static in their authored (bind) pose — fine for a recognisable ship
+    /// Skinned meshes are shown static in their authored (bind) pose - fine for a recognisable ship
     /// silhouette. Every hull mesh is painted with one opaque, self-lit preview material (the ship's own
     /// hull material is a transparent, runtime-theme-driven shader that renders dim/invisible at rest),
     /// so the model reads as a solid, domain-tinted silhouette regardless of scene lighting. The result
@@ -23,7 +23,7 @@ namespace CosmicShore.Gameplay
     /// </summary>
     public static class VesselModelBuilder
     {
-        // Builtin primitive mesh names — the skimmer bodies are huge builtin Spheres; drop them so
+        // Builtin primitive mesh names - the skimmer bodies are huge builtin Spheres; drop them so
         // they don't pollute the bounds. Name-based so it's independent of the GameObject's name.
         static readonly HashSet<string> PrimitiveMeshNames = new()
         { "Sphere", "Cube", "Cylinder", "Capsule", "Plane", "Quad" };
@@ -74,7 +74,7 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Whether this renderer is part of the ship hull we want to display (vs. skimmer/trail/vfx,
         /// or an inactive/disabled authoring duplicate). Everything is evaluated against the prefab
-        /// asset, so activeness is read via <c>activeSelf</c> up the chain — <c>activeInHierarchy</c>
+        /// asset, so activeness is read via <c>activeSelf</c> up the chain - <c>activeInHierarchy</c>
         /// is always false for a prefab that isn't in a loaded scene.
         /// </summary>
         static bool IsHullRenderer(Transform prefabRoot, Transform t, Mesh mesh, Renderer renderer)

@@ -26,7 +26,7 @@ namespace CosmicShore.Gameplay
     ///
     /// When an RPC arrives but objects haven't replicated yet, pairs are queued.
     /// OnPlayerNetworkSpawnedUlong + OnVesselNetworkSpawned SOAP events trigger
-    /// re-processing of the queue — zero WaitUntil polling.
+    /// re-processing of the queue - zero WaitUntil polling.
     /// </summary>
     public class ClientPlayerVesselInitializer : NetworkBehaviour
     {
@@ -65,7 +65,7 @@ namespace CosmicShore.Gameplay
             // Client-pull bootstrap (unbreakable join): ask the host for the current
             // roster from inside our own OnNetworkSpawn. Because this object now
             // provably exists on the client, the host's reply ClientRpc cannot be
-            // dropped for "target not spawned" — the root cause of the legacy
+            // dropped for "target not spawned" - the root cause of the legacy
             // one-shot-push hang. A bounded retry re-asks if the request or reply is
             // lost, so convergence never depends on catching a transient SOAP event.
             _localPairResolved = false;
@@ -184,7 +184,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Direct server-side vessel replacement (called by MenuServerPlayerVesselInitializer on host).
-        /// The player already has a vessel — this wires the new one in place.
+        /// The player already has a vessel - this wires the new one in place.
         /// </summary>
         public void ReplaceVesselForPlayer(IPlayer player, IVessel newVessel)
         {
@@ -308,6 +308,21 @@ namespace CosmicShore.Gameplay
 
             if (_pendingPairs.Count == 0 && _signalClientReadyWhenDone)
             {
+                // The batch only counts as complete once the LOCAL pair actually
+                // resolved. The client-pull roster request fires from our own
+                // OnNetworkSpawn, so the host's reply can legitimately predate our
+                // vessel spawn (preSpawnDelay + spawn + postSpawnDelay on the host)
+                // - that roster contains every pair EXCEPT ours. Declaring ready on
+                // it would raise OnClientReady with no local vessel (the party
+                // accept flow completes early) and, worse, cancel the
+                // RosterPullRetryLoop - so a lost follow-up push would strand this
+                // client vessel-less with no self-heal left. Most likely for the
+                // 2nd+ joiner into an existing party (Docs/PartySystem/BUGS.md B5).
+                // Keep the flag armed: the retry loop re-asks, and the next
+                // full-roster reply (or the host's push) completes the batch.
+                if (gameData.LocalPlayer?.Vessel == null)
+                    return;
+
                 _signalClientReadyWhenDone = false;
                 _localPairResolved = true;
                 _rosterRetryCts?.Cancel();
@@ -350,7 +365,7 @@ namespace CosmicShore.Gameplay
         /// (ActionExecutorRegistry.AudioSystem, executor AudioSystems, GameDataSO
         /// mirrors, …) is null on non-server peers. The server/host injects at
         /// instantiation time (ServerPlayerVesselInitializer.SpawnVesselForPlayer),
-        /// so only client-side instances need it here — before vessel.Initialize()
+        /// so only client-side instances need it here - before vessel.Initialize()
         /// so executors see their dependencies during their own Initialize.
         /// </summary>
         void InjectVesselDependencies(IVessel vessel)
@@ -363,7 +378,7 @@ namespace CosmicShore.Gameplay
 
         void InitializePair(IPlayer player, IVessel vessel)
         {
-            Debug.Log($"<color=#00FF00>[FLOW-6] [ClientVesselInit] InitializePair — Player={player.Name}, IsLocalUser={player.IsLocalUser}, IsAI={player.IsInitializedAsAI}</color>");
+            Debug.Log($"<color=#00FF00>[FLOW-6] [ClientVesselInit] InitializePair - Player={player.Name}, IsLocalUser={player.IsLocalUser}, IsAI={player.IsInitializedAsAI}</color>");
             InjectVesselDependencies(vessel);
             player.InitializeForMultiplayerMode(vessel);
             vessel.Initialize(player);
@@ -387,7 +402,7 @@ namespace CosmicShore.Gameplay
 
             if (player.IsLocalUser)
             {
-                // Local pair resolved — stop the client-pull retry loop and clear the splash.
+                // Local pair resolved - stop the client-pull retry loop and clear the splash.
                 _localPairResolved = true;
                 _rosterRetryCts?.Cancel();
                 Debug.Log("<color=#FFFFFF><b>[FLOW-6] [ClientVesselInit] Raising OnClientReady (local player initialized)</b></color>");
@@ -398,7 +413,7 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Re-initializes a player-vessel pair during a vessel swap.
         /// Unlike <see cref="InitializePair"/>, the player is already in
-        /// <see cref="GameDataSO.Players"/> and has domain/name set —
+        /// <see cref="GameDataSO.Players"/> and has domain/name set -
         /// only the vessel reference needs to change.
         /// </summary>
         void ReInitializePair(IPlayer player, IVessel newVessel)
@@ -406,7 +421,7 @@ namespace CosmicShore.Gameplay
             InjectVesselDependencies(newVessel);
             player.ChangeVessel(newVessel);
 
-            // Keep the swapped-in vessel on the player's CHOSEN domain — a vessel swap must never
+            // Keep the swapped-in vessel on the player's CHOSEN domain - a vessel swap must never
             // repaint the hull back to the Jade menu default, or desync the domain-changer toy
             // (which reads the live Player.Domain). The new vessel paints its domain during
             // Initialize/SetShipProperties below, reading status.Domain (= Player.Domain), which
@@ -421,7 +436,7 @@ namespace CosmicShore.Gameplay
 
             // Signal the (re)initialized pair exactly like InitializePair does. The new vessel's
             // VesselHUDController was just initialized HIDDEN by VesselController.Initialize, and the
-            // swap path never re-enters freestyle, so nothing would re-show it — leaving the swapped
+            // swap path never re-enters freestyle, so nothing would re-show it - leaving the swapped
             // ship with no working HUD. MenuMiniGameHUD listens for this and re-shows the local HUD
             // while in freestyle; MainMenuController re-activates non-local swapped vessels.
             gameData.InvokePlayerPairInitialized(player.PlayerNetId);

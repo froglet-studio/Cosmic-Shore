@@ -257,7 +257,7 @@ namespace CosmicShore.Utility
             // ── Footer ───────────────────────────────────────────────────────
             var footerRect = GUILayoutUtility.GetRect(0, 18, GUILayout.ExpandWidth(true));
             EditorGUI.DrawRect(footerRect, FooterBg);
-            GUI.Label(footerRect, "Froglet Inc. — Cosmic Shore", _mutedLabel);
+            GUI.Label(footerRect, "Froglet Inc. - Cosmic Shore", _mutedLabel);
         }
 
         void DrawTabBar()
@@ -598,11 +598,11 @@ namespace CosmicShore.Utility
             EditorGUILayout.BeginHorizontal();
             GUILayout.Space(Pad);
             EditorGUILayout.LabelField(
-                "1. Paste the report back to the prompter — it's the falsifiable correctness contract.\n" +
+                "1. Paste the report back to the prompter - it's the falsifiable correctness contract.\n" +
                 "2. The geometric benchmark grades single-query accuracy. The temporal sim runs the " +
                 "flora/fauna/phase loop over time and checks whether outer-shell mass stays bounded " +
                 "(fauna reach it) or accumulates forever (the shipped ±500m grid is blind to it).\n" +
-                "3. Runs are deterministic per seed — a textual diff surfaces real changes.",
+                "3. Runs are deterministic per seed - a textual diff surfaces real changes.",
                 EditorStyles.wordWrappedMiniLabel);
             EditorGUILayout.EndHorizontal();
         }
@@ -670,7 +670,7 @@ namespace CosmicShore.Utility
 
             var go = new GameObject("DensityPartitionBenchmarkRunner");
             go.AddComponent(runnerType);
-            // Also add the temporal ecology sim runner if it compiled — same
+            // Also add the temporal ecology sim runner if it compiled - same
             // GameObject, so the Density tab finds both in one scene.
             var simType = ResolveTemporalSimType();
             if (simType != null) go.AddComponent(simType);
@@ -698,7 +698,7 @@ namespace CosmicShore.Utility
         {
             var sb = new System.Text.StringBuilder();
             sb.AppendLine($"[FrogletToolbox] Cannot find '{DensityRunnerTypeName}'.");
-            sb.AppendLine("Diagnostic — searching every loaded assembly for *DensityPartition* types:");
+            sb.AppendLine("Diagnostic - searching every loaded assembly for *DensityPartition* types:");
 
             int hits = 0;
             foreach (var asm in System.AppDomain.CurrentDomain.GetAssemblies())
@@ -735,7 +735,7 @@ namespace CosmicShore.Utility
             {
                 sb.AppendLine();
                 sb.AppendLine($"Found {hits} DensityPartition* type(s) but expected name '{DensityRunnerTypeName}' wasn't among them.");
-                sb.AppendLine("This means the runner is loaded under a different namespace — paste the diagnostic above and I'll fix it.");
+                sb.AppendLine("This means the runner is loaded under a different namespace - paste the diagnostic above and I'll fix it.");
             }
 
             Debug.LogError(sb.ToString());
@@ -1207,7 +1207,7 @@ namespace CosmicShore.Utility
                 : new Color(0.85f, 0.83f, 0.92f);
             _contentBoldStyle.normal.textColor = subColor;
             _contentBoldStyle.fontSize = 12;
-            GUI.Label(labelRect, "— " + title, _contentBoldStyle);
+            GUI.Label(labelRect, "- " + title, _contentBoldStyle);
             GUILayout.Space(4);
         }
 

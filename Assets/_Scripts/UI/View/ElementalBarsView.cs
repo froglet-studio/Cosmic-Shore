@@ -49,7 +49,7 @@ namespace CosmicShore.UI
             public Sprite normalLabelSprite;
         }
 
-        [Header("Config (shared spec — single source of truth)")]
+        [Header("Config (shared spec - single source of truth)")]
         [Tooltip("Colours, petal sprites and juice timings. Loaded from Resources/ElementalBarsConfig when empty.")]
         [SerializeField] private ElementalBarsConfigSO config;
 
@@ -101,7 +101,22 @@ namespace CosmicShore.UI
         public void Build()
         {
             if (_built) return;
-            if (bars == null || bars.Length == 0) return;
+
+            // The four-element display is a REQUIRED fleet-wide system: a view with no
+            // authored bindings self-populates the standard four flowers instead of
+            // silently building nothing (petal roots auto-create; sprites come from
+            // Resources; placement from the shared config). Authored bindings (label
+            // icons, sprite overrides) take precedence when present.
+            if (bars == null || bars.Length == 0)
+            {
+                bars = new[]
+                {
+                    new ElementBarBinding { element = Element.Charge },
+                    new ElementBarBinding { element = Element.Mass },
+                    new ElementBarBinding { element = Element.Space },
+                    new ElementBarBinding { element = Element.Time },
+                };
+            }
 
             if (!config)
                 config = Resources.Load<ElementalBarsConfigSO>(configResourcePath);
@@ -113,6 +128,19 @@ namespace CosmicShore.UI
             }
 
             _rootRT = (RectTransform)transform;
+
+            // Fleet-wide standard placement: the flowers are a required, uniform display on
+            // every vessel — the shared config stamps the container's rect so no vessel's
+            // HUD authoring can drift the layout (per-vessel uniqueness lives in the
+            // ElementalAbilityMapSO parameters/upgrades, never in the display).
+            if (config.enforceStandardPlacement)
+            {
+                _rootRT.anchorMin        = config.standardAnchorMin;
+                _rootRT.anchorMax        = config.standardAnchorMax;
+                _rootRT.pivot            = config.standardPivot;
+                _rootRT.anchoredPosition = config.standardAnchoredPosition;
+                _rootRT.sizeDelta        = config.standardSize;
+            }
 
             int count = bars.Length;
             _currentLevels       = new int[count];
@@ -171,6 +199,7 @@ namespace CosmicShore.UI
             }
 
             var petals = new Image[PetalCount];
+            int runtimeCreated = 0;
             for (int p = 0; p < PetalCount; p++)
             {
                 // Reuse a petal authored in the prefab ("Petal{p}") if present, else create one.
@@ -181,10 +210,19 @@ namespace CosmicShore.UI
                     var go = new GameObject($"Petal{p}", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
                     go.transform.SetParent(root, false);
                     img = go.GetComponent<Image>();
+                    runtimeCreated++;
                 }
                 ConfigurePetal(img, sprite, p);
                 petals[p] = img;
             }
+
+            // Authored-in-prefab is the norm (Tools > Cosmic Shore > Wire Elemental Petal Bars, or
+            // the bake-all variant). Runtime creation is a fallback so the fleet-required display
+            // can never silently ship missing - but it should be loud, not invisible.
+            if (runtimeCreated > 0)
+                Debug.LogWarning($"[ElementalBarsView] Created {runtimeCreated} petal(s) for '{bar.element}' at " +
+                                 "RUNTIME. Author them into the prefab instead: Tools > Cosmic Shore > " +
+                                 "Bake Elemental Petal Bars Into All Vessel HUDs.", this);
             return petals;
         }
 
@@ -205,7 +243,7 @@ namespace CosmicShore.UI
             rt.localRotation = Quaternion.Euler(0f, 0f, -ElementalBarsConfigSO.PetalSpacing * petalIndex);
 
             img.sprite = sprite;
-            img.raycastTarget = false;     // decorative — never block touches
+            img.raycastTarget = false;     // decorative - never block touches
             img.preserveAspect = true;
         }
 
@@ -213,6 +251,9 @@ namespace CosmicShore.UI
         {
             if (bar.petalRoot) return bar.petalRoot;
 
+            Debug.LogWarning($"[ElementalBarsView] Auto-creating the '{bar.element}' flower container at " +
+                             "RUNTIME - no petalRoot is authored in the prefab. Run Tools > Cosmic Shore > " +
+                             "Bake Elemental Petal Bars Into All Vessel HUDs to author it.", this);
             var go = new GameObject($"{bar.element}_Flower", typeof(RectTransform));
             var rt = (RectTransform)go.transform;
             rt.SetParent(transform, false);
@@ -333,7 +374,7 @@ namespace CosmicShore.UI
                 tweens[p]?.Kill();
                 var rt = img.rectTransform;
 
-                // Buff pops scale; debuff shakes position — different transform channels. If one
+                // Buff pops scale; debuff shakes position - different transform channels. If one
                 // interrupts the other mid-flight, the killed tween leaves its channel dirty (scale
                 // stuck > 1, or an off-centre shake offset) and the flower looks mis-arranged. Snap
                 // both channels back to rest first so the arrangement is always clean before animating.
@@ -506,7 +547,7 @@ namespace CosmicShore.UI
         }
 
         // Kill in-flight tweens and snap everything to its rest pose. Because Build() is guarded by
-        // _built, a disable/re-enable cycle (e.g. a pooled or toggled HUD) won't rebuild — so we leave
+        // _built, a disable/re-enable cycle (e.g. a pooled or toggled HUD) won't rebuild - so we leave
         // the petals at the correct colour/scale and labels at rest rather than mid-tween.
         void OnDisable()
         {

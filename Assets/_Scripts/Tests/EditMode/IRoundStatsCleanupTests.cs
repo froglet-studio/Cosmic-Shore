@@ -6,12 +6,12 @@ using CosmicShore.Data;
 namespace CosmicShore.Tests
 {
     /// <summary>
-    /// IRoundStats.Cleanup Tests — Validates the stat reset mechanism.
+    /// IRoundStats.Cleanup Tests - Validates the stat reset mechanism.
     ///
     /// WHY THIS MATTERS:
     /// IRoundStats.Cleanup() is called between rounds and on replay. It zeroes out
     /// all 30+ stat properties. If a new property is added to IRoundStats but not
-    /// added to Cleanup(), that stat will carry over between rounds — score from
+    /// added to Cleanup(), that stat will carry over between rounds - score from
     /// round 1 bleeds into round 2, abilities show wrong active time, etc.
     /// This is one of the most common bugs in the stats system.
     /// </summary>
@@ -20,7 +20,7 @@ namespace CosmicShore.Tests
     {
         /// <summary>
         /// Concrete implementation of IRoundStats for testing Cleanup().
-        /// No Netcode dependency — just plain properties.
+        /// No Netcode dependency - just plain properties.
         /// </summary>
         class TestRoundStats : IRoundStats
         {
@@ -216,7 +216,7 @@ namespace CosmicShore.Tests
         [Test]
         public void Cleanup_PreservesNameAndDomain()
         {
-            // Cleanup should NOT reset identity fields — those persist between rounds.
+            // Cleanup should NOT reset identity fields - those persist between rounds.
             _stats.Cleanup();
 
             Assert.AreEqual("TestPlayer", _stats.Name,

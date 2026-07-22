@@ -12,7 +12,7 @@ namespace CosmicShore.Gameplay
     /// representative player's <c>GoalsScored</c>, aggregated by domain like Astro
     /// League goals). The turn ends when an active domain's brood sum reaches
     /// <see cref="GameDataSO.GoalTargetCount"/> (default 3, authored via
-    /// Tools &gt; Cosmic Shore &gt; End Game Conditions) — a race to N waves.
+    /// Tools &gt; Cosmic Shore &gt; End Game Conditions) - a race to N waves.
     /// </summary>
     [CreateAssetMenu(menuName = "ScriptableObjects/Scoring Rules/NucleusRush", fileName = "NucleusRushScoringRule")]
     public class NucleusRushScoringRuleSO : ScoringRuleSO

@@ -10,7 +10,7 @@ using CosmicShore.Gameplay;
 namespace CosmicShore.Tests
 {
     /// <summary>
-    /// GameDataSO Tests — Validates the central game state container.
+    /// GameDataSO Tests - Validates the central game state container.
     ///
     /// WHY THIS MATTERS:
     /// GameDataSO is the single most important runtime data object. It connects
@@ -144,7 +144,7 @@ namespace CosmicShore.Tests
             // RequestedAIBackfillCount is a pre-launch config value that must survive
             // ResetRuntimeData (called during scene loading) so AI opponents spawn correctly.
             Assert.AreEqual(2, _gameData.RequestedAIBackfillCount,
-                "RequestedAIBackfillCount should NOT be reset by ResetRuntimeData — it is a config value.");
+                "RequestedAIBackfillCount should NOT be reset by ResetRuntimeData - it is a config value.");
         }
 
         [Test]

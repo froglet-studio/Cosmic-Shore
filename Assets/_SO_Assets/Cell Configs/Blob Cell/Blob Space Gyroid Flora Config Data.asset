@@ -12,9 +12,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a32a297a7606432885f4d3e1f83bea9a, type: 3}
   m_Name: Blob Space Gyroid Flora Config Data
   m_EditorClassIdentifier: 
-  FloraPrefab: {fileID: 8186157953239024492, guid: 64c1c3612f071b946a3f70e8a65496db,
+  FloraPrefab: {fileID: 8186157953239024492, guid: a84d160ac0bcaf94da22c5368e4d3962,
     type: 3}
   SpawnProbability: 1
   InitialSpawnCount: 1
   OverrideDefaultPlantPeriod: 0
   NewPlantPeriod: 9999999
+  Element: 3
+  Variant:
+    Enabled: 1
+    LeafSize: {x: 20, y: 1, z: 1}
+    GrowPeriod: 0.8
+    ShieldPeriod: 0
+    MaxTotalSpawnedObjects: 800
+    PlantRadiusCellFraction: 0.2
+  InitialLevel: 1
+  LeafScalePerLevel: 1.15
+  CrystalScalePerLevel: 1.2

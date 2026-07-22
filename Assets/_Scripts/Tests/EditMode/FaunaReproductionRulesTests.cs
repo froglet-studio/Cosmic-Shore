@@ -5,7 +5,7 @@ using CosmicShore.Utility;
 namespace CosmicShore.Tests
 {
     /// <summary>
-    /// Tests for <see cref="FaunaReproductionRules"/> — the pure gating behind the
+    /// Tests for <see cref="FaunaReproductionRules"/> - the pure gating behind the
     /// prey-linked population pipeline (Docs/ECOSYSTEM.md §6): reproduction converts
     /// feeds into offspring (the population driver), and the periodic spawner only
     /// seeds a species back up to its floor (bootstrap + extinction recovery).
@@ -46,7 +46,7 @@ namespace CosmicShore.Tests
         [Test]
         public void ShouldBirth_AboveFeedThreshold_True()
         {
-            // Feeds carry over while the cooldown blocks — exceeding the threshold is fine.
+            // Feeds carry over while the cooldown blocks - exceeding the threshold is fine.
             Assert.IsTrue(FaunaReproductionRules.ShouldBirth(25, 10, 999f, 0f, 5, 0));
         }
 
@@ -115,7 +115,7 @@ namespace CosmicShore.Tests
         [Test]
         public void SeedSpawnCount_AboveFloor_SpawnsNothing()
         {
-            // Reproduction has grown the population past the floor — the seeder stays out.
+            // Reproduction has grown the population past the floor - the seeder stays out.
             Assert.AreEqual(0, FaunaReproductionRules.SeedSpawnCount(48, 25, 0));
         }
 
@@ -150,7 +150,7 @@ namespace CosmicShore.Tests
         public void WaveSpawnCount_PopulatedCell_StillSpawnsFullWave()
         {
             // Unlike the seeder, a live population at/above the floor does NOT
-            // suppress the wave — every tick births a fresh brood.
+            // suppress the wave - every tick births a fresh brood.
             Assert.AreEqual(6, FaunaReproductionRules.WaveSpawnCount(12, 6, 24));
         }
 

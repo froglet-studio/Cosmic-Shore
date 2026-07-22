@@ -49,18 +49,16 @@ namespace CosmicShore.Gameplay
             VesselStatus.Course = courseTransform.forward;
         }
 
+        // Single-stick has no analog throttle: full throttle is implicit, so the target
+        // ignores XDiff / the throttle-scaler multiplier.
+        protected override float ComputeThrottleTarget()
+            => ThrottleScaler * CurrentBoostAmount() + MinimumSpeed;
+
         protected override void MoveShip()
         {
-            float boostAmount = 1f;
-            if (VesselStatus.IsBoosting) // TODO: if we run out of fuel while full speed and straight the vessel data still thinks we are boosting
-                boostAmount = Vessel.VesselStatus.BoostMultiplier;
+            AdvanceSpeed(ComputeThrottleTarget());
 
-            if (VesselStatus.IsChargedBoostDischarging)
-                boostAmount *= VesselStatus.ChargedBoostCharge;
-
-            speed = Mathf.Lerp(speed, ThrottleScaler * boostAmount + MinimumSpeed, LERP_AMOUNT * Time.deltaTime);
-
-            // Scale the output speed only — see VesselTransformer.MoveShip: multiplying
+            // Scale the output speed only - see VesselTransformer.MoveShip: multiplying
             // into the persistent smoothed `speed` field compounds per frame and
             // saturates every sub-1 modifier to a near-stop.
             float effectiveSpeed = speed * throttleMultiplier;

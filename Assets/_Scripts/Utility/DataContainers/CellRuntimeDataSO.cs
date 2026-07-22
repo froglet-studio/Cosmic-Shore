@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Linq;
 using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
 using Obvious.Soap;
@@ -87,7 +86,7 @@ namespace CosmicShore.Utility
 
         /// <summary>
         /// Get crystal for local player.
-        /// Tries local domain, then Blue (the "no team" sentinel — uncommitted crystals),
+        /// Tries local domain, then Blue (the "no team" sentinel - uncommitted crystals),
         /// then first crystal.
         /// </summary>
         public bool TryGetLocalCrystal(out Crystal crystal)
@@ -111,15 +110,22 @@ namespace CosmicShore.Utility
             return false;
         }
 
+        // Plain loops — the LINQ Where allocated a closure + enumerator per call,
+        // and these run in per-frame paths (SnowChanger's reorientation slice calls
+        // TryGetLocalCrystal every frame while a pass is active).
         bool TryGetCrystalByDomain(Domains domain, out Crystal crystal)
         {
             crystal = null;
             if (Crystals == null || Crystals.Count == 0) return false;
 
-            foreach (var c in Crystals.Where(c => c && c.ownDomain == domain))
+            for (int i = 0; i < Crystals.Count; i++)
             {
-                crystal = c;
-                return true;
+                var c = Crystals[i];
+                if (c && c.ownDomain == domain)
+                {
+                    crystal = c;
+                    return true;
+                }
             }
 
             return false;
@@ -130,10 +136,14 @@ namespace CosmicShore.Utility
             crystal = null;
             if (Crystals == null || Crystals.Count == 0) return false;
 
-            foreach (var c in Crystals.Where(c => c && c.Id == crystalId))
+            for (int i = 0; i < Crystals.Count; i++)
             {
-                crystal = c;
-                return true;
+                var c = Crystals[i];
+                if (c && c.Id == crystalId)
+                {
+                    crystal = c;
+                    return true;
+                }
             }
 
             return false;

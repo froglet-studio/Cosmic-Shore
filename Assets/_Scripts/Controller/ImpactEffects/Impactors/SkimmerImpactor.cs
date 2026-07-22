@@ -16,6 +16,13 @@ namespace CosmicShore.Gameplay
         [SerializeField]
         private SkimmerImpactorDataContainerSO skimmerImpactorDataContainer;
 
+        /// <summary>
+        /// Effect container for this skimmer - exposed so the vessel-level confirmed-joust
+        /// dispatch (VesselImpactor.ExecuteJoustImpact) can locate the joust effect config
+        /// wired to this vessel without duplicating the reference.
+        /// </summary>
+        public SkimmerImpactorDataContainerSO EffectContainer => skimmerImpactorDataContainer;
+
         //[Header("Block-Stay effects (tick while skimming)")] [SerializeField]
         //SkimmerPrismEffectSO[] skimmerPrismStayEffectsSO; // TODO -> Add to the container
 
@@ -37,6 +44,29 @@ namespace CosmicShore.Gameplay
         public float SqrSweetSpot;
         //float sigma;
 
+        // Cached trigger sphere so the skim feel can scale by how close a prism passed to the
+        // skimmer centre without a per-impact GetComponent on a dense-trail hot path.
+        SphereCollider _sphereCollider;
+        bool _sphereLookedUp;
+
+        /// <summary>
+        /// World-space radius of the skimmer's trigger sphere. Tracks the runtime SPACE-reach
+        /// resize via lossyScale; falls back to half the scale if no sphere collider is present.
+        /// </summary>
+        public float SphereWorldRadius
+        {
+            get
+            {
+                if (!_sphereLookedUp)
+                {
+                    _sphereLookedUp = true;
+                    TryGetComponent(out _sphereCollider);
+                }
+                float lossy = transform.lossyScale.x;
+                return _sphereCollider != null ? _sphereCollider.radius * lossy : lossy * 0.5f;
+            }
+        }
+
         //float minMaturePrismSqrDistance;
         //Prism minMaturePrism;
         //PrismImpactor minPrismImpactor;
@@ -54,7 +84,8 @@ namespace CosmicShore.Gameplay
             if (!isInitialized)
                 return;
             
-            if (skimmer.AllowVaccumCrystal && other.TryGetComponent<Crystal>(out var crystal))
+            if (skimmer.AllowVaccumCrystal && other.TryGetComponent<Crystal>(out var crystal)
+                && !crystal.IsEmbedded) // a living lifeform's heart is never vacuumed out of its body
             {
                 // NEW -> Vaccum logic transferred from skimmer to crystal, to reduce crystal dependency
                 crystal.Vacuum(transform.position, skimmer.VaccumAmount);
@@ -127,6 +158,11 @@ namespace CosmicShore.Gameplay
             switch (impactee)
             {
                 case VesselImpactor shipImpactor:
+                    // A skimmer never impacts its own vessel. The Rhino's sword capsule
+                    // permanently overlaps its own hull, so without this guard the full
+                    // victim-effect chain ran against the pilot themselves (muting their
+                    // own RightStickAction and spamming impact SFX).
+                    if (ReferenceEquals(shipImpactor.Vessel?.VesselStatus, skimmer.VesselStatus)) return;
                     var evs = skimmerImpactorDataContainer.VesselSkimmerEffects;
                     if (!DoesEffectExist(evs)) return;
                     foreach (var effect in evs)

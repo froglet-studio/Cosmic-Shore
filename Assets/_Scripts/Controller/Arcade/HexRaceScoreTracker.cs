@@ -11,7 +11,7 @@ namespace CosmicShore.Gameplay
     /// <summary>
     /// Handles scoring logic for HexRace (single and multiplayer).
     /// Vessel telemetry (drift, boost, streak, jousts) is owned by the vessel's
-    /// VesselTelemetry subclass — this tracker only reads final values for UGS reporting.
+    /// VesselTelemetry subclass - this tracker only reads final values for UGS reporting.
     /// </summary>
     public class HexRaceScoreTracker : BaseScoreTracker, IStatExposable
     {
@@ -134,10 +134,10 @@ namespace CosmicShore.Gameplay
 
         protected override void CalculateWinnerAndInvokeEvent()
         {
-            // Not used — HandleGameEnd drives the flow
+            // Not used - HandleGameEnd drives the flow
         }
 
-        // Temporary — logs telemetry values for verification.
+        // Temporary - logs telemetry values for verification.
         // Remove once EventDrivenStatsProvider is confirmed working.
         public Dictionary<string, object> GetExposedStats()
         {

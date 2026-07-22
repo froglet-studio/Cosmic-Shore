@@ -23,7 +23,7 @@ namespace CosmicShore.Utility
     /// Containment test: A point is inside the stellation iff it lies in
     /// either constituent tetrahedron. The two tetrahedra's face planes
     /// share the same 4 linear forms (Tet B's planes are the negations of
-    /// Tet A's), so containment reduces to 4 dot products plus min/max —
+    /// Tet A's), so containment reduces to 4 dot products plus min/max -
     /// see <see cref="ContainsPointLocal"/>. Comparable cost to a box
     /// AABB check (3 abs + 3 compares) and cheaper than a convex hull.
     /// </summary>
@@ -71,9 +71,39 @@ namespace CosmicShore.Utility
             return mesh;
         }
 
+        // Settled super-shield meshes shared across prisms, keyed by quantized geometry -
+        // mirrors OctahedronMeshGenerator.GetSharedShieldMesh. Half-extents come from the
+        // authored LOCAL BoxCollider size, so every same-size super-shielded prism (e.g. the
+        // 240-prism Astro League edge lining) resolves to ONE mesh: one convex MeshCollider
+        // cook, and settled stellations batch on the instanced render path. Entries are
+        // Unity-null-checked on fetch so a stale cache rebuilds instead of returning
+        // destroyed meshes.
+        static readonly System.Collections.Generic.Dictionary<(long x, long y, long z, long s), Mesh>
+            s_sharedShieldMeshes = new();
+
+        /// <summary>
+        /// A cache-shared full-size stellation for the given geometry. Callers must NOT
+        /// destroy the returned mesh - the cache owns it for the session.
+        /// </summary>
+        public static Mesh GetSharedShieldMesh(Vector3 halfExtents, float shieldScale = CIRCUMSCRIBING_SCALE)
+        {
+            var key = (x: (long)Mathf.Round(halfExtents.x * 1024f),
+                       y: (long)Mathf.Round(halfExtents.y * 1024f),
+                       z: (long)Mathf.Round(halfExtents.z * 1024f),
+                       s: (long)Mathf.Round(shieldScale * 1024f));
+
+            if (!s_sharedShieldMeshes.TryGetValue(key, out var mesh) || mesh == null)
+            {
+                mesh = Generate(halfExtents, shieldScale);
+                mesh.name = $"StellatedOctahedron_SuperShield_Shared_{key.x}x{key.y}x{key.z}";
+                s_sharedShieldMeshes[key] = mesh;
+            }
+            return mesh;
+        }
+
         /// <summary>
         /// Rewrite an existing mesh in-place. Reuses the mesh's vertex/index
-        /// buffers; cheaper than allocating a new Mesh each frame — use this
+        /// buffers; cheaper than allocating a new Mesh each frame - use this
         /// for lerp/morph animations.
         /// </summary>
         public static void PopulateMesh(Mesh mesh, Vector3 halfExtents, float shieldScale = CIRCUMSCRIBING_SCALE)
@@ -161,7 +191,7 @@ namespace CosmicShore.Utility
 
             mesh.vertices = verts;
             mesh.RecalculateBounds();
-            // Normals stay correct — direction is unchanged by uniform
+            // Normals stay correct - direction is unchanged by uniform
             // per-face scaling from centroid.
         }
 
@@ -230,10 +260,10 @@ namespace CosmicShore.Utility
         ///   inside Tet B:        max(f1,f2,f3,f4) ≤ +1
         ///   inside super-shield: either holds
         ///
-        /// Cost: 4 linear forms + min/max + 2 compares — comparable to a box
+        /// Cost: 4 linear forms + min/max + 2 compares - comparable to a box
         /// AABB and cheaper than a full convex collision check.
         ///
-        /// Precompute the inverses once per prism and reuse — this is the
+        /// Precompute the inverses once per prism and reuse - this is the
         /// fast path for gameplay overlap checks without a MeshCollider.
         /// </summary>
         public static bool ContainsPointLocal(Vector3 localPoint, float invA, float invB, float invC)

@@ -20,7 +20,8 @@ Docs/
 │   ├── TODOS.md                 parking-lot items
 │   ├── INVITE_ENHANCEMENTS.md   planning: in-party invite guard,
 │   │                            panel-gated refresh, party-merge on accept,
-│   │                            SOAP confirm-popup
+│   │                            SOAP confirm-popup, invite chain (member-
+│   │                            sent invites join the member's current party)
 │   ├── UI.md                    party/friends UI surface: component
 │   │                            inventory, invite UX flow, scene wiring
 │   └── MPPM_SESSION_LOG.md      chronological MPPM session journal

@@ -10,7 +10,10 @@ Crystal Capture is a competitive crystal-collection mode for 1-4 players. Teams 
 - **Single GameMode enum**: `GameModes.MultiplayerCrystalCapture = 35`
 - **Always Netcode**: `MultiplayerCrystalCaptureController` extends the multiplayer controller hierarchy. Even solo play runs through Netcode (host is always active from Menu_Main)
 - **Server-authoritative**: Winner determination and final score sync are server-owned
-- **Non-golf scoring**: Higher score = better rank. Score = CrystalsCollected (mapped directly)
+- **Golf-timed scoring** (finish-time change): winning-domain players' `Score` = match finish
+  time (displayed mm:ss:cs); losing players' `Score` = `GolfScoreSentinels` DnfThreshold +
+  team crystals remaining (displayed "N Crystals Left"; individual crystals on the secondary
+  line). Lower = better, like HexRace
 - **Scene reload for replay**: `UseSceneReloadForReplay = true`
 
 ## Class Hierarchy
@@ -178,8 +181,8 @@ TurnMonitor detects end condition → gameData.InvokeGameTurnConditionsMet()
 │   │           ├─ DetermineWinner(): active domain with the highest ScoringMetrics.SumByDomain(gameData, Crystals, …);
 │   │           │   representative WinnerName = best individual contributor on that domain
 │   │           ├─ Map CrystalsCollected → Score for ALL players (individual contribution)
-│   │           ├─ gameData.SortRoundStats(UseGolfRules: false)  — descending
-│   │           ├─ gameData.CalculateDomainStats(UseGolfRules: false)
+│   │           ├─ gameData.SortRoundStats(UseGolfRules: true)   — ascending (golf)
+│   │           ├─ gameData.CalculateDomainStats(UseGolfRules: true)
 │   │           ├─ _finalResultsSent = true
 │   │           └─ SyncFinalScoresSnapshot(winnerName)
 │   │               └─ SyncFinalScores_ClientRpc(names[], scores[], domains[], crystals[], winnerName)
@@ -195,18 +198,32 @@ TurnMonitor detects end condition → gameData.InvokeGameTurnConditionsMet()
 │                   └─ if (_finalResultsSent) return  — suppresses Ready button
 │
 ├─ CrystalCaptureStatsReporter.ReportStats()  [each client, on OnMiniGameEnd]
-│   └─ [Winner only] Reports crystal count + vessel telemetry to UGS
+│   └─ [Winning-domain players] Report finish time + vessel telemetry to UGS
 ```
 
 **Scoring Rules:**
 
-| Player | Score | Rank |
-|---|---|---|
-| Winner (most crystals, e.g., 25) | 25 | 1st (highest) |
-| 2nd place (e.g., 18 crystals) | 18 | 2nd |
-| 3rd place (e.g., 12 crystals) | 12 | 3rd |
+Ranking is **TEAM-major** (matching HexRace/Joust, where the team outcome dominates the
+individual one): domains are placed by their summed crystals (`ScoringRuleSO.ResolvePlacementOrder`
+— the same aggregation that ends the turn and picks `WinnerDomain`), then teammates rank by
+individual crystals (name as the final cross-peer tiebreak). Every winning-domain player ranks
+above every losing-domain player — a losing player who ties/outscores the top winner individually
+still ranks below the winning team (this previously flipped the round winner in team games:
+`Results[0]` sat on the losing domain and clobbered `WinnerDomain` via `SetResults`; the derive is
+now unset-only).
 
-Non-golf rules (`UseGolfRules = false`): Higher score = higher rank. Scores sorted descending.
+| Player (2v2 example) | Score | Rank |
+|---|---|---|
+| Winning domain, best (e.g., 12 crystals) | 12 | 1st |
+| Winning domain, teammate (e.g., 8) | 8 | 2nd |
+| Losing domain, best (e.g., 12) | 12 | 3rd |
+| Losing domain, teammate (e.g., 5) | 5 | 4th |
+
+Golf rules (`UseGolfRules = true`): lower score = better. Winners carry the match finish time
+(`Time.time - gameData.TurnStartTime`, computed server-side in `OnTurnEndedCustom` and
+replicated via the snapshot RPC); losers carry `GolfScoreSentinels.EncodeHexRaceLoserScore(teamRemaining)`
+(the shared time-golf sentinel scheme — the "HexRace" naming is legacy). Individual crystal
+counts still order teammates and fill the scoreboard's secondary line.
 
 ### 8. End Game (Scoreboard)
 
@@ -252,9 +269,9 @@ To swap the end condition mode (e.g., timer-based), replace the turn monitor in 
 | Component | Class | Purpose |
 |---|---|---|
 | In-game HUD | `MultiplayerCrystalCaptureHUD` (extends `MultiplayerHUD`) | Per-player crystal count cards; subscribes to `OnCrystalsCollectedChanged`; refreshes all cards on turn start |
-| Scoreboard | `Scoreboard` (base — per-mode subclass deleted in the scoring refactor; scene-added component, `gameController` wired in inspector) | End-game player ranking; "N Crystals" per card from `CrystalCaptureScoringRuleSO.BuildResults`; sorts descending (highest first) |
+| Scoreboard | `Scoreboard` (base — per-mode subclass deleted in the scoring refactor; scene-added component, `gameController` wired in inspector) | End-game player ranking; "N Crystals" per card from `CrystalCaptureScoringRuleSO.BuildResults`; team-major order (winning domain's players first, then by individual crystals) |
 | End Game | `EndGameSequencer` (shared) | Halts vessels, plays GameEnd SFX, raises `OnShowGameEndScreen` → the `Scoreboard` shows results. No cinematic. |
-| Stats Reporter | `CrystalCaptureStatsReporter` | Reports winner's crystal count + vessel telemetry to UGS (winner only) |
+| Stats Reporter | `CrystalCaptureStatsReporter` | Reports finish time + vessel telemetry to UGS (winning-domain players; `IsFinishTime` gate) |
 
 ## Shared State & NetworkVariables
 
@@ -274,7 +291,7 @@ Note: `MultiplayerCrystalCaptureController` declares **no NetworkVariables**. Al
 ugsStatsManager.ReportCrystalCaptureStats(
     gameMode,
     gameData.SelectedIntensity.Value,
-    (int)localStats.Score  // crystal count
+    (int)localStats.Score  // finish time (seconds) — winners only
 );
 ```
 
@@ -317,7 +334,7 @@ Also reports vessel telemetry via `ugsStatsManager.ReportVesselTelemetry()`.
 
 2. **Domain-aggregated turn end**: The scene wires `NetworkCrystalCollisionTurnMonitor` with `CrystalCollisions` set to the per-domain target. The turn ends as soon as `gameData.ScoringRule.IsObjectiveReached(gameData, out _)` returns true — i.e., when any active domain's summed CrystalsCollected reaches the target. To swap the trigger (e.g., back to a timer), replace the monitor in the scene.
 
-3. **Score = CrystalsCollected (per-player)**: Per-player `Score` still equals individual `CrystalsCollected` so the scoreboard's secondary stat shows individual contribution. The winner banner and end-game attribution use the domain aggregate via `WinnerDomain`.
+3. **Score = finish time / loser sentinel (per-player)**: winning-domain players carry the match time, losers the team-remaining sentinel; the scoreboard's secondary stat reads `CrystalsCollected` directly for individual contribution. The winner banner and end-game attribution use the domain aggregate via `WinnerDomain`. NOTE: UGS `CrystalCaptureStats.HighScores` values recorded before this change were crystal counts and shadow real times until cleared server-side (`UGSStatsManager.GetEvaluatedHighScore`).
 
 4. **HasEndGame=false + SetupNewRound suppression**: Crystal Capture handles end-game through `OnTurnEndedCustom()` → `SyncFinalScores_ClientRpc()`, which calls `InvokeWinnerCalculated()` + `InvokeMiniGameEnd()`. Setting `HasEndGame=false` prevents the base controller's `SyncGameEnd_ClientRpc` from duplicating these calls. Since `HasEndGame=false` causes `ExecuteServerRoundEnd` to call `SetupNewRound()` instead of `ExecuteServerGameEnd()`, Crystal Capture also overrides `SetupNewRound()` to return immediately when `_finalResultsSent=true`.
 

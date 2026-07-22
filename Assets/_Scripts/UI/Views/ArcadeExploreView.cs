@@ -77,6 +77,10 @@ namespace CosmicShore.UI
         public void PopulateGameSelectionList()
         {
             GameCards = new List<GameCard>();
+            // Rebuild the dpad grid from scratch - AddRow calls below would otherwise
+            // append duplicate rows on every repopulate (inventory load, progression
+            // change, favorite toggle), breaking gamepad navigation.
+            ArcadeDPadNav.ResetGrid();
             ArcadeDPadNav.AddRow(new List<Button>());
             ArcadeDPadNav.AddButtonToRow(DailyChallengeCard.GetComponent<Button>(), 0);
 
@@ -95,9 +99,11 @@ namespace CosmicShore.UI
                 }
             }
 
-            // Sort favorited first, then alphabetically
+            // Sort favorited first, then alphabetically. Sort a COPY - sorting
+            // GameList.Games directly mutates the ScriptableObject's serialized list
+            // order at runtime, which any positional consumer of the list would see.
             var filteredGames = RespectInventoryForGameSelection ? GameList.Games.Where(x => CatalogManager.Inventory.ContainsGame(x.DisplayName)).ToList() : GameList.Games;
-            var sortedGames = filteredGames;
+            var sortedGames = new List<SO_ArcadeGame>(filteredGames);
             sortedGames.Sort((x, y) =>
             {
                 int flagComparison = FavoriteSystem.IsFavorited(y.Mode).CompareTo(FavoriteSystem.IsFavorited(x.Mode));
@@ -144,6 +150,8 @@ namespace CosmicShore.UI
 
                 gameCard.gameObject.SetActive(true);
             }
+
+            ArcadeDPadNav.RefreshSelection();
         }
 
         void OnProgressionChanged(GameModeProgressionData data)

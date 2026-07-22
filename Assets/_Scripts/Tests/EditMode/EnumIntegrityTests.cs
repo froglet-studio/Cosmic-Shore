@@ -8,7 +8,7 @@ using CosmicShore.Data;
 namespace CosmicShore.Tests
 {
     /// <summary>
-    /// Enum Integrity Tests — Guard against Unity serialization drift.
+    /// Enum Integrity Tests - Guard against Unity serialization drift.
     ///
     /// WHY THIS MATTERS:
     /// Unity serializes enums by their integer value, not their name. If someone
@@ -26,7 +26,7 @@ namespace CosmicShore.Tests
         public void VesselClassType_HasExpectedMemberCount()
         {
             // If someone adds or removes a vessel, this test forces them to
-            // update the test suite — ensuring new vessels get tested too.
+            // update the test suite - ensuring new vessels get tested too.
             var values = Enum.GetValues(typeof(VesselClassType));
             Assert.AreEqual(13, values.Length,
                 "VesselClassType member count changed. Update tests if a vessel was added/removed.");
@@ -121,7 +121,7 @@ namespace CosmicShore.Tests
         [Test]
         public void Domains_PlayableTeams_ArePositive()
         {
-            // Jade, Ruby, Blue, Gold are real teams — they must be > 0.
+            // Jade, Ruby, Blue, Gold are real teams - they must be > 0.
             Assert.Greater((int)Domains.Jade, 0);
             Assert.Greater((int)Domains.Ruby, 0);
             Assert.Greater((int)Domains.Blue, 0);

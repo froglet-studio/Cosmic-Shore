@@ -23,7 +23,7 @@ namespace CosmicShore.Core
             if (UserActionSystem.Instance != null)
                 UserActionSystem.Instance.OnUserActionCompleted += ResolveCallsToActionOnUserActionCompleted;
             else
-                Debug.LogWarning($"{nameof(CallToActionSystem)}: UserActionSystem.Instance is null — skipping event subscription.");
+                Debug.LogWarning($"{nameof(CallToActionSystem)}: UserActionSystem.Instance is null - skipping event subscription.");
         }
 
         /// <summary>

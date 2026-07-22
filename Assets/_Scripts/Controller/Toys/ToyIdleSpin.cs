@@ -4,7 +4,7 @@ namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// Gentle idle rotation for toy bodies (crystal-spike cones catch the light, jacks tumble).
-    /// Motion without scale change — the calm "alive" read the rest of the game's pickups have,
+    /// Motion without scale change - the calm "alive" read the rest of the game's pickups have,
     /// instead of a pulsing throb.
     /// </summary>
     public class ToyIdleSpin : MonoBehaviour

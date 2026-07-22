@@ -34,7 +34,7 @@ namespace CosmicShore.Gameplay
             if (spawnProfile.SupportedFloras is not { Count: > 0 })
                 yield break;
 
-            // No excluded-domain roll — the locked no-domain-asymmetry invariant: all three
+            // No excluded-domain roll - the locked no-domain-asymmetry invariant: all three
             // domains seed flora uniformly. Passing null keeps legacy SpawnProfile assets with
             // the old serialized FloraExcludeLocalDomain=true inert (same as RandomLifeSpawner).
             Domains? excluded = null;
@@ -59,15 +59,15 @@ namespace CosmicShore.Gameplay
             int initialCount = Mathf.Max(0, floraCfg.InitialSpawnCount);
             float initialInterval = Mathf.Max(0f, spawnProfile.FloraSpawnIntervalSeconds);
 
-            // Initial batch — gated on FloraPlantingEnabled and per-attempt probability.
+            // Initial batch - gated on FloraPlantingEnabled and per-attempt probability.
             for (int i = 0; i < initialCount; i++)
             {
                 if (host && host.FloraPlantingEnabled && AllowSpawn(floraCfg.SpawnProbability))
-                    SpawnFlora(host, floraCfg.FloraPrefab, excluded);
+                    SpawnFlora(host, floraCfg.FloraPrefab, excluded, floraCfg);
 
                 // Spread instantiation across frames. WaitForSeconds when an interval
                 // is configured; otherwise yield a single frame so a large InitialSpawnCount
-                // doesn't instantiate every (prism-bodied) life form in one frame — that
+                // doesn't instantiate every (prism-bodied) life form in one frame - that
                 // showed up as a ~48% frame spike in Cell.SpawnFaunaTypeLoop_Random.
                 if (i < initialCount - 1)
                 {
@@ -76,7 +76,7 @@ namespace CosmicShore.Gameplay
                 }
             }
 
-            // Continuous spawn — the loop keeps ticking so spawning resumes if the
+            // Continuous spawn - the loop keeps ticking so spawning resumes if the
             // cell falls back across the planting hysteresis floor.
             while (true)
             {
@@ -93,7 +93,7 @@ namespace CosmicShore.Gameplay
                 if (!host.FloraPlantingEnabled) continue;
                 if (!AllowSpawn(floraCfg.SpawnProbability)) continue;
 
-                SpawnFlora(host, floraCfg.FloraPrefab, excluded);
+                SpawnFlora(host, floraCfg.FloraPrefab, excluded, floraCfg);
             }
         }
 
@@ -142,7 +142,7 @@ namespace CosmicShore.Gameplay
             int initialCount = Mathf.Max(0, faunaCfg.InitialSpawnCount);
             float initialInterval = Mathf.Max(0f, spawnProfile.FaunaSpawnIntervalSeconds);
 
-            // Initial batch — gated on FaunaSpawningEnabled (cell holds mass) +
+            // Initial batch - gated on FaunaSpawningEnabled (cell holds mass) +
             // per-attempt probability.
             for (int i = 0; i < initialCount; i++)
             {
@@ -151,7 +151,7 @@ namespace CosmicShore.Gameplay
 
                 // Spread instantiation across frames. WaitForSeconds when an interval
                 // is configured; otherwise yield a single frame so a large InitialSpawnCount
-                // doesn't instantiate every (prism-bodied) life form in one frame — that
+                // doesn't instantiate every (prism-bodied) life form in one frame - that
                 // showed up as a ~48% frame spike in Cell.SpawnFaunaTypeLoop_Random.
                 if (i < initialCount - 1)
                 {
@@ -160,7 +160,7 @@ namespace CosmicShore.Gameplay
                 }
             }
 
-            // Continuous spawn — interval scales with aggression so reinforcements
+            // Continuous spawn - interval scales with aggression so reinforcements
             // arrive faster when the cell is under stress. Seed the spawn-cycle
             // telemetry before the first wait so the indicator ring starts at 0%
             // instead of stuck-at-100% (the "never spawned" sentinel value).
@@ -196,7 +196,7 @@ namespace CosmicShore.Gameplay
             var fauna = SpawnFaunaWithDomain(host, faunaCfg.FaunaPrefab, goal, color);
             // Lineage-bind so the species counts toward the cell's live population and
             // can reproduce if its config authors FeedsPerOffspring > 0 (off by default
-            // on the WildlifeBlitz/Tournament configs — purely config-opt-in).
+            // on the WildlifeBlitz/Tournament configs - purely config-opt-in).
             if (fauna) fauna.AssignLineage(host, faunaCfg);
         }
     }

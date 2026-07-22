@@ -7,14 +7,14 @@ using UnityEngine;
 namespace CosmicShore.Tests
 {
     /// <summary>
-    /// Tests for <see cref="MicroscenePatterns.Plan"/> — the pure recipe generators + theming behind
+    /// Tests for <see cref="MicroscenePatterns.Plan"/> - the pure recipe generators + theming behind
     /// the freestyle conveyor toy (Docs/ToySystem/ARCHITECTURE.md ▸ Wanderway). Load-bearing
     /// guarantees locked here:
     ///
-    ///   1. BUDGET EXACTNESS — every recipe emits exactly prismBudget points (geometry AND themed),
+    ///   1. BUDGET EXACTNESS - every recipe emits exactly prismBudget points (geometry AND themed),
     ///      so a recycled scene can re-pose its fixed stock of prisms into ANY recipe (mass is
     ///      conserved: the belt never needs to create or destroy prisms to change arrangement).
-    ///   2. DETERMINISM — same seed → identical plan, geometry and theming (instance-local
+    ///   2. DETERMINISM - same seed → identical plan, geometry and theming (instance-local
     ///      System.Random only; the generators must never touch the global UnityEngine.Random).
     ///
     /// Plus sanity bounds: crystal clamp, lifeform counts confined to the living recipes, prism
@@ -24,7 +24,7 @@ namespace CosmicShore.Tests
     [TestFixture]
     public class MicroscenePatternsTests
     {
-        static readonly int[] Budgets = { 12, 42, 60 };
+        static readonly int[] Budgets = { 12, 42, 60, 100 }; // 100 = the shipped Toy_Conveyor budget
         static readonly int[] Seeds = { 1, 7, 12345 };
         const float Radius = 55f;
         const int MaxCrystals = 3;
@@ -109,18 +109,19 @@ namespace CosmicShore.Tests
         {
             // The conveyor clamps scene anchors to (bounds − sceneRadius×1.1 − margin), so a
             // generator escaping this envelope would push registered mass outside the cell's sense
-            // radius — invisible to the ecosystem.
+            // radius - invisible to the ecosystem.
             float lateral = Radius * 1.1f;
             float along = Radius * 1.1f * 1.2f; // 2.2×radius length / 2, small jitter allowance
 
             for (int recipe = 0; recipe < MicroscenePatterns.RecipeCount; recipe++)
-                foreach (int seed in Seeds)
-                    foreach (var p in Plan(recipe, seed).Prisms)
-                    {
-                        Assert.LessOrEqual(Mathf.Abs(p.Point.Position.x), lateral, $"recipe {recipe} seed {seed} x");
-                        Assert.LessOrEqual(Mathf.Abs(p.Point.Position.y), lateral, $"recipe {recipe} seed {seed} y");
-                        Assert.LessOrEqual(Mathf.Abs(p.Point.Position.z), along, $"recipe {recipe} seed {seed} z");
-                    }
+                foreach (int budget in Budgets)
+                    foreach (int seed in Seeds)
+                        foreach (var p in Plan(recipe, seed, budget).Prisms)
+                        {
+                            Assert.LessOrEqual(Mathf.Abs(p.Point.Position.x), lateral, $"recipe {recipe} budget {budget} seed {seed} x");
+                            Assert.LessOrEqual(Mathf.Abs(p.Point.Position.y), lateral, $"recipe {recipe} budget {budget} seed {seed} y");
+                            Assert.LessOrEqual(Mathf.Abs(p.Point.Position.z), along, $"recipe {recipe} budget {budget} seed {seed} z");
+                        }
         }
 
         [Test]
@@ -139,21 +140,69 @@ namespace CosmicShore.Tests
         public void Theming_RespectsCollider_BudgetCapsOnShieldedPrisms()
         {
             // Shielded / supershielded prisms carry an always-on convex MeshCollider the collider-LOD
-            // cannot reclaim, so the palette caps them per scene. Confirm no scene ever exceeds the caps.
+            // cannot reclaim, so the palette caps them per scene (danger is capped for readability).
+            // The painter's EnforceKindCaps backstop must hold for EVERY scheme it can roll.
             var pal = MicroscenePalette.Default;
             for (int recipe = 0; recipe < MicroscenePatterns.RecipeCount; recipe++)
                 foreach (int seed in Seeds)
                 {
                     var plan = MicroscenePatterns.Plan(recipe, new System.Random(seed), 60, Radius, MaxCrystals, pal);
-                    int shielded = 0, superShielded = 0;
+                    int danger = 0, shielded = 0, superShielded = 0;
                     foreach (var p in plan.Prisms)
                     {
-                        if (p.Kind == PrismKind.Shielded) shielded++;
+                        if (p.Kind == PrismKind.Danger) danger++;
+                        else if (p.Kind == PrismKind.Shielded) shielded++;
                         else if (p.Kind == PrismKind.SuperShielded) superShielded++;
                     }
+                    Assert.LessOrEqual(danger, pal.MaxDanger, $"recipe {recipe} seed {seed} danger cap");
                     Assert.LessOrEqual(shielded, pal.MaxShielded, $"recipe {recipe} seed {seed} shielded cap");
                     Assert.LessOrEqual(superShielded, pal.MaxSuperShielded, $"recipe {recipe} seed {seed} supershield cap");
                 }
+        }
+
+        [Test]
+        public void StructureMetadata_StaysInLockstepWithPrismPoints()
+        {
+            // The painter keys every structural scheme (per-structure domains, danger tips, armoured
+            // frames, taper) off Metas - a desync would silently mis-paint, so lockstep is locked here.
+            for (int recipe = 0; recipe < MicroscenePatterns.RecipeCount; recipe++)
+                foreach (int budget in Budgets)
+                    foreach (int seed in Seeds)
+                    {
+                        var plan = MicroscenePatterns.Plan(recipe, new System.Random(seed), budget, Radius, MaxCrystals);
+                        Assert.AreEqual(plan.PrismPoints.Count, plan.Metas.Count,
+                            $"recipe {recipe} ({MicroscenePatterns.RecipeName(recipe)}), budget {budget}, seed {seed}");
+                        foreach (var meta in plan.Metas)
+                        {
+                            Assert.Less(meta.Structure, plan.StructureCount,
+                                $"recipe {recipe} seed {seed}: structure id out of range");
+                            Assert.That(meta.T, Is.InRange(0f, 1f), $"recipe {recipe} seed {seed}: t out of range");
+                        }
+                    }
+        }
+
+        [Test]
+        public void Theming_ProducesMultiDomainAndKindVariety_AcrossTheBag()
+        {
+            // The regression this build exists to prevent: every scene mono-coloured in one domain
+            // and all-plain. Across a full recipe bag × seeds, the default palette must land BOTH
+            // multi-domain scenes and danger/shield accents somewhere. Deterministic (fixed seeds).
+            bool anyMultiDomain = false, anyDanger = false, anyShieldedKind = false;
+            for (int recipe = 0; recipe < MicroscenePatterns.RecipeCount; recipe++)
+                foreach (int seed in Seeds)
+                {
+                    var plan = Plan(recipe, seed);
+                    var first = plan.Prisms[0].Domain;
+                    foreach (var p in plan.Prisms)
+                    {
+                        if (p.Domain != first) anyMultiDomain = true;
+                        if (p.Kind == PrismKind.Danger) anyDanger = true;
+                        if (p.Kind is PrismKind.Shielded or PrismKind.SuperShielded) anyShieldedKind = true;
+                    }
+                }
+            Assert.IsTrue(anyMultiDomain, "no scene in the whole bag used more than one domain");
+            Assert.IsTrue(anyDanger, "no scene in the whole bag laid a danger prism");
+            Assert.IsTrue(anyShieldedKind, "no scene in the whole bag laid a shielded/supershielded prism");
         }
 
         [Test]

@@ -1,5 +1,4 @@
 using CosmicShore.Data;
-using CosmicShore.Gameplay;
 using DG.Tweening;
 using TMPro;
 using UnityEngine;
@@ -8,10 +7,10 @@ using UnityEngine.UI;
 namespace CosmicShore.UI
 {
     /// <summary>
-    /// <b>Summary Player Card</b> (MaelstromSummaryScoreCardContainer) — one player's row on the
+    /// <b>Summary Player Card</b> (MaelstromSummaryScoreCardContainer) - one player's row on the
     /// Maelstrom results screen: avatar, name, the player's <b>Total Score</b> (their domain's cumulative
-    /// tournament points). The background tints to the player's domain via the
-    /// <see cref="DomainColorPaletteSO"/> (same as the in-round Player Data Card). The authored "stats"
+    /// tournament points). The background tints to the player's domain colour the view passes in (the
+    /// theme's per-domain UI accent, same as the in-round Player Data Card). The authored "stats"
     /// placeholder text is left untouched. Pops in with a staggered entrance.
     /// </summary>
     public class TournamentSummaryPlayerCard : MonoBehaviour
@@ -23,18 +22,16 @@ namespace CosmicShore.UI
         [Header("Domain colour")]
         [Tooltip("Background image tinted to the player's domain colour.")]
         [SerializeField] Image domainBackground;
-        [Tooltip("Palette mapping Domain → colour (Assets/_SO_Assets/DomainColorPalette.asset).")]
-        [SerializeField] DomainColorPaletteSO palette;
 
         CanvasGroup _cg;
         Sequence _seq;
 
-        public void Setup(string playerName, Sprite avatar, Domains domain, int totalScore)
+        public void Setup(string playerName, Sprite avatar, Domains domain, int totalScore, Color domainColor)
         {
             if (nameText) nameText.text = playerName;
             SetAvatar(avatar);
             if (totalScoreText) totalScoreText.text = $"Total Score : {totalScore}";
-            if (domainBackground && palette) domainBackground.color = palette.Get(domain);
+            if (domainBackground) domainBackground.color = domainColor;
         }
 
         /// <summary>

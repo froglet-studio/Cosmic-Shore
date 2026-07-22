@@ -7,7 +7,7 @@ namespace CosmicShore.Core
 {
     /// <summary>
     /// Base repository with debounced save logic.
-    /// Open/Closed: derive a new repository per data domain — no modifications needed here.
+    /// Open/Closed: derive a new repository per data domain - no modifications needed here.
     /// Single Responsibility: handles only load/save lifecycle and debouncing.
     /// Liskov Substitution: any derived repository can substitute for this base.
     /// </summary>
@@ -97,7 +97,7 @@ namespace CosmicShore.Core
                     {
                         // Provider already retried with backoff. Keep the data dirty so
                         // the finally-reloop, the next mutation, network recovery, or an
-                        // app-pause flush retries it — never drop a pending change.
+                        // app-pause flush retries it - never drop a pending change.
                         _dirty = true;
                         break;
                     }

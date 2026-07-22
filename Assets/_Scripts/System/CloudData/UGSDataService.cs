@@ -16,7 +16,7 @@ namespace CosmicShore.Core
     /// <summary>
     /// Unified facade for all player cloud data.
     /// Single Responsibility: orchestrates initialization and provides typed access
-    ///                        to every data domain — does not own any domain logic.
+    ///                        to every data domain - does not own any domain logic.
     /// Dependency Inversion: depends on ICloudSaveProvider and ICloudDataRepository
     ///                       interfaces, not concrete UGS types.
     ///
@@ -187,7 +187,7 @@ namespace CosmicShore.Core
 
         public async Task FlushAllAsync(CancellationToken ct = default)
         {
-            // Only flush repositories with pending changes — clean repos would
+            // Only flush repositories with pending changes - clean repos would
             // otherwise re-upload an unchanged payload on every flush.
             var tasks = new List<Task>();
             foreach (var repo in _allRepos)

@@ -258,7 +258,7 @@ namespace CosmicShore.UI
             _isPlayingClaimSequence = true;
             _claimSequence?.Kill();
 
-            // Commit the data change — OnProgressionChanged will be skipped due to the flag
+            // Commit the data change - OnProgressionChanged will be skipped due to the flag
             GameModeProgressionService.Instance?.ClaimQuestAndUnlockNext(quest.GameMode);
 
             // Pre-compute slider targets from the now-updated data
@@ -340,7 +340,7 @@ namespace CosmicShore.UI
             seq.OnComplete(() =>
             {
                 _isPlayingClaimSequence = false;
-                // Final sync — ensure all cards reflect the true data state
+                // Final sync - ensure all cards reflect the true data state
                 RefreshAllCards();
                 UpdateActivePulse();
             });

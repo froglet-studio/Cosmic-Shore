@@ -46,9 +46,16 @@ namespace CosmicShore.Gameplay
                     gameData.SelectedPlayerCount.Value,
                     gameData.RequestedAIBackfillCount,
                     gameData.RequestedDomainCount,
-                    gameData.IsTournamentMode
+                    gameData.IsTournamentMode,
+                    gameData.ComebackRatePerScoreDeficit
                 );
             }
+
+            // REQUIRED for every party game: the elemental comeback system. Scene-authored
+            // instances are respected; a scene that forgot one gets it created and configured
+            // for this game mode (comeback runs locally on every machine, so this executes on
+            // host and clients alike).
+            ElementalComebackSystem.EnsureExists(gameObject, gameData);
 
             InitializeAfterDelay().Forget();
         }
@@ -102,7 +109,7 @@ namespace CosmicShore.Gameplay
         {
             try
             {
-                Debug.Log($"<color=#00CED1>[FLOW-7] [MultiplayerMiniGameBase] InitializeAfterDelay — waiting {InitDelayMs}ms, IsServer={IsServer}</color>");
+                Debug.Log($"<color=#00CED1>[FLOW-7] [MultiplayerMiniGameBase] InitializeAfterDelay - waiting {InitDelayMs}ms, IsServer={IsServer}</color>");
                 await UniTask.Delay(InitDelayMs, DelayType.UnscaledDeltaTime);
 
                 Debug.Log($"<color=#00CED1>[FLOW-7] [MultiplayerMiniGameBase] Calling gameData.InitializeGame(). Players.Count={gameData.Players.Count}</color>");
@@ -295,13 +302,13 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Entry point for Scoreboard / PauseMenu "Play Again" button.
-        /// Only the host can trigger a replay — all clients are forced to follow.
+        /// Only the host can trigger a replay - all clients are forced to follow.
         /// </summary>
         public override void RequestReplay()
         {
             if (!IsServer)
             {
-                CSDebug.LogWarning("[MultiplayerController] RequestReplay ignored — only the host can restart the game.");
+                CSDebug.LogWarning("[MultiplayerController] RequestReplay ignored - only the host can restart the game.");
                 return;
             }
             ExecuteReplaySequence();
@@ -344,7 +351,7 @@ namespace CosmicShore.Gameplay
 
                 // AI players/vessels are spawned with destroyWithScene=false and must be
                 // explicitly despawned before the reload, otherwise SpawnAIs creates duplicates.
-                // Despawn players before vessels — same order as SceneLoader.ClearPlayerVesselReferences.
+                // Despawn players before vessels - same order as SceneLoader.ClearPlayerVesselReferences.
                 for (int i = gameData.Players.Count - 1; i >= 0; i--)
                 {
                     if (gameData.Players[i] is Player aiPlayer
@@ -365,11 +372,11 @@ namespace CosmicShore.Gameplay
 
                 gameData.ResetRuntimeData();
 
-                // Server-authoritative scene reload — all clients follow automatically
+                // Server-authoritative scene reload - all clients follow automatically
                 var nm = NetworkManager.Singleton;
                 if (nm != null && nm.IsServer && nm.SceneManager != null)
                 {
-                    Debug.Log($"[MultiplayerController] Scene reload replay — loading {gameData.SceneName}");
+                    Debug.Log($"[MultiplayerController] Scene reload replay - loading {gameData.SceneName}");
                     nm.SceneManager.LoadScene(gameData.SceneName, LoadSceneMode.Single);
                 }
             }
@@ -393,6 +400,14 @@ namespace CosmicShore.Gameplay
         private void FadeFromBlackOnReplay()
         {
             gameData.OnClientReady.OnRaised -= FadeFromBlackOnReplay;
+
+            // Play Again reloads bypass SceneLoader.LoadSceneAsync entirely, so
+            // neither host nor clients would ever take the scheduled scene-change
+            // GC on repeated replays. This runs on every peer with the overlay
+            // still opaque and the reloaded scene up — the covered moment to take
+            // the full collect and reset the mid-gameplay collection clock.
+            GC.Collect();
+
             _sceneTransitionManager?.FadeFromBlack().Forget();
         }
 
@@ -441,7 +456,7 @@ namespace CosmicShore.Gameplay
         void SyncGameConfigToClients_ClientRpc(
             string sceneName, int gameMode, bool isMultiplayer,
             int vesselClass, int intensity, int playerCount, int aiBackfillCount,
-            int domainCount, bool isTournament)
+            int domainCount, bool isTournament, float comebackRate)
         {
             if (IsServer) return;
 
@@ -454,6 +469,7 @@ namespace CosmicShore.Gameplay
             gameData.RequestedAIBackfillCount = aiBackfillCount;
             gameData.RequestedDomainCount = domainCount;
             gameData.IsTournamentMode = isTournament;
+            gameData.ComebackRatePerScoreDeficit = comebackRate;
         }
     }
 }

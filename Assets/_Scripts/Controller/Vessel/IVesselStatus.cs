@@ -123,6 +123,13 @@ namespace CosmicShore.Gameplay
         R_ShipElementStatsHandler ElementalStatsHandler { get; }
 
         /// <summary>
+        /// Per-vessel elemental ability state: quantitative multipliers + level-threshold
+        /// qualitative unlocks, configured by the class's ElementalAbilityMapSO.
+        /// Lazily created and self-initializing (the ResourceSystem pattern).
+        /// </summary>
+        R_VesselElementalAbilityHandler ElementalAbilityHandler { get; }
+
+        /// <summary>
         /// In multiplayer mode, true -> owner client, false -> other clients
         /// In singleplayer mode, always false.
         /// </summary>

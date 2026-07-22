@@ -62,6 +62,16 @@ public class VesselTransformer : MonoBehaviour
         public float SpeedMultiplier => throttleMultiplier;
 
         protected Vector3 velocityShift = Vector3.zero;
+
+        /// <summary>Current additive world-space displacement (the ModifyVelocity channel),
+        /// summed on top of speed * Course by MoveShip. Read-only view for systems that need
+        /// the vessel's ACTUAL travel direction (e.g. barrel-roll bridging prisms).</summary>
+        public Vector3 VelocityShift => velocityShift;
+
+        /// <summary>When set, trail prisms orient along this rotation instead of the vessel's
+        /// facing. Owned by the barrel-roll controller for the roll duration; null restores
+        /// normal facing-aligned trail.</summary>
+        public Quaternion? BlockRotationOverride { get; set; }
         private bool isActive;
 
         // ----------------------------- Analog Drift -----------------------------
@@ -86,7 +96,11 @@ public class VesselTransformer : MonoBehaviour
             if (!isActive || VesselStatus == null || VesselStatus.IsStationary)
                 return;
 
-            VesselStatus.blockRotation = transform.rotation;
+            // Trail prisms orient by blockRotation (facing). During velocity≠forward states
+            // (barrel roll) the roll controller overrides it with the actual travel
+            // direction so bridging prisms follow the true path — replicates for free via
+            // the owner-written n_BlockRotation.
+            VesselStatus.blockRotation = BlockRotationOverride ?? transform.rotation;
 
             if (decayBoost) DecayBoost();
 
@@ -155,8 +169,9 @@ public class VesselTransformer : MonoBehaviour
             ThrottleScaler = DefaultThrottleScaler;
             speed = 0f;
             throttleMultiplier = 1f;
+            _speedTrackingRate = 0f;
 
-            // Rotation — reset to face forward
+            // Rotation - reset to face forward
             accumulatedRotation = Quaternion.identity;
             transform.rotation = Quaternion.identity;
 
@@ -401,26 +416,66 @@ public class VesselTransformer : MonoBehaviour
                 transform.forward) * accumulatedRotation;
         }
 
-        protected virtual void MoveShip()
+        protected float CurrentBoostAmount()
         {
-            if (VesselStatus == null || InputStatus == null) return;
-
             float boostAmount = 1f;
             if (VesselStatus.IsBoosting)
-                boostAmount = VesselStatus.BoostMultiplier;
+                // TIME → boost speed: scaled by the vessel's live Time level via its
+                // ElementalAbilityMapSO (1x for vessels without a map or Time entry).
+                boostAmount = VesselStatus.BoostMultiplier
+                              * VesselStatus.ElementalAbilityHandler.Multiplier(Element.Time);
 
             if (VesselStatus.IsChargedBoostDischarging)
                 boostAmount *= VesselStatus.ChargedBoostCharge;
 
+            return boostAmount;
+        }
+
+        /// <summary>The steady-state cruise speed the smoothed `speed` field is moving toward
+        /// this frame — throttle × boost + minimum. Single source of the formula for
+        /// <see cref="AdvanceSpeed"/> in every transformer.</summary>
+        protected virtual float ComputeThrottleTarget()
+            => InputStatus.XDiff * ThrottleScaler * ThrottleScalerMultiplier.EvaluateLive(VesselStatus) * CurrentBoostAmount()
+               + MinimumSpeed;
+
+        float _speedTrackingRate;
+
+        /// <summary>Put the cruise speed into constant-rate tracking: instead of the default
+        /// exponential lerp, speed moves toward the throttle target at a fixed
+        /// <paramref name="unitsPerSecond"/> — a linear ramp with a steady, readable slope.
+        /// Used by ramp boosts (e.g. the Rhino's full-speed-straight run) for constant
+        /// acceleration up and, with a higher rate, the fast return down after release.
+        /// Auto-reverts to the normal smoothing once the speed lands on the target.</summary>
+        public void SetSpeedTrackingRate(float unitsPerSecond)
+            => _speedTrackingRate = Mathf.Max(0f, unitsPerSecond);
+
+        /// <summary>Advance the smoothed cruise speed one frame toward
+        /// <paramref name="target"/> — constant-rate while a tracking rate is set
+        /// (see <see cref="SetSpeedTrackingRate"/>), exponential lerp otherwise.</summary>
+        protected void AdvanceSpeed(float target)
+        {
+            if (_speedTrackingRate > 0f)
+            {
+                speed = Mathf.MoveTowards(speed, target, _speedTrackingRate * Time.deltaTime);
+                if (Mathf.Approximately(speed, target))
+                    _speedTrackingRate = 0f;
+            }
+            else
+            {
+                speed = Mathf.Lerp(speed, target, LERP_AMOUNT * Time.deltaTime);
+            }
+        }
+
+        protected virtual void MoveShip()
+        {
+            if (VesselStatus == null || InputStatus == null) return;
+
             // Smooth throttle speed calculation
-            speed = Mathf.Lerp(
-                speed,
-                InputStatus.XDiff * ThrottleScaler * ThrottleScalerMultiplier.Value * boostAmount + MinimumSpeed,
-                LERP_AMOUNT * Time.deltaTime);
+            AdvanceSpeed(ComputeThrottleTarget());
 
             // Modifiers scale this frame's output speed only. Multiplying into the
             // persistent smoothed `speed` field compounds the modifier every frame,
-            // saturating any sub-1 multiplier to a near-stop within a few frames —
+            // saturating any sub-1 multiplier to a near-stop within a few frames -
             // which makes modifier strength untunable (a 0.5 floor and a 0.0 floor
             // both collapse to ~zero).
             float effectiveSpeed = speed * throttleMultiplier;

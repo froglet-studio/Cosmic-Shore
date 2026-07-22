@@ -73,7 +73,7 @@ namespace CosmicShore.Core
             }
             Instance = this;
 
-            // Web checkout has no SDK handshake — it is ready as soon as a config (real or
+            // Web checkout has no SDK handshake - it is ready as soon as a config (real or
             // default) is resolvable. We are "initialized" whenever we have a base URL to open.
             IsInitialized = !string.IsNullOrWhiteSpace(Config.checkoutBaseUrl) ||
                             !string.IsNullOrWhiteSpace(Config.supportUrl);
@@ -133,7 +133,7 @@ namespace CosmicShore.Core
 
         /// <summary>
         /// Called by a verification step / UI once the player returns and the purchase is
-        /// confirmed (or rejected). This is the single entitlement-grant seam — make it
+        /// confirmed (or rejected). This is the single entitlement-grant seam - make it
         /// server-authoritative by verifying the order before invoking with success=true.
         /// </summary>
         public void ConfirmPendingPurchase(bool success)

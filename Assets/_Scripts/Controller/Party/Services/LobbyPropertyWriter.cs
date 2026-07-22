@@ -11,7 +11,7 @@
 //
 // THREAD SAFETY:
 //   All methods must be called on Unity's main thread.  SemaphoreSlim is used
-//   as a mutex (not for actual threading) — it serialises async continuations
+//   as a mutex (not for actual threading) - it serialises async continuations
 //   that all run on the main thread via UniTask's PlayerLoop integration.
 //
 // DI NOTE:
@@ -35,17 +35,17 @@ namespace CosmicShore.Gameplay
     /// Owns two <see cref="SemaphoreSlim"/> mutexes:
     /// <list type="bullet">
     ///   <item>
-    ///     <see cref="LobbyMutex"/> — serialises all reads/writes to the presence
+    ///     <see cref="LobbyMutex"/> - serialises all reads/writes to the presence
     ///     lobby.  Acquired by <see cref="WriteAsync"/> and held for the entire
     ///     duration of <see cref="HostConnectionService"/>'s refresh cycle.
     ///   </item>
     ///   <item>
-    ///     <see cref="SessionCreationMutex"/> — deduplicates concurrent Relay
+    ///     <see cref="SessionCreationMutex"/> - deduplicates concurrent Relay
     ///     session creation attempts (double-check pattern).
     ///   </item>
     /// </list>
     ///
-    /// Lifetime: pure C# — no MonoBehaviour.  Created as a field on
+    /// Lifetime: pure C# - no MonoBehaviour.  Created as a field on
     /// <see cref="HostConnectionService"/>; will be DI-registered in Phase 12.
     /// Thread-safety: main-thread only.
     /// </summary>
@@ -63,7 +63,7 @@ namespace CosmicShore.Gameplay
         /// Serialises all presence-lobby reads and writes.
         /// <para>
         /// The refresh cycle holds this mutex for its entire duration (non-blocking
-        /// try-acquire — skips if busy).  Property writes acquire it in blocking
+        /// try-acquire - skips if busy).  Property writes acquire it in blocking
         /// mode to prevent partial writes.
         /// </para>
         /// </summary>
@@ -107,7 +107,7 @@ namespace CosmicShore.Gameplay
             await LobbyMutex.WaitAsync();
             try
             {
-                // Refresh before writing — the SDK's player-index cache can be
+                // Refresh before writing - the SDK's player-index cache can be
                 // stale, causing SaveCurrentPlayerDataAsync to fail silently if
                 // the local player's index moved since the last refresh.
                 await lobby.RefreshAsync().AsMainThread();
@@ -168,11 +168,11 @@ namespace CosmicShore.Gameplay
                     // family as B1/B6 in Docs/PresenceSystem/BUGS.md), an SDK bug
                     // we already classify as known-transient and retry. The "retry
                     // X/3" message is diagnostic chatter, not a real failure
-                    // signal — final state is correct if any retry succeeds, and
+                    // signal - final state is correct if any retry succeeds, and
                     // a sustained failure propagates to the outer caller via the
                     // `when` filter expiring at attempt == maxRetries.
                     CSDebug.Log(
-                        $"[LobbyPropertyWriter] Save failed ({e.GetType().Name}: {e.Message}) — retry {attempt + 1}/{maxRetries} in {baseDelayMs}ms");
+                        $"[LobbyPropertyWriter] Save failed ({e.GetType().Name}: {e.Message}) - retry {attempt + 1}/{maxRetries} in {baseDelayMs}ms");
                     await UniTask.Delay(baseDelayMs);
                     try { await lobby.RefreshAsync().AsMainThread(); } catch { /* best-effort */ }
                 }

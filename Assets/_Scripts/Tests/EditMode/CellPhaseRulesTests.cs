@@ -6,7 +6,7 @@ using CosmicShore.Utility;
 namespace CosmicShore.Tests
 {
     /// <summary>
-    /// Tests for <see cref="CellPhaseRules.Compute"/> — the pure phase-resolution
+    /// Tests for <see cref="CellPhaseRules.Compute"/> - the pure phase-resolution
     /// function that is the spine of the cell ecology (Docs/ECOSYSTEM.md §1).
     /// VOLUME is the spine (locked invariant): the ladder climbs when LiveVolume meets
     /// a phase's UpEnter volume, descends below the current phase's DownExit volume,
@@ -91,7 +91,7 @@ namespace CosmicShore.Tests
         public void Climb_RequiresEnter_NotExit()
         {
             // From Restless just under FrenzyEnter (but >= FrenzyExit) we must NOT climb
-            // to Frenzy — climbing keys off Enter, descending off Exit.
+            // to Frenzy - climbing keys off Enter, descending off Exit.
             Assert.AreEqual(CellPhase.Restless, ComputeV(T.FrenzyEnterVolume - 1f, CellPhase.Restless));
         }
 
@@ -165,7 +165,7 @@ namespace CosmicShore.Tests
         public void Default_EnterAlwaysAboveExit_PerPhase()
         {
             // The hysteresis band must be positive at every boundary, else the cell can
-            // chatter. (Calm has no band — it's the floor.)
+            // chatter. (Calm has no band - it's the floor.)
             Assert.Greater(T.RestlessEnterVolume, T.RestlessExitVolume);
             Assert.Greater(T.FrenzyEnterVolume, T.FrenzyExitVolume);
             Assert.Greater(T.FrenzyEnter, T.FrenzyExit);

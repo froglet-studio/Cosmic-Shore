@@ -24,7 +24,8 @@ MonoBehaviour:
   gapMultiplier: 3
   columnGapMultiplier: 3
   useDomainPaletteColors: 1
-  domainPalette: {fileID: 11400000, guid: d202844a3d86d1240bae99b182e573d3, type: 2}
   enableDangerVisual: 1
   dangerBlockPrefab: {fileID: 0}
   dangerColor: {r: 1, g: 0.25, b: 0.2, a: 1}
+  enableHoloStyle: 1
+  holoMaterial: {fileID: 2100000, guid: 4b321ec4c36e43ee8498b41105898e8d, type: 2}

@@ -6,8 +6,8 @@ using Unity.Netcode;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Turn monitor for Nucleus Rush ("Brood Rush"). The wave TARGET — how many
-    /// fauna waves a domain must claim to win (default 3) — is resolved at
+    /// Turn monitor for Nucleus Rush ("Brood Rush"). The wave TARGET - how many
+    /// fauna waves a domain must claim to win (default 3) - is resolved at
     /// <see cref="StartMonitor"/> from <see cref="EndConditionOverridesSO"/>
     /// (Tools &gt; Cosmic Shore &gt; End Game Conditions; never a per-scene field),
     /// synced to every client via NetworkVariable, and published to
@@ -73,7 +73,7 @@ namespace CosmicShore.Gameplay
         protected override void RestrictedUpdate()
         {
             // Brood points land from the wave event (30s cadence), so a 1s display
-            // tick is plenty — no per-stat event subscriptions to leak (B15 class).
+            // tick is plenty - no per-stat event subscriptions to leak (B15 class).
             UpdateRemainingUI();
         }
 

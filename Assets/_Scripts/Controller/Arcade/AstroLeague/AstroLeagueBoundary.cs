@@ -7,40 +7,40 @@ namespace CosmicShore.Gameplay
     /// The court geometry the Astro League ball bounces off of.
     ///
     /// The original arena was a SPHERE: the ball reflected about the sphere's radial normal, and
-    /// every surface normal on a sphere points at the center — so every bounce carried the ball back
+    /// every surface normal on a sphere points at the center - so every bounce carried the ball back
     /// toward the middle (a whispering-gallery focusing effect), never a tangential "bank". Billiards,
     /// air hockey and Rocket League are fun *because* of FLAT walls: a flat plane preserves the
     /// wall-parallel velocity component and only flips the perpendicular one, so a glancing shot banks
     /// along the boards instead of being thrown back at center.
     ///
     /// Every ricochet-friendly polytope (box, octagonal/hexagonal prism, beveled box, octahedron) is
-    /// a CONVEX POLYTOPE — an intersection of flat half-spaces, i.e. a list of inward-facing face
+    /// a CONVEX POLYTOPE - an intersection of flat half-spaces, i.e. a list of inward-facing face
     /// planes. So one generic bounce (<see cref="Contain"/>) handles all of them: for the ball center,
     /// reflect off every plane it has poked through and clamp it to kiss the wall. Sphere and Cylinder
     /// keep an analytic curved branch (Sphere is the legacy baseline; Cylinder has flat goal caps + a
     /// curved barrel). <see cref="NotchedRing"/> layers a central torus OBSTACLE (the ball bounces off
-    /// its OUTSIDE) inside a chosen outer court, with an angular notch — a center choke point that adds
+    /// its OUTSIDE) inside a chosen outer court, with an angular notch - a center choke point that adds
     /// bounces while leaving the central hole + the notch open as shooting lanes. The same geometry
     /// drives the visual: <see cref="BuildVisualMesh"/> builds the outer hull + the notched torus, so
     /// the nucleus "cage" silhouette is the wall the ball actually hits.
     /// </summary>
     public enum AstroLeagueBoundaryShape
     {
-        /// <summary>Legacy curved boundary — radial reflect, focuses toward center. Kept as the A/B baseline.</summary>
+        /// <summary>Legacy curved boundary - radial reflect, focuses toward center. Kept as the A/B baseline.</summary>
         Sphere = 0,
-        /// <summary>Rectangular court — pure pool/air-hockey banking. Flat everything, 90° corners.</summary>
+        /// <summary>Rectangular court - pure pool/air-hockey banking. Flat everything, 90° corners.</summary>
         Box = 1,
         /// <summary>Box with its 4 goal-axis edges chamfered → octagon cross-section. "Cage" arena, 135° corners, flat goal caps.</summary>
         OctagonalPrism = 2,
         /// <summary>Elongated hexagon cross-section extruded along the goal axis. Tighter 6-wall arena, flat goal caps.</summary>
         HexagonalPrism = 3,
-        /// <summary>Box with every edge + corner chamfered — Rocket-League-style flat faces + angled ramps that redirect instead of trap.</summary>
+        /// <summary>Box with every edge + corner chamfered - Rocket-League-style flat faces + angled ramps that redirect instead of trap.</summary>
         BeveledBox = 4,
-        /// <summary>Diamond — 8 angled faces. Every wall banks, very different feel.</summary>
+        /// <summary>Diamond - 8 angled faces. Every wall banks, very different feel.</summary>
         Octahedron = 5,
         /// <summary>Flat goal caps + a curved barrel along the goal axis. Banks lengthwise, focuses across.</summary>
         Cylinder = 6,
-        /// <summary>An outer court (default Cylinder) with a central NOTCHED TORUS ring obstacle — a choke
+        /// <summary>An outer court (default Cylinder) with a central NOTCHED TORUS ring obstacle - a choke
         /// point in the center that adds bounces; the central hole + the notch stay open as shooting lanes.</summary>
         NotchedRing = 7,
     }
@@ -71,22 +71,22 @@ namespace CosmicShore.Gameplay
         readonly float _cylinderRadius; // barrel radius in the XY cross-section
         readonly float _capHalfLength;  // ±Z cap distance for the cylinder
 
-        // Effective OUTER shape the ball is contained within — equals Shape, except for NotchedRing,
+        // Effective OUTER shape the ball is contained within - equals Shape, except for NotchedRing,
         // whose outer is a separate court shape (default Cylinder) wrapped around the central ring.
         readonly AstroLeagueBoundaryShape _outerShape;
 
         // Central torus ring obstacle (NotchedRing only): axis = Z (the goal axis), so the ring lies in
         // the mid-plane and the ball can shoot straight down the center hole or through the angular notch.
         readonly bool _hasRing;
-        readonly float _ringMajor;          // ring (major) radius — distance from center to the tube centerline
-        readonly float _ringTube;           // tube (minor) radius — half the ring thickness
+        readonly float _ringMajor;          // ring (major) radius - distance from center to the tube centerline
+        readonly float _ringTube;           // tube (minor) radius - half the ring thickness
         readonly float _notchCenter;        // notch center angle (radians, atan2(y,x))
         readonly float _notchHalfWidth;     // notch half-width (radians); 0 = solid ring, no gap
 
         readonly List<FacePlane> _planes = new();
 
         /// <summary>
-        /// Largest distance from center to the boundary surface — used to size the cell sense radius
+        /// Largest distance from center to the boundary surface - used to size the cell sense radius
         /// margin and gizmos. For polytopes this is the farthest vertex; for curved shapes the radius.
         /// </summary>
         public float MaxExtent { get; private set; }
@@ -100,7 +100,7 @@ namespace CosmicShore.Gameplay
         /// <param name="ringOuterShape">For <see cref="AstroLeagueBoundaryShape.NotchedRing"/>: the outer court the ring sits inside (default Cylinder).</param>
         /// <param name="ringMajorFraction">0..1: ring radius as a fraction of the cross-section radius (min(width,height)/2). The central hole = (major − tube) must clear the ball.</param>
         /// <param name="ringTubeFraction">0..1: ring thickness as a fraction of the cross-section radius.</param>
-        /// <param name="notchCenterRadians">Angle (atan2(y,x)) of the notch center — the gap in the ring.</param>
+        /// <param name="notchCenterRadians">Angle (atan2(y,x)) of the notch center - the gap in the ring.</param>
         /// <param name="notchHalfWidthRadians">Half-angle of the notch gap; 0 = a solid ring (no gap).</param>
         public AstroLeagueBoundary(
             AstroLeagueBoundaryShape shape,
@@ -330,7 +330,7 @@ namespace CosmicShore.Gameplay
         /// If the ball (center <paramref name="position"/>, radius <paramref name="ballRadius"/>) has
         /// reached or passed any wall, depenetrate it to kiss the wall and reflect the wall-perpendicular
         /// component of <paramref name="velocity"/> with restitution <paramref name="restitution"/>
-        /// (the wall-PARALLEL component is preserved — that is the bank). Returns true if it bounced,
+        /// (the wall-PARALLEL component is preserved - that is the bank). Returns true if it bounced,
         /// with the deepest contact reported for juice. Handles corners (multiple violated planes) by
         /// resolving each, so a box corner reverses both axes cleanly.
         /// </summary>
@@ -361,7 +361,7 @@ namespace CosmicShore.Gameplay
                     break;
             }
 
-            // Central ring OBSTACLE (the ball stays OUTSIDE the torus tube) — runs after the outer wall.
+            // Central ring OBSTACLE (the ball stays OUTSIDE the torus tube) - runs after the outer wall.
             if (_hasRing && ContainRing(ref position, ref velocity, ballRadius, e, out Vector3 rcp, out Vector3 rcn))
             {
                 bounced = true;
@@ -375,7 +375,7 @@ namespace CosmicShore.Gameplay
         /// Central torus ring obstacle (axis Z): keep the ball OUTSIDE the tube. The ball can pass freely
         /// through the central hole (radius major−tube) and through the angular notch. When it would enter
         /// the tube, push it back to the tube surface and reflect the inward (toward-the-tube) velocity
-        /// component — extra bounces + a center choke point, leaving the hole and notch open as lanes.
+        /// component - extra bounces + a center choke point, leaving the hole and notch open as lanes.
         /// </summary>
         bool ContainRing(ref Vector3 pos, ref Vector3 vel, float r, float e, out Vector3 cp, out Vector3 cn)
         {
@@ -383,7 +383,7 @@ namespace CosmicShore.Gameplay
 
             Vector3 rel = pos - Center;
             float rho = Mathf.Sqrt(rel.x * rel.x + rel.y * rel.y); // distance from the Z (goal) axis
-            if (rho < 1e-4f) return false;                          // dead center — inside the hole, far from the tube
+            if (rho < 1e-4f) return false;                          // dead center - inside the hole, far from the tube
 
             // The notch is an angular gap where the ring is absent (a shooting lane through the ring).
             if (_notchHalfWidth > 1e-4f)
@@ -531,7 +531,7 @@ namespace CosmicShore.Gameplay
         /// Build the boundary's visual mesh, centered on the origin in world units (the nucleus
         /// GameObject sits at <see cref="Center"/> with unit scale). The outer court is the convex hull
         /// of its face planes (polytopes) or a barrel + caps (cylinder), so the same geometry drives
-        /// physics and visuals — the glowing cage silhouette IS the wall the ball hits. NotchedRing also
+        /// physics and visuals - the glowing cage silhouette IS the wall the ball hits. NotchedRing also
         /// appends the central notched torus. Returns null for the Sphere (it keeps its prefab mesh).
         /// </summary>
         public Mesh BuildVisualMesh()
@@ -553,8 +553,13 @@ namespace CosmicShore.Gameplay
             return FinalizeMesh(meshVerts, tris, normals);
         }
 
-        /// <summary>Convex hull of the face planes, fan-triangulated per face, appended to the lists.</summary>
-        void AppendPolytopeMesh(List<Vector3> meshVerts, List<int> tris, List<Vector3> normals)
+        /// <summary>
+        /// Solve the polytope hull shared by the visual mesh and the edge-path collector: the unique
+        /// hull vertices (every plane-triple intersection lying inside all planes) and, per face, the
+        /// indices of its vertices ordered CCW about the outward normal. One geometry source means the
+        /// cage mesh, the edge lining and the physics walls can never drift apart. False when degenerate.
+        /// </summary>
+        bool SolvePolytopeHull(List<Vector3> verts, List<(int planeIndex, List<int> loop)> faces)
         {
             // Tolerances scale with arena size (50..600u half-extent across intensities) so a small
             // feature isn't merged away and a vertex on a large arena still registers on its face.
@@ -562,7 +567,6 @@ namespace CosmicShore.Gameplay
             float epsSqr = eps * eps;
 
             // 1. Candidate vertices = intersection of every plane triple that lies inside all planes.
-            var verts = new List<Vector3>();
             int p = _planes.Count;
             for (int i = 0; i < p; i++)
                 for (int j = i + 1; j < p; j++)
@@ -572,20 +576,18 @@ namespace CosmicShore.Gameplay
                             && InsideAllPlanes(v, eps))
                             AddUniqueVertex(verts, v, epsSqr);
                     }
-            if (verts.Count < 4) return;
+            if (verts.Count < 4) return false;
 
-            // 2. Each face = the vertices lying on its plane, fan-triangulated in CCW order about the normal.
-            var onPlane = new List<int>();
+            // 2. Each face = the vertices lying on its plane, ordered CCW about the outward normal.
             for (int f = 0; f < p; f++)
             {
                 FacePlane plane = _planes[f];
-                onPlane.Clear();
+                var onPlane = new List<int>();
                 for (int vi = 0; vi < verts.Count; vi++)
                     if (Mathf.Abs(Vector3.Dot(verts[vi], plane.Normal) - plane.Offset) < eps)
                         onPlane.Add(vi);
                 if (onPlane.Count < 3) continue;
 
-                // Order the face's vertices by angle in the plane (CCW about the outward normal).
                 Vector3 centroid = Vector3.zero;
                 for (int o = 0; o < onPlane.Count; o++) centroid += verts[onPlane[o]];
                 centroid /= onPlane.Count;
@@ -600,19 +602,101 @@ namespace CosmicShore.Gameplay
                     return ax.CompareTo(ay);
                 });
 
+                faces.Add((f, onPlane));
+            }
+            return faces.Count > 0;
+        }
+
+        /// <summary>Convex hull of the face planes, fan-triangulated per face, appended to the lists.</summary>
+        void AppendPolytopeMesh(List<Vector3> meshVerts, List<int> tris, List<Vector3> normals)
+        {
+            var verts = new List<Vector3>();
+            var faces = new List<(int planeIndex, List<int> loop)>();
+            if (!SolvePolytopeHull(verts, faces)) return;
+
+            foreach (var (planeIndex, loop) in faces)
+            {
+                FacePlane plane = _planes[planeIndex];
                 int baseIndex = meshVerts.Count;
-                for (int o = 0; o < onPlane.Count; o++)
+                for (int o = 0; o < loop.Count; o++)
                 {
-                    meshVerts.Add(verts[onPlane[o]]);
+                    meshVerts.Add(verts[loop[o]]);
                     normals.Add(plane.Normal);
                 }
-                for (int o = 1; o < onPlane.Count - 1; o++)
+                for (int o = 1; o < loop.Count - 1; o++)
                 {
                     tris.Add(baseIndex);
                     tris.Add(baseIndex + o);
                     tris.Add(baseIndex + o + 1);
                 }
             }
+        }
+
+        // ── Edge paths (the super-shielded lining) ───────────────────────────
+
+        /// <summary>
+        /// Collect the court's EDGE polylines, CENTER-RELATIVE (add <see cref="Center"/> for world
+        /// space) - the geometry the arena dresses with its super-shielded prism lining. Polytope
+        /// courts yield one 2-point segment per hull edge (a vertex pair shared by two faces); the
+        /// cylinder yields its two cap rims; the sphere - which has no true edges - yields three
+        /// latitude rings around the goal (Z) axis. NotchedRing yields its OUTER court's edges (the
+        /// central torus is an obstacle, not an edge).
+        /// </summary>
+        public void CollectEdgePaths(List<Vector3[]> paths)
+        {
+            paths.Clear();
+            const int ringSegments = 48;
+
+            switch (_outerShape)
+            {
+                case AstroLeagueBoundaryShape.Sphere:
+                {
+                    float r = _sphereRadius;
+                    float lat = r * 0.70710678f; // ±45° latitude
+                    paths.Add(BuildLatitudeRing(r, 0f, ringSegments));
+                    paths.Add(BuildLatitudeRing(lat, lat, ringSegments));
+                    paths.Add(BuildLatitudeRing(lat, -lat, ringSegments));
+                    break;
+                }
+                case AstroLeagueBoundaryShape.Cylinder:
+                {
+                    paths.Add(BuildLatitudeRing(_cylinderRadius, _capHalfLength, ringSegments));
+                    paths.Add(BuildLatitudeRing(_cylinderRadius, -_capHalfLength, ringSegments));
+                    break;
+                }
+                default:
+                {
+                    var verts = new List<Vector3>();
+                    var faces = new List<(int planeIndex, List<int> loop)>();
+                    if (!SolvePolytopeHull(verts, faces)) return;
+
+                    // Every hull edge is a consecutive pair in exactly two face loops - a
+                    // min/max-keyed set emits each once.
+                    var seen = new HashSet<(int, int)>();
+                    foreach (var (_, loop) in faces)
+                        for (int o = 0; o < loop.Count; o++)
+                        {
+                            int a = loop[o];
+                            int b = loop[(o + 1) % loop.Count];
+                            var key = a < b ? (a, b) : (b, a);
+                            if (seen.Add(key))
+                                paths.Add(new[] { verts[key.Item1], verts[key.Item2] });
+                        }
+                    break;
+                }
+            }
+        }
+
+        /// <summary>A closed circle of constant Z around the goal axis (center-relative).</summary>
+        static Vector3[] BuildLatitudeRing(float radius, float z, int segments)
+        {
+            var pts = new Vector3[segments + 1];
+            for (int i = 0; i <= segments; i++)
+            {
+                float a = i / (float)segments * Mathf.PI * 2f;
+                pts[i] = new Vector3(Mathf.Cos(a) * radius, Mathf.Sin(a) * radius, z);
+            }
+            return pts;
         }
 
         /// <summary>Barrel (N segments) + flat ±Z caps, matching <see cref="ContainCylinder"/>'s walls.</summary>
@@ -709,7 +793,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Double-side the geometry (players fly INSIDE the boundary, so the cage must render no matter
-        /// what the nucleus material's cull mode is — mirror every triangle with a flipped-normal copy)
+        /// what the nucleus material's cull mode is - mirror every triangle with a flipped-normal copy)
         /// and assemble the Mesh.
         /// </summary>
         Mesh FinalizeMesh(List<Vector3> meshVerts, List<int> tris, List<Vector3> normals)

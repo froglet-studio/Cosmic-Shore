@@ -5,7 +5,7 @@ using UnityEngine;
 namespace CosmicShore.Utility.PerformanceBenchmark.Editor
 {
     /// <summary>
-    /// Shared pastel styling for the Performance Benchmark window — centralizes the palette
+    /// Shared pastel styling for the Performance Benchmark window - centralizes the palette
     /// and reusable IMGUI factories (section headers, badges, stat rows, score bars) so the
     /// tabs look consistent. Styles are created lazily inside OnGUI.
     /// </summary>
