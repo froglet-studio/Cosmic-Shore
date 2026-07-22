@@ -5,12 +5,14 @@ namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// Quasi dolly zoom sold entirely through optics: as the vessel's LIVE speed climbs
-    /// through the effect window, the gameplay camera's field of view widens while the
-    /// URP Panini projection distance rises with it. The Panini re-compresses the frame
-    /// centre that the wider FOV pushed away, so the periphery stretches and streams while
-    /// the focal point holds — tunnel vision, with no camera-distance change. Because the
-    /// drive signal is the measured speed (not boost state), the effect automatically
-    /// follows the ramp boost's constant acceleration up AND its fast return down.
+    /// through the effect window, the gameplay camera's field of view NARROWS below the
+    /// shared home value while the URP Panini projection distance drops below the shared
+    /// baseline with it. The tightening FOV magnifies the frame centre (telephoto push-in)
+    /// as the Panini compression relaxes toward rectilinear — tunnel vision, with no
+    /// camera-distance change. Home for both is whatever every vessel is running with;
+    /// the effect only ever moves DOWN from there and returns exactly. Because the drive
+    /// signal is the measured speed (not boost state), the effect automatically follows
+    /// the ramp boost's constant acceleration up AND its fast return down.
     ///
     /// Local-human-pilot-only: remote and AI vessels never touch the local camera or the
     /// global post volume. Owns its visual parameters (ForcefieldCrackleController
@@ -30,11 +32,13 @@ namespace CosmicShore.Gameplay
         [SerializeField] float maxEffectSpeed = 210f;
 
         [Header("Quasi Dolly Zoom")]
-        [Tooltip("Degrees added to the camera's base field of view at full effect.")]
-        [SerializeField] float fovBoost = 25f;
+        [Tooltip("Degrees REMOVED from the camera's home field of view at full effect — the " +
+                 "narrowing that magnifies the frame centre into the tunnel.")]
+        [SerializeField] float fovDrop = 25f;
 
-        [Tooltip("URP Panini projection distance at full effect (0-1).")]
-        [SerializeField, Range(0f, 1f)] float maxPaniniDistance = 0.6f;
+        [Tooltip("How far the Panini projection distance falls below the shared profile " +
+                 "baseline at full effect (clamped at 0).")]
+        [SerializeField, Range(0f, 1f)] float paniniDrop = 0.5f;
 
         [Header("Response")]
         [Tooltip("Per-second exponential tracking of the visual toward the speed-derived value. " +
@@ -88,12 +92,12 @@ namespace CosmicShore.Gameplay
             if (cam != null && !cam.orthographic)
             {
                 // Home = whatever FOV the camera is ACTUALLY running with the moment the
-                // effect takes over — the effect modulates from there and returns there,
-                // never snapping the vessel onto some other default.
+                // effect takes over — the effect modulates DOWN from there and returns
+                // there, never snapping the vessel onto some other default.
                 if (cam != _appliedCamera)
                     _homeFov = cam.fieldOfView;
 
-                cam.fieldOfView = _homeFov + fovBoost * t;
+                cam.fieldOfView = Mathf.Max(1f, _homeFov - fovDrop * t);
                 _appliedCamera = cam;
             }
             else
@@ -101,7 +105,7 @@ namespace CosmicShore.Gameplay
                 _appliedCamera = null;
             }
 
-            PostProcessing?.SetSpeedTunnelPanini(maxPaniniDistance * t);
+            PostProcessing?.SetSpeedTunnelPanini(-paniniDrop * t);
             _applied = true;
         }
 

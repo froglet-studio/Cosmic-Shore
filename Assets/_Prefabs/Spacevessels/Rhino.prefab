@@ -2433,8 +2433,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   minEffectSpeed: 70
   maxEffectSpeed: 280
-  fovBoost: 45
-  maxPaniniDistance: 0.85
+  fovDrop: 25
+  paniniDrop: 0.5
   responsiveness: 12
 --- !u!114 &874579555101021522
 MonoBehaviour:
