@@ -226,82 +226,26 @@ All first-party gameplay code compiles in Unity's default assembly (no runtime `
 
 Third-party assemblies: `Obvious.Soap`, `PlayFab`, `Lofelt.NiceVibrations`, `NativeShare.Runtime`
 
-### Scene Inventory
+### Scenes & Game Modes
 
-See `Docs/SCENES.md` for the full scene and game mode reference. Summary below.
+Full scene inventory, `GameModes` enum reference, controller hierarchy, and launch
+pipeline: `Docs/SCENES.md`. The always-true rules:
 
-#### Core Application Scenes
-
-| Scene | Build Order | Purpose |
-|---|---|---|
-| **Bootstrap** | 0 (must be first) | App entry: DI registration, platform config, auth start, splash |
-| **Authentication** | 1 | Auth UI, cached session check, NetworkManager host start |
-| **Menu_Main** | 2 | Main menu with networked autopilot vessel, screen navigation |
-
-#### Multiplayer Game Scenes
-
-There are no single-player scenes: **solo play is a multiplayer game whose party is one
-host** (eager Relay session + AI backfill via `ServerPlayerVesselInitializerWithAI`).
-The former `Singleplayer Scenes/` folder is gone; `SplashScreen.unity` lives at
-`Assets/_Scenes/`.
-
-| Scene | Game Mode | Controller |
-|---|---|---|
-| `MinigameHexRace` | `HexRace (33)` | `HexRaceController` |
-| `MinigameCrystalCaptureMultiplayer_Gameplay` | `MultiplayerCrystalCapture (35)` | `MultiplayerCrystalCaptureController` |
-| `MinigameDuelForCellMultiplayer_Gameplay` | `MultiplayerCellularDuel (29)` | `MultiplayerCellularDuelController` |
-| `MinigameJoust_Gameplay` | `MultiplayerJoust (34)` | `MultiplayerJoustController` |
-| `MinigameAstroLeague` | `AstroLeague (36)` | `AstroLeagueController` |
-| `MinigameNucleusRush` | `NucleusRush (38)` | `NucleusRushController` |
-| `MinigameWildlifeBlitz` | `WildlifeBlitz (26)` | `MultiplayerWildlifeBlitzController` |
-| `BenchmarkStressTest` | (Settings → Run Benchmark; `WildlifeBlitz` mode) | `SandboxBenchmarkController` |
-| `ArcadeGameMultiplayer2v2CoOpVsAI` | `Multiplayer2v2CoOpVsAI (30)` | Domain games variant |
-
-All in `Assets/_Scenes/Multiplayer Scenes/`.
-
-#### Tool & Test Scenes
-
-`Recording Studio`, `MattsRecording Studio`, `PhotoBooth` (in `_Scenes/Tools/`), `AudioTestSandbox` (in `_Scenes/Game_TestDesign/`).
-
-### Game Modes & Controllers
-
-#### GameModes Enum (`Assets/_Scripts/Data/Enums/GameModes.cs`)
-
-38 game modes with explicit numeric IDs (highest is `NucleusRush(38)`; IDs 7 and 31 are skipped). Single-player: `Elimination(1)` through `ProtectMission(27)`. Multiplayer: `MultiplayerCellularDuel(29)`, `Multiplayer2v2CoOpVsAI(30)`, `MultiplayerWildlifeBlitzGame(32)`, `HexRace(33)`, `MultiplayerJoust(34)`, `MultiplayerCrystalCapture(35)`, `AstroLeague(37)`, `NucleusRush(38)`. Meta-mode: `Tournament(36)` — the session-level meta that chains HexRace → Joust → Crystal Capture back-to-back via sequential `Single` loads (see `Docs/TournamentSystem/ARCHITECTURE.md`). `AstroLeague(37)` is hypersea soccer (a standalone domain minigame, see `_Scripts/Controller/Arcade/ASTROLEAGUE.md`). `NucleusRush(38)` (display name "Brood Rush") is the nucleus-control fauna-wave race (see `_Scripts/Controller/Arcade/NUCLEUSRUSH.md`). Meta sentinel: `Random(0)`. Note: IDs 7 and 31 are skipped — 7 was the retired standalone arcade Freestyle game, 31 was never assigned. `MultiplayerFreestyle(28)` was retired 2026-07-21: freestyle lives ONLY in Menu_Main as the lava lamp (see "Lava-Lamp Mode"); the standalone sandbox scene/controller/card are deleted. Do not reuse any of these IDs.
-
-Solo modes were retired 2026-07-20: their scene-less `SO_ArcadeGame` cards are deleted and the retired enum IDs (1-6, 8-25, 27, 32) are kept only for serialized-int stability (annotated do-not-reuse in `GameModes.cs`). `WildlifeBlitz (26)` lives on as the networked single-host co-op blitz; `CellularDuel` play lives on as `MultiplayerCellularDuel (29)`.
-
-#### Controller Hierarchy
-
-```
-MiniGameControllerBase (abstract, NetworkBehaviour)
-│   Template Method: rounds → turns → countdown → gameplay → end
-│
-└── MultiplayerMiniGameControllerBase (abstract, NetworkBehaviour)
-    │   Server-authoritative turn/round/game flow via ClientRpc
-    │
-    └── MultiplayerDomainGamesController
-        ├── HexRaceController              — crystal race, deterministic track, golf scoring
-        ├── MultiplayerJoustController      — collision tracking, golf scoring
-        ├── MultiplayerCellularDuelController — vessel ownership swap between rounds
-        ├── MultiplayerCrystalCaptureController — minimal (1 round, 1 turn)
-        ├── AstroLeagueController             — hypersea soccer, server-simulated ball, golden goal
-        ├── NucleusRushController             — nucleus-control fauna-wave race, brood scoring
-        └── MultiplayerWildlifeBlitzController — co-op clear-the-cell vs clock (golf: clear time / DNF)
-            └── SandboxBenchmarkController — endless auto-start benchmark (no monitors)
-```
-
-The single-player controller branch (`SinglePlayerMiniGameControllerBase` + subclasses)
-and the non-networked spawn path (`PlayerSpawner`/`VesselSpawner`/spawner adapters) were
-deleted 2026-07-20 — every mode runs the networked single-host model.
-
-#### Game Launch Pipeline
-
-1. **`SO_ArcadeGame` asset** — static config (mode, scene, captains, player/intensity ranges, scoring)
-2. **`ArcadeGameConfigSO`** — ephemeral UI state (selected game + intensity + players + vessel)
-3. **`GameDataSO`** — shared SOAP runtime state (all game params + SOAP events)
-4. **`SceneLoader.LaunchGame()`** — subscribes to `OnLaunchGame`, loads scene. Game config is synced to clients by `MultiplayerMiniGameControllerBase.OnNetworkSpawn()` in the game scene
-5. **Game controller** — scene-placed `MiniGameControllerBase` subclass drives turn/round/game lifecycle
+- **No single-player scenes**: solo play is a multiplayer game whose party is one host
+  (eager Relay session + AI backfill via `ServerPlayerVesselInitializerWithAI`). The
+  single-player controller branch and non-networked spawn path were deleted 2026-07-20.
+- **GameModes IDs are never reused** (`Assets/_Scripts/Data/Enums/GameModes.cs`): retired
+  IDs stay annotated do-not-reuse (7 and 31 are skipped; highest is `NucleusRush(38)`).
+  `Tournament(36)` is the session-level meta (player-facing name "Maelstrom"); freestyle
+  lives ONLY in Menu_Main as the lava lamp - `Freestyle(7)` and `MultiplayerFreestyle(28)`
+  are retired and must not be reintroduced.
+- **Controller skeleton**: `MiniGameControllerBase` → `MultiplayerMiniGameControllerBase`
+  → `MultiplayerDomainGamesController` → per-mode controllers (server-authoritative
+  turn/round/game flow via ClientRpc).
+- **Launch pipeline**: `SO_ArcadeGame` (static config) → `ArcadeGameConfigureModal` →
+  `GameDataSO` (SOAP runtime state) → `SceneLoader.LaunchGame()` (host-driven Netcode
+  scene load) → scene-placed controller; config syncs to clients in
+  `MultiplayerMiniGameControllerBase.OnNetworkSpawn()`.
 
 ### Documentation Index
 
@@ -330,6 +274,16 @@ deleted 2026-07-20 — every mode runs the networked single-host model.
 | `UNIT_TESTING_GUIDE.md` | `_Scripts/Tests/` | Unit testing guidelines and inventory |
 | `BENCHMARK_TOOL.md` | `_Scripts/Utility/PerformanceBenchmark/` | Performance Benchmark tool guide (tabs, score/hints, sweep, customization) |
 | `GIT_RULES.md` | Project root | Git commit conventions |
+| `BOOTSTRAP_AUTH_FLOW.md` | `Docs/` | Bootstrap → Authentication → Menu_Main full flow: scene-by-scene diagrams, `ApplicationStateMachine`, auth SOAP data flow, key-file tables, auth patterns |
+| `MULTIPLAYER_SPAWNING.md` | `Docs/` | Netcode component reference, player/vessel spawn chains (menu, game, party join, freestyle flight), Player NetworkVariables, player-count & AI-backfill pipeline, team balancing |
+| `PARTY_SOCIAL.md` | `Docs/` | Party/invite lobby + friend system reference: services, SOAP types, facade API, presence, UI components, SO assets, patterns |
+| `HEXRACE_SUMMARY.md` | `Docs/` | Condensed HexRace reference (canonical deep-dive: `_Scripts/Controller/Arcade/HEXRACE.md`) |
+| `MENU_NAVIGATION.md` | `Docs/` | Menu_Main screen navigation: `ScreenSwitcher`, `IScreen`, screen inventory, reusable UI components |
+| `LAVALAMP.md` | `Docs/` | Lava-lamp / menu-freestyle merge: Game UI hierarchy, HUD lifecycle, vessel selection, phased shape-drawing/scoring rollout |
+| `ELEMENTAL_BARS.md` | `Docs/` | Elemental bars petal-flower HUD: level→colour math, `ElementalBarsConfigSO` single source of truth, per-vessel rollout |
+| `ECOSYSTEM.md` + `ECOSYSTEM_MASTERPLAN.md` | `Docs/` | Ecosystem mechanics log + north-star roadmap (the LOCKED invariants above summarize these) |
+| `NUCLEUSRUSH.md` | `_Scripts/Controller/Arcade/` | Brood Rush (nucleus-control fauna-wave race) technical reference |
+| `README.md` | `Docs/` | Party / Presence / NetDiag docs index + shared conventions and locked designs |
 
 ## Architecture Patterns
 
@@ -456,261 +410,21 @@ threading.
 - **Do not** touch a `UnityEngine.Object` (incl. `== null` checks) in a `Task` continuation without `.AsMainThread()` upstream.
 - **Do not** capture `Thread.CurrentThread.ManagedThreadId` in random places to make per-class main-thread checks — read `MainThreadDispatcher.IsOnMainThread` instead, single source of truth.
 
-### Bootstrap & Scene Flow
+### Bootstrap, Authentication & App State
 
-The application uses a unified bootstrap pattern centered on `AppManager`, with `ApplicationStateMachine` tracking the top-level phase:
+Full flow (scene-by-scene execution diagrams, `ApplicationStateMachine` graph, SOAP data
+flow, key-file tables): `Docs/BOOTSTRAP_AUTH_FLOW.md`. The rules that must hold:
 
-1. **Bootstrap scene** (build index 0) → `AppManager` configures platform, registers DI bindings, starts auth, transitions to Authentication scene. State: `None → Bootstrapping → Authenticating`.
-2. **Authentication scene** → checks cached auth, signs in or shows auth UI. State: `Authenticating → MainMenu`.
-3. **Menu_Main scene** → main menu entry point. State: `MainMenu`.
-
-Key classes:
-- `AppManager` (`_Scripts/System/AppManager.cs`) — top-level orchestrator and Reflex DI root (`[DefaultExecutionOrder(-100)]`, implements `IInstaller`). Handles platform configuration, DI registration of all persistent managers and SO assets, auth/network startup, splash fade, and scene transition. Lives on a `DontDestroyOnLoad` root.
-- `ApplicationStateMachine` (`_Scripts/System/ApplicationStateMachine.cs`) — pure C# class (DI lazy singleton). Single-writer to `ApplicationStateDataVariable` (SOAP). Validates transitions via a table-driven state graph. Auto-subscribes to gameplay SOAP events (`OnSessionStarted`, `OnMiniGameEnd`) and lifecycle events (pause, quit, network loss) for automatic phase transitions. States: `None(0)`, `Bootstrapping(1)`, `Authenticating(2)`, `MainMenu(3)`, `LoadingGame(4)`, `InGame(5)`, `GameOver(6)`, `Paused(7)`, `Disconnected(8)`, `ShuttingDown(9)`.
-- `SceneLoader` (`_Scripts/System/SceneLoader.cs`) — persistent scene-loading service. Extends `MonoBehaviour` (DontDestroyOnLoad). Lives in the Bootstrap scene and persists across all scene transitions. Subscribes to SOAP events in code (`OnLaunchGame`, `OnClickToMainMenuButton`, `OnActiveSessionEnd`, `OnClickToRestartButton`) — no per-scene EventListenerNoParam wiring needed. Handles launching gameplay scenes (host-driven Netcode scene load, with a defensive local fallback only when no NetworkManager is active), returning to main menu, and local restart. Registered as a DI singleton via AppManager. Game config sync to clients is handled by `MultiplayerMiniGameControllerBase.SyncGameConfigToClients_ClientRpc()` in the game scene.
-- `SceneNameListSO` (`_Scripts/Utility/DataContainers/SceneNameListSO.cs`) — centralized scene name registry (Bootstrap, Authentication, Menu_Main, Multiplayer). Registered in DI and injected where scene names are needed, replacing hardcoded strings.
-- `SceneTransitionManager` — unified scene loading with fade transitions (`[DefaultExecutionOrder(-50)]`), creates its own full-screen fade overlay programmatically. Registered as a DI singleton.
-- `ApplicationLifecycleManager` — application lifecycle events, bridges both static C# events (legacy) and SOAP events via `ApplicationLifecycleEventsContainerSO`
-- `ApplicationLifecycleEventsContainerSO` (`_Scripts/ScriptableObjects/ApplicationLifecycleEventsContainerSO.cs`) — SO container bundling SOAP events for app lifecycle: `OnAppPaused`, `OnAppFocusChanged`, `OnAppQuitting`, `OnSceneLoaded`, `OnSceneUnloading`. Registered in DI.
-- `BootstrapConfigSO` — configures: service init timeout, splash duration, framerate, screen sleep, vsync, verbose logging
-- `FriendsServiceFacade` (`_Scripts/System/FriendsServiceFacade.cs`) — pure C# class (DI lazy singleton). Single-writer facade for UGS Friends service. Syncs relationship data into `FriendsDataSO`. Supports friend requests, management, presence, and refresh.
-
-See `Assets/_Scripts/System/Bootstrap/BOOTSTRAP_AUDIT.md` for the bootstrap scene audit: root GameObjects, execution order map, applied fixes, and deferred issues. See `Docs/SCENES.md` for the complete scene inventory, game mode reference, and game launch pipeline documentation.
-
-### Authentication & Session Flow
-
-Authentication uses **Unity Gaming Services (UGS)** exclusively. Legacy PlayFab auth files exist under `_Scripts/System/Playfab/Authentication/` but are deprecated and inert.
-
-#### Architecture
-
-The auth system follows a **single-writer / multi-reader** pattern through SOAP:
-
-- **`AuthenticationServiceFacade`** (plain C# singleton, Reflex DI) — the **sole writer** to `AuthenticationDataVariable`. Handles UGS initialization, anonymous sign-in, cached session restore, event wiring, and sign-out. Created by `AppManager.InstallBindings()` as a lazy singleton.
-- **`AuthenticationDataVariable`** (SOAP `ScriptableVariable<AuthenticationData>`) — the **shared state**. All other systems read from this or subscribe to its events.
-- **`AuthenticationController`** (MonoBehaviour) — thin adapter that delegates to the facade via `[Inject]`. Exists for scenes that need a GameObject entry point (e.g., inspector-driven `autoSignInAnonymously` toggle).
-- **`AuthenticationSceneController`** (MonoBehaviour) — orchestrates the Authentication scene UI: auto-skip on cached auth, guest login button, username setup panel, navigation to main menu. All async work uses `CancellationToken` and `UniTask`.
-- **`SplashToAuthFlow`** (MonoBehaviour) — placed on the splash scene. After splash display, reads `AuthenticationDataVariable` to decide: skip to `Menu_Main` (if signed in) or load the Authentication scene.
-
-#### Execution Flow
-
-```
-Bootstrap Scene (build index 0)
-│
-├─ AppManager.Awake() [DefaultExecutionOrder(-100)]
-│   ├─ DontDestroyOnLoad(gameObject)
-│   ├─ ConfigurePlatform() (framerate, vsync, screen sleep via BootstrapConfigSO)
-│   └─ TryResolveManagersEarly() (find 12 scene managers, mark DontDestroyOnLoad)
-│
-├─ AppManager.InstallBindings() (Reflex IInstaller)
-│   ├─ RegisterValue: SceneNameListSO, GameDataSO, AuthenticationDataVariable,
-│   │   NetworkMonitorDataVariable, FriendsDataSO, HostConnectionDataSO,
-│   │   ApplicationLifecycleEventsContainerSO, ApplicationStateDataVariable
-│   ├─ RegisterFactory (Lazy Singleton): GameSetting, AudioSystem, PlayerDataService,
-│   │   UGSStatsManager, CaptainManager, IAPManager, SceneLoader, ThemeManager,
-│   │   CameraManager, PostProcessingManager, StatsManager, SceneTransitionManager
-│   └─ RegisterFactory (Lazy Singleton): AuthenticationServiceFacade, NetworkMonitor,
-│       FriendsServiceFacade, ApplicationStateMachine
-│
-├─ AppManager.Start()
-│   ├─ ApplicationStateMachine.TransitionTo(Bootstrapping)
-│   ├─ ConfigureGameData()
-│   ├─ StartNetworkMonitor()
-│   ├─ StartAuthentication()  ← fire-and-forget
-│   │   ├─ UnityServices.InitializeAsync()
-│   │   ├─ WireAuthEventsOnce()
-│   │   ├─ SignInAnonymouslyAsync()
-│   │   └─ OnSignInSuccess() → AuthenticationData SOAP events
-│   │       └─ OnSignedIn.Raise() ──► PlayerDataService.HandleSignedIn()
-│   │                                  └─ CloudSave load/merge → IsInitialized = true
-│   └─ RunBootstrapAsync().Forget()
-│       ├─ Yield frames (let Awake/Start settle)
-│       ├─ Enforce minimum splash duration
-│       ├─ Fade out splash CanvasGroup
-│       ├─ ApplicationStateMachine.TransitionTo(Authenticating)
-│       └─ Load Authentication scene (via SceneTransitionManager or direct)
-│
-    ▼
-Authentication Scene
-│ AuthenticationSceneController.Start()
-│ ├─ [1] Already signed in? → HandlePostAuthFlow → Menu_Main
-│ ├─ [2] facade.TrySignInCachedAsync() succeeds? → HandlePostAuthFlow → Menu_Main
-│ ├─ [3] Show auth panel (or auto-anonymous sign-in if no panel)
-│ │   └─ Guest Login button → facade.EnsureSignedInAnonymouslyAsync()
-│ ├─ OnSignedIn SOAP event ──► MultiplayerSetup.EnsureHostStartedAsync()
-│ │   └─ Instantiates NetworkManager prefab → nm.StartHost()
-│ ├─ HandlePostAuthFlow:
-│ │   ├─ Wait for PlayerDataService.IsInitialized (with timeout)
-│ │   ├─ Username needed? → Show username setup panel
-│ │   └─ NavigateToMainMenu():
-│ │       ├─ ApplicationStateMachine.TransitionTo(MainMenu)
-│ │       ├─ Wait for NetworkManager.IsListening (3s timeout)
-│ │       ├─ If host ready → nm.SceneManager.LoadScene(Menu_Main)
-│ │       └─ Fallback → direct scene load via SceneTransitionManager
-│ └─ Safety timeout (10s configurable) → force-navigate to Menu_Main
-│
-    ▼
-Menu_Main Scene (loaded as networked scene when host is running)
-│
-│ MainMenuController.Start()  [Game GameObject]
-│ ├─ ConfigureMenuGameData():
-│ │   ├─ gameData.SetSpawnPositions(_playerOrigins)
-│ │   ├─ gameData.selectedVesselClass = Squirrel (configurable)
-│ │   ├─ gameData.SelectedPlayerCount = 3
-│ │   └─ gameData.SelectedIntensity = 1
-│ ├─ Subscribe to OnClientReady → HandleMenuReady (transitions to Ready state)
-│ ├─ Subscribe to OnLaunchGame → HandleLaunchGame (transitions to LaunchingGame)
-│ ├─ TransitionTo(Initializing)
-│ ├─ DomainAssigner.Initialize()
-│ └─ gameData.InitializeGame() → raises OnInitializeGame
-│
-│ Player Spawning Chain (network-driven):
-│ ├─ Player.OnNetworkSpawn() [host's Player object, spawned in Auth scene]
-│ │   ├─ gameData.Players.Add(this)
-│ │   ├─ Raise OnPlayerNetworkSpawnedUlong(OwnerClientId)
-│ │   ├─ Resolve display name (PlayerDataService → GameDataSO → UGS fallback)
-│ │   ├─ NetDomain = DomainAssigner.GetDomainsByGameModes(gameMode)
-│ │   └─ NetDefaultVesselType = gameData.selectedVesselClass (Squirrel)
-│ │
-│ ├─ ServerPlayerVesselInitializer.OnNetworkSpawn() [via NetcodeHooks]
-│ │   ├─ Subscribe to OnPlayerNetworkSpawnedUlong
-│ │   └─ ProcessPreExistingPlayers() — catches host Player already spawned
-│ │
-│ ├─ HandlePlayerNetworkSpawnedAsync(ownerClientId):
-│ │   ├─ Wait preSpawnDelayMs (200ms) for NetworkVariables to sync
-│ │   ├─ FindUnprocessedPlayerByOwnerClientId()
-│ │   ├─ IsReadyToSpawn() — checks valid vessel type + non-empty name
-│ │   └─ OnPlayerReadyToSpawnAsync(player) [virtual — Menu overrides]
-│ │
-│ ├─ ServerPlayerVesselInitializer.OnPlayerReadyToSpawnAsync():
-│ │   ├─ SpawnVesselForPlayer():
-│ │   │   ├─ vesselPrefabContainer.TryGetShipPrefab(vesselType)
-│ │   │   ├─ Instantiate(shipNetworkObject)
-│ │   │   ├─ GameObjectInjector.InjectRecursive() — Reflex DI
-│ │   │   ├─ networkVessel.SpawnWithOwnership(clientId, destroyWithScene: true)
-│ │   │   └─ player.NetVesselId = networkVessel.NetworkObjectId
-│ │   ├─ ClientPlayerVesselInitializer.InitializePlayerAndVessel():
-│ │   │   ├─ player.InitializeForMultiplayerMode(vessel)
-│ │   │   ├─ vessel.Initialize(player)
-│ │   │   ├─ ShipHelper.SetShipProperties(themeManagerData, vessel)
-│ │   │   ├─ gameData.AddPlayer(player) — sets LocalPlayer, assigns spawn pose
-│ │   │   ├─ CameraManager.SnapPlayerCameraToTarget() (if local user)
-│ │   │   └─ gameData.InvokeClientReady() → raises OnClientReady
-│ │   ├─ Wait postSpawnDelayMs (200ms) for vessel to replicate
-│ │   └─ NotifyClients() — RPCs to non-host clients (N/A for menu)
-│ │
-│ └─ MenuServerPlayerVesselInitializer.OnPlayerReadyToSpawnAsync() [override]:
-│     ├─ player.NetDomain.Value = menuVesselDomain (Jade) — server-authoritative
-│     │   menu domain reset, BEFORE base so the vessel paints Jade at init
-│     ├─ await base.OnPlayerReadyToSpawnAsync() — full chain above
-│     └─ ActivateAutopilot(player):
-│         ├─ player.StartPlayer() — activates vessel, enables input
-│         ├─ player.Vessel.ToggleAIPilot(true)
-│         ├─ player.InputController.SetPause(true)
-│         └─ CameraManager.SetupEndCameraFollow(vessel.CameraFollowTarget)
-│
-│ MainMenuController.HandleMenuReady() [on OnClientReady]:
-│ ├─ TransitionTo(Ready)  — menu is now fully interactive
-│ └─ gameData.InitializeGame()
-│
-│ MenuCrystalClickHandler (optional play-from-menu):
-│ ├─ Tap crystal → TransitionToGameplay:
-│ │   ├─ Fade out menu UI
-│ │   ├─ Vessel.ToggleAIPilot(false), InputController.SetPause(false)
-│ │   └─ Retarget Cinemachine vCam to vessel follow target
-│ └─ Center tap → TransitionToMenu:
-│     ├─ InputController.SetPause(true), Vessel.ToggleAIPilot(true)
-│     ├─ Restore Cinemachine to original menu targets
-│     └─ Fade in menu UI
-│
-│ ScreenSwitcher
-│ ├─ Caches IScreen components, lays out panels to viewport width
-│ ├─ Navigates to HOME (or persisted ReturnToScreen)
-│ └─ Screens: STORE(0), ARK(1), HOME(2), PORT(3), HANGAR(4)
-```
-
-#### Application State Machine
-
-The `ApplicationStateMachine` (pure C# DI singleton) tracks the top-level application phase via `ApplicationStateDataVariable` (SOAP). Transitions are validated against a table; invalid transitions log warnings.
-
-```
-None → Bootstrapping → Authenticating → MainMenu → LoadingGame → InGame → GameOver
-                                           ↑          ↑              ↑        │
-                                           │          └──────────────┘        │
-                                           └──────────────────────────────────┘
-Special states (from any active state):
-  Paused → (previous state)     — driven by ApplicationLifecycleManager.OnAppPaused
-  Disconnected → MainMenu | Authenticating  — driven by NetworkMonitor.OnNetworkLost
-  ShuttingDown                   — terminal, always allowed
-```
-
-Auto-wired SOAP transitions:
-- `GameDataSO.OnSessionStarted` → `InGame`
-- `GameDataSO.OnMiniGameEnd` → `GameOver`
-- `ApplicationLifecycleManager.OnAppPaused` → `Paused` / restore
-- `ApplicationLifecycleManager.OnAppQuitting` → `ShuttingDown`
-- `NetworkMonitorData.OnNetworkLost` → `Disconnected`
-
-#### SOAP Data Flow
-
-```
-AuthenticationServiceFacade (single writer)
-        │ writes to
-        ▼
-AuthenticationDataVariable (ScriptableObject asset)
-  └─ AuthenticationData
-       ├─ .State        (NotInitialized → Initializing → Ready → SigningIn → SignedIn | Failed)
-       ├─ .IsSignedIn   (bool)
-       ├─ .PlayerId     (string)
-       ├─ .OnSignedIn   ──► PlayerDataService.HandleSignedIn()
-       │                 ──► MultiplayerSetup.EnsureHostStartedAsync()
-       ├─ .OnSignedOut  ──► (listeners clear session state)
-       └─ .OnSignInFailed ──► (listeners handle error UI)
-
-ApplicationStateMachine (single writer)
-        │ writes to
-        ▼
-ApplicationStateDataVariable (ScriptableObject asset)
-  └─ ApplicationStateData
-       ├─ .State         (ApplicationState enum)
-       ├─ .PreviousState (ApplicationState enum)
-       └─ .OnStateChanged ──► (ScriptableEventApplicationState — any subscriber)
-```
-
-Readers of auth state: `SplashToAuthFlow`, `AuthenticationSceneController`, `PlayerDataService`, `AuthenticationController`, `MultiplayerSetup`, `FriendsServiceFacade`.
-
-Readers of app state: any system via `[Inject] ApplicationStateDataVariable` or `ApplicationStateData.OnStateChanged` SOAP event.
-
-#### Key Files
-
-| Role | File | Location |
-|---|---|---|
-| DI root / bootstrap orchestrator | `AppManager.cs` | `_Scripts/System/` |
-| App state machine (single writer) | `ApplicationStateMachine.cs` | `_Scripts/System/` |
-| Auth facade (single writer) | `AuthenticationServiceFacade.cs` | `_Scripts/System/` |
-| Friends facade (single writer) | `FriendsServiceFacade.cs` | `_Scripts/System/` |
-| Auth scene controller | `AuthenticationSceneController.cs` | `_Scripts/System/` |
-| MonoBehaviour auth adapter | `AuthenticationController.cs` | `_Scripts/System/Systems/Authentication/` |
-| Splash → auth routing | `SplashToAuthFlow.cs` | `_Scripts/System/` |
-| Network monitor | `NetworkMonitor.cs` | `_Scripts/System/` |
-| SOAP auth state | `AuthenticationData.cs` | `_Scripts/ScriptableObjects/SOAP/ScriptableAuthenticationData/` |
-| SOAP auth variable | `AuthenticationDataVariable.cs` | `_Scripts/ScriptableObjects/SOAP/ScriptableAuthenticationData/` |
-| SOAP network state | `NetworkMonitorData.cs` | `_Scripts/ScriptableObjects/SOAP/ScriptableAuthenticationData/` |
-| SOAP app state | `ApplicationStateData.cs` | `_Scripts/ScriptableObjects/SOAP/ScriptableApplicationState/` |
-| SOAP app state variable | `ApplicationStateDataVariable.cs` | `_Scripts/ScriptableObjects/SOAP/ScriptableApplicationState/` |
-| ApplicationState enum | `ApplicationState.cs` | `_Scripts/Data/Enums/` |
-| Friends data SO | `FriendsDataSO.cs` | `_Scripts/Utility/DataContainers/` |
-| Player profile service | `PlayerDataService.cs` | `_Scripts/UI/Views/` |
-| Auth SO asset instance | `AuthenticationData.asset` | `_SO_Assets/Authentication Data/` |
-| Legacy PlayFab auth (deprecated) | `AuthenticationManager.cs` | `_Scripts/System/Playfab/Authentication/` |
-| Legacy PlayFab UI (deprecated) | `AuthenticationView.cs` | `_Scripts/System/Playfab/Authentication/` |
-
-#### Auth Patterns to Follow
-
-- **Single writer**: Only `AuthenticationServiceFacade` writes to `AuthenticationData`. Scene controllers and UI read state and subscribe to SOAP events — they never mutate auth state directly.
-- **UniTask + CancellationToken**: All auth async paths use `UniTask` with `CancellationTokenSource` tied to `OnEnable`/`OnDisable` lifecycle. No raw `Task.Delay` or manual elapsed-time polling.
-- **Timeout via linked CTS**: Use `CancellationTokenSource.CreateLinkedTokenSource(ct)` + `CancelAfter()` for timeouts, not polling loops.
-- **Button interactability**: Disable buttons during async operations instead of boolean `_isProcessing` guards.
-- **Facade via DI**: Scene scripts get the facade via `[Inject]`, not by creating their own `AuthenticationController` GameObjects at runtime.
+- `AppManager` is the Reflex DI root and bootstrap orchestrator (`[DefaultExecutionOrder(-100)]`,
+  `IInstaller`); all persistent services/SO assets register in `InstallBindings()`.
+- **Single writer**: only `AuthenticationServiceFacade` writes `AuthenticationData`; only
+  `ApplicationStateMachine` writes `ApplicationStateDataVariable`; scene controllers and
+  UI read state and subscribe to SOAP events - they never mutate directly.
+- All auth async uses UniTask + `CancellationToken` with linked-CTS timeouts (no polling
+  loops, no raw `Task.Delay`); disable buttons during async ops instead of boolean
+  guards; get facades via `[Inject]`, never by creating controller GameObjects.
+- `SceneLoader` (DontDestroyOnLoad, Bootstrap) owns game launch / restart /
+  return-to-menu via code-subscribed SOAP events; scene names come from `SceneNameListSO`.
 
 ### Dependency Injection (Reflex)
 
@@ -765,306 +479,44 @@ Key interfaces: `IImpactor` / `IImpactCollider`
 
 **Forcefield Crackle (Skimmer)**: `SkimmerForcefieldCracklePrismEffectSO` (at `_Scripts/Controller/ImpactEffects/EffectsSO/Skimmer Prism Effects/`) is a shader-driven alternative to `SkimmerFXPrismEffectSO` that visualizes the Skimmer's invisible sphere collider on prism impacts. It computes the impact point via `Collider.ClosestPoint` between the prism box and skimmer sphere, projects it onto the sphere surface, and forwards the event (position + duration + intensity + radius) to a `ForcefieldCrackleController` MonoBehaviour on the vessel (`_Scripts/Controller/Vessel/ForcefieldCrackleController.cs`). The controller owns all visual parameters (colors, arc density/sharpness, ring thickness, ripple speed, fresnel) as serialized fields and feeds a ring buffer of up to 16 simultaneous impacts to the shader via MaterialPropertyBlock arrays each frame. `[ExecuteAlways]` allows edit-mode preview via `ForcefieldCrackleControllerEditor` (at `_Scripts/Editor/`). The shader's custom-function HLSL file `ForcefieldCrackle.hlsl` (at `Assets/Materials/Graphs/`) uses FBM-based electrical arcs with expanding wavefronts on a geodesic distance metric so arcs follow the sphere's curvature. All three code files use the `CosmicShore.Gameplay` namespace.
 
-### Multiplayer / Netcode
+### Multiplayer / Netcode & Player Spawning
 
-The game uses Unity Netcode for GameObjects (`com.unity.netcode.gameobjects` 2.5.0) for multiplayer. Key files in `Assets/_Scripts/Controller/Multiplayer/`:
+Component reference, full spawn chains (menu, game, party join, freestyle flight),
+`Player` NetworkVariable tables, and the player-count/AI-backfill pipeline:
+`Docs/MULTIPLAYER_SPAWNING.md`. Load-bearing rules:
 
-- `ServerPlayerVesselInitializer` — core server-side vessel spawner. Listens for `OnPlayerNetworkSpawnedUlong` SOAP events, waits for NetworkVariables to sync (`preSpawnDelayMs`), spawns the vessel prefab via `VesselPrefabContainer`, injects DI with `GameObjectInjector.InjectRecursive()`, then delegates initialization to `ClientPlayerVesselInitializer`. Tracks processed players by `NetworkObjectId` (not `OwnerClientId`, since AI shares the host's). Uses `NetcodeHooks` (not direct `NetworkBehaviour` inheritance) for spawn/despawn hooks. `ProcessPreExistingPlayers()` catches host Player objects spawned before the initializer loaded. The spawner never shuts down the NetworkManager on despawn — under the eager-Relay design the network/Relay persists across all scene transitions and is torn down only by explicit party-leave (`PartyInviteController`) or transport failure (`MultiplayerSetup.OnTransportFailure`).
-- `ClientPlayerVesselInitializer` — common player-vessel pair initialization (extends `NetworkBehaviour`). Server path: called directly by `ServerPlayerVesselInitializer`. Client path: receives RPCs (`InitializeAllPlayersAndVessels_ClientRpc` for new clients, `InitializeNewPlayerAndVessel_ClientRpc` for existing clients). Queues pending `(playerNetId, vesselNetId)` pairs when RPCs arrive before objects replicate — resolved reactively via `OnPlayerNetworkSpawnedUlong` + `OnVesselNetworkSpawned` SOAP events (zero `WaitUntil` polling). `InitializePair()` calls `player.InitializeForMultiplayerMode(vessel)`, `vessel.Initialize(player)`, `ShipHelper.SetShipProperties()`, `gameData.AddPlayer()`, and fires `gameData.InvokeClientReady()` for the local user.
-- `ServerPlayerVesselInitializerWithAI` — extends `ServerPlayerVesselInitializer`. Spawns server-owned AI players **before** `base.OnNetworkSpawn()` subscribes to events, so AI spawn events are harmlessly missed. Marks all AI players in `_processedPlayers` so the base class skips them. Picks AI vessel type from `SO_GameList` captains (falls back to Sparrow). Configures `AIPilot` with game-mode-aware seeking and skill level. **AI players and vessels are spawned with `destroyWithScene: false`** so they survive the client's end-of-frame scene-transition cleanup — without this the client's scene-load message batches with the AI spawn messages on the same network tick and the client destroys the just-spawned AI NetworkObjects (surfacing as `[Invalid Destroy]` errors on the host and invisible AI on clients). Human vessels are unaffected because `ServerPlayerVesselInitializer` delays spawn by `preSpawnDelayMs` (200 ms), pushing them into a later tick. Because AI no longer gets scene-unload cleanup for free, `MultiplayerMiniGameControllerBase.ExecuteSceneReloadReplay()` explicitly despawns all AI players and vessels before the scene reload; the existing cleanup paths (`SceneLoader.ClearPlayerVesselReferences` for Game→Menu, `NetworkManager.Shutdown` on disconnect) already explicit-despawn AI, so AI does not leak into Menu_Main.
-- `MenuServerPlayerVesselInitializer` — extends `ServerPlayerVesselInitializer`. Overrides `OnPlayerReadyToSpawnAsync()` to first reset the player's domain server-side (`NetDomain.Value = menuVesselDomain`, Jade — the ONLY menu domain reset, before vessel spawn so the hull paints Jade at init; replicates to all peers, covering fresh entry, party join, and host-return), then call `base`, then `ActivateAutopilot()`: `player.StartPlayer()`, `Vessel.ToggleAIPilot(true)`, `InputController.SetPause(true)`, `CameraManager.SetupEndCameraFollow(vessel.CameraFollowTarget)`. Game data configuration (vessel class, player count, intensity) is handled by `MainMenuController` — this class only handles the network spawn chain, the menu domain reset, and autopilot activation. The Jade reset is on the **player-spawn** path (`OnPlayerReadyToSpawnAsync`) only; a runtime **vessel swap** (`RequestSwap` → `SwapVesselAsync`) does **not** touch domain — it despawns/respawns the vessel and the new hull keeps the player's current `NetDomain` (`ReInitializePair` re-syncs `Player.Domain` from `NetDomain` before repaint so it can't fall back to Jade / desync the domain-changer toy), and inherits the outgoing vessel's pose (`SetPose`) and speed (`SetInitialSpeed`, captured before despawn) for a seamless swap.
-- `MenuCrystalClickHandler` — toggles between menu mode (Cinemachine crystal camera + autopilot) and gameplay mode (Cinemachine follows vessel + player control) on Menu_Main. Tap crystal → fade out menu UI, disable autopilot, enable player input, retarget Cinemachine vCam to vessel follow target. Center tap → restore autopilot and menu UI.
-- `MultiplayerSetup` — bridges authentication → Netcode host lifecycle. `EnsureHostStarted()` registers Netcode callbacks and calls `nm.StartHost()` exactly once (guarded by `_hostStartInProgress` flag). For multiplayer games: shuts down local host, queries/creates/joins UGS Multiplayer sessions with Relay transport, handles race conditions on session joins. Session properties: `gameMode` (String1), `maxPlayers` (String2). Connection approval auto-creates player objects.
-- `NetworkStatsManager` — network health monitoring via `NetworkMonitorData` SOAP type
-- `DomainAssigner` — static team pool manager. `Initialize()` fills pool with `[Jade, Ruby, Gold]` (excludes Blue, the "no team" sentinel). `GetDomainsByGameModes()` picks a random unique domain per player (returns `Domains.Jade` for co-op modes; returns `Domains.Blue` if the pool is exhausted). **Must** be called per session start to prevent duplicate/swapped domains.
+- Vessel spawning is ONE unified Netcode+SOAP pipeline for menu and game
+  (`ServerPlayerVesselInitializer` → `ClientPlayerVesselInitializer`; menu adds autopilot
+  via `MenuServerPlayerVesselInitializer`, game scenes pre-spawn AI via
+  `ServerPlayerVesselInitializerWithAI`). Never add a parallel spawn path.
+- **AI players/vessels spawn server-owned with `destroyWithScene: false`** (same-tick
+  scene-load batching would destroy them on clients as they spawn) - so every cleanup
+  path must explicitly despawn AI (`ExecuteSceneReloadReplay`,
+  `SceneLoader.ClearPlayerVesselReferences`, disconnect shutdown).
+- Track processed players by `NetworkObjectId`, never `OwnerClientId` - AI shares the
+  host's OwnerClientId. Locality (`Player.IsLocalUser`) is reliable only after pair-init
+  sets `IsInitializedAsAI` (the AI spawner writes `NetIsAI` AFTER `Spawn()`).
+- The spawner never shuts down the NetworkManager - the eager Relay session persists
+  across all scene transitions; teardown is explicit party-leave
+  (`PartyInviteController`) or transport failure (`MultiplayerSetup.OnTransportFailure`).
+- `SceneLoader` guards `if (nm.IsListening && !nm.IsServer) return` before any local
+  scene load (MPPM shared-SOAP double-load protection).
+- AI team assignment is deterministic (`GetBalancedDomain`: lowest total → fewest humans
+  → enum order Jade→Ruby→Gold) - identical results on every machine, no shared seed.
+- Menu domain reset (Jade) happens ONLY server-side in
+  `MenuServerPlayerVesselInitializer.OnPlayerReadyToSpawnAsync`; a runtime vessel swap
+  keeps the player's current `NetDomain` and inherits pose + speed.
 
-Scene loading for multiplayer is handled by `SceneLoader` (`_Scripts/System/SceneLoader.cs`), which extends `MonoBehaviour` and drives a host/server Netcode scene load (with a defensive local fallback only when no NetworkManager is active). `SceneLoader` lives in Bootstrap (DontDestroyOnLoad) and subscribes to SOAP events in code. Game config sync to clients is handled by `MultiplayerMiniGameControllerBase.SyncGameConfigToClients_ClientRpc()` in `OnNetworkSpawn()`.
+### Party / Invite / Friends (social layer)
 
-**MPPM / connected-client guard**: `LaunchGame`, `ReturnToMainMenu`, and `HandleActiveSessionEnd` all check `if (nm.IsListening && !nm.IsServer) return` after visual setup (fade-to-black, state transition, `OnClientReady` subscription) but before `LoadSceneAsync()`. In Multiplayer Play Mode, SOAP events on the shared `GameDataSO` fire on every virtual player, so without this guard a client's `SceneLoader` would call `SceneManager.LoadScene()` locally and race the server's Netcode scene load — destroying AI NetworkObjects before they replicate. The guard lets connected clients keep the smooth visual transitions while deferring the actual scene load to the server's Netcode scene management.
-
-`VesselStatus` extends `NetworkBehaviour`. Multiplayer game modes can also run solo with AI opponents via the AI Profile system.
-
-#### Player Spawning Architecture
-
-The player spawning system uses a unified multiplayer-first pipeline — menu vessels spawn through the same Netcode + SOAP pipeline as gameplay vessels.
-
-**Spawning class hierarchy:**
-
-```
-ServerPlayerVesselInitializer (MonoBehaviour + NetcodeHooks)
-├── MenuServerPlayerVesselInitializer (Menu_Main: adds autopilot)
-└── ServerPlayerVesselInitializerWithAI (game scenes: pre-spawns AI)
-
-ClientPlayerVesselInitializer (NetworkBehaviour)
-└── Used by all ServerPlayerVesselInitializer variants
-
-```
-
-**Player (`NetworkBehaviour`) NetworkVariables:**
-
-| Variable | Read | Write | Purpose |
-|---|---|---|---|
-| `NetDefaultVesselType` | Everyone | Owner | Vessel class selection |
-| `NetDomain` | Everyone | Server | Team assignment (via `DomainAssigner`) |
-| `NetName` | Everyone | Owner | Display name (3-tier fallback: PlayerDataService → GameDataSO cache → UGS PlayerName) |
-| `NetVesselId` | Everyone | Server | Linked vessel's `NetworkObjectId` |
-| `NetIsAI` | Everyone | Server | AI flag |
-| `NetAvatarId` | Everyone | Owner | Profile avatar ID |
-
-**Player identity resolution** (`Player.OnNetworkSpawn()`):
-1. `PlayerDataService.CurrentProfile.displayName` (live Cloud Save profile)
-2. `GameDataSO.LocalPlayerDisplayName` (cached by `PlayerDataService.HandleProfileChanged`)
-3. `AuthenticationService.PlayerName` with `#XXXX` suffix stripped (last resort)
-
-**SOAP event flow for spawning:**
-
-```
-Player.OnNetworkSpawn()
-  ├─ gameData.Players.Add(this)
-  ├─ Raise OnPlayerNetworkSpawnedUlong(OwnerClientId)
-  │   └─ ServerPlayerVesselInitializer.HandlePlayerNetworkSpawned()
-  │       ├─ Wait preSpawnDelayMs (200ms) for NetworkVariables
-  │       ├─ SpawnVesselForPlayer():
-  │       │   ├─ vesselPrefabContainer.TryGetShipPrefab(vesselType)
-  │       │   ├─ Instantiate + GameObjectInjector.InjectRecursive()
-  │       │   ├─ SpawnWithOwnership(clientId)
-  │       │   └─ player.NetVesselId = vessel.NetworkObjectId
-  │       ├─ ClientPlayerVesselInitializer.InitializePlayerAndVessel()
-  │       │   ├─ player.InitializeForMultiplayerMode(vessel)
-  │       │   ├─ vessel.Initialize(player)
-  │       │   ├─ ShipHelper.SetShipProperties()
-  │       │   ├─ gameData.AddPlayer() → sets LocalPlayer, assigns spawn pose
-  │       │   └─ gameData.InvokeClientReady() (if IsLocalUser)
-  │       ├─ Wait postSpawnDelayMs (200ms) for replication
-  │       └─ NotifyClients() → RPCs to non-host clients
-  │
-  └─ [Client side: SOAP events drive pending pair resolution]
-      ├─ OnPlayerNetworkSpawnedUlong → ProcessPendingPairs()
-      └─ OnVesselNetworkSpawned → ProcessPendingPairs()
-```
-
-**Menu_Main spawning specifics** (via `MainMenuController` + `MenuServerPlayerVesselInitializer`):
-
-**Host path (initial menu load):**
-
-| Step | Actor | Action |
-|---|---|---|
-| 1 | `MainMenuController.Start()` | Configure game data: vessel=Squirrel, players=3, intensity=1, spawn positions |
-| 2 | `MainMenuController` | `DomainAssigner.Initialize()`, `gameData.InitializeGame()` |
-| 3 | `Player.OnNetworkSpawn()` | Host Player (spawned in Auth scene) fires `OnPlayerNetworkSpawnedUlong` |
-| 4 | `ServerPlayerVesselInitializer` | `ProcessPreExistingPlayers()` catches the already-spawned host Player |
-| 5 | `ServerPlayerVesselInitializer` | Spawns vessel, initializes pair |
-| 6 | `MenuServerPlayerVesselInitializer` | Override: `ActivateAutopilot()` — AI on, input paused |
-| 7 | `ClientPlayerVesselInitializer` | `InvokeClientReady()` for local user |
-| 8 | `MainMenuController` | `HandleMenuReady()` → `TransitionTo(Ready)` — menu interactive |
-
-**Client path (joining via party invite):**
-
-| Step | Actor | Action |
-|---|---|---|
-| 1 | `PartyInviteController` | `AcceptInviteAsync()` — shutdown local host, join Relay party session |
-| 2 | `PartyInviteController` | `WaitForClientConnectionAsync()` + `WaitForSceneLoadAsync()` — Menu_Main syncs from host |
-| 3 | `Player.OnNetworkSpawn()` | Client Player fires `OnPlayerNetworkSpawnedUlong(clientId)` |
-| 4 | Host `ServerPlayerVesselInitializer` | `HandlePlayerNetworkSpawned(clientId)` — spawns vessel, initializes pair |
-| 5 | Host `MenuServerPlayerVesselInitializer` | `ActivateAutopilot()` — AI on, input paused on host side |
-| 6 | Host `ServerPlayerVesselInitializer` | `NotifyClients()` — RPCs all player-vessel pairs to new client |
-| 7 | Client `ClientPlayerVesselInitializer` | Receives `InitializeAllPlayersAndVessels_ClientRpc`, queues pairs |
-| 8 | Client `ClientPlayerVesselInitializer` | SOAP events resolve pairs → `InitializePair()` → `InvokeClientReady()` for local user |
-| 9 | Client `MainMenuController` | `HandleMenuReady()` → `SetNonOwnerPlayersActiveInNewClient()` activates host's vessel |
-| 10 | Client `MainMenuController` | `ActivateLocalPlayerAutopilot()` — ensures client vessel starts in autopilot |
-
-**`MainMenuController` sub-state machine** (`MainMenuState` enum):
-
-```
-None(0) → Initializing(1) → Ready(2) → LaunchingGame(3)
-                ↑                            │
-                └────────────────────────────┘
-```
-
-- `None → Initializing`: `Start()` — configures game data, fires `OnInitializeGame`
-- `Initializing → Ready`: `OnClientReady` SOAP event (autopilot vessel spawned and active)
-- `Ready → LaunchingGame`: `OnLaunchGame` SOAP event (player selected a game mode)
-
-#### Key Files — Player Spawning
-
-| Role | File | Location |
-|---|---|---|
-| Server vessel spawner (base) | `ServerPlayerVesselInitializer.cs` | `_Scripts/Controller/Multiplayer/` |
-| Client pair initializer | `ClientPlayerVesselInitializer.cs` | `_Scripts/Controller/Multiplayer/` |
-| Server AI spawner | `ServerPlayerVesselInitializerWithAI.cs` | `_Scripts/Controller/Multiplayer/` |
-| Menu autopilot spawner | `MenuServerPlayerVesselInitializer.cs` | `_Scripts/Controller/Multiplayer/` |
-| Menu play-from-menu toggle | `MenuCrystalClickHandler.cs` | `_Scripts/Controller/Multiplayer/` |
-| NetworkManager lifecycle | `MultiplayerSetup.cs` | `_Scripts/Controller/Multiplayer/` |
-| Team assignment | `DomainAssigner.cs` | `_Scripts/Controller/Multiplayer/` |
-| Player NetworkBehaviour | `Player.cs` | `_Scripts/Controller/Player/` |
-| Player interface | `IPlayer.cs` | `_Scripts/Controller/Player/` |
-| Vessel prefab mapping | `VesselPrefabContainer.cs` | `_Scripts/ScriptableObjects/SOAP/` |
-| NetcodeHooks adapter | `NetcodeHooks.cs` | `_Scripts/Utility/Network/` |
-| Game data + SOAP events | `GameDataSO.cs` | `_Scripts/Utility/DataContainers/` |
-| Menu scene controller | `MainMenuController.cs` | `_Scripts/System/` |
-| Menu sub-state enum | `MainMenuState.cs` | `_Scripts/Data/Enums/` |
-
-### Party / Invite Lobby System
-
-The invite lobby system enables multiplayer freestyle roaming in Menu_Main. Players discover each other via a shared **presence lobby** (UGS session without Relay) and send invites. Accepting an invite transitions the recipient from local host to Relay client, connecting to the inviter's party session. The host's `MenuServerPlayerVesselInitializer` spawns a vessel for the joining client with autopilot enabled.
-
-#### Two-Level Session Architecture
-
-Two UGS sessions layer here: a **Presence Lobby** (lobby-only, no Relay, ≤100 players — discovery + invite property exchange) and a **Party Session** (Relay-backed, ≤4 — actual gameplay networking). Both coexist with an active NetworkManager; invites are per-player lobby properties, so no host privilege is needed. Full tables + rationale: `Docs/PresenceSystem/ARCHITECTURE.md` and `Docs/PartySystem/ARCHITECTURE.md`.
-
-#### Core Services
-
-- **`HostConnectionService`** (`_Scripts/Controller/Party/`) — Singleton + `DontDestroyOnLoad`. Single-writer to `HostConnectionDataSO`. Auto-joins the presence lobby on auth sign-in. Periodically refreshes (3s) to sync online player list and detect incoming invites. Manages party session creation (with Relay) for actual gameplay.
-- **`PartyInviteController`** (`_Scripts/Controller/Party/`) — Singleton + `DontDestroyOnLoad`. Orchestrates Netcode transitions: host→client for accepting invites, local→Relay for sending first invite. Uses `UniTask` + `CancellationToken` with configurable timeouts. Recovers from failed transitions by restarting local host.
-- **`FriendsInitializer`** (`_Scripts/Controller/Party/`) — MonoBehaviour bridge. Initializes `FriendsServiceFacade` on auth sign-in. Manages presence updates for scene transitions.
-
-#### SOAP Data Containers
-
-- **`HostConnectionDataSO`** (`_Scripts/Utility/DataContainers/`) — Central data container for all party/lobby state. SOAP events: `OnHostConnectionEstablished`, `OnHostConnectionLost`, `OnPartyMemberJoined`, `OnPartyMemberLeft`, `OnPartyMemberKicked`, `OnInviteReceived`, `OnInviteSent`, `OnPartyJoinCompleted`. SOAP lists: `OnlinePlayers`, `PartyMembers`. Registered in AppManager DI.
-- **`FriendsDataSO`** (`_Scripts/Utility/DataContainers/`) — Friends service state. SOAP lists: `Friends`, `IncomingRequests`, `OutgoingRequests`, `BlockedPlayers`. SOAP events: `OnFriendAdded`, `OnFriendRemoved`, `OnFriendRequestReceived`, `OnFriendsServiceReady`.
-
-#### SOAP Types (PartyData)
-
-Location: `_Scripts/ScriptableObjects/SOAP/ScriptablePartyData/`
-
-| Type | Purpose |
-|---|---|
-| `PartyInviteData` | Immutable invite payload: hostPlayerId, partySessionId, hostDisplayName, hostAvatarId |
-| `PartyPlayerData` | Immutable player identity: playerId, displayName, avatarId (equality by playerId) |
-| `ScriptableEventPartyInviteData` | SOAP event for invite notifications |
-| `ScriptableEventPartyPlayerData` | SOAP event for party member changes |
-| `ScriptableListPartyPlayerData` | SOAP reactive list for online players / party members |
-| `EventListenerPartyInviteData` | MonoBehaviour listener for invite events |
-| `EventListenerPartyPlayerData` | MonoBehaviour listener for party member events |
-
-#### Invite Flow
-
-The UI-level click → send → detect → accept flow, plus the `invite_payloads`
-per-property format, lives in **`Docs/PartySystem/UI.md`** (UI surface); the
-service/SOAP happy path is in **`Docs/PartySystem/ARCHITECTURE.md`** § "SOAP
-event flow — invite happy path".
-
-#### Multiplayer Freestyle Flight in Menu_Main
-
-After a client joins via party invite, both host and client spawn with vessels and can fly together. The system uses a unified Netcode + SOAP pipeline — no special-case code for menu multiplayer.
-
-**Client join vessel spawn chain:**
-
-```
-Client joins party session via Relay
-  │
-  ├─ Client's Player.OnNetworkSpawn()
-  │   ├─ gameData.Players.Add(this)
-  │   ├─ Raise OnPlayerNetworkSpawnedUlong(clientId)
-  │   └─ Set NetDefaultVesselType, NetName, NetDomain
-  │
-  ├─ Host's ServerPlayerVesselInitializer receives OnPlayerNetworkSpawnedUlong(clientId)
-  │   ├─ Wait preSpawnDelayMs (200ms) for NetworkVariables to sync
-  │   ├─ SpawnVesselForPlayer(clientId) → vessel spawned + DI injection
-  │   ├─ ClientPlayerVesselInitializer.InitializePlayerAndVessel()
-  │   ├─ MenuServerPlayerVesselInitializer.ActivateAutopilot(player)
-  │   │   ├─ player.StartPlayer()
-  │   │   ├─ player.Vessel.ToggleAIPilot(true)
-  │   │   └─ player.InputController.SetPause(true)
-  │   ├─ Wait postSpawnDelayMs (200ms) for replication
-  │   └─ NotifyClients():
-  │       ├─ InitializeAllPlayersAndVessels_ClientRpc → new client (all pairs)
-  │       └─ InitializeNewPlayerAndVessel_ClientRpc → existing clients (new pair only)
-  │
-  ├─ Client's ClientPlayerVesselInitializer receives RPC
-  │   ├─ Queues pending (playerNetId, vesselNetId) pairs
-  │   ├─ SOAP events (OnPlayerNetworkSpawnedUlong, OnVesselNetworkSpawned) → ProcessPendingPairs()
-  │   ├─ InitializePair() for each resolved pair
-  │   └─ gameData.InvokeClientReady() for local user → fires OnClientReady
-  │
-  └─ Client's MainMenuController.HandleMenuReady()
-      ├─ TransitionTo(Ready)
-      ├─ ActivateMenuCamera()
-      ├─ ActivateLocalPlayerAutopilot() — ensures client vessel starts in autopilot
-      └─ gameData.SetNonOwnerPlayersActiveInNewClient() — activates host's vessel on client screen
-```
-
-**Freestyle toggle (autopilot ↔ player control):**
-
-`MenuCrystalClickHandler.ToggleTransition()` lets each player independently switch between autopilot and freestyle flight:
-
-| Guard | Purpose |
-|---|---|
-| `localPlayer.IsLocalUser` | Only the locally-owned vessel can be toggled |
-| `IsMultiplayerSession()` (`ConnectedClientsIds.Count > 1`) | Skips `Time.timeScale` changes in multiplayer to avoid freezing remote players |
-| `_isTransitioning` | Prevents concurrent toggle transitions |
-
-Each client has its own Cinemachine camera following its own vessel. No network syncing of freestyle state is needed — each client independently toggles their own vessel via `MenuFreestyleEventsContainerSO` SOAP events.
-
-**What works in multiplayer menu:**
-- Both players spawn with network-owned vessels
-- Both vessels visible and active on all clients' screens
-- Each player independently toggles autopilot ↔ freestyle control
-- Independent Cinemachine cameras per client — no conflicts
-- Network ownership prevents cross-control of vessels
-
-**Limitations:**
-- Party size bounded by `HostConnectionDataSO.MaxPartySlots`
-- No AI backfill in menu — `MenuServerPlayerVesselInitializer` does not pre-spawn AI opponents (unlike `ServerPlayerVesselInitializerWithAI` in game scenes)
-- Freestyle state is local-only — other players cannot see whether you are in autopilot or freestyle mode (vessel behavior replicates, but the mode label does not)
-
-#### UI Components
-
-Party/social UI lives in `_Scripts/UI/Elements/`
-(`PartyInviteNotificationPanel` is in `_Scripts/UI/Screens/`):
-`ArcadeLobbyList` (4-slot party panel; host-only per-slot kick ✕) + `FriendInfoSlot`
-(one slot), `FriendsListPanel` (combined Online + Requests, no tabs),
-`OnlineInfoEntry` (online row: an Invite button when invitable + a ✕ that cancels a
-pending outgoing invite or — host only — kicks an in-party member; "IN YOUR PARTY N/M"
-for party members; Invite/cancel/kick share an anti-spam cooldown),
-`RequestInfoEntry` (Accept/Decline — friend-request + party-invite),
-and `PartyInviteNotificationPanel` (the
-bottom-left **global invite popup** in Menu_Main — avatar + name + Accept/Decline,
-3s auto-hide, latest-wins). Full inventory + behaviour: **`Docs/PartySystem/UI.md`**.
-
-#### SO Assets
-
-Location: `_SO_Assets/Host Connection Data/`
-
-| Asset | Type |
-|---|---|
-| `HostConnectionData.asset` | `HostConnectionDataSO` |
-| `Event_HostConnectionEstablished.asset` | `ScriptableEventNoParam` |
-| `Event_HostConnectionLost.asset` | `ScriptableEventNoParam` |
-| `Event_InviteReceived.asset` | `ScriptableEventPartyInviteData` |
-| `Event_InviteSent.asset` | `ScriptableEventPartyPlayerData` |
-| `Event_PartyMemberJoined.asset` | `ScriptableEventPartyPlayerData` |
-| `Event_PartyMemberLeft.asset` | `ScriptableEventPartyPlayerData` |
-| `Event_PartyMemberKicked.asset` | `ScriptableEventPartyPlayerData` |
-| `Event_PartyJoinCompleted.asset` | `ScriptableEventNoParam` |
-| `List_OnlinePlayers.asset` | `ScriptableListPartyPlayerData` |
-| `List_PartyMembers.asset` | `ScriptableListPartyPlayerData` |
-
-#### Prefabs
-
-Location: `_Prefabs/UI Elements/Panels/Party/`
-
-Run `Tools > Cosmic Shore > Create Party Prefabs` in Unity Editor to generate missing prefabs with auto-wired component references. SO data container references (`HostConnectionDataSO`, `FriendsDataSO`, `SO_ProfileIconList`) must be wired manually in the inspector after creation.
-
-#### Scene Setup Checklist (Menu_Main)
-
-Persistent services (`HostConnectionService` + `PartyInviteController` +
-`FriendsInitializer`) live on one Bootstrap `DontDestroyOnLoad` GameObject;
-`AppManager` holds `HostConnectionData.asset`. The full Menu_Main UI wiring
-checklist (panels, row prefabs, SO references) is in
-**`Docs/PartySystem/UI.md`** § "Scene wiring checklist".
-
-#### Party System Patterns to Follow
-
-- **Single writer**: Only `HostConnectionService` writes to `HostConnectionDataSO`. UI reads via SOAP events/lists.
-- **Player properties for invites**: Use per-player properties (not session properties) so any lobby member can send invites.
-- **Lobby-only session**: Presence lobby uses no Relay — coexists with active NetworkManager.
-- **UniTask + CancellationToken**: All async transitions use `UniTask` with linked CTS for timeouts.
-- **Dedup guard**: `_lastFiredInvite` prevents re-firing the same invite on repeated refreshes.
-- **Client autopilot**: `MainMenuController.HandleMenuReady()` calls `ActivateLocalPlayerAutopilot()` for the local player's vessel, ensuring both host and joining clients start in autopilot mode. For hosts this is redundant with `MenuServerPlayerVesselInitializer.ActivateAutopilot()`, but for remote clients it is the primary activation path.
-- **Non-owner vessel activation**: `MainMenuController.HandleMenuReady()` calls `gameData.SetNonOwnerPlayersActiveInNewClient()` so joining clients see and render existing players' vessels.
-- **Local-only freestyle toggle**: `MenuCrystalClickHandler` toggles autopilot ↔ freestyle per-client with `IsLocalUser` guard. No network RPC needed — vessel behavior replicates automatically via Netcode.
-- **TimeScale safety**: `MenuCrystalClickHandler.IsMultiplayerSession()` (`ConnectedClientsIds.Count > 1`) prevents `Time.timeScale` changes in multiplayer, which would freeze all local rendering including other players' vessels.
+Two UGS sessions layer here: a **presence lobby** (lobby-only, no Relay, ≤100 players -
+discovery + invite property exchange) and a **party session** (Relay-backed, ≤4 - actual
+gameplay networking); both coexist with the active NetworkManager. Single writers:
+`HostConnectionService` → `HostConnectionDataSO`; `FriendsServiceFacade` → `FriendsDataSO`
+(UI reads SOAP lists/events, never calls UGS directly; presence updates go through
+`FriendsInitializer` only; invites are per-player lobby properties so no host privilege is
+needed). Service/UI/SO-asset inventories + facade API: `Docs/PARTY_SOCIAL.md`; spawn
+chains for party join + menu freestyle flight: `Docs/MULTIPLAYER_SPAWNING.md`.
 
 #### Party / Presence / NetDiag docs — start at `Docs/README.md`
 
@@ -1097,345 +549,25 @@ off-thread → `EnsureRunningOnMainThread` cascade is resolved by `MainThreadDis
 `UniTask.Yield(PlayerLoopTiming.Update)` as a thread-marshaling fix — both have
 been tried and proven unreliable on this UniTask version.
 
-### Friend System
+### Domain Game Modes (HexRace / Joust / Crystal Capture / Astro League / Brood Rush)
 
-The friend system uses **Unity Gaming Services (UGS) Friends SDK** for relationship management and presence. It follows the same single-writer / multi-reader SOAP pattern as auth and party systems.
+Per-mode technical references live next to the controllers
+(`_Scripts/Controller/Arcade/HEXRACE.md`, `JOUST.md`, `CRYSTAL_CAPTURE.md`,
+`ASTROLEAGUE.md`, `NUCLEUSRUSH.md`; condensed HexRace notes in
+`Docs/HEXRACE_SUMMARY.md`). Cross-mode rules:
 
-#### Architecture
-
-```
-FriendsServiceFacade (single writer, pure C# DI singleton)
-        │ writes to
-        ▼
-FriendsDataSO (ScriptableObject asset)
-  ├─ Lists:
-  │   ├─ Friends              (ScriptableListFriendData)
-  │   ├─ IncomingRequests      (ScriptableListFriendData)
-  │   ├─ OutgoingRequests      (ScriptableListFriendData)
-  │   └─ BlockedPlayers        (ScriptableListFriendData)
-  │
-  └─ Events:
-      ├─ OnFriendAdded         ──► FriendsListPanel refreshes friend list
-      ├─ OnFriendRemoved       ──► FriendsListPanel refreshes friend list
-      ├─ OnFriendRequestReceived ──► FriendsListPanel spawns the new request row
-      └─ OnFriendsServiceReady ──► (subscribers know the service is usable)
-```
-
-#### Initialization Flow
-
-```
-Auth Sign-In (OnSignedIn SOAP event)
-       │
-       ▼
-FriendsInitializer.HandleSignedInEvent()
-       │
-       └─► FriendsServiceFacade.InitializeAsync()
-            ├─ UGS FriendsService.InitializeAsync()
-            ├─ WireEvents():
-            │   ├─ RelationshipAdded → OnRelationshipAdded()
-            │   ├─ RelationshipDeleted → OnRelationshipDeleted()
-            │   └─ PresenceUpdated → OnPresenceUpdated()
-            ├─ SyncAllRelationships() → populate all 4 SOAP lists
-            ├─ FriendsDataSO.IsInitialized = true
-            ├─ OnFriendsServiceReady.Raise()
-            └─ SetPresence(Online, "In Menu")
-```
-
-#### SOAP Types (FriendData)
-
-Location: `_Scripts/ScriptableObjects/SOAP/ScriptableFriendData/`
-
-| Type | Purpose |
-|---|---|
-| `FriendData` | Immutable struct: `PlayerId`, `DisplayName`, `Availability` (int), `ActivityStatus` (string). Identity + presence for a single friend. |
-| `FriendPresenceActivity` | `[DataContract]` class for rich UGS presence payload: `Status`, `Scene`, `VesselClass`, `PartySessionId`. Serialized by the Friends SDK. |
-| `ScriptableEventFriendData` | SOAP event channel for friend added/removed notifications |
-| `ScriptableListFriendData` | SOAP reactive list backing `Friends`, `IncomingRequests`, `OutgoingRequests`, `BlockedPlayers` in `FriendsDataSO` |
-| `EventListenerFriendData` | Inspector-wirable MonoBehaviour listener for `ScriptableEventFriendData` |
-
-#### FriendsServiceFacade API
-
-The facade (`_Scripts/System/FriendsServiceFacade.cs`) exposes these operations. All mutating methods call `SyncAllRelationships()` after the UGS SDK call to update SOAP lists.
-
-| Method | UGS SDK Call | Effect |
-|---|---|---|
-| `InitializeAsync()` | `FriendsService.InitializeAsync()` | Wire events, sync all lists, raise `OnFriendsServiceReady` |
-| `SendFriendRequestByNameAsync(name)` | `AddFriendByNameAsync(name)` | Adds to `OutgoingRequests` list |
-| `SendFriendRequestAsync(playerId)` | `AddFriendAsync(playerId)` | Adds to `OutgoingRequests` list |
-| `AcceptFriendRequestAsync(playerId)` | `AddFriendAsync(playerId)` | Moves from `IncomingRequests` to `Friends`, raises `OnFriendAdded` |
-| `DeclineFriendRequestAsync(playerId)` | `DeleteIncomingFriendRequestAsync(playerId)` | Removes from `IncomingRequests` |
-| `CancelFriendRequestAsync(playerId)` | `DeleteOutgoingFriendRequestAsync(playerId)` | Removes from `OutgoingRequests` |
-| `RemoveFriendAsync(playerId)` | `DeleteFriendAsync(playerId)` | Removes from `Friends`, raises `OnFriendRemoved` |
-| `BlockPlayerAsync(playerId)` | `AddBlockAsync(playerId)` | Removes any relationship, adds to `BlockedPlayers` |
-| `UnblockPlayerAsync(playerId)` | `DeleteBlockAsync(playerId)` | Removes from `BlockedPlayers` |
-| `SetPresenceAsync(availability, activity)` | `SetPresenceAsync(...)` | Updates local player's presence for friends to see |
-| `SetAvailabilityAsync(availability)` | `SetPresenceAvailabilityAsync(...)` | Updates availability only |
-| `RefreshAsync()` | `ForceRelationshipsRefreshAsync()` | Full server refresh of all lists |
-| `IsFriend(playerId)` | (local query) | Checks `FriendsDataSO.Friends` list |
-| `IsBlocked(playerId)` | (local query) | Checks `FriendsDataSO.BlockedPlayers` list |
-
-#### Presence Management
-
-`FriendsInitializer` (`_Scripts/Controller/Party/FriendsInitializer.cs`) manages the local player's presence state across scene transitions:
-
-| Trigger | Availability | Activity Status |
-|---|---|---|
-| Auth sign-in / enter menu | `Online` | `"In Menu"` (scene: `Menu_Main`) |
-| Enter game scene | `Busy` | `"In Game"` (scene name, vessel class, party session ID) |
-| App shutdown / `OnDestroy` | `Offline` | — |
-
-Friends see presence updates via UGS SDK's `PresenceUpdated` event → `FriendsServiceFacade.OnPresenceUpdated()` → `SyncAllRelationships()` → `FriendData.Availability` updated in SOAP lists → `OnlineInfoEntry` rows update their online status indicator color.
-
-#### Friend UI Components
-
-The friends UI shares the party UI family (`FriendsListPanel` combined Online +
-Requests, `RequestInfoEntry`) — inventory +
-behaviour in **`Docs/PartySystem/UI.md`**. File locations are in the Key Files
-table below.
-
-#### Friend System Key Files
-
-| Role | File | Location |
-|---|---|---|
-| Friends facade (single writer) | `FriendsServiceFacade.cs` | `_Scripts/System/` |
-| MonoBehaviour bridge / presence | `FriendsInitializer.cs` | `_Scripts/Controller/Party/` |
-| SOAP data container | `FriendsDataSO.cs` | `_Scripts/Utility/DataContainers/` |
-| Friend identity struct | `FriendData.cs` | `_Scripts/ScriptableObjects/SOAP/ScriptableFriendData/` |
-| Rich presence payload | `FriendPresenceActivity.cs` | `_Scripts/ScriptableObjects/SOAP/ScriptableFriendData/` |
-| SOAP event channel | `ScriptableEventFriendData.cs` | `_Scripts/ScriptableObjects/SOAP/ScriptableFriendData/` |
-| SOAP reactive list | `ScriptableListFriendData.cs` | `_Scripts/ScriptableObjects/SOAP/ScriptableFriendData/` |
-| SOAP MonoBehaviour listener | `EventListenerFriendData.cs` | `_Scripts/ScriptableObjects/SOAP/ScriptableFriendData/` |
-| Combined friends/online panel UI | `FriendsListPanel.cs` | `_Scripts/UI/Elements/` |
-| Online row UI (invite / cancel / kick) | `OnlineInfoEntry.cs` | `_Scripts/UI/Elements/` |
-| Request row UI (friend request + party invite) | `RequestInfoEntry.cs` | `_Scripts/UI/Elements/` |
-| SO asset instance | `FriendsData.asset` | `_SO_Assets/Friends Data/` |
-
-#### Friend Requests (no UI entry point today)
-
-The by-name `AddFriendPanel` and the confirmed-friend row `FriendInfoEntry` were
-retired, so there is currently **no UI control to send a friend request** —
-`FriendsListPanel` renders only the Online + Requests sections. The single-writer
-facade methods remain for re-introducing one: `FriendsServiceFacade.SendFriendRequestByNameAsync(name)`
-(by name) and `.SendFriendRequestAsync(playerId)` (by ID). Incoming requests still
-arrive as `RequestInfoEntry` rows (Accept/Decline). Friend-request (persistent UGS
-relationship) and party-invite (ephemeral session property) stay separate systems.
-Detail: **`Docs/PartySystem/UI.md`** § "Friend requests vs. party invites".
-
-#### Friend System Patterns to Follow
-
-- **Single writer**: Only `FriendsServiceFacade` writes to `FriendsDataSO`. UI components read via SOAP lists and events — they never call UGS SDK directly.
-- **Sync after mutate**: Every facade method that changes relationship state calls `SyncAllRelationships()` after the SDK call to keep SOAP lists in sync.
-- **Event-driven UI**: `FriendsListPanel` and entry views subscribe to SOAP list events (`OnItemAdded`, `OnItemRemoved`, `OnCleared`) for reactive updates. No polling.
-- **Presence via FriendsInitializer**: Scene transition presence is managed by `FriendsInitializer` — do not set presence from other MonoBehaviours.
-- **DI access**: UI components access `FriendsServiceFacade` via `[Inject]`, not by finding it in the scene.
-- **Bridge between Party and Friends**: the online row (`OnlineInfoEntry`) invite button calls `HostConnectionService.SendInviteAsync()` — the friend system feeds into the party system for social gameplay.
-
-### Player Count & AI Backfill Pipeline
-
-The player count system is fully data-driven from `SO_ArcadeGame` assets through the UI stepper, into `GameDataSO`, and finally into AI spawning. No hardcoded limits exist in the pipeline.
-
-#### Data Flow
-
-```
-SO_ArcadeGame asset (MinPlayersAllowed, MaxPlayersAllowed)
-       │
-       ▼
-ArcadeGameConfigureModal.InitializeScreen1Controls()
-       │ effectiveMin = Max(game.MinPlayersAllowed, CurrentPartyHumanCount)
-       │ playerCountStepper.Initialize(effectiveMin, game.MaxPlayersAllowed, config.PlayerCount)
-       ▼
-PlayerCountStepper (±1 stepper, range 1-12, fires OnValueChanged)
-       │
-       ▼
-ArcadeGameConfigureModal.HandlePlayerCountSelected(playerCount)
-       │ Clamp(playerCount, effectiveMin, MaxPlayersAllowed) → config.PlayerCount
-       ▼
-ArcadeGameConfigureModal.OnStartGameClicked()
-       │ SyncAllGameDataForLaunch():
-       │   humanCount = Max(1, hostConnectionData.PartyMembers.Count)
-       │   gameData.ConfigurePlayerCounts(config.PlayerCount, humanCount)
-       ▼
-GameDataSO.ConfigurePlayerCounts(totalDesired, humanCount)
-       │ SelectedPlayerCount.Value = totalDesired
-       │ RequestedAIBackfillCount = Max(0, totalDesired - humanCount)
-       ▼
-gameData.InvokeGameLaunch() → OnLaunchGame SOAP event
-       │
-       ▼
-SceneLoader.LaunchGame()
-       │ AppState → LoadingGame, network scene load
-       ▼
-MultiplayerMiniGameControllerBase.OnNetworkSpawn() [game scene]
-       │ [Server] SyncGameConfigToClients_ClientRpc (intensity, player count, AI backfill, etc.)
-       ▼
-ServerPlayerVesselInitializerWithAI.OnNetworkSpawn() [game scene]
-       │ SpawnAIs():
-       │   aiCount = gameData.RequestedAIBackfillCount
-       │   teamCounts = gameData.BuildTeamCounts()  ← counts existing human players per team
-       │   For each AI:
-       │     domain = GetBalancedDomain(teamCounts)  ← picks team with fewest players
-       │     teamCounts[domain]++
-       │     Spawn AI player + vessel with that domain
-       ▼
-MultiplayerSetup.CreateOrJoinSession()
-       │ MaxPlayers = gameData.SelectedPlayerCount.Value  ← no hardcoded cap
-```
-
-#### Player Count Examples
-
-| Humans in Party | Selected Total | AI Backfill | Teams (Jade/Ruby/Gold) |
-|---|---|---|---|
-| 1 (solo) | 1 | 0 | 1/0/0 |
-| 1 (solo) | 4 | 3 | 2/1/1 (balanced) |
-| 1 (solo) | 12 | 11 | 4/4/4 (balanced) |
-| 2 (both Jade) | 6 | 4 | 2/2/2 → 4/4/4 with AI fill |
-| 3 (J/R/G) | 9 | 6 | 3/3/3 (balanced) |
-
-#### Team Balancing Algorithm
-
-`ServerPlayerVesselInitializerWithAI.GetBalancedDomain()` assigns each AI to the team with the fewest players. Ties break by enum order (Jade → Ruby → Gold). `GameDataSO.BuildTeamCounts()` initializes a `Dictionary<Domains, int>` with {Jade=0, Ruby=0, Gold=0} and counts existing non-AI players.
-
-#### PlayerCountStepper
-
-`PlayerCountStepper` (`_Scripts/UI/Elements/PlayerCountStepper.cs`) is a ±1 stepper control with three serialized fields:
-
-| Field | Type | Purpose |
-|---|---|---|
-| `decrementButton` | `Button` | "-" button, auto-disables at min |
-| `incrementButton` | `Button` | "+" button, auto-disables at max |
-| `countText` | `TMP_Text` | Displays current count |
-
-The modal initializes it via `playerCountStepper.Initialize(effectiveMin, game.MaxPlayersAllowed, config.PlayerCount)`. The stepper fires `OnValueChanged` on button press, which the modal handles via `HandlePlayerCountSelected`.
-
-A legacy `playerCountButtons` list (4 fixed buttons for counts 1-4) coexists as fallback. Both UIs share the same `HandlePlayerCountSelected` callback. The stepper is required for ranges above 4.
-
-#### Separate Limits
-
-| System | Limit | Purpose |
-|---|---|---|
-| `SO_ArcadeGame.MaxPlayersAllowed` | Per-game (e.g., 12) | Total players (human + AI) in a game session |
-| `HostConnectionDataSO.MaxPartySlots` | 4 | Human players in Menu_Main party lobby |
-| UGS Presence Lobby | 100 | Player discovery (no Relay) |
-
-These are independent — a party of 2 humans can launch a 12-player game with 10 AI.
-
-#### Key Files — Player Count
-
-| Role | File | Location |
-|---|---|---|
-| Per-game min/max config | `SO_ArcadeGame.cs` | `_Scripts/ScriptableObjects/` |
-| Configure modal (UI) | `ArcadeGameConfigureModal.cs` | `_Scripts/UI/Modals/` |
-| Player count stepper | `PlayerCountStepper.cs` | `_Scripts/UI/Elements/` |
-| Player count computation | `GameDataSO.ConfigurePlayerCounts()` | `_Scripts/Utility/DataContainers/` |
-| Team count builder | `GameDataSO.BuildTeamCounts()` | `_Scripts/Utility/DataContainers/` |
-| AI spawner + team balancing | `ServerPlayerVesselInitializerWithAI.cs` | `_Scripts/Controller/Multiplayer/` |
-| Session creation | `MultiplayerSetup.cs` | `_Scripts/Controller/Multiplayer/` |
-
-### HexRace Game Mode
-
-HexRace is a competitive crystal-collection racing mode (1-4 players) using a **single unified scene** (`MinigameHexRace.unity`). There is no separate singleplayer scene — all games run through Netcode regardless of player count. Solo play uses AI backfill via `ServerPlayerVesselInitializerWithAI`. See `Assets/_Scripts/Controller/Arcade/HEXRACE.md` for the full technical reference.
-
-#### Architecture
-
-```
-MiniGameControllerBase (MonoBehaviour + NetworkBehaviour)
-  └── MultiplayerMiniGameControllerBase
-      └── MultiplayerDomainGamesController
-          └── HexRaceController
-```
-
-**SO config**: `SO_ArcadeGame` asset — `Mode=HexRace(33)`, `IsMultiplayer=true`, `MinPlayers=1`, `MaxPlayers=4`, `GolfScoring=true`
-
-#### Execution Flow
-
-```
-ArcadeGameConfigureModal.OnStartGameClicked()
-  ├─ SyncAllGameDataForLaunch():
-  │   ├─ gameData.SceneName = "MinigameHexRace"
-  │   ├─ gameData.GameMode = GameModes.HexRace
-  │   ├─ gameData.SelectedPlayerCount = humanCount
-  │   └─ gameData.RequestedAIBackfillCount = max(0, config.PlayerCount - humanCount)
-  └─ gameData.InvokeGameLaunch() → OnLaunchGame SOAP event
-      └─ SceneLoader.LaunchGame()
-          ├─ AppState → LoadingGame
-          ├─ Network scene load (host always active from Menu_Main)
-          └─ Game config synced to clients by MultiplayerMiniGameControllerBase.OnNetworkSpawn()
-```
-
-#### Player Count & AI Backfill
-
-| Humans in Party | Selected Players | AI Backfill | Total |
-|---|---|---|---|
-| 1 (solo) | 1 | 0 | 1 |
-| 1 (solo) | 2 | 1 | 2 |
-| 1 (solo) | 4 | 3 | 4 |
-| 2 (party) | 2 | 0 | 2 |
-| 2 (party) | 4 | 2 | 4 |
-| 3 (party) | 3 | 0 | 3 |
-
-#### Track Spawning
-
-Server generates a random seed (after 1500ms delay for intensity sync) → writes to `_netTrackSeed` NetworkVariable → all clients spawn identical track via `SegmentSpawner.Initialize()`. Clients receive the seed through three redundant paths: immediate read at spawn, `OnValueChanged` callback, or poll fallback (100ms × 50 attempts). `HexRaceController` sets `segmentSpawner.ExternalResetControl = true` to own the track lifecycle.
-
-| Parameter | Formula | Base |
-|---|---|---|
-| Segments | `base * Intensity` | 10 |
-| Straight Line Length | `base / Intensity` | 400 |
-| Helix Radius | `Intensity / 1.3` | — |
-
-#### Race Rules
-
-- **Crystal target**: Resolved by `NetworkCrystalCollisionTurnMonitor.GetCrystalCollisionCount()`: inspector `CrystalCollisions` field (if non-zero) > `SpawnableWaypointTrack` waypoints > default 39. Synced to all clients via `NetworkCrystalCollisionTurnMonitor._netCrystalCollisions` NetworkVariable → `gameData.CrystalTargetCount`
-- **Turn monitor (domain-aggregated)**: `NetworkCrystalCollisionTurnMonitor` calls `gameData.ScoringRule.IsObjectiveReached(gameData, out _)` every frame (server only) — the turn ends when any active domain's summed CrystalsCollected (`ScoringMetrics.SumByDomain`) reaches the target, so AI and human teammates finish the race together
-- **Winner detection (domain-aggregated)**: Server-authoritative via `HexRaceController.OnTurnEndedCustom()` — finds the first active domain whose summed crystals reach the target (Jade → Ruby → Gold tie-break), sets `_raceEnded=true`, picks the best individual contributor on that domain as the representative `WinnerName`, calculates all scores, broadcasts via `SyncFinalScores_ClientRpc`
-- **Scoring**: Every player on the winning domain gets `Score = finishTime` (seconds). Losing-domain players get `Score = 10000 + domainCrystalsRemaining` — the penalty reflects the team's deficit, so teammates on the same losing domain tie on Score. Golf rules (`UseGolfRules=true`): lower = better
-- **Score sync**: `SyncFinalScores_ClientRpc()` broadcasts all player scores + winner name to all clients, then calls `InvokeWinnerCalculated()` + `InvokeMiniGameEnd()`
-- **HasEndGame=false**: Prevents base controller from calling `SyncGameEnd_ClientRpc` (which would duplicate `InvokeMiniGameEnd`). `SetupNewRound()` is overridden to return when `_raceEnded=true`, suppressing the Ready button
-- **Comeback**: `ElementalComebackSystem` reads `gameData.SumCrystalsCollectedByDomain` for the leader and the player's own domain — buffs are sized to the **team** deficit, so players on the leading domain don't get a buff even when they personally trail their teammates
-
-#### End Game
-
-- `HexRaceEndGameController` reads `gameData.WinnerName` (set by server via `SyncFinalScores_ClientRpc`)
-- Winner sees "VICTORY" + race time (formatted mm:ss:cs); losers see "DEFEAT" + crystals remaining
-- `HexRaceScoreboard` displays all players ranked by score (golf rules — sorts ascending)
-- **Replay**: Full network scene reload (`UseSceneReloadForReplay=true`). `OnResetForReplayCustom()` was removed — all race state, track, and environment are destroyed with the scene and re-initialized fresh via `OnNetworkSpawn`. Fade to black → scene reload → fade from black on `OnClientReady`
-
-#### Shared State & NetworkVariables
-
-| Variable | Owner | Purpose |
-|---|---|---|
-| `HexRaceController._netTrackSeed` | Server | Deterministic track seed (NetworkVariable) |
-| `NetworkCrystalCollisionTurnMonitor._netCrystalCollisions` | Server | Crystal target synced to clients (NetworkVariable); writes to `gameData.CrystalTargetCount` |
-| `gameData.WinnerName` | Server (via ClientRpc) | Authoritative winner identity; non-empty = results ready |
-| `gameData.CrystalTargetCount` | Server (via `_netCrystalCollisions.OnValueChanged`) | Crystal target readable by any system |
-
-#### Key Files — HexRace
-
-| Role | File | Location |
-|---|---|---|
-| Game controller | `HexRaceController.cs` | `_Scripts/Controller/Arcade/` |
-| Domain games base | `MultiplayerDomainGamesController.cs` | `_Scripts/Controller/Arcade/` |
-| Score tracker | `HexRaceScoreTracker.cs` | `_Scripts/Controller/Arcade/` |
-| Crystal turn monitor | `NetworkCrystalCollisionTurnMonitor.cs` | `_Scripts/Controller/Arcade/TurnMonitors/` |
-| Track spawner | `SegmentSpawner.cs` | `_Scripts/Controller/Environment/MiniGameObjects/` |
-| End game controller | `HexRaceEndGameController.cs` | `_Scripts/Utility/DataContainers/` |
-| In-game HUD | `HexRaceHUD.cs` | `_Scripts/UI/` |
-| Scoreboard | `HexRaceScoreboard.cs` | `_Scripts/UI/` |
-| Elemental comeback | `ElementalComebackSystem.cs` | `_Scripts/Controller/Arcade/` |
-| Stats provider | `HexRaceStatsProvider.cs` | `_Scripts/Controller/Arcade/` |
-| Player stats profile | `HexRacePlayerStatsProfile.cs` | `_Scripts/UI/` |
-| Full documentation | `HEXRACE.md` | `_Scripts/Controller/Arcade/` |
-
-#### HexRace Patterns to Follow
-
-- **Server authority via OnTurnEndedCustom**: Winner detection runs on the server in `OnTurnEndedCustom()`. `HexRaceScoreTracker` only handles local elapsed-time tracking and UGS stats reporting — it does not participate in winner determination.
-- **Deterministic track**: All clients spawn identical tracks from shared seed + intensity. `SegmentSpawner` uses `Random.InitState(seed)`. Three redundant sync paths (immediate, OnValueChanged, poll fallback) ensure reliability.
-- **Golf scoring**: `UseGolfRules = true` — lower score = better rank. Winner time (seconds) always ranks above loser penalty (10000+).
-- **Scene reload for replay**: Use `UseSceneReloadForReplay = true` — do not implement in-place reset. Flora/fauna/environment don't fully reset in-place.
-- **Comeback system**: Use `ElementalComebackSystem` with `ScoreDifferenceSource.CrystalsCollected` for HexRace (not Score, since Score tracks elapsed time equally for all). Leader and player values are read as domain aggregates via `GameDataSO.SumCrystalsCollectedByDomain`, so comeback buffs scale with the **team** deficit.
-- **Single scene**: Do not create separate singleplayer/multiplayer scenes. AI backfill handles solo play within the same Netcode pipeline.
-- **Crystal target sync**: Server writes target to `NetworkCrystalCollisionTurnMonitor._netCrystalCollisions` NetworkVariable, which syncs to `gameData.CrystalTargetCount` on all clients.
-- **Domain-aggregated scoring**: HexRace, Joust, and Crystal Capture all end on a **per-domain** sum via the mode's `ScoringRuleSO.IsObjectiveReached` (over `ScoringMetrics.SumByDomain`). At most three scores ever exist (Jade / Ruby / Gold); teammates contribute to the same domain total. The in-game `MultiplayerHUD` shows the local player's domain panel to the left of the centered player score and 1-2 opposing-domain panels to the right when its `MultiplayerHUDView` has the `allyDomainContainer` / `opposingDomainsContainer` / `domainPanelPrefab` wiring; otherwise it falls back to the legacy per-player layout.
+- **Domain-aggregated scoring**: modes end on a per-domain sum via the mode's
+  `ScoringRuleSO.IsObjectiveReached` (`ScoringMetrics.SumByDomain`) - at most three
+  scores ever exist (Jade/Ruby/Gold); teammates contribute to one total. The comeback
+  system (`ElementalComebackSystem`, REQUIRED in every party game, auto-created by
+  `MultiplayerMiniGameControllerBase.EnsureExists`) keys off domain aggregates too.
+- **Replay is a full network scene reload** (`UseSceneReloadForReplay = true`) for all
+  shipped modes except Cellular Duel - flora/fauna/environment don't reset in place.
+- **Server-authoritative winners**: detection runs in `OnTurnEndedCustom()` on the
+  server; results broadcast via the shared `SyncFinalResults` template.
+- **End-game/win-condition COUNTS** are authored ONLY through Tools > Cosmic Shore >
+  End Game Conditions (`Resources/EndConditionOverrides.asset`) - never per-scene
+  inspector fields.
 
 ### FTUE (First-Time User Experience)
 
@@ -1485,295 +617,34 @@ Runtime-configurable AI opponents at `Assets/_Scripts/Controller/AI/`:
   idempotent; `StopAIPilot` uses `StopAllCoroutines` (a `StopCoroutine(new enumerator)`
   never stops the running coroutine).
 
-### Menu Screen Navigation (Menu_Main Scene)
+### Menu Screen Navigation (Menu_Main)
 
-The main menu uses a horizontal sliding panel system managed by `ScreenSwitcher`. Screen panels are laid out side-by-side and the container slides left/right to reveal each screen.
+`ScreenSwitcher` slides side-by-side panels and discovers `IScreen` implementors
+automatically (`OnScreenEnter`/`OnScreenExit`) - never hard-wire screen references.
+Reuse `ProfileDisplayWidget`, `NavLink`/`NavGroup`, `ModalWindowManager`; cache component
+lookups; pair every subscribe with an unsubscribe; prefer `[Inject] AudioSystem` for new
+code. Screen inventory + component reference: `Docs/MENU_NAVIGATION.md`.
 
-#### IScreen Interface
+### Lava-Lamp Mode (Menu Freestyle)
 
-All menu screens that need lifecycle notifications implement `IScreen` (`Assets/_Scripts/UI/Interfaces/IScreen.cs`):
-
-```csharp
-public interface IScreen
-{
-    void OnScreenEnter();  // Called when this screen becomes active
-    void OnScreenExit();   // Called when navigating away from this screen
-}
-```
-
-`ScreenSwitcher` discovers `IScreen` components on screen root GameObjects (via `GetComponentInChildren<IScreen>`) at startup and caches them in a dictionary. On navigation, it calls `OnScreenExit()` on the outgoing screen and `OnScreenEnter()` on the incoming screen automatically — no hard-coded screen references needed.
-
-**Current `IScreen` implementors**: `HangarScreen`, `LeaderboardsMenu`
-
-#### Screen Inventory
-
-| Screen | Class | Extends `IScreen` | Init Pattern |
-|---|---|---|---|
-| Home | `HomeScreen` | No | `Start()` |
-| Arcade (ARK) | `ArcadeScreen` | No | `Start()` |
-| Store | `StoreScreen` (extends `View`) | No | `Start()` + `OnEnable()` events |
-| Port (Leaderboards) | `LeaderboardsMenu` | Yes | `OnScreenEnter()` → `LoadView()` |
-| Hangar | `HangarScreen` | Yes | `OnScreenEnter()` → `LoadView()` |
-| Episodes | `EpisodeScreen` | No | Lazy `LoadView()` on panel toggle |
-
-#### ScreenSwitcher
-
-`ScreenSwitcher` (`Assets/_Scripts/UI/ScreenSwitcher.cs`) is the central navigation hub:
-
-- Maps `MenuScreens` enum values to screen panel `RectTransform`s via inspector-configured `ScreenEntry` list
-- Handles horizontal slide animations between screens
-- Manages a modal window stack (`PushModal`/`PopModal`) for overlay modals
-- Persists return-to-screen/modal state via `PlayerPrefs` across scene reloads
-- Notifies `IScreen` implementors on navigation transitions
-- Supports gamepad left/right trigger navigation
-
-**Adding a new screen**: Create a `MonoBehaviour` implementing `IScreen` if it needs enter/exit lifecycle. Add a `ScreenEntry` in the `ScreenSwitcher` inspector mapping. The switcher will discover and call the `IScreen` automatically.
-
-#### Reusable UI Components
-
-- **`ProfileDisplayWidget`** (`Assets/_Scripts/UI/Elements/ProfileDisplayWidget.cs`) — Displays player name + avatar. Uses `[Inject] PlayerDataService` and subscribes to `OnProfileChanged`. Drop onto any menu screen that needs profile display — replaces inline profile display logic.
-- **`NavLink` / `NavGroup`** (`Assets/_Scripts/UI/Elements/`) — Tab navigation within a screen. `NavGroup` discovers child `NavLink` components and manages selection state with crossfade animations.
-- **`ModalWindowManager`** (`Assets/_Scripts/UI/Modals/ModalWindowManager.cs`) — Base class for modal windows. Caches `ScreenSwitcher` reference at startup. Handles open/close animations, audio, and modal stack integration.
-
-#### Menu Screen Patterns to Follow
-
-- **Implement `IScreen`** for any screen that needs to refresh data when navigated to — do not add direct screen references to `ScreenSwitcher`
-- **Use `ProfileDisplayWidget`** for profile display instead of duplicating `PlayerDataService` subscription logic
-- **Cache component lookups** — use `Start()` or `Awake()` for `GetComponent` calls, not per-frame or per-event
-- **Unsubscribe from events** — always pair event subscriptions in `OnEnable`/`OnDisable` or `Start`/`OnDestroy`
-- **Use `[Inject]` for audio** — prefer `[Inject] AudioSystem` via Reflex DI over `[RequireComponent(typeof(MenuAudio))]` + `GetComponent` for new code
-
-### Lava-Lamp Mode (Menu Freestyle Merge)
-
-**Naming: "lava lamp" and "freestyle" are the same thing.** When viewed from the menu (autopilot vessels drifting behind the UI) it is called the *lava lamp*; when the player takes control and flies it is called *freestyle*. One system, two names. BOTH standalone freestyle games are retired and must not be reintroduced: the old arcade "Freestyle" (`GameModes.Freestyle = 7`) and the standalone multiplayer sandbox (`MultiplayerFreestyle = 28`, deleted 2026-07-21). The lava lamp is the only freestyle — party members fly it together in Menu_Main.
-
-Lava-lamp mode hosts freestyle gameplay directly in Menu_Main: the autopilot vessel becomes playable when the player enters freestyle mode. Game UI panels (MiniGameHUD, Scoreboard, Vessel Selection, Vessel HUDs, PlayerScoreCards, EndShapeDetailHUD) live under Menu_Main's "Game UI" container and fade in/out with the freestyle toggle.
-
-#### Design Principles
-
-- **Individual panels, not GameCanvas prefab**: Extract needed UI panels as scene-level objects under "Game UI" — do not instantiate the full `GameCanvas.prefab`. The GameCanvas prefab bundles a `Canvas` + `CanvasScaler` + `GraphicRaycaster` root that would conflict with Menu_Main's existing Canvas.
-- **Reuse existing SOAP pipeline**: `MenuCrystalClickHandler` already toggles autopilot↔freestyle with CanvasGroup fading. "Game UI" `CanvasGroup` is already wired into its `freestyleCanvasGroups[]` array. `MainMenuController` already has `MainMenuState.Freestyle`. No new states or SOAP events needed.
-- **Network-aware vessel selection**: Use `MenuVesselSelectionPanelController` — it delegates vessel swaps to `MenuServerPlayerVesselInitializer` via the Netcode despawn/spawn/RPC pipeline so changes replicate to all clients. (The legacy singleplayer `VesselSelectionPanelController` was deleted with the SP path.)
-- **Phased rollout**: Phase 1 (core HUD + vessel selection), Phase 2 (shape drawing), Phase 3 (scoring).
-
-#### Current "Game UI" Container
-
-The existing "Game UI" in Menu_Main has two children:
-
-```
-Game UI [RectTransform, CanvasGroup]                    ← already in freestyleCanvasGroups[]
-├── MiniGameHUD [RectTransform, CanvasGroup, MenuMiniGameHUD]
-│   └── Volume / Pause Button [Image, Button, MenuAudio]
-│       └── MenuMiniGameHUD.Awake() wires onClick → vesselSelectionPanel.Open() + Hide()
-│
-└── Vessel Selection Panel [CanvasGroup, VesselSelectionPanelUI, MenuVesselSelectionPanelController]
-    ├── Buttons (Resume, Close) → onClick includes MenuMiniGameHUD.Show()
-    └── Menu [GridLayout, 6× ShipCardView]
-```
-
-`MenuMiniGameHUD` (`_Scripts/UI/MenuMiniGameHUD.cs`) is a slim alternative to the full `MiniGameHUD` for menu freestyle mode. It provides the Volume/Pause icon button that opens the `MenuVesselSelectionPanelController` panel, vessel HUD reparenting via the `onShipHUDInitialized` SOAP event, and runtime PauseMenu prefab instantiation. The button is visible when Game UI fades in during freestyle, hidden when returning to menu. The full `MiniGameHUD` can replace this when Phase 2/3 features (shape drawing, scoring) are needed.
-
-**Freestyle input ownership + HUD-after-swap (do not regress).** The menu ("appshell") and the vessel both poll the one gamepad, so ownership must be exclusive: in freestyle `ScreenSwitcher.HandleEnterFreestyle` sets `EventSystem.sendNavigationEvents = false` (restored on exit) so the pad flies the ship and no longer double-drives the UI selection ring / Submit on the still-touch-interactable vessel HUD (`ScreenSwitcher.Update` screen-nav was already gated on `_isInFreestyle`; the vessel is paused in menu state). `MenuMiniGameHUD.Update` polls **gamepad Start** while in freestyle → `MenuCrystalClickHandler.ToggleTransition()`, the pad counterpart to the on-screen Volume/Pause exit. On a runtime **vessel swap**, `VesselController.Initialize` creates the new HUD hidden and the swap never re-enters freestyle, so `ClientPlayerVesselInitializer.ReInitializePair` re-raises `GameDataSO.OnPlayerPairInitialized` and `MenuMiniGameHUD` re-shows the local HUD (gated on freestyle + local player) — the `onShipHUDInitialized`/`ShipHUD` reparent path is dead for menu vessels (no `ShipHUD` on the vessel prefabs). See `Docs/ToySystem/ARCHITECTURE.md`.
-
-#### Phase 1: Core Freestyle HUD (target hierarchy)
-
-```
-Game UI [RectTransform, CanvasGroup]
-├── MiniGameHUD [CanvasGroup, MiniGameHUD, MiniGameHUDView, SOAP listeners]
-│   ├── ReadyButton [INACTIVE — no countdown in lava-lamp]
-│   ├── Volume / Pause Button
-│   ├── Scoreboard (inline score TMP)
-│   ├── RoundTime (rotating circles + countdown TMP)
-│   ├── LifeFormCounter (rotating circles + counter TMP)
-│   ├── ThumbCursors (LeftCursor, RightCursor — ThumbCursor)
-│   ├── NotificationUI [GameEventFeed]
-│   └── PlayerScoreContainer [Transform — for dynamically instantiated PlayerScoreCards]
-│
-├── Vessel Selection Panel [CanvasGroup, VesselSelectionPanelUI, MenuVesselSelectionPanelController]
-│   ├── Buttons (Resume, Close)
-│   └── Menu [GridLayout, 6× ShipCardView]
-│
-├── ScoreboardController [Scoreboard.cs — hidden by default, no OnShowGameEndScreen in basic freestyle]
-│   ├── SinglePlayerView
-│   ├── MultiplayerView (4 player rows, winner banner)
-│   └── Buttons (PlayAgain, Home)
-│
-└── EndGameShapePanel [EndShapeDetailHUD — INACTIVE, Phase 2]
-    ├── Shape stats (name, time, par, accuracy, star rating)
-    ├── ScreenShotButton
-    └── ExitShapeButton
-```
-
-#### MiniGameHUD Configuration for Menu
-
-| Setting | Value | Rationale |
-|---|---|---|
-| `enablePreGameCinematic` | `false` | No cinematic in menu freestyle |
-| `isAIAvailable` | `false` | No AI score tracking in basic lava-lamp (Phase 3) |
-| `minConnectingSeconds` | `0` | No connecting panel delay |
-| `preGameCinematic` | `null` | Not needed |
-| `onMoundDroneSpawned` | `null` | No drones in menu |
-| `onQueenDroneSpawned` | `null` | No drones in menu |
-| `scoreboard` | Wire to ScoreboardController | Present but hidden |
-
-**SOAP events to wire on MiniGameHUD GO:**
-- `EventListenerPipData` → `onShipHUDInitialized` (vessel HUD reparenting)
-- `EventListenerBool` → optional, for turn visibility toggling
-
-#### Vessel HUD Lifecycle in Menu
-
-Vessel HUDs reparent into "Game UI" automatically through the existing SOAP pipeline — no code changes needed:
-
-```
-Vessel spawned (MenuServerPlayerVesselInitializer)
-  └─ ShipHUD.Start() [on vessel prefab]
-      └─ onShipHUDInitialized.Raise(ShipHUDData)
-          └─ MiniGameHUD.OnShipHUDInitialized()
-              └─ Reparents HUD children under transform.parent (= "Game UI")
-```
-
-HUD children persist across freestyle toggles. Their visibility is controlled by the "Game UI" `CanvasGroup.alpha` that `MenuCrystalClickHandler` already fades.
-
-Per-vessel HUD controllers (`IVesselHUDController` implementors):
-
-| Vessel | Controller | View |
-|---|---|---|
-| Manta | `MantaHUDController` | `MantaHUDView` |
-| Rhino | `RhinoHUDController` | `RhinoHUDView` |
-| Serpent | `SerpentHUDController` | `SerpentHUDView` |
-| Sparrow | `SparrowHUDController` | `SparrowHUDView` |
-| Dolphin | — | `DolphinHUDView` |
-| Squirrel | — | `SquirrelHUDView` |
-
-HUD prefab variants at `_Prefabs/UI Elements/VesselHUD/` (e.g., `MantaHUDVariant.prefab`, `DolphinHUDVariant.prefab`).
-
-#### Vessel Selection Panel (Network-Aware)
-
-The Vessel Selection Panel in Menu_Main uses `MenuVesselSelectionPanelController`
-(network-aware): vessel swaps go through `MenuServerPlayerVesselInitializer.RequestSwap()`
-(Netcode despawn/spawn pipeline, replicates to all clients) and freestyle control is
-restored after the swap delay. The legacy singleplayer variant
-(`VesselSelectionPanelController` + `VesselSpawner`) was deleted with the SP path.
-
-The panel opens from a button in the freestyle HUD. While open, the vessel flies on autopilot. On "Resume", if a different vessel is selected, it requests a network swap and waits `restoreFreestyleDelayMs` (600ms) before restoring player control.
-
-#### SOAP Event Flow (Freestyle Toggle with Game UI)
-
-```
-Player taps freestyle button
-  └─ MenuCrystalClickHandler.ToggleTransition()
-      ├─ TransitionToFreestyle():
-      │   ├─ Vessel.ToggleAIPilot(false), InputController.SetPause(false)
-      │   ├─ freestyleEvents.OnEnterFreestyle.Raise()
-      │   │   └─ MainMenuController → TransitionTo(Freestyle)
-      │   ├─ FadeBetweenStates(menuAlpha=0, freestyleAlpha=1)
-      │   │   ├─ menuCanvasGroups[] → fade to 0 (menu screens, nav bar)
-      │   │   └─ freestyleCanvasGroups[] → fade to 1 ("Game UI" + contents)
-      │   │       └─ MiniGameHUD, Vessel HUD children, Vessel Selection Button all become visible
-      │   └─ Wait cameraTransitionDuration (parallel with fade)
-      │
-      └─ TransitionToMenu():
-          ├─ InputController.SetPause(true), Vessel.ToggleAIPilot(true)
-          ├─ freestyleEvents.OnExitFreestyle.Raise()
-          │   └─ MainMenuController → TransitionTo(Ready)
-          │   └─ MenuVesselSelectionPanelController → ui.Hide() (auto-close panel)
-          ├─ FadeToSavedMenuAlphas()
-          │   ├─ menuCanvasGroups[] → restore to saved alphas
-          │   └─ freestyleCanvasGroups[] → fade to 0 ("Game UI" hidden)
-          └─ Wait cameraTransitionDuration
-```
-
-#### Scoreboard in Menu Context
-
-The `Scoreboard` component is present but hidden in basic lava-lamp mode. It subscribes to `OnShowGameEndScreen` to show and `OnResetForReplay` to hide. Since no game controller raises `OnShowGameEndScreen` during basic freestyle, the scoreboard stays inactive.
-
-When scoring is enabled (Phase 3), a game controller can raise `OnShowGameEndScreen` to display results. The scoreboard renders the per-player card layout from `gameData.Results` (solo play renders as a single card - `IsMultiplayerMode` is retired).
-
-#### Phase 2: Shape Drawing (Deferred)
-
-Shape drawing requires additional scene infrastructure beyond UI panels. The scripts all still exist; their scene wiring lived in the removed `MinigameFreestyle.unity` (recover the reference setup from git history when porting):
-
-| Dependency | Purpose | Script Location |
-|---|---|---|
-| `ShapeDrawingManager` | Orchestrates shape preview → draw → score flow | `_Scripts/Controller/Environment/MiniGameObjects/` |
-| `SegmentSpawner` | Spawns trail segments with shape triggers | `_Scripts/Controller/Environment/MiniGameObjects/` |
-| `ShapeDrawingCrystalManager` | Manages crystals during shape mode | `_Scripts/Controller/Environment/MiniGameObjects/` |
-| `Spawnable*` objects | Shape definitions (Arrow, Circle, Diamond, etc.) | `_Prefabs/Spawnables/` |
-| `EndShapeDetailHUD` | Shows shape results (name, time, accuracy, stars) | `_Scripts/UI/` |
-
-The removed `SinglePlayerFreestyleController` (git history) managed the freestyle↔shape-drawing transitions (collision detection, environment teardown/restore, camera swaps). For lava-lamp, a `MenuFreestyleController` would adapt this flow for the menu context.
-
-**Shape Drawing State Flow:**
-```
-Freestyle → ShapeCollision → FreezePlayer → NukeEnvironment → ShapePreview
-  → ReadyButton → Countdown → DrawingMode → ShapeComplete → EndShapeDetailHUD
-  → ExitButton → RestoreEnvironment → ConnectingFlow → ReadyButton → Freestyle
-```
-
-#### Phase 3: Scoring & PlayerScoreCards (Deferred)
-
-`PlayerScoreCard`s are instantiated dynamically by `MiniGameHUD` when `OnMiniGameTurnStarted` fires:
-
-- `SetupLocalPlayerCard()` — creates a card for the local player with name, score, domain color, avatar
-- `SetupAICards()` — creates cards for AI opponents (when `isAIAvailable=true`)
-
-For lava-lamp scoring, set `isAIAvailable=true` on MiniGameHUD and ensure `gameData.RoundStatsList` is populated. Cards are destroyed on `OnMiniGameTurnEnd`.
-
-#### Lava-Lamp Key Files
-
-| Role | File | Location |
-|---|---|---|
-| Menu MiniGameHUD (freestyle HUD + vessel change trigger) | `MenuMiniGameHUD.cs` | `_Scripts/UI/` |
-| Freestyle toggle (autopilot↔control) | `MenuCrystalClickHandler.cs` | `_Scripts/Controller/Multiplayer/` |
-| Menu state machine | `MainMenuController.cs` | `_Scripts/System/` |
-| Menu vessel spawner (base) | `MenuServerPlayerVesselInitializer.cs` | `_Scripts/Controller/Multiplayer/` |
-| Vessel selection (network-aware) | `MenuVesselSelectionPanelController.cs` | `_Scripts/Controller/Multiplayer/` |
-| Vessel selection UI (show/hide) | `VesselSelectionPanelUI.cs` | `_Scripts/UI/` |
-| Vessel card (per-vessel button) | `VesselCardView.cs` (class: `ShipCardView`) | `_Scripts/UI/` |
-| Minigame HUD controller | `MiniGameHUD.cs` | `_Scripts/UI/` |
-| Minigame HUD view | `MiniGameHUDView.cs` | `_Scripts/UI/View/` |
-| Scoreboard (end-game results) | `Scoreboard.cs` | `_Scripts/UI/` |
-| Player score card (per-player) | `PlayerScoreCard.cs` | `_Scripts/UI/` |
-| Shape results panel | `EndShapeDetailHUD.cs` | `_Scripts/UI/` |
-| Vessel HUD reparenting bridge | `VesselHUD.cs` (class: `ShipHUD`) | `_Scripts/Controller/Vessel/` |
-| Freestyle SOAP events container | `MenuFreestyleEventsContainerSO.cs` | `_Scripts/ScriptableObjects/` |
-| Shape drawing manager (Phase 2) | `ShapeDrawingManager.cs` | `_Scripts/Controller/Environment/MiniGameObjects/` |
-| VesselHUD prefab variants | `*HUDVariant.prefab` | `_Prefabs/UI Elements/VesselHUD/` |
-| PlayerScoreCard prefab | `PlayerScoreCard.prefab` | `_Prefabs/UI Elements/In Game/` |
-
-#### Lava-Lamp Patterns to Follow
-
-- **No new `MainMenuState` values** — `Freestyle` already exists and covers the lava-lamp gameplay phase
-- **"Game UI" CanvasGroup controls all game panel visibility** — individual panels should not manage their own top-level visibility during freestyle toggles; the parent CanvasGroup handles fade in/out
-- **Vessel HUD reparenting is automatic** — do not manually instantiate or position vessel HUDs; the `onShipHUDInitialized` → `MiniGameHUD.OnShipHUDInitialized()` pipeline handles it
-- **Network-aware vessel selection only** — always use `MenuVesselSelectionPanelController` in Menu_Main, never the singleplayer `VesselSelectionPanelController`
-- **Mass is conserved in the menu too** — the lava-lamp vessel is the freestyle gameplay vessel, so its trail follows the universal conserved-mass rules: no trail caps, prism TTLs, or idle cullers (a `maxTrailBlocks` ring-buffer cap was added for menu perf and reverted — see "Don't cheat emergence"). Manage menu-idle prism growth with fauna cleanup or by pausing the spawner
-- **Scoreboard hidden until needed** — do not show the scoreboard in basic freestyle; let the SOAP event system activate it when a game controller raises `OnShowGameEndScreen`
-- **Phase 2/3 panels start inactive** — `EndShapeDetailHUD` GO starts with `SetActive(false)`, activated only by `ShapeDrawingManager` (Phase 2). PlayerScoreCards are dynamically instantiated only when turns are active (Phase 3)
+**"Lava lamp" and "freestyle" are the same thing** - one system, two names (viewed from
+the menu vs player-controlled). BOTH standalone freestyle games are retired and must not
+be reintroduced; party members fly the lava lamp together in Menu_Main. **Mass is
+conserved in the menu too**: the lava-lamp vessel IS the freestyle gameplay vessel - no
+trail caps, prism TTLs, or idle cullers (a menu ring-buffer cap shipped once and was
+reverted; see Design Philosophy). Manage menu-idle prism growth with fauna cleanup or by
+pausing the spawner. Freestyle input ownership (gamepad vs UI `sendNavigationEvents`),
+HUD-after-swap, Game UI hierarchy, and the phased HUD/shape/scoring rollout:
+`Docs/LAVALAMP.md` + `Docs/ToySystem/ARCHITECTURE.md`.
 
 ### Elemental Bars (per-vessel buff/debuff display)
 
-`ElementalBarsView` (`_Scripts/UI/View/ElementalBarsView.cs`) is the shared HUD widget every vessel uses to convey its dynamic and meta-earned elemental buffs/debuffs. Each of the four elements (Charge, Mass, Space, Time) renders as a **5-fold-symmetric "flower"**: five copies of one crisp white petal sprite, pivot-centred and rotated 72°·n. The petal shape differs per element (charge = irregular pentagon, mass = triangle, space = kite, time = rhombus), all sharing an inward-pointing 72° apex so adjacent inner edges stay parallel and form the negative-space gaps.
-
-**Level → colour mapping.** `ResourceSystem.GetLevel(element)` returns `floor(normalizedLevel × 10)` with `normalizedLevel ∈ [-0.5, 1.5]` → an integer in **[-5, 15]**. `ElementalBarsConfigSO.DistributePetalValues` spreads that total round-robin across the five petals; each petal value lands in `{-1,0,1,2,3}` → `{fire, grey, white, blue, lime}`:
-
-| Level | -5 | 0 | +5 | +10 | +15 |
-|---|---|---|---|---|---|
-| Petals | all fire | all grey | all white | all blue | all lime |
-
-At any total at most two adjacent colours show (e.g. +8 → 3 blue + 2 white). Petals are pure white, so a single multiply-tint reproduces every colour exactly — **never hue-shift** (a low-saturation source can't reach grey/white or vivid colours). Each petal recolours and scale-pops about the flower centre (outward bloom) on upgrade, flash+shakes on downgrade.
-
-**Single source of truth — `ElementalBarsConfigSO`** (`_Scripts/ScriptableObjects/`, asset at `Resources/ElementalBarsConfig.asset`). Per CLAUDE.md Config Separation, all shared look/feel lives here: the 5 tick colours, per-element petal sprites, and every juice timing/haptic. All vessels reference the one asset, so the spec can't drift between prefabs. Holds the petal math (`DistributePetalValues`, `ColorForTick`) and constants (`PetalCount=5`, `MinLevel=-5`, `MaxLevel=15`, `PetalSpacing=72`).
-
-**Per-vessel integration.** `SilhouetteController` (on all 11 vessel prefabs) is the driver: `InitializeElementBars()` calls `elementBars.Build()`, seeds levels, and subscribes to `ResourceSystem.OnElementLevelChange`. The `elementBars` reference is null-safe — vessels without the view wired simply show no bars (opt-in rollout). `SquirrelVesselHUDView` routes drift/joust/crystal juice into the view.
-
-**Zero-wire by default.** With no config or petalRoot assigned, the view loads `Resources/ElementalBarsConfig`, auto-creates a centred flower container per element, and loads petal sprites from `Resources/ElementPetals/{element}_petal`. To author explicitly (recommended for real positioning), run **Tools > Cosmic Shore > Wire Elemental Petal Bars** (assigns config + creates `*_Flower` containers), then position the containers. A petal authored in-prefab as `Petal{0..4}` under a container is reused (not duplicated) and normalised via `ElementalBarsView.ConfigurePetal`.
-
-**Patterns to follow:**
-- **Spec changes go in the config asset**, never per-vessel SerializeFields — that's the whole point of the shared system.
-- **Petal sprites are pure-white silhouettes** tinted at runtime. Add a new element by adding its sprite to the config's `petals` list and `Resources/ElementPetals/`.
-- **Rolling out to another vessel**: add an `ElementalBarsView` to that vessel's HUD (or run the wirer), then assign it to the vessel's `SilhouetteController.elementBars`. No code changes.
-- **Performance**: petals render at ~88px — keep `maxTextureSize` small (128). One `Image` per petal (20 total), `raycastTarget` off, event-driven (no `Update`), `SetLevel`/`RefreshBar` early-out when nothing changed, tweens `SetLink`ed and killed + snapped to rest on `OnDisable` for pooled/toggled HUDs.
+Every vessel conveys elemental buffs/debuffs through `ElementalBarsView` - a 5-petal
+"flower" per element driven by `SilhouetteController` (null-safe, opt-in rollout per
+vessel). **All shared look/feel lives in `ElementalBarsConfigSO`**
+(`Resources/ElementalBarsConfig.asset`) - never per-vessel SerializeFields. Petals are
+pure-white silhouettes multiply-tinted at runtime - **never hue-shift**. Petal math,
+level→colour table, juice, wiring tool, and perf notes: `Docs/ELEMENTAL_BARS.md`.
 
 ### Namespace Convention
 
