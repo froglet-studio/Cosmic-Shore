@@ -42,7 +42,7 @@ namespace CosmicShore.Data
         ProtectMission = 27,
         // 28 (MultiplayerFreestyle) retired 2026-07-21 - freestyle IS the Menu_Main lava lamp. Do not reuse.
         // 29 (MultiplayerCellularDuel) retired 2026-07-21 with the Cellular Duel deletion - do not reuse.
-        Multiplayer2v2CoOpVsAI = 30,
+        // 30 (Multiplayer2v2CoOpVsAI) retired 2026-07-21 - unreachable content deleted. Do not reuse.
         // 31 stays reserved - never assigned.
         // 32 (MultiplayerWildlifeBlitzGame) retired 2026-07-20 with the co-op blitz stack - do not reuse.
         HexRace = 33,

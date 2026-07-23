@@ -54,7 +54,7 @@ namespace CosmicShore.Data
         // 429 (PlayGameMultiplayerDuelForCell) retired with Cellular Duel - do not reuse.
         // 430 (PlayGameMultiplayerWildlifeBlitzGame) retired with the co-op blitz stack - do not reuse.
         PlayGameHexRace = 431,
-        PlayGameMultiplayer2v2CoOpVsAI = 432,
+        // 432 (PlayGameMultiplayer2v2CoOpVsAI) retired with the 2v2 stack - do not reuse.
         PlayGameMultiplayerCrystalCapture = 433,
         PlayGameMultiplayerJoust = 434,
         PlayGameBotDuel = 435,

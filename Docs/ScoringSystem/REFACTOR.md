@@ -282,7 +282,7 @@ when the stat-row surface itself changes.
 ---
 
 ## Parking lot
-- `CoOpScoreBoard.OppponentScoreTextField` — field-name typo ("Oppponent");
+- ~~`CoOpScoreBoard.OppponentScoreTextField` typo~~ — class deleted with the 2v2 stack 2026-07-21;
   rename when touched.
 - `HUDAnimationSettingsSO.scoreboardRowStagger` appears unused (the scoreboard
   passes the row index but `PlayerScoreCard` uses `cardEntranceStagger`) — see

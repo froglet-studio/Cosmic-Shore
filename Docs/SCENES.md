@@ -47,7 +47,6 @@ scene and `ServerPlayerVesselInitializerWithAI` backfills AI.
 | **MinigameJoust_Gameplay** | `_Scenes/Multiplayer Scenes/` | `MultiplayerJoust (34)` | `MultiplayerJoustController` |
 | **MinigameAstroLeague** | `_Scenes/Multiplayer Scenes/` | `AstroLeague (37)` | `AstroLeagueController` |
 | **MinigameNucleusRush** | `_Scenes/Multiplayer Scenes/` | `NucleusRush (38)` | `NucleusRushController` |
-| **ArcadeGameMultiplayer2v2CoOpVsAI** | `_Scenes/Multiplayer Scenes/` | `Multiplayer2v2CoOpVsAI (30)` | Variant of domain games controller |
 | **MinigameTournamentMultuplayer** | `_Scenes/Multiplayer Scenes/` | Tournament variant | Multi-round tournament format |
 | **BenchmarkStressTest** | `_Scenes/Multiplayer Scenes/` | Settings → Run Benchmark (`GameModes.Benchmark`) | `SandboxBenchmarkController` — endless auto-start, no monitors, no scoring |
 
@@ -223,7 +222,7 @@ was deleted 2026-07-20 — solo play runs the multiplayer spine as a party of on
 | 26 | retired (was the co-op blitz) | Retired | — | — (deleted 2026-07-21; enum member removed) |
 | 28 | retired (was the standalone MP freestyle sandbox) | Retired | — | — (freestyle IS the Menu_Main lava lamp) |
 | 29 | retired (was Cellular Duel) | Retired | — | — (deleted outright 2026-07-21) |
-| 30 | `Multiplayer2v2CoOpVsAI` | MP | ArcadeGameMultiplayer2v2CoOpVsAI | Variant |
+| 30 | retired (was 2v2CoOpVsAI) | Retired | — | — (unreachable content deleted 2026-07-21; enum member removed) |
 | 32 | retired (was the separate co-op blitz) | Retired | — | — (26 IS the networked co-op blitz) |
 | 33 | `HexRace` | MP Racing | MinigameHexRace | `HexRaceController` |
 | 34 | `MultiplayerJoust` | MP | MinigameJoust_Gameplay | `MultiplayerJoustController` |

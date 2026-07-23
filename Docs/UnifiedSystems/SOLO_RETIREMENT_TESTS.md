@@ -19,7 +19,7 @@ after the step was written; do not test).
 
 - [x] **4.** Boot → auth → Menu_Main: normal startup, host starts, no errors (C5 deleted the legacy matchmaking path in `MultiplayerSetup` — sign-in host start must be unaffected). *(verified 2026-07-21)*
 - [x] **5.** Lava-lamp regression (C8): autopilot vessel drifts behind UI → tap crystal → control + Game UI + vessel HUD. Toys all work (vessel changer keeps domain/speed + HUD re-shows, domain changer, painting, Wanderway). Gamepad **Start** exits; center-tap returns to menu. *(verified 2026-07-21)*
-- [x] **6.** Arcade grid contents (C6, C8, C9, C10): no solo cards, no Freestyle card, no Cellular Duel card, no Wildlife Blitz card. Expected: HexRace, Joust, Crystal Capture, Maelstrom (OrganicRematchGames); the LaunchPartyAllGames surfaces now render zero cards. *(verified 2026-07-21 pre-C9/C10 — re-check that the Duel + Blitz cards are gone)*
+- [x] **6.** Arcade grid contents (C6, C8, C9, C10, C11): the only cards anywhere are HexRace, Joust, Crystal Capture, Maelstrom — every game-list surface now binds OrganicRematchGames (LaunchPartyAllGames was deleted and its holders rewired; the 2v2 card/scene are gone). *(verified 2026-07-21 pre-C9 — re-check the surfaces show the four live cards)*
 
 ## Part B — Solo runs (solo = party of one + AI)
 
