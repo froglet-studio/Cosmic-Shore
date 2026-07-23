@@ -459,7 +459,7 @@ namespace CosmicShore.Gameplay
 
             // RoundStats.Domain is a LOCAL mirror derived from Player.NetDomain - the single
             // authoritative networked domain source (RoundStats.n_Domain is retired). Update it on
-            // EVERY peer here so all consumers (scoreboards, end-game, GameFeedAPI colorers) stay
+            // EVERY peer here so all consumers (scoreboards, end-game, GameToastAPI colorers) stay
             // correct across initial picks, modal re-picks, and rerolls, without a second
             // RoundStats-level replication that could lag behind.
             if (_roundStats)

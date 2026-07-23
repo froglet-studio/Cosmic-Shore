@@ -142,7 +142,7 @@ namespace CosmicShore.Gameplay
             var domain = player?.Domain
                          ?? gameData.RoundStatsList.FirstOrDefault(s => s.Name == playerName)?.Domain
                          ?? Domains.Blue;
-            GameFeedAPI.Post($"<b>{playerName}</b> Ready", domain, GameFeedType.PlayerReady);
+            GameToastAPI.Post(GameToastSituation.PlayerReady, domain, playerName);
         }
 
         [ClientRpc]
@@ -199,7 +199,7 @@ namespace CosmicShore.Gameplay
                 // the disconnect notification colors correctly even if domain changed
                 // mid-game.
                 var domain = player.Domain;
-                GameFeedAPI.Post($"<b>{player.Name}</b> disconnected", domain, GameFeedType.PlayerDisconnected);
+                GameToastAPI.Post(GameToastSituation.PlayerDisconnected, domain, player.Name);
                 gameData.RemovePlayerData(player.Name);
             }
         }
