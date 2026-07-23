@@ -10,6 +10,26 @@ namespace CosmicShore.Gameplay
     {
         private const float TriggerDeadzone = 0.05f;
 
+        // Trigger rest calibration. Triggers do not universally rest at zero: worn or
+        // miscalibrated springs drift upward, and some DirectInput-style pads map a
+        // trigger to an axis that rests mid-range by design. Any rest value above
+        // TriggerDeadzone makes the absolute edge detector read the trigger as
+        // permanently held - the press edge never fires and trigger-bound actions
+        // (e.g. the Squirrel's drift) go dead, while the analog intensity idles
+        // non-zero. Track the minimum observed raw value per trigger as its resting
+        // baseline and remap [baseline..1] onto [0..1] so edges and analog behave
+        // identically on every pad (a trigger resting at zero latches baseline 0 and
+        // passes through unchanged). Min-tracking self-corrects if the trigger
+        // happens to be held during calibration; a device change re-calibrates.
+        private float _leftTriggerRestBaseline = 1f;
+        private float _rightTriggerRestBaseline = 1f;
+        private Gamepad _calibratedPad;
+
+        static float RemapFromRest(float raw, float rest) =>
+            rest <= 0f ? raw                                          // healthy pad: identity, no divide
+            : rest >= 0.99f ? 0f                                      // pinned/broken axis: never active
+            : Mathf.Clamp01((raw - rest) / (1f - rest));
+
         private bool fullSpeedStraightEffectsStarted;
         private bool minimumSpeedStraightEffectsStarted;
 
@@ -100,8 +120,23 @@ namespace CosmicShore.Gameplay
             // Triggers - read analog values and use custom deadzone for edge detection.
             // This gives full analog range (0-1) for drift scaling while keeping
             // binary event compatibility for button-style triggers (which snap 0/1).
-            float leftTriggerValue = Gamepad.current.leftTrigger.ReadValue();
-            float rightTriggerValue = Gamepad.current.rightTrigger.ReadValue();
+            // Values are measured from the trigger's calibrated resting baseline (see
+            // RemapFromRest) so a non-zero-resting trigger can't read as permanently held.
+            if (!ReferenceEquals(_calibratedPad, Gamepad.current))
+            {
+                _calibratedPad = Gamepad.current;
+                _leftTriggerRestBaseline = 1f;
+                _rightTriggerRestBaseline = 1f;
+            }
+
+            float leftTriggerRaw = Gamepad.current.leftTrigger.ReadValue();
+            float rightTriggerRaw = Gamepad.current.rightTrigger.ReadValue();
+
+            _leftTriggerRestBaseline = Mathf.Min(_leftTriggerRestBaseline, leftTriggerRaw);
+            _rightTriggerRestBaseline = Mathf.Min(_rightTriggerRestBaseline, rightTriggerRaw);
+
+            float leftTriggerValue = RemapFromRest(leftTriggerRaw, _leftTriggerRestBaseline);
+            float rightTriggerValue = RemapFromRest(rightTriggerRaw, _rightTriggerRestBaseline);
 
             inputStatus.LeftTriggerAnalog = leftTriggerValue;
             inputStatus.RightTriggerAnalog = rightTriggerValue;

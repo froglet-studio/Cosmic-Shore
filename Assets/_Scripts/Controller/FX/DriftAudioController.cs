@@ -242,7 +242,13 @@ namespace CosmicShore.Gameplay.Audio
                         this);
                 }
             }
-            if (!_classGatePass) return;
+            if (!_classGatePass)
+            {
+                // Self-disable like the remote/AI branch below - a wrong-class vessel
+                // should not keep paying Update() dispatch for a permanent early-out.
+                enabled = false;
+                return;
+            }
 
             // Local-user gating: skip remote/AI vessels in default mode. We
             // can't decide until Player is set, so retry each frame until

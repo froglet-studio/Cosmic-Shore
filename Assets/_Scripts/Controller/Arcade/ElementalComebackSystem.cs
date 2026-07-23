@@ -54,11 +54,19 @@ namespace CosmicShore.Gameplay
             if (existing)
             {
                 existing.gameData ??= gameData;
+                // Respect an intentionally disabled authored instance - OnEnable
+                // completes the subscription if it is activated later.
+                if (existing.isActiveAndEnabled)
+                    existing.TrySubscribeToGameEvents();
                 return existing;
             }
 
+            // AddComponent runs the new component's OnEnable INLINE, before the field
+            // assignment below - gameData is still null there, so subscription is
+            // deferred and completed explicitly once the reference is set.
             var system = host.AddComponent<ElementalComebackSystem>();
             system.gameData = gameData;
+            system.TrySubscribeToGameEvents();
             switch (gameData ? gameData.GameMode : GameModes.Random)
             {
                 case GameModes.HexRace: // Score is elapsed time - crystals are the honest stat
@@ -104,18 +112,32 @@ namespace CosmicShore.Gameplay
         // Index matches AllElements order: Mass=0, Charge=1, Space=2, Time=3.
         readonly float[] _lastComebackAudioTime = { -999f, -999f, -999f, -999f };
 
-        void OnEnable()
+        bool _subscribed;
+
+        // Deferred-subscription pattern (CLAUDE.md DI rules): gameData is not available in
+        // OnEnable - [Inject] lands after Awake/OnEnable for scene-authored instances, and
+        // EnsureExists assigns it only after AddComponent (whose OnEnable runs inline).
+        // Attempt on every entry point; the guard makes repeats no-ops.
+        void OnEnable() => TrySubscribeToGameEvents();
+
+        void Start()
         {
-            if (gameData == null)
-            {
+            TrySubscribeToGameEvents();
+
+            // Fail loud, but only once every init path has had its chance to assign gameData.
+            if (!_subscribed)
                 CSDebug.LogError("[ElementalComebackSystem] GameDataSO is not assigned!");
-                return;
-            }
+        }
+
+        void TrySubscribeToGameEvents()
+        {
+            if (_subscribed || gameData == null) return;
             // Profile is optional now (initial-levels only) - the system runs without one.
 
             gameData.OnMiniGameTurnStarted.OnRaised += OnTurnStarted;
             gameData.OnMiniGameTurnEnd.OnRaised += OnTurnEnded;
             gameData.OnMiniGameEnd.OnRaised += OnGameEnded;
+            _subscribed = true;
 
             if (debugLogging)
                 CSDebug.Log("[ElementalComebackSystem] Enabled and subscribed to game events.");
@@ -123,10 +145,11 @@ namespace CosmicShore.Gameplay
 
         void OnDisable()
         {
-            if (gameData == null) return;
+            if (!_subscribed) return;
             gameData.OnMiniGameTurnStarted.OnRaised -= OnTurnStarted;
             gameData.OnMiniGameTurnEnd.OnRaised -= OnTurnEnded;
             gameData.OnMiniGameEnd.OnRaised -= OnGameEnded;
+            _subscribed = false;
         }
 
         void OnTurnStarted()

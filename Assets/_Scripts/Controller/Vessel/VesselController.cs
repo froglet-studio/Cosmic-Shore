@@ -207,6 +207,15 @@ namespace CosmicShore.Gameplay
 
         public void ToggleAIPilot(bool toggle)
         {
+            // Any explicit pilot-mode change ends a cinematic flourish. EndGameSequencer
+            // starts its behavior AFTER enabling the pilot, so the flourish still works;
+            // nothing else may leave the cinematic writing input into a live vessel.
+            // TryGetComponent, not the VesselStatus GetOrAdd accessor: a vessel that
+            // never flourished shouldn't have the component instantiated just to
+            // no-op stop it.
+            if (TryGetComponent<AICinematicBehavior>(out var cinematic))
+                cinematic.StopCinematicBehavior();
+
             if (toggle)
                 VesselStatus.AIPilot.StartAIPilot();
             else
@@ -274,6 +283,12 @@ namespace CosmicShore.Gameplay
                 return;
             }
             
+            // Vessel handover to a human (Cellular Duel's between-round swap): the previous
+            // AI owner's pilot must stop NOW, not at the next StartPlayer - a live AIPilot
+            // blocks every button action in R_VesselActionHandler and keeps writing into
+            // the new owner's InputStatus.
+            ToggleAIPilot(false);
+
             UnsubscribeFromNetworkVariables();
 
             VesselStatus.VesselHUDController.SubscribeToEvents();

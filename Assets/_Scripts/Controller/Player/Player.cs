@@ -146,6 +146,13 @@ namespace CosmicShore.Gameplay
             AvatarId = NetAvatarId.Value;
             Vessel = vessel;
 
+            // Only the local human's InputController polls devices (its class contract).
+            // Locality isn't knowable at OnNetworkSpawn (the AI spawner writes NetIsAI
+            // after Spawn()), so gate here: a disabled controller stops the per-frame
+            // device polling and duplicate global OnButtonPressed raises from AI/remote
+            // players' copies. SetPause/SetIdle/InputStatus remain usable while disabled.
+            InputController.enabled = IsLocalUser;
+
             // RoundStats.Domain is a LOCAL mirror of the player's domain on EVERY peer -
             // Player.NetDomain is the single networked source (RoundStats.n_Domain is retired). Set
             // it on clients too, so a client's own RoundStats.Domain is correct immediately instead
@@ -400,7 +407,14 @@ namespace CosmicShore.Gameplay
                 ToggleInputPause(true);
             }
             else
+            {
+                // A human-controlled turn must never start with autopilot on. Vessels can
+                // arrive here still AI-driven (Cellular Duel's between-round vessel swap,
+                // the EndGameSequencer flourish on in-place replays); a live AIPilot blocks
+                // every button action in R_VesselActionHandler and fights the pilot's input.
+                ToggleAIPilot(false);
                 ToggleInputPause(false);
+            }
         }
         
 
