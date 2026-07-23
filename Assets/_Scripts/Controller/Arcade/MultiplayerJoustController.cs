@@ -1,5 +1,7 @@
 // MultiplayerJoustController.cs
 using System.Linq;
+using System.Threading;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 using CosmicShore.Utility;
 using CosmicShore.Data;
@@ -17,11 +19,55 @@ namespace CosmicShore.Gameplay
         // InvokeMiniGameEnd from SyncGameEnd_ClientRpc.
         protected override bool HasEndGame => false;
 
+        // Mid-turn centerline feed (replaces the legacy NetworkScoreTracker's
+        // TimePlayedScoring): a spawned peer's LOCAL Score write does not raise
+        // OnScoreChanged - only a SERVER write replicates via n_Score and reaches every
+        // peer's HUD - so the elapsed-time tick must be a server-side write (the same
+        // expression the winner's finishTime uses in OnTurnEndedCustom).
+        CancellationTokenSource _scoreFeedCts;
+
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
             numberOfRounds = 1;
             numberOfTurnsPerRound = 1;
+
+            if (IsServer)
+            {
+                _scoreFeedCts = CancellationTokenSource.CreateLinkedTokenSource(
+                    this.GetCancellationTokenOnDestroy());
+                RunScoreFeedAsync(_scoreFeedCts.Token).Forget();
+            }
+        }
+
+        public override void OnNetworkDespawn()
+        {
+            _scoreFeedCts?.Cancel();
+            _scoreFeedCts?.Dispose();
+            _scoreFeedCts = null;
+            base.OnNetworkDespawn();
+        }
+
+        async UniTaskVoid RunScoreFeedAsync(CancellationToken token)
+        {
+            while (!token.IsCancellationRequested)
+            {
+                if (gameData.IsTurnRunning && !FinalResultsSent)
+                {
+                    float elapsed = Time.time - gameData.TurnStartTime;
+                    // Re-read the live roster each tick - no cached stats refs (B15).
+                    var statsList = gameData.RoundStatsList;
+                    for (int i = 0; i < statsList.Count; i++)
+                    {
+                        var stats = statsList[i];
+                        if (stats != null)
+                            stats.Score = elapsed;
+                    }
+                }
+
+                await UniTask.Delay(250, DelayType.UnscaledDeltaTime, cancellationToken: token)
+                    .SuppressCancellationThrow();
+            }
         }
 
         // ── Server-authoritative game end ─────────────────────────────────

@@ -10517,7 +10517,6 @@ GameObject:
   - component: {fileID: 1628508330}
   - component: {fileID: 1628508332}
   - component: {fileID: 1628508335}
-  - component: {fileID: 1628508336}
   - component: {fileID: 1628508341}
   - component: {fileID: 1628508345}
   - component: {fileID: 1628508348}
@@ -10601,24 +10600,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
---- !u!114 &1628508336
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1628508325}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7cf9c7929c7c484faf5a985004c9caee, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  ShowTopMostFoldoutHeaderGroup: 1
-  OnClickToMainMenu: {fileID: 11400000, guid: 7a1182f4329e5d645ad474c11a633a3e, type: 2}
-  golfRules: 0
-  scoringConfigs:
-  - Mode: 2
-    Multiplier: 1
 --- !u!114 &1628508338
 MonoBehaviour:
   m_ObjectHideFlags: 0
