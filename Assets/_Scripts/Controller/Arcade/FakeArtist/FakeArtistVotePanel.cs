@@ -24,6 +24,7 @@ namespace CosmicShore.Gameplay
     public class FakeArtistVotePanel : MonoBehaviour
     {
         const float FadeSpeed = 5f;
+        const float CardWidth = 540f;
 
         static readonly Color CardColor = new(0.05f, 0.06f, 0.1f, 0.92f);
         static readonly Color ButtonColor = new(0.16f, 0.2f, 0.3f, 0.95f);
@@ -71,14 +72,14 @@ namespace CosmicShore.Gameplay
             var cardGO = new GameObject("Card", typeof(RectTransform), typeof(Image), typeof(CanvasGroup));
             _card = (RectTransform)cardGO.transform;
             _card.SetParent(transform, false);
-            // Anchor to the lower-center and grow UPWARD, so the top ~60% of the screen
-            // stays clear for the gallery camera's view of the shared painting while
-            // players study it and answer.
-            _card.anchorMin = new Vector2(0.5f, 0f);
-            _card.anchorMax = new Vector2(0.5f, 0f);
-            _card.pivot = new Vector2(0.5f, 0f);
-            _card.anchoredPosition = new Vector2(0f, 48f);
-            _card.sizeDelta = new Vector2(980f, 100f);
+            // Compact dialog tucked into the UPPER-LEFT corner (where the toast lives) so
+            // the rest of the screen stays clear for the gallery camera's view of the
+            // shared painting while players read their directions and answer.
+            _card.anchorMin = new Vector2(0f, 1f);
+            _card.anchorMax = new Vector2(0f, 1f);
+            _card.pivot = new Vector2(0f, 1f);
+            _card.anchoredPosition = new Vector2(40f, -40f);
+            _card.sizeDelta = new Vector2(CardWidth, 80f);
 
             cardGO.GetComponent<Image>().color = CardColor;
             _group = cardGO.GetComponent<CanvasGroup>();
@@ -87,9 +88,9 @@ namespace CosmicShore.Gameplay
             _group.blocksRaycasts = false;
 
             var layout = cardGO.AddComponent<VerticalLayoutGroup>();
-            layout.padding = new RectOffset(36, 36, 28, 28);
-            layout.spacing = 16f;
-            layout.childAlignment = TextAnchor.UpperCenter;
+            layout.padding = new RectOffset(22, 22, 18, 18);
+            layout.spacing = 10f;
+            layout.childAlignment = TextAnchor.UpperLeft;
             layout.childControlWidth = true;
             layout.childControlHeight = true;
             layout.childForceExpandWidth = true;
@@ -134,21 +135,21 @@ namespace CosmicShore.Gameplay
 
             if (isImposter)
             {
-                AddText("YOU ARE THE FAKE ARTIST", 40f, AccentTextColor, FontStyles.Bold);
-                AddText($"The subject is  <b>{subject.ToUpper()}</b>", 30f, TextColor);
-                AddText("You know WHAT it is - but your strokes show only where they start and stop.\nImprovise the middle. Blend in. Don't get caught.",
-                    22f, TextColor);
+                AddText("YOU ARE THE FAKE ARTIST", 24f, AccentTextColor, FontStyles.Bold);
+                AddText($"Subject: <b>{subject.ToUpper()}</b>", 19f, TextColor);
+                AddText("You know WHAT it is, but only get each stroke's start and stop. Improvise the middle. Blend in.",
+                    15f, TextColor);
                 if (imposterCount > 1)
-                    AddText("You're not alone - there is another fake artist.", 22f, AccentTextColor);
+                    AddText("You're not alone - there is another fake artist.", 15f, AccentTextColor);
             }
             else
             {
-                AddText("DRAW YOUR STROKES", 40f, AccentTextColor, FontStyles.Bold);
-                AddText("Subject: <b>???</b>", 30f, TextColor);
-                AddText("Follow your rings. Watch what emerges - and watch for the one\nwhose strokes don't quite belong.",
-                    22f, TextColor);
+                AddText("DRAW YOUR STROKES", 24f, AccentTextColor, FontStyles.Bold);
+                AddText("Subject: <b>???</b>", 19f, TextColor);
+                AddText("Follow your ring. Watch what emerges - and watch for the one whose strokes don't belong.",
+                    15f, TextColor);
             }
-            AddText($"Your brush: <b>{brushName}</b>", 24f, TextColor);
+            AddText($"Your brush: <b>{brushName}</b>", 16f, TextColor);
 
             Show();
             _hideAtTime = Time.unscaledTime + Mathf.Max(2f, seconds);
@@ -167,22 +168,22 @@ namespace CosmicShore.Gameplay
             _accusedChoice = -1;
             _voteDeadline = Time.unscaledTime + Mathf.Max(5f, seconds);
 
-            AddText("THE GALLERY VOTES", 38f, AccentTextColor, FontStyles.Bold);
+            AddText("THE GALLERY VOTES", 22f, AccentTextColor, FontStyles.Bold);
 
-            AddText("What are we drawing?", 26f, TextColor);
-            var subjectGrid = AddGrid(2, new Vector2(430f, 62f));
+            AddText("What are we drawing?", 16f, TextColor);
+            var subjectGrid = AddGrid(2, new Vector2(242f, 44f));
             for (int i = 0; i < subjectOptions.Count; i++)
-                _subjectButtons.Add(AddChoiceButton(subjectGrid, subjectOptions[i], 26f, i, isSubject: true));
+                _subjectButtons.Add(AddChoiceButton(subjectGrid, subjectOptions[i], 16f, i, isSubject: true));
 
-            AddText("Who is the fake artist?", 26f, TextColor);
-            var accuseGrid = AddGrid(3, new Vector2(284f, 54f));
+            AddText("Who is the fake artist?", 16f, TextColor);
+            var accuseGrid = AddGrid(2, new Vector2(242f, 40f));
             for (int i = 0; i < candidateNames.Count; i++)
             {
                 if (i == selfIndex) continue;
-                _accuseButtons.Add(AddChoiceButton(accuseGrid, candidateNames[i], 22f, i, isSubject: false));
+                _accuseButtons.Add(AddChoiceButton(accuseGrid, candidateNames[i], 15f, i, isSubject: false));
             }
 
-            _timerText = AddText("", 30f, AccentTextColor, FontStyles.Bold);
+            _timerText = AddText("", 20f, AccentTextColor, FontStyles.Bold);
 
             Show();
 
@@ -196,8 +197,8 @@ namespace CosmicShore.Gameplay
             ClearCard();
             _voteActive = false;
 
-            AddText("THE GALLERY VOTES", 38f, AccentTextColor, FontStyles.Bold);
-            AddText("You don't get a ballot - you get a poker face.\nHold tight while the artists deliberate...", 24f, TextColor);
+            AddText("THE GALLERY VOTES", 22f, AccentTextColor, FontStyles.Bold);
+            AddText("No ballot for you - just a poker face. Hold tight while the artists deliberate...", 15f, TextColor);
 
             Show();
             _hideAtTime = Time.unscaledTime + Mathf.Max(2f, seconds) + 4f;
@@ -209,11 +210,11 @@ namespace CosmicShore.Gameplay
             ClearCard();
             _voteActive = false;
 
-            AddText("REVEAL", 38f, AccentTextColor, FontStyles.Bold);
-            AddText($"The subject was  <b>{subject.ToUpper()}</b>", 28f, TextColor);
-            AddText($"The fake artist was  <b>{imposterName}</b>", 28f, AccentTextColor);
+            AddText("REVEAL", 22f, AccentTextColor, FontStyles.Bold);
+            AddText($"Subject: <b>{subject.ToUpper()}</b>", 17f, TextColor);
+            AddText($"Fake artist: <b>{imposterName}</b>", 17f, AccentTextColor);
             if (resultLines != null && resultLines.Count > 0)
-                AddText(string.Join("\n", resultLines), 22f, TextColor);
+                AddText(string.Join("\n", resultLines), 14f, TextColor);
 
             Show();
             _hideAtTime = Time.unscaledTime + Mathf.Max(2f, seconds);
@@ -310,7 +311,7 @@ namespace CosmicShore.Gameplay
             tmp.fontSize = size;
             tmp.color = color;
             tmp.fontStyle = style;
-            tmp.alignment = TextAlignmentOptions.Center;
+            tmp.alignment = TextAlignmentOptions.Left; // corner dialog reads left-aligned
             tmp.raycastTarget = false;
             return tmp;
         }
@@ -321,10 +322,10 @@ namespace CosmicShore.Gameplay
             go.transform.SetParent(_card, false);
             var grid = go.AddComponent<GridLayoutGroup>();
             grid.cellSize = cellSize;
-            grid.spacing = new Vector2(12f, 10f);
+            grid.spacing = new Vector2(8f, 8f);
             grid.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
             grid.constraintCount = columns;
-            grid.childAlignment = TextAnchor.MiddleCenter;
+            grid.childAlignment = TextAnchor.UpperLeft;
 
             var fitter = go.AddComponent<ContentSizeFitter>();
             fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;

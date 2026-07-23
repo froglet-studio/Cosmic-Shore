@@ -46,7 +46,6 @@ namespace CosmicShore.Gameplay
 
         const float BloomLerpSpeed = 6f;
         const float MarkerDespawnSeconds = 0.45f;
-        const float DimmedDotScale = 0.65f;
 
         /// <summary>Raised once per completed stroke (index into this player's bundle).</summary>
         public event Action<int> StrokeCompleted;
@@ -70,12 +69,9 @@ namespace CosmicShore.Gameplay
         bool _running;
         bool _penHeld;              // true while this guide is holding the pen up
 
-        // Markers of the CURRENT stroke, index-aligned with its dots (retired entries -> null).
-        readonly List<GameObject> _dotMarkers = new();
-        // Per-marker animation target: each marker eases toward its stored scale (bloom-in
-        // to full for the current dot, to DimmedDotScale for the rest) - a single shared
-        // bloomer target would drag dimmed dots back to full size.
-        readonly Dictionary<Transform, float> _markerTargets = new();
+        // Only ONE ring is shown at a time - the immediate NEXT dot to fly to, never the
+        // whole stroke's dots. It blooms in on spawn and scales out when latched.
+        GameObject _currentMarker;
         Transform _objectiveAnchor;
 
         /// <summary>
@@ -111,7 +107,7 @@ namespace CosmicShore.Gameplay
             if (!_running && IsFinished) return;
             _running = false;
             SetPen(true);
-            ClearStrokeMarkers();
+            RetireCurrentMarker();
             if (ObjectiveRelay.Active == this) ObjectiveRelay.Active = null;
         }
 
@@ -126,10 +122,11 @@ namespace CosmicShore.Gameplay
             }
 
             _strokeIndex = 0;
+            _dotIndex = 0;
             StrokesCompletedCount = 0;
             _running = true;
             ObjectiveRelay.Active = this;
-            SpawnStrokeMarkers();
+            SpawnCurrentMarker(); // only the first (start) ring
             SetPen(true); // pen-up until the first start ring
         }
 
@@ -158,8 +155,8 @@ namespace CosmicShore.Gameplay
             if ((vessel.Transform.position - target).sqrMagnitude > latch * latch)
                 return;
 
-            // Latched the current dot.
-            RetireMarkerForDot(_dotIndex);
+            // Latched the current dot - fold this ring away.
+            RetireCurrentMarker();
 
             if (_dotIndex == 0)
                 SetPen(false); // pen-down: the stroke starts here
@@ -169,13 +166,13 @@ namespace CosmicShore.Gameplay
             if (_dotIndex >= dots.Length)
                 CompleteStroke();
             else
-                HighlightCurrentDot();
+                SpawnCurrentMarker(); // reveal the NEXT ring only
         }
 
         void CompleteStroke()
         {
             SetPen(true);
-            ClearStrokeMarkers();
+            RetireCurrentMarker();
 
             int completed = _strokeIndex;
             StrokesCompletedCount = completed + 1;
@@ -193,93 +190,60 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
-            SpawnStrokeMarkers();
+            _dotIndex = 0;
+            SpawnCurrentMarker();
         }
 
-        // ── Markers ─────────────────────────────────────────────────────────
+        // ── Marker (one ring at a time) ─────────────────────────────────────
 
-        void SpawnStrokeMarkers()
+        /// <summary>
+        /// Show ONLY the current target ring - never the whole stroke's dots. The start
+        /// dot carries a cone ("trail on, this way") + label; the end dot carries a jack
+        /// ("trail off"). Blooms in from zero scale.
+        /// </summary>
+        void SpawnCurrentMarker()
         {
-            ClearStrokeMarkers();
-            _dotIndex = 0;
+            RetireCurrentMarker();
 
             var dots = _strokeDots[_strokeIndex];
+            if (_dotIndex < 0 || _dotIndex >= dots.Length) return;
+
+            bool isStart = _dotIndex == 0;
+            bool isEnd = _dotIndex == dots.Length - 1;
             float ringR = RingRadius;
 
-            for (int i = 0; i < dots.Length; i++)
+            var tangent = TangentAt(dots, _dotIndex);
+            var root = new GameObject($"Ring_{_strokeIndex}_{_dotIndex}");
+            root.transform.SetParent(transform, false);
+            root.transform.SetPositionAndRotation(dots[_dotIndex],
+                tangent.sqrMagnitude > 0.0001f ? Quaternion.LookRotation(tangent) : Quaternion.identity);
+
+            ToyFactory.AddRingBody(root.transform, ringR, _accent, _prismMaterial);
+            if (isStart)
             {
-                bool isStart = i == 0;
-                bool isEnd = i == dots.Length - 1;
-
-                // The fake artist's degraded guide: the deal already reduced their
-                // strokes to [start, end], so every received dot renders.
-                var tangent = TangentAt(dots, i);
-                var root = new GameObject($"Dot_{_strokeIndex}_{i}");
-                root.transform.SetParent(transform, false);
-                root.transform.SetPositionAndRotation(dots[i],
-                    tangent.sqrMagnitude > 0.0001f ? Quaternion.LookRotation(tangent) : Quaternion.identity);
-
-                ToyFactory.AddRingBody(root.transform, ringR, _accent, _prismMaterial);
-                if (isStart)
-                {
-                    ToyFactory.AddConeBody(root.transform, ringR * 0.22f, ringR * 0.66f, _accent, _prismMaterial);
-                    ToyFactory.AddLabel(root.transform, $"{_strokeIndex + 1}/{_strokeDots.Count}", _accent, ringR * 1.4f);
-                }
-                if (isEnd)
-                    ToyFactory.AddJackBody(root.transform, ringR * 0.45f, _accent, _prismMaterial);
-
-                root.transform.localScale = Vector3.zero;
-                _dotMarkers.Add(root);
+                ToyFactory.AddConeBody(root.transform, ringR * 0.22f, ringR * 0.66f, _accent, _prismMaterial);
+                ToyFactory.AddLabel(root.transform, $"{_strokeIndex + 1}/{_strokeDots.Count}", _accent, ringR * 1.4f);
             }
+            if (isEnd)
+                ToyFactory.AddJackBody(root.transform, ringR * 0.45f, _accent, _prismMaterial);
 
-            HighlightCurrentDot();
+            root.transform.localScale = Vector3.zero;
+            _currentMarker = root;
         }
 
-        /// <summary>Eases every live marker toward its stored target scale (continuity of motion).</summary>
+        /// <summary>Blooms the single live ring toward full scale (continuity of motion).</summary>
         void AnimateMarkers()
         {
-            foreach (var marker in _dotMarkers)
-            {
-                if (marker == null) continue;
-                var t = marker.transform;
-                float target = _markerTargets.TryGetValue(t, out var s) ? s : 1f;
-                t.localScale = Vector3.Lerp(t.localScale, Vector3.one * target, Time.deltaTime * BloomLerpSpeed);
-            }
+            if (_currentMarker == null) return;
+            var t = _currentMarker.transform;
+            t.localScale = Vector3.Lerp(t.localScale, Vector3.one, Time.deltaTime * BloomLerpSpeed);
         }
 
-        void HighlightCurrentDot()
+        void RetireCurrentMarker()
         {
-            for (int i = 0; i < _dotMarkers.Count; i++)
-            {
-                var marker = _dotMarkers[i];
-                if (marker == null) continue;
-                _markerTargets[marker.transform] = i == _dotIndex ? 1f : DimmedDotScale;
-            }
-        }
-
-        void RetireMarkerForDot(int dotIndex)
-        {
-            if (dotIndex < 0 || dotIndex >= _dotMarkers.Count) return;
-            var marker = _dotMarkers[dotIndex];
-            _dotMarkers[dotIndex] = null;
-            if (marker != null)
-            {
-                _markerTargets.Remove(marker.transform);
-                ToyFactory.ScaleOutAndDestroy(marker, MarkerDespawnSeconds).Forget();
-            }
-        }
-
-        void ClearStrokeMarkers()
-        {
-            for (int i = 0; i < _dotMarkers.Count; i++)
-            {
-                if (_dotMarkers[i] != null)
-                {
-                    _markerTargets.Remove(_dotMarkers[i].transform);
-                    ToyFactory.ScaleOutAndDestroy(_dotMarkers[i], MarkerDespawnSeconds).Forget();
-                }
-            }
-            _dotMarkers.Clear();
+            if (_currentMarker == null) return;
+            ToyFactory.ScaleOutAndDestroy(_currentMarker, MarkerDespawnSeconds).Forget();
+            _currentMarker = null;
         }
 
         static Vector3 TangentAt(Vector3[] dots, int i)

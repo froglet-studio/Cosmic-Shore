@@ -10,11 +10,12 @@ directly on the Connect-the-Dots painting toy's stroke toolkit (BACKLOG.md's san
 "separate, score-bearing mode" — the toy itself stays scoreless).
 
 Each round, up to 12 players simultaneously fly 3 assigned strokes of one secret artwork.
-Honest artists get full "connect the dots" ring guides; the fake artist gets only each
-stroke's start and end. Then everyone but the fake artist votes on two questions — *what
-are we drawing?* and *who is the fake artist?* — points land, the full blueprint blooms
-over the painted prisms as the reveal, and the next round starts on a fresh canvas. First
-player to the win target (default 8) takes the gallery.
+Honest artists get "connect the dots" ring guides — one ring at a time, the immediate
+next dot only, never the whole stroke — while the fake artist gets only each stroke's
+start and end. Then everyone but the fake artist votes on two questions — *what are we
+drawing?* and *who is the fake artist?* — points land, the full blueprint blooms over the
+painted prisms as the reveal, and the next round starts on a fresh canvas. First player to
+the win target (default 8) takes the gallery.
 
 - **The drawing IS the deduction surface.** Nothing is announced; players read the
   emerging prism artwork itself. The imposter's improvised middles betray them; the honest
@@ -54,8 +55,8 @@ player to the win target (default 8) takes the gallery.
   keeps strokes that bend in different directions (`DirectionChanges`) so a fake artist's
   start→end shortcut reads as wrong. During voting/reveal a gallery camera
   (`FakeArtistGalleryCam`, the `CameraManager` manual-replay rig) orbits the shared
-  painting and the vote panel drops to the lower third, so players study the creation
-  while answering.
+  painting and the directions/vote dialog tucks into the upper-left corner (the toast
+  spot), so players study the creation while answering.
 - **Turn monitor**: `FakeArtistTurnMonitor` resolves the win target from
   `EndConditionOverridesSO.GetFakeArtistWinTarget()` at StartMonitor (never a per-scene
   field), syncs via NetworkVariable → `GameDataSO.GoalTargetCount`, and ends the turn when
