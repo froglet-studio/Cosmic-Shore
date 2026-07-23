@@ -44,7 +44,6 @@ scene and `ServerPlayerVesselInitializerWithAI` backfills AI.
 |---|---|---|---|
 | **MinigameHexRace** | `_Scenes/Multiplayer Scenes/` | `HexRace (33)` | `HexRaceController` |
 | **MinigameCrystalCaptureMultiplayer_Gameplay** | `_Scenes/Multiplayer Scenes/` | `MultiplayerCrystalCapture (35)` | `MultiplayerCrystalCaptureController` |
-| **MinigameDuelForCellMultiplayer_Gameplay** | `_Scenes/Multiplayer Scenes/` | `MultiplayerCellularDuel (29)` | `MultiplayerCellularDuelController` |
 | **MinigameJoust_Gameplay** | `_Scenes/Multiplayer Scenes/` | `MultiplayerJoust (34)` | `MultiplayerJoustController` |
 | **MinigameAstroLeague** | `_Scenes/Multiplayer Scenes/` | `AstroLeague (37)` | `AstroLeagueController` |
 | **MinigameNucleusRush** | `_Scenes/Multiplayer Scenes/` | `NucleusRush (38)` | `NucleusRushController` |
@@ -201,7 +200,6 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
         │
         ├── HexRaceController              — deterministic track, crystal race, golf scoring
         ├── MultiplayerJoustController      — collision tracking, server-authoritative winner, golf scoring
-        ├── MultiplayerCellularDuelController — vessel ownership swap between rounds
         ├── MultiplayerCrystalCaptureController — minimal subclass (1 round, 1 turn)
         ├── AstroLeagueController             — hypersea soccer, server-simulated ball, golden goal
         ├── NucleusRushController             — nucleus-control fauna-wave race, brood scoring
@@ -224,7 +222,7 @@ was deleted 2026-07-20 — solo play runs the multiplayer spine as a party of on
 | 1-25, 27 | retired solo IDs | Retired | — | — (cards + scenes deleted 2026-07-20; enum members kept for serialized-int stability — see `GameModes.cs`) |
 | 26 | `WildlifeBlitz` | MP Co-op | MinigameWildlifeBlitz | `MultiplayerWildlifeBlitzController` |
 | 28 | retired (was the standalone MP freestyle sandbox) | Retired | — | — (freestyle IS the Menu_Main lava lamp) |
-| 29 | `MultiplayerCellularDuel` | MP | MinigameDuelForCellMultiplayer_Gameplay | `MultiplayerCellularDuelController` |
+| 29 | retired (was Cellular Duel) | Retired | — | — (deleted outright 2026-07-21) |
 | 30 | `Multiplayer2v2CoOpVsAI` | MP | ArcadeGameMultiplayer2v2CoOpVsAI | Variant |
 | 32 | retired (was the separate co-op blitz) | Retired | — | — (26 IS the networked co-op blitz) |
 | 33 | `HexRace` | MP Racing | MinigameHexRace | `HexRaceController` |
@@ -276,8 +274,7 @@ to 3 with AI teammates via `ServerPlayerVesselInitializerWithAI`.
 - Replay: full scene reload (`UseSceneReloadForReplay`)
 
 (The former single-player Cellular Duel / Wildlife Blitz / SlipNStride sections are
-retired: duel play lives on as `MultiplayerCellularDuel (29)`; SlipNStride's card and
-controller are deleted.)
+retired; Cellular Duel was then deleted outright 2026-07-21 - mode 29 with it.)
 
 ### HexRace (Multiplayer)
 
@@ -327,19 +324,6 @@ Collision-based competitive duel. Players collide with each other; first to reac
 - `JoustCollisionTurnMonitor` with `CollisionsNeeded` threshold
 - Atomic results sync via `FixedString64Bytes[]` / `float[]` / `int[]` arrays in ClientRpc
 - `_finalResultsSent` guard prevents duplicate end-game processing
-
-### Multiplayer Cellular Duel
-
-**Scene**: `MinigameDuelForCellMultiplayer_Gameplay.unity`
-**Controller**: `MultiplayerCellularDuelController`
-**Base**: `MultiplayerDomainGamesController`
-
-Networked vessel-swapping duel for exactly 2 players. Between rounds, players swap vessels via Netcode `ChangeOwnership()`.
-
-**Key features**:
-- Vessel ownership swap via `NetworkObject.ChangeOwnership()` + `gameData.SwapVessels()`
-- Hardcoded for 2 players (`gameData.Players[0]` and `Players[1]`)
-- Vessels swapped back on replay
 
 ### Multiplayer Crystal Capture
 
@@ -476,7 +460,6 @@ All turn monitors live in `Assets/_Scripts/Controller/Arcade/TurnMonitors/`.
 | Joust | Elapsed time (seconds) | `99999` |
 | Crystal Capture | Crystals collected (higher = better) | Crystals collected |
 | Astro League | Goals scored (higher = better) | Goals scored |
-| Cellular Duel | Standard scoring | Standard scoring |
 
 ---
 
@@ -547,7 +530,6 @@ Game scene names are stored in `SO_ArcadeGame.SceneName` assets, not in `SceneNa
 | Domain games base | `MultiplayerDomainGamesController.cs` | `_Scripts/Controller/Arcade/` |
 | HexRace | `HexRaceController.cs` | `_Scripts/Controller/Arcade/` |
 | Joust | `MultiplayerJoustController.cs` | `_Scripts/Controller/Arcade/` |
-| Cellular Duel (MP) | `MultiplayerCellularDuelController.cs` | `_Scripts/Controller/Arcade/` |
 | Crystal Capture | `MultiplayerCrystalCaptureController.cs` | `_Scripts/Controller/Arcade/` |
 | Astro League | `AstroLeagueController.cs` | `_Scripts/Controller/Arcade/AstroLeague/` |
 | Nucleus Rush (Brood Rush) | `NucleusRushController.cs` | `_Scripts/Controller/Arcade/` |

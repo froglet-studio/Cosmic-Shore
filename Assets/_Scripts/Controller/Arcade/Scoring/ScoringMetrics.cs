@@ -20,8 +20,9 @@ namespace CosmicShore.Gameplay
             ScoringMetric.ElementalCrystals => stats.ElementalCrystalsCollected,
             ScoringMetric.Jousts            => stats.JoustCollisions,
             ScoringMetric.Goals             => stats.GoalsScored,
-            ScoringMetric.VolumeCreated     => (int)stats.VolumeCreated,
-            ScoringMetric.VolumeActivity    => (int)(stats.VolumeCreated + stats.HostileVolumeDestroyed + stats.FriendlyVolumeDestroyed),
+            // VolumeCreated(5) / VolumeActivity(6) retired with the standalone Freestyle
+            // and CellularDuel modes - no rule asset selects them (enum members remain
+            // only for serialized-int stability).
             _                               => 0,
         };
 
@@ -39,11 +40,6 @@ namespace CosmicShore.Gameplay
                 case ScoringMetric.ElementalCrystals: stats.ElementalCrystalsCollected = value; break;
                 case ScoringMetric.Jousts:            stats.JoustCollisions = value; break;
                 case ScoringMetric.Goals:             stats.GoalsScored = value; break;
-                case ScoringMetric.VolumeCreated:     stats.VolumeCreated = value; break;
-                // VolumeActivity is a composite - not writable. Its three components each
-                // replicate via their own RoundStats NetworkVariables, so the final-results
-                // write-back has nothing to add for it.
-                case ScoringMetric.VolumeActivity:    break;
             }
         }
 

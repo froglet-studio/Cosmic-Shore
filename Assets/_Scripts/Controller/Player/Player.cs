@@ -409,7 +409,7 @@ namespace CosmicShore.Gameplay
             else
             {
                 // A human-controlled turn must never start with autopilot on. Vessels can
-                // arrive here still AI-driven (Cellular Duel's between-round vessel swap,
+                // arrive here still AI-driven (a vessel handover (retired Cellular Duel's between-round swap was the original case),
                 // the EndGameSequencer flourish on in-place replays); a live AIPilot blocks
                 // every button action in R_VesselActionHandler and fights the pilot's input.
                 ToggleAIPilot(false);

@@ -32,7 +32,7 @@ namespace CosmicShore.Data
         PlayGameBlockBandit = 407,
         PlayGameShootingGallery = 408,
         // 409 (PlayGameFreestyle) retired with the standalone arcade Freestyle game.
-        PlayGameCellularDuel = 410,
+        PlayGameCellularDuel = 410, // retired with Cellular Duel (2026-07-21) - do not reuse
         PlayGameCellularBrawl = 411,
         PlayGameDashAndGrab = 412,
         PlayGameRiskyDriftness = 413,
@@ -51,7 +51,7 @@ namespace CosmicShore.Data
         PlayGameMazeRunner = 426,
         PlayGameWildlifeBlitz = 427,
         PlayGameMultiplayerFreestyle = 428, // retired with the standalone freestyle game (2026-07-21) - do not reuse
-        PlayGameMultiplayerDuelForCell = 429,
+        PlayGameMultiplayerDuelForCell = 429, // retired with Cellular Duel (2026-07-21) - do not reuse
         PlayGameMultiplayerWildlifeBlitzGame = 430,
         PlayGameHexRace = 431,
         PlayGameMultiplayer2v2CoOpVsAI = 432,

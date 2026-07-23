@@ -262,7 +262,6 @@ end-game cinematic was removed; `EndGameSequencer` now just raises the scoreboar
 | **HexRace** (33) | `HexRaceScoringRuleSO` | Crystals | golf ↑, tiebreak `CrystalsCollected`↓ | finish time `MM:SS:CS` / `EncodeHexRaceLoserScore` (10000 + crystals-left) → "{N} Crystals Left" | VICTORY/RACE TIME • DEFEAT/CRYSTALS LEFT |
 | **Joust** (34) | `JoustScoringRuleSO` | Jousts | golf ↑, tiebreak `JoustCollisions`↓ | finish time `MM:SS:CS` / `JoustLoserScore` (99999) → "{N} Jousts Left" (domain deficit) | VICTORY/WON BY N JOUSTS • DEFEAT/LOST BY N JOUSTS |
 | **Crystal Capture** (35) | `CrystalCaptureScoringRuleSO` | Crystals | points ↓ | `Score` = CrystalsCollected → "{N} Crystals" (both) | WON/LOST BY N CRYSTALS |
-| **Cellular Duel** (29) | — (no rule) | `Score` | points ↓ | `"{N}"` | `EndGameSequencer`; `DuelForCellScoreboard` |
 | **Wildlife Blitz** co-op (32) | — (no rule) | `Score` | base | base | `CoOpScoreBoard` + `EndGameSequencer` |
 
 > **Loser sentinels (centralized).** Golf modes encode a DNF loser score — HexRace
@@ -371,7 +370,7 @@ subclasses any more, and **no end-game cinematic** (`EndGameSequencer` raises th
 | **Per-mode scoring rule** (the only per-mode code) | `_Scripts/Controller/Arcade/Scoring/ScoringRuleSO.cs` (+ `HexRace`/`Joust`/`CrystalCapture` `ScoringRuleSO`), `ScoringMetrics.cs` |
 | Ranked-results types | `_Scripts/Data/Structs/ScoreResult.cs`, `_Scripts/Controller/Arcade/ScoreResultBuilder.cs`, `_Scripts/Controller/Arcade/Scoring/ScoreReveal.cs` |
 | End-game scoreboard | `_Scripts/UI/Scoreboard.cs` (reads `gameData.Results`), `_Scripts/UI/PlayerScoreCard.cs` |
-| Non-rule scoreboards | `_Scripts/UI/DuelForCellScoreboard.cs`, `CoOpScoreBoard.cs` (rule modes use the base `Scoreboard`) |
+| Non-rule scoreboards | `_Scripts/UI/DuelForCellScoreboard.cs` (now used only by the unreachable 2v2CoOpVsAI scene), `CoOpScoreBoard.cs` (rule modes use the base `Scoreboard`) |
 | End-game sequencer | `_Scripts/Utility/DataContainers/EndGameSequencer.cs` (halts vessels, GameEnd SFX, raises `OnShowGameEndScreen`; shared by all modes) |
 | Stats providers | `_Scripts/UI/ScoreboardStatsProvider.cs`, `UniversalStatsProvider.cs`, `StatModuleSO.cs`, `StatRowUI.cs`; `_Scripts/Controller/Arcade/*StatsProvider.cs` |
 | Shared anim config | `_Scripts/UI/HUDAnimationSettingsSO.cs` |

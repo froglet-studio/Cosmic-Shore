@@ -669,21 +669,6 @@ namespace CosmicShore.Utility
             return (removedPlayers + removedStats) > 0;
         }
         
-        public void SwapVessels()
-        {
-            var player0 = Players[0];
-            var player1 = Players[1];
-            
-            var vessel0 = player0.Vessel;
-            var vessel1 = player1.Vessel;
-            
-            player0.ChangeVessel(vessel1);
-            player1.ChangeVessel(vessel0);
-            
-            vessel0.ChangePlayer(player1);
-            vessel1.ChangePlayer(player0);
-        }
-        
         // -----------------------------------------------------------------------------------------
         // Queries / Scores
 

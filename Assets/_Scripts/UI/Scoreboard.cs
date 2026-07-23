@@ -295,7 +295,7 @@ namespace CosmicShore.UI
         {
             // Prefer the single source of truth: the mode's ranked + formatted results
             // (GameDataSO.Results, produced once by the ScoringRule). Modes that don't
-            // produce results (freestyle, DuelForCell) fall back to the legacy path.
+            // produce results fall back to the legacy path below.
             if (gameData.Results is { Count: > 0 })
             {
                 // An authoritative no-winner end (co-op DNF) must not credit the top DNF
@@ -330,8 +330,8 @@ namespace CosmicShore.UI
         /// Winning domain for the banner. Prefers the server-authoritative
         /// <see cref="GameDataSO.WinnerDomain"/> - the SAME value the end-game
         /// cinematic uses - so the banner and the cinematic can't disagree on a tie
-        /// and there is one source of truth for "who won". Modes that don't set it
-        /// (single-player / co-op / DuelForCell) leave it <see cref="Domains.Blue"/>
+        /// and there is one source of truth for "who won". Legacy modes that don't
+        /// set it leave it <see cref="Domains.Blue"/>
         /// - it is reset on every scene load (SceneLoader → GameDataSO.ResetRuntimeData)
         /// and on replay (ResetRuntimeDataForReplay) - and fall back to the per-domain
         /// sum order exactly as before. Subclasses may override.

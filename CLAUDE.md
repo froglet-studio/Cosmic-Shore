@@ -562,7 +562,7 @@ Per-mode technical references live next to the controllers
   system (`ElementalComebackSystem`, REQUIRED in every party game, auto-created by
   `MultiplayerMiniGameControllerBase.EnsureExists`) keys off domain aggregates too.
 - **Replay is a full network scene reload** (`UseSceneReloadForReplay = true`) for all
-  shipped modes except Cellular Duel - flora/fauna/environment don't reset in place.
+  shipped modes - flora/fauna/environment don't reset in place.
 - **Server-authoritative winners**: detection runs in `OnTurnEndedCustom()` on the
   server; results broadcast via the shared `SyncFinalResults` template.
 - **End-game/win-condition COUNTS** are authored ONLY through Tools > Cosmic Shore >
@@ -607,9 +607,7 @@ Runtime-configurable AI opponents at `Assets/_Scripts/Controller/AI/`:
   its behavior *after* enabling the pilot, so the end-game flourish still works). Never
   call `AIPilot.StartAIPilot`/`StopAIPilot` or start a cinematic around this seam.
 - **A human-controlled turn never starts with autopilot on**: `Player.StartPlayer`'s human
-  branch calls `ToggleAIPilot(false)` (symmetric with the AI branch), and
-  `VesselController.ChangePlayer` clears the pilot when a human receives a vessel
-  (Cellular Duel's between-round swap vs an AI opponent). A leaked `AutoPilotEnabled`
+  branch calls `ToggleAIPilot(false)` (symmetric with the AI branch). A leaked `AutoPilotEnabled`
   blocks every button action in `R_VesselActionHandler` while `AIPilot.Update` fights the
   player's input — the root of the "AI drifting conflicts with my drifting" class of bug.
 - `AIPilot` and `AICinematicBehavior` keep their `enabled` flag mirrored to their active

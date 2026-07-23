@@ -166,7 +166,7 @@ winner only because of the loser-sentinel score design (and could diverge on a
 tie). **Done** (commit `80b14de4`): the banner now prefers the server-authoritative
 `gameData.WinnerDomain` (the same value the cinematic uses), falling back to
 `DomainStatsList[0]`/`orderedStats[0]` for modes that don't set it (single-player /
-co-op / DuelForCell — `WinnerDomain` stays `Blue`, already reset every scene load +
+co-op / legacy — `WinnerDomain` stays `Blue`, already reset every scene load +
 replay). Behavior-preserving in normal play; fixes the tie divergence. No reset
 code needed (existing infra). Full consolidation is **R10**.
 
@@ -287,8 +287,7 @@ when the stat-row surface itself changes.
 - `HUDAnimationSettingsSO.scoreboardRowStagger` appears unused (the scoreboard
   passes the row index but `PlayerScoreCard` uses `cardEntranceStagger`) — see
   `BUGS.md` B3; remove or wire correctly.
-- `DuelForCell` in-game HUD wiring is unclear (no dedicated HUD subclass) —
-  confirm which HUD the Cellular Duel scene uses during the unified-path work.
+- ~~`DuelForCell` in-game HUD wiring~~ — closed: Cellular Duel deleted outright 2026-07-21.
 - `GameCanvas-HexRace.prefab` carries stale Scoreboard-era data: the internal
   `Scoreboard`'s serialized fields predate the current class (old
   `multiplayerController` name, `SinglePlayerBannerColor`, rematch panel refs),

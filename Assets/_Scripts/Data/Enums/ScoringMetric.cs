@@ -14,14 +14,18 @@ namespace CosmicShore.Data
         ElementalCrystals = 2,
         Jousts = 3,
         Goals = 4,
-        /// <summary>Trail volume the player laid (truncated to int). Freestyle's live feed.</summary>
+        /// <summary>
+        /// RETIRED (2026-07-21): was the standalone Freestyle sandbox's live feed; that
+        /// game was deleted (freestyle IS the Menu_Main lava lamp). No rule asset selects
+        /// this metric and ScoringMetrics has no arm for it. Member kept for
+        /// serialized-int stability - do not reuse.
+        /// </summary>
         VolumeCreated = 5,
         /// <summary>
-        /// Total volume churn the player caused: created + hostile destroyed + friendly
-        /// destroyed (truncated to int) - the CellularDuel-family composite (the legacy
-        /// tracker summed the same three strategies at multiplier 1). Composite metrics
-        /// cannot be written back through <c>ScoringMetrics.Write</c>; their components
-        /// each replicate via their own RoundStats NetworkVariables.
+        /// RETIRED (2026-07-21): was the CellularDuel volume-churn composite
+        /// (created + hostile destroyed + friendly destroyed); that mode was deleted.
+        /// No rule asset selects this metric and ScoringMetrics has no arm for it.
+        /// Member kept for serialized-int stability - do not reuse.
         /// </summary>
         VolumeActivity = 6,
     }

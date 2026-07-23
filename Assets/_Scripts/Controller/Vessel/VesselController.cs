@@ -260,46 +260,6 @@ namespace CosmicShore.Gameplay
                 SetPose_Local(pose);
         }
 
-        public void ChangePlayer(IPlayer player)
-        {
-            VesselStatus.Player = player;
-
-            // If the player is AI in general, or if it is a network client
-            if (player.IsInitializedAsAI || player.IsNetworkClient)
-            {
-                VesselStatus.VesselHUDController.UnsubscribeFromEvents();
-                if (player.IsInitializedAsAI)
-                {
-                    VesselStatus.VesselTransformer.ToggleActive(true);
-                }
-                if (player.IsNetworkClient)
-                {
-                    VesselStatus.VesselTransformer.ToggleActive(false);
-                    SubscribeToNetworkVariables();
-                }
-                VesselStatus.ActionHandler.ToggleSubscription(false);
-                VesselStatus.VesselHUDController.HideHUD();
-
-                return;
-            }
-            
-            // Vessel handover to a human (Cellular Duel's between-round swap): the previous
-            // AI owner's pilot must stop NOW, not at the next StartPlayer - a live AIPilot
-            // blocks every button action in R_VesselActionHandler and keeps writing into
-            // the new owner's InputStatus.
-            ToggleAIPilot(false);
-
-            UnsubscribeFromNetworkVariables();
-
-            VesselStatus.VesselHUDController.SubscribeToEvents();
-            VesselStatus.VesselHUDController.ShowHUD();
-
-                
-            VesselStatus.VesselTransformer.ToggleActive(true);
-            VesselStatus.ActionHandler.ToggleSubscription(true);
-            VesselStatus.VesselCameraCustomizer.RetargetAndApply(this);
-        }
-        
         public void SetTranslationRestricted(bool value)
         {
             if (IsNetworkOwner)
