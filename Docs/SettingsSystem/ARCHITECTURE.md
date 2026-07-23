@@ -109,7 +109,7 @@ the in-scene **Benchmark**, which measures real frame cost via the author's
   and NO scoring (it was originally cloned from the since-retired Wildlife Blitz scene and has
   been fully decoupled from that deleted stack).
 - **Launch:** Settings → Run Benchmark calls `BenchmarkSceneLauncher.LaunchBenchmark()` → sets
-  `GameDataSO` (Squirrel, the retired WildlifeBlitz mode id for AI crystal-seek behavior, `RequestedAIBackfillCount` = graphics-settings AI
+  `GameDataSO` (Squirrel, `GameModes.Benchmark`, `RequestedAIBackfillCount` = graphics-settings AI
   crowd) → `InvokeGameLaunch()` → the always-on host loads it via Netcode scene management, the
   same single-host path every mode uses (solo = party of one).
 - **Endless + flyable:** `SandboxBenchmarkController` (extends `MultiplayerMiniGameControllerBase`;

@@ -15,7 +15,6 @@ namespace CosmicShore.Core
 
         protected override void OnAfterLoad(PlayerStatsProfile data)
         {
-            data.BlitzStats ??= new WildlifeBlitzPlayerStatsProfile();
             data.MultiHexStats ??= new HexRacePlayerStatsProfile();
             data.JoustStats ??= new JoustPlayerStatsProfile();
             data.CrystalCaptureStats ??= new CrystalCapturePlayerStatsProfile();

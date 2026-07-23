@@ -20,7 +20,7 @@ namespace CosmicShore.Data
         // 7 (Freestyle) retired: the standalone arcade Freestyle game was removed.
         // Freestyle now refers to the Menu_Main lava-lamp experience (see CLAUDE.md,
         // "Lava-Lamp Mode"). Do not reuse ID 7.
-        CellularDuel = 8,
+        // 8 (CellularDuel) retired 2026-07-21 with the Cellular Duel deletion - do not reuse.
         DashNGrab = 9,
         CellularBrawl = 10,
         Denial = 11,
@@ -38,27 +38,13 @@ namespace CosmicShore.Data
         BotDuel = 23,
         Curvatious = 24,
         MazeRunner = 25,
-        // 26 retired as a PLAYABLE mode 2026-07-21: the co-op blitz scene/controller/
-        // card were deleted. The member stays (serialized-int stability, dormant
-        // training/quest assets) and BenchmarkSceneLauncher still sets it as the
-        // benchmark's GameMode so AI crystal-seeking behavior keys correctly.
-        // Do not reuse.
-        WildlifeBlitz = 26,
+        // 26 (WildlifeBlitz) retired 2026-07-21 with the Wildlife Blitz deletion - do not reuse.
         ProtectMission = 27,
-        // 28 retired 2026-07-21: the standalone MultiplayerFreestyle sandbox game
-        // (scene + controller + card) was deleted - freestyle IS the Menu_Main
-        // lava lamp now (see CLAUDE.md "Lava-Lamp Mode"). Member kept for
-        // serialized-int stability; do not reuse.
-        MultiplayerFreestyle = 28,
-        // 29 retired 2026-07-21: Cellular Duel deleted outright (scene + controller +
-        // rule + card). Member kept for serialized-int stability; do not reuse.
-        MultiplayerCellularDuel = 29,
+        // 28 (MultiplayerFreestyle) retired 2026-07-21 - freestyle IS the Menu_Main lava lamp. Do not reuse.
+        // 29 (MultiplayerCellularDuel) retired 2026-07-21 with the Cellular Duel deletion - do not reuse.
         Multiplayer2v2CoOpVsAI = 30,
-        // 32 retired 2026-07-20: the separate co-op blitz stack (scene + card)
-        // was deleted; the mode-26 blitz it folded into was itself retired
-        // 2026-07-21. Member kept for serialized-int stability; do not reuse.
-        // (31 stays reserved - never assigned.)
-        MultiplayerWildlifeBlitzGame = 32,
+        // 31 stays reserved - never assigned.
+        // 32 (MultiplayerWildlifeBlitzGame) retired 2026-07-20 with the co-op blitz stack - do not reuse.
         HexRace = 33,
         MultiplayerJoust = 34,
         MultiplayerCrystalCapture = 35,
@@ -74,5 +60,10 @@ namespace CosmicShore.Data
         // scores a point; first domain to the wave target (default 3) wins. See
         // _Scripts/Controller/Arcade/NUCLEUSRUSH.md.
         NucleusRush = 38,
+        // Benchmark (39): the Settings > Run Benchmark stress-test context - not an
+        // arcade mode (no card, no scoring, endless). Set by BenchmarkSceneLauncher so
+        // mode-keyed consumers (presence/connecting-panel display, comeback default,
+        // HUD objective default) resolve honestly instead of borrowing a retired id.
+        Benchmark = 39,
     }
 }

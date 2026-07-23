@@ -49,7 +49,7 @@ scene and `ServerPlayerVesselInitializerWithAI` backfills AI.
 | **MinigameNucleusRush** | `_Scenes/Multiplayer Scenes/` | `NucleusRush (38)` | `NucleusRushController` |
 | **ArcadeGameMultiplayer2v2CoOpVsAI** | `_Scenes/Multiplayer Scenes/` | `Multiplayer2v2CoOpVsAI (30)` | Variant of domain games controller |
 | **MinigameTournamentMultuplayer** | `_Scenes/Multiplayer Scenes/` | Tournament variant | Multi-round tournament format |
-| **BenchmarkStressTest** | `_Scenes/Multiplayer Scenes/` | Settings → Run Benchmark (sets the retired `WildlifeBlitz` mode id for AI crystal-seek behavior) | `SandboxBenchmarkController` — endless auto-start, no monitors, no scoring |
+| **BenchmarkStressTest** | `_Scenes/Multiplayer Scenes/` | Settings → Run Benchmark (`GameModes.Benchmark`) | `SandboxBenchmarkController` — endless auto-start, no monitors, no scoring |
 
 ### Tool & Test Scenes
 
@@ -220,7 +220,7 @@ was deleted 2026-07-20 — solo play runs the multiplayer spine as a party of on
 |---|---|---|---|---|
 | 0 | `Random` | Meta | — | — |
 | 1-25, 27 | retired solo IDs | Retired | — | — (cards + scenes deleted 2026-07-20; enum members kept for serialized-int stability — see `GameModes.cs`) |
-| 26 | retired (was the co-op blitz) | Retired | — | — (deleted 2026-07-21; the benchmark still sets the mode id for AI behavior) |
+| 26 | retired (was the co-op blitz) | Retired | — | — (deleted 2026-07-21; enum member removed) |
 | 28 | retired (was the standalone MP freestyle sandbox) | Retired | — | — (freestyle IS the Menu_Main lava lamp) |
 | 29 | retired (was Cellular Duel) | Retired | — | — (deleted outright 2026-07-21) |
 | 30 | `Multiplayer2v2CoOpVsAI` | MP | ArcadeGameMultiplayer2v2CoOpVsAI | Variant |
@@ -258,8 +258,8 @@ The co-op clear-the-cell blitz (mode 26) was deleted outright (scene, controller
 objective monitor, score keeper, rule, HUD, stats provider, card, blitz SOAP events).
 The benchmark scene, originally built on the blitz stack, was decoupled: its
 `SandboxBenchmarkController` now extends `MultiplayerMiniGameControllerBase` directly
-and the scene carries no scoring. `BenchmarkSceneLauncher` still sets the retired
-mode-26 id so AI crystal-seeking behavior keys correctly.
+and the scene carries no scoring. The benchmark has its own honest mode id
+(`GameModes.Benchmark = 39`).
 
 ### HexRace (Multiplayer)
 

@@ -7,7 +7,6 @@ namespace CosmicShore.UI
     {
         public long LastLoginTick;
 
-        public WildlifeBlitzPlayerStatsProfile BlitzStats = new();
         public HexRacePlayerStatsProfile MultiHexStats = new();
         public JoustPlayerStatsProfile JoustStats = new();
         public CrystalCapturePlayerStatsProfile CrystalCaptureStats = new();

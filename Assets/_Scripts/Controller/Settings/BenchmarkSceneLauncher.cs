@@ -39,7 +39,7 @@ namespace CosmicShore.Core
                 : 3;
 
             gameData.SceneName = BenchmarkSceneName;
-            gameData.GameMode = GameModes.WildlifeBlitz; // ecosystem mode → AI seeks crystals
+            gameData.GameMode = GameModes.Benchmark;
             gameData.selectedVesselClass.Value = VesselClassType.Squirrel;
             gameData.SelectedIntensity.Value = intensity;
             gameData.RequestedDomainCount = 3; // deterministic Jade/Ruby/Gold AI spread (don't inherit the last game's)

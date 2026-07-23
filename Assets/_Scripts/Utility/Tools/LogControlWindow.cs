@@ -1062,12 +1062,6 @@ namespace CosmicShore.Utility
                     ? new DateTime(d.LastLoginTick, DateTimeKind.Utc).ToString("yyyy-MM-dd HH:mm:ss UTC")
                     : "(never)");
 
-                if (d.BlitzStats?.HighScores != null && d.BlitzStats.HighScores.Count > 0)
-                {
-                    DrawFieldHeader("Blitz High Scores");
-                    foreach (var kv in d.BlitzStats.HighScores)
-                        DrawSubField(kv.Key, kv.Value.ToString());
-                }
                 if (d.MultiHexStats?.BestMultiplayerRaceTimes != null && d.MultiHexStats.BestMultiplayerRaceTimes.Count > 0)
                 {
                     DrawFieldHeader("HexRace Best Times");

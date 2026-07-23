@@ -87,11 +87,6 @@ namespace CosmicShore.Core
                 if (cloudBest <= 0.001f) return currentSessionScore;
                 return currentSessionScore >= GolfScoreSentinels.DnfThreshold ? cloudBest : Mathf.Min(cloudBest, currentSessionScore);
             }
-            else if (mode == GameModes.WildlifeBlitz)
-            {
-                _cachedProfile.BlitzStats.HighScores.TryGetValue(key, out int blitzBest);
-                return Mathf.Max(blitzBest, currentSessionScore);
-            }
             else if (mode == GameModes.MultiplayerCrystalCapture)
             {
                 _cachedProfile.CrystalCaptureStats.HighScores.TryGetValue(key, out int ccBest);
