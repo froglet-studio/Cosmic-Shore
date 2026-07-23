@@ -319,6 +319,11 @@ namespace CosmicShore.Gameplay
 
         public void StopAIPilot()
         {
+            // Already stopped - every human turn start clears the pilot defensively,
+            // so skip the redundant native StopAllCoroutines/enabled writes.
+            if (!AutoPilotEnabled && !enabled)
+                return;
+
             AutoPilotEnabled = false;
 
             // StopCoroutine(UseAbilityCoroutine(ability)) stopped a freshly created

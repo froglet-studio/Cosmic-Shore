@@ -26,7 +26,9 @@ namespace CosmicShore.Gameplay
         private Gamepad _calibratedPad;
 
         static float RemapFromRest(float raw, float rest) =>
-            rest >= 0.99f ? 0f : Mathf.Clamp01((raw - rest) / (1f - rest));
+            rest <= 0f ? raw                                          // healthy pad: identity, no divide
+            : rest >= 0.99f ? 0f                                      // pinned/broken axis: never active
+            : Mathf.Clamp01((raw - rest) / (1f - rest));
 
         private bool fullSpeedStraightEffectsStarted;
         private bool minimumSpeedStraightEffectsStarted;
