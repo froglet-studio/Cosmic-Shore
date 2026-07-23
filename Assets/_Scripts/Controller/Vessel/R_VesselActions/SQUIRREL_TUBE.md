@@ -19,6 +19,20 @@ across the full 0-2 drift range so a single trigger spans the light→sharp rang
 from summing both triggers. See `DriftActionSO.playDriftSfx` (off on the sharp tier) so the shared
 drift SFX isn't doubled when both tiers stack on one trigger.
 
+Two robustness rules protect this control scheme:
+
+- **Trigger rest calibration** (`GamepadInputStrategy`): trigger analog values are measured from a
+  min-latched per-trigger resting baseline, not raw — a worn trigger resting above the deadzone
+  (field repro: an Xbox pad resting at 0.38) otherwise reads as permanently held, the press edge
+  never fires, and drift goes dead on that pad in every scene. The remap also restores the full
+  analog range the 0-2 drift ramp depends on.
+- **Drift start/end one-shots are local-pilot-only** (`DriftActionSO`): the 2D
+  `DriftStart`/`DriftEnd` SFX and the HUD raises sit behind the `IsLocalUser` gate — the action
+  pipeline replays on every peer and AI pilots drive it too, so ungated one-shots spam full-volume
+  drift cues over the local pilot's own feedback. Physics (`BeginDrift`/`IsDrifting`) still runs on
+  all peers; remote/AI vessels keep only spatialized per-vessel audio (`DriftAudioController`,
+  already local-gated).
+
 The ability fires on the trigger **press** (`Begin`); release (`Commit`) does nothing.
 
 ## Placement — straight out the front, led by speed

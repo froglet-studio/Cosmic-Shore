@@ -725,7 +725,7 @@ The project uses Reflex DI with `AppManager` as the root `IInstaller`. All persi
 #### DI Patterns to Follow
 
 - **Use `[Inject]` for shared assets**: `GameDataSO`, `SceneNameListSO`, and other DI-registered assets should be accessed via `[Inject]`, not `[SerializeField]`. This eliminates manual inspector wiring and serialization drift.
-- **Injection timing**: `[Inject]` fields are populated after `Awake()` but before `Start()`. Access injected fields in `Start()` or later — never in `Awake()`. If you need to subscribe to events in `OnEnable()`, use a deferred pattern: attempt in `OnEnable()`, retry with duplicate guards in `Start()`.
+- **Injection timing**: `[Inject]` fields are populated after `Awake()` but before `Start()`. Access injected fields in `Start()` or later — never in `Awake()`. If you need to subscribe to events in `OnEnable()`, use a deferred pattern: attempt in `OnEnable()`, retry with duplicate guards in `Start()`. The same hazard applies to runtime creation: `AddComponent<T>()` runs the new component's `Awake`/`OnEnable` INLINE, before the caller's next line can assign any field — so a factory that assigns dependencies after `AddComponent` must also explicitly complete the deferred subscription (reference: `ElementalComebackSystem.EnsureExists` + `TrySubscribeToGameEvents`).
 - **ContainerScope per scene**: Each scene that uses `[Inject]` must have a Reflex `ContainerScope` component (via the `ContainerScope.prefab` in `_Prefabs/CORE/`). The Bootstrap scene's scope is the root; other scenes get child scopes.
 
 ### Input Strategy Pattern
@@ -738,6 +738,18 @@ Platform-agnostic input via `Assets/_Scripts/Controller/IO/`:
 - `InputController` — manages active strategy and input state
 - `IInputStatus` / `InputStatus` — input state container
 - Input strategies are swappable per platform/context at runtime
+- **Only the local human's `InputController` runs.** `Player.InitializeForMultiplayerMode`
+  sets `InputController.enabled = IsLocalUser` (the earliest point AI-ness is reliable —
+  `NetIsAI` is written by the AI spawner *after* `Spawn()`, so `OnNetworkSpawn` cannot gate
+  this). AI pilots write `InputStatus` directly; remote vessels replicate theirs.
+- **Gamepad triggers are rest-calibrated.** Triggers do not universally rest at zero (worn
+  springs drift upward; some DirectInput-style pads rest mid-range by design), and a rest
+  value above the deadzone reads as "permanently held" — the press edge never fires and
+  trigger-bound actions (e.g. the Squirrel's drift) go dead. `GamepadInputStrategy`
+  min-latches each trigger's observed resting baseline (re-latched on `Gamepad.current`
+  device change) and remaps `[rest..1] → [0..1]` before edge detection and the
+  `InputStatus` analog writes. Do not compare raw trigger reads against an absolute
+  threshold anywhere else.
 
 ### Impact Effects Architecture
 
@@ -1455,6 +1467,23 @@ Runtime-configurable AI opponents at `Assets/_Scripts/Controller/AI/`:
 - AI profiles configured via `SO_AIProfileList` (`MainAIProfileList.asset`)
 - AI profiles used for score cards and multiplayer backfill
 - Configurable AI ship selection and behavior at runtime
+
+**AI pilot lifecycle (do not regress):**
+
+- `VesselController.ToggleAIPilot(bool)` is the single choke point for AI control of a
+  vessel — it also stops any `AICinematicBehavior` flourish (the `EndGameSequencer` starts
+  its behavior *after* enabling the pilot, so the end-game flourish still works). Never
+  call `AIPilot.StartAIPilot`/`StopAIPilot` or start a cinematic around this seam.
+- **A human-controlled turn never starts with autopilot on**: `Player.StartPlayer`'s human
+  branch calls `ToggleAIPilot(false)` (symmetric with the AI branch), and
+  `VesselController.ChangePlayer` clears the pilot when a human receives a vessel
+  (Cellular Duel's between-round swap vs an AI opponent). A leaked `AutoPilotEnabled`
+  blocks every button action in `R_VesselActionHandler` while `AIPilot.Update` fights the
+  player's input — the root of the "AI drifting conflicts with my drifting" class of bug.
+- `AIPilot` and `AICinematicBehavior` keep their `enabled` flag mirrored to their active
+  state: no `Update()` dispatch on vessels they aren't driving. `StartAIPilot` is
+  idempotent; `StopAIPilot` uses `StopAllCoroutines` (a `StopCoroutine(new enumerator)`
+  never stops the running coroutine).
 
 ### Menu Screen Navigation (Menu_Main Scene)
 
