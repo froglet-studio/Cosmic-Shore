@@ -21,6 +21,17 @@ after the step was written; do not test).
 - [x] **5.** Lava-lamp regression (C8): autopilot vessel drifts behind UI → tap crystal → control + Game UI + vessel HUD. Toys all work (vessel changer keeps domain/speed + HUD re-shows, domain changer, painting, Wanderway). Gamepad **Start** exits; center-tap returns to menu. *(verified 2026-07-21)*
 - [x] **6.** Arcade grid contents (C6, C8, C9, C10, C11): the only cards anywhere are HexRace, Joust, Crystal Capture, Maelstrom — every game-list surface now binds OrganicRematchGames (LaunchPartyAllGames was deleted and its holders rewired; the 2v2 card/scene are gone). *(verified 2026-07-21 pre-C9 — re-check the surfaces show the four live cards)*
 
+## Part A2 — Y0 wire-fix wave (W1-W5, 2026-07-21)
+
+- [ ] **25.** Quest chain alive (Y0.1): Arcade → quest track — quests unlock beyond quest 0,
+  intensity gating works, completing a quest's game fires the quest-complete toast.
+- [ ] **26.** Joust + CC centerline feeds (Y0.2): covered inside steps 14/15/21 — mid-turn the
+  centerline score ticks on BOTH peers (Joust: elapsed time; CC: crystals), final results
+  identical host vs client, exactly ONE end sequence (the legacy tracker's duplicate winner
+  event is gone).
+- [ ] **27.** Touch inversion (Y0.3, touch device/simulator): Settings → Invert Y / Invert
+  Throttle now affect touch flight (pitch/roll flip; throttle flips).
+
 ## Part B — Solo runs (solo = party of one + AI)
 
 - ~~**7.** Cellular Duel solo~~ — **OBSOLETE**: Cellular Duel retired (C9, 2026-07-21). Do not test.

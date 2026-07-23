@@ -14,7 +14,19 @@ perf branches).
 
 ---
 
-## Y0 — Wire-fix wave (bug-fix grade, all unblocked)
+## Y0 — Wire-fix wave — **EXECUTED 2026-07-21** (branch `claude/unified-yash-refactor-9sc0ws`)
+
+> **STATUS:** all three items shipped per the verified plans below. Y0.1: service mounted in
+> Bootstrap (questList + gameData wired, progressionConfig lazily defaulted), migration folder
+> deleted (re-verified zero external refs). Y0.2: in-controller SERVER feeds replace the legacy
+> tracker - Joust: 0.25s destroy-linked elapsed-time loop; CC: per-stats
+> OnCrystalsCollectedChanged -> rule.LiveMetric with B15 own-record teardown - then the tracker
+> blocks were deleted from both scenes and `NetworkScoreTracker` itself deleted (scene-less; the
+> C9-C12 retirements had removed its other 4 carrier scenes). Remaining family blockers:
+> HexRaceScoreTracker de-basing + Recording Studio's offline ScoreTracker + D20
+> (UniversalStatsProvider). Y0.3: inversion block added to TouchInputStrategy.Reparameterize.
+> In-editor verification steps live in `SOLO_RETIREMENT_TESTS.md` (steps 25-27).
+
 
 - **Y0.1 Mount `GameModeProgressionService`.** Add the component to the Bootstrap scene's
   PlayerDataService GameObject (copy serialized refs — `questList`/`progressionConfig`/`gameData`,
