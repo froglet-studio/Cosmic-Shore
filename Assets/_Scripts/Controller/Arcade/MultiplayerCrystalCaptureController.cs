@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using CosmicShore.Data;
 
 namespace CosmicShore.Gameplay
@@ -13,11 +14,66 @@ namespace CosmicShore.Gameplay
         // a duplicate InvokeWinnerCalculated from SyncGameEnd_ClientRpc.
         protected override bool HasEndGame => false;
 
+        // Mid-turn centerline feed (replaces the legacy NetworkScoreTracker's
+        // CrystalsCollectedScoring): server-only per-stats subscription writing the rule
+        // metric into Score - a spawned peer's local write does not raise OnScoreChanged;
+        // only server writes replicate via n_Score to every HUD. B15: detach from THIS
+        // record list only (never by iterating gameData.RoundStatsList at teardown), with
+        // OnNetworkDespawn + OnDestroy nets (precedent: NetworkCrystalCollisionTurnMonitor).
+        readonly List<IRoundStats> _scoreFeedStats = new();
+
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
             numberOfRounds = 1;
             numberOfTurnsPerRound = 1;
+
+            if (IsServer)
+                gameData.OnMiniGameTurnStarted.OnRaised += StartScoreFeed;
+        }
+
+        public override void OnNetworkDespawn()
+        {
+            if (IsServer)
+                gameData.OnMiniGameTurnStarted.OnRaised -= StartScoreFeed;
+            StopScoreFeed();
+            base.OnNetworkDespawn();
+        }
+
+        public override void OnDestroy()
+        {
+            StopScoreFeed(); // B15: destruction paths that bypass despawn must still detach
+            base.OnDestroy();
+        }
+
+        /// <summary>
+        /// Turn-start roster snapshot suffices: the server roster is complete before any
+        /// turn starts, and the Contains guard makes re-subscription a no-op.
+        /// </summary>
+        void StartScoreFeed()
+        {
+            foreach (var stats in gameData.RoundStatsList)
+            {
+                if (stats == null || _scoreFeedStats.Contains(stats)) continue;
+                stats.OnCrystalsCollectedChanged += FeedScore;
+                _scoreFeedStats.Add(stats);
+            }
+        }
+
+        void StopScoreFeed()
+        {
+            foreach (var stats in _scoreFeedStats)
+            {
+                if (stats == null) continue;
+                stats.OnCrystalsCollectedChanged -= FeedScore;
+            }
+            _scoreFeedStats.Clear();
+        }
+
+        void FeedScore(IRoundStats stats)
+        {
+            if (FinalResultsSent) return;
+            stats.Score = rule.LiveMetric(stats);
         }
 
         // ── Server-authoritative game end ─────────────────────────────────
