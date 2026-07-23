@@ -71,7 +71,9 @@ namespace CosmicShore.Gameplay
         // Resting size is the skimmer's live elemental (Space-driven) scale — element levels
         // lengthen the sword and energy growth composes on top. Falls back to the config value.
         float BaseScale => _skimmer ? Mathf.Max(0.01f, _skimmer.LiveElementalScale) : config.BaseScale;
-        float MaxScale  => config.MaxScale;
+        // Keep max ≥ base: the two come from different sources (base = skimmer's live elemental
+        // scale, max = config), so a large elemental scale must never invert the resting clamp.
+        float MaxScale  => Mathf.Max(config.MaxScale, BaseScale);
         float Range     => Mathf.Max(0.0001f, MaxScale - BaseScale);
 
         public float MinScale => BaseScale;
