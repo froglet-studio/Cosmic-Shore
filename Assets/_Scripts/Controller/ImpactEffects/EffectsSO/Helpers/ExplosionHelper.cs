@@ -64,6 +64,19 @@ namespace CosmicShore.Gameplay
             SpawnAllAndDetonate(aoePrefabs, init, impactor.DIContainer);
         }
 
+        /// <summary>
+        /// Spawn + detonate a pre-built explosion at an arbitrary world position/scale. Used when
+        /// the caller isn't a vessel or projectile (e.g. the Rhino energy sword exploding a crystal
+        /// at the crystal's location, scaled by the energy consumed).
+        /// </summary>
+        public static void CreateExplosion(
+            AOEExplosion[] aoePrefabs,
+            AOEExplosion.InitializeStruct init,
+            Container container)
+        {
+            SpawnAllAndDetonate(aoePrefabs, init, container);
+        }
+
         // ---------- Internals ----------
 
         static void SpawnAllAndDetonate(IEnumerable<AOEExplosion> prefabs, AOEExplosion.InitializeStruct init, Container container)

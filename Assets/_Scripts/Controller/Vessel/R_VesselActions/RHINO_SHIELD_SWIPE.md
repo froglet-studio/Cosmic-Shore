@@ -1,5 +1,11 @@
 # Rhino Shield Swipe — analog trigger swordsmanship
 
+> The **energy economy** layered on top of this rig — energy gained per prism destroyed, the
+> crystal 3D burst + explosion, the energize stance (white blade + tracers + super-shield popping
+> + 0 slash cooldown), and the 1 s slash cooldown — lives in **`RHINO_ENERGY_SWORD.md`**. This
+> file covers only the pose/analog-swipe control model. The `ShieldSkimmerScaleDriver` "Sword
+> dimensions & scale ownership" section below is now driven by that energy meter.
+
 The Rhino's ForceFieldSkimmer capsule (the only CapsuleCollider on the vessel — its
 "sword") is puppeteered by the analog triggers. The vessel plays like a swordsman:
 the triggers are reparameterized Manta-style into a difference axis and a sum axis,

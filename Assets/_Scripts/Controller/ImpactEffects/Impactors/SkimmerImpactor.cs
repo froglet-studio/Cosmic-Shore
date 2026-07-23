@@ -33,6 +33,13 @@ namespace CosmicShore.Gameplay
 
         // runtime state (moved from Skimmer)
         readonly Dictionary<string, float> _skimStartTimes = new();
+
+        // Prisms currently inside this skimmer's trigger. Maintained on enter/exit so the Rhino
+        // energy sword can, on a slash rising-edge, re-run its prism effects against a prism that
+        // was already overlapping the blade before the slash began (no fresh OnTriggerEnter fires
+        // for it). Generic + cheap; only the Rhino path calls ReapplyPrismEffectsToOverlapping.
+        readonly HashSet<PrismImpactor> _overlappingPrisms = new();
+        readonly List<PrismImpactor> _reapplyBuffer = new();
         //private int ActivelySkimmingBlockCount;
         //[HideInInspector]
         public float CombinedWeight; // exposed for effects that need it
@@ -138,6 +145,9 @@ namespace CosmicShore.Gameplay
 
             if (!other.TryGetComponent<PrismImpactor>(out var prismImpactor)) return;
             var prism = prismImpactor.Prism;
+
+            _overlappingPrisms.Remove(prismImpactor);
+
             if (!skimmer.AffectSelf && prism.Domain == skimmer.VesselStatus.Domain) return;
 
             if (!_skimStartTimes.Remove(prism.ownerID)) return;
@@ -176,6 +186,7 @@ namespace CosmicShore.Gameplay
                 case PrismImpactor prismImpactor:
                     var prism = prismImpactor.Prism;
                     var esp = skimmerImpactorDataContainer.SkimmerPrismEffects;
+                    _overlappingPrisms.Add(prismImpactor);
                     skimmer.ExecuteImpactOnPrism(prism); // secondary call (booster viz, etc.)
                     if (!DoesEffectExist(esp)) return;
 
@@ -223,6 +234,35 @@ namespace CosmicShore.Gameplay
             if (_skimStartTimes.ContainsKey(ownerId)) return;
             _skimStartTimes.Add(ownerId, Time.time);
             //ActivelySkimmingBlockCount++;
+        }
+
+        /// <summary>
+        /// Re-runs this skimmer's prism effects against every prism currently inside the trigger.
+        /// The Rhino energy sword calls this on a slash rising-edge so a slash pops a prism that
+        /// was already overlapping the blade before the slash began (no new OnTriggerEnter fires
+        /// for a prism that never left the trigger). The effects themselves gate on the sword's
+        /// slash state, so this is a no-op when the sword is not slashing. Stale entries (prisms
+        /// pooled/destroyed without an OnTriggerExit) are pruned as they are encountered.
+        /// </summary>
+        public void ReapplyPrismEffectsToOverlapping()
+        {
+            if (!isInitialized || _overlappingPrisms.Count == 0) return;
+            var esp = skimmerImpactorDataContainer.SkimmerPrismEffects;
+            if (!DoesEffectExist(esp)) return;
+
+            _reapplyBuffer.Clear();
+            _reapplyBuffer.AddRange(_overlappingPrisms);
+            for (int i = 0; i < _reapplyBuffer.Count; i++)
+            {
+                var prismImpactor = _reapplyBuffer[i];
+                if (!prismImpactor || prismImpactor.Prism == null)
+                {
+                    _overlappingPrisms.Remove(prismImpactor);
+                    continue;
+                }
+                foreach (var effect in esp)
+                    effect.Execute(this, prismImpactor);
+            }
         }
     }
 }

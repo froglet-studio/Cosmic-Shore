@@ -6,9 +6,17 @@ using System.Linq;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Rhino-specific skimmer vs prism effect:
-    /// - If the impacted prism is "Super Shield", the Rhino bounces back (no damage).
-    /// - Otherwise, applies standard damage: inertia * speed * course.
+    /// Rhino energy-sword skimmer vs prism effect (RHINO_ENERGY_SWORD.md). Gated by the sword's
+    /// per-vessel <see cref="IRhinoSwordState"/> (read via <c>impactor.Skimmer.SwordState</c>):
+    /// <list type="bullet">
+    /// <item>Normal prism — damaged only when the sword <c>CanSlashDamage</c> (a slash is being
+    /// pulled and the 1s cooldown has elapsed) OR the blade is energized. Each hit lands a slash
+    /// (starting the cooldown) and gains energy.</item>
+    /// <item>Super-shielded prism — POPPED when energized (DeactivateShields → devastating Damage,
+    /// the sanctioned mass-conserving teardown); otherwise the Rhino bounces off as before.</item>
+    /// </list>
+    /// With no sword state present (any non-Rhino skimmer that reuses this asset) it falls back to
+    /// the legacy behavior: always damage normal prisms, always bounce super-shields.
     /// </summary>
     [CreateAssetMenu(
         fileName = "RhinoSkimmerDamagePrismEffect",
@@ -17,6 +25,11 @@ namespace CosmicShore.Gameplay
     {
         [Header("Damage (when NOT super-shield)")]
         [SerializeField] private float inertia = 70f;
+
+        [Header("Energy gained per prism destroyed (normalized 0..1)")]
+        [Tooltip("Energy the sword banks each time a slash destroys a prism. ~1/energyPerPrism " +
+                 "prism kills fill the meter, enabling a full-power crystal burst.")]
+        [SerializeField] private float energyPerPrism = 0.04f;
 
         [Header("Bounce (when super-shield)")]
         [Tooltip("Multiplier applied to current speed to compute bounce target speed.")]
@@ -41,15 +54,49 @@ namespace CosmicShore.Gameplay
             var status = impactor.Skimmer.VesselStatus;
             if (status == null || status.ShipTransform == null) return;
 
-            // Branch: Super-shield => bounce & exit
+            var sword = impactor.Skimmer.SwordState; // null on any non-energy-sword skimmer
+
+            // Super-shield: only an ENERGIZED blade shatters it; otherwise the Rhino bounces off.
             if (IsSuperShield(prismImpactee))
             {
-                BounceBack(status, prismImpactee);
+                if (sword != null && sword.IsEnergized)
+                {
+                    PopSuperShield(status, prismImpactee);
+                    AfterSlashLands(sword);
+                }
+                else
+                {
+                    BounceBack(status, prismImpactee);
+                }
                 return;
             }
 
-            // Otherwise: normal damage flow
+            // Normal prism: while an energy sword is present, damage only during an allowed slash
+            // (energized ignores the cooldown). No sword state -> legacy always-damage behavior.
+            if (sword != null && !sword.IsEnergized && !sword.CanSlashDamage) return;
+
             PrismEffectHelper.Damage(status, prismImpactee, inertia, status.Course, status.Speed);
+            AfterSlashLands(sword);
+        }
+
+        // A slash landed damage: start the slash cooldown and bank energy for destroying a prism.
+        void AfterSlashLands(IRhinoSwordState sword)
+        {
+            if (sword == null) return;
+            sword.NotifySlashLanded();
+            sword.AddEnergy(energyPerPrism);
+        }
+
+        // Sanctioned mass-conserving super-shield teardown (see AstroLeagueArena.ClearEdgeLining):
+        // drop the shields first so the animated Damage explode-out can run, then devastate.
+        void PopSuperShield(IVesselStatus status, PrismImpactor prismImpactee)
+        {
+            var prism = prismImpactee.Prism;
+            if (prism == null) return;
+
+            prism.DeactivateShields(); // synchronously clears IsSuperShielded -> Normal
+            var damage = status.Course * status.Speed * inertia;
+            prism.Damage(damage, status.Domain, status.PlayerName, devastate: true);
         }
 
         private void BounceBack(IVesselStatus status, PrismImpactor prismImpactee)

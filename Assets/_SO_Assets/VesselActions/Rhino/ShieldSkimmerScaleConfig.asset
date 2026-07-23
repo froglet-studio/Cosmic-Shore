@@ -23,3 +23,18 @@ MonoBehaviour:
   crystalGrowSpeed: 40
   shrinkSpeed: 10
   maxHoldEpsilon: 0.05
+  crystalBurstFactorAtFullEnergy: 4
+  crystalBurstHoldSeconds: 2.5
+  crystalBurstGrowSpeed: 600
+  crystalBurstReturnSpeed: 150
+  energizeCostFraction: 0.1
+  energizeHoldSeconds: 1
+  energizedTailSeconds: 5
+  energizeCooldownSeconds: 5
+  slashCooldownSeconds: 1
+  visibilityMultiplier: 2
+  energizedColor: {r: 1, g: 1, b: 1, a: 1}
+  colorTransitionSeconds: 0.25
+  tracersEnabled: 1
+  tracerWidth: 2
+  tracerTimeSeconds: 0.3

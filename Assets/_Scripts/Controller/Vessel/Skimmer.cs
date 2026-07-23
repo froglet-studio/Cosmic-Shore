@@ -56,6 +56,15 @@ namespace CosmicShore.Gameplay
         /// <summary>Set by an external per-frame scale driver (ShieldSkimmerScaleDriver) while it owns this transform's scale.</summary>
         public bool HasExternalScaleDriver { get; set; }
 
+        /// <summary>
+        /// Rhino "energy sword" per-vessel state, registered by <see cref="ShieldSkimmerScaleDriver"/>
+        /// in its Awake. Null on every other vessel's skimmer. Shared impact-effect SOs read it via
+        /// <c>impactor.Skimmer.SwordState</c> to gate slashing, gain energy, pop super-shields while
+        /// energized, and trigger the crystal burst — none of which they could hold themselves
+        /// (effect SOs are singletons). See <c>RHINO_ENERGY_SWORD.md</c>.
+        /// </summary>
+        public IRhinoSwordState SwordState { get; set; }
+
         void Awake()
         {
             _authoredShape = transform.localScale;

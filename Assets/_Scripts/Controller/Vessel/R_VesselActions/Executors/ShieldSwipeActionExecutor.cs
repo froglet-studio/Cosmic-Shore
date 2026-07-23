@@ -45,6 +45,18 @@ namespace CosmicShore.Gameplay
         bool _rightHeld;   // event-side per-direction held state (cross-swipe handoff)
         bool _leftHeld;
 
+        // The Rhino energy-sword state lives on the sword skimmer (ShieldSkimmerScaleDriver).
+        // Difference (single trigger) drives SLASHING; sum (both triggers, centered) drives the
+        // energize STANCE. Null-safe so a Rhino without the driver simply runs the pose only.
+        IRhinoSwordState Sword
+        {
+            get
+            {
+                var sk = _status?.NearFieldSkimmer;
+                return sk ? sk.SwordState : null;
+            }
+        }
+
         void OnEnable()
         {
             if (OnMiniGameTurnEnd) OnMiniGameTurnEnd.OnRaised += OnTurnEndOfMiniGame;
@@ -106,6 +118,8 @@ namespace CosmicShore.Gameplay
                 diffTarget = _activeSign;
                 sumTarget = _activeSign != 0f ? 1f : 0f;
             }
+
+            FeedSwordSignals(diffTarget, sumTarget);
 
             if (_diff == 0f && _sum == 0f && diffTarget == 0f && sumTarget == 0f) return;
 
@@ -198,6 +212,22 @@ namespace CosmicShore.Gameplay
             shieldRoot.localPosition = sweep * _baseLocalPos;
         }
 
+        // Translate the analog difference/sum into the sword's two gestures each frame:
+        // a single-trigger pull (|difference| high) is a SLASH; both triggers held centered
+        // (sum high, |difference| low) is the energize STANCE (the "lower position").
+        void FeedSwordSignals(float diffTarget, float sumTarget)
+        {
+            var sword = Sword;
+            if (sword == null) return;
+
+            float absDiff = Mathf.Abs(diffTarget);
+            bool inStance = sumTarget >= config.StanceSumThreshold && absDiff <= config.StanceCenterEpsilon;
+            bool slashing = absDiff >= config.SlashTriggerThreshold;
+
+            sword.SetInStance(inStance);
+            sword.SetSlashing(slashing);
+        }
+
         void ClearStance()
         {
             _activeSign = 0f;
@@ -226,6 +256,15 @@ namespace CosmicShore.Gameplay
             _diff = 0f;
             _sum = 0f;
             ClearStance();
+
+            // Drop the sword gestures so a turn-end/despawn can't leave it stuck slashing
+            // or mid-stance (which would keep it energizing or gating damage).
+            var sword = Sword;
+            if (sword != null)
+            {
+                sword.SetInStance(false);
+                sword.SetSlashing(false);
+            }
 
             if (_baseCaptured && shieldRoot)
             {

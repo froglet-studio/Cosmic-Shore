@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: RhinoSkimmerDamagePrismEffect
   m_EditorClassIdentifier: 
   inertia: 70
+  energyPerPrism: 0.04
   bounceSpeedMultiplier: 0.85
   minBounceSpeed: 10
   accelScale: 20

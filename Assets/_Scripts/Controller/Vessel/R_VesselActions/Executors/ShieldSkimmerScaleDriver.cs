@@ -1,12 +1,31 @@
 using System;
-using System.Collections;
-using CosmicShore.Gameplay;
 using UnityEngine;
-using System.Linq;
 
 namespace CosmicShore.Gameplay
 {
-    public class ShieldSkimmerScaleDriver : MonoBehaviour
+    /// <summary>
+    /// The Rhino energy sword's brain. Owns the sword transform's SCALE and all energy-sword
+    /// state, and implements <see cref="IRhinoSwordState"/> so the shared impact-effect SOs can
+    /// read/drive it via <c>Skimmer.SwordState</c>.
+    ///
+    /// ENERGY is the Rhino's Shield resource (<see cref="shieldIndex"/>, normalized 0..1). It is
+    /// gained when a slash destroys a prism and spent two ways:
+    ///  • CRYSTAL HIT (<see cref="TriggerCrystalBurst"/>): the blade bursts in all three dimensions
+    ///    scaled by the energy at the moment of the hit, then ALL energy is consumed. Full energy
+    ///    reaches the authored max scale; less energy scales the burst down.
+    ///  • ENERGIZE (hold the lower/chop stance &gt; <c>EnergizeHoldSeconds</c>): costs
+    ///    <c>EnergizeCostFraction</c> (1/10) of max energy and lights the blade up (white + tracers),
+    ///    lets it pop super-shielded prisms, and drops the slash cooldown to 0. It stays energized
+    ///    for <c>EnergizedTailSeconds</c> after leaving the stance, then locks out for
+    ///    <c>EnergizeCooldownSeconds</c>.
+    ///
+    /// While NOT bursting the blade's resting length reflects stored energy (Y-only elongation, the
+    /// same energy meter the Rhino HUD reads through <see cref="OnScaleChanged"/>). Sets
+    /// <c>Skimmer.HasExternalScaleDriver</c> so the Skimmer's own elemental scale write stands down.
+    /// The swipe pose (rotation/position) is owned by <see cref="ShieldSwipeActionExecutor"/> — only
+    /// scale is ours. See <c>RHINO_ENERGY_SWORD.md</c>.
+    /// </summary>
+    public class ShieldSkimmerScaleDriver : MonoBehaviour, IRhinoSwordState
     {
         [Header("Refs")]
         [SerializeField] private ResourceSystem resourceSystem;
@@ -15,233 +34,272 @@ namespace CosmicShore.Gameplay
         [Header("Config")]
         [SerializeField] private ShieldSkimmerScaleConfigSO config;
 
-        [Header("Shield Resource Index (normalized 0..1)")]
-        [SerializeField] private int shieldIndex = 0;
+        [Header("Energy Resource Index (Shield, normalized 0..1)")]
+        [SerializeField] private int shieldIndex = 1;
 
+        /// <summary>Fires each frame with (currentWorldLength, restingLength, maxLength) — the Rhino
+        /// HUD reads it as a 0..1 energy meter.</summary>
         public event Action<float, float, float> OnScaleChanged;
 
-        private enum CrystalState { None, Armed, Holding }
-
-        CrystalState _crystalState = CrystalState.None;
-        float _crystalHoldEndTime;
-
-        float _targetWorld;
-        float _prevShield01;
-        float _noDecayUntil;     // time until which no decay is allowed (reset delay / crystal hold)
-
-        Coroutine _tickLoop;
         Skimmer _skimmer;
+        SkimmerImpactor _skimmerImpactor;
+        readonly RhinoSwordVisualizer _visual = new();
 
-        // Sword capsules (Skimmer.ElongateYOnly, Rhino): the driver grows only local Y and
-        // preserves the authored X/Z silhouette instead of writing a uniform XYZ.
+        Vector3 _authoredShape; // local X/Y/Z silhouette captured from the Skimmer
+
+        // ── crystal burst ──
+        enum BurstPhase { None, Growing, Holding, Returning }
+        BurstPhase _burst = BurstPhase.None;
+        Vector3 _burstTargetLocal;
+        float _burstHoldEnd;
+
+        // ── energize state machine ──
+        enum EnergizeState { Idle, Charging, Energized, Cooldown }
+        EnergizeState _energize = EnergizeState.Idle;
+        float _chargeStart, _tailEnd, _cooldownEnd;
+        bool _tailCounting;
+        bool _inStance;
+
+        // ── slashing ──
+        bool _isSlashing;
+        float _nextSlashTime;
+
+        // Sword capsules (Skimmer.ElongateYOnly): the resting length grows only local Y and
+        // preserves the authored X/Z silhouette; the crystal burst overrides all three dims.
         bool YOnly => _skimmer && _skimmer.ElongateYOnly;
 
-        // The resting size is the skimmer's live elemental (Space-driven) scale, so element
-        // levels lengthen the sword and shield growth composes on top of that baseline.
-        // Falls back to the authored config value when no Skimmer sits on the driven root.
-        float BaseScale  => _skimmer ? Mathf.Max(0.01f, _skimmer.LiveElementalScale) : config.BaseScale;
-        float MaxScale   =>config.MaxScale;
-        float PrismMax   => config.PrismMaxScale;
-        float StepUnits  => config.StepScaleUnits;
-        float TickSecs   => config.TickSeconds;
-        float ResetDelay => config.ResetDelaySeconds;
-        float HoldSecs   => config.CrystalHoldSeconds;
-        float PrismGrow  => config.PrismGrowSpeed;
-        float CrystalGrow=> config.CrystalGrowSpeed;
-        float Shrink     => config.ShrinkSpeed;
-        float HoldEps    => config.MaxHoldEpsilon;
-
-        float Range => Mathf.Max(0.0001f, MaxScale - BaseScale);
-        float Step01 => StepUnits / Range;
-
-        float PrismCap01
-        {
-            get
-            {
-                float cap = (PrismMax - BaseScale) / Range;
-                return Mathf.Clamp01(cap);
-            }
-        }
+        // Resting size is the skimmer's live elemental (Space-driven) scale — element levels
+        // lengthen the sword and energy growth composes on top. Falls back to the config value.
+        float BaseScale => _skimmer ? Mathf.Max(0.01f, _skimmer.LiveElementalScale) : config.BaseScale;
+        float MaxScale  => config.MaxScale;
+        float Range     => Mathf.Max(0.0001f, MaxScale - BaseScale);
 
         public float MinScale => BaseScale;
         public float CurrentScale => skimmerRoot
             ? (YOnly ? skimmerRoot.lossyScale.y : skimmerRoot.lossyScale.x)
             : BaseScale;
 
+        // ── IRhinoSwordState ──
+        public bool IsEnergized => _energize == EnergizeState.Energized;
+        public float Energy01 => GetShield01();
+
+        public bool CanSlashDamage => _isSlashing && (IsEnergized || Time.time >= _nextSlashTime);
+
+        public void NotifySlashLanded() =>
+            _nextSlashTime = Time.time + (IsEnergized ? 0f : config.SlashCooldownSeconds);
+
+        public void AddEnergy(float amount01)
+        {
+            if (amount01 == 0f) return;
+            SetShield01(GetShield01() + amount01);
+        }
+
+        public void TriggerCrystalBurst()
+        {
+            if (config == null) return;
+            float energy = Mathf.Clamp01(GetShield01());
+            float factor = Mathf.Lerp(1f, config.CrystalBurstFactorAtFullEnergy, energy);
+
+            _burstTargetLocal = new Vector3(
+                _authoredShape.x * factor,
+                _authoredShape.y * factor,
+                _authoredShape.z * factor);
+            _burst = BurstPhase.Growing;
+
+            SetShield01(0f); // hitting a crystal consumes ALL energy
+        }
+
+        public void SetInStance(bool inStance) => _inStance = inStance;
+
+        public void SetSlashing(bool slashing)
+        {
+            bool rising = slashing && !_isSlashing;
+            _isSlashing = slashing;
+
+            // A slash that begins with a prism already inside the blade sees no fresh
+            // OnTriggerEnter, so re-apply the prism effects to whatever is overlapping right now.
+            // The effects self-gate on CanSlashDamage (which is true this frame), so this only
+            // bites when a slash actually opens.
+            if (rising && _skimmerImpactor) _skimmerImpactor.ReapplyPrismEffectsToOverlapping();
+        }
+
         void Awake()
         {
             if (!skimmerRoot) skimmerRoot = transform;
             skimmerRoot.TryGetComponent(out _skimmer);
-            _targetWorld = CurrentScale;
+            skimmerRoot.TryGetComponent(out _skimmerImpactor);
+            if (_skimmer) _skimmer.SwordState = this;
+            _authoredShape = skimmerRoot.localScale;
         }
 
         void OnEnable()
         {
-            if (_skimmer) _skimmer.HasExternalScaleDriver = true;
+            if (_skimmer)
+            {
+                _skimmer.HasExternalScaleDriver = true;
+                _skimmer.SwordState = this;
+                // Skimmer.Awake has run (all Awakes precede all OnEnables on a fresh instance),
+                // so the authored silhouette is captured and valid here.
+                _authoredShape = _skimmer.AuthoredShape;
+            }
 
-            if (!resourceSystem) return;
+            // reset runtime state so a pooled/re-enabled vessel starts clean
+            _burst = BurstPhase.None;
+            _energize = EnergizeState.Idle;
+            _isSlashing = false;
+            _inStance = false;
+            _tailCounting = false;
+            _nextSlashTime = 0f;
 
-            _prevShield01 = GetShield01();
-            UpdateTargetFromShield(_prevShield01);
-
-            resourceSystem.OnResourceChanged += OnResourceChanged;
-
-            if (_tickLoop == null)
-                _tickLoop = StartCoroutine(TickLoop());
+            _visual.Setup(skimmerRoot, config);
         }
 
         void OnDisable()
         {
             if (_skimmer) _skimmer.HasExternalScaleDriver = false;
-
-            if (resourceSystem)
-                resourceSystem.OnResourceChanged -= OnResourceChanged;
-
-            if (_tickLoop != null) StopCoroutine(_tickLoop);
-            _tickLoop = null;
-        }
-
-        void OnResourceChanged(int index, float current, float max)
-        {
-            if (index != shieldIndex) return;
-
-            float now   = Time.time;
-            float cur01 = Mathf.Clamp01(current);
-
-            if (cur01 >= 0.999f && _prevShield01 < 0.999f)
-            {
-                _crystalState = CrystalState.Armed;
-                _crystalHoldEndTime = 0f;
-
-                _noDecayUntil = float.PositiveInfinity;
-            }
-
-            switch (_crystalState)
-            {
-                case CrystalState.Armed or CrystalState.Holding when cur01 < 0.999f:
-                    SetShield01(1f);
-                    cur01 = 1f;
-                    break;
-                case CrystalState.None:
-                {
-                    bool increased = cur01 > _prevShield01 + 0.0001f;
-                    if (increased)
-                    {
-                        _noDecayUntil = now + ResetDelay;
-                    }
-
-                    break;
-                }
-            }
-
-            _prevShield01 = cur01;
-            
-            if (_crystalState != CrystalState.Holding)
-                UpdateTargetFromShield(cur01);
+            _visual.Teardown();
         }
 
         void Update()
         {
-            if (!skimmerRoot) return;
+            if (!skimmerRoot || config == null) return;
+            float dt = Time.deltaTime;
 
-            if (_crystalState == CrystalState.Holding)
+            UpdateEnergize();
+            UpdateScale(dt);
+            _visual.Tick(IsEnergized, dt);
+        }
+
+        // ── energize ──────────────────────────────────────────────────────────
+        void UpdateEnergize()
+        {
+            float now = Time.time;
+            float cost = config.EnergizeCostFraction;
+
+            switch (_energize)
             {
-                SetWorldUniform(MaxScale);
-                OnScaleChanged?.Invoke(MaxScale, BaseScale, MaxScale);
+                case EnergizeState.Idle:
+                    if (_inStance && now >= _cooldownEnd && GetShield01() >= cost)
+                    {
+                        _energize = EnergizeState.Charging;
+                        _chargeStart = now;
+                    }
+                    break;
+
+                case EnergizeState.Charging:
+                    if (!_inStance || GetShield01() < cost)
+                        _energize = EnergizeState.Idle;
+                    else if (now - _chargeStart >= config.EnergizeHoldSeconds)
+                    {
+                        SetShield01(GetShield01() - cost); // spend 1/10 of max energy
+                        _energize = EnergizeState.Energized;
+                        _tailCounting = false;
+                    }
+                    break;
+
+                case EnergizeState.Energized:
+                    if (_inStance)
+                    {
+                        _tailCounting = false; // holding the stance keeps it lit
+                    }
+                    else if (!_tailCounting)
+                    {
+                        _tailCounting = true;
+                        _tailEnd = now + config.EnergizedTailSeconds;
+                    }
+                    else if (now >= _tailEnd)
+                    {
+                        _energize = EnergizeState.Cooldown;
+                        _cooldownEnd = now + config.EnergizeCooldownSeconds;
+                    }
+                    break;
+
+                case EnergizeState.Cooldown:
+                    if (now >= _cooldownEnd) _energize = EnergizeState.Idle;
+                    break;
+            }
+        }
+
+        // ── scale ─────────────────────────────────────────────────────────────
+        void UpdateScale(float dt)
+        {
+            if (_burst != BurstPhase.None)
+            {
+                UpdateBurst(dt);
                 return;
             }
 
-            float nowWorld = CurrentScale;
+            // Resting length reflects stored energy (Y-only, world units).
+            float energy = Mathf.Clamp01(GetShield01());
+            float targetWorldY = Mathf.Clamp(BaseScale + energy * Range, BaseScale, MaxScale);
+            float nowWorldY = skimmerRoot.lossyScale.y;
+            float speed = (targetWorldY >= nowWorldY) ? config.PrismGrowSpeed : config.ShrinkSpeed;
+            float nextWorldY = Mathf.MoveTowards(nowWorldY, targetWorldY, speed * dt);
 
-            float speed;
-            if (_targetWorld >= nowWorld)
-            {
-                speed = (_crystalState == CrystalState.Armed) ? CrystalGrow : PrismGrow;
-            }
-            else
-            {
-                speed = Shrink;
-            }
-            
-            _targetWorld = Mathf.Clamp(_targetWorld, BaseScale, MaxScale);
-
-            float nextWorld = Mathf.MoveTowards(nowWorld, _targetWorld, speed * Time.deltaTime);
-
-            if (_crystalState == CrystalState.Armed &&
-                Mathf.Abs(nextWorld - MaxScale) <= HoldEps)
-            {
-                _crystalState = CrystalState.Holding;
-                _crystalHoldEndTime = Time.time + HoldSecs;
-
-                _noDecayUntil = _crystalHoldEndTime;
-
-                nextWorld = MaxScale;
-            }
-
-            SetWorldUniform(nextWorld);
-            OnScaleChanged?.Invoke(nextWorld, BaseScale, MaxScale);
+            SetLengthWorldY(nextWorldY);
+            OnScaleChanged?.Invoke(nextWorldY, BaseScale, MaxScale);
         }
 
-        IEnumerator TickLoop()
+        void UpdateBurst(float dt)
         {
-            var wait = new WaitForSeconds(TickSecs);
+            Vector3 cur = skimmerRoot.localScale;
 
-            while (true)
+            switch (_burst)
             {
-                yield return wait;
-
-                float now = Time.time;
-
-                // If holding from crystal, do not decay until hold time is over.
-                if (_crystalState == CrystalState.Holding)
+                case BurstPhase.Growing:
                 {
-                    if (now < _crystalHoldEndTime)
-                        continue;
-
-                    // Hold finished – go back to normal and allow decay.
-                    _crystalState = CrystalState.None;
+                    var next = Vector3.MoveTowards(cur, _burstTargetLocal, config.CrystalBurstGrowSpeed * dt);
+                    skimmerRoot.localScale = next;
+                    if ((next - _burstTargetLocal).sqrMagnitude < 0.0025f)
+                    {
+                        skimmerRoot.localScale = _burstTargetLocal;
+                        _burst = BurstPhase.Holding;
+                        _burstHoldEnd = Time.time + config.CrystalBurstHoldSeconds;
+                    }
+                    break;
                 }
+                case BurstPhase.Holding:
+                    skimmerRoot.localScale = _burstTargetLocal;
+                    if (Time.time >= _burstHoldEnd) _burst = BurstPhase.Returning;
+                    break;
 
-                // Respect reset delay (or +∞ while in Armed state).
-                if (now < _noDecayUntil)
-                    continue;
-
-                float cur01 = GetShield01();
-                if (cur01 <= 0f)
-                    continue;
-
-                // Decay Shield by same step size as prism growth.
-                float next01 = Mathf.Max(0f, cur01 - Step01);
-                SetShield01(next01);
-
-                _prevShield01 = next01;
-
-                if (_crystalState != CrystalState.Holding)
-                    UpdateTargetFromShield(next01);
+                case BurstPhase.Returning:
+                {
+                    Vector3 rest = RestLocalScale();
+                    var back = Vector3.MoveTowards(cur, rest, config.CrystalBurstReturnSpeed * dt);
+                    skimmerRoot.localScale = back;
+                    if ((back - rest).sqrMagnitude < 0.0025f) _burst = BurstPhase.None;
+                    break;
+                }
             }
+
+            OnScaleChanged?.Invoke(skimmerRoot.lossyScale.y, BaseScale, MaxScale);
         }
 
-        void UpdateTargetFromShield(float shield01)
+        Vector3 RestLocalScale()
         {
-            _targetWorld = BaseScale + Mathf.Clamp01(shield01) * Range;
+            float energy = Mathf.Clamp01(GetShield01());
+            float targetWorldY = Mathf.Clamp(BaseScale + energy * Range, BaseScale, MaxScale);
+            float parentY = skimmerRoot.parent ? skimmerRoot.parent.lossyScale.y : 1f;
+            return new Vector3(_authoredShape.x, targetWorldY / Mathf.Max(0.0001f, parentY), _authoredShape.z);
         }
 
-        void SetWorldUniform(float world)
+        void SetLengthWorldY(float worldY)
         {
             if (YOnly)
             {
-                float parentY = (skimmerRoot.parent) ? skimmerRoot.parent.lossyScale.y : 1f;
-                float localY  = world / Mathf.Max(0.0001f, parentY);
-                var shape = _skimmer.AuthoredShape;
-                skimmerRoot.localScale = new Vector3(shape.x, localY, shape.z);
+                float parentY = skimmerRoot.parent ? skimmerRoot.parent.lossyScale.y : 1f;
+                float localY = worldY / Mathf.Max(0.0001f, parentY);
+                skimmerRoot.localScale = new Vector3(_authoredShape.x, localY, _authoredShape.z);
                 return;
             }
 
-            float parent = (skimmerRoot.parent) ? skimmerRoot.parent.lossyScale.x : 1f;
-            float local  = world / Mathf.Max(0.0001f, parent);
+            float parent = skimmerRoot.parent ? skimmerRoot.parent.lossyScale.x : 1f;
+            float local = worldY / Mathf.Max(0.0001f, parent);
             skimmerRoot.localScale = new Vector3(local, local, local);
         }
 
+        // ── energy resource ───────────────────────────────────────────────────
         float GetShield01()
         {
             if (!resourceSystem) return 0f;
