@@ -1,9 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <objects serializationModel="Studio.02.02.00">
-	<object class="AudioFile" id="{48d39410-abad-4a66-ad24-f34a7952afe3}">
-		<property name="assetPath">
-			<value>cosmic shore 6.wav</value>
-		</property>
+	<object class="AudioFile" id="{0b1e7a8e-adaf-41fe-b77a-54bb14c44fd7}">
+		<property name="assetPath" />
 		<property name="frequencyInKHz">
 			<value>48</value>
 		</property>

@@ -1,9 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <objects serializationModel="Studio.02.02.00">
-	<object class="AudioFile" id="{71a4df6e-9a1a-4e87-a969-c314a0c542bb}">
-		<property name="assetPath">
-			<value>cosmic shore 3 skim.wav</value>
-		</property>
+	<object class="AudioFile" id="{ba330f62-a8ca-4bcd-8504-74d53d005612}">
+		<property name="assetPath" />
 		<property name="frequencyInKHz">
 			<value>48</value>
 		</property>

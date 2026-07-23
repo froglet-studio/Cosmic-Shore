@@ -3191,12 +3191,12 @@ PrefabInstance:
     - target: {fileID: 1452114705, guid: 9426870f37f271d4daf180ef32c4d10f, type: 3}
       propertyPath: 'so_songs.Array.data[1]'
       value: 
-      objectReference: {fileID: 11400000, guid: 80e0bd86ad3004044887cdee79937d89,
+      objectReference: {fileID: 11400000, guid: 4e08bd425a0357a4cb2913dcb1c22370,
         type: 2}
     - target: {fileID: 1452114705, guid: 9426870f37f271d4daf180ef32c4d10f, type: 3}
       propertyPath: 'so_songs.Array.data[2]'
       value: 
-      objectReference: {fileID: 11400000, guid: 4e08bd425a0357a4cb2913dcb1c22370,
+      objectReference: {fileID: 11400000, guid: 80e0bd86ad3004044887cdee79937d89,
         type: 2}
     - target: {fileID: 1452114705, guid: 9426870f37f271d4daf180ef32c4d10f, type: 3}
       propertyPath: 'so_songs.Array.data[3]'
