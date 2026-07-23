@@ -142,7 +142,6 @@ MonoBehaviour:
     type: 2}
   cinematicCameraController: {fileID: 642151802}
   view: {fileID: 642151803}
-  singlePlayerWildlifeBlitzScoreTracker: {fileID: 1078953720}
 --- !u!114 &1078953791
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -767,7 +766,6 @@ GameObject:
   - component: {fileID: 1078953712}
   - component: {fileID: 1078953714}
   - component: {fileID: 1078953719}
-  - component: {fileID: 1078953720}
   - component: {fileID: 1078953791}
   - component: {fileID: 1078953792}
   - component: {fileID: 1078953793}
@@ -859,27 +857,9 @@ MonoBehaviour:
   gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   _onToggleReadyButton: {fileID: 11400000, guid: 49189b231ecf3ab4ea602699f3401cf2,
     type: 2}
-  scoreTracker: {fileID: 1078953720}
   autoStart: 1
   autoStartDelaySeconds: 1
   cellData: {fileID: 11400000, guid: 8d4e8398eedc76c4dadb8604f89b9e1b, type: 2}
-  rule: {fileID: 11400000, guid: d0bd4446a9cf424398ee66240df2d27a, type: 2}
---- !u!114 &1078953720
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1078953702}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0b89c3833b86441ca5614d45593b03e2, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  killPoints: 5
-  crystalPoints: 20
-  eventOnScoreChanged: {fileID: 11400000, guid: 5dffc57600d375147a28ac22bfb8c1f9,
-    type: 2}
 --- !u!1 &1192541910
 GameObject:
   m_ObjectHideFlags: 0
@@ -1021,26 +1001,6 @@ PrefabInstance:
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
       objectReference: {fileID: 0}
-    - target: {fileID: 1567971284630841138, guid: 65bf1ed35b752374ca46ae214710e41c,
-        type: 3}
-      propertyPath: _eventResponses.Array.size
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 1567971284630841138, guid: 65bf1ed35b752374ca46ae214710e41c,
-        type: 3}
-      propertyPath: _eventResponses.Array.data[0]._response.m_PersistentCalls.m_Calls.Array.data[0].m_Target
-      value: 
-      objectReference: {fileID: 1556114768}
-    - target: {fileID: 1567971284630841138, guid: 65bf1ed35b752374ca46ae214710e41c,
-        type: 3}
-      propertyPath: _eventResponses.Array.data[0]._response.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
-      value: OnPipInitialized
-      objectReference: {fileID: 0}
-    - target: {fileID: 1567971284630841138, guid: 65bf1ed35b752374ca46ae214710e41c,
-        type: 3}
-      propertyPath: _eventResponses.Array.data[0]._response.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
-      value: CosmicShore.UI.WildlifeBlitzHUD, Assembly-CSharp
-      objectReference: {fileID: 0}
     - target: {fileID: 2143510943989971611, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: m_IsActive
@@ -1060,77 +1020,6 @@ PrefabInstance:
         type: 3}
       propertyPath: m_SizeDelta.y
       value: 144
-      objectReference: {fileID: 0}
-    - target: {fileID: 3363310347917282178, guid: 65bf1ed35b752374ca46ae214710e41c,
-        type: 3}
-      propertyPath: _eventResponses.Array.size
-      value: 2
-      objectReference: {fileID: 0}
-    - target: {fileID: 3363310347917282178, guid: 65bf1ed35b752374ca46ae214710e41c,
-        type: 3}
-      propertyPath: _eventResponses.Array.data[1]._scriptableEvent
-      value: 
-      objectReference: {fileID: 11400000, guid: df0e1862f7f460b459c52515c53ceb4f,
-        type: 2}
-    - target: {fileID: 3363310347917282178, guid: 65bf1ed35b752374ca46ae214710e41c,
-        type: 3}
-      propertyPath: _eventResponses.Array.data[0]._response.m_PersistentCalls.m_Calls.Array.size
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 3363310347917282178, guid: 65bf1ed35b752374ca46ae214710e41c,
-        type: 3}
-      propertyPath: _eventResponses.Array.data[1]._response.m_PersistentCalls.m_Calls.Array.size
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 3363310347917282178, guid: 65bf1ed35b752374ca46ae214710e41c,
-        type: 3}
-      propertyPath: _eventResponses.Array.data[0]._response.m_PersistentCalls.m_Calls.Array.data[0].m_Mode
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3363310347917282178, guid: 65bf1ed35b752374ca46ae214710e41c,
-        type: 3}
-      propertyPath: _eventResponses.Array.data[0]._response.m_PersistentCalls.m_Calls.Array.data[0].m_Target
-      value: 
-      objectReference: {fileID: 1556114768}
-    - target: {fileID: 3363310347917282178, guid: 65bf1ed35b752374ca46ae214710e41c,
-        type: 3}
-      propertyPath: _eventResponses.Array.data[1]._response.m_PersistentCalls.m_Calls.Array.data[0].m_Target
-      value: 
-      objectReference: {fileID: 1556114768}
-    - target: {fileID: 3363310347917282178, guid: 65bf1ed35b752374ca46ae214710e41c,
-        type: 3}
-      propertyPath: _eventResponses.Array.data[1]._response.m_PersistentCalls.m_Calls.Array.data[0].m_CallState
-      value: 2
-      objectReference: {fileID: 0}
-    - target: {fileID: 3363310347917282178, guid: 65bf1ed35b752374ca46ae214710e41c,
-        type: 3}
-      propertyPath: _eventResponses.Array.data[0]._response.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
-      value: UpdateTurnMonitorDisplay
-      objectReference: {fileID: 0}
-    - target: {fileID: 3363310347917282178, guid: 65bf1ed35b752374ca46ae214710e41c,
-        type: 3}
-      propertyPath: _eventResponses.Array.data[1]._response.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
-      value: UpdateLifeformCounterDisplay
-      objectReference: {fileID: 0}
-    - target: {fileID: 3363310347917282178, guid: 65bf1ed35b752374ca46ae214710e41c,
-        type: 3}
-      propertyPath: _eventResponses.Array.data[0]._response.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
-      value: CosmicShore.UI.WildlifeBlitzHUD, Assembly-CSharp
-      objectReference: {fileID: 0}
-    - target: {fileID: 3363310347917282178, guid: 65bf1ed35b752374ca46ae214710e41c,
-        type: 3}
-      propertyPath: _eventResponses.Array.data[1]._response.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
-      value: CosmicShore.UI.WildlifeBlitzHUD, Assembly-CSharp
-      objectReference: {fileID: 0}
-    - target: {fileID: 3363310347917282178, guid: 65bf1ed35b752374ca46ae214710e41c,
-        type: 3}
-      propertyPath: _eventResponses.Array.data[0]._response.m_PersistentCalls.m_Calls.Array.data[0].m_Arguments.m_ObjectArgumentAssemblyTypeName
-      value: UnityEngine.Object, UnityEngine
-      objectReference: {fileID: 0}
-    - target: {fileID: 3363310347917282178, guid: 65bf1ed35b752374ca46ae214710e41c,
-        type: 3}
-      propertyPath: _eventResponses.Array.data[1]._response.m_PersistentCalls.m_Calls.Array.data[0].m_Arguments.m_ObjectArgumentAssemblyTypeName
-      value: UnityEngine.Object, UnityEngine
       objectReference: {fileID: 0}
     - target: {fileID: 3396558452113245478, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
@@ -1368,16 +1257,6 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 5497835174634480093, guid: 65bf1ed35b752374ca46ae214710e41c,
-        type: 3}
-      propertyPath: m_Name
-      value: WildLifeBlitzMiniGameHUD
-      objectReference: {fileID: 0}
-    - target: {fileID: 5770965876004851188, guid: 65bf1ed35b752374ca46ae214710e41c,
-        type: 3}
-      propertyPath: wildlifeBlitzScoreTracker
-      value: 
-      objectReference: {fileID: 1078953720}
     - target: {fileID: 5795041723107988051, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: _eventResponses.Array.data[0]._response.m_PersistentCalls.m_Calls.Array.size
@@ -1401,7 +1280,7 @@ PrefabInstance:
     - target: {fileID: 5795041723107988051, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: _eventResponses.Array.data[0]._response.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
-      value: CosmicShore.Gameplay.SinglePlayerWildlifeBlitzController, Assembly-CSharp
+      value: CosmicShore.Gameplay.SandboxBenchmarkController, Assembly-CSharp
       objectReference: {fileID: 0}
     - target: {fileID: 5795041723107988051, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
@@ -1481,7 +1360,7 @@ PrefabInstance:
     - target: {fileID: 6862200546756341092, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
-      value: CosmicShore.Gameplay.SinglePlayerWildlifeBlitzController, Assembly-CSharp
+      value: CosmicShore.Gameplay.SandboxBenchmarkController, Assembly-CSharp
       objectReference: {fileID: 0}
     - target: {fileID: 6862200546756341092, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
@@ -1519,18 +1398,10 @@ PrefabInstance:
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 5497835174634480093, guid: 65bf1ed35b752374ca46ae214710e41c,
-        type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 1556114768}
     - targetCorrespondingSourceObject: {fileID: 1259559001432499751, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       insertIndex: 4
       addedObject: {fileID: 246918836}
-    - targetCorrespondingSourceObject: {fileID: 4434680674616434883, guid: 65bf1ed35b752374ca46ae214710e41c,
-        type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 1887827200}
   m_SourcePrefab: {fileID: 100100000, guid: 65bf1ed35b752374ca46ae214710e41c, type: 3}
 --- !u!1 &1556114763 stripped
 GameObject:
@@ -1562,55 +1433,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ad1572ebe0d06f143bbc8789e520819f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!1 &1556114766 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 5497835174634480093, guid: 65bf1ed35b752374ca46ae214710e41c,
-    type: 3}
-  m_PrefabInstance: {fileID: 1556114762}
-  m_PrefabAsset: {fileID: 0}
---- !u!114 &1556114767 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 4439541433828613727, guid: 65bf1ed35b752374ca46ae214710e41c,
-    type: 3}
-  m_PrefabInstance: {fileID: 1556114762}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1556114766}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 726155bbf4139474dbf25b978b006c3a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
---- !u!114 &1556114768
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1556114766}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0256aea0e9744692888ae4ccba88efa5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
-  view: {fileID: 1556114767}
-  scoreboard: {fileID: 1556114765}
-  onMoundDroneSpawned: {fileID: 11400000, guid: 14f15b4cda639404cae764ee683d8c3e,
-    type: 2}
-  onQueenDroneSpawned: {fileID: 11400000, guid: 6aaabf7a28722bd4e926935472d614ba,
-    type: 2}
-  onSilhouetteInitialized: {fileID: 11400000, guid: c7d641afc3a978e40b3de9afcad3d44d,
-    type: 2}
-  onShipHUDInitialized: {fileID: 11400000, guid: a03bc39518f9381478a7a3957f9d44af,
-    type: 2}
-  OnResetForReplay: {fileID: 11400000, guid: 91ea9101389ea884babdf61e446ced27, type: 2}
-  minConnectingSeconds: 5
-  targetScoreToWin: 100
-  onSetScoreTargetEvent: {fileID: 11400000, guid: d4a8c6eaa0ff9ef409cf2171f995f5ac,
-    type: 2}
-  onScoreChanged: {fileID: 11400000, guid: 5dffc57600d375147a28ac22bfb8c1f9, type: 2}
-  onLifeFormCounterUpdatedEvent: {fileID: 11400000, guid: df0e1862f7f460b459c52515c53ceb4f,
-    type: 2}
 --- !u!1 &1613999303
 GameObject:
   m_ObjectHideFlags: 0
@@ -1894,21 +1716,6 @@ GameObject:
     type: 3}
   m_PrefabInstance: {fileID: 1556114762}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &1887827200
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1887827199}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d855de5dc42b45f188c7095af4b0caa0, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  scoreTracker: {fileID: 1078953720}
-  lifeFormIcon: {fileID: 21300000, guid: 63c7ed790b8907a45bedbf003d9979af, type: 3}
-  crystalIcon: {fileID: 21300000, guid: 4206d9fa3d98d9c4cbe20d38fddaadce, type: 3}
 --- !u!1001 &1901873740
 PrefabInstance:
   m_ObjectHideFlags: 0

@@ -4,18 +4,18 @@ namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// Endless free-flight controller for the benchmark / stress-test scene, on the
-    /// networked single-host model every mode now uses: the always-on Relay host loads the
+    /// networked single-host model every mode uses: the always-on Relay host loads the
     /// scene, <c>ServerPlayerVesselInitializerWithAI</c> spawns the human's Squirrel plus
     /// the Settings-configured AI crowd (<c>GameDataSO.RequestedAIBackfillCount</c>, set by
     /// <c>BenchmarkSceneLauncher</c>), and the environment spawners ramp load - exactly the
     /// sustained workload a stress test wants.
     ///
-    /// Extends the blitz controller for its keeper wiring (live score feed) but never ends:
-    /// the scene wires NO turn monitors, so the turn-end path is unreachable, and
-    /// <see cref="SetupNewTurn"/> auto-begins the turn instead of showing the Ready button -
-    /// the scene "just works" on entry with zero clicks.
+    /// Never ends: the scene wires NO turn monitors, so the turn-end path is unreachable,
+    /// and <see cref="SetupNewTurn"/> auto-begins the turn instead of showing the Ready
+    /// button - the scene "just works" on entry with zero clicks. No scoring - the
+    /// Wildlife Blitz keeper this once piggybacked on was retired with that mode.
     /// </summary>
-    public class SandboxBenchmarkController : MultiplayerWildlifeBlitzController
+    public class SandboxBenchmarkController : MultiplayerMiniGameControllerBase
     {
         [Header("Sandbox / Benchmark")]
         [SerializeField, Tooltip("Begin the turn automatically after setup so the scene 'just works' " +
@@ -25,6 +25,7 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(0f), Tooltip("Delay before auto-beginning, so spawners and DI settle first.")]
         float autoStartDelaySeconds = 1f;
 
+        protected override bool HasEndGame => false;          // endless - never reaches game end
         protected override bool ShowEndGameSequence => false;
 
         /// <summary>

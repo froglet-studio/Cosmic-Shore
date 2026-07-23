@@ -105,17 +105,6 @@ namespace CosmicShore.Core
 
         #region Public API - Reporting
 
-        public void ReportBlitzStats(GameModes mode, int intensity, int crystals, int lifeForms, int score)
-        {
-            if (!_isReady) return;
-
-            string key = $"{mode}_{intensity}";
-            _cachedProfile.BlitzStats.TryUpdateHighScore(key, score);
-
-            SubmitScoreInternal(mode, intensity, score);
-            SaveProfile();
-        }
-
         public void ReportHexRaceStats(GameModes mode, int intensity, int clean, float drift, int jousts, float score)
         {
             if (!_isReady) return;

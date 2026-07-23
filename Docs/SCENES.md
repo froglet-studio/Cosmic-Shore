@@ -49,8 +49,7 @@ scene and `ServerPlayerVesselInitializerWithAI` backfills AI.
 | **MinigameNucleusRush** | `_Scenes/Multiplayer Scenes/` | `NucleusRush (38)` | `NucleusRushController` |
 | **ArcadeGameMultiplayer2v2CoOpVsAI** | `_Scenes/Multiplayer Scenes/` | `Multiplayer2v2CoOpVsAI (30)` | Variant of domain games controller |
 | **MinigameTournamentMultuplayer** | `_Scenes/Multiplayer Scenes/` | Tournament variant | Multi-round tournament format |
-| **MinigameWildlifeBlitz** | `_Scenes/Multiplayer Scenes/` | `WildlifeBlitz (26)` | `MultiplayerWildlifeBlitzController` — co-op clear-the-cell vs clock |
-| **BenchmarkStressTest** | `_Scenes/Multiplayer Scenes/` | Settings → Run Benchmark (`WildlifeBlitz` mode) | `SandboxBenchmarkController` — endless auto-start, no monitors |
+| **BenchmarkStressTest** | `_Scenes/Multiplayer Scenes/` | Settings → Run Benchmark (sets the retired `WildlifeBlitz` mode id for AI crystal-seek behavior) | `SandboxBenchmarkController` — endless auto-start, no monitors, no scoring |
 
 ### Tool & Test Scenes
 
@@ -203,8 +202,9 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
         ├── MultiplayerCrystalCaptureController — minimal subclass (1 round, 1 turn)
         ├── AstroLeagueController             — hypersea soccer, server-simulated ball, golden goal
         ├── NucleusRushController             — nucleus-control fauna-wave race, brood scoring
-        └── MultiplayerWildlifeBlitzController — co-op clear-the-cell vs clock (golf: clear time / DNF)
-            └── SandboxBenchmarkController — endless auto-start benchmark (no monitors)
+        └── (per-mode controllers above)
+    │
+    └── SandboxBenchmarkController — endless auto-start benchmark (no monitors, no scoring)
 ```
 
 The single-player controller branch (`SinglePlayerMiniGameControllerBase` + subclasses)
@@ -220,7 +220,7 @@ was deleted 2026-07-20 — solo play runs the multiplayer spine as a party of on
 |---|---|---|---|---|
 | 0 | `Random` | Meta | — | — |
 | 1-25, 27 | retired solo IDs | Retired | — | — (cards + scenes deleted 2026-07-20; enum members kept for serialized-int stability — see `GameModes.cs`) |
-| 26 | `WildlifeBlitz` | MP Co-op | MinigameWildlifeBlitz | `MultiplayerWildlifeBlitzController` |
+| 26 | retired (was the co-op blitz) | Retired | — | — (deleted 2026-07-21; the benchmark still sets the mode id for AI behavior) |
 | 28 | retired (was the standalone MP freestyle sandbox) | Retired | — | — (freestyle IS the Menu_Main lava lamp) |
 | 29 | retired (was Cellular Duel) | Retired | — | — (deleted outright 2026-07-21) |
 | 30 | `Multiplayer2v2CoOpVsAI` | MP | ArcadeGameMultiplayer2v2CoOpVsAI | Variant |
@@ -252,29 +252,14 @@ is planned to return as lava-lamp Phase 2. The supporting scripts still exist:
 - `SegmentSpawner.cs` — spawns trail segments with shape triggers
 - `SinglePlayerFreestyleController.cs` — removed; recover the flow from git history when porting
 
-### Wildlife Blitz (Co-op, networked single-host)
+### Wildlife Blitz — RETIRED (2026-07-21)
 
-**Scene**: `MinigameWildlifeBlitz.unity` (`_Scenes/Multiplayer Scenes/`)
-**Controller**: `MultiplayerWildlifeBlitzController`
-**Base**: `MultiplayerDomainGamesController`
-
-Co-op clear-the-cell: the TEAM's summed blitz composite (hostile volume + weighted
-kills + weighted crystals, fed server-side by `WildlifeBlitzScoreKeeper`) races the
-cell's authored `CellEndGameScore` before the clock runs out. Solo = party of one; up
-to 3 with AI teammates via `ServerPlayerVesselInitializerWithAI`.
-
-**Key features**:
-- `WildlifeBlitzScoreKeeper` — server-authoritative composite (writes `RoundStats.Score`,
-  replicates via `n_Score`); every peer counts local sim events for its own UGS report
-- `WildlifeBlitzObjectiveTurnMonitor` — publishes the cell target into
-  `GameDataSO.GoalTargetCount`, sealed rule-driven end from `ObjectiveTurnMonitor`
-- `NetworkTimeBasedTurnMonitor` — the loss clock
-- Win: everyone shares the clear time (golf); loss: Blue no-winner DNF end
-  (`GameDataSO.HasNoWinner` → DEFEAT reveal + neutral GAME OVER banner)
-- Replay: full scene reload (`UseSceneReloadForReplay`)
-
-(The former single-player Cellular Duel / Wildlife Blitz / SlipNStride sections are
-retired; Cellular Duel was then deleted outright 2026-07-21 - mode 29 with it.)
+The co-op clear-the-cell blitz (mode 26) was deleted outright (scene, controller,
+objective monitor, score keeper, rule, HUD, stats provider, card, blitz SOAP events).
+The benchmark scene, originally built on the blitz stack, was decoupled: its
+`SandboxBenchmarkController` now extends `MultiplayerMiniGameControllerBase` directly
+and the scene carries no scoring. `BenchmarkSceneLauncher` still sets the retired
+mode-26 id so AI crystal-seeking behavior keys correctly.
 
 ### HexRace (Multiplayer)
 
@@ -450,7 +435,7 @@ All turn monitors live in `Assets/_Scripts/Controller/Arcade/TurnMonitors/`.
 | Aspect | Standard (`UseGolfRules=false`) | Golf (`UseGolfRules=true`) |
 |---|---|---|
 | Higher score | Wins (better) | Loses (worse) |
-| Used by | CrystalCapture, WildlifeBlitz, most SP modes | HexRace, Joust |
+| Used by | CrystalCapture (and formerly the retired blitz) | HexRace, Joust |
 
 ### Game-Specific Scoring
 
@@ -533,7 +518,6 @@ Game scene names are stored in `SO_ArcadeGame.SceneName` assets, not in `SceneNa
 | Crystal Capture | `MultiplayerCrystalCaptureController.cs` | `_Scripts/Controller/Arcade/` |
 | Astro League | `AstroLeagueController.cs` | `_Scripts/Controller/Arcade/AstroLeague/` |
 | Nucleus Rush (Brood Rush) | `NucleusRushController.cs` | `_Scripts/Controller/Arcade/` |
-| Wildlife Blitz (co-op) | `MultiplayerWildlifeBlitzController.cs` | `_Scripts/Controller/Arcade/` |
 | Benchmark (endless) | `SandboxBenchmarkController.cs` | `_Scripts/Controller/Arcade/` |
 | Countdown timer | `CountdownTimer.cs` | `_Scripts/Controller/Arcade/` |
 
