@@ -3125,6 +3125,10 @@ PrefabInstance:
     m_TransformParent: {fileID: 0}
     m_Modifications:
     - target: {fileID: 1452114705, guid: 9426870f37f271d4daf180ef32c4d10f, type: 3}
+      propertyPath: RandomizePlay
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1452114705, guid: 9426870f37f271d4daf180ef32c4d10f, type: 3}
       propertyPath: so_songs.Array.size
       value: 7
       objectReference: {fileID: 0}
