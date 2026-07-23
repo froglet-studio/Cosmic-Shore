@@ -760,6 +760,7 @@ GameObject:
   - component: {fileID: 483927158}
   - component: {fileID: 483927159}
   - component: {fileID: 483927160}
+  - component: {fileID: 483927161}
   m_Layer: 0
   m_Name: PlayerDataService
   m_TagString: Untagged
@@ -823,6 +824,21 @@ MonoBehaviour:
   gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   progressionConfig: {fileID: 0}
   xpPerGame: 25
+--- !u!114 &483927161
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 483927156}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 541692fb0a8f1b6478f85df5b78951a7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  questList: {fileID: 11400000, guid: 5eee61facaac4bb46b9e9892512f74cb, type: 2}
+  progressionConfig: {fileID: 0}
+  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
 --- !u!1 &684811273
 GameObject:
   m_ObjectHideFlags: 0
