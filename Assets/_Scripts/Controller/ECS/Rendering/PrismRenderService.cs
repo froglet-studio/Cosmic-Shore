@@ -53,6 +53,21 @@ namespace CosmicShore.ECS
     /// per-frame) hand rendering back to the GameObject via
     /// Prism.SetExoticVisualActive.
     ///
+    /// ⚠ TRAP — a bare MeshFilter/material swap on a prism renders NOTHING.
+    /// The GameObject's MeshRenderer is disabled while the companion entity
+    /// draws, so any component that restyles a prism by swapping its
+    /// MeshFilter mesh (or MeshRenderer materials) without the handoff shows
+    /// no change on screen — the entity keeps drawing the plain box. This is
+    /// exactly how the stellated super-shield first shipped invisible
+    /// (PrismStellatedOctahedronShield predated the handoff). The contract for
+    /// any new prism visual state: SetExoticVisualActive(true) while showing
+    /// per-prism-unique geometry, SetRenderMeshOverride(cachedSharedMesh) +
+    /// SetExoticVisualActive(false) once it settles (so same-size prisms
+    /// batch), ClearRenderMeshOverride + SetExoticVisualActive(false) on the
+    /// way back AND on pool-return OnDisable. Reference implementations:
+    /// PrismOctahedronShield / PrismStellatedOctahedronShield. Also listed in
+    /// CLAUDE.md ▸ Anti-Patterns.
+    ///
     /// All methods are main-thread only and no-op safely when the ECS world or
     /// EntitiesGraphicsSystem is unavailable (tool scenes, headless, teardown),
     /// so the legacy MeshRenderer path remains a complete fallback at runtime

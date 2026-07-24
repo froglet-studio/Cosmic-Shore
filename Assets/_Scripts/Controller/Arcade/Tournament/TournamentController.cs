@@ -140,10 +140,20 @@ namespace CosmicShore.Gameplay
             // Fold this game's ranked, synced results into the cumulative per-domain standings (and
             // bump GamesPlayed) + capture a per-round history snapshot. Runs on every peer with
             // identical input, BEFORE the next Single load clears Results / Players.
+            //
+            // Domain placement comes from the mode rule's TEAM-TOTAL order (summed metric per
+            // domain - the same aggregation that ends the turn and picks WinnerDomain), NOT from
+            // per-player ranks: rank-derived placement let a losing team outplace the team that
+            // out-collected it whenever its best individual tied the top score. RoundStatsList is
+            // still populated and synced here (the ClientRpc that raised OnMiniGameEnd updated it),
+            // so the order is identical on every peer.
+            var placement = _gameData.ScoringRule != null
+                ? _gameData.ScoringRule.ResolvePlacementOrder(_gameData)
+                : null;
             var snapshots = BuildPlayerSnapshots(_gameData.Results);
             string modeName = _tournament.CurrentGame != null ? _tournament.CurrentGame.DisplayName : null;
             int intensity = _gameData.SelectedIntensity != null ? _gameData.SelectedIntensity.Value : 0;
-            _tournament.RecordResults(_gameData.Results, snapshots, modeName, intensity);
+            _tournament.RecordResults(_gameData.Results, snapshots, modeName, intensity, placement);
 
             // Race to 6 (or the game cap): once the shuffle is decided, the next Continue loads the
             // summary instead of another game. Evaluated identically on every peer from synced state.

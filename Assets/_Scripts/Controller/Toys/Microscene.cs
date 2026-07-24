@@ -250,10 +250,11 @@ namespace CosmicShore.Gameplay
 
             var crystal = Instantiate(prefab, transform);
             crystal.transform.localPosition = localPosition;
-            // MULTIPLY the prefab's authored scale (the elemental prefabs ship at root scale 10 -
-            // assigning would shrink the pickup and its trigger 10×). Sized before Start():
-            // crystalValue and the element-level gain both read lossyScale.
-            crystal.transform.localScale *= (float)(rng.NextDouble() * 0.2 + 0.1);
+            // MULTIPLY the prefab's authored scale (the elemental prefabs share one convention:
+            // root 1.5, ~2 world units of visible crystal per unit of root scale). The multiplier
+            // lands skims at ~1.5-3.5 visible world units. Sized before Start(): crystalValue and
+            // the element-level gain both read lossyScale.
+            crystal.transform.localScale *= (float)(rng.NextDouble() * 0.7 + 0.5);
             crystal.enabled = true;
             crystal.gameObject.SetActive(true);
 
@@ -328,7 +329,7 @@ namespace CosmicShore.Gameplay
                     if (!cfg || !cfg.FloraPrefab) continue;
                     // Canonical cell spawn: random playable domain, Initialize(cell), Register. Flora
                     // re-disperses within the membrane in its own Plant(), so cell-centre spawn is fine.
-                    CellLifeSpawnerBase.SpawnFlora(cell, cfg.FloraPrefab, null);
+                    CellLifeSpawnerBase.SpawnFlora(cell, cfg.FloraPrefab, null, cfg);
                 }
             }
 

@@ -114,17 +114,34 @@ namespace CosmicShore.Utility
 
         IEnumerator RunReveal()
         {
-            bool didWin = DidLocalPlayerWin();
-
-            HaltOtherVessels();
-            StartLocalVesselFlourish();
-            AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.GameEnd);
-
-            ShowToast(ResolveMessage(didWin));
+            // The reveal is cosmetic; the OnShowGameEndScreen raise at the end is NOT - it is the
+            // only path to the Scoreboard, and in a tournament the Scoreboard's host-only Continue
+            // is the only way to advance the party. An exception anywhere in the flourish / SFX /
+            // toast (a coroutine dies on its first unhandled throw) must degrade to a skipped
+            // flourish - never to a finished game with no end-game screen.
+            try
+            {
+                HaltOtherVessels();
+                StartLocalVesselFlourish();
+                AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.GameEnd);
+                ShowToast(ResolveMessage(DidLocalPlayerWin()));
+            }
+            catch (System.Exception e)
+            {
+                CSDebug.LogError($"[EndGameSequencer] End-game reveal failed - skipping to the end-game screen: {e}");
+            }
 
             yield return new WaitForSeconds(revealDuration);
 
-            HideToast();
+            try
+            {
+                HideToast();
+            }
+            catch (System.Exception e)
+            {
+                CSDebug.LogError($"[EndGameSequencer] HideToast failed: {e}");
+            }
+
             gameData.InvokeShowGameEndScreen();
             _revealRoutine = null;
         }

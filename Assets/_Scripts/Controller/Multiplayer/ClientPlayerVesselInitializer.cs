@@ -340,6 +340,21 @@ namespace CosmicShore.Gameplay
 
             if (_pendingPairs.Count == 0 && _signalClientReadyWhenDone)
             {
+                // The batch only counts as complete once the LOCAL pair actually
+                // resolved. The client-pull roster request fires from our own
+                // OnNetworkSpawn, so the host's reply can legitimately predate our
+                // vessel spawn (preSpawnDelay + spawn + postSpawnDelay on the host)
+                // - that roster contains every pair EXCEPT ours. Declaring ready on
+                // it would raise OnClientReady with no local vessel (the party
+                // accept flow completes early) and, worse, cancel the
+                // RosterPullRetryLoop - so a lost follow-up push would strand this
+                // client vessel-less with no self-heal left. Most likely for the
+                // 2nd+ joiner into an existing party (Docs/PartySystem/BUGS.md B5).
+                // Keep the flag armed: the retry loop re-asks, and the next
+                // full-roster reply (or the host's push) completes the batch.
+                if (gameData.LocalPlayer?.Vessel == null)
+                    return;
+
                 _signalClientReadyWhenDone = false;
                 _localPairResolved = true;
                 _rosterRetryCts?.Cancel();

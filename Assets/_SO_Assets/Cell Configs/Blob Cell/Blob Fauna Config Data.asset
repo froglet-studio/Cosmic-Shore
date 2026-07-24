@@ -20,3 +20,4 @@ MonoBehaviour:
   OffspringPerBirth: 1
   ReproductionCooldownSeconds: 14
   MaxLivePopulation: 5
+  CenterFocusBias: 0.35

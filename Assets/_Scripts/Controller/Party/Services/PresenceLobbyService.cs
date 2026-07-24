@@ -128,6 +128,9 @@ namespace CosmicShore.Gameplay
         public ISession ActiveLobby => _activeLobby;
 
         /// <inheritdoc/>
+        public Func<IReadOnlyDictionary<string, string>> LivePropertySource { get; set; }
+
+        /// <inheritdoc/>
         /// <remarks>
         /// Three-step algorithm:
         /// <list type="number">
@@ -339,7 +342,7 @@ namespace CosmicShore.Gameplay
             int partyCount = _connectionData.PartyMembers != null ? _connectionData.PartyMembers.Count : 0;
             int partyMax   = _connectionData.MaxPartySlots;
 
-            return new Dictionary<string, PlayerProperty>
+            var props = new Dictionary<string, PlayerProperty>
             {
                 { DISPLAY_NAME_KEY,    new PlayerProperty(string.IsNullOrEmpty(_connectionData.LocalDisplayName) ? "Pilot" : _connectionData.LocalDisplayName, VisibilityPropertyOptions.Public) },
                 { AVATAR_ID_KEY,       new PlayerProperty(_connectionData.LocalAvatarId.ToString(),    VisibilityPropertyOptions.Public) },
@@ -350,6 +353,27 @@ namespace CosmicShore.Gameplay
                 { INVITE_PAYLOADS_KEY, new PlayerProperty(string.Empty,          VisibilityPropertyOptions.Public) },
                 { ACCEPTED_INVITE_KEY, new PlayerProperty(string.Empty,          VisibilityPropertyOptions.Public) },
             };
+
+            // State-preserving rejoin (Docs/PresenceSystem/BUGS.md B4): a lobby
+            // rejoin used to reset the stateful keys to empty, wiping in-flight
+            // invites and a guest's joined_party advertisement - which is why
+            // convergence had to be PAUSED while an invite was outstanding or a
+            // party had formed, freezing lobby splits exactly when a 3rd player
+            // was being invited. Overlaying live values here makes every rejoin
+            // path (initial, reconnect, converge-migration) state-safe, so the
+            // pause is gone. The source is HostConnectionService - still the
+            // single writer of these values; this service only carries them.
+            var live = LivePropertySource?.Invoke();
+            if (live != null)
+            {
+                foreach (var kv in live)
+                {
+                    if (string.IsNullOrEmpty(kv.Key) || string.IsNullOrEmpty(kv.Value)) continue;
+                    props[kv.Key] = new PlayerProperty(kv.Value, VisibilityPropertyOptions.Public);
+                }
+            }
+
+            return props;
         }
 
         // ─────────────────────────────────────────────────────────────────────

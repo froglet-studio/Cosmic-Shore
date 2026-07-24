@@ -27,6 +27,8 @@ namespace CosmicShore.Gameplay
 
         readonly Dictionary<int, float> _lastCrystalImpactTime = new();
 
+        SkimmerImpactor[] _skimmerImpactors;
+
         public IVessel Vessel { get; private set; }
         protected override bool isInitialized => Vessel?.VesselStatus?.Player != null;
         public override Domains OwnDomain => Vessel.VesselStatus.Domain;
@@ -73,6 +75,18 @@ namespace CosmicShore.Gameplay
 
                 case ElementalCrystalImpactor elementalCrystalImpactee:
                 {
+                    // A LIVING lifeform's embedded crystal (its heart) is a JOUST surface, not a
+                    // pickup: skip the collect chain and run the lifeform-crystal effects instead
+                    // (e.g. Squirrel Space-5 Crystal Joust). Local-only - the ecosystem sim is local.
+                    if (elementalCrystalImpactee.Crystal && elementalCrystalImpactee.Crystal.IsEmbedded)
+                    {
+                        if (!TryLatchCrystalImpact(elementalCrystalImpactee.Crystal)) break;
+                        if (!DoesEffectExist(vesselImpactorDataContainerSO.VesselLifeformCrystalEffects)) break;
+                        foreach (var effect in vesselImpactorDataContainerSO.VesselLifeformCrystalEffects)
+                            effect.Execute(this, elementalCrystalImpactee.Crystal);
+                        break;
+                    }
+
                     if (!TryLatchCrystalImpact(elementalCrystalImpactee.Crystal)) break;
                     audioSystem?.PlayGameplaySFX(GameplaySFXCategory.CrystalCollect, transform.position);
                     var data = CrystalImpactData.FromCrystal(elementalCrystalImpactee.Crystal);
@@ -84,6 +98,11 @@ namespace CosmicShore.Gameplay
                 }
 
                 case SkimmerImpactor skimmerImpactee:
+                    // A vessel never impacts its own skimmer (the Rhino's sword capsule
+                    // permanently overlaps its own hull) - see the mirror guard in
+                    // SkimmerImpactor.AcceptImpactee.
+                    if (skimmerImpactee.Skimmer
+                        && ReferenceEquals(skimmerImpactee.Skimmer.VesselStatus, Vessel?.VesselStatus)) return;
                     if (!DoesEffectExist(vesselImpactorDataContainerSO.VesselSkimmerEffects)) return;
                     audioSystem?.PlayGameplaySFX(GameplaySFXCategory.VesselImpact, transform.position);
                     foreach (var effect in vesselImpactorDataContainerSO.VesselSkimmerEffects)
@@ -108,6 +127,39 @@ namespace CosmicShore.Gameplay
 
             _lastCrystalImpactTime[id] = now;
             return true;
+        }
+
+        /// <summary>
+        /// Confirmed-joust dispatch: this vessel is the scoring impactee whose skimmer a
+        /// slower opponent swept through. Finds the joust effect in this vessel's skimmer
+        /// effect containers and runs its confirmed half (explosion, scoring raise, audio,
+        /// game-feed post). Called on every machine from
+        /// NetworkVesselImpactor.ExecuteJoust_ClientRpc after the impactee's owner
+        /// validated and reported the joust.
+        /// </summary>
+        public void ExecuteJoustImpact(VesselImpactor impactorVesselImpactor)
+        {
+            _skimmerImpactors ??= GetComponentsInChildren<SkimmerImpactor>(true);
+
+            foreach (var skimmerImpactor in _skimmerImpactors)
+            {
+                var container = skimmerImpactor.EffectContainer;
+                if (container == null || !DoesEffectExist(container.VesselSkimmerEffects))
+                    continue;
+
+                foreach (var effect in container.VesselSkimmerEffects)
+                {
+                    if (effect is not VesselExplosionBySkimmerEffectSO joustEffect)
+                        continue;
+
+                    joustEffect.ExecuteConfirmed(impactorVesselImpactor, this);
+                    return;
+                }
+            }
+
+            CSDebug.LogWarning("[VesselImpactor] Confirmed joust arrived for " +
+                $"'{Vessel?.VesselStatus?.PlayerName}' but no VesselExplosionBySkimmerEffectSO " +
+                "is wired in its skimmer effect containers.");
         }
 
         public void ExecuteOmniCrystalImpact(CrystalImpactData data)

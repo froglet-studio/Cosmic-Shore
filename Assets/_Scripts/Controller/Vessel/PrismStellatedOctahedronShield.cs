@@ -12,10 +12,11 @@ namespace CosmicShore.Gameplay
     /// at the 8 cube corners.
     ///
     /// States:
-    ///   Unshielded:        BoxCollider active, authored prism mesh visible,
+    ///   Unshielded:        authored BoxCollider (trigger) active, authored prism mesh visible,
     ///                      mass = ρ · 8·a·b·c
-    ///   Super-shielded:    MeshCollider (convex) with stellated mesh,
-    ///                      stellation mesh visible,
+    ///   Super-shielded:    authored BoxCollider (trigger) STAYS the collider (a convex-mesh
+    ///                      trigger is invisible to trigger skimmers; the primitive box is what
+    ///                      both trigger and solid impactors detect), stellation mesh visible,
     ///                      mass = ρ · 108·a·b·c (exactly 13.5× box mass by default,
     ///                      3× the inscribed octahedron shield's mass)
     ///
@@ -112,6 +113,13 @@ namespace CosmicShore.Gameplay
         private MeshRenderer _shatterRenderer;
         private Mesh _shatterMesh;
 
+        // Owning prism — prisms render through an instanced companion entity, so engage/disengage
+        // must hand rendering between the entity and this GameObject's MeshRenderer
+        // (Prism.SetExoticVisualActive), and the settled stellation is pushed back to the entity
+        // as a render-mesh override. Mirrors PrismOctahedronShield; without this the companion
+        // keeps drawing the plain box and the stellation is invisible.
+        private Prism _prism;
+
         // Precomputed fast-path containment inverses.
         private float _invA, _invB, _invC;
 
@@ -127,6 +135,7 @@ namespace CosmicShore.Gameplay
             if (meshFilter == null)  meshFilter  = GetComponent<MeshFilter>();
             if (rb == null)          rb          = GetComponent<Rigidbody>();
             _meshRenderer = GetComponent<MeshRenderer>();
+            _prism = GetComponent<Prism>();
 
             CacheGeometry();
 
@@ -136,8 +145,11 @@ namespace CosmicShore.Gameplay
             if (_meshRenderer != null)
                 _originalMaterials = _meshRenderer.sharedMaterials;
 
-            // Build the stellation mesh once from the cached half-extents.
-            _stellatedMesh = StellatedOctahedronMeshGenerator.Generate(_halfExtents, shieldScale);
+            // Settled stellation comes from the shared cache (half-extents are the authored
+            // LOCAL collider size), so every same-size super-shielded prism resolves to ONE
+            // mesh - one MeshCollider cook, and settled stellations batch on the instanced
+            // render path. Cache-owned: never destroy it here.
+            _stellatedMesh = StellatedOctahedronMeshGenerator.GetSharedShieldMesh(_halfExtents, shieldScale);
             _morphMesh = new Mesh { name = "StellatedOctahedron_SuperShield_Morph" };
             _morphMesh.MarkDynamic();
 
@@ -158,12 +170,17 @@ namespace CosmicShore.Gameplay
                 if (_stellatedMesh != null)
                     ApplyUnshieldedPose();
                 StopShatter();
+                if (_prism != null)
+                {
+                    _prism.ClearRenderMeshOverride();
+                    _prism.SetExoticVisualActive(false);
+                }
             }
         }
 
         private void OnDestroy()
         {
-            if (_stellatedMesh != null) Destroy(_stellatedMesh);
+            // _stellatedMesh is cache-shared (other shields reference it) - not destroyed here.
             if (_morphMesh != null)     Destroy(_morphMesh);
             if (_shatterMesh != null)   Destroy(_shatterMesh);
             if (_shatterChild != null)  Destroy(_shatterChild);
@@ -234,6 +251,10 @@ namespace CosmicShore.Gameplay
 
             _isShielded = true;
 
+            // The morph mesh is per-prism-unique geometry — render through the
+            // GameObject while the shield blooms (no-op on the legacy path).
+            if (_prism != null) _prism.SetExoticVisualActive(true);
+
             if (instant || engageDuration <= 0f)
             {
                 _engageT = 1f;
@@ -243,7 +264,7 @@ namespace CosmicShore.Gameplay
             else
             {
                 _isEngaging = true;
-                DisableCollidersDuringMorph();
+                KeepGameplayColliderDuringMorph();
                 UpdateEngageMesh(engageCurve.Evaluate(_engageT));
             }
         }
@@ -263,6 +284,14 @@ namespace CosmicShore.Gameplay
 
             // Immediately restore box mesh + colliders so gameplay is unaffected.
             ApplyUnshieldedPose();
+
+            // Box mesh is back — return the entity to the prism mesh and rendering to the
+            // instanced path. The shatter overlay plays on its own child renderer.
+            if (_prism != null)
+            {
+                _prism.ClearRenderMeshOverride();
+                _prism.SetExoticVisualActive(false);
+            }
 
             if (instant || shatterDuration <= 0f)
             {
@@ -368,26 +397,37 @@ namespace CosmicShore.Gameplay
             if (meshFilter != null)
                 meshFilter.sharedMesh = _stellatedMesh;
 
+            // COLLISION stays on the authored PRIMITIVE trigger box - super-shield only
+            // changes the LOOK (stellated mesh, above) and mass, never the collider. A convex
+            // MeshCollider can't serve both skimmer families at once: as a SOLID it is invisible
+            // to solid impactors like the Rhino shield-swipe (solid-vs-solid fires nothing); as a
+            // TRIGGER it is invisible to TRIGGER colliders (Unity/PhysX does not report a
+            // convex-mesh trigger to another trigger), which is every vessel's kinematic-RB
+            // trigger skimmer sphere - so the swap made skims "not register" on the Skim Race /
+            // Astro League lining. The authored box is a PRIMITIVE trigger, which BOTH see
+            // (trigger-vs-trigger works for primitives; solid-vs-trigger works) - exactly how
+            // unshielded prisms already skim for everyone. It's also LOD-cullable and needs no
+            // convex cook. (True stellated containment is still available via IsPointInsideShield.)
             if (boxCollider != null)
-                boxCollider.enabled = false;
+                boxCollider.enabled = true;
 
-            EnsureShieldMeshCollider();
             if (shieldMeshCollider != null)
-            {
-                shieldMeshCollider.sharedMesh = _stellatedMesh;
-                // Convex is required for Rigidbody interaction. Note: the
-                // stellation is non-convex, so Unity will compute a convex
-                // hull approximation (≈ the bounding cube). For accurate
-                // gameplay containment use IsPointInsideShield, which does
-                // the true tetrahedral-union check.
-                shieldMeshCollider.convex = true;
-                shieldMeshCollider.enabled = true;
-            }
+                shieldMeshCollider.enabled = false;
 
             if (rb != null)
                 rb.mass = _shieldMass;
 
             ApplyMaterialOverride(shielded: true);
+
+            // The settled stellation is static geometry — hand rendering back to the companion
+            // entity with the stellated mesh as its render override (same-size super-shielded
+            // prisms share the look through the instanced path; only the engage morph and the
+            // shatter overlay are per-prism-unique). No-op on the legacy path.
+            if (_prism != null)
+            {
+                _prism.SetRenderMeshOverride(_stellatedMesh);
+                _prism.SetExoticVisualActive(false);
+            }
         }
 
         private void ApplyUnshieldedPose()
@@ -407,17 +447,16 @@ namespace CosmicShore.Gameplay
             ApplyMaterialOverride(shielded: false);
         }
 
-        private void DisableCollidersDuringMorph()
+        // Keep the prism interactive through the ~engageDuration bloom. Previously this
+        // disabled BOTH colliders, so a super-shielding prism went completely collider-less
+        // for the whole morph - a skimmer/vessel passing during that window touched nothing.
+        // The authored box stays in whatever state it already holds (never force-enabled, so
+        // the spawn-wait / LOD cull still own it); we only make sure the legacy shield mesh
+        // collider (if a prefab still carries one) is off, since the shield keeps the box as
+        // its collider and never enables the mesh.
+        private void KeepGameplayColliderDuringMorph()
         {
-            if (boxCollider != null) boxCollider.enabled = false;
             if (shieldMeshCollider != null) shieldMeshCollider.enabled = false;
-        }
-
-        private void EnsureShieldMeshCollider()
-        {
-            if (shieldMeshCollider != null) return;
-            shieldMeshCollider = gameObject.AddComponent<MeshCollider>();
-            shieldMeshCollider.convex = true;
         }
 
         private void ApplyMaterialOverride(bool shielded)

@@ -20,7 +20,8 @@ Docs/
 │   ├── TODOS.md                 parking-lot items
 │   ├── INVITE_ENHANCEMENTS.md   planning: in-party invite guard,
 │   │                            panel-gated refresh, party-merge on accept,
-│   │                            SOAP confirm-popup
+│   │                            SOAP confirm-popup, invite chain (member-
+│   │                            sent invites join the member's current party)
 │   ├── UI.md                    party/friends UI surface: component
 │   │                            inventory, invite UX flow, scene wiring
 │   └── MPPM_SESSION_LOG.md      chronological MPPM session journal
@@ -56,6 +57,8 @@ Docs/
 │                                (.AsMainThread() contract, MainThreadDispatcher)
 ├── SCENES.md                    scene inventory, game-mode reference,
 │                                launch pipeline
+├── UNITY_VERIFICATION_CHECKLIST.md  changes that landed without an in-editor
+│                                pass — verify these when you next open Unity
 └── CameraMigrationReview.md     camera system migration tracking
 ```
 
@@ -84,6 +87,7 @@ session-scoped findings that benefit from a timeline view.
 | Understand the tournament meta-mode (chains the 3 domain games) | `TournamentSystem/ARCHITECTURE.md` |
 | Find "Shuffle" (it's Tournament's card display name) | `ShuffleSystem/ARCHITECTURE.md` → `TournamentSystem/ARCHITECTURE.md` |
 | Understand the threading rules | `THREADING.md` |
+| Confirm changes that landed without an editor pass | `UNITY_VERIFICATION_CHECKLIST.md` |
 | Find a scene | `SCENES.md` |
 
 ## Shared conventions

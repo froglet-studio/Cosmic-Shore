@@ -30,8 +30,16 @@ namespace CosmicShore.Gameplay
         float _noDecayUntil;     // time until which no decay is allowed (reset delay / crystal hold)
 
         Coroutine _tickLoop;
+        Skimmer _skimmer;
 
-        float BaseScale  => config.BaseScale;
+        // Sword capsules (Skimmer.ElongateYOnly, Rhino): the driver grows only local Y and
+        // preserves the authored X/Z silhouette instead of writing a uniform XYZ.
+        bool YOnly => _skimmer && _skimmer.ElongateYOnly;
+
+        // The resting size is the skimmer's live elemental (Space-driven) scale, so element
+        // levels lengthen the sword and shield growth composes on top of that baseline.
+        // Falls back to the authored config value when no Skimmer sits on the driven root.
+        float BaseScale  => _skimmer ? Mathf.Max(0.01f, _skimmer.LiveElementalScale) : config.BaseScale;
         float MaxScale   =>config.MaxScale;
         float PrismMax   => config.PrismMaxScale;
         float StepUnits  => config.StepScaleUnits;
@@ -56,16 +64,21 @@ namespace CosmicShore.Gameplay
         }
 
         public float MinScale => BaseScale;
-        public float CurrentScale => skimmerRoot ? skimmerRoot.lossyScale.x : BaseScale;
+        public float CurrentScale => skimmerRoot
+            ? (YOnly ? skimmerRoot.lossyScale.y : skimmerRoot.lossyScale.x)
+            : BaseScale;
 
         void Awake()
         {
             if (!skimmerRoot) skimmerRoot = transform;
+            skimmerRoot.TryGetComponent(out _skimmer);
             _targetWorld = CurrentScale;
         }
 
         void OnEnable()
         {
+            if (_skimmer) _skimmer.HasExternalScaleDriver = true;
+
             if (!resourceSystem) return;
 
             _prevShield01 = GetShield01();
@@ -79,6 +92,8 @@ namespace CosmicShore.Gameplay
 
         void OnDisable()
         {
+            if (_skimmer) _skimmer.HasExternalScaleDriver = false;
+
             if (resourceSystem)
                 resourceSystem.OnResourceChanged -= OnResourceChanged;
 
@@ -213,6 +228,15 @@ namespace CosmicShore.Gameplay
 
         void SetWorldUniform(float world)
         {
+            if (YOnly)
+            {
+                float parentY = (skimmerRoot.parent) ? skimmerRoot.parent.lossyScale.y : 1f;
+                float localY  = world / Mathf.Max(0.0001f, parentY);
+                var shape = _skimmer.AuthoredShape;
+                skimmerRoot.localScale = new Vector3(shape.x, localY, shape.z);
+                return;
+            }
+
             float parent = (skimmerRoot.parent) ? skimmerRoot.parent.lossyScale.x : 1f;
             float local  = world / Mathf.Max(0.0001f, parent);
             skimmerRoot.localScale = new Vector3(local, local, local);

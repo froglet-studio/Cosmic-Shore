@@ -56,7 +56,7 @@ Cell (Nucleus Rush Cell Config)                    [every peer, client-local fau
 NucleusRushController.HandleFaunaWave              [SERVER only scores]
   ├─ gate: turn live, results not sent, NucleusControlled, domain != Blue
   ├─ representative RoundStats on domain → GoalsScored++   (NetworkVariable → peers)
-  └─ AnnounceWaveScored_ClientRpc → GameFeedAPI    "<domain> brood hatched — n/target"
+  └─ AnnounceWaveScored_ClientRpc → GameToastAPI   BroodWaveScored "<domain> brood hatched — n/target"
               │
               ▼
 NucleusRushWaveTurnMonitor.CheckForEndOfTurn       rule.IsObjectiveReached: any active

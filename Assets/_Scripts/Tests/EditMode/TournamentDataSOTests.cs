@@ -15,10 +15,12 @@ namespace CosmicShore.Tests
     /// WHY THIS MATTERS:
     /// Standings are reduced LOCALLY on every peer from the already-synced GameDataSO.Results
     /// (no extra networking), so the fold MUST be deterministic and identical everywhere:
-    ///   • a domain's place each game = the best (lowest) player Rank on that domain,
-    ///   • domains ordered by that best rank (ties → enum order Jade→Ruby→Gold),
-    ///   • placement crystals {2,1,0} awarded by place and accumulated across games,
-    ///   • final sort: points desc, then best single placement, then enum order.
+    ///   • domain placement = the mode rule's TEAM-total order when supplied
+    ///     (ScoringRuleSO.ResolvePlacementOrder, passed by TournamentController); the results-only
+    ///     fallback is best (lowest) player Rank per domain, ties → enum order Jade→Ruby→Gold,
+    ///   • placement crystals {2,1,0} awarded by place - the LAST-placed domain of a round always
+    ///     earns the table's last entry (0), whatever the domain count, so losing never pays,
+    ///   • accumulated across games; final sort: points desc, best single placement, enum order.
     /// A divergence here desyncs the leaderboard between host and clients.
     /// </summary>
     [TestFixture]
@@ -76,7 +78,8 @@ namespace CosmicShore.Tests
         [Test]
         public void RecordResults_DomainPlace_UsesBestPlayerRank()
         {
-            // Jade has the worst AND the best player; its best (rank 1) decides its place → 1st.
+            // FALLBACK path (no explicit placement supplied): Jade has the worst AND the best
+            // player; its best (rank 1) decides its place → 1st.
             _data.RecordResults(new[]
             {
                 Row(1, Domains.Jade),
@@ -88,6 +91,63 @@ namespace CosmicShore.Tests
             Assert.AreEqual(2, Standing(Domains.Jade).TotalPoints, "Jade is 1st via its rank-1 player.");
             Assert.AreEqual(1, Standing(Domains.Ruby).TotalPoints);
             Assert.AreEqual(0, Standing(Domains.Gold).TotalPoints);
+        }
+
+        [Test]
+        public void RecordResults_ExplicitPlacementOrder_OverridesRankDerivedOrder()
+        {
+            // The 2v2 "Scurry" regression: results are ranked per-PLAYER, and a losing-team player
+            // ties the top individual score (rank 1 lands on Jade), but the TEAM totals say Ruby won
+            // (12+8 vs 12+5). The mode rule's team-total order must beat the rank-derived order.
+            var results = new[]
+            {
+                Row(1, Domains.Jade),   // 12 crystals (tie, listed first)
+                Row(2, Domains.Ruby),   // 12 crystals
+                Row(3, Domains.Ruby),   // 8 crystals
+                Row(4, Domains.Jade),   // 5 crystals
+            };
+
+            _data.RecordResults(results, domainPlacementOrder: new[] { Domains.Ruby, Domains.Jade });
+
+            Assert.AreEqual(2, Standing(Domains.Ruby).TotalPoints, "Ruby (20 total) wins the round.");
+            Assert.AreEqual(0, Standing(Domains.Jade).TotalPoints, "Jade (17 total) is last → 0.");
+            Assert.AreEqual(Domains.Ruby, _data.History[0].WinningDomain,
+                "The round card's winner is the team-total winner, not the top individual's team.");
+        }
+
+        [Test]
+        public void RecordResults_ExplicitPlacementOrder_SanitizedAgainstResults()
+        {
+            // A domain the order names but nobody fielded (Gold) is dropped; a domain the order
+            // missed but that played (Ruby) is appended - no team is ever dropped from standings.
+            var results = new[] { Row(1, Domains.Jade), Row(2, Domains.Ruby) };
+
+            _data.RecordResults(results, domainPlacementOrder: new[] { Domains.Gold, Domains.Jade });
+
+            Assert.IsNull(Standing(Domains.Gold), "Gold fielded nobody → no standings row.");
+            Assert.AreEqual(2, Standing(Domains.Jade).TotalPoints, "Jade keeps 1st from the order.");
+            Assert.AreEqual(0, Standing(Domains.Ruby).TotalPoints, "Ruby appended last → 0.");
+            CollectionAssert.AreEqual(new[] { Domains.Jade, Domains.Ruby }, _data.History[0].DomainOrder);
+        }
+
+        [Test]
+        public void RecordResults_TwoDomains_LoserEarnsNothing()
+        {
+            // "Win a game = 2 points, lose = nothing": with only two domains the loser is LAST and
+            // must earn the table's last entry (0), not the 2nd-place 1 - otherwise a team could
+            // race to the win target on losses alone.
+            _data.RecordResults(new[] { Row(1, Domains.Jade), Row(2, Domains.Ruby) });
+
+            Assert.AreEqual(2, Standing(Domains.Jade).TotalPoints, "Winner earns 2.");
+            Assert.AreEqual(0, Standing(Domains.Ruby).TotalPoints, "Loser (last place) earns 0.");
+
+            // Three straight wins reach the default race target (6); the loser stays at 0.
+            _data.RecordResults(new[] { Row(1, Domains.Jade), Row(2, Domains.Ruby) });
+            _data.RecordResults(new[] { Row(1, Domains.Jade), Row(2, Domains.Ruby) });
+
+            Assert.AreEqual(6, Standing(Domains.Jade).TotalPoints);
+            Assert.AreEqual(0, Standing(Domains.Ruby).TotalPoints);
+            Assert.IsTrue(_data.IsShuffleComplete, "Race to 6 = exactly three dominant finishes.");
         }
 
         [Test]
@@ -285,6 +345,22 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void PointsForPlacement_LastPlaceAlwaysEarnsLastTableEntry()
+        {
+            // 3 domains: identical to the raw table {2,1,0}.
+            Assert.AreEqual(2, _data.PointsForPlacement(1, 3));
+            Assert.AreEqual(1, _data.PointsForPlacement(2, 3));
+            Assert.AreEqual(0, _data.PointsForPlacement(3, 3));
+
+            // 2 domains: the loser is LAST → the table's last entry (0), not the 2nd-place 1.
+            Assert.AreEqual(2, _data.PointsForPlacement(1, 2));
+            Assert.AreEqual(0, _data.PointsForPlacement(2, 2), "2-domain loser earns nothing.");
+
+            // Degenerate single-domain round keeps 1st-place points (guarded, never last-mapped).
+            Assert.AreEqual(2, _data.PointsForPlacement(1, 1));
+        }
+
+        [Test]
         public void CrystalsForDomain_ReturnsThisGamePlacementReward()
         {
             var results = new[] { Row(1, Domains.Jade), Row(2, Domains.Ruby), Row(3, Domains.Gold) };
@@ -297,11 +373,27 @@ namespace CosmicShore.Tests
         [Test]
         public void CrystalsForDomain_UsesBestPlayerRank()
         {
-            // Jade holds the worst AND the best player; its best (rank 1) makes it 1st → 2.
+            // FALLBACK path: Jade holds the worst AND the best player; its best (rank 1) makes it
+            // 1st → 2. Ruby is LAST of the two placed domains → 0 (last place never pays).
             var results = new[] { Row(1, Domains.Jade), Row(2, Domains.Ruby), Row(3, Domains.Jade) };
 
             Assert.AreEqual(2, _data.CrystalsForDomain(results, Domains.Jade));
-            Assert.AreEqual(1, _data.CrystalsForDomain(results, Domains.Ruby));
+            Assert.AreEqual(0, _data.CrystalsForDomain(results, Domains.Ruby), "2-domain loser earns 0.");
+        }
+
+        [Test]
+        public void CrystalsForDomain_WithExplicitPlacement_MatchesTheFold()
+        {
+            // Same Scurry-regression shape as the RecordResults test: the explicit team-total order
+            // must drive the Scoreboard's reward badge/wallet exactly like the standings fold.
+            var results = new[]
+            {
+                Row(1, Domains.Jade), Row(2, Domains.Ruby), Row(3, Domains.Ruby), Row(4, Domains.Jade),
+            };
+            var placement = new[] { Domains.Ruby, Domains.Jade };
+
+            Assert.AreEqual(2, _data.CrystalsForDomain(results, Domains.Ruby, placement), "Team-total winner earns 2.");
+            Assert.AreEqual(0, _data.CrystalsForDomain(results, Domains.Jade, placement), "Team-total loser earns 0.");
         }
 
         [Test]

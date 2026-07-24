@@ -18,3 +18,14 @@ MonoBehaviour:
   InitialSpawnCount: 2
   OverrideDefaultPlantPeriod: 1
   NewPlantPeriod: 9999999
+  Element: 2
+  Variant:
+    Enabled: 1
+    LeafSize: {x: 7, y: 4.5, z: 3.5}
+    GrowPeriod: 0.3
+    ShieldPeriod: 0
+    MaxTotalSpawnedObjects: 1500
+    PlantRadiusCellFraction: 0.2
+  InitialLevel: 1
+  LeafScalePerLevel: 1.15
+  CrystalScalePerLevel: 1.2

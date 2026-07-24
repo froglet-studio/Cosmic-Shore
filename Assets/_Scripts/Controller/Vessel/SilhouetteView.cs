@@ -32,9 +32,41 @@ namespace CosmicShore.Gameplay
         private int _cols;
         private Sprite _originalSprite;
 
+        private static readonly int DomainColorId = Shader.PropertyToID("_DomainColor");
+        private Material _holoInstance;
+
         float Alpha => (config != null && config.smooth)
             ? (1f - Mathf.Exp(-Time.unscaledDeltaTime / Mathf.Max(0.0001f, config.smoothingSeconds)))
             : 1f;
+
+        // --- Holo icon treatment ---
+
+        /// <summary>
+        /// Applies the shared holographic material (domain-tinted body, pulsing rim, scanline
+        /// shimmer) to every Image under the silhouette root. One material instance per HUD (this
+        /// is the local player's icon) so the domain accent can be set without touching the shared
+        /// asset; every look parameter beyond the accent lives on the material.
+        /// </summary>
+        public void ApplyHoloStyle(Color domainAccent)
+        {
+            if (!config || !config.enableHoloStyle || !config.holoMaterial || !silhouetteRoot) return;
+
+            if (!_holoInstance)
+                _holoInstance = new Material(config.holoMaterial);
+            _holoInstance.SetColor(DomainColorId, domainAccent);
+
+            foreach (var img in silhouetteRoot.GetComponentsInChildren<Image>(true))
+                img.material = _holoInstance;
+        }
+
+        void OnDestroy()
+        {
+            if (_holoInstance)
+            {
+                if (Application.isPlaying) Destroy(_holoInstance); else DestroyImmediate(_holoInstance);
+                _holoInstance = null;
+            }
+        }
 
         // --- Energy UI ---
         public void UpdateEnergyUI(float current, float max)

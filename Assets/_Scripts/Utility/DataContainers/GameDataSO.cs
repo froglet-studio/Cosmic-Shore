@@ -95,6 +95,15 @@ namespace CosmicShore.Utility
         public int RequestedAIBackfillCount;
 
         /// <summary>
+        /// Levels of ALL FOUR elements a trailing player/team gains per unit of score deficit
+        /// behind first place - this game's comeback strength, authored on SO_ArcadeGame and
+        /// synced from the launch pipeline (host) / config RPC (clients). Read every tick by
+        /// the required ElementalComebackSystem; the comeback layer never lifts an element
+        /// above level 10. 0 = comeback disabled for this game.
+        /// </summary>
+        public float ComebackRatePerScoreDeficit = 1f;
+
+        /// <summary>
         /// Number of domains configured by the host (1-3).
         /// 1 = Jade only, 2 = Jade + Ruby, 3 = Jade + Ruby + Gold.
         /// Used by AI spawning to assign AI to the correct domains and by
@@ -166,8 +175,12 @@ namespace CosmicShore.Utility
         /// <summary>
         /// Sets <see cref="Results"/> (reusing the same list instance so existing references
         /// stay valid) and derives <see cref="WinnerName"/>/<see cref="WinnerDomain"/> from
-        /// the top row, keeping them a convenience view over the single source. Call once per
-        /// game end on the server and on each client.
+        /// the top row ONLY when the mode has not already written them. The domain modes set
+        /// the authoritative winner (highest DOMAIN metric sum, via their final-score ClientRpc)
+        /// BEFORE calling this - deriving over it from <c>Results[0]</c> (the best INDIVIDUAL)
+        /// mis-credited team games whenever the top individual sat on a losing domain (e.g. a
+        /// 2v2 Crystal Capture where a losing-team player tied the top score - the losing team
+        /// saw VICTORY). Call once per game end on the server and on each client.
         /// </summary>
         public void SetResults(IEnumerable<ScoreResult> results)
         {
@@ -177,8 +190,10 @@ namespace CosmicShore.Utility
 
             if (Results.Count > 0)
             {
-                WinnerName = Results[0].Name;
-                WinnerDomain = Results[0].Domain;
+                if (string.IsNullOrEmpty(WinnerName))
+                    WinnerName = Results[0].Name;
+                if (WinnerDomain == Domains.Blue)
+                    WinnerDomain = Results[0].Domain;
             }
         }
 
@@ -213,6 +228,17 @@ namespace CosmicShore.Utility
         [NonSerialized] public int GoalTargetCount;
 
         /// <summary>
+        /// The resolved hostile-prism destruction target for the current Rampage session -
+        /// the per-domain <see cref="IRoundStats.HostilePrismsDestroyed"/> sum that ends the
+        /// turn. Published by <see cref="RampagePrismTurnMonitor"/> in StartMonitor (server),
+        /// synced to clients via NetworkVariable.OnValueChanged. Read by
+        /// <see cref="CosmicShore.Gameplay.RampageScoringRuleSO"/> for the end condition and
+        /// the "remaining" readout. Reset in <see cref="ResetRuntimeData"/> and
+        /// <see cref="ResetRuntimeDataForReplay"/>.
+        /// </summary>
+        [NonSerialized] public int PrismTargetCount;
+
+        /// <summary>
         /// The active scoring strategy for the current mode, published by the mode's controller
         /// in OnNetworkSpawn (drag the matching <see cref="CosmicShore.Gameplay.ScoringRuleSO"/>
         /// asset onto the controller). Read by the network turn monitors for the end condition
@@ -238,6 +264,7 @@ namespace CosmicShore.Utility
             SceneName = game.SceneName;
             GameMode = game.Mode;
             IsMultiplayerMode = game.IsMultiplayer;
+            ComebackRatePerScoreDeficit = game.ComebackRatePerScoreDeficit;
         }
 
         /// <summary>
@@ -395,6 +422,7 @@ namespace CosmicShore.Utility
             CrystalTargetCount = 0;
             JoustTargetCount = 0;
             GoalTargetCount = 0;
+            PrismTargetCount = 0;
             System.Array.Clear(_domainMetricSums, 0, _domainMetricSums.Length);
             // Note: RequestedAIBackfillCount and RequestedDomainCount are intentionally
             // NOT reset here. They are pre-launch config values set by
@@ -439,6 +467,7 @@ namespace CosmicShore.Utility
             CrystalTargetCount = 0;
             JoustTargetCount = 0;
             GoalTargetCount = 0;
+            PrismTargetCount = 0;
             System.Array.Clear(_domainMetricSums, 0, _domainMetricSums.Length);
         }
 

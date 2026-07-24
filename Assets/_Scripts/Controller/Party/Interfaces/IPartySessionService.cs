@@ -83,6 +83,17 @@ namespace CosmicShore.Gameplay
         UniTask RefreshAsync();
 
         /// <summary>
+        /// Re-publishes the local player's identity properties (displayName /
+        /// avatarId) on the ACTIVE session's player record. Session player
+        /// properties are otherwise written only at create/join, so a mid-party
+        /// profile rename would leave every peer's roster (party slots) showing
+        /// the stale name. Called by <c>HostConnectionService</c> on profile
+        /// change; no-op when no session is active. Failures are logged and
+        /// swallowed - the name self-heals on the next session (re)join.
+        /// </summary>
+        UniTask UpdateLocalPlayerPropertiesAsync(string displayName, int avatarId);
+
+        /// <summary>
         /// Synchronously clears <see cref="ActiveSession"/> without calling the UGS SDK.
         /// Use for stale-reference cleanup (game→menu transition) or after non-rate-limit
         /// refresh failures.  Call <see cref="LeaveAsync"/> for a graceful leave.

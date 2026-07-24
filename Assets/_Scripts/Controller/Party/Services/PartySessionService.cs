@@ -292,6 +292,31 @@ namespace CosmicShore.Gameplay
             await ActiveSession.RefreshAsync().AsMainThread();
         }
 
+        /// <inheritdoc/>
+        public async UniTask UpdateLocalPlayerPropertiesAsync(string displayName, int avatarId)
+        {
+            var session = ActiveSession;
+            if (session == null) return;
+
+            try
+            {
+                session.CurrentPlayer.SetProperty(DISPLAY_NAME_KEY,
+                    new PlayerProperty(string.IsNullOrEmpty(displayName) ? "Pilot" : displayName,
+                        VisibilityPropertyOptions.Public));
+                session.CurrentPlayer.SetProperty(AVATAR_ID_KEY,
+                    new PlayerProperty(avatarId.ToString(), VisibilityPropertyOptions.Public));
+                await session.SaveCurrentPlayerDataAsync().AsMainThread();
+                Debug.Log($"[PartySessionService] Local player properties updated (displayName='{displayName}').");
+            }
+            catch (Exception e)
+            {
+                // Non-fatal: peers keep the stale name until the next session
+                // (re)join. Never throw into the profile-change event chain.
+                Debug.LogWarning(
+                    $"[PartySessionService] UpdateLocalPlayerProperties failed ({e.GetType().Name}): {e.Message}");
+            }
+        }
+
         /// <summary>
         /// Synchronously clears <see cref="ActiveSession"/> and
         /// <see cref="CreatedAtUnscaledTime"/> without calling the UGS SDK.
