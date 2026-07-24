@@ -28,6 +28,7 @@
 		<relationship name="groupTracks">
 			<destination>{52a74978-3549-424a-894f-cd2118798a15}</destination>
 			<destination>{9134ebd0-3912-485e-bae1-e3fb2e9eb7d2}</destination>
+			<destination>{1883bed3-f1ae-4c25-9914-f506c5b2065b}</destination>
 		</relationship>
 		<relationship name="timeline">
 			<destination>{e0237280-0506-474c-aeb6-45f8e0f6b0ae}</destination>
@@ -95,9 +96,20 @@
 			<destination>{ba98407b-a479-4f82-8367-b2f33f14f808}</destination>
 		</relationship>
 	</object>
+	<object class="GroupTrack" id="{1883bed3-f1ae-4c25-9914-f506c5b2065b}">
+		<relationship name="modules">
+			<destination>{46843023-6a92-43f2-bd97-078e465d5de6}</destination>
+			<destination>{c0dfc8b9-9c2e-400f-a64a-df96a4898e44}</destination>
+			<destination>{a76fe8a1-f922-4829-a8be-d60f850ae8db}</destination>
+		</relationship>
+		<relationship name="mixerGroup">
+			<destination>{1aec1f2e-c85c-4fcd-ae7f-8a4baf937199}</destination>
+		</relationship>
+	</object>
 	<object class="Timeline" id="{e0237280-0506-474c-aeb6-45f8e0f6b0ae}">
 		<relationship name="modules">
 			<destination>{9c9e83eb-fff0-4c1f-b2ab-18ded07a1192}</destination>
+			<destination>{a76fe8a1-f922-4829-a8be-d60f850ae8db}</destination>
 		</relationship>
 		<relationship name="markers">
 			<destination>{8cae1992-008c-4fb3-b123-2e53c48a7c2e}</destination>
@@ -254,6 +266,38 @@
 			<destination>{0c5417ef-4c93-4d18-a558-841a7a61e93d}</destination>
 		</relationship>
 	</object>
+	<object class="TransitionSourceSound" id="{46843023-6a92-43f2-bd97-078e465d5de6}">
+		<property name="length">
+			<value>0</value>
+		</property>
+	</object>
+	<object class="TransitionDestinationSound" id="{c0dfc8b9-9c2e-400f-a64a-df96a4898e44}">
+		<property name="start">
+			<value>2</value>
+		</property>
+		<property name="length">
+			<value>0</value>
+		</property>
+	</object>
+	<object class="EventSound" id="{a76fe8a1-f922-4829-a8be-d60f850ae8db}">
+		<relationship name="event">
+			<destination>{e0adc9be-359c-4ada-aaa6-8006673c9381}</destination>
+		</relationship>
+	</object>
+	<object class="EventMixerGroup" id="{1aec1f2e-c85c-4fcd-ae7f-8a4baf937199}">
+		<property name="name">
+			<value>Audio 3</value>
+		</property>
+		<relationship name="effectChain">
+			<destination>{bf859916-30c9-4562-be74-e59c89cf3956}</destination>
+		</relationship>
+		<relationship name="panner">
+			<destination>{b9f76dd8-2344-4573-992d-8adb9c400f39}</destination>
+		</relationship>
+		<relationship name="output">
+			<destination>{0c5417ef-4c93-4d18-a558-841a7a61e93d}</destination>
+		</relationship>
+	</object>
 	<object class="LoopRegion" id="{8cae1992-008c-4fb3-b123-2e53c48a7c2e}">
 		<property name="position">
 			<value>1.5</value>
@@ -369,6 +413,12 @@
 		</relationship>
 	</object>
 	<object class="MixerBusPanner" id="{7171b1d9-344e-42db-9090-e001c61af6b6}" />
+	<object class="MixerBusEffectChain" id="{bf859916-30c9-4562-be74-e59c89cf3956}">
+		<relationship name="effects">
+			<destination>{781e7ab1-6860-495d-9c34-69c68641fd23}</destination>
+		</relationship>
+	</object>
+	<object class="MixerBusPanner" id="{b9f76dd8-2344-4573-992d-8adb9c400f39}" />
 	<object class="TransitionTimeline" id="{9f441ebf-feeb-4bae-b14f-c674e99b3639}">
 		<property name="length">
 			<value>2</value>
@@ -380,6 +430,8 @@
 			<destination>{4e83d650-3c93-4502-a8e7-9618d854add6}</destination>
 			<destination>{90db8c48-97ce-4476-8267-c1b33af7b152}</destination>
 			<destination>{39c30ec4-b732-4497-8e4b-4f4a588dfec8}</destination>
+			<destination>{46843023-6a92-43f2-bd97-078e465d5de6}</destination>
+			<destination>{c0dfc8b9-9c2e-400f-a64a-df96a4898e44}</destination>
 		</relationship>
 	</object>
 	<object class="MixerBusFader" id="{f65886f6-ed38-4bd2-8fee-536d500373c3}" />
@@ -526,6 +578,7 @@
 		</relationship>
 	</object>
 	<object class="MixerBusFader" id="{cf25c211-f0be-4f3b-b366-929523fe4fce}" />
+	<object class="MixerBusFader" id="{781e7ab1-6860-495d-9c34-69c68641fd23}" />
 	<object class="AutomationCurve" id="{13bb0009-c4c8-4c46-8814-6e8dc812fff3}">
 		<relationship name="parameter">
 			<destination>{b528af60-6451-495a-9b69-5389a6e709ba}</destination>
