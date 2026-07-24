@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <objects serializationModel="Studio.02.02.00">
-	<object class="AudioFile" id="{316acf7f-f873-42d4-a1e1-ad83959039b9}">
-		<property name="assetPath" />
+	<object class="AudioFile" id="{f6604ca4-100d-46ec-9a0a-b4ec315fde0e}">
+		<property name="assetPath">
+			<value>boost rhino cosmic shore 2.wav</value>
+		</property>
 		<property name="frequencyInKHz">
 			<value>48</value>
 		</property>
@@ -9,7 +11,7 @@
 			<value>2</value>
 		</property>
 		<property name="length">
-			<value>0.25</value>
+			<value>8.341333333333333</value>
 		</property>
 		<relationship name="masterAssetFolder">
 			<destination>{10bfe9dd-695d-4131-b664-efde45fc55f0}</destination>

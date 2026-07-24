@@ -68,7 +68,7 @@
 			<value>0</value>
 		</property>
 		<property name="maximumDistance">
-			<value>70</value>
+			<value>90</value>
 		</property>
 	</object>
 	<object class="MarkerTrack" id="{a0ebcda5-6044-4bca-9885-d6f1ce8824e1}" />
@@ -215,7 +215,7 @@
 			<value>0</value>
 		</property>
 		<property name="maximumDistance">
-			<value>70</value>
+			<value>90</value>
 		</property>
 	</object>
 	<object class="MixerBusFader" id="{f70e5f78-4215-4e3a-ba5d-e94806f1540d}" />
