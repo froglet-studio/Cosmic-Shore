@@ -1215,10 +1215,14 @@ namespace CosmicShore.Editor
             if (statBased)
             {
                 float target = gate.intensityTier >= 4 ? quest.Intensity4StatTarget : quest.Intensity3StatTarget;
-                string requirement = quest.IntensityUnlockStatType ==
-                                     CosmicShore.ScriptableObjects.QuestTargetType.RaceTimeUnder
-                    ? $"finish time ≤ {target}s (must finish on the WINNING domain — a loss scores 0)"
-                    : $"{quest.IntensityUnlockStatType} ≥ {target}";
+                string requirement = quest.IntensityUnlockStatType switch
+                {
+                    CosmicShore.ScriptableObjects.QuestTargetType.RaceTimeUnder =>
+                        $"finish time ≤ {target}s (must finish on the WINNING domain — a loss scores 0)",
+                    CosmicShore.ScriptableObjects.QuestTargetType.WinMatch =>
+                        "WIN the match (rank first — your domain takes the game)",
+                    _ => $"{quest.IntensityUnlockStatType} ≥ {target}",
+                };
                 sb.Append($"\nUnlocks by: {requirement} in ONE intensity-{playIntensity} game.");
                 string desc = gate.intensityTier >= 4 ? quest.Intensity4GoalDescription : quest.Intensity3GoalDescription;
                 if (!string.IsNullOrEmpty(desc))

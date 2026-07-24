@@ -20,13 +20,13 @@ MonoBehaviour:
   Icon: {fileID: 21300000, guid: 587d2203114c8004c9985d0112c89585, type: 3}
   TargetType: 6
   TargetValue: 4
-  IntensityUnlockStatType: 1
-  Intensity3StatTarget: 215
-  Intensity4StatTarget: 270
+  IntensityUnlockStatType: 5
+  Intensity3StatTarget: 1
+  Intensity4StatTarget: 1
   PlaysToUnlockIntensity3: 3
   PlaysToUnlockIntensity4: 3
-  Intensity3GoalDescription: 
-  Intensity4GoalDescription: 
+  Intensity3GoalDescription: Rank first in an Intensity 2 race
+  Intensity4GoalDescription: Rank first in an Intensity 3 race
   Order: 1
   IsPlaceholder: 0
   CallToActionTargetID: 431

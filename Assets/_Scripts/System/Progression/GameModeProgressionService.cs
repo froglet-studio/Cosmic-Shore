@@ -661,14 +661,27 @@ namespace CosmicShore.Core
                     return GolfScoreSentinels.IsFinishTime(time) ? time : 0f;
 
                 case QuestTargetType.WinMatch:
-                    if (gameData.RoundStatsList != null && gameData.RoundStatsList.Count > 0 &&
-                        gameData.RoundStatsList[0].Name == localName)
-                        return 1f;
-                    return 0f;
+                    return DidLocalPlayerWin() ? 1f : 0f;
 
                 default:
                     return 0f;
             }
+        }
+
+        /// <summary>
+        /// Authoritative local-win check (same semantics as EndGameSequencer's reveal):
+        /// domain modes set WinnerDomain server-side; anything else falls back to the
+        /// per-domain stats winner. RoundStatsList ORDER is roster order, not rank — never
+        /// infer a win from list position.
+        /// </summary>
+        bool DidLocalPlayerWin()
+        {
+            if (gameData == null || gameData.LocalPlayer == null) return false;
+
+            if (gameData.WinnerDomain != Domains.Blue)
+                return gameData.LocalPlayer.Domain == gameData.WinnerDomain;
+
+            return gameData.IsLocalDomainWinner(out _);
         }
 
         /// <summary>
@@ -732,11 +745,7 @@ namespace CosmicShore.Core
                     return localStats?.JoustCollisions ?? 0;
 
                 case QuestTargetType.WinMatch:
-                    // Check if the local player is first in the sorted round stats
-                    if (gameData.RoundStatsList != null && gameData.RoundStatsList.Count > 0 &&
-                        gameData.RoundStatsList[0].Name == localName)
-                        return 1f;
-                    return 0f;
+                    return DidLocalPlayerWin() ? 1f : 0f;
 
                 case QuestTargetType.SurvivalTime:
                     return localStats?.Score ?? 0f;

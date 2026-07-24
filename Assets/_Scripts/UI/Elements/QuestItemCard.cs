@@ -202,6 +202,23 @@ namespace CosmicShore.UI
             if (claimButton != null) claimButton.interactable = interactable;
         }
 
+        /// <summary>
+        /// Wires a whole-card tap, distinct from the claim button (a child Button that
+        /// consumes its own clicks first). A Button is added to the card root on demand,
+        /// with the background Image as its raycast surface.
+        /// </summary>
+        public void BindCardAction(UnityEngine.Events.UnityAction action)
+        {
+            if (!TryGetComponent<Button>(out var cardButton))
+            {
+                cardButton = gameObject.AddComponent<Button>();
+                cardButton.transition = Selectable.Transition.None;
+                if (cardBackground != null) cardButton.targetGraphic = cardBackground;
+            }
+            cardButton.onClick.RemoveAllListeners();
+            cardButton.onClick.AddListener(action);
+        }
+
         public void BindClaimAction(UnityEngine.Events.UnityAction action)
         {
             if (claimButton == null) return;
