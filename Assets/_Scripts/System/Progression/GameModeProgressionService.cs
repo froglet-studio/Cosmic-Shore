@@ -602,6 +602,14 @@ namespace CosmicShore.Core
                     SaveImmediateAsync();
                     return;
                 }
+
+                // Name the shortfall — "played I3, nothing advanced" must be diagnosable
+                // from the console (and the Quest Graph tool surfaces the same goal).
+                CSDebug.Log($"[GameModeProgressionService] {mode} intensity-4 goal NOT met this game — " +
+                            (useStatBased
+                                ? $"{quest.IntensityUnlockStatType} was {statValue}, needs " +
+                                  $"{(quest.IntensityUnlockStatType == QuestTargetType.RaceTimeUnder ? "a winning finish ≤" : "≥")} {quest.Intensity4StatTarget}."
+                                : $"plays at intensity 3: {newCount}/{quest.PlaysToUnlockIntensity4}."));
             }
 
             // No tier unlock — just save the updated play count
@@ -637,6 +645,10 @@ namespace CosmicShore.Core
             switch (quest.IntensityUnlockStatType)
             {
                 case QuestTargetType.CrystalsCollected:
+                    // The dedicated crystal counter — NOT Score. Score is mode-defined (finish
+                    // time under golf rules, points elsewhere) and silently broke crystal goals.
+                    return localStats?.CrystalsCollected ?? 0;
+
                 case QuestTargetType.ScoreAbove:
                 case QuestTargetType.SurvivalTime:
                     return localStats?.Score ?? 0f;
@@ -704,7 +716,8 @@ namespace CosmicShore.Core
             switch (quest.TargetType)
             {
                 case QuestTargetType.CrystalsCollected:
-                    return localStats?.Score ?? 0f;
+                    // The dedicated crystal counter — NOT Score (mode-defined; golf time in races).
+                    return localStats?.CrystalsCollected ?? 0;
 
                 case QuestTargetType.ScoreAbove:
                     return localStats?.Score ?? 0f;

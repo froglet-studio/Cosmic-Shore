@@ -989,9 +989,12 @@ namespace CosmicShore.Editor
                         : string.IsNullOrEmpty(_cursorNodeId) ? "(phase entry)"
                         : "(node not in this graph — regenerated quest? Reset below)";
 
+                    string gateDetail = DescribeGateRequirement(cursorNode);
+
                     EditorGUILayout.HelpBox(
                         $"Phase: {phaseLabel}\nResumes at: {nextLabel}\nNodes completed: {_doneNodeIds.Count}\n" +
-                        "Canvas: ✓ = completed, ▶ NEXT = resume point (updates live in Play mode).",
+                        "Canvas: ✓ = completed, ▶ NEXT = resume point (updates live in Play mode)." +
+                        (string.IsNullOrEmpty(gateDetail) ? string.Empty : $"\n\n{gateDetail}"),
                         MessageType.Info);
                 }
 
@@ -1173,6 +1176,64 @@ namespace CosmicShore.Editor
                 QuestArcadeConstraints.Clear();
                 Debug.Log("[Quest] Arcade funnel cleared from the editor.");
             }
+        }
+
+        /// <summary>
+        /// When the ▶ NEXT node is a tier gate, spell out WHY it hasn't advanced: the authored
+        /// unlock goal (stat threshold or play count), the mode's current tier, and — in Play
+        /// mode — the recorded plays. Answers "I played it once, why no progress?" inside the
+        /// tool instead of requiring console archaeology.
+        /// </summary>
+        static string DescribeGateRequirement(QuestNodeSO node)
+        {
+            if (node is not QuestWaitForIntensityNode gate) return null;
+
+            var svc = GameModeProgressionService.Instance;
+            var questList = svc != null ? svc.QuestList
+                : QuestRunnerSetup.FindAsset<CosmicShore.ScriptableObjects.SO_UnlockList>();
+
+            CosmicShore.ScriptableObjects.SO_UnlockData quest = null;
+            if (questList != null)
+            {
+                foreach (var q in questList.Quests)
+                {
+                    if (q != null && q.GameMode == gate.mode) { quest = q; break; }
+                }
+            }
+
+            var sb = new System.Text.StringBuilder();
+            sb.Append($"GATE — {gate.mode} must reach tier {gate.intensityTier}");
+            if (svc != null && Application.isPlaying)
+                sb.Append($" (currently ≤{svc.GetMaxUnlockedIntensity(gate.mode)})");
+            sb.Append('.');
+
+            if (quest == null) return sb.ToString();
+
+            int playIntensity = Mathf.Max(1, gate.intensityTier - 1);
+            bool statBased = quest.IntensityUnlockStatType !=
+                             CosmicShore.ScriptableObjects.QuestTargetType.Placeholder;
+            if (statBased)
+            {
+                float target = gate.intensityTier >= 4 ? quest.Intensity4StatTarget : quest.Intensity3StatTarget;
+                string requirement = quest.IntensityUnlockStatType ==
+                                     CosmicShore.ScriptableObjects.QuestTargetType.RaceTimeUnder
+                    ? $"finish time ≤ {target}s (must finish on the WINNING domain — a loss scores 0)"
+                    : $"{quest.IntensityUnlockStatType} ≥ {target}";
+                sb.Append($"\nUnlocks by: {requirement} in ONE intensity-{playIntensity} game.");
+                string desc = gate.intensityTier >= 4 ? quest.Intensity4GoalDescription : quest.Intensity3GoalDescription;
+                if (!string.IsNullOrEmpty(desc))
+                    sb.Append($"\nGoal text: \"{desc}\"");
+            }
+            else
+            {
+                int needed = gate.intensityTier >= 4 ? quest.PlaysToUnlockIntensity4 : quest.PlaysToUnlockIntensity3;
+                sb.Append($"\nUnlocks by: playing {needed} game(s) at intensity {playIntensity}");
+                if (svc != null && Application.isPlaying)
+                    sb.Append($" — {svc.ProgressionData.GetIntensityPlayCount(gate.mode.ToString(), playIntensity)}/{needed} so far");
+                sb.Append('.');
+            }
+
+            return sb.ToString();
         }
 
         /// <summary>

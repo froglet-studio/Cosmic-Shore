@@ -21,12 +21,12 @@ MonoBehaviour:
   TargetType: 6
   TargetValue: 4
   IntensityUnlockStatType: 0
-  Intensity3StatTarget: 30
-  Intensity4StatTarget: 25
+  Intensity3StatTarget: 10
+  Intensity4StatTarget: 10
   PlaysToUnlockIntensity3: 3
   PlaysToUnlockIntensity4: 3
-  Intensity3GoalDescription: Collect 30 crystals in Intensity 2
-  Intensity4GoalDescription: Collect 25 crystals in Intensity 3
+  Intensity3GoalDescription: Collect 10 crystals in an Intensity 2 game
+  Intensity4GoalDescription: Collect 10 crystals in an Intensity 3 game
   Order: 0
   IsPlaceholder: 0
   CallToActionTargetID: 433
