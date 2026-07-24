@@ -6,6 +6,7 @@ using Reflex.Attributes;
 using UnityEngine;
 using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
+using CosmicShore.UI;
 using System.Linq;
 namespace CosmicShore.Gameplay
 {
@@ -108,6 +109,11 @@ namespace CosmicShore.Gameplay
         float _lastUpdateTime;
         bool _isActive;
 
+        // Rising-edge tracker for the local player's "comeback system is on" toast - fires
+        // once when their buff activates, re-arms when the deficit closes. Only modes whose
+        // GameToastConfigSO authors ComebackActivated display it (e.g. Skim Race).
+        bool _localComebackActive;
+
         // Per-element last-played timestamp for the local player's comeback audio.
         // Index matches AllElements order: Mass=0, Charge=1, Space=2, Time=3.
         readonly float[] _lastComebackAudioTime = { -999f, -999f, -999f, -999f };
@@ -146,6 +152,7 @@ namespace CosmicShore.Gameplay
                           $"Source={differenceSource}");
 
             _isActive = true;
+            _localComebackActive = false;
             ResetComebackAudioTimestamps();
 
             if (comebackProfile == null) return; // profile only seeds optional initial levels
@@ -234,6 +241,9 @@ namespace CosmicShore.Gameplay
                 float normalizedBonus = Mathf.Max(0f, bonusLevels / 10f);
 
                 bool isLocalPlayer = player.IsLocalUser;
+                if (isLocalPlayer)
+                    UpdateLocalComebackToast(player, bonusLevels);
+
                 for (int i = 0; i < AllElements.Length; i++)
                 {
                     var element = AllElements[i];
@@ -262,6 +272,25 @@ namespace CosmicShore.Gameplay
                               $"bonus={bonusLevels:F1} → " +
                               $"M={rs.GetLevel(Element.Mass)} C={rs.GetLevel(Element.Charge)} " +
                               $"S={rs.GetLevel(Element.Space)} T={rs.GetLevel(Element.Time)}");
+            }
+        }
+
+        /// <summary>
+        /// Posts the ComebackActivated toast situation on the rising edge of the LOCAL
+        /// player's comeback buff, and re-arms once the buff drops back to zero. Whether it
+        /// displays is up to the current mode's toast config (unauthored = silent).
+        /// </summary>
+        void UpdateLocalComebackToast(IPlayer player, float bonusLevels)
+        {
+            if (bonusLevels > 0f)
+            {
+                if (_localComebackActive) return;
+                _localComebackActive = true;
+                GameToastAPI.Post(GameToastSituation.ComebackActivated, player.Domain, player.Name);
+            }
+            else
+            {
+                _localComebackActive = false;
             }
         }
 

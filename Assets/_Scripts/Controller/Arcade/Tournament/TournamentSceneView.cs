@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using Cysharp.Threading.Tasks;
 using DG.Tweening;
 using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
@@ -26,7 +27,8 @@ namespace CosmicShore.Gameplay
     ///       – lobby/hub: <b>START</b> + an animated countdown that <b>auto-starts</b> the round.
     ///       – complete (summary phase): <b>NEXT</b> → reveals the summary panel (no countdown).
     ///   • <b>Summary panel</b> (summaryRoot) - winning-domain banner + the final domain ranking, with
-    ///     host-only Play Again / Main Menu.
+    ///     host-only Play Again and an everyone-visible Main Menu (the host's press takes the whole
+    ///     party back over the live Relay; a client's press leaves the party and returns solo).
     ///
     /// Domain colours come from the live theme's per-domain UI accent
     /// (<see cref="SO_ColorSet.GetDomainUIAccentColor"/> via <c>gameData.ThemeManagerData</c> - no
@@ -311,8 +313,10 @@ namespace CosmicShore.Gameplay
             BuildSummaryRankText();
             PopulateSummaryCards();
 
+            // Play Again stays host-only (a client cannot restart the party's tournament), but Main
+            // Menu is available to every peer - the host takes the whole party back, a client leaves.
             if (playAgainButton) playAgainButton.gameObject.SetActive(IsHost);
-            if (mainMenuButton) mainMenuButton.gameObject.SetActive(IsHost);
+            if (mainMenuButton) mainMenuButton.gameObject.SetActive(true);
         }
 
         // "DOMAIN RANK :" + the ranked domains (each coloured), revealed with an AAA typewriter + pop.
@@ -393,15 +397,36 @@ namespace CosmicShore.Gameplay
 
         public void OnMainMenuPressed()
         {
-            if (!IsHost || _summaryActionTaken) return;
-            if (onClickToMainMenu == null)
+            if (_summaryActionTaken) return;
+
+            if (IsHost)
             {
-                CSDebug.LogError("[TournamentSceneView] onClickToMainMenu event not wired - cannot return to menu.");
+                // Host-initiated return keeps the live Relay - SceneLoader drives a Netcode scene
+                // load so the whole party lands in Menu_Main together.
+                if (onClickToMainMenu == null)
+                {
+                    CSDebug.LogError("[TournamentSceneView] onClickToMainMenu event not wired - cannot return to menu.");
+                    return;
+                }
+                _summaryActionTaken = true;
+                DisableEndButtons();
+                onClickToMainMenu.Raise();
+                return;
+            }
+
+            // Client: SceneLoader.ReturnToMainMenu defers scene loads to the server, so raising the
+            // SOAP event here would fade to black and wait on the host forever. Leave the party
+            // instead (same path as the Scoreboard's Leave Lobby) - disconnects, loads Menu_Main
+            // locally, and restarts a solo Relay session; TournamentController clears tournament
+            // state on the Menu_Main load.
+            if (PartyInviteController.Instance == null)
+            {
+                CSDebug.LogError("[TournamentSceneView] PartyInviteController not available - cannot leave to main menu.");
                 return;
             }
             _summaryActionTaken = true;
             DisableEndButtons();
-            onClickToMainMenu.Raise();
+            PartyInviteController.Instance.LeavePartyAndReturnToMenuAsync().Forget();
         }
 
         void DisableEndButtons()
