@@ -154,6 +154,10 @@ namespace CosmicShore.Gameplay
                 block.Trail = trail;
                 block.Initialize();
                 trail.Add(block);
+                // Custom loop bypasses PrismTrailBuilder.LayOne — register with the arena-ready
+                // gate so these blocks can't pop in after the connecting screen drops (Joust
+                // intensity 3 is this surface).
+                PrismTrailBuilder.WatchForReveal(block);
             }
 
             trails.Add(trail);
