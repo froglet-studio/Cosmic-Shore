@@ -4040,7 +4040,7 @@ MonoBehaviour:
       - m_Target: {fileID: 4357675176818844460}
         m_TargetAssemblyTypeName: CosmicShore.App.UI.Modals.ArcadeGameConfigureModal,
           Assembly-CSharp
-        m_MethodName: OnBackFromGameSelectView
+        m_MethodName: OnCloseModal
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
