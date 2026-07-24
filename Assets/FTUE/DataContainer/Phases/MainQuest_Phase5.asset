@@ -52,7 +52,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestPhaseGraphSO
   graphId: MainQuest_Phase5
   phaseName: "Episodes & Beyond \u2014 Finale"
-  phaseEnabled: 0
+  phaseEnabled: 1
   designerNotes: "Entry: vessel unlocked. Wait gate, closing dialogue ('you can also
     buy new game modes'), then enable the (authored non-interactable) Episodes screen
     button and Quest End \u2014 the FTUE is complete and persisted to UGS."

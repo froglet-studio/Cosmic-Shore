@@ -101,7 +101,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestPhaseGraphSO
   graphId: MainQuest_Phase1
   phaseName: Unlock HexRace
-  phaseEnabled: 0
+  phaseEnabled: 1
   designerNotes: "Entry gate: MultiplayerCrystalCapture reaches intensity tier 4
     (its quest milestone). Guide to the profile screen, explain, wait for the player
     to CLAIM HexRace on the quest track (unlocks to intensity 3), reward dialogue,

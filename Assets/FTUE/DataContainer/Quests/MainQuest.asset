@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: MainQuest
   m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestSO
   questId: MainQuest
-  questEnabled: 0
+  questEnabled: 1
   designerNotes: 
   phases:
   - {fileID: 11400000, guid: 385774e18f65e064fac0a9a87e24b8d3, type: 2}

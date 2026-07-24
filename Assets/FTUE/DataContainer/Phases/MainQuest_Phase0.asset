@@ -406,7 +406,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestPhaseGraphSO
   graphId: MainQuest_Phase0
   phaseName: Onboarding & Crystal Capture
-  phaseEnabled: 0
+  phaseEnabled: 1
   designerNotes: 
   entryNode: {fileID: -2956468355650793072}
   nodes:
@@ -549,7 +549,7 @@ MonoBehaviour:
   m_Name: 'Wait: Player Taps Volume Button'
   m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestExitFreestyleNode
   nodeId: bc7f51400cc641cb996b29b608f4f43b
-  displayName: 'Wait: Player Taps Volume Button'
+  displayName: 'Wait: Player Taps Overlay Button'
   nodeEnabled: 1
   graphPosition: {x: 580, y: 280}
   outputs:
@@ -571,14 +571,14 @@ MonoBehaviour:
   m_Name: 'Prompt: Exit Via Volume Button'
   m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestShowInstructionNode
   nodeId: cebd5a6ffdef4df080f7d5715edfd42b
-  displayName: 'Prompt: Exit Via Volume Button'
+  displayName: 'Prompt: Exit Via Overlay Button'
   nodeEnabled: 1
   graphPosition: {x: 580, y: 160}
   outputs:
   - portName: next
     targetNodeId: bc7f51400cc641cb996b29b608f4f43b
     delaySeconds: 0
-  text: Training complete! Tap the VOLUME button to head back to the menu.
+  text: Training complete! Tap the OVERLAY button to head back to the menu.
   haptic: 0
   panelKey: exit_freestyle
   minDisplaySeconds: 2
