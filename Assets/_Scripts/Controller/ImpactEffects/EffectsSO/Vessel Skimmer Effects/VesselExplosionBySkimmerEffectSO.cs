@@ -141,8 +141,9 @@ namespace CosmicShore.Gameplay
             else if (impactorVessel.VesselStatus.IsLocalUser)
                 AudioSystem.Instance?.PlayGameplaySFX(GameplaySFXCategory.JoustReceived);
 
-            // Post two-tone joust notification to the game feed
-            GameFeedAPI.PostJoust(
+            // Post the joust situation to the in-game toast feed. Copy + points formatting
+            // live in the Joust mode's GameToastConfigSO, resolved by GameToastController.
+            GameToastAPI.PostJoust(
                 impacteeVessel.VesselStatus.PlayerName,
                 impacteeVessel.VesselStatus.Domain,
                 impactorVessel.VesselStatus.PlayerName,
