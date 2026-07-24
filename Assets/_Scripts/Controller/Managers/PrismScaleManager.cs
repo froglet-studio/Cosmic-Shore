@@ -22,6 +22,11 @@ namespace CosmicShore.Gameplay
         // slow growth tempo under exactly the load it exists to bound.
         private const float MAX_STEP_DT = 0.5f;
 
+        // Grower budget while the loading gate holds the connecting screen (screen is
+        // covered — frames exist only to finish building the arena). True-dt easing keeps
+        // per-prism tempo identical; only the stepping cadence rises.
+        private const int LOAD_GATE_GROWER_BUDGET = 4096;
+
         [Header("Slicing")]
         [Tooltip("Max growers stepped per processed tick. A grazing frenzy can push " +
                  "thousands of growers active at once; the rotating window bounds the " +
@@ -69,7 +74,16 @@ namespace CosmicShore.Gameplay
             int count = activeAnimatorsList.Count;
             if (count == 0) return;
 
-            int budget = math.min(count, maxGrowersPerFrame);
+            // While the loading gate holds the connecting screen (screen covered, nothing to
+            // render for), step far more growers per tick so a freshly-laid arena cohort
+            // finishes its grow-in behind the curtain: at 300/frame a 25k-prism environment
+            // rotates every ~80+ frames, leaving most of it still invisible at reveal and
+            // popping in waves during play. Gameplay frames keep the authored slice budget —
+            // the gate flag is only ever set while the connecting screen is up.
+            int cap = PrismTrailBuilder.IsLoadGateHolding
+                ? math.max(maxGrowersPerFrame, LOAD_GATE_GROWER_BUDGET)
+                : maxGrowersPerFrame;
+            int budget = math.min(count, cap);
             if (_sliceCursor >= count) _sliceCursor = 0;
 
             // Catch-up cap for this tick. Under heavy load a grower's slices arrive

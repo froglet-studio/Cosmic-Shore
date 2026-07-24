@@ -132,6 +132,44 @@ namespace CosmicShore.Gameplay
         public float Volume => scaleAnimator?.GetCurrentVolume() ?? .001f;
         public BlockState CurrentState => stateManager?.CurrentState ?? BlockState.Normal;
 
+        /// <summary>
+        /// True while this prism's grow-in animation is still running (scale has not settled at
+        /// TargetScale). A deactivated prism reports false — pooled/consumed prisms must never
+        /// wedge a caller waiting on growth (PrismTrailBuilder's arena-ready gate sweeps on this).
+        /// </summary>
+        public bool IsGrowing => isActiveAndEnabled && scaleAnimator != null && scaleAnimator.IsScaling;
+
+        /// <summary>
+        /// True once CreateBlockCoroutine has finished this life's creation — renderer visible,
+        /// collider on, spatial index registered. Until then the prism EXISTS but cannot be seen
+        /// (creation completions are budgeted per frame to de-spike simultaneous spawns), which
+        /// is why scale alone can never prove a prism is on screen.
+        /// </summary>
+        public bool IsCreationComplete { get; private set; }
+
+        /// <summary>
+        /// True when this prism is exactly what the player will see for the rest of the match:
+        /// created (visible), not animating, and settled at its target scale — or dead, which
+        /// can never pop in later. THE per-prism predicate behind PrismTrailBuilder's
+        /// arena-ready gate; anything short of this can still visibly appear or change after
+        /// the connecting screen drops.
+        /// </summary>
+        public bool IsSettledForReveal =>
+            destroyed ||
+            scaleAnimator == null ||
+            (IsCreationComplete && !scaleAnimator.IsScaling && scaleAnimator.IsAtTarget);
+
+        /// <summary>
+        /// Snap this prism's grow-in to its final scale NOW (loading-screen use only — the world
+        /// must be covered). No-op until creation completes: CreateBlockCoroutine owns the
+        /// pre-visibility state and must not be raced.
+        /// </summary>
+        public void CompleteGrowthImmediately()
+        {
+            if (destroyed || !IsCreationComplete) return;
+            scaleAnimator?.CompleteImmediately();
+        }
+
         public Vector3 MaxScale
         {
             get => scaleAnimator?.MaxScale ?? Vector3.one * 10f;
@@ -449,6 +487,7 @@ namespace CosmicShore.Gameplay
             PlayerName = playerName;
             blockCollider.enabled = false;
             SetRenderVisible(false);
+            IsCreationComplete = false; // this life is invisible until CreateBlockCoroutine finishes
 
             var authoredTargetScale = scaleAnimator ? scaleAnimator.TargetScale : transform.localScale;
             if (authoredTargetScale == Vector3.zero)
@@ -545,6 +584,13 @@ namespace CosmicShore.Gameplay
         // creation per frame; the rest retry next frame. On top of the 0.6s spawn
         // window the extra frames are invisible, and nothing is ever skipped.
         const int MaxCreationCompletionsPerFrame = 6;
+
+        // Creation budget while the loading gate holds the connecting screen. At the gameplay
+        // cap a 25k-prism arena would drain 6/frame for 60+ seconds AFTER the match starts —
+        // the "prisms load in batches during play" bug. Behind the covered screen the de-spike
+        // rationale is void (there is no visible frame to protect), so the queue drains in a
+        // handful of frames instead. Gameplay frames keep the authored cap untouched.
+        const int LoadGateCreationCompletionsPerFrame = 512;
         static int s_creationCompletionsThisFrame;
         static int s_creationBudgetFrame = -1;
 
@@ -577,7 +623,10 @@ namespace CosmicShore.Gameplay
                     s_creationBudgetFrame = Time.frameCount;
                     s_creationCompletionsThisFrame = 0;
                 }
-                if (s_creationCompletionsThisFrame < MaxCreationCompletionsPerFrame)
+                int creationBudget = PrismTrailBuilder.IsLoadGateHolding
+                    ? LoadGateCreationCompletionsPerFrame
+                    : MaxCreationCompletionsPerFrame;
+                if (s_creationCompletionsThisFrame < creationBudget)
                     break;
 
                 yield return null;
@@ -590,6 +639,7 @@ namespace CosmicShore.Gameplay
                 SetRenderVisible(true);
                 blockCollider.enabled = true;
             }
+            IsCreationComplete = true; // visible from here — the arena-ready gate may now count this prism
 
             if (scaleAnimator.TargetScale == Vector3.zero)
                 scaleAnimator.SetTargetScale(authoredTargetScale);

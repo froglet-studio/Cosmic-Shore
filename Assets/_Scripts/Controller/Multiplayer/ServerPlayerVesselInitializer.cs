@@ -3,6 +3,7 @@ using System.Threading;
 using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
+using CosmicShore.Utility.PerformanceBenchmark;
 using Cysharp.Threading.Tasks;
 using Reflex.Attributes;
 using Reflex.Core;
@@ -182,7 +183,11 @@ namespace CosmicShore.Gameplay
         {
             Debug.Log($"<color=#00FF00>[FLOW-5] [ServerVesselInit] HandlePlayerNetworkSpawnedAsync - ownerClientId={ownerClientId}, waiting {preSpawnDelayMs}ms for NetworkVariables</color>");
             // Wait for NetworkVariables set in Player.OnNetworkSpawn to sync
-            await UniTask.Delay(preSpawnDelayMs, DelayType.UnscaledDeltaTime, cancellationToken: ct);
+            using (LoadInsights.Measure(LoadInsightCategory.ScriptedDelay,
+                       $"preSpawnDelayMs before vessel spawn ({preSpawnDelayMs}ms)", isWait: true))
+            {
+                await UniTask.Delay(preSpawnDelayMs, DelayType.UnscaledDeltaTime, cancellationToken: ct);
+            }
 
             Player player = FindUnprocessedPlayerByOwnerClientId(ownerClientId);
             if (player == null)
@@ -215,19 +220,23 @@ namespace CosmicShore.Gameplay
                 const int retryIntervalMs = 100;
                 const int maxRetries = 20; // 2 seconds total
 
-                for (int i = 0; i < maxRetries; i++)
+                using (LoadInsights.Measure(LoadInsightCategory.Netcode,
+                           "Waiting for player NetworkVariables to replicate (retry loop)", isWait: true))
                 {
-                    await UniTask.Delay(retryIntervalMs, DelayType.UnscaledDeltaTime, cancellationToken: ct);
-
-                    // Host owns its own player - push selectedVesselClass when ready
-                    if (player.IsOwner
-                        && !IsValidVesselType(player.NetDefaultVesselType.Value)
-                        && IsValidVesselType(gameData.selectedVesselClass.Value))
+                    for (int i = 0; i < maxRetries; i++)
                     {
-                        player.NetDefaultVesselType.Value = gameData.selectedVesselClass.Value;
-                    }
+                        await UniTask.Delay(retryIntervalMs, DelayType.UnscaledDeltaTime, cancellationToken: ct);
 
-                    if (IsReadyToSpawn(player)) break;
+                        // Host owns its own player - push selectedVesselClass when ready
+                        if (player.IsOwner
+                            && !IsValidVesselType(player.NetDefaultVesselType.Value)
+                            && IsValidVesselType(gameData.selectedVesselClass.Value))
+                        {
+                            player.NetDefaultVesselType.Value = gameData.selectedVesselClass.Value;
+                        }
+
+                        if (IsReadyToSpawn(player)) break;
+                    }
                 }
 
                 if (!IsReadyToSpawn(player))
@@ -256,7 +265,11 @@ namespace CosmicShore.Gameplay
 
             Debug.Log($"<color=#00FF00>[FLOW-5] [ServerVesselInit] Vessel spawned. Waiting {postSpawnDelayMs}ms for replication...</color>");
             // Wait for the vessel NetworkObject to fully replicate before telling clients
-            await UniTask.Delay(postSpawnDelayMs, DelayType.UnscaledDeltaTime, cancellationToken: ct);
+            using (LoadInsights.Measure(LoadInsightCategory.ScriptedDelay,
+                       $"postSpawnDelayMs before NotifyClients ({postSpawnDelayMs}ms)", isWait: true))
+            {
+                await UniTask.Delay(postSpawnDelayMs, DelayType.UnscaledDeltaTime, cancellationToken: ct);
+            }
 
             Debug.Log($"<color=#00FF00>[FLOW-5] [ServerVesselInit] NotifyClients for {player.NetName.Value}</color>");
             NotifyClients(player);
@@ -397,11 +410,19 @@ namespace CosmicShore.Gameplay
                 return null;
             }
 
-            var networkVessel = Instantiate(shipNetworkObject);
-            GameObjectInjector.InjectRecursive(networkVessel.gameObject, _container);
-            networkVessel.SpawnWithOwnership(clientId, DestroyVesselWithScene);
-            networkPlayer.NetVesselId.Value = networkVessel.NetworkObjectId;
-            return networkVessel;
+            // AI vessels bill to AI Backfill; humans to Vessels & Players.
+            var insightCategory = networkPlayer.NetIsAI.Value
+                ? LoadInsightCategory.AiBackfill
+                : LoadInsightCategory.Vessels;
+            using (LoadInsights.Measure(insightCategory, $"Vessel instantiate+inject+spawn ({vesselType})"))
+            {
+                var networkVessel = Instantiate(shipNetworkObject);
+                GameObjectInjector.InjectRecursive(networkVessel.gameObject, _container);
+                networkVessel.SpawnWithOwnership(clientId, DestroyVesselWithScene);
+                networkPlayer.NetVesselId.Value = networkVessel.NetworkObjectId;
+                LoadInsights.Count("Vessels spawned during load");
+                return networkVessel;
+            }
         }
 
         /// <summary>

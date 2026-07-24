@@ -35,6 +35,7 @@ namespace CosmicShore.Gameplay
 
         private bool _raceEnded;
         private bool _trackSpawned;
+        private bool _arenaBuildAnnounced;
         private CancellationTokenSource _seedPollCts;
         private readonly NetworkVariable<int> _netTrackSeed = new(0);
 
@@ -58,6 +59,16 @@ namespace CosmicShore.Gameplay
             // HexRaceController owns the track lifecycle (seed generation, spawning, replay reset).
             // Prevent SegmentSpawner from auto-resetting on OnResetForReplay.
             if (segmentSpawner) segmentSpawner.ExternalResetControl = true;
+
+            // The track builds only after the netcode seed arrives — announce the pending build
+            // so the connecting screen's arena-ready gate holds through the seed wait (an
+            // absence-of-activity check would misread "nothing laying yet" as "arena done" and
+            // release the player into a still-materializing track).
+            if (segmentSpawner)
+            {
+                _arenaBuildAnnounced = true;
+                PrismTrailBuilder.BeginArenaBuild();
+            }
 
             // Listen for seed changes so late-joining clients can spawn the track
             _netTrackSeed.OnValueChanged += OnTrackSeedChanged;
@@ -87,8 +98,19 @@ namespace CosmicShore.Gameplay
         public override void OnNetworkDespawn()
         {
             CancelSeedPoll();
+            ReleaseArenaBuildAnnouncement();
             _netTrackSeed.OnValueChanged -= OnTrackSeedChanged;
             base.OnNetworkDespawn();
+        }
+
+        /// <summary>Close the BeginArenaBuild bracket exactly once — after the track spawns, on
+        /// seed-poll timeout, or on despawn (whichever comes first), so a failed seed sync can
+        /// never wedge the connecting screen on a build that will not happen.</summary>
+        void ReleaseArenaBuildAnnouncement()
+        {
+            if (!_arenaBuildAnnounced) return;
+            _arenaBuildAnnounced = false;
+            PrismTrailBuilder.EndArenaBuild();
         }
 
         /// <summary>
@@ -139,6 +161,7 @@ namespace CosmicShore.Gameplay
                 }
 
                 Debug.LogWarning("[HexRaceController] Client poll: timed out after 5s waiting for track seed.");
+                ReleaseArenaBuildAnnouncement();
             }
             catch (System.OperationCanceledException)
             {
@@ -203,6 +226,8 @@ namespace CosmicShore.Gameplay
             ApplyHelixIntensity();
             segmentSpawner.Initialize();
             _trackSpawned = true;
+            // The build has executed — laid prisms are now covered by the gate's grow watch.
+            ReleaseArenaBuildAnnouncement();
         }
 
         void ApplyHelixIntensity()

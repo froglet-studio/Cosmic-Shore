@@ -336,13 +336,47 @@ namespace CosmicShore.Utility
             InvokeTurnStarted();
         }
 
-        public void InvokeGameLaunch() => OnLaunchGame?.Raise();
+        public void InvokeGameLaunch()
+        {
+            // Load Time Insights: a game launch is the recording trigger; every peer raises this
+            // (clients for the splash), so hosts and MPPM virtual players all self-record. The
+            // calls are no-ops unless Record Insight Mode is armed (see LoadInsights).
+            PerformanceBenchmark.LoadInsights.BeginLoad($"Game launch — {GameMode} → {SceneName}");
+            PerformanceBenchmark.LoadInsights.SetGameContext(
+                SceneName,
+                GameMode.ToString(),
+                SelectedIntensity != null ? SelectedIntensity.Value : 0,
+                SelectedPlayerCount != null ? SelectedPlayerCount.Value : 0,
+                SelectedPlayerCount != null ? Mathf.Max(0, SelectedPlayerCount.Value - RequestedAIBackfillCount) : 0,
+                RequestedAIBackfillCount,
+                IsMultiplayerMode);
+            OnLaunchGame?.Raise();
+        }
         public void InvokeSceneTransition(bool param) => OnSceneTransition?.Raise(param);
-        public void InvokeSessionStarted() => OnSessionStarted?.Raise();
+        public void InvokeSessionStarted()
+        {
+            PerformanceBenchmark.LoadInsights.Mark("Session started (app state → InGame)");
+            OnSessionStarted?.Raise();
+        }
         public void InvokeInitializeGame() => OnInitializeGame?.Raise();
-        public void InvokeClientReady() => OnClientReady?.Raise();
+        public void InvokeClientReady()
+        {
+            // Load Time Insights milestone: client ready = splash clearing into the connecting
+            // panel. The recording itself completes later, when the arena finishes laying and
+            // the connecting screen ends (MiniGameHUD.HandleClientReady) - the panel hold IS
+            // load time; the cinematic/Ready/countdown after it are not.
+            PerformanceBenchmark.LoadInsights.MarkVisualReady();
+            OnClientReady?.Raise();
+        }
         public void InvokeMiniGameRoundStarted() => OnMiniGameRoundStarted?.Raise();
-        public void InvokeTurnStarted() => OnMiniGameTurnStarted?.Raise();
+        public void InvokeTurnStarted()
+        {
+            // Fallback endpoint only: no-op when the recording already completed at
+            // arena-complete (MiniGameHUD.HandleClientReady, the normal path). Catches flows
+            // without a MiniGameHUD where that endpoint never fires.
+            PerformanceBenchmark.LoadInsights.CompleteLoad("Playable - turn started (fallback endpoint; arena-complete never fired)");
+            OnMiniGameTurnStarted?.Raise();
+        }
 
         public void InvokeGameTurnConditionsMet()
         {

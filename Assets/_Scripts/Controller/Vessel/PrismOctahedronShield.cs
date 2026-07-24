@@ -131,16 +131,28 @@ namespace CosmicShore.Gameplay
             if (_meshRenderer != null)
                 _originalMaterials = _meshRenderer.sharedMaterials;
 
-            // Settled octahedron comes from the shared cache: half-extents are the authored
-            // LOCAL collider size, so every same-prefab shield resolves to ONE mesh — the
-            // convex MeshCollider cooks once, and settled shields batch on the instanced
-            // render path instead of each owning a unique octahedron. Cache-owned: never
-            // destroy it here.
+            // Mesh setup is deferred to the first Engage (EnsureShieldMeshesBuilt): Load Time
+            // Insights measured per-prism shield mesh work at Awake as a dominant share of
+            // mass environment lays (25k prisms in one load) - prisms that are never shielded
+            // must not pay for the shield's geometry.
+
+            ComputeMassTargets();
+        }
+
+        /// <summary>
+        /// Resolves the shield meshes on first use. The settled octahedron comes from the shared
+        /// cache: half-extents are the authored LOCAL collider size, so every same-prefab shield
+        /// resolves to ONE mesh - the convex MeshCollider cooks once, and settled shields batch
+        /// on the instanced render path instead of each owning a unique octahedron. Cache-owned:
+        /// never destroyed here. The per-instance morph mesh is lazy for the same reason.
+        /// Deferred out of Awake so never-shielded prisms skip both entirely.
+        /// </summary>
+        private void EnsureShieldMeshesBuilt()
+        {
+            if (_octahedronMesh != null) return;
             _octahedronMesh = OctahedronMeshGenerator.GetSharedShieldMesh(_halfExtents, shieldScale);
             _morphMesh = new Mesh { name = "Octahedron_Shield_Morph" };
             _morphMesh.MarkDynamic();
-
-            ComputeMassTargets();
         }
 
         private void OnDisable()
@@ -234,6 +246,8 @@ namespace CosmicShore.Gameplay
         public void Engage(bool instant = false)
         {
             if (_isShielded && !_isEngaging) return;
+
+            EnsureShieldMeshesBuilt();
 
             // If a shatter overlay is still playing, kill it immediately.
             StopShatter();
