@@ -42,6 +42,22 @@ namespace CosmicShore.Gameplay
         protected virtual float ShieldMarginThreshold => 0f;
 
         /// <summary>
+        /// Uniform shrink applied to THIS impactor's hull collider(s) in the
+        /// shielded narrowphase ONLY — never to the physics broadphase trigger.
+        /// A vessel's authored hull box is a loose bounding box, larger than the
+        /// visible mesh, so an exact box-vs-shell overlap fires the instant the
+        /// box EDGE reaches the shell while the visible ship still has a gap
+        /// ("the box outline pops it"). Scaling the box half-edges about their
+        /// centre by this factor lets the effective hull hug the visible
+        /// silhouette so contact reads as ship-touches-shell, not
+        /// box-touches-shell. 1 = the authored collider (default — the skimmer
+        /// sphere MUST stay exact or tangential skims dead-zone). VesselImpactor
+        /// exposes it as a live-tunable inspector knob.
+        /// See Docs/CollisionLOD/DESIGN.md §7.4.
+        /// </summary>
+        protected virtual float HullNarrowphaseScale => 1f;
+
+        /// <summary>
         /// Self-side narrowphase seam: when THIS impactor is itself a shielded
         /// prism, an incoming contact must reach its shell before dispatch.
         /// Default true (non-prism impactors have no shell of their own);
@@ -235,9 +251,10 @@ namespace CosmicShore.Gameplay
 
             // THIS impactor's collider(s) are the touchers; dispatch if ANY of them
             // reaches the impactee prism's shell (logical OR — a compound hull is one
-            // toucher made of several boxes).
+            // toucher made of several boxes). HullNarrowphaseScale shrinks the loose
+            // hull box down to the visible silhouette (vessels only; 1 elsewhere).
             return AnyColliderReachesShell(OwnColliders, gate, prism.transform.position,
-                ShieldMarginThreshold, transform.position);
+                ShieldMarginThreshold, transform.position, HullNarrowphaseScale);
         }
 
         /// <summary>
@@ -247,7 +264,7 @@ namespace CosmicShore.Gameplay
         /// pivot-point test ONLY when the set holds no live collider at all.
         /// </summary>
         protected static bool AnyColliderReachesShell(Collider[] colliders, IShieldContainmentGate gate,
-            Vector3 prismCentre, float threshold, Vector3 fallbackPoint)
+            Vector3 prismCentre, float threshold, Vector3 fallbackPoint, float hullScale = 1f)
         {
             bool sawCollider = false;
             if (colliders != null)
@@ -258,7 +275,7 @@ namespace CosmicShore.Gameplay
                     if (c == null)
                         continue;
                     sawCollider = true;
-                    if (ColliderReachesShell(c, gate, prismCentre, threshold, fallbackPoint))
+                    if (ColliderReachesShell(c, gate, prismCentre, threshold, fallbackPoint, hullScale))
                         return true;
                 }
             }
@@ -281,17 +298,21 @@ namespace CosmicShore.Gameplay
         /// grazing threshold ⇒ the shell is grown by that magnitude.
         /// </summary>
         protected static bool ColliderReachesShell(Collider c, IShieldContainmentGate gate,
-            Vector3 prismCentre, float threshold, Vector3 fallbackPoint)
+            Vector3 prismCentre, float threshold, Vector3 fallbackPoint, float hullScale = 1f)
         {
             if (c == null)
                 return gate.SignedMargin(fallbackPoint) >= threshold;
+
+            // hullScale shrinks the effective toucher about its OWN centre so a loose
+            // bounding collider reads as the visible silhouette, not the box outline.
+            if (hullScale <= 0f) hullScale = 1f;
 
             if (c is SphereCollider sc)
             {
                 Vector3 wc = sc.transform.TransformPoint(sc.center);
                 Vector3 ls = sc.transform.lossyScale;
                 float r = sc.radius * Mathf.Max(Mathf.Abs(ls.x), Mathf.Max(Mathf.Abs(ls.y), Mathf.Abs(ls.z)));
-                return gate.SignedMarginSphere(wc, r) >= threshold;
+                return gate.SignedMarginSphere(wc, r * hullScale) >= threshold;
             }
 
             // Shell inflate (normalized units): 0 = exact containment/pop; a negative
@@ -302,9 +323,10 @@ namespace CosmicShore.Gameplay
             {
                 Transform t = bc.transform;
                 Vector3 worldCenter = t.TransformPoint(bc.center);
-                Vector3 axX = t.TransformVector(new Vector3(bc.size.x * 0.5f, 0f, 0f));
-                Vector3 axY = t.TransformVector(new Vector3(0f, bc.size.y * 0.5f, 0f));
-                Vector3 axZ = t.TransformVector(new Vector3(0f, 0f, bc.size.z * 0.5f));
+                float h = 0.5f * hullScale;
+                Vector3 axX = t.TransformVector(new Vector3(bc.size.x * h, 0f, 0f));
+                Vector3 axY = t.TransformVector(new Vector3(0f, bc.size.y * h, 0f));
+                Vector3 axZ = t.TransformVector(new Vector3(0f, 0f, bc.size.z * h));
                 return gate.OverlapsWorldBox(worldCenter, axX, axY, axZ, inflate);
             }
 
@@ -313,7 +335,7 @@ namespace CosmicShore.Gameplay
             // direction (never a skim dead zone). ClosestPoint isn't usable for a
             // general shape, and the AABB SAT still catches the thin tips.
             Bounds b = c.bounds;
-            Vector3 ext = b.extents;
+            Vector3 ext = b.extents * hullScale;
             return gate.OverlapsWorldBox(b.center,
                 new Vector3(ext.x, 0f, 0f), new Vector3(0f, ext.y, 0f), new Vector3(0f, 0f, ext.z),
                 inflate);

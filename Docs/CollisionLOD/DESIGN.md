@@ -212,7 +212,11 @@ checklist is the gate — pay special attention to skim reach vs the visible she
 shell (not early/late), the stella (non-convex) inter-spike gaps, and whether one swing popping AND
 killing feels right.
 
-### 7.2 Shape-aware narrowphase (in-editor: hulls clipped through the tips)
+### 7.2 Shape-aware narrowphase (in-editor: hulls clipped through the tips) — SUPERSEDED by §7.3
+
+> **Historical.** This round-2 two-point support-sample approach was replaced by the exact analytic
+> OBB-vs-shell SAT in §7.3, and the `IShieldContainmentGate.ShellInwardNormal` it introduced has since
+> been **removed** from the interface and both shields (dead once the SAT landed). Kept for the record.
 
 First playtest confirmed the 3× box **reach** is live (the `BoxCollider` gizmo encloses the spikes) but a
 **vessel hull clipped straight through the pointy tips** — only the inner region interacted. Cause: the
@@ -274,3 +278,23 @@ scaling. Verified against an independent exact ground truth (half-space feasibil
 `scratch_sat_reference.py`: 0 disagreements over ~12k overlap + ~3.2k non-overlap cases per shape, plus a
 spike-tip landmark (stella hits, octahedron misses without inflate) and inflate monotonicity. **Still gated on
 the §6 in-editor pass** (this is geometry-verified, not play-tested).
+
+### 7.4 Hull narrowphase scale — "the box outline pops it, not the octahedron" (implemented)
+
+After §7.3 the SAT is exact, but in-editor the interaction still fired **too early**: flying the Squirrel
+so its collision-box *outline* (not the visible ship) reached a shielded prism popped it. That is not a SAT
+bug — it is a size mismatch. The authored hull box is a **loose bounding box** (Squirrel: 4.12 × 3.11 × 0.59)
+noticeably larger than the visible mesh, and a small trail prism's octahedron shell (≈ 3× a low-volume prism)
+is smaller still. An *exact* box-vs-octahedron overlap therefore fires the instant the box **edge** reaches the
+shell — while the visible ship still has a gap. Correct for the authored box; wrong for what the player sees.
+
+Fix: a narrowphase-only **hull shrink**. `ImpactorBase.HullNarrowphaseScale` (default `1`) uniformly scales
+the toucher's box half-edges / sphere radius **about its own centre** inside `ColliderReachesShell` — applied
+to the analytic shell test ONLY, never to the physics broadphase trigger. `VesselImpactor` overrides it with a
+serialized, `Range(0.2, 1)` inspector knob (`hullNarrowphaseScale`, default `0.7`) so each vessel's effective
+hull can be dialled down to hug its visible silhouette live in the editor: lower until the pop fires when the
+*visible* ship touches the octahedron/stella, not when the loose box does. It is deliberately **not** applied
+to the skimmer sphere (base stays `1`) — shrinking a skimmer would open a tangential-skim dead zone, the exact
+failure §7 exists to avoid. The broadphase box is untouched, so the parked-contact re-test window is unchanged
+(no tunneling): the shrink only decides *dispatch* within an existing overlap window. Still gated on the §6
+in-editor pass — the right per-vessel value is a feel call the human tunes.

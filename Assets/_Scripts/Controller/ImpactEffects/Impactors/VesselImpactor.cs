@@ -25,6 +25,17 @@ namespace CosmicShore.Gameplay
         [SerializeField] VesselImpactorDataContainerSO vesselImpactorDataContainerSO;
         [SerializeField] NetworkVesselImpactor networkVesselImpactor;
 
+        [Header("Shielded-prism narrowphase")]
+        [Tooltip("Uniform shrink of the hull collider(s) used ONLY for shielded-prism " +
+                 "shape collision — never the physics trigger, never the skimmer sphere. " +
+                 "The authored hull box is a loose bounding box larger than the visible " +
+                 "mesh, so the exact box-vs-octahedron test fires when the box EDGE reaches " +
+                 "the shell while the visible ship still has a gap. Lower this until the " +
+                 "interaction fires when the VISIBLE ship touches the octahedron/stella. " +
+                 "1 = authored box.")]
+        [SerializeField, Range(0.2f, 1f)] float hullNarrowphaseScale = 0.7f;
+        protected override float HullNarrowphaseScale => hullNarrowphaseScale;
+
         readonly Dictionary<int, float> _lastCrystalImpactTime = new();
 
         SkimmerImpactor[] _skimmerImpactors;

@@ -28,16 +28,6 @@ namespace CosmicShore.Gameplay
         /// </summary>
         float SignedMarginSphere(Vector3 worldCentre, float worldRadius);
 
-        /// <summary>
-        /// World-space unit direction of steepest margin INCREASE at a world point
-        /// (i.e. toward the shell interior — the inward normal of the nearest
-        /// facet). The dispatch narrowphase queries a non-sphere collider's SUPPORT
-        /// point in this direction (its farthest point toward the shell), so a hull
-        /// is tested where it actually reaches the octahedron/stella surface — the
-        /// thin tips included — instead of at a single centre-facing point.
-        /// </summary>
-        Vector3 ShellInwardNormal(Vector3 worldPoint);
-
         /// <summary>Convenience: inside or on the surface (SignedMargin ≥ 0).</summary>
         bool ContainsWorldPoint(Vector3 worldPoint);
 
