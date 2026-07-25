@@ -113,6 +113,19 @@ perf branches).
 > EXECUTION still hard-gated on D21). `a4728138` Y1.5 scoped (two verified-dead blitz classes
 > deleted; family deletion blocked — see Y1.5 note below).
 >
+> **Y1.2 completed across all six domain modes (2026-07-25, post-`bleeding-edge` merge):**
+> Rampage arrived from `bleeding-edge` carrying a hand-copied end-game tail — its own
+> `_finalResultsSent` latch, `SyncFinalScoresSnapshot`/`SyncFinalScores_ClientRpc` pair, and
+> `SetupNewRound` guard — written against the merge base, before the Y1.2 template existed. It
+> was folded onto `SyncFinalResults` on arrival. The fold is exact: the rule's metric is
+> `PrismsDestroyed`, so the base's `rule.LiveMetric` snapshot + `ScoringMetrics.Write` replicate
+> the identical `HostilePrismsDestroyed` field, and its representative-winner tie-break (first
+> roster entry) matches the bespoke `OrderByDescending`. It also fixes two latent defects the
+> copy carried: `gameData.HasNoWinner` was never written, and `Winner*` was written BEFORE
+> `SetResults` — the inverse of the documented order that keeps a DNF from rendering as VICTORY.
+> **All six** domain modes (HexRace, Joust, Crystal Capture, NucleusRush, AstroLeague, Rampage)
+> now share the one tail; no mode reimplements it.
+>
 > **Y1.1 dead stacks skipped (owner default):** co-op WildlifeBlitz (32) and 2v2CoOpVsAI (30) are
 > player-UNREACHABLE — their SO_ArcadeGame assets are in NO game list; the co-op scene runs a
 > `MultiplayerCellularDuelController` leftover (`MultiplayerWildlifeBlitzMiniGame` was an orphan,
