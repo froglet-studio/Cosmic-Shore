@@ -81,8 +81,14 @@ branch alone.
   scoreboard flips to **finish time** for the winner / remaining-crystals sentinel for the
   losers (their golf scoring). Getting only one of the two = the union resolution regressed.
 - [ ] **31.** **Game toasts** replaced the old event feed: a toast appears on player-Ready and
-  on a mid-game disconnect, and on the Brood Rush wave-scored beat in NucleusRush. The old
-  bottom-of-screen `GameEventFeed` strip must be gone entirely (no empty UI object left behind).
+  on a mid-game disconnect. The old `GameEventFeed` strip must be gone entirely (no empty UI
+  object left behind). **Expect partial coverage** — `GameToastController`/`GameToastView` live
+  on a per-scene panel, and only **HexRace** (script mounted directly) and **Joust**
+  (`NotificationUI.prefab` instanced) currently carry one. Crystal Capture, Maelstrom,
+  AstroLeague, NucleusRush, Rampage and Menu_Main have no toast UI, so they will show nothing —
+  including the Brood Rush wave beat, whose `GameToastAPI.Post` call fires into a scene with no
+  listener. This is bleeding-edge's rollout state, not merge damage; wiring the remaining six
+  scenes is a follow-up, not part of this branch.
 - [ ] **32.** Bootstrap union check (W1 vs their Bootstrap UI rework): boot completes, the new
   heartbeat loader animates, AND the quest chain still works (step 25) — the
   `GameModeProgressionService` component must still be mounted on the `PlayerDataService`

@@ -47,8 +47,11 @@ Game UI [RectTransform, CanvasGroup]
 │   ├── RoundTime (rotating circles + countdown TMP)
 │   ├── LifeFormCounter (rotating circles + counter TMP)
 │   ├── ThumbCursors (LeftCursor, RightCursor — ThumbCursor)
-│   ├── NotificationUI [GameEventFeed]
 │   └── PlayerScoreContainer [Transform — for dynamically instantiated PlayerScoreCards]
+│
+│   (No toast panel here. `GameEventFeed` was retired with the game-toast system;
+│    its replacement — `NotificationUI.prefab` [GameToastController + GameToastView] —
+│    is per-scene and is NOT instanced in Menu_Main, so the lava lamp shows no toasts.)
 │
 ├── Vessel Selection Panel [CanvasGroup, VesselSelectionPanelUI, MenuVesselSelectionPanelController]
 │   ├── Buttons (Resume, Close)
