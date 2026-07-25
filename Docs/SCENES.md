@@ -47,6 +47,7 @@ scene and `ServerPlayerVesselInitializerWithAI` backfills AI.
 | **MinigameJoust_Gameplay** | `_Scenes/Multiplayer Scenes/` | `MultiplayerJoust (34)` | `MultiplayerJoustController` |
 | **MinigameAstroLeague** | `_Scenes/Multiplayer Scenes/` | `AstroLeague (37)` | `AstroLeagueController` |
 | **MinigameNucleusRush** | `_Scenes/Multiplayer Scenes/` | `NucleusRush (38)` | `NucleusRushController` |
+| **MinigameRampage** | `_Scenes/Multiplayer Scenes/` | `Rampage (2)` | `RampageController` — destruction race |
 | **MinigameTournamentMultuplayer** | `_Scenes/Multiplayer Scenes/` | Tournament variant | Multi-round tournament format |
 | **BenchmarkStressTest** | `_Scenes/Multiplayer Scenes/` | Settings → Run Benchmark (`GameModes.Benchmark`) | `SandboxBenchmarkController` — endless auto-start, no monitors, no scoring |
 
@@ -201,7 +202,7 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
         ├── MultiplayerCrystalCaptureController — minimal subclass (1 round, 1 turn)
         ├── AstroLeagueController             — hypersea soccer, server-simulated ball, golden goal
         ├── NucleusRushController             — nucleus-control fauna-wave race, brood scoring
-        └── (per-mode controllers above)
+        └── RampageController                 — destruction race (Scurry's destructive analog), prisms-destroyed scoring
     │
     └── SandboxBenchmarkController — endless auto-start benchmark (no monitors, no scoring)
 ```
@@ -218,7 +219,8 @@ was deleted 2026-07-20 — solo play runs the multiplayer spine as a party of on
 | ID | Mode | Category | Has Scene | Has Controller |
 |---|---|---|---|---|
 | 0 | `Random` | Meta | — | — |
-| 1-25, 27 | retired solo IDs | Retired | — | — (cards + scenes deleted 2026-07-20; enum members kept for serialized-int stability — see `GameModes.cs`) |
+| 1, 3-25, 27 | retired solo IDs | Retired | — | — (cards + scenes deleted 2026-07-20; enum members kept for serialized-int stability — see `GameModes.cs`) |
+| 2 | `Rampage` | MP | MinigameRampage | `RampageController` — legacy solo ID deliberately repurposed as the multiplayer destruction race (see `RAMPAGE.md`) |
 | 26 | retired (was the co-op blitz) | Retired | — | — (deleted 2026-07-21; enum member removed) |
 | 28 | retired (was the standalone MP freestyle sandbox) | Retired | — | — (freestyle IS the Menu_Main lava lamp) |
 | 29 | retired (was Cellular Duel) | Retired | — | — (deleted outright 2026-07-21) |
@@ -230,7 +232,7 @@ was deleted 2026-07-20 — solo play runs the multiplayer spine as a party of on
 | 37 | `AstroLeague` | MP | MinigameAstroLeague | `AstroLeagueController` |
 | 38 | `NucleusRush` | MP | MinigameNucleusRush | `NucleusRushController` |
 
-Note: IDs 7 and 31 are skipped in the enum. 31 was never assigned; 7 was the retired standalone arcade Freestyle game (freestyle now lives in Menu_Main as the lava lamp — see the naming note at the top of this document). Solo modes were retired 2026-07-20: every game runs the networked single-host model, and a solo launch is simply a party of one plus AI backfill.
+Note: IDs 7 and 31 are skipped in the enum. 31 was never assigned; 7 was the retired standalone arcade Freestyle game (freestyle now lives in Menu_Main as the lava lamp — see the naming note at the top of this document). Solo modes were retired 2026-07-20: every game runs the networked single-host model, and a solo launch is simply a party of one plus AI backfill. The one exception is `Rampage(2)` — its legacy solo ID was deliberately repurposed for the multiplayer destruction race, which has its own `MinigameRampage` scene (see `_Scripts/Controller/Arcade/RAMPAGE.md`).
 
 ---
 
@@ -517,6 +519,7 @@ Game scene names are stored in `SO_ArcadeGame.SceneName` assets, not in `SceneNa
 | Crystal Capture | `MultiplayerCrystalCaptureController.cs` | `_Scripts/Controller/Arcade/` |
 | Astro League | `AstroLeagueController.cs` | `_Scripts/Controller/Arcade/AstroLeague/` |
 | Nucleus Rush (Brood Rush) | `NucleusRushController.cs` | `_Scripts/Controller/Arcade/` |
+| Rampage | `RampageController.cs` | `_Scripts/Controller/Arcade/` |
 | Benchmark (endless) | `SandboxBenchmarkController.cs` | `_Scripts/Controller/Arcade/` |
 | Countdown timer | `CountdownTimer.cs` | `_Scripts/Controller/Arcade/` |
 

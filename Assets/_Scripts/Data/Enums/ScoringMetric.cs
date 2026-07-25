@@ -14,19 +14,12 @@ namespace CosmicShore.Data
         ElementalCrystals = 2,
         Jousts = 3,
         Goals = 4,
-        /// <summary>
-        /// RETIRED (2026-07-21): was the standalone Freestyle sandbox's live feed; that
-        /// game was deleted (freestyle IS the Menu_Main lava lamp). No rule asset selects
-        /// this metric and ScoringMetrics has no arm for it. Member kept for
-        /// serialized-int stability - do not reuse.
-        /// </summary>
-        VolumeCreated = 5,
-        /// <summary>
-        /// RETIRED (2026-07-21): was the CellularDuel volume-churn composite
-        /// (created + hostile destroyed + friendly destroyed); that mode was deleted.
-        /// No rule asset selects this metric and ScoringMetrics has no arm for it.
-        /// Member kept for serialized-int stability - do not reuse.
-        /// </summary>
-        VolumeActivity = 6,
+        // Rampage: hostile prisms destroyed (reads IRoundStats.HostilePrismsDestroyed).
+        // "Hostile" = everything except your own/your teammates' PLAYER-LAID mass:
+        // other domains' trails, plus ALL environment mass (flora/fauna carry
+        // non-roster owner names, so StatsManager classifies them hostile regardless
+        // of color). Laying-then-shattering your own trail is worthless by
+        // construction - trails ARE rostered, so the domain check filters them.
+        PrismsDestroyed = 5,
     }
 }

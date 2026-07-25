@@ -150,6 +150,7 @@ namespace CosmicShore.Tests
 
         [Test]
         [TestCase(GameModes.Random, 0)]
+        [TestCase(GameModes.Rampage, 2)]   // repurposed legacy solo ID - now the live MP destruction race
         [TestCase(GameModes.HexRace, 33)]
         [TestCase(GameModes.MultiplayerJoust, 34)]
         [TestCase(GameModes.MultiplayerCrystalCapture, 35)]

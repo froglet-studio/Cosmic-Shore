@@ -7,11 +7,17 @@ namespace CosmicShore.Data
         Random = 0,
         // ── RETIRED SOLO IDS — DO NOT REUSE ─────────────────────────────────
         // Solo modes were retired 2026-07-20 (solo = a multiplayer game whose
-        // party is one host). IDs 1-6, 8-25, and 27 kept their enum members so
+        // party is one host). IDs 1, 3-6, 8-25 and 27 kept their enum members so
         // the serialized ints inside the kept-but-dormant training/mission
         // assets (SO_TrainingGame_*, SO_Mission_Protect) stay stable, but their
         // SO_ArcadeGame cards and scenes are deleted. Do not reuse any retired ID.
+        // EXCEPTION: Rampage(2) is NOT retired - its legacy solo ID was deliberately
+        // repurposed for the live multiplayer destruction race (see below).
         Elimination = 1,
+        // Rampage (2): multiplayer destruction race - the destructive analog of
+        // Crystal Capture/"Scurry". Race to destroy the hostile-prism target first.
+        // (Repurposed from the legacy single-player arcade entry, whose scene never
+        // shipped.) See _Scripts/Controller/Arcade/RAMPAGE.md.
         Rampage = 2,
         Darts = 3,
         ShootingGallery = 4,

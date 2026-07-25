@@ -158,6 +158,11 @@ namespace CosmicShore.Gameplay
             switch (impactee)
             {
                 case VesselImpactor shipImpactor:
+                    // A skimmer never impacts its own vessel. The Rhino's sword capsule
+                    // permanently overlaps its own hull, so without this guard the full
+                    // victim-effect chain ran against the pilot themselves (muting their
+                    // own RightStickAction and spamming impact SFX).
+                    if (ReferenceEquals(shipImpactor.Vessel?.VesselStatus, skimmer.VesselStatus)) return;
                     var evs = skimmerImpactorDataContainer.VesselSkimmerEffects;
                     if (!DoesEffectExist(evs)) return;
                     foreach (var effect in evs)

@@ -13,4 +13,4 @@ MonoBehaviour:
   m_Name: CrystalCaptureScoringRule
   m_EditorClassIdentifier:
   metric: 0
-  golfRules: 0
+  golfRules: 1

@@ -2,16 +2,24 @@
 2d8c7d12373dc3049ba919b74e17f4cb Assets/_Prefabs/UI Elements/Panels/OptionsMenuContent.prefab
 358e11ad6d037a24998bd295142ff242 Assets/_Prefabs/UI Elements/In Game/EndGameStatsPanel.prefab
 35cd70bd7d1798e4db9246fd457b281f Assets/_Prefabs/UI Elements/Main Menu Screens/OnlinePlayerEntry.prefab
+41fed1c4dafc82a4fbda27caacb9752c Assets/_Prefabs/UI Elements/Panels/Party/New Prefabs/PartyInviteNotificationPanel Variant.prefab
 55bd66c06974e224994d5a98bc84d4b4 Assets/_Prefabs/UI Elements/Main Menu Screens/VesselGridPrefab.prefab
+64ce5567f292ec9458a8f22c96cdc01a Assets/_Prefabs/UI Elements/Panels/Party/New Prefabs/OnlineFriendsInfo Variant.prefab
 684f37fbb851ac543b0649d877b8cd5d Assets/_Prefabs/UI Elements/Main Menu Screens/QuestLevelPrefab.prefab
+86934f33e957bcc479b57b0f6de66feb Assets/_Prefabs/UI Elements/Panels/Party/New Prefabs/RequestsInfo.prefab
+8b1b138a45878494caee24cc0f2f9d3a Assets/_Prefabs/UI Elements/Panels/Party/New Prefabs/DenyRequest.prefab
 8fbb0cb07812f4948bf9b879bbbdaf62 Assets/_Prefabs/UI Elements/Main Menu Screens/QuestItemPrefab.prefab
 9b3e72c1f8a04d7d8b6c5e4a1c2d3e4f Assets/_Prefabs/UI Elements/In Game/DomainScorePanel.prefab
 b11bf89b1ccfe234e811c025b88bc21e Assets/_Prefabs/UI Elements/In Game/PlayerScoreEntry.prefab
+b92b3887ba979304084627952eac749a Assets/_Prefabs/UI Elements/Panels/Party/New Prefabs/AcceptRequest.prefab
 ba84a682b21a0a742974715e5d7432b5 Assets/_Prefabs/UI Elements/In Game/PlayerScoreCard.prefab
+c1572db06ad4244469ad3f25d86940b8 Assets/_Prefabs/UI Elements/VesselHUD/SquirrelHUDVariant.prefab
 cd63e74244ceca240a435734402e496f Assets/_Prefabs/MaelStrom/MaelStromPlayerScoreCardContainer.prefab
+d6c180e4a4b428149af2391c7969c365 Assets/_Prefabs/UI Elements/Panels/DomainAvatarChip.prefab
 dcf433f2806495a44931709616d958d9 Assets/_Prefabs/MaelStrom/MaelstromSummaryScoreCardContainer.prefab
 e261e06b3ac934846b48f7122bb7f961 Assets/_Prefabs/UI Elements/Panels/Stats_Row_UI.prefab
 e5bce11a0462ceb468817b6050ccb94b Assets/_Prefabs/UI Elements/Panels/Goodies.prefab
 e6a20a73c884a6a4db213f545e1b0b73 Assets/_Prefabs/UI Elements/In Game/EndgameVesselDisplay.prefab
 e881a908f3acf27409422f3c9bb414eb Assets/_Prefabs/MaelStrom/MaelstormRoundScoreCardBG.prefab
+ec814ff96a453c047a7bab7aeeb35dba Assets/_Prefabs/UI Elements/Panels/Party/New Prefabs/FriendsInfo.prefab
 f93b2dd52fce2754b88f30d5938ad9d6 Assets/_Prefabs/UI Elements/Main Menu Screens/QuestDescriptionPrefab.prefab

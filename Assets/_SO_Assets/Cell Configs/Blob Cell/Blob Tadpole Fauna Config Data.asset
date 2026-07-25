@@ -20,6 +20,7 @@ MonoBehaviour:
   OffspringPerBirth: 1
   ReproductionCooldownSeconds: 10
   MaxLivePopulation: 6
+  CenterFocusBias: 0.35
   Element: 2
   InitialLevel: 1
   BodyScalePerLevel: 1.15
@@ -34,7 +35,7 @@ MonoBehaviour:
     Forager: 1
     CohesionRadius: 50
     BehaviorUpdateRate: 1.5
-    TrailBlockInteractionRadius: 45
+    TrailBlockInteractionRadius: 20
     GoalWeight: 3
     MinSpeed: 10
     MaxSpeed: 15
@@ -45,6 +46,6 @@ MonoBehaviour:
         Data2: 0
         Data3: 0
         Data4: 0
-      Path: 
+      Path:
     AudioMinDistance: -1
     AudioMaxDistance: -1

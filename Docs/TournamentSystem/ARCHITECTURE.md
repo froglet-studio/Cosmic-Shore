@@ -132,15 +132,19 @@ mode `Scoreboard.ConfigureLobbyButtons` shows **only Continue, host-only**:
 | Per-game scoreboard (after EVERY game) | **Continue** → `TournamentController.AdvanceToNextGame()` | Play Again, Main Menu, Leave |
 | Per-game scoreboard, on a client | — | all |
 | **Maelstrom hub** (between rounds, shuffle not decided) | ready-up countdown → **START**, then auto-advances to the next random game | — |
-| **Maelstrom summary** (shuffle decided) | **NEXT** → reveals results → host-only **Play Again** (→ `RestartTournament()`) + **Main Menu** (→ `onClickToMainMenu` → Menu_Main) | — |
-| Maelstrom hub / summary, on a client | — (follows the host's load; results only) | host-only buttons |
+| **Maelstrom summary** (shuffle decided) | **NEXT** → reveals results → host-only **Play Again** (→ `RestartTournament()`) + **Main Menu** for everyone (host → `onClickToMainMenu` → Menu_Main for the whole party; client → `PartyInviteController.LeavePartyAndReturnToMenuAsync()` — leaves the party, returns solo) | — |
+| Maelstrom hub / summary, on a client | — (follows the host's load; results + **Main Menu** on the summary) | Play Again |
 
 `AdvanceToNextGame` **always** loads the Maelstrom scene (`LoadTournamentScene`); the hub-vs-summary
 choice is made on load from the authoritative, deterministic `TournamentDataSO.IsShuffleComplete` (a
 domain reached `WinTarget`, or `MaxGames` was hit) — **not** the transient `Complete` phase (see §3).
 Mid-run it shows the standings **hub** (ready-up → next random game via `BeginNextRound`); once decided it
-shows the results **summary**, whose active-panel button reads **NEXT** and reveals the host-only Play
-Again / Main Menu panel (`TournamentSceneView.OnPlayAgainPressed` / `OnMainMenuPressed`), not the Scoreboard.
+shows the results **summary**, whose active-panel button reads **NEXT** and reveals the end panel
+(`TournamentSceneView.OnPlayAgainPressed` / `OnMainMenuPressed`), not the Scoreboard. Play Again is
+host-only; Main Menu shows on **every peer** — the host's press raises `onClickToMainMenu` (Netcode scene
+load takes the whole party back over the live Relay), a client's press goes through
+`PartyInviteController.LeavePartyAndReturnToMenuAsync()` (raising the SOAP event on a client would fade
+and then defer to the server forever — `SceneLoader.ReturnToMainMenu` skips the load on connected clients).
 
 **All Maelstrom-scene buttons are code-wired only** (`TournamentSceneView.Awake` adds the listeners) — the
 scene must NOT also add inspector `onClick` entries. Duplicate inspector wiring double-fired NEXT / Play
@@ -283,14 +287,16 @@ The mode runs end-to-end; one **optional** wire remains for the §4 between-game
   degrade gracefully (clean splash / flat winner reward).
 
 No per-button visibility code lives in the scene — `TournamentSceneView` and `Scoreboard`
-drive it (host-only, phase-selected).
+drive it (phase-selected; host-only except the summary's Main Menu, which every peer gets).
 
 ## 8. Verification
 
 See the plan's verification section: solo + bot-fill (Continue advances; final game shows Play
-Again + Main Menu; bots stable across games), 2-4 players in MPPM (clients show no buttons;
-standings identical on every peer), flag hygiene (a normal game after a tournament shows the
-standard buttons), and an edit-mode unit test for `TournamentDataSO.RecordResults`.
+Again + Main Menu; bots stable across games), 2-4 players in MPPM (clients show no per-game buttons
+and no Play Again, but DO get Main Menu on the final summary — pressing it leaves the party and lands
+that client alone in Menu_Main while the rest stay on the summary; standings identical on every peer),
+flag hygiene (a normal game after a tournament shows the standard buttons), and an edit-mode unit
+test for `TournamentDataSO.RecordResults`.
 
 ## 9. Deferred (later P3 plans)
 

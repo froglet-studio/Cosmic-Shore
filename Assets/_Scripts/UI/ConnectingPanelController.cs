@@ -2,7 +2,6 @@ using System;
 using System.Text;
 using System.Threading;
 using CosmicShore.Data;
-using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
@@ -26,7 +25,6 @@ namespace CosmicShore.UI
         [Header("Data")]
         [SerializeField] GameDataSO gameData;
         [SerializeField] TournamentDataSO tournamentData;
-        [SerializeField] DomainColorPaletteSO palette;
 
         [Header("References")]
         [Tooltip("Optional CanvasGroup used to show/hide the panel UI (auto-added if missing).")]
@@ -121,7 +119,11 @@ namespace CosmicShore.UI
             return mode.ToString().ToUpperInvariant();
         }
 
-        Color DomainColor(Domains d) => palette ? palette.Get(d) : Color.white;
+        // Theme per-domain UI accent (same source as the Maelstrom cards); white when no theme is wired.
+        Color DomainColor(Domains d) =>
+            gameData != null && gameData.ThemeManagerData != null
+                ? gameData.ThemeManagerData.GetDomainUIAccentColor(d)
+                : Color.white;
 
         void SetVisible(bool visible)
         {

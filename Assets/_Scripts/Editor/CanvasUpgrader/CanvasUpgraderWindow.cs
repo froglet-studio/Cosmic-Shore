@@ -55,6 +55,7 @@ namespace CosmicShore.Editor
         bool _canvasLessAlreadyUpgraded;
         bool _reanchorRecursive;
         bool _addAdaptiveScaler = true;
+        float _anchorFaultTolerance = 8f;
         string _lastReport = "Scan the open scene (or the open Prefab Stage) to begin.";
         string _targetLabel = "";
 
@@ -146,6 +147,27 @@ namespace CosmicShore.Editor
             {
                 if (GUILayout.Button($"Re-anchor {anySelected} canvas(es) — snap center anchors to nearest of 9 presets (single Undo step)"))
                     RunReanchor();
+            }
+
+            EditorGUILayout.Space();
+
+            // ---- Faulted anchors ----
+            EditorGUILayout.LabelField("Faulted Anchors", EditorStyles.boldLabel);
+            _anchorFaultTolerance = EditorGUILayout.Slider(
+                new GUIContent("Fault tolerance (px)",
+                    "An element is FAULTED when its anchor region on the parent sits further than this " +
+                    "from the rect it drives - anchors not wrapped around the element, so nothing holds " +
+                    "its place across resolutions. The fix wraps the anchors around the element's current " +
+                    "rect and zeroes the offsets, pixel-identical visually."),
+                _anchorFaultTolerance, 0f, 200f);
+
+            bool anyAnchorTarget = anySelected > 0 || _canvasLessRoot != null;
+            using (new EditorGUI.DisabledScope(!anyAnchorTarget))
+            {
+                if (GUILayout.Button("Find faulted anchors — report only, change nothing"))
+                    RunFixFaultedAnchors(apply: false);
+                if (GUILayout.Button("Fix ALL faulted anchors — wrap anchors around each element (single Undo step)"))
+                    RunFixFaultedAnchors(apply: true);
             }
 
             EditorGUILayout.Space();
@@ -332,6 +354,33 @@ namespace CosmicShore.Editor
 
             string summary = Summarize(apply, counters)
                              + (apply ? $" Logged in {CanvasUpgradeProcessor.UpgradedPrefabLogPath} (commit it); save the prefab (Ctrl+S) to keep." : "");
+            _lastReport = $"{summary}\n\n{report}";
+            Debug.Log($"[CanvasUpgrader] {summary}\n{report}");
+        }
+
+        void RunFixFaultedAnchors(bool apply)
+        {
+            int group = 0;
+            if (apply)
+            {
+                Undo.IncrementCurrentGroup();
+                Undo.SetCurrentGroupName("Fix Faulted Anchors");
+                group = Undo.GetCurrentGroup();
+            }
+
+            string report = CanvasUpgradeProcessor.FixFaultedAnchors(
+                _entries, _canvasLessRoot, _anchorFaultTolerance, apply,
+                out int faulted, out int fixedCount);
+
+            if (apply)
+            {
+                Undo.CollapseUndoOperations(group);
+                Canvas.ForceUpdateCanvases();
+            }
+
+            string summary = apply
+                ? $"Fixed {fixedCount} of {faulted} faulted anchor(s) — anchors wrapped around each element, visual positions preserved. One Undo step."
+                : $"Found {faulted} faulted anchor(s) (anchor region > {_anchorFaultTolerance:0.#}px from the element it drives). Nothing changed.";
             _lastReport = $"{summary}\n\n{report}";
             Debug.Log($"[CanvasUpgrader] {summary}\n{report}");
         }

@@ -20,9 +20,7 @@ namespace CosmicShore.Gameplay
             ScoringMetric.ElementalCrystals => stats.ElementalCrystalsCollected,
             ScoringMetric.Jousts            => stats.JoustCollisions,
             ScoringMetric.Goals             => stats.GoalsScored,
-            // VolumeCreated(5) / VolumeActivity(6) retired with the standalone Freestyle
-            // and CellularDuel modes - no rule asset selects them (enum members remain
-            // only for serialized-int stability).
+            ScoringMetric.PrismsDestroyed   => stats.HostilePrismsDestroyed,
             _                               => 0,
         };
 
@@ -40,6 +38,7 @@ namespace CosmicShore.Gameplay
                 case ScoringMetric.ElementalCrystals: stats.ElementalCrystalsCollected = value; break;
                 case ScoringMetric.Jousts:            stats.JoustCollisions = value; break;
                 case ScoringMetric.Goals:             stats.GoalsScored = value; break;
+                case ScoringMetric.PrismsDestroyed:   stats.HostilePrismsDestroyed = value; break;
             }
         }
 

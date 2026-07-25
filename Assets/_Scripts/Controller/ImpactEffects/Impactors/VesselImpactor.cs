@@ -98,6 +98,11 @@ namespace CosmicShore.Gameplay
                 }
 
                 case SkimmerImpactor skimmerImpactee:
+                    // A vessel never impacts its own skimmer (the Rhino's sword capsule
+                    // permanently overlaps its own hull) - see the mirror guard in
+                    // SkimmerImpactor.AcceptImpactee.
+                    if (skimmerImpactee.Skimmer
+                        && ReferenceEquals(skimmerImpactee.Skimmer.VesselStatus, Vessel?.VesselStatus)) return;
                     if (!DoesEffectExist(vesselImpactorDataContainerSO.VesselSkimmerEffects)) return;
                     audioSystem?.PlayGameplaySFX(GameplaySFXCategory.VesselImpact, transform.position);
                     foreach (var effect in vesselImpactorDataContainerSO.VesselSkimmerEffects)

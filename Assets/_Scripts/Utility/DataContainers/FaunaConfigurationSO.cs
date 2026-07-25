@@ -34,6 +34,13 @@ namespace CosmicShore.Utility
                  "tolerates, not to where you want the population to sit. 0 = uncapped.")]
         [Min(0)] public int MaxLivePopulation = 0;
 
+        [Header("Deployment behavior")]
+        [Tooltip("0-1: pulls this species' roaming goal toward the cell centre so it spends " +
+                 "more time on the central canopy (the gyroids around the nucleus). Herbivores " +
+                 "only — predators hunt prey, not places. Leave 0 (default) for deployments " +
+                 "that must range far from centre (e.g. the Skim Race track-cleanup swarm).")]
+        [Range(0f, 1f)] public float CenterFocusBias = 0f;
+
         [Header("Elemental contract (element x level - one base prefab, 20 data-defined variants)")]
         [Tooltip("The element this species config spawns as. None = keep the prefab-authored " +
                  "crystal element (the legacy per-element prefab-variant path). Setting it lets " +

@@ -1,11 +1,14 @@
 using System.Collections.Generic;
+using UnityEngine;
 using CosmicShore.Data;
 
 namespace CosmicShore.Gameplay
 {
     public class MultiplayerCrystalCaptureController : MultiplayerDomainGamesController
     {
-        protected override bool UseGolfRules => false;
+        // Golf: winners carry their finish time, losers a DnfThreshold+remaining sentinel
+        // (see CrystalCaptureScoringRuleSO.AssignScores) - lower is better, like HexRace.
+        protected override bool UseGolfRules => true;
         protected override bool UseSceneReloadForReplay => true;
 
         // Crystal Capture handles end-game through OnTurnEndedCustom (server-side winner
@@ -93,7 +96,12 @@ namespace CosmicShore.Gameplay
             var winningDomain = rule.ResolveWinner(gameData);
             if (winningDomain == Domains.Blue) return;
 
-            SyncFinalResults(winningDomain, 0f);
+            // Winners score the match time; losers the remaining-crystals sentinel - the
+            // rule owns the encoding (CrystalCaptureScoringRuleSO.AssignScores), the base
+            // SyncFinalResults template owns score assignment, the roster snapshot and the
+            // canonical results tail.
+            float finishTime = Mathf.Max(0f, Time.time - gameData.TurnStartTime);
+            SyncFinalResults(winningDomain, finishTime);
         }
 
         // ── Replay ───────────────────────────────────────────────────────

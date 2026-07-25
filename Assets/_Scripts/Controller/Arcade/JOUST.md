@@ -149,7 +149,7 @@ gameData.OnMiniGameTurnStarted.Raise()
 │                       │               └─ [Server] SyncCollision_ClientRpc(name, count)
 │                       │                   └─ [Clients only] update local stats
 │                       ├─ JoustScored / JoustReceived SFX (per-machine local user)
-│                       └─ GameFeedAPI.PostJoust(hitPlayer, hitDomain, hitterPlayer, hitterDomain)
+│                       └─ GameToastAPI.PostJoust(hitPlayer, hitDomain, hitterPlayer, hitterDomain)
 │
 └─ TurnMonitor.Update() — every frame
     └─ NetworkJoustCollisionTurnMonitor.CheckForEndOfTurn()  [server only]
@@ -264,7 +264,7 @@ The jousting collision system is triggered by `VesselExplosionBySkimmerEffectSO`
 6. **Report & broadcast**: `NetworkVesselImpactor.ReportJoust` → `ExecuteJoust_ServerRpc` → `ExecuteJoust_ClientRpc` → `VesselImpactor.ExecuteJoustImpact` → `ExecuteConfirmed` on **every** machine (offline contexts skip the RPC and run `ExecuteConfirmed` directly)
 7. **Effect**: An AOE explosion is created at the collision point (all machines)
 8. **Joust point**: `OnJoustCollision.Raise(vesselB.PlayerName)` — the **hit vessel** (whose skimmer was impacted) receives the joust point, not the vessel that did the impacting. The raise happens on all machines; only the server's raise records (`StatsManager._allowRecord`), and replication fans the count back out
-9. **Game feed**: `GameFeedAPI.PostJoust()` posts a two-tone notification showing both players' names and domain colors — on every machine, and only for jousts that actually scored
+9. **Game toast**: `GameToastAPI.PostJoust()` posts the Joust situation on every machine, and only for jousts that actually scored. The copy ("A(pts) jousted B(pts)", domain-colored names, live joust points) comes from `GameToastConfig_Joust.asset`, which also authors the idle hint shown after a minute without a joust
 
 **Key insight**: The collision credit goes to the **impactee's vessel** (the one whose skimmer was hit by a faster opponent). This means the faster player — whose skimmer sweeps through the slower player's path — earns the point for the slower player. The design rewards getting jousted while moving fast.
 
@@ -351,7 +351,7 @@ Also reports vessel telemetry via `ugsStatsManager.ReportVesselTelemetry()`.
 | AI vessel spawner | `ServerPlayerVesselInitializerWithAI.cs` | `_Scripts/Controller/Multiplayer/` |
 | AI pilot (opponent seek) | `AIPilot.cs` | `_Scripts/Controller/AI/` |
 | End-game scoreboard (shared) | `Scoreboard.cs` | `_Scripts/UI/` |
-| Game feed API | `GameFeedAPI.cs` | `_Scripts/UI/GameEventFeed/` |
+| Game toast API | `GameToastAPI.cs` | `_Scripts/UI/GameToastSystem/` |
 | Game scene | `MinigameJoust_Gameplay.unity` | `_Scenes/Multiplayer Scenes/` |
 
 ## SO Asset References
