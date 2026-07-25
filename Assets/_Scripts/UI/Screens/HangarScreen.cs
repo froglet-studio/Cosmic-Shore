@@ -308,7 +308,13 @@ namespace CosmicShore.UI
         {
             if (SelectedShip == null || SelectedShip.IsLocked) return;
 
-            if (HangarTrainingModal && SelectedShip.TrainingGames != null)
+            // The modal is a two-button picker: SetTrainingGames indexes [0] and [1]
+            // unconditionally, so a null check is not enough - a vessel whose TrainingGames
+            // list is empty or single-entry threw ArgumentOutOfRangeException here. Every
+            // vessel is currently unpopulated (the solo training games this pointed at were
+            // retired with the rest of the solo content); the surface stays wired so the
+            // list can be repopulated with live modes.
+            if (HangarTrainingModal && SelectedShip.TrainingGames is { Count: >= 2 })
             {
                 HangarTrainingModal.SetTrainingGames(SelectedShip.TrainingGames);
                 HangarTrainingModal.ModalWindowIn();
