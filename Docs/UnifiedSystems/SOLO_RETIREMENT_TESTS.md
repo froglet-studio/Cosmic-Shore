@@ -2,7 +2,8 @@
 
 One consolidated in-editor/MPPM pass covering everything on this branch: Y1 scoring
 unification → C1–C8 (solo retirement, benchmark conversion, `IsMultiplayerMode` removal,
-dead-content deletion, standalone-freestyle retirement) → C9 (Cellular Duel retirement).
+dead-content deletion, standalone-freestyle retirement) → C9 (Cellular Duel retirement) →
+C10–C12 (Wildlife Blitz + 2v2 retirement) → Y0 wire-fix wave → M1–M3 (`bleeding-edge` merge).
 Steps are ordered to minimize scene churn. Keep the numbering — progress is tracked
 against it. (C10 retired Wildlife Blitz: steps 8-11 and 23 are struck.)
 
@@ -19,7 +20,7 @@ after the step was written; do not test).
 
 - [x] **4.** Boot → auth → Menu_Main: normal startup, host starts, no errors (C5 deleted the legacy matchmaking path in `MultiplayerSetup` — sign-in host start must be unaffected). *(verified 2026-07-21)*
 - [x] **5.** Lava-lamp regression (C8): autopilot vessel drifts behind UI → tap crystal → control + Game UI + vessel HUD. Toys all work (vessel changer keeps domain/speed + HUD re-shows, domain changer, painting, Wanderway). Gamepad **Start** exits; center-tap returns to menu. *(verified 2026-07-21)*
-- [x] **6.** Arcade grid contents (C6, C8, C9, C10, C11): the only cards anywhere are HexRace, Joust, Crystal Capture, Maelstrom — every game-list surface now binds OrganicRematchGames (LaunchPartyAllGames was deleted and its holders rewired; the 2v2 card/scene are gone). *(verified 2026-07-21 pre-C9 — re-check the surfaces show the four live cards)*
+- [x] **6.** Arcade grid contents (C6, C8, C9, C10, C11): every game-list surface now binds OrganicRematchGames (LaunchPartyAllGames was deleted and its holders rewired; the 2v2 card/scene are gone). *(verified 2026-07-21 pre-C9)* — **re-verify post-merge**: the live set is now **seven** cards (HexRace, Joust, Crystal Capture, Maelstrom, AstroLeague, NucleusRush, **Rampage**) and none of the retired ones. See step 28.
 
 ## Part A2 — Y0 wire-fix wave (W1-W5, 2026-07-21)
 
@@ -58,9 +59,40 @@ after the step was written; do not test).
 - ~~**22.** Duel 2-human~~ — **OBSOLETE**: Cellular Duel retired (C9, 2026-07-21). Do not test.
 - ~~**23.** Blitz 2-human co-op~~ — **OBSOLETE**: Wildlife Blitz retired (C10, 2026-07-21). Do not test.
 
+## Part E — Post-merge with `bleeding-edge` (M1–M3, 2026-07-25)
+
+The merge brought in Rampage, the game-toast system (which replaced `GameEventFeed`), and
+finish-time golf scoring for Crystal Capture. These steps cover the seams where the two
+branches met — a break here is a *merge-integration* bug, not a regression in either
+branch alone.
+
+- [ ] **28.** Arcade grid post-merge: **seven** live cards — HexRace, Joust, Crystal Capture,
+  Maelstrom, AstroLeague, NucleusRush, **Rampage**. None of Wildlife Blitz / Cellular Duel /
+  Freestyle / 2v2 reappears on ANY surface (grid, rematch list, quest track, CTA).
+- [ ] **29.** **Rampage** solo (new mode, ID 2): launches from the card, AI pilots hunt the
+  densest hostile-mass region (they should visibly converge on other domains' trails, not
+  wander), the match ends on the prism target, scoreboard shows **finish time** for the
+  winning domain and the remaining-prisms sentinel for the losers, exactly ONE end sequence,
+  Play Again reloads the scene. Watch the Rampage controller in the inspector: its **Scoring**
+  slot must hold `RampageScoringRule` (the merge removed a shadowing field — a null here means
+  the serialized binding didn't survive).
+- [ ] **30.** **Crystal Capture** post-merge (both behaviours must coexist): mid-turn the
+  centerline score ticks **crystals** on both peers (my Y0.2 server feed), and at the end the
+  scoreboard flips to **finish time** for the winner / remaining-crystals sentinel for the
+  losers (their golf scoring). Getting only one of the two = the union resolution regressed.
+- [ ] **31.** **Game toasts** replaced the old event feed: a toast appears on player-Ready and
+  on a mid-game disconnect, and on the Brood Rush wave-scored beat in NucleusRush. The old
+  bottom-of-screen `GameEventFeed` strip must be gone entirely (no empty UI object left behind).
+- [ ] **32.** Bootstrap union check (W1 vs their Bootstrap UI rework): boot completes, the new
+  heartbeat loader animates, AND the quest chain still works (step 25) — the
+  `GameModeProgressionService` component must still be mounted on the `PlayerDataService`
+  GameObject in `Bootstrap.unity`.
+- [ ] **33.** Build settings: File → Build Settings lists 13 scenes, all resolving (no
+  `<missing>` rows), including `MinigameRampage` and `BenchmarkStressTest`.
+
 ## Throughout
 
-- [ ] **24.** Console watch: no NREs, no `[Invalid Destroy]`, no missing-script/reference errors from deleted classes — especially in the benchmark scene, which was surgically decoupled from the deleted blitz stack (C10). (The one known pre-existing missing-script component lived in the duel scene — gone with C9; none should remain anywhere.)
+- [ ] **24.** Console watch: no NREs, no `[Invalid Destroy]`, no missing-script/reference errors from deleted classes — especially in the benchmark scene, which was surgically decoupled from the deleted blitz stack (C10), and in any scene bleeding-edge touched (the merge is the other place a "missing script" can appear: their asset referencing my deleted script, or mine referencing their deleted `GameFeedAPI`). (The one known pre-existing missing-script component lived in the duel scene — gone with C9; none should remain anywhere.)
 
 ---
 
