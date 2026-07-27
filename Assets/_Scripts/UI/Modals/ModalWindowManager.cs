@@ -25,6 +25,14 @@ namespace CosmicShore.UI
         [SerializeField] Animator windowAnimator;
         bool isOn;
 
+        /// <summary>
+        /// Raised whenever this modal transitions from open to closed, regardless of the
+        /// close path (Close button, gamepad B, code). Lets the owner of the modal react
+        /// to dismissals it did not initiate - e.g. PauseMenu resuming the game when the
+        /// pause modal is dismissed with gamepad B instead of the Resume button.
+        /// </summary>
+        public event System.Action OnModalClosed;
+
         [Header("Scene References")]
         [SerializeField] ScreenSwitcher screenSwitcher;
 
@@ -129,11 +137,16 @@ namespace CosmicShore.UI
             audioSystem.PlayMenuAudio(MenuAudioCategory.CloseView);
             isOn = false;
 
-            if (ModalType == ModalWindows.SETTINGS) return;
+            if (ModalType != ModalWindows.SETTINGS)
+            {
+                if (_disableCoroutine != null)
+                    StopCoroutine(_disableCoroutine);
+                _disableCoroutine = StartCoroutine(DisableWindow());
+            }
 
-            if (_disableCoroutine != null)
-                StopCoroutine(_disableCoroutine);
-            _disableCoroutine = StartCoroutine(DisableWindow());
+            // Raised last so subscribers may deactivate this GameObject without
+            // interrupting the close sequence above.
+            OnModalClosed?.Invoke();
         }
 
         IEnumerator DisableWindow()
