@@ -1,5 +1,6 @@
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 using CosmicShore.Utility;
 using Reflex.Attributes;
 
@@ -7,7 +8,7 @@ namespace CosmicShore.UI
 {
     /// <summary>
     /// Provides high level functionality to panels in the main menu scene.
-    /// Player name display driven by PlayerDataService.OnProfileChanged.
+    /// Player name and avatar display driven by PlayerDataService.OnProfileChanged.
     /// </summary>
     public class HomeScreen : MonoBehaviour
     {
@@ -15,6 +16,7 @@ namespace CosmicShore.UI
         [SerializeField] GameObject FirstAppLaunchScreen;
         [SerializeField] GameObject NavBar;
         [SerializeField] TMP_Text userNameText;
+        [SerializeField] Image avatarImage;
 
         [Inject] private PlayerDataService playerDataService;
 
@@ -82,8 +84,18 @@ namespace CosmicShore.UI
 
         void OnProfileChanged(PlayerProfileData profile)
         {
-            if (userNameText != null && profile != null)
+            if (profile == null)
+                return;
+
+            if (userNameText != null)
                 userNameText.text = profile.displayName;
+
+            if (avatarImage != null && playerDataService != null)
+            {
+                var sprite = playerDataService.GetAvatarSprite(profile.avatarId);
+                if (sprite != null)
+                    avatarImage.sprite = sprite;
+            }
         }
 
         void OnDisable()

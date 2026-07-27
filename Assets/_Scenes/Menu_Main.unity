@@ -19484,6 +19484,7 @@ MonoBehaviour:
   FirstAppLaunchScreen: {fileID: 0}
   NavBar: {fileID: 8900367420559236131}
   userNameText: {fileID: 1674904252436572557}
+  avatarImage: {fileID: 7652523670908676547}
 --- !u!224 &371769937261967235
 RectTransform:
   m_ObjectHideFlags: 0
