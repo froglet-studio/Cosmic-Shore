@@ -1,5 +1,11 @@
 # Rhino Shield Swipe — analog trigger swordsmanship
 
+> The blade's **cutting behavior and energy meter** — ungated prism damage, super-shield
+> popping on contact, energy banked per kill (blade length + heat), and the elemental-crystal
+> 3D burst — live in **`RHINO_ENERGY_SWORD.md`**. This file covers only the pose/analog-swipe
+> control model. The `ShieldSkimmerScaleDriver` "Sword dimensions & scale ownership" section
+> below is now driven by that energy meter (no tick decay).
+
 The Rhino's ForceFieldSkimmer capsule (the only CapsuleCollider on the vessel — its
 "sword") is puppeteered by the analog triggers. The vessel plays like a swordsman:
 the triggers are reparameterized Manta-style into a difference axis and a sum axis,
@@ -59,10 +65,11 @@ Config knobs (`RhinoShieldSwipeConfig.asset`): `swipeYawDegrees` 90, `swipeRollD
 ## Sword dimensions & scale ownership
 
 The sword's silhouette is the authored local scale on the ForceFieldSkimmer instance
-in `Rhino.prefab` — (1.5, 30, 4.8) — and X/Z are **never** scaled at runtime. All
-runtime scaling elongates local Y only (`Skimmer.elongateYOnly`, set on
-`ForceFieldSkimmer Variant.prefab`; spherical skimmers on other vessels keep the
-legacy uniform XYZ path).
+in `Rhino.prefab` — (1.5, 30, 4.8). Resting-length scaling elongates local Y only
+(`Skimmer.elongateYOnly`, set on `ForceFieldSkimmer Variant.prefab`; spherical
+skimmers on other vessels keep the legacy uniform XYZ path). The one exception is the
+transient elemental-crystal **burst** (`RHINO_ENERGY_SWORD.md`), which deliberately
+scales all three dimensions for a few seconds before easing back to the authored X/Z.
 
 Exactly one component writes the sword's scale at runtime:
 
