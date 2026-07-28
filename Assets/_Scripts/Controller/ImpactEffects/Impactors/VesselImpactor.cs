@@ -39,11 +39,63 @@ namespace CosmicShore.Gameplay
             networkVesselImpactor ??= GetComponent<NetworkVesselImpactor>();
         }
 
+        // Shell-tier probes: the hull colliders whose trigger events land on THIS
+        // impactor — i.e. every collider attached to this GameObject's Rigidbody
+        // (Unity routes trigger callbacks to the collider's GO and its
+        // attachedRigidbody's GO). Child colliders owned by their own Rigidbody
+        // (the skimmer; Manta's per-wing bodies) are excluded, exactly matching
+        // the events this impactor receives today. Cached once — hull collider
+        // sets don't change at runtime; world poses are re-read every frame.
+        Collider[] _probeColliders;
+
+        void OnEnable()
+        {
+            _probeColliders ??= GatherHullColliders();
+            PrismShellContactManager.RegisterProbeOwner(this, _probeColliders);
+        }
+
+        void OnDisable()
+        {
+            PrismShellContactManager.UnregisterProbeOwner(this);
+        }
+
+        Collider[] GatherHullColliders()
+        {
+            if (!TryGetComponent(out Rigidbody rootBody))
+                return GetComponents<Collider>();
+
+            var all = GetComponentsInChildren<Collider>(true);
+            var hull = new List<Collider>(all.Length);
+            foreach (var col in all)
+            {
+                if (FindAncestorRigidbody(col.transform) == rootBody)
+                    hull.Add(col);
+            }
+            return hull.ToArray();
+        }
+
+        static Rigidbody FindAncestorRigidbody(Transform t)
+        {
+            while (t != null)
+            {
+                if (t.TryGetComponent(out Rigidbody rb))
+                    return rb;
+                t = t.parent;
+            }
+            return null;
+        }
+
         protected override void AcceptImpactee(IImpactor impactee)
         {
             switch (impactee)
             {
                 case PrismImpactor prismImpactee:
+                    // While a prism's engaged shell owns contact, the shell tier
+                    // (PrismShellContactManager) dispatches this pair at the visible
+                    // shell surface — suppress the box-trigger dispatch for the same
+                    // prism so a shielded hit can't double-fire.
+                    if (!IsShellDispatch && PrismShellContactManager.ShellOwnsContact(prismImpactee.Prism))
+                        return;
                     if (!DoesEffectExist(vesselImpactorDataContainerSO.VesselPrismEffects)) return;
                     // HexRace's track is built from indestructible, environment-owned prisms
                     // (no player name) rather than destructible player trails. Hitting the

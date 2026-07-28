@@ -832,6 +832,16 @@ fix spreads or de-allocates the same work.
   Console commands: `prisms N` / `prisms off` / `prismcolors`.
 - **Collider-LOD telemetry**: `PrismColliderLodManager.LastNearCount` /
   `LastLiveCount`.
+- **Shell-contact tier markers**: `ShellContact.Build` (per-frame probe
+  rebuild from live collider poses), `ShellContact.Query` (the synchronous
+  Burst `ShellContactQueryJob` schedule+complete inside
+  `PrismSpatialIndex.CollectShellContacts`), `ShellContact.Dispatch`
+  (enter/exit resolution + `AcceptImpactee` effect chains). Per-impactor
+  `<Type>.AcceptImpactee` markers cover shell dispatches too (the shell tier
+  routes through the same lazy marker). A/B switch:
+  `PrismShellContactManager.ForceLegacyBoxInteraction` reverts shielded
+  interaction to the authored box trigger (see Docs/SPATIAL_INDEX.md § Shell
+  view).
 - **Benchmark tool**: `Assets/_Scripts/Utility/PerformanceBenchmark/`
   (`BENCHMARK_TOOL.md` — tabs, score/hints, sweep).
 - **Raycast audit tool**: `Tools > Cosmic Shore > UI > Raycast Target Audit`

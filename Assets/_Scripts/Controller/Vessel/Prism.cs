@@ -72,6 +72,59 @@ namespace CosmicShore.Gameplay
         /// </summary>
         internal int SpatialIndexId = -1;
 
+        // Shell-geometry sources for the spatial index's shell view (the analytic
+        // shielded-collision tier). The octahedron shield is auto-added to every
+        // prism by PrismStateManager.Awake; the stellated shield appears lazily at
+        // the first super-shield engage, so the lookup re-runs when super-shielded
+        // with no cached stella component.
+        PrismOctahedronShield _octaShellSource;
+        PrismStellatedOctahedronShield _stellaShellSource;
+        bool _shellSourcesLookedUp;
+
+        /// <summary>
+        /// Local-space shell geometry for the spatial index's shell view: the
+        /// engaged shell's center (authored BoxCollider center) and semi-axes
+        /// (shieldScale × authored half-extents), in the prism's LOCAL frame —
+        /// the index applies the live world transform. Reads the shield
+        /// components' Awake-cached geometry (never the live BoxCollider.size,
+        /// which HoldColliderAtFullSize mutates during the bloom).
+        /// </summary>
+        internal bool TryGetShellGeometry(out Vector3 centerLocal, out Vector3 semiAxesLocal)
+        {
+            bool super = prismProperties is { IsSuperShielded: true };
+            if (!_shellSourcesLookedUp || (super && _stellaShellSource == null))
+            {
+                _shellSourcesLookedUp = true;
+                TryGetComponent(out _octaShellSource);
+                TryGetComponent(out _stellaShellSource);
+            }
+
+            if (super && _stellaShellSource != null)
+            {
+                centerLocal = _stellaShellSource.ShellCenterLocal;
+                semiAxesLocal = _stellaShellSource.ShellSemiAxesLocal;
+                return true;
+            }
+
+            if (_octaShellSource != null)
+            {
+                centerLocal = _octaShellSource.ShellCenterLocal;
+                semiAxesLocal = _octaShellSource.ShellSemiAxesLocal;
+                return true;
+            }
+
+            if (_authoredColliderSizeCached)
+            {
+                centerLocal = blockCollider != null ? blockCollider.center : Vector3.zero;
+                semiAxesLocal = _authoredColliderSize * (0.5f * OctahedronMeshGenerator.CIRCUMSCRIBING_SCALE);
+                return true;
+            }
+
+            centerLocal = default;
+            semiAxesLocal = default;
+            return false;
+        }
+
 
         public Domains Domain
         {
@@ -731,7 +784,17 @@ namespace CosmicShore.Gameplay
             // volumes — same O(growing)/frame cadence as this cache itself. No-op
             // during the spawn window (Register seeds the slot from CachedVolume).
             if (SpatialIndexId >= 0)
-                PrismSpatialIndex.Instance?.UpdateCellVolume(SpatialIndexId, CachedVolume);
+            {
+                var index = PrismSpatialIndex.Instance;
+                if (index != null)
+                {
+                    index.UpdateCellVolume(SpatialIndexId, CachedVolume);
+                    // A shielded prism growing under PrismScaleManager changes its
+                    // world shell too - re-capture it on the same cadence
+                    // (single byte read no-op for the unshielded majority).
+                    index.UpdateShellTransform(SpatialIndexId);
+                }
+            }
         }
 
         // Growth Methods
@@ -988,7 +1051,16 @@ namespace CosmicShore.Gameplay
         public void NotifyPositionChanged()
         {
             if (SpatialIndexId >= 0)
-                PrismSpatialIndex.Instance?.UpdatePosition(SpatialIndexId, transform.position);
+            {
+                var index = PrismSpatialIndex.Instance;
+                if (index != null)
+                {
+                    index.UpdatePosition(SpatialIndexId, transform.position);
+                    // Movers can rotate too (gyroid bonding, fauna bodies) - a
+                    // shielded mover's shell pose must track the full transform.
+                    index.UpdateShellTransform(SpatialIndexId);
+                }
+            }
 
             // Movers (gyroid steering, fauna body prisms) must also keep the
             // companion render entity's matrix honest — same contract as the
