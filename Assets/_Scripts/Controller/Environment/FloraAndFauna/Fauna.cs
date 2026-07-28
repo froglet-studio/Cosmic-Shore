@@ -390,6 +390,23 @@ namespace CosmicShore.Gameplay
         protected Cell cell => hostCell ? hostCell : (cellData ? cellData.Cell : null);
 
         /// <summary>
+        /// Shielded mass is not food for ANY herbivore - the one canonical rule every
+        /// species' edibility predicate routes through, so no new grazer can re-acquire
+        /// the bug. A SUPER-shielded prism is fully invulnerable and a SHIELDED one only
+        /// sheds its shield (see <see cref="Prism.Consume"/>), so a grazer that adopts one
+        /// as its feed target approaches it, faces it, "eats" it, and finds it still there
+        /// on the next mouthful-chaining query - grazing forever without ever removing
+        /// mass. That is what parked brittlestars on Skim Race's super-shielded track
+        /// prisms. Excluding shields from the predicate makes the creature skip straight
+        /// to the next normal prism on the same behavior tick.
+        /// </summary>
+        protected static bool IsShieldedMass(Prism prism)
+        {
+            var properties = prism ? prism.prismProperties : null;
+            return properties != null && (properties.IsShielded || properties.IsSuperShielded);
+        }
+
+        /// <summary>
         /// Shared scratch buffer for Physics.OverlapSphereNonAlloc in fauna
         /// behavior ticks. All fauna tick on the main thread and consume the
         /// buffer within a single call, so one static buffer serves every

@@ -669,11 +669,14 @@ namespace CosmicShore.Gameplay
         /// LifeForm (fauna bodies carry none — herbivores never eat creatures), and the
         /// diet is spatialized through Cell.IsPreyForHerbivore (nucleus interior = the
         /// territorial claim, never consumed; exterior = voracious any-domain; no nucleus
-        /// = legacy opposing-domain rule).
+        /// = legacy opposing-domain rule). Shielded and super-shielded mass is never food
+        /// (Fauna.IsShieldedMass) — targeting one is a feed-hold the creature can never
+        /// finish, which is what stuck brittlestars on Skim Race's track prisms.
         /// </summary>
         bool IsEdibleForHerbivore(Prism prism)
         {
             if (!prism || prism.destroyed) return false;
+            if (IsShieldedMass(prism)) return false;
             if (prism is HealthPrism hp)
             {
                 if (!hp.LifeForm) return false;

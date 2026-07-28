@@ -479,10 +479,8 @@ namespace CosmicShore.Gameplay
 
             if (forager)
             {
-                var pp = prism.prismProperties;
-                bool shielded = pp != null && (pp.IsShielded || pp.IsSuperShielded);
                 bool isFaunaBody = prism is HealthPrism bodyPrism && bodyPrism.ResolveOwnerFauna() != null;
-                if (shielded || isFaunaBody) return;
+                if (IsShieldedMass(prism) || isFaunaBody) return;
                 // Nucleus-interior mass is the territorial claim, never forager food -
                 // same check as the scan, re-applied in case the nucleus radius
                 // refreshed inside the pacing window.
@@ -643,8 +641,7 @@ namespace CosmicShore.Gameplay
         {
             if (!prism || prism.destroyed) return false;
             if (blockCollider && prism.gameObject == blockCollider.gameObject) return false;
-            var pp = prism.prismProperties;
-            if (pp != null && (pp.IsShielded || pp.IsSuperShielded)) return false;
+            if (IsShieldedMass(prism)) return false;
             if (prism is HealthPrism && prism.GetComponentInParent<Fauna>() != null) return false;
             return cell == null || !cell.IsInsideNucleus(prism.transform.position);
         }

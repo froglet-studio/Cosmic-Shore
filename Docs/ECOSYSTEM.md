@@ -504,7 +504,8 @@ foragers, which is counterproductive to that scene's trail-cleanup perf goal.
 
 - **Diet = "what counts as prey"** is a `FaunaDiet diet` field on the `Fauna`
   base (`Herbivore` / `Predator`), defaulting to **Herbivore**:
-  - **Herbivore** — eats prism MASS, but the two herbivore species differ:
+  - **Herbivore** — eats prism MASS, but the two herbivore species differ
+    (neither eats **shielded or super-shielded** mass — the shared rule, §15):
     - `LightFauna` (brittlestar) `Consume`s **opposing-domain** flora/trail prisms
       within `consumeRadius`.
     - `Boid` (tadpole forager) `Consume`s (implode → **suction shader**) any
@@ -698,7 +699,8 @@ O(1) per tick:
   cell centre (equidistant from each other and the centre), so each new group
   gets its own feeding ground and a head start before a territorial predator's
   patch reaches it. Computed once per 30s wave; predators keep the
-  densest-mass spawn. Blob runs 3 points at radius 400.
+  densest-mass spawn. Blob runs 3 points at radius 400. **The rotation is keyed
+  to the wave clock, not to a spawn counter — see §15.**
 
 **v3.2 — polar predator ring + feeding-consistency fixes** (from in-editor
 observation of v3.1):
@@ -1176,3 +1178,83 @@ Count backstops are untouched — volume-only mass never enters `LiveBlockCount`
   lining as a spawn count, not a collider-cost floor; zero new physics queries (the ball resolves
   prisms via `PrismSpatialIndex.QuerySphere` and skips super-shielded entirely). Collision is at
   authored box size for now; shape-precise (stellated) collision is the planned three-LOD follow-up.
+
+---
+
+## 15. Herbivore spawn rotation + the shielded-mass diet rule (July 2026, Lobby observation)
+
+Two independent defects observed in `Menu_Main` (Blob Cell) and Skim Race. Both are
+targeting bugs, not population bugs — neither changes how many creatures live, only
+*where* they hatch and *what* they will bite.
+
+### 15.1 The herbivore ring rotated on spawns, not on the clock
+
+**Symptom.** Every brittlestar and tadpole in the Lobby hatched at the *same* one of
+the Blob profile's three ring points, so the whole species — and the elemental crystals
+its creatures eventually drop — piled into one patch of a cell whose ring was authored
+to spread them over three.
+
+**Cause.** `RandomLifeSpawner` advanced `_herbivoreSpawnPointIndex` inside
+`SpawnFaunaPopulation`, i.e. **once per wave that actually hatched**. The tick is a
+SEEDER (§6): it only spawns while a species is under its `PopulationSize` floor, and
+reproduction holds a fed population at its `MaxLivePopulation` cap. So after the
+bootstrap wave the index could sit on one point for an entire session — every later
+seed pinned to the same spot.
+
+**Fix.** The ring is now a pure function of the **wave number on the fixed
+`BaseFaunaSpawnTime` clock** (`RandomLifeSpawner.HerbivoreSpawnPoint(host, profile,
+wave)`); the per-spawn index is gone. Each species loop carries its own `wave` counter,
+and because `StartFaunaLoops` starts every loop in the same frame with the same
+`InitialFaunaSpawnWaitTime` + period, all herbivore species agree on the wave number —
+so a wave's species share a point and the point steps once per period. A 3-point ring at
+30s therefore walks all three points in 90s and repeats, whether or not any given tick
+had a deficit to fill. (The predator ring is unchanged: it still alternates per spawn,
+which is its authored "solitary predators alternate poles" behavior.)
+
+**Not changed — deliberately.** The ring says *where* a wave lands; the food web still
+says *whether* one hatches. A tick that finds the species at its cap hatches nothing, at
+any point on the ring. Guaranteeing a brood every 30s regardless of population would
+need either uncapped spawning or imposed death, and imposed death is locked out. If a
+deployment wants a visible brood on every tick, that is the authored pair
+`SpawnProfileSO.SeedFullWaveEveryTick` (the Brood Rush wave mode) + enough
+`FaunaConfigurationSO.MaxLivePopulation` headroom to hold it — a population/collider
+decision, made per profile. Note the Blob profile is shared by `Menu_Main` **and**
+`BenchmarkStressTest`, so flipping it moves the benchmark baseline
+(`Docs/PERFORMANCE_OPTIMIZATION.md`).
+
+### 15.2 Shielded mass is not food for any herbivore
+
+**Symptom.** Brittlestars in Skim Race parked on the super-shielded track prisms and
+never moved on.
+
+**Cause.** `LightFauna.IsEdibleForHerbivore` tested domain and nucleus but not shield
+state. `Prism.Consume` is a **no-op on a super-shielded prism** (fully invulnerable) and
+only sheds the shield on a shielded one, so a brittlestar that adopted a track prism as
+its feed target approached it, faced it, "ate" it (incrementing `bites` and calling
+`NotifyFed()` on a bite that removed nothing), held facing for `consumeHoldSeconds`, then
+re-acquired the *same* prism through `FindNearestEdibleInFeedingRange` — a feed-hold loop
+it could never finish. `Boid`'s forager path already excluded shields; `LightFauna` never
+did.
+
+**Fix.** One canonical rule on the base — `Fauna.IsShieldedMass(Prism)` — routed through
+by every herbivore edibility predicate (`LightFauna.IsEdibleForHerbivore`,
+`Boid.IsEdibleForForager`, `Boid.EatPrism`), so a new grazer species cannot re-acquire the
+bug. A shielded prism is now never adopted as a feed target and never selected by the
+mouthful-chaining query, so the creature skips to the next normal prism on the same
+behavior tick. Both bite sites re-check the predicate before consuming, which also closes
+the case where a shield engages between selection and the bite.
+
+**Consequence, and it is the correct one.** The Skim Race cleanup swarm still grazes what
+it was there to graze — vessel trails and flora, all unshielded — it just no longer treats
+the track as a meal. Where the *only* mass in reach is shielded, a herbivore now finds
+nothing edible and starves on its normal clock, withering to a crystal per the sealed
+`Fauna.Die` (mass conserved). That is the food web doing its job, not a regression: the
+previous behavior only looked stable because the creature was fake-feeding — every bite on
+an invulnerable prism reset its starvation clock and advanced its birth counter without
+removing any mass, so a stuck brittlestar was also an immortal, still-reproducing one.
+
+**Collider budget: unchanged.** Neither fix adds a collider, a physics query, or an index
+query. 15.1 replaces an `int++` with an `int % n`; 15.2 adds two bool reads to predicates
+that already ran per candidate prism, and strictly *reduces* work (shielded prisms drop out
+before the `Cell.IsPreyForHerbivore` call, and stuck creatures stop re-running the
+mouthful-chaining `QuerySphere` every `consumeHoldSeconds`).
