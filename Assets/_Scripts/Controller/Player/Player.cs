@@ -34,6 +34,14 @@ namespace CosmicShore.Gameplay
         public NetworkVariable<bool> NetIsAI = new(false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
         public NetworkVariable<int> NetAvatarId = new(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
 
+        /// <summary>
+        /// The owner's UGS authentication PlayerId - the same key as Cloud Save, Leaderboards
+        /// and analytics. Replicated so any peer can build the match roster (player_ids on
+        /// game_started) from settled network state rather than from a local party roster,
+        /// which would disagree between clients. Empty for AI.
+        /// </summary>
+        public NetworkVariable<FixedString64Bytes> NetUgsPlayerId = new(string.Empty, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+
         public Domains Domain { get; private set; } = Domains.Jade;
 
         /// <summary>
@@ -48,6 +56,23 @@ namespace CosmicShore.Gameplay
         /// Changes the player's domain at runtime. Used by shape mode to match
         /// the player's prism color to the collided shape's domain.
         /// </summary>
+        /// <summary>
+        /// Writes the owner's UGS PlayerId once auth is available. Defensive: analytics is
+        /// never worth throwing a spawn path over.
+        /// </summary>
+        void TryWriteUgsPlayerId()
+        {
+            try
+            {
+                if (AuthenticationService.Instance != null && AuthenticationService.Instance.IsSignedIn)
+                    NetUgsPlayerId.Value = AuthenticationService.Instance.PlayerId;
+            }
+            catch
+            {
+                // Auth not ready on this peer - the roster simply omits this player.
+            }
+        }
+
         public void SetDomain(Domains newDomain)
         {
             Domain = newDomain;
@@ -78,7 +103,12 @@ namespace CosmicShore.Gameplay
         }
         public string Name { get; private set; }
         public int AvatarId { get; private set; }
+        // NOTE: PlayerUUID is the DISPLAY NAME, not a unique id - two players can choose the
+        // same name. It is load-bearing for AOE block ownership strings, so it is left alone
+        // here; UgsPlayerId below is the real identity and should eventually replace it.
         public string PlayerUUID => Name;
+
+        public string UgsPlayerId => NetUgsPlayerId.Value.ToString();
         public ulong PlayerNetId => NetworkObjectId;
         /// <summary>
         /// Remarks, this VesselNetId will be set by server
@@ -229,6 +259,8 @@ namespace CosmicShore.Gameplay
                 {
                     NetName.Value = StripPlayerNameSuffix(AuthenticationService.Instance.PlayerName);
                 }
+
+                TryWriteUgsPlayerId();
 
                 // If profile wasn't ready when we spawned, subscribe so NetName updates
                 // when the cloud profile finishes loading.

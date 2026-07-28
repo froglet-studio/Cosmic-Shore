@@ -342,7 +342,10 @@ namespace CosmicShore.Core
 
             _gameInProgress = true;
             _gameStartTime = Time.realtimeSinceStartup;
-            RecordEvent(UGSKeys.EventGameStarted, BuildGameParameters());
+
+            var parameters = BuildGameParameters();
+            AddMatchEnvelope(parameters);
+            RecordEvent(UGSKeys.EventGameStarted, parameters);
         }
 
         void HandleMiniGameEnd()
@@ -362,6 +365,10 @@ namespace CosmicShore.Core
             // excluded. GameDataSO.InvokeMiniGameEnd settles the clock before raising, so this
             // is final by the time we read it.
             parameters["flight_time_seconds"] = FlightClock.LastGameSeconds;
+
+            // Echo the grouping keys so completion joins back to game_started.
+            parameters["match_id"] = _gameData.MatchId ?? string.Empty;
+            parameters["party_id"] = _gameData.PartyId ?? string.Empty;
 
             AddCompletionTimestamp(parameters);
 
@@ -420,6 +427,57 @@ namespace CosmicShore.Core
             }
 
             return false;
+        }
+
+        /// <summary>
+        /// Adds the identifiers that let us group players who played together, and separate
+        /// organic rematches from re-invited ones.
+        ///
+        /// match_id / party_id / invite_triggered are host-stamped and replicated
+        /// (MultiplayerMiniGameControllerBase), so every client reports identical values.
+        ///
+        /// player_ids is derived here from replicated Player NetworkObjects and SORTED. Deriving
+        /// it from the local party roster would disagree between clients (join order, a peer
+        /// that dropped during scene load); deriving it from replicated state and sorting is
+        /// deterministic on every peer. AI is excluded and counted separately.
+        /// See Docs/Analytics/DATA_ARCHITECTURE.md §6.
+        /// </summary>
+        void AddMatchEnvelope(IDictionary<string, object> parameters)
+        {
+            parameters["match_id"] = _gameData.MatchId ?? string.Empty;
+            parameters["party_id"] = _gameData.PartyId ?? string.Empty;
+            parameters["invite_triggered"] = _gameData.InviteTriggered;
+
+            var humanIds = new List<string>();
+            int aiCount = 0;
+
+            var players = _gameData.Players;
+            if (players != null)
+            {
+                for (int i = 0; i < players.Count; i++)
+                {
+                    var player = players[i];
+                    if (player == null) continue;
+
+                    if (player.IsInitializedAsAI)
+                    {
+                        aiCount++;
+                        continue;
+                    }
+
+                    string id = player.UgsPlayerId;
+                    if (!string.IsNullOrEmpty(id) && !humanIds.Contains(id))
+                        humanIds.Add(id);
+                }
+            }
+
+            humanIds.Sort(StringComparer.Ordinal);
+
+            // Comma-joined, not an array: UGS Analytics parameters accept only scalar values.
+            // The PostHog sink splits this back into a real array (commit 4).
+            parameters["player_ids"] = string.Join(",", humanIds);
+            parameters["player_count_human"] = humanIds.Count;
+            parameters["player_count_ai"] = aiCount;
         }
 
         /// <summary>

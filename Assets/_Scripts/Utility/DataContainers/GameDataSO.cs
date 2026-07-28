@@ -150,6 +150,24 @@ namespace CosmicShore.Utility
         /// SyncFinalScores_ClientRpc. Read by EndGameControllers after OnWinnerCalculated fires.
         /// Reset automatically in <see cref="ResetRuntimeData"/> and <see cref="ResetRuntimeDataForReplay"/>.
         /// </summary>
+        // ── Match envelope (SERVER authority; replicated by SyncGameConfigToClients_ClientRpc) ──
+        // Stamped once by the host so every client emits an IDENTICAL identifier set on
+        // game_started. See Docs/Analytics/DATA_ARCHITECTURE.md §6.
+
+        /// <summary>Unique per game instance. The "same game instance" grouping key.</summary>
+        [NonSerialized] public string MatchId = "";
+
+        /// <summary>
+        /// The Relay party session id: stable across consecutive matches by the same party.
+        /// Sent ALONGSIDE MatchId, not instead of it - grouping on the session alone would
+        /// collapse three back-to-back games into one, and grouping on the match alone would
+        /// lose "the same people stayed together". The organic-rematch query needs both.
+        /// </summary>
+        [NonSerialized] public string PartyId = "";
+
+        /// <summary>Whether this party was formed through a formal invite rather than presence.</summary>
+        [NonSerialized] public bool InviteTriggered;
+
         [NonSerialized] public string WinnerName = "";
 
         /// <summary>
