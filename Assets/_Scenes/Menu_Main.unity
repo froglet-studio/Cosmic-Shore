@@ -22339,6 +22339,11 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 6818916199485298600}
     m_Modifications:
+    - target: {fileID: 1111638120248792970, guid: 0b36fa278f9a30d4c8f44e846674c904,
+        type: 3}
+      propertyPath: screenSwitcher
+      value: 
+      objectReference: {fileID: 4216411968520269688}
     - target: {fileID: 38250029498242172, guid: 0b36fa278f9a30d4c8f44e846674c904,
         type: 3}
       propertyPath: m_AnchorMax.x
