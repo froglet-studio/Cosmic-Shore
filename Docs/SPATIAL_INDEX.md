@@ -257,6 +257,53 @@ trigger skimmers; a convex-mesh solid is invisible to solid swipes). The
   precedent). Markers: `ShellContact.Build` / `ShellContact.Query` /
   `ShellContact.Dispatch`.
 
+### Shell view — in-editor verification (the human gate)
+
+The math is pinned by `ShieldShellMathTests` (edit-mode) and was validated
+against independent QP/LP ground truth pre-port; the INTEGRATION needs a human
+at the editor:
+
+1. **Squirrel on the Skim Race track** (all-super-shielded lining): skims
+   register at the **stella surface** — spike-tip grazes count, threading the
+   gap between spikes does not, and nothing fires at the old bare-box reach.
+   Boost accrual (+0.1/hit) should feel per-shell-touch.
+2. **Rhino swipe vs a shielded prism**: the pop lands at the octahedron
+   surface (~3× reach), not point-blank; a swing that follows through past the
+   popped shell may still destroy the inner prism (emergent, accepted).
+3. **Crystal auto-shield churn** (fly a crystal through a dense trail): the 2 s
+   shield windows engage/disengage without console errors and without prisms
+   becoming untouchable afterwards.
+4. **Profiler** (HexRace, Deep Profile off): `ShellContact.Build/Query` sub-ms;
+   `Physics.SendEvents` flat vs bleeding-edge; no new spike train (§5 protocol
+   in Docs/PERFORMANCE_OPTIMIZATION.md).
+5. **A/B**: toggling `PrismShellContactManager.ForceLegacyBoxInteraction` at
+   runtime reverts to authored-box interaction cleanly (pairs drop with exit
+   bookkeeping, box triggers resume).
+
+### Shell view — follow-ups (recorded, not blocking)
+
+- **Projectiles/mines stay box-authoritative** vs shielded prisms (status
+  quo). Promoting `ProjectileImpactor` to a probe owner is mechanical
+  (register on `Projectile.OnEnable`/`OnDisable`, which already exist) once
+  the feel is wanted.
+- **The AOE tier ignores shells**: `ProcessExplosionFrame` still tests the
+  stored point against the sphere, so explosions and the shell tier disagree
+  about where a shielded prism's surface is. Point the AOE hit test at
+  `ShieldShellMath` when tier consistency matters.
+- **`AOEDangerHemisphereBlocks.MakeDangerousAsync`** writes
+  `prismProperties.IsShielded = true` directly (no `ActivateShield()`): a
+  prism registered with that flag publishes a shell with **no shell visual**.
+  Inert in shipped config (`markShielded: 0`) but the serialized default is
+  true — route through `prism.ActivateShield()` when touched.
+- **Re-engage re-dispatch**: a shield engaging while a probe already overlaps
+  the new shell dispatches the shielded-hit chain immediately ("the shell
+  materialized onto you"). Feels right on paper; confirm during the in-editor
+  pass, and if it spams under crystal auto-shield churn, gate enters on
+  pair age.
+- **`MakeDangerous` still never disengages the shell visual** (pre-existing):
+  the octahedron stays rendered while flags + shell interaction correctly
+  retire. Visual-only mismatch, owned by PrismStateManager.
+
 ## What NOT to use it for
 
 - **Raycasts / general narrow-phase geometry** (`AIPilot` obstacle rays,
