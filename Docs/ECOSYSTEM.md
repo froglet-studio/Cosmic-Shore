@@ -1218,9 +1218,14 @@ need either uncapped spawning or imposed death, and imposed death is locked out.
 deployment wants a visible brood on every tick, that is the authored pair
 `SpawnProfileSO.SeedFullWaveEveryTick` (the Brood Rush wave mode) + enough
 `FaunaConfigurationSO.MaxLivePopulation` headroom to hold it — a population/collider
-decision, made per profile. Note the Blob profile is shared by `Menu_Main` **and**
-`BenchmarkStressTest`, so flipping it moves the benchmark baseline
-(`Docs/PERFORMANCE_OPTIMIZATION.md`).
+decision, made per profile.
+
+**Blob now runs full-wave.** `Blob Cell Spawn Profile` carries
+`SeedFullWaveEveryTick: 1` so every 30s tick hatches a brood at that wave's ring point
+(still clamped by each species' `MaxLivePopulation` — a tick with the species at cap
+hatches nothing). The profile is shared by `Menu_Main` **and** `BenchmarkStressTest`, so
+the benchmark now runs a fuller average fauna population; re-baseline before reading it
+against older numbers (`Docs/PERFORMANCE_OPTIMIZATION.md`).
 
 ### 15.2 Shielded mass is not food for any herbivore
 
@@ -1258,3 +1263,38 @@ query. 15.1 replaces an `int++` with an `int % n`; 15.2 adds two bool reads to p
 that already ran per candidate prism, and strictly *reduces* work (shielded prisms drop out
 before the `Cell.IsPreyForHerbivore` call, and stuck creatures stop re-running the
 mouthful-chaining `QuerySphere` every `consumeHoldSeconds`).
+
+### 15.3 The permanent steering stall §15.2 exposed
+
+**Symptom.** After 15.2 shipped, brittlestars in Skim Race (intensity 3) still parked
+against the super-shielded track — no longer feeding on it, just motionless beside it.
+
+**Cause — two defects that only bite together.**
+
+1. `LightFauna.UpdateBehavior` recomputes `Goal` every behavior tick and did so
+   **without `GoalOrbitOffset`**, silently clobbering the offset `Fauna.ResolveGoal`
+   applies on the goal coroutine. That offset is the anti-convergence term: without it
+   every creature seeks the *identical* point (the crystal at Calm, a density centroid at
+   Restless/Frenzy) and arrives exactly on it.
+2. `Vector3.normalized` returns **zero** for a ~zero vector. On arrival `goalDirection`
+   is zero; with no separation nearby (the track is plain prisms, which contribute none)
+   the steering sum is zero, so `desiredDirection` is zero and `currentVelocity` is zeroed.
+   A motionless creature then recomputes the *identical* zero from the identical position
+   on every later tick — **the stall is permanent**, and `desiredRotation` freezes with it.
+
+This predates 15.2 but was masked: the Skim Race crystal sits on the track, so an arriving
+brittlestar always had a track prism as `_feedTarget`, and `goalDirection` was overwritten
+with the direction to that prism — never zero. Removing shielded mass from the diet (15.2)
+took the mask away and the latent stall surfaced.
+
+**Fix.** `GoalOrbitOffset` is now `protected` on `Fauna` and documented as mandatory for any
+subclass that recomputes `Goal` on its own cadence; `LightFauna` applies it at Calm/Restless
+(and on the origin fallback), skipping it at Frenzy exactly as `ResolveGoal` does. On top of
+that, both steering sites — `LightFauna.UpdateBehavior` and `Boid.CalculateBehavior`, plus
+Boid's attached-target path — test the steering sum against `Fauna.DegenerateSteeringSqr`
+and hold the last heading instead of publishing a zero direction. The offset makes arrival
+stalls rare; the guard makes them non-permanent, so no future steering term can reintroduce
+a frozen creature.
+
+**Collider budget: unchanged.** One `sqrMagnitude` compare per behavior tick, replacing an
+unconditional `normalized` (which computes the same magnitude anyway).

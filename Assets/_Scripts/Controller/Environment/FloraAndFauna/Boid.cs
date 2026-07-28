@@ -259,7 +259,11 @@ namespace CosmicShore.Gameplay
         {
             if (isAttached)
             {
-                desiredDirection = (target - transform.position).normalized;
+                Vector3 toTarget = target - transform.position;
+                if (toTarget.sqrMagnitude > DegenerateSteeringSqr)
+                    desiredDirection = toTarget.normalized;
+                else if (desiredDirection.sqrMagnitude <= DegenerateSteeringSqr)
+                    desiredDirection = transform.forward;
                 currentVelocity = desiredDirection * Mathf.Clamp(currentVelocity.magnitude, minSpeed, maxSpeed);
 
                 if (SafeLookRotation.TryGet(currentVelocity, out var rotation, this))
@@ -425,11 +429,19 @@ namespace CosmicShore.Gameplay
 
             averageSpeed = separatedBoidCount > 0 ? averageSpeed / separatedBoidCount : currentVelocity.magnitude;
 
-            desiredDirection = ((separation * separationWeight)
+            // Same permanent-stall guard as LightFauna: a steering sum that cancels to
+            // ~zero normalizes to Vector3.zero, which zeroes currentVelocity - and a
+            // motionless boid recomputes the identical zero from the identical position
+            // every tick, so it never recovers. Hold the last heading instead.
+            Vector3 steering = (separation * separationWeight)
                                + (alignment * alignmentWeight)
                                + (cohesion * cohesionWeight)
                                + (goalDirection * goalWeight)
-                               + blockAttraction).normalized;
+                               + blockAttraction;
+            if (steering.sqrMagnitude > DegenerateSteeringSqr)
+                desiredDirection = steering.normalized;
+            else if (desiredDirection.sqrMagnitude <= DegenerateSteeringSqr)
+                desiredDirection = transform.forward;
 
             // Foragers DASH (huntSpeedMultiplier, e.g. 10x) toward a mass concentration so
             // the swarm covers the arena quickly. The dash is ARRIVAL-CAPPED: never faster
