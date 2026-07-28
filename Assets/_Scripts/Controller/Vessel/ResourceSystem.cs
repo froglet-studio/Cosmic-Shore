@@ -158,6 +158,12 @@ namespace CosmicShore.Gameplay
         // SetElementLevel every tick, erasing crystal progression within a second.)
         // Single-writer: ElementalComebackSystem.
         readonly Dictionary<Element, float> _comebackModifiers = new();
+        // Domain fauna buff layer — the summed elemental value of this vessel's domain's LIVING
+        // fauna hearts (each contributes exactly what its dropped crystal would grant on
+        // collection). Held while the fauna live, revoked the moment they die — composited like
+        // the comeback layer so it never touches crystal-earned base progress.
+        // Single-writer: DomainFaunaBuffSystem.
+        readonly Dictionary<Element, float> _faunaBuffModifiers = new();
         // Last integer level emitted per element, so OnElementLevelChange only fires on real changes.
         readonly Dictionary<Element, int> _emittedLevels = new();
 
@@ -174,16 +180,30 @@ namespace CosmicShore.Gameplay
         // reach the overcharge band above 10; charity cannot.
         const float ComebackCeiling = 1.0f;
 
-        /// <summary>Effective level = base + temporary modifiers + comeback bonus, clamped to range.
-        /// The comeback contribution is capped so it can never raise the effective level above 10.</summary>
+        /// <summary>Effective level = base + temporary modifiers + domain fauna buff + comeback
+        /// bonus, clamped to range. The fauna buff counts as earned power (the comeback
+        /// contribution yields to it); the comeback contribution is capped so it can never
+        /// raise the effective level above 10.</summary>
         float GetEffectiveLevel(Element element)
         {
             float baseLevel = ElementalLevels.TryGetValue(element, out var b) ? b : 0f;
             float modifier  = _elementModifiers.TryGetValue(element, out var m) ? m : 0f;
+            float faunaBuff = _faunaBuffModifiers.TryGetValue(element, out var f) ? f : 0f;
             float comeback  = _comebackModifiers.TryGetValue(element, out var c) ? c : 0f;
 
-            float earned = baseLevel + modifier;
-            comeback = Mathf.Min(comeback, Mathf.Max(0f, ComebackCeiling - earned));
+            return CompositeEffectiveLevel(baseLevel, modifier, faunaBuff, comeback);
+        }
+
+        /// <summary>
+        /// Pure layer compositing (edit-mode tested): earned = base + temporary modifier +
+        /// domain fauna buff; the comeback bonus only fills toward <see cref="ComebackCeiling"/>
+        /// above that sum, and the result clamps to the element range.
+        /// </summary>
+        public static float CompositeEffectiveLevel(
+            float baseLevel, float tempModifier, float faunaBuff, float comebackBonus)
+        {
+            float earned = baseLevel + tempModifier + faunaBuff;
+            float comeback = Mathf.Min(comebackBonus, Mathf.Max(0f, ComebackCeiling - earned));
             return Mathf.Clamp(earned + comeback, MinElementalLevel, MaxElementalLevel);
         }
 
@@ -234,6 +254,34 @@ namespace CosmicShore.Gameplay
         {
             if (_comebackModifiers.Count == 0) return;
             _comebackModifiers.Clear();
+            foreach (var element in AllElements)
+                EmitElementLevel(element);
+        }
+
+        /// <summary>
+        /// Sets the domain fauna buff for an element (normalized units, ≥ 0): the value this
+        /// vessel's domain draws from its LIVING fauna hearts. Composites into the effective
+        /// level without touching the crystal-earned base, so the buff vanishes cleanly when
+        /// the fauna die — and their dropped crystals grant the very same value back through
+        /// <see cref="AdjustLevel"/> on collection. Pass 0 to remove the buff.
+        /// Single-writer: DomainFaunaBuffSystem.
+        /// </summary>
+        public void SetFaunaBuffModifier(Element element, float normalizedBonus)
+        {
+            normalizedBonus = Mathf.Max(0f, normalizedBonus);
+            _faunaBuffModifiers.TryGetValue(element, out var current);
+            if (Mathf.Approximately(current, normalizedBonus)) return;
+
+            if (normalizedBonus == 0f) _faunaBuffModifiers.Remove(element);
+            else _faunaBuffModifiers[element] = normalizedBonus;
+            EmitElementLevel(element);
+        }
+
+        /// <summary>Clears all domain fauna buffs (system teardown).</summary>
+        public void ClearFaunaBuffModifiers()
+        {
+            if (_faunaBuffModifiers.Count == 0) return;
+            _faunaBuffModifiers.Clear();
             foreach (var element in AllElements)
                 EmitElementLevel(element);
         }

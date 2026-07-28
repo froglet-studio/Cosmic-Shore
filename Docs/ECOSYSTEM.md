@@ -814,6 +814,7 @@ facing hold, so the two would double-drive consumption if both ran. Resolution:
 | Indicator (hex gauge + spawn ring, no numbers) | `Assets/_Scripts/UI/DomainVolumeIndicator.cs` |
 | Headless perf+ecology tuner (no Unity) | `Tools/ecosim/ecosim.py` (+ `calibration.csv`, `README.md`) — see §12 |
 | In-Unity perf probe (emits calibration samples) | `Assets/_Scripts/Controller/Environment/EcosystemPerfProbe.cs` |
+| Domain fauna buff (living hearts empower their domain's vessels) — see §15 | `Assets/_Scripts/Controller/Environment/DomainFaunaBuffSystem.cs`, `Fauna.LiveHeart`, `ResourceSystem.SetFaunaBuffModifier` |
 
 ---
 
@@ -888,7 +889,10 @@ with the others.
    Flora/fauna express their effects through **Elementals** (Charge/Mass/Space/
    Time) rather than bespoke buffs: a domain's flora buff its vessels, fauna debuff
    opposing mass. Vessels start to *feel* the ecosystem. Composes with Domain,
-   Vessels, Elementals.
+   Vessels, Elementals. **Fauna half LANDED (see §15):** every living fauna's
+   embedded heart grants its elemental value to all vessels of its domain, revoked
+   at death when the same heart drops as the collectible crystal. Flora hearts are
+   the natural follow-up (same `LiveHeart`-style seam on `LifeForm`).
 
 5. **Domain territory dynamics.**
    As fauna cull opposing prisms and flora regrow, a cell's controlling domain
@@ -1176,3 +1180,87 @@ Count backstops are untouched — volume-only mass never enters `LiveBlockCount`
   lining as a spawn count, not a collider-cost floor; zero new physics queries (the ball resolves
   prisms via `PrismSpatialIndex.QuerySphere` and skips super-shielded entirely). Collision is at
   authored box size for now; shape-precise (stellated) collision is the planned three-LOD follow-up.
+
+## 15. Domain fauna buff — living hearts empower their domain (July 2026, roadmap item 4 fauna half)
+
+**The mechanic.** Every LIVING fauna's embedded elemental heart grants its element's value to
+**all vessels of the fauna's domain**; the power is **lost the moment the fauna dies** — at
+which point the very same heart drops as the collectible crystal (the locked wither-to-crystal
+invariant). The economy this creates:
+
+- **Kill + collect your own domain's fauna → net zero for you, pure loss for allies.** You
+  re-earn exactly the buff you destroyed (crystal collect adds the same value to your base);
+  every teammate who doesn't collect just loses it.
+- **Kill an opposing domain's fauna → deny AND steal.** Their whole domain loses the buff, and
+  the drop is domain-agnostic, so you can collect it for yourself.
+- **Nourish your own fauna (Shepherd joust `LevelUp`) → grow your whole domain's buff** — the
+  heart grows a level step, and the buff tracks the heart's live world scale.
+- **Territorial stakes:** fauna spawn in the controlling color, so holding cells now feeds your
+  domain standing elemental power — and wave kills strip it.
+
+**Value symmetry is structural, not tuned.** Each living heart contributes
+`SkimmerAdjustElementLevelByCrystalEffectSO.ComputeLevelGain(heart.lossyScale.x, …)` — the
+exact collect formula, with the parameters read from the effect array wired on the heart's
+**own** `ElementalCrystalImpactor` (the EXACT effects `AcceptImpactee` executes at collect
+time; a heart whose drop cannot repay the value — no impactor, or no level effect wired —
+grants **nothing**; multiple wired level effects are summed exactly as collection executes
+them). The buff keys off **`Fauna.LiveHeart`**, which nulls at the precise
+`ActivateCrystal()` moment inside the sealed `Fauna.Die` — so the buff ends exactly when the
+crystal becomes collectible, with the same world scale carrying the same value on both sides
+(`transform.parent = cell` preserves world scale on the drop, and `GrowCrystalWithPop` now
+freezes if the heart is freed mid-level-up so the drop keeps its death-moment scale — a
+mid-flare death drops at the pop's transient scale, bounded by the ×1.6 overshoot and the
+per-crystal gain cap). **Zero
+new tunables**: the existing knobs (`levelPerUnitScale`, `maxLevelGainPerCrystal`,
+`CrystalScalePerLevel`, `InitialLevel`, per-species population caps) govern both the standing
+buff and the pickup.
+
+**Mechanism (SOAP-evented + reconcile sweep, no cheat).** `DomainFaunaBuffSystem`
+(auto-created by the first `Cell.Initialize` via `EnsureExists` — so it exists wherever fauna
+do, Menu_Main freestyle included; one HyperSea, one rule set) re-sums
+`Cell.ActiveCellsSnapshot → cell.LiveFauna → fauna.LiveHeart` into per-domain, per-element
+pools and applies them via `ResourceSystem.SetFaunaBuffModifier` on every `gameData.Players`
+vessel of that domain. Two triggers share the one sweep:
+`CellRuntimeDataSO.OnFaunaHeartsChanged` (raised by `Fauna.AssignLineage` and `Fauna.Die`
+**through the host cell's runtime SO** — several fauna prefabs author their own `cellData`
+wire null or dangling, so the per-prefab wire is only the hostless fallback)
+lands spawn grants and death revocations **within a frame**, and the periodic reconcile sweep
+(`updateInterval`, 1s) tracks heart growth, late-spawning vessels, vessel swaps (access is
+hardened against the destroyed-but-referenced vessel window during a menu swap), and domain
+re-picks (`player.Domain` read live). The fauna buff is a **dedicated composited layer** on
+`ResourceSystem` (like the comeback layer, its own single writer): it counts as *earned*
+power — it can reach the overcharge band and the comeback charity yields to it — and never
+touches the crystal-earned base, so revocation is exact. Compositing is pure
+(`ResourceSystem.CompositeEffectiveLevel`) and pinned by `DomainFaunaBuffTests` (net-zero
+own-kill-collect, exact revocation, comeback interaction, clamps). HUD: petal bars animate
+automatically off `OnElementLevelChange` — one level-1 tadpole heart (scale 1) = one petal
+tick for the whole domain.
+
+**Scope + caveats:**
+- **Fauna only** for now; flora hearts are the follow-up seam (`LifeForm` would grow the same
+  `LiveHeart` accessor; roadmap item 4's "flora buff its vessels").
+- **Net-zero is exact at the moment of collection.** Over time the pre-existing resting-band
+  drift (`ResourceSystem.RecoverBaseLevels`) applies to the collected BASE value — overcharge
+  above level 10 bleeds back to 10, deficits refill to 0 — while a living heart's aura is a
+  held layer the drift never touches. Consequence (by design, aligned with the mechanic's
+  intent): killing your own domain's fauna is **never profitable** — break-even at best, and
+  strictly worse once the collected value lands in the overcharge band the drain reclaims. A
+  domain holding living hearts keeps standing power the drain cannot touch; collected value is
+  subject to the same decay as any crystal pickup.
+- **Manager-spawned fauna** (`LightFaunaManager.SpawnGroup`, `BoidManager.SpawnBoids` — the
+  dead scene-population paths wired through the removed `Cell.fauna2` field, §7) never enter
+  `Cell.LiveFauna`, so they would drop collectibles without having granted a buff — acceptable
+  while those paths stay dead; fold them into `AssignLineage` if they ever revive. Segment
+  fauna (worms) carry no per-segment crystal → no buff, no drop → consistent.
+- **Client-local divergence:** fauna have no NetworkObject and element levels don't replicate,
+  so peers can disagree on exact buff values — the same accepted divergence the fauna sim
+  itself has (§7 caveat 4). Each client is self-consistent. Server-authoritative pools are the
+  follow-up if the buff enters strict competitive modes.
+- **Collider budget: zero.** No colliders, no physics queries — a 1 Hz walk of the existing
+  registries (menu steady state: ~13 fauna, ≤4 players) plus event-driven re-sums on the 30s
+  wave heartbeat and on deaths.
+
+**In-editor verification (Menu_Main):** enter freestyle, watch your petal bars — they should
+tick up as controlling-color fauna spawn (30s waves) and drop when fauna starve/are predated,
+with the dropped crystal granting the lost amount back on collection. Toggle `debugLogging` on
+the auto-created `DomainFaunaBuffSystem` (on the Cell's GameObject) for per-player pool logs.
