@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using CosmicShore.Utility;
+using CosmicShore.Utility.PerformanceBenchmark;
 using UnityEngine;
 using CosmicShore.Data;
 using System.Linq;
@@ -130,6 +131,13 @@ namespace CosmicShore.Gameplay
         {
             if (!host || !floraPrefab) return null;
 
+            // IsRecording-guarded label: this runs for EVERY gameplay spawn, so the disarmed
+            // path must not pay the interpolated-string allocation.
+            using var _ = LoadInsights.IsRecording
+                ? LoadInsights.Measure(LoadInsightCategory.Flora, $"Flora spawn ({floraPrefab.name})")
+                : LoadSpanScope.None;
+            LoadInsights.Count("Flora spawned during load");
+
             Vector3 pos = spawnPosition ?? host.transform.position;
             var flora = UnityEngine.Object.Instantiate(floraPrefab, pos, Quaternion.identity);
             flora.domain = PickRandomDomain(excludedDomain);
@@ -161,6 +169,12 @@ namespace CosmicShore.Gameplay
         {
             if (!host || !faunaPrefab) return null;
 
+            // IsRecording-guarded label — see SpawnFlora.
+            using var _ = LoadInsights.IsRecording
+                ? LoadInsights.Measure(LoadInsightCategory.Fauna, $"Fauna spawn ({faunaPrefab.name})")
+                : LoadSpanScope.None;
+            LoadInsights.Count("Fauna spawned during load");
+
             var pop = UnityEngine.Object.Instantiate(faunaPrefab, host.transform.position, Quaternion.identity);
             pop.domain = PickRandomDomain(excludedDomain);
             pop.Goal = goal;
@@ -182,6 +196,12 @@ namespace CosmicShore.Gameplay
         public static Fauna SpawnFaunaWithDomain(Cell host, Fauna faunaPrefab, Vector3 goal, Domains domain, Vector3? spawnPosition = null)
         {
             if (!host || !faunaPrefab) return null;
+
+            // IsRecording-guarded label — see SpawnFlora.
+            using var _ = LoadInsights.IsRecording
+                ? LoadInsights.Measure(LoadInsightCategory.Fauna, $"Fauna spawn ({faunaPrefab.name})")
+                : LoadSpanScope.None;
+            LoadInsights.Count("Fauna spawned during load");
 
             // Spawn at the requested position (e.g. on the mass concentration the fauna will
             // forage) when given; otherwise the cell centre (legacy behavior, IntensityWise).

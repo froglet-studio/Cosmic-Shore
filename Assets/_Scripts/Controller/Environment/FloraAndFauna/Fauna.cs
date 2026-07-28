@@ -156,6 +156,24 @@ namespace CosmicShore.Gameplay
                     ApplyVariantTuning(config.Variant);
                 SetLevel(config.InitialLevel, animate: false);
             }
+
+            // A new living heart entered the world - let the domain fauna buff re-sum now
+            // instead of on its next reconcile sweep.
+            RaiseFaunaHeartsChanged();
+        }
+
+        /// <summary>
+        /// Pokes <see cref="CellRuntimeDataSO.OnFaunaHeartsChanged"/> through the host cell's
+        /// runtime SO (always wired on a live cell) rather than the per-prefab cellData wire —
+        /// several fauna prefabs author cellData null or dangling, and every fauna that
+        /// participates in the buff pool has a host cell by construction (AssignLineage sets
+        /// it). cellData is the fallback for hostless deaths; the event field itself must fail
+        /// loud if unwired on the asset.
+        /// </summary>
+        void RaiseFaunaHeartsChanged()
+        {
+            var runtimeData = hostCell ? hostCell.RuntimeData : cellData;
+            if (runtimeData) runtimeData.OnFaunaHeartsChanged.Raise();
         }
 
         void TryReproduce()
@@ -361,20 +379,26 @@ namespace CosmicShore.Gameplay
             float flareTime = Mathf.Max(0.05f, seconds * 0.25f);
             float settleTime = Mathf.Max(0.05f, seconds - flareTime);
 
+            // Stop the moment the heart is no longer embedded in this fauna: a death mid-grow
+            // reparents the crystal to the cell (ActivateCrystal), where localTarget - computed
+            // to divide out the fauna body's scale - would land as the wrong WORLD scale. The
+            // drop keeps the world scale it had at death, which is exactly the value the domain
+            // buff was granting at that moment.
             for (float e = 0f; e < flareTime; e += Time.deltaTime)
             {
-                if (!crystal) yield break;
+                if (!crystal || !ReferenceEquals(crystal.EmbeddedIn, this)) yield break;
                 t.localScale = Vector3.one * Mathf.Lerp(start, flare, e / flareTime);
                 yield return null;
             }
             for (float e = 0f; e < settleTime; e += Time.deltaTime)
             {
-                if (!crystal) yield break;
+                if (!crystal || !ReferenceEquals(crystal.EmbeddedIn, this)) yield break;
                 float u = e / settleTime;
                 t.localScale = Vector3.one * Mathf.Lerp(flare, localTarget, u * u * (3f - 2f * u));
                 yield return null;
             }
-            if (crystal) t.localScale = Vector3.one * localTarget;
+            if (crystal && ReferenceEquals(crystal.EmbeddedIn, this))
+                t.localScale = Vector3.one * localTarget;
         }
 
         IEnumerator GrowToScale(Vector3 target, float seconds)
@@ -559,6 +583,19 @@ namespace CosmicShore.Gameplay
         protected Crystal crystal;
 
         /// <summary>
+        /// The living embedded heart: non-null only while this fauna is alive and its elemental
+        /// crystal is still embedded in it. The sealed <see cref="Die"/> path frees the heart
+        /// via ActivateCrystal, so this returns null from the exact moment the crystal becomes
+        /// a collectible — the domain fauna buff keys off this so a fauna's domain-wide power
+        /// ends precisely when its crystal (the same heart, at the same world scale, carrying
+        /// the same value) hits the open water.
+        /// </summary>
+        public Crystal LiveHeart =>
+            crystal && crystal.gameObject.activeInHierarchy && ReferenceEquals(crystal.EmbeddedIn, this)
+                ? crystal
+                : null;
+
+        /// <summary>
         /// Death chokepoint - SEALED so no fauna can die without conserving its mass.
         /// Every death path (starvation, <see cref="Predated"/>) routes here; it drops
         /// the elemental crystal (the locked "every lifeform drops one elemental crystal
@@ -571,6 +608,9 @@ namespace CosmicShore.Gameplay
         {
             if (crystal && crystal.gameObject && crystal.gameObject.activeInHierarchy)
                 crystal.ActivateCrystal();
+            // The heart just left the living pool - poke the domain fauna buff so the
+            // domain's power drops with the death, not on the next reconcile sweep.
+            RaiseFaunaHeartsChanged();
             OnDeath(killerName);
         }
 

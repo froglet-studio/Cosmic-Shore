@@ -13,6 +13,12 @@ namespace Obvious.Soap
         [SerializeField] protected T _debugValue = default(T);
 
         private readonly List<EventListenerGeneric<T>> _eventListeners = new List<EventListenerGeneric<T>>();
+
+        // [Cosmic Shore patch] O(1) membership guard — see ScriptableEventNoParam for rationale
+        // (List.Contains registration was quadratic at prism scale). List stays authoritative
+        // so Raise() iteration order is unchanged.
+        private readonly HashSet<EventListenerGeneric<T>> _eventListenerLookup = new HashSet<EventListenerGeneric<T>>();
+
         private readonly List<Object> _listenersObjects = new List<Object>();
         private Action<T> _onRaised = null;
 
@@ -65,13 +71,13 @@ namespace Obvious.Soap
         
         internal void RegisterListener(EventListenerGeneric<T> listener)
         {
-            if (!_eventListeners.Contains(listener))
+            if (_eventListenerLookup.Add(listener))
                 _eventListeners.Add(listener);
         }
-        
+
         internal void UnregisterListener(EventListenerGeneric<T> listener)
         {
-            if (_eventListeners.Contains(listener))
+            if (_eventListenerLookup.Remove(listener))
                 _eventListeners.Remove(listener);
         }
 

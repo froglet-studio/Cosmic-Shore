@@ -2875,11 +2875,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Gameplay.Audio.ShipAudioController
   engineEvent:
     Guid:
-      Data1: -1809053689
-      Data2: 1230251534
-      Data3: 566434957
-      Data4: -1286293035
-    Path: event:/Engine stuff/space ship engine main
+      Data1: 629477504
+      Data2: 1212224528
+      Data3: 134015372
+      Data4: 1054464202
+    Path: event:/Engine stuff/space ship engine main Rhino
   additionalEngineLayers: []
   speedParameterName: Speed
   tiltParameterName: Tilt Acel

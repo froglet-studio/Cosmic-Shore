@@ -145,6 +145,10 @@ namespace CosmicShore.Core
             AdsSystem.AdLoaded += HandleAdLoaded;
             TryWireUiActions();
 
+            // Crash capture follows the same opt-in gate as analytics. Applied here so a returning
+            // player's stored decision re-arms it immediately after the BeforeSceneLoad disarm.
+            ApplyCrashReportingGate();
+
             // ── Phase 2: subscribe to SO-asset SOAP events (safe at construction) ──
             _menuFreestyleEvents.OnGameStateTransitionStart.OnRaised += HandleFreestyleEntered;
             _friendsData.OnFriendRequestSent.OnRaised += HandleFriendRequestSent;
@@ -184,6 +188,8 @@ namespace CosmicShore.Core
                 StartCollectionIfReady();
             else
                 StopCollection();
+
+            ApplyCrashReportingGate();
         }
 
         /// <summary>
@@ -200,11 +206,20 @@ namespace CosmicShore.Core
                 PlayerPrefs.SetInt(ConsentPrefKey, 0);
                 PlayerPrefs.Save();
                 StopCollection();
+                ApplyCrashReportingGate();
                 return;
             }
 
             PlayerPrefs.Save();
+            ApplyCrashReportingGate();
         }
+
+        /// <summary>
+        /// Mirrors the analytics opt-in decision onto crash capture. Deliberately keyed off consent
+        /// and age eligibility ONLY - not sign-in or connectivity - because a crash that happens
+        /// offline or before sign-in is exactly the one worth capturing.
+        /// </summary>
+        void ApplyCrashReportingGate() => CrashReportingService.ApplyConsent(AgeEligible && ConsentGranted);
 
         /// <summary>
         /// COPPA-friendly neutral age gate: pass the player's birth year; eligibility

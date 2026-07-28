@@ -127,6 +127,10 @@ namespace CosmicShore.Gameplay
                     spawnedBlock.Trail = trail;
                     spawnedBlock.Initialize();
                     trail.Add(spawnedBlock);
+                    // Custom loop bypasses PrismTrailBuilder.LayOne — cords laid during a level
+                    // build must be reveal-complete before the connecting screen drops (watch
+                    // self-prunes, so gameplay-time cords are unaffected).
+                    PrismTrailBuilder.WatchForReveal(spawnedBlock);
                 }
 
             }
