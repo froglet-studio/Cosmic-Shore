@@ -39,6 +39,16 @@ namespace CosmicShore.Gameplay
         // spawn but varied across the pack.
         Vector3 _goalOrbitOffset;
 
+        /// <summary>
+        /// This creature's stable offset from whatever point it is currently seeking -
+        /// the anti-convergence term. Subclasses that recompute <see cref="Goal"/> on
+        /// their own cadence MUST add it wherever <see cref="ResolveGoal"/> does, or the
+        /// pack collapses onto one point: every creature seeks the identical centroid,
+        /// arrives, and its goal direction degenerates to zero. See
+        /// <see cref="LightFauna"/>'s behavior tick.
+        /// </summary>
+        protected Vector3 GoalOrbitOffset => _goalOrbitOffset;
+
         [Header("Diet (predator / prey)")]
         [Tooltip("What this fauna eats - the predator/herbivore selector. Herbivore: " +
                  "opposing-domain prism MASS (flora canopy + vessel trails); the default, " +
@@ -412,6 +422,33 @@ namespace CosmicShore.Gameplay
         // are never Initialize(cell)-called. Unity-null guards on both so callers
         // just get null and skip the goal/avoidance branches that need a cell.
         protected Cell cell => hostCell ? hostCell : (cellData ? cellData.Cell : null);
+
+        /// <summary>
+        /// Squared length below which a steering vector counts as degenerate. A steering
+        /// sum that cancels to ~zero normalizes to <see cref="Vector3.zero"/>, which zeroes
+        /// the creature's velocity - and a motionless creature recomputes the identical
+        /// zero from the identical position on every later tick, so the stall is PERMANENT
+        /// (it hangs in place until it starves). Steering code must test against this and
+        /// keep its last heading rather than publish a zero direction.
+        /// </summary>
+        protected const float DegenerateSteeringSqr = 1e-6f;
+
+        /// <summary>
+        /// Shielded mass is not food for ANY herbivore - the one canonical rule every
+        /// species' edibility predicate routes through, so no new grazer can re-acquire
+        /// the bug. A SUPER-shielded prism is fully invulnerable and a SHIELDED one only
+        /// sheds its shield (see <see cref="Prism.Consume"/>), so a grazer that adopts one
+        /// as its feed target approaches it, faces it, "eats" it, and finds it still there
+        /// on the next mouthful-chaining query - grazing forever without ever removing
+        /// mass. That is what parked brittlestars on Skim Race's super-shielded track
+        /// prisms. Excluding shields from the predicate makes the creature skip straight
+        /// to the next normal prism on the same behavior tick.
+        /// </summary>
+        protected static bool IsShieldedMass(Prism prism)
+        {
+            var properties = prism ? prism.prismProperties : null;
+            return properties != null && (properties.IsShielded || properties.IsSuperShielded);
+        }
 
         /// <summary>
         /// Shared scratch buffer for Physics.OverlapSphereNonAlloc in fauna

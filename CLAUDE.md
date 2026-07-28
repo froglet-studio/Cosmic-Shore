@@ -29,7 +29,11 @@ outcome is optimization, not life). Use the `/ecology` skill for any change here
   cross-domain / prey-weighted / per-domain-biased spawning. The herbivore DIET is spatial in
   nucleus cells (see "Volume is the spine" below): outside the nucleus they graze **any**
   domain's mass voraciously; inside they eat **nothing**. Cells without a nucleus keep the
-  legacy opposing-mass diet.
+  legacy opposing-mass diet. **Shielded and super-shielded mass is never food, in any cell** —
+  `Prism.Consume` is a no-op on super-shielded mass and only sheds the shield on shielded mass,
+  so targeting one is a feed-hold the creature can never finish. Every herbivore edibility
+  predicate routes through `Fauna.IsShieldedMass`; do not write a grazer that tests shield state
+  itself. (`Docs/ECOSYSTEM.md §16`.)
 - **Starvation = wither-to-crystal.** A starving (or predated) creature withers from its extremity
   spindles inward — a shark's fins / a brittlestar's arms evaporate *before* the core body
   (farthest-from-centre first, emergent from geometry) — and leaves a collectible elemental crystal.
