@@ -134,6 +134,7 @@ namespace CosmicShore.Core
             var record = _modeStats.GetOrCreate(mode, intensity);
             record.GamesPlayed++;
             record.LastPlayedUtcMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            record.FlightTimeSeconds += FlightClock.LastGameSeconds;
 
             if (won)
                 record.GamesWon++;
@@ -195,6 +196,9 @@ namespace CosmicShore.Core
 
             record.GamesPlayed++;
             record.LastUsedUtcMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+
+            // Drives HangarCloudData.PreferredVessel ("most hours played").
+            record.FlightTimeSeconds += FlightClock.LastGameSeconds;
 
             // Common stats - keep best values
             if (telemetry.MaxDriftTime > record.BestDriftTimeSeconds)

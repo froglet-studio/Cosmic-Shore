@@ -58,11 +58,19 @@ namespace CosmicShore.UI
                 ds.OnInitialized -= HandleDataServiceReady;
 
             OnProfileChanged -= SyncProfileToGameData;
+
+            if (gameData != null)
+                gameData.OnMiniGameEnd.OnRaised -= HandleMiniGameEnd;
         }
 
         void Start()
         {
             OnProfileChanged += SyncProfileToGameData;
+
+            // Lifetime games/flight-time totals. Menu freestyle never raises this, so the
+            // lava lamp stays out - matching the analytics game_completed boundary.
+            if (gameData != null)
+                gameData.OnMiniGameEnd.OnRaised += HandleMiniGameEnd;
 
             if (_ugsDataService == null)
             {
@@ -120,6 +128,19 @@ namespace CosmicShore.UI
             lifecycle.LastPlatform = Application.platform.ToString();
 
             SyncCurrentProfileToRepo();
+        }
+
+        int _lastRecordedGameSequence;
+
+        void HandleMiniGameEnd()
+        {
+            // Some modes raise OnMiniGameEnd more than once; latch the clock's game sequence
+            // so lifetime totals count each game exactly once.
+            if (FlightClock.CompletedGameSequence == _lastRecordedGameSequence)
+                return;
+
+            _lastRecordedGameSequence = FlightClock.CompletedGameSequence;
+            RecordGameCompleted(FlightClock.LastGameSeconds);
         }
 
         /// <summary>

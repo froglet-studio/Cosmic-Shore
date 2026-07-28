@@ -10,6 +10,7 @@ using UnityEngine;
 using UnityEngine.Serialization;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
+using CosmicShore.Core;
 using IPlayer = CosmicShore.Gameplay.IPlayer;
 
 namespace CosmicShore.Utility
@@ -333,6 +334,11 @@ namespace CosmicShore.Utility
         {
             IsTurnRunning = true;
             TurnStartTime = Time.time;
+
+            // Control has just been handed to the player (countdown ended, players activated).
+            // This is the start point for flight_time_seconds.
+            FlightClock.OnTurnStarted();
+
             InvokeTurnStarted();
         }
 
@@ -347,11 +353,21 @@ namespace CosmicShore.Utility
         public void InvokeGameTurnConditionsMet()
         {
             IsTurnRunning = false;
+            FlightClock.OnTurnEnded();
             OnMiniGameTurnEnd?.Raise();
         }
         
         public void InvokeMiniGameRoundEnd() => OnMiniGameRoundEnd?.Raise();
-        public void InvokeMiniGameEnd() => OnMiniGameEnd?.Raise();
+        /// <summary>
+        /// Ends the game. The flight clock is settled BEFORE the SOAP raise so every
+        /// subscriber - analytics, stats reporters, the profile - reads the same final
+        /// FlightClock.LastGameSeconds regardless of subscription order.
+        /// </summary>
+        public void InvokeMiniGameEnd()
+        {
+            FlightClock.EndGame();
+            OnMiniGameEnd?.Raise();
+        }
         public void InvokeWinnerCalculated() => OnWinnerCalculated?.Raise();
         public void InvokeOnSessionEnded() => OnSessionEnded?.Raise();
         public void InvokeShowGameEndScreen() => OnShowGameEndScreen?.Raise();
@@ -371,6 +387,10 @@ namespace CosmicShore.Utility
         public void ResetRuntimeData()
         {
             IsTurnRunning = false;
+
+            // Scene teardown / mid-game exit: abandon the flight clock without publishing a
+            // time, so an abandoned game cannot leak its seconds into the next one.
+            FlightClock.AbortGame();
             Players.Clear();
             Vessels.Clear();
             SlowedShipTransforms.Clear();
@@ -423,6 +443,7 @@ namespace CosmicShore.Utility
         void ResetRuntimeDataForReplay()
         {
             IsTurnRunning = false;
+            FlightClock.AbortGame();
             TurnStartTime = 0f;
             RoundsPlayed = 0;
             TurnsTakenThisRound = 0;

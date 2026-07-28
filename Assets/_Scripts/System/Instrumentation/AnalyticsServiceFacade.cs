@@ -352,7 +352,18 @@ namespace CosmicShore.Core
 
             _gameInProgress = false;
             var parameters = BuildGameParameters();
+
+            // Wall-clock, pause included. Kept alongside flight_time_seconds because the
+            // DELTA between the two is the pause + AFK + between-round time - a churn signal
+            // we would otherwise have to instrument separately.
             parameters["duration_seconds"] = Mathf.RoundToInt(Time.realtimeSinceStartup - _gameStartTime);
+
+            // Time actually at the stick: control granted -> game end, pause and background
+            // excluded. GameDataSO.InvokeMiniGameEnd settles the clock before raising, so this
+            // is final by the time we read it.
+            parameters["flight_time_seconds"] = FlightClock.LastGameSeconds;
+
+            AddCompletionTimestamp(parameters);
 
             if (TryResolveLocalWin(out bool won))
             {
@@ -409,6 +420,19 @@ namespace CosmicShore.Core
             }
 
             return false;
+        }
+
+        /// <summary>
+        /// Stamps the client's completion time in both forms: epoch milliseconds for
+        /// arithmetic, ISO-8601 for day/week/month bucketing without a per-query conversion.
+        /// UGS and PostHog both stamp their own ingest time; this is the CLIENT time, which is
+        /// what "timestamp at completion" means.
+        /// </summary>
+        static void AddCompletionTimestamp(IDictionary<string, object> parameters)
+        {
+            var nowUtc = DateTime.UtcNow;
+            parameters["timestamp_utc_ms"] = new DateTimeOffset(nowUtc).ToUnixTimeMilliseconds();
+            parameters["timestamp_utc_iso"] = nowUtc.ToString("yyyy-MM-ddTHH:mm:ss.fffZ");
         }
 
         Dictionary<string, object> BuildGameParameters() => new()
