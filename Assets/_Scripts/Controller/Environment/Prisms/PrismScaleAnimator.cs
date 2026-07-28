@@ -130,6 +130,36 @@ namespace CosmicShore.Gameplay
             return v.x * v.y * v.z;
         }
 
+        /// <summary>True when the visual scale has settled at TargetScale (same threshold the
+        /// scale manager's completion pass uses).</summary>
+        public bool IsAtTarget => (transform.localScale - TargetScale).sqrMagnitude <= 0.01f;
+
+        /// <summary>
+        /// Snap to TargetScale NOW, running the exact bookkeeping the scale manager's completion
+        /// pass would (render sync, volume cache, completion callbacks, active-set removal).
+        /// ONLY for windows where the world is covered (the loading gate's connecting screen) —
+        /// an on-screen snap would violate continuity of existence.
+        /// </summary>
+        public void CompleteImmediately()
+        {
+            if (!enabled) return;
+            var target = TargetScale;
+            if (target == Vector3.zero) return; // never authored/set — nothing to settle to
+
+            if ((transform.localScale - target).sqrMagnitude > 0.01f)
+            {
+                transform.localScale = target;
+                prism?.SyncRenderTransform();
+                prism?.RefreshVolumeCache();
+            }
+
+            if (IsScaling)
+            {
+                IsScaling = false; // setter unregisters from PrismScaleManager's active set
+                ExecuteOnScaleComplete();
+            }
+        }
+
         public void ExecuteOnScaleComplete()
         {
             var deltaVolume = UpdateVolume();

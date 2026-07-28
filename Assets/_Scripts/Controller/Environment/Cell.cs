@@ -5,6 +5,7 @@ using CosmicShore.Data;
 using CosmicShore.Game;
 using CosmicShore.Gameplay;
 using CosmicShore.Utility;
+using CosmicShore.Utility.PerformanceBenchmark;
 using Reflex.Attributes;
 using Unity.Collections;
 using Unity.Jobs;
@@ -228,6 +229,14 @@ namespace CosmicShore.Gameplay
         /// phase system gates flora and fauna behavior on it).
         /// </summary>
         public int LiveBlockCount => trackedBlocks.Count;
+
+        /// <summary>
+        /// The shared runtime SO this cell writes to. Read-only handle for residents that
+        /// need to raise its events through their host cell (e.g. Fauna's hearts-changed
+        /// poke) — more reliable than a per-prefab CellRuntimeDataSO wire, which several
+        /// fauna prefabs author as null or dangling.
+        /// </summary>
+        public CellRuntimeDataSO RuntimeData => runtime;
 
         /// <summary>
         /// Live leader by per-domain prism VOLUME - "volume is the spine" (locked
@@ -913,12 +922,24 @@ namespace CosmicShore.Gameplay
             runtime.Cell = this;
             runtime.EnsureCellStats(ID);
 
+            // Elemental integration: any scene with a living cell gets the domain fauna buff
+            // system — living fauna hearts empower their domain's vessels, platform-wide.
+            DomainFaunaBuffSystem.EnsureExists(gameObject, gameData, runtime);
+
             AssignConfig();
             // SpawnVisuals must run before SetupDensityGrids: the density grids
             // are now sized to the cell's membrane radius, and MembraneRadius
             // reads the membrane GameObject that SpawnVisuals instantiates.
-            SpawnVisuals();
-            SetupDensityGrids();
+            using (LoadInsights.Measure(LoadInsightCategory.Environment,
+                       $"Cell membrane+nucleus instantiate (cell {ID})"))
+            {
+                SpawnVisuals();
+            }
+            using (LoadInsights.Measure(LoadInsightCategory.Environment,
+                       $"Cell density grid allocation (cell {ID})"))
+            {
+                SetupDensityGrids();
+            }
             ResetVolumes();
 
             UpdateCellStats();
@@ -1110,9 +1131,13 @@ namespace CosmicShore.Gameplay
         {
             if (!cellConfigData || cellConfigData.CytoplasmPrefab == null) return;
 
-            spawnedCytoplasm = Instantiate(cellConfigData.CytoplasmPrefab, transform.position, Quaternion.identity);
-            spawnedCytoplasm.SetOrigin(transform.position);
-            spawnedCytoplasm.Initialize();
+            using (LoadInsights.Measure(LoadInsightCategory.Environment,
+                       $"Cytoplasm (SnowChanger) instantiate+init (cell {ID})"))
+            {
+                spawnedCytoplasm = Instantiate(cellConfigData.CytoplasmPrefab, transform.position, Quaternion.identity);
+                spawnedCytoplasm.SetOrigin(transform.position);
+                spawnedCytoplasm.Initialize();
+            }
         }
 
         void StartSpawnerForMode()
@@ -1125,6 +1150,7 @@ namespace CosmicShore.Gameplay
 
             activeSpawner.Start(this, cellConfigData, runtime, gameData);
 
+            LoadInsights.Mark($"Flora/fauna spawner started (cell {ID}, {activeSpawner.GetType().Name})");
             CSDebug.Log($"<color=green>[Cell {ID}] Spawner started: {activeSpawner.GetType().Name}</color>");
         }
 

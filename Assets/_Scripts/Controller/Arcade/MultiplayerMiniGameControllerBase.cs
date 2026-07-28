@@ -7,6 +7,7 @@ using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using CosmicShore.Utility;
+using CosmicShore.Utility.PerformanceBenchmark;
 using Reflex.Attributes;
 
 namespace CosmicShore.Gameplay
@@ -29,6 +30,8 @@ namespace CosmicShore.Gameplay
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
+
+            LoadInsights.Mark($"Game controller spawned ({GetType().Name}, IsServer={IsServer})");
 
             if (IsServer)
             {
@@ -116,10 +119,18 @@ namespace CosmicShore.Gameplay
             try
             {
                 Debug.Log($"<color=#00CED1>[FLOW-7] [MultiplayerMiniGameBase] InitializeAfterDelay - waiting {InitDelayMs}ms, IsServer={IsServer}</color>");
-                await UniTask.Delay(InitDelayMs, DelayType.UnscaledDeltaTime);
+                using (LoadInsights.Measure(LoadInsightCategory.ScriptedDelay,
+                           $"InitDelayMs gate before InitializeGame ({InitDelayMs}ms)", isWait: true))
+                {
+                    await UniTask.Delay(InitDelayMs, DelayType.UnscaledDeltaTime);
+                }
 
                 Debug.Log($"<color=#00CED1>[FLOW-7] [MultiplayerMiniGameBase] Calling gameData.InitializeGame(). Players.Count={gameData.Players.Count}</color>");
-                gameData.InitializeGame();
+                using (LoadInsights.Measure(LoadInsightCategory.GameFlow,
+                           "InitializeGame raise (inline listeners: cell, spawn adapters, HUD…)"))
+                {
+                    gameData.InitializeGame();
+                }
 
                 // On replay scene reload, fade in once the player vessel is ready.
                 // Runs on ALL machines (server + clients) since each needs to fade their own overlay.
@@ -513,6 +524,13 @@ namespace CosmicShore.Gameplay
             gameData.RequestedDomainCount = domainCount;
             gameData.IsTournamentMode = isTournament;
             gameData.ComebackRatePerScoreDeficit = comebackRate;
+
+            // Clients began recording before these values replicated — refresh the report header
+            // with the authoritative config now that it has arrived.
+            LoadInsights.Mark("Game config received from server");
+            LoadInsights.SetGameContext(
+                sceneName, ((GameModes)gameMode).ToString(), intensity, playerCount,
+                Mathf.Max(0, playerCount - aiBackfillCount), aiBackfillCount, isMultiplayer);
         }
     }
 }
