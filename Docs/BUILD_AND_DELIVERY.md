@@ -18,6 +18,7 @@ Owner: Shombith. Related: `Docs/STEAM_EA_INVESTOR_CHECKPOINT.pdf`, `Tools/Steam/
 | B5 | Repeatable build checklist | **This document** + `Tools/Build/build_windows.sh`. |
 | B6 | Crash reporting behind consent | **Done** — `CrashReportingService`, gated by the existing analytics consent. |
 | B7 | Steam overlay verification | **Blocked** — needs a real Steam build on the beta branch. Do it during the closed playtest (E7). |
+| — | Nightly build verification (CI) | **Authored, not running** — `.github/workflows/unity-ci.yml`. Needs a runner, see §10. |
 
 ---
 
@@ -203,3 +204,64 @@ Run top to bottom. Every step is either a command above or a box to tick.
   the first IL2CPP build to take considerably longer than a Mono one.
 - Cloud Diagnostics must also be switched on in the Unity Dashboard; the project-side settings are
   set but the service is per-project on the web side.
+
+
+---
+
+## 10. Continuous integration
+
+`.github/workflows/unity-ci.yml`. The repository had no CI before this; this is the first workflow.
+
+### Tiers
+
+| Tier | Trigger | What runs | Catches | Rough time |
+|---|---|---|---|---|
+| `compile` | Every PR into `bleeding-edge` | Edit-mode tests (which force a full compile of runtime, editor, and test assemblies) | Non-compiling C#, broken tests | 5–15 min |
+| `mono` | Nightly, 07:00 UTC | Mono standalone player build | Above, plus broken scenes, missing assets, bad build settings | 20–40 min |
+| `il2cpp` | Weekly, Sunday 08:00 UTC | Full IL2CPP release build | Above, plus AOT/generic failures and native link errors — the ones that only appear in a shipping build | 60–150 min cold |
+
+Any tier can also be run on demand from the Actions tab (**Run workflow** → pick a mode).
+
+### The runner is not chosen yet
+
+`runs-on` reads the repository variable **`UNITY_RUNNER_LABEL`** and falls back to `self-hosted`.
+Until a matching runner exists the job queues rather than doing anything wrong. Options:
+
+| Option | What it needs | Notes |
+|---|---|---|
+| **Self-hosted on the existing build box** | Register the machine as a repo runner; set `UNITY_PATH` | No license activation, no minute costs, and `Library/` stays warm so builds are incremental. Best fit given the build server already exists. |
+| **UGS Build Automation** | Replace the build step with an API call that triggers the existing build target | Least new machinery; logs and status live in UGS rather than on the PR. |
+| **GitHub-hosted** | `UNITY_EMAIL` / `UNITY_PASSWORD` / `UNITY_SERIAL` secrets, plus a larger runner | Standard `windows-latest` offers ~14 GB free disk. This project is a 2.8 GB checkout plus ~10 GB of Unity and Windows IL2CPP tooling, and `Library/` for a project this size lands well beyond that. Windows minutes also bill at 2×. Not viable for a player build; workable for `compile` only. |
+
+### Configuration
+
+| Variable | Where | Purpose |
+|---|---|---|
+| `UNITY_PATH` | Runner env **or** repo variable | Absolute path to the Unity 6000.3.17f1 executable. The job fails fast with a clear message if unset. |
+| `UNITY_RUNNER_LABEL` | Repo variable | Runner label to target. Defaults to `self-hosted`. |
+| `UNITY_TESTS_BLOCKING` | Repo variable | Set to `false` to report edit-mode failures as a warning instead of failing the PR. See the caveat below. |
+
+### Two things to know before turning it on
+
+- **The edit-mode suite has not been run here.** If it is not currently green, the PR gate goes red
+  on day one. Either green it up first, or set `UNITY_TESTS_BLOCKING=false` for a grace period —
+  but treat that as temporary, since a non-blocking gate is not a gate.
+- **Scheduled workflows run the default branch's copy of the file** and check out the default
+  branch. The `resolve` job therefore pins scheduled runs to `bleeding-edge` explicitly, and this
+  workflow must be merged to the default branch before any nightly will fire at all.
+
+### Security
+
+If `froglet-studio/Cosmic-Shore` is **public**, do not attach a self-hosted runner without first
+restricting who can trigger it: a fork PR would otherwise execute arbitrary code on the build
+machine. This workflow uses `pull_request` (never `pull_request_target`) and takes
+`permissions: contents: read`, but the safe configuration on a public repo is to require approval
+for outside-contributor runs, or drop the PR trigger and keep only `schedule` +
+`workflow_dispatch`. On a private repo this is a non-issue.
+
+### What it does not do
+
+- No player artefact upload. The build is multiple GB; only test results and the build manifest are
+  retained. SteamPipe uploads run from the build machine (§4), not from CI.
+- No notifications beyond GitHub's own. Failures surface in the Actions tab and via GitHub's default
+  email; wiring Discord is a later addition if the signal gets missed.
