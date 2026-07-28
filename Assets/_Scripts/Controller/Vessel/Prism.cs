@@ -4,6 +4,7 @@ using UnityEngine;
 using System.Collections;
 using CosmicShore.Core;
 using CosmicShore.Utility;
+using CosmicShore.Utility.PerformanceBenchmark;
 using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
 using UnityEngine.Serialization;
