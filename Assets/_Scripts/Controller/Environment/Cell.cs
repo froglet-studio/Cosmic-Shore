@@ -231,6 +231,14 @@ namespace CosmicShore.Gameplay
         public int LiveBlockCount => trackedBlocks.Count;
 
         /// <summary>
+        /// The shared runtime SO this cell writes to. Read-only handle for residents that
+        /// need to raise its events through their host cell (e.g. Fauna's hearts-changed
+        /// poke) — more reliable than a per-prefab CellRuntimeDataSO wire, which several
+        /// fauna prefabs author as null or dangling.
+        /// </summary>
+        public CellRuntimeDataSO RuntimeData => runtime;
+
+        /// <summary>
         /// Live leader by per-domain prism VOLUME - "volume is the spine" (locked
         /// invariant). NODE CONTROL IS THE NUCLEUS: when this cell has a nucleus
         /// control zone, only the ENVIRONMENT volume INSIDE the nucleus counts -
@@ -913,6 +921,10 @@ namespace CosmicShore.Gameplay
             // Bind runtime -> this cell
             runtime.Cell = this;
             runtime.EnsureCellStats(ID);
+
+            // Elemental integration: any scene with a living cell gets the domain fauna buff
+            // system — living fauna hearts empower their domain's vessels, platform-wide.
+            DomainFaunaBuffSystem.EnsureExists(gameObject, gameData, runtime);
 
             AssignConfig();
             // SpawnVisuals must run before SetupDensityGrids: the density grids
