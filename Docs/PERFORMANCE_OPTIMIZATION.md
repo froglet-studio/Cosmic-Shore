@@ -157,6 +157,112 @@ per-capture analyses; `Docs/SPATIAL_INDEX.md` documents the summation view
 
 ---
 
+## 0.0 LOAD TIME — Joust / Scurry intensity 3–4 (2026-07-28)
+
+Branch `claude/game-load-time-optimization-b3j58o`. Source datum: one Load
+Time Insights recording, **Menu_Main → MinigameJoust_Gameplay, MultiplayerJoust
+intensity 3, 2 players, Editor — 37.49 s**, 156 frames at avg 4.2 fps, worst
+frame 2828 ms.
+
+### The finding: load time IS prism count, near-linearly
+
+| Slice | Cost | Share |
+|---|---|---|
+| Streamed prism lay (`SpawnableSchwarzP::SURFACE`, **49,856 prisms**) | 22.6 s | 60% |
+| Arena settle (creation queue + grow-in, behind the connecting screen) | 11.8 s | 31% |
+| Scene load → activation | 2.4 s | 6% |
+| Splash cover + scripted delays (real, non-overlapped) | ~0.5 s | 1% |
+
+Two numbers close the case. `ConfigureLaid`'s hot-path accumulators total only
+**1.57 s across all 49,856 prisms** (0.031 ms each) — our spawn contract is not
+the cost. The remaining ~33 s divided by the count is **~0.66 ms/prism**, which
+is engine-side clone/integration plus per-prism creation bookkeeping. Both scale
+linearly with the count, so no code fix reaches <20 s at ~50k prisms; the
+content density has to come down too.
+
+**The scripted delays are a red herring here.** The report attributes 3.19 s to
+`postSpawnDelayMs` / `preSpawnDelayMs` / `InitDelayMs`, but the timeline shows
+them running *concurrently* with the environment build and inflated by 2 s
+frames (a 200 ms `UniTask.Delay` costs 2.6 s of attributed time when frames are
+2 s long). Shrinking those constants buys ~0 s. Fix the frames, not the gates.
+
+### Per-intensity prism counts (computed from the spawnables, verified against the recording)
+
+| Mode | Intensity | Spawnable | Before | After |
+|---|---|---|---|---|
+| Joust | 3 | `SpawnableSchwarzP` | 49,856 | **22,048** |
+| Joust | 4 | `SpawnableGyroid` | ~9,859 | unchanged |
+| Crystal Capture ("Scurry") | 3 | `SpawnableHelicoid` | 57,840 | **21,720** |
+| Crystal Capture ("Scurry") | 4 | `SpawnableGyroid` | ~9,859 | unchanged |
+
+SchwarzP count is exact (`Σ |cos u + cos v + cos w| ≤ threshold` over the sample
+grid); Helicoid is exact (`(turns·samplesPerTurn + 1) × radialSamples × sheets`);
+Gyroid was obtained by replaying its BFS + overlap-dedup offline. **Intensity 4
+is only ~10k prisms in both modes** — if i4 still loads slow, the cause is NOT
+the environment build and needs its own recording.
+
+### Shipped (do not re-fix; regression list)
+
+1. **Content density, intensity 3 only** — prefab serialized fields, shape
+   envelope untouched (same `periodScale` / `turns` / `height` / radii, so the
+   arena occupies the same volume; only sampling thins).
+   - `SpawnableSchwarzP`: `samplesPerPeriod` 30 → 24, `surfaceThreshold`
+     0.4 → 0.35. The shell was **2.2–3.8 sample layers thick** while each prism
+     is a 12-unit needle along the surface normal — most of that mass was buried
+     inside a needle. Post-change the band still holds **1.55–2.67 layers**
+     everywhere (worst case at `|∇f| = √3`), so the surface stays closed: no
+     holes. In-plane spacing 10 → 12.5.
+   - `SpawnableHelicoid`: `samplesPerTurn` 40 → 30, `radialSamples` 80 → 40.
+2. **Prisms created behind the load gate settle at creation instead of
+   animating** (`Prism.CreateBlockCoroutine`). The arena-ready gate already
+   force-snapped every one of them before dropping the screen
+   (`SettleGrowWatch` → `CompleteGrowthImmediately`), so this reaches the same
+   covered-screen state without first registering ~50k growers and stepping
+   them thousands-per-frame. **Not a continuity-of-existence exemption** — the
+   law is that the *player* never sees a pop, and the gate guarantees nothing
+   here is on screen. Every prism born outside the gate still blooms in.
+3. **`Prism.LoadGateCreationCompletionsPerFrame` 512 → 4096.** The creation
+   queue, not the grow-in, paced the 11.8 s settle. The gameplay cap (6) is
+   untouched.
+4. **`AsyncInstantiateOperation` integration slice raised to 200 ms while the
+   gate holds** (`PrismTrailBuilder.ApplyIntegrationTimeForGate`, restored on
+   release). Unity's 10 ms default is sized to keep a *running* game smooth,
+   which is exactly wrong behind a covered screen — at 10 ms/frame a 50k arena
+   spends hundreds of frames just integrating finished clones. Gameplay
+   streaming (freestyle microscene conveyor) keeps the engine default.
+5. **`CloneBatchSize` 256 → 1024 while the gate holds** — bigger batches give
+   the engine more to spread across workers; the small batch only ever existed
+   to tick a progress readout nobody watches frame-by-frame.
+6. **`SettleSnapsPerPoll` 2000 → 8192** — with (2) in place this only mops up
+   the cohort laid *before* the connecting panel armed the gate.
+7. **`ElementalComebackSystem` DI-timing bug** (`GameDataSO is not assigned!`,
+   the one error in the recording). `[Inject]` fields land after `Awake` but
+   before `Start`, so `OnEnable` logged and **returned — never subscribing to a
+   single game event**. Every scene-authored comeback system was dead. Now
+   deferred-subscribe (OnEnable → retry in Start, double-subscribe guarded).
+
+### Verify in-editor (next session)
+
+Re-record Load Time Insights for all four cases (Joust i3/i4, Scurry i3/i4).
+Expected Joust i3: lay ~10 s (linear in the new count, better with 4–5),
+settle ~1–2 s, **total ~14–15 s**. Then eyeball the two arenas in play — the
+SchwarzP tunnel network and the Helicoid ramps should read the same shape, one
+notch airier. If either reads too sparse, raise `surfaceThreshold` back toward
+0.4 / `radialSamples` toward 60 and re-measure; the count/threshold relation is
+`count ∝ N³ · threshold`.
+
+### Lessons
+
+- A load-time report's "scripted delays" bucket is attributed wall-clock, not
+  serial cost. Read the TIMELINE for nesting before touching a delay constant —
+  a 200 ms gate that reads as 2.6 s is a symptom of the frames, not a cause.
+- When per-item instrumentation totals ~5% of a span, the cost is in the engine
+  (clone/integrate), not in our code. Cut the item count.
+- Unity's async-instantiate integration budget is a global static tuned for
+  gameplay smoothness. Behind a loading screen it is pure throughput lost.
+
+---
+
 ## 0.1 PREVIOUS SESSION HANDOFF (2026-07-09)
 
 Branch `claude/cosmic-shore-perf-opt-g8j6n0` — tracked by
@@ -1200,3 +1306,4 @@ not compiler, at the time of the merge).
 | 2026-07-09 (flora round, re-verified) | Adversarial pass over the four commits. Markers + gauge gating: SOUND. Two real bugs fixed in `fc9c53f3`: (1) the flora drain outlived `LifeForm.Die` (`StopAllCoroutines` killed the old GrowCoroutine spawn site but not `Update`) — a dying flora kept spawning through its wither window (zombie flora / child pop-out); `Die` override clears the queue. (2) Spindle's evaporate renderer-gone early-out could bail before `DisableSpindle`, hanging `DieCoroutine`'s empty-tracker wait — removed. Hardening: grow orders carry `decidedAt` and drop past `ReservationTtlSeconds − 1` (Frenzy holds could outlive the 5 s claim → overlap risk); drain freezes at `timeScale 0` (parity with the old `WaitForSeconds` loop). **Correction of record:** a material clone stays SRP-batchable; an MPB excludes the renderer for the fade duration — the spindle win is zero material create/destroy churn, at the cost of unbatched draws *during* fades. Re-measure in the next capture; fallback is quantized shared fade materials (phase-variant pattern). Accepted nuances: gauge ring can lag ≤1 rebuild-epsilon (~1.4°, under segment granularity); theme-swap colors up to 0.25 s latent; per-tick flora throughput can under-fill only when a parent dies or an assembler fails mid-window (rare, disclosed). |
 | 2026-07-09 | 6-agent adversarial re-verification of the five commits (pre-editor-test). **3 blockers found in the fresh Task 1 commits, fixed in `d80e7ee5`:** `dtNominal` 0.02 → 0.04 (project Fixed Timestep is 0.04 — growth was ~1.9× too fast as committed; two agents converged on it independently); fixed 0.5 s dt cap → rotation-scaled cap (fixed cap slowed tempo up to 7× under the target frenzy load); cursor drift on removal bursts corrected. GC coverage gaps (clients + Play Again reloads never took the scheduled collect) fixed in `4443df83` via the two all-peers post-load fade-back handlers. WaitForSeconds cache, pool marker verdicts: SOUND (notes: cache misses on the variable-`waitTime` `waitTillOutsideSkimmer` path — acceptable; prewarm burst unmarked — intentional). Final compile-sanity pass over all six edited files: PASS (arithmetic invariants proven, `MaterialStateManager` independent, no external readers of the sliced behavior). Lesson recorded: never assume Unity's 0.02 default fixed timestep — check `TimeManager.asset`. |
 | 2026-07-17 (Sparrow regression) | The `75828ff0` async refill broke Sparrow guns/missiles once merged to bleeding-edge: `InstantiateAsync` bypasses the virtual `CreateFunc`, the only place `ProjectilePoolManager` ran Reflex injection, so async-refilled projectiles carried a null `AudioSystem` and NRE'd in `LaunchProjectile` (stack pool = un-injected instances hand out FIRST; Sparrow missile pool prewarms 5 toward a 20 target, so the pool top went dud within seconds). Fixed in `e146b882`: new `GenericPoolManager.OnInstanceCreated(T)` hook fires on both creation paths; subclass instance-prep (DI injection) must live there, never in a `CreateFunc` override. §1 item 3 updated with the contract. |
+| 2026-07-28 (load time) | Joust/Scurry intensity-3 load time root-caused from a Load Time Insights recording (37.49 s, 49,856 prisms) — see §0.0. Verdict: load time is prism count at ~0.66 ms/prism, engine-side clone/integration; our per-prism spawn contract is 1.57 s of 33 s. Shipped: intensity-3 content density cut (SchwarzP 49,856 → 22,048; Helicoid 57,840 → 21,720, shape envelopes untouched), settle-at-creation behind the load gate, `LoadGateCreationCompletionsPerFrame` 512 → 4096, `AsyncInstantiateOperation` integration slice 10 → 200 ms while covered, gate clone batch 256 → 1024, `SettleSnapsPerPoll` 2000 → 8192, and the `ElementalComebackSystem` `[Inject]`-in-`OnEnable` bug that left every scene-authored instance unsubscribed. Intensity 4 is only ~9,859 prisms in both modes — if it still loads slow it needs its own recording. |

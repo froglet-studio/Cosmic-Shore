@@ -49,8 +49,8 @@ MonoBehaviour:
   prism: {fileID: 4563009547826722997, guid: ed9defc56162b4b4588e61c20984b6d9, type: 3}
   blockScale: {x: 1, y: 2, z: 12}
   periods: 2
-  samplesPerPeriod: 30
-  surfaceThreshold: 0.4
+  samplesPerPeriod: 24
+  surfaceThreshold: 0.35
   periodScale: 300
   colorBySide: 1
   positiveDomain: 3

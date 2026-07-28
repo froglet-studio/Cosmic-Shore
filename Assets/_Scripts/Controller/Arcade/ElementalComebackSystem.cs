@@ -118,18 +118,33 @@ namespace CosmicShore.Gameplay
         // Index matches AllElements order: Mass=0, Charge=1, Space=2, Time=3.
         readonly float[] _lastComebackAudioTime = { -999f, -999f, -999f, -999f };
 
-        void OnEnable()
+        // Reflex populates [Inject] fields AFTER Awake but BEFORE Start, so a scene-authored
+        // instance reaches OnEnable with gameData still null. Deferred-subscribe (CLAUDE.md ▸ DI
+        // Patterns): attempt in OnEnable, retry in Start, guard against double-subscribe.
+        // Previously OnEnable logged "GameDataSO is not assigned!" and returned — which meant
+        // every scene-authored comeback system also never subscribed to a single game event.
+        bool _subscribed;
+
+        void OnEnable() => TrySubscribe();
+
+        void Start()
         {
-            if (gameData == null)
-            {
-                CSDebug.LogError("[ElementalComebackSystem] GameDataSO is not assigned!");
-                return;
-            }
+            TrySubscribe();
+            if (!_subscribed)
+                CSDebug.LogError("[ElementalComebackSystem] GameDataSO is not assigned — the " +
+                                 "scene needs a Reflex ContainerScope, or the component must be " +
+                                 "created via EnsureExists(host, gameData).", this);
+        }
+
+        void TrySubscribe()
+        {
+            if (_subscribed || gameData == null) return;
             // Profile is optional now (initial-levels only) - the system runs without one.
 
             gameData.OnMiniGameTurnStarted.OnRaised += OnTurnStarted;
             gameData.OnMiniGameTurnEnd.OnRaised += OnTurnEnded;
             gameData.OnMiniGameEnd.OnRaised += OnGameEnded;
+            _subscribed = true;
 
             if (debugLogging)
                 CSDebug.Log("[ElementalComebackSystem] Enabled and subscribed to game events.");
@@ -137,10 +152,11 @@ namespace CosmicShore.Gameplay
 
         void OnDisable()
         {
-            if (gameData == null) return;
+            if (!_subscribed || gameData == null) return;
             gameData.OnMiniGameTurnStarted.OnRaised -= OnTurnStarted;
             gameData.OnMiniGameTurnEnd.OnRaised -= OnTurnEnded;
             gameData.OnMiniGameEnd.OnRaised -= OnGameEnded;
+            _subscribed = false;
         }
 
         void OnTurnStarted()

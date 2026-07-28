@@ -643,7 +643,13 @@ namespace CosmicShore.Gameplay
         // the "prisms load in batches during play" bug. Behind the covered screen the de-spike
         // rationale is void (there is no visible frame to protect), so the queue drains in a
         // handful of frames instead. Gameplay frames keep the authored cap untouched.
-        const int LoadGateCreationCompletionsPerFrame = 512;
+        //
+        // Sized so a whole 50k arena drains in ~12 gate frames rather than ~100: Load Time
+        // Insights measured the post-lay "arena settle" window at 11.8s for a 49,856-prism
+        // Joust arena, and the creation queue — not the grow-in — is what paced it. There is
+        // nothing to de-spike behind the curtain; every frame spent under-budget is pure load
+        // time. Only raise the GAMEPLAY cap above with profiler evidence.
+        const int LoadGateCreationCompletionsPerFrame = 4096;
         static int s_creationCompletionsThisFrame;
         static int s_creationBudgetFrame = -1;
 
@@ -746,6 +752,21 @@ namespace CosmicShore.Gameplay
                 // keeps its collider until a bubble boundary happens to cross it.
                 PrismColliderLodManager.NotifyPrismActivated(this);
             }
+
+            // Behind the covered connecting screen the grow-in is never seen: the arena-ready
+            // gate force-settles every laid prism anyway (PrismTrailBuilder.SettleGrowWatch →
+            // CompleteGrowthImmediately) before it lets the screen drop. Doing it HERE — same
+            // call, same post-registration position in the sequence, just at creation instead of
+            // N frames later — reaches the identical covered-screen state without a 50k cohort
+            // first registering as growers and then being stepped thousands-per-frame (transform
+            // write + render sync + volume-cache refresh each) on the way to the same snap.
+            // Load Time Insights: that tail was 11.8s of a 37.5s Joust load.
+            //
+            // NOT a continuity-of-existence exemption: the law is that the PLAYER never sees a
+            // pop, and the gate guarantees nothing here is on screen. Every prism born outside
+            // the gate — gameplay trails, flora, fauna, conveyor, menu — still blooms in.
+            if (PrismTrailBuilder.IsLoadGateHolding)
+                scaleAnimator.CompleteImmediately();
         }
 
         /// <summary>
