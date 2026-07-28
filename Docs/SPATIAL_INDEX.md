@@ -175,8 +175,11 @@ blocked for up to 5s). `AssembledFlora` orders its random-skip *before*
 | `MarkDestroyed(index)` | `Prism.SetupDestruction` **only** | AOE skips; occupancy frees; leaves the cell grids |
 | `MarkRestored(index)` | `Prism.Restore` **only** | Re-enter AOE + occupancy + cell grids |
 | `ForwardDomainChangeToCell(index)` | `Prism.HandleTeamChangedForCell` **only** | Re-file a stolen prism in its cell's per-domain grids + refresh the summation view's live domain (does NOT touch AOE cold data) |
-| `UpdatePosition(index, pos)` | `Prism.NotifyPositionChanged` (movers) | Keep stored position honest |
-| `UpdateShieldState(index, ...)` | `PrismStateManager` **only** | Shield flags for AOE |
+| `UpdatePosition(index, pos)` | `Prism.NotifyPositionChanged` (movers) | Keep stored position honest (also refreshes the shell view's pose for shielded movers) |
+| `UpdateShieldState(index, ...)` | `PrismStateManager` **only** | Shield flags for AOE + publishes/clears the shell view entry |
+| `UpdateShellTransform(index)` | `Prism.RefreshVolumeCache` (growers) + `Prism.NotifyPositionChanged` (movers) | Re-capture a shielded slot's world shell pose; O(1) single-byte no-op for the unshielded majority |
+| `CollectShellContacts(probes, count, hits)` | `PrismShellContactManager` **only** | Shell-contact tier: one synchronous Burst pass testing every shield-flagged slot's analytic shell (octahedron / stella two-tet union, exact) against the frame's probe set |
+| `GetRegisteredPrism(index)` | `PrismShellContactManager` (same-frame resolve) | Managed back-reference for a query-result slot — same parallel-array resolve `ProcessExplosionFrame` uses |
 | `ProcessExplosionFrame(...)` | `ExplosionImpactor` **only** | Batch AOE damage (Burst) |
 | `SetCellBinding(index, cellId, envMass, domain)` | `Cell.AddBlock` **only** | Bind a slot into a cell's summation view |
 | `ClearCellBinding(index, cellId)` | `Cell.RemoveBlock` **only** | Release a slot from the owning cell's summation view (no-op for non-owners) |
@@ -214,11 +217,54 @@ of which are driven by active-force code paths. Reservations are the only
 TTL-expiring entries, and they represent *intent to create mass*, not mass.
 Nothing in this system decays, culls, or auto-corrects prism populations.
 
+## Shell view — the shielded-prism analytic collision tier
+
+A shielded prism's visible shell (octahedron for SHIELDED, the non-convex
+stellated octahedron for SUPER-SHIELDED) is 3× its authored box, but its PhysX
+collider stays the authored box trigger (a convex-mesh trigger is invisible to
+trigger skimmers; a convex-mesh solid is invisible to solid swipes). The
+**shell view** makes the shell the interaction surface without touching PhysX:
+
+- `PrismShellData` (cold, 48B): world rotation + shell center + world semi-axes
+  (`shieldScale · authoredHalfExtents ⊙ lossyScale`) + bounding radius + kind.
+  Populated only for shield-flagged slots; `Kind = None` otherwise. Refreshed at
+  engage/disengage (`UpdateShieldState`, `Register`), on growth steps
+  (`RefreshVolumeCache → UpdateShellTransform`), and for movers
+  (`NotifyPositionChanged → UpdateShellTransform`). Cleared on `Unregister` so
+  slot reuse can never alias a stale shell.
+- `ShellContactQueryJob` (Burst): the AOE-style linear scan with the flag-byte
+  early-out, plus an **exact** narrowphase from `ShieldShellMath`
+  (`_Scripts/Utility/ShieldShellMath.cs`): sphere / capsule / oriented-box
+  probes vs the octahedron (25-axis SAT for boxes, world-space triangle
+  distances for sphere/capsule) and vs the stella as the **union of its two
+  tetrahedra** — a probe touching a spike tip collides; a probe threaded
+  between spikes inside the bounding box does not. The math was validated
+  against independent QP/LP ground truth over 7,200 randomized poses +
+  landmark cases with zero disagreements (edit-mode pins:
+  `ShieldShellMathTests`).
+- `PrismShellContactManager` (`_Scripts/Controller/Managers/`): the Update-rate
+  pump. Vessel hulls and skimmers register their collider sets as probes
+  (world poses re-read every frame, so elemental/driver skimmer resizes need no
+  events); enter transitions dispatch through the same
+  `AcceptImpactee` effect chain as triggers
+  (`ImpactorBase.AcceptImpacteeFromShellContact`), exits mirror the skim
+  bookkeeping (`NotifyShellContactExit`). While a prism's shell owns contact
+  (`ShellOwnsContact`), Skimmer/VesselImpactor suppress their box-trigger prism
+  dispatch so a pair can never double-fire; a pop clears the flags the same
+  frame, and a genuine later box contact re-enters through PhysX (one-swing
+  pop-then-destroy stays emergent). `ForceLegacyBoxInteraction` is the A/B
+  switch back to authored-box behavior (ExplosionImpactor.ForceLegacyPhysics
+  precedent). Markers: `ShellContact.Build` / `ShellContact.Query` /
+  `ShellContact.Dispatch`.
+
 ## What NOT to use it for
 
-- **Raycasts / narrow-phase geometry** (`AIPilot` obstacle rays, skimmer
-  `Collider.ClosestPoint`, arch-burst placement rays) — the index stores
-  points, not extents+rotations. Physics is the right tool there.
+- **Raycasts / general narrow-phase geometry** (`AIPilot` obstacle rays,
+  skimmer `Collider.ClosestPoint`, arch-burst placement rays) — the index
+  stores points (plus the shell view's pose for shielded slots), not arbitrary
+  extents+rotations. Physics is the right tool there. The one sanctioned
+  narrowphase is the shell view above — added via checklist item 2 as a query
+  method on this class, never as a parallel store.
 - **Non-prism fauna proxies** — fauna senses (LightFauna, Boid) DO ride the
   index, because fauna bodies *are* HealthPrisms: registered mass, kept honest
   by the movers contract. What stays forbidden is registering anything that
@@ -278,6 +324,7 @@ registry for its own lattice, `TryReserve` for the world.
 | 2 | `QuerySphere` neighborhood view replaces the remaining physics queries against prisms: `GyroidAssembler.FindClosestMate` (+ fixes its stale `OverlapSphereNonAlloc` array bug, keeps a Mound-layer probe for unregistered mound blocks), `WallAssembler` mate-finding (was allocating `OverlapSphere`; its `MoveMateToSite` now also upholds the movers contract), `ScoutTrailPrismScaler` (adaptive `IsAnyPrismWithin`), `LightFauna` (prisms via index, vessels via prism-masked physics), `Boid` prism-attraction + boid-neighbor scan (fully index-based). Fauna bodies uphold the movers contract via `Fauna.NotifyBodyPrismsMoved` — also fixes batch AOE hitting creatures at their spawn point. A planned `FindNearest` view was folded into callers' own scoring loops (every caller filters candidates with custom logic). | **Shipped** |
 | 3 | Cell density grids driven by the index lifecycle: `Register`/`MarkRestored` bind the containing cell (`Cell.AddBlock`), `MarkDestroyed`/`Unregister` release it, `ForwardDomainChangeToCell` re-files steals. `Prism` lost `_registeredCell`/`RegisterWithCell`/`UnregisterFromCell` — every lifecycle moment makes ONE index call and the coarse view follows. Bonus consistency fix: restoring a prism that was killed inside its spawn window (never registered) now does a full `Register`, where the old code put it in the cell grids but left it invisible to AOE/occupancy. The flora ownership stream (`HealthBlockTracker`) remains a second, idempotent `Cell.AddBlock` contributor. | **Shipped** |
 | 4 | Optional: bucket-accelerated AOE if profiling ever demands it. (A second index instance over fauna is no longer needed for current populations — fauna bodies are registered prisms and their senses already ride this index; it would only return if a non-prism fauna population appears.) | Candidate |
+| 5 | Shell view: shape-precise shielded/super-shielded collision as a Burst query tier (`PrismShellData` + `ShellContactQueryJob` + `PrismShellContactManager`) — vessels/skimmers interact at the visible shell (exact octahedron / non-convex stella union) instead of the authored box, with the box trigger suppressed for shell-owned pairs. Replaces the abandoned trigger-resize + managed-narrowphase approach (`claude/skimmers-shielded-prisms-hek21c`), whose per-pair `OnTriggerStay` re-tests inside `Physics.SendEvents` were unbounded in shielded-prism density. | **Shipped** |
 
 ## Adding a consumer (checklist)
 
