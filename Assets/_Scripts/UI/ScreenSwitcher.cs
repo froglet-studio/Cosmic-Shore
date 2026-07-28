@@ -133,6 +133,7 @@ namespace CosmicShore.UI
         {
             activeModalStack.Add(modalType);
             SetReturnToModal(activeModalStack.Last());
+            UpdateScreensInteractable();
         }
 
         public void PopModal()
@@ -143,6 +144,22 @@ namespace CosmicShore.UI
             activeModalStack.RemoveAt(activeModalStack.Count - 1);
 
             SetReturnToModal(activeModalStack.Count == 0 ? ModalWindows.NONE : activeModalStack.Last());
+            UpdateScreensInteractable();
+        }
+
+        /// <summary>
+        /// Screens stay visible under an open modal but must not accept input - without
+        /// this, buttons on the screen behind the modal remain clickable. Toggles only
+        /// interactable: alpha stays 1 (screens visible behind the modal) and
+        /// blocksRaycasts stays on (clicks outside the modal don't fall through to the
+        /// 3D scene). Freestyle hides the whole group itself, so never fight that state.
+        /// </summary>
+        private void UpdateScreensInteractable()
+        {
+            if (!screensCanvasGroup) return;
+            if (InFreestyle) return;
+
+            screensCanvasGroup.interactable = activeModalStack.Count == 0;
         }
 
         #endregion
