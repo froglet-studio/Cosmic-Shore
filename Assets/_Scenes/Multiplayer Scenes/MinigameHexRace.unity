@@ -9931,7 +9931,7 @@ MonoBehaviour:
   onUpdateTurnMonitorDisplay: {fileID: 11400000, guid: eeddfa759c802804cb806e62ab076f4d,
     type: 2}
   optionalEnvironment: {fileID: 1899528610}
-  optionalLaps: 4
+  optionalLaps: 3
 --- !u!114 &1078953729
 MonoBehaviour:
   m_ObjectHideFlags: 0
