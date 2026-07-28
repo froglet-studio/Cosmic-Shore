@@ -15,6 +15,7 @@ namespace CosmicShore.Gameplay
     public abstract class MultiplayerMiniGameControllerBase : MiniGameControllerBase
     {
         [Inject] private SceneTransitionManager _sceneTransitionManager;
+        [Inject] private HostConnectionDataSO _hostConnectionData;
 
         protected virtual int InitDelayMs => 1000;
         private bool _isResetting;
@@ -37,6 +38,8 @@ namespace CosmicShore.Gameplay
                 gameData.OnMiniGameTurnEnd.OnRaised += HandleTurnEnd;
                 gameData.OnSessionStarted.OnRaised += SubscribeToSessionEvents;
 
+                StampMatchEnvelope();
+
                 // Sync game config to all clients now that we're in the game scene.
                 // Previously this was done by SceneLoader via ClientRpc before scene load,
                 // but SceneLoader is now a plain MonoBehaviour (no RPCs).
@@ -50,7 +53,10 @@ namespace CosmicShore.Gameplay
                     gameData.RequestedAIBackfillCount,
                     gameData.RequestedDomainCount,
                     gameData.IsTournamentMode,
-                    gameData.ComebackRatePerScoreDeficit
+                    gameData.ComebackRatePerScoreDeficit,
+                    gameData.MatchId,
+                    gameData.PartyId,
+                    gameData.InviteTriggered
                 );
             }
 
@@ -157,6 +163,36 @@ namespace CosmicShore.Gameplay
             }
         }
         
+        /// <summary>
+        /// Host-only: stamps the identifiers that group players into one game instance.
+        /// Runs once per game launch, before the config broadcast.
+        ///
+        /// player_ids is deliberately NOT stamped here - at OnNetworkSpawn the roster has not
+        /// settled. It is derived at game_started from replicated Player NetworkObjects and
+        /// sorted, so every peer computes the same set from the same replicated state.
+        /// See Docs/Analytics/DATA_ARCHITECTURE.md §6.
+        /// </summary>
+        void StampMatchEnvelope()
+        {
+            gameData.MatchId = Guid.NewGuid().ToString("N");
+            gameData.PartyId = ResolvePartyId();
+            gameData.InviteTriggered = _hostConnectionData != null && _hostConnectionData.PartyFormedByInvite;
+        }
+
+        /// <summary>
+        /// The Relay party session id, shared by everyone in the session. Falls back to the
+        /// match id for a solo session with no active session object, so the field is never
+        /// empty and solo games do not all collapse into one group.
+        /// </summary>
+        string ResolvePartyId()
+        {
+            var session = gameData.ActiveSession;
+            if (session != null && !string.IsNullOrEmpty(session.Id))
+                return session.Id;
+
+            return gameData.MatchId;
+        }
+
         // ---------------- Turn & Round Flow ----------------
 
         protected override void OnCountdownTimerEnded()
@@ -467,9 +503,16 @@ namespace CosmicShore.Gameplay
         void SyncGameConfigToClients_ClientRpc(
             string sceneName, int gameMode, bool isMultiplayer,
             int vesselClass, int intensity, int playerCount, int aiBackfillCount,
-            int domainCount, bool isTournament, float comebackRate)
+            int domainCount, bool isTournament, float comebackRate,
+            string matchId, string partyId, bool inviteTriggered)
         {
             if (IsServer) return;
+
+            // Match envelope: echoed verbatim, never recomputed. Every client must emit the
+            // SAME identifiers on game_started or the analytics GROUP BY fragments.
+            gameData.MatchId = matchId;
+            gameData.PartyId = partyId;
+            gameData.InviteTriggered = inviteTriggered;
 
             gameData.SceneName = sceneName;
             gameData.GameMode = (GameModes)gameMode;

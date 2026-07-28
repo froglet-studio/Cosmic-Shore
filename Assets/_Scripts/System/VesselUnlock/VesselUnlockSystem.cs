@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using CosmicShore.UI;
 using CosmicShore.Core;
 using CosmicShore.Utility;
@@ -76,12 +77,16 @@ namespace CosmicShore.Core
                 vessel.Lock();
             }
 
-            // Clear cloud data (skipped while the progression backend gate is closed)
+            // Clear ownership only. Lifetime per-vessel stats live in the same record now
+            // and are TELEMETRY, not entitlement - a debug unlock reset must not wipe them.
+            // Skipped entirely while the progression backend gate is closed (local-only mode).
             var ds = ProgressionBackendGate.CloudEnabled ? UGSDataService.Instance : null;
             if (ds?.HangarRepo != null)
             {
-                ds.HangarRepo.Data.UnlockedVessels.Clear();
-                ds.HangarRepo.Data.VesselPreferences.Clear();
+                foreach (var name in new List<string>(ds.HangarRepo.Data.UnlockedVesselNames()))
+                    ds.HangarRepo.Data.LockVessel(name);
+
+                ds.HangarRepo.Data.SelectedVessel = "";
                 ds.HangarRepo.MarkDirty();
             }
 
@@ -95,8 +100,16 @@ namespace CosmicShore.Core
             var ds = UGSDataService.Instance;
             if (ds?.HangarRepo == null) return;
 
+            if (string.IsNullOrWhiteSpace(vesselName))
+            {
+                // SO_Vessel.Name is authored data and at least one asset ships blank. Persisting
+                // it is what put an empty string in the old flat UnlockedVessels list.
+                CSDebug.LogWarning("[VesselUnlockSystem] Refusing to persist unlock state for a vessel with a blank Name. Fix the SO_Vessel asset.");
+                return;
+            }
+
             if (unlocked)
-                ds.HangarRepo.Data.UnlockVessel(vesselName);
+                ds.HangarRepo.Data.UnlockVessel(vesselName, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
             else
                 ds.HangarRepo.Data.LockVessel(vesselName);
 

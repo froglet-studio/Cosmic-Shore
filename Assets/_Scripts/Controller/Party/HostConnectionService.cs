@@ -645,6 +645,10 @@ namespace CosmicShore.Gameplay
                     "[INVITE-SEND] SaveCurrentPlayerDataAsync completed - properties persisted",
                     Color.green);
 
+                // This party is now invite-formed for analytics purposes (host side).
+                // Cleared by HostConnectionDataSO.ResetRuntimeData on party teardown.
+                connectionData.PartyFormedByInvite = true;
+
                 foreach (var player in connectionData.OnlinePlayers.ToList())
                 {
                     if (player.PlayerId != targetPlayerId) continue;
@@ -692,6 +696,10 @@ namespace CosmicShore.Gameplay
             // re-spawn a row for the invite the user just accepted.
             _lastInviteResolved = true;
             _eventBus.RaiseInviteResolved();
+
+            // This party is invite-formed for analytics purposes (joiner side).
+            connectionData.PartyFormedByInvite = true;
+
             try
             {
                 SyncLocalIdentity();
@@ -1910,8 +1918,8 @@ namespace CosmicShore.Gameplay
 
             if (playerDataService?.CurrentProfile != null)
             {
-                connectionData.LocalDisplayName = playerDataService.CurrentProfile.displayName;
-                connectionData.LocalAvatarId    = playerDataService.CurrentProfile.avatarId;
+                connectionData.LocalDisplayName = playerDataService.CurrentProfile.Identity.DisplayName;
+                connectionData.LocalAvatarId    = playerDataService.CurrentProfile.Identity.AvatarId;
             }
 
             // Fallback chain so LocalDisplayName is NEVER empty when used to

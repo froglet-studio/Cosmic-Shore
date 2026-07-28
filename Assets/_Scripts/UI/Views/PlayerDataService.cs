@@ -58,11 +58,19 @@ namespace CosmicShore.UI
                 ds.OnInitialized -= HandleDataServiceReady;
 
             OnProfileChanged -= SyncProfileToGameData;
+
+            if (gameData != null)
+                gameData.OnMiniGameEnd.OnRaised -= HandleMiniGameEnd;
         }
 
         void Start()
         {
             OnProfileChanged += SyncProfileToGameData;
+
+            // Lifetime games/flight-time totals. Menu freestyle never raises this, so the
+            // lava lamp stays out - matching the analytics game_completed boundary.
+            if (gameData != null)
+                gameData.OnMiniGameEnd.OnRaised += HandleMiniGameEnd;
 
             if (_ugsDataService == null)
             {
@@ -84,24 +92,71 @@ namespace CosmicShore.UI
             _ugsDataService.OnInitialized -= HandleDataServiceReady;
 
             MergeCloudProfile();
-
-            // Stamp account-creation time once for cohorting (cross-session, cloud-persisted).
-            if (CurrentProfile != null && CurrentProfile.firstSeenUtc == 0)
-            {
-                CurrentProfile.firstSeenUtc = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-                SyncCurrentProfileToRepo();
-            }
-
+            StampSessionLifecycle();
             ApplyPendingDebugCrystals();
 
             IsInitialized = true;
             OnProfileChanged?.Invoke(CurrentProfile);
 
-            // Notify currency displays of the freshly-loaded cloud value. This view subscribes
-            // to the static balance event but it is otherwise only raised on mutation
-            // (AddCrystals), so without this it would show the local-default 0 until the next
-            // change.
-            OnCrystalBalanceChanged?.Invoke(CurrentProfile?.crystalBalance ?? 0);
+            // Notify currency/XP displays of the freshly-loaded cloud values. These views
+            // subscribe to the static balance/xp events but those are otherwise only raised on
+            // mutation (AddCrystals/AddXP), so without this they'd show the local-default 0
+            // until the next change.
+            OnCrystalBalanceChanged?.Invoke(GetCrystalBalance());
+            OnXPChanged?.Invoke(GetXP());
+        }
+
+        /// <summary>
+        /// Stamps the account timeline once per session: first-seen (once ever), last-seen,
+        /// session count, and the client build/platform. These are the segmentation
+        /// denominators every "is this regression real" question needs, and nothing recorded
+        /// them before.
+        /// </summary>
+        void StampSessionLifecycle()
+        {
+            if (CurrentProfile?.Lifecycle == null) return;
+
+            var lifecycle = CurrentProfile.Lifecycle;
+            long nowUtcMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+
+            if (lifecycle.FirstSeenUtcMs == 0)
+                lifecycle.FirstSeenUtcMs = nowUtcMs;
+
+            lifecycle.LastSeenUtcMs = nowUtcMs;
+            lifecycle.SessionCount++;
+            lifecycle.LastAppVersion = Application.version;
+            lifecycle.LastPlatform = Application.platform.ToString();
+
+            SyncCurrentProfileToRepo();
+        }
+
+        int _lastRecordedGameSequence;
+
+        void HandleMiniGameEnd()
+        {
+            // Some modes raise OnMiniGameEnd more than once; latch the clock's game sequence
+            // so lifetime totals count each game exactly once.
+            if (FlightClock.CompletedGameSequence == _lastRecordedGameSequence)
+                return;
+
+            _lastRecordedGameSequence = FlightClock.CompletedGameSequence;
+            RecordGameCompleted(FlightClock.LastGameSeconds);
+        }
+
+        /// <summary>
+        /// Adds one game's flight time to the lifetime total and bumps the completed-game
+        /// count. Called at game end; the lifetime total must reconcile with the sum of the
+        /// per-game flight_time_seconds analytics events.
+        /// </summary>
+        public void RecordGameCompleted(float flightTimeSeconds)
+        {
+            if (CurrentProfile?.Lifecycle == null) return;
+
+            CurrentProfile.Lifecycle.GamesCompleted++;
+            if (flightTimeSeconds > 0f)
+                CurrentProfile.Lifecycle.TotalFlightTimeSeconds += flightTimeSeconds;
+
+            ScheduleSave();
         }
 
         /// <summary>
@@ -114,7 +169,7 @@ namespace CosmicShore.UI
             if (ds?.ProfileRepo == null) return;
 
             var cloudData = ds.ProfileRepo.Data;
-            if (cloudData == null || string.IsNullOrEmpty(cloudData.userId))
+            if (cloudData?.Identity == null || string.IsNullOrEmpty(cloudData.Identity.UserId))
             {
                 // No cloud profile → push local defaults to cloud
                 SyncCurrentProfileToRepo();
@@ -123,8 +178,8 @@ namespace CosmicShore.UI
 
             // Merge unlocked rewards: union of local + cloud sets
             bool needsResync = false;
-            var localRewards = CurrentProfile.unlockedRewardIds ?? new List<string>();
-            var cloudRewards = cloudData.unlockedRewardIds ?? new List<string>();
+            var localRewards = CurrentProfile.Economy?.UnlockedRewardIds ?? new List<string>();
+            var cloudRewards = cloudData.Economy.UnlockedRewardIds ?? new List<string>();
             foreach (var rewardId in localRewards)
             {
                 if (!cloudRewards.Contains(rewardId))
@@ -133,7 +188,7 @@ namespace CosmicShore.UI
                     needsResync = true;
                 }
             }
-            cloudData.unlockedRewardIds = cloudRewards;
+            cloudData.Economy.UnlockedRewardIds = cloudRewards;
 
             // Update local userId from auth
             try
@@ -142,7 +197,7 @@ namespace CosmicShore.UI
                     AuthenticationService.Instance != null &&
                     AuthenticationService.Instance.IsSignedIn)
                 {
-                    cloudData.userId = AuthenticationService.Instance.PlayerId;
+                    cloudData.Identity.UserId = AuthenticationService.Instance.PlayerId;
                 }
             }
             catch { /* auth not ready, keep existing userId */ }
@@ -157,12 +212,12 @@ namespace CosmicShore.UI
 
         void CreateLocalDefaultProfile(string playerId)
         {
-            CurrentProfile = new PlayerProfileData
-            {
-                userId      = string.IsNullOrEmpty(playerId) ? Guid.NewGuid().ToString("N") : playerId,
-                displayName = GenerateDefaultDisplayName(),
-                avatarId    = GetDefaultAvatarId()
-            };
+            CurrentProfile = new PlayerProfileData();
+            CurrentProfile.Identity.UserId = string.IsNullOrEmpty(playerId)
+                ? Guid.NewGuid().ToString("N")
+                : playerId;
+            CurrentProfile.Identity.DisplayName = GenerateDefaultDisplayName();
+            CurrentProfile.Identity.AvatarId = GetDefaultAvatarId();
         }
 
         static string GenerateDefaultDisplayName()
@@ -188,14 +243,14 @@ namespace CosmicShore.UI
             var ds = _ugsDataService;
             if (ds?.ProfileRepo == null || CurrentProfile == null) return;
 
+            // Assign whole groups rather than individual fields: adding a field to any group
+            // then needs no change here, which is one of the reasons the model is grouped.
             var repoData = ds.ProfileRepo.Data;
-            repoData.userId = CurrentProfile.userId;
-            repoData.displayName = CurrentProfile.displayName;
-            repoData.avatarId = CurrentProfile.avatarId;
-            repoData.crystalBalance = CurrentProfile.crystalBalance;
-            repoData.xp = CurrentProfile.xp;
-            repoData.unlockedRewardIds = CurrentProfile.unlockedRewardIds;
-            repoData.firstSeenUtc = CurrentProfile.firstSeenUtc;
+            repoData.SchemaVersion = CurrentProfile.SchemaVersion;
+            repoData.Identity = CurrentProfile.Identity;
+            repoData.Economy = CurrentProfile.Economy;
+            repoData.Progression = CurrentProfile.Progression;
+            repoData.Lifecycle = CurrentProfile.Lifecycle;
 
             ds.ProfileRepo.MarkDirty();
         }
@@ -233,7 +288,7 @@ namespace CosmicShore.UI
             if (CurrentProfile == null)
                 return;
 
-            CurrentProfile.avatarId = avatarId;
+            CurrentProfile.Identity.AvatarId = avatarId;
             // OnProfileChanged drives the menu UI (ProfileScreen/widgets), gameData.LocalPlayerAvatarId,
             // and the local Player's NetAvatarId (Player.HandleProfileLoadedAfterSpawn → replicates
             // the new avatar to every peer in-game).
@@ -247,7 +302,7 @@ namespace CosmicShore.UI
             if (CurrentProfile == null)
                 return;
 
-            CurrentProfile.displayName = displayName;
+            CurrentProfile.Identity.DisplayName = displayName;
             OnProfileChanged?.Invoke(CurrentProfile);
             ScheduleSave();
         }
@@ -256,8 +311,8 @@ namespace CosmicShore.UI
         {
             if (gameData != null)
             {
-                gameData.LocalPlayerDisplayName = data.displayName;
-                gameData.LocalPlayerAvatarId = data.avatarId;
+                gameData.LocalPlayerDisplayName = data.Identity.DisplayName;
+                gameData.LocalPlayerAvatarId = data.Identity.AvatarId;
             }
         }
 
@@ -278,40 +333,65 @@ namespace CosmicShore.UI
         // ----------------- Crystal Currency -----------------
 
         public static event Action<int> OnCrystalBalanceChanged;
+        public static event Action<int> OnXPChanged;
 
         public int GetCrystalBalance()
         {
-            return CurrentProfile?.crystalBalance ?? 0;
+            return CurrentProfile?.Economy?.CrystalBalance ?? 0;
+        }
+
+        public int GetXP()
+        {
+            return CurrentProfile?.Progression?.Xp ?? 0;
+        }
+
+        /// <summary>
+        /// Adds XP to the player's profile, persists it, and notifies listeners.
+        /// Mirrors <see cref="AddCrystals"/> so the XP progress bar has a single,
+        /// authoritative earning + persistence path.
+        /// </summary>
+        public int AddXP(int amount)
+        {
+            if (CurrentProfile == null || amount <= 0) return GetXP();
+
+            CurrentProfile.Progression.Xp += amount;
+            ScheduleSave();
+            OnXPChanged?.Invoke(CurrentProfile.Progression.Xp);
+            OnProfileChanged?.Invoke(CurrentProfile);
+            CSDebug.Log($"[PlayerDataService] Added {amount} XP. Total: {CurrentProfile.Progression.Xp}");
+            return CurrentProfile.Progression.Xp;
         }
 
         public int AddCrystals(int amount, string source = null)
         {
             if (CurrentProfile == null || amount <= 0) return GetCrystalBalance();
 
-            CurrentProfile.crystalBalance += amount;
+            CurrentProfile.Economy.CrystalBalance += amount;
+            CurrentProfile.Economy.LifetimeCrystalsEarned += amount;
             ScheduleSave();
-            OnCrystalBalanceChanged?.Invoke(CurrentProfile.crystalBalance);
+            OnCrystalBalanceChanged?.Invoke(CurrentProfile.Economy.CrystalBalance);
             OnProfileChanged?.Invoke(CurrentProfile);
-            _analytics?.RecordCrystalsEarned(amount, source, CurrentProfile.crystalBalance);
-            CSDebug.Log($"[PlayerDataService] Added {amount} crystals. Balance: {CurrentProfile.crystalBalance}");
-            return CurrentProfile.crystalBalance;
+            _analytics?.RecordCrystalsEarned(amount, source, CurrentProfile.Economy.CrystalBalance);
+            CSDebug.Log($"[PlayerDataService] Added {amount} crystals. Balance: {CurrentProfile.Economy.CrystalBalance}");
+            return CurrentProfile.Economy.CrystalBalance;
         }
 
         public bool TrySpendCrystals(int amount, string source = null)
         {
             if (CurrentProfile == null || amount <= 0) return false;
-            if (CurrentProfile.crystalBalance < amount)
+            if (CurrentProfile.Economy.CrystalBalance < amount)
             {
-                _analytics?.RecordCrystalSpendBlocked(amount, source, CurrentProfile.crystalBalance);
+                _analytics?.RecordCrystalSpendBlocked(amount, source, CurrentProfile.Economy.CrystalBalance);
                 return false;
             }
 
-            CurrentProfile.crystalBalance -= amount;
+            CurrentProfile.Economy.CrystalBalance -= amount;
+            CurrentProfile.Economy.LifetimeCrystalsSpent += amount;
             ScheduleSave();
-            OnCrystalBalanceChanged?.Invoke(CurrentProfile.crystalBalance);
+            OnCrystalBalanceChanged?.Invoke(CurrentProfile.Economy.CrystalBalance);
             OnProfileChanged?.Invoke(CurrentProfile);
-            _analytics?.RecordCrystalsSpent(amount, source, CurrentProfile.crystalBalance);
-            CSDebug.Log($"[PlayerDataService] Spent {amount} crystals. Balance: {CurrentProfile.crystalBalance}");
+            _analytics?.RecordCrystalsSpent(amount, source, CurrentProfile.Economy.CrystalBalance);
+            CSDebug.Log($"[PlayerDataService] Spent {amount} crystals. Balance: {CurrentProfile.Economy.CrystalBalance}");
             return true;
         }
 
@@ -323,13 +403,12 @@ namespace CosmicShore.UI
             if (CurrentProfile == null || string.IsNullOrEmpty(rewardId))
                 return;
 
-            if (CurrentProfile.unlockedRewardIds == null)
-                CurrentProfile.unlockedRewardIds = new List<string>();
+            CurrentProfile.Economy.UnlockedRewardIds ??= new List<string>();
 
-            if (CurrentProfile.unlockedRewardIds.Contains(rewardId))
+            if (CurrentProfile.Economy.UnlockedRewardIds.Contains(rewardId))
                 return;
 
-            CurrentProfile.unlockedRewardIds.Add(rewardId);
+            CurrentProfile.Economy.UnlockedRewardIds.Add(rewardId);
             OnProfileChanged?.Invoke(CurrentProfile);
             ScheduleSave();
             CSDebug.Log($"[PlayerDataService] Reward unlocked: {rewardId}");
@@ -340,8 +419,8 @@ namespace CosmicShore.UI
         /// </summary>
         public bool IsRewardUnlocked(string rewardId)
         {
-            return CurrentProfile?.unlockedRewardIds != null &&
-                   CurrentProfile.unlockedRewardIds.Contains(rewardId);
+            return CurrentProfile?.Economy?.UnlockedRewardIds != null &&
+                   CurrentProfile.Economy.UnlockedRewardIds.Contains(rewardId);
         }
 
         /// <summary>
@@ -366,10 +445,10 @@ namespace CosmicShore.UI
             int pending = LogControlWindow.ConsumePendingDebugCrystals();
             if (pending > 0 && CurrentProfile != null)
             {
-                CurrentProfile.crystalBalance += pending;
+                CurrentProfile.Economy.CrystalBalance += pending;
                 ScheduleSave();
-                OnCrystalBalanceChanged?.Invoke(CurrentProfile.crystalBalance);
-                CSDebug.Log($"[PlayerDataService] Applied {pending} pending debug crystals. Balance: {CurrentProfile.crystalBalance}");
+                OnCrystalBalanceChanged?.Invoke(CurrentProfile.Economy.CrystalBalance);
+                CSDebug.Log($"[PlayerDataService] Applied {pending} pending debug crystals. Balance: {CurrentProfile.Economy.CrystalBalance}");
             }
 #endif
         }

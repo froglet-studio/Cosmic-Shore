@@ -39,8 +39,7 @@ namespace CosmicShore.Core
 
         // ── Repositories ──
         PlayerProfileRepository _profile;
-        PlayerStatsRepository _stats;
-        VesselStatsRepository _vesselStats;
+        ModeStatsRepository _modeStats;
         GameProgressionRepository _progression;
         HangarRepository _hangar;
         EpisodeProgressRepository _episodes;
@@ -61,8 +60,7 @@ namespace CosmicShore.Core
 
         // Read-only accessors (for UI / query-only consumers)
         public ICloudDataReader<PlayerProfileData> Profile => _profile;
-        public ICloudDataReader<PlayerStatsProfile> Stats => _stats;
-        public ICloudDataReader<VesselStatsCloudData> VesselStats => _vesselStats;
+        public ICloudDataReader<ModeStatsCloudData> ModeStats => _modeStats;
         public ICloudDataReader<GameModeProgressionData> Progression => _progression;
         public ICloudDataReader<HangarCloudData> Hangar => _hangar;
         public ICloudDataReader<EpisodeProgressCloudData> Episodes => _episodes;
@@ -75,8 +73,7 @@ namespace CosmicShore.Core
 
         // Typed write access (for game systems that mutate + mark dirty)
         public PlayerProfileRepository ProfileRepo => _profile;
-        public PlayerStatsRepository StatsRepo => _stats;
-        public VesselStatsRepository VesselStatsRepo => _vesselStats;
+        public ModeStatsRepository ModeStatsRepo => _modeStats;
         public GameProgressionRepository ProgressionRepo => _progression;
         public HangarRepository HangarRepo => _hangar;
         public EpisodeProgressRepository EpisodesRepo => _episodes;
@@ -135,8 +132,7 @@ namespace CosmicShore.Core
         void CreateRepositories()
         {
             _profile = new PlayerProfileRepository(_provider);
-            _stats = new PlayerStatsRepository(_provider);
-            _vesselStats = new VesselStatsRepository(_provider);
+            _modeStats = new ModeStatsRepository(_provider);
             _progression = new GameProgressionRepository(_provider);
             _hangar = new HangarRepository(_provider);
             _episodes = new EpisodeProgressRepository(_provider);
@@ -149,7 +145,7 @@ namespace CosmicShore.Core
 
             _allRepos = new List<ICloudDataWriter>
             {
-                _profile, _stats, _vesselStats, _progression,
+                _profile, _modeStats, _progression,
                 _hangar, _episodes, _settings,
                 _dailyChallenge, _training, _squad, _loadout, _questGraph
             };
@@ -163,8 +159,7 @@ namespace CosmicShore.Core
 
             await Task.WhenAll(
                 _profile.LoadAsync(ct),
-                _stats.LoadAsync(ct),
-                _vesselStats.LoadAsync(ct),
+                _modeStats.LoadAsync(ct),
                 _progression.LoadAsync(ct),
                 _hangar.LoadAsync(ct),
                 _episodes.LoadAsync(ct),
@@ -206,8 +201,7 @@ namespace CosmicShore.Core
 
                 await Task.WhenAll(
                     _profile.ResetAsync(ct),
-                    _stats.ResetAsync(ct),
-                    _vesselStats.ResetAsync(ct),
+                    _modeStats.ResetAsync(ct),
                     _progression.ResetAsync(ct),
                     _hangar.ResetAsync(ct),
                     _episodes.ResetAsync(ct),

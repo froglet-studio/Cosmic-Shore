@@ -495,7 +495,15 @@ namespace CosmicShore.UI
                 _previewVideo = Instantiate(game.PreviewClip, selectedGamePreviewWindow.transform, false);
                 var rt = _previewVideo.GetComponent<RectTransform>();
                 if (rt)
-                    rt.sizeDelta = new Vector2(300, 152);
+                {
+                    // Stretch to fill the preview window. The prefab's authored fixed
+                    // size predates the canvas resolution upgrade and no longer matches
+                    // the parent, leaving the video floating small in its frame.
+                    rt.anchorMin = Vector2.zero;
+                    rt.anchorMax = Vector2.one;
+                    rt.offsetMin = Vector2.zero;
+                    rt.offsetMax = Vector2.zero;
+                }
             }
             else
             {

@@ -191,7 +191,9 @@ A uGUI overlay that **auto-spawns in the Editor and Development builds** (stripp
 needs no editor window and writes its own reports.
 
 **Controls:** **F7** toggles the whole overlay · **F6** Advanced/Simple · **F5** Run Diagnostic.
-On-screen buttons mirror these (**Advanced/Simple**, **Run Ns**, **– / +** to set the duration).
+On-screen buttons mirror these (**Advanced/Simple**, **Run Ns**, **– / +** to set the duration),
+plus **Min**, which collapses the overlay to an FPS-only strip (no buttons, no console). Click
+anywhere on the collapsed strip to restore the detailed view.
 
 **Layout** (top-left, two side-by-side blocks, color-coded by health — green/amber/red):
 
