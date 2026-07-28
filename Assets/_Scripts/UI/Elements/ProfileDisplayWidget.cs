@@ -37,12 +37,12 @@ namespace CosmicShore.UI
             if (profile == null) return;
 
             if (displayNameText != null)
-                displayNameText.text = profile.displayName;
+                displayNameText.text = profile.Identity.DisplayName;
 
             if (avatarImage != null)
             {
                 var sprite = playerDataService != null
-                    ? playerDataService.GetAvatarSprite(profile.avatarId)
+                    ? playerDataService.GetAvatarSprite(profile.Identity.AvatarId)
                     : null;
                 avatarImage.sprite = sprite;
                 avatarImage.enabled = sprite != null;

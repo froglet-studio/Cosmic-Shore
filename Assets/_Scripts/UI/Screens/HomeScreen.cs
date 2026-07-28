@@ -87,12 +87,13 @@ namespace CosmicShore.UI
             if (profile == null)
                 return;
 
-            if (userNameText != null)
-                userNameText.text = profile.displayName;
+            // Use the refactored Identity shape if present (incoming branch); keep avatar logic from ours
+            if (userNameText != null && profile.Identity != null)
+                userNameText.text = profile.Identity.DisplayName;
 
-            if (avatarImage != null && playerDataService != null)
+            if (avatarImage != null && playerDataService != null && profile.Identity != null)
             {
-                var sprite = playerDataService.GetAvatarSprite(profile.avatarId);
+                var sprite = playerDataService.GetAvatarSprite(profile.Identity.AvatarId);
                 if (sprite != null)
                     avatarImage.sprite = sprite;
             }
