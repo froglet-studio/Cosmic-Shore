@@ -1910,8 +1910,8 @@ namespace CosmicShore.Gameplay
 
             if (playerDataService?.CurrentProfile != null)
             {
-                connectionData.LocalDisplayName = playerDataService.CurrentProfile.displayName;
-                connectionData.LocalAvatarId    = playerDataService.CurrentProfile.avatarId;
+                connectionData.LocalDisplayName = playerDataService.CurrentProfile.Identity.DisplayName;
+                connectionData.LocalAvatarId    = playerDataService.CurrentProfile.Identity.AvatarId;
             }
 
             // Fallback chain so LocalDisplayName is NEVER empty when used to

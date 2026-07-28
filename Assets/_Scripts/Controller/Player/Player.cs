@@ -217,8 +217,8 @@ namespace CosmicShore.Gameplay
                 if (playerDataService != null && playerDataService.IsInitialized
                     && playerDataService.CurrentProfile != null)
                 {
-                    NetName.Value = playerDataService.CurrentProfile.displayName;
-                    NetAvatarId.Value = playerDataService.CurrentProfile.avatarId;
+                    NetName.Value = playerDataService.CurrentProfile.Identity.DisplayName;
+                    NetAvatarId.Value = playerDataService.CurrentProfile.Identity.AvatarId;
                 }
                 else if (!string.IsNullOrEmpty(gameData.LocalPlayerDisplayName))
                 {
@@ -293,12 +293,12 @@ namespace CosmicShore.Gameplay
         private void HandleProfileLoadedAfterSpawn(PlayerProfileData profile)
         {
             if (!IsLocalUser || profile == null) return;
-            if (string.IsNullOrEmpty(profile.displayName)) return;
+            if (string.IsNullOrEmpty(profile.Identity.DisplayName)) return;
 
-            if (NetName.Value.ToString() != profile.displayName)
-                NetName.Value = profile.displayName;
-            if (NetAvatarId.Value != profile.avatarId)
-                NetAvatarId.Value = profile.avatarId;
+            if (NetName.Value.ToString() != profile.Identity.DisplayName)
+                NetName.Value = profile.Identity.DisplayName;
+            if (NetAvatarId.Value != profile.Identity.AvatarId)
+                NetAvatarId.Value = profile.Identity.AvatarId;
         }
 
 
@@ -359,10 +359,10 @@ namespace CosmicShore.Gameplay
                 && playerDataService.CurrentProfile != null)
             {
                 var profile = playerDataService.CurrentProfile;
-                if (!string.IsNullOrEmpty(profile.displayName) && NetName.Value.ToString() != profile.displayName)
-                    NetName.Value = profile.displayName;
-                if (NetAvatarId.Value != profile.avatarId)
-                    NetAvatarId.Value = profile.avatarId;
+                if (!string.IsNullOrEmpty(profile.Identity.DisplayName) && NetName.Value.ToString() != profile.Identity.DisplayName)
+                    NetName.Value = profile.Identity.DisplayName;
+                if (NetAvatarId.Value != profile.Identity.AvatarId)
+                    NetAvatarId.Value = profile.Identity.AvatarId;
             }
 
             // Reset server-writable NetworkVariables.

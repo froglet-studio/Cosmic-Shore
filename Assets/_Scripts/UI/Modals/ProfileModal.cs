@@ -280,8 +280,8 @@ namespace CosmicShore.UI
         {
             var profile = playerDataService != null ? playerDataService.CurrentProfile : null;
 
-            if (displayNameInputField && profile != null && !string.IsNullOrEmpty(profile.displayName))
-                displayNameInputField.text = profile.displayName;
+            if (displayNameInputField && profile != null && !string.IsNullOrEmpty(profile.Identity.DisplayName))
+                displayNameInputField.text = profile.Identity.DisplayName;
 
             HideDisplayNameButtons();
         }
@@ -354,9 +354,9 @@ namespace CosmicShore.UI
 
             var profile = playerDataService != null ? playerDataService.CurrentProfile : null;
 
-            var profileDisplayName = (profile == null || string.IsNullOrEmpty(profile.displayName))
+            var profileDisplayName = (profile == null || string.IsNullOrEmpty(profile.Identity.DisplayName))
                 ? "PLAYER"
-                : profile.displayName;
+                : profile.Identity.DisplayName;
 
             if (displayNameInputField)
                 displayNameInputField.text = profileDisplayName;
@@ -386,8 +386,8 @@ namespace CosmicShore.UI
             var profile = playerDataService != null ? playerDataService.CurrentProfile : null;
             string name = null;
 
-            if (profile != null && !string.IsNullOrEmpty(profile.displayName))
-                name = profile.displayName;
+            if (profile != null && !string.IsNullOrEmpty(profile.Identity.DisplayName))
+                name = profile.Identity.DisplayName;
             else if (gameData && !string.IsNullOrEmpty(gameData.LocalPlayerDisplayName))
                 name = gameData.LocalPlayerDisplayName;
 
@@ -416,7 +416,7 @@ namespace CosmicShore.UI
             // lookup and its own fallback).
             if (playerDataService != null && playerDataService.CurrentProfile != null)
             {
-                sprite = playerDataService.GetAvatarSprite(playerDataService.CurrentProfile.avatarId);
+                sprite = playerDataService.GetAvatarSprite(playerDataService.CurrentProfile.Identity.AvatarId);
             }
             // Fallback: first icon in the locally-wired list if the service isn't ready.
             else if (profileIconList != null && profileIconList.profileIcons is { Count: > 0 })

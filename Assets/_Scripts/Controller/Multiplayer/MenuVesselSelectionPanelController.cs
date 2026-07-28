@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Threading;
+using CosmicShore.Core;
 using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.UI;
@@ -138,6 +139,10 @@ namespace CosmicShore.Gameplay
 
             var targetClass = _selectedCard.VesselClass;
             var currentClass = CurrentVessel?.VesselStatus.VesselType ?? VesselClassType.Any;
+
+            // The player deliberately picked this vessel - persist it as HANGAR_DATA.SelectedVessel.
+            // Nothing wrote that field before, which is why it was always empty.
+            UGSStatsManager.Instance?.ReportVesselSelected(targetClass.ToString());
 
             if (targetClass != currentClass && !serverInitializer.IsSwapping)
             {

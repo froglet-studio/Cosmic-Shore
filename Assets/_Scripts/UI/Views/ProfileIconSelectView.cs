@@ -142,7 +142,7 @@ namespace CosmicShore.UI
 
             if (dataService != null && dataService.CurrentProfile != null)
             {
-                existing = dataService.CurrentProfile.displayName;
+                existing = dataService.CurrentProfile.Identity.DisplayName;
             }
 
             displayNameInput.text = existing ?? string.Empty;
@@ -267,7 +267,7 @@ namespace CosmicShore.UI
             // 1) Try UGS profile service
             if (dataService != null && dataService.IsInitialized && dataService.CurrentProfile != null)
             {
-                avatarId = dataService.CurrentProfile.avatarId;
+                avatarId = dataService.CurrentProfile.Identity.AvatarId;
                 hasId    = avatarId != 0;
                 CSDebug.Log($"[ProfileIconSelectView] Load from UGS: {avatarId}");
             }

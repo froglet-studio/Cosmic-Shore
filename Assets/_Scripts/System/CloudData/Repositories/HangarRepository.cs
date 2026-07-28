@@ -1,22 +1,27 @@
 using System.Collections.Generic;
-using CosmicShore.Core;
 
 namespace CosmicShore.Core
 {
     /// <summary>
-    /// Repository for vessel unlock state and hangar preferences.
+    /// Repository for vessel ownership, selection, and lifetime per-vessel stats.
     /// Cloud key: "HANGAR_DATA"
+    ///
+    /// Debounce is 2s (was 1.5s) because this key now also absorbs the per-game-end vessel
+    /// telemetry writes that used to land on VESSEL_STATS.
     /// </summary>
     public sealed class HangarRepository : CloudDataRepository<HangarCloudData>
     {
         public override string CloudKey => UGSKeys.HangarData;
 
-        public HangarRepository(ICloudSaveProvider provider) : base(provider) { }
+        public HangarRepository(ICloudSaveProvider provider) : base(provider, 2f) { }
 
         protected override void OnAfterLoad(HangarCloudData data)
         {
-            data.UnlockedVessels ??= new List<string>();
-            data.VesselPreferences ??= new Dictionary<string, VesselPreference>();
+            data.Vessels ??= new Dictionary<string, VesselRecord>();
+
+            foreach (var record in data.Vessels.Values)
+                if (record != null)
+                    record.Counters ??= new Dictionary<string, int>();
         }
     }
 }

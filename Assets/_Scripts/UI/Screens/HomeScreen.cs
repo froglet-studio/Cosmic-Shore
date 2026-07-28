@@ -83,7 +83,7 @@ namespace CosmicShore.UI
         void OnProfileChanged(PlayerProfileData profile)
         {
             if (userNameText != null && profile != null)
-                userNameText.text = profile.displayName;
+                userNameText.text = profile.Identity.DisplayName;
         }
 
         void OnDisable()
