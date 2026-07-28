@@ -56,7 +56,7 @@ namespace CosmicShore.Utility
                  "around the cell centre (equidistant from each other and from the centre). " +
                  "The ring rotates on the SPAWN CLOCK — each BaseFaunaSpawnTime tick steps to " +
                  "the next point, whether or not that tick actually hatched anything — so a " +
-                 "3-point ring at 30s walks all three points in 90s and then repeats, and " +
+                 "3-point ring walks all three points in 3 × BaseFaunaSpawnTime and repeats, and " +
                  "every herbivore species hatching on the same tick shares that point. Each " +
                  "new group therefore gets its own feeding ground, and a head start before a " +
                  "territorial predator's patch reaches it. 0 or 1 = legacy behavior (spawn on " +

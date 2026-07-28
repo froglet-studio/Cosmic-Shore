@@ -250,8 +250,8 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// The herbivore feeding ground for a given WAVE of the fixed spawn clock: point
         /// <c>wave % HerbivoreSpawnPointCount</c> on the equatorial ring, so successive
-        /// waves walk the ring in succession (3 points × 30s ⇒ all three used in 90s,
-        /// then repeat).
+        /// waves walk the ring in succession — N points × BaseFaunaSpawnTime covers the
+        /// whole ring, then repeats (Blob: 3 points at 15s ⇒ 45s a lap).
         ///
         /// Keying on the wave rather than on a spawn COUNTER is the fix for "every
         /// herbivore hatches at the same point": the old index only advanced when a wave

@@ -1307,13 +1307,14 @@ wave)`); the per-spawn index is gone. Each species loop carries its own `wave` c
 and because `StartFaunaLoops` starts every loop in the same frame with the same
 `InitialFaunaSpawnWaitTime` + period, all herbivore species agree on the wave number —
 so a wave's species share a point and the point steps once per period. A 3-point ring at
-30s therefore walks all three points in 90s and repeats, whether or not any given tick
-had a deficit to fill. (The predator ring is unchanged: it still alternates per spawn,
+`BaseFaunaSpawnTime` covers the whole ring in `N × BaseFaunaSpawnTime` and repeats,
+whether or not any given tick had a deficit to fill (Blob: 3 points at 15s ⇒ a lap every
+45s). (The predator ring is unchanged: it still alternates per spawn,
 which is its authored "solitary predators alternate poles" behavior.)
 
 **Not changed — deliberately.** The ring says *where* a wave lands; the food web still
 says *whether* one hatches. A tick that finds the species at its cap hatches nothing, at
-any point on the ring. Guaranteeing a brood every 30s regardless of population would
+any point on the ring. Guaranteeing a brood every tick regardless of population would
 need either uncapped spawning or imposed death, and imposed death is locked out. If a
 deployment wants a visible brood on every tick, that is the authored pair
 `SpawnProfileSO.SeedFullWaveEveryTick` (the Brood Rush wave mode) + enough
@@ -1321,7 +1322,7 @@ deployment wants a visible brood on every tick, that is the authored pair
 decision, made per profile.
 
 **Blob now runs full-wave.** `Blob Cell Spawn Profile` carries
-`SeedFullWaveEveryTick: 1` so every 30s tick hatches a brood at that wave's ring point
+`SeedFullWaveEveryTick: 1` so every wave tick hatches a brood at that wave's ring point
 (still clamped by each species' `MaxLivePopulation` — a tick with the species at cap
 hatches nothing). The profile is shared by `Menu_Main` **and** `BenchmarkStressTest`, so
 the benchmark now runs a fuller average fauna population; re-baseline before reading it
