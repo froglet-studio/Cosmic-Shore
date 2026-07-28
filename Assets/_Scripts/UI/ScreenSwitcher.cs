@@ -134,6 +134,7 @@ namespace CosmicShore.UI
             activeModalStack.Add(modalType);
             SetReturnToModal(activeModalStack.Last());
             UpdateScreensInteractable();
+            UpdateModalStackInteractable();
         }
 
         public void PopModal()
@@ -145,6 +146,7 @@ namespace CosmicShore.UI
 
             SetReturnToModal(activeModalStack.Count == 0 ? ModalWindows.NONE : activeModalStack.Last());
             UpdateScreensInteractable();
+            UpdateModalStackInteractable();
         }
 
         /// <summary>
@@ -160,6 +162,30 @@ namespace CosmicShore.UI
             if (InFreestyle) return;
 
             screensCanvasGroup.interactable = activeModalStack.Count == 0;
+        }
+
+        /// <summary>
+        /// With stacked modals (e.g. Arcade -> Arcade Game Configure) only the TOP modal
+        /// may accept input; without this the window underneath keeps live buttons for
+        /// clicks that get past the backdrop and for gamepad/keyboard navigation, which
+        /// no raycast blocker can stop. Only modals currently in the stack are touched -
+        /// closed modals stay owned by ModalWindowManager's own show/hide, and the
+        /// re-promoted modal gets its input back when the one above it pops.
+        /// </summary>
+        private void UpdateModalStackInteractable()
+        {
+            if (Modals == null || activeModalStack.Count == 0) return;
+
+            var top = activeModalStack.Last();
+
+            foreach (var modal in Modals)
+            {
+                if (!modal) continue;
+                if (!activeModalStack.Contains(modal.ModalType)) continue;
+                if (!modal.TryGetComponent<CanvasGroup>(out var cg)) continue;
+
+                cg.interactable = modal.ModalType == top;
+            }
         }
 
         #endregion
