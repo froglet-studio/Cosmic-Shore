@@ -326,8 +326,13 @@ namespace CosmicShore.Gameplay
                     continue;
                 }
 
-                if (!prism.TryGetComponent(out PrismImpactor prismImpactor))
-                    continue; // not an impactable prism - the trigger path would find no ImpactCollider either
+                // Exact parity with the trigger path's impactee precondition:
+                // OnTriggerEnter resolves the impactee through ImpactCollider
+                // (ImpactorBase.cs), so a prism without a wired ImpactCollider must
+                // not gain brand-new interactions from the shell tier either.
+                if (!prism.TryGetComponent(out ImpactCollider impactCollider)
+                    || impactCollider.Impactor is not PrismImpactor prismImpactor)
+                    continue;
 
                 _activePairs.Add(key, new ActivePair
                 {

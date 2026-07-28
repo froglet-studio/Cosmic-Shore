@@ -158,6 +158,12 @@ namespace CosmicShore.Gameplay
 
             if (!other.TryGetComponent<PrismImpactor>(out var prismImpactor)) return;
             var prism = prismImpactor.Prism;
+            // Symmetric with the enter-side suppression: while the shell tier owns
+            // this prism's contact, exiting the (smaller) box must not tear down
+            // the skim bookkeeping the shell contact added - the shell tier's own
+            // exit (NotifyShellContactExit) handles it.
+            if (PrismShellContactManager.ShellOwnsContact(prism))
+                return;
             if (!skimmer.AffectSelf && prism.Domain == skimmer.VesselStatus.Domain) return;
 
             if (!_skimStartTimes.Remove(prism.ownerID)) return;
