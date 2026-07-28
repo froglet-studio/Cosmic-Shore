@@ -1785,6 +1785,40 @@ At any total at most two adjacent colours show (e.g. +8 → 3 blue + 2 white). P
 - **Rolling out to another vessel**: add an `ElementalBarsView` to that vessel's HUD (or run the wirer), then assign it to the vessel's `SilhouetteController.elementBars`. No code changes.
 - **Performance**: petals render at ~88px — keep `maxTextureSize` small (128). One `Image` per petal (20 total), `raycastTarget` off, event-driven (no `Update`), `SetLevel`/`RefreshBar` early-out when nothing changed, tweens `SetLink`ed and killed + snapped to rest on `OnDisable` for pooled/toggled HUDs.
 
+### The Four-Icon Ability Row (LOCKED structure — every vessel HUD)
+
+Every vessel HUD shows **exactly four ability icons in the lower right — one per ability** — and the
+order is not a layout preference, it is the element contract made visible:
+
+> **The icons run charge → mass → space → time, left to right — the same order as the element
+> flowers above them.** Each icon sits under the element that upgrades that ability (per the vessel's
+> `ElementalAbilityMapSO`), so "which flower do I fill to upgrade this?" is answered by position alone.
+
+`VesselHUDView.AbilityDisplayOrder` is the single source of that order — `VesselHUDController`'s
+upgrade-seeding loop and `ElementalBarsView`'s flower layout read the same array. `OnValidate` keeps
+the `abilityIcons` list sorted into it; `VesselHUDView.ValidateAbilityIconRow()` (editor-only, called
+once from `VesselHUDController.Initialize`) warns on the wrong icon count, an out-of-order binding, or
+a layout whose left-to-right order contradicts the bindings.
+
+**The upgrade signal** (element hits its unlock level, default 5 — the all-petals-white flower):
+`R_VesselElementalAbilityHandler.OnUpgradeStateChanged` → `VesselHUDController` →
+`VesselHUDView.SetAbilityUpgraded`. Three independent layers, so the signal survives any per-vessel
+presentation: (1) **authored sprite swap** (`AbilityIconBinding.upgradedSprite`, restored on re-lock —
+authored art only, never runtime-generated); (2) the **element badge** — that element's petal in the
+level-5 white from `ElementalBarsConfigSO`, blooming in / withering out per the continuity law, and a
+*child* of the icon so per-frame icon repaints can never stomp it; (3) an optional **tint + persistent
+scale bump** with a one-shot unlock punch.
+
+- **Icons that are live gameplay gauges** (cooldown fill, heat tint, drift lean, impact flash) set
+  `tintIconOnUpgrade = false` — never overload a gauge colour with upgrade meaning — and their view
+  **must** override `SetAbilityUpgraded` to re-anchor its captured rest scales to
+  `AbilityIconRestScale(element)`, or its own tweens settle back to the pre-upgrade scale and wipe the
+  bump. `SquirrelVesselHUDView` is the reference implementation.
+- **Fleet status**: only the Squirrel HUD authors the row today (Charge→boost/skim icon, Mass→drift,
+  Space→impact/joust, Time→boost-ring). The other five flyable HUDs bind no `abilityIcons` and have
+  varied lower-right layouts — wiring them is per-vessel HUD work; the framework needs no changes.
+- Full reference: `Docs/ElementalAbilitySystem/ARCHITECTURE.md` §7.1.
+
 ### Namespace Convention
 
 All game code lives under `CosmicShore.*` with 8 primary namespaces:

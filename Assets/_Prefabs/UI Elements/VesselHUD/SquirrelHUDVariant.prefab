@@ -1087,10 +1087,10 @@ RectTransform:
   - {fileID: 1196874049070028833}
   m_Father: {fileID: 7631468186400504090}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.69500005, y: 0.04748148}
-  m_AnchorMax: {x: 0.75100005, y: 0.14600001}
-  m_AnchoredPosition: {x: 1.5, y: 0.42578125}
-  m_SizeDelta: {x: 45.036194, y: 43.513794}
+  m_AnchorMin: {x: 0.9126459, y: 0.04748148}
+  m_AnchorMax: {x: 0.96700007, y: 0.14600001}
+  m_AnchoredPosition: {x: -1.5341797, y: 0.42578125}
+  m_SizeDelta: {x: 46.03618, y: 43.513794}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &2974566921358380768
 CanvasRenderer:
@@ -1605,10 +1605,10 @@ RectTransform:
   - {fileID: 4791740209390210297}
   m_Father: {fileID: 7631468186400504090}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.9126459, y: 0.04748148}
-  m_AnchorMax: {x: 0.96700007, y: 0.14600001}
-  m_AnchoredPosition: {x: -1.5341797, y: 0.42590332}
-  m_SizeDelta: {x: 46.03618, y: 43.513794}
+  m_AnchorMin: {x: 0.69500005, y: 0.04748148}
+  m_AnchorMax: {x: 0.75100005, y: 0.14600001}
+  m_AnchoredPosition: {x: 1.5, y: 0.42590332}
+  m_SizeDelta: {x: 45.036194, y: 43.513794}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &4031192907774581928
 CanvasRenderer:
@@ -1821,10 +1821,10 @@ RectTransform:
   - {fileID: 6863069803987815124}
   m_Father: {fileID: 7631468186400504090}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.763, y: 0.04748148}
-  m_AnchorMax: {x: 0.818, y: 0.14600001}
-  m_AnchoredPosition: {x: 0, y: 0.42596436}
-  m_SizeDelta: {x: 44.036194, y: 43.513794}
+  m_AnchorMin: {x: 0.8308751, y: 0.04748148}
+  m_AnchorMax: {x: 0.8877084, y: 0.14600001}
+  m_AnchoredPosition: {x: -0.5, y: 0.42596436}
+  m_SizeDelta: {x: 41.03618, y: 43.513794}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &1967068883771445052
 CanvasRenderer:
@@ -2077,10 +2077,10 @@ RectTransform:
   - {fileID: 3632122720483437778}
   m_Father: {fileID: 7631468186400504090}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.8308751, y: 0.04748148}
-  m_AnchorMax: {x: 0.8877084, y: 0.14600001}
-  m_AnchoredPosition: {x: -0.5, y: 0.4258423}
-  m_SizeDelta: {x: 41.03618, y: 43.513794}
+  m_AnchorMin: {x: 0.763, y: 0.04748148}
+  m_AnchorMax: {x: 0.818, y: 0.14600001}
+  m_AnchoredPosition: {x: 0, y: 0.4258423}
+  m_SizeDelta: {x: 44.036194, y: 43.513794}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &1088935853079475263
 CanvasRenderer:
@@ -3325,17 +3325,28 @@ MonoBehaviour:
   highlights: []
   abilityIcons:
   - element: 1
-    icon: {fileID: 6390265052795311443}
+    icon: {fileID: 6559234619875545904}
+    upgradedSprite: {fileID: 0}
   - element: 2
     icon: {fileID: 5199230409720723880}
+    upgradedSprite: {fileID: 0}
   - element: 3
     icon: {fileID: 4425814395415128621}
+    upgradedSprite: {fileID: 0}
   - element: 4
     icon: {fileID: 8778855275387912087}
+    upgradedSprite: {fileID: 0}
+  tintIconOnUpgrade: 0
   upgradeHighlightColor: {r: 1, g: 0.85, b: 0.3, a: 1}
   upgradeHighlightScale: 1.15
   upgradePunchScale: 1.35
   upgradePunchDuration: 0.35
+  showUpgradeBadge: 1
+  elementalBarsConfig: {fileID: 0}
+  elementalBarsConfigResourcePath: ElementalBarsConfig
+  badgeSizeFraction: 0.45
+  badgeAnchor: {x: 1, y: 1}
+  badgeTransitionDuration: 0.3
   animSettings: {fileID: 11400000, guid: e1e99ce577ae9be408463160f475ed8d, type: 2}
   boostFill: {fileID: 6390265052795311443}
   colorLerpSpeed: 4

@@ -183,9 +183,43 @@ attached. The stale "Redirection" ability card is replaced by the turret-stance 
 - Element levels: the existing petal flowers (fix the Sparrow's broken `elementBars` wiring
   first — AUDIT §5#1). The all-white state IS the unlock telegraph; add a one-shot bloom/flare via
   `OnUpgradeStateChanged` (juice config in `ElementalBarsConfigSO`, per its single-source rule).
-- Ability icons: adopt the branch's **final** view-binding shape only
-  (`VesselHUDView.GetAbilitySlotImage`) if/when the four-icon row ships; authored sprites only.
-  An unlocked slot swaps to its authored unlocked-state icon.
+- Ability icons — **the four-icon row has SHIPPED** (Squirrel first; the framework is fleet-wide).
+  See §7.1.
 - Per-upgrade state (e.g. roll armed) rides the existing per-vessel HUD controllers
   (`SparrowHUDController`) subscribing to the handler's event — same pattern as its current
   weapon-mode icon swap.
+
+### 7.1 The four-icon ability row (LOCKED structure)
+
+Every vessel HUD shows **exactly four ability icons in the lower right — one per ability** — and
+their order is not a layout preference, it is the element contract made visible:
+
+> **The icons run charge → mass → space → time, left to right — the same order as the element
+> flowers above them.** Each icon sits under the element that upgrades that ability, so "which
+> flower do I need to fill to upgrade this?" is answered by position alone.
+
+`VesselHUDView.AbilityDisplayOrder` is the single source of that order (`VesselHUDController` seeds
+its upgrade loop from the same array, and `ElementalBarsView` lays the flowers out the same way).
+`OnValidate` keeps the `abilityIcons` list sorted into it, and
+`VesselHUDView.ValidateAbilityIconRow()` — called once from `VesselHUDController.Initialize`, editor
+only — warns when a HUD binds the wrong count, binds a slot out of order, or lays the icons out in
+an order that contradicts the bindings.
+
+**The upgrade signal.** `R_VesselElementalAbilityHandler.OnUpgradeStateChanged` →
+`VesselHUDController.HandleUpgradeStateChanged` → `VesselHUDView.SetAbilityUpgraded(element, on)`,
+which applies three independent layers so the signal survives any per-vessel presentation:
+
+| Layer | What it does | When it is the load-bearing one |
+|---|---|---|
+| Authored sprite swap | `AbilityIconBinding.upgradedSprite` replaces the icon art, restored on re-lock | Whenever a vessel authors upgraded art (authored sprites only — never runtime-generated) |
+| Element badge | That element's **petal**, in the level-5 **white**, blooms in at a corner of the icon (withers out on re-lock — nothing pops in or out) | Always. It is a *child* of the icon, so views that repaint the icon colour every frame cannot stomp it. Sprite + white come from `ElementalBarsConfigSO`, so level 5 reads as the same "all petals white" the flower shows |
+| Tint + persistent scale bump | Icon tints to `upgradeHighlightColor` and rests at `upgradeHighlightScale`, with a one-shot unlock punch | Vessels whose icon colour is otherwise static. Set `tintIconOnUpgrade = false` where the icon colour is a live gameplay gauge |
+
+**Vessels whose icons are live gauges** (the Squirrel: tube cooldown fill, drift lean, impact flash,
+heat tint) must override `SetAbilityUpgraded` and re-anchor their own captured rest scales to
+`AbilityIconRestScale(element)` — otherwise the view's own tweens settle back to the *pre-upgrade*
+scale and wipe the bump. `SquirrelVesselHUDView` is the reference implementation.
+
+**Fleet status.** Only the Squirrel HUD authors the row today (four buttons, four bindings). The
+other five flyable HUDs have no `abilityIcons` bindings and varied lower-right layouts; wiring them
+is per-vessel HUD work — the framework above needs no further changes.

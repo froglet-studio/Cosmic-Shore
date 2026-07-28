@@ -17,8 +17,9 @@ namespace CosmicShore.UI
 
         R_VesselElementalAbilityHandler _abilityHandler;
 
-        static readonly Element[] AllElements =
-            { Element.Charge, Element.Mass, Element.Space, Element.Time };
+        // One ordering contract for the fleet - the ability row, the element flowers and this
+        // seeding loop all read the same array.
+        static Element[] AllElements => VesselHUDView.AbilityDisplayOrder;
 
         private void OnDestroy()
         {
@@ -48,6 +49,11 @@ namespace CosmicShore.UI
                 foreach (var element in AllElements) // seed already-active upgrades
                     baseView.SetAbilityUpgraded(element, _abilityHandler.IsUpgradeActive(element));
             }
+
+#if UNITY_EDITOR
+            // Structural contract: four ability icons, charge/mass/space/time, left to right.
+            baseView?.ValidateAbilityIconRow();
+#endif
         }
 
         private void HandleUpgradeStateChanged(Element element, bool active)
