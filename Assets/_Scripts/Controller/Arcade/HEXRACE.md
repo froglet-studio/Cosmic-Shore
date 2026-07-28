@@ -177,6 +177,15 @@ segmentSpawner.Initialize();
 - Segments positioned along Z-axis: `index * StraightLineLength` offset
 - Crystals are spawned as part of track segments (via `SpawnableWaypointTrack` waypoints)
 
+**Per-intensity waypoint tracks** (`SpawnableWaypointTrack` component in `MinigameHexRace.unity`; the paired crystal anchors live on the scene's `CrystalManager`). Every loop is closed, fits the ±700 envelope, and begins near the shared player spawns at (700, ~0, −200) facing +Z. Waypoint count drives the auto crystal target (waypoints × 4 laps):
+
+| Intensity | Waypoints | Target | Spline | Shape |
+|---|---|---|---|---|
+| 1 | 8 | 32 | Linear | Flat octagon, radius 700 |
+| 2 | 10 | 40 | Catmull-Rom | Undulating tilted loop (±610 Y) |
+| 3 | 28 | 112 | Catmull-Rom | Dumbbell circuit: two sinusoidal lanes at z = ±20 running along X (amplitude ±20 Y, 2 periods, antiphase — they braid in side view and are ridden in opposite directions), joined by two flat circles (R = 120, centers (±580, 0, 0), ~341° sweep). The east circle's far pole sits at (700, 0, 0). Crystal anchors: each lane peak/valley (8) + 3 per circle (14 total), advancing in traversal order from the pole. |
+| 4 | 27 | 108 | Linear | Complex 3D loop |
+
 ### 6. Ready State & Countdown
 
 ```
