@@ -5,7 +5,6 @@ using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.UI;
 using CosmicShore.Utility;
-using Unity.Services.Analytics;
 using Unity.Services.Core;
 using UnityEngine;
 
@@ -48,6 +47,13 @@ namespace CosmicShore.Core
         /// <summary>Consecutive losses before <c>repeated_game_fail</c> fires.</summary>
         const int RepeatedFailThreshold = 3;
 
+        /// <summary>
+        /// Version of the event contract carried on every event. Bump when a field's meaning
+        /// changes, so downstream queries can tell old rows from new ones instead of silently
+        /// mixing them. Must match Docs/Analytics/EVENT_SCHEMA.json.
+        /// </summary>
+        const int EventSchemaVersion = 1;
+
         readonly AuthenticationDataVariable _authVariable;
         readonly NetworkMonitorDataVariable _networkVariable;
         readonly GameDataSO _gameData;
@@ -57,6 +63,15 @@ namespace CosmicShore.Core
         readonly FriendsDataSO _friendsData;
         readonly HostConnectionDataSO _hostConnectionData;
         readonly bool _allowLog;
+
+        /// <summary>
+        /// Every destination. One payload is built per event and fanned out unchanged, so the
+        /// destinations cannot drift apart. Consent and the age gate are enforced here, above
+        /// the sinks, so adding a destination can never widen collection.
+        /// </summary>
+        readonly List<IAnalyticsSink> _sinks = new();
+
+        readonly PostHogAnalyticsSink _postHogSink;
 
         bool _collecting;
         bool _isConnected = true;
@@ -110,6 +125,15 @@ namespace CosmicShore.Core
             _friendsData = friendsData;
             _hostConnectionData = hostConnectionData;
             _allowLog = allowLog;
+
+            _sinks.Add(new UgsAnalyticsSink(Log));
+
+            var postHogConfig = Resources.Load<PostHogConfigSO>("PostHogConfig");
+            if (postHogConfig != null && postHogConfig.Enabled)
+            {
+                _postHogSink = new PostHogAnalyticsSink(postHogConfig, Log);
+                _sinks.Add(_postHogSink);
+            }
 
             AuthData.OnSignedIn.OnRaised += HandleSignedIn;
             NetworkData.OnNetworkFound.OnRaised += HandleNetworkFound;
@@ -200,16 +224,13 @@ namespace CosmicShore.Core
         /// </summary>
         public void RequestDataDeletion()
         {
+            // Delete BEFORE revoking consent: StopCollection drops anything still queued.
+            string distinctId = ResolveDistinctId();
+            foreach (var sink in _sinks)
+                sink.RequestDataDeletion(distinctId);
+
+            Log("Data deletion requested from all sinks.");
             SetConsent(false);
-            try
-            {
-                AnalyticsService.Instance.RequestDataDeletion();
-                Log("Data deletion requested.");
-            }
-            catch (Exception e)
-            {
-                Debug.LogWarning($"[Analytics] RequestDataDeletion failed: {e.Message}");
-            }
         }
 
         void HandleSignedIn()
@@ -241,19 +262,14 @@ namespace CosmicShore.Core
             if (UnityServices.State != ServicesInitializationState.Initialized)
                 return;
 
-            try
-            {
-                // No ExternalUserId override: with UGS auth active, events carry
-                // the UGS player id - the same key as Cloud Save and Leaderboards.
-                AnalyticsService.Instance.StartDataCollection();
-                _collecting = true;
-                Log("Data collection started.");
-                MaybeRecordFirstLaunch();
-            }
-            catch (Exception e)
-            {
-                Debug.LogWarning($"[Analytics] StartDataCollection failed: {e.Message}");
-            }
+            foreach (var sink in _sinks)
+                sink.StartCollection();
+
+            _collecting = true;
+            Log("Data collection started.");
+
+            IdentifyPlayer();
+            MaybeRecordFirstLaunch();
         }
 
         void StopCollection()
@@ -261,16 +277,11 @@ namespace CosmicShore.Core
             if (!_collecting)
                 return;
 
-            try
-            {
-                AnalyticsService.Instance.StopDataCollection();
-                _collecting = false;
-                Log("Data collection stopped (consent revoked).");
-            }
-            catch (Exception e)
-            {
-                Debug.LogWarning($"[Analytics] StopDataCollection failed: {e.Message}");
-            }
+            foreach (var sink in _sinks)
+                sink.StopCollection();
+
+            _collecting = false;
+            Log("Data collection stopped (consent revoked).");
         }
 
         #endregion
@@ -290,20 +301,100 @@ namespace CosmicShore.Core
                 return;
             }
 
+            var payload = parameters != null
+                ? new Dictionary<string, object>(parameters)
+                : new Dictionary<string, object>();
+
+            AddCommonEnvelope(payload);
+
+            foreach (var sink in _sinks)
+                sink.RecordEvent(eventName, payload);
+
+            Log($"Recorded '{eventName}'.");
+        }
+
+        /// <summary>
+        /// Fields present on EVERY event, so any two events can be joined without a lookup:
+        /// who, which build, which platform, and when by the client's clock.
+        /// </summary>
+        void AddCommonEnvelope(IDictionary<string, object> payload)
+        {
+            payload["player_id"] = ResolveDistinctId();
+            payload["app_version"] = Application.version;
+            payload["platform"] = Application.platform.ToString();
+            payload["schema_version"] = EventSchemaVersion;
+
+            if (!payload.ContainsKey("timestamp_utc_ms"))
+                AddCompletionTimestamp(payload);
+        }
+
+        /// <summary>
+        /// The canonical identity: the UGS player id. Immutable, and the same key as Cloud
+        /// Save and Leaderboards, so PostHog joins to both with no mapping table. Display name
+        /// is a person PROPERTY (see <see cref="IdentifyPlayer"/>), never the identity - it is
+        /// mutable and two players can choose the same one.
+        /// </summary>
+        string ResolveDistinctId()
+        {
             try
             {
-                var evt = new CustomEvent(eventName);
-                if (parameters != null)
-                    foreach (var kvp in parameters)
-                        evt.Add(kvp.Key, kvp.Value);
+                if (AuthData != null && !string.IsNullOrEmpty(AuthData.PlayerId))
+                    return AuthData.PlayerId;
+            }
+            catch { /* auth not ready */ }
 
-                AnalyticsService.Instance.RecordEvent(evt);
-                Log($"Recorded '{eventName}'.");
-            }
-            catch (Exception e)
+            return string.Empty;
+        }
+
+        /// <summary>
+        /// Mirrors cloud-save state onto the PostHog person, so events can be segmented by
+        /// player state without a join. Grouped exactly like PLAYER_PROFILE, which is what
+        /// makes this mapping mechanical rather than a hand-maintained list.
+        ///
+        /// display_name is included (approved as P2 personal data). That makes the privacy
+        /// policy + consent disclosure a release blocker - see DATA_ARCHITECTURE.md §8.
+        /// </summary>
+        public void IdentifyPlayer()
+        {
+            if (!_collecting)
+                return;
+
+            string distinctId = ResolveDistinctId();
+            if (string.IsNullOrEmpty(distinctId))
+                return;
+
+            var properties = new Dictionary<string, object>();
+
+            var profile = PlayerDataService.Instance?.CurrentProfile;
+            if (profile != null)
             {
-                Debug.LogWarning($"[Analytics] Failed to record '{eventName}': {e.Message}");
+                properties["display_name"] = profile.Identity.DisplayName ?? string.Empty;
+                properties["avatar_id"] = profile.Identity.AvatarId;
+                properties["crystal_balance"] = profile.Economy.CrystalBalance;
+                properties["lifetime_crystals_earned"] = profile.Economy.LifetimeCrystalsEarned;
+                properties["lifetime_crystals_spent"] = profile.Economy.LifetimeCrystalsSpent;
+                properties["xp"] = profile.Progression.Xp;
+                properties["first_seen_utc_ms"] = profile.Lifecycle.FirstSeenUtcMs;
+                properties["session_count"] = profile.Lifecycle.SessionCount;
+                properties["games_completed"] = profile.Lifecycle.GamesCompleted;
+                properties["total_flight_time_seconds"] = profile.Lifecycle.TotalFlightTimeSeconds;
             }
+
+            var dataService = UGSDataService.Instance;
+            var hangar = dataService?.Hangar?.Data;
+            if (hangar != null)
+            {
+                properties["preferred_vessel"] = hangar.PreferredVessel ?? string.Empty;
+                properties["selected_vessel"] = hangar.SelectedVessel ?? string.Empty;
+                properties["unlocked_vessel_count"] = hangar.UnlockedVesselCount();
+            }
+
+            var progression = dataService?.Progression?.Data;
+            if (progression?.UnlockedModes != null)
+                properties["unlocked_mode_count"] = progression.UnlockedModes.Count;
+
+            foreach (var sink in _sinks)
+                sink.Identify(distinctId, properties);
         }
 
         public void RecordPlayAgain() => RecordEvent(UGSKeys.EventPlayAgain);
@@ -318,14 +409,8 @@ namespace CosmicShore.Core
             if (!_collecting)
                 return;
 
-            try
-            {
-                AnalyticsService.Instance.Flush();
-            }
-            catch (Exception e)
-            {
-                Debug.LogWarning($"[Analytics] Flush failed: {e.Message}");
-            }
+            foreach (var sink in _sinks)
+                sink.Flush();
         }
 
         #endregion
@@ -512,7 +597,9 @@ namespace CosmicShore.Core
             if (paused)
             {
                 RecordSessionEnded("pause");
+                IdentifyPlayer();
                 Flush();
+                _postHogSink?.SaveQueue();
             }
             else
             {
@@ -524,7 +611,9 @@ namespace CosmicShore.Core
         void HandleAppQuitting()
         {
             RecordSessionEnded("quit");
+            IdentifyPlayer();
             Flush();
+            _postHogSink?.SaveQueue();
         }
 
         void RecordSessionEnded(string reason)

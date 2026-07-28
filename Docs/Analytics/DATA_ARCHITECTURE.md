@@ -1,6 +1,6 @@
 # Data Architecture — Cloud Save schemas, classification, and the analytics contract
 
-> **Status:** proposed, awaiting sign-off. Companion to `DATA_INVENTORY.md` (what exists today)
+> **Status:** schemas approved; commits 1-4 shipped. Companion to `DATA_INVENTORY.md` (what exists today)
 > and `INSTRUMENTATION_DATA.html` (the instrumentation team's event reference).
 >
 > **Decisions taken (2026-07-27):** PostHog is fed **directly from the client** through a second
@@ -301,8 +301,14 @@ correlation across two payloads.
   `UGSStatsManager.GetEvaluatedHighScore`. After this change, **adding a mode is data, not code.**
 - Key separator normalised to `:`, matching `GAME_MODE_PROGRESSION.IntensityPlayCounts`. One
   convention across the project.
-- `BestScore` is `float` for every mode. Golf-vs-high-score direction is **not stored** — it is read
-  from `LeaderboardConfigSO`, which already owns it. Storing it per record would let the two drift.
+- `BestScore` is `float` for every mode. Golf-vs-high-score direction is **not stored in the
+  record** — storing it per row would let it drift from the mode's real rules.
+  **Correction to the original draft:** `LeaderboardConfigSO` does *not* own the direction (it has
+  no such field), and the controller's `MiniGameControllerBase.UseGolfRules` is not reachable at
+  report time — reporters run outside the controller's lifetime. The direction therefore lives in
+  one table in `UGSStatsManager`, which is exactly where the old `GetEvaluatedHighScore` already
+  hardcoded it. This is consolidation, not new duplication, but the real fix is to publish
+  `SO_Game.GolfScoring` onto `GameDataSO` so both read one value (§10).
 - **New — `GamesPlayed` / `GamesWon` per mode:intensity.** This is the denominator the email's
   "rematch rate **by game mode**" analysis needs, and it gives per-mode win rate for free.
 - **New — `FlightTimeSeconds`** per mode:intensity, from the same clock as §5.
@@ -419,19 +425,26 @@ The organic-rematch query then reads: *same `player_ids` set + same `game_mode` 
 Requiring a different `party_id` is what stops three matches in one sitting from registering as two
 rematches — which the email's single-identifier version would have done.
 
-### 6.2 Every envelope field is host-stamped
+### 6.2 Envelope authority
 
-`match_id`, `party_id`, `player_ids` and `invite_triggered` are **`SERVER` authority**: the host
-computes them once and broadcasts them; clients echo them verbatim into their own `game_started`.
+`match_id`, `party_id` and `invite_triggered` are **`SERVER` authority**: the host stamps them once
+in `MultiplayerMiniGameControllerBase.OnNetworkSpawn` and broadcasts them through the existing
+`SyncGameConfigToClients_ClientRpc` (which already carries intensity, player count and AI backfill).
+Clients echo them verbatim and never recompute — otherwise the `GROUP BY` the whole analysis depends
+on fragments into near-duplicate rows.
 
-This is not ceremony. If each client computed `player_ids` locally they would disagree — join order
-differs, a peer that drops during scene load is present in one client's view and absent in another's —
-and the `GROUP BY` that the entire analysis depends on fragments into near-duplicate rows. One
-authority stamps the envelope; everyone echoes.
+**`player_ids` is the exception, and the draft was wrong about it.** It cannot be stamped at
+`OnNetworkSpawn`, because the roster has not settled there. Stamping it later would mean either a
+new RPC hooked into a turn-start path that **nine** controllers override, or a base-owned hook that
+does not exist. Instead it is derived on every peer at `game_started` from **replicated
+`Player` NetworkObjects** and then **sorted**.
 
-The transport already exists: `MultiplayerMiniGameControllerBase.SyncGameConfigToClients_ClientRpc()`
-already broadcasts intensity, player count and AI backfill at `OnNetworkSpawn`. The four envelope
-fields ride along in it.
+That is deterministic for the same reason host-stamping would be: it reads replicated state, which
+is identical on every peer once settled, and sorting removes join-order divergence. The original
+objection — that clients would disagree — applies to deriving from the *local party roster*
+(`HostConnectionDataSO.PartyMembers`), which is the party roster rather than the match roster and
+still lists a peer that dropped during scene load. Deriving from the spawned NetworkObjects does not
+have that problem.
 
 ### 6.3 `player_ids` — we cannot produce this today
 
@@ -445,9 +458,15 @@ Two sources were considered:
 | `HostConnectionDataSO.PartyMembers` | **Rejected.** It is the *party roster*, not the *match roster*. A member who dropped during scene load is still listed, AI is not represented, and it says nothing about who actually spawned in. |
 | New `Player.NetUgsPlayerId` | **Chosen.** Owner-write `NetworkVariable<FixedString64Bytes>`, set in `OnNetworkSpawn` from `AuthenticationService.Instance.PlayerId`, next to the existing `NetName` / `NetAvatarId` owner writes. |
 
-The NetworkVariable is authoritative for who is genuinely in the match, and it incidentally fixes
-`PlayerUUID` — a latent bug for any per-player analytics, since two players may share a display name.
-`player_ids` is filtered to humans (`!NetIsAI`); AI is reported separately as `player_count_ai`.
+The NetworkVariable is authoritative for who is genuinely in the match. `player_ids` is filtered to
+humans (`!NetIsAI`); AI is reported separately as `player_count_ai`. UGS Analytics parameters accept
+only scalars, so it travels as a comma-joined string and the PostHog sink expands it back to an array.
+
+`PlayerUUID` is **left as-is** rather than repointed at the new id: it is load-bearing for AOE block
+ownership strings (`AOERadialBlocks`, `AOEBlockCreation`, `AOEDangerHemisphereBlocks`) and for
+`MiniGame`'s local-player comparison, so changing its meaning would be a gameplay change smuggled
+into an analytics commit. `IPlayer.UgsPlayerId` is added alongside it, and retiring `PlayerUUID` is
+tracked in §10.
 
 ### 6.4 `invite_triggered` — where the truth lives
 
@@ -525,6 +544,13 @@ PostHog **project** API key is write-only by design and is safe to ship in a cli
 **Coverage.** All ~30 events already declared in `UGSKeys.cs` plus the new fields above — the two sinks
 receive identical payloads, so PostHog is at full parity from the first commit rather than the current
 partial feed.
+
+**Erasure is only partial from the client, and this is surfaced rather than hidden.** Deleting a
+PostHog *person* requires a personal (admin) API key, which must never ship in a client build. So
+`PostHogAnalyticsSink.RequestDataDeletion` does what it actually can: stops collecting, drops the
+pending queue, and sets `gdpr_deletion_requested` + a timestamp on the person so an operator or
+server-side automation can complete the deletion. **Until that automation exists, pressing the
+in-game erasure button does not fully honor the request** — see §8.6 and §10.
 
 #### 7.3.1 Identity — two searchable keys, one canonical
 
@@ -656,9 +682,11 @@ Access, rectification, erasure, portability, and objection all now have to reach
   `AnalyticsService.Instance.RequestDataDeletion()` (UGS). The moment a PostHog sink exists, that
   method is **incomplete** — it would report a deletion that did not fully happen, which is worse
   than not offering the button.
-- **Commit 4 must extend it** to also delete the PostHog person. This is the one item on this list
-  that is a code defect rather than paperwork, and it is why the deletion path is in scope for the
-  same commit that adds the sink.
+- **Shipped:** `RequestDataDeletion()` now fans out to every sink, so UGS deletion still runs and
+  PostHog is told too. **But PostHog deletion is only partial from the client** (§7.3): the write-only
+  project key cannot delete a person, so the sink flags `gdpr_deletion_requested` and an operator or
+  server-side automation must finish it. That automation is a **blocking release item** (§10) — a
+  button that reports a deletion which did not happen is worse than no button.
 - The right-to-erasure button must also be reachable in Settings/Privacy, not only via API.
 
 ### 8.7 Retention
@@ -727,10 +755,10 @@ Four commits, each independently reviewable and shippable.
 
 | # | Scope | Depends on |
 |---|---|---|
-| 1 | Format standard + schema rewrite (§2–4): models, repositories, `UGSKeys`, writers, `LogControlWindow` dump | — |
-| 2 | `FlightClock` + `flight_time_seconds` + timestamps on `game_completed` (§5); feeds the new per-vessel / per-mode / lifetime totals | 1 |
-| 3 | Match envelope (§6): `Player.NetUgsPlayerId`, `HostConnectionDataSO.PartyFormedByInvite`, host stamping through `SyncGameConfigToClients_ClientRpc`, new `game_started` fields | 1 |
-| 4 | `IAnalyticsSink` extraction + `PostHogAnalyticsSink` + `PostHogConfigSO` + dual identity (§7.3.1) + person properties + **PostHog person deletion in `RequestDataDeletion()` (§8.6)** + `EVENT_SCHEMA.json` | 2, 3 |
+| 1 | **SHIPPED** — Format standard + schema rewrite (§2–4): models, repositories, `UGSKeys`, writers, `LogControlWindow` dump | — |
+| 2 | **SHIPPED** — `FlightClock` + `flight_time_seconds` + timestamps on `game_completed` (§5); feeds the new per-vessel / per-mode / lifetime totals | 1 |
+| 3 | **SHIPPED** — Match envelope (§6): `Player.NetUgsPlayerId`, `HostConnectionDataSO.PartyFormedByInvite`, host stamping through `SyncGameConfigToClients_ClientRpc`, new `game_started` fields | 1 |
+| 4 | **SHIPPED** — `IAnalyticsSink` extraction + `PostHogAnalyticsSink` + `PostHogConfigSO` + dual identity (§7.3.1) + person properties + deletion fan-out (§8.6, partial) + `EVENT_SCHEMA.json` | 2, 3 |
 
 Verification is in-editor per commit: MPPM two-client session for commit 3 (both clients must emit
 byte-identical `match_id` / `party_id` / `player_ids` / `invite_triggered`), and the
@@ -751,7 +779,12 @@ path removes it.
 | Declare all events/parameters in the UGS Event Manager, or the backend silently discards them (§7.4) | instrumentation | No |
 | Confirm PostHog replay + autocapture off; decide on IP/geolocation capture (§8.9) | instrumentation | No |
 | Define retention for PostHog and Cloud Save (§8.7) | instrumentation | No |
+| **Fill in the PostHog project API key** in `Assets/Resources/PostHogConfig.asset` (write-only project key, never a personal key) — the sink stays inert until then | instrumentation | **Yes** |
+| **Server-side PostHog person deletion** to complete right-to-erasure; the client can only flag it (§7.3, §8.6) | instrumentation | **Yes** |
+| Set the PostHog `host` to the EU endpoint if the project is EU Cloud | instrumentation | Yes, if EU |
 | One `SO_Vessel` asset has a blank `Name` — fix the asset (§3.2 stops it persisting, it does not fix the asset) | gameplay | No |
+| Publish `SO_Game.GolfScoring` onto `GameDataSO` so scoring direction has one source (§3.3) | gameplay | No |
+| Retire `IPlayer.PlayerUUID` (display name) in favour of `UgsPlayerId`, once AOE ownership strings are decoupled (§6.3) | gameplay | No |
 | `IntensityPlayCounts` ↔ `MODE_STATS.GamesPlayed` redundancy | quest-system pass | No |
 
 ~~PostHog project + write-only API key~~ — **done** (project set up; only the Unity link is outstanding,
