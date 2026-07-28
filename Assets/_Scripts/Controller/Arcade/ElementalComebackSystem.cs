@@ -59,6 +59,7 @@ namespace CosmicShore.Gameplay
             if (existing)
             {
                 existing.gameData ??= gameData;
+                existing.WireEvents(); // its own OnEnable may have run before gameData existed
                 return existing;
             }
 
@@ -80,6 +81,10 @@ namespace CosmicShore.Gameplay
                     system.differenceSource = ScoreDifferenceSource.Score;
                     break;
             }
+            // AddComponent already ran OnEnable with a null gameData, so wire explicitly now
+            // that the reference is set (WireEvents is idempotent).
+            system.WireEvents();
+
             CSDebug.Log($"[ElementalComebackSystem] Auto-created for {gameData?.GameMode} " +
                         $"(source={system.differenceSource}, rate={gameData?.ComebackRatePerScoreDeficit ?? 0f}).");
             return system;
@@ -118,29 +123,43 @@ namespace CosmicShore.Gameplay
         // Index matches AllElements order: Mass=0, Charge=1, Space=2, Time=3.
         readonly float[] _lastComebackAudioTime = { -999f, -999f, -999f, -999f };
 
-        void OnEnable()
+        // True while subscribed, so WireEvents is idempotent. Required because the auto-created
+        // path can only assign gameData AFTER AddComponent has already run OnEnable (see
+        // EnsureExists) — that pass found a null gameData and returned, leaving the system
+        // silently unsubscribed for the whole match. Now EnsureExists wires explicitly once the
+        // reference exists, and this guard makes the later OnEnable a no-op instead of a
+        // double-subscribe.
+        bool _subscribed;
+
+        void OnEnable() => WireEvents();
+
+        void OnDisable() => UnwireEvents();
+
+        /// <summary>
+        /// Subscribe to the game-flow events. Safe to call repeatedly and before gameData is
+        /// assigned (a null reference simply defers wiring to whoever assigns it).
+        /// </summary>
+        internal void WireEvents()
         {
-            if (gameData == null)
-            {
-                CSDebug.LogError("[ElementalComebackSystem] GameDataSO is not assigned!");
-                return;
-            }
+            if (_subscribed || gameData == null) return;
             // Profile is optional now (initial-levels only) - the system runs without one.
 
             gameData.OnMiniGameTurnStarted.OnRaised += OnTurnStarted;
             gameData.OnMiniGameTurnEnd.OnRaised += OnTurnEnded;
             gameData.OnMiniGameEnd.OnRaised += OnGameEnded;
+            _subscribed = true;
 
             if (debugLogging)
                 CSDebug.Log("[ElementalComebackSystem] Enabled and subscribed to game events.");
         }
 
-        void OnDisable()
+        void UnwireEvents()
         {
-            if (gameData == null) return;
+            if (!_subscribed || gameData == null) return;
             gameData.OnMiniGameTurnStarted.OnRaised -= OnTurnStarted;
             gameData.OnMiniGameTurnEnd.OnRaised -= OnTurnEnded;
             gameData.OnMiniGameEnd.OnRaised -= OnGameEnded;
+            _subscribed = false;
         }
 
         void OnTurnStarted()

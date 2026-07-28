@@ -699,11 +699,17 @@ namespace CosmicShore.Gameplay
             }
             s_creationCompletionsThisFrame++;
 
+            // Hot-path accumulators mirror the ProfilerMarkers below: on a mass environment lay
+            // this reveal tick runs ~50k times and was measured at 11.8s of a 37.5s load
+            // ("Arena settle"), with no breakdown. Inert unless a load recording is armed.
+            long tRe = LoadInsights.AccumulateStart();
+
             using (s_createVisibilityMarker.Auto())
             {
                 SetRenderVisible(true);
                 blockCollider.enabled = true;
             }
+            tRe = LoadInsights.AccumulateSample("Prism reveal: renderer + collider on", tRe);
             IsCreationComplete = true; // visible from here — the arena-ready gate may now count this prism
 
             if (scaleAnimator.TargetScale == Vector3.zero)
@@ -712,6 +718,7 @@ namespace CosmicShore.Gameplay
             prismProperties.volume = scaleAnimator.GetCurrentVolume();
 
             scaleAnimator.BeginGrowthAnimation();
+            tRe = LoadInsights.AccumulateSample("Prism reveal: scale/volume + growth start", tRe);
 
             using (s_createSoapMarker.Auto())
             {
@@ -721,6 +728,7 @@ namespace CosmicShore.Gameplay
                     Volume = prismProperties.volume,
                 });
             }
+            tRe = LoadInsights.AccumulateSample("Prism reveal: SOAP created-raise (all listeners)", tRe);
 
             // Register with the spatial index - one registration, every view:
             // cache-friendly batch AOE processing, growth occupancy (consumes the
@@ -746,6 +754,7 @@ namespace CosmicShore.Gameplay
                 // keeps its collider until a bubble boundary happens to cross it.
                 PrismColliderLodManager.NotifyPrismActivated(this);
             }
+            LoadInsights.AccumulateSample("Prism reveal: spatial index + cell bind + LOD", tRe);
         }
 
         /// <summary>

@@ -439,7 +439,15 @@ namespace CosmicShore.Gameplay
             if (!parent) return null;
             var clones = new Prism[count];
             for (int i = 0; i < count; i++)
+            {
+                // Per-item accumulator: the clone is the single biggest slice of a mass lay, so
+                // it must stay measurable in the hot-path breakdown (splitting LayOne into
+                // clone + ConfigureLaid dropped this sample and made the dominant cost invisible
+                // in the report — the breakdown summed to 1.6s of a 22.6s span).
+                long t = LoadInsights.AccumulateStart();
                 clones[i] = UnityEngine.Object.Instantiate(prefab, parent);
+                LoadInsights.AccumulateSample("Prism lay: Instantiate + component Awakes", t);
+            }
             return clones;
         }
 
