@@ -27,7 +27,10 @@ namespace CosmicShore.Gameplay
     /// One system per scene, hosted by the first Cell to initialize (EnsureExists) so it runs
     /// wherever fauna live — game scenes and Menu_Main freestyle alike (one HyperSea, one rule
     /// set). Applies via the ResourceSystem's dedicated fauna-buff layer (single-writer: this
-    /// class). Two triggers share one sweep: CellRuntimeDataSO.OnFaunaHeartsChanged (raised at
+    /// class), which obeys the maintained-mechanism law: the held layer SUSTAINS at most
+    /// level 10, and pool increases above that arrive as temporary spikes (up to 15) that
+    /// drain back down — every wave is felt, and the drain restores headroom to feel the
+    /// next. Two triggers share one sweep: CellRuntimeDataSO.OnFaunaHeartsChanged (raised at
     /// lineage-assign and death) lands grants/revocations within a frame, and a periodic
     /// reconcile sweep (updateInterval) tracks heart growth, late-spawning vessels, vessel
     /// swaps, and domain re-picks (player.Domain read live each tick).

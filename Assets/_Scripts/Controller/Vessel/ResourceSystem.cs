@@ -175,15 +175,21 @@ namespace CosmicShore.Gameplay
             ElementalLevels[Element.Time]   = resourceGroup.Time;
         }
 
-        // The comeback layer may only FILL an element toward integer level 10 (normalized 1.0)
-        // - it never lifts anyone past it. Earned progression (crystals, effects) can still
-        // reach the overcharge band above 10; charity cannot.
-        const float ComebackCeiling = 1.0f;
+        // THE MAINTAINED-MECHANISM LAW: no sustained/held mechanism may HOLD an element above
+        // integer level 10 (normalized 1.0). The overcharge band (10..15] is reserved for
+        // transients, and everything in it drains back to (at most) 10:
+        // - temporary effects (ApplyElementalEffect) decay to zero on their own;
+        // - crystal-earned base overcharge bleeds down via RecoverBaseLevels;
+        // - the domain fauna buff's held layer only FILLS toward the ceiling, and the part of
+        //   an increase above it converts to a temporary spike (SetFaunaBuffModifier);
+        // - the comeback bonus fills toward the ceiling and never past it.
+        // The player always gets to FEEL a reward above 10, and the drain always restores the
+        // headroom to feel the next one.
+        const float SustainedCeiling = 1.0f;
 
-        /// <summary>Effective level = base + temporary modifiers + domain fauna buff + comeback
-        /// bonus, clamped to range. The fauna buff counts as earned power (the comeback
-        /// contribution yields to it); the comeback contribution is capped so it can never
-        /// raise the effective level above 10.</summary>
+        /// <summary>Effective level = base + temporary modifiers + capped domain fauna buff +
+        /// capped comeback bonus, clamped to range. Maintained layers only fill toward
+        /// <see cref="SustainedCeiling"/> (level 10); only transients reach the 10..15 band.</summary>
         float GetEffectiveLevel(Element element)
         {
             float baseLevel = ElementalLevels.TryGetValue(element, out var b) ? b : 0f;
@@ -195,16 +201,41 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Pure layer compositing (edit-mode tested): earned = base + temporary modifier +
-        /// domain fauna buff; the comeback bonus only fills toward <see cref="ComebackCeiling"/>
-        /// above that sum, and the result clamps to the element range.
+        /// Pure layer compositing (edit-mode tested): the held fauna buff fills the room
+        /// between the persistent base and the sustained ceiling; temporary effects ride on
+        /// top (the only path into the overcharge band, together with base overcharge); the
+        /// comeback bonus fills toward the same ceiling above everything else; the result
+        /// clamps to the element range.
         /// </summary>
         public static float CompositeEffectiveLevel(
             float baseLevel, float tempModifier, float faunaBuff, float comebackBonus)
         {
-            float earned = baseLevel + tempModifier + faunaBuff;
-            float comeback = Mathf.Min(comebackBonus, Mathf.Max(0f, ComebackCeiling - earned));
+            float faunaHeld = HeldFaunaContribution(baseLevel, faunaBuff);
+            float earned = baseLevel + tempModifier + faunaHeld;
+            float comeback = Mathf.Min(comebackBonus, Mathf.Max(0f, SustainedCeiling - earned));
             return Mathf.Clamp(earned + comeback, MinElementalLevel, MaxElementalLevel);
+        }
+
+        /// <summary>
+        /// How much of the domain fauna pool the HELD layer expresses: it fills the room
+        /// between the persistent base and the sustained ceiling (level 10), never further.
+        /// The over-ceiling remainder is only ever felt as temporary spikes. Pure for tests.
+        /// </summary>
+        public static float HeldFaunaContribution(float baseLevel, float faunaBuff)
+            => Mathf.Min(faunaBuff, Mathf.Max(0f, SustainedCeiling - baseLevel));
+
+        /// <summary>
+        /// The part of a fauna-pool INCREASE the capped held layer cannot express right now.
+        /// SetFaunaBuffModifier grants it as a temporary decaying boost instead, so the
+        /// reward is felt (up to 15) and drains back to the sustained ceiling. Pure for tests.
+        /// </summary>
+        public static float ComputeUnfeltIncrease(float baseLevel, float previousPool, float newPool)
+        {
+            float increase = newPool - previousPool;
+            if (increase <= 0f) return 0f;
+            float feltDelta = HeldFaunaContribution(baseLevel, newPool)
+                              - HeldFaunaContribution(baseLevel, previousPool);
+            return increase - feltDelta;
         }
 
         public int GetLevel(Element element)
@@ -260,10 +291,13 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Sets the domain fauna buff for an element (normalized units, ≥ 0): the value this
-        /// vessel's domain draws from its LIVING fauna hearts. Composites into the effective
-        /// level without touching the crystal-earned base, so the buff vanishes cleanly when
-        /// the fauna die — and their dropped crystals grant the very same value back through
-        /// <see cref="AdjustLevel"/> on collection. Pass 0 to remove the buff.
+        /// vessel's domain draws from its LIVING fauna hearts. The held layer sustains at most
+        /// <see cref="SustainedCeiling"/> (level 10); the part of an INCREASE above it is
+        /// granted as a standard temporary boost instead — a felt spike (up to 15) that drains
+        /// back at the elemental recovery rate, restoring headroom for the next reward.
+        /// Composites without touching the crystal-earned base, so the buff vanishes cleanly
+        /// when the fauna die — and their dropped crystals grant the very same value back
+        /// through <see cref="AdjustLevel"/> on collection. Pass 0 to remove the buff.
         /// Single-writer: DomainFaunaBuffSystem.
         /// </summary>
         public void SetFaunaBuffModifier(Element element, float normalizedBonus)
@@ -274,6 +308,17 @@ namespace CosmicShore.Gameplay
 
             if (normalizedBonus == 0f) _faunaBuffModifiers.Remove(element);
             else _faunaBuffModifiers[element] = normalizedBonus;
+
+            float baseLevel = ElementalLevels.TryGetValue(element, out var b) ? b : 0f;
+            float unfelt = ComputeUnfeltIncrease(baseLevel, current, normalizedBonus);
+            if (unfelt > 0.0001f)
+            {
+                // Rate-matched to the base overcharge drain so "above 10" always comes back
+                // down at one uniform speed, whichever channel put it there.
+                float drainRate = elementalRecoveryRate > 0f ? elementalRecoveryRate : 0.05f;
+                ApplyElementalEffect(element, unfelt, unfelt / drainRate);
+                return; // ApplyElementalEffect recomputes modifiers and emits
+            }
             EmitElementLevel(element);
         }
 

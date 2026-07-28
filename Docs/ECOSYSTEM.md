@@ -1228,25 +1228,34 @@ lands spawn grants and death revocations **within a frame**, and the periodic re
 (`updateInterval`, 1s) tracks heart growth, late-spawning vessels, vessel swaps (access is
 hardened against the destroyed-but-referenced vessel window during a menu swap), and domain
 re-picks (`player.Domain` read live). The fauna buff is a **dedicated composited layer** on
-`ResourceSystem` (like the comeback layer, its own single writer): it counts as *earned*
-power — it can reach the overcharge band and the comeback charity yields to it — and never
-touches the crystal-earned base, so revocation is exact. Compositing is pure
-(`ResourceSystem.CompositeEffectiveLevel`) and pinned by `DomainFaunaBuffTests` (net-zero
-own-kill-collect, exact revocation, comeback interaction, clamps). HUD: petal bars animate
-automatically off `OnElementLevelChange` — one level-1 tadpole heart (scale 1) = one petal
-tick for the whole domain.
+`ResourceSystem` (like the comeback layer, its own single writer) that never touches the
+crystal-earned base, so revocation is exact — and it obeys the **maintained-mechanism law**
+(`ResourceSystem.SustainedCeiling`): *no sustained mechanism holds an element above level 10;
+the 10..15 overcharge band belongs to transients, and everything in it drains back to (at
+most) 10.* Concretely: the held layer fills only the room between the base and level 10, and
+the part of a pool INCREASE above that (a wave spawning into a saturated pool, a heart
+growing) is converted by `SetFaunaBuffModifier` into a standard temporary elemental effect —
+a felt spike up to the 15 clamp that drains at the elemental recovery rate, restoring the
+headroom so the **next** wave is felt too. Base crystal overcharge already drains the same
+way (`RecoverBaseLevels`) and comeback already fills-to-10, so after this every channel obeys
+one law. Compositing is pure (`CompositeEffectiveLevel` + `HeldFaunaContribution` +
+`ComputeUnfeltIncrease`) and pinned by `DomainFaunaBuffTests` (net-zero own-kill-collect
+below and at saturation, exact revocation, sustained-cap, spike-rides-above, clamps). HUD:
+petal bars animate automatically off `OnElementLevelChange` — one level-1 tadpole heart
+(scale 1) = one petal tick for the whole domain, and each 30s wave at a saturated pool reads
+as a petal surge that settles back to 10.
 
 **Scope + caveats:**
 - **Fauna only** for now; flora hearts are the follow-up seam (`LifeForm` would grow the same
   `LiveHeart` accessor; roadmap item 4's "flora buff its vessels").
-- **Net-zero is exact at the moment of collection.** Over time the pre-existing resting-band
-  drift (`ResourceSystem.RecoverBaseLevels`) applies to the collected BASE value — overcharge
-  above level 10 bleeds back to 10, deficits refill to 0 — while a living heart's aura is a
-  held layer the drift never touches. Consequence (by design, aligned with the mechanic's
-  intent): killing your own domain's fauna is **never profitable** — break-even at best, and
-  strictly worse once the collected value lands in the overcharge band the drain reclaims. A
-  domain holding living hearts keeps standing power the drain cannot touch; collected value is
-  subject to the same decay as any crystal pickup.
+- **Net-zero is exact at the moment of collection.** Over time the resting-band drift
+  (`ResourceSystem.RecoverBaseLevels`) applies to the collected BASE value — overcharge above
+  level 10 bleeds back to 10, deficits refill to 0 — and the held fauna layer sustains at
+  most level 10 by the maintained-mechanism law, so neither side of the swap can park power
+  in the overcharge band. Killing your own domain's fauna is **never profitable** —
+  break-even at best. At a saturated pool the swap is absorbed by the buffer (the held fill
+  re-balances around the collected gain; sustained level stays 10 on both sides), so
+  stripping a saturated domain's standing power takes sustained overkill, not one pick.
 - **Manager-spawned fauna** (`LightFaunaManager.SpawnGroup`, `BoidManager.SpawnBoids` — the
   dead scene-population paths wired through the removed `Cell.fauna2` field, §7) never enter
   `Cell.LiveFauna`, so they would drop collectibles without having granted a buff — acceptable
@@ -1262,5 +1271,8 @@ tick for the whole domain.
 
 **In-editor verification (Menu_Main):** enter freestyle, watch your petal bars — they should
 tick up as controlling-color fauna spawn (30s waves) and drop when fauna starve/are predated,
-with the dropped crystal granting the lost amount back on collection. Toggle `debugLogging` on
-the auto-created `DomainFaunaBuffSystem` (on the Cell's GameObject) for per-player pool logs.
+with the dropped crystal granting the lost amount back on collection. Once the domain's pool
+is rich enough to hold level 10, each new wave should read as a **temporary surge above 10
+that drains back to 10** (never a parked 11+); temporary effects (overtake buff, danger
+debuff) still ride on top. Toggle `debugLogging` on the auto-created `DomainFaunaBuffSystem`
+(on the Cell's GameObject) for per-player pool logs.
