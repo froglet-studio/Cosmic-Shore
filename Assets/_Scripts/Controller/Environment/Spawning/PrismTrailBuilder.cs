@@ -199,11 +199,8 @@ namespace CosmicShore.Gameplay
         const float ReadyStableSeconds = 0.5f;
 
         /// <summary>Grow-in snaps applied per gate poll — bounds the per-frame cost of
-        /// force-settling a 25k cohort (each snap runs full completion bookkeeping). Sized for
-        /// the covered screen: prisms laid while the gate holds now settle at creation
-        /// (Prism.CreateBlockCoroutine), so this only has to mop up the cohort laid BEFORE the
-        /// connecting panel armed the gate — draining it in one or two polls instead of a dozen.</summary>
-        const int SettleSnapsPerPoll = 8192;
+        /// force-settling a 25k cohort (each snap runs full completion bookkeeping).</summary>
+        const int SettleSnapsPerPoll = 2000;
 
         /// <summary>
         /// Announce an arena build whose SegmentSpawner.Initialize happens LATER than scene
@@ -233,7 +230,6 @@ namespace CosmicShore.Gameplay
         {
             s_loadGateHolding = holding;
             s_allClearSince = -1f;
-            ApplyIntegrationTimeForGate(holding);
             if (holding)
             {
                 s_loadGateStartTime = Time.unscaledTime;
@@ -389,46 +385,6 @@ namespace CosmicShore.Gameplay
         const int CloneBatchSize = 256;
 
         /// <summary>
-        /// Clone batch used while the load gate holds. Bigger batches hand the engine more work
-        /// to spread across worker threads per call; the only reason to keep them small is the
-        /// progress readout, which behind the covered screen updates a spinner nobody is reading
-        /// frame-by-frame.
-        /// </summary>
-        const int LoadGateCloneBatchSize = 1024;
-
-        /// <summary>
-        /// Per-frame slice Unity spends INTEGRATING finished async clones on the main thread
-        /// (<see cref="AsyncInstantiateOperation"/>). The engine default is 10 ms — sized to keep
-        /// a running game smooth, which is exactly wrong while the connecting screen covers the
-        /// world: at 10 ms/frame a 50k-prism arena needs hundreds of frames just to integrate,
-        /// and every one of those frames is load time the player waits through. Raised for the
-        /// duration of the hold and restored the moment it ends, so gameplay streaming (the
-        /// freestyle microscene conveyor) keeps the engine default.
-        /// </summary>
-        const float LoadGateIntegrationTimeMs = 200f;
-
-        static float s_savedIntegrationTimeMs = -1f;
-
-        /// <summary>
-        /// Applies <see cref="LoadGateIntegrationTimeMs"/> while the gate holds and puts the
-        /// engine default back when it releases. Idempotent — safe to call on every edge.
-        /// </summary>
-        static void ApplyIntegrationTimeForGate(bool holding)
-        {
-            if (holding)
-            {
-                if (s_savedIntegrationTimeMs >= 0f) return; // already raised
-                s_savedIntegrationTimeMs = AsyncInstantiateOperation.GetIntegrationTimeMS();
-                AsyncInstantiateOperation.SetIntegrationTimeMS(LoadGateIntegrationTimeMs);
-                return;
-            }
-
-            if (s_savedIntegrationTimeMs < 0f) return; // never raised
-            AsyncInstantiateOperation.SetIntegrationTimeMS(s_savedIntegrationTimeMs);
-            s_savedIntegrationTimeMs = -1f;
-        }
-
-        /// <summary>
         /// Set false to force the per-item clone path (kept as a live escape hatch: batched
         /// instantiate is an engine fast path, and the sync path is the behavioural baseline).
         /// Flipped automatically if the batched call ever fails.
@@ -527,8 +483,7 @@ namespace CosmicShore.Gameplay
                 {
                     if (!parent) return; // container destroyed — stop laying
 
-                    int batchSize = s_loadGateHolding ? LoadGateCloneBatchSize : CloneBatchSize;
-                    int batch = Mathf.Min(batchSize, count - i);
+                    int batch = Mathf.Min(CloneBatchSize, count - i);
                     var clones = await CloneBatchAsync(prefab, batch, parent);
                     if (clones == null || !parent) return;
 
