@@ -657,12 +657,24 @@ namespace CosmicShore.Gameplay
 
         private IEnumerator CreateBlockCoroutine(Vector3 authoredTargetScale)
         {
-            if (_spawnWait == null || _spawnWaitSeconds != waitTime)
+            // While the load gate holds the connecting screen the world is covered and nothing is
+            // playing, so the spawn-stagger wait is pure dead time on the critical path: it
+            // delays every prism's creation completion by waitTime and leaves a tail after the
+            // last prism is laid. Skipping it there lets creation drain WHILE laying continues
+            // (the growth occupancy claim, not this timer, is what protects the spawn site).
+            if (PrismTrailBuilder.IsLoadGateHolding)
             {
-                _spawnWait = new WaitForSeconds(waitTime);
-                _spawnWaitSeconds = waitTime;
+                yield return null;
             }
-            yield return _spawnWait;
+            else
+            {
+                if (_spawnWait == null || _spawnWaitSeconds != waitTime)
+                {
+                    _spawnWait = new WaitForSeconds(waitTime);
+                    _spawnWaitSeconds = waitTime;
+                }
+                yield return _spawnWait;
+            }
 
             // Destroyed before creation completed (e.g. AOE within waitTime of spawn) -
             // don't resurrect the renderer/collider or register a dead prism with the

@@ -139,8 +139,10 @@ namespace CosmicShore.Gameplay
             if (meshFilter != null)
                 _originalMesh = meshFilter.sharedMesh;
 
-            if (_meshRenderer != null)
-                _originalMaterials = _meshRenderer.sharedMaterials;
+            // NOT cached here: MeshRenderer.sharedMaterials allocates a fresh managed array on
+            // every read, and only ApplyMaterialOverride (first shield engage) ever needs it —
+            // paying it in Awake was 25k throwaway arrays on a mass environment lay. Captured
+            // lazily on the first override instead, while the renderer still has the originals.
 
             // Mesh setup is deferred to the first Engage (EnsureShieldMeshesBuilt): Load Time
             // Insights measured per-prism shield mesh work at Awake as a dominant share of
@@ -486,6 +488,11 @@ namespace CosmicShore.Gameplay
         private void ApplyMaterialOverride(bool shielded)
         {
             if (_meshRenderer == null || shieldMaterialOverride == null) return;
+
+            // Capture the authored materials on the first override, before we overwrite them
+            // (deferred out of Awake — see the comment there).
+            _originalMaterials ??= _meshRenderer.sharedMaterials;
+
             _meshRenderer.sharedMaterials = shielded
                 ? new[] { shieldMaterialOverride }
                 : _originalMaterials;
