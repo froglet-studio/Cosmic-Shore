@@ -317,8 +317,8 @@ namespace CosmicShore.Core
 
             var profile = _playerDataService.CurrentProfile;
             return profile == null
-                || string.IsNullOrEmpty(profile.displayName)
-                || profile.displayName.StartsWith("Pilot", StringComparison.Ordinal);
+                || string.IsNullOrEmpty(profile.Identity.DisplayName)
+                || profile.Identity.DisplayName.StartsWith("Pilot", StringComparison.Ordinal);
         }
 
         // ──────────────────────────────────────────────
