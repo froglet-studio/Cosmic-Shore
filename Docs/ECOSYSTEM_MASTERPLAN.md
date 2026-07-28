@@ -390,6 +390,22 @@ code was deliberately **not** adopted.
 3. **Confirm the food-web loop end-to-end:** starvation AND predation wither extremities-first,
    never blink out, drop a collectible crystal that buffs the collector's element; sharks thin
    the brittlestar school then starve back (Lotka–Volterra oscillation visible).
+3a. **`SegmentSpawner.SuperShieldSpawnedPrisms` still bypasses the state machine** — it pokes
+   `prismProperties.IsSuperShielded` directly instead of calling `Prism.ActivateSuperShield()`
+   (which would also route `PrismStateManager.SyncAOERegistryShieldState` → `UpdateShieldState`).
+   It is correct *today* only because `SegmentSpawner.Initialize` lays the whole track
+   synchronously, before any prism registers with `PrismSpatialIndex`, so the Register-time
+   `ComputeEnvironmentMass` read already sees the flag. The moment `SpawnableWaypointTrack`
+   opts into `layAcrossFrames`, prisms laid after the pass would silently miss the super-shield
+   and land in the targeting grids as ordinary prey. Route it through `ActivateSuperShield`
+   (needs an `instant` pass-through for `superShieldEngageInstant`) before that happens.
+3b. **Skim Race has no herbivore spawn ring** (`Skim Race Spawn Profile.HerbivoreSpawnPointCount`
+   is 0, so its herbivores still seed on the densest sensed mass). Blob runs 3 points at radius
+   400; decide whether the racing cell wants the same spread now that the ring rides the wave
+   clock (`Docs/ECOSYSTEM.md §16.1`).
+3c. **No edit-mode test covers the wave→ring mapping.** `HerbivoreSpawnPoint` takes a `Cell`, so
+   it is not reachable from the engine-free `FaunaReproductionRulesTests` surface. Extracting the
+   angle math to a pure static would make "N points, N waves, no repeat" a unit test.
 
 **Phase B — collider budget completion (perf).**
 4. **`ColliderBudget` per cell** (CellConfigDataSO, target ≤ ~1,500 — §4): the probe warns when
