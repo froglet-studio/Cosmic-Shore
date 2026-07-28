@@ -59,6 +59,14 @@ namespace CosmicShore.Gameplay
                 _themeManagerData.GetTeamDangerousBlockMaterial(teamManager.Domain)
             );
             CurrentState = BlockState.Dangerous;
+
+            // Mirror the cleared IsShielded flag into the spatial index so the
+            // shell view retires this prism's analytic shell. Without this, a
+            // danger-converted ex-shielded prism keeps its stale shell entry and
+            // runs the exact shell narrowphase against every probe every frame,
+            // forever (its hits are filtered on the managed side, so this is a
+            // pure perf leak - but an unbounded one).
+            SyncAOERegistryShieldState();
         }
 
         public void ActivateShield(float? duration = null)

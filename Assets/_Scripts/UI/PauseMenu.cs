@@ -47,6 +47,41 @@ namespace CosmicShore.UI
         bool wasLocalPlayerInputPausedBefore;
 
         /// <summary>
+        /// True while Hide() itself is closing the modal, so the OnModalClosed
+        /// callback only reacts to closes we did NOT initiate (e.g. gamepad B).
+        /// </summary>
+        bool isHidingFromCode;
+
+        void Start()
+        {
+            if (settingsModalWindowManager != null)
+                settingsModalWindowManager.OnModalClosed += HandleModalClosed;
+        }
+
+        void OnDestroy()
+        {
+            if (settingsModalWindowManager != null)
+                settingsModalWindowManager.OnModalClosed -= HandleModalClosed;
+        }
+
+        /// <summary>
+        /// The pause modal was dismissed by a path that bypasses our buttons - the
+        /// ModalWindowManager's gamepad B (East) close. Route it through the same
+        /// resume flow as the on-screen Resume button so the game and the player's
+        /// input actually unpause instead of leaving the vessel frozen.
+        /// </summary>
+        void HandleModalClosed()
+        {
+            if (isHidingFromCode) return;
+            if (!pauseMenuPanel.activeInHierarchy) return;
+
+            if (PauseSystem.Paused)
+                OnClickResumeGameButton();
+            else
+                OnClickMultiplayerResumeGameButton();
+        }
+
+        /// <summary>
         /// Toggles the Master Volume On/Off
         /// </summary>
         public void OnClickToggleMusic() => gameSetting.ChangeMusicEnabledSetting();
@@ -152,7 +187,10 @@ namespace CosmicShore.UI
 
         public void Hide()
         {
+            isHidingFromCode = true;
             settingsModalWindowManager.ModalWindowOut();
+            isHidingFromCode = false;
+
             pauseMenuPanel.gameObject.SetActive(false);
             audioSystem.PlayGameplaySFX(GameplaySFXCategory.PauseClose);
         }

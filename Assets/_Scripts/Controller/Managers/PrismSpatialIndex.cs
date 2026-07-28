@@ -36,6 +36,9 @@ namespace CosmicShore.Gameplay
         // Active (bit 0 set) AND not destroyed (bit 1 clear) → value == 0x01
         public const byte JobSkipMask    = IsActive | Destroyed;
         public const byte JobPassValue   = IsActive; // exactly active, not destroyed
+
+        // Either shield bit — the shell-contact tier's candidate filter.
+        public const byte AnyShieldMask  = IsShielded | IsSuperShielded;
     }
 
     /// <summary>
@@ -106,6 +109,138 @@ namespace CosmicShore.Gameplay
         public byte DomainSlot; // 1B
         public byte EnvMass;    // 1B
         // Total: 8B
+    }
+
+    /// <summary>Which analytic shield shell a slot currently presents to probes.</summary>
+    public static class ShellKind
+    {
+        public const byte None = 0;
+        public const byte Octahedron = 1; // SHIELDED: L1 ball circumscribing the authored box
+        public const byte Stella = 2;     // SUPER-SHIELDED: union of two tetrahedra (non-convex)
+    }
+
+    /// <summary>
+    /// Shell view (cold): the world pose of a shielded prism's analytic shell, read
+    /// by <see cref="ShellContactQueryJob"/> only for slots whose flags carry a
+    /// shield bit. Refreshed at shield engage/disengage (UpdateShieldState /
+    /// Register), on growth steps (RefreshVolumeCache → UpdateShellTransform), and
+    /// for movers (NotifyPositionChanged → UpdateShellTransform). Kind is cleared on
+    /// Unregister so slot reuse can never inherit a stale shell.
+    ///
+    /// SemiAxes are WORLD semi-axes: shieldScale · authoredHalfExtents ⊙ lossyScale.
+    /// Valid because prism transforms are rigid rotation × axis-aligned scale (no
+    /// shear in any spawn path).
+    /// </summary>
+    public struct PrismShellData
+    {
+        public quaternion Rotation; // 16B
+        public float3 Center;       // 12B  world shell center (TransformPoint(boxCollider.center))
+        public float3 SemiAxes;     // 12B  world semi-axes
+        public float BoundRadius;   // 4B   conservative bounding-sphere radius about Center
+        public byte Kind;           // 1B   ShellKind
+        // 3B pad — 48B total
+    }
+
+    /// <summary>Probe shape classification for the shell-contact query.</summary>
+    public static class ShellProbeKind
+    {
+        public const byte Sphere = 0;
+        public const byte Capsule = 1;
+        public const byte Box = 2;
+    }
+
+    /// <summary>
+    /// One collision probe (a vessel hull collider or skimmer sphere/capsule) in
+    /// world space, rebuilt each frame by <see cref="PrismShellContactManager"/>
+    /// from the live collider transforms.
+    /// </summary>
+    public struct ShellProbe
+    {
+        public float3 A;           // sphere center / capsule endpoint 0 / box center
+        public float3 B;           // capsule endpoint 1 (unused otherwise)
+        public float3 E1, E2, E3;  // box half-edge world vectors (unused otherwise)
+        public float Radius;       // sphere/capsule world radius
+        public float3 BoundCenter; // conservative bounding sphere for the coarse reject
+        public float BoundRadius;
+        public int OwnerSlot;      // index into the manager's registered-owner list
+        public byte Kind;          // ShellProbeKind
+    }
+
+    /// <summary>One probe-vs-shell overlap found by the query job.</summary>
+    public struct ShellContactHit
+    {
+        public int ProbeIndex;
+        public int PrismIndex;
+    }
+
+    /// <summary>
+    /// Burst query for the shielded-prism analytic-collision tier: scans the hot
+    /// spatial array exactly like <see cref="AOESpatialQueryJob"/>, but only slots
+    /// carrying a shield flag proceed to the exact shell narrowphase
+    /// (<see cref="ShieldShellMath"/> — octahedron, or the NON-CONVEX two-tet
+    /// stella union: a probe touching a spike tip overlaps; a probe threaded
+    /// between spikes inside the bounding box does not).
+    /// </summary>
+    [BurstCompile]
+    public struct ShellContactQueryJob : IJobParallelFor
+    {
+        [ReadOnly] public NativeArray<PrismSpatialData> Prisms;
+        [ReadOnly] public NativeArray<PrismShellData> Shells;
+        [ReadOnly] public NativeArray<ShellProbe> Probes;
+        [ReadOnly] public int ProbeCount;
+
+        public NativeList<ShellContactHit>.ParallelWriter Hits;
+
+        public void Execute(int index)
+        {
+            var p = Prisms[index];
+            if ((p.Flags & PrismFlags.JobSkipMask) != PrismFlags.JobPassValue) return;
+            if ((p.Flags & PrismFlags.AnyShieldMask) == 0) return;
+
+            var shell = Shells[index];
+            if (shell.Kind == ShellKind.None) return;
+
+            bool frameBuilt = false;
+            ShieldShellMath.ShellFrame frame = default;
+
+            for (int i = 0; i < ProbeCount; i++)
+            {
+                var probe = Probes[i];
+                float reach = probe.BoundRadius + shell.BoundRadius;
+                if (math.distancesq(probe.BoundCenter, shell.Center) > reach * reach)
+                    continue;
+
+                if (!frameBuilt)
+                {
+                    frame = ShieldShellMath.CreateFrame(shell.Center, shell.Rotation, shell.SemiAxes);
+                    frameBuilt = true;
+                }
+
+                bool octa = shell.Kind == ShellKind.Octahedron;
+                bool hit;
+                switch (probe.Kind)
+                {
+                    case ShellProbeKind.Sphere:
+                        hit = octa
+                            ? ShieldShellMath.SphereOverlapsOcta(in frame, probe.A, probe.Radius)
+                            : ShieldShellMath.SphereOverlapsStella(in frame, probe.A, probe.Radius);
+                        break;
+                    case ShellProbeKind.Capsule:
+                        hit = octa
+                            ? ShieldShellMath.CapsuleOverlapsOcta(in frame, probe.A, probe.B, probe.Radius)
+                            : ShieldShellMath.CapsuleOverlapsStella(in frame, probe.A, probe.B, probe.Radius);
+                        break;
+                    default:
+                        hit = octa
+                            ? ShieldShellMath.BoxOverlapsOcta(in frame, probe.A, probe.E1, probe.E2, probe.E3)
+                            : ShieldShellMath.BoxOverlapsStella(in frame, probe.A, probe.E1, probe.E2, probe.E3);
+                        break;
+                }
+
+                if (hit)
+                    Hits.AddNoResize(new ShellContactHit { ProbeIndex = i, PrismIndex = index });
+            }
+        }
     }
 
     /// <summary>
@@ -375,6 +510,10 @@ namespace CosmicShore.Gameplay
         private NativeArray<PrismCellData> _cellData;
         private NativeArray<float> _cellVolumeScratch;
 
+        // Shell view (cold): world pose of each shielded slot's analytic shell,
+        // read by ShellContactQueryJob only for shield-flagged slots.
+        private NativeArray<PrismShellData> _shell;
+
         // Async summation snapshot: the live arrays are mutated freely on the main
         // thread (Register / UpdateCellVolume per grower / steals), so a
         // worker-thread sum job reads a point-in-time COPY instead. One snapshot
@@ -426,6 +565,7 @@ namespace CosmicShore.Gameplay
         private static readonly ProfilerMarker s_processExplosion = new("AOE.ProcessExplosion");
         private static readonly ProfilerMarker s_burstJobSchedule = new("AOE.BurstJob.Schedule");
         private static readonly ProfilerMarker s_resolveDamage = new("AOE.ResolveDamage");
+        private static readonly ProfilerMarker s_shellQuery = new("ShellContact.Query");
 
         public bool IsAvailable => _spatial.IsCreated;
         public int HighWaterMark => _highWaterMark;
@@ -453,6 +593,7 @@ namespace CosmicShore.Gameplay
             _damage = new NativeArray<PrismDamageData>(INITIAL_CAPACITY, Allocator.Persistent);
             _cellData = new NativeArray<PrismCellData>(INITIAL_CAPACITY, Allocator.Persistent);
             _cellVolumeScratch = new NativeArray<float>(CellVolumeResultCount, Allocator.Persistent);
+            _shell = new NativeArray<PrismShellData>(INITIAL_CAPACITY, Allocator.Persistent);
             _prisms = new Prism[INITIAL_CAPACITY];
             _cells = new Cell[INITIAL_CAPACITY];
             _hitIndices = new NativeList<int>(512, Allocator.Persistent);
@@ -1142,6 +1283,11 @@ namespace CosmicShore.Gameplay
             // Coarse view: file into the containing cell's density grids.
             BindCell(index, prism, (Vector3)position);
 
+            // Shell view: prisms whose shield engaged before registration (authored
+            // IsShielded, SegmentSpawner track super-shielding, spawn-window engages)
+            // publish their shell here — the flags above are the source of truth.
+            RefreshShellData(index);
+
             return index;
         }
 
@@ -1173,6 +1319,9 @@ namespace CosmicShore.Gameplay
             s.Flags = 0; // clear all flags including IsActive
             _spatial[index] = s;
             _prisms[index] = null;
+            // Shell view hygiene: a freed slot must not present a shell through the
+            // free-list window (slot reuse would alias a stale shell onto a new prism).
+            if (_shell.IsCreated) _shell[index] = default;
             _freeList.Push(index);
         }
 
@@ -1223,6 +1372,9 @@ namespace CosmicShore.Gameplay
             // (re-resolved at the restored position, like the old
             // Prism.RegisterWithCell call this replaces).
             if (prism) BindCell(index, prism, (Vector3)s.Position);
+            // Shell view: a restored prism that is still shielded re-captures its
+            // shell at the restored pose (stale data from before destruction).
+            RefreshShellData(index);
         }
 
         /// <summary>
@@ -1262,6 +1414,9 @@ namespace CosmicShore.Gameplay
             if (superShielded) s.Flags |= PrismFlags.IsSuperShielded;
             _spatial[index] = s;
 
+            // Shell view: engage publishes the world shell pose; disengage clears it.
+            RefreshShellData(index);
+
             // A super-shield transition flips the prism between environment mass and volume-only
             // structure (see ComputeEnvironmentMass) - re-file it with its bound cell so the
             // targeting grids, per-domain counts and control reads stay truthful.
@@ -1288,6 +1443,106 @@ namespace CosmicShore.Gameplay
             var d = _damage[index];
             d.Volume = volume;
             _damage[index] = d;
+        }
+
+        /// <summary>
+        /// Re-captures a shielded slot's world shell pose from its transform —
+        /// called on growth steps (RefreshVolumeCache) and mover updates
+        /// (NotifyPositionChanged). O(1) no-op for the unshielded majority: one
+        /// cold-array byte read decides.
+        /// </summary>
+        public void UpdateShellTransform(int index)
+        {
+            if (!_shell.IsCreated) return;
+            if (index < 0 || index >= _highWaterMark) return;
+            if (_shell[index].Kind == ShellKind.None) return;
+            RefreshShellData(index);
+        }
+
+        /// <summary>
+        /// (Re)derives the shell view entry for a slot from its shield flags and its
+        /// prism's live transform. Unshielded / dead / geometry-less slots clear to
+        /// Kind = None, which the query job skips.
+        /// </summary>
+        private void RefreshShellData(int index)
+        {
+            if (!_shell.IsCreated) return;
+
+            var s = _spatial[index];
+            byte kind = ShellKind.None;
+            if ((s.Flags & PrismFlags.IsSuperShielded) != 0) kind = ShellKind.Stella;
+            else if ((s.Flags & PrismFlags.IsShielded) != 0) kind = ShellKind.Octahedron;
+
+            var prism = _prisms[index];
+            if (kind == ShellKind.None || prism == null
+                || !prism.TryGetShellGeometry(out Vector3 centerLocal, out Vector3 semiAxesLocal))
+            {
+                _shell[index] = default;
+                return;
+            }
+
+            Transform t = prism.transform;
+            Vector3 lossy = t.lossyScale;
+            float3 semi = new float3(
+                Mathf.Abs(semiAxesLocal.x * lossy.x),
+                Mathf.Abs(semiAxesLocal.y * lossy.y),
+                Mathf.Abs(semiAxesLocal.z * lossy.z));
+            // Octahedron vertices sit at ±semi along each axis; stella spike tips at
+            // the scaled cube corners (±sx, ±sy, ±sz).
+            float bound = kind == ShellKind.Stella ? math.length(semi) : math.cmax(semi);
+
+            _shell[index] = new PrismShellData
+            {
+                Rotation = t.rotation,
+                Center = t.TransformPoint(centerLocal),
+                SemiAxes = semi,
+                BoundRadius = bound,
+                Kind = kind,
+            };
+        }
+
+        /// <summary>
+        /// Managed back-reference for a query-result slot (the same parallel-array
+        /// resolve ProcessExplosionFrame uses). Callers must treat the reference as
+        /// same-frame only — never cache registry indices across frames.
+        /// </summary>
+        internal Prism GetRegisteredPrism(int index)
+        {
+            if (index < 0 || index >= _highWaterMark) return null;
+            return _prisms[index];
+        }
+
+        /// <summary>
+        /// Shell-contact query: one synchronous Burst pass over the hot array that
+        /// tests every shield-flagged slot's analytic shell against the probe set
+        /// and appends overlaps to <paramref name="hits"/>. Same
+        /// Schedule-then-Complete discipline as ProcessExplosionFrame — the caller
+        /// dispatches from the results afterwards, never during the scan.
+        /// </summary>
+        public void CollectShellContacts(NativeArray<ShellProbe> probes, int probeCount, NativeList<ShellContactHit> hits)
+        {
+            hits.Clear();
+            if (!_spatial.IsCreated || !_shell.IsCreated || _highWaterMark == 0 || probeCount <= 0)
+                return;
+
+            // AddNoResize throws on overflow; size for a dense worst case (a large
+            // skimmer riding a fully super-shielded track lining).
+            int capacity = math.min(65536, math.max(1024, probeCount * 512));
+            if (hits.Capacity < capacity)
+                hits.Capacity = capacity;
+
+            using (s_shellQuery.Auto())
+            {
+                var job = new ShellContactQueryJob
+                {
+                    Prisms = _spatial,
+                    Shells = _shell,
+                    Probes = probes,
+                    ProbeCount = probeCount,
+                    Hits = hits.AsParallelWriter()
+                };
+                job.Schedule(_highWaterMark, JOB_BATCH_SIZE).Complete();
+            }
         }
 
         #endregion
@@ -1319,6 +1574,8 @@ namespace CosmicShore.Gameplay
             _cells[index] = null;
             _spatial[index] = new PrismSpatialData { Position = position, Flags = flags };
             _damage[index] = new PrismDamageData { Volume = volume, Domain = domain };
+            // Synthetic slots have no Prism to derive a shell from - stay Kind None.
+            if (_shell.IsCreated) _shell[index] = default;
             // Synthetic mass stays out of the summation view (CellId -1) - it must
             // not perturb Cell.LiveVolume / phase accounting (see remarks above).
             _cellData[index] = new PrismCellData
@@ -1535,6 +1792,12 @@ namespace CosmicShore.Gameplay
             _cellData.Dispose();
             _cellData = newCellData;
 
+            // Grow shell view
+            var newShell = new NativeArray<PrismShellData>(newSize, Allocator.Persistent);
+            NativeArray<PrismShellData>.Copy(_shell, newShell, _shell.Length);
+            _shell.Dispose();
+            _shell = newShell;
+
             // Grow managed arrays
             var newPrisms = new Prism[newSize];
             System.Array.Copy(_prisms, newPrisms, _prisms.Length);
@@ -1559,6 +1822,7 @@ namespace CosmicShore.Gameplay
             if (_spatial.IsCreated) _spatial.Dispose();
             if (_damage.IsCreated) _damage.Dispose();
             if (_cellData.IsCreated) _cellData.Dispose();
+            if (_shell.IsCreated) _shell.Dispose();
             if (_cellVolumeScratch.IsCreated) _cellVolumeScratch.Dispose();
             if (_hitIndices.IsCreated) _hitIndices.Dispose();
             if (_buckets.IsCreated) _buckets.Dispose();

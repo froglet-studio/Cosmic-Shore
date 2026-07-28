@@ -30,6 +30,63 @@ namespace CosmicShore.Gameplay
         ProfilerMarker _acceptMarker;
         bool _acceptMarkerInit;
 
+        /// <summary>
+        /// True while <see cref="AcceptImpactee"/> is running for a shell contact
+        /// dispatched by <see cref="PrismShellContactManager"/> (the analytic
+        /// shielded-prism tier) rather than a PhysX trigger. Lets the shielded-prism
+        /// suppression check in subclasses pass shell dispatches through while
+        /// short-circuiting the box-trigger path for the same prism.
+        /// </summary>
+        protected bool IsShellDispatch { get; private set; }
+
+        /// <summary>
+        /// Exposes the trigger gate to <see cref="PrismShellContactManager"/> so the
+        /// shell tier honors the exact same initialization gating as OnTriggerEnter
+        /// (e.g. a skimmer goes inert when its Player deactivates mid-scene).
+        /// </summary>
+        internal bool IsInitializedForImpact => isInitialized;
+
+        /// <summary>
+        /// Shell-tier entry point: dispatches an impactee through the same
+        /// isInitialized gate, profiler marker, and AcceptImpactee chain as the
+        /// trigger path, with <see cref="IsShellDispatch"/> raised so subclass
+        /// suppression checks let it through.
+        /// </summary>
+        internal void AcceptImpacteeFromShellContact(IImpactor impactee)
+        {
+            if (!isInitialized)
+                return;
+
+            EnsureAcceptMarker();
+            using (_acceptMarker.Auto())
+            {
+                IsShellDispatch = true;
+                try
+                {
+                    AcceptImpactee(impactee);
+                }
+                finally
+                {
+                    IsShellDispatch = false;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Shell-tier exit notification — the analogue of OnTriggerExit for a shell
+        /// contact ending. Base does nothing; SkimmerImpactor overrides to mirror its
+        /// trigger-exit skim bookkeeping.
+        /// </summary>
+        internal virtual void NotifyShellContactExit(PrismImpactor prismImpactor) { }
+
+        void EnsureAcceptMarker()
+        {
+            if (_acceptMarkerInit)
+                return;
+            _acceptMarkerInit = true;
+            _acceptMarker = new ProfilerMarker(GetType().Name + ".AcceptImpactee");
+        }
+
         protected virtual void OnTriggerEnter(Collider other)
         {
             if (!isInitialized)
@@ -44,11 +101,7 @@ namespace CosmicShore.Gameplay
             if (!other.TryGetComponent(out ImpactCollider impacteeCollider))
                 return;
 
-            if (!_acceptMarkerInit)
-            {
-                _acceptMarkerInit = true;
-                _acceptMarker = new ProfilerMarker(GetType().Name + ".AcceptImpactee");
-            }
+            EnsureAcceptMarker();
             using (_acceptMarker.Auto())
                 AcceptImpactee(impacteeCollider.Impactor);
         }

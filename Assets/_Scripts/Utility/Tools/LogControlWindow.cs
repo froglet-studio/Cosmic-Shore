@@ -53,7 +53,6 @@ namespace CosmicShore.Utility
         // ── UGS Data sub-foldouts ────────────────────────────────────────────
         bool _ugsProfileFoldout;
         bool _ugsStatsFoldout;
-        bool _ugsVesselStatsFoldout;
         bool _ugsProgressionFoldout;
         bool _ugsHangarFoldout;
         bool _ugsEpisodesFoldout;
@@ -1045,65 +1044,46 @@ namespace CosmicShore.Utility
             {
                 var d = ds.Profile?.Data;
                 if (d == null) { DrawNoData(); return; }
-                DrawField("User ID", d.userId);
-                DrawField("Display Name", d.displayName);
-                DrawField("Avatar ID", d.avatarId.ToString());
-                DrawField("Crystal Balance", d.crystalBalance.ToString());
-                DrawField("Unlocked Rewards", d.unlockedRewardIds != null && d.unlockedRewardIds.Count > 0
-                    ? string.Join(", ", d.unlockedRewardIds)
+                DrawFieldHeader("Identity");
+                DrawSubField("User ID", d.Identity.UserId);
+                DrawSubField("Display Name", d.Identity.DisplayName);
+                DrawSubField("Avatar ID", d.Identity.AvatarId.ToString());
+
+                DrawFieldHeader("Economy");
+                DrawSubField("Crystal Balance", d.Economy.CrystalBalance.ToString());
+                DrawSubField("Lifetime Earned", d.Economy.LifetimeCrystalsEarned.ToString());
+                DrawSubField("Lifetime Spent", d.Economy.LifetimeCrystalsSpent.ToString());
+                DrawSubField("Unlocked Rewards", d.Economy.UnlockedRewardIds != null && d.Economy.UnlockedRewardIds.Count > 0
+                    ? string.Join(", ", d.Economy.UnlockedRewardIds)
                     : "(none)");
+
+                DrawFieldHeader("Progression");
+                DrawSubField("XP", d.Progression.Xp.ToString());
+
+                DrawFieldHeader("Lifecycle");
+                DrawSubField("First Seen", FormatUtcMs(d.Lifecycle.FirstSeenUtcMs));
+                DrawSubField("Last Seen", FormatUtcMs(d.Lifecycle.LastSeenUtcMs));
+                DrawSubField("Sessions", d.Lifecycle.SessionCount.ToString());
+                DrawSubField("Games Completed", d.Lifecycle.GamesCompleted.ToString());
+                DrawSubField("Total Flight Time", $"{d.Lifecycle.TotalFlightTimeSeconds:F1}s");
+                DrawSubField("App Version", string.IsNullOrEmpty(d.Lifecycle.LastAppVersion) ? "(unknown)" : d.Lifecycle.LastAppVersion);
+                DrawSubField("Platform", string.IsNullOrEmpty(d.Lifecycle.LastPlatform) ? "(unknown)" : d.Lifecycle.LastPlatform);
             });
 
-            DrawUGSSubSection("Player Stats", ref _ugsStatsFoldout, () =>
+            DrawUGSSubSection("Mode Stats", ref _ugsStatsFoldout, () =>
             {
-                var d = ds.Stats?.Data;
-                if (d == null) { DrawNoData(); return; }
-                DrawField("Last Login", d.LastLoginTick > 0
-                    ? new DateTime(d.LastLoginTick, DateTimeKind.Utc).ToString("yyyy-MM-dd HH:mm:ss UTC")
-                    : "(never)");
+                var d = ds.ModeStats?.Data;
+                if (d == null || d.Modes == null || d.Modes.Count == 0) { DrawNoData(); return; }
 
-                if (d.BlitzStats?.HighScores != null && d.BlitzStats.HighScores.Count > 0)
+                foreach (var kv in d.Modes)
                 {
-                    DrawFieldHeader("Blitz High Scores");
-                    foreach (var kv in d.BlitzStats.HighScores)
-                        DrawSubField(kv.Key, kv.Value.ToString());
-                }
-                if (d.MultiHexStats?.BestMultiplayerRaceTimes != null && d.MultiHexStats.BestMultiplayerRaceTimes.Count > 0)
-                {
-                    DrawFieldHeader("HexRace Best Times");
-                    foreach (var kv in d.MultiHexStats.BestMultiplayerRaceTimes)
-                        DrawSubField(kv.Key, $"{kv.Value:F2}s");
-                }
-                if (d.JoustStats?.BestRaceTimes != null && d.JoustStats.BestRaceTimes.Count > 0)
-                {
-                    DrawFieldHeader("Joust Best Times");
-                    foreach (var kv in d.JoustStats.BestRaceTimes)
-                        DrawSubField(kv.Key, $"{kv.Value:F2}s");
-                }
-                if (d.CrystalCaptureStats?.HighScores != null && d.CrystalCaptureStats.HighScores.Count > 0)
-                {
-                    DrawFieldHeader("Crystal Capture High Scores");
-                    foreach (var kv in d.CrystalCaptureStats.HighScores)
-                        DrawSubField(kv.Key, kv.Value.ToString());
-                }
-            });
-
-            DrawUGSSubSection("Vessel Stats", ref _ugsVesselStatsFoldout, () =>
-            {
-                var d = ds.VesselStats?.Data;
-                if (d == null || d.Vessels == null || d.Vessels.Count == 0) { DrawNoData(); return; }
-
-                foreach (var kv in d.Vessels)
-                {
+                    var r = kv.Value;
+                    if (r == null) continue;
                     DrawFieldHeader(kv.Key);
-                    var v = kv.Value;
-                    DrawSubField("Games Played", v.GamesPlayed.ToString());
-                    DrawSubField("Best Drift", $"{v.BestDriftTime:F2}s");
-                    DrawSubField("Best Boost", $"{v.BestBoostTime:F2}s");
-                    DrawSubField("Prisms Damaged", v.TotalPrismsDamaged.ToString());
-                    if (v.Counters != null && v.Counters.Count > 0)
-                        foreach (var c in v.Counters)
-                            DrawSubField(c.Key, c.Value.ToString());
+                    DrawSubField("Played / Won", $"{r.GamesPlayed} / {r.GamesWon}");
+                    DrawSubField("Best Score", r.HasScore ? $"{r.BestScore:F2}" : "(none)");
+                    DrawSubField("Flight Time", $"{r.FlightTimeSeconds:F1}s");
+                    DrawSubField("Last Played", FormatUtcMs(r.LastPlayedUtcMs));
                 }
             });
 
@@ -1123,24 +1103,29 @@ namespace CosmicShore.Utility
                 }
             });
 
-            DrawUGSSubSection("Hangar", ref _ugsHangarFoldout, () =>
+            DrawUGSSubSection("Hangar (ownership + vessel stats)", ref _ugsHangarFoldout, () =>
             {
                 var d = ds.Hangar?.Data;
                 if (d == null) { DrawNoData(); return; }
                 DrawField("Selected Vessel", string.IsNullOrEmpty(d.SelectedVessel) ? "(none)" : d.SelectedVessel);
-                DrawField("Unlocked Vessels", d.UnlockedVessels != null && d.UnlockedVessels.Count > 0
-                    ? string.Join(", ", d.UnlockedVessels) : "(none)");
-                if (d.VesselPreferences != null && d.VesselPreferences.Count > 0)
+                DrawField("Preferred Vessel", string.IsNullOrEmpty(d.PreferredVessel) ? "(none)" : d.PreferredVessel);
+
+                if (d.Vessels == null || d.Vessels.Count == 0) { DrawNoData(); return; }
+
+                foreach (var kv in d.Vessels)
                 {
-                    DrawFieldHeader("Vessel Preferences");
-                    foreach (var kv in d.VesselPreferences)
-                    {
-                        var p = kv.Value;
-                        string lastUsed = p.LastUsedTicks > 0
-                            ? new DateTime(p.LastUsedTicks, DateTimeKind.Utc).ToString("yyyy-MM-dd HH:mm")
-                            : "never";
-                        DrawSubField(kv.Key, $"fav={p.Favorited}, last={lastUsed}");
-                    }
+                    var v = kv.Value;
+                    if (v == null) continue;
+                    DrawFieldHeader($"{kv.Key}{(v.Unlocked ? "" : "  (locked)")}");
+                    DrawSubField("Games Played", v.GamesPlayed.ToString());
+                    DrawSubField("Flight Time", $"{v.FlightTimeSeconds:F1}s");
+                    DrawSubField("Best Drift", $"{v.BestDriftTimeSeconds:F2}s");
+                    DrawSubField("Best Boost", $"{v.BestBoostTimeSeconds:F2}s");
+                    DrawSubField("Prisms Damaged", v.TotalPrismsDamaged.ToString());
+                    DrawSubField("Last Used", FormatUtcMs(v.LastUsedUtcMs));
+                    if (v.Counters != null)
+                        foreach (var c in v.Counters)
+                            DrawSubField(c.Key, c.Value.ToString());
                 }
             });
 
@@ -1175,6 +1160,11 @@ namespace CosmicShore.Utility
                 DrawField("Joystick Visuals", d.JoystickVisualsEnabled ? "ON" : "OFF");
             });
         }
+
+        /// <summary>Formats a Unix epoch-millisecond UTC timestamp - the project-wide standard.</summary>
+        static string FormatUtcMs(long utcMs) => utcMs > 0
+            ? DateTimeOffset.FromUnixTimeMilliseconds(utcMs).UtcDateTime.ToString("yyyy-MM-dd HH:mm:ss") + " UTC"
+            : "(never)";
 
         // ── Drawing helpers ──────────────────────────────────────────────────
 

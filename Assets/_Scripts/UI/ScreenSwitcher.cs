@@ -133,6 +133,8 @@ namespace CosmicShore.UI
         {
             activeModalStack.Add(modalType);
             SetReturnToModal(activeModalStack.Last());
+            UpdateScreensInteractable();
+            UpdateModalStackInteractable();
         }
 
         public void PopModal()
@@ -143,6 +145,47 @@ namespace CosmicShore.UI
             activeModalStack.RemoveAt(activeModalStack.Count - 1);
 
             SetReturnToModal(activeModalStack.Count == 0 ? ModalWindows.NONE : activeModalStack.Last());
+            UpdateScreensInteractable();
+            UpdateModalStackInteractable();
+        }
+
+        /// <summary>
+        /// Screens stay visible under an open modal but must not accept input - without
+        /// this, buttons on the screen behind the modal remain clickable. Toggles only
+        /// interactable: alpha stays 1 (screens visible behind the modal) and
+        /// blocksRaycasts stays on (clicks outside the modal don't fall through to the
+        /// 3D scene). Freestyle hides the whole group itself, so never fight that state.
+        /// </summary>
+        private void UpdateScreensInteractable()
+        {
+            if (!screensCanvasGroup) return;
+            if (InFreestyle) return;
+
+            screensCanvasGroup.interactable = activeModalStack.Count == 0;
+        }
+
+        /// <summary>
+        /// With stacked modals (e.g. Arcade -> Arcade Game Configure) only the TOP modal
+        /// may accept input; without this the window underneath keeps live buttons for
+        /// clicks that get past the backdrop and for gamepad/keyboard navigation, which
+        /// no raycast blocker can stop. Only modals currently in the stack are touched -
+        /// closed modals stay owned by ModalWindowManager's own show/hide, and the
+        /// re-promoted modal gets its input back when the one above it pops.
+        /// </summary>
+        private void UpdateModalStackInteractable()
+        {
+            if (Modals == null || activeModalStack.Count == 0) return;
+
+            var top = activeModalStack.Last();
+
+            foreach (var modal in Modals)
+            {
+                if (!modal) continue;
+                if (!activeModalStack.Contains(modal.ModalType)) continue;
+                if (!modal.TryGetComponent<CanvasGroup>(out var cg)) continue;
+
+                cg.interactable = modal.ModalType == top;
+            }
         }
 
         #endregion
