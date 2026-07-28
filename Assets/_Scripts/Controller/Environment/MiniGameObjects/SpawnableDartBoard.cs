@@ -89,6 +89,9 @@ namespace CosmicShore.Gameplay
                     blockObj.Trail = trail;
                     blockObj.Initialize();
                     trail.Add(blockObj);
+                    // Custom loop bypasses PrismTrailBuilder.LayOne — register with the
+                    // arena-ready gate so ring blocks can't pop in after the connecting screen.
+                    PrismTrailBuilder.WatchForReveal(blockObj);
                 }
             }
         }

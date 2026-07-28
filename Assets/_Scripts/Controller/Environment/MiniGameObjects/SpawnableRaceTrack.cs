@@ -161,6 +161,9 @@ namespace CosmicShore.Gameplay
                 spawnedBlock.Trail = trail;
                 spawnedBlock.Initialize();
                 trail.Add(spawnedBlock);
+                // Custom loop bypasses PrismTrailBuilder.LayOne — register with the arena-ready
+                // gate so track blocks can't pop in after the connecting screen drops.
+                PrismTrailBuilder.WatchForReveal(spawnedBlock);
             }
 
             trails.Add(trail);

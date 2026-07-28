@@ -5,6 +5,7 @@ using CosmicShore.Data;
 using CosmicShore.Game;
 using CosmicShore.Gameplay;
 using CosmicShore.Utility;
+using CosmicShore.Utility.PerformanceBenchmark;
 using Reflex.Attributes;
 using Unity.Collections;
 using Unity.Jobs;
@@ -929,8 +930,16 @@ namespace CosmicShore.Gameplay
             // SpawnVisuals must run before SetupDensityGrids: the density grids
             // are now sized to the cell's membrane radius, and MembraneRadius
             // reads the membrane GameObject that SpawnVisuals instantiates.
-            SpawnVisuals();
-            SetupDensityGrids();
+            using (LoadInsights.Measure(LoadInsightCategory.Environment,
+                       $"Cell membrane+nucleus instantiate (cell {ID})"))
+            {
+                SpawnVisuals();
+            }
+            using (LoadInsights.Measure(LoadInsightCategory.Environment,
+                       $"Cell density grid allocation (cell {ID})"))
+            {
+                SetupDensityGrids();
+            }
             ResetVolumes();
 
             UpdateCellStats();
@@ -1122,9 +1131,13 @@ namespace CosmicShore.Gameplay
         {
             if (!cellConfigData || cellConfigData.CytoplasmPrefab == null) return;
 
-            spawnedCytoplasm = Instantiate(cellConfigData.CytoplasmPrefab, transform.position, Quaternion.identity);
-            spawnedCytoplasm.SetOrigin(transform.position);
-            spawnedCytoplasm.Initialize();
+            using (LoadInsights.Measure(LoadInsightCategory.Environment,
+                       $"Cytoplasm (SnowChanger) instantiate+init (cell {ID})"))
+            {
+                spawnedCytoplasm = Instantiate(cellConfigData.CytoplasmPrefab, transform.position, Quaternion.identity);
+                spawnedCytoplasm.SetOrigin(transform.position);
+                spawnedCytoplasm.Initialize();
+            }
         }
 
         void StartSpawnerForMode()
@@ -1137,6 +1150,7 @@ namespace CosmicShore.Gameplay
 
             activeSpawner.Start(this, cellConfigData, runtime, gameData);
 
+            LoadInsights.Mark($"Flora/fauna spawner started (cell {ID}, {activeSpawner.GetType().Name})");
             CSDebug.Log($"<color=green>[Cell {ID}] Spawner started: {activeSpawner.GetType().Name}</color>");
         }
 
