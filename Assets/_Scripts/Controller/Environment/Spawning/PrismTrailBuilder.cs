@@ -384,12 +384,24 @@ namespace CosmicShore.Gameplay
         /// </summary>
         const int CloneBatchSize = 256;
 
+        /// <summary>Clones per chunk on the per-item path — small enough that overshooting the
+        /// frame budget by at most one chunk stays invisible in the build readout.</summary>
+        const int SyncCloneChunk = 24;
+
         /// <summary>
-        /// Set false to force the per-item clone path (kept as a live escape hatch: batched
-        /// instantiate is an engine fast path, and the sync path is the behavioural baseline).
-        /// Flipped automatically if the batched call ever fails.
+        /// OFF by default — measured REGRESSION, do not flip without re-measuring.
+        /// <para>
+        /// AsyncInstantiateOperation integrates its clones on the main thread under its own
+        /// per-frame time budget (~10 ms by default). That budget, not our lay budget, then
+        /// governs the build: a structure needing ~15 s of integration is throttled to ~10 ms
+        /// per frame, so it stretches to 25 s+ instead of speeding up. The worker-thread clone
+        /// win is real but far smaller than the throttle it imposes.
+        /// </para>
+        /// Re-enabling requires raising the integration budget for the covered window
+        /// (AsyncInstantiateOperation.SetIntegrationTimeMS) and proving the result with a Load
+        /// Time Insights capture — the code path is kept for exactly that experiment.
         /// </summary>
-        public static bool UseBatchedInstantiate = true;
+        public static bool UseBatchedInstantiate = false;
 
         /// <summary>
         /// Clone <paramref name="count"/> prisms as children of <paramref name="parent"/> using
@@ -483,7 +495,12 @@ namespace CosmicShore.Gameplay
                 {
                     if (!parent) return; // container destroyed — stop laying
 
-                    int batch = Mathf.Min(CloneBatchSize, count - i);
+                    // On the per-item path a batch is cloned in one go with no budget check
+                    // inside it, so keep batches small there or the frame budget is overshot by
+                    // a whole batch (the progress readout stops ticking). The batched path wants
+                    // the opposite: bigger batches parallelize better.
+                    int batchCap = UseBatchedInstantiate ? CloneBatchSize : SyncCloneChunk;
+                    int batch = Mathf.Min(batchCap, count - i);
                     var clones = await CloneBatchAsync(prefab, batch, parent);
                     if (clones == null || !parent) return;
 
