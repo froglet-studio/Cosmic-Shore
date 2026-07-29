@@ -28,6 +28,23 @@ namespace CosmicShore.Core
     }
 
     /// <summary>
+    /// Where the player physically IS while a node runs — the app shell (menus, modals,
+    /// profile, arcade) or gameplay (freestyle flight, a launched match). Only the nodes
+    /// that MOVE the player between the two declare a venue; everything else inherits the
+    /// venue of the beat before it. The graph editor's row layout starts a new row at each
+    /// declared change, so a phase reads as one row per place the player is standing.
+    /// </summary>
+    public enum QuestVenue
+    {
+        /// <summary>Runs wherever the previous node left the player (the default).</summary>
+        Inherit = 0,
+        /// <summary>Menus, modals, the arcade — anything outside a flying/playing session.</summary>
+        AppShell = 1,
+        /// <summary>Freestyle flight or a launched game session.</summary>
+        Gameplay = 2,
+    }
+
+    /// <summary>
     /// Base ScriptableObject for every node in a quest phase graph.
     ///
     /// Each concrete node is its own SO subclass carrying typed authoring fields and
@@ -70,6 +87,22 @@ namespace CosmicShore.Core
 
         /// <summary>Short live summary of the node's authored fields, shown on the card body in the editor.</summary>
         public virtual string EditorSummary => string.Empty;
+
+        /// <summary>
+        /// Where the player is WHILE this node runs. Override only on nodes that move the
+        /// player between the app shell and gameplay (enter/exit freestyle, game launch/played,
+        /// milestone gates the player has to go play for) — every other node inherits, so a
+        /// row break in the editor always marks a real context switch.
+        /// </summary>
+        public virtual QuestVenue Venue => QuestVenue.Inherit;
+
+        /// <summary>
+        /// Where the player is AFTER this node completes. Defaults to <see cref="Venue"/>;
+        /// override for "away trip" nodes that span a whole excursion and hand the player
+        /// back somewhere else (e.g. WaitForGamePlayed runs during a match and returns to
+        /// the app shell).
+        /// </summary>
+        public virtual QuestVenue VenueAfter => Venue;
 
         /// <summary>
         /// The output ports this node can advance through. Linear nodes emit only

@@ -22,6 +22,10 @@ namespace CosmicShore.Core
             }
         }
 
+        /// <summary>An away trip: the node spans the match, and hands the player back to the shell.</summary>
+        public override QuestVenue Venue => QuestVenue.Gameplay;
+        public override QuestVenue VenueAfter => QuestVenue.AppShell;
+
         [Tooltip("Only count runs of a specific game mode.")]
         public bool filterByMode;
 

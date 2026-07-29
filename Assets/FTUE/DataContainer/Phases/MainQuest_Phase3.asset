@@ -15,7 +15,7 @@ MonoBehaviour:
   nodeId: 0641bcba83df4162b8f49b46f36add32
   displayName: 'CTA: Profile Screen'
   nodeEnabled: 1
-  graphPosition: {x: 60, y: 160}
+  graphPosition: {x: 60, y: 260}
   outputs:
   - portName: next
     targetNodeId: 7dcc20a0a59e4dbda2a1ed858335da7b
@@ -38,7 +38,7 @@ MonoBehaviour:
   nodeId: c0f7de8b85fe4a40b6c7c0d5753af1b3
   displayName: Reward Reveal
   nodeEnabled: 1
-  graphPosition: {x: 50, y: 645}
+  graphPosition: {x: 1960, y: 260}
   outputs:
   - portName: next
     targetNodeId: bfc2404831d647cea43c667a9c4f05b4
@@ -62,7 +62,7 @@ MonoBehaviour:
   nodeId: 7dcc20a0a59e4dbda2a1ed858335da7b
   displayName: Profile Explainer
   nodeEnabled: 1
-  graphPosition: {x: 60, y: 280}
+  graphPosition: {x: 440, y: 260}
   outputs:
   - portName: next
     targetNodeId: de753ae9f2b64359ac3b5e87f9d6d74f
@@ -87,7 +87,7 @@ MonoBehaviour:
   nodeId: 17b9b30c76674383a1d8f6a41c7061e1
   displayName: 'Wait: Tournament Played'
   nodeEnabled: 1
-  graphPosition: {x: 320, y: 160}
+  graphPosition: {x: 60, y: 480}
   outputs:
   - portName: next
     targetNodeId: 8b22d1910a35470abaca8a5e13aeec1e
@@ -110,7 +110,7 @@ MonoBehaviour:
   nodeId: 8b22d1910a35470abaca8a5e13aeec1e
   displayName: Phase 3 Complete
   nodeEnabled: 1
-  graphPosition: {x: 320, y: 280}
+  graphPosition: {x: 60, y: 700}
   outputs: []
 --- !u!114 &-1930776475551863198
 MonoBehaviour:
@@ -127,7 +127,7 @@ MonoBehaviour:
   nodeId: 36fd4aa76b5d4d0f97e50f0f104e3bd2
   displayName: 'Wait: Claim Tournament'
   nodeEnabled: 1
-  graphPosition: {x: 54, y: 555}
+  graphPosition: {x: 1580, y: 260}
   outputs:
   - portName: next
     targetNodeId: c0f7de8b85fe4a40b6c7c0d5753af1b3
@@ -203,7 +203,7 @@ MonoBehaviour:
   nodeId: de753ae9f2b64359ac3b5e87f9d6d74f
   displayName: 'Wait: Profile Opened'
   nodeEnabled: 1
-  graphPosition: {x: 71, y: 381}
+  graphPosition: {x: 820, y: 260}
   outputs:
   - portName: next
     targetNodeId: 8210e999a4854c4abbe303aeca6a36c6
@@ -224,7 +224,7 @@ MonoBehaviour:
   nodeId: 8210e999a4854c4abbe303aeca6a36c6
   displayName: 'Dialogue: Collect Your Reward'
   nodeEnabled: 1
-  graphPosition: {x: 66, y: 459}
+  graphPosition: {x: 1200, y: 260}
   outputs:
   - portName: next
     targetNodeId: 36fd4aa76b5d4d0f97e50f0f104e3bd2
@@ -248,7 +248,7 @@ MonoBehaviour:
   nodeId: bfc2404831d647cea43c667a9c4f05b4
   displayName: 'CTA: Play Tournament'
   nodeEnabled: 1
-  graphPosition: {x: 320, y: 40}
+  graphPosition: {x: 2340, y: 260}
   outputs:
   - portName: next
     targetNodeId: 17b9b30c76674383a1d8f6a41c7061e1

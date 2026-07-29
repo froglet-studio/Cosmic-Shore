@@ -17,6 +17,9 @@ namespace CosmicShore.Core
         public override string TypeTooltip => "Passive: waits for the player to return to the menu. Force Exit: drives the return itself (pair with a WaitForInput gate, e.g. 'press B'). Advances when the menu blend completes.";
         public override string EditorSummary => forceExit ? "Force return to menu" : "Until player returns to menu";
 
+        /// <summary>The door BACK to the app shell — starts an app-shell row in the editor layout.</summary>
+        public override QuestVenue Venue => QuestVenue.AppShell;
+
         [Tooltip("Drive the freestyle→menu transition programmatically instead of waiting for the player's own back action.")]
         public bool forceExit;
 

@@ -15,7 +15,7 @@ MonoBehaviour:
   nodeId: ab0334de1b4740a89134f7e01c7c4f35
   displayName: Phase 4 Complete
   nodeEnabled: 1
-  graphPosition: {x: 310, y: 576}
+  graphPosition: {x: 1580, y: 260}
   outputs: []
 --- !u!114 &-5824163366969753463
 MonoBehaviour:
@@ -32,7 +32,7 @@ MonoBehaviour:
   nodeId: c5db4e22130341cdbf45c73450b9f20f
   displayName: Wait For Intensity
   nodeEnabled: 1
-  graphPosition: {x: 331, y: 31}
+  graphPosition: {x: 60, y: 40}
   outputs:
   - portName: next
     targetNodeId: b5c9e90d2b1f4f63ac6a96a32987795e
@@ -54,7 +54,7 @@ MonoBehaviour:
   nodeId: b5c9e90d2b1f4f63ac6a96a32987795e
   displayName: 'CTA: Hangar'
   nodeEnabled: 1
-  graphPosition: {x: 328, y: 124}
+  graphPosition: {x: 60, y: 260}
   outputs:
   - portName: next
     targetNodeId: 353af98344ef4837949d4f83ef108e1f
@@ -105,7 +105,7 @@ MonoBehaviour:
   nodeId: 5e527af455e3478290c2be3227a5b79e
   displayName: Vessel Reward Reveal
   nodeEnabled: 1
-  graphPosition: {x: 313, y: 469}
+  graphPosition: {x: 1200, y: 260}
   outputs:
   - portName: next
     targetNodeId: ab0334de1b4740a89134f7e01c7c4f35
@@ -129,7 +129,7 @@ MonoBehaviour:
   nodeId: ae3c625329724a109acead3c2c440873
   displayName: 'Wait: Vessel Unlocked'
   nodeEnabled: 1
-  graphPosition: {x: 315, y: 366}
+  graphPosition: {x: 820, y: 260}
   outputs:
   - portName: next
     targetNodeId: 5e527af455e3478290c2be3227a5b79e
@@ -150,7 +150,7 @@ MonoBehaviour:
   nodeId: 353af98344ef4837949d4f83ef108e1f
   displayName: Vessel Unlock Tour
   nodeEnabled: 1
-  graphPosition: {x: 326, y: 239}
+  graphPosition: {x: 440, y: 260}
   outputs:
   - portName: next
     targetNodeId: ae3c625329724a109acead3c2c440873

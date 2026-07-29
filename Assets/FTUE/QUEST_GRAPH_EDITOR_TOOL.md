@@ -19,13 +19,14 @@ One-time setup menus (only needed on a fresh scene / fresh checkout):
 | `FrogletTools ▸ Quest Graph ▸ Setup Runner In Scene` | Drops/wires `QuestGraphRunner` into the open scene (Menu_Main) and auto-resolves its references |
 | `FrogletTools ▸ Quest Graph ▸ Wire Phase 0 UI (Menu_Main)` | Wires the hand-built UI: instruction sets, dialogue panel, toast notifier, nav buttons (Hangar + Profile lockable, Arcade allowed), progression service, and the **Quest Buttons** list (auto-registers the Episodes button under key `episodes`). Review the console mapping, then **save the scene** |
 | `FrogletTools ▸ Quest Graph ▸ Create Main Quest (Default Content)` | Regenerates the whole Main Quest from the design map. ⚠ Overwrites generated content — your hand-edited phase assets are the source of truth, so only use this when you deliberately want a fresh graph |
+| `FrogletTools ▸ Quest Graph ▸ Layout All Phases (Rows)` | Re-arranges **every** phase graph into venue rows (see §3) and saves. Safe to re-run any time |
 
 ## 2. Window tour
 
 ```
 ┌──────────────────────── Toolbar ────────────────────────┐
-│ + Add Node · Frame (F) · Node Colors · ◧ Quests ·       │
-│ Inspector ◨ · zoom % · Save/Save*                       │
+│ + Add Node · Frame (F) · Layout Rows · Node Colors ·    │
+│ ◧ Quests · Inspector ◨ · zoom % · Save/Save*            │
 ├──────────┬──────────────────────────────┬───────────────┤
 │ QUESTS   │           CANVAS             │  INSPECTOR    │
 │ quest    │  nodes + edges of the        │  quest info + │
@@ -58,6 +59,7 @@ One-time setup menus (only needed on a fresh scene / fresh checkout):
 | Zoom | mouse wheel (cursor-anchored) — click the toolbar **%** to reset |
 | Pan | middle-drag or Alt-drag |
 | Frame the graph | **F** |
+| Re-arrange into rows | toolbar **Layout Rows** (undoable — press Save to keep it) |
 | Tooltips | hover a node header or a port |
 
 ## 3. Editing a graph
@@ -74,6 +76,31 @@ One-time setup menus (only needed on a fresh scene / fresh checkout):
    phase, which completes the whole quest). Validation flags dead-ends.
 6. **Save** — the toolbar button reads **Save\*** when there are unsaved edits; press it (or
    Ctrl+S). Enable-toggle changes save to disk automatically so they always show up in git.
+
+### Canvas layout — one row per place the player is standing
+
+Graphs are arranged in **rows, not columns**. The flow reads left→right along a row, and a new
+row starts wherever the beat moves the player between the **app shell** (menus, arcade, profile)
+and **gameplay** (freestyle flight, a launched match) — so you can see at a glance where the
+player physically is at every point of a track, and every row break is a real context switch.
+
+```
+row 0  gameplay   enter freestyle → …flight-school beats…
+row 1  app shell  exit freestyle → lock nav → dialogue → funnel → CTAs
+row 2  gameplay   wait for the match to be played          (the away trip)
+row 3  app shell  …everything that greets them on the way back… → Phase Complete
+```
+
+**Layout Rows** (toolbar) re-arranges the open phase this way — undoable, and it takes effect in
+git once you press **Save**. `FrogletTools ▸ Quest Graph ▸ Layout All Phases (Rows)` does the
+whole quest at once. You are free to drag nodes anywhere afterwards; Layout Rows just puts the
+canonical arrangement back.
+
+Where the breaks land is declared **on the node type** (`Venue` / `VenueAfter` in code), not
+guessed from the layout — the enter/exit-freestyle nodes, the game-launch/played gates, and the
+intensity milestone gates are the only ones that move the player. If you add a new node type
+that takes the player in or out of gameplay, override `Venue` on it or its row break won't
+appear. Details: `QUEST_GRAPH_TOOL.md` § "Canvas layout — venue rows".
 
 ### Enable toggles (mute anything without unwiring it)
 
@@ -174,6 +201,7 @@ UGS cloud sync once the FTUE is signed off — no other changes needed.
 | Funnel the arcade for a beat | **SetArcadeConstraints** (Apply) … your beats … **SetArcadeConstraints** (Clear). Validation warns if a phase applies without clearing; PhaseEnd clears as a safety net |
 | Let a quest node enable a scene button | Register the Button on the runner's **Quest Buttons** list (or re-run the Phase 0 wirer), then use **SetButtonInteractable** with that key |
 | Rename the quest asset | QUEST section → type the name → **Rename Asset** |
+| Tidy a graph after adding beats | Toolbar **Layout Rows** → **Save**. For every phase at once: `FrogletTools ▸ Quest Graph ▸ Layout All Phases (Rows)` |
 
 ## 8. Troubleshooting
 

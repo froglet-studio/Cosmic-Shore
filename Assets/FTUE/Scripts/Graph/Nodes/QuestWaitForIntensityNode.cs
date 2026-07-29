@@ -17,6 +17,10 @@ namespace CosmicShore.Core
         public override string TypeTooltip => "Waits until the mode's unlocked intensity reaches the target tier (the progression service's own gate — tier 4 completes a mode's quest). Passes immediately if already met.";
         public override string EditorSummary => $"{mode} ≥ tier {intensityTier}";
 
+        /// <summary>An away trip: the player earns the tier by playing, then lands back in the shell.</summary>
+        public override QuestVenue Venue => QuestVenue.Gameplay;
+        public override QuestVenue VenueAfter => QuestVenue.AppShell;
+
         [Tooltip("The game mode whose intensity gate this node waits on.")]
         public GameModes mode = GameModes.MultiplayerCrystalCapture;
 

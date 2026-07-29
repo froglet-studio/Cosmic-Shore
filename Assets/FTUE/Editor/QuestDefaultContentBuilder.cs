@@ -23,8 +23,6 @@ namespace CosmicShore.Editor
         const string QuestsFolder = RootFolder + "/Quests";
         const string PhasesFolder = RootFolder + "/Phases";
 
-        static int _nodeCursor;
-
         [MenuItem("FrogletTools/Quest Graph/Create Main Quest (Default Content)")]
         public static void CreateMainQuest()
         {
@@ -394,7 +392,6 @@ namespace CosmicShore.Editor
             g.designerNotes = notes;
             string path = AssetDatabase.GenerateUniqueAssetPath($"{PhasesFolder}/MainQuest_Phase{index}.asset");
             AssetDatabase.CreateAsset(g, path);
-            _nodeCursor = 0;
             return g;
         }
 
@@ -404,8 +401,6 @@ namespace CosmicShore.Editor
             node.nodeId = Guid.NewGuid().ToString("N");
             node.name = name;
             node.displayName = name;
-            node.graphPosition = new Vector2(60 + (_nodeCursor / 5) * 260, 40 + (_nodeCursor % 5) * 120);
-            _nodeCursor++;
             AssetDatabase.AddObjectToAsset(node, graph);
             graph.nodes.Add(node);
             return node;
@@ -425,9 +420,16 @@ namespace CosmicShore.Editor
                 edge.delaySeconds = seconds;
         }
 
+        /// <summary>
+        /// Wire the entry node and arrange the canvas. Positions come from
+        /// <see cref="QuestGraphLayout"/> (one row per venue, broken at every app-shell ⇄
+        /// gameplay transition) so generated graphs open already laid out the same way the
+        /// editor's Layout Rows button leaves a hand-authored one.
+        /// </summary>
         static QuestPhaseGraphSO Finish(QuestPhaseGraphSO graph, QuestNodeSO entry)
         {
             graph.entryNode = entry;
+            QuestGraphLayout.LayoutRows(graph);
             EditorUtility.SetDirty(graph);
             return graph;
         }
