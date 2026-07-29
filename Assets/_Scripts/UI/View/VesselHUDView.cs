@@ -101,6 +101,26 @@ namespace CosmicShore.UI
         public bool IsAbilityUpgraded(Element element) => _upgraded.Contains(element);
 
         /// <summary>
+        /// The ability icon this element upgrades, if the vessel wired one. Used by the control-hint
+        /// binder so an (LT)/(RT) label can find the ability it belongs to instead of being pinned to
+        /// a hand-authored position.
+        /// </summary>
+        public bool TryGetAbilityIcon(Element element, out Image icon)
+        {
+            foreach (var binding in abilityIcons)
+            {
+                if (binding.element != element || !binding.icon) continue;
+                icon = binding.icon;
+                return true;
+            }
+            icon = null;
+            return false;
+        }
+
+        /// <summary>True when this HUD authors the four-icon ability row at all (opt-in rollout).</summary>
+        public bool HasAbilityIconRow => abilityIcons is { Count: > 0 };
+
+        /// <summary>
         /// The scale an ability icon should rest at right now - one, or the upgrade bump. Per-vessel
         /// views that run their own scale tweens capture THIS as their icon's rest scale so the
         /// persistent upgrade bump survives every tween they play.

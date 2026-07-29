@@ -1819,6 +1819,18 @@ scale bump** with a one-shot unlock punch.
   varied lower-right layouts — wiring them is per-vessel HUD work; the framework needs no changes.
 - Full reference: `Docs/ElementalAbilitySystem/ARCHITECTURE.md` §7.1.
 
+**Control hints attach to the ability, never to a position.** The `(LT)`/`(RT)` glyphs are bound to
+an ability and their placement is *derived*: `hint.binding` (the physical control) →
+`InputHintBindingMap` → `InputEvents` → the ability bound to that input (`ElementalAbilityMapSO`,
+falling back to a shared action asset via `R_VesselActionHandler.CollectBoundActions` when a vessel's
+touch and gamepad maps use different events) → `VesselHUDView.TryGetAbilityIcon`.
+`InputDeviceIconSetSwitcher.BindHintsToAbilities` runs this once from `VesselHUDController.Initialize`
+and re-anchors each hint onto its icon — **without reparenting**, so the Xbox/PS/keyboard set
+switching still works. Reassign an ability to a different input event, or move an icon in the row,
+and the label follows on its own. Editor warnings flag both a hint that labels nothing and an
+input-bound ability with no hint. Do NOT hand-position control glyphs against a HUD layout — that is
+the brittleness this replaced. See `Docs/ElementalAbilitySystem/ARCHITECTURE.md` §7.2.
+
 ### Namespace Convention
 
 All game code lives under `CosmicShore.*` with 8 primary namespaces:

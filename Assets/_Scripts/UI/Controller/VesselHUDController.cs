@@ -12,6 +12,11 @@ namespace CosmicShore.UI
         [Header("Legacy Silhouette")]
         [SerializeField] private SilhouetteController silhouette;
 
+        [Header("Control hints (optional)")]
+        [Tooltip("Drives the LT/RT/A/B glyph sets and attaches each hint to the ability icon its " +
+                 "input drives. Found under this vessel automatically when left empty.")]
+        [SerializeField] private InputDeviceIconSetSwitcher _iconSetSwitcher;
+
         protected R_VesselActionHandler Actions { get; private set; }
         protected VesselHUDView View => baseView;
 
@@ -49,6 +54,14 @@ namespace CosmicShore.UI
                 foreach (var element in AllElements) // seed already-active upgrades
                     baseView.SetAbilityUpgraded(element, _abilityHandler.IsUpgradeActive(element));
             }
+
+            // Control hints (LT/RT/…) attach themselves to the ability icon their input actually
+            // drives, resolved from this vessel's action handler. Rearranging the row can never
+            // leave a label behind on the wrong ability.
+            if (!_iconSetSwitcher)
+                _iconSetSwitcher = GetComponentInChildren<InputDeviceIconSetSwitcher>(true);
+            if (_iconSetSwitcher && baseView)
+                _iconSetSwitcher.BindHintsToAbilities(vesselStatus, baseView);
 
 #if UNITY_EDITOR
             // Structural contract: four ability icons, charge/mass/space/time, left to right.

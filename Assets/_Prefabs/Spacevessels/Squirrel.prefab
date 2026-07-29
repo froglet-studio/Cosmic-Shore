@@ -2753,6 +2753,116 @@ PrefabInstance:
       propertyPath: setVisuals.Array.data[2].hints.Array.data[1].inactiveColor.r
       value: 0.6320754
       objectReference: {fileID: 0}
+    - target: {fileID: 3562127641477033886, guid: c1572db06ad4244469ad3f25d86940b8,
+        type: 3}
+      propertyPath: setVisuals.Array.data[0].hints.Array.data[0].binding
+      value: 20
+      objectReference: {fileID: 0}
+    - target: {fileID: 3562127641477033886, guid: c1572db06ad4244469ad3f25d86940b8,
+        type: 3}
+      propertyPath: setVisuals.Array.data[0].hints.Array.data[0].attachToAbilityIcon
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3562127641477033886, guid: c1572db06ad4244469ad3f25d86940b8,
+        type: 3}
+      propertyPath: setVisuals.Array.data[0].hints.Array.data[0].attachOffset.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3562127641477033886, guid: c1572db06ad4244469ad3f25d86940b8,
+        type: 3}
+      propertyPath: setVisuals.Array.data[0].hints.Array.data[0].attachOffset.y
+      value: -74.9
+      objectReference: {fileID: 0}
+    - target: {fileID: 3562127641477033886, guid: c1572db06ad4244469ad3f25d86940b8,
+        type: 3}
+      propertyPath: setVisuals.Array.data[0].hints.Array.data[1].binding
+      value: 21
+      objectReference: {fileID: 0}
+    - target: {fileID: 3562127641477033886, guid: c1572db06ad4244469ad3f25d86940b8,
+        type: 3}
+      propertyPath: setVisuals.Array.data[0].hints.Array.data[1].attachToAbilityIcon
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3562127641477033886, guid: c1572db06ad4244469ad3f25d86940b8,
+        type: 3}
+      propertyPath: setVisuals.Array.data[0].hints.Array.data[1].attachOffset.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3562127641477033886, guid: c1572db06ad4244469ad3f25d86940b8,
+        type: 3}
+      propertyPath: setVisuals.Array.data[0].hints.Array.data[1].attachOffset.y
+      value: -74.9
+      objectReference: {fileID: 0}
+    - target: {fileID: 3562127641477033886, guid: c1572db06ad4244469ad3f25d86940b8,
+        type: 3}
+      propertyPath: setVisuals.Array.data[1].hints.Array.data[0].attachToAbilityIcon
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3562127641477033886, guid: c1572db06ad4244469ad3f25d86940b8,
+        type: 3}
+      propertyPath: setVisuals.Array.data[1].hints.Array.data[0].attachOffset.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3562127641477033886, guid: c1572db06ad4244469ad3f25d86940b8,
+        type: 3}
+      propertyPath: setVisuals.Array.data[1].hints.Array.data[0].attachOffset.y
+      value: -76.6
+      objectReference: {fileID: 0}
+    - target: {fileID: 3562127641477033886, guid: c1572db06ad4244469ad3f25d86940b8,
+        type: 3}
+      propertyPath: setVisuals.Array.data[1].hints.Array.data[1].binding
+      value: 8
+      objectReference: {fileID: 0}
+    - target: {fileID: 3562127641477033886, guid: c1572db06ad4244469ad3f25d86940b8,
+        type: 3}
+      propertyPath: setVisuals.Array.data[1].hints.Array.data[1].attachToAbilityIcon
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3562127641477033886, guid: c1572db06ad4244469ad3f25d86940b8,
+        type: 3}
+      propertyPath: setVisuals.Array.data[1].hints.Array.data[1].attachOffset.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3562127641477033886, guid: c1572db06ad4244469ad3f25d86940b8,
+        type: 3}
+      propertyPath: setVisuals.Array.data[1].hints.Array.data[1].attachOffset.y
+      value: -76.6
+      objectReference: {fileID: 0}
+    - target: {fileID: 3562127641477033886, guid: c1572db06ad4244469ad3f25d86940b8,
+        type: 3}
+      propertyPath: setVisuals.Array.data[2].hints.Array.data[0].attachToAbilityIcon
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3562127641477033886, guid: c1572db06ad4244469ad3f25d86940b8,
+        type: 3}
+      propertyPath: setVisuals.Array.data[2].hints.Array.data[0].attachOffset.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3562127641477033886, guid: c1572db06ad4244469ad3f25d86940b8,
+        type: 3}
+      propertyPath: setVisuals.Array.data[2].hints.Array.data[0].attachOffset.y
+      value: -76.6
+      objectReference: {fileID: 0}
+    - target: {fileID: 3562127641477033886, guid: c1572db06ad4244469ad3f25d86940b8,
+        type: 3}
+      propertyPath: setVisuals.Array.data[2].hints.Array.data[1].binding
+      value: 8
+      objectReference: {fileID: 0}
+    - target: {fileID: 3562127641477033886, guid: c1572db06ad4244469ad3f25d86940b8,
+        type: 3}
+      propertyPath: setVisuals.Array.data[2].hints.Array.data[1].attachToAbilityIcon
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3562127641477033886, guid: c1572db06ad4244469ad3f25d86940b8,
+        type: 3}
+      propertyPath: setVisuals.Array.data[2].hints.Array.data[1].attachOffset.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3562127641477033886, guid: c1572db06ad4244469ad3f25d86940b8,
+        type: 3}
+      propertyPath: setVisuals.Array.data[2].hints.Array.data[1].attachOffset.y
+      value: -76.6
+      objectReference: {fileID: 0}
     - target: {fileID: 4101317441828585055, guid: c1572db06ad4244469ad3f25d86940b8,
         type: 3}
       propertyPath: m_AnchorMax.x

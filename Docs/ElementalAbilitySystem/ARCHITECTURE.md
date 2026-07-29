@@ -247,6 +247,39 @@ that is not 16:9. Authoring all four the same way keeps the widths equal and the
 aspect ratio. The box scales with canvas width; the icon inside it does not (a fixed 80×80 child at
 0.7 scale), so only the touch target changes size.
 
+### 7.2 Control hints attach to the ability, not to a position
+
+The `(LT)` / `(RT)` glyphs under the row used to be absolutely-positioned objects under
+`XBOXRoot` / `PSRoot` / `PCRoot` with no link to what they labelled — so reordering the icons left
+them behind, pointing at the wrong abilities. A label is now **bound to an ability**, and its
+position is derived:
+
+```
+hint.binding (LT / RT / A / B …)          the physical control, authored on the hint
+      │  InputHintBindingMap              mirrors what the input strategies raise
+      ▼
+InputEvents  { LeftStickAction, OnlyLeftStickAction }
+      │  ElementalAbilityMapSO.Entries[].Input     (direct match)
+      │  R_VesselActionHandler.CollectBoundActions (fallback: the ability's input and the
+      │                                             control's input start the same action asset,
+      ▼                                             for vessels whose touch/gamepad maps differ)
+Element  →  VesselHUDView.TryGetAbilityIcon  →  the icon the label sits under
+```
+
+`InputDeviceIconSetSwitcher.BindHintsToAbilities` runs this once from
+`VesselHUDController.Initialize` (after `ActionHandler.Initialize`, so the maps are populated) and
+re-anchors each hint onto its ability icon plus `attachOffset`. It **does not reparent** — the hint
+has to stay under its icon-set root so the Xbox/PS/keyboard switching still works — and it writes
+the anchor as a fraction of the hint's own parent, so the placement survives resolution and aspect
+changes the same way the row does. Placement retries until the canvas has laid out, and every set is
+placed (including inactive ones) so switching devices later needs no extra work.
+
+Two warnings close the loop in the editor: a hint whose control drives no ability on this vessel, and
+an ability that *is* bound to an input but has no hint labelling it.
+
+Reassigning an ability to a different input event in the action handler, or moving an icon in the
+row, now carries the label along with no manual repositioning.
+
 **Fleet status.** Only the Squirrel HUD authors the row today (four buttons, four bindings). The
 other five flyable HUDs have no `abilityIcons` bindings and varied lower-right layouts; wiring them
 is per-vessel HUD work — the framework above needs no further changes.
