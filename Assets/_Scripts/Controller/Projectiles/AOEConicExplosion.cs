@@ -70,7 +70,6 @@ namespace CosmicShore.Gameplay
 
                 float elapsed = 0f;
 
-                var sphereCol = GetComponent<SphereCollider>();
                 float maxScaleMag = MaxScaleVector.magnitude; // invariant for this explosion - hoist out of the per-frame loop
 
                 while (elapsed < ExplosionDuration)
@@ -85,9 +84,12 @@ namespace CosmicShore.Gameplay
                     coneContainer.transform.localScale =
                         Vector3.Lerp(Vector3.zero, MaxScaleVector, lerp);
 
-                    // Dynamic collider radius update
-                    float z = Mathf.Clamp(coneContainer.transform.localScale.z, 0.01f, Mathf.Infinity);
-                    sphereCol.radius = coneContainer.transform.localScale.x / (z * 2f);
+                    // Damage volume: the prefab's CapsuleCollider (radius 0.5, height 1,
+                    // direction Y = the cone's length axis) is shaped entirely by the
+                    // animated container scale - world length = cone height (z), world
+                    // radius = half the base scale (x). No per-frame collider math: the
+                    // old sphere-radius formula interacted with Unity's max-axis sphere
+                    // scaling so the height term cancelled out of the damage reach.
 
                     // Opacity fade
                     float opacity =
