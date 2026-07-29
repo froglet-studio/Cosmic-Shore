@@ -318,6 +318,11 @@ namespace CosmicShore.Editor
                     ShowCreateNodeMenu(ScreenCenterWorld(), null, null);
                 if (GUILayout.Button("Frame (F)", EditorStyles.toolbarButton, GUILayout.Width(72)))
                     FrameContent();
+                if (GUILayout.Button(new GUIContent("Layout Rows",
+                        "Re-arrange this phase into rows: the flow reads left→right, and a new row starts "
+                        + "wherever the player moves between the app shell and gameplay."),
+                        EditorStyles.toolbarButton, GUILayout.Width(84)))
+                    LayoutRows();
             }
 
             bool legend = GUILayout.Toggle(_showLegend,
@@ -1736,6 +1741,21 @@ namespace CosmicShore.Editor
             var menu = new GenericMenu();
             menu.AddItem(new GUIContent($"Disconnect '{port}'"), false, () => SetEdge(node, port, null));
             menu.ShowAsContext();
+        }
+
+        /// <summary>
+        /// Re-arrange the open phase with <see cref="QuestGraphLayout"/> — one row per venue
+        /// (app shell / gameplay), broken wherever the flow moves the player between them —
+        /// then frame the result. Undoable; press Save to write it to disk.
+        /// </summary>
+        void LayoutRows()
+        {
+            if (_graph == null) return;
+
+            int rows = QuestGraphLayout.LayoutRows(_graph);
+            _cards.Clear();
+            FrameContent();
+            Debug.Log($"[Quest] Laid out '{_graph.PhaseName}' into {rows} row{(rows == 1 ? "" : "s")}. Save to keep it.");
         }
 
         void FrameContent()

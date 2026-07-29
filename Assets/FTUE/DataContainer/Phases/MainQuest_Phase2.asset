@@ -15,7 +15,7 @@ MonoBehaviour:
   nodeId: 9900d89e605e4641bc8f6543020d45dc
   displayName: Phase 2 Complete
   nodeEnabled: 1
-  graphPosition: {x: 320, y: 280}
+  graphPosition: {x: 60, y: 700}
   outputs: []
 --- !u!114 &-7463569488550784757
 MonoBehaviour:
@@ -54,7 +54,7 @@ MonoBehaviour:
   nodeId: e061a6d6876e4aeaa0f9951eaa2ac0ab
   displayName: 'CTA: Play MultiplayerJoust'
   nodeEnabled: 1
-  graphPosition: {x: 320, y: 40}
+  graphPosition: {x: 2340, y: 260}
   outputs:
   - portName: next
     targetNodeId: bd7e7a0525154f999d286ac2f85dad0d
@@ -77,7 +77,7 @@ MonoBehaviour:
   nodeId: bd7e7a0525154f999d286ac2f85dad0d
   displayName: 'Wait: MultiplayerJoust Played'
   nodeEnabled: 1
-  graphPosition: {x: 320, y: 160}
+  graphPosition: {x: 60, y: 480}
   outputs:
   - portName: next
     targetNodeId: 9900d89e605e4641bc8f6543020d45dc
@@ -133,7 +133,7 @@ MonoBehaviour:
   nodeId: 0e5938393bfb4a849324115a687b7311
   displayName: 'Wait: Profile Opened'
   nodeEnabled: 1
-  graphPosition: {x: 41, y: 356}
+  graphPosition: {x: 820, y: 260}
   outputs:
   - portName: next
     targetNodeId: 02205f6c786142f6ac83d94136d9aaf3
@@ -154,7 +154,7 @@ MonoBehaviour:
   nodeId: 02205f6c786142f6ac83d94136d9aaf3
   displayName: 'Dialogue: Collect Your Reward'
   nodeEnabled: 1
-  graphPosition: {x: 23, y: 447}
+  graphPosition: {x: 1200, y: 260}
   outputs:
   - portName: next
     targetNodeId: aea68490b5cb4622bb36c073981f8c24
@@ -178,7 +178,7 @@ MonoBehaviour:
   nodeId: c2687bdca2cc4799bb93f5c1e0869c71
   displayName: Reward Reveal
   nodeEnabled: 1
-  graphPosition: {x: 39, y: 658}
+  graphPosition: {x: 1960, y: 260}
   outputs:
   - portName: next
     targetNodeId: e061a6d6876e4aeaa0f9951eaa2ac0ab
@@ -203,7 +203,7 @@ MonoBehaviour:
   nodeId: aea68490b5cb4622bb36c073981f8c24
   displayName: 'Wait: Claim MultiplayerJoust'
   nodeEnabled: 1
-  graphPosition: {x: 28, y: 549}
+  graphPosition: {x: 1580, y: 260}
   outputs:
   - portName: next
     targetNodeId: c2687bdca2cc4799bb93f5c1e0869c71
@@ -224,7 +224,7 @@ MonoBehaviour:
   nodeId: 12e410a373744f128fd39a4579140e99
   displayName: Profile Explainer
   nodeEnabled: 1
-  graphPosition: {x: 46, y: 237}
+  graphPosition: {x: 440, y: 260}
   outputs:
   - portName: next
     targetNodeId: 0e5938393bfb4a849324115a687b7311
@@ -249,7 +249,7 @@ MonoBehaviour:
   nodeId: 92312a30a6e3436aa870eb3feca6c3fd
   displayName: 'CTA: Profile Screen'
   nodeEnabled: 1
-  graphPosition: {x: 55, y: 142}
+  graphPosition: {x: 60, y: 260}
   outputs:
   - portName: next
     targetNodeId: 12e410a373744f128fd39a4579140e99

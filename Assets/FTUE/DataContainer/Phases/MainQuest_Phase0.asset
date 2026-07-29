@@ -15,7 +15,7 @@ MonoBehaviour:
   nodeId: 4d51e7e97c7a48a9a4330fdf253f3952
   displayName: Maps Tour + Intensity-4 Rule
   nodeEnabled: 1
-  graphPosition: {x: 1081.7087, y: 249.43002}
+  graphPosition: {x: 1580, y: 700}
   outputs:
   - portName: next
     targetNodeId: 38d080a5539f45c88e872ec24f2b9991
@@ -40,7 +40,7 @@ MonoBehaviour:
   nodeId: 62bc32852c844642b884e692791eebbf
   displayName: 'Wait: Drift Both Ways'
   nodeEnabled: 0
-  graphPosition: {x: 320, y: 400}
+  graphPosition: {x: 3100, y: 40}
   outputs:
   - portName: next
     targetNodeId: 1de038df581042b9a3eaa9ea0e8c4152
@@ -64,7 +64,7 @@ MonoBehaviour:
   nodeId: 8943a1eafac648e2917dd95481f4b9ae
   displayName: 'Prompt: Slow Down'
   nodeEnabled: 1
-  graphPosition: {x: 60, y: 400}
+  graphPosition: {x: 1200, y: 40}
   outputs:
   - portName: next
     targetNodeId: 4359e453bb1543d5ab60cdba3231c3dd
@@ -89,7 +89,7 @@ MonoBehaviour:
   nodeId: 25ff321a1f6447f78e85cdd409061ab4
   displayName: 'Dialogue: Go To The Arcade'
   nodeEnabled: 1
-  graphPosition: {x: 580, y: 520}
+  graphPosition: {x: 820, y: 260}
   outputs:
   - portName: next
     targetNodeId: 4146918752d64a12942513cbcd7f92a8
@@ -114,7 +114,7 @@ MonoBehaviour:
   nodeId: 22266fc0e2a14456a92d8a0d2710790b
   displayName: Dialogue
   nodeEnabled: 1
-  graphPosition: {x: 1088.2756, y: 38.099716}
+  graphPosition: {x: 820, y: 700}
   outputs:
   - portName: next
     targetNodeId: 4e9d130b72e147619021272ddaacfec8
@@ -138,7 +138,7 @@ MonoBehaviour:
   nodeId: 467d633fe0e745afa54ed2c99049f452
   displayName: 'Wait: CC Played @2'
   nodeEnabled: 1
-  graphPosition: {x: 840, y: 400}
+  graphPosition: {x: 60, y: 480}
   outputs:
   - portName: next
     targetNodeId: 633e678a3b7c4f40b9ce8c79fb6fae81
@@ -161,7 +161,7 @@ MonoBehaviour:
   nodeId: 6a6faa6cb7fc4d7da700bda7d95da791
   displayName: Unlock Nav Buttons
   nodeEnabled: 1
-  graphPosition: {x: 837.33936, y: 577.64746}
+  graphPosition: {x: 440, y: 700}
   outputs:
   - portName: next
     targetNodeId: 22266fc0e2a14456a92d8a0d2710790b
@@ -182,7 +182,7 @@ MonoBehaviour:
   nodeId: 4e9d130b72e147619021272ddaacfec8
   displayName: 'CTA: Profile Screen'
   nodeEnabled: 1
-  graphPosition: {x: 1092.4749, y: 154.64478}
+  graphPosition: {x: 1200, y: 700}
   outputs:
   - portName: next
     targetNodeId: 4d51e7e97c7a48a9a4330fdf253f3952
@@ -205,7 +205,7 @@ MonoBehaviour:
   nodeId: 38d080a5539f45c88e872ec24f2b9991
   displayName: Wait For User Action
   nodeEnabled: 1
-  graphPosition: {x: 1095.436, y: 353.80234}
+  graphPosition: {x: 1960, y: 700}
   outputs:
   - portName: next
     targetNodeId: 99a4babdb4af4034a1cee165f55e4764
@@ -226,7 +226,7 @@ MonoBehaviour:
   nodeId: e49acbf58ca14b319267a3c2f4422eeb
   displayName: Phase 0 Complete
   nodeEnabled: 1
-  graphPosition: {x: 1097.6528, y: 576.4997}
+  graphPosition: {x: 2720, y: 700}
   outputs: []
 --- !u!114 &-2956468355650793072
 MonoBehaviour:
@@ -264,7 +264,7 @@ MonoBehaviour:
   nodeId: 4f53e5d54482409da1b3ea7ef567886d
   displayName: "Lock Nav \u2192 Arcade Only"
   nodeEnabled: 1
-  graphPosition: {x: 580, y: 400}
+  graphPosition: {x: 440, y: 260}
   outputs:
   - portName: next
     targetNodeId: 25ff321a1f6447f78e85cdd409061ab4
@@ -285,7 +285,7 @@ MonoBehaviour:
   nodeId: 633e678a3b7c4f40b9ce8c79fb6fae81
   displayName: Set Arcade Constraints
   nodeEnabled: 1
-  graphPosition: {x: 836.70135, y: 495.33673}
+  graphPosition: {x: 60, y: 700}
   outputs:
   - portName: next
     targetNodeId: 6a6faa6cb7fc4d7da700bda7d95da791
@@ -310,7 +310,7 @@ MonoBehaviour:
   nodeId: cd1a84021b8f4c489211a176dc040455
   displayName: 'Prompt: Drift'
   nodeEnabled: 0
-  graphPosition: {x: 320, y: 280}
+  graphPosition: {x: 2720, y: 40}
   outputs:
   - portName: next
     targetNodeId: 62bc32852c844642b884e692791eebbf
@@ -335,7 +335,7 @@ MonoBehaviour:
   nodeId: 1de038df581042b9a3eaa9ea0e8c4152
   displayName: 'Prompt: Skim'
   nodeEnabled: 1
-  graphPosition: {x: 320, y: 520}
+  graphPosition: {x: 3480, y: 40}
   outputs:
   - portName: next
     targetNodeId: b55978264a4149d1a70fd4d2a46ebcd9
@@ -360,7 +360,7 @@ MonoBehaviour:
   nodeId: 140d0136f41041f78b6b010b95e1552b
   displayName: 'Prompt: Look Around'
   nodeEnabled: 0
-  graphPosition: {x: 320, y: 40}
+  graphPosition: {x: 1960, y: 40}
   outputs:
   - portName: next
     targetNodeId: e1a4553726bc41e89f2dbb23f2628519
@@ -385,7 +385,7 @@ MonoBehaviour:
   nodeId: e1a4553726bc41e89f2dbb23f2628519
   displayName: 'Wait: Look Around'
   nodeEnabled: 0
-  graphPosition: {x: 320, y: 160}
+  graphPosition: {x: 2340, y: 40}
   outputs:
   - portName: next
     targetNodeId: cd1a84021b8f4c489211a176dc040455
@@ -454,7 +454,7 @@ MonoBehaviour:
   nodeId: 4146918752d64a12942513cbcd7f92a8
   displayName: 'Arcade Funnel: CC @ Intensity 2'
   nodeEnabled: 1
-  graphPosition: {x: 840, y: 40}
+  graphPosition: {x: 1200, y: 260}
   outputs:
   - portName: next
     targetNodeId: 7b57585db85147d3ba2a8d8827bac682
@@ -479,7 +479,7 @@ MonoBehaviour:
   nodeId: 99a4babdb4af4034a1cee165f55e4764
   displayName: Dialogue
   nodeEnabled: 1
-  graphPosition: {x: 1087.9777, y: 453.12585}
+  graphPosition: {x: 2340, y: 700}
   outputs:
   - portName: next
     targetNodeId: e49acbf58ca14b319267a3c2f4422eeb
@@ -505,7 +505,7 @@ MonoBehaviour:
   nodeId: b55978264a4149d1a70fd4d2a46ebcd9
   displayName: 'Wait: Skim 10 Prisms'
   nodeEnabled: 1
-  graphPosition: {x: 580, y: 40}
+  graphPosition: {x: 3860, y: 40}
   outputs:
   - portName: next
     targetNodeId: cebd5a6ffdef4df080f7d5715edfd42b
@@ -528,7 +528,7 @@ MonoBehaviour:
   nodeId: 7b57585db85147d3ba2a8d8827bac682
   displayName: 'CTA: Arcade'
   nodeEnabled: 1
-  graphPosition: {x: 840, y: 160}
+  graphPosition: {x: 1580, y: 260}
   outputs:
   - portName: next
     targetNodeId: b86125208ea445679021639310070914
@@ -551,7 +551,7 @@ MonoBehaviour:
   nodeId: bc7f51400cc641cb996b29b608f4f43b
   displayName: 'Wait: Player Taps Overlay Button'
   nodeEnabled: 1
-  graphPosition: {x: 580, y: 280}
+  graphPosition: {x: 60, y: 260}
   outputs:
   - portName: next
     targetNodeId: 4f53e5d54482409da1b3ea7ef567886d
@@ -573,7 +573,7 @@ MonoBehaviour:
   nodeId: cebd5a6ffdef4df080f7d5715edfd42b
   displayName: 'Prompt: Exit Via Overlay Button'
   nodeEnabled: 1
-  graphPosition: {x: 580, y: 160}
+  graphPosition: {x: 4240, y: 40}
   outputs:
   - portName: next
     targetNodeId: bc7f51400cc641cb996b29b608f4f43b
@@ -598,7 +598,7 @@ MonoBehaviour:
   nodeId: 4359e453bb1543d5ab60cdba3231c3dd
   displayName: 'Wait: Minimum Speed'
   nodeEnabled: 1
-  graphPosition: {x: 60, y: 520}
+  graphPosition: {x: 1580, y: 40}
   outputs:
   - portName: next
     targetNodeId: 140d0136f41041f78b6b010b95e1552b
@@ -620,7 +620,7 @@ MonoBehaviour:
   nodeId: 751c8dc6b91e44d6bd8c9a4946f3ca0a
   displayName: 'Wait: Full Speed'
   nodeEnabled: 1
-  graphPosition: {x: 60, y: 280}
+  graphPosition: {x: 820, y: 40}
   outputs:
   - portName: next
     targetNodeId: 8943a1eafac648e2917dd95481f4b9ae
@@ -642,7 +642,7 @@ MonoBehaviour:
   nodeId: 722dc64991ac42e8b0cdfac3daa82652
   displayName: 'Prompt: Speed Up'
   nodeEnabled: 1
-  graphPosition: {x: 58.722473, y: 160}
+  graphPosition: {x: 440, y: 40}
   outputs:
   - portName: next
     targetNodeId: 751c8dc6b91e44d6bd8c9a4946f3ca0a
@@ -667,7 +667,7 @@ MonoBehaviour:
   nodeId: b86125208ea445679021639310070914
   displayName: 'CTA: Play CC (Intensity 2)'
   nodeEnabled: 1
-  graphPosition: {x: 840, y: 280}
+  graphPosition: {x: 1960, y: 260}
   outputs:
   - portName: next
     targetNodeId: 467d633fe0e745afa54ed2c99049f452

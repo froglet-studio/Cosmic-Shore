@@ -18,6 +18,9 @@ namespace CosmicShore.Core
         public override string TypeTooltip => "Forces the menu vessel from autopilot into freestyle (player-controlled) flight; advances when the camera/UI blend completes.";
         public override string EditorSummary => "Autopilot → player control";
 
+        /// <summary>The door INTO gameplay — starts a gameplay row in the editor layout.</summary>
+        public override QuestVenue Venue => QuestVenue.Gameplay;
+
         [Tooltip("Safety timeout (seconds). If the transition never completes, advance anyway so the FTUE never hard-locks.")]
         [Min(1f)] public float timeoutSeconds = 8f;
 

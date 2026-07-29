@@ -15,7 +15,7 @@ MonoBehaviour:
   nodeId: d5c931a387794bf5b2fb9c43d0d3e082
   displayName: Reward Reveal
   nodeEnabled: 1
-  graphPosition: {x: 63.999023, y: 627.9742}
+  graphPosition: {x: 1580, y: 260}
   outputs:
   - portName: next
     targetNodeId: da0c5e9066f94b2e96e23b99cfe2ce6b
@@ -39,7 +39,7 @@ MonoBehaviour:
   nodeId: 17c7ae9711c443a1b29f2a515a3ea47a
   displayName: Phase 1 Complete
   nodeEnabled: 1
-  graphPosition: {x: 320, y: 280}
+  graphPosition: {x: 60, y: 700}
   outputs: []
 --- !u!114 &-1540299717785453082
 MonoBehaviour:
@@ -78,7 +78,7 @@ MonoBehaviour:
   nodeId: d4bd50f6eee54654bec7b27ecb94a2b4
   displayName: Dialogue
   nodeEnabled: 1
-  graphPosition: {x: 58.066605, y: 436.26617}
+  graphPosition: {x: 820, y: 260}
   outputs:
   - portName: next
     targetNodeId: a9cf9fe9435548a9bb64a204ae0adbe5
@@ -134,7 +134,7 @@ MonoBehaviour:
   nodeId: dd1cbacb4df947329cfce9f23174d955
   displayName: Wait For User Action
   nodeEnabled: 1
-  graphPosition: {x: 59.0663, y: 341.28894}
+  graphPosition: {x: 440, y: 260}
   outputs:
   - portName: next
     targetNodeId: d4bd50f6eee54654bec7b27ecb94a2b4
@@ -155,7 +155,7 @@ MonoBehaviour:
   nodeId: da0c5e9066f94b2e96e23b99cfe2ce6b
   displayName: 'CTA: Play HexRace'
   nodeEnabled: 1
-  graphPosition: {x: 320, y: 40}
+  graphPosition: {x: 1960, y: 260}
   outputs:
   - portName: next
     targetNodeId: adcb6c7d76e94882b216fcc2a06079b4
@@ -178,7 +178,7 @@ MonoBehaviour:
   nodeId: adcb6c7d76e94882b216fcc2a06079b4
   displayName: 'Wait: HexRace Played'
   nodeEnabled: 1
-  graphPosition: {x: 320, y: 160}
+  graphPosition: {x: 60, y: 480}
   outputs:
   - portName: next
     targetNodeId: 17c7ae9711c443a1b29f2a515a3ea47a
@@ -201,7 +201,7 @@ MonoBehaviour:
   nodeId: a9cf9fe9435548a9bb64a204ae0adbe5
   displayName: 'Wait: Claim HexRace'
   nodeEnabled: 1
-  graphPosition: {x: 59.000244, y: 522.9705}
+  graphPosition: {x: 1200, y: 260}
   outputs:
   - portName: next
     targetNodeId: d5c931a387794bf5b2fb9c43d0d3e082
@@ -222,7 +222,7 @@ MonoBehaviour:
   nodeId: efa36ece7b19480689d7d4346dafb080
   displayName: Profile Explainer
   nodeEnabled: 1
-  graphPosition: {x: 61.99951, y: 199.01949}
+  graphPosition: {x: 60, y: 260}
   outputs:
   - portName: next
     targetNodeId: dd1cbacb4df947329cfce9f23174d955
