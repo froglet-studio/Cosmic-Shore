@@ -36,7 +36,7 @@ namespace CosmicShore.Gameplay
         public bool AnonymousExplosion { get; protected set; }
         public float MaxScale { get; protected set; } = 200f;
 
-        private ExplosionImpactor _explosionImpactor;
+        protected ExplosionImpactor _explosionImpactor;
         private float _colliderRadius = 0.5f; // Default sphere collider radius
         private MaterialPropertyBlock _mpb;
         private SphereCollider _sphereCollider;
@@ -64,7 +64,7 @@ namespace CosmicShore.Gameplay
         /// explosion→vessel effects (e.g. VesselChangeSpeedByExplosionEffect) are
         /// resolved through this collider's OnTriggerEnter, not the batch path.
         /// </summary>
-        private void ApplyPrismExclusion()
+        protected void ApplyPrismExclusion()
         {
             if (_prismExclusionApplied || !_sphereCollider) return;
             _originalExcludeLayers = _sphereCollider.excludeLayers;
@@ -72,7 +72,7 @@ namespace CosmicShore.Gameplay
             _prismExclusionApplied = true;
         }
 
-        private void RestorePrismExclusion()
+        protected void RestorePrismExclusion()
         {
             if (!_prismExclusionApplied || !_sphereCollider) return;
             _sphereCollider.excludeLayers = _originalExcludeLayers;
