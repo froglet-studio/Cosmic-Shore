@@ -114,8 +114,13 @@ namespace CosmicShore.Gameplay
                     Vector3 sphereWorldCenter =
                         containerTransform.position + containerTransform.forward * scale.z;
 
+                    // Blast origin = the cone APEX (container origin, the spawn
+                    // point). The wavefront sphere travels; the impact vectors all
+                    // radiate from the apex at the blast-wave speed, so every
+                    // struck prism flies outward with the expanding blast.
                     bool shouldContinue = impactor?.ProcessBatchFrame(
-                        sphereWorldCenter, sphereWorldRadius, speed, Inertia) ?? true;
+                        sphereWorldCenter, sphereWorldRadius, containerTransform.position,
+                        speed, Inertia) ?? true;
 
                     if (!shouldContinue)
                     {
@@ -177,6 +182,19 @@ namespace CosmicShore.Gameplay
                 DestroyContainer();
                 if (this) Destroy(gameObject);
             }
+        }
+
+        /// <summary>
+        /// Vessel impacts (and the physics fallback) get the same blast-wave
+        /// dynamics as the batch prism path: direction radiates from the cone
+        /// APEX (the container origin), not from this transform, which sits at
+        /// the cone's midpoint. Per-hit managed normalize is fine here - vessel
+        /// hits are rare.
+        /// </summary>
+        public override Vector3 CalculateImpactVector(Vector3 impacteePosition)
+        {
+            Vector3 origin = coneContainer ? coneContainer.transform.position : transform.position;
+            return (impacteePosition - origin).normalized * speed * Inertia;
         }
 
         protected override void PerformResetCleanup()

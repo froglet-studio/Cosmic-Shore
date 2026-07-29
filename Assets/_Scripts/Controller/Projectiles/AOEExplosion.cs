@@ -165,7 +165,7 @@ namespace CosmicShore.Gameplay
 
         // ... [CalculateImpactVector and ExplodeAsync remain unchanged] ...
 
-        public Vector3 CalculateImpactVector(Vector3 impacteePosition)
+        public virtual Vector3 CalculateImpactVector(Vector3 impacteePosition)
         {
             Vector3 direction = (impacteePosition - transform.position).normalized;
             return direction * speed * Inertia;
@@ -235,8 +235,10 @@ namespace CosmicShore.Gameplay
                         // Batch AOE damage via Burst job over cache-packed prism data
                         // Effective radius = collider radius (local) * localScale
                         float currentRadius = _colliderRadius * MaxScale * ease;
+                        // Spherical explosion: wavefront and blast origin share the
+                        // stationary center - impacts radiate from the spawn point.
                         bool shouldContinue = impactor?.ProcessBatchFrame(
-                            cachedTransform.position, currentRadius, speed, Inertia) ?? true;
+                            cachedTransform.position, currentRadius, cachedTransform.position, speed, Inertia) ?? true;
 
                         if (!shouldContinue)
                         {
