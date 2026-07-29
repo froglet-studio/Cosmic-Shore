@@ -220,6 +220,17 @@ heat tint) must override `SetAbilityUpgraded` and re-anchor their own captured r
 `AbilityIconRestScale(element)` — otherwise the view's own tweens settle back to the *pre-upgrade*
 scale and wipe the bump. `SquirrelVesselHUDView` is the reference implementation.
 
+**Where the row's geometry lives — read this before moving an icon.** A vessel HUD variant is
+instantiated *inside the vessel prefab*, and that prefab instance can override the row's rects. The
+Squirrel's did: `DriftButton` and `ShieldRingsButton` had their `m_Anchor*.x` / `m_AnchoredPosition.x`
+/ `m_SizeDelta.x` overridden in `Assets/_Prefabs/Spacevessels/Squirrel.prefab`, while the other two
+buttons' x came from the variant. Editing only the variant therefore moved half the row and left the
+other half pinned — four icons collapsing onto two positions. Those x overrides have been **removed**,
+so `SquirrelHUDVariant.prefab` is now the single source of truth for the row's horizontal layout (the
+y overrides stay — they give two of the buttons a taller box around the same y centre). When you touch
+another vessel's row, resolve the effective value through the vessel prefab's `m_Modifications` first;
+do not trust the variant alone.
+
 **Fleet status.** Only the Squirrel HUD authors the row today (four buttons, four bindings). The
 other five flyable HUDs have no `abilityIcons` bindings and varied lower-right layouts; wiring them
 is per-vessel HUD work — the framework above needs no further changes.
