@@ -207,6 +207,18 @@ Inward, Thumbstick_Look, Trigger_LT/RT, Button_B.
 - UI-side intensity locking for the "play at intensity N" beats (the graph verifies via the
   WaitGamePlayed filter).
 
+## Follow-ups (layout)
+
+- **Very long rows don't wrap.** Row breaks come only from venue changes, so Phase 0's
+  flight-school row is 12 nodes (~4.5k px) and can't fully fit a framed canvas (Frame clamps at
+  the 0.35 min zoom). If that becomes annoying, add a soft wrap — continue on the next line at an
+  indent, keeping the row's venue — rather than breaking on something that isn't a transition.
+- **`CLAUDE.md` has no Quest Graph section.** Its FTUE entry still describes only the older
+  adapter/step system (`TutorialFlowController` et al.), so a new developer won't find this graph
+  tool from the root doc. Worth a short entry + a Documentation Index row pointing here.
+
 ## Notes
 
 - Node ids are stable GUIDs — UGS records survive renames/reorders. Don't hand-edit `nodeId`.
+- Node positions (`graphPosition`) are authoring-only, but the ARRANGEMENT is canonical — see
+  "Canvas layout — venue rows". Re-run Layout Rows after adding beats instead of hand-tidying.
