@@ -125,7 +125,7 @@ namespace CosmicShore.Gameplay
             if (VesselStatus.FarFieldSkimmer)
                 VesselStatus.FarFieldSkimmer.Initialize(VesselStatus);
 
-            VesselStatus.Silhouette.Initialize(VesselStatus);
+            VesselStatus.ElementalBarsController.Initialize(VesselStatus);
             VesselStatus.VesselTransformer.ToggleActive(true);
 
             if (player.IsLocalUser)

@@ -50,7 +50,6 @@ namespace CosmicShore.UI
         [Header("Event Channels")]
         [SerializeField] private ScriptableEventInt onMoundDroneSpawned;
         [SerializeField] private ScriptableEventInt onQueenDroneSpawned;
-        [SerializeField] private ScriptableEventSilhouetteData onSilhouetteInitialized;
         [SerializeField] private ScriptableEventShipHUDData onShipHUDInitialized;
         [SerializeField] private ScriptableEventNoParam OnResetForReplay;
 
@@ -293,7 +292,6 @@ namespace CosmicShore.UI
 
             if (onMoundDroneSpawned != null) onMoundDroneSpawned.OnRaised += OnMoundDroneSpawned;
             if (onQueenDroneSpawned != null) onQueenDroneSpawned.OnRaised += OnQueenDroneSpawned;
-            if (onSilhouetteInitialized != null) onSilhouetteInitialized.OnRaised += OnSilhouetteInitialized;
             if (onShipHUDInitialized != null) onShipHUDInitialized.OnRaised += OnShipHUDInitialized;
         }
 
@@ -312,7 +310,6 @@ namespace CosmicShore.UI
 
             if (onMoundDroneSpawned != null) onMoundDroneSpawned.OnRaised -= OnMoundDroneSpawned;
             if (onQueenDroneSpawned != null) onQueenDroneSpawned.OnRaised -= OnQueenDroneSpawned;
-            if (onSilhouetteInitialized != null) onSilhouetteInitialized.OnRaised -= OnSilhouetteInitialized;
             if (onShipHUDInitialized != null) onShipHUDInitialized.OnRaised -= OnShipHUDInitialized;
         }
 
@@ -597,18 +594,6 @@ namespace CosmicShore.UI
         {
             view.RightNumberDisplay.transform.parent.parent.gameObject.SetActive(count > 0);
             view.RightNumberDisplay.text = count.ToString();
-        }
-
-        private void OnSilhouetteInitialized(SilhouetteData data)
-        {
-            var sil = view.Silhouette;
-            sil.SetActive(data.IsSilhouetteActive);
-
-            foreach (var part in data.Silhouettes)
-            {
-                part.transform.SetParent(sil.transform, false);
-                part.SetActive(true);
-            }
         }
 
         private void OnShipHUDInitialized(ShipHUDData data)
