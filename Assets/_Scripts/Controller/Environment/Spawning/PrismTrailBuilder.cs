@@ -189,9 +189,19 @@ namespace CosmicShore.Gameplay
         static float s_allClearSince = -1f;
         static int s_settleSpan = -1;
 
-        /// <summary>Hard cap on the load-gate hold — releases with an error instead of holding a
-        /// broken build forever (a wedged build must surface loud, not as an infinite screen).</summary>
+        /// <summary>Hard cap on load-gate STALL — releases with an error when the build makes no
+        /// progress (no prism laid or settled) for this long, instead of holding a broken build
+        /// forever (a wedged build must surface loud, not as an infinite screen). Measured as
+        /// stall rather than total hold time so a slow-but-progressing lay (e.g. a 70k-prism
+        /// arena on the per-item clone fallback) finishes behind the screen instead of being
+        /// force-released into a mid-match pop-in cascade.</summary>
         const float LoadGateHardCapSeconds = 180f;
+
+        // Progress snapshot for the stall cap: the gate releases only when BOTH counters hold
+        // still for LoadGateHardCapSeconds. Reset when the hold begins.
+        static int s_lastLayDone = -1;
+        static int s_lastGrowRemaining = -1;
+        static float s_lastProgressTime;
 
         /// <summary>The all-clear must hold this long before the gate releases — bridges any
         /// same-frame gaps between async build steps (a lay finishing while another spawnable
@@ -233,6 +243,9 @@ namespace CosmicShore.Gameplay
             if (holding)
             {
                 s_loadGateStartTime = Time.unscaledTime;
+                s_lastLayDone = -1;
+                s_lastGrowRemaining = -1;
+                s_lastProgressTime = Time.unscaledTime;
                 // Fresh readout for this load: purge last match's (destroyed) entries so the
                 // panel never shows a stale grow count during the dwell.
                 SweepGrowWatch();
@@ -250,13 +263,22 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public static bool PollArenaReady()
         {
-            if (s_loadGateHolding && Time.unscaledTime - s_loadGateStartTime > LoadGateHardCapSeconds)
+            // Stall detection: any advance in laying or settling counts as progress (readings
+            // lag one poll for GrowRemainingCount, which is updated by the sweep below - fine).
+            if (s_layDoneTotal != s_lastLayDone || GrowRemainingCount != s_lastGrowRemaining)
             {
-                Debug.LogError($"[PrismTrailBuilder] Arena build exceeded the {LoadGateHardCapSeconds:F0}s " +
-                               $"hold cap (pendingBuilds={s_pendingArenaBuilds}, lays={s_activeBudgetedLays}, " +
-                               $"settling={GrowRemainingCount}) — releasing the gate so the match can start. " +
-                               "Either the build wedged or the load is pathologically slow; capture a " +
-                               "Load Time Insights recording to see which.");
+                s_lastLayDone = s_layDoneTotal;
+                s_lastGrowRemaining = GrowRemainingCount;
+                s_lastProgressTime = Time.unscaledTime;
+            }
+
+            if (s_loadGateHolding && Time.unscaledTime - s_lastProgressTime > LoadGateHardCapSeconds)
+            {
+                Debug.LogError($"[PrismTrailBuilder] Arena build made no progress for {LoadGateHardCapSeconds:F0}s " +
+                               $"(pendingBuilds={s_pendingArenaBuilds}, lays={s_activeBudgetedLays}, " +
+                               $"settling={GrowRemainingCount}, held {Time.unscaledTime - s_loadGateStartTime:F0}s total) — " +
+                               "releasing the gate so the match can start. The build wedged; capture a " +
+                               "Load Time Insights recording to see where.");
                 EndSettleSpan();
                 return true;
             }
