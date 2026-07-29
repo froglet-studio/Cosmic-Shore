@@ -244,10 +244,27 @@ namespace CosmicShore.Gameplay
     }
 
     /// <summary>
+    /// One prism hit by an AOE query frame: slot index plus the unit blast
+    /// direction (blast origin → prism), computed in-job so the main thread
+    /// never pays a managed sqrt per hit.
+    /// </summary>
+    public struct AOEHit
+    {
+        public int Index;
+        public float3 ImpactDir;
+    }
+
+    /// <summary>
     /// Burst-compiled spatial query over cache-line-packed PrismSpatialData.
     /// Each Execute() reads exactly 16B (one PrismSpatialData entry).
     /// With 4 entries per cache line, a sequential scan of 3000 prisms
     /// touches only 750 cache lines (48KB).
+    ///
+    /// The query sphere (Center/RadiusSq) is the traveling blast WAVEFRONT -
+    /// for a conic explosion it rides the growing cone's leading base plane,
+    /// a different sphere each frame. BlastOrigin is the fixed emission point
+    /// (cone apex / spherical-explosion center): every hit's impact direction
+    /// radiates from it, so struck prisms all fly outward with the blast wave.
     /// </summary>
     [BurstCompile]
     public struct AOESpatialQueryJob : IJobParallelFor
@@ -255,8 +272,9 @@ namespace CosmicShore.Gameplay
         [ReadOnly] public NativeArray<PrismSpatialData> Prisms;
         [ReadOnly] public float3 Center;
         [ReadOnly] public float RadiusSq;
+        [ReadOnly] public float3 BlastOrigin;
 
-        public NativeList<int>.ParallelWriter HitIndices;
+        public NativeList<AOEHit>.ParallelWriter Hits;
 
         public void Execute(int index)
         {
@@ -268,7 +286,14 @@ namespace CosmicShore.Gameplay
             float distSq = math.lengthsq(p.Position - Center);
             if (distSq > RadiusSq) return;
 
-            HitIndices.AddNoResize(index);
+            // Unit vector without a scalar sqrt: Burst lowers math.rsqrt to the
+            // hardware reciprocal-sqrt on the squared length it already has,
+            // vectorized across the scan. The max() guards a prism sitting
+            // exactly on the origin (degenerates to a ~zero vector, no NaN).
+            float3 diff = p.Position - BlastOrigin;
+            float3 dir = diff * math.rsqrt(math.max(math.lengthsq(diff), 1e-12f));
+
+            Hits.AddNoResize(new AOEHit { Index = index, ImpactDir = dir });
         }
     }
 
@@ -539,7 +564,7 @@ namespace CosmicShore.Gameplay
 
         private int _highWaterMark;
         private readonly Stack<int> _freeList = new(256);
-        private NativeList<int> _hitIndices;
+        private NativeList<AOEHit> _aoeHits;
 
         // Occupancy view: bucket key → registry index, one entry per LIVE
         // (active, not destroyed) prism. Maintained incrementally by
@@ -596,7 +621,7 @@ namespace CosmicShore.Gameplay
             _shell = new NativeArray<PrismShellData>(INITIAL_CAPACITY, Allocator.Persistent);
             _prisms = new Prism[INITIAL_CAPACITY];
             _cells = new Cell[INITIAL_CAPACITY];
-            _hitIndices = new NativeList<int>(512, Allocator.Persistent);
+            _aoeHits = new NativeList<AOEHit>(512, Allocator.Persistent);
             _buckets = new NativeParallelMultiHashMap<int3, int>(INITIAL_CAPACITY, Allocator.Persistent);
             _lodCenters = new NativeArray<float3>(16, Allocator.Persistent);
             _lodBecameNear = new NativeList<int>(512, Allocator.Persistent);
@@ -1629,12 +1654,19 @@ namespace CosmicShore.Gameplay
         ///
         /// Phase 1 (Burst job): Scans _spatial array (16B/prism, 4 per cache line).
         ///   - Checks Flags byte + distance² against all registered prisms.
-        ///   - Outputs indices of prisms within radius to _hitIndices.
+        ///   - Outputs {index, unit blast direction} per prism within radius to
+        ///     _aoeHits - the direction radiates from blastOrigin, normalized
+        ///     in-job via rsqrt so the main thread never pays a per-hit sqrt.
         ///
-        /// Phase 2 (main thread): For each hit index (typically dozens, not thousands):
+        /// Phase 2 (main thread): For each hit (typically dozens, not thousands):
         ///   - Reads _damage[idx] for domain/shield info (cold data, not in Burst working set).
         ///   - Applies domain logic, shield activation/deactivation, or damage.
         ///   - Syncs results back to registry.
+        ///
+        /// The query sphere (center/radius) is this frame's blast WAVEFRONT - a
+        /// conic explosion passes a different, forward-traveling sphere each frame.
+        /// blastOrigin is the fixed emission point (cone apex / spherical center)
+        /// that all impact vectors radiate from, at magnitude speed * inertia.
         ///
         /// Returns true if the explosion should continue, false if it should be destroyed
         /// (e.g. hit a super-shielded enemy prism - mirrors original Destroy(gameObject) behavior).
@@ -1642,6 +1674,7 @@ namespace CosmicShore.Gameplay
         public bool ProcessExplosionFrame(
             Vector3 center,
             float radius,
+            Vector3 blastOrigin,
             float speed,
             float inertia,
             Domains explosionDomain,
@@ -1658,13 +1691,13 @@ namespace CosmicShore.Gameplay
             if (_highWaterMark == 0 || !_spatial.IsCreated) return true;
 
             // --- Phase 1: Burst job over hot spatial data ---
-            _hitIndices.Clear();
+            _aoeHits.Clear();
 
             // Ensure NativeList capacity can hold all prisms - AddNoResize in
             // ParallelWriter will throw if capacity < count, killing the async loop
             // and leaving the explosion stuck at max scale.
-            if (_hitIndices.Capacity < _highWaterMark)
-                _hitIndices.Capacity = _highWaterMark;
+            if (_aoeHits.Capacity < _highWaterMark)
+                _aoeHits.Capacity = _highWaterMark;
 
             using (s_burstJobSchedule.Auto())
             {
@@ -1673,7 +1706,8 @@ namespace CosmicShore.Gameplay
                     Prisms = _spatial,
                     Center = (float3)center,
                     RadiusSq = radius * radius,
-                    HitIndices = _hitIndices.AsParallelWriter()
+                    BlastOrigin = (float3)blastOrigin,
+                    Hits = _aoeHits.AsParallelWriter()
                 };
 
                 job.Schedule(_highWaterMark, JOB_BATCH_SIZE).Complete();
@@ -1695,9 +1729,9 @@ namespace CosmicShore.Gameplay
             }
 
             int newHitCount = 0;
-            for (int i = 0; i < _hitIndices.Length; i++)
+            for (int i = 0; i < _aoeHits.Length; i++)
             {
-                int idx = _hitIndices[i];
+                int idx = _aoeHits[i].Index;
 
                 // Skip if already hit by this explosion (mirrors OnTriggerEnter once-per-pair behavior)
                 if (alreadyHit.Contains(idx)) continue;
@@ -1741,10 +1775,9 @@ namespace CosmicShore.Gameplay
                     continue;
                 }
 
-                // Compute impact vector (same formula as AOEExplosion.CalculateImpactVector)
-                Vector3 prismPos = (Vector3)_spatial[idx].Position;
-                Vector3 direction = (prismPos - center).normalized;
-                Vector3 impactVector = direction * speed * inertia;
+                // Impact vector: the in-job unit direction (blastOrigin → prism)
+                // at the blast-wave speed - no managed normalize per hit.
+                Vector3 impactVector = (Vector3)(_aoeHits[i].ImpactDir * (speed * inertia));
 
                 // Deal damage
                 if (anonymous)
@@ -1824,7 +1857,7 @@ namespace CosmicShore.Gameplay
             if (_cellData.IsCreated) _cellData.Dispose();
             if (_shell.IsCreated) _shell.Dispose();
             if (_cellVolumeScratch.IsCreated) _cellVolumeScratch.Dispose();
-            if (_hitIndices.IsCreated) _hitIndices.Dispose();
+            if (_aoeHits.IsCreated) _aoeHits.Dispose();
             if (_buckets.IsCreated) _buckets.Dispose();
             if (_lodCenters.IsCreated) _lodCenters.Dispose();
             if (_lodBecameNear.IsCreated) _lodBecameNear.Dispose();
