@@ -225,11 +225,27 @@ instantiated *inside the vessel prefab*, and that prefab instance can override t
 Squirrel's did: `DriftButton` and `ShieldRingsButton` had their `m_Anchor*.x` / `m_AnchoredPosition.x`
 / `m_SizeDelta.x` overridden in `Assets/_Prefabs/Spacevessels/Squirrel.prefab`, while the other two
 buttons' x came from the variant. Editing only the variant therefore moved half the row and left the
-other half pinned — four icons collapsing onto two positions. Those x overrides have been **removed**,
-so `SquirrelHUDVariant.prefab` is now the single source of truth for the row's horizontal layout (the
-y overrides stay — they give two of the buttons a taller box around the same y centre). When you touch
-another vessel's row, resolve the effective value through the vessel prefab's `m_Modifications` first;
-do not trust the variant alone.
+other half pinned — four icons collapsing onto two positions. **Every one of those overrides has been
+removed**, so `SquirrelHUDVariant.prefab` is now the single source of truth for the row. When you
+touch another vessel's row, resolve the effective value through the vessel prefab's
+`m_Modifications` first; do not trust the variant alone.
+
+The four buttons are now authored **identically** — same anchor span, `sizeDelta` and
+`anchoredPosition` of zero, one shared y — with evenly spaced centres:
+
+| | anchorMin.x | anchorMax.x | centre @1920 |
+|---|---|---|---|
+| charge | 0.68481258 | 0.76293758 | 1389.8 |
+| mass | 0.75652886 | 0.83465386 | 1527.5 |
+| space | 0.82824515 | 0.90637015 | 1665.2 |
+| time | 0.89996143 | 0.97808643 | 1802.9 |
+
+y is `0.027730448 .. 0.1665395` on all four. Because the CanvasScaler matches **height** (reference
+1920×1080, `MatchWidthOrHeight = 1`), canvas *width* varies with aspect ratio — so a row that mixes
+anchor-fraction sizing with fixed `sizeDelta` sizing, as this one did, renders unevenly on anything
+that is not 16:9. Authoring all four the same way keeps the widths equal and the gaps equal at every
+aspect ratio. The box scales with canvas width; the icon inside it does not (a fixed 80×80 child at
+0.7 scale), so only the touch target changes size.
 
 **Fleet status.** Only the Squirrel HUD authors the row today (four buttons, four bindings). The
 other five flyable HUDs have no `abilityIcons` bindings and varied lower-right layouts; wiring them
