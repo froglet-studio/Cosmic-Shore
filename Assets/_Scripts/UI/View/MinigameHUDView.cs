@@ -18,7 +18,6 @@ namespace CosmicShore.UI
         [SerializeField] private Button readyButton;
         [SerializeField] private GameObject pip;
         [SerializeField] private GameObject silhouette;
-        [SerializeField] private GameObject trailDisplay;
         [SerializeField] private CanvasGroup connectingPanelCanvasGroup;
         [SerializeField] private CanvasGroup canvasGroup;
         [SerializeField] private TMP_Text lifeFormCounter;
@@ -182,7 +181,6 @@ namespace CosmicShore.UI
         public Button ReadyButton => readyButton;
         public GameObject Pip => pip;
         public GameObject Silhouette => silhouette;
-        public GameObject TrailDisplay => trailDisplay;
 
         private void OnDestroy()
         {

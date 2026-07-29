@@ -520,7 +520,6 @@ GameObject:
   m_Component:
   - component: {fileID: 941510904160143966}
   - component: {fileID: 9221702416238991819}
-  - component: {fileID: 2488967136998847961}
   - component: {fileID: 2680042072590057084}
   m_Layer: 8
   m_Name: OverheatingBoostActionExecutor
@@ -559,21 +558,6 @@ MonoBehaviour:
   OnMiniGameTurnEnd: {fileID: 11400000, guid: 498a06d44bde9184f985c938c803b2a1, type: 2}
   StationaryModeChanged: {fileID: 11400000, guid: 0b48e834efdbe654ca3c7df60370ea3f,
     type: 2}
---- !u!114 &2488967136998847961
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3694008845488612218}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a15b5e9096604a049dbbde6dd963cdf9, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  overheating: {fileID: 9221702416238991819}
-  silhouette: {fileID: 838706159439259027}
-  config: {fileID: 11400000, guid: 06bb3baee9ee60b40a76c902eb6e8b9e, type: 2}
 --- !u!114 &2680042072590057084
 MonoBehaviour:
   m_ObjectHideFlags: 0

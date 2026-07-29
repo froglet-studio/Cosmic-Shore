@@ -604,9 +604,6 @@ namespace CosmicShore.UI
             var sil = view.Silhouette;
             sil.SetActive(data.IsSilhouetteActive);
 
-            var trail = view.TrailDisplay;
-            trail.SetActive(data.IsTrailDisplayActive);
-
             foreach (var part in data.Silhouettes)
             {
                 part.transform.SetParent(sil.transform, false);

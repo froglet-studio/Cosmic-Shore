@@ -10,7 +10,6 @@ namespace CosmicShore.ScriptableObjects
     {
         public SilhouetteController Sender;
         public bool IsSilhouetteActive;
-        public bool IsTrailDisplayActive;
         public List<GameObject> Silhouettes;
     }
 }
