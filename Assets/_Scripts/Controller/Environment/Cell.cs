@@ -43,6 +43,7 @@ namespace CosmicShore.Gameplay
         public CellConfigDataSO Config => cellConfigData;
         GameObject membrane;
         GameObject nucleus;
+        GameObject environment;   // config-authored structural environment (lives/dies with the cell)
 
         // Optional target WORLD radius for the nucleus, requested by a mode (e.g. Astro League uses
         // the nucleus as its spherical play boundary). 0 = use the prefab/multiplier size as-is.
@@ -970,6 +971,14 @@ namespace CosmicShore.Gameplay
 
         void AssignConfig()
         {
+            // Sticky per scene: OnEnable nulls runtime.Config, so the first Initialize pass
+            // rolls fresh - but repeat passes (lazy crystal init + OnInitializeGame both run
+            // it) must NOT re-roll. With multiple configs a re-roll could swap the config
+            // out from under an already-spawning prepopulated environment (e.g. the Yggdra
+            // garden streaming in while the cell re-labels itself Blob), stranding ~950k of
+            // environment volume under thresholds authored for an empty cell.
+            if (runtime && runtime.Config) return;
+
             if (CellConfigs == null || CellConfigs.Count == 0)
             {
                 CSDebug.LogError($"{nameof(Cell)}: No CellConfigs found to assign.");
@@ -1024,12 +1033,40 @@ namespace CosmicShore.Gameplay
             if (cellConfigData.MembranePrefab != null)
                 membrane = Instantiate(cellConfigData.MembranePrefab, transform.position, Quaternion.identity);
 
+            // Guarded for repeat Initialize passes - a duplicated membrane is a visual
+            // wart, but a duplicated 70k-prism environment would double the cell's mass.
+            if (cellConfigData.EnvironmentPrefab != null && environment == null)
+                SpawnEnvironment();
+
             if (cellConfigData.NucleusPrefab == null) return;
             nucleus = Instantiate(cellConfigData.NucleusPrefab, transform.position, Quaternion.identity);
             nucleus.transform.localScale *= nucleusScaleMultiplier;
             ApplyNucleusWorldRadius(); // honor any radius a mode requested before the nucleus existed
             ApplyNucleusMesh();        // ...or a replacement boundary mesh (non-spherical court)
             RefreshNucleusControlRadius();
+        }
+
+        /// <summary>
+        /// Spawn the config's authored structural environment (e.g. the Atlantis garden the
+        /// Yggdra cell begins with). Called on the prefab ASSET, mirroring SegmentSpawner:
+        /// SpawnableBase.Spawn() creates its own container GameObject, which we parent to the
+        /// cell so the environment lives and dies with it. Prisms flow through the canonical
+        /// PrismTrailBuilder lay path (big structures stream budgeted and bloom in - continuity
+        /// of existence holds), register with this cell's volume/density bookkeeping like any
+        /// other mass, and are ordinary prey/territory thereafter - prepopulation is a head
+        /// start for the ecosystem, not a parallel system.
+        /// </summary>
+        void SpawnEnvironment()
+        {
+            using (LoadInsights.Measure(LoadInsightCategory.Environment,
+                       $"Cell environment spawn (cell {ID}, {cellConfigData.EnvironmentPrefab.name})"))
+            {
+                environment = cellConfigData.EnvironmentPrefab.Spawn(Mathf.Max(1, cellConfigData.EnvironmentIntensity));
+                if (environment == null) return;
+                environment.transform.SetParent(transform, false);
+                environment.transform.localPosition = Vector3.zero;
+                environment.transform.localRotation = Quaternion.identity;
+            }
         }
 
         /// <summary>

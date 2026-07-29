@@ -68,9 +68,12 @@ namespace CosmicShore.Gameplay
         [Header("Block Settings")]
         [SerializeField] Prism prism;
 
-        /// <summary>Laying slice per frame before the load gate takes over (it raises the slice
-        /// while the connecting screen is covered — see PrismTrailBuilder.EffectiveLayBudget).</summary>
-        const float LayBudgetMsPerFrame = 100f;
+        /// <summary>Laying slice per frame in UNGATED contexts only - behind a game load the
+        /// connecting screen holds and PrismTrailBuilder.EffectiveLayBudget raises the slice to
+        /// 250ms regardless, so this small value costs Scurry loads nothing. Where no gate holds
+        /// (the Yggdra cell blooming its garden into the live Menu_Main lava lamp) it keeps the
+        /// frame tax gentle and lets the world grow in over tens of seconds instead of stuttering.</summary>
+        const float LayBudgetMsPerFrame = 8f;
 
         /// <summary>Seed used when the serialized seed is 0 — generation must never fall back to
         /// time-seeding (clients build the arena locally and must agree on every prism).</summary>

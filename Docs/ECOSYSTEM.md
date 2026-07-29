@@ -1399,3 +1399,54 @@ a frozen creature.
 
 **Collider budget: unchanged.** One `sqrMagnitude` compare per behavior tick, replacing an
 unconditional `normalized` (which computes the same magnitude anyway).
+
+## 17. Prepopulated cell environments + the Yggdra cell (July 2026)
+
+A cell config can now carry an authored structural environment that spawns WITH the cell:
+`CellConfigDataSO.EnvironmentPrefab` (any `SpawnableBase` prefab) + `EnvironmentIntensity`
+(passed to `Spawn()`; fixed structures ignore it). `Cell.SpawnVisuals` calls the prefab
+asset's `Spawn()` exactly the way `SegmentSpawner` does and parents the returned container
+under the cell, so the environment lives and dies with it. Every prism flows through the
+canonical `PrismTrailBuilder` lay path — big structures stream budgeted and bloom in
+(continuity of existence holds), and the mass registers with the cell's volume/density
+bookkeeping like any other prism.
+
+**Prepopulation is a head start, not a parallel system.** The spawned mass is ordinary
+conserved mass: herbivores graze it (voraciously outside the nucleus), players smash and
+consume it, and nothing ever ages it out. A prepopulated garden slowly weathers into
+whatever the food web makes of it — which is the point.
+
+**Phase thresholds must ride the baseline.** The phase ladder reads TOTAL `LiveVolume`
+(plus the count backstop), so a config that prepopulates ~950k volume of structure must
+author `PhaseThresholds` above that baseline or the cell boots straight into Frenzy. The
+Yggdra config authors the Blob ladder's deltas on top of the measured baseline
+(~69.1k prisms / ~950.8k volume): Restless at 962k / 958.8k, Frenzy at 1,008.4k / 998.8k,
+counts 69.8k/69.6k/72.7k/72.1k. As grazing wears the garden down the cell relaxes deeper
+into Calm — an emergent "aging" of the biome with no clock anywhere.
+
+**The Yggdra cell** (`_SO_Assets/Cell Configs/Yggdra Cell/Yggdra Cell Config.asset`) is
+the first user: a Blob-family cell (same membrane/nucleus/cytoplasm/modifiers/spawn
+profile) whose `EnvironmentPrefab` is `SpawnableAtlantis` — the ~69k-prism Atlantean
+garden built for Scurry intensity 4 (world-tree, terraces, reefs, kelp, Möbius causeway,
+atolls, currents, dunes; see `CRYSTAL_CAPTURE.md`). It is registered in Menu_Main's
+freestyle Cell `CellConfigs` list (choice mode Random), so the lava lamp sometimes rolls
+an Atlantis to fly through instead of an empty Blob. Its 258 danger thorn/anemone prisms
+ride along — the autopilot vessel can clip one occasionally; that is the environment
+being real, not a bug.
+
+**Collider budget:** the environment's plain/danger prisms ride the LOD-cullable
+BoxCollider (active count bounded by `PrismColliderLodManager` radius, not population);
+its 225 shielded/super-shielded landmarks carry always-on convex MeshColliders (~0.3%,
+same ration as the Scurry arena). The Yggdra menu roll has NOT yet been device-profiled —
+soak Menu_Main with the Yggdra config forced before shipping (see
+`Docs/PERFORMANCE_OPTIMIZATION.md`); the Atlantis prefab's `density` knob (0.5–1.3) is
+the fallback lever.
+
+**Replay + re-init constraints.** `Cell.AssignConfig` is sticky per scene (first Initialize
+pass rolls, repeat passes keep the roll) so the acknowledged double-Initialize path can never
+re-label the cell while a prepopulated environment is streaming in. `ResetCell` (in-place
+replay) neither destroys nor respawns the environment — environment-bearing configs are for
+scene-lifetime cells only: use them in `UseSceneReloadForReplay` modes (all current ones) or
+Menu_Main, not in-place-reset modes. The environment lay budget is 8ms/frame in ungated
+contexts (the menu bloom is a slow, gentle grow-in by design); game loads hold the arena
+gate, which raises the slice to 250ms, so gated loads are unaffected.
