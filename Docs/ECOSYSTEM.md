@@ -1399,3 +1399,62 @@ a frozen creature.
 
 **Collider budget: unchanged.** One `sqrMagnitude` compare per behavior tick, replacing an
 unconditional `normalized` (which computes the same magnitude anyway).
+
+---
+
+## 17. Spawning the whole matrix — element × level spread (July 2026)
+
+**What was wrong.** The element × level contract (§3) was fully implemented but almost
+nothing used it: every cell config authored ONE element and `InitialLevel: 1`, so a
+session only ever showed a few element variants at level 1. The 4 × 5 matrix existed in
+code and in the Lifeform Matrix bench, and nowhere in the live world.
+
+**The two halves spread differently, on purpose.**
+
+- **Level is a pure scale curve** (body/leaf prisms + the heart crystal), so it spreads in
+  code: `LifeformLevelSpread` (`MinLevel`/`MaxLevel`/`RarityFalloff`) on both config SOs.
+  Higher levels are *rarer* — weight of level n is `falloff^-(n - min)`, so the default 2
+  makes level 5 about 1 in 31. A level-5 kill drops the biggest crystal in the cell
+  (`CrystalScalePerLevel` compounding, ≈2.07× at level 1's size), which is exactly the
+  thing worth hunting for; making it common would have made it worth nothing.
+- **Element is an identity**, not a tint: per the §3 variant inventory, an element is its
+  leaf/body PRISM shape, growth tempo, shield cadence, starvation clock, flocking numbers
+  and audio. So a config that spreads elements resolves each roll through an
+  `ElementPalette` — the four canonical per-element assets in `_SO_Assets/Lifeforms` for
+  that species — and applies **only** their `Element` + `Variant`. Population size, seed
+  floor, reproduction, probability and planting cadence stay on the cell's own config, so
+  a biome keeps its density tuning. An **empty palette** still rolls the element but keeps
+  the cell's authored `Variant` — used by the score-tuned cells (Skim Race, Nucleus Rush,
+  Astro League) whose swarms are tuned for a job (track cleanup, the wave clock) and must
+  not inherit another element's graze radius or starvation clock.
+
+**Heredity.** The roll happens once per spawn and is then **inherited**: `Fauna` remembers
+its `LifeformVariantPick` (element + tuning + hatch level) and passes it to its offspring in
+`AssignLineage`, so a lineage breeds true instead of re-rolling an identity every birth.
+In-world level-ups (the Shepherd joust) are deliberately *not* inherited — acquired growth
+is not heritable, which keeps selection endogenous rather than Lamarckian. This is the first
+heritable trait to ride the reproduction path and is the natural seat for the P3 genome.
+
+**Collider budget: unchanged — this is the reason the design is shaped this way.** Element
+spread rolls *which* variant a creature is, never *how many* exist (counts stay on the cell
+config, so the alternative — one config per element per cell — would have quadrupled the
+population). Level spread changes scale only: the same prism count, the same one heart
+collider per lifeform. Expected volume drift: mean level ≈1.94 at the default falloff, so
+average body/leaf scale rises ~13% — `LiveVolume` reads a little heavier per creature, which
+is worth a look during the phase-threshold retune (masterplan §2) but adds no colliders.
+
+**Spread is off by default.** `SpreadElements` and `Levels.Enabled` are opt-in per config;
+with both off the spawn path returns the authored `Element` / `Variant` / `InitialLevel`
+exactly as before. Enabled in the shipped cells: Blob (and Rampage, which shares its
+assets), Wildlife Blitz 1–4 with full palettes; Skim Race, Nucleus Rush and Astro League
+with element-only spread. The Lifeform Matrix toy pins both off on its runtime clones — the
+bench must spawn the exact variant its station shows.
+
+**Verify in-editor.** Menu_Main (Blob Cell) is the fastest read: fly freestyle and watch a
+few fauna waves. Expect mixed element crystals (all four crystal MODELS, not just recoloured
+ones) inside a single species' brood, visibly mixed body sizes, and the occasional
+conspicuously large creature. Confirm a level-5 creature drops a visibly larger crystal on
+death, and that a brood born from reproduction matches its parent's element. Knobs:
+`Levels.RarityFalloff` (2 → 1 for uniform, higher for rarer giants), `Levels.MaxLevel` to
+cap a biome's size band, and `ElementPalette` to give a cell its own per-element tuning
+instead of the canonical assets.
