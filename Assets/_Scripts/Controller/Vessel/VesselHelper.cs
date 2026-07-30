@@ -165,7 +165,6 @@ namespace CosmicShore.Gameplay
             }
 
             vessel.SetShipMaterial(materialSet.ShipMaterial);
-            vessel.SetBlockSilhouettePrefab(materialSet.BlockSilhouettePrefab);
             vessel.SetAOEExplosionMaterial(materialSet.AOEExplosionMaterial);
             vessel.SetAOEConicExplosionMaterial(materialSet.AOEConicExplosionMaterial);
             vessel.SetSkimmerMaterial(materialSet.SkimmerMaterial);

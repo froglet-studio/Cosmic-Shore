@@ -13494,11 +13494,7 @@ PrefabInstance:
         type: 3}
       insertIndex: -1
       addedObject: {fileID: 3851541404398176172}
-    m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 7379408300357240204, guid: 2656b477a4af7304180e65f2848a84b3,
-        type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 7955211723655855840}
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 2656b477a4af7304180e65f2848a84b3, type: 3}
 --- !u!224 &3797657973119974518 stripped
 RectTransform:
@@ -13512,31 +13508,6 @@ GameObject:
     type: 3}
   m_PrefabInstance: {fileID: 2754590152818896375}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &7955211723655855840
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4634953772157888635}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 47e75593b0dd60a4f8eeade919affa5b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  trailDisplayContainer: {fileID: 8599908183405914023}
-  blockPrefab: {fileID: 8156872032051993332, guid: 5d38f65bc3c39384fbfaa3ffbc665c99,
-    type: 3}
-  silhouetteRoot: {fileID: 6074306236903073578}
-  jawTop: {fileID: 0}
-  jawBottom: {fileID: 0}
-  jawMaxOffset: 40
-  jawNormalColor: {r: 1, g: 1, b: 1, a: 1}
-  jawFullColor: {r: 0, g: 1, b: 0, a: 1}
-  jawTintTargets: []
-  config: {fileID: 11400000, guid: 7bdf308b6685d7646bb57265f899033f, type: 2}
-  overlayPrefab: {fileID: 0}
-  overlayDuration: 1
 --- !u!224 &6074306236903073578 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 8247780251481082589, guid: 2656b477a4af7304180e65f2848a84b3,
