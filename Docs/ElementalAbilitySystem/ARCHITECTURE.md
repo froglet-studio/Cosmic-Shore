@@ -298,3 +298,15 @@ only thing that was giving them size, so nothing recovers them.
 anchor **centre**. It never reads `rect.size` and never writes size. Placement also re-runs from
 `ApplySet`, so a root that was inactive (and unmeasurable) when the hints were bound gets a correct
 pass the moment its set is shown.
+
+Two more traps in the same routine, both of which render the glyph invisible with no error:
+
+- **`Mathf.InverseLerp` clamps to 0..1.** The hint roots are thin strips — `XBOXRoot` is ~11 px tall
+  and sits at the very bottom of the canvas, while the ability row is at y ≈ 105 — so the honest
+  anchor fraction is **7.3**, not something in 0..1. Clamping collapsed it to 1.0 and the negative
+  `attachOffset` then pushed every glyph to negative Y, entirely below the screen. Use
+  `InverseLerpUnclamped`; an anchor fraction far outside 0..1 is correct here, not a bug.
+- **Verify against the function you actually called.** Both failed fixes were "verified" by a
+  simulation that used unclamped arithmetic while the code called the clamping `Mathf.InverseLerp`.
+  `WarnIfPlacedOffScreen` now checks the placed rect against the canvas rect and logs when a hint
+  lands somewhere it cannot be seen — it would have caught all three failures on the first run.

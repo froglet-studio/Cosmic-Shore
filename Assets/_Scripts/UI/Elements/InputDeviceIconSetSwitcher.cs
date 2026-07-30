@@ -88,6 +88,8 @@ namespace CosmicShore.UI
             [NonSerialized] public bool Applied;
             /// <summary>Resolved ability icon this hint labels; null until bound (or unresolvable).</summary>
             [NonSerialized] public RectTransform AbilityTarget;
+            /// <summary>Latches the off-screen warning so it is reported once, not every frame.</summary>
+            [NonSerialized] public bool OffScreenReported;
         }
 
         [Serializable]
@@ -245,6 +247,8 @@ namespace CosmicShore.UI
                     if (!rt) continue;
                     if (!PlaceOnAbilityIcon(rt, hint.AbilityTarget, hint.attachOffset))
                         allPlaced = false;
+                    else
+                        WarnIfPlacedOffScreen(hint, rt);
                 }
             }
 
@@ -253,6 +257,37 @@ namespace CosmicShore.UI
         }
 
         const int MaxPlacementAttempts = 120;
+
+        /// <summary>
+        /// A placed hint that lands outside the canvas is silently invisible, which is exactly how this
+        /// placement failed three times (a zeroed size, then a clamped anchor fraction plus a negative
+        /// offset that pushed every glyph below the screen). Say so instead of rendering nothing.
+        /// </summary>
+        [System.Diagnostics.Conditional("UNITY_EDITOR")]
+        static void WarnIfPlacedOffScreen(HintVisual hint, RectTransform rt)
+        {
+            if (hint.OffScreenReported) return;
+
+            var canvas = rt.GetComponentInParent<Canvas>();
+            if (!canvas) return;
+            var canvasRT = canvas.transform as RectTransform;
+            if (!canvasRT) return;
+
+            Rect canvasRect = canvasRT.rect;
+            Vector2 local = canvasRT.InverseTransformPoint(rt.TransformPoint(rt.rect.center));
+            Vector2 half = rt.rect.size * 0.5f;
+
+            bool onScreen = local.x + half.x > canvasRect.xMin && local.x - half.x < canvasRect.xMax
+                         && local.y + half.y > canvasRect.yMin && local.y - half.y < canvasRect.yMax;
+            bool hasArea = rt.rect.width > 0.5f && rt.rect.height > 0.5f;
+
+            if (onScreen && hasArea) return;
+
+            hint.OffScreenReported = true;
+            Debug.LogWarning($"[InputDeviceIconSetSwitcher] Control hint '{hint.label}' was placed where it " +
+                             $"cannot be seen: rect {rt.rect.size} at canvas-local {local}, canvas {canvasRect}. " +
+                             $"Check its attachOffset ({hint.attachOffset}) and the ability icon it targets.");
+        }
 
         static RectTransform HintRect(HintVisual hint)
         {
@@ -286,9 +321,13 @@ namespace CosmicShore.UI
             Vector3 targetWorld = abilityIcon.TransformPoint(abilityIcon.rect.center);
             Vector2 local = parent.InverseTransformPoint(targetWorld);
 
+            // MUST be unclamped. The hint roots are thin strips (XBOXRoot is ~11 px tall) and the
+            // ability row sits well above them, so the honest fraction is far outside 0..1 - the
+            // Xbox glyphs need y ≈ 7.3. Mathf.InverseLerp Clamp01s, which collapsed that to 1.0 and,
+            // with the negative attachOffset on top, put every glyph below the bottom of the screen.
             var centre = new Vector2(
-                Mathf.InverseLerp(parentRect.xMin, parentRect.xMax, local.x),
-                Mathf.InverseLerp(parentRect.yMin, parentRect.yMax, local.y));
+                InverseLerpUnclamped(parentRect.xMin, parentRect.xMax, local.x),
+                InverseLerpUnclamped(parentRect.yMin, parentRect.yMax, local.y));
             if (!IsUsable(centre.x) || !IsUsable(centre.y)) return false;
 
             Vector2 span = hint.anchorMax - hint.anchorMin;   // preserved - it IS the glyph's size
@@ -302,6 +341,13 @@ namespace CosmicShore.UI
         // A fraction well outside the parent is legitimate (a hint can sit far from its set root), but
         // NaN or a runaway value means the rects were not laid out - retry rather than write garbage.
         static bool IsUsable(float f) => !float.IsNaN(f) && !float.IsInfinity(f) && Mathf.Abs(f) < 50f;
+
+        /// <summary>
+        /// Where <paramref name="value"/> lies between a and b, NOT clamped to 0..1.
+        /// <see cref="Mathf.InverseLerp"/> deliberately clamps; this placement needs the honest ratio.
+        /// </summary>
+        static float InverseLerpUnclamped(float a, float b, float value)
+            => Mathf.Approximately(a, b) ? float.NaN : (value - a) / (b - a);
 
         static bool TryResolveElement(IVesselStatus status, ElementalAbilityMapSO map,
             HintBinding binding, out Element element)
