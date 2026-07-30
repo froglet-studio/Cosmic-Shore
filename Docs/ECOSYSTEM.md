@@ -1464,3 +1464,102 @@ death, and that a brood born from reproduction matches its parent's element. Kno
 `Levels.RarityFalloff` (2 → 1 for uniform, higher for rarer giants), `Levels.MaxLevel` to
 cap a biome's size band, and `ElementPalette` to give a cell its own per-element tuning
 instead of the canonical assets.
+
+---
+
+## 18. Prepopulated cell environments + the freestyle six (July 2026)
+
+A cell config can now carry an authored structural environment that spawns WITH the cell:
+`CellConfigDataSO.EnvironmentPrefab` (any `SpawnableBase` prefab) + `EnvironmentIntensity`
+(passed to `Spawn()`; fixed structures ignore it). `Cell.SpawnVisuals` calls the prefab
+asset's `Spawn()` exactly the way `SegmentSpawner` does and parents the returned container
+under the cell, so the environment lives and dies with it. Every prism flows through the
+canonical `PrismTrailBuilder` lay path — big structures stream budgeted and bloom in
+(continuity of existence holds), and the mass registers with the cell's volume/density
+bookkeeping like any other prism.
+
+**Prepopulation is a head start, not a parallel system.** The spawned mass is ordinary
+conserved mass: herbivores graze it (voraciously outside the nucleus), players smash and
+consume it, and nothing ever ages it out. A prepopulated garden slowly weathers into
+whatever the food web makes of it — which is the point.
+
+**Phase thresholds must ride the baseline.** The phase ladder reads TOTAL `LiveVolume`
+(plus the count backstop), so a config that prepopulates ~950k volume of structure must
+author `PhaseThresholds` above that baseline or the cell boots straight into Frenzy. The
+Yggdra config authors the Blob ladder's deltas on top of the measured baseline
+(~69.1k prisms / ~950.8k volume): Restless at 962k / 958.8k, Frenzy at 1,008.4k / 998.8k,
+counts 69.8k/69.6k/72.7k/72.1k. As grazing wears the garden down the cell relaxes deeper
+into Calm — an emergent "aging" of the biome with no clock anywhere.
+
+**The Yggdra cell** (`_SO_Assets/Cell Configs/Yggdra Cell/Yggdra Cell Config.asset`) is
+the first user: a Blob-family cell (same membrane/nucleus/cytoplasm/modifiers/spawn
+profile) whose `EnvironmentPrefab` is `SpawnableYggdra` — the world-tree distilled from
+the ~69k-prism Atlantis garden (which itself stays Scurry-intensity-4 exclusive; see
+`CRYSTAL_CAPTURE.md`) at roughly half the weight for the freestyle rotation. Registered
+in Menu_Main's freestyle Cell `CellConfigs` list (choice mode Random) alongside the rest
+of the freestyle six below. Danger thorn prisms ride along — the autopilot vessel can
+clip one occasionally; that is the environment being real, not a bug.
+
+**Collider budget:** the environment's plain/danger prisms ride the LOD-cullable
+BoxCollider (active count bounded by `PrismColliderLodManager` radius, not population);
+its 225 shielded/super-shielded landmarks carry always-on convex MeshColliders (~0.3%,
+same ration as the Scurry arena). The Yggdra menu roll has NOT yet been device-profiled —
+soak Menu_Main with the Yggdra config forced before shipping (see
+`Docs/PERFORMANCE_OPTIMIZATION.md`); the Atlantis prefab's `density` knob (0.5–1.3) is
+the fallback lever.
+
+**Replay + re-init constraints.** `Cell.AssignConfig` is sticky per scene (first Initialize
+pass rolls, repeat passes keep the roll) so the acknowledged double-Initialize path can never
+re-label the cell while a prepopulated environment is streaming in. `ResetCell` (in-place
+replay) neither destroys nor respawns the environment — environment-bearing configs are for
+scene-lifetime cells only: use them in `UseSceneReloadForReplay` modes (all current ones) or
+Menu_Main, not in-place-reset modes. **Every environment build is gated AND deferred past boot**: game scenes hold
+their connecting screen over a quiescent, fully-loaded scene; gate-less scenes (Menu_Main
+freestyle) wait until the scene reports ready (local player pair initialized, 12s deadline)
+and then raise an `EnvironmentLoadVeil` - the connecting-screen status idiom, a gentler 80ms
+lay slice so Netcode/Relay/audio keep breathing under the veil, released only when every
+prism is laid and settled. Building DURING boot shared the engine's async budget with the
+vessel-spawn chain, session setup, and audio banks - audio underruns plus a clone batch
+wedged mid-integration (a 4s watchdog in PrismTrailBuilder.CloneBatchAsync now force-
+completes any stalled batch as a second line of defense). The original design let the menu
+world bloom in under live play at 8ms/frame; that built for minutes under gameplay
+(clone-integration spikes + physics churn against a half-built world) and crashed the menu
+reliably, so live blooming is retired - the 8ms ungated slice remains only as a last-resort
+fallback.
+
+**The freestyle six (July 2026).** Atlantis (~69k) stays Scurry-intensity-4 exclusive; the
+freestyle rotation runs at roughly HALF that weight per cell (~31-35k prisms), split across
+six environments so the lava lamp deals a different world each load — Blob (empty baseline)
+plus: **Yggdra** (the world-tree, distilled from Atlantis: trunk/roots/canopy/vines/kelp/
+fireflies), **Daedala** (Atlantis's built half expanded into an Escher road-city: four ring
+terraces, twin counter-chiral Möbius causeways, arches, aqueducts, minarets, lanterns),
+**Orrery** (a celestial clock: sun shell, seven tilted orbit rings with planets and moons,
+zodiac band, pendulums, a danger-tailed comet), **Zephyr** (a painted sky: braided wind
+rivers, twin cyclones, cloud banks with one lightning thunderhead, Van Gogh sun/moon discs,
+a swell sea), **Caldera** (the danger-led forge: terraced volcano with TRUE danger lava
+lake/falls/river, basalt column fields, ember plumes, sulfur terraces, fumaroles, ash ring),
+and **Geode** (the angular, serene pole: a cracked crystal cathedral — husk hemispheres,
+inward crystal linings, super-shielded druse tips, agate bands, dust, light shafts; zero
+danger). All extend `CellEnvironmentSpawnableBase` (one deterministic lay/stream/noise
+contract, per-cell fixed seed); per-cell PhaseThresholds ride each baseline measured with
+a bit-exact simulation of the C# noise (count/volume): Yggdra 34.3k/541k, Daedala
+33.9k/638k, Orrery 34.6k/197k, Zephyr 36.1k/427k, Caldera 31.2k/433k, Geode 34.4k/561k —
+confirm in-engine via Tools > Cosmic Shore > Measure Cell Environment Baselines before
+retuning any ladder. Same soak-before-ship rule as §17 above; each prefab's
+`density` knob (0.5-1.3) is the per-cell fallback lever.
+
+**Follow-ups (cell environments).**
+1. **Field-verify the deferred menu build** — the defer-past-boot + 80ms veil slice + clone
+   watchdog fix shipped after the 10,496 freeze but has not yet been confirmed in-editor.
+2. **Device soak per cell + Scurry Atlantis** — record steady-state numbers in
+   `Docs/PERFORMANCE_OPTIMIZATION.md`; per-prefab `density` (0.5-1.3) is the fallback lever.
+3. **Confirm simulated baselines in-engine** (Tools > Cosmic Shore > Measure Cell Environment
+   Baselines) and re-author any PhaseThresholds off by more than a few hundred count / few
+   thousand volume.
+4. **Menu load-time UX call** — if the veil hold feels long for a menu, options are lower
+   density, or rolling Blob on first entry and reserving environment cells for explicit
+   freestyle entry.
+5. **Danger tuning after playtests** — Caldera (~1.6k danger prisms) is deliberately the spicy
+   cell; tune per feel.
+6. **Future archetypes** (diversity headroom before hybrids/dynamics take over): Abyss, Mycel,
+   Hive, Glacier, Reliquary, Mesa.
