@@ -183,9 +183,169 @@ attached. The stale "Redirection" ability card is replaced by the turret-stance 
 - Element levels: the existing petal flowers (fix the Sparrow's broken `elementBars` wiring
   first — AUDIT §5#1). The all-white state IS the unlock telegraph; add a one-shot bloom/flare via
   `OnUpgradeStateChanged` (juice config in `ElementalBarsConfigSO`, per its single-source rule).
-- Ability icons: adopt the branch's **final** view-binding shape only
-  (`VesselHUDView.GetAbilitySlotImage`) if/when the four-icon row ships; authored sprites only.
-  An unlocked slot swaps to its authored unlocked-state icon.
+- Ability icons — **the four-icon row has SHIPPED** (Squirrel first; the framework is fleet-wide).
+  See §7.1.
 - Per-upgrade state (e.g. roll armed) rides the existing per-vessel HUD controllers
   (`SparrowHUDController`) subscribing to the handler's event — same pattern as its current
   weapon-mode icon swap.
+
+### 7.1 The four-icon ability row (LOCKED structure)
+
+Every vessel HUD shows **exactly four ability icons in the lower right — one per ability** — and
+their order is not a layout preference, it is the element contract made visible:
+
+> **The icons run charge → mass → space → time, left to right — the same order as the element
+> flowers above them.** Each icon sits under the element that upgrades that ability, so "which
+> flower do I need to fill to upgrade this?" is answered by position alone.
+
+`VesselHUDView.AbilityDisplayOrder` is the single source of that order (`VesselHUDController` seeds
+its upgrade loop from the same array, and `ElementalBarsView` lays the flowers out the same way).
+`OnValidate` keeps the `abilityIcons` list sorted into it, and
+`VesselHUDView.ValidateAbilityIconRow()` — called once from `VesselHUDController.Initialize`, editor
+only — warns when a HUD binds the wrong count, binds a slot out of order, or lays the icons out in
+an order that contradicts the bindings.
+
+**The upgrade signal.** `R_VesselElementalAbilityHandler.OnUpgradeStateChanged` →
+`VesselHUDController.HandleUpgradeStateChanged` → `VesselHUDView.SetAbilityUpgraded(element, on)`,
+which applies three independent layers so the signal survives any per-vessel presentation:
+
+| Layer | What it does | When it is the load-bearing one |
+|---|---|---|
+| Authored sprite swap | `AbilityIconBinding.upgradedSprite` replaces the icon art, restored on re-lock | Whenever a vessel authors upgraded art (authored sprites only — never runtime-generated) |
+| Element badge | That element's **petal**, in the level-5 **white**, blooms in at a corner of the icon (withers out on re-lock — nothing pops in or out) | Always. It is a *child* of the icon, so views that repaint the icon colour every frame cannot stomp it. Sprite + white come from `ElementalBarsConfigSO`, so level 5 reads as the same "all petals white" the flower shows |
+| Tint + persistent scale bump | Icon tints to `upgradeHighlightColor` and rests at `upgradeHighlightScale`, with a one-shot unlock punch | Vessels whose icon colour is otherwise static. Set `tintIconOnUpgrade = false` where the icon colour is a live gameplay gauge |
+
+**Vessels whose icons are live gauges** (the Squirrel: tube cooldown fill, drift lean, impact flash,
+heat tint) must override `SetAbilityUpgraded` and re-anchor their own captured rest scales to
+`AbilityIconRestScale(element)` — otherwise the view's own tweens settle back to the *pre-upgrade*
+scale and wipe the bump. `SquirrelVesselHUDView` is the reference implementation.
+
+**Where the row's geometry lives — read this before moving an icon.** A vessel HUD variant is
+instantiated *inside the vessel prefab*, and that prefab instance can override the row's rects. The
+Squirrel's did: `DriftButton` and `ShieldRingsButton` had their `m_Anchor*.x` / `m_AnchoredPosition.x`
+/ `m_SizeDelta.x` overridden in `Assets/_Prefabs/Spacevessels/Squirrel.prefab`, while the other two
+buttons' x came from the variant. Editing only the variant therefore moved half the row and left the
+other half pinned — four icons collapsing onto two positions. **Every one of those overrides has been
+removed**, so `SquirrelHUDVariant.prefab` is now the single source of truth for the row. When you
+touch another vessel's row, resolve the effective value through the vessel prefab's
+`m_Modifications` first; do not trust the variant alone.
+
+The four buttons are now authored **identically** — same anchor span, `sizeDelta` and
+`anchoredPosition` of zero, one shared y — with evenly spaced centres:
+
+| | anchorMin.x | anchorMax.x | centre @1920 |
+|---|---|---|---|
+| charge | 0.68481258 | 0.76293758 | 1389.8 |
+| mass | 0.75652886 | 0.83465386 | 1527.5 |
+| space | 0.82824515 | 0.90637015 | 1665.2 |
+| time | 0.89996143 | 0.97808643 | 1802.9 |
+
+y is `0.027730448 .. 0.1665395` on all four. Because the CanvasScaler matches **height** (reference
+1920×1080, `MatchWidthOrHeight = 1`), canvas *width* varies with aspect ratio — so a row that mixes
+anchor-fraction sizing with fixed `sizeDelta` sizing, as this one did, renders unevenly on anything
+that is not 16:9. Authoring all four the same way keeps the widths equal and the gaps equal at every
+aspect ratio. The box scales with canvas width; the icon inside it does not (a fixed 80×80 child at
+0.7 scale), so only the touch target changes size.
+
+### 7.2 Control hints attach to the ability, not to a position
+
+The `(LT)` / `(RT)` glyphs under the row used to be absolutely-positioned objects under
+`XBOXRoot` / `PSRoot` / `PCRoot` with no link to what they labelled — so reordering the icons left
+them behind, pointing at the wrong abilities. A label is now **bound to an ability**, and its
+position is derived:
+
+```
+hint.binding (LT / RT / A / B …)          the physical control, authored on the hint
+      │  InputHintBindingMap              mirrors what the input strategies raise
+      ▼
+InputEvents  { LeftStickAction, OnlyLeftStickAction }
+      │  ElementalAbilityMapSO.Entries[].Input     (direct match)
+      │  R_VesselActionHandler.CollectBoundActions (fallback: the ability's input and the
+      │                                             control's input start the same action asset,
+      ▼                                             for vessels whose touch/gamepad maps differ)
+Element  →  VesselHUDView.TryGetAbilityIcon  →  the icon the label sits under
+```
+
+`InputDeviceIconSetSwitcher.BindHintsToAbilities` runs this once from
+`VesselHUDController.Initialize` (after `ActionHandler.Initialize`, so the maps are populated) and
+re-anchors each hint onto its ability icon plus `attachOffset`. It **does not reparent** — the hint
+has to stay under its icon-set root so the Xbox/PS/keyboard switching still works — and it writes
+the anchor as a fraction of the hint's own parent, so the placement survives resolution and aspect
+changes the same way the row does. Placement retries until the canvas has laid out, and every set is
+placed (including inactive ones) so switching devices later needs no extra work.
+
+Two warnings close the loop in the editor: a hint whose control drives no ability on this vessel, and
+an ability that *is* bound to an input but has no hint labelling it.
+
+Reassigning an ability to a different input event in the action handler, or moving an icon in the
+row, now carries the label along with no manual repositioning.
+
+**Fleet status.** Squirrel and Sparrow author the row (four buttons, four bindings, uniform pitch and
+slot size, charge → mass → space → time). Sparrow's row was **Mass, Space, Charge, Time** and is now
+reordered; note two of its icons have their sprite driven by gameplay (`missileIcon` by ammo,
+`weaponModeIcon` by weapon mode) and both start `enabled = false`, so the sprite-swap layer of the
+upgrade signal is unavailable there and the element badge carries it. Sparrow's HUD is **not** a variant
+of `VesselHUDPrefab` and has no `InputDeviceIconSetSwitcher`, so its four Xbox + four PlayStation
+`ControllerIcon` glyphs are untoggled — both sets render at once — and hints cannot bind to abilities
+until a switcher is added.
+
+Manta, Dolphin, Rhino and Serpent are blocked on **design**: their maps are still `(open design slot)`
+with `Input = 0` and no `UpgradeLabel`, and their HUDs carry 0–2 lower-right icons. Run
+**Tools > Cosmic Shore > Audit Vessel Ability Rows** (`VesselAbilityRowAuditor`) for the live table — it
+checks map completeness, icon count and order, pitch/size uniformity and hint coverage across the whole
+fleet from assets alone. At runtime a vessel with no row now warns once per class instead of failing
+silently. The
+other five flyable HUDs have no `abilityIcons` bindings and varied lower-right layouts; wiring them
+is per-vessel HUD work — the framework above needs no further changes.
+
+### 7.3 Gotcha: never write a control hint's SIZE
+
+The glyph objects under `XBOXRoot` / `PSRoot` / `PCRoot` are authored as **pure stretch rects with a
+`sizeDelta` of zero** — their entire size comes from the anchor span (an Xbox glyph is 0.185 × 4.479
+of a 269 × 11 px root; a PC text is 0.290 × 1.000 of a 366 × 22 px root). So a placement routine that
+collapses the anchors to a point and re-supplies the size from `rect.size` renders them at **zero
+size**, because that read happens before any layout pass and, for the two inactive set roots, while
+Unity is not updating their rects at all. The glyphs vanish, and collapsing the span has destroyed the
+only thing that was giving them size, so nothing recovers them.
+
+`PlaceOnAbilityIcon` therefore preserves the anchor **span** and `sizeDelta` exactly and moves only the
+anchor **centre**. It never reads `rect.size` and never writes size. Placement also re-runs from
+`ApplySet`, so a root that was inactive (and unmeasurable) when the hints were bound gets a correct
+pass the moment its set is shown.
+
+Two more traps in the same routine, both of which render the glyph invisible with no error:
+
+- **`Mathf.InverseLerp` clamps to 0..1.** The hint roots are thin strips — `XBOXRoot` is ~11 px tall
+  and sits at the very bottom of the canvas, while the ability row is at y ≈ 105 — so the honest
+  anchor fraction is **7.3**, not something in 0..1. Clamping collapsed it to 1.0 and the negative
+  `attachOffset` then pushed every glyph to negative Y, entirely below the screen. Use
+  `InverseLerpUnclamped`; an anchor fraction far outside 0..1 is correct here, not a bug.
+- **Verify against the function you actually called.** Both failed fixes were "verified" by a
+  simulation that used unclamped arithmetic while the code called the clamping `Mathf.InverseLerp`.
+  `WarnIfPlacedOffScreen` now checks the placed rect against the canvas rect and logs when a hint
+  lands somewhere it cannot be seen — it would have caught all three failures on the first run.
+
+### 7.4 Two fleet-wide traps this uncovered
+
+**Reordering a row strands its labels unless a switcher runs there.** `BindHintsToAbilities` is a method
+on `InputDeviceIconSetSwitcher`, so a HUD with no switcher gets no automatic placement — its glyphs stay
+where they were authored. The Sparrow has four `ControllerIcon` glyphs per set but no switcher, so
+reordering its row left every label beside the wrong ability. Its glyphs are now shifted onto their own
+abilities (each keeping its authored offset), but that is a static fix: **add an
+`InputDeviceIconSetSwitcher` to the Sparrow HUD** and the placement becomes automatic, and its Xbox and
+PlayStation sets stop rendering simultaneously. Before touching any vessel's row, check whether that HUD
+has a switcher.
+
+**A HUD root that is not stretched to its canvas collapses the whole HUD to screen centre.** Every
+vessel prefab overrides its HUD-instance root to `anchorMin (0,0) / anchorMax (1,1) / sizeDelta 0` so
+screen-fraction anchors mean what they say. The Serpent's was `anchorMin (0.5,0.5) / anchorMax (0.5,0.5)
+/ sizeDelta (100,100)` — a 100×100 box at the centre — so its control labels, silhouette and trail
+display all clustered mid-screen, and someone had compensated by pushing `Boost Button` to
+`anchoredPosition.x = +881`. The root is now stretched like the rest of the fleet and the boost button
+re-tuned to hold its rendered position (verified: zero drift). If a vessel's HUD looks centre-clustered,
+check the root override first — the children are probably fine.
+
+Sparrow glyph art is separately wrong and needs an artist: the Xbox set uses `R1 Active` where the
+control is the right TRIGGER and `R2 Active` where it is the LEFT trigger, and the PlayStation set uses
+`triangle` where the control is ✕ and `square` where it is R2. `Buttons/XBOX/` has no left-trigger art
+at all.
