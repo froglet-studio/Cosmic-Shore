@@ -19,7 +19,7 @@ namespace CosmicShore.Gameplay
         const float OuterR = 380f;
 
         protected override int DefaultSeed => 11;
-        protected override int BuildParameterHash() => System.HashCode.Combine(nameof(SpawnableYggdra), 1);
+        protected override int BuildParameterHash() => System.HashCode.Combine(nameof(SpawnableYggdra), 2);
 
         float BowlY(float r) { float t = r / OuterR; return Floor + t * t * 90f; }
 
@@ -39,14 +39,33 @@ namespace CosmicShore.Gameplay
                     float t = i / 219f;
                     float y = baseY + height * t;
                     float r = 44f * Mathf.Pow(1f - t, 1.7f) + 12f + 30f * Mathf.Max(0f, t - 0.86f) * 7f;
-                    float ang = phase + t * 4.6f + 1.1f * N01(t * 5f, s * 3f, 0f, 0);
-                    float sway = 11f * N01(t * 3f, s * 7f, 1f, 1) - 5.5f;
-                    var p = new Vector3((r + sway) * Mathf.Cos(ang), y, (r + sway) * Mathf.Sin(ang));
+                    // Phase-locked over/under weave (adjacent strands alternate) + a small
+                    // centred wander keeps every strand in its own azimuthal lane - the braid
+                    // signature. Strand 0 is the gold KING STRAND: a clean, wide, radially-thin
+                    // helix ribbon (identical prism volume) - the premier roots-to-crown skim
+                    // road, readable against the noisy Jade braid by its colour and calm.
+                    float ang, radius;
+                    Vector3 scale;
+                    if (s == 0)
+                    {
+                        ang = t * 4.6f;
+                        radius = r;
+                        scale = new Vector3(9.6f, 0.6f, 7.8f);
+                    }
+                    else
+                    {
+                        ang = phase + t * 4.6f + 0.16f * (2f * N01(t * 5f, s * 3f, 0f, 0) - 1f);
+                        float weave = 6f * Mathf.Sin(t * 9f * Mathf.PI + s * Mathf.PI);
+                        float sway = 4.4f * N01(t * 3f, s * 7f, 1f, 1) - 2.2f;
+                        radius = r + sway + weave;
+                        scale = Jit(new Vector3(3.2f, 1.8f, 7.8f));
+                    }
+                    var p = new Vector3(radius * Mathf.Cos(ang), y, radius * Mathf.Sin(ang));
                     Vector3 radial = new Vector3(p.x, 0f, p.z).normalized;
                     Quaternion rot = i == 0
                         ? SpawnPoint.LookRotation(Vector3.up, radial)
                         : SpawnPoint.LookRotation(p - prev, radial);
-                    Emit(p, rot, Jit(new Vector3(3.2f, 1.8f, 7.8f)), dom);
+                    Emit(p, rot, scale, dom);
                     prev = p;
                 }
             }
@@ -58,15 +77,18 @@ namespace CosmicShore.Gameplay
                 float a = 2f * Mathf.PI * i / 48f;
                 var radial = new Vector3(Mathf.Cos(a), 0f, Mathf.Sin(a));
                 var tangent = new Vector3(-Mathf.Sin(a), 0f, Mathf.Cos(a));
-                Emit(new Vector3(radial.x * 21f, heartY, radial.z * 21f),
+                // Girdles the trunk just OUTSIDE the strand envelope (identical prism
+                // volume, long axis chained around the circumference) so the permanent
+                // landmark reads as a continuous gold belt, not dots buried in the braid.
+                Emit(new Vector3(radial.x * 40f, heartY, radial.z * 40f),
                     SpawnPoint.LookRotation(tangent, radial),
-                    new Vector3(3.2f, 3.2f, 3.2f), Domains.Gold, PrismKind.SuperShielded);
+                    new Vector3(2f, 2f, 8.192f), Domains.Gold, PrismKind.SuperShielded);
             }
 
             // Root buttresses.
             for (int b = 0; b < 10; b++)
             {
-                float a0 = 2f * Mathf.PI * b / 10f + 0.2f;
+                float a0 = 2f * Mathf.PI * b / 10f;
                 float len = 100f + 60f * Hash01(b * 77 + _noiseSeed);
                 Vector3 prevMid = Vector3.zero;
                 for (int i = 0; i < 58; i++)
@@ -105,6 +127,10 @@ namespace CosmicShore.Gameplay
                 float rr = 180f * Mathf.Sqrt(u);
                 float dome = 95f * Mathf.Cos(u * Mathf.PI * 0.5f);
                 float wob = 18f * N01(Mathf.Cos(a) * 3f + 3f, u * 6f, Mathf.Sin(a) * 3f, 5);
+                // Three vessel-sized partings spiral from the (solid) crown cap to the rim
+                // so the canopy is a dappled roof with flyways, not a sealed shell.
+                float lane = Mathf.Repeat(a + 0.8f * Mathf.Sqrt(u), 2f * Mathf.PI / 3f);
+                if (rr > 45f && lane * rr < 13f) continue;
                 var p = new Vector3(rr * Mathf.Cos(a), Crown - 50f + dome * 0.62f + wob - 32f * u, rr * Mathf.Sin(a));
                 var normal = (Vector3.up + new Vector3(Mathf.Cos(a), 0f, Mathf.Sin(a)) * (0.55f * u)).normalized;
                 var azimuthal = new Vector3(-Mathf.Sin(a), 0f, Mathf.Cos(a));

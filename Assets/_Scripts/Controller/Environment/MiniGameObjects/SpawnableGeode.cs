@@ -19,7 +19,7 @@ namespace CosmicShore.Gameplay
         const float CrackGap = 110f;
 
         protected override int DefaultSeed => 67;
-        protected override int BuildParameterHash() => System.HashCode.Combine(nameof(SpawnableGeode), 2);
+        protected override int BuildParameterHash() => System.HashCode.Combine(nameof(SpawnableGeode), 3);
 
         static readonly Domains[] CrystalDoms = { Domains.Ruby, Domains.Blue, Domains.Gold };
 
@@ -95,9 +95,11 @@ namespace CosmicShore.Gameplay
                         float w = 2.6f * (1f - t * 0.75f);
                         Emit(basePos + tilt * (t * len * 2.2f), spikeRot, new Vector3(w, w, 3.4f), CrystalDoms[(k + sp) % 3]);
                     }
-                    // The first spike of each cluster is the "perfect crystal" - stella tip.
+                    // ONLY the first spike of each cluster is the "perfect crystal" stella -
+                    // 24 landmarks total; shielding every tip buried them (and doubled the
+                    // always-on mesh-collider ration).
                     Emit(basePos + tilt * (len * 2.2f), spikeRot, new Vector3(2f, 2f, 2f),
-                        CrystalDoms[(k + sp) % 3], sp == 0 ? PrismKind.SuperShielded : PrismKind.Shielded);
+                        CrystalDoms[(k + sp) % 3], sp == 0 ? PrismKind.SuperShielded : PrismKind.Plain);
                 }
             }
         }
@@ -121,9 +123,11 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < 90; i++)
             {
                 float a = 2f * Mathf.PI * i / 90f;
-                var tangent = new Vector3(-Mathf.Sin(a), 0f, Mathf.Cos(a));
+                // Chain along the true 3D derivative (the wave's vertical pitch reaches ~43
+                // degrees) so the orbit reads as one continuous undulating strand.
+                var deriv = new Vector3(-58f * Mathf.Sin(a), 54f * Mathf.Cos(a * 3f), 58f * Mathf.Cos(a));
                 Emit(new Vector3(58f * Mathf.Cos(a), 18f * Mathf.Sin(a * 3f), 58f * Mathf.Sin(a)),
-                    SpawnPoint.LookRotation(tangent, Vector3.up), new Vector3(1.3f, 1f, 3.4f), Domains.Blue);
+                    SpawnPoint.LookRotation(deriv, Vector3.up), new Vector3(1.3f, 1f, 3.4f), Domains.Blue);
             }
         }
 
@@ -140,10 +144,13 @@ namespace CosmicShore.Gameplay
                     float a = 2f * Mathf.PI * i / n;
                     float x = R * Mathf.Cos(a);
                     if (Mathf.Abs(x) < CrackGap * 0.42f) continue; // bands break at the crack
-                    float xoff = x > 0f ? CrackGap * 0.5f * 0.35f : -CrackGap * 0.5f * 0.35f;
+                    // Full husk-half offset + 15 extra radius clears the wobbled shell at the
+                    // x-poles; thin axis = radial normal with the 3.6 axis chained along the
+                    // band (shingle idiom) so the ribbon wraps continuously.
+                    float xoff = x > 0f ? CrackGap * 0.5f : -CrackGap * 0.5f;
                     var tangent = new Vector3(-Mathf.Sin(a), 0f, Mathf.Cos(a));
-                    Emit(new Vector3(x + xoff, yb + 9f * Mathf.Sin(a * 2f + band), R * Mathf.Sin(a)),
-                        SpawnPoint.LookRotation(tangent, new Vector3(Mathf.Cos(a), 0f, Mathf.Sin(a))),
+                    Emit(new Vector3((R + 15f) * Mathf.Cos(a) + xoff, yb + 9f * Mathf.Sin(a * 2f + band), (R + 15f) * Mathf.Sin(a)),
+                        SpawnPoint.LookRotation(new Vector3(Mathf.Cos(a), 0f, Mathf.Sin(a)), tangent),
                         new Vector3(2.2f, 3.6f, 1f), bandDoms[band]);
                 }
             }
@@ -166,15 +173,19 @@ namespace CosmicShore.Gameplay
 
         void BuildLightShafts()
         {
-            var shaftRot = SpawnPoint.LookRotation(new Vector3(520f, 30f, 40f), Vector3.up);
+            // God-rays knife diagonally DOWN the rift slab (|x| < ~77) from the upper rim
+            // past the heart's airspace - telegraphing the crack as THE entrance from
+            // outside and lighting the cathedral interior. Never pierces the husk walls.
+            var dir = new Vector3(30f, -520f, 130f);
+            var shaftRot = SpawnPoint.LookRotation(dir, Vector3.up);
             for (int k = 0; k < 12; k++)
             {
-                float y0 = -155f + k * 29f;
-                float z0 = -160f + 50f * k * (k % 2 != 0 ? -1f : 1f) * 0.4f;
+                float x0 = -33f + 6f * k;
+                float z0 = -170f + 28f * k;
                 for (int i = 0; i < 46; i++)
                 {
                     float t = i / 45f;
-                    Emit(new Vector3(-260f + t * 520f, y0 + t * 30f - 15f, z0 + t * 40f),
+                    Emit(new Vector3(x0 + 30f * t, 265f - 520f * t, z0 + 130f * t),
                         shaftRot, new Vector3(1f, 1f, 5.2f), k % 2 != 0 ? Domains.Gold : Domains.Blue);
                 }
             }

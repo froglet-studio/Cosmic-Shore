@@ -16,7 +16,7 @@ namespace CosmicShore.Gameplay
     public class SpawnableDaedala : CellEnvironmentSpawnableBase
     {
         protected override int DefaultSeed => 23;
-        protected override int BuildParameterHash() => System.HashCode.Combine(nameof(SpawnableDaedala), 2);
+        protected override int BuildParameterHash() => System.HashCode.Combine(nameof(SpawnableDaedala), 3);
 
         static readonly (float R, float yc, Domains dom)[] Rings =
         {
@@ -95,6 +95,13 @@ namespace CosmicShore.Gameplay
             }
         }
 
+        /// <summary>The terrace deck's undulation at angle <paramref name="a"/> on ring
+        /// <paramref name="ring"/> - identical math/args to BuildTerraces, so stairs and
+        /// plazas dock onto the exact deterministic deck height instead of floating beside it.</summary>
+        float Und(float a, int ring) =>
+            22f * Mathf.Sin(a * 3f + ring * 1.7f)
+            + 9f * N01(Mathf.Cos(a) * 4f + 9f, ring * 5f, Mathf.Sin(a) * 4f, 3);
+
         void Stair(float R1, float y1, float R2, float y2, float a0, int ri)
         {
             Domains dom = ri % 2 != 0 ? Domains.Gold : Domains.Blue;
@@ -104,7 +111,7 @@ namespace CosmicShore.Gameplay
                 float t = i / 51f;
                 float a = a0 + t * 1.9f;
                 float R = Mathf.Lerp(R1, R2, t);
-                float y = Mathf.Lerp(y1, y2, t) + 6f * Mathf.Sin(t * Mathf.PI);
+                float y = Mathf.Lerp(y1 + Und(a0, ri), y2 + Und(a0 + 1.9f, ri + 1), t) + 6f * Mathf.Sin(t * Mathf.PI);
                 var mid = new Vector3(R * Mathf.Cos(a), y, R * Mathf.Sin(a));
                 Quaternion rot = i == 0
                     ? SpawnPoint.LookRotation(new Vector3(-Mathf.Sin(a), 0f, Mathf.Cos(a)), Vector3.up)
@@ -205,19 +212,26 @@ namespace CosmicShore.Gameplay
             {
                 float a = 2f * Mathf.PI * k / 11f + 0.45f;
                 float ca = Mathf.Cos(a), sa = Mathf.Sin(a);
-                var radialRot = SpawnPoint.LookRotation(new Vector3(ca, 0.6f, sa), Vector3.up);
+                var prevMid = new Vector3(155f * ca, -90f, 155f * sa);
                 for (int i = 0; i < 44; i++)
                 {
                     float t = i / 43f;
                     float rr = Mathf.Lerp(155f, 385f, t);
                     float y = Mathf.Lerp(-90f, 112f, t) + 10f * Mathf.Sin(t * Mathf.PI * 3f);
+                    var mid = new Vector3(rr * ca, y, rr * sa);
+                    Quaternion rot = i == 0
+                        ? SpawnPoint.LookRotation(new Vector3(ca, 0.88f, sa), Vector3.up)
+                        : SpawnPoint.LookRotation(mid - prevMid, Vector3.up);
+                    prevMid = mid;
+                    // Lapis water-channel rails on gold piers - the aqueduct holds the city's
+                    // two-tone band; Jade stays reserved for the gate accents.
                     for (int w = -1; w <= 1; w += 2)
                         Emit(new Vector3(rr * ca - w * 3.4f * sa, y, rr * sa + w * 3.4f * ca),
-                            radialRot, new Vector3(2.6f, 1.4f, 3.6f), Domains.Jade);
+                            rot, new Vector3(2.6f, 1.4f, 3.6f), Domains.Blue);
                     if (i % 5 == 2)
                         for (int hh = 0; hh < 4; hh++)
                             Emit(new Vector3(rr * ca, y - 4f - hh * 3.4f, rr * sa),
-                                Quaternion.identity, new Vector3(1.8f, 3f, 1.8f), Domains.Blue);
+                                Quaternion.identity, new Vector3(1.8f, 3f, 1.8f), Domains.Gold);
                 }
             }
         }
@@ -247,14 +261,18 @@ namespace CosmicShore.Gameplay
                     new Vector3(2.6f, 2.6f, 2.6f), Domains.Ruby, PrismKind.Shielded);
             }
 
-            // Catenary lantern strings between tower sites.
+            // Catenary lantern strings tied tower-top to tower-top (varying stride so the
+            // second lap of k picks different partner pairs instead of duplicating strings).
             for (int k = 0; k < 30; k++)
             {
-                float a1 = k * GoldenAngle * 2.3f, a2 = (k + 3) * GoldenAngle * 2.3f;
-                float r1 = 185f + 170f * Hash01((k % 14) * 37 + _noiseSeed);
-                float r2 = 185f + 170f * Hash01(((k + 3) % 14) * 37 + _noiseSeed);
-                var p1 = new Vector3(r1 * Mathf.Cos(a1), -60f + 120f * Hash01((k % 14) * 53) + 70f, r1 * Mathf.Sin(a1));
-                var p2 = new Vector3(r2 * Mathf.Cos(a2), -60f + 120f * Hash01(((k + 3) % 14) * 53) + 70f, r2 * Mathf.Sin(a2));
+                int i1 = k % 14;
+                int stride = 3 + 4 * (k / 14);
+                int i2 = (i1 + stride) % 14;
+                float a1 = i1 * GoldenAngle * 2.3f, a2 = i2 * GoldenAngle * 2.3f;
+                float r1 = 185f + 170f * Hash01(i1 * 37 + _noiseSeed);
+                float r2 = 185f + 170f * Hash01(i2 * 37 + _noiseSeed);
+                var p1 = new Vector3(r1 * Mathf.Cos(a1), -60f + 120f * Hash01(i1 * 53) + 70f + 40f * Hash01(i1 * 11), r1 * Mathf.Sin(a1));
+                var p2 = new Vector3(r2 * Mathf.Cos(a2), -60f + 120f * Hash01(i2 * 53) + 70f + 40f * Hash01(i2 * 11), r2 * Mathf.Sin(a2));
                 for (int i = 0; i < 34; i++)
                 {
                     float t = i / 33f;
@@ -270,11 +288,13 @@ namespace CosmicShore.Gameplay
         {
             for (int k = 0; k < 18; k++)
             {
-                int ri = k % 3;
+                int ri = k % 4;
                 var (R, yc, _) = Rings[ri];
                 float a = 2f * Mathf.PI * Hash01(k * 61 + _noiseSeed);
-                var cx = new Vector3((R + 16f) * Mathf.Cos(a), yc + 24f, (R + 16f) * Mathf.Sin(a));
-                Domains dom = (k % 4) switch { 0 => Domains.Jade, 1 => Domains.Ruby, 2 => Domains.Gold, _ => Domains.Blue };
+                // Landing pads hover a consistent 8 units beside their road (docked to the
+                // deck's undulation). Ruby stays exclusive to the shielded tower finials.
+                var cx = new Vector3((R + 16f) * Mathf.Cos(a), yc + Und(a, ri) + 8f, (R + 16f) * Mathf.Sin(a));
+                Domains dom = (k % 3) switch { 0 => Domains.Gold, 1 => Domains.Blue, _ => Domains.Jade };
                 for (int i = 0; i < 64; i++)
                 {
                     float aa = i * GoldenAngle;

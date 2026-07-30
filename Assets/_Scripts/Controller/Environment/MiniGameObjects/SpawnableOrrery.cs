@@ -16,7 +16,7 @@ namespace CosmicShore.Gameplay
     public class SpawnableOrrery : CellEnvironmentSpawnableBase
     {
         protected override int DefaultSeed => 31;
-        protected override int BuildParameterHash() => System.HashCode.Combine(nameof(SpawnableOrrery), 1);
+        protected override int BuildParameterHash() => System.HashCode.Combine(nameof(SpawnableOrrery), 2);
 
         static readonly (float R, float tiltDeg, Domains dom)[] RingDefs =
         {
@@ -38,6 +38,7 @@ namespace CosmicShore.Gameplay
             BuildComet();
             BuildGears();
             BuildPendulums();
+            BuildSuspensionHoop();
             BuildStars();
         }
 
@@ -146,7 +147,9 @@ namespace CosmicShore.Gameplay
                 // Armature spoke sun -> planet.
                 int ns = (int)(R / 3.4f);
                 var spokeRot = SpawnPoint.LookRotation(pc.normalized, Vector3.up);
-                for (int i = 2; i < ns; i++)
+                // Dock at the sun shell (r=46) instead of skewering the core fly-in space.
+                int i0 = Mathf.Max(2, Mathf.CeilToInt(ns * 50f / R));
+                for (int i = i0; i < ns; i++)
                 {
                     float t = i / (float)ns;
                     float x = R * t * Mathf.Cos(pa), zz = R * t * Mathf.Sin(pa);
@@ -168,13 +171,14 @@ namespace CosmicShore.Gameplay
                 for (int sd = 0; sd < sides; sd++)
                 {
                     float a0 = 2f * Mathf.PI * sd / sides, a1 = 2f * Mathf.PI * (sd + 1) / sides;
+                    float c0 = Mathf.Cos(a0), s0 = Mathf.Sin(a0), c1 = Mathf.Cos(a1), s1 = Mathf.Sin(a1);
+                    // Straight CHORDS (lerped positions, not lerped angles) so triangle /
+                    // square / pentagon / hexagon glyphs actually render as polygons.
+                    var sideDir = new Vector3(-sa * (c1 - c0), s1 - s0, ca * (c1 - c0));
                     for (int i = 0; i < 16; i++)
                     {
                         float t = (i + 0.5f) / 16f;
-                        float aa = Mathf.Lerp(a0, a1, t);
-                        float lx = 18f * Mathf.Cos(aa), ly = 18f * Mathf.Sin(aa);
-                        // Gate plane faces the centre; strands chain along each polygon side.
-                        var sideDir = new Vector3(-sa * (-Mathf.Sin(aa)), Mathf.Cos(aa), ca * (-Mathf.Sin(aa)));
+                        float lx = 18f * Mathf.Lerp(c0, c1, t), ly = 18f * Mathf.Lerp(s0, s1, t);
                         Emit(cx + new Vector3(-sa * lx, ly, ca * lx),
                             SpawnPoint.LookRotation(sideDir, new Vector3(ca, 0f, sa)),
                             new Vector3(1.6f, 1.6f, 4.2f), dom);
@@ -217,14 +221,21 @@ namespace CosmicShore.Gameplay
 
         void BuildGears()
         {
+            // Six meshed PAIRS (same plane, centre distance 48: tooth arms interleave, rims
+            // clear) with the odd gear half-tooth phased - a legible gear train, not medallions.
             for (int k = 0; k < 12; k++)
             {
-                float a = k * GoldenAngle * 2.9f;
-                float rr = 125f + 45f * (k % 3);
-                var cx = new Vector3(rr * Mathf.Cos(a), (k % 2 * 2 - 1) * 36f, rr * Mathf.Sin(a));
+                int pair = k / 2;
+                float a = pair * GoldenAngle * 2.9f;
+                float rr = 125f + 45f * (pair % 3);
+                var cx = new Vector3(rr * Mathf.Cos(a), (pair % 2 * 2 - 1) * 36f, rr * Mathf.Sin(a));
+                if (k % 2 != 0)
+                    cx += new Vector3(-Mathf.Sin(a), 0f, Mathf.Cos(a)) * 48f;
+                float toothPhase = (k % 2) * (Mathf.PI / 11f);
+                float rimPhase = (k % 2) * (Mathf.PI / 26f);
                 for (int tt = 0; tt < 11; tt++)
                 {
-                    float ta = 2f * Mathf.PI * tt / 11f;
+                    float ta = 2f * Mathf.PI * tt / 11f + toothPhase;
                     var radial = new Vector3(Mathf.Cos(ta), 0f, Mathf.Sin(ta));
                     for (int i = 0; i < 9; i++)
                     {
@@ -235,7 +246,7 @@ namespace CosmicShore.Gameplay
                 }
                 for (int i = 0; i < 26; i++)
                 {
-                    float ta = 2f * Mathf.PI * i / 26f;
+                    float ta = 2f * Mathf.PI * i / 26f + rimPhase;
                     var tangent = new Vector3(-Mathf.Sin(ta), 0f, Mathf.Cos(ta));
                     Emit(cx + new Vector3(22f * Mathf.Cos(ta), 0f, 22f * Mathf.Sin(ta)),
                         SpawnPoint.LookRotation(tangent, Vector3.up), new Vector3(1.6f, 0.9f, 2.6f), Domains.Ruby);
@@ -250,12 +261,16 @@ namespace CosmicShore.Gameplay
                 float a = 2f * Mathf.PI * k / 9f;
                 var top = new Vector3(120f * Mathf.Cos(a), 300f, 120f * Mathf.Sin(a));
                 float swing = Mathf.Sin(k * 2.1f) * 38f;
+                var swingDir = new Vector3(Mathf.Cos(a + 1.5f), 0f, Mathf.Sin(a + 1.5f));
+                var swingSide = new Vector3(-Mathf.Sin(a + 1.5f), 0f, Mathf.Cos(a + 1.5f));
                 for (int i = 0; i < 26; i++)
                 {
                     float t = i / 25f;
-                    Emit(new Vector3(top.x + swing * t * t * Mathf.Cos(a + 1.5f), top.y - t * 150f,
-                            top.z + swing * t * t * Mathf.Sin(a + 1.5f)),
-                        Quaternion.identity, new Vector3(1f, 3.2f, 1f), Domains.Blue);
+                    // Links chain along the swing curve's tangent (same prism volume).
+                    var tangentDir = swingDir * (2f * swing * t) + Vector3.down * 150f;
+                    Emit(new Vector3(top.x + swing * t * t * swingDir.x, top.y - t * 150f,
+                            top.z + swing * t * t * swingDir.z),
+                        SpawnPoint.LookRotation(tangentDir, swingSide), new Vector3(1f, 1f, 3.2f), Domains.Blue);
                 }
                 var bob = new Vector3(top.x + swing * Mathf.Cos(a + 1.5f), top.y - 152f, top.z + swing * Mathf.Sin(a + 1.5f));
                 for (int i = 0; i < 60; i++)
@@ -263,6 +278,20 @@ namespace CosmicShore.Gameplay
                     var d = SpherePoint(i, 60);
                     Emit(bob + d * 5f, ShellRot(d, i), new Vector3(1.8f, 1.8f, 0.7f), Domains.Gold);
                 }
+            }
+        }
+
+        /// <summary>The canopy frame the pendulums hang FROM - a gold suspension hoop through
+        /// the tops, reusing the orbit-rail vocabulary; also the machine's high skim line.</summary>
+        void BuildSuspensionHoop()
+        {
+            int n = (int)(2f * Mathf.PI * 120f / 3.4f);
+            for (int i = 0; i < n; i++)
+            {
+                float t = 2f * Mathf.PI * i / n;
+                var tangent = new Vector3(-Mathf.Sin(t), 0f, Mathf.Cos(t));
+                Emit(new Vector3(120f * Mathf.Cos(t), 300f, 120f * Mathf.Sin(t)),
+                    SpawnPoint.LookRotation(tangent, Vector3.up), new Vector3(1.2f, 1f, 4.6f), Domains.Gold);
             }
         }
 

@@ -17,7 +17,7 @@ namespace CosmicShore.Gameplay
         const float Base = -180f;
 
         protected override int DefaultSeed => 53;
-        protected override int BuildParameterHash() => System.HashCode.Combine(nameof(SpawnableCaldera), 2);
+        protected override int BuildParameterHash() => System.HashCode.Combine(nameof(SpawnableCaldera), 3);
 
         protected override void BuildEnvironment()
         {
@@ -96,9 +96,11 @@ namespace CosmicShore.Gameplay
                     float u = Hash01(k * 333 + i * 3);
                     float aa = i * GoldenAngle;
                     float rr = 14f * Mathf.Sqrt(u);
+                    // Molten Danger core with a cooling Plain rim - a telegraphed edge to
+                    // bail onto (per-prism parity is invisible at flight speed).
                     Emit(p + new Vector3(rr * Mathf.Cos(aa), -1f, rr * Mathf.Sin(aa)),
                         Quaternion.identity, new Vector3(2.6f, 0.6f, 2.6f),
-                        Domains.Ruby, i % 2 != 0 ? PrismKind.Plain : PrismKind.Danger);
+                        Domains.Ruby, u < 0.5f ? PrismKind.Danger : PrismKind.Plain);
                 }
             }
 
@@ -112,7 +114,7 @@ namespace CosmicShore.Gameplay
                 if (rp.magnitude > 430f) break;
                 var q = new Vector3(rp.x, Base + 2f + 0.5f * Mathf.Sin(i * 0.4f), rp.z);
                 Emit(q, SpawnPoint.LookRotation(q - rprev, Vector3.up), new Vector3(2.4f, 0.7f, 3.2f),
-                    Domains.Ruby, i % 2 != 0 ? PrismKind.Plain : PrismKind.Danger);
+                    Domains.Ruby, PrismKind.Danger);
                 rprev = q;
             }
         }
@@ -128,13 +130,15 @@ namespace CosmicShore.Gameplay
                 for (int co = 0; co < cols; co++)
                 {
                     float ca = 2f * Mathf.PI * co / cols;
-                    var off = new Vector3(6.4f * Mathf.Cos(ca) * (1 + co % 2), 0f, 6.4f * Mathf.Sin(ca) * (1 + co % 2));
+                    // Touching segments (solid pipes) on two rings whose gaps fit the
+                    // vessel: inner ~8, outer ~19 - real weave-through slalom terrain.
+                    var off = new Vector3(9.5f * Mathf.Cos(ca) * (1 + co % 2), 0f, 9.5f * Mathf.Sin(ca) * (1 + co % 2));
                     int height = 8 + (int)(14f * Hash01(cl * 13 + co));
                     float yaw = ca * Mathf.Rad2Deg;
                     for (int h = 0; h < height; h++)
-                        Emit(cx + off + new Vector3(0f, h * 3.3f, 0f), Quaternion.Euler(0f, yaw, 0f),
+                        Emit(cx + off + new Vector3(0f, h * 1.9f, 0f), Quaternion.Euler(0f, yaw, 0f),
                             Jit(new Vector3(3f, 1.7f, 3f), 0.08f), Domains.Blue);
-                    Emit(cx + off + new Vector3(0f, height * 3.3f, 0f), Quaternion.Euler(0f, yaw, 0f),
+                    Emit(cx + off + new Vector3(0f, height * 1.9f, 0f), Quaternion.Euler(0f, yaw, 0f),
                         new Vector3(3.2f, 0.8f, 3.2f), Domains.Gold);
                 }
             }
@@ -154,8 +158,10 @@ namespace CosmicShore.Gameplay
                     float aa = t * 7f * Mathf.PI * (k % 2 != 0 ? 1f : -1f);
                     float r2 = 3f + t * 26f;
                     var p = basePos + new Vector3(r2 * Mathf.Cos(aa), t * 230f, r2 * Mathf.Sin(aa));
-                    Emit(p, SpawnPoint.LookRotation(p - prev, Vector3.up), new Vector3(1.1f, 1.9f, 1.1f),
-                        i % 3 != 0 ? Domains.Gold : Domains.Ruby);
+                    // Long axis chains along the rising spiral (radial up keeps roll stable on
+                    // the near-vertical base); widening step spacing dissolves it into sparks.
+                    Emit(p, SpawnPoint.LookRotation(p - prev, new Vector3(Mathf.Cos(aa), 0f, Mathf.Sin(aa))),
+                        new Vector3(1.1f, 1.1f, 1.9f), i % 3 != 0 ? Domains.Gold : Domains.Ruby);
                     prev = p;
                 }
             }
@@ -170,15 +176,19 @@ namespace CosmicShore.Gameplay
                 var basePos = new Vector3(rr * Mathf.Cos(a), Base + 2f, rr * Mathf.Sin(a));
                 float span = 40f + 30f * Hash01(k * 7);
                 float dirA = a + 1.2f;
+                // The arc's constant lateral is never parallel to the steep tangent, so the
+                // thin axis stays the blade normal along the whole span; the long axis chains
+                // along the arc - 16 knife-edge ribbons to fly under and thread.
+                var side = new Vector3(-Mathf.Sin(dirA), 0f, Mathf.Cos(dirA));
                 Vector3 prev = basePos;
                 for (int i = 0; i < 34; i++)
                 {
                     float t = i / 33f;
                     var p = basePos + new Vector3(Mathf.Cos(dirA) * span * t, 55f * Mathf.Sin(t * Mathf.PI), Mathf.Sin(dirA) * span * t);
                     Quaternion rot = i == 0
-                        ? SpawnPoint.LookRotation(new Vector3(Mathf.Cos(dirA) * span, 55f * Mathf.PI, Mathf.Sin(dirA) * span), Vector3.up)
-                        : SpawnPoint.LookRotation(p - prev, Vector3.up);
-                    Emit(p, rot, new Vector3(0.9f, 3.8f, 1.6f), Domains.Blue);
+                        ? SpawnPoint.LookRotation(new Vector3(Mathf.Cos(dirA) * span, 55f * Mathf.PI, Mathf.Sin(dirA) * span), side)
+                        : SpawnPoint.LookRotation(p - prev, side);
+                    Emit(p, rot, new Vector3(0.9f, 1.6f, 3.8f), Domains.Blue);
                     prev = p;
                 }
             }

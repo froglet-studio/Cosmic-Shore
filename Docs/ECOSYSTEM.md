@@ -1465,8 +1465,8 @@ and **Geode** (the angular, serene pole: a cracked crystal cathedral — husk he
 inward crystal linings, super-shielded druse tips, agate bands, dust, light shafts; zero
 danger). All extend `CellEnvironmentSpawnableBase` (one deterministic lay/stream/noise
 contract, per-cell fixed seed); per-cell PhaseThresholds ride each baseline measured with
-a bit-exact simulation of the C# noise (count/volume): Yggdra 34.8k/551k, Daedala
-33.9k/638k, Orrery 34.4k/197k, Zephyr 36.1k/427k, Caldera 31.2k/433k, Geode 34.4k/561k —
+a bit-exact simulation of the C# noise (count/volume): Yggdra 34.3k/541k, Daedala
+33.9k/638k, Orrery 34.6k/197k, Zephyr 36.1k/427k, Caldera 31.2k/433k, Geode 34.4k/561k —
 confirm in-engine via Tools > Cosmic Shore > Measure Cell Environment Baselines before
 retuning any ladder. Same soak-before-ship rule as §17 above; each prefab's
 `density` knob (0.5-1.3) is the per-cell fallback lever.

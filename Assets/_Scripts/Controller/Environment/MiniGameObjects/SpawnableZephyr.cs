@@ -16,7 +16,7 @@ namespace CosmicShore.Gameplay
         const float Sea = -170f;
 
         protected override int DefaultSeed => 41;
-        protected override int BuildParameterHash() => System.HashCode.Combine(nameof(SpawnableZephyr), 2);
+        protected override int BuildParameterHash() => System.HashCode.Combine(nameof(SpawnableZephyr), 3);
 
         protected override void BuildEnvironment()
         {
@@ -56,12 +56,16 @@ namespace CosmicShore.Gameplay
                         p += d * 5.4f;
                         if (Mathf.Sqrt(p.x * p.x + p.z * p.z) > 470f) break;
                         var flowRot = SpawnPoint.LookRotation(d, Vector3.up);
-                        // Braid: four filaments coiling around the streamline.
+                        // Braid: four filaments coiling in the STREAMLINE frame (a true helix
+                        // around the tangent at every heading - a world-frame offset collapses
+                        // the coil whenever the flow runs along +/-x).
+                        var right = flowRot * Vector3.right;
+                        var upv = flowRot * Vector3.up;
                         for (int f = 0; f < 4; f++)
                         {
                             float fa = i * 0.35f + f * 1.5708f;
-                            var off = new Vector3(Mathf.Cos(fa) * 3.2f, Mathf.Sin(fa) * 2.2f, Mathf.Sin(fa + 1f) * 3.2f);
-                            Emit(p + off, flowRot, new Vector3(1.8f, 0.8f, 4.8f),
+                            Emit(p + right * (Mathf.Cos(fa) * 3.2f) + upv * (Mathf.Sin(fa) * 2.2f),
+                                flowRot, new Vector3(1.8f, 0.8f, 4.8f),
                                 (i / 9 + f) % 3 != 0 ? dom1 : dom2);
                         }
                     }
@@ -71,12 +75,15 @@ namespace CosmicShore.Gameplay
 
         void BuildCyclones()
         {
-            var defs = new (Vector3 cx, float chir)[]
+            // Anchored: one waterspout whose tip skims the swell and whose mouth opens at
+            // cloud base (the missing sea-to-sky climb line), one funnel hung inverted from
+            // the cloud deck, sinking. Quadratic lerp hugs the anchor before climbing.
+            var defs = new (Vector3 cx, float chir, float yTip, float yMouth)[]
             {
-                (new Vector3(190f, 10f, -140f), 1f),
-                (new Vector3(-200f, 40f, 150f), -1f),
+                (new Vector3(190f, 0f, -140f), 1f, Sea + 18f, 120f),
+                (new Vector3(-200f, 0f, 150f), -1f, 170f, -40f),
             };
-            foreach (var (cx, chir) in defs)
+            foreach (var (cx, chir, yTip, yMouth) in defs)
             {
                 for (int arm = 0; arm < 11; arm++)
                 {
@@ -87,7 +94,7 @@ namespace CosmicShore.Gameplay
                         float t = i / 209f;
                         float r = 8f + 150f * t;
                         float a = a0 + chir * t * 3.4f * Mathf.PI;
-                        var p = new Vector3(cx.x + r * Mathf.Cos(a), cx.y + (t * t * 130f - 30f) * chir, cx.z + r * Mathf.Sin(a));
+                        var p = new Vector3(cx.x + r * Mathf.Cos(a), Mathf.Lerp(yTip, yMouth, t * t), cx.z + r * Mathf.Sin(a));
                         Quaternion rot = i == 0
                             ? SpawnPoint.LookRotation(new Vector3(-Mathf.Sin(a), 0f, Mathf.Cos(a)), Vector3.up)
                             : SpawnPoint.LookRotation(p - prev, Vector3.up);
@@ -124,11 +131,20 @@ namespace CosmicShore.Gameplay
                 {
                     for (int bolt = 0; bolt < 3; bolt++)
                     {
+                        // Chained, hard-kinked, and striking the sea - unmistakably lightning
+                        // against the strictly-vertical rain around it (same prism volume).
+                        float startY = cx.y - ey - 4f;
+                        float drop = (startY - (Sea + 12f)) / 26f;
                         var p = cx + new Vector3(20f * bolt - 20f, -ey - 4f, 10f * bolt - 10f);
                         for (int i = 0; i < 26; i++)
                         {
-                            p += new Vector3(6f * Hash01(bolt * 97 + i * 3) - 3f, -7f, 6f * Hash01(bolt * 89 + i * 7) - 3f);
-                            Emit(p, Quaternion.identity, new Vector3(1f, 3.2f, 1f), Domains.Ruby, PrismKind.Danger);
+                            float kink = i % 3 == 0 ? 2.2f : 1f;
+                            var step = new Vector3(
+                                8f * (Hash01(bolt * 97 + i * 3) - 0.5f) * kink, -drop,
+                                8f * (Hash01(bolt * 89 + i * 7) - 0.5f) * kink);
+                            p += step;
+                            Emit(p, SpawnPoint.LookRotation(step, Vector3.up),
+                                new Vector3(1f, 1f, 3.2f), Domains.Ruby, PrismKind.Danger);
                         }
                     }
                     for (int rv = 0; rv < 100; rv++)
@@ -172,8 +188,12 @@ namespace CosmicShore.Gameplay
                         float rr = rad + 6f + i * 4.4f;
                         float aa = a + i * 0.14f; // swirl
                         var outward = new Vector3(Mathf.Cos(aa), 0f, Mathf.Sin(aa));
+                        var tangent = new Vector3(-Mathf.Sin(aa), 0f, Mathf.Cos(aa));
+                        // Long axis chains along the actual spiral stroke (radial step 4.4 +
+                        // tangential step rr*0.14) - a curling brushstroke, not herringbone.
+                        var chainDir = (outward * 4.4f + tangent * (rr * 0.14f)).normalized;
                         Emit(dc + new Vector3(rr * outward.x, 3f * Mathf.Sin(i * 0.9f + ray), rr * outward.z),
-                            SpawnPoint.LookRotation(outward, Vector3.up), new Vector3(1.2f, 0.7f, 3.8f), dom);
+                            SpawnPoint.LookRotation(chainDir, Vector3.up), new Vector3(1.2f, 0.7f, 3.8f), dom);
                     }
                 }
             }
