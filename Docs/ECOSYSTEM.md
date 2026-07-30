@@ -246,6 +246,12 @@ grows a step per level so a higher-level creature drops a **bigger** elemental p
 death (mass rewarded, still conserved). Flora answer the contract at fixed level 1 until
 flora leveling lands.
 
+**Who actually spawns the 20.** A config authors ONE point of the matrix, so the live world
+only showed the whole grid once cells were allowed to *spread* across it: `SpreadElements` +
+`ElementPalette` (element) and `LifeformLevelSpread` (level, higher levels rarer) roll a
+variant per spawn, and offspring inherit their parent's roll. See **§17** — that is where the
+spread mechanism, its rarity curve, the palette rule and the per-cell settings live.
+
 **Variant expression (`FaunaVariantTuning` on the config).** The full diff between the
 authored Mass/Space/Time tadpole prefab variants was hoisted into config so one base
 prefab can express all of it as data (sentinels keep the prefab's authored value):
