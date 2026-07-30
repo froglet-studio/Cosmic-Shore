@@ -1051,16 +1051,24 @@ namespace CosmicShore.Gameplay
         /// Yggdra cell begins with). Called on the prefab ASSET, mirroring SegmentSpawner:
         /// SpawnableBase.Spawn() creates its own container GameObject, which we parent to the
         /// cell so the environment lives and dies with it. Prisms flow through the canonical
-        /// PrismTrailBuilder lay path (big structures stream budgeted and bloom in - continuity
-        /// of existence holds), register with this cell's volume/density bookkeeping like any
-        /// other mass, and are ordinary prey/territory thereafter - prepopulation is a head
-        /// start for the ecosystem, not a parallel system.
+        /// PrismTrailBuilder lay path, register with this cell's volume/density bookkeeping
+        /// like any other mass, and are ordinary prey/territory thereafter - prepopulation is
+        /// a head start for the ecosystem, not a parallel system. In gate-less scenes the
+        /// EnvironmentLoadVeil holds the screen (with the standard prism/percent readout)
+        /// until the build settles - the world is never half-built under live play.
         /// </summary>
         void SpawnEnvironment()
         {
             using (LoadInsights.Measure(LoadInsightCategory.Environment,
                        $"Cell environment spawn (cell {ID}, {cellConfigData.EnvironmentPrefab.name})"))
             {
+                // Ungated scenes (Menu_Main freestyle) get the same treatment as gated game
+                // loads: a veil with the prism/percent readout holds the screen while the
+                // build runs at the boosted slice, releasing only when every prism is laid
+                // and settled. Building under live gameplay crashed the menu. Must be raised
+                // BEFORE Spawn() so the first lay slice sees the boosted budget.
+                if (Application.isPlaying)
+                    EnvironmentLoadVeil.Hold(cellConfigData.CellName);
                 environment = cellConfigData.EnvironmentPrefab.Spawn(Mathf.Max(1, cellConfigData.EnvironmentIntensity));
                 if (environment == null) return;
                 environment.transform.SetParent(transform, false);

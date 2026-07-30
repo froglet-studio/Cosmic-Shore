@@ -1446,9 +1446,14 @@ pass rolls, repeat passes keep the roll) so the acknowledged double-Initialize p
 re-label the cell while a prepopulated environment is streaming in. `ResetCell` (in-place
 replay) neither destroys nor respawns the environment — environment-bearing configs are for
 scene-lifetime cells only: use them in `UseSceneReloadForReplay` modes (all current ones) or
-Menu_Main, not in-place-reset modes. The environment lay budget is 8ms/frame in ungated
-contexts (the menu bloom is a slow, gentle grow-in by design); game loads hold the arena
-gate, which raises the slice to 250ms, so gated loads are unaffected.
+Menu_Main, not in-place-reset modes. **Every environment build is gated**: game scenes hold
+their connecting screen, and gate-less scenes (Menu_Main freestyle) raise an
+`EnvironmentLoadVeil` - the same prism-count/percent readout, the same 250ms boosted lay
+slice, released only when every prism is laid and settled. The original design let the menu
+world bloom in under live play at 8ms/frame; that built for minutes under gameplay
+(clone-integration spikes + physics churn against a half-built world) and crashed the menu
+reliably, so live blooming is retired - the 8ms ungated slice remains only as a last-resort
+fallback.
 
 **The freestyle six (July 2026).** Atlantis (~69k) stays Scurry-intensity-4 exclusive; the
 freestyle rotation runs at roughly HALF that weight per cell (~31-35k prisms), split across

@@ -17,9 +17,10 @@ namespace CosmicShore.Gameplay
     ///     subclass's fixed <see cref="DefaultSeed"/>, never time.
     ///   • STREAMING - per-prism domain + kind via <see cref="PrismLay"/>, streamed with
     ///     <see cref="PrismTrailBuilder.LayBudgetedAsync"/>. Behind a game load the arena
-    ///     gate raises the slice to 250ms; in ungated contexts (a cell blooming its garden
-    ///     into the live Menu_Main lava lamp) the small authored slice keeps the frame tax
-    ///     gentle and the world grows in over tens of seconds.
+    ///     gate raises the slice to 250ms; cell-spawned environments in gate-less scenes
+    ///     (Menu_Main freestyle) raise an <see cref="EnvironmentLoadVeil"/> that brackets the
+    ///     same gate machinery - building a big world UNDER live gameplay crashed the menu,
+    ///     so the tiny ungated slice below is only a last-resort fallback.
     ///   • Subclasses implement <see cref="BuildEnvironment"/> (Emit everything) and
     ///     <see cref="BuildParameterHash"/> (their own generation-affecting params); the base
     ///     hashes seed/density/clearance and owns the SpawnableBase cache contract.
@@ -29,9 +30,9 @@ namespace CosmicShore.Gameplay
         [Header("Block Settings")]
         [SerializeField] protected Prism prism;
 
-        /// <summary>Laying slice per frame in UNGATED contexts only - behind a game load the
-        /// connecting screen holds and PrismTrailBuilder.EffectiveLayBudget raises the slice to
-        /// 250ms regardless, so this small value costs gated loads nothing.</summary>
+        /// <summary>Laying slice per frame when NO gate holds - a last-resort fallback only,
+        /// since both the game connecting screens and the freestyle EnvironmentLoadVeil raise
+        /// the gate (PrismTrailBuilder.EffectiveLayBudget then boosts the slice to 250ms).</summary>
         protected const float LayBudgetMsPerFrame = 8f;
 
         [Header("Population")]
