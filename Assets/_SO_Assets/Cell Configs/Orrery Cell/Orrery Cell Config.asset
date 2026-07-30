@@ -10,10 +10,10 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 01f934d50526431a9392a6ceca1dc33d, type: 3}
-  m_Name: Yggdra Cell Config
+  m_Name: Orrery Cell Config
   m_EditorClassIdentifier: 
-  CellName: Yggdra
-  Description: The World-Tree - a garden grown around a colossal braided trunk
+  CellName: Orrery
+  Description: Flying inside a celestial clock
   Icon: {fileID: 21300000, guid: 6aa1c06e11b265744a5f9fa8858ac72a, type: 3}
   Difficulty: 2
   CellEndGameScore: 0
@@ -26,16 +26,15 @@ MonoBehaviour:
   CellModifiers:
   - {fileID: 8058406376250941529, guid: daa37ae0e7af4b04383c1c4e6e76817d, type: 3}
   SpawnProfile: {fileID: 11400000, guid: 4c06f97afbda28c4ea70d435976318d2, type: 2}
-  EnvironmentPrefab: {fileID: 5210000000000103, guid: 805b035b759c44d7911b25880ab74da3,
-    type: 3}
+  EnvironmentPrefab: {fileID: 5230000000000103, guid: ddc0ba67c22c42a9bfe0106c3471546d, type: 3}
   EnvironmentIntensity: 1
   SenseRadiusOverride: 0
   PhaseThresholds:
-    RestlessEnter: 35500
-    RestlessExit: 35300
-    FrenzyEnter: 38400
-    FrenzyExit: 37800
-    RestlessEnterVolume: 561800
-    RestlessExitVolume: 558600
-    FrenzyEnterVolume: 608200
-    FrenzyExitVolume: 598600
+    RestlessEnter: 35100
+    RestlessExit: 34900
+    FrenzyEnter: 38000
+    FrenzyExit: 37400
+    RestlessEnterVolume: 207900
+    RestlessExitVolume: 204700
+    FrenzyEnterVolume: 254300
+    FrenzyExitVolume: 244700

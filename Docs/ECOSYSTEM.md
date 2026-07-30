@@ -1426,13 +1426,12 @@ into Calm — an emergent "aging" of the biome with no clock anywhere.
 
 **The Yggdra cell** (`_SO_Assets/Cell Configs/Yggdra Cell/Yggdra Cell Config.asset`) is
 the first user: a Blob-family cell (same membrane/nucleus/cytoplasm/modifiers/spawn
-profile) whose `EnvironmentPrefab` is `SpawnableAtlantis` — the ~69k-prism Atlantean
-garden built for Scurry intensity 4 (world-tree, terraces, reefs, kelp, Möbius causeway,
-atolls, currents, dunes; see `CRYSTAL_CAPTURE.md`). It is registered in Menu_Main's
-freestyle Cell `CellConfigs` list (choice mode Random), so the lava lamp sometimes rolls
-an Atlantis to fly through instead of an empty Blob. Its 258 danger thorn/anemone prisms
-ride along — the autopilot vessel can clip one occasionally; that is the environment
-being real, not a bug.
+profile) whose `EnvironmentPrefab` is `SpawnableYggdra` — the world-tree distilled from
+the ~69k-prism Atlantis garden (which itself stays Scurry-intensity-4 exclusive; see
+`CRYSTAL_CAPTURE.md`) at roughly half the weight for the freestyle rotation. Registered
+in Menu_Main's freestyle Cell `CellConfigs` list (choice mode Random) alongside the rest
+of the freestyle six below. Danger thorn prisms ride along — the autopilot vessel can
+clip one occasionally; that is the environment being real, not a bug.
 
 **Collider budget:** the environment's plain/danger prisms ride the LOD-cullable
 BoxCollider (active count bounded by `PrismColliderLodManager` radius, not population);
@@ -1450,3 +1449,24 @@ scene-lifetime cells only: use them in `UseSceneReloadForReplay` modes (all curr
 Menu_Main, not in-place-reset modes. The environment lay budget is 8ms/frame in ungated
 contexts (the menu bloom is a slow, gentle grow-in by design); game loads hold the arena
 gate, which raises the slice to 250ms, so gated loads are unaffected.
+
+**The freestyle six (July 2026).** Atlantis (~69k) stays Scurry-intensity-4 exclusive; the
+freestyle rotation runs at roughly HALF that weight per cell (~31-35k prisms), split across
+six environments so the lava lamp deals a different world each load — Blob (empty baseline)
+plus: **Yggdra** (the world-tree, distilled from Atlantis: trunk/roots/canopy/vines/kelp/
+fireflies), **Daedala** (Atlantis's built half expanded into an Escher road-city: four ring
+terraces, twin counter-chiral Möbius causeways, arches, aqueducts, minarets, lanterns),
+**Orrery** (a celestial clock: sun shell, seven tilted orbit rings with planets and moons,
+zodiac band, pendulums, a danger-tailed comet), **Zephyr** (a painted sky: braided wind
+rivers, twin cyclones, cloud banks with one lightning thunderhead, Van Gogh sun/moon discs,
+a swell sea), **Caldera** (the danger-led forge: terraced volcano with TRUE danger lava
+lake/falls/river, basalt column fields, ember plumes, sulfur terraces, fumaroles, ash ring),
+and **Geode** (the angular, serene pole: a cracked crystal cathedral — husk hemispheres,
+inward crystal linings, super-shielded druse tips, agate bands, dust, light shafts; zero
+danger). All extend `CellEnvironmentSpawnableBase` (one deterministic lay/stream/noise
+contract, per-cell fixed seed); per-cell PhaseThresholds ride each baseline measured with
+a bit-exact simulation of the C# noise (count/volume): Yggdra 34.8k/551k, Daedala
+33.9k/638k, Orrery 34.4k/197k, Zephyr 36.1k/427k, Caldera 31.2k/433k, Geode 34.4k/561k —
+confirm in-engine via Tools > Cosmic Shore > Measure Cell Environment Baselines before
+retuning any ladder. Same soak-before-ship rule as §17 above; each prefab's
+`density` knob (0.5-1.3) is the per-cell fallback lever.

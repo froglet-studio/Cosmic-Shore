@@ -63,22 +63,8 @@ namespace CosmicShore.Gameplay
     /// intensity 4 per Docs/PERFORMANCE_OPTIMIZATION.md before ship, and if it exceeds budget
     /// pull <see cref="density"/> down to the largest value the capture validates.
     /// </summary>
-    public class SpawnableAtlantis : SpawnableBase
+    public class SpawnableAtlantis : CellEnvironmentSpawnableBase
     {
-        [Header("Block Settings")]
-        [SerializeField] Prism prism;
-
-        /// <summary>Laying slice per frame in UNGATED contexts only - behind a game load the
-        /// connecting screen holds and PrismTrailBuilder.EffectiveLayBudget raises the slice to
-        /// 250ms regardless, so this small value costs Scurry loads nothing. Where no gate holds
-        /// (the Yggdra cell blooming its garden into the live Menu_Main lava lamp) it keeps the
-        /// frame tax gentle and lets the world grow in over tens of seconds instead of stuttering.</summary>
-        const float LayBudgetMsPerFrame = 8f;
-
-        /// <summary>Seed used when the serialized seed is 0 — generation must never fall back to
-        /// time-seeding (clients build the arena locally and must agree on every prism).</summary>
-        const int DefaultSeed = 7;
-
         [Header("Composition")]
         [Tooltip("Outer radius of the main mass (terrace ring 3 / dune rim). Currents and atolls reach ~25% past this. Keep well inside the r=1200 membrane.")]
         [SerializeField] float outerRadius = 430f;
@@ -89,43 +75,14 @@ namespace CosmicShore.Gameplay
         [Tooltip("Height of the world-tree crown; the canopy dome sits just below this.")]
         [SerializeField] float crownHeight = 235f;
 
-        [Tooltip("Scales the population-heavy families (canopy, kelp, causeway, currents, pebbles). 1 = ~70k prisms total.")]
-        [Range(0.5f, 1.3f)]
-        [SerializeField] float density = 1f;
+        // Base-class serialized fields carried by the shipped prefab: prism, density
+        // (population scale), spawnClearRadius 14 + the five Crystal Capture pad points.
 
-        [Header("Spawn Clearance")]
-        [Tooltip("No prism is laid within this radius of any clearance point (player spawn pads).")]
-        [SerializeField] float spawnClearRadius = 14f;
+        protected override int DefaultSeed => 7;
+        protected override int LayCapacity => 75000;
 
-        [Tooltip("Player spawn pads + PlayerOrigin for the Crystal Capture scene. Local space (structure spawns at the arena origin).")]
-        [SerializeField]
-        Vector3[] spawnClearPoints =
+        protected override void BuildEnvironment()
         {
-            new Vector3(50f, 0f, 50f),
-            new Vector3(50f, 0f, -50f),
-            new Vector3(-50f, 0f, -50f),
-            new Vector3(-50f, 0f, 50f),
-            new Vector3(0f, 0f, 150f),
-        };
-
-        // Golden angle in radians - the phyllotaxis constant behind the canopy, blossoms,
-        // kelp anchors, and atoll placement (same value as PrismGeometry.AddShellPatch).
-        const float GoldenAngle = 2.39996323f;
-
-        // Generation state (valid only during GenerateTrailData; _cachedLays persists for
-        // SpawnLeafObjects, mirroring SpawnableGyroid/SpawnableSchwarzPSurface).
-        List<PrismLay> _cachedLays;
-        System.Random _r;
-        int _noiseSeed;
-
-        // ── SpawnableBase contract ───────────────────────────────────────────
-
-        protected override SpawnTrailData[] GenerateTrailData()
-        {
-            _noiseSeed = seed != 0 ? seed : DefaultSeed;
-            _r = new System.Random(_noiseSeed);
-            _cachedLays = new List<PrismLay>(75000);
-
             BuildWorldTree();
             BuildTerraces();
             BuildReefGardens();
@@ -134,96 +91,16 @@ namespace CosmicShore.Gameplay
             BuildAtolls();
             BuildGlimmerCurrents();
             BuildTideGarden();
-
-            var points = new SpawnPoint[_cachedLays.Count];
-            for (int i = 0; i < _cachedLays.Count; i++)
-                points[i] = _cachedLays[i].Point;
-
-            return new[] { new SpawnTrailData(points, false, domain) };
         }
 
-        protected override void SpawnLeafObjects(SpawnTrailData[] trailData, GameObject container)
-        {
-            if (prism == null || _cachedLays == null) return;
-
-            var trail = new Trail();
-
-            // Streamed + batched at play time (70k prisms; laying the 25k geodesic shells in one
-            // frame measured ~95s). The arena-ready gate holds the connecting screen until every
-            // prism is revealed and grown, so streaming can never leak into play. Edit-mode
-            // spawns stay synchronous.
-            if (Application.isPlaying)
-                PrismTrailBuilder.LayBudgetedAsync(prism, _cachedLays, container.transform, trail,
-                    $"{container.name}::BLOCK", LayBudgetMsPerFrame).Forget();
-            else
-                PrismTrailBuilder.LaySync(prism, _cachedLays, container.transform, trail, $"{container.name}::BLOCK");
-
-            trails.Add(trail);
-        }
-
-        protected override int GetParameterHash()
-        {
-            // Clearance point VALUES feed Emit's rejection test, so they must invalidate the
-            // SpawnableBase cache too - length alone would serve a stale arena after a pad edit.
-            int clearHash = System.HashCode.Combine(spawnClearRadius, spawnClearPoints?.Length ?? 0, seed);
-            if (spawnClearPoints != null)
-                for (int i = 0; i < spawnClearPoints.Length; i++)
-                    clearHash = System.HashCode.Combine(clearHash, spawnClearPoints[i]);
-            return System.HashCode.Combine(outerRadius, floorDepth, crownHeight, density, clearHash);
-        }
-
-        // ── Shared helpers ───────────────────────────────────────────────────
+        protected override int BuildParameterHash() =>
+            System.HashCode.Combine(outerRadius, floorDepth, crownHeight, 1);
 
         float BowlY(float r)
         {
             // Paraboloid seafloor: floorDepth at the centre rising ~100 units at the rim.
             float t = r / outerRadius;
             return floorDepth + t * t * 100f;
-        }
-
-        float RangeF(float min, float max) => (float)(_r.NextDouble() * (max - min) + min);
-
-        /// <summary>One uniform jitter factor per prism (min-clamped so no axis falls under the
-        /// prism scale animator's 0.5 floor and silently clamps).</summary>
-        Vector3 Jit(Vector3 s, float amt = 0.2f)
-        {
-            float k = 1f + RangeF(-amt, amt);
-            return new Vector3(Mathf.Max(0.5f, s.x * k), Mathf.Max(0.5f, s.y * k), Mathf.Max(0.5f, s.z * k));
-        }
-
-        /// <summary>Order-independent per-index hash in [0,1) - stable decoration values that do
-        /// not disturb the shared System.Random stream.</summary>
-        static float Hash01(int n)
-        {
-            unchecked
-            {
-                uint h = (uint)n;
-                h = (h ^ 61u) ^ (h >> 16);
-                h *= 9u;
-                h ^= h >> 4;
-                h *= 0x27d4eb2du;
-                h ^= h >> 15;
-                return (h & 0xffffffu) / (float)0x1000000;
-            }
-        }
-
-        /// <summary>Seeded 3D value noise remapped to [0,1] (PaintingStrokeToolkit returns ~[-1,1]).</summary>
-        float N01(float x, float y, float z, int seedOffset) =>
-            0.5f * (PaintingStrokeToolkit.ValueNoise(new Vector3(x, y, z), _noiseSeed + seedOffset) + 1f);
-
-        Vector3 Curl(Vector3 p, float freq, int seedOffset) =>
-            PaintingStrokeToolkit.CurlNoise(p, freq, _noiseSeed + seedOffset);
-
-        void Emit(Vector3 pos, Quaternion rot, Vector3 scale, Domains dom, PrismKind kind = PrismKind.Plain)
-        {
-            if (spawnClearPoints != null)
-            {
-                float rr = spawnClearRadius * spawnClearRadius;
-                for (int i = 0; i < spawnClearPoints.Length; i++)
-                    if ((pos - spawnClearPoints[i]).sqrMagnitude < rr)
-                        return;
-            }
-            _cachedLays.Add(new PrismLay(new SpawnPoint(pos, rot, scale), dom, kind));
         }
 
         // ── 1. WORLD-TREE ────────────────────────────────────────────────────
