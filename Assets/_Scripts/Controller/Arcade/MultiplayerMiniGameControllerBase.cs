@@ -530,7 +530,11 @@ namespace CosmicShore.Gameplay
             LoadInsights.Mark("Game config received from server");
             LoadInsights.SetGameContext(
                 sceneName, ((GameModes)gameMode).ToString(), intensity, playerCount,
-                Mathf.Max(0, playerCount - aiBackfillCount), aiBackfillCount, isMultiplayer);
+                Mathf.Max(0, playerCount - aiBackfillCount), aiBackfillCount,
+                // The RPC no longer carries an isMultiplayer flag: C5 retired
+                // IsMultiplayerMode because every mode runs the networked single-host
+                // model, so there is nothing left to sync. Matches GameDataSO.InvokeGameLaunch.
+                isMultiplayer: true);
         }
     }
 }
