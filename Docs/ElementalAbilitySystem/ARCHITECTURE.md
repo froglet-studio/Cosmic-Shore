@@ -324,3 +324,28 @@ Two more traps in the same routine, both of which render the glyph invisible wit
   simulation that used unclamped arithmetic while the code called the clamping `Mathf.InverseLerp`.
   `WarnIfPlacedOffScreen` now checks the placed rect against the canvas rect and logs when a hint
   lands somewhere it cannot be seen — it would have caught all three failures on the first run.
+
+### 7.4 Two fleet-wide traps this uncovered
+
+**Reordering a row strands its labels unless a switcher runs there.** `BindHintsToAbilities` is a method
+on `InputDeviceIconSetSwitcher`, so a HUD with no switcher gets no automatic placement — its glyphs stay
+where they were authored. The Sparrow has four `ControllerIcon` glyphs per set but no switcher, so
+reordering its row left every label beside the wrong ability. Its glyphs are now shifted onto their own
+abilities (each keeping its authored offset), but that is a static fix: **add an
+`InputDeviceIconSetSwitcher` to the Sparrow HUD** and the placement becomes automatic, and its Xbox and
+PlayStation sets stop rendering simultaneously. Before touching any vessel's row, check whether that HUD
+has a switcher.
+
+**A HUD root that is not stretched to its canvas collapses the whole HUD to screen centre.** Every
+vessel prefab overrides its HUD-instance root to `anchorMin (0,0) / anchorMax (1,1) / sizeDelta 0` so
+screen-fraction anchors mean what they say. The Serpent's was `anchorMin (0.5,0.5) / anchorMax (0.5,0.5)
+/ sizeDelta (100,100)` — a 100×100 box at the centre — so its control labels, silhouette and trail
+display all clustered mid-screen, and someone had compensated by pushing `Boost Button` to
+`anchoredPosition.x = +881`. The root is now stretched like the rest of the fleet and the boost button
+re-tuned to hold its rendered position (verified: zero drift). If a vessel's HUD looks centre-clustered,
+check the root override first — the children are probably fine.
+
+Sparrow glyph art is separately wrong and needs an artist: the Xbox set uses `R1 Active` where the
+control is the right TRIGGER and `R2 Active` where it is the LEFT trigger, and the PlayStation set uses
+`triangle` where the control is ✕ and `square` where it is R2. `Buttons/XBOX/` has no left-trigger art
+at all.
