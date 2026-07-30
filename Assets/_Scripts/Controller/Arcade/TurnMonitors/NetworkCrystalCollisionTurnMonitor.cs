@@ -1,4 +1,5 @@
 // NetworkCrystalCollisionTurnMonitor.cs
+using System.Collections.Generic;
 using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
 using UnityEngine;
@@ -24,6 +25,13 @@ namespace CosmicShore.Gameplay
 
         [Header("Optional Configuration")]
         [SerializeField] SpawnableWaypointTrack optionalEnvironment;
+
+        [Tooltip("Laps per intensity level (index 0 = intensity 1), matching the track's waypoint " +
+                 "list by index. Lets a long track run fewer laps than a short one. An entry <= 0, " +
+                 "or a missing entry for the current intensity, falls back to Optional Laps.")]
+        [SerializeField] List<int> lapsPerIntensity = new();
+
+        [Tooltip("Fallback lap count, used for any intensity Laps Per Intensity does not cover.")]
         [SerializeField] int optionalLaps = 4;
 
         public override void StartMonitor()
@@ -80,10 +88,28 @@ namespace CosmicShore.Gameplay
         int ComputeAutoCalcCount()
         {
             if (optionalEnvironment)
-                return optionalEnvironment.waypoints[optionalEnvironment.intensityLevel - 1].positions.Count * optionalLaps;
+            {
+                int intensity = optionalEnvironment.intensityLevel;
+                int waypointCount = optionalEnvironment.waypoints[intensity - 1].positions.Count;
+                return waypointCount * ResolveLaps(intensity);
+            }
 
             CSDebug.LogWarning($"[NetworkCrystalMonitor] No crystal count configured for {gameObject.name} and no waypoints. Defaulting to 39.");
             return 39;
+        }
+
+        /// <summary>
+        /// Laps for the given 1-based intensity: the per-intensity entry when one is
+        /// authored and positive, otherwise the flat <see cref="optionalLaps"/>. Keeps
+        /// scenes that predate <see cref="lapsPerIntensity"/> (empty list) on their
+        /// original single-value behavior.
+        /// </summary>
+        int ResolveLaps(int intensity)
+        {
+            int index = intensity - 1;
+            if (lapsPerIntensity != null && index >= 0 && index < lapsPerIntensity.Count && lapsPerIntensity[index] > 0)
+                return lapsPerIntensity[index];
+            return optionalLaps;
         }
     }
 }

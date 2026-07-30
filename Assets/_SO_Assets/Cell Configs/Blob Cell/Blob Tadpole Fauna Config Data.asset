@@ -49,3 +49,14 @@ MonoBehaviour:
       Path:
     AudioMinDistance: -1
     AudioMaxDistance: -1
+  SpreadElements: 1
+  ElementPalette:
+  - {fileID: 11400000, guid: ede43cd3ab5943c58c646065c1f57a1f, type: 2}
+  - {fileID: 11400000, guid: 28c9a96388684fa0b3b10b9dbea56c70, type: 2}
+  - {fileID: 11400000, guid: 72fa98519b534214b89e9c29c44b89da, type: 2}
+  - {fileID: 11400000, guid: 62a30981533145a5b66304c04e7c50e0, type: 2}
+  Levels:
+    Enabled: 1
+    MinLevel: 1
+    MaxLevel: 5
+    RarityFalloff: 2

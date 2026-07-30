@@ -20,3 +20,10 @@ MonoBehaviour:
   OffspringPerBirth: 1
   ReproductionCooldownSeconds: 10
   MaxLivePopulation: 16
+  SpreadElements: 1
+  ElementPalette: []
+  Levels:
+    Enabled: 1
+    MinLevel: 1
+    MaxLevel: 5
+    RarityFalloff: 2

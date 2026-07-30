@@ -19,7 +19,7 @@ namespace CosmicShore.Gameplay
     [RequireComponent(typeof(ResourceSystem))]
     [RequireComponent(typeof(VesselTransformer))]
     [RequireComponent(typeof(AIPilot))]
-    [RequireComponent(typeof(SilhouetteController))]
+    [RequireComponent(typeof(ElementalBarsController))]
     [RequireComponent(typeof(VesselCameraCustomizer))]
     [RequireComponent(typeof(VesselAnimation))]
     [RequireComponent(typeof(R_VesselActionHandler))]
@@ -203,13 +203,13 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        SilhouetteController _silhouette;
-        public SilhouetteController Silhouette
+        ElementalBarsController _elementalBarsController;
+        public ElementalBarsController ElementalBarsController
         {
             get
             {
-                _silhouette = _silhouette != null ? _silhouette : gameObject.GetOrAdd<SilhouetteController>();
-                return _silhouette;
+                _elementalBarsController = _elementalBarsController != null ? _elementalBarsController : gameObject.GetOrAdd<ElementalBarsController>();
+                return _elementalBarsController;
             }
         }
 

@@ -53,12 +53,29 @@ namespace CosmicShore.Gameplay
             prism.prismProperties.IsDangerous = true;
             prism.prismProperties.speedDebuffAmount = 0.1f;
             prism.prismProperties.IsShielded = false;
+            // Danger is mutually exclusive with BOTH shield tiers (matching how
+            // ActivateSuperShield clears IsDangerous). Leaving IsSuperShielded set
+            // makes the danger prism invulnerable AND stops AOE explosions dead
+            // (both the Burst batch path and ExecuteCommonPrismCommands destroy
+            // the explosion on the super-shield flag).
+            prism.prismProperties.IsSuperShielded = false;
 
             materialAnimator.UpdateMaterial(
                 _themeManagerData.GetTeamTransparentDangerousBlockMaterial(teamManager.Domain),
                 _themeManagerData.GetTeamDangerousBlockMaterial(teamManager.Domain)
             );
             CurrentState = BlockState.Dangerous;
+
+            if (octahedronShield != null) octahedronShield.Disengage();
+            if (stellatedShield != null) stellatedShield.Disengage();
+
+            // Mirror the cleared IsShielded flag into the spatial index so the
+            // shell view retires this prism's analytic shell. Without this, a
+            // danger-converted ex-shielded prism keeps its stale shell entry and
+            // runs the exact shell narrowphase against every probe every frame,
+            // forever (its hits are filtered on the managed side, so this is a
+            // pure perf leak - but an unbounded one).
+            SyncAOERegistryShieldState();
         }
 
         public void ActivateShield(float? duration = null)

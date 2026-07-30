@@ -1,0 +1,198 @@
+# Unity CI - tiered build verification.
+#
+# Tiers (chosen deliberately for cost-to-coverage):
+#   compile  - edit-mode tests, which force a full script compile. Runs on every PR. ~5-15 min.
+#   mono     - Mono standalone player build. Nightly. Proves scenes, assets, and build settings
+#              actually produce a player. ~20-40 min.
+#   il2cpp   - Full IL2CPP release build. Weekly. The only tier that catches AOT/generic failures
+#              and native link errors, i.e. the ones that only appear in a shipping build.
+#
+# RUNNER IS NOT DECIDED YET. `runs-on` reads the repository variable UNITY_RUNNER_LABEL and falls
+# back to `self-hosted`. Nothing runs until that runner exists - jobs queue rather than silently
+# doing the wrong thing. See Docs/BUILD_AND_DELIVERY.md section 10 for what each hosting option
+# requires (a GitHub-hosted runner additionally needs Unity license secrets and almost certainly
+# more disk than the standard image provides).
+#
+# The runner is expected to have Unity 6000.3.17f1 installed and activated, with UNITY_PATH set
+# as an environment variable or repository variable pointing at the editor executable.
+
+name: Unity CI
+
+on:
+  pull_request:
+    branches: [bleeding-edge]
+  schedule:
+    - cron: '0 7 * * *'    # 07:00 UTC daily  -> mono player build
+    - cron: '0 8 * * 0'    # 08:00 UTC Sunday -> il2cpp release build
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'Tier to run'
+        type: choice
+        options: [compile, mono, il2cpp]
+        default: compile
+
+# Read-only by default. Nothing here writes to the repo.
+permissions:
+  contents: read
+
+# Supersede in-flight PR runs; never cancel a scheduled build midway.
+concurrency:
+  group: unity-ci-${{ github.ref }}-${{ github.event_name }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  # ──────────────────────────────────────────────
+  #  Decide which tier this invocation is
+  # ──────────────────────────────────────────────
+  resolve:
+    runs-on: ubuntu-latest
+    outputs:
+      mode: ${{ steps.pick.outputs.mode }}
+      ref: ${{ steps.pick.outputs.ref }}
+    steps:
+      - id: pick
+        shell: bash
+        run: |
+          set -euo pipefail
+          EVENT="${{ github.event_name }}"
+          SCHEDULE="${{ github.event.schedule }}"
+
+          if   [[ "$EVENT" == "workflow_dispatch" ]]; then MODE="${{ inputs.mode }}"
+          elif [[ "$EVENT" == "pull_request"      ]]; then MODE="compile"
+          elif [[ "$SCHEDULE" == "0 8 * * 0"      ]]; then MODE="il2cpp"
+          else                                             MODE="mono"
+          fi
+
+          # Scheduled workflows always run the DEFAULT branch's copy of this file and check out the
+          # default branch. Pin scheduled runs to bleeding-edge explicitly so the nightly verifies
+          # the integration branch regardless of what the default branch happens to be.
+          if [[ "$EVENT" == "schedule" ]]; then REF="bleeding-edge"; else REF=""; fi
+
+          echo "mode=$MODE" >> "$GITHUB_OUTPUT"
+          echo "ref=$REF"   >> "$GITHUB_OUTPUT"
+          echo "Tier: $MODE   ref: ${REF:-<event default>}"
+
+  # ──────────────────────────────────────────────
+  #  Run it
+  # ──────────────────────────────────────────────
+  unity:
+    needs: resolve
+    runs-on: ${{ vars.UNITY_RUNNER_LABEL || 'self-hosted' }}
+    timeout-minutes: 240
+
+    env:
+      MODE: ${{ needs.resolve.outputs.mode }}
+      BUILD_OUTPUT: Builds/Windows64
+      TEST_RESULTS: Artifacts/editmode-results.xml
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.resolve.outputs.ref }}
+          lfs: true          # the project stores binary assets in Git LFS
+          fetch-depth: 1
+
+      - name: Resolve Unity
+        shell: bash
+        run: |
+          set -euo pipefail
+          # UNITY_PATH may come from the runner environment or a repository variable.
+          UNITY="${UNITY_PATH:-${{ vars.UNITY_PATH }}}"
+          if [[ -z "$UNITY" ]]; then
+            echo "::error::UNITY_PATH is not set. Point it at the Unity 6000.3.17f1 executable on the runner."
+            exit 1
+          fi
+          if [[ ! -x "$UNITY" ]]; then
+            echo "::error::UNITY_PATH is not executable: $UNITY"
+            exit 1
+          fi
+
+          EXPECTED="$(grep '^m_EditorVersion:' ProjectSettings/ProjectVersion.txt | awk '{print $2}')"
+          echo "Project expects Unity $EXPECTED"
+          echo "UNITY=$UNITY" >> "$GITHUB_ENV"
+
+      # ── compile tier ────────────────────────────
+      # Edit-mode tests force a full compile of runtime, editor, and test assemblies, so a broken
+      # push fails here. Note: -runTests must NOT be combined with -quit.
+      - name: Edit-mode tests
+        if: env.MODE == 'compile'
+        id: tests
+        continue-on-error: ${{ vars.UNITY_TESTS_BLOCKING == 'false' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p Artifacts
+          "$UNITY" -batchmode -nographics \
+                   -projectPath "$PWD" \
+                   -runTests -testPlatform EditMode \
+                   -testResults "$PWD/$TEST_RESULTS" \
+                   -logFile -
+
+      # ── mono / il2cpp tiers ─────────────────────
+      - name: Player build
+        if: env.MODE != 'compile'
+        shell: bash
+        run: |
+          set -euo pipefail
+          ARGS=(-quit -batchmode -nographics
+                -projectPath "$PWD"
+                -executeMethod CosmicShore.Editor.CosmicShoreBuildPipeline.BuildWindowsRelease
+                -buildOutput "$BUILD_OUTPUT"
+                -buildCommit "$(git rev-parse HEAD)"
+                -logFile -)
+
+          # The nightly tier uses Mono: it proves the project still produces a player in a third of
+          # the time. The weekly tier leaves IL2CPP on, which is what a shipping build uses.
+          if [[ "$MODE" == "mono" ]]; then ARGS+=(-useMono); fi
+
+          "$UNITY" "${ARGS[@]}"
+
+      - name: Verify build output
+        if: env.MODE != 'compile'
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ ! -f "$BUILD_OUTPUT/CosmicShore.exe" ]]; then
+            echo "::error::Build reported success but $BUILD_OUTPUT/CosmicShore.exe is missing."
+            exit 1
+          fi
+          echo "### Build manifest" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          cat "$BUILD_OUTPUT/build_manifest.txt" >> "$GITHUB_STEP_SUMMARY" || true
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+
+      # ── artifacts ───────────────────────────────
+      # Test results and the manifest only. The player itself is multiple GB and is not worth
+      # pushing through artifact storage nightly; SteamPipe uploads come from the build machine.
+      - name: Upload test results
+        if: always() && env.MODE == 'compile'
+        uses: actions/upload-artifact@v4
+        with:
+          name: editmode-results
+          path: Artifacts/
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Upload build manifest
+        if: always() && env.MODE != 'compile'
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-manifest-${{ env.MODE }}
+          path: ${{ env.BUILD_OUTPUT }}/build_manifest.txt
+          if-no-files-found: ignore
+          retention-days: 30
+
+      # Self-hosted runners keep the workspace between jobs. Library/ must persist (it is what makes
+      # incremental builds fast), but the player output should not accumulate build over build.
+      - name: Clean player output
+        if: always() && env.MODE != 'compile'
+        shell: bash
+        run: rm -rf "$BUILD_OUTPUT" || true
+
+      - name: Fail if tests were non-blocking but red
+        if: env.MODE == 'compile' && steps.tests.outcome == 'failure'
+        shell: bash
+        run: |
+          echo "::warning::Edit-mode tests failed but UNITY_TESTS_BLOCKING is set to false, so this run is not being failed."

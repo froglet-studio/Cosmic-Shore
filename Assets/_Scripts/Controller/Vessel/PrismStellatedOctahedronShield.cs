@@ -91,6 +91,16 @@ namespace CosmicShore.Gameplay
         private Mesh _morphMesh;            // reused every frame during engage morph, owned
         private Vector3 _halfExtents;       // from BoxCollider.size * 0.5
         private Vector3 _center;            // from BoxCollider.center
+
+        /// <summary>Local-space shell center for the spatial index's shell view.</summary>
+        internal Vector3 ShellCenterLocal => _center;
+
+        /// <summary>
+        /// Local-space shell semi-axes (shieldScale × Awake-cached half-extents):
+        /// the spike-tip cube's half-extents — the two tetrahedra sit at its
+        /// alternating corners. Frozen authored geometry, never live collider size.
+        /// </summary>
+        internal Vector3 ShellSemiAxesLocal => _halfExtents * shieldScale;
         private float _boxMass;
         private float _shieldMass;
         private Material[] _originalMaterials;

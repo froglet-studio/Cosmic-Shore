@@ -29,7 +29,11 @@ outcome is optimization, not life). Use the `/ecology` skill for any change here
   cross-domain / prey-weighted / per-domain-biased spawning. The herbivore DIET is spatial in
   nucleus cells (see "Volume is the spine" below): outside the nucleus they graze **any**
   domain's mass voraciously; inside they eat **nothing**. Cells without a nucleus keep the
-  legacy opposing-mass diet.
+  legacy opposing-mass diet. **Shielded and super-shielded mass is never food, in any cell** —
+  `Prism.Consume` is a no-op on super-shielded mass and only sheds the shield on shielded mass,
+  so targeting one is a feed-hold the creature can never finish. Every herbivore edibility
+  predicate routes through `Fauna.IsShieldedMass`; do not write a grazer that tests shield state
+  itself. (`Docs/ECOSYSTEM.md §16`.)
 - **Starvation = wither-to-crystal.** A starving (or predated) creature withers from its extremity
   spindles inward — a shark's fins / a brittlestar's arms evaporate *before* the core body
   (farthest-from-centre first, emergent from geometry) — and leaves a collectible elemental crystal.
@@ -276,7 +280,7 @@ pipeline: `Docs/SCENES.md`. The always-true rules:
 | `ASTROLEAGUE.md` | `_Scripts/Controller/Arcade/` | Astro League game mode technical reference |
 | `PRISM_PERFORMANCE_AUDIT.md` | `_Scripts/Game/Prisms/` | Prism system performance analysis (vestigial location) |
 | `UNIT_TESTING_GUIDE.md` | `_Scripts/Tests/` | Unit testing guidelines and inventory |
-| `BENCHMARK_TOOL.md` | `_Scripts/Utility/PerformanceBenchmark/` | Performance Benchmark tool guide (tabs, score/hints, sweep, customization) |
+| `BENCHMARK_TOOL.md` | `_Scripts/Utility/PerformanceBenchmark/` | Performance Benchmark tool guide (tabs, score/hints, sweep, Load Time Insights, customization) |
 | `GIT_RULES.md` | Project root | Git commit conventions |
 | `BOOTSTRAP_AUTH_FLOW.md` | `Docs/` | Bootstrap → Authentication → Menu_Main full flow: scene-by-scene diagrams, `ApplicationStateMachine`, auth SOAP data flow, key-file tables, auth patterns |
 | `MULTIPLAYER_SPAWNING.md` | `Docs/` | Netcode component reference, player/vessel spawn chains (menu, game, party join, freestyle flight), Player NetworkVariables, player-count & AI-backfill pipeline, team balancing |
@@ -335,7 +339,7 @@ Custom SOAP types live in `Assets/_Scripts/ScriptableObjects/SOAP/` organized by
 4. Create the listener class: `EventListener[TypeName] : EventListenerGeneric<[TypeName]>`
 5. Use namespace `CosmicShore.ScriptableObjects` for all custom SOAP types
 
-Existing custom SOAP types (16 subdirectories): `AbilityStats`, `ApplicationState` (`ApplicationStateData` + `ApplicationStateDataVariable` + `ScriptableEventApplicationState` — written by `ApplicationStateMachine`), `AuthenticationData` (+ `NetworkMonitorData`), `ClassType` (VesselClassType + VesselImpactor + debuff events), `CrystalStats`, `FriendData` (`FriendData` struct + `FriendPresenceActivity` `[DataContract]` + `ScriptableEventFriendData` + `ScriptableListFriendData` + `EventListenerFriendData` — relationship & presence data for UGS Friends integration, written by `FriendsServiceFacade`), `GameplaySFX` (gameplay sound effect category events for decoupled audio), `InputEvents`, `PartyData` (PartyInviteData, PartyPlayerData + list variant), `PipData`, `PrismStats`, `Quaternion`, `VesselHUDData`, `SilhouetteData`, `Transform`, and `ScriptableEventWithReturn` (generic return channel + `PrismEventChannelWithReturnSO`). Also contains `VesselPrefabContainer.cs` for vessel-class-to-prefab mapping.
+Existing custom SOAP types (16 subdirectories): `AbilityStats`, `ApplicationState` (`ApplicationStateData` + `ApplicationStateDataVariable` + `ScriptableEventApplicationState` — written by `ApplicationStateMachine`), `AuthenticationData` (+ `NetworkMonitorData`), `ClassType` (VesselClassType + VesselImpactor + debuff events), `CrystalStats`, `FriendData` (`FriendData` struct + `FriendPresenceActivity` `[DataContract]` + `ScriptableEventFriendData` + `ScriptableListFriendData` + `EventListenerFriendData` — relationship & presence data for UGS Friends integration, written by `FriendsServiceFacade`), `GameplaySFX` (gameplay sound effect category events for decoupled audio), `InputEvents`, `PartyData` (PartyInviteData, PartyPlayerData + list variant), `PipData`, `PrismStats`, `Quaternion`, `VesselHUDData`, `Transform`, and `ScriptableEventWithReturn` (generic return channel + `PrismEventChannelWithReturnSO`). Also contains `VesselPrefabContainer.cs` for vessel-class-to-prefab mapping.
 
 #### SOAP Anti-Patterns
 
@@ -479,7 +483,9 @@ The collision/impact system (`Assets/_Scripts/Controller/ImpactEffects/`) uses a
 
 Key interfaces: `IImpactor` / `IImpactCollider`
 
-**Danger prisms are not safe to their own domain (locked design).** `IsDangerous` effects apply to every vessel that touches the prism, regardless of domain — friendly fire included (the fire-trail action literally sets `IsDangerous` from a `FriendlyFire` flag). Danger-prism effect SOs must not gate on domain. This is what makes danger trails a risk/reward surface: the Squirrel's own overheat trail grants 10x skim energy (`SkimmerBoostPrismEffect.dangerEnergyMultiplier`, gated behind the skimming vessel's Charge level-5 "Live Wire" upgrade — below it danger skims pay base energy) but slams its owner on contact — volume-independent full-stop slow at the danger max (`VesselChangeSpeedByPrismEffectSO`: `maxSlowStrength * dangerSlowMultiplier`), all-element decaying debuff for 4s (`VesselElementalDebuffByDangerPrismEffectSO`), and boost reset.
+**A vessel and its own skimmer never impact each other.** `SkimmerImpactor` and `VesselImpactor` carry mirrored self-guards on their vessel<->skimmer dispatch — required because the Rhino's sword capsule permanently overlaps its own hull, which otherwise ran the full victim-effect chain against the pilot (muting their own `RightStickAction` via `VesselDamageBySkimmerEffect`, impact-SFX spam). Skimmer-vs-own-PRISM handling is separate and stays flag-controlled (`Skimmer.AffectSelf`). See `_Scripts/Controller/Vessel/R_VesselActions/RHINO_SHIELD_SWIPE.md`.
+
+**Danger prisms are not safe to their own domain (locked design).** `IsDangerous` effects apply to every vessel that touches the prism, regardless of domain — friendly fire included (the fire-trail action literally sets `IsDangerous` from a `FriendlyFire` flag). Danger-prism effect SOs must not gate on domain. **Danger is mutually exclusive with BOTH shield tiers**: `PrismStateManager.MakeDangerous` clears `IsShielded` AND `IsSuperShielded` (and disengages the shield visuals), just as `ActivateSuperShield` clears `IsDangerous` — a danger prism carrying a stale super-shield flag is invulnerable and kills any AOE explosion that touches it. `Prism.ResetState` also clears `IsSuperShielded` on pool reuse (no spawner requests super-shield pre-`Initialize`; it is always engaged post-spawn). This is what makes danger trails a risk/reward surface: the Squirrel's own overheat trail grants 10x skim energy (`SkimmerBoostPrismEffect.dangerEnergyMultiplier`, gated behind the skimming vessel's Charge level-5 "Live Wire" upgrade — below it danger skims pay base energy) but slams its owner on contact — volume-independent full-stop slow at the danger max (`VesselChangeSpeedByPrismEffectSO`: `maxSlowStrength * dangerSlowMultiplier`), all-element decaying debuff for 4s (`VesselElementalDebuffByDangerPrismEffectSO`), and boost reset.
 
 **Forcefield Crackle (Skimmer)**: `SkimmerForcefieldCracklePrismEffectSO` (at `_Scripts/Controller/ImpactEffects/EffectsSO/Skimmer Prism Effects/`) is a shader-driven alternative to `SkimmerFXPrismEffectSO` that visualizes the Skimmer's invisible sphere collider on prism impacts. It computes the impact point via `Collider.ClosestPoint` between the prism box and skimmer sphere, projects it onto the sphere surface, and forwards the event (position + duration + intensity + radius) to a `ForcefieldCrackleController` MonoBehaviour on the vessel (`_Scripts/Controller/Vessel/ForcefieldCrackleController.cs`). The controller owns all visual parameters (colors, arc density/sharpness, ring thickness, ripple speed, fresnel) as serialized fields and feeds a ring buffer of up to 16 simultaneous impacts to the shader via MaterialPropertyBlock arrays each frame. `[ExecuteAlways]` allows edit-mode preview via `ForcefieldCrackleControllerEditor` (at `_Scripts/Editor/`). The shader's custom-function HLSL file `ForcefieldCrackle.hlsl` (at `Assets/Materials/Graphs/`) uses FBM-based electrical arcs with expanding wavefronts on a geodesic distance metric so arcs follow the sphere's curvature. All three code files use the `CosmicShore.Gameplay` namespace.
 
@@ -642,11 +648,81 @@ HUD-after-swap, Game UI hierarchy, and the phased HUD/shape/scoring rollout:
 ### Elemental Bars (per-vessel buff/debuff display)
 
 Every vessel conveys elemental buffs/debuffs through `ElementalBarsView` - a 5-petal
-"flower" per element driven by `SilhouetteController` (null-safe, opt-in rollout per
-vessel). **All shared look/feel lives in `ElementalBarsConfigSO`**
+"flower" per element driven by `ElementalBarsController` (null-safe, opt-in rollout per
+vessel; named `SilhouetteController` until the vessel silhouette / trail-display HUD
+element it also drove was removed). **All shared look/feel lives in `ElementalBarsConfigSO`**
 (`Resources/ElementalBarsConfig.asset`) - never per-vessel SerializeFields. Petals are
 pure-white silhouettes multiply-tinted at runtime - **never hue-shift**. Petal math,
 level→colour table, juice, wiring tool, and perf notes: `Docs/ELEMENTAL_BARS.md`.
+
+**The maintained-mechanism law (LOCKED).** No sustained/held mechanism may HOLD an element
+above integer level **10** — the 10..15 overcharge band belongs to **transients only**, and
+everything in it drains back to (at most) 10: temporary effects decay to zero, crystal-earned
+base overcharge bleeds down (`RecoverBaseLevels`), the domain fauna buff's held layer fills
+only to 10 with over-ceiling increases converted to draining spikes, and the comeback bonus
+fills toward 10 and never past it. The player always gets to *feel* a reward above 10, and the
+drain always restores the headroom to feel the next one. Enforced in `ResourceSystem`
+(`SustainedCeiling`, `CompositeEffectiveLevel`); mechanics log: `Docs/ECOSYSTEM.md §15`.
+
+### The Four-Icon Ability Row (LOCKED structure — every vessel HUD)
+
+Every vessel HUD shows **exactly four ability icons in the lower right — one per ability** — and the
+order is not a layout preference, it is the element contract made visible:
+
+> **The icons run charge → mass → space → time, left to right — the same order as the element
+> flowers above them.** Each icon sits under the element that upgrades that ability (per the vessel's
+> `ElementalAbilityMapSO`), so "which flower do I fill to upgrade this?" is answered by position alone.
+
+`VesselHUDView.AbilityDisplayOrder` is the single source of that order — `VesselHUDController`'s
+upgrade-seeding loop and `ElementalBarsView`'s flower layout read the same array. `OnValidate` keeps
+the `abilityIcons` list sorted into it; `VesselHUDView.ValidateAbilityIconRow()` (editor-only, called
+once from `VesselHUDController.Initialize`) warns on the wrong icon count, an out-of-order binding, or
+a layout whose left-to-right order contradicts the bindings.
+
+**The upgrade signal** (element hits its unlock level, default 5 — the all-petals-white flower):
+`R_VesselElementalAbilityHandler.OnUpgradeStateChanged` → `VesselHUDController` →
+`VesselHUDView.SetAbilityUpgraded`. Three independent layers, so the signal survives any per-vessel
+presentation: (1) **authored sprite swap** (`AbilityIconBinding.upgradedSprite`, restored on re-lock —
+authored art only, never runtime-generated); (2) the **element badge** — that element's petal in the
+level-5 white from `ElementalBarsConfigSO`, blooming in / withering out per the continuity law, and a
+*child* of the icon so per-frame icon repaints can never stomp it; (3) an optional **tint + persistent
+scale bump** with a one-shot unlock punch.
+
+- **Icons that are live gameplay gauges** (cooldown fill, heat tint, drift lean, impact flash) set
+  `tintIconOnUpgrade = false` — never overload a gauge colour with upgrade meaning — and their view
+  **must** override `SetAbilityUpgraded` to re-anchor its captured rest scales to
+  `AbilityIconRestScale(element)`, or its own tweens settle back to the pre-upgrade scale and wipe the
+  bump. `SquirrelVesselHUDView` is the reference implementation.
+- **Fleet status** (audit it yourself: **Tools > Cosmic Shore > Audit Vessel Ability Rows**, which
+  reports every vessel's compliance against this contract from assets alone, no play mode):
+
+  | vessel | map | icons | order | uniform | hints |
+  |---|---|---|---|---|---|
+  | Squirrel | complete | 4/4 | ✅ | ✅ | ✅ bound |
+  | Sparrow | complete | 4/4 | ✅ | ✅ | ⚠ no switcher on its HUD |
+  | Manta | 3/4 named, 0/4 upgrades | 0/4 | — | — | n/a |
+  | Dolphin | 2/4 named, 0/4 upgrades | 0/4 | — | — | n/a |
+  | Rhino | 1/4 named, 0/4 upgrades | 0/4 | — | — | n/a |
+  | Serpent | 1/4 named, 0/4 upgrades | 0/4 | — | — | n/a |
+
+  Manta / Dolphin / Rhino / Serpent are blocked on **design, not wiring**: their
+  `ElementalAbilityMapSO` entries are still `(open design slot)` with `Input = 0` and no
+  `UpgradeLabel`, and their HUDs have 0–2 lower-right icons rather than four. Author the map
+  (`Docs/ElementalAbilitySystem/FLEET_MAPS.md` §2 holds the un-approved proposals) and the icons
+  before wiring — do not invent an element→ability mapping to satisfy the audit.
+- Full reference: `Docs/ElementalAbilitySystem/ARCHITECTURE.md` §7.1.
+
+**Control hints attach to the ability, never to a position.** The `(LT)`/`(RT)` glyphs are bound to
+an ability and their placement is *derived*: `hint.binding` (the physical control) →
+`InputHintBindingMap` → `InputEvents` → the ability bound to that input (`ElementalAbilityMapSO`,
+falling back to a shared action asset via `R_VesselActionHandler.CollectBoundActions` when a vessel's
+touch and gamepad maps use different events) → `VesselHUDView.TryGetAbilityIcon`.
+`InputDeviceIconSetSwitcher.BindHintsToAbilities` runs this once from `VesselHUDController.Initialize`
+and re-anchors each hint onto its icon — **without reparenting**, so the Xbox/PS/keyboard set
+switching still works. Reassign an ability to a different input event, or move an icon in the row,
+and the label follows on its own. Editor warnings flag both a hint that labels nothing and an
+input-bound ability with no hint. Do NOT hand-position control glyphs against a HUD layout — that is
+the brittleness this replaced. See `Docs/ElementalAbilitySystem/ARCHITECTURE.md` §7.2.
 
 ### Namespace Convention
 
@@ -669,13 +745,14 @@ All game code lives under `CosmicShore.*` with 8 primary namespaces:
 | Vessel actions | `VesselActionSO` (base config), `VesselActionExecutorBase`, `ActionExecutorRegistry` + 40+ action SOs | `_Scripts/Controller/Vessel/R_VesselActions/`, `VesselActions/` |
 | Prism lifecycle | `Prism`, `PrismFactory`, `Trail`, `TrailFollower` | `_Scripts/Controller/Vessel/`, `_Scripts/Controller/Prisms/` |
 | Prism performance | `PrismScaleManager`, `MaterialStateManager`, `AdaptiveAnimationManager`, `PrismStateManager`, `PrismTimerManager`, `BlockDensityGrid` | `_Scripts/Controller/Managers/` |
+| Cell environments | `CellEnvironmentSpawnableBase` (shared deterministic lay/stream/noise contract) + `SpawnableAtlantis` (Scurry intensity 4, ~69k prisms) + the freestyle six `SpawnableYggdra`/`Daedala`/`Orrery`/`Zephyr`/`Caldera`/`Geode` (~31-36k each, rolled by Menu_Main's Cell via `CellConfigDataSO.EnvironmentPrefab`), `EnvironmentLoadVeil` (gate-less scenes defer past boot then hold a connecting-style veil), `CellEnvironmentBaselineMeasurer` (Tools > Cosmic Shore > Measure Cell Environment Baselines - PhaseThresholds must ride each measured baseline; see `Docs/ECOSYSTEM.md` §18) | `_Scripts/Controller/Environment/Spawning/`, `_Scripts/Controller/Environment/MiniGameObjects/`, `_Scripts/Editor/` |
 | Prism spatial index | `PrismSpatialIndex` (formerly `PrismAOERegistry`) — THE canonical spatial index of all live prism mass: Burst AOE damage queries + growth occupancy (`TryReserve` claim-before-spawn closes the disabled-collider spawn race) + bucket hash grid. One registration lifecycle (`Register`/`MarkDestroyed`/`MarkRestored`/`Unregister`/`UpdatePosition`), multiple query views. Do not build parallel spatial stores or query prisms via physics — see `Docs/SPATIAL_INDEX.md` | `_Scripts/Controller/Managers/` |
-| Shield octahedra | `PrismOctahedronShield` (the SHIELDED state's octahedron: per-face bloom engage + shatter-overlay disengage, mass scales with volume; the COLLIDER stays the authored primitive box TRIGGER — the octahedron is a look-only change, because a convex-mesh trigger is invisible to trigger-skimmers and a convex-mesh solid is invisible to solid swipes, whereas the primitive box trigger is seen by both, exactly like an unshielded prism; shape-precise shielded collision is the planned three-LOD follow-up), `PrismStellatedOctahedronShield` (the SUPER-SHIELDED state's stellated octahedron / Stella Octangula — the Skim Race track look; engaged by `PrismStateManager.ActivateSuperShield` with the OPAQUE team material, reversed by `DeactivateShields`), testers, `OctahedronMeshGenerator` / `StellatedOctahedronMeshGenerator` (`PopulateMesh*` + `GetSharedShieldMesh` quantized-geometry caches). **Both integrate with the instanced prism render path via the `SetExoticVisualActive` / `SetRenderMeshOverride` handoff — see the anti-pattern below on why a bare MeshFilter swap renders nothing** | `_Scripts/Controller/Vessel/`, `_Scripts/Utility/` |
+| Shield octahedra | `PrismOctahedronShield` (the SHIELDED state's octahedron: per-face bloom engage + shatter-overlay disengage, mass scales with volume; the COLLIDER stays the authored primitive box TRIGGER — the octahedron is a look-only change, because a convex-mesh trigger is invisible to trigger-skimmers and a convex-mesh solid is invisible to solid swipes, whereas the primitive box trigger is seen by both, exactly like an unshielded prism; shape-precise shielded collision is SHIPPED as the spatial-index shell tier: `PrismShellContactManager` + `PrismSpatialIndex.CollectShellContacts` + `ShieldShellMath` run an exact Burst narrowphase — sphere/capsule/OBB probes vs the octahedron and vs the stella as the NON-CONVEX union of its two tetrahedra (spike-tip grazes hit, inter-spike gaps inside the bounding box do not) — dispatching through the same AcceptImpactee effect chain while Skimmer/VesselImpactor suppress box-trigger dispatch for shell-owned pairs; see Docs/SPATIAL_INDEX.md § Shell view), `PrismStellatedOctahedronShield` (the SUPER-SHIELDED state's stellated octahedron / Stella Octangula — the Skim Race track look; engaged by `PrismStateManager.ActivateSuperShield` with the OPAQUE team material, reversed by `DeactivateShields`), testers, `OctahedronMeshGenerator` / `StellatedOctahedronMeshGenerator` (`PopulateMesh*` + `GetSharedShieldMesh` quantized-geometry caches). **Both integrate with the instanced prism render path via the `SetExoticVisualActive` / `SetRenderMeshOverride` handoff — see the anti-pattern below on why a bare MeshFilter swap renders nothing** | `_Scripts/Controller/Vessel/`, `_Scripts/Utility/` |
 | Impact effects | `ImpactorBase` + 11 impactor types, 20+ Effect SO types | `_Scripts/Controller/ImpactEffects/` |
 | Forcefield crackle | `SkimmerForcefieldCracklePrismEffectSO` (computes impact points via `Collider.ClosestPoint`), `ForcefieldCrackleController` (`[ExecuteAlways]`, 16-impact ring buffer + MaterialPropertyBlock arrays, owns all visual params), `ForcefieldCrackle.hlsl` (FBM electrical arcs on geodesic sphere), `ForcefieldCrackleControllerEditor` (edit-mode preview) | `_Scripts/Controller/ImpactEffects/EffectsSO/Skimmer Prism Effects/`, `_Scripts/Controller/Vessel/`, `Assets/Materials/Graphs/`, `_Scripts/Editor/` |
 | Camera | `CustomCameraController`, `VesselCameraCustomizer`, `CameraSettingsSO`, `ICameraController`, `ICameraConfigurator` | `_Scripts/Controller/Camera/` |
 | Vessel HUD | `IVesselHUDController`, `IVesselHUDView`, per-vessel controllers & views (Sparrow, Squirrel, Serpent, Manta, Rhino, Dolphin) | `_Scripts/UI/Controller/`, `_Scripts/UI/View/`, `_Scripts/UI/Interfaces/` |
-| Elemental bars | `ElementalBarsView` (5-petal flower per element), `ElementalBarsConfigSO` (shared colour/sprite/juice spec), `SilhouetteController` (per-vessel driver), `ElementalPetalBarWirer` (editor setup) | `_Scripts/UI/View/`, `_Scripts/ScriptableObjects/`, `_Scripts/Controller/Vessel/`, `_Scripts/Editor/` |
+| Elemental bars | `ElementalBarsView` (5-petal flower per element), `ElementalBarsConfigSO` (shared colour/sprite/juice spec), `ElementalBarsController` (per-vessel driver), `ElementalPetalBarWirer` (editor setup) | `_Scripts/UI/View/`, `_Scripts/ScriptableObjects/`, `_Scripts/Controller/Vessel/`, `_Scripts/Editor/` |
 | Arcade games | `MiniGameControllerBase`, `MultiplayerMiniGameControllerBase`, `MultiplayerDomainGamesController`, `ScoringRuleSO` family | `_Scripts/Controller/Arcade/` |
 | Resource system | `ResourceSystem`, `R_VesselActionHandler`, `R_VesselElementStatsHandler` | `_Scripts/Controller/Vessel/` |
 | Object pooling | `GenericPoolManager` (Unity `ObjectPool<T>` with async buffer maintenance) | `_Scripts/Utility/PoolsAndBuffers/` |

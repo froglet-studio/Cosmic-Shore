@@ -44,7 +44,6 @@ namespace CosmicShore.Gameplay
         void DisableSkimmer();
         void SetBoostMultiplier (float boostMultiplier);
         void SetShipMaterial(Material material);
-        void SetBlockSilhouettePrefab(GameObject prefab);
         void SetAOEExplosionMaterial(Material material);
         void SetAOEConicExplosionMaterial(Material material);
         void SetSkimmerMaterial(Material material);

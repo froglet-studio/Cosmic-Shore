@@ -15,7 +15,7 @@ namespace CosmicShore.Gameplay
     /// deficit behind first place. ALL FOUR elements rise EQUALLY - the per-game strength is
     /// `SO_ArcadeGame.ComebackRatePerScoreDeficit` (synced to every machine via
     /// GameDataSO.ComebackRatePerScoreDeficit): bonusLevels = deficit x rate. The comeback
-    /// layer can never lift an element above level 10 (ResourceSystem.ComebackCeiling).
+    /// layer can never lift an element above level 10 (ResourceSystem.SustainedCeiling).
     ///
     /// Scene-authored instances keep their authored score-source settings; a scene without one
     /// gets it auto-created by MultiplayerMiniGameControllerBase (EnsureExists) with per-mode

@@ -125,7 +125,7 @@ namespace CosmicShore.Gameplay
             if (VesselStatus.FarFieldSkimmer)
                 VesselStatus.FarFieldSkimmer.Initialize(VesselStatus);
 
-            VesselStatus.Silhouette.Initialize(VesselStatus);
+            VesselStatus.ElementalBarsController.Initialize(VesselStatus);
             VesselStatus.VesselTransformer.ToggleActive(true);
 
             if (player.IsLocalUser)
@@ -166,18 +166,6 @@ namespace CosmicShore.Gameplay
         
         public void SetShipMaterial(Material material) =>
             VesselStatus.ShipMaterial = material;
-
-        public void SetBlockSilhouettePrefab(GameObject prefab)
-        {
-            // var trail =VesselStatus.VesselHUDView.TrailUI;
-            // if (trail != null)
-            // {
-            //     trail.SetBlockPrefab(prefab, VesselStatus);
-            //     return;
-            // }
-
-            VesselStatus?.VesselHUDController?.SetBlockPrefab(prefab);
-        }
 
         public void SetAOEExplosionMaterial(Material material) =>
             VesselStatus.AOEExplosionMaterial = material;

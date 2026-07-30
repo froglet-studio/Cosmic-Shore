@@ -10,6 +10,7 @@ using UnityEngine;
 using UnityEngine.Serialization;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
+using CosmicShore.Core;
 using IPlayer = CosmicShore.Gameplay.IPlayer;
 
 namespace CosmicShore.Utility
@@ -148,6 +149,24 @@ namespace CosmicShore.Utility
         /// SyncFinalResults tail. Read by EndGameControllers after OnWinnerCalculated fires.
         /// Reset automatically in <see cref="ResetRuntimeData"/> and <see cref="ResetRuntimeDataForReplay"/>.
         /// </summary>
+        // ── Match envelope (SERVER authority; replicated by SyncGameConfigToClients_ClientRpc) ──
+        // Stamped once by the host so every client emits an IDENTICAL identifier set on
+        // game_started. See Docs/Analytics/DATA_ARCHITECTURE.md §6.
+
+        /// <summary>Unique per game instance. The "same game instance" grouping key.</summary>
+        [NonSerialized] public string MatchId = "";
+
+        /// <summary>
+        /// The Relay party session id: stable across consecutive matches by the same party.
+        /// Sent ALONGSIDE MatchId, not instead of it - grouping on the session alone would
+        /// collapse three back-to-back games into one, and grouping on the match alone would
+        /// lose "the same people stayed together". The organic-rematch query needs both.
+        /// </summary>
+        [NonSerialized] public string PartyId = "";
+
+        /// <summary>Whether this party was formed through a formal invite rather than presence.</summary>
+        [NonSerialized] public bool InviteTriggered;
+
         [NonSerialized] public string WinnerName = "";
 
         /// <summary>
@@ -342,25 +361,78 @@ namespace CosmicShore.Utility
         {
             IsTurnRunning = true;
             TurnStartTime = Time.time;
+
+            // Control has just been handed to the player (countdown ended, players activated).
+            // This is the start point for flight_time_seconds.
+            FlightClock.OnTurnStarted();
+
             InvokeTurnStarted();
         }
 
-        public void InvokeGameLaunch() => OnLaunchGame?.Raise();
+        public void InvokeGameLaunch()
+        {
+            // Load Time Insights: a game launch is the recording trigger; every peer raises this
+            // (clients for the splash), so hosts and MPPM virtual players all self-record. The
+            // calls are no-ops unless Record Insight Mode is armed (see LoadInsights).
+            PerformanceBenchmark.LoadInsights.BeginLoad($"Game launch — {GameMode} → {SceneName}");
+            PerformanceBenchmark.LoadInsights.SetGameContext(
+                SceneName,
+                GameMode.ToString(),
+                SelectedIntensity != null ? SelectedIntensity.Value : 0,
+                SelectedPlayerCount != null ? SelectedPlayerCount.Value : 0,
+                SelectedPlayerCount != null ? Mathf.Max(0, SelectedPlayerCount.Value - RequestedAIBackfillCount) : 0,
+                RequestedAIBackfillCount,
+                // Always networked since C5 retired IsMultiplayerMode: every mode runs the
+                // single-host model and a solo launch is a party of one plus AI backfill.
+                // The solo-vs-party distinction the header used to carry is now readable
+                // off humanPlayers, which this call already reports.
+                isMultiplayer: true);
+            OnLaunchGame?.Raise();
+        }
         public void InvokeSceneTransition(bool param) => OnSceneTransition?.Raise(param);
-        public void InvokeSessionStarted() => OnSessionStarted?.Raise();
+        public void InvokeSessionStarted()
+        {
+            PerformanceBenchmark.LoadInsights.Mark("Session started (app state → InGame)");
+            OnSessionStarted?.Raise();
+        }
         public void InvokeInitializeGame() => OnInitializeGame?.Raise();
-        public void InvokeClientReady() => OnClientReady?.Raise();
+        public void InvokeClientReady()
+        {
+            // Load Time Insights milestone: client ready = splash clearing into the connecting
+            // panel. The recording itself completes later, when the arena finishes laying and
+            // the connecting screen ends (MiniGameHUD.HandleClientReady) - the panel hold IS
+            // load time; the cinematic/Ready/countdown after it are not.
+            PerformanceBenchmark.LoadInsights.MarkVisualReady();
+            OnClientReady?.Raise();
+        }
         public void InvokeMiniGameRoundStarted() => OnMiniGameRoundStarted?.Raise();
-        public void InvokeTurnStarted() => OnMiniGameTurnStarted?.Raise();
+        public void InvokeTurnStarted()
+        {
+            // Fallback endpoint only: no-op when the recording already completed at
+            // arena-complete (MiniGameHUD.HandleClientReady, the normal path). Catches flows
+            // without a MiniGameHUD where that endpoint never fires.
+            PerformanceBenchmark.LoadInsights.CompleteLoad("Playable - turn started (fallback endpoint; arena-complete never fired)");
+            OnMiniGameTurnStarted?.Raise();
+        }
 
         public void InvokeGameTurnConditionsMet()
         {
             IsTurnRunning = false;
+            FlightClock.OnTurnEnded();
             OnMiniGameTurnEnd?.Raise();
         }
         
         public void InvokeMiniGameRoundEnd() => OnMiniGameRoundEnd?.Raise();
-        public void InvokeMiniGameEnd() => OnMiniGameEnd?.Raise();
+        /// <summary>
+        /// Ends the game. The flight clock is settled BEFORE the SOAP raise so every
+        /// subscriber - analytics, stats reporters, the profile - reads the same final
+        /// FlightClock.LastGameSeconds regardless of subscription order.
+        /// </summary>
+        public void InvokeMiniGameEnd()
+        {
+            FlightClock.EndGame();
+            OnMiniGameEnd?.Raise();
+        }
         public void InvokeWinnerCalculated() => OnWinnerCalculated?.Raise();
         public void InvokeOnSessionEnded() => OnSessionEnded?.Raise();
         public void InvokeShowGameEndScreen() => OnShowGameEndScreen?.Raise();
@@ -380,6 +452,10 @@ namespace CosmicShore.Utility
         public void ResetRuntimeData()
         {
             IsTurnRunning = false;
+
+            // Scene teardown / mid-game exit: abandon the flight clock without publishing a
+            // time, so an abandoned game cannot leak its seconds into the next one.
+            FlightClock.AbortGame();
             Players.Clear();
             Vessels.Clear();
             SlowedShipTransforms.Clear();
@@ -433,6 +509,7 @@ namespace CosmicShore.Utility
         void ResetRuntimeDataForReplay()
         {
             IsTurnRunning = false;
+            FlightClock.AbortGame();
             TurnStartTime = 0f;
             RoundsPlayed = 0;
             TurnsTakenThisRound = 0;

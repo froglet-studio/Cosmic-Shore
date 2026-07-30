@@ -25,7 +25,12 @@ at runtime via `Resources.Load`.
   are now plain internal fields that just hold the *resolved* value. If you want a count changed,
   change it in the tool, not in a scene.
 - **`0` = auto/default, `> 0` = explicit count** (same semantic the old field had, moved into the tool):
-  - **HexRace / Crystal Capture** — `0` → auto-calc from the track waypoints (then 39).
+  - **HexRace / Crystal Capture** — `0` → auto-calc from the track waypoints (then 39). The
+    auto-calc is `waypoints × laps`, where laps come from the monitor's `lapsPerIntensity`
+    list (index 0 = intensity 1) and fall back to its scalar `optionalLaps`. Those two ARE
+    legitimate per-scene fields — they are *inputs* to the auto-calc, not the resolved count.
+    To change how long a race runs you can either retune laps there or set an explicit count
+    here; setting a count here wins outright.
   - **Joust** — `0` → `EndConditionOverridesSO.DefaultJoustCount` (3).
   - **Brood Rush (Nucleus Rush)** — `0` → `EndConditionOverridesSO.DefaultNucleusRushWaveTarget` (3):
     claimed fauna waves a domain needs to win (resolved by `NucleusRushWaveTurnMonitor.StartMonitor`

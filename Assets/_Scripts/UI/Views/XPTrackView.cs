@@ -55,7 +55,7 @@ namespace CosmicShore.UI
 
         void OnProfileChanged(PlayerProfileData data)
         {
-            UpdateXPDisplay(data.xp);
+            UpdateXPDisplay(data.Progression.Xp);
         }
 
         public void LoadTrack()
