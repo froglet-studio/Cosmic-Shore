@@ -958,18 +958,6 @@ RectTransform:
     type: 3}
   m_PrefabInstance: {fileID: 8514091261509452843}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &552943725 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 2480592506132879094, guid: 96d427922847afd4ca2fcdffed2c2b3b,
-    type: 3}
-  m_PrefabInstance: {fileID: 8514091261509452843}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
 --- !u!1 &684811273
 GameObject:
   m_ObjectHideFlags: 0
@@ -1199,7 +1187,6 @@ GameObject:
   - component: {fileID: 820208345}
   - component: {fileID: 820208346}
   - component: {fileID: 820208347}
-  - component: {fileID: 820208348}
   m_Layer: 5
   m_Name: Canvas - Splash Screen
   m_TagString: Untagged
@@ -1311,22 +1298,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   statusText: {fileID: 1713505288}
   retryButton: {fileID: 203003806}
-  heartbeatIcon: {fileID: 552943725}
-  iconSprites:
-  - {fileID: 21300000, guid: 819effa465b72bb45b905aedef472366, type: 3}
-  - {fileID: 21300000, guid: 729a100b8ad2f8145a1fcbe2ac19d42f, type: 3}
-  - {fileID: 21300000, guid: 5a2eaf0a05e3a1a4981382c56f47b0a4, type: 3}
-  iconColors:
-  - {r: 1, g: 1, b: 1, a: 1}
-  - {r: 0.25, g: 0.95, b: 1, a: 1}
-  - {r: 0.65, g: 0.45, b: 1, a: 1}
-  beatScale: 1.18
-  secondBeatScale: 1.09
-  beatStepDuration: 0.12
-  beatRestInterval: 0.55
-  iconSwapInterval: 2
-  colorChangeChance: 0.073
-  colorFadeDuration: 0.3
   inboundRequestEvent: {fileID: 11400000, guid: 8a2f3b41c9e7456db1d8f9c0a1b2e84b,
     type: 2}
   outboundRetryEvent: {fileID: 11400000, guid: 8a2f3b41c9e7456db1d8f9c0a1b2e95c, type: 2}
@@ -1352,21 +1323,6 @@ MonoBehaviour:
   labelCreatingSession: "Creating session\u2026"
   labelHostReady: "Host ready\u2026"
   labelConnectionLost: Connection lost. Tap retry.
---- !u!114 &820208348
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 820208339}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7e2dd056aa475344790c04e23e5ac92b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.UI.JustRotate
-  canRotate: 1
-  speed: 20
-  direction: {x: 0, y: 0, z: 0}
 --- !u!1 &838949991
 GameObject:
   m_ObjectHideFlags: 0
@@ -3181,40 +3137,45 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1452114705, guid: 9426870f37f271d4daf180ef32c4d10f, type: 3}
       propertyPath: so_songs.Array.size
-      value: 7
+      value: 8
       objectReference: {fileID: 0}
     - target: {fileID: 1452114705, guid: 9426870f37f271d4daf180ef32c4d10f, type: 3}
       propertyPath: 'so_songs.Array.data[0]'
       value: 
-      objectReference: {fileID: 11400000, guid: 949584b5ee18049e3a7333eeed4eb40a,
+      objectReference: {fileID: 11400000, guid: e560f1237279e4ad2834f8d1f4aeb895,
         type: 2}
     - target: {fileID: 1452114705, guid: 9426870f37f271d4daf180ef32c4d10f, type: 3}
       propertyPath: 'so_songs.Array.data[1]'
       value: 
-      objectReference: {fileID: 11400000, guid: 4e08bd425a0357a4cb2913dcb1c22370,
+      objectReference: {fileID: 11400000, guid: 949584b5ee18049e3a7333eeed4eb40a,
         type: 2}
     - target: {fileID: 1452114705, guid: 9426870f37f271d4daf180ef32c4d10f, type: 3}
       propertyPath: 'so_songs.Array.data[2]'
       value: 
-      objectReference: {fileID: 11400000, guid: 80e0bd86ad3004044887cdee79937d89,
+      objectReference: {fileID: 11400000, guid: 4e08bd425a0357a4cb2913dcb1c22370,
         type: 2}
     - target: {fileID: 1452114705, guid: 9426870f37f271d4daf180ef32c4d10f, type: 3}
       propertyPath: 'so_songs.Array.data[3]'
       value: 
-      objectReference: {fileID: 11400000, guid: 23e5ea5c5d2b9cb4699185ebd9ea651b,
+      objectReference: {fileID: 11400000, guid: 80e0bd86ad3004044887cdee79937d89,
         type: 2}
     - target: {fileID: 1452114705, guid: 9426870f37f271d4daf180ef32c4d10f, type: 3}
       propertyPath: 'so_songs.Array.data[4]'
       value: 
-      objectReference: {fileID: 11400000, guid: bb2c516f233054b479a5327beb6427b0,
+      objectReference: {fileID: 11400000, guid: 23e5ea5c5d2b9cb4699185ebd9ea651b,
         type: 2}
     - target: {fileID: 1452114705, guid: 9426870f37f271d4daf180ef32c4d10f, type: 3}
       propertyPath: 'so_songs.Array.data[5]'
       value: 
-      objectReference: {fileID: 11400000, guid: bd7cffa3846cdd047b46c58cef6eb164,
+      objectReference: {fileID: 11400000, guid: bb2c516f233054b479a5327beb6427b0,
         type: 2}
     - target: {fileID: 1452114705, guid: 9426870f37f271d4daf180ef32c4d10f, type: 3}
       propertyPath: 'so_songs.Array.data[6]'
+      value: 
+      objectReference: {fileID: 11400000, guid: bd7cffa3846cdd047b46c58cef6eb164,
+        type: 2}
+    - target: {fileID: 1452114705, guid: 9426870f37f271d4daf180ef32c4d10f, type: 3}
+      propertyPath: 'so_songs.Array.data[7]'
       value: 
       objectReference: {fileID: 11400000, guid: 1f7ebca9281b9244ba31143be2de7799,
         type: 2}
@@ -4941,8 +4902,39 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 8779510937632799036, guid: 96d427922847afd4ca2fcdffed2c2b3b,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8514091261509452845}
   m_SourcePrefab: {fileID: 100100000, guid: 96d427922847afd4ca2fcdffed2c2b3b, type: 3}
+--- !u!1 &8514091261509452844 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 8779510937632799036, guid: 96d427922847afd4ca2fcdffed2c2b3b,
+    type: 3}
+  m_PrefabInstance: {fileID: 8514091261509452843}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &8514091261509452845
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8514091261509452844}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: aaaed8bb0b858bc03fe202977b7f2ff0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.UI.IconRotator
+  degreesPerSecond: -360
+  cycleColors:
+  - {r: 1, g: 1, b: 1, a: 1}
+  - {r: 0.25, g: 0.95, b: 1, a: 1}
+  - {r: 1, g: 0.3, b: 0.85, a: 1}
+  - {r: 0.65, g: 0.45, b: 1, a: 1}
+  colorCycleSeconds: 3
+  useUnscaledTime: 1
+  resetOnDisable: 1
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

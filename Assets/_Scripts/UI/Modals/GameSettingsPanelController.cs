@@ -63,6 +63,9 @@ namespace CosmicShore.UI
         [SerializeField] Button bugReportButton;
         [SerializeField] Button privacyPolicyButton;
         [SerializeField] Button deleteDataButton;
+        [SerializeField, Tooltip("PC/Steam only: closes the game. Hidden automatically on mobile, where " +
+             "the OS owns app exit and a quit button is a store-review flag.")]
+        Button quitGameButton;
         [SerializeField] TMP_Text versionText;
 
         [Header("Display")]
@@ -195,6 +198,7 @@ namespace CosmicShore.UI
             BindButton(bugReportButton, OpenBugReport);
             BindButton(privacyPolicyButton, OpenPrivacyPolicy);
             BindButton(deleteDataButton, OpenDeleteDataForm);
+            BindQuitButton();
 
             // DISPLAY
             BindDropdown(displayModeDropdown, DisplayModeOpts, SetDisplayModeIndex);
@@ -335,6 +339,23 @@ namespace CosmicShore.UI
         public void OpenBugReport() => OpenUrl(bugReportUrl);
         public void OpenPrivacyPolicy() => OpenUrl(privacyPolicyUrl);
         public void OpenDeleteDataForm() => OpenUrl(deleteDataUrl);
+
+        /// <summary>Closes the game. Desktop only - see <see cref="BindQuitButton"/>.</summary>
+        public void QuitGame() => DesktopPlatformServices.Quit();
+
+        /// <summary>
+        /// Shows the quit button on desktop and hides it everywhere else. A PC player expects to be
+        /// able to close the game from its own UI; a mobile player does not, and iOS review treats a
+        /// self-quit control as a defect.
+        /// </summary>
+        void BindQuitButton()
+        {
+            if (quitGameButton == null) return;
+
+            bool desktop = DesktopPlatformServices.IsDesktop;
+            quitGameButton.gameObject.SetActive(desktop);
+            if (desktop) BindButton(quitGameButton, QuitGame);
+        }
 
         public void SetDisplayModeIndex(int index) => S?.SetDisplayMode((DisplayModeSetting)index);
         public void SetResolutionIndex(int index)

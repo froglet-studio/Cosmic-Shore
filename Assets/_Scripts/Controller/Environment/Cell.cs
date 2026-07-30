@@ -1,10 +1,12 @@
 // Cell.cs
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using CosmicShore.Data;
 using CosmicShore.Game;
 using CosmicShore.Gameplay;
 using CosmicShore.Utility;
+using CosmicShore.Utility.PerformanceBenchmark;
 using Reflex.Attributes;
 using Unity.Collections;
 using Unity.Jobs;
@@ -42,6 +44,7 @@ namespace CosmicShore.Gameplay
         public CellConfigDataSO Config => cellConfigData;
         GameObject membrane;
         GameObject nucleus;
+        GameObject environment;   // config-authored structural environment (lives/dies with the cell)
 
         // Optional target WORLD radius for the nucleus, requested by a mode (e.g. Astro League uses
         // the nucleus as its spherical play boundary). 0 = use the prefab/multiplier size as-is.
@@ -228,6 +231,14 @@ namespace CosmicShore.Gameplay
         /// phase system gates flora and fauna behavior on it).
         /// </summary>
         public int LiveBlockCount => trackedBlocks.Count;
+
+        /// <summary>
+        /// The shared runtime SO this cell writes to. Read-only handle for residents that
+        /// need to raise its events through their host cell (e.g. Fauna's hearts-changed
+        /// poke) — more reliable than a per-prefab CellRuntimeDataSO wire, which several
+        /// fauna prefabs author as null or dangling.
+        /// </summary>
+        public CellRuntimeDataSO RuntimeData => runtime;
 
         /// <summary>
         /// Live leader by per-domain prism VOLUME - "volume is the spine" (locked
@@ -913,12 +924,24 @@ namespace CosmicShore.Gameplay
             runtime.Cell = this;
             runtime.EnsureCellStats(ID);
 
+            // Elemental integration: any scene with a living cell gets the domain fauna buff
+            // system — living fauna hearts empower their domain's vessels, platform-wide.
+            DomainFaunaBuffSystem.EnsureExists(gameObject, gameData, runtime);
+
             AssignConfig();
             // SpawnVisuals must run before SetupDensityGrids: the density grids
             // are now sized to the cell's membrane radius, and MembraneRadius
             // reads the membrane GameObject that SpawnVisuals instantiates.
-            SpawnVisuals();
-            SetupDensityGrids();
+            using (LoadInsights.Measure(LoadInsightCategory.Environment,
+                       $"Cell membrane+nucleus instantiate (cell {ID})"))
+            {
+                SpawnVisuals();
+            }
+            using (LoadInsights.Measure(LoadInsightCategory.Environment,
+                       $"Cell density grid allocation (cell {ID})"))
+            {
+                SetupDensityGrids();
+            }
             ResetVolumes();
 
             UpdateCellStats();
@@ -949,6 +972,14 @@ namespace CosmicShore.Gameplay
 
         void AssignConfig()
         {
+            // Sticky per scene: OnEnable nulls runtime.Config, so the first Initialize pass
+            // rolls fresh - but repeat passes (lazy crystal init + OnInitializeGame both run
+            // it) must NOT re-roll. With multiple configs a re-roll could swap the config
+            // out from under an already-spawning prepopulated environment (e.g. the Yggdra
+            // garden streaming in while the cell re-labels itself Blob), stranding ~950k of
+            // environment volume under thresholds authored for an empty cell.
+            if (runtime && runtime.Config) return;
+
             if (CellConfigs == null || CellConfigs.Count == 0)
             {
                 CSDebug.LogError($"{nameof(Cell)}: No CellConfigs found to assign.");
@@ -1003,12 +1034,79 @@ namespace CosmicShore.Gameplay
             if (cellConfigData.MembranePrefab != null)
                 membrane = Instantiate(cellConfigData.MembranePrefab, transform.position, Quaternion.identity);
 
+            // Guarded for repeat Initialize passes - a duplicated membrane is a visual
+            // wart, but a duplicated 70k-prism environment would double the cell's mass.
+            if (cellConfigData.EnvironmentPrefab != null && environment == null)
+                SpawnEnvironment();
+
             if (cellConfigData.NucleusPrefab == null) return;
             nucleus = Instantiate(cellConfigData.NucleusPrefab, transform.position, Quaternion.identity);
             nucleus.transform.localScale *= nucleusScaleMultiplier;
             ApplyNucleusWorldRadius(); // honor any radius a mode requested before the nucleus existed
             ApplyNucleusMesh();        // ...or a replacement boundary mesh (non-spherical court)
             RefreshNucleusControlRadius();
+        }
+
+        /// <summary>
+        /// Spawn the config's authored structural environment (e.g. the Atlantis garden the
+        /// Yggdra cell begins with). Called on the prefab ASSET, mirroring SegmentSpawner:
+        /// SpawnableBase.Spawn() creates its own container GameObject, which we parent to the
+        /// cell so the environment lives and dies with it. Prisms flow through the canonical
+        /// PrismTrailBuilder lay path, register with this cell's volume/density bookkeeping
+        /// like any other mass, and are ordinary prey/territory thereafter - prepopulation is
+        /// a head start for the ecosystem, not a parallel system. In gate-less scenes the
+        /// EnvironmentLoadVeil holds the screen (with the standard prism/percent readout)
+        /// until the build settles - the world is never half-built under live play.
+        /// </summary>
+        void SpawnEnvironment()
+        {
+            // Edit mode builds synchronously, immediately.
+            if (!Application.isPlaying)
+            {
+                BuildEnvironmentNow();
+                return;
+            }
+
+            // Play mode: the game connecting screens hold a QUIESCENT, fully-loaded scene -
+            // that is why gated minigame builds are smooth. A gate-less scene (Menu_Main) is
+            // still BOOTING when the cell initializes: the Netcode vessel-spawn chain, eager
+            // Relay/session creation, presence-lobby joins, and audio-bank loads all need
+            // responsive frames, and they share the engine's async budget with the batched
+            // prism instantiates (building during boot starved audio into underruns and
+            // wedged a clone batch mid-integration). So defer until the scene reports ready
+            // (local player pair initialized - the same beat OnClientReady fires on) with a
+            // hard deadline, THEN raise the veil and build over a settled scene. The
+            // environment field is pre-claimed so a repeat Initialize pass can't double-book.
+            environment = gameObject;
+            StartCoroutine(DeferredEnvironmentBuild());
+        }
+
+        IEnumerator DeferredEnvironmentBuild()
+        {
+            float deadline = Time.unscaledTime + 12f;
+            while (gameData != null && gameData.LocalPlayer == null && Time.unscaledTime < deadline)
+                yield return null;
+            // A settle beat after readiness so spawn-chain tail work (camera snap, autopilot
+            // activation, HUD fades) clears the frame before the build takes the gate.
+            yield return new WaitForSecondsRealtime(0.75f);
+            BuildEnvironmentNow();
+        }
+
+        void BuildEnvironmentNow()
+        {
+            if (!cellConfigData || cellConfigData.EnvironmentPrefab == null) return;
+            using (LoadInsights.Measure(LoadInsightCategory.Environment,
+                       $"Cell environment spawn (cell {ID}, {cellConfigData.EnvironmentPrefab.name})"))
+            {
+                // Raised BEFORE Spawn() so the first lay slice sees the gate's boosted budget.
+                if (Application.isPlaying)
+                    EnvironmentLoadVeil.Hold(cellConfigData.CellName);
+                environment = cellConfigData.EnvironmentPrefab.Spawn(Mathf.Max(1, cellConfigData.EnvironmentIntensity));
+                if (environment == null) return;
+                environment.transform.SetParent(transform, false);
+                environment.transform.localPosition = Vector3.zero;
+                environment.transform.localRotation = Quaternion.identity;
+            }
         }
 
         /// <summary>
@@ -1110,9 +1208,13 @@ namespace CosmicShore.Gameplay
         {
             if (!cellConfigData || cellConfigData.CytoplasmPrefab == null) return;
 
-            spawnedCytoplasm = Instantiate(cellConfigData.CytoplasmPrefab, transform.position, Quaternion.identity);
-            spawnedCytoplasm.SetOrigin(transform.position);
-            spawnedCytoplasm.Initialize();
+            using (LoadInsights.Measure(LoadInsightCategory.Environment,
+                       $"Cytoplasm (SnowChanger) instantiate+init (cell {ID})"))
+            {
+                spawnedCytoplasm = Instantiate(cellConfigData.CytoplasmPrefab, transform.position, Quaternion.identity);
+                spawnedCytoplasm.SetOrigin(transform.position);
+                spawnedCytoplasm.Initialize();
+            }
         }
 
         void StartSpawnerForMode()
@@ -1125,6 +1227,7 @@ namespace CosmicShore.Gameplay
 
             activeSpawner.Start(this, cellConfigData, runtime, gameData);
 
+            LoadInsights.Mark($"Flora/fauna spawner started (cell {ID}, {activeSpawner.GetType().Name})");
             CSDebug.Log($"<color=green>[Cell {ID}] Spawner started: {activeSpawner.GetType().Name}</color>");
         }
 

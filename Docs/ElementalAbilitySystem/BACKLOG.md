@@ -91,3 +91,47 @@ Sparrow HUD indicators (roll armed, shielded turret, piercing, domain-safe). Cle
    *Recommendation:* re-lock; debuffs stripping your upgrade is legible elemental counterplay.
 5. **`origin/claude/falcon-brittlestar-reintro-oyx1q1`**: if it is ever merged, it must not land
    without `f1f278ab4` (its prewarm cap makes the pool-injection NRE strictly worse — AUDIT §2#1).
+
+## Four-icon ability row — follow-ups (from the `vessel-ability-icons` branch)
+
+The row contract, the level-5 upgrade signal, the ability-bound control hints and the fleet
+auditor shipped. Squirrel and Sparrow are compliant. What is left, in rough priority order:
+
+### Blocked on design (cannot be wired until someone authors the map)
+
+1. **Author the open `ElementalAbilityMapSO` slots** for Manta, Dolphin, Rhino and Serpent. Each
+   still has `(open design slot)` entries with `Input = 0` and **no `UpgradeLabel` on any element**.
+   Proposals live in `FLEET_MAPS.md` §2 and are un-approved. Until the element→ability→input
+   mapping exists, an icon row cannot be bound — do not guess it to satisfy the auditor.
+
+### Wiring, once the maps land
+
+2. **Rhino already has four icons** — `LaserTargeting`, `Crystal`, `ForceField` (all three are
+   vessel-prefab objects parented into the HUD instance) plus `BoostContainer` from the HUD variant.
+   They sit at x 1288.6 / 1461.6 / 1639.6 / 1814.6, y 116.7, 99.8×99.8 — a real row needing only
+   ~3 px of pitch evening. Bind + reorder once the Rhino map is authored.
+3. **Re-survey Dolphin and Manta at the vessel level.** The Rhino's icons were missed because the
+   first survey only read HUD prefabs; three of its four icons live in the vessel prefab. Assume the
+   same may be true of Dolphin (1 icon found) and Manta (0 found) until checked the same way.
+
+### Independent of the maps
+
+4. **Add an `InputDeviceIconSetSwitcher` to the Sparrow HUD.** It has four Xbox + four PlayStation
+   `ControllerIcon` glyphs but no switcher, so (a) both sets render simultaneously, and (b)
+   `BindHintsToAbilities` never runs there — its glyphs are currently placed *statically* and will
+   strand again if the row is reordered. This is the fix that makes them self-placing.
+5. **Sparrow glyph art is wrong** independently of position: the Xbox set uses `R1 Active` where the
+   control is the right TRIGGER and `R2 Active` where it is the LEFT trigger; the PlayStation set uses
+   `triangle` where the control is ✕ and `square` where it is R2. `Buttons/XBOX/` contains **no
+   left-trigger art at all** — this needs an artist, not a wiring change.
+6. **`ControllerButtonIconReferences` is vestigial and destructive.** Zero callers in the codebase;
+   its only runtime effect is `Awake()` doing `_img.sprite = inactiveIcon` unconditionally, which
+   stomps the authored per-side sprite. On the Squirrel all four pad glyphs share one `inactiveIcon`
+   (`XBOX/R1.png`), so both the left and right glyph render as R1. Either delete the component or
+   make it non-destructive and author per-side sprites.
+7. **Author `upgradedSprite` art** for the wired vessels. The sprite-swap layer of the upgrade signal
+   is in place but no vessel authors upgraded art, so only the element badge and the scale bump are
+   visible today. Note two Sparrow icons (`missileIcon`, `weaponModeIcon`) have their sprite driven by
+   gameplay and start disabled — the badge must carry the signal there regardless.
+8. **Squirrel hint labels say `L1`/`R1`** in the inspector while the bindings are triggers (LT/RT).
+   Designer notes only — used by `SetHintActive(label, …)` for unbound hints — but misleading.

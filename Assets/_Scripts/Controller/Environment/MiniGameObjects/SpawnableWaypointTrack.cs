@@ -166,6 +166,9 @@ public class SpawnableWaypointTrack : SpawnableBase
                 block.Trail = trail;
                 block.Initialize();
                 trail.Add(block);
+                // Custom loop bypasses PrismTrailBuilder.LayOne — register with the arena-ready
+                // gate so track blocks can't pop in after the connecting screen drops.
+                PrismTrailBuilder.WatchForReveal(block);
 
                 totalBlocks++;
             }

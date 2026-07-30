@@ -2,6 +2,7 @@ using System;
 using System.Text;
 using System.Threading;
 using CosmicShore.Data;
+using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
@@ -60,10 +61,38 @@ namespace CosmicShore.UI
             if (!_showing || !statusText) return;
             _dotTimer += Time.unscaledDeltaTime;
             int dots = 1 + (int)(_dotTimer / dotInterval) % 4;   // 1..4 on a loop
-            statusText.text = statusBaseText + new string('.', dots);
+
+            // While the arena build holds this panel up, run a live readout under the status
+            // line — elapsed clock + progress — so the wait reads as a loading bar, not a hang.
+            // Phases mirror the arena-ready gate: laying (prisms being placed) → growing
+            // (placed prisms finishing their grow-in behind the covered screen). Rendered into
+            // statusText so no scene/prefab rewiring is needed.
+            if (PrismTrailBuilder.IsLayingInProgress)
+            {
+                statusText.text =
+                    $"{statusBaseText}{new string('.', dots)}\n" +
+                    $"<size=70%>BUILDING ARENA  {PrismTrailBuilder.LayProgress:P0}  " +
+                    $"({PrismTrailBuilder.LayDoneCount:N0} / {PrismTrailBuilder.LayQueuedCount:N0})  ·  {_dotTimer:F0}s</size>";
+            }
+            else if (PrismTrailBuilder.GrowRemainingCount > 0)
+            {
+                statusText.text =
+                    $"{statusBaseText}{new string('.', dots)}\n" +
+                    $"<size=70%>GROWING ARENA  ({PrismTrailBuilder.GrowRemainingCount:N0} settling)  ·  {_dotTimer:F0}s</size>";
+            }
+            else
+            {
+                statusText.text = statusBaseText + new string('.', dots);
+            }
         }
 
-        public async UniTask ShowAsync(CancellationToken ct)
+        /// <param name="ct">Cancellation (HUD lifecycle).</param>
+        /// <param name="holdUntil">Optional extra hold: after the dwell, the panel stays up until
+        /// this returns true (checked once per frame). Used to keep the connecting screen covering
+        /// the world until the arena is ready (every build executed, every lay drained, every
+        /// prism fully grown — PrismTrailBuilder.PollArenaReady) so the player never sees the
+        /// structure lay or bloom in.</param>
+        public async UniTask ShowAsync(CancellationToken ct, Func<bool> holdUntil = null)
         {
             _dotTimer = 0f;
             SetVisible(true);
@@ -75,6 +104,11 @@ namespace CosmicShore.UI
             try
             {
                 await UniTask.Delay(TimeSpan.FromSeconds(dwellSeconds), ignoreTimeScale: true, cancellationToken: ct);
+                if (holdUntil != null)
+                {
+                    while (!holdUntil())
+                        await UniTask.Yield(PlayerLoopTiming.Update, ct);
+                }
             }
             finally
             {

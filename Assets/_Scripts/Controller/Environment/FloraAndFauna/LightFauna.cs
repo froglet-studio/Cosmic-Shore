@@ -405,14 +405,20 @@ namespace CosmicShore.Gameplay
             //   Calm:     aggression 0 - head toward crystal
             //   Restless: aggression 1 - head toward nearest opposing-color centroid
             //   Frenzy:   aggression 2 - head toward nearest centroid (any domain)
+            // GoalOrbitOffset at Calm/Restless, none at Frenzy — the same split
+            // Fauna.ResolveGoal uses. This tick RECOMPUTES Goal on its own cadence, so
+            // omitting the offset here silently clobbered the one the goal coroutine
+            // applied: every creature then sought the identical centroid (or the
+            // crystal), arrived, and its goal direction degenerated to zero — see the
+            // degenerate-steering guard below.
             var phase = cell ? cell.Phase : CellPhase.Calm;
             Goal = phase switch
             {
-                CellPhase.Restless => cell.GetExplosionTarget(domain),
+                CellPhase.Restless => cell.GetExplosionTarget(domain) + GoalOrbitOffset,
                 CellPhase.Frenzy => cell.GetDensestRegionAnyDomain(),
-                _ => (cellData && cellData.CrystalTransform)
+                _ => ((cellData && cellData.CrystalTransform)
                        ? cellData.CrystalTransform.position
-                       : (cell ? cell.transform.position : transform.position),
+                       : (cell ? cell.transform.position : transform.position)) + GoalOrbitOffset,
             };
 
             // Voracious exterior: with a nucleus control zone, mass outside the
@@ -422,7 +428,7 @@ namespace CosmicShore.Gameplay
             // scales cadence/radius/speed).
             if (phase == CellPhase.Calm && cell != null &&
                 cell.HasNucleusControlZone && cell.HasSensedExteriorMass)
-                Goal = cell.GetDensestRegionAnyDomain();
+                Goal = cell.GetDensestRegionAnyDomain() + GoalOrbitOffset;
 
             // Centre focus (per-deployment, FaunaConfigurationSO.CenterFocusBias): pull
             // the herbivore's roaming goal toward the cell centre so it lingers on the
@@ -456,7 +462,12 @@ namespace CosmicShore.Gameplay
 
             if (!IsFinite(Goal) || Goal.sqrMagnitude < 0.001f)
             {
-                Goal = cellData && cellData.CrystalTransform ? cellData.CrystalTransform.position : cell.transform.position;
+                // Offset here too: this fallback fires when the resolved goal lands on the
+                // world ORIGIN, which in an origin-centred cell is exactly where the whole
+                // pack would otherwise pile up.
+                Goal = (cellData && cellData.CrystalTransform
+                    ? cellData.CrystalTransform.position
+                    : cell.transform.position) + GoalOrbitOffset;
             }
 
             Vector3 goalDirection = (Goal - transform.position).normalized;
@@ -632,7 +643,21 @@ namespace CosmicShore.Gameplay
             if (IsFeedingEngaged)
                 return;
 
-            desiredDirection = ((separation * separationWeight) + (goalDirection * goalWeight)).normalized;
+            // Degenerate steering is a PERMANENT stall, so it must never reach the
+            // velocity. `Vector3.normalized` returns ZERO for a ~zero vector, which zeroes
+            // currentVelocity; the creature then stops moving, so the next tick recomputes
+            // the identical zero from the identical position and it is frozen for life
+            // (it just hangs there until it starves). Two ways in: the creature reaches
+            // its goal exactly (goalDirection → zero), or separation cancels the goal pull.
+            // This is what parked brittlestars against Skim Race's track — the crystal they
+            // seek at Calm sits on the track, and once shielded prisms stopped being valid
+            // feed targets there was no _feedTarget left to override goalDirection. Keep
+            // the last heading instead: swimming on always re-acquires a goal.
+            Vector3 steering = (separation * separationWeight) + (goalDirection * goalWeight);
+            if (steering.sqrMagnitude > DegenerateSteeringSqr)
+                desiredDirection = steering.normalized;
+            else if (desiredDirection.sqrMagnitude <= DegenerateSteeringSqr)
+                desiredDirection = transform.forward;
 
             float speedMult = GetAggressionSpeedMultiplier();
             // Active pursuit: a predator with live prey in its sights closes noticeably
@@ -669,11 +694,14 @@ namespace CosmicShore.Gameplay
         /// LifeForm (fauna bodies carry none — herbivores never eat creatures), and the
         /// diet is spatialized through Cell.IsPreyForHerbivore (nucleus interior = the
         /// territorial claim, never consumed; exterior = voracious any-domain; no nucleus
-        /// = legacy opposing-domain rule).
+        /// = legacy opposing-domain rule). Shielded and super-shielded mass is never food
+        /// (Fauna.IsShieldedMass) — targeting one is a feed-hold the creature can never
+        /// finish, which is what stuck brittlestars on Skim Race's track prisms.
         /// </summary>
         bool IsEdibleForHerbivore(Prism prism)
         {
             if (!prism || prism.destroyed) return false;
+            if (IsShieldedMass(prism)) return false;
             if (prism is HealthPrism hp)
             {
                 if (!hp.LifeForm) return false;

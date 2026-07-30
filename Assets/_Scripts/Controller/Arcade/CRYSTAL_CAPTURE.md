@@ -330,7 +330,7 @@ Also reports vessel telemetry via `ugsStatsManager.ReportVesselTelemetry()`.
 
 ## Design Notes
 
-1. **No dedicated environment generation**: Unlike HexRace's deterministic track with seed sync, Crystal Capture uses a scene-placed environment. No seed NetworkVariable or deterministic spawning is needed.
+1. **No dedicated environment generation**: Unlike HexRace's deterministic track with seed sync, Crystal Capture uses a scene-placed environment. No seed NetworkVariable is needed — but the scene-placed spawnables must themselves be **deterministic from their authored seed**, because every client builds the environment locally. The scene's `SegmentSpawner` maps intensity → structure: `[CliffordTorus, ConcentricSpheres, Helicoid, Atlantis]`. Intensity 4 is `SpawnableAtlantis` (`_Scripts/Controller/Environment/MiniGameObjects/SpawnableAtlantis.cs`) — the ~69k-prism organic garden-city (world-tree, terraces, coral reef mounds, kelp, Möbius causeway, floating atolls, curl-field currents, dune floor) that replaced the gyroid lattice; the gyroid remains Joust's intensity-4 structure. It streams in via `PrismTrailBuilder.LayBudgetedAsync` behind the arena-ready gate and is fully deterministic from the prefab's serialized seed.
 
 2. **Domain-aggregated turn end**: The scene wires `NetworkCrystalCollisionTurnMonitor` with `CrystalCollisions` set to the per-domain target. The turn ends as soon as `gameData.ScoringRule.IsObjectiveReached(gameData, out _)` returns true — i.e., when any active domain's summed CrystalsCollected reaches the target. To swap the trigger (e.g., back to a timer), replace the monitor in the scene.
 

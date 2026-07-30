@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
+using CosmicShore.Utility.PerformanceBenchmark;
 using Reflex.Attributes;
 using Reflex.Injectors;
 using Unity.Netcode;
@@ -149,8 +150,14 @@ namespace CosmicShore.Gameplay
                     tournamentData.TournamentAINames.Add(profiles[p].Name);
             }
 
+            // The whole loop runs synchronously in ONE frame — the dominant launch spike at
+            // high player counts. The span makes that cost (and its scaling) visible.
+            using var _ = LoadInsights.Measure(LoadInsightCategory.AiBackfill,
+                $"AI backfill spawn loop ({aiCount} AI players+vessels, single frame)");
+
             for (int i = 0; i < aiCount; i++)
             {
+                LoadInsights.Count("AI players spawned during load");
                 var aiPlayerNO = Instantiate(aiPlayerPrefab);
                 GameObjectInjector.InjectRecursive(aiPlayerNO.gameObject, _container);
 
@@ -350,12 +357,16 @@ namespace CosmicShore.Gameplay
                 return false;
             }
 
-            vesselNO = Instantiate(shipNetworkObject);
-            GameObjectInjector.InjectRecursive(vesselNO.gameObject, _container);
-            // destroyWithScene=false matches the AI player spawn - must stay consistent for cleanup ordering.
-            vesselNO.Spawn(false);
-            aiPlayer.NetVesselId.Value = vesselNO.NetworkObjectId;
-            return true;
+            using (LoadInsights.Measure(LoadInsightCategory.AiBackfill, $"AI vessel instantiate+inject+spawn ({vesselType})"))
+            {
+                vesselNO = Instantiate(shipNetworkObject);
+                GameObjectInjector.InjectRecursive(vesselNO.gameObject, _container);
+                // destroyWithScene=false matches the AI player spawn - must stay consistent for cleanup ordering.
+                vesselNO.Spawn(false);
+                aiPlayer.NetVesselId.Value = vesselNO.NetworkObjectId;
+                LoadInsights.Count("Vessels spawned during load");
+                return true;
+            }
         }
 
         void ConfigureAIPilot(NetworkObject aiVesselNO)
