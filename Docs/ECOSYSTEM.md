@@ -1446,10 +1446,15 @@ pass rolls, repeat passes keep the roll) so the acknowledged double-Initialize p
 re-label the cell while a prepopulated environment is streaming in. `ResetCell` (in-place
 replay) neither destroys nor respawns the environment — environment-bearing configs are for
 scene-lifetime cells only: use them in `UseSceneReloadForReplay` modes (all current ones) or
-Menu_Main, not in-place-reset modes. **Every environment build is gated**: game scenes hold
-their connecting screen, and gate-less scenes (Menu_Main freestyle) raise an
-`EnvironmentLoadVeil` - the same prism-count/percent readout, the same 250ms boosted lay
-slice, released only when every prism is laid and settled. The original design let the menu
+Menu_Main, not in-place-reset modes. **Every environment build is gated AND deferred past boot**: game scenes hold
+their connecting screen over a quiescent, fully-loaded scene; gate-less scenes (Menu_Main
+freestyle) wait until the scene reports ready (local player pair initialized, 12s deadline)
+and then raise an `EnvironmentLoadVeil` - the connecting-screen status idiom, a gentler 80ms
+lay slice so Netcode/Relay/audio keep breathing under the veil, released only when every
+prism is laid and settled. Building DURING boot shared the engine's async budget with the
+vessel-spawn chain, session setup, and audio banks - audio underruns plus a clone batch
+wedged mid-integration (a 4s watchdog in PrismTrailBuilder.CloneBatchAsync now force-
+completes any stalled batch as a second line of defense). The original design let the menu
 world bloom in under live play at 8ms/frame; that built for minutes under gameplay
 (clone-integration spikes + physics churn against a half-built world) and crashed the menu
 reliably, so live blooming is retired - the 8ms ungated slice remains only as a last-resort

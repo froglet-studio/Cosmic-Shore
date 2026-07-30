@@ -406,6 +406,10 @@ namespace CosmicShore.Gameplay
         /// </summary>
         const int CloneBatchSize = 256;
 
+        /// <summary>Seconds an async clone batch may sit unintegrated before the watchdog
+        /// forces synchronous completion (normal integration is well under a second).</summary>
+        const float CloneStallSeconds = 4f;
+
         /// <summary>
         /// Set false to force the per-item clone path (kept as a live escape hatch: batched
         /// instantiate is an engine fast path, and the sync path is the behavioural baseline).
@@ -427,10 +431,25 @@ namespace CosmicShore.Gameplay
                 try
                 {
                     var op = UnityEngine.Object.InstantiateAsync(prefab, count, parent);
+                    float waitStart = Time.unscaledTime;
                     while (!op.isDone)
                     {
                         await UniTask.Yield(PlayerLoopTiming.Update);
                         if (!parent) return null; // container destroyed mid-flight
+
+                        // Watchdog: batched instantiate integration shares the engine's async
+                        // loading budget, and a busy scene (Menu_Main boot: Netcode spawn chain,
+                        // Relay/session setup, audio banks) can starve it indefinitely - observed
+                        // as a build frozen at an exact 256-batch boundary. Force the batch to
+                        // integrate synchronously rather than wedging the whole lay.
+                        if (Time.unscaledTime - waitStart > CloneStallSeconds)
+                        {
+                            Debug.LogWarning($"[PrismTrailBuilder] Async clone batch ({count} prisms) not " +
+                                             $"integrated after {CloneStallSeconds:F0}s — forcing WaitForCompletion. " +
+                                             "The engine's async-instantiate budget is being starved by other loading.");
+                            op.WaitForCompletion();
+                            break;
+                        }
                     }
 
                     var result = op.Result;
@@ -546,10 +565,21 @@ namespace CosmicShore.Gameplay
         static float EffectiveLayBudget(float authoredBudgetMs)
         {
             float budget = Mathf.Max(0.5f, authoredBudgetMs);
-            return s_loadGateHolding ? Mathf.Max(budget, LoadGateLayBudgetMs) : budget;
+            if (!s_loadGateHolding) return budget;
+            float boost = LoadGateLayBudgetOverrideMs > 0f ? LoadGateLayBudgetOverrideMs : LoadGateLayBudgetMs;
+            return Mathf.Max(budget, boost);
         }
 
         /// <summary>Laying slice per frame while the load gate holds (~4 readout updates/second).</summary>
         const float LoadGateLayBudgetMs = 250f;
+
+        /// <summary>
+        /// Optional gentler boost for gate holds in scenes that must keep breathing while they
+        /// build (Menu_Main's EnvironmentLoadVeil: Netcode heartbeats, Relay/session setup, and
+        /// audio all run under the veil, and the full 250ms slice starved them into buffer
+        /// underruns and wedged async work). 0 = use the full connecting-screen slice. Owned by
+        /// whoever holds the gate; cleared with the hold.
+        /// </summary>
+        public static float LoadGateLayBudgetOverrideMs { get; set; }
     }
 }

@@ -1,4 +1,5 @@
 // Cell.cs
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using CosmicShore.Data;
@@ -1059,14 +1060,45 @@ namespace CosmicShore.Gameplay
         /// </summary>
         void SpawnEnvironment()
         {
+            // Edit mode builds synchronously, immediately.
+            if (!Application.isPlaying)
+            {
+                BuildEnvironmentNow();
+                return;
+            }
+
+            // Play mode: the game connecting screens hold a QUIESCENT, fully-loaded scene -
+            // that is why gated minigame builds are smooth. A gate-less scene (Menu_Main) is
+            // still BOOTING when the cell initializes: the Netcode vessel-spawn chain, eager
+            // Relay/session creation, presence-lobby joins, and audio-bank loads all need
+            // responsive frames, and they share the engine's async budget with the batched
+            // prism instantiates (building during boot starved audio into underruns and
+            // wedged a clone batch mid-integration). So defer until the scene reports ready
+            // (local player pair initialized - the same beat OnClientReady fires on) with a
+            // hard deadline, THEN raise the veil and build over a settled scene. The
+            // environment field is pre-claimed so a repeat Initialize pass can't double-book.
+            environment = gameObject;
+            StartCoroutine(DeferredEnvironmentBuild());
+        }
+
+        IEnumerator DeferredEnvironmentBuild()
+        {
+            float deadline = Time.unscaledTime + 12f;
+            while (gameData != null && gameData.LocalPlayer == null && Time.unscaledTime < deadline)
+                yield return null;
+            // A settle beat after readiness so spawn-chain tail work (camera snap, autopilot
+            // activation, HUD fades) clears the frame before the build takes the gate.
+            yield return new WaitForSecondsRealtime(0.75f);
+            BuildEnvironmentNow();
+        }
+
+        void BuildEnvironmentNow()
+        {
+            if (!cellConfigData || cellConfigData.EnvironmentPrefab == null) return;
             using (LoadInsights.Measure(LoadInsightCategory.Environment,
                        $"Cell environment spawn (cell {ID}, {cellConfigData.EnvironmentPrefab.name})"))
             {
-                // Ungated scenes (Menu_Main freestyle) get the same treatment as gated game
-                // loads: a veil with the prism/percent readout holds the screen while the
-                // build runs at the boosted slice, releasing only when every prism is laid
-                // and settled. Building under live gameplay crashed the menu. Must be raised
-                // BEFORE Spawn() so the first lay slice sees the boosted budget.
+                // Raised BEFORE Spawn() so the first lay slice sees the gate's boosted budget.
                 if (Application.isPlaying)
                     EnvironmentLoadVeil.Hold(cellConfigData.CellName);
                 environment = cellConfigData.EnvironmentPrefab.Spawn(Mathf.Max(1, cellConfigData.EnvironmentIntensity));

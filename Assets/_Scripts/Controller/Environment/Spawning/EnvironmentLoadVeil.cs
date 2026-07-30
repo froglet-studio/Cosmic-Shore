@@ -32,6 +32,7 @@ namespace CosmicShore.Gameplay
         TextMeshProUGUI _progress;
         bool _released;
         float _fade;
+        float _dotTimer;
 
         /// <summary>
         /// Raise the veil (idempotent - a second environment in the same hold just relabels).
@@ -59,11 +60,18 @@ namespace CosmicShore.Gameplay
             s_active._label = environmentName;
         }
 
+        /// <summary>Gate slice while the veil holds: enough for a fast build (~10x the ungated
+        /// pace) while leaving most of each frame for the services still running under the menu
+        /// (Netcode heartbeats, Relay/session traffic, audio) - the full 250ms connecting-screen
+        /// slice starved them into buffer underruns.</summary>
+        const float VeilLayBudgetMs = 80f;
+
         void Awake()
         {
             // Gate ON before the first lay slice (AddComponent runs Awake synchronously,
             // so the caller's subsequent Spawn() sees the boosted budget immediately).
             PrismTrailBuilder.SetLoadGateHolding(true);
+            PrismTrailBuilder.LoadGateLayBudgetOverrideMs = VeilLayBudgetMs;
 
             var canvas = gameObject.AddComponent<Canvas>();
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;
@@ -115,15 +123,20 @@ namespace CosmicShore.Gameplay
                 _fade = Mathf.Min(1f, _fade + Time.unscaledDeltaTime / FadeInSeconds);
                 _group.alpha = _fade;
 
-                int laid = PrismTrailBuilder.LayDoneCount;
-                int queued = PrismTrailBuilder.LayQueuedCount;
-                int settling = PrismTrailBuilder.GrowRemainingCount;
-                _title.text = _label.ToUpperInvariant();
-                _progress.text = queued > 0 && laid < queued
-                    ? $"{laid:N0} / {queued:N0} prisms  ({(float)laid / queued:P0})"
-                    : settling > 0
-                        ? $"{queued:N0} prisms laid — settling {settling:N0}"
-                        : "growing…";
+                // Same status idiom as ConnectingPanelController so freestyle loads read as
+                // the same family as the minigame connecting screens.
+                _dotTimer += Time.unscaledDeltaTime;
+                int dots = 1 + (int)(_dotTimer / 0.35f) % 4;
+                _title.text = $"GROWING {_label.ToUpperInvariant()}{new string('.', dots)}";
+                if (PrismTrailBuilder.IsLayingInProgress)
+                    _progress.text =
+                        $"BUILDING ARENA  {PrismTrailBuilder.LayProgress:P0}  " +
+                        $"({PrismTrailBuilder.LayDoneCount:N0} / {PrismTrailBuilder.LayQueuedCount:N0})  ·  {_dotTimer:F0}s";
+                else if (PrismTrailBuilder.GrowRemainingCount > 0)
+                    _progress.text =
+                        $"GROWING ARENA  ({PrismTrailBuilder.GrowRemainingCount:N0} settling)  ·  {_dotTimer:F0}s";
+                else
+                    _progress.text = $"·  {_dotTimer:F0}s";
 
                 // PollArenaReady force-settles behind the covered screen and self-releases
                 // on a 180s no-progress stall, so the veil can never hold a wedged build.
@@ -131,6 +144,7 @@ namespace CosmicShore.Gameplay
                 {
                     _released = true;
                     PrismTrailBuilder.SetLoadGateHolding(false);
+                    PrismTrailBuilder.LoadGateLayBudgetOverrideMs = 0f;
                 }
                 return;
             }
@@ -146,7 +160,10 @@ namespace CosmicShore.Gameplay
         {
             // A scene change mid-hold must not leave the global gate bracket open.
             if (!_released)
+            {
                 PrismTrailBuilder.SetLoadGateHolding(false);
+                PrismTrailBuilder.LoadGateLayBudgetOverrideMs = 0f;
+            }
             if (s_active == this)
                 s_active = null;
         }
