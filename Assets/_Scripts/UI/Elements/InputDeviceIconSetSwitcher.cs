@@ -262,9 +262,19 @@ namespace CosmicShore.UI
 
         /// <summary>
         /// Re-anchors a hint onto an ability icon WITHOUT reparenting it - it has to stay under its
-        /// icon-set root so the set switcher can keep showing/hiding it. The anchor is written as a
-        /// fraction of the hint's own parent, so the placement survives resolution and aspect changes
-        /// the same way the ability row does. Returns false while the parent has no laid-out rect yet.
+        /// icon-set root so the set switcher can keep showing/hiding it.
+        ///
+        /// Only the anchor CENTRE moves: the authored anchor SPAN and <c>sizeDelta</c> are preserved
+        /// exactly. That is not a style choice - these glyphs are authored as pure stretch rects with
+        /// a sizeDelta of zero, so their whole size comes from the span. Collapsing the anchors to a
+        /// point and re-supplying the size from <c>rect.size</c> renders them at ZERO SIZE whenever
+        /// that read happens before a layout pass or while the set root is inactive (Unity does not
+        /// update rects on inactive hierarchies) - which is every hint on vessel spawn. Never read
+        /// <c>rect.size</c> here, and never write size.
+        ///
+        /// The centre is written as a fraction of the hint's own parent, so the placement survives
+        /// resolution and aspect changes the same way the ability row does. Returns false while the
+        /// parent has no usable rect yet, so the caller can retry.
         /// </summary>
         static bool PlaceOnAbilityIcon(RectTransform hint, RectTransform abilityIcon, Vector2 offset)
         {
@@ -273,20 +283,25 @@ namespace CosmicShore.UI
             Rect parentRect = parent.rect;
             if (Mathf.Abs(parentRect.width) < 0.01f || Mathf.Abs(parentRect.height) < 0.01f) return false;
 
-            Vector2 size = hint.rect.size;                    // keep the authored glyph size
             Vector3 targetWorld = abilityIcon.TransformPoint(abilityIcon.rect.center);
             Vector2 local = parent.InverseTransformPoint(targetWorld);
 
-            var fraction = new Vector2(
+            var centre = new Vector2(
                 Mathf.InverseLerp(parentRect.xMin, parentRect.xMax, local.x),
                 Mathf.InverseLerp(parentRect.yMin, parentRect.yMax, local.y));
+            if (!IsUsable(centre.x) || !IsUsable(centre.y)) return false;
 
-            hint.anchorMin = hint.anchorMax = fraction;
-            hint.pivot = new Vector2(0.5f, 0.5f);
-            hint.sizeDelta = size;
-            hint.anchoredPosition = offset;
+            Vector2 span = hint.anchorMax - hint.anchorMin;   // preserved - it IS the glyph's size
+            hint.pivot     = new Vector2(0.5f, 0.5f);
+            hint.anchorMin = centre - span * 0.5f;
+            hint.anchorMax = centre + span * 0.5f;
+            hint.anchoredPosition = offset;                    // sizeDelta deliberately untouched
             return true;
         }
+
+        // A fraction well outside the parent is legitimate (a hint can sit far from its set root), but
+        // NaN or a runaway value means the rects were not laid out - retry rather than write garbage.
+        static bool IsUsable(float f) => !float.IsNaN(f) && !float.IsInfinity(f) && Mathf.Abs(f) < 50f;
 
         static bool TryResolveElement(IVesselStatus status, ElementalAbilityMapSO map,
             HintBinding binding, out Element element)
@@ -411,6 +426,11 @@ namespace CosmicShore.UI
             if (_visualsBySet.TryGetValue(set, out var visuals))
                 foreach (var hint in visuals.hints)
                     if (hint != null) { hint.Lit = false; hint.Applied = false; }
+
+            // A root that was inactive when the hints were bound had no laid-out rect, so re-place
+            // now that this one is active and measurable.
+            _placementPending = true;
+            _placementAttempts = 0;
         }
 
         // Lights each visible hint while its bound control is held. State-change driven - a hint's

@@ -283,3 +283,18 @@ row, now carries the label along with no manual repositioning.
 **Fleet status.** Only the Squirrel HUD authors the row today (four buttons, four bindings). The
 other five flyable HUDs have no `abilityIcons` bindings and varied lower-right layouts; wiring them
 is per-vessel HUD work — the framework above needs no further changes.
+
+### 7.3 Gotcha: never write a control hint's SIZE
+
+The glyph objects under `XBOXRoot` / `PSRoot` / `PCRoot` are authored as **pure stretch rects with a
+`sizeDelta` of zero** — their entire size comes from the anchor span (an Xbox glyph is 0.185 × 4.479
+of a 269 × 11 px root; a PC text is 0.290 × 1.000 of a 366 × 22 px root). So a placement routine that
+collapses the anchors to a point and re-supplies the size from `rect.size` renders them at **zero
+size**, because that read happens before any layout pass and, for the two inactive set roots, while
+Unity is not updating their rects at all. The glyphs vanish, and collapsing the span has destroyed the
+only thing that was giving them size, so nothing recovers them.
+
+`PlaceOnAbilityIcon` therefore preserves the anchor **span** and `sizeDelta` exactly and moves only the
+anchor **centre**. It never reads `rect.size` and never writes size. Placement also re-runs from
+`ApplySet`, so a root that was inactive (and unmeasurable) when the hints were bound gets a correct
+pass the moment its set is shown.
