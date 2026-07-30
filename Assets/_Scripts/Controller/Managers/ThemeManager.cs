@@ -55,9 +55,6 @@ namespace CosmicShore.Gameplay
             materialSet.SpikeMaterial = new Material(_dataContainer.BaseMaterialSet.SpikeMaterial);
             materialSet.SkimmerMaterial = new Material(_dataContainer.BaseMaterialSet.SkimmerMaterial);
 
-            // Copy prefab reference
-            materialSet.BlockSilhouettePrefab = _dataContainer.BaseMaterialSet.BlockSilhouettePrefab;
-
             // Set colors for materials that use domain-specific colors
             materialSet.BlockMaterial.SetColor("_BrightColor", colorSet.InsideBlockColor);
             materialSet.BlockMaterial.SetColor("_DarkColor", colorSet.OutsideBlockColor);

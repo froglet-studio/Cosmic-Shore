@@ -52,8 +52,6 @@ namespace CosmicShore.UI
 
         public abstract void Initialize();
 
-        internal GameObject TrailBlockPrefab;
-
         public void Show()
         {
             gameObject.SetActive(true);

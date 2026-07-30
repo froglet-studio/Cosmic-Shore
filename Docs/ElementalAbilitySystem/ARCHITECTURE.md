@@ -40,7 +40,7 @@ prisms, mass conservation, and continuity-of-existence constraints are addressed
   resurrected; the shared-asset state bugs in AUDIT §2#4 are the cautionary tale.)
 - **(b) Per-vessel state lives in executors / vessel-root MonoBehaviours.**
 - **(c) The observation channel is `ResourceSystem.OnElementLevelChange`** — a per-vessel C# event
-  (the SilhouetteController/ElementalBars precedent). Not SOAP: the signal is vessel-internal, and
+  (the ElementalBarsController/ElementalBars precedent). Not SOAP: the signal is vessel-internal, and
   a global channel would recreate the `stationaryModeChanged` cross-talk bug. SOAP is reserved for
   cross-system observers (toasts, analytics, game feed).
 - **(d) Config lives in SOs** (CLAUDE.md config separation). The abandoned branch's scattered

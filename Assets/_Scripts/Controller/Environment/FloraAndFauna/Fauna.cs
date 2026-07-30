@@ -111,6 +111,10 @@ namespace CosmicShore.Gameplay
 
         Cell hostCell;
         FaunaConfigurationSO sourceConfig;
+
+        // This individual's rolled variant (element + the block expressing it + hatch level).
+        // Passed to offspring so a lineage breeds true instead of re-rolling per birth.
+        LifeformVariantPick<FaunaVariantTuning>? _variantPick;
         bool lineageRegistered;
         int _feedsSinceBirth;
         float _lastBirthTime = float.NegativeInfinity;
@@ -129,7 +133,17 @@ namespace CosmicShore.Gameplay
         /// OnDestroy). Called by the spawner after Initialize, and by a parent
         /// for its offspring - heredity is what lets reproduction recurse.
         /// </summary>
-        public void AssignLineage(Cell host, FaunaConfigurationSO config)
+        public void AssignLineage(Cell host, FaunaConfigurationSO config) =>
+            AssignLineage(host, config, null);
+
+        /// <summary>
+        /// Lineage bind with an optional INHERITED variant pick: a parent passes its own pick to
+        /// its offspring so a lineage keeps its element (and the level it hatched at) instead of
+        /// re-rolling a fresh identity every birth. Null rolls a new pick from the config - which,
+        /// with spread off, is just the authored Element / Variant / InitialLevel.
+        /// </summary>
+        public void AssignLineage(Cell host, FaunaConfigurationSO config,
+            LifeformVariantPick<FaunaVariantTuning>? inherit)
         {
             hostCell = host;
             sourceConfig = config;
@@ -147,14 +161,17 @@ namespace CosmicShore.Gameplay
             // the level curve grows from the variant's base scale.
             if (config)
             {
-                if (config.Element != Element.None)
+                var pick = config.RollVariant(inherit);
+                _variantPick = pick;
+
+                if (pick.Element != Element.None)
                 {
-                    crystal = LifeFormCrystal.EnsureElementalCrystal(this, config.Element);
+                    crystal = LifeFormCrystal.EnsureElementalCrystal(this, pick.Element);
                     if (crystal) crystal.SetEmbeddedIn(this);
                 }
-                if (config.Variant is { Enabled: true })
-                    ApplyVariantTuning(config.Variant);
-                SetLevel(config.InitialLevel, animate: false);
+                if (pick.Tuning is { Enabled: true })
+                    ApplyVariantTuning(pick.Tuning);
+                SetLevel(pick.Level, animate: false);
             }
 
             // A new living heart entered the world - let the domain fauna buff re-sum now
@@ -214,7 +231,10 @@ namespace CosmicShore.Gameplay
             // passes heredity so the child can reproduce in turn. Predation
             // immunity (stamped in Awake) gives it time to disperse.
             child.Initialize(host);
-            child.AssignLineage(host, cfg);
+            // Heredity: the child inherits this parent's variant pick - its element and the
+            // level it hatched at - rather than rolling a new identity. In-world level-ups
+            // (the Shepherd joust) are NOT inherited: acquired growth is not heritable.
+            child.AssignLineage(host, cfg, _variantPick);
             host.RegisterSpawnedObject(child.gameObject);
         }
 

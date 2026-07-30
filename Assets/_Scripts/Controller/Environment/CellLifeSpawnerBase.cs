@@ -153,10 +153,16 @@ namespace CosmicShore.Gameplay
             // Initialize - the leaf prism size and crystal lookup are consumed there.
             if (config)
             {
-                flora.ApplyElement(config.Element);
-                if (config.Variant is { Enabled: true })
-                    flora.ApplyVariantTuning(config.Variant);
-                flora.ApplyLevel(config.InitialLevel, config.LeafScalePerLevel, config.CrystalScalePerLevel);
+                // One roll decides this plant's variant: which element it carries, the block
+                // that expresses that element, and the level it seeds at. With spread off the
+                // roll returns the config's authored Element / Variant / InitialLevel, so the
+                // legacy per-element-config path is unchanged.
+                var pick = config.RollVariant();
+
+                flora.ApplyElement(pick.Element);
+                if (pick.Tuning is { Enabled: true })
+                    flora.ApplyVariantTuning(pick.Tuning);
+                flora.ApplyLevel(pick.Level, config.LeafScalePerLevel, config.CrystalScalePerLevel);
             }
 
             flora.Initialize(host);

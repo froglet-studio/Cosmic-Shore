@@ -74,7 +74,7 @@ energy-constrained agent ecology where *survival is selection* — our north-sta
 | Response to stimuli | react to environment | aggression-by-phase, prey-seeking, starvation clocks | ✅ have it |
 | Homeostasis / regulation | self-bounding populations | prey-linked starvation + phase gates; full **Lotka–Volterra** after the predator/herbivore split | 🟡 partial → **P2** |
 | Reproduction | individuals replicate | well-fed fauna breed; spawner becomes a seeder | ❌ → **P3** |
-| Heredity (a "program"/genome) | traits passed to offspring | a small **trait genome** per lifeform, inherited | ❌ → **P3** |
+| Heredity (a "program"/genome) | traits passed to offspring | a small **trait genome** per lifeform, inherited | 🟡 **first heritable trait shipped** — the spawn variant (element + hatch level) is rolled once and inherited by offspring through `AssignLineage`, and acquired level-ups are deliberately *not* inherited (`Docs/ECOSYSTEM.md §17`); that inheritance channel is the seat for the trait genome → **P3** |
 | Variation / mutation | offspring differ heritably | mutation on inheritance | ❌ → **P3/P4** |
 | Selection | differential survival/reproduction | the energy economy (starvation/predation) **already selects** — becomes *natural* selection once traits are heritable | 🟡 substrate exists → **P4** |
 | **Adaptation / EVOLUTION (the bar)** | open-ended Darwinian evolution → novelty | reproduction + genome + mutation + selection; then speciation / predator-prey arms races | ❌ → **P4 (centerpiece)** |
@@ -213,8 +213,20 @@ you want the anchor power-up synced. It can ride the controller's existing `Netw
 **Phase 3 — Reproduction + the genome** *(reproduction ✅ adopted; genome = the evolution substrate, TODO)*
 - Well-fed lifeforms **reproduce** (`Fauna.NotifyFed`→`TryReproduce`; `FaunaReproductionRules`);
   the spawner is now a one-time **seeder**. ✅ *(adopted from `bleeding-edge`)*
+- The **spawn variant is now heritable**: a cell spreads its species across the element × level
+  matrix, each spawn rolls one variant, and offspring inherit their parent's roll (element + hatch
+  level) rather than re-rolling — while acquired level-ups stay non-heritable. That is the first
+  trait riding the reproduction path and the seat the genome plugs into. ✅ (`Docs/ECOSYSTEM.md §17`)
 - TODO: a small **heritable trait genome** (e.g. speed, size, consume-radius, starvation-tolerance,
-  diet-bias, reproduction-threshold, element); offspring inherit **with mutation**.
+  diet-bias, reproduction-threshold, element); offspring inherit **with mutation** — extend the
+  inherited `LifeformVariantPick` channel rather than adding a second inheritance path.
+- TODO (follow-up from the spread): **phase-threshold retune for the new volume mix.** Level spread
+  raises mean creature scale ~13%, so `LiveVolume` per creature reads heavier than when the
+  thresholds were authored at level 1. Retune with §2's volume pass; no collider change.
+- TODO (follow-up from the spread): per-cell **element palettes**. Cells currently borrow the
+  canonical `_SO_Assets/Lifeforms` per-element tuning; the score-tuned cells (Skim Race, Nucleus
+  Rush, Astro League) therefore run element-only spread to protect their job-tuned swarms. Author
+  cell-local palette assets if a biome wants both its own behavior tuning and full element identity.
 - *Life:* reproduction + heredity + variation — the substrate for evolution. *Collider:* governed
   by the budget (reproduction can't exceed it). *Tunable:* mutation rate, trait ranges per biome.
 

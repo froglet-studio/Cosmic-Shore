@@ -1,7 +1,9 @@
+using System.Collections.Generic;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using UnityEngine;
 using UnityEngine.Serialization;
+using Random = UnityEngine.Random;
 
 namespace CosmicShore.Utility
 {
@@ -69,6 +71,69 @@ namespace CosmicShore.Utility
                  "authored. Inventory source: the Mass/Space/Time tadpole prefab diff " +
                  "(Docs/ECOSYSTEM.md §3).")]
         public FaunaVariantTuning Variant = new();
+
+        [Header("Variant spread - one config spans the element x level matrix")]
+        [Tooltip("Roll the ELEMENT per spawn instead of hatching this config's single element. " +
+                 "The element's identity (body prism shape, starvation clock, flocking numbers, " +
+                 "material, audio) comes from the palette below, so a rolled element behaves as " +
+                 "authored - not just a recoloured heart. Empty palette = roll the element alone " +
+                 "and keep this config's own Variant tuning. Population, reproduction and the " +
+                 "seed floor stay on THIS config, so spreading elements does not multiply the " +
+                 "creature count (or the collider budget).")]
+        public bool SpreadElements = false;
+
+        [Tooltip("Per-element sibling configs that define each element's identity (normally the " +
+                 "four canonical assets in _SO_Assets/Lifeforms for this species). Only Element " +
+                 "and Variant are read from them.")]
+        public List<FaunaConfigurationSO> ElementPalette = new();
+
+        [Tooltip("Spawn across a band of LEVELS instead of always InitialLevel. Level is a pure " +
+                 "scale curve (body + dropped crystal), so this costs no extra colliders. " +
+                 "Offspring INHERIT their parent's element and spawn level - a lineage keeps its " +
+                 "identity rather than re-rolling every birth.")]
+        public LifeformLevelSpread Levels = new();
+
+        /// <summary>
+        /// What a single hatch of this species is: element + the variant block expressing it +
+        /// the level it seeds at. Pass <paramref name="inherit"/> (a parent's pick) so offspring
+        /// keep the lineage's identity instead of rolling a fresh one.
+        /// </summary>
+        public LifeformVariantPick<FaunaVariantTuning> RollVariant(
+            LifeformVariantPick<FaunaVariantTuning>? inherit = null)
+        {
+            if (inherit.HasValue) return inherit.Value;
+
+            var element = Element;
+            var tuning = Variant;
+
+            if (SpreadElements)
+            {
+                var sibling = RollPaletteSibling();
+                if (sibling)
+                {
+                    element = sibling.Element;
+                    tuning = sibling.Variant;
+                }
+                else
+                {
+                    element = CosmicShore.ScriptableObjects.ElementalCrystalSetSO.RandomElement();
+                }
+            }
+
+            return new LifeformVariantPick<FaunaVariantTuning>(element, tuning, Levels.Roll(InitialLevel));
+        }
+
+        FaunaConfigurationSO RollPaletteSibling()
+        {
+            if (ElementPalette is not { Count: > 0 }) return null;
+
+            for (int attempt = 0; attempt < ElementPalette.Count; attempt++)
+            {
+                var candidate = ElementPalette[Random.Range(0, ElementPalette.Count)];
+                if (candidate && candidate.Element != CosmicShore.Data.Element.None) return candidate;
+            }
+            return null;
+        }
     }
 
     /// <summary>

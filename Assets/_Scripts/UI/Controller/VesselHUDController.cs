@@ -9,9 +9,6 @@ namespace CosmicShore.UI
         [Header("Base View (fallback)")]
         [SerializeField] private VesselHUDView baseView;
 
-        [Header("Legacy Silhouette")]
-        [SerializeField] private SilhouetteController silhouette;
-
         protected R_VesselActionHandler Actions { get; private set; }
         protected VesselHUDView View => baseView;
 
@@ -82,15 +79,6 @@ namespace CosmicShore.UI
                 if (h.input == ev && h.image)
                     h.image.enabled = on;
             }
-        }
-
-        public void SetBlockPrefab(GameObject prefab)
-        {
-            if (baseView != null)
-                baseView.TrailBlockPrefab = prefab;
-
-            if (silhouette != null)
-                silhouette.SetBlockPrefab(prefab);
         }
     }
 }
