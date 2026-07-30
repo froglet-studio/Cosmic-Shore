@@ -7,17 +7,18 @@ namespace CosmicShore.Gameplay
     /// <summary>
     /// The freestyle counterpart of the game scenes' connecting-screen hold: when a cell
     /// spawns a prepopulated environment in a scene WITHOUT an arena gate (Menu_Main's lava
-    /// lamp), this veil covers the screen with the same prism-count / percent readout the
-    /// gated loads show, brackets <see cref="PrismTrailBuilder.SetLoadGateHolding"/> so the
-    /// build runs at the boosted 250ms/frame slice with force-settled grow-ins, and releases
+    /// lamp), this veil covers the screen with the connecting panel's status idiom, brackets
+    /// <see cref="PrismTrailBuilder.SetLoadGateHolding"/> at a gentler 80ms lay slice
+    /// (<see cref="VeilLayBudgetMs"/> - the scene's Netcode/Relay/audio keep breathing under
+    /// the veil, unlike the quiescent game scenes that take the full 250ms), and releases
     /// (fading out - continuity of existence applies to UI too) only when
     /// <see cref="PrismTrailBuilder.PollArenaReady"/> reports every prism laid, created, and
-    /// grown. Without this, a ~34k-prism world streamed at the gentle ungated slice builds
-    /// for minutes UNDER live gameplay - clone-integration spikes plus physics churn against
-    /// a half-built world (the measured menu-crash path). The overlay is created
-    /// programmatically like SceneTransitionManager's fade and blocks input while held, so a
-    /// game launch cannot start a second gate bracket mid-build. Scene-local: a scene change
-    /// destroys it and OnDestroy closes the gate bracket.
+    /// grown. Cell.SpawnEnvironment DEFERS raising it until the scene has finished booting -
+    /// building during boot starved audio into underruns and wedged a clone batch (the
+    /// 10,496-prism freeze); streaming ungated under live gameplay crashed outright. The
+    /// overlay is created programmatically like SceneTransitionManager's fade and blocks
+    /// pointer input while held. Scene-local: a scene change destroys it and OnDestroy
+    /// closes the gate bracket.
     /// </summary>
     public sealed class EnvironmentLoadVeil : MonoBehaviour
     {

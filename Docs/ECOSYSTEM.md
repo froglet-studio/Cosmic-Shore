@@ -1547,3 +1547,19 @@ a bit-exact simulation of the C# noise (count/volume): Yggdra 34.3k/541k, Daedal
 confirm in-engine via Tools > Cosmic Shore > Measure Cell Environment Baselines before
 retuning any ladder. Same soak-before-ship rule as §17 above; each prefab's
 `density` knob (0.5-1.3) is the per-cell fallback lever.
+
+**Follow-ups (cell environments).**
+1. **Field-verify the deferred menu build** — the defer-past-boot + 80ms veil slice + clone
+   watchdog fix shipped after the 10,496 freeze but has not yet been confirmed in-editor.
+2. **Device soak per cell + Scurry Atlantis** — record steady-state numbers in
+   `Docs/PERFORMANCE_OPTIMIZATION.md`; per-prefab `density` (0.5-1.3) is the fallback lever.
+3. **Confirm simulated baselines in-engine** (Tools > Cosmic Shore > Measure Cell Environment
+   Baselines) and re-author any PhaseThresholds off by more than a few hundred count / few
+   thousand volume.
+4. **Menu load-time UX call** — if the veil hold feels long for a menu, options are lower
+   density, or rolling Blob on first entry and reserving environment cells for explicit
+   freestyle entry.
+5. **Danger tuning after playtests** — Caldera (~1.6k danger prisms) is deliberately the spicy
+   cell; tune per feel.
+6. **Future archetypes** (diversity headroom before hybrids/dynamics take over): Abyss, Mycel,
+   Hive, Glacier, Reliquary, Mesa.
