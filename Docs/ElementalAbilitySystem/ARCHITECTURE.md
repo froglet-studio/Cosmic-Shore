@@ -280,7 +280,21 @@ an ability that *is* bound to an input but has no hint labelling it.
 Reassigning an ability to a different input event in the action handler, or moving an icon in the
 row, now carries the label along with no manual repositioning.
 
-**Fleet status.** Only the Squirrel HUD authors the row today (four buttons, four bindings). The
+**Fleet status.** Squirrel and Sparrow author the row (four buttons, four bindings, uniform pitch and
+slot size, charge → mass → space → time). Sparrow's row was **Mass, Space, Charge, Time** and is now
+reordered; note two of its icons have their sprite driven by gameplay (`missileIcon` by ammo,
+`weaponModeIcon` by weapon mode) and both start `enabled = false`, so the sprite-swap layer of the
+upgrade signal is unavailable there and the element badge carries it. Sparrow's HUD is **not** a variant
+of `VesselHUDPrefab` and has no `InputDeviceIconSetSwitcher`, so its four Xbox + four PlayStation
+`ControllerIcon` glyphs are untoggled — both sets render at once — and hints cannot bind to abilities
+until a switcher is added.
+
+Manta, Dolphin, Rhino and Serpent are blocked on **design**: their maps are still `(open design slot)`
+with `Input = 0` and no `UpgradeLabel`, and their HUDs carry 0–2 lower-right icons. Run
+**Tools > Cosmic Shore > Audit Vessel Ability Rows** (`VesselAbilityRowAuditor`) for the live table — it
+checks map completeness, icon count and order, pitch/size uniformity and hint coverage across the whole
+fleet from assets alone. At runtime a vessel with no row now warns once per class instead of failing
+silently. The
 other five flyable HUDs have no `abilityIcons` bindings and varied lower-right layouts; wiring them
 is per-vessel HUD work — the framework above needs no further changes.
 

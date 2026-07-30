@@ -1814,9 +1814,23 @@ scale bump** with a one-shot unlock punch.
   **must** override `SetAbilityUpgraded` to re-anchor its captured rest scales to
   `AbilityIconRestScale(element)`, or its own tweens settle back to the pre-upgrade scale and wipe the
   bump. `SquirrelVesselHUDView` is the reference implementation.
-- **Fleet status**: only the Squirrel HUD authors the row today (Charge→boost/skim icon, Mass→drift,
-  Space→impact/joust, Time→boost-ring). The other five flyable HUDs bind no `abilityIcons` and have
-  varied lower-right layouts — wiring them is per-vessel HUD work; the framework needs no changes.
+- **Fleet status** (audit it yourself: **Tools > Cosmic Shore > Audit Vessel Ability Rows**, which
+  reports every vessel's compliance against this contract from assets alone, no play mode):
+
+  | vessel | map | icons | order | uniform | hints |
+  |---|---|---|---|---|---|
+  | Squirrel | complete | 4/4 | ✅ | ✅ | ✅ bound |
+  | Sparrow | complete | 4/4 | ✅ | ✅ | ⚠ no switcher on its HUD |
+  | Manta | 3/4 named, 0/4 upgrades | 0/4 | — | — | n/a |
+  | Dolphin | 2/4 named, 0/4 upgrades | 0/4 | — | — | n/a |
+  | Rhino | 1/4 named, 0/4 upgrades | 0/4 | — | — | n/a |
+  | Serpent | 1/4 named, 0/4 upgrades | 0/4 | — | — | n/a |
+
+  Manta / Dolphin / Rhino / Serpent are blocked on **design, not wiring**: their
+  `ElementalAbilityMapSO` entries are still `(open design slot)` with `Input = 0` and no
+  `UpgradeLabel`, and their HUDs have 0–2 lower-right icons rather than four. Author the map
+  (`Docs/ElementalAbilitySystem/FLEET_MAPS.md` §2 holds the un-approved proposals) and the icons
+  before wiring — do not invent an element→ability mapping to satisfy the audit.
 - Full reference: `Docs/ElementalAbilitySystem/ARCHITECTURE.md` §7.1.
 
 **Control hints attach to the ability, never to a position.** The `(LT)`/`(RT)` glyphs are bound to

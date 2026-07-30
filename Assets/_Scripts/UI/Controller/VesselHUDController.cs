@@ -65,7 +65,7 @@ namespace CosmicShore.UI
 
 #if UNITY_EDITOR
             // Structural contract: four ability icons, charge/mass/space/time, left to right.
-            baseView?.ValidateAbilityIconRow();
+            baseView?.ValidateAbilityIconRow(vesselStatus.VesselType);
 #endif
         }
 
