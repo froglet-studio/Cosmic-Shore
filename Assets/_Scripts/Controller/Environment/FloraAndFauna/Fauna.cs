@@ -39,6 +39,16 @@ namespace CosmicShore.Gameplay
         // spawn but varied across the pack.
         Vector3 _goalOrbitOffset;
 
+        /// <summary>
+        /// This creature's stable offset from whatever point it is currently seeking -
+        /// the anti-convergence term. Subclasses that recompute <see cref="Goal"/> on
+        /// their own cadence MUST add it wherever <see cref="ResolveGoal"/> does, or the
+        /// pack collapses onto one point: every creature seeks the identical centroid,
+        /// arrives, and its goal direction degenerates to zero. See
+        /// <see cref="LightFauna"/>'s behavior tick.
+        /// </summary>
+        protected Vector3 GoalOrbitOffset => _goalOrbitOffset;
+
         [Header("Diet (predator / prey)")]
         [Tooltip("What this fauna eats - the predator/herbivore selector. Herbivore: " +
                  "opposing-domain prism MASS (flora canopy + vessel trails); the default, " +
@@ -101,6 +111,10 @@ namespace CosmicShore.Gameplay
 
         Cell hostCell;
         FaunaConfigurationSO sourceConfig;
+
+        // This individual's rolled variant (element + the block expressing it + hatch level).
+        // Passed to offspring so a lineage breeds true instead of re-rolling per birth.
+        LifeformVariantPick<FaunaVariantTuning>? _variantPick;
         bool lineageRegistered;
         int _feedsSinceBirth;
         float _lastBirthTime = float.NegativeInfinity;
@@ -119,7 +133,17 @@ namespace CosmicShore.Gameplay
         /// OnDestroy). Called by the spawner after Initialize, and by a parent
         /// for its offspring - heredity is what lets reproduction recurse.
         /// </summary>
-        public void AssignLineage(Cell host, FaunaConfigurationSO config)
+        public void AssignLineage(Cell host, FaunaConfigurationSO config) =>
+            AssignLineage(host, config, null);
+
+        /// <summary>
+        /// Lineage bind with an optional INHERITED variant pick: a parent passes its own pick to
+        /// its offspring so a lineage keeps its element (and the level it hatched at) instead of
+        /// re-rolling a fresh identity every birth. Null rolls a new pick from the config - which,
+        /// with spread off, is just the authored Element / Variant / InitialLevel.
+        /// </summary>
+        public void AssignLineage(Cell host, FaunaConfigurationSO config,
+            LifeformVariantPick<FaunaVariantTuning>? inherit)
         {
             hostCell = host;
             sourceConfig = config;
@@ -137,14 +161,17 @@ namespace CosmicShore.Gameplay
             // the level curve grows from the variant's base scale.
             if (config)
             {
-                if (config.Element != Element.None)
+                var pick = config.RollVariant(inherit);
+                _variantPick = pick;
+
+                if (pick.Element != Element.None)
                 {
-                    crystal = LifeFormCrystal.EnsureElementalCrystal(this, config.Element);
+                    crystal = LifeFormCrystal.EnsureElementalCrystal(this, pick.Element);
                     if (crystal) crystal.SetEmbeddedIn(this);
                 }
-                if (config.Variant is { Enabled: true })
-                    ApplyVariantTuning(config.Variant);
-                SetLevel(config.InitialLevel, animate: false);
+                if (pick.Tuning is { Enabled: true })
+                    ApplyVariantTuning(pick.Tuning);
+                SetLevel(pick.Level, animate: false);
             }
 
             // A new living heart entered the world - let the domain fauna buff re-sum now
@@ -204,7 +231,10 @@ namespace CosmicShore.Gameplay
             // passes heredity so the child can reproduce in turn. Predation
             // immunity (stamped in Awake) gives it time to disperse.
             child.Initialize(host);
-            child.AssignLineage(host, cfg);
+            // Heredity: the child inherits this parent's variant pick - its element and the
+            // level it hatched at - rather than rolling a new identity. In-world level-ups
+            // (the Shepherd joust) are NOT inherited: acquired growth is not heritable.
+            child.AssignLineage(host, cfg, _variantPick);
             host.RegisterSpawnedObject(child.gameObject);
         }
 
@@ -412,6 +442,33 @@ namespace CosmicShore.Gameplay
         // are never Initialize(cell)-called. Unity-null guards on both so callers
         // just get null and skip the goal/avoidance branches that need a cell.
         protected Cell cell => hostCell ? hostCell : (cellData ? cellData.Cell : null);
+
+        /// <summary>
+        /// Squared length below which a steering vector counts as degenerate. A steering
+        /// sum that cancels to ~zero normalizes to <see cref="Vector3.zero"/>, which zeroes
+        /// the creature's velocity - and a motionless creature recomputes the identical
+        /// zero from the identical position on every later tick, so the stall is PERMANENT
+        /// (it hangs in place until it starves). Steering code must test against this and
+        /// keep its last heading rather than publish a zero direction.
+        /// </summary>
+        protected const float DegenerateSteeringSqr = 1e-6f;
+
+        /// <summary>
+        /// Shielded mass is not food for ANY herbivore - the one canonical rule every
+        /// species' edibility predicate routes through, so no new grazer can re-acquire
+        /// the bug. A SUPER-shielded prism is fully invulnerable and a SHIELDED one only
+        /// sheds its shield (see <see cref="Prism.Consume"/>), so a grazer that adopts one
+        /// as its feed target approaches it, faces it, "eats" it, and finds it still there
+        /// on the next mouthful-chaining query - grazing forever without ever removing
+        /// mass. That is what parked brittlestars on Skim Race's super-shielded track
+        /// prisms. Excluding shields from the predicate makes the creature skip straight
+        /// to the next normal prism on the same behavior tick.
+        /// </summary>
+        protected static bool IsShieldedMass(Prism prism)
+        {
+            var properties = prism ? prism.prismProperties : null;
+            return properties != null && (properties.IsShielded || properties.IsSuperShielded);
+        }
 
         /// <summary>
         /// Shared scratch buffer for Physics.OverlapSphereNonAlloc in fauna

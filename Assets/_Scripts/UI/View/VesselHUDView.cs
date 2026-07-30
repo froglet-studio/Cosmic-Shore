@@ -92,8 +92,6 @@ namespace CosmicShore.UI
 
         public abstract void Initialize();
 
-        internal GameObject TrailBlockPrefab;
-
         /// <summary>Persistent rest scale an ability icon sits at while its upgrade is active.</summary>
         protected float UpgradeHighlightScale => upgradeHighlightScale;
 

@@ -57,8 +57,24 @@ namespace CosmicShore.Gameplay
 
         protected override async UniTaskVoid ExplodeAsync(CancellationToken ct)
         {
+            var impactor = _explosionImpactor;
+            bool colliderExcludedForBatch = false;
             try
             {
+                // Prism damage rides the Burst batch path (PrismSpatialIndex), same as
+                // the spherical base explosion; the trigger sphere stays live for
+                // explosion→vessel effects and as the physics fallback.
+                impactor?.BeginBatchProcessing();
+                if (impactor != null && impactor.IsBatchProcessing)
+                {
+                    ApplyPrismExclusion();
+                    colliderExcludedForBatch = true;
+                }
+                else
+                {
+                    RestorePrismExclusion();
+                }
+
                 await UniTask.Delay(
                     System.TimeSpan.FromSeconds(ExplosionDelay),
                     DelayType.DeltaTime,
@@ -71,6 +87,7 @@ namespace CosmicShore.Gameplay
                 float elapsed = 0f;
 
                 var sphereCol = GetComponent<SphereCollider>();
+                var containerTransform = coneContainer.transform;
                 float maxScaleMag = MaxScaleVector.magnitude; // invariant for this explosion - hoist out of the per-frame loop
 
                 while (elapsed < ExplosionDuration)
@@ -82,17 +99,52 @@ namespace CosmicShore.Gameplay
                     float lerp = Mathf.Sin(t * PI_OVER_TWO);
 
                     // Scale cone
-                    coneContainer.transform.localScale =
+                    containerTransform.localScale =
                         Vector3.Lerp(Vector3.zero, MaxScaleVector, lerp);
 
-                    // Dynamic collider radius update
-                    float z = Mathf.Clamp(coneContainer.transform.localScale.z, 0.01f, Mathf.Infinity);
-                    sphereCol.radius = coneContainer.transform.localScale.x / (z * 2f);
+                    // Parametric coupling: the damage sphere IS the rendered cone's
+                    // leading cross-section - centered on the growing cone's base plane
+                    // (container z = current height), radius = half the current base
+                    // width (container x). Growth and translation both derive from the
+                    // same container scale that shapes the mesh, so a sphere sweeping
+                    // this path covers exactly the conic volume the player sees, and
+                    // editing MaxScale or height moves visuals and damage together.
+                    Vector3 scale = containerTransform.localScale;
+                    float sphereWorldRadius = scale.x * 0.5f;
+                    Vector3 sphereWorldCenter =
+                        containerTransform.position + containerTransform.forward * scale.z;
+
+                    // Blast origin = the cone APEX (container origin, the spawn
+                    // point). The wavefront sphere travels; the impact vectors all
+                    // radiate from the apex at the blast-wave speed, so every
+                    // struck prism flies outward with the expanding blast.
+                    bool shouldContinue = impactor?.ProcessBatchFrame(
+                        sphereWorldCenter, sphereWorldRadius, containerTransform.position,
+                        speed, Inertia) ?? true;
+
+                    if (!shouldContinue)
+                    {
+                        // Super-shielded enemy prism physically blocks the explosion.
+                        impactor?.EndBatchProcessing();
+                        if (colliderExcludedForBatch) RestorePrismExclusion();
+                        DestroyContainer();
+                        if (this) Destroy(gameObject);
+                        return;
+                    }
+
+                    // Keep the trigger sphere on the same parametric sphere (vessel
+                    // impacts + physics fallback). Unity scales a SphereCollider by
+                    // its transform's LARGEST lossy axis - max(x, z) here - so divide
+                    // it back out; the historical x/(2z) form assumed z >= x and lost
+                    // the coupling whenever the base outgrew the height.
+                    if (sphereCol)
+                        sphereCol.radius =
+                            scale.x / (2f * Mathf.Max(Mathf.Max(scale.x, scale.z), 0.01f));
 
                     // Opacity fade
                     float opacity =
                         Mathf.Clamp(
-                            (MaxScaleVector - coneContainer.transform.localScale).magnitude
+                            (MaxScaleVector - containerTransform.localScale).magnitude
                              / maxScaleMag,
                             0f,
                             1f);
@@ -102,13 +154,47 @@ namespace CosmicShore.Gameplay
                     await UniTask.Yield(PlayerLoopTiming.Update, ct);
                 }
 
+                impactor?.EndBatchProcessing();
+                if (colliderExcludedForBatch) RestorePrismExclusion();
+
                 // Clean up when the animation finishes
                 DestroyContainer();
                 if (this) Destroy(gameObject);
             }
             catch (OperationCanceledException)
             {
+                impactor?.EndBatchProcessing();
+                // Prism exclusion deliberately NOT restored here - same reasoning as
+                // the base class: a cancelled explosion stays frozen at its current
+                // scale, and re-including TrailBlocks would make PhysX refilter and
+                // fire OnTriggerEnter for every overlapping prism after the turn
+                // ended. It is restored lazily on the next run or discarded with the
+                // GameObject on reset.
             }
+            catch (Exception e)
+            {
+                // Safety net (mirrors the base class): any unexpected exception - e.g.
+                // the container destroyed externally mid-animation - must still clean
+                // up batch processing, or _useBatchProcessing stays stuck true.
+                Debug.LogException(e);
+                impactor?.EndBatchProcessing();
+                if (colliderExcludedForBatch) RestorePrismExclusion();
+                DestroyContainer();
+                if (this) Destroy(gameObject);
+            }
+        }
+
+        /// <summary>
+        /// Vessel impacts (and the physics fallback) get the same blast-wave
+        /// dynamics as the batch prism path: direction radiates from the cone
+        /// APEX (the container origin), not from this transform, which sits at
+        /// the cone's midpoint. Per-hit managed normalize is fine here - vessel
+        /// hits are rare.
+        /// </summary>
+        public override Vector3 CalculateImpactVector(Vector3 impacteePosition)
+        {
+            Vector3 origin = coneContainer ? coneContainer.transform.position : transform.position;
+            return (impacteePosition - origin).normalized * speed * Inertia;
         }
 
         protected override void PerformResetCleanup()

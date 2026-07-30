@@ -16,8 +16,8 @@ MonoBehaviour:
     type: 2}
   _aoePrefabs:
   - {fileID: 1775484485627665200, guid: 2ae56847c6f549948a71f41eaf59f749, type: 3}
-  _minExplosionScale: 200
-  _maxExplosionScale: 800
+  _minExplosionScale: 400
+  _maxExplosionScale: 1600
   _resourceIndex: 1
   _aoeExplosionMaterial: {fileID: 0}
   _spawnOffset: {x: 0, y: 0, z: 0}

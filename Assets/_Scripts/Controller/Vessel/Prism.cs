@@ -570,6 +570,15 @@ namespace CosmicShore.Gameplay
             destroyed = false;
             devastated = false;
             _destroyedByCreature = false; // pool reuse: clear stale creature-kill flag
+
+            // Pool-reuse safety: no spawner requests super-shield via prismProperties
+            // before Initialize (it's engaged post-spawn via ActivateSuperShield /
+            // SegmentSpawner), so a set flag here is always a leak from the previous
+            // life. Left set, this life registers as super-shielded in the spatial
+            // index - invulnerable, and it kills any AOE explosion that touches it.
+            // IsShielded/IsDangerous are NOT cleared: spawners set those pre-Initialize
+            // as the requested state for this life.
+            if (prismProperties != null) prismProperties.IsSuperShielded = false;
             _lodCulled = false; // pool reuse: Initialize owns the collider again
             CachedVolume = 0f;  // stale from the previous life; reseeded at CreateBlock
             IsSmallest = false;

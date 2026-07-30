@@ -9,9 +9,6 @@ namespace CosmicShore.UI
         [Header("Base View (fallback)")]
         [SerializeField] private VesselHUDView baseView;
 
-        [Header("Legacy Silhouette")]
-        [SerializeField] private SilhouetteController silhouette;
-
         [Header("Control hints (optional)")]
         [Tooltip("Drives the LT/RT/A/B glyph sets and attaches each hint to the ability icon its " +
                  "input drives. Found under this vessel automatically when left empty.")]
@@ -101,15 +98,6 @@ namespace CosmicShore.UI
                 if (h.input == ev && h.image)
                     h.image.enabled = on;
             }
-        }
-
-        public void SetBlockPrefab(GameObject prefab)
-        {
-            if (baseView != null)
-                baseView.TrailBlockPrefab = prefab;
-
-            if (silhouette != null)
-                silhouette.SetBlockPrefab(prefab);
         }
     }
 }
