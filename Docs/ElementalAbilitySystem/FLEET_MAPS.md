@@ -9,7 +9,7 @@ executor, replicated unlock bits, no new fundamentals).
 ## 1. What is live on every vessel now
 
 - **Display (required, structural):** any vessel without an authored `ElementalBarsView`
-  auto-creates one on its HUD canvas (`SilhouetteController.CreateDefaultElementBars`), and a
+  auto-creates one on its HUD canvas (`ElementalBarsController.CreateDefaultElementBars`), and a
   view with no authored bindings self-populates the standard four flowers
   (`ElementalBarsView.Build`). Placement is stamped fleet-wide from `ElementalBarsConfig`
   (the Squirrel's reference spot). A vessel literally cannot ship without the display.
