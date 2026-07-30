@@ -1,3 +1,4 @@
+using CosmicShore.Data;
 using DG.Tweening;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -5,6 +6,21 @@ using UnityEngine.UI;
 
 namespace CosmicShore.UI
 {
+    /// <summary>
+    /// The Squirrel's four lower-right ability icons, in the fleet order charge → mass → space → time
+    /// (the same order as the element flowers above them), each bound to the element that upgrades it:
+    ///
+    ///   Charge → skim energy   (overheatIcon + the boost fill) → "Live Wire"
+    ///   Mass   → trail volume  (driftButtonIcon)               → "Heavy Trail"
+    ///   Space  → skimmer reach (impactIcon, joust + crystal)   → "Shepherd"
+    ///   Time   → boost ring    (tubeCooldownIcon)              → "Twin Rings"
+    ///
+    /// Every one of those icons is also a live gameplay gauge - cooldown fill, heat tint, drift lean,
+    /// impact flash - repainted per frame or per event. So the upgrade signal here is carried by the
+    /// element badge and a persistent scale bump rather than by the icon's colour (tintIconOnUpgrade
+    /// is off on this prefab), and the local rest scales below are re-anchored on every upgrade flip
+    /// so this view's own tweens can never wipe the bump.
+    /// </summary>
     public sealed class SquirrelVesselHUDView : VesselHUDView
     {
         [Header("Boost")]
@@ -109,14 +125,14 @@ namespace CosmicShore.UI
             if (driftButtonIcon)
             {
                 driftButtonIcon.sprite = normalSprite;
-                _driftIconOriginalScale = driftButtonIcon.rectTransform.localScale;
+                _driftIconOriginalScale = AbilityIconRestScale(Element.Mass);
                 _driftIconOriginalColor = driftButtonIcon.color;
             }
 
             if (impactIcon)
             {
                 impactIcon.color = impactRestColor;
-                _impactIconOriginalScale = impactIcon.rectTransform.localScale;
+                _impactIconOriginalScale = AbilityIconRestScale(Element.Space);
             }
 
             if (tubeCooldownIcon)
@@ -126,14 +142,14 @@ namespace CosmicShore.UI
                 // sink-and-rise loading motion alone.
                 if (tubeCooldownIcon.type == Image.Type.Filled) tubeCooldownIcon.fillAmount = 1f;
                 tubeCooldownIcon.color = tubeReadyColor;
-                _tubeIconOriginalScale = tubeCooldownIcon.rectTransform.localScale;
+                _tubeIconOriginalScale = AbilityIconRestScale(Element.Time);
                 _tubeIconRestAnchoredPos = tubeCooldownIcon.rectTransform.anchoredPosition;
                 _tubeWasReady = true;
             }
 
             if (overheatIcon)
             {
-                _overheatIconOriginalScale = overheatIcon.rectTransform.localScale;
+                _overheatIconOriginalScale = AbilityIconRestScale(Element.Charge);
                 _overheatIconOriginalColor = overheatIcon.color;
             }
 
@@ -142,6 +158,41 @@ namespace CosmicShore.UI
                 // The highlight doubles as the heat gauge: invisible cold, ember-bright hot.
                 var c = overheatHotColor; c.a = 0f;
                 overheatHighlight.color = c;
+            }
+        }
+
+        /// <summary>
+        /// Re-anchors this view's per-icon rest scales to the shared upgrade rest scale, so the drift
+        /// lean, the impact punch, the tube reload pulse and the overheat throb all settle back to the
+        /// UPGRADED size instead of snapping the bump away. The base call does the sprite swap, the
+        /// element badge and the one-shot unlock punch.
+        /// </summary>
+        public override void SetAbilityUpgraded(Element element, bool upgraded)
+        {
+            base.SetAbilityUpgraded(element, upgraded);
+
+            var rest = AbilityIconRestScale(element);
+            switch (element)
+            {
+                case Element.Charge:
+                    _overheatIconOriginalScale = rest;
+                    break;
+                case Element.Mass:
+                    _driftIconOriginalScale = rest;
+                    break;
+                case Element.Space:
+                    _impactIconOriginalScale = rest;
+                    break;
+                case Element.Time:
+                    _tubeIconOriginalScale = rest;
+                    // The reload pulse is a looping tween around the old rest scale - restart it so it
+                    // breathes around the new one instead of dragging the icon back down.
+                    if (_tubeLoadPulseTween != null && _tubeLoadPulseTween.IsActive())
+                    {
+                        _tubeLoadPulseTween.Kill();
+                        StartTubeLoadPulse();
+                    }
+                    break;
             }
         }
 

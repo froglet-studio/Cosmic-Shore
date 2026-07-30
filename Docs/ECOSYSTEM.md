@@ -246,6 +246,12 @@ grows a step per level so a higher-level creature drops a **bigger** elemental p
 death (mass rewarded, still conserved). Flora answer the contract at fixed level 1 until
 flora leveling lands.
 
+**Who actually spawns the 20.** A config authors ONE point of the matrix, so the live world
+only showed the whole grid once cells were allowed to *spread* across it: `SpreadElements` +
+`ElementPalette` (element) and `LifeformLevelSpread` (level, higher levels rarer) roll a
+variant per spawn, and offspring inherit their parent's roll. See **§17** — that is where the
+spread mechanism, its rarity curve, the palette rule and the per-cell settings live.
+
 **Variant expression (`FaunaVariantTuning` on the config).** The full diff between the
 authored Mass/Space/Time tadpole prefab variants was hoisted into config so one base
 prefab can express all of it as data (sentinels keep the prefab's authored value):
@@ -504,7 +510,8 @@ foragers, which is counterproductive to that scene's trail-cleanup perf goal.
 
 - **Diet = "what counts as prey"** is a `FaunaDiet diet` field on the `Fauna`
   base (`Herbivore` / `Predator`), defaulting to **Herbivore**:
-  - **Herbivore** — eats prism MASS, but the two herbivore species differ:
+  - **Herbivore** — eats prism MASS, but the two herbivore species differ
+    (neither eats **shielded or super-shielded** mass — the shared rule, §16):
     - `LightFauna` (brittlestar) `Consume`s **opposing-domain** flora/trail prisms
       within `consumeRadius`.
     - `Boid` (tadpole forager) `Consume`s (implode → **suction shader**) any
@@ -698,7 +705,8 @@ O(1) per tick:
   cell centre (equidistant from each other and the centre), so each new group
   gets its own feeding ground and a head start before a territorial predator's
   patch reaches it. Computed once per 30s wave; predators keep the
-  densest-mass spawn. Blob runs 3 points at radius 400.
+  densest-mass spawn. Blob runs 3 points at radius 400. **The rotation is keyed
+  to the wave clock, not to a spawn counter — see §16.**
 
 **v3.2 — polar predator ring + feeding-consistency fixes** (from in-editor
 observation of v3.1):
@@ -814,6 +822,7 @@ facing hold, so the two would double-drive consumption if both ran. Resolution:
 | Indicator (hex gauge + spawn ring, no numbers) | `Assets/_Scripts/UI/DomainVolumeIndicator.cs` |
 | Headless perf+ecology tuner (no Unity) | `Tools/ecosim/ecosim.py` (+ `calibration.csv`, `README.md`) — see §12 |
 | In-Unity perf probe (emits calibration samples) | `Assets/_Scripts/Controller/Environment/EcosystemPerfProbe.cs` |
+| Domain fauna buff (living hearts empower their domain's vessels) — see §15 | `Assets/_Scripts/Controller/Environment/DomainFaunaBuffSystem.cs`, `Fauna.LiveHeart`, `ResourceSystem.SetFaunaBuffModifier` |
 
 ---
 
@@ -888,7 +897,10 @@ with the others.
    Flora/fauna express their effects through **Elementals** (Charge/Mass/Space/
    Time) rather than bespoke buffs: a domain's flora buff its vessels, fauna debuff
    opposing mass. Vessels start to *feel* the ecosystem. Composes with Domain,
-   Vessels, Elementals.
+   Vessels, Elementals. **Fauna half LANDED (see §15):** every living fauna's
+   embedded heart grants its elemental value to all vessels of its domain, revoked
+   at death when the same heart drops as the collectible crystal. Flora hearts are
+   the natural follow-up (same `LiveHeart`-style seam on `LifeForm`).
 
 5. **Domain territory dynamics.**
    As fauna cull opposing prisms and flora regrow, a cell's controlling domain
@@ -1176,3 +1188,378 @@ Count backstops are untouched — volume-only mass never enters `LiveBlockCount`
   lining as a spawn count, not a collider-cost floor; zero new physics queries (the ball resolves
   prisms via `PrismSpatialIndex.QuerySphere` and skips super-shielded entirely). Collision is at
   authored box size for now; shape-precise (stellated) collision is the planned three-LOD follow-up.
+
+## 15. Domain fauna buff — living hearts empower their domain (July 2026, roadmap item 4 fauna half)
+
+**The mechanic.** Every LIVING fauna's embedded elemental heart grants its element's value to
+**all vessels of the fauna's domain**; the power is **lost the moment the fauna dies** — at
+which point the very same heart drops as the collectible crystal (the locked wither-to-crystal
+invariant). The economy this creates:
+
+- **Kill + collect your own domain's fauna → net zero for you, pure loss for allies.** You
+  re-earn exactly the buff you destroyed (crystal collect adds the same value to your base);
+  every teammate who doesn't collect just loses it.
+- **Kill an opposing domain's fauna → deny AND steal.** Their whole domain loses the buff, and
+  the drop is domain-agnostic, so you can collect it for yourself.
+- **Nourish your own fauna (Shepherd joust `LevelUp`) → grow your whole domain's buff** — the
+  heart grows a level step, and the buff tracks the heart's live world scale.
+- **Territorial stakes:** fauna spawn in the controlling color, so holding cells now feeds your
+  domain standing elemental power — and wave kills strip it.
+
+**Value symmetry is structural, not tuned.** Each living heart contributes
+`SkimmerAdjustElementLevelByCrystalEffectSO.ComputeLevelGain(heart.lossyScale.x, …)` — the
+exact collect formula, with the parameters read from the effect array wired on the heart's
+**own** `ElementalCrystalImpactor` (the EXACT effects `AcceptImpactee` executes at collect
+time; a heart whose drop cannot repay the value — no impactor, or no level effect wired —
+grants **nothing**; multiple wired level effects are summed exactly as collection executes
+them). The buff keys off **`Fauna.LiveHeart`**, which nulls at the precise
+`ActivateCrystal()` moment inside the sealed `Fauna.Die` — so the buff ends exactly when the
+crystal becomes collectible, with the same world scale carrying the same value on both sides
+(`transform.parent = cell` preserves world scale on the drop, and `GrowCrystalWithPop` now
+freezes if the heart is freed mid-level-up so the drop keeps its death-moment scale — a
+mid-flare death drops at the pop's transient scale, bounded by the ×1.6 overshoot and the
+per-crystal gain cap). **Zero
+new tunables**: the existing knobs (`levelPerUnitScale`, `maxLevelGainPerCrystal`,
+`CrystalScalePerLevel`, `InitialLevel`, per-species population caps) govern both the standing
+buff and the pickup.
+
+**Mechanism (SOAP-evented + reconcile sweep, no cheat).** `DomainFaunaBuffSystem`
+(auto-created by the first `Cell.Initialize` via `EnsureExists` — so it exists wherever fauna
+do, Menu_Main freestyle included; one HyperSea, one rule set) re-sums
+`Cell.ActiveCellsSnapshot → cell.LiveFauna → fauna.LiveHeart` into per-domain, per-element
+pools and applies them via `ResourceSystem.SetFaunaBuffModifier` on every `gameData.Players`
+vessel of that domain. Two triggers share the one sweep:
+`CellRuntimeDataSO.OnFaunaHeartsChanged` (raised by `Fauna.AssignLineage` and `Fauna.Die`
+**through the host cell's runtime SO** — several fauna prefabs author their own `cellData`
+wire null or dangling, so the per-prefab wire is only the hostless fallback)
+lands spawn grants and death revocations **within a frame**, and the periodic reconcile sweep
+(`updateInterval`, 1s) tracks heart growth, late-spawning vessels, vessel swaps (access is
+hardened against the destroyed-but-referenced vessel window during a menu swap), and domain
+re-picks (`player.Domain` read live). The fauna buff is a **dedicated composited layer** on
+`ResourceSystem` (like the comeback layer, its own single writer) that never touches the
+crystal-earned base, so revocation is exact — and it obeys the **maintained-mechanism law**
+(`ResourceSystem.SustainedCeiling`): *no sustained mechanism holds an element above level 10;
+the 10..15 overcharge band belongs to transients, and everything in it drains back to (at
+most) 10.* Concretely: the held layer fills only the room between the base and level 10, and
+the part of a pool INCREASE above that (a wave spawning into a saturated pool, a heart
+growing) is converted by `SetFaunaBuffModifier` into a standard temporary elemental effect —
+a felt spike up to the 15 clamp that drains at the elemental recovery rate, restoring the
+headroom so the **next** wave is felt too. Base crystal overcharge already drains the same
+way (`RecoverBaseLevels`) and comeback already fills-to-10, so after this every channel obeys
+one law. Compositing is pure (`CompositeEffectiveLevel` + `HeldFaunaContribution` +
+`ComputeUnfeltIncrease`) and pinned by `DomainFaunaBuffTests` (net-zero own-kill-collect
+below and at saturation, exact revocation, sustained-cap, spike-rides-above, clamps). HUD:
+petal bars animate automatically off `OnElementLevelChange` — one level-1 tadpole heart
+(scale 1) = one petal tick for the whole domain, and each 30s wave at a saturated pool reads
+as a petal surge that settles back to 10.
+
+**Scope + caveats:**
+- **Fauna only** for now; flora hearts are the follow-up seam (`LifeForm` would grow the same
+  `LiveHeart` accessor; roadmap item 4's "flora buff its vessels").
+- **Net-zero is exact at the moment of collection.** Over time the resting-band drift
+  (`ResourceSystem.RecoverBaseLevels`) applies to the collected BASE value — overcharge above
+  level 10 bleeds back to 10, deficits refill to 0 — and the held fauna layer sustains at
+  most level 10 by the maintained-mechanism law, so neither side of the swap can park power
+  in the overcharge band. Killing your own domain's fauna is **never profitable** —
+  break-even at best. At a saturated pool the swap is absorbed by the buffer (the held fill
+  re-balances around the collected gain; sustained level stays 10 on both sides), so
+  stripping a saturated domain's standing power takes sustained overkill, not one pick.
+- **Manager-spawned fauna** (`LightFaunaManager.SpawnGroup`, `BoidManager.SpawnBoids` — the
+  dead scene-population paths wired through the removed `Cell.fauna2` field, §7) never enter
+  `Cell.LiveFauna`, so they would drop collectibles without having granted a buff — acceptable
+  while those paths stay dead; fold them into `AssignLineage` if they ever revive. Segment
+  fauna (worms) carry no per-segment crystal → no buff, no drop → consistent.
+- **Client-local divergence:** fauna have no NetworkObject and element levels don't replicate,
+  so peers can disagree on exact buff values — the same accepted divergence the fauna sim
+  itself has (§7 caveat 4). Each client is self-consistent. Server-authoritative pools are the
+  follow-up if the buff enters strict competitive modes.
+- **Collider budget: zero.** No colliders, no physics queries — a 1 Hz walk of the existing
+  registries (menu steady state: ~13 fauna, ≤4 players) plus event-driven re-sums on the 30s
+  wave heartbeat and on deaths.
+
+**In-editor verification (Menu_Main):** enter freestyle, watch your petal bars — they should
+tick up as controlling-color fauna spawn (30s waves) and drop when fauna starve/are predated,
+with the dropped crystal granting the lost amount back on collection. Once the domain's pool
+is rich enough to hold level 10, each new wave should read as a **temporary surge above 10
+that drains back to 10** (never a parked 11+); temporary effects (overtake buff, danger
+debuff) still ride on top. Toggle `debugLogging` on the auto-created `DomainFaunaBuffSystem`
+(on the Cell's GameObject) for per-player pool logs.
+
+---
+
+## 16. Herbivore spawn rotation + the shielded-mass diet rule (July 2026, Lobby observation)
+
+Two independent defects observed in `Menu_Main` (Blob Cell) and Skim Race. Both are
+targeting bugs, not population bugs — neither changes how many creatures live, only
+*where* they hatch and *what* they will bite.
+
+### 16.1 The herbivore ring rotated on spawns, not on the clock
+
+**Symptom.** Every brittlestar and tadpole in the Lobby hatched at the *same* one of
+the Blob profile's three ring points, so the whole species — and the elemental crystals
+its creatures eventually drop — piled into one patch of a cell whose ring was authored
+to spread them over three.
+
+**Cause.** `RandomLifeSpawner` advanced `_herbivoreSpawnPointIndex` inside
+`SpawnFaunaPopulation`, i.e. **once per wave that actually hatched**. The tick is a
+SEEDER (§6): it only spawns while a species is under its `PopulationSize` floor, and
+reproduction holds a fed population at its `MaxLivePopulation` cap. So after the
+bootstrap wave the index could sit on one point for an entire session — every later
+seed pinned to the same spot.
+
+**Fix.** The ring is now a pure function of the **wave number on the fixed
+`BaseFaunaSpawnTime` clock** (`RandomLifeSpawner.HerbivoreSpawnPoint(host, profile,
+wave)`); the per-spawn index is gone. Each species loop carries its own `wave` counter,
+and because `StartFaunaLoops` starts every loop in the same frame with the same
+`InitialFaunaSpawnWaitTime` + period, all herbivore species agree on the wave number —
+so a wave's species share a point and the point steps once per period. A 3-point ring at
+`BaseFaunaSpawnTime` covers the whole ring in `N × BaseFaunaSpawnTime` and repeats,
+whether or not any given tick had a deficit to fill (Blob: 3 points at 15s ⇒ a lap every
+45s). (The predator ring is unchanged: it still alternates per spawn,
+which is its authored "solitary predators alternate poles" behavior.)
+
+**Not changed — deliberately.** The ring says *where* a wave lands; the food web still
+says *whether* one hatches. A tick that finds the species at its cap hatches nothing, at
+any point on the ring. Guaranteeing a brood every tick regardless of population would
+need either uncapped spawning or imposed death, and imposed death is locked out. If a
+deployment wants a visible brood on every tick, that is the authored pair
+`SpawnProfileSO.SeedFullWaveEveryTick` (the Brood Rush wave mode) + enough
+`FaunaConfigurationSO.MaxLivePopulation` headroom to hold it — a population/collider
+decision, made per profile.
+
+**Blob now runs full-wave.** `Blob Cell Spawn Profile` carries
+`SeedFullWaveEveryTick: 1` so every wave tick hatches a brood at that wave's ring point
+(still clamped by each species' `MaxLivePopulation` — a tick with the species at cap
+hatches nothing). The profile is shared by `Menu_Main` **and** `BenchmarkStressTest`, so
+the benchmark now runs a fuller average fauna population; re-baseline before reading it
+against older numbers (`Docs/PERFORMANCE_OPTIMIZATION.md`).
+
+### 16.2 Shielded mass is not food for any herbivore
+
+**Symptom.** Brittlestars in Skim Race parked on the super-shielded track prisms and
+never moved on.
+
+**Cause.** `LightFauna.IsEdibleForHerbivore` tested domain and nucleus but not shield
+state. `Prism.Consume` is a **no-op on a super-shielded prism** (fully invulnerable) and
+only sheds the shield on a shielded one, so a brittlestar that adopted a track prism as
+its feed target approached it, faced it, "ate" it (incrementing `bites` and calling
+`NotifyFed()` on a bite that removed nothing), held facing for `consumeHoldSeconds`, then
+re-acquired the *same* prism through `FindNearestEdibleInFeedingRange` — a feed-hold loop
+it could never finish. `Boid`'s forager path already excluded shields; `LightFauna` never
+did.
+
+**Fix.** One canonical rule on the base — `Fauna.IsShieldedMass(Prism)` — routed through
+by every herbivore edibility predicate (`LightFauna.IsEdibleForHerbivore`,
+`Boid.IsEdibleForForager`, `Boid.EatPrism`), so a new grazer species cannot re-acquire the
+bug. A shielded prism is now never adopted as a feed target and never selected by the
+mouthful-chaining query, so the creature skips to the next normal prism on the same
+behavior tick. Both bite sites re-check the predicate before consuming, which also closes
+the case where a shield engages between selection and the bite.
+
+**Consequence, and it is the correct one.** The Skim Race cleanup swarm still grazes what
+it was there to graze — vessel trails and flora, all unshielded — it just no longer treats
+the track as a meal. Where the *only* mass in reach is shielded, a herbivore now finds
+nothing edible and starves on its normal clock, withering to a crystal per the sealed
+`Fauna.Die` (mass conserved). That is the food web doing its job, not a regression: the
+previous behavior only looked stable because the creature was fake-feeding — every bite on
+an invulnerable prism reset its starvation clock and advanced its birth counter without
+removing any mass, so a stuck brittlestar was also an immortal, still-reproducing one.
+
+**Collider budget: unchanged.** Neither fix adds a collider, a physics query, or an index
+query. 16.1 replaces an `int++` with an `int % n`; 16.2 adds two bool reads to predicates
+that already ran per candidate prism, and strictly *reduces* work (shielded prisms drop out
+before the `Cell.IsPreyForHerbivore` call, and stuck creatures stop re-running the
+mouthful-chaining `QuerySphere` every `consumeHoldSeconds`).
+
+### 16.3 The permanent steering stall §16.2 exposed
+
+**Symptom.** After 16.2 shipped, brittlestars in Skim Race (intensity 3) still parked
+against the super-shielded track — no longer feeding on it, just motionless beside it.
+
+**Cause — two defects that only bite together.**
+
+1. `LightFauna.UpdateBehavior` recomputes `Goal` every behavior tick and did so
+   **without `GoalOrbitOffset`**, silently clobbering the offset `Fauna.ResolveGoal`
+   applies on the goal coroutine. That offset is the anti-convergence term: without it
+   every creature seeks the *identical* point (the crystal at Calm, a density centroid at
+   Restless/Frenzy) and arrives exactly on it.
+2. `Vector3.normalized` returns **zero** for a ~zero vector. On arrival `goalDirection`
+   is zero; with no separation nearby (the track is plain prisms, which contribute none)
+   the steering sum is zero, so `desiredDirection` is zero and `currentVelocity` is zeroed.
+   A motionless creature then recomputes the *identical* zero from the identical position
+   on every later tick — **the stall is permanent**, and `desiredRotation` freezes with it.
+
+This predates 16.2 but was masked: the Skim Race crystal sits on the track, so an arriving
+brittlestar always had a track prism as `_feedTarget`, and `goalDirection` was overwritten
+with the direction to that prism — never zero. Removing shielded mass from the diet (16.2)
+took the mask away and the latent stall surfaced.
+
+**Fix.** `GoalOrbitOffset` is now `protected` on `Fauna` and documented as mandatory for any
+subclass that recomputes `Goal` on its own cadence; `LightFauna` applies it at Calm/Restless
+(and on the origin fallback), skipping it at Frenzy exactly as `ResolveGoal` does. On top of
+that, both steering sites — `LightFauna.UpdateBehavior` and `Boid.CalculateBehavior`, plus
+Boid's attached-target path — test the steering sum against `Fauna.DegenerateSteeringSqr`
+and hold the last heading instead of publishing a zero direction. The offset makes arrival
+stalls rare; the guard makes them non-permanent, so no future steering term can reintroduce
+a frozen creature.
+
+**Collider budget: unchanged.** One `sqrMagnitude` compare per behavior tick, replacing an
+unconditional `normalized` (which computes the same magnitude anyway).
+
+---
+
+## 17. Spawning the whole matrix — element × level spread (July 2026)
+
+**What was wrong.** The element × level contract (§3) was fully implemented but almost
+nothing used it: every cell config authored ONE element and `InitialLevel: 1`, so a
+session only ever showed a few element variants at level 1. The 4 × 5 matrix existed in
+code and in the Lifeform Matrix bench, and nowhere in the live world.
+
+**The two halves spread differently, on purpose.**
+
+- **Level is a pure scale curve** (body/leaf prisms + the heart crystal), so it spreads in
+  code: `LifeformLevelSpread` (`MinLevel`/`MaxLevel`/`RarityFalloff`) on both config SOs.
+  Higher levels are *rarer* — weight of level n is `falloff^-(n - min)`, so the default 2
+  makes level 5 about 1 in 31. A level-5 kill drops the biggest crystal in the cell
+  (`CrystalScalePerLevel` compounding, ≈2.07× at level 1's size), which is exactly the
+  thing worth hunting for; making it common would have made it worth nothing.
+- **Element is an identity**, not a tint: per the §3 variant inventory, an element is its
+  leaf/body PRISM shape, growth tempo, shield cadence, starvation clock, flocking numbers
+  and audio. So a config that spreads elements resolves each roll through an
+  `ElementPalette` — the four canonical per-element assets in `_SO_Assets/Lifeforms` for
+  that species — and applies **only** their `Element` + `Variant`. Population size, seed
+  floor, reproduction, probability and planting cadence stay on the cell's own config, so
+  a biome keeps its density tuning. An **empty palette** still rolls the element but keeps
+  the cell's authored `Variant` — used by the score-tuned cells (Skim Race, Nucleus Rush,
+  Astro League) whose swarms are tuned for a job (track cleanup, the wave clock) and must
+  not inherit another element's graze radius or starvation clock.
+
+**Heredity.** The roll happens once per spawn and is then **inherited**: `Fauna` remembers
+its `LifeformVariantPick` (element + tuning + hatch level) and passes it to its offspring in
+`AssignLineage`, so a lineage breeds true instead of re-rolling an identity every birth.
+In-world level-ups (the Shepherd joust) are deliberately *not* inherited — acquired growth
+is not heritable, which keeps selection endogenous rather than Lamarckian. This is the first
+heritable trait to ride the reproduction path and is the natural seat for the P3 genome.
+
+**Collider budget: unchanged — this is the reason the design is shaped this way.** Element
+spread rolls *which* variant a creature is, never *how many* exist (counts stay on the cell
+config, so the alternative — one config per element per cell — would have quadrupled the
+population). Level spread changes scale only: the same prism count, the same one heart
+collider per lifeform. Expected volume drift: mean level ≈1.94 at the default falloff, so
+average body/leaf scale rises ~13% — `LiveVolume` reads a little heavier per creature, which
+is worth a look during the phase-threshold retune (masterplan §2) but adds no colliders.
+
+**Spread is off by default.** `SpreadElements` and `Levels.Enabled` are opt-in per config;
+with both off the spawn path returns the authored `Element` / `Variant` / `InitialLevel`
+exactly as before. Enabled in the shipped cells: Blob (and Rampage, which shares its
+assets), Wildlife Blitz 1–4 with full palettes; Skim Race, Nucleus Rush and Astro League
+with element-only spread. The Lifeform Matrix toy pins both off on its runtime clones — the
+bench must spawn the exact variant its station shows.
+
+**Verify in-editor.** Menu_Main (Blob Cell) is the fastest read: fly freestyle and watch a
+few fauna waves. Expect mixed element crystals (all four crystal MODELS, not just recoloured
+ones) inside a single species' brood, visibly mixed body sizes, and the occasional
+conspicuously large creature. Confirm a level-5 creature drops a visibly larger crystal on
+death, and that a brood born from reproduction matches its parent's element. Knobs:
+`Levels.RarityFalloff` (2 → 1 for uniform, higher for rarer giants), `Levels.MaxLevel` to
+cap a biome's size band, and `ElementPalette` to give a cell its own per-element tuning
+instead of the canonical assets.
+
+---
+
+## 18. Prepopulated cell environments + the freestyle six (July 2026)
+
+A cell config can now carry an authored structural environment that spawns WITH the cell:
+`CellConfigDataSO.EnvironmentPrefab` (any `SpawnableBase` prefab) + `EnvironmentIntensity`
+(passed to `Spawn()`; fixed structures ignore it). `Cell.SpawnVisuals` calls the prefab
+asset's `Spawn()` exactly the way `SegmentSpawner` does and parents the returned container
+under the cell, so the environment lives and dies with it. Every prism flows through the
+canonical `PrismTrailBuilder` lay path — big structures stream budgeted and bloom in
+(continuity of existence holds), and the mass registers with the cell's volume/density
+bookkeeping like any other prism.
+
+**Prepopulation is a head start, not a parallel system.** The spawned mass is ordinary
+conserved mass: herbivores graze it (voraciously outside the nucleus), players smash and
+consume it, and nothing ever ages it out. A prepopulated garden slowly weathers into
+whatever the food web makes of it — which is the point.
+
+**Phase thresholds must ride the baseline.** The phase ladder reads TOTAL `LiveVolume`
+(plus the count backstop), so a config that prepopulates ~950k volume of structure must
+author `PhaseThresholds` above that baseline or the cell boots straight into Frenzy. The
+Yggdra config authors the Blob ladder's deltas on top of the measured baseline
+(~69.1k prisms / ~950.8k volume): Restless at 962k / 958.8k, Frenzy at 1,008.4k / 998.8k,
+counts 69.8k/69.6k/72.7k/72.1k. As grazing wears the garden down the cell relaxes deeper
+into Calm — an emergent "aging" of the biome with no clock anywhere.
+
+**The Yggdra cell** (`_SO_Assets/Cell Configs/Yggdra Cell/Yggdra Cell Config.asset`) is
+the first user: a Blob-family cell (same membrane/nucleus/cytoplasm/modifiers/spawn
+profile) whose `EnvironmentPrefab` is `SpawnableYggdra` — the world-tree distilled from
+the ~69k-prism Atlantis garden (which itself stays Scurry-intensity-4 exclusive; see
+`CRYSTAL_CAPTURE.md`) at roughly half the weight for the freestyle rotation. Registered
+in Menu_Main's freestyle Cell `CellConfigs` list (choice mode Random) alongside the rest
+of the freestyle six below. Danger thorn prisms ride along — the autopilot vessel can
+clip one occasionally; that is the environment being real, not a bug.
+
+**Collider budget:** the environment's plain/danger prisms ride the LOD-cullable
+BoxCollider (active count bounded by `PrismColliderLodManager` radius, not population);
+its 225 shielded/super-shielded landmarks carry always-on convex MeshColliders (~0.3%,
+same ration as the Scurry arena). The Yggdra menu roll has NOT yet been device-profiled —
+soak Menu_Main with the Yggdra config forced before shipping (see
+`Docs/PERFORMANCE_OPTIMIZATION.md`); the Atlantis prefab's `density` knob (0.5–1.3) is
+the fallback lever.
+
+**Replay + re-init constraints.** `Cell.AssignConfig` is sticky per scene (first Initialize
+pass rolls, repeat passes keep the roll) so the acknowledged double-Initialize path can never
+re-label the cell while a prepopulated environment is streaming in. `ResetCell` (in-place
+replay) neither destroys nor respawns the environment — environment-bearing configs are for
+scene-lifetime cells only: use them in `UseSceneReloadForReplay` modes (all current ones) or
+Menu_Main, not in-place-reset modes. **Every environment build is gated AND deferred past boot**: game scenes hold
+their connecting screen over a quiescent, fully-loaded scene; gate-less scenes (Menu_Main
+freestyle) wait until the scene reports ready (local player pair initialized, 12s deadline)
+and then raise an `EnvironmentLoadVeil` - the connecting-screen status idiom, a gentler 80ms
+lay slice so Netcode/Relay/audio keep breathing under the veil, released only when every
+prism is laid and settled. Building DURING boot shared the engine's async budget with the
+vessel-spawn chain, session setup, and audio banks - audio underruns plus a clone batch
+wedged mid-integration (a 4s watchdog in PrismTrailBuilder.CloneBatchAsync now force-
+completes any stalled batch as a second line of defense). The original design let the menu
+world bloom in under live play at 8ms/frame; that built for minutes under gameplay
+(clone-integration spikes + physics churn against a half-built world) and crashed the menu
+reliably, so live blooming is retired - the 8ms ungated slice remains only as a last-resort
+fallback.
+
+**The freestyle six (July 2026).** Atlantis (~69k) stays Scurry-intensity-4 exclusive; the
+freestyle rotation runs at roughly HALF that weight per cell (~31-35k prisms), split across
+six environments so the lava lamp deals a different world each load — Blob (empty baseline)
+plus: **Yggdra** (the world-tree, distilled from Atlantis: trunk/roots/canopy/vines/kelp/
+fireflies), **Daedala** (Atlantis's built half expanded into an Escher road-city: four ring
+terraces, twin counter-chiral Möbius causeways, arches, aqueducts, minarets, lanterns),
+**Orrery** (a celestial clock: sun shell, seven tilted orbit rings with planets and moons,
+zodiac band, pendulums, a danger-tailed comet), **Zephyr** (a painted sky: braided wind
+rivers, twin cyclones, cloud banks with one lightning thunderhead, Van Gogh sun/moon discs,
+a swell sea), **Caldera** (the danger-led forge: terraced volcano with TRUE danger lava
+lake/falls/river, basalt column fields, ember plumes, sulfur terraces, fumaroles, ash ring),
+and **Geode** (the angular, serene pole: a cracked crystal cathedral — husk hemispheres,
+inward crystal linings, super-shielded druse tips, agate bands, dust, light shafts; zero
+danger). All extend `CellEnvironmentSpawnableBase` (one deterministic lay/stream/noise
+contract, per-cell fixed seed); per-cell PhaseThresholds ride each baseline measured with
+a bit-exact simulation of the C# noise (count/volume): Yggdra 34.3k/541k, Daedala
+33.9k/638k, Orrery 34.6k/197k, Zephyr 36.1k/427k, Caldera 31.2k/433k, Geode 34.4k/561k —
+confirm in-engine via Tools > Cosmic Shore > Measure Cell Environment Baselines before
+retuning any ladder. Same soak-before-ship rule as §17 above; each prefab's
+`density` knob (0.5-1.3) is the per-cell fallback lever.
+
+**Follow-ups (cell environments).**
+1. **Field-verify the deferred menu build** — the defer-past-boot + 80ms veil slice + clone
+   watchdog fix shipped after the 10,496 freeze but has not yet been confirmed in-editor.
+2. **Device soak per cell + Scurry Atlantis** — record steady-state numbers in
+   `Docs/PERFORMANCE_OPTIMIZATION.md`; per-prefab `density` (0.5-1.3) is the fallback lever.
+3. **Confirm simulated baselines in-engine** (Tools > Cosmic Shore > Measure Cell Environment
+   Baselines) and re-author any PhaseThresholds off by more than a few hundred count / few
+   thousand volume.
+4. **Menu load-time UX call** — if the veil hold feels long for a menu, options are lower
+   density, or rolling Blob on first entry and reserving environment cells for explicit
+   freestyle entry.
+5. **Danger tuning after playtests** — Caldera (~1.6k danger prisms) is deliberately the spicy
+   cell; tune per feel.
+6. **Future archetypes** (diversity headroom before hybrids/dynamics take over): Abyss, Mycel,
+   Hive, Glacier, Reliquary, Mesa.

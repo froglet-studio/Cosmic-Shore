@@ -1,5 +1,8 @@
 using System;
 using System.Collections.Generic;
+using CosmicShore.Data;
+using CosmicShore.Gameplay;
+using CosmicShore.ScriptableObjects;
 using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -70,8 +73,23 @@ namespace CosmicShore.UI
             public Color activeColor = Color.white;
             public Color inactiveColor = new Color(0.65f, 0.65f, 0.7f, 1f);
 
+            [Header("Ability attachment")]
+            [Tooltip("Move this hint onto the ability icon its control actually drives, resolved at " +
+                     "runtime from the vessel's action handler + ElementalAbilityMapSO. Rearranging " +
+                     "the ability row then carries the label with it. Hints whose control drives no " +
+                     "ability (or on a HUD with no ability row) are left exactly where they were " +
+                     "authored, so this is safe to leave on.")]
+            public bool attachToAbilityIcon = true;
+            [Tooltip("Offset from the ability icon's centre, in reference pixels. Negative Y sits the " +
+                     "label below the icon.")]
+            public Vector2 attachOffset = new Vector2(0f, -76f);
+
             [NonSerialized] public bool Lit;
             [NonSerialized] public bool Applied;
+            /// <summary>Resolved ability icon this hint labels; null until bound (or unresolvable).</summary>
+            [NonSerialized] public RectTransform AbilityTarget;
+            /// <summary>Latches the off-screen warning so it is reported once, not every frame.</summary>
+            [NonSerialized] public bool OffScreenReported;
         }
 
         [Serializable]
@@ -125,6 +143,249 @@ namespace CosmicShore.UI
             var actuated = DetectActuatedSet();
             if (actuated.HasValue) ApplySet(actuated.Value);
             DriveHintVisuals();
+            TryApplyAbilityPlacement();
+        }
+
+        // ---------------------------------------------------------------
+        // Ability attachment - a hint labels an ABILITY, not a position
+        // ---------------------------------------------------------------
+
+        int _placementAttempts;
+        bool _placementPending;
+
+        /// <summary>
+        /// Binds every hint to the ability icon its control drives, then places it there. Called once
+        /// from <c>VesselHUDController.Initialize</c>, after the action handler is initialized.
+        ///
+        /// The chain is entirely data-driven, which is the point: hint → physical control
+        /// (<see cref="HintBinding"/>) → input events (<see cref="InputHintBindingMap"/>) → the ability
+        /// bound to that input (the vessel's <c>ElementalAbilityMapSO</c>, falling back to a shared
+        /// action asset in <c>R_VesselActionHandler</c> when the touch and gamepad maps use different
+        /// events for one ability) → that element's icon in the HUD row. Move an icon, or reassign an
+        /// ability to a different input in the action handler, and the label follows on its own.
+        /// </summary>
+        public void BindHintsToAbilities(IVesselStatus status, VesselHUDView view)
+        {
+            if (status == null || !view || !view.HasAbilityIconRow) return;   // opt-in rollout
+
+            var map = status.ElementalAbilityHandler ? status.ElementalAbilityHandler.Map : null;
+            if (map == null) return;
+
+            foreach (var visuals in setVisuals)
+            {
+                if (visuals?.hints == null) continue;
+                foreach (var hint in visuals.hints)
+                {
+                    if (hint == null || !hint.attachToAbilityIcon || !HintRect(hint)) continue;
+
+                    if (!TryResolveElement(status, map, hint.binding, out var element))
+                    {
+                        if (hint.binding != HintBinding.None)
+                            Debug.LogWarning($"[InputDeviceIconSetSwitcher] Control hint '{hint.label}' " +
+                                             $"({hint.binding}) drives no ability on this vessel - leaving it " +
+                                             "where it was authored. Check the action handler's input map.", this);
+                        continue;
+                    }
+
+                    if (!view.TryGetAbilityIcon(element, out var abilityIcon))
+                    {
+                        Debug.LogWarning($"[InputDeviceIconSetSwitcher] Control hint '{hint.label}' labels the " +
+                                         $"'{element}' ability but the HUD binds no icon for it.", this);
+                        continue;
+                    }
+
+                    hint.AbilityTarget = abilityIcon.rectTransform;
+                    _labelledElements.Add(element);
+                }
+            }
+
+            _placementPending = true;
+            _placementAttempts = 0;
+            TryApplyAbilityPlacement();
+            WarnOnUnlabelledAbilities(status, map);
+            _labelledElements.Clear();
+        }
+
+        readonly HashSet<Element> _labelledElements = new();
+
+        /// <summary>
+        /// The other half of the contract: an ability the player can actually press should have a
+        /// control label. Flags the case where an ability is bound to an input in the action handler
+        /// but no hint claims it - the "I added a button but forgot the glyph" bug.
+        /// </summary>
+        [System.Diagnostics.Conditional("UNITY_EDITOR")]
+        void WarnOnUnlabelledAbilities(IVesselStatus status, ElementalAbilityMapSO map)
+        {
+            var handler = status.ActionHandler;
+            if (!handler) return;
+
+            foreach (var entry in map.Entries)
+            {
+                if (entry == null || _labelledElements.Contains(entry.Element)) continue;
+                if (!handler.HasBinding(entry.Input)) continue;   // passive ability - no button, no label
+                Debug.LogWarning($"[InputDeviceIconSetSwitcher] The '{entry.Element}' ability " +
+                                 $"('{entry.AbilityLabel}') is bound to {entry.Input} but no control hint " +
+                                 "labels it. Add a hint with the matching HintBinding.", this);
+            }
+        }
+
+        // Placement needs a laid-out canvas, which may not exist on the frame the vessel spawns, so
+        // it retries for a short while. Inactive set roots are placed too - switching sets later must
+        // not need any extra work.
+        void TryApplyAbilityPlacement()
+        {
+            if (!_placementPending) return;
+
+            bool allPlaced = true;
+            foreach (var visuals in setVisuals)
+            {
+                if (visuals?.hints == null) continue;
+                foreach (var hint in visuals.hints)
+                {
+                    if (hint?.AbilityTarget == null) continue;
+                    var rt = HintRect(hint);
+                    if (!rt) continue;
+                    if (!PlaceOnAbilityIcon(rt, hint.AbilityTarget, hint.attachOffset))
+                        allPlaced = false;
+                    else
+                        WarnIfPlacedOffScreen(hint, rt);
+                }
+            }
+
+            if (allPlaced || ++_placementAttempts > MaxPlacementAttempts)
+                _placementPending = false;
+        }
+
+        const int MaxPlacementAttempts = 120;
+
+        /// <summary>
+        /// A placed hint that lands outside the canvas is silently invisible, which is exactly how this
+        /// placement failed three times (a zeroed size, then a clamped anchor fraction plus a negative
+        /// offset that pushed every glyph below the screen). Say so instead of rendering nothing.
+        /// </summary>
+        [System.Diagnostics.Conditional("UNITY_EDITOR")]
+        static void WarnIfPlacedOffScreen(HintVisual hint, RectTransform rt)
+        {
+            if (hint.OffScreenReported) return;
+
+            var canvas = rt.GetComponentInParent<Canvas>();
+            if (!canvas) return;
+            var canvasRT = canvas.transform as RectTransform;
+            if (!canvasRT) return;
+
+            Rect canvasRect = canvasRT.rect;
+            Vector2 local = canvasRT.InverseTransformPoint(rt.TransformPoint(rt.rect.center));
+            Vector2 half = rt.rect.size * 0.5f;
+
+            bool onScreen = local.x + half.x > canvasRect.xMin && local.x - half.x < canvasRect.xMax
+                         && local.y + half.y > canvasRect.yMin && local.y - half.y < canvasRect.yMax;
+            bool hasArea = rt.rect.width > 0.5f && rt.rect.height > 0.5f;
+
+            if (onScreen && hasArea) return;
+
+            hint.OffScreenReported = true;
+            Debug.LogWarning($"[InputDeviceIconSetSwitcher] Control hint '{hint.label}' was placed where it " +
+                             $"cannot be seen: rect {rt.rect.size} at canvas-local {local}, canvas {canvasRect}. " +
+                             $"Check its attachOffset ({hint.attachOffset}) and the ability icon it targets.");
+        }
+
+        static RectTransform HintRect(HintVisual hint)
+        {
+            if (hint.icon) return hint.icon.rectTransform;
+            return hint.text ? hint.text.rectTransform : null;
+        }
+
+        /// <summary>
+        /// Re-anchors a hint onto an ability icon WITHOUT reparenting it - it has to stay under its
+        /// icon-set root so the set switcher can keep showing/hiding it.
+        ///
+        /// Only the anchor CENTRE moves: the authored anchor SPAN and <c>sizeDelta</c> are preserved
+        /// exactly. That is not a style choice - these glyphs are authored as pure stretch rects with
+        /// a sizeDelta of zero, so their whole size comes from the span. Collapsing the anchors to a
+        /// point and re-supplying the size from <c>rect.size</c> renders them at ZERO SIZE whenever
+        /// that read happens before a layout pass or while the set root is inactive (Unity does not
+        /// update rects on inactive hierarchies) - which is every hint on vessel spawn. Never read
+        /// <c>rect.size</c> here, and never write size.
+        ///
+        /// The centre is written as a fraction of the hint's own parent, so the placement survives
+        /// resolution and aspect changes the same way the ability row does. Returns false while the
+        /// parent has no usable rect yet, so the caller can retry.
+        /// </summary>
+        static bool PlaceOnAbilityIcon(RectTransform hint, RectTransform abilityIcon, Vector2 offset)
+        {
+            if (hint.parent is not RectTransform parent) return false;
+
+            Rect parentRect = parent.rect;
+            if (Mathf.Abs(parentRect.width) < 0.01f || Mathf.Abs(parentRect.height) < 0.01f) return false;
+
+            Vector3 targetWorld = abilityIcon.TransformPoint(abilityIcon.rect.center);
+            Vector2 local = parent.InverseTransformPoint(targetWorld);
+
+            // MUST be unclamped. The hint roots are thin strips (XBOXRoot is ~11 px tall) and the
+            // ability row sits well above them, so the honest fraction is far outside 0..1 - the
+            // Xbox glyphs need y ≈ 7.3. Mathf.InverseLerp Clamp01s, which collapsed that to 1.0 and,
+            // with the negative attachOffset on top, put every glyph below the bottom of the screen.
+            var centre = new Vector2(
+                InverseLerpUnclamped(parentRect.xMin, parentRect.xMax, local.x),
+                InverseLerpUnclamped(parentRect.yMin, parentRect.yMax, local.y));
+            if (!IsUsable(centre.x) || !IsUsable(centre.y)) return false;
+
+            Vector2 span = hint.anchorMax - hint.anchorMin;   // preserved - it IS the glyph's size
+            hint.pivot     = new Vector2(0.5f, 0.5f);
+            hint.anchorMin = centre - span * 0.5f;
+            hint.anchorMax = centre + span * 0.5f;
+            hint.anchoredPosition = offset;                    // sizeDelta deliberately untouched
+            return true;
+        }
+
+        // A fraction well outside the parent is legitimate (a hint can sit far from its set root), but
+        // NaN or a runaway value means the rects were not laid out - retry rather than write garbage.
+        static bool IsUsable(float f) => !float.IsNaN(f) && !float.IsInfinity(f) && Mathf.Abs(f) < 50f;
+
+        /// <summary>
+        /// Where <paramref name="value"/> lies between a and b, NOT clamped to 0..1.
+        /// <see cref="Mathf.InverseLerp"/> deliberately clamps; this placement needs the honest ratio.
+        /// </summary>
+        static float InverseLerpUnclamped(float a, float b, float value)
+            => Mathf.Approximately(a, b) ? float.NaN : (value - a) / (b - a);
+
+        static bool TryResolveElement(IVesselStatus status, ElementalAbilityMapSO map,
+            HintBinding binding, out Element element)
+        {
+            element = Element.None;
+
+            var inputs = InputHintBindingMap.InputEventsFor(binding);
+            if (inputs.Count == 0) return false;
+
+            // 1. The ability's own authored input is one this control raises - the common case.
+            foreach (var entry in map.Entries)
+            {
+                if (entry == null) continue;
+                for (int i = 0; i < inputs.Count; i++)
+                    if (entry.Input == inputs[i]) { element = entry.Element; return true; }
+            }
+
+            // 2. Otherwise go through the action handler: the ability's input and this control's input
+            //    start the same action asset. Covers a vessel whose touch and gamepad maps drive one
+            //    ability from two different input events.
+            var handler = status.ActionHandler;
+            if (!handler) return false;
+
+            var viaControl = new List<ShipActionSO>();
+            for (int i = 0; i < inputs.Count; i++)
+                handler.CollectBoundActions(inputs[i], viaControl);
+            if (viaControl.Count == 0) return false;
+
+            var viaAbility = new List<ShipActionSO>();
+            foreach (var entry in map.Entries)
+            {
+                if (entry == null) continue;
+                viaAbility.Clear();
+                handler.CollectBoundActions(entry.Input, viaAbility);
+                for (int i = 0; i < viaAbility.Count; i++)
+                    if (viaControl.Contains(viaAbility[i])) { element = entry.Element; return true; }
+            }
+            return false;
         }
 
         /// <summary>
@@ -211,6 +472,11 @@ namespace CosmicShore.UI
             if (_visualsBySet.TryGetValue(set, out var visuals))
                 foreach (var hint in visuals.hints)
                     if (hint != null) { hint.Lit = false; hint.Applied = false; }
+
+            // A root that was inactive when the hints were bound had no laid-out rect, so re-place
+            // now that this one is active and measurable.
+            _placementPending = true;
+            _placementAttempts = 0;
         }
 
         // Lights each visible hint while its bound control is held. State-change driven - a hint's

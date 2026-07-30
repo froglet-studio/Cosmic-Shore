@@ -100,7 +100,7 @@ namespace CosmicShore.Gameplay
 
         GameObject OrientationHandle { get; }
 
-        SilhouetteController Silhouette { get; }
+        ElementalBarsController ElementalBarsController { get; }
 
         Material ShipMaterial { get; set; }
         Material SkimmerMaterial { get; set; }

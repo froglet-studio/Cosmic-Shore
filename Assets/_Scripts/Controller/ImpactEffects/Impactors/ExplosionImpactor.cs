@@ -72,10 +72,13 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Processes one frame of batch AOE damage via the PrismSpatialIndex.
         /// Called from AOEExplosion.ExplodeAsync each frame instead of relying on Physics.
+        /// center/radius describe this frame's blast wavefront (a conic explosion
+        /// passes a different, forward-traveling sphere each frame); blastOrigin is
+        /// the fixed emission point all impact vectors radiate from.
         /// Returns true if the explosion should continue, false if it should be destroyed
         /// (e.g. hit a super-shielded enemy prism).
         /// </summary>
-        public bool ProcessBatchFrame(Vector3 center, float radius, float speed, float inertia)
+        public bool ProcessBatchFrame(Vector3 center, float radius, Vector3 blastOrigin, float speed, float inertia)
         {
             using (s_processBatch.Auto())
             {
@@ -84,7 +87,7 @@ namespace CosmicShore.Gameplay
                 if (registry == null) return true;
 
                 return registry.ProcessExplosionFrame(
-                    center, radius, speed, inertia,
+                    center, radius, blastOrigin, speed, inertia,
                     explosion.Domain,
                     affectSelf, destructive, devastating, shielding,
                     explosion.AnonymousExplosion,

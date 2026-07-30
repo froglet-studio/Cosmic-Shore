@@ -60,6 +60,9 @@ namespace CosmicShore.Core
         [SerializeField, Tooltip("Seconds to wait per attempt for HostConnectionService to start the Relay host (minimum 15s). Three attempts are made before giving up.")]
         private float networkHostTimeout = 15f;
 
+        [SerializeField, Tooltip("Seconds the offline notice stays on screen before continuing to the main menu, so the player reads why they are not signed in.")]
+        private float offlineNoticeDwell = 2f;
+
         [Inject] private AuthenticationServiceFacade _facade;
         [Inject] private AuthenticationDataVariable _authDataVariable;
         [Inject] private PlayerDataService _playerDataService;
@@ -114,7 +117,7 @@ namespace CosmicShore.Core
         async UniTaskVoid RunAuthFlowAsync(CancellationToken ct)
         {
             HideAllPanels();
-            ShowLoading("Signing in…");
+            ShowLoading(IsOffline ? "No connection. Starting offline…" : "Signing in…");
 
             try
             {
@@ -128,6 +131,7 @@ namespace CosmicShore.Core
                 if (winnerIndex == 1 && !_navigated)
                 {
                     CSDebug.LogWarning($"[AuthScene] Safety timeout reached after {safetyTimeout}s. Force-navigating to main menu.");
+                    await ShowOfflineNoticeAsync(ct);
                     NavigateToMainMenu();
                 }
             }
@@ -135,6 +139,7 @@ namespace CosmicShore.Core
             catch (Exception ex)
             {
                 CSDebug.LogWarning($"[AuthScene] Auth flow failed: {ex.Message}. Navigating to main menu.");
+                await ShowOfflineNoticeAsync(ct);
                 NavigateToMainMenu();
             }
         }
@@ -264,7 +269,9 @@ namespace CosmicShore.Core
                 HideLoading();
                 ShowAuthPanel();
                 if (statusText)
-                    statusText.text = $"Guest login failed: {ex.Message}";
+                    statusText.text = IsOffline
+                        ? "No internet connection. Check your network and try again."
+                        : "Sign-in failed. Please try again.";
                 CSDebug.LogWarning($"[AuthScene] Guest login failed: {ex}");
             }
             finally
@@ -317,8 +324,8 @@ namespace CosmicShore.Core
 
             var profile = _playerDataService.CurrentProfile;
             return profile == null
-                || string.IsNullOrEmpty(profile.displayName)
-                || profile.displayName.StartsWith("Pilot", StringComparison.Ordinal);
+                || string.IsNullOrEmpty(profile.Identity.DisplayName)
+                || profile.Identity.DisplayName.StartsWith("Pilot", StringComparison.Ordinal);
         }
 
         // ──────────────────────────────────────────────
@@ -407,6 +414,37 @@ namespace CosmicShore.Core
         {
             if (statusText) statusText.text = string.Empty;
             if (usernameStatusText) usernameStatusText.text = string.Empty;
+        }
+
+        /// <summary>
+        /// Device-level reachability. Cheap and synchronous, and enough to tell "the player has no
+        /// network" apart from "UGS is having a bad day" - which want different copy.
+        /// </summary>
+        static bool IsOffline => Application.internetReachability == NetworkReachability.NotReachable;
+
+        /// <summary>
+        /// Explains why the player is arriving at the menu unauthenticated, then holds it on screen
+        /// long enough to read. Without this the offline path is a silent jump that looks like the
+        /// sign-in was skipped for no reason.
+        /// </summary>
+        async UniTask ShowOfflineNoticeAsync(CancellationToken ct)
+        {
+            string message = IsOffline
+                ? "No internet connection. Starting in offline mode - online play and progress sync are unavailable."
+                : "Could not reach the servers. Starting in offline mode - online play and progress sync are unavailable.";
+
+            ShowLoading(message);
+            if (statusText) statusText.text = message;
+            CSDebug.LogWarning($"[AuthScene] {message}");
+
+            try
+            {
+                await UniTask.Delay(
+                    TimeSpan.FromSeconds(Mathf.Max(0f, offlineNoticeDwell)),
+                    ignoreTimeScale: true,
+                    cancellationToken: ct);
+            }
+            catch (OperationCanceledException) { /* scene destroyed - fine, we are leaving anyway */ }
         }
 
         // ──────────────────────────────────────────────

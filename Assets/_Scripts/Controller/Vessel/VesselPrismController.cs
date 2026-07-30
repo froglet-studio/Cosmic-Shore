@@ -13,9 +13,6 @@ namespace CosmicShore.Gameplay
 {
     public class VesselPrismController : MonoBehaviour
     {
-        public delegate void BlockCreationHandler(float xShift, float wavelength, float scaleX, float scaleY, float scaleZ);
-        public event BlockCreationHandler OnBlockCreated;
-
         [SerializeField] private PrismEventChannelWithReturnSO _onPrismSpawnedEventChannel;
 
         [Header("References")]
@@ -302,7 +299,6 @@ namespace CosmicShore.Gameplay
             prism.Initialize(vesselStatus.PlayerName);
 
             // Events
-            OnBlockCreated?.Invoke(xShift, wavelength, scale.x, scale.y, scale.z);
             OnBlockSpawned?.Invoke(prism);
         }
 

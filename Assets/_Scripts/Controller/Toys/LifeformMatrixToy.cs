@@ -229,6 +229,10 @@ namespace CosmicShore.Gameplay
             var clone = Instantiate(config);
             clone.name = $"{config.name} (L{level})";
             clone.InitialLevel = level;
+            // The matrix is the tuning BENCH: a station spawns the EXACT variant it shows, so
+            // the cell's element/level spread must not re-roll it here.
+            clone.SpreadElements = false;
+            clone.Levels.Enabled = false;
 
             // A POPULATION, not an individual - the same seed-floor count the cell spawner
             // uses, jittered around the station so the group disperses like a spawner wave.
@@ -259,6 +263,9 @@ namespace CosmicShore.Gameplay
             var clone = Instantiate(config);
             clone.name = $"{config.name} (L{level})";
             clone.InitialLevel = level;
+            // Bench semantics - see SpawnFaunaVariant.
+            clone.SpreadElements = false;
+            clone.Levels.Enabled = false;
 
             // A POPULATION (InitialSpawnCount), rooted AT the station so the tester sees it
             // grow right where they flew - Plant() would otherwise disperse it across the cell.

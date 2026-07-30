@@ -29,7 +29,10 @@ namespace CosmicShore.Gameplay
         [Header("Refs")] [SerializeField] private Skimmer skimmer;
         public Skimmer Skimmer => skimmer;
         public override Domains OwnDomain => Skimmer.Domain;
-        protected override bool isInitialized => Skimmer.IsInitialized;
+        // Null-safe: the shell-contact tier polls this every frame for registered
+        // probes (not just inside trigger callbacks), so an unwired skimmer ref
+        // must read as uninitialized rather than throw.
+        protected override bool isInitialized => skimmer != null && skimmer.IsInitialized;
 
         // runtime state (moved from Skimmer)
         readonly Dictionary<string, float> _skimStartTimes = new();
@@ -78,6 +81,23 @@ namespace CosmicShore.Gameplay
         //    SqrSweetSpot = scale * scale / 16f;
         //    sigma = SqrSweetSpot / 2.355f;
         //}
+
+        // Shell-tier probes: this skimmer's own colliders (the sphere; on the Rhino
+        // also the sword capsule) measured against shielded prisms' analytic shells
+        // by PrismShellContactManager. The component set is cached once — world
+        // poses are re-read every frame, so runtime scale drivers need no events.
+        Collider[] _probeColliders;
+
+        void OnEnable()
+        {
+            _probeColliders ??= GetComponents<Collider>();
+            PrismShellContactManager.RegisterProbeOwner(this, _probeColliders);
+        }
+
+        void OnDisable()
+        {
+            PrismShellContactManager.UnregisterProbeOwner(this);
+        }
 
         void OnTriggerStay(Collider other)
         {
@@ -138,6 +158,12 @@ namespace CosmicShore.Gameplay
 
             if (!other.TryGetComponent<PrismImpactor>(out var prismImpactor)) return;
             var prism = prismImpactor.Prism;
+            // Symmetric with the enter-side suppression: while the shell tier owns
+            // this prism's contact, exiting the (smaller) box must not tear down
+            // the skim bookkeeping the shell contact added - the shell tier's own
+            // exit (NotifyShellContactExit) handles it.
+            if (PrismShellContactManager.ShellOwnsContact(prism))
+                return;
             if (!skimmer.AffectSelf && prism.Domain == skimmer.VesselStatus.Domain) return;
 
             if (!_skimStartTimes.Remove(prism.ownerID)) return;
@@ -175,6 +201,12 @@ namespace CosmicShore.Gameplay
 
                 case PrismImpactor prismImpactor:
                     var prism = prismImpactor.Prism;
+                    // While a prism's engaged shell owns contact, the shell tier
+                    // (PrismShellContactManager) dispatches this pair at the visible
+                    // shell surface — the box trigger must not also dispatch it at
+                    // bare-prism reach, or every shielded hit would double-fire.
+                    if (!IsShellDispatch && PrismShellContactManager.ShellOwnsContact(prism))
+                        return;
                     var esp = skimmerImpactorDataContainer.SkimmerPrismEffects;
                     skimmer.ExecuteImpactOnPrism(prism); // secondary call (booster viz, etc.)
                     if (!DoesEffectExist(esp)) return;
@@ -209,6 +241,23 @@ namespace CosmicShore.Gameplay
 
                     break;
             }
+        }
+
+        /// <summary>
+        /// Shell-contact exit — mirrors the prism branch of OnTriggerExit (the skim
+        /// bookkeeping removal) for contacts that lived on the analytic shell tier
+        /// instead of the box trigger.
+        /// </summary>
+        internal override void NotifyShellContactExit(PrismImpactor prismImpactor)
+        {
+            if (!isInitialized)
+                return;
+            var prism = prismImpactor != null ? prismImpactor.Prism : null;
+            if (prism == null)
+                return;
+            if (!skimmer.AffectSelf && prism.Domain == skimmer.VesselStatus.Domain)
+                return;
+            _skimStartTimes.Remove(prism.ownerID);
         }
 
         // ------------------------------------------------------------------

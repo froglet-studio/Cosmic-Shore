@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Linq;
 using System.Threading;
 using CosmicShore.Utility;
+using CosmicShore.Utility.PerformanceBenchmark;
 using Cysharp.Threading.Tasks;
 using Obvious.Soap;
 using TMPro;
@@ -49,7 +50,6 @@ namespace CosmicShore.UI
         [Header("Event Channels")]
         [SerializeField] private ScriptableEventInt onMoundDroneSpawned;
         [SerializeField] private ScriptableEventInt onQueenDroneSpawned;
-        [SerializeField] private ScriptableEventSilhouetteData onSilhouetteInitialized;
         [SerializeField] private ScriptableEventShipHUDData onShipHUDInitialized;
         [SerializeField] private ScriptableEventNoParam OnResetForReplay;
 
@@ -292,7 +292,6 @@ namespace CosmicShore.UI
 
             if (onMoundDroneSpawned != null) onMoundDroneSpawned.OnRaised += OnMoundDroneSpawned;
             if (onQueenDroneSpawned != null) onQueenDroneSpawned.OnRaised += OnQueenDroneSpawned;
-            if (onSilhouetteInitialized != null) onSilhouetteInitialized.OnRaised += OnSilhouetteInitialized;
             if (onShipHUDInitialized != null) onShipHUDInitialized.OnRaised += OnShipHUDInitialized;
         }
 
@@ -311,7 +310,6 @@ namespace CosmicShore.UI
 
             if (onMoundDroneSpawned != null) onMoundDroneSpawned.OnRaised -= OnMoundDroneSpawned;
             if (onQueenDroneSpawned != null) onQueenDroneSpawned.OnRaised -= OnQueenDroneSpawned;
-            if (onSilhouetteInitialized != null) onSilhouetteInitialized.OnRaised -= OnSilhouetteInitialized;
             if (onShipHUDInitialized != null) onShipHUDInitialized.OnRaised -= OnShipHUDInitialized;
         }
 
@@ -335,12 +333,47 @@ namespace CosmicShore.UI
 
                 // Connecting panel: hide the HUD (CG 0) while the panel (its own camera + reveal) holds
                 // ~2s, then restore the HUD. The panel is a sibling with its own CanvasGroup, so it stays
-                // visible while the HUD is hidden.
+                // visible while the HUD is hidden. The panel also HOLDS on the arena-ready gate
+                // (PrismTrailBuilder.PollArenaReady): every announced build executed, every streamed
+                // lay drained, AND every laid prism fully grown — the whole structure exists at full
+                // scale before the player gets past the connecting screen. Nothing lays or blooms in
+                // view during play. SetLoadGateHolding lets PrismScaleManager boost grow-in stepping
+                // while the screen is covered (gameplay slicing untouched).
                 if (connectingPanel != null)
                 {
                     Hide();
-                    await connectingPanel.ShowAsync(ct);
+                    LoadInsights.Mark("Connecting panel shown (holding for arena build)");
+                    PrismTrailBuilder.SetLoadGateHolding(true);
+                    try
+                    {
+                        await connectingPanel.ShowAsync(ct, PrismTrailBuilder.PollArenaReady);
+                    }
+                    finally
+                    {
+                        PrismTrailBuilder.SetLoadGateHolding(false);
+                    }
                 }
+                else
+                {
+                    // No panel wired in this mode — still hold on the same arena-ready gate
+                    // (per-frame poll on static builder state; the wait is bounded by the build
+                    // itself plus the builder's hard cap).
+                    PrismTrailBuilder.SetLoadGateHolding(true);
+                    try
+                    {
+                        while (!PrismTrailBuilder.PollArenaReady())
+                            await UniTask.Yield(PlayerLoopTiming.Update, ct);
+                    }
+                    finally
+                    {
+                        PrismTrailBuilder.SetLoadGateHolding(false);
+                    }
+                }
+
+                // Load Time Insights ENDPOINT: the arena is complete (laid + fully grown) and the
+                // connecting screen is done — the pre-game cinematic shows next. Everything after
+                // this line is gameplay ceremony (cinematic, Ready, countdown), not load.
+                LoadInsights.CompleteLoad("Loaded — arena complete (laid + grown), connecting screen done");
                 Show();
 
                 // Play pre-game cinematic if available
@@ -561,21 +594,6 @@ namespace CosmicShore.UI
         {
             view.RightNumberDisplay.transform.parent.parent.gameObject.SetActive(count > 0);
             view.RightNumberDisplay.text = count.ToString();
-        }
-
-        private void OnSilhouetteInitialized(SilhouetteData data)
-        {
-            var sil = view.Silhouette;
-            sil.SetActive(data.IsSilhouetteActive);
-
-            var trail = view.TrailDisplay;
-            trail.SetActive(data.IsTrailDisplayActive);
-
-            foreach (var part in data.Silhouettes)
-            {
-                part.transform.SetParent(sil.transform, false);
-                part.SetActive(true);
-            }
         }
 
         private void OnShipHUDInitialized(ShipHUDData data)
