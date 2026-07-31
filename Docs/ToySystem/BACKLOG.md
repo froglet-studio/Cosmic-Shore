@@ -1,6 +1,6 @@
 # Toy System — Backlog & Known Limitations
 
-The core toy system + the four toys are in. This tracks the polish/improvement
+The core toy system + the six toys are in. This tracks the polish/improvement
 work, grouped so each group can be its own follow-up branch, plus current known
 limitations and verification status. Architecture: `ARCHITECTURE.md`.
 
@@ -295,3 +295,126 @@ teardown). Everything below is remaining polish / not-yet-play-verified.
 - **Variant matrix stations beyond the membrane**: layered outward they can cross the
   membrane; spawns resolve the cell from the toy's position so they work, but station
   placement could clamp to the membrane radius for tidiness.
+- **The four element-crystal "moons" are probably invisible.** `LifeformMatrixToy.OnInitialized`
+  places them 2.2 raw world units from the toy centre at scale 0.35, but the toybox places toys
+  with `toyBodyRadius = 22`, so a 44-unit body sphere swallows them. `Toy.Placement` is now
+  exposed (added for the Cell Selector, which sizes its moons off `Placement.BodyRadius`) — scale
+  these the same way. Confirm in-editor before changing, since the crystal models carry their own
+  authored scale.
+
+## Cell Selector follow-ups
+
+Shipped on `claude/freestyle-cell-selector-toy-*`. Design + invariant analysis:
+`Docs/ECOSYSTEM.md §19`; surface description: `ARCHITECTURE.md § Cell Selector`.
+
+**Verification (in-editor, Menu_Main — none of this is play-verified):**
+
+1. **The boot win is the headline.** Enter Menu_Main cold: no `EnvironmentLoadVeil`, no
+   "GROWING …" hold. Launch any arcade game and return: same. Console should log the Cell
+   assigning **Blob**. That is the whole point of the branch — verify it first.
+2. **Pick a world.** Enter freestyle, fly the Cell Selector (300° around the membrane ring);
+   a matrix of mini-cells blooms outward. Fly e.g. **Yggdra**: the (empty) world suctions,
+   the veil raises with the usual prism/percent readout, Yggdra grows in. Confirm its
+   `PhaseThresholds` are in force afterwards (the cell should read Calm, not boot to Frenzy).
+3. **The reset.** With a world loaded and a long trail laid, fly the toy again and pick the
+   **same** cell (label reads `RESET`). Everything suctions away — environment, flora/fauna,
+   *and* your trail — and grows back fresh. Watch for `Trail`/`TrailFollower` NREs; the
+   detach in `SetVesselTrailsDetached` is what prevents them, so this is the risky path.
+4. **Squirrel specifically** — it is the tube-rider (`AttachedPrism`, `TrailFollower`). Reset
+   while attached to a trail and confirm no exception storm.
+5. **Teardown cost.** The 500-prisms-per-frame drain should keep the retire smooth; profile a
+   Yggdra→Geode swap and raise/lower `PrismsPerFrame` if it hitches or drags.
+6. **Pool health.** After several resets, confirm trail prisms still spawn at full size and
+   the interactive prism pool has not drifted (the pooled prisms take a
+   `SetParent(null,false)` → `ReturnToPool()` path specifically to avoid baking the suction
+   scale into `localScale`).
+7. **Wanderway interaction.** Run the conveyor, then reset the cell: the belt's own stock is
+   instantiated (no pool handler) so it must survive untouched. If it does not, the
+   `OnReturnToPool == null` discriminator in `RetireWorldIntoSuctionRoot` is wrong.
+8. **`retireSuctionSeconds`** (Cell inspector, default 1.1) — tune for feel.
+9. **Scale models.** Opening the matrix should show each world's real silhouette inside its
+   mini-cell, blooming in one per frame. Watch the frame time while they stream: each is one
+   environment generation (pure math, no prisms). If a single one hitches badly, drop
+   `modelPointBudget` — it affects mesh size, not generation cost — or move generation off the
+   main thread. Confirm the models look like the worlds they build (fly Yggdra, come back, and
+   compare) and that the Blob mini-cell is empty.
+10. **Model memory.** `ReleaseGeneratedData()` is called right after sampling, so the seven
+   34k-entry lay lists must NOT stay resident. Check the memory profiler after opening the
+   matrix; if they linger, the release is not landing.
+11. **Layout knobs** on `Toy_CellSelector.asset`: `stationSpacing` 55, `stationRadius` 9,
+   `matrixDistanceFactor` 3 (how far out the matrix sits — doubled from the first pass),
+   `modelPointBudget` 1200 are all guesses at menu scale.
+
+**Known limitations / follow-up work:**
+
+- **Local-only selection.** In a party each client picks its own cell. Strictly better than
+  the `Random` roll it replaced (which already differed per client), but the honest fix is a
+  server-authoritative pick: a `CellNetworkSync` RPC carrying a config index, host-only toy
+  activation, clients following. Needs a design call on who owns the menu world.
+- **The player flies blind under the veil.** They opted in, and it matches a scene load, but a
+  danger prism from a Caldera build could land on them. Options if it bites: park/autopilot the
+  vessel for the hold, or re-pose it to the cell centre before the build.
+- **Toy placement does not re-derive after a swap.** `ToyboxController` rings the membrane once
+  at `OnClientReady`. Every freestyle config shares one membrane prefab so the radius does not
+  change today; a config with a different membrane would leave the toys mis-ringed.
+- **`Cell.Initialize` during a swap is unguarded.** Nothing raises `OnInitializeGame` mid-session
+  in Menu_Main, so it cannot happen today; a guard on `_swapping` would make that structural.
+- **A model now generates the environment**, so the prism count IS knowable at matrix-open time
+  (`CachedLays.Count` before the release). If a load-cost telegraph is wanted, stamp it on the
+  station label from that count instead of authoring a hint field.
+- **Model generation is on the main thread.** One environment per frame keeps it tolerable, but a
+  heavy generator will still show as a hitch. The generation is pure math over value types, so it
+  is a good Burst/Job candidate if it bites.
+- **Nested generators preview their own placement points**, not their descendants' prisms. Every
+  freestyle environment is a leaf node, so this is graceful degradation rather than a live gap —
+  but a future nested environment would show a sparse model.
+
+## One-toy-opens-into-many follow-ups
+
+Shipped on `claude/freestyle-cell-selector-toy-*`. Three toys now share `MatrixToy`: fly one
+station, its options unfold out ahead; fly it again, they fold away. Architecture:
+`ARCHITECTURE.md § The "one toy, then many" pattern`.
+
+**Verification (in-editor, Menu_Main freestyle — none of it play-verified):**
+
+1. **All three unfold and fold.** Cell Selector, Connect the Dots, Vessel Changer: one pass opens
+   the matrix at `matrixDistanceFactor` × `stationSpacing` out along the outward radial, a second
+   pass folds it away (shrinking, not popping). Confirm the matrix is reachable — you fly at the
+   toy and keep going — and does not land inside the membrane or on top of another toy's matrix.
+2. **Cell Selector has no orbs.** Each slot is the bare scale model + its label. Nothing ringing it.
+3. **Vessel Changer.** The matrix shows every ship except the one you fly; flying one swaps you
+   and the matrix closes behind you. Control still returns after the swap
+   (`RestoreControlAfterSwap`), and the mini ships re-tint when you use the domain changer while
+   the matrix is open.
+4. **Painting gallery — the risky one.** Start a painting, fly the gallery toy to FOLD the matrix
+   mid-run, then fly it again to re-open. The run must still be going, and the station must
+   re-adopt it (progress on the label, no second runner spawned on the same canvas). The runner is
+   parented to the toybox root and `PaintingToy.ActiveRuns` is what makes this work.
+5. **First gallery open cost.** Opening the gallery generates strokes for all 16 paintings (for
+   the monument packing). This used to be paid at menu **boot** — it is now on the first open, so
+   expect a hitch there and confirm boot is clean. If the hitch is bad, stream the packing/station
+   build over frames the way the Cell Selector streams its models.
+6. **Domain Changer is unchanged** — still a `SwapToySetCoordinator` flip-set (its universe is two
+   toys). Confirm it still flips to the domain you just left.
+
+**Known limitations / follow-up work:**
+
+- **Matrix collision between toys.** Each toy's matrix blooms outward from its own slot; with six
+  toys ringed around the membrane and matrices three spacings out, two adjacent open matrices
+  could overlap. Only one is normally open at a time, but nothing enforces that — a "close the
+  others when one opens" coordinator on `ToyboxController` would.
+- **`MiniaturePaintingBuilder` runs 16 times in one frame** on the first gallery open (see #5).
+- **The vessel matrix rebuilds its models on every open.** `VesselModelBuilder` extraction is
+  cheap next to the painting/cell cases, but caching them like `CellSelectorToy._miniatures`
+  would make repeat opens free.
+- **Cell swap vs. painting pen (cross-toy).** `VesselPrismController.SetSpawnerPaused` is one
+  last-writer-wins flag shared by the cell swap's pen-up and the painting runner's between-stroke
+  pen-up. Reset the cell while a painting is between strokes and the swap un-pens it; the runner
+  re-asserts at its next stroke boundary, so the cost is a short stretch of unwanted trail. A
+  reset also clears the painting's laid prisms — but `PaintingPrismStore` regrows them when you
+  return to the station, which is the designed resume path. Left as-is deliberately: a
+  refcounted pen would be more machinery than the bounded, self-correcting symptom warrants.
+- **Asset drift cleaned in passing** (`Toy_VesselChanger` had a stale `vesselCycle` key with no
+  field behind it; `Toy_Painting` never serialized `clusterSpacingBodies`, so that knob read 0
+  and was masked by the `max()`). `Toy_Painting` still carries a stale `shape:` key — harmless,
+  Unity drops unknown keys on the next save.
