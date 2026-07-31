@@ -318,7 +318,9 @@ namespace CosmicShore.Gameplay
         // (UnityEngine.Objects are never GC'd). Nothing mutates these after creation.
         static readonly System.Collections.Generic.Dictionary<int, Material> s_accentMaterials = new();
 
-        static Material AccentMaterial(Color accent)
+        /// <summary>Shared unlit material for an accent colour (cached per colour). Public so
+        /// toys that build their own meshes can use the same tint path as the primitive bodies.</summary>
+        public static Material AccentMaterial(Color accent)
         {
             Color32 c = accent;
             int key = (c.r << 24) | (c.g << 16) | (c.b << 8) | c.a;

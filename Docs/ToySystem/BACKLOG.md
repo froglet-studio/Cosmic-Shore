@@ -332,8 +332,18 @@ Shipped on `claude/freestyle-cell-selector-toy-*`. Design + invariant analysis:
    instantiated (no pool handler) so it must survive untouched. If it does not, the
    `OnReturnToPool == null` discriminator in `RetireWorldIntoSuctionRoot` is wrong.
 8. **`retireSuctionSeconds`** (Cell inspector, default 1.1) — tune for feel.
-9. **Layout knobs** on `Toy_CellSelector.asset`: `stationSpacing` 55, `stationRadius` 9,
-   `shardsPerCell` 24 are all guesses at menu scale.
+9. **Scale models.** Opening the matrix should show each world's real silhouette inside its
+   mini-cell, blooming in one per frame. Watch the frame time while they stream: each is one
+   environment generation (pure math, no prisms). If a single one hitches badly, drop
+   `modelPointBudget` — it affects mesh size, not generation cost — or move generation off the
+   main thread. Confirm the models look like the worlds they build (fly Yggdra, come back, and
+   compare) and that the Blob mini-cell is empty.
+10. **Model memory.** `ReleaseGeneratedData()` is called right after sampling, so the seven
+   34k-entry lay lists must NOT stay resident. Check the memory profiler after opening the
+   matrix; if they linger, the release is not landing.
+11. **Layout knobs** on `Toy_CellSelector.asset`: `stationSpacing` 55, `stationRadius` 9,
+   `matrixDistanceFactor` 3 (how far out the matrix sits — doubled from the first pass),
+   `modelPointBudget` 1200 are all guesses at menu scale.
 
 **Known limitations / follow-up work:**
 
@@ -349,6 +359,12 @@ Shipped on `claude/freestyle-cell-selector-toy-*`. Design + invariant analysis:
   change today; a config with a different membrane would leave the toys mis-ringed.
 - **`Cell.Initialize` during a swap is unguarded.** Nothing raises `OnInitializeGame` mid-session
   in Menu_Main, so it cannot happen today; a guard on `_swapping` would make that structural.
-- **No load-cost telegraph beyond `LOAD` vs `INSTANT`.** The mini-cells cannot show a prism count
-  without generating the environment. An authored `EnvironmentWeightHint` on `CellConfigDataSO`
-  would let a station read "~34k" — worth it only if players start caring which world is heavy.
+- **A model now generates the environment**, so the prism count IS knowable at matrix-open time
+  (`CachedLays.Count` before the release). If a load-cost telegraph is wanted, stamp it on the
+  station label from that count instead of authoring a hint field.
+- **Model generation is on the main thread.** One environment per frame keeps it tolerable, but a
+  heavy generator will still show as a hitch. The generation is pure math over value types, so it
+  is a good Burst/Job candidate if it bites.
+- **Nested generators preview their own placement points**, not their descendants' prisms. Every
+  freestyle environment is a leaf node, so this is graceful degradation rather than a live gap —
+  but a future nested environment would show a sparse model.

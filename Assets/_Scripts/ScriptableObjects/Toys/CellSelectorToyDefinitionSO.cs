@@ -9,8 +9,10 @@ namespace CosmicShore.ScriptableObjects
     /// The <b>Cell Selector</b> toy - the freestyle world picker, and the freestyle reset.
     ///
     /// Fly the station and a matrix of MINI-CELLS blooms beside it, one per config the
-    /// containing <see cref="Cell"/> can be. Fly a mini-cell and the cell becomes it: the old
-    /// world suctions away and the chosen one grows back behind the standard environment veil.
+    /// containing <see cref="Cell"/> can be - each holding a genuine SCALE MODEL of the world
+    /// that config creates, sampled by <see cref="CellMiniatureBuilder"/> from the generator's
+    /// own output (no prisms spawned). Fly a mini-cell and the cell becomes it: the old world
+    /// suctions away and the chosen one grows back behind the standard environment veil.
     /// Fly the mini-cell of the world you are already in and you get that same cycle on the
     /// same config - the reset.
     ///
@@ -47,20 +49,30 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Min(10f), Tooltip("Spacing between mini-cells in the matrix.")]
         float stationSpacing = 55f;
 
-        [SerializeField, Min(1f), Tooltip("Radius of one mini-cell (its membrane rings).")]
+        [SerializeField, Min(1f), Tooltip("Radius of one mini-cell (its membrane rings). The scale " +
+                                          "model inside is fitted to just under this.")]
         float stationRadius = 9f;
 
-        [SerializeField, Range(0, 60), Tooltip("Prism shards drawn inside a mini-cell that HAS an " +
-                                               "authored environment. Environment-free cells always " +
-                                               "draw empty, so the picture tells you the entry is free " +
-                                               "before you read the label.")]
-        int shardsPerCell = 24;
+        [SerializeField, Min(0.5f), Tooltip("How far out the matrix blooms, in multiples of Station " +
+                                            "Spacing, measured from the toy along the outward radial " +
+                                            "(away from the cell centre). You fly AT the toy and keep " +
+                                            "going, so this is the gap you cross before the choices.")]
+        float matrixDistanceFactor = 3f;
+
+        [Header("Scale models")]
+        [SerializeField, Range(200, 4000), Tooltip("Samples taken from an environment's real generated " +
+                                                   "output to build its mini-cell scale model (24 mesh " +
+                                                   "vertices each). The silhouette is what reads at " +
+                                                   "thumbnail size, so ~1k carries it; higher just costs " +
+                                                   "vertices. No prisms are ever spawned for a model.")]
+        int modelPointBudget = 1200;
 
         public IReadOnlyList<CellConfigDataSO> Cells => cells;
         public bool ClearLooseTrailMass => clearLooseTrailMass;
         public float StationSpacing => stationSpacing;
         public float StationRadius => stationRadius;
-        public int ShardsPerCell => shardsPerCell;
+        public float MatrixDistanceFactor => matrixDistanceFactor;
+        public int ModelPointBudget => modelPointBudget;
 
         public override void Spawn(Transform parent, ToyPlacement placement, ToyContext context)
         {

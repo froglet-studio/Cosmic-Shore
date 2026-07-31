@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using CosmicShore.Data;
+using System.Threading;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
@@ -14,9 +14,11 @@ namespace CosmicShore.Gameplay
     /// Pass 1 (the toy itself): a matrix of MINI-CELLS blooms one layer outward - one station
     /// per config in the containing <see cref="Cell"/>'s own rotation (the Cell owns the
     /// environment; the toy reads its list rather than authoring a parallel one). Each station
-    /// is a little cell: three gyroscopic rings for the membrane, a nucleus dot, and a
-    /// constellation of prism shards seeded from the config's name, so every world reads
-    /// distinct at a glance and an environment-free config reads visibly EMPTY.
+    /// is a little cell: three gyroscopic rings for the membrane, a nucleus dot, and - inside -
+    /// a genuine SCALE MODEL of the world that config creates, sampled by
+    /// <see cref="CellMiniatureBuilder"/> straight from the generator's own output (real
+    /// silhouette, real structure, real domain composition; no prisms spawned). A config with no
+    /// authored environment has nothing to model, so it reads visibly EMPTY.
     ///
     /// Pass 2 (a mini-cell): <see cref="Cell.RequestCellSwap"/> - the cell retires its current
     /// world in a suction and grows the chosen one back behind the standard
@@ -35,11 +37,25 @@ namespace CosmicShore.Gameplay
         CellSelectorToyDefinitionSO _def;
         GameObject _grid;
 
+        // Built models, keyed by the config they portray. Generation is the expensive part, so a
+        // re-opened matrix is free. Instance-scoped (not static) and destroyed with the toy, so
+        // the meshes cannot outlive the scene.
+        readonly Dictionary<CellConfigDataSO, CellMiniatureBuilder.Miniature> _miniatures = new();
+
+        // Cancels the model stream when the matrix closes - a selection tears down the grid AND
+        // starts a cell swap, and the streamer must not still be generating (and releasing the
+        // generator's cache) underneath the build that swap just started.
+        CancellationTokenSource _streamCts;
+
         public void Configure(CellSelectorToyDefinitionSO definition) => _def = definition;
 
         protected override void OnInitialized()
         {
-            // Findability + identity: the world picker wears three little worlds as moons.
+            // Findability + identity: the world picker wears three EMPTY little worlds as moons -
+            // the same membrane shell the matrix stations wear, waiting to be filled. They stay
+            // empty on purpose: filling them would mean generating environments at menu boot,
+            // which is the exact cost this toy exists to defer.
+            //
             // Sized off the ACTUAL body radius - the toybox places toys at menu scale (tens of
             // world units), so decoration authored in raw units would sit inside the body sphere.
             float body = Placement.BodyRadius > 0.01f ? Placement.BodyRadius : 20f;
@@ -50,8 +66,7 @@ namespace CosmicShore.Gameplay
                 moon.transform.SetParent(transform, false);
                 moon.transform.localPosition =
                     new Vector3(Mathf.Cos(a), 0.2f * ((i % 2 == 0) ? 1f : -1f), Mathf.Sin(a)) * (body * 1.7f);
-                BuildMiniCell(moon.transform, body * 0.28f, Definition.AccentColor,
-                    Hash01(i * 977), shardCount: 5);
+                BuildMiniCellShell(moon.transform, body * 0.28f, Definition.AccentColor);
             }
 
             CSDebug.Log($"[CellSelector] Toy placed at {transform.position} " +
@@ -77,14 +92,27 @@ namespace CosmicShore.Gameplay
 
         void OnDestroy() // teardown with the toybox
         {
+            CancelStream();
             if (_grid) Destroy(_grid);
+            foreach (var miniature in _miniatures.Values)
+                if (miniature.Mesh) Destroy(miniature.Mesh);
+            _miniatures.Clear();
         }
 
         void ClearGrid()
         {
+            CancelStream();
             if (!_grid) return;
             ToyFactory.ScaleOutAndDestroy(_grid, 0.8f).Forget();
             _grid = null;
+        }
+
+        void CancelStream()
+        {
+            if (_streamCts == null) return;
+            _streamCts.Cancel();
+            _streamCts.Dispose();
+            _streamCts = null;
         }
 
         // ── Pass 1: the mini-cell matrix ─────────────────────────────────────
@@ -131,13 +159,14 @@ namespace CosmicShore.Gameplay
             _grid.transform.SetParent(transform.parent, true);
 
             float spacing = _def.StationSpacing;
-            Vector3 origin = transform.position + Outward * (spacing * 1.5f);
+            Vector3 origin = transform.position + Outward * (spacing * _def.MatrixDistanceFactor);
             Vector3 right = transform.right;
             Vector3 up = transform.up;
 
             int cols = Mathf.Max(1, Mathf.CeilToInt(Mathf.Sqrt(configs.Count)));
             int rows = Mathf.CeilToInt(configs.Count / (float)cols);
             var current = cell.Config;
+            var pendingModels = new List<(Transform host, CellConfigDataSO config)>();
 
             for (int i = 0; i < configs.Count; i++)
             {
@@ -161,9 +190,19 @@ namespace CosmicShore.Gameplay
                 var capturedConfig = config;
                 var capturedCell = cell;
                 station.OnVesselPassed = () => SelectCell(capturedCell, capturedConfig);
+
+                if (hasEnvironment) pendingModels.Add((station.transform, config));
             }
 
-            CSDebug.Log($"[CellSelector] {configs.Count} cells offered (current: {DisplayNameOf(current)}).");
+            // The shells are up NOW; the scale models fill them in over the next frames. Each
+            // model costs one environment generation (pure math, no prisms), which is small next
+            // to a real build but too big to do seven of in one frame.
+            CancelStream();
+            _streamCts = CancellationTokenSource.CreateLinkedTokenSource(this.GetCancellationTokenOnDestroy());
+            StreamMiniatures(pendingModels, _streamCts.Token).Forget();
+
+            CSDebug.Log($"[CellSelector] {configs.Count} cells offered (current: {DisplayNameOf(current)}); " +
+                        $"{pendingModels.Count} scale models building.");
         }
 
         /// <summary>
@@ -219,11 +258,11 @@ namespace CosmicShore.Gameplay
             var go = ToyFactory.CreateBareRoot(DisplayNameOf(config), parent, position,
                 transform.position, radius * 1.6f);
 
-            // A cell with no authored environment is drawn EMPTY - the picture tells you it
-            // costs nothing to enter, before you read the label.
-            int shards = config.EnvironmentPrefab != null ? _def.ShardsPerCell : 0;
-            BuildMiniCell(go.transform, radius, Definition.AccentColor,
-                Hash01(StableHash(DisplayNameOf(config))), shards);
+            // Shell only here - the scale model of the world this config creates streams in
+            // afterwards (see StreamMiniatures). A config with no authored environment has
+            // nothing to model, so it stays EMPTY: the picture tells you the entry costs
+            // nothing before you read the label.
+            BuildMiniCellShell(go.transform, radius, Definition.AccentColor);
 
             var text = ToyFactory.AddLabel(go.transform, label, Definition.AccentColor, radius * 1.9f);
             if (isCurrent && text) text.fontStyle = TMPro.FontStyles.Bold;
@@ -236,13 +275,11 @@ namespace CosmicShore.Gameplay
         // ── Mini-cell visual ─────────────────────────────────────────────────
 
         /// <summary>
-        /// A little cell: three gyroscopic rings for the membrane (the existing fly-through-ring
-        /// shape language, hollow so you can see inside), a nucleus dot, and
-        /// <paramref name="shardCount"/> prism shards on a phyllotaxis shell seeded by
-        /// <paramref name="seed01"/>. Cells are told apart by SHAPE and CONTENT, never by tint -
-        /// colour belongs to domains (the same rule the Lifeform Matrix follows for elements).
+        /// The empty little cell: three gyroscopic rings for the membrane (the existing
+        /// fly-through-ring shape language, hollow so you can see inside) and a nucleus dot.
+        /// Whatever lives inside is the config's own scale model, added separately.
         /// </summary>
-        void BuildMiniCell(Transform parent, float radius, Color accent, float seed01, int shardCount)
+        static void BuildMiniCellShell(Transform parent, float radius, Color accent)
         {
             var membrane = new GameObject("Membrane");
             membrane.transform.SetParent(parent, false);
@@ -254,92 +291,104 @@ namespace CosmicShore.Gameplay
             }
 
             ToyFactory.AddSphereBody(parent, radius * 0.10f, accent).name = "Nucleus";
-            if (shardCount <= 0) return;
-
-            var prismMaterial = ToyFactory.DomainPrismMaterial(Context, LocalDomain);
-            var contents = new GameObject("Contents");
-            contents.transform.SetParent(parent, false);
-
-            // Phyllotaxis shell - the same golden-angle placement the cell environments use,
-            // offset by the seed so each config's constellation is its own and is stable
-            // across sessions.
-            const float goldenAngle = 2.39996323f;
-            int seed = Mathf.RoundToInt(seed01 * 4096f);
-            float phase = seed01 * Mathf.PI * 2f;
-            float shardSize = radius * 0.16f;
-
-            // Per-cell anisotropy on top of the rotation phase: some worlds read as flat discs,
-            // some as spheres. Two cheap seeded axes are enough to tell seven worlds apart.
-            float squash = Mathf.Lerp(0.30f, 1f, Hash01(seed + 7));
-
-            for (int i = 0; i < shardCount; i++)
-            {
-                float t = (i + 0.5f) / shardCount;
-                float y = 1f - 2f * t;
-                float ringRadius = Mathf.Sqrt(Mathf.Max(0f, 1f - y * y));
-                float theta = goldenAngle * i + phase;
-
-                // Jitter the shell radius per shard so the constellation reads as a world with
-                // depth rather than a perfect sphere of dots.
-                float shell = Mathf.Lerp(0.35f, 0.82f, Hash01(i * 131 + seed));
-                var local = new Vector3(Mathf.Cos(theta) * ringRadius, y * squash, Mathf.Sin(theta) * ringRadius)
-                            * (radius * shell);
-
-                var shard = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                shard.name = "Shard";
-                if (shard.TryGetComponent(out Collider shardCollider)) Destroy(shardCollider);
-                shard.transform.SetParent(contents.transform, false);
-                shard.transform.localPosition = local;
-                shard.transform.localRotation = Quaternion.Euler(
-                    Hash01(i * 17) * 360f, Hash01(i * 37) * 360f, Hash01(i * 57) * 360f);
-                shard.transform.localScale = Vector3.one * shardSize;
-
-                if (shard.TryGetComponent(out MeshRenderer shardRenderer))
-                {
-                    if (prismMaterial) shardRenderer.sharedMaterial = prismMaterial;
-                    shardRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-                    shardRenderer.receiveShadows = false;
-                }
-            }
-
-            // The contents turn inside the still membrane - a world you can watch.
-            contents.AddComponent<ToyIdleSpin>().Configure(Vector3.up, 12f);
         }
 
-        Domains LocalDomain =>
-            Context?.GameData?.LocalPlayer?.Vessel?.VesselStatus?.Domain ?? Domains.Blue;
+        // ── Scale models ─────────────────────────────────────────────────────
 
-        /// <summary>Order-independent hash in [0,1) - stable decoration values.</summary>
-        static float Hash01(int n)
+        /// <summary>
+        /// Fill each mini-cell with a scale model of the world its config creates, ONE PER FRAME.
+        /// Each model costs one environment generation (pure math - no prism is ever spawned),
+        /// which is small next to a real build but too big to do seven of in a single frame.
+        /// The models bloom in as they land, so nothing pops.
+        /// </summary>
+        async UniTaskVoid StreamMiniatures(
+            List<(Transform host, CellConfigDataSO config)> pending, CancellationToken ct)
         {
-            unchecked
+            for (int i = 0; i < pending.Count; i++)
             {
-                uint h = (uint)n;
-                h = (h ^ 61u) ^ (h >> 16);
-                h *= 9u;
-                h ^= h >> 4;
-                h *= 0x27d4eb2du;
-                h ^= h >> 15;
-                return (h & 0xffffffu) / (float)0x1000000;
+                await UniTask.Yield(PlayerLoopTiming.Update, ct);
+                var (host, config) = pending[i];
+                if (!host || !config) continue;
+
+                var miniature = ResolveMiniature(config);
+                if (!miniature.IsValid) continue;
+
+                AttachMiniature(host, miniature);
+
+                // A clear frame between generations so a heavy one never stacks with the next.
+                await UniTask.Yield(PlayerLoopTiming.Update, ct);
             }
         }
 
         /// <summary>
-        /// FNV-1a over the name. <c>string.GetHashCode</c> is explicitly not stable across
-        /// runtimes, and a constellation that reshuffles between sessions is not an identity.
+        /// The model for a config, built once and kept. The generator's point data is released
+        /// immediately after sampling: holding seven 34k-entry lay lists so the menu can show
+        /// seven thumbnails is the wrong trade on mobile, and re-generating on load is a small
+        /// fraction of the lay cost.
         /// </summary>
-        static int StableHash(string value)
+        CellMiniatureBuilder.Miniature ResolveMiniature(CellConfigDataSO config)
         {
-            unchecked
-            {
-                uint hash = 2166136261u;
-                for (int i = 0; i < value.Length; i++)
-                {
-                    hash ^= value[i];
-                    hash *= 16777619u;
-                }
-                return (int)hash;
-            }
+            if (_miniatures.TryGetValue(config, out var cached) && cached.Mesh)
+                return cached;
+
+            var prefab = config.EnvironmentPrefab;
+            if (!prefab) return default;
+
+            var built = CellMiniatureBuilder.Build(prefab, _def.StationRadius, _def.ModelPointBudget);
+            if (prefab is CellEnvironmentSpawnableBase env) env.ReleaseGeneratedData();
+
+            if (built.IsValid) _miniatures[config] = built;
+            else CSDebug.LogWarning($"[CellSelector] {prefab.name} generated no points - " +
+                                    $"{DisplayNameOf(config)} shows as an empty cell.");
+            return built;
         }
+
+        void AttachMiniature(Transform host, CellMiniatureBuilder.Miniature miniature)
+        {
+            var go = new GameObject("ScaleModel");
+            go.transform.SetParent(host, false);
+
+            go.AddComponent<MeshFilter>().sharedMesh = miniature.Mesh;
+
+            // One material per domain submesh - the model wears the world's REAL domain
+            // composition, in the same prism materials the world itself is built from.
+            var materials = new Material[miniature.SubmeshDomains.Length];
+            for (int i = 0; i < materials.Length; i++)
+            {
+                var domain = miniature.SubmeshDomains[i];
+                var material = ToyFactory.DomainPrismMaterial(Context, domain);
+                materials[i] = material
+                    ? material
+                    : ToyFactory.AccentMaterial(ToyFactory.DomainAccentColor(Context, domain));
+            }
+
+            var renderer = go.AddComponent<MeshRenderer>();
+            renderer.sharedMaterials = materials;
+            renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            renderer.receiveShadows = false;
+
+            // The world turns inside its still membrane - a thing you can watch.
+            go.AddComponent<ToyIdleSpin>().Configure(Vector3.up, 12f);
+
+            // Continuity of existence: the model grows in rather than appearing. Zeroed here,
+            // before the first tick, so it can never render at full size for a frame first.
+            go.transform.localScale = Vector3.zero;
+            BloomModelIn(go.transform, 0.6f, this.GetCancellationTokenOnDestroy()).Forget();
+        }
+
+        static async UniTaskVoid BloomModelIn(Transform target, float seconds, CancellationToken ct)
+        {
+            float elapsed = 0f;
+            while (elapsed < seconds)
+            {
+                if (!target) return;
+                elapsed += Time.unscaledDeltaTime;
+                float t = Mathf.Clamp01(elapsed / seconds);
+                target.localScale = Vector3.one * (t * t * (3f - 2f * t));
+                await UniTask.Yield(PlayerLoopTiming.Update, ct);
+            }
+            if (target) target.localScale = Vector3.one;
+        }
+
     }
 }

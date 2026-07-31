@@ -49,6 +49,7 @@ detection. On top of that base the `Toy` class adds:
 | Toy base (trigger, bloom, gating, re-arm) | `Assets/_Scripts/Controller/Toys/Toy.cs` |
 | Shared matrix station (fly-through choice) | `Assets/_Scripts/Controller/Toys/ToyMatrixStation.cs` |
 | Cell Selector (world picker + reset) | `Assets/_Scripts/Controller/Toys/CellSelectorToy.cs` |
+| Scale model of a cell environment | `Assets/_Scripts/Controller/Toys/CellMiniatureBuilder.cs` |
 | Cell Selector config | `Assets/_Scripts/ScriptableObjects/Toys/CellSelectorToyDefinitionSO.cs` |
 | Runtime cell swap (the toy's one entry point) | `Assets/_Scripts/Controller/Environment/Cell.cs` (`RequestCellSwap`) |
 | Coordinated toy (reports activation to its set) | `Assets/_Scripts/Controller/Toys/SwapToy.cs` |
@@ -104,8 +105,10 @@ first config authoring no `EnvironmentPrefab` (Blob), so the menu opens with not
 The six heavy worlds stay in the Cell's list and become **opt-in**: this toy is the only place
 that load is ever paid.
 
-Fly the toy (a sphere ringed by three little worlds) and a matrix of **mini-cells** blooms one
-layer outward — the Lifeform Matrix's "fly at a wall of choices" pattern, now sharing
+Fly the toy (a sphere ringed by three empty little worlds — they stay empty because filling
+them would mean generating environments at menu boot, the exact cost this toy defers) and a
+matrix of **mini-cells** blooms outward, `matrixDistanceFactor` × `stationSpacing` clear of the
+toy along the outward radial: you fly AT the toy and keep going, and the choices are ahead — the Lifeform Matrix's "fly at a wall of choices" pattern, now sharing
 `ToyMatrixStation`. Fly a mini-cell and the cell becomes that world. **Fly the mini-cell of the
 world you are already in and you get the same cycle on the same config — that is the reset.**
 Labels say what a pass costs before you take it: `RESET` (the current cell), `INSTANT` (an
@@ -116,12 +119,22 @@ reads `Cell.AvailableConfigs` — the Cell's own `CellConfigs` rotation. The Cel
 environment, so there is one source of truth for what a scene's cell can be and the toy cannot
 drift from it. Authoring the list is an override for scenes that want a curated subset.
 
-**Mini-cell look.** Three gyroscopic rings (the existing fly-through-ring shape language,
-hollow so you can see inside) + a nucleus dot + a phyllotaxis constellation of prism shards
-seeded by an FNV hash of the config name (stable across sessions — `string.GetHashCode` is
-explicitly not). Worlds are told apart by **shape and content, never tint**: colour belongs to
-domains, the same rule the Lifeform Matrix follows for elements. A config with no environment
-draws visibly **empty**.
+**Mini-cell look — a real scale model.** Three gyroscopic rings (the existing fly-through-ring
+shape language, hollow so you can see inside) + a nucleus dot, and inside them a genuine **scale
+model of the world that config creates**. `CellMiniatureBuilder` reads the generator's own output
+— `SpawnableBase.GetTrailData()` plus `CellEnvironmentSpawnableBase.CachedLays` for the per-*prism*
+domain that `SpawnTrailData` flattens away — strides it down to a point budget (~1.2k), and emits
+one small box per sample into **one mesh with a submesh per domain**. So a mini-cell shows the real
+silhouette, the real structure, and the real domain composition, in the same prism materials the
+world itself is built from. **No prism is ever spawned for a model**: generation is pure math, and
+the ~97%-of-cost per-prism `Instantiate` never happens.
+
+Cost control: models stream in **one per frame** after the shells are already up (each blooms in as
+it lands), the built meshes are cached on the toy for the session, and the generator's point data is
+**released immediately after sampling** (`ReleaseGeneratedData`) — holding seven 34k-entry lay lists
+so the menu can show seven thumbnails is the wrong trade on mobile, and re-generating on load is a
+small fraction of the lay cost. A config with no environment has nothing to model and draws visibly
+**empty** — which is now literally true rather than a stand-in.
 
 **What a selection does** is `Cell.RequestCellSwap` — suction the old world away over a visible
 transition, drain it in 500-prism-per-frame slices while it is invisible, then rebuild behind

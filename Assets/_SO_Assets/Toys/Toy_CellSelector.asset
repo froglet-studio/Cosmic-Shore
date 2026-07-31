@@ -24,4 +24,5 @@ MonoBehaviour:
   clearLooseTrailMass: 1
   stationSpacing: 55
   stationRadius: 9
-  shardsPerCell: 24
+  matrixDistanceFactor: 3
+  modelPointBudget: 1200

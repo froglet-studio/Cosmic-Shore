@@ -1601,19 +1601,29 @@ code.
 | 7 | The standard `EnvironmentLoadVeil` holds the screen while the world streams in; the spawner restarts and the trails un-pen only once the lay has drained, so flora/fauna seed into a **finished** world. |
 
 `CellSelectorToy` is the player-facing surface — a toy, so no score, no end condition, no
-timer. Fly it and a matrix of **mini-cells** blooms one layer outward (the Lifeform Matrix's
-"fly at a wall of choices" pattern, now sharing `ToyMatrixStation`). Fly a mini-cell and the
-cell becomes it. **Fly the mini-cell of the world you are already in and you get the same
-cycle on the same config — that is the reset.**
+timer. Fly it and a matrix of **mini-cells** blooms outward, well clear of the toy (the
+Lifeform Matrix's "fly at a wall of choices" pattern, now sharing `ToyMatrixStation`). Fly a
+mini-cell and the cell becomes it. **Fly the mini-cell of the world you are already in and you
+get the same cycle on the same config — that is the reset.**
 
 The toy authors **no cell list of its own**: it reads `Cell.AvailableConfigs`, the Cell's own
 rotation. The Cell owns the environment (`ECOSYSTEM_MASTERPLAN.md §5.1`), so there is exactly
-one source of truth for what a scene's cell can be and the toy cannot drift from it. Each
-mini-cell is three gyroscopic rings (membrane) + a nucleus dot + a phyllotaxis constellation
-of prism shards seeded from the config name — **shape and content, never tint** (colour belongs
-to domains, the same rule the Lifeform Matrix follows for elements). A config with no
-environment draws **visibly empty**, so the picture tells you the entry is free before you read
-the `RESET` / `LOAD` / `INSTANT` label.
+one source of truth for what a scene's cell can be and the toy cannot drift from it.
+
+Each mini-cell is three gyroscopic rings (membrane) + a nucleus dot, holding a genuine **scale
+model of the world that config creates**. `CellMiniatureBuilder` reads the generator's own
+output — `SpawnableBase.GetTrailData()` plus the new `CellEnvironmentSpawnableBase.CachedLays`
+(the per-*prism* domain, which `SpawnTrailData` flattens to one domain per trail) — strides it
+to a ~1.2k point budget and emits one box per sample into a single mesh with a submesh per
+domain, painted in the real domain prism materials. So the thumbnail is the world's real
+silhouette, structure, and domain composition. **No prism is ever spawned for a model**:
+generation is pure math, and the ~97%-of-a-build per-prism `Instantiate` never happens. Models
+stream in one per frame behind the shells (each blooming in), the meshes are cached for the
+session, and `ReleaseGeneratedData()` drops the generator's point data right after sampling —
+retaining seven 34k-entry lay lists so the menu can show seven thumbnails is the wrong trade on
+mobile, and re-generating on load is a small fraction of the lay cost. A config with no
+environment has nothing to model and draws **visibly empty**, so the picture tells you the entry
+is free before you read the `RESET` / `LOAD` / `INSTANT` label.
 
 ### Invariants — what this does and does not touch
 
