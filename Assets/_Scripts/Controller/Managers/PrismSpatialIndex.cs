@@ -301,15 +301,18 @@ namespace CosmicShore.Gameplay
 
     /// <summary>
     /// One explosion hit deferred by the per-frame budget, waiting in the
-    /// explosion's backlog. Managed (never enters a Burst job) precisely so it can
-    /// carry <see cref="Prism"/> as an identity guard: registry slots are recycled
-    /// through the free list, and a deferred hit may wait several frames, so the raw
-    /// index alone can silently alias onto a DIFFERENT prism by drain time.
+    /// explosion's backlog. Carries the slot's occupancy GENERATION as an identity
+    /// guard: registry slots are recycled through the free list and a deferred hit
+    /// may wait many frames, so the raw index alone can silently alias onto a
+    /// different prism — or onto the same pooled instance living a new life — by the
+    /// time it drains. A generation stamp catches both; an object reference catches
+    /// only the first (and a Unity-destroyed reference compares fake-null, which
+    /// would disable the check in exactly the case it exists for).
     /// </summary>
     public struct PendingExplosionHit
     {
-        public Prism Prism;      // identity captured at defer time
         public int Index;
+        public int Generation;   // _slotGeneration[Index] captured at defer time
         public float3 ImpactDir;
     }
 
@@ -628,6 +631,12 @@ namespace CosmicShore.Gameplay
         /// </summary>
         private const int MAX_DRAIN_EXAMINED_PER_FRAME = MAX_NEW_HITS_PER_FRAME * 8;
 
+        /// <summary>
+        /// Sentinel for "no generation check" - used by same-frame hits, which have no
+        /// aliasing window. Never produced by Register (it pre-increments from 0).
+        /// </summary>
+        private const int AnyGeneration = 0;
+
         // Hot: scanned by Burst job every frame during AOE
         private NativeArray<PrismSpatialData> _spatial;
 
@@ -659,6 +668,13 @@ namespace CosmicShore.Gameplay
 
         // Managed: Prism references for applying damage callbacks
         private Prism[] _prisms;
+
+        // Per-slot occupancy stamp, incremented on every Register. A slot index is
+        // only a valid handle while its generation is unchanged, so anything that
+        // holds an index across frames (the explosion backlog) can detect BOTH a
+        // free-list recycle to a different prism AND a pooled prism re-entering the
+        // same slot for a new life. Object identity alone catches only the first.
+        private int[] _slotGeneration;
 
         // Managed: the cell whose per-domain density grids each prism is filed in
         // (the coarse view of this same lifecycle), or null - open space, fauna
@@ -724,6 +740,7 @@ namespace CosmicShore.Gameplay
             _cellVolumeScratch = new NativeArray<float>(CellVolumeResultCount, Allocator.Persistent);
             _shell = new NativeArray<PrismShellData>(INITIAL_CAPACITY, Allocator.Persistent);
             _prisms = new Prism[INITIAL_CAPACITY];
+            _slotGeneration = new int[INITIAL_CAPACITY];
             _cells = new Cell[INITIAL_CAPACITY];
             _aoeHits = new NativeList<AOEHit>(512, Allocator.Persistent);
             _buckets = new NativeParallelMultiHashMap<int3, int>(INITIAL_CAPACITY, Allocator.Persistent);
@@ -1375,6 +1392,10 @@ namespace CosmicShore.Gameplay
             }
 
             _prisms[index] = prism;
+            unchecked { _slotGeneration[index]++; }
+            // Never let a live slot carry the "no check" sentinel (only reachable
+            // after a full 2^32 wrap on one slot, but the guard is one comparison).
+            if (_slotGeneration[index] == AnyGeneration) _slotGeneration[index] = 1;
 
             // Build flags byte
             byte flags = PrismFlags.IsActive;
@@ -1973,8 +1994,8 @@ namespace CosmicShore.Gameplay
                     alreadyHit.Add(idx);
                     pending.Enqueue(new PendingExplosionHit
                     {
-                        Prism = live,
                         Index = idx,
+                        Generation = _slotGeneration[idx],
                         ImpactDir = _aoeHits[i].ImpactDir
                     });
                     continue;
@@ -1982,7 +2003,7 @@ namespace CosmicShore.Gameplay
 
                 alreadyHit.Add(idx);
 
-                if (ResolveExplosionHit(idx, null, _aoeHits[i].ImpactDir,
+                if (ResolveExplosionHit(idx, AnyGeneration, _aoeHits[i].ImpactDir,
                         speed, inertia, expDomain, affectSelf, destructive, devastating,
                         shielding, anonymous, vesselDomain, vesselPlayerName, ref shouldContinue))
                     budgetSpent++;
@@ -1997,11 +2018,12 @@ namespace CosmicShore.Gameplay
         /// query time (a prism that gained a super-shield or changed domain while
         /// queued must be re-judged, not blindly damaged).
         ///
-        /// <paramref name="expected"/> is the identity guard: registry slots are
-        /// recycled through <c>_freeList</c>, so a hit that sat in the backlog for
-        /// several frames may find a DIFFERENT prism in its slot. Pass the prism
-        /// captured at defer time; a mismatch drops the hit. Pass null for a
-        /// same-frame hit, where no aliasing window exists.
+        /// <paramref name="expectedGeneration"/> is the identity guard: registry
+        /// slots are recycled through <c>_freeList</c>, so a hit that sat in the
+        /// backlog for several frames may find a different prism in its slot — or the
+        /// same pooled instance living a new life. Pass the generation captured at
+        /// defer time; a mismatch drops the hit. Pass <see cref="AnyGeneration"/> for
+        /// a same-frame hit, where no aliasing window exists.
         ///
         /// Returns true if the frame's budget should be charged - i.e. real work was
         /// done. Both outcomes that do work are charged: <see cref="Prism.Damage"/>
@@ -2011,7 +2033,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         private bool ResolveExplosionHit(
             int idx,
-            Prism expected,
+            int expectedGeneration,
             float3 impactDir,
             float speed,
             float inertia,
@@ -2025,11 +2047,13 @@ namespace CosmicShore.Gameplay
             string vesselPlayerName,
             ref bool shouldContinue)
         {
+            // Slot-recycling guard - see the summary. Checked BEFORE the prism is
+            // touched: a stale entry must not resolve against whatever now owns the slot.
+            if (expectedGeneration != AnyGeneration && _slotGeneration[idx] != expectedGeneration)
+                return false;
+
             var prism = _prisms[idx];
             if (prism == null || prism.destroyed) return false;
-
-            // Slot-recycling guard - see the summary.
-            if (expected != null && !ReferenceEquals(prism, expected)) return false;
 
             // Read cold data - only for hit prisms, never pollutes the Burst job's cache
             var flags = _spatial[idx].Flags;
@@ -2107,7 +2131,7 @@ namespace CosmicShore.Gameplay
             {
                 examined++;
                 var deferred = pending.Dequeue();
-                if (ResolveExplosionHit(deferred.Index, deferred.Prism, deferred.ImpactDir,
+                if (ResolveExplosionHit(deferred.Index, deferred.Generation, deferred.ImpactDir,
                         speed, inertia, expDomain, affectSelf, destructive, devastating,
                         shielding, anonymous, vesselDomain, vesselPlayerName, ref shouldContinue))
                     spent++;
@@ -2196,6 +2220,10 @@ namespace CosmicShore.Gameplay
             var newPrisms = new Prism[newSize];
             System.Array.Copy(_prisms, newPrisms, _prisms.Length);
             _prisms = newPrisms;
+
+            var newGenerations = new int[newSize];
+            System.Array.Copy(_slotGeneration, newGenerations, _slotGeneration.Length);
+            _slotGeneration = newGenerations;
 
             var newCells = new Cell[newSize];
             System.Array.Copy(_cells, newCells, _cells.Length);

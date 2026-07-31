@@ -403,10 +403,14 @@ lost coverage. The lever for shortening it is the per-prism destruction cost
   `alreadyHit` probe for every prism in it, every frame, and the window is one
   blast long. Revisit if mass starts appearing inside live blasts at scale.
 - The explosion backlog is the **one sanctioned holder of registry indices across
-  frames**. It is safe only because `PendingExplosionHit` also captures the
-  `Prism` and the drain drops any entry whose slot no longer holds it. Any future
-  consumer that outlives the frame needs the same identity guard — the raw index
-  alone is not a stable handle (the free list recycles slots LIFO).
+  frames**. It is safe only because `PendingExplosionHit` also captures
+  `_slotGeneration[index]` (bumped by every `Register`) and the drain drops any
+  entry whose stamp no longer matches. Any future consumer that outlives the frame
+  needs the same guard — the raw index is not a stable handle, because the free
+  list recycles slots LIFO. Note an object reference is **not** sufficient here:
+  prisms are pooled, so the same instance can re-enter the same slot for a new
+  life, and a Unity-destroyed reference compares fake-null, which would disable
+  the check in precisely the case it exists for. Compare generations, not refs.
 - `Boid.NewBlock` mound blocks bypass `Prism.Initialize` and therefore never
   register (no AOE, no occupancy, no neighborhood visibility) — mound
   mate-finding compensates with a Mound-layer collider probe (see "What NOT to
