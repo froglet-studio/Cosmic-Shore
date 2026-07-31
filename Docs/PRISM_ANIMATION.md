@@ -116,6 +116,12 @@ re-plumbing, not invention:
 
 ## 3. The audit — every way prisms are updated (2026-07-31)
 
+An 11-agent exhaustive sweep (10 lenses + a completeness critic) inventoried
+**162 path entries: 94 violations, 68 conforming**. §3.1–3.6 summarize the seven
+core paths; §3.7 is the complete per-lens inventory (lenses overlap deliberately —
+a path can appear under more than one; **§5 is the deduplicated work list**);
+§3.8 records latent bugs the sweep surfaced and the verified-clean absences.
+
 Verdicts: ✅ conforming · ❌ violation (multiframe CPU animation) · ⚠ exception/decision.
 
 ### 3.1 Scale / growth
@@ -170,8 +176,8 @@ per-tick `smoothstep` color lerp → `PrismRenderService.SetColors` or MPB write
 | Spawn stagger (`waitTime`) | `WaitForSeconds` per prism | ⚠ same — becomes part of the stamped start time |
 | Creation-completion budget | Static per-frame counter + retry loop | ⚠ same |
 
-*(Rows for trail lay, boost rings, segment/track spawners, spawnable shapes, painting
-regrow, conveyor recycle — see §3.7 pending the full sweep.)*
+*(Trail lay, boost rings, segment/track spawners, spawnable shapes, painting regrow,
+conveyor recycle — all inventoried in §3.7 lenses A, F, G, J, K.)*
 
 ### 3.6 Movers (gameplay data — not animation)
 
@@ -181,11 +187,273 @@ regrow, conveyor recycle — see §3.7 pending the full sweep.)*
 | Fauna body prisms | Creature locomotion moves prisms | live gameplay data |
 | Cell swap drain / conveyor suction | Batched retire/relocate passes | must use clock-material suction/bloom for the *visuals*; the batch bookkeeping itself is one-shot per prism |
 
-### 3.7 Full path inventory
+### 3.7 Full path inventory (all 10 lenses + critic)
 
-The exhaustive per-path table (including flora growth, fauna wither, microscene
-conveyor, cell swap, spawnables, projectiles/mines, test scaffolding) is appended by
-the audit sweep — see the migration tracker in §5.
+<!-- AUDIT_TABLE_START -->
+#### A. Grow-in / scale
+
+| Path | Cadence | Verdict | Where | Migration |
+|---|---|---|---|---|
+| PrismScaleManager sliced grow-in pass (the shared CPU engine) | per-frame CPU | ❌ | `Controller/Managers/PrismScaleManager.cs:54-196` | Replace with a clock material on the companion entity: at spawn write per-instance _GrowStartTime (t0), _GrowRate (k, computed once from GrowthRate exactly as line 146), and rely on the entity's LocalToWorld already holding FINAL scale; vertex shader scales positions by clamp01(1−exp(−k·(t−t0))) — i… |
+| PrismScaleAnimator trigger surface + end-of-animation side effects | per-frame CPU | ❌ | `Controller/Environment/Prisms/PrismScaleAnimator.cs:92-124` | Keep as the data holder (TargetScale/GrowthRate/min-max are the initial conditions the pool-pull loads into the material). Move ExecuteOnScaleComplete to spawn: UpdateVolume already reads TargetScale, so the SOAP raise + IsLargest/IsSmallest checks are start-safe verbatim. |
+| Universal pool-spawn bloom: Prism.Initialize → CreateBlockCoroutine | per-frame CPU | ❌ | `Controller/Vessel/Prism.cs:534-555` | Pool-pull configures everything at spawn in one pass: transform.localScale = TargetScale (final), collider enabled at authored size (world footprint final at start — one scheduled callback at t0+waitTime only if the 0.6s no-collide spawn window must survive), spatial Register + RefreshVolumeCache im… |
+| Vessel trail lay (all 11 vessels) | per-frame CPU | ❌ | `Controller/Vessel/VesselPrismController.cs:215-303` | No caller change beyond the engine migration: TargetScale remains the initial condition the pool-pull loads into the clock material. CreateBlock's computed scale becomes the final transform write at spawn. Nothing else moves. |
+| Environment lay: PrismTrailBuilder + spawnable consumers | per-frame CPU | ❌ | `Controller/Environment/Spawning/PrismTrailBuilder.cs:65-89` | Inherits the engine migration wholesale. ConfigureLaid's TargetScale write becomes the final-transform + clock-material configure. The arena-ready gate simplifies: IsSettledForReveal = IsCreationComplete && now >= t0+settleTime, and behind the veil the builder can stamp t0 = now − settleTime to rend… |
+| Load-gate force settle (CompleteGrowthImmediately) | one-shot | ✅ | `Controller/Environment/Spawning/PrismTrailBuilder.cs:327-357` | Becomes a single t0 rewrite per prism (stamp the clock into the past) or disappears entirely — with GPU-clocked growth a 25k cohort settles with zero CPU regardless of frame budget, so the load-gate grower/creation boosts and the settle sweep are all deletable. |
+| Boost ring / Squirrel tube: BoostRingBuilder + HoldColliderAtFullSize | per-frame CPU | ❌ | `Controller/Environment/Spawning/BoostRingBuilder.cs:83-120` | With transform final at spawn the entire coroutine deletes: collider enabled at authored size = full-size world footprint from frame 0 with zero per-frame work. |
+| Boost pool spawn config (PrismFactory.SpawnBoostPrism) | one-shot | ✅ | `Controller/Prisms/PrismFactory.cs:208-230` | Unchanged in spirit: SetGrowthRate becomes 'write k into the clock material at pull'. The dedicated-pool pattern (per-behavior pools carrying their own initial conditions) is exactly what the target architecture generalizes. |
+| Assembler-driven growth (WallAssembler / GyroidAssembler) | per-frame CPU | ❌ | `Controller/Assemblers/WallAssembler.cs:270-326` | Grow-on-bond and ConvertBlock retargets become one-shot clock-material retargets (write new _TargetScale/_StartScale + restamp t0; gameplay volume snaps to new target immediately via one RefreshVolumeCache). |
+| Flora leaf growth (growPeriod loop → new health prisms) | per-frame CPU | ❌ | `Controller/Environment/FloraAndFauna/Flora.cs:94-98` | Inherits the engine migration: each new leaf pulls with leafSize as its clock-material target, volume final at start (flora mass counts in Cell.LiveVolume the moment the leaf is laid — re-baseline any phase tuning that implicitly relied on ramp-in). |
+| Fauna body-prism shaping + Boid feeding mass transfer (Grow ±) | per-frame CPU | ❌ | `Controller/Environment/FloraAndFauna/Fauna.cs:340-357` | Retarget = one write: _StartScale := current displayed scale (computed analytically from the old (t0,k,start,target) — no transform read), _TargetScale := new target, t0 := now. |
+| Turret prism bloom (FullAutoBlockShootActionExecutor) | per-frame CPU | ❌ | `Controller/Vessel/R_VesselActions/Executors/FullAutoBlockShootActionExecutor.cs:128-147` | Engine migration covers it: pull with blockScale as clock target, transform final at spawn (the projectile system keeps writing position — unrelated to scale). The raw-localScale fallback branch (:146) becomes the only branch and is a legal one-shot. |
+| Fired trail-block projectile (FireTrailBlockActionExecutor) | per-frame CPU | ❌ | `Controller/Vessel/VesselActions/FireTrailBlockActionExecutor.cs:49-94` | Engine migration for the bloom; move to the factory/pool channel with ProjectileScale as an initial condition; replace the Destroy timer with the projectile-end effect chain (or a scheduled swap to an end-state), per the continuity law. |
+| AOE double-growers: AOERadialBlocks + AOEDangerHemisphereBlocks GrowToScale | per-frame CPU | ❌ | `Controller/Projectiles/AOERadialBlocks.cs:200-222` | Immediate pre-migration cleanup: delete both GrowToScale loops and the localScale=0 rewrites (the engine already grows from zero), replace the growthRate field writes with prism.SetGrowthRate(config.GrowthRate), replace r.material with the kind/state pipeline. |
+| Clean AOE / painting / microscene one-shot lays | per-frame CPU | ❌ | `Controller/Projectiles/AOEBlockCreation.cs:104-141` | Engine migration only. Microscene's recycle becomes the canonical 'pull from pool with initial conditions': one configure call (pose + kind + domain + clock target, t0=now) with no ordering trap, since the clock material has no disabled-animator state to re-arm. |
+| Prism.Restore (destroyed → live reappear) | one-shot | ✅ | `Controller/Vessel/Prism.cs:1089-1128` | Keep the one-shot gameplay writes exactly as-is (already final-at-start); add a bloom for continuity by stamping the clock material (t0=now, start=0, target=retained scale) in the same write — zero CPU follow-up, and the disabled-animator special case (CurrentVolume fallback, ResetState re-arm) diss… |
+| Pre-spawn scale parameterization (writes vessel state, never live prisms) | one-shot | ✅ | `Controller/Vessel/TrailPassives/ScoutTrailPrismScaler.cs:86-148` | None required. Under the target architecture these remain the producers of the initial conditions each pool-pull loads. |
+
+#### B. Color / domain / state
+
+| Path | Cadence | Verdict | Where | Migration |
+|---|---|---|---|---|
+| UpdateMaterial → MaterialStateManager fused color lerp (the central violation) | per-frame CPU | ❌ | `Controller/Environment/Prisms/MaterialPropertyAnimator.cs:159-223` | Add per-instance transition inputs to the prism shader + entity overrides: _FromBrightColor/_FromDarkColor/_FromSpread + _TransitionStartTime + _TransitionDuration. |
+| Domain paint at spawn / recolor — ChangeTeam → HandleTeamChange | per-frame CPU | ❌ | `Controller/Managers/PrismTeamManager.cs:54-60` | Split spawn from mid-life recolor. SPAWN: the prism grows in from scale zero, so no color transition is visible or needed — make the spawn paint a pure one-shot: SetMaterial(domain material, refreshColors:true) with zero-duration (add an UpdateMaterial fast-path or a SetTeamImmediate that skips the… |
+| Steal / capture repaint | per-frame CPU | ❌ | `Controller/Managers/PrismTeamManager.cs:62-96` | Already 'collider/gameplay final at start' — gameplay needs zero change. Visual: SetMaterial(new domain's state-appropriate end material) + one BeginColorTransition(from = old domain colors) write; GPU clock runs the 0.8s blend. No pool swap needed (same prism, same mesh). |
+| MakeDangerous repaint | per-frame CPU | ❌ | `Controller/Managers/PrismStateManager.cs:51-79` | SetMaterial(GetTeamDangerousBlockMaterial one-shot) + BeginColorTransition(from = current colors). For spawn-time danger (Prism.Initialize / PrismKinds.Apply on fresh spawn) skip the transition entirely — prism is at scale zero; pull from a danger-state pool or immediate paint. |
+| ActivateShield / ApplyShieldState repaint + octahedron engage | per-frame CPU | ❌ | `Controller/Managers/PrismStateManager.cs:81-92` | Color: as path 1 (shielded end material one-shot + GPU from→to). Morph: bake box→octahedron as a vertex-shader morph (two vertex streams or a morph texture) driven by per-instance _EngageStartTime on the INSTANCED path — no exotic-visual handoff during engage, prisms stay batched; schedule ONE callb… |
+| ActivateSuperShield repaint + stellated engage (self-Update violation) | per-frame CPU | ❌ | `Controller/Managers/PrismStateManager.cs:94-121` | Same as path 5: one-shot opaque end material + GPU color clock; stellation morph as GPU vertex morph off _EngageStartTime; scheduled single callback swaps to StellatedOctahedronMeshGenerator.GetSharedShieldMesh. |
+| DeactivateShields / ApplyNormalState repaint (+ PrismTimerManager scheduled path) | scheduled | ❌ | `Controller/Managers/PrismStateManager.cs:123-143` | Keep PrismTimerManager as the generic end-frame scheduler (rename/generalize: it is exactly the 'at the right frame, swap for the end-state prism' mechanism). |
+| SetTransparency — one-shot material swap (CONFORMING) | one-shot | ✅ | `Controller/Environment/Prisms/MaterialPropertyAnimator.cs:225-233` | None required. (If a fade-in/out is ever wanted for continuity-of-existence polish, do it as a GPU clock via the same _TransitionStartTime inputs — not by reintroducing a lerp manager.) |
+| ClearPrisms per-physics-tick _Alpha MPB fade (rogue, and blind on the instanced path) | per-frame CPU | ❌ | `Controller/Vessel/ClearPrisms.cs:117-127` | Pure shader solution, zero per-prism writes: publish the camera→vessel line (two float4 globals) once per frame via Shader.SetGlobalVector; the prism shader computes distance-from-line per vertex/pixel and derives _Alpha itself. |
+| MaterialBlendUtility.BeginBlend — rogue per-object coroutine blend (overheat danger trail + skim overcharge ma… | per-frame CPU | ❌ | `Controller/ImpactEffects/EffectsSO/Skimmer Prism Effects/MaterialBlendUtility.cs:31-128` | Delete MaterialBlendUtility. Overheat: VesselPrismController._dangerMode already sets IsDangerous — route the visual through prism.MakeDangerous()/PrismStateManager so it inherits the migrated GPU transition (and spawn-time danger needs no transition at all — the prism grows from zero). |
+| Initial domain paint via Prism.Domain setter (SetInitialTeam) | per-frame CPU | ❌ | `Controller/Vessel/Prism.cs:129-136` | Fold into the pool-pull contract: Initialize/factory pull writes the final domain material one-shot (refreshColors:true) before the prism becomes visible — no transition, since the grow-in from scale zero already satisfies continuity. |
+| ThemeManager domain material set generation (end-state material pool source) — CONFORMING | one-shot | ✅ | `Controller/Managers/ThemeManager.cs:14-110` | Extend, don't change: the BaseMaterialSet block shaders gain the transition inputs (_FromBright/_FromDark/_FromSpread/_TransitionStartTime/_TransitionDuration, defaulting to no-op), making every generated end-state material also a transition-accepting material — no new material count, batching prese… |
+| PrismFactory.ConfigureForTeam — effect-prism team colors — CONFORMING | one-shot | ✅ | `Controller/Prisms/PrismFactory.cs:293-334` | None for the color write — it already matches the target pattern (pull from pool, load initial conditions once). |
+
+#### C. Instanced render path (PrismRenderService)
+
+| Path | Cadence | Verdict | Where | Migration |
+|---|---|---|---|---|
+| Companion entity creation (prototype instantiate + initial stamp) | one-shot | ✅ | `Controller/ECS/Rendering/PrismRenderService.cs:391-413` | This IS the pool-pull primitive. Extend: Create() gains the animation-stamp payload (or a follow-up Stamp* call in the same frame) — grow/color clock components live in the prototype archetype so the stamp stays non-structural; RenderBounds parameter added for animations that displace geometry beyon… |
+| Grow-in transform sync (PrismScaleManager → SetTransform) | per-frame CPU | ❌ | `Controller/Managers/PrismScaleManager.cs:165-172` | Stamp LocalToWorld ONCE at FINAL scale at creation; add _GrowStartTime/_GrowRate/_GrowStartFrac to the Prism override set (prototype archetype); BlockGraph vertex stage computes s(t)=1−(1−s₀)·exp(−k·(t−t₀)) about the prism origin; analytic t_end = t0+ln(Δ₀/ε)/k scheduled on PrismAnimationScheduler f… |
+| Color/state transition lerp (MaterialStateManager → SetColors) | per-frame CPU | ❌ | `Controller/Managers/MaterialStateManager.cs:84-117` | Stamp {_ColorStartTime, _ColorDuration, _StartBrightColor, _StartDarkColor, _StartSpread} once (color-space-converted at the service boundary); target = the swapped-to material's authored constants; fragment lerp on smoothstep((t−t₀)/dur); scheduled SetMaterial(refreshColors:true) at t0+dur is the s… |
+| Explosion per-frame parameter feed (PrismEffectsManager.ProcessExplosions) | per-frame CPU | ❌ | `Controller/Managers/PrismEffectsManager.cs:296-307` | Every output is f(t, stamp): stamp {_ExplodeStartTime, _Velocity, _ExplodeSpeed, _ExplodeDuration} once at TriggerExplosion (which already writes the exact initial-condition set — extend it); entity LocalToWorld stamped once at p₀; vertex shader offsets by (t−t₀)·_Velocity; RenderBounds expanded at… |
+| Implosion per-frame parameter feed (PrismEffectsManager.ProcessImplosions) | per-frame CPU | ❌ | `Controller/Managers/PrismEffectsManager.cs:346-431` | Stamp {_SuctionStartTime, _SuctionDuration, _SuctionDirection, _GrowDelay} once; progress computed in-shader; _Location snapshotted at stamp time. The MOVING convergence target is the audit's one documented-exception candidate (live gameplay data per PRISM_ANIMATION.md §1): if play-testing shows tra… |
+| Effect initial-condition stamp (TriggerExplosion / ApplyInitialVisualState) | one-shot | ✅ | `Utility/Effects/PrismExplosion.cs:208-224` | Extend in place: add the clock params (start time/speed/duration/direction/delay) to this same stamp; expand RenderBounds here; make the effect visible immediately (correct params exist at t0). This becomes the complete touchpoint-1 for effects. |
+| Base material swap (SyncRenderMaterial → SetMaterial) | one-shot | ✅ | `Controller/Vessel/Prism.cs:476-496` | Keep as the scheduled settle swap's engine. The refreshColors gate becomes the clock predicate (now < colorEndTime); the scheduled end-swap calls SetMaterial(refreshColors:true) AND re-stamps clock overrides to rest values so the material constants display verbatim. |
+| Mesh swap for settled shields (SetRenderMeshOverride / ClearRenderMeshOverride → SetMesh) | one-shot | ✅ | `Controller/Vessel/Prism.cs:443-462` | Unchanged; when shield morphs migrate to vertex-shader bloom/shatter (tracker item 7) this same SetMesh is the scheduled end swap, and the exotic GameObject fallback for shields can retire. |
+| Visibility — immediate (SetVisible) | one-shot | ✅ | `Controller/ECS/Rendering/PrismRenderService.cs:419-433` | Keep for handoffs; the per-frame EnableVisual caller in ProcessExplosions disappears under stamps. New code should prefer QueueVisible unless same-instant matters. |
+| Visibility — batched queue + LateUpdate flush (QueueVisible / FlushVisibility) | one-shot | ✅ | `Controller/ECS/Rendering/PrismRenderService.cs:442-509` | Unchanged — this is the model the design keeps: stamps are non-structural and need no batching; visibility remains the only structural op and is already amortized. The GPU-clock end swap (in-place re-stamp + SetMaterial/SetMesh) adds zero structural changes. |
+| Exotic-visual handoff color continuity (SyncRenderColorsFromAnimator) | one-shot | ✅ | `Controller/Vessel/Prism.cs:503-529` | Under GPU-clock stamps this becomes either unnecessary (the entity's stamped clock overrides survive the handoff untouched — the animation was never CPU-tracked) or an analytic evaluation f(clock, stamp) for the MPB twin on the GameObject side. |
+| Movers — NotifyPositionChanged → SyncRenderTransform (gameplay data, law-exempt) | per-frame CPU | ✅ | `Controller/Vessel/Prism.cs:1142-1160` | No migration — keeps the existing NotifyPositionChanged contract. Boundary rule for reviewers: if a mover's path IS expressible from initial conditions (a scripted conveyor glide along a fixed curve), it is animation and must move to a stamped clock path instead of riding this exemption. |
+| Pool-return / teardown lifecycle (OnDisable hide, OnDestroy destroy) | one-shot | ✅ | `Controller/Vessel/Prism.cs:1162-1203` | Unchanged, plus one addition: pool return must also cancel any outstanding PrismAnimationScheduler entry for the instance (or the scheduler re-validates the handle + a generation counter at fire time) so a scheduled end swap can never fire on a reused prism. |
+| Load-gate snap (PrismScaleAnimator.CompleteImmediately → SyncRenderTransform) | one-shot | ✅ | `Controller/Environment/Prisms/PrismScaleAnimator.cs:143-161` | Becomes trivial under the stamp architecture: behind the veil the stamp simply sets t₀ in the past (or duration 0), so the shader is already at rest — the snap and the load-gate grower-budget raise (PrismScaleManager.cs:90-92) both dissolve. |
+| Dev-only zombie audit (periodic entity-visibility sweep) | scheduled | ✅ | `Controller/Managers/PrismEffectsManager.cs:186-246` | Keep; under the scheduler design its detection predicate changes from IsActive flags to 'now > scheduled end + grace', and it doubles as the watchdog for missed scheduled swaps. |
+| Stress harness churn (PrismRenderStressTest) | per-frame CPU | ❌ | `Controller/ECS/Rendering/PrismRenderStressTest.cs:238-283` | Keep as the measurement tool, and ADD a third mode: stamp-once GPU-clock animation over the new clock components with zero Update writes — the A/B (per-frame churn vs stamped clock at equal visual motion) is the acceptance benchmark proving the infrastructure and validating the Hybrid-Per-Instance c… |
+
+#### D. Shields (exotic geometry)
+
+| Path | Cadence | Verdict | Where | Migration |
+|---|---|---|---|---|
+| Octahedron shield engage bloom (per-face morph) | per-frame CPU | ❌ | `Controller/Vessel/PrismOctahedronShield.cs:259-287 (Engage)` | Bake the bloom into a vertex shader on the SHARED cached mesh: extend OctahedronMeshGenerator.GetSharedShieldMesh to emit one 'anim' variant per quantized geometry carrying per-vertex face-centroid in TEXCOORD1 (normals are already flat per-face). |
+| Octahedron shield shatter overlay (disengage) | per-frame CPU | ❌ | `Controller/Vessel/PrismOctahedronShield.cs:294-330 (Disengage)` | Same shared anim mesh as the engage bloom, second shader path (or second material) driven by _ShatterStartTime: t = saturate((_Time.y - _ShatterStartTime)/_ShatterDuration); pos = centroid + (1-t)*(v - centroid) + t*_ShatterMaxOffset*normal. |
+| Stellated (super-shield) engage bloom — plus a persistent idle per-prism Update() | per-frame CPU | ❌ | `Controller/Vessel/PrismStellatedOctahedronShield.cs:255-280 (Engage)` | Same GPU-clock migration as the octa bloom (shared anim mesh with per-vertex face-centroid in TEXCOORD1, _EngageStartTime per-instance property, shader clamp to settled shape, optional scheduled swap to the plain settled stellation from StellatedOctahedronMeshGenerator.GetSharedShieldMesh). |
+| Stellated (super-shield) shatter overlay | per-frame CPU | ❌ | `Controller/Vessel/PrismStellatedOctahedronShield.cs:287-320 (Disengage)` | Identical to the octa shatter migration: pooled shatter ghost + shared anim mesh + _ShatterStartTime/_ShatterMaxOffset per-instance properties, one scheduled pool-return callback at t=1. |
+| Instant engage / instant disengage (instant:true or duration<=0) | one-shot | ✅ | `Controller/Vessel/PrismOctahedronShield.cs:274-279, 314-317` | No change needed for correctness. Under the target architecture this becomes 'write _EngageStartTime = _Time.y - _EngageDuration' (already-settled clock value) — same one-shot write as the animated case, unifying the two code paths. |
+| Settled-state shared-mesh swap (ApplyShieldedPose → SetRenderMeshOverride handoff) — ALREADY the 'swap to end-… | one-shot | ✅ | `Controller/Vessel/PrismOctahedronShield.cs:422-457 (ApplyShieldedPose)` | Keep this code nearly verbatim; retime its trigger. Under GPU-clocked bloom, schedule ApplyShieldedPose's render-handoff portion via a single callback at engageStart+engageDuration (PrismTimerManager already provides exactly this scheduled-callback shape for shield deactivation — reuse it), or elimi… |
+| SetExoticVisualActive render-path handoff + color-continuity flush | one-shot | ✅ | `Controller/Vessel/Prism.cs:503-517 (SetExoticVisualActive)` | Under the GPU-clock migration the bloom runs on the companion entity itself (shared anim mesh + per-instance _EngageStartTime), so the shield never leaves the instanced path and these calls are deleted from the shield code. |
+| Gameplay/collider/flag state on shield transitions | one-shot | ✅ | `Controller/Managers/PrismStateManager.cs:145-162 (ApplyShieldState — flags + spatial index at engage START)` | Move the rb.mass = _shieldMass write from ApplyShieldedPose into Engage() (both shield classes), next to the flag writes — gameplay fully final at t=0. Everything else in this path is already correct and becomes the template for the migrated engage: one synchronous gameplay commit, then a fire-and-f… |
+| Shield material swaps (state-change material feed + shield material override) | per-frame CPU | ❌ | `Controller/Managers/PrismStateManager.cs:63-66,105-108,150-153,168-171 (materialAnimator.UpdateMaterial on every state change)` | When MaterialStateManager migrates to GPU-clocked color transitions (per-instance _ColorLerpStartTime + from/to colors in the existing _BrightColor/_DarkColor/_Spread sink family), the shield system needs no change beyond passing the target material/colors once — the one-shot UpdateMaterial call sha… |
+| Pool-return / disable snap-to-clean | one-shot | ✅ | `Controller/Vessel/PrismOctahedronShield.cs:171-194 (OnDisable — Unregister + ApplyUnshieldedPose + StopShatter + ClearRenderMeshOverride + SetExoticVisualActive(false))` | No change. Under GPU-clock the cleanup shrinks: no ticker to unregister, no morph mesh to reset — just ClearRenderMeshOverride + resetting the per-instance _EngageStartTime/_ShatterStartTime properties to the sentinel 'no animation' value on pool reuse (fold into Prism.Initialize alongside the exist… |
+| Test-harness toggles (triggers only, not prism update paths) | per-frame CPU | ✅ | `Controller/Vessel/PrismOctahedronShieldTester.cs:41-62 (Update polling Space / auto-toggle timer)` | No migration needed; they exercise whatever the shields do. After the GPU-clock migration they double as the in-editor verification rig for the shader bloom/shatter. |
+
+#### E. Destruction / restoration
+
+| Path | Cadence | Verdict | Where | Migration |
+|---|---|---|---|---|
+| Explosion debris flight + shatter + fade (ProcessExplosions) | per-frame CPU | ❌ | `Controller/Managers/PrismEffectsManager.cs:172-184` | Pool-pull is already right (dedicated PrismExplosionPoolManager, 64 prewarm). Change TriggerExplosion into a pure stamp: write {_ExplodeStartTime = Time.timeSinceLevelLoad, _Velocity (already exists), _ExplodeSpeed, _ExplodeDuration = 5} as per-instance overrides on the companion entity (PrismRender… |
+| Implosion / consume suction (ProcessImplosions, 0→1) | per-frame CPU | ❌ | `Controller/Managers/PrismEffectsManager.cs:346-431` | Stamp {_SuctionStartTime, _SuctionDuration = 2, _SuctionDirection = +1, _Location} once at StartImplosion (SuctionGraph computes progress in-shader — Docs/PRISM_ANIMATION.md §4.1); one scheduled pool-return callback at t0+2s. |
+| Grow (reverse suction, StartGrow 1→0 with 0.25s delay) — currently DORMANT | per-frame CPU | ❌ | `Utility/Effects/PrismImplosion.cs:234-266` | Same SuctionGraph stamp with _SuctionDirection = −1 and the 0.25s growDelay folded into the stamp (t0 = now + growDelay — the shader clamps progress to 1 before t0, so the delay costs zero CPU frames). |
+| Effect initial-condition stamp + team colors + scale | one-shot | ✅ | `Utility/Effects/PrismExplosion.cs:75-80` | Keep as-is; under the clock shader the stamp also sets visibility immediately (t=t0 evaluates to the unexploded state by construction), deleting the deferred EnableVisual contract. SetTeamColors/_pendingTeamColors machinery is untouched — it is already the per-instance-override pattern. |
+| Destruction gameplay state (SetupDestruction) | one-shot | ✅ | `Controller/Vessel/Prism.cs:890-929` | No change. This is the reference for the swap discipline; the migration only replaces the VFX twin's driver (paths above). |
+| Restoration (Prism.Restore) | one-shot | ✅ | `Controller/Vessel/Prism.cs:1089-1134` | Keep gameplay finality exactly as-is (collider on, index restored, volume reweighed at frame 0). Add a grow stamp at the reveal: StampGrow(handle, t0 = now, rate, startFrac = 0) so the shader blooms the visual from zero while the collider is already live — one extra one-shot write, no scheduler entr… |
+| Per-frame VFX spawn caps + concurrency ceiling | one-shot | ✅ | `Controller/Prisms/PrismFactory.cs:32-38` | After the clock migration the marginal cost of a live effect is zero CPU, so MAX_ACTIVE_EFFECTS stops being a CPU guard — the remaining bound is pool size / instance count (GPU instancing absorbs thousands). |
+| PrismImplosion wall-clock watchdog (per-instance Update) | per-frame CPU | ❌ | `Utility/Effects/PrismImplosion.cs:120-124` | Retire with the manager pass: under the target architecture the scheduled end callback at t0+dur IS the single completion authority, and the failure modes this watchdog hunts (state-reset bugs starving the polled completion) cannot occur. |
+| Zombie-VFX safety audit (editor/dev builds only) | per-frame CPU | ✅ | `Controller/Managers/PrismEffectsManager.cs:92-97` | Retires naturally with paths 1-3: once completion is a scheduled callback keyed to a stamp, 'zombie with enabled renderer but no manager entry' has no mechanism to occur. Keep during the transition; delete (with the EnabledInstances registries) when the manager passes go. |
+| Effect pool lifecycle + scene teardown | one-shot | ✅ | `Utility/Effects/PrismExplosionPoolManager.cs:12-55` | Unchanged except the caller of OnEffectComplete moves from the per-frame completion queue to the PrismAnimationScheduler entry created at stamp time. Prewarm sizing can be revisited once the 64/frame cap is lifted (path 7). |
+| Event routing: OnBlockImpactedEventChannel → PrismFactory (context, one-shot) | one-shot | ✅ | `Controller/Vessel/Prism.cs:56` | Unchanged. PrismEventData is already the stamp payload; if the moving-sink buffer option is chosen for implosions, TargetTransform maps to a sink index allocated per eater at this seam. |
+| Wither/devour prism-side routing (cross-reference) | per-frame CPU | ❌ | `Controller/Environment/FloraAndFauna/LifeForm.cs:269-295` | Prism side: inherited automatically from paths 1-2. Spindle fade: same clock recipe on the spindle material — stamp {_DeathStartTime, _DeathDuration} once (the shader already animates off _DeathAnimation; make it compute _DeathAnimation = saturate((t−t0)/dur) instead) + one scheduled callback for Di… |
+
+#### F. Spawn / pooling / trail lay
+
+| Path | Cadence | Verdict | Where | Migration |
+|---|---|---|---|---|
+| Pool pull + placement (factory dispatch) | one-shot | ✅ | `Controller/Prisms/PrismFactory.cs:40-56 (one InteractivePrismPoolManager per PrismType: dolphin/serpent/sparrow/manta/squirrel/rhino/interactive/boost)` | The pull itself is already one-shot and stays. To reach 'right prism with the right material from the right pool': either widen pool keying to (type × domain-material × kind) — the Boost pool at PrismFactory.cs:48-52 is the shipped precedent for a state-dedicated pool — or keep type-keyed pools and… |
+| Vessel trail-lay spawn contract (CreateBlock) | one-shot | ❌ | `Controller/Vessel/VesselPrismController.cs:172-199 (SpawnLoopAsync: UniTask loop, wavelength/speed delay)` | Keep the loop and the one-shot writes, change what they mean: pull from a (type × domain × kind) pool or stamp per-instance properties at spawn — _BrightColor/_DarkColor sinks already exist (PrismRenderService.SetColors) — plus a _SpawnTime/_BloomDuration property; GPU shader scales/blooms off the c… |
+| Spawn-time domain recolor (ChangeTeam → 0.8s CPU color lerp) | per-frame CPU | ❌ | `Controller/Managers/PrismTeamManager.cs:42-52 (SetInitialTeam), 54-60 (ChangeTeam), 98-128 (HandleTeamChange → per-state material pair)` | Pool-pull with the material already right (domain-keyed pools), or one-shot: at spawn write start=previous-life colors (or target colors directly for fresh spawns — nothing was visible yet, no continuity to preserve), target=domain colors, plus _TransitionStart/_TransitionDuration per-instance prope… |
+| Grow-in scale animation feed (TargetScale → PrismScaleManager sliced pass) | per-frame CPU | ❌ | `Controller/Vessel/Prism.cs:175-183 (TargetScale setter → SetTargetScale + BeginGrowthAnimation), 235-242 (ChangeSize), 250-254 (SetGrowthRate), 592-596 (ResetState re-zero scale on pooled reuse)` | One stamp at spawn: transform.localScale = TargetScale immediately (physics/gameplay final at start — colliders, spatial index, volume cache all correct from frame 0, killing RefreshVolumeCache-during-growth and the O(growing) cell churn); per-instance properties _GrowStartTime/_GrowDuration/_GrowOr… |
+| CreateBlockCoroutine spawn window (waitTime stagger + creation budget + deferred collider/renderer enable) | per-frame CPU | ❌ | `Controller/Vessel/Prism.cs:31 (waitTime 0.6s default), 36-37 + 680-685 (cached WaitForSeconds), 648 (MaxCreationCompletionsPerFrame=6), 655 (LoadGateCreationCompletionsPerFrame=512), 667-758 (coroutine: stagger → budget spin-wait → SetRenderVisible(true) + blockCollider.enabled=true → BeginGrowthAnimation → SOAP created raise → spatial Register + collider-LOD notify)` | Under the law, collider and gameplay state go FINAL at spawn: enable the collider at authored size on the spawn frame (owner-clearance via layer/ignore-collision instead of a timer, or at most ONE scheduled enable callback at waitTime — no coroutine polling), register with the spatial index immediat… |
+| HoldColliderAtFullSize per-frame collider compensation | per-frame CPU | ❌ | `Controller/Vessel/Prism.cs:272-322 (HoldColliderAtFullSize + coroutine: per-frame BoxCollider.size = authored*target/current inverse-compensation, per-frame localScale floor at 1% target, restore authored size on settle, onGrown callback)` | The whole coroutine evaporates under the law: transform goes to final scale at spawn (collider at authored size is automatically full world size, zero writes), the bloom is a GPU vertex-scale off the clock. |
+| Boost prism pool overrides (SpawnBoostPrism) | one-shot | ✅ | `Controller/Prisms/PrismFactory.cs:48-52 (dedicated boost pool rationale), 58-64 (boostPrismGrowthRate=8, pinned to PrismScaleManager's clamp ceiling), 208-230 (SpawnBoostPrism: waitTime=0, SetGrowthRate, kind-flag leak clear)` | Keep the dedicated pool. GrowthRate becomes a per-instance _GrowDuration material property (e.g. 0.15s fast bloom vs 0.8s trail bloom) — freeing the value from PrismScaleManager's [0.05,0.1]/frame clamp so 'fast' is an authored duration, not a saturated rate. |
+| BoostRingBuilder ring lay + deferred shield-kind engage | scheduled | ❌ | `Controller/Environment/Spawning/BoostRingBuilder.cs:55-76 (LayRing geometry), 83-120 (LayOne: pool spawn → ChangeTeam:99 → TargetScale:101 → Initialize:105-106 → immediate Danger kind:111-113 → HoldColliderAtFullSize(deferredKind ? apply-shield-onGrown : null):115)` | With transform-at-final-scale-from-spawn, the octahedron MeshCollider is full-size at frame 0, so PrismKinds.Apply runs for ALL kinds inline in LayOne — shield state, spatial-index shell registration, and materials final at start. |
+| Environment trail lay (PrismTrailBuilder LayOne/LaySync/LayGradual/LayBatched/LayBudgetedAsync) | per-frame CPU | ❌ | `Controller/Environment/Spawning/PrismTrailBuilder.cs:44-57 (LayOne: raw Object.Instantiate — NOT pooled), 65-89 (ConfigureLaid: ChangeTeam → pose → TargetScale:73 → Initialize:77 → PrismKinds.Apply:80 → WatchForReveal:88), 107-120 (LaySync), 125-136 (LayGradual: WaitForSeconds interval coroutine), 140-152 (LayBatched: N/frame UniTask), 427-473 (CloneBatchAsync: InstantiateAsync 256-batches + stall watchdog), 488-558 (LayBudgetedAsync: shared per-frame ms budget, 250ms slice under load gate:574)` | Convert LayOne to a pool pull through the same factory channel the vessel path uses (PrismType.Interactive or a dedicated environment pool), with domain-material + kind + _GrowStartTime stamped at Get — 'right prism, right material, right pool' for the environment too, and the Blue→domain recolor le… |
+| Arena-ready gate: reveal watch, poll, force-settle (grow-in compensation layer) | per-frame CPU | ❌ | `Controller/Environment/Spawning/PrismTrailBuilder.cs:98-103 (WatchForReveal list), 239-254 (SetLoadGateHolding), 264-312 (PollArenaReady: stall cap, all-clear hold), 327-357 (SettleGrowWatch: CompleteGrowthImmediately snaps, 2000/poll), 364-377 (SweepGrowWatch)` | Under GPU-clocked grow-in, reveal-readiness is arithmetic, not observation: arena ready = all lays drained (existing counters) AND now >= max(_GrowStartTime + _GrowDuration) — one comparison against a running max stamped at lay time, no per-prism watch list, no force-settle pass (or trivially: stamp… |
+| Danger-trail overheat material blend (MaterialBlendUtility) | per-frame CPU | ❌ | `Controller/Vessel/VesselPrismController.cs:79-82 (_dangerMode fields), 272-285 (CreateBlock danger branch: IsDangerous flag + BeginBlend or direct sharedMaterial swap), 312-329 (Enable/DisableDangerMode)` | Danger blocks pull from the pool already wearing the danger state: set IsDangerous pre-Initialize (already done) and let PrismStateManager/PrismTeamManager select the danger material pair as the SPAWN material (one sharedMaterial write + SyncRenderMaterial). |
+| SegmentSpawner / SpawnableBase orchestration (+ super-shield diagnostic) | one-shot | ✅ | `Controller/Environment/MiniGameObjects/SegmentSpawner.cs:132-187 (Initialize: seeded selection, per-domain cycling, SpawnAndLayout), 272-288 (SpawnAndLayout → spawnable.Spawn → LayoutSegment), 316-325 (NukeTheTrails: Destroy container — despawn path, no animation), 214-245 (SuperShieldSpawnedPrisms diagnostic: AddComponent + shield.Engage(instant or bloom) + flag pokes, bypassing PrismStateManager per PrismKinds.cs:19-20 note)` | No change needed for the orchestration itself. When paths 3/4 migrate, this file is untouched — it inherits conforming lays through PrismTrailBuilder. Route the diagnostic through PrismKinds.Apply/ActivateSuperShield so it exercises the same state machine gameplay uses, and give NukeTheTrails a pool… |
+| Trail.TrailRenderer visual (vestigial) + Trail list bookkeeping | one-shot | ✅ | `Controller/Vessel/Trail.cs:12 (public TrailRenderer field), 39-46 (Clear → TrailRenderer.Clear()), 25-37 (Add), 58-176 (LookAhead/Project/GetBlock — read-only queries over prism transforms)` | None required. If the field is confirmed dead (no prefab wires it), delete it and the two Clear() call sites to shrink the pooled-reuse path. |
+| Destruction handoff: prism to final state one-shot + pooled VFX prism (the law's model, already shipped) | one-shot | ✅ | `Controller/Vessel/Prism.cs:890-929 (SetupDestruction: scale animator OFF, collider OFF, render OFF, spatial MarkDestroyed, volume zeroed — ALL final state on the destruction frame), 955-1000 (Explode/Implode raise factory event)` | Keep the handoff shape as the template for SPAWN: mirror it so birth = pull display prism with initial conditions (timepoint, colors, scale) exactly as death already pulls debris. The VFX component's own CPU animation migrates in the effects area; once it is GPU-clocked, delete the per-frame caps. |
+| Pool buffer maintenance / async incubated refills | per-frame CPU | ✅ | `Utility/PoolsAndBuffers/GenericPoolManager.cs:56-63 (inactive incubator staging), 223-244 (Prewarm), 296-343 (BufferMaintenanceAsync: EarlyUpdate loop, rate-controlled), 354-421 (RefillAsync: InstantiateAsync batches, deactivate-before-reparent), 251-264 (CreateFunc/CreateInstance miss attribution)` | No change required by the law. If pools become (type × domain × kind)-keyed, the maintenance loop generalizes per keyed sub-pool; alternatively per-instance stamping at Get keeps a single pool per type and this file fully unchanged. |
+| Spawn-parameter easing lerps (XScaler / danger scale multipliers) | per-frame CPU | ✅ | `Controller/Vessel/VesselPrismController.cs:154-163 (SetNormalizedXScale), 201-212 (LerpXScalerAsync: per-frame XScaler lerp over 1.5s), 332-358 (LerpScaleMultipliers: per-frame X/Y/ZScaler lerp for danger-mode enter/exit)` | None required. Optionally replace the two ad-hoc lerp tasks with an analytic evaluation at spawn time (value = f(now - rampStart)) to drop the always-running tasks, but this is hygiene, not law. |
+
+#### G. Ecosystem movers
+
+| Path | Cadence | Verdict | Where | Migration |
+|---|---|---|---|---|
+| Fauna locomotion body-prism movement (movers contract) | per-frame CPU | ✅ | `Controller/Environment/FloraAndFauna/LightFauna.cs:910-929` | No migration required — this is live gameplay data, explicitly out of the law's scope (Docs/PRISM_ANIMATION.md §1 'Animation vs. live gameplay data', §3.6). The value each frame depends on live steering/physics and could not have been computed at a start stamp. |
+| Fauna level-up body bloom (GrowToScale root-scale lerp) | per-frame CPU | ❌ | `Controller/Environment/FloraAndFauna/Fauna.cs:287-291` | Stamp per body prism: at level-up, write gameplay state final (root localScale to target immediately, spatial index shell/occupancy/volume re-stamped once), and stamp each body prism's per-instance _GrowStartTime/_GrowRate/_GrowStartFrac so the vertex shader scales the visual from oldScale/newScale→… |
+| Fauna wither-from-extremities (starvation/joust death) | per-frame CPU | ❌ | `Controller/Environment/FloraAndFauna/LightFauna.cs:179-189` | All-stamps-at-death: at Die, compute each spindle's ring index by distance once, stamp its renderer material (or per-instance override) with _DeathStartTime = now + ringIndex*interval and _DeathDuration; the shader runs the whole cascade off the clock with zero further CPU writes. |
+| Fauna devour / no-spindle wither — suction-to-mouth consume loops | per-frame CPU | ❌ | `Controller/Environment/FloraAndFauna/LightFauna.cs:253-278` | Stamp _SuctionStartTime/_SuctionDuration/_Location per implosion instance and let the shader compute progress — retires the per-frame _State write. The moving mouth is the documented exception candidate (Docs/PRISM_ANIMATION.md §1): first try snapshotting the mouth position at bite time (bites are 2… |
+| Boid starvation fade-out (root scale to zero) | per-frame CPU | ❌ | `Controller/Environment/FloraAndFauna/Boid.cs:520-536` | Gameplay final at death (prism MarkDestroyed/collider off/volume zero at t0 — a dying boid should not be edible/collidable anyway), stamp a per-instance shrink (_GrowStartFrac inverted: scale 1→0 over 0.4s, or reuse the SuctionGraph toward the boid centre), schedule the husk Destroy at t0+0.4s via t… |
+| Herbivore grazing / forager consumption (the ecosystem's bulk suction channel) | per-frame CPU | ❌ | `Controller/Environment/FloraAndFauna/LightFauna.cs:724-843` | Same as the devour entry (it is the same PrismImplosion path — one migration fixes both): SuctionGraph stamp with start time/duration/sink; sink snapshotted at bite (the creature already brakes-to-hover and holds facing for consumeHoldSeconds ≈ the suction duration, so a snapshot is likely visually… |
+| Flora growth (grow tick + paced instantiation drain) | per-frame CPU | ❌ | `Controller/Environment/FloraAndFauna/Flora.cs:100-128` | Flora-side: nothing structural — the decision tick and drain pacing survive as-is, but the drain's Instantiate becomes pool-pull + stamp (grow params _GrowStartTime=now, rate; collider/index/volume final at stamp — TryReserve already claims the site up-front, which is exactly gameplay-final-at-start… |
+| Gyroid bonding movers (mound knitting — steered prisms) | per-frame CPU | ✅ | `Controller/Assemblers/GyroidAssembler.cs:377-386` | Out of the law's scope today — keep the NotifyPositionChanged contract. Opportunistic future migration IF the parent structure is verifiably static for the pull duration: snapshot bondSite at PrepareMate, stamp an exponential-approach clock animation (analytic: p(t)=target−(target−p₀)·e^−t), set col… |
+| Wall bonding movers (drift-course wall assembly) | per-frame CPU | ✅ | `Controller/Assemblers/WallAssembler.cs:330-357` | Same as gyroid movers: keep the contract; if/when wall roots are static, a MoveTowards at fixed speed from a snapshot is exactly linear-in-t (analytic arrival time = dist/speed) — stamp start/velocity, gameplay state (index position, collider, Steal) final at stamp, schedule the snap. |
+| Microscene conveyor recycle — container suction-out / bloom-in (Wanderway) | per-frame CPU | ❌ | `Controller/Toys/Microscene.cs:113-140` | Purest win in the area: (1) suction = per-prism SuctionGraph stamp (_SuctionStartTime=now, _SuctionDuration, _Location=container anchor) written once — colliders/index go final at stamp (unregister or move to destination immediately; the scene is off-screen and logically in transit, matching gamepla… |
+| Batched lay + bloom-in (microscene first population, cell environment build) | per-frame CPU | ❌ | `Controller/Toys/Microscene.cs:84-102` | Keep the per-frame instantiation budget only until prisms are pool-pulled; then a lay is N stamps with staggered start times (t₀ᵢ = now + i·Δ) issued in one or few frames — the veil/load-gate fast-grow special case disappears (stamp t₀ in the past = already settled). |
+| Cell swap — retiring-world suction (single root scale) | per-frame CPU | ❌ | `Controller/Environment/Cell.cs:1237-1273` | Per-prism suction stamp at retire time: the same walk that re-parents (or the GetComponentsInChildren the drain already does) writes each prism's _SuctionStartTime/_SuctionDuration/_Location=cell centre once — GPU runs the collapse; fixes the instanced-path gap by construction (the stamp IS the enti… |
+| Cell swap — hidden drain (500 destroys/frame) + pooled returns | one-shot | ✅ | `Controller/Environment/Cell.cs:1345-1361` | Keep the slicing. Improvement aligned with 'pull from the right pool': environment prisms are Instantiated/Destroyed today — making them pool-resident turns the drain into pool returns and the rebuild into pool pulls + stamps, removing the 35k Instantiate on every swap. |
+| Worm segment make-room shift + dormant worm locomotion | per-frame CPU | ❌ | `Controller/Environment/FloraAndFauna/Worm.cs:163-192` | Two options: (a) if worms revive as live creatures, give BodySegmentFauna the standard per-frame NotifyBodyPrismsMoved locomotion contract and treat the shift as gameplay motion; (b) as a transition, stamp the segment's prisms with a 0.5s translate clock animation (linear p₀→p₀+middleSpacing), index… |
+| Prism.NotifyPositionChanged sink (the movers contract itself) | one-shot | ✅ | `Controller/Vessel/Prism.cs:1142-1160` | None — this is the sanctioned mechanism. Post-migration it remains the gameplay-mover contract (fauna locomotion, bonding steering); visual-transition callers (Microscene suction) stop calling it per-frame because their gameplay state goes final at stamp. |
+
+#### H. Timers / coroutines / tweens
+
+| Path | Cadence | Verdict | Where | Migration |
+|---|---|---|---|---|
+| PrismTimerManager scheduled shield deactivation (THE swap-scheduler primitive) | scheduled | ✅ | `Controller/Managers/PrismTimerManager.cs:56-121` | Keep and PROMOTE: this is exactly the 'swap at the right frame' primitive. Generalize TimerAction beyond DeactivateShield (creation-complete, projectile-anchor, morph-settled, end-state pool swap); replace the O(n) per-frame scan with a min-heap on EndTime if timer counts grow. |
+| Prism.CreateBlockCoroutine — per-prism spawn-hold + creation-budget spin | scheduled | ❌ | `Controller/Vessel/Prism.cs:551` | Pool-pull writes initial conditions once: _SpawnTime, _GrowDuration/rate, target scale, colors into per-instance properties (extend the SetColors sink); GPU clock runs invisible→bloom with zero further writes. |
+| Prism.HoldColliderAtFullSizeCoroutine — per-frame collider inverse-compensation | per-frame CPU | ❌ | `Controller/Vessel/Prism.cs:272-322` | Dissolves completely under the target architecture: with GPU-clocked growth the TRANSFORM never animates (it sits at final scale from frame 0; the shrink lives in the shader), so the authored collider is already full-size at spawn — enable it and do nothing. |
+| MaterialBlendUtility.BlendRoutine — per-frame material lerp on prism renderers | per-frame CPU | ❌ | `Controller/ImpactEffects/EffectsSO/Skimmer Prism Effects/MaterialBlendUtility.cs:31-128` | Delete the utility for prisms. The per-instance color sink already exists (SetColors: _BrightColor/_DarkColor/_Spread): one-shot write of {fromColor, toColor, _BlendStartTime, _BlendDuration} instance properties, shader lerps off the clock; end state needs no swap because the target colors are alrea… |
+| FireTrailBlockActionExecutor — per-frame projectile-prism movement + timed Destroy | per-frame CPU | ❌ | `Controller/Vessel/VesselActions/FireTrailBlockActionExecutor.cs:38-47` | Straight-line constant speed is the ideal GPU-clock case: pool-pull with instance props {origin, direction, speed, _SpawnTime}; shader displaces the rendered instance, zero CPU writes in flight. |
+| FullAutoBlockShootActionExecutor.MoveAndAnchorAsync — per-frame MoveTowards to anchor | per-frame CPU | ❌ | `Controller/Vessel/R_VesselActions/Executors/FullAutoBlockShootActionExecutor.cs:277-346` | Deterministic flight (fixed dir, speed, travelDistance chosen at fire time): instance props {muzzlePos, dir, speed, _FireTime, stopDistance}, GPU animates the flight. |
+| AOERadialBlocks.GrowToScale — detached fallback grower racing the real grow path | per-frame CPU | ❌ | `Controller/Projectiles/AOERadialBlocks.cs:214` | Delete GrowToScale outright — Prism.Initialize already owns grow-in; there is no path where the prism 'doesn't auto grow'. Under the target architecture the whole question disappears: growth is a per-instance initial condition (_SpawnTime, duration) and no spawner ever needs a fallback animator. |
+| AOEDangerHemisphereBlocks.MakeDangerousAsync + GrowToScale — deferred restyle + duplicate grower | per-frame CPU | ❌ | `Controller/Projectiles/AOEDangerHemisphereBlocks.cs:205-258` | Set IsDangerous/IsShielded BEFORE Initialize (the ResetState contract explicitly supports spawner-requested pre-Initialize state — Prism.cs:579-580), killing the one-frame defer; pull from a danger-styled pool (PrismKinds already maps kind→state, PrismKinds.cs:37) so the danger palette is an initial… |
+| Octahedron shield engage/shatter morph — centrally ticked per-frame CPU mesh rebuild | per-frame CPU | ❌ | `Controller/Vessel/PrismOctahedronShield.cs:259-330` | The morphs are closed-form in t: face-vertex = centroid + (v-centroid)*faceScale (+ normal*offset for shatter). Bake face centroid + face normal into the SHARED octahedron mesh (color/UV2 channels), add _MorphStart/_MorphDuration/_MorphMode instance props; a vertex shader runs the bloom/shatter off… |
+| Stellated super-shield engage/shatter morph — per-prism Update() | per-frame CPU | ❌ | `Controller/Vessel/PrismStellatedOctahedronShield.cs:336-401` | Identical GPU vertex-morph migration as the octahedron shield (shared mesh + per-face centroid/normal attributes + _MorphStart/_MorphDuration instance props, PrismTimerManager one-shot at settle for the shared-mesh handoff). |
+| SkimmerOvercharge BlowUpPrismsOverTime — staggered detonation ripple | scheduled | ✅ | `Controller/ImpactEffects/EffectsSO/Skimmer Prism Effects/SkimmerOverchargeCollectPrismEffectSO.cs:174-195` | Already cadence-conforming. Optional hardening: schedule the N destruction callbacks through a generalized PrismTimerManager (t0 + 0.1·i) instead of a live await-loop on an SO (survives scene teardown races, no allocation). |
+| Shield/danger trigger sites — one-shot state writes (complete conforming inventory) | one-shot | ✅ | `Controller/Vessel/Prism.cs:875-888` | No cadence change. When the shield morphs go GPU-clocked, these calls become: one-shot instance-prop write (_MorphStart=now + state palette) + optional PrismTimerManager settle/deactivation callbacks — same call sites, same signatures. |
+| Next-frame deferral shims (SeedAssembler bonding, AssembledArchBurst scale enforce) | scheduled | ✅ | `Controller/Vessel/VesselActions/SeedAssemblerConfigurator.cs:60-71` | Both shims dissolve when initial conditions move into pool-pull material properties (nothing zeroes the transform anymore, nothing needs a next-frame rewrite). |
+| AOE spawn-stagger loops (spawn scheduling, one-shot per prism) | scheduled | ✅ | `Controller/Projectiles/AOEBlockCreation.cs:56-85` | Keep as spawn scheduling. Under the target architecture the de-spike motivation weakens (spawn = a few instance-prop writes, no coroutine, no mesh work), so several of these staggers can collapse to single-frame batch spawns with staggered _SpawnTime props — the visual stagger moves onto the GPU clo… |
+| Spawner-parameter lerps (never touch spawned prisms) | per-frame CPU | ✅ | `Controller/Vessel/TrailScaleModulator.cs:33-61` | No migration required by the prism law (prisms receive only initial conditions). Optional tidy-up: evaluate scaler(t) analytically at spawn time instead of running a lerp loop, which also removes the fire-and-forget async on the controller. |
+| Skimmer.DrawCircle sweet-spot markers (prism-adjacent, prisms read-only) | scheduled | ✅ | `Controller/Vessel/Skimmer.cs:195-247` | Out of scope for prism updates. If the shards ever become prisms, the 8s release must become a suction/fade with a scheduled end-swap. |
+
+#### I. Shaders & materials (GPU side)
+
+| Path | Cadence | Verdict | Where | Migration |
+|---|---|---|---|---|
+| BlockGraph — the live-prism rest-state shader (static, clockless) | one-shot | ✅ | `_Graphics/Materials/Graphs/BlockGraph.shadergraph:626 (_Spread, hlslDeclarationOverride:3 = Hybrid Per Instance)` | This is the graph to extend for the clock-material architecture. Add DOTS-instanced (Hybrid Per Instance) properties: _AnimStartTime f1, _AnimDuration f1, _StartBrightColor f4, _StartDarkColor f4, _StartSpread f3, _StartScale f1 (or f3). |
+| MaterialStateManager per-tick color/spread lerp → BlockGraph (the flagship violation this area enables) | per-frame CPU | ❌ | `Controller/Managers/MaterialStateManager.cs:84-85 (per-tick progress advance), :108 (PrismRenderService.SetColors per animated frame, entity path), :116 (MeshRenderer.SetPropertyBlock per animated frame, legacy path), :11-17 (header already declares this a KNOWN VIOLATION of the clock-material law)` | Pure GPU-clock replacement using the BlockGraph extension above: at transition start do ONE write — stamp _Start* = currently displayed colors (already tracked as MaterialPropertyAnimator.CurrentBrightColor/CurrentDarkColor/CurrentSpread for interruption support), _AnimStartTime = now, _AnimDuration… |
+| ExplodingBlockGraph — parametric shatter shader, CPU-ticked parameters | per-frame CPU | ❌ | `_Graphics/Materials/Graphs/ExplodingBlockGraph.shadergraph:686,1268,2008,2351,2510,2625 (_DarkColor/_ExplosionAmount/_Velocity/_BrightColor/_Opacity/_Spread all Hybrid Per Instance :3); :823,1533,1816 (_ExplosiveRotation/_ExplosiveSpead/_SqrDistance material constants, not instanced)` | Closest-to-done migration in the project. Add instanced _AnimStartTime f1, _Speed f1, _AnimDuration f1 (keep _Velocity, already instanced). In-graph: e = max(0, Time − _AnimStartTime); _ExplosionAmount := _Speed*e; _Opacity := saturate(1 − e/_AnimDuration); translation moves into the vertex stage: p… |
+| SuctionGraph — parametric implosion/growth shader, CPU-ticked _State + per-frame moving-sink _Location | per-frame CPU | ❌ | `_Graphics/Materials/Graphs/PrismGraphs/SuctionGraph.shadergraph:1260,1289,1458,2138,2192 (_State/_DarkColor/_Location/_BrightColor/_Spread Hybrid Per Instance :3); :1318 (_Move bool, not instanced); :2402 (_SqrDistance constant)` | Two-part. (1) _State goes GPU-clock exactly like the explosion: instanced _AnimStartTime/_AnimDuration/_GrowDelay/_Direction; in-graph _State := direction-signed saturate((Time − _AnimStartTime − _GrowDelay)/_AnimDuration). |
+| UnstablePrismGraph — the existing GPU-clock prism precedent (flicker runs with ZERO CPU updates) | GPU clock | ✅ | `_Graphics/Materials/Graphs/PrismGraphs/UnstablePrismGraph.shadergraph — node census: 1 TimeNode, 1 SineNode, 1 VoronoiNode, 3 BlendNodes; edge chain: Time → Add → Sine → Multiply(SqrDistance) → Voronoi(angle offset) → Blend(_UnstableColor over bright/dark) → PrismSubGraph → BaseColor + vertex Position` | Already conforming as animation. Two hygiene items when touched: (1) its 6 properties need hlslDeclarationOverride:3 if overcharged prisms should ever draw through the companion entity with per-instance colors (today a GameObject-renderer material append on an entity-rendered prism is also exposed t… |
+| DOTS per-instance property plumbing — PrismRenderProperties + PrismRenderService (the stamp carrier) | one-shot | ✅ | `Controller/ECS/Rendering/PrismRenderProperties.cs:19-35 ([MaterialProperty] _BrightColor f4 / _DarkColor f4 / _Spread f3), :42-58 (_Velocity f3 / _ExplosionAmount f1 / _Opacity f1), :64-74 (_State f1 / _Location f3)` | To add {_AnimStartTime, _AnimDuration, _StartScale, _StartBright, _StartDark, _StartSpread}: (1) declare each as an exposed Shader Graph property with hlslDeclarationOverride:3 (pattern-match the working _Velocity per Docs/PRISM_ECS_MIGRATION.md §7, then Reimport so DOTS_INSTANCING_ON variants recom… |
+| ThemeManager runtime material generation — the domain × state material census | one-shot | ✅ | `Controller/Managers/ThemeManager.cs:14-31 (Awake: 4 domain sets), :33-110 (GenerateDomainMaterialSet — new Material() clone of all 18 set entries + one-shot SetColor of _BrightColor/_DarkColor per domain)` | No behavioral change needed — this IS the 'right pool with the right material' half of the target architecture: pools keyed (domain × state × transparency) over these 36. |
+| SpreadFresnelShader / TriangleFresnelShader HLSL family — legacy static prism-look shaders (non-instanced) | one-shot | ✅ | `_Graphics/Materials/Shaders/SpreadFresnelShader.shader:48-71 (plain CGPROGRAM/UnityCG: _Spread vertex displacement + fresnel lerp of _BrightColor/_DarkColor; properties NOT in a UnityPerMaterial CBUFFER → not SRP-Batcher compatible; no DOTS instancing; no _Time)` | Do not extend. If DartBlock/TriBlock/TriangleBlock prefabs are still spawnable prisms, rebase their materials onto BlockGraph theme materials during the migration so they inherit the clock properties; otherwise mark the family decor-only. Delete the dead PrismShader.shader stub. |
+| Spindle phase-variant materials + _DeathAnimation fade (adjacent flora path — both the best precedent and a ma… | per-frame CPU | ❌ | `Controller/Environment/FloraAndFauna/Spindle.cs:37-38,103-125 (8 quantized _Phase variant materials bucketed by world-position hash — sway desync with SHARED materials, zero per-renderer state: the exact 'material that accepts the initial conditions' pattern), :189-250 (violation: condense/evaporate coroutines tick _DeathAnimation 0↔1 via MPB every frame for ~1s)` | Same recipe as prisms: add _FadeStartTime/_FadeDirection (instanced, or quantized shared fade materials as the file suggests); in-graph _DeathAnimation := direction-signed saturate(Time − _FadeStartTime). |
+| Wider GPU-clock precedent inventory (crystal/effect graphs) — patterns ready to copy | GPU clock | ✅ | `36 shader graphs contain a TimeNode (full list from grep): notably _Graphics/Materials/Graphs/ShepardGraph.shadergraph (Time→Modulo(_Period)→looping vertex ripple bounded by _Start/_Stop, with _Ease/_velocity — a material-parameterized, endlessly-looping clock animation with zero CPU writers: no script in the repo sets _Start/_Stop/_Period), CrystalGraph.shadergraph and SkimmerGraph.shadergraph (TimeNode AND already Hybrid Per Instance — cited as the pattern source in Docs/PRISM_ECS_MIGRATION.md:369), ExplodingCrystalGraph, AnimatedSpindleGraph, ForceFieldGraph, RippleGraph, LaserGraph, WispGraph, SkyBoxGraph, + 13 Lifeform_World graphs` | No action; reference material. ShepardGraph is the copy-paste template for windowed clock behavior (start/stop/period params), CrystalGraph/SkimmerGraph for Hybrid-Per-Instance flags, Spindle phase buckets for quantized initial-condition materials when a per-instance prop is not warranted. |
+
+#### J. Discovery sweep
+
+| Path | Cadence | Verdict | Where | Migration |
+|---|---|---|---|---|
+| ClearPrisms camera-occlusion transparency | per-frame CPU | ❌ | `Controller/Vessel/ClearPrisms.cs:84-105` | This is view-dependent (live camera+vessel line) so it can never be stamp-once per prism — but it needs ZERO per-prism CPU: write the camera→vessel segment + capsule radius as 2-3 GLOBAL shader uniforms once per frame and compute the occlusion alpha in the prism shader from world position vs the lin… |
+| MaterialBlendUtility per-renderer coroutine blends | per-frame CPU | ❌ | `Controller/ImpactEffects/EffectsSO/Skimmer Prism Effects/MaterialBlendUtility.cs:31-70` | Delete the utility. Overcharge mark: stamp per-instance blend params through the existing PrismRenderService color sinks (_BrightColor/_DarkColor/_Spread) — {_BlendStartTime, from/to colors} — and let the shader lerp off the clock; at blend end the prism is already in the end-state colors (no swap n… |
+| VesselPrismController danger-material stamp on spawn | one-shot | ❌ | `Controller/Vessel/VesselPrismController.cs:272-285` | One-shot in shape but wrong in mechanism: a bare sharedMaterial swap without Prism.SyncRenderMaterial() is invisible under the companion-entity path (the documented renders-nothing anti-pattern), and it bypasses PrismStateManager.MakeDangerous (which owns danger state + shield mutual-exclusion). |
+| CloakSeedWall cloak/uncloak (Serpent) | one-shot | ❌ | `Controller/Vessel/R_VesselActions/Executors/CloakSeedWallActionExecutor.cs:360-398` | The triggers are one-shot but they feed the multi-frame CPU color-lerp manager. Migrate the blend itself to the clock-material: stamp {_CloakStartTime, _CloakDirection, from/to color pairs} per instance via PrismRenderService sinks, GPU runs the dissolve; at the scheduled end swap the prism to the t… |
+| WallAssembler / GyroidAssembler magnet-steering of mate prisms | per-frame CPU | ❌ | `Controller/Assemblers/WallAssembler.cs:330-357` | Once a mate is chosen the trajectory is deterministic: reserve the bond site immediately (PrismSpatialIndex.TryReserve — occupancy/gameplay to FINAL state at start), stamp {startPose, targetPose, _StartTime, duration} into per-instance params and let the GPU interpolate the matrix (entity-side, same… |
+| Sparrow FullAutoBlockShoot turret prisms (launch + anchor) | per-frame CPU | ❌ | `Controller/Vessel/R_VesselActions/Executors/FullAutoBlockShootActionExecutor.cs:136-147` | The flight is a pure function of time: p(t) = muzzle + dir·min(speed·t, stopDistance). Stamp {_StartTime, _Velocity, _StopDistance} per instance; the GPU moves the visual and eases the grow-in on the same clock (no per-frame CPU position writes). |
+| AOERadialBlocks bespoke parallel grower | per-frame CPU | ❌ | `Controller/Projectiles/AOERadialBlocks.cs:200-221` | Delete the fallback GrowToScale entirely — Prism.Initialize's CreateBlockCoroutine + scale animator already own grow-in (the 'fallback' actively races the manager and stomps its slice writes). |
+| AOEDangerHemisphereBlocks danger prisms (material clone + bespoke grower) | per-frame CPU | ❌ | `Controller/Projectiles/AOEDangerHemisphereBlocks.cs:200-216` | Three fixes in one: (1) state via PrismStateManager.MakeDangerous (owns danger/shield mutual exclusion + routes material with SyncRenderMaterial — the raw .material clone is both a leak and likely invisible under the entity path); (2) delete the bespoke GrowToScale — grow-in belongs to the (future G… |
+| Microscene conveyor suction/bloom recycle (Wanderway) | per-frame CPU | ❌ | `Controller/Toys/Microscene.cs:112-132` | Scale-about-a-pivot is a pure function of time: stamp {_PivotWorldPos, _TransitionStartTime, _Duration, _FromScale, _ToScale} per instance (or one shared per-scene constant block) and compute the collapsed matrix in the shader — zero per-frame CPU, no per-frame entity matrix writes. |
+| Cell.RequestCellSwap world suction + sliced drain | per-frame CPU | ❌ | `Controller/Environment/Cell.cs:1262-1273` | Same pivot-collapse-on-the-clock as the Microscene: stamp {_SuctionCenter, _SuctionStartTime, _SuctionDuration} once (a per-cell shader constant or per-instance stamp walked once) and let the GPU collapse every instance; one CPU write total. |
+| ShapeDrawingManager environment shrink-to-outline (Phase 2, dormant) | per-frame CPU | ❌ | `Controller/Environment/MiniGameObjects/ShapeDrawingManager.cs:427-461` | Stamp per-instance {startPose, targetPose, _StartTime, _Duration}; GPU interpolates both position and scale off the clock; spatial index goes to the final outline position at start (or simply unbinds — the environment is 'nuked' for the drawing mode anyway). |
+| Fauna level-up body growth (parent-scale over body prisms) | per-frame CPU | ❌ | `Controller/Environment/FloraAndFauna/Fauna.cs:302-315` | Stamp {_GrowStartTime, _FromScale, _ToScale, _PivotWorldPos(=fauna origin at stamp)} on the body prisms' instances; GPU scales about the pivot on the clock; body-prism colliders + spatial index go to the final scale/position at start (fauna colliders are already coarse); one scheduled callback settl… |
+| Boid despawn shrink + boid prism Grow feeders | per-frame CPU | ❌ | `Controller/Environment/FloraAndFauna/Boid.cs:565-576` | Shrink-out: stamp {_ShrinkStartTime, duration} and let the GPU run it; scheduled callback at the end pool-returns the boid (Destroy in a gameplay loop is already an anti-pattern). |
+| TrailViewer sliding transparency window (dormant legacy) | per-frame CPU | ❌ | `Controller/Vessel/TrailViewer.cs:30-72` | Delete (orphaned), or if the feature returns: pass the attachment world position + window radius as global shader uniforms and fade in the prism shader — zero per-prism CPU, no material churn. |
+| TrailBlockBufferManager pre-instantiation buffer (dormant legacy) | one-shot | ❌ | `Controller/Projectiles/TrailBlockBufferManager.cs:63-76` | Delete. PrismFactory's pools + team material sets already own this; any resurrection must pull pooled prisms whose domain material is the pooled initial condition (sharedMaterial + SyncRenderMaterial, never .material). |
+| GunVesselTransformer slide Grow/Steal trigger | one-shot | ✅ | `Controller/Vessel/GunVesselTransformer.cs:91-103` | Trigger is already one-shot and event-driven — conforming. It inherits whatever the Grow/Steal pipelines become: Grow restamps {_GrowStartTime, from→to scale}, Steal restamps the color-blend clock params (see PrismTeamManager entry). |
+| PrismStateManager / PrismTeamManager state + team changes (the MaterialStateManager feeder mouths) | one-shot | ❌ | `Controller/Managers/PrismStateManager.cs:63` | These are the highest-value migration point: the entire color animation is start-color→target-color over a fixed duration — a textbook clock material. Stamp {_BlendStartTime, _FromBright,_ToBright,_FromDark,_ToDark,_FromSpread,_ToSpread} per instance at the trigger (the UpdateMaterial call site beco… |
+| Prism.SetTransparency instant swap | one-shot | ✅ | `Controller/Vessel/Prism.cs:1055` | Already the target shape (pool-state material + one-shot swap + entity sync). Under the full law, callers that want a VISIBLE fade (continuity) pair it with a stamped dissolve (see CloakSeedWall entry) and keep this as the end-state swap. |
+| PrismColliderLodManager (collider LOD, gameplay state) | per-frame CPU | ✅ | `Controller/Managers/PrismColliderLodManager.cs:27-31` | Not an animation path — the locked decision's collider clause ('gameplay state may go to final state at start') is orthogonal to and compatible with LOD culling. No migration; just ensure future animation migrations set collider state once at animation start and let LOD own it thereafter. |
+| PrismTimerManager scheduled expiries | scheduled | ✅ | `Controller/Managers/PrismTimerManager.cs:20` | Already conforming — and it is exactly the 'at the right frame, seamlessly swap to the end-state prism' scheduling primitive the target architecture needs. Reuse it as the swap scheduler for every migrated path. |
+| SkimFxRunner ship→prism stretch beam | per-frame CPU | ❌ | `Controller/ImpactEffects/EffectsSO/Helpers/SkimFxRunner.cs:35-69` | The prism end is static and the ship end is LIVE data — the sanctioned pattern is a pooled beam whose shader reads the vessel position from a per-vessel GLOBAL uniform (one CPU write per vessel per frame, shared by all beams) with {_PrismPos, _StartTime, _Duration} stamped per instance; pool the bea… |
+| Spindle evaporate fade (flora/fauna limb rods — prism-adjacent) | per-frame CPU | ❌ | `Controller/Environment/FloraAndFauna/Spindle.cs:189-209` | Textbook clock material: stamp _DeathStartTime (+ speed) once and compute deathAnimation = saturate((time-start)*speed) in the spindle shader; one scheduled callback despawns/pool-returns at completion. Same fix pattern as the prism paths even though it's outside the prism instanced pipeline. |
+| Fauna variant tuning spindle material swap + body prism retarget | one-shot | ✅ | `Controller/Environment/FloraAndFauna/Fauna.cs:353-368` | Already conforming (initial conditions at spawn). Under the GPU-grow migration, TargetScale retarget becomes part of the spawn stamp. |
+| Flora/assembler spawn feeders (AssembledFlora, BranchingFlora, WallAssembler conversion) | one-shot | ✅ | `Controller/Environment/FloraAndFauna/AssembledFlora.cs:253-273` | Spawn-time writes are the conforming half; they inherit the GPU grow-in when the spawn pipeline migrates. The non-conforming halves are itemized separately (assembler steering). |
+| PrismFactory team-color MPB stamp (spawn path detail) | one-shot | ✅ | `Controller/Prisms/PrismFactory.cs:312-334` | Already the target pattern (initial conditions loaded at pull). Ensure the entity path mirrors via PrismRenderService color sinks (it does — SetColors). |
+| PaintingRunner toy-station transitions (prism-material geometry, not prisms) | per-frame CPU | ❌ | `Controller/Toys/PaintingRunner.cs:278-313` | Optional under the prism law but same recipe: stamp {_TransitionStartTime, from/to scale} and run the ease in-shader (the prism material already ships per-instance color properties; adding the clock scale would cover all toy geometry), or accept as UI-class animation if toys are explicitly out of sc… |
+| Test/editor scaffolding (classify-only) | per-frame CPU | ✅ | `Controller/ECS/Rendering/PrismRenderStressTest.cs:238-286` | Exempt (test scaffolding; never ships in gameplay scenes). Keep the stress test as the regression harness FOR the migration: its 'movingFraction' mode measures exactly the per-frame-write cost the clock-material work eliminates. |
+
+#### K. Completeness-critic additions
+
+| Path | Cadence | Verdict | Where | Migration |
+|---|---|---|---|---|
+| GAP: SpawnableCord cord-wave prism mover (SeaweedFlora) | per-frame CPU | ❌ | `Controller/Environment/FloraAndFauna/SpawnableCord.cs:206-230 (Update: driven-vertex sine + energized-queue propagation, up to 300 vertex checks/frame)` | This is exactly the SpindleGraph precedent: bake the sway into a GPU clock material (per-instance _Phase/_Amplitude/_Axis stamped once at lay from the cord parameterization, TimeNode-driven sine in the shader). Colliders stay at rest pose (gameplay state = final state at start). |
+| GAP: SpawnableFlower bespoke branch lay (AOEFlowerSpawner) | one-shot | ❌ | `Controller/Projectiles/SpawnableFlower.cs:101-119 (CreateBlock: raw Instantiate + ChangeTeam + TargetScale + Initialize — bypasses PrismTrailBuilder and pooling)` | Same recipe as the other environment lays: pool-pull via the PrismFactory channel (BoostRingBuilder.LayOne or PrismTrailBuilder.LayOne) with a bloom-clock material stamped with spawn timepoint + target scale + domain colors; collider enabled at final size on frame 0; scheduled swap to the rest-state… |
+| GAP: SpawnableDartBoard ring lay | one-shot | ❌ | `Controller/Environment/MiniGameObjects/SpawnableDartBoard.cs:60-96 (per-ring Instantiate loop: ChangeTeam(Jade/Ruby alternation) + TargetScale + Initialize + WatchForReveal, bypasses PrismTrailBuilder.LayOne per its own comment)` | Identical to SpawnableFlower: route through the shared conforming lay primitive (pool pull + initial-conditions bloom material + end-state swap). The WatchForReveal load-gate integration already models 'snap to end state' — under the new architecture the gate simply stamps the material clock to its… |
+| GAP: AstroLeague ball per-tick prism sweep (shield / unshield / eat) | per-frame CPU | ✅ | `Controller/Arcade/AstroLeague/AstroLeagueBall.cs:570-640 (ProcessPrismInteractions: PrismSpatialIndex.QuerySphere sweep over the segment travelled each physics tick, on EVERY peer)` | No change to the ball itself — gameplay state already goes final immediately. The load it generates migrates for free once shield engage/disengage becomes a material-clock swap: ActivateShield = pool-swap (or mesh+material override) to a shielded prism whose engage-bloom clock starts at the stamp; D… |
+| GAP: AstroLeague arena edge lining lay + field-reset devastate sweeps | one-shot | ✅ | `Controller/Arcade/AstroLeague/AstroLeagueArena.cs:149-220 (RebuildEdgeLining: super-shielded Blue lining laid per peer via BoostRingBuilder.LayOne on the PrismFactory channel)` | Lay side: inherits the BoostRingBuilder migration (pool-pull, full-size collider frame 0 — already the law's collider model — bloom on the material clock). |
+| GAP: NudgeShard cytoplasm steal trigger | one-shot | ✅ | `Controller/Environment/Cytoplasm/NudgeShard.cs:28-47 (OnTriggerEnter: Squirrel vessel → foreach prism in Prisms: prism.Steal(player, domain))` | Nothing to change here — one-shot state write. It conforms fully once the repaint it triggers becomes a color-transition clock material (stamp old+new domain color pairs + transition start time, GPU lerps, swap to the flat end-state material on the scheduled tick). |
+| GAP: SquirrelTubeActionExecutor — tube lay trigger + pool-return pop-out teardown | one-shot | ❌ | `Controller/Vessel/R_VesselActions/Executors/SquirrelTubeActionExecutor.cs:141-151 (SpawnTubeAsync: rings-per-frame UniTask loop into BoostRingBuilder.LayRing — Boost pool, danger kind)` | Lay inherits the BoostRingBuilder migration. Teardown: swap each tube prism to a pooled fade/suction prism (SuctionGraph-style clock material stamped with start time + sink), disable the collider immediately (gameplay to final state at start), schedule one callback (PrismTimerManager) to pool-return… |
+| GAP-DETAIL: ShapeDrawingManager captured-trail shrink bypasses the render bridge (+ pool-detach and event-driv… | per-frame CPU | ❌ | `Controller/Environment/MiniGameObjects/ShapeDrawingManager.cs:384-461 (ShrinkPrismsIntoShape: per-frame transform.position + localScale Lerp on captured PLAYER trail prisms — no SyncRenderTransform / NotifyPositionChanged, so the instanced companion never sees the move)` | When Phase 2 is ported: the shrink-into-outline is a per-prism start-pose → target-pose interpolation with a known duration — ideal for a clock material with per-instance start/end transforms (stamp both, GPU interpolates, swap to a static miniature at the end tick). |
+| GAP-MINOR: HealthPrism Explode/Implode overrides + effect-SO trigger mouths not enumerated | one-shot | ✅ | `Controller/Environment/HealthPrism.cs:73-98 (Explode/Implode overrides: spindle + LifeForm bookkeeping wrapped around base — one-shot, conforming)` | No behavioral change. Migration caveat: the end-state-swap primitive must dispatch through the prism's virtual Explode/Implode (or replicate HealthPrism's unhook-before/notify-after ordering) so lifeform bookkeeping and the LifeFormCrystal drop guarantee survive the swap. |
+<!-- AUDIT_TABLE_END -->
+
+### 3.8 Latent bugs & findings surfaced by the sweep
+
+Fix these DURING the migration (most disappear by construction under stamp+clock):
+
+1. **Cell swap suction is invisible on the instanced path** — `Cell.RequestCellSwap`'s
+   1.1 s retiring-world suction scales a root transform but never syncs child prisms'
+   companion entities (zero `PrismRenderService`/`NotifyPositionChanged` references in
+   `Cell.cs`), so entity-rendered prisms stand at full size then vanish at the drain.
+   The per-prism suction stamp fixes this by construction. (`Microscene.AnimateScaleAsync`
+   shows the expensive-but-correct per-frame notify alternative — both extremes collapse
+   into the stamp.)
+2. **Rogue color writers are blind on the instanced path**: `ClearPrisms`' per-physics-tick
+   `_Alpha` MPB fade, `MaterialBlendUtility`'s `_Color`/`_EmissionColor` coroutine blends
+   (also the wrong property names for the prism shader), and bare `sharedMaterial` swaps
+   without `SyncRenderMaterial` in `VesselPrismController`/`TrailViewer` — all write the
+   disabled MeshRenderer.
+3. **AOE double-growers**: `AOERadialBlocks.GrowToScale` + `AOEDangerHemisphereBlocks.GrowToScale`
+   run bespoke per-frame scale loops RACING `PrismScaleManager` on the same prisms, without
+   `SyncRenderTransform`/`RefreshVolumeCache` — their writes never reach the screen between
+   manager steps on the instanced path. Also: `growthRate` FIELD writes there are dead on
+   pooled prisms (`SetGrowthRate` exists for this), and `AOEDangerHemisphereBlocks` uses
+   `renderer.material` (banned clone).
+4. **Stellated shield idles a per-prism `Update()` forever** — `PrismOctahedronShield`
+   was migrated to the central `PrismOctahedronShieldManager` ticker (registered only
+   while morphing) but `PrismStellatedOctahedronShield` still self-ticks; a super-shielded
+   track carries thousands of standing early-return Updates. Cheapest interim fix in the
+   area even before the GPU migration.
+5. **`FireTrailBlockActionExecutor`** bypasses pooling, moves its projectile prism per
+   frame, and `Destroy()`-timers it — a clock-law violation AND an imposed-despawn
+   ecosystem-law violation.
+6. **`PrismImplosion` wall-clock watchdog** — per-instance `Update()` for a 4 s timeout;
+   belongs on the scheduler.
+7. **Orphans recommended for deletion**: `TrailViewer`, `TrailBlockBufferManager`
+   (no scene/prefab references; both carry violations).
+8. **Dormant**: `PrismType.Grow` / `PrismImplosion.StartGrow` has no live raiser;
+   `ShapeDrawingManager` shrink-to-outline (Phase 2, dormant) also bypasses the render
+   bridge and spatial index.
+9. **Spindles** (flora/fauna limb rods — prism-adjacent, same law family): per-frame MPB
+   `_DeathAnimation` fade breaks SRP batching mid-fade; migrate alongside with clock
+   inputs on the spindle material.
+
+**Verified clean (no prism update path — do not re-audit)**: Rewind system, warp/flow
+fields, `SkimmerAlignPrismEffectSO` (reads prisms, writes the vessel), network sync
+(prisms are per-peer local), PhotoBooth/Recording tools, mines, cell phase transitions
+(no recolor), DOTween (zero prism usage — all UI), Animator/Animation components on
+prism prefabs (none).
 
 ---
 
@@ -193,14 +461,50 @@ the audit sweep — see the migration tracker in §5.
 
 ### 4.1 Shader side
 
-Three graphs carry the animated states today; each gains clock inputs (all
-Hybrid Per Instance):
+Four Shader Graphs own the prism look today (audit lens I):
+
+- **`BlockGraph`** — ALL live-prism rest states (normal opaque, shielded ×2,
+  super-shielded ×2, danger ×2, cloak). Static — no Time node. Its vertex stage
+  already runs `SpreadSubGraph` (object-scale-compensated normal offset), so a
+  clock scale multiplier slots in cleanly.
+- **`ExplodingBlockGraph`** — explosion VFX pool AND (quirk) the transparent live
+  prism (`TransparentPrismMaterial` rests at `_ExplosionAmount = 0`).
+- **`SuctionGraph`** — implosion/growth VFX pool.
+- **`UnstablePrismGraph`** — overcharge flicker: **the existing GPU-clock precedent**
+  (Time → Sine → Voronoi, runs with ZERO CPU updates). The law asks every animated
+  state to work the way this one already does.
+
+(Plus a legacy hand-HLSL family — `SpreadFresnelShader`/`TriangleFresnelShader`, 14
+materials on old trail prefabs — and a dead stub `BlockMaterials/PrismShader.shader`.)
+
+Each animated graph gains clock inputs, all **Hybrid Per Instance**
+(`hlslDeclarationOverride: 3` — the §7 recipe in `Docs/PRISM_ECS_MIGRATION.md`):
 
 | Graph | New per-instance properties | Behavior |
 |---|---|---|
-| `UnstablePrismGraph` (base prism) | `_GrowStartTime`, `_GrowRate`, `_GrowStartFrac` (scale fraction at t₀); `_ColorStartTime`, `_ColorDuration`, `_StartBrightColor`, `_StartDarkColor`, `_StartSpread` | Vertex: scale factor `s(t) = 1 − (1−s₀)·exp(−k·(t−t₀))` about the prism origin (the entity's `LocalToWorld` is at FINAL scale from the start). Fragment: colors = `lerp(start, material target, smoothstep((t−t₀)/dur))`. At rest (t ≥ end) both expressions equal the end state exactly — the settle swap merely clears the overrides. |
-| `ExplodingBlockGraph` | `_ExplodeStartTime`, `_ExplodeSpeed`, `_ExplodeDuration` (keeps `_Velocity`) | Vertex: world offset `(t−t₀)·_Velocity`; `amount = _ExplodeSpeed·(t−t₀)`; `opacity = 1 − (t−t₀)/_ExplodeDuration`. Entity transform never moves. |
+| `BlockGraph` | `_GrowStartTime`, `_GrowRate` (k), `_GrowStartFrac` (scale fraction at t₀); `_ColorStartTime`, `_ColorDuration`, `_StartBrightColor`, `_StartDarkColor`, `_StartSpread` | Vertex: scale factor `s(t) = 1 − (1−s₀)·exp(−k·(t−t₀))` about the prism origin (the entity's `LocalToWorld` is at FINAL scale from the start). Fragment: colors = `lerp(start, material's authored values, smoothstep((t−t₀)/dur))` — **the target is the bound material's authored colors, so no `_Target*` properties are needed** and the settle swap is just `SetMaterial` (already one-shot). Authored defaults (`_GrowStartFrac = 1`, `_ColorDuration = 0`) make every existing material render the settled end state unstamped. |
+| `ExplodingBlockGraph` | `_ExplodeStartTime`, `_ExplodeSpeed`, `_ExplodeDuration` (keeps `_Velocity`) | Vertex: world offset `(t−t₀)·_Velocity`; `amount = _ExplodeSpeed·(t−t₀)`; `opacity = 1 − (t−t₀)/_ExplodeDuration`. Entity transform never moves after the stamp. Defaults render the rest state (the transparent-prism quirk keeps working unstamped). |
 | `SuctionGraph` | `_SuctionStartTime`, `_SuctionDuration`, `_SuctionDirection` (grow=−1 / implode=+1), `_GrowDelay` (keeps `_Location`) | `progress(t)` computed in-shader; `_Location` stamped once (moving-target exception per §1 if retained). |
+
+Implementation constraints (verified by the capability audit):
+
+- New `[MaterialProperty]` structs must be added to the **prototype archetypes** in
+  `PrismRenderService.GetPrototype` so every stamp stays non-structural
+  `SetComponentData` — `AddComponentData` on a live entity is a per-prism structural
+  change, the exact cost the prototype pattern kills. Fold the clock params into the
+  three EXISTING override sets (Prism / Explosion / Implosion).
+- float/float4 sizes are safe; float3 works today (`_Spread`/`_Velocity`/`_Location`)
+  but `PRISM_ECS_MIGRATION.md` §7 documents the size-mismatch fallback to float4.
+- Instanced rendering is ON in the shipped config
+  (`Assets/Resources/PrismRenderConfig.asset`, `useInstancedRendering: 1`); per-instance
+  values live in Entities Graphics' persistent GPU buffer — a stamp is genuinely
+  write-once. The legacy MeshRenderer fallback gets the same stamp via ONE
+  MaterialPropertyBlock write (Hybrid Per Instance is additive; the MPB path is
+  unaffected).
+- Currently NON-instanced properties that must not be driven per-instance without
+  flipping the flag first: `_SqrDistance`, `_Alpha` (BlockGraph),
+  `_ExplosiveRotation`/`_ExplosiveSpead` (ExplodingBlockGraph), `_Move` (SuctionGraph),
+  and ALL of UnstablePrismGraph.
 
 ### 4.2 CPU side
 
@@ -218,10 +522,28 @@ Hybrid Per Instance):
   (`CurrentBrightColor` et al. become computed properties).
 - **Gameplay finality at stamp**: collider enabled at authored size on `Initialize`;
   volume/`CachedVolume`/spatial shell stamped final; `IsGrowing`/`IsSettledForReveal`
-  become clock predicates; `HoldColliderAtFullSize` deleted.
+  become clock predicates; `HoldColliderAtFullSize` deleted. `PrismScaleAnimator.
+  ExecuteOnScaleComplete` (volume SOAP raise + IsLargest shield engage) moves to the
+  stamp — `UpdateVolume` already computes from `TargetScale`, so it is start-safe
+  verbatim. **PhaseThresholds must be re-baselined** against volume-final-at-spawn
+  (today volume ramps in over the bloom; see `Docs/ECOSYSTEM.md` §18's measuring tool).
+- **Three whole compensation subsystems exist ONLY to patch CPU-clocked grow-in and
+  delete under the law**: `HoldColliderAtFullSize` (per-frame collider inverse-resize;
+  sole caller `BoostRingBuilder`), the `CreateBlockCoroutine` waitTime/creation-budget
+  window (colliders disabled 0.6 s, 6 completions/frame — a spawn becomes ONE stamp,
+  with a staggered t₀ where the stagger was aesthetic), and the arena-ready gate's
+  per-prism reveal watch + force-settle sweep (+ its three load-gate boost knobs) —
+  settling becomes a pure clock predicate.
+- **The shipped structural template**: `SetupDestruction` + pooled VFX twin is
+  already exactly the law's shape — gameplay state one-shot final at frame 0, a
+  pooled effect prism seeded with initial conditions, swap at completion. Cite it;
+  copy it.
 - **Retirements when migration completes**: `PrismScaleManager`,
-  `MaterialStateManager`, `PrismEffectsManager`'s per-frame passes, and
-  `AdaptiveAnimationManager`'s frame-skip machinery for these paths.
+  `MaterialStateManager`, `PrismEffectsManager`'s per-frame passes,
+  `AdaptiveAnimationManager`'s frame-skip machinery for these paths, and the
+  `MAX_ACTIVE_EFFECTS`/64-per-frame VFX caps (they exist purely to bound the
+  per-frame CPU apply; the 64/frame skip is itself a continuity-law breach under
+  burst load that the migration removes).
 
 ### 4.3 Pools
 
@@ -233,21 +555,64 @@ touchpoint 1, never per frame. Effect pools (explosion/implosion) likewise: the
 pulled instance's material is the animated graph; the stamp is its initial
 conditions; `OnEffectComplete` (the scheduled end) returns it to the pool.
 
+Audit findings to fix here: pools are keyed by prism TYPE only (one
+`InteractivePrismPoolManager` per vessel type + Interactive + the Boost pool) —
+"right material from the right pool" is currently true only when a pooled prism is
+reused into the same domain (`ChangeTeam` no-ops); every cross-domain reuse runs the
+0.8 s CPU repaint today. Under the law that repaint becomes a stamped clock lerp
+(or an instant swap where no transition is wanted — spawn-paint of a fresh prism is
+a *creation*, not a recolor of existing mass, so the grow-in bloom alone can carry
+the continuity and the domain material can be final from frame 0). Also:
+`PrismTrailBuilder.LayOne` uses raw `Object.Instantiate`, not pools, and starts
+`Domains.Blue` — environment lays should pull pooled prisms with the final domain
+material.
+
 ---
 
-## 5. Migration tracker
+## 5. Migration tracker (the deduplicated work list)
 
-| # | Path | Status |
+Phase A — infrastructure (everything else rides on it):
+
+| # | Item | Status |
 |---|---|---|
-| 1 | Shader graphs: clock inputs (grow, color, explode, suction) | ☐ not started |
-| 2 | `PrismRenderProperties` + stamp APIs + legacy MPB twins | ☐ not started |
-| 3 | `PrismAnimationScheduler` (end-swap scheduling) | ☐ not started |
-| 4 | Grow-in migrated; `PrismScaleManager` retired | ☐ not started |
-| 5 | Color/state transitions migrated; `MaterialStateManager` retired | ☐ not started |
-| 6 | Explosion/implosion migrated; `PrismEffectsManager` per-frame passes retired | ☐ not started |
-| 7 | Shield morphs migrated (vertex-shader bloom/shatter) | ☐ not started |
-| 8 | Gameplay-final-at-start (collider/volume/predicates; `HoldColliderAtFullSize` deleted) | ☐ not started |
-| 9 | Docs locked (this file + CLAUDE.md anti-patterns) | ☐ in progress |
+| A1 | Shader graphs: clock inputs (BlockGraph grow+color, ExplodingBlockGraph, SuctionGraph) — Hybrid Per Instance, settled-state authored defaults | ☐ not started |
+| A2 | `PrismRenderProperties` clock structs + prototype-archetype additions + `PrismRenderService` stamp APIs + legacy one-MPB-write twins | ☐ not started |
+| A3 | Swap scheduler: generalize `PrismTimerManager` `TimerAction` (settle swaps, completion callbacks) | ☐ not started |
+
+Phase B — migrate the engines (each retires a per-frame pass):
+
+| # | Item | Status |
+|---|---|---|
+| B1 | Grow-in → clock (all ~12 feeder paths ride the one engine); retire `PrismScaleManager`; gameplay-final-at-start (volume/spatial/collider stamps, clock predicates, `ExecuteOnScaleComplete` → start); delete `HoldColliderAtFullSize` + `CreateBlockCoroutine` window + arena-gate compensation; re-baseline PhaseThresholds | ☐ not started |
+| B2 | Color/state transitions → clock lerp (start colors + t₀; target = material authored); retire `MaterialStateManager`; keep the end `sharedMaterial` swap, scheduled | ☐ not started |
+| B3 | Explosion/implosion → clock (stamp `{t₀, velocity, speed, duration}` / `{t₀, duration, direction, location}`); retire `PrismEffectsManager` per-frame passes + VFX caps; decide implosion moving-target (snapshot vs documented exception) | ☐ not started |
+| B4 | Shield morphs → GPU (vertex-shader bloom/shatter from per-vertex face data + t₀; settled shared-mesh swap already conforms); kill stellated idle per-prism `Update()` (interim: register with `PrismOctahedronShieldManager`) | ☐ not started |
+
+Phase C — rogue paths & ecosystem visuals (each is standalone):
+
+| # | Item | Status |
+|---|---|---|
+| C1 | `ClearPrisms` `_Alpha` fade → clock (also fix instanced-path blindness) | ☐ not started |
+| C2 | `MaterialBlendUtility` (overheat danger trail + skim overcharge) → stamped clock blend; fix wrong property names / instanced blindness | ☐ not started |
+| C3 | AOE double-growers (`AOERadialBlocks`, `AOEDangerHemisphereBlocks`) → single engine stamp; fix dead `growthRate` field writes + `renderer.material` clone | ☐ not started |
+| C4 | `FireTrailBlockActionExecutor` → pooled + mover-contract or stamped ballistic clock; remove `Destroy()` timer (ecosystem law) | ☐ not started |
+| C5 | `FullAutoBlockShoot.MoveAndAnchorAsync` turret anchor flight → stamped clock translation + one anchor callback | ☐ not started |
+| C6 | Fauna visual transitions → clock: level-up bloom, wither-from-extremities (staggered t₀ ring stamps — pacing already analytic), devour/graze suction, boid starvation fade | ☐ not started |
+| C7 | Flora growth tick / paced instantiation → stamped blooms (spawn scheduling stays CPU; visuals ride clock) | ☐ not started |
+| C8 | Microscene conveyor recycle + first-population bloom → suction/bloom stamps (kills the per-frame notify storm) | ☐ not started |
+| C9 | Cell swap retiring-world suction → per-prism suction stamps (fixes instanced-path invisibility, §3.8.1) | ☐ not started |
+| C10 | Worm segment make-room shift → stamped slide (locomotion stays mover-contract) | ☐ not started |
+| C11 | Spindle `_DeathAnimation` fade (prism-adjacent) → clock inputs on spindle material | ☐ not started |
+| C12 | `PrismImplosion` watchdog → scheduler; delete orphans `TrailViewer` + `TrailBlockBufferManager`; `SkimFxRunner` stretch beam review; `CloakSeedWall` dead code removal | ☐ not started |
+| C13 | Environment lay pooling: `PrismTrailBuilder.LayOne` → pooled pull with final domain material (kills spawn repaint) | ☐ not started |
+
+Phase D — lock-in:
+
+| # | Item | Status |
+|---|---|---|
+| D1 | Docs locked (this file + CLAUDE.md anti-pattern + manager banners + cross-refs) | ✅ shipped (2026-07-31) |
+| D2 | Retire `AdaptiveAnimationManager` frame-skip machinery once B1–B3 land | ☐ not started |
+| D3 | In-editor verification pass (all migrated paths, both render paths, load-gate + hitstop + pause) | ☐ not started |
 
 ---
 
