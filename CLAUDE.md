@@ -1799,6 +1799,38 @@ At any total at most two adjacent colours show (e.g. +8 → 3 blue + 2 white). P
 - **Rolling out to another vessel**: add an `ElementalBarsView` to that vessel's HUD (or run the wirer), then assign it to the vessel's `ElementalBarsController.elementBars`. No code changes.
 - **Performance**: petals render at ~88px — keep `maxTextureSize` small (128). One `Image` per petal (20 total), `raycastTarget` off, event-driven (no `Update`), `SetLevel`/`RefreshBar` early-out when nothing changed, tweens `SetLink`ed and killed + snapped to rest on `OnDisable` for pooled/toggled HUDs.
 
+### Elemental Hull Morphs (the vessel model is an element display)
+
+The vessel's own hull conveys its element levels: vessel models carry **blend shapes on their
+skinned meshes labeled by element name** (`charge` / `mass` / `space` / `time`, case-insensitive —
+authored into the FBX), and `VesselAnimation` (base class, runs on every vessel) discovers them **by
+name** at `Initialize` and glides each between its extremes as the effective element level moves
+through the **[0, 10] progression band** — the deficit band [-5, 0) holds the level-0 silhouette,
+the overcharge band (10, 15] holds the level-10 authored extreme (the same effective level the HUD
+flowers read, so hull and flowers always agree). Transitions are DOTween glides, never snaps —
+continuity of existence applies to the vessel's own body.
+
+- **Single source of feel — `VesselElementalMorphConfigSO`** (`_Scripts/ScriptableObjects/`, asset
+  at `Resources/VesselElementalMorphConfig.asset`): morph duration + ease, plus the pure helpers
+  (`NormalizedMorphWeight`, `TryResolveElement` — both edit-mode tested in
+  `VesselElementalMorphTests`). Spec changes go in the asset, never per-vessel fields.
+- **Opt-in by art, zero wiring.** A vessel morphs the moment its model ships element-labeled shape
+  keys — no per-prefab flags (the old `UseShapeKeys` bool + hardcoded shape indices are retired).
+  Non-element art shapes (jaws, tendrils) are untouched; a name mentioning two elements is ambiguous
+  and ignored. The shape's authored extreme is read from its last frame weight, so 0-100 and custom
+  frame weights both work.
+- **Fleet status**: audit with **Tools > Cosmic Shore > Audit Vessel Elemental Morphs** (asset-only,
+  no play mode, uses the exact runtime discovery). Today Manta/Termite/Falcon/Shrike (Manta meshes),
+  Sparrow, and Serpent ship labeled shapes; Dolphin/Urchin/Rhino prefabs currently wire test meshes
+  without them (their `*_shapekey_with_animations.fbx` models exist — re-wiring the art lights them
+  up with no code change); Squirrel/Grizzly have none yet.
+- **Seeding**: `VesselAnimation` snaps to live levels at `Initialize` (the live initial emit is
+  `ResourceSystem.Start`), and `ResourceSystem.InitializeElementLevels` now emits
+  `OnElementLevelChange` (deduped) so a mid-session re-seed repaints every consumer — hull morphs,
+  HUD flowers, and ability unlock state alike. Note `SetResourceLevels` currently has **no live
+  caller** (its historical MiniGame turn-reset and Hangar call sites are commented out); the emit
+  future-proofs any revived re-seed path.
+
 ### The Four-Icon Ability Row (LOCKED structure — every vessel HUD)
 
 Every vessel HUD shows **exactly four ability icons in the lower right — one per ability** — and the
