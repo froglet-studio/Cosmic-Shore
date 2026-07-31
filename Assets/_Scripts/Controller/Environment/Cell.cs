@@ -1425,6 +1425,11 @@ namespace CosmicShore.Gameplay
         /// <see cref="Trail"/> or follower holds a reference to mass that is about to leave.
         /// <c>ClearTrails</c> only drops the bookkeeping - it never removes a prism - so this
         /// is not a mass sink.
+        ///
+        /// NOTE: <c>SetSpawnerPaused</c> is a single last-writer-wins flag, also used by the
+        /// painting toy's pen-up between strokes. A swap taken mid-painting therefore un-pens a
+        /// run that was between strokes; the runner re-asserts the pen at its next stroke
+        /// boundary, so the cost is bounded to a short stretch of unwanted trail.
         /// </summary>
         void SetVesselTrailsDetached(bool pauseSpawners)
         {

@@ -407,3 +407,14 @@ station, its options unfold out ahead; fly it again, they fold away. Architectur
 - **The vessel matrix rebuilds its models on every open.** `VesselModelBuilder` extraction is
   cheap next to the painting/cell cases, but caching them like `CellSelectorToy._miniatures`
   would make repeat opens free.
+- **Cell swap vs. painting pen (cross-toy).** `VesselPrismController.SetSpawnerPaused` is one
+  last-writer-wins flag shared by the cell swap's pen-up and the painting runner's between-stroke
+  pen-up. Reset the cell while a painting is between strokes and the swap un-pens it; the runner
+  re-asserts at its next stroke boundary, so the cost is a short stretch of unwanted trail. A
+  reset also clears the painting's laid prisms — but `PaintingPrismStore` regrows them when you
+  return to the station, which is the designed resume path. Left as-is deliberately: a
+  refcounted pen would be more machinery than the bounded, self-correcting symptom warrants.
+- **Asset drift cleaned in passing** (`Toy_VesselChanger` had a stale `vesselCycle` key with no
+  field behind it; `Toy_Painting` never serialized `clusterSpacingBodies`, so that knob read 0
+  and was masked by the `max()`). `Toy_Painting` still carries a stale `shape:` key — harmless,
+  Unity drops unknown keys on the next save.
