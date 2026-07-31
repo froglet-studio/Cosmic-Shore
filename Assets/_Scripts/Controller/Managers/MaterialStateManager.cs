@@ -8,6 +8,13 @@ using System;
 
 namespace CosmicShore.Gameplay
 {
+    /// <summary>
+    /// ⚠ CLOCK-MATERIAL LAW (Docs/PRISM_ANIMATION.md, LOCKED): this manager's per-tick
+    /// color lerps are a KNOWN VIOLATION scheduled for retirement — color/state
+    /// transitions migrate to GPU-clock lerps (one stamp of start colors + start time;
+    /// the material's authored values are the target; one scheduled sharedMaterial
+    /// settle swap at the end). Do NOT route any new prism animation through here.
+    /// </summary>
     public class MaterialStateManager : AdaptiveAnimationManager<MaterialStateManager, MaterialPropertyAnimator, MaterialAnimationData>
     {
         // The profiler collapses every AdaptiveAnimationManager instance into one

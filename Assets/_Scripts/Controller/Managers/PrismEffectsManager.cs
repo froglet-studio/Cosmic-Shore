@@ -13,6 +13,15 @@ namespace CosmicShore.Gameplay
     /// Centralized Jobs-based manager for prism explosion and implosion VFX.
     /// Replaces per-instance UniTask async loops with batched Burst-compiled updates.
     /// Follows the same pattern as MaterialStateManager and PrismScaleManager.
+    ///
+    /// ⚠ CLOCK-MATERIAL LAW (Docs/PRISM_ANIMATION.md, LOCKED): the per-frame stepping
+    /// here is a KNOWN VIOLATION scheduled for retirement — every output this job
+    /// computes is a pure function of elapsed time and the stamp-time initial
+    /// conditions (pos = p0 + t·v, amount = speed·t, opacity = 1 − t/dur), so the
+    /// shader computes it from {_StartTime, _Velocity, _Speed, _Duration} stamped
+    /// once. The only review case is the implosion's MOVING convergence target
+    /// (RefreshConvergence) — live gameplay data, see the doc §1. Do NOT route any
+    /// new prism effect through per-frame parameter feeding.
     /// </summary>
     public class PrismEffectsManager : Singleton<PrismEffectsManager>
     {

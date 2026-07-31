@@ -12,6 +12,12 @@ post PR #573 merge).
 are ordered by value-for-cost. After every fix, run the §5 verification
 protocol and update this doc (status + measured numbers).
 
+**Prism animation work has its own locked law:** `Docs/PRISM_ANIMATION.md` — no
+prism may need multiframe CPU updates to animate (one stamp → GPU clock → one
+scheduled end swap; gameplay state final at start). Any perf work touching
+`PrismScaleManager` / `MaterialStateManager` / `PrismEffectsManager` must move
+toward that law, never optimize the per-frame passes further.
+
 ---
 
 ## 0. SESSION HANDOFF (2026-07-15) — next session starts here

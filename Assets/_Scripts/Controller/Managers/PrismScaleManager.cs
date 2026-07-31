@@ -5,6 +5,13 @@ using System.Collections.Generic;
 using CosmicShore.Gameplay;
 namespace CosmicShore.Gameplay
 {
+    /// <summary>
+    /// ⚠ CLOCK-MATERIAL LAW (Docs/PRISM_ANIMATION.md, LOCKED): this manager's sliced
+    /// per-tick transform writes are a KNOWN VIOLATION scheduled for retirement —
+    /// grow-in migrates to a GPU-clock vertex scale (one stamp, zero per-frame CPU).
+    /// Do NOT route any new prism animation through here, and do not extend this
+    /// pass with new per-frame work.
+    /// </summary>
     public class PrismScaleManager : AdaptiveAnimationManager<PrismScaleManager, PrismScaleAnimator, ScaleAnimationData>
     {
         // The profiler collapses every AdaptiveAnimationManager instance into one
