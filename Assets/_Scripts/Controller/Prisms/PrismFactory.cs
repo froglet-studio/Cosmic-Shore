@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
@@ -36,6 +37,24 @@ namespace CosmicShore.Gameplay
         private int _implosionVFXCount;
         private int _lastExplosionFrame;
         private int _lastImplosionFrame;
+
+        // A destruction whose visual does not fit in this frame's cap is DEFERRED, not
+        // dropped. Prism.SetupDestruction has already hidden the prism, so the pooled
+        // VFX is the only thing standing in for it - skipping the spawn makes the prism
+        // vanish mid-air, which the continuity law forbids ("deaths animate out"; see
+        // CLAUDE.md). Deferred effects are spawned within a later frame's cap, so the
+        // per-frame ceiling this budget exists to enforce is unchanged.
+        //
+        // The queue is bounded at a few frames' worth: past that the visual would play
+        // so long after the death that it reads as a random pop somewhere the fight has
+        // already left. When full we discard the STALEST, matching PrismEffectsManager's
+        // recycle-the-oldest policy for the concurrent-effect ceiling.
+        private const int MaxDeferredVFX = 192;
+        private readonly Queue<PrismEventData> _deferredExplosions = new(64);
+        private readonly Queue<PrismEventData> _deferredImplosions = new(64);
+
+        /// <summary>Destruction visuals waiting on a later frame's spawn budget.</summary>
+        public int DeferredExplosionCount => _deferredExplosions.Count;
 
         [Header("Pool Managers")]
         [SerializeField] private InteractivePrismPoolManager dolphinPrismPool;
@@ -85,6 +104,11 @@ namespace CosmicShore.Gameplay
         {
             if (_onPrismSpawnedEventChannel)
                 _onPrismSpawnedEventChannel.OnEventReturn -= OnPrismSpawnedEventRaised;
+
+            // Queued visuals belong to deaths in the scene being torn down - replaying
+            // them after a reload would pop effects at coordinates nothing occupies.
+            _deferredExplosions.Clear();
+            _deferredImplosions.Clear();
         }
         #endregion
 
@@ -232,15 +256,54 @@ namespace CosmicShore.Gameplay
         
         GameObject SpawnExplosion(PrismEventData data)
         {
-            // Cap explosion VFX per frame to prevent pool exhaustion.
-            // Prism destruction still happens (Damage already applied), we just skip the visual.
-            if (Time.frameCount != _lastExplosionFrame)
-            {
-                _lastExplosionFrame = Time.frameCount;
-                _explosionVFXCount = 0;
-            }
+            RollExplosionFrameBudget();
+
+            // Over budget: queue the visual for a later frame rather than dropping it.
+            // The prism is already hidden, so a dropped visual IS a disappearing prism.
             if (_explosionVFXCount >= MaxExplosionVFXPerFrame)
+            {
+                Defer(_deferredExplosions, data);
                 return null;
+            }
+
+            return SpawnExplosionNow(data);
+        }
+
+        GameObject SpawnImplosion(PrismEventData data)
+        {
+            RollImplosionFrameBudget();
+
+            // Same reasoning as explosions - defer, never drop.
+            if (_implosionVFXCount >= MaxImplosionVFXPerFrame)
+            {
+                Defer(_deferredImplosions, data);
+                return null;
+            }
+
+            return SpawnImplosionNow(data);
+        }
+
+        private void RollExplosionFrameBudget()
+        {
+            if (Time.frameCount == _lastExplosionFrame) return;
+            _lastExplosionFrame = Time.frameCount;
+            _explosionVFXCount = 0;
+        }
+
+        private void RollImplosionFrameBudget()
+        {
+            if (Time.frameCount == _lastImplosionFrame) return;
+            _lastImplosionFrame = Time.frameCount;
+            _implosionVFXCount = 0;
+        }
+
+        /// <summary>
+        /// Spawns the effect without consulting the frame budget - callers have already
+        /// reserved a slot. Keeping this separate from <see cref="SpawnExplosion"/> means
+        /// the drain can never re-enter the defer branch and cycle the queue.
+        /// </summary>
+        private GameObject SpawnExplosionNow(PrismEventData data)
+        {
             _explosionVFXCount++;
 
             var obj = explosionPool?.Get(data.SpawnPosition, data.Rotation, explosionPool.transform);
@@ -251,16 +314,8 @@ namespace CosmicShore.Gameplay
             return obj.gameObject;
         }
 
-        GameObject SpawnImplosion(PrismEventData data)
+        private GameObject SpawnImplosionNow(PrismEventData data)
         {
-            // Cap implosion VFX per frame for the same reason as explosions.
-            if (Time.frameCount != _lastImplosionFrame)
-            {
-                _lastImplosionFrame = Time.frameCount;
-                _implosionVFXCount = 0;
-            }
-            if (_implosionVFXCount >= MaxImplosionVFXPerFrame)
-                return null;
             _implosionVFXCount++;
 
             var obj = implosionPool?.Get(data.SpawnPosition, data.Rotation, implosionPool.transform);
@@ -269,6 +324,42 @@ namespace CosmicShore.Gameplay
             ConfigureForTeam(obj.gameObject, data.ownDomain);
             obj.StartImplosion(data.TargetTransform);
             return obj.gameObject;
+        }
+
+        private static void Defer(Queue<PrismEventData> queue, PrismEventData data)
+        {
+            while (queue.Count >= MaxDeferredVFX)
+                queue.Dequeue(); // stalest first - see MaxDeferredVFX
+            queue.Enqueue(data);
+        }
+
+        /// <summary>
+        /// Spends whatever is left of this frame's VFX budget on deaths whose visual an
+        /// earlier frame could not afford, oldest first. Runs in LateUpdate so every
+        /// destruction the frame produced has already had first claim on the budget - a
+        /// burst therefore animates out over the next frame or two instead of vanishing.
+        /// </summary>
+        private void LateUpdate()
+        {
+            if (_deferredExplosions.Count > 0)
+            {
+                RollExplosionFrameBudget();
+                while (_deferredExplosions.Count > 0 && _explosionVFXCount < MaxExplosionVFXPerFrame)
+                    SpawnExplosionNow(_deferredExplosions.Dequeue());
+            }
+
+            if (_deferredImplosions.Count > 0)
+            {
+                RollImplosionFrameBudget();
+                while (_deferredImplosions.Count > 0 && _implosionVFXCount < MaxImplosionVFXPerFrame)
+                {
+                    var data = _deferredImplosions.Dequeue();
+                    // An implosion converges on a target; if the consumer died while the
+                    // visual was queued there is nothing to converge on.
+                    if (data.TargetTransform == null) continue;
+                    SpawnImplosionNow(data);
+                }
+            }
         }
         
         GameObject SpawnGrow(PrismEventData data)

@@ -36,7 +36,48 @@ namespace CosmicShore.Utility
         // PrismRenderService's per-instance overrides)
         private static readonly int ExplodeStartTimeId = Shader.PropertyToID("_ExplodeStartTime");
 
-        internal float MaxDuration => 5f;
+        /// <summary>The unpressured animation length - what a death looks like when the
+        /// scene is not saturated with them.</summary>
+        internal const float DefaultDuration = 5f;
+
+        // Shortest an explosion is squeezed to under full pressure. Still long enough
+        // to read as a death (~13 frames at 60fps) while raising the sustainable
+        // effect throughput ~20x — the headroom a dense blast needs for every prism
+        // to animate out rather than pop (continuity law).
+        const float MinPressuredDuration = 0.22f;
+
+        // Live-effect count at which pressure shortening starts (full length below
+        // half of this, eased to MinPressuredDuration at/above it). On the clock
+        // path effects cost no per-frame CPU, so this bounds POOL size and entity
+        // count rather than an animation pass — same product-of-concurrency-and-
+        // duration reasoning as the retired manager's ceiling.
+        const int PressureCeiling = 256;
+
+        /// <summary>
+        /// This instance's animation length. Assigned by TriggerExplosion on every
+        /// spawn from the live-effect pressure (so a pooled instance can never
+        /// inherit a previous life's value): it shortens under load so a dense
+        /// blast's effects COMPLETE as smaller, quicker puffs instead of piling up.
+        /// </summary>
+        internal float MaxDuration { get; private set; } = DefaultDuration;
+
+        /// <summary>
+        /// Animation length for an effect starting while <paramref name="activeCount"/>
+        /// are already running (the EnabledInstances registry — the live set). Full
+        /// length until half the ceiling, then eased down to the pressured minimum.
+        /// Expansion and drift are speed·elapsed, so a pressured effect is a SMALLER,
+        /// quicker puff rather than the same bloom fast-forwarded — deliberate
+        /// (scaling speed to compensate would fling debris at up to 22x).
+        /// </summary>
+        static float PressuredDuration(int activeCount)
+        {
+            const float pressureFloor = PressureCeiling * 0.5f;
+            if (activeCount <= pressureFloor) return DefaultDuration;
+
+            float pressure = Mathf.InverseLerp(pressureFloor, PressureCeiling, activeCount);
+            return Mathf.Lerp(DefaultDuration, MinPressuredDuration, pressure);
+        }
+
         internal bool IsActive { get; private set; }
         internal MeshRenderer Renderer => _renderer;
 
@@ -177,6 +218,11 @@ namespace CosmicShore.Utility
                 speed = velocity.magnitude;
 
             IsActive = true;
+
+            // Pressure-scale THIS life's duration before anything reads it — the
+            // clock stamp, the bounds envelope, and the scheduled completion all
+            // key off MaxDuration. EnabledInstances is the live-effect registry.
+            MaxDuration = PressuredDuration(EnabledInstances.Count);
 
             EnsureRenderEntity();
 
