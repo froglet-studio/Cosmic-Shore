@@ -20,5 +20,17 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField] private bool useInstancedRendering;
 
         public bool UseInstancedRendering => useInstancedRendering;
+
+        [Header("Clock-Material Animation (Docs/PRISM_ANIMATION.md)")]
+        [Tooltip("Drive prism animations (grow-in bloom, color transitions, explosion/implosion) from the GPU clock via " +
+                 "one-shot initial-condition stamps instead of per-frame CPU updates — the clock-material law. " +
+                 "OPT-IN: defaults OFF. Before enabling, the prism ShaderGraphs must be wired to PrismClockAnimation.hlsl " +
+                 "and declare the clock properties (_GrowStartTime/_GrowRate/_GrowStartFrac, _ColorStartTime/_ColorDuration/" +
+                 "_StartBrightColor/_StartDarkColor/_StartSpread, _ExplodeStartTime/_ExplodeSpeed/_ExplodeDuration, " +
+                 "_SuctionStartTime/_SuctionDuration/_SuctionDirection/_SuctionGrowDelay) as Hybrid Per Instance. " +
+                 "See Docs/PRISM_ANIMATION.md §4.4 for the wiring + verification protocol.")]
+        [SerializeField] private bool useClockAnimation;
+
+        public bool UseClockAnimation => useClockAnimation;
     }
 }

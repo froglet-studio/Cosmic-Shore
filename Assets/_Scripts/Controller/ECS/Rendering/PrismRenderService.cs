@@ -131,6 +131,48 @@ namespace CosmicShore.ECS
         /// <summary>Runtime A/B override (null = fall back to config). New prisms follow the new value; existing ones keep their current path until reuse.</summary>
         public static void SetRuntimeOverride(bool? enabled) => _runtimeOverride = enabled;
 
+        // ------------------------------------------------------------------
+        // Clock-material animation toggle (Docs/PRISM_ANIMATION.md, LOCKED law)
+        // ------------------------------------------------------------------
+
+        static bool? _clockRuntimeOverride;
+        static bool _clockConfigLoaded;
+        // OPT-IN: defaults OFF. The clock stamps only render once the prism
+        // ShaderGraphs are wired to PrismClockAnimation.hlsl with the clock
+        // properties declared Hybrid Per Instance (PRISM_ANIMATION.md §4.4);
+        // until then callers fall back to the legacy CPU animation managers.
+        static bool _clockConfigEnabled;
+
+        /// <summary>
+        /// Master switch for clock-material prism animation (one initial-conditions
+        /// stamp, GPU runs the course, one scheduled end swap — Docs/PRISM_ANIMATION.md).
+        /// Resolution: runtime override → PrismRenderConfig asset → default OFF.
+        /// When false, every Stamp* API returns false and callers keep the legacy path.
+        /// </summary>
+        public static bool ClockAnimationEnabled
+        {
+            get
+            {
+                if (_clockRuntimeOverride.HasValue) return _clockRuntimeOverride.Value;
+                if (!_clockConfigLoaded)
+                {
+                    _clockConfigLoaded = true;
+                    var config = Resources.Load<CosmicShore.ScriptableObjects.PrismRenderConfigSO>("PrismRenderConfig");
+                    if (config != null) _clockConfigEnabled = config.UseClockAnimation;
+                }
+                return _clockConfigEnabled;
+            }
+        }
+
+        /// <summary>Runtime A/B override for clock animation (null = config). Clears the
+        /// prototype cache so newly created entities carry (or drop) the clock components;
+        /// existing entities keep their current archetype until reuse.</summary>
+        public static void SetClockAnimationOverride(bool? enabled)
+        {
+            _clockRuntimeOverride = enabled;
+            _prototypes.Clear();
+        }
+
         /// <summary>
         /// Read-only, allocation-light diagnosis of whether the instanced path is
         /// actually engaging — and if not, exactly which link in the chain is broken
@@ -372,6 +414,41 @@ namespace CosmicShore.ECS
                     break;
             }
 
+            // Clock-material animation stamps (Docs/PRISM_ANIMATION.md §4). Added on
+            // the PROTOTYPE so every per-prism stamp stays non-structural
+            // SetComponentData — AddComponentData on a live entity is a per-prism
+            // archetype move, the exact cost this prototype pattern exists to kill.
+            // Defaults are the settled state (rate/duration 0 → PrismClockAnimation.hlsl
+            // renders the end state / legacy fallback), so entities render unchanged
+            // until a Stamp* call arrives.
+            if (ClockAnimationEnabled)
+            {
+                switch (overrideSet)
+                {
+                    case PrismRenderOverrideSet.Prism:
+                        em.AddComponentData(prototype, new PrismGrowStartTimeOverride { Value = 0f });
+                        em.AddComponentData(prototype, new PrismGrowRateOverride { Value = 0f });
+                        em.AddComponentData(prototype, new PrismGrowStartFracOverride { Value = 1f });
+                        em.AddComponentData(prototype, new PrismColorStartTimeOverride { Value = 0f });
+                        em.AddComponentData(prototype, new PrismColorDurationOverride { Value = 0f });
+                        em.AddComponentData(prototype, new PrismStartBrightColorOverride { Value = new float4(1f) });
+                        em.AddComponentData(prototype, new PrismStartDarkColorOverride { Value = new float4(1f) });
+                        em.AddComponentData(prototype, new PrismStartSpreadOverride { Value = float3.zero });
+                        break;
+                    case PrismRenderOverrideSet.Explosion:
+                        em.AddComponentData(prototype, new PrismExplodeStartTimeOverride { Value = 0f });
+                        em.AddComponentData(prototype, new PrismExplodeSpeedOverride { Value = 0f });
+                        em.AddComponentData(prototype, new PrismExplodeDurationOverride { Value = 0f });
+                        break;
+                    case PrismRenderOverrideSet.Implosion:
+                        em.AddComponentData(prototype, new PrismSuctionStartTimeOverride { Value = 0f });
+                        em.AddComponentData(prototype, new PrismSuctionDurationOverride { Value = 0f });
+                        em.AddComponentData(prototype, new PrismSuctionDirectionOverride { Value = 1f });
+                        em.AddComponentData(prototype, new PrismSuctionGrowDelayOverride { Value = 0f });
+                        break;
+                }
+            }
+
             // Clones are born hidden (existing contract); the Prefab tag keeps the
             // prototype itself invisible to every query and is stripped on Instantiate.
             em.AddComponent<DisableRendering>(prototype);
@@ -594,6 +671,97 @@ namespace CosmicShore.ECS
             var em = _world.EntityManager;
             em.SetComponentData(handle.Entity, new PrismImplosionStateOverride { Value = state });
             em.SetComponentData(handle.Entity, new PrismImplosionLocationOverride { Value = location });
+        }
+
+        // ------------------------------------------------------------------
+        // Clock-material stamps (Docs/PRISM_ANIMATION.md §4 — the law's
+        // touchpoint 1). Each writes an animation's INITIAL CONDITIONS once;
+        // PrismClockAnimation.hlsl evaluates the visual from _Time.y with zero
+        // further CPU writes. All return false when the clock path is off or
+        // the entity lacks the clock components (prototype built before an
+        // override flip) so callers fall back to the legacy CPU managers.
+        // Start times come from PrismClock.Now (same epoch as _Time.y).
+        // ------------------------------------------------------------------
+
+        /// <summary>Stamps a grow-in bloom: visual scales from startFrac to 1 about the
+        /// entity's FINAL transform (LocalToWorld must already hold final scale —
+        /// gameplay-final-at-start). rate is the per-second exponential-approach k.</summary>
+        public static bool StampGrow(in PrismRenderHandle handle, float startTime, float rate, float startFrac)
+        {
+            if (!ClockAnimationEnabled || !IsUsable(in handle)) return false;
+            var em = _world.EntityManager;
+            if (!em.HasComponent<PrismGrowStartTimeOverride>(handle.Entity)) return false;
+            em.SetComponentData(handle.Entity, new PrismGrowStartTimeOverride { Value = startTime });
+            em.SetComponentData(handle.Entity, new PrismGrowRateOverride { Value = rate });
+            em.SetComponentData(handle.Entity, new PrismGrowStartFracOverride { Value = startFrac });
+            return true;
+        }
+
+        /// <summary>Stamps a color/state transition: shader lerps from the given start
+        /// colors (authored-space; color-space transform applied here, matching SetColors)
+        /// to the bound material's target colors over duration. The settle swap to the
+        /// end-state material is scheduled separately (touchpoint 3).</summary>
+        public static bool StampColorTransition(in PrismRenderHandle handle, float startTime, float duration,
+            in float4 startBright, in float4 startDark, in float3 startSpread)
+        {
+            if (!ClockAnimationEnabled || !IsUsable(in handle)) return false;
+            var em = _world.EntityManager;
+            if (!em.HasComponent<PrismColorStartTimeOverride>(handle.Entity)) return false;
+            em.SetComponentData(handle.Entity, new PrismColorStartTimeOverride { Value = startTime });
+            em.SetComponentData(handle.Entity, new PrismColorDurationOverride { Value = duration });
+            em.SetComponentData(handle.Entity, new PrismStartBrightColorOverride { Value = ApplyColorSpace(in startBright) });
+            em.SetComponentData(handle.Entity, new PrismStartDarkColorOverride { Value = ApplyColorSpace(in startDark) });
+            em.SetComponentData(handle.Entity, new PrismStartSpreadOverride { Value = startSpread });
+            return true;
+        }
+
+        /// <summary>Clears a prism's animation stamps back to the settled state (pool
+        /// reuse / settle swap). Safe no-op when the clock components are absent.</summary>
+        public static void ClearPrismStamps(in PrismRenderHandle handle)
+        {
+            if (!IsUsable(in handle)) return;
+            var em = _world.EntityManager;
+            if (!em.HasComponent<PrismGrowStartTimeOverride>(handle.Entity)) return;
+            em.SetComponentData(handle.Entity, new PrismGrowStartTimeOverride { Value = 0f });
+            em.SetComponentData(handle.Entity, new PrismGrowRateOverride { Value = 0f });
+            em.SetComponentData(handle.Entity, new PrismGrowStartFracOverride { Value = 1f });
+            em.SetComponentData(handle.Entity, new PrismColorStartTimeOverride { Value = 0f });
+            em.SetComponentData(handle.Entity, new PrismColorDurationOverride { Value = 0f });
+        }
+
+        /// <summary>Stamps an explosion's flight: offset/amount/opacity become pure
+        /// functions of the clock. The entity transform must already hold the debris'
+        /// initial pose — it never moves again.</summary>
+        public static bool StampExplosionClock(in PrismRenderHandle handle, float startTime, float speed, float duration,
+            in float3 velocity)
+        {
+            if (!ClockAnimationEnabled || !IsUsable(in handle)) return false;
+            var em = _world.EntityManager;
+            if (!em.HasComponent<PrismExplodeStartTimeOverride>(handle.Entity)) return false;
+            em.SetComponentData(handle.Entity, new PrismExplodeStartTimeOverride { Value = startTime });
+            em.SetComponentData(handle.Entity, new PrismExplodeSpeedOverride { Value = speed });
+            em.SetComponentData(handle.Entity, new PrismExplodeDurationOverride { Value = duration });
+            em.SetComponentData(handle.Entity, new PrismVelocityOverride { Value = velocity });
+            return true;
+        }
+
+        /// <summary>Stamps a suction/implosion (direction >= 0, progress 0→1) or reverse
+        /// grow (direction &lt; 0, progress 1→0) with an optional start delay. location is
+        /// the convergence point, snapshotted at stamp time (moving-target exception:
+        /// see PRISM_ANIMATION.md §1 — if retained, refresh via SetImplosionParams'
+        /// location only, never the progress).</summary>
+        public static bool StampSuctionClock(in PrismRenderHandle handle, float startTime, float duration,
+            float direction, float growDelay, in float3 location)
+        {
+            if (!ClockAnimationEnabled || !IsUsable(in handle)) return false;
+            var em = _world.EntityManager;
+            if (!em.HasComponent<PrismSuctionStartTimeOverride>(handle.Entity)) return false;
+            em.SetComponentData(handle.Entity, new PrismSuctionStartTimeOverride { Value = startTime });
+            em.SetComponentData(handle.Entity, new PrismSuctionDurationOverride { Value = duration });
+            em.SetComponentData(handle.Entity, new PrismSuctionDirectionOverride { Value = direction });
+            em.SetComponentData(handle.Entity, new PrismSuctionGrowDelayOverride { Value = growDelay });
+            em.SetComponentData(handle.Entity, new PrismImplosionLocationOverride { Value = location });
+            return true;
         }
 
         /// <summary>Destroys the companion entity (prism GameObject destruction / scene teardown).</summary>

@@ -569,15 +569,82 @@ material.
 
 ---
 
+### 4.4 Phase A infrastructure — shipped dark + in-editor wiring protocol
+
+Shipped 2026-07-31 behind `PrismRenderConfigSO.UseClockAnimation` (default **OFF** —
+zero behavior change until the graphs are wired and the toggle flipped, the same
+opt-in-dark pattern instanced rendering itself shipped under):
+
+- **`Assets/_Graphics/Materials/Graphs/PrismClockAnimation.hlsl`** — the four Custom
+  Function bodies: `PrismGrowScale`, `PrismColorLerp`, `PrismExplosionClock`,
+  `PrismSuctionClock`. Every function treats rate/duration ≤ 0 as "unstamped" and
+  returns the settled end state or the legacy CPU-fed parameter, so wiring the graphs
+  changes nothing until a stamp arrives.
+- **`PrismRenderProperties.cs`** — the 15 clock override structs (Prism / Explosion /
+  Implosion sets), added to the **prototype archetypes** in
+  `PrismRenderService.GetPrototype` when the toggle is on (stamps stay non-structural).
+- **`PrismRenderService`** — `ClockAnimationEnabled` (+ `SetClockAnimationOverride`
+  A/B hook, clears the prototype cache), and the touchpoint-1 stamp APIs:
+  `StampGrow`, `StampColorTransition`, `StampExplosionClock`, `StampSuctionClock`,
+  `ClearPrismStamps`. All return false when dark → callers keep the legacy path.
+- **`PrismClock`** (`_Scripts/Utility/`) — the single CPU-side epoch
+  (`Time.timeSinceLevelLoad`, matching `_Time.y`), plus `SettledPast` for
+  behind-the-veil instant settling.
+- **`PrismTimerManager.ScheduleAction` / `CancelScheduledActions`** — the generalized
+  touchpoint-3 scheduler (flat list, one delegate per animation event).
+- Legacy-path MPB stamp twins land with the first B-phase call-site migration (one
+  `MaterialPropertyBlock` write of the same properties).
+
+**In-editor wiring (required before flipping the toggle; do all three graphs):**
+
+1. **BlockGraph** — add properties with these EXACT reference names, all marked
+   **Hybrid Per Instance** (Node Settings ▸ Shader Declaration; verify
+   `hlslDeclarationOverride: 3` lands in the file — the `PRISM_ECS_MIGRATION.md` §7
+   recipe): `_GrowStartTime` Float 0 · `_GrowRate` Float 0 · `_GrowStartFrac` Float 1 ·
+   `_ColorStartTime` Float 0 · `_ColorDuration` Float 0 · `_StartBrightColor` Color
+   (1,1,1,1) · `_StartDarkColor` Color (1,1,1,1) · `_StartSpread` Vector3 (0,0,0).
+   Vertex stage: Custom Function node (Source = `PrismClockAnimation.hlsl`, Name =
+   `PrismGrowScale`, Clock ← Time node's **Time** output) → multiply the object-space
+   vertex position by `Scale` upstream of the existing `SpreadSubGraph` offset.
+   Fragment: Custom Function `PrismColorLerp` with `Target*` inputs fed by the
+   existing `_BrightColor` / `_DarkColor` / `_Spread` property nodes; route its
+   outputs everywhere those properties fed before.
+2. **ExplodingBlockGraph** — add `_ExplodeStartTime` / `_ExplodeSpeed` /
+   `_ExplodeDuration` (Float 0, Hybrid Per Instance). Custom Function
+   `PrismExplosionClock` with `LegacyAmount` ← `_ExplosionAmount` property and
+   `LegacyOpacity` ← `_Opacity` property; its `Amount`/`Opacity` outputs replace the
+   direct property uses; `WorldOffset` adds to the world-space vertex position
+   (Transform node if the graph computes in object space).
+3. **SuctionGraph** — add `_SuctionStartTime` / `_SuctionDuration` /
+   `_SuctionGrowDelay` (Float 0) and `_SuctionDirection` (Float 1), Hybrid Per
+   Instance. Custom Function `PrismSuctionClock` with `LegacyState` ← `_State`
+   property; its `State` output replaces the `_State` uses.
+4. Save/reimport, then tick **Use Clock Animation** on
+   `Assets/Resources/PrismRenderConfig.asset`.
+
+**Verification protocol:**
+
+- Toggle OFF (shipped state): zero visual or perf change anywhere.
+- Graphs wired + toggle ON, before any B-phase call site lands: still zero visual
+  change — nothing stamps, the legacy managers keep feeding `SetColors` /
+  `SetExplosionParams` / `SetImplosionParams`, and the clock branches idle at their
+  fallbacks.
+- Stamp smoke test (play mode): stamp any live prism via
+  `PrismRenderService.StampGrow(handle, PrismClock.Now, 1.5f, 0f)` from a debug
+  hook — it must visibly re-bloom with the DiagnosticsHUD "Animators" rows showing
+  **0 active** (no CPU animation) and keep colliding at full size throughout.
+- Hitstop/pause: prism animations freeze with `Time.timeScale` (the clock is scaled
+  time) — expected and desired.
+
 ## 5. Migration tracker (the deduplicated work list)
 
 Phase A — infrastructure (everything else rides on it):
 
 | # | Item | Status |
 |---|---|---|
-| A1 | Shader graphs: clock inputs (BlockGraph grow+color, ExplodingBlockGraph, SuctionGraph) — Hybrid Per Instance, settled-state authored defaults | ☐ not started |
-| A2 | `PrismRenderProperties` clock structs + prototype-archetype additions + `PrismRenderService` stamp APIs + legacy one-MPB-write twins | ☐ not started |
-| A3 | Swap scheduler: generalize `PrismTimerManager` `TimerAction` (settle swaps, completion callbacks) | ☐ not started |
+| A1 | Shader graphs: clock inputs (BlockGraph grow+color, ExplodingBlockGraph, SuctionGraph) — Hybrid Per Instance, settled-state authored defaults | ◐ HLSL shipped (`PrismClockAnimation.hlsl`); graph wiring is an in-editor step — protocol in §4.4 |
+| A2 | `PrismRenderProperties` clock structs + prototype-archetype additions + `PrismRenderService` stamp APIs + legacy one-MPB-write twins | ✅ shipped dark 2026-07-31 (MPB twins land with the first B-phase call site) |
+| A3 | Swap scheduler: generalize `PrismTimerManager` (ScheduleAction / CancelScheduledActions) | ✅ shipped 2026-07-31 |
 
 Phase B — migrate the engines (each retires a per-frame pass):
 
