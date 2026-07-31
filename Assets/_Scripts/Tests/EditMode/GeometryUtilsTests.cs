@@ -230,6 +230,24 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void ClampMagnitude_ZeroVector_ReturnsMinMagnitudeNotNaN()
+        {
+            // A zero vector has no direction to scale, and vector * (min / 0) is NaN. This
+            // reaches live callers: AstroLeague's arena teardown and field reset both call
+            // Prism.Damage(Vector3.zero, ...), so those prisms were handed a NaN debris
+            // velocity - the explosion job then rejected every position it computed and the
+            // prism sat unanimated until it faded.
+            var result = Utility.GeometryUtils.ClampMagnitude(Vector3.zero, 10f, 33f, out float magnitude);
+
+            Assert.IsFalse(float.IsNaN(result.x) || float.IsNaN(result.y) || float.IsNaN(result.z),
+                "A zero input must not produce a NaN vector.");
+            Assert.AreEqual(10f, result.magnitude, 0.0001f,
+                "A zero input should leave at the minimum magnitude, in some stable direction.");
+            Assert.AreEqual(0f, magnitude, 0.0001f,
+                "The reported magnitude is still the original vector's.");
+        }
+
+        [Test]
         public void ClampMagnitude_OutputsMagnitude()
         {
             var input = new Vector3(3, 4, 0); // magnitude = 5

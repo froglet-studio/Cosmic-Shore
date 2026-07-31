@@ -246,7 +246,7 @@ namespace CosmicShore.Gameplay
             if (obj == null) return null;
             obj.transform.localScale = data.Scale;
             ConfigureForTeam(obj.gameObject, data.ownDomain);
-            obj.TriggerExplosion(data.Velocity);
+            obj.TriggerExplosion(data.Velocity, data.DebrisSpeedLimit);
             return obj.gameObject;
         }
 
