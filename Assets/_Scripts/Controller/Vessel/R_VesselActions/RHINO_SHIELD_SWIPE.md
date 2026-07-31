@@ -337,8 +337,43 @@ there but a stepped sword falsifies this analysis; 0/1 there confirms the driver
    trigger presses (binary approximation, no analog pose).
 4. Turn end / vessel swap mid-pull: sword snaps back to its authored rest pose.
 
+### Swing velocity model + debris retune (this branch — needs a human at the editor)
+
+None of the below can be checked without play mode; the math is unit-tested, the *feel* is not.
+
+5. **Parked sword == hull.** Fly straight, no trigger. Clip a prism with the hull, then clip an
+   identical prism with the parked sword. Debris speed must look the same. (Was: sword visibly
+   hotter.)
+6. **Tip vs hilt.** Mid-swipe, clip one prism near the blade's base and one near the tip. The tip
+   strike must throw debris noticeably harder AND along the swing tangent rather than along your
+   course. Select the ForceFieldSkimmer in the hierarchy during play — `OnDrawGizmosSelected`
+   draws the blade segment with per-point velocity rays, green→red by speed.
+7. **Volume independence** (the fix for "Rhino trail prisms feel heavy"). Clip your own Rhino
+   trail (the smallest mass in the game, volume ≈ 0.75) and then a fat environment prism at the
+   same speed. Debris speed must match. Any visible difference means the pre-multiply crept back.
+8. **Ram speed matters.** Ram prisms at low throttle vs full boost — debris should scale with
+   speed instead of looking identical.
+9. **The 1/3 retune also slowed the shatter 3x** (`restitution` drives both). Watch a slow graze:
+   it now crumbles over ~1.8s where a tip strike bursts in ~7 frames. If the slow end reads as
+   sluggish, raise `restitution` on the three damage SOs *and* `debrisSpeedLimit` + the prefab's
+   `minSpeed`/`maxSpeed` together — they are one tuning group (see the retune table above).
+10. **Other vessels are on the legacy path** and only moved via the clamp band. Spot-check a
+    Squirrel/Manta skim and a projectile hit: debris should be ~1/3 its old speed, nothing else.
+11. **AstroLeague field reset** (regression for the NaN fix): trigger an arena teardown / field
+    reset and confirm those prisms now animate out instead of sitting still until they fade.
+
 ## Follow-ups
 
+- **Prism mass-report defect (OPEN, ecology-adjacent)**: `OnTrailBlockDestroyed` raises
+  `Volume = 1` for every prism and `OnTrailBlockCreated` reads volume at zero scale — same
+  animator-ordering cause as the dead divide. `Cell.LiveVolume` is unaffected (separate
+  `CachedVolume` path), but destroyed-mass stats are suspect. Full write-up and fix shape:
+  `Docs/ECOSYSTEM.md` §20.2.
+- **`VesselDamagePrismEffect.asset` stale field**: still serializes `inertia: 70`; the SO stopped
+  declaring it and reads `status.Inertia`. Unity drops the orphan on next save — harmless.
+- **Legacy debris paths** (projectiles, AOE, danger, fauna) still ride `impactVector * inertia`
+  into the prefab clamp, so their magnitude carries no information. Converting them to
+  `DamageProportional` is the same one-line change per effect if that signal is wanted.
 - **Analog stepping**: run the Input Debugger diagnostic above; if raw axes are
   smooth, reopen the investigation (next suspect: none identified — instrument
   `ShieldSwipeActionExecutor` targets).
