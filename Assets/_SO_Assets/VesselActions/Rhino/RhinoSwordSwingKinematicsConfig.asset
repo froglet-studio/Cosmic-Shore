@@ -9,11 +9,11 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d86b2820bc9b4c7c97803ea2cbe4bccd, type: 3}
-  m_Name: SkimmerDamagePrismEffect
+  m_Script: {fileID: 11500000, guid: 112cafe0e1f844e780bb0b6a62b66ffd, type: 3}
+  m_Name: RhinoSwordSwingKinematicsConfig
   m_EditorClassIdentifier: 
-  inertia: 70
-  overrideCourse: {x: 0, y: 0, z: 0}
-  overrideSpeed: 0
-  swingVelocityScale: 1
-  maxImpactSpeed: 0
+  smoothingSeconds: 0.03
+  maxSampleDeltaSeconds: 0.1
+  maxAngularSpeedDegrees: 3600
+  includeVesselRotation: 1
+  includeElongation: 1

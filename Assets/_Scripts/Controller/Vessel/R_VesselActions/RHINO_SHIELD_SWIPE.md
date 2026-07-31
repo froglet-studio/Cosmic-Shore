@@ -49,6 +49,9 @@ do not copy it (follow-up below).
 |---|---|
 | Executor (all runtime state + analog drive) | `Executors/ShieldSwipeActionExecutor.cs` |
 | Shared tuning (single source, both directions) | `Data Containers/RhinoShieldSwipeConfigSO.cs` → `_SO_Assets/VesselActions/Rhino/RhinoShieldSwipeConfig.asset` |
+| Swing velocity model (tip-vs-hilt impact speed) | `_Scripts/Controller/Vessel/SkimmerSwingKinematics.cs` + `SkimmerSwingKinematicsConfigSO.cs` → `_SO_Assets/VesselActions/Rhino/RhinoSwordSwingKinematicsConfig.asset`; component added on `ForceFieldSkimmer Variant.prefab` |
+| Impact composition (vessel velocity + contact-point swing) | `PrismEffectHelper.ContactVelocity` → `SkimmerDamagePrismEffectSO` / `RhinoSkimmerDamagePrismEffectSO` |
+| Model tests | `_Scripts/Tests/EditMode/SkimmerSwingKinematicsTests.cs` |
 | Per-direction event bindings | `Data Containers/RhinoShieldSwipeActionSO.cs` → `RhinoShieldSwipeRight/LeftAction.asset` (direction only) |
 | Prefab wiring | `Rhino.prefab`: `ShieldSwipeActionRegistry` GO under ShipActions, registered in `ActionExecutorRegistry._executors`; `_gamepadActionOverrides` events 1/2; skimmer transform rest pose |
 
@@ -93,6 +96,101 @@ feature bound an action to that event). `SkimmerImpactor` and `VesselImpactor` n
 carry mirrored guards: **a vessel and its own skimmer never impact each other.**
 Enemy-Rhino skims still mute the victim's right trigger — that debuff now visibly
 disarms an active swipe, which is the designed interaction.
+
+## Swing velocity model — the tip hits harder than the hilt
+
+The sword is a **rigid segment swinging on a lever arm**, so no single number describes
+"how fast the sword is moving." `SkimmerSwingKinematics`
+(`_Scripts/Controller/Vessel/SkimmerSwingKinematics.cs`, on the ForceFieldSkimmer) models
+the velocity of *any point* on the blade, and impact effects feed a destroyed prism the
+velocity of the point that actually touched it.
+
+### The model
+
+```
+v(P) = v_vessel  +  omega_vessel x (P - vesselOrigin)  +  R_vessel * v_rel(P)
+v_rel(P) = v_bladeOrigin/vessel  +  omega_blade/vessel x (P - bladeOrigin)  +  (dL/dt)*f*axis
+```
+
+| Term | Source | Meaning |
+|---|---|---|
+| `v_vessel` | `Speed * Course + VesselTransformer.VelocityShift` | the hull's own translation — the canonical value the transformer integrates each frame |
+| `omega_vessel x r` | vessel rotation, differentiated | a hard turn genuinely sweeps a 35-unit sword. Optional (`includeVesselRotation`) |
+| `v_bladeOrigin/vessel` | `ShieldSwipeActionExecutor` writes `localPosition = sweep * basePos` | the mount arcs about the Fusilage origin |
+| `omega_blade/vessel x r` | `localRotation = sweep * baseRot`, differentiated | the blade's own spin — the dominant term at the tip |
+| `(dL/dt)*f*axis` | `ShieldSkimmerScaleDriver` growing local Y | a lengthening blade drives its points outward. Optional (`includeElongation`) |
+
+Every rate is differentiated **in the vessel's frame**, so vessel translation, teleports,
+respawns and pooling can never leak into the swing. Sampling is in `LateUpdate` — after the
+swipe executor and scale driver have written the pose, which is also the pose the next
+`FixedUpdate` evaluates triggers against, so an impact reads the rates that produced its
+own contact. `OnEnable` drops the previous sample so a vessel swap can't differentiate
+across the discontinuity.
+
+### Which part of the sword hit
+
+The sword's collider is a **SphereCollider (radius 0.5, centred on the blade)** scaled by
+the transform's largest axis — so the trigger volume is a ball of radius = the blade's
+half-length, and the trigger alone cannot say *where* on the blade something is.
+`ClosestBladePoint(worldPoint)` recovers it by projecting onto the blade's centreline
+segment and clamping; `NormalizedAlongBlade` reports 0 at the hilt, 1 at the tip. Hilt vs.
+tip is derived from geometry (**the end farther from the pivot is the tip**), never
+authored, so re-posing or re-parenting the sword cannot invert them.
+
+### Impact wiring
+
+`PrismEffectHelper.ContactVelocity` composes it, and both
+`SkimmerDamagePrismEffectSO` (the generic effect that the Rhino sword's
+`RhinoForceFieldSkimmerImpactorDataContainer` actually wires — `RhinoSkimmerDamagePrismEffect`
+exists but is **not** in that container) and `RhinoSkimmerDamagePrismEffectSO` call it before
+`PrismEffectHelper.Damage(..., Vector3 velocity)` → `Prism.Damage` → `Prism.Explode`
+(`Velocity = impactVector / volume` on the debris VFX).
+
+A skimmer with **no** `SkimmerSwingKinematics` has no relative motion to add, so
+`ContactVelocity` collapses to exactly the previous `Course * Speed` — every other vessel's
+spherical skimmer is byte-for-byte unchanged.
+
+| Dial | Where | Default |
+|---|---|---|
+| `swingVelocityScale` | the damage effect SO, next to `inertia` | 1 (the physical model); 0 restores pre-model behaviour |
+| `maxImpactSpeed` | the damage effect SO | 0 = unclamped |
+| `smoothingSeconds`, `maxSampleDeltaSeconds`, `maxAngularSpeedDegrees`, `includeVesselRotation`, `includeElongation` | `RhinoSwordSwingKinematicsConfig.asset` | 0.03 / 0.1 / 3600 / on / on |
+
+### Measured magnitudes (verify before retuning)
+
+Simulating the authored rig (mount `(0, 9.38, 20.7)`, 20° rest pitch, 90/90/65 sweep over
+`swipeOutSeconds` 0.18) against a vessel cruising at 35 u/s:
+
+| blade length | near end | mid | **tip** |
+|---|---|---|---|
+| rest (scale 30) | 259 | 340 | **534 u/s** (≈15× the ship) |
+| full shield (scale 120) | 768 | 340 | **1219 u/s** (≈35× the ship) |
+
+Two consequences worth knowing before tuning:
+
+- **The near end is not "the ship's speed."** The blade mounts ~23 units out from its swing
+  pivot, so even the hilt rides a lever arm — and once shield growth pushes the blade past
+  that offset, the hilt swings on the *far side* of the pivot and moves fast in the
+  opposite direction. That is why the mid-blade can be the *slowest* point at full growth.
+- **Debris magnitude saturates downstream.** `PrismExplosion` clamps the debris speed to
+  `[30, 250]`, and the fed velocity reaches it at `250 * volume / inertia` ≈ 57 u/s (at the
+  nominal volume 16) — which the ship's own cruise speed already approaches. So during a
+  swipe the readable difference between a hilt graze and a tip strike is mostly
+  **direction** (course vs. swing tangent) rather than magnitude. Lower `swingVelocityScale`
+  or raise `PrismExplosion.maxSpeed` if a magnitude gradient is wanted.
+
+### Verification
+
+`Assets/_Scripts/Tests/EditMode/SkimmerSwingKinematicsTests.cs` rebuilds the authored rig
+and checks `RelativeVelocity` against an analytically differentiated material point across
+swipe / vessel-turn / blade-growth / all-at-once trajectories (1% relative tolerance), plus
+the idle-sword no-op, tip-faster-than-midpoint, per-term isolation, and the
+`AngularVelocity` shortest-arc and clamp behaviours.
+
+Independently, the composition was checked against a continuum-limit ground truth: error
+≤0.06% (numerical noise) as `dt -> 0`, and the residual at real frame rates halves exactly
+with `dt` — the O(dt) chord-vs-arc signature every per-frame differentiator has, not a
+model error.
 
 ## Known issue — analog stepping (OPEN)
 

@@ -18,6 +18,12 @@ namespace CosmicShore.Gameplay
         [Header("Damage (when NOT super-shield)")]
         [SerializeField] private float inertia = 70f;
 
+        [Tooltip("How much of the sword's own velocity at the contact point reaches the prism. 1 = the physical model: a tip strike mid-swipe drives debris many times harder than a hilt graze, and along the swing tangent. 0 = vessel velocity only (pre-model behaviour). Requires a SkimmerSwingKinematics on the skimmer.")]
+        [SerializeField] private float swingVelocityScale = 1f;
+
+        [Tooltip("Ceiling on the impact speed handed to the prism. 0 = unclamped (the explosion VFX applies its own clamp downstream).")]
+        [SerializeField] private float maxImpactSpeed;
+
         [Header("Bounce (when super-shield)")]
         [Tooltip("Multiplier applied to current speed to compute bounce target speed.")]
         [SerializeField] private float bounceSpeedMultiplier = 0.85f;
@@ -48,8 +54,11 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
-            // Otherwise: normal damage flow
-            PrismEffectHelper.Damage(status, prismImpactee, inertia, status.Course, status.Speed);
+            // Otherwise: normal damage flow, carrying the velocity of the part of the sword
+            // that actually made contact (see SkimmerSwingKinematics) rather than the hull's.
+            var velocity = PrismEffectHelper.ContactVelocity(
+                impactor, status, prismImpactee.Prism.transform.position, swingVelocityScale, maxImpactSpeed);
+            PrismEffectHelper.Damage(status, prismImpactee, inertia, velocity);
         }
 
         private void BounceBack(IVesselStatus status, PrismImpactor prismImpactee)
