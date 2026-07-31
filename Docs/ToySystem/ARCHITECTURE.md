@@ -47,6 +47,7 @@ detection. On top of that base the `Toy` class adds:
 | Role | File |
 |---|---|
 | Toy base (trigger, bloom, gating, re-arm) | `Assets/_Scripts/Controller/Toys/Toy.cs` |
+| One-toy-opens-into-many base | `Assets/_Scripts/Controller/Toys/MatrixToy.cs` |
 | Shared matrix station (fly-through choice) | `Assets/_Scripts/Controller/Toys/ToyMatrixStation.cs` |
 | Cell Selector (world picker + reset) | `Assets/_Scripts/Controller/Toys/CellSelectorToy.cs` |
 | Scale model of a cell environment | `Assets/_Scripts/Controller/Toys/CellMiniatureBuilder.cs` |
@@ -57,8 +58,9 @@ detection. On top of that base the `Toy` class adds:
 | Shared runtime refs handed to each toy | `Assets/_Scripts/Controller/Toys/ToyContext.cs` (`ToyContext` + `ToyPlacement`) |
 | Procedural body/label/collider builder | `Assets/_Scripts/Controller/Toys/ToyFactory.cs` |
 | Mini vessel model (mesh-extract from prefab) | `Assets/_Scripts/Controller/Toys/VesselModelBuilder.cs` |
-| Vessel Changer set | `Assets/_Scripts/Controller/Toys/VesselChangerToySet.cs` |
+| Vessel Changer (matrix of ships) | `Assets/_Scripts/Controller/Toys/VesselChangerToy.cs` |
 | Domain Changer set | `Assets/_Scripts/Controller/Toys/DomainChangerToySet.cs` |
+| Painting gallery (matrix of paintings) | `Assets/_Scripts/Controller/Toys/PaintingGalleryToy.cs` |
 | Painting station (one per painting) | `Assets/_Scripts/Controller/Toys/PaintingToy.cs` |
 | Multi-stroke fly-by-numbers runner | `Assets/_Scripts/Controller/Toys/PaintingRunner.cs` |
 | Painting data (strokes + domains) | `Assets/_Scripts/ScriptableObjects/Toys/PaintingDefinitionSO.cs` |
@@ -119,9 +121,10 @@ reads `Cell.AvailableConfigs` — the Cell's own `CellConfigs` rotation. The Cel
 environment, so there is one source of truth for what a scene's cell can be and the toy cannot
 drift from it. Authoring the list is an override for scenes that want a curated subset.
 
-**Mini-cell look — a real scale model.** Three gyroscopic rings (the existing fly-through-ring
-shape language, hollow so you can see inside) + a nucleus dot, and inside them a genuine **scale
-model of the world that config creates**. `CellMiniatureBuilder` reads the generator's own output
+**A station IS its world — no cage, no orb.** Each slot is a genuine **scale model of the world
+that config creates**, standing on its own with only its label. (An earlier pass wrapped each one
+in gyroscopic membrane rings; they were removed — the model speaks for itself.)
+`CellMiniatureBuilder` reads the generator's own output
 — `SpawnableBase.GetTrailData()` plus `CellEnvironmentSpawnableBase.CachedLays` for the per-*prism*
 domain that `SpawnTrailData` flattens away — strides it down to a point budget (~1.2k), and emits
 one small box per sample into **one mesh with a submesh per domain**. So a mini-cell shows the real
@@ -148,24 +151,50 @@ reset rather than an environment swap. Prisms owned by a closed toy system (the 
 conveyor transports its own fixed stock, instantiated not pooled) are never touched either way,
 so a cell swap cannot break the conveyor's conservation.
 
-## The "swap set" pattern (vessel + domain)
+## The "one toy, then many" pattern (`MatrixToy`)
 
-Both the vessel and domain changers are **sets** of toys managed by a shared generic
-coordinator, `SwapToySetCoordinator<T>`. The set always shows *the options you are not
-currently on* (`universe \ {current}`), each toy visually *being* the option it will switch
-you to. Flying through a toy applies the change; the coordinator then **flips the used toy to
-the option you just left**, so the set continuously mirrors "everything except where you are
-now". Current state is polled each frame, so external changes (a panel, a menu reset) reconcile
-the same way. `SwapToy` is the per-option toy; it just reports activation and lets the
-coordinator own the option→visual mapping and the flip.
+Three toys share one shape: **one station until you fly it, then many.** A pass unfolds a
+MATRIX of choices out ahead; another pass folds it away. A toybox of a dozen permanently-visible
+stations is clutter — a single toy that opens into its options reads as one thing you can pick up
+and put down.
 
-### Vessel Changer (`VesselChangerToySet`)
-A **collection** of toys, each a **mini 3D model** of a ship you can switch into (every vessel
-in the collection except the one you're flying). The model is built by `VesselModelBuilder`,
-which reads mesh data straight off the ship **prefab asset** (never instantiates it, so no
-NetworkObject/VesselStatus/controllers ever run). Flying through one swaps you into that ship
-via `MenuServerPlayerVesselInitializer.RequestSwap` (the existing networked pipeline), and the
-toy flips to a mini model of the ship you just left.
+`MatrixToy` owns the whole of it: the toggle, the grid geometry, and the teardown. The matrix
+blooms `matrixDistanceFactor` × `stationSpacing` from the toy along the **outward radial** (away
+from the cell centre — the toy faces the centre, so outward is `-forward`), laid out as a
+roughly-square grid in the toy's own right × up plane. You fly AT the toy and keep going: the
+choices are ahead, never back through where you came from. Subclasses supply the item count, the
+spacing knobs, and `BuildStation(index, parent, position, radius)`; `OnMatrixOpened` /
+`OnMatrixClosed` hook whatever streaming the toy needs.
+
+Stations may be light (`ToyMatrixStation` — a trigger with a short cooldown, via
+`MatrixToy.CreateStation`) or a full `Toy` when the station needs its own bloom, exit-gated
+re-arm, and `Update` (the painting stations are full toys for exactly that reason).
+
+Anything a station starts that must **outlive the matrix** parents to `MatrixToy.ToyboxRoot`,
+not to the grid — that is how a painting run survives folding the gallery away.
+
+Users: **Cell Selector** (worlds), **Connect the Dots** (paintings), **Vessel Changer** (ships).
+
+## The "swap set" pattern (domain)
+
+The domain changer is a **set** of toys managed by the generic coordinator
+`SwapToySetCoordinator<T>` — its universe is small enough (two toys in a 3-domain session) that
+showing it laid out around you beats unfolding it. The set always shows *the options you are not
+currently on* (`universe \ {current}`), each toy visually *being* the option it will switch you
+to. Flying through a toy applies the change; the coordinator then **flips the used toy to the
+option you just left**, so the set continuously mirrors "everything except where you are now".
+Current state is polled each frame, so external changes (a panel, a menu reset) reconcile the
+same way. `SwapToy` is the per-option toy; it just reports activation and lets the coordinator
+own the option→visual mapping and the flip.
+
+### Vessel Changer (`VesselChangerToy`)
+**One toy that opens into the hangar.** Fly it and a matrix of **mini 3D ship models** blooms
+out ahead — every vessel in the collection except the one you're flying. The model is built by
+`VesselModelBuilder`, which reads mesh data straight off the ship **prefab asset** (never
+instantiates it, so no NetworkObject/VesselStatus/controllers ever run). Fly a ship and you swap
+into it via `MenuServerPlayerVesselInitializer.RequestSwap` (the existing networked pipeline);
+the matrix closes behind you, since it was "everything except what you fly" and what you fly just
+changed.
 
 **Mini-model rendering.** `VesselModelBuilder` extracts only the **hull**: it skips builtin-
 primitive meshes (the skimmer sphere, scaled 15–60× — it otherwise dominated `NormalizeToRadius`
@@ -179,11 +208,10 @@ material is a transparent, runtime-theme-driven shader that renders dim/invisibl
 different hull". Vessels whose body isn't statically extractable fall back to the labelled
 tinted sphere.
 
-**Recolour on domain change.** The mini ships are tinted to your domain, but `ConfigureVisual`
-only runs on create/flip. So the set watches the local player's domain each frame
-(`SwapToySetCoordinator.OnTick` → `VesselChangerToySet`) and, on a change, re-tints **every** mini
-ship + label in place (`ForEachSlot` → `RecolorSlot`, no rebuild → instant, pop-free) so they all
-follow the domain changer, not just the one slot that flips on the next swap.
+**Recolour on domain change.** The mini ships are tinted to your domain, but they are built once
+when the matrix opens. So `VesselChangerToy.Update` watches the local player's domain and, on a
+change, re-tints **every** open mini ship in place (no rebuild → instant, pop-free) so they all
+follow the domain changer.
 
 **Swap continuity.** A swap is seamless — the new vessel inherits the old one's:
 - **Domain / colour** — the swap re-syncs `Player.Domain` from the authoritative `NetDomain`
@@ -198,7 +226,7 @@ follow the domain changer, not just the one slot that flips on the next swap.
   avoiding the post-`ResetForPlay` dead stop.
 
 **Lost-control fix:** the swap pipeline drops the new vessel into autopilot with input paused
-(that's why the old toy left you unable to steer). `VesselChangerToySet.RestoreControlAfterSwap`
+(that's why the old toy left you unable to steer). `VesselChangerToy.RestoreControlAfterSwap`
 waits for `IsSwapping` to clear, then re-hands freestyle control — mirroring
 `MenuVesselSelectionPanelController.RestoreFreestyleAfterSwapAsync`.
 
@@ -208,8 +236,9 @@ So `ReInitializePair` re-raises `GameDataSO.OnPlayerPairInitialized` (as the ini
 does) and `MenuMiniGameHUD` re-shows the local HUD on that event while in freestyle (gated on
 freestyle + local player). Covers both the toy swap and the vessel-selection panel swap.
 
-Collection defaults to a curated set (Manta, Dolphin, Rhino, Squirrel, Serpent, Sparrow) so
-the ring isn't crowded with all 11; override per-asset via `vesselCollection`.
+Collection defaults to a curated set (Manta, Dolphin, Rhino, Squirrel, Serpent, Sparrow) rather
+than all 11; override per-asset via `vesselCollection`. Layout knobs: `stationSpacing`,
+`matrixDistanceFactor`.
 
 ### Domain Changer (`DomainChangerToySet`)
 Two toys (in a 3-domain session), each **tinted the domain it will switch you to**
@@ -218,7 +247,21 @@ colours you are *not*. Flying through one requests that domain via the server-au
 `Player.RequestSetDomain_ServerRpc` (**never** a client-local write — CLAUDE.md), and the toy
 flips to the colour you just left.
 
-### Painting / Connect the Dots (`PaintingToy` + `PaintingRunner`)
+### Painting / Connect the Dots (`PaintingGalleryToy` + `PaintingToy` + `PaintingRunner`)
+
+**One toy that opens into the whole gallery.** `PaintingGalleryToy` is a `MatrixToy`: fly it and
+the collection unfolds out ahead, one `PaintingToy` station per painting, each a miniature of its
+own canvas with its name and live progress. Fly it again and the gallery folds away. (Sixteen
+permanently-visible stations fanned around the membrane was clutter — and the gallery's stroke
+generation used to be paid at menu **boot**, which is exactly the cost this branch moves off the
+boot path. The first open now pays it instead.)
+
+**A run outlives the matrix.** `PaintingRunner` is parented to `MatrixToy.ToyboxRoot`, not to the
+grid, so folding the gallery away mid-painting leaves the canvas untouched; `PaintingToy` keeps a
+static id→runner map and **re-adopts** a live run when the matrix re-opens, so re-flying a
+painting resumes it instead of starting a second run on the same canvas. Monument anchors come
+from the same proximity-first sphere packing as before, computed once on the first open.
+
 
 The painting toy (player-facing name **"Connect the Dots"**, formerly "Fly by Numbers") is a
 **gallery**: `PaintingToyDefinitionSO` spawns one `PaintingToy` station per `PaintingDefinitionSO`,
@@ -668,6 +711,16 @@ the authoring environment) — an in-editor pass is the last step before/after m
 recipe/pacing tuning + audio, unlock persistence, tests) is tracked in **`BACKLOG.md`**, grouped so
 each area can be its own branch.
 
+### Files touched — one-toy-opens-into-many pass (for review)
+
+| Area | Files |
+|---|---|
+| Shared base | `Controller/Toys/MatrixToy.cs` (new) |
+| Cell Selector (orbs removed, moved onto the base) | `Controller/Toys/CellSelectorToy.cs` |
+| Vessel Changer (set → matrix) | `Controller/Toys/VesselChangerToy.cs` (new), `ScriptableObjects/Toys/VesselChangerToyDefinitionSO.cs`, `Controller/Toys/VesselChangerToySet.cs` (deleted), `Controller/Toys/SwapToySetCoordinator.cs` (docs) |
+| Painting gallery (16 stations → matrix) | `Controller/Toys/PaintingGalleryToy.cs` (new), `ScriptableObjects/Toys/PaintingToyDefinitionSO.cs`, `Controller/Toys/PaintingToy.cs` (run survives the fold) |
+| Assets | `_SO_Assets/Toys/Toy_VesselChanger.asset`, `_SO_Assets/Toys/Toy_Painting.asset` |
+
 ### Files touched — Cell Selector pass (for review)
 
 | Area | Files |
@@ -683,8 +736,8 @@ each area can be its own branch.
 | Area | Files |
 |---|---|
 | Re-arm / escape | `Controller/Toys/Toy.cs`, `Controller/Toys/SwapToySetCoordinator.cs` |
-| Mini-model rendering | `Controller/Toys/VesselModelBuilder.cs`, `Controller/Toys/VesselChangerToySet.cs` |
-| Recolour on domain change | `Controller/Toys/SwapToySetCoordinator.cs` (`OnTick`/`ForEachSlot`), `Controller/Toys/VesselChangerToySet.cs` |
+| Mini-model rendering | `Controller/Toys/VesselModelBuilder.cs`, `Controller/Toys/VesselChangerToy.cs` |
+| Recolour on domain change | `Controller/Toys/VesselChangerToy.cs` (`Update`) |
 | Domain preserved on swap | `Controller/Multiplayer/ClientPlayerVesselInitializer.cs` (`ReInitializePair`) |
 | Speed inherited on swap | `Controller/Multiplayer/MenuServerPlayerVesselInitializer.cs`, `Controller/Vessel/IVessel.cs`, `Controller/Vessel/VesselController.cs`, `Controller/Vessel/VesselTransformer.cs` |
 | HUD re-show after swap | `Controller/Multiplayer/ClientPlayerVesselInitializer.cs`, `UI/MenuMiniGameHUD.cs` |

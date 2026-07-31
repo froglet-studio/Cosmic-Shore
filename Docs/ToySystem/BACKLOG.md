@@ -368,3 +368,42 @@ Shipped on `claude/freestyle-cell-selector-toy-*`. Design + invariant analysis:
 - **Nested generators preview their own placement points**, not their descendants' prisms. Every
   freestyle environment is a leaf node, so this is graceful degradation rather than a live gap —
   but a future nested environment would show a sparse model.
+
+## One-toy-opens-into-many follow-ups
+
+Shipped on `claude/freestyle-cell-selector-toy-*`. Three toys now share `MatrixToy`: fly one
+station, its options unfold out ahead; fly it again, they fold away. Architecture:
+`ARCHITECTURE.md § The "one toy, then many" pattern`.
+
+**Verification (in-editor, Menu_Main freestyle — none of it play-verified):**
+
+1. **All three unfold and fold.** Cell Selector, Connect the Dots, Vessel Changer: one pass opens
+   the matrix at `matrixDistanceFactor` × `stationSpacing` out along the outward radial, a second
+   pass folds it away (shrinking, not popping). Confirm the matrix is reachable — you fly at the
+   toy and keep going — and does not land inside the membrane or on top of another toy's matrix.
+2. **Cell Selector has no orbs.** Each slot is the bare scale model + its label. Nothing ringing it.
+3. **Vessel Changer.** The matrix shows every ship except the one you fly; flying one swaps you
+   and the matrix closes behind you. Control still returns after the swap
+   (`RestoreControlAfterSwap`), and the mini ships re-tint when you use the domain changer while
+   the matrix is open.
+4. **Painting gallery — the risky one.** Start a painting, fly the gallery toy to FOLD the matrix
+   mid-run, then fly it again to re-open. The run must still be going, and the station must
+   re-adopt it (progress on the label, no second runner spawned on the same canvas). The runner is
+   parented to the toybox root and `PaintingToy.ActiveRuns` is what makes this work.
+5. **First gallery open cost.** Opening the gallery generates strokes for all 16 paintings (for
+   the monument packing). This used to be paid at menu **boot** — it is now on the first open, so
+   expect a hitch there and confirm boot is clean. If the hitch is bad, stream the packing/station
+   build over frames the way the Cell Selector streams its models.
+6. **Domain Changer is unchanged** — still a `SwapToySetCoordinator` flip-set (its universe is two
+   toys). Confirm it still flips to the domain you just left.
+
+**Known limitations / follow-up work:**
+
+- **Matrix collision between toys.** Each toy's matrix blooms outward from its own slot; with six
+  toys ringed around the membrane and matrices three spacings out, two adjacent open matrices
+  could overlap. Only one is normally open at a time, but nothing enforces that — a "close the
+  others when one opens" coordinator on `ToyboxController` would.
+- **`MiniaturePaintingBuilder` runs 16 times in one frame** on the first gallery open (see #5).
+- **The vessel matrix rebuilds its models on every open.** `VesselModelBuilder` extraction is
+  cheap next to the painting/cell cases, but caching them like `CellSelectorToy._miniatures`
+  would make repeat opens free.
