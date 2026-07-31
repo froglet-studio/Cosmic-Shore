@@ -12,11 +12,13 @@ namespace CosmicShore.Gameplay
     /// behaviour the prompter asked for - <b>the toy you use flips to the option you just left</b>,
     /// so the set continuously mirrors "everything except where you are now".
     ///
-    /// Shared by <see cref="DomainChangerToySet"/> (Jade/Ruby/Gold) and <see cref="VesselChangerToySet"/>
-    /// (a collection of ships). Current state is polled each frame, so external changes (a panel, a
-    /// menu reset) reconcile the same way a toy activation does.
+    /// Used by <see cref="DomainChangerToySet"/> (Jade/Ruby/Gold), whose universe is small enough
+    /// that showing it laid out around you beats unfolding it. Toys with a bigger universe (the
+    /// vessel changer, the painting gallery, the cell selector) are <see cref="MatrixToy"/>s
+    /// instead: one station that opens into its options. Current state is polled each frame, so
+    /// external changes (a panel, a menu reset) reconcile the same way a toy activation does.
     /// </summary>
-    /// <typeparam name="T">The option type - <c>Domains</c> or <c>VesselClassType</c>.</typeparam>
+    /// <typeparam name="T">The option type - <c>Domains</c>.</typeparam>
     public abstract class SwapToySetCoordinator<T> : MonoBehaviour
     {
         protected ToyContext Context { get; private set; }
