@@ -155,7 +155,7 @@ spherical skimmer is byte-for-byte unchanged.
 |---|---|---|
 | `swingVelocityScale` | the damage effect SO, next to `inertia` | 1 (the physical model); 0 restores pre-model behaviour |
 | `maxImpactSpeed` | the damage effect SO | 0 = unclamped |
-| `proportionalDebris` / `restitution` / `debrisSpeedLimit` | the damage effect SO (skimmer AND hull) | on / 1 / 600 (see below) |
+| `proportionalDebris` / `restitution` / `debrisSpeedLimit` | the damage effect SO (skimmer AND hull) | on / 1/3 / 200 (see the retune group below) |
 | `restDeadbandSpeed` | `RhinoSwordSwingKinematicsConfig.asset` | 1.5 — below this a parked sword adds exactly nothing |
 | `smoothingSeconds`, `maxSampleDeltaSeconds`, `maxAngularSpeedDegrees`, `includeVesselRotation`, `includeElongation` | `RhinoSwordSwingKinematicsConfig.asset` | 0.03 / 0.1 / 3600 / on / **off** |
 
@@ -244,19 +244,45 @@ why the mid-blade can be the *slowest* point at full growth.
 
 End-to-end debris speed, identical now for every prism size:
 
-| contact speed | before (any volume) | after |
-|---|---|---|
-| parked sword @ cruise (35) | 100 (ceiling) | 35 — **same as the hull** |
-| hilt, mid-swipe (200) | 100 (ceiling) | 200 |
-| mid-blade (340) | 100 (ceiling) | 340 |
-| **tip, mid-swipe (534)** | 100 (ceiling) | **534** |
-| tip, full shield (1219) | 100 (ceiling) | 600 (ceiling) |
-| hull ram @ 35 / 60 / 90 | 30 / 40 / 60 | 35 / 60 / 90 |
+| contact speed | legacy (any volume) | proportional | **shipped (x1/3)** |
+|---|---|---|---|
+| parked sword @ cruise (35) | 100 (ceiling) | 35 — same as the hull | **11.7** |
+| hilt, mid-swipe (200) | 100 (ceiling) | 200 | **66.7** |
+| mid-blade (340) | 100 (ceiling) | 340 | **113** |
+| **tip, mid-swipe (534)** | 100 (ceiling) | 534 | **178** |
+| tip, full shield (1219) | 100 (ceiling) | 600 (ceiling) | **200** (ceiling) |
+| hull ram @ 35 / 60 / 90 | 30 / 40 / 60 | 35 / 60 / 90 | **11.7 / 20 / 30** |
 
-`debrisSpeedLimit` is **600** because that is roughly where the shatter animation stops being
-perceivable: `_ExplosionAmount` reaches its "fully exploded" value (~20.7) at `20.7 / speed`
-seconds, so 600 u/s completes it in ~2 frames at 60 fps and anything faster finishes inside one.
-Raise it if the shatter timing is retuned; only extreme full-shield tip strikes clip.
+### The retune is one tuning group
+
+Debris speed ships at **1/3** of the physical read, because full speed looks too hot. `restitution`
+alone will not do it — the explosion's `minSpeed` **floor** would swallow the whole low end (at
+1/3, every contact under 90 u/s would collapse back onto the floor, exactly the degenerate state
+this work removed). Four values move together, all by the same factor:
+
+| value | where | physical | shipped |
+|---|---|---|---|
+| `restitution` | the three damage effect SOs | 1 | **1/3** |
+| `debrisSpeedLimit` | the three damage effect SOs | 600 | **200** |
+| `minSpeed` | `PrismExplosion.prefab` | 30 | **10** |
+| `maxSpeed` | `PrismExplosion.prefab` | 100 | **33.33** |
+
+`minSpeed`/`maxSpeed` also carry the **legacy** paths (projectiles, AOE, fauna, danger prisms),
+which are clamp-bound rather than proportional — scaling the band is what tones *those* down by
+the same 1/3, so the retune really is uniform. `inertia` is NOT the lever: the proportional paths
+ignore it entirely, and the legacy paths are saturated against the clamp, so lowering it changes
+nothing until it drops below saturation.
+
+**`restitution` also drives the shatter rate** (`_ExplosionAmount = speed * elapsed`, on the
+accurate path both channels ride one number). So the retune slows the shatter by 3x as well, and
+the two stay locked: a gentle graze now crumbles over ~1.8s while a tip strike bursts in ~7
+frames. That coupling is deliberate — shatter violence tracks impact force for free — but it does
+mean a velocity retune is also a shatter-timing retune.
+
+The ceiling sits at `600 x restitution` = **200**: at the physical read 600 was where the shatter
+stopped being perceivable (`_ExplosionAmount` reaches its "fully exploded" ~20.7 at `20.7 / speed`
+seconds, so 600 u/s finishes inside ~2 frames), and scaling it with `restitution` keeps that
+relationship. Only extreme full-shield tip strikes clip.
 
 ### Verification
 

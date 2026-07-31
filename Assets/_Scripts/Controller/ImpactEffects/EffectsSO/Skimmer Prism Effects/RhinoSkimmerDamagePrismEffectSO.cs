@@ -27,11 +27,11 @@ namespace CosmicShore.Gameplay
         [Tooltip("ON: debris leaves at the actual impact speed, identically for every prism size - a tip strike visibly throws mass harder than a hilt graze. OFF (legacy): debris speed is impact * inertia / prismVolume, a gain spanning ~100x across prism sizes that the explosion clamp then flattens.")]
         [SerializeField] private bool proportionalDebris;
 
-        [Tooltip("Debris speed as a multiple of impact speed. 1 = the prism leaves at the speed of the thing that hit it.")]
-        [SerializeField] private float restitution = 1f;
+        [Tooltip("Debris speed as a multiple of impact speed. 1 = the physical read (the prism leaves at the speed of the thing that hit it); shipped at 1/3 because full speed reads too hot. Also drives the shatter RATE, so gentle hits crumble slowly and hard hits burst instantly - scale it and both scale together.")]
+        [SerializeField] private float restitution = 1f / 3f;
 
         [Tooltip("Ceiling on debris speed, in real speed units, replacing the explosion prefab's clamp.")]
-        [SerializeField] private float debrisSpeedLimit = 600f;
+        [SerializeField] private float debrisSpeedLimit = 200f;
 
         [Header("Bounce (when super-shield)")]
         [Tooltip("Multiplier applied to current speed to compute bounce target speed.")]

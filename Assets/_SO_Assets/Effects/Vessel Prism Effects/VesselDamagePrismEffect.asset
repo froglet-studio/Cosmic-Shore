@@ -18,5 +18,5 @@ MonoBehaviour:
   overrideSpeed: 0
   useOverrideSpeed: 0
   proportionalDebris: 1
-  restitution: 1
-  debrisSpeedLimit: 600
+  restitution: 0.3333333
+  debrisSpeedLimit: 200

@@ -17,11 +17,11 @@ namespace CosmicShore.Utility
     public class PrismExplosion : MonoBehaviour
     {
         [SerializeField]
-        private float minSpeed = 30f;
+        private float minSpeed = 10f;
 
-        [Tooltip("Default ceiling on debris speed. This is a GUARD against the legacy impactVector/volume gain (which spans ~100x across prism sizes), not a physical bound - so it sits far below any real impact speed and flattens the magnitude of everything that hits it. An impact that hands over a true velocity passes its own limit through PrismEventData.DebrisSpeedLimit instead.")]
+        [Tooltip("Default ceiling on debris speed. This is a GUARD against the legacy impactVector/volume gain (which spans ~100x across prism sizes), not a physical bound - so it sits far below any real impact speed and flattens the magnitude of everything that hits it. An impact that hands over a true velocity passes its own limit through PrismEventData.DebrisSpeedLimit instead. This band and the proportional paths' restitution/debrisSpeedLimit are one tuning group - scale them together or the retune clips instead of toning down.")]
         [SerializeField]
-        private float maxSpeed = 250f;
+        private float maxSpeed = 33.33f;
 
         [SerializeField]
         private MeshRenderer _renderer;

@@ -18,11 +18,11 @@ namespace CosmicShore.Gameplay
         [Tooltip("ON: debris leaves at the vessel's actual ram speed, identically for every prism size - so ramming faster visibly throws mass harder, and a hull hit matches a skimmer hit made at the same velocity. OFF (legacy): debris speed is ramSpeed * Inertia / prismVolume; with every vessel's Inertia at 1 that lands below the explosion clamp's floor for any realistic prism, so EVERY ram produced exactly the same 30 u/s and ram speed did nothing.")]
         [SerializeField] private bool proportionalDebris = true;
 
-        [Tooltip("Debris speed as a multiple of ram speed. 1 = the prism leaves at the speed of the hull that hit it.")]
-        [SerializeField] private float restitution = 1f;
+        [Tooltip("Debris speed as a multiple of ram speed. 1 = the physical read (the prism leaves at the speed of the hull that hit it); shipped at 1/3 because full speed reads too hot. Matches the skimmer path so a hull hit and a sword hit at the same velocity stay identical.")]
+        [SerializeField] private float restitution = 1f / 3f;
 
         [Tooltip("Ceiling on debris speed, in real speed units, replacing the explosion prefab's clamp. Matches the sword's so the two paths saturate together.")]
-        [SerializeField] private float debrisSpeedLimit = 600f;
+        [SerializeField] private float debrisSpeedLimit = 200f;
 
         public static event Action<string> OnVesselDamagedPrism;
 
