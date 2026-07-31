@@ -65,6 +65,28 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public IRhinoSwordState SwordState { get; set; }
 
+        SkimmerSwingKinematics _swingKinematics;
+        bool _swingLookedUp;
+
+        /// <summary>
+        /// The swing velocity model for skimmers that move relative to their vessel (the
+        /// Rhino's sword), or null for a skimmer rigidly mounted to the hull. Impact effects
+        /// read it to feed a prism the velocity of the PART of the skimmer that touched it
+        /// rather than the vessel's. Looked up once - impacts are a dense-trail hot path.
+        /// </summary>
+        public SkimmerSwingKinematics SwingKinematics
+        {
+            get
+            {
+                if (!_swingLookedUp)
+                {
+                    _swingLookedUp = true;
+                    TryGetComponent(out _swingKinematics);
+                }
+                return _swingKinematics;
+            }
+        }
+
         void Awake()
         {
             _authoredShape = transform.localScale;

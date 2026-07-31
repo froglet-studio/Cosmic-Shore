@@ -21,3 +21,8 @@ MonoBehaviour:
   accelScale: 20
   usePrismNormalReflection: 0
   spinStrength01: 1
+  swingVelocityScale: 1
+  maxImpactSpeed: 0
+  proportionalDebris: 1
+  restitution: 0.3333333
+  debrisSpeedLimit: 200

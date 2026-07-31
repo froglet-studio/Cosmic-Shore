@@ -11,7 +11,7 @@ contact and always destroys super-shielded prisms. A first iteration gated damag
 
 | Target | Result |
 |---|---|
-| Normal prism | Explodes (standard `PrismEffectHelper.Damage`, as before) |
+| Normal prism | Explodes, debris thrown at the **contact velocity** (below) |
 | Shielded prism | Shield pops, prism survives (standard `Prism.Damage` semantics) |
 | **Super-shielded prism** | **POPPED**: `DeactivateShields()` (stellation shatter + SFX) then `Damage(devastate: true)` (animated explode-out, unrestorable) — the sanctioned mass-conserving teardown, same sequence as `AstroLeagueArena.ClearEdgeLining`. `Prism.Damage` alone hard-ignores super-shielded prisms, which is why the shields must drop first. |
 
@@ -21,6 +21,32 @@ Consequence to be aware of: super-shielded prisms are used as track/arena lining
 Astro League edge). A Rhino can now carve those. That is the intended universality — one rule
 set — but if a mode must protect its lining, that's a follow-up (per-mode effect container or
 a prism-level carve-out decided then, not a silent re-gate of the sword).
+
+### Contact velocity (composes with the swing model)
+
+Both destruction paths — the normal explode and the super-shield pop — throw debris at the
+velocity of the **part of the blade that actually touched the prism**, via
+`PrismEffectHelper.ContactVelocity` → `SkimmerSwingKinematics` (`RHINO_SHIELD_SWIPE.md`
+§ "Swing velocity model"). A tip strike mid-swipe scatters mass far harder than a hilt graze;
+a skimmer with no swing model collapses to `Course * Speed`. `proportionalDebris` (on) hands
+that velocity over as final through `DamageProportional`, at `restitution` (1/3) and capped by
+`debrisSpeedLimit` (200). The super-shield pop reproduces those same two lines directly
+(`Damage(v * restitution, …, devastate: true, debrisSpeedLimit:)`) because the helper cannot
+devastate — keep the two branches in sync if the helper ever gains a devastate overload.
+
+**Elongation interaction:** the energy meter and the crystal burst change the blade's length
+every frame, and `SkimmerSwingKinematics` can optionally count that elongation as tip velocity
+(`includeElongation`, **off** in `RhinoSwordSwingKinematicsConfig.asset`). Leave it off: the
+burst's grow speed (600 u/s) would read as an enormous phantom tip velocity for the ~0.2 s it
+is expanding, and a parked-but-charging sword must impart exactly what the hull does.
+
+**Length is the lever arm — the intended emergent loop.** Even with elongation off, the blade's
+live length still bounds `ClosestBladePoint`, so it *is* the lever arm `r` in `ω × r`. Banking
+energy lengthens the blade, which makes every subsequent tip strike genuinely faster, which kills
+more mass, which banks more energy. That positive loop is the reward curve, not a defect — it is
+bounded at both ends (length clamps to `MaxScale`, debris clamps to `debrisSpeedLimit` 200, and a
+crystal drains the meter to zero), and it falls out of the two systems composing rather than
+being scripted anywhere.
 
 ## Energy = the Shield resource (index 1)
 
@@ -132,7 +158,11 @@ feed, no overlap re-apply — with no damage gate, `OnTriggerEnter` always bites
 ## Tuning knobs
 
 On `RhinoSkimmerDamagePrismEffect.asset`: `inertia` 70 · `destroySuperShielded` 1 ·
-`energyPerPrism` 0.04 · `energyPerSuperShieldedPrism` 0.12 · legacy bounce params.
+`energyPerPrism` 0.04 · `energyPerSuperShieldedPrism` 0.12 · legacy bounce params · plus the
+swing-model group `swingVelocityScale` 1 / `maxImpactSpeed` 0 / `proportionalDebris` 1 /
+`restitution` 0.333 / `debrisSpeedLimit` 200 (the last two move **together** with the other
+damage SOs and `PrismExplosion.prefab`'s speed band — see the swing-kinematics row in
+`CLAUDE.md`; `inertia` is not the lever on the proportional path).
 
 On `ShieldSkimmerScaleConfig.asset`: `baseScale` 30 (fallback; live base is the Space elemental
 scale) · `maxScale` 120 · `prismGrowSpeed` 30 · `shrinkSpeed` 10 ·

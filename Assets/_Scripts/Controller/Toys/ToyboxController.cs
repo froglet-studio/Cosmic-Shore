@@ -214,6 +214,11 @@ namespace CosmicShore.Gameplay
             box.AddToy(MakeDefault<ConveyorToyDefinitionSO>(
                 "conveyor", "Wanderway", "Fly through to summon an endless trail of little worlds.",
                 new Color(0.35f, 1.00f, 0.55f)));
+            // Needs no content wiring: with no cells authored it reads the containing Cell's
+            // own CellConfigs rotation.
+            box.AddToy(MakeDefault<CellSelectorToyDefinitionSO>(
+                "cell_selector", "Cell Selector", "Fly through to pick the world you fly in - or reset it.",
+                new Color(0.55f, 0.75f, 1.00f)));
             return box;
         }
 

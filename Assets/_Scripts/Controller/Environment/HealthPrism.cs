@@ -70,12 +70,13 @@ namespace CosmicShore.Gameplay
             if (spindle) spindle.CheckForLife();
         }
 
-        protected override void Explode(Vector3 impactVector, Domains domain, string playerName, bool devastate = false)
+        protected override void Explode(Vector3 impactVector, Domains domain, string playerName, bool devastate = false,
+                                        float debrisSpeedLimit = 0f)
         {
             spindle ??= transform.parent.GetComponent<Spindle>();
             if (spindle) spindle.RemoveHealthBlock(this);
 
-            base.Explode(impactVector, domain, playerName, devastate);
+            base.Explode(impactVector, domain, playerName, devastate, debrisSpeedLimit);
 
             if (LifeForm)
                 LifeForm.RemoveHealthBlock(this, playerName);
