@@ -42,7 +42,17 @@ namespace CosmicShore.Utility
         internal Vector3 Velocity { get; private set; }
         internal float Speed { get; private set; }
         internal float Elapsed { get; set; }
-        internal float MaxDuration => 5f;
+        /// <summary>The unpressured animation length - what a death looks like when the
+        /// scene is not saturated with them.</summary>
+        internal const float DefaultDuration = 5f;
+
+        /// <summary>
+        /// This instance's animation length. Assigned by
+        /// <see cref="PrismEffectsManager.RegisterExplosion"/> on every spawn (so a
+        /// pooled instance can never inherit a previous life's value): it shortens
+        /// under load so effects COMPLETE instead of being recycled mid-animation.
+        /// </summary>
+        internal float MaxDuration { get; set; } = DefaultDuration;
         internal bool IsActive { get; private set; }
         internal MeshRenderer Renderer => _renderer;
 

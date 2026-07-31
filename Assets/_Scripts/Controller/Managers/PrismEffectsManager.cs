@@ -53,6 +53,12 @@ namespace CosmicShore.Gameplay
         // See PRISM_PERFORMANCE_AUDIT.md rec 5.
         private const int MAX_ACTIVE_EFFECTS = 256;
 
+        // Shortest an explosion is allowed to be squeezed to under full pressure. Still
+        // long enough to read as a death (~13 frames at 60fps) while raising the
+        // sustainable rate from ~51/s at the 5s default to ~1170/s here - the headroom a
+        // dense blast needs for every prism to animate out rather than pop.
+        private const float MIN_PRESSURED_DURATION = 0.22f;
+
         // Explosion tracking
         private readonly List<PrismExplosion> activeExplosions = new(INITIAL_CAPACITY);
         private readonly List<PrismExplosion> tempExplosionList = new(INITIAL_CAPACITY);
@@ -100,8 +106,26 @@ namespace CosmicShore.Gameplay
         public void RegisterExplosion(PrismExplosion explosion)
         {
             if (explosion == null || activeExplosions.Contains(explosion)) return;
-            // Bound concurrent active VFX - recycle the oldest (front of the list,
-            // longest-running) to make room so the per-frame apply stays O(cap).
+
+            // What the ceiling really bounds is the PRODUCT of concurrency and duration.
+            // At the unpressured 5s length a 256-effect ceiling sustains only ~51 deaths
+            // per SECOND; a big blast produces that many per frame, so every explosion
+            // used to be recycled a few frames in - a flicker, then nothing, which is
+            // the "blow up many and they just disappear" report. Shortening new effects
+            // as the buffer fills lets them run to completion instead. Unpressured load
+            // is untouched (pressure 0 -> DefaultDuration).
+            //
+            // Note what a shorter duration actually looks like: expansion and debris
+            // drift are speed*elapsed / velocity*elapsed, so a pressured effect is a
+            // SMALLER, quicker puff rather than the same bloom fast-forwarded. That is
+            // deliberate - scaling speed to compensate would fling shrapnel at up to 22x
+            // - and hundreds of small pops read better in a frenzy than hundreds of
+            // overlapping 5s blooms. Tune via MIN_PRESSURED_DURATION.
+            explosion.MaxDuration = PressuredDuration(activeExplosions.Count);
+
+            // Backstop only - with the duration scaling above this should now be rare.
+            // Recycle the oldest (front of the list, longest-running, hence nearest done)
+            // to make room so the per-frame apply stays O(cap).
             while (activeExplosions.Count >= MAX_ACTIVE_EFFECTS)
             {
                 var oldest = activeExplosions[0];
@@ -110,6 +134,21 @@ namespace CosmicShore.Gameplay
             }
             activeExplosions.Add(explosion);
             EnsureExplosionCapacity();
+        }
+
+        /// <summary>
+        /// Animation length for an effect registering while <paramref name="activeCount"/>
+        /// are already running. Full length until the buffer is half full, then eased down
+        /// to <see cref="MIN_PRESSURED_DURATION"/> as it saturates - so throughput rises
+        /// with load exactly when it has to, and deaths animate out instead of popping.
+        /// </summary>
+        private static float PressuredDuration(int activeCount)
+        {
+            const float pressureFloor = MAX_ACTIVE_EFFECTS * 0.5f;
+            if (activeCount <= pressureFloor) return PrismExplosion.DefaultDuration;
+
+            float pressure = Mathf.InverseLerp(pressureFloor, MAX_ACTIVE_EFFECTS, activeCount);
+            return Mathf.Lerp(PrismExplosion.DefaultDuration, MIN_PRESSURED_DURATION, pressure);
         }
 
         public void UnregisterExplosion(PrismExplosion explosion)
