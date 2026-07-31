@@ -19,6 +19,7 @@ namespace CosmicShore.Utility
         [SerializeField]
         private float minSpeed = 30f;
 
+        [Tooltip("Default ceiling on debris speed. This is a GUARD against the legacy impactVector/volume gain (which spans ~100x across prism sizes), not a physical bound - so it sits far below any real impact speed and flattens the magnitude of everything that hits it. An impact that hands over a true velocity passes its own limit through PrismEventData.DebrisSpeedLimit instead.")]
         [SerializeField]
         private float maxSpeed = 250f;
 
@@ -164,7 +165,13 @@ namespace CosmicShore.Utility
         /// Fire the explosion animation. Sets up state and registers with the
         /// centralized PrismEffectsManager for batched Burst-compiled updates.
         /// </summary>
-        public void TriggerExplosion(Vector3 velocity)
+        /// <param name="speedLimitOverride">
+        /// Per-impact ceiling replacing <see cref="maxSpeed"/>; 0 keeps the authored value.
+        /// Supplied by impacts that hand over a TRUE velocity rather than the legacy
+        /// inertia/volume product, so their accurate magnitude is not clipped by a guard
+        /// sized for a different quantity.
+        /// </param>
+        public void TriggerExplosion(Vector3 velocity, float speedLimitOverride = 0f)
         {
             if (_renderer == null || _mpb == null)
                 return;
@@ -176,8 +183,20 @@ namespace CosmicShore.Utility
             if (IsActive)
                 PrismEffectsManager.Instance?.UnregisterExplosion(this);
 
+            bool hasOverride = speedLimitOverride > 0f;
+            float ceiling = hasOverride ? speedLimitOverride : maxSpeed;
+
             // Clamp velocity and calculate speed
-            velocity = GeometryUtils.ClampMagnitude(velocity, minSpeed, maxSpeed, out float speed);
+            velocity = GeometryUtils.ClampMagnitude(velocity, minSpeed, ceiling, out float speed);
+
+            // ClampMagnitude reports the PRE-clamp magnitude, so Speed - which drives the
+            // shatter rate (_ExplosionAmount = speed * elapsed) - has always run at the raw
+            // value while the translation was capped. On the legacy gain that quirk is
+            // load-bearing tuning, so leave it alone; but a true-velocity impact must keep
+            // both channels on one number, or raising its ceiling would finish the shatter
+            // inside a single frame while the debris crawled.
+            if (hasOverride)
+                speed = velocity.magnitude;
 
             // Store state for manager to read
             InitialPosition = transform.position;

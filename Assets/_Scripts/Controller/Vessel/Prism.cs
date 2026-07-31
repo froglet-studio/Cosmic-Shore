@@ -952,7 +952,8 @@ namespace CosmicShore.Gameplay
         }
 
         // Explosion Methods
-        protected virtual void Explode(Vector3 impactVector, Domains domain, string playerName, bool devastate = false)
+        protected virtual void Explode(Vector3 impactVector, Domains domain, string playerName, bool devastate = false,
+                                       float debrisSpeedLimit = 0f)
         {
             SetupDestruction(domain, playerName, devastate);
             PlayDestructionSFX();
@@ -964,6 +965,7 @@ namespace CosmicShore.Gameplay
                 Rotation = transform.rotation,
                 Scale = _lastDestructionScale,
                 Velocity = impactVector / prismProperties.volume,
+                DebrisSpeedLimit = debrisSpeedLimit,
                 PrismType = PrismType.Explosion
             });
         }
@@ -996,7 +998,14 @@ namespace CosmicShore.Gameplay
         // accumulating "garbage" the user observes (fauna swarm-eat trail blocks → 64-128
         // concurrent implosions). Once destroyed, hits become no-ops until Restore /
         // ResetState clears the flag.
-        public void Damage(Vector3 impactVector, Domains domain, string playerName, bool devastate = false, bool byCreature = false)
+        /// <param name="debrisSpeedLimit">
+        /// Optional per-impact ceiling on the resulting debris speed, overriding the explosion
+        /// prefab's own. 0 keeps the prefab value. Pass one only alongside a TRUE-velocity
+        /// impact vector (see <see cref="PrismEffectHelper.DamageProportional"/>) - the prefab
+        /// ceiling is sized for the legacy inertia/volume gain, not for real speeds.
+        /// </param>
+        public void Damage(Vector3 impactVector, Domains domain, string playerName, bool devastate = false, bool byCreature = false,
+                           float debrisSpeedLimit = 0f)
         {
             if (destroyed) return;
             // Super-shielded prisms are fully invulnerable. No damage source
@@ -1009,7 +1018,7 @@ namespace CosmicShore.Gameplay
             else
             {
                 _destroyedByCreature = byCreature;
-                Explode(impactVector, domain, playerName, devastate);
+                Explode(impactVector, domain, playerName, devastate, debrisSpeedLimit);
             }
         }
 

@@ -20,3 +20,6 @@ MonoBehaviour:
   spinStrength01: 1
   swingVelocityScale: 1
   maxImpactSpeed: 0
+  proportionalDebris: 1
+  restitution: 1
+  debrisSpeedLimit: 600

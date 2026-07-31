@@ -51,6 +51,7 @@ do not copy it (follow-up below).
 | Shared tuning (single source, both directions) | `Data Containers/RhinoShieldSwipeConfigSO.cs` → `_SO_Assets/VesselActions/Rhino/RhinoShieldSwipeConfig.asset` |
 | Swing velocity model (tip-vs-hilt impact speed) | `_Scripts/Controller/Vessel/SkimmerSwingKinematics.cs` + `SkimmerSwingKinematicsConfigSO.cs` → `_SO_Assets/VesselActions/Rhino/RhinoSwordSwingKinematicsConfig.asset`; component added on `ForceFieldSkimmer Variant.prefab` |
 | Impact composition (vessel velocity + contact-point swing) | `PrismEffectHelper.ContactVelocity` → `SkimmerDamagePrismEffectSO` / `RhinoSkimmerDamagePrismEffectSO` |
+| Accurate debris magnitude (volume-cancelling + per-impact ceiling) | `PrismEffectHelper.DamageProportional` → `Prism.Damage`/`Explode` → `PrismEventData.DebrisSpeedLimit` → `PrismFactory` → `PrismExplosion.TriggerExplosion` |
 | Model tests | `_Scripts/Tests/EditMode/SkimmerSwingKinematicsTests.cs` |
 | Per-direction event bindings | `Data Containers/RhinoShieldSwipeActionSO.cs` → `RhinoShieldSwipeRight/LeftAction.asset` (direction only) |
 | Prefab wiring | `Rhino.prefab`: `ShieldSwipeActionRegistry` GO under ShipActions, registered in `ActionExecutorRegistry._executors`; `_gamepadActionOverrides` events 1/2; skimmer transform rest pose |
@@ -154,7 +155,47 @@ spherical skimmer is byte-for-byte unchanged.
 |---|---|---|
 | `swingVelocityScale` | the damage effect SO, next to `inertia` | 1 (the physical model); 0 restores pre-model behaviour |
 | `maxImpactSpeed` | the damage effect SO | 0 = unclamped |
+| `proportionalDebris` / `restitution` / `debrisSpeedLimit` | the damage effect SO | on / 1 / 600 (see below) |
 | `smoothingSeconds`, `maxSampleDeltaSeconds`, `maxAngularSpeedDegrees`, `includeVesselRotation`, `includeElongation` | `RhinoSwordSwingKinematicsConfig.asset` | 0.03 / 0.1 / 3600 / on / on |
+
+### Making the magnitude survive to the screen
+
+Computing an accurate impact velocity is only half the job — the debris response has to
+carry it. The legacy path could not:
+
+```
+Prism.Explode:  debrisVelocity = impactVector / prismProperties.volume
+                              = contactSpeed * inertia / volume
+```
+
+That gain (`inertia / volume`) spans **~100×** between a Rhino trail prism (volume ≈ 0.75–2.25)
+and a fat environment prism (≈125). `PrismExplosion`'s `[30, 100]` clamp exists to contain it —
+and sits so far below real impact speeds that *every* skim saturated at the ceiling. The
+magnitude channel was carrying no information at all, for any vessel.
+
+The fix is the idiom `Boid` already uses when a creature knocks its own health prism loose:
+**pre-multiply by the prism's volume so the divide cancels**, leaving the debris velocity equal
+to the true contact velocity for every prism size. `PrismEffectHelper.DamageProportional` does
+this and passes a matching ceiling (`PrismEventData.DebrisSpeedLimit` →
+`PrismExplosion.TriggerExplosion`) in the same units, so the accurate value is not re-clipped by
+a guard sized for a different quantity.
+
+Two correctness details, both load-bearing:
+
+- It multiplies by **`prismProperties.volume`** — the exact field `Explode` divides by — not the
+  live `Prism.Volume`. Those diverge (the cached one is refreshed at lifecycle points and some
+  paths floor it at 1), and Rhino trail prisms sit right at that boundary, so the live value
+  would leave a residual gain on precisely the prisms this feature is about.
+- `ClampMagnitude` reports the **pre-clamp** magnitude, so `Speed` — which drives the shatter
+  rate (`_ExplosionAmount = speed * elapsed`) — has always run at the raw value while the
+  translation was capped. That quirk is load-bearing tuning on the legacy gain, so it is left
+  alone there; on the accurate path both channels are put on one number, or raising the ceiling
+  would finish the shatter inside a single frame while the debris crawled.
+
+Everything else is untouched: `proportionalDebris` defaults **off**, `DebrisSpeedLimit` defaults
+**0** (= use the prefab clamp), and `SkimmerDamagePrismEffect.asset` is the only asset of its type
+in the project and is wired only by the Rhino's container — so no other vessel, projectile, AOE
+or fauna destruction changes.
 
 ### Measured magnitudes (verify before retuning)
 
@@ -166,18 +207,25 @@ Simulating the authored rig (mount `(0, 9.38, 20.7)`, 20° rest pitch, 90/90/65 
 | rest (scale 30) | 259 | 340 | **534 u/s** (≈15× the ship) |
 | full shield (scale 120) | 768 | 340 | **1219 u/s** (≈35× the ship) |
 
-Two consequences worth knowing before tuning:
+**The near end is not "the ship's speed."** The blade mounts ~23 units out from its swing pivot,
+so even the hilt rides a lever arm — and once shield growth pushes the blade past that offset,
+the hilt swings on the *far side* of the pivot and moves fast in the opposite direction. That is
+why the mid-blade can be the *slowest* point at full growth.
 
-- **The near end is not "the ship's speed."** The blade mounts ~23 units out from its swing
-  pivot, so even the hilt rides a lever arm — and once shield growth pushes the blade past
-  that offset, the hilt swings on the *far side* of the pivot and moves fast in the
-  opposite direction. That is why the mid-blade can be the *slowest* point at full growth.
-- **Debris magnitude saturates downstream.** `PrismExplosion` clamps the debris speed to
-  `[30, 250]`, and the fed velocity reaches it at `250 * volume / inertia` ≈ 57 u/s (at the
-  nominal volume 16) — which the ship's own cruise speed already approaches. So during a
-  swipe the readable difference between a hilt graze and a tip strike is mostly
-  **direction** (course vs. swing tangent) rather than magnitude. Lower `swingVelocityScale`
-  or raise `PrismExplosion.maxSpeed` if a magnitude gradient is wanted.
+End-to-end debris speed, identical now for every prism size:
+
+| contact speed | before (any volume) | after |
+|---|---|---|
+| idle sword @ cruise (35) | 100 (ceiling) | 35 |
+| hilt, mid-swipe (200) | 100 (ceiling) | 200 |
+| mid-blade (340) | 100 (ceiling) | 340 |
+| **tip, mid-swipe (534)** | 100 (ceiling) | **534** |
+| tip, full shield (1219) | 100 (ceiling) | 600 (ceiling) |
+
+`debrisSpeedLimit` is **600** because that is roughly where the shatter animation stops being
+perceivable: `_ExplosionAmount` reaches its "fully exploded" value (~20.7) at `20.7 / speed`
+seconds, so 600 u/s completes it in ~2 frames at 60 fps and anything faster finishes inside one.
+Raise it if the shatter timing is retuned; only extreme full-shield tip strikes clip.
 
 ### Verification
 
