@@ -26,16 +26,20 @@ namespace CosmicShore.Gameplay
         [Tooltip("Ceiling on the blade's angular speed relative to the vessel. Guards against a single bad frame turning into an absurd tip velocity. 0 = unclamped.")]
         [SerializeField] float maxAngularSpeedDegrees = 3600f;
 
+        [Tooltip("Relative speeds below this read as exactly zero, so a sword that is not being swung imparts precisely the vessel's own velocity - the same thing the hull imparts - instead of a slightly hotter one. Sized to swallow sampling residue, not real motion: a swipe runs 200-500 u/s.")]
+        [SerializeField] float restDeadbandSpeed = 1.5f;
+
         [Header("Terms")]
         [Tooltip("Include the vessel's own rotation carrying the blade around (omega_vessel x r). Real motion: a hard turn genuinely sweeps a 35-unit sword. Off = only the blade's motion relative to the hull counts.")]
         [SerializeField] bool includeVesselRotation = true;
 
-        [Tooltip("Include the radial velocity from the blade lengthening/shortening (the shield growth driver). A growing sword really does drive its tip outward.")]
-        [SerializeField] bool includeElongation = true;
+        [Tooltip("Include the radial velocity from the blade lengthening/shortening. Physically real, but OFF by default: the Rhino's blade length is driven by a resource meter (ShieldSkimmerScaleDriver grows at 30 and shrinks at 10 world-units/sec, and its tick loop decays the shield every second), so the blade is almost never static. At the tip that is a permanent +15/-5 u/s on top of a ~35 u/s cruise - the sword would read as hotter than the hull for a reason that has nothing to do with swordsmanship. Turn on only if a shield extension should shove.")]
+        [SerializeField] bool includeElongation;
 
         public float SmoothingSeconds => smoothingSeconds;
         public float MaxSampleDeltaSeconds => maxSampleDeltaSeconds;
         public float MaxAngularSpeedDegrees => maxAngularSpeedDegrees;
+        public float RestDeadbandSpeed => restDeadbandSpeed;
         public bool IncludeVesselRotation => includeVesselRotation;
         public bool IncludeElongation => includeElongation;
     }

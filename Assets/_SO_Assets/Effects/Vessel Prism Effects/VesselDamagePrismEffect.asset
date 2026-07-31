@@ -17,3 +17,6 @@ MonoBehaviour:
   useOverrideCourse: 0
   overrideSpeed: 0
   useOverrideSpeed: 0
+  proportionalDebris: 1
+  restitution: 1
+  debrisSpeedLimit: 600

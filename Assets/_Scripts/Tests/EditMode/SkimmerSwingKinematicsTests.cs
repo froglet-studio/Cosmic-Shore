@@ -333,6 +333,72 @@ namespace CosmicShore.Tests
             Assert.That(omega.magnitude, Is.LessThan(1e-5f));
         }
 
+        [Test]
+        public void AngularVelocity_StaysExactAtTinyPerFrameAngles()
+        {
+            // The angle must come off the quaternion's VECTOR part, not from acos(w). At these
+            // per-frame rates w sits at ~1 where acos is catastrophically ill-conditioned in
+            // float32: Quaternion.ToAngleAxis reads 12% high at 0.05 deg/frame and returns
+            // exactly ZERO below ~0.01, silently dropping a slowly-rotating vessel and
+            // quantizing what it does report into steps that read as noise on the sword tip.
+            const float dt = 1f / 60f;
+            foreach (float degreesPerFrame in new[] { 5f, 1f, 0.2f, 0.05f, 0.01f, 0.002f })
+            {
+                Vector3 omega = SkimmerSwingKinematics.AngularVelocity(
+                    Quaternion.identity, Quaternion.AngleAxis(degreesPerFrame, Vector3.up), 1f / dt, 0f);
+
+                float expected = degreesPerFrame * Mathf.Deg2Rad / dt;
+                Assert.That(omega.magnitude, Is.EqualTo(expected).Within(expected * 0.001f + 1e-6f),
+                    $"{degreesPerFrame} deg/frame must survive to the angular velocity");
+                Assert.That(omega.normalized.y, Is.EqualTo(1f).Within(1e-3f));
+            }
+        }
+
+        #endregion
+
+        #region Rest deadband - a sword you are not swinging adds nothing
+
+        [Test]
+        public void RestDeadband_ZeroesSubThresholdResidue()
+        {
+            // Flying straight with a static sword: whatever sampling residue survives must not
+            // reach the prism, or the sword imparts more than the hull does for the same motion.
+            Vector3 residue = new Vector3(0.4f, -0.3f, 0.2f);   // |v| ~ 0.54
+            Assert.That(SkimmerSwingKinematics.ApplyRestDeadband(residue, 1.5f), Is.EqualTo(Vector3.zero));
+        }
+
+        [Test]
+        public void RestDeadband_LeavesRealSwingsUntouched()
+        {
+            // A swipe runs 200-500 u/s; the deadband must be nowhere near it.
+            Vector3 swing = new Vector3(120f, 40f, -90f);
+            Assert.That(SkimmerSwingKinematics.ApplyRestDeadband(swing, 1.5f), Is.EqualTo(swing));
+        }
+
+        [Test]
+        public void RestDeadband_Disabled_PassesEverythingThrough()
+        {
+            Vector3 residue = new Vector3(0.4f, -0.3f, 0.2f);
+            Assert.That(SkimmerSwingKinematics.ApplyRestDeadband(residue, 0f), Is.EqualTo(residue));
+        }
+
+        [Test]
+        public void RestDeadband_IdleSwordImpartsExactlyTheVesselVelocity()
+        {
+            // The end-to-end statement of the bug this closes: with the sword parked and the
+            // vessel flying straight, the contact velocity must equal the vessel's own, so a
+            // sword hit and a hull hit at the same speed produce the same magnitude.
+            var sample = SampleAt(Cruise, 0.2f);
+            Vector3 tip = WorldPoint(Cruise(0.2f), Vector3.up * RestHalfLength);
+            Vector3 vesselVelocity = new Vector3(0f, 0f, 35f);
+
+            Vector3 relative = SkimmerSwingKinematics.ApplyRestDeadband(
+                SkimmerSwingKinematics.RelativeVelocity(sample, tip, Vector3.up, true, false), 1.5f);
+
+            Assert.That(relative, Is.EqualTo(Vector3.zero));
+            Assert.That((vesselVelocity + relative).magnitude, Is.EqualTo(35f).Within(1e-3f));
+        }
+
         #endregion
     }
 }

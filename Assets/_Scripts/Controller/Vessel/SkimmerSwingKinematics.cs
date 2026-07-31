@@ -291,9 +291,23 @@ namespace CosmicShore.Gameplay
         {
             if (!_hasPreviousSample) return Vector3.zero;
             var cfg = Config;
-            return RelativeVelocity(CurrentSample, worldPoint, LocalAxis,
-                                    cfg.IncludeVesselRotation, cfg.IncludeElongation);
+            Vector3 relative = RelativeVelocity(CurrentSample, worldPoint, LocalAxis,
+                                                cfg.IncludeVesselRotation, cfg.IncludeElongation);
+            return ApplyRestDeadband(relative, cfg.RestDeadbandSpeed);
         }
+
+        /// <summary>
+        /// Zero out sub-threshold relative motion. A sword that is not being swung must
+        /// contribute EXACTLY nothing, so an impact while flying straight imparts the same
+        /// velocity the hull would. Without this, per-frame sampling residue survives as a
+        /// small non-zero vector - and because it adds roughly perpendicular to the vessel's
+        /// velocity, |v + n| > |v| always: the residue can only ever bias the magnitude
+        /// upward, never down, so the sword reads permanently hotter than the hull.
+        /// </summary>
+        public static Vector3 ApplyRestDeadband(Vector3 relative, float deadbandSpeed) =>
+            deadbandSpeed > 0f && relative.sqrMagnitude < deadbandSpeed * deadbandSpeed
+                ? Vector3.zero
+                : relative;
 
         /// <summary>True world velocity of the sword's material point at <paramref name="worldPoint"/>.</summary>
         public Vector3 VelocityAt(Vector3 worldPoint) => VesselVelocity + RelativeVelocityAt(worldPoint);
@@ -391,17 +405,35 @@ namespace CosmicShore.Gameplay
         {
             Quaternion delta = to * Quaternion.Inverse(from);
             // Keep the short way around: a quaternion and its negation are the same
-            // rotation, but ToAngleAxis reads the negated one as ~360 deg the other way.
+            // rotation, but the angle recovered from the negated one reads ~360 deg the
+            // other way.
             if (delta.w < 0f) delta = new Quaternion(-delta.x, -delta.y, -delta.z, -delta.w);
-            delta.ToAngleAxis(out float degrees, out Vector3 axis);
-            if (degrees > 180f) degrees -= 360f;
-            if (float.IsNaN(degrees) || axis.sqrMagnitude < Epsilon) return Vector3.zero;
 
-            float degreesPerSecond = degrees * invDt;
+            // Recover the angle from the VECTOR part, not from w. For a rotation of angle
+            // th about unit axis n, delta = (n*sin(th/2), cos(th/2)); the per-frame angles
+            // here are small, where w sits at ~1 and acos(w) is catastrophically
+            // ill-conditioned in float32 - Quaternion.ToAngleAxis is 12% off at 0.05
+            // deg/frame and returns exactly ZERO below ~0.01, silently dropping slow vessel
+            // rotation. atan2(|vec|, w) is well-conditioned at every angle: measured exact
+            // to float precision from 0.002 deg/frame to 5.
+            var vec = new Vector3(delta.x, delta.y, delta.z);
+            float sinHalf = vec.magnitude;
+            // Far below Epsilon: the axis divide is well-conditioned here, so the guard only
+            // needs to catch a true identity delta. Epsilon (1e-5) would floor out rotations
+            // under ~0.001 deg/frame, which the rest of this method resolves exactly.
+            if (sinHalf < 1e-9f) return Vector3.zero;
+
+            float radians = 2f * Mathf.Atan2(sinHalf, delta.w);
+            if (float.IsNaN(radians)) return Vector3.zero;
+
+            float radiansPerSecond = radians * invDt;
             if (maxDegreesPerSecond > 0f)
-                degreesPerSecond = Mathf.Clamp(degreesPerSecond, -maxDegreesPerSecond, maxDegreesPerSecond);
+            {
+                float limit = maxDegreesPerSecond * Mathf.Deg2Rad;
+                radiansPerSecond = Mathf.Clamp(radiansPerSecond, -limit, limit);
+            }
 
-            return axis.normalized * (degreesPerSecond * Mathf.Deg2Rad);
+            return (vec / sinHalf) * radiansPerSecond;
         }
 
         static float SmoothingBlend(float tau, float dt) =>

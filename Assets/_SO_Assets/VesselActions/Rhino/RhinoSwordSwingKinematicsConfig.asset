@@ -15,5 +15,6 @@ MonoBehaviour:
   smoothingSeconds: 0.03
   maxSampleDeltaSeconds: 0.1
   maxAngularSpeedDegrees: 3600
+  restDeadbandSpeed: 1.5
   includeVesselRotation: 1
-  includeElongation: 1
+  includeElongation: 0

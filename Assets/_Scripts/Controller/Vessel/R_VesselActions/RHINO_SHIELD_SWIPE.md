@@ -155,8 +155,9 @@ spherical skimmer is byte-for-byte unchanged.
 |---|---|---|
 | `swingVelocityScale` | the damage effect SO, next to `inertia` | 1 (the physical model); 0 restores pre-model behaviour |
 | `maxImpactSpeed` | the damage effect SO | 0 = unclamped |
-| `proportionalDebris` / `restitution` / `debrisSpeedLimit` | the damage effect SO | on / 1 / 600 (see below) |
-| `smoothingSeconds`, `maxSampleDeltaSeconds`, `maxAngularSpeedDegrees`, `includeVesselRotation`, `includeElongation` | `RhinoSwordSwingKinematicsConfig.asset` | 0.03 / 0.1 / 3600 / on / on |
+| `proportionalDebris` / `restitution` / `debrisSpeedLimit` | the damage effect SO (skimmer AND hull) | on / 1 / 600 (see below) |
+| `restDeadbandSpeed` | `RhinoSwordSwingKinematicsConfig.asset` | 1.5 — below this a parked sword adds exactly nothing |
+| `smoothingSeconds`, `maxSampleDeltaSeconds`, `maxAngularSpeedDegrees`, `includeVesselRotation`, `includeElongation` | `RhinoSwordSwingKinematicsConfig.asset` | 0.03 / 0.1 / 3600 / on / **off** |
 
 ### Making the magnitude survive to the screen
 
@@ -192,10 +193,39 @@ Two correctness details, both load-bearing:
   alone there; on the accurate path both channels are put on one number, or raising the ceiling
   would finish the shatter inside a single frame while the debris crawled.
 
-Everything else is untouched: `proportionalDebris` defaults **off**, `DebrisSpeedLimit` defaults
-**0** (= use the prefab clamp), and `SkimmerDamagePrismEffect.asset` is the only asset of its type
-in the project and is wired only by the Rhino's container — so no other vessel, projectile, AOE
-or fauna destruction changes.
+`DebrisSpeedLimit` defaults **0** (= use the prefab clamp), so projectile, AOE and fauna
+destruction are untouched.
+
+**The hull runs the same model.** `VesselDamagePrismEffectSO` is on `proportionalDebris` too,
+because otherwise the two paths could never agree: the hull's legacy formula is
+`ramSpeed * Inertia / prismVolume`, and **every vessel's `Inertia` is 1**, so that lands below
+the explosion clamp's *floor* for any realistic prism — every ram in the game produced exactly
+30 u/s of debris regardless of speed or vessel, and ram speed did nothing at all. With both paths
+proportional, flying straight at 35 u/s imparts 35 whether the prism is clipped by the hull or by
+the parked sword, and ramming faster finally throws mass harder. This does change hull-ram debris
+for all six vessels (30 → the true ram speed); that is the change that makes the magnitude
+accurate. `VesselDamagePrismEffect.asset` still carries a stale serialized `inertia: 70` — the SO
+stopped declaring that field and reads `status.Inertia`; Unity will drop the orphan on next save.
+
+### A parked sword must impart exactly what the hull does
+
+Three things otherwise leave the sword permanently "hotter" than the hull while flying straight,
+which is not swordsmanship and reads as a bug:
+
+- **Blade elongation is ambient, not a strike.** `ShieldSkimmerScaleDriver` grows the blade at 30
+  and shrinks it at 10 world-units/sec, and its tick loop decays the shield every second — the
+  blade is almost never static. At the tip that is a standing **+15 / −5 u/s** on a ~35 u/s
+  cruise. The term is physically real and stays in the model, but `includeElongation` now
+  defaults **off**; turn it on only if a shield extension should genuinely shove.
+- **Sampling residue rectifies upward.** Whatever residue survives per-frame differentiation adds
+  roughly *perpendicular* to the vessel's velocity, and `|v + n| > |v|` always — residue can only
+  bias the magnitude up, never down. `restDeadbandSpeed` (1.5) zeroes sub-threshold relative
+  motion so a parked sword contributes exactly nothing. A swipe runs 200–500 u/s, nowhere near it.
+- **Slow vessel rotation was being dropped and quantized.** `AngularVelocity` recovers the angle
+  from the quaternion's **vector part** via `atan2(|vec|, w)`, not from `acos(w)`.
+  `Quaternion.ToAngleAxis` reads 12% high at 0.05°/frame and returns exactly **zero** below
+  ~0.01°/frame in float32 — silently dropping a gently-turning vessel, and stepping what it does
+  report into noise on a 37-unit lever arm. The `atan2` form measures exact from 0.002°/frame to 5°.
 
 ### Measured magnitudes (verify before retuning)
 
@@ -216,11 +246,12 @@ End-to-end debris speed, identical now for every prism size:
 
 | contact speed | before (any volume) | after |
 |---|---|---|
-| idle sword @ cruise (35) | 100 (ceiling) | 35 |
+| parked sword @ cruise (35) | 100 (ceiling) | 35 — **same as the hull** |
 | hilt, mid-swipe (200) | 100 (ceiling) | 200 |
 | mid-blade (340) | 100 (ceiling) | 340 |
 | **tip, mid-swipe (534)** | 100 (ceiling) | **534** |
 | tip, full shield (1219) | 100 (ceiling) | 600 (ceiling) |
+| hull ram @ 35 / 60 / 90 | 30 / 40 / 60 | 35 / 60 / 90 |
 
 `debrisSpeedLimit` is **600** because that is roughly where the shatter animation stops being
 perceivable: `_ExplosionAmount` reaches its "fully exploded" value (~20.7) at `20.7 / speed`
