@@ -72,6 +72,33 @@ namespace CosmicShore.Gameplay
         /// after a code-level layout change.</summary>
         protected abstract int BuildParameterHash();
 
+        /// <summary>
+        /// The per-prism lay list from the most recent generation - pose <b>and domain and
+        /// kind</b>, which <see cref="SpawnableBase.GetTrailData"/>'s <see cref="SpawnTrailData"/>
+        /// cannot carry (it holds one domain for a whole trail). Exposed so a PREVIEW consumer -
+        /// the freestyle Cell Selector's scale models - can render an environment's real structure
+        /// and its real domain composition without spawning a single prism.
+        ///
+        /// Null until a generation has run: call <see cref="SpawnableBase.GetTrailData"/> first
+        /// (it is cached, so this costs the generation math at most once). Read-only - the list
+        /// is live generation state, not a copy.
+        /// </summary>
+        public IReadOnlyList<PrismLay> CachedLays => _cachedLays;
+
+        /// <summary>
+        /// Drop the generated point data (both the <see cref="SpawnableBase"/> trail cache and
+        /// <see cref="CachedLays"/>). For a PREVIEW consumer that generated an environment only to
+        /// sample it: a freestyle cell's lay list is tens of thousands of structs, and holding
+        /// seven of them so the menu can show seven thumbnails is a bad trade on a mobile target -
+        /// re-generating on load is a small fraction of the lay cost. Safe during an in-flight
+        /// lay: <c>LayBudgetedAsync</c> holds its own reference to the list it was handed.
+        /// </summary>
+        public void ReleaseGeneratedData()
+        {
+            InvalidateCache();
+            _cachedLays = null;
+        }
+
         protected override SpawnTrailData[] GenerateTrailData()
         {
             _noiseSeed = seed != 0 ? seed : DefaultSeed;
