@@ -1556,10 +1556,98 @@ retuning any ladder. Same soak-before-ship rule as §17 above; each prefab's
 3. **Confirm simulated baselines in-engine** (Tools > Cosmic Shore > Measure Cell Environment
    Baselines) and re-author any PhaseThresholds off by more than a few hundred count / few
    thousand volume.
-4. **Menu load-time UX call** — if the veil hold feels long for a menu, options are lower
-   density, or rolling Blob on first entry and reserving environment cells for explicit
-   freestyle entry.
+4. ~~**Menu load-time UX call**~~ — **SHIPPED, see §19.** The veil hold *was* long for a menu,
+   and it was paid on every entry (boot *and* every return from an arcade game). Resolved by
+   the second option: Menu_Main now boots the environment-free config and the six worlds are
+   opt-in through the **Cell Selector** toy.
 5. **Danger tuning after playtests** — Caldera (~1.6k danger prisms) is deliberately the spicy
    cell; tune per feel.
 6. **Future archetypes** (diversity headroom before hybrids/dynamics take over): Abyss, Mycel,
    Hive, Glacier, Reliquary, Mesa.
+
+---
+
+## 19. Opt-in worlds — the environment-free boot + the Cell Selector toy (July 2026)
+
+§18 gave the freestyle rotation six authored worlds of ~31–36k prisms each. It also gave
+Menu_Main a **multi-second `EnvironmentLoadVeil` hold on every entry** — the first boot *and*
+every return from an arcade game — because `AssignConfig` rolled one of the seven configs at
+random and six of them build a world. §18 follow-up 4 named the two ways out; this is the one
+that shipped.
+
+### The boot half — `CellTypeChoiceOptions.EnvironmentFree`
+
+A third choice mode on `Cell`: **boot on the first config in `CellConfigs` that authors no
+`EnvironmentPrefab`** (falls back to index 0, loudly, if every config has one). Menu_Main's
+Cell is set to it, so the menu opens on **Blob** — no prepopulated build, no veil, no wait.
+The other six stay in the list; they are simply not paid for until asked for.
+
+This is not a special case bolted onto the menu: it is a config knob on the Cell, so any scene
+that wants a cheap entry with heavy worlds available on demand gets the same behaviour with no
+code.
+
+### The opt-in half — `Cell.RequestCellSwap` + the Cell Selector toy
+
+`Cell.RequestCellSwap(config, clearLooseTrailMass)` is the one runtime entry point:
+
+| Step | What happens |
+|---|---|
+| 1 | `StopSpawner()` — nothing new seeds into a world that is leaving. |
+| 2 | Every vessel drops its trail bookkeeping (`ClearTrails`, `AttachedPrism = null`) and pens up (`SetSpawnerPaused`). `Trail.LookAhead`/`Project` and `TrailFollower` dereference their prisms **without null guards**, so this must precede the teardown. `ClearTrails` drops bookkeeping only — it removes no prism. |
+| 3 | Everything the cell owns — the environment container, the lifeforms, the old membrane/nucleus/cytoplasm, and (optionally) the pooled trail prisms — is gathered under **one root** that **suctions to a point** over `retireSuctionSeconds`. The authored environment is a single container, so the 35k-prism case costs one re-parent. |
+| 4 | Pooled prisms `ReturnToPool()` (destroying one corrupts the pool's accounting); the rest are destroyed in **500-per-frame slices** while the root is already invisible — a 35k-prism teardown in one frame is a multi-second freeze. |
+| 5 | Bookkeeping reset (the same set `ResetCell` clears), then `runtime.Config = config` — the one sanctioned bypass of `AssignConfig`'s deliberate stickiness. |
+| 6 | Membrane + nucleus → **then** `SetupDensityGrids()` (grids are sized off the membrane) → cytoplasm → modifiers → **then** `BuildEnvironmentNow()`. Ordering matters: an immediate build before the grids would file its first prisms into grids that are about to be disposed. On boot this cannot happen because the build is deferred past scene start. |
+| 7 | The standard `EnvironmentLoadVeil` holds the screen while the world streams in; the spawner restarts and the trails un-pen only once the lay has drained, so flora/fauna seed into a **finished** world. |
+
+`CellSelectorToy` is the player-facing surface — a toy, so no score, no end condition, no
+timer. Fly it and a matrix of **mini-cells** blooms one layer outward (the Lifeform Matrix's
+"fly at a wall of choices" pattern, now sharing `ToyMatrixStation`). Fly a mini-cell and the
+cell becomes it. **Fly the mini-cell of the world you are already in and you get the same
+cycle on the same config — that is the reset.**
+
+The toy authors **no cell list of its own**: it reads `Cell.AvailableConfigs`, the Cell's own
+rotation. The Cell owns the environment (`ECOSYSTEM_MASTERPLAN.md §5.1`), so there is exactly
+one source of truth for what a scene's cell can be and the toy cannot drift from it. Each
+mini-cell is three gyroscopic rings (membrane) + a nucleus dot + a phyllotaxis constellation
+of prism shards seeded from the config name — **shape and content, never tint** (colour belongs
+to domains, the same rule the Lifeform Matrix follows for elements). A config with no
+environment draws **visibly empty**, so the picture tells you the entry is free before you read
+the `RESET` / `LOAD` / `INSTANT` label.
+
+### Invariants — what this does and does not touch
+
+- **Continuity of existence (upheld).** The old world **suctions** away over a visible
+  transition — the same sanctioned transport the microscene conveyor uses — and the new one
+  **blooms** in prism by prism through the canonical `PrismTrailBuilder` lay path. Nothing pops
+  in or out at either end.
+- **Mass is conserved (upheld — this is not decay).** Nothing here is on a clock. No prism ages
+  out, no lifespan expires, no population is culled to hit a number, and no cell "tidies itself
+  up". A cell swap is an **explicit, player-initiated world change** — the same class of event
+  as the scene load that has always ended a cell's mass — and it is the *only* thing that
+  removes this mass. The distinction §0 draws is between *passive* removal (rejected) and
+  *active* removal (the whole point); a toy the player must fly into is as active as it gets.
+- **Every lifeform drops a crystal (not violated).** The invariant binds `Fauna.Die` — death by
+  starvation or predation. Retiring a world is an un-load, not a death, so lifeforms leave
+  without dropping crystals — exactly what `ResetCell` and every scene transition already do.
+- **No imposed death / no domain asymmetry / volume is the spine / territorial permanence** —
+  untouched. The new cell runs its own authored `SpawnProfile` and `PhaseThresholds` from the
+  first frame, so a swapped-in Yggdra gets Yggdra's ladder, not Blob's.
+- **Toy-owned closed systems are left alone.** The reset retires **pooled** prisms (the
+  vessels' trail); instantiated toy mass — the Wanderway conveyor transports its own fixed,
+  conserved stock — has no pool handler and is never touched, so a cell swap cannot break the
+  conveyor's conservation.
+- **Collider budget: net negative.** The default menu cell is now the *empty* one, so the
+  steady-state active-collider count in Menu_Main drops from "one of six 31–36k-prism worlds"
+  to "trail + spawned life only". A loaded world costs exactly what §18 measured for that
+  config — nothing new. The toy's own stations are transient trigger spheres (one per config,
+  freestyle only) torn down with the matrix.
+
+### Known limitation — party clients pick independently
+
+Cell selection is **local**, like every other toy effect that has no server-authoritative path.
+In a party each client would run its own cell. This is not a regression: environments are
+already built locally with no seed sync, and `AssignConfig`'s `Random.Range` roll already gave
+each client a *different* cell. A deliberate pick is strictly more consistent than a random
+one. Making it authoritative means an RPC on the menu's cell — tracked in
+`Docs/ToySystem/BACKLOG.md`.

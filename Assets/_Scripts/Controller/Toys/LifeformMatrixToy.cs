@@ -289,7 +289,7 @@ namespace CosmicShore.Gameplay
 
         // ── Stations ─────────────────────────────────────────────────────────
 
-        LifeformMatrixStation CreateStation(Transform parent, Vector3 position, string label,
+        ToyMatrixStation CreateStation(Transform parent, Vector3 position, string label,
             float radius, Color accent, bool bodySphere = true)
         {
             var go = ToyFactory.CreateBareRoot(label, parent, position, transform.position, radius * 1.6f);
@@ -297,38 +297,9 @@ namespace CosmicShore.Gameplay
                 ToyFactory.AddSphereBody(go.transform, radius, accent);
             ToyFactory.AddLabel(go.transform, label, accent, radius * 1.9f);
 
-            var station = go.AddComponent<LifeformMatrixStation>();
+            var station = go.AddComponent<ToyMatrixStation>();
             station.Bind(Context);
             return station;
-        }
-    }
-
-    /// <summary>
-    /// A single fly-through station of the lifeform matrix. Same local-vessel + freestyle
-    /// gating as <see cref="Toy"/>, with a short per-station cooldown instead of the full
-    /// exit-gated re-arm (stations sit close together; the cooldown stops one pass from
-    /// double-firing while still allowing rapid A/B spawning).
-    /// </summary>
-    public sealed class LifeformMatrixStation : MonoBehaviour
-    {
-        const float CooldownSeconds = 1.5f;
-
-        ToyContext _context;
-        float _readyTime;
-
-        /// <summary>What happens when the local vessel passes through.</summary>
-        public System.Action OnVesselPassed;
-
-        public void Bind(ToyContext context) => _context = context;
-
-        void OnTriggerEnter(Collider other)
-        {
-            if (Time.time < _readyTime) return;
-            if (!Toy.TryGetLocalVessel(other, out _)) return;
-            if (_context?.IsFreestyleActive != null && !_context.IsFreestyleActive()) return;
-
-            _readyTime = Time.time + CooldownSeconds;
-            OnVesselPassed?.Invoke();
         }
     }
 }

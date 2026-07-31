@@ -39,6 +39,15 @@ namespace CosmicShore.Gameplay
         protected ToyDefinitionSO Definition { get; private set; }
         protected ToyContext Context { get; private set; }
 
+        /// <summary>
+        /// Where and how big this toy was placed. Kept so subclasses can size their own
+        /// decoration against the ACTUAL body radius (the toybox places toys at menu scale -
+        /// tens of world units - so decoration authored in raw units disappears inside the
+        /// body sphere). <c>default</c> for toys built through
+        /// <see cref="ToyFactory.CreateGate"/>, which places them itself.
+        /// </summary>
+        protected ToyPlacement Placement { get; private set; }
+
         Vector3 _targetScale = Vector3.one;
         float _triggerWorldRadius;
         bool _armed;
@@ -56,6 +65,7 @@ namespace CosmicShore.Gameplay
         {
             Definition = definition;
             Context = context;
+            Placement = placement;
             _targetScale = transform.localScale;
 
             if (TryGetComponent(out Collider col))

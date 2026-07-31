@@ -1,6 +1,6 @@
 # Toy System — Backlog & Known Limitations
 
-The core toy system + the four toys are in. This tracks the polish/improvement
+The core toy system + the six toys are in. This tracks the polish/improvement
 work, grouped so each group can be its own follow-up branch, plus current known
 limitations and verification status. Architecture: `ARCHITECTURE.md`.
 
@@ -295,3 +295,60 @@ teardown). Everything below is remaining polish / not-yet-play-verified.
 - **Variant matrix stations beyond the membrane**: layered outward they can cross the
   membrane; spawns resolve the cell from the toy's position so they work, but station
   placement could clamp to the membrane radius for tidiness.
+- **The four element-crystal "moons" are probably invisible.** `LifeformMatrixToy.OnInitialized`
+  places them 2.2 raw world units from the toy centre at scale 0.35, but the toybox places toys
+  with `toyBodyRadius = 22`, so a 44-unit body sphere swallows them. `Toy.Placement` is now
+  exposed (added for the Cell Selector, which sizes its moons off `Placement.BodyRadius`) — scale
+  these the same way. Confirm in-editor before changing, since the crystal models carry their own
+  authored scale.
+
+## Cell Selector follow-ups
+
+Shipped on `claude/freestyle-cell-selector-toy-*`. Design + invariant analysis:
+`Docs/ECOSYSTEM.md §19`; surface description: `ARCHITECTURE.md § Cell Selector`.
+
+**Verification (in-editor, Menu_Main — none of this is play-verified):**
+
+1. **The boot win is the headline.** Enter Menu_Main cold: no `EnvironmentLoadVeil`, no
+   "GROWING …" hold. Launch any arcade game and return: same. Console should log the Cell
+   assigning **Blob**. That is the whole point of the branch — verify it first.
+2. **Pick a world.** Enter freestyle, fly the Cell Selector (300° around the membrane ring);
+   a matrix of mini-cells blooms outward. Fly e.g. **Yggdra**: the (empty) world suctions,
+   the veil raises with the usual prism/percent readout, Yggdra grows in. Confirm its
+   `PhaseThresholds` are in force afterwards (the cell should read Calm, not boot to Frenzy).
+3. **The reset.** With a world loaded and a long trail laid, fly the toy again and pick the
+   **same** cell (label reads `RESET`). Everything suctions away — environment, flora/fauna,
+   *and* your trail — and grows back fresh. Watch for `Trail`/`TrailFollower` NREs; the
+   detach in `SetVesselTrailsDetached` is what prevents them, so this is the risky path.
+4. **Squirrel specifically** — it is the tube-rider (`AttachedPrism`, `TrailFollower`). Reset
+   while attached to a trail and confirm no exception storm.
+5. **Teardown cost.** The 500-prisms-per-frame drain should keep the retire smooth; profile a
+   Yggdra→Geode swap and raise/lower `PrismsPerFrame` if it hitches or drags.
+6. **Pool health.** After several resets, confirm trail prisms still spawn at full size and
+   the interactive prism pool has not drifted (the pooled prisms take a
+   `SetParent(null,false)` → `ReturnToPool()` path specifically to avoid baking the suction
+   scale into `localScale`).
+7. **Wanderway interaction.** Run the conveyor, then reset the cell: the belt's own stock is
+   instantiated (no pool handler) so it must survive untouched. If it does not, the
+   `OnReturnToPool == null` discriminator in `RetireWorldIntoSuctionRoot` is wrong.
+8. **`retireSuctionSeconds`** (Cell inspector, default 1.1) — tune for feel.
+9. **Layout knobs** on `Toy_CellSelector.asset`: `stationSpacing` 55, `stationRadius` 9,
+   `shardsPerCell` 24 are all guesses at menu scale.
+
+**Known limitations / follow-up work:**
+
+- **Local-only selection.** In a party each client picks its own cell. Strictly better than
+  the `Random` roll it replaced (which already differed per client), but the honest fix is a
+  server-authoritative pick: a `CellNetworkSync` RPC carrying a config index, host-only toy
+  activation, clients following. Needs a design call on who owns the menu world.
+- **The player flies blind under the veil.** They opted in, and it matches a scene load, but a
+  danger prism from a Caldera build could land on them. Options if it bites: park/autopilot the
+  vessel for the hold, or re-pose it to the cell centre before the build.
+- **Toy placement does not re-derive after a swap.** `ToyboxController` rings the membrane once
+  at `OnClientReady`. Every freestyle config shares one membrane prefab so the radius does not
+  change today; a config with a different membrane would leave the toys mis-ringed.
+- **`Cell.Initialize` during a swap is unguarded.** Nothing raises `OnInitializeGame` mid-session
+  in Menu_Main, so it cannot happen today; a guard on `_swapping` would make that structural.
+- **No load-cost telegraph beyond `LOAD` vs `INSTANT`.** The mini-cells cannot show a prism count
+  without generating the environment. An authored `EnvironmentWeightHint` on `CellConfigDataSO`
+  would let a station read "~34k" — worth it only if players start caring which world is heavy.
