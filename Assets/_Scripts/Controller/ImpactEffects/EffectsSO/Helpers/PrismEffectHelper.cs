@@ -34,21 +34,24 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Damage a prism with a TRUE impact velocity, so the debris actually flies at the
-        /// speed of the thing that hit it.
+        /// Damage a prism with a TRUE impact velocity, so the debris flies at the speed of the
+        /// thing that hit it - the same speed for every prism size.
         ///
         /// The legacy <see cref="Damage(IVesselStatus, PrismImpactor, float, Vector3)"/> path
-        /// hands over <c>velocity * inertia</c> and <see cref="Prism.Explode"/> divides by the
-        /// prism's volume, so the debris speed carries a gain of <c>inertia / volume</c> - which
-        /// ranges over ~100x between a thin trail prism and a fat environment one. The explosion
-        /// prefab's speed clamp exists to contain that, and it sits so far below real impact
-        /// speeds that every hit saturates and the magnitude reads the same no matter what hit it.
+        /// hands over <c>velocity * inertia</c>, which the explosion clamp then flattens: the
+        /// gain sits so far above real impact speeds that every hit saturates and the magnitude
+        /// reads the same no matter what caused it.
         ///
-        /// Pre-multiplying by the prism's volume cancels the divide, so the debris velocity IS
-        /// the impact velocity (times <paramref name="restitution"/>) for every prism size - and
-        /// the accompanying <paramref name="debrisSpeedLimit"/> replaces the mismatched guard
-        /// with a ceiling in the same units. Same idiom <c>Boid</c> already uses when a creature
-        /// knocks its own health prism loose.
+        /// Here the vector IS the debris velocity. <see cref="Prism.Explode"/> passes it through
+        /// untouched (the supplied <paramref name="debrisSpeedLimit"/> is what marks it), and
+        /// that limit replaces the mismatched prefab clamp with a ceiling in the same units.
+        ///
+        /// Do NOT pre-multiply by the prism's volume hoping to cancel Explode's divide. That
+        /// divide is a no-op: SetupDestruction stands the scale animator down before reading the
+        /// volume, GetCurrentVolume() reports 0 once disabled, and the Max(_, 1) floor therefore
+        /// pins prismProperties.volume to exactly 1 for every prism at the moment of the divide.
+        /// A pre-multiply survives as a straight volume multiplier - which damps small prisms
+        /// (a Rhino trail prism is ~0.75) and slams large ones into the ceiling.
         /// </summary>
         /// <param name="restitution">Debris speed as a multiple of impact speed. 1 = the struck prism leaves at the speed of the striker.</param>
         /// <param name="debrisSpeedLimit">Ceiling in real speed units; 0 falls back to the explosion prefab's clamp (which will flatten it).</param>
@@ -61,20 +64,8 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
-            var prism = prismImpactor.Prism;
-
-            // Multiply by the EXACT value Explode divides by - the cached
-            // prismProperties.volume, not the live Prism.Volume. They diverge: the cached one
-            // is refreshed at specific lifecycle points and some paths floor it at 1, while the
-            // live property reads the scale animator with no floor. Rhino trail prisms sit right
-            // at that boundary (~0.75-2.25), so using the live value would leave a residual gain
-            // on exactly the prisms this feature is about. Same-value cancellation is exact
-            // whatever the cache holds.
-            float volume = prism.prismProperties != null ? prism.prismProperties.volume : 0f;
-            if (volume <= 0f) volume = Mathf.Max(prism.Volume, 0.0001f);
-
-            prism.Damage(impactVelocity * (restitution * volume), status.Domain, status.PlayerName,
-                         debrisSpeedLimit: debrisSpeedLimit);
+            prismImpactor.Prism.Damage(impactVelocity * restitution, status.Domain, status.PlayerName,
+                                       debrisSpeedLimit: debrisSpeedLimit);
         }
 
         public static void Steal(PrismImpactor impactee, IVesselStatus status)

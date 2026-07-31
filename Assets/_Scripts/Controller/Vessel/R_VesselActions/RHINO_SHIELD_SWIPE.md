@@ -51,7 +51,7 @@ do not copy it (follow-up below).
 | Shared tuning (single source, both directions) | `Data Containers/RhinoShieldSwipeConfigSO.cs` → `_SO_Assets/VesselActions/Rhino/RhinoShieldSwipeConfig.asset` |
 | Swing velocity model (tip-vs-hilt impact speed) | `_Scripts/Controller/Vessel/SkimmerSwingKinematics.cs` + `SkimmerSwingKinematicsConfigSO.cs` → `_SO_Assets/VesselActions/Rhino/RhinoSwordSwingKinematicsConfig.asset`; component added on `ForceFieldSkimmer Variant.prefab` |
 | Impact composition (vessel velocity + contact-point swing) | `PrismEffectHelper.ContactVelocity` → `SkimmerDamagePrismEffectSO` / `RhinoSkimmerDamagePrismEffectSO` |
-| Accurate debris magnitude (volume-cancelling + per-impact ceiling) | `PrismEffectHelper.DamageProportional` → `Prism.Damage`/`Explode` → `PrismEventData.DebrisSpeedLimit` → `PrismFactory` → `PrismExplosion.TriggerExplosion` |
+| Accurate debris magnitude (velocity passed through as final + per-impact ceiling) | `PrismEffectHelper.DamageProportional` → `Prism.Damage`/`Explode` → `PrismEventData.DebrisSpeedLimit` → `PrismFactory` → `PrismExplosion.TriggerExplosion` |
 | Model tests | `_Scripts/Tests/EditMode/SkimmerSwingKinematicsTests.cs` |
 | Per-direction event bindings | `Data Containers/RhinoShieldSwipeActionSO.cs` → `RhinoShieldSwipeRight/LeftAction.asset` (direction only) |
 | Prefab wiring | `Rhino.prefab`: `ShieldSwipeActionRegistry` GO under ShipActions, registered in `ActionExecutorRegistry._executors`; `_gamepadActionOverrides` events 1/2; skimmer transform rest pose |
@@ -161,51 +161,62 @@ spherical skimmer is byte-for-byte unchanged.
 
 ### Making the magnitude survive to the screen
 
-Computing an accurate impact velocity is only half the job — the debris response has to
-carry it. The legacy path could not:
+Computing an accurate impact velocity is only half the job — the debris response has to carry it.
+
+**`Prism.Explode`'s divide is dead code.** It reads
 
 ```
-Prism.Explode:  debrisVelocity = impactVector / prismProperties.volume
-                              = contactSpeed * inertia / volume
+debrisVelocity = impactVector / prismProperties.volume
 ```
 
-That gain (`inertia / volume`) spans **~100×** between a Rhino trail prism (volume ≈ 0.75–2.25)
-and a fat environment prism (≈125). `PrismExplosion`'s `[30, 100]` clamp exists to contain it —
-and sits so far below real impact speeds that *every* skim saturated at the ceiling. The
-magnitude channel was carrying no information at all, for any vessel.
+but `SetupDestruction` runs first and stands the scale animator **down before reading the
+volume**. `PrismScaleAnimator.GetCurrentVolume()` gates on `enabled` and returns 0 once it is
+off, so `Mathf.Max(0f, 1f)` pins `prismProperties.volume` to **exactly 1 for every prism,
+regardless of size**, at the moment of the divide. The legacy gain is therefore just `inertia` —
+not `inertia / volume`.
 
-The fix is the idiom `Boid` already uses when a creature knocks its own health prism loose:
-**pre-multiply by the prism's volume so the divide cancels**, leaving the debris velocity equal
-to the true contact velocity for every prism size. `PrismEffectHelper.DamageProportional` does
-this and passes a matching ceiling (`PrismEventData.DebrisSpeedLimit` →
-`PrismExplosion.TriggerExplosion`) in the same units, so the accurate value is not re-clipped by
-a guard sized for a different quantity.
+That matters in two directions:
 
-Two correctness details, both load-bearing:
+- With `inertia = 70`, the legacy skimmer path fed `contactSpeed * 70` into a `[30, 100]` clamp,
+  so every skim saturated and the magnitude carried no information. (The hull's `Inertia` is 1,
+  so hull rams were *not* saturated — they already produced roughly `ramSpeed`.)
+- **Do not pre-multiply by volume expecting it to cancel.** It does not, and the leftover is a
+  straight volume multiplier. This shipped briefly and was exactly the "Rhino trail prisms feel
+  heavier than they should" bug: at `restitution` 1/3 a Rhino trail prism (volume ≈ 0.75) got
+  `0.25x` and floored out at 10, while every larger prism sat pinned at the 200 ceiling — the
+  Rhino's own trail was the only mass in the game being damped. `Boid` carried the same mistake,
+  and worse: its factor was the volume of the *boid's* health prism, not the victim's.
 
-- It multiplies by **`prismProperties.volume`** — the exact field `Explode` divides by — not the
-  live `Prism.Volume`. Those diverge (the cached one is refreshed at lifecycle points and some
-  paths floor it at 1), and Rhino trail prisms sit right at that boundary, so the live value
-  would leave a residual gain on precisely the prisms this feature is about.
-- `ClampMagnitude` reports the **pre-clamp** magnitude, so `Speed` — which drives the shatter
-  rate (`_ExplosionAmount = speed * elapsed`) — has always run at the raw value while the
-  translation was capped. That quirk is load-bearing tuning on the legacy gain, so it is left
-  alone there; on the accurate path both channels are put on one number, or raising the ceiling
-  would finish the shatter inside a single frame while the debris crawled.
+So `PrismEffectHelper.DamageProportional` hands over the debris velocity **as final**, and
+`Explode` passes it through untouched — the supplied `DebrisSpeedLimit` is what marks it as a
+true velocity. That limit also replaces the mismatched prefab clamp with a ceiling in the same
+units. Debris speed is then genuinely volume-independent: 11.7 at cruise and 178 for a tip
+strike, whether the prism is a 0.75 trail sliver or a 125-unit environment block.
 
-`DebrisSpeedLimit` defaults **0** (= use the prefab clamp), so projectile, AOE and fauna
-destruction are untouched.
+One more detail, load-bearing: `ClampMagnitude` reports the **pre-clamp** magnitude, so `Speed` —
+which drives the shatter rate (`_ExplosionAmount = speed * elapsed`) — has always run at the raw
+value while the translation was capped. That quirk is load-bearing tuning on the legacy paths, so
+it is left alone there; on the accurate path both channels are put on one number, or raising the
+ceiling would finish the shatter inside a single frame while the debris crawled.
 
-**The hull runs the same model.** `VesselDamagePrismEffectSO` is on `proportionalDebris` too,
-because otherwise the two paths could never agree: the hull's legacy formula is
-`ramSpeed * Inertia / prismVolume`, and **every vessel's `Inertia` is 1**, so that lands below
-the explosion clamp's *floor* for any realistic prism — every ram in the game produced exactly
-30 u/s of debris regardless of speed or vessel, and ram speed did nothing at all. With both paths
-proportional, flying straight at 35 u/s imparts 35 whether the prism is clipped by the hull or by
-the parked sword, and ramming faster finally throws mass harder. This does change hull-ram debris
-for all six vessels (30 → the true ram speed); that is the change that makes the magnitude
-accurate. `VesselDamagePrismEffect.asset` still carries a stale serialized `inertia: 70` — the SO
-stopped declaring that field and reads `status.Inertia`; Unity will drop the orphan on next save.
+`DebrisSpeedLimit` defaults **0** (= use the prefab clamp and the legacy divide), so projectile,
+AOE and fauna destruction keep their existing behaviour.
+
+**The hull runs the same model.** `VesselDamagePrismEffectSO` is on `proportionalDebris` too, so
+the two paths cannot drift: flying straight at 35 u/s imparts the same debris speed whether the
+prism is clipped by the hull or by the parked sword. At `restitution` 1 that was already what the
+hull produced (`ramSpeed * Inertia(1) / 1`), so the conversion was behaviour-neutral; it earns
+its place by locking the two paths to one formula and one retune.
+`VesselDamagePrismEffect.asset` still carries a stale serialized `inertia: 70` — the SO stopped
+declaring that field and reads `status.Inertia`; Unity will drop the orphan on next save.
+
+> **Open, out of scope here:** the same animator-disabled-first ordering means the *mass
+> accounting* events misreport. `SetupDestruction` raises `OnTrailBlockDestroyed` with
+> `Volume = prismProperties.volume` = **1** for every prism, and the creation event raises
+> `Volume` read while the prism is still scaled to zero. Anything keying off those channels sees
+> a flat 1-per-prism instead of real volume. `Cell.LiveVolume` uses a different path
+> (`Prism.CachedVolume` via `PrismSpatialIndex`) and is unaffected, but this is worth a look
+> before trusting destroyed-mass stats.
 
 ### A parked sword must impart exactly what the hull does
 

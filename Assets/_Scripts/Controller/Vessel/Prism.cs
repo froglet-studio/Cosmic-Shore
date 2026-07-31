@@ -958,13 +958,24 @@ namespace CosmicShore.Gameplay
             SetupDestruction(domain, playerName, devastate);
             PlayDestructionSFX();
 
+            // A supplied debrisSpeedLimit marks impactVector as a TRUE velocity (see
+            // PrismEffectHelper.DamageProportional) - it is already the speed the debris
+            // should leave at, so it passes through untouched.
+            //
+            // The legacy branch's divisor is worth understanding before trusting it:
+            // SetupDestruction has already run, and it stands the scale animator down
+            // BEFORE reading the volume. GetCurrentVolume() gates on `enabled` and reports
+            // 0 once it is off, so Max(0, 1) makes prismProperties.volume exactly 1 for
+            // EVERY prism regardless of size. The divide is therefore a no-op today and the
+            // legacy gain is just `inertia`. Do not pre-multiply by a volume expecting it to
+            // cancel here - it will not, and the result is a straight volume multiplier.
             var returnData = OnBlockImpactedEventChannel.RaiseEvent(new PrismEventData
             {
                 ownDomain = Domain,
                 SpawnPosition = transform.position,
                 Rotation = transform.rotation,
                 Scale = _lastDestructionScale,
-                Velocity = impactVector / prismProperties.volume,
+                Velocity = debrisSpeedLimit > 0f ? impactVector : impactVector / prismProperties.volume,
                 DebrisSpeedLimit = debrisSpeedLimit,
                 PrismType = PrismType.Explosion
             });
