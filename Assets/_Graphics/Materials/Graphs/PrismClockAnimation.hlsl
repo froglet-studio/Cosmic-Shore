@@ -8,8 +8,10 @@
 //
 // Shader Graph usage: Custom Function node, Source = this file, with the
 // function name WITHOUT the _float suffix (Shader Graph appends it by
-// precision). Wire the Time node's "Time" output into every Clock input —
-// _Time.y matches the CPU stamp epoch, PrismClock.Now (Time.timeSinceLevelLoad).
+// precision). Wire the _PrismClock property node (unexposed global, published
+// per frame by PrismClock's publisher from the SAME value the stamps use) into
+// every Clock input. NEVER the Time node: URP feeds _Time from a different
+// clock domain than the stamps, which renders every animation pre-finished.
 //
 // Settled-state defaults: every function treats a non-positive Rate/Duration as
 // "unstamped" and returns the end state (or the legacy CPU-fed parameter during

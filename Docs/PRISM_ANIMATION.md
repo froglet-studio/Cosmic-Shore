@@ -119,7 +119,7 @@ re-plumbing, not invention:
 | The end-state material swap | `MaterialPropertyAnimator.UpdateMaterial`'s `OnAnimationComplete` — already ends every color transition with a `sharedMaterial` swap + `SyncRenderMaterial()` |
 | The end-state mesh swap (pool-equivalent exchange) | The shields' settled handoff: `OctahedronMeshGenerator.GetSharedShieldMesh` + `Prism.SetRenderMeshOverride` + `SetExoticVisualActive(false)` — a per-prism-unique animation settling into a cache-shared batched end state. **This is the reference implementation of "swap to a prism in the end state."** |
 | The swap scheduler | `PrismTimerManager` — flat timer list, one callback at a known future time, already used for shield deactivation |
-| The clock | `_Time.y` in shaders (= scaled `Time.timeSinceLevelLoad`). CPU stamps use `Time.timeSinceLevelLoad` so both sides read the same epoch. If editor/scene-load semantics ever bite, the fallback is a single global `_PrismClock` uniform written once per frame by one publisher — O(1), conforming. Note `_Time` scales with `Time.timeScale`, so hitstop/pause freeze prism animation for free — desired. |
+| The clock | The **`_PrismClock` global uniform**, published once per frame by `PrismClock`'s publisher from the SAME value the stamps use (`Time.time`) — CPU and GPU read the same number BY CONSTRUCTION (O(1) per frame, the law's allowed clock publisher). Do NOT use the shader Time node: URP feeds `_Time` from a different clock domain than naive CPU stamps (scaled time since startup, not since level load), which made every bloom evaluate as already finished — prisms popped in fully grown, silently. `Time.time` is scaled, so hitstop/pause freeze prism animation for free — desired. |
 | GPU-driven animation precedent | Blend shapes are already converted to textures for shader-driven animation with no controller scripts (CLAUDE.md ▸ Shader & Visual Development); the explosion/implosion shaders are already parametric in an "amount" — the CPU merely feeds them per frame today. |
 
 ---
@@ -605,9 +605,10 @@ the prompter's direction.** `ClockAnimationEnabled` is constant `true`; the form
   A/B hook, clears the prototype cache), and the touchpoint-1 stamp APIs:
   `StampGrow`, `StampColorTransition`, `StampExplosionClock`, `StampSuctionClock`,
   `ClearPrismStamps`. All return false when dark → callers keep the legacy path.
-- **`PrismClock`** (`_Scripts/Utility/`) — the single CPU-side epoch
-  (`Time.timeSinceLevelLoad`, matching `_Time.y`), plus `SettledPast` for
-  behind-the-veil instant settling.
+- **`PrismClock`** (`_Scripts/Utility/`) — the single clock: stamps read `Now`
+  (`Time.time`) and a hidden publisher writes the same value to the `_PrismClock`
+  global uniform every frame (the graphs' Clock input — never the Time node),
+  plus `SettledPast` for behind-the-veil instant settling.
 - **`PrismTimerManager.ScheduleAction` / `CancelScheduledActions`** — the generalized
   touchpoint-3 scheduler (flat list, one delegate per animation event).
 - No MPB stamp twins, by decision (§4.1): the clock path rides the instanced
@@ -665,7 +666,8 @@ spawn/transition/effect snaps and logs; do all three graphs):**
    (`_GrowStartFrac` is **Vector3 (1,1,1)** — per-axis start fraction, so anisotropic
    `Grow()` retargets stay continuous.)
    Vertex stage: Custom Function node (Source = `PrismClockAnimation.hlsl`, Name =
-   `PrismGrowScale`, Clock ← Time node's **Time** output) → multiply the object-space
+   `PrismGrowScale`, Clock ← the **`_PrismClock` property node** — the unexposed
+   global the publisher drives; NEVER the Time node) → multiply the object-space
    vertex position componentwise by the `Scale` (Vector3) output, upstream of the
    existing `SpreadSubGraph` offset.
    Fragment: Custom Function `PrismColorLerp` with `Target*` inputs fed by the

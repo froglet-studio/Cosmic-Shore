@@ -35,7 +35,7 @@ which does the identical insertion with automatic rollback on import error.
 
 ## Phase 1 — BlockGraph grow nodes — ✅ WIRED PROGRAMMATICALLY IN-BRANCH
 
-Done out-of-editor and committed: Time node + `PrismGrowScale` Custom Function
+Done out-of-editor and committed: `_PrismClock` global feed + `PrismGrowScale` Custom Function
 (source = `PrismClockAnimation.hlsl`, GUID pinned by its committed `.meta`) +
 property feeds + Multiply spliced into the one edge that fed Vertex ▸ Position
 (`Prism Sub Graph #1 → Multiply.A`, `Scale → Multiply.B`, `Multiply → Position`).
@@ -66,7 +66,7 @@ Same file. Properties already present.
       Vector4 · `StartDark` Vector4 · `StartSpread` Vector3 · `TargetBright` Vector4
       · `TargetDark` Vector4 · `TargetSpread` Vector3. Outputs: `Bright` Vector4 ·
       `Dark` Vector4 · `Spread` Vector3.
-- [ ] Wire: Time.Time → `Clock`; `ColorStartTime` → `StartTime`, `ColorDuration` →
+- [ ] Wire: the `PrismClock` property node → `Clock`; `ColorStartTime` → `StartTime`, `ColorDuration` →
       `Duration`, `StartBrightColor`/`StartDarkColor`/`StartSpread` → the Start
       inputs; **the EXISTING `BrightColor`/`DarkColor`/`Spread` property nodes →
       the Target inputs** (the bound material's values ARE the lerp targets).
@@ -83,7 +83,7 @@ Open `Assets/_Graphics/Materials/Graphs/ExplodingBlockGraph.shadergraph`.
       `StartTime` Float · `Speed` Float · `Duration` Float · `Velocity` Vector3 ·
       `LegacyAmount` Float · `LegacyOpacity` Float. Outputs: `Amount` Float ·
       `Opacity` Float · `WorldOffset` Vector3.
-- [ ] Wire: Time.Time → `Clock`; `ExplodeStartTime`/`ExplodeSpeed`/`ExplodeDuration`
+- [ ] Wire: the `PrismClock` property node → `Clock`; `ExplodeStartTime`/`ExplodeSpeed`/`ExplodeDuration`
       → `StartTime`/`Speed`/`Duration`; existing `Velocity` property → `Velocity`;
       existing `ExplosionAmount` property → `LegacyAmount`; existing `Opacity`
       property → `LegacyOpacity` (the Legacy inputs keep `TransparentPrismMaterial`
@@ -94,10 +94,10 @@ Open `Assets/_Graphics/Materials/Graphs/ExplodingBlockGraph.shadergraph`.
 - [ ] `WorldOffset` is WORLD-space: Transform node (World → Object, Type
       **Direction**) → **Add** to the object-space vertex position → Vertex ▸ Position.
 - [ ] **Transparent live prisms bloom**: also add the `PrismGrowScale` cluster here
-      (grow properties already exist on this graph's Blackboard). Tip: copy-paste
-      the Time + Custom Function + Multiply nodes from BlockGraph, then re-drag the
-      LOCAL Blackboard properties into the inputs (don't paste property nodes across
-      graphs — drag this graph's own).
+      (grow properties + `PrismClock` already exist on this graph's Blackboard).
+      Tip: copy-paste the Custom Function + Multiply nodes from BlockGraph, then
+      re-drag the LOCAL Blackboard properties (including `PrismClock`) into the
+      inputs — don't paste property nodes across graphs.
 - [ ] Save → Validate → play: debris flies/shatters/fades smoothly; transparent
       prisms bloom on spawn and render correctly at rest.
 
@@ -108,7 +108,7 @@ Open `Assets/_Graphics/Materials/Graphs/PrismGraphs/SuctionGraph.shadergraph`.
 - [ ] Custom Function **`PrismSuctionClock`** — Inputs: `Clock` Float · `StartTime`
       Float · `Duration` Float · `Direction` Float · `GrowDelay` Float ·
       `LegacyState` Float. Output: `State` Float.
-- [ ] Wire: Time.Time → `Clock`; `SuctionStartTime`/`SuctionDuration`/
+- [ ] Wire: the `PrismClock` property node → `Clock`; `SuctionStartTime`/`SuctionDuration`/
       `SuctionDirection`/`SuctionGrowDelay` → their inputs; existing `State`
       property → `LegacyState`. The `State` output replaces every downstream
       `_State` use. (`_Location` stays untouched — live moving-target exception.)
@@ -155,6 +155,7 @@ pooling · B4 GPU shield morphs.
 | Symptom | Cause | Fix |
 |---|---|---|
 | Prism snaps + `[PrismClock] ... does not declare '_X'` | Property missing (graph reverted?) | Run **Auto-Wire Clock Properties**; reimport |
+| Pops in fully grown, NO errors | Clock domains mismatched (the original Time-node bug) or `_PrismClock` exposed/not published | Clock input must come from the `_PrismClock` property node (unexposed global); validator checks it |
 | Snaps, property exists, error persists | Not Hybrid Per Instance / wrong reference | Validator names it; fix Node Settings |
 | Everything magenta after a graph edit | Graph failed to compile | Undo / `git checkout` the `.shadergraph`, redo; Auto-Wire self-rolls-back |
 | Growth smooth but colors pop | Phase 2 outputs not re-routed | Finish the `Bright`/`Dark`/`Spread` re-route |

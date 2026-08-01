@@ -84,6 +84,25 @@ namespace CosmicShore.Editor
                 foreach (var prop in spec.OptionalProps)
                     CheckProp(report, blocks, prop, required: false);
 
+                // The clock feed: _PrismClock must exist as a GLOBAL (unexposed,
+                // no HPI) — published per frame by PrismClock's publisher. The
+                // shader Time node is deliberately NOT used (URP feeds it from a
+                // different clock domain than the stamps — the pop-in bug).
+                var clockBlock = blocks.FirstOrDefault(b =>
+                    b.Contains("\"m_DefaultReferenceName\": \"_PrismClock\"") && b.Contains("ShaderProperty"));
+                if (clockBlock == null)
+                {
+                    report.AppendLine("   ❌ property _PrismClock MISSING (the global clock feed)");
+                    allRequiredPass = false;
+                }
+                else if (clockBlock.Contains("\"m_GeneratePropertyBlock\": true"))
+                {
+                    report.AppendLine("   ❌ _PrismClock is EXPOSED — it must be unexposed (global uniform) or Shader.SetGlobalFloat cannot drive it");
+                    allRequiredPass = false;
+                }
+                else
+                    report.AppendLine("   ✅ property _PrismClock (global, unexposed)");
+
                 // The Custom Function nodes reference PrismClockAnimation.hlsl by asset;
                 // its function names appearing in the graph source is the cheapest
                 // node-presence signal available textually.

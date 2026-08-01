@@ -40,7 +40,17 @@ namespace CosmicShore.Editor
             public string Display;      // blackboard display name
             public string DonorType;    // serialized property class to clone
             public string ValueJson;    // replacement for the m_Value payload
+            public bool Global;         // true = unexposed global uniform (no HPI) — the _PrismClock feed
         }
+
+        static PropSpec GlobalClock() => new PropSpec
+        {
+            Ref = "_PrismClock",
+            Display = "PrismClock",
+            DonorType = FloatType,
+            ValueJson = "0.0",
+            Global = true,
+        };
 
         static PropSpec F(string refName, float v) => new PropSpec
         {
@@ -79,6 +89,7 @@ namespace CosmicShore.Editor
                 GraphName = "BlockGraph",
                 Props = new[]
                 {
+                    GlobalClock(),
                     F("_GrowStartTime", 0f), F("_GrowRate", 0f), V3("_GrowStartFrac", 1f, 1f, 1f),
                     F("_ColorStartTime", 0f), F("_ColorDuration", 0f),
                     C4("_StartBrightColor", 1f, 1f, 1f, 1f), C4("_StartDarkColor", 1f, 1f, 1f, 1f),
@@ -90,6 +101,7 @@ namespace CosmicShore.Editor
                 GraphName = "ExplodingBlockGraph",
                 Props = new[]
                 {
+                    GlobalClock(),
                     F("_ExplodeStartTime", 0f), F("_ExplodeSpeed", 0f), F("_ExplodeDuration", 0f),
                     // Transparent LIVE prisms rest on this graph — the grow trio here
                     // is what lets them bloom instead of snapping (loudly) on spawn.
@@ -101,6 +113,7 @@ namespace CosmicShore.Editor
                 GraphName = "SuctionGraph",
                 Props = new[]
                 {
+                    GlobalClock(),
                     F("_SuctionStartTime", 0f), F("_SuctionDuration", 0f),
                     F("_SuctionDirection", 1f), F("_SuctionGrowDelay", 0f),
                 },
@@ -253,10 +266,17 @@ namespace CosmicShore.Editor
             s = ReplaceFirst(s, "\"m_RefNameGeneratedByDisplayName\": \"[^\"]*\"", $"\"m_RefNameGeneratedByDisplayName\": \"{prop.Display}\"");
             s = ReplaceFirst(s, "\"m_DefaultReferenceName\": \"[^\"]*\"", $"\"m_DefaultReferenceName\": \"{prop.Ref}\"");
             s = ReplaceFirst(s, "\"m_OverrideReferenceName\": \"[^\"]*\"", "\"m_OverrideReferenceName\": \"\"");
-            s = ReplaceFirst(s, "\"overrideHLSLDeclaration\": (true|false)", "\"overrideHLSLDeclaration\": true");
-            s = ReplaceFirst(s, "\"hlslDeclarationOverride\": -?\\d+", "\"hlslDeclarationOverride\": 3");
+            // Globals (the _PrismClock feed) are UNEXPOSED with no declaration
+            // override — Shader Graph declares unexposed properties as global
+            // uniforms, which is what lets Shader.SetGlobalFloat drive them.
+            // Per-instance stamps are EXPOSED + Hybrid Per Instance.
+            s = ReplaceFirst(s, "\"overrideHLSLDeclaration\": (true|false)",
+                prop.Global ? "\"overrideHLSLDeclaration\": false" : "\"overrideHLSLDeclaration\": true");
+            s = ReplaceFirst(s, "\"hlslDeclarationOverride\": -?\\d+",
+                prop.Global ? "\"hlslDeclarationOverride\": 0" : "\"hlslDeclarationOverride\": 3");
             s = ReplaceFirst(s, "\"m_Hidden\": (true|false)", "\"m_Hidden\": false");
-            s = ReplaceFirst(s, "\"m_GeneratePropertyBlock\": (true|false)", "\"m_GeneratePropertyBlock\": true");
+            s = ReplaceFirst(s, "\"m_GeneratePropertyBlock\": (true|false)",
+                prop.Global ? "\"m_GeneratePropertyBlock\": false" : "\"m_GeneratePropertyBlock\": true");
 
             // Default value: scalar for floats, flat object for vector/color.
             string valued = prop.DonorType == FloatType
@@ -267,7 +287,8 @@ namespace CosmicShore.Editor
 
             // Identity sanity: every rewritten field must actually differ from a
             // second clone of the same donor (i.e. the regexes matched).
-            if (!s.Contains(objectId) || !s.Contains(prop.Ref) || !s.Contains("\"hlslDeclarationOverride\": 3"))
+            string expectedDecl = prop.Global ? "\"hlslDeclarationOverride\": 0" : "\"hlslDeclarationOverride\": 3";
+            if (!s.Contains(objectId) || !s.Contains(prop.Ref) || !s.Contains(expectedDecl))
                 return null;
 
             return s;

@@ -35,6 +35,9 @@
         },
         {
             "m_Id": "5a300271ef3245d086185a8c60920982"
+        },
+        {
+            "m_Id": "20f6bcc578bf4f219835b4b9010bf320"
         }
     ],
     "m_Keywords": [],
@@ -823,6 +826,9 @@
         },
         {
             "m_Id": "db9b5644c1184b54bae61e50a60973d2"
+        },
+        {
+            "m_Id": "20f6bcc578bf4f219835b4b9010bf320"
         }
     ]
 }
@@ -2623,3 +2629,30 @@
     ]
 }
 
+{
+    "m_SGVersion": 1,
+    "m_Type": "UnityEditor.ShaderGraph.Internal.Vector1ShaderProperty",
+    "m_ObjectId": "20f6bcc578bf4f219835b4b9010bf320",
+    "m_Guid": {
+        "m_GuidSerialized": "0eafa98a-a3ed-48c3-9d56-b9f12096a4ae"
+    },
+    "m_Name": "PrismClock",
+    "m_DefaultRefNameVersion": 1,
+    "m_RefNameGeneratedByDisplayName": "PrismClock",
+    "m_DefaultReferenceName": "_PrismClock",
+    "m_OverrideReferenceName": "",
+    "m_GeneratePropertyBlock": false,
+    "m_UseCustomSlotLabel": false,
+    "m_CustomSlotLabel": "",
+    "m_DismissedVersion": 0,
+    "m_Precision": 0,
+    "overrideHLSLDeclaration": false,
+    "hlslDeclarationOverride": 0,
+    "m_Hidden": false,
+    "m_Value": 0.0,
+    "m_FloatType": 1,
+    "m_RangeValues": {
+        "x": 0.0,
+        "y": 1.0
+    }
+}
