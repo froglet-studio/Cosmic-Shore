@@ -23,6 +23,62 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Presence sync — Commit 2 (poll cadence): honest interval field, wall-clock accumulator, jitter
+
+Commits `09381def`, `084dce0b`, `6a3a37a5` on
+`claude/multiplayer-presence-lobby-sync-6j924k`. Plan:
+`Docs/PresenceSystem/PRESENCE_SYNC_PLAN.md` § 5 Commit 2.
+
+**What landed.** `refreshIntervalSeconds` now actually drives the poll (it did
+not — `AppManager`'s factory hardcoded 1.5f and the prefab said 3, so 1.5 won);
+the backoff and session-settle timings that were incidentally riding that field
+moved to their own constants at unchanged values; the scheduler's accumulator
+now measures wall time instead of gate-eligible time; ±10% jitter added;
+`BOOSTED_INTERVAL_SECONDS` 0.75 → 1.1.
+
+**Verify in editor**
+
+1. **Effective cadence is still ~1.5 s.** `PartyServices.prefab` moved
+   `refreshIntervalSeconds: 3 → 1.5` specifically so this commit changes no
+   timing. Confirm the prefab imported the value (it is a plain YAML scalar
+   edit made without the editor) and that presence refresh logs are ~1.5 s
+   apart in solo Menu_Main, not ~3 s.
+2. **The field is live now.** Set `refreshIntervalSeconds` to something obvious
+   (e.g. 6) in the inspector, enter play, confirm the refresh cadence actually
+   follows it, then set it back to **1.5**. This is the single check that the
+   `DefaultInterval` wiring works; it was untestable before because the field
+   was inert.
+3. **No double-fire and no burst.** The accumulator now runs unconditionally,
+   including before the presence lobby exists. Confirm exactly ONE refresh
+   fires immediately on lobby join (intended — first online-list population no
+   longer waits an interval) and that a long mutex-held write is followed by a
+   single catch-up refresh, not a rapid series of them.
+4. **Party join still settles.** `ResetDeferred(POST_SESSION_SETTLE_SECONDS)`
+   now counts down in wall time rather than eligible time, so the post-join
+   window is genuinely ~3 s + interval instead of "3 s of whenever we happened
+   to be eligible". Run the 3-VP accept flow and confirm no stale-session 404
+   burst right after a join.
+5. **Jitter is not visible as stutter.** ±10% on a 1.5 s poll is ±150 ms; the
+   refresh is a fire-and-forget network call, so it should be invisible.
+   Confirm no periodic hitch appeared.
+
+**First-pass tuning (expect a balancing pass):**
+
+| Knob | Value | Where |
+|---|---|---|
+| Poll cadence | **1.5 s** | `PartyServices.prefab` → `refreshIntervalSeconds` (becomes the 10 s safety poll after Commit 4) |
+| Boosted cadence | **1.1 s** | `LobbyRefreshScheduler.BOOSTED_INTERVAL_SECONDS` |
+| Interval jitter | **±10%** | `LobbyRefreshScheduler.INTERVAL_JITTER_FRACTION` |
+| Rate-limit backoff | **6 s** | `HostConnectionService.RATE_LIMIT_BACKOFF_SECONDS` |
+| Post-session settle | **3 s** | `HostConnectionService.POST_SESSION_SETTLE_SECONDS` |
+
+The boosted cadence is the one to watch: it was raised from 0.75 s to get under
+the ~1/s UGS read cap, at the cost of ~0.35 s of invite latency. If invites feel
+sluggish in the 3-VP smoke, the fix is the push channel (Commit 4), **not**
+lowering this back under 1 s.
+
+---
+
 ### 🔴 Presence sync — Commit 1 (observability): benign-skip counters, shared rate-limit classifier, NetDiag on every presence catch
 
 Commits `44587a2f`, `11559a93`, `92ec00f7` on

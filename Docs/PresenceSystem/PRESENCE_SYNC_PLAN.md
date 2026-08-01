@@ -6,12 +6,13 @@ repaints. When a player leaves, they disappear from every other client's `Friend
 / `ArcadeLobbyList` as fast as the platform allows. Both driven by an explicit state machine
 so each step is an observable event other systems can subscribe to.
 
-**Status.** Commit 1 of 8 shipped (§ 5). Every claim below carries a `file:line` and was
+**Status.** Commits 1 and 2 of 8 shipped (§ 5). Every claim below carries a `file:line` and was
 adversarially re-verified against source. Corrections from the verification pass are folded in;
 where a claim did not survive it is listed in § 8 rather than quietly dropped.
 
-**Nothing here has been run in the editor yet.** Commit 1 is counters plus editor-only logging,
-so the risk is low, but it is unverified — see `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+**Nothing here has been run in the editor yet.** Commit 1 is counters plus editor-only logging
+and Commit 2 is mostly behaviour-preserving, so the risk is low — but it is unverified. See
+`Docs/UNITY_VERIFICATION_CHECKLIST.md`.
 
 **Scope.** The three reported symptoms:
 
@@ -450,18 +451,45 @@ Landed as three commits:
 Only the rate-limit reorder shipped. Everything else in this commit is counters
 and editor-only logging — classification, control flow and recovery are untouched.
 
-### Commit 2 — Kill the decoy interval; jitter; wall-clock accumulator **[RC-4, RC-13]**
+### Commit 2 — Kill the decoy interval; jitter; wall-clock accumulator **[RC-4, RC-13]** — ✅ SHIPPED
 
-- `LobbyRefreshScheduler` — add `public float DefaultInterval { get; set; }`; apply
-  `interval *= Random.Range(0.9f, 1.1f)` re-rolled per fire (`TODO-P3`); raise
-  `BOOSTED_INTERVAL_SECONDS` `0.75f → 1.1f` and fix the comment that claims 0.75 s respects a 1/s cap.
-- `HostConnectionService.Start()` — `_scheduler.DefaultInterval = refreshIntervalSeconds;` (one line;
-  the inspector field finally drives the poll).
-- `Update()` — accumulate **before** the four early-returns; only *fire* if the gates pass.
-- `AppManager.cs:462-466` — delete the now-false "matches the HCS SerializeField default" comment.
-- `LobbyPropertyWriter.cs:113,153` — delete the pre-write and post-save `RefreshAsync()`; keep only
-  the retry refresh. Make the retry delay actually exponential (`baseDelayMs * (1 << attempt)`), as
-  its own comment at `:163-165` claims. **3 UGS calls per write → 1.**
+Landed as three commits:
+
+| Commit | What |
+|---|---|
+| `09381def` | Decoupled the two incidental users of `refreshIntervalSeconds` — the rate-limit backoff (`* 2`, two sites) and the post-session settle — into `RATE_LIMIT_BACKOFF_SECONDS = 6f` / `POST_SESSION_SETTLE_SECONDS = 3f`, both preserving the shipped prefab's effective values. |
+| `084dce0b` | `LobbyRefreshScheduler.DefaultInterval` assigned from `HostConnectionService.Start`; prefab `3 → 1.5` so the **effective cadence is unchanged**; `AppManager`'s factory comment now says its argument is a placeholder `Start` overwrites. |
+| `6a3a37a5` | `ShouldFireNow(dt)` split into `Accumulate(dt)` (unconditional, above the gates) + `TryConsumeFire()` (below them) so the timer measures wall time; ±10% per-fire jitter (`TODO-P3`); `BOOSTED_INTERVAL_SECONDS` `0.75f → 1.1f`. |
+
+The first two are behaviour-preserving; `6a3a37a5` is the only real change.
+
+**Cadence deliberately held at 1.5 s, not raised to the prefab's 3.** Wiring the
+field while keeping 3 would have halved the poll rate and made staleness
+measurably worse with nothing yet compensating — push does not exist until
+Commit 4. The field becomes the safety-poll knob (10 s menu / 30 s in game) there.
+
+**Ordering mattered:** the decouple (`09381def`) had to land *before* the wiring
+(`084dce0b`). The other way round, correcting the prefab value would have
+silently halved the rate-limit backoff and shortened the session settle as a side
+effect of an unrelated fix.
+
+Side effect worth knowing: the accumulator now also runs during boot, so the first
+online-list population fires immediately on lobby join instead of one interval
+later. Session creation still gets its settle window via `ResetDeferred`.
+
+> **Deviation: the `LobbyPropertyWriter` edits move to Commit 4.** This section
+> also called for deleting the pre-write and post-save `lobby.RefreshAsync()`
+> calls (3 UGS calls per write → 1). The stated justification was *"the push
+> channel delivers our own delta back"* — **not true until Commit 4 lands**. Both
+> refreshes have documented reasons that still hold: the pre-write one guards a
+> stale SDK player-index that makes `SaveCurrentPlayerDataAsync` **fail silently**
+> (`LobbyPropertyWriter.cs:110-113`), and the post-save one is documented as
+> reducing the stale-delta window that is B1's root cause (`:146-153`). Deleting
+> them now would likely make B1 *worse* with nothing compensating. The
+> exponential-retry fix (the `when` filter waits a fixed `baseDelayMs` despite the
+> comment at `:163-165` claiming exponential) rides along, being the same fragile
+> write path `TODO-P2` flags as high-risk. **Do not re-derive this — it moves with
+> the push channel or not at all.**
 
 ### Commit 3 — Explicit leave on quit / pause **[RC-5]**
 
