@@ -33,27 +33,29 @@ which does the identical insertion with automatic rollback on import error.
 
 ---
 
-## Phase 1 — BlockGraph grow nodes (the smooth-ring fix, ~10 min)
+## Phase 1 — BlockGraph grow nodes — ✅ WIRED PROGRAMMATICALLY IN-BRANCH
 
-Open `Assets/_Graphics/Materials/Graphs/BlockGraph.shadergraph`. The grow properties
-are already on the Blackboard.
+Done out-of-editor and committed: Time node + `PrismGrowScale` Custom Function
+(source = `PrismClockAnimation.hlsl`, GUID pinned by its committed `.meta`) +
+property feeds + Multiply spliced into the one edge that fed Vertex ▸ Position
+(`Prism Sub Graph #1 → Multiply.A`, `Scale → Multiply.B`, `Multiply → Position`).
+Every object reference machine-validated.
 
-- [ ] Add a **Time** node.
-- [ ] Add a **Custom Function** node — Node Settings: Type **File**, Source
-      **`PrismClockAnimation.hlsl`** (in this same Graphs folder), Name
-      **`PrismGrowScale`**. Inputs, exact names/types: `Clock` Float · `StartTime`
-      Float · `Rate` Float · `StartFrac` Vector3. Output: `Scale` Vector3.
-- [ ] Wire: Time.**Time** → `Clock`; drag Blackboard properties `GrowStartTime` →
-      `StartTime`, `GrowRate` → `Rate`, `GrowStartFrac` → `StartFrac`.
-- [ ] **Multiply the object-space vertex position by `Scale`** at the START of the
-      vertex chain: if the Master Stack's Vertex ▸ Position is fed by the
-      SpreadSubGraph chain, insert the Multiply on that chain's base **Position
-      (Object)** input (the bloom must scale about the origin *before* the spread
-      offset is added). If Vertex ▸ Position is unconnected: Position node (Object)
-      → Multiply (× `Scale`) → Vertex ▸ Position.
-- [ ] **Save Asset** → run **Validate** (BlockGraph `PrismGrowScale` row goes ✅) →
-      play: Squirrel right-trigger ring grows **smooth**; smoke test passes;
-      DiagnosticsHUD Animators stay **0 active**.
+**Your test (nothing to build):**
+
+- [ ] Pull. If git complains about an untracked
+      `PrismClockAnimation.hlsl.meta` (your editor generated one locally before the
+      committed meta existed), delete the local file and pull again — the graph
+      references the committed GUID.
+- [ ] Open the project; let it import. If BlockGraph goes magenta or errors (not
+      expected — the wiring is donor-schema-exact), run
+      **Validate Clock Wiring** and tell me what it says; `git checkout` the graph
+      reverts cleanly.
+- [ ] Play: **Squirrel right-trigger ring must grow smooth** (per-vertex GPU bloom).
+      Trail lay and gyroid growth too. Run the **Smoke Test** menu item; DiagnosticsHUD
+      "Animators" rows stay **0 active**.
+- [ ] Report back — then I wire ExplodingBlockGraph (test: vessel collision debris)
+      and BlockGraph colors (test: skimmer steal) the same way.
 
 ## Phase 2 — BlockGraph color nodes
 
