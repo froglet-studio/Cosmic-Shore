@@ -35,10 +35,13 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Min(0), Tooltip("Most crystal pickups a single scene can hold.")]
         int maxCrystalsPerScene = 3;
 
-        [SerializeField, Tooltip("Theming palette - per-scene domain distribution (incl. neutral Blue), " +
-                                 "prism-kind accents (danger / shielded / supershielded), scale mood, and " +
-                                 "the elemental/omni crystal mix. Weighted toward coherent scenes with " +
-                                 "occasional spice, never chaotic confetti.")]
+        [SerializeField, Tooltip("Theming palette - structural domain schemes over the full playable " +
+                                 "triad (per-structure rainbows, gradients, pinwheels, stripes, mirrors, " +
+                                 "neutral-Blue veins), prism-kind schemes (danger gates/tips, armoured " +
+                                 "shield frames, keystone landmarks - shield counts capped for the " +
+                                 "collider budget), scale moods (uniform / long-axis stretch / taper), " +
+                                 "and the elemental/omni crystal mix. Painted per structure, never " +
+                                 "per-prism confetti.")]
         MicroscenePalette palette = new();
 
         [SerializeField, Tooltip("Include the living recipes (Meadow flora / Menagerie fauna, released into " +
@@ -97,6 +100,22 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Tooltip("Deterministic seed for recipes/variation. 0 = fresh ride every session.")]
         int seed;
 
+        [Header("Conveyor - visibility guards")]
+        [SerializeField, Min(0f),
+         Tooltip("Hard floor on how close a scene may bloom in, world units from the vessel. The " +
+                 "belt already targets far ahead; this guarantees a structure never materialises in " +
+                 "the player's face even under degenerate geometry. Keep at or below First Scene " +
+                 "Distance so it never fights normal near-fill placement.")]
+        float minPlacementDistance = 140f;
+
+        [SerializeField, Min(0f),
+         Tooltip("Extra world-unit margin added to Scene Radius when deciding a scene is fully off " +
+                 "screen before it may be recycled (suctioned away). A scene is only reclaimed once " +
+                 "this padded sphere lies wholly outside the camera view, so the player never watches " +
+                 "a scene vanish. Larger = more buffer against turning mid-transition; the belt just " +
+                 "waits a touch longer for scenes to leave view.")]
+        float offscreenMargin = 40f;
+
         public override void Spawn(Transform parent, ToyPlacement placement, ToyContext context)
         {
             var go = ToyFactory.CreateRoot(Id, parent, placement, AccentColor, DisplayName);
@@ -124,6 +143,8 @@ namespace CosmicShore.ScriptableObjects
             MaxCrystalsPerScene = maxCrystalsPerScene,
             LifeformScenes = lifeformScenes,
             Seed = seed,
+            MinPlacementDistance = minPlacementDistance,
+            OffscreenMargin = offscreenMargin,
         };
 
         /// <summary>Wires a prism prefab on a runtime-synthesised definition (the zero-config default toybox).</summary>

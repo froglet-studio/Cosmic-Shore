@@ -7,6 +7,7 @@ using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using CosmicShore.Utility;
+using CosmicShore.Utility.PerformanceBenchmark;
 using Reflex.Attributes;
 
 namespace CosmicShore.Gameplay
@@ -14,6 +15,7 @@ namespace CosmicShore.Gameplay
     public abstract class MultiplayerMiniGameControllerBase : MiniGameControllerBase
     {
         [Inject] private SceneTransitionManager _sceneTransitionManager;
+        [Inject] private HostConnectionDataSO _hostConnectionData;
 
         protected virtual int InitDelayMs => 1000;
         private bool _isResetting;
@@ -29,10 +31,14 @@ namespace CosmicShore.Gameplay
         {
             base.OnNetworkSpawn();
 
+            LoadInsights.Mark($"Game controller spawned ({GetType().Name}, IsServer={IsServer})");
+
             if (IsServer)
             {
                 gameData.OnMiniGameTurnEnd.OnRaised += HandleTurnEnd;
                 gameData.OnSessionStarted.OnRaised += SubscribeToSessionEvents;
+
+                StampMatchEnvelope();
 
                 // Sync game config to all clients now that we're in the game scene.
                 // Previously this was done by SceneLoader via ClientRpc before scene load,
@@ -40,15 +46,24 @@ namespace CosmicShore.Gameplay
                 SyncGameConfigToClients_ClientRpc(
                     gameData.SceneName,
                     (int)gameData.GameMode,
-                    gameData.IsMultiplayerMode,
                     (int)gameData.selectedVesselClass.Value,
                     gameData.SelectedIntensity.Value,
                     gameData.SelectedPlayerCount.Value,
                     gameData.RequestedAIBackfillCount,
                     gameData.RequestedDomainCount,
-                    gameData.IsTournamentMode
+                    gameData.IsTournamentMode,
+                    gameData.ComebackRatePerScoreDeficit,
+                    gameData.MatchId,
+                    gameData.PartyId,
+                    gameData.InviteTriggered
                 );
             }
+
+            // REQUIRED for every party game: the elemental comeback system. Scene-authored
+            // instances are respected; a scene that forgot one gets it created and configured
+            // for this game mode (comeback runs locally on every machine, so this executes on
+            // host and clients alike).
+            ElementalComebackSystem.EnsureExists(gameObject, gameData);
 
             InitializeAfterDelay().Forget();
         }
@@ -103,10 +118,18 @@ namespace CosmicShore.Gameplay
             try
             {
                 Debug.Log($"<color=#00CED1>[FLOW-7] [MultiplayerMiniGameBase] InitializeAfterDelay - waiting {InitDelayMs}ms, IsServer={IsServer}</color>");
-                await UniTask.Delay(InitDelayMs, DelayType.UnscaledDeltaTime);
+                using (LoadInsights.Measure(LoadInsightCategory.ScriptedDelay,
+                           $"InitDelayMs gate before InitializeGame ({InitDelayMs}ms)", isWait: true))
+                {
+                    await UniTask.Delay(InitDelayMs, DelayType.UnscaledDeltaTime);
+                }
 
                 Debug.Log($"<color=#00CED1>[FLOW-7] [MultiplayerMiniGameBase] Calling gameData.InitializeGame(). Players.Count={gameData.Players.Count}</color>");
-                gameData.InitializeGame();
+                using (LoadInsights.Measure(LoadInsightCategory.GameFlow,
+                           "InitializeGame raise (inline listeners: cell, spawn adapters, HUD…)"))
+                {
+                    gameData.InitializeGame();
+                }
 
                 // On replay scene reload, fade in once the player vessel is ready.
                 // Runs on ALL machines (server + clients) since each needs to fade their own overlay.
@@ -139,20 +162,52 @@ namespace CosmicShore.Gameplay
             }
         }
         
+        /// <summary>
+        /// Host-only: stamps the identifiers that group players into one game instance.
+        /// Runs once per game launch, before the config broadcast.
+        ///
+        /// player_ids is deliberately NOT stamped here - at OnNetworkSpawn the roster has not
+        /// settled. It is derived at game_started from replicated Player NetworkObjects and
+        /// sorted, so every peer computes the same set from the same replicated state.
+        /// See Docs/Analytics/DATA_ARCHITECTURE.md §6.
+        /// </summary>
+        void StampMatchEnvelope()
+        {
+            gameData.MatchId = Guid.NewGuid().ToString("N");
+            gameData.PartyId = ResolvePartyId();
+            gameData.InviteTriggered = _hostConnectionData != null && _hostConnectionData.PartyFormedByInvite;
+        }
+
+        /// <summary>
+        /// The Relay party session id, shared by everyone in the session. Falls back to the
+        /// match id for a solo session with no active session object, so the field is never
+        /// empty and solo games do not all collapse into one group.
+        /// </summary>
+        string ResolvePartyId()
+        {
+            var session = gameData.ActiveSession;
+            if (session != null && !string.IsNullOrEmpty(session.Id))
+                return session.Id;
+
+            return gameData.MatchId;
+        }
+
         // ---------------- Turn & Round Flow ----------------
 
         protected override void OnCountdownTimerEnded()
         {
             if (!IsServer)
                 return;
-                
+
             // Server activates players and starts turn
+            Debug.Log($"<color=#00CED1>[FLOW-9] [MultiplayerMiniGameBase] OnCountdownTimerEnded (server) - activating players. Players={gameData.Players.Count}, RoundStats={gameData.RoundStatsList.Count}</color>");
             OnCountdownTimerEnded_ClientRpc();
         }
-        
+
         [ClientRpc]
         void OnCountdownTimerEnded_ClientRpc()
         {
+            Debug.Log("<color=#00CED1>[FLOW-9] [MultiplayerMiniGameBase] OnCountdownTimerEnded_ClientRpc - SetPlayersActive + StartTurn</color>");
             gameData.SetPlayersActive();
             gameData.StartTurn();
             EnsureLocalHumanCanMove();
@@ -447,21 +502,39 @@ namespace CosmicShore.Gameplay
         /// </summary>
         [ClientRpc]
         void SyncGameConfigToClients_ClientRpc(
-            string sceneName, int gameMode, bool isMultiplayer,
+            string sceneName, int gameMode,
             int vesselClass, int intensity, int playerCount, int aiBackfillCount,
-            int domainCount, bool isTournament)
+            int domainCount, bool isTournament, float comebackRate,
+            string matchId, string partyId, bool inviteTriggered)
         {
             if (IsServer) return;
 
+            // Match envelope: echoed verbatim, never recomputed. Every client must emit the
+            // SAME identifiers on game_started or the analytics GROUP BY fragments.
+            gameData.MatchId = matchId;
+            gameData.PartyId = partyId;
+            gameData.InviteTriggered = inviteTriggered;
+
             gameData.SceneName = sceneName;
             gameData.GameMode = (GameModes)gameMode;
-            gameData.IsMultiplayerMode = isMultiplayer;
             gameData.selectedVesselClass.Value = (VesselClassType)vesselClass;
             gameData.SelectedIntensity.Value = intensity;
             gameData.SelectedPlayerCount.Value = playerCount;
             gameData.RequestedAIBackfillCount = aiBackfillCount;
             gameData.RequestedDomainCount = domainCount;
             gameData.IsTournamentMode = isTournament;
+            gameData.ComebackRatePerScoreDeficit = comebackRate;
+
+            // Clients began recording before these values replicated — refresh the report header
+            // with the authoritative config now that it has arrived.
+            LoadInsights.Mark("Game config received from server");
+            LoadInsights.SetGameContext(
+                sceneName, ((GameModes)gameMode).ToString(), intensity, playerCount,
+                Mathf.Max(0, playerCount - aiBackfillCount), aiBackfillCount,
+                // The RPC no longer carries an isMultiplayer flag: C5 retired
+                // IsMultiplayerMode because every mode runs the networked single-host
+                // model, so there is nothing left to sync. Matches GameDataSO.InvokeGameLaunch.
+                isMultiplayer: true);
         }
     }
 }

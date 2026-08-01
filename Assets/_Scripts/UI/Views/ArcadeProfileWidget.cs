@@ -72,11 +72,11 @@ namespace CosmicShore.UI
             if (profile == null) return;
 
             if (usernameText)
-                usernameText.text = profile.displayName;
+                usernameText.text = profile.Identity.DisplayName;
 
             if (avatarImage && profileIconList)
             {
-                avatarImage.sprite = ResolveAvatarSprite(profile.avatarId);
+                avatarImage.sprite = ResolveAvatarSprite(profile.Identity.AvatarId);
                 avatarImage.enabled = avatarImage.sprite != null;
             }
         }

@@ -64,16 +64,26 @@ namespace CosmicShore.Gameplay
         IVesselStatus vesselStatus;
         bool _subscribedToInputPaused;
 
+        // Idempotence guard: subscription is requested from two independent paths for the
+        // local vessel (VesselController.Initialize and the input-unpause replay through
+        // OnToggleInputPaused). Without the guard the delegates stack and every button
+        // event dispatches its actions twice (double RPCs, double Start/StopAction).
+        bool _buttonEventsSubscribed;
+
         void SubscribeToInputEvents()
         {
+            if (_buttonEventsSubscribed) return;
             _onButtonPressed.OnRaised  += OnButtonPressed;
             _onButtonReleased.OnRaised += OnButtonReleased;
+            _buttonEventsSubscribed = true;
         }
 
         void UnsubscribeFromInputEvents()
         {
+            if (!_buttonEventsSubscribed) return;
             _onButtonPressed.OnRaised  -= OnButtonPressed;
             _onButtonReleased.OnRaised -= OnButtonReleased;
+            _buttonEventsSubscribed = false;
         }
 
         void OnDisable()
@@ -182,6 +192,37 @@ namespace CosmicShore.Gameplay
 
         void OnToggleInputPaused(bool toggle) => ToggleSubscription(!toggle);
 
+        /// <summary>
+        /// Appends every action this vessel binds to <paramref name="inputEvent"/> - across the shared
+        /// map AND both device override maps, not just the active device's. Presentation code uses it
+        /// to work out which ability an input drives (the HUD's control-hint binder), which needs to
+        /// see the touch and gamepad bindings together to know they are the same ability.
+        /// Safe before Initialize - the maps are simply empty.
+        /// </summary>
+        public void CollectBoundActions(InputEvents inputEvent, List<ShipActionSO> into)
+        {
+            if (into == null) return;
+            AppendBound(_shipControlActions, inputEvent, into);
+            AppendBound(_touchOverrideActions, inputEvent, into);
+            AppendBound(_gamepadOverrideActions, inputEvent, into);
+        }
+
+        /// <summary>True when this vessel binds any action to the input event, on any device.</summary>
+        public bool HasBinding(InputEvents inputEvent) =>
+            IsBound(_shipControlActions, inputEvent) ||
+            IsBound(_touchOverrideActions, inputEvent) ||
+            IsBound(_gamepadOverrideActions, inputEvent);
+
+        static void AppendBound(Dictionary<InputEvents, List<ShipActionSO>> map,
+            InputEvents inputEvent, List<ShipActionSO> into)
+        {
+            if (map != null && map.TryGetValue(inputEvent, out var list) && list != null)
+                into.AddRange(list);
+        }
+
+        static bool IsBound(Dictionary<InputEvents, List<ShipActionSO>> map, InputEvents inputEvent)
+            => map != null && map.TryGetValue(inputEvent, out var list) && list is { Count: > 0 };
+
         bool HasAction(InputEvents inputEvent)
         {
             var overrides = GetActiveOverrides();
@@ -192,7 +233,7 @@ namespace CosmicShore.Gameplay
 
         void OnButtonPressed(InputEvents ie)
         {
-            if (vesselStatus.AutoPilotEnabled) 
+            if (vesselStatus.AutoPilotEnabled)
                 return;
             if (IsInputMuted(ie)) return;
             if (IsSpawned && IsOwner)

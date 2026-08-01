@@ -24,12 +24,13 @@ namespace CosmicShore.Gameplay
             Release_(instance);
         }
 
-        protected override Projectile CreateFunc()
+        // OnInstanceCreated (not CreateFunc) so async InstantiateAsync refills are
+        // injected too — an un-injected projectile NREs on its null AudioSystem in
+        // LaunchProjectile and every shot from that instance is a dud.
+        protected override void OnInstanceCreated(Projectile obj)
         {
-            var obj = base.CreateFunc();
             if (_container != null)
                 GameObjectInjector.InjectRecursive(obj.gameObject, _container);
-            return obj;
         }
     }
 }

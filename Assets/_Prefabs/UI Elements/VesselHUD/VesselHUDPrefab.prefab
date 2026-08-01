@@ -779,6 +779,7 @@ GameObject:
   m_Component:
   - component: {fileID: 6557045720525393826}
   - component: {fileID: 5582900316631961953}
+  - component: {fileID: 177924628460034342}
   m_Layer: 0
   m_Name: ShipHUDPrefab
   m_TagString: Untagged
@@ -2071,3 +2072,20 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!114 &177924628460034342
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3323122711064239023}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 87aee9c87b20478c8938cc775a54f19d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  xboxIconRoot: {fileID: 1005613640110903854}
+  psIconRoot: {fileID: 2086617415635028028}
+  keyboardTextRoot: {fileID: 0}
+  showXboxSetWhenNoKeyboardRoot: 1
+  stickActuationThreshold: 0.25

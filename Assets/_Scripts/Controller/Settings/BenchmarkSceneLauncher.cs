@@ -11,8 +11,9 @@ namespace CosmicShore.Core
     /// <c>OnLaunchGame</c> → <c>SceneLoader.LaunchGame</c>), so the always-on Relay host loads it
     /// correctly via Netcode scene management and nothing special-cases it.
     ///
-    /// The scene runs as a single-player sandbox (<see cref="SandboxBenchmarkController"/> +
-    /// <c>MiniGamePlayerSpawnerAdapter</c>) - the host loads it, the Relay simply idles.
+    /// The scene runs on the networked single-host model like every mode
+    /// (<see cref="SandboxBenchmarkController"/> + <c>ServerPlayerVesselInitializerWithAI</c>):
+    /// the host's Squirrel plus an AI crowd sized by the graphics settings.
     /// </summary>
     public class BenchmarkSceneLauncher : MonoBehaviour
     {
@@ -38,13 +39,12 @@ namespace CosmicShore.Core
                 : 3;
 
             gameData.SceneName = BenchmarkSceneName;
-            gameData.GameMode = GameModes.WildlifeBlitz; // single-player ecosystem mode → AI seeks crystals
-            gameData.IsMultiplayerMode = false;
+            gameData.GameMode = GameModes.Benchmark;
             gameData.selectedVesselClass.Value = VesselClassType.Squirrel;
             gameData.SelectedIntensity.Value = intensity;
+            gameData.RequestedDomainCount = 3; // deterministic Jade/Ruby/Gold AI spread (don't inherit the last game's)
 
-            // Drives AI backfill where supported; the cloned single-player scene also carries a fixed
-            // AI list in its spawner. 1 human + aiCount AI.
+            // 1 human + aiCount AI Squirrels via ServerPlayerVesselInitializerWithAI backfill.
             gameData.ConfigurePlayerCounts(1 + Mathf.Max(0, aiCount), 1);
 
             gameData.InvokeGameLaunch();

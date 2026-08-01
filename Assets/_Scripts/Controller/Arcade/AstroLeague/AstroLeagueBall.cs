@@ -190,6 +190,44 @@ namespace CosmicShore.Gameplay
             transform.localScale = _baseScale * Mathf.Max(0.01f, factor);
         }
 
+        /// <summary>
+        /// Dress a visual-only ghost of this ball for the goal replay: same icosphere mesh, same
+        /// shared material with the CURRENT property-block tint (frozen at the goal moment - the
+        /// scorer's domain color), same world scale, and a matching motion trail. No collider, no
+        /// networking - <see cref="AstroLeagueGoalReplay"/> animates the ghost's transform locally.
+        /// </summary>
+        public void DressReplayGhost(MeshFilter ghostMesh, MeshRenderer ghostRenderer, TrailRenderer ghostTrail)
+        {
+            if (ghostMesh != null && meshFilter != null)
+            {
+                ghostMesh.sharedMesh = meshFilter.sharedMesh;
+                ghostMesh.transform.localScale = transform.localScale;
+            }
+
+            if (ghostRenderer != null && ballRenderer != null)
+            {
+                ghostRenderer.sharedMaterial = ballRenderer.sharedMaterial;
+                if (mpb != null) ghostRenderer.SetPropertyBlock(mpb);
+                ghostRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                ghostRenderer.receiveShadows = false;
+            }
+
+            if (ghostTrail != null && trail != null)
+            {
+                ghostTrail.time = 0.35f;
+                ghostTrail.startWidth = trail.startWidth;
+                ghostTrail.endWidth = trail.endWidth;
+                ghostTrail.numCapVertices = trail.numCapVertices;
+                ghostTrail.sharedMaterial = trail.sharedMaterial;
+                ghostTrail.startColor = trail.startColor;
+                ghostTrail.endColor = trail.endColor;
+                ghostTrail.minVertexDistance = trail.minVertexDistance;
+                ghostTrail.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                ghostTrail.receiveShadows = false;
+                ghostTrail.generateLightingData = false;
+            }
+        }
+
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
@@ -523,6 +561,8 @@ namespace CosmicShore.Gameplay
         ///                                             The ONLY thing that slows the ball.
         ///   • OPPOSING + SHIELDED                 → UNSHIELD it and LEAVE it standing this visit (the
         ///                                             shield absorbs the pass); a later visit eats it.
+        ///   • SUPER-SHIELDED (any domain)         → UNTOUCHED. Invulnerable structure (the arena's
+        ///                                             edge lining) - never popped, never eaten, no cost.
         /// Prisms are per-peer GameObjects, so each peer resolves its OWN local copies (position-
         /// deterministic). Only the SERVER applies the speed drag; clients get the slowed velocity via
         /// replication and just mirror the shield/destroy on their copies.
@@ -562,10 +602,16 @@ namespace CosmicShore.Gameplay
                 {
                     var prism = _prismQueryBuffer[i];
                     if (prism == null || prism.destroyed) continue;
+
+                    // SUPER-shielded prisms are fully invulnerable structure (Prism.Damage/Consume
+                    // no-op on them - e.g. the arena's edge lining): the ball passes through
+                    // untouched regardless of domain - never unshielded, never eaten, no speed cost.
+                    if (prism.prismProperties.IsSuperShielded) continue;
+
                     _scanInRange.Add(prism);
 
                     bool same = !ballNeutral && prism.Domain == ballDomain;
-                    bool shielded = prism.prismProperties.IsShielded || prism.prismProperties.IsSuperShielded;
+                    bool shielded = prism.prismProperties.IsShielded;
 
                     if (same)
                     {
@@ -946,14 +992,15 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        /// <summary>Base hue for a claimed (non-neutral) ball - matches the arena's per-domain palette.</summary>
+        /// <summary>Base hue for a claimed (non-neutral) ball - matches the arena's per-domain palette
+        /// (all three domains config-driven from <see cref="AstroLeagueSettingsSO"/>).</summary>
         Color DomainTint(Domains d)
         {
             switch (d)
             {
                 case Domains.Jade: return settings.jadeGoalColor;
                 case Domains.Ruby: return settings.rubyGoalColor;
-                case Domains.Gold: return new Color(1f, 0.82f, 0.2f, 1f);
+                case Domains.Gold: return settings.goldGoalColor;
                 default: return primaryColor;
             }
         }

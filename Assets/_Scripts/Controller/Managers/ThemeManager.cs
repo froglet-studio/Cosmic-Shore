@@ -25,9 +25,9 @@ namespace CosmicShore.Gameplay
                 { Domains.Blue,  BlueTeamMaterialSet },
             };
 
-            // Hand the ColorSet to the static game-feed API so it colors joust messages
+            // Hand the ColorSet to the static game-toast API so it colors domain names
             // from the same single source the vessels and prisms use (R5).
-            GameFeedAPI.ColorSet = _dataContainer.ColorSet;
+            GameToastAPI.ColorSet = _dataContainer.ColorSet;
         }
 
         SO_MaterialSet GenerateDomainMaterialSet(DomainColorSet colorSet, string domainName)
@@ -54,9 +54,6 @@ namespace CosmicShore.Gameplay
             materialSet.AOEConicExplosionMaterial = new Material(_dataContainer.BaseMaterialSet.AOEConicExplosionMaterial);
             materialSet.SpikeMaterial = new Material(_dataContainer.BaseMaterialSet.SpikeMaterial);
             materialSet.SkimmerMaterial = new Material(_dataContainer.BaseMaterialSet.SkimmerMaterial);
-
-            // Copy prefab reference
-            materialSet.BlockSilhouettePrefab = _dataContainer.BaseMaterialSet.BlockSilhouettePrefab;
 
             // Set colors for materials that use domain-specific colors
             materialSet.BlockMaterial.SetColor("_BrightColor", colorSet.InsideBlockColor);

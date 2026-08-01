@@ -39,6 +39,18 @@ namespace CosmicShore.ScriptableObjects
         /// </summary>
         public Color GetDomainUIColor(Domains domain) =>
             TryGetColorSetByDomain(domain, out var colorSet) ? colorSet.TrailHighlightColor : Color.gray;
+
+        /// <summary>
+        /// The per-domain accent for translucent flat-UI card tints (Maelstrom round/player/summary
+        /// cards, Connecting-panel domain rank) - deliberately brighter than
+        /// <see cref="DomainColorSet.TrailHighlightColor"/> and alpha-tinted so card backgrounds stay
+        /// translucent over the scene. Falls back to <see cref="GetDomainUIColor"/> when the accent is
+        /// unauthored (alpha 0), so color sets without accents keep the unified domain UI color.
+        /// </summary>
+        public Color GetDomainUIAccentColor(Domains domain) =>
+            TryGetColorSetByDomain(domain, out var colorSet) && colorSet.UIAccentColor.a > 0f
+                ? colorSet.UIAccentColor
+                : GetDomainUIColor(domain);
     }
 
     [System.Serializable]
@@ -63,7 +75,10 @@ namespace CosmicShore.ScriptableObjects
         [ColorUsage(true, true)] [SerializeField] public Color BrightCrystalColor;
         [ColorUsage(true, true)] [SerializeField] public Color TrailHighlightColor;
         [ColorUsage(true, true)] [SerializeField] public Color TrailCoreColor;
-
+        [Tooltip("Translucent flat-UI accent (Maelstrom cards, Connecting-panel rank). Brighter than " +
+                 "TrailHighlightColor, alpha-tinted for card backgrounds. Alpha 0 = unauthored, falls " +
+                 "back to the unified domain UI color (TrailHighlightColor).")]
+        [SerializeField] public Color UIAccentColor;
     }
 
     [System.Serializable]

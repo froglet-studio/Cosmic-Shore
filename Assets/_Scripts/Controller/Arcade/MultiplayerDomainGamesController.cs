@@ -1,7 +1,7 @@
 using System.Collections;
 using System.Linq;
 using CosmicShore.UI;
-using Cysharp.Threading.Tasks;
+using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
 using CosmicShore.Utility;
@@ -11,7 +11,19 @@ namespace CosmicShore.Gameplay
 {
     public class MultiplayerDomainGamesController : MultiplayerMiniGameControllerBase
     {
+        [Header("Scoring")]
+        [Tooltip("Drag the mode's ScoringRule asset - the per-mode scoring strategy (winner, scores, results).")]
+        [SerializeField] protected ScoringRuleSO rule;
+
         private int readyClientCount;
+
+        /// <summary>
+        /// Latched (server-side) once the authoritative final results have been computed and
+        /// broadcast via <see cref="SyncFinalResults"/>. Suppresses the base round flow's
+        /// Ready button (<see cref="SetupNewRound"/>) and makes repeat end-game calls no-ops.
+        /// Reset on network spawn and on in-place replay.
+        /// </summary>
+        protected bool FinalResultsSent { get; private set; }
 
         // ── Server-authoritative per-domain score sync (in-game HUD) ─────────────
         // Clients re-summing their own per-player RoundStats can freeze for a client's OWN player
@@ -30,6 +42,13 @@ namespace CosmicShore.Gameplay
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
+
+            // Publish the mode's scoring rule for every rule consumer (domain sums, HUD metric,
+            // turn monitors, results). Null only for not-yet-migrated legacy scenes, which must
+            // not clear a previously published rule they don't own.
+            if (rule != null)
+                gameData.ScoringRule = rule;
+            FinalResultsSent = false;
 
             // Every peer mirrors the synced sums into gameData (read by MultiplayerHUD).
             n_DomainSum0.OnValueChanged += (_, v) => PublishDomainSum(0, v);
@@ -69,33 +88,130 @@ namespace CosmicShore.Gameplay
             var wait = new WaitForSeconds(0.1f);
             while (true)
             {
-                var rule = gameData.ScoringRule;
-                if (rule != null)
+                // Read the published rule (not the serialized field) so not-yet-migrated
+                // subclasses that publish nothing keep their pre-hoist behavior.
+                var activeRule = gameData.ScoringRule;
+                if (activeRule != null)
                 {
-                    n_DomainSum0.Value = ScoringMetrics.SumByDomain(gameData, rule.Metric, GameDataSO.ActiveDomains[0]);
-                    n_DomainSum1.Value = ScoringMetrics.SumByDomain(gameData, rule.Metric, GameDataSO.ActiveDomains[1]);
-                    n_DomainSum2.Value = ScoringMetrics.SumByDomain(gameData, rule.Metric, GameDataSO.ActiveDomains[2]);
+                    n_DomainSum0.Value = ScoringMetrics.SumByDomain(gameData, activeRule.Metric, GameDataSO.ActiveDomains[0]);
+                    n_DomainSum1.Value = ScoringMetrics.SumByDomain(gameData, activeRule.Metric, GameDataSO.ActiveDomains[1]);
+                    n_DomainSum2.Value = ScoringMetrics.SumByDomain(gameData, activeRule.Metric, GameDataSO.ActiveDomains[2]);
                 }
                 yield return wait;
             }
         }
 
-        protected override void OnCountdownTimerEnded()
-        {
-            if (!IsServer)
-                return;
+        // ── Rule-driven authoritative end-game (the shared six-step tail) ────────
+        // Every domain mode ends the same way: server detects the winner in its
+        // OnTurnEndedCustom, then calls SyncFinalResults exactly once. The template owns
+        // score assignment, the roster snapshot, and the canonical results tail
+        // (WinnerName → SortRoundStats → CalculateDomainStats → SetResults →
+        // InvokeWinnerCalculated → InvokeMiniGameEnd) so a mode cannot forget a step.
 
-            Debug.Log($"<color=#00CED1>[FLOW-9] [DomainGamesCtrl] OnCountdownTimerEnded (server) - activating players. Players={gameData.Players.Count}, RoundStats={gameData.RoundStatsList.Count}</color>");
-            OnCountdownTimerEnded_ClientRpc();
+        /// <summary>
+        /// Server-side: the one authoritative end-game entry for domain modes. Assigns final
+        /// scores via the rule, sorts + aggregates, snapshots the roster (name/score/domain/
+        /// metric) and broadcasts the canonical results tail to every peer. Latched - repeat
+        /// calls are no-ops. Modes call this from <see cref="OnTurnEndedCustom"/> once their
+        /// winning domain is known; <paramref name="finishTime"/> feeds golf-style
+        /// <see cref="ScoringRuleSO.AssignScores"/> (pass 0 for points modes).
+        /// A <see cref="Domains.Blue"/> winner is a valid NO-WINNER end (e.g. a co-op DNF):
+        /// results still broadcast, with no representative name and DEFEAT attribution.
+        /// </summary>
+        protected void SyncFinalResults(Domains winnerDomain, float finishTime)
+        {
+            if (!IsServer || FinalResultsSent) return;
+
+            var statsList = gameData.RoundStatsList;
+            if (statsList == null || statsList.Count == 0) return;
+
+            // Representative winner-name resolves before AssignScores mutates Score
+            // (LiveMetric is Score-independent, but keep the read upfront for clarity).
+            string winnerName = winnerDomain == Domains.Blue ? "" : ResolveWinnerRepresentativeName(winnerDomain);
+            if (winnerDomain != Domains.Blue && string.IsNullOrEmpty(winnerName)) return; // no roster entry on the winning domain
+
+            Debug.Log($"<color=#00CED1>[FLOW-10] [{GetType().Name}] Final results - domain {winnerDomain} wins ('{winnerName}', finishTime={finishTime:F2}). Broadcasting.</color>");
+            FinalResultsSent = true;
+
+            rule.AssignScores(gameData, winnerDomain, finishTime);
+            gameData.SortRoundStats(UseGolfRules);
+            gameData.CalculateDomainStats(UseGolfRules);
+
+            int count = statsList.Count;
+            var names = new FixedString64Bytes[count];
+            var scores = new float[count];
+            var domains = new int[count];
+            var metricValues = new int[count];
+
+            for (int i = 0; i < count; i++)
+            {
+                names[i] = new FixedString64Bytes(statsList[i].Name);
+                scores[i] = statsList[i].Score;
+                domains[i] = (int)statsList[i].Domain;
+                metricValues[i] = rule.LiveMetric(statsList[i]);
+            }
+
+            SyncFinalResults_ClientRpc(names, scores, domains, metricValues,
+                new FixedString64Bytes(winnerName), (int)winnerDomain);
+        }
+
+        /// <summary>
+        /// Representative winner-name = best individual metric contributor on the winning
+        /// domain (display strings only - VICTORY/DEFEAT attribution is via WinnerDomain).
+        /// First roster entry wins metric ties, keeping the pick deterministic on the server.
+        /// </summary>
+        protected virtual string ResolveWinnerRepresentativeName(Domains winnerDomain)
+        {
+            IRoundStats best = null;
+            var statsList = gameData.RoundStatsList;
+            for (int i = 0; i < statsList.Count; i++)
+            {
+                var stats = statsList[i];
+                if (stats == null || stats.Domain != winnerDomain) continue;
+                if (best == null || rule.LiveMetric(stats) > rule.LiveMetric(best))
+                    best = stats;
+            }
+            return best?.Name ?? "";
         }
 
         [ClientRpc]
-        void OnCountdownTimerEnded_ClientRpc()
+        void SyncFinalResults_ClientRpc(
+            FixedString64Bytes[] names,
+            float[] scores,
+            int[] domains,
+            int[] metricValues,
+            FixedString64Bytes winnerName,
+            int winnerDomain)
         {
-            Debug.Log("<color=#00CED1>[FLOW-9] [DomainGamesCtrl] OnCountdownTimerEnded_ClientRpc - SetPlayersActive + StartTurn</color>");
-            gameData.SetPlayersActive();
-            gameData.StartTurn();
-            EnsureLocalHumanCanMove();
+            for (int i = 0; i < names.Length; i++)
+            {
+                string sName = names[i].ToString();
+                var stat = gameData.RoundStatsList.FirstOrDefault(s => s.Name == sName);
+                if (stat == null)
+                {
+                    CSDebug.LogError($"[{GetType().Name}] Client could not match RoundStats for '{sName}'. " +
+                                     $"Available: {string.Join(", ", gameData.RoundStatsList.Select(s => $"'{s.Name}'"))}");
+                    continue;
+                }
+                stat.Score = scores[i];
+                stat.Domain = (Domains)domains[i];
+                ScoringMetrics.Write(stat, rule.Metric, metricValues[i]);
+            }
+
+            gameData.SortRoundStats(UseGolfRules);
+            gameData.CalculateDomainStats(UseGolfRules);
+            gameData.SetResults(rule.BuildResults(gameData));
+
+            // Authoritative winner - written AFTER SetResults so the explicit values always
+            // win: SetResults derives Winner* from Results[0] when unset, which would credit
+            // a roster row on a no-winner (Blue) end and flip a DNF into VICTORY.
+            // OnWinnerCalculated (below) is the "results ready" signal.
+            gameData.WinnerName = winnerName.ToString();
+            gameData.WinnerDomain = (Domains)winnerDomain;
+            gameData.HasNoWinner = (Domains)winnerDomain == Domains.Blue;
+
+            gameData.InvokeWinnerCalculated();
+            gameData.InvokeMiniGameEnd();
         }
 
         protected override void OnReadyClicked_()
@@ -142,7 +258,7 @@ namespace CosmicShore.Gameplay
             var domain = player?.Domain
                          ?? gameData.RoundStatsList.FirstOrDefault(s => s.Name == playerName)?.Domain
                          ?? Domains.Blue;
-            GameFeedAPI.Post($"<b>{playerName}</b> Ready", domain, GameFeedType.PlayerReady);
+            GameToastAPI.Post(GameToastSituation.PlayerReady, domain, playerName);
         }
 
         [ClientRpc]
@@ -151,8 +267,15 @@ namespace CosmicShore.Gameplay
             StartCountdownTimer();
         }
 
+        /// <summary>
+        /// Suppresses the round flow once the final results are latched (HasEndGame=false
+        /// modes route ExecuteServerRoundEnd back here otherwise - this prevents the Ready
+        /// button from reappearing after the game ended).
+        /// </summary>
         protected override void SetupNewRound()
         {
+            if (FinalResultsSent) return;
+
             if (IsServer)
             {
                 readyClientCount = 0;
@@ -173,21 +296,10 @@ namespace CosmicShore.Gameplay
             base.OnResetForReplay();
         }
 
-        protected override void EndGame()
+        protected override void OnResetForReplayCustom()
         {
-            if (!ShowEndGameSequence) return;
-            gameData.SortRoundStats(UseGolfRules);
-            gameData.InvokeWinnerCalculated();
-            if (IsServer)
-            {
-                StartCoroutine(EndGameSyncRoutine());
-            }
-        }
-
-        private IEnumerator EndGameSyncRoutine()
-        {
-            yield return new WaitForSeconds(0.25f);
-            gameData.InvokeMiniGameEnd();
+            FinalResultsSent = false;
+            base.OnResetForReplayCustom();
         }
 
         protected override void OnPlayerLeavingFromSession(string clientId)
@@ -199,7 +311,7 @@ namespace CosmicShore.Gameplay
                 // the disconnect notification colors correctly even if domain changed
                 // mid-game.
                 var domain = player.Domain;
-                GameFeedAPI.Post($"<b>{player.Name}</b> disconnected", domain, GameFeedType.PlayerDisconnected);
+                GameToastAPI.Post(GameToastSituation.PlayerDisconnected, domain, player.Name);
                 gameData.RemovePlayerData(player.Name);
             }
         }

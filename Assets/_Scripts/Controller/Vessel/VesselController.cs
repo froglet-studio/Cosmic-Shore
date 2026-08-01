@@ -125,7 +125,7 @@ namespace CosmicShore.Gameplay
             if (VesselStatus.FarFieldSkimmer)
                 VesselStatus.FarFieldSkimmer.Initialize(VesselStatus);
 
-            VesselStatus.Silhouette.Initialize(VesselStatus);
+            VesselStatus.ElementalBarsController.Initialize(VesselStatus);
             VesselStatus.VesselTransformer.ToggleActive(true);
 
             if (player.IsLocalUser)
@@ -167,18 +167,6 @@ namespace CosmicShore.Gameplay
         public void SetShipMaterial(Material material) =>
             VesselStatus.ShipMaterial = material;
 
-        public void SetBlockSilhouettePrefab(GameObject prefab)
-        {
-            // var trail =VesselStatus.VesselHUDView.TrailUI;
-            // if (trail != null)
-            // {
-            //     trail.SetBlockPrefab(prefab, VesselStatus);
-            //     return;
-            // }
-
-            VesselStatus?.VesselHUDController?.SetBlockPrefab(prefab);
-        }
-
         public void SetAOEExplosionMaterial(Material material) =>
             VesselStatus.AOEExplosionMaterial = material;
 
@@ -207,6 +195,15 @@ namespace CosmicShore.Gameplay
 
         public void ToggleAIPilot(bool toggle)
         {
+            // Any explicit pilot-mode change ends a cinematic flourish. EndGameSequencer
+            // starts its behavior AFTER enabling the pilot, so the flourish still works;
+            // nothing else may leave the cinematic writing input into a live vessel.
+            // TryGetComponent, not the VesselStatus GetOrAdd accessor: a vessel that
+            // never flourished shouldn't have the component instantiated just to
+            // no-op stop it.
+            if (TryGetComponent<AICinematicBehavior>(out var cinematic))
+                cinematic.StopCinematicBehavior();
+
             if (toggle)
                 VesselStatus.AIPilot.StartAIPilot();
             else
@@ -251,40 +248,6 @@ namespace CosmicShore.Gameplay
                 SetPose_Local(pose);
         }
 
-        public void ChangePlayer(IPlayer player)
-        {
-            VesselStatus.Player = player;
-
-            // If the player is AI in general, or if it is a network client
-            if (player.IsInitializedAsAI || player.IsNetworkClient)
-            {
-                VesselStatus.VesselHUDController.UnsubscribeFromEvents();
-                if (player.IsInitializedAsAI)
-                {
-                    VesselStatus.VesselTransformer.ToggleActive(true);
-                }
-                if (player.IsNetworkClient)
-                {
-                    VesselStatus.VesselTransformer.ToggleActive(false);
-                    SubscribeToNetworkVariables();
-                }
-                VesselStatus.ActionHandler.ToggleSubscription(false);
-                VesselStatus.VesselHUDController.HideHUD();
-
-                return;
-            }
-            
-            UnsubscribeFromNetworkVariables();
-
-            VesselStatus.VesselHUDController.SubscribeToEvents();
-            VesselStatus.VesselHUDController.ShowHUD();
-
-                
-            VesselStatus.VesselTransformer.ToggleActive(true);
-            VesselStatus.ActionHandler.ToggleSubscription(true);
-            VesselStatus.VesselCameraCustomizer.RetargetAndApply(this);
-        }
-        
         public void SetTranslationRestricted(bool value)
         {
             if (IsNetworkOwner)

@@ -39,11 +39,63 @@ namespace CosmicShore.Gameplay
             networkVesselImpactor ??= GetComponent<NetworkVesselImpactor>();
         }
 
+        // Shell-tier probes: the hull colliders whose trigger events land on THIS
+        // impactor — i.e. every collider attached to this GameObject's Rigidbody
+        // (Unity routes trigger callbacks to the collider's GO and its
+        // attachedRigidbody's GO). Child colliders owned by their own Rigidbody
+        // (the skimmer; Manta's per-wing bodies) are excluded, exactly matching
+        // the events this impactor receives today. Cached once — hull collider
+        // sets don't change at runtime; world poses are re-read every frame.
+        Collider[] _probeColliders;
+
+        void OnEnable()
+        {
+            _probeColliders ??= GatherHullColliders();
+            PrismShellContactManager.RegisterProbeOwner(this, _probeColliders);
+        }
+
+        void OnDisable()
+        {
+            PrismShellContactManager.UnregisterProbeOwner(this);
+        }
+
+        Collider[] GatherHullColliders()
+        {
+            if (!TryGetComponent(out Rigidbody rootBody))
+                return GetComponents<Collider>();
+
+            var all = GetComponentsInChildren<Collider>(true);
+            var hull = new List<Collider>(all.Length);
+            foreach (var col in all)
+            {
+                if (FindAncestorRigidbody(col.transform) == rootBody)
+                    hull.Add(col);
+            }
+            return hull.ToArray();
+        }
+
+        static Rigidbody FindAncestorRigidbody(Transform t)
+        {
+            while (t != null)
+            {
+                if (t.TryGetComponent(out Rigidbody rb))
+                    return rb;
+                t = t.parent;
+            }
+            return null;
+        }
+
         protected override void AcceptImpactee(IImpactor impactee)
         {
             switch (impactee)
             {
                 case PrismImpactor prismImpactee:
+                    // While a prism's engaged shell owns contact, the shell tier
+                    // (PrismShellContactManager) dispatches this pair at the visible
+                    // shell surface — suppress the box-trigger dispatch for the same
+                    // prism so a shielded hit can't double-fire.
+                    if (!IsShellDispatch && PrismShellContactManager.ShellOwnsContact(prismImpactee.Prism))
+                        return;
                     if (!DoesEffectExist(vesselImpactorDataContainerSO.VesselPrismEffects)) return;
                     // HexRace's track is built from indestructible, environment-owned prisms
                     // (no player name) rather than destructible player trails. Hitting the
@@ -75,6 +127,18 @@ namespace CosmicShore.Gameplay
 
                 case ElementalCrystalImpactor elementalCrystalImpactee:
                 {
+                    // A LIVING lifeform's embedded crystal (its heart) is a JOUST surface, not a
+                    // pickup: skip the collect chain and run the lifeform-crystal effects instead
+                    // (e.g. Squirrel Space-5 Crystal Joust). Local-only - the ecosystem sim is local.
+                    if (elementalCrystalImpactee.Crystal && elementalCrystalImpactee.Crystal.IsEmbedded)
+                    {
+                        if (!TryLatchCrystalImpact(elementalCrystalImpactee.Crystal)) break;
+                        if (!DoesEffectExist(vesselImpactorDataContainerSO.VesselLifeformCrystalEffects)) break;
+                        foreach (var effect in vesselImpactorDataContainerSO.VesselLifeformCrystalEffects)
+                            effect.Execute(this, elementalCrystalImpactee.Crystal);
+                        break;
+                    }
+
                     if (!TryLatchCrystalImpact(elementalCrystalImpactee.Crystal)) break;
                     audioSystem?.PlayGameplaySFX(GameplaySFXCategory.CrystalCollect, transform.position);
                     var data = CrystalImpactData.FromCrystal(elementalCrystalImpactee.Crystal);
@@ -86,6 +150,11 @@ namespace CosmicShore.Gameplay
                 }
 
                 case SkimmerImpactor skimmerImpactee:
+                    // A vessel never impacts its own skimmer (the Rhino's sword capsule
+                    // permanently overlaps its own hull) - see the mirror guard in
+                    // SkimmerImpactor.AcceptImpactee.
+                    if (skimmerImpactee.Skimmer
+                        && ReferenceEquals(skimmerImpactee.Skimmer.VesselStatus, Vessel?.VesselStatus)) return;
                     if (!DoesEffectExist(vesselImpactorDataContainerSO.VesselSkimmerEffects)) return;
                     audioSystem?.PlayGameplaySFX(GameplaySFXCategory.VesselImpact, transform.position);
                     foreach (var effect in vesselImpactorDataContainerSO.VesselSkimmerEffects)

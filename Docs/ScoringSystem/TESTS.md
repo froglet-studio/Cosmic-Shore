@@ -87,13 +87,13 @@ Finish each mode and verify against `ARCHITECTURE.md` §5:
 - Banner shows `"{WINNER DOMAIN} VICTORY"` in the domain color.
 - **HexRace/Joust** (golf ↑): fastest time on top; losers below ordered by
   crystals/jousts left; same-time teammates broken by the documented tiebreak.
-- **Crystal Capture / Cellular Duel** (points ↓): highest score on top.
+- **Crystal Capture** (points ↓): highest score on top.
 - Winner's card shows the `+N` crystal reward.
 
 ### T7 — Score formatting per mode
 Verify each card's formatted score matches §5: HexRace/Joust winners
 `MM:SS:CS`, losers `"{N} Crystals/Joust(s) Left"`; CrystalCapture `"{N}
-Crystals"`; Cellular Duel `"{N}"`. Cross-check the Joust "jousts left" number
+Crystals"`. Cross-check the Joust "jousts left" number
 against the end-game reveal (**BUGS.md B2** — they should match once fixed).
 
 ### T8 — Host vs client lobby buttons (MPPM)

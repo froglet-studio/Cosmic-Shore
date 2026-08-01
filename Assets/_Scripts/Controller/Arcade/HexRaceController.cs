@@ -1,13 +1,7 @@
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using Cysharp.Threading.Tasks;
-using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
-using CosmicShore.Gameplay;
-using CosmicShore.Utility;
-using CosmicShore.Data;
 
 namespace CosmicShore.Gameplay
 {
@@ -27,14 +21,10 @@ namespace CosmicShore.Gameplay
         [Header("Seed")]
         [SerializeField] int seed = 0;
 
-        [Header("Scoring")]
-        [Tooltip("Drag HexRaceScoringRule.asset - the per-mode scoring strategy (end condition, scores, results).")]
-        [SerializeField] ScoringRuleSO rule;
-
         int Intensity => Mathf.Max(1, gameData.SelectedIntensity.Value);
 
-        private bool _raceEnded;
         private bool _trackSpawned;
+        private bool _arenaBuildAnnounced;
         private CancellationTokenSource _seedPollCts;
         private readonly NetworkVariable<int> _netTrackSeed = new(0);
 
@@ -42,7 +32,7 @@ namespace CosmicShore.Gameplay
         protected override bool UseSceneReloadForReplay => true;
 
         // HexRace handles end-game through OnTurnEndedCustom (server-side winner detection) →
-        // SyncFinalScores_ClientRpc, which calls InvokeWinnerCalculated + InvokeMiniGameEnd.
+        // the base SyncFinalResults template, which broadcasts the canonical results tail.
         // Suppress the base controller's turn→round→game flow so we don't get a duplicate
         // InvokeWinnerCalculated from SyncGameEnd_ClientRpc.
         protected override bool HasEndGame => false;
@@ -51,13 +41,22 @@ namespace CosmicShore.Gameplay
         {
             Debug.Log($"<color=#00CED1>[FLOW-7HR] [HexRaceController] OnNetworkSpawn - IsServer={IsServer}, Intensity={Intensity}</color>");
             base.OnNetworkSpawn();
-            gameData.ScoringRule = rule;
             numberOfRounds = 1;
             numberOfTurnsPerRound = 1;
 
             // HexRaceController owns the track lifecycle (seed generation, spawning, replay reset).
             // Prevent SegmentSpawner from auto-resetting on OnResetForReplay.
             if (segmentSpawner) segmentSpawner.ExternalResetControl = true;
+
+            // The track builds only after the netcode seed arrives — announce the pending build
+            // so the connecting screen's arena-ready gate holds through the seed wait (an
+            // absence-of-activity check would misread "nothing laying yet" as "arena done" and
+            // release the player into a still-materializing track).
+            if (segmentSpawner)
+            {
+                _arenaBuildAnnounced = true;
+                PrismTrailBuilder.BeginArenaBuild();
+            }
 
             // Listen for seed changes so late-joining clients can spawn the track
             _netTrackSeed.OnValueChanged += OnTrackSeedChanged;
@@ -87,8 +86,19 @@ namespace CosmicShore.Gameplay
         public override void OnNetworkDespawn()
         {
             CancelSeedPoll();
+            ReleaseArenaBuildAnnouncement();
             _netTrackSeed.OnValueChanged -= OnTrackSeedChanged;
             base.OnNetworkDespawn();
+        }
+
+        /// <summary>Close the BeginArenaBuild bracket exactly once — after the track spawns, on
+        /// seed-poll timeout, or on despawn (whichever comes first), so a failed seed sync can
+        /// never wedge the connecting screen on a build that will not happen.</summary>
+        void ReleaseArenaBuildAnnouncement()
+        {
+            if (!_arenaBuildAnnounced) return;
+            _arenaBuildAnnounced = false;
+            PrismTrailBuilder.EndArenaBuild();
         }
 
         /// <summary>
@@ -139,6 +149,7 @@ namespace CosmicShore.Gameplay
                 }
 
                 Debug.LogWarning("[HexRaceController] Client poll: timed out after 5s waiting for track seed.");
+                ReleaseArenaBuildAnnouncement();
             }
             catch (System.OperationCanceledException)
             {
@@ -203,6 +214,8 @@ namespace CosmicShore.Gameplay
             ApplyHelixIntensity();
             segmentSpawner.Initialize();
             _trackSpawned = true;
+            // The build has executed — laid prisms are now covered by the gate's grow watch.
+            ReleaseArenaBuildAnnouncement();
         }
 
         void ApplyHelixIntensity()
@@ -216,14 +229,15 @@ namespace CosmicShore.Gameplay
         // ── Server-authoritative race end ─────────────────────────────────
 
         /// <summary>
-        /// Server-side winner detection, mirroring MultiplayerJoustController.OnTurnEndedCustom().
-        /// Called from SyncTurnEnd_ClientRpc BEFORE ExecuteServerTurnEnd → SetupNewRound,
-        /// so _raceEnded is set in time to suppress the Ready button.
+        /// Server-side winner detection. Called from SyncTurnEnd_ClientRpc BEFORE
+        /// ExecuteServerTurnEnd → SetupNewRound, so FinalResultsSent latches in time to
+        /// suppress the Ready button. Score assignment, roster snapshot, and the canonical
+        /// results tail are owned by the base SyncFinalResults template.
         /// </summary>
         protected override void OnTurnEndedCustom()
         {
             base.OnTurnEndedCustom();
-            if (!IsServer || _raceEnded) return;
+            if (!IsServer || FinalResultsSent) return;
 
             // Domain-aggregated end + scoring delegated to the mode's ScoringRule: the first
             // active domain whose summed metric reaches the target wins together. Teammates
@@ -232,95 +246,11 @@ namespace CosmicShore.Gameplay
                 return;
 
             Debug.Log($"<color=#00CED1>[FLOW-10] [HexRaceController] Objective reached - domain {winningDomain} wins. Broadcasting final scores.</color>");
-            _raceEnded = true;
 
+            // Winner = finish time (the server's elapsed-time Score feed); losers get the
+            // DOMAIN crystal-deficit sentinel (the rule owns this).
             float finishTime = gameData.LocalRoundStats?.Score ?? 0f;
-
-            // Representative winner-name = best individual contributor on the winning
-            // domain. Used for the WinnerName legacy field (display strings only -
-            // VICTORY/DEFEAT attribution is via WinnerDomain).
-            var winnerRep = gameData.RoundStatsList
-                .Where(s => s.Domain == winningDomain)
-                .OrderByDescending(s => s.CrystalsCollected)
-                .FirstOrDefault();
-            string winnerName = winnerRep?.Name ?? "";
-
-            // Winner = finish time; losers = DOMAIN crystal-deficit sentinel (the rule owns this).
-            rule.AssignScores(gameData, winningDomain, finishTime);
-
-            gameData.SortRoundStats(UseGolfRules);
-            gameData.CalculateDomainStats(UseGolfRules);
-            SyncFinalScoresSnapshot(winnerName, winningDomain);
-        }
-
-        /// <summary>
-        /// Suppress the base flow's SetupNewRound when the race just ended.
-        /// HasEndGame=false causes ExecuteServerRoundEnd to call SetupNewRound instead of
-        /// ExecuteServerGameEnd - this override prevents the Ready button from appearing.
-        /// After replay reset, _raceEnded is cleared so new rounds work normally.
-        /// </summary>
-        protected override void SetupNewRound()
-        {
-            if (_raceEnded) return;
-            base.SetupNewRound();
-        }
-
-        void SyncFinalScoresSnapshot(string winnerName, Domains winnerDomain)
-        {
-            var statsList = gameData.RoundStatsList;
-            int count = statsList.Count;
-
-            var nameArray = new FixedString64Bytes[count];
-            var scoreArray = new float[count];
-            var domainArray = new int[count];
-            var crystalsArray = new int[count];
-
-            for (int i = 0; i < count; i++)
-            {
-                nameArray[i] = new FixedString64Bytes(statsList[i].Name);
-                scoreArray[i] = statsList[i].Score;
-                domainArray[i] = (int)statsList[i].Domain;
-                crystalsArray[i] = statsList[i].CrystalsCollected;
-            }
-
-            SyncFinalScores_ClientRpc(nameArray, scoreArray, domainArray, crystalsArray,
-                new FixedString64Bytes(winnerName), (int)winnerDomain);
-        }
-
-        [ClientRpc]
-        void SyncFinalScores_ClientRpc(
-            FixedString64Bytes[] names,
-            float[] scores,
-            int[] domains,
-            int[] crystalsCollected,
-            FixedString64Bytes winnerName,
-            int winnerDomain)
-        {
-            for (int i = 0; i < names.Length; i++)
-            {
-                string sName = names[i].ToString();
-                var stat = gameData.RoundStatsList.FirstOrDefault(s => s.Name == sName);
-                if (stat == null)
-                {
-                    CSDebug.LogError($"[HexRace] Client could not match RoundStats for '{sName}'. " +
-                                   $"Available: {string.Join(", ", gameData.RoundStatsList.Select(s => $"'{s.Name}'"))}");
-                    continue;
-                }
-                stat.Score = scores[i];
-                stat.Domain = (Domains)domains[i];
-                stat.CrystalsCollected = crystalsCollected[i];
-            }
-
-            // Authoritative winner - written to gameData, consumed by EndGameControllers
-            // OnWinnerCalculated (below) is the "results ready" signal.
-            gameData.WinnerName = winnerName.ToString();
-            gameData.WinnerDomain = (Domains)winnerDomain;
-
-            gameData.SortRoundStats(UseGolfRules);
-            gameData.CalculateDomainStats(UseGolfRules);
-            gameData.SetResults(rule.BuildResults(gameData));
-            gameData.InvokeWinnerCalculated();
-            gameData.InvokeMiniGameEnd();
+            SyncFinalResults(winningDomain, finishTime);
         }
 
         // OnResetForReplayCustom removed - HexRace uses UseSceneReloadForReplay = true,

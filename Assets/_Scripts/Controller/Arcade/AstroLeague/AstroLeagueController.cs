@@ -20,7 +20,7 @@ namespace CosmicShore.Gameplay
     ///
     ///   Ready → shared 3-2-1 countdown (first kickoff count-in) → live play →
     ///   GOAL! celebration → kickoff count-in → ... → full time →
-    ///   golden-goal overtime if tied → winner banner → SyncFinalScores → shared scoreboard.
+    ///   golden-goal overtime if tied → winner banner → SyncFinalResults → shared scoreboard.
     ///
     /// Server-authoritative throughout: goal attribution (last non-defending striker),
     /// per-player GoalsScored (NetworkVariable on RoundStats), match phase, and the clock all
@@ -33,8 +33,6 @@ namespace CosmicShore.Gameplay
     {
         [Header("Astro League")]
         [SerializeField] AstroLeagueSettingsSO settings;
-        [Tooltip("Drag AstroLeagueScoringRule.asset - the per-mode scoring strategy (winner, scores, results).")]
-        [SerializeField] ScoringRuleSO rule;
         [SerializeField] AstroLeagueBall ball;
         [SerializeField] AstroLeagueArena arena;
         [Tooltip("The standard Cell whose nucleus is scaled to become the spherical play boundary.")]
@@ -46,6 +44,17 @@ namespace CosmicShore.Gameplay
         [SerializeField] List<Transform> teamSpawns;
 
         [Inject] AudioSystem audioSystem;
+        [Inject] CameraManager cameraManager;
+
+        // Per-peer goal replay (records the replicated ball flight; plays a ghost on the replay
+        // camera while the arena resets). Added at runtime in OnNetworkSpawn - no scene wiring.
+        AstroLeagueGoalReplay goalReplay;
+
+        // Attribution identity for the goal-reset prism sweep (matches the ball's attacker name).
+        const string FieldResetAttacker = "Astro League";
+
+        // Reusable buffer for the goal-reset prism sweep (per-peer local prism copies).
+        static readonly List<Prism> s_fieldClearBuffer = new(512);
 
         // Intensity scaling: base (authored) positions captured at spawn, multiplied by the scale.
         readonly List<Vector3> _baseGoalLocalPos = new();
@@ -78,7 +87,6 @@ namespace CosmicShore.Gameplay
         enum MatchPhase { PreMatch, Kickoff, Live, Celebration, Overtime, Finished }
         MatchPhase phase = MatchPhase.PreMatch;
 
-        bool _finalResultsSent;
         Domains _matchWinner = Domains.Blue;
         CancellationTokenSource matchCts;
 
@@ -89,22 +97,24 @@ namespace CosmicShore.Gameplay
         protected override bool UseGolfRules => false;
         protected override bool UseSceneReloadForReplay => true;
 
-        // End-game runs through OnTurnEndedCustom → SyncFinalScores_ClientRpc (HexRace/Joust/
-        // CrystalCapture pattern); suppress the base turn→round→game flow so we don't get a
-        // duplicate InvokeWinnerCalculated from SyncGameEnd_ClientRpc.
+        // End-game runs through OnTurnEndedCustom → the base SyncFinalResults template;
+        // suppress the base turn→round→game flow so we don't get a duplicate
+        // InvokeWinnerCalculated from SyncGameEnd_ClientRpc.
         protected override bool HasEndGame => false;
 
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
-            gameData.ScoringRule = rule;
             numberOfRounds = 1;
             numberOfTurnsPerRound = 1;
-            _finalResultsSent = false;
             phase = MatchPhase.PreMatch;
             matchCts = new CancellationTokenSource();
 
             CaptureBaseLayout();
+
+            // Every peer records + replays locally (the ball trajectory is already replicated).
+            if (goalReplay == null) goalReplay = gameObject.AddComponent<AstroLeagueGoalReplay>();
+            goalReplay.Configure(ball, settings, cameraManager);
 
             if (IsServer)
             {
@@ -170,15 +180,17 @@ namespace CosmicShore.Gameplay
                     _baseSpawnLocalPos.Add(t != null ? t.localPosition : Vector3.zero);
         }
 
-        /// <summary>Arena/ball/layout scale: 1x at intensity 1, ramping to intensityScaleAtMax at the top.</summary>
+        /// <summary>
+        /// Arena/ball/layout scale for the selected intensity - the per-intensity table on the
+        /// settings asset (default doubles the intensity-1 court to 2x), with the legacy even
+        /// ramp as its fallback.
+        /// </summary>
         float ScaleForIntensity()
         {
-            int maxLevel = Mathf.Max(2, settings.maxIntensityLevel);
             int intensity = gameData.SelectedIntensity != null
-                ? Mathf.Clamp(gameData.SelectedIntensity.Value, 1, maxLevel)
+                ? Mathf.Max(1, gameData.SelectedIntensity.Value)
                 : 1;
-            float t = (intensity - 1f) / (maxLevel - 1f);
-            return Mathf.Lerp(1f, Mathf.Max(1f, settings.intensityScaleAtMax), t);
+            return settings.ScaleForIntensity(intensity);
         }
 
         /// <summary>Court geometry for the selected intensity - one ricochet test shape per level.</summary>
@@ -405,7 +417,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public void HandleGoalServer(AstroLeagueGoal goal, AstroLeagueBall scoredBall)
         {
-            if (!IsServer || _finalResultsSent) return;
+            if (!IsServer || FinalResultsSent) return;
             if (phase != MatchPhase.Live && phase != MatchPhase.Overtime) return;
 
             var scorer = _lastStrikers.FirstOrDefault(p => p != null && p.Domain != goal.DefendingDomain);
@@ -476,7 +488,7 @@ namespace CosmicShore.Gameplay
 
         void HandleClockExpiredServer()
         {
-            if (phase == MatchPhase.Finished || _finalResultsSent) return;
+            if (phase == MatchPhase.Finished || FinalResultsSent) return;
 
             if (IsTiedAcrossActiveDomains() && settings.goldenGoalOvertime)
             {
@@ -542,98 +554,23 @@ namespace CosmicShore.Gameplay
             matchMonitor.ForceEnd(); // → turn end → OnTurnEndedCustom computes + syncs final scores
         }
 
-        // ── Server-authoritative game end (HexRace/Joust/CrystalCapture pattern) ──
+        // ── Server-authoritative game end (shared SyncFinalResults template) ──
 
+        /// <summary>
+        /// Server-side end-game. The match FSM has usually already resolved the winner
+        /// (full time / golden goal / mercy rule → _matchWinner); the rule resolves it
+        /// from goal sums otherwise. Score assignment, roster snapshot, and the canonical
+        /// results tail are owned by the base SyncFinalResults template.
+        /// </summary>
         protected override void OnTurnEndedCustom()
         {
             base.OnTurnEndedCustom();
-            if (!IsServer || _finalResultsSent) return;
-            if (gameData.RoundStatsList == null || gameData.RoundStatsList.Count == 0) return;
+            if (!IsServer || FinalResultsSent) return;
 
             var winningDomain = _matchWinner != Domains.Blue ? _matchWinner : rule.ResolveWinner(gameData);
             if (winningDomain == Domains.Blue) return;
 
-            var winnerRep = gameData.RoundStatsList
-                .Where(s => s.Domain == winningDomain)
-                .OrderByDescending(s => s.GoalsScored)
-                .FirstOrDefault();
-            if (winnerRep == null) return;
-
-            rule.AssignScores(gameData, winningDomain, 0f);
-            gameData.SortRoundStats(UseGolfRules);
-            gameData.CalculateDomainStats(UseGolfRules);
-
-            _finalResultsSent = true;
-            SyncFinalScoresSnapshot(winnerRep.Name, winningDomain);
-        }
-
-        /// <summary>
-        /// Suppress the base flow's SetupNewRound when the match just ended.
-        /// HasEndGame=false causes ExecuteServerRoundEnd to call SetupNewRound instead of
-        /// ExecuteServerGameEnd - this override prevents the Ready button from reappearing.
-        /// </summary>
-        protected override void SetupNewRound()
-        {
-            if (_finalResultsSent) return;
-            base.SetupNewRound();
-        }
-
-        void SyncFinalScoresSnapshot(string winnerName, Domains winnerDomain)
-        {
-            var statsList = gameData.RoundStatsList;
-            int count = statsList.Count;
-
-            var nameArray = new FixedString64Bytes[count];
-            var scoreArray = new float[count];
-            var domainArray = new int[count];
-            var goalsArray = new int[count];
-
-            for (int i = 0; i < count; i++)
-            {
-                nameArray[i] = new FixedString64Bytes(statsList[i].Name);
-                scoreArray[i] = statsList[i].Score;
-                domainArray[i] = (int)statsList[i].Domain;
-                goalsArray[i] = statsList[i].GoalsScored;
-            }
-
-            SyncFinalScores_ClientRpc(nameArray, scoreArray, domainArray, goalsArray,
-                new FixedString64Bytes(winnerName), (int)winnerDomain);
-        }
-
-        [ClientRpc]
-        void SyncFinalScores_ClientRpc(
-            FixedString64Bytes[] names,
-            float[] scores,
-            int[] domains,
-            int[] goalsScored,
-            FixedString64Bytes winnerName,
-            int winnerDomain)
-        {
-            for (int i = 0; i < names.Length; i++)
-            {
-                string sName = names[i].ToString();
-                var stat = gameData.RoundStatsList.FirstOrDefault(s => s.Name == sName);
-                if (stat == null)
-                {
-                    CSDebug.LogError($"[AstroLeague] Client could not match RoundStats for '{sName}'. " +
-                                   $"Available: {string.Join(", ", gameData.RoundStatsList.Select(s => $"'{s.Name}'"))}");
-                    continue;
-                }
-                stat.Score = scores[i];
-                stat.Domain = (Domains)domains[i];
-                stat.GoalsScored = goalsScored[i];
-            }
-
-            // Authoritative winner - written to gameData, consumed by EndGameControllers.
-            // OnWinnerCalculated (below) is the "results ready" signal.
-            gameData.WinnerName = winnerName.ToString();
-            gameData.WinnerDomain = (Domains)winnerDomain;
-
-            gameData.SortRoundStats(UseGolfRules);
-            gameData.CalculateDomainStats(UseGolfRules);
-            gameData.SetResults(rule.BuildResults(gameData));
-            gameData.InvokeWinnerCalculated();
-            gameData.InvokeMiniGameEnd();
+            SyncFinalResults(winningDomain, 0f);
         }
 
         // ── Kickoff parking (every peer parks the vessels it owns) ──────────
@@ -645,7 +582,14 @@ namespace CosmicShore.Gameplay
         /// name within each domain) so all peers compute identical lines without extra sync.
         /// </summary>
         [ClientRpc]
-        void ParkVesselsForKickoff_ClientRpc()
+        void ParkVesselsForKickoff_ClientRpc() => ParkOwnedVesselsForKickoff();
+
+        /// <summary>
+        /// Park every vessel this peer owns on its team's kickoff line, speed ZEROED - kickoffs
+        /// (and the on-goal arena reset that precedes them) start from rest. Idempotent, so the
+        /// goal-reset park and the kickoff re-park can both run in one celebration window.
+        /// </summary>
+        void ParkOwnedVesselsForKickoff()
         {
             foreach (var player in gameData.Players)
             {
@@ -657,6 +601,10 @@ namespace CosmicShore.Gameplay
                 if (!ownedHere) continue;
 
                 player.SetPoseOfVessel(ComputeKickoffPose(player));
+                // Zero the speed on the OWNING peer's transformer directly (motion replicates
+                // owner-authoritatively, same as RecoilVessel) - IVessel.SetInitialSpeed routes
+                // through a ClientRpc, which a client peer cannot send.
+                player.Vessel.VesselStatus?.VesselTransformer?.SetInitialSpeed(0f);
             }
         }
 
@@ -755,8 +703,18 @@ namespace CosmicShore.Gameplay
         // ── Announcer ClientRpcs (play the shared AudioSystem cue on every peer) ──
 
         [ClientRpc]
-        void AnnounceKickoffGo_ClientRpc() =>
+        void AnnounceKickoffGo_ClientRpc()
+        {
             audioSystem?.PlayGameplaySFX(GameplaySFXCategory.SpeedBurst);
+
+            // The replay must never bleed into live play, and a fresh rally must never replay a
+            // pre-reset flight: stop the ghost (restores the gameplay camera) and forget the recording.
+            if (goalReplay != null)
+            {
+                goalReplay.Stop();
+                goalReplay.ClearRecording();
+            }
+        }
 
         [ClientRpc]
         void AnnounceGoal_ClientRpc(FixedString64Bytes scorerName, int scoringDomain) =>
@@ -771,6 +729,82 @@ namespace CosmicShore.Gameplay
             bool solo = nm == null || !nm.IsListening || nm.ConnectedClientsIds.Count <= 1;
             if (solo)
                 RunCelebrationSlowMoAsync().Forget();
+
+            // On-goal arena reset, on every peer, behind the goal replay: park the vessels this
+            // peer owns with speed zeroed and sweep the field prisms clean (per-peer local copies).
+            // The kickoff re-park before GO is idempotent on top of this.
+            float resetWindow = settings.celebrationSeconds + settings.kickoffFreezeSeconds;
+            if (settings.goalResetsArena)
+            {
+                ParkOwnedVesselsForKickoff();
+                if (matchCts != null)
+                    ClearFieldPrismsAsync(matchCts.Token).Forget();
+            }
+
+            // The goal replay fills the reset window on the replay camera; it restores the
+            // gameplay camera when playback ends (or at kickoff GO, whichever lands first).
+            if (settings.goalReplayEnabled && goalReplay != null)
+                goalReplay.Play(resetWindow, _currentScale);
+        }
+
+        /// <summary>
+        /// Local, per-peer: sweep the accumulated FIELD prisms off the pitch with the canonical
+        /// animated Damage path - never a raw Destroy (continuity law; the per-frame VFX cap in
+        /// PrismEffectsManager paces the burst). Staggered center-out over goalPrismClearSeconds
+        /// so the field visibly washes clean behind the goal replay. Skips invulnerable
+        /// super-shielded structure (the arena edge lining) and fauna body prisms - the food web
+        /// is not part of the pitch reset (no imposed death; fauna die by starvation/predation
+        /// only). Prisms are per-peer GameObjects, so each peer clears its own copies - no RPC.
+        /// </summary>
+        async UniTaskVoid ClearFieldPrismsAsync(CancellationToken token)
+        {
+            var index = PrismSpatialIndex.Instance;
+            if (index == null || arena == null) return;
+
+            float radius = (arena.Boundary != null ? arena.Boundary.MaxExtent : 400f * _currentScale) * 1.25f;
+            Vector3 center = arena.Center;
+            index.QuerySphere(center, radius, s_fieldClearBuffer);
+            if (s_fieldClearBuffer.Count == 0) return;
+
+            // Center-out wave: the clear reads as washing outward from the pitch center.
+            s_fieldClearBuffer.Sort((a, b) =>
+            {
+                float da = a != null ? (a.transform.position - center).sqrMagnitude : float.MaxValue;
+                float db = b != null ? (b.transform.position - center).sqrMagnitude : float.MaxValue;
+                return da.CompareTo(db);
+            });
+
+            int total = s_fieldClearBuffer.Count;
+            float duration = Mathf.Max(0.1f, settings.goalPrismClearSeconds);
+            float start = Time.unscaledTime;
+            int cleared = 0;
+
+            try
+            {
+                while (cleared < total)
+                {
+                    token.ThrowIfCancellationRequested();
+
+                    float progress = Mathf.Clamp01((Time.unscaledTime - start) / duration);
+                    int target = Mathf.CeilToInt(progress * total);
+                    for (; cleared < target; cleared++)
+                    {
+                        var prism = s_fieldClearBuffer[cleared];
+                        if (prism == null || prism.destroyed) continue;
+                        if (prism.prismProperties != null && prism.prismProperties.IsSuperShielded) continue;
+                        if (prism is HealthPrism body && body.ResolveOwnerFauna() != null) continue;
+                        prism.Damage(Vector3.zero, Domains.Blue, FieldResetAttacker, devastate: true);
+                    }
+
+                    if (progress >= 1f) break;
+                    await UniTask.Yield(PlayerLoopTiming.Update);
+                }
+            }
+            catch (OperationCanceledException) { /* scene teardown mid-sweep */ }
+            finally
+            {
+                s_fieldClearBuffer.Clear();
+            }
         }
 
         async UniTaskVoid RunCelebrationSlowMoAsync()
@@ -800,7 +834,11 @@ namespace CosmicShore.Gameplay
             audioSystem?.PlayGameplaySFX(GameplaySFXCategory.ComebackCharge);
 
         [ClientRpc]
-        void AnnounceMatchFinished_ClientRpc(int winnerDomain) =>
+        void AnnounceMatchFinished_ClientRpc(int winnerDomain)
+        {
             audioSystem?.PlayGameplaySFX(GameplaySFXCategory.GameEnd);
+            // A ghost still on screen would fight the winner banner + end-game cinematic.
+            goalReplay?.Stop();
+        }
     }
 }

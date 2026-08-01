@@ -21,6 +21,14 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField] Crystal space;
         [SerializeField] Crystal time;
 
+        [Tooltip("Collection effects wired onto runtime-provisioned crystals (the standalone " +
+                 "prefabs above author no collection components). Used when the provisioning " +
+                 "lifeform has no authored effects to inherit.")]
+        [SerializeField] SkimmerCrystalEffectSO[] collectionEffects;
+
+        /// <summary>Default skim-collection effects for runtime-provisioned crystals.</summary>
+        public SkimmerCrystalEffectSO[] CollectionEffects => collectionEffects;
+
         // The four droppable elements - Element also has None and Omni, which are NOT valid
         // lifeform powerup elements.
         static readonly Element[] Elemental = { Element.Charge, Element.Mass, Element.Space, Element.Time };

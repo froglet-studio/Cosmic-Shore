@@ -13,7 +13,6 @@ MonoBehaviour:
   m_Name: ArcadeGameNucleusRush
   m_EditorClassIdentifier: 
   Mode: 38
-  IsMultiplayer: 1
   DisplayName: Brood Rush
   Description: Hold the nucleus. Every brood the cell births in your color scores
     a point - first team to three wins.

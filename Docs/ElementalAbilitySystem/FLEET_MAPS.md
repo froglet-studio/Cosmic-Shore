@@ -9,13 +9,21 @@ executor, replicated unlock bits, no new fundamentals).
 ## 1. What is live on every vessel now
 
 - **Display (required, structural):** any vessel without an authored `ElementalBarsView`
-  auto-creates one on its HUD canvas (`SilhouetteController.CreateDefaultElementBars`), and a
+  auto-creates one on its HUD canvas (`ElementalBarsController.CreateDefaultElementBars`), and a
   view with no authored bindings self-populates the standard four flowers
   (`ElementalBarsView.Build`). Placement is stamped fleet-wide from `ElementalBarsConfig`
   (the Squirrel's reference spot). A vessel literally cannot ship without the display.
 - **Level economy (vessel-agnostic):** element levels rise by collecting the elemental
   crystals dropped by lifeforms (the adjust effect rides the crystal side), plus comeback
   bonuses. No per-vessel wiring involved.
+- **Comeback (REQUIRED in every party game):** `ElementalComebackSystem` is auto-created by
+  `MultiplayerMiniGameControllerBase` when a scene lacks one. ALL FOUR elements rise EQUALLY
+  by `deficit × SO_ArcadeGame.ComebackRatePerScoreDeficit` (the per-game dial, synced to
+  clients via `GameDataSO`; deficit = first-place team aggregate minus yours in the mode's
+  scoring stat). The comeback layer can never lift an element above level 10
+  (`ResourceSystem.ComebackCeiling`) — earned progression alone reaches the overcharge band.
+  The old per-vessel/per-element profile weights are retired; the profile only seeds
+  optional initial levels.
 - **Quantitative scaling (map-driven):** every executor call site now reads
   `ElementalAbilityHandler.Multiplier(element)`, tuned by the vessel's
   `Resources/ElementalAbilityMaps/{Vessel}.asset`. The former hardcoded `atFull` literals
@@ -28,7 +36,7 @@ executor, replicated unlock bits, no new fundamentals).
 | Dolphin | Charge→charge-boost peak (1.5) · Time→charge fill rate (1.5) |
 | Rhino | Mass→trail slab max size (1.5) |
 | Serpent | Time→boost duration (1.6) |
-| Squirrel | Time→top speed (authored `ThrottleScalerMultiplier` 1→2.5 on the transformer, now evaluated LIVE via `ElementalFloat.EvaluateLive` — the unified read for per-vessel component floats; generic map multipliers stay 1.0 to avoid double-dipping) |
+| Squirrel | **All four LIVE (approved + shipped, see §2 Squirrel)**: Charge→skim energy per prism hit (map 2.0, read in `SkimmerBoostPrismEffectSO`) · Mass→trail prism VOLUME (authored `trailVolume` ElementalFloat 1→2.5 on `VesselPrismController`, cube-root per axis) · Space→skimmer reach (authored skimmer `Scale` ElementalFloat 15→30) · Time→boost-ring cooldown (authored `cooldownMultiplierAtFullTime` 0.5 on `SquirrelTubeActionSO`; the generic map Time multiplier stays 1.0 because `VesselTransformer` consumes it for boost speed). The former Time→top speed mapping was REMOVED (prefab `ThrottleScalerMultiplier` disabled) — one parameter per element. |
 
 ## 2. Level-5 upgrade proposals (NOT implemented — mark up)
 
@@ -72,14 +80,22 @@ timers/decay, gate strictly in the acting system's layer.
 | Space | *(open)* → propose: skimmer scale | **Coil Reach** — skim energy from own wall at double rate |
 | Time | boost duration | **Endless Coil** — consuming a boost charge while boosting chains without the reload pause |
 
-### Squirrel — racer (drift + tube)
+### Squirrel — racer (drift + tube) — APPROVED + SHIPPED
 
-| Element | Quantitative (proposed) | Proposed L5 upgrade |
+The original proposal table below was superseded by Garrett's markup; the shipped design:
+
+| Element | Quantitative (LIVE) | L5 upgrade (LIVE) |
 |---|---|---|
-| Charge | danger-ring potency | **Ring Master** — danger ring also grants the 10× skim bonus to the owner (risk/reward symmetric) |
-| Mass | trail prism volume | **Heavy Trail** — drift trail prisms arrive shielded |
-| Space | drift trail width (xShift/gap) | **Wide Line** — double trail while drifting |
-| Time | top speed (LIVE — see §1) | **Barrel Roll** — direct reuse of the Sparrow TIME-5 controller (it is vessel-agnostic) |
+| Charge | skim energy per prism-skimmer collision (map 2.0, `SkimmerBoostPrismEffectSO`) | **Live Wire** — danger prisms grant the 10× energy bonus (the bonus was always-on before; it is now EARNED — below Charge 5 danger prisms pay base energy) |
+| Mass | trail prism VOLUME (`trailVolume` ElementalFloat 1→2.5, cube-root per axis) | **Heavy Trail** — trail prisms arrive shielded ONLY while drifting (`massUpgradeShieldsTrail` + `IsDrifting` gate on `VesselPrismController`) |
+| Space | skimmer reach (skimmer `Scale` ElementalFloat 15→30 — this mapping predates the doc and was restored to the record). BASE joust (ungated): jousting any lifeform's embedded crystal while moving FASTER than it withers opposing-domain lifeforms (`ILifeFormEntity.Jousted`; rooted flora sit at speed 0 so they're trivially joustable) | **Shepherd** — jousting an OWN-domain lifeform's crystal levels it up (`ILifeFormEntity.LevelUp`, the lifeform elemental contract — see `Docs/ECOSYSTEM.md §3`) |
+| Time | boost-ring cooldown ×0.5 at level 10 (`SquirrelTubeActionSO.cooldownMultiplierAtFullTime`) | **Twin Rings** — the tube deploys a second ring (baseline reduced 2→1 ring; `upgradeExtraRings`) |
+
+Removed: Time→top speed (prefab `ThrottleScalerMultiplier` disabled — one parameter per element).
+HUD: the shared upgrade-highlight system (`VesselHUDView.abilityIcons` + base
+`VesselHUDController` subscribing `OnUpgradeStateChanged`) is wired on the Squirrel's four
+icons (boost gauge / drift / impact / tube); other vessels adopt by filling their view's
+`abilityIcons` bindings — no code.
 
 ## 3. Implementation notes for approved rows
 

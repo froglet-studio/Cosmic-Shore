@@ -16,6 +16,11 @@ namespace CosmicShore.Gameplay
         /// </summary>
         int AvatarId { get; }
         string PlayerUUID { get; }
+        /// <summary>
+        /// The player's UGS authentication PlayerId, replicated to every peer. Empty for AI.
+        /// This is the real identity - <see cref="PlayerUUID"/> is the display name.
+        /// </summary>
+        string UgsPlayerId { get; }
         IVessel Vessel { get; }
         InputController InputController { get; }
         IInputStatus InputStatus { get; }
@@ -57,7 +62,6 @@ namespace CosmicShore.Gameplay
         /// Id of the owner client of this player in multiplayer
         /// </summary>
         ulong OwnerClientNetId { get; }
-        void InitializeForSinglePlayerMode(InitializeData data, IVessel vessel);
         void InitializeForMultiplayerMode(IVessel vessel);
         void ToggleGameObject(bool toggle);
         void DestroyPlayer();

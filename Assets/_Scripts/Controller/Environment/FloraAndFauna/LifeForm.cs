@@ -45,6 +45,87 @@ namespace CosmicShore.Gameplay
 
         // --- Public contract (ILifeFormEntity) ---
         public Domains Domain => domain;
+
+        /// <summary>Elemental contract: the element this lifeform carries (its crystal's element).</summary>
+        public Element Element => crystal ? crystal.crystalProperties.Element : Element.None;
+
+        /// <summary>Elemental contract: this lifeform's level (1..5), seeded from config at spawn.</summary>
+        public int Level { get; protected set; } = 1;
+
+        /// <summary>
+        /// Elemental contract: seeds the spawn level. Base scales the crystal (level 5 always
+        /// carries, and drops, the largest crystal); Flora also scales its leaf prisms. Call
+        /// BEFORE Initialize - it spawns AT size, nothing pops mid-life.
+        /// </summary>
+        public virtual void ApplyLevel(int level, float bodyScalePerLevel, float crystalScalePerLevel)
+        {
+            Level = Mathf.Clamp(level, 1, 5);
+            _bodyScalePerLevel = Mathf.Max(1f, bodyScalePerLevel);
+            _crystalScalePerLevel = Mathf.Max(1f, crystalScalePerLevel);
+            if (crystal && Level > 1)
+                crystal.transform.localScale *= Mathf.Pow(_crystalScalePerLevel, Level - 1);
+        }
+
+        // Per-level factors remembered from ApplyLevel so in-world LevelUp uses the same curve.
+        float _bodyScalePerLevel = 1.15f;
+        float _crystalScalePerLevel = 1.2f;
+
+        /// <summary>Per-level scale factors (config-seeded); Flora reads them in LevelUp.</summary>
+        protected float BodyScalePerLevel => _bodyScalePerLevel;
+        protected float CrystalScalePerLevel => _crystalScalePerLevel;
+
+        /// <summary>Rooted flora never travel - which makes them trivially joustable.</summary>
+        public float CurrentSpeed => 0f;
+
+        /// <summary>
+        /// A faster vessel jousted this lifeform's heart: dies through the normal death path
+        /// (wither via spindles, crystal drop - mass conserved, continuity honored). Idempotent.
+        /// </summary>
+        public bool Jousted(string killerName)
+        {
+            if (dying || isCleaningUp) return false;
+            dying = true;
+            Die(killerName);
+            return true;
+        }
+
+        /// <summary>
+        /// In-world level-up (the Squirrel Space-5 'Shepherd' joust on an ally). The crystal
+        /// grows a step; Flora also grows future leaves. Capped at level 5.
+        /// </summary>
+        public virtual bool LevelUp()
+        {
+            if (Level >= 5) return false;
+            Level++;
+            if (crystal)
+                crystal.GrowCrystal(1f, crystal.transform.localScale.x * _crystalScalePerLevel);
+            return true;
+        }
+
+        /// <summary>
+        /// Elemental contract: provisions this lifeform's crystal to EXACTLY the given element
+        /// (element as data - one base prefab, per-element variants from config). Call BEFORE
+        /// Initialize so the crystal lookup there finds the provisioned one. None is a no-op.
+        /// </summary>
+        public void ApplyElement(Element element)
+        {
+            if (element == Element.None) return;
+            crystal = LifeFormCrystal.EnsureElementalCrystal(this, element);
+        }
+
+        /// <summary>
+        /// Applies the config's per-variant expression - the deltas that used to force a flora
+        /// prefab variant per element (see FloraVariantTuning). Base handles what every
+        /// lifeform has (shield cadence); Flora / AssembledFlora layer leaf shape, growth
+        /// tempo, planting radius, and prism budget on top. Call BEFORE Initialize - leafSize
+        /// is consumed there.
+        /// </summary>
+        public virtual void ApplyVariantTuning(FloraVariantTuning tuning)
+        {
+            if (tuning == null) return;
+            if (tuning.ShieldPeriod >= 0f) shieldPeriod = tuning.ShieldPeriod;
+        }
+
         public static event Action<string, int> OnLifeFormDeath;
 
         // --- Composition: extracted trackers (SRP) ---
@@ -94,6 +175,10 @@ namespace CosmicShore.Gameplay
             spindleTracker = new SpindleTracker();
 
             crystal = GetComponentInChildren<Crystal>();
+            // The crystal is this lifeform's HEART while it lives: joustable by a faster vessel
+            // (destroys opposing-domain lifeforms; Space-5 levels up allies) but never
+            // skim-collectable until death drops it. Cleared by ActivateCrystal in Die.
+            if (crystal) crystal.SetEmbeddedIn(this);
 
             BindEmbeddedParts();
 

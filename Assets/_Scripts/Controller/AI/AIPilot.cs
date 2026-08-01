@@ -283,11 +283,28 @@ namespace CosmicShore.Gameplay
 
             // Pick up any crystals that were spawned before this AI was initialized
             UpdateCellContent();
+
+            // Update() only runs while the pilot is active (StartAIPilot/StopAIPilot
+            // toggle it) - human-piloted vessels pay no per-frame AI cost.
+            enabled = AutoPilotEnabled;
         }
 
         public void StartAIPilot()
         {
+            // Idempotent: menu activation calls this twice for the same vessel
+            // (MenuServerPlayerVesselInitializer.ActivateAutopilot + the client-side
+            // ActivateLocalPlayerAutopilot) and a second pass would stack duplicate
+            // ability/seek coroutines.
+            if (AutoPilotEnabled)
+                return;
+
             AutoPilotEnabled = true;
+            enabled = true;
+
+            // The OnCellItemsUpdated subscription was inactive while the component was
+            // disabled - re-seed the target so the pilot doesn't fly a stale heading
+            // until the next raise.
+            UpdateCellContent();
 
             foreach (var ability in abilities)
             {
@@ -302,12 +319,20 @@ namespace CosmicShore.Gameplay
 
         public void StopAIPilot()
         {
+            // Already stopped - every human turn start clears the pilot defensively,
+            // so skip the redundant native StopAllCoroutines/enabled writes.
+            if (!AutoPilotEnabled && !enabled)
+                return;
+
             AutoPilotEnabled = false;
-            
-            foreach (var ability in abilities)
-            {
-                StopCoroutine(UseAbilityCoroutine(ability));
-            }
+
+            // StopCoroutine(UseAbilityCoroutine(ability)) stopped a freshly created
+            // enumerator, never the running coroutine, so abilities could fire one more
+            // Start/Stop cycle after handing the vessel to a human. Kill them all.
+            StopAllCoroutines();
+
+            // No Update() dispatch while a human pilots this vessel.
+            enabled = false;
         }
 
         void Update()

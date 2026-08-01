@@ -34,6 +34,14 @@ namespace CosmicShore.Gameplay
         public NetworkVariable<bool> NetIsAI = new(false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
         public NetworkVariable<int> NetAvatarId = new(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
 
+        /// <summary>
+        /// The owner's UGS authentication PlayerId - the same key as Cloud Save, Leaderboards
+        /// and analytics. Replicated so any peer can build the match roster (player_ids on
+        /// game_started) from settled network state rather than from a local party roster,
+        /// which would disagree between clients. Empty for AI.
+        /// </summary>
+        public NetworkVariable<FixedString64Bytes> NetUgsPlayerId = new(string.Empty, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+
         public Domains Domain { get; private set; } = Domains.Jade;
 
         /// <summary>
@@ -48,6 +56,23 @@ namespace CosmicShore.Gameplay
         /// Changes the player's domain at runtime. Used by shape mode to match
         /// the player's prism color to the collided shape's domain.
         /// </summary>
+        /// <summary>
+        /// Writes the owner's UGS PlayerId once auth is available. Defensive: analytics is
+        /// never worth throwing a spawn path over.
+        /// </summary>
+        void TryWriteUgsPlayerId()
+        {
+            try
+            {
+                if (AuthenticationService.Instance != null && AuthenticationService.Instance.IsSignedIn)
+                    NetUgsPlayerId.Value = AuthenticationService.Instance.PlayerId;
+            }
+            catch
+            {
+                // Auth not ready on this peer - the roster simply omits this player.
+            }
+        }
+
         public void SetDomain(Domains newDomain)
         {
             Domain = newDomain;
@@ -78,7 +103,12 @@ namespace CosmicShore.Gameplay
         }
         public string Name { get; private set; }
         public int AvatarId { get; private set; }
+        // NOTE: PlayerUUID is the DISPLAY NAME, not a unique id - two players can choose the
+        // same name. It is load-bearing for AOE block ownership strings, so it is left alone
+        // here; UgsPlayerId below is the real identity and should eventually replace it.
         public string PlayerUUID => Name;
+
+        public string UgsPlayerId => NetUgsPlayerId.Value.ToString();
         public ulong PlayerNetId => NetworkObjectId;
         /// <summary>
         /// Remarks, this VesselNetId will be set by server
@@ -126,24 +156,6 @@ namespace CosmicShore.Gameplay
         // it is still excluded (IsMultiplayerOwner == IsSpawned && IsOwner && !IsInitializedAsAI).
         public bool IsLocalUser => IsMultiplayerOwner;
        
-        IPlayer.InitializeData InitializeData;
-        
-        public void InitializeForSinglePlayerMode(IPlayer.InitializeData data, IVessel vessel)
-        {
-            InitializeData = data;
-            IsInitializedAsAI = InitializeData.IsAI;
-            // Single-player & legacy menu spawns default to Jade. Multiplayer overrides
-            // via NetDomain (server-write) before the vessel is initialized.
-            Domain = Domains.Jade;
-            Name = InitializeData.PlayerName;
-            AvatarId = InitializeData.AvatarId;
-            InputController.Initialize();
-            ToggleInputPause(true);
-            Vessel = vessel;
-            RoundStats.Name = Name;
-            RoundStats.Domain = Domain;
-        }
-
         /// <summary>
         /// TODO -> A temp way to initialize in multiplayer, try for better approach.
         /// </summary>
@@ -163,6 +175,13 @@ namespace CosmicShore.Gameplay
             Name = NetName.Value.ToString();
             AvatarId = NetAvatarId.Value;
             Vessel = vessel;
+
+            // Only the local human's InputController polls devices (its class contract).
+            // Locality isn't knowable at OnNetworkSpawn (the AI spawner writes NetIsAI
+            // after Spawn()), so gate here: a disabled controller stops the per-frame
+            // device polling and duplicate global OnButtonPressed raises from AI/remote
+            // players' copies. SetPause/SetIdle/InputStatus remain usable while disabled.
+            InputController.enabled = IsLocalUser;
 
             // RoundStats.Domain is a LOCAL mirror of the player's domain on EVERY peer -
             // Player.NetDomain is the single networked source (RoundStats.n_Domain is retired). Set
@@ -217,8 +236,8 @@ namespace CosmicShore.Gameplay
                 if (playerDataService != null && playerDataService.IsInitialized
                     && playerDataService.CurrentProfile != null)
                 {
-                    NetName.Value = playerDataService.CurrentProfile.displayName;
-                    NetAvatarId.Value = playerDataService.CurrentProfile.avatarId;
+                    NetName.Value = playerDataService.CurrentProfile.Identity.DisplayName;
+                    NetAvatarId.Value = playerDataService.CurrentProfile.Identity.AvatarId;
                 }
                 else if (!string.IsNullOrEmpty(gameData.LocalPlayerDisplayName))
                 {
@@ -229,6 +248,8 @@ namespace CosmicShore.Gameplay
                 {
                     NetName.Value = StripPlayerNameSuffix(AuthenticationService.Instance.PlayerName);
                 }
+
+                TryWriteUgsPlayerId();
 
                 // If profile wasn't ready when we spawned, subscribe so NetName updates
                 // when the cloud profile finishes loading.
@@ -293,12 +314,12 @@ namespace CosmicShore.Gameplay
         private void HandleProfileLoadedAfterSpawn(PlayerProfileData profile)
         {
             if (!IsLocalUser || profile == null) return;
-            if (string.IsNullOrEmpty(profile.displayName)) return;
+            if (string.IsNullOrEmpty(profile.Identity.DisplayName)) return;
 
-            if (NetName.Value.ToString() != profile.displayName)
-                NetName.Value = profile.displayName;
-            if (NetAvatarId.Value != profile.avatarId)
-                NetAvatarId.Value = profile.avatarId;
+            if (NetName.Value.ToString() != profile.Identity.DisplayName)
+                NetName.Value = profile.Identity.DisplayName;
+            if (NetAvatarId.Value != profile.Identity.AvatarId)
+                NetAvatarId.Value = profile.Identity.AvatarId;
         }
 
 
@@ -359,10 +380,10 @@ namespace CosmicShore.Gameplay
                 && playerDataService.CurrentProfile != null)
             {
                 var profile = playerDataService.CurrentProfile;
-                if (!string.IsNullOrEmpty(profile.displayName) && NetName.Value.ToString() != profile.displayName)
-                    NetName.Value = profile.displayName;
-                if (NetAvatarId.Value != profile.avatarId)
-                    NetAvatarId.Value = profile.avatarId;
+                if (!string.IsNullOrEmpty(profile.Identity.DisplayName) && NetName.Value.ToString() != profile.Identity.DisplayName)
+                    NetName.Value = profile.Identity.DisplayName;
+                if (NetAvatarId.Value != profile.Identity.AvatarId)
+                    NetAvatarId.Value = profile.Identity.AvatarId;
             }
 
             // Reset server-writable NetworkVariables.
@@ -418,7 +439,14 @@ namespace CosmicShore.Gameplay
                 ToggleInputPause(true);
             }
             else
+            {
+                // A human-controlled turn must never start with autopilot on. Vessels can
+                // arrive here still AI-driven (a vessel handover (retired Cellular Duel's between-round swap was the original case),
+                // the EndGameSequencer flourish on in-place replays); a live AIPilot blocks
+                // every button action in R_VesselActionHandler and fights the pilot's input.
+                ToggleAIPilot(false);
                 ToggleInputPause(false);
+            }
         }
         
 
@@ -459,7 +487,7 @@ namespace CosmicShore.Gameplay
 
             // RoundStats.Domain is a LOCAL mirror derived from Player.NetDomain - the single
             // authoritative networked domain source (RoundStats.n_Domain is retired). Update it on
-            // EVERY peer here so all consumers (scoreboards, end-game, GameFeedAPI colorers) stay
+            // EVERY peer here so all consumers (scoreboards, end-game, GameToastAPI colorers) stay
             // correct across initial picks, modal re-picks, and rerolls, without a second
             // RoundStats-level replication that could lag behind.
             if (_roundStats)

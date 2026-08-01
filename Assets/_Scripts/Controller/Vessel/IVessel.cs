@@ -44,7 +44,6 @@ namespace CosmicShore.Gameplay
         void DisableSkimmer();
         void SetBoostMultiplier (float boostMultiplier);
         void SetShipMaterial(Material material);
-        void SetBlockSilhouettePrefab(GameObject prefab);
         void SetAOEExplosionMaterial(Material material);
         void SetAOEConicExplosionMaterial(Material material);
         void SetSkimmerMaterial(Material material);
@@ -58,7 +57,6 @@ namespace CosmicShore.Gameplay
         void ResetForPlay();
         void SetPose(Pose pose);
         void SetInitialSpeed(float initialSpeed);
-        void ChangePlayer(IPlayer player);
         void ModifyThrottle(float amount, float duration);
         void AddSlowedShipTransformToGameData();
         void RemoveSlowedShipTransformFromGameData();

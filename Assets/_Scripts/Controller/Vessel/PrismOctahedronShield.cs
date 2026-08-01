@@ -8,11 +8,12 @@ namespace CosmicShore.Gameplay
     /// box state and its supershielded circumscribing octahedron state.
     ///
     /// States:
-    ///   Unshielded:   BoxCollider active, authored prism mesh visible,
+    ///   Unshielded:   authored BoxCollider (trigger) active, authored prism mesh visible,
     ///                 mass = rho · 8·a·b·c
-    ///   Supershielded: MeshCollider (convex) active with generated octahedron,
-    ///                 octahedron mesh visible, mass = rho · 36·a·b·c
-    ///                 (exactly 4.5× the box mass by default)
+    ///   Supershielded: authored BoxCollider (trigger) STAYS the collider (a convex-mesh
+    ///                 trigger is invisible to trigger skimmers; the primitive box is what
+    ///                 both trigger and solid impactors detect), octahedron mesh visible,
+    ///                 mass = rho · 36·a·b·c (exactly 4.5× the box mass by default)
     ///
     /// Engage: per-face bloom morph - 8 faces grow outward from their centroids.
     /// Disengage: box mesh snaps back immediately, then a shatter overlay plays
@@ -78,6 +79,17 @@ namespace CosmicShore.Gameplay
         private Mesh _morphMesh;           // reused every frame during engage morph, owned
         private Vector3 _halfExtents;      // from BoxCollider.size * 0.5
         private Vector3 _center;           // from BoxCollider.center
+
+        /// <summary>Local-space shell center for the spatial index's shell view.</summary>
+        internal Vector3 ShellCenterLocal => _center;
+
+        /// <summary>
+        /// Local-space shell semi-axes (shieldScale × Awake-cached half-extents)
+        /// for the spatial index's shell view — deliberately the frozen authored
+        /// geometry, never the live BoxCollider.size (HoldColliderAtFullSize
+        /// mutates that during the bloom).
+        /// </summary>
+        internal Vector3 ShellSemiAxesLocal => _halfExtents * shieldScale;
         private float _boxMass;
         private float _shieldMass;
         private Material[] _originalMaterials;
@@ -127,19 +139,33 @@ namespace CosmicShore.Gameplay
             if (meshFilter != null)
                 _originalMesh = meshFilter.sharedMesh;
 
-            if (_meshRenderer != null)
-                _originalMaterials = _meshRenderer.sharedMaterials;
+            // NOT cached here: MeshRenderer.sharedMaterials allocates a fresh managed array on
+            // every read, and only ApplyMaterialOverride (first shield engage) ever needs it —
+            // paying it in Awake was 25k throwaway arrays on a mass environment lay. Captured
+            // lazily on the first override instead, while the renderer still has the originals.
 
-            // Settled octahedron comes from the shared cache: half-extents are the authored
-            // LOCAL collider size, so every same-prefab shield resolves to ONE mesh — the
-            // convex MeshCollider cooks once, and settled shields batch on the instanced
-            // render path instead of each owning a unique octahedron. Cache-owned: never
-            // destroy it here.
+            // Mesh setup is deferred to the first Engage (EnsureShieldMeshesBuilt): Load Time
+            // Insights measured per-prism shield mesh work at Awake as a dominant share of
+            // mass environment lays (25k prisms in one load) - prisms that are never shielded
+            // must not pay for the shield's geometry.
+
+            ComputeMassTargets();
+        }
+
+        /// <summary>
+        /// Resolves the shield meshes on first use. The settled octahedron comes from the shared
+        /// cache: half-extents are the authored LOCAL collider size, so every same-prefab shield
+        /// resolves to ONE mesh - the convex MeshCollider cooks once, and settled shields batch
+        /// on the instanced render path instead of each owning a unique octahedron. Cache-owned:
+        /// never destroyed here. The per-instance morph mesh is lazy for the same reason.
+        /// Deferred out of Awake so never-shielded prisms skip both entirely.
+        /// </summary>
+        private void EnsureShieldMeshesBuilt()
+        {
+            if (_octahedronMesh != null) return;
             _octahedronMesh = OctahedronMeshGenerator.GetSharedShieldMesh(_halfExtents, shieldScale);
             _morphMesh = new Mesh { name = "Octahedron_Shield_Morph" };
             _morphMesh.MarkDynamic();
-
-            ComputeMassTargets();
         }
 
         private void OnDisable()
@@ -234,6 +260,8 @@ namespace CosmicShore.Gameplay
         {
             if (_isShielded && !_isEngaging) return;
 
+            EnsureShieldMeshesBuilt();
+
             // If a shatter overlay is still playing, kill it immediately.
             StopShatter();
 
@@ -252,7 +280,7 @@ namespace CosmicShore.Gameplay
             else
             {
                 _isEngaging = true;
-                DisableCollidersDuringMorph();
+                KeepGameplayColliderDuringMorph();
                 UpdateEngageMesh(engageCurve.Evaluate(_engageT));
                 PrismOctahedronShieldManager.EnsureInstance()?.Register(this);
             }
@@ -396,16 +424,21 @@ namespace CosmicShore.Gameplay
             if (meshFilter != null)
                 meshFilter.sharedMesh = _octahedronMesh;
 
+            // COLLISION stays on the authored PRIMITIVE trigger box - the shield only changes
+            // the LOOK (octahedron mesh, above) and mass, never the collider. A convex
+            // MeshCollider can't serve both skimmer families at once: as a SOLID it is invisible
+            // to solid impactors like the Rhino shield-swipe (solid-vs-solid fires nothing); as a
+            // TRIGGER it is invisible to TRIGGER colliders (Unity/PhysX does not report a
+            // convex-mesh trigger to another trigger), which is every vessel's kinematic-RB
+            // trigger skimmer sphere - so the swap made skims "not register" at all. The authored
+            // box is a PRIMITIVE trigger, which BOTH see (trigger-vs-trigger works for primitives;
+            // solid-vs-trigger works) - exactly how unshielded prisms already skim for everyone.
+            // Bonus: the box is LOD-cullable (PrismColliderLodManager) and needs no convex cook.
             if (boxCollider != null)
-                boxCollider.enabled = false;
+                boxCollider.enabled = true;
 
-            EnsureShieldMeshCollider();
             if (shieldMeshCollider != null)
-            {
-                shieldMeshCollider.sharedMesh = _octahedronMesh;
-                shieldMeshCollider.convex = true;
-                shieldMeshCollider.enabled = true;
-            }
+                shieldMeshCollider.enabled = false;
 
             if (rb != null)
                 rb.mass = _shieldMass;
@@ -440,22 +473,26 @@ namespace CosmicShore.Gameplay
             ApplyMaterialOverride(shielded: false);
         }
 
-        private void DisableCollidersDuringMorph()
+        // Keep the prism interactive through the ~engageDuration bloom. Previously this
+        // disabled BOTH colliders, so a shielding prism went completely collider-less for
+        // the whole morph - a skimmer/vessel passing during that window touched nothing.
+        // The authored box stays in whatever state it already holds (enabled when mature,
+        // still off during the spawn-wait / LOD cull - we never force it on); we only make
+        // sure the legacy shield mesh collider (if a prefab still carries one) is off, since
+        // the shield keeps the box as its collider and never enables the mesh.
+        private void KeepGameplayColliderDuringMorph()
         {
-            if (boxCollider != null) boxCollider.enabled = false;
             if (shieldMeshCollider != null) shieldMeshCollider.enabled = false;
-        }
-
-        private void EnsureShieldMeshCollider()
-        {
-            if (shieldMeshCollider != null) return;
-            shieldMeshCollider = gameObject.AddComponent<MeshCollider>();
-            shieldMeshCollider.convex = true;
         }
 
         private void ApplyMaterialOverride(bool shielded)
         {
             if (_meshRenderer == null || shieldMaterialOverride == null) return;
+
+            // Capture the authored materials on the first override, before we overwrite them
+            // (deferred out of Awake — see the comment there).
+            _originalMaterials ??= _meshRenderer.sharedMaterials;
+
             _meshRenderer.sharedMaterials = shielded
                 ? new[] { shieldMaterialOverride }
                 : _originalMaterials;

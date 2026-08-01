@@ -39,6 +39,16 @@ namespace CosmicShore.Gameplay
         // spawn but varied across the pack.
         Vector3 _goalOrbitOffset;
 
+        /// <summary>
+        /// This creature's stable offset from whatever point it is currently seeking -
+        /// the anti-convergence term. Subclasses that recompute <see cref="Goal"/> on
+        /// their own cadence MUST add it wherever <see cref="ResolveGoal"/> does, or the
+        /// pack collapses onto one point: every creature seeks the identical centroid,
+        /// arrives, and its goal direction degenerates to zero. See
+        /// <see cref="LightFauna"/>'s behavior tick.
+        /// </summary>
+        protected Vector3 GoalOrbitOffset => _goalOrbitOffset;
+
         [Header("Diet (predator / prey)")]
         [Tooltip("What this fauna eats - the predator/herbivore selector. Herbivore: " +
                  "opposing-domain prism MASS (flora canopy + vessel trails); the default, " +
@@ -101,6 +111,10 @@ namespace CosmicShore.Gameplay
 
         Cell hostCell;
         FaunaConfigurationSO sourceConfig;
+
+        // This individual's rolled variant (element + the block expressing it + hatch level).
+        // Passed to offspring so a lineage breeds true instead of re-rolling per birth.
+        LifeformVariantPick<FaunaVariantTuning>? _variantPick;
         bool lineageRegistered;
         int _feedsSinceBirth;
         float _lastBirthTime = float.NegativeInfinity;
@@ -119,7 +133,17 @@ namespace CosmicShore.Gameplay
         /// OnDestroy). Called by the spawner after Initialize, and by a parent
         /// for its offspring - heredity is what lets reproduction recurse.
         /// </summary>
-        public void AssignLineage(Cell host, FaunaConfigurationSO config)
+        public void AssignLineage(Cell host, FaunaConfigurationSO config) =>
+            AssignLineage(host, config, null);
+
+        /// <summary>
+        /// Lineage bind with an optional INHERITED variant pick: a parent passes its own pick to
+        /// its offspring so a lineage keeps its element (and the level it hatched at) instead of
+        /// re-rolling a fresh identity every birth. Null rolls a new pick from the config - which,
+        /// with spread off, is just the authored Element / Variant / InitialLevel.
+        /// </summary>
+        public void AssignLineage(Cell host, FaunaConfigurationSO config,
+            LifeformVariantPick<FaunaVariantTuning>? inherit)
         {
             hostCell = host;
             sourceConfig = config;
@@ -128,6 +152,45 @@ namespace CosmicShore.Gameplay
                 host.RegisterLiveFauna(this);
                 lineageRegistered = true;
             }
+
+            // Elemental contract: the species config may define the ELEMENT as data (one base
+            // prefab, 20 data-defined variants) - re-provision the heart to that element if the
+            // prefab-authored crystal disagrees - apply the variant's expression (behavior /
+            // body / audio deltas that used to force a prefab variant per element), and seed the
+            // spawn LEVEL (spawns AT size, nothing pops mid-life). Tuning runs BEFORE SetLevel so
+            // the level curve grows from the variant's base scale.
+            if (config)
+            {
+                var pick = config.RollVariant(inherit);
+                _variantPick = pick;
+
+                if (pick.Element != Element.None)
+                {
+                    crystal = LifeFormCrystal.EnsureElementalCrystal(this, pick.Element);
+                    if (crystal) crystal.SetEmbeddedIn(this);
+                }
+                if (pick.Tuning is { Enabled: true })
+                    ApplyVariantTuning(pick.Tuning);
+                SetLevel(pick.Level, animate: false);
+            }
+
+            // A new living heart entered the world - let the domain fauna buff re-sum now
+            // instead of on its next reconcile sweep.
+            RaiseFaunaHeartsChanged();
+        }
+
+        /// <summary>
+        /// Pokes <see cref="CellRuntimeDataSO.OnFaunaHeartsChanged"/> through the host cell's
+        /// runtime SO (always wired on a live cell) rather than the per-prefab cellData wire —
+        /// several fauna prefabs author cellData null or dangling, and every fauna that
+        /// participates in the buff pool has a host cell by construction (AssignLineage sets
+        /// it). cellData is the fallback for hostless deaths; the event field itself must fail
+        /// loud if unwired on the asset.
+        /// </summary>
+        void RaiseFaunaHeartsChanged()
+        {
+            var runtimeData = hostCell ? hostCell.RuntimeData : cellData;
+            if (runtimeData) runtimeData.OnFaunaHeartsChanged.Raise();
         }
 
         void TryReproduce()
@@ -168,7 +231,10 @@ namespace CosmicShore.Gameplay
             // passes heredity so the child can reproduce in turn. Predation
             // immunity (stamped in Awake) gives it time to disperse.
             child.Initialize(host);
-            child.AssignLineage(host, cfg);
+            // Heredity: the child inherits this parent's variant pick - its element and the
+            // level it hatched at - rather than rolling a new identity. In-world level-ups
+            // (the Shepherd joust) are NOT inherited: acquired growth is not heritable.
+            child.AssignLineage(host, cfg, _variantPick);
             host.RegisterSpawnedObject(child.gameObject);
         }
 
@@ -183,6 +249,192 @@ namespace CosmicShore.Gameplay
         public Domains Domain => domain;
         public GameObject GetGameObject() => gameObject;
 
+        // --- Elemental contract (element x level - one base prefab, 20 data-defined variants) ---
+
+        /// <summary>Level cap for every lifeform (the 4 elements x 5 levels contract).</summary>
+        public const int MaxLifeformLevel = 5;
+
+        /// <summary>The element this creature carries - single source: its crystal (the heart).</summary>
+        public Element Element => crystal ? crystal.crystalProperties.Element : Element.None;
+
+        /// <summary>This creature's level, 1..MaxLifeformLevel. Scales body + crystal via the species config.</summary>
+        public int Level { get; private set; } = 1;
+
+        /// <summary>Current travel speed (world units/s). Mobile subclasses (Boid, LightFauna)
+        /// override with their live velocity; manager/rooted fauna read as stationary.</summary>
+        public virtual float CurrentSpeed => 0f;
+
+        /// <summary>A faster vessel jousted this creature's heart - routes through Predated
+        /// (idempotent, immunity-respecting) so it withers and drops its crystal.</summary>
+        public bool Jousted(string killerName) => Predated(killerName);
+
+        Vector3 _levelBaseScale = Vector3.one;   // root scale at level 1 (captured on first level apply)
+        float _crystalBaseScale = 1f;            // crystal local scale at level 1
+        bool _levelBaseCaptured;
+        Coroutine _levelGrowRoutine;
+
+        float BodyScalePerLevel => sourceConfig ? sourceConfig.BodyScalePerLevel : 1.15f;
+        float CrystalScalePerLevel => sourceConfig ? sourceConfig.CrystalScalePerLevel : 1.2f;
+        float LevelGrowSeconds => sourceConfig ? sourceConfig.LevelGrowSeconds : 1f;
+
+        /// <summary>
+        /// Raises this creature's level by one (clamped at <see cref="MaxLifeformLevel"/>),
+        /// GROWING the body and its embedded crystal over LevelGrowSeconds - the continuity law:
+        /// a level-up blooms, it never pops. Returns false at the cap (callers skip their juice).
+        /// Raised in-world by active forces (e.g. an own-domain Crystal Joust).
+        /// </summary>
+        public bool LevelUp()
+        {
+            if (Level >= MaxLifeformLevel) return false;
+            SetLevel(Level + 1, animate: true);
+            return true;
+        }
+
+        /// <summary>Applies a level directly (spawn-time seeding animates nothing - it spawns AT size).</summary>
+        protected void SetLevel(int level, bool animate)
+        {
+            level = Mathf.Clamp(level, 1, MaxLifeformLevel);
+            if (!_levelBaseCaptured)
+            {
+                _levelBaseScale = transform.localScale;
+                if (crystal) _crystalBaseScale = crystal.transform.localScale.x;
+                _levelBaseCaptured = true;
+            }
+
+            Level = level;
+            Vector3 targetScale = _levelBaseScale * Mathf.Pow(BodyScalePerLevel, Level - 1);
+
+            if (!animate || !isActiveAndEnabled)
+            {
+                transform.localScale = targetScale;
+            }
+            else
+            {
+                if (_levelGrowRoutine != null) StopCoroutine(_levelGrowRoutine);
+                _levelGrowRoutine = StartCoroutine(GrowToScale(targetScale, LevelGrowSeconds));
+            }
+
+            // The heart grows with the level so the eventual death drop is a bigger powerup
+            // (crystal value reads lossyScale live at collect time - mass rewarded). The crystal
+            // is a child of the root, so divide the body growth back out of its LOCAL target.
+            if (crystal)
+            {
+                // The body grows by pow(BodyScalePerLevel, L-1), so the crystal's LOCAL target is
+                // its world target divided by the body growth (it lands at the world size wanted).
+                float worldTarget = _crystalBaseScale * Mathf.Pow(CrystalScalePerLevel, Level - 1);
+                float localTarget = worldTarget / Mathf.Pow(BodyScalePerLevel, Level - 1);
+                if (animate && isActiveAndEnabled && crystal.gameObject.activeInHierarchy)
+                    StartCoroutine(GrowCrystalWithPop(localTarget, LevelGrowSeconds));
+                else
+                    crystal.transform.localScale = Vector3.one * localTarget;
+            }
+        }
+
+        /// <summary>
+        /// Applies the config's per-variant expression - the deltas that used to force a prefab
+        /// variant per element (see FaunaVariantTuning). The base handles what every fauna has:
+        /// body scale, spindle material, starvation, forager-agnostic survival; Boid layers the
+        /// flocking numbers on top. Runs at AssignLineage, BEFORE the level curve seeds, and
+        /// before the creature is visible-established (spawn-time - continuity is not violated).
+        /// </summary>
+        public virtual void ApplyVariantTuning(FaunaVariantTuning tuning)
+        {
+            if (tuning == null) return;
+
+            if (tuning.BaseBodyScale > 0f)
+                transform.localScale = Vector3.one * tuning.BaseBodyScale;
+
+            if (tuning.StarvationSeconds >= 0f)
+                starvationSeconds = tuning.StarvationSeconds;
+
+            // Per-element body PRISM shape: retarget every body HealthPrism's TargetScale (the
+            // bloom target - PrismScaleManager animates toward it, so a post-Initialize retarget
+            // still grows continuously, never pops).
+            if (tuning.BodyPrismScale != Vector3.zero)
+            {
+                foreach (var hp in GetComponentsInChildren<HealthPrism>(true))
+                    if (hp) hp.TargetScale = tuning.BodyPrismScale;
+            }
+
+            // Per-element body look: swap the spindle renderers' shared material (never
+            // renderer.material - that clones). Crystal models keep their own materials.
+            if (tuning.BodyMaterial)
+            {
+                foreach (var sp in GetComponentsInChildren<Spindle>(true))
+                {
+                    if (sp && sp.TryGetComponent<Renderer>(out var rend))
+                        rend.sharedMaterial = tuning.BodyMaterial;
+                }
+            }
+
+            // Per-element audio loop: retarget the FMOD emitter before its ObjectStart play
+            // (AssignLineage runs in the spawn call, ahead of the emitter's Start). An empty
+            // reference with OverrideAudio on silences the loop (the Space tadpole is silent).
+            var emitter = tuning.OverrideAudio
+                ? GetComponentInChildren<FMODUnity.StudioEventEmitter>(true)
+                : null;
+            if (emitter)
+            {
+                emitter.EventReference = tuning.AudioLoopEvent;
+                if (tuning.AudioMinDistance >= 0f || tuning.AudioMaxDistance >= 0f)
+                {
+                    emitter.OverrideAttenuation = true;
+                    if (tuning.AudioMinDistance >= 0f) emitter.OverrideMinDistance = tuning.AudioMinDistance;
+                    if (tuning.AudioMaxDistance >= 0f) emitter.OverrideMaxDistance = tuning.AudioMaxDistance;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Level-up crystal growth with an OVERSHOOT pop: the heart flares past its new size in
+        /// the first quarter of the animation, then settles - readable at flight speed, where a
+        /// plain 20%-over-a-second ease is too subtle to notice. Still continuous (never pops in).
+        /// </summary>
+        IEnumerator GrowCrystalWithPop(float localTarget, float seconds)
+        {
+            if (!crystal) yield break;
+            var t = crystal.transform;
+            float start = t.localScale.x;
+            float flare = localTarget * 1.6f;
+            float flareTime = Mathf.Max(0.05f, seconds * 0.25f);
+            float settleTime = Mathf.Max(0.05f, seconds - flareTime);
+
+            // Stop the moment the heart is no longer embedded in this fauna: a death mid-grow
+            // reparents the crystal to the cell (ActivateCrystal), where localTarget - computed
+            // to divide out the fauna body's scale - would land as the wrong WORLD scale. The
+            // drop keeps the world scale it had at death, which is exactly the value the domain
+            // buff was granting at that moment.
+            for (float e = 0f; e < flareTime; e += Time.deltaTime)
+            {
+                if (!crystal || !ReferenceEquals(crystal.EmbeddedIn, this)) yield break;
+                t.localScale = Vector3.one * Mathf.Lerp(start, flare, e / flareTime);
+                yield return null;
+            }
+            for (float e = 0f; e < settleTime; e += Time.deltaTime)
+            {
+                if (!crystal || !ReferenceEquals(crystal.EmbeddedIn, this)) yield break;
+                float u = e / settleTime;
+                t.localScale = Vector3.one * Mathf.Lerp(flare, localTarget, u * u * (3f - 2f * u));
+                yield return null;
+            }
+            if (crystal && ReferenceEquals(crystal.EmbeddedIn, this))
+                t.localScale = Vector3.one * localTarget;
+        }
+
+        IEnumerator GrowToScale(Vector3 target, float seconds)
+        {
+            Vector3 start = transform.localScale;
+            float t = 0f;
+            while (t < 1f)
+            {
+                t += Time.deltaTime / Mathf.Max(0.05f, seconds);
+                transform.localScale = Vector3.Lerp(start, target, Mathf.Clamp01(t));
+                NotifyBodyPrismsMoved(); // keep the spatial index honest while the body grows
+                yield return null;
+            }
+            _levelGrowRoutine = null;
+        }
+
         // Prefer the explicit host cell (set by Initialize/AssignLineage). The
         // cellData runtime SO is a SHARED asset holding only the LAST cell that
         // initialized it, so in multi-cell scenes the SO path can point a fauna at
@@ -190,6 +442,33 @@ namespace CosmicShore.Gameplay
         // are never Initialize(cell)-called. Unity-null guards on both so callers
         // just get null and skip the goal/avoidance branches that need a cell.
         protected Cell cell => hostCell ? hostCell : (cellData ? cellData.Cell : null);
+
+        /// <summary>
+        /// Squared length below which a steering vector counts as degenerate. A steering
+        /// sum that cancels to ~zero normalizes to <see cref="Vector3.zero"/>, which zeroes
+        /// the creature's velocity - and a motionless creature recomputes the identical
+        /// zero from the identical position on every later tick, so the stall is PERMANENT
+        /// (it hangs in place until it starves). Steering code must test against this and
+        /// keep its last heading rather than publish a zero direction.
+        /// </summary>
+        protected const float DegenerateSteeringSqr = 1e-6f;
+
+        /// <summary>
+        /// Shielded mass is not food for ANY herbivore - the one canonical rule every
+        /// species' edibility predicate routes through, so no new grazer can re-acquire
+        /// the bug. A SUPER-shielded prism is fully invulnerable and a SHIELDED one only
+        /// sheds its shield (see <see cref="Prism.Consume"/>), so a grazer that adopts one
+        /// as its feed target approaches it, faces it, "eats" it, and finds it still there
+        /// on the next mouthful-chaining query - grazing forever without ever removing
+        /// mass. That is what parked brittlestars on Skim Race's super-shielded track
+        /// prisms. Excluding shields from the predicate makes the creature skip straight
+        /// to the next normal prism on the same behavior tick.
+        /// </summary>
+        protected static bool IsShieldedMass(Prism prism)
+        {
+            var properties = prism ? prism.prismProperties : null;
+            return properties != null && (properties.IsShielded || properties.IsSuperShielded);
+        }
 
         /// <summary>
         /// Shared scratch buffer for Physics.OverlapSphereNonAlloc in fauna
@@ -211,6 +490,15 @@ namespace CosmicShore.Gameplay
         /// having its snapshot clobbered mid-iteration.
         /// </summary>
         protected static readonly List<Prism> PrismScratch = new(256);
+
+        /// <summary>
+        /// Separate scratch list for the small per-MOUTHFUL cluster query intentional
+        /// feeding runs when a herbivore actually consumes (LightFauna.ConsumeMouthful /
+        /// Boid feeding). Kept distinct from <see cref="PrismScratch"/> because mouthful
+        /// consumption fires from per-frame Update code, which must never clobber a
+        /// behavior tick's in-flight neighborhood snapshot.
+        /// </summary>
+        protected static readonly List<Prism> FeedScratch = new(64);
 
         /// <summary>
         /// Overlap mask for the physics half of fauna scans: everything EXCEPT prism
@@ -253,6 +541,9 @@ namespace CosmicShore.Gameplay
             }
             return _bodyPrisms;
         }
+
+        /// <summary>The cached body prisms (see <see cref="CacheBodyPrisms"/>). May contain destroyed entries.</summary>
+        protected HealthPrism[] BodyPrisms => _bodyPrisms;
 
         /// <summary>
         /// Pushes the body prisms' current positions into the spatial index. Call
@@ -312,6 +603,19 @@ namespace CosmicShore.Gameplay
         protected Crystal crystal;
 
         /// <summary>
+        /// The living embedded heart: non-null only while this fauna is alive and its elemental
+        /// crystal is still embedded in it. The sealed <see cref="Die"/> path frees the heart
+        /// via ActivateCrystal, so this returns null from the exact moment the crystal becomes
+        /// a collectible — the domain fauna buff keys off this so a fauna's domain-wide power
+        /// ends precisely when its crystal (the same heart, at the same world scale, carrying
+        /// the same value) hits the open water.
+        /// </summary>
+        public Crystal LiveHeart =>
+            crystal && crystal.gameObject.activeInHierarchy && ReferenceEquals(crystal.EmbeddedIn, this)
+                ? crystal
+                : null;
+
+        /// <summary>
         /// Death chokepoint - SEALED so no fauna can die without conserving its mass.
         /// Every death path (starvation, <see cref="Predated"/>) routes here; it drops
         /// the elemental crystal (the locked "every lifeform drops one elemental crystal
@@ -324,6 +628,9 @@ namespace CosmicShore.Gameplay
         {
             if (crystal && crystal.gameObject && crystal.gameObject.activeInHierarchy)
                 crystal.ActivateCrystal();
+            // The heart just left the living pool - poke the domain fauna buff so the
+            // domain's power drops with the death, not on the next reconcile sweep.
+            RaiseFaunaHeartsChanged();
             OnDeath(killerName);
         }
 
@@ -344,15 +651,32 @@ namespace CosmicShore.Gameplay
         public bool IsAlivePrey => !_consumedAsPrey;
 
         /// <summary>
+        /// Where a devouring predator wants this prey's body prisms suctioned to (the
+        /// predator's mouth). Set by the devour overload of <see cref="Predated"/> before
+        /// Die runs, so subclass OnDeath can choose the break-apart-and-suction exit over
+        /// the default wither. Null for non-predation deaths (starvation).
+        /// </summary>
+        protected Transform DevourTarget { get; private set; }
+
+        /// <summary>
         /// A predator has caught this fauna. Routes through the normal <see cref="Die"/> path
         /// (manager removal / destroy), is idempotent, and respects the post-spawn predation
         /// immunity window. Returns true only if the prey was actually eaten this call - the
         /// predator should reset its starvation clock (NotifyFed) only on a true result.
         /// </summary>
-        public virtual bool Predated(string predatorName = "predator")
+        public bool Predated(string predatorName = "predator") => Predated(predatorName, null);
+
+        /// <summary>
+        /// Devour variant: <paramref name="devourTarget"/> is the predator's mouth — the
+        /// suction sink the prey's body prisms implode toward (continuity rule: the prey
+        /// breaks apart and is pulled into the mouth, never popping out of existence). The
+        /// sealed <see cref="Die"/> still drops the elemental crystal first (mass conserved).
+        /// </summary>
+        public virtual bool Predated(string predatorName, Transform devourTarget)
         {
             if (_consumedAsPrey || IsPredationImmune) return false;
             _consumedAsPrey = true;
+            DevourTarget = devourTarget;
             Die(predatorName);
             return true;
         }

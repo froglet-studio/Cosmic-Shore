@@ -1,82 +1,66 @@
 // NetworkJoustCollisionTurnMonitor.cs
-using System.Collections.Generic;
 using CosmicShore.Data;
+using CosmicShore.ScriptableObjects;
 using Unity.Netcode;
 using System.Linq;
-using UnityEngine;
 using CosmicShore.Utility;
 
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Network-aware joust collision turn monitor. Owns the collision sync RPCs
-    /// so that no direct reference to any game controller is needed.
-    /// The monitor detects collisions locally, syncs them across the network,
-    /// and ends the turn when any player reaches <see cref="CollisionsNeeded"/>.
+    /// Joust objective monitor. Resolves the joust target at <see cref="StartMonitor"/>
+    /// from <see cref="EndConditionOverridesSO"/> (Tools &gt; Cosmic Shore &gt; End Game
+    /// Conditions; 0 = default 3 - never a per-scene field) and publishes it to
+    /// <see cref="GameDataSO.JoustTargetCount"/> on EVERY peer (a scene constant, so no
+    /// NetworkVariable leg is needed - deliberate, R10). Owns the collision sync RPC pair
+    /// so client-observed collisions reach the server authoritatively. End condition,
+    /// remaining display, and the B15 subscription lifecycle come from
+    /// <see cref="ObjectiveTurnMonitor"/>.
     /// </summary>
-    public class NetworkJoustCollisionTurnMonitor : JoustCollisionTurnMonitor
+    public class NetworkJoustCollisionTurnMonitor : ObjectiveTurnMonitor
     {
-        // Stats this monitor actually subscribed to. Unsubscription must run off THIS
-        // list, never gameData.RoundStatsList: on a mid-turn scene exit, SceneLoader's
-        // ResetRuntimeData clears the roster BEFORE the old scene's objects are
-        // destroyed, so a list-based unsubscribe loop detaches nothing and the handlers
-        // leak onto the persistent human RoundStats (Docs/ScoringSystem/BUGS.md B15).
-        readonly List<IRoundStats> _subscribedStats = new();
+        // RESOLVED joust target - set in StartMonitor. Intentionally NOT a
+        // [SerializeField]: end-game counts are authored only via the tool, never
+        // per-scene. Do not re-add [SerializeField] here (see /EndGameConditions skill).
+        int collisionsNeeded;
+        public int CollisionsNeeded => collisionsNeeded;
 
         public override void StartMonitor()
         {
-            base.StartMonitor();
+            // End-game count from the tool: 0 there = default (3). Published per-peer -
+            // every machine resolves the same committed asset value.
+            var overrides = EndConditionOverridesSO.Instance;
+            collisionsNeeded = overrides != null ? overrides.GetJoustCount() : EndConditionOverridesSO.DefaultJoustCount;
+            gameData.JoustTargetCount = collisionsNeeded;
+
+            // ALL machines subscribe - clients report their own observed collisions up to
+            // the server, and the "jousts remaining" readout reflects the local player's
+            // DOMAIN aggregate, which changes whenever ANY teammate jousts. B15
+            // bookkeeping is the base's.
+            SubscribeRoster();
 
             CSDebug.Log($"[NetworkJoustMonitor] StartMonitor - IsServer={IsServer}, " +
-                $"CollisionsNeeded={CollisionsNeeded}, " +
+                $"CollisionsNeeded={collisionsNeeded}, " +
                 $"Players={gameData.RoundStatsList.Count}, " +
                 $"Names=[{string.Join(", ", gameData.RoundStatsList.Select(s => s.Name))}]");
 
-            // ALL machines subscribe - client needs to report its own collisions up to server,
-            // and the HUD's "jousts remaining" readout needs to reflect the local player's
-            // DOMAIN aggregate, which changes whenever ANY teammate jousts.
-            foreach (var stat in gameData.RoundStatsList)
-            {
-                if (stat == null || _subscribedStats.Contains(stat)) continue;
-                stat.OnJoustCollisionChanged += OnCollisionChanged;
-                stat.OnJoustCollisionChanged += OnAnyJoustChangedUI;
-                _subscribedStats.Add(stat);
-            }
-
-            UpdateDomainRemainingUI();
+            RaiseRemainingUI();
+            base.StartMonitor();
         }
 
-        public override void StopMonitor()
+        protected override void AttachStatsHandlers(IRoundStats stats)
         {
-            foreach (var stat in _subscribedStats)
-            {
-                if (stat == null) continue;
-                stat.OnJoustCollisionChanged -= OnCollisionChanged;
-                stat.OnJoustCollisionChanged -= OnAnyJoustChangedUI;
-            }
-            _subscribedStats.Clear();
-
-            base.StopMonitor();
+            stats.OnJoustCollisionChanged += OnCollisionChanged;
+            stats.OnJoustCollisionChanged += OnAnyJoustChangedUI;
         }
 
-        public override void OnDestroy()
+        protected override void DetachStatsHandlers(IRoundStats stats)
         {
-            // Safety net for destruction paths that bypass StopMonitor - detaching
-            // from the persistent RoundStats must never depend on the turn ending.
-            StopMonitor();
-            base.OnDestroy();
+            stats.OnJoustCollisionChanged -= OnCollisionChanged;
+            stats.OnJoustCollisionChanged -= OnAnyJoustChangedUI;
         }
 
-        void OnAnyJoustChangedUI(IRoundStats _) => UpdateDomainRemainingUI();
-
-        void UpdateDomainRemainingUI()
-        {
-            if (gameData.LocalPlayer == null) return;
-            // Remaining = local player's DOMAIN joust deficit (the rule owns target + sum).
-            int remaining = gameData.ScoringRule.Remaining(gameData, gameData.LocalPlayer.Domain);
-            if (onUpdateTurnMonitorDisplay)
-                onUpdateTurnMonitorDisplay.Raise(remaining.ToString());
-        }
+        void OnAnyJoustChangedUI(IRoundStats _) => RaiseRemainingUI();
 
         void OnCollisionChanged(IRoundStats stats)
         {
@@ -119,16 +103,6 @@ namespace CosmicShore.Gameplay
             if (IsServer) return;
             if (!gameData.TryGetRoundStats(playerName, out IRoundStats stats)) return;
             stats.JoustCollisions = collisionCount;
-        }
-
-        public override bool CheckForEndOfTurn()
-        {
-            // Only server ends the turn authoritatively
-            if (!IsServer) return false;
-
-            // End condition delegated to the mode's ScoringRule: an active domain's summed
-            // jousts reaching the target. Domain teammates finish the objective together.
-            return gameData.ScoringRule.IsObjectiveReached(gameData, out _);
         }
     }
 }

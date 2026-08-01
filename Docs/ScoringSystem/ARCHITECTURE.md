@@ -73,8 +73,11 @@ The shared hub. **SOAP events** (all `ScriptableEventNoParam`):
   once sorted).
 - `LocalRoundStats` — the local player's stats.
 - `WinnerName`, `WinnerDomain` — server-authoritative result.
-- `IsGolfRules` (get/private set), `RequestedDomainCount` (=3),
-  `IsMultiplayerMode` **[legacy — see §8]**.
+- `IsGolfRules` (get/private set), `RequestedDomainCount` (=3).
+  (`IsMultiplayerMode` retired 2026-07-20 — see §8.)
+- `HasNoWinner` — true when the authoritative end explicitly declared no winner
+  (Blue broadcast, e.g. co-op DNF); read by `EndGameSequencer`/`Scoreboard`
+  so derive-a-winner fallbacks never credit a DNF (BUGS.md B17).
 - **Server-synced per-domain metric sums** (BUGS.md B9 / "Approach B"):
   `GetDomainMetricSum(d)` / `SetDomainMetricSum(d, v)` + `OnDomainMetricSumsChanged`.
   The server computes each domain's metric sum and replicates it; clients display it
@@ -211,10 +214,13 @@ mode-agnostic consumer of `gameData.Results` (R10). The crystal reward is the sc
   avatar (`SO_ProfileIconList` humans / `SO_AIProfileList` AI), `+N` crystal reward on the
   winner, and `AwardCrystalsIfLocalWinner` if the local player won. Order/primary/secondary
   all come from the rule — no per-mode formatting here.
-- Banner domain = `gameData.WinnerDomain` (falls back to `Results[0].Domain`).
-- `ConfigureLobbyButtons`: host/single-player see **Main Menu + Play Again**;
-  non-host clients see **Leave Lobby**. **[legacy dependency]** gated on
-  `IsMultiplayerMode` (§8).
+- Banner domain = `gameData.WinnerDomain` (falls back to `Results[0].Domain`) —
+  unless `gameData.HasNoWinner`, which renders the neutral `SetNoWinnerBanner()`
+  ("GAME OVER", Blue tint) instead of crediting a domain (BUGS.md B17).
+- `ConfigureLobbyButtons`: forks on **`NetworkManager.IsServer`** (host sees
+  **Main Menu + Play Again**; non-host clients see **Leave Lobby**; tournament
+  swaps in the host-only Continue). It does NOT read the retired
+  `IsMultiplayerMode` (§8) — an earlier revision of this doc mislabeled that.
 - The old per-mode `SortPlayers` / `DetermineWinnerDomain` / `FormatPlayerScore` /
   `FormatSecondaryStat` / `SetBannerForDomain` virtuals were removed (R10) — the rule
   produces all of it.
@@ -255,14 +261,15 @@ end-game cinematic was removed; `EndGameSequencer` now just raises the scoreboar
 |---|---|---|---|---|---|
 | **HexRace** (33) | `HexRaceScoringRuleSO` | Crystals | golf ↑, tiebreak `CrystalsCollected`↓ | finish time `MM:SS:CS` / `EncodeHexRaceLoserScore` (10000 + crystals-left) → "{N} Crystals Left" | VICTORY/RACE TIME • DEFEAT/CRYSTALS LEFT |
 | **Joust** (34) | `JoustScoringRuleSO` | Jousts | golf ↑, tiebreak `JoustCollisions`↓ | finish time `MM:SS:CS` / `JoustLoserScore` (99999) → "{N} Jousts Left" (domain deficit) | VICTORY/WON BY N JOUSTS • DEFEAT/LOST BY N JOUSTS |
-| **Crystal Capture** (35) | `CrystalCaptureScoringRuleSO` | Crystals | points ↓ | `Score` = CrystalsCollected → "{N} Crystals" (both) | WON/LOST BY N CRYSTALS |
-| **Cellular Duel** (29) | — (no rule) | `Score` | points ↓ | `"{N}"` | `EndGameSequencer`; `DuelForCellScoreboard` |
-| **Wildlife Blitz** co-op (32) | — (no rule) | `Score` | base | base | `CoOpScoreBoard` + `EndGameSequencer` |
+| **Crystal Capture** (35) | `CrystalCaptureScoringRuleSO` | Crystals | golf ↑, tiebreak `CrystalsCollected`↓ | finish time `MM:SS:CS` / `EncodeHexRaceLoserScore` (10000 + crystals-left) → "{N} Crystals Left"; secondary "{N} Crystals" | VICTORY/CAPTURE TIME • DEFEAT/CRYSTALS LEFT |
+| **Rampage** (2) | `RampageScoringRuleSO` | PrismsDestroyed | golf ↑, tiebreak `HostilePrismsDestroyed`↓ | finish time `MM:SS:CS` / `EncodeHexRaceLoserScore` (10000 + prisms-left) → "{N} Prisms Left"; secondary "{N} Prisms" | VICTORY/RAMPAGE TIME • DEFEAT/PRISMS LEFT |
 
-> **Loser sentinels (centralized).** Golf modes encode a DNF loser score — HexRace
-> `10000 + crystalsLeft`, Joust `99999` — via the one `GolfScoreSentinels` helper
-> (`Encode…` / `IsFinishTime`), the single documented source after `REFACTOR.md` R4.
-> The rule's `AssignScores` writes it; `BuildResults` decodes it into `ScoreText`.
+> **Loser sentinels (centralized).** Golf modes encode a DNF loser score — HexRace /
+> Crystal Capture / Rampage `10000 + team-metric-remaining` (all three share
+> `EncodeHexRaceLoserScore`; the "HexRace" naming is legacy), Joust `99999` — via the one
+> `GolfScoreSentinels` helper (`Encode…` / `IsFinishTime`), the single documented source
+> after `REFACTOR.md` R4. The rule's `AssignScores` writes it; `BuildResults` decodes it
+> into `ScoreText`.
 
 ---
 
@@ -273,10 +280,13 @@ end-game cinematic was removed; `EndGameSequencer` now just raises the scoreboar
   punch, counter roll, color flash, countdown, HUD fade, and scoreboard
   entrance/banner timings + `useUnscaledTime`. Per Config Separation, tuning
   lives here, not on per-widget SerializeFields.
-- **Domain → color** resolution order: `ThemeManagerData.ColorSet`
-  (`TryGetColorSetByDomain`) → `DomainColorPaletteSO` → `MiniGameHUDView.domainColors`
-  (white fallback). The end-game `Scoreboard` additionally has hardcoded
-  `*TeamBannerColor` fallbacks. Three paths today → unify (`REFACTOR.md` R5).
+- **Domain → color** resolves from the ONE source: `ThemeManagerData.ColorSet`
+  (`SO_ColorSet`). Flat scoring UI uses `GetDomainUIColor` (= `TrailHighlightColor`);
+  the Maelstrom cards / Connecting-panel rank use the named accent role
+  `GetDomainUIAccentColor` (= `DomainColorSet.UIAccentColor`, a deliberately
+  brighter translucent tint that falls back to `GetDomainUIColor` when
+  unauthored). The former parallel `DomainColorPaletteSO` is deleted
+  (`REFACTOR.md` R5).
 
 ---
 
@@ -307,23 +317,33 @@ scoring data is already RPC-synced; the goal is to delete the
 single-player/multiplayer **fork** so solo-host and online render identically
 (domain-aggregated, RPC-synced).
 
-**`IsMultiplayerMode` fork map (current call sites):**
+**EXECUTED 2026-07-20 (owner-resolved D21 — solo modes retired, solo = party-of-one
+host).** `GameDataSO.IsMultiplayerMode` and `SO_Game.IsMultiplayer` are deleted.
+What each fork-site became:
 
-| File:line | Use |
+| Former site | Resolution |
 |---|---|
-| `Controller/Managers/Arcade.cs:66,107,162` | **writes** the flag; `:107` sets `isMultiplayer && SelectedPlayerCount > 1` (so a 1-player game is marked non-MP) |
-| `Controller/Arcade/MultiplayerMiniGameControllerBase.cs:44,450` | reads/writes during config sync |
-| `UI/Scoreboard.cs:154,456` | lobby-button visibility + Play-Again host guard |
-| `UI/PauseMenu.cs:131` | pause-menu behavior |
-| `Controller/Multiplayer/MultiplayerSetup.cs:86` | session creation path |
-| `Controller/Party/HostConnectionService.cs:1714` | presence activity string |
-| `System/SceneLoader.cs:139` | log line only |
+| `MultiplayerSetup` sign-in session gate | DELETED along with the whole legacy query/join/create matchmaking path it guarded (`ExecuteMultiplayerSetup` + helpers) — provably dead: `AppManager.ConfigureGameData` runs `ResetAllData()` before sign-in, so the flag was always false at the gate, and the eager per-user Relay party session (`HostConnectionService`) is the session for every game |
+| `HostConnectionService.ResolveCurrentMatchName` presence guard | dropped — every in-game scene advertises its match name (friends now see solo games too; intentional change) |
+| `SyncGameConfigToClients_ClientRpc` round-trip | `isMultiplayer` arg + client write removed |
+| `SceneLoader` launch log | field dropped from the log line |
+| Analytics `is_multiplayer` payload | now `NetworkManager.ConnectedClientsIds.Count > 1` at report time (metric meaning change: "more than one connected human", AI backfill excluded) |
+| Writes (`TournamentController`, `BenchmarkSceneLauncher`, `Arcade.cs` dead launcher, `GameDataSO.SyncFromArcadeGame` + `ResetAllData`) | deleted with the flag |
+| `Loadout.IsMultiplayer` / `LoadoutCloudData.IsMultiplayer` | KEPT as documented tombstones (persisted cloud-save schema); callers pass constant `true`; never branch on them |
 
-**Target:** route all the above through the always-networked host model (solo =
-host + AI), driving lobby/scoreboard behavior off concrete signals
-(connected client count, `WinnerDomain`, domain membership) rather than the
-`IsMultiplayerMode` boolean, then remove the flag. **This is a discuss-first
-item** (`REFACTOR.md` R1) — agree the per-site replacement before any code.
+> **Merge hazard at two of these sites (hit twice, 2026-07-25).** Removing the `isMultiplayer`
+> parameter from `SyncGameConfigToClients_ClientRpc` and the flag from
+> `GameDataSO.InvokeGameLaunch` changed those methods' **signatures** on this branch while
+> `bleeding-edge` independently added a `LoadInsights.SetGameContext(...)` call **inside both
+> method bodies** that passes the flag. Git auto-merges signature-from-one-side with
+> body-from-the-other and emits **no conflict marker**; the result is `CS0103: The name
+> 'isMultiplayer' does not exist in the current context`. Both sites now pass
+> `isMultiplayer: true` — unconditional post-C5, and the solo-vs-party distinction is readable
+> off `humanPlayers`, which the same call already reports.
+>
+> If a future merge touches either method, check the body before trusting a clean merge. Grepping
+> for `IsMultiplayerMode` does **not** find this — the reintroduced identifier is a lowercase
+> parameter name.
 
 ---
 
@@ -368,7 +388,7 @@ subclasses any more, and **no end-game cinematic** (`EndGameSequencer` raises th
 | **Per-mode scoring rule** (the only per-mode code) | `_Scripts/Controller/Arcade/Scoring/ScoringRuleSO.cs` (+ `HexRace`/`Joust`/`CrystalCapture` `ScoringRuleSO`), `ScoringMetrics.cs` |
 | Ranked-results types | `_Scripts/Data/Structs/ScoreResult.cs`, `_Scripts/Controller/Arcade/ScoreResultBuilder.cs`, `_Scripts/Controller/Arcade/Scoring/ScoreReveal.cs` |
 | End-game scoreboard | `_Scripts/UI/Scoreboard.cs` (reads `gameData.Results`), `_Scripts/UI/PlayerScoreCard.cs` |
-| Non-rule scoreboards | `_Scripts/UI/DuelForCellScoreboard.cs`, `CoOpScoreBoard.cs` (rule modes use the base `Scoreboard`) |
+| Non-rule scoreboards | none remain — `DuelForCellScoreboard`/`CoOpScoreBoard` deleted with the 2v2 stack 2026-07-21; every mode uses the base `Scoreboard` |
 | End-game sequencer | `_Scripts/Utility/DataContainers/EndGameSequencer.cs` (halts vessels, GameEnd SFX, raises `OnShowGameEndScreen`; shared by all modes) |
 | Stats providers | `_Scripts/UI/ScoreboardStatsProvider.cs`, `UniversalStatsProvider.cs`, `StatModuleSO.cs`, `StatRowUI.cs`; `_Scripts/Controller/Arcade/*StatsProvider.cs` |
 | Shared anim config | `_Scripts/UI/HUDAnimationSettingsSO.cs` |

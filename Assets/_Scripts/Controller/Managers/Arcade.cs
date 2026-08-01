@@ -63,7 +63,6 @@ namespace CosmicShore.Core
             gameData.IsDailyChallenge = false;
             gameData.IsTraining = false;
             gameData.IsMission = true;
-            gameData.IsMultiplayerMode = false;
             gameData.GameMode = gameMode;
             gameData.SelectedPlayerCount.Value = 1;
             gameData.SelectedIntensity.Value = intensity;
@@ -100,11 +99,6 @@ namespace CosmicShore.Core
             gameData.IsTraining = false;
             gameData.IsMission = false;
             gameData.GameMode = gameMode;
-            
-            // For multiplayer-capable games with only 1 human player, run locally with AI
-            // instead of doing online matchmaking. Use gameData.SelectedPlayerCount (set by
-            // the config modal) rather than the legacy numberOfPlayers parameter.
-            gameData.IsMultiplayerMode = isMultiplayer && gameData.SelectedPlayerCount.Value > 1;
             gameData.SceneName = ArcadeGameLookup[gameMode].SceneName;
             gameData.InvokeGameLaunch();
 
@@ -159,7 +153,6 @@ namespace CosmicShore.Core
             gameData.IsDailyChallenge = isDailyChallenge;
             gameData.IsTraining = !isDailyChallenge;
             gameData.IsMission = false;
-            gameData.IsMultiplayerMode = false;
             gameData.SceneName = TrainingGameLookup[gameMode].Game.SceneName;
             gameData.InvokeGameLaunch();
             

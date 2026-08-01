@@ -55,57 +55,22 @@ namespace CosmicShore.Gameplay
         {
         }
 
-        protected void EndTurn()
-        {
-            OnTurnEndedCustom();
-            
-            if (ShouldResetPlayersOnTurnEnd)
-                gameData.ResetPlayers();
-            
-            gameData.TurnsTakenThisRound++;
-
-            if (gameData.TurnsTakenThisRound >= numberOfTurnsPerRound)
-                EndRound();
-            else 
-                SetupNewTurn();
-        }
-        
         protected virtual void OnTurnEndedCustom()
         {
         }
-        
+
         protected virtual void SetupNewRound()
         {
             gameData.TurnsTakenThisRound = 0;
             gameData.InvokeMiniGameRoundStarted();
             SetupNewTurn();
         }
-        
-        protected void EndRound()
-        {
-            OnRoundEndedCustom();
-            
-            gameData.RoundsPlayed++;
-            gameData.InvokeMiniGameRoundEnd();
-            
-            if (HasEndGame && gameData.RoundsPlayed >= numberOfRounds)
-                EndGame();
-            else
-                SetupNewRound();
-        }
-        
+
         protected virtual void OnRoundEndedCustom()
         {
         }
 
-        protected virtual void EndGame()
-        {
-            if (!ShowEndGameSequence) return;
-            gameData.SortRoundStats(UseGolfRules);
-            gameData.InvokeWinnerCalculated();
-            gameData.InvokeMiniGameEnd();
-        }
-        
+
         protected virtual void OnResetForReplay()
         {
             SetupNewRound();

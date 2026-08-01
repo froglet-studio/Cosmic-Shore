@@ -398,6 +398,32 @@ Files: `_Scripts/Controller/ImpactEffects/EffectsSO/Vessel Skimmer Effects/Vesse
 `_Scripts/Controller/ImpactEffects/Impactors/VesselImpactor.cs`,
 `_Scripts/Controller/ImpactEffects/Impactors/SkimmerImpactor.cs`.
 
+### B17 — ✅ Wildlife Blitz DNF loss: reveal header says VICTORY (pre-existing, surfaced by Y1.1 review; FIXED 2026-07-20)
+
+**Symptom:** lose the solo blitz (clock runs out, cell uncleared) - the scoreboard state is
+correct (no winner credited; DNF row), but the EndGameSequencer reveal header shows VICTORY.
+
+**Root cause:** `EndGameSequencer.DidLocalPlayerWin()` falls back to
+`gameData.IsLocalDomainWinner(...)` when `WinnerDomain == Blue`, and `IsLocalDomainWinner`
+matches the local domain against `DomainStatsList` - which always contains the local player's
+domain in a solo game, so the fallback returns true. `Domains.Blue` is overloaded: "not set"
+vs "explicitly nobody won" are indistinguishable to the sequencer. The legacy blitz tracker
+behaved identically (it also ran `CalculateDomainStats` before `InvokeWinnerCalculated`), so
+this is NOT a Y1.1 regression - but the Y1.1 blitz migration's explicit `WinnerDomain = Blue`
+write fixes only the scoreboard banner derivation, not this reveal fallback.
+
+**Fix (shipped 2026-07-20, option (a)):** `GameDataSO.HasNoWinner` — a distinct
+"explicitly nobody won" signal, set on every peer by
+`MultiplayerDomainGamesController.SyncFinalResults_ClientRpc` alongside the
+`WinnerName`/`WinnerDomain` writes (`true` iff the broadcast winner is `Blue`), reset with
+the other Winner* fields in both runtime-data resets. Consumers: `EndGameSequencer.
+DidLocalPlayerWin` returns false before any fallback (DEFEAT reveal + the rule's
+"CELL UNCLEARED" body), and `Scoreboard.ShowMultiplayerView` renders a neutral
+`SetNoWinnerBanner()` ("GAME OVER", Blue tint) instead of crediting `Results[0].Domain`.
+Legacy modes that never write Winner* keep both fallbacks (flag stays false).
+Engine verification: solo blitz, let the clock expire → DEFEAT reveal + GAME OVER banner;
+clear the cell → VICTORY + clear time (unchanged).
+
 ---
 
 B1–B4, B6, B7, B8 fixed (verify only — B6 also warrants a visual position check).
@@ -413,4 +439,5 @@ end flow) fixed & verified in engine 2026-06-12 — regression steps in `TESTS.m
 T15. B5 remains scheduled into **R10** (the unified ranked `ScoreResult` list
 dissolves it). B16 (ghost joust toasts / unrecorded client-observed jousts) fixed
 2026-07-16 — code-complete, engine verification pending (see B16's verification
-steps). No other open read-through findings remain.
+steps). B17 (blitz DNF reveal header) fixed 2026-07-20 via `GameDataSO.HasNoWinner` — engine
+verification pending (see B17's verification steps). No other open read-through findings remain.

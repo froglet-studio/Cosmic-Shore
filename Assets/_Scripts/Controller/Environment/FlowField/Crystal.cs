@@ -50,6 +50,43 @@ namespace CosmicShore.Gameplay
         public CrystalManager CrystalManager { get; protected set; }
         public bool IsExploding { get; private set; }
 
+        // ── Embedded lifeform heart ──────────────────────────────────────────
+        // While a lifeform is alive its elemental crystal rides INSIDE the body (the heart).
+        // SetEmbeddedIn enables the crystal's collider so a vessel can JOUST the heart (the
+        // Squirrel's joust: destroys opposing-domain lifeforms when moving faster; its Space
+        // level-5 upgrade levels up allies instead), while the impact chain gates on IsEmbedded
+        // so an embedded heart is never skim-collected or treated as a free-floating pickup.
+        // ActivateCrystal (death) clears it - the crystal then drops as the normal collectible
+        // powerup (mass conserved).
+
+        /// <summary>The living lifeform (flora or fauna) this crystal is embedded in; null once dropped/free.</summary>
+        public ILifeFormEntity EmbeddedIn { get; private set; }
+
+        /// <summary>True while this crystal is a living lifeform's heart (not yet dropped).</summary>
+        public bool IsEmbedded => EmbeddedIn != null;
+
+        // The embedded heart's trigger is INFLATED so a vessel passing through the creature
+        // reliably clips it at flight speed (the authored radius is a pickup hitbox, tiny and
+        // buried inside the body). Restored to the authored radius when the crystal drops.
+        const float EmbeddedHeartRadiusMultiplier = 2.5f;
+        float _authoredColliderRadius = -1f;
+
+        /// <summary>
+        /// Marks this crystal as a living lifeform's heart and enables its collider (inflated,
+        /// so the joust reliably lands) so vessels can joust it. Called by lifeforms right
+        /// after LifeFormCrystal.EnsureElementalCrystal.
+        /// </summary>
+        public void SetEmbeddedIn(ILifeFormEntity owner)
+        {
+            EmbeddedIn = owner;
+            var col = GetComponent<SphereCollider>();
+            if (!col) return;
+            if (_authoredColliderRadius < 0f) _authoredColliderRadius = col.radius;
+            col.radius = _authoredColliderRadius * (owner != null ? EmbeddedHeartRadiusMultiplier : 1f);
+            col.enabled = owner != null;
+            ApplyColorSetTint(); // heart = blue-white neutral while it lives
+        }
+
         // ── Active-crystal registry ──────────────────────────────────────────
         // Lets systems (e.g. HexRaceObjectiveProvider) enumerate live crystals without a
         // per-call FindObjectsByType scene scan. Maintained via OnEnable/OnDisable so it
@@ -75,6 +112,69 @@ namespace CosmicShore.Gameplay
         protected virtual void Start()
         {
             crystalProperties.crystalValue = crystalProperties.fuelAmount * transform.lossyScale.x;
+            ApplyColorSetTint();
+        }
+
+        // ── Color set (single source: SO_ColorSet via the theme container) ───
+        // Crystal COLOR signals WHO can collect it (element identity is shape, never color):
+        //   • domain crystal (Jade/Ruby/Gold)  → that domain's crystal colors - only it collects
+        //   • embedded lifeform heart          → blue-white neutral (BlueColors) - nobody collects
+        //   • free pickup (drop / omni / cell) → lime CTA (EnvironmentColors) - anyone collects
+        // Applies to omni and all four elemental crystals. Colors come LIVE from the theme's
+        // ColorSet, per-renderer via MaterialPropertyBlock - never renderer.material clones.
+
+        static MaterialPropertyBlock s_tintBlock;
+
+        /// <summary>Tints all crystal models from the theme ColorSet by collectability state
+        /// (see comment above). No-op when the theme container or color set is unwired.</summary>
+        protected void ApplyColorSetTint()
+        {
+            if (!_themeManagerData || _themeManagerData.ColorSet == null) return;
+            var colors = _themeManagerData.ColorSet;
+
+            Color bright, dull;
+            bool domainOwned = ownDomain is Domains.Jade or Domains.Ruby or Domains.Gold;
+            if (domainOwned && colors.TryGetColorSetByDomain(ownDomain, out var domainSet) && domainSet != null)
+            {
+                bright = domainSet.BrightCrystalColor;
+                dull = domainSet.DullCrystalColor;
+            }
+            else if (IsEmbedded)
+            {
+                // A living lifeform's heart: the blue-white neutral range - no domain can take it.
+                if (!colors.TryGetColorSetByDomain(Domains.Blue, out var neutralSet) || neutralSet == null) return;
+                bright = neutralSet.BrightCrystalColor;
+                dull = neutralSet.DullCrystalColor;
+            }
+            else
+            {
+                // Free collectible: the lime CTA - any domain can collect it now.
+                if (colors.EnvironmentColors == null) return;
+                bright = colors.EnvironmentColors.BrightCTA;
+                dull = colors.EnvironmentColors.DarkCTA;
+            }
+
+            s_tintBlock ??= new MaterialPropertyBlock();
+            foreach (var modelData in crystalModels)
+            {
+                if (modelData?.model == null || !modelData.model.TryGetComponent<Renderer>(out var renderer)) continue;
+                var mat = renderer.sharedMaterial;
+                if (!mat) continue;
+                var props = FindColorPropertyNames(mat);
+                if (props.bright == null) continue;
+
+                renderer.GetPropertyBlock(s_tintBlock);
+                s_tintBlock.SetColor(props.bright, bright);
+                s_tintBlock.SetColor(props.dull, dull);
+                renderer.SetPropertyBlock(s_tintBlock);
+            }
+        }
+
+        /// <summary>Clears the tint override on one model so a material color lerp is visible.</summary>
+        static void ClearColorSetTint(GameObject model)
+        {
+            if (model && model.TryGetComponent<Renderer>(out var renderer))
+                renderer.SetPropertyBlock(null);
         }
 
         public void InjectDependencies(CrystalManager cm) => CrystalManager = cm;
@@ -203,8 +303,11 @@ namespace CosmicShore.Gameplay
 
         public void ActivateCrystal()
         {
+            EmbeddedIn = null; // no longer a living heart - it's a free collectible now
             transform.parent = cellData.Cell.transform;
-            gameObject.GetComponent<SphereCollider>().enabled = true;
+            var dropCol = gameObject.GetComponent<SphereCollider>();
+            if (_authoredColliderRadius > 0f) dropCol.radius = _authoredColliderRadius;
+            dropCol.enabled = true;
             enabled = true;
 
             for (int i = 0; i < crystalModels.Count; i++)
@@ -249,6 +352,10 @@ namespace CosmicShore.Gameplay
             Renderer renderer = model.GetComponent<Renderer>();
             if (renderer == null)
                 yield break;
+
+            // The property-block tint would override the animated material colors - drop it for
+            // the lerp; the current domain's tint is reapplied once the material settles.
+            ClearColorSetTint(model);
 
             Material tempMaterial = new Material(renderer.material);
             renderer.material = tempMaterial;
@@ -295,6 +402,7 @@ namespace CosmicShore.Gameplay
             }
 
             Destroy(tempMaterial);
+            ApplyColorSetTint();
         }
 
         private static (string bright, string dull) FindColorPropertyNames(Material mat)

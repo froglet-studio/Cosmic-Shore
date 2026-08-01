@@ -5068,7 +5068,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: de0489feb2583f34cb62e8fe745d111b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  GameList: {fileID: 11400000, guid: 23306534ee610414c99a9b7bf3d92995, type: 2}
+  GameList: {fileID: 11400000, guid: 25a98002ea18f5d45b5e8b2098a06c57, type: 2}
   SelectedGameName: {fileID: 2951917895479207692}
   SelectedGameDescription: {fileID: 2951917896982183822}
   SelectedGamePreviewWindow: {fileID: 2951917896455488285}

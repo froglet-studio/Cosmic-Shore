@@ -78,7 +78,7 @@ namespace CosmicShore.Gameplay
                 // and the food web (fauna grazing) is the only down-force. Replaces the
                 // old scored-volume ceiling (~0 in Menu_Main, so it never bounded planting).
                 if (host && host.FloraPlantingEnabled)
-                    SpawnFlora(host, floraCfg.FloraPrefab, excluded);
+                    SpawnFlora(host, floraCfg.FloraPrefab, excluded, floraCfg);
 
                 // Spread instantiation across frames. WaitForSeconds when an interval
                 // is configured; otherwise yield a single frame so a large InitialSpawnCount
@@ -104,7 +104,7 @@ namespace CosmicShore.Gameplay
 
                 if (!host) yield break;
                 if (host.FloraPlantingEnabled)
-                    SpawnFlora(host, floraCfg.FloraPrefab, excluded);
+                    SpawnFlora(host, floraCfg.FloraPrefab, excluded, floraCfg);
             }
         }
 
@@ -138,6 +138,14 @@ namespace CosmicShore.Gameplay
             // predator. (Docs/ECOSYSTEM.md §6-§7.)
             bool isPredator = faunaCfg.FaunaPrefab && faunaCfg.FaunaPrefab.Diet == FaunaDiet.Predator;
 
+            // Wave number on the fixed spawn clock - the herbivore spawn-point ring
+            // rotates on THIS, not on how many waves happened to hatch (see
+            // HerbivoreSpawnPoint). Every species loop is started in the same frame by
+            // StartFaunaLoops and shares InitialFaunaSpawnWaitTime + period, so all
+            // herbivore species agree on the wave number and land on the same point,
+            // and the point steps once per period.
+            int wave = 0;
+
             while (true)
             {
                 if (!host) yield break;
@@ -159,13 +167,19 @@ namespace CosmicShore.Gameplay
                         Mathf.Max(1, faunaCfg.PopulationSize),
                         faunaCfg.MaxLivePopulation);
 
+                // Solitary predators: while the predator spawn ring is active, at most
+                // ONE predator hatches per spawn interval (successive spawns alternate
+                // ring points, e.g. the two poles).
+                if (isPredator && spawnProfile.PredatorSpawnPointCount > 0 && spawnProfile.PredatorSpawnRadius > 0f)
+                    toSpawn = Mathf.Min(toSpawn, 1);
+
                 bool preyAvailable = FaunaReproductionRules.PreyAvailable(
                     isPredator, host.GetLiveHerbivoreCount(), host.OpposingVolume(color), spawnProfile.FaunaFoodFloor);
 
                 int spawned = 0;
                 if (toSpawn > 0 && preyAvailable)
                 {
-                    SpawnFaunaPopulation(host, runtime, faunaCfg, color, toSpawn);
+                    SpawnFaunaPopulation(host, runtime, spawnProfile, faunaCfg, color, toSpawn, wave);
                     spawned = toSpawn;
                 }
 
@@ -182,6 +196,7 @@ namespace CosmicShore.Gameplay
                     new FaunaWaveData(host.ID, color, spawned, nucleusControlled));
 
                 yield return new WaitForSeconds(period);
+                wave++;
             }
         }
 
@@ -190,20 +205,39 @@ namespace CosmicShore.Gameplay
         /// controlling domain. Spawning in the controller's color fixes "no Jade fauna
         /// when Jade controls" and lets the dominant color's fauna hunt the minority.
         /// Each spawn is lineage-bound to its species config so it counts toward the
-        /// per-cell population and can reproduce. Seeks the densest mass concentration
-        /// when present, the crystal/cell anchor otherwise.
+        /// per-cell population and can reproduce. Predators spawn on the densest mass
+        /// concentration (crystal/cell anchor when empty); herbivores land on the point
+        /// this <paramref name="wave"/> of the spawn clock owns on the profile's ring
+        /// when one is configured (see <see cref="HerbivoreSpawnPoint"/>).
         /// </summary>
         // Jitter radius around the mass concentration when spawning a population, so the
         // swarm spreads over the buildup instead of stacking on one point.
         const float FaunaSpawnJitter = 150f;
 
-        void SpawnFaunaPopulation(Cell host, CellRuntimeDataSO runtime, FaunaConfigurationSO faunaCfg, Domains color, int count)
+        // Rotates predator waves around the predator ring. Instance state — one spawner
+        // per cell — so successive predators alternate poles. The HERBIVORE ring is not
+        // an index: it rides the wave clock (see HerbivoreSpawnPoint).
+        int _predatorSpawnPointIndex;
+
+        void SpawnFaunaPopulation(Cell host, CellRuntimeDataSO runtime, SpawnProfileSO spawnProfile,
+            FaunaConfigurationSO faunaCfg, Domains color, int count, int wave)
         {
-            // Spawn new fauna right ON the prioritized mass concentration (the densest region
-            // the cell senses) so they appear on the buildup they'll forage, not at the
-            // distant cell centre - they start clearing immediately. GetDensestRegionAnyDomain
-            // falls back to the crystal/cell anchor when there's no mass yet.
-            Vector3 goal = host.GetDensestRegionAnyDomain();
+            bool isPredator = faunaCfg.FaunaPrefab && faunaCfg.FaunaPrefab.Diet == FaunaDiet.Predator;
+            bool useHerbivoreRing = !isPredator &&
+                spawnProfile.HerbivoreSpawnPointCount > 1 && spawnProfile.HerbivoreSpawnRadius > 0f;
+            bool usePredatorRing = isPredator &&
+                spawnProfile.PredatorSpawnPointCount > 0 && spawnProfile.PredatorSpawnRadius > 0f;
+
+            // Ring mode: each wave takes the next point on its diet's ring — herbivores
+            // get their own feeding ground away from where the last group (and any
+            // predator drawn to it) already is; predators enter from the poles,
+            // orthogonal to the herbivore ring. Legacy mode: spawn right ON the densest
+            // mass concentration so they start clearing immediately
+            // (GetDensestRegionAnyDomain falls back to the crystal/cell anchor when
+            // there's no mass yet).
+            Vector3 goal = useHerbivoreRing ? HerbivoreSpawnPoint(host, spawnProfile, wave)
+                : usePredatorRing ? NextPredatorSpawnPoint(host, spawnProfile)
+                : host.GetDensestRegionAnyDomain();
 
             for (int i = 0; i < count; i++)
             {
@@ -211,6 +245,40 @@ namespace CosmicShore.Gameplay
                 var fauna = SpawnFaunaWithDomain(host, faunaCfg.FaunaPrefab, goal, color, spawnPos);
                 if (fauna) fauna.AssignLineage(host, faunaCfg);
             }
+        }
+
+        /// <summary>
+        /// The herbivore feeding ground for a given WAVE of the fixed spawn clock: point
+        /// <c>wave % HerbivoreSpawnPointCount</c> on the equatorial ring, so successive
+        /// waves walk the ring in succession — N points × BaseFaunaSpawnTime covers the
+        /// whole ring, then repeats (Blob: 3 points at 15s ⇒ 45s a lap).
+        ///
+        /// Keying on the wave rather than on a spawn COUNTER is the fix for "every
+        /// herbivore hatches at the same point": the old index only advanced when a wave
+        /// actually hatched, and the seeder only hatches while a species is under its
+        /// floor. Reproduction holds a fed population at its cap, so after the bootstrap
+        /// wave the counter could sit on one point for the whole session — pinning every
+        /// later seed, and the crystals its creatures eventually drop, to one patch of
+        /// the cell. The wave clock advances whether or not the food web called for a
+        /// seed, so the next hatch is always somewhere new.
+        /// </summary>
+        static Vector3 HerbivoreSpawnPoint(Cell host, SpawnProfileSO spawnProfile, int wave)
+        {
+            int pointCount = spawnProfile.HerbivoreSpawnPointCount;
+            float angle = (wave % pointCount) * (Mathf.PI * 2f / pointCount);
+            return host.transform.position
+                   + new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle)) * spawnProfile.HerbivoreSpawnRadius;
+        }
+
+        // Predator ring: a VERTICAL circle (X-Y plane) starting at +Y, orthogonal to the
+        // equatorial (XZ) herbivore ring — with 2 points the spawns sit exactly on the
+        // poles, alternating each wave.
+        Vector3 NextPredatorSpawnPoint(Cell host, SpawnProfileSO spawnProfile)
+        {
+            int pointCount = spawnProfile.PredatorSpawnPointCount;
+            float angle = (_predatorSpawnPointIndex++ % pointCount) * (Mathf.PI * 2f / pointCount);
+            return host.transform.position
+                   + new Vector3(Mathf.Sin(angle), Mathf.Cos(angle), 0f) * spawnProfile.PredatorSpawnRadius;
         }
     }
 }

@@ -202,17 +202,40 @@ teardown). Everything below is remaining polish / not-yet-play-verified.
   same rhythm new ones arrive; (5) recipes vary strongly — same recipe should land with
   different radii/twists/counts each time; (6) crystals fade in and are skimmable; menagerie
   fauna spawn in the controlling colour and graze; (7) the autopilot lava-lamp vessel never
-  trips the toy. Watch the `[ECOSIM]` line — belt steady-state adds ~420 prisms max.
+  trips the toy; (8) **you never watch a scene appear in your face or suction away in view** —
+  scenes bloom in only at a distance ahead and a scene is only reclaimed once it is fully off
+  screen (fly straight, then hard-turn and reverse: the old ribbon should wait to recycle until
+  it has left your view, briefly idling rather than popping away). Watch the `[ECOSIM]` line —
+  belt steady-state adds ~420 prisms max.
 - **Tuning dials** (all on `Toy_Conveyor.asset`): `aheadTargetScenes` (field depth, 3-10) +
   `minSceneIntervalSeconds` (seconds of flight between scenes at speed) are the pacing pair;
   `sceneSpacing` / `recycleBehindDistance` are the low-speed floors; `sceneRadius` + per-recipe
   radii vs. vessel + skimmer size; `transitionSeconds` (suction/bloom read); `poolSize` /
   `prismBudgetPerScene` (density vs. perf); `turnBreakDegrees` (forward-cone half-angle, 20-80° —
   how sharp a turn re-lays the ribbon straight ahead vs. bends it along the curve; lower snaps to
-  your new heading sooner, higher follows longer curves before re-laying).
-- **Recipe art pass.** The 16 `MicroscenePatterns` recipes are procedural (each re-rolls its own
+  your new heading sooner, higher follows longer curves before re-laying);
+  `minPlacementDistance` (hard floor on how close a scene may bloom in — keep ≤ `firstSceneDistance`)
+  + `offscreenMargin` (extra padding on the `sceneRadius` bounding sphere that must clear the camera
+  frustum before a scene may recycle — larger = more buffer against turning mid-suction, at the cost
+  of the belt waiting a touch longer for scenes to leave view). By design these can briefly *stall*
+  recycling when the whole field is on screen (near-stationary or mid-U-turn); the belt idles and
+  self-heals as motion pushes scenes out of view — it never pops one away to keep flowing. A future
+  hardening could re-check frustum visibility per-frame *during* the ~`transitionSeconds` suction
+  (today it is gated once at selection, with the margin as the buffer) — not needed at current dials.
+- **Recipe art pass.** The 40 `MicroscenePatterns` recipes are procedural (each re-rolls its own
   radii/counts/twists/bends per arrival) — tune ranges per recipe, and consider authored recipes
   (a `MicrosceneRecipeSO`) if designers want hand-built set pieces in the shuffle bag.
+- **Diversity pass (shipped).** Recipes stamp structural metadata (`MicroscenePlan.CloseStructure`)
+  and `MicroscenePainter` paints along it: 8 domain schemes over the full triad (per-structure
+  rainbows, flight gradients, pinwheels, stripes, mirrors), 7 kind schemes using danger/shield as
+  palette tools (danger gates/tips, armoured frames, keystone landmarks — shield caps unchanged),
+  scale moods (uniform × long-axis stretch × structure taper, per-axis family jitter), plus 12 new
+  recipes on superstructure-oriented primitives (domes, grottos, torus knots, Möbius rails,
+  rosettes, terrace spirals, banked ribbon chicanes, split tubes, 4 spine×motif Medley composers).
+  In-editor check: ride the belt and confirm most scenes carry structural colour, danger structures
+  read as deliberate hot gates (and slam you on contact — friendly fire is the design), shielded
+  ribs shrug off weapon fire, and mono/plain scenes still occur as breathing room. Tune the
+  `Toy_Conveyor.asset` palette weights to taste.
 - **Belt audio/VFX.** Suction/bloom currently rides scale only; a whoosh SFX
   (`AudioSystem` gameplay SFX) + a faint particle draw toward the anchor would sell the
   conveyor. Consider a soft chime as a new scene finishes blooming.
@@ -257,3 +280,18 @@ teardown). Everything below is remaining polish / not-yet-play-verified.
   speed then eases to the current throttle target — with input paused during the post-swap
   autopilot window it will drift toward `MinimumSpeed`; fine for the seamless-handoff goal, tune
   if a longer hold is wanted.
+
+## Lifeform Matrix follow-ups
+
+- **Charge tadpole is NEW and untuned** (authored from the Space baseline with a Charge
+  crystal) — tune via the matrix, then bake into `Tadpole Fauna Charge.asset`.
+- **Not in the elemental contract yet**: Seaweed (`SpawnableCord`, not a `Flora`), worms
+  (`Worm` is not a `Fauna`), drone populations (BoidManager path — now all spawn the base
+  tadpole; needs its own config pass for per-element identity).
+- **Sparrow (and other vessels') HUD ability-icon bindings** for the shared upgrade-highlight
+  system are unwired (Squirrel only); fill each view's `abilityIcons` in its prefab.
+- **Squirrel HUD tube/energy icons repaint colours per-frame**, so the upgrade highlight
+  reads via scale only there — teach those repaints to respect the highlight tint.
+- **Variant matrix stations beyond the membrane**: layered outward they can cross the
+  membrane; spawns resolve the cell from the toy's position so they work, but station
+  placement could clamp to the membrane radius for tidiness.

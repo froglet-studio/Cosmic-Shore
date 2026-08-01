@@ -15,13 +15,13 @@ namespace CosmicShore.Utility
         [SerializeField, Tooltip("Main menu scene loaded after authentication. Typically 'Menu_Main'.")]
         string _mainMenuScene = "Menu_Main";
 
-        [Header("Gameplay Scenes")]
-        [SerializeField, Tooltip("Multiplayer gameplay scene.")]
-        string _multiplayerScene = "MinigameFreestyleMultiplayer_Gameplay";
+        // Gameplay scenes are launched by name from each SO_ArcadeGame card's SceneName -
+        // there is no single generic "multiplayer scene" (the retired MultiplayerScene
+        // member defaulted to the deleted standalone freestyle scene and had no runtime
+        // consumers).
 
         public string BootstrapScene => _bootstrapScene;
         public string AuthenticationScene => _authenticationScene;
         public string MainMenuScene => _mainMenuScene;
-        public string MultiplayerScene => _multiplayerScene;
     }
 }

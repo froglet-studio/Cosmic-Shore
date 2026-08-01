@@ -60,6 +60,20 @@ namespace CosmicShore.Gameplay
         [Tooltip("Seconds before the ability can be used again after it forms. Keep it long.")]
         [SerializeField] private float cooldown = 20f;
 
+        [Header("Elemental (Time)")]
+        [Tooltip("TIME -> cooldown: multiplier on Cooldown at Time level 10 (1 at resting level, " +
+                 "extrapolates into the deficit band so debuffed Time LENGTHENS the cooldown). " +
+                 "Authored here - the generic map Time multiplier stays 1.0 because " +
+                 "VesselTransformer already consumes it for boost speed.")]
+        [SerializeField] private float cooldownMultiplierAtFullTime = 0.5f;
+
+        [Tooltip("Floor for the Time cooldown multiplier so overcharge can never zero the cooldown.")]
+        [SerializeField] private float minCooldownMultiplier = 0.35f;
+
+        [Tooltip("TIME level-5 'Twin Rings': extra rings added to the tube while the Time " +
+                 "elemental upgrade is active (per-deploy snapshot).")]
+        [SerializeField] private int upgradeExtraRings = 1;
+
         public bool Danger => danger;
         public float Radius => radius;
         public int Segments => Mathf.Max(3, segments);
@@ -70,6 +84,9 @@ namespace CosmicShore.Gameplay
         public float ForwardOffset => forwardOffset;
         public int SpawnPerFrame => Mathf.Max(1, spawnPerFrame);
         public float Cooldown => Mathf.Max(0f, cooldown);
+        public float CooldownMultiplierAtFullTime => cooldownMultiplierAtFullTime;
+        public float MinCooldownMultiplier => Mathf.Max(0.01f, minCooldownMultiplier);
+        public int UpgradeExtraRings => Mathf.Max(0, upgradeExtraRings);
 
         /// <summary>Total axial length the tube spans, from the first ring to the last.</summary>
         public float Length => (Rings - 1) * RingSpacing;

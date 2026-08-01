@@ -2,6 +2,7 @@ using System;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using CosmicShore.Utility;
+using CosmicShore.Utility.PerformanceBenchmark;
 using Cysharp.Threading.Tasks;
 using Obvious.Soap;
 using Reflex.Attributes;
@@ -31,6 +32,9 @@ namespace CosmicShore.Core
     public class SceneLoader : MonoBehaviour
     {
         [SerializeField] float waitBeforeLoading = 0.5f;
+
+        // Load Time Insights span: LoadScene call → OnSceneLoaded (server / local path).
+        int _sceneLoadSpan = -1;
 
         [Header("SOAP Events (wired in Bootstrap inspector)")]
         [SerializeField] ScriptableEventNoParam _onClickToMainMenuButton;
@@ -83,6 +87,9 @@ namespace CosmicShore.Core
 
         void OnSceneLoaded(Scene scene, LoadSceneMode mode)
         {
+            LoadInsights.End(_sceneLoadSpan);
+            _sceneLoadSpan = -1;
+
             if (!gameData) return;
             gameData.InvokeSceneTransition(true);
 
@@ -136,7 +143,7 @@ namespace CosmicShore.Core
             PlayerPrefs.Save();
 
             Debug.Log($"<color=#FF8C00>[FLOW-3] [SceneLoader] LaunchGame - Scene={gameData.SceneName}, Mode={gameData.GameMode}, " +
-                      $"IsMultiplayer={gameData.IsMultiplayerMode}, Vessel={gameData.selectedVesselClass.Value}, " +
+                      $"Vessel={gameData.selectedVesselClass.Value}, " +
                       $"Intensity={gameData.SelectedIntensity.Value}, PlayerCount={gameData.SelectedPlayerCount.Value}, " +
                       $"AIBackfill={gameData.RequestedAIBackfillCount}</color>");
 
@@ -158,6 +165,7 @@ namespace CosmicShore.Core
                 Debug.Log($"<color=#FF8C00>[FLOW-3] [SceneLoader] LaunchGame deferring scene load to server - " +
                           $"IsListening={nm.IsListening}, IsServer={nm.IsServer}, IsClient={nm.IsClient}. " +
                           $"Server will replicate scene via Netcode.</color>");
+                LoadInsights.Mark("SceneLoader deferred scene load to server (client waits for Netcode scene pull)");
                 return;
             }
 
@@ -246,10 +254,17 @@ namespace CosmicShore.Core
             // (minSplashDwell) so the running standings on the splash are readable before the next scene
             // loads. Unscaled so a paused / zero timescale can't stall the hold.
             float wait = Mathf.Max(waitBeforeLoading, minSplashDwell);
-            await UniTask.Delay(
-                TimeSpan.FromSeconds(wait),
-                DelayType.UnscaledDeltaTime
-            );
+            using (LoadInsights.Measure(LoadInsightCategory.ScriptedDelay,
+                       $"SceneLoader splash cover before load ({wait:F1}s)", isWait: true))
+            {
+                await UniTask.Delay(
+                    TimeSpan.FromSeconds(wait),
+                    DelayType.UnscaledDeltaTime
+                );
+            }
+
+            _sceneLoadSpan = LoadInsights.Begin(LoadInsightCategory.SceneLoad,
+                $"Scene load → activation ({sceneName})");
 
             // The splash is opaque here — take a full blocking GC now so the heap
             // that accumulated over the last session (conserved prisms, pool-refill

@@ -607,6 +607,14 @@ All three soak offenders fixed in `e0735b2c` / `eaf107e0` / `75828ff0`:
    spawn-tick hits should disappear once the buffer holds. `maxSize` is
    clamped ≥ buffer target at Awake so config drift can't create an
    instantiate/destroy churn loop.
+   **Instance-preparation contract:** the async batch bypasses the virtual
+   `CreateFunc`, so subclass per-instance setup must live in
+   `GenericPoolManager.OnInstanceCreated(T)` — invoked on BOTH creation paths
+   (sync `CreateFunc` and each async clone as it leaves the incubator).
+   `ProjectilePoolManager` does its Reflex `InjectRecursive` there; overriding
+   `CreateFunc` for setup is a regression trap (async-refilled Sparrow
+   projectiles shipped un-injected → null `AudioSystem` NRE in
+   `LaunchProjectile` → dead guns/missiles, fixed in `e146b882`).
 
 ### 2026-07-09 soak capture (Menu_Main, ~25,000 prisms) — the population-scaling rows
 
@@ -763,12 +771,17 @@ fix spreads or de-allocates the same work.
 | `e0735b2c` | Render entities instantiate from Prefab-tagged prototypes (1 structural op, was ~8); prism visibility toggles batched into a LateUpdate flush (2 structural ops/frame total) |
 | `eaf107e0` | Collider-LOD classification is one Burst pass emitting transitions via the `LodNear` flag bit; managed cost O(changed) under a 512/frame toggle budget (was 5.5 ms managed slice frames) |
 | `75828ff0` | Pool refills via engine-timesliced `InstantiateAsync` batches; `PoolMiss.*` markers on on-demand misses; prism pools 120 buffer / 40 rate / 300 max; prewarm = defaultCapacity only; maxSize clamped ≥ buffer |
+| `e146b882` | FIX from Sparrow regression: async refills bypass `CreateFunc`, so subclass instance-prep moved to the new `OnInstanceCreated(T)` hook (fires on both creation paths); `ProjectilePoolManager` DI injection lives there — un-injected async projectiles were NRE-ing on launch (dead Sparrow guns/missiles) |
 | `019eb3c0` | Flora grow-tick instantiation paced across frames (decision at tick, drain 1/frame); branch walk de-LINQ'd |
 | `5da47650` | Spindle condense/evaporate fades via shared MaterialPropertyBlock (was a Material clone + Destroy per fade) |
 | `d4f696ae` | Creation-tick split markers: `Prism.Create.Visibility` / `.SOAPRaise` / `.SpatialBind` (Task 4 attribution) |
 | `481a7ad8` | Domain-volume gauge: colors on sample cadence, push gated on real change (was 1.02 ms/frame flat) |
 | `fb5e6643` | Cell volume recompute is one Burst `CellVolumeSumJob` over the index's new packed summation view (`PrismCellData`); managed 8000-prism slice deleted (was a ~10 ms reader-attributed spike billed to `DomainVolumeIndicator.Update`); `Cell.VolumeSum` + `DomainVolumeIndicator.Sample`/`.Push` markers (closes TODO C2) |
 | `71b51a28` | Collider-LOD hysteresis band (`lodExitRadiusMultiplier`, kills moving-focus boundary flapping); drain budget charged per re-validated entry (was unbounded transform reads on churny queues); `LOD.Sweep`/`LOD.Drain` markers; LOD tick de-phased half an interval from the volume recompute |
+| `bec6338c` | `AIPilot` + `AICinematicBehavior` `enabled` mirrors their active state — zero `Update()` dispatch on vessels not actively AI-driven (was every vessel, every frame, early-out); `StartAIPilot` idempotent (repeated activations stacked duplicate ability/seek coroutines forever); `StopAIPilot` uses `StopAllCoroutines` (the old `StopCoroutine(new enumerator)` was a no-op) |
+| `6e899993` | Non-local players' `InputController.enabled = false` at pair-init — AI/remote copies no longer poll the physical devices per frame nor raise duplicate global button events |
+| `ce11eaf6` | `R_VesselActionHandler` button-event subscription idempotent — init + input-unpause both subscribed, so every button press dispatched its actions (and RPC round-trip) twice |
+| `e75569d3` | Drift/AI-pilot trims: `StopAIPilot` early-out when already stopped (per-turn-start native calls skipped); `ToggleAIPilot` cinematic stop via `TryGetComponent` (no component instantiated just to no-op stop it); trigger rest-remap short-circuits to identity on healthy pads; `DriftAudioController` self-disables on class-gate fail (was a permanent early-out `Update`) |
 
 ---
 
@@ -823,6 +836,16 @@ fix spreads or de-allocates the same work.
   Console commands: `prisms N` / `prisms off` / `prismcolors`.
 - **Collider-LOD telemetry**: `PrismColliderLodManager.LastNearCount` /
   `LastLiveCount`.
+- **Shell-contact tier markers**: `ShellContact.Build` (per-frame probe
+  rebuild from live collider poses), `ShellContact.Query` (the synchronous
+  Burst `ShellContactQueryJob` schedule+complete inside
+  `PrismSpatialIndex.CollectShellContacts`), `ShellContact.Dispatch`
+  (enter/exit resolution + `AcceptImpactee` effect chains). Per-impactor
+  `<Type>.AcceptImpactee` markers cover shell dispatches too (the shell tier
+  routes through the same lazy marker). A/B switch:
+  `PrismShellContactManager.ForceLegacyBoxInteraction` reverts shielded
+  interaction to the authored box trigger (see Docs/SPATIAL_INDEX.md § Shell
+  view).
 - **Benchmark tool**: `Assets/_Scripts/Utility/PerformanceBenchmark/`
   (`BENCHMARK_TOOL.md` — tabs, score/hints, sweep).
 - **Raycast audit tool**: `Tools > Cosmic Shore > UI > Raycast Target Audit`
@@ -1180,3 +1203,4 @@ not compiler, at the time of the merge).
 | 2026-07-09 (DOTS round) | Shipped the three soak fixes: prototype-instantiated render entities + batched visibility flush (`e0735b2c`), Burst LOD classification with transition-only apply (`eaf107e0`), async timesliced pool refills + `PoolMiss.*` + deeper buffers (`75828ff0`). 4-agent adversarial re-verification found 1 blocker + 9 real/minor findings → fixed in `9b891d40`: immediate SetVisible/Destroy cancel queued toggles (stale queued show = ghost box through a shield morph); pending-visibility map cleared on world invalidation; flush host un-leaked + late execution order; LOD sweeps never blocked by the cull backlog (restores immediate + cancel queued culls; culls drain budgeted with live foci re-validation at apply); `Prism.Restore` clears stale `_lodCulled`; pool clones incubate under an INACTIVE parent (no Awake/OnEnable at integration — a pooled Projectile's OnEnable registers an LOD focus); wall-clock refill timer; narrowed async fallback catch. Accepted notes: `LastNearCount` is approximate telemetry between reconciles; implosion pool fills to 160 async over first seconds (own 64 min-prewarm covers bursts); 6 unreferenced `_Prefabs/Pools/*PrismPool.prefab` siblings still carry old values (unused — candidates for deletion); Entities/UnityEngine API signatures verified from knowledge (PackageCache absent in this checkout) — the first editor compile is the real gate. |
 | 2026-07-09 (flora round, re-verified) | Adversarial pass over the four commits. Markers + gauge gating: SOUND. Two real bugs fixed in `fc9c53f3`: (1) the flora drain outlived `LifeForm.Die` (`StopAllCoroutines` killed the old GrowCoroutine spawn site but not `Update`) — a dying flora kept spawning through its wither window (zombie flora / child pop-out); `Die` override clears the queue. (2) Spindle's evaporate renderer-gone early-out could bail before `DisableSpindle`, hanging `DieCoroutine`'s empty-tracker wait — removed. Hardening: grow orders carry `decidedAt` and drop past `ReservationTtlSeconds − 1` (Frenzy holds could outlive the 5 s claim → overlap risk); drain freezes at `timeScale 0` (parity with the old `WaitForSeconds` loop). **Correction of record:** a material clone stays SRP-batchable; an MPB excludes the renderer for the fade duration — the spindle win is zero material create/destroy churn, at the cost of unbatched draws *during* fades. Re-measure in the next capture; fallback is quantized shared fade materials (phase-variant pattern). Accepted nuances: gauge ring can lag ≤1 rebuild-epsilon (~1.4°, under segment granularity); theme-swap colors up to 0.25 s latent; per-tick flora throughput can under-fill only when a parent dies or an assembler fails mid-window (rare, disclosed). |
 | 2026-07-09 | 6-agent adversarial re-verification of the five commits (pre-editor-test). **3 blockers found in the fresh Task 1 commits, fixed in `d80e7ee5`:** `dtNominal` 0.02 → 0.04 (project Fixed Timestep is 0.04 — growth was ~1.9× too fast as committed; two agents converged on it independently); fixed 0.5 s dt cap → rotation-scaled cap (fixed cap slowed tempo up to 7× under the target frenzy load); cursor drift on removal bursts corrected. GC coverage gaps (clients + Play Again reloads never took the scheduled collect) fixed in `4443df83` via the two all-peers post-load fade-back handlers. WaitForSeconds cache, pool marker verdicts: SOUND (notes: cache misses on the variable-`waitTime` `waitTillOutsideSkimmer` path — acceptable; prewarm burst unmarked — intentional). Final compile-sanity pass over all six edited files: PASS (arithmetic invariants proven, `MaterialStateManager` independent, no external readers of the sliced behavior). Lesson recorded: never assume Unity's 0.02 default fixed timestep — check `TimeManager.asset`. |
+| 2026-07-17 (Sparrow regression) | The `75828ff0` async refill broke Sparrow guns/missiles once merged to bleeding-edge: `InstantiateAsync` bypasses the virtual `CreateFunc`, the only place `ProjectilePoolManager` ran Reflex injection, so async-refilled projectiles carried a null `AudioSystem` and NRE'd in `LaunchProjectile` (stack pool = un-injected instances hand out FIRST; Sparrow missile pool prewarms 5 toward a 20 target, so the pool top went dud within seconds). Fixed in `e146b882`: new `GenericPoolManager.OnInstanceCreated(T)` hook fires on both creation paths; subclass instance-prep (DI injection) must live there, never in a `CreateFunc` override. §1 item 3 updated with the contract. |

@@ -10,6 +10,7 @@ using UnityEngine;
 using UnityEngine.Serialization;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
+using CosmicShore.Core;
 using IPlayer = CosmicShore.Gameplay.IPlayer;
 
 namespace CosmicShore.Utility
@@ -71,7 +72,6 @@ namespace CosmicShore.Utility
         public bool IsDailyChallenge;
         public bool IsTraining;
         public bool IsMission;
-        public bool IsMultiplayerMode;
 
         /// <summary>
         /// True while a Tournament session is in progress (set by
@@ -93,6 +93,15 @@ namespace CosmicShore.Utility
         /// A value of 0 means no AI backfill (all human or solo-mode AI logic applies).
         /// </summary>
         public int RequestedAIBackfillCount;
+
+        /// <summary>
+        /// Levels of ALL FOUR elements a trailing player/team gains per unit of score deficit
+        /// behind first place - this game's comeback strength, authored on SO_ArcadeGame and
+        /// synced from the launch pipeline (host) / config RPC (clients). Read every tick by
+        /// the required ElementalComebackSystem; the comeback layer never lifts an element
+        /// above level 10. 0 = comeback disabled for this game.
+        /// </summary>
+        public float ComebackRatePerScoreDeficit = 1f;
 
         /// <summary>
         /// Number of domains configured by the host (1-3).
@@ -136,10 +145,28 @@ namespace CosmicShore.Utility
         }
 
         /// <summary>
-        /// Server-authoritative winner name, written by game controllers in their
-        /// SyncFinalScores_ClientRpc. Read by EndGameControllers after OnWinnerCalculated fires.
+        /// Server-authoritative winner name, written by the domain controllers' shared
+        /// SyncFinalResults tail. Read by EndGameControllers after OnWinnerCalculated fires.
         /// Reset automatically in <see cref="ResetRuntimeData"/> and <see cref="ResetRuntimeDataForReplay"/>.
         /// </summary>
+        // ── Match envelope (SERVER authority; replicated by SyncGameConfigToClients_ClientRpc) ──
+        // Stamped once by the host so every client emits an IDENTICAL identifier set on
+        // game_started. See Docs/Analytics/DATA_ARCHITECTURE.md §6.
+
+        /// <summary>Unique per game instance. The "same game instance" grouping key.</summary>
+        [NonSerialized] public string MatchId = "";
+
+        /// <summary>
+        /// The Relay party session id: stable across consecutive matches by the same party.
+        /// Sent ALONGSIDE MatchId, not instead of it - grouping on the session alone would
+        /// collapse three back-to-back games into one, and grouping on the match alone would
+        /// lose "the same people stayed together". The organic-rematch query needs both.
+        /// </summary>
+        [NonSerialized] public string PartyId = "";
+
+        /// <summary>Whether this party was formed through a formal invite rather than presence.</summary>
+        [NonSerialized] public bool InviteTriggered;
+
         [NonSerialized] public string WinnerName = "";
 
         /// <summary>
@@ -149,6 +176,17 @@ namespace CosmicShore.Utility
         /// Reset automatically in <see cref="ResetRuntimeData"/> and <see cref="ResetRuntimeDataForReplay"/>.
         /// </summary>
         [NonSerialized] public Domains WinnerDomain = Domains.Blue;
+
+        /// <summary>
+        /// True when the authoritative end EXPLICITLY declared no winner (a
+        /// <see cref="Domains.Blue"/> broadcast from the domain controllers' SyncFinalResults
+        /// tail - e.g. a co-op DNF). Distinguishes an intentional no-winner end from the
+        /// legacy "Winner* never written" state: end-game surfaces (EndGameSequencer,
+        /// Scoreboard) keep their derive-a-winner fallbacks for legacy modes but must treat
+        /// this flag as "nobody won" (DEFEAT reveal, neutral banner).
+        /// Reset alongside <see cref="WinnerName"/>.
+        /// </summary>
+        [NonSerialized] public bool HasNoWinner;
 
         /// <summary>
         /// Single source of truth for the final ranked results (per-player, sorted, with
@@ -199,7 +237,7 @@ namespace CosmicShore.Utility
 
         /// <summary>
         /// The resolved joust-collision target for the current session - the per-domain
-        /// joust sum that ends a Joust turn. Published by <see cref="JoustCollisionTurnMonitor"/>
+        /// joust sum that ends a Joust turn. Published by <see cref="NetworkJoustCollisionTurnMonitor"/>
         /// in StartMonitor on every peer (a scene constant, identical across clients). Read by
         /// the Joust controller to format the "N Jousts Left" loser line into
         /// <see cref="ScoreResult.ScoreText"/>. Reset in <see cref="ResetRuntimeData"/> and
@@ -217,6 +255,17 @@ namespace CosmicShore.Utility
         /// <see cref="ResetRuntimeDataForReplay"/>.
         /// </summary>
         [NonSerialized] public int GoalTargetCount;
+
+        /// <summary>
+        /// The resolved hostile-prism destruction target for the current Rampage session -
+        /// the per-domain <see cref="IRoundStats.HostilePrismsDestroyed"/> sum that ends the
+        /// turn. Published by <see cref="RampagePrismTurnMonitor"/> in StartMonitor (server),
+        /// synced to clients via NetworkVariable.OnValueChanged. Read by
+        /// <see cref="CosmicShore.Gameplay.RampageScoringRuleSO"/> for the end condition and
+        /// the "remaining" readout. Reset in <see cref="ResetRuntimeData"/> and
+        /// <see cref="ResetRuntimeDataForReplay"/>.
+        /// </summary>
+        [NonSerialized] public int PrismTargetCount;
 
         /// <summary>
         /// The active scoring strategy for the current mode, published by the mode's controller
@@ -243,7 +292,7 @@ namespace CosmicShore.Utility
 
             SceneName = game.SceneName;
             GameMode = game.Mode;
-            IsMultiplayerMode = game.IsMultiplayer;
+            ComebackRatePerScoreDeficit = game.ComebackRatePerScoreDeficit;
         }
 
         /// <summary>
@@ -312,25 +361,78 @@ namespace CosmicShore.Utility
         {
             IsTurnRunning = true;
             TurnStartTime = Time.time;
+
+            // Control has just been handed to the player (countdown ended, players activated).
+            // This is the start point for flight_time_seconds.
+            FlightClock.OnTurnStarted();
+
             InvokeTurnStarted();
         }
 
-        public void InvokeGameLaunch() => OnLaunchGame?.Raise();
+        public void InvokeGameLaunch()
+        {
+            // Load Time Insights: a game launch is the recording trigger; every peer raises this
+            // (clients for the splash), so hosts and MPPM virtual players all self-record. The
+            // calls are no-ops unless Record Insight Mode is armed (see LoadInsights).
+            PerformanceBenchmark.LoadInsights.BeginLoad($"Game launch — {GameMode} → {SceneName}");
+            PerformanceBenchmark.LoadInsights.SetGameContext(
+                SceneName,
+                GameMode.ToString(),
+                SelectedIntensity != null ? SelectedIntensity.Value : 0,
+                SelectedPlayerCount != null ? SelectedPlayerCount.Value : 0,
+                SelectedPlayerCount != null ? Mathf.Max(0, SelectedPlayerCount.Value - RequestedAIBackfillCount) : 0,
+                RequestedAIBackfillCount,
+                // Always networked since C5 retired IsMultiplayerMode: every mode runs the
+                // single-host model and a solo launch is a party of one plus AI backfill.
+                // The solo-vs-party distinction the header used to carry is now readable
+                // off humanPlayers, which this call already reports.
+                isMultiplayer: true);
+            OnLaunchGame?.Raise();
+        }
         public void InvokeSceneTransition(bool param) => OnSceneTransition?.Raise(param);
-        public void InvokeSessionStarted() => OnSessionStarted?.Raise();
+        public void InvokeSessionStarted()
+        {
+            PerformanceBenchmark.LoadInsights.Mark("Session started (app state → InGame)");
+            OnSessionStarted?.Raise();
+        }
         public void InvokeInitializeGame() => OnInitializeGame?.Raise();
-        public void InvokeClientReady() => OnClientReady?.Raise();
+        public void InvokeClientReady()
+        {
+            // Load Time Insights milestone: client ready = splash clearing into the connecting
+            // panel. The recording itself completes later, when the arena finishes laying and
+            // the connecting screen ends (MiniGameHUD.HandleClientReady) - the panel hold IS
+            // load time; the cinematic/Ready/countdown after it are not.
+            PerformanceBenchmark.LoadInsights.MarkVisualReady();
+            OnClientReady?.Raise();
+        }
         public void InvokeMiniGameRoundStarted() => OnMiniGameRoundStarted?.Raise();
-        public void InvokeTurnStarted() => OnMiniGameTurnStarted?.Raise();
+        public void InvokeTurnStarted()
+        {
+            // Fallback endpoint only: no-op when the recording already completed at
+            // arena-complete (MiniGameHUD.HandleClientReady, the normal path). Catches flows
+            // without a MiniGameHUD where that endpoint never fires.
+            PerformanceBenchmark.LoadInsights.CompleteLoad("Playable - turn started (fallback endpoint; arena-complete never fired)");
+            OnMiniGameTurnStarted?.Raise();
+        }
 
         public void InvokeGameTurnConditionsMet()
         {
             IsTurnRunning = false;
+            FlightClock.OnTurnEnded();
             OnMiniGameTurnEnd?.Raise();
         }
         
         public void InvokeMiniGameRoundEnd() => OnMiniGameRoundEnd?.Raise();
-        public void InvokeMiniGameEnd() => OnMiniGameEnd?.Raise();
+        /// <summary>
+        /// Ends the game. The flight clock is settled BEFORE the SOAP raise so every
+        /// subscriber - analytics, stats reporters, the profile - reads the same final
+        /// FlightClock.LastGameSeconds regardless of subscription order.
+        /// </summary>
+        public void InvokeMiniGameEnd()
+        {
+            FlightClock.EndGame();
+            OnMiniGameEnd?.Raise();
+        }
         public void InvokeWinnerCalculated() => OnWinnerCalculated?.Raise();
         public void InvokeOnSessionEnded() => OnSessionEnded?.Raise();
         public void InvokeShowGameEndScreen() => OnShowGameEndScreen?.Raise();
@@ -350,6 +452,10 @@ namespace CosmicShore.Utility
         public void ResetRuntimeData()
         {
             IsTurnRunning = false;
+
+            // Scene teardown / mid-game exit: abandon the flight clock without publishing a
+            // time, so an abandoned game cannot leak its seconds into the next one.
+            FlightClock.AbortGame();
             Players.Clear();
             Vessels.Clear();
             SlowedShipTransforms.Clear();
@@ -363,10 +469,12 @@ namespace CosmicShore.Utility
             LocalRoundStats = null;
             WinnerName = "";
             WinnerDomain = Domains.Blue;
+            HasNoWinner = false;
             Results.Clear();
             CrystalTargetCount = 0;
             JoustTargetCount = 0;
             GoalTargetCount = 0;
+            PrismTargetCount = 0;
             System.Array.Clear(_domainMetricSums, 0, _domainMetricSums.Length);
             // Note: RequestedAIBackfillCount and RequestedDomainCount are intentionally
             // NOT reset here. They are pre-launch config values set by
@@ -401,16 +509,19 @@ namespace CosmicShore.Utility
         void ResetRuntimeDataForReplay()
         {
             IsTurnRunning = false;
+            FlightClock.AbortGame();
             TurnStartTime = 0f;
             RoundsPlayed = 0;
             TurnsTakenThisRound = 0;
             _playerSpawnPoseList.Clear();
             WinnerName = "";
             WinnerDomain = Domains.Blue;
+            HasNoWinner = false;
             Results.Clear();
             CrystalTargetCount = 0;
             JoustTargetCount = 0;
             GoalTargetCount = 0;
+            PrismTargetCount = 0;
             System.Array.Clear(_domainMetricSums, 0, _domainMetricSums.Length);
         }
 
@@ -431,7 +542,6 @@ namespace CosmicShore.Utility
         public void ResetAllData()
         {
             GameMode = GameModes.Random;
-            IsMultiplayerMode = false;
             // ActiveSession is intentionally NOT reset here. Under the "Always
             // InParty" model the field is the single source of truth for the
             // live UGS Relay session reference (shared with HCS via
@@ -647,21 +757,6 @@ namespace CosmicShore.Utility
             // No-op here because Players list holds the references.
 
             return (removedPlayers + removedStats) > 0;
-        }
-        
-        public void SwapVessels()
-        {
-            var player0 = Players[0];
-            var player1 = Players[1];
-            
-            var vessel0 = player0.Vessel;
-            var vessel1 = player1.Vessel;
-            
-            player0.ChangeVessel(vessel1);
-            player1.ChangeVessel(vessel0);
-            
-            vessel0.ChangePlayer(player1);
-            vessel1.ChangePlayer(player0);
         }
         
         // -----------------------------------------------------------------------------------------

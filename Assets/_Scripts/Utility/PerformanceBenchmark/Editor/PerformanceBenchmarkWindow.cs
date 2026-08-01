@@ -11,7 +11,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
 {
     public class PerformanceBenchmarkWindow : EditorWindow
     {
-        enum Tab { Collect, Sweep, History, Compare }
+        enum Tab { Collect, Sweep, History, Compare, LoadInsights }
         [SerializeField] Tab activeTab = Tab.Collect;
 
         // ── Shared assets (serialized so they survive the play-mode domain reload) ──
@@ -100,6 +100,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
                 collectReport = BenchmarkReport.LoadFromFile(CollectCachePath);
             if (sweepReport == null && File.Exists(SweepCachePath))
                 sweepReport = BenchmarkReport.LoadFromFile(SweepCachePath);
+            LoadInsightsTab.OnWindowEnable();
         }
 
         // Spike enrichment (editor-side, off the game thread).
@@ -129,7 +130,8 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
 
             bool busy = (collectRunner != null && collectRunner.IsRunning) ||
                         (sweepRunner != null && sweepRunner.IsRunning) ||
-                        (activeSweep != null && activeSweep.IsSweeping);
+                        (activeSweep != null && activeSweep.IsSweeping) ||
+                        (activeTab == Tab.LoadInsights && LoadInsightsTab.IsBusy);
             if (busy && EditorApplication.timeSinceStartup >= _nextRepaint)
             {
                 _nextRepaint = EditorApplication.timeSinceStartup + RepaintInterval;
@@ -182,6 +184,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
                 case Tab.Sweep: DrawSweepTab(); break;
                 case Tab.History: DrawHistoryTab(); break;
                 case Tab.Compare: DrawCompareTab(); break;
+                case Tab.LoadInsights: LoadInsightsTab.Draw(this); break;
             }
         }
 
@@ -192,6 +195,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
             DrawTabButton(Tab.Sweep, "Sweep");
             DrawTabButton(Tab.History, $"History ({historyEntries.Count})");
             DrawTabButton(Tab.Compare, "Compare");
+            DrawTabButton(Tab.LoadInsights, LoadInsights.IsRecording ? "● Load Time Insights" : "Load Time Insights");
             EditorGUILayout.EndHorizontal();
         }
 

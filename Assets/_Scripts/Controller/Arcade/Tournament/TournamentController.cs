@@ -374,7 +374,6 @@ namespace CosmicShore.Gameplay
         {
             _gameData.SceneName = _tournament.LobbySceneName;
             _gameData.GameMode = CosmicShore.Data.GameModes.Tournament;
-            _gameData.IsMultiplayerMode = true;
             _gameData.IsTournamentMode = true;
             _gameData.InvokeGameLaunch();
         }

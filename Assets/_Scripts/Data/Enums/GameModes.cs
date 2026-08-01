@@ -5,7 +5,19 @@ namespace CosmicShore.Data
     public enum GameModes
     {
         Random = 0,
+        // ── RETIRED SOLO IDS — DO NOT REUSE ─────────────────────────────────
+        // Solo modes were retired 2026-07-20 (solo = a multiplayer game whose
+        // party is one host). IDs 1, 3-6, 8-25 and 27 kept their enum members so
+        // the serialized ints inside the kept-but-dormant training/mission
+        // assets (SO_TrainingGame_*, SO_Mission_Protect) stay stable, but their
+        // SO_ArcadeGame cards and scenes are deleted. Do not reuse any retired ID.
+        // EXCEPTION: Rampage(2) is NOT retired - its legacy solo ID was deliberately
+        // repurposed for the live multiplayer destruction race (see below).
         Elimination = 1,
+        // Rampage (2): multiplayer destruction race - the destructive analog of
+        // Crystal Capture/"Scurry". Race to destroy the hostile-prism target first.
+        // (Repurposed from the legacy single-player arcade entry, whose scene never
+        // shipped.) See _Scripts/Controller/Arcade/RAMPAGE.md.
         Rampage = 2,
         Darts = 3,
         ShootingGallery = 4,
@@ -14,7 +26,7 @@ namespace CosmicShore.Data
         // 7 (Freestyle) retired: the standalone arcade Freestyle game was removed.
         // Freestyle now refers to the Menu_Main lava-lamp experience (see CLAUDE.md,
         // "Lava-Lamp Mode"). Do not reuse ID 7.
-        CellularDuel = 8,
+        // 8 (CellularDuel) retired 2026-07-21 with the Cellular Duel deletion - do not reuse.
         DashNGrab = 9,
         CellularBrawl = 10,
         Denial = 11,
@@ -32,12 +44,13 @@ namespace CosmicShore.Data
         BotDuel = 23,
         Curvatious = 24,
         MazeRunner = 25,
-        WildlifeBlitz = 26,
+        // 26 (WildlifeBlitz) retired 2026-07-21 with the Wildlife Blitz deletion - do not reuse.
         ProtectMission = 27,
-        MultiplayerFreestyle = 28,
-        MultiplayerCellularDuel = 29,
-        Multiplayer2v2CoOpVsAI = 30,
-        MultiplayerWildlifeBlitzGame = 32,
+        // 28 (MultiplayerFreestyle) retired 2026-07-21 - freestyle IS the Menu_Main lava lamp. Do not reuse.
+        // 29 (MultiplayerCellularDuel) retired 2026-07-21 with the Cellular Duel deletion - do not reuse.
+        // 30 (Multiplayer2v2CoOpVsAI) retired 2026-07-21 - unreachable content deleted. Do not reuse.
+        // 31 stays reserved - never assigned.
+        // 32 (MultiplayerWildlifeBlitzGame) retired 2026-07-20 with the co-op blitz stack - do not reuse.
         HexRace = 33,
         MultiplayerJoust = 34,
         MultiplayerCrystalCapture = 35,
@@ -53,5 +66,10 @@ namespace CosmicShore.Data
         // scores a point; first domain to the wave target (default 3) wins. See
         // _Scripts/Controller/Arcade/NUCLEUSRUSH.md.
         NucleusRush = 38,
+        // Benchmark (39): the Settings > Run Benchmark stress-test context - not an
+        // arcade mode (no card, no scoring, endless). Set by BenchmarkSceneLauncher so
+        // mode-keyed consumers (presence/connecting-panel display, comeback default,
+        // HUD objective default) resolve honestly instead of borrowing a retired id.
+        Benchmark = 39,
     }
 }

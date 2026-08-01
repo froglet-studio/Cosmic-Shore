@@ -18,16 +18,26 @@ at runtime via `Resources.Load`.
 ## The rule (do not break this)
 
 - **There are NO per-scene inspector fields for these counts.** The old
-  `CrystalCollisionTurnMonitor.CrystalCollisions` and `JoustCollisionTurnMonitor.collisionsNeeded`
-  `[SerializeField]`s were removed on purpose. **Do not re-add `[SerializeField]` to them** — they
+  `CrystalCollisions` and `collisionsNeeded` `[SerializeField]`s (now plain fields on
+  `NetworkCrystalCollisionTurnMonitor` / `NetworkJoustCollisionTurnMonitor` - the non-network
+  base classes were collapsed into them under `ObjectiveTurnMonitor`, Y1.3) were removed on
+  purpose. **Do not re-add `[SerializeField]` to them** — they
   are now plain internal fields that just hold the *resolved* value. If you want a count changed,
   change it in the tool, not in a scene.
 - **`0` = auto/default, `> 0` = explicit count** (same semantic the old field had, moved into the tool):
-  - **HexRace / Crystal Capture** — `0` → auto-calc from the track waypoints (then 39).
+  - **HexRace / Crystal Capture** — `0` → auto-calc from the track waypoints (then 39). The
+    auto-calc is `waypoints × laps`, where laps come from the monitor's `lapsPerIntensity`
+    list (index 0 = intensity 1) and fall back to its scalar `optionalLaps`. Those two ARE
+    legitimate per-scene fields — they are *inputs* to the auto-calc, not the resolved count.
+    To change how long a race runs you can either retune laps there or set an explicit count
+    here; setting a count here wins outright.
   - **Joust** — `0` → `EndConditionOverridesSO.DefaultJoustCount` (3).
   - **Brood Rush (Nucleus Rush)** — `0` → `EndConditionOverridesSO.DefaultNucleusRushWaveTarget` (3):
     claimed fauna waves a domain needs to win (resolved by `NucleusRushWaveTurnMonitor.StartMonitor`
     → `GameDataSO.GoalTargetCount`, synced by NetworkVariable).
+  - **Rampage** — `0` → `EndConditionOverridesSO.DefaultRampagePrismTarget` (2000): hostile prisms
+    (another domain's mass) a domain must destroy to win (resolved by
+    `RampagePrismTurnMonitor.StartMonitor` → `GameDataSO.PrismTargetCount`, synced by NetworkVariable).
   - **Maelstrom** — `0` → `EndConditionOverridesSO.DefaultMaelstromWinTarget` (6). This is the
     "race to N" win target: the first DOMAIN whose cumulative `{2,1,0}` placement points reach it
     wins the shuffle. NOT a per-turn count — it ends the whole tournament.
@@ -42,8 +52,8 @@ at runtime via `Resources.Load`.
 EndConditionOverridesSO (Resources/EndConditionOverrides.asset)   ← edited by the Tools window
         │  GetCrystalCount(mode, autoCalc) / GetJoustCount() / GetMaelstromWinTarget()
         ▼
-CrystalCollisionTurnMonitor.GetCrystalCollisionCount()   → resolves CrystalCollisions (HexRace, Crystal Capture)
-JoustCollisionTurnMonitor.StartMonitor()                 → resolves collisionsNeeded (Joust)
+NetworkCrystalCollisionTurnMonitor.GetCrystalCollisionCount() → resolves CrystalCollisions (HexRace, Crystal Capture)
+NetworkJoustCollisionTurnMonitor.StartMonitor()               → resolves collisionsNeeded (Joust)
 TournamentController.StartTournamentInternal()           → TournamentDataSO.ResolveWinTarget(...) (Maelstrom)
         │  (0 in the tool → waypoint auto-calc / default 3 / default 6)
         ▼
@@ -67,13 +77,14 @@ networking.
 
 1. Unity → **Tools ▸ Cosmic Shore ▸ End Game Conditions** (auto-creates the asset on first open).
 2. Set **HexRace — Crystal Count**, **Crystal Capture — Crystal Count**, **Joust — Joust Count**,
-   **Maelstrom — Win Target (points)**, and/or **Brood Rush — Wave Target** (fauna waves a domain
+   **Maelstrom — Win Target (points)**, **Rampage — Prism Target** (hostile prisms a domain must
+   destroy to win), and/or **Brood Rush — Wave Target** (fauna waves a domain
    must claim to win Nucleus Rush; one wave per 30s spawn cycle). Leave `0` for auto/default. The window shows the
    effective value and saves on edit.
 3. Commit `Assets/Resources/EndConditionOverrides.asset` (and its `.meta`).
 
 Defaults shipped (match the pre-tool scene/asset values, so behavior is unchanged until edited):
-HexRace `0` (auto), Crystal Capture `20`, Joust `3`, Maelstrom `6`, Brood Rush `3`.
+HexRace `0` (auto), Crystal Capture `20`, Joust `3`, Maelstrom `6`, Brood Rush `3`, Rampage `2000`.
 
 ## Live vs. Build values (don't ship a test config)
 
@@ -109,8 +120,8 @@ build restore.
 | Config asset (committed) | `Assets/Resources/EndConditionOverrides.asset` |
 | Editor window (the menu) | `Assets/_Scripts/Editor/EndConditionOverridesWindow.cs` |
 | Build-time auto-restore | `Assets/_Scripts/Editor/EndConditionBuildRestore.cs` |
-| Crystal modes read it here | `Assets/_Scripts/Controller/Arcade/TurnMonitors/CrystalCollisionTurnMonitor.cs` (`GetCrystalCollisionCount`) |
-| Joust reads it here | `Assets/_Scripts/Controller/Arcade/TurnMonitors/JoustCollisionTurnMonitor.cs` (`StartMonitor`) |
+| Crystal modes read it here | `Assets/_Scripts/Controller/Arcade/TurnMonitors/NetworkCrystalCollisionTurnMonitor.cs` (`GetCrystalCollisionCount`) |
+| Joust reads it here | `Assets/_Scripts/Controller/Arcade/TurnMonitors/NetworkJoustCollisionTurnMonitor.cs` (`StartMonitor`) |
 | Maelstrom resolves it here | `Assets/_Scripts/Controller/Arcade/Tournament/TournamentController.cs` (`StartTournamentInternal` → `ResolveWinTarget`) |
 | Maelstrom reads it here | `Assets/_Scripts/Utility/DataContainers/Tournament/TournamentDataSO.cs` (`EffectiveWinTarget`, `IsShuffleComplete`) |
 | Network sync (unchanged) | `NetworkCrystalCollisionTurnMonitor.cs` (`CrystalTargetCount`), `NetworkJoustCollisionTurnMonitor.cs` (`JoustTargetCount`) |

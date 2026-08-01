@@ -41,6 +41,9 @@ Hangar; disable the mission modal entry, keep `ThreatSpawner` wave design parked
 returning — rebuild launch paths, delete nothing; (c) cut both.
 Gates: YASH Y4.3 (Arcade singleton fate), SHOMBITH S6.2 (modal hiding).
 
+**D3 — RESOLVED by owner 2026-07-20: delete outright (option b), superseding the archive
+default — executed in the solo-retirement program (C6).** Original entry:
+
 **D3 — Dead arcade content.** ~23 scene-less `SO_ArcadeGame` assets; 5 still render as playable
 Arcade cards that fail at load (BlockBandit, Darts, MazeRunner, Rampage, SlipNStride);
 `PreviousAllGames.asset` referenced by nothing; the mode-32 co-op blitz stack dead end-to-end.
@@ -117,6 +120,10 @@ into 5 of 11 vessel prefabs; its role is served by `ToastNotificationAPI` (AUDIT
 (a) **delete the family + de-nest** *(recommended)*; (b) reserve it (still de-nest from vessels).
 Gate: SHOMBITH S1.2.
 
+**D16 — RESOLVED by owner 2026-07-20: convert to the networked single-host model —
+executed (C3): scene rebuilt on the converted-blitz pattern, added to EditorBuildSettings,
+`SandboxBenchmarkController` re-parented onto the MP spine + wired.** Original entry:
+
 **D16 — Benchmark.** The Settings "Run Benchmark" button targets a scene that isn't in the build,
 and the scene carries a different controller than the docs specify (AUDIT §1.7). (a) **fix it:
 add `BenchmarkStressTest.unity` to EditorBuildSettings + wire `SandboxBenchmarkController` as
@@ -137,6 +144,10 @@ CameraManager commits to `.Instance` + drops the dead DI registration; AudioSyst
 funnel new code to `[Inject]`; prism-manager self-creating singletons whitelisted)*; (b) full
 `[Inject]` everywhere; (c) defer. Gate: YASH Y5.4.
 
+**D19 — RESOLVED by owner 2026-07-20: go — solo modes are retired as a concept
+(solo = party-of-one host). Executed (C1-C4): duel + blitz consolidated onto their MP
+modes, benchmark converted, SP spawn path deleted.** Original entry:
+
 **D19 — Retire the single-player spawn path + controller branch.** Two scenes remain
 (CellularDuel, WildlifeBlitz); the direction is already declared in three places ("solo = host +
 AI"). (a) **go** *(recommended)*; (b) hold. Depends on D16 (benchmark scene rides the SP
@@ -147,10 +158,22 @@ controller today). Gate: YASH Y2. **[hard-gate]**
 (AUDIT §1.9). (a) **EventDriven wins — delete the Universal framework** *(recommended)*;
 (b) Universal was the intended direction — wire it instead. Gate: SHOMBITH S4.2.
 
+**D21 — RESOLVED by owner 2026-07-20: the flag is retired outright rather than replaced
+(solo modes no longer exist, so there is nothing for a replacement signal to distinguish).
+Executed (C5): both behavioral reads deleted — the `MultiplayerSetup` gate died with the whole
+legacy matchmaking path (provably dead: `ResetAllData()` runs before sign-in), and presence now
+advertises every in-game scene; analytics reads `ConnectedClientsIds.Count > 1` at report time.
+See `Docs/ScoringSystem/ARCHITECTURE.md` §8 for the per-site resolution table.** Original entry:
+
 **D21 — `IsMultiplayerMode` replacement signals.** Two behavioral reads remain
 (`MultiplayerSetup.cs:84` session gate; `HostConnectionService.cs:1860` presence). REFACTOR.md Q1
 requires sign-off on the replacement signals (party human count / requested-session semantics /
 ApplicationState). Approve the concrete signals when Yash's Y1.4 design note lands. **[hard-gate]**
+→ **The Y1.4 design note has landed:** `Docs/ScoringSystem/ARCHITECTURE.md` §8 now carries the
+refreshed (measured 2026-07-20) fork map + the per-site replacement proposals — session gate →
+`HostConnectionDataSO.PartyMembers.Count > 1`; presence → ApplicationState==InGame + the
+party-session id already in `FriendPresenceActivity`. Mark this decision to unblock R1/Y1.4
+execution.
 
 ---
 

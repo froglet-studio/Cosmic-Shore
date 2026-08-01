@@ -6,34 +6,92 @@ using Reflex.Attributes;
 using UnityEngine;
 using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
+using CosmicShore.UI;
 using System.Linq;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Applies elemental buffs to losing players based on their score difference from the leader.
-    /// Attach to minigame scene alongside the minigame controller. Assign a comeback profile
-    /// to configure per-vessel, per-element weights.
+    /// REQUIRED component of every party game: buffs trailing players by their team's score
+    /// deficit behind first place. ALL FOUR elements rise EQUALLY - the per-game strength is
+    /// `SO_ArcadeGame.ComebackRatePerScoreDeficit` (synced to every machine via
+    /// GameDataSO.ComebackRatePerScoreDeficit): bonusLevels = deficit x rate. The comeback
+    /// layer can never lift an element above level 10 (ResourceSystem.SustainedCeiling).
     ///
-    /// Operates only in the 0.0–1.5 normalized range (levels 0–15). The first 5 base pips
-    /// (levels -5 to 0) are reserved for the overtake impact effect and are never touched here.
+    /// Scene-authored instances keep their authored score-source settings; a scene without one
+    /// gets it auto-created by MultiplayerMiniGameControllerBase (EnsureExists) with per-mode
+    /// defaults. The optional comeback profile only seeds per-vessel INITIAL levels now - the
+    /// old per-vessel/per-element weights are retired (equal-elements is the law).
     /// </summary>
     public class ElementalComebackSystem : MonoBehaviour
     {
         /// <summary>
         /// Which stat to use when calculating who is ahead/behind.
         /// HexRace tracks elapsed time as Score (same for everyone) so use CrystalsCollected.
-        /// CrystalCapture uses Score directly. AstroLeague uses GoalsScored.
+        /// CrystalCapture also uses CrystalsCollected and Rampage PrismsDestroyed - in the
+        /// finish-time-scored modes Score is only assigned at game end (winners a time,
+        /// losers a sentinel), so the Score source would be dead during live play.
+        /// AstroLeague uses GoalsScored.
         /// </summary>
         public enum ScoreDifferenceSource
         {
             Score,
             CrystalsCollected,
             Goals,
+            PrismsDestroyed,
         }
 
         [Header("Config")]
+        [Tooltip("Optional: only per-vessel INITIAL levels are read from the profile now. The " +
+                 "comeback strength itself comes from the game's ComebackRatePerScoreDeficit " +
+                 "and applies to all four elements equally.")]
         [SerializeField] SO_ElementalComebackProfile comebackProfile;
         [Inject] GameDataSO gameData;
+
+        /// <summary>
+        /// Guarantees a party-game scene has the comeback system (the REQUIRED-component rule).
+        /// A scene-authored instance is respected as-is; otherwise one is added to the host
+        /// (Reflex injection has already run for scene objects, so the added instance receives
+        /// gameData directly) and configured with per-mode score-source defaults.
+        /// </summary>
+        public static ElementalComebackSystem EnsureExists(GameObject host, GameDataSO gameData)
+        {
+            var existing = FindFirstObjectByType<ElementalComebackSystem>(FindObjectsInactive.Include);
+            if (existing)
+            {
+                existing.gameData ??= gameData;
+                // Respect an intentionally disabled authored instance - OnEnable
+                // completes the subscription if it is activated later.
+                if (existing.isActiveAndEnabled)
+                    existing.TrySubscribeToGameEvents();
+                return existing;
+            }
+
+            // AddComponent runs the new component's OnEnable INLINE, before the field
+            // assignment below - gameData is still null there, so subscription is
+            // deferred and completed explicitly once the reference is set.
+            var system = host.AddComponent<ElementalComebackSystem>();
+            system.gameData = gameData;
+            system.TrySubscribeToGameEvents();
+            switch (gameData ? gameData.GameMode : GameModes.Random)
+            {
+                case GameModes.HexRace: // Score is elapsed time - crystals are the honest stat
+                case GameModes.MultiplayerCrystalCapture: // Score lands only at game end (time/sentinel)
+                    system.differenceSource = ScoreDifferenceSource.CrystalsCollected;
+                    break;
+                case GameModes.AstroLeague:
+                    system.differenceSource = ScoreDifferenceSource.Goals;
+                    break;
+                case GameModes.Rampage: // Score lands only at game end - destruction is the live stat
+                    system.differenceSource = ScoreDifferenceSource.PrismsDestroyed;
+                    break;
+                default:
+                    system.differenceSource = ScoreDifferenceSource.Score;
+                    break;
+            }
+            CSDebug.Log($"[ElementalComebackSystem] Auto-created for {gameData?.GameMode} " +
+                        $"(source={system.differenceSource}, rate={gameData?.ComebackRatePerScoreDeficit ?? 0f}).");
+            return system;
+        }
 
         [Header("Scoring")]
         [Tooltip("Which stat drives the comeback calculation")]
@@ -59,23 +117,41 @@ namespace CosmicShore.Gameplay
         float _lastUpdateTime;
         bool _isActive;
 
+        // Rising-edge tracker for the local player's "comeback system is on" toast - fires
+        // once when their buff activates, re-arms when the deficit closes. Only modes whose
+        // GameToastConfigSO authors ComebackActivated display it (e.g. Skim Race).
+        bool _localComebackActive;
+
         // Per-element last-played timestamp for the local player's comeback audio.
         // Index matches AllElements order: Mass=0, Charge=1, Space=2, Time=3.
         readonly float[] _lastComebackAudioTime = { -999f, -999f, -999f, -999f };
 
-        void OnEnable()
+        bool _subscribed;
+
+        // Deferred-subscription pattern (CLAUDE.md DI rules): gameData is not available in
+        // OnEnable - [Inject] lands after Awake/OnEnable for scene-authored instances, and
+        // EnsureExists assigns it only after AddComponent (whose OnEnable runs inline).
+        // Attempt on every entry point; the guard makes repeats no-ops.
+        void OnEnable() => TrySubscribeToGameEvents();
+
+        void Start()
         {
-            if (gameData == null)
-            {
+            TrySubscribeToGameEvents();
+
+            // Fail loud, but only once every init path has had its chance to assign gameData.
+            if (!_subscribed)
                 CSDebug.LogError("[ElementalComebackSystem] GameDataSO is not assigned!");
-                return;
-            }
-            if (comebackProfile == null)
-                CSDebug.LogWarning("[ElementalComebackSystem] No comeback profile assigned. System will be inactive.");
+        }
+
+        void TrySubscribeToGameEvents()
+        {
+            if (_subscribed || gameData == null) return;
+            // Profile is optional now (initial-levels only) - the system runs without one.
 
             gameData.OnMiniGameTurnStarted.OnRaised += OnTurnStarted;
             gameData.OnMiniGameTurnEnd.OnRaised += OnTurnEnded;
             gameData.OnMiniGameEnd.OnRaised += OnGameEnded;
+            _subscribed = true;
 
             if (debugLogging)
                 CSDebug.Log("[ElementalComebackSystem] Enabled and subscribed to game events.");
@@ -83,24 +159,26 @@ namespace CosmicShore.Gameplay
 
         void OnDisable()
         {
-            if (gameData == null) return;
+            if (!_subscribed) return;
             gameData.OnMiniGameTurnStarted.OnRaised -= OnTurnStarted;
             gameData.OnMiniGameTurnEnd.OnRaised -= OnTurnEnded;
             gameData.OnMiniGameEnd.OnRaised -= OnGameEnded;
+            _subscribed = false;
         }
 
         void OnTurnStarted()
         {
             if (debugLogging)
                 CSDebug.Log($"[ElementalComebackSystem] OnTurnStarted fired. " +
-                          $"Profile={(comebackProfile != null ? comebackProfile.name : "NULL")}, " +
+                          $"Rate={gameData.ComebackRatePerScoreDeficit}, " +
                           $"Players={gameData.Players?.Count ?? 0}, " +
                           $"Source={differenceSource}");
 
-            if (comebackProfile == null) return;
-
             _isActive = true;
+            _localComebackActive = false;
             ResetComebackAudioTimestamps();
+
+            if (comebackProfile == null) return; // profile only seeds optional initial levels
 
             foreach (var player in gameData.Players)
             {
@@ -153,7 +231,7 @@ namespace CosmicShore.Gameplay
 
         void Update()
         {
-            if (!_isActive || comebackProfile == null) return;
+            if (!_isActive) return;
 
             if (Time.time - _lastUpdateTime < updateInterval) return;
 
@@ -167,6 +245,8 @@ namespace CosmicShore.Gameplay
             if (players == null || players.Count < 2) return;
 
             float leaderValue = GetLeaderValue();
+            float rate = gameData.ComebackRatePerScoreDeficit;
+            if (rate <= 0f) return; // this game opted out of comeback
 
             for (int p = 0; p < players.Count; p++)
             {
@@ -177,20 +257,24 @@ namespace CosmicShore.Gameplay
                 float playerValue = GetPlayerValue(player);
                 float scoreDiff = CalculateScoreDifference(leaderValue, playerValue);
 
-                var vesselType = player.Vessel.VesselStatus.VesselType;
-                var config = comebackProfile.GetConfig(vesselType);
+                // ALL FOUR elements rise EQUALLY - the game's authored rate is the only dial.
+                // The ResourceSystem caps the comeback contribution so it can never lift an
+                // element above level 10 (earned progression alone reaches the overcharge band).
+                float bonusLevels = scoreDiff * rate;
+                float normalizedBonus = Mathf.Max(0f, bonusLevels / 10f);
 
                 bool isLocalPlayer = player.IsLocalUser;
+                if (isLocalPlayer)
+                    UpdateLocalComebackToast(player, bonusLevels);
+
                 for (int i = 0; i < AllElements.Length; i++)
                 {
                     var element = AllElements[i];
-                    float weight = config.GetWeight(element);
-                    float bonusLevels = scoreDiff * weight;
 
                     // Composited through the ResourceSystem's comeback-modifier layer instead
                     // of overwriting the base level - mid-turn crystal gains (AdjustLevel)
                     // persist underneath the comeback bonus instead of being erased each tick.
-                    rs.SetComebackModifier(element, Mathf.Max(0f, bonusLevels / 10f));
+                    rs.SetComebackModifier(element, normalizedBonus);
 
                     // Fire comeback audio for the local player when a buff activates,
                     // gated by per-element cooldown so it doesn't fire every tick.
@@ -206,10 +290,30 @@ namespace CosmicShore.Gameplay
                 }
 
                 if (debugLogging)
-                    CSDebug.Log($"[ElementalComebackSystem] {player.Name} ({vesselType}): " +
-                              $"value={playerValue:F1}, leader={leaderValue:F1}, diff={scoreDiff:F1} → " +
+                    CSDebug.Log($"[ElementalComebackSystem] {player.Name}: " +
+                              $"value={playerValue:F1}, leader={leaderValue:F1}, diff={scoreDiff:F1}, " +
+                              $"bonus={bonusLevels:F1} → " +
                               $"M={rs.GetLevel(Element.Mass)} C={rs.GetLevel(Element.Charge)} " +
                               $"S={rs.GetLevel(Element.Space)} T={rs.GetLevel(Element.Time)}");
+            }
+        }
+
+        /// <summary>
+        /// Posts the ComebackActivated toast situation on the rising edge of the LOCAL
+        /// player's comeback buff, and re-arms once the buff drops back to zero. Whether it
+        /// displays is up to the current mode's toast config (unauthored = silent).
+        /// </summary>
+        void UpdateLocalComebackToast(IPlayer player, float bonusLevels)
+        {
+            if (bonusLevels > 0f)
+            {
+                if (_localComebackActive) return;
+                _localComebackActive = true;
+                GameToastAPI.Post(GameToastSituation.ComebackActivated, player.Domain, player.Name);
+            }
+            else
+            {
+                _localComebackActive = false;
             }
         }
 
@@ -267,6 +371,8 @@ namespace CosmicShore.Gameplay
                     return gameData.SumCrystalsCollectedByDomain(domain);
                 case ScoreDifferenceSource.Goals:
                     return ScoringMetrics.SumByDomain(gameData, ScoringMetric.Goals, domain);
+                case ScoreDifferenceSource.PrismsDestroyed:
+                    return ScoringMetrics.SumByDomain(gameData, ScoringMetric.PrismsDestroyed, domain);
                 case ScoreDifferenceSource.Score:
                     float sum = 0f;
                     var list = gameData.RoundStatsList;
@@ -287,6 +393,7 @@ namespace CosmicShore.Gameplay
             {
                 ScoreDifferenceSource.CrystalsCollected => true,
                 ScoreDifferenceSource.Goals => true,
+                ScoreDifferenceSource.PrismsDestroyed => true,
                 ScoreDifferenceSource.Score => !useGolfRules,
                 _ => !useGolfRules
             };
