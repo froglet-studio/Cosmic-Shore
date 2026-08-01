@@ -13,10 +13,11 @@
 //     3. The scheduler is independently testable without a MonoBehaviour.
 //
 // USAGE:
-//   Each MonoBehaviour.Update() tick, call ShouldFireNow(Time.unscaledDeltaTime).
-//   It accumulates the delta internally and returns true exactly once per
-//   interval - the caller is responsible for firing RefreshAsync() and for
-//   all other guards (mutex, rate-limit backoff, scene check).
+//   Each MonoBehaviour.Update() tick, call Accumulate(Time.unscaledDeltaTime)
+//   UNCONDITIONALLY, then call TryConsumeFire() once the caller's own guards
+//   (mutex, rate-limit backoff, scene check) have passed. Accumulating before
+//   the guards is what makes the timer measure wall time rather than eligible
+//   time - see Accumulate's remarks for why that distinction mattered.
 //   Call Boost() to enter the fast-refresh window after invite events.
 //   Call Reset() to force the next fire to occur immediately.
 //   Call ResetDeferred(delay) to push the next fire out by a custom amount.
@@ -38,9 +39,10 @@ namespace CosmicShore.Gameplay
     /// presence-lobby poll cycle.
     ///
     /// <para>
-    /// Call <see cref="ShouldFireNow"/> each <c>Update()</c> tick; it returns
+    /// Call <see cref="Accumulate"/> each <c>Update()</c> tick and
+    /// <see cref="TryConsumeFire"/> after the caller's guards; the latter returns
     /// <c>true</c> at most once per interval.  Use <see cref="Boost"/> to
-    /// temporarily halve the interval for 15 seconds after invite events, and
+    /// temporarily shorten the interval for 15 seconds after invite events, and
     /// <see cref="Reset"/> to trigger an immediate next fire.
     /// </para>
     ///
@@ -58,11 +60,37 @@ namespace CosmicShore.Gameplay
         // ─────────────────────────────────────────────────────────────────────
 
         /// <summary>
-        /// Refresh interval while in boosted mode (seconds).  UGS lobby reads are
-        /// rate-limited to ~1/s per client; 0.75s keeps us safely under that cap
-        /// while staying responsive enough that invite arrivals feel instant.
+        /// Refresh interval while in boosted mode (seconds).
+        ///
+        /// <para>
+        /// This was 0.75f, with a comment claiming it "keeps us safely under"
+        /// the ~1/s UGS lobby read cap. It does the opposite: 0.75s is 1.33
+        /// reads/s, and the boost window overlaps the invite handshake, which is
+        /// also the busiest stretch for property WRITES (each of which costs
+        /// further UGS calls). 1.1s is 0.91 reads/s, which leaves room for the
+        /// periodic converge query on top and still stays under the cap.
+        /// </para>
+        ///
+        /// <para>
+        /// The ~0.35s of extra worst-case invite latency is a good trade: a 429
+        /// parks the entire <see cref="HostConnectionService.Update"/> loop for
+        /// <c>RATE_LIMIT_BACKOFF_SECONDS</c> (6s) - so tripping the cap to save a
+        /// third of a second costs about seventeen times that in blindness.
+        /// </para>
         /// </summary>
-        public const float BOOSTED_INTERVAL_SECONDS = 0.75f;
+        public const float BOOSTED_INTERVAL_SECONDS = 1.1f;
+
+        /// <summary>
+        /// Per-fire random scaling applied to the interval, as a +/- fraction.
+        /// Without it every client in the presence lobby polls on the same
+        /// cadence, and since they mostly launch in bursts (a party starting
+        /// together, an MPPM run), their reads arrive at the service in phase -
+        /// which concentrates load into periodic spikes instead of spreading it,
+        /// and raises 429 incidence for everyone at once. Jitter is additive
+        /// noise only; it does not change the median cadence.
+        /// See Docs/PresenceSystem/TODOS.md TODO-P3.
+        /// </summary>
+        private const float INTERVAL_JITTER_FRACTION = 0.1f;
 
         /// <summary>
         /// How long (seconds) a single Boost() call keeps the scheduler in boosted
@@ -122,25 +150,52 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// True while the scheduler is in boosted mode (a recent <see cref="Boost"/>
         /// call raised the refresh frequency).  Read for diagnostic logs only - the
-        /// interval switch is handled automatically inside <see cref="ShouldFireNow"/>.
+        /// interval switch is handled automatically inside <see cref="TryConsumeFire"/>.
         /// </summary>
         public bool IsBoosted => Time.unscaledTime < _boostedUntil;
 
         /// <summary>
-        /// Accumulates <paramref name="unscaledDeltaTime"/> and returns <c>true</c>
-        /// exactly once per interval.  Resets the accumulator automatically when the
-        /// interval is reached.
+        /// Advances the accumulator by one frame. Call this EVERY frame,
+        /// unconditionally - before any caller-side eligibility gates.
         ///
-        /// The caller decides whether to actually fire the refresh; this method only
-        /// manages the timing gate.
+        /// <para>
+        /// Split out of the old <c>ShouldFireNow(dt)</c> because that method both
+        /// accumulated and consumed, so it could only be called once the caller's
+        /// gates had already passed. The accumulator therefore measured
+        /// <i>eligible</i> time rather than wall time: while the lobby mutex was
+        /// held - which is precisely when a property write is in flight, i.e.
+        /// when party state is CHANGING - the clock simply stopped. A write
+        /// costing several seconds paused the timer mid-interval, so the next
+        /// poll landed a full further interval after the write finished. The
+        /// refresh loop went blind exactly when the roster was moving.
+        /// </para>
         /// </summary>
         /// <param name="unscaledDeltaTime">
         /// <c>Time.unscaledDeltaTime</c> from the current Update() tick.
         /// </param>
-        public bool ShouldFireNow(float unscaledDeltaTime)
+        public void Accumulate(float unscaledDeltaTime) => _timer += unscaledDeltaTime;
+
+        /// <summary>
+        /// Returns <c>true</c> at most once per interval, consuming the
+        /// accumulated time when it does. Call this AFTER the caller's
+        /// eligibility gates, so a tick that was not allowed to fire leaves the
+        /// accumulated time intact and fires as soon as it becomes eligible
+        /// instead of restarting the interval.
+        ///
+        /// <para>
+        /// Cannot burst: the accumulator is zeroed on consume, so a long
+        /// ineligible stretch produces exactly one catch-up fire, not one per
+        /// elapsed interval.
+        /// </para>
+        /// </summary>
+        public bool TryConsumeFire()
         {
-            _timer += unscaledDeltaTime;
             float interval = IsBoosted ? BOOSTED_INTERVAL_SECONDS : _defaultInterval;
+
+            // Re-rolled per fire rather than per client so a client that drifts
+            // into phase with another does not stay there.
+            interval *= 1f + Random.Range(-INTERVAL_JITTER_FRACTION, INTERVAL_JITTER_FRACTION);
+
             if (_timer < interval) return false;
             _timer = 0f;
             return true;
@@ -166,7 +221,7 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Resets the timer to zero so the next <see cref="ShouldFireNow"/> call
+        /// Resets the timer to zero so the next <see cref="TryConsumeFire"/> call
         /// returns true at the next interval.  Use after manually triggering a refresh
         /// to avoid a double-fire within the same tick.
         /// </summary>

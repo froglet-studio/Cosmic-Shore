@@ -455,6 +455,16 @@ namespace CosmicShore.Gameplay
 
         void Update()
         {
+            // Accumulate FIRST, unconditionally, before any eligibility gate.
+            // The gates below describe when a refresh may be ISSUED, not whether
+            // time passed. Accumulating after them made the scheduler measure
+            // eligible time instead of wall time, so any stretch spent holding
+            // the lobby mutex - i.e. any in-flight property write, which is
+            // exactly when party state is changing - froze the clock and pushed
+            // the next poll out by a further full interval past the write. See
+            // LobbyRefreshScheduler.Accumulate.
+            _scheduler.Accumulate(Time.unscaledDeltaTime);
+
             if (!IsInPresenceLobby) return;
             if (_lobbyMutex.CurrentCount == 0) return;                   // someone is already inside the mutex
             if (Time.unscaledTime < _rateLimitBackoffUntil) return;
@@ -462,7 +472,10 @@ namespace CosmicShore.Gameplay
 
             ExpireOutgoingInvites();
 
-            if (_scheduler.ShouldFireNow(Time.unscaledDeltaTime))
+            // Consume only once eligible, so a tick blocked by the gates keeps its
+            // accumulated time and fires as soon as it can rather than restarting
+            // the interval. Cannot burst - the accumulator zeroes on consume.
+            if (_scheduler.TryConsumeFire())
                 RefreshAsync().Forget();
         }
 
