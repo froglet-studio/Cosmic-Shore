@@ -4,6 +4,14 @@ using CosmicShore.Utility;
 
 namespace CosmicShore.Gameplay
 {
+    /// <summary>
+    /// ⚠ CLOCK-MATERIAL LAW (Docs/PRISM_ANIMATION.md §3.8): dormant legacy — its
+    /// sliding-transparency window swaps prism sharedMaterials directly without
+    /// SyncRenderMaterial (invisible on the instanced path) and tracks per-prism
+    /// material snapshots. Still referenced by Urchin.prefab, so it cannot be
+    /// deleted from code alone: remove the component from that prefab in-editor,
+    /// then delete this file. Do NOT wire it anywhere new.
+    /// </summary>
     public class TrailViewer : MonoBehaviour
     {
         public Material TransparentMaterial;

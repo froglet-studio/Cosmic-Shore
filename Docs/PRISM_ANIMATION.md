@@ -440,8 +440,10 @@ Fix these DURING the migration (most disappear by construction under stamp+clock
    ecosystem-law violation.
 6. **`PrismImplosion` wall-clock watchdog** — per-instance `Update()` for a 4 s timeout;
    belongs on the scheduler.
-7. **Orphans recommended for deletion**: `TrailViewer`, `TrailBlockBufferManager`
-   (no scene/prefab references; both carry violations).
+7. **Orphans**: `TrailBlockBufferManager` — confirmed unreferenced, DELETED
+   2026-08-01. `TrailViewer` — the sweep's "no references" claim was WRONG:
+   `Urchin.prefab` carries it (GUID check). Banner added; remove the component from
+   that prefab in-editor, then delete the file.
 8. **Dormant**: `PrismType.Grow` / `PrismImplosion.StartGrow` has no live raiser;
    `ShapeDrawingManager` shrink-to-outline (Phase 2, dormant) also bypasses the render
    bridge and spatial index.
@@ -707,7 +709,7 @@ Phase C — rogue paths & ecosystem visuals (each is standalone):
 | # | Item | Status |
 |---|---|---|
 | C1 | `ClearPrisms` `_Alpha` fade → clock (also fix instanced-path blindness) | ☐ not started |
-| C2 | `MaterialBlendUtility` (overheat danger trail + skim overcharge) → stamped clock blend; fix wrong property names / instanced blindness | ☐ not started |
+| C2 | `MaterialBlendUtility` (overheat danger trail + skim overcharge) → the one color pipeline | ✅ shipped 2026-08-01: utility DELETED. Overheat danger trail: the redundant direct blend removed — `IsDangerous` pre-`Initialize` already runs `MakeDangerous()` through the pipeline (per-domain danger material, clock or legacy transition); `EnableDangerMode`'s material param is legacy-ignored. Skim overcharge: rides `MaterialPropertyAnimator.UpdateMaterial(overchargedMaterial, …)` — visible on both render paths; the multi-material append semantic retired |
 | C3 | AOE double-growers (`AOERadialBlocks`, `AOEDangerHemisphereBlocks`) → single engine stamp; fix dead `growthRate` field writes + `renderer.material` clone | ✅ shipped 2026-08-01: both bespoke `GrowToScale` loops deleted (growth = the one engine via `TargetScale` + `SetGrowthRate`); `MakeDangerousAsync` deleted — danger/shield now ride the pre-`Initialize` flag contract so `PrismStateManager` applies the proper per-domain theme materials (the `renderer.material` clone and the instanced-path-blind restyle are gone); hemisphere prisms now get the firing vessel's Domain like the radial sibling |
 | C4 | `FireTrailBlockActionExecutor` → pooled + mover-contract or stamped ballistic clock; remove `Destroy()` timer (ecosystem law) | ☐ not started |
 | C5 | `FullAutoBlockShoot.MoveAndAnchorAsync` turret anchor flight → stamped clock translation + one anchor callback | ☐ not started |
@@ -717,7 +719,7 @@ Phase C — rogue paths & ecosystem visuals (each is standalone):
 | C9 | Cell swap retiring-world suction → per-prism suction stamps (fixes instanced-path invisibility, §3.8.1) | ☐ not started |
 | C10 | Worm segment make-room shift → stamped slide (locomotion stays mover-contract) | ☐ not started |
 | C11 | Spindle `_DeathAnimation` fade (prism-adjacent) → clock inputs on spindle material | ☐ not started |
-| C12 | `PrismImplosion` watchdog → scheduler; delete orphans `TrailViewer` + `TrailBlockBufferManager`; `SkimFxRunner` stretch beam review; `CloakSeedWall` dead code removal | ☐ not started |
+| C12 | `PrismImplosion` watchdog → scheduler; orphan cleanup; `SkimFxRunner` stretch beam review; `CloakSeedWall` dead code removal | ◐ 2026-08-01: `TrailBlockBufferManager` deleted; `TrailViewer` is NOT an orphan (Urchin.prefab — banner added, in-editor removal step pending); watchdog / SkimFxRunner / CloakSeedWall pending |
 | C13 | Environment lay pooling: `PrismTrailBuilder.LayOne` → pooled pull with final domain material (kills spawn repaint) | ☐ not started |
 
 Phase D — lock-in:
