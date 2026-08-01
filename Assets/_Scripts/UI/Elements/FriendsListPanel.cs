@@ -22,7 +22,7 @@ namespace CosmicShore.UI
     ///
     /// Sound plays when a party invite is received.
     /// </summary>
-    public class FriendsListPanel : MonoBehaviour
+    public class FriendsListPanel : MonoBehaviour, IModalPanel
     {
         [Header("Section Content Parents (ScrollRect > Viewport > Content)")]
         [SerializeField] private Transform onlineContent;
@@ -77,6 +77,30 @@ namespace CosmicShore.UI
         void OnEnable()
         {
             ValidateSceneWiring();
+            RefreshFromData();
+        }
+
+        /// <summary>
+        /// This panel is normally shown via <see cref="Show"/> (which does
+        /// <c>SetActive(true)</c>, so <c>OnEnable</c> fires), but it can also sit
+        /// inside a <see cref="ModalWindowManager"/> that hides by CanvasGroup
+        /// and never deactivates. Implementing <see cref="IModalPanel"/> covers
+        /// that second case; <see cref="RefreshFromData"/> is idempotent, so
+        /// being driven by both is harmless.
+        /// </summary>
+        public void OnModalOpened() => RefreshFromData();
+
+        /// <inheritdoc/>
+        public void OnModalClosed() => TeardownSubscriptions();
+
+        void RefreshFromData()
+        {
+            // Unsubscribe-then-resubscribe rather than a "already subscribed"
+            // guard: the handlers are the same delegates either way, so a
+            // repeated bind must not stack duplicates (which would double every
+            // row rebuild), and a re-read must still happen on every open.
+            TeardownSubscriptions();
+
             RehydrateOutgoingInvitesFromService();
             RehydratePendingInviteFromService();
             SubscribeSoap();
@@ -88,6 +112,12 @@ namespace CosmicShore.UI
             // that was added between polling ticks. Debounced and mutex-aware
             // inside HostConnectionService, so bursty opens are safe.
             HostConnectionService.Instance?.ForceRefreshNow();
+        }
+
+        void TeardownSubscriptions()
+        {
+            UnsubscribeSoap();
+            UnsubscribeServiceEvents();
         }
 
         /// <summary>
@@ -147,8 +177,7 @@ namespace CosmicShore.UI
 
         void OnDisable()
         {
-            UnsubscribeSoap();
-            UnsubscribeServiceEvents();
+            TeardownSubscriptions();
 
             // The deferred reconcile coroutine dies with the disable; clear its guard so
             // the next OnCleared after re-enable can schedule a fresh one. (OnEnable
@@ -256,8 +285,13 @@ namespace CosmicShore.UI
 
         public void Show()
         {
+            // If the object was inactive, SetActive fires OnEnable, which already
+            // rehydrates + resubscribes + repopulates. Only build explicitly when
+            // it was ALREADY active, where OnEnable does not fire - previously
+            // this always ran a second full rebuild on the common path.
+            bool wasActive = gameObject.activeSelf;
             gameObject.SetActive(true);
-            PopulateAll();
+            if (wasActive) RefreshFromData();
         }
 
         public void Hide()

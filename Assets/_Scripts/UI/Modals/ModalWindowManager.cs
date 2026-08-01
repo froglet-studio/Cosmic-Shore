@@ -48,10 +48,55 @@ namespace CosmicShore.UI
         Coroutine _disableCoroutine;
         RectTransform _backdrop;
 
+        /// <summary>
+        /// Child panels that need to know when this modal is actually shown or
+        /// hidden. Cached once - the set is fixed for a prefab hierarchy, and
+        /// <c>GetComponentsInChildren</c> on every open would allocate on a UI
+        /// interaction path.
+        ///
+        /// <para>
+        /// Required because this class hides by CanvasGroup and never
+        /// deactivates, so a child's <c>OnEnable</c> fires once per scene load
+        /// rather than once per open. See <see cref="IModalPanel"/>.
+        /// </para>
+        /// </summary>
+        IModalPanel[] _modalPanels;
+
         // Side length of the backdrop blocker in canvas units. Parented to the window
         // (which may sit anywhere on screen and be scaled by the open animation), so it
         // is deliberately oversized to cover the full screen at any aspect ratio.
         const float BackdropSpan = 8000f;
+
+        /// <summary>
+        /// Notifies child <see cref="IModalPanel"/>s that the modal was shown or
+        /// hidden.
+        ///
+        /// <para>
+        /// The panel array is resolved lazily on first dispatch rather than in an
+        /// <c>Awake</c> override. This class's own <c>EnsureBackdrop</c> doc warns
+        /// that "a subclass declaring its own Awake would silently skip a base
+        /// Awake hook", and <c>ArcadeGameConfigureModal</c> does exactly that
+        /// (<c>void Awake()</c>, not <c>override</c>) - which is precisely the
+        /// modal whose party panel this dispatch exists to fix. Lazy init cannot
+        /// be hidden by a subclass.
+        /// </para>
+        ///
+        /// <para>
+        /// includeInactive: a panel may legitimately start deactivated and be
+        /// switched on later; it still needs open/close notifications.
+        /// </para>
+        /// </summary>
+        void DispatchModalVisibility(bool opened)
+        {
+            _modalPanels ??= GetComponentsInChildren<IModalPanel>(true);
+
+            foreach (var panel in _modalPanels)
+            {
+                if (panel == null) continue;
+                if (opened) panel.OnModalOpened();
+                else        panel.OnModalClosed();
+            }
+        }
 
         protected virtual void Start()
         {
@@ -172,6 +217,11 @@ namespace CosmicShore.UI
 
                 audioSystem.PlayMenuAudio(MenuAudioCategory.OpenView);
                 isOn = true;
+
+                // Inside the isOn==false branch so this fires once per genuine
+                // open, not on every ModalWindowIn call against an already-open
+                // modal.
+                DispatchModalVisibility(true);
             }
         }
 
@@ -196,6 +246,8 @@ namespace CosmicShore.UI
 
             audioSystem.PlayMenuAudio(MenuAudioCategory.CloseView);
             isOn = false;
+
+            DispatchModalVisibility(false);
 
             if (ModalType != ModalWindows.SETTINGS)
             {

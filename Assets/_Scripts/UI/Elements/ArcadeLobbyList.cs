@@ -22,7 +22,7 @@ namespace CosmicShore.UI
     /// All data flows through SOAP events - no direct <see cref="HostConnectionService"/>
     /// references are needed beyond the Leave button callback.
     /// </summary>
-    public class ArcadeLobbyList : MonoBehaviour
+    public class ArcadeLobbyList : MonoBehaviour, IModalPanel
     {
         [Header("SOAP Data")]
         [SerializeField] private HostConnectionDataSO connectionData;
@@ -95,9 +95,69 @@ namespace CosmicShore.UI
             }
         }
 
-        void OnEnable()
+        // ─────────────────────────────────────────────────────────────────────
+        // Visibility lifecycle
+        //
+        // Bound through BOTH OnEnable/OnDisable and IModalPanel, because neither
+        // alone is sufficient:
+        //
+        //   • The arcade panel lives inside a ModalWindowManager, which hides by
+        //     fading its CanvasGroup and never calls SetActive(false). So
+        //     OnEnable fired exactly ONCE per Menu_Main load and never again when
+        //     the player actually opened the panel - meaning the ForceRefreshNow
+        //     pull below, and the full repopulate, simply never happened on open.
+        //     Every write to HostConnectionDataSO that does not raise a SOAP
+        //     event (LocalDisplayName / LocalAvatarId are plain field
+        //     assignments in SyncLocalIdentity) stayed invisible forever.
+        //
+        //   • IModalPanel alone would miss any scene or prefab that DOES toggle
+        //     this GameObject.
+        //
+        // Bind/Unbind are idempotent, so a double open (OnEnable + OnModalOpened
+        // in the same frame on first show) is harmless.
+        // ─────────────────────────────────────────────────────────────────────
+
+        bool _subscribed;
+
+        void OnEnable()  => Bind();
+        void OnDisable() => Unbind();
+
+        /// <inheritdoc/>
+        /// <remarks>
+        /// Subscription is idempotent, but the RE-READ is not conditional: the
+        /// whole point of this hook is that the panel must never render a
+        /// snapshot taken when it was last closed. Guarding the refresh behind
+        /// the subscribe flag would reintroduce exactly the bug this fixes, since
+        /// OnEnable has already set that flag at scene load.
+        /// </remarks>
+        public void OnModalOpened()
         {
+            Bind();
+            RefreshFromData();
+        }
+
+        /// <inheritdoc/>
+        public void OnModalClosed() => Unbind();
+
+        void Bind()
+        {
+            if (_subscribed) return;
+            _subscribed = true;
+
             SubscribeSoap();
+            RefreshFromData();
+        }
+
+        void Unbind()
+        {
+            if (!_subscribed) return;
+            _subscribed = false;
+
+            UnsubscribeSoap();
+        }
+
+        void RefreshFromData()
+        {
             PopulateAll();
 
             // Pull fresh lobby data the moment the arcade panel opens so the
@@ -105,11 +165,6 @@ namespace CosmicShore.UI
             // instead of whatever snapshot happened to be cached when the user
             // last navigated away. Debounced inside HostConnectionService.
             HostConnectionService.Instance?.ForceRefreshNow();
-        }
-
-        void OnDisable()
-        {
-            UnsubscribeSoap();
         }
 
         void SubscribeSoap()
@@ -307,16 +362,23 @@ namespace CosmicShore.UI
         // SOAP Handlers
         // ─────────────────────────────────────────────────────────────────────
 
+        // UpdateOnlineStatus() is included here because the "N Players Online"
+        // counter adds 1 for the local player when connectionData.IsConnected -
+        // so a party change that flips connection state moved the count without
+        // either of these repainting it. Cheap (one string assignment) and it
+        // removes a whole class of "the counter says 2 but I can see 3" drift.
         void HandlePartyChanged(PartyPlayerData _)
         {
             PopulateSlots();
             UpdateLeaveButtonState();
+            UpdateOnlineStatus();
         }
 
         void HandlePartyCleared()
         {
             PopulateSlots();
             UpdateLeaveButtonState();
+            UpdateOnlineStatus();
         }
 
         void HandleOnlineChanged(PartyPlayerData _) => UpdateOnlineStatus();
