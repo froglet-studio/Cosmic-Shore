@@ -62,6 +62,24 @@ broken until you do these.**
 
 ---
 
+## Retest after the B11 / B12 fix (`a510bd51`)
+
+The first 4-instance MPPM run found two bugs; both are fixed and unverified.
+Re-run **Step 1a**, **2b** and **2d** first — they are the direct regression
+checks:
+
+| Was | Now expected |
+|---|---|
+| 3 of 4 instances stuck on `CONNECTING…` forever | all four reach `Present`; every peer shows ONLINE |
+| turning an instance off left its row for ~30 s | row disappears in well under a second |
+
+If an instance is still stuck at `Announced`, the console now says so explicitly
+(`Presence reconciled to Present …` should appear if the one-shot was missed and
+the per-tick reconcile caught it). If you see that line, the race is real and the
+reconcile is doing its job — not a failure.
+
+---
+
 ## Step 1 — Solo Menu_Main baseline (~2 min)
 
 **1a. Presence state timeline.** The new machine logs every transition. Expect:
@@ -120,8 +138,17 @@ against the compiled assembly. Add a temporary `Debug.Log` in
 - Fires but the row is late → the drain in `HostConnectionService.Update` is
   blocked by one of its four gates; check the lobby mutex.
 
-**2d. Departure.** Quit VP-B via the in-game quit: gone from A in **< 1 s**. Then
-hard-kill a VP: expect up to ~30 s. **That asymmetry is correct and
+**2d. Departure.** Three distinct cases, three different expectations:
+
+| How B goes away | Expected removal on A |
+|---|---|
+| In-game quit button | **< 1 s** |
+| **MPPM: toggle the virtual player off / stop play mode** | **< 1 s** (this is what B12 fixed — it was ~30 s) |
+| Hard kill (kill the process) | up to ~30 s |
+
+The first two now emit an explicit UGS leave, which pushes `PlayerLeaving`
+carrying B's id; A evicts that id on the spot rather than waiting out the
+two-strike rule. The third cannot notify anyone. **That asymmetry is correct and
 unavoidable** — there is no transport between non-party lobby members, so a hard
 kill can only be caught by the UGS reap. `TESTS.md` P5's "within 5 s" is wrong
 for this case; rewrite as "≤1 s graceful / ≤35 s hard kill".

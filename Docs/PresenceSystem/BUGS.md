@@ -15,11 +15,90 @@ Statuses: 🔴 open · 🟡 investigating · 🟢 fixed (commit) · ⚪ deferred
 | B1 | `ArgumentOutOfRangeException` (LobbyPatcher) spam at game start | High (cause) | 🟢 (needs Editor retest) |
 | B4 | TC1 second invite not delivered + party members vanish from 3rd player's panel | High, needs retest | 🔴 |
 | B6 | TC3 NRE (`WrappedLobbyService`) + empty online/request lists | Medium | 🔴 |
+| B11 | Presence stuck at `Announced` - peers render "CONNECTING…" forever | High (root-caused) | 🟢 `a510bd51` (needs Editor retest) |
+| B12 | Explicit leave took ~30 s to remove the player | High (root-caused) | 🟢 `a510bd51` (needs Editor retest) |
 
 > **Working order.** Diagnostics-first. The presence-lobby cluster (B4,
 > B6) is the locked-design area — read `ARCHITECTURE.md` and
 > `../PartySystem/ARCHITECTURE.md` before touching `PresenceLobbyService`
 > or `HostConnectionService`. Do not reintroduce LAZY session creation.
+
+---
+
+## B11. Presence stuck at `Announced` — peers render "CONNECTING…" forever — FIXED (unverified)
+
+**Found.** 4-instance MPPM run, 2026-08-01. Every instance flying the lava lamp
+normally. `FriendsListPanel` on each:
+
+```
+Ys1 → Ys2 (connecting)  Ys3 (connecting)  Ys4 (connecting)
+Ys2 → Ys1 (online)      Ys3 (connecting)  Ys4 (connecting)
+Ys3 → Ys1 (online)      Ys2 (connecting)  Ys4 (connecting)
+Ys4 → Ys1 (online)      Ys2 (connecting)  Ys3 (connecting)
+```
+
+Exactly one instance published `Present`; the other three never did. The
+asymmetry is the diagnosis: it is a **race**, and one instance won it.
+
+**Root cause.** `Announced → Present` depended on catching
+`GameDataSO.OnClientReady`, a one-shot `ScriptableEventNoParam` with no replay.
+There is no ordering guarantee between the presence-lobby join and the menu
+vessel spawn, and the two race differently on the main editor instance than on
+an MPPM virtual player. When the signal landed while the machine was still in
+`Joining`, `Joining → Present` was illegal — `TryTransition` warned, returned
+`false`, and **discarded the only signal that would ever arrive**.
+
+**Fix** (`a510bd51`). Two parts, both needed:
+1. `HandleLocalVesselReady` latches `_localVesselReady` unconditionally *before*
+   attempting the transition, so a signal arriving in a state that cannot accept
+   it is remembered.
+2. `ReconcilePresenceState()` runs each refresh tick and re-derives the state
+   from the observable **condition** (does the local vessel exist?) rather than
+   from a caught event.
+
+**Lesson.** A state machine must never depend on having *caught* a one-shot.
+Latch the fact, reconcile the condition.
+
+**Two related holes found while tracing it**, each able to reproduce the same
+symptom independently:
+- `BuildLivePresenceProperties` did not carry `presenceState`, so a converge
+  migration rebuilt the player record without it. Same class as B4 — a new
+  stateful key added without registering it with `LivePropertySource`.
+- `PublishPartyStateIfChangedAsync`'s change-gate compared against trackers
+  describing a *different* lobby, so after a migration it never re-published,
+  masking the dropped key permanently. Trackers are now invalidated on lobby-id
+  change.
+
+---
+
+## B12. Explicit leave took ~30 s to remove the player — FIXED (unverified)
+
+**Found.** Same run. Turning off Ys2 left its row on Ys1/Ys3/Ys4 for ~30 s (the
+UGS reap window) before it disappeared.
+
+**Root cause — two independent failures stacked:**
+
+1. **The id was thrown away.** The `PlayerLeaving` / `PlayerHasLeft` pushes carry
+   the departing player's id as their payload. The handlers ignored it and only
+   set the generic roster-dirty flag, so removal fell through to "absent from N
+   consecutive reads" — processing an explicit, authoritative, instant leave as
+   if it were an ambiguous absence.
+2. **The leaver never left.** Stopping play mode does **not** raise
+   `Application.wantsToQuit`, so in the editor — where MPPM lives — the
+   departure path added in Commit 3 never ran, and no push was emitted at all.
+
+**Fix** (`a510bd51`). `PresenceLobbyService` collects departed ids and exposes
+`TryConsumeDepartedPlayerIds`; `RefreshOnlinePlayersDiff` drains them first and
+evicts immediately, bypassing the two-strike rule (which exists for *ambiguous*
+absences, not for the service naming the player). `ApplicationLifecycleManager`
+also raises `OnAppQuitRequested` from `EditorApplication.playModeStateChanged /
+ExitingPlayMode`.
+
+**Remaining floor.** `ExitingPlayMode` cannot be deferred, so the leave is
+dispatched best-effort rather than awaited. A true process kill or crash still
+cannot notify anyone, and for a non-party peer there is no transport to detect it
+— the UGS reap (~30 s) remains the floor for that case. See
+`PRESENCE_SYNC_PLAN.md` § 6.
 
 ---
 
