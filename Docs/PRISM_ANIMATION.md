@@ -495,7 +495,7 @@ Each animated graph gains clock inputs, all **Hybrid Per Instance**
 | Graph | New per-instance properties | Behavior |
 |---|---|---|
 | `BlockGraph` | `_GrowStartTime`, `_GrowRate` (k), `_GrowStartFrac` (scale fraction at t₀); `_ColorStartTime`, `_ColorDuration`, `_StartBrightColor`, `_StartDarkColor`, `_StartSpread` | Vertex: scale factor `s(t) = 1 − (1−s₀)·exp(−k·(t−t₀))` about the prism origin (the entity's `LocalToWorld` is at FINAL scale from the start). Fragment: colors = `lerp(start, material's authored values, smoothstep((t−t₀)/dur))` — **the target is the bound material's authored colors, so no `_Target*` properties are needed** and the settle swap is just `SetMaterial` (already one-shot). Authored defaults (`_GrowStartFrac = 1`, `_ColorDuration = 0`) make every existing material render the settled end state unstamped. |
-| `ExplodingBlockGraph` | `_ExplodeStartTime`, `_ExplodeSpeed`, `_ExplodeDuration` (keeps `_Velocity`) | Vertex: world offset `(t−t₀)·_Velocity`; `amount = _ExplodeSpeed·(t−t₀)`; `opacity = 1 − (t−t₀)/_ExplodeDuration`. Entity transform never moves after the stamp. Defaults render the rest state (the transparent-prism quirk keeps working unstamped). |
+| `ExplodingBlockGraph` | `_ExplodeStartTime`, `_ExplodeSpeed`, `_ExplodeDuration`, `_ExplodeVelocityOS` (keeps `_Velocity` — world-space, still the shatter-spin axis) | Vertex: **object-space** offset `(t−t₀)·_ExplodeVelocityOS` — the velocity is converted world→object ONCE on the CPU at stamp time against the frozen entity pose (`PrismExplosion.TriggerExplosion`), because a GPU-side `TransformWorldToObjectDir` read the wrong per-instance inverse under DOTS instancing and skewed the debris directions. `amount = _ExplodeSpeed·(t−t₀)`; `opacity = 1 − (t−t₀)/_ExplodeDuration`. Entity transform never moves after the stamp; **`RenderBounds` are reset to the mesh then expanded at stamp time to cover the whole flight envelope** (`ResetBoundsToMesh` + `ExpandBoundsForClockAnimation` — without this, debris frustum-culls against the unexploded box). Defaults render the rest state (the transparent-prism quirk keeps working unstamped). |
 | `SuctionGraph` | `_SuctionStartTime`, `_SuctionDuration`, `_SuctionDirection` (grow=−1 / implode=+1), `_GrowDelay` (keeps `_Location`) | `progress(t)` computed in-shader; `_Location` stamped once (moving-target exception per §1 if retained). |
 
 Implementation constraints (verified by the capability audit):
@@ -632,10 +632,17 @@ the prompter's direction.** `ClockAnimationEnabled` is constant `true`; the form
   accounting is preserved exactly (the created event captures its volume before the
   stamp mutates it).
 - **Explosion/implosion (B3)** — `PrismExplosion.TriggerExplosion` stamps
-  `{t₀, speed, MaxDuration, velocity}` and shows the entity immediately (the stamp IS
-  the correct initial state — no unanimated-mesh flash to hide); the entity transform
-  holds the initial pose forever; ONE scheduled `OnEffectComplete` returns it to the
-  pool. `PrismImplosion.StartImplosion/StartGrow` stamp `{t₀, duration, ±direction,
+  `{t₀, speed, MaxDuration, velocity, velocityOS}` and shows the entity immediately
+  (the stamp IS the correct initial state — no unanimated-mesh flash to hide); the
+  entity transform holds the initial pose forever; ONE scheduled `OnEffectComplete`
+  returns it to the pool. Two playtest-found fixes are part of the contract: the
+  flight velocity is converted world→object **once on the CPU at the stamp**
+  (`_ExplodeVelocityOS` — a GPU-side `TransformWorldToObjectDir` reads the wrong
+  per-instance inverse under DOTS instancing and skews debris directions), and
+  `RenderBounds` are **reset to the mesh then expanded to the full flight envelope**
+  at the stamp (`ResetBoundsToMesh` + `ExpandBoundsForClockAnimation` — the entity
+  matrix never moves, so unexpanded bounds frustum-cull the debris against the
+  unexploded box; reset-before-expand keeps pooled reuse from compounding). `PrismImplosion.StartImplosion/StartGrow` stamp `{t₀, duration, ±direction,
   growDelay, location}`; the **moving convergence target stays live** as the §1
   documented exception — `PrismEffectsManager.clockConvergenceTracking` refreshes
   `_Location` only (one float3 per frame per implosion, self-dropping when the target
@@ -674,11 +681,16 @@ spawn/transition/effect snaps and logs; do all three graphs):**
    existing `_BrightColor` / `_DarkColor` / `_Spread` property nodes; route its
    outputs everywhere those properties fed before.
 2. **ExplodingBlockGraph** — add `_ExplodeStartTime` / `_ExplodeSpeed` /
-   `_ExplodeDuration` (Float 0, Hybrid Per Instance). Custom Function
-   `PrismExplosionClock` with `LegacyAmount` ← `_ExplosionAmount` property and
+   `_ExplodeDuration` (Float 0) and `_ExplodeVelocityOS` (Vector3 0,0,0), all Hybrid
+   Per Instance. Custom Function `PrismExplosionClock` with `VelocityOS` ←
+   `_ExplodeVelocityOS`, `LegacyAmount` ← `_ExplosionAmount` property and
    `LegacyOpacity` ← `_Opacity` property; its `Amount`/`Opacity` outputs replace the
-   direct property uses; `WorldOffset` adds to the world-space vertex position
-   (Transform node if the graph computes in object space).
+   direct property uses; `ObjectOffset` **adds directly to the object-space vertex
+   position** (no Transform node — the velocity arrives already object-space,
+   converted once on the CPU at stamp time; a GPU-side world→object conversion
+   reads the wrong per-instance inverse under DOTS instancing). The stamp site also
+   resets + expands `RenderBounds` to the flight envelope
+   (`PrismRenderService.ResetBoundsToMesh` / `ExpandBoundsForClockAnimation`).
 3. **SuctionGraph** — add `_SuctionStartTime` / `_SuctionDuration` /
    `_SuctionGrowDelay` (Float 0) and `_SuctionDirection` (Float 1), Hybrid Per
    Instance. Custom Function `PrismSuctionClock` with `LegacyState` ← `_State`

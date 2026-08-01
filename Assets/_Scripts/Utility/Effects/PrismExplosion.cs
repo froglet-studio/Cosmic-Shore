@@ -225,10 +225,26 @@ namespace CosmicShore.Utility
                     !_renderer.sharedMaterial.HasProperty(ExplodeStartTimeId))
                     PrismClockDiagnostics.WarnUnwiredMaterial(_renderer.sharedMaterial, "_ExplodeStartTime", this);
 
+                // Flight velocity in OBJECT space, converted once here against the
+                // pose the entity is frozen at — the shader does offset = v·t with
+                // no per-instance matrix reads (exact direction by construction).
+                Vector3 objVelocity = transform.InverseTransformVector(velocity);
+                var objVel3 = new Unity.Mathematics.float3(objVelocity.x, objVelocity.y, objVelocity.z);
+
                 PrismRenderService.StampExplosionClock(in RenderHandle,
                     PrismClock.Now, speed, MaxDuration,
-                    new Unity.Mathematics.float3(velocity.x, velocity.y, velocity.z));
+                    new Unity.Mathematics.float3(velocity.x, velocity.y, velocity.z),
+                    in objVel3);
                 SyncRenderTransform();
+
+                // Culling envelope: bounds must cover the WHOLE deterministic flight
+                // (the entity matrix never moves), else debris culls against the
+                // unexploded box. Reset first — pooled reuse must not compound.
+                if (_meshFilter != null)
+                    PrismRenderService.ResetBoundsToMesh(in RenderHandle, _meshFilter.sharedMesh);
+                var objDisp = objVel3 * MaxDuration;
+                float pad = 4f + 0.25f * Unity.Mathematics.math.length(objDisp);
+                PrismRenderService.ExpandBoundsForClockAnimation(in RenderHandle, in objDisp, pad);
                 if (_hasPendingTeamColors)
                 {
                     PrismRenderService.SetTeamColors(in RenderHandle,

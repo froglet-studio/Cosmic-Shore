@@ -96,29 +96,48 @@ Done and committed: `PrismExplosionClock` CF (Amount/Opacity re-routes + object-
 space flight offset added into the vertex chain) + the `PrismGrowScale` cluster
 (transparent live prisms bloom).
 
-**Test: collide your vessel with trail prisms** — debris flies, shatters, and
-fades smoothly on the GPU clock. Transparent prisms bloom on spawn and render
-correctly at rest. Known pending: COLOR transitions on currently-transparent
-prisms (they bind one-shot; a handful of one-time [PrismClock] _ColorStartTime
-errors on the transparent materials are expected until the C-phase adds the
-color cluster to this graph).
+**Fix round (after first playtest — wrong debris direction + wrong culling):**
+
+- **Direction**: the flight velocity is now converted world→object ONCE on the
+  CPU at stamp time (`transform.InverseTransformVector` against the frozen
+  entity pose) and shipped as the new per-instance **`_ExplodeVelocityOS`**
+  property; the shader does a pure `VelocityOS · t` with zero matrix math. The
+  earlier GPU-side `TransformWorldToObjectDir` read the wrong per-instance
+  inverse under DOTS instancing and skewed the directions. (`_Velocity` remains
+  world-space — it is still the legacy shatter-spin axis.)
+- **Culling**: `RenderBounds` are reset to the mesh's authored bounds then
+  expanded one-shot at stamp time to the whole flight envelope
+  (`PrismRenderService.ResetBoundsToMesh` + `ExpandBoundsForClockAnimation`) —
+  the entity matrix never moves, so without this the debris frustum-culled
+  against the unexploded box (visible faces vanished / off-screen faces drew).
+  Reset-before-expand keeps pooled reuse from compounding envelopes.
+
+**Retest: collide your vessel with trail prisms** — debris flies in the impact
+direction, shatters, and fades smoothly on the GPU clock, and stays visible
+across the whole flight even when its spawn point leaves the screen. Transparent
+prisms bloom on spawn and render correctly at rest. Known pending: COLOR
+transitions on currently-transparent prisms (they bind one-shot; a handful of
+one-time [PrismClock] _ColorStartTime errors on the transparent materials are
+expected until the C-phase adds the color cluster to this graph).
 
 <details><summary>Manual steps (reference only — already done)</summary>
 
 - [ ] Custom Function **`PrismExplosionClock`** — Inputs: `Clock` Float ·
-      `StartTime` Float · `Speed` Float · `Duration` Float · `Velocity` Vector3 ·
+      `StartTime` Float · `Speed` Float · `Duration` Float · `VelocityOS` Vector3 ·
       `LegacyAmount` Float · `LegacyOpacity` Float. Outputs: `Amount` Float ·
-      `Opacity` Float · `WorldOffset` Vector3.
+      `Opacity` Float · `ObjectOffset` Vector3.
 - [ ] Wire: the `PrismClock` property node → `Clock`; `ExplodeStartTime`/`ExplodeSpeed`/`ExplodeDuration`
-      → `StartTime`/`Speed`/`Duration`; existing `Velocity` property → `Velocity`;
+      → `StartTime`/`Speed`/`Duration`; the `ExplodeVelocityOS` property →
+      `VelocityOS` (object-space, converted on the CPU at stamp — NOT the
+      world-space `Velocity`, which stays on shatter-spin duty);
       existing `ExplosionAmount` property → `LegacyAmount`; existing `Opacity`
       property → `LegacyOpacity` (the Legacy inputs keep `TransparentPrismMaterial`
       — a LIVE prism material resting at `_ExplosionAmount = 0` — rendering
       correctly).
 - [ ] Re-route: `Amount` replaces downstream `_ExplosionAmount` uses; `Opacity`
       replaces `_Opacity` uses.
-- [ ] `WorldOffset` is WORLD-space: Transform node (World → Object, Type
-      **Direction**) → **Add** to the object-space vertex position → Vertex ▸ Position.
+- [ ] `ObjectOffset` is OBJECT-space: **Add** it to the object-space vertex
+      position → Vertex ▸ Position. No Transform node.
 - [ ] **Transparent live prisms bloom**: also add the `PrismGrowScale` cluster here
       (grow properties + `PrismClock` already exist on this graph's Blackboard).
       Tip: copy-paste the Custom Function + Multiply nodes from BlockGraph, then
@@ -146,6 +165,10 @@ Open `Assets/_Graphics/Materials/Graphs/PrismGraphs/SuctionGraph.shadergraph`.
       `_State` use. (`_Location` stays untouched — live moving-target exception.)
 - [ ] Save → Validate → play: fauna grazing sucks prisms into the moving creature
       smoothly.
+- [ ] Bounds: suction displaces vertices toward `_Location`, so the stamp sites
+      (`PrismImplosion.StartImplosion`/`StartGrow`) get the same treatment as
+      explosions — `ResetBoundsToMesh` + `ExpandBoundsForClockAnimation` toward the
+      convergence point (same class of culling bug otherwise).
 
 ## Phase 5 — Full verification (§4.4 protocol)
 
@@ -192,5 +215,7 @@ pooling · B4 GPU shield morphs.
 | Everything magenta after a graph edit | Graph failed to compile | Undo / `git checkout` the `.shadergraph`, redo; Auto-Wire self-rolls-back |
 | Growth smooth but colors pop | Phase 2 outputs not re-routed | Finish the `Bright`/`Dark`/`Spread` re-route |
 | Transparent prisms snap on spawn | `PrismGrowScale` cluster missing on ExplodingBlockGraph | Phase 3 last step |
+| Debris flies in the wrong direction | Shader doing its own world→object velocity transform | Feed the CF `VelocityOS` from `_ExplodeVelocityOS` (CPU-converted at stamp) — never a Transform node on `_Velocity` |
+| Debris vanishes mid-flight / draws when it shouldn't | `RenderBounds` still the unexploded box | Stamp site must call `ResetBoundsToMesh` + `ExpandBoundsForClockAnimation` (any vertex-displacing clock animation needs this) |
 | `[PrismClock] ... no companion render entity` | Instanced rendering off / no ECS world | `PrismRenderConfig` ▸ Use Instanced Rendering ON |
 | DiagnosticsHUD shows active CPU animators | Something re-engaged a retired manager | Law regression — find the caller; it should not exist |

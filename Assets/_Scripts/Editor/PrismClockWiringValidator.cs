@@ -43,7 +43,7 @@ namespace CosmicShore.Editor
             new GraphSpec
             {
                 GraphName = "ExplodingBlockGraph",
-                RequiredProps = new[] { "_ExplodeStartTime", "_ExplodeSpeed", "_ExplodeDuration" },
+                RequiredProps = new[] { "_ExplodeStartTime", "_ExplodeSpeed", "_ExplodeDuration", "_ExplodeVelocityOS" },
                 // Transparent LIVE prisms rest on this graph — they need the grow trio
                 // here too or their spawn bloom snaps (loudly) while opaque prisms bloom.
                 OptionalProps = new[] { "_GrowStartTime", "_GrowRate", "_GrowStartFrac" },

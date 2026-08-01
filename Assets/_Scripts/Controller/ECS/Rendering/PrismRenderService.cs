@@ -411,6 +411,7 @@ namespace CosmicShore.ECS
                         em.AddComponentData(prototype, new PrismExplodeStartTimeOverride { Value = 0f });
                         em.AddComponentData(prototype, new PrismExplodeSpeedOverride { Value = 0f });
                         em.AddComponentData(prototype, new PrismExplodeDurationOverride { Value = 0f });
+                        em.AddComponentData(prototype, new PrismExplodeVelocityOSOverride { Value = float3.zero });
                         break;
                     case PrismRenderOverrideSet.Implosion:
                         em.AddComponentData(prototype, new PrismSuctionStartTimeOverride { Value = 0f });
@@ -721,9 +722,12 @@ namespace CosmicShore.ECS
 
         /// <summary>Stamps an explosion's flight: offset/amount/opacity become pure
         /// functions of the clock. The entity transform must already hold the debris'
-        /// initial pose — it never moves again.</summary>
+        /// initial pose — it never moves again. velocity is WORLD-space (also the
+        /// legacy shatter-spin axis); velocityObjectSpace is the SAME velocity
+        /// converted on the CPU against that frozen pose — the shader flies the
+        /// debris with zero matrix math (offset = VelocityOS · t).</summary>
         public static bool StampExplosionClock(in PrismRenderHandle handle, float startTime, float speed, float duration,
-            in float3 velocity)
+            in float3 velocity, in float3 velocityObjectSpace)
         {
             if (!ClockAnimationEnabled || !IsUsable(in handle)) return false;
             var em = _world.EntityManager;
@@ -732,7 +736,45 @@ namespace CosmicShore.ECS
             em.SetComponentData(handle.Entity, new PrismExplodeSpeedOverride { Value = speed });
             em.SetComponentData(handle.Entity, new PrismExplodeDurationOverride { Value = duration });
             em.SetComponentData(handle.Entity, new PrismVelocityOverride { Value = velocity });
+            if (em.HasComponent<PrismExplodeVelocityOSOverride>(handle.Entity))
+                em.SetComponentData(handle.Entity, new PrismExplodeVelocityOSOverride { Value = velocityObjectSpace });
             return true;
+        }
+
+        /// <summary>Restores RenderBounds to the mesh's authored bounds — call before
+        /// re-expanding on a pooled reuse, or the envelopes compound run over run.</summary>
+        public static void ResetBoundsToMesh(in PrismRenderHandle handle, Mesh mesh)
+        {
+            if (mesh == null || !IsUsable(in handle)) return;
+            _world.EntityManager.SetComponentData(handle.Entity, new RenderBounds
+            {
+                Value = new AABB { Center = mesh.bounds.center, Extents = mesh.bounds.extents }
+            });
+        }
+
+        /// <summary>
+        /// One-shot RenderBounds expansion at stamp time so frustum culling covers a
+        /// vertex-shader animation's WHOLE deterministic envelope (the entity matrix
+        /// never moves; without this, debris culls against the unexploded box —
+        /// visible faces vanish when the spawn point leaves the frustum and vice
+        /// versa). objectDisplacement is the local-space end-of-flight offset;
+        /// padding inflates for shatter spread. Conservative overdraw is the
+        /// accepted cost — bounds are gameplay-free.
+        /// </summary>
+        public static void ExpandBoundsForClockAnimation(in PrismRenderHandle handle,
+            in float3 objectDisplacement, float padding)
+        {
+            if (!IsUsable(in handle)) return;
+            var em = _world.EntityManager;
+            var rb = em.GetComponentData<RenderBounds>(handle.Entity);
+            float3 c0 = rb.Value.Center, e0 = rb.Value.Extents;
+            float3 half = objectDisplacement * 0.5f;
+            rb.Value = new AABB
+            {
+                Center = c0 + half,
+                Extents = e0 + math.abs(half) + new float3(math.max(0f, padding)),
+            };
+            em.SetComponentData(handle.Entity, rb);
         }
 
         /// <summary>Stamps a suction/implosion (direction >= 0, progress 0→1) or reverse
