@@ -244,6 +244,17 @@ namespace CosmicShore.Gameplay
         /// leave deliberately does NOT mark us Disconnected - see HandleAppPaused.
         /// </summary>
         private bool   _leftPresenceForBackground;
+
+        /// <summary>
+        /// Consecutive lobby reads a player must be absent from before we drop
+        /// their online row. Mirrors
+        /// <c>PartyMemberService.MISSED_READS_BEFORE_REMOVAL</c>; see the comment
+        /// at the removal loop in <see cref="RefreshOnlinePlayersDiff"/>.
+        /// </summary>
+        private const int ONLINE_MISSED_READS_BEFORE_REMOVAL = 2;
+
+        /// <summary>Absent-read strike counts keyed by PlayerId, cleared on sight.</summary>
+        private readonly Dictionary<string, int> _onlineMissedReads = new();
         private float  _rateLimitBackoffUntil;
         private float  _nextForcedRefreshAllowed;
         private float  _nextConvergeAllowed;
@@ -1693,10 +1704,32 @@ namespace CosmicShore.Gameplay
                 }
             }
 
+            // Removal needs corroboration. A lobby read can come back short
+            // without anyone having left - the UGS stale-cache defect
+            // (Docs/PresenceSystem/BUGS.md B1/B6), or a ConvergeToCanonicalAsync
+            // migration swapping _activeLobby mid-cycle so we diff against a
+            // lobby we have only just joined. Acting on a single short read
+            // emptied the whole online panel and then refilled it on the next
+            // tick, which is precisely the "rows flicker / wrong info" symptom.
+            // A genuine graceful leave is not delayed by this: it arrives as an
+            // ISession.PlayerLeaving push, which drives an immediate re-read.
             for (int i = connectionData.OnlinePlayers.Count - 1; i >= 0; i--)
             {
-                if (!freshPlayerIds.Contains(connectionData.OnlinePlayers[i].PlayerId))
-                    connectionData.OnlinePlayers.RemoveAt(i);
+                string id = connectionData.OnlinePlayers[i].PlayerId;
+                if (freshPlayerIds.Contains(id))
+                {
+                    _onlineMissedReads.Remove(id);
+                    continue;
+                }
+
+                _onlineMissedReads.TryGetValue(id, out int misses);
+                misses++;
+                _onlineMissedReads[id] = misses;
+
+                if (misses < ONLINE_MISSED_READS_BEFORE_REMOVAL) continue;
+
+                _onlineMissedReads.Remove(id);
+                connectionData.OnlinePlayers.RemoveAt(i);
             }
 
             // Departed players with outstanding invites - free the slot now.
@@ -1705,17 +1738,32 @@ namespace CosmicShore.Gameplay
             List<string> departed = null;
             foreach (var targetId in _inviteService.OutgoingTargets)
             {
-                if (!freshPlayerIds.Contains(targetId))
-                {
-                    departed ??= new List<string>();
-                    departed.Add(targetId);
-                }
+                if (freshPlayerIds.Contains(targetId)) continue;
+
+                // Same corroboration rule, expressed via the roster rather than
+                // the strike counter: the loop above DELETES a player's counter
+                // entry at the moment it evicts them, so reading the counter here
+                // would find nothing precisely when the player has genuinely
+                // gone. "Absent from this read AND no longer in OnlinePlayers"
+                // means the strikes were served.
+                if (ContainsOnlinePlayer(targetId)) continue;
+
+                departed ??= new List<string>();
+                departed.Add(targetId);
             }
             if (departed != null)
             {
                 foreach (var id in departed)
                     _ = ClearOutgoingInviteIfPresentAsync(id, "presence-leave");
             }
+        }
+
+        private bool ContainsOnlinePlayer(string playerId)
+        {
+            if (connectionData.OnlinePlayers == null) return false;
+            foreach (var p in connectionData.OnlinePlayers)
+                if (p.PlayerId == playerId) return true;
+            return false;
         }
 
         private PartyPlayerData ReadOnlinePlayerData(IReadOnlyPlayer p)

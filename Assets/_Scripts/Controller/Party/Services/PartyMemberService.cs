@@ -65,6 +65,38 @@ namespace CosmicShore.Gameplay
         private readonly HostConnectionDataSO _connectionData;
         private readonly SoapPartyEventBus    _eventBus;
 
+        /// <summary>
+        /// Consecutive session reads in which a member must be absent before we
+        /// treat them as gone.
+        ///
+        /// <para>
+        /// One absence is not evidence of departure. The session read can come
+        /// back short for reasons that have nothing to do with the member: the
+        /// UGS SDK's documented stale-cache defect
+        /// (<c>Docs/PresenceSystem/BUGS.md</c> B1/B6), or a refresh landing
+        /// mid-mutation. Acting on a single short read raised
+        /// <c>OnPartyMemberLeft</c>, which flips Friends presence and forces a
+        /// full <c>FriendsListPanel</c> rebuild - so a transient blip presented
+        /// as a party member vanishing and then reappearing.
+        /// </para>
+        ///
+        /// <para>
+        /// The cost of waiting is one extra refresh interval on a genuine
+        /// departure, and only for the cases with no push signal - an explicit
+        /// leave arrives via <c>ISession.PlayerLeaving</c> and the host's
+        /// <c>OnClientDisconnect</c> backstop routes through
+        /// <c>ReconcilePartyMembersNow</c>, neither of which waits on this.
+        /// </para>
+        /// </summary>
+        private const int MISSED_READS_BEFORE_REMOVAL = 2;
+
+        /// <summary>
+        /// Consecutive absent-read counts keyed by PlayerId. Cleared the moment a
+        /// member is seen again, so an intermittent connection cannot accumulate
+        /// strikes across unrelated blips.
+        /// </summary>
+        private readonly Dictionary<string, int> _missedReads = new();
+
         // ─────────────────────────────────────────────────────────────────────
         // Construction
         // ─────────────────────────────────────────────────────────────────────
@@ -166,18 +198,37 @@ namespace CosmicShore.Gameplay
                 }
             }
 
-            // Remove players that are in the SOAP list but no longer in the session.
+            // Remove players that are in the SOAP list but no longer in the
+            // session - but only after MISSED_READS_BEFORE_REMOVAL consecutive
+            // absences. See the field doc on _missedReads for why one absence is
+            // not enough evidence.
             for (int i = _connectionData.PartyMembers.Count - 1; i >= 0; i--)
             {
                 var member = _connectionData.PartyMembers[i];
                 if (member.PlayerId == localPlayerId) continue;
 
-                if (!sessionPlayerIds.Contains(member.PlayerId))
+                if (sessionPlayerIds.Contains(member.PlayerId))
                 {
-                    _connectionData.PartyMembers.RemoveAt(i);
-                    _eventBus.RaisePartyMemberLeft(member);
-                    Debug.Log($"[PartyMemberService] Member left: {member.DisplayName} ({member.PlayerId})");
+                    _missedReads.Remove(member.PlayerId);
+                    continue;
                 }
+
+                _missedReads.TryGetValue(member.PlayerId, out int misses);
+                misses++;
+                _missedReads[member.PlayerId] = misses;
+
+                if (misses < MISSED_READS_BEFORE_REMOVAL)
+                {
+                    Debug.Log(
+                        $"[PartyMemberService] Member {member.DisplayName} ({member.PlayerId}) absent from " +
+                        $"session read {misses}/{MISSED_READS_BEFORE_REMOVAL} - holding the slot.");
+                    continue;
+                }
+
+                _missedReads.Remove(member.PlayerId);
+                _connectionData.PartyMembers.RemoveAt(i);
+                _eventBus.RaisePartyMemberLeft(member);
+                Debug.Log($"[PartyMemberService] Member left: {member.DisplayName} ({member.PlayerId})");
             }
 
             return joinedPlayerIds;
