@@ -4,6 +4,12 @@ Parking lot for minor improvements that don't rise to a refactor
 commit or a bug. Each entry has enough context that it can be picked
 up cold.
 
+> **Read `PRESENCE_SYNC_PLAN.md` before picking anything up here.** It
+> folds P2/P3/P6 into its commit order and **rejects P7 as written** —
+> gating the roster diff on panel visibility manufactures the exact
+> staleness bug we're fixing (`ArcadeLobbyList` never receives an enable
+> event at all, because arcade modals hide by CanvasGroup).
+
 ## Code health
 
 ### TODO-P1. Document `BuildLocalPlayerProperties` `invite_payloads` reset
@@ -88,13 +94,24 @@ spinner / text label during `Reconnecting`.
 
 ## Performance / polish
 
-### TODO-P7. Reduce online-player panel scan frequency
+### TODO-P7. Reduce online-player panel scan frequency — **WON'T DO**
 
-**Why.** `RefreshOnlinePlayersDiff` runs on every refresh tick (~3-5
-s), recomputing the diff for the panel even when the panel is closed.
+**Original why.** `RefreshOnlinePlayersDiff` runs on every refresh tick,
+recomputing the diff even when the panel is closed. Proposed action was
+to gate the diff on panel visibility.
 
-**Touchpoint.** Gate the diff computation on whether the panel is
-visible, or compute lazily on next panel open.
+**Rejected.** Landing this manufactures the staleness bug it looks like
+it would help:
 
-**Risk.** Low; doesn't affect the underlying lobby state, only the
-SOAP list update frequency.
+- The diff is not the cost. `RefreshAsync` also carries invite
+  detection, the acceptance handshake, the joined-member scan and the
+  presence publish — `INVITE_ENHANCEMENTS.md:386` already warns "Do NOT
+  stop the poll when closed."
+- `ArcadeLobbyList` has no usable visibility signal today: arcade modals
+  hide via `ModalWindowManager.SetCanvasGroupVisible`, never
+  `SetActive(false)`, so its `OnEnable` fires once per **scene load**,
+  not per open. Gating on visibility would freeze it permanently.
+
+**Superseded by** the push channel in `PRESENCE_SYNC_PLAN.md` § 4.4,
+which drops steady-state reads to ~0.1/s and makes the diff event-driven
+rather than periodic — removing the cost this item was chasing.

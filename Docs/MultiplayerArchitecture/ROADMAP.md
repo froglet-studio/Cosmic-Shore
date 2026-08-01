@@ -38,7 +38,7 @@ Companion to the PDF dossier in `Docs/MultiplayerArchitecture/`
 - [ ] **Prove 3–4-player party reliability (close B5).** The second sequential joiner fails today, so parties beyond two aren't dependable. *Acceptance:* 4-VP concurrent-invite MPPM (exit criterion 8) green repeatably. *Ref:* `../PartySystem/BUGS.md` B5.
 
 ### Med–High
-- [ ] **Push-based invites / presence.** Replace property *polling* with lobby subscription events to cut invite latency and the SDK stale-index churn that surfaces as B1/B6. *Acceptance:* invite delivery is event-driven; B1/B6 churn drops materially. *Ref:* `../PresenceSystem/BUGS.md` B1, B6.
+- [ ] **Push-based invites / presence.** Replace property *polling* with lobby subscription events to cut invite latency and the SDK stale-index churn that surfaces as B1/B6. *Acceptance:* invite delivery is event-driven; B1/B6 churn drops materially. *Ref:* `../PresenceSystem/BUGS.md` B1, B6. **PLANNED IN DETAIL — `../PresenceSystem/PRESENCE_SYNC_PLAN.md`** (root causes, `PresenceStateMachine` sibling design, 8-commit landing order, rate-limit budget, PS-1..PS-8 acceptance). The presence lobby is already an `ISession`; the repo already consumes `ISession.PlayerLeaving`/`Deleted` on the *party* session — it was simply never subscribed on the presence lobby.
 
 ### Med
 - [ ] **Scale & cost story.** Reap idle Relay allocations; shard or query-based discovery beyond the single 100-player `PRESENCE_LOBBY`; add Relay/lobby cost telemetry. *Acceptance:* a documented plan + dashboards for >few-hundred concurrent users.

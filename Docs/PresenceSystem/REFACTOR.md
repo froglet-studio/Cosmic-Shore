@@ -9,6 +9,11 @@ is the remaining presence-side refactor target.
 > `../NetworkDiagnostics/ARCHITECTURE.md` overlay makes any regression
 > interpretable.
 
+> **Sequenced in `PRESENCE_SYNC_PLAN.md`.** The `LobbyMembershipMonitor`
+> extraction below is Commit 4 of that plan, and its "wait for NetDiag
+> data" prerequisite is Commit 1 (the two silent catch branches that make
+> the data unobtainable today).
+
 ## Refactor — `PresenceLobbyService`
 
 **Why.** Lobby join/refresh/leave logic, including the false-positive

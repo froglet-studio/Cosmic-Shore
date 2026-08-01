@@ -28,6 +28,11 @@ Docs/
 │
 ├── PresenceSystem/              ← the lobby-only discovery layer
 │   ├── ARCHITECTURE.md          locked design, ForceReset semantics
+│   ├── PRESENCE_SYNC_PLAN.md    ACTIVE PLAN: push-based presence + a
+│   │                            PresenceStateMachine sibling. Root causes of
+│   │                            stale online / party lists + wrong profile
+│   │                            icons, one deduplicated backlog, 8-commit
+│   │                            landing order, what NOT to do
 │   ├── REFACTOR.md              backlog for PresenceLobbyService
 │   ├── BUGS.md                  open bugs (B1, B4, B6)
 │   ├── TESTS.md                 manual procedures (P1-P6)
@@ -77,6 +82,7 @@ session-scoped findings that benefit from a timeline view.
 | Understand the party system | `PartySystem/ARCHITECTURE.md` |
 | Understand presence vs party | `PresenceSystem/ARCHITECTURE.md` § "Why it's separate from the party session" |
 | See known issues + their status | `PartySystem/BUGS.md` + `PresenceSystem/BUGS.md` |
+| Fix stale/wrong online lists, party slots, or profile icons | `PresenceSystem/PRESENCE_SYNC_PLAN.md` |
 | See what we're refactoring next | `PartySystem/REFACTOR.md` § "Sequencing" |
 | See the next multiplayer TODOs / big-picture roadmap | `MultiplayerArchitecture/ROADMAP.md` |
 | Run the manual smoke / stress tests | `PartySystem/TESTS.md` § "Smoke gate" |
