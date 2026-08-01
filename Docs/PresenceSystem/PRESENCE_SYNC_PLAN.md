@@ -397,7 +397,7 @@ Today's worst case is over budget (RC-13). After: **~0.1 reads/s steady state**,
 → 1. That headroom is what makes the boost window unnecessary and stops the
 `refreshIntervalSeconds * 2` blackout (`:1187`) from being a routine event.
 
-**Budget-rejected: a per-player `lastSeen` heartbeat property.** 100 members × 1 write / 15 s ≈ 6.7
+**Budget-rejected: a per-player `lastSeen` heartbeat property.** (Now costed in full in `LIVENESS_COST_ANALYSIS.md` and formally closed as `TODOS.md` TODO-P8 — the decisive figure is not the write budget guessed at below but the **10-player-data-value hard cap**, of which we already use 9.) 100 members × 1 write / 15 s ≈ 6.7
 `UpdatePlayer`/s fanned to 100 subscribers — precisely the delta churn that *produces* the B1/B6 SDK
 stale-index defect. Do not add it.
 
@@ -783,7 +783,7 @@ New acceptance criteria for this work:
   `INVITE_ENHANCEMENTS.md:386` already warns "Do NOT stop the poll when closed" — invite detection,
   member sync, the accept handshake and the joined-member scan all ride the same `RefreshAsync`.
   **Close as won't-do**; the push channel supersedes its motivation.
-- **A per-player `lastSeen` heartbeat** — rejected on budget, see § 4.5.
+- **A per-player `lastSeen` heartbeat** — rejected; full costing in `LIVENESS_COST_ANALYSIS.md`, closed as TODO-P8.
 - **Polling below 1 s.** `GetLobby` is 1 req/s; `BOOSTED_INTERVAL_SECONDS = 0.75f` already breaches
   it. Commit 2 corrects it *upward*.
 - **Broadening `IsBenignSdkStaleIndexError`.** It already swallows any `SessionException` with

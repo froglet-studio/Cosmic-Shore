@@ -51,6 +51,37 @@ across the wall-clock window.
 **Risk.** Low; jitter is additive, doesn't change median cadence
 materially.
 
+## Liveness
+
+### TODO-P8. Do NOT add a presence heartbeat — costed and rejected
+
+Costed in full in `LIVENESS_COST_ANALYSIS.md`. Summary of why it is closed:
+
+- **We are at 9 of the 10 player-data-values cap** (a hard UGS limit). A
+  `lastSeen` key spends the last slot on a keepalive.
+- To beat the ~30 s reap meaningfully the interval must be ~2 s; at a
+  comfortable 10 s the threshold lands at ~25 s, i.e. no gain.
+- At 2 s it breaches the read cap **even at N=4** as the code stands, and
+  sustains exactly the `LobbyPatcher` delta churn behind B1/B6.
+- The planned private friend list makes it moot: UGS Friends presence is
+  server-tracked and push-based, costs no property slots, and fans out per
+  friend rather than O(N²) over all 100 lobby members.
+
+### TODO-P9. Re-diff from the in-memory roster instead of re-fetching on push
+
+**Why.** `HostConnectionService.Update` drains the push flag by calling
+`RefreshAsync()`, which issues a `GetLobby`. The SDK has already applied the
+delta locally before the callback fires (Unity documents `PlayerJoined` as
+firing "right after the session gets updated", and `LobbyPatcher` exists
+precisely to patch local state from deltas), so the fetch is redundant.
+
+**Value.** Removes one `GetLobby` per inbound delta per client — the dominant
+read cost at any lobby size — and is what makes relaxing the safety poll from
+1.5 s to 10 s safe.
+
+**Introduced by** `8a146795`, which routed push through the existing
+poll-shaped refresh because it was the smallest diff. Correct, but not cheap.
+
 ## Diagnostics
 
 ### TODO-P4. Document `ConvergeToCanonicalAsync` race-detect semantics

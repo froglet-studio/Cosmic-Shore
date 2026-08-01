@@ -28,6 +28,10 @@ Docs/
 │
 ├── PresenceSystem/              ← the lobby-only discovery layer
 │   ├── ARCHITECTURE.md          locked design, ForceReset semantics
+│   ├── LIVENESS_COST_ANALYSIS.md  why there is no presence heartbeat:
+│   │                            the 10-player-data-value cap (9 used), the
+│   │                            interval-vs-latency math, O(N²) fanout, and
+│   │                            why a private friend list moots the question
 │   ├── PRESENCE_SYNC_PLAN.md    ACTIVE PLAN: push-based presence + a
 │   │                            PresenceStateMachine sibling. Root causes of
 │   │                            stale online / party lists + wrong profile
