@@ -40,8 +40,12 @@ namespace CosmicShore.UI
             TicketBalance.text = CatalogManager.Instance.GetDailyChallengeTicketBalance().ToString();
         }
 
-        void Update()
+        protected override void Update()
         {
+            // Was a hiding 'void Update()', which silently suppressed the base modal's
+            // gamepad-B close handling for this modal only.
+            base.Update();
+
             if (GameMode == GameModes.Random)
                 AssignGameMode();
 
