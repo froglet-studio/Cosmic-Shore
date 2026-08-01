@@ -75,7 +75,7 @@ namespace CosmicShore.Gameplay
         // Private state
         // ─────────────────────────────────────────────────────────────────────
 
-        private readonly float _defaultInterval;
+        private float _defaultInterval;
         private float _timer;
         private float _boostedUntil;  // unscaled time; 0 = not boosted
 
@@ -98,6 +98,26 @@ namespace CosmicShore.Gameplay
         // ─────────────────────────────────────────────────────────────────────
         // Public API
         // ─────────────────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Normal (non-boosted) refresh interval in seconds.
+        ///
+        /// <para>
+        /// Settable because this service is DI-constructed by a factory that has
+        /// no access to the owning MonoBehaviour's serialized configuration.
+        /// <see cref="HostConnectionService"/> assigns its inspector value here in
+        /// <c>Start</c>. Before that, the factory's constructor argument and the
+        /// inspector field were two independent numbers that had silently drifted
+        /// apart - the factory passed a hardcoded 1.5 while the shipped prefab
+        /// said 3, so the field named "how often to refresh the online player
+        /// list" had no effect on how often the online player list refreshed.
+        /// </para>
+        /// </summary>
+        public float DefaultInterval
+        {
+            get => _defaultInterval;
+            set => _defaultInterval = value;
+        }
 
         /// <summary>
         /// True while the scheduler is in boosted mode (a recent <see cref="Boost"/>

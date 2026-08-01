@@ -405,6 +405,14 @@ namespace CosmicShore.Gameplay
 
             authenticationDataVariable.Value.OnSignedIn.OnRaised += HandleSignedInEvent;
 
+            // The scheduler is DI-constructed by a factory with no access to this
+            // component's serialized config, so it starts on the factory's
+            // placeholder interval. Hand it the real inspector value here - until
+            // this line existed, refreshIntervalSeconds did not affect the refresh
+            // rate at all (the factory's hardcoded 1.5f won, while the shipped
+            // prefab said 3).
+            _scheduler.DefaultInterval = refreshIntervalSeconds;
+
             // State-preserving lobby rejoin (B4): every lobby (re)join - initial,
             // reconnect, and the periodic converge migration - publishes the LIVE
             // stateful property values instead of wiping them to empty. HCS stays

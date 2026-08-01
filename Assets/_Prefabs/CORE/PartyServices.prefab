@@ -51,7 +51,7 @@ MonoBehaviour:
     type: 2}
   connectionData: {fileID: 11400000, guid: 69a7bf449c11416dac2d81ebd3ff61f5, type: 2}
   presenceLobbyMaxPlayers: 100
-  refreshIntervalSeconds: 3
+  refreshIntervalSeconds: 1.5
 --- !u!114 &2287010195568088798
 MonoBehaviour:
   m_ObjectHideFlags: 0

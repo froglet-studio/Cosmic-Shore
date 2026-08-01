@@ -459,7 +459,12 @@ namespace CosmicShore.Core
                 resolution: Resolution.Lazy
             );
 
-            // 1.5f matches the HCS SerializeField default (refreshIntervalSeconds).
+            // Placeholder interval only - HostConnectionService.Start overwrites it
+            // with its serialized refreshIntervalSeconds, which is the real knob.
+            // This factory cannot read that value (no component reference here), so
+            // it must not be treated as the tuning point: a value set here and a
+            // value set on the prefab will drift, and for a long time they did -
+            // the prefab said 3, this said 1.5, and 1.5 silently won.
             builder.RegisterFactory(
                 _ => new LobbyRefreshScheduler(1.5f),
                 lifetime: Lifetime.Singleton,
