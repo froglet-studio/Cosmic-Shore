@@ -766,6 +766,12 @@ Phase D — lock-in:
 
 ## 6. Handoff — the in-editor gate (REQUIRED, do this next)
 
+> **The step-by-step, self-verifying checklist lives in
+> `Docs/PRISM_CLOCK_WIRING_CHECKLIST.md`** — phases 1–7 with exact clicks, the
+> validator (`Tools > Cosmic Shore > Prism Animation > Validate Clock Wiring`),
+> the play-mode smoke test, and a troubleshooting table. This section is the
+> summary.
+
 **STRICT MODE is live: the clock path is the only animation path, and the graphs
 are not wired yet.** Until this session happens, every prism spawn/transition/
 effect snaps to its end state and the console screams one `[PrismClock]` error per
