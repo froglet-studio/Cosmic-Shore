@@ -1799,6 +1799,103 @@ At any total at most two adjacent colours show (e.g. +8 → 3 blue + 2 white). P
 - **Rolling out to another vessel**: add an `ElementalBarsView` to that vessel's HUD (or run the wirer), then assign it to the vessel's `ElementalBarsController.elementBars`. No code changes.
 - **Performance**: petals render at ~88px — keep `maxTextureSize` small (128). One `Image` per petal (20 total), `raycastTarget` off, event-driven (no `Update`), `SetLevel`/`RefreshBar` early-out when nothing changed, tweens `SetLink`ed and killed + snapped to rest on `OnDisable` for pooled/toggled HUDs.
 
+### Elemental Hull Morphs (the vessel model is an element display)
+
+The vessel's own hull conveys its element levels: vessel models carry **blend shapes on their
+skinned meshes labeled by element name** (`charge` / `mass` / `space` / `time`, case-insensitive —
+authored into the FBX), and `VesselAnimation` (base class, runs on every vessel) discovers them **by
+name** at `Initialize` and glides each between its extremes as the effective element level moves
+through the **[0, 10] progression band** — the deficit band [-5, 0) holds the level-0 silhouette,
+the overcharge band (10, 15] holds the level-10 authored extreme (the same effective level the HUD
+flowers read, so hull and flowers always agree). Transitions are DOTween glides, never snaps —
+continuity of existence applies to the vessel's own body.
+
+- **Single source of feel — `VesselElementalMorphConfigSO`** (`_Scripts/ScriptableObjects/`, asset
+  at `Resources/VesselElementalMorphConfig.asset`): morph duration + ease, plus the pure helpers
+  (`NormalizedMorphWeight`, `TryResolveElement` — both edit-mode tested in
+  `VesselElementalMorphTests`). Spec changes go in the asset, never per-vessel fields.
+- **Opt-in by art, zero wiring.** A vessel morphs the moment its model ships element-labeled shape
+  keys — no per-prefab flags (the old `UseShapeKeys` bool + hardcoded shape indices are retired).
+  Non-element art shapes (jaws, tendrils) are untouched; a name mentioning two elements is ambiguous
+  and ignored. The shape's authored extreme is read from its last frame weight, so 0-100 and custom
+  frame weights both work.
+- **Fleet status**: audit with **Tools > Cosmic Shore > Audit Vessel Elemental Morphs** (asset-only,
+  no play mode, uses the exact runtime discovery). Manta/Termite/Falcon/Shrike (Manta meshes),
+  Sparrow, Serpent, and Squirrel ship labeled shapes; Dolphin/Urchin/Rhino prefabs still wire
+  shape-less test/placeholder meshes and need the rig swap below; Grizzly has no labeled shapes yet.
+- **The Squirrel's FBX is a spliced hybrid of two historical exports — do not re-export over it
+  blindly.** The 2024-10-29 export (`aa5046d41`, "add squirrel with shapekeys") carried
+  `Time/Mass/Space/Charge` but its takes were broken; the 2024-11-15 re-export (`dc2c8ea54`,
+  "fixed squirrel animations") repaired 2,622 of 3,483 bone curves across all 9 takes **and
+  silently dropped all four shape keys** — which also silently killed the elemental morph surface.
+  The shipped file is the fixed export with the four shape-key subtrees grafted back at the FBX
+  binary level (valid because both exports share byte-identical topology and vertex drift ≤2e-6;
+  verified by byte-level structural diff: base objects untouched, takes byte-identical to the fixed
+  export, shapes byte-identical to the shape-key export, and **zero blend-shape animation curves**
+  — the donor's constant-zero residue curves were deliberately left out). Same path + GUID; the
+  mesh fileID is a name-hash shared by both exports, and the `.meta` pins each clip's take name to
+  an explicit internalID matching `SquirrelAnimatorController 1`'s motion references — so the
+  nested prefab instance, the animator clips, and the blend-space puppetry
+  (`MantaAnimationContoller` → Animator floats `Pitch/Yaw/Roll/Throttle`) all keep binding. Any
+  future Squirrel re-export must carry BOTH the fixed takes and the four element shape keys.
+- **Morph weights are written in `LateUpdate`, which is load-bearing.** Unity's Animator writes
+  bound curves every frame during the animation update — after `Update`, where tweens run — so an
+  export that carries even constant-zero blend-shape curves would stomp script-set weights every
+  frame. Tweens therefore drive a cached weight and `VesselAnimation.LateUpdate` is the single
+  writer to the renderers, making the element level authoritative over any stray animation curve on
+  any vessel (the current Squirrel takes are clean, but the defense is deliberate). Do not
+  "simplify" the tween to write the renderer directly.
+- **Animated parts resolve BY NAME too** (`VesselAnimation.ResolvePart`, `ResolveParts()` hook):
+  an authored inspector reference always wins, and an empty one is looked up among the model's
+  descendants by candidate name — current rig bone first, legacy part name as fallback. This is
+  what makes an art swap cheap: the stale references come back null and the rig's bones bind
+  themselves. Unbound parts are reported (`ReportUnresolvedParts`) and degrade to "that limb
+  doesn't move", never a per-frame `NullReferenceException`.
+
+#### The rigged-model swap (Dolphin / Urchin / Rhino)
+
+These three are the fleet's only vessels whose art cannot morph, and it is **not** a wiring
+oversight — their prefabs wire fundamentally different models. `Dolphin_Test.fbx` is 17 separate
+static part meshes, `Urchan_Test.fbx` 14, and Rhino wires `Vessel_Placeholder_1.fbx` (a literal
+placeholder); none carries a single blend shape. Their `*_shapekey_with_animations.fbx` rigs are
+one skinned mesh on an armature **plus** the four element shapes — and each rig was authored FOR
+that vessel's script: the dolphin rig's `jetT/jetm/jetB × .l/.r` + `jaw.u`/`jaw.b` are exactly
+`RiptideAnimation`'s six thrusters and two jaws; the rhino rig's `wing1.*`/`jet.*` are
+`RhinoAnimation`'s wings and engines (its `wing2.*` back wings host colliders, nothing drives them);
+the urchin rig's `gunM.*`/`jetT.*`/`jetB.*` are `UrchinAnimation`'s guns and jets. The three scripts
+name those bones as their primary resolution candidates, so the **code half of the port is done**.
+
+**Rest poses are the reason a rig needs more than a name swap.** Puppetry drives a part *toward* an
+absolute local rotation, which silently assumes it rests at identity — true of part-per-mesh art
+placed by translation alone, false of a rig, where the bone's rest angle is what fans the engines
+out (`wing1.l` rests at ~42°, `jet.l` at ~115°, `gunM.l` at ~90°). So `VesselAnimation` gained
+`CaptureRestRotations` / `RotatePartFromRest` / rest-aware `ResetAnimation`: parts are driven
+**relative to the pose they were authored in**. Identity-rest art is unaffected; rigged art holds
+its shape. Two Dolphin bugs surfaced from the same root and are fixed: `RiptideAnimation` re-homed
+its drift parts onto `Chassis` every non-drifting frame (a no-op on the old art, where they were
+already its children — on the rig it would have permanently flattened the armature onto `fuse` and
+collapsed the six jets onto one point; it now restores each part's **own** captured parent), and its
+`InitialRotations` list was indexed two slots out of step with `animationTransforms`, so each engine
+animated around a neighbour's rest pose. **That second fix changes the Dolphin's current look** — its
+six engine cases rest at 26–169° and were being dragged toward identity.
+
+The prefab half is a **hands-on editor pass**, not an automated one: a `SkinnedMeshRenderer`'s bone
+list, bindposes, bounds and imported mesh IDs are owned by Unity's FBX importer, collider volumes
+were authored against the old silhouettes and must be re-fitted by eye, and every legacy part
+carries its `MeshRenderer` alongside its collider — so moving one onto a bone without retiring its
+renderer welds the placeholder ship to the new skeleton. Run **Tools > Cosmic Shore > Plan Vessel
+Rig Swap** (report only, never writes): it prints, per vessel, which gameplay object belongs on
+which bone, which objects have **no mapped bone** and would go dark when the old model is disabled
+(Rhino's `ForceFieldSkimmer` parents to the legacy root), the rig's element shapes, and the ship-
+geometry re-point. The printed procedure ends by clearing the animation's part fields — leave them
+**empty** so they resolve to bones — and re-running the morph audit.
+- **Seeding**: `VesselAnimation` snaps to live levels at `Initialize` (the live initial emit is
+  `ResourceSystem.Start`), and `ResourceSystem.InitializeElementLevels` now emits
+  `OnElementLevelChange` (deduped) so a mid-session re-seed repaints every consumer — hull morphs,
+  HUD flowers, and ability unlock state alike. Note `SetResourceLevels` currently has **no live
+  caller** (its historical MiniGame turn-reset and Hangar call sites are commented out); the emit
+  future-proofs any revived re-seed path.
+
 ### The Four-Icon Ability Row (LOCKED structure — every vessel HUD)
 
 Every vessel HUD shows **exactly four ability icons in the lower right — one per ability** — and the
