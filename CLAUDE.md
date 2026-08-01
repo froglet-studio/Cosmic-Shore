@@ -1821,8 +1821,21 @@ continuity of existence applies to the vessel's own body.
   frame weights both work.
 - **Fleet status**: audit with **Tools > Cosmic Shore > Audit Vessel Elemental Morphs** (asset-only,
   no play mode, uses the exact runtime discovery). Manta/Termite/Falcon/Shrike (Manta meshes),
-  Sparrow, and Serpent ship labeled shapes; Dolphin/Urchin/Rhino prefabs still wire shape-less
-  test/placeholder meshes and need the rig swap below; Squirrel/Grizzly have no labeled shapes yet.
+  Sparrow, Serpent, and Squirrel ship labeled shapes; Dolphin/Urchin/Rhino prefabs still wire
+  shape-less test/placeholder meshes and need the rig swap below; Grizzly has no labeled shapes yet.
+- **The Squirrel's shapes were recovered from git history.** Its FBX's 2024-10-29 export
+  (`aa5046d41`, "add squirrel with shapekeys") carried `Time/Mass/Space/Charge`; the 2024-11-15
+  re-export (`dc2c8ea54`, "fixed squirrel animations") silently dropped all four while changing
+  **nothing else** — identical 44-node skeleton, identical 20,703-vert base mesh, identical bone
+  curves on all 9 takes (verified curve-by-curve). The shape-key version is restored in place
+  (same path + GUID; mesh/clip fileIDs are name-hashes shared by both exports, so every existing
+  reference — nested prefab instance, `SquirrelAnimatorController 1` clips — keeps binding).
+- **Morph weights are written in `LateUpdate`, which is load-bearing.** The Squirrel's takes carry
+  residual constant-zero blend-shape curves (Blender export residue; single key at 0), and Unity's
+  Animator writes bound curves every frame during the animation update — after `Update`, where
+  tweens run. Tweens therefore drive a cached weight and `VesselAnimation.LateUpdate` is the single
+  writer to the renderers, making the element level authoritative over any stray animation curve on
+  any vessel. Do not "simplify" the tween to write the renderer directly.
 - **Animated parts resolve BY NAME too** (`VesselAnimation.ResolvePart`, `ResolveParts()` hook):
   an authored inspector reference always wins, and an empty one is looked up among the model's
   descendants by candidate name — current rig bone first, legacy part name as fallback. This is

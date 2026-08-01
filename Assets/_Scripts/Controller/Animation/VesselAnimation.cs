@@ -253,6 +253,7 @@ namespace CosmicShore.Gameplay
 
         readonly List<ElementShapeTarget> _elementShapes = new();
         Tween[] _elementMorphTweens = System.Array.Empty<Tween>();
+        float[] _elementShapeWeights = System.Array.Empty<float>();
         VesselElementalMorphConfigSO _morphConfig;
 
         void InitializeElementMorphs()
@@ -262,6 +263,11 @@ namespace CosmicShore.Gameplay
             _elementMorphTweens = _elementShapes.Count > 0
                 ? new Tween[_elementShapes.Count]
                 : System.Array.Empty<Tween>();
+            _elementShapeWeights = _elementShapes.Count > 0
+                ? new float[_elementShapes.Count]
+                : System.Array.Empty<float>();
+            for (int i = 0; i < _elementShapes.Count; i++)
+                _elementShapeWeights[i] = _elementShapes[i].Renderer.GetBlendShapeWeight(_elementShapes[i].ShapeIndex);
             if (_elementShapes.Count == 0) return; // model ships no element shapes - nothing to drive
 
             _morphConfig = VesselElementalMorphConfigSO.LoadDefault();
@@ -279,6 +285,11 @@ namespace CosmicShore.Gameplay
         public virtual void UpdateShapeKey(Element element, int level) =>
             MorphToLevel(element, level, instant: false);
 
+        // Tweens drive the CACHED weight; LateUpdate is the single writer to the renderers. The
+        // Squirrel's authored takes carry residual constant-zero blend-shape curves (Blender
+        // export residue), and Unity's Animator writes bound curves every frame during the
+        // animation update - after Update, where tweens run. Writing in LateUpdate makes the
+        // element level authoritative over any such stray animation curve, on every vessel.
         void MorphToLevel(Element element, int level, bool instant)
         {
             float normalized = VesselElementalMorphConfigSO.NormalizedMorphWeight(level);
@@ -292,18 +303,28 @@ namespace CosmicShore.Gameplay
 
                 if (instant || _morphConfig.morphDuration <= 0f)
                 {
+                    _elementShapeWeights[i] = target;
                     shape.Renderer.SetBlendShapeWeight(shape.ShapeIndex, target);
                     continue;
                 }
 
-                var renderer = shape.Renderer;
-                int shapeIndex = shape.ShapeIndex;
+                int index = i;
                 _elementMorphTweens[i] = DOTween
-                    .To(() => renderer.GetBlendShapeWeight(shapeIndex),
-                        weight => renderer.SetBlendShapeWeight(shapeIndex, weight),
+                    .To(() => _elementShapeWeights[index],
+                        weight => _elementShapeWeights[index] = weight,
                         target, _morphConfig.morphDuration)
                     .SetEase(_morphConfig.morphEase)
-                    .SetLink(renderer.gameObject);
+                    .SetLink(shape.Renderer.gameObject);
+            }
+        }
+
+        protected virtual void LateUpdate()
+        {
+            for (int i = 0; i < _elementShapes.Count; i++)
+            {
+                var shape = _elementShapes[i];
+                if (shape.Renderer)
+                    shape.Renderer.SetBlendShapeWeight(shape.ShapeIndex, _elementShapeWeights[i]);
             }
         }
 
