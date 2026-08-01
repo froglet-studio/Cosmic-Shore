@@ -81,23 +81,14 @@ namespace CosmicShore.UI
             }
         }
 
-        Sprite ResolveAvatarSprite(int avatarId)
-        {
-            if (profileIconList == null || profileIconList.profileIcons == null)
-                return null;
-
-            foreach (var icon in profileIconList.profileIcons)
-            {
-                if (icon.Id == avatarId)
-                    return icon.IconSprite;
-            }
-
-            // Fallback to first icon
-            if (profileIconList.profileIcons.Count > 0)
-                return profileIconList.profileIcons[0].IconSprite;
-
-            return null;
-        }
+        /// <summary>
+        /// Delegates to the one project-wide resolver
+        /// (<see cref="CosmicShore.ScriptableObjects.SO_ProfileIconList.Resolve"/>),
+        /// which falls back to the authored "unknown" placeholder instead of to
+        /// the first real icon.
+        /// </summary>
+        Sprite ResolveAvatarSprite(int avatarId) =>
+            profileIconList ? profileIconList.Resolve(avatarId) : null;
 
         // ----- Username Editing -----
 

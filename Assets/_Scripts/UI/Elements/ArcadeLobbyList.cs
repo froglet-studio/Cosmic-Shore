@@ -460,19 +460,12 @@ namespace CosmicShore.UI
         // Helpers
         // ─────────────────────────────────────────────────────────────────────
 
-        Sprite ResolveAvatar(int avatarId)
-        {
-            if (!profileIcons || profileIcons.profileIcons == null) return null;
-
-            foreach (var icon in profileIcons.profileIcons)
-            {
-                if (icon.Id == avatarId)
-                    return icon.IconSprite;
-            }
-
-            return profileIcons.profileIcons.Count > 0
-                ? profileIcons.profileIcons[0].IconSprite
-                : null;
-        }
+        /// <summary>
+        /// Delegates to the one project-wide resolver. The local scan this
+        /// replaced fell back to profileIcons[0] - i.e. rendered every
+        /// unresolved avatar as authored icon #1.
+        /// </summary>
+        Sprite ResolveAvatar(int avatarId) =>
+            profileIcons ? profileIcons.Resolve(avatarId) : null;
     }
 }

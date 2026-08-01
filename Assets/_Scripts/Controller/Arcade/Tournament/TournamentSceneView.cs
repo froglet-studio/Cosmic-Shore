@@ -506,14 +506,10 @@ namespace CosmicShore.Gameplay
                     if (p.Name == s.Name) return p.AvatarSprite;
             }
 
-            if (profileIconList != null && profileIconList.profileIcons != null)
-            {
-                foreach (var icon in profileIconList.profileIcons)
-                    if (icon.Id == s.AvatarId) return icon.IconSprite;
-                if (profileIconList.profileIcons.Count > 0)
-                    return profileIconList.profileIcons[0].IconSprite;
-            }
-            return null;
+            // Human avatars route through the one project-wide resolver, which
+            // falls back to the authored "unknown" placeholder rather than to the
+            // first real icon.
+            return profileIconList ? profileIconList.Resolve(s.AvatarId) : null;
         }
 
         Domains GetLocalDomain()

@@ -226,13 +226,13 @@ namespace CosmicShore.UI
             return $"Pilot{suffix}";
         }
 
-        int GetDefaultAvatarId()
-        {
-            if (profileIcons != null && profileIcons.profileIcons.Count > 0)
-                return profileIcons.profileIcons[0].Id;
-
-            return 0;
-        }
+        /// <summary>
+        /// Avatar id seeded onto a brand-new profile. Uses the first SELECTABLE
+        /// id (> 0) so a fresh player is never handed a sentinel as their actual
+        /// choice - ids at or below 0 mean "unknown", not "an avatar".
+        /// </summary>
+        int GetDefaultAvatarId() =>
+            profileIcons ? profileIcons.FirstSelectableId() : 0;
 
         /// <summary>
         /// Copies CurrentProfile fields into the repository's data object and marks dirty.
@@ -316,19 +316,13 @@ namespace CosmicShore.UI
             }
         }
 
-        public Sprite GetAvatarSprite(int avatarId)
-        {
-            if (profileIcons == null || profileIcons.profileIcons == null || profileIcons.profileIcons.Count == 0)
-                return null;
-
-            for (int i = 0; i < profileIcons.profileIcons.Count; i++)
-            {
-                if (profileIcons.profileIcons[i].Id == avatarId)
-                    return profileIcons.profileIcons[i].IconSprite;
-            }
-
-            return profileIcons.profileIcons[0].IconSprite;
-        }
+        /// <summary>
+        /// Delegates to the one project-wide resolver. The local scan this
+        /// replaced fell back to profileIcons[0] - i.e. rendered every
+        /// unresolved avatar as authored icon #1.
+        /// </summary>
+        public Sprite GetAvatarSprite(int avatarId) =>
+            profileIcons ? profileIcons.Resolve(avatarId) : null;
 
         // ----------------- Crystal Currency -----------------
 

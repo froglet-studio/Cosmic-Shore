@@ -152,12 +152,13 @@ namespace CosmicShore.UI
             if (inviterNameText != null)
                 inviterNameText.text = invite.HostDisplayName;
 
+            // Assigned unconditionally. The old conditional assignment meant an
+            // unresolvable avatar left the PREVIOUS inviter's face on the popup -
+            // the worst possible failure for an invite prompt, since the user
+            // decides based on who they think is asking. Resolve returns the
+            // "unknown" placeholder, so a miss now reads as unknown.
             if (inviterAvatarImage != null)
-            {
-                var sprite = ResolveAvatarSprite(invite.HostAvatarId);
-                if (sprite != null)
-                    inviterAvatarImage.sprite = sprite;
-            }
+                inviterAvatarImage.sprite = ResolveAvatarSprite(invite.HostAvatarId);
 
             SetButtonsInteractable(true);
             ShowPanel(true);
@@ -255,15 +256,13 @@ namespace CosmicShore.UI
                 declineButton.interactable = interactable;
         }
 
-        private Sprite ResolveAvatarSprite(int avatarId)
-        {
-            if (profileIcons == null) return null;
-            foreach (var icon in profileIcons.profileIcons)
-            {
-                if (icon.Id == avatarId)
-                    return icon.IconSprite;
-            }
-            return null;
-        }
+        /// <summary>
+        /// Delegates to the one project-wide resolver. This one previously had NO
+        /// fallback at all and returned null on a miss - and the caller assigns
+        /// conditionally, so a miss left the PREVIOUS inviter's face on the
+        /// popup. Resolve returns the "unknown" placeholder instead.
+        /// </summary>
+        private Sprite ResolveAvatarSprite(int avatarId) =>
+            profileIcons ? profileIcons.Resolve(avatarId) : null;
     }
 }

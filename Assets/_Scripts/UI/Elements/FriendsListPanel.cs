@@ -483,6 +483,9 @@ namespace CosmicShore.UI
             entry.Populate(
                 request.PlayerId,
                 request.DisplayName,
+                // Friend requests carry no avatar id, so this is genuinely
+                // unknown - 0 resolves to the placeholder rather than to
+                // authored icon #1, which is what it used to render as.
                 ResolveAvatar(0),
                 RequestInfoEntry.Kind.FriendRequest,
                 friendRequestExpirationSeconds,
@@ -771,20 +774,13 @@ namespace CosmicShore.UI
 
         #region Helpers
 
-        Sprite ResolveAvatar(int avatarId)
-        {
-            if (!profileIcons || profileIcons.profileIcons == null) return null;
-
-            foreach (var icon in profileIcons.profileIcons)
-            {
-                if (icon.Id == avatarId)
-                    return icon.IconSprite;
-            }
-
-            return profileIcons.profileIcons.Count > 0
-                ? profileIcons.profileIcons[0].IconSprite
-                : null;
-        }
+        /// <summary>
+        /// Delegates to the one project-wide resolver. The local scan this
+        /// replaced fell back to profileIcons[0] - i.e. rendered every
+        /// unresolved avatar as authored icon #1.
+        /// </summary>
+        Sprite ResolveAvatar(int avatarId) =>
+            profileIcons ? profileIcons.Resolve(avatarId) : null;
 
         static void ClearSpawned(List<GameObject> list)
         {

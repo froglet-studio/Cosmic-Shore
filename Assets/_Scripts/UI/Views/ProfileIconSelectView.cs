@@ -182,10 +182,13 @@ namespace CosmicShore.UI
                 buttonInstance.SetSelected(isSelected);
             }
 
-            // If nothing matched the saved id, default to first icon
+            // If nothing matched the saved id, default to the first SELECTABLE
+            // icon (id > 0) - ids at or below 0 are the unknown sentinel and are
+            // not a choice the player can make.
             if (!_hasSelectedIcon && profileIcons.profileIcons.Count > 0)
             {
-                var first = profileIcons.profileIcons[0];
+                int firstId = profileIcons.FirstSelectableId();
+                var first = profileIcons.profileIcons.FirstOrDefault(i => i.Id == firstId);
 
                 var allButtons = iconGrid.GetComponentsInChildren<ProfileIconSelectButton>(true);
                 var firstButton = allButtons.FirstOrDefault(b => b.ProfileIcon.Id == first.Id);

@@ -418,10 +418,12 @@ namespace CosmicShore.UI
             {
                 sprite = playerDataService.GetAvatarSprite(playerDataService.CurrentProfile.Identity.AvatarId);
             }
-            // Fallback: first icon in the locally-wired list if the service isn't ready.
-            else if (profileIconList != null && profileIconList.profileIcons is { Count: > 0 })
+            // Fallback when the service isn't ready: the "unknown" placeholder.
+            // Deliberately NOT the first authored icon - showing a real avatar
+            // the player did not pick reads as "this is your icon".
+            else if (profileIconList != null)
             {
-                sprite = profileIconList.profileIcons[0].IconSprite;
+                sprite = profileIconList.UnknownIcon;
             }
 
             if (sprite != null)

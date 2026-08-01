@@ -526,21 +526,14 @@ namespace CosmicShore.UI
             view.ClearPlayerList();
         }
 
-        protected Sprite ResolveAvatarSprite(int avatarId)
-        {
-            if (profileIconList == null || profileIconList.profileIcons == null)
-                return null;
-
-            foreach (var icon in profileIconList.profileIcons)
-            {
-                if (icon.Id == avatarId)
-                    return icon.IconSprite;
-            }
-
-            return profileIconList.profileIcons.Count > 0
-                ? profileIconList.profileIcons[0].IconSprite
-                : null;
-        }
+        /// <summary>
+        /// Delegates to the one project-wide resolver
+        /// (<see cref="CosmicShore.ScriptableObjects.SO_ProfileIconList.Resolve"/>),
+        /// which falls back to the authored "unknown" placeholder instead of to
+        /// the first real icon.
+        /// </summary>
+        protected Sprite ResolveAvatarSprite(int avatarId) =>
+            profileIconList ? profileIconList.Resolve(avatarId) : null;
 
         /// <summary>
         /// Assigns random AI profiles from the AI profile list to each AI player.

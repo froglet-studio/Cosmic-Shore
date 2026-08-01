@@ -800,6 +800,24 @@ namespace CosmicShore.UI
 
         readonly Dictionary<Player, DomainAvatarChip> _playerChips = new();
         readonly Dictionary<Player, NetworkVariable<Domains>.OnValueChangedDelegate> _domainHandlers = new();
+
+        /// <summary>
+        /// Per-player NetAvatarId subscriptions, mirroring
+        /// <see cref="_domainHandlers"/>.
+        ///
+        /// <para>
+        /// The chip sampled <c>p.NetAvatarId.Value</c> ONCE at spawn and
+        /// subscribed only to <c>NetDomain</c>, so any avatar that arrived later
+        /// was dropped permanently. Two real paths do arrive later:
+        /// a player joining while the modal is open (the spawn event
+        /// <c>OnPlayerNetworkSpawnedUlong</c> is gated on
+        /// <c>Player.IsSpawnReady()</c>, which checks name + vessel type but NOT
+        /// avatar), and any player whose cloud profile resolves after spawn via
+        /// <c>Player.HandleProfileLoadedAfterSpawn</c>. Both left the chip on
+        /// avatar id 0 forever.
+        /// </para>
+        /// </summary>
+        readonly Dictionary<Player, NetworkVariable<int>.OnValueChangedDelegate> _avatarHandlers = new();
         bool _watchingPlayerSpawnEvent;
 
         void SpawnChipsForAllPlayers()
@@ -854,6 +872,26 @@ namespace CosmicShore.UI
                 (_, newDomain) => HandlePlayerDomainChanged(p, newDomain);
             p.NetDomain.OnValueChanged += handler;
             _domainHandlers[p] = handler;
+
+            // Same treatment for the avatar. Without this the sprite sampled two
+            // lines above is final, and a late-replicating avatar id (late joiner,
+            // or a profile that resolved after spawn) leaves the chip on the
+            // unknown placeholder for the life of the modal.
+            NetworkVariable<int>.OnValueChangedDelegate avatarHandler =
+                (_, newAvatarId) => HandlePlayerAvatarChanged(p, newAvatarId);
+            p.NetAvatarId.OnValueChanged += avatarHandler;
+            _avatarHandlers[p] = avatarHandler;
+        }
+
+        void HandlePlayerAvatarChanged(Player p, int newAvatarId)
+        {
+            if (!_playerChips.TryGetValue(p, out var chip) || chip == null) return;
+
+            var dataService = PlayerDataService.Instance;
+            if (dataService == null) return;
+
+            ulong localId = NetworkManager.Singleton ? NetworkManager.Singleton.LocalClientId : 0UL;
+            chip.Set(dataService.GetAvatarSprite(newAvatarId), p.OwnerClientId == localId);
         }
 
         void HandlePlayerDomainChanged(Player p, Domains newDomain)
@@ -872,6 +910,13 @@ namespace CosmicShore.UI
                     kv.Key.NetDomain.OnValueChanged -= kv.Value;
             }
             _domainHandlers.Clear();
+
+            foreach (var kv in _avatarHandlers)
+            {
+                if (kv.Key != null && kv.Key.NetAvatarId != null)
+                    kv.Key.NetAvatarId.OnValueChanged -= kv.Value;
+            }
+            _avatarHandlers.Clear();
 
             foreach (var chip in _playerChips.Values)
                 if (chip) Destroy(chip.gameObject);
@@ -1205,6 +1250,12 @@ namespace CosmicShore.UI
         {
             if (arcadeConfigSyncManager && !IsClientMode)
                 arcadeConfigSyncManager.NotifyConfigClosed();
+
+            // The client close path already did this; the host path did not, so
+            // every per-Player NetDomain / NetAvatarId subscription and the
+            // OnPlayerNetworkSpawnedUlong watch leaked until the next open. Stale
+            // handlers then fired against destroyed chips.
+            DespawnAllChips();
 
             _isClientMode = false;
 

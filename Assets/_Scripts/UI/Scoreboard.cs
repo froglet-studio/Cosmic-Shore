@@ -577,12 +577,9 @@ namespace CosmicShore.UI
                 var player = gameData.Players.FirstOrDefault(pl => pl.Name == playerName);
                 if (player != null)
                 {
-                    foreach (var icon in profileIconList.profileIcons)
-                    {
-                        if (icon.Id == player.AvatarId) return icon.IconSprite;
-                    }
-                    if (profileIconList.profileIcons.Count > 0)
-                        return profileIconList.profileIcons[0].IconSprite;
+                    // One project-wide resolver; falls back to the authored
+                    // "unknown" placeholder rather than to the first real icon.
+                    return profileIconList.Resolve(player.AvatarId);
                 }
             }
 
