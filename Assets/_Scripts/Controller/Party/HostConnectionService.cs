@@ -108,6 +108,38 @@ namespace CosmicShore.Gameplay
         private const float PRESENCE_CONVERGE_INTERVAL_SECONDS = 4f;
 
         /// <summary>
+        /// How long the whole <see cref="Update"/> loop stays parked after UGS
+        /// returns a 429.
+        ///
+        /// <para>
+        /// Previously computed as <c>refreshIntervalSeconds * 2</c>, which
+        /// coupled two unrelated things: how often we poll and how long we
+        /// retreat when told to stop. The value here (6 s) is exactly what that
+        /// expression produced with the shipped prefab value
+        /// (<c>refreshIntervalSeconds: 3</c>), so this is a rename of a number,
+        /// not a retune - but it means wiring the cadence field to the scheduler
+        /// can no longer silently halve the backoff as a side effect.
+        /// </para>
+        /// </summary>
+        private const float RATE_LIMIT_BACKOFF_SECONDS = 6f;
+
+        /// <summary>
+        /// Extra settling time granted to a freshly created or joined party
+        /// session before the first member-sync refresh touches it, ON TOP of the
+        /// normal refresh interval (see <see cref="LobbyRefreshScheduler.ResetDeferred"/>).
+        /// Guards against stale-session 404s against a session UGS has only just
+        /// provisioned.
+        ///
+        /// <para>
+        /// Also previously passed as <c>refreshIntervalSeconds</c>; 3 s preserves
+        /// the shipped prefab value. Same rationale as
+        /// <see cref="RATE_LIMIT_BACKOFF_SECONDS"/> - the settle exists because
+        /// UGS needs a beat, which has nothing to do with our poll rate.
+        /// </para>
+        /// </summary>
+        private const float POST_SESSION_SETTLE_SECONDS = 3f;
+
+        /// <summary>
         /// Minimum seconds between benign-SDK-skip diagnostic lines. The whole
         /// point of classifying these faults as benign was to stop the console
         /// spam (<c>Docs/PresenceSystem/BUGS.md</c> B1 fired ~every 3 s in solo
@@ -784,7 +816,7 @@ namespace CosmicShore.Gameplay
 
                 // Give the freshly-joined session a settling period before the
                 // first member-sync refresh fires - avoids stale-session 404s.
-                _scheduler.ResetDeferred(refreshIntervalSeconds);
+                _scheduler.ResetDeferred(POST_SESSION_SETTLE_SECONDS);
                 Debug.Log($"[HostConnectionService] Joined party {_partySessionService.ActiveSession?.Id}");
                 // Relay session join succeeded - we are now fully inside the party.
                 _stateMachine.TryTransition(PartyState.InParty);
@@ -1020,7 +1052,7 @@ namespace CosmicShore.Gameplay
                 _memberService.SeedLocalPlayer(clearFirst: true);
 
                 // Give the new session breathing room before RefreshAsync touches it.
-                _scheduler.ResetDeferred(refreshIntervalSeconds);
+                _scheduler.ResetDeferred(POST_SESSION_SETTLE_SECONDS);
 
                 // HostingParty → InParty: session is live, NM is listening.
                 // Meaning shifts: InParty now means "I have a live Relay session"
@@ -1220,7 +1252,7 @@ namespace CosmicShore.Gameplay
                 // anything from the benign branches.
                 if (IsRateLimitException(e))
                 {
-                    _rateLimitBackoffUntil = Time.unscaledTime + refreshIntervalSeconds * 2;
+                    _rateLimitBackoffUntil = Time.unscaledTime + RATE_LIMIT_BACKOFF_SECONDS;
                     Debug.LogWarning("[HostConnectionService] Rate limited during refresh - backing off");
                 }
                 // UGS SDK self-corrects on the next refresh tick. Treat as a
@@ -1615,7 +1647,7 @@ namespace CosmicShore.Gameplay
                 if (IsRateLimitException(e))
                 {
                     Debug.LogWarning($"[HostConnectionService] Party session refresh rate-limited - backing off");
-                    _rateLimitBackoffUntil = Time.unscaledTime + refreshIntervalSeconds * 2;
+                    _rateLimitBackoffUntil = Time.unscaledTime + RATE_LIMIT_BACKOFF_SECONDS;
                     return;
                 }
 
