@@ -127,11 +127,37 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Saves the local player's properties to the UGS backend with exponential
-        /// retry on rate-limit (HTTP 429) and index-out-of-range errors.
+        /// Saves the local player's properties to the UGS backend, retrying on
+        /// rate-limit (HTTP 429) and index-out-of-range errors.
         ///
         /// Can be called directly inside the refresh cycle (mutex already held),
         /// or indirectly via <see cref="WriteAsync"/> (which acquires the mutex).
+        ///
+        /// <para>
+        /// <b>The retry delay is FIXED, not exponential</b>, despite what the
+        /// comment beside <c>UniTask.Delay</c> used to claim. Left fixed
+        /// deliberately: the whole retry loop runs while holding
+        /// <see cref="LobbyMutex"/>, and that mutex also gates
+        /// <c>HostConnectionService.Update</c>'s refresh path - so stretching
+        /// three retries from ~6 s to ~14 s would widen the window in which the
+        /// online roster cannot be re-read, to fix a rate-limit problem that the
+        /// push channel and the interval work have already reduced. Revisit only
+        /// with 429 counts from a real run (<c>Docs/PresenceSystem/TODOS.md</c>
+        /// TODO-P5) showing the retries actually saturating.
+        /// </para>
+        ///
+        /// <para>
+        /// <b>Both surrounding refreshes are load-bearing - do not remove them.</b>
+        /// The pre-write refresh in <see cref="WriteAsync"/> guards a stale SDK
+        /// player-index that makes <c>SaveCurrentPlayerDataAsync</c> fail
+        /// SILENTLY, and the post-save refresh is what re-syncs the SDK's cache
+        /// so subsequent WebSocket deltas do not reference stale indices - the
+        /// root cause of <c>Docs/PresenceSystem/BUGS.md</c> B1. The push channel
+        /// does NOT replace the post-save refresh: UGS documents
+        /// <c>PlayerPropertiesChanged</c> as not firing when the properties are
+        /// already up to date locally, which is exactly the case for our own
+        /// write. Deleting these to save UGS calls would likely make B1 worse.
+        /// </para>
         /// </summary>
         /// <param name="lobby">
         /// The active presence lobby session.  Must not be null.
@@ -159,9 +185,12 @@ namespace CosmicShore.Gameplay
                     (e.Message.Contains("Too Many Requests") ||
                      e.Message.Contains("Index was out of range")))
                 {
-                    // UGS rate-limits property writes to ~1/s per client.
-                    // Back off exponentially so a burst of rapid retries doesn't
-                    // consume the entire rate-limit budget.
+                    // UGS rate-limits property writes to ~1/s per client. The
+                    // fixed baseDelayMs wait keeps a burst of rapid retries from
+                    // consuming the entire budget. NOT exponential - see the
+                    // method doc for why that is deliberate rather than an
+                    // oversight (the mutex held across this loop also gates the
+                    // roster re-read).
                     //
                     // CSDebug.Log (info-level, release-stripped + runtime-muteable):
                     // "Index was out of range" is the SDK stale-index defect (same
