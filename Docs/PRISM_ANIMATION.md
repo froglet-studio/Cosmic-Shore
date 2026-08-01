@@ -732,7 +732,30 @@ Phase D — lock-in:
 
 ---
 
-## 6. Enforcement
+## 6. Handoff — the in-editor gate (do this next)
+
+Everything shipped so far is dark behind `PrismRenderConfigSO.UseClockAnimation`.
+**One in-editor session unlocks all of it**, in this order:
+
+1. Wire the three graphs per §4.4 (properties + Custom Function nodes from
+   `PrismClockAnimation.hlsl`, Hybrid Per Instance flags).
+2. Tick **Use Clock Animation** on `Assets/Resources/PrismRenderConfig.asset`.
+3. Run the §4.4 verification protocol (no-change checks, stamp smoke test,
+   hitstop). Watch the DiagnosticsHUD "Animators" rows: with the toggle live,
+   `PrismScaleManager`/`MaterialStateManager` active counts should sit at 0
+   during normal play (only GameObject-fallback prisms register).
+4. Then the retirement pass (D2) and the remaining C-phase items become safe to
+   land branch-by-branch — the ecosystem visual transitions (C6–C10) REQUIRE the
+   wired `SuctionGraph`/`BlockGraph` clock inputs to render at all, which is why
+   they were not shipped dark. Each is a small, per-path change following the B1/B3
+   templates (suction = `StampSuctionClock` + scheduled retire; blooms = the grow
+   engine, already migrated).
+5. Small in-editor chores while there: remove the `TrailViewer` component from
+   `Urchin.prefab` (then delete the file), and re-baseline PhaseThresholds
+   (volume-final-at-spawn — Tools > Cosmic Shore > Measure Cell Environment
+   Baselines).
+
+## 7. Enforcement
 
 - **CLAUDE.md ▸ Anti-Patterns** carries the rule; any PR adding a per-frame prism
   visual write is rejected on review.
