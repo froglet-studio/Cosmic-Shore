@@ -167,7 +167,7 @@ namespace CosmicShore.Gameplay
             catch (Exception e)
             {
                 Debug.LogWarning($"[PresenceLobbyService] Join failed ({e.Message}) - creating new lobby as fallback.");
-                CosmicShore.Utility.CSDebug.Log($"[PresenceLobbyService] NetDiag: class={CosmicShore.Utility.NetworkDiagnostics.ClassifyException(e)} | {CosmicShore.Utility.NetworkDiagnostics.GetSnapshot()}");
+                LogNetDiag("JoinOrCreate", e);
                 if (_activeLobby == null)
                     await CreateAsync(maxPlayers);
             }
@@ -201,6 +201,7 @@ namespace CosmicShore.Gameplay
                 catch (Exception e)
                 {
                     Debug.LogWarning($"[PresenceLobbyService] Converge query failed ({e.GetType().Name}): {e.Message}");
+                    LogNetDiag("ConvergeQuery", e);
                     return;
                 }
             }
@@ -239,6 +240,7 @@ namespace CosmicShore.Gameplay
                 // Canonical lobby may have died between query and join - keep our
                 // current lobby; the next periodic converge retries.
                 Debug.LogWarning($"[PresenceLobbyService] Converge join to {canonicalId} failed ({e.GetType().Name}): {e.Message}");
+                LogNetDiag("ConvergeJoin", e);
             }
         }
 
@@ -262,8 +264,8 @@ namespace CosmicShore.Gameplay
             }
             catch (Exception e)
             {
-                CosmicShore.Utility.CSDebug.Log($"[PresenceLobbyService] Leave error (session may already be gone) ({e.GetType().Name}): {e}");
-                CosmicShore.Utility.CSDebug.Log($"[PresenceLobbyService] NetDiag: class={CosmicShore.Utility.NetworkDiagnostics.ClassifyException(e)} | {CosmicShore.Utility.NetworkDiagnostics.GetSnapshot()}");
+                CSDebug.Log($"[PresenceLobbyService] Leave error (session may already be gone) ({e.GetType().Name}): {e}");
+                LogNetDiag("Leave", e);
             }
             finally
             {
@@ -432,6 +434,7 @@ namespace CosmicShore.Gameplay
                 catch (Exception e)
                 {
                     Debug.LogWarning($"[PresenceLobbyService] Failed to join session {session.Id}: {e.Message}");
+                    LogNetDiag($"JoinSession({session.Id})", e);
                     if (IsRateLimitException(e))
                         await UniTask.Delay(RATE_LIMIT_BASE_DELAY_MS);
                 }
@@ -486,7 +489,7 @@ namespace CosmicShore.Gameplay
             catch (Exception e)
             {
                 Debug.LogError($"[PresenceLobbyService] Could not create presence lobby: {e.Message}");
-                CosmicShore.Utility.CSDebug.Log($"[PresenceLobbyService] NetDiag: class={CosmicShore.Utility.NetworkDiagnostics.ClassifyException(e)} | {CosmicShore.Utility.NetworkDiagnostics.GetSnapshot()}");
+                LogNetDiag("CreateLobby", e);
             }
         }
 
@@ -509,12 +512,38 @@ namespace CosmicShore.Gameplay
             catch (Exception e)
             {
                 Debug.LogWarning($"[PresenceLobbyService] DeleteOwnLobby error: {e.Message}");
+                LogNetDiag("DeleteOwnLobby", e);
             }
             finally
             {
                 _activeLobby = null;
             }
         }
+
+        /// <summary>
+        /// Emits the one-line NetDiag classification + reachability snapshot for
+        /// a caught exception.
+        ///
+        /// <para>
+        /// Every catch in this service now carries one. Before, only three did
+        /// (join-fallback, leave, create) - the three that were easiest to reach
+        /// in a smoke test. The four that did NOT are the ones that matter most
+        /// for diagnosing a split or partial online list: both halves of
+        /// <see cref="ConvergeToCanonicalAsync"/> (the self-heal for a
+        /// simultaneous-create race) and the per-session join attempt inside
+        /// <see cref="TryQueryAndJoinAsync"/>. When convergence silently failed,
+        /// two clients sat in different presence lobbies seeing each other's
+        /// panels as empty, and the only evidence was an unclassified
+        /// <c>LogWarning</c> with no indication of whether the cause was
+        /// <c>Offline</c>, <c>RateLimit</c>, <c>SessionGone</c> or something else.
+        /// That distinction is exactly what
+        /// <c>Docs/PresenceSystem/REFACTOR.md</c>'s <c>LobbyMembershipMonitor</c>
+        /// extraction is waiting on.
+        /// </para>
+        /// </summary>
+        private static void LogNetDiag(string operation, Exception e) =>
+            CSDebug.Log($"[PresenceLobbyService] {operation} NetDiag: " +
+                        $"class={NetworkDiagnostics.ClassifyException(e)} | {NetworkDiagnostics.GetSnapshot()}");
 
         /// <summary>
         /// True when the exception is a UGS HTTP 429 Too Many Requests response.
