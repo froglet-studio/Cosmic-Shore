@@ -75,7 +75,11 @@ namespace CosmicShore.Editor
                     continue;
                 }
 
-                string text = File.ReadAllText(path);
+                // Normalize line endings BEFORE splitting: Windows checkouts
+                // (git autocrlf) deliver CRLF, and "\n\n" never matches inside
+                // "\r\n\r\n" — the whole file became ONE block and every
+                // block-scoped check ran against unrelated properties.
+                string text = File.ReadAllText(path).Replace("\r\n", "\n");
                 var blocks = text.Split(new[] { "\n\n" }, System.StringSplitOptions.RemoveEmptyEntries);
 
                 report.AppendLine($"— {spec.GraphName}  ({path})  [{spec.Purpose}]");
@@ -136,7 +140,12 @@ namespace CosmicShore.Editor
             {
                 var mat = AssetDatabase.LoadAssetAtPath<Material>(AssetDatabase.GUIDToAssetPath(guid));
                 if (mat == null || mat.shader == null) continue;
-                var spec = Specs.FirstOrDefault(s => mat.shader.name.EndsWith(s.GraphName));
+                // Exact-name match: EndsWith("BlockGraph") also matched
+                // "ExplodingBlockGraph", checking those materials against the
+                // wrong property list (the earlier 4/22 false failures).
+                var spec = Specs.FirstOrDefault(s =>
+                    mat.shader.name == "Shader Graphs/" + s.GraphName ||
+                    mat.shader.name.EndsWith("/" + s.GraphName));
                 if (spec == null) continue;
 
                 matChecked++;

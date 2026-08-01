@@ -86,24 +86,27 @@ void PrismColorLerp_float(float Clock, float StartTime, float Duration,
 // Duration <= 0 -> legacy fallback: passes through the CPU-fed _ExplosionAmount
 // and _Opacity so the un-migrated path AND the TransparentPrismMaterial quirk
 // (live transparent prisms rest on this graph at _ExplosionAmount = 0) keep
-// rendering identically. Offset is applied in the vertex stage in WORLD space;
-// the entity transform never moves after the stamp.
+// rendering identically. The flight offset is computed in WORLD space
+// (velocity * t) and converted to OBJECT space HERE (unnormalized
+// TransformWorldToObjectDir), so the graph just ADDS ObjectOffset to the
+// object-space vertex position — no Transform node needed. The entity
+// transform never moves after the stamp.
 // -----------------------------------------------------------------------------
 void PrismExplosionClock_float(float Clock, float StartTime, float Speed, float Duration,
     float3 Velocity, float LegacyAmount, float LegacyOpacity,
-    out float Amount, out float Opacity, out float3 WorldOffset)
+    out float Amount, out float Opacity, out float3 ObjectOffset)
 {
     if (Duration <= 0.0)
     {
         Amount = LegacyAmount;
         Opacity = LegacyOpacity;
-        WorldOffset = float3(0.0, 0.0, 0.0);
+        ObjectOffset = float3(0.0, 0.0, 0.0);
         return;
     }
     float t = max(Clock - StartTime, 0.0);
     Amount = Speed * t;
     Opacity = saturate(1.0 - t / Duration);
-    WorldOffset = Velocity * t;
+    ObjectOffset = TransformWorldToObjectDir(Velocity * t, false);
 }
 
 // -----------------------------------------------------------------------------
