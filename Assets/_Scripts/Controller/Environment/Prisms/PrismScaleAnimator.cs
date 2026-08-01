@@ -111,12 +111,22 @@ namespace CosmicShore.Gameplay
         // (COMPLETION_THRESHOLD_SQR = 0.01 on localScale distance).
         const float SETTLE_EPSILON = 0.1f;
 
+        static readonly int GrowStartTimeId = Shader.PropertyToID("_GrowStartTime");
+
         /// <summary>True when this prism can animate via the clock material:
-        /// master toggle on AND the companion entity is drawing.</summary>
+        /// master toggle on, the companion entity is drawing, AND the bound
+        /// material's shader actually declares the grow clock property — the
+        /// per-material interlock that makes the toggle safe to flip before (or
+        /// while) the graphs are wired: an unwired material would render the
+        /// FINAL transform with no bloom (a pop-in, violating continuity), so it
+        /// stays on the legacy manager until its graph gains the §4.4 inputs.</summary>
         bool ClockPathAvailable =>
             PrismRenderService.ClockAnimationEnabled &&
             prism != null &&
-            PrismRenderService.IsHandleUsable(in prism.RenderHandle);
+            PrismRenderService.IsHandleUsable(in prism.RenderHandle) &&
+            meshRenderer != null &&
+            meshRenderer.sharedMaterial != null &&
+            meshRenderer.sharedMaterial.HasProperty(GrowStartTimeId);
 
         /// <summary>Clock-aware "is the visual still blooming" — the replacement
         /// for reading IsScaling directly (legacy path still reports IsScaling).</summary>

@@ -671,9 +671,29 @@ opt-in-dark pattern instanced rendering itself shipped under):
 4. Save/reimport, then tick **Use Clock Animation** on
    `Assets/Resources/PrismRenderConfig.asset`.
 
+**The per-material interlock (safe incremental rollout):** every stamp site first
+checks that the material actually being bound DECLARES its clock property
+(`HasProperty(_GrowStartTime / _ColorStartTime / _ExplodeStartTime /
+_SuctionStartTime)`). A prism whose graph isn't wired yet stays on the legacy CPU
+manager — without this, flipping the toggle early would snap transforms/materials to
+their end states with no visible transition (pop-in — a continuity-law violation) or
+freeze effects at their initial state. Consequences: the toggle is **safe to flip at
+any time**, graphs can be wired **one at a time** (wire BlockGraph's grow inputs
+first and trail/ring/gyroid growth goes GPU-smooth immediately, while colors/effects
+stay legacy until their graphs follow), and the transparent-prism quirk self-handles
+(transparent live prisms rest on ExplodingBlockGraph, which has no grow inputs — they
+keep legacy growth unless you also add the grow trio there).
+
 **Verification protocol:**
 
 - Toggle OFF (shipped state): zero visual or perf change anywhere.
+- Diagnostic: **chunky, few-frame growth (rings laid in visible batches, gyroid
+  grow-on-bond stepping) = you are watching the LEGACY path** — its adaptive
+  frame-skipping (1–12 frame steps), the 300-grower slice window, and the 6/frame
+  creation budget trade smoothness for bounded frame cost by design. The clock path
+  evaluates growth per-vertex per-frame on the GPU regardless of CPU load; if it
+  still looks chunky after wiring, the interlock is telling you that material's
+  property isn't declared (check the exact reference name + Hybrid Per Instance).
 - Graphs wired + toggle ON, before any B-phase call site lands: still zero visual
   change — nothing stamps, the legacy managers keep feeding `SetColors` /
   `SetExplosionParams` / `SetImplosionParams`, and the clock branches idle at their
@@ -737,9 +757,13 @@ Phase D — lock-in:
 Everything shipped so far is dark behind `PrismRenderConfigSO.UseClockAnimation`.
 **One in-editor session unlocks all of it**, in this order:
 
-1. Wire the three graphs per §4.4 (properties + Custom Function nodes from
-   `PrismClockAnimation.hlsl`, Hybrid Per Instance flags).
-2. Tick **Use Clock Animation** on `Assets/Resources/PrismRenderConfig.asset`.
+1. Tick **Use Clock Animation** on `Assets/Resources/PrismRenderConfig.asset` —
+   safe at any time: the per-material interlock (§4.4) keeps every unwired material
+   on the legacy path, so nothing pops or freezes.
+2. Wire the graphs per §4.4, one at a time if you like — **BlockGraph's three grow
+   properties + the `PrismGrowScale` node are the 15-minute change that makes ring /
+   gyroid / trail growth GPU-smooth** (the chunky legacy stepping disappears for
+   every prism on a wired material the moment it reimports).
 3. Run the §4.4 verification protocol (no-change checks, stamp smoke test,
    hitstop). Watch the DiagnosticsHUD "Animators" rows: with the toggle live,
    `PrismScaleManager`/`MaterialStateManager` active counts should sit at 0

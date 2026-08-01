@@ -276,10 +276,20 @@ namespace CosmicShore.Gameplay
         /// clock path is dark, the prism renders through the GameObject fallback,
         /// or the entity stamp fails.
         /// </summary>
+        static readonly int ColorStartTimeId = Shader.PropertyToID("_ColorStartTime");
+
         bool TryClockColorTransition(Material transparentMaterial, Material opaqueMaterial, float duration, Action onComplete)
         {
             if (!PrismRenderService.ClockAnimationEnabled) return false;
             if (cachedPrism == null || !cachedPrism.UsesEntityColorSink) return false;
+
+            // Per-material interlock: the material being bound must declare the
+            // clock property, or binding it at the start would SNAP to the end
+            // state with no visible transition (unwired graph). Such materials
+            // stay on the legacy lerp until wired (§4.4).
+            bool transparent = cachedPrism.prismProperties != null && cachedPrism.prismProperties.IsTransparent;
+            var bindMaterial = transparent ? transparentMaterial : opaqueMaterial;
+            if (bindMaterial == null || !bindMaterial.HasProperty(ColorStartTimeId)) return false;
 
             float now = PrismClock.Now;
 
@@ -311,8 +321,7 @@ namespace CosmicShore.Gameplay
             // (refreshColors — IsAnimating stays false on the clock path).
             activeTransparentMaterial = transparentMaterial;
             activeOpaqueMaterial = opaqueMaterial;
-            bool transparent = cachedPrism.prismProperties != null && cachedPrism.prismProperties.IsTransparent;
-            MeshRenderer.sharedMaterial = transparent ? transparentMaterial : opaqueMaterial;
+            MeshRenderer.sharedMaterial = bindMaterial;
             cachedPrism.SyncRenderMaterial();
 
             if (!PrismRenderService.StampColorTransition(in cachedPrism.RenderHandle, now, duration,

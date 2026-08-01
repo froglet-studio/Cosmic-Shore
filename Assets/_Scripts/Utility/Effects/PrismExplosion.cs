@@ -35,6 +35,7 @@ namespace CosmicShore.Utility
         private static readonly int VelocityID = Shader.PropertyToID("_Velocity");
         private static readonly int ExplosionAmountID = Shader.PropertyToID("_ExplosionAmount");
         private static readonly int OpacityID = Shader.PropertyToID("_Opacity");
+        private static readonly int ExplodeStartTimeId = Shader.PropertyToID("_ExplodeStartTime");
         private static readonly int BrightColorID = Shader.PropertyToID("_BrightColor");
         private static readonly int DarkColorID = Shader.PropertyToID("_DarkColor");
 
@@ -216,7 +217,11 @@ namespace CosmicShore.Utility
             // debris off _Time.y (offset = v·t, amount = speed·t, opacity = 1−t/dur)
             // with zero further CPU writes; ONE scheduled completion returns it to
             // the pool. The entity transform holds the initial pose and never moves.
+            // Per-material interlock: an unwired graph would render a frozen,
+            // never-fading shatter — stay legacy until it declares the clock input.
             if (UsesEntityRenderPath &&
+                _renderer.sharedMaterial != null &&
+                _renderer.sharedMaterial.HasProperty(ExplodeStartTimeId) &&
                 PrismRenderService.StampExplosionClock(in RenderHandle,
                     PrismClock.Now, speed, MaxDuration,
                     new Unity.Mathematics.float3(velocity.x, velocity.y, velocity.z)))
