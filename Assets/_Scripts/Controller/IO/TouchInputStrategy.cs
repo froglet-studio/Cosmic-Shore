@@ -301,6 +301,19 @@ namespace CosmicShore.Gameplay
             inputStatus.YSum = -Ease(rightNormalizedJoystickPosition.y + leftNormalizedJoystickPosition.y);
             inputStatus.XDiff = (rightNormalizedJoystickPosition.x - leftNormalizedJoystickPosition.x + 2) / 4;
             inputStatus.YDiff = Ease(rightNormalizedJoystickPosition.y - leftNormalizedJoystickPosition.y);
+
+            // Apply inversions AFTER calculations (parity with Gamepad/Keyboard/DualMouse -
+            // touch was the one strategy missing the settings' Invert Y / Invert Throttle).
+            if (inputStatus.InvertYEnabled)
+            {
+                inputStatus.YSum *= -1f;   // Invert pitch
+                inputStatus.YDiff *= -1f;  // Invert roll
+            }
+
+            if (inputStatus.InvertThrottleEnabled)
+            {
+                inputStatus.XDiff = 1f - inputStatus.XDiff;  // Invert throttle/speed
+            }
         }
 
         private void PerformSpeedAndDirectionalEffects()

@@ -185,8 +185,8 @@ TurnMonitor detects collision target reached → gameData.InvokeGameTurnConditio
 │   │           ├─ gameData.SortRoundStats(UseGolfRules: true)  — ascending
 │   │           ├─ gameData.CalculateDomainStats(UseGolfRules: true)
 │   │           ├─ _finalResultsSent = true
-│   │           └─ SyncJoustResults_Authoritative()
-│   │               └─ SyncJoustResults_ClientRpc(names[], scores[], collisions[], domains[], winnerName)
+│   │           └─ SyncFinalResults()
+│   │               └─ SyncFinalResults_ClientRpc (shared MultiplayerDomainGamesController tail)(names[], scores[], collisions[], domains[], winnerName)
 │   │                   ├─ Update all RoundStats on all clients
 │   │                   ├─ gameData.WinnerName = winnerName
 │   │                   ├─ gameData.InvokeWinnerCalculated()
@@ -308,7 +308,7 @@ The two effects compose: overtaking an **opponent** scores a joust point *and* d
 | Variable | Owner | Type | Purpose |
 |---|---|---|---|
 | `RoundStats.n_JoustCollisions` | Server | `NetworkVariable<int>` (per player) | Joust collision count; replicated to all clients via `OnValueChanged` |
-| `gameData.WinnerName` | Server (via `SyncJoustResults_ClientRpc`) | `string` (non-serialized field) | Authoritative winner identity; non-empty signals "results ready" |
+| `gameData.WinnerName` | Server (via `SyncFinalResults_ClientRpc (shared MultiplayerDomainGamesController tail)`) | `string` (non-serialized field) | Authoritative winner identity; non-empty signals "results ready" |
 
 Note: `MultiplayerJoustController` declares **no NetworkVariables**. `NetworkJoustCollisionTurnMonitor` also uses no NetworkVariables — it syncs collisions purely via `ReportCollision_ServerRpc` / `SyncCollision_ClientRpc`.
 
@@ -365,7 +365,7 @@ Also reports vessel telemetry via `ugsStatsManager.ReportVesselTelemetry()`.
 
 1. **Collision attribution is counter-intuitive**: The joust point goes to the vessel whose skimmer was hit (the `impactee`), not the vessel that physically collided. The speed check (`impacteeVessel.Speed > impactorVessel.Speed`) ensures only the faster vessel's skimmer-collisions count — essentially rewarding the faster player for "jousting" past a slower opponent.
 
-2. **HasEndGame=false + SetupNewRound suppression**: Joust handles end-game through `OnTurnEndedCustom()` → `SyncJoustResults_ClientRpc()`, which calls `InvokeWinnerCalculated()` + `InvokeMiniGameEnd()`. Setting `HasEndGame=false` prevents the base controller's `SyncGameEnd_ClientRpc` from duplicating these calls. `SetupNewRound()` is overridden to return when `_finalResultsSent=true`.
+2. **HasEndGame=false + SetupNewRound suppression**: Joust handles end-game through `OnTurnEndedCustom()` → `SyncFinalResults_ClientRpc (shared MultiplayerDomainGamesController tail)()`, which calls `InvokeWinnerCalculated()` + `InvokeMiniGameEnd()`. Setting `HasEndGame=false` prevents the base controller's `SyncGameEnd_ClientRpc` from duplicating these calls. `SetupNewRound()` is overridden to return when `_finalResultsSent=true`.
 
 3. **Scene reload for replay (commit 21d538d3)**: Joust matches HexRace and Crystal Capture with `UseSceneReloadForReplay=true` — Play Again performs a full network scene reload so all per-round state, environment, and AI re-initialize fresh via `OnNetworkSpawn`. The old in-place `OnResetForReplayCustom()` was removed; `_finalResultsSent` / `_winningDomain` reset in `OnNetworkSpawn`, and persistent human players' `JoustCollisions`/`Score` are zeroed by `Player.PrepareForNewScene()` → `RoundStats.Cleanup()`. See §9 for the scene-wiring requirement on the Play Again button.
 

@@ -64,16 +64,26 @@ namespace CosmicShore.Gameplay
         IVesselStatus vesselStatus;
         bool _subscribedToInputPaused;
 
+        // Idempotence guard: subscription is requested from two independent paths for the
+        // local vessel (VesselController.Initialize and the input-unpause replay through
+        // OnToggleInputPaused). Without the guard the delegates stack and every button
+        // event dispatches its actions twice (double RPCs, double Start/StopAction).
+        bool _buttonEventsSubscribed;
+
         void SubscribeToInputEvents()
         {
+            if (_buttonEventsSubscribed) return;
             _onButtonPressed.OnRaised  += OnButtonPressed;
             _onButtonReleased.OnRaised += OnButtonReleased;
+            _buttonEventsSubscribed = true;
         }
 
         void UnsubscribeFromInputEvents()
         {
+            if (!_buttonEventsSubscribed) return;
             _onButtonPressed.OnRaised  -= OnButtonPressed;
             _onButtonReleased.OnRaised -= OnButtonReleased;
+            _buttonEventsSubscribed = false;
         }
 
         void OnDisable()
@@ -223,7 +233,7 @@ namespace CosmicShore.Gameplay
 
         void OnButtonPressed(InputEvents ie)
         {
-            if (vesselStatus.AutoPilotEnabled) 
+            if (vesselStatus.AutoPilotEnabled)
                 return;
             if (IsInputMuted(ie)) return;
             if (IsSpawned && IsOwner)

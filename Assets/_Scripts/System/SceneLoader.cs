@@ -143,7 +143,7 @@ namespace CosmicShore.Core
             PlayerPrefs.Save();
 
             Debug.Log($"<color=#FF8C00>[FLOW-3] [SceneLoader] LaunchGame - Scene={gameData.SceneName}, Mode={gameData.GameMode}, " +
-                      $"IsMultiplayer={gameData.IsMultiplayerMode}, Vessel={gameData.selectedVesselClass.Value}, " +
+                      $"Vessel={gameData.selectedVesselClass.Value}, " +
                       $"Intensity={gameData.SelectedIntensity.Value}, PlayerCount={gameData.SelectedPlayerCount.Value}, " +
                       $"AIBackfill={gameData.RequestedAIBackfillCount}</color>");
 

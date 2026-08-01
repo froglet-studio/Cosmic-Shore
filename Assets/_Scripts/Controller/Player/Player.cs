@@ -156,24 +156,6 @@ namespace CosmicShore.Gameplay
         // it is still excluded (IsMultiplayerOwner == IsSpawned && IsOwner && !IsInitializedAsAI).
         public bool IsLocalUser => IsMultiplayerOwner;
        
-        IPlayer.InitializeData InitializeData;
-        
-        public void InitializeForSinglePlayerMode(IPlayer.InitializeData data, IVessel vessel)
-        {
-            InitializeData = data;
-            IsInitializedAsAI = InitializeData.IsAI;
-            // Single-player & legacy menu spawns default to Jade. Multiplayer overrides
-            // via NetDomain (server-write) before the vessel is initialized.
-            Domain = Domains.Jade;
-            Name = InitializeData.PlayerName;
-            AvatarId = InitializeData.AvatarId;
-            InputController.Initialize();
-            ToggleInputPause(true);
-            Vessel = vessel;
-            RoundStats.Name = Name;
-            RoundStats.Domain = Domain;
-        }
-
         /// <summary>
         /// TODO -> A temp way to initialize in multiplayer, try for better approach.
         /// </summary>
@@ -193,6 +175,13 @@ namespace CosmicShore.Gameplay
             Name = NetName.Value.ToString();
             AvatarId = NetAvatarId.Value;
             Vessel = vessel;
+
+            // Only the local human's InputController polls devices (its class contract).
+            // Locality isn't knowable at OnNetworkSpawn (the AI spawner writes NetIsAI
+            // after Spawn()), so gate here: a disabled controller stops the per-frame
+            // device polling and duplicate global OnButtonPressed raises from AI/remote
+            // players' copies. SetPause/SetIdle/InputStatus remain usable while disabled.
+            InputController.enabled = IsLocalUser;
 
             // RoundStats.Domain is a LOCAL mirror of the player's domain on EVERY peer -
             // Player.NetDomain is the single networked source (RoundStats.n_Domain is retired). Set
@@ -450,7 +439,14 @@ namespace CosmicShore.Gameplay
                 ToggleInputPause(true);
             }
             else
+            {
+                // A human-controlled turn must never start with autopilot on. Vessels can
+                // arrive here still AI-driven (a vessel handover (retired Cellular Duel's between-round swap was the original case),
+                // the EndGameSequencer flourish on in-place replays); a live AIPilot blocks
+                // every button action in R_VesselActionHandler and fights the pilot's input.
+                ToggleAIPilot(false);
                 ToggleInputPause(false);
+            }
         }
         
 

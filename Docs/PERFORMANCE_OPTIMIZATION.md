@@ -778,6 +778,10 @@ fix spreads or de-allocates the same work.
 | `481a7ad8` | Domain-volume gauge: colors on sample cadence, push gated on real change (was 1.02 ms/frame flat) |
 | `fb5e6643` | Cell volume recompute is one Burst `CellVolumeSumJob` over the index's new packed summation view (`PrismCellData`); managed 8000-prism slice deleted (was a ~10 ms reader-attributed spike billed to `DomainVolumeIndicator.Update`); `Cell.VolumeSum` + `DomainVolumeIndicator.Sample`/`.Push` markers (closes TODO C2) |
 | `71b51a28` | Collider-LOD hysteresis band (`lodExitRadiusMultiplier`, kills moving-focus boundary flapping); drain budget charged per re-validated entry (was unbounded transform reads on churny queues); `LOD.Sweep`/`LOD.Drain` markers; LOD tick de-phased half an interval from the volume recompute |
+| `bec6338c` | `AIPilot` + `AICinematicBehavior` `enabled` mirrors their active state — zero `Update()` dispatch on vessels not actively AI-driven (was every vessel, every frame, early-out); `StartAIPilot` idempotent (repeated activations stacked duplicate ability/seek coroutines forever); `StopAIPilot` uses `StopAllCoroutines` (the old `StopCoroutine(new enumerator)` was a no-op) |
+| `6e899993` | Non-local players' `InputController.enabled = false` at pair-init — AI/remote copies no longer poll the physical devices per frame nor raise duplicate global button events |
+| `ce11eaf6` | `R_VesselActionHandler` button-event subscription idempotent — init + input-unpause both subscribed, so every button press dispatched its actions (and RPC round-trip) twice |
+| `e75569d3` | Drift/AI-pilot trims: `StopAIPilot` early-out when already stopped (per-turn-start native calls skipped); `ToggleAIPilot` cinematic stop via `TryGetComponent` (no component instantiated just to no-op stop it); trigger rest-remap short-circuits to identity on healthy pads; `DriftAudioController` self-disables on class-gate fail (was a permanent early-out `Update`) |
 
 ---
 

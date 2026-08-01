@@ -199,44 +199,9 @@ namespace CosmicShore.Core
             }
         }
 
-        [Test]
-        public void SceneNameListSOAsset_MultiplayerScene_MatchesBuildSettings()
-        {
-            var guids = AssetDatabase.FindAssets("t:SceneNameListSO");
-            if (guids.Length == 0)
-            {
-                Assert.Inconclusive("No SceneNameListSO asset to validate.");
-                return;
-            }
-
-            var enabledNames = EditorBuildSettings.scenes
-                .Where(s => s.enabled)
-                .Select(s => System.IO.Path.GetFileNameWithoutExtension(s.path))
-                .ToHashSet();
-
-            foreach (var guid in guids)
-            {
-                var path = AssetDatabase.GUIDToAssetPath(guid);
-                var asset = AssetDatabase.LoadAssetAtPath<ScriptableObject>(path);
-                Assert.IsNotNull(asset, $"Failed to load SceneNameListSO at {path}");
-
-                var so = new SerializedObject(asset);
-                var multiplayerProp = so.FindProperty("_multiplayerScene");
-                Assert.IsNotNull(multiplayerProp,
-                    $"SceneNameListSO at {path} is missing '_multiplayerScene' field.");
-
-                var multiplayerValue = multiplayerProp.stringValue;
-                if (string.IsNullOrEmpty(multiplayerValue))
-                {
-                    Assert.Inconclusive($"SceneNameListSO at {path} has empty MultiplayerScene (may not be configured yet).");
-                    return;
-                }
-
-                Assert.IsTrue(enabledNames.Contains(multiplayerValue),
-                    $"SceneNameListSO.MultiplayerScene ('{multiplayerValue}') at {path} " +
-                    $"not found in enabled build settings scenes.");
-            }
-        }
+        // (The MultiplayerScene member was retired with the standalone MultiplayerFreestyle
+        // scene - gameplay scenes launch by each SO_ArcadeGame card's SceneName, so there is
+        // no generic "multiplayer scene" to validate against build settings.)
 
         [Test]
         public void SceneNameListSO_DefaultValues_AreCorrect()
@@ -246,7 +211,6 @@ namespace CosmicShore.Core
             Assert.AreEqual("Bootstrap", sceneNames.BootstrapScene);
             Assert.AreEqual("Authentication", sceneNames.AuthenticationScene);
             Assert.AreEqual("Menu_Main", sceneNames.MainMenuScene);
-            Assert.AreEqual("MinigameFreestyleMultiplayer_Gameplay", sceneNames.MultiplayerScene);
 
             Object.DestroyImmediate(sceneNames);
         }

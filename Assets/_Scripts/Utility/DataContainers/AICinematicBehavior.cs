@@ -37,6 +37,13 @@ namespace CosmicShore.Utility
         private float behaviorStartTime;
         private Vector3 loopCenter;
 
+        void Awake()
+        {
+            // Update() only runs during an active flourish (Start/StopCinematicBehavior
+            // toggle it) - vessels pay no per-frame cost outside the end-game reveal.
+            enabled = false;
+        }
+
         public void Initialize(IVesselStatus status, AIPilot pilot)
         {
             vesselStatus = status;
@@ -50,6 +57,7 @@ namespace CosmicShore.Utility
         {
             currentBehavior = behaviorType;
             isActive = true;
+            enabled = true;
             behaviorStartTime = Time.time;
             
             CSDebug.Log($"[AICinematicBehavior] Starting behavior: {behaviorType}");
@@ -92,7 +100,13 @@ namespace CosmicShore.Utility
         /// </summary>
         public void StopCinematicBehavior()
         {
+            // Called on every pilot-mode change (VesselController.ToggleAIPilot), which
+            // is almost always while no flourish runs - skip the log noise for no-ops.
+            if (!isActive && !enabled)
+                return;
+
             isActive = false;
+            enabled = false;
             CSDebug.Log($"[AICinematicBehavior] Stopped behavior: {currentBehavior}");
         }
 

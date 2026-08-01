@@ -10,7 +10,6 @@ namespace CosmicShore.ScriptableObjects
     public class SO_Game : ScriptableObject
     {
         public GameModes Mode;
-        public bool IsMultiplayer;
         public string DisplayName;
         public string Description;
         [FormerlySerializedAs("SelectedIcon")]

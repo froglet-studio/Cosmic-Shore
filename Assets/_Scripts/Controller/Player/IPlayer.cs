@@ -62,7 +62,6 @@ namespace CosmicShore.Gameplay
         /// Id of the owner client of this player in multiplayer
         /// </summary>
         ulong OwnerClientNetId { get; }
-        void InitializeForSinglePlayerMode(InitializeData data, IVessel vessel);
         void InitializeForMultiplayerMode(IVessel vessel);
         void ToggleGameObject(bool toggle);
         void DestroyPlayer();

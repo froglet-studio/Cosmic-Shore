@@ -24,6 +24,24 @@ namespace CosmicShore.Gameplay
             _                               => 0,
         };
 
+        /// <summary>
+        /// Writes the chosen metric back onto a single player's round stats - the inverse of
+        /// <see cref="Read"/>. Used by the shared final-results broadcast so every peer's stats
+        /// carry the server's authoritative metric values without per-mode array plumbing.
+        /// </summary>
+        public static void Write(IRoundStats stats, ScoringMetric metric, int value)
+        {
+            switch (metric)
+            {
+                case ScoringMetric.Crystals:          stats.CrystalsCollected = value; break;
+                case ScoringMetric.OmniCrystals:      stats.OmniCrystalsCollected = value; break;
+                case ScoringMetric.ElementalCrystals: stats.ElementalCrystalsCollected = value; break;
+                case ScoringMetric.Jousts:            stats.JoustCollisions = value; break;
+                case ScoringMetric.Goals:             stats.GoalsScored = value; break;
+                case ScoringMetric.PrismsDestroyed:   stats.HostilePrismsDestroyed = value; break;
+            }
+        }
+
         /// <summary>Sums the chosen metric across every player on <paramref name="domain"/>.</summary>
         public static int SumByDomain(GameDataSO gameData, ScoringMetric metric, Domains domain)
         {

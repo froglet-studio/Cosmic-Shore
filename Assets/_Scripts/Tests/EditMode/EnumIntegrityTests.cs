@@ -136,7 +136,7 @@ namespace CosmicShore.Tests
         public void GameModes_HasExpectedMemberCount()
         {
             var values = Enum.GetValues(typeof(GameModes));
-            Assert.AreEqual(33, values.Length,
+            Assert.AreEqual(32, values.Length,
                 "GameModes member count changed. Update tests if a game mode was added/removed.");
         }
 
@@ -150,10 +150,7 @@ namespace CosmicShore.Tests
 
         [Test]
         [TestCase(GameModes.Random, 0)]
-        [TestCase(GameModes.MultiplayerFreestyle, 28)]
-        [TestCase(GameModes.MultiplayerCellularDuel, 29)]
-        [TestCase(GameModes.Multiplayer2v2CoOpVsAI, 30)]
-        [TestCase(GameModes.MultiplayerWildlifeBlitzGame, 32)]
+        [TestCase(GameModes.Rampage, 2)]   // repurposed legacy solo ID - now the live MP destruction race
         [TestCase(GameModes.HexRace, 33)]
         [TestCase(GameModes.MultiplayerJoust, 34)]
         [TestCase(GameModes.MultiplayerCrystalCapture, 35)]
@@ -179,10 +176,6 @@ namespace CosmicShore.Tests
             // Convention check: multiplayer modes should be identifiable by name.
             var multiplayerModes = new[]
             {
-                GameModes.MultiplayerFreestyle,
-                GameModes.MultiplayerCellularDuel,
-                GameModes.Multiplayer2v2CoOpVsAI,
-                GameModes.MultiplayerWildlifeBlitzGame,
                 GameModes.MultiplayerJoust,
                 GameModes.MultiplayerCrystalCapture
             };

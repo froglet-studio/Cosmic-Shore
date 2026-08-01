@@ -184,8 +184,8 @@ TurnMonitor detects end condition → gameData.InvokeGameTurnConditionsMet()
 │   │           ├─ gameData.SortRoundStats(UseGolfRules: true)   — ascending (golf)
 │   │           ├─ gameData.CalculateDomainStats(UseGolfRules: true)
 │   │           ├─ _finalResultsSent = true
-│   │           └─ SyncFinalScoresSnapshot(winnerName)
-│   │               └─ SyncFinalScores_ClientRpc(names[], scores[], domains[], crystals[], winnerName)
+│   │           └─ SyncFinalResults(winnerName)
+│   │               └─ SyncFinalResults_ClientRpc (shared MultiplayerDomainGamesController tail)(names[], scores[], domains[], crystals[], winnerName)
 │   │                   ├─ Update all RoundStats on all clients
 │   │                   ├─ gameData.WinnerName = winnerName
 │   │                   ├─ gameData.InvokeWinnerCalculated()
@@ -278,7 +278,7 @@ To swap the end condition mode (e.g., timer-based), replace the turn monitor in 
 | Variable | Owner | Type | Purpose |
 |---|---|---|---|
 | `NetworkCrystalCollisionTurnMonitor._netCrystalCollisions` | Server | `NetworkVariable<int>` | Crystal target synced to all clients; `OnValueChanged` writes to `gameData.CrystalTargetCount` |
-| `gameData.WinnerName` | Server (via `SyncFinalScores_ClientRpc`) | `string` (non-serialized field) | Authoritative winner identity; non-empty signals "results ready" |
+| `gameData.WinnerName` | Server (via `SyncFinalResults_ClientRpc (shared MultiplayerDomainGamesController tail)`) | `string` (non-serialized field) | Authoritative winner identity; non-empty signals "results ready" |
 | `gameData.CrystalTargetCount` | Server (via `_netCrystalCollisions.OnValueChanged`) | `int` (non-serialized field) | Crystal target readable by any system |
 
 Note: `MultiplayerCrystalCaptureController` declares **no NetworkVariables**. All network sync is via ClientRpc arrays.
@@ -336,7 +336,7 @@ Also reports vessel telemetry via `ugsStatsManager.ReportVesselTelemetry()`.
 
 3. **Score = finish time / loser sentinel (per-player)**: winning-domain players carry the match time, losers the team-remaining sentinel; the scoreboard's secondary stat reads `CrystalsCollected` directly for individual contribution. The winner banner and end-game attribution use the domain aggregate via `WinnerDomain`. NOTE: UGS `CrystalCaptureStats.HighScores` values recorded before this change were crystal counts and shadow real times until cleared server-side (`UGSStatsManager.GetEvaluatedHighScore`).
 
-4. **HasEndGame=false + SetupNewRound suppression**: Crystal Capture handles end-game through `OnTurnEndedCustom()` → `SyncFinalScores_ClientRpc()`, which calls `InvokeWinnerCalculated()` + `InvokeMiniGameEnd()`. Setting `HasEndGame=false` prevents the base controller's `SyncGameEnd_ClientRpc` from duplicating these calls. Since `HasEndGame=false` causes `ExecuteServerRoundEnd` to call `SetupNewRound()` instead of `ExecuteServerGameEnd()`, Crystal Capture also overrides `SetupNewRound()` to return immediately when `_finalResultsSent=true`.
+4. **HasEndGame=false + SetupNewRound suppression**: Crystal Capture handles end-game through `OnTurnEndedCustom()` → `SyncFinalResults_ClientRpc (shared MultiplayerDomainGamesController tail)()`, which calls `InvokeWinnerCalculated()` + `InvokeMiniGameEnd()`. Setting `HasEndGame=false` prevents the base controller's `SyncGameEnd_ClientRpc` from duplicating these calls. Since `HasEndGame=false` causes `ExecuteServerRoundEnd` to call `SetupNewRound()` instead of `ExecuteServerGameEnd()`, Crystal Capture also overrides `SetupNewRound()` to return immediately when `_finalResultsSent=true`.
 
 5. **UseSceneReloadForReplay=true**: Same as HexRace — full network scene reload for clean state. The in-place reset path (`OnResetForReplayCustom`) is retained as a fallback but not used by default.
 

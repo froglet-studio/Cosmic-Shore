@@ -29,9 +29,31 @@ These come from the project owner and govern **every** item below:
 
 ---
 
+> **The unified path goal is MET (2026-07-25, `claude/unified-yash-refactor-9sc0ws`).** All
+> **six** domain modes — HexRace, Joust, Crystal Capture, NucleusRush, AstroLeague and Rampage —
+> now end through the one `MultiplayerDomainGamesController.SyncFinalResults` template
+> (score assignment → sort → aggregate → snapshot → `SetResults` → `Winner*` → `HasNoWinner` →
+> `InvokeWinnerCalculated` → `InvokeMiniGameEnd`). No mode reimplements the tail, and there is no
+> `IsMultiplayerMode` fork left to remove — the property itself was deleted in C5.
+>
+> Rampage was the last holdout: it arrived from `bleeding-edge` with a hand-copied tail written
+> before the Y1.2 hoist existed, and was folded onto the template on arrival (commit `0243abb3`).
+> Doing so also fixed two latent defects the copy carried — it never wrote `gameData.HasNoWinner`,
+> and it wrote `Winner*` **before** `SetResults`, the inverse of the order that stops a DNF
+> rendering as VICTORY.
+>
+> **If you add a seventh domain mode, do not hand-write an end-game tail.** Set
+> `HasEndGame => false`, resolve the winning domain in `OnTurnEndedCustom`, and call
+> `SyncFinalResults(domain, finishTime)`. The template owns everything after that.
+>
+> Still unverified in the editor: B17's engine check and the per-mode regression runs
+> (`Docs/UnifiedSystems/SOLO_RETIREMENT_TESTS.md` steps 13–17, 20–21, 29–30, 34).
+
+---
+
 ## Open design questions (agree before coding)
 
-### Q1 — Unify on the always-networked model; retire `IsMultiplayerMode`
+### Q1 — ✅ RESOLVED by owner 2026-07-20: solo modes retired outright; flag deleted (see R1)
 The game always runs as a network host, so a solo game is host + AI. We want
 solo-host and online to render scores through the **identical**
 domain-aggregated, RPC-synced path. Before writing code we must agree, per
@@ -52,13 +74,15 @@ Output of this discussion becomes item **R1**.
 
 ## Backlog (sequenced)
 
-### R1 — 🔴 [discuss-first] Remove `IsMultiplayerMode` forking → unified path
-Route all scoring/lobby/cinematic behavior through the always-networked host
-model; drive per-site behavior off concrete signals (§8) and delete the flag.
-Works *through* the **Domain + scoring** fundamentals (consolidation, not a new
-system). **Touches** winner calc, score sync, HUD layout selection, lobby
-buttons — gated on **Q1** sign-off. Ship in small steps (one fork site / small
-group per commit).
+### R1 — ✅ EXECUTED 2026-07-20 — `IsMultiplayerMode` deleted (solo-retirement program C5)
+The owner's decision dissolved the discuss-first question: solo modes no longer
+exist (solo = party-of-one host), so the flag distinguished nothing and was
+deleted rather than replaced. `SO_Game.IsMultiplayer` died with it; the
+`MultiplayerSetup` matchmaking path it gated was deleted whole (provably dead);
+presence advertises every in-game scene; analytics reads
+`ConnectedClientsIds.Count > 1` at report time. Per-site resolution table:
+`ARCHITECTURE.md` §8. Solo-host lobby buttons fork on `NetworkManager.IsServer`
+(the solo host owns Play Again / Main Menu — never "Leave Lobby").
 
 ### R2 — 🟢 Deduplicate the score-text animation (DRY) — incl. R2b (entrance)
 `PlayCounterRoll` / `PlayScorePunch` / `PlayColorFlash` / entrance were
@@ -183,7 +207,7 @@ winner only because of the loser-sentinel score design (and could diverge on a
 tie). **Done** (commit `80b14de4`): the banner now prefers the server-authoritative
 `gameData.WinnerDomain` (the same value the cinematic uses), falling back to
 `DomainStatsList[0]`/`orderedStats[0]` for modes that don't set it (single-player /
-co-op / DuelForCell — `WinnerDomain` stays `Blue`, already reset every scene load +
+co-op / legacy — `WinnerDomain` stays `Blue`, already reset every scene load +
 replay). Behavior-preserving in normal play; fixes the tie divergence. No reset
 code needed (existing infra). Full consolidation is **R10**.
 
@@ -229,9 +253,11 @@ Sequence **with R1** (unified always-networked path) — both touch the scoring 
   vessel podium (`EndGameVesselDisplayManager`) still ranked by a local descending-`Score` sort
   (golf-inverted → showed the loser 1st in HexRace). It now reads `gameData.Results` too (BUGS.md
   B7); that was the last end-game surface re-deriving rank locally.
-- 🟡 **C** (R1) — partially advanced: `IsLocalUser` → `IsMultiplayerOwner` (commit `10e541fc`, no
-  offline single-player branch). Still open: remove the `IsMultiplayerMode` scoring branches
-  (`Scoreboard.cs:147,454`) and retire `DomainStatsList[0]` as a winner source.
+- ✅ **C** (R1) — complete: `IsLocalUser` → `IsMultiplayerOwner` (commit `10e541fc`), and the
+  `IsMultiplayerMode` flag itself deleted 2026-07-20 (solo-retirement C5 — the Scoreboard
+  branches were already gone by then). `DomainStatsList[0]`-as-winner-source survives only as
+  the legacy fallback in `EndGameSequencer.DidLocalPlayerWin` for modes that never write
+  `WinnerDomain`, now guarded by `GameDataSO.HasNoWinner` (B17).
 - 🔴 **D** (next session) — **server-ORDERED results sync**: the rows are still re-SORTED on every
   peer (`SyncFinalScores_ClientRpc` → `rule.BuildResults` over the local `RoundStatsList`), so tied
   rows order differently host vs client. Sort once on the server, ship rows in rank order (+ the
@@ -297,13 +323,12 @@ when the stat-row surface itself changes.
 ---
 
 ## Parking lot
-- `CoOpScoreBoard.OppponentScoreTextField` — field-name typo ("Oppponent");
+- ~~`CoOpScoreBoard.OppponentScoreTextField` typo~~ — class deleted with the 2v2 stack 2026-07-21;
   rename when touched.
 - `HUDAnimationSettingsSO.scoreboardRowStagger` appears unused (the scoreboard
   passes the row index but `PlayerScoreCard` uses `cardEntranceStagger`) — see
   `BUGS.md` B3; remove or wire correctly.
-- `DuelForCell` in-game HUD wiring is unclear (no dedicated HUD subclass) —
-  confirm which HUD the Cellular Duel scene uses during the unified-path work.
+- ~~`DuelForCell` in-game HUD wiring~~ — closed: Cellular Duel deleted outright 2026-07-21.
 - `GameCanvas-HexRace.prefab` carries stale Scoreboard-era data: the internal
   `Scoreboard`'s serialized fields predate the current class (old
   `multiplayerController` name, `SinglePlayerBannerColor`, rematch panel refs),

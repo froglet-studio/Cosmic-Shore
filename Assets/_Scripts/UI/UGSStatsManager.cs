@@ -148,11 +148,6 @@ namespace CosmicShore.Core
             SaveModeStats();
         }
 
-        public void ReportBlitzStats(GameModes mode, int intensity, int crystals, int lifeForms, int score)
-        {
-            // Score attack: every run is a real result, and there is no win condition.
-            ReportModeResult(mode, intensity, score, isRealResult: true, won: false);
-        }
 
         public void ReportHexRaceStats(GameModes mode, int intensity, int clean, float drift, int jousts, float score)
         {

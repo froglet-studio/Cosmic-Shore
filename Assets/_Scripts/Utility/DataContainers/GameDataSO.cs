@@ -72,7 +72,6 @@ namespace CosmicShore.Utility
         public bool IsDailyChallenge;
         public bool IsTraining;
         public bool IsMission;
-        public bool IsMultiplayerMode;
 
         /// <summary>
         /// True while a Tournament session is in progress (set by
@@ -146,8 +145,8 @@ namespace CosmicShore.Utility
         }
 
         /// <summary>
-        /// Server-authoritative winner name, written by game controllers in their
-        /// SyncFinalScores_ClientRpc. Read by EndGameControllers after OnWinnerCalculated fires.
+        /// Server-authoritative winner name, written by the domain controllers' shared
+        /// SyncFinalResults tail. Read by EndGameControllers after OnWinnerCalculated fires.
         /// Reset automatically in <see cref="ResetRuntimeData"/> and <see cref="ResetRuntimeDataForReplay"/>.
         /// </summary>
         // ── Match envelope (SERVER authority; replicated by SyncGameConfigToClients_ClientRpc) ──
@@ -177,6 +176,17 @@ namespace CosmicShore.Utility
         /// Reset automatically in <see cref="ResetRuntimeData"/> and <see cref="ResetRuntimeDataForReplay"/>.
         /// </summary>
         [NonSerialized] public Domains WinnerDomain = Domains.Blue;
+
+        /// <summary>
+        /// True when the authoritative end EXPLICITLY declared no winner (a
+        /// <see cref="Domains.Blue"/> broadcast from the domain controllers' SyncFinalResults
+        /// tail - e.g. a co-op DNF). Distinguishes an intentional no-winner end from the
+        /// legacy "Winner* never written" state: end-game surfaces (EndGameSequencer,
+        /// Scoreboard) keep their derive-a-winner fallbacks for legacy modes but must treat
+        /// this flag as "nobody won" (DEFEAT reveal, neutral banner).
+        /// Reset alongside <see cref="WinnerName"/>.
+        /// </summary>
+        [NonSerialized] public bool HasNoWinner;
 
         /// <summary>
         /// Single source of truth for the final ranked results (per-player, sorted, with
@@ -227,7 +237,7 @@ namespace CosmicShore.Utility
 
         /// <summary>
         /// The resolved joust-collision target for the current session - the per-domain
-        /// joust sum that ends a Joust turn. Published by <see cref="JoustCollisionTurnMonitor"/>
+        /// joust sum that ends a Joust turn. Published by <see cref="NetworkJoustCollisionTurnMonitor"/>
         /// in StartMonitor on every peer (a scene constant, identical across clients). Read by
         /// the Joust controller to format the "N Jousts Left" loser line into
         /// <see cref="ScoreResult.ScoreText"/>. Reset in <see cref="ResetRuntimeData"/> and
@@ -282,7 +292,6 @@ namespace CosmicShore.Utility
 
             SceneName = game.SceneName;
             GameMode = game.Mode;
-            IsMultiplayerMode = game.IsMultiplayer;
             ComebackRatePerScoreDeficit = game.ComebackRatePerScoreDeficit;
         }
 
@@ -373,7 +382,11 @@ namespace CosmicShore.Utility
                 SelectedPlayerCount != null ? SelectedPlayerCount.Value : 0,
                 SelectedPlayerCount != null ? Mathf.Max(0, SelectedPlayerCount.Value - RequestedAIBackfillCount) : 0,
                 RequestedAIBackfillCount,
-                IsMultiplayerMode);
+                // Always networked since C5 retired IsMultiplayerMode: every mode runs the
+                // single-host model and a solo launch is a party of one plus AI backfill.
+                // The solo-vs-party distinction the header used to carry is now readable
+                // off humanPlayers, which this call already reports.
+                isMultiplayer: true);
             OnLaunchGame?.Raise();
         }
         public void InvokeSceneTransition(bool param) => OnSceneTransition?.Raise(param);
@@ -456,6 +469,7 @@ namespace CosmicShore.Utility
             LocalRoundStats = null;
             WinnerName = "";
             WinnerDomain = Domains.Blue;
+            HasNoWinner = false;
             Results.Clear();
             CrystalTargetCount = 0;
             JoustTargetCount = 0;
@@ -502,6 +516,7 @@ namespace CosmicShore.Utility
             _playerSpawnPoseList.Clear();
             WinnerName = "";
             WinnerDomain = Domains.Blue;
+            HasNoWinner = false;
             Results.Clear();
             CrystalTargetCount = 0;
             JoustTargetCount = 0;
@@ -527,7 +542,6 @@ namespace CosmicShore.Utility
         public void ResetAllData()
         {
             GameMode = GameModes.Random;
-            IsMultiplayerMode = false;
             // ActiveSession is intentionally NOT reset here. Under the "Always
             // InParty" model the field is the single source of truth for the
             // live UGS Relay session reference (shared with HCS via
@@ -743,21 +757,6 @@ namespace CosmicShore.Utility
             // No-op here because Players list holds the references.
 
             return (removedPlayers + removedStats) > 0;
-        }
-        
-        public void SwapVessels()
-        {
-            var player0 = Players[0];
-            var player1 = Players[1];
-            
-            var vessel0 = player0.Vessel;
-            var vessel1 = player1.Vessel;
-            
-            player0.ChangeVessel(vessel1);
-            player1.ChangeVessel(vessel0);
-            
-            vessel0.ChangePlayer(player1);
-            vessel1.ChangePlayer(player0);
         }
         
         // -----------------------------------------------------------------------------------------
