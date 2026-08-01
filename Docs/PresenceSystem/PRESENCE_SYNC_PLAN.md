@@ -6,9 +6,12 @@ repaints. When a player leaves, they disappear from every other client's `Friend
 / `ArcadeLobbyList` as fast as the platform allows. Both driven by an explicit state machine
 so each step is an observable event other systems can subscribe to.
 
-**Status.** Plan only — no code changed yet. Every claim below carries a `file:line` and was
+**Status.** Commit 1 of 8 shipped (§ 5). Every claim below carries a `file:line` and was
 adversarially re-verified against source. Corrections from the verification pass are folded in;
 where a claim did not survive it is listed in § 8 rather than quietly dropped.
+
+**Nothing here has been run in the editor yet.** Commit 1 is counters plus editor-only logging,
+so the risk is low, but it is unverified — see `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
 
 **Scope.** The three reported symptoms:
 
@@ -417,19 +420,35 @@ stale-index defect. Do not add it.
 Tags: **[RC]** fixes a confirmed root cause · **[ARCH]** architectural improvement.
 Each block is one commit with its own 3-VP MPPM smoke (`PartySystem/REFACTOR.md:153`).
 
-### Commit 1 — Observability first, no behavior change **[RC-2, RC-3]**
+### Commit 1 — Observability first **[RC-2, RC-3]** — ✅ SHIPPED
 
-- `HostConnectionService.cs:1176-1184` and `:1515-1539` — replace both empty branches with a
-  `_benignRefreshSkips++` counter and a **throttled** (1 per 10 s) `CSDebug.Log` carrying
-  `NetworkDiagnostics.ClassifyException(e)`. Expose `BenignRefreshSkips` for the NetDiag overlay.
-  Do **not** restore full `Debug.LogWarning` — B1's whole point was noise suppression.
-- `:2099-2100` — `IsRateLimitException` walks `InnerException` and matches
-  `SessionException.Error == SessionError.RateLimited`.
-- Reorder both catches: transition guards → definite-session-gone → rate-limit → benign → generic.
-  Update the XML comment at `:2189-2191`, which asserts an ordering that does not exist.
-- `PresenceLobbyService.cs:201-205, 238-242, 432-437` — add NetDiag to the converge-query,
-  converge-join and per-session-join catches. Unblocks `TODO-P5` / the `LobbyMembershipMonitor`
-  data prerequisite.
+Landed as three commits:
+
+| Commit | What |
+|---|---|
+| `44587a2f` | Both empty benign branches now increment per-read-path counters (`_benignPresenceSkips` / `_benignPartySessionSkips`, exposed as `BenignPresenceSkips` / `BenignPartySessionSkips`) and emit one throttled `CSDebug.Log` per 10 s carrying both running counts + `ClassifyException` + `GetSnapshot`. `CSDebug`, not `Debug.LogWarning` — it compiles out in release, so observability returns without B1's spam. |
+| `11559a93` | New `UgsErrorClassifier.IsRateLimit` — one chain-walking classifier replacing three divergent private copies (`HostConnectionService` and `PresenceLobbyService` matched an outer-message substring; `PartySessionService` pattern-matched only an outer `RequestFailedException`). Rate-limit branch moved **above** the benign branches at both catch sites. Stale `IsBenignSdkStaleIndexError` class doc corrected. |
+| `92ec00f7` | `LogNetDiag(operation, e)` on all seven `PresenceLobbyService` catches (four had none, including both halves of `ConvergeToCanonicalAsync`), with an operation tag so a log line says *which* lobby op failed. |
+
+> **Deviation from this plan, decided on re-read of the source.** This section
+> originally called for reordering both catches to
+> `transition → definite → rate-limit → benign → generic`. **`[definite]` was
+> deliberately left below `[benign]`.** Structured definite errors
+> (`SessionNotFound` / `SessionDeleted` / `NotInLobby`) carry a specific
+> `SessionError` and therefore never match `IsBenignSdkStaleIndexError`'s
+> `Error == Unknown` discriminator — they already reach `[definite]` correctly
+> under the existing order. The *only* input the current order sends to benign
+> instead is a `SessionException` the SDK itself could not classify whose message
+> merely reads like `"session … not found"`, and `IsDefiniteSessionGoneException`
+> has a message-substring fallback that would catch it. Promoting `[definite]`
+> would route that ambiguous case into `HandleDefiniteSessionGoneAsync` — which
+> recreates the solo session and kicks any client mid-join (the hazard
+> `SESSION_CREATION_GRACE_PERIOD_SECONDS` exists to prevent). "Retry next tick" is
+> the safe reading of an error the SDK could not name. Rationale is recorded at
+> the branch and in the classifier doc; **do not re-derive this.**
+
+Only the rate-limit reorder shipped. Everything else in this commit is counters
+and editor-only logging — classification, control flow and recovery are untouched.
 
 ### Commit 2 — Kill the decoy interval; jitter; wall-clock accumulator **[RC-4, RC-13]**
 

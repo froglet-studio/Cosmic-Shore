@@ -23,6 +23,57 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Presence sync — Commit 1 (observability): benign-skip counters, shared rate-limit classifier, NetDiag on every presence catch
+
+Commits `44587a2f`, `11559a93`, `92ec00f7` on
+`claude/multiplayer-presence-lobby-sync-6j924k`. Plan:
+`Docs/PresenceSystem/PRESENCE_SYNC_PLAN.md` § 5 Commit 1.
+
+**What landed.** Counters + one throttled `CSDebug.Log` per 10 s on the two
+previously-empty benign catch branches in `HostConnectionService`; a new
+`UgsErrorClassifier.IsRateLimit` (chain-walking) replacing three divergent
+private copies; the `[rate-limit]` branch moved above `[benign]` at both catch
+sites; `LogNetDiag(operation, e)` on all seven `PresenceLobbyService` catches.
+
+**Verify in editor**
+
+1. **It compiles.** `UgsErrorClassifier.cs` is a new file authored without an
+   editor — confirm Unity imported it, generated a `.meta` matching the
+   hand-authored GUID `517b66f60f7b4b1dab3cb151fecd2c5f` (it should adopt the
+   committed one, not mint a new one), and that
+   `Assets/_Scripts/Controller/Party/Services/` compiles clean. It references
+   `SessionException` / `SessionError` via `Unity.Services.Multiplayer` and
+   `RequestFailedException` via `Unity.Services.Core`; both are already used by
+   `HostConnectionService`, so no asmdef change should be needed.
+2. **The benign counter actually ticks.** Run solo Menu_Main for ~60 s.
+   `Docs/PresenceSystem/BUGS.md` B1 reports this SDK fault firing every ~3 s, so
+   `[HostConnectionService] Benign SDK fault on the presence read` should appear
+   at most once per 10 s with a climbing `skips: presence=N`. **If N stays 0 for
+   a full minute, that is the interesting result** — it means B1 is no longer
+   firing on this path and the "stale list" symptom has a different cause than
+   RC-2. Record either outcome in `BUGS.md` B1/B6.
+3. **No new console spam.** The whole point of the original silence was B1's
+   ~3 s spam. Confirm the throttle holds — one line per 10 s maximum, and none
+   at all when the SDK is behaving.
+4. **Rate-limit reorder didn't steal benign traffic.** If step 2 shows skips
+   climbing, confirm they are still classified benign and NOT appearing as
+   `Rate limited during refresh - backing off`. A benign stale-index fault
+   carries neither a 429 nor "Too Many Requests", so the two should stay
+   disjoint; if they don't, `UgsErrorClassifier.IsRateLimit` is over-matching.
+5. **Party smoke still green.** 3-VP MPPM with uniquely tagged virtual players:
+   accept / decline / leave / second accept after leave
+   (`Docs/PartySystem/TESTS.md` S-series). The classifier now fires in
+   `catch ... when` filters on `PresenceLobbyService` query/join/create and
+   `PartySessionService` create/join, so a retry that previously did NOT engage
+   for a wrapped 429 now will — that is the intended fix, but it is the one
+   behavior change in this commit set and deserves the smoke.
+
+**Not verifiable in editor:** whether a real wrapped 429 is actually shaped the
+way `UgsErrorClassifier` expects. Confirm from a live NetDiag log line showing
+`class=RateLimit` alongside the new backoff warning before treating RC-3 as closed.
+
+---
+
 ### 🔴 Fauna consumption v3 + shark jaw rig (fauna-consumption-behavior branch, merged)
 
 Landed via PR #614 (`claude/fauna-consumption-behavior-*`) plus the shark-jaw
