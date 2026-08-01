@@ -6,8 +6,7 @@ repaints. When a player leaves, they disappear from every other client's `Friend
 / `ArcadeLobbyList` as fast as the platform allows. Both driven by an explicit state machine
 so each step is an observable event other systems can subscribe to.
 
-**Status.** Commits 1, 2, 3 and 4 of 8 shipped (§ 5). Remaining: 5 (PresenceStateMachine + the
-vessel-spawn broadcast), 6 (tombstones), 7 (UI binding), 8 (profile icons). Every claim below carries a `file:line` and was
+**Status.** **All 8 commits shipped** (§ 5). Nothing is verified in the editor yet. Every claim below carries a `file:line` and was
 adversarially re-verified against source. Corrections from the verification pass are folded in;
 where a claim did not survive it is listed in § 8 rather than quietly dropped.
 
@@ -569,102 +568,111 @@ value, so the recovery only leaves `Reconnecting` when it actually entered it.
 > source. **Revisit only with real 429 counts (`TODO-P5`).**
 
 
-### Commit 5 — `PresenceStateMachine` + the vessel-spawn broadcast **[RC-7; the requirement]**
+### Commit 5 — `PresenceStateMachine` + the vessel-spawn broadcast **[RC-7]** — ✅ SHIPPED
 
-- New `PresenceState.cs` (static numeric values, per CLAUDE.md), `PresenceStateMachine.cs` (copy
-  `PartyStateMachine`'s shape verbatim), `SOAP/ScriptablePresenceState/` triple.
-- New `PresenceService.cs` — owns the machine; subscribes `OnClientReady` → `Present`,
-  `OnLaunchGame` → `InMatch`, `sceneLoaded(Menu_Main)` → arm `Present`,
-  `PartyStateMachine.OnStateChanged` (observe only); catch-up probe at init. Registered lazily in
-  `AppManager.InstallBindings` beside the other party services.
-- `HostConnectionService.cs:1864-1870` — **delete `if (IsOnMenuScene()) return string.Empty;`**.
-  Return `_presence.CurrentState == PresenceState.InMatch ? _gameData.GameMode.ToString() : string.Empty`.
-  The state machine, not the scene name, is the authority. Revives the dead `InMatch` branch at
-  `FriendsListPanel.cs:365`.
-- `:1822-1863` — `presenceState` joins the same batched `SaveWithRetryAsync` (still one
-  `UpdatePlayer`) with a `_publishedPresenceState` tracker in the change gate.
-- `:1392-1416` — `ReadOnlinePlayerData` parses `presenceState`; `PartyPlayerData` gains
-  `int PresenceState` (keep `Equals`/`GetHashCode` on `playerId` only).
-- `:377-388` — **remove `if (!IsOnMenuScene()) return;`**. In a game scene: 30 s cadence,
-  publish-only, no invite scan. The presence layer must keep running there or `matchName` can never
-  be maintained.
-- `FriendsInitializer` — subscribe `OnLocalPresenceStateChanged`; call the existing-but-dead
-  `SetPresenceInGame(...)` on `InMatch` and `SetPresenceInMenu()` on `Present`. Wire
-  `HandleSignedOutEvent` to `AuthenticationData.OnSignedOut` (raised at
-  `AuthenticationServiceFacade.cs:309`, currently routed nowhere). Add a duplicate guard to
-  `WireEvents`.
-- Fix the stale lazy-Relay XML comment at `:481-485` in the same commit.
+`641ec251`. A **sibling** machine, not an extension of `PartyStateMachine`:
 
-### Commit 6 — Tombstones; stop the reconnect wiping the party **[RC-6, RC-8]**
+```
+Offline → Joining → Announced → Present → InMatch
+                        ↑           │         │
+                        └──── Recovering ◄────┘
+        (→ Departing → Offline from anywhere)
+```
 
-- `:1367-1371` — replace the unconditional `RemoveAt` with a `Dictionary<string,int> _missedReads`:
-  ≥1 miss → `OnOnlinePlayerUpdated` with `Liveness = Unconfirmed` (row dimmed, invite disabled,
-  **kept**); ≥3 misses **or** an explicit `PlayerLeaving` push → `RemoveAt` + `OnOnlinePlayerLeft`.
-  Reset on every sighting. Move the departed-invite cleanup (`:1385`) behind the same threshold so a
-  transient read can't cancel a live invite.
-- `PartyMemberService.cs:157-168` — same two-strike rule before `RemoveAt` + `RaisePartyMemberLeft`.
-  Skip the strike when the removal came from a `PlayerLeaving` push or `ReconcilePartyMembersNow`.
-- `:1723-1734` — `ApplyPostLobbyJoinState` calls
-  `_memberService.SeedLocalPlayer(clearFirst: _partySessionService.ActiveSession == null)`.
-  A presence-layer reconnect must never clear a live party roster.
-- `PartySessionService.cs:239-240` — set `CreatedAtUnscaledTime` in `JoinByIdAsync` too, so the 4 s
-  grace gate is symmetric.
-- `MultiplayerSetup.cs:182` — on the host's `OnClientDisconnect`, also mark that peer `Unconfirmed`
-  in `OnlinePlayers` (the only sub-reap signal available for a party peer). Lower
-  `UnityTransport.DisconnectTimeoutMS` to **10000** — not 5000; mobile radios stall.
+`Announced → Present` fires on `GameDataSO.OnClientReady` — the vessel-spawn
+broadcast. It publishes a `presenceState` lobby property that the Commit 4 push
+channel delivers to every peer.
 
-### Commit 7 — UI binding **[RC-9; ARCH]**
+`Announced` is what fixes the "wrong information" half of symptom A: a peer whose
+vessel has not spawned renders as a non-invitable **CONNECTING…** row instead of a
+normal invitable one. Inviting them never worked anyway — their refresh loop is
+not running, so the invite is never scanned for.
 
-- New `UI/Interfaces/IModalPanel.cs` — `void OnModalOpened(); void OnModalClosed();`.
-  `ModalWindowManager` caches `GetComponentsInChildren<IModalPanel>(true)` in `Awake` and dispatches
-  from `ModalWindowIn()` / `ModalWindowOut()`. This is parent→child dispatch inside one prefab
-  hierarchy — the same shape as `ScreenSwitcher`/`IScreen.OnScreenEnter` — not cross-system
-  communication, so it does not violate the SOAP rule.
-- `ArcadeLobbyList` — implement `IModalPanel`; move the `SubscribeSoap + PopulateAll +
-  ForceRefreshNow` body into `OnModalOpened()`. Keep `OnEnable`/`OnDisable` delegating to the same
-  (idempotent) methods. `HandlePartyChanged` / `HandlePartyCleared` must call `UpdateOnlineStatus()`.
-  Subscribe `OnHostConnectionEstablished/Lost` → `UpdateOnlineStatus()`, and the new
-  `OnLocalIdentityChanged` → `PopulateLocalSlot(slots[0])`.
-- Replace the single-shot `PlayerDataService.Instance` / `HostConnectionService.Instance` captures
-  (`ArcadeLobbyList.cs:153`, `FriendsListPanel.cs:161`) with the deferred-bind pattern from
-  `ProfileImage.TryBind` — attempt in `OnEnable` **and** `Start`, guarded by `_subscribed`.
-- New roster SOAP channels on `HostConnectionDataSO` (there is no online joined/left event today —
-  panels infer it from `ScriptableList` item events, which is why an in-place field change arrives
-  as destroy-then-instantiate):
-  `OnOnlinePlayerJoined` / `OnOnlinePlayerLeft` / `OnOnlinePlayerUpdated` /
-  `OnOnlineRosterResynced` / `OnLocalPresenceStateChanged` / `OnLocalIdentityChanged`.
-  Author the assets and wire them — **no null guards**.
-- `FriendsListPanel` — subscribe those instead of the raw item events. `Updated` →
-  `PopulateOnlineEntry(existingRow, player)` **in place**: no `Destroy`, no `Instantiate`, no sibling
-  reorder. `HandlePartyMemberChanged` repaints only the affected row instead of rebuilding the
-  section (removes the double rebuild per kick, since `RemovePartyMember` raises Kicked **and**
-  Left). Drop the redundant second `PopulateAll()` in `Show()`. Pool rows instead of
-  `Destroy`/`Instantiate`.
-- Both panels — render a "Reconnecting…" overlay while `Recovering`. Closes `TODO-P6`: today an
-  empty panel is indistinguishable from a reconnect.
+**RC-7 fixed.** `ResolveCurrentMatchName` now keys off the state machine instead
+of `IsOnMenuScene()`, and `HandleGameLaunch` transitions to `InMatch` *before*
+publishing. `matchName` was previously never published at all, making
+`OnlineInfoEntry.Status.InMatch` dead code.
 
-### Commit 8 — Profile icons **[RC-10, RC-11; ARCH]**
+**Compatibility:** an absent `presenceState` parses as `Present`, not 0/`Offline` —
+a peer on an older build publishes nothing, and defaulting to 0 would have made
+every such player invisible.
 
-- `SO_DefaultProfileIcons.asset` — insert an `Id: 0`, `Name: "Unknown"` entry with a **visually
-  distinct** sprite. This alone converts every silent icon bug into a visible one.
-- New `Utility/ProfileIconResolver.cs` (pure C#, DI singleton): dictionary cache + `TryResolve` /
-  `Resolve` / `Unknown`. Collapse all **seven** local scans onto it
-  (`FriendsListPanel:740`, `ArcadeLobbyList:401`, `PartyInviteNotificationPanel:258`,
-  `ArcadeProfileWidget:84`, `PlayerDataService:319`, `MiniGameHUD:529`, `TournamentSceneView:501`).
-  `PartyInviteNotificationPanel.cs:156-159` assigns unconditionally — a miss now shows "Unknown",
-  never the previous inviter's face.
-- `PlayerDataService.GetDefaultAvatarId()` (`:229-235`) — return the first icon with `Id > 0`;
-  `ProfileIconSelectView.BuildAvatarGrid` skips `Id <= 0` (it is a sentinel, not a choice).
-- `GameDataSO` — add `OnPlayerIdentityChanged(ulong netObjId)`. `Player.OnNetAvatarIdChanged`
-  (`:552`) and the `NetName` callback raise it alongside the existing mirror writes.
-- `ArcadeGameConfigureModal` — subscribe `OnPlayerIdentityChanged` in `SpawnChipsForAllPlayers`,
-  re-resolve that chip's sprite on raise, unsubscribe in `DespawnAllChips`. `CloseAndNotifyClients()`
-  (`:1204-1221`) must call `DespawnAllChips()` — the client path already does at `:1477`; the host
-  path leaks the per-`Player` `NetDomain` handlers.
-- `ProfileIconSelectView` — implement `IModalPanel`, build the grid in `OnModalOpened()`, subscribe
-  `OnProfileChanged` to rebuild the highlight. When `!dataService.IsInitialized` (`:239-259`) either
-  actually cache the write and raise `OnProfileChanged`, or refuse the selection and leave the button
-  unlatched — silently latching a selection that never persists is the worst of the three.
+Deviation: the `PresenceState` SOAP triple was **not** authored. The machine
+exposes a C# `OnStateChanged`, matching `PartyStateMachine`'s established shape in
+this same subsystem, so no new SOAP assets were hand-authored. Add the SOAP
+channel in-editor if inspector-wired listeners are wanted.
+
+### Commit 6 — Two-strike removal **[RC-6]** — ✅ SHIPPED
+
+`c9c6db17`. Both roster diffs (`RefreshOnlinePlayersDiff` and
+`PartyMemberService.SyncFromSession`) now require **2** consecutive absent reads
+before evicting, strike count cleared on sight.
+
+One absence was never evidence of departure — the UGS stale-cache defect (B1/B6),
+a refresh landing mid-mutation, or `ConvergeToCanonicalAsync` swapping
+`_activeLobby` mid-cycle all produce a short read. Acting on one emptied the panel
+and refilled it a tick later: the reported flicker.
+
+Genuine departures are not slowed where it matters — a graceful leave arrives as
+an `ISession.PlayerLeaving` push, and a hard-dropping party peer is caught by the
+host's `OnClientDisconnect` backstop.
+
+The outgoing-invite cleanup keys off the roster, not the strike counter: the
+removal loop deletes a player's counter entry as it evicts them, so reading the
+counter there would find nothing exactly when the player had genuinely gone.
+
+The `Unconfirmed`/dimmed tombstone rendering from § 6(d) is **not** implemented —
+only the eviction delay. Rows hold their normal appearance during the grace
+window.
+
+### Commit 7 — UI binding **[RC-9]** — ✅ SHIPPED
+
+`24a9b420`. New `IModalPanel { OnModalOpened, OnModalClosed }`, dispatched by
+`ModalWindowManager` from `ModalWindowIn`/`ModalWindowOut`. Both panels implement
+it and also keep `OnEnable`/`OnDisable`, since neither alone is sufficient.
+
+`ArcadeLobbyList.OnEnable` fired **once per scene load**, never per open, because
+arcade modals hide by CanvasGroup. Its `ForceRefreshNow()` pull and full
+repopulate therefore never ran on open, and every eventless write to
+`HostConnectionDataSO` (`LocalDisplayName` / `LocalAvatarId` are plain field
+assignments) stayed invisible forever.
+
+The panel array resolves **lazily**, not in an `Awake` override:
+`ArcadeGameConfigureModal` declares `void Awake()` (not `override`), which would
+have hidden a base `Awake` — on the very modal this exists to fix. The class's own
+`EnsureBackdrop` doc warns about exactly this hazard.
+
+Also: the online counter repaints on party changes; `Show()` no longer
+double-builds; the `HostConnectionService.Instance` subscription is re-attempted
+on every open instead of once.
+
+### Commit 8 — Profile icons **[RC-10, RC-11]** — ✅ SHIPPED
+
+`3b9a30fa`. **Nine** duplicated resolvers with three different fallbacks collapsed
+onto `SO_ProfileIconList.Resolve(id)` — a lazily built dictionary falling back to a
+new authored `unknownIcon`.
+
+Authored ids start at **1**; every producer defaults to **0**; every consumer fell
+back to `profileIcons[0]` — which *is* id 1. So "unknown" rendered as a real,
+plausible avatar. That is why this symptom was hard to pin down and why every
+other avatar bug behind it was invisible.
+
+> **Editor action required: assign "Unknown Icon" on `SO_DefaultProfileIcons.asset`.**
+> A sprite could not be authored from this environment. Left unassigned,
+> unresolved avatars render as nothing — still honest, and `DomainAvatarChip.Set`
+> keeps its Image enabled so the prefab placeholder shows — but a distinct
+> placeholder is the intent.
+
+Also: ids ≤ 0 are sentinels, not choices (`FirstSelectableId()` for new profiles
+and for the picker's default); configure-modal chips subscribe
+`NetAvatarId.OnValueChanged` alongside `NetDomain` so a late-replicating avatar
+repaints; `CloseAndNotifyClients()` calls `DespawnAllChips()`, which the host path
+never did — leaking every per-`Player` handler until the next open.
+
+Deviation: the resolver lives **on the SO** rather than as a separate
+DI-registered `ProfileIconResolver`. Every consumer already holds a reference, so
+this needed no new registration, no new asset, and no `AppManager` change.
+
 
 ### Commit 9+ — deferred **[ARCH]**, gated on 1–8 landing green
 

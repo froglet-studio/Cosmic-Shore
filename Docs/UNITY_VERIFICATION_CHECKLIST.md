@@ -23,6 +23,48 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Presence sync — Commits 5-8 (state machine, tombstones, UI binding, icons)
+
+Commits `641ec251`, `c9c6db17`, `24a9b420`, `3b9a30fa` on
+`claude/multiplayer-presence-lobby-sync-6j924k`. **All 8 commits of the branch
+are now landed and none are editor-verified.**
+
+**Work `Docs/PresenceSystem/PRESENCE_SYNC_VERIFICATION.md`** — one guide covering
+all 8 in a single pass, rather than these per-commit entries.
+
+**TWO EDITOR ACTIONS REQUIRED before anything will look right:**
+
+1. **Assign `Unknown Icon`** on `_SO_Assets/SO_DefaultProfileIcons.asset` (new
+   field under "Fallback"). A sprite could not be authored headlessly. Use
+   something clearly not one of the 18 real avatars. Unassigned, unresolved
+   avatars render as nothing.
+2. **Confirm `On App Quit Requested`** on `ApplicationLifecycleEvents.asset`
+   points at `EventOnAppQuitRequested`, not `None` — it was wired by raw-YAML
+   text edit, and SOAP fields fail loud (NRE on quit).
+
+**New hand-authored files** (hand-written `.meta` GUIDs; Unity should adopt them,
+not mint new): `PresenceState.cs`, `PresenceStateMachine.cs`, `IModalPanel.cs`
+(plus `UgsErrorClassifier.cs` from Commit 1).
+
+**Highest-risk behaviour to confirm:**
+
+- **`PresenceStateMachine` reaches `Present`.** Solo Menu_Main should log
+  `Offline → Joining → Announced → Present`. Stalling at `Announced` means the
+  vessel-spawn signal is not arriving and every peer will show you as
+  `CONNECTING…` permanently.
+- **`ArcadeLobbyList` re-reads on open** (the RC-9 fix). Its `OnEnable` fired once
+  per scene load before; `IModalPanel` dispatch replaces it.
+- **`ModalWindowManager` panel array is lazily resolved, not `Awake`-based** —
+  `ArcadeGameConfigureModal` declares a non-virtual `Awake` that would have
+  hidden a base hook on the very modal this fixes.
+
+**Deliberate gaps** (not oversights, documented in the guide): tombstone
+*rendering* is not implemented (only the eviction delay); `PresenceState` has no
+SOAP channel (C# event only, matching `PartyStateMachine`); granular roster SOAP
+events were not added.
+
+---
+
 ### 🔴 Presence sync — Commits 3 + 4 (push channel, explicit leave)
 
 Commits `b0adfa72`, `8a146795`, `2452a392`, `52b8f5f6` on
