@@ -25,11 +25,16 @@
 //   HostConnectionService for Phases 7-11.  Phase 12 registers it in Reflex DI.
 //
 // THREAD SAFETY:
-//   Main-thread only.
+//   Main-thread only, with ONE deliberate exception: the ISession push handlers
+//   (OnPush*) may be dispatched by the UGS SDK from an arbitrary thread. They do
+//   nothing but Interlocked-set an int flag - no Unity API, no SOAP raise, no
+//   logging - and HostConnectionService.Update() drains those flags on the main
+//   thread. Do not add anything else to those handlers; see WireSessionEvents.
 // ─────────────────────────────────────────────────────────────────────────────
 
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
 using Unity.Services.Multiplayer;
@@ -53,7 +58,8 @@ namespace CosmicShore.Gameplay
     ///
     /// Lifetime: pure C# - no MonoBehaviour.  Created as a field on
     /// <see cref="HostConnectionService"/>; will be DI-registered in Phase 12.
-    /// Thread-safety: main-thread only.
+    /// Thread-safety: main-thread only, except the flag-only ISession push
+    /// handlers - see the file header.
     /// </summary>
     public sealed class PresenceLobbyService : IPresenceLobbyService
     {
@@ -98,6 +104,13 @@ namespace CosmicShore.Gameplay
         private IMultiplayerService _multiplayerService => MultiplayerService.Instance;
         private ISession _activeLobby;
         private bool     _leaving;
+
+        // Push-channel flags. Set from ISession callbacks (which may arrive off
+        // the main thread), drained from Update(). int + Interlocked rather than
+        // bool because the SDK gives no thread guarantee for its dispatch, and a
+        // torn read here would silently drop a roster update.
+        private int _rosterDirty;
+        private int _membershipLost;
 
         // ─────────────────────────────────────────────────────────────────────
         // Construction
@@ -148,7 +161,7 @@ namespace CosmicShore.Gameplay
             Debug.Log("[PresenceLobbyService] JoinOrCreateAsync - joining presence lobby...");
             try
             {
-                _activeLobby = await TryQueryAndJoinAsync(maxPlayers);
+                SetActiveLobby(await TryQueryAndJoinAsync(maxPlayers));
 
                 if (_activeLobby == null)
                 {
@@ -232,7 +245,7 @@ namespace CosmicShore.Gameplay
                     new JoinSessionOptions { PlayerProperties = BuildLocalPlayerProperties() }).AsMainThread();
 
                 await DeleteOwnLobbyQuietlyAsync();   // releases the previous _activeLobby
-                _activeLobby = joined;
+                SetActiveLobby(joined);
                 Debug.Log($"[PresenceLobbyService] Converged to canonical presence lobby {joined.Id}.");
             }
             catch (Exception e)
@@ -269,7 +282,7 @@ namespace CosmicShore.Gameplay
             }
             finally
             {
-                _activeLobby = null;
+                SetActiveLobby(null);
                 _leaving     = false;
             }
         }
@@ -320,7 +333,7 @@ namespace CosmicShore.Gameplay
         public void ForceReset()
         {
             Debug.Log("[PresenceLobbyService] ForceReset - clearing active lobby reference for reconnect.");
-            _activeLobby = null;
+            SetActiveLobby(null);
         }
 
         // ─────────────────────────────────────────────────────────────────────
@@ -474,7 +487,7 @@ namespace CosmicShore.Gameplay
                 {
                     try
                     {
-                        _activeLobby = await _multiplayerService.CreateSessionAsync(opts).AsMainThread();
+                        SetActiveLobby(await _multiplayerService.CreateSessionAsync(opts).AsMainThread());
                         Debug.Log($"[PresenceLobbyService] Created presence lobby {_activeLobby.Id}.");
                         return;
                     }
@@ -516,9 +529,124 @@ namespace CosmicShore.Gameplay
             }
             finally
             {
-                _activeLobby = null;
+                SetActiveLobby(null);
             }
         }
+
+        // ─────────────────────────────────────────────────────────────────────
+        // Push channel - ISession event subscriptions
+        // ─────────────────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// The ONLY place <see cref="_activeLobby"/> is written. Unsubscribes the
+        /// push handlers from the outgoing session and subscribes them to the
+        /// incoming one.
+        ///
+        /// <para>
+        /// A single choke point rather than wire/unwire calls beside each of the
+        /// six assignment sites (initial join, create, converge migration, leave,
+        /// quiet delete, force-reset): missing one would either leak a
+        /// subscription onto a session we no longer hold - marking the roster
+        /// dirty from a lobby we left - or leave a freshly joined lobby with no
+        /// push at all, silently reverting that path to poll-only.
+        /// </para>
+        ///
+        /// <para>
+        /// Marks the roster dirty on any non-null assignment so the first read of
+        /// a newly joined lobby happens immediately rather than waiting for the
+        /// first push or the next poll tick.
+        /// </para>
+        /// </summary>
+        private void SetActiveLobby(ISession next)
+        {
+            if (ReferenceEquals(_activeLobby, next)) return;
+
+            UnwireSessionEvents(_activeLobby);
+            _activeLobby = next;
+            WireSessionEvents(_activeLobby);
+
+            if (next != null) MarkRosterDirty();
+        }
+
+        /// <inheritdoc/>
+        public bool ConsumeRosterDirty() => Interlocked.Exchange(ref _rosterDirty, 0) == 1;
+
+        /// <inheritdoc/>
+        public bool ConsumeMembershipLost() => Interlocked.Exchange(ref _membershipLost, 0) == 1;
+
+        /// <summary>
+        /// Subscribes the push-channel handlers to a session we have just taken
+        /// ownership of. Called at EVERY point <see cref="_activeLobby"/> is
+        /// assigned - initial join, create, and the converge migration - because
+        /// a lobby we migrated into pushes to us just as the first one did.
+        ///
+        /// <para>
+        /// Every handler does exactly one thing: set an <c>int</c> flag. No Unity
+        /// API, no SOAP raise, no logging. The UGS SDK gives no guarantee about
+        /// which thread it dispatches these on, and per <c>Docs/THREADING.md</c> a
+        /// SOAP <c>Raise()</c> invokes its listeners INLINE - so raising from here
+        /// would run <c>FriendsListPanel</c>'s <c>Instantiate</c>/<c>Destroy</c>
+        /// handlers off the main thread and throw
+        /// <c>EnsureRunningOnMainThread</c>. Draining the flag from
+        /// <c>HostConnectionService.Update()</c> is the main-thread guarantee.
+        /// </para>
+        ///
+        /// <para>
+        /// Note on <c>PlayerLeaving</c>: UGS documents it as firing BEFORE the
+        /// session updates, so the departing player is still present in
+        /// <see cref="ISession.Players"/> at callback time. That is precisely why
+        /// this sets a flag instead of reading the roster inline - the drain runs
+        /// on a later frame, by which point the session has updated.
+        /// <c>PlayerHasLeft</c> fires after and is subscribed too; either one
+        /// arriving is enough to schedule the re-read.
+        /// </para>
+        /// </summary>
+        private void WireSessionEvents(ISession session)
+        {
+            if (session == null) return;
+
+            session.PlayerJoined            += OnPushPlayerJoined;
+            session.PlayerLeaving           += OnPushPlayerLeaving;
+            session.PlayerHasLeft           += OnPushPlayerHasLeft;
+            session.PlayerPropertiesChanged += OnPushPlayerPropertiesChanged;
+            session.Changed                 += OnPushChanged;
+            session.RemovedFromSession      += OnPushRemovedFromSession;
+            session.Deleted                 += OnPushDeleted;
+        }
+
+        /// <summary>
+        /// Mirror of <see cref="WireSessionEvents"/>. Called wherever
+        /// <see cref="_activeLobby"/> stops being ours - leave, quiet delete,
+        /// converge migration, and <see cref="ForceReset"/>. Missing one of these
+        /// would leak a subscription onto a dead session object and keep marking
+        /// the roster dirty from a lobby we are no longer in.
+        /// </summary>
+        private void UnwireSessionEvents(ISession session)
+        {
+            if (session == null) return;
+
+            session.PlayerJoined            -= OnPushPlayerJoined;
+            session.PlayerLeaving           -= OnPushPlayerLeaving;
+            session.PlayerHasLeft           -= OnPushPlayerHasLeft;
+            session.PlayerPropertiesChanged -= OnPushPlayerPropertiesChanged;
+            session.Changed                 -= OnPushChanged;
+            session.RemovedFromSession      -= OnPushRemovedFromSession;
+            session.Deleted                 -= OnPushDeleted;
+        }
+
+        // Flag-only handlers. Named methods (not lambdas) so the -= in
+        // UnwireSessionEvents actually removes them - a lambda would create a new
+        // delegate instance and silently unsubscribe nothing.
+        private void OnPushPlayerJoined(string _)            => MarkRosterDirty();
+        private void OnPushPlayerLeaving(string _)           => MarkRosterDirty();
+        private void OnPushPlayerHasLeft(string _)           => MarkRosterDirty();
+        private void OnPushPlayerPropertiesChanged()         => MarkRosterDirty();
+        private void OnPushChanged()                         => MarkRosterDirty();
+        private void OnPushRemovedFromSession()              => MarkMembershipLost();
+        private void OnPushDeleted()                         => MarkMembershipLost();
+
+        private void MarkRosterDirty()    => Interlocked.Exchange(ref _rosterDirty, 1);
+        private void MarkMembershipLost() => Interlocked.Exchange(ref _membershipLost, 1);
 
         /// <summary>
         /// Emits the one-line NetDiag classification + reachability snapshot for

@@ -111,5 +111,53 @@ namespace CosmicShore.Gameplay
         /// </summary>
         /// <param name="maxPlayers">Capacity to use if a (re)join is required.</param>
         UniTask ConvergeToCanonicalAsync(int maxPlayers);
+
+        /// <summary>
+        /// Returns <c>true</c> (and clears the flag) when the UGS session has
+        /// pushed a roster-affecting event since the last call - a player joined,
+        /// a player is leaving or has left, player properties changed, or a
+        /// generic lobby delta arrived.
+        ///
+        /// <para>
+        /// This is the PUSH half of presence discovery. The presence lobby has
+        /// always been an <see cref="ISession"/>, and this codebase already
+        /// consumes <c>ISession</c> events on the PARTY session
+        /// (<c>PartySessionService</c> subscribes <c>PlayerLeaving</c>) - the
+        /// presence lobby was simply never subscribed, so every arrival and
+        /// departure anywhere in the world was discovered only by the next poll
+        /// tick. Callers should treat a <c>true</c> return as "refresh now"
+        /// while keeping their periodic poll as a safety net.
+        /// </para>
+        ///
+        /// <para>
+        /// Deliberately a polled flag rather than a C# event: the SDK raises its
+        /// callbacks from its own dispatch context, and raising a SOAP event or
+        /// touching a <c>UnityEngine.Object</c> from there would run listeners
+        /// inline off the main thread (see <c>Docs/THREADING.md</c>). Draining
+        /// the flag from <c>Update()</c> is both the main-thread guarantee and a
+        /// per-frame coalescer - a four-player join burst produces one refresh,
+        /// not four.
+        /// </para>
+        /// </summary>
+        bool ConsumeRosterDirty();
+
+        /// <summary>
+        /// Returns <c>true</c> (and clears the flag) when UGS has pushed a
+        /// DEFINITE membership-loss signal since the last call - either
+        /// <c>RemovedFromSession</c> (we were removed) or <c>Deleted</c> (the
+        /// lobby is gone).
+        ///
+        /// <para>
+        /// Distinct from <see cref="ConsumeRosterDirty"/> because the recovery is
+        /// different: a roster change means re-read, a membership loss means
+        /// rejoin. This is an authoritative statement from the service, not the
+        /// error-count heuristic
+        /// (<c>MAX_REFRESH_ERRORS_BEFORE_RECONNECT</c>) the reconnect path
+        /// otherwise relies on - so it can be acted on without waiting for the
+        /// NetDiag data that <c>Docs/PresenceSystem/REFACTOR.md</c>'s
+        /// <c>LobbyMembershipMonitor</c> extraction is gated on.
+        /// </para>
+        /// </summary>
+        bool ConsumeMembershipLost();
     }
 }
