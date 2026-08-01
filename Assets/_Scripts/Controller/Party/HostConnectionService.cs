@@ -108,6 +108,16 @@ namespace CosmicShore.Gameplay
         private const float PRESENCE_CONVERGE_INTERVAL_SECONDS = 4f;
 
         /// <summary>
+        /// Minimum seconds between benign-SDK-skip diagnostic lines. The whole
+        /// point of classifying these faults as benign was to stop the console
+        /// spam (<c>Docs/PresenceSystem/BUGS.md</c> B1 fired ~every 3 s in solo
+        /// Menu_Main), so the accounting must stay quiet enough not to reintroduce
+        /// it while still making a sustained stall visible. One line per 10 s
+        /// carries the running counts, so a burst is legible from a single line.
+        /// </summary>
+        private const float BENIGN_SKIP_LOG_INTERVAL_SECONDS = 10f;
+
+        /// <summary>
         /// After session creation, suppress <see cref="RefreshPartyMembersAsync"/>
         /// for this many seconds.  A freshly-provisioned session can transiently
         /// fail RefreshAsync; nulling the session in response would cause
@@ -200,6 +210,18 @@ namespace CosmicShore.Gameplay
         private float  _nextForcedRefreshAllowed;
         private float  _nextConvergeAllowed;
         private int    _consecutiveRefreshErrors;
+
+        // Benign-SDK-fault accounting. A benign-classified throw is silenced by
+        // design (the SDK self-corrects next tick), but it is NOT free: it aborts
+        // the whole refresh cycle, so the online-player diff, invite scan, member
+        // sync and presence publish for that tick never run. Counting them is the
+        // difference between "the roster is converging" and "the roster has been
+        // frozen for 40 s and nothing said so". See Docs/PresenceSystem/BUGS.md
+        // B1/B6 and Docs/PresenceSystem/PRESENCE_SYNC_PLAN.md RC-2.
+        private int    _benignPresenceSkips;
+        private int    _benignPartySessionSkips;
+        private float  _nextBenignSkipLogAllowed;
+
         private int    _publishedPartyCount = -1;
         private string _publishedMatchName  = "<UNSET>";
         // Identity (displayName/avatarId) rides the same change-gated per-tick
@@ -296,6 +318,23 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public PartyInviteData? LastPendingInvite =>
             _lastInviteResolved ? null : _lastFiredInvite;
+
+        /// <summary>
+        /// Refresh ticks aborted by a benign-classified SDK fault on the PRESENCE
+        /// lobby read. Each one is a lost online-player diff, invite scan and
+        /// presence publish. Read by the NetDiag overlay; a value that climbs
+        /// while the roster looks stale is the confirmation that the SDK
+        /// stale-index defect (<c>Docs/PresenceSystem/BUGS.md</c> B1/B6), not our
+        /// own logic, is holding the list back.
+        /// </summary>
+        public int BenignPresenceSkips => _benignPresenceSkips;
+
+        /// <summary>
+        /// Refresh ticks aborted by a benign-classified SDK fault on the PARTY
+        /// SESSION read. Each one is a lost <c>PartyMemberService.SyncFromSession</c>,
+        /// i.e. a party roster that did not converge this tick.
+        /// </summary>
+        public int BenignPartySessionSkips => _benignPartySessionSkips;
 
         // ╔═══════════════════════════════════════════════════════════════════╗
         // ║  Unity Lifecycle                                                  ║
@@ -1175,12 +1214,15 @@ namespace CosmicShore.Gameplay
                 // the reconnect path on harmless SDK noise.
                 if (IsBenignLobbyPatcherError(e))
                 {
-                    // intentional: no log, no counter increment, no state change
+                    // No state change and no console warning (B1 noise suppression),
+                    // but the tick IS lost - account for it. See RecordBenignRefreshSkip.
+                    RecordBenignRefreshSkip(ref _benignPresenceSkips, e, "presence", "LobbyPatcher");
                 }
                 else if (IsBenignSdkStaleIndexError(e))
                 {
-                    // Same SDK stale-index defect, read-path surface. Silence to
-                    // match the IsBenignLobbyPatcherError treatment above.
+                    // Same SDK stale-index defect, read-path surface. Same
+                    // treatment as the LobbyPatcher case above.
+                    RecordBenignRefreshSkip(ref _benignPresenceSkips, e, "presence", "SdkStaleIndex");
                 }
                 else if (IsRateLimitException(e))
                 {
@@ -1242,6 +1284,51 @@ namespace CosmicShore.Gameplay
                 await _lobbyService.JoinOrCreateAsync(presenceLobbyMaxPlayers);
                 ApplyPostLobbyJoinState();
             }
+        }
+
+        /// <summary>
+        /// Records a refresh tick that was aborted by a benign-classified SDK
+        /// fault, and emits at most one diagnostic line per
+        /// <see cref="BENIGN_SKIP_LOG_INTERVAL_SECONDS"/>.
+        ///
+        /// <para>
+        /// <b>Why this exists.</b> Both benign branches used to be literally
+        /// empty - no log, no counter, no state change - which made a voided tick
+        /// byte-for-byte indistinguishable from a healthy one. Because the lobby
+        /// read is the FIRST await in <see cref="RefreshAsync"/>, a benign throw
+        /// there skips the online-player diff, the invite scan, the acceptance
+        /// scan, the joined-member scan, the party-member sync AND the presence
+        /// publish for that entire tick. A persistent SDK fault therefore froze
+        /// every roster in the game while the console stayed clean. The counters
+        /// are the signal that tells <c>LobbyMembershipMonitor</c> (see
+        /// <c>Docs/PresenceSystem/REFACTOR.md</c>) whether the reconnect watchdog
+        /// is escalating on real membership loss or on SDK noise - the data its
+        /// "wait for NetDiag data" prerequisite was blocked on.
+        /// </para>
+        ///
+        /// <para>
+        /// Deliberately <see cref="CSDebug"/>, not <see cref="Debug.LogWarning"/>:
+        /// CSDebug.Log is compiled out entirely in release builds, and B1's whole
+        /// point was noise suppression. This restores observability without
+        /// restoring the spam.
+        /// </para>
+        /// </summary>
+        /// <param name="counter">The per-path counter to increment.</param>
+        /// <param name="e">The classified exception (logged via NetDiag only).</param>
+        /// <param name="readPath">Which read aborted - "presence" or "party-session".</param>
+        /// <param name="defect">Which benign classifier matched.</param>
+        private void RecordBenignRefreshSkip(ref int counter, Exception e, string readPath, string defect)
+        {
+            counter++;
+
+            if (Time.unscaledTime < _nextBenignSkipLogAllowed) return;
+            _nextBenignSkipLogAllowed = Time.unscaledTime + BENIGN_SKIP_LOG_INTERVAL_SECONDS;
+
+            CSDebug.Log(
+                $"[HostConnectionService] Benign SDK fault on the {readPath} read - refresh tick VOIDED " +
+                $"(roster diff / invite scan / member sync / publish all skipped this tick). " +
+                $"defect={defect} | skips: presence={_benignPresenceSkips}, partySession={_benignPartySessionSkips} | " +
+                $"NetDiag: class={NetworkDiagnostics.ClassifyException(e)} | {NetworkDiagnostics.GetSnapshot()}");
         }
 
         private bool TryFindIncomingInvite(IReadOnlyPlayer sender, out PartyInviteData invite)
@@ -1513,7 +1600,10 @@ namespace CosmicShore.Gameplay
                 // [benign] LobbyPatcher stale-index ArgumentOutOfRangeException -
                 // known harmless SDK noise, self-corrects on the next tick.
                 if (IsBenignLobbyPatcherError(e))
+                {
+                    RecordBenignRefreshSkip(ref _benignPartySessionSkips, e, "party-session", "LobbyPatcher");
                     return;
+                }
 
                 // [benign] WrappedLobbyService NRE on lobby refresh - same SDK
                 // stale-index family as the LobbyPatcher case above, surfacing on
@@ -1521,7 +1611,10 @@ namespace CosmicShore.Gameplay
                 // See Docs/PresenceSystem/BUGS.md B6 + Docs/PartySystem/MPPM_SESSION_LOG.md
                 // Session 1 finding #2.
                 if (IsBenignSdkStaleIndexError(e))
+                {
+                    RecordBenignRefreshSkip(ref _benignPartySessionSkips, e, "party-session", "SdkStaleIndex");
                     return;
+                }
 
                 // [rate-limit] UGS throttled us - back off, keep ActiveSession.
                 if (IsRateLimitException(e))
