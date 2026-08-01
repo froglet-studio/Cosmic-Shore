@@ -4,6 +4,18 @@
     "m_ObjectId": "c4a273a9a9e44b928eb58c3adfe1cc8a",
     "m_Properties": [
         {
+            "m_Id": "516a715d728f4f79986239be17708df5"
+        },
+        {
+            "m_Id": "b3def810b9774c52aad837a49d1c912c"
+        },
+        {
+            "m_Id": "7fc3a3b1c1604421a26420672c12fd24"
+        },
+        {
+            "m_Id": "e541e26594f348da9e22d0cf8f2427b1"
+        },
+        {
             "m_Id": "db9b5644c1184b54bae61e50a60973d2"
         },
         {
@@ -789,6 +801,18 @@
     "m_Name": "Category",
     "m_ChildObjectList": [
         {
+            "m_Id": "516a715d728f4f79986239be17708df5"
+        },
+        {
+            "m_Id": "b3def810b9774c52aad837a49d1c912c"
+        },
+        {
+            "m_Id": "7fc3a3b1c1604421a26420672c12fd24"
+        },
+        {
+            "m_Id": "e541e26594f348da9e22d0cf8f2427b1"
+        },
+        {
             "m_Id": "58a36f808612404fa437089b4a801149"
         },
         {
@@ -1251,6 +1275,118 @@
     "m_DefaultRefNameVersion": 1,
     "m_RefNameGeneratedByDisplayName": "State",
     "m_DefaultReferenceName": "_State",
+    "m_OverrideReferenceName": "",
+    "m_GeneratePropertyBlock": true,
+    "m_UseCustomSlotLabel": false,
+    "m_CustomSlotLabel": "",
+    "m_DismissedVersion": 0,
+    "m_Precision": 0,
+    "overrideHLSLDeclaration": true,
+    "hlslDeclarationOverride": 3,
+    "m_Hidden": false,
+    "m_Value": 0.0,
+    "m_FloatType": 1,
+    "m_RangeValues": {
+        "x": 0.0,
+        "y": 1.0
+    }
+}
+
+{
+    "m_SGVersion": 1,
+    "m_Type": "UnityEditor.ShaderGraph.Internal.Vector1ShaderProperty",
+    "m_ObjectId": "516a715d728f4f79986239be17708df5",
+    "m_Guid": {
+        "m_GuidSerialized": "30fbeb54-84b8-4e8e-a267-b39f1aee5f92"
+    },
+    "m_Name": "SuctionGrowDelay",
+    "m_DefaultRefNameVersion": 1,
+    "m_RefNameGeneratedByDisplayName": "SuctionGrowDelay",
+    "m_DefaultReferenceName": "_SuctionGrowDelay",
+    "m_OverrideReferenceName": "",
+    "m_GeneratePropertyBlock": true,
+    "m_UseCustomSlotLabel": false,
+    "m_CustomSlotLabel": "",
+    "m_DismissedVersion": 0,
+    "m_Precision": 0,
+    "overrideHLSLDeclaration": true,
+    "hlslDeclarationOverride": 3,
+    "m_Hidden": false,
+    "m_Value": 0.0,
+    "m_FloatType": 1,
+    "m_RangeValues": {
+        "x": 0.0,
+        "y": 1.0
+    }
+}
+
+{
+    "m_SGVersion": 1,
+    "m_Type": "UnityEditor.ShaderGraph.Internal.Vector1ShaderProperty",
+    "m_ObjectId": "b3def810b9774c52aad837a49d1c912c",
+    "m_Guid": {
+        "m_GuidSerialized": "57bcb21b-6a92-46a6-8fad-850a72570a74"
+    },
+    "m_Name": "SuctionDirection",
+    "m_DefaultRefNameVersion": 1,
+    "m_RefNameGeneratedByDisplayName": "SuctionDirection",
+    "m_DefaultReferenceName": "_SuctionDirection",
+    "m_OverrideReferenceName": "",
+    "m_GeneratePropertyBlock": true,
+    "m_UseCustomSlotLabel": false,
+    "m_CustomSlotLabel": "",
+    "m_DismissedVersion": 0,
+    "m_Precision": 0,
+    "overrideHLSLDeclaration": true,
+    "hlslDeclarationOverride": 3,
+    "m_Hidden": false,
+    "m_Value": 1.0,
+    "m_FloatType": 1,
+    "m_RangeValues": {
+        "x": 0.0,
+        "y": 1.0
+    }
+}
+
+{
+    "m_SGVersion": 1,
+    "m_Type": "UnityEditor.ShaderGraph.Internal.Vector1ShaderProperty",
+    "m_ObjectId": "7fc3a3b1c1604421a26420672c12fd24",
+    "m_Guid": {
+        "m_GuidSerialized": "877df754-eb32-49a5-bc87-d8e38e13f0ff"
+    },
+    "m_Name": "SuctionDuration",
+    "m_DefaultRefNameVersion": 1,
+    "m_RefNameGeneratedByDisplayName": "SuctionDuration",
+    "m_DefaultReferenceName": "_SuctionDuration",
+    "m_OverrideReferenceName": "",
+    "m_GeneratePropertyBlock": true,
+    "m_UseCustomSlotLabel": false,
+    "m_CustomSlotLabel": "",
+    "m_DismissedVersion": 0,
+    "m_Precision": 0,
+    "overrideHLSLDeclaration": true,
+    "hlslDeclarationOverride": 3,
+    "m_Hidden": false,
+    "m_Value": 0.0,
+    "m_FloatType": 1,
+    "m_RangeValues": {
+        "x": 0.0,
+        "y": 1.0
+    }
+}
+
+{
+    "m_SGVersion": 1,
+    "m_Type": "UnityEditor.ShaderGraph.Internal.Vector1ShaderProperty",
+    "m_ObjectId": "e541e26594f348da9e22d0cf8f2427b1",
+    "m_Guid": {
+        "m_GuidSerialized": "faeb22d0-710d-45ff-97cc-1ff7be78a30d"
+    },
+    "m_Name": "SuctionStartTime",
+    "m_DefaultRefNameVersion": 1,
+    "m_RefNameGeneratedByDisplayName": "SuctionStartTime",
+    "m_DefaultReferenceName": "_SuctionStartTime",
     "m_OverrideReferenceName": "",
     "m_GeneratePropertyBlock": true,
     "m_UseCustomSlotLabel": false,
