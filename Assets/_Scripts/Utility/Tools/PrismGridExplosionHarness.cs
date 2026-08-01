@@ -53,6 +53,34 @@ namespace CosmicShore.Utility
         /// <summary>Suction end-scale — never exactly zero, so lossyScale stays well-formed.</summary>
         const float SuctionScale = 0.002f;
 
+        /// <summary>
+        /// Seconds the materialization wait tolerates a stalled index count before declaring the
+        /// lattice ready anyway. Guards against waiting forever when prisms died during spawn (so
+        /// the indexed count can never reach the requested count).
+        /// </summary>
+        const float MaterializeStallSeconds = 2f;
+
+        /// <summary>How long a warning stays pinned under the readout.</summary>
+        const float WarningSeconds = 6f;
+
+        /// <summary>
+        /// Lattice lifecycle. Laying (instantiating) and materializing (becoming visible, collidable
+        /// and registered in PrismSpatialIndex) are SEPARATE and wildly different in duration:
+        /// Prism gates creation completion behind a static, process-wide budget of 6 per frame
+        /// (Prism.MaxCreationCompletionsPerFrame), so 6,000 prisms are laid in ~30 frames but take
+        /// ~1,000 frames to register. Until a prism registers it has no spatial-index slot AND a
+        /// disabled collider, so a blast fired early is invisible to it through both the Burst path
+        /// and the physics fallback. Conflating the two would make every early run measure a lattice
+        /// that is not there yet.
+        /// </summary>
+        enum GridPhase
+        {
+            Idle = 0,
+            Laying = 1,
+            Materializing = 2,
+            Ready = 3,
+        }
+
         [Header("Configuration")]
         [Tooltip("Tunables asset. When empty the harness falls back to any PrismGridTestConfigSO in " +
                  "Resources, so the rig still runs if the scene reference is lost.")]
@@ -67,7 +95,7 @@ namespace CosmicShore.Utility
         Transform _gridRoot;
         readonly List<Prism> _prisms = new();
         CancellationTokenSource _spawnCts;
-        bool _spawning;
+        GridPhase _phase = GridPhase.Idle;
         int _laid;
         int _requested;
         int _sweepCursor;
@@ -82,6 +110,8 @@ namespace CosmicShore.Utility
         InputField _countXInput, _countYInput, _countZInput, _gapInput;
         Slider _zoomSlider;
         Text _readout;
+        string _warning;
+        float _warningUntil;
 
         void Awake()
         {
@@ -122,7 +152,9 @@ namespace CosmicShore.Utility
 
         void Update()
         {
-            if (!_spawning) ReclaimHusks();
+            // Only sweep once the lattice has settled: nothing is destroyed while laying or
+            // materializing, so a sweep then is pure overhead inside the measurement window.
+            if (_phase == GridPhase.Ready) ReclaimHusks();
         }
 
         void OnDestroy()
@@ -173,6 +205,26 @@ namespace CosmicShore.Utility
             if (changed) PublishStats();
         }
 
+        /// <summary>
+        /// Prisms of THIS lattice that have actually registered with PrismSpatialIndex — the number
+        /// the blast can reach, and the only honest measure of readiness.
+        ///
+        /// Counted over our own list rather than read off <c>PrismSpatialIndex.LiveCount</c>: that
+        /// count is global, so a previous lattice still suctioning out would inflate it and end the
+        /// materialization wait early. The scan is a few thousand int reads — negligible next to the
+        /// ~6-per-frame registration it is waiting on.
+        /// </summary>
+        int IndexedCount()
+        {
+            int n = 0;
+            for (int i = 0; i < _prisms.Count; i++)
+            {
+                var prism = _prisms[i];
+                if (prism != null && !prism.destroyed && prism.SpatialIndexId >= 0) n++;
+            }
+            return n;
+        }
+
         // ── Grid geometry ────────────────────────────────────────────────────
 
         /// <summary>
@@ -219,21 +271,21 @@ namespace CosmicShore.Utility
         {
             if (config.PrismPrefab == null)
             {
-                SetReadout("<color=#ff8080>No prism prefab configured.</color>");
+                Warn("No prism prefab configured.");
                 return;
             }
 
             long total = (long)_counts.x * _counts.y * _counts.z;
             if (total <= 0)
             {
-                SetReadout("<color=#ff8080>Counts must all be >= 1.</color>");
+                Warn("Counts must all be >= 1.");
                 return;
             }
 
             if (total > config.MaxTotalPrisms)
             {
-                SetReadout($"<color=#ff8080>{total:N0} prisms exceeds the {config.MaxTotalPrisms:N0} " +
-                           "cap (PrismGridTestConfig.maxTotalPrisms).</color>");
+                Warn($"{total:N0} prisms exceeds the {config.MaxTotalPrisms:N0} cap " +
+                     "(PrismGridTestConfig.maxTotalPrisms).");
                 return;
             }
 
@@ -250,7 +302,7 @@ namespace CosmicShore.Utility
             var lays = BuildLays();
             _requested = lays.Count;
             _laid = 0;
-            _spawning = true;
+            _phase = GridPhase.Laying;
 
             _gridRoot = new GameObject(GridRootName).transform;
             _gridRoot.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
@@ -268,6 +320,10 @@ namespace CosmicShore.Utility
                 await PrismTrailBuilder.LayBatched(
                     config.PrismPrefab, lays, _gridRoot, _trail,
                     OwnerPrefix, config.PrismsPerFrame, ct, _prisms);
+
+                _laid = _prisms.Count;
+                _phase = GridPhase.Materializing;
+                await WaitForMaterializationAsync(ct);
             }
             catch (OperationCanceledException)
             {
@@ -275,9 +331,44 @@ namespace CosmicShore.Utility
             }
             finally
             {
-                _spawning = false;
-                _laid = _prisms.Count;
+                // Only settle state if this run still owns the lattice; a Clear/re-Spawn during the
+                // await has already moved on, and stomping _phase here would lie about that one.
+                if (_spawnCts != null && _spawnCts.Token == ct)
+                {
+                    _phase = GridPhase.Ready;
+                    _laid = _prisms.Count;
+                }
                 PublishStats();
+            }
+        }
+
+        /// <summary>
+        /// Blocks until the prisms have actually registered with PrismSpatialIndex, not merely been
+        /// instantiated. Prism completes creation behind a static 6-per-frame budget, so a 6,000-prism
+        /// lattice finishes laying in ~30 frames but needs ~1,000 to become blast-visible. Bails out
+        /// if the count stalls, which happens whenever prisms died during the wait.
+        /// </summary>
+        async UniTask WaitForMaterializationAsync(CancellationToken ct)
+        {
+            int lastCount = -1;
+            float stalled = 0f;
+
+            while (IndexedCount() < _requested)
+            {
+                int current = IndexedCount();
+                if (current != lastCount)
+                {
+                    lastCount = current;
+                    stalled = 0f;
+                }
+                else
+                {
+                    stalled += Time.unscaledDeltaTime;
+                    if (stalled >= MaterializeStallSeconds) return;
+                }
+
+                PublishStats();
+                await UniTask.Yield(PlayerLoopTiming.Update, ct);
             }
         }
 
@@ -285,7 +376,7 @@ namespace CosmicShore.Utility
         {
             try
             {
-                while (_spawning && !ct.IsCancellationRequested)
+                while (_phase == GridPhase.Laying && !ct.IsCancellationRequested)
                 {
                     _laid = _prisms.Count;
                     PublishStats();
@@ -304,7 +395,7 @@ namespace CosmicShore.Utility
             if (!_spawnCts.IsCancellationRequested) _spawnCts.Cancel();
             _spawnCts.Dispose();
             _spawnCts = null;
-            _spawning = false;
+            _phase = GridPhase.Idle;
         }
 
         // ── Explode ──────────────────────────────────────────────────────────
@@ -313,15 +404,21 @@ namespace CosmicShore.Utility
         {
             if (config.ExplosionPrefab == null)
             {
-                SetReadout("<color=#ff8080>No explosion prefab configured.</color>");
+                Warn("No explosion prefab configured.");
                 return;
             }
 
             if (!config.DomainsAreDestructive)
             {
-                SetReadout($"<color=#ffcc60>Grid and explosion are both {config.GridDomain} — the blast " +
-                           "will NOT destroy prisms (AOEExplosion does not affect its own domain). " +
-                           "Change one domain in PrismGridTestConfig.</color>");
+                Warn($"Grid and blast are both {config.GridDomain} — prisms will be SHIELDED, not " +
+                     "destroyed (AOEExplosion ships affectSelf=false). Change one domain in the config.");
+            }
+            else if (_phase != GridPhase.Ready)
+            {
+                // Only indexed prisms have a spatial-index slot and an enabled collider, so an early
+                // blast is invisible to everything still materializing.
+                Warn($"Detonating at {_phase.ToString().ToLowerInvariant()}: only {IndexedCount():N0} of " +
+                     $"{_requested:N0} prisms are indexed and can be hit.");
             }
 
             // Mirrors ExplosionHelper.SpawnAllAndDetonate, minus the DI inject: this scene has no
@@ -458,9 +555,10 @@ namespace CosmicShore.Utility
         {
             DiagnosticsHUD.SetStat(StatsSection, "counts", $"{_counts.x}x{_counts.y}x{_counts.z}");
             DiagnosticsHUD.SetStat(StatsSection, "gap", _gap.ToString("F1"));
-            DiagnosticsHUD.SetStat(StatsSection, "prisms", _spawning
-                ? $"{_laid:N0}/{_requested:N0}"
-                : $"{_prisms.Count:N0}");
+            DiagnosticsHUD.SetStat(StatsSection, "phase", _phase.ToString().ToLowerInvariant());
+            DiagnosticsHUD.SetStat(StatsSection, "laid", $"{_laid:N0}/{_requested:N0}");
+            // The number that actually matters: only indexed prisms are reachable by the blast.
+            DiagnosticsHUD.SetStat(StatsSection, "indexed", $"{IndexedCount():N0}/{_requested:N0}");
             DiagnosticsHUD.SetStat(StatsSection, "extents",
                 $"{Extents.x:F0}x{Extents.y:F0}x{Extents.z:F0}");
             DiagnosticsHUD.SetStat(StatsSection, "blast r", config.BlastRadius.ToString("F0"));
@@ -477,9 +575,20 @@ namespace CosmicShore.Utility
                 ? "<color=#80ff80>blast engulfs lattice</color>"
                 : "<color=#ffcc60>blast covers centre only</color>";
 
-            string state = _spawning
-                ? $"spawning {_laid:N0}/{_requested:N0}"
-                : $"live {_prisms.Count:N0}";
+            int indexed = IndexedCount();
+            string state = _phase switch
+            {
+                GridPhase.Laying =>
+                    $"<color=#ffcc60>laying {_laid:N0}/{_requested:N0}</color>",
+                // Prism registers 6/frame process-wide, so this is the long pole — say so, or the
+                // operator detonates into a lattice that is not blast-visible yet.
+                GridPhase.Materializing =>
+                    $"<color=#ffcc60>materializing {indexed:N0}/{_requested:N0} " +
+                    $"(~6/frame — wait before detonating)</color>",
+                GridPhase.Ready =>
+                    $"<color=#80ff80>ready — {indexed:N0} indexed</color> (live {_prisms.Count:N0})",
+                _ => "idle",
+            };
 
             SetReadout(
                 $"{state}   extents {Extents.x:F0} x {Extents.y:F0} x {Extents.z:F0}   " +
@@ -488,7 +597,23 @@ namespace CosmicShore.Utility
 
         void SetReadout(string text)
         {
-            if (_readout != null) _readout.text = text;
+            if (_readout == null) return;
+            _readout.text = Time.unscaledTime < _warningUntil
+                ? $"{text}\n<color=#ff9060>{_warning}</color>"
+                : text;
+        }
+
+        /// <summary>
+        /// Shows a message that survives the next few stat publishes. Without the expiry stamp a
+        /// warning is wiped by whichever PublishStats lands next frame, which is exactly when the
+        /// operator is looking away at the thing they just clicked.
+        /// </summary>
+        void Warn(string message)
+        {
+            _warning = message;
+            _warningUntil = Time.unscaledTime + WarningSeconds;
+            Debug.LogWarning($"[PrismGridExplosionHarness] {message}");
+            UpdateReadout();
         }
 
         const string Usage = "usage: grid <x> <y> <z> [gap] | grid explode | grid clear | grid zoom <0..1>";
@@ -715,6 +840,10 @@ namespace CosmicShore.Utility
             handleArea.anchoredPosition = Vector2.zero;
             handleArea.sizeDelta = Vector2.zero;
             var handleRT = CreateRect("Handle", handleArea, new Vector2(0, 0), new Vector2(0, 1), Vector2.zero, new Vector2(14, 0));
+            // Slider.UpdateVisuals overwrites the handle's anchors each frame but never its pivot,
+            // so the shared CreateRect pivot of (0,1) would hang the handle down-and-left of the
+            // track and push it fully outside at value 1. Centre it.
+            handleRT.pivot = new Vector2(0.5f, 0.5f);
             var handle = handleRT.gameObject.AddComponent<Image>();
             handle.color = Color.white;
 
