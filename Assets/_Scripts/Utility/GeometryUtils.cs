@@ -56,11 +56,18 @@ namespace CosmicShore.Utility
         }
 
         public static Vector3 ClampMagnitude(Vector3 vector, float minMagnitude, float maxMagnitude, out float magnitude)
-        { 
-            magnitude = vector.magnitude;   
+        {
+            magnitude = vector.magnitude;
+            // A zero vector has no direction to scale, and vector * (min / 0) is NaN - which
+            // reaches live callers: AstroLeague's arena teardown and field reset both call
+            // Prism.Damage(Vector3.zero, ...), so those prisms were handed a NaN debris
+            // velocity. Pick a stable direction instead of poisoning it.
+            if (magnitude <= Mathf.Epsilon)
+                return Vector3.up * minMagnitude;
+
             if (magnitude < minMagnitude)
                 return vector * minMagnitude/magnitude;
-      
+
             else if (magnitude > maxMagnitude)
                 return vector * maxMagnitude/magnitude;
             return vector;

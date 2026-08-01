@@ -1661,3 +1661,60 @@ already built locally with no seed sync, and `AssignConfig`'s `Random.Range` rol
 each client a *different* cell. A deliberate pick is strictly more consistent than a random
 one. Making it authoritative means an RPC on the menu's cell — tracked in
 `Docs/ToySystem/BACKLOG.md`.
+
+---
+
+## 20. Prism destruction velocity & the mass-report defect (July 2026, Rhino sword branch)
+
+Landed while making the Rhino sword hand a destroyed prism the velocity of the *part of the
+blade* that hit it (`Docs`-side reference: `_Scripts/Controller/Vessel/R_VesselActions/RHINO_SHIELD_SWIPE.md`
+§ "Swing velocity model"). Two things here touch ecology.
+
+### 20.1 Fauna debris leaves at the creature's own speed
+
+`Boid` knocking a prism loose used to call
+
+```csharp
+prism.Damage(currentVelocity * embeddedHealthPrism.Volume, ...)
+```
+
+The `* Volume` was there to cancel `Prism.Explode`'s `impactVector / prismProperties.volume`.
+It cancelled nothing, for two independent reasons:
+
+- The factor was the volume of the **boid's own health prism**, not the victim's.
+- That divide is a **no-op**. `SetupDestruction` runs first and stands the scale animator
+  **down before reading the volume**; `PrismScaleAnimator.GetCurrentVolume()` gates on
+  `enabled` and returns 0 once it is off, so `Mathf.Max(0f, 1f)` pins
+  `prismProperties.volume` to **exactly 1 for every prism** at the moment of the divide.
+
+So creature debris was scaled by an unrelated quantity. The multiply is gone; debris now leaves
+at the creature's own speed. **No ecology invariant is touched** — this is destruction VFX
+velocity only. Mass conservation, diet, starvation, spawn cadence and phase are all unchanged;
+nothing about *whether* a prism dies moved, only how fast its debris flies.
+
+### 20.2 OPEN — the destroyed/created mass events misreport volume
+
+The same ordering breaks mass **reporting**, and "volume is the spine":
+
+| channel | raised with | actual value |
+|---|---|---|
+| `OnTrailBlockDestroyed` | `Volume = prismProperties.volume` | **always exactly 1**, every prism, every size |
+| `OnTrailBlockCreated` | `Volume = prismProperties.volume` | read while the prism is still scaled to **zero** (`BeginGrowthAnimation` runs after) |
+
+`PrismScaleAnimator` later writes the true target volume (`TargetScale.x*y*z`) on growth
+completion, so `prismProperties.volume` is correct *during* a prism's life — it is only the two
+lifecycle **events** that carry a wrong number.
+
+**`Cell.LiveVolume` is NOT affected** — it aggregates `Prism.CachedVolume` through
+`PrismSpatialIndex`, a separate path that reads the live transform. So phase, dominant domain,
+prey selection and the HUD are all correct. What is suspect is anything keying off the
+created/destroyed **event** payloads (destroyed-mass stats, scoring that sums prism volume).
+
+Deliberately **not** fixed on that branch: moving the read above the animator shutdown changes
+the numbers those channels report, which is a scoring/stats behaviour change with its own blast
+radius and needs its own verification pass. Fix shape, when someone takes it: capture the volume
+*before* `scaleAnimator.enabled = false` in `SetupDestruction`, and seed the creation event from
+`authoredTargetScale` rather than the pre-growth transform.
+
+Do not "fix" this by pre-multiplying an impact vector by volume somewhere else — that is the
+trap this section exists to document (see §20.1).
