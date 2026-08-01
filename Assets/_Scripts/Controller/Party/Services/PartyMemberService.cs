@@ -96,8 +96,21 @@ namespace CosmicShore.Gameplay
             if (clearFirst)
                 _connectionData.PartyMembers?.Clear();
 
-            if (!string.IsNullOrEmpty(_connectionData.LocalPlayerData.PlayerId))
-                _connectionData.PartyMembers?.Add(_connectionData.LocalPlayerData);
+            if (string.IsNullOrEmpty(_connectionData.LocalPlayerData.PlayerId))
+            {
+                Debug.Log("[PartyMemberService] Seeded PartyMembers with local player.");
+                return;
+            }
+
+            // Idempotent: with clearFirst == false the list may already hold our
+            // row, and PartyPlayerData's Equals/GetHashCode key on PlayerId only,
+            // so a blind Add would leave two entries for the same player - which
+            // ArcadeLobbyList renders as the local player occupying two slots.
+            // Required now that the presence-reconnect path seeds without
+            // clearing (see HostConnectionService.ApplyPostLobbyJoinState).
+            if (_connectionData.PartyMembers != null &&
+                !_connectionData.PartyMembers.Contains(_connectionData.LocalPlayerData))
+                _connectionData.PartyMembers.Add(_connectionData.LocalPlayerData);
 
             Debug.Log("[PartyMemberService] Seeded PartyMembers with local player.");
         }

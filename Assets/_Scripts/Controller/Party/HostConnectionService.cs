@@ -472,11 +472,75 @@ namespace CosmicShore.Gameplay
 
             ExpireOutgoingInvites();
 
+            // UGS told us we are no longer in the lobby (RemovedFromSession /
+            // Deleted). Unlike the consecutive-error watchdog below in
+            // RefreshAsync, this is not a heuristic - it is the service stating
+            // the fact - so recover immediately instead of waiting for three
+            // refreshes to fail against a lobby that no longer exists.
+            if (_lobbyService.ConsumeMembershipLost())
+            {
+                HandlePresenceMembershipLostAsync().Forget();
+                return;
+            }
+
+            // Push: a roster-affecting event arrived since the last frame.
+            // Refresh now rather than waiting out the remaining interval - this
+            // is what turns "discovered on the next tick" into "delivered when it
+            // happens". Reset the scheduler so the safety poll re-arms from now
+            // and we do not immediately follow the push with a redundant read.
+            bool pushed = _lobbyService.ConsumeRosterDirty();
+            if (pushed) _scheduler.Reset();
+
             // Consume only once eligible, so a tick blocked by the gates keeps its
             // accumulated time and fires as soon as it can rather than restarting
             // the interval. Cannot burst - the accumulator zeroes on consume.
-            if (_scheduler.TryConsumeFire())
+            if (pushed || _scheduler.TryConsumeFire())
                 RefreshAsync().Forget();
+        }
+
+        /// <summary>
+        /// Recovers from a definite presence-lobby membership loss pushed by UGS
+        /// (<c>RemovedFromSession</c> or <c>Deleted</c>).
+        ///
+        /// <para>
+        /// Deliberately does NOT touch the party session, NetworkManager or any
+        /// vessel: the presence lobby is the discovery layer and is independent
+        /// of the Relay-backed party. Losing it means peers stop appearing in the
+        /// online list, not that the party broke. This is the same reason
+        /// <see cref="ApplyPostLobbyJoinState"/> must not clear a live party
+        /// roster on rejoin.
+        /// </para>
+        /// </summary>
+        private async UniTaskVoid HandlePresenceMembershipLostAsync()
+        {
+            Debug.LogWarning("[HostConnectionService] Presence lobby membership lost (UGS push) - rejoining.");
+            CSDebug.Log($"[HostConnectionService] NetDiag: {NetworkDiagnostics.GetSnapshot()}");
+
+            // Reconnecting is only legal from Inviting / JoiningParty / InParty,
+            // so capture whether we actually entered it - this is the first call
+            // site in the codebase to READ TryTransition's return value, and it is
+            // what stops the recovery below from firing an illegal
+            // <whatever> → InParty when we never left the original state.
+            bool enteredReconnecting = _stateMachine.TryTransition(PartyState.Reconnecting);
+
+            _lobbyService.ForceReset();
+            await _lobbyService.JoinOrCreateAsync(presenceLobbyMaxPlayers);
+            ApplyPostLobbyJoinState();
+
+            // Leave Reconnecting rather than stranding the machine there (it has
+            // no other exit today). The presence lobby is independent of the
+            // Relay party, so if the session is still live we are fully
+            // recovered. If it is not, surface the loss and let the explicit
+            // user-driven retry recreate it - recreating a session from this
+            // background path would Shutdown() NetworkManager and respawn every
+            // menu vessel, which is exactly why the consecutive-error reconnect
+            // path in RefreshAsync does not do it either.
+            if (!enteredReconnecting) return;
+
+            if (_partySessionService.ActiveSession != null)
+                _stateMachine.TryTransition(PartyState.InParty);
+            else
+                _eventBus.RaiseHostConnectionLost();
         }
 
         async void OnDestroy()
@@ -1902,7 +1966,20 @@ namespace CosmicShore.Gameplay
             connectionData.IsConnected         = true;
             connectionData.IsPresenceLobbyHost = lobby.IsHost;
 
-            _memberService.SeedLocalPlayer(clearFirst: true);
+            // Clear the party roster ONLY when there is no live party session.
+            // The presence lobby is the discovery layer; the Relay-backed party
+            // is independent of it. A presence rejoin - reconnect, converge
+            // migration, or a UGS-pushed membership loss - left NetworkManager,
+            // the session and every remote member untouched, yet the
+            // unconditional clearFirst:true wiped every remote row anyway.
+            // ScriptableList.Clear() raises only OnCleared (never per-item
+            // OnItemRemoved), so ArcadeLobbyList blanked slots 1-3 and disabled
+            // the Leave button while the party was still perfectly alive.
+            // On the INITIAL join ActiveSession is still null (EnsureInitialized
+            // creates the session after this runs), so first-boot behaviour is
+            // unchanged. SeedLocalPlayer is idempotent, so skipping the clear
+            // cannot duplicate our own row.
+            _memberService.SeedLocalPlayer(clearFirst: _partySessionService.ActiveSession == null);
 
             _eventBus.RaiseHostConnectionEstablished();
         }
