@@ -261,6 +261,13 @@ namespace CosmicShore.Gameplay
         private bool   _profileSubscribed;
         private bool   _gameLaunchSubscribed;
         private bool   _clientReadySubscribed;
+        /// <summary>
+        /// Latched true once the local Menu_Main vessel is known to exist -
+        /// either from the OnClientReady signal or from ReconcilePresenceState's
+        /// direct probe. Separate from the state machine so a signal that arrives
+        /// in a state which cannot accept it is remembered rather than discarded.
+        /// </summary>
+        private bool   _localVesselReady;
         private bool   _partyLeaveSubscribed;
         private bool   _handlingDefiniteSessionGone;
         /// <summary>
@@ -280,6 +287,9 @@ namespace CosmicShore.Gameplay
 
         /// <summary>Absent-read strike counts keyed by PlayerId, cleared on sight.</summary>
         private readonly Dictionary<string, int> _onlineMissedReads = new();
+
+        /// <summary>Reused buffer for draining departed ids - avoids a per-tick allocation.</summary>
+        private readonly List<string> _departedScratch = new();
         private float  _rateLimitBackoffUntil;
         private float  _nextForcedRefreshAllowed;
         private float  _nextConvergeAllowed;
@@ -305,6 +315,8 @@ namespace CosmicShore.Gameplay
         private string _publishedDisplayName = "<UNSET>";
         private int    _publishedAvatarId    = int.MinValue;
         private int    _publishedPresenceState = int.MinValue;
+        /// <summary>Lobby id the trackers above describe; a change invalidates them all.</summary>
+        private string _publishedToLobbyId;
 
         // ─────────────────────────────────────────────────────────────────────
         // Invite state
@@ -501,6 +513,14 @@ namespace CosmicShore.Gameplay
             if (!string.IsNullOrEmpty(matchName))
                 live[MATCH_NAME_KEY] = matchName;
 
+            // presenceState is stateful and MUST survive a rejoin, exactly like
+            // the three keys above. Omitting it meant a converge migration
+            // rebuilt our player record from BuildLocalPlayerProperties - which
+            // does not know about presence - and silently dropped the key, while
+            // the change-gate in PublishPartyStateIfChangedAsync still believed
+            // the published value matched and never re-sent it.
+            live[PRESENCE_STATE_KEY] = ((int)_presence.CurrentState).ToString();
+
             return live;
         }
 
@@ -522,6 +542,7 @@ namespace CosmicShore.Gameplay
             if (!IsOnMenuScene()) return;
 
             ExpireOutgoingInvites();
+            ReconcilePresenceState();
 
             // UGS told us we are no longer in the lobby (RemovedFromSession /
             // Deleted). Unlike the consecutive-error watchdog below in
@@ -1698,6 +1719,32 @@ namespace CosmicShore.Gameplay
 
         private void RefreshOnlinePlayersDiff()
         {
+            // Authoritative departures first. UGS named these players in a
+            // PlayerLeaving / PlayerHasLeft push, so there is nothing to
+            // corroborate - evict on the spot rather than making an explicit,
+            // instant leave wait out the two-strike rule meant for AMBIGUOUS
+            // absences. This is what makes a quitting player disappear from
+            // every peer in well under a second instead of after the UGS reap.
+            _departedScratch.Clear();
+            if (_lobbyService.TryConsumeDepartedPlayerIds(_departedScratch))
+            {
+                foreach (var departedId in _departedScratch)
+                {
+                    _onlineMissedReads.Remove(departedId);
+
+                    for (int i = connectionData.OnlinePlayers.Count - 1; i >= 0; i--)
+                    {
+                        if (connectionData.OnlinePlayers[i].PlayerId != departedId) continue;
+                        Debug.Log($"[HostConnectionService] Player {departedId} left (UGS push) - removing immediately.");
+                        connectionData.OnlinePlayers.RemoveAt(i);
+                    }
+
+                    // Their invite, if any, is dead with them.
+                    if (_inviteService.OutgoingCount > 0)
+                        _ = ClearOutgoingInviteIfPresentAsync(departedId, "presence-leave-push");
+                }
+            }
+
             var freshPlayerIds = new HashSet<string>();
 
             foreach (var p in _lobbyService.ActiveLobby.Players)
@@ -2190,7 +2237,10 @@ namespace CosmicShore.Gameplay
             // "CONNECTING…" on every peer for the rest of the session. Same
             // already-fired pattern as ToyboxController's vessel probe.
             if (_gameData?.LocalPlayer?.Vessel != null)
+            {
+                _localVesselReady = true;
                 _presence.TryTransition(PresenceState.Present);
+            }
 
             // Clear the party roster ONLY when there is no live party session.
             // The presence lobby is the discovery layer; the Relay-backed party
@@ -2306,6 +2356,27 @@ namespace CosmicShore.Gameplay
             string currentName     = connectionData.LocalDisplayName ?? "Pilot";
             int    currentAvatar   = connectionData.LocalAvatarId;
             int    currentPresence = (int)_presence.CurrentState;
+
+            // A lobby change invalidates every tracker. The trackers describe
+            // what WE last wrote to a SPECIFIC lobby; after a converge migration
+            // or a reconnect we are writing to a different one, whose copy of our
+            // player record was rebuilt from scratch. Without this the change-gate
+            // below compares against the old lobby's values, concludes nothing
+            // changed, and never re-publishes - so any key the rebuild dropped
+            // stays dropped for the rest of the session. This is the general
+            // guard; carrying presenceState in LivePropertySource is the specific
+            // one, and both are wanted (belt and braces on a path that has
+            // already produced this class of bug twice - see BUGS.md B4).
+            string currentLobbyId = lobby.Id;
+            if (currentLobbyId != _publishedToLobbyId)
+            {
+                _publishedPartyCount    = -1;
+                _publishedMatchName     = "<UNSET>";
+                _publishedDisplayName   = "<UNSET>";
+                _publishedAvatarId      = int.MinValue;
+                _publishedPresenceState = int.MinValue;
+                _publishedToLobbyId     = currentLobbyId;
+            }
 
             if (currentCount    == _publishedPartyCount &&
                 currentMatch    == _publishedMatchName &&
@@ -2627,6 +2698,16 @@ namespace CosmicShore.Gameplay
         /// </summary>
         private void HandleLocalVesselReady()
         {
+            // Latch FIRST, unconditionally. OnClientReady is a one-shot with no
+            // replay, and the transition below can legitimately be illegal at the
+            // moment it arrives (e.g. still Joining, because the lobby join is
+            // slower than the vessel spawn on this machine). Before the latch,
+            // that rejection DISCARDED the only signal we would ever get and the
+            // player stayed Announced - rendering as CONNECTING… on every peer
+            // for the rest of the session. ReconcilePresenceState re-tries from
+            // the latch on every tick, so ordering no longer matters.
+            _localVesselReady = true;
+
             if (_presence.CurrentState == PresenceState.InMatch)
             {
                 // Back in the menu: drop the match advertisement.
@@ -2637,6 +2718,40 @@ namespace CosmicShore.Gameplay
 
             if (_presence.TryTransition(PresenceState.Present))
                 PublishPresenceImmediateAsync().Forget();
+        }
+
+        /// <summary>
+        /// Per-tick convergence check for the presence state.
+        ///
+        /// <para>
+        /// The presence machine must never depend on having CAUGHT a one-shot
+        /// event, because there is no ordering guarantee between the presence
+        /// lobby join and the menu vessel spawn - and the two race differently on
+        /// the main editor instance versus an MPPM virtual player, which is
+        /// exactly how three of four instances ended up stuck at
+        /// <see cref="PresenceState.Announced"/> while the fourth was correct.
+        /// This re-derives the state from the observable CONDITION (does the
+        /// local vessel exist?) once per refresh tick, so a missed, early or
+        /// out-of-order signal self-heals within one interval instead of
+        /// persisting for the whole session.
+        /// </para>
+        /// </summary>
+        private void ReconcilePresenceState()
+        {
+            // The vessel may have spawned before we were in a state that could
+            // accept the transition, or before we subscribed at all.
+            if (!_localVesselReady && _gameData?.LocalPlayer?.Vessel != null)
+                _localVesselReady = true;
+
+            if (!_localVesselReady) return;
+            if (_presence.CurrentState != PresenceState.Announced) return;
+
+            if (_presence.TryTransition(PresenceState.Present))
+            {
+                Debug.Log("[HostConnectionService] Presence reconciled to Present " +
+                          "(vessel exists but the spawn signal did not land in a state that could accept it).");
+                PublishPresenceImmediateAsync().Forget();
+            }
         }
 
         // ╔═══════════════════════════════════════════════════════════════════╗

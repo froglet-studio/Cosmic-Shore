@@ -92,6 +92,16 @@ namespace CosmicShore.Core
             SceneManager.sceneLoaded += HandleSceneLoaded;
             SceneManager.sceneUnloaded += HandleSceneUnloaded;
             Application.wantsToQuit += HandleWantsToQuit;
+
+#if UNITY_EDITOR
+            // Stopping play mode does NOT raise Application.wantsToQuit, so in
+            // the editor - which is where MPPM virtual players live, and where
+            // multiplayer is actually exercised - the graceful-departure path
+            // above never ran. A stopped virtual player therefore lingered in
+            // every peer's online list until the UGS reap (~30 s), which is
+            // precisely the symptom that made "turn off an instance" look broken.
+            UnityEditor.EditorApplication.playModeStateChanged += HandlePlayModeStateChanged;
+#endif
         }
 
         void OnDisable()
@@ -99,7 +109,36 @@ namespace CosmicShore.Core
             SceneManager.sceneLoaded -= HandleSceneLoaded;
             SceneManager.sceneUnloaded -= HandleSceneUnloaded;
             Application.wantsToQuit -= HandleWantsToQuit;
+
+#if UNITY_EDITOR
+            UnityEditor.EditorApplication.playModeStateChanged -= HandlePlayModeStateChanged;
+#endif
         }
+
+#if UNITY_EDITOR
+        /// <summary>
+        /// Editor equivalent of <see cref="HandleWantsToQuit"/>.
+        ///
+        /// <para>
+        /// <c>ExitingPlayMode</c> fires while the play-mode domain is still
+        /// alive, so subscribers can still dispatch an outbound request - but
+        /// unlike <see cref="Application.wantsToQuit"/> the exit CANNOT be
+        /// deferred, so there is no drain window and the request is genuinely
+        /// best-effort. It is still far better than nothing: the UGS leave is
+        /// usually dispatched, and a dispatched leave is fanned out to every peer
+        /// immediately rather than waiting on the service's disconnect reap.
+        /// </para>
+        /// </summary>
+        void HandlePlayModeStateChanged(UnityEditor.PlayModeStateChange change)
+        {
+            if (change != UnityEditor.PlayModeStateChange.ExitingPlayMode) return;
+            if (_quitApproved) return;   // wantsToQuit already ran the drain
+
+            _quitApproved = true;        // suppress a duplicate raise on the way out
+            OnAppQuitRequested?.Invoke();
+            _lifecycleEvents?.OnAppQuitRequested.Raise();
+        }
+#endif
 
         /// <summary>
         /// Defers the quit exactly once so subscribers can complete outbound

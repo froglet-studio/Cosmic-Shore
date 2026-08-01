@@ -159,5 +159,22 @@ namespace CosmicShore.Gameplay
         /// </para>
         /// </summary>
         bool ConsumeMembershipLost();
+
+        /// <summary>
+        /// Drains the ids of players UGS has explicitly reported as leaving or
+        /// gone (the payload of the <c>PlayerLeaving</c> / <c>PlayerHasLeft</c>
+        /// pushes) into <paramref name="into"/>.
+        ///
+        /// <para>
+        /// This is AUTHORITATIVE departure evidence - the service naming the
+        /// player - as opposed to inferring departure from a player being absent
+        /// from a read, which can happen for reasons unrelated to them (the SDK
+        /// stale-cache defect, a read landing mid-mutation, a lobby migration).
+        /// Consumers may therefore evict these ids immediately, bypassing the
+        /// consecutive-absent-read corroboration they apply to everyone else.
+        /// </para>
+        /// </summary>
+        /// <returns><c>true</c> when at least one id was drained.</returns>
+        bool TryConsumeDepartedPlayerIds(List<string> into);
     }
 }

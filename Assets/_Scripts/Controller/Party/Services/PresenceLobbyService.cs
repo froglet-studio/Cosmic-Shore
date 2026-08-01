@@ -112,6 +112,28 @@ namespace CosmicShore.Gameplay
         private int _rosterDirty;
         private int _membershipLost;
 
+        /// <summary>
+        /// Player ids UGS has told us are leaving or have left, via the
+        /// <c>PlayerLeaving</c> / <c>PlayerHasLeft</c> pushes - which carry the
+        /// departing player's id as their payload.
+        ///
+        /// <para>
+        /// This is authoritative departure evidence, not an inference from a
+        /// short read, so the consumer may evict immediately instead of waiting
+        /// out the two-strike corroboration rule. Without consuming the id the
+        /// only removal path was "absent from N consecutive reads", which turned
+        /// an instant, explicit leave into a multi-second disappearance.
+        /// </para>
+        ///
+        /// <para>
+        /// Guarded by <see cref="_departedLock"/>: the SDK gives no thread
+        /// guarantee for its callbacks, and unlike the plain int flags a HashSet
+        /// cannot be updated atomically.
+        /// </para>
+        /// </summary>
+        private readonly HashSet<string> _departedPlayerIds = new();
+        private readonly object _departedLock = new();
+
         // ─────────────────────────────────────────────────────────────────────
         // Construction
         // ─────────────────────────────────────────────────────────────────────
@@ -638,8 +660,8 @@ namespace CosmicShore.Gameplay
         // UnwireSessionEvents actually removes them - a lambda would create a new
         // delegate instance and silently unsubscribe nothing.
         private void OnPushPlayerJoined(string _)            => MarkRosterDirty();
-        private void OnPushPlayerLeaving(string _)           => MarkRosterDirty();
-        private void OnPushPlayerHasLeft(string _)           => MarkRosterDirty();
+        private void OnPushPlayerLeaving(string playerId)    => MarkDeparted(playerId);
+        private void OnPushPlayerHasLeft(string playerId)    => MarkDeparted(playerId);
         private void OnPushPlayerPropertiesChanged()         => MarkRosterDirty();
         private void OnPushChanged()                         => MarkRosterDirty();
         private void OnPushRemovedFromSession()              => MarkMembershipLost();
@@ -647,6 +669,30 @@ namespace CosmicShore.Gameplay
 
         private void MarkRosterDirty()    => Interlocked.Exchange(ref _rosterDirty, 1);
         private void MarkMembershipLost() => Interlocked.Exchange(ref _membershipLost, 1);
+
+        private void MarkDeparted(string playerId)
+        {
+            if (!string.IsNullOrEmpty(playerId))
+            {
+                lock (_departedLock) _departedPlayerIds.Add(playerId);
+            }
+
+            MarkRosterDirty();
+        }
+
+        /// <inheritdoc/>
+        public bool TryConsumeDepartedPlayerIds(List<string> into)
+        {
+            if (into == null) return false;
+
+            lock (_departedLock)
+            {
+                if (_departedPlayerIds.Count == 0) return false;
+                into.AddRange(_departedPlayerIds);
+                _departedPlayerIds.Clear();
+            }
+            return true;
+        }
 
         /// <summary>
         /// Emits the one-line NetDiag classification + reachability snapshot for
