@@ -40,6 +40,8 @@ namespace CosmicShore.UI
         [SerializeField] private Color inLobbyColor = new(0.4f, 0.8f, 1f, 1f);
         [SerializeField] private Color inMatchColor = new(0.9f, 0.2f, 0.2f, 1f);
         [SerializeField] private Color lobbyFullColor = new(0.5f, 0.5f, 0.5f, 1f);
+        [Tooltip("Label colour while a remote player is still entering the world (vessel not spawned).")]
+        [SerializeField] private Color connectingColor = new(0.6f, 0.6f, 0.6f, 1f);
         [Tooltip("Label colour when this player is already in the local player's party (non-invitable).")]
         [SerializeField] private Color inYourPartyColor = new(0.6f, 0.9f, 0.6f, 1f);
 
@@ -73,7 +75,23 @@ namespace CosmicShore.UI
                  "can't be spam-clicked. Shared by both buttons.")]
         [SerializeField] private float actionCooldownSeconds = 0.4f;
 
-        public enum Status { Online, InLobby, InMatch, LobbyFull, InYourParty }
+        public enum Status
+        {
+            Online,
+            InLobby,
+            InMatch,
+            LobbyFull,
+            InYourParty,
+
+            /// <summary>
+            /// In the presence lobby, but their vessel has not spawned yet -
+            /// they published PresenceState.Joining or Announced. Non-invitable:
+            /// their own refresh loop is not running yet, so an invite sent now
+            /// would not be scanned for. Promotes to a normal row the moment they
+            /// publish Present.
+            /// </summary>
+            Connecting,
+        }
 
         string _playerId;
         Action<string> _onInvite;
@@ -205,6 +223,10 @@ namespace CosmicShore.UI
                         ? "IN A MATCH"
                         : $"IN A MATCH - {matchName.ToUpperInvariant()}";
                     color = inMatchColor;
+                    break;
+                case Status.Connecting:
+                    text = "CONNECTING…";
+                    color = connectingColor;
                     break;
                 case Status.InYourParty:
                     text = partyMaxSlots > 0

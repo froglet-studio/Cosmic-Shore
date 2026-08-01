@@ -84,6 +84,7 @@ namespace CosmicShore.Gameplay
         private const string INVITE_PAYLOADS_KEY     = "invite_payloads";
         private const string JOINED_PARTY_KEY        = "joined_party";
         private const string ACCEPTED_INVITE_KEY     = "accepted_invite";
+        private const string PRESENCE_STATE_KEY      = "presenceState";
         private const string PENDING_SESSION_ID      = "PENDING";
 
         private const float OUTGOING_INVITE_TIMEOUT_SECONDS  = 10f;
@@ -233,9 +234,33 @@ namespace CosmicShore.Gameplay
         /// </summary>
         private readonly PartyStateMachine _stateMachine = new();
 
+        /// <summary>
+        /// Tracks what this player is DOING, as far as every other client is
+        /// concerned - orthogonal to <see cref="_stateMachine"/>, which tracks
+        /// which Relay session we are in. You are simultaneously
+        /// <c>PartyState.InParty</c> and <c>PresenceState.InMatch</c>.
+        ///
+        /// <para>
+        /// Its <c>Announced → Present</c> transition, driven by
+        /// <c>GameDataSO.OnClientReady</c>, is the "this player is in the world"
+        /// broadcast: it publishes a <c>presenceState</c> property that every
+        /// peer reads, so a player is only rendered as a real, interactable row
+        /// once their lava-lamp vessel actually exists.
+        /// </para>
+        /// </summary>
+        private readonly PresenceStateMachine _presence = new();
+
+        /// <summary>
+        /// Read-only view of the presence lifecycle for UI and other subsystems.
+        /// Subscribe to <c>OnStateChanged</c> to react to this player entering
+        /// the world, entering a match, or starting to reconnect.
+        /// </summary>
+        public PresenceStateMachine Presence => _presence;
+
         private bool   _joining;
         private bool   _profileSubscribed;
         private bool   _gameLaunchSubscribed;
+        private bool   _clientReadySubscribed;
         private bool   _partyLeaveSubscribed;
         private bool   _handlingDefiniteSessionGone;
         /// <summary>
@@ -279,6 +304,7 @@ namespace CosmicShore.Gameplay
         // a reconnect/converge window) or its save fails - the tick reconciles.
         private string _publishedDisplayName = "<UNSET>";
         private int    _publishedAvatarId    = int.MinValue;
+        private int    _publishedPresenceState = int.MinValue;
 
         // ─────────────────────────────────────────────────────────────────────
         // Invite state
@@ -547,6 +573,7 @@ namespace CosmicShore.Gameplay
             // what stops the recovery below from firing an illegal
             // <whatever> → InParty when we never left the original state.
             bool enteredReconnecting = _stateMachine.TryTransition(PartyState.Reconnecting);
+            _presence.TryTransition(PresenceState.Recovering);
 
             _lobbyService.ForceReset();
             await _lobbyService.JoinOrCreateAsync(presenceLobbyMaxPlayers);
@@ -586,6 +613,7 @@ namespace CosmicShore.Gameplay
                 authenticationDataVariable.Value.OnSignedIn.OnRaised -= HandleSignedInEvent;
             UnsubscribeFromProfileChanges();
             UnsubscribeFromGameLaunch();
+            UnsubscribeFromVesselReady();
             UnsubscribeFromPartySessionEvents();
 
             if (bootStatusRetryRequestedEvent != null)
@@ -700,6 +728,8 @@ namespace CosmicShore.Gameplay
             if (markDisconnected)
                 _stateMachine.TryTransition(PartyState.Disconnected);
 
+            _presence.TryTransition(PresenceState.Departing);
+
             var leave = leaveParty
                 ? UniTask.WhenAll(_lobbyService.LeaveAsync(), _partySessionService.LeaveAsync())
                 : _lobbyService.LeaveAsync();
@@ -709,6 +739,7 @@ namespace CosmicShore.Gameplay
             // time at all. Best-effort by design.
             await UniTask.WhenAny(leave, UniTask.Delay(DEPARTURE_LEAVE_TIMEOUT_MS, DelayType.UnscaledDeltaTime));
 
+            _presence.TryTransition(PresenceState.Offline);
             Debug.Log($"[HostConnectionService] Departure leave complete (leaveParty={leaveParty}).");
         }
 
@@ -751,6 +782,7 @@ namespace CosmicShore.Gameplay
             // Sign-out is the "emergency exit" - always allowed regardless of current state.
             // Transition flips IsInitialized to false (replaces the old _initialized boolean).
             _stateMachine.TryTransition(PartyState.Disconnected);
+            _presence.TryTransition(PresenceState.Offline);
             connectionData.ResetRuntimeData();
             await _lobbyService.LeaveAsync();
             _eventBus.RaiseHostConnectionLost();
@@ -775,11 +807,13 @@ namespace CosmicShore.Gameplay
             {
                 SubscribeToProfileChanges();
                 SubscribeToGameLaunch();
+                SubscribeToVesselReady();
                 SubscribeToPartySessionEvents();
 
                 await WaitForProfileInitAsync(PROFILE_INIT_TIMEOUT_MS);
                 SyncLocalIdentity();
 
+                _presence.TryTransition(PresenceState.Joining);
                 await _lobbyService.JoinOrCreateAsync(presenceLobbyMaxPlayers);
 
                 // Apply post-join state now that the lobby reference is live.
@@ -1773,6 +1807,10 @@ namespace CosmicShore.Gameplay
             int    partyCount  = 0;
             int    partyMax    = 0;
             string matchName   = string.Empty;
+            // Absent means "unknown, assume in-world" - a peer on a build from
+            // before this property existed publishes nothing, and defaulting to 0
+            // (Offline) would make every such player invisible.
+            int    presenceState = PartyPlayerData.PRESENCE_PRESENT;
 
             if (p.Properties.TryGetValue(DISPLAY_NAME_KEY, out var dn) &&
                 !string.IsNullOrEmpty(dn.Value))
@@ -1788,8 +1826,13 @@ namespace CosmicShore.Gameplay
                 partyMax = parsedPm;
             if (p.Properties.TryGetValue(MATCH_NAME_KEY, out var mn))
                 matchName = mn.Value ?? string.Empty;
+            if (p.Properties.TryGetValue(PRESENCE_STATE_KEY, out var ps) &&
+                !string.IsNullOrEmpty(ps.Value) &&
+                int.TryParse(ps.Value, out int parsedPs))
+                presenceState = parsedPs;
 
-            return new PartyPlayerData(p.Id, displayName, avatarId, partyCount, partyMax, matchName);
+            return new PartyPlayerData(
+                p.Id, displayName, avatarId, partyCount, partyMax, matchName, presenceState);
         }
 
         private void ScanPresenceForJoinedPartyMembers()
@@ -2130,6 +2173,25 @@ namespace CosmicShore.Gameplay
             connectionData.IsConnected         = true;
             connectionData.IsPresenceLobbyHost = lobby.IsHost;
 
+            // Every lobby-join path converges here - initial join, reconnect,
+            // resume-from-background, and the pushed membership-loss recovery -
+            // so this is the one place Announced needs to be asserted.
+            // Announced, not Present: the vessel-spawn signal (OnClientReady)
+            // promotes us, and on a mid-session rejoin it will already have
+            // fired, so HandleLocalVesselReady's catch-up probe in Start covers
+            // the case where it never fires again.
+            _presence.TryTransition(PresenceState.Announced);
+
+            // Catch-up probe for an already-fired signal. OnClientReady is a
+            // one-shot ScriptableEventNoParam with no replay, and on a RE-join
+            // (reconnect, resume-from-background, pushed membership loss) the
+            // vessel already exists and will not spawn again - so waiting for the
+            // event would strand us in Announced and render this player as
+            // "CONNECTING…" on every peer for the rest of the session. Same
+            // already-fired pattern as ToyboxController's vessel probe.
+            if (_gameData?.LocalPlayer?.Vessel != null)
+                _presence.TryTransition(PresenceState.Present);
+
             // Clear the party roster ONLY when there is no live party session.
             // The presence lobby is the discovery layer; the Relay-backed party
             // is independent of it. A presence rejoin - reconnect, converge
@@ -2239,15 +2301,17 @@ namespace CosmicShore.Gameplay
             var lobby = _lobbyService.ActiveLobby;
             if (lobby == null) return;
 
-            int    currentCount  = connectionData.PartyMembers != null ? connectionData.PartyMembers.Count : 0;
-            string currentMatch  = ResolveCurrentMatchName();
-            string currentName   = connectionData.LocalDisplayName ?? "Pilot";
-            int    currentAvatar = connectionData.LocalAvatarId;
+            int    currentCount    = connectionData.PartyMembers != null ? connectionData.PartyMembers.Count : 0;
+            string currentMatch    = ResolveCurrentMatchName();
+            string currentName     = connectionData.LocalDisplayName ?? "Pilot";
+            int    currentAvatar   = connectionData.LocalAvatarId;
+            int    currentPresence = (int)_presence.CurrentState;
 
-            if (currentCount  == _publishedPartyCount &&
-                currentMatch  == _publishedMatchName &&
-                currentName   == _publishedDisplayName &&
-                currentAvatar == _publishedAvatarId) return;
+            if (currentCount    == _publishedPartyCount &&
+                currentMatch    == _publishedMatchName &&
+                currentName     == _publishedDisplayName &&
+                currentAvatar   == _publishedAvatarId &&
+                currentPresence == _publishedPresenceState) return;
 
             try
             {
@@ -2263,12 +2327,18 @@ namespace CosmicShore.Gameplay
                     new PlayerProperty(currentName, VisibilityPropertyOptions.Public));
                 lobby.CurrentPlayer.SetProperty(AVATAR_ID_KEY,
                     new PlayerProperty(currentAvatar.ToString(), VisibilityPropertyOptions.Public));
+                // Rides the SAME single save as everything else - one UpdatePlayer
+                // call, not one per field. This is the property peers read to
+                // know whether this player is actually in the world yet.
+                lobby.CurrentPlayer.SetProperty(PRESENCE_STATE_KEY,
+                    new PlayerProperty(currentPresence.ToString(), VisibilityPropertyOptions.Public));
 
                 await _propertyWriter.SaveWithRetryAsync(lobby);
-                _publishedPartyCount  = currentCount;
-                _publishedMatchName   = currentMatch;
-                _publishedDisplayName = currentName;
-                _publishedAvatarId    = currentAvatar;
+                _publishedPartyCount    = currentCount;
+                _publishedMatchName     = currentMatch;
+                _publishedDisplayName   = currentName;
+                _publishedAvatarId      = currentAvatar;
+                _publishedPresenceState = currentPresence;
             }
             catch (Exception e)
             {
@@ -2276,10 +2346,34 @@ namespace CosmicShore.Gameplay
             }
         }
 
+        /// <summary>
+        /// The match this player is in, or empty when they are in the menu.
+        ///
+        /// <para>
+        /// Keyed off <see cref="PresenceState.InMatch"/>, NOT the active scene
+        /// name. The previous <c>if (IsOnMenuScene()) return string.Empty;</c>
+        /// made this structurally impossible to publish: the only trigger,
+        /// <c>HandleGameLaunch</c>, fires on <c>GameDataSO.OnLaunchGame</c> -
+        /// which <c>SceneLoader.LaunchGame</c> also handles - so it ran while
+        /// Menu_Main was still the active scene. With the lobby mutex
+        /// uncontended, <c>SemaphoreSlim.WaitAsync()</c> completes synchronously,
+        /// so the publish executed inline, still on the menu, returned empty,
+        /// matched <c>_publishedMatchName</c>, and the change-gate skipped the
+        /// write entirely. Then <see cref="Update"/>'s <c>IsOnMenuScene</c> gate
+        /// killed the loop for the rest of the match.
+        /// </para>
+        ///
+        /// <para>
+        /// Net effect: <c>matchName</c> was never published, so
+        /// <c>OnlineInfoEntry.Status.InMatch</c> was dead code and players in a
+        /// match rendered as idle and invitable - while their own refresh loop
+        /// was dead, so the invite was never even scanned for.
+        /// </para>
+        /// </summary>
         private string ResolveCurrentMatchName()
         {
             if (_gameData == null) return string.Empty;
-            if (IsOnMenuScene()) return string.Empty;
+            if (_presence.CurrentState != PresenceState.InMatch) return string.Empty;
             // Every in-game scene advertises its match name - solo is just a party of one.
             return _gameData.GameMode.ToString();
         }
@@ -2489,7 +2583,61 @@ namespace CosmicShore.Gameplay
             _gameLaunchSubscribed = false;
         }
 
-        private void HandleGameLaunch() => PublishPresenceImmediateAsync().Forget();
+        private void HandleGameLaunch()
+        {
+            // Enter InMatch BEFORE publishing - ResolveCurrentMatchName now reads
+            // the state machine, so the order is what makes the write contain a
+            // match name at all.
+            _presence.TryTransition(PresenceState.InMatch);
+            PublishPresenceImmediateAsync().Forget();
+        }
+
+        // ╔═══════════════════════════════════════════════════════════════════╗
+        // ║  Presence lifecycle drivers                                       ║
+        // ╚═══════════════════════════════════════════════════════════════════╝
+
+        private void SubscribeToVesselReady()
+        {
+            if (_clientReadySubscribed || _gameData == null || _gameData.OnClientReady == null) return;
+            _gameData.OnClientReady.OnRaised += HandleLocalVesselReady;
+            _clientReadySubscribed = true;
+        }
+
+        private void UnsubscribeFromVesselReady()
+        {
+            if (!_clientReadySubscribed || _gameData == null || _gameData.OnClientReady == null) return;
+            _gameData.OnClientReady.OnRaised -= HandleLocalVesselReady;
+            _clientReadySubscribed = false;
+        }
+
+        /// <summary>
+        /// <b>The "I am here" broadcast.</b> <c>GameDataSO.OnClientReady</c> is
+        /// raised by <c>ClientPlayerVesselInitializer.InitializePair</c> for the
+        /// LOCAL user once its vessel exists - i.e. the moment the Menu_Main
+        /// lava-lamp vessel has spawned. Moving to
+        /// <see cref="PresenceState.Present"/> here publishes a
+        /// <c>presenceState</c> property change, which the push channel delivers
+        /// to every peer on their next drained tick.
+        ///
+        /// <para>
+        /// Also covers the return leg: coming back from an arcade game reloads
+        /// Menu_Main and respawns the menu vessel, raising this again, which
+        /// moves us <c>InMatch → Present</c> and clears <c>matchName</c>.
+        /// </para>
+        /// </summary>
+        private void HandleLocalVesselReady()
+        {
+            if (_presence.CurrentState == PresenceState.InMatch)
+            {
+                // Back in the menu: drop the match advertisement.
+                _presence.TryTransition(PresenceState.Present);
+                PublishPresenceImmediateAsync().Forget();
+                return;
+            }
+
+            if (_presence.TryTransition(PresenceState.Present))
+                PublishPresenceImmediateAsync().Forget();
+        }
 
         // ╔═══════════════════════════════════════════════════════════════════╗
         // ║  Helpers                                                          ║

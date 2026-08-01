@@ -18,6 +18,7 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField] private int partyMemberCount;
         [SerializeField] private int partyMaxSlots;
         [SerializeField] private string matchName;
+        [SerializeField] private int presenceState;
 
         public string PlayerId => playerId;
         public string DisplayName => displayName;
@@ -32,8 +33,34 @@ namespace CosmicShore.ScriptableObjects
         /// <summary>Active match name if this player is in-game, else empty.</summary>
         public string MatchName => matchName ?? string.Empty;
 
+        /// <summary>
+        /// This player's advertised <c>PresenceState</c> as an int.
+        ///
+        /// <para>
+        /// Defaults to <c>(int)PresenceState.Present</c>, NOT 0. A peer running a
+        /// build from before the presence property existed publishes nothing, and
+        /// 0 is <c>Offline</c> - so defaulting to 0 would make every such player
+        /// invisible. Absent means "unknown, assume they are in the world".
+        /// </para>
+        /// </summary>
+        public int PresenceState => presenceState;
+
+        /// <summary>
+        /// True when this player is actually in the world - their vessel exists.
+        /// False only while they are positively known to be still joining, i.e.
+        /// they published Joining or Announced.
+        /// </summary>
+        public bool IsInWorld => presenceState >= PRESENCE_PRESENT;
+
+        /// <summary>
+        /// Mirrors <c>PresenceState.Present</c>. Kept as a local literal because
+        /// this struct lives in CosmicShore.ScriptableObjects and the enum lives
+        /// in CosmicShore.Gameplay; the wire format is an int either way.
+        /// </summary>
+        public const int PRESENCE_PRESENT = 3;
+
         public PartyPlayerData(string playerId, string displayName, int avatarId)
-            : this(playerId, displayName, avatarId, 0, 0, null) { }
+            : this(playerId, displayName, avatarId, 0, 0, null, PRESENCE_PRESENT) { }
 
         public PartyPlayerData(
             string playerId,
@@ -42,6 +69,16 @@ namespace CosmicShore.ScriptableObjects
             int partyMemberCount,
             int partyMaxSlots,
             string matchName)
+            : this(playerId, displayName, avatarId, partyMemberCount, partyMaxSlots, matchName, PRESENCE_PRESENT) { }
+
+        public PartyPlayerData(
+            string playerId,
+            string displayName,
+            int avatarId,
+            int partyMemberCount,
+            int partyMaxSlots,
+            string matchName,
+            int presenceState)
         {
             this.playerId = playerId;
             this.displayName = displayName;
@@ -49,6 +86,7 @@ namespace CosmicShore.ScriptableObjects
             this.partyMemberCount = partyMemberCount;
             this.partyMaxSlots = partyMaxSlots;
             this.matchName = matchName;
+            this.presenceState = presenceState;
         }
 
         public override bool Equals(object obj)

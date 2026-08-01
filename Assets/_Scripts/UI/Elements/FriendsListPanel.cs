@@ -388,6 +388,17 @@ namespace CosmicShore.UI
                       : (connectionData != null ? connectionData.MaxPartySlots : 0);
             matchName = player.MatchName;
 
+            // Not in the world yet: in the presence lobby, but their vessel has
+            // not spawned (they published PresenceState.Joining or Announced).
+            // Rendering them as a normal invitable row was the "shows wrong
+            // information" half of the symptom - the invite would be published
+            // against a player whose own refresh loop was not running yet, so it
+            // was never scanned for. Non-invitable until they publish Present.
+            // An absent property defaults to Present, so a peer running an older
+            // build is unaffected.
+            if (!player.IsInWorld)
+                return OnlineInfoEntry.Status.Connecting;
+
             // Already in MY party → non-invitable "IN YOUR PARTY" (Task 1). Highest
             // priority: a party member is in *my* lobby, not somewhere else. OnlineInfoEntry
             // makes this status non-invitable, so the row disables + relabels (it is NOT
