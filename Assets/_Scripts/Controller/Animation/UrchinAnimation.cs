@@ -24,14 +24,48 @@ namespace CosmicShore.Gameplay
 
         protected List<Transform> scaledParts = new();
 
+        // Bone names of the rigged urchin model (urchan_shapekey_with_animations.fbx): a 'fuse'
+        // body with top/bottom jets and a mid gun pair per side, each behind its own hold/rot
+        // bone. Legacy part names from the older part-per-mesh model follow as fallbacks, so
+        // this resolves on either art. See VesselAnimation.ResolvePart.
+        protected override void ResolveParts()
+        {
+            Body = ResolvePart(Body, "fuse", "Body");
+            LeftGun = ResolvePart(LeftGun, "gunM.l", "LeftGun");
+            RightGun = ResolvePart(RightGun, "gunM.r", "RightGun");
+
+            JetTopLeft = ResolvePart(JetTopLeft, "jetT.l", "JetTopLeft");
+            JetTopRight = ResolvePart(JetTopRight, "jetT.r", "JetTopRight");
+            JetBottomLeft = ResolvePart(JetBottomLeft, "jetB.l", "JetBottomLeft");
+            JetBottomRight = ResolvePart(JetBottomRight, "jetB.r", "JetBottomRight");
+
+            // Shrouds are the wing/shield panels. Declared for authoring; the puppetry below
+            // does not drive them, so an unmatched shroud costs nothing.
+            ShroudTopLeft = ResolvePart(ShroudTopLeft, "wingconrotT.l", "ShroudTopLeft");
+            ShroudTopRight = ResolvePart(ShroudTopRight, "wingconrotT.r", "ShroudTopRight");
+            ShroudBottomLeft = ResolvePart(ShroudBottomLeft, "wingconrotB.l", "ShroudBottomLeft");
+            ShroudBottomRight = ResolvePart(ShroudBottomRight, "wingconrotB.r", "ShroudBottomRight");
+            ShroudLeft = ResolvePart(ShroudLeft, "sheildconrot.l", "ShroudLeft");
+            ShroudRight = ResolvePart(ShroudRight, "sheildconrot.r", "ShroudRight");
+
+            ReportUnresolvedParts();
+        }
+
         public override void Initialize(IVesselStatus vesselStatus)
         {
             base.Initialize(vesselStatus);
 
-            scaledParts.Add(JetBottomLeft);
-            scaledParts.Add(JetBottomRight);
-            scaledParts.Add(JetTopLeft);
-            scaledParts.Add(JetTopRight);
+            // Populated after base.Initialize so ResolveParts has bound the jets.
+            scaledParts.Clear();
+            AddScaledPart(JetBottomLeft);
+            AddScaledPart(JetBottomRight);
+            AddScaledPart(JetTopLeft);
+            AddScaledPart(JetTopRight);
+        }
+
+        void AddScaledPart(Transform part)
+        {
+            if (part) scaledParts.Add(part);
         }
 
         protected override void Update()

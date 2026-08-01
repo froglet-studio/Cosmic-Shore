@@ -39,6 +39,7 @@ namespace CosmicShore.Gameplay
             VesselStatus = vesselStatus;
             InitializeElementMorphs();
 
+            ResolveParts();
             AssignTransforms();
 
             _isInitialized = true;
@@ -51,6 +52,70 @@ namespace CosmicShore.Gameplay
         }
 
         protected abstract void AssignTransforms();
+
+        // --- Part resolution ---------------------------------------------------------------
+        // A vessel's animated parts are found the same way its element morphs are: BY NAME.
+        // An authored inspector reference always wins, so every already-wired vessel keeps its
+        // exact behaviour; a part left empty is looked up among the model's descendants using
+        // the candidate names the subclass declares. That is what lets a vessel's art be swapped
+        // for a rigged model (the shape-key rigs whose bones ARE the parts - 'wing.l', 'jetT.r',
+        // 'jaw.u') without re-wiring a dozen inspector fields by hand: the stale references come
+        // back null and the bones resolve themselves.
+
+        Dictionary<string, Transform> _partsByName;
+        readonly List<string> _unresolvedParts = new();
+
+        /// <summary>
+        /// Hook for subclasses to resolve their part fields via <see cref="ResolvePart"/> before
+        /// <see cref="AssignTransforms"/> runs. Base implementation does nothing, so vessels that
+        /// rely purely on authored references are unaffected.
+        /// </summary>
+        protected virtual void ResolveParts() { }
+
+        /// <summary>
+        /// Returns <paramref name="authored"/> when it is wired; otherwise the first descendant
+        /// whose name matches one of <paramref name="candidateNames"/> (case-insensitive, in
+        /// priority order - put the current rig's bone name first and legacy part names after).
+        /// Unresolved parts are collected and reported once, loudly, at the end of resolution.
+        /// </summary>
+        protected Transform ResolvePart(Transform authored, params string[] candidateNames)
+        {
+            if (authored) return authored;
+
+            if (_partsByName == null)
+            {
+                _partsByName = new Dictionary<string, Transform>(System.StringComparer.OrdinalIgnoreCase);
+                foreach (var t in GetComponentsInChildren<Transform>(true))
+                    if (!_partsByName.ContainsKey(t.name)) // first occurrence wins
+                        _partsByName[t.name] = t;
+            }
+
+            for (int i = 0; i < candidateNames.Length; i++)
+                if (_partsByName.TryGetValue(candidateNames[i], out var found))
+                    return found;
+
+            if (candidateNames.Length > 0)
+                _unresolvedParts.Add(candidateNames[0]);
+            return null;
+        }
+
+        /// <summary>
+        /// Call at the end of a subclass's <see cref="ResolveParts"/>: reports every part that
+        /// neither an authored reference nor the model could supply. A silently unbound part is
+        /// a limb that stops animating, so this must not fail quietly.
+        /// </summary>
+        protected void ReportUnresolvedParts()
+        {
+            if (_unresolvedParts.Count == 0) return;
+            CSDebug.LogWarning($"[{GetType().Name}] '{name}' could not resolve animated part(s): " +
+                               $"{string.Join(", ", _unresolvedParts)}. They will not animate - wire them " +
+                               "in the inspector, or check that the model's bone names match.");
+            _unresolvedParts.Clear();
+        }
+
+        /// <summary>Local rotation of a part, or identity when it is unbound (keeps index alignment).</summary>
+        protected static Quaternion LocalRotationOf(Transform part) =>
+            part ? part.localRotation : Quaternion.identity;
 
         // Vessel animations TODO: figure out how to leverage a single definition for pitch, etc. that captures the gyro in the animations.
         protected abstract void PerformShipPuppetry(float Pitch, float Yaw, float Roll, float Throttle);
@@ -87,18 +152,24 @@ namespace CosmicShore.Gameplay
             return (throttle < brakeThreshold) ? throttle - brakeThreshold : 0;
         }
 
+        // The part guards below keep an unbound limb from taking the whole vessel's animation
+        // down with a NullReferenceException every frame: an art swap that renames one bone
+        // costs that limb's motion (reported by ReportUnresolvedParts), not the ship.
         protected virtual void ResetAnimation(Transform part)
         {
+            if (!part) return;
             part.localRotation = Quaternion.Lerp(part.localRotation, Quaternion.identity, smallLerpAmount * Time.deltaTime);
         }
 
         protected virtual void ResetAnimation(Transform part, Quaternion resetQuaternion)
         {
+            if (!part) return;
             part.localRotation = Quaternion.Lerp(part.localRotation, resetQuaternion, smallLerpAmount * Time.deltaTime);
         }
 
         protected virtual void RotatePart(Transform part, float pitch, float yaw, float roll)
         {
+            if (!part) return;
             var targetRotation = Quaternion.Euler(pitch, yaw, roll);
 
             part.localRotation = Quaternion.Lerp(
@@ -109,6 +180,7 @@ namespace CosmicShore.Gameplay
 
         protected virtual void RotatePart(Transform part, float pitch, float yaw, float roll, Quaternion initialRotation)
         {
+            if (!part) return;
             var targetRotation = Quaternion.Euler(pitch, roll, yaw) * initialRotation;
 
             part.localRotation = Quaternion.Lerp(

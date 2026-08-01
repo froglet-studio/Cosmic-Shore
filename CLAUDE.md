@@ -1820,10 +1820,40 @@ continuity of existence applies to the vessel's own body.
   and ignored. The shape's authored extreme is read from its last frame weight, so 0-100 and custom
   frame weights both work.
 - **Fleet status**: audit with **Tools > Cosmic Shore > Audit Vessel Elemental Morphs** (asset-only,
-  no play mode, uses the exact runtime discovery). Today Manta/Termite/Falcon/Shrike (Manta meshes),
-  Sparrow, and Serpent ship labeled shapes; Dolphin/Urchin/Rhino prefabs currently wire test meshes
-  without them (their `*_shapekey_with_animations.fbx` models exist — re-wiring the art lights them
-  up with no code change); Squirrel/Grizzly have none yet.
+  no play mode, uses the exact runtime discovery). Manta/Termite/Falcon/Shrike (Manta meshes),
+  Sparrow, and Serpent ship labeled shapes; Dolphin/Urchin/Rhino prefabs still wire shape-less
+  test/placeholder meshes and need the rig swap below; Squirrel/Grizzly have no labeled shapes yet.
+- **Animated parts resolve BY NAME too** (`VesselAnimation.ResolvePart`, `ResolveParts()` hook):
+  an authored inspector reference always wins, and an empty one is looked up among the model's
+  descendants by candidate name — current rig bone first, legacy part name as fallback. This is
+  what makes an art swap cheap: the stale references come back null and the rig's bones bind
+  themselves. Unbound parts are reported (`ReportUnresolvedParts`) and degrade to "that limb
+  doesn't move", never a per-frame `NullReferenceException`.
+
+#### The rigged-model swap (Dolphin / Urchin / Rhino)
+
+These three are the fleet's only vessels whose art cannot morph, and it is **not** a wiring
+oversight — their prefabs wire fundamentally different models. `Dolphin_Test.fbx` is 17 separate
+static part meshes, `Urchan_Test.fbx` 14, and Rhino wires `Vessel_Placeholder_1.fbx` (a literal
+placeholder); none carries a single blend shape. Their `*_shapekey_with_animations.fbx` rigs are
+one skinned mesh on an armature **plus** the four element shapes — and each rig was authored FOR
+that vessel's script: the dolphin rig's `jetT/jetm/jetB × .l/.r` + `jaw.u`/`jaw.b` are exactly
+`RiptideAnimation`'s six thrusters and two jaws; the rhino rig's `wing1.*`/`wing2.*`/`jet.*` are
+`RhinoAnimation`'s front wings, back wings and engines; the urchin rig's `gunM.*`/`jetT.*`/`jetB.*`
+are `UrchinAnimation`'s guns and jets. The three scripts now name those bones as their primary
+resolution candidates, so the code half of the port is done.
+
+The prefab half must run **in the editor** — a `SkinnedMeshRenderer`'s bone list, bindposes, bounds
+and imported mesh IDs are all owned by Unity's FBX importer and cannot be hand-authored in prefab
+YAML. Use **Tools > Cosmic Shore > Report Vessel Rig Swap (dry run)** first, then
+**Wire Vessel Rigs**: it instantiates the rig under `OrientationHandle`, re-parents gameplay
+carriers (impact colliders, `Gun`s, particles) onto their mapped bone preserving world pose, clears
+the animation's part references so they re-resolve to bones, re-points
+`VesselCustomization._shipGeometries` at the new skinned mesh, and **deactivates rather than
+deletes** the old model so the swap is reversible. It is idempotent. **Collider volumes still need
+re-fitting to the new silhouettes by hand** — they were authored against the old art — and the
+Dolphin's drift re-parenting (`RiptideAnimation.Reparent`) drives bones from the drift handle's
+space, so verify a drift in play mode after swapping.
 - **Seeding**: `VesselAnimation` snaps to live levels at `Initialize` (the live initial emit is
   `ResourceSystem.Start`), and `ResourceSystem.InitializeElementLevels` now emits
   `OnElementLevelChange` (deduped) so a mid-session re-seed repaints every consumer — hull morphs,

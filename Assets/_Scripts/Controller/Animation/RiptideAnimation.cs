@@ -34,6 +34,34 @@ namespace CosmicShore.Gameplay
 
         [SerializeField] int JawResourceIndex;
 
+        // Bone names of the rigged dolphin model (dolphin_shapekey_with_animations.fbx), which
+        // was authored FOR this script: six jets (top/middle/bottom x l/r), two jaws and two
+        // wings, all hanging off 'fuse'. Legacy names from the older part-per-mesh model follow
+        // as fallbacks, so this resolves on either art. See VesselAnimation.ResolvePart.
+        protected override void ResolveParts()
+        {
+            Chassis = ResolvePart(Chassis, "fuse", "Chassis", "Dolphin_Test");
+            LeftWing = ResolvePart(LeftWing, "wing.l", "LeftWing");
+            RightWing = ResolvePart(RightWing, "wing.r", "RightWing.001", "RightWing");
+
+            ThrusterTopLeft = ResolvePart(ThrusterTopLeft, "jetT.l", "Engine case Left.1");
+            ThrusterTopRight = ResolvePart(ThrusterTopRight, "jetT.r", "Engine case Right.1");
+            ThrusterLeft = ResolvePart(ThrusterLeft, "jetm.l", "Engine case Left.2");
+            ThrusterRight = ResolvePart(ThrusterRight, "jetm.r", "Engine case Right.2");
+            ThrusterBottomLeft = ResolvePart(ThrusterBottomLeft, "jetB.l", "Engine case Left.3");
+            ThrusterBottomRight = ResolvePart(ThrusterBottomRight, "jetB.r", "Engine case Right.3");
+
+            // The rigged model's jaws ARE its nose halves - one pair of bones serves both roles.
+            topJaw = ResolvePart(topJaw, "jaw.u", "TopNose");
+            bottomJaw = ResolvePart(bottomJaw, "jaw.b", "bottomNose");
+            NoseTop = ResolvePart(NoseTop, "jaw.u", "TopNose");
+            NoseBottom = ResolvePart(NoseBottom, "jaw.b", "bottomNose");
+
+            DriftHandle = ResolvePart(DriftHandle, "DriftHandle");
+
+            ReportUnresolvedParts();
+        }
+
         private void OnDisable()
         {
             if (topJaw) VesselStatus.ResourceSystem.Resources[JawResourceIndex].OnResourceChange -= calculateBlastAngle;
@@ -61,30 +89,14 @@ namespace CosmicShore.Gameplay
             if (VesselStatus.IsDrifting)
             {
                 SafeLookRotation.TrySet(DriftHandle, VesselStatus.Course, transform.up, DriftHandle ? DriftHandle.gameObject : gameObject, logError: false);
-                RightWing.parent = DriftHandle;
-                LeftWing.parent = DriftHandle;
+                Reparent(DriftHandle);
                 wingPosition = forwardWingPosition;
-
-                ThrusterTopRight.parent = DriftHandle;
-                ThrusterRight.parent = DriftHandle;
-                ThrusterBottomRight.parent = DriftHandle;
-                ThrusterBottomLeft.parent = DriftHandle;
-                ThrusterLeft.parent = DriftHandle;
-                ThrusterTopLeft.parent = DriftHandle;
                 thrusterPosition = backwardThrusterPosition;
             }
             else
             {
-                RightWing.parent = Chassis;
-                LeftWing.parent = Chassis;
+                Reparent(Chassis);
                 wingPosition = defaultWingPosition;
-
-                ThrusterTopRight.parent = Chassis;
-                ThrusterRight.parent = Chassis;
-                ThrusterBottomRight.parent = Chassis;
-                ThrusterBottomLeft.parent = Chassis;
-                ThrusterLeft.parent = Chassis;
-                ThrusterTopLeft.parent = Chassis;
                 thrusterPosition = defaultThrusterPosition;
             }
 
@@ -112,8 +124,31 @@ namespace CosmicShore.Gameplay
 
         }
 
+        // Swings the wings and thrusters between the chassis and the drift handle. On the rigged
+        // model these parts are BONES; a SkinnedMeshRenderer reads its bones wherever they sit in
+        // the hierarchy, so re-parenting still skins - it just drives the deformation from the
+        // drift handle's space, which is the intent.
+        void Reparent(Transform newParent)
+        {
+            if (!newParent) return;
+            SetParent(RightWing, newParent);
+            SetParent(LeftWing, newParent);
+            SetParent(ThrusterTopRight, newParent);
+            SetParent(ThrusterRight, newParent);
+            SetParent(ThrusterBottomRight, newParent);
+            SetParent(ThrusterBottomLeft, newParent);
+            SetParent(ThrusterLeft, newParent);
+            SetParent(ThrusterTopLeft, newParent);
+        }
+
+        static void SetParent(Transform part, Transform parent)
+        {
+            if (part && part.parent != parent) part.parent = parent;
+        }
+
         void AnimatePart(Transform part, float pitch, float yaw, float roll, Vector3 position)
         {
+            if (!part) return;
             base.RotatePart(part, pitch, yaw, roll);
 
             part.localPosition = Vector3.Lerp(part.localPosition, position, lerpAmount * Time.deltaTime);
@@ -121,6 +156,7 @@ namespace CosmicShore.Gameplay
 
         void AnimatePart(Transform part, float pitch, float yaw, float roll, Vector3 position, Quaternion InitialRotation)
         {
+            if (!part) return;
             base.RotatePart(part, pitch, roll, yaw, InitialRotation);
 
             part.localPosition = Vector3.Lerp(part.localPosition, position, lerpAmount * Time.deltaTime);
@@ -128,8 +164,8 @@ namespace CosmicShore.Gameplay
 
         private void calculateBlastAngle(float currentAmmo)
         {
-            topJaw.transform.localRotation = Quaternion.Euler(-21 * currentAmmo, 0, 0);
-            bottomJaw.transform.localRotation = Quaternion.Euler(21 * currentAmmo, 0, 0);
+            if (topJaw) topJaw.localRotation = Quaternion.Euler(-21 * currentAmmo, 0, 0);
+            if (bottomJaw) bottomJaw.localRotation = Quaternion.Euler(21 * currentAmmo, 0, 0);
         }
 
         protected override void AssignTransforms()
@@ -148,16 +184,18 @@ namespace CosmicShore.Gameplay
             Transforms.Add(topJaw);
             Transforms.Add(bottomJaw);
 
-            InitialRotations.Add(NoseTop.localRotation);
-            InitialRotations.Add(NoseBottom.localRotation);
-            InitialRotations.Add(ThrusterTopRight.localRotation);
-            InitialRotations.Add(ThrusterRight.localRotation);
-            InitialRotations.Add(ThrusterBottomRight.localRotation);
-            InitialRotations.Add(ThrusterBottomLeft.localRotation);
-            InitialRotations.Add(ThrusterLeft.localRotation);
-            InitialRotations.Add(ThrusterTopLeft.localRotation);
-            InitialRotations.Add(topJaw.localRotation);
-            InitialRotations.Add(bottomJaw.localRotation);  
+            // LocalRotationOf keeps the index alignment PerformShipPuppetry relies on even when
+            // a part is unbound (it contributes identity instead of throwing).
+            InitialRotations.Add(LocalRotationOf(NoseTop));
+            InitialRotations.Add(LocalRotationOf(NoseBottom));
+            InitialRotations.Add(LocalRotationOf(ThrusterTopRight));
+            InitialRotations.Add(LocalRotationOf(ThrusterRight));
+            InitialRotations.Add(LocalRotationOf(ThrusterBottomRight));
+            InitialRotations.Add(LocalRotationOf(ThrusterBottomLeft));
+            InitialRotations.Add(LocalRotationOf(ThrusterLeft));
+            InitialRotations.Add(LocalRotationOf(ThrusterTopLeft));
+            InitialRotations.Add(LocalRotationOf(topJaw));
+            InitialRotations.Add(LocalRotationOf(bottomJaw));
         }
     }
 }
