@@ -2,6 +2,7 @@ using UnityEngine;
 using System;
 using CosmicShore.Gameplay;
 using CosmicShore.Utility;
+using CosmicShore.ECS;
 
 namespace CosmicShore.Gameplay
 {
@@ -121,6 +122,10 @@ namespace CosmicShore.Gameplay
                 MaterialStateManager.Instance.UnregisterAnimator(this);
                 isRegistered = false;
             }
+
+            // Clock path: a pooled-out prism must not fire a stale settle later.
+            _clockColorActive = false;
+            PrismTimerManager.Instance?.CancelScheduledActions(this);
         }
 
         private bool ValidateMaterials()
@@ -156,6 +161,46 @@ namespace CosmicShore.Gameplay
             }
         }
 
+        // ------------------------------------------------------------------
+        // Clock-material color transitions (Docs/PRISM_ANIMATION.md, LOCKED law).
+        // When live, a transition is: bind the END-STATE material immediately
+        // (gameplay-final-at-start — the entity's per-instance overrides snap to
+        // the new material's authored values, which ARE the lerp targets), stamp
+        // {t0, duration, start colors} once, and schedule ONE settle at t0+dur.
+        // MaterialStateManager is never engaged for clock transitions.
+        // ------------------------------------------------------------------
+
+        bool _clockColorActive;
+        float _clockColorT0;
+        float _clockColorDuration;
+        Color _clockFromBright;
+        Color _clockFromDark;
+        Vector3 _clockFromSpread;
+
+        /// <summary>Analytic displayed colors of an in-flight clock transition —
+        /// the interruption start-state and the exotic-handoff pin, computed on
+        /// demand (never tracked per frame).</summary>
+        internal bool TryGetClockColorCurrent(out Color bright, out Color dark, out Vector3 spread)
+        {
+            if (!_clockColorActive || _clockColorDuration <= 0f)
+            {
+                bright = default; dark = default; spread = default;
+                return false;
+            }
+            float now = PrismClock.Now;
+            if (now >= _clockColorT0 + _clockColorDuration)
+            {
+                bright = default; dark = default; spread = default;
+                return false;
+            }
+            float p = Mathf.Clamp01((now - _clockColorT0) / _clockColorDuration);
+            float t = p * p * (3f - 2f * p); // smoothstep — matches PrismColorLerp
+            bright = Color.Lerp(_clockFromBright, TargetBrightColor, t);
+            dark = Color.Lerp(_clockFromDark, TargetDarkColor, t);
+            spread = Vector3.Lerp(_clockFromSpread, TargetSpread, t);
+            return true;
+        }
+
         public void UpdateMaterial(Material transparentMaterial, Material opaqueMaterial, float duration = 0.8f, Action onComplete = null)
         {
             if (!enabled || MeshRenderer == null) return;
@@ -167,6 +212,9 @@ namespace CosmicShore.Gameplay
             }
 
             if (!ValidateMaterials()) return;
+
+            if (TryClockColorTransition(transparentMaterial, opaqueMaterial, duration, onComplete))
+                return;
 
             // If already animating, capture current state as start state. Uses the
             // manager-tracked current values (works for both the MPB path and the
@@ -222,6 +270,92 @@ namespace CosmicShore.Gameplay
             };
         }
 
+        /// <summary>
+        /// The clock-material path of <see cref="UpdateMaterial"/>. Returns false
+        /// (caller falls back to the legacy MaterialStateManager lerp) when the
+        /// clock path is dark, the prism renders through the GameObject fallback,
+        /// or the entity stamp fails.
+        /// </summary>
+        bool TryClockColorTransition(Material transparentMaterial, Material opaqueMaterial, float duration, Action onComplete)
+        {
+            if (!PrismRenderService.ClockAnimationEnabled) return false;
+            if (cachedPrism == null || !cachedPrism.UsesEntityColorSink) return false;
+
+            float now = PrismClock.Now;
+
+            // Start colors: analytic current of an in-flight clock transition,
+            // else the currently bound material's authored values. Must be read
+            // BEFORE the end-state material is bound below.
+            if (TryGetClockColorCurrent(out var curBright, out var curDark, out var curSpread))
+            {
+                StartBrightColor = curBright;
+                StartDarkColor = curDark;
+                StartSpread = curSpread;
+            }
+            else
+            {
+                var currentMaterial = MeshRenderer.sharedMaterial;
+                StartBrightColor = currentMaterial.GetColor(BrightColorId);
+                StartDarkColor = currentMaterial.GetColor(DarkColorId);
+                StartSpread = currentMaterial.GetVector(SpreadId);
+            }
+
+            // Targets = the end-state material's authored values (the material the
+            // shader lerps toward — no _Target* properties exist by design).
+            TargetBrightColor = transparentMaterial.GetColor(BrightColorId);
+            TargetDarkColor = transparentMaterial.GetColor(DarkColorId);
+            TargetSpread = transparentMaterial.GetVector(SpreadId);
+
+            // Gameplay-final-at-start: bind the end-state material NOW. The entity's
+            // color overrides snap to its authored values via SyncRenderMaterial
+            // (refreshColors — IsAnimating stays false on the clock path).
+            activeTransparentMaterial = transparentMaterial;
+            activeOpaqueMaterial = opaqueMaterial;
+            bool transparent = cachedPrism.prismProperties != null && cachedPrism.prismProperties.IsTransparent;
+            MeshRenderer.sharedMaterial = transparent ? transparentMaterial : opaqueMaterial;
+            cachedPrism.SyncRenderMaterial();
+
+            if (!PrismRenderService.StampColorTransition(in cachedPrism.RenderHandle, now, duration,
+                    PrismRenderService.ToFloat4(StartBrightColor),
+                    PrismRenderService.ToFloat4(StartDarkColor),
+                    PrismRenderService.ToFloat3(StartSpread)))
+            {
+                // Entity lost between the sink check and the stamp — the material is
+                // already the end state; report unhandled so the legacy lerp runs
+                // (it will start from the tracked currents seeded below).
+                CurrentBrightColor = StartBrightColor;
+                CurrentDarkColor = StartDarkColor;
+                CurrentSpread = StartSpread;
+                return false;
+            }
+
+            _clockColorActive = true;
+            _clockColorT0 = now;
+            _clockColorDuration = duration;
+            _clockFromBright = StartBrightColor;
+            _clockFromDark = StartDarkColor;
+            _clockFromSpread = StartSpread;
+
+            // Keep the tracked currents sane for handoff paths that read them.
+            CurrentBrightColor = StartBrightColor;
+            CurrentDarkColor = StartDarkColor;
+            CurrentSpread = StartSpread;
+
+            // Touchpoint 3: ONE scheduled settle — clear the stamp (invisible: at
+            // t >= end the shader lerp already equals the bound material) and fire
+            // the caller's completion.
+            var timers = PrismTimerManager.EnsureInstance();
+            timers.CancelScheduledActions(this);
+            timers.ScheduleAction(this, duration, () =>
+            {
+                _clockColorActive = false;
+                if (cachedPrism != null)
+                    PrismRenderService.ClearColorTransitionStamp(in cachedPrism.RenderHandle);
+                onComplete?.Invoke();
+            });
+            return true;
+        }
+
         public void SetTransparency(bool transparent)
         {
             if (MeshRenderer != null && ValidateMaterials())
@@ -256,6 +390,15 @@ namespace CosmicShore.Gameplay
                 PropertyBlock.SetColor(DarkColorId, CurrentDarkColor);
                 PropertyBlock.SetVector(SpreadId, new Vector4(CurrentSpread.x, CurrentSpread.y, CurrentSpread.z, 0));
             }
+            else if (TryGetClockColorCurrent(out var bright, out var dark, out var spread))
+            {
+                // Mid-flight clock transition handing off to the GameObject renderer
+                // (shield engage): pin the analytically-current colors so the frame
+                // can't flash the already-bound end-state material's colors.
+                PropertyBlock.SetColor(BrightColorId, bright);
+                PropertyBlock.SetColor(DarkColorId, dark);
+                PropertyBlock.SetVector(SpreadId, new Vector4(spread.x, spread.y, spread.z, 0));
+            }
             MeshRenderer.SetPropertyBlock(PropertyBlock);
         }
 
@@ -267,6 +410,7 @@ namespace CosmicShore.Gameplay
                 isRegistered = false;
             }
             OnAnimationComplete = null;
+            PrismTimerManager.Instance?.CancelScheduledActions(this);
         }
     }
 }

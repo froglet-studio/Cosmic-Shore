@@ -99,10 +99,15 @@ namespace CosmicShore.ECS
         public float Value;
     }
 
+    // Per-AXIS start fraction (displayed scale at t0 as a fraction of the FINAL
+    // scale, per component). float3 so anisotropic retargets stay continuous:
+    // Grow() adds GrowthVector along one axis, and the displayed/new-target ratio
+    // then differs per axis. Values above 1 are legal — that's a shrink toward
+    // the new target (the exponential converges to 1 from either side).
     [MaterialProperty("_GrowStartFrac")]
     public struct PrismGrowStartFracOverride : IComponentData
     {
-        public float Value;
+        public float3 Value;
     }
 
     [MaterialProperty("_ColorStartTime")]

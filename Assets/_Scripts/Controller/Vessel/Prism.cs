@@ -190,7 +190,7 @@ namespace CosmicShore.Gameplay
         /// TargetScale). A deactivated prism reports false — pooled/consumed prisms must never
         /// wedge a caller waiting on growth (PrismTrailBuilder's arena-ready gate sweeps on this).
         /// </summary>
-        public bool IsGrowing => isActiveAndEnabled && scaleAnimator != null && scaleAnimator.IsScaling;
+        public bool IsGrowing => isActiveAndEnabled && scaleAnimator != null && scaleAnimator.IsVisuallyGrowing;
 
         /// <summary>
         /// True once CreateBlockCoroutine has finished this life's creation — renderer visible,
@@ -210,7 +210,7 @@ namespace CosmicShore.Gameplay
         public bool IsSettledForReveal =>
             destroyed ||
             scaleAnimator == null ||
-            (IsCreationComplete && !scaleAnimator.IsScaling && scaleAnimator.IsAtTarget);
+            (IsCreationComplete && scaleAnimator.IsVisuallySettled);
 
         /// <summary>
         /// Snap this prism's grow-in to its final scale NOW (loading-screen use only — the world
@@ -536,6 +536,7 @@ namespace CosmicShore.Gameplay
             // [Fix] Always clean up previous state when coming from pool
             ResetState();
             ClearRenderMeshOverride(); // pooled reuse: the entity must not keep a prior life's shield mesh
+            PrismRenderService.ClearPrismStamps(in RenderHandle); // nor a prior life's clock-animation stamps
 
             PlayerName = playerName;
             blockCollider.enabled = false;
@@ -594,6 +595,10 @@ namespace CosmicShore.Gameplay
                 scaleAnimator.enabled = true;
                 transform.localScale = Vector3.zero;
             }
+
+            // Clock-material reuse safety: the previous life's stamp state must not
+            // leak into this life's IsVisuallyGrowing / settle predicates.
+            scaleAnimator?.ResetClockState();
 
             // Clear trail renderer to prevent visual artifacts across the map
             if (Trail != null && Trail.TrailRenderer != null)
@@ -720,6 +725,14 @@ namespace CosmicShore.Gameplay
 
             prismProperties.volume = scaleAnimator.GetCurrentVolume();
 
+            // Capture BEFORE BeginGrowthAnimation: on the clock path the stamp runs
+            // the completion side effects at the start (the law), which writes the
+            // FINAL volume into prismProperties and raises the volume-delta SOAP —
+            // raising the created event with the mutated value would double-count
+            // the mass (created=final + delta=final). The local preserves the
+            // legacy accounting split (created≈0 + delta≈final) on both paths.
+            float createdVolume = prismProperties.volume;
+
             scaleAnimator.BeginGrowthAnimation();
 
             using (s_createSoapMarker.Auto())
@@ -727,7 +740,7 @@ namespace CosmicShore.Gameplay
                 _onTrailBlockCreatedEventChannel.Raise(new PrismStats
                 {
                     OwnName = PlayerName,
-                    Volume = prismProperties.volume,
+                    Volume = createdVolume,
                 });
             }
 

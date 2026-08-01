@@ -27,20 +27,24 @@
 // where rate is the per-second k the manager derived from GrowthRate
 // (PrismScaleManager.cs — k = clamp(GrowthRate*0.04, 0.05, 0.1)/0.04).
 // The entity's LocalToWorld holds FINAL scale from the stamp; this factor
-// scales object-space vertex positions, so the visual blooms while collider,
-// volume, and spatial state are already final (gameplay-final-at-start).
+// scales object-space vertex positions componentwise, so the visual blooms
+// while collider, volume, and spatial state are already final
+// (gameplay-final-at-start). StartFrac is PER AXIS (anisotropic retargets) and
+// may exceed 1 — that's a shrink toward the new target; the exponential
+// converges to 1 from either side.
 // Rate <= 0 -> settled (factor 1): unstamped materials render the end state.
 // -----------------------------------------------------------------------------
-void PrismGrowScale_float(float Clock, float StartTime, float Rate, float StartFrac,
-    out float Scale)
+void PrismGrowScale_float(float Clock, float StartTime, float Rate, float3 StartFrac,
+    out float3 Scale)
 {
     if (Rate <= 0.0)
     {
-        Scale = 1.0;
+        Scale = float3(1.0, 1.0, 1.0);
         return;
     }
     float t = max(Clock - StartTime, 0.0);
-    Scale = 1.0 - (1.0 - saturate(StartFrac)) * exp(-Rate * t);
+    Scale = max(float3(1.0, 1.0, 1.0) - (float3(1.0, 1.0, 1.0) - StartFrac) * exp(-Rate * t),
+                float3(0.0, 0.0, 0.0));
 }
 
 // -----------------------------------------------------------------------------

@@ -428,7 +428,7 @@ namespace CosmicShore.ECS
                     case PrismRenderOverrideSet.Prism:
                         em.AddComponentData(prototype, new PrismGrowStartTimeOverride { Value = 0f });
                         em.AddComponentData(prototype, new PrismGrowRateOverride { Value = 0f });
-                        em.AddComponentData(prototype, new PrismGrowStartFracOverride { Value = 1f });
+                        em.AddComponentData(prototype, new PrismGrowStartFracOverride { Value = new float3(1f) });
                         em.AddComponentData(prototype, new PrismColorStartTimeOverride { Value = 0f });
                         em.AddComponentData(prototype, new PrismColorDurationOverride { Value = 0f });
                         em.AddComponentData(prototype, new PrismStartBrightColorOverride { Value = new float4(1f) });
@@ -683,10 +683,11 @@ namespace CosmicShore.ECS
         // Start times come from PrismClock.Now (same epoch as _Time.y).
         // ------------------------------------------------------------------
 
-        /// <summary>Stamps a grow-in bloom: visual scales from startFrac to 1 about the
-        /// entity's FINAL transform (LocalToWorld must already hold final scale —
-        /// gameplay-final-at-start). rate is the per-second exponential-approach k.</summary>
-        public static bool StampGrow(in PrismRenderHandle handle, float startTime, float rate, float startFrac)
+        /// <summary>Stamps a grow-in bloom: visual scales from startFrac (per axis, may
+        /// exceed 1 for shrink-retargets) to 1 about the entity's FINAL transform
+        /// (LocalToWorld must already hold final scale — gameplay-final-at-start).
+        /// rate is the per-second exponential-approach k.</summary>
+        public static bool StampGrow(in PrismRenderHandle handle, float startTime, float rate, in float3 startFrac)
         {
             if (!ClockAnimationEnabled || !IsUsable(in handle)) return false;
             var em = _world.EntityManager;
@@ -695,6 +696,29 @@ namespace CosmicShore.ECS
             em.SetComponentData(handle.Entity, new PrismGrowRateOverride { Value = rate });
             em.SetComponentData(handle.Entity, new PrismGrowStartFracOverride { Value = startFrac });
             return true;
+        }
+
+        /// <summary>Settles just the grow stamp (visual snaps to final — call only when
+        /// settled or covered). Safe no-op when the clock components are absent.</summary>
+        public static void ClearGrowStamp(in PrismRenderHandle handle)
+        {
+            if (!IsUsable(in handle)) return;
+            var em = _world.EntityManager;
+            if (!em.HasComponent<PrismGrowStartTimeOverride>(handle.Entity)) return;
+            em.SetComponentData(handle.Entity, new PrismGrowStartTimeOverride { Value = 0f });
+            em.SetComponentData(handle.Entity, new PrismGrowRateOverride { Value = 0f });
+            em.SetComponentData(handle.Entity, new PrismGrowStartFracOverride { Value = new float3(1f) });
+        }
+
+        /// <summary>Settles just the color-transition stamp (visual snaps to the bound
+        /// material's colors — the scheduled settle, or an interruption reset).</summary>
+        public static void ClearColorTransitionStamp(in PrismRenderHandle handle)
+        {
+            if (!IsUsable(in handle)) return;
+            var em = _world.EntityManager;
+            if (!em.HasComponent<PrismColorStartTimeOverride>(handle.Entity)) return;
+            em.SetComponentData(handle.Entity, new PrismColorStartTimeOverride { Value = 0f });
+            em.SetComponentData(handle.Entity, new PrismColorDurationOverride { Value = 0f });
         }
 
         /// <summary>Stamps a color/state transition: shader lerps from the given start
@@ -716,17 +740,11 @@ namespace CosmicShore.ECS
         }
 
         /// <summary>Clears a prism's animation stamps back to the settled state (pool
-        /// reuse / settle swap). Safe no-op when the clock components are absent.</summary>
+        /// reuse). Safe no-op when the clock components are absent.</summary>
         public static void ClearPrismStamps(in PrismRenderHandle handle)
         {
-            if (!IsUsable(in handle)) return;
-            var em = _world.EntityManager;
-            if (!em.HasComponent<PrismGrowStartTimeOverride>(handle.Entity)) return;
-            em.SetComponentData(handle.Entity, new PrismGrowStartTimeOverride { Value = 0f });
-            em.SetComponentData(handle.Entity, new PrismGrowRateOverride { Value = 0f });
-            em.SetComponentData(handle.Entity, new PrismGrowStartFracOverride { Value = 1f });
-            em.SetComponentData(handle.Entity, new PrismColorStartTimeOverride { Value = 0f });
-            em.SetComponentData(handle.Entity, new PrismColorDurationOverride { Value = 0f });
+            ClearGrowStamp(in handle);
+            ClearColorTransitionStamp(in handle);
         }
 
         /// <summary>Stamps an explosion's flight: offset/amount/opacity become pure

@@ -498,9 +498,13 @@ Implementation constraints (verified by the capability audit):
 - Instanced rendering is ON in the shipped config
   (`Assets/Resources/PrismRenderConfig.asset`, `useInstancedRendering: 1`); per-instance
   values live in Entities Graphics' persistent GPU buffer — a stamp is genuinely
-  write-once. The legacy MeshRenderer fallback gets the same stamp via ONE
-  MaterialPropertyBlock write (Hybrid Per Instance is additive; the MPB path is
-  unaffected).
+  write-once.
+- **The clock path rides the instanced renderer (decided)**: a prism that falls back
+  to its GameObject MeshRenderer (no ECS world / tool scenes / exotic-morph windows)
+  keeps the legacy CPU managers for that animation. This keeps the migration surface
+  to ONE stamping discipline instead of maintaining MaterialPropertyBlock twins that
+  would collide with `FlushDisplayedColorsToRenderer`'s block ownership; the CPU
+  managers retire only after the fallback population is measured to be negligible.
 - Currently NON-instanced properties that must not be driven per-instance without
   flipping the flag first: `_SqrDistance`, `_Alpha` (BlockGraph),
   `_ExplosiveRotation`/`_ExplosiveSpead` (ExplodingBlockGraph), `_Move` (SuctionGraph),
@@ -592,20 +596,51 @@ opt-in-dark pattern instanced rendering itself shipped under):
   behind-the-veil instant settling.
 - **`PrismTimerManager.ScheduleAction` / `CancelScheduledActions`** — the generalized
   touchpoint-3 scheduler (flat list, one delegate per animation event).
-- Legacy-path MPB stamp twins land with the first B-phase call-site migration (one
-  `MaterialPropertyBlock` write of the same properties).
+- No MPB stamp twins, by decision (§4.1): the clock path rides the instanced
+  renderer; GameObject-fallback prisms keep the legacy CPU managers until those
+  retire.
+
+**Phase B1/B2 call sites (shipped dark, same toggle):**
+
+- **Grow-in (B1)** — `PrismScaleAnimator` stamps instead of engaging
+  `PrismScaleManager` when the clock path is live: transform/entity matrix/volume go
+  FINAL at the stamp, completion side effects (`ExecuteOnScaleComplete`: volume SOAP
+  delta + IsLargest shield) run at the START, settledness is the analytic
+  `t₀ + ln(d₀/ε)/k` clock predicate (`IsVisuallyGrowing` / `IsVisuallySettled`, read
+  by `Prism.IsGrowing` / `IsSettledForReveal`), retargets re-stamp from the
+  analytically-current per-axis fraction (shrinks included — fractions above 1
+  converge down), and `CompleteGrowthImmediately` becomes a stamp rewrite into
+  `PrismClock.SettledPast`. Pre-creation growth requests defer to the
+  creation-complete stamp — a **known visual delta**: prisms bloom from zero at
+  reveal instead of inheriting the legacy 0.6 s invisible head start (more
+  continuity-law-correct, slightly later apparent growth). Created/delta SOAP volume
+  accounting is preserved exactly (the created event captures its volume before the
+  stamp mutates it).
+- **Color/state transitions (B2)** — `MaterialPropertyAnimator.UpdateMaterial` binds
+  the END-STATE material immediately (its authored values are the lerp targets),
+  stamps `{t₀, duration, start colors}` (start = analytic current of any in-flight
+  clock transition, else the outgoing material's colors), and schedules ONE settle
+  via `PrismTimerManager.ScheduleAction` (clears the stamp — invisible, since at
+  t ≥ end the shader already equals the bound material — then fires the caller's
+  completion). Every feeder (`SetInitialTeam`, `Steal`/`ChangeTeam`, `MakeDangerous`,
+  shield repaints) rides this with zero caller changes. Exotic handoffs pin the
+  analytic current colors (`FlushDisplayedColorsToRenderer`); pool return cancels the
+  scheduled settle and clears stamps.
 
 **In-editor wiring (required before flipping the toggle; do all three graphs):**
 
 1. **BlockGraph** — add properties with these EXACT reference names, all marked
    **Hybrid Per Instance** (Node Settings ▸ Shader Declaration; verify
    `hlslDeclarationOverride: 3` lands in the file — the `PRISM_ECS_MIGRATION.md` §7
-   recipe): `_GrowStartTime` Float 0 · `_GrowRate` Float 0 · `_GrowStartFrac` Float 1 ·
-   `_ColorStartTime` Float 0 · `_ColorDuration` Float 0 · `_StartBrightColor` Color
-   (1,1,1,1) · `_StartDarkColor` Color (1,1,1,1) · `_StartSpread` Vector3 (0,0,0).
+   recipe): `_GrowStartTime` Float 0 · `_GrowRate` Float 0 · `_GrowStartFrac` Vector3
+   (1,1,1) · `_ColorStartTime` Float 0 · `_ColorDuration` Float 0 · `_StartBrightColor`
+   Color (1,1,1,1) · `_StartDarkColor` Color (1,1,1,1) · `_StartSpread` Vector3 (0,0,0).
+   (`_GrowStartFrac` is **Vector3 (1,1,1)** — per-axis start fraction, so anisotropic
+   `Grow()` retargets stay continuous.)
    Vertex stage: Custom Function node (Source = `PrismClockAnimation.hlsl`, Name =
    `PrismGrowScale`, Clock ← Time node's **Time** output) → multiply the object-space
-   vertex position by `Scale` upstream of the existing `SpreadSubGraph` offset.
+   vertex position componentwise by the `Scale` (Vector3) output, upstream of the
+   existing `SpreadSubGraph` offset.
    Fragment: Custom Function `PrismColorLerp` with `Target*` inputs fed by the
    existing `_BrightColor` / `_DarkColor` / `_Spread` property nodes; route its
    outputs everywhere those properties fed before.
@@ -650,8 +685,8 @@ Phase B — migrate the engines (each retires a per-frame pass):
 
 | # | Item | Status |
 |---|---|---|
-| B1 | Grow-in → clock (all ~12 feeder paths ride the one engine); retire `PrismScaleManager`; gameplay-final-at-start (volume/spatial/collider stamps, clock predicates, `ExecuteOnScaleComplete` → start); delete `HoldColliderAtFullSize` + `CreateBlockCoroutine` window + arena-gate compensation; re-baseline PhaseThresholds | ☐ not started |
-| B2 | Color/state transitions → clock lerp (start colors + t₀; target = material authored); retire `MaterialStateManager`; keep the end `sharedMaterial` swap, scheduled | ☐ not started |
+| B1 | Grow-in → clock (all ~12 feeder paths ride the one engine); gameplay-final-at-start (volume/spatial stamps, clock predicates, `ExecuteOnScaleComplete` → start) | ◐ shipped dark 2026-08-01 (§4.4) — pending: in-editor graph wiring + verification, then `PrismScaleManager` retirement, `HoldColliderAtFullSize` deletion, `CreateBlockCoroutine` window simplification, arena-gate simplification, PhaseThresholds re-baseline |
+| B2 | Color/state transitions → clock lerp (start colors + t₀; target = material authored; end-state material bound at START, settle scheduled) | ◐ shipped dark 2026-08-01 (§4.4) — pending: in-editor graph wiring + verification, then `MaterialStateManager` retirement |
 | B3 | Explosion/implosion → clock (stamp `{t₀, velocity, speed, duration}` / `{t₀, duration, direction, location}`); retire `PrismEffectsManager` per-frame passes + VFX caps; decide implosion moving-target (snapshot vs documented exception) | ☐ not started |
 | B4 | Shield morphs → GPU (vertex-shader bloom/shatter from per-vertex face data + t₀; settled shared-mesh swap already conforms); kill stellated idle per-prism `Update()` (interim: register with `PrismOctahedronShieldManager`) | ☐ not started |
 
