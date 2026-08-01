@@ -364,8 +364,15 @@ namespace CosmicShore.Gameplay
             };
         }
 
+        /// <summary>
+        /// True when the exception is a UGS rate-limit (429) response.
+        /// Delegates to <see cref="UgsErrorClassifier.IsRateLimit"/>; the
+        /// previous local version pattern-matched only the OUTER exception as a
+        /// <c>RequestFailedException</c>, so a wrapped 429 never armed the
+        /// retry in <c>CreateAsync</c> / <c>JoinByIdAsync</c>.
+        /// </summary>
         private static bool IsRateLimitException(Exception e) =>
-            e is Unity.Services.Core.RequestFailedException rfe && rfe.ErrorCode == 429;
+            UgsErrorClassifier.IsRateLimit(e);
 
         private static bool IsHostConflictException(Exception e) =>
             e.Message?.Contains("NetworkManager", StringComparison.OrdinalIgnoreCase) == true ||

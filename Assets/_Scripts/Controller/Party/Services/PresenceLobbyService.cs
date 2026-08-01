@@ -520,8 +520,18 @@ namespace CosmicShore.Gameplay
         /// True when the exception is a UGS HTTP 429 Too Many Requests response.
         /// Used in <c>catch ... when (...)</c> clauses to distinguish rate-limit
         /// errors (retry-able) from other errors (propagate).
+        ///
+        /// <para>
+        /// Delegates to <see cref="UgsErrorClassifier.IsRateLimit"/> so this
+        /// service, <see cref="HostConnectionService"/> and
+        /// <see cref="PartySessionService"/> agree. The previous local version
+        /// tested only <c>e.Message.Contains("Too Many Requests")</c> on the
+        /// OUTER exception, so a wrapped 429 - the common shape, since UGS and
+        /// UniTask both wrap - fell through every <c>catch ... when</c> filter
+        /// here and propagated as a hard failure instead of retrying.
+        /// </para>
         /// </summary>
         private static bool IsRateLimitException(Exception e) =>
-            e.Message != null && e.Message.Contains("Too Many Requests");
+            UgsErrorClassifier.IsRateLimit(e);
     }
 }

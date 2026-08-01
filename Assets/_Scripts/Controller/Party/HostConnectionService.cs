@@ -1209,10 +1209,24 @@ namespace CosmicShore.Gameplay
             }
             catch (Exception e)
             {
+                // [rate-limit] MUST be tested before the benign branches.
+                // IsBenignSdkStaleIndexError matches ANY SessionException whose
+                // Error is Unknown, and a 429 can arrive wrapped in exactly that
+                // shape - so with benign first, being throttled was silently
+                // classified as harmless SDK noise and no backoff was ever armed,
+                // leaving us hammering the same endpoint that just refused us.
+                // The two are otherwise disjoint (a stale-index fault carries no
+                // 429 and no "Too Many Requests"), so this reorder cannot steal
+                // anything from the benign branches.
+                if (IsRateLimitException(e))
+                {
+                    _rateLimitBackoffUntil = Time.unscaledTime + refreshIntervalSeconds * 2;
+                    Debug.LogWarning("[HostConnectionService] Rate limited during refresh - backing off");
+                }
                 // UGS SDK self-corrects on the next refresh tick. Treat as a
                 // no-op so the consecutive-error counter doesn't roll into
                 // the reconnect path on harmless SDK noise.
-                if (IsBenignLobbyPatcherError(e))
+                else if (IsBenignLobbyPatcherError(e))
                 {
                     // No state change and no console warning (B1 noise suppression),
                     // but the tick IS lost - account for it. See RecordBenignRefreshSkip.
@@ -1223,11 +1237,6 @@ namespace CosmicShore.Gameplay
                     // Same SDK stale-index defect, read-path surface. Same
                     // treatment as the LobbyPatcher case above.
                     RecordBenignRefreshSkip(ref _benignPresenceSkips, e, "presence", "SdkStaleIndex");
-                }
-                else if (IsRateLimitException(e))
-                {
-                    _rateLimitBackoffUntil = Time.unscaledTime + refreshIntervalSeconds * 2;
-                    Debug.LogWarning("[HostConnectionService] Rate limited during refresh - backing off");
                 }
                 else
                 {
@@ -1597,6 +1606,19 @@ namespace CosmicShore.Gameplay
 
                 // Error-handling matrix - see Docs/PartySystem/ARCHITECTURE.md.
                 //
+                // [rate-limit] UGS throttled us - back off, keep ActiveSession.
+                // Tested BEFORE the benign branches: IsBenignSdkStaleIndexError
+                // matches any SessionException with Error == Unknown, which a
+                // wrapped 429 can present as, and swallowing it there armed no
+                // backoff. The two are disjoint in practice, so nothing is stolen
+                // from benign by running this first.
+                if (IsRateLimitException(e))
+                {
+                    Debug.LogWarning($"[HostConnectionService] Party session refresh rate-limited - backing off");
+                    _rateLimitBackoffUntil = Time.unscaledTime + refreshIntervalSeconds * 2;
+                    return;
+                }
+
                 // [benign] LobbyPatcher stale-index ArgumentOutOfRangeException -
                 // known harmless SDK noise, self-corrects on the next tick.
                 if (IsBenignLobbyPatcherError(e))
@@ -1610,17 +1632,23 @@ namespace CosmicShore.Gameplay
                 // the read path. Same recovery (retry next tick); silence to match.
                 // See Docs/PresenceSystem/BUGS.md B6 + Docs/PartySystem/MPPM_SESSION_LOG.md
                 // Session 1 finding #2.
+                //
+                // NOTE: [definite] deliberately stays BELOW these, unlike the
+                // ordering the class doc for IsBenignSdkStaleIndexError asserts.
+                // Structured definite errors (SessionNotFound / SessionDeleted /
+                // NotInLobby) carry a specific Error and so are never matched by
+                // the Unknown-discriminator above - they already reach [definite]
+                // correctly. The only case the current order sends to benign
+                // instead is a SessionException the SDK ITSELF could not classify
+                // (Error == Unknown) whose message happens to read like
+                // "session ... not found". Promoting [definite] would make that
+                // ambiguous input trigger HandleDefiniteSessionGoneAsync, which
+                // recreates the solo session and kicks any client mid-join (see
+                // SESSION_CREATION_GRACE_PERIOD_SECONDS). "Retry next tick" is the
+                // safe reading of an error the SDK could not name.
                 if (IsBenignSdkStaleIndexError(e))
                 {
                     RecordBenignRefreshSkip(ref _benignPartySessionSkips, e, "party-session", "SdkStaleIndex");
-                    return;
-                }
-
-                // [rate-limit] UGS throttled us - back off, keep ActiveSession.
-                if (IsRateLimitException(e))
-                {
-                    Debug.LogWarning($"[HostConnectionService] Party session refresh rate-limited - backing off");
-                    _rateLimitBackoffUntil = Time.unscaledTime + refreshIntervalSeconds * 2;
                     return;
                 }
 
@@ -2189,8 +2217,26 @@ namespace CosmicShore.Gameplay
             return sceneName == "Menu_Main" || sceneName == "Authentication";
         }
 
+        /// <summary>
+        /// True when the exception is a UGS rate-limit (429) response.
+        /// Delegates to <see cref="UgsErrorClassifier.IsRateLimit"/> so all three
+        /// party-layer services agree.
+        ///
+        /// <para>
+        /// The previous local version tested only
+        /// <c>e.Message.Contains("Too Many Requests")</c> on the OUTER exception,
+        /// while its two siblings in this file
+        /// (<see cref="IsDefiniteSessionGoneException"/>,
+        /// <see cref="IsBenignLobbyPatcherError"/>) both walk the chain. A wrapped
+        /// 429 therefore missed the rate-limit branch and fell through to the
+        /// generic one, which increments
+        /// <see cref="MAX_REFRESH_ERRORS_BEFORE_RECONNECT"/> - so being throttled
+        /// could escalate into <c>ForceReset</c> plus a throwaway presence lobby
+        /// instead of backing off.
+        /// </para>
+        /// </summary>
         private static bool IsRateLimitException(Exception e) =>
-            e.Message != null && e.Message.Contains("Too Many Requests");
+            UgsErrorClassifier.IsRateLimit(e);
 
         /// <summary>
         /// Detects a "session is definitely gone server-side" error - as opposed
@@ -2275,11 +2321,23 @@ namespace CosmicShore.Gameplay
         /// the log). Chasing message strings was whack-a-mole - three variants
         /// appeared across three MPPM restarts. The structured <c>Error</c> is the
         /// stable signal: a genuinely actionable <c>SessionException</c> carries a
-        /// specific reason (<c>SessionNotFound</c>, <c>RateLimited</c>, …), which
-        /// the <c>[definite]</c> / rate-limit branches handle *before* this check
-        /// runs; only the unclassifiable SDK-internal failures land on
-        /// <c>Unknown</c>, and for those "log-silent, retry next tick" is already
-        /// the correct (and only) recovery.
+        /// specific reason (<c>SessionNotFound</c>, <c>RateLimited</c>, …), so it
+        /// never matches the <c>Unknown</c> discriminator here; only the
+        /// unclassifiable SDK-internal failures land on <c>Unknown</c>, and for
+        /// those "log-silent, retry next tick" is already the correct (and only)
+        /// recovery.
+        /// </para>
+        ///
+        /// <para>
+        /// <b>Branch ordering.</b> This doc previously claimed the
+        /// <c>[definite]</c> and rate-limit branches ran *before* this check.
+        /// They did not - at both catch sites this ran first, which is how a
+        /// wrapped 429 got silently classified as harmless. The rate-limit branch
+        /// has since been moved above this one. <c>[definite]</c> deliberately
+        /// still runs after: the structured discriminator already keeps definite
+        /// errors out of here, and promoting it would route
+        /// SDK-couldn't-classify errors into a session recreation. See the note
+        /// at the <c>[benign]</c> branch in <see cref="RefreshPartyMembersAsync"/>.
         /// </para>
         ///
         /// <para>
