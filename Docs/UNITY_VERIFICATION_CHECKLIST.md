@@ -23,6 +23,29 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Presence sync — Commits 3 + 4 (push channel, explicit leave)
+
+Commits `b0adfa72`, `8a146795`, `2452a392`, `52b8f5f6` on
+`claude/multiplayer-presence-lobby-sync-6j924k`.
+
+**Step-by-step verification lives in
+`Docs/PresenceSystem/PRESENCE_SYNC_VERIFICATION.md`** — work that guide rather
+than this entry; it covers commits 1–4 in one pass. The highest-risk items:
+
+- **Hand-authored asset.** `_SO_Assets/Event Channels/Lifecycle/EventOnAppQuitRequested.asset`
+  (+ `.meta`, GUID `65f957fb…`) was written as raw YAML and wired into
+  `ApplicationLifecycleEvents.asset` by text edit. Confirm the container's
+  **On App Quit Requested** field is not `None`. SOAP fields fail loud by policy,
+  so a bad wire = NullReferenceException on quit.
+- **`ISession` event names are doc-verified, not compile-verified.** Checked
+  against Unity's API reference for `com.unity.services.multiplayer@1.1`
+  (package not vendored here). If push never fires, fall back to subscribing
+  `Changed` alone — see the guide, Step 2c.
+- **The safety poll is still 1.5 s on purpose.** Raise it to 10 only after push
+  is confirmed working. Prefab-only change.
+
+---
+
 ### 🔴 Presence sync — Commit 2 (poll cadence): honest interval field, wall-clock accumulator, jitter
 
 Commits `09381def`, `084dce0b`, `6a3a37a5` on

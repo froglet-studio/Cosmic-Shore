@@ -6,13 +6,14 @@ repaints. When a player leaves, they disappear from every other client's `Friend
 / `ArcadeLobbyList` as fast as the platform allows. Both driven by an explicit state machine
 so each step is an observable event other systems can subscribe to.
 
-**Status.** Commits 1 and 2 of 8 shipped (§ 5). Every claim below carries a `file:line` and was
+**Status.** Commits 1, 2, 3 and 4 of 8 shipped (§ 5). Remaining: 5 (PresenceStateMachine + the
+vessel-spawn broadcast), 6 (tombstones), 7 (UI binding), 8 (profile icons). Every claim below carries a `file:line` and was
 adversarially re-verified against source. Corrections from the verification pass are folded in;
 where a claim did not survive it is listed in § 8 rather than quietly dropped.
 
-**Nothing here has been run in the editor yet.** Commit 1 is counters plus editor-only logging
-and Commit 2 is mostly behaviour-preserving, so the risk is low — but it is unverified. See
-`Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+**Nothing here has been run in the editor yet** — this checkout cannot compile. Verification is
+batched: see `Docs/PresenceSystem/PRESENCE_SYNC_VERIFICATION.md` for the step-by-step guide, and
+`Docs/UNITY_VERIFICATION_CHECKLIST.md` for the per-commit entries.
 
 **Scope.** The three reported symptoms:
 
@@ -491,33 +492,82 @@ later. Session creation still gets its settle window via `ResetDeferred`.
 > write path `TODO-P2` flags as high-risk. **Do not re-derive this — it moves with
 > the push channel or not at all.**
 
-### Commit 3 — Explicit leave on quit / pause **[RC-5]**
+### Commit 3 — Explicit leave on quit/pause **[RC-5]** — ✅ SHIPPED
 
-- `ApplicationLifecycleManager` — `Application.wantsToQuit += HandleWantsToQuit` in `Awake`; return
-  `false` once, raise a new `ApplicationLifecycleEventsContainerSO.OnAppQuitRequested`, start a
-  1500 ms drain, then `Application.Quit()` and return `true` on re-entry. Existing `OnAppQuitting`
-  semantics unchanged.
-- `HostConnectionService` — subscribe `OnAppQuitRequested` **and** `OnAppPaused` in `Start`;
-  → `PresenceService.EnterDeparting()` → bounded `UniTask.WhenAny(leave, Delay(1200))` over
-  `_lobbyService.LeaveAsync()` **and** `_partySessionService.LeaveAsync()` (no quit path leaves the
-  Relay session today). On mobile, `OnAppPaused(true)` is the only hook that ever runs — leave there
-  and rejoin on `OnAppPaused(false)`.
-- `OnDestroy` — keep the leave as a backstop, guarded by `CurrentState != Offline` so the quit path
-  doesn't double-leave.
+`52b8f5f6`. `ApplicationLifecycleManager.OnAppQuitRequested` (static event + SOAP
+channel + authored `EventOnAppQuitRequested.asset`, wired into
+`ApplicationLifecycleEvents.asset`), raised from an `Application.wantsToQuit`
+handler that returns `false` once, holds the quit for `QUIT_DRAIN_SECONDS` (1.5 s),
+then re-requests and lets it through. `HostConnectionService` leaves, bounded to
+1200 ms:
 
-### Commit 4 — Push channel + membership monitor **[RC-1; ARCH]**
+| Trigger | Presence lobby | Party session |
+|---|---|---|
+| Quit | leave | leave |
+| Pause (background) | leave | **keep** |
+| Resume | rejoin | — |
 
-- `PresenceLobbyService` — `WireSessionEvents` / `UnwireSessionEvents` per § 4.4; expose
-  `ConsumeRosterDirty()` / `ConsumeMembershipDirty()`.
-- New `LobbyMembershipMonitor` — `{ Active, StaleReference, RemovedFromLobby, LobbyDeleted }`, fed by
-  push + refresh outcomes. **Replaces `MAX_REFRESH_ERRORS_BEFORE_RECONNECT` as the reconnect
-  trigger** (`PresenceSystem/REFACTOR.md`'s extraction, now unblocked by Commit 1's data).
-- `HostConnectionService.Update()` — fire on `ConsumeRosterDirty()` **or** safety-poll elapsed
-  (10 s menu / 30 s game).
-- `:1211-1221` — reconnect reads `MembershipState`, not the error counter. Add the missing
-  `Reconnecting → InPresenceLobby` / `→ HostingParty` exits so `Reconnecting` stops being terminal,
-  and add `(Disconnected, HostingParty)` / `(Disconnected, InParty)` to `LegalTransitions` so the
-  boot-status retry path stops performing two rejected transitions.
+Pause keeps the party deliberately: a backgrounded app may never resume (OS kill —
+the ghost-row case), but a three-second app switch must not eject the player from
+their party. Netcode/Relay has real transport-level disconnect handling; the
+presence lobby has only the reap timer, which is why only it needs this.
+
+The pause path must **not** mark the state machine `Disconnected` — `IsInitialized`
+derives from it, so doing so makes the resume branch conclude we were never
+initialized and silently never rejoin. Tracked with `_leftPresenceForBackground`.
+
+`OnDestroy` keeps its leave as a backstop for paths that skip the lifecycle hooks,
+now guarded on `ActiveLobby != null` so a normal quit does not double-leave.
+
+
+### Commit 4 — Push channel + membership signal **[RC-1; ARCH]** — ✅ SHIPPED
+
+| Commit | What |
+|---|---|
+| `b0adfa72` | `ISession` push events subscribed on the presence lobby for the first time, via a single `SetActiveLobby(next)` choke point (six assignment sites). Flag-only handlers; `ConsumeRosterDirty()` / `ConsumeMembershipLost()` added to `IPresenceLobbyService`. |
+| `8a146795` | `HostConnectionService.Update` refreshes on roster-push and rejoins on membership-loss push. Pulls RC-8 forward (see below). |
+| `2452a392` | `LobbyPropertyWriter` doc corrections; both structural refreshes pinned against deletion. |
+
+**Event surface verified against Unity's API reference** for
+`com.unity.services.multiplayer@1.1` (the package is not vendored in this
+checkout): `PlayerJoined` / `PlayerLeaving` / `PlayerHasLeft` are
+`Action<string>`; `PlayerPropertiesChanged` / `Changed` / `RemovedFromSession` /
+`Deleted` are `Action`. UGS documents `PlayerLeaving` as firing **before** the
+session updates — which is why the design sets a flag rather than reading the
+roster inline; the drain runs a frame later, after the update.
+
+**The poll was deliberately NOT relaxed to the planned 10 s safety interval.**
+Push is unverified in-editor, so until it is confirmed the poll remains the
+load-bearing path and push is purely additive — strictly faster, no regression if
+it never fires. Relaxing it is a prefab-only change afterwards, and is where the
+rate-limit budget gets reclaimed.
+
+**RC-8 pulled forward from Commit 6.** `ApplyPostLobbyJoinState` called
+`SeedLocalPlayer(clearFirst: true)` unconditionally, so any presence rejoin wiped
+every remote party row while NetworkManager, the session and the members were
+untouched. Commit 4 adds a *third* caller to that path, so fixing it was not
+optional. Now clears only when there is no live session (still true on the initial
+join, so first boot is unchanged), and `SeedLocalPlayer` is idempotent — with
+`clearFirst:false` a blind `Add` would have duplicated the local row, since
+`PartyPlayerData` keys equality on `PlayerId` alone.
+
+Also the first call site in the codebase to **read** `TryTransition`'s return
+value, so the recovery only leaves `Reconnecting` when it actually entered it.
+
+> **Deviation: the `LobbyPropertyWriter` write-reduction is rejected, not deferred
+> again.** The plan wanted the pre-write and post-save `RefreshAsync()` deleted
+> because "the push channel delivers our own change back". It does not: UGS
+> documents `PlayerPropertiesChanged` as **not firing when the properties are
+> already up to date locally**, which is exactly the case for our own write. The
+> pre-write refresh guards a stale player-index that makes
+> `SaveCurrentPlayerDataAsync` fail *silently*; the post-save refresh re-syncs the
+> SDK cache so later deltas do not reference stale indices — B1's root cause.
+> Deleting them would likely make B1 worse. The "exponential retry" fix is
+> rejected for the same family of reason: the retry loop holds `LobbyMutex`, which
+> also gates the roster re-read, so 6 s → 14 s would widen the blind window to fix
+> a rate-limit problem push has already reduced. Both are now documented in the
+> source. **Revisit only with real 429 counts (`TODO-P5`).**
+
 
 ### Commit 5 — `PresenceStateMachine` + the vessel-spawn broadcast **[RC-7; the requirement]**
 
