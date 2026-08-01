@@ -238,6 +238,12 @@ namespace CosmicShore.Gameplay
         private bool   _gameLaunchSubscribed;
         private bool   _partyLeaveSubscribed;
         private bool   _handlingDefiniteSessionGone;
+        /// <summary>
+        /// True between an app-pause presence leave and the matching resume
+        /// rejoin. Tracked separately from the state machine because the pause
+        /// leave deliberately does NOT mark us Disconnected - see HandleAppPaused.
+        /// </summary>
+        private bool   _leftPresenceForBackground;
         private float  _rateLimitBackoffUntil;
         private float  _nextForcedRefreshAllowed;
         private float  _nextConvergeAllowed;
@@ -413,6 +419,14 @@ namespace CosmicShore.Gameplay
             // prefab said 3).
             _scheduler.DefaultInterval = refreshIntervalSeconds;
 
+            // Leave the presence lobby explicitly on the way out. Until this
+            // existed the only leave was an async void OnDestroy awaiting after
+            // teardown had begun - best-effort at best, usually incomplete - so a
+            // quitting or backgrounded player stayed in every peer's online list
+            // until UGS reaped them. See RC-5 in Docs/PresenceSystem/PRESENCE_SYNC_PLAN.md.
+            ApplicationLifecycleManager.OnAppQuitRequested += HandleAppQuitRequested;
+            ApplicationLifecycleManager.OnAppPaused        += HandleAppPaused;
+
             // State-preserving lobby rejoin (B4): every lobby (re)join - initial,
             // reconnect, and the periodic converge migration - publishes the LIVE
             // stateful property values instead of wiping them to empty. HCS stays
@@ -555,6 +569,8 @@ namespace CosmicShore.Gameplay
 
             // Unsubscribes are no-ops if we never subscribed.
             SceneManager.sceneLoaded -= OnSceneLoaded;
+            ApplicationLifecycleManager.OnAppQuitRequested -= HandleAppQuitRequested;
+            ApplicationLifecycleManager.OnAppPaused        -= HandleAppPaused;
             if (authenticationDataVariable != null)
                 authenticationDataVariable.Value.OnSignedIn.OnRaised -= HandleSignedInEvent;
             UnsubscribeFromProfileChanges();
@@ -568,12 +584,19 @@ namespace CosmicShore.Gameplay
                     "[HostConnectionService] OnDestroy: bootStatusRetryRequestedEvent is null - " +
                     "SOAP event asset not wired on the prefab. Boot-status retry would not have functioned.");
 
-            if (_lobbyService != null)
-                await _lobbyService.LeaveAsync();
-            else
+            // Backstop only. The real leave happens on OnAppQuitRequested /
+            // OnAppPaused, while the app is still alive and can actually await a
+            // UGS round-trip. This await is not reliable during teardown - which
+            // is exactly why it was never sufficient on its own - so it is kept
+            // for the paths that skip the lifecycle hooks entirely (a scene-level
+            // Destroy, a duplicate-instance teardown) and skipped when the
+            // departure path already ran, so a normal quit does not double-leave.
+            if (_lobbyService == null)
                 Debug.LogError(
                     "[HostConnectionService] OnDestroy: _lobbyService is null - Reflex DI never populated it. " +
                     "Skipping presence-lobby leave; other users may see this player online for ~30s until UGS reaps the entry.");
+            else if (_lobbyService.ActiveLobby != null)
+                await _lobbyService.LeaveAsync();
 
             if (_propertyWriter != null)
             {
@@ -591,6 +614,99 @@ namespace CosmicShore.Gameplay
         }
 
         private void HandleBootStatusRetryRequested() => EnsurePartySessionAsync().Forget();
+
+        // ╔═══════════════════════════════════════════════════════════════════╗
+        // ║  Departure - explicit leave on quit / background                  ║
+        // ╚═══════════════════════════════════════════════════════════════════╝
+
+        /// <summary>
+        /// Hard cap on how long a departure leave may take. Must stay comfortably
+        /// under <see cref="ApplicationLifecycleManager"/>'s quit-drain window,
+        /// or the app quits mid-leave and we are back to the ghost-row behaviour
+        /// this exists to prevent.
+        /// </summary>
+        private const int DEPARTURE_LEAVE_TIMEOUT_MS = 1200;
+
+        /// <summary>
+        /// The user asked to quit and the quit has been deferred for a short
+        /// window. Leave BOTH UGS sessions: we are not coming back, so the
+        /// presence lobby row and the Relay party allocation should both go now
+        /// rather than waiting on the service's reap timer.
+        ///
+        /// <para>
+        /// This is the one case where a sub-second removal on every peer is
+        /// actually achievable. UGS fans an explicit leave out over the WebSocket
+        /// immediately, so peers see the row disappear on their next drained push
+        /// - as opposed to a hard kill, where nothing can beat the service-side
+        /// reap. See PRESENCE_SYNC_PLAN.md § 6.
+        /// </para>
+        /// </summary>
+        private void HandleAppQuitRequested() =>
+            LeaveForDepartureAsync(leaveParty: true, markDisconnected: true).Forget();
+
+        /// <summary>
+        /// Mobile background / foreground.
+        ///
+        /// <para>
+        /// On pause we leave the PRESENCE LOBBY ONLY, and deliberately keep the
+        /// Relay party session. A backgrounded app may never be resumed - the OS
+        /// can kill it silently, which produces exactly the ghost row this fixes
+        /// - but a three-second app switch must not eject the player from their
+        /// party. Netcode/Relay has its own disconnect handling for that case,
+        /// with a real transport underneath it; the presence lobby has nothing
+        /// but the reap timer, which is why only it needs the explicit leave.
+        /// </para>
+        ///
+        /// <para>
+        /// On resume we rejoin. <c>JoinOrCreateAsync</c> is idempotent and
+        /// returns early when a lobby is already held, so a spurious resume is
+        /// harmless.
+        /// </para>
+        /// </summary>
+        private void HandleAppPaused(bool paused)
+        {
+            if (paused)
+            {
+                if (!IsInPresenceLobby) return;
+                _leftPresenceForBackground = true;
+
+                // markDisconnected:false is load-bearing. IsInitialized is derived
+                // from the state machine (CurrentState != Disconnected), so marking
+                // Disconnected here would make the resume branch below decide we
+                // were never initialized and silently never rejoin - leaving the
+                // player invisible to everyone for the rest of the session.
+                LeaveForDepartureAsync(leaveParty: false, markDisconnected: false).Forget();
+                return;
+            }
+
+            if (!_leftPresenceForBackground) return;
+            _leftPresenceForBackground = false;
+            RejoinPresenceAfterResumeAsync().Forget();
+        }
+
+        private async UniTaskVoid LeaveForDepartureAsync(bool leaveParty, bool markDisconnected)
+        {
+            if (markDisconnected)
+                _stateMachine.TryTransition(PartyState.Disconnected);
+
+            var leave = leaveParty
+                ? UniTask.WhenAll(_lobbyService.LeaveAsync(), _partySessionService.LeaveAsync())
+                : _lobbyService.LeaveAsync();
+
+            // Bounded: a hung UGS request must never hold the quit open past the
+            // drain window, and on mobile the OS gives no guarantee we get any
+            // time at all. Best-effort by design.
+            await UniTask.WhenAny(leave, UniTask.Delay(DEPARTURE_LEAVE_TIMEOUT_MS, DelayType.UnscaledDeltaTime));
+
+            Debug.Log($"[HostConnectionService] Departure leave complete (leaveParty={leaveParty}).");
+        }
+
+        private async UniTaskVoid RejoinPresenceAfterResumeAsync()
+        {
+            Debug.Log("[HostConnectionService] Resumed from background - rejoining presence lobby.");
+            await _lobbyService.JoinOrCreateAsync(presenceLobbyMaxPlayers);
+            ApplyPostLobbyJoinState();
+        }
 
         /// <summary>
         /// Resets per-session invite state on Menu_Main reload.

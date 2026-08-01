@@ -23,6 +23,14 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("Raised once when the application is about to quit.")]
         public ScriptableEventNoParam OnAppQuitting;
 
+        [Tooltip("Raised once when the user has ASKED to quit but the quit has been deferred, " +
+                 "giving subscribers a short bounded window to finish outbound network work " +
+                 "(e.g. leaving the UGS presence lobby so peers stop seeing this player online). " +
+                 "Unlike OnAppQuitting - which fires from OnApplicationQuit, after teardown has " +
+                 "begun and too late for anything async - this fires while the app is still fully " +
+                 "alive. Do NOT do slow work here; the window is capped.")]
+        public ScriptableEventNoParam OnAppQuitRequested;
+
         [Header("Scene Lifecycle")]
         [Tooltip("Raised when a scene finishes loading. Passes the scene name.")]
         public ScriptableEventString OnSceneLoaded;

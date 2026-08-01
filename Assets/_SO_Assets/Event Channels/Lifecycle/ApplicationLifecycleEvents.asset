@@ -16,6 +16,7 @@ MonoBehaviour:
   OnAppFocusChanged: {fileID: 11400000, guid: 1fdca5834b584180ace9fed3091b0376,
     type: 2}
   OnAppQuitting: {fileID: 11400000, guid: 5f3f55c90a11473e8a5e2efd80ab4849, type: 2}
+  OnAppQuitRequested: {fileID: 11400000, guid: 65f957fbee5e4e318acc21f981fb54a1, type: 2}
   OnSceneLoaded: {fileID: 11400000, guid: 5a500b8af2084696a5df96caadcf5242, type: 2}
   OnSceneUnloading: {fileID: 11400000, guid: ecc81118710e4ae8b90eda2efd64f08f,
     type: 2}
