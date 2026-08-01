@@ -126,6 +126,28 @@ namespace CosmicShore.Gameplay
             activeExplosions.Remove(explosion);
         }
 
+        // ------------------------------------------------------------------
+        // Clock-mode implosions: progress rides the GPU clock (no entry in
+        // activeImplosions, no Burst pass). ONLY the moving convergence target
+        // refreshes here — the documented exception (PRISM_ANIMATION.md §1):
+        // live gameplay data, one float3 write per frame per implosion, and
+        // nothing else. Entries drop themselves when the target dies (the
+        // suction freezes at the last stamped point) or the effect completes.
+        // ------------------------------------------------------------------
+
+        private readonly List<PrismImplosion> clockConvergenceTracking = new(32);
+
+        public void RegisterClockConvergence(PrismImplosion implosion)
+        {
+            if (implosion == null || clockConvergenceTracking.Contains(implosion)) return;
+            clockConvergenceTracking.Add(implosion);
+        }
+
+        public void UnregisterClockConvergence(PrismImplosion implosion)
+        {
+            clockConvergenceTracking.Remove(implosion);
+        }
+
         public void RegisterImplosion(PrismImplosion implosion)
         {
             if (implosion == null || activeImplosions.Contains(implosion)) return;
@@ -181,6 +203,15 @@ namespace CosmicShore.Gameplay
             {
                 using (s_processImplosions.Auto())
                     ProcessImplosions(dt);
+            }
+
+            // Moving-target refresh for clock-stamped implosions (§1 exception —
+            // location only; the animation itself never touches the CPU).
+            for (int i = clockConvergenceTracking.Count - 1; i >= 0; i--)
+            {
+                var imp = clockConvergenceTracking[i];
+                if (imp == null || !imp.IsActive || !imp.RefreshConvergenceForClock())
+                    clockConvergenceTracking.RemoveAt(i);
             }
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
@@ -438,6 +469,7 @@ namespace CosmicShore.Gameplay
         {
             activeExplosions.Clear();
             activeImplosions.Clear();
+            clockConvergenceTracking.Clear();
         }
 
         private void OnDestroy()
@@ -448,6 +480,7 @@ namespace CosmicShore.Gameplay
             activeImplosions.Clear();
             tempExplosionList.Clear();
             tempImplosionList.Clear();
+            clockConvergenceTracking.Clear();
         }
 
         #endregion

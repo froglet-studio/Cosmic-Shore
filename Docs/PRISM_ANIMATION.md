@@ -616,6 +616,18 @@ opt-in-dark pattern instanced rendering itself shipped under):
   continuity-law-correct, slightly later apparent growth). Created/delta SOAP volume
   accounting is preserved exactly (the created event captures its volume before the
   stamp mutates it).
+- **Explosion/implosion (B3)** — `PrismExplosion.TriggerExplosion` stamps
+  `{t₀, speed, MaxDuration, velocity}` and shows the entity immediately (the stamp IS
+  the correct initial state — no unanimated-mesh flash to hide); the entity transform
+  holds the initial pose forever; ONE scheduled `OnEffectComplete` returns it to the
+  pool. `PrismImplosion.StartImplosion/StartGrow` stamp `{t₀, duration, ±direction,
+  growDelay, location}`; the **moving convergence target stays live** as the §1
+  documented exception — `PrismEffectsManager.clockConvergenceTracking` refreshes
+  `_Location` only (one float3 per frame per implosion, self-dropping when the target
+  dies; the suction then freezes at the last stamped point while the GPU finishes the
+  animation). Pool return / re-trigger cancels the scheduled completion and retires
+  the stamp (`ClearExplosionClockStamp`/`ClearSuctionClockStamp`) so a legacy-path
+  reuse of the same entity can never replay a stale clock animation.
 - **Color/state transitions (B2)** — `MaterialPropertyAnimator.UpdateMaterial` binds
   the END-STATE material immediately (its authored values are the lerp targets),
   stamps `{t₀, duration, start colors}` (start = analytic current of any in-flight
@@ -687,7 +699,7 @@ Phase B — migrate the engines (each retires a per-frame pass):
 |---|---|---|
 | B1 | Grow-in → clock (all ~12 feeder paths ride the one engine); gameplay-final-at-start (volume/spatial stamps, clock predicates, `ExecuteOnScaleComplete` → start) | ◐ shipped dark 2026-08-01 (§4.4) — pending: in-editor graph wiring + verification, then `PrismScaleManager` retirement, `HoldColliderAtFullSize` deletion, `CreateBlockCoroutine` window simplification, arena-gate simplification, PhaseThresholds re-baseline |
 | B2 | Color/state transitions → clock lerp (start colors + t₀; target = material authored; end-state material bound at START, settle scheduled) | ◐ shipped dark 2026-08-01 (§4.4) — pending: in-editor graph wiring + verification, then `MaterialStateManager` retirement |
-| B3 | Explosion/implosion → clock (stamp `{t₀, velocity, speed, duration}` / `{t₀, duration, direction, location}`); retire `PrismEffectsManager` per-frame passes + VFX caps; decide implosion moving-target (snapshot vs documented exception) | ☐ not started |
+| B3 | Explosion/implosion → clock (stamp `{t₀, velocity, speed, duration}` / `{t₀, duration, direction, delay, location}`) | ◐ shipped dark 2026-08-01 (§4.4) — moving-target DECIDED as the §1 exception (the in-code rationale is load-bearing: a snapshot would suck prisms toward where the fauna WAS): progress rides the clock, `PrismEffectsManager` refreshes `_Location` only (one float3/frame) while the target lives. Pending: in-editor wiring + verification, then the per-frame Burst passes + VFX caps retire |
 | B4 | Shield morphs → GPU (vertex-shader bloom/shatter from per-vertex face data + t₀; settled shared-mesh swap already conforms); kill stellated idle per-prism `Update()` (interim: register with `PrismOctahedronShieldManager`) | ☐ not started |
 
 Phase C — rogue paths & ecosystem visuals (each is standalone):

@@ -135,6 +135,10 @@ namespace CosmicShore.Utility
                 PrismEffectsManager.Instance?.UnregisterExplosion(this);
             }
 
+            // A pooled-out clock explosion must not fire a stale completion later.
+            PrismTimerManager.Instance?.CancelScheduledActions(this);
+            PrismRenderService.ClearExplosionClockStamp(in RenderHandle);
+
             if (PrismRenderService.IsHandleUsable(in RenderHandle))
                 PrismRenderService.SetVisible(in RenderHandle, false);
 
@@ -206,6 +210,37 @@ namespace CosmicShore.Utility
             IsActive = true;
 
             EnsureRenderEntity();
+
+            // Clock-material path (Docs/PRISM_ANIMATION.md §4.4, B3): ONE stamp of
+            // {t0, speed, duration, velocity}; the shader flies/shatters/fades the
+            // debris off _Time.y (offset = v·t, amount = speed·t, opacity = 1−t/dur)
+            // with zero further CPU writes; ONE scheduled completion returns it to
+            // the pool. The entity transform holds the initial pose and never moves.
+            if (UsesEntityRenderPath &&
+                PrismRenderService.StampExplosionClock(in RenderHandle,
+                    PrismClock.Now, speed, MaxDuration,
+                    new Unity.Mathematics.float3(velocity.x, velocity.y, velocity.z)))
+            {
+                SyncRenderTransform();
+                if (_hasPendingTeamColors)
+                {
+                    PrismRenderService.SetTeamColors(in RenderHandle,
+                        PrismRenderService.ToFloat4(_pendingBrightColor),
+                        PrismRenderService.ToFloat4(_pendingDarkColor));
+                }
+                // Visible immediately: the stamp itself IS the correct initial state
+                // (amount 0, opacity 1 at t = t0) — no unanimated-mesh flash to hide.
+                PrismRenderService.SetVisible(in RenderHandle, true);
+                _renderer.enabled = false;
+
+                // Touchpoint 3: the analytic end. NOT registered with
+                // PrismEffectsManager — no per-frame work exists for this effect.
+                var timers = PrismTimerManager.EnsureInstance();
+                timers.CancelScheduledActions(this);
+                timers.ScheduleAction(this, MaxDuration, OnEffectComplete);
+                return;
+            }
+
             if (UsesEntityRenderPath)
             {
                 // Entity path: initial shader params + team colors on the
@@ -267,6 +302,12 @@ namespace CosmicShore.Utility
                 IsActive = false;
                 PrismEffectsManager.Instance?.UnregisterExplosion(this);
             }
+
+            // Clock path cleanup: cancel the scheduled completion (idempotent) and
+            // retire the stamp so a later legacy-path reuse of this entity can't
+            // replay a stale clock animation.
+            PrismTimerManager.Instance?.CancelScheduledActions(this);
+            PrismRenderService.ClearExplosionClockStamp(in RenderHandle);
 
             if (PrismRenderService.IsHandleUsable(in RenderHandle))
                 PrismRenderService.SetVisible(in RenderHandle, false);

@@ -782,6 +782,38 @@ namespace CosmicShore.ECS
             return true;
         }
 
+        /// <summary>Location-only refresh for a clock-stamped implosion tracking a MOVING
+        /// convergence target — the documented exception (PRISM_ANIMATION.md §1): live
+        /// gameplay data, one float3 per frame per implosion, nothing else.</summary>
+        public static void SetImplosionLocation(in PrismRenderHandle handle, in float3 location)
+        {
+            if (!IsUsable(in handle)) return;
+            var em = _world.EntityManager;
+            if (!em.HasComponent<PrismImplosionLocationOverride>(handle.Entity)) return;
+            em.SetComponentData(handle.Entity, new PrismImplosionLocationOverride { Value = location });
+        }
+
+        /// <summary>Retires an explosion's clock stamp (pool return). Duration 0 restores
+        /// the legacy CPU-fed fallback branch, so a later legacy-path reuse of this entity
+        /// can't replay a stale clock animation.</summary>
+        public static void ClearExplosionClockStamp(in PrismRenderHandle handle)
+        {
+            if (!IsUsable(in handle)) return;
+            var em = _world.EntityManager;
+            if (!em.HasComponent<PrismExplodeDurationOverride>(handle.Entity)) return;
+            em.SetComponentData(handle.Entity, new PrismExplodeDurationOverride { Value = 0f });
+        }
+
+        /// <summary>Retires a suction/grow clock stamp (pool return) — same contract as
+        /// <see cref="ClearExplosionClockStamp"/>.</summary>
+        public static void ClearSuctionClockStamp(in PrismRenderHandle handle)
+        {
+            if (!IsUsable(in handle)) return;
+            var em = _world.EntityManager;
+            if (!em.HasComponent<PrismSuctionDurationOverride>(handle.Entity)) return;
+            em.SetComponentData(handle.Entity, new PrismSuctionDurationOverride { Value = 0f });
+        }
+
         /// <summary>Destroys the companion entity (prism GameObject destruction / scene teardown).</summary>
         public static void Destroy(ref PrismRenderHandle handle)
         {

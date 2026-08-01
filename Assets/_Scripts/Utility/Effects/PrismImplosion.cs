@@ -170,6 +170,11 @@ namespace CosmicShore.Utility
                 PrismEffectsManager.Instance?.UnregisterImplosion(this); // safe: may already be null during teardown
             }
 
+            // A pooled-out clock implosion must not fire a stale completion later.
+            PrismTimerManager.Instance?.CancelScheduledActions(this);
+            PrismEffectsManager.Instance?.UnregisterClockConvergence(this);
+            PrismRenderService.ClearSuctionClockStamp(in RenderHandle);
+
             if (PrismRenderService.IsHandleUsable(in RenderHandle))
                 PrismRenderService.SetVisible(in RenderHandle, false);
 
@@ -226,6 +231,14 @@ namespace CosmicShore.Utility
             // Set initial shader state on the active render path
             ApplyInitialVisualState(0f, targetPos);
 
+            // Clock-material path (Docs/PRISM_ANIMATION.md §4.4, B3): progress rides
+            // the GPU clock (ONE stamp + ONE scheduled completion, no per-frame
+            // _State feed). The MOVING convergence target is the documented §1
+            // exception: live gameplay data — the manager refreshes _Location only,
+            // one float3 per frame, while the target transform lives.
+            if (TryStampClock(direction: 1f, delay: 0f, location: targetPos))
+                return;
+
             // Register with batched manager for frame updates (auto-creates if not in scene)
             PrismEffectsManager.EnsureInstance().RegisterImplosion(this);
         }
@@ -261,8 +274,51 @@ namespace CosmicShore.Utility
             // Set initial collapsed state on the active render path
             ApplyInitialVisualState(1f, startPosition);
 
+            // Clock-material path — reverse suction (1 → 0) with the grow delay
+            // baked into the stamp; same moving-target exception as StartImplosion.
+            if (TryStampClock(direction: -1f, delay: growDelay, location: startPosition))
+                return;
+
             // Register with batched manager for frame updates (auto-creates if not in scene)
             PrismEffectsManager.EnsureInstance().RegisterImplosion(this);
+        }
+
+        /// <summary>
+        /// The clock-material stamp shared by StartImplosion/StartGrow. Returns false
+        /// (caller registers with the legacy per-frame manager) when the clock path is
+        /// dark or the entity lacks the clock components.
+        /// </summary>
+        bool TryStampClock(float direction, float delay, Vector3 location)
+        {
+            if (!UsesEntityRenderPath) return false;
+            if (!PrismRenderService.StampSuctionClock(in RenderHandle,
+                    CosmicShore.Utility.PrismClock.Now, implosionDuration, direction, delay,
+                    new Unity.Mathematics.float3(location.x, location.y, location.z)))
+                return false;
+
+            // Moving-target exception: the manager refreshes ONLY _Location while the
+            // target transform lives (RefreshConvergenceForClock).
+            PrismEffectsManager.EnsureInstance()?.RegisterClockConvergence(this);
+
+            var timers = PrismTimerManager.EnsureInstance();
+            timers.CancelScheduledActions(this);
+            timers.ScheduleAction(this, delay + implosionDuration, OnEffectComplete);
+            return true;
+        }
+
+        /// <summary>
+        /// Per-frame location-only refresh for a clock-stamped implosion following its
+        /// moving target (the §1 documented exception). Returns false once the target
+        /// is gone — the suction then freezes at the last known point and the manager
+        /// drops this entry (the stamp keeps animating on the GPU regardless).
+        /// </summary>
+        internal bool RefreshConvergenceForClock()
+        {
+            if (!_convergenceTransform) return false;
+            TargetPosition = _convergenceTransform.position;
+            PrismRenderService.SetImplosionLocation(in RenderHandle,
+                new Unity.Mathematics.float3(TargetPosition.x, TargetPosition.y, TargetPosition.z));
+            return true;
         }
 
         /// <summary>
@@ -310,6 +366,13 @@ namespace CosmicShore.Utility
                 IsActive = false;
                 PrismEffectsManager.Instance?.UnregisterImplosion(this); // safe: may already be null during teardown
             }
+
+            // Clock path cleanup: cancel the scheduled completion (idempotent), stop
+            // the location refresh, and retire the stamp so a later legacy-path reuse
+            // of this entity can't replay a stale clock animation.
+            PrismTimerManager.Instance?.CancelScheduledActions(this);
+            PrismEffectsManager.Instance?.UnregisterClockConvergence(this);
+            PrismRenderService.ClearSuctionClockStamp(in RenderHandle);
 
             if (PrismRenderService.IsHandleUsable(in RenderHandle))
                 PrismRenderService.SetVisible(in RenderHandle, false);
