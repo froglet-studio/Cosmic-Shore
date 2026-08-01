@@ -1823,19 +1823,28 @@ continuity of existence applies to the vessel's own body.
   no play mode, uses the exact runtime discovery). Manta/Termite/Falcon/Shrike (Manta meshes),
   Sparrow, Serpent, and Squirrel ship labeled shapes; Dolphin/Urchin/Rhino prefabs still wire
   shape-less test/placeholder meshes and need the rig swap below; Grizzly has no labeled shapes yet.
-- **The Squirrel's shapes were recovered from git history.** Its FBX's 2024-10-29 export
-  (`aa5046d41`, "add squirrel with shapekeys") carried `Time/Mass/Space/Charge`; the 2024-11-15
-  re-export (`dc2c8ea54`, "fixed squirrel animations") silently dropped all four while changing
-  **nothing else** — identical 44-node skeleton, identical 20,703-vert base mesh, identical bone
-  curves on all 9 takes (verified curve-by-curve). The shape-key version is restored in place
-  (same path + GUID; mesh/clip fileIDs are name-hashes shared by both exports, so every existing
-  reference — nested prefab instance, `SquirrelAnimatorController 1` clips — keeps binding).
-- **Morph weights are written in `LateUpdate`, which is load-bearing.** The Squirrel's takes carry
-  residual constant-zero blend-shape curves (Blender export residue; single key at 0), and Unity's
-  Animator writes bound curves every frame during the animation update — after `Update`, where
-  tweens run. Tweens therefore drive a cached weight and `VesselAnimation.LateUpdate` is the single
+- **The Squirrel's FBX is a spliced hybrid of two historical exports — do not re-export over it
+  blindly.** The 2024-10-29 export (`aa5046d41`, "add squirrel with shapekeys") carried
+  `Time/Mass/Space/Charge` but its takes were broken; the 2024-11-15 re-export (`dc2c8ea54`,
+  "fixed squirrel animations") repaired 2,622 of 3,483 bone curves across all 9 takes **and
+  silently dropped all four shape keys** — which also silently killed the elemental morph surface.
+  The shipped file is the fixed export with the four shape-key subtrees grafted back at the FBX
+  binary level (valid because both exports share byte-identical topology and vertex drift ≤2e-6;
+  verified by byte-level structural diff: base objects untouched, takes byte-identical to the fixed
+  export, shapes byte-identical to the shape-key export, and **zero blend-shape animation curves**
+  — the donor's constant-zero residue curves were deliberately left out). Same path + GUID; the
+  mesh fileID is a name-hash shared by both exports, and the `.meta` pins each clip's take name to
+  an explicit internalID matching `SquirrelAnimatorController 1`'s motion references — so the
+  nested prefab instance, the animator clips, and the blend-space puppetry
+  (`MantaAnimationContoller` → Animator floats `Pitch/Yaw/Roll/Throttle`) all keep binding. Any
+  future Squirrel re-export must carry BOTH the fixed takes and the four element shape keys.
+- **Morph weights are written in `LateUpdate`, which is load-bearing.** Unity's Animator writes
+  bound curves every frame during the animation update — after `Update`, where tweens run — so an
+  export that carries even constant-zero blend-shape curves would stomp script-set weights every
+  frame. Tweens therefore drive a cached weight and `VesselAnimation.LateUpdate` is the single
   writer to the renderers, making the element level authoritative over any stray animation curve on
-  any vessel. Do not "simplify" the tween to write the renderer directly.
+  any vessel (the current Squirrel takes are clean, but the defense is deliberate). Do not
+  "simplify" the tween to write the renderer directly.
 - **Animated parts resolve BY NAME too** (`VesselAnimation.ResolvePart`, `ResolveParts()` hook):
   an authored inspector reference always wins, and an empty one is looked up among the model's
   descendants by candidate name — current rig bone first, legacy part name as fallback. This is

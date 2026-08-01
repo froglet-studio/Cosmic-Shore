@@ -285,11 +285,12 @@ namespace CosmicShore.Gameplay
         public virtual void UpdateShapeKey(Element element, int level) =>
             MorphToLevel(element, level, instant: false);
 
-        // Tweens drive the CACHED weight; LateUpdate is the single writer to the renderers. The
-        // Squirrel's authored takes carry residual constant-zero blend-shape curves (Blender
-        // export residue), and Unity's Animator writes bound curves every frame during the
-        // animation update - after Update, where tweens run. Writing in LateUpdate makes the
-        // element level authoritative over any such stray animation curve, on every vessel.
+        // Tweens drive the CACHED weight; LateUpdate is the single writer to the renderers.
+        // Unity's Animator writes bound curves every frame during the animation update - after
+        // Update, where tweens run - so an export carrying even constant-zero blend-shape curves
+        // (a common Blender residue) would stomp script-set weights every frame. Writing in
+        // LateUpdate makes the element level authoritative over any such stray animation curve,
+        // on every vessel. The current fleet's takes are clean; the defense is deliberate.
         void MorphToLevel(Element element, int level, bool instant)
         {
             float normalized = VesselElementalMorphConfigSO.NormalizedMorphWeight(level);
