@@ -57,9 +57,19 @@ Every object reference machine-validated.
 - [ ] Report back — then I wire ExplodingBlockGraph (test: vessel collision debris)
       and BlockGraph colors (test: skimmer steal) the same way.
 
-## Phase 2 — BlockGraph color nodes
+## Phase 2 — BlockGraph color nodes — ✅ WIRED PROGRAMMATICALLY IN-BRANCH
 
-Same file. Properties already present.
+Done and committed: `PrismColorLerp` CF intercepts the three property→subgraph
+feeds (existing `BrightColor`/`DarkColor`/`Spread` nodes → Target inputs; CF
+outputs → subgraph; start colors + times from new property nodes; Clock ←
+`_PrismClock`).
+
+**Test: steal a prism with your skimmer** — the repaint fades smoothly (0.8s)
+instead of snapping. Shield engage/danger repaints likewise. (The octahedron
+shield MORPH itself is still the CPU-ticked B4 item — only its color fade is
+clock-driven.)
+
+<details><summary>Manual steps (reference only — already done)</summary>
 
 - [ ] Add a **Custom Function** node — Source same file, Name **`PrismColorLerp`**.
       Inputs: `Clock` Float · `StartTime` Float · `Duration` Float · `StartBright`
@@ -75,9 +85,25 @@ Same file. Properties already present.
 - [ ] Save → Validate → play: shield engage / steal / danger transitions fade
       smoothly; BlockGraph `[PrismClock]` errors gone.
 
-## Phase 3 — ExplodingBlockGraph nodes
+- Save → Validate → play: shield engage / steal / danger transitions fade
+  smoothly; BlockGraph `[PrismClock]` errors gone.
 
-Open `Assets/_Graphics/Materials/Graphs/ExplodingBlockGraph.shadergraph`.
+</details>
+
+## Phase 3 — ExplodingBlockGraph nodes — ✅ WIRED PROGRAMMATICALLY IN-BRANCH
+
+Done and committed: `PrismExplosionClock` CF (Amount/Opacity re-routes + object-
+space flight offset added into the vertex chain) + the `PrismGrowScale` cluster
+(transparent live prisms bloom).
+
+**Test: collide your vessel with trail prisms** — debris flies, shatters, and
+fades smoothly on the GPU clock. Transparent prisms bloom on spawn and render
+correctly at rest. Known pending: COLOR transitions on currently-transparent
+prisms (they bind one-shot; a handful of one-time [PrismClock] _ColorStartTime
+errors on the transparent materials are expected until the C-phase adds the
+color cluster to this graph).
+
+<details><summary>Manual steps (reference only — already done)</summary>
 
 - [ ] Custom Function **`PrismExplosionClock`** — Inputs: `Clock` Float ·
       `StartTime` Float · `Speed` Float · `Duration` Float · `Velocity` Vector3 ·
@@ -101,9 +127,15 @@ Open `Assets/_Graphics/Materials/Graphs/ExplodingBlockGraph.shadergraph`.
 - [ ] Save → Validate → play: debris flies/shatters/fades smoothly; transparent
       prisms bloom on spawn and render correctly at rest.
 
+- Save → Validate → play: debris flies/shatters/fades smoothly; transparent
+  prisms bloom on spawn and render correctly at rest.
+
+</details>
+
 ## Phase 4 — SuctionGraph nodes
 
 Open `Assets/_Graphics/Materials/Graphs/PrismGraphs/SuctionGraph.shadergraph`.
+(Next up — will be wired programmatically after the Phase 2/3 tests pass.)
 
 - [ ] Custom Function **`PrismSuctionClock`** — Inputs: `Clock` Float · `StartTime`
       Float · `Duration` Float · `Direction` Float · `GrowDelay` Float ·
