@@ -213,85 +213,34 @@ namespace CosmicShore.Gameplay
 
             if (!ValidateMaterials()) return;
 
-            if (TryClockColorTransition(transparentMaterial, opaqueMaterial, duration, onComplete))
-                return;
-
-            // If already animating, capture current state as start state. Uses the
-            // manager-tracked current values (works for both the MPB path and the
-            // entity path, which has no property block to read back).
-            if (IsAnimating)
-            {
-                StartBrightColor = CurrentBrightColor;
-                StartDarkColor = CurrentDarkColor;
-                StartSpread = CurrentSpread;
-            }
-            else
-            {
-                var currentMaterial = MeshRenderer.sharedMaterial;
-                StartBrightColor = currentMaterial.GetColor(BrightColorId);
-                StartDarkColor = currentMaterial.GetColor(DarkColorId);
-                StartSpread = currentMaterial.GetVector(SpreadId);
-            }
-
-            // Seed the tracked currents so an interruption before the first
-            // animated frame still has a valid start state.
-            CurrentBrightColor = StartBrightColor;
-            CurrentDarkColor = StartDarkColor;
-            CurrentSpread = StartSpread;
-
-            // Set target values
-            TargetBrightColor = transparentMaterial.GetColor(BrightColorId);
-            TargetDarkColor = transparentMaterial.GetColor(DarkColorId);
-            TargetSpread = transparentMaterial.GetVector(SpreadId);
-
-            // One-time conversions for the manager's per-frame lerp.
-            StartBright4 = new Unity.Mathematics.float4(StartBrightColor.r, StartBrightColor.g, StartBrightColor.b, StartBrightColor.a);
-            TargetBright4 = new Unity.Mathematics.float4(TargetBrightColor.r, TargetBrightColor.g, TargetBrightColor.b, TargetBrightColor.a);
-            StartDark4 = new Unity.Mathematics.float4(StartDarkColor.r, StartDarkColor.g, StartDarkColor.b, StartDarkColor.a);
-            TargetDark4 = new Unity.Mathematics.float4(TargetDarkColor.r, TargetDarkColor.g, TargetDarkColor.b, TargetDarkColor.a);
-
-            Duration = duration;
-            AnimationProgress = 0f;
-            IsAnimating = true;
-            OnAnimationComplete = () =>
-            {
-                activeTransparentMaterial = transparentMaterial;
-                activeOpaqueMaterial = opaqueMaterial;
-                
-                if (MeshRenderer != null && cachedPrism != null &&
-                    cachedPrism.prismProperties != null)
-                {
-                    MeshRenderer.sharedMaterial = cachedPrism.prismProperties.IsTransparent ?
-                        transparentMaterial : opaqueMaterial;
-                    cachedPrism.SyncRenderMaterial();
-                }
-
-                onComplete?.Invoke();
-            };
+            // STRICT MODE (Docs/PRISM_ANIMATION.md, no-fallback law): the clock
+            // transition is the ONLY implementation — the legacy MaterialStateManager
+            // lerp is never engaged.
+            ClockColorTransition(transparentMaterial, opaqueMaterial, duration, onComplete);
         }
 
-        /// <summary>
-        /// The clock-material path of <see cref="UpdateMaterial"/>. Returns false
-        /// (caller falls back to the legacy MaterialStateManager lerp) when the
-        /// clock path is dark, the prism renders through the GameObject fallback,
-        /// or the entity stamp fails.
-        /// </summary>
         static readonly int ColorStartTimeId = Shader.PropertyToID("_ColorStartTime");
 
-        bool TryClockColorTransition(Material transparentMaterial, Material opaqueMaterial, float duration, Action onComplete)
+        /// <summary>
+        /// The ONLY implementation of a prism color/state transition (STRICT MODE —
+        /// no legacy fallback). Binds the end-state material immediately
+        /// (gameplay-final-at-start), stamps the clock lerp when the companion
+        /// entity can carry it, and schedules ONE settle. When the entity sink is
+        /// unavailable (exotic morph window, pre-first-show prism, instanced path
+        /// down) the bind is the whole transition — a one-shot to the end state;
+        /// spawn-paint of a fresh prism is a creation, not a recolor, so that is
+        /// silent; a genuinely missing render path screams via diagnostics.
+        /// </summary>
+        void ClockColorTransition(Material transparentMaterial, Material opaqueMaterial, float duration, Action onComplete)
         {
-            if (!PrismRenderService.ClockAnimationEnabled) return false;
-            if (cachedPrism == null || !cachedPrism.UsesEntityColorSink) return false;
-
-            // Per-material interlock: the material being bound must declare the
-            // clock property, or binding it at the start would SNAP to the end
-            // state with no visible transition (unwired graph). Such materials
-            // stay on the legacy lerp until wired (§4.4).
-            bool transparent = cachedPrism.prismProperties != null && cachedPrism.prismProperties.IsTransparent;
-            var bindMaterial = transparent ? transparentMaterial : opaqueMaterial;
-            if (bindMaterial == null || !bindMaterial.HasProperty(ColorStartTimeId)) return false;
-
             float now = PrismClock.Now;
+            bool transparent = cachedPrism != null && cachedPrism.prismProperties != null &&
+                               cachedPrism.prismProperties.IsTransparent;
+            var bindMaterial = transparent ? transparentMaterial : opaqueMaterial;
+
+            // Fail loud on an unwired graph — the transition will SNAP (no fallback).
+            if (!bindMaterial.HasProperty(ColorStartTimeId))
+                PrismClockDiagnostics.WarnUnwiredMaterial(bindMaterial, "_ColorStartTime", this);
 
             // Start colors: analytic current of an in-flight clock transition,
             // else the currently bound material's authored values. Must be read
@@ -312,57 +261,60 @@ namespace CosmicShore.Gameplay
 
             // Targets = the end-state material's authored values (the material the
             // shader lerps toward — no _Target* properties exist by design).
-            TargetBrightColor = transparentMaterial.GetColor(BrightColorId);
-            TargetDarkColor = transparentMaterial.GetColor(DarkColorId);
-            TargetSpread = transparentMaterial.GetVector(SpreadId);
+            TargetBrightColor = bindMaterial.GetColor(BrightColorId);
+            TargetDarkColor = bindMaterial.GetColor(DarkColorId);
+            TargetSpread = bindMaterial.GetVector(SpreadId);
 
             // Gameplay-final-at-start: bind the end-state material NOW. The entity's
             // color overrides snap to its authored values via SyncRenderMaterial
-            // (refreshColors — IsAnimating stays false on the clock path).
+            // (refreshColors — IsAnimating is never true in strict mode).
             activeTransparentMaterial = transparentMaterial;
             activeOpaqueMaterial = opaqueMaterial;
             MeshRenderer.sharedMaterial = bindMaterial;
-            cachedPrism.SyncRenderMaterial();
-
-            if (!PrismRenderService.StampColorTransition(in cachedPrism.RenderHandle, now, duration,
-                    PrismRenderService.ToFloat4(StartBrightColor),
-                    PrismRenderService.ToFloat4(StartDarkColor),
-                    PrismRenderService.ToFloat3(StartSpread)))
-            {
-                // Entity lost between the sink check and the stamp — the material is
-                // already the end state; report unhandled so the legacy lerp runs
-                // (it will start from the tracked currents seeded below).
-                CurrentBrightColor = StartBrightColor;
-                CurrentDarkColor = StartDarkColor;
-                CurrentSpread = StartSpread;
-                return false;
-            }
-
-            _clockColorActive = true;
-            _clockColorT0 = now;
-            _clockColorDuration = duration;
-            _clockFromBright = StartBrightColor;
-            _clockFromDark = StartDarkColor;
-            _clockFromSpread = StartSpread;
+            cachedPrism?.SyncRenderMaterial();
 
             // Keep the tracked currents sane for handoff paths that read them.
             CurrentBrightColor = StartBrightColor;
             CurrentDarkColor = StartDarkColor;
             CurrentSpread = StartSpread;
 
-            // Touchpoint 3: ONE scheduled settle — clear the stamp (invisible: at
-            // t >= end the shader lerp already equals the bound material) and fire
-            // the caller's completion.
+            // A new transition supersedes any pending settle.
             var timers = PrismTimerManager.EnsureInstance();
             timers.CancelScheduledActions(this);
-            timers.ScheduleAction(this, duration, () =>
+            _clockColorActive = false;
+
+            bool stamped = cachedPrism != null && cachedPrism.UsesEntityColorSink &&
+                PrismRenderService.StampColorTransition(in cachedPrism.RenderHandle, now, duration,
+                    PrismRenderService.ToFloat4(StartBrightColor),
+                    PrismRenderService.ToFloat4(StartDarkColor),
+                    PrismRenderService.ToFloat3(StartSpread));
+
+            if (stamped)
             {
-                _clockColorActive = false;
-                if (cachedPrism != null)
-                    PrismRenderService.ClearColorTransitionStamp(in cachedPrism.RenderHandle);
-                onComplete?.Invoke();
-            });
-            return true;
+                _clockColorActive = true;
+                _clockColorT0 = now;
+                _clockColorDuration = duration;
+                _clockFromBright = StartBrightColor;
+                _clockFromDark = StartDarkColor;
+                _clockFromSpread = StartSpread;
+
+                // Touchpoint 3: ONE scheduled settle — clear the stamp (invisible: at
+                // t >= end the shader lerp already equals the bound material) and fire
+                // the caller's completion.
+                timers.ScheduleAction(this, duration, () =>
+                {
+                    _clockColorActive = false;
+                    if (cachedPrism != null)
+                        PrismRenderService.ClearColorTransitionStamp(in cachedPrism.RenderHandle);
+                    onComplete?.Invoke();
+                });
+            }
+            else if (onComplete != null)
+            {
+                // No entity sink (exotic window / pre-show / instanced down): the
+                // bind above IS the transition. Preserve completion timing.
+                timers.ScheduleAction(this, duration, () => onComplete());
+            }
         }
 
         public void SetTransparency(bool transparent)

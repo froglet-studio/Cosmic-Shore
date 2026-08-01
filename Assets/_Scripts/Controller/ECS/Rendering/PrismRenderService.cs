@@ -132,46 +132,19 @@ namespace CosmicShore.ECS
         public static void SetRuntimeOverride(bool? enabled) => _runtimeOverride = enabled;
 
         // ------------------------------------------------------------------
-        // Clock-material animation toggle (Docs/PRISM_ANIMATION.md, LOCKED law)
+        // Clock-material animation (Docs/PRISM_ANIMATION.md, LOCKED law)
         // ------------------------------------------------------------------
 
-        static bool? _clockRuntimeOverride;
-        static bool _clockConfigLoaded;
-        // OPT-IN: defaults OFF. The clock stamps only render once the prism
-        // ShaderGraphs are wired to PrismClockAnimation.hlsl with the clock
-        // properties declared Hybrid Per Instance (PRISM_ANIMATION.md §4.4);
-        // until then callers fall back to the legacy CPU animation managers.
-        static bool _clockConfigEnabled;
-
         /// <summary>
-        /// Master switch for clock-material prism animation (one initial-conditions
-        /// stamp, GPU runs the course, one scheduled end swap — Docs/PRISM_ANIMATION.md).
-        /// Resolution: runtime override → PrismRenderConfig asset → default OFF.
-        /// When false, every Stamp* API returns false and callers keep the legacy path.
+        /// ALWAYS TRUE — clock-material animation is the ONLY prism animation path
+        /// (STRICT MODE, locked by the prompter 2026-08-01: no legacy fallback).
+        /// One initial-conditions stamp, the GPU runs the course, one scheduled end
+        /// swap. A material whose graph is not wired (§4.4) does not fall back —
+        /// its visual snaps to the end state and the stamp site logs a loud error
+        /// naming the graph to wire. Kept as a property so call sites read as
+        /// law-references, not as a toggle.
         /// </summary>
-        public static bool ClockAnimationEnabled
-        {
-            get
-            {
-                if (_clockRuntimeOverride.HasValue) return _clockRuntimeOverride.Value;
-                if (!_clockConfigLoaded)
-                {
-                    _clockConfigLoaded = true;
-                    var config = Resources.Load<CosmicShore.ScriptableObjects.PrismRenderConfigSO>("PrismRenderConfig");
-                    if (config != null) _clockConfigEnabled = config.UseClockAnimation;
-                }
-                return _clockConfigEnabled;
-            }
-        }
-
-        /// <summary>Runtime A/B override for clock animation (null = config). Clears the
-        /// prototype cache so newly created entities carry (or drop) the clock components;
-        /// existing entities keep their current archetype until reuse.</summary>
-        public static void SetClockAnimationOverride(bool? enabled)
-        {
-            _clockRuntimeOverride = enabled;
-            _prototypes.Clear();
-        }
+        public static bool ClockAnimationEnabled => true;
 
         /// <summary>
         /// Read-only, allocation-light diagnosis of whether the instanced path is
@@ -419,9 +392,8 @@ namespace CosmicShore.ECS
             // SetComponentData — AddComponentData on a live entity is a per-prism
             // archetype move, the exact cost this prototype pattern exists to kill.
             // Defaults are the settled state (rate/duration 0 → PrismClockAnimation.hlsl
-            // renders the end state / legacy fallback), so entities render unchanged
-            // until a Stamp* call arrives.
-            if (ClockAnimationEnabled)
+            // renders the end state), so entities render unchanged until a Stamp*
+            // call arrives. Unconditional: the clock path is the only animation path.
             {
                 switch (overrideSet)
                 {

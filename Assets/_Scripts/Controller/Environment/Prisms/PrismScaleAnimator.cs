@@ -113,21 +113,6 @@ namespace CosmicShore.Gameplay
 
         static readonly int GrowStartTimeId = Shader.PropertyToID("_GrowStartTime");
 
-        /// <summary>True when this prism can animate via the clock material:
-        /// master toggle on, the companion entity is drawing, AND the bound
-        /// material's shader actually declares the grow clock property — the
-        /// per-material interlock that makes the toggle safe to flip before (or
-        /// while) the graphs are wired: an unwired material would render the
-        /// FINAL transform with no bloom (a pop-in, violating continuity), so it
-        /// stays on the legacy manager until its graph gains the §4.4 inputs.</summary>
-        bool ClockPathAvailable =>
-            PrismRenderService.ClockAnimationEnabled &&
-            prism != null &&
-            PrismRenderService.IsHandleUsable(in prism.RenderHandle) &&
-            meshRenderer != null &&
-            meshRenderer.sharedMaterial != null &&
-            meshRenderer.sharedMaterial.HasProperty(GrowStartTimeId);
-
         /// <summary>Clock-aware "is the visual still blooming" — the replacement
         /// for reading IsScaling directly (legacy path still reports IsScaling).</summary>
         public bool IsVisuallyGrowing =>
@@ -213,20 +198,33 @@ namespace CosmicShore.Gameplay
                         Mathf.Approximately(target.z, 0f) ? 1f : current.z / target.z);
             }
 
-            // Stamp first: a failed stamp (entity lost between the availability
-            // check and here) must leave the transform untouched so the legacy
-            // manager fallback still has its real start scale to grow from.
-            if (!PrismRenderService.StampGrow(in prism.RenderHandle, now, k, in startFrac))
-            {
-                _clockActive = false;
-                IsScaling = true;
-                return;
-            }
+            // STRICT MODE (no legacy fallback): stamp, and scream if the visual
+            // cannot ride the clock — gameplay state goes final regardless.
+            bool stamped = PrismRenderService.StampGrow(in prism.RenderHandle, now, k, in startFrac);
+            if (!stamped)
+                PrismClockDiagnostics.WarnNoRenderEntity($"grow:{name}", this);
+            else if (meshRenderer != null && meshRenderer.sharedMaterial != null &&
+                     !meshRenderer.sharedMaterial.HasProperty(GrowStartTimeId))
+                PrismClockDiagnostics.WarnUnwiredMaterial(meshRenderer.sharedMaterial, "_GrowStartTime", this);
 
             // Gameplay-final-at-start: transform, entity matrix, volume, shell.
             transform.localScale = target;
             prism.SyncRenderTransform();
             prism.RefreshVolumeCache();
+
+            if (!stamped)
+            {
+                // Visual transition is skipped (loud above); settle immediately so
+                // clock predicates read the truth: this prism is at its end state.
+                _clockActive = true;
+                _clockT0 = now;
+                _clockK = k;
+                _clockStartFrac = new float3(1f);
+                _clockLastTarget = target;
+                _clockSettleTime = now;
+                ExecuteOnScaleComplete();
+                return;
+            }
 
             _clockActive = true;
             _clockT0 = now;
@@ -258,26 +256,17 @@ namespace CosmicShore.Gameplay
             if (TargetScale == Vector3.zero)
                 TargetScale = transform.localScale;
 
-            if (ClockPathAvailable)
-            {
-                // Pre-creation calls (spawners set TargetScale before Initialize /
-                // during the spawn window) defer: CreateBlockCoroutine calls this
-                // again at creation-complete, when the entity is visible and the
-                // stamp can take effect. The visual then blooms from zero on
-                // reveal — the continuity law's preferred reading of the spawn.
-                if (prism != null && !prism.IsCreationComplete) return;
+            // STRICT MODE: the clock stamp is the ONLY growth path (no legacy
+            // manager engagement — Docs/PRISM_ANIMATION.md, no-fallback law).
+            // Pre-creation calls (spawners set TargetScale before Initialize /
+            // during the spawn window) defer: CreateBlockCoroutine calls this
+            // again at creation-complete, when the entity is visible and the
+            // stamp can take effect. The visual then blooms from zero on
+            // reveal — the continuity law's preferred reading of the spawn.
+            if (prism != null && !prism.IsCreationComplete) return;
 
-                if (resetToZero) transform.localScale = Vector3.zero;
-                StampClockGrowth();
-                return;
-            }
-
-            if (IsScaling) return;
-
-            if (resetToZero)
-                transform.localScale = Vector3.zero;
-
-            IsScaling = true;
+            if (resetToZero) transform.localScale = Vector3.zero;
+            StampClockGrowth();
         }
 
         public void SetTargetScale(Vector3 newTarget)

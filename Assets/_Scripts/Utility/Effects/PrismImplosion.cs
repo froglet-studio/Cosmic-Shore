@@ -231,16 +231,13 @@ namespace CosmicShore.Utility
             // Set initial shader state on the active render path
             ApplyInitialVisualState(0f, targetPos);
 
-            // Clock-material path (Docs/PRISM_ANIMATION.md §4.4, B3): progress rides
-            // the GPU clock (ONE stamp + ONE scheduled completion, no per-frame
-            // _State feed). The MOVING convergence target is the documented §1
-            // exception: live gameplay data — the manager refreshes _Location only,
-            // one float3 per frame, while the target transform lives.
-            if (TryStampClock(direction: 1f, delay: 0f, location: targetPos))
-                return;
-
-            // Register with batched manager for frame updates (auto-creates if not in scene)
-            PrismEffectsManager.EnsureInstance().RegisterImplosion(this);
+            // Clock-material path (Docs/PRISM_ANIMATION.md §4.4, B3) — STRICT MODE,
+            // the ONLY path: progress rides the GPU clock (ONE stamp + ONE scheduled
+            // completion, no per-frame _State feed, PrismEffectsManager's animation
+            // pass never engaged). The MOVING convergence target is the documented
+            // §1 exception: live gameplay data — the manager refreshes _Location
+            // only, one float3 per frame, while the target transform lives.
+            StampClockStrict(direction: 1f, delay: 0f, location: targetPos);
         }
 
         /// <summary> Start grow (shader: 1 -> 0). </summary>
@@ -276,40 +273,42 @@ namespace CosmicShore.Utility
 
             // Clock-material path — reverse suction (1 → 0) with the grow delay
             // baked into the stamp; same moving-target exception as StartImplosion.
-            if (TryStampClock(direction: -1f, delay: growDelay, location: startPosition))
-                return;
-
-            // Register with batched manager for frame updates (auto-creates if not in scene)
-            PrismEffectsManager.EnsureInstance().RegisterImplosion(this);
+            StampClockStrict(direction: -1f, delay: growDelay, location: startPosition);
         }
 
-        /// <summary>
-        /// The clock-material stamp shared by StartImplosion/StartGrow. Returns false
-        /// (caller registers with the legacy per-frame manager) when the clock path is
-        /// dark or the entity lacks the clock components.
-        /// </summary>
         static readonly int SuctionStartTimeId = Shader.PropertyToID("_SuctionStartTime");
 
-        bool TryStampClock(float direction, float delay, Vector3 location)
+        /// <summary>
+        /// The ONLY animation driver for StartImplosion/StartGrow (STRICT MODE —
+        /// no legacy per-frame fallback). A missing entity or unwired graph fails
+        /// LOUD via PrismClockDiagnostics; the completion is scheduled on every
+        /// outcome so the pool flow never wedges.
+        /// </summary>
+        void StampClockStrict(float direction, float delay, Vector3 location)
         {
-            if (!UsesEntityRenderPath) return false;
-            // Per-material interlock: an unwired SuctionGraph would freeze the
-            // suction at its initial state forever — stay legacy until wired.
-            var mat = prismRenderer != null ? prismRenderer.sharedMaterial : null;
-            if (mat == null || !mat.HasProperty(SuctionStartTimeId)) return false;
-            if (!PrismRenderService.StampSuctionClock(in RenderHandle,
-                    CosmicShore.Utility.PrismClock.Now, implosionDuration, direction, delay,
-                    new Unity.Mathematics.float3(location.x, location.y, location.z)))
-                return false;
+            if (UsesEntityRenderPath)
+            {
+                var mat = prismRenderer != null ? prismRenderer.sharedMaterial : null;
+                if (mat == null || !mat.HasProperty(SuctionStartTimeId))
+                    PrismClockDiagnostics.WarnUnwiredMaterial(mat, "_SuctionStartTime", this);
 
-            // Moving-target exception: the manager refreshes ONLY _Location while the
-            // target transform lives (RefreshConvergenceForClock).
-            PrismEffectsManager.EnsureInstance()?.RegisterClockConvergence(this);
+                if (PrismRenderService.StampSuctionClock(in RenderHandle,
+                        PrismClock.Now, implosionDuration, direction, delay,
+                        new Unity.Mathematics.float3(location.x, location.y, location.z)))
+                {
+                    // Moving-target exception: the manager refreshes ONLY _Location
+                    // while the target transform lives (RefreshConvergenceForClock).
+                    PrismEffectsManager.EnsureInstance()?.RegisterClockConvergence(this);
+                }
+            }
+            else
+            {
+                PrismClockDiagnostics.WarnNoRenderEntity($"implosion:{name}", this);
+            }
 
             var timers = PrismTimerManager.EnsureInstance();
             timers.CancelScheduledActions(this);
             timers.ScheduleAction(this, delay + implosionDuration, OnEffectComplete);
-            return true;
         }
 
         /// <summary>

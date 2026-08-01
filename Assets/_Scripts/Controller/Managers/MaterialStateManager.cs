@@ -9,11 +9,12 @@ using System;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// ⚠ CLOCK-MATERIAL LAW (Docs/PRISM_ANIMATION.md, LOCKED): this manager's per-tick
-    /// color lerps are a KNOWN VIOLATION scheduled for retirement — color/state
-    /// transitions migrate to GPU-clock lerps (one stamp of start colors + start time;
-    /// the material's authored values are the target; one scheduled sharedMaterial
-    /// settle swap at the end). Do NOT route any new prism animation through here.
+    /// ⚠ RETIRED (STRICT clock-material mode — Docs/PRISM_ANIMATION.md, no legacy
+    /// fallback, locked 2026-08-01): NO code path starts color animations here
+    /// anymore. MaterialPropertyAnimator never sets IsAnimating, so this manager's
+    /// active set stays empty and its pass never runs. The class survives only so
+    /// scene-placed components deserialize; delete the class + its scene objects in
+    /// the in-editor pass (tracker D2). Do NOT route anything through here.
     /// </summary>
     public class MaterialStateManager : AdaptiveAnimationManager<MaterialStateManager, MaterialPropertyAnimator, MaterialAnimationData>
     {

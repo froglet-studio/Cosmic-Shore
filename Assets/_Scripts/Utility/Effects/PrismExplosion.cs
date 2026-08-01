@@ -31,13 +31,10 @@ namespace CosmicShore.Utility
         // Pool callback (set by PoolManager)
         public Action<PrismExplosion> OnReturnToPool;
 
-        // Cache shader property IDs for performance
-        private static readonly int VelocityID = Shader.PropertyToID("_Velocity");
-        private static readonly int ExplosionAmountID = Shader.PropertyToID("_ExplosionAmount");
-        private static readonly int OpacityID = Shader.PropertyToID("_Opacity");
+        // Cache shader property IDs for performance (strict clock mode: only the
+        // wiring diagnostic reads a property by name — stamps go through
+        // PrismRenderService's per-instance overrides)
         private static readonly int ExplodeStartTimeId = Shader.PropertyToID("_ExplodeStartTime");
-        private static readonly int BrightColorID = Shader.PropertyToID("_BrightColor");
-        private static readonly int DarkColorID = Shader.PropertyToID("_DarkColor");
 
         // State exposed to PrismEffectsManager for batched updates
         internal Vector3 InitialPosition { get; private set; }
@@ -212,20 +209,25 @@ namespace CosmicShore.Utility
 
             EnsureRenderEntity();
 
-            // Clock-material path (Docs/PRISM_ANIMATION.md §4.4, B3): ONE stamp of
-            // {t0, speed, duration, velocity}; the shader flies/shatters/fades the
-            // debris off _Time.y (offset = v·t, amount = speed·t, opacity = 1−t/dur)
-            // with zero further CPU writes; ONE scheduled completion returns it to
-            // the pool. The entity transform holds the initial pose and never moves.
-            // Per-material interlock: an unwired graph would render a frozen,
-            // never-fading shatter — stay legacy until it declares the clock input.
-            if (UsesEntityRenderPath &&
-                _renderer.sharedMaterial != null &&
-                _renderer.sharedMaterial.HasProperty(ExplodeStartTimeId) &&
+            // Clock-material path (Docs/PRISM_ANIMATION.md §4.4, B3) — STRICT MODE,
+            // the ONLY path: ONE stamp of {t0, speed, duration, velocity}; the shader
+            // flies/shatters/fades the debris off _Time.y (offset = v·t,
+            // amount = speed·t, opacity = 1−t/dur) with zero further CPU writes; ONE
+            // scheduled completion returns it to the pool. The entity transform holds
+            // the initial pose and never moves. PrismEffectsManager is never engaged.
+            // No fallback: a missing entity or unwired graph fails LOUD and the
+            // effect is skipped/frozen until the wiring lands.
+            _renderer.enabled = false;
+
+            if (UsesEntityRenderPath)
+            {
+                if (_renderer.sharedMaterial == null ||
+                    !_renderer.sharedMaterial.HasProperty(ExplodeStartTimeId))
+                    PrismClockDiagnostics.WarnUnwiredMaterial(_renderer.sharedMaterial, "_ExplodeStartTime", this);
+
                 PrismRenderService.StampExplosionClock(in RenderHandle,
                     PrismClock.Now, speed, MaxDuration,
-                    new Unity.Mathematics.float3(velocity.x, velocity.y, velocity.z)))
-            {
+                    new Unity.Mathematics.float3(velocity.x, velocity.y, velocity.z));
                 SyncRenderTransform();
                 if (_hasPendingTeamColors)
                 {
@@ -236,55 +238,17 @@ namespace CosmicShore.Utility
                 // Visible immediately: the stamp itself IS the correct initial state
                 // (amount 0, opacity 1 at t = t0) — no unanimated-mesh flash to hide.
                 PrismRenderService.SetVisible(in RenderHandle, true);
-                _renderer.enabled = false;
-
-                // Touchpoint 3: the analytic end. NOT registered with
-                // PrismEffectsManager — no per-frame work exists for this effect.
-                var timers = PrismTimerManager.EnsureInstance();
-                timers.CancelScheduledActions(this);
-                timers.ScheduleAction(this, MaxDuration, OnEffectComplete);
-                return;
-            }
-
-            if (UsesEntityRenderPath)
-            {
-                // Entity path: initial shader params + team colors on the
-                // companion entity; stays hidden until the manager's first frame.
-                SyncRenderTransform();
-                PrismRenderService.SetExplosionParams(in RenderHandle,
-                    new Unity.Mathematics.float3(velocity.x, velocity.y, velocity.z), 0f, 1f);
-                if (_hasPendingTeamColors)
-                {
-                    PrismRenderService.SetTeamColors(in RenderHandle,
-                        PrismRenderService.ToFloat4(_pendingBrightColor),
-                        PrismRenderService.ToFloat4(_pendingDarkColor));
-                }
-                PrismRenderService.SetVisible(in RenderHandle, false);
-                _renderer.enabled = false;
             }
             else
             {
-                // Legacy path. Set ALL animated shader properties to their initial
-                // values so we never fall back to the material's baked defaults
-                // (ExplodingBlockMaterial has _ExplosionAmount: 20.7 which looks fully exploded)
-                _renderer.GetPropertyBlock(_mpb);
-                _mpb.SetVector(VelocityID, velocity);
-                _mpb.SetFloat(ExplosionAmountID, 0f);
-                _mpb.SetFloat(OpacityID, 1f);
-                if (_hasPendingTeamColors)
-                {
-                    _mpb.SetColor(BrightColorID, _pendingBrightColor);
-                    _mpb.SetColor(DarkColorID, _pendingDarkColor);
-                }
-                _renderer.SetPropertyBlock(_mpb);
-
-                // Keep renderer disabled until PrismEffectsManager applies the first animated
-                // frame. The manager will set renderer.enabled = true once real values are applied.
-                _renderer.enabled = false;
+                PrismClockDiagnostics.WarnNoRenderEntity($"explosion:{name}", this);
             }
 
-            // Register with batched manager for frame updates (auto-creates if not in scene)
-            PrismEffectsManager.EnsureInstance().RegisterExplosion(this);
+            // Touchpoint 3: the analytic end (pool return), on both outcomes so the
+            // pool flow never wedges.
+            var timers = PrismTimerManager.EnsureInstance();
+            timers.CancelScheduledActions(this);
+            timers.ScheduleAction(this, MaxDuration, OnEffectComplete);
         }
 
         /// <summary>

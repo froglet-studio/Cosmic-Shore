@@ -10,18 +10,15 @@ using System.Linq;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Centralized Jobs-based manager for prism explosion and implosion VFX.
-    /// Replaces per-instance UniTask async loops with batched Burst-compiled updates.
-    /// Follows the same pattern as MaterialStateManager and PrismScaleManager.
-    ///
-    /// ⚠ CLOCK-MATERIAL LAW (Docs/PRISM_ANIMATION.md, LOCKED): the per-frame stepping
-    /// here is a KNOWN VIOLATION scheduled for retirement — every output this job
-    /// computes is a pure function of elapsed time and the stamp-time initial
-    /// conditions (pos = p0 + t·v, amount = speed·t, opacity = 1 − t/dur), so the
-    /// shader computes it from {_StartTime, _Velocity, _Speed, _Duration} stamped
-    /// once. The only review case is the implosion's MOVING convergence target
-    /// (RefreshConvergence) — live gameplay data, see the doc §1. Do NOT route any
-    /// new prism effect through per-frame parameter feeding.
+    /// ⚠ ANIMATION PASSES RETIRED (STRICT clock-material mode —
+    /// Docs/PRISM_ANIMATION.md, no legacy fallback, locked 2026-08-01): NO code
+    /// path registers explosions/implosions for per-frame stepping anymore
+    /// (PrismExplosion/PrismImplosion stamp the GPU clock and schedule ONE
+    /// completion). ProcessExplosions/ProcessImplosions and their Burst jobs are
+    /// dead code kept only until the in-editor deletion pass (tracker D2).
+    /// The class REMAINS LIVE for exactly two conforming jobs: the implosion
+    /// moving-convergence-target refresh (the doc's §1 exception — location only,
+    /// one float3/frame) and the dev-build zombie-VFX audit.
     /// </summary>
     public class PrismEffectsManager : Singleton<PrismEffectsManager>
     {

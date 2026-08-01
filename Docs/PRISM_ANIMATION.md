@@ -8,6 +8,16 @@
 > go to the FINAL state at the START of the animation.** Only photons animate.
 
 This is a required practice, platform-wide, and it cannot be broken by future work.
+**STRICT MODE (locked by the prompter, 2026-08-01): there is NO legacy fallback.**
+The clock-material path is the only prism animation path — no toggle, no
+per-material fallback tier, no CPU animation managers. A prism whose graph is not
+wired (§4.4) does not fall back: gameplay state still goes final at the stamp
+(law-correct), the visual snaps to its end state, and the stamp site logs a loud
+error naming exactly what to wire (`PrismClockDiagnostics`, per the project's
+fail-loud policy). Until the §4.4 wiring lands, spawns/transitions/effects visibly
+snap — that is the intended forcing function, not a bug to paper over with a
+fallback.
+
 It is the animation-side counterpart of two locked laws that already exist:
 
 - **Continuity of existence** (CLAUDE.md ▸ Ecosystem Design Principles): everything must
@@ -501,12 +511,14 @@ Implementation constraints (verified by the capability audit):
   (`Assets/Resources/PrismRenderConfig.asset`, `useInstancedRendering: 1`); per-instance
   values live in Entities Graphics' persistent GPU buffer — a stamp is genuinely
   write-once.
-- **The clock path rides the instanced renderer (decided)**: a prism that falls back
-  to its GameObject MeshRenderer (no ECS world / tool scenes / exotic-morph windows)
-  keeps the legacy CPU managers for that animation. This keeps the migration surface
-  to ONE stamping discipline instead of maintaining MaterialPropertyBlock twins that
-  would collide with `FlushDisplayedColorsToRenderer`'s block ownership; the CPU
-  managers retire only after the fallback population is measured to be negligible.
+- **The clock path rides the instanced renderer, with NO fallback (strict mode)**: a
+  prism without a usable companion entity (no ECS world / tool scenes / pre-first-show
+  / exotic-morph windows) gets its one-shot gameplay-final state and NO visual
+  transition — silent where that is a normal transient (fresh spawn paint, morph
+  overlay windows), screaming via `PrismClockDiagnostics.WarnNoRenderEntity` where the
+  render path is genuinely down. There are no MaterialPropertyBlock twins and no CPU
+  animation tier; the former managers are retired (empty active sets, class deletion
+  pending in-editor — tracker D2).
 - Currently NON-instanced properties that must not be driven per-instance without
   flipping the flag first: `_SqrDistance`, `_Alpha` (BlockGraph),
   `_ExplosiveRotation`/`_ExplosiveSpead` (ExplodingBlockGraph), `_Move` (SuctionGraph),
@@ -575,11 +587,11 @@ material.
 
 ---
 
-### 4.4 Phase A infrastructure — shipped dark + in-editor wiring protocol
+### 4.4 Phase A infrastructure + in-editor wiring protocol
 
-Shipped 2026-07-31 behind `PrismRenderConfigSO.UseClockAnimation` (default **OFF** —
-zero behavior change until the graphs are wired and the toggle flipped, the same
-opt-in-dark pattern instanced rendering itself shipped under):
+Shipped 2026-07-31; **made STRICT (always-on, no toggle, no fallback) 2026-08-01 at
+the prompter's direction.** `ClockAnimationEnabled` is constant `true`; the former
+`UseClockAnimation` opt-in was removed. The pieces:
 
 - **`Assets/_Graphics/Materials/Graphs/PrismClockAnimation.hlsl`** — the four Custom
   Function bodies: `PrismGrowScale`, `PrismColorLerp`, `PrismExplosionClock`,
@@ -602,7 +614,7 @@ opt-in-dark pattern instanced rendering itself shipped under):
   renderer; GameObject-fallback prisms keep the legacy CPU managers until those
   retire.
 
-**Phase B1/B2 call sites (shipped dark, same toggle):**
+**Phase B1/B2 call sites (LIVE — strict, the only path):**
 
 - **Grow-in (B1)** — `PrismScaleAnimator` stamps instead of engaging
   `PrismScaleManager` when the clock path is live: transform/entity matrix/volume go
@@ -641,7 +653,8 @@ opt-in-dark pattern instanced rendering itself shipped under):
   analytic current colors (`FlushDisplayedColorsToRenderer`); pool return cancels the
   scheduled settle and clears stamps.
 
-**In-editor wiring (required before flipping the toggle; do all three graphs):**
+**In-editor wiring (REQUIRED for correct visuals — until it lands, every prism
+spawn/transition/effect snaps and logs; do all three graphs):**
 
 1. **BlockGraph** — add properties with these EXACT reference names, all marked
    **Hybrid Per Instance** (Node Settings ▸ Shader Declaration; verify
@@ -668,40 +681,39 @@ opt-in-dark pattern instanced rendering itself shipped under):
    `_SuctionGrowDelay` (Float 0) and `_SuctionDirection` (Float 1), Hybrid Per
    Instance. Custom Function `PrismSuctionClock` with `LegacyState` ← `_State`
    property; its `State` output replaces the `_State` uses.
-4. Save/reimport, then tick **Use Clock Animation** on
-   `Assets/Resources/PrismRenderConfig.asset`.
+4. Save/reimport. There is nothing to enable — the clock path is always on.
 
-**The per-material interlock (safe incremental rollout):** every stamp site first
-checks that the material actually being bound DECLARES its clock property
+**Fail-loud wiring diagnostics (STRICT MODE — no fallback):** every stamp site
+checks whether the material actually being bound declares its clock property
 (`HasProperty(_GrowStartTime / _ColorStartTime / _ExplodeStartTime /
-_SuctionStartTime)`). A prism whose graph isn't wired yet stays on the legacy CPU
-manager — without this, flipping the toggle early would snap transforms/materials to
-their end states with no visible transition (pop-in — a continuity-law violation) or
-freeze effects at their initial state. Consequences: the toggle is **safe to flip at
-any time**, graphs can be wired **one at a time** (wire BlockGraph's grow inputs
-first and trail/ring/gyroid growth goes GPU-smooth immediately, while colors/effects
-stay legacy until their graphs follow), and the transparent-prism quirk self-handles
-(transparent live prisms rest on ExplodingBlockGraph, which has no grow inputs — they
-keep legacy growth unless you also add the grow trio there).
+_SuctionStartTime)`) and whether a companion entity exists to stamp. Neither check
+gates behavior — there is nothing to fall back to. They exist to SCREAM
+(`PrismClockDiagnostics.WarnUnwiredMaterial` / `WarnNoRenderEntity`, once per
+offender) with the exact graph, property name, and doc reference, while the visual
+snaps to its end state. Graphs can still be wired **one at a time** — each material
+family goes smooth the moment its graph reimports (BlockGraph's grow trio first:
+trail/ring/gyroid growth), and the errors enumerate exactly what remains. Note the
+transparent-prism quirk: transparent live prisms rest on ExplodingBlockGraph, so
+their grow bloom needs the grow trio added there too or they snap (loudly) while
+opaque prisms bloom.
 
-**Verification protocol:**
+**Verification protocol (strict mode):**
 
-- Toggle OFF (shipped state): zero visual or perf change anywhere.
-- Diagnostic: **chunky, few-frame growth (rings laid in visible batches, gyroid
-  grow-on-bond stepping) = you are watching the LEGACY path** — its adaptive
-  frame-skipping (1–12 frame steps), the 300-grower slice window, and the 6/frame
-  creation budget trade smoothness for bounded frame cost by design. The clock path
-  evaluates growth per-vertex per-frame on the GPU regardless of CPU load; if it
-  still looks chunky after wiring, the interlock is telling you that material's
-  property isn't declared (check the exact reference name + Hybrid Per Instance).
-- Graphs wired + toggle ON, before any B-phase call site lands: still zero visual
-  change — nothing stamps, the legacy managers keep feeding `SetColors` /
-  `SetExplosionParams` / `SetImplosionParams`, and the clock branches idle at their
-  fallbacks.
-- Stamp smoke test (play mode): stamp any live prism via
-  `PrismRenderService.StampGrow(handle, PrismClock.Now, 1.5f, 0f)` from a debug
-  hook — it must visibly re-bloom with the DiagnosticsHUD "Animators" rows showing
-  **0 active** (no CPU animation) and keep colliding at full size throughout.
+- BEFORE wiring: every prism spawn/steal/danger/shield transition and every
+  explosion/implosion SNAPS to its end state, and the console carries one
+  `[PrismClock] STRICT MODE` error per unwired material naming the missing property.
+  That is the expected pre-wiring state, not a regression.
+- AFTER wiring each graph: its material family animates GPU-smooth (per-vertex,
+  per-frame, regardless of CPU load) and its errors disappear. All three graphs
+  wired = console clean.
+- If something still snaps or looks chunky after wiring, the diagnostics say exactly
+  which material/property is wrong (exact reference name + Hybrid Per Instance flag
+  are the usual culprits).
+- DiagnosticsHUD "Animators" rows (`PrismScaleManager` / `MaterialStateManager`)
+  must read **0 active / 0 reg is not required — registered is fine — but 0 ACTIVE
+  always**, in every scene, under any load: nothing may engage the retired passes.
+- Colliders: a just-laid ring must collide at full size from the frame the collider
+  enables, while the visual is still blooming.
 - Hitstop/pause: prism animations freeze with `Time.timeScale` (the clock is scaled
   time) — expected and desired.
 
@@ -712,16 +724,16 @@ Phase A — infrastructure (everything else rides on it):
 | # | Item | Status |
 |---|---|---|
 | A1 | Shader graphs: clock inputs (BlockGraph grow+color, ExplodingBlockGraph, SuctionGraph) — Hybrid Per Instance, settled-state authored defaults | ◐ HLSL shipped (`PrismClockAnimation.hlsl`); graph wiring is an in-editor step — protocol in §4.4 |
-| A2 | `PrismRenderProperties` clock structs + prototype-archetype additions + `PrismRenderService` stamp APIs + legacy one-MPB-write twins | ✅ shipped dark 2026-07-31 (MPB twins land with the first B-phase call site) |
+| A2 | `PrismRenderProperties` clock structs + prototype-archetype additions + `PrismRenderService` stamp APIs | ✅ shipped 2026-07-31; STRICT (always-on, no toggle) 2026-08-01. No MPB twins by design — no fallback tier exists |
 | A3 | Swap scheduler: generalize `PrismTimerManager` (ScheduleAction / CancelScheduledActions) | ✅ shipped 2026-07-31 |
 
 Phase B — migrate the engines (each retires a per-frame pass):
 
 | # | Item | Status |
 |---|---|---|
-| B1 | Grow-in → clock (all ~12 feeder paths ride the one engine); gameplay-final-at-start (volume/spatial stamps, clock predicates, `ExecuteOnScaleComplete` → start) | ◐ shipped dark 2026-08-01 (§4.4) — pending: in-editor graph wiring + verification, then `PrismScaleManager` retirement, `HoldColliderAtFullSize` deletion, `CreateBlockCoroutine` window simplification, arena-gate simplification, PhaseThresholds re-baseline |
-| B2 | Color/state transitions → clock lerp (start colors + t₀; target = material authored; end-state material bound at START, settle scheduled) | ◐ shipped dark 2026-08-01 (§4.4) — pending: in-editor graph wiring + verification, then `MaterialStateManager` retirement |
-| B3 | Explosion/implosion → clock (stamp `{t₀, velocity, speed, duration}` / `{t₀, duration, direction, delay, location}`) | ◐ shipped dark 2026-08-01 (§4.4) — moving-target DECIDED as the §1 exception (the in-code rationale is load-bearing: a snapshot would suck prisms toward where the fauna WAS): progress rides the clock, `PrismEffectsManager` refreshes `_Location` only (one float3/frame) while the target lives. Pending: in-editor wiring + verification, then the per-frame Burst passes + VFX caps retire |
+| B1 | Grow-in → clock (all ~12 feeder paths ride the one engine); gameplay-final-at-start (volume/spatial stamps, clock predicates, `ExecuteOnScaleComplete` → start) | ✅ LIVE (strict, the only path) 2026-08-01 — `PrismScaleManager` retired (empty active set; class deletion in-editor, D2). Pending: graph wiring (visuals snap loudly until then), `HoldColliderAtFullSize` deletion, `CreateBlockCoroutine` window simplification, arena-gate simplification, PhaseThresholds re-baseline |
+| B2 | Color/state transitions → clock lerp (start colors + t₀; target = material authored; end-state material bound at START, settle scheduled) | ✅ LIVE (strict, the only path) 2026-08-01 — `MaterialStateManager` retired (empty active set; class deletion in-editor, D2). Pending: graph wiring (transitions snap loudly until then) |
+| B3 | Explosion/implosion → clock (stamp `{t₀, velocity, speed, duration}` / `{t₀, duration, direction, delay, location}`) | ✅ LIVE (strict, the only path) 2026-08-01 — moving-target DECIDED as the §1 exception (a snapshot would suck prisms toward where the fauna WAS): progress rides the clock, `PrismEffectsManager` refreshes `_Location` only (one float3/frame) while the target lives. Animation passes retired (never registered; Burst-job dead code + VFX caps delete in-editor, D2). Pending: graph wiring (effects freeze/snap loudly until then) |
 | B4 | Shield morphs → GPU (vertex-shader bloom/shatter from per-vertex face data + t₀; settled shared-mesh swap already conforms) | ◐ interim shipped 2026-08-01: stellated idle per-prism `Update()` KILLED — both shield tiers now ride the central `PrismOctahedronShieldManager` ticker (`IPrismShieldMorphTicker`), registered only while morphing. GPU morph itself still pending |
 
 Phase C — rogue paths & ecosystem visuals (each is standalone):
@@ -747,34 +759,36 @@ Phase D — lock-in:
 | # | Item | Status |
 |---|---|---|
 | D1 | Docs locked (this file + CLAUDE.md anti-pattern + manager banners + cross-refs) | ✅ shipped (2026-07-31) |
-| D2 | Retire `AdaptiveAnimationManager` frame-skip machinery once B1–B3 land | ☐ not started |
+| D2 | Delete the retired classes + scene components in-editor (`PrismScaleManager`, `MaterialStateManager`, `PrismEffectsManager`'s animation passes + Burst jobs, `AdaptiveAnimationManager` frame-skip machinery, retired animator fields) | ◐ code-side retirement DONE 2026-08-01 (nothing registers; passes never run); physical deletion is the in-editor chore |
 | D3 | In-editor verification pass (all migrated paths, both render paths, load-gate + hitstop + pause) | ☐ not started |
 
 ---
 
-## 6. Handoff — the in-editor gate (do this next)
+## 6. Handoff — the in-editor gate (REQUIRED, do this next)
 
-Everything shipped so far is dark behind `PrismRenderConfigSO.UseClockAnimation`.
-**One in-editor session unlocks all of it**, in this order:
+**STRICT MODE is live: the clock path is the only animation path, and the graphs
+are not wired yet.** Until this session happens, every prism spawn/transition/
+effect snaps to its end state and the console screams one `[PrismClock]` error per
+unwired material. That is the intended forcing function. The session:
 
-1. Tick **Use Clock Animation** on `Assets/Resources/PrismRenderConfig.asset` —
-   safe at any time: the per-material interlock (§4.4) keeps every unwired material
-   on the legacy path, so nothing pops or freezes.
-2. Wire the graphs per §4.4, one at a time if you like — **BlockGraph's three grow
-   properties + the `PrismGrowScale` node are the 15-minute change that makes ring /
-   gyroid / trail growth GPU-smooth** (the chunky legacy stepping disappears for
-   every prism on a wired material the moment it reimports).
-3. Run the §4.4 verification protocol (no-change checks, stamp smoke test,
-   hitstop). Watch the DiagnosticsHUD "Animators" rows: with the toggle live,
-   `PrismScaleManager`/`MaterialStateManager` active counts should sit at 0
-   during normal play (only GameObject-fallback prisms register).
-4. Then the retirement pass (D2) and the remaining C-phase items become safe to
-   land branch-by-branch — the ecosystem visual transitions (C6–C10) REQUIRE the
-   wired `SuctionGraph`/`BlockGraph` clock inputs to render at all, which is why
-   they were not shipped dark. Each is a small, per-path change following the B1/B3
-   templates (suction = `StampSuctionClock` + scheduled retire; blooms = the grow
-   engine, already migrated).
-5. Small in-editor chores while there: remove the `TrailViewer` component from
+1. Wire the graphs per §4.4 — **BlockGraph's three grow properties + the
+   `PrismGrowScale` node are the 15-minute change that makes ring / gyroid / trail
+   growth GPU-smooth**; then BlockGraph's color inputs, ExplodingBlockGraph,
+   SuctionGraph. Each material family goes smooth (and silent) the moment its graph
+   reimports; the remaining errors enumerate what's left.
+2. Run the §4.4 verification protocol. The DiagnosticsHUD "Animators" rows
+   (`PrismScaleManager` / `MaterialStateManager`) must show **0 active** in every
+   scene under any load — nothing may engage the retired passes.
+3. The D2 physical deletion pass: remove the retired manager classes + their scene
+   components (`PrismScaleManager`, `MaterialStateManager`, the
+   `PrismEffectsManager` animation passes/Burst jobs — the class itself stays for
+   the §1 convergence refresh + zombie audit — and `AdaptiveAnimationManager`'s
+   frame-skip machinery).
+4. The remaining C-phase items (C6–C10 ecosystem visual transitions, C4/C5
+   projectile teardown fixes) land branch-by-branch on the wired graphs, following
+   the B1/B3 templates (suction = `StampSuctionClock` + scheduled retire; blooms =
+   the grow engine, already migrated).
+5. Small chores while there: remove the `TrailViewer` component from
    `Urchin.prefab` (then delete the file), and re-baseline PhaseThresholds
    (volume-final-at-spawn — Tools > Cosmic Shore > Measure Cell Environment
    Baselines).

@@ -6,11 +6,12 @@ using CosmicShore.Gameplay;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// ⚠ CLOCK-MATERIAL LAW (Docs/PRISM_ANIMATION.md, LOCKED): this manager's sliced
-    /// per-tick transform writes are a KNOWN VIOLATION scheduled for retirement —
-    /// grow-in migrates to a GPU-clock vertex scale (one stamp, zero per-frame CPU).
-    /// Do NOT route any new prism animation through here, and do not extend this
-    /// pass with new per-frame work.
+    /// ⚠ RETIRED (STRICT clock-material mode — Docs/PRISM_ANIMATION.md, no legacy
+    /// fallback, locked 2026-08-01): NO code path registers growth here anymore.
+    /// PrismScaleAnimator never sets IsScaling, so this manager's active set stays
+    /// empty and its pass never runs. The class survives only so scene-placed
+    /// components deserialize; delete the class + its scene objects in the
+    /// in-editor pass (tracker D2). Do NOT route anything through here.
     /// </summary>
     public class PrismScaleManager : AdaptiveAnimationManager<PrismScaleManager, PrismScaleAnimator, ScaleAnimationData>
     {
