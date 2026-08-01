@@ -1838,22 +1838,35 @@ static part meshes, `Urchan_Test.fbx` 14, and Rhino wires `Vessel_Placeholder_1.
 placeholder); none carries a single blend shape. Their `*_shapekey_with_animations.fbx` rigs are
 one skinned mesh on an armature **plus** the four element shapes — and each rig was authored FOR
 that vessel's script: the dolphin rig's `jetT/jetm/jetB × .l/.r` + `jaw.u`/`jaw.b` are exactly
-`RiptideAnimation`'s six thrusters and two jaws; the rhino rig's `wing1.*`/`wing2.*`/`jet.*` are
-`RhinoAnimation`'s front wings, back wings and engines; the urchin rig's `gunM.*`/`jetT.*`/`jetB.*`
-are `UrchinAnimation`'s guns and jets. The three scripts now name those bones as their primary
-resolution candidates, so the code half of the port is done.
+`RiptideAnimation`'s six thrusters and two jaws; the rhino rig's `wing1.*`/`jet.*` are
+`RhinoAnimation`'s wings and engines (its `wing2.*` back wings host colliders, nothing drives them);
+the urchin rig's `gunM.*`/`jetT.*`/`jetB.*` are `UrchinAnimation`'s guns and jets. The three scripts
+name those bones as their primary resolution candidates, so the **code half of the port is done**.
 
-The prefab half must run **in the editor** — a `SkinnedMeshRenderer`'s bone list, bindposes, bounds
-and imported mesh IDs are all owned by Unity's FBX importer and cannot be hand-authored in prefab
-YAML. Use **Tools > Cosmic Shore > Report Vessel Rig Swap (dry run)** first, then
-**Wire Vessel Rigs**: it instantiates the rig under `OrientationHandle`, re-parents gameplay
-carriers (impact colliders, `Gun`s, particles) onto their mapped bone preserving world pose, clears
-the animation's part references so they re-resolve to bones, re-points
-`VesselCustomization._shipGeometries` at the new skinned mesh, and **deactivates rather than
-deletes** the old model so the swap is reversible. It is idempotent. **Collider volumes still need
-re-fitting to the new silhouettes by hand** — they were authored against the old art — and the
-Dolphin's drift re-parenting (`RiptideAnimation.Reparent`) drives bones from the drift handle's
-space, so verify a drift in play mode after swapping.
+**Rest poses are the reason a rig needs more than a name swap.** Puppetry drives a part *toward* an
+absolute local rotation, which silently assumes it rests at identity — true of part-per-mesh art
+placed by translation alone, false of a rig, where the bone's rest angle is what fans the engines
+out (`wing1.l` rests at ~42°, `jet.l` at ~115°, `gunM.l` at ~90°). So `VesselAnimation` gained
+`CaptureRestRotations` / `RotatePartFromRest` / rest-aware `ResetAnimation`: parts are driven
+**relative to the pose they were authored in**. Identity-rest art is unaffected; rigged art holds
+its shape. Two Dolphin bugs surfaced from the same root and are fixed: `RiptideAnimation` re-homed
+its drift parts onto `Chassis` every non-drifting frame (a no-op on the old art, where they were
+already its children — on the rig it would have permanently flattened the armature onto `fuse` and
+collapsed the six jets onto one point; it now restores each part's **own** captured parent), and its
+`InitialRotations` list was indexed two slots out of step with `animationTransforms`, so each engine
+animated around a neighbour's rest pose. **That second fix changes the Dolphin's current look** — its
+six engine cases rest at 26–169° and were being dragged toward identity.
+
+The prefab half is a **hands-on editor pass**, not an automated one: a `SkinnedMeshRenderer`'s bone
+list, bindposes, bounds and imported mesh IDs are owned by Unity's FBX importer, collider volumes
+were authored against the old silhouettes and must be re-fitted by eye, and every legacy part
+carries its `MeshRenderer` alongside its collider — so moving one onto a bone without retiring its
+renderer welds the placeholder ship to the new skeleton. Run **Tools > Cosmic Shore > Plan Vessel
+Rig Swap** (report only, never writes): it prints, per vessel, which gameplay object belongs on
+which bone, which objects have **no mapped bone** and would go dark when the old model is disabled
+(Rhino's `ForceFieldSkimmer` parents to the legacy root), the rig's element shapes, and the ship-
+geometry re-point. The printed procedure ends by clearing the animation's part fields — leave them
+**empty** so they resolve to bones — and re-running the morph audit.
 - **Seeding**: `VesselAnimation` snaps to live levels at `Initialize` (the live initial emit is
   `ResourceSystem.Start`), and `ResourceSystem.InitializeElementLevels` now emits
   `OnElementLevelChange` (deduped) so a mid-session re-seed repaints every consumer — hull morphs,

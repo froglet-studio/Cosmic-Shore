@@ -117,6 +117,44 @@ namespace CosmicShore.Gameplay
         protected static Quaternion LocalRotationOf(Transform part) =>
             part ? part.localRotation : Quaternion.identity;
 
+        // --- Rest poses --------------------------------------------------------------------
+        // Puppetry drives a part TOWARD an absolute local rotation, which silently assumes the
+        // part rests at identity. That holds for a part-per-mesh model whose pieces are placed by
+        // translation alone, but NOT for a rigged model: a bone's rest pose is what fans the
+        // engines out and sweeps the wings back (the rhino rig's 'wing1.l' rests at ~42 degrees,
+        // 'jet.l' at ~115). Driving those toward a bare Euler tears the ship out of its rest pose
+        // the moment it animates. Parts registered here are driven RELATIVE to the pose they were
+        // authored in, so identity-rest art behaves exactly as before and rigged art holds shape.
+
+        readonly Dictionary<Transform, Quaternion> _restRotations = new();
+
+        /// <summary>Records each part's authored local rotation as its rest pose. Call from ResolveParts.</summary>
+        protected void CaptureRestRotations(params Transform[] parts)
+        {
+            foreach (var part in parts)
+                if (part) _restRotations[part] = part.localRotation;
+        }
+
+        /// <summary>The captured rest pose of a part, or identity when it has none.</summary>
+        protected Quaternion RestRotationOf(Transform part) =>
+            part && _restRotations.TryGetValue(part, out var rest) ? rest : Quaternion.identity;
+
+        /// <summary>
+        /// Rest-relative <see cref="RotatePart"/>: drives the part toward its captured rest pose
+        /// composed with the requested rotation. Identical to <see cref="RotatePart"/> for parts
+        /// resting at identity, so legacy art is unaffected.
+        /// </summary>
+        protected void RotatePartFromRest(Transform part, float pitch, float yaw, float roll)
+        {
+            if (!part) return;
+            var targetRotation = Quaternion.Euler(pitch, yaw, roll) * RestRotationOf(part);
+
+            part.localRotation = Quaternion.Lerp(
+                                        part.localRotation,
+                                        targetRotation,
+                                        lerpAmount * Time.deltaTime);
+        }
+
         // Vessel animations TODO: figure out how to leverage a single definition for pitch, etc. that captures the gyro in the animations.
         protected abstract void PerformShipPuppetry(float Pitch, float Yaw, float Roll, float Throttle);
         protected virtual void Idle()
@@ -155,10 +193,13 @@ namespace CosmicShore.Gameplay
         // The part guards below keep an unbound limb from taking the whole vessel's animation
         // down with a NullReferenceException every frame: an art swap that renames one bone
         // costs that limb's motion (reported by ReportUnresolvedParts), not the ship.
+        // Settles toward the part's REST pose, which is identity unless CaptureRestRotations
+        // recorded otherwise - so idling a rigged vessel relaxes its bones to the pose the rig
+        // was authored in instead of flattening them.
         protected virtual void ResetAnimation(Transform part)
         {
             if (!part) return;
-            part.localRotation = Quaternion.Lerp(part.localRotation, Quaternion.identity, smallLerpAmount * Time.deltaTime);
+            part.localRotation = Quaternion.Lerp(part.localRotation, RestRotationOf(part), smallLerpAmount * Time.deltaTime);
         }
 
         protected virtual void ResetAnimation(Transform part, Quaternion resetQuaternion)

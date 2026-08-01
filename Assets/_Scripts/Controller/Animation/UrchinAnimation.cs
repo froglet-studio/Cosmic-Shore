@@ -48,6 +48,12 @@ namespace CosmicShore.Gameplay
             ShroudLeft = ResolvePart(ShroudLeft, "sheildconrot.l", "ShroudLeft");
             ShroudRight = ResolvePart(ShroudRight, "sheildconrot.r", "ShroudRight");
 
+            // The legacy parts all rest at identity, so this is a no-op on the current art; the
+            // rig's bones rest at large angles (gunM.l ~90 deg, jetT.l ~76) and must be driven
+            // relative to that pose or the ship tears flat the moment it animates.
+            CaptureRestRotations(Body, LeftGun, RightGun,
+                                 JetTopLeft, JetTopRight, JetBottomLeft, JetBottomRight);
+
             ReportUnresolvedParts();
         }
 
@@ -103,45 +109,45 @@ namespace CosmicShore.Gameplay
 
             if (VesselStatus.IsAttached)
             {
-                RotatePart(Body,
+                RotatePartFromRest(Body,
                    Time.deltaTime * 100f,
                     0,
                     0);
             }
             else
             {
-                RotatePart(Body,
+                RotatePartFromRest(Body,
                     pitch * animationScaler,
                     yaw * animationScaler,
                     roll * animationScaler);
             }
 
-            RotatePart(LeftGun,
+            RotatePartFromRest(LeftGun,
                         pitch * animationScaler,
                         yaw * animationScaler,
                         roll * animationScaler);
 
-            RotatePart(RightGun,
+            RotatePartFromRest(RightGun,
                         pitch * animationScaler,
                         yaw * animationScaler,
                         roll * animationScaler);
 
-            RotatePart(JetBottomLeft,
+            RotatePartFromRest(JetBottomLeft,
                     pitch * animationScaler,
                     yaw * animationScaler,
                     roll * animationScaler);
 
-            RotatePart(JetBottomRight,
+            RotatePartFromRest(JetBottomRight,
                     pitch * animationScaler,
                     yaw * animationScaler,
                     roll * animationScaler);
 
-            RotatePart(JetTopLeft,
+            RotatePartFromRest(JetTopLeft,
                     pitch * animationScaler,
                     yaw * animationScaler,
                     roll * animationScaler);
 
-            RotatePart(JetTopRight,
+            RotatePartFromRest(JetTopRight,
                     pitch * animationScaler,
                     yaw * animationScaler,
                     roll * animationScaler);

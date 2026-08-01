@@ -34,10 +34,13 @@ namespace CosmicShore.Gameplay
 
         [SerializeField] int JawResourceIndex;
 
-        // Bone names of the rigged dolphin model (dolphin_shapekey_with_animations.fbx), which
-        // was authored FOR this script: six jets (top/middle/bottom x l/r), two jaws and two
-        // wings, all hanging off 'fuse'. Legacy names from the older part-per-mesh model follow
-        // as fallbacks, so this resolves on either art. See VesselAnimation.ResolvePart.
+        // Bone names of the rigged dolphin model (dolphin_shapekey_with_animations.fbx), which was
+        // authored FOR this script: six jets (top/middle/bottom x l/r), two jaws and two wings.
+        // Only the jaws hang off 'fuse'; each wing and jet sits behind its own 'winghold'/'jethold'
+        // parent, and those parents carry the rest angles that fan the engines out - which is why
+        // the drift re-parent restores each part's own parent rather than a shared node. Legacy
+        // names from the older part-per-mesh model follow as fallbacks, so this resolves on either
+        // art. See VesselAnimation.ResolvePart.
         protected override void ResolveParts()
         {
             Chassis = ResolvePart(Chassis, "fuse", "Chassis", "Dolphin_Test");
@@ -59,6 +62,14 @@ namespace CosmicShore.Gameplay
 
             DriftHandle = ResolvePart(DriftHandle, "DriftHandle");
 
+            // Drive every part around the pose it was authored in. The legacy wings and noses rest
+            // at identity (unchanged), the six engine cases at 26-169 degrees, and the rig's bones
+            // at their own fan-out angles - all now animate relative to that instead of toward a
+            // bare Euler.
+            CaptureRestRotations(Chassis, LeftWing, RightWing, NoseTop, NoseBottom, topJaw, bottomJaw,
+                                 ThrusterTopLeft, ThrusterTopRight, ThrusterLeft,
+                                 ThrusterRight, ThrusterBottomLeft, ThrusterBottomRight);
+
             ReportUnresolvedParts();
         }
 
@@ -73,6 +84,8 @@ namespace CosmicShore.Gameplay
             if (topJaw) base.VesselStatus.ResourceSystem.Resources[JawResourceIndex].OnResourceChange += calculateBlastAngle;
 
             animationTransforms = new List<Transform>() { ThrusterTopRight, ThrusterRight, ThrusterBottomRight, ThrusterBottomLeft, ThrusterLeft, ThrusterTopLeft };
+
+            CaptureHomeParents();
         }
 
         protected override void PerformShipPuppetry(float pitch, float yaw, float roll, float throttle)
@@ -89,13 +102,13 @@ namespace CosmicShore.Gameplay
             if (VesselStatus.IsDrifting)
             {
                 SafeLookRotation.TrySet(DriftHandle, VesselStatus.Course, transform.up, DriftHandle ? DriftHandle.gameObject : gameObject, logError: false);
-                Reparent(DriftHandle);
+                ReparentToDrift(DriftHandle);
                 wingPosition = forwardWingPosition;
                 thrusterPosition = backwardThrusterPosition;
             }
             else
             {
-                Reparent(Chassis);
+                ReparentHome();
                 wingPosition = defaultWingPosition;
                 thrusterPosition = defaultThrusterPosition;
             }
@@ -117,55 +130,84 @@ namespace CosmicShore.Gameplay
             var rollScalar = roll * exaggeratedAnimationScaler;
 
 
+            // Each thruster is driven around ITS OWN rest pose, looked up per part. The previous
+            // InitialRotations[partIndex] indexing was offset by two against animationTransforms
+            // (InitialRotations starts with the two nose entries), so every engine animated around
+            // a neighbour's rest pose - harmless while all six rested at identity, wrong on the
+            // Dolphin's authored 26-169 degree engine cases and fatal on a rig.
             for (int partIndex = 0; partIndex < animationTransforms.Count; partIndex++)
             {
-                AnimatePart(animationTransforms[partIndex], pitchScalar, yawScalar, rollScalar, thrusterPosition, InitialRotations[partIndex]);
+                AnimatePart(animationTransforms[partIndex], pitchScalar, yawScalar, rollScalar, thrusterPosition);
             }
 
         }
 
-        // Swings the wings and thrusters between the chassis and the drift handle. On the rigged
-        // model these parts are BONES; a SkinnedMeshRenderer reads its bones wherever they sit in
-        // the hierarchy, so re-parenting still skins - it just drives the deformation from the
-        // drift handle's space, which is the intent.
-        void Reparent(Transform newParent)
+        // Swings the wings and thrusters out to the drift handle while drifting, and HOME again
+        // when not. "Home" is each part's own authored parent, captured at Initialize - never a
+        // single shared node. On the part-per-mesh art every one of these was a direct child of
+        // Chassis, so this is exactly the old behaviour; on the rigged model they are bones whose
+        // parents ('winghold.l/r', 'jetholdT/m/B.l/r') carry the rest angles that fan the six
+        // engines out, and re-homing them all onto 'fuse' would permanently flatten the armature
+        // and collapse the jets onto one point.
+        readonly Dictionary<Transform, Transform> _homeParents = new();
+
+        void CaptureHomeParents()
         {
-            if (!newParent) return;
-            SetParent(RightWing, newParent);
-            SetParent(LeftWing, newParent);
-            SetParent(ThrusterTopRight, newParent);
-            SetParent(ThrusterRight, newParent);
-            SetParent(ThrusterBottomRight, newParent);
-            SetParent(ThrusterBottomLeft, newParent);
-            SetParent(ThrusterLeft, newParent);
-            SetParent(ThrusterTopLeft, newParent);
+            _homeParents.Clear();
+            foreach (var part in DriftParts())
+                if (part) _homeParents[part] = part.parent;
+        }
+
+        IEnumerable<Transform> DriftParts()
+        {
+            yield return RightWing;
+            yield return LeftWing;
+            yield return ThrusterTopRight;
+            yield return ThrusterRight;
+            yield return ThrusterBottomRight;
+            yield return ThrusterBottomLeft;
+            yield return ThrusterLeft;
+            yield return ThrusterTopLeft;
+        }
+
+        void ReparentToDrift(Transform driftHandle)
+        {
+            if (!driftHandle) return;
+            foreach (var part in DriftParts())
+                SetParent(part, driftHandle);
+        }
+
+        void ReparentHome()
+        {
+            foreach (var part in DriftParts())
+                if (part && _homeParents.TryGetValue(part, out var home))
+                    SetParent(part, home);
         }
 
         static void SetParent(Transform part, Transform parent)
         {
-            if (part && part.parent != parent) part.parent = parent;
+            if (part && parent && part.parent != parent) part.parent = parent;
         }
 
+        // Every animated part is driven around its OWN rest pose. This is the same rotation math
+        // the old InitialRotation overload produced (its caller and the base method swapped
+        // yaw/roll twice, netting Euler(pitch, yaw, roll) * rest) - it just reads the part's own
+        // captured rest instead of one indexed out of a misaligned list. The chassis and wings
+        // rest at identity on the legacy art, so they are unaffected there.
         void AnimatePart(Transform part, float pitch, float yaw, float roll, Vector3 position)
         {
             if (!part) return;
-            base.RotatePart(part, pitch, yaw, roll);
+            RotatePartFromRest(part, pitch, yaw, roll);
 
             part.localPosition = Vector3.Lerp(part.localPosition, position, lerpAmount * Time.deltaTime);
         }
 
-        void AnimatePart(Transform part, float pitch, float yaw, float roll, Vector3 position, Quaternion InitialRotation)
-        {
-            if (!part) return;
-            base.RotatePart(part, pitch, roll, yaw, InitialRotation);
-
-            part.localPosition = Vector3.Lerp(part.localPosition, position, lerpAmount * Time.deltaTime);
-        }
-
+        // The jaws open around their rest pose too - identity on the legacy nose halves, the rig's
+        // authored jaw angle on 'jaw.u'/'jaw.b'.
         private void calculateBlastAngle(float currentAmmo)
         {
-            if (topJaw) topJaw.localRotation = Quaternion.Euler(-21 * currentAmmo, 0, 0);
-            if (bottomJaw) bottomJaw.localRotation = Quaternion.Euler(21 * currentAmmo, 0, 0);
+            if (topJaw) topJaw.localRotation = Quaternion.Euler(-21 * currentAmmo, 0, 0) * RestRotationOf(topJaw);
+            if (bottomJaw) bottomJaw.localRotation = Quaternion.Euler(21 * currentAmmo, 0, 0) * RestRotationOf(bottomJaw);
         }
 
         protected override void AssignTransforms()
@@ -184,18 +226,11 @@ namespace CosmicShore.Gameplay
             Transforms.Add(topJaw);
             Transforms.Add(bottomJaw);
 
-            // LocalRotationOf keeps the index alignment PerformShipPuppetry relies on even when
-            // a part is unbound (it contributes identity instead of throwing).
-            InitialRotations.Add(LocalRotationOf(NoseTop));
-            InitialRotations.Add(LocalRotationOf(NoseBottom));
-            InitialRotations.Add(LocalRotationOf(ThrusterTopRight));
-            InitialRotations.Add(LocalRotationOf(ThrusterRight));
-            InitialRotations.Add(LocalRotationOf(ThrusterBottomRight));
-            InitialRotations.Add(LocalRotationOf(ThrusterBottomLeft));
-            InitialRotations.Add(LocalRotationOf(ThrusterLeft));
-            InitialRotations.Add(LocalRotationOf(ThrusterTopLeft));
-            InitialRotations.Add(LocalRotationOf(topJaw));
-            InitialRotations.Add(LocalRotationOf(bottomJaw));
+            // Idle() pairs InitialRotations with Transforms BY INDEX, so this list is built in
+            // Transforms order, one entry per part. LocalRotationOf keeps that alignment even
+            // when a part is unbound (it contributes identity instead of throwing).
+            for (int i = 0; i < Transforms.Count; i++)
+                InitialRotations.Add(LocalRotationOf(Transforms[i]));
         }
     }
 }
