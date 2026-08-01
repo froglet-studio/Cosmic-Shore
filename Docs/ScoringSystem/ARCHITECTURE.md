@@ -331,6 +331,19 @@ What each fork-site became:
 | Writes (`TournamentController`, `BenchmarkSceneLauncher`, `Arcade.cs` dead launcher, `GameDataSO.SyncFromArcadeGame` + `ResetAllData`) | deleted with the flag |
 | `Loadout.IsMultiplayer` / `LoadoutCloudData.IsMultiplayer` | KEPT as documented tombstones (persisted cloud-save schema); callers pass constant `true`; never branch on them |
 
+> **Merge hazard at two of these sites (hit twice, 2026-07-25).** Removing the `isMultiplayer`
+> parameter from `SyncGameConfigToClients_ClientRpc` and the flag from
+> `GameDataSO.InvokeGameLaunch` changed those methods' **signatures** on this branch while
+> `bleeding-edge` independently added a `LoadInsights.SetGameContext(...)` call **inside both
+> method bodies** that passes the flag. Git auto-merges signature-from-one-side with
+> body-from-the-other and emits **no conflict marker**; the result is `CS0103: The name
+> 'isMultiplayer' does not exist in the current context`. Both sites now pass
+> `isMultiplayer: true` — unconditional post-C5, and the solo-vs-party distinction is readable
+> off `humanPlayers`, which the same call already reports.
+>
+> If a future merge touches either method, check the body before trusting a clean merge. Grepping
+> for `IsMultiplayerMode` does **not** find this — the reintroduced identifier is a lowercase
+> parameter name.
 
 ---
 

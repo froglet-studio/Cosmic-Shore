@@ -14,6 +14,48 @@ perf branches).
 
 ---
 
+## Program status at a glance (updated 2026-07-25)
+
+Branch `claude/unified-yash-refactor-9sc0ws`, 52 commits ahead of `bleeding-edge`, fully merged
+up to `6f263c22` and pushed.
+
+| Item | State |
+|---|---|
+| **Y0** wire-fix wave | ✅ executed (Y0.1 quest-service mount, Y0.2 Joust/CC server feeds + tracker deletion, Y0.3 touch inversion) |
+| **Y1** scoring unification | ✅ executed — all **six** domain modes on the one `SyncFinalResults` tail (Rampage folded on at merge) |
+| **Y2** spawn/controller spine | ✅ executed, and widened into the full solo retirement (C1–C7) |
+| **C8–C12** mode retirement | ✅ executed — Freestyle, Cellular Duel, Wildlife Blitz, 2v2 gone; seven live modes remain |
+| **M1–M4** `bleeding-edge` integration | ✅ executed — 228 upstream commits, 21 conflicts, 2 hidden CS0103s fixed |
+| **Y3** input pipeline template | ⬜ not started `[default-ok D9/D12]` |
+| **Y4** PlayFab excision | ⬜ blocked `[hard-gates D4–D7]` |
+| **Y5** SOAP/static-event migrations | ⬜ not started `[default-ok D18]` |
+| **Y6** impact-effects cleanup | ⬜ not started `[mostly default-ok]` |
+| **Y7** legacy vessel actions | ⬜ blocked `[hard-gate D1]` |
+| **Y8** deferred/decision-shaped | ⬜ not started (Y8.1 audio is `[default-ok D17]`) |
+
+**The one thing gating everything shipped so far: in-editor verification.** Every C/M item was
+verified statically (guid greps, symbol sweeps, YAML lint) but only steps 1–6 of
+`Docs/UnifiedSystems/SOLO_RETIREMENT_TESTS.md` have been run in the editor by the owner. Steps
+12–21 and 24–34 are outstanding. Do that before starting Y3+ — a regression found now is cheap,
+and the merges touched every game scene.
+
+**Known non-blocking issues carried deliberately** (documented, not defects introduced here):
+
+- Game toasts have **partial scene coverage** — the panel is per-scene and only HexRace and Joust
+  carry one. Six scenes show no toasts, incl. Brood Rush's wave beat. Upstream's rollout state.
+- Six stale **silhouette references** (five `*SilhouetteConfig.asset` on vessel prefabs,
+  `EventOnSilhouetteInitialized` in four scenes) dangle identically on `bleeding-edge`. Inert —
+  no live script declares those fields, so Unity drops the keys. Left alone rather than editing
+  upstream's in-flight vessel prefabs mid-merge.
+- `Arcade` (`SingletonPersistent`) has **zero instances** in any scene or prefab on any branch, so
+  `Arcade.Instance` is permanently null. `ArcadeExploreView.PlaySelectedGame` would NRE, but it is
+  only wired in a prefab that Menu_Main does not instance. Pre-existing; worth confirming in-editor.
+- The Hangar **training surface is unpopulated** — every vessel's `TrainingGames` list is empty
+  after C6/M3, so the Train button no-ops by design. Upstream added `SO_TrainingGame_Rampage`
+  (in no list), which reads as intent to repopulate with live modes.
+
+---
+
 ## Y0 — Wire-fix wave — **EXECUTED 2026-07-21** (branch `claude/unified-yash-refactor-9sc0ws`)
 
 > **STATUS:** all three items shipped per the verified plans below. Y0.1: service mounted in
@@ -195,8 +237,62 @@ game modes with one party member as host" retired the entire solo axis:
   delete-outright per owner.
 - **C7** Docs sweep (this note, SCENES.md, CLAUDE.md, GARRETT.md annotations).
 
-Remaining verification: the MPPM regression runs listed in the program's test guide (solo-as-host
-duel + blitz, 2-human runs, HexRace/Joust regression, Settings → Run Benchmark).
+> **C1/C2 above are SUPERSEDED — read C8–C12 before acting on them.** C1 consolidated Cellular
+> Duel onto mode 29 and C2 converted Wildlife Blitz to the networked model; the owner then
+> declared both modes obsolete outright, so C9/C10 deleted the stacks those two commits had just
+> finished building. The consolidation work is history, not current state. Nothing in the tree
+> references either mode today.
+
+### C8–C12 — mode retirement wave — **EXECUTED 2026-07-23/24**
+
+Owner direction after C1–C7: the remaining non-shipping modes are obsolete, delete them outright,
+no tombstones and no temporary shims.
+
+- **C8** Standalone `MultiplayerFreestyle` (28) retired — freestyle IS the lava lamp
+  (`Docs/LAVALAMP.md`; one system, two names). Do not reintroduce a freestyle scene.
+- **C9** Cellular Duel (29) retired — scene, controller, rule, card, `MinigameHUDInspector`,
+  `DuelForCellScoreboard` + Duel Cell Stats prefabs, and the mode's sole-use dependents.
+- **C10** Wildlife Blitz (26) retired — the whole stack; the benchmark scene was decoupled from it
+  first so it no longer borrows a blitz `GameMode`.
+- **C11** Retired-ID purge: `GameModes.WildlifeBlitz` and friends erased (not tombstoned), the
+  benchmark got its own `GameModes.Benchmark = 39`, `BlitzStats` removed from the cloud profile,
+  `LaunchPartyAllGames` deleted with its holders rewired to `OrganicRematchGames`.
+- **C12** `2v2CoOpVsAI` (30) retired — the stack was player-unreachable (card in no game list).
+
+Live arcade set is now exactly seven: HexRace, Joust, Crystal Capture, Maelstrom/Tournament,
+AstroLeague, NucleusRush, Rampage.
+
+### M1–M4 — `bleeding-edge` integration — **EXECUTED 2026-07-25**
+
+Two merges, 228 upstream commits total, 21 conflicts. Both branches' features intact. The
+load-bearing lesson: **conflict markers caught the easy half.** Every genuinely dangerous defect
+in both merges was a clean auto-merge where one side changed a signature and the other changed a
+body — see "Merge hazards" below.
+
+- **M1/M2** First merge (113 commits, 10 conflicts): Rampage restored as a live mode on the
+  repurposed ID 2, game-toast system adopted (`GameFeedAPI` deleted), finish-time golf scoring for
+  Crystal Capture. `ScoringMetric` took their enum wholesale (slot 5 reused for `PrismsDestroyed`).
+- **M3** Adversarial review of that merge, then three fixes: `RampageController` folded onto the
+  shared `SyncFinalResults` template (it had arrived with a hand-copied tail predating Y1.2, and
+  never wrote `HasNoWinner`); four `SO_TrainingGame_*` wrappers orphaned by C6 deleted (a live NRE
+  on the Hangar Train button); two stale prefab overrides dropped.
+- **M4** Second merge (115 commits, 11 conflicts): per-intensity HexRace laps, unified Cloud Save
+  schema, the four-icon ability row. Their `lapsPerIntensity` feature was **ported by hand** onto
+  `NetworkCrystalCollisionTurnMonitor` — they added it to the non-network base that Y1.3 had
+  collapsed away, and the HexRace scene auto-merges carrying `lapsPerIntensity: [3,3,2,2]`, so
+  without the port the key binds to nothing and the mode silently reverts to the flat
+  `optionalLaps` (~50% too many crystals at intensities 3–4).
+
+**Merge hazards — the failure mode to expect next time.** Two CS0103s reached the working tree
+through clean auto-merges, both the same shape: a method whose **signature** this branch changed
+(C5 dropped the `isMultiplayer` parameter) and whose **body** upstream changed (a new
+`LoadInsights.SetGameContext` call using that parameter). Git merges the two halves without a
+marker. Grepping for deleted *type* and *member* names does not find these — the second one was a
+lowercase local parameter. The check that does find them: for every file both sides modified,
+compare each method's merged parameter list against upstream's and flag any dropped parameter the
+merged body still references. **Validate any such detector by confirming it fires on a known bug
+before trusting a clean result** — the first arity-check regex written for this silently skipped
+every method declared without an access modifier and reported clean.
 
 ## Y3 — Input pipeline template `[default-ok D9/D12]`
 
@@ -282,16 +378,40 @@ commit each.
 
 ## Starting prompt (new Claude Code session)
 
+Y0, Y1 and Y2 are done — do **not** re-derive them. Use this prompt as-is:
+
 ```
-Read Docs/UnifiedSystems/AUDIT.md (method + evidence), Docs/UnifiedSystems/YASH.md
-(my work list), and Docs/UnifiedSystems/GARRETT.md §1 (decision gates — unmarked
-decisions mean the recommended default applies only to [default-ok] items; [hard-gate]
-items wait). Start with Y0.1 and Y0.2, one item per commit on a
-claude/unified-yash-<item> branch off bleeding-edge. Before every deletion or de-wire,
-re-verify the AUDIT claim with a guid grep (.cs.meta guid across *.prefab/*.unity/
-*.asset) and a repo-wide class-name grep — line numbers may have drifted. Follow
+Continue the unified-systems refactor on branch claude/unified-yash-refactor-9sc0ws
+(already pushed, merged up to bleeding-edge 6f263c22).
+
+Read first: Docs/UnifiedSystems/YASH.md "Program status at a glance" (what is done,
+what is left, known non-blocking issues), then AUDIT.md (method + evidence) and
+GARRETT.md §1 (decision gates — unmarked decisions mean the recommended default
+applies only to [default-ok] items; [hard-gate] items wait).
+
+Y0, Y1, Y2 and the C8-C12 retirement wave are EXECUTED. Do not re-plan them. Y2's
+C1/C2 bullets are superseded by C9/C10 — read the note under them before believing
+anything about Cellular Duel or Wildlife Blitz.
+
+FIRST, before any new work: the branch is verified statically but NOT in the editor
+beyond steps 1-6. Ask the owner to run Docs/UnifiedSystems/SOLO_RETIREMENT_TESTS.md
+steps 12-21 and 24-34, or run what you can, and fix what falls out. The two merges
+touched every game scene.
+
+THEN pick up Y3 (input pipeline template, [default-ok D9/D12]) or Y5/Y6/Y8.1 — all
+[default-ok]. Y4 and Y7 are hard-gated on Garrett's markup; do not start them.
+
+Discipline: one item per commit; before every deletion or de-wire re-verify with a
+guid grep (.cs.meta guid across *.prefab/*.unity/*.asset) and a repo-wide class-name
+grep — AUDIT line numbers have drifted a long way. Follow
 Docs/ScoringSystem/REFACTOR.md ground rules (SOAP-first, fail-loud, no new statics or
-singletons, no temporary fixes). For anything touching Joust/CrystalCapture/HexRace
-scenes, run the MPPM checks in Docs/ScoringSystem/TESTS.md before pushing. Do not
-start Y2 until Garrett has marked D19 and D16 is resolved.
+singletons, no temporary fixes and no tombstones for retired content). For anything
+touching Joust/CrystalCapture/HexRace scenes run the MPPM checks in
+Docs/ScoringSystem/TESTS.md before pushing. Push only to
+claude/unified-yash-refactor-9sc0ws; do not open a PR unless asked.
+
+If you merge bleeding-edge again, read the "Merge hazards" note under Y2 first — the
+real defects hide in clean auto-merges (this branch's signature + upstream's body),
+not in conflict markers, and any detector you write must be proven to fire on a known
+bug before you trust it reporting clean.
 ```

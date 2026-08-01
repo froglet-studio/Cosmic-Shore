@@ -29,6 +29,28 @@ These come from the project owner and govern **every** item below:
 
 ---
 
+> **The unified path goal is MET (2026-07-25, `claude/unified-yash-refactor-9sc0ws`).** All
+> **six** domain modes — HexRace, Joust, Crystal Capture, NucleusRush, AstroLeague and Rampage —
+> now end through the one `MultiplayerDomainGamesController.SyncFinalResults` template
+> (score assignment → sort → aggregate → snapshot → `SetResults` → `Winner*` → `HasNoWinner` →
+> `InvokeWinnerCalculated` → `InvokeMiniGameEnd`). No mode reimplements the tail, and there is no
+> `IsMultiplayerMode` fork left to remove — the property itself was deleted in C5.
+>
+> Rampage was the last holdout: it arrived from `bleeding-edge` with a hand-copied tail written
+> before the Y1.2 hoist existed, and was folded onto the template on arrival (commit `0243abb3`).
+> Doing so also fixed two latent defects the copy carried — it never wrote `gameData.HasNoWinner`,
+> and it wrote `Winner*` **before** `SetResults`, the inverse of the order that stops a DNF
+> rendering as VICTORY.
+>
+> **If you add a seventh domain mode, do not hand-write an end-game tail.** Set
+> `HasEndGame => false`, resolve the winning domain in `OnTurnEndedCustom`, and call
+> `SyncFinalResults(domain, finishTime)`. The template owns everything after that.
+>
+> Still unverified in the editor: B17's engine check and the per-mode regression runs
+> (`Docs/UnifiedSystems/SOLO_RETIREMENT_TESTS.md` steps 13–17, 20–21, 29–30, 34).
+
+---
+
 ## Open design questions (agree before coding)
 
 ### Q1 — ✅ RESOLVED by owner 2026-07-20: solo modes retired outright; flag deleted (see R1)

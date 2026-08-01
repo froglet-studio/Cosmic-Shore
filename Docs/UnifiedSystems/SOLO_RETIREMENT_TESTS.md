@@ -10,6 +10,16 @@ against it. (C10 retired Wildlife Blitz: steps 8-11 and 23 are struck.)
 Legend: `[x]` verified by owner · `[ ]` pending · ~~struck~~ = obsolete (feature retired
 after the step was written; do not test).
 
+> **Status 2026-07-25 — 6 of 33 live steps verified.** Steps 1–6 passed in the editor on
+> 2026-07-21; everything since (C9–C12, Y0, and BOTH `bleeding-edge` merges) has been verified
+> **statically only** — guid greps, deleted-symbol sweeps, scene/YAML lint, build-settings
+> resolution. That catches dangling references and compile breaks; it cannot catch wrong
+> gameplay values, a broken end-game sequence, or a HUD that no longer binds. Steps 12–21 and
+> 24–37 are the outstanding work, and they gate starting Y3+.
+>
+> Highest-value first if time is short: **34** (silent failure mode), **29/30** (the two merge
+> unions), **35** (compile), then **13–17** (per-mode regression).
+
 ## Setup
 
 - [x] **1.** Pull the branch, open in Unity, let it compile — zero compile errors. *(verified 2026-07-21)*
@@ -95,6 +105,37 @@ branch alone.
   GameObject in `Bootstrap.unity`.
 - [ ] **33.** Build settings: File → Build Settings lists 13 scenes, all resolving (no
   `<missing>` rows), including `MinigameRampage` and `BenchmarkStressTest`.
+
+## Part F — Second `bleeding-edge` merge (M4, 2026-07-25)
+
+- [ ] **34.** **HexRace per-intensity laps** — the highest-value check on this branch, because
+  a failure here is silent (no error, just wrong pacing). Upstream added `lapsPerIntensity` to
+  the non-network monitor base that Y1.3 had collapsed away; the field was ported by hand onto
+  `NetworkCrystalCollisionTurnMonitor`. Confirm the crystal target per intensity:
+
+  | Intensity | Waypoints × laps | Expected target |
+  |---|---|---|
+  | 1 | 8 × 3 | **24** |
+  | 2 | 10 × 3 | **30** |
+  | 3 | 28 × 2 | **56** |
+  | 4 | 27 × 2 | **54** |
+
+  If intensities 3–4 ask for ~84/81 instead, the port did not take and the scene fell back to the
+  flat `optionalLaps` — check that the monitor's inspector shows a **Laps Per Intensity** list of
+  `[3,3,2,2]`.
+
+- [ ] **35.** Compile clean on a fresh reload. Two CS0103s from `isMultiplayer` were fixed
+  (`GameDataSO.InvokeGameLaunch`, `MultiplayerMiniGameControllerBase.SyncGameConfigToClients_ClientRpc`).
+  Any further "does not exist in the current context" error is the same merge hazard in a third
+  place — report the exact message rather than working around it.
+
+- [ ] **36.** Cloud profile still loads after the Cloud Save schema swap (`ModeStatsCloudData` /
+  `ModeStatsRepository` replaced the per-mode profile family): Profile screen shows stats, and
+  Tools → Log Control → UGS shows a populated **Mode Stats** section. Old per-mode cloud buckets
+  are gone by design; historical values may not carry over.
+
+- [ ] **37.** Hangar **Train** button no-ops for every vessel (lists are intentionally empty after
+  C6/M3) — it must not throw. See the note in Part E's preamble.
 
 ## Throughout
 
