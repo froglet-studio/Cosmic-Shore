@@ -346,7 +346,11 @@ namespace CosmicShore.Gameplay
         {
             bool domainOwned = ownDomain is Domains.Jade or Domains.Ruby or Domains.Gold;
             if (!domainOwned || !_themeManagerData) return modelData.defaultMaterial;
-            return _themeManagerData.GetTeamCrystalMaterial(ownDomain, index) ?? modelData.defaultMaterial;
+
+            // Unity's implicit bool, not ?? - a destroyed material is FAKE-null, which ?? happily
+            // passes through, and the lerp would then bail and strand the crystal on inactiveMaterial.
+            var teamMaterial = _themeManagerData.GetTeamCrystalMaterial(ownDomain, index);
+            return teamMaterial ? teamMaterial : modelData.defaultMaterial;
         }
 
         public void ChangeDomain(Domains newDomain, float duration = -1)

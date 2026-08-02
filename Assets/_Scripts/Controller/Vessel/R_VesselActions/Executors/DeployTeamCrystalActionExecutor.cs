@@ -40,13 +40,11 @@ namespace CosmicShore.Gameplay
         Tween _ghostTween;
         MaterialPropertyBlock _fadeBlock;
 
-        IVessel _ship;
         IVesselStatus _status;
 
         // The SO carries the tuning, but it only reaches us through Begin/Commit. The HUD polls
         // from frame zero, so resolve it lazily off the action handler the first time anything asks.
         DeployTeamCrystalActionSO _so;
-        bool _soSearched;
         static readonly List<ShipActionSO> s_boundScratch = new();
 
         // Charge stack. _charges is what the pilot is holding right now; the recharge clock refills
@@ -55,27 +53,27 @@ namespace CosmicShore.Gameplay
         float _rechargeEndTime;
         float _activeCooldown;
 
+        // No null guard on the SOAP channel: a missing reference must fail loud, not silently
+        // strand the preview past the end of a turn.
         void OnEnable()
         {
-            if (OnMiniGameTurnEnd) OnMiniGameTurnEnd.OnRaised += OnTurnEndOfMiniGame;
+            OnMiniGameTurnEnd.OnRaised += OnTurnEndOfMiniGame;
         }
 
         void OnDisable()
         {
-            if (OnMiniGameTurnEnd) OnMiniGameTurnEnd.OnRaised -= OnTurnEndOfMiniGame;
+            OnMiniGameTurnEnd.OnRaised -= OnTurnEndOfMiniGame;
             End();
         }
 
         public override void Initialize(IVesselStatus shipStatus)
         {
             _status = shipStatus;
-            _ship = shipStatus.Vessel;
 
             // Fresh vessel, fresh stack. The SO may differ after a class swap, so re-resolve it.
             _charges = -1;
             _activeCooldown = 0f;
             _so = null;
-            _soSearched = false;
         }
 
         // ---------------- HUD surface ----------------
@@ -122,7 +120,7 @@ namespace CosmicShore.Gameplay
         public void Begin(DeployTeamCrystalActionSO so, IVesselStatus status)
         {
             if (so) _so = so;
-            if (_ghostCrystal || !crystalPrefab || status?.Vessel?.Transform == null) return;
+            if (!so || _ghostCrystal || !crystalPrefab || status?.Vessel?.Transform == null) return;
 
             // Out of crystals: no preview at all, so the cooldown is legible from the cockpit and
             // not just from the HUD.
@@ -328,18 +326,21 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Finds this vessel's crystal action among its own bindings. The action handler builds its
-        /// maps AFTER initialising executors, so this cannot happen in Initialize — it runs once, on
-        /// the first access that beats the first deploy (i.e. the HUD's).
+        /// maps AFTER initialising executors, so this cannot happen in Initialize — it runs on the
+        /// first access that beats the first deploy (i.e. the HUD's).
+        ///
+        /// It gives up only on SUCCESS, never on the first attempt. R_VesselActionHandler.Initialize
+        /// calls InitializeAll on the executors BEFORE it populates the binding maps, so an early
+        /// query lands in a window where the maps are still empty — latching there would pin _so
+        /// null for the life of the vessel and leave the HUD reporting "always ready".
         /// </summary>
         DeployTeamCrystalActionSO ResolveSo()
         {
             if (_so) return _so;
-            if (_soSearched) return null;
 
             var handler = _status?.ActionHandler;
             if (!handler) return null;
 
-            _soSearched = true;
             s_boundScratch.Clear();
             foreach (InputEvents inputEvent in Enum.GetValues(typeof(InputEvents)))
                 handler.CollectBoundActions(inputEvent, s_boundScratch);

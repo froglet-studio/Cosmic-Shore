@@ -42,6 +42,9 @@ namespace CosmicShore.Gameplay
         Resource _energy;
         Resource _driftBoost;
 
+        // True only for a local human pilot's Dolphin - the one cockpit that actually gets drawn.
+        bool _drawGauges;
+
         public override void Initialize(IVesselStatus vesselStatus)
         {
             base.Initialize(vesselStatus);
@@ -50,6 +53,12 @@ namespace CosmicShore.Gameplay
 
             _status = vesselStatus;
             _resources = vesselStatus?.ResourceSystem;
+
+            // Cleared up front: a re-init can hand this controller an AI or remote pilot, and a
+            // stale true would let OnEnable resume driving a hidden HUD.
+            _drawGauges = false;
+            Unbind();
+
             if (_resources == null || view == null) return;
 
             // Remote and AI vessels have no cockpit to draw.
@@ -59,49 +68,61 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
+            _drawGauges = true;
             _energyIndex = ResolveResource(energyResourceName, energyResourceIndex);
             _driftBoostIndex = ResolveResource(driftBoostResourceName, driftBoostResourceIndex);
 
-            view.Initialize();
+            // base.Initialize already ran view.Initialize() on this same component - do not run it
+            // twice, it would reset the pip row and the jaw gape a second time.
 
-            // Bind the PER-RESOURCE event, not the system-level OnResourceChanged. Both exist and
-            // they are not equivalent: ChargeBoostActionExecutor fills the boost meter by assigning
-            // Resource.CurrentAmount directly, which raises only the per-resource event — a gauge
-            // hung off the index-based one would sit frozen through every drift.
-            _energy = Bind(_energyIndex, HandleEnergyChanged);
-            _driftBoost = Bind(_driftBoostIndex, HandleDriftBoostChanged);
+            // A vessel swap re-runs Initialize on a live controller, so detach before attaching or
+            // every handler fires twice and OnDisable's single -= only removes one of them.
+            Rebind();
 
-            ExplosionImpactor.OnBlastResolved += HandleBlastResolved;
-
+            var hull = vesselStatus.Vessel?.Transform
+                ? vesselStatus.Vessel.Transform.GetComponentInChildren<RiptideAnimation>(true)
+                : null;
             _crystalExecutor = vesselStatus.Vessel?.Transform
                 ? vesselStatus.Vessel.Transform.GetComponentInChildren<DeployTeamCrystalActionExecutor>(true)
                 : null;
 
+            // One source for the gape: the HULL's authored max angle. The cockpit jaws and the ship's
+            // own jaws are showing the same thing - the half-angle of the next blast - so they must
+            // not drift apart through two separately-authored numbers.
+            if (hull) view.SetMaxJawAngle(hull.MaxJawAngleDegrees);
+
             SeedFromResources();
         }
 
-        // Symmetric with OnDisable, so a disable/enable cycle re-binds instead of silently leaving
-        // the gauges dead. A no-op before Initialize - there are no resources to bind to yet.
-        void OnEnable()
+        void Rebind()
         {
-            if (_resources == null || view == null) return;
-            _energy ??= Bind(_energyIndex, HandleEnergyChanged);
-            _driftBoost ??= Bind(_driftBoostIndex, HandleDriftBoostChanged);
-            ExplosionImpactor.OnBlastResolved -= HandleBlastResolved;
+            Unbind();
+            _energy = Bind(_energyIndex, HandleEnergyChanged);
+            _driftBoost = Bind(_driftBoostIndex, HandleDriftBoostChanged);
             ExplosionImpactor.OnBlastResolved += HandleBlastResolved;
         }
 
-        void OnDisable()
+        void Unbind()
         {
-            // Detach from the resources we actually attached to, not by re-deriving indices - the
-            // vessel may already be tearing down.
             if (_energy != null) _energy.OnResourceChange -= HandleEnergyChanged;
             if (_driftBoost != null) _driftBoost.OnResourceChange -= HandleDriftBoostChanged;
             _energy = null;
             _driftBoost = null;
-
             ExplosionImpactor.OnBlastResolved -= HandleBlastResolved;
         }
+
+        // Symmetric with OnDisable, so a disable/enable cycle re-binds instead of silently leaving
+        // the gauges dead. Gated on _drawGauges, which Initialize only sets for a LOCAL human
+        // pilot - an AI or remote Dolphin must not start driving a hidden HUD on re-enable.
+        void OnEnable()
+        {
+            if (!_drawGauges || _resources == null || view == null) return;
+            Rebind();
+        }
+
+        // Detach from the resources we actually attached to, not by re-deriving indices - the
+        // vessel may already be tearing down.
+        void OnDisable() => Unbind();
 
         Resource Bind(int index, Resource.ResourceUpdateDelegate handler)
         {

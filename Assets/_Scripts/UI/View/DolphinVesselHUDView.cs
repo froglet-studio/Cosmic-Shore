@@ -153,7 +153,10 @@ namespace CosmicShore.UI
                     break;
                 case Element.Mass:  _driftIconRestScale = rest; break;
                 case Element.Space: _blastIconRestScale = rest; break;
-                case Element.Time:  _jawRestScale = rest; break;
+                case Element.Time:
+                    _jawRestScale = rest;
+                    ApplyJawRestScale(); // the jaws are driven by rotation, so nothing else re-scales them
+                    break;
             }
         }
 
@@ -337,6 +340,29 @@ namespace CosmicShore.UI
             _currentJawAngle = angle;
             if (jawUpper) jawUpper.localRotation = Quaternion.Euler(0f, 0f, angle);
             if (jawLower) jawLower.localRotation = Quaternion.Euler(0f, 0f, -angle);
+            ApplyJawRestScale();
+        }
+
+        /// <summary>
+        /// Parks both jaw halves at the Time slot's current rest scale, so the level-5 upgrade bump
+        /// survives every gape change. Without this the jaws are the one icon in the row whose
+        /// upgrade scale is never applied.
+        /// </summary>
+        void ApplyJawRestScale()
+        {
+            if (jawUpper) jawUpper.localScale = _jawRestScale;
+            if (jawLower) jawLower.localScale = _jawRestScale;
+        }
+
+        /// <summary>
+        /// Adopts the HULL's authored gape as this icon's maximum, so the cockpit jaws and the
+        /// ship's own jaws open by the same angle — they are showing the same quantity (the
+        /// half-angle of the next blast) and must not drift apart through two authored numbers.
+        /// </summary>
+        public void SetMaxJawAngle(float degrees)
+        {
+            if (degrees <= 0f) return;
+            maxJawAngle = degrees;
         }
 
         // ---------------------------------------------------------------
