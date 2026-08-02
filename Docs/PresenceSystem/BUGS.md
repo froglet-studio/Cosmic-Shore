@@ -17,11 +17,77 @@ Statuses: 🔴 open · 🟡 investigating · 🟢 fixed (commit) · ⚪ deferred
 | B6 | TC3 NRE (`WrappedLobbyService`) + empty online/request lists | Medium | 🔴 |
 | B11 | Presence stuck at `Announced` - peers render "CONNECTING…" forever | High (root-caused) | 🟢 `a510bd51` (needs Editor retest) |
 | B12 | Explicit leave took ~30 s to remove the player | High (root-caused) | 🟢 `a510bd51` (needs Editor retest) |
+| B13 | Relay 500 on boot bricks the loading splash (no retry, no recovery) | High (root-caused) | 🟢 (needs Editor retest) |
 
 > **Working order.** Diagnostics-first. The presence-lobby cluster (B4,
 > B6) is the locked-design area — read `ARCHITECTURE.md` and
 > `../PartySystem/ARCHITECTURE.md` before touching `PresenceLobbyService`
 > or `HostConnectionService`. Do not reintroduce LAZY session creation.
+
+---
+
+## B13. Relay 500 on boot bricks the loading splash — FIXED (unverified)
+
+**Found.** 2026-08-02, intermittently on one MPPM instance at startup.
+
+```
+[Multiplayer]: Internal Server Error: allocation call failure
+SessionException: Failed to create allocation
+  RelayHandler.CreateAllocationAsync
+  → ConnectionModule.CreateConnectionAsync
+  → SessionManager.CreateAsync
+  → PartySessionService.CreateAsync:184
+  → HostConnectionService.EnsurePartySessionAsync:1324
+  → HostConnectionService.EnsureInitializedAsync:867
+  → HostConnectionService.HandleSignedInEvent:806   ← async void, UNHANDLED
+```
+
+Game stays on the loading splash, status "Loading", forever.
+
+**Root cause — the UGS 500 is upstream and transient; the brick is ours.**
+
+1. `IsTransientSessionException` did not match it. It required the OUTER
+   exception to be a `SessionException` (true) and then matched only five
+   message patterns on that outer message — none of which is
+   `"Failed to create allocation"`. It also never walked `InnerException`, where
+   the actual `"Internal Server Error: allocation call failure"` lives. So the
+   retry loop in `CreateAsync` never engaged.
+2. Nothing caught it after that. `EnsurePartySessionAsync` and
+   `EnsureInitializedAsync` both have `finally` **but no `catch`**, so the
+   exception propagated into `async void HandleSignedInEvent` and was reported
+   as unhandled.
+3. Therefore `_eventBus.RaiseHostConnectionEstablished()` never fired — and the
+   auth scene's `LoadMainMenuNetworkedAsync` waits on exactly that signal before
+   loading Menu_Main. Hence the permanent splash.
+4. And it could not self-recover: the state machine was left in `HostingParty`,
+   so `IsInitialized` was true and `IsInPresenceLobby` was true, meaning a
+   re-fired sign-in hit `EnsureInitializedAsync`'s
+   `if (IsInPresenceLobby || _joining) return;` guard and did nothing.
+
+**Fix.**
+- `IsTransientSessionException` walks the `InnerException` chain and treats **any
+  UGS 5xx** (`RequestFailedException.ErrorCode` 500-599) as transient — the
+  general rule the message patterns were specific instances of — plus explicit
+  matches for `Failed to create allocation`, `allocation call failure`,
+  `Internal Server Error`. `CreateAsync` already had a transient branch with 5
+  exponential retries (1+2+4+8+16 s), so this alone makes the common case
+  self-heal.
+- `EnsurePartySessionAsync` catches, logs with NetDiag, and raises
+  `OnHostConnectionLost`. `BootStatusBroadcaster` listens for that and swaps the
+  splash to the **Retry** surface, whose button routes back via
+  `bootStatusRetryRequestedEvent → HandleBootStatusRetryRequested →
+  EnsurePartySessionAsync`. The state machine is deliberately left in
+  `HostingParty`: `IsHostingParty` is false with no session, so the retry
+  re-enters cleanly.
+- `EnsureInitializedAsync` gains a matching backstop for everything before the
+  session step (profile wait, identity sync, lobby join).
+
+**The rule this encodes.** Nothing on the boot path may throw into an
+`async void`. An unhandled boot exception is indistinguishable from a hang.
+
+**Known limitation.** Worst-case retry budget is ~31 s, during which the splash
+still reads "Loading" with no indication that a retry is in progress. Surfacing
+"retrying…" is a follow-up.
 
 ---
 

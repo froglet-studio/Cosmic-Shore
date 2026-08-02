@@ -382,18 +382,48 @@ namespace CosmicShore.Gameplay
         {
             if (e is not SessionException) return false;
 
-            // NRE-flavored transient (null ref inside UGS SDK on lobby events subscription)
-            if (e.InnerException is NullReferenceException) return true;
+            // Walk the chain: UGS wraps the underlying failure, so the detail that
+            // identifies it as transient is usually on an inner exception rather
+            // than the SessionException we were handed.
+            for (var current = e; current != null; current = current.InnerException)
+            {
+                // NRE-flavored transient (null ref inside UGS SDK on lobby events subscription)
+                if (current is NullReferenceException) return true;
 
-            var msg = e.Message ?? string.Empty;
-            if (msg.IndexOf("Object reference",        StringComparison.OrdinalIgnoreCase) >= 0) return true;
+                // ANY UGS 5xx is transient by definition: the request was
+                // well-formed and the service failed to serve it, so the only
+                // sensible response is to try again. This is the general rule the
+                // message patterns below are specific instances of.
+                if (current is Unity.Services.Core.RequestFailedException rfe &&
+                    rfe.ErrorCode >= 500 && rfe.ErrorCode < 600)
+                    return true;
 
-            // Lobby-events / Wire-subscription transients (error code 23006).
-            // These originate in LobbyHandler.SubscribeToLobbyEventsAsync after the
-            // lobby is created server-side, so retrying CreateSessionAsync is safe.
-            if (msg.IndexOf("lobby service for events", StringComparison.OrdinalIgnoreCase) >= 0) return true;
-            if (msg.IndexOf("Error Code[23006]",        StringComparison.OrdinalIgnoreCase) >= 0) return true;
-            if (msg.IndexOf("valid Lobby ID",           StringComparison.OrdinalIgnoreCase) >= 0) return true;
+                var msg = current.Message ?? string.Empty;
+                if (msg.IndexOf("Object reference",        StringComparison.OrdinalIgnoreCase) >= 0) return true;
+
+                // Lobby-events / Wire-subscription transients (error code 23006).
+                // These originate in LobbyHandler.SubscribeToLobbyEventsAsync after the
+                // lobby is created server-side, so retrying CreateSessionAsync is safe.
+                if (msg.IndexOf("lobby service for events", StringComparison.OrdinalIgnoreCase) >= 0) return true;
+                if (msg.IndexOf("Error Code[23006]",        StringComparison.OrdinalIgnoreCase) >= 0) return true;
+                if (msg.IndexOf("valid Lobby ID",           StringComparison.OrdinalIgnoreCase) >= 0) return true;
+
+                // Relay allocation failure. Observed in the wild as
+                //   SessionException: Failed to create allocation
+                // wrapping "Internal Server Error: allocation call failure" from
+                // RelayHandler.CreateAllocationAsync. Nothing about the request is
+                // wrong - Relay simply failed to hand out an allocation that
+                // moment - and a retry a second later normally succeeds. Before
+                // this matched, the exception escaped CreateAsync, then
+                // EnsurePartySessionAsync, then EnsureInitializedAsync (both of
+                // which have finally-but-no-catch), and finally the async void
+                // HandleSignedInEvent - so the eager session was never created,
+                // OnHostConnectionEstablished never fired, and the boot sat on the
+                // loading splash forever.
+                if (msg.IndexOf("Failed to create allocation", StringComparison.OrdinalIgnoreCase) >= 0) return true;
+                if (msg.IndexOf("allocation call failure",     StringComparison.OrdinalIgnoreCase) >= 0) return true;
+                if (msg.IndexOf("Internal Server Error",       StringComparison.OrdinalIgnoreCase) >= 0) return true;
+            }
 
             return false;
         }

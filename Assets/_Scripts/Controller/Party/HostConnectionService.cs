@@ -822,11 +822,15 @@ namespace CosmicShore.Gameplay
         /// (auth-already-signed-in path) and <see cref="HandleSignedInEvent"/>
         /// (auth-signed-in-after-Start path) - concurrent calls collapse to one.
         ///
-        /// NOTE: party session is intentionally NOT created here. Eager creation
-        /// would burn a Relay allocation per launch and would call
-        /// <c>nm.Shutdown()</c> + <c>StartHost()</c> - destroying and respawning
-        /// every menu vessel. The Relay session is created lazily on first
-        /// invite acceptance via <see cref="AcceptanceSignalService.ScanForSignals"/>.
+        /// <para>
+        /// <b>The party session IS created here, eagerly.</b> Every authenticated
+        /// player hosts their own solo Relay session from menu entry - the locked
+        /// design in <c>Docs/PartySystem/ARCHITECTURE.md</c>. (This comment
+        /// previously described the retired LAZY / on-first-invite model, eight
+        /// lines above the code doing the opposite. Do not reintroduce lazy
+        /// creation: the shutdown-and-recreate cascade it caused is the root of
+        /// every recurring party-invite bug.)
+        /// </para>
         /// </summary>
         private async UniTask EnsureInitializedAsync()
         {
@@ -865,6 +869,21 @@ namespace CosmicShore.Gameplay
                 // Every player always hosts their own solo Relay party session from menu entry.
                 // Creates Relay session and starts NM - vessel spawns when NM is up.
                 await EnsurePartySessionAsync();
+            }
+            catch (Exception e)
+            {
+                // Backstop. EnsurePartySessionAsync now handles its own failures,
+                // so this covers everything BEFORE it - profile wait, identity
+                // sync, lobby join. Nothing on the boot path may throw into the
+                // async void caller (HandleSignedInEvent): that reads as an
+                // unhandled exception and leaves the player on the loading splash
+                // with no error surface and no way forward.
+                Debug.LogError(
+                    $"[HostConnectionService] Initialization FAILED ({e.GetType().Name}): {e.Message} - " +
+                    "surfacing the retry surface.");
+                CSDebug.Log($"[HostConnectionService] NetDiag: class={NetworkDiagnostics.ClassifyException(e)} | {NetworkDiagnostics.GetSnapshot()}");
+
+                _eventBus.RaiseHostConnectionLost();
             }
             finally { _joining = false; }
         }
@@ -1339,6 +1358,39 @@ namespace CosmicShore.Gameplay
                 DebugExtensions.LogColored(
                     $"[HostConnectionService] Solo party session ready: {_partySessionService.ActiveSession?.Id} - InParty, vessel will spawn.",
                     Color.green);
+            }
+            catch (Exception e)
+            {
+                // Session creation failed after PartySessionService exhausted its
+                // retries. This MUST NOT propagate.
+                //
+                // The call chain above is EnsureInitializedAsync ->
+                // HandleSignedInEvent, and both have finally-but-no-catch, so an
+                // escaping exception surfaced as an unhandled async void throw and
+                // simply stopped the boot: OnHostConnectionEstablished never fired,
+                // the auth scene's wait for the Relay-ready signal never completed,
+                // and the player sat on the loading splash indefinitely with no
+                // error and no way forward. Observed with a Relay 500
+                // ("Failed to create allocation").
+                //
+                // Raising HostConnectionLost is the recovery: BootStatusBroadcaster
+                // listens for it and swaps the splash to the Retry surface, whose
+                // button routes back here via bootStatusRetryRequestedEvent ->
+                // HandleBootStatusRetryRequested -> EnsurePartySessionAsync.
+                //
+                // The state machine is deliberately LEFT in HostingParty. That is
+                // exactly what makes the retry clean: IsHostingParty is false (no
+                // session), so the fast-path guard lets us back in, and the
+                // CurrentState check skips a redundant transition. Rolling back to
+                // Disconnected would instead make IsInPresenceLobby false and send
+                // a re-fired sign-in through the whole init again.
+                Debug.LogError(
+                    $"[HostConnectionService] Party session creation FAILED ({e.GetType().Name}): {e.Message} - " +
+                    "surfacing the retry surface. The player is in the presence lobby but has no Relay session, " +
+                    "so no vessel will spawn until this succeeds.");
+                CSDebug.Log($"[HostConnectionService] NetDiag: class={NetworkDiagnostics.ClassifyException(e)} | {NetworkDiagnostics.GetSnapshot()}");
+
+                _eventBus.RaiseHostConnectionLost();
             }
             finally
             {
