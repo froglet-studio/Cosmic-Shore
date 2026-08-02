@@ -141,18 +141,10 @@ namespace CosmicShore.ECS
     }
 
     // -- Explosion set (ExplodingBlockGraph): debris flight clock --
-
-    // OBJECT-space flight velocity, converted ONCE on the CPU at stamp time
-    // (the entity pose is frozen at the stamp, so the conversion is exact).
-    // The shader does offset = _ExplodeVelocityOS * t with zero matrix math —
-    // the earlier GPU-side TransformWorldToObjectDir read the wrong per-instance
-    // inverse under DOTS instancing and sent debris in skewed directions.
-    // (_Velocity stays WORLD-space: it is also the legacy shatter-spin axis.)
-    [MaterialProperty("_ExplodeVelocityOS")]
-    public struct PrismExplodeVelocityOSOverride : IComponentData
-    {
-        public float3 Value;
-    }
+    // The flight velocity is the existing WORLD-space _Velocity (also the
+    // shatter-spin axis) — ONE stamped vector; the world->object conversion is
+    // GPU-side inside PrismExplosionClock (raw inverse-model multiply, NOT the
+    // normalizing Direction-mode Transform node — see PrismClockAnimation.hlsl).
 
     [MaterialProperty("_ExplodeStartTime")]
     public struct PrismExplodeStartTimeOverride : IComponentData

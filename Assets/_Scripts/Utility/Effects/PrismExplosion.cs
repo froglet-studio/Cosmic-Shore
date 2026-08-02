@@ -225,24 +225,27 @@ namespace CosmicShore.Utility
                     !_renderer.sharedMaterial.HasProperty(ExplodeStartTimeId))
                     PrismClockDiagnostics.WarnUnwiredMaterial(_renderer.sharedMaterial, "_ExplodeStartTime", this);
 
-                // Flight velocity in OBJECT space, converted once here against the
-                // pose the entity is frozen at — the shader does offset = v·t with
-                // no per-instance matrix reads (exact direction by construction).
-                Vector3 objVelocity = transform.InverseTransformVector(velocity);
-                var objVel3 = new Unity.Mathematics.float3(objVelocity.x, objVelocity.y, objVelocity.z);
-
+                // ONE stamped vector: the WORLD-space velocity. The world->object
+                // conversion for the flight offset happens on the GPU inside
+                // PrismExplosionClock (raw inverse-model multiply) — no CPU-side
+                // matrix math on the animation path, and the shatter-spin axis
+                // chain reads the same vector.
                 PrismRenderService.StampExplosionClock(in RenderHandle,
                     PrismClock.Now, speed, MaxDuration,
-                    new Unity.Mathematics.float3(velocity.x, velocity.y, velocity.z),
-                    in objVel3);
+                    new Unity.Mathematics.float3(velocity.x, velocity.y, velocity.z));
                 SyncRenderTransform();
 
                 // Culling envelope: bounds must cover the WHOLE deterministic flight
                 // (the entity matrix never moves), else debris culls against the
-                // unexploded box. Reset first — pooled reuse must not compound.
+                // unexploded box. RenderBounds is a CPU-owned Entities Graphics
+                // structure (frustum culling runs on the CPU), so this one-shot
+                // object-space sizing at the stamp is the envelope's home — it is
+                // initial-conditions data, not animation. Reset first: pooled reuse
+                // must not compound envelopes run over run.
                 if (_meshFilter != null)
                     PrismRenderService.ResetBoundsToMesh(in RenderHandle, _meshFilter.sharedMesh);
-                var objDisp = objVel3 * MaxDuration;
+                Vector3 objDispV = transform.InverseTransformVector(velocity) * MaxDuration;
+                var objDisp = new Unity.Mathematics.float3(objDispV.x, objDispV.y, objDispV.z);
                 float pad = 4f + 0.25f * Unity.Mathematics.math.length(objDisp);
                 PrismRenderService.ExpandBoundsForClockAnimation(in RenderHandle, in objDisp, pad);
                 if (_hasPendingTeamColors)

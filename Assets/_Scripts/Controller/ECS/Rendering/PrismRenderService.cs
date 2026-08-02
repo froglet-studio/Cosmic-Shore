@@ -411,7 +411,6 @@ namespace CosmicShore.ECS
                         em.AddComponentData(prototype, new PrismExplodeStartTimeOverride { Value = 0f });
                         em.AddComponentData(prototype, new PrismExplodeSpeedOverride { Value = 0f });
                         em.AddComponentData(prototype, new PrismExplodeDurationOverride { Value = 0f });
-                        em.AddComponentData(prototype, new PrismExplodeVelocityOSOverride { Value = float3.zero });
                         break;
                     case PrismRenderOverrideSet.Implosion:
                         em.AddComponentData(prototype, new PrismSuctionStartTimeOverride { Value = 0f });
@@ -722,12 +721,13 @@ namespace CosmicShore.ECS
 
         /// <summary>Stamps an explosion's flight: offset/amount/opacity become pure
         /// functions of the clock. The entity transform must already hold the debris'
-        /// initial pose — it never moves again. velocity is WORLD-space (also the
-        /// legacy shatter-spin axis); velocityObjectSpace is the SAME velocity
-        /// converted on the CPU against that frozen pose — the shader flies the
-        /// debris with zero matrix math (offset = VelocityOS · t).</summary>
+        /// initial pose — it never moves again. velocity is the ONE stamped vector,
+        /// WORLD-space, feeding both the flight offset and the shatter-spin axis;
+        /// the world→object conversion happens on the GPU inside PrismExplosionClock
+        /// (raw inverse-model multiply — no CPU-side matrix math, and NOT the
+        /// normalizing Direction-mode Transform node).</summary>
         public static bool StampExplosionClock(in PrismRenderHandle handle, float startTime, float speed, float duration,
-            in float3 velocity, in float3 velocityObjectSpace)
+            in float3 velocity)
         {
             if (!ClockAnimationEnabled || !IsUsable(in handle)) return false;
             var em = _world.EntityManager;
@@ -736,8 +736,6 @@ namespace CosmicShore.ECS
             em.SetComponentData(handle.Entity, new PrismExplodeSpeedOverride { Value = speed });
             em.SetComponentData(handle.Entity, new PrismExplodeDurationOverride { Value = duration });
             em.SetComponentData(handle.Entity, new PrismVelocityOverride { Value = velocity });
-            if (em.HasComponent<PrismExplodeVelocityOSOverride>(handle.Entity))
-                em.SetComponentData(handle.Entity, new PrismExplodeVelocityOSOverride { Value = velocityObjectSpace });
             return true;
         }
 

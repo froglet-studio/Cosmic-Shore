@@ -86,16 +86,18 @@ void PrismColorLerp_float(float Clock, float StartTime, float Duration,
 // Duration <= 0 -> legacy fallback: passes through the CPU-fed _ExplosionAmount
 // and _Opacity so the un-migrated path AND the TransparentPrismMaterial quirk
 // (live transparent prisms rest on this graph at _ExplosionAmount = 0) keep
-// rendering identically. VelocityOS is the flight velocity ALREADY IN OBJECT
-// SPACE — converted once on the CPU at stamp time against the entity's frozen
-// pose (PrismExplosion.TriggerExplosion), so the offset here is a pure v·t
-// with no per-instance matrix reads (a GPU-side world->object conversion sent
-// debris in skewed directions under DOTS instancing). The entity transform
-// never moves after the stamp; RenderBounds are expanded at stamp to cover
-// the whole flight envelope.
+// rendering identically. Velocity is the WORLD-space flight velocity — the ONE
+// stamped vector, shared with the shatter-spin axis chain — and the world->
+// object conversion happens HERE, on the GPU, as a raw (float3x3) inverse-model
+// multiply. NOT Shader Graph's Direction-mode Transform node: that emits
+// TransformWorldToObjectDir, which NORMALIZES — the magnitude is destroyed and
+// the direction re-skews under the prism's non-uniform scale (the wrong-vector
+// bug). The raw multiply is the exact linear map; no CPU-side matrix math.
+// The entity transform never moves after the stamp; RenderBounds are expanded
+// at stamp to cover the whole flight envelope.
 // -----------------------------------------------------------------------------
 void PrismExplosionClock_float(float Clock, float StartTime, float Speed, float Duration,
-    float3 VelocityOS, float LegacyAmount, float LegacyOpacity,
+    float3 Velocity, float LegacyAmount, float LegacyOpacity,
     out float Amount, out float Opacity, out float3 ObjectOffset)
 {
     if (Duration <= 0.0)
@@ -108,7 +110,12 @@ void PrismExplosionClock_float(float Clock, float StartTime, float Speed, float 
     float t = max(Clock - StartTime, 0.0);
     Amount = Speed * t;
     Opacity = saturate(1.0 - t / Duration);
-    ObjectOffset = VelocityOS * t;
+#if defined(SHADERGRAPH_PREVIEW)
+    ObjectOffset = Velocity * t;
+#else
+    // Full inverse-model linear transform, unnormalized (see header comment).
+    ObjectOffset = mul((float3x3)GetWorldToObjectMatrix(), Velocity * t);
+#endif
 }
 
 // -----------------------------------------------------------------------------

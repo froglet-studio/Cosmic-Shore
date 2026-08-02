@@ -50,9 +50,6 @@
         },
         {
             "m_Id": "3b61caab0963427c97481f062011d353"
-        },
-        {
-            "m_Id": "ed57154c3fd94f5cb451215434f6fd64"
         }
     ],
     "m_Keywords": [],
@@ -161,9 +158,6 @@
         },
         {
             "m_Id": "3628791843de4f48aa7b43461dd578e3"
-        },
-        {
-            "m_Id": "38d4ccc9333348e39b02e85dbf98773e"
         }
     ],
     "m_GroupDatas": [],
@@ -536,7 +530,7 @@
         {
             "m_OutputSlot": {
                 "m_Node": {
-                    "m_Id": "38d4ccc9333348e39b02e85dbf98773e"
+                    "m_Id": "007d224179f3455c9e35243b4742602d"
                 },
                 "m_SlotId": 0
             },
@@ -2207,9 +2201,6 @@
         },
         {
             "m_Id": "3b61caab0963427c97481f062011d353"
-        },
-        {
-            "m_Id": "ed57154c3fd94f5cb451215434f6fd64"
         }
     ]
 }
@@ -3603,10 +3594,10 @@
     "m_Type": "UnityEditor.ShaderGraph.Vector3MaterialSlot",
     "m_ObjectId": "f4099cb6634b4a4bb90c2cd1614f12cd",
     "m_Id": 4,
-    "m_DisplayName": "VelocityOS",
+    "m_DisplayName": "Velocity",
     "m_SlotType": 0,
     "m_Hidden": false,
-    "m_ShaderOutputName": "VelocityOS",
+    "m_ShaderOutputName": "Velocity",
     "m_StageCapability": 3,
     "m_Value": {
         "x": 0.0,
@@ -4210,93 +4201,5 @@
     "m_PreviewMode": 0,
     "m_CustomColors": {
         "m_SerializableColors": []
-    }
-}
-
-
-{
-    "m_SGVersion": 1,
-    "m_Type": "UnityEditor.ShaderGraph.Internal.Vector3ShaderProperty",
-    "m_ObjectId": "ed57154c3fd94f5cb451215434f6fd64",
-    "m_Guid": {
-        "m_GuidSerialized": "bf64d1a3-a0ae-464f-b631-56c02d498f16"
-    },
-    "m_Name": "ExplodeVelocityOS",
-    "m_DefaultRefNameVersion": 1,
-    "m_RefNameGeneratedByDisplayName": "ExplodeVelocityOS",
-    "m_DefaultReferenceName": "_ExplodeVelocityOS",
-    "m_OverrideReferenceName": "",
-    "m_GeneratePropertyBlock": true,
-    "m_UseCustomSlotLabel": false,
-    "m_CustomSlotLabel": "",
-    "m_DismissedVersion": 0,
-    "m_Precision": 0,
-    "overrideHLSLDeclaration": true,
-    "hlslDeclarationOverride": 3,
-    "m_Hidden": false,
-    "m_Value": {
-        "x": 0.009999999776482582,
-        "y": 0.0,
-        "z": 0.0,
-        "w": 0.0
-    }
-}
-
-{
-    "m_SGVersion": 0,
-    "m_Type": "UnityEditor.ShaderGraph.Vector3MaterialSlot",
-    "m_ObjectId": "14ad0d150e814f87b7f04bf5864f4aed",
-    "m_Id": 0,
-    "m_DisplayName": "ExplodeVelocityOS",
-    "m_SlotType": 1,
-    "m_Hidden": false,
-    "m_ShaderOutputName": "Out",
-    "m_StageCapability": 3,
-    "m_Value": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
-    },
-    "m_DefaultValue": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
-    },
-    "m_Labels": []
-}
-
-{
-    "m_SGVersion": 0,
-    "m_Type": "UnityEditor.ShaderGraph.PropertyNode",
-    "m_ObjectId": "38d4ccc9333348e39b02e85dbf98773e",
-    "m_Group": {
-        "m_Id": ""
-    },
-    "m_Name": "Property",
-    "m_DrawState": {
-        "m_Expanded": true,
-        "m_Position": {
-            "serializedVersion": "2",
-            "x": -2300.0,
-            "y": 1140.0,
-            "width": 180.0,
-            "height": 36.0
-        }
-    },
-    "m_Slots": [
-        {
-            "m_Id": "14ad0d150e814f87b7f04bf5864f4aed"
-        }
-    ],
-    "synonyms": [],
-    "m_Precision": 0,
-    "m_PreviewExpanded": true,
-    "m_DismissedVersion": 0,
-    "m_PreviewMode": 0,
-    "m_CustomColors": {
-        "m_SerializableColors": []
-    },
-    "m_Property": {
-        "m_Id": "ed57154c3fd94f5cb451215434f6fd64"
     }
 }

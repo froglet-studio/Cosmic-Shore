@@ -102,11 +102,10 @@ namespace CosmicShore.Editor
                 Props = new[]
                 {
                     GlobalClock(),
+                    // The flight velocity is the graph's existing world-space _Velocity
+                    // (also the shatter-spin axis) — the world->object conversion is
+                    // GPU-side inside PrismExplosionClock, so no extra property.
                     F("_ExplodeStartTime", 0f), F("_ExplodeSpeed", 0f), F("_ExplodeDuration", 0f),
-                    // OBJECT-space flight velocity, converted once on the CPU at stamp
-                    // time (PrismExplosion.TriggerExplosion). _Velocity stays world-space
-                    // as the legacy shatter-spin axis.
-                    V3("_ExplodeVelocityOS", 0f, 0f, 0f),
                     // Transparent LIVE prisms rest on this graph — the grow trio here
                     // is what lets them bloom instead of snapping (loudly) on spawn.
                     F("_GrowStartTime", 0f), F("_GrowRate", 0f), V3("_GrowStartFrac", 1f, 1f, 1f),

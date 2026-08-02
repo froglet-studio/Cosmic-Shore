@@ -496,7 +496,7 @@ Each animated graph gains clock inputs, all **Hybrid Per Instance**
 | Graph | New per-instance properties | Behavior |
 |---|---|---|
 | `BlockGraph` | `_GrowStartTime`, `_GrowRate` (k), `_GrowStartFrac` (scale fraction at t₀); `_ColorStartTime`, `_ColorDuration`, `_StartBrightColor`, `_StartDarkColor`, `_StartSpread` | Vertex: scale factor `s(t) = 1 − (1−s₀)·exp(−k·(t−t₀))` about the prism origin (the entity's `LocalToWorld` is at FINAL scale from the start). Fragment: colors = `lerp(start, material's authored values, smoothstep((t−t₀)/dur))` — **the target is the bound material's authored colors, so no `_Target*` properties are needed** and the settle swap is just `SetMaterial` (already one-shot). Authored defaults (`_GrowStartFrac = 1`, `_ColorDuration = 0`) make every existing material render the settled end state unstamped. |
-| `ExplodingBlockGraph` | `_ExplodeStartTime`, `_ExplodeSpeed`, `_ExplodeDuration`, `_ExplodeVelocityOS` (keeps `_Velocity` — world-space, still the shatter-spin axis) | Vertex: **object-space** offset `(t−t₀)·_ExplodeVelocityOS` — the velocity is converted world→object ONCE on the CPU at stamp time against the frozen entity pose (`PrismExplosion.TriggerExplosion`), because a GPU-side `TransformWorldToObjectDir` read the wrong per-instance inverse under DOTS instancing and skewed the debris directions. `amount = _ExplodeSpeed·(t−t₀)`; `opacity = 1 − (t−t₀)/_ExplodeDuration`. Entity transform never moves after the stamp; **`RenderBounds` are reset to the mesh then expanded at stamp time to cover the whole flight envelope** (`ResetBoundsToMesh` + `ExpandBoundsForClockAnimation` — without this, debris frustum-culls against the unexploded box). Defaults render the rest state (the transparent-prism quirk keeps working unstamped). |
+| `ExplodingBlockGraph` | `_ExplodeStartTime`, `_ExplodeSpeed`, `_ExplodeDuration` (the flight velocity is the graph's existing world-space `_Velocity` — ONE stamped vector shared with the shatter-spin axis chain) | Vertex: object-space offset computed **on the GPU inside `PrismExplosionClock`** as `mul((float3x3)GetWorldToObjectMatrix(), _Velocity·(t−t₀))` — a raw, unnormalized inverse-model multiply. **Never Shader Graph's Direction-mode Transform node**: it emits `TransformWorldToObjectDir`, which NORMALIZES — magnitude destroyed, direction re-skewed by the prism's non-uniform scale (the wrong-vector bug). No CPU-side matrix math on the animation path. `amount = _ExplodeSpeed·(t−t₀)`; `opacity = 1 − (t−t₀)/_ExplodeDuration`. Entity transform never moves after the stamp; **`RenderBounds` are reset to the mesh then expanded at stamp time to cover the whole flight envelope** (`ResetBoundsToMesh` + `ExpandBoundsForClockAnimation` — bounds are the one CPU-side consumer, because frustum culling itself runs on the CPU; without this, debris culls against the unexploded box). Defaults render the rest state (the transparent-prism quirk keeps working unstamped). |
 | `SuctionGraph` | `_SuctionStartTime`, `_SuctionDuration`, `_SuctionDirection` (grow=−1 / implode=+1), `_GrowDelay` (keeps `_Location`) | `progress(t)` computed in-shader; `_Location` stamped once (moving-target exception per §1 if retained). |
 
 Implementation constraints (verified by the capability audit):
@@ -636,14 +636,19 @@ the prompter's direction.** `ClockAnimationEnabled` is constant `true`; the form
   `{t₀, speed, MaxDuration, velocity, velocityOS}` and shows the entity immediately
   (the stamp IS the correct initial state — no unanimated-mesh flash to hide); the
   entity transform holds the initial pose forever; ONE scheduled `OnEffectComplete`
-  returns it to the pool. Two playtest-found fixes are part of the contract: the
-  flight velocity is converted world→object **once on the CPU at the stamp**
-  (`_ExplodeVelocityOS` — a GPU-side `TransformWorldToObjectDir` reads the wrong
-  per-instance inverse under DOTS instancing and skews debris directions), and
+  returns it to the pool. Two playtest-found fixes are part of the contract:
+  the world→object conversion of the flight velocity happens **on the GPU inside
+  `PrismExplosionClock`** as a raw `(float3x3)GetWorldToObjectMatrix()` multiply —
+  never Shader Graph's Direction-mode Transform node, whose
+  `TransformWorldToObjectDir` NORMALIZES (magnitude destroyed, direction re-skewed
+  by non-uniform scale — the wrong-vector bug); the CPU stamps ONE world-space
+  `_Velocity` shared by the flight offset and the shatter-spin axis chain. And
   `RenderBounds` are **reset to the mesh then expanded to the full flight envelope**
-  at the stamp (`ResetBoundsToMesh` + `ExpandBoundsForClockAnimation` — the entity
-  matrix never moves, so unexpanded bounds frustum-cull the debris against the
-  unexploded box; reset-before-expand keeps pooled reuse from compounding). `PrismImplosion.StartImplosion/StartGrow` stamp `{t₀, duration, ±direction,
+  at the stamp (`ResetBoundsToMesh` + `ExpandBoundsForClockAnimation` — bounds are
+  the one legitimate CPU-side computation, because frustum culling runs on the CPU;
+  the entity matrix never moves, so unexpanded bounds frustum-cull the debris
+  against the unexploded box; reset-before-expand keeps pooled reuse from
+  compounding). `PrismImplosion.StartImplosion/StartGrow` stamp `{t₀, duration, ±direction,
   growDelay, location}`; the **moving convergence target stays live** as the §1
   documented exception — `PrismEffectsManager.clockConvergenceTracking` refreshes
   `_Location` only (one float3 per frame per implosion, self-dropping when the target
@@ -686,14 +691,16 @@ spawn/transition/effect snaps and logs; do all three graphs):**
    existing `_BrightColor` / `_DarkColor` / `_Spread` property nodes; route its
    outputs everywhere those properties fed before.
 2. **ExplodingBlockGraph** — add `_ExplodeStartTime` / `_ExplodeSpeed` /
-   `_ExplodeDuration` (Float 0) and `_ExplodeVelocityOS` (Vector3 0,0,0), all Hybrid
-   Per Instance. Custom Function `PrismExplosionClock` with `VelocityOS` ←
-   `_ExplodeVelocityOS`, `LegacyAmount` ← `_ExplosionAmount` property and
-   `LegacyOpacity` ← `_Opacity` property; its `Amount`/`Opacity` outputs replace the
-   direct property uses; `ObjectOffset` **adds directly to the object-space vertex
-   position** (no Transform node — the velocity arrives already object-space,
-   converted once on the CPU at stamp time; a GPU-side world→object conversion
-   reads the wrong per-instance inverse under DOTS instancing). The stamp site also
+   `_ExplodeDuration` (Float 0, Hybrid Per Instance). Custom Function
+   `PrismExplosionClock` with `Velocity` ← the existing world-space `_Velocity`
+   property (the same node feeding the shatter-spin chain — ONE stamped vector),
+   `LegacyAmount` ← `_ExplosionAmount` property and `LegacyOpacity` ← `_Opacity`
+   property; its `Amount`/`Opacity` outputs replace the direct property uses;
+   `ObjectOffset` **adds directly to the object-space vertex position**. The
+   world→object conversion lives INSIDE the HLSL function (raw
+   `(float3x3)GetWorldToObjectMatrix()` multiply, unnormalized) — **never a
+   Direction-mode Transform node**, whose `TransformWorldToObjectDir` normalizes
+   and skews the vector under non-uniform prism scale. The stamp site also
    resets + expands `RenderBounds` to the flight envelope
    (`PrismRenderService.ResetBoundsToMesh` / `ExpandBoundsForClockAnimation`).
 3. **SuctionGraph** — add `_SuctionStartTime` / `_SuctionDuration` /
@@ -752,7 +759,7 @@ Phase B — migrate the engines (each retires a per-frame pass):
 |---|---|---|
 | B1 | Grow-in → clock (all ~12 feeder paths ride the one engine); gameplay-final-at-start (volume/spatial stamps, clock predicates, `ExecuteOnScaleComplete` → start) | ✅ LIVE (strict, the only path) 2026-08-01 — `PrismScaleManager` retired (empty active set; class deletion in-editor, D2). Graph wiring ✅ (playtest-confirmed smooth). Pending: `HoldColliderAtFullSize` deletion, `CreateBlockCoroutine` window simplification, arena-gate simplification, PhaseThresholds re-baseline |
 | B2 | Color/state transitions → clock lerp (start colors + t₀; target = material authored; end-state material bound at START, settle scheduled) | ✅ LIVE (strict, the only path) 2026-08-01 — `MaterialStateManager` retired (empty active set; class deletion in-editor, D2). Graph wiring ✅ (playtest-confirmed smooth on BlockGraph; transparent-prism color cluster on ExplodingBlockGraph remains a C-phase item) |
-| B3 | Explosion/implosion → clock (stamp `{t₀, velocity, speed, duration}` / `{t₀, duration, direction, delay, location}`) | ✅ LIVE (strict, the only path) 2026-08-01 — moving-target DECIDED as the §1 exception (a snapshot would suck prisms toward where the fauna WAS): progress rides the clock, `PrismEffectsManager` refreshes `_Location` only (one float3/frame) while the target lives. Animation passes retired (never registered; Burst-job dead code + VFX caps delete in-editor, D2). Graph wiring ✅ both graphs; explosion fix round shipped (CPU object-space `_ExplodeVelocityOS` + flight-envelope bounds), suction bounds ship with the wiring (`EncapsulateBoundsPoint`) — both awaiting playtest |
+| B3 | Explosion/implosion → clock (stamp `{t₀, velocity, speed, duration}` / `{t₀, duration, direction, delay, location}`) | ✅ LIVE (strict, the only path) 2026-08-01 — moving-target DECIDED as the §1 exception (a snapshot would suck prisms toward where the fauna WAS): progress rides the clock, `PrismEffectsManager` refreshes `_Location` only (one float3/frame) while the target lives. Animation passes retired (never registered; Burst-job dead code + VFX caps delete in-editor, D2). Graph wiring ✅ both graphs; explosion fix round shipped (GPU-side world→object conversion inside `PrismExplosionClock` — raw inverse-model multiply, never the normalizing Direction-mode Transform — + flight-envelope bounds), suction bounds ship with the wiring (`EncapsulateBoundsPoint`) — both awaiting playtest |
 | B4 | Shield morphs → GPU (vertex-shader bloom/shatter from per-vertex face data + t₀; settled shared-mesh swap already conforms) | ◐ interim shipped 2026-08-01: stellated idle per-prism `Update()` KILLED — both shield tiers now ride the central `PrismOctahedronShieldManager` ticker (`IPrismShieldMorphTicker`), registered only while morphing. GPU morph itself still pending |
 
 Phase C — rogue paths & ecosystem visuals (each is standalone):
