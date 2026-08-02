@@ -53,14 +53,34 @@ timers/decay, gate strictly in the acting system's layer.
 | Space | Yawstery turn rate | **Wide Wake** — near-field skimmer size class up while overcharged (reach/presence) |
 | Time | *(open)* → propose: overcharge decay rate | **Held Charge** — overcharge no longer bleeds between skims (still spent on detonation) |
 
-### Dolphin — "Darts" (charge and release)
+### Dolphin — "Darts" (charge and release) — APPROVED + SHIPPED
 
-| Element | Quantitative (live) | Proposed L5 upgrade |
+The proposal table below was superseded by Garrett's design; the shipped map is
+`Assets/Resources/ElementalAbilityMaps/Dolphin.asset`. **The asset is the record — do not
+re-litigate from the superseded proposal.**
+
+The Dolphin's spine is an ENERGY economy: skimming banks energy, hitting a prism halves it,
+and hitting a crystal spends it ALL at once to release a cone. Energy sets the cone's ANGLE,
+and the hull's jaws open to that same angle so the blast is readable before it fires.
+
+| Element | Quantitative (LIVE) | L5 upgrade (LIVE) |
 |---|---|---|
-| Charge | charge-boost peak | **Shockwave Release** — a full-charge release emits the spherical AOE explosion at the release point (reuses the skyburst spherical prefab, charge-scaled) |
-| Mass | *(open)* → propose: trail prism scale while discharging | **Solid Wake** — discharge trail arrives shielded (Sparrow MASS-5 shape) |
-| Space | *(open)* → propose: skimmer scale | **Slipstream** — skim energy multiplier vs any trail while discharging |
-| Time | charge fill rate | **Instant Draw** — collecting any crystal completes the current charge instantly |
+| Charge | team-crystal recharge ×0.5 at level 10 (`DeployTeamCrystalActionSO.cooldownMultiplierAtFullCharge`, floored by `minCooldown`) | **Twin Seed** — carry TWO team crystals instead of one (`upgradedCharges`), so two can be planted back to back |
+| Mass | drift prism VOLUME (`trailVolume` ElementalFloat 1→2.5 on `VesselPrismController`, cube-root per axis) | **Hard Wake** — drift prisms arrive shielded, gated on `IsDrifting` (`massUpgradeShieldsTrail`, the Squirrel's Heavy Trail machinery) |
+| Space | crystal-impact cone SIZE ×2 at level 10 (`VesselExplosionByCrystalEffectSO._heightMultiplierAtFullSpace`). Scales the blast **self-similarly** — reach and base diameter together — because the half-angle IS baseRadius/height, and energy owns the angle | **Clean Blast** — the cone spares the pilot's own domain (`_spaceUpgradeSparesAllies` → `InitializeStruct.AffectSelfOverride`). Below the unlock the cone is indiscriminate, which is what makes sparing allies worth earning |
+| Time | boost charge RATE while drifting ×1.5 at level 10 (`ChargeBoostActionSO.chargeRateMultiplierAtFullTime`) | **Live Current** — skimming a DANGER prism grants 3× energy (`SkimmerChangeResourceByPrismEffectSO._dangerBonusElement/_dangerBonusMultiplier`; the Squirrel's Live Wire shape — the risk was always there, the reward is now earned) |
+
+All four map `MultiplierAtFullLevel` are pinned to **1** — every scaling above is authored on its
+own SO field. That is not cosmetic: `ChargeBoostActionExecutor` was already consuming the generic
+Charge multiplier for the boost peak and the generic Time multiplier for the charge rate, while
+`VesselTransformer` consumes generic Time for boost SPEED. Reading the map's generic multiplier for
+the new abilities would have driven two unrelated parameters off one element. The boost peak is now
+flat (Charge was reassigned to crystal seeding); give it its own element + field if it should scale
+again.
+
+Superseded proposal (kept for the record): Charge→charge-boost peak / "Shockwave Release",
+Mass→trail scale while discharging / "Solid Wake", Space→skimmer scale / "Slipstream",
+Time→charge fill rate / "Instant Draw".
 
 ### Rhino — "Bulldozer" (slabs + forcefield + ram)
 
