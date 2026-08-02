@@ -176,6 +176,8 @@ namespace CosmicShore.Utility
             }
 
             DiagnosticsHUD.RegisterCommand(CommandName, HandleGridCommand);
+            // Alias: operators consistently type `prisms 50000` — meet them there.
+            DiagnosticsHUD.RegisterCommand("prisms", HandleGridCommand);
             PublishStats();
         }
 
@@ -190,6 +192,7 @@ namespace CosmicShore.Utility
         {
             CancelSpawn();
             DiagnosticsHUD.UnregisterCommand(CommandName);
+            DiagnosticsHUD.UnregisterCommand("prisms");
             DiagnosticsHUD.ClearStats(StatsSection);
         }
 
@@ -357,6 +360,14 @@ namespace CosmicShore.Utility
             catch (OperationCanceledException)
             {
                 // Cancelled by Clear / disable — partial lattice is left as-is for the caller to clear.
+            }
+            catch (Exception e)
+            {
+                // A lay failure otherwise dies in UniTask's unobserved-exception handler —
+                // visually indistinguishable from "the button did nothing". Pin it where
+                // the operator is looking and keep the full stack in the console.
+                Warn($"Lay FAILED after {_prisms.Count:N0}/{_requested:N0}: {e.GetType().Name}: {e.Message}");
+                Debug.LogException(e, this);
             }
             finally
             {
@@ -645,12 +656,25 @@ namespace CosmicShore.Utility
             UpdateReadout();
         }
 
-        const string Usage = "usage: grid <x> <y> <z> [gap] | grid explode | grid clear | grid zoom <0..1>";
+        const string Usage = "usage: grid <x> <y> <z> [gap] | grid <total> | grid explode | grid clear | grid zoom <0..1>";
 
         string HandleGridCommand(string[] args)
         {
             if (args.Length == 0)
                 return Usage;
+
+            // Count-first ergonomics: `grid 50000` (also registered as `prisms 50000`)
+            // factors a total into a near-cube lattice — the shape operators reach for.
+            if (args.Length == 1 && int.TryParse(args[0], out int total) && total > 0)
+            {
+                int side = Mathf.Max(1, Mathf.RoundToInt(Mathf.Pow(total, 1f / 3f)));
+                int x1 = side, y1 = side;
+                int z1 = Mathf.Max(1, Mathf.CeilToInt(total / (float)(side * side)));
+                _counts = new Vector3Int(x1, y1, z1);
+                SyncInputsFromState();
+                Spawn();
+                return $"spawning {x1}x{y1}x{z1} = {(long)x1 * y1 * z1:N0} prisms (requested {total:N0})";
+            }
 
             switch (args[0].ToLowerInvariant())
             {

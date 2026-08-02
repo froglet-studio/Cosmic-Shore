@@ -165,6 +165,15 @@ namespace CosmicShore.Utility
                     }
                     if (_cancelRequested) break;
 
+                    // An empty lattice "runs" fine and writes plausible-looking numbers —
+                    // refuse it: a benchmark of nothing is worse than no benchmark.
+                    if (_harness.LivePrismCount == 0)
+                    {
+                        Debug.LogError("[PrismExplosionBenchmark] Lattice is Ready but EMPTY (0 live prisms) — " +
+                                       "the lay failed (see the harness readout / console). Aborting series.");
+                        break;
+                    }
+
                     Publish($"run {run}/{n}", "settling");
                     await UniTask.Delay(TimeSpan.FromSeconds(settleSeconds), DelayType.UnscaledDeltaTime,
                         cancellationToken: this.GetCancellationTokenOnDestroy());

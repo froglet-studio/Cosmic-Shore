@@ -39,10 +39,13 @@ namespace CosmicShore.Editor
                 try
                 {
                     var r = JsonUtility.FromJson<PrismExplosionBenchmark.RunResult>(File.ReadAllText(file));
-                    if (r != null && r.deltaTimes != null && r.deltaTimes.Length > r.preRollFrames)
-                        runs.Add(r);
-                    else
+                    if (r == null || r.deltaTimes == null || r.deltaTimes.Length <= r.preRollFrames)
                         Debug.LogWarning($"[PrismBench] Skipping malformed run file {Path.GetFileName(file)}");
+                    else if (r.prismTotal <= 0)
+                        Debug.LogWarning($"[PrismBench] Skipping EMPTY-lattice run {Path.GetFileName(file)} " +
+                                         "(recorded before the empty-lattice guard existed — delete it)");
+                    else
+                        runs.Add(r);
                 }
                 catch (Exception e)
                 {
