@@ -1750,7 +1750,11 @@ namespace CosmicShore.Gameplay
             if (Time.unscaledTime < _nextBenignSkipLogAllowed) return;
             _nextBenignSkipLogAllowed = Time.unscaledTime + BENIGN_SKIP_LOG_INTERVAL_SECONDS;
 
-            CSDebug.Log(
+            // Stackless: this fires on a timer from deep inside an async chain, so
+            // Unity's attached stack is ~100 lines of UGS/UniTask plumbing per
+            // occurrence - identical every time, and it buries the counters that
+            // are the actual signal.
+            CSDebug.LogNoStack(
                 $"[HostConnectionService] Benign SDK fault on the {readPath} read - refresh tick VOIDED " +
                 $"(roster diff / invite scan / member sync / publish all skipped this tick). " +
                 $"defect={defect} | skips: presence={_benignPresenceSkips}, partySession={_benignPartySessionSkips} | " +

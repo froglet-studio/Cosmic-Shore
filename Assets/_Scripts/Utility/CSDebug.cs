@@ -102,6 +102,30 @@ namespace CosmicShore.Utility
             Debug.Log(message, context);
         }
 
+        /// <summary>
+        /// Info-level log with the stack trace suppressed.
+        ///
+        /// <para>
+        /// For recurring diagnostics whose call site is fixed and already named in
+        /// the message. Unity attaches a full managed stack to every
+        /// <see cref="Debug.Log"/>, and for a line that fires on a timer inside a
+        /// deep async chain that stack is ~100 console lines of UGS/UniTask
+        /// plumbing per occurrence - which buries the very signal the diagnostic
+        /// exists to surface, and costs a real stack walk each time.
+        /// </para>
+        ///
+        /// <para>
+        /// Use for periodic/telemetry lines. Do NOT use for anything you would
+        /// want to debug from - a genuine error still wants its stack.
+        /// </para>
+        /// </summary>
+        [Conditional("UNITY_EDITOR"), Conditional("DEVELOPMENT_BUILD")]
+        public static void LogNoStack(string message)
+        {
+            if (!LogEnabled) return;
+            Debug.LogFormat(LogType.Log, LogOption.NoStacktrace, null, "{0}", message);
+        }
+
         [Conditional("UNITY_EDITOR"), Conditional("DEVELOPMENT_BUILD")]
         public static void LogFormat(string format, params object[] args)
         {

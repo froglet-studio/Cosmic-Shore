@@ -27,6 +27,55 @@ Statuses: 🔴 open · 🟡 investigating · 🟢 fixed (commit) · ⚪ deferred
 
 ---
 
+## MEASURED: B1/B6 stale-index fault rate (2026-08-02)
+
+First real numbers, from the Commit 1 counters. **This is the data
+`REFACTOR.md`'s `LobbyMembershipMonitor` extraction and `TODOS.md` TODO-P5 were
+waiting on.** Verification guide Step 1c, "N climbing" outcome — decisively.
+
+```
+[HostConnectionService] Benign SDK fault on the presence read - refresh tick VOIDED
+  defect=SdkStaleIndex | skips: presence=13, partySession=22
+  NetDiag: class=Transient | reach=ReachableViaLocalAreaNetwork|monitor=Online|sinceChange=95.8s
+```
+
+Thrown from `WrappedLobbyService.GetLobbyAsync` → `LobbyHandler.RefreshLobbyAsync`
+— i.e. the HTTP GET succeeded and the SDK failed while deserialising it against
+its stale local cache. Exactly the B6 read-path surface.
+
+**Rate.** ~96 s at the 1.5 s poll ≈ 64 fetch ticks:
+
+| Path | Voided | Of | Rate |
+|---|---|---|---|
+| presence read | 13 | ~64 | **~20%** |
+| party-session read | 22 | ~51 (only reached when the presence read succeeded) | **~43%** |
+
+**What it costs.** A voided tick skips the roster diff, invite scan, acceptance
+scan, member sync **and** the presence publish. It is not a correctness break —
+the next tick retries and the roster converges — but it is a large, silent
+reduction in the poll's effective cadence.
+
+**Consequences to act on:**
+
+1. **Do NOT relax the safety poll from 1.5 s to 10 s yet.** That change was
+   staged in `PRESENCE_SYNC_PLAN.md` as prefab-only once push was confirmed. At a
+   ~20% void rate a 10 s nominal poll is a ~12.5 s effective backstop, and the
+   party-session path is worse. Re-measure after push is confirmed and after any
+   write-coalescing work; decide then.
+2. **`TODO-P2` (coalesce startup property writes) is now motivated by data**, not
+   speculation — fewer property writes means fewer deltas means fewer stale-index
+   opportunities.
+3. The `LobbyMembershipMonitor` reconnect decision should treat `SdkStaleIndex` as
+   explicitly NOT membership loss. At this rate an error-count watchdog that
+   counted it would escalate constantly.
+
+**Note.** After `40226752` (push ticks no longer fetch) only *poll* ticks can
+produce this fault, so the absolute count should drop even if the per-fetch rate
+does not. These numbers predate that change taking effect in a measured run —
+re-measure.
+
+---
+
 ## B14. `presenceState` changes never repainted the row — "CONNECTING…" forever — FIXED (unverified)
 
 **Found.** 2-instance MPPM run, 2026-08-02, immediately after the B11 fix. Both
