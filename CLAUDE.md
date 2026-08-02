@@ -113,6 +113,11 @@ The game features 11 vessel class types (defined in `Assets/_Scripts/Data/Enums/
 
 Meta values: `Any (-1)`, `Random (0)`
 
+**Use the `/vessel` skill for ANY vessel-class work** — new vessels, abilities/executors,
+elemental ability maps + level-5 upgrades, HUD rows/hints/gauges, petal bars, hull morphs/rig
+swaps, impact/skimmer containers. It loads the fleet-wide vessel contract, the audit tools, and
+the per-subsystem checklists so the requirements are not re-derived per vessel.
+
 ### Team Domains
 
 Team ownership is tracked via the `Domains` enum: `Jade (1)`, `Ruby (2)`, `Blue (3)`, `Gold (4)`. **Blue is the "no team / not yet picked / neutral entity" sentinel** and is never present in `GameDataSO.ActiveDomains` (the playable set is `{Jade, Ruby, Gold}`, indices 0..2). Code that previously used `Domains.None` or `Domains.Unassigned` (both removed) now uses `Domains.Blue` for the same "no specific team" semantic — neutral mines, uncommitted crystals, the wildcard "any team" density-grid bucket, and players who haven't yet picked a domain.
@@ -1949,7 +1954,8 @@ scale bump** with a one-shot unlock punch.
   `UpgradeLabel`, and their HUDs have 0–2 lower-right icons rather than four. Author the map
   (`Docs/ElementalAbilitySystem/FLEET_MAPS.md` §2 holds the un-approved proposals) and the icons
   before wiring — do not invent an element→ability mapping to satisfy the audit.
-- Full reference: `Docs/ElementalAbilitySystem/ARCHITECTURE.md` §7.1.
+- Full reference: `Docs/ElementalAbilitySystem/ARCHITECTURE.md` §7.1. The `/vessel` skill
+  encodes this contract (plus the rest of the per-vessel checklist) — use it for any vessel work.
 
 **Control hints attach to the ability, never to a position.** The `(LT)`/`(RT)` glyphs are bound to
 an ability and their placement is *derived*: `hint.binding` (the physical control) →
