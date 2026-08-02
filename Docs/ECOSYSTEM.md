@@ -1539,14 +1539,15 @@ terraces, twin counter-chiral Möbius causeways, arches, aqueducts, minarets, la
 **Orrery** (a celestial clock: sun shell, seven tilted orbit rings with planets and moons,
 zodiac band, pendulums, a danger-tailed comet), **Zephyr** (a painted sky: braided wind
 rivers, twin cyclones, cloud banks with one lightning thunderhead, Van Gogh sun/moon discs,
-a swell sea), **Caldera** (the danger-led forge: terraced volcano with TRUE danger lava
-lake/falls/river, basalt column fields, ember plumes, sulfur terraces, fumaroles, ash ring),
+a swell sea), **Caldera** (the danger-led forge — see §18.1: four floating volcanic massifs
+in tetrahedral symmetry around the nucleus, each aimed inward, with TRUE danger spillways/
+curtains/crust rivers, basalt column collars, ember plumes, fumaroles, obsidian edge-arcs),
 and **Geode** (the angular, serene pole: a cracked crystal cathedral — husk hemispheres,
 inward crystal linings, super-shielded druse tips, agate bands, dust, light shafts; zero
 danger). All extend `CellEnvironmentSpawnableBase` (one deterministic lay/stream/noise
 contract, per-cell fixed seed); per-cell PhaseThresholds ride each baseline measured with
 a bit-exact simulation of the C# noise (count/volume): Yggdra 34.3k/541k, Daedala
-33.9k/638k, Orrery 34.6k/197k, Zephyr 36.1k/427k, Caldera 31.2k/433k, Geode 34.4k/561k —
+33.9k/638k, Orrery 34.6k/197k, Zephyr 36.1k/427k, Caldera 25.1k/375k, Geode 34.4k/561k —
 confirm in-engine via Tools > Cosmic Shore > Measure Cell Environment Baselines before
 retuning any ladder. Same soak-before-ship rule as §17 above; each prefab's
 `density` knob (0.5-1.3) is the per-cell fallback lever.
@@ -1563,10 +1564,75 @@ retuning any ladder. Same soak-before-ship rule as §17 above; each prefab's
    and it was paid on every entry (boot *and* every return from an arcade game). Resolved by
    the second option: Menu_Main now boots the environment-free config and the six worlds are
    opt-in through the **Cell Selector** toy.
-5. **Danger tuning after playtests** — Caldera (~1.6k danger prisms) is deliberately the spicy
-   cell; tune per feel.
+5. **Danger tuning after playtests** — Caldera (1,503 danger prisms, 6.0% of its mass) is
+   deliberately the spicy cell; tune per feel. The pre-rework build laid 858 (2.8%) despite this
+   line long claiming ~1.6k; §18.1 lists the six dials that set it.
 6. **Future archetypes** (diversity headroom before hybrids/dynamics take over): Abyss, Mycel,
    Hive, Glacier, Reliquary, Mesa.
+
+---
+
+## 18.1 Caldera, de-gravitized — the tetrahedral forge (August 2026)
+
+The shipped Caldera was a **landscape**: a `Base = -180f` slab plain with a 255-unit cone rising
+out of it along +Y, a flat ash layer at one altitude, and a magma river meandering across the
+floor. Every family keyed off a world-space ground plane and a world "up" — legible, but wrong for
+something floating in a cell. Two measured consequences beyond the look:
+
+- **89% of its mass (27,803 prisms / 371,602 volume) sat INSIDE the nucleus** (`Cell`'s
+  node-control radius, ~392u — `Nucleus.prefab` localScale 400 × the Node mesh's ~0.98u radius).
+  Per §13 the nucleus interior *is* the territorial claim, so the cell booted with node control
+  pre-awarded to whatever colour the landscape happened to favour (Blue, 27k of it), and true-
+  danger prisms sat inside the fauna sanctuary.
+- The composition had no relationship to the nucleus at all — the cone simply engulfed it.
+
+**The rework.** There is no ground plane and no world `up` anywhere in the file. Four volcanic
+massifs hang at the vertices of a *roughly* regular tetrahedron (each axis nudged a few degrees off
+true) around the nucleus, each aimed **inward**: broad shield base outward at the rim, crater mouth
+facing the core. Every family is authored in a per-massif radial `Frame` (`Ax` outward radial, `U`/
+`V` across it), so the cell's only "down" is the radial pull toward the nucleus — and the geometry
+states it: spillways drain the flanks *inward* into the vent, the vent drips a molten curtain
+*inward* across the gap, and the four curtains land on a shared magma crust riding the nucleus
+shell (impact basins joined by great-circle rivers along the tetrahedron's edges). Six obsidian
+knife-arcs span the same six edges, making the symmetry legible from inside the cell.
+
+**The crust stays outside the nucleus by construction.** `CrustR = NucleusR + CrustClearance` and
+`VentR = CrustR + FallDrop` — the nucleus radius is load-bearing, not a comment, so moving the
+nucleus moves the whole composition. Measured minimum prism radius is **402.7** against the 392
+control radius: **zero prisms inside the nucleus**, node control unclaimed at boot, no danger in
+the sanctuary.
+
+**The four are different creatures**, which is the point — silhouette, activity, palette, girth,
+reach, basis roll, and chirality all vary per massif (`Specs`):
+
+| # | silhouette | vent | stone / trim | girth × reach | notes |
+|---|---|---|---|---|---|
+| 0 | Shingled (plate rings) | Erupting | Blue / Ruby | 92 × 1.12 | the signature: molten mouth disc, 5-strand curtain |
+| 1 | Terraced (stepped ziggurat) | Degassing | Gold / Blue | 76 × 0.90 | gas strands, 7 lip chimneys under shielded caps, no lava |
+| 2 | Fluted (organ pipes on a groove floor) | Collapsed | Blue / Gold | 86 × 1.00 | wide (50u) sunken mouth, 3 secondary vents each with its own fall |
+| 3 | Shattered (phyllotaxis glass plates) | Cooled | Ruby / Blue | 70 × 0.84 | frozen tongue, **super-shielded heart**, near-zero danger — the safe approach |
+
+Massif proportions are `MassifLength 152 × Reach` long against a 22u vent mouth (50u on the
+collapsed one), i.e. a ~1.7:1 stratovolcano taper matching the old cone's — an earlier pass at
+120 × 106 measured squat enough to read as a blob rather than a mountain.
+
+**Baseline** (offline sim, validated bit-exact against the shipped build's authored thresholds —
+it reproduced 31,194 / 430,691 to the unit before any edit): **25,055 prisms / 374,907 volume** —
+down from 31,194 / 430,691, so the cell got genuinely smaller (−16% count, −13% volume). Outer
+extent grew (460 → 678) purely because the composition now *rings* a 392-unit nucleus instead of
+engulfing it; each individual massif (≈170 long × 184 wide) is well under half the old cone.
+PhaseThresholds re-authored as baseline + Blob deltas: 25755/25555/28655/28055 count,
+386107/382907/432507/422907 volume.
+
+**Danger dials** (6 knobs, if the cell plays too hot or too cold): spillway `t < 0.45f` glow
+cutoff · basin `u < 0.34f` · river `hot` noise threshold `> 0.36f` · collapsed floor `u < 0.5f` ·
+secondary-vent count (3) · erupting mouth disc (150) + curtain strands (5).
+
+**Collider budget:** plain/danger ride the LOD-cullable BoxCollider (bounded by
+`PrismColliderLodManager` radius, not population) and the population *fell* by 6,139. Always-on
+convex MeshColliders (shielded + super-shielded landmarks) go 16 → **22** (+6): 21 shielded
+(fumarole caps + degassing lip caps) and 1 super-shielded (the cooled massif's frozen heart),
+still ~0.08% of the cell's prisms and well under the 225 the Yggdra roll carries.
 
 ---
 
