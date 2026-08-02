@@ -89,6 +89,12 @@ namespace CosmicShore.ScriptableObjects
             this.presenceState = presenceState;
         }
 
+        /// <summary>
+        /// Identity only - deliberately keyed on <see cref="PlayerId"/> so the
+        /// optional state fields can change without breaking ScriptableList
+        /// dedup. Use <see cref="HasSameDisplayDataAs"/> to ask whether a row
+        /// needs repainting.
+        /// </summary>
         public override bool Equals(object obj)
         {
             if (obj is not PartyPlayerData other) return false;
@@ -96,5 +102,32 @@ namespace CosmicShore.ScriptableObjects
         }
 
         public override int GetHashCode() => playerId?.GetHashCode() ?? 0;
+
+        /// <summary>
+        /// True when every field a roster row RENDERS from is identical - i.e.
+        /// replacing the stored entry with <paramref name="other"/> would change
+        /// nothing on screen.
+        ///
+        /// <para>
+        /// <b>This is the single list of render-relevant fields. Add new ones
+        /// here.</b> The diff in <c>HostConnectionService.RefreshOnlinePlayersDiff</c>
+        /// used to inline this comparison, and when <see cref="PresenceState"/>
+        /// was added to this struct and to the property reader, the inline
+        /// comparison was not updated. The consequence was invisible and total: a
+        /// peer's row was created while they were still `Announced`, they
+        /// published `Present` a moment later, the diff read the new value,
+        /// compared the five fields it knew about, concluded "unchanged", and
+        /// never replaced the entry - so every peer rendered them as
+        /// "CONNECTING…" permanently. Keeping the comparison next to the fields
+        /// makes that omission structurally impossible to repeat.
+        /// </para>
+        /// </summary>
+        public bool HasSameDisplayDataAs(PartyPlayerData other) =>
+            displayName      == other.displayName      &&
+            avatarId         == other.avatarId         &&
+            partyMemberCount == other.partyMemberCount &&
+            partyMaxSlots    == other.partyMaxSlots    &&
+            MatchName        == other.MatchName        &&
+            presenceState    == other.presenceState;
     }
 }

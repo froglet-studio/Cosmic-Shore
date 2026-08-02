@@ -1885,12 +1885,14 @@ namespace CosmicShore.Gameplay
                 else
                 {
                     var existing = connectionData.OnlinePlayers[existingIdx];
-                    bool changed =
-                        existing.DisplayName       != playerData.DisplayName       ||
-                        existing.AvatarId          != playerData.AvatarId          ||
-                        existing.PartyMemberCount  != playerData.PartyMemberCount  ||
-                        existing.PartyMaxSlots     != playerData.PartyMaxSlots     ||
-                        existing.MatchName         != playerData.MatchName;
+                    // Delegated to the struct so the field list lives next to the
+                    // fields. Inlined here, it silently went stale the moment
+                    // PresenceState was added: a peer's row was created while they
+                    // were still Announced, they published Present a beat later,
+                    // this comparison did not know about the field, reported
+                    // "unchanged", and the row was never replaced - so they
+                    // rendered as CONNECTING… on every peer forever.
+                    bool changed = !existing.HasSameDisplayDataAs(playerData);
 
                     if (changed)
                     {

@@ -18,11 +18,66 @@ Statuses: 🔴 open · 🟡 investigating · 🟢 fixed (commit) · ⚪ deferred
 | B11 | Presence stuck at `Announced` - peers render "CONNECTING…" forever | High (root-caused) | 🟢 `a510bd51` (needs Editor retest) |
 | B12 | Explicit leave took ~30 s to remove the player | High (root-caused) | 🟢 `a510bd51` (needs Editor retest) |
 | B13 | Relay 500 on boot bricks the loading splash (no retry, no recovery) | High (root-caused) | 🟢 (needs Editor retest) |
+| B14 | `presenceState` change never repainted the row - "CONNECTING…" forever | High (root-caused) | 🟢 (needs Editor retest) |
 
 > **Working order.** Diagnostics-first. The presence-lobby cluster (B4,
 > B6) is the locked-design area — read `ARCHITECTURE.md` and
 > `../PartySystem/ARCHITECTURE.md` before touching `PresenceLobbyService`
 > or `HostConnectionService`. Do not reintroduce LAZY session creation.
+
+---
+
+## B14. `presenceState` changes never repainted the row — "CONNECTING…" forever — FIXED (unverified)
+
+**Found.** 2-instance MPPM run, 2026-08-02, immediately after the B11 fix. Both
+instances flying the lava lamp; each showed the other as `CONNECTING…`.
+
+**This was a regression I introduced in `641ec251`**, and B11 was partly a
+symptom of it rather than the whole cause.
+
+**Root cause.** `RefreshOnlinePlayersDiff` decides whether to replace a stored
+roster entry with an inline comparison:
+
+```csharp
+bool changed =
+    existing.DisplayName      != playerData.DisplayName      ||
+    existing.AvatarId         != playerData.AvatarId         ||
+    existing.PartyMemberCount != playerData.PartyMemberCount ||
+    existing.PartyMaxSlots    != playerData.PartyMaxSlots    ||
+    existing.MatchName        != playerData.MatchName;
+```
+
+`641ec251` added `PresenceState` to `PartyPlayerData` **and** to
+`ReadOnlinePlayerData`, but **not here**. So:
+
+1. A peer's row is created while they are still `Announced` (2) → renders
+   `CONNECTING…`.
+2. They reach `Present` and publish `presenceState = 3`.
+3. The next diff reads the new value, compares the five fields it knows about,
+   finds them identical, reports `changed == false`, and **does not replace the
+   entry**.
+4. The stored row keeps `PresenceState = 2` for the rest of the session.
+
+Perfectly symmetric when two instances start together — both rows are created
+while both are `Announced`. It also explains why the earlier 4-instance run
+looked asymmetric: Ys1 started first, so its row on each peer happened to be
+created *after* it had already reached `Present`, capturing 3 at insert time.
+
+**Fix.** The comparison moves onto the struct as
+`PartyPlayerData.HasSameDisplayDataAs`, next to the fields it compares, and the
+diff calls that. Adding a render-relevant field now cannot silently skip the
+differ.
+
+**Lesson.** A struct whose `Equals` is deliberately identity-only needs an
+explicit content comparison living beside its fields. Leaving that comparison
+inlined at the call site guarantees it goes stale the first time a field is
+added — and the failure is silent, because "no change detected" is
+indistinguishable from "nothing changed".
+
+`PartyMemberService.SyncFromSession`'s identity check is NOT affected: it
+compares `DisplayName`/`AvatarId` only, which is correct for its data source
+(party-session player properties carry nothing else), and its rows are built via
+the 3-arg constructor, which defaults `presenceState` to `Present`.
 
 ---
 
