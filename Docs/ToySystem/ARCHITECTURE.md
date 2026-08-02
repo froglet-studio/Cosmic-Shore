@@ -71,8 +71,9 @@ detection. On top of that base the `Toy` class adds:
 | Web share export (inline-WebGL viewer) | `Assets/_Scripts/Controller/Toys/PaintingShareExporter.cs` |
 | Idle spin for toy bodies | `Assets/_Scripts/Controller/Toys/ToyIdleSpin.cs` |
 | Conveyor ("Wanderway") toy | `Assets/_Scripts/Controller/Toys/ConveyorToy.cs` |
-| Conveyor belt runner | `Assets/_Scripts/Controller/Toys/MicrosceneConveyor.cs` |
+| Conveyor belt runner (+ the load-veil prime) | `Assets/_Scripts/Controller/Toys/MicrosceneConveyor.cs` |
 | One conveyor scene (lay/transport/re-arrange) | `Assets/_Scripts/Controller/Toys/Microscene.cs` |
+| Grand assemblies (the monument-scale eight) | `Assets/_Scripts/Controller/Toys/MicroscenePatternsGrand.cs` |
 | Microscene recipe generators (pure) | `Assets/_Scripts/Controller/Toys/MicroscenePatterns.cs` |
 | Microscene structural painter (domain/kind/scale) | `Assets/_Scripts/Controller/Toys/MicroscenePainter.cs` |
 | Placement + lifecycle | `Assets/_Scripts/Controller/Toys/ToyboxController.cs` |
@@ -478,10 +479,13 @@ always works.
 
 ### Wanderway / Microscene Conveyor (`ConveyorToy` + `MicrosceneConveyor` + `Microscene`)
 
-Fly through → the belt switches **ON** (the toy flips bright + relabels "flowing — fly through
-to stop"; another pass switches it off) and a field of **microscenes** blooms in ahead of your
-flight path, scene after scene — open-world exploring crossed with an infinite runner. **40
-recipes** built from a shared geometry vocabulary (`PrismGeometry`): gate runs, helix weaves,
+Fly through → the belt builds its **entire conserved stock behind a load veil** (see *Scale* below)
+and then switches **ON** (the toy flips bright + relabels "flowing — fly through to stop"; another
+pass switches it off), with a field of **microscenes** standing ahead of your flight path, scene
+after scene — open-world exploring crossed with an infinite runner. **48 recipes** built from a
+shared geometry vocabulary (`PrismGeometry`), in two families.
+
+**The classic forty** (`MicroscenePatterns`): gate runs, helix weaves,
 tunnels, slaloms, starbursts, orchards, meadows, menageries, polygon gates, serpent ribbons,
 colonnades, orbitals, canyons, lattices, comet tails, spiral ramps, archways, vortices (converging
 lines with an open convergence + an inviting crystal), slot corridors (parallel plates with gaps to
@@ -493,9 +497,53 @@ turns), split tubes (facing curved shell walls), and four **Medley** slots that 
 (straight / arc / S-curve / helix drift) with alternating motifs (hoops, polygon gates, torus
 rings, shell dishes, blade crosses, clusters) — a combinatorial space no fixed recipe list could
 enumerate. Each recipe re-rolls its own radii/counts/twists/bends on every arrival, so the same
-recipe never lands the same way twice. The belt **follows you anywhere at any
-speed**: effective spacing = `max(sceneSpacing, speed × minSceneIntervalSeconds)` and lookahead =
-`aheadTargetScenes × spacing`, so there is always a field of ~7 structures ahead.
+recipe never lands the same way twice.
+
+**The grand eight** (`MicroscenePatternsGrand`) — monument-scale set pieces for a belt whose
+per-scene budget is measured in thousands: a **Cathedral** (nave of piers, ribbed vault, clerestory,
+flying buttresses, rose window), a **World Tree** (braided trunk, curl-noise boughs, phyllotaxis
+canopy, root buttresses), an **Orrery** (nested tilted torus rings each carrying a body, around a
+core), a **Sunken City** (terraced ziggurats on a plaza, causeways slung between rooftops, a spire),
+a **Leviathan** (serpentine spine, ribs, dorsal fins, a jaw-arch at the head), a **Geode Vault**
+(shingled shell with a mouth cut through it and the interior bristling inward), an **Aurora Veil**
+(layered curl-noise ribbon curtains to weave), and a **Hypersphere** (nested geodesic shells with a
+bore drilled clean through). They borrow the construction idioms of the authored cell environments
+(`SpawnableYggdra`, `SpawnableOrrery`, `SpawnableAtlantis`, `SpawnableGeode`, `SpawnableZephyr`) —
+the freestyle six are the proof that a 30k-prism world reads as a *place*, and the conveyor now
+transports one.
+
+**Why two families, and how they scale.** The classic forty are hand-tuned in ABSOLUTE world units
+around `MicroscenePatterns.DesignRadius` (80) and derive their part counts by *dividing* the budget
+(a gate run is always 3–6 gates however much mass it is handed) — so at grand budgets they get
+denser, never bigger: solid rings inside a mostly-empty envelope. They are therefore generated at
+their design radius and scaled **bodily** to the live scene (`ScaleToScene`), POSITIONS only — never
+prism scales, so a grand scene reads as *more architecture at the same grain*, and per-prism volume
+(which feeds the host cell's phase ladder) does not inflate just because the belt got bigger. The
+grand eight instead take the scene radius as their own basis and *multiply* their part counts with
+the budget: more mass buys more bays, more branches, more shells. They join the shuffle bag only at
+`prismBudgetPerScene ≥ MicroscenePatterns.GrandBudgetThreshold` (400), weighted ×3 so a grand ride
+lands a landmark roughly every third scene while the classic forty carry the variety between them.
+Edit-mode tests lock both properties: every recipe emits exactly the budget, stays inside the
+advertised scene envelope, and — for the grand family — fills its budget with *architecture* rather
+than letting `FitToBudget` pad it with ambient scatter.
+
+The belt **follows you anywhere at any speed**: effective spacing =
+`max(sceneSpacing, speed × minSceneIntervalSeconds)` and lookahead = `aheadTargetScenes × spacing`,
+so there is always a field of structures ahead.
+
+**Scale — 30,000 conserved prisms, built once behind a veil.** The belt's whole stock is
+`poolSize × prismBudgetPerScene` (**20 × 1500 = 30,000** at the authored defaults — the same order as
+an authored cell environment, which is the proven envelope for the instanced render path + collider
+LOD). It is built **up front**, on the first pass through the toy, behind the same
+`EnvironmentLoadVeil` the Cell Selector raises for a world swap: `MicrosceneConveyor.PrimeAsync`
+brackets `PrismTrailBuilder.BeginArenaBuild`/`EndArenaBuild`, raises the veil, and lays all
+`poolSize` scenes concurrently through `PrismTrailBuilder.LayBudgetedAsync` — the time-budgeted,
+multithreaded-clone lay the cell environments use. The gate raises the lay slice ~10× while the veil
+holds and releases only when every prism is laid, created AND grown, so the ride opens on a world
+that is simply *there*. **After the prime the belt never instantiates again**: every arrival is
+transport of mass that already exists. (The predecessor created one scene per belt tick, which at
+grand scale would drip structures into view for the first minute of the ride and instantiate under
+live gameplay — the exact failure the cell environments already learned.)
 
 **Geometry vs. theming (why it stays fresh, not chaotic).** A recipe produces pure *shape* plus
 **structural metadata** — `MicroscenePlan.CloseStructure()` after each gate/strand/tree/wall stamps
@@ -536,10 +584,24 @@ A **sharp turn** drops the whole old ribbon out of the cone: its measured reach 
 re-lays straight down the **new** heading from `firstSceneDistance` outward, and the now-lateral
 leftovers become the farthest-first recycle candidates that rebuild ahead — so the ribbon *breaks and
 restarts in front of you* on a hard turn while staying a continuous ribbon through gentler ones.
-Passed scenes and a turn's leftovers clear (suction) as new ones arrive — spawn frequency IS the
-clear frequency, because the pool is finite and **closed**: a reclaimable scene (off the flight cone,
-or dropped far behind) is *suctioned* to a point, relocated onto the ribbon ahead, re-posed into a
-fresh recipe with new domain colour, and *bloomed* back out. Scenes still in the cone ahead (what
+Passed scenes and a turn's leftovers clear as new ones arrive — spawn frequency IS the clear
+frequency, because the pool is finite and **closed**: a reclaimable scene (off the flight cone, or
+dropped far behind) *collapses*, is relocated onto the ribbon ahead, re-posed into a fresh recipe
+with new domain colour, and *bloomed* back out. The transport runs in three phases, **none of which
+costs a per-frame CPU pass over the scene's prisms** (`Docs/PRISM_ANIMATION.md` §5 C8):
+
+1. **Collapse** — one grow-clock re-stamp per prism toward the animator's min scale, budgeted at
+   `Microscene.TransportBudgetMsPerFrame`. The GPU runs the shrink; gameplay state goes final at the
+   stamp. *(The predecessor scaled the CONTAINER over ~2.4 s and re-synced every child prism's
+   spatial entry AND companion render entity every frame to make that visible — because a container
+   scale is invisible on the instanced path otherwise. At 1,500 prisms/scene that was ~180,000
+   writes per recycle.)*
+2. **Transport** — the stock is hidden (`Prism.HideForTransport`) and the container moves in ONE
+   transform write. Unseen by construction: the off-screen removal gate below is what licenses it.
+3. **Re-pose + bloom** — the same prism instances take fresh slots, domains and kinds, budgeted, and
+   bloom back in from zero on the clock. `Prism.BeginBulkTransport` raises the creation-completion
+   budget for the duration so a grand scene re-enters in about a second instead of trickling back
+   over four. Scenes still in the cone ahead (what
 you're flying toward) are never reclaimed, and a scene mid-recycle **claims its destination slot
 immediately** (`Microscene.PendingAnchor`) so a rebuild never piles several arrivals onto one point
 while the blooms are in flight. No score, no end condition; every belt advance is driven by the
@@ -549,16 +611,19 @@ flow — either way its scenes stay in the world.
 **Visibility guards — the transport itself is invisible.** The belt should read as a world that is
 simply *there*, never as props spawning and despawning in view, so two gates constrain where the
 continuity transitions may run:
-- **Placement floor** (`minPlacementDistance`, default 140 u) — a scene never blooms in closer than
+- **Placement floor** (`minPlacementDistance`, default 380 u) — a scene never blooms in closer than
   this to the vessel. Near-fill (`≥ firstSceneDistance`) and extend already target far ahead; this is
   the hard floor (squared compare) that also covers degenerate geometry, so a structure never
   materialises in the player's face. Keep it at or below `firstSceneDistance` so it never fights
   normal near-fill.
-- **Off-screen removal** (`offscreenMargin`, default 40 u) — a scene is only reclaimed (suctioned
-  away at its old anchor) once its whole body — a `sceneRadius + offscreenMargin` sphere — lies
+- **Off-screen removal** (`offscreenMargin`, default 80 u) — a scene is only reclaimed (collapsed
+  and carried away from its old anchor) once its whole body — a `sceneRadius + offscreenMargin`
+  sphere — lies
   **fully outside the player camera's view frustum** (`GeometryUtility.CalculateFrustumPlanes`,
-  non-allocating overload; a straddling sphere counts as *visible* and is left alone). The suction is
-  therefore never watched; the bloom then happens far ahead at the new pose. If every pooled scene is
+  non-allocating overload; a straddling sphere counts as *visible* and is left alone). The collapse
+  and the hide are therefore never watched; the bloom then happens far ahead at the new pose. This
+  gate is load-bearing twice over: it is also what makes phase 2's outright hide legitimate rather
+  than a continuity breach. If every pooled scene is
   on screen the belt simply idles — placing nothing — until the player's motion pushes a scene out of
   view, at which point the field self-heals. Camera-less fallback (rare): a scene clearly behind the
   flight course, which the follow camera cannot see. The pool still *fills* to `poolSize` regardless
@@ -566,8 +631,10 @@ continuity transitions may run:
 
 **Ecosystem invariants (this toy is ecology-adjacent — all hold by construction):**
 
-- *Continuity of existence* — prisms grow in via their own `PrismScaleAnimator`; crystals
-  `FadeIn`; recycling is suction-out → bloom-in (both sanctioned transitions). Nothing pops.
+- *Continuity of existence* — prisms grow in via their own `PrismScaleAnimator` (the GPU clock);
+  crystals `FadeIn`; recycling is collapse-out → bloom-in (both sanctioned transitions), and the one
+  step that is neither — the hide before the move — is provably unseen (off-screen removal gate).
+  Nothing pops.
 - *Mass conservation / no passive removal* — the belt never destroys a prism; recycling
   **transports the same prism instances** (movers contract: `Prism.NotifyPositionChanged`).
   The only sink is fauna grazing belt prisms (an active force); grazed slots are re-minted
@@ -584,8 +651,9 @@ continuity transitions may run:
   Multi-domain colouring applies only to *prisms* (neutral mass), distributed per-scene by a
   coherent domain scheme (incl. optional neutral-Blue veins) — not a per-domain spawn bias.
 - *Volume is the spine / collider budget* — belt mass is bounded at
-  `poolSize × prismBudgetPerScene` prisms (default 10 × 42 = 420 BoxColliders + ≤3 crystal
-  triggers per scene + 1 toy trigger, well under the ~1,500/cell target); distant scenes are
+  `poolSize × prismBudgetPerScene` prisms (default 20 × 1500 = **30,000** BoxColliders + ≤6 crystal
+  triggers per scene + 1 toy trigger — the same order as an authored cell environment, and the belt
+  is spread over ~10 km of ribbon so only the near scenes are ever un-culled); distant scenes are
   collider-LOD-culled by `PrismColliderLodManager` automatically. **Shielded / supershielded**
   prisms now KEEP their authored cullable `BoxCollider` trigger (the octahedron / stellation is a
   look-only change — no convex MeshCollider, no convex cook), so they cost the same as any other

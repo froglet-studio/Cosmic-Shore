@@ -32,7 +32,27 @@ namespace CosmicShore.Gameplay
     /// </summary>
     public static class MicroscenePatterns
     {
-        public const int RecipeCount = 40;
+        /// <summary>
+        /// The classic recipes — hand-tuned in ABSOLUTE world units (gate radii 13-28, ribbon
+        /// prisms 10×1×3) around <see cref="DesignRadius"/>, and sized by DIVIDING the budget
+        /// (a gate run is always 3-6 gates however much mass it is handed). They are generated at
+        /// their design scale and then scaled bodily to the scene, which preserves their
+        /// proportions exactly at any belt size.
+        /// </summary>
+        public const int ClassicRecipeCount = 40;
+
+        /// <summary>Classic + <see cref="MicroscenePatternsGrand"/>. Recipe indices at or above
+        /// <see cref="ClassicRecipeCount"/> address the grand assemblies.</summary>
+        public static int RecipeCount => ClassicRecipeCount + MicroscenePatternsGrand.Count;
+
+        /// <summary>
+        /// The scene radius the classic recipes were authored against. A scene laid at a different
+        /// radius gets their geometry scaled by <c>sceneRadius / DesignRadius</c> — POSITIONS only,
+        /// never prism scales: a grand scene should read as more architecture at the same grain,
+        /// not as the same architecture built out of boulders (and per-prism volume feeds the host
+        /// cell's phase ladder, which must not inflate just because the belt got bigger).
+        /// </summary>
+        public const float DesignRadius = 80f;
 
         static readonly string[] Names =
         {
@@ -44,28 +64,62 @@ namespace CosmicShore.Gameplay
             "Medley", "Medley II", "Medley III", "Medley IV",
         };
 
-        public static string RecipeName(int recipe) => Names[Mathf.Abs(recipe) % RecipeCount];
+        public static string RecipeName(int recipe)
+        {
+            int r = Mathf.Abs(recipe) % RecipeCount;
+            return r < ClassicRecipeCount ? Names[r] : MicroscenePatternsGrand.Name(r - ClassicRecipeCount);
+        }
 
         /// <summary>Recipes that release lifeforms into the host cell (skipped when lifeform scenes are disabled).</summary>
         public static bool IsLifeformRecipe(int recipe)
         {
             int r = Mathf.Abs(recipe) % RecipeCount;
-            // Meadow, Menagerie, Rolling Plains, Grove, Aviary, Preserve.
+            // Meadow, Menagerie, Rolling Plains, Grove, Aviary, Preserve. The grand assemblies are
+            // architecture and request none.
             return r == 6 || r == 7 || r == 24 || r == 25 || r == 26 || r == 27;
         }
 
         /// <summary>
-        /// Build the plan for one microscene. <paramref name="radius"/> bounds the lateral extent;
-        /// the scene runs roughly 2.2 × radius along +z so it reads as a place you fly THROUGH.
+        /// True for the monument-scale family (<see cref="MicroscenePatternsGrand"/>), which only
+        /// reads as intended once a scene's prism budget is in the hundreds — below that the belt
+        /// should stay on the classic recipes.
+        /// </summary>
+        public static bool IsGrandRecipe(int recipe) => Mathf.Abs(recipe) % RecipeCount >= ClassicRecipeCount;
+
+        /// <summary>Scene prism budget at or above which the grand assemblies join the shuffle bag.</summary>
+        public const int GrandBudgetThreshold = 400;
+
+        /// <summary>
+        /// Build the plan for one microscene. <paramref name="sceneRadius"/> bounds the lateral
+        /// extent; the scene runs roughly 2.2 × that along +z so it reads as a place you fly
+        /// THROUGH. Classic recipes are generated at <see cref="DesignRadius"/> and scaled to the
+        /// scene; grand assemblies are authored at the scene's own scale.
         /// <paramref name="palette"/> drives theming (domain/kind/scale/crystal mix); null = defaults.
         /// </summary>
-        public static MicroscenePlan Plan(int recipe, System.Random rng, int prismBudget, float radius, int maxCrystals,
+        public static MicroscenePlan Plan(int recipe, System.Random rng, int prismBudget, float sceneRadius, int maxCrystals,
             MicroscenePalette palette = null)
         {
             var plan = new MicroscenePlan { RecipeName = RecipeName(recipe) };
+            int recipeIndex = Mathf.Abs(recipe) % RecipeCount;
+
+            if (recipeIndex >= ClassicRecipeCount)
+            {
+                // Grand assemblies take the scene radius as their own basis and multiply their part
+                // counts with the budget — no rescale pass.
+                MicroscenePatternsGrand.Build(recipeIndex - ClassicRecipeCount, plan, rng, prismBudget, sceneRadius);
+                plan.CloseStructure();
+                FitToBudget(plan, rng, prismBudget, sceneRadius);
+                ClampCrystals(plan, rng, maxCrystals);
+                MicroscenePainter.Paint(plan, rng, palette);
+                return plan;
+            }
+
+            // Classic recipes are generated at the radius they were authored against and scaled
+            // bodily afterwards (see DesignRadius).
+            float radius = DesignRadius;
             float length = radius * 2.2f;
 
-            switch (Mathf.Abs(recipe) % RecipeCount)
+            switch (recipeIndex)
             {
                 case 0: GateRun(plan, rng, prismBudget, radius, length); break;
                 case 1: HelixWeave(plan, rng, prismBudget, radius, length); break;
@@ -110,10 +164,34 @@ namespace CosmicShore.Gameplay
             }
 
             plan.CloseStructure(); // sweep any untagged tail into a final substructure
-            FitToBudget(plan, rng, prismBudget, radius);
+            ScaleToScene(plan, sceneRadius / DesignRadius);
+            FitToBudget(plan, rng, prismBudget, sceneRadius);
             ClampCrystals(plan, rng, maxCrystals);
             MicroscenePainter.Paint(plan, rng, palette);
             return plan;
+        }
+
+        /// <summary>
+        /// Blow a design-scale plan up (or down) to the live scene size. POSITIONS only — see
+        /// <see cref="DesignRadius"/> for why prism scales deliberately stay put. Rotations are
+        /// scale-invariant, and the structural metadata is untouched, so the painter still themes
+        /// the same architecture.
+        /// </summary>
+        static void ScaleToScene(MicroscenePlan plan, float k)
+        {
+            if (Mathf.Approximately(k, 1f)) return;
+
+            var points = plan.PrismPoints;
+            for (int i = 0; i < points.Count; i++)
+            {
+                var p = points[i];
+                p.Position *= k;
+                points[i] = p;
+            }
+
+            var crystals = plan.CrystalPoints;
+            for (int i = 0; i < crystals.Count; i++)
+                crystals[i] *= k;
         }
 
         // ── Original eight ───────────────────────────────────────────────────

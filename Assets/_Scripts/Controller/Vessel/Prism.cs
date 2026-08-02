@@ -634,6 +634,22 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// Drops this prism out of sight and out of collision for a BULK TRANSPORT (the Wanderway
+        /// conveyor relocating a whole microscene's conserved stock). Not a death and not a
+        /// despawn: the prism keeps its spatial-index registration and its mass, and re-enters
+        /// through the standard creation bloom when the transport re-poses it.
+        ///
+        /// Only legitimate where the mass is provably unseen — the conveyor recycles a scene only
+        /// once it is wholly outside the camera frustum, so nothing the player can watch vanishes
+        /// (CLAUDE.md ▸ continuity of existence). Do NOT reach for this to hide live mass.
+        /// </summary>
+        public void HideForTransport()
+        {
+            if (blockCollider) blockCollider.enabled = false;
+            SetRenderVisible(false);
+        }
+
+        /// <summary>
         /// Called when spawning from pool. Resets state and starts growth.
         /// </summary>
         public virtual void Initialize(string playerName = DEFAULT_PLAYER_NAME)
@@ -762,6 +778,25 @@ namespace CosmicShore.Gameplay
         // rationale is void (there is no visible frame to protect), so the queue drains in a
         // handful of frames instead. Gameplay frames keep the authored cap untouched.
         const int LoadGateCreationCompletionsPerFrame = 512;
+
+        // Creation budget while a BULK TRANSPORT of already-existing mass is in flight (the
+        // Wanderway conveyor re-posing a whole microscene's conserved stock into a fresh
+        // arrangement). At the gameplay cap a 1,500-prism scene would trickle back into
+        // existence over ~4 seconds — the player flies to the arrival point in less than that
+        // and watches it assemble. This is NOT a load gate: frames are live, so the tier sits
+        // an order of magnitude below the covered-screen budget and stays a slice, not a dump.
+        // Bracketed by BeginBulkTransport/EndBulkTransport; the arrival is far away
+        // (ConveyorConfig.MinPlacementDistance) so the faster drain is invisible either way.
+        const int BulkTransportCreationCompletionsPerFrame = 64;
+        static int s_bulkTransportsInFlight;
+
+        /// <summary>Open a bulk-transport bracket (raises the per-frame creation-completion
+        /// budget). ALWAYS pair with <see cref="EndBulkTransport"/> in a finally.</summary>
+        public static void BeginBulkTransport() => s_bulkTransportsInFlight++;
+
+        /// <summary>Close a bulk-transport bracket.</summary>
+        public static void EndBulkTransport() => s_bulkTransportsInFlight = Mathf.Max(0, s_bulkTransportsInFlight - 1);
+
         static int s_creationCompletionsThisFrame;
         static int s_creationBudgetFrame = -1;
 
@@ -808,7 +843,9 @@ namespace CosmicShore.Gameplay
                 }
                 int creationBudget = PrismTrailBuilder.IsLoadGateHolding
                     ? LoadGateCreationCompletionsPerFrame
-                    : MaxCreationCompletionsPerFrame;
+                    : s_bulkTransportsInFlight > 0
+                        ? BulkTransportCreationCompletionsPerFrame
+                        : MaxCreationCompletionsPerFrame;
                 if (s_creationCompletionsThisFrame < creationBudget)
                     break;
 

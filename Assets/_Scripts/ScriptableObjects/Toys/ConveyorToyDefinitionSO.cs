@@ -33,7 +33,7 @@ namespace CosmicShore.ScriptableObjects
         Crystal omniCrystalPrefab;
 
         [SerializeField, Min(0), Tooltip("Most crystal pickups a single scene can hold.")]
-        int maxCrystalsPerScene = 3;
+        int maxCrystalsPerScene = 6;
 
         [SerializeField, Tooltip("Theming palette - structural domain schemes over the full playable " +
                                  "triad (per-structure rainbows, gradients, pinwheels, stripes, mirrors, " +
@@ -50,30 +50,40 @@ namespace CosmicShore.ScriptableObjects
         bool lifeformScenes = true;
 
         [Header("Conveyor - belt")]
-        [SerializeField, Min(2), Tooltip("Scenes in the pool. The belt creates this many, then recycles - " +
-                                         "this bounds the toy's total mass and collider footprint " +
-                                         "(poolSize × prismBudget prism colliders). Keep a few above " +
-                                         "Ahead Target Scenes so passed scenes have slack before reclaim.")]
-        int poolSize = 10;
+        [SerializeField, Min(2), Tooltip("Scenes in the pool. THE BELT'S WHOLE CONSERVED STOCK IS " +
+                                         "poolSize × prismBudgetPerScene — it is built once, up front, " +
+                                         "behind a load veil, and transported forever after (the belt " +
+                                         "never instantiates again). 20 × 1500 = 30,000 prisms, the same " +
+                                         "order as an authored cell environment. Keep a few above Ahead " +
+                                         "Target Scenes so passed scenes have slack before reclaim.")]
+        int poolSize = 20;
 
         [SerializeField, Min(6), Tooltip("Prisms per scene. Every recipe is fitted to exactly this count so " +
-                                         "recycled scenes can re-pose the same prism stock into any arrangement.")]
-        int prismBudgetPerScene = 42;
+                                         "recycled scenes can re-pose the same prism stock into any " +
+                                         "arrangement. At or above MicroscenePatterns.GrandBudgetThreshold " +
+                                         "the monument-scale assemblies (Cathedral, World Tree, Orrery, " +
+                                         "Sunken City, Leviathan, Geode Vault, Aurora Veil, Hypersphere) " +
+                                         "join the shuffle; below it the belt stays on the classic recipes.")]
+        int prismBudgetPerScene = 1500;
 
-        [SerializeField, Min(20f), Tooltip("Lateral radius of one scene, world units.")]
-        float sceneRadius = 55f;
+        [SerializeField, Min(20f), Tooltip("Lateral radius of one scene, world units. The classic recipes " +
+                                           "are authored at 80 and scaled bodily to this; the grand " +
+                                           "assemblies use it as their own basis. A scene runs ~2.2 × this " +
+                                           "along the flight axis, so Scene Spacing must exceed that.")]
+        float sceneRadius = 180f;
 
-        [SerializeField, Min(50f), Tooltip("Minimum spacing between consecutive scene anchors. At speed the " +
-                                           "effective spacing stretches to speed × Min Scene Interval.")]
-        float sceneSpacing = 220f;
+        [SerializeField, Min(50f), Tooltip("Minimum spacing between consecutive scene anchors. Must exceed " +
+                                           "~2.2 × Scene Radius or grand assemblies interpenetrate. At speed " +
+                                           "the effective spacing stretches to speed × Min Scene Interval.")]
+        float sceneSpacing = 520f;
 
         [SerializeField, Min(30f), Tooltip("Minimum distance ahead of the vessel for the first scene on " +
                                            "activation (stretches with speed so it isn't instantly passed).")]
-        float firstSceneDistance = 170f;
+        float firstSceneDistance = 460f;
 
         [SerializeField, Range(3, 10), Tooltip("The field of structures the belt keeps ahead of you at all " +
                                                "times, in scenes. Lookahead distance = this × effective spacing.")]
-        int aheadTargetScenes = 7;
+        int aheadTargetScenes = 5;
 
         [SerializeField, Min(0.5f), Tooltip("Seconds of flight between scenes at speed - the faster you fly, " +
                                             "the wider scenes space out so the stream stays readable. " +
@@ -82,7 +92,7 @@ namespace CosmicShore.ScriptableObjects
 
         [SerializeField, Min(100f), Tooltip("Minimum distance behind you before a passed scene clears " +
                                             "(suctions up for the belt head). Stretches with speed.")]
-        float recycleBehindDistance = 250f;
+        float recycleBehindDistance = 520f;
 
         [SerializeField, Min(0.2f), Tooltip("Seconds for each half of the recycle transport (suction out, " +
                                             "bloom back in) - the visible continuity-law transition. Also bounds " +
@@ -106,7 +116,7 @@ namespace CosmicShore.ScriptableObjects
                  "belt already targets far ahead; this guarantees a structure never materialises in " +
                  "the player's face even under degenerate geometry. Keep at or below First Scene " +
                  "Distance so it never fights normal near-fill placement.")]
-        float minPlacementDistance = 140f;
+        float minPlacementDistance = 380f;
 
         [SerializeField, Min(0f),
          Tooltip("Extra world-unit margin added to Scene Radius when deciding a scene is fully off " +
@@ -114,7 +124,7 @@ namespace CosmicShore.ScriptableObjects
                  "this padded sphere lies wholly outside the camera view, so the player never watches " +
                  "a scene vanish. Larger = more buffer against turning mid-transition; the belt just " +
                  "waits a touch longer for scenes to leave view.")]
-        float offscreenMargin = 40f;
+        float offscreenMargin = 80f;
 
         public override void Spawn(Transform parent, ToyPlacement placement, ToyContext context)
         {
@@ -126,6 +136,7 @@ namespace CosmicShore.ScriptableObjects
 
         ConveyorConfig BuildConfig() => new()
         {
+            DisplayName = DisplayName,
             PrismPrefab = prismPrefab,
             OmniCrystalPrefab = omniCrystalPrefab,
             CrystalEffects = crystalCollectionEffects,
