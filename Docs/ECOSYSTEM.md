@@ -1724,6 +1724,44 @@ LOD-cullable BoxCollider.
 **Follow-ups.** (a) Not yet flown — confirm the band width really does read as "locally flat" at
 vessel speed, and that a crossing is legible rather than confusing. (b) Ourobor shares the generic
 cell icon with every other config; it wants its own art. (c) Device soak, same rule as §18.
+(d) Ourobor's assets (prefab, cell config, metas, and the Menu_Main `CellConfigs` array entry)
+were hand-authored as YAML and have never had an editor import pass — the checks below cover it.
+
+---
+
+## 18.3 In-editor verification for §18.1 / §18.2 (the human is the gate)
+
+Neither cell has been opened in Unity. Run these in order; each has a specific failure it catches.
+
+1. **Import.** Pull the branch and let Unity reimport. `SpawnableOurobor.prefab` and
+   `Ourobor Cell Config.asset` must both open with **no "Missing (Mono Script)"** row and no
+   `None` reference — the prefab's `prism` field in particular must show the prism prefab, or the
+   cell builds zero prisms silently. (Their GUIDs were minted offline and checked for collisions,
+   and the prefab's serialized field set is byte-identical to `SpawnableCaldera.prefab`'s, but an
+   import pass is the only real proof.)
+2. **Baselines.** `Tools > Cosmic Shore > Measure Cell Environment Baselines`. Expect
+   `SpawnableCaldera` **41,353 / 1,210,753** and `SpawnableOurobor` **37,889 / 751,449**. These
+   came from an offline bit-exact port of the generators (validated by reproducing the shipped
+   Caldera's 31,194 / 430,691 to the unit), so a divergence of more than a few hundred count /
+   few thousand volume means the port drifted — re-author the two `PhaseThresholds` blocks from
+   the measurer's numbers + the Blob deltas, don't keep the authored ones.
+3. **Console on load.** `SpawnableOurobor.BuildBands` carries two fail-loud authoring guards
+   (a band reaching inside the node-control radius; an even half-twist count, which would make an
+   ordinary two-sided annulus instead of a Möbius band). Either firing is a red console error and
+   an authoring bug, not a runtime one.
+4. **Phase at rest.** Menu_Main → Cell Selector → each cell. Both must idle in **Calm**, not
+   Restless/Frenzy. Frenzy-at-boot means the ladder is under the baseline (step 2 failed).
+5. **Node control unclaimed.** With the cell freshly built and no player mass laid,
+   `Cell.TryGetNucleusClaim` must return **false**. Both generators are authored to lay nothing
+   inside the 392u control radius (measured minima: Caldera 405.9, Ourobor 422.1); a claim at
+   boot means something reached in.
+6. **The things only flying can answer.** Caldera: do the 2× massifs still feel like four
+   distinct mountains rather than a wall, and is the danger (1,503 prisms, 6.0% of mass, much of
+   it on the crust you orbit) fun or punishing? Ourobor: does ~290 units of band width actually
+   read as "locally flat" — that is the whole premise — and is a band crossing legible or
+   confusing? Both: the `EnvironmentLoadVeil` hold is now longer than any previous world; time it.
+
+Per-cell fallback lever for all of the above: `density` (0.5–1.3) on the two Spawnable prefabs.
 
 ---
 
