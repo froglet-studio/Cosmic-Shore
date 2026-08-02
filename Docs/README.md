@@ -59,6 +59,9 @@ Docs/
 │                                launch pipeline
 ├── UNITY_VERIFICATION_CHECKLIST.md  changes that landed without an in-editor
 │                                pass — verify these when you next open Unity
+├── EDITOR_TOOL_LEDGER.md        every [MenuItem] tool: standing vs one-shot,
+│                                which one-shots still owe a run + push, and
+│                                which are retirable (enforced by /ship §2.5)
 └── CameraMigrationReview.md     camera system migration tracking
 ```
 
@@ -88,6 +91,7 @@ session-scoped findings that benefit from a timeline view.
 | Find "Shuffle" (it's Tournament's card display name) | `ShuffleSystem/ARCHITECTURE.md` → `TournamentSystem/ARCHITECTURE.md` |
 | Understand the threading rules | `THREADING.md` |
 | Confirm changes that landed without an editor pass | `UNITY_VERIFICATION_CHECKLIST.md` |
+| See which editor tools still owe a run (or are retirable) | `EDITOR_TOOL_LEDGER.md` |
 | Find a scene | `SCENES.md` |
 
 ## Shared conventions
