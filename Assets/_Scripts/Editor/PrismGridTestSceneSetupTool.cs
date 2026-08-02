@@ -1,0 +1,205 @@
+using CosmicShore.Gameplay;
+using CosmicShore.ScriptableObjects;
+using CosmicShore.Utility;
+using UnityEditor;
+using UnityEditor.SceneManagement;
+using UnityEngine;
+using UnityEngine.SceneManagement;
+
+namespace CosmicShore.Editor
+{
+    /// <summary>
+    /// One-click setup for the prism-grid explosion test scene. It:
+    ///   1. authors <c>Assets/Resources/PrismGridTestConfig.asset</c> and points it at the default
+    ///      prism prefab (Dolphin) and the base spherical AOE explosion prefab,
+    ///   2. creates/opens <c>Assets/_Scenes/Game_TestDesign/PrismGridExplosionTest.unity</c>, and
+    ///   3. populates it with the minimum the rig needs: a plain Main Camera, a Directional Light,
+    ///      an instance of <c>PrismManagers.prefab</c> (PrismScaleManager / MaterialStateManager are
+    ///      Singleton&lt;T&gt;, which never auto-creates), and the harness GameObject.
+    ///
+    /// Idempotent — safe to re-run; existing objects are reused rather than duplicated.
+    ///
+    /// The scene is deliberately NOT added to Build Settings, matching every other
+    /// Game_TestDesign scene (Bootstrap must stay at index 0 for SceneBootstrapper). Add it only if
+    /// you want it in the Performance Benchmark's automatic multi-scene sweep.
+    ///
+    /// No DiagnosticsHUD wiring is needed or wanted: it auto-spawns in every scene via
+    /// [RuntimeInitializeOnLoadMethod] — F7 overlay, F5 records to Documents/CosmicShore Diagnostics/.
+    /// </summary>
+    public static class PrismGridTestSceneSetupTool
+    {
+        const string ResourcesFolder = "Assets/Resources";
+        const string ConfigAssetPath = "Assets/Resources/PrismGridTestConfig.asset";
+        const string SceneFolder = "Assets/_Scenes/Game_TestDesign";
+        const string ScenePath = "Assets/_Scenes/Game_TestDesign/PrismGridExplosionTest.unity";
+
+        const string PrismPrefabPath = "Assets/_Prefabs/Trails/Prisms With Pools/Dolphin Prism.prefab";
+        const string ExplosionPrefabPath = "Assets/_Prefabs/Projectile/AOEExplosion.prefab";
+        const string PrismManagersPrefabPath = "Assets/_Prefabs/Environment/PrismManagers.prefab";
+
+        [MenuItem("Tools/Cosmic Shore/Setup Prism Grid Explosion Scene")]
+        static void SetupScene()
+        {
+            // The scene is opened Single, so give the user a chance to keep whatever they had open.
+            if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
+
+            var config = LoadOrCreateConfig();
+
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+
+            string report = BuildScene(config);
+
+            EditorUtility.DisplayDialog("Setup Prism Grid Explosion Scene",
+                $"Config: {ConfigAssetPath}\nScene: {ScenePath}\n\n{report}\n\n" +
+                "Before pressing Play, disable Bootstrap auto-load:\n" +
+                "Tools > Cosmic Shore > Testing Multiplayer > Do not load Bootstrap Scene on Play\n\n" +
+                "In Play mode: F7 shows the DiagnosticsHUD, F5 records a report to " +
+                "Documents/CosmicShore Diagnostics/.",
+                "OK");
+        }
+
+        // ── Config asset ─────────────────────────────────────────────────────
+
+        static PrismGridTestConfigSO LoadOrCreateConfig()
+        {
+            EnsureFolder(ResourcesFolder);
+
+            var config = AssetDatabase.LoadAssetAtPath<PrismGridTestConfigSO>(ConfigAssetPath);
+            if (!config)
+            {
+                config = ScriptableObject.CreateInstance<PrismGridTestConfigSO>();
+                AssetDatabase.CreateAsset(config, ConfigAssetPath);
+            }
+
+            var so = new SerializedObject(config);
+
+            // Only fill unset references, so a re-run never stomps a deliberate retarget.
+            SetObjectIfEmpty(so, "prismPrefab",
+                AssetDatabase.LoadAssetAtPath<Prism>(PrismPrefabPath));
+            SetObjectIfEmpty(so, "explosionPrefab",
+                AssetDatabase.LoadAssetAtPath<AOEExplosion>(ExplosionPrefabPath));
+
+            so.ApplyModifiedProperties();
+            EditorUtility.SetDirty(config);
+            return config;
+        }
+
+        // ── Scene ────────────────────────────────────────────────────────────
+
+        static string BuildScene(PrismGridTestConfigSO config)
+        {
+            EnsureFolder(SceneFolder);
+
+            bool existed = System.IO.File.Exists(ScenePath);
+            var scene = existed
+                ? EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single)
+                : EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects, NewSceneMode.Single);
+
+            var camera = EnsureCamera(scene);
+            EnsureLight(scene);
+            bool managersAdded = EnsurePrismManagers(scene);
+            EnsureHarness(scene, config, camera);
+
+            EditorSceneManager.MarkSceneDirty(scene);
+            EditorSceneManager.SaveScene(scene, ScenePath);
+
+            return existed
+                ? $"Updated existing scene. PrismManagers {(managersAdded ? "added" : "already present")}."
+                : $"Created new scene. PrismManagers {(managersAdded ? "added" : "MISSING — check " + PrismManagersPrefabPath)}.";
+        }
+
+        static Camera EnsureCamera(Scene scene)
+        {
+            var camera = Object.FindFirstObjectByType<Camera>();
+            if (camera == null)
+            {
+                var go = NewRoot("Main Camera", scene);
+                go.tag = "MainCamera";
+                camera = Undo.AddComponent<Camera>(go);
+            }
+
+            // The lattice can reach thousands of units across; the stock 1000 far plane clips it.
+            camera.farClipPlane = Mathf.Max(camera.farClipPlane, 20000f);
+            camera.transform.SetPositionAndRotation(new Vector3(0f, 0f, -600f), Quaternion.identity);
+            EditorUtility.SetDirty(camera);
+            return camera;
+        }
+
+        static void EnsureLight(Scene scene)
+        {
+            if (Object.FindFirstObjectByType<Light>() != null) return;
+
+            var go = NewRoot("Directional Light", scene);
+            var light = Undo.AddComponent<Light>(go);
+            light.type = LightType.Directional;
+            go.transform.rotation = Quaternion.Euler(50f, -30f, 0f);
+        }
+
+        static bool EnsurePrismManagers(Scene scene)
+        {
+            // PrismScaleManager / MaterialStateManager are Singleton<T> — they never auto-create,
+            // so without this prefab prisms spawn but never animate or theme.
+            if (Object.FindFirstObjectByType<PrismScaleManager>() != null) return false;
+
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(PrismManagersPrefabPath);
+            if (prefab == null)
+            {
+                Debug.LogError($"[PrismGridTestSceneSetupTool] Missing {PrismManagersPrefabPath} — " +
+                               "prisms will not animate.");
+                return false;
+            }
+
+            var instance = (GameObject)PrefabUtility.InstantiatePrefab(prefab, scene);
+            Undo.RegisterCreatedObjectUndo(instance, "Create PrismManagers");
+            return true;
+        }
+
+        static void EnsureHarness(Scene scene, PrismGridTestConfigSO config, Camera camera)
+        {
+            var harness = Object.FindFirstObjectByType<PrismGridExplosionHarness>();
+            if (harness == null)
+            {
+                var go = NewRoot("[PrismGridHarness]", scene);
+                harness = Undo.AddComponent<PrismGridExplosionHarness>(go);
+            }
+
+            var so = new SerializedObject(harness);
+            SetObject(so, "config", config);
+            SetObject(so, "viewCamera", camera);
+            so.ApplyModifiedProperties();
+            EditorUtility.SetDirty(harness);
+        }
+
+        // ── Helpers ──────────────────────────────────────────────────────────
+
+        static GameObject NewRoot(string name, Scene scene)
+        {
+            var go = new GameObject(name);
+            SceneManager.MoveGameObjectToScene(go, scene);
+            Undo.RegisterCreatedObjectUndo(go, "Create " + name);
+            return go;
+        }
+
+        static void EnsureFolder(string path)
+        {
+            if (AssetDatabase.IsValidFolder(path)) return;
+            string parent = System.IO.Path.GetDirectoryName(path).Replace('\\', '/');
+            string leaf = System.IO.Path.GetFileName(path);
+            if (!AssetDatabase.IsValidFolder(parent)) EnsureFolder(parent);
+            AssetDatabase.CreateFolder(parent, leaf);
+        }
+
+        static void SetObject(SerializedObject so, string field, Object value)
+        {
+            var p = so.FindProperty(field);
+            if (p != null) p.objectReferenceValue = value;
+        }
+
+        static void SetObjectIfEmpty(SerializedObject so, string field, Object value)
+        {
+            var p = so.FindProperty(field);
+            if (p != null && p.objectReferenceValue == null) p.objectReferenceValue = value;
+        }
+    }
+}
