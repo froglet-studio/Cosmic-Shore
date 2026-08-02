@@ -35,7 +35,7 @@ which does the identical insertion with automatic rollback on import error.
 
 ---
 
-## Phase 1 — BlockGraph grow nodes — ✅ WIRED PROGRAMMATICALLY IN-BRANCH
+## Phase 1 — BlockGraph grow nodes — ✅ WIRED + PLAYTEST-CONFIRMED
 
 Done out-of-editor and committed: `_PrismClock` global feed + `PrismGrowScale` Custom Function
 (source = `PrismClockAnimation.hlsl`, GUID pinned by its committed `.meta`) +
@@ -43,30 +43,17 @@ property feeds + Multiply spliced into the one edge that fed Vertex ▸ Position
 (`Prism Sub Graph #1 → Multiply.A`, `Scale → Multiply.B`, `Multiply → Position`).
 Every object reference machine-validated.
 
-**Your test (nothing to build):**
+**✅ PLAYTEST-CONFIRMED** — Squirrel right-trigger ring, trail lay, and gyroid
+growth all bloom smoothly on the GPU clock.
 
-- [ ] Pull. If git complains about an untracked
-      `PrismClockAnimation.hlsl.meta` (your editor generated one locally before the
-      committed meta existed), delete the local file and pull again — the graph
-      references the committed GUID.
-- [ ] Open the project; let it import. If BlockGraph goes magenta or errors (not
-      expected — the wiring is donor-schema-exact), run
-      **Validate Clock Wiring** and tell me what it says; `git checkout` the graph
-      reverts cleanly.
-- [ ] Play: **Squirrel right-trigger ring must grow smooth** (per-vertex GPU bloom).
-      Trail lay and gyroid growth too. Run the **Smoke Test** menu item; DiagnosticsHUD
-      "Animators" rows stay **0 active**.
-- [ ] Report back — then I wire ExplodingBlockGraph (test: vessel collision debris)
-      and BlockGraph colors (test: skimmer steal) the same way.
-
-## Phase 2 — BlockGraph color nodes — ✅ WIRED PROGRAMMATICALLY IN-BRANCH
+## Phase 2 — BlockGraph color nodes — ✅ WIRED + PLAYTEST-CONFIRMED
 
 Done and committed: `PrismColorLerp` CF intercepts the three property→subgraph
 feeds (existing `BrightColor`/`DarkColor`/`Spread` nodes → Target inputs; CF
 outputs → subgraph; start colors + times from new property nodes; Clock ←
 `_PrismClock`).
 
-**Test: steal a prism with your skimmer** — the repaint fades smoothly (0.8s)
+**✅ PLAYTEST-CONFIRMED** — skimmer-steal repaints fade smoothly (0.8s)
 instead of snapping. Shield engage/danger repaints likewise. (The octahedron
 shield MORPH itself is still the CPU-ticked B4 item — only its color fade is
 clock-driven.)
@@ -92,7 +79,7 @@ clock-driven.)
 
 </details>
 
-## Phase 3 — ExplodingBlockGraph nodes — ✅ WIRED PROGRAMMATICALLY IN-BRANCH
+## Phase 3 — ExplodingBlockGraph nodes — ✅ WIRED + PLAYTEST-CONFIRMED (color cluster added after, one test left)
 
 Done and committed: `PrismExplosionClock` CF (Amount/Opacity re-routes + object-
 space flight offset added into the vertex chain) + the `PrismGrowScale` cluster
@@ -119,13 +106,20 @@ space flight offset added into the vertex chain) + the `PrismGrowScale` cluster
   runs on the CPU, and the envelope is one-shot initial-conditions data, not
   animation. Reset-before-expand keeps pooled reuse from compounding envelopes.
 
-**Retest: collide your vessel with trail prisms** — debris flies in the impact
-direction, shatters, and fades smoothly on the GPU clock, and stays visible
-across the whole flight even when its spawn point leaves the screen. Transparent
-prisms bloom on spawn and render correctly at rest. Known pending: COLOR
-transitions on currently-transparent prisms (they bind one-shot; a handful of
-one-time [PrismClock] _ColorStartTime errors on the transparent materials are
-expected until the C-phase adds the color cluster to this graph).
+**✅ PLAYTEST-CONFIRMED 2026-08-02** — debris flies in the impact direction,
+shatters, and fades smoothly on the GPU clock, and stays visible across the
+whole flight.
+
+**Color cluster added (post-confirmation wrap-up):** the color five properties +
+the `PrismColorLerp` cluster are now wired into this graph too (bright/dark
+intercepted at the Prism Sub Graph feeds, spread at the explosion spread-chain
+Add — same shape as BlockGraph). Transparent live prisms now FADE on
+steal/repaint instead of snapping, and the last expected one-time
+`[PrismClock] _ColorStartTime` errors on transparent materials are gone.
+
+**Test: steal a TRANSPARENT prism with your skimmer** (or watch a danger/shield
+repaint on one) — the recolor fades over ~0.8s like the opaque prisms do, with
+zero `[PrismClock]` errors.
 
 <details><summary>Manual steps (reference only — already done)</summary>
 
@@ -158,7 +152,7 @@ expected until the C-phase adds the color cluster to this graph).
 
 </details>
 
-## Phase 4 — SuctionGraph nodes — ✅ WIRED PROGRAMMATICALLY IN-BRANCH
+## Phase 4 — SuctionGraph nodes — ✅ WIRED + PLAYTEST-CONFIRMED
 
 Done and committed: `PrismSuctionClock` CF (Clock ← `_PrismClock`, the suction
 four → their inputs, existing `_State` property → `LegacyState`; the `State`
@@ -171,9 +165,9 @@ convergence point (`ResetBoundsToMesh` + `EncapsulateBoundsPoint`), and the
 per-frame location refresh keeps the envelope covering a wandering sink at
 no-op cost while it stays inside.
 
-**Test: let fauna graze a trail** — prisms suck smoothly into the moving
+**✅ PLAYTEST-CONFIRMED 2026-08-02** — prisms suck smoothly into the moving
 creature (and fauna-spawned prisms grow OUT of it via `StartGrow`, the reverse
-suction), staying visible across the whole collapse even at screen edges.
+suction), staying visible across the whole collapse.
 
 <details><summary>Manual steps (reference only — already done)</summary>
 

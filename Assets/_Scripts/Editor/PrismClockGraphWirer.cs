@@ -106,9 +106,13 @@ namespace CosmicShore.Editor
                     // (also the shatter-spin axis) — the world->object conversion is
                     // GPU-side inside PrismExplosionClock, so no extra property.
                     F("_ExplodeStartTime", 0f), F("_ExplodeSpeed", 0f), F("_ExplodeDuration", 0f),
-                    // Transparent LIVE prisms rest on this graph — the grow trio here
-                    // is what lets them bloom instead of snapping (loudly) on spawn.
+                    // Transparent LIVE prisms rest on this graph — the grow trio +
+                    // color five here are what let them bloom and fade colors instead
+                    // of snapping (loudly) on spawn/steal.
                     F("_GrowStartTime", 0f), F("_GrowRate", 0f), V3("_GrowStartFrac", 1f, 1f, 1f),
+                    F("_ColorStartTime", 0f), F("_ColorDuration", 0f),
+                    C4("_StartBrightColor", 1f, 1f, 1f, 1f), C4("_StartDarkColor", 1f, 1f, 1f, 1f),
+                    V3("_StartSpread", 0f, 0f, 0f),
                 },
             },
             new GraphJob

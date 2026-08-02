@@ -43,11 +43,18 @@ namespace CosmicShore.Editor
             new GraphSpec
             {
                 GraphName = "ExplodingBlockGraph",
-                RequiredProps = new[] { "_ExplodeStartTime", "_ExplodeSpeed", "_ExplodeDuration" },
-                // Transparent LIVE prisms rest on this graph — they need the grow trio
-                // here too or their spawn bloom snaps (loudly) while opaque prisms bloom.
-                OptionalProps = new[] { "_GrowStartTime", "_GrowRate", "_GrowStartFrac" },
-                Purpose = "explosion debris flight/shatter/fade (PrismExplosionClock)",
+                // Transparent LIVE prisms rest on this graph — the grow trio + color
+                // five are required here too, or their spawn bloom / steal repaint
+                // snaps (loudly) while opaque prisms animate.
+                RequiredProps = new[]
+                {
+                    "_ExplodeStartTime", "_ExplodeSpeed", "_ExplodeDuration",
+                    "_GrowStartTime", "_GrowRate", "_GrowStartFrac",
+                    "_ColorStartTime", "_ColorDuration",
+                    "_StartBrightColor", "_StartDarkColor", "_StartSpread",
+                },
+                OptionalProps = new string[0],
+                Purpose = "explosion debris flight/shatter/fade (PrismExplosionClock) + transparent live prism bloom/color",
             },
             new GraphSpec
             {
@@ -120,13 +127,21 @@ namespace CosmicShore.Editor
                     report.AppendLine($"   ❌ Custom Function node '{expectedFunction}' NOT found (add it per §4.4, Source = PrismClockAnimation.hlsl)");
                     allRequiredPass = false;
                 }
-                if (spec.GraphName == "BlockGraph")
+                // Secondary CF nodes: BlockGraph carries the color lerp;
+                // ExplodingBlockGraph carries the grow + color clusters too
+                // (transparent live prisms bloom and fade colors on this graph).
+                string[] extraFunctions = spec.GraphName == "BlockGraph"
+                    ? new[] { "PrismColorLerp" }
+                    : spec.GraphName == "ExplodingBlockGraph"
+                        ? new[] { "PrismGrowScale", "PrismColorLerp" }
+                        : new string[0];
+                foreach (var fn in extraFunctions)
                 {
-                    if (text.Contains("PrismColorLerp"))
-                        report.AppendLine("   ✅ Custom Function node 'PrismColorLerp' present");
+                    if (text.Contains(fn))
+                        report.AppendLine($"   ✅ Custom Function node '{fn}' present");
                     else
                     {
-                        report.AppendLine("   ❌ Custom Function node 'PrismColorLerp' NOT found (fragment stage, targets ← _BrightColor/_DarkColor/_Spread property nodes)");
+                        report.AppendLine($"   ❌ Custom Function node '{fn}' NOT found (add it per §4.4, Source = PrismClockAnimation.hlsl)");
                         allRequiredPass = false;
                     }
                 }
