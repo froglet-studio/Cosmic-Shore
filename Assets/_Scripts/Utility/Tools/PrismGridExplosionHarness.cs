@@ -175,6 +175,14 @@ namespace CosmicShore.Utility
                                "add _Prefabs/Environment/PrismManagers.prefab to the scene.");
             }
 
+            // The lay path hard-depends on a populated theme (Prism.ChangeTeam →
+            // domain material lookup). ThemeManager.Awake fills the container; in
+            // gameplay it lives in Bootstrap, which this scene deliberately skips.
+            // Without it, the FIRST laid prism NREs and Spawn appears to do nothing.
+            if (FindFirstObjectByType<ThemeManager>() == null)
+                Warn("No ThemeManager in scene — Spawn will fail on the first prism. " +
+                     "Re-run Tools > Cosmic Shore > Setup Prism Grid Explosion Scene.");
+
             DiagnosticsHUD.RegisterCommand(CommandName, HandleGridCommand);
             // Alias: operators consistently type `prisms 50000` — meet them there.
             DiagnosticsHUD.RegisterCommand("prisms", HandleGridCommand);

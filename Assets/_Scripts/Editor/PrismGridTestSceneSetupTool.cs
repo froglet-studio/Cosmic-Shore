@@ -99,6 +99,7 @@ namespace CosmicShore.Editor
             var camera = EnsureCamera(scene);
             EnsureLight(scene);
             bool managersAdded = EnsurePrismManagers(scene);
+            EnsureThemeManager(scene, config);
             EnsureHarness(scene, config, camera);
 
             EditorSceneManager.MarkSceneDirty(scene);
@@ -156,6 +157,51 @@ namespace CosmicShore.Editor
             var instance = (GameObject)PrefabUtility.InstantiatePrefab(prefab, scene);
             Undo.RegisterCreatedObjectUndo(instance, "Create PrismManagers");
             return true;
+        }
+
+        /// <summary>
+        /// The lay path hard-depends on the theme: Prism.ChangeTeam →
+        /// PrismTeamManager.HandleTeamChange fetches the domain's opaque AND
+        /// transparent block materials from ThemeManagerDataContainerSO, whose
+        /// TeamMaterialSets dictionary is populated ONLY by ThemeManager.Awake
+        /// (a Bootstrap-scene object in gameplay). Without one in this
+        /// Bootstrap-less scene, the FIRST laid prism NREs and the whole lay dies
+        /// — the "Spawn produced no prisms" failure. The container asset is
+        /// resolved from the prism prefab's own PrismTeamManager reference so the
+        /// scene themes with exactly the asset the prisms will read.
+        /// </summary>
+        static void EnsureThemeManager(Scene scene, PrismGridTestConfigSO config)
+        {
+            if (Object.FindFirstObjectByType<ThemeManager>() != null) return;
+
+            ThemeManagerDataContainerSO container = null;
+            if (config != null && config.PrismPrefab != null &&
+                config.PrismPrefab.TryGetComponent<PrismTeamManager>(out var teamManager))
+            {
+                var prefabSo = new SerializedObject(teamManager);
+                container = prefabSo.FindProperty("_themeManagerData")?.objectReferenceValue
+                    as ThemeManagerDataContainerSO;
+            }
+            if (container == null)
+            {
+                var guids = AssetDatabase.FindAssets("t:ThemeManagerDataContainerSO");
+                if (guids.Length > 0)
+                    container = AssetDatabase.LoadAssetAtPath<ThemeManagerDataContainerSO>(
+                        AssetDatabase.GUIDToAssetPath(guids[0]));
+            }
+            if (container == null)
+            {
+                Debug.LogError("[PrismGridTestSceneSetupTool] No ThemeManagerDataContainerSO found — " +
+                               "prism team painting will NullReference on the first laid prism.");
+                return;
+            }
+
+            var go = NewRoot("[ThemeManager]", scene);
+            var tm = Undo.AddComponent<ThemeManager>(go);
+            var so = new SerializedObject(tm);
+            so.FindProperty("_dataContainer").objectReferenceValue = container;
+            so.ApplyModifiedProperties();
+            EditorUtility.SetDirty(tm);
         }
 
         static void EnsureHarness(Scene scene, PrismGridTestConfigSO config, Camera camera)
