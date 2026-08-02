@@ -37,6 +37,9 @@ the same folder. The variant label is auto-detected (`legacy-cpu` when
 git checkout -b bench-legacy origin/bleeding-edge
 git cherry-pick 8436342f cf382420   # Yash's harness (grid rig + readiness fix)
 git cherry-pick 0af666b4            # the A/B benchmark layer (branch-portable)
+git cherry-pick c08024bd            # loud lay failures + 'prisms N' + empty-lattice guard
+git cherry-pick 3b9efbf5            # ThemeManager self-provisioning (zero-prism root cause —
+                                    # present on bleeding-edge too; re-run the setup tool after)
 ```
 
 Then steps 2–4 exactly as above — same scene tool, same grid size, same Bench
