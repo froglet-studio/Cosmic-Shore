@@ -291,8 +291,11 @@ namespace CosmicShore.Gameplay
                 // stalk outward and is attached to the plant. Placing it AT the reach left every
                 // leaf floating at the end of an invisible stem - the single biggest reason the
                 // whorls read as a wheel of chips rather than a head of leaves.
+                // Claim on the leaf's CROSS-SECTION, not its length. A whorl is meant to be dense
+                // around one node - claiming a length-sized volume would have each leaf reject
+                // its own siblings and the head would come out with holes in it.
                 Vector3 pos = node + outward * (scale.z * 0.5f);
-                if (!Claim(pos, scale.z * 0.35f)) continue;
+                if (!Claim(pos, scale.x)) continue;
 
                 _pending.Enqueue(new SpawnOrder
                 {
@@ -444,12 +447,26 @@ namespace CosmicShore.Gameplay
 
         void SeedTips()
         {
+            Vector3 basis = Vector3.Cross(_axis, Mathf.Abs(_axis.y) > 0.95f ? Vector3.right : Vector3.up)
+                .normalized;
+
             for (int i = 0; i < initialTips; i++)
             {
-                var root = AddSpindle();
-                root.transform.position = transform.position;
+                // Fan the initial tips around the axis at the golden angle so a multi-tip clump
+                // never sends two shoots the same way...
+                float roll = i * GoldenAngle;
+                Vector3 tilt = Quaternion.AngleAxis(roll * Mathf.Rad2Deg, _axis) * basis;
+                Vector3 heading = Quaternion.AngleAxis(spreadDegrees, tilt) * _axis;
 
-                var leaf = Instantiate(healthPrism, transform.position, transform.rotation);
+                // ...and stand each root apart on the ground. Seeding every root at the planting
+                // point stacked five reed stalks in exactly one spot; a clump wants a footprint.
+                Vector3 root0 = transform.position +
+                                (initialTips > 1 ? tilt * (segmentLength * 0.28f) : Vector3.zero);
+
+                var root = AddSpindle();
+                root.transform.position = root0;
+
+                var leaf = Instantiate(healthPrism, root0, transform.rotation);
                 leaf.transform.SetParent(root.transform, false);
                 leaf.transform.localPosition = Vector3.zero;
                 leaf.LifeForm = this;
@@ -460,14 +477,6 @@ namespace CosmicShore.Gameplay
                 _pendingPrismScale = new Vector3(collar.x * 1.5f, collar.y * 1.5f, collar.z);
                 AddHealthBlock(leaf);
                 leaf.Initialize("flora");
-
-                // Fan the initial tips around the axis at the golden angle so a multi-tip clump
-                // never sends two shoots the same way.
-                float roll = i * GoldenAngle;
-                Vector3 basis = Vector3.Cross(_axis, Mathf.Abs(_axis.y) > 0.95f ? Vector3.right : Vector3.up)
-                    .normalized;
-                Vector3 tilt = Quaternion.AngleAxis(roll * Mathf.Rad2Deg, _axis) * basis;
-                Vector3 heading = Quaternion.AngleAxis(spreadDegrees, tilt) * _axis;
 
                 Keep(new Tip { gameObject = root.gameObject, heading = heading.normalized, depth = 0, roll = roll });
             }
@@ -499,8 +508,11 @@ namespace CosmicShore.Gameplay
                     gameObject = survivors[i].gameObject,
                     heading = (survivors[i].transform.forward + _axis).normalized,
                     // Regrowth restarts mid-plant, not from scratch: a re-sprouted shoot opens
-                    // whorls again rather than climbing the whole stem a second time.
-                    depth = Mathf.Max(0, whorlStartDepth - 1),
+                    // whorls again rather than climbing the whole stem a second time. CLAMPED
+                    // below maxDepth - a species that never whorls authors whorlStartDepth above
+                    // maxDepth, and an unclamped reseed there would hand back a tip that is
+                    // instantly discarded as over-depth, reseeding forever and never growing.
+                    depth = Mathf.Clamp(whorlStartDepth - 1, 0, Mathf.Max(0, maxDepth - 2)),
                     roll = Random.value * Mathf.PI * 2f,
                 });
             }

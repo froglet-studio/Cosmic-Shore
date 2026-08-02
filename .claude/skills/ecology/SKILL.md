@@ -51,3 +51,28 @@ selection only (survival = fitness, never a scripted fitness function) · the co
 One coherent step per commit; conventional-commit message; develop on the feature branch (never
 `bleeding-edge`); open a PR only when asked. After lifeform-prefab changes, note to run
 `Tools ▸ Cosmic Shore ▸ Validate Lifeform Crystals`.
+
+## 7. Budgeting a new cell WITHOUT Unity (do this before you author thresholds)
+
+You cannot run the measurer, but a generator's cost is analytic — transliterate its
+loop structure to Python and compute the exact prism COUNT and the expected VOLUME:
+
+- Counts are pure loop arithmetic (mind index-dependent skips like crenellation and
+  `Scaled(n)` under the `density` knob).
+- Volume is `Σ count × (x·y·z)` per structure. `Jit(s, a)` multiplies **all three axes
+  by one** factor `k ~ U(1-a, 1+a)`, so `E[k³] = ((1+a)⁴ − (1−a)⁴) / (4a)` — ≈ **1.04**
+  at the default `a = 0.2`. Noise-driven POSITION jitter never changes volume.
+- Print the per-structure table. It shows you immediately which family is eating the
+  budget (a thick "ground" slab band is the usual culprit) and is what the human
+  checks the measurer's output against.
+
+**Then author PhaseThresholds for what will GROW, not just for the baseline.** §18's
+rule (measured baseline + the Blob deltas) assumes the mass above baseline is vessel
+TRAIL. For a cell whose mass comes from **flora**, `FrenzyEnter` *is* the planting
+budget — planting and growth stop there — so it must be set at
+`baseline + the mature planting you actually want`, or the garden freezes while it
+still looks bare. Size the planting as `Σ species (plants × maxTotalSpawnedObjects)`
+and put Restless somewhere the fauna start hunting a partly-grown cell.
+
+Always hand the numbers back as ESTIMATES with the measurer step attached — analytic
+counts are exact, but only the editor proves the generator runs at all.

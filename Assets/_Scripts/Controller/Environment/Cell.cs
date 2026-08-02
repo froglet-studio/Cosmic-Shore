@@ -1189,6 +1189,7 @@ namespace CosmicShore.Gameplay
         // species preferring different ground never advance each other's rotation.
         readonly Dictionary<FloraSiteKind, List<FloraPlantingSite>> _sitesByKind = new();
         readonly Dictionary<FloraSiteKind, int> _kindCursor = new();
+        int _kindRotation;
         static readonly FloraSiteKind[] SiteKinds =
         {
             FloraSiteKind.Bed, FloraSiteKind.Climb, FloraSiteKind.Basket,
@@ -1256,8 +1257,11 @@ namespace CosmicShore.Gameplay
             site = default;
             int matched = 0;
             // Deterministic starting offset that advances per call, so successive plants of the
-            // same species rotate through the preferred kinds rather than always taking the first.
-            int offset = _nextPlantingSite++;
+            // same species rotate through the preferred kinds rather than always draining the
+            // first. Its own counter - advancing the generic cursor here would make a
+            // preference-matched plant silently skip a site for the species that use the
+            // fallback.
+            int offset = _kindRotation++;
 
             for (int pass = 0; pass < SiteKinds.Length; pass++)
             {
@@ -1310,6 +1314,7 @@ namespace CosmicShore.Gameplay
             _sitesByKind.Clear();
             _kindCursor.Clear();
             _nextPlantingSite = 0;
+            _kindRotation = 0;
         }
 
         // =====================================================================

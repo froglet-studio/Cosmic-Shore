@@ -1567,6 +1567,9 @@ retuning any ladder. Same soak-before-ship rule as §17 above; each prefab's
    cell; tune per feel.
 6. **Future archetypes** (diversity headroom before hybrids/dynamics take over): Abyss, Mycel,
    Hive, Glacier, Reliquary, Mesa.
+7. **The garden archetype landed** — `SpawnableHesperides`, the cell whose world is the
+   *planting* rather than the lay (~12k authored + ~21k grown). Different budgeting rule, so it
+   has its own section: **§21**.
 
 ---
 
