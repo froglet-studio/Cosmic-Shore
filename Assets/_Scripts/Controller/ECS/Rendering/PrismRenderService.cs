@@ -777,6 +777,28 @@ namespace CosmicShore.ECS
             em.SetComponentData(handle.Entity, rb);
         }
 
+        /// <summary>Grows RenderBounds minimally to contain an OBJECT-space point
+        /// (+ padding) — the suction envelope: vertices lerp toward `_Location`, so
+        /// the bounds must cover mesh ∪ convergence point or the collapsing geometry
+        /// frustum-culls against the resting box. No-op while the point is already
+        /// inside, so the moving-target refresh can call this each frame at
+        /// read-mostly cost.</summary>
+        public static void EncapsulateBoundsPoint(in PrismRenderHandle handle,
+            in float3 objectPoint, float padding)
+        {
+            if (!IsUsable(in handle)) return;
+            var em = _world.EntityManager;
+            var rb = em.GetComponentData<RenderBounds>(handle.Entity);
+            float3 min = rb.Value.Center - rb.Value.Extents;
+            float3 max = rb.Value.Center + rb.Value.Extents;
+            float3 pad = new float3(math.max(0f, padding));
+            float3 pmin = objectPoint - pad, pmax = objectPoint + pad;
+            if (math.all(pmin >= min) && math.all(pmax <= max)) return;
+            float3 nmin = math.min(min, pmin), nmax = math.max(max, pmax);
+            rb.Value = new AABB { Center = (nmin + nmax) * 0.5f, Extents = (nmax - nmin) * 0.5f };
+            em.SetComponentData(handle.Entity, rb);
+        }
+
         /// <summary>Stamps a suction/implosion (direction >= 0, progress 0→1) or reverse
         /// grow (direction &lt; 0, progress 1→0) with an optional start delay. location is
         /// the convergence point, snapshotted at stamp time (moving-target exception:

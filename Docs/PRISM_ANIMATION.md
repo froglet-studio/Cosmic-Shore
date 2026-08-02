@@ -14,9 +14,10 @@ per-material fallback tier, no CPU animation managers. A prism whose graph is no
 wired (§4.4) does not fall back: gameplay state still goes final at the stamp
 (law-correct), the visual snaps to its end state, and the stamp site logs a loud
 error naming exactly what to wire (`PrismClockDiagnostics`, per the project's
-fail-loud policy). Until the §4.4 wiring lands, spawns/transitions/effects visibly
-snap — that is the intended forcing function, not a bug to paper over with a
-fallback.
+fail-loud policy). If a graph is ever unwired (a revert, a new prism graph),
+spawns/transitions/effects visibly snap — that is the intended forcing function,
+not a bug to paper over with a fallback. (All four §4.4 phases are wired
+in-branch as of 2026-08-02 — see `Docs/PRISM_CLOCK_WIRING_CHECKLIST.md`.)
 
 It is the animation-side counterpart of two locked laws that already exist:
 
@@ -647,7 +648,11 @@ the prompter's direction.** `ClockAnimationEnabled` is constant `true`; the form
   documented exception — `PrismEffectsManager.clockConvergenceTracking` refreshes
   `_Location` only (one float3 per frame per implosion, self-dropping when the target
   dies; the suction then freezes at the last stamped point while the GPU finishes the
-  animation). Pool return / re-trigger cancels the scheduled completion and retires
+  animation). Suction bounds get the same envelope treatment as explosions:
+  `ResetBoundsToMesh` + `EncapsulateBoundsPoint` (mesh ∪ convergence point) at the
+  stamp, and the location refresh re-encapsulates a wandering sink — a no-op while
+  the point stays inside the envelope, so the per-frame cost stays read-mostly.
+  Pool return / re-trigger cancels the scheduled completion and retires
   the stamp (`ClearExplosionClockStamp`/`ClearSuctionClockStamp`) so a legacy-path
   reuse of the same entity can never replay a stale clock animation.
 - **Color/state transitions (B2)** — `MaterialPropertyAnimator.UpdateMaterial` binds
@@ -737,7 +742,7 @@ Phase A — infrastructure (everything else rides on it):
 
 | # | Item | Status |
 |---|---|---|
-| A1 | Shader graphs: clock inputs (BlockGraph grow+color, ExplodingBlockGraph, SuctionGraph) — Hybrid Per Instance, settled-state authored defaults | ◐ HLSL shipped (`PrismClockAnimation.hlsl`); graph wiring is an in-editor step — protocol in §4.4 |
+| A1 | Shader graphs: clock inputs (BlockGraph grow+color, ExplodingBlockGraph, SuctionGraph) — Hybrid Per Instance, settled-state authored defaults | ✅ ALL FOUR PHASES WIRED PROGRAMMATICALLY IN-BRANCH 2026-08-02 (donor-clone JSON synthesis, machine-validated; `Docs/PRISM_CLOCK_WIRING_CHECKLIST.md` phases 1–4). Playtest-confirmed: grow ✅, colors ✅; explosion fix round (object-space velocity + bounds envelope) and suction awaiting retest |
 | A2 | `PrismRenderProperties` clock structs + prototype-archetype additions + `PrismRenderService` stamp APIs | ✅ shipped 2026-07-31; STRICT (always-on, no toggle) 2026-08-01. No MPB twins by design — no fallback tier exists |
 | A3 | Swap scheduler: generalize `PrismTimerManager` (ScheduleAction / CancelScheduledActions) | ✅ shipped 2026-07-31 |
 
@@ -745,9 +750,9 @@ Phase B — migrate the engines (each retires a per-frame pass):
 
 | # | Item | Status |
 |---|---|---|
-| B1 | Grow-in → clock (all ~12 feeder paths ride the one engine); gameplay-final-at-start (volume/spatial stamps, clock predicates, `ExecuteOnScaleComplete` → start) | ✅ LIVE (strict, the only path) 2026-08-01 — `PrismScaleManager` retired (empty active set; class deletion in-editor, D2). Pending: graph wiring (visuals snap loudly until then), `HoldColliderAtFullSize` deletion, `CreateBlockCoroutine` window simplification, arena-gate simplification, PhaseThresholds re-baseline |
-| B2 | Color/state transitions → clock lerp (start colors + t₀; target = material authored; end-state material bound at START, settle scheduled) | ✅ LIVE (strict, the only path) 2026-08-01 — `MaterialStateManager` retired (empty active set; class deletion in-editor, D2). Pending: graph wiring (transitions snap loudly until then) |
-| B3 | Explosion/implosion → clock (stamp `{t₀, velocity, speed, duration}` / `{t₀, duration, direction, delay, location}`) | ✅ LIVE (strict, the only path) 2026-08-01 — moving-target DECIDED as the §1 exception (a snapshot would suck prisms toward where the fauna WAS): progress rides the clock, `PrismEffectsManager` refreshes `_Location` only (one float3/frame) while the target lives. Animation passes retired (never registered; Burst-job dead code + VFX caps delete in-editor, D2). Pending: graph wiring (effects freeze/snap loudly until then) |
+| B1 | Grow-in → clock (all ~12 feeder paths ride the one engine); gameplay-final-at-start (volume/spatial stamps, clock predicates, `ExecuteOnScaleComplete` → start) | ✅ LIVE (strict, the only path) 2026-08-01 — `PrismScaleManager` retired (empty active set; class deletion in-editor, D2). Graph wiring ✅ (playtest-confirmed smooth). Pending: `HoldColliderAtFullSize` deletion, `CreateBlockCoroutine` window simplification, arena-gate simplification, PhaseThresholds re-baseline |
+| B2 | Color/state transitions → clock lerp (start colors + t₀; target = material authored; end-state material bound at START, settle scheduled) | ✅ LIVE (strict, the only path) 2026-08-01 — `MaterialStateManager` retired (empty active set; class deletion in-editor, D2). Graph wiring ✅ (playtest-confirmed smooth on BlockGraph; transparent-prism color cluster on ExplodingBlockGraph remains a C-phase item) |
+| B3 | Explosion/implosion → clock (stamp `{t₀, velocity, speed, duration}` / `{t₀, duration, direction, delay, location}`) | ✅ LIVE (strict, the only path) 2026-08-01 — moving-target DECIDED as the §1 exception (a snapshot would suck prisms toward where the fauna WAS): progress rides the clock, `PrismEffectsManager` refreshes `_Location` only (one float3/frame) while the target lives. Animation passes retired (never registered; Burst-job dead code + VFX caps delete in-editor, D2). Graph wiring ✅ both graphs; explosion fix round shipped (CPU object-space `_ExplodeVelocityOS` + flight-envelope bounds), suction bounds ship with the wiring (`EncapsulateBoundsPoint`) — both awaiting playtest |
 | B4 | Shield morphs → GPU (vertex-shader bloom/shatter from per-vertex face data + t₀; settled shared-mesh swap already conforms) | ◐ interim shipped 2026-08-01: stellated idle per-prism `Update()` KILLED — both shield tiers now ride the central `PrismOctahedronShieldManager` ticker (`IPrismShieldMorphTicker`), registered only while morphing. GPU morph itself still pending |
 
 Phase C — rogue paths & ecosystem visuals (each is standalone):

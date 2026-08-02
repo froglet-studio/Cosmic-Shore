@@ -1,8 +1,10 @@
 # Prism Clock Wiring — In-Editor Checklist
 
 Companion to `Docs/PRISM_ANIMATION.md` (§4.4, §6). **STRICT MODE is live: no legacy
-fallback.** Until the node wiring below lands, prisms SNAP to end states and the
-console logs one `[PrismClock]` error per unwired material.
+fallback.** All four wiring phases below are ✅ wired programmatically in-branch —
+what remains is in-editor verification (Phase 5) and the deletion pass (Phase 6).
+If any graph reverts to unwired, prisms SNAP to end states and the console logs
+one `[PrismClock]` error per unwired material.
 
 **Already done programmatically on this branch — not your job:**
 
@@ -151,10 +153,24 @@ expected until the C-phase adds the color cluster to this graph).
 
 </details>
 
-## Phase 4 — SuctionGraph nodes
+## Phase 4 — SuctionGraph nodes — ✅ WIRED PROGRAMMATICALLY IN-BRANCH
 
-Open `Assets/_Graphics/Materials/Graphs/PrismGraphs/SuctionGraph.shadergraph`.
-(Next up — will be wired programmatically after the Phase 2/3 tests pass.)
+Done and committed: `PrismSuctionClock` CF (Clock ← `_PrismClock`, the suction
+four → their inputs, existing `_State` property → `LegacyState`; the `State`
+output replaces the ONE downstream `_State` use — `SequentialFaceConverger`'s
+LerpAmount). `_Location` stays untouched (live moving-target exception, Position-
+mode world→object transform — correct math, unlike the explosion's Direction-mode
+transform that lost scale/magnitude). Bounds ship with it: the stamp sites
+(`PrismImplosion.StampClockStrict`) reset to the mesh then encapsulate the
+convergence point (`ResetBoundsToMesh` + `EncapsulateBoundsPoint`), and the
+per-frame location refresh keeps the envelope covering a wandering sink at
+no-op cost while it stays inside.
+
+**Test: let fauna graze a trail** — prisms suck smoothly into the moving
+creature (and fauna-spawned prisms grow OUT of it via `StartGrow`, the reverse
+suction), staying visible across the whole collapse even at screen edges.
+
+<details><summary>Manual steps (reference only — already done)</summary>
 
 - [ ] Custom Function **`PrismSuctionClock`** — Inputs: `Clock` Float · `StartTime`
       Float · `Duration` Float · `Direction` Float · `GrowDelay` Float ·
@@ -165,10 +181,8 @@ Open `Assets/_Graphics/Materials/Graphs/PrismGraphs/SuctionGraph.shadergraph`.
       `_State` use. (`_Location` stays untouched — live moving-target exception.)
 - [ ] Save → Validate → play: fauna grazing sucks prisms into the moving creature
       smoothly.
-- [ ] Bounds: suction displaces vertices toward `_Location`, so the stamp sites
-      (`PrismImplosion.StartImplosion`/`StartGrow`) get the same treatment as
-      explosions — `ResetBoundsToMesh` + `ExpandBoundsForClockAnimation` toward the
-      convergence point (same class of culling bug otherwise).
+
+</details>
 
 ## Phase 5 — Full verification (§4.4 protocol)
 

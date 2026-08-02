@@ -296,6 +296,16 @@ namespace CosmicShore.Utility
                         PrismClock.Now, implosionDuration, direction, delay,
                         new Unity.Mathematics.float3(location.x, location.y, location.z)))
                 {
+                    // Culling envelope: vertices lerp toward _Location, so bounds
+                    // must cover mesh ∪ convergence point (same class of bug as the
+                    // explosion flight — geometry outside stale bounds frustum-culls
+                    // wrong in both directions). Reset first: pooled reuse must not
+                    // compound envelopes run over run.
+                    if (_meshFilter != null)
+                        PrismRenderService.ResetBoundsToMesh(in RenderHandle, _meshFilter.sharedMesh);
+                    PrismRenderService.EncapsulateBoundsPoint(in RenderHandle,
+                        ToObjectPoint(location), ConvergenceBoundsPadding);
+
                     // Moving-target exception: the manager refreshes ONLY _Location
                     // while the target transform lives (RefreshConvergenceForClock).
                     PrismEffectsManager.EnsureInstance()?.RegisterClockConvergence(this);
@@ -323,7 +333,23 @@ namespace CosmicShore.Utility
             TargetPosition = _convergenceTransform.position;
             PrismRenderService.SetImplosionLocation(in RenderHandle,
                 new Unity.Mathematics.float3(TargetPosition.x, TargetPosition.y, TargetPosition.z));
+            // Keep the culling envelope covering the moving sink — no-op while the
+            // point stays inside the stamped bounds (the common case: the creature
+            // approaches its meal), a minimal grow when it wanders outside.
+            PrismRenderService.EncapsulateBoundsPoint(in RenderHandle,
+                ToObjectPoint(TargetPosition), ConvergenceBoundsPadding);
             return true;
+        }
+
+        // Padding around the convergence point in the culling envelope — object
+        // space, generous enough to absorb small per-frame target drift without
+        // re-growing bounds every frame.
+        const float ConvergenceBoundsPadding = 2f;
+
+        Unity.Mathematics.float3 ToObjectPoint(Vector3 worldPoint)
+        {
+            var p = transform.InverseTransformPoint(worldPoint);
+            return new Unity.Mathematics.float3(p.x, p.y, p.z);
         }
 
         /// <summary>
