@@ -42,8 +42,19 @@ namespace CosmicShore.Gameplay
         const float FallDrop = 40f;            // vent mouth -> crust: the height of every curtain
         const float CrustR = NucleusR + CrustClearance; // the cell's only "floor"
         const float VentR = CrustR + FallDrop; // crater mouth: each massif's innermost point
-        const float ArcR = 620f;               // apex of the six tetrahedron-edge obsidian arcs
-        const float MassifLength = 152f;       // vent -> outer rim, before each massif's Reach
+        const float ArcR = 860f;               // apex of the six tetrahedron-edge obsidian arcs
+        const float MassifLength = 304f;       // vent -> outer rim, before each massif's Reach
+
+        /// <summary>Flank sampling spacing AND plate footprint both scale by this. Using ONE factor
+        /// for both holds surface COVERAGE exactly constant (count x footprint / area = 1) while a
+        /// doubled massif pays ~1.9x the prisms for 4x the area instead of 4x. Raise it for a
+        /// coarser, holier mountain; lower it for a denser one.</summary>
+        const float PlateDetail = 1.45f;
+
+        /// <summary>A flank plate: broad axes scale with <see cref="PlateDetail"/>, thickness never
+        /// does (a bigger mountain has bigger slabs, not thicker ones).</summary>
+        static Vector3 Plate(float x, float y, float thickness) =>
+            new(x * PlateDetail, y * PlateDetail, thickness);
 
         protected override int DefaultSeed => 53;
         protected override int BuildParameterHash() => System.HashCode.Combine(nameof(SpawnableCaldera), 4);
@@ -78,16 +89,16 @@ namespace CosmicShore.Gameplay
         {
             // The forge proper: a shingled basalt cone in full eruption - thickest curtain,
             // widest impact basin, the cell's signature.
-            new(92f, 1.12f, 0.0f, 1f, FlankStyle.Shingled, VentState.Erupting, Domains.Blue, Domains.Ruby),
+            new(184f, 1.12f, 0.0f, 1f, FlankStyle.Shingled, VentState.Erupting, Domains.Blue, Domains.Ruby),
             // The sulfur works: a stepped ziggurat venting gas, not lava - treads crusted gold,
             // fumarole chimneys ringing the mouth under shielded caps.
-            new(76f, 0.90f, 1.10f, -1f, FlankStyle.Terraced, VentState.Degassing, Domains.Gold, Domains.Blue),
+            new(152f, 0.90f, 1.10f, -1f, FlankStyle.Terraced, VentState.Degassing, Domains.Gold, Domains.Blue),
             // The collapsed caldera: organ-pipe fluting down a broad mouth that fell in on
             // itself, ringed by secondary vents each dripping its own thin fall.
-            new(86f, 1.00f, 2.30f, 1f, FlankStyle.Fluted, VentState.Collapsed, Domains.Blue, Domains.Gold),
+            new(172f, 1.00f, 2.30f, 1f, FlankStyle.Fluted, VentState.Collapsed, Domains.Blue, Domains.Gold),
             // The dead one: a shattered obsidian massif, glass tongue frozen mid-pour, a
             // super-shielded heart where the melt set. Almost no danger - the safe approach.
-            new(70f, 0.84f, 3.40f, -1f, FlankStyle.Shattered, VentState.Cooled, Domains.Ruby, Domains.Blue),
+            new(140f, 0.84f, 3.40f, -1f, FlankStyle.Shattered, VentState.Cooled, Domains.Ruby, Domains.Blue),
         };
 
         /// <summary>Tetrahedron vertex directions (normalised in <see cref="BuildFrames"/>).</summary>
@@ -177,7 +188,7 @@ namespace CosmicShore.Gameplay
                 var u = u0 * Mathf.Cos(s.Roll) + v0 * Mathf.Sin(s.Roll);
                 var v = Vector3.Cross(ax, u);
 
-                float mouth = s.Vent == VentState.Collapsed ? 50f : 22f; // a collapsed mouth is wide
+                float mouth = s.Vent == VentState.Collapsed ? 100f : 44f; // a collapsed mouth is wide
                 _frames[k] = new Frame(ax, u, v, MassifLength * s.Reach, mouth, s.Girth);
             }
         }
@@ -201,21 +212,21 @@ namespace CosmicShore.Gameplay
         /// axis is the slope normal.</summary>
         void BuildShingledFlank(in Spec s, in Frame f, int k)
         {
-            const int rings = 28;
+            const int rings = 40;
             for (int L = 0; L < rings; L++)
             {
                 float t = L / (rings - 1f);
                 float radial = VentR + f.Length * t;
                 float rho = Mathf.Lerp(f.Rho0, f.Rho1, t);
-                int n = Mathf.Max(6, (int)(2f * Mathf.PI * rho / 3.1f));
+                int n = Mathf.Max(6, (int)(2f * Mathf.PI * rho / (3.1f * PlateDetail)));
                 for (int i = 0; i < n; i++)
                 {
                     float a = 2f * Mathf.PI * i / n + L * 0.13f * s.Chirality;
                     if (N01(a * 2.6f, L * 0.7f + k * 5f, 3.3f, 2) < 0.09f) continue; // blown-through vents
-                    float wob = 5f * N01(Mathf.Cos(a) * 4f, L * 0.5f + k * 3f, Mathf.Sin(a) * 4f, 1);
+                    float wob = 9f * N01(Mathf.Cos(a) * 4f, L * 0.5f + k * 3f, Mathf.Sin(a) * 4f, 1);
                     Emit(f.At(radial + 2f * Mathf.Sin(a * 5f + L), rho + wob, a),
                         SpawnPoint.LookRotation(f.Normal(a), f.Around(a)),
-                        Jit(new Vector3(4.2f, 2.6f, 1.4f), 0.25f), s.Stone);
+                        Jit(Plate(4.2f, 2.6f, 1.4f), 0.25f), s.Stone);
                 }
             }
         }
@@ -236,26 +247,26 @@ namespace CosmicShore.Gameplay
                 for (int lane = 0; lane < 2; lane++)
                 {
                     float rho = Mathf.Lerp(rhoIn, rhoOut, 0.34f + lane * 0.42f);
-                    int n = Mathf.Max(8, (int)(2f * Mathf.PI * rho / 3.0f));
+                    int n = Mathf.Max(8, (int)(2f * Mathf.PI * rho / (3.0f * PlateDetail)));
                     for (int i = 0; i < n; i++)
                     {
                         float a = 2f * Mathf.PI * i / n + step * 0.2f * s.Chirality;
                         if (N01(a * 3.1f, step * 1.3f + k * 4f, lane * 2.7f, 4) < 0.12f) continue;
                         Emit(f.At(radialIn, rho, a),
                             SpawnPoint.LookRotation(-f.Ax, f.Around(a)),
-                            Jit(new Vector3(4.4f, 3.4f, 1.2f), 0.2f), lane == 0 ? s.Stone : s.Trim);
+                            Jit(Plate(4.4f, 3.4f, 1.2f), 0.2f), lane == 0 ? s.Stone : s.Trim);
                     }
                 }
 
                 // Riser: the wall climbing out to the next tread.
-                int rn = Mathf.Max(8, (int)(2f * Mathf.PI * rhoOut / 3.7f));
+                int rn = Mathf.Max(8, (int)(2f * Mathf.PI * rhoOut / (3.7f * PlateDetail)));
                 for (int i = 0; i < rn; i++)
                 {
                     float a = 2f * Mathf.PI * i / rn + step * 0.2f * s.Chirality;
-                    for (int h = 0; h < 2; h++)
-                        Emit(f.At(radialIn + (h + 0.5f) * rise / 2f, rhoOut, a),
+                    for (int h = 0; h < 3; h++)
+                        Emit(f.At(radialIn + (h + 0.5f) * rise / 3f, rhoOut, a),
                             SpawnPoint.LookRotation(f.Out(a), f.Ax),
-                            Jit(new Vector3(3.2f, 2.4f, 1.3f), 0.15f), s.Stone);
+                            Jit(Plate(3.2f, 2.4f, 1.3f), 0.15f), s.Stone);
                 }
             }
         }
@@ -265,35 +276,35 @@ namespace CosmicShore.Gameplay
         void BuildFlutedFlank(in Spec s, in Frame f, int k)
         {
             // Groove floor - the shell the pipes stand out of.
-            const int rings = 22;
+            const int rings = 30;
             for (int L = 0; L < rings; L++)
             {
                 float t = L / (rings - 1f);
                 float rho = Mathf.Lerp(f.Rho0, f.Rho1, t) - 1.5f;
-                int n = Mathf.Max(6, (int)(2f * Mathf.PI * rho / 3.6f));
+                int n = Mathf.Max(6, (int)(2f * Mathf.PI * rho / (3.6f * PlateDetail)));
                 for (int i = 0; i < n; i++)
                 {
                     float a = 2f * Mathf.PI * i / n + L * 0.09f * s.Chirality;
                     if (N01(a * 2.2f, L * 0.9f + k * 6f, 2.2f, 5) < 0.16f) continue;
                     Emit(f.At(VentR + f.Length * t, rho, a),
                         SpawnPoint.LookRotation(f.Normal(a), f.Around(a)),
-                        Jit(new Vector3(4.6f, 3f, 1.1f), 0.2f), s.Stone);
+                        Jit(Plate(4.6f, 3f, 1.1f), 0.2f), s.Stone);
                 }
             }
 
-            const int flutes = 18;
+            const int flutes = 24;
             for (int fl = 0; fl < flutes; fl++)
             {
                 float a0 = 2f * Mathf.PI * fl / flutes;
                 Vector3 prev = f.At(VentR, f.Rho0, a0);
-                for (int i = 0; i < 46; i++)
+                for (int i = 0; i < 72; i++)
                 {
-                    float t = i / 45f;
+                    float t = i / 71f;
                     float a = a0 + 0.22f * t * s.Chirality; // flutes sweep as they climb out
                     float rho = Mathf.Lerp(f.Rho0, f.Rho1, t) + 5.5f;
                     var p = f.At(VentR + f.Length * t, rho, a);
                     Emit(p, SpawnPoint.LookRotation(p - prev, f.Normal(a)),
-                        new Vector3(2.4f, 3.6f, 3.4f), fl % 4 == 0 ? s.Trim : s.Stone);
+                        Plate(2.4f, 3.6f, 3.4f), fl % 4 == 0 ? s.Trim : s.Stone);
                     prev = p;
                 }
             }
@@ -303,20 +314,20 @@ namespace CosmicShore.Gameplay
         /// phyllotaxis over the cone surface instead of rings, so nothing reads as a course.</summary>
         void BuildShatteredFlank(in Spec s, in Frame f, int k)
         {
-            const int plates = 2400;
+            const int plates = 4560;
             for (int i = 0; i < plates; i++)
             {
                 float t = (i + 0.5f) / plates;
                 float a = i * GoldenAngle * s.Chirality;
                 if (N01(Mathf.Cos(a) * 3f, t * 11f, Mathf.Sin(a) * 3f + k, 6) < 0.24f) continue;
 
-                float rho = Mathf.Lerp(f.Rho0, f.Rho1, t) + 7f * (Hash01(i * 7 + k * 101) - 0.5f);
+                float rho = Mathf.Lerp(f.Rho0, f.Rho1, t) + 13f * (Hash01(i * 7 + k * 101) - 0.5f);
                 // Each shard is knocked off true by its own noise - a fracture field, not a shell.
                 var tilt = (f.Normal(a) + f.Around(a) * (Hash01(i * 13 + k) - 0.5f) * 0.9f
                                         + f.Ax * (Hash01(i * 29 + k) - 0.5f) * 0.7f).normalized;
                 Emit(f.At(VentR + f.Length * t, rho, a),
                     SpawnPoint.LookRotation(tilt, f.Around(a)),
-                    Jit(new Vector3(6.4f, 4.8f, 1.2f), 0.35f), i % 5 == 0 ? s.Trim : s.Stone);
+                    Jit(Plate(6.4f, 4.8f, 1.2f), 0.35f), i % 5 == 0 ? s.Trim : s.Stone);
             }
         }
 
@@ -327,14 +338,14 @@ namespace CosmicShore.Gameplay
         /// <summary>Teeth around the crater lip, leaning inward over the drop.</summary>
         void BuildCraterRim(in Spec s, in Frame f, int k)
         {
-            int n = s.Vent == VentState.Collapsed ? 56 : 34;
+            int n = s.Vent == VentState.Collapsed ? 112 : 68;
             for (int i = 0; i < n; i++)
             {
                 float a = 2f * Mathf.PI * i / n;
-                float lean = 3f + 3f * Mathf.Sin(a * 6f + k);
+                float lean = 6f + 6f * Mathf.Sin(a * 6f + k);
                 Emit(f.At(VentR - lean, f.Rho0 + 2f, a),
                     SpawnPoint.LookRotation(-f.Ax + f.Out(a) * 0.35f, f.Around(a)),
-                    new Vector3(2.2f, 2.2f, 5.4f), i % 3 == 0 ? s.Trim : s.Stone);
+                    new Vector3(3f, 3f, 7.2f), i % 3 == 0 ? s.Trim : s.Stone);
             }
         }
 
@@ -344,21 +355,21 @@ namespace CosmicShore.Gameplay
         void BuildSpillways(in Spec s, in Frame f, int k)
         {
             bool molten = s.Vent is VentState.Erupting or VentState.Collapsed;
-            int lanes = s.Vent == VentState.Cooled ? 3 : 6;
+            int lanes = s.Vent == VentState.Cooled ? 5 : 9;
             for (int lane = 0; lane < lanes; lane++)
             {
                 float a0 = 2f * Mathf.PI * lane / lanes + k * 0.4f;
-                Vector3 prev = f.At(f.RimR + 4f, f.Rho1 + 4f, a0);
-                for (int i = 0; i < 40; i++)
+                Vector3 prev = f.At(f.RimR + 7f, f.Rho1 + 7f, a0);
+                for (int i = 0; i < 64; i++)
                 {
-                    float t = 1f - i / 39f; // rim -> vent
+                    float t = 1f - i / 63f; // rim -> vent
                     float a = a0 + 0.5f * Mathf.Sin(t * 4.1f + lane) * s.Chirality;
-                    float rho = Mathf.Lerp(f.Rho0, f.Rho1, t) + 4f;
+                    float rho = Mathf.Lerp(f.Rho0, f.Rho1, t) + 7f;
                     var p = f.At(VentR + f.Length * t, rho, a);
                     // Only the stretch nearest the mouth still glows - a runnel cools as it
                     // climbs away from the vent, so the danger is telegraphed by where it is.
                     Emit(p, SpawnPoint.LookRotation(p - prev, f.Normal(a)),
-                        new Vector3(2.6f, 1.1f, 3.4f), Domains.Ruby,
+                        new Vector3(3.4f, 1.4f, 3.4f), Domains.Ruby,
                         molten && t < 0.45f ? PrismKind.Danger : PrismKind.Plain);
                     prev = p;
                 }
@@ -381,13 +392,13 @@ namespace CosmicShore.Gameplay
         /// whole way to the crust.</summary>
         void BuildEruptingVent(in Spec s, in Frame f, int k)
         {
-            for (int i = 0; i < 150; i++)
+            for (int i = 0; i < 285; i++)
             {
                 float u = Hash01(i * 7 + _noiseSeed + k * 313);
                 float a = i * GoldenAngle * s.Chirality;
                 Emit(f.At(VentR - 2f, f.Rho0 * Mathf.Sqrt(u), a),
                     SpawnPoint.LookRotation(f.Ax, f.Around(a)),
-                    new Vector3(3f, 3f, 0.8f), Domains.Ruby, PrismKind.Danger);
+                    new Vector3(4.4f, 4.4f, 0.9f), Domains.Ruby, PrismKind.Danger);
             }
             BuildFall(f, k, f.Ax * VentR, 5, 15f, PrismKind.Danger);
         }
@@ -410,14 +421,14 @@ namespace CosmicShore.Gameplay
                     prev = p;
                 }
             }
-            for (int i = 0; i < 7; i++)
+            for (int i = 0; i < 10; i++)
             {
-                float a = 2f * Mathf.PI * i / 7f;
+                float a = 2f * Mathf.PI * i / 10f;
                 for (int h = 0; h < 12; h++)
-                    Emit(f.At(VentR - h * 2.4f, f.Rho0 - 4f, a + h * 0.14f * s.Chirality),
+                    Emit(f.At(VentR - h * 2.4f, f.Rho0 - 8f, a + h * 0.14f * s.Chirality),
                         SpawnPoint.LookRotation(f.Ax, f.Around(a)),
                         new Vector3(2.2f, 2.2f, 2.6f), s.Stone);
-                Emit(f.At(VentR - 31.8f, f.Rho0 - 4f, a + 1.68f * s.Chirality),
+                Emit(f.At(VentR - 31.8f, f.Rho0 - 8f, a + 1.68f * s.Chirality),
                     Quaternion.identity, new Vector3(2.4f, 2.4f, 2.4f), Domains.Ruby, PrismKind.Shielded);
             }
         }
@@ -426,18 +437,18 @@ namespace CosmicShore.Gameplay
         /// dripping its own short fall.</summary>
         void BuildCollapsedVent(in Spec s, in Frame f, int k)
         {
-            for (int i = 0; i < 230; i++)
+            for (int i = 0; i < 440; i++)
             {
                 float u = Hash01(i * 11 + _noiseSeed + k * 971);
                 float a = i * GoldenAngle;
-                Emit(f.At(VentR + 12f - 22f * (1f - u), f.Rho0 * Mathf.Sqrt(u), a),
+                Emit(f.At(VentR + 24f - 44f * (1f - u), f.Rho0 * Mathf.Sqrt(u), a),
                     SpawnPoint.LookRotation(f.Ax, f.Around(a)),
-                    new Vector3(3.2f, 3.2f, 0.8f), Domains.Ruby,
+                    new Vector3(4.6f, 4.6f, 0.9f), Domains.Ruby,
                     u < 0.5f ? PrismKind.Danger : PrismKind.Plain);
             }
-            for (int sv = 0; sv < 3; sv++)
+            for (int sv = 0; sv < 5; sv++)
             {
-                float a = 2f * Mathf.PI * sv / 3f + 0.3f;
+                float a = 2f * Mathf.PI * sv / 5f + 0.3f;
                 float rho = f.Rho0 * 0.62f;
                 for (int h = 0; h < 9; h++)
                     Emit(f.At(VentR + 2f - h * 2.2f, rho, a),
@@ -452,13 +463,13 @@ namespace CosmicShore.Gameplay
         void BuildCooledVent(in Spec s, in Frame f, int k)
         {
             BuildFall(f, k, f.Ax * VentR, 3, 11f, PrismKind.Plain);
-            for (int i = 0; i < 90; i++)
+            for (int i = 0; i < 170; i++)
             {
                 float u = Hash01(i * 17 + _noiseSeed + k * 449);
                 float a = i * GoldenAngle;
                 Emit(f.At(VentR - 1f, f.Rho0 * Mathf.Sqrt(u), a),
                     SpawnPoint.LookRotation(f.Ax, f.Around(a)),
-                    new Vector3(2.6f, 2.6f, 0.9f), i % 7 == 0 ? s.Trim : s.Stone);
+                    new Vector3(3.8f, 3.8f, 1f), i % 7 == 0 ? s.Trim : s.Stone);
             }
             Emit(f.Ax * (VentR - 6f), Quaternion.identity, new Vector3(3.2f, 3.2f, 3.2f),
                 Domains.Ruby, PrismKind.SuperShielded);
@@ -496,7 +507,7 @@ namespace CosmicShore.Gameplay
         /// let you tell one face of a massif from another.</summary>
         void BuildFumaroles(in Spec s, in Frame f, int k)
         {
-            int clusters = s.Vent == VentState.Cooled ? 2 : 4;
+            int clusters = s.Vent == VentState.Cooled ? 4 : 7;
             for (int c = 0; c < clusters; c++)
             {
                 float a = c * GoldenAngle * 1.7f + k * 0.9f;
@@ -523,7 +534,7 @@ namespace CosmicShore.Gameplay
         /// slalom terrain instead of a wall.</summary>
         void BuildColumnCollar(in Spec s, in Frame f, int k)
         {
-            const int clusters = 8;
+            const int clusters = 14;
             for (int cl = 0; cl < clusters; cl++)
             {
                 float a = 2f * Mathf.PI * cl / clusters + k * 0.55f;
@@ -559,12 +570,12 @@ namespace CosmicShore.Gameplay
                 float a0 = 2f * Mathf.PI * pl / plumes + k * 1.3f;
                 var seat = f.At(f.RimR, f.Rho1 * 0.5f, a0);
                 Vector3 prev = seat;
-                for (int i = 0; i < 78; i++)
+                for (int i = 0; i < 110; i++)
                 {
-                    float t = i / 77f;
+                    float t = i / 109f;
                     float aa = a0 + t * 6.5f * Mathf.PI * s.Chirality;
-                    float r2 = 3f + t * 24f;
-                    var p = seat + f.Ax * (t * 56f)
+                    float r2 = 4f + t * 40f;
+                    var p = seat + f.Ax * (t * 104f)
                             + f.Around(a0) * (r2 * Mathf.Cos(aa)) + f.Out(a0) * (r2 * Mathf.Sin(aa));
                     Emit(p, SpawnPoint.LookRotation(p - prev, f.Ax),
                         new Vector3(1.1f, 1.1f, 1.9f), i % 3 != 0 ? Domains.Gold : Domains.Ruby);
@@ -683,7 +694,7 @@ namespace CosmicShore.Gameplay
         /// the massifs. A shell, not a layer - there is no altitude here to stratify by.</summary>
         void BuildEmberShell()
         {
-            int n = Scaled(4200);
+            int n = Scaled(5200);
             for (int i = 0; i < n; i++)
             {
                 if (Hash01(i * 11) < 0.3f) continue;
@@ -691,7 +702,7 @@ namespace CosmicShore.Gameplay
                 float r = Mathf.Sqrt(Mathf.Max(0f, 1f - y * y));
                 float a = i * GoldenAngle;
                 var dir = new Vector3(r * Mathf.Cos(a), y, r * Mathf.Sin(a));
-                Emit(dir * (460f + 180f * Hash01(i * 7 + _noiseSeed)),
+                Emit(dir * (470f + 410f * Hash01(i * 7 + _noiseSeed)),
                     Quaternion.Euler(0f, Hash01(i * 13) * 360f, Hash01(i * 3) * 360f),
                     new Vector3(3.2f, 0.8f, 2.4f), i % 7 == 0 ? Domains.Gold : Domains.Blue);
             }

@@ -1467,7 +1467,7 @@ instead of the canonical assets.
 
 ---
 
-## 18. Prepopulated cell environments + the freestyle six (July 2026)
+## 18. Prepopulated cell environments + the freestyle seven (July 2026)
 
 A cell config can now carry an authored structural environment that spawns WITH the cell:
 `CellConfigDataSO.EnvironmentPrefab` (any `SpawnableBase` prefab) + `EnvironmentIntensity`
@@ -1486,7 +1486,7 @@ whatever the food web makes of it — which is the point.
 **Phase thresholds must ride the baseline.** The phase ladder reads TOTAL `LiveVolume`
 (plus the count backstop), so a config that prepopulates hundreds of thousands of volume
 must author `PhaseThresholds` above that baseline or the cell boots straight into Frenzy.
-Each of the freestyle six authors the Blob ladder's deltas (+700/+500/+3600/+3000 count,
+Each of the freestyle seven authors the Blob ladder's deltas (+700/+500/+3600/+3000 count,
 +11.2k/+8k/+57.6k/+48k volume) on top of its own measured baseline (Tools > Cosmic Shore >
 Measure Cell Environment Baselines). Re-baselined 2026-08-02 post clock-material migration
 (volume is final at spawn now) — e.g. Yggdra measures 34,340 prisms / 541,156 volume →
@@ -1500,7 +1500,7 @@ profile) whose `EnvironmentPrefab` is `SpawnableYggdra` — the world-tree disti
 the ~69k-prism Atlantis garden (which itself stays Scurry-intensity-4 exclusive; see
 `CRYSTAL_CAPTURE.md`) at roughly half the weight for the freestyle rotation. Registered
 in Menu_Main's freestyle Cell `CellConfigs` list (choice mode Random) alongside the rest
-of the freestyle six below. Danger thorn prisms ride along — the autopilot vessel can
+of the freestyle seven below. Danger thorn prisms ride along — the autopilot vessel can
 clip one occasionally; that is the environment being real, not a bug.
 
 **Collider budget:** the environment's plain/danger prisms ride the LOD-cullable
@@ -1530,9 +1530,9 @@ world bloom in under live play at 8ms/frame; that built for minutes under gamepl
 reliably, so live blooming is retired - the 8ms ungated slice remains only as a last-resort
 fallback.
 
-**The freestyle six (July 2026).** Atlantis (~69k) stays Scurry-intensity-4 exclusive; the
-freestyle rotation runs at roughly HALF that weight per cell (~31-35k prisms), split across
-six environments so the lava lamp deals a different world each load — Blob (empty baseline)
+**The freestyle seven (July–August 2026).** Atlantis (~69k) stays Scurry-intensity-4 exclusive;
+the freestyle rotation runs at roughly half that weight per cell, split across seven
+environments so the lava lamp deals a different world each load — Blob (empty baseline)
 plus: **Yggdra** (the world-tree, distilled from Atlantis: trunk/roots/canopy/vines/kelp/
 fireflies), **Daedala** (Atlantis's built half expanded into an Escher road-city: four ring
 terraces, twin counter-chiral Möbius causeways, arches, aqueducts, minarets, lanterns),
@@ -1542,12 +1542,15 @@ rivers, twin cyclones, cloud banks with one lightning thunderhead, Van Gogh sun/
 a swell sea), **Caldera** (the danger-led forge — see §18.1: four floating volcanic massifs
 in tetrahedral symmetry around the nucleus, each aimed inward, with TRUE danger spillways/
 curtains/crust rivers, basalt column collars, ember plumes, fumaroles, obsidian edge-arcs),
-and **Geode** (the angular, serene pole: a cracked crystal cathedral — husk hemispheres,
+**Geode** (the angular, serene pole: a cracked crystal cathedral — husk hemispheres,
 inward crystal linings, super-shielded druse tips, agate bands, dust, light shafts; zero
-danger). All extend `CellEnvironmentSpawnableBase` (one deterministic lay/stream/noise
+danger), and **Ourobor** (see §18.2 — the pastoral pole: three interlocked ULTRAWIDE Möbius
+bands carrying rolling countryside with a cityscape on both faces; zero danger). All extend
+`CellEnvironmentSpawnableBase` (one deterministic lay/stream/noise
 contract, per-cell fixed seed); per-cell PhaseThresholds ride each baseline measured with
 a bit-exact simulation of the C# noise (count/volume): Yggdra 34.3k/541k, Daedala
-33.9k/638k, Orrery 34.6k/197k, Zephyr 36.1k/427k, Caldera 25.1k/375k, Geode 34.4k/561k —
+33.9k/638k, Orrery 34.6k/197k, Zephyr 36.1k/427k, Caldera 41.4k/1,211k, Geode 34.4k/561k,
+Ourobor 37.9k/751k —
 confirm in-engine via Tools > Cosmic Shore > Measure Cell Environment Baselines before
 retuning any ladder. Same soak-before-ship rule as §17 above; each prefab's
 `density` knob (0.5-1.3) is the per-cell fallback lever.
@@ -1607,32 +1610,120 @@ reach, basis roll, and chirality all vary per massif (`Specs`):
 
 | # | silhouette | vent | stone / trim | girth × reach | notes |
 |---|---|---|---|---|---|
-| 0 | Shingled (plate rings) | Erupting | Blue / Ruby | 92 × 1.12 | the signature: molten mouth disc, 5-strand curtain |
-| 1 | Terraced (stepped ziggurat) | Degassing | Gold / Blue | 76 × 0.90 | gas strands, 7 lip chimneys under shielded caps, no lava |
-| 2 | Fluted (organ pipes on a groove floor) | Collapsed | Blue / Gold | 86 × 1.00 | wide (50u) sunken mouth, 3 secondary vents each with its own fall |
-| 3 | Shattered (phyllotaxis glass plates) | Cooled | Ruby / Blue | 70 × 0.84 | frozen tongue, **super-shielded heart**, near-zero danger — the safe approach |
+| 0 | Shingled (plate rings) | Erupting | Blue / Ruby | 184 × 1.12 | the signature: molten mouth disc, 5-strand curtain |
+| 1 | Terraced (stepped ziggurat) | Degassing | Gold / Blue | 152 × 0.90 | gas strands, 10 lip chimneys under shielded caps, no lava |
+| 2 | Fluted (organ pipes on a groove floor) | Collapsed | Blue / Gold | 172 × 1.00 | wide (100u) sunken mouth, 5 secondary vents each with its own fall |
+| 3 | Shattered (phyllotaxis glass plates) | Cooled | Ruby / Blue | 140 × 0.84 | frozen tongue, **super-shielded heart**, near-zero danger — the safe approach |
 
-Massif proportions are `MassifLength 152 × Reach` long against a 22u vent mouth (50u on the
-collapsed one), i.e. a ~1.7:1 stratovolcano taper matching the old cone's — an earlier pass at
-120 × 106 measured squat enough to read as a blob rather than a mountain.
+Massif proportions are `MassifLength 304 × Reach` long against a 44u vent mouth (100u on the
+collapsed one) — a ~1.7:1 stratovolcano taper matching the old cone's. (An intermediate pass at
+120 long × 106 girth measured squat enough to read as a blob rather than a mountain; a second pass
+doubled the silhouette on request.)
+
+**Doubling a massif is not doubling its numbers.** Two rules keep the 2× pass honest:
+
+- **The silhouette scales; the FURNITURE does not.** A column bundle's two-ring gaps and a
+  fumarole's chimneys are sized to the *vessel*, not to the mountain — doubling them turns the
+  weave-through slalom into open air. So a bigger massif carries **more** bundles (8 → 14
+  clusters) and **more** chimney clusters (4 → 7), never bigger ones.
+- **`PlateDetail` (1.45) scales flank sampling spacing AND plate footprint by the same factor**,
+  which holds surface *coverage* exactly constant (count × footprint / area = 1) while paying
+  ~1.9× the prisms for 4× the area instead of 4×. Note the one family whose plate count is
+  explicit rather than spacing-derived (the shattered flank) must have its count set to
+  `base × 4 / PlateDetail²` or it silently over-covers.
+
+At constant coverage and constant plate thickness a 2× massif costs exactly **4× flank volume** —
+that is geometry, not a tuning miss. The levers are coverage (holier mountains) or thickness.
 
 **Baseline** (offline sim, validated bit-exact against the shipped build's authored thresholds —
-it reproduced 31,194 / 430,691 to the unit before any edit): **25,055 prisms / 374,907 volume** —
-down from 31,194 / 430,691, so the cell got genuinely smaller (−16% count, −13% volume). Outer
-extent grew (460 → 678) purely because the composition now *rings* a 392-unit nucleus instead of
-engulfing it; each individual massif (≈170 long × 184 wide) is well under half the old cone.
-PhaseThresholds re-authored as baseline + Blob deltas: 25755/25555/28655/28055 count,
-386107/382907/432507/422907 volume.
+it reproduced 31,194 / 430,691 to the unit before any edit): **41,353 prisms / 1,210,753 volume**
+(the de-gravitized pass alone measured 25,055 / 374,907 before the 2× scale-up). Outer extent
+460 → **903**. PhaseThresholds re-authored as baseline + Blob deltas: 42053/41853/44953/44353
+count, 1221953/1218753/1268353/1258753 volume. This is now the heaviest cell in the rotation by
+volume — `density` (0.5–1.3) on `SpawnableCaldera.prefab` is the fallback lever, and the
+soak-before-ship rule in §18 applies double.
 
 **Danger dials** (6 knobs, if the cell plays too hot or too cold): spillway `t < 0.45f` glow
 cutoff · basin `u < 0.34f` · river `hot` noise threshold `> 0.36f` · collapsed floor `u < 0.5f` ·
-secondary-vent count (3) · erupting mouth disc (150) + curtain strands (5).
+secondary-vent count (5) · erupting mouth disc (285) + curtain strands (5).
 
 **Collider budget:** plain/danger ride the LOD-cullable BoxCollider (bounded by
-`PrismColliderLodManager` radius, not population) and the population *fell* by 6,139. Always-on
-convex MeshColliders (shielded + super-shielded landmarks) go 16 → **22** (+6): 21 shielded
-(fumarole caps + degassing lip caps) and 1 super-shielded (the cooled massif's frozen heart),
-still ~0.08% of the cell's prisms and well under the 225 the Yggdra roll carries.
+`PrismColliderLodManager` radius, not population). Always-on convex MeshColliders (shielded +
+super-shielded landmarks) go 16 → **36**: 35 shielded (fumarole caps + degassing lip caps, both
+families multiplied by the 2× pass's cluster counts) and 1 super-shielded (the cooled massif's
+frozen heart), still ~0.09% of the cell's prisms and well under the 225 the Yggdra roll carries.
+
+---
+
+## 18.2 Ourobor — the one-sided country (August 2026)
+
+§18.1 removed the pre-tetrahedral Caldera's ground plane, and with it two things that were
+genuinely good: the **pleasant rolling landscape** its floor made, and the **fun cityscape feel**
+of the basalt-column fields at its base. Both were casualties of *how* they were built (a flat
+plane at `y = -180` and towers standing along +Y), not of *what* they felt like. Ourobor is the
+new cell that keeps the feel and throws away the gravity.
+
+**The idea.** Three **ultrawide Möbius bands**, interlocked on the three coordinate planes around
+the nucleus. Each is ~290 units across, so at flight scale the ground under you is as flat and
+rolling as a landscape and the towers around you stand as straight as a skyline — the local feel
+is preserved exactly. Only when you keep going does the surface curve out from under the idea of a
+single up. And because each band carries an **odd** number of half twists it is genuinely
+one-sided: follow the countryside far enough and you return to your own starting patch standing
+upside down on the other face. **The stalagmites you flew out between are the stalactites you fly
+back between. They were never different towers.**
+
+**The math** lives in the `Band` struct — `E1`/`E2` span the loop plane, `E3` is its normal, and
+the width direction rotates out of the plane as it goes round:
+
+```
+Width(u) = Radial(u)·cos(Phase + TwistRate·u) + E3·sin(Phase + TwistRate·u)
+At(u, v) = Radial(u)·Radius + Width(u)·v
+```
+
+`TwistRate = HalfTwists / 2`, so after a lap the width direction has rotated by `π·HalfTwists` —
+for odd counts it has *flipped sign*, which is the whole trick. `AlongSurface` is the exact
+∂P/∂u (the loop tangent stretched by the width term plus the twist's own contribution) and
+`Normal = cross(AlongSurface, Width)` is the local "up" that only exists locally.
+
+| band | radius × halfwidth | half twists | country / fields | city stone / crowns |
+|---|---|---|---|---|
+| 0 "the homeland" | 620 × 145 | 1 | Jade / Gold | Blue / Gold |
+| 1 "the wringer" | 700 × 160 | 3 | Jade / Blue | Gold / Ruby |
+| 2 "the narrow" | 780 × 130 | 5 | Gold / Jade | Blue / Ruby |
+
+The three are **not** kept apart: where two bands pass they cross, and a crossing is a multi-level
+interchange with country and city on every deck. That is the point of a cell with no up, not an
+artefact to fix.
+
+**Families.** *Rolling ground* — the old floor idiom moved onto a ribbon: plates laid flat on the
+surface (thin axis along the local normal), lifted by two octaves of low-frequency noise into
+swells and hollows, with a noise cull for ponds and broken ground and a second noise field
+painting gold field patches and blue outcrops. *Cityscape* — Caldera's Giant's-Causeway bundle
+(solid pipes on two rings whose gaps fit the vessel) seated across the country and grown along
+**±normal**, the sign taken from a noise field so districts *clump* rather than alternate; heights
+spread by `tall²` so it reads as a skyline, and every third district carries a spire under a
+shielded crown. *Cornice* — the band's boundary, which needs `u` to run **0 → 4π** to close,
+because a Möbius band has one edge; fly it and you have flown both "edges" of the country without
+ever crossing one. Its far end carries the band's super-shielded **keystone**, the one fixed point
+in the cell. Plus a centreline *road* and drifting *motes*.
+
+**Baseline** (same offline sim): **37,889 prisms / 751,449 volume**, extent 422 → 982, **zero
+prisms inside the nucleus** (every `BandSpec` is authored so `Radius − HalfWidth − RollAmp −
+TowerDepth` clears `NucleusR`). PhaseThresholds 38589/38389/41489/40889 count,
+762649/759449/809049/799449 volume.
+
+**Zero danger** — the pastoral pole, alongside Geode. Its risk is disorientation, not damage, and
+that is the deliberate contrast with Caldera sitting next to it in the rotation. It is also NOT
+Daedala: Daedala is *built* everywhere and gravity-coherent (terraces climb, minarets stand up);
+Ourobor is landscape with towers on both faces and no global up at all.
+
+**Collider budget:** 27 always-on convex MeshColliders (24 shielded spire crowns + 3
+super-shielded keystones), ~0.07% of the cell's prisms. Everything else is plain and rides the
+LOD-cullable BoxCollider.
+
+**Follow-ups.** (a) Not yet flown — confirm the band width really does read as "locally flat" at
+vessel speed, and that a crossing is legible rather than confusing. (b) Ourobor shares the generic
+cell icon with every other config; it wants its own art. (c) Device soak, same rule as §18.
 
 ---
 
