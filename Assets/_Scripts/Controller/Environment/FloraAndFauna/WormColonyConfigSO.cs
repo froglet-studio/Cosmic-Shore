@@ -1,0 +1,142 @@
+using CosmicShore.Data;
+using UnityEngine;
+
+namespace CosmicShore.Gameplay
+{
+    /// <summary>
+    /// All tuning for the worm colony kaiju (Docs/ECOSYSTEM.md §20) — the boss-scale
+    /// connected population of Head / Body / Tail segment fauna. One shared asset per
+    /// deployment; per CLAUDE.md Config Separation no numbers live on the prefabs.
+    ///
+    /// The three clocks that are LEGAL here, and why (invariant review):
+    ///  • Growth (new segments) is funded by FEEDING only — feedsPerSegment, never a
+    ///    wall-clock (the old WormManager's 10s growth tick was the banned oscillator).
+    ///  • End differentiation (a wound hardening into a new danger head/tail) is a
+    ///    STATE CHANGE of existing mass, not mass creation — same legal class as
+    ///    LifeForm's shield-regen cadence — and it is gated on the colony being fed
+    ///    (a starving worm cannot harden its wounds).
+    ///  • Starvation shedding imposes death only through the standard starvation
+    ///    channel (population bounded by consumption, never a lifespan).
+    /// </summary>
+    [CreateAssetMenu(
+        fileName = "WormColonyConfig",
+        menuName = "ScriptableObjects/LifeForms/FaunaPrefab/Worm Colony Data")]
+    public class WormColonyConfigSO : ScriptableObject
+    {
+        [Header("Colony shape")]
+        [Tooltip("Segments a fresh colony spawns with (1 head + N-2 bodies + 1 tail). " +
+                 "Minimum 3 so the spawned worm has all three fauna types.")]
+        [Min(3)] public int SpawnSegmentCount = 8;
+        [Tooltip("Rest distance between segment centres (world units), before kaiju scale.")]
+        [Min(0.1f)] public float SegmentSpacing = 14f;
+        [Tooltip("Uniform scale applied to every segment root at spawn — the kaiju dial. " +
+                 "Also scales the effective spacing so the body stays connected.")]
+        [Min(0.1f)] public float KaijuScale = 3f;
+        [Tooltip("Per-colony segment cap — a PERFORMANCE backstop (collider budget), not " +
+                 "the population control (starvation is). Growth pauses at the cap; splits " +
+                 "conserve the total so they can never exceed it.")]
+        [Min(3)] public int MaxSegmentsPerWorm = 16;
+
+        [Header("Movement (follow-the-leader slither)")]
+        [Tooltip("Head cruise speed (world units/s).")]
+        [Min(0f)] public float CruiseSpeed = 18f;
+        [Tooltip("Head turn rate toward its goal (degrees/s) while cruising.")]
+        [Min(0f)] public float TurnDegreesPerSecond = 40f;
+        [Tooltip("Per-second exponential sharpness with which each segment closes onto its " +
+                 "follow point behind its predecessor. Higher = stiffer chain.")]
+        [Min(0f)] public float FollowSharpness = 5f;
+        [Tooltip("Per-second slerp sharpness of each segment's look-at-predecessor rotation.")]
+        [Min(0f)] public float RotationSharpness = 4f;
+        [Tooltip("Slither wave: yaw oscillation (degrees) layered on the head's steered " +
+                 "heading. The body inherits the wave through follow-the-leader.")]
+        [Min(0f)] public float UndulationYawDegrees = 12f;
+        [Tooltip("Slither temporal frequency (radians/s).")]
+        [Min(0f)] public float UndulationFrequency = 2.2f;
+        [Tooltip("Phase offset per whip segment down the chain (radians) — the traveling wave.")]
+        public float UndulationPhaseStep = 0.9f;
+        [Tooltip("Speed multipliers indexed by CellAggressionLevel (Level0/1/2) — the " +
+                 "same escalation surface every fauna reads from the cell phase.")]
+        public float[] SpeedByAggression = { 1f, 1.25f, 1.6f };
+        [Tooltip("Behavior-tick cadence multipliers indexed by CellAggressionLevel.")]
+        public float[] CadenceByAggression = { 1f, 0.7f, 0.45f };
+
+        [Header("Feeding (the head is the colony's mouth)")]
+        [Tooltip("Seconds between colony behavior ticks (senses, feeding, growth, attacks).")]
+        [Min(0.1f)] public float BehaviorTickSeconds = 1.5f;
+        [Tooltip("Graze radius around the head. Edibility follows the canonical herbivore " +
+                 "rule (Cell.IsPreyForHerbivore + Fauna.IsShieldedMass) — the kaiju is a " +
+                 "voracious grazer of prism mass, not of fauna.")]
+        [Min(0f)] public float MouthRadius = 28f;
+        [Tooltip("Cap on prisms suctioned per tick — bounds the implosion-VFX burst.")]
+        [Min(1)] public int MaxBitesPerTick = 6;
+        [Tooltip("Feeds (consumed prisms) that fund ONE new body segment blooming in " +
+                 "behind the head. This is the only source of new worm mass — length is a " +
+                 "readable record of how much the colony has eaten.")]
+        [Min(1)] public int FeedsPerSegment = 24;
+        [Tooltip("Seconds a new segment's root grows from zero to full scale (continuity " +
+                 "— nothing pops in). Its prisms bloom via their own growth stamp.")]
+        [Min(0.05f)] public float SegmentBloomSeconds = 2f;
+
+        [Header("Wound differentiation (head/tail regrow)")]
+        [Tooltip("Seconds after losing an end before the adjacent body segment hardens " +
+                 "into the missing head/tail (danger prisms engage + a heart is " +
+                 "provisioned). THE souls-like window: chain end-kills faster than this " +
+                 "and you always face soft tissue; slower and every kill is armored. " +
+                 "Gated on the colony being fed — a starving worm cannot differentiate.")]
+        [Min(0f)] public float EndRegrowSeconds = 18f;
+        [Tooltip("Element of hearts provisioned for DIFFERENTIATED ends (authored, per " +
+                 "the elemental contract — random is only the misconfig fallback). The " +
+                 "spawn prefabs' authored crystals are unaffected.")]
+        public Element RegrownEndElement = Element.Mass;
+
+        [Header("Starvation (population bounded by consumption)")]
+        [Tooltip("While the colony is starving (no feed for the prefab-authored " +
+                 "starvationSeconds), it digests itself: the tail-most segment withers " +
+                 "every this many seconds. A 1-segment starving worm dies outright.")]
+        [Min(0.5f)] public float StarvationShedIntervalSeconds = 12f;
+
+        [Header("Attacks (souls-like telegraph grammar)")]
+        [Tooltip("Vessel detection radius around the head. Uses the shared physics " +
+                 "scratch masked to non-prism layers — never a prism query.")]
+        [Min(0f)] public float AggroRadius = 130f;
+        [Tooltip("Attack pulses: a hunt window opens every this many seconds (0 = always " +
+                 "hunting). Outside the window the worm only cruises and grazes — " +
+                 "guaranteed downtime between assaults, same pattern as the shark.")]
+        [Min(0f)] public float HuntIntervalSeconds = 26f;
+        [Tooltip("How long each hunt window lasts (clamped to the interval).")]
+        [Min(0f)] public float HuntDurationSeconds = 12f;
+        [Tooltip("Telegraph: seconds the head rears back, slowed and coiling, before the " +
+                 "lunge — the readable wind-up that makes the strike dodgeable.")]
+        [Min(0.1f)] public float TelegraphSeconds = 1.2f;
+        [Tooltip("Undulation amplitude multiplier during the telegraph coil.")]
+        [Min(1f)] public float TelegraphAmplitudeMultiplier = 2.5f;
+        [Tooltip("Lunge speed (world units/s) toward the point locked at telegraph end.")]
+        [Min(0f)] public float LungeSpeed = 70f;
+        [Tooltip("Lunge ends when the head is within this distance of the locked point…")]
+        [Min(0.1f)] public float LungeArriveRadius = 10f;
+        [Tooltip("…or after this many seconds, whichever comes first.")]
+        [Min(0.1f)] public float LungeMaxSeconds = 2.5f;
+        [Tooltip("Recovery: seconds of slow, straightened drift after a lunge — the " +
+                 "punish window where the body is easiest to strafe.")]
+        [Min(0f)] public float RecoverSeconds = 2.5f;
+        [Tooltip("Fraction of cruise speed during recovery.")]
+        [Range(0f, 1f)] public float RecoverSpeedFraction = 0.35f;
+
+        [Header("Tail whip")]
+        [Tooltip("A vessel loitering within this radius of the tail (during a hunt " +
+                 "window) provokes a whip — the rear segments' slither amplitude bursts " +
+                 "so the danger tail sweeps through its neighborhood.")]
+        [Min(0f)] public float TailWhipRadius = 45f;
+        [Tooltip("Whip burst duration (seconds).")]
+        [Min(0.1f)] public float TailWhipSeconds = 1.5f;
+        [Tooltip("Cooldown between whips (seconds).")]
+        [Min(0f)] public float TailWhipCooldownSeconds = 8f;
+        [Tooltip("Lateral swing of the whipped segments' follow points (world units, " +
+                 "multiplied by KaijuScale).")]
+        [Min(0f)] public float WhipLateralAmplitude = 5f;
+        [Tooltip("Whip oscillation frequency (radians/s) — faster than the cruise slither.")]
+        [Min(0f)] public float WhipFrequency = 7f;
+        [Tooltip("How many tail-most segments the whip amplifies.")]
+        [Min(1)] public int WhipSegmentCount = 3;
+    }
+}

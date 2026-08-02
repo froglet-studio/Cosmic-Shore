@@ -240,8 +240,9 @@ Tracker items (`Docs/PRISM_ANIMATION.md` §5 C-phase) landing per-path on the wi
 graphs, each following the shipped B1/B3 templates: C1 `ClearPrisms` shader-side
 occlusion fade · C4 `FireTrailBlock` pool/Destroy fix · C5 turret anchor flight ·
 C6 fauna wither/devour/level-up · C7 flora growth · C8 microscene conveyor ·
-C9 cell-swap suction · C10 worm shift · C11 spindle fade · C13 environment-lay
-pooling · B4 GPU shield morphs.
+C9 cell-swap suction · C11 spindle fade · C13 environment-lay
+pooling · B4 GPU shield morphs. (C10 worm shift is resolved by deletion — the
+worm-colony rebuild removed the legacy shift; see Docs/ECOSYSTEM.md §21.)
 
 ## Troubleshooting
 

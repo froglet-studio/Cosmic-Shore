@@ -546,6 +546,17 @@ namespace CosmicShore.Gameplay
         protected HealthPrism[] BodyPrisms => _bodyPrisms;
 
         /// <summary>
+        /// A prism of this creature's BODY was destroyed by an active force (vessel,
+        /// projectile, AOE). Raised by <see cref="HealthPrism.Explode"/> through the
+        /// stamped owner, so a creature can react to being shot — the worm colony's
+        /// segments die when their body is stripped (Docs/ECOSYSTEM.md §20).
+        /// <paramref name="killerName"/> is the attribution the destruction pipeline
+        /// carried. Default is empty: most fauna (LightFauna, Boid) keep their
+        /// historical behavior of swimming on with a thinner body.
+        /// </summary>
+        public virtual void OnBodyPrismExploded(HealthPrism prism, string killerName) { }
+
+        /// <summary>
         /// Pushes the body prisms' current positions into the spatial index. Call
         /// every frame after moving the creature. Cheap: the index only rebuckets
         /// when a body crosses an 8m occupancy-bucket boundary; unregistered

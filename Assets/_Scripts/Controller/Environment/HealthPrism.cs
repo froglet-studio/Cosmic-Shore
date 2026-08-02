@@ -81,6 +81,14 @@ namespace CosmicShore.Gameplay
             if (LifeForm)
                 LifeForm.RemoveHealthBlock(this, playerName);
 
+            // Fauna-body notification: creatures whose bodies are these prisms learn
+            // they were shot (the LifeForm path above is flora-only — fauna body
+            // prisms deliberately author LifeForm null so they never register as
+            // consumable cell mass). Resolved via the stamped owner; a walk-and-
+            // backfill only runs for unstamped prisms, once, on this one-shot path.
+            var ownerFauna = ResolveOwnerFauna();
+            if (ownerFauna) ownerFauna.OnBodyPrismExploded(this, playerName);
+
             if (spindle) spindle.CheckForLife();
         }
         
