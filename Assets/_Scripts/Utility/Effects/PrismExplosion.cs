@@ -9,8 +9,8 @@ namespace CosmicShore.Utility
 {
     /// <summary>
     /// Handles visual + positional explosion effect for prism destruction.
-    /// Animation is driven by PrismEffectsManager via batched Burst jobs
-    /// instead of per-instance async loops.
+    /// Clock-material driven (Docs/PRISM_ANIMATION.md B3): ONE stamp, the GPU
+    /// flies/shatters/fades the debris, ONE scheduled completion.
     /// Uses MaterialPropertyBlock to keep prefab-assigned materials intact.
     /// </summary>
     [RequireComponent(typeof(MeshRenderer))]
@@ -36,11 +36,6 @@ namespace CosmicShore.Utility
         // PrismRenderService's per-instance overrides)
         private static readonly int ExplodeStartTimeId = Shader.PropertyToID("_ExplodeStartTime");
 
-        // State exposed to PrismEffectsManager for batched updates
-        internal Vector3 InitialPosition { get; private set; }
-        internal Vector3 Velocity { get; private set; }
-        internal float Speed { get; private set; }
-        internal float Elapsed { get; set; }
         internal float MaxDuration => 5f;
         internal bool IsActive { get; private set; }
         internal MeshRenderer Renderer => _renderer;
@@ -84,17 +79,6 @@ namespace CosmicShore.Utility
             PrismRenderService.SetTransform(in RenderHandle, transform.localToWorldMatrix);
         }
 
-        /// <summary>First-animated-frame show, called by PrismEffectsManager (the
-        /// visual stays hidden until real values are applied to avoid a one-frame
-        /// flash of the unanimated mesh — same contract as the legacy path).</summary>
-        internal void EnableVisual()
-        {
-            if (UsesEntityRenderPath)
-                PrismRenderService.SetVisible(in RenderHandle, true);
-            else if (_renderer != null && !_renderer.enabled)
-                _renderer.enabled = true;
-        }
-
 #if UNITY_EDITOR
         private void OnValidate()
         {
@@ -111,8 +95,8 @@ namespace CosmicShore.Utility
 
             _mpb = new MaterialPropertyBlock();
 
-            // Start with renderer disabled - only PrismEffectsManager should enable it
-            // during active animation. This prevents pool-retrieved objects from flashing.
+            // Start with renderer disabled — the companion entity draws.
+            // This prevents pool-retrieved objects from flashing.
             if (_renderer != null)
                 _renderer.enabled = false;
         }
@@ -127,11 +111,7 @@ namespace CosmicShore.Utility
         {
             EnabledInstances.Remove(this);
 
-            if (IsActive)
-            {
-                IsActive = false;
-                PrismEffectsManager.Instance?.UnregisterExplosion(this);
-            }
+            IsActive = false;
 
             // A pooled-out clock explosion must not fire a stale completion later.
             PrismTimerManager.Instance?.CancelScheduledActions(this);
@@ -148,7 +128,7 @@ namespace CosmicShore.Utility
             if (_renderer != null)
             {
                 // Keep renderer disabled so pool-reactivated objects are invisible
-                // until PrismEffectsManager explicitly enables during animation.
+                // (the companion entity draws; the GameObject renderer never shows).
                 _renderer.enabled = false;
                 if (_mpb != null)
                 {
@@ -164,8 +144,8 @@ namespace CosmicShore.Utility
         }
 
         /// <summary>
-        /// Fire the explosion animation. Sets up state and registers with the
-        /// centralized PrismEffectsManager for batched Burst-compiled updates.
+        /// Fire the explosion animation: ONE clock stamp + ONE scheduled completion
+        /// (Docs/PRISM_ANIMATION.md B3 — no per-frame stepping anywhere).
         /// </summary>
         /// <param name="speedLimitOverride">
         /// Per-impact ceiling replacing <see cref="maxSpeed"/>; 0 keeps the authored value.
@@ -180,10 +160,6 @@ namespace CosmicShore.Utility
 
             if (float.IsNaN(velocity.x) || float.IsNaN(velocity.y) || float.IsNaN(velocity.z))
                 velocity = Vector3.up * minSpeed;
-
-            // If already active, unregister first
-            if (IsActive)
-                PrismEffectsManager.Instance?.UnregisterExplosion(this);
 
             bool hasOverride = speedLimitOverride > 0f;
             float ceiling = hasOverride ? speedLimitOverride : maxSpeed;
@@ -200,11 +176,6 @@ namespace CosmicShore.Utility
             if (hasOverride)
                 speed = velocity.magnitude;
 
-            // Store state for manager to read
-            InitialPosition = transform.position;
-            Velocity = velocity;
-            Speed = speed;
-            Elapsed = 0f;
             IsActive = true;
 
             EnsureRenderEntity();
@@ -281,19 +252,15 @@ namespace CosmicShore.Utility
         }
 
         /// <summary>
-        /// Called internally or by PrismEffectsManager to stop the animation and clear overrides.
+        /// Stops the animation and clears overrides.
         /// </summary>
         internal void CompleteEffect()
         {
-            if (IsActive)
-            {
-                IsActive = false;
-                PrismEffectsManager.Instance?.UnregisterExplosion(this);
-            }
+            IsActive = false;
 
             // Clock path cleanup: cancel the scheduled completion (idempotent) and
-            // retire the stamp so a later legacy-path reuse of this entity can't
-            // replay a stale clock animation.
+            // retire the stamp so a later reuse of this entity can't replay a
+            // stale clock animation.
             PrismTimerManager.Instance?.CancelScheduledActions(this);
             PrismRenderService.ClearExplosionClockStamp(in RenderHandle);
 
@@ -302,9 +269,9 @@ namespace CosmicShore.Utility
 
             if (_renderer != null)
             {
-                // Disable renderer - only PrismEffectsManager should enable it during
-                // active animation. Leaving it enabled here caused undistorted sphere
-                // flashes when OnReturnToPool was null or pool deactivation was delayed.
+                // Keep the renderer disabled (the companion entity draws). Leaving
+                // it enabled here caused undistorted sphere flashes when
+                // OnReturnToPool was null or pool deactivation was delayed.
                 _renderer.enabled = false;
                 if (_mpb != null)
                 {
@@ -315,7 +282,7 @@ namespace CosmicShore.Utility
         }
 
         /// <summary>
-        /// Called by PrismEffectsManager when the animation finishes naturally (elapsed >= maxDuration).
+        /// Fired by the scheduled completion at MaxDuration (touchpoint 3).
         /// Cleans up and notifies pool.
         /// </summary>
         internal void OnEffectComplete()

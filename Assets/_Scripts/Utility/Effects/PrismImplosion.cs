@@ -8,8 +8,9 @@ namespace CosmicShore.Utility
 {
     /// <summary>
     /// Handles prism implosion/grow VFX. Managed by PrismImplosionPoolManager.
-    /// Animation is driven by PrismEffectsManager via batched Burst jobs
-    /// instead of per-instance async loops.
+    /// Clock-material driven (Docs/PRISM_ANIMATION.md B3): ONE stamp, the GPU
+    /// runs the suction/grow, ONE scheduled completion. PrismEffectsManager only
+    /// refreshes the moving convergence target (_Location) while the target lives.
     /// Uses MaterialPropertyBlock so prefab materials remain untouched.
     /// </summary>
     [RequireComponent(typeof(Renderer))]
@@ -32,20 +33,15 @@ namespace CosmicShore.Utility
         // FOLLOWS this transform as it keeps moving - a fauna swims a long way during the
         // ~2s implosion, so a position snapshotted at consumption time would suck the
         // prisms toward where the creature WAS, not where it is. Refreshed each frame by
-        // PrismEffectsManager via RefreshConvergence(). Held as a reference (not copied to
+        // PrismEffectsManager via RefreshConvergenceForClock(). Held as a reference (not copied to
         // a Vector3 and discarded) precisely so it can track. Fake-null safe: if the target
         // withers / despawns mid-suction (starvation & predation outlive this VFX), we fall
         // back to the last known position rather than throwing.
         private Transform _convergenceTransform;
 
-        // State exposed to PrismEffectsManager for batched updates
         internal Vector3 TargetPosition { get; private set; }
-        internal float Elapsed { get; set; }
         internal float Duration => implosionDuration;
-        internal float GrowDelayRemaining { get; set; }
-        internal float Progress { get; set; }
         internal bool IsActive { get; private set; }
-        internal bool IsGrowing { get; private set; }
         internal Renderer Renderer => prismRenderer;
 
         // --- Instanced rendering (Entities Graphics companion entity) -----------
@@ -117,9 +113,9 @@ namespace CosmicShore.Utility
             }
         }
 
-        // Wall-clock start time, used by the watchdog. Tracking via Time.time (not the
-        // manager-driven Elapsed counter) is robust against state-reset bugs that
-        // would otherwise keep Elapsed pinned at 0 and starve the natural completion path.
+        // Wall-clock start time, used by the watchdog. Tracking via Time.time is
+        // robust against state-reset bugs that would otherwise starve the natural
+        // completion path.
         float _activatedAtTime;
         const float WatchdogDurationMultiplier = 2f;
 
@@ -164,11 +160,7 @@ namespace CosmicShore.Utility
             // reference (possibly a destroyed transform) across pool reuse.
             _convergenceTransform = null;
 
-            if (IsActive)
-            {
-                IsActive = false;
-                PrismEffectsManager.Instance?.UnregisterImplosion(this); // safe: may already be null during teardown
-            }
+            IsActive = false;
 
             // A pooled-out clock implosion must not fire a stale completion later.
             PrismTimerManager.Instance?.CancelScheduledActions(this);
@@ -206,25 +198,12 @@ namespace CosmicShore.Utility
                 return;
             }
 
-            // Re-entry on an already-active instance: this should not happen during
-            // normal pool flow (Get always returns an inactive instance), but it does
-            // happen if the prefab's OnMiniGameTurnEnd EventListener interleaves with
-            // a fresh Implode call. Unregister cleanly so RegisterImplosion below
-            // doesn't dedup-skip and the instance gets a fresh tick cadence.
-            if (IsActive)
-                PrismEffectsManager.Instance?.UnregisterImplosion(this); // safe: may already be null during teardown
-
             var targetPos = convergenceTransform.position;
 
             // Keep the live transform so the sink tracks the moving fauna each frame.
             _convergenceTransform = convergenceTransform;
 
-            // Store state for manager to read
             TargetPosition = targetPos;
-            Elapsed = 0f;
-            Progress = 0f;
-            IsGrowing = false;
-            GrowDelayRemaining = 0f;
             IsActive = true;
             _activatedAtTime = Time.time;
 
@@ -249,9 +228,6 @@ namespace CosmicShore.Utility
                 return;
             }
 
-            if (IsActive)
-                PrismEffectsManager.Instance?.UnregisterImplosion(this); // safe: may already be null during teardown
-
             var startPosition = ownerTransform.position;
 
             // Grow is the reverse animation but uses the same moving-target convergence:
@@ -259,12 +235,7 @@ namespace CosmicShore.Utility
             // anchored to it instead of to its spawn-instant position.
             _convergenceTransform = ownerTransform;
 
-            // Store state for manager to read
             TargetPosition = startPosition;
-            Elapsed = 0f;
-            Progress = 1f;
-            IsGrowing = true;
-            GrowDelayRemaining = growDelay;
             IsActive = true;
             _activatedAtTime = Time.time;
 
@@ -361,30 +332,13 @@ namespace CosmicShore.Utility
             OnReturnToPool?.Invoke(this);
         }
 
-        public float GetImplosionProgress() => Progress;
-
         /// <summary>Externally stop (cancels animation, but does not auto-return).</summary>
         public void StopEffect() => CompleteEffect();
 
         // ---------------- Internals ----------------
 
         /// <summary>
-        /// Re-read the convergence point from the live target transform. Called once per
-        /// frame by PrismEffectsManager before it samples TargetPosition into the job, so
-        /// the suction sink tracks the still-moving fauna. One Transform.position read per
-        /// active implosion - the per-frame _Location write to the shader already happens
-        /// unconditionally, so this is the only marginal cost of following the target.
-        /// Fake-null safe: a target destroyed mid-suction leaves TargetPosition at its last
-        /// known value.
-        /// </summary>
-        internal void RefreshConvergence()
-        {
-            if (_convergenceTransform)
-                TargetPosition = _convergenceTransform.position;
-        }
-
-        /// <summary>
-        /// Called internally or by PrismEffectsManager to stop the animation and clear overrides.
+        /// Stops the animation and clears overrides.
         /// </summary>
         internal void CompleteEffect()
         {
@@ -392,15 +346,11 @@ namespace CosmicShore.Utility
             // transform alive or track a stale target on its next reuse.
             _convergenceTransform = null;
 
-            if (IsActive)
-            {
-                IsActive = false;
-                PrismEffectsManager.Instance?.UnregisterImplosion(this); // safe: may already be null during teardown
-            }
+            IsActive = false;
 
             // Clock path cleanup: cancel the scheduled completion (idempotent), stop
-            // the location refresh, and retire the stamp so a later legacy-path reuse
-            // of this entity can't replay a stale clock animation.
+            // the location refresh, and retire the stamp so a later reuse of this
+            // entity can't replay a stale clock animation.
             PrismTimerManager.Instance?.CancelScheduledActions(this);
             PrismEffectsManager.Instance?.UnregisterClockConvergence(this);
             PrismRenderService.ClearSuctionClockStamp(in RenderHandle);
@@ -416,7 +366,7 @@ namespace CosmicShore.Utility
         }
 
         /// <summary>
-        /// Called by PrismEffectsManager when the animation finishes naturally.
+        /// Fired by the scheduled completion (touchpoint 3) or the watchdog.
         /// Cleans up, notifies pool, and force-deactivates the GameObject as a
         /// safety net so the implosion VFX can never visually loop even if the
         /// pool callback chain is broken (e.g., OnReturnToPool was nulled by an

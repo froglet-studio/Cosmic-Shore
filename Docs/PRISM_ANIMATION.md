@@ -389,7 +389,7 @@ conveyor recycle — all inventoried in §3.7 lenses A, F, G, J, K.)*
 | ShapeDrawingManager environment shrink-to-outline (Phase 2, dormant) | per-frame CPU | ❌ | `Controller/Environment/MiniGameObjects/ShapeDrawingManager.cs:427-461` | Stamp per-instance {startPose, targetPose, _StartTime, _Duration}; GPU interpolates both position and scale off the clock; spatial index goes to the final outline position at start (or simply unbinds — the environment is 'nuked' for the drawing mode anyway). |
 | Fauna level-up body growth (parent-scale over body prisms) | per-frame CPU | ❌ | `Controller/Environment/FloraAndFauna/Fauna.cs:302-315` | Stamp {_GrowStartTime, _FromScale, _ToScale, _PivotWorldPos(=fauna origin at stamp)} on the body prisms' instances; GPU scales about the pivot on the clock; body-prism colliders + spatial index go to the final scale/position at start (fauna colliders are already coarse); one scheduled callback settl… |
 | Boid despawn shrink + boid prism Grow feeders | per-frame CPU | ❌ | `Controller/Environment/FloraAndFauna/Boid.cs:565-576` | Shrink-out: stamp {_ShrinkStartTime, duration} and let the GPU run it; scheduled callback at the end pool-returns the boid (Destroy in a gameplay loop is already an anti-pattern). |
-| TrailViewer sliding transparency window (dormant legacy) | per-frame CPU | ❌ | `Controller/Vessel/TrailViewer.cs:30-72` | Delete (orphaned), or if the feature returns: pass the attachment world position + window radius as global shader uniforms and fade in the prism shader — zero per-prism CPU, no material churn. |
+| TrailViewer sliding transparency window (dormant legacy) | per-frame CPU | ✅ | `Controller/Vessel/TrailViewer.cs` (DELETED, D2 2026-08-02 — component excised from Urchin.prefab) | If the feature returns: pass the attachment world position + window radius as global shader uniforms and fade in the prism shader — zero per-prism CPU, no material churn. |
 | TrailBlockBufferManager pre-instantiation buffer (dormant legacy) | one-shot | ❌ | `Controller/Projectiles/TrailBlockBufferManager.cs:63-76` | Delete. PrismFactory's pools + team material sets already own this; any resurrection must pull pooled prisms whose domain material is the pooled initial condition (sharedMaterial + SyncRenderMaterial, never .material). |
 | GunVesselTransformer slide Grow/Steal trigger | one-shot | ✅ | `Controller/Vessel/GunVesselTransformer.cs:91-103` | Trigger is already one-shot and event-driven — conforming. It inherits whatever the Grow/Steal pipelines become: Grow restamps {_GrowStartTime, from→to scale}, Steal restamps the color-blend clock params (see PrismTeamManager entry). |
 | PrismStateManager / PrismTeamManager state + team changes (the MaterialStateManager feeder mouths) | one-shot | ❌ | `Controller/Managers/PrismStateManager.cs:63` | These are the highest-value migration point: the entire color animation is start-color→target-color over a fixed duration — a textbook clock material. Stamp {_BlendStartTime, _FromBright,_ToBright,_FromDark,_ToDark,_FromSpread,_ToSpread} per instance at the trigger (the UpdateMaterial call site beco… |
@@ -453,8 +453,8 @@ Fix these DURING the migration (most disappear by construction under stamp+clock
    belongs on the scheduler.
 7. **Orphans**: `TrailBlockBufferManager` — confirmed unreferenced, DELETED
    2026-08-01. `TrailViewer` — the sweep's "no references" claim was WRONG:
-   `Urchin.prefab` carries it (GUID check). Banner added; remove the component from
-   that prefab in-editor, then delete the file.
+   `Urchin.prefab` carried it (GUID check). Component excised from the prefab by
+   fileID + file DELETED (D2, 2026-08-02).
 8. **Dormant**: `PrismType.Grow` / `PrismImplosion.StartGrow` has no live raiser;
    `ShapeDrawingManager` shrink-to-outline (Phase 2, dormant) also bypasses the render
    bridge and spatial index.
@@ -518,8 +518,7 @@ Implementation constraints (verified by the capability audit):
   transition — silent where that is a normal transient (fresh spawn paint, morph
   overlay windows), screaming via `PrismClockDiagnostics.WarnNoRenderEntity` where the
   render path is genuinely down. There are no MaterialPropertyBlock twins and no CPU
-  animation tier; the former managers are retired (empty active sets, class deletion
-  pending in-editor — tracker D2).
+  animation tier; the former managers are DELETED (tracker D2, 2026-08-02).
 - Currently NON-instanced properties that must not be driven per-instance without
   flipping the flag first: `_SqrDistance`, `_Alpha` (BlockGraph),
   `_ExplosiveRotation`/`_ExplosiveSpead` (ExplodingBlockGraph), `_Move` (SuctionGraph),
@@ -758,9 +757,9 @@ Phase B — migrate the engines (each retires a per-frame pass):
 
 | # | Item | Status |
 |---|---|---|
-| B1 | Grow-in → clock (all ~12 feeder paths ride the one engine); gameplay-final-at-start (volume/spatial stamps, clock predicates, `ExecuteOnScaleComplete` → start) | ✅ LIVE (strict, the only path) 2026-08-01 — `PrismScaleManager` retired (empty active set; class deletion in-editor, D2). Graph wiring ✅ (playtest-confirmed smooth). Pending: `HoldColliderAtFullSize` deletion, `CreateBlockCoroutine` window simplification, arena-gate simplification, PhaseThresholds re-baseline |
-| B2 | Color/state transitions → clock lerp (start colors + t₀; target = material authored; end-state material bound at START, settle scheduled) | ✅ LIVE (strict, the only path) 2026-08-01 — `MaterialStateManager` retired (empty active set; class deletion in-editor, D2). Graph wiring ✅ (playtest-confirmed smooth on BlockGraph; the transparent-prism color cluster on ExplodingBlockGraph is wired too — 2026-08-02 — so transparent steals/repaints fade instead of snapping) |
-| B3 | Explosion/implosion → clock (stamp `{t₀, velocity, speed, duration}` / `{t₀, duration, direction, delay, location}`) | ✅ LIVE (strict, the only path) 2026-08-01 — moving-target DECIDED as the §1 exception (a snapshot would suck prisms toward where the fauna WAS): progress rides the clock, `PrismEffectsManager` refreshes `_Location` only (one float3/frame) while the target lives. Animation passes retired (never registered; Burst-job dead code + VFX caps delete in-editor, D2). Graph wiring ✅ both graphs, PLAYTEST-CONFIRMED 2026-08-02: explosions ✅ (GPU-side world→object conversion inside `PrismExplosionClock` — raw inverse-model multiply, never the normalizing Direction-mode Transform — + flight-envelope bounds) and suction ✅ (`EncapsulateBoundsPoint` envelope) |
+| B1 | Grow-in → clock (all ~12 feeder paths ride the one engine); gameplay-final-at-start (volume/spatial stamps, clock predicates, `ExecuteOnScaleComplete` → start) | ✅ LIVE (strict, the only path) 2026-08-01 — `PrismScaleManager` DELETED (D2, 2026-08-02). Graph wiring ✅ (playtest-confirmed smooth). Pending: `HoldColliderAtFullSize` deletion, `CreateBlockCoroutine` window simplification, arena-gate simplification, PhaseThresholds re-baseline |
+| B2 | Color/state transitions → clock lerp (start colors + t₀; target = material authored; end-state material bound at START, settle scheduled) | ✅ LIVE (strict, the only path) 2026-08-01 — `MaterialStateManager` DELETED (D2, 2026-08-02). Graph wiring ✅ (playtest-confirmed smooth on BlockGraph; the transparent-prism color cluster on ExplodingBlockGraph is wired too — 2026-08-02 — so transparent steals/repaints fade instead of snapping) |
+| B3 | Explosion/implosion → clock (stamp `{t₀, velocity, speed, duration}` / `{t₀, duration, direction, delay, location}`) | ✅ LIVE (strict, the only path) 2026-08-01 — moving-target DECIDED as the §1 exception (a snapshot would suck prisms toward where the fauna WAS): progress rides the clock, `PrismEffectsManager` refreshes `_Location` only (one float3/frame) while the target lives. Animation passes + Burst jobs DELETED (D2, 2026-08-02 — the manager keeps only convergence refresh + zombie audit). Graph wiring ✅ both graphs, PLAYTEST-CONFIRMED 2026-08-02: explosions ✅ (GPU-side world→object conversion inside `PrismExplosionClock` — raw inverse-model multiply, never the normalizing Direction-mode Transform — + flight-envelope bounds) and suction ✅ (`EncapsulateBoundsPoint` envelope) |
 | B4 | Shield morphs → GPU (vertex-shader bloom/shatter from per-vertex face data + t₀; settled shared-mesh swap already conforms) | ◐ interim shipped 2026-08-01: stellated idle per-prism `Update()` KILLED — both shield tiers now ride the central `PrismOctahedronShieldManager` ticker (`IPrismShieldMorphTicker`), registered only while morphing. GPU morph itself still pending |
 
 Phase C — rogue paths & ecosystem visuals (each is standalone):
@@ -778,7 +777,7 @@ Phase C — rogue paths & ecosystem visuals (each is standalone):
 | C9 | Cell swap retiring-world suction → per-prism suction stamps (fixes instanced-path invisibility, §3.8.1) | ☐ not started |
 | C10 | Worm segment make-room shift → stamped slide (locomotion stays mover-contract) | ☐ not started |
 | C11 | Spindle `_DeathAnimation` fade (prism-adjacent) → clock inputs on spindle material | ☐ not started |
-| C12 | `PrismImplosion` watchdog → scheduler; orphan cleanup; `SkimFxRunner` stretch beam review; `CloakSeedWall` dead code removal | ◐ 2026-08-01: `TrailBlockBufferManager` deleted; `TrailViewer` is NOT an orphan (Urchin.prefab — banner added, in-editor removal step pending); watchdog / SkimFxRunner / CloakSeedWall pending |
+| C12 | `PrismImplosion` watchdog → scheduler; orphan cleanup; `SkimFxRunner` stretch beam review; `CloakSeedWall` dead code removal | ◐ 2026-08-01: `TrailBlockBufferManager` deleted; `TrailViewer` removed from Urchin.prefab + deleted (D2, 2026-08-02); watchdog / SkimFxRunner / CloakSeedWall pending |
 | C13 | Environment lay pooling: `PrismTrailBuilder.LayOne` → pooled pull with final domain material (kills spawn repaint) | ☐ not started |
 
 Phase D — lock-in:
@@ -786,7 +785,7 @@ Phase D — lock-in:
 | # | Item | Status |
 |---|---|---|
 | D1 | Docs locked (this file + CLAUDE.md anti-pattern + manager banners + cross-refs) | ✅ shipped (2026-07-31) |
-| D2 | Delete the retired classes + scene components in-editor (`PrismScaleManager`, `MaterialStateManager`, `PrismEffectsManager`'s animation passes + Burst jobs, `AdaptiveAnimationManager` frame-skip machinery, retired animator fields) | ◐ code-side retirement DONE 2026-08-01 (nothing registers; passes never run); physical deletion is the in-editor chore |
+| D2 | Delete the retired classes + scene components (`PrismScaleManager`, `MaterialStateManager`, `PrismEffectsManager`'s animation passes + Burst jobs, `AdaptiveAnimationManager` frame-skip machinery, retired animator fields, `TrailViewer`) | ✅ DONE 2026-08-02, programmatically: classes deleted; components excised from `PrismManagers.prefab` + `Urchin.prefab` by fileID (machine-verified reference-free); `PrismEffectsManager` slimmed to convergence refresh + zombie audit; animator dead surface stripped (`IsAnimating`/`IsScaling`/registration/…); `GameLoadSampler` re-sourced to `PrismSpatialIndex.LiveCount` + effect `EnabledInstances`; `AdaptivePerformanceSetting` documented INERT. Remaining in-editor: PhaseThresholds re-baseline (needs the measuring tool) |
 | D3 | In-editor verification pass (all migrated paths, both render paths, load-gate + hitstop + pause) | ☐ not started |
 
 ---
@@ -809,20 +808,19 @@ unwired material. That is the intended forcing function. The session:
    growth GPU-smooth**; then BlockGraph's color inputs, ExplodingBlockGraph,
    SuctionGraph. Each material family goes smooth (and silent) the moment its graph
    reimports; the remaining errors enumerate what's left.
-2. Run the §4.4 verification protocol. The DiagnosticsHUD "Animators" rows
-   (`PrismScaleManager` / `MaterialStateManager`) must show **0 active** in every
-   scene under any load — nothing may engage the retired passes.
-3. The D2 physical deletion pass: remove the retired manager classes + their scene
-   components (`PrismScaleManager`, `MaterialStateManager`, the
-   `PrismEffectsManager` animation passes/Burst jobs — the class itself stays for
-   the §1 convergence refresh + zombie audit — and `AdaptiveAnimationManager`'s
-   frame-skip machinery).
+2. Run the §4.4 verification protocol. (The retired CPU animation managers are
+   deleted, so "0 active animators" holds by construction — verification is now
+   about zero `[PrismClock]` errors and visual smoothness.)
+3. ✅ DONE (2026-08-02, programmatically): the D2 physical deletion pass — retired
+   manager classes deleted, their prefab components excised by fileID, the
+   `PrismEffectsManager` animation passes/Burst jobs removed (the class stays for
+   the §1 convergence refresh + zombie audit), `AdaptiveAnimationManager` deleted.
 4. The remaining C-phase items (C6–C10 ecosystem visual transitions, C4/C5
    projectile teardown fixes) land branch-by-branch on the wired graphs, following
    the B1/B3 templates (suction = `StampSuctionClock` + scheduled retire; blooms =
    the grow engine, already migrated).
-5. Small chores while there: remove the `TrailViewer` component from
-   `Urchin.prefab` (then delete the file), and re-baseline PhaseThresholds
+5. `TrailViewer` ✅ removed from `Urchin.prefab` + file deleted (D2, 2026-08-02).
+   Remaining in-editor chore: re-baseline PhaseThresholds
    (volume-final-at-spawn — Tools > Cosmic Shore > Measure Cell Environment
    Baselines).
 

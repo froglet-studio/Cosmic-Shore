@@ -348,8 +348,8 @@ namespace CosmicShore.Gameplay
                 starvationSeconds = tuning.StarvationSeconds;
 
             // Per-element body PRISM shape: retarget every body HealthPrism's TargetScale (the
-            // bloom target - PrismScaleManager animates toward it, so a post-Initialize retarget
-            // still grows continuously, never pops).
+            // bloom target - the clock growth stamp blooms toward it, so a post-Initialize
+            // retarget still grows continuously, never pops).
             if (tuning.BodyPrismScale != Vector3.zero)
             {
                 foreach (var hp in GetComponentsInChildren<HealthPrism>(true))

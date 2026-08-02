@@ -14,9 +14,11 @@ protocol and update this doc (status + measured numbers).
 
 **Prism animation work has its own locked law:** `Docs/PRISM_ANIMATION.md` — no
 prism may need multiframe CPU updates to animate (one stamp → GPU clock → one
-scheduled end swap; gameplay state final at start). Any perf work touching
-`PrismScaleManager` / `MaterialStateManager` / `PrismEffectsManager` must move
-toward that law, never optimize the per-frame passes further.
+scheduled end swap; gameplay state final at start). The CPU animation managers
+(`PrismScaleManager` / `MaterialStateManager` / `AdaptiveAnimationManager` and
+`PrismEffectsManager`'s animation passes) were DELETED in the D2 pass
+(2026-08-02) — historical task entries below that reference them describe a
+retired architecture; do not resurrect a per-frame pass to "optimize" anything.
 
 ---
 

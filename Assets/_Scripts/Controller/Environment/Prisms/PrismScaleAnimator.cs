@@ -29,31 +29,6 @@ namespace CosmicShore.Gameplay
 
         private Prism prism;
         private MeshRenderer meshRenderer;
-        private bool isRegistered;
-
-        /// <summary>Owning prism — PrismScaleManager pushes transform updates to
-        /// the companion render entity through this after each scale write.</summary>
-        internal Prism OwnerPrism => prism;
-
-        /// <summary>Time.time of this animator's last processed growth step.
-        /// Written by PrismScaleManager: the sliced growth pass steps each grower
-        /// with its true elapsed dt, so tempo is preserved no matter how many
-        /// frames sit between a grower's slices.</summary>
-        internal float LastStepTime { get; set; }
-
-        private bool isScaling;
-        public bool IsScaling
-        {
-            get => isScaling;
-            set
-            {
-                if (isScaling.Equals(value)) return;
-                isScaling = value;
-
-                if (isScaling) PrismScaleManager.Instance?.OnBlockStartScaling(this);
-                else PrismScaleManager.Instance?.OnBlockStopScaling(this);
-            }
-        }
 
         private void Awake()
         {
@@ -76,29 +51,12 @@ namespace CosmicShore.Gameplay
             transform.localScale = Vector3.zero;
         }
 
-        public void Initialize()
-        {
-            if (isRegistered) return;
-            if (!PrismScaleManager.Instance) return;
-            PrismScaleManager.Instance.RegisterAnimator(this);
-            isRegistered = true;
-        }
-
-        private void OnDisable()
-        {
-            if (PrismScaleManager.Instance == null || !isRegistered) return;
-            PrismScaleManager.Instance.UnregisterAnimator(this);
-            isRegistered = false;
-        }
-        
         // ------------------------------------------------------------------
         // Clock-material growth (Docs/PRISM_ANIMATION.md, LOCKED law).
-        // When the clock path is live (PrismRenderService.ClockAnimationEnabled
-        // + this prism renders through a companion entity), growth is ONE stamp:
-        // transform/volume/spatial go FINAL immediately (gameplay-final-at-
-        // start), the GPU blooms the visual off _Time.y, and settledness is a
-        // pure clock predicate. The legacy PrismScaleManager pass is never
-        // engaged for clock-grown prisms.
+        // Growth is ONE stamp: transform/volume/spatial go FINAL immediately
+        // (gameplay-final-at-start), the GPU blooms the visual off the shader
+        // clock, and settledness is a pure clock predicate. The legacy
+        // per-frame manager pass was deleted in the D2 pass.
         // ------------------------------------------------------------------
 
         bool _clockActive;            // a clock grow has been stamped this life
@@ -113,18 +71,16 @@ namespace CosmicShore.Gameplay
 
         static readonly int GrowStartTimeId = Shader.PropertyToID("_GrowStartTime");
 
-        /// <summary>Clock-aware "is the visual still blooming" — the replacement
-        /// for reading IsScaling directly (legacy path still reports IsScaling).</summary>
+        /// <summary>Clock-aware "is the visual still blooming".</summary>
         public bool IsVisuallyGrowing =>
-            _clockActive ? PrismClock.Now < _clockSettleTime
-                         : isActiveAndEnabled && IsScaling;
+            _clockActive && PrismClock.Now < _clockSettleTime;
 
-        /// <summary>Clock-aware settledness for the arena-ready gate: on the clock
-        /// path the transform is final from the stamp, so settled == the visual has
-        /// run its course; on the legacy path it's the old transform check.</summary>
+        /// <summary>Clock-aware settledness for the arena-ready gate: the transform
+        /// is final from the stamp, so settled == the visual has run its course.
+        /// A never-stamped prism falls back to the transform check.</summary>
         public bool IsVisuallySettled =>
             _clockActive ? PrismClock.Now >= _clockSettleTime
-                         : !IsScaling && IsAtTarget;
+                         : IsAtTarget;
 
         /// <summary>Pool-reuse reset — called from Prism.ResetState so a recycled
         /// prism can't inherit the previous life's clock state.</summary>
@@ -135,8 +91,8 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>The per-second exponential-approach rate k — the exact per-tick
-        /// tempo the legacy manager derived from GrowthRate (PrismScaleManager.cs,
-        /// dtNominal = the project's fixed timestep 0.04).</summary>
+        /// tempo the retired legacy manager derived from GrowthRate
+        /// (dtNominal = the project's fixed timestep 0.04).</summary>
         float ClockRateK
         {
             get
@@ -301,9 +257,8 @@ namespace CosmicShore.Gameplay
         public bool IsAtTarget => (transform.localScale - TargetScale).sqrMagnitude <= 0.01f;
 
         /// <summary>
-        /// Snap to TargetScale NOW, running the exact bookkeeping the scale manager's completion
-        /// pass would (render sync, volume cache, completion callbacks, active-set removal).
-        /// ONLY for windows where the world is covered (the loading gate's connecting screen) —
+        /// Snap to TargetScale NOW (render sync, volume cache). ONLY for windows
+        /// where the world is covered (the loading gate's connecting screen) —
         /// an on-screen snap would violate continuity of existence.
         /// </summary>
         public void CompleteImmediately()
@@ -326,17 +281,13 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
+            // Never stamped (e.g. pre-creation window): snap the transform so the
+            // gate reads settled; the growth side effects run at the deferred stamp.
             if ((transform.localScale - target).sqrMagnitude > 0.01f)
             {
                 transform.localScale = target;
                 prism?.SyncRenderTransform();
                 prism?.RefreshVolumeCache();
-            }
-
-            if (IsScaling)
-            {
-                IsScaling = false; // setter unregisters from PrismScaleManager's active set
-                ExecuteOnScaleComplete();
             }
         }
 
@@ -382,11 +333,5 @@ namespace CosmicShore.Gameplay
             return prism.prismProperties.volume - oldVolume;
         }
 
-        private void OnDestroy()
-        {
-            if (!PrismScaleManager.Instance || !isRegistered) return;
-            PrismScaleManager.Instance.UnregisterAnimator(this);
-            isRegistered = false;
-        }
     }
 }

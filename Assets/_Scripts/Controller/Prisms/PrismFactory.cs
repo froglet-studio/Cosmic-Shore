@@ -56,11 +56,12 @@ namespace CosmicShore.Gameplay
         // Add more later: PrismShockwavePoolManager, PrismDisintegrationPoolManager, etc.
 
         [Header("Boost Prism Tuning")]
-        [Tooltip("Grow-in speed for boost prisms (fast bloom). PrismScaleManager clamps " +
-                 "growthRate * deltaTime into [0.05, 0.1] lerp/frame, so values below ~6 are " +
-                 "indistinguishable from the default; 8 pins the bloom at the max speed across " +
-                 "framerates. The collider never waits on this - boost prisms hold a full-size " +
-                 "collider from frame 0 (Prism.HoldColliderAtFullSize).")]
+        [Tooltip("Grow-in speed for boost prisms (fast bloom). The clock growth stamp " +
+                 "clamps the derived rate (PrismScaleAnimator.ClockRateK: growthRate * 0.04 " +
+                 "into [0.05, 0.1]), so values below ~6 are indistinguishable from the " +
+                 "default; 8 pins the bloom at the max speed across framerates. The collider " +
+                 "never waits on this - boost prisms hold a full-size collider from frame 0 " +
+                 "(Prism.HoldColliderAtFullSize).")]
         [SerializeField] private float boostPrismGrowthRate = 8f;
 
         [Header("Data Containers")]

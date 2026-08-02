@@ -193,21 +193,35 @@ suction), staying visible across the whole collapse.
 - [ ] A just-laid ring collides at full size while still visibly blooming
 - [ ] Hitstop / pause freezes prism animation (scaled clock — expected)
 
-## Phase 6 — Deletion pass (D2) + chores — only after Phase 5 is green
+## Phase 6 — Deletion pass (D2) + chores — ✅ DONE PROGRAMMATICALLY (one item left)
 
-- [ ] Delete `PrismScaleManager.cs` + its scene components
-- [ ] Delete `MaterialStateManager.cs` + scene components
-- [ ] `PrismEffectsManager.cs`: delete `ProcessExplosions`/`ProcessImplosions`, both
-      Burst jobs, the explosion/implosion registration APIs/lists — KEEP the class
-      (clock convergence tracking + dev zombie audit)
-- [ ] Delete `AdaptiveAnimationManager.cs` once both subclasses are gone
-- [ ] Cleanup PR: strip dead manager-era fields from `MaterialPropertyAnimator`
-      (`IsAnimating`, `AnimationProgress`, `Start*4`, `OnAnimationComplete`) and
-      `PrismScaleAnimator` (`IsScaling`, `LastStepTime`)
-- [ ] Remove `TrailViewer` from `Assets/_Prefabs/Spacevessels/Urchin.prefab`, delete the file
-- [ ] Re-baseline PhaseThresholds (volume is final at spawn now):
-      `Tools > Cosmic Shore > Measure Cell Environment Baselines` + update cell
-      configs per `Docs/ECOSYSTEM.md` §18
+Executed in-branch 2026-08-02 (every removal machine-verified reference-free
+across code AND scenes/prefabs before deletion):
+
+- [x] `PrismScaleManager.cs` deleted; its component removed from
+      `PrismManagers.prefab` (the only asset reference)
+- [x] `MaterialStateManager.cs` deleted; component removed from `PrismManagers.prefab`
+- [x] `PrismEffectsManager.cs` slimmed: `ProcessExplosions`/`ProcessImplosions`, both
+      Burst jobs, job-data structs, and the registration APIs/lists deleted — class
+      KEPT (clock convergence tracking + dev zombie audit)
+- [x] `AdaptiveAnimationManager.cs` deleted (no other subclasses; the
+      `AdaptivePerformanceSetting` graphics setting is documented INERT)
+- [x] Dead manager-era surface stripped: `MaterialPropertyAnimator` (`IsAnimating`,
+      `AnimationProgress`, `OnAnimationComplete`, `Current*`, `*4` mirrors,
+      `Duration`, manager registration) and `PrismScaleAnimator` (`IsScaling`,
+      `LastStepTime`, `OwnerPrism`, `Initialize`, manager registration); callers
+      updated (`Prism`, `FullAutoBlockShootActionExecutor`); benchmark counts
+      re-sourced (`GameLoadSampler` → `PrismSpatialIndex.LiveCount` +
+      effect `EnabledInstances`)
+- [x] `TrailViewer` component removed from `Urchin.prefab`; file deleted
+- [ ] **YOURS, in-editor** — re-baseline PhaseThresholds (volume is final at spawn
+      now): `Tools > Cosmic Shore > Measure Cell Environment Baselines` + update
+      cell configs per `Docs/ECOSYSTEM.md` §18
+
+**In-editor sanity after pulling this phase**: open `PrismManagers.prefab` and
+`Urchin.prefab` in the inspector — there must be NO "Missing (Mono Script)" rows
+(the components were excised, not orphaned). Enter play mode once; the console
+must show no compile errors and no `[PrismClock]` errors.
 
 ## Phase 7 — Follow-up branches (post-wiring, own PRs)
 

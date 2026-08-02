@@ -20,8 +20,8 @@ namespace CosmicShore.Gameplay
     /// counts every prism carries an octahedron shield, so thousands of Update()
     /// invocations ran every frame just to early-return (profiled: 9234 calls, ~1.3ms
     /// plus the BehaviourUpdate dispatch overhead). Shields register here ONLY while
-    /// actively morphing — the idle majority cost nothing. Mirrors PrismTimerManager /
-    /// PrismScaleManager (centralized ticking of the few active members).
+    /// actively morphing — the idle majority cost nothing. Mirrors PrismTimerManager
+    /// (centralized ticking of the few active members).
     /// NOTE (clock-material law): the morphs this ticks are themselves scheduled for
     /// GPU migration (Docs/PRISM_ANIMATION.md §5 B4) — do not add new members.
     /// </summary>

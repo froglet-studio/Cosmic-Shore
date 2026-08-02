@@ -30,18 +30,17 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         {
             var metrics = new GameLoadMetrics();
 
-            // Every live prism owns a PrismScaleAnimator, so the scale manager's registered
-            // count is a faithful "active prisms" reading without a scene scan.
-            var scaleManager = PrismScaleManager.Instance;
-            if (scaleManager != null)
-                metrics.activePrisms = scaleManager.RegisteredAnimatorCount;
+            // The spatial index is THE canonical registry of live prism mass
+            // (Docs/SPATIAL_INDEX.md) — its O(1) live count is the faithful
+            // "active prisms" reading without a scene scan.
+            var spatialIndex = CosmicShore.Gameplay.PrismSpatialIndex.Instance;
+            if (spatialIndex != null)
+                metrics.activePrisms = spatialIndex.LiveCount;
 
-            var effectsManager = PrismEffectsManager.Instance;
-            if (effectsManager != null)
-            {
-                metrics.activeExplosions = effectsManager.ActiveExplosionCount;
-                metrics.activeImplosions = effectsManager.ActiveImplosionCount;
-            }
+            // Effects ride the GPU clock (no manager-tracked active lists) — the
+            // enabled-instance registries the zombie audit walks are the live sets.
+            metrics.activeExplosions = PrismExplosion.EnabledInstances.Count;
+            metrics.activeImplosions = PrismImplosion.EnabledInstances.Count;
 
             if (gameData != null)
             {

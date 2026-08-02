@@ -604,9 +604,9 @@ namespace CosmicShore.ECS
             });
         }
 
-        /// <summary>Per-frame animated colors from MaterialStateManager's Burst job output.
-        /// Inputs are authored-space values (the same numbers the legacy MPB received);
-        /// the color-space transform is applied here.</summary>
+        /// <summary>Direct color write (stress test / tooling — live prisms use the
+        /// clock stamps instead). Inputs are authored-space values; the color-space
+        /// transform is applied here.</summary>
         public static void SetColors(in PrismRenderHandle handle, in float4 bright, in float4 dark, in float3 spread)
         {
             if (!IsUsable(in handle)) return;
@@ -626,17 +626,8 @@ namespace CosmicShore.ECS
             em.SetComponentData(handle.Entity, new PrismDarkColorOverride { Value = ApplyColorSpace(in dark) });
         }
 
-        /// <summary>Per-frame explosion shader params from PrismEffectsManager's Burst job output.</summary>
-        public static void SetExplosionParams(in PrismRenderHandle handle, in float3 velocity, float explosionAmount, float opacity)
-        {
-            if (!IsUsable(in handle)) return;
-            var em = _world.EntityManager;
-            em.SetComponentData(handle.Entity, new PrismVelocityOverride { Value = velocity });
-            em.SetComponentData(handle.Entity, new PrismExplosionAmountOverride { Value = explosionAmount });
-            em.SetComponentData(handle.Entity, new PrismOpacityOverride { Value = opacity });
-        }
-
-        /// <summary>Per-frame implosion shader params from PrismEffectsManager's Burst job output.</summary>
+        /// <summary>Initial implosion shader params (one-shot at effect start —
+        /// progress itself rides the clock stamp).</summary>
         public static void SetImplosionParams(in PrismRenderHandle handle, float state, in float3 location)
         {
             if (!IsUsable(in handle)) return;

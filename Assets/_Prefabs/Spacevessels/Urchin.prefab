@@ -2506,7 +2506,6 @@ GameObject:
   - component: {fileID: 4005043449782909879}
   - component: {fileID: 2048454636339882050}
   - component: {fileID: 7081412522392871879}
-  - component: {fileID: 8607513911732901166}
   - component: {fileID: 4235613159111207255}
   - component: {fileID: 8233249704035529933}
   - component: {fileID: 3734859533843191741}
@@ -2750,21 +2749,6 @@ MonoBehaviour:
   HostileTerrainSpeed: 10
   DestroyedTerrainSpeed: 10
   Throttle: 0
---- !u!114 &8607513911732901166
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6417075533431866457}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1e03405a6e8a59b468bd7970ecc7d3e0, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  TransparentMaterial: {fileID: 2100000, guid: cc4ffbaa55bcb9b4494cfdc9d19d1214, type: 2}
-  radiusInBlocks: 5
-  trailViewerMaterial: {fileID: 2100000, guid: d9c5732e6a43fbd40b2c9fe615ed746e, type: 2}
 --- !u!114 &4235613159111207255
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -462,8 +462,8 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>Pushes the live transform to the companion entity. Called on
-        /// show, by PrismScaleManager during growth, and by movers via
-        /// NotifyPositionChanged.</summary>
+        /// show, at the growth stamp (transform goes final there), and by movers
+        /// via NotifyPositionChanged.</summary>
         internal void SyncRenderTransform()
         {
             if (_exoticVisualActive) return;
@@ -491,8 +491,9 @@ namespace CosmicShore.Gameplay
                 }
                 return;
             }
-            bool refreshColors = materialAnimator == null || !materialAnimator.IsAnimating;
-            PrismRenderService.SetMaterial(in RenderHandle, meshRenderer.sharedMaterial, refreshColors);
+            // Always refresh: clock color transitions bind the end-state material
+            // at the stamp, and its authored values ARE the lerp targets.
+            PrismRenderService.SetMaterial(in RenderHandle, meshRenderer.sharedMaterial, refreshColors: true);
         }
 
         /// <summary>
@@ -506,26 +507,13 @@ namespace CosmicShore.Gameplay
             _exoticVisualActive = active;
             ApplyRenderPath();
 
-            // Color continuity: the displayed colors live on the outgoing path —
-            // push them onto the incoming one so the handoff frame can't flash a
-            // stale MaterialPropertyBlock (engage) or pre-engage entity colors
-            // (disengage).
+            // Color continuity: on engage the displayed colors live on the outgoing
+            // entity path — pin them onto the GameObject renderer so the handoff
+            // frame can't flash a stale MaterialPropertyBlock. On disengage nothing
+            // is needed: the entity's clock stamps kept ticking while the exotic
+            // visual was shown, so it resumes at the analytically-correct colors.
             if (active)
                 materialAnimator?.FlushDisplayedColorsToRenderer();
-            else
-                SyncRenderColorsFromAnimator();
-        }
-
-        /// <summary>Pushes the animator's in-flight colors onto the companion
-        /// entity (used when the entity path resumes mid-animation).</summary>
-        internal void SyncRenderColorsFromAnimator()
-        {
-            if (materialAnimator == null || !materialAnimator.IsAnimating) return;
-            if (!PrismRenderService.IsHandleUsable(in RenderHandle)) return;
-            PrismRenderService.SetColors(in RenderHandle,
-                PrismRenderService.ToFloat4(materialAnimator.CurrentBrightColor),
-                PrismRenderService.ToFloat4(materialAnimator.CurrentDarkColor),
-                PrismRenderService.ToFloat3(materialAnimator.CurrentSpread));
         }
 
         /// <summary>
@@ -547,7 +535,6 @@ namespace CosmicShore.Gameplay
             if (authoredTargetScale == Vector3.zero)
                 authoredTargetScale = transform.localScale;
 
-            scaleAnimator.Initialize();
             scaleAnimator.SetTargetScale(authoredTargetScale);
             StartCoroutine(CreateBlockCoroutine(authoredTargetScale));
 
@@ -833,7 +820,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Cached copy of <see cref="CurrentVolume"/>, refreshed ONLY when this prism's
-        /// scale actually changes (PrismScaleManager during growth + on settle, plus
+        /// scale actually changes (the growth stamp — transform is final there — plus
         /// create / restore). Cell.EnsureVolumeFresh reads THIS instead of CurrentVolume
         /// so the per-domain volume aggregation over the whole prism population stops
         /// doing a transform.lossyScale parent-walk per prism per recompute — the
@@ -873,9 +860,9 @@ namespace CosmicShore.Gameplay
                 if (index != null)
                 {
                     index.UpdateCellVolume(SpatialIndexId, CachedVolume);
-                    // A shielded prism growing under PrismScaleManager changes its
-                    // world shell too - re-capture it on the same cadence
-                    // (single byte read no-op for the unshielded majority).
+                    // A shielded prism whose scale just changed (growth stamp)
+                    // changes its world shell too - re-capture it on the same
+                    // cadence (single byte read no-op for the unshielded majority).
                     index.UpdateShellTransform(SpatialIndexId);
                 }
             }
@@ -906,8 +893,7 @@ namespace CosmicShore.Gameplay
 
             if (scaleAnimator)
             {
-                scaleAnimator.IsScaling = false;      
-                scaleAnimator.enabled = false;       
+                scaleAnimator.enabled = false;
             }
 
             blockCollider.enabled = false;
