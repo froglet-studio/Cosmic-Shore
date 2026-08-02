@@ -8,32 +8,40 @@ using UnityEngine.UI;
 namespace CosmicShore.Editor
 {
     /// <summary>
-    /// One-click setup for the Dolphin's four-icon ability row — the fleet-wide contract in
-    /// <see cref="VesselHUDView"/>: exactly four icons in the lower right, running charge → mass →
-    /// space → time, left to right, each under the element flower that upgrades it.
+    /// Repair/re-bind tool for the Dolphin's four-icon ability row. The row is already AUTHORED in
+    /// DolphinHUDVariant.prefab — this exists so a broken or hand-edited HUD can be put back on the
+    /// standard without re-deriving it, and so the layout has exactly one definition in code.
     ///
-    /// It authors the row as real prefab content (nothing spawned at runtime), binds every serialized
-    /// slot on <see cref="DolphinVesselHUDView"/>, and turns <c>tintIconOnUpgrade</c> OFF because all
-    /// four Dolphin icons are live gameplay gauges — the upgrade signal rides the element badge and
-    /// the scale bump instead of icon colour.
+    /// The layout is the fleet standard, not a judgement call: four buttons parented to the HUD
+    /// root, sharing one Y band, at four equal X bands across the lower right, each holding an
+    /// 80×80 <c>Icon</c>. The numbers below are lifted verbatim from SquirrelHUDVariant.prefab,
+    /// which established them — change them here and you are changing the fleet, so don't.
     ///
-    ///   Charge → CrystalIcon (+2 carry pips)      "Twin Seed"
-    ///   Mass   → DriftIcon   (radial boost fill)  "Hard Wake"
-    ///   Space  → BlastIcon   (+ a blast tally)    "Clean Blast"
-    ///   Time   → JawIcon     (two jaw halves)     "Live Current"
+    ///   Charge → CrystalIcon (+2 carry pips)     "Twin Seed"
+    ///   Mass   → DriftIcon   (radial boost fill) "Hard Wake"
+    ///   Space  → BlastIcon   (+ a prism tally)   "Clean Blast"
+    ///   Time   → JawIcon     (two jaw halves)    "Live Current"
     ///
-    /// Idempotent: re-running finds the objects it made last time and only re-binds. Sprites are
-    /// deliberately left empty — art is an authoring decision, and the row reads as placeholder
-    /// white boxes until someone assigns them. Reposition the AbilityRow container to taste.
+    /// Idempotent: it finds objects by name and only re-binds, so running it on the authored prefab
+    /// changes nothing. Sprites are never touched — art is an authoring decision.
     ///
-    /// Open Assets/_Prefabs/UI Elements/VesselHUD/DolphinHUDVariant.prefab in Prefab Mode, select
-    /// the root, then Tools > Cosmic Shore > Wire Dolphin Ability Row.
+    /// Open the prefab in Prefab Mode, select the root, then
+    /// Tools > Cosmic Shore > Wire Dolphin Ability Row.
     /// </summary>
     public static class DolphinHUDRowWirer
     {
-        const string RowName = "AbilityRow";
-        const float IconSize = 96f;
-        const float IconSpacing = 112f;
+        const float IconSize = 80f;
+
+        // THE fleet standard, from SquirrelHUDVariant.prefab. One Y band, four equal X bands.
+        const float BandYMin = 0.027730448f;
+        const float BandYMax = 0.1665395f;
+        static readonly (string slot, float xMin, float xMax)[] Bands =
+        {
+            ("Crystal", 0.68481258f, 0.76293758f),
+            ("Drift",   0.75652886f, 0.83465386f),
+            ("Blast",   0.82824515f, 0.90637015f),
+            ("Jaw",     0.89996143f, 0.97808643f),
+        };
 
         [MenuItem("Tools/Cosmic Shore/Wire Dolphin Ability Row")]
         static void WireSelected()
@@ -51,41 +59,46 @@ namespace CosmicShore.Editor
             Wire(view);
             EditorUtility.SetDirty(view);
             EditorUtility.DisplayDialog("Wire Dolphin Ability Row",
-                $"Authored the four-icon ability row on '{view.name}'.\n\n" +
-                "Assign sprites to the four icons, then reposition the AbilityRow container. " +
+                $"Re-bound the four-icon ability row on '{view.name}' to the fleet-standard bands.\n\n" +
                 "Verify with Tools > Cosmic Shore > Audit Vessel Ability Rows.", "OK");
         }
 
         static void Wire(DolphinVesselHUDView view)
         {
-            var row = EnsureChild(view.transform, RowName);
-            var rowRect = row.GetComponent<RectTransform>();
-            // Anchor the row to the lower right — where the fleet contract puts it.
-            rowRect.anchorMin = rowRect.anchorMax = rowRect.pivot = new Vector2(1f, 0f);
-            rowRect.anchoredPosition = new Vector2(-40f, 40f);
-            rowRect.sizeDelta = new Vector2(IconSpacing * 4f, IconSize);
+            var root = view.transform;
 
-            // Left to right in the canonical element order. X is what the row validator checks.
-            var crystal = EnsureIcon(row.transform, "CrystalIcon", 0);
-            var drift = EnsureIcon(row.transform, "DriftIcon", 1);
-            var blast = EnsureIcon(row.transform, "BlastIcon", 2);
-            var jaw = EnsureIcon(row.transform, "JawIcon", 3);
+            var icons = new Image[Bands.Length];
+            for (int i = 0; i < Bands.Length; i++)
+            {
+                var (slot, xMin, xMax) = Bands[i];
 
-            drift.type = Image.Type.Filled;
-            drift.fillMethod = Image.FillMethod.Radial360;
+                // The BUTTON carries the position; sizeDelta 0 means "exactly the anchor band".
+                var button = EnsureChild(root, $"{slot}Button");
+                var brt = button.GetComponent<RectTransform>();
+                brt.anchorMin = new Vector2(xMin, BandYMin);
+                brt.anchorMax = new Vector2(xMax, BandYMax);
+                brt.pivot = new Vector2(0.5f, 0.5f);
+                brt.anchoredPosition = Vector2.zero;
+                brt.sizeDelta = Vector2.zero;
+
+                icons[i] = EnsureIcon(button.transform, $"{slot}Icon");
+            }
+
+            var crystal = icons[0];
+            var drift = icons[1];
+            var blast = icons[2];
+            var jaw = icons[3];
+
+            // Radial fills: the recharge wipe and the drift-boost meter.
             crystal.type = Image.Type.Filled;
             crystal.fillMethod = Image.FillMethod.Radial360;
+            drift.type = Image.Type.Filled;
+            drift.fillMethod = Image.FillMethod.Radial360;
 
-            // Charge: two carry pips under the crystal icon. The second only shows once Twin Seed
-            // raises the limit, so the row communicates capacity as well as stock.
             var pip0 = EnsurePip(crystal.transform, "CrystalPip0", -18f);
             var pip1 = EnsurePip(crystal.transform, "CrystalPip1", 18f);
-
-            // Time: the jaw pair. Two halves that rotate apart by the same angle the hull's jaws do.
             var jawUpper = EnsureJawHalf(jaw.transform, "JawUpper", 1f);
             var jawLower = EnsureJawHalf(jaw.transform, "JawLower", -1f);
-
-            // Space: the blast tally.
             var blastText = EnsureBlastText(blast.transform);
 
             var so = new SerializedObject(view);
@@ -94,47 +107,40 @@ namespace CosmicShore.Editor
             Bind(so, "driftBoostIcon", drift);
             Bind(so, "blastIcon", blast);
             Bind(so, "blastCountText", blastText);
-            Bind(so, "jawUpper", jawUpper.GetComponent<RectTransform>());
-            Bind(so, "jawLower", jawLower.GetComponent<RectTransform>());
+            Bind(so, "jawUpper", jawUpper);
+            Bind(so, "jawLower", jawLower);
 
-            // Every Dolphin icon is a live gauge, so colour is already spoken for.
+            // Every Dolphin icon is a live gauge, so colour is already spoken for - the upgrade
+            // signal rides the element badge and the scale bump instead.
             var tint = so.FindProperty("tintIconOnUpgrade");
             if (tint != null) tint.boolValue = false;
 
-            BindAbilityRow(so, crystal, drift, blast, jaw);
+            BindAbilityRow(so, icons);
             so.ApplyModifiedPropertiesWithoutUndo();
         }
 
-        /// <summary>Binds the four icons into abilityIcons in the canonical charge/mass/space/time order.</summary>
-        static void BindAbilityRow(SerializedObject so, Image charge, Image mass, Image space, Image time)
+        /// <summary>Binds the icons into abilityIcons in the canonical charge/mass/space/time order.</summary>
+        static void BindAbilityRow(SerializedObject so, Image[] icons)
         {
-            var icons = so.FindProperty("abilityIcons");
-            if (icons == null) return;
+            var prop = so.FindProperty("abilityIcons");
+            if (prop == null) return;
 
             var elements = VesselHUDView.AbilityDisplayOrder;
-            var bound = new[] { charge, mass, space, time };
-
-            icons.arraySize = elements.Length;
+            prop.arraySize = elements.Length;
             for (int i = 0; i < elements.Length; i++)
             {
-                var entry = icons.GetArrayElementAtIndex(i);
-                entry.FindPropertyRelative("element").enumValueIndex = ElementEnumIndex(elements[i]);
-                entry.FindPropertyRelative("icon").objectReferenceValue = bound[i];
+                var entry = prop.GetArrayElementAtIndex(i);
+                entry.FindPropertyRelative("element").enumValueIndex = OrdinalOf(elements[i]);
+                entry.FindPropertyRelative("icon").objectReferenceValue = icons[i];
                 // upgradedSprite stays empty: authored art only, never generated.
             }
         }
 
-        // Element is a plain enum with explicit values; SerializedProperty wants the ORDINAL.
-        static int ElementEnumIndex(Element element) => element switch
-        {
-            Element.None => 0,
-            Element.Charge => 1,
-            Element.Mass => 2,
-            Element.Space => 3,
-            Element.Time => 4,
-            Element.Omni => 5,
-            _ => 0,
-        };
+        // SerializedProperty.enumValueIndex wants the DECLARATION ORDINAL, not the enum's value.
+        // Element happens to declare None=0 … Omni=5 in order so the two coincide today; computing
+        // it means a future renumbering cannot silently bind the wrong element.
+        static int OrdinalOf(Element element)
+            => System.Array.IndexOf((Element[])System.Enum.GetValues(typeof(Element)), element);
 
         static void Bind(SerializedObject so, string field, Object value)
         {
@@ -157,20 +163,20 @@ namespace CosmicShore.Editor
             if (existing) return existing.gameObject;
 
             var go = new GameObject(name, typeof(RectTransform));
+            go.layer = LayerMask.NameToLayer("UI");
             go.transform.SetParent(parent, false);
             return go;
         }
 
-        static Image EnsureIcon(Transform parent, string name, int slot)
+        static Image EnsureIcon(Transform parent, string name)
         {
             var go = EnsureChild(parent, name);
-            var image = go.GetComponent<Image>();
-            if (!image) image = go.AddComponent<Image>();
+            var image = go.GetComponent<Image>() ? go.GetComponent<Image>() : go.AddComponent<Image>();
 
             var rect = go.GetComponent<RectTransform>();
-            rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(0f, 0.5f);
+            rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(0.5f, 0.5f);
+            rect.anchoredPosition = Vector2.zero;
             rect.sizeDelta = new Vector2(IconSize, IconSize);
-            rect.anchoredPosition = new Vector2(slot * IconSpacing, 0f);
             image.raycastTarget = false;
             image.preserveAspect = true;
             return image;
@@ -179,11 +185,11 @@ namespace CosmicShore.Editor
         static Image EnsurePip(Transform parent, string name, float x)
         {
             var go = EnsureChild(parent, name);
-            var image = go.GetComponent<Image>();
-            if (!image) image = go.AddComponent<Image>();
+            var image = go.GetComponent<Image>() ? go.GetComponent<Image>() : go.AddComponent<Image>();
 
             var rect = go.GetComponent<RectTransform>();
-            rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(0.5f, 0f);
+            rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 0.5f);
+            rect.pivot = new Vector2(0.5f, 0f);
             rect.sizeDelta = new Vector2(22f, 22f);
             rect.anchoredPosition = new Vector2(x, -14f);
             image.raycastTarget = false;
@@ -191,11 +197,10 @@ namespace CosmicShore.Editor
             return image;
         }
 
-        static GameObject EnsureJawHalf(Transform parent, string name, float dir)
+        static RectTransform EnsureJawHalf(Transform parent, string name, float dir)
         {
             var go = EnsureChild(parent, name);
-            var image = go.GetComponent<Image>();
-            if (!image) image = go.AddComponent<Image>();
+            var image = go.GetComponent<Image>() ? go.GetComponent<Image>() : go.AddComponent<Image>();
 
             var rect = go.GetComponent<RectTransform>();
             // Pivot at the hinge (the jaw's inner edge) so a Z rotation opens the gape rather than
@@ -203,36 +208,27 @@ namespace CosmicShore.Editor
             rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 0.5f);
             rect.pivot = new Vector2(0f, 0.5f);
             rect.sizeDelta = new Vector2(IconSize * 0.6f, IconSize * 0.3f);
-            rect.anchoredPosition = new Vector2(-IconSize * 0.3f, dir * IconSize * 0.08f);
+            rect.anchoredPosition = new Vector2(-IconSize * 0.3f, dir * 6f);
             image.raycastTarget = false;
             image.preserveAspect = true;
-            return go;
+            return rect;
         }
 
         static TMP_Text EnsureBlastText(Transform parent)
         {
-            var existing = parent.Find("BlastCount");
-            if (existing)
-            {
-                var found = existing.GetComponent<TMP_Text>();
-                if (found) return found;
-            }
-
-            var go = existing ? existing.gameObject : new GameObject("BlastCount", typeof(RectTransform));
-            go.transform.SetParent(parent, false);
-
+            var go = EnsureChild(parent, "BlastCount");
             var text = go.GetComponent<TextMeshProUGUI>();
             if (!text) text = go.AddComponent<TextMeshProUGUI>();
 
             var rect = go.GetComponent<RectTransform>();
-            rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(0.5f, 0f);
+            rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 0.5f);
+            rect.pivot = new Vector2(0.5f, 0f);
             rect.sizeDelta = new Vector2(IconSize, 28f);
             rect.anchoredPosition = new Vector2(0f, -18f);
 
             text.alignment = TextAlignmentOptions.Center;
             text.fontSize = 22f;
             text.raycastTarget = false;
-            text.text = string.Empty;
             return text;
         }
     }
