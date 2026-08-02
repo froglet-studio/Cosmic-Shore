@@ -291,6 +291,23 @@ namespace CosmicShore.Gameplay
         
         GameObject SpawnExplosion(PrismEventData data)
         {
+            // Batched pure-entity debris path (Docs/PRISM_ANIMATION.md B3): no
+            // GameObject, no pool, no per-frame budget — a whole burst spawns as
+            // one prototype-instantiate batch at LateUpdate and the GPU animates
+            // every piece at full length. The pooled path below survives as the
+            // fallback for a disabled render service / misconfigured prefab, and
+            // its per-frame caps + deferral only ever engage in that world.
+            if (CosmicShore.Utility.PrismDebris.Configure(explosionPool != null ? explosionPool.Prefab : null) &&
+                TryGetTeamColors(data.ownDomain, out var bright, out var dark) &&
+                CosmicShore.Utility.PrismDebris.TryRequestExplosion(
+                    data.SpawnPosition, data.Rotation, data.Scale,
+                    bright, dark, data.Velocity, data.DebrisSpeedLimit))
+            {
+                // Callers treat a null spawn as fire-and-forget (the deferral
+                // branch below has always returned null).
+                return null;
+            }
+
             RollExplosionFrameBudget();
 
             // Over budget: queue the visual for a later frame rather than dropping it.
@@ -417,6 +434,23 @@ namespace CosmicShore.Gameplay
             return obj.gameObject;
         }
         
+        /// <summary>
+        /// Domain palette lookup shared by the entity-debris path (which has no
+        /// GameObject for <see cref="ConfigureForTeam"/> to visit). False when the
+        /// theme is not populated yet — the caller falls back to the pooled path,
+        /// whose own warning covers the misconfiguration.
+        /// </summary>
+        private bool TryGetTeamColors(Domains domain, out Color bright, out Color dark)
+        {
+            bright = Color.white;
+            dark = Color.black;
+            if (!_themeManagerData || !_themeManagerData.ColorSet) return false;
+            if (!_themeManagerData.ColorSet.TryGetColorSetByDomain(domain, out var colorSet)) return false;
+            bright = colorSet.InsideBlockColor;
+            dark = colorSet.OutsideBlockColor;
+            return true;
+        }
+
         private void ConfigureForTeam(GameObject obj, Domains domain)
         {
             if (!obj) return;

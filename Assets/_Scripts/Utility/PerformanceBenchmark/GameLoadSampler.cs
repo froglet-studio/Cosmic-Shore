@@ -38,8 +38,9 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                 metrics.activePrisms = spatialIndex.LiveCount;
 
             // Effects ride the GPU clock (no manager-tracked active lists) — the
-            // enabled-instance registries the zombie audit walks are the live sets.
-            metrics.activeExplosions = PrismExplosion.EnabledInstances.Count;
+            // enabled-instance registries the zombie audit walks are the live sets,
+            // plus the batched pure-entity debris that has no GameObject at all.
+            metrics.activeExplosions = PrismExplosion.EnabledInstances.Count + PrismDebris.LiveDebrisCount;
             metrics.activeImplosions = PrismImplosion.EnabledInstances.Count;
 
             if (gameData != null)

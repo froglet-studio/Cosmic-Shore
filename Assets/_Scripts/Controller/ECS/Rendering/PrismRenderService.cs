@@ -866,6 +866,141 @@ namespace CosmicShore.ECS
             em.SetComponentData(handle.Entity, new PrismSuctionDurationOverride { Value = 0f });
         }
 
+        // ------------------------------------------------------------------
+        // Batched pure-entity debris (Docs/PRISM_ANIMATION.md B3 — the
+        // mass-death path). A prism death's explosion VFX needs exactly what an
+        // entity provides: one pose, one clock stamp, one retirement. The
+        // pooled-GameObject carrier (PrismExplosion) charges Instantiate +
+        // OnEnable/OnDisable registry churn + a transform + a per-effect timer
+        // entry per death — profiled at 1.9s of a single frame when a lifted-
+        // throttle blast killed 2,408 prisms at once (every death a pool miss).
+        // These APIs spawn a whole frame's deaths as ONE prototype-instantiate
+        // batch plus one batched visibility op; PrismDebris owns the entity
+        // lifetimes and retires whole batches below. No handles: the registry
+        // exists for objects whose state changes over life — debris state is
+        // written once and never touched again.
+        // ------------------------------------------------------------------
+
+        /// <summary>Epoch of the cached ECS world. PrismDebris tags its batches with
+        /// this; a mismatch at sweep time means the world (and every entity in it)
+        /// is already gone, so records are dropped without a destroy.</summary>
+        public static int CurrentEpoch => _epoch;
+
+        /// <summary>One debris entity's complete initial conditions — everything the
+        /// clock animation needs, stamped once at spawn (the entity never changes
+        /// again until its batch is destroyed).</summary>
+        public struct ExplosionDebrisSpawn
+        {
+            /// <summary>Initial pose. The entity matrix never moves — the GPU flies
+            /// the debris off the clock stamp.</summary>
+            public Matrix4x4 LocalToWorld;
+            /// <summary>Raw team colors — color-space conversion happens at stamp,
+            /// same as <see cref="SetTeamColors"/>.</summary>
+            public float4 BrightColor;
+            public float4 DarkColor;
+            /// <summary>World-space debris velocity, already clamped by the caller
+            /// (the shader does the world→object conversion).</summary>
+            public float3 Velocity;
+            /// <summary>Shatter-rate channel (may exceed |Velocity| on the legacy
+            /// gain — see PrismExplosion.TriggerExplosion's ClampMagnitude note).</summary>
+            public float Speed;
+            public float Duration;
+            /// <summary>Object-space end-of-flight offset — the culling envelope
+            /// (mesh AABB extended along the flight, exactly like
+            /// <see cref="ExpandBoundsForClockAnimation"/>).</summary>
+            public float3 ObjectDisplacement;
+            public float BoundsPadding;
+        }
+
+        /// <summary>
+        /// Spawns every entry of <paramref name="spawns"/> as debris entities in ONE
+        /// prototype-instantiate + ONE batched visibility change; per-entity state
+        /// lands via non-structural SetComponentData. Spawned entities are appended
+        /// to <paramref name="appendEntitiesTo"/> in spawn order (index-aligned with
+        /// <paramref name="spawns"/>). Returns false — spawning nothing — when the
+        /// service is off or no world exists; the caller falls back to the pooled
+        /// GameObject path.
+        /// </summary>
+        public static bool SpawnExplosionDebrisBatch(Mesh mesh, Material material, int layer,
+            System.Collections.Generic.List<ExplosionDebrisSpawn> spawns, float startTime,
+            System.Collections.Generic.List<Entity> appendEntitiesTo)
+        {
+            if (!Enabled || mesh == null || material == null ||
+                spawns == null || spawns.Count == 0 || !TryEnsure())
+                return false;
+
+            var em = _world.EntityManager;
+            var prototype = GetPrototype(layer, PrismRenderOverrideSet.Explosion, mesh, material);
+
+            var entities = new Unity.Collections.NativeArray<Entity>(
+                spawns.Count, Unity.Collections.Allocator.Temp);
+            em.Instantiate(prototype, entities);
+            // Clones are born hidden (prototype ships DisableRendering); strip the
+            // whole batch in one structural op. The stamp below IS the correct
+            // initial state (amount 0, opacity 1 at t = startTime) — nothing to hide.
+            em.RemoveComponent(entities, ComponentType.ReadWrite<DisableRendering>());
+
+            var mmi = new MaterialMeshInfo(GetMaterialID(material), GetMeshID(mesh));
+            float3 spread = ReadVector3(material, SpreadId);
+            float3 meshCenter = mesh.bounds.center;
+            float3 meshExtents = mesh.bounds.extents;
+
+            for (int i = 0; i < spawns.Count; i++)
+            {
+                var s = spawns[i];
+                var entity = entities[i];
+                em.SetComponentData(entity, mmi);
+                em.SetComponentData(entity, new LocalToWorld { Value = ToFloat4x4(in s.LocalToWorld) });
+                em.SetComponentData(entity, new PrismBrightColorOverride { Value = ApplyColorSpace(in s.BrightColor) });
+                em.SetComponentData(entity, new PrismDarkColorOverride { Value = ApplyColorSpace(in s.DarkColor) });
+                em.SetComponentData(entity, new PrismSpreadOverride { Value = spread });
+                em.SetComponentData(entity, new PrismExplodeStartTimeOverride { Value = startTime });
+                em.SetComponentData(entity, new PrismExplodeSpeedOverride { Value = s.Speed });
+                em.SetComponentData(entity, new PrismExplodeDurationOverride { Value = s.Duration });
+                em.SetComponentData(entity, new PrismVelocityOverride { Value = s.Velocity });
+
+                float3 half = s.ObjectDisplacement * 0.5f;
+                em.SetComponentData(entity, new RenderBounds
+                {
+                    Value = new AABB
+                    {
+                        Center = meshCenter + half,
+                        Extents = meshExtents + math.abs(half) + new float3(math.max(0f, s.BoundsPadding)),
+                    }
+                });
+
+                appendEntitiesTo.Add(entity);
+            }
+
+            LiveEntityCount += spawns.Count;
+            entities.Dispose();
+            return true;
+        }
+
+        /// <summary>Retires debris entities in ONE batched DestroyEntity. Safe against
+        /// world resets: a stale epoch or missing world is a no-op (the entities died
+        /// with the world), and individual already-destroyed entities are skipped.</summary>
+        public static void DestroyDebrisBatch(
+            System.Collections.Generic.List<Entity> entities, int epoch)
+        {
+            if (entities == null || entities.Count == 0) return;
+            if (epoch != _epoch || _world == null || !_world.IsCreated) return;
+
+            var em = _world.EntityManager;
+            var arr = new Unity.Collections.NativeArray<Entity>(
+                entities.Count, Unity.Collections.Allocator.Temp);
+            int n = 0;
+            for (int i = 0; i < entities.Count; i++)
+            {
+                var e = entities[i];
+                if (e != Entity.Null && em.Exists(e)) arr[n++] = e;
+            }
+            if (n > 0)
+                em.DestroyEntity(arr.GetSubArray(0, n));
+            LiveEntityCount = Mathf.Max(0, LiveEntityCount - n);
+            arr.Dispose();
+        }
+
         /// <summary>Destroys the companion entity (prism GameObject destruction / scene teardown).</summary>
         public static void Destroy(ref PrismRenderHandle handle)
         {

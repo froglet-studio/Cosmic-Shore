@@ -89,6 +89,11 @@ namespace CosmicShore.Utility
         internal bool IsActive { get; private set; }
         internal MeshRenderer Renderer => _renderer;
 
+        /// <summary>Authored debris-speed clamp band — PrismDebris reads these off the
+        /// pool prefab so the batched entity path ships identical clamp semantics.</summary>
+        public float MinDebrisSpeed => minSpeed;
+        public float MaxDebrisSpeed => maxSpeed;
+
         // --- Instanced rendering (Entities Graphics companion entity) -----------
         // Mirrors the prism path: the MeshRenderer stays disabled and a companion
         // entity carrying _Velocity/_ExplosionAmount/_Opacity overrides draws in
@@ -152,13 +157,35 @@ namespace CosmicShore.Utility
 
         // Enabled-instance registry for PrismEffectsManager's zombie audit — replaces the
         // periodic FindObjectsByType full-scene scans (a recurring dev-build profiler spike).
+        //
+        // Removal is O(1) swap-remove keyed by a stored index: List.Remove(this) is an
+        // O(n) scan with UnityEngine.Object equality per element, and under a mass-death
+        // burst it ran once per pool interaction against a registry tens of thousands
+        // long — profiled at 1,863 ms of a single frame (2,408 pool-miss deactivations
+        // scanning ~50k live effects each, most for an instance not even in the list).
+        // Order is not part of the registry's contract: the audit walks it backwards
+        // with idempotent checks, so a swap moving an already-visited entry into the
+        // current slot is harmless.
         internal static readonly List<PrismExplosion> EnabledInstances = new();
+        int _enabledIndex = -1;
 
-        private void OnEnable() => EnabledInstances.Add(this);
+        private void OnEnable()
+        {
+            _enabledIndex = EnabledInstances.Count;
+            EnabledInstances.Add(this);
+        }
 
         private void OnDisable()
         {
-            EnabledInstances.Remove(this);
+            if (_enabledIndex >= 0)
+            {
+                int last = EnabledInstances.Count - 1;
+                var moved = EnabledInstances[last];
+                EnabledInstances[_enabledIndex] = moved;
+                moved._enabledIndex = _enabledIndex;
+                EnabledInstances.RemoveAt(last);
+                _enabledIndex = -1;
+            }
 
             IsActive = false;
 

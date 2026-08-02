@@ -138,10 +138,15 @@ namespace CosmicShore.Utility
 
         // Enabled-instance registry for PrismEffectsManager's zombie audit - replaces the
         // periodic FindObjectsByType full-scene scans (a recurring dev-build profiler spike).
+        // O(1) swap-remove keyed by a stored index — same fix and profile evidence as
+        // PrismExplosion.EnabledInstances (List.Remove's O(n) scan was 1.9s of one frame
+        // under a mass-death burst); order is not part of the registry's contract.
         internal static readonly List<PrismImplosion> EnabledInstances = new();
+        int _enabledIndex = -1;
 
         private void OnEnable()
         {
+            _enabledIndex = EnabledInstances.Count;
             EnabledInstances.Add(this);
 
             // Backstop the watchdog timer for the case where the pool re-activates
@@ -154,7 +159,15 @@ namespace CosmicShore.Utility
 
         private void OnDisable()
         {
-            EnabledInstances.Remove(this);
+            if (_enabledIndex >= 0)
+            {
+                int last = EnabledInstances.Count - 1;
+                var moved = EnabledInstances[last];
+                EnabledInstances[_enabledIndex] = moved;
+                moved._enabledIndex = _enabledIndex;
+                EnabledInstances.RemoveAt(last);
+                _enabledIndex = -1;
+            }
 
             // Pool return / scene teardown may bypass CompleteEffect - never carry a target
             // reference (possibly a destroyed transform) across pool reuse.

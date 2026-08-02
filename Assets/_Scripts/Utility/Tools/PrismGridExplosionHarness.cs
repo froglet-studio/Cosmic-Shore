@@ -740,6 +740,8 @@ namespace CosmicShore.Utility
                 $"r {EffectiveBlastRadius:F0} in {EffectiveExplosionDuration:F1}s");
             DiagnosticsHUD.SetStat(StatsSection, "throttles",
                 _throttlesLifted ? "LIFTED (unweakened)" : "gameplay defaults");
+            // Pure-entity debris in flight (the batched mass-death VFX path).
+            DiagnosticsHUD.SetStat(StatsSection, "debris", PrismDebris.LiveDebrisCount.ToString("N0"));
 
             UpdateReadout();
         }
