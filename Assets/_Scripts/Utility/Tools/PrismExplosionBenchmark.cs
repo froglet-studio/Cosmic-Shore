@@ -41,8 +41,13 @@ namespace CosmicShore.Utility
         [Header("Recording window (seconds, unscaled)")]
         [Tooltip("Baseline recorded BEFORE detonation — the resting-lattice envelope the explosion cost is judged against.")]
         [SerializeField, Min(0f)] float preRollSeconds = 1f;
-        [Tooltip("Recorded AFTER detonation. Covers the full explosion interval (debris flight + shatter + fade run 5s) with margin.")]
-        [SerializeField, Min(1f)] float windowSeconds = 6f;
+        [Tooltip("Recorded AFTER detonation. Must cover the FULL explosion interval: the visual " +
+                 "wavefront (~2s), the per-prism debris/fade effects (up to 5s, pressure-shortened " +
+                 "under load), AND the lossless damage-backlog drain — destruction applies at " +
+                 "48 prisms/frame, so an inscribed blast into the 47³ cube (~54k prisms in the " +
+                 "sphere) keeps destroying for ~19s at 60fps. The frame-locked drain means slower " +
+                 "variants show LONGER tails — that is signal, not noise.")]
+        [SerializeField, Min(1f)] float windowSeconds = 20f;
         [Tooltip("Quiet time between the lattice reporting Ready and recording starting, so spawn-tail hitching can't pollute the baseline.")]
         [SerializeField, Min(0f)] float settleSeconds = 1.5f;
         [Tooltip("Give up waiting for a lattice rebuild after this long (materialization is ~6 prisms/frame, so large grids take minutes).")]

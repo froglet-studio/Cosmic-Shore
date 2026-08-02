@@ -80,6 +80,18 @@ namespace CosmicShore.Editor
             SetObjectIfEmpty(so, "explosionPrefab",
                 AssetDatabase.LoadAssetAtPath<AOEExplosion>(ExplosionPrefabPath));
 
+            // Benchmark spec (prompter, 2026-08): a ~100k CUBE (47³ = 103,823 — odd-sided
+            // so exact face-centre prisms exist) with the blast ending INSCRIBED at the
+            // face centres. Enforced on every run so pre-existing config assets pick up
+            // the retune; per-session grid variations belong in the harness panel, not
+            // the asset.
+            var counts = so.FindProperty("defaultCounts");
+            if (counts != null) counts.vector3IntValue = new Vector3Int(47, 47, 47);
+            var cap = so.FindProperty("maxTotalPrisms");
+            if (cap != null && cap.intValue < 150000) cap.intValue = 150000;
+            var fit = so.FindProperty("fitBlastToLattice");
+            if (fit != null) fit.boolValue = true;
+
             so.ApplyModifiedProperties();
             EditorUtility.SetDirty(config);
             return config;

@@ -124,6 +124,29 @@ namespace CosmicShore.Utility
         /// <summary>The tunables asset (blast radius etc.) — read-only for the recorder's metadata.</summary>
         public PrismGridTestConfigSO Config => config;
 
+        /// <summary>
+        /// The blast's final damage radius. Fit-to-lattice (the benchmark spec): the
+        /// explosion ends INSCRIBED — its last, largest overlap sphere reaches the
+        /// centre of the nearest cube faces (min half-extent + a small epsilon), so
+        /// the face-centre prisms are destroyed while edges and corners survive.
+        /// Otherwise the authored config radius.
+        /// </summary>
+        public float EffectiveBlastRadius
+        {
+            get
+            {
+                if (config == null) return 0f;
+                if (!config.FitBlastToLattice) return config.BlastRadius;
+                float halfX = (_counts.x - 1) * 0.5f * _gap;
+                float halfY = (_counts.y - 1) * 0.5f * _gap;
+                float halfZ = (_counts.z - 1) * 0.5f * _gap;
+                float inscribed = Mathf.Min(halfX, Mathf.Min(halfY, halfZ));
+                // Epsilon: enough to claim the face-centre prism, small enough that
+                // the first ring around it (sqrt(h² + gap²) ≈ h + gap²/2h) survives.
+                return inscribed + Mathf.Min(1f, _gap * 0.25f);
+            }
+        }
+
         // ── UI ───────────────────────────────────────────────────────────────
 
         Font _font;
@@ -333,11 +356,30 @@ namespace CosmicShore.Utility
             SpawnAsync().Forget();
         }
 
+        // True while THIS harness holds the global load gate open for a build.
+        // The gate raises Prism's creation-completion budget 6 → 512/frame and
+        // skips the per-prism spawn-stagger wait — behind a covered screen in
+        // gameplay; here the whole scene IS the loading screen, and nothing is
+        // measured until Ready. A 100k lattice materializes in ~4s instead of
+        // ~5 minutes. Ownership is release-once: CancelSpawn (synchronous
+        // teardown) and the owning run's finally both route through here.
+        bool _holdingLoadGate;
+
+        void ReleaseLoadGate()
+        {
+            if (!_holdingLoadGate) return;
+            _holdingLoadGate = false;
+            PrismTrailBuilder.SetLoadGateHolding(false);
+        }
+
         async UniTaskVoid SpawnAsync()
         {
             CancelSpawn();
             _spawnCts = new CancellationTokenSource();
             var ct = _spawnCts.Token;
+
+            PrismTrailBuilder.SetLoadGateHolding(true);
+            _holdingLoadGate = true;
 
             var lays = BuildLays();
             _requested = lays.Count;
@@ -380,11 +422,13 @@ namespace CosmicShore.Utility
             finally
             {
                 // Only settle state if this run still owns the lattice; a Clear/re-Spawn during the
-                // await has already moved on, and stomping _phase here would lie about that one.
+                // await has already moved on, and stomping _phase here would lie about that one
+                // (or release the gate the successor is holding).
                 if (_spawnCts != null && _spawnCts.Token == ct)
                 {
                     _phase = GridPhase.Ready;
                     _laid = _prisms.Count;
+                    ReleaseLoadGate();
                 }
                 PublishStats();
             }
@@ -439,6 +483,7 @@ namespace CosmicShore.Utility
 
         void CancelSpawn()
         {
+            ReleaseLoadGate();
             if (_spawnCts == null) return;
             if (!_spawnCts.IsCancellationRequested) _spawnCts.Cancel();
             _spawnCts.Dispose();
@@ -478,7 +523,11 @@ namespace CosmicShore.Utility
                 AnnonymousExplosion = true,
                 Vessel = null,
                 OverrideMaterial = ResolveExplosionMaterial(aoe),
-                MaxScale = config.MaxScale,
+                // AOEExplosion's damage radius = 0.5 (collider radius) * MaxScale, so
+                // the inscribed end condition converts as MaxScale = 2 * radius. The
+                // wavefront itself stays AOEExplosion's: progressively larger overlap
+                // spheres each frame, expanding at speed = MaxScale / ExplosionDuration.
+                MaxScale = 2f * EffectiveBlastRadius,
                 SpawnPosition = Vector3.zero,
                 SpawnRotation = Quaternion.identity,
             });
@@ -609,7 +658,7 @@ namespace CosmicShore.Utility
             DiagnosticsHUD.SetStat(StatsSection, "indexed", $"{IndexedCount():N0}/{_requested:N0}");
             DiagnosticsHUD.SetStat(StatsSection, "extents",
                 $"{Extents.x:F0}x{Extents.y:F0}x{Extents.z:F0}");
-            DiagnosticsHUD.SetStat(StatsSection, "blast r", config.BlastRadius.ToString("F0"));
+            DiagnosticsHUD.SetStat(StatsSection, "blast r", EffectiveBlastRadius.ToString("F0"));
 
             UpdateReadout();
         }
@@ -619,9 +668,11 @@ namespace CosmicShore.Utility
             if (_readout == null) return;
 
             float halfDiagonal = Extents.magnitude * 0.5f;
-            string coverage = config.BlastRadius >= halfDiagonal
-                ? "<color=#80ff80>blast engulfs lattice</color>"
-                : "<color=#ffcc60>blast covers centre only</color>";
+            string coverage = config.FitBlastToLattice
+                ? "<color=#80ff80>inscribed — ends at the face centres</color>"
+                : EffectiveBlastRadius >= halfDiagonal
+                    ? "<color=#80ff80>blast engulfs lattice</color>"
+                    : "<color=#ffcc60>blast covers centre only</color>";
 
             int indexed = IndexedCount();
             string state = _phase switch
@@ -640,7 +691,7 @@ namespace CosmicShore.Utility
 
             SetReadout(
                 $"{state}   extents {Extents.x:F0} x {Extents.y:F0} x {Extents.z:F0}   " +
-                $"blast r {config.BlastRadius:F0} vs half-diagonal {halfDiagonal:F0}   {coverage}");
+                $"blast r {EffectiveBlastRadius:F0} vs half-diagonal {halfDiagonal:F0}   {coverage}");
         }
 
         void SetReadout(string text)

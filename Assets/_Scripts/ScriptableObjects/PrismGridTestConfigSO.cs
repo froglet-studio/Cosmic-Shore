@@ -18,8 +18,10 @@ namespace CosmicShore.ScriptableObjects
     {
         [Header("Grid")]
         [Tooltip("Default prism count along each axis: X = length, Y = breadth, Z = height. " +
-                 "The lattice is always centred on the world origin.")]
-        [SerializeField] private Vector3Int defaultCounts = new(10, 20, 30);
+                 "The lattice is always centred on the world origin. Benchmark spec: 47^3 = " +
+                 "103,823 — the ~100k CUBE, odd-sided so an exact centre prism exists on every " +
+                 "face (the inscribed blast's end condition is 'face-centre prisms destroyed').")]
+        [SerializeField] private Vector3Int defaultCounts = new(47, 47, 47);
 
         [Tooltip("Default gap 'A' between adjacent prisms, as CENTRE-TO-CENTRE pitch in world units. " +
                  "Cuboid extent along an axis = (count - 1) * gap.")]
@@ -27,7 +29,7 @@ namespace CosmicShore.ScriptableObjects
 
         [Tooltip("Hard ceiling on countX * countY * countZ. A spawn request above this is rejected " +
                  "before any prism is laid, so a fat-fingered 100^3 cannot lock up the editor.")]
-        [SerializeField] private int maxTotalPrisms = 60000;
+        [SerializeField] private int maxTotalPrisms = 150000;
 
         [Tooltip("How many prisms PrismTrailBuilder.LayBatched lays per frame. Prism itself also " +
                  "throttles completions per frame, so this stacks on top of that budget.")]
@@ -58,8 +60,14 @@ namespace CosmicShore.ScriptableObjects
 
         [Tooltip("Explosion max scale. 800 is the Dolphin's giant blast value, the largest of any " +
                  "vessel (see DolphinVesselExplosionByCrystalEffect). Blast radius reaches " +
-                 "0.5 * maxScale world units.")]
+                 "0.5 * maxScale world units. IGNORED while Fit Blast To Lattice is on.")]
         [SerializeField] private float maxScale = 800f;
+
+        [Tooltip("Derive the blast's final radius from the CURRENT lattice instead of Max Scale: " +
+                 "the explosion ends INSCRIBED — the wavefront's last overlap sphere reaches the " +
+                 "centre of each (nearest) cube face, destroying the face-centre prisms while the " +
+                 "edges and corners survive. This is the benchmark's spec'd end condition.")]
+        [SerializeField] private bool fitBlastToLattice = true;
 
         [Tooltip("Domain the blast belongs to. MUST differ from the grid domain to be destructive.")]
         [SerializeField] private Domains explosionDomain = Domains.Ruby;
@@ -91,6 +99,7 @@ namespace CosmicShore.ScriptableObjects
         public float ClearSeconds => Mathf.Max(0f, clearSeconds);
         public AOEExplosion ExplosionPrefab => explosionPrefab;
         public float MaxScale => maxScale;
+        public bool FitBlastToLattice => fitBlastToLattice;
         public Domains ExplosionDomain => explosionDomain;
         public Material OverrideMaterial => overrideMaterial;
         public float NearDistance => Mathf.Max(1f, nearDistance);
