@@ -2504,6 +2504,13 @@ MonoBehaviour:
   maxBlockScale: 6
   waitTillOutsideSkimmer: 1
   shielded: 0
+  trailVolume:
+    Enabled: 1
+    Value: 1
+    Min: 1
+    Max: 2.5
+    element: 2
+  massUpgradeShieldsTrail: 1
   offset: 0
   Gap: 1
   MinimumGap: 1
@@ -2747,7 +2754,7 @@ MonoBehaviour:
   baseView: {fileID: 117603555638778835}
   silhouette: {fileID: 8438934208232307470}
   view: {fileID: 117603555638778835}
-  energyResourceIndex: 1
+  energyResourceIndex: 0
 --- !u!114 &5259057883249728580
 MonoBehaviour:
   m_ObjectHideFlags: 0

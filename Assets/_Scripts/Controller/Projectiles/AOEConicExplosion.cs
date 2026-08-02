@@ -12,6 +12,13 @@ namespace CosmicShore.Gameplay
         [SerializeField] private float height = 800f;
         [SerializeField] protected GameObject coneContainer;
 
+        /// <summary>
+        /// The cone's axial reach as authored on the prefab — the baseline callers scale from when
+        /// they drive reach off an element level, so the art stays the source of the cone's shape.
+        /// Read it from the PREFAB; on a live instance it may already carry a per-blast override.
+        /// </summary>
+        public float AuthoredHeight => height;
+
         public override void Initialize(InitializeStruct initStruct)
         {
             AnonymousExplosion = initStruct.AnnonymousExplosion;
@@ -28,7 +35,17 @@ namespace CosmicShore.Gameplay
                 Domain = Vessel.VesselStatus.Domain;
 
             MaxScale = initStruct.MaxScale;
+
+            // MaxScale is the cone's BASE DIAMETER and height its axial reach, and the two together
+            // fix the half-angle (see tanHalfAngle below). A caller that wants to widen the cone
+            // without lengthening it - the Dolphin, whose skim energy opens the blast out while
+            // Space sets how far down-range it carries - drives them independently through here.
+            if (initStruct.HeightOverride > 0f)
+                height = initStruct.HeightOverride;
+
             MaxScaleVector = new Vector3(MaxScale, MaxScale, height);
+
+            ApplyAffectSelfOverride(initStruct);
 
             speed = height / (ExplosionDuration * 4);
 

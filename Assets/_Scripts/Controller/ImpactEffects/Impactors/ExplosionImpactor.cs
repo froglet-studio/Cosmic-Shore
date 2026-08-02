@@ -19,6 +19,15 @@ namespace CosmicShore.Gameplay
 
         public override Domains OwnDomain => explosion.Domain;
 
+        /// <summary>
+        /// Per-instance friendly fire. False spares the blast's own domain (allied prisms are
+        /// shielded rather than damaged, allied vessels are skipped entirely); true lets the blast
+        /// hit everyone. Set by <see cref="AOEExplosion.InitializeStruct.AffectSelfOverride"/> so an
+        /// elemental upgrade can hand a pilot a blast that no longer eats their own team's mass.
+        /// Safe on the instance: every explosion is a fresh Instantiate of its prefab.
+        /// </summary>
+        public void SetAffectSelf(bool value) => affectSelf = value;
+
         // Batch AOE processing - bypasses Physics for prisms entirely
         private bool _useBatchProcessing;
         private static int _trailBlockLayer = -1;
@@ -165,10 +174,28 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// How many distinct prisms this blast has claimed so far. The batch tracker already keys
+        /// every prism the blast reached, so this is free — it is the blast's own footprint, not a
+        /// second count kept alongside it.
+        /// </summary>
+        public int BatchHitCount => _batchHitTracker?.Count ?? 0;
+
+        /// <summary>
+        /// Raised once per blast as it retires, with the vessel that fired it and how many prisms
+        /// it claimed. Presentation only (a HUD tally) — listeners must not change outcomes.
+        /// Static because explosions are spawned and destroyed per shot, so there is nothing
+        /// durable for a HUD to subscribe to; listeners filter by the vessel they own.
+        /// </summary>
+        public static event System.Action<IVessel, int> OnBlastResolved;
+
+        /// <summary>
         /// Ends batch processing and cleans up tracking data.
         /// </summary>
         public void EndBatchProcessing()
         {
+            if (_useBatchProcessing && explosion != null && explosion.Vessel != null)
+                OnBlastResolved?.Invoke(explosion.Vessel, BatchHitCount);
+
             _useBatchProcessing = false;
             // Keep HashSet/Queue allocated for reuse - cleared on next BeginBatchProcessing.
             // Any hits still pending here are abandoned deliberately: EndBatchProcessing
