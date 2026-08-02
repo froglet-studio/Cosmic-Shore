@@ -67,6 +67,14 @@ namespace CosmicShore.Gameplay
 
             /// <summary>False = never re-tint. A changed tint rewrites the ONE owned material.</summary>
             bool TryGetLiveTint(out Color tint);
+
+            /// <summary>
+            /// False when this source paints its own items (real prism materials, vertex-coloured
+            /// lines) and ignores the <c>shared</c> argument. The emblem then never allocates a
+            /// material for it - the getter runs up to three <c>Shader.Find</c> calls, and three of
+            /// the five sources would pay that for nothing.
+            /// </summary>
+            bool UsesSharedMaterial { get; }
         }
 
         IEmblemSource _source;
@@ -201,7 +209,9 @@ namespace CosmicShore.Gameplay
             bool built = false;
             try
             {
-                built = _source.TryBuildSlot(slot, holder, radius, SharedMaterial, out heavy);
+                // Only sources that actually paint with it get one - see UsesSharedMaterial.
+                var shared = _source.UsesSharedMaterial ? SharedMaterial : null;
+                built = _source.TryBuildSlot(slot, holder, radius, shared, out heavy);
             }
             catch (System.Exception e)
             {
@@ -239,20 +249,70 @@ namespace CosmicShore.Gameplay
             if (_placeholderRetired || !_placeholder) return;
             _placeholderRetired = true;
             // Cross-fade, not a swap: the real core blooms in while the stand-in shrinks away.
-            ToyFactory.ScaleOutAndDestroy(_placeholder, PlaceholderFadeSeconds).Forget();
-            _placeholder = null;
+            // WITHDRAWN, not destroyed - a later rebuild can produce nothing (pick the world you
+            // are in, then pick the environment-free one) and the fallback below has to have
+            // something left to bring back, or the toy becomes an invisible trigger with a label.
+            AnimatePlaceholder(0f, disableAtEnd: true).Forget();
         }
 
         void OnStreamComplete()
         {
-            if (_placeholderRetired || !_placeholder) return;
             foreach (bool b in _built)
                 if (b) return;
 
-            // Nothing at all could be built (no theme, no prefabs, an environment-free config with
-            // no satellites). Restore the plain body so the toy still reads exactly as it does
-            // today. Do NOT delete this branch as redundant - it is the only fallback.
-            _placeholder.transform.localScale = Vector3.one * (_bodyRadius * 2f);
+            // Nothing at all could be built (no theme, no prefabs, an environment-free config).
+            // Bring the stand-in back rather than leaving an empty root. Do NOT delete this branch
+            // as redundant - it is the only fallback.
+            RestorePlaceholder();
+        }
+
+        void RestorePlaceholder()
+        {
+            if (!_placeholder) return;
+            _placeholderRetired = false;
+            _placeholder.SetActive(true);
+
+            // A core-only toy with nothing to show stays SMALL - that is the Cell Selector at boot,
+            // where the cell is environment-free and "a small bare core" is the honest read (you
+            // are in the empty one). A toy that expected satellites falls all the way back to the
+            // plain body it had before emblems existed.
+            float target = _source.SatelliteCount > 0
+                ? _bodyRadius * 2f
+                : _bodyRadius * CoreRadiusBodies * 2f;
+            AnimatePlaceholder(target, disableAtEnd: false).Forget();
+        }
+
+        /// <summary>
+        /// Ease the placeholder to a size (and optionally park it), never snap it - it is a body
+        /// the player can already see, so the continuity law applies to its resize too.
+        ///
+        /// Self-superseding: it captures <see cref="_placeholderRetired"/> and bails the moment
+        /// that flips, so a retire tween still in flight can never park a placeholder that a
+        /// failed rebuild has just brought back.
+        /// </summary>
+        async UniTaskVoid AnimatePlaceholder(float targetDiameter, bool disableAtEnd)
+        {
+            var go = _placeholder;
+            if (!go) return;
+
+            bool epoch = _placeholderRetired;
+            var ct = this.GetCancellationTokenOnDestroy();
+            Vector3 start = go.transform.localScale;
+            Vector3 end = Vector3.one * targetDiameter;
+
+            float elapsed = 0f;
+            while (elapsed < PlaceholderFadeSeconds)
+            {
+                if (!go || _placeholderRetired != epoch) return;
+                elapsed += Time.unscaledDeltaTime;
+                go.transform.localScale = Vector3.LerpUnclamped(start, end,
+                    Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(elapsed / PlaceholderFadeSeconds)));
+                await UniTask.Yield(PlayerLoopTiming.Update, ct);
+            }
+
+            if (!go || _placeholderRetired != epoch) return;
+            go.transform.localScale = end;
+            if (disableAtEnd) go.SetActive(false);
         }
 
         // ── Liveness ─────────────────────────────────────────────────────────
@@ -317,12 +377,26 @@ namespace CosmicShore.Gameplay
             {
                 if (!holder) continue;
                 for (int i = holder.childCount - 1; i >= 0; i--)
-                    ToyFactory.ScaleOutAndDestroy(holder.GetChild(i).gameObject, ItemBloomSeconds).Forget();
-                // The holder's own spin is re-added per item by EnsureSpin.
-                if (holder.TryGetComponent(out ToyIdleSpin spin)) Destroy(spin);
+                {
+                    // Re-parent to the halo BEFORE the scale-out: the holder is about to be
+                    // re-bloomed from zero for its replacement, and a still-parented item would be
+                    // multiplied to nothing on that frame - an instant disappearance, which is the
+                    // continuity law's one prohibition. Detached, it shrinks away properly.
+                    var child = holder.GetChild(i);
+                    child.SetParent(_halo, worldPositionStays: true);
+                    ToyFactory.ScaleOutAndDestroy(child.gameObject, ItemBloomSeconds).Forget();
+                }
+                // NOTE: the holder's own ToyIdleSpin is deliberately LEFT ALONE. Destroy() is
+                // deferred to end of frame, so a destroyed-this-frame spin is still found by
+                // EnsureSpin's GetComponentInChildren - the replacement item would be skipped and
+                // then the spin would die, leaving a permanently frozen core. EnsureSpin already
+                // no-ops when a spin is present, so keeping it is both correct and cheaper.
             }
 
-            ReleaseOwnedMeshes();
+            // Deferred past the fade: these meshes are still being rendered by the items that are
+            // shrinking away. (No shipped source both owns meshes and rebuilds, but the ordering
+            // must not be a trap for the next one that does.)
+            ReleaseOwnedMeshesAfter(ItemBloomSeconds).Forget();
             for (int i = 0; i < _built.Length; i++) _built[i] = false;
             _nextSlot = 0;
             if (_streamer) _streamer.RequestRefresh();
@@ -343,6 +417,17 @@ namespace CosmicShore.Gameplay
             foreach (var mesh in _ownedMeshes)
                 if (mesh) Destroy(mesh);
             _ownedMeshes.Clear();
+        }
+
+        /// <summary>Hand the current owned set to a timer, so the items rendering them can finish fading.</summary>
+        async UniTaskVoid ReleaseOwnedMeshesAfter(float seconds)
+        {
+            var stale = new List<Mesh>(_ownedMeshes);
+            _ownedMeshes.Clear();
+            await UniTask.Delay(Mathf.RoundToInt(seconds * 1000f), ignoreTimeScale: true,
+                cancellationToken: this.GetCancellationTokenOnDestroy());
+            foreach (var mesh in stale)
+                if (mesh) Destroy(mesh);
         }
 
         void OnDestroy()

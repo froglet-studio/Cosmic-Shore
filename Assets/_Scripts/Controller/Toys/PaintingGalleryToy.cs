@@ -57,6 +57,9 @@ namespace CosmicShore.Gameplay
 
             public int SatelliteCount => 3;
 
+            // Strokes carry their own domain colours through ToyFactory's shared line material.
+            public bool UsesSharedMaterial => false;
+
             public bool TryBuildSlot(int slot, Transform holder, float radius, Material shared, out bool heavy)
             {
                 // Slot 0 also forces the on-ramp's stroke generation (which the gallery pays

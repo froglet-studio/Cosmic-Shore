@@ -256,10 +256,16 @@ emblem never reads bigger than its own interaction volume. First satellite sits 
 different toy"); real content carries the near read (~100u, "that's the hangar"); distinct orbit
 rates carry both. The rates stay clear of the reserved body spins (cone 45, jack 22, ring 15).
 
-**Nothing is built on the spawn frame.** `ToyboxController.PlaceToys` runs on the `OnClientReady`
-frame of *every* entry to Menu_Main and is already the menu's most expensive. So `Attach` creates
-**holders only** (~23 GameObjects toybox-wide; zero meshes, zero materials, zero `Shader.Find`,
-zero `Instantiate`), and `ToyEmblemStreamer` fills one slot per frame — **round-robin,
+**Nothing is built on the caller's frame.** `ToyboxController.PlaceToys` runs on the
+`OnClientReady` frame of *every* entry to Menu_Main and is already the menu's most expensive. So
+`Attach` creates **holders only** (~23 GameObjects toybox-wide; zero meshes, zero materials, zero
+`Shader.Find`, zero `Instantiate`), and `ToyEmblemStreamer` fills one slot per frame. The pump
+**yields before its first build** — an `async UniTaskVoid` body runs synchronously up to its first
+suspension, so without that yield the first registered emblem's core would build on the stack of
+whoever started the pump: the spawn frame on registration, and inside `ToyEmblem.Update` on a
+live-key rebuild (where the Cell Selector's `heavy` mesh assembly would land on the frame right
+after a cell swap). A source that ignores the shared material declares `UsesSharedMaterial =>
+false`, so it never triggers the `Shader.Find` chain behind it — **round-robin,
 breadth-first**, so every toy's core lands before any satellite. 18 items ≈ 0.3s, entirely inside
 the toys' 1.2s bloom-in, so the emblem assembles *inside* the growth and nothing pops in. A slot
 that reports itself `heavy` gets a clear frame after it.
@@ -276,9 +282,13 @@ enforced by API, not by comment), else empty. At boot the cell is environment-fr
 is a small bare core: *you are in the empty one.* Zero cost on every entry to Menu_Main.
 
 **Fail-soft.** `Attach` doesn't replace the factory's sphere — it **rescales it to core size** and
-keeps it as a placeholder, cross-fading it out when a real core lands and restoring it to full
-size if the whole stream built nothing. That is why `ToyFactory.CreateRoot` and all five `Spawn`
-overrides are untouched.
+keeps it as a placeholder, fading it out when a real core lands. It is **withdrawn, never
+destroyed**: a rebuild can legitimately produce nothing (pick a world, then pick the
+environment-free one) and the fallback has to have something to bring back, or the toy becomes an
+invisible trigger under a floating label. On an empty stream it returns — animated, since it is a
+body already on screen — to the plain full-size body, *except* for a core-only source, which stays
+small: that is the Cell Selector at boot, where "a small bare core" is the honest read. That is
+also why `ToyFactory.CreateRoot` and all five `Spawn` overrides are untouched.
 
 **Liveness** is a 0.5s poll of the source's own key/tint (there is no cell-config-changed event to
 subscribe to, and the vessel source's existing mid-swap guard is exactly the "hold, don't rebuild"

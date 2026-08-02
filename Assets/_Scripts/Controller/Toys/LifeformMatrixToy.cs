@@ -58,6 +58,10 @@ namespace CosmicShore.Gameplay
 
             public int SatelliteCount => 4;
 
+            // One material for all four crystals AND the species: that is what makes "elements
+            // have SHAPE signatures, never colour signatures" true by construction here.
+            public bool UsesSharedMaterial => true;
+
             public bool TryBuildSlot(int slot, Transform holder, float radius, Material shared, out bool heavy)
             {
                 heavy = false;

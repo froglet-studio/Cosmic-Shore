@@ -46,6 +46,14 @@ namespace CosmicShore.Gameplay
             _running = true;
             try
             {
+                // Yield BEFORE the first build. An `async UniTaskVoid` body runs synchronously up
+                // to its first suspension, so without this the pump's first slot is built on the
+                // stack of whoever started it - which is exactly the frame this class exists to
+                // keep free (ToyboxController.PlaceToys, on every entry to Menu_Main) and, for a
+                // live-key rebuild, inside ToyEmblem.Update. One frame of latency on a ~0.3s
+                // stream, in exchange for "nothing builds on the caller's frame" being true.
+                await UniTask.Yield(PlayerLoopTiming.Update, ct);
+
                 while (!ct.IsCancellationRequested)
                 {
                     bool builtAny = false;

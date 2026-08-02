@@ -61,6 +61,10 @@ namespace CosmicShore.Gameplay
 
             public int SatelliteCount => 3;
 
+            // The hulls are painted with the emblem's one material, so a domain change is a
+            // three-write re-tint rather than a rebuild.
+            public bool UsesSharedMaterial => true;
+
             public bool TryBuildSlot(int slot, Transform holder, float radius, Material shared, out bool heavy)
             {
                 heavy = false;

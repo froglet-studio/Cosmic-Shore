@@ -70,6 +70,9 @@ namespace CosmicShore.Gameplay
 
             public int SatelliteCount => 0;
 
+            // The world model wears its own real domain prism materials.
+            public bool UsesSharedMaterial => false;
+
             public bool TryBuildSlot(int slot, Transform holder, float radius, Material shared, out bool heavy)
             {
                 heavy = true; // mesh assembly - give the streamer a clear frame after it

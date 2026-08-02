@@ -58,6 +58,9 @@ namespace CosmicShore.Gameplay
 
             public int SatelliteCount => 3;
 
+            // Microscenes wear the real per-domain prism materials.
+            public bool UsesSharedMaterial => false;
+
             public bool TryBuildSlot(int slot, Transform holder, float radius, Material shared, out bool heavy)
             {
                 heavy = false;
