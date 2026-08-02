@@ -110,6 +110,31 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Tooltip("Deterministic seed for recipes/variation. 0 = fresh ride every session.")]
         int seed;
 
+        [Header("Conveyor - the run (Wanderway as its own mode)")]
+        [SerializeField, Tooltip("Starting a wander hands the host cell back to its environment-free " +
+                                 "config (the Blob) through Cell.RequestCellSwap - the same explicit, " +
+                                 "player-initiated world change the Cell Selector performs. The wander " +
+                                 "is the thing you look at, not an authored world you fly through. " +
+                                 "Requires the cell's config list to include an environment-free entry; " +
+                                 "with none it warns and leaves the world alone.")]
+        bool revertCellOnStart = true;
+
+        [SerializeField, Min(1), Tooltip("Trail prisms the vessel may lay per wander before the spawner " +
+                                         "goes PEN-UP and the return station blooms at the last one. The " +
+                                         "trail is a finite TETHER, not an endless ribbon - and nothing is " +
+                                         "removed to achieve that: not creating mass is allowed, un-creating " +
+                                         "it is not (CLAUDE.md ▸ Mass is conserved).")]
+        int tetherPrisms = 120;
+
+        [SerializeField, Min(4f), Tooltip("Body radius of the return station at the end of the tether. " +
+                                          "It has to read at wander distances, so keep it well above the " +
+                                          "toybox toys' scale.")]
+        float returnStationRadius = 22f;
+
+        [SerializeField, Tooltip("Accent for the return station - deliberately distinct from the toy's own " +
+                                 "accent so the way home never reads as another wander station.")]
+        Color returnStationColor = new(1f, 0.78f, 0.25f, 1f);
+
         [Header("Conveyor - visibility guards")]
         [SerializeField, Min(0f),
          Tooltip("Hard floor on how close a scene may bloom in, world units from the vessel. The " +
@@ -156,6 +181,10 @@ namespace CosmicShore.ScriptableObjects
             Seed = seed,
             MinPlacementDistance = minPlacementDistance,
             OffscreenMargin = offscreenMargin,
+            RevertCellOnStart = revertCellOnStart,
+            TetherPrisms = tetherPrisms,
+            ReturnStationRadius = returnStationRadius,
+            ReturnStationColor = returnStationColor,
         };
 
         /// <summary>Wires a prism prefab on a runtime-synthesised definition (the zero-config default toybox).</summary>

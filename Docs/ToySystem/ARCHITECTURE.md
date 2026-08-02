@@ -71,6 +71,8 @@ detection. On top of that base the `Toy` class adds:
 | Web share export (inline-WebGL viewer) | `Assets/_Scripts/Controller/Toys/PaintingShareExporter.cs` |
 | Idle spin for toy bodies | `Assets/_Scripts/Controller/Toys/ToyIdleSpin.cs` |
 | Conveyor ("Wanderway") toy | `Assets/_Scripts/Controller/Toys/ConveyorToy.cs` |
+| The wander run (canvas + tether + exits) | `Assets/_Scripts/Controller/Toys/WanderwayRun.cs` |
+| Return station at the tether's end | `Assets/_Scripts/Controller/Toys/WanderwayReturnToy.cs` |
 | Conveyor belt runner (+ the load-veil prime) | `Assets/_Scripts/Controller/Toys/MicrosceneConveyor.cs` |
 | One conveyor scene (lay/transport/re-arrange) | `Assets/_Scripts/Controller/Toys/Microscene.cs` |
 | Grand assemblies (the monument-scale eight) | `Assets/_Scripts/Controller/Toys/MicroscenePatternsGrand.cs` |
@@ -479,10 +481,10 @@ always works.
 
 ### Wanderway / Microscene Conveyor (`ConveyorToy` + `MicrosceneConveyor` + `Microscene`)
 
-Fly through → the belt builds its **entire conserved stock behind a load veil** (see *Scale* below)
-and then switches **ON** (the toy flips bright + relabels "flowing — fly through to stop"; another
-pass switches it off), with a field of **microscenes** standing ahead of your flight path, scene
-after scene — open-world exploring crossed with an infinite runner. **48 recipes** built from a
+Fly through and you **leave for a wander** (`WanderwayRun` — see *The run* below): the cell reverts
+to its bare canvas, the belt builds its **entire conserved stock behind a load veil** (see *Scale*),
+and a field of **microscenes** stands ahead of your flight path, scene after scene — open-world
+exploring crossed with an infinite runner. **48 recipes** built from a
 shared geometry vocabulary (`PrismGeometry`), in two families.
 
 **The classic forty** (`MicroscenePatterns`): gate runs, helix weaves,
@@ -628,6 +630,45 @@ continuity transitions may run:
   view, at which point the field self-heals. Camera-less fallback (rare): a scene clearly behind the
   flight course, which the follow camera cannot see. The pool still *fills* to `poolSize` regardless
   (new placements don't remove anything), so this gate only ever throttles recycling, never growth.
+
+### The run — Wanderway as its own mode (`WanderwayRun` + `WanderwayReturnToy`)
+
+The belt is what you fly *through*; the **run** is what makes the wander a place you go to and come
+back from. Starting one does three things, and all three are undone when it ends:
+
+- **A bare canvas.** The host cell is handed back to its environment-free config — the Blob
+  (`Cell.EnvironmentFreeConfig`, new accessor) — through the one sanctioned entry point,
+  `Cell.RequestCellSwap(blob, clearLooseTrailMass: true)`. Re-selecting the config the cell is
+  already on is the documented freestyle **reset**, which is exactly what starting a wander should
+  mean. It is requested *before* the belt's stock build so both join ONE load-veil hold instead of
+  stacking two covers. Authored off (`revertCellOnStart`) if a designer wants the wander to happen
+  inside whatever world is up; with no environment-free config in the cell's list it warns and
+  leaves the world alone.
+- **A finite tether.** The trail you lay on the way out is a budget (`tetherPrisms`, default 120),
+  not an endless ribbon. When it completes, the vessel's spawner goes **pen-up**
+  (`VesselPrismController.SetSpawnerPaused` — the same mechanism the painting toy uses between
+  strokes). **Nothing is removed, aged out, or capped**: not creating mass is allowed, un-creating
+  it is not, and the reverted `maxTrailBlocks` ring buffer is the named counter-example
+  (CLAUDE.md ▸ *Mass is conserved* / *Don't cheat emergence*). Pen-up is a single last-writer-wins
+  flag shared with the painting runner; the run only sets it when its tether completes and clears
+  it when the run ends, and the painting runner re-asserts on its next stroke gate.
+- **A way home at its end.** The instant the tether completes, the **return station** blooms at the
+  last prism you laid — the far end of your lifeline. It is a full `Toy`, not a bespoke trigger, so
+  it inherits local-user detection, freestyle gating, the bloom-in, deferred activation, and the
+  exit-gated re-arm (which is load-bearing here: the station blooms right where the vessel just
+  was, so the gate is what stops it firing the instant it appears).
+
+**Three exits, one path.** The return station, another pass through the Wanderway toy, and the
+**overview button** (the freestyle HUD's Volume/Pause button, and gamepad **Start**) all call
+`WanderwayRun.End(returnToCell: true)`. The overview route needs no new wiring: that button routes
+through `MenuCrystalClickHandler.ToggleTransition`, which drops freestyle, and the run watches
+`ToyContext.IsFreestyleActive` for that edge. Ending a run stops the belt, clears the pen, retires
+the station, flips the toy's label, and puts the vessel back where the wander started
+(`IVessel.SetPose` + `SetInitialSpeed`, the same repose the menu vessel-swap uses, so speed carries
+through) — skipped when they are already home, so ending the run AT the toy never jerks their pose.
+The belt's **scenes stay in the world**: conserved mass and released citizens are not toy props to
+vanish. So does the Blob cell — restoring a previous world is the Cell Selector's job, not the
+wander's.
 
 **Ecosystem invariants (this toy is ecology-adjacent — all hold by construction):**
 

@@ -40,6 +40,12 @@ namespace CosmicShore.Gameplay
         // on top of them, nor watch one suction away.
         public float MinPlacementDistance = 380f;
         public float OffscreenMargin = 80f;
+
+        // ── The run (see WanderwayRun): Wanderway as its own mode ────────────
+        public bool RevertCellOnStart = true;
+        public int TetherPrisms = 120;
+        public float ReturnStationRadius = 22f;
+        public Color ReturnStationColor = new(1f, 0.78f, 0.25f, 1f);
     }
 
     /// <summary>
