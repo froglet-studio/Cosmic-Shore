@@ -101,8 +101,50 @@ namespace CosmicShore.Utility
         int _sweepCursor;
 
         Vector3Int _counts;
-        float _gap;
+        Vector3 _gaps;
         float _zoom;
+
+        // ── Safety-throttle lifts ────────────────────────────────────────────
+        // The gameplay guards (per-frame AOE damage budget, per-frame VFX spawn
+        // caps, live-effect pressure shortening) were sized for the CPU-per-effect
+        // era. On the clock path a running effect costs no per-frame CPU, so this
+        // rig lifts them by default (config.LiftSafetyThrottles) to measure the
+        // system UNWEAKENED. Scene-scoped: previous values are captured on apply
+        // and restored on destroy, so gameplay defaults are never touched.
+
+        /// <summary>Effectively-unbounded per-frame budget. Not int.MaxValue: the
+        /// drain/queue bounds scale it (×8, ×3) in long math before clamping, but a
+        /// merely-huge number keeps every downstream int computation trivially safe.</summary>
+        const int UnthrottledBudget = 1_000_000;
+
+        bool _throttlesLifted;
+        int _prevDamageBudgetOverride;
+        int _prevVfxBudgetOverride;
+        bool _prevPressureDisabled;
+
+        void ApplyThrottleLifts()
+        {
+            if (_throttlesLifted || config == null || !config.LiftSafetyThrottles) return;
+            _prevDamageBudgetOverride = PrismSpatialIndex.DamageBudgetPerFrameOverride;
+            _prevVfxBudgetOverride = PrismFactory.VFXBudgetPerFrameOverride;
+            _prevPressureDisabled = PrismFactory.EffectPressureScalingDisabled;
+            PrismSpatialIndex.DamageBudgetPerFrameOverride = UnthrottledBudget;
+            PrismFactory.VFXBudgetPerFrameOverride = UnthrottledBudget;
+            PrismFactory.EffectPressureScalingDisabled = true;
+            _throttlesLifted = true;
+            Debug.Log("[PrismGridExplosionHarness] Safety throttles LIFTED for this scene: " +
+                      "damage budget 48→unbounded, VFX caps 64→unbounded, pressure shortening off. " +
+                      "Restored automatically on scene exit.");
+        }
+
+        void RestoreThrottleLifts()
+        {
+            if (!_throttlesLifted) return;
+            PrismSpatialIndex.DamageBudgetPerFrameOverride = _prevDamageBudgetOverride;
+            PrismFactory.VFXBudgetPerFrameOverride = _prevVfxBudgetOverride;
+            PrismFactory.EffectPressureScalingDisabled = _prevPressureDisabled;
+            _throttlesLifted = false;
+        }
 
         // ── Benchmark-driver surface (PrismExplosionBenchmark) ──────────────
 
@@ -118,8 +160,12 @@ namespace CosmicShore.Utility
         /// <summary>The lattice dimensions the next Spawn will build.</summary>
         public Vector3Int Counts => _counts;
 
-        /// <summary>The lattice gap the next Spawn will use.</summary>
-        public float Gap => _gap;
+        /// <summary>The per-axis lattice gaps the next Spawn will use.</summary>
+        public Vector3 Gaps => _gaps;
+
+        /// <summary>True while this rig holds the safety-throttle lifts (recorder metadata —
+        /// mixed-lift runs are not comparable).</summary>
+        public bool ThrottlesLifted => _throttlesLifted;
 
         /// <summary>The tunables asset (blast radius etc.) — read-only for the recorder's metadata.</summary>
         public PrismGridTestConfigSO Config => config;
@@ -137,20 +183,44 @@ namespace CosmicShore.Utility
             {
                 if (config == null) return 0f;
                 if (!config.FitBlastToLattice) return config.BlastRadius;
-                float halfX = (_counts.x - 1) * 0.5f * _gap;
-                float halfY = (_counts.y - 1) * 0.5f * _gap;
-                float halfZ = (_counts.z - 1) * 0.5f * _gap;
-                float inscribed = Mathf.Min(halfX, Mathf.Min(halfY, halfZ));
+                float halfX = (_counts.x - 1) * 0.5f * _gaps.x;
+                float halfY = (_counts.y - 1) * 0.5f * _gaps.y;
+                float halfZ = (_counts.z - 1) * 0.5f * _gaps.z;
+                // With per-axis gaps the inscribed sphere binds to the TIGHTEST
+                // half-extent, and the epsilon must be sized against that axis's
+                // own pitch — the neighbour ring it must not claim lives there.
+                float inscribed = halfX;
+                float bindingGap = _gaps.x;
+                if (halfY < inscribed) { inscribed = halfY; bindingGap = _gaps.y; }
+                if (halfZ < inscribed) { inscribed = halfZ; bindingGap = _gaps.z; }
                 // Epsilon: enough to claim the face-centre prism, small enough that
                 // the first ring around it (sqrt(h² + gap²) ≈ h + gap²/2h) survives.
-                return inscribed + Mathf.Min(1f, _gap * 0.25f);
+                return inscribed + Mathf.Min(1f, bindingGap * 0.25f);
+            }
+        }
+
+        /// <summary>
+        /// The wavefront's full-expansion time for the next Explode. With a configured
+        /// explosion SPEED the duration scales with the blast radius (fixed physical
+        /// expansion rate); otherwise it is the prefab's authored duration (fixed sweep
+        /// time — bigger blasts expand faster).
+        /// </summary>
+        public float EffectiveExplosionDuration
+        {
+            get
+            {
+                if (config == null || config.ExplosionPrefab == null) return 0f;
+                return config.ExplosionSpeed > 0f
+                    ? EffectiveBlastRadius / config.ExplosionSpeed
+                    : config.ExplosionPrefab.Duration;
             }
         }
 
         // ── UI ───────────────────────────────────────────────────────────────
 
         Font _font;
-        InputField _countXInput, _countYInput, _countZInput, _gapInput;
+        InputField _countXInput, _countYInput, _countZInput;
+        InputField _gapXInput, _gapYInput, _gapZInput;
         Slider _zoomSlider;
         Text _readout;
         string _warning;
@@ -170,11 +240,12 @@ namespace CosmicShore.Utility
             }
 
             _counts = config.DefaultCounts;
-            _gap = config.DefaultGap;
+            _gaps = config.DefaultGaps;
             _zoom = config.DefaultZoom;
 
             if (viewCamera == null) viewCamera = Camera.main;
 
+            ApplyThrottleLifts();
             BuildUI();
             ApplyZoom();
         }
@@ -222,6 +293,7 @@ namespace CosmicShore.Utility
         void OnDestroy()
         {
             CancelSpawn();
+            RestoreThrottleLifts();
             DiagnosticsHUD.UnregisterCommand(CommandName);
             DiagnosticsHUD.UnregisterCommand("prisms");
             DiagnosticsHUD.ClearStats(StatsSection);
@@ -291,12 +363,12 @@ namespace CosmicShore.Utility
         // ── Grid geometry ────────────────────────────────────────────────────
 
         /// <summary>
-        /// Cuboid extent per axis. Gap A is centre-to-centre pitch, so N prisms span (N-1)*A.
+        /// Cuboid extent per axis. Gaps are centre-to-centre pitch, so N prisms span (N-1)*gap.
         /// </summary>
         Vector3 Extents => new(
-            Mathf.Max(0, _counts.x - 1) * _gap,
-            Mathf.Max(0, _counts.y - 1) * _gap,
-            Mathf.Max(0, _counts.z - 1) * _gap);
+            Mathf.Max(0, _counts.x - 1) * _gaps.x,
+            Mathf.Max(0, _counts.y - 1) * _gaps.y,
+            Mathf.Max(0, _counts.z - 1) * _gaps.z);
 
         /// <summary>Lattice sites, centred on the origin so the cuboid's middle IS (0,0,0).</summary>
         List<PrismLay> BuildLays()
@@ -316,9 +388,9 @@ namespace CosmicShore.Utility
             for (int z = 0; z < _counts.z; z++)
             {
                 var pos = new Vector3(
-                    (x - half.x) * _gap,
-                    (y - half.y) * _gap,
-                    (z - half.z) * _gap);
+                    (x - half.x) * _gaps.x,
+                    (y - half.y) * _gaps.y,
+                    (z - half.z) * _gaps.z);
 
                 lays.Add(new PrismLay(
                     new SpawnPoint(pos, Quaternion.identity, scale),
@@ -530,6 +602,12 @@ namespace CosmicShore.Utility
                 MaxScale = 2f * EffectiveBlastRadius,
                 SpawnPosition = Vector3.zero,
                 SpawnRotation = Quaternion.identity,
+                // A configured explosion SPEED pins the physical expansion rate:
+                // duration = radius / speed. Zero keeps the prefab's authored
+                // duration (fixed sweep time regardless of lattice size).
+                DurationOverride = config.ExplosionSpeed > 0f
+                    ? EffectiveBlastRadius / config.ExplosionSpeed
+                    : 0f,
             });
             aoe.Detonate();
         }
@@ -651,14 +729,17 @@ namespace CosmicShore.Utility
         void PublishStats()
         {
             DiagnosticsHUD.SetStat(StatsSection, "counts", $"{_counts.x}x{_counts.y}x{_counts.z}");
-            DiagnosticsHUD.SetStat(StatsSection, "gap", _gap.ToString("F1"));
+            DiagnosticsHUD.SetStat(StatsSection, "gaps", $"{_gaps.x:F1}x{_gaps.y:F1}x{_gaps.z:F1}");
             DiagnosticsHUD.SetStat(StatsSection, "phase", _phase.ToString().ToLowerInvariant());
             DiagnosticsHUD.SetStat(StatsSection, "laid", $"{_laid:N0}/{_requested:N0}");
             // The number that actually matters: only indexed prisms are reachable by the blast.
             DiagnosticsHUD.SetStat(StatsSection, "indexed", $"{IndexedCount():N0}/{_requested:N0}");
             DiagnosticsHUD.SetStat(StatsSection, "extents",
                 $"{Extents.x:F0}x{Extents.y:F0}x{Extents.z:F0}");
-            DiagnosticsHUD.SetStat(StatsSection, "blast r", EffectiveBlastRadius.ToString("F0"));
+            DiagnosticsHUD.SetStat(StatsSection, "blast",
+                $"r {EffectiveBlastRadius:F0} in {EffectiveExplosionDuration:F1}s");
+            DiagnosticsHUD.SetStat(StatsSection, "throttles",
+                _throttlesLifted ? "LIFTED (unweakened)" : "gameplay defaults");
 
             UpdateReadout();
         }
@@ -691,7 +772,8 @@ namespace CosmicShore.Utility
 
             SetReadout(
                 $"{state}   extents {Extents.x:F0} x {Extents.y:F0} x {Extents.z:F0}   " +
-                $"blast r {EffectiveBlastRadius:F0} vs half-diagonal {halfDiagonal:F0}   {coverage}");
+                $"blast r {EffectiveBlastRadius:F0} in {EffectiveExplosionDuration:F1}s " +
+                $"vs half-diagonal {halfDiagonal:F0}   {coverage}");
         }
 
         void SetReadout(string text)
@@ -715,7 +797,8 @@ namespace CosmicShore.Utility
             UpdateReadout();
         }
 
-        const string Usage = "usage: grid <x> <y> <z> [gap] | grid <total> | grid explode | grid clear | grid zoom <0..1>";
+        const string Usage = "usage: grid <x> <y> <z> [gap | gapX gapY gapZ] | grid <total> | " +
+                             "grid explode | grid clear | grid zoom <0..1>";
 
         string HandleGridCommand(string[] args)
         {
@@ -756,12 +839,23 @@ namespace CosmicShore.Utility
                 !int.TryParse(args[2], out int z))
                 return Usage;
 
-            if (args.Length > 3 && float.TryParse(args[3], out float gap)) _gap = gap;
+            // One trailing gap applies to all three axes; three set them individually.
+            if (args.Length >= 6 &&
+                float.TryParse(args[3], out float gx) &&
+                float.TryParse(args[4], out float gy) &&
+                float.TryParse(args[5], out float gz))
+            {
+                _gaps = new Vector3(Mathf.Max(0.01f, gx), Mathf.Max(0.01f, gy), Mathf.Max(0.01f, gz));
+            }
+            else if (args.Length > 3 && float.TryParse(args[3], out float gap))
+            {
+                _gaps = Vector3.one * Mathf.Max(0.01f, gap);
+            }
 
             _counts = new Vector3Int(Mathf.Max(1, x), Mathf.Max(1, y), Mathf.Max(1, z));
             SyncInputsFromState();
             Spawn();
-            return $"spawning {_counts.x}x{_counts.y}x{_counts.z} at gap {_gap:F1}";
+            return $"spawning {_counts.x}x{_counts.y}x{_counts.z} at gaps {_gaps.x:F1}/{_gaps.y:F1}/{_gaps.z:F1}";
         }
 
         // ── UI construction (mirrors DiagnosticsHUD.BuildUI's code-built idiom) ──
@@ -786,15 +880,17 @@ namespace CosmicShore.Utility
             var bg = panel.gameObject.AddComponent<Image>();
             bg.color = new Color(0.05f, 0.05f, 0.08f, 0.85f);
 
-            // Row 1 — grid dimensions.
-            CreateLabel("X", panel, new Vector2(8, -8), 20);
-            _countXInput = CreateInput(panel, new Vector2(28, -8), 54, _counts.x.ToString(), OnCountsChanged);
-            CreateLabel("Y", panel, new Vector2(90, -8), 20);
-            _countYInput = CreateInput(panel, new Vector2(110, -8), 54, _counts.y.ToString(), OnCountsChanged);
-            CreateLabel("Z", panel, new Vector2(172, -8), 20);
-            _countZInput = CreateInput(panel, new Vector2(192, -8), 54, _counts.z.ToString(), OnCountsChanged);
-            CreateLabel("gap A", panel, new Vector2(254, -8), 46);
-            _gapInput = CreateInput(panel, new Vector2(302, -8), 60, _gap.ToString("F1"), OnCountsChanged);
+            // Row 1 — grid dimensions + per-axis gaps.
+            CreateLabel("X", panel, new Vector2(8, -8), 14);
+            _countXInput = CreateInput(panel, new Vector2(22, -8), 46, _counts.x.ToString(), OnCountsChanged);
+            CreateLabel("Y", panel, new Vector2(74, -8), 14);
+            _countYInput = CreateInput(panel, new Vector2(88, -8), 46, _counts.y.ToString(), OnCountsChanged);
+            CreateLabel("Z", panel, new Vector2(140, -8), 14);
+            _countZInput = CreateInput(panel, new Vector2(154, -8), 46, _counts.z.ToString(), OnCountsChanged);
+            CreateLabel("gaps", panel, new Vector2(212, -8), 38);
+            _gapXInput = CreateInput(panel, new Vector2(250, -8), 46, _gaps.x.ToString("F1"), OnCountsChanged);
+            _gapYInput = CreateInput(panel, new Vector2(300, -8), 46, _gaps.y.ToString("F1"), OnCountsChanged);
+            _gapZInput = CreateInput(panel, new Vector2(350, -8), 46, _gaps.z.ToString("F1"), OnCountsChanged);
 
             // Row 2 — actions.
             CreateButton("Spawn", panel, new Vector2(8, -40), 90, Spawn);
@@ -838,7 +934,9 @@ namespace CosmicShore.Utility
             if (int.TryParse(_countXInput.text, out int x)) _counts.x = Mathf.Max(1, x);
             if (int.TryParse(_countYInput.text, out int y)) _counts.y = Mathf.Max(1, y);
             if (int.TryParse(_countZInput.text, out int z)) _counts.z = Mathf.Max(1, z);
-            if (float.TryParse(_gapInput.text, out float gap)) _gap = Mathf.Max(0.01f, gap);
+            if (float.TryParse(_gapXInput.text, out float gx)) _gaps.x = Mathf.Max(0.01f, gx);
+            if (float.TryParse(_gapYInput.text, out float gy)) _gaps.y = Mathf.Max(0.01f, gy);
+            if (float.TryParse(_gapZInput.text, out float gz)) _gaps.z = Mathf.Max(0.01f, gz);
 
             ApplyZoom(); // far distance follows the Z extent
             PublishStats();
@@ -855,7 +953,9 @@ namespace CosmicShore.Utility
             if (_countXInput != null) _countXInput.text = _counts.x.ToString();
             if (_countYInput != null) _countYInput.text = _counts.y.ToString();
             if (_countZInput != null) _countZInput.text = _counts.z.ToString();
-            if (_gapInput != null) _gapInput.text = _gap.ToString("F1");
+            if (_gapXInput != null) _gapXInput.text = _gaps.x.ToString("F1");
+            if (_gapYInput != null) _gapYInput.text = _gaps.y.ToString("F1");
+            if (_gapZInput != null) _gapZInput.text = _gaps.z.ToString("F1");
         }
 
         RectTransform CreateRect(string name, Transform parent, Vector2 anchorMin, Vector2 anchorMax,

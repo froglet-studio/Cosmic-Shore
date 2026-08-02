@@ -42,11 +42,12 @@ namespace CosmicShore.Utility
         [Tooltip("Baseline recorded BEFORE detonation — the resting-lattice envelope the explosion cost is judged against.")]
         [SerializeField, Min(0f)] float preRollSeconds = 1f;
         [Tooltip("Recorded AFTER detonation. Must cover the FULL explosion interval: the visual " +
-                 "wavefront (~2s), the per-prism debris/fade effects (up to 5s, pressure-shortened " +
-                 "under load), AND the lossless damage-backlog drain — destruction applies at " +
-                 "48 prisms/frame, so an inscribed blast into the 47³ cube (~54k prisms in the " +
-                 "sphere) keeps destroying for ~19s at 60fps. The frame-locked drain means slower " +
-                 "variants show LONGER tails — that is signal, not noise.")]
+                 "wavefront, the per-prism debris/fade effects (5s at full length), and — only when " +
+                 "the safety throttles are NOT lifted — the damage-backlog drain (48 destructions/" +
+                 "frame, ~19s for the inscribed 47³ kill at 60fps; the frame-locked drain makes " +
+                 "slower variants show LONGER tails, which is signal). With the rig's default " +
+                 "throttle lifts every contained prism dies the frame the wavefront reaches it, so " +
+                 "the whole interval ends at wavefront + 5s effect tail.")]
         [SerializeField, Min(1f)] float windowSeconds = 20f;
         [Tooltip("Quiet time between the lattice reporting Ready and recording starting, so spawn-tail hitching can't pollute the baseline.")]
         [SerializeField, Min(0f)] float settleSeconds = 1.5f;
@@ -77,8 +78,10 @@ namespace CosmicShore.Utility
             public string utc;            // run start, ISO-8601
             public int prismTotal;        // live lattice prisms at detonation
             public int countsX, countsY, countsZ;
-            public float gap;
+            public float gapX, gapY, gapZ;
             public float blastRadius;
+            public float explosionDuration;   // wavefront full-expansion time (s)
+            public bool throttlesLifted;      // safety throttles lifted for this run
             public float preRollSeconds;
             public float windowSeconds;
             public int preRollFrames;     // deltaTimes[0..preRollFrames) are pre-detonation
@@ -194,8 +197,10 @@ namespace CosmicShore.Utility
                         utc = DateTime.UtcNow.ToString("o"),
                         prismTotal = _harness.LivePrismCount,
                         countsX = _harness.Counts.x, countsY = _harness.Counts.y, countsZ = _harness.Counts.z,
-                        gap = _harness.Gap,
-                        blastRadius = _harness.Config != null ? _harness.Config.BlastRadius : -1f,
+                        gapX = _harness.Gaps.x, gapY = _harness.Gaps.y, gapZ = _harness.Gaps.z,
+                        blastRadius = _harness.EffectiveBlastRadius,
+                        explosionDuration = _harness.EffectiveExplosionDuration,
+                        throttlesLifted = _harness.ThrottlesLifted,
                         preRollSeconds = preRollSeconds,
                         windowSeconds = windowSeconds,
                     };

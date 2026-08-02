@@ -33,6 +33,41 @@ namespace CosmicShore.Gameplay
         // Per-frame VFX spawn caps to prevent pool exhaustion when AOE hits many prisms
         private const int MaxExplosionVFXPerFrame = 64;
         private const int MaxImplosionVFXPerFrame = 64;
+
+        /// <summary>
+        /// Benchmark/diagnostic override of the per-frame VFX spawn caps (0 = the
+        /// authored defaults above). The caps were sized for the CPU-per-effect era;
+        /// the stress rig lifts them to measure the clock-material system UNWEAKENED
+        /// (a death's effect costs one stamp + one entity, not a per-frame update).
+        /// Gameplay never sets this.
+        /// </summary>
+        public static int VFXBudgetPerFrameOverride = 0;
+
+        /// <summary>
+        /// Benchmark/diagnostic switch: disables the pressure-shortening of effect
+        /// durations (every death animates at full length regardless of how many
+        /// effects are live). Shared home so both the clock branch
+        /// (PrismExplosion.PressuredDuration) and legacy branches
+        /// (PrismEffectsManager.PressuredDuration) can gate on one flag.
+        /// Gameplay never sets this.
+        /// </summary>
+        public static bool EffectPressureScalingDisabled = false;
+
+        static int EffectiveExplosionVFXBudget =>
+            VFXBudgetPerFrameOverride > 0 ? VFXBudgetPerFrameOverride : MaxExplosionVFXPerFrame;
+        static int EffectiveImplosionVFXBudget =>
+            VFXBudgetPerFrameOverride > 0 ? VFXBudgetPerFrameOverride : MaxImplosionVFXPerFrame;
+        // Deferred-queue bound scales with the lifted budget so a burst the operator
+        // deliberately unthrottled is not silently truncated by the queue instead.
+        static int EffectiveDeferredCap
+        {
+            get
+            {
+                long scaled = (long)EffectiveExplosionVFXBudget * 3;
+                return scaled > int.MaxValue ? int.MaxValue
+                    : (int)System.Math.Max(MaxDeferredVFX, scaled);
+            }
+        }
         private int _explosionVFXCount;
         private int _implosionVFXCount;
         private int _lastExplosionFrame;
@@ -260,7 +295,7 @@ namespace CosmicShore.Gameplay
 
             // Over budget: queue the visual for a later frame rather than dropping it.
             // The prism is already hidden, so a dropped visual IS a disappearing prism.
-            if (_explosionVFXCount >= MaxExplosionVFXPerFrame)
+            if (_explosionVFXCount >= EffectiveExplosionVFXBudget)
             {
                 Defer(_deferredExplosions, data);
                 return null;
@@ -274,7 +309,7 @@ namespace CosmicShore.Gameplay
             RollImplosionFrameBudget();
 
             // Same reasoning as explosions - defer, never drop.
-            if (_implosionVFXCount >= MaxImplosionVFXPerFrame)
+            if (_implosionVFXCount >= EffectiveImplosionVFXBudget)
             {
                 Defer(_deferredImplosions, data);
                 return null;
@@ -328,7 +363,7 @@ namespace CosmicShore.Gameplay
 
         private static void Defer(Queue<PrismEventData> queue, PrismEventData data)
         {
-            while (queue.Count >= MaxDeferredVFX)
+            while (queue.Count >= EffectiveDeferredCap)
                 queue.Dequeue(); // stalest first - see MaxDeferredVFX
             queue.Enqueue(data);
         }
@@ -344,14 +379,14 @@ namespace CosmicShore.Gameplay
             if (_deferredExplosions.Count > 0)
             {
                 RollExplosionFrameBudget();
-                while (_deferredExplosions.Count > 0 && _explosionVFXCount < MaxExplosionVFXPerFrame)
+                while (_deferredExplosions.Count > 0 && _explosionVFXCount < EffectiveExplosionVFXBudget)
                     SpawnExplosionNow(_deferredExplosions.Dequeue());
             }
 
             if (_deferredImplosions.Count > 0)
             {
                 RollImplosionFrameBudget();
-                while (_deferredImplosions.Count > 0 && _implosionVFXCount < MaxImplosionVFXPerFrame)
+                while (_deferredImplosions.Count > 0 && _implosionVFXCount < EffectiveImplosionVFXBudget)
                 {
                     var data = _deferredImplosions.Dequeue();
                     // An implosion converges on a target; if the consumer died while the

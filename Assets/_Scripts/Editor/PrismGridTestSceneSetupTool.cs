@@ -110,7 +110,7 @@ namespace CosmicShore.Editor
 
             var camera = EnsureCamera(scene);
             EnsureLight(scene);
-            bool managersAdded = EnsurePrismManagers(scene);
+            string managersReport = EnsurePrismManagers(scene);
             EnsureThemeManager(scene, config);
             EnsureHarness(scene, config, camera);
 
@@ -118,8 +118,8 @@ namespace CosmicShore.Editor
             EditorSceneManager.SaveScene(scene, ScenePath);
 
             return existed
-                ? $"Updated existing scene. PrismManagers {(managersAdded ? "added" : "already present")}."
-                : $"Created new scene. PrismManagers {(managersAdded ? "added" : "MISSING — check " + PrismManagersPrefabPath)}.";
+                ? $"Updated existing scene. PrismManagers: {managersReport}."
+                : $"Created new scene. PrismManagers: {managersReport}.";
         }
 
         static Camera EnsureCamera(Scene scene)
@@ -149,26 +149,68 @@ namespace CosmicShore.Editor
             go.transform.rotation = Quaternion.Euler(50f, -30f, 0f);
         }
 
-        static bool EnsurePrismManagers(Scene scene)
+        /// <summary>
+        /// The prism managers are Singleton&lt;T&gt; — they never auto-create, so without this
+        /// prefab prisms spawn but never theme/state-manage (and on legacy branches never
+        /// animate). A SECOND instance is just as broken: two copies fight for the singleton
+        /// slot, and whichever loses destroys itself or shadows the winner unpredictably.
+        ///
+        /// SELF-HEALING: enumerates every instance — by component with INACTIVE objects
+        /// included (a deactivated managers object still races the singleton on enable, and
+        /// the old FindFirstObjectByType check silently missed it, which is exactly how
+        /// duplicate instances crept into the scene), and by prefab identity (covers an
+        /// instance whose scripts are missing/stripped after a branch switch) — keeps the
+        /// first and deletes the rest. Re-running the tool now REPAIRS a duplicated scene
+        /// instead of making it worse.
+        /// </summary>
+        static string EnsurePrismManagers(Scene scene)
         {
-            // The prism managers are Singleton<T> — they never auto-create, so without
-            // this prefab prisms spawn but never theme/state-manage (and on legacy
-            // branches never animate). BRANCH-PORTABLE presence check: PrismStateManager
-            // lives on the same prefab and exists on both the legacy-CPU and gpu-clock
-            // branches (PrismScaleManager only exists on legacy branches).
-            if (Object.FindFirstObjectByType<PrismStateManager>() != null) return false;
-
             var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(PrismManagersPrefabPath);
+
+            // BRANCH-PORTABLE detection: PrismStateManager lives on the managers prefab and
+            // exists on both the legacy-CPU and gpu-clock branches (PrismScaleManager only
+            // exists on legacy branches).
+            var roots = new System.Collections.Generic.List<GameObject>();
+            foreach (var mgr in Object.FindObjectsByType<PrismStateManager>(
+                         FindObjectsInactive.Include, FindObjectsSortMode.InstanceID))
+            {
+                var root = mgr.transform.root.gameObject;
+                if (!roots.Contains(root)) roots.Add(root);
+            }
+            foreach (var root in scene.GetRootGameObjects())
+            {
+                if (roots.Contains(root)) continue;
+                var source = PrefabUtility.GetCorrespondingObjectFromOriginalSource(root);
+                if ((prefab != null && source == prefab) || root.name.StartsWith("PrismManagers"))
+                    roots.Add(root);
+            }
+
+            int removed = 0;
+            for (int i = roots.Count - 1; i >= 1; i--)
+            {
+                Undo.DestroyObjectImmediate(roots[i]);
+                removed++;
+            }
+            if (removed > 0)
+                Debug.LogWarning($"[PrismGridTestSceneSetupTool] Removed {removed} duplicate " +
+                                 "PrismManagers instance(s) — the managers are Singleton<T>; " +
+                                 "exactly one instance may exist.");
+
+            if (roots.Count > 0)
+                return removed > 0
+                    ? $"already present (removed {removed} duplicate{(removed > 1 ? "s" : "")})"
+                    : "already present";
+
             if (prefab == null)
             {
                 Debug.LogError($"[PrismGridTestSceneSetupTool] Missing {PrismManagersPrefabPath} — " +
                                "prisms will not animate.");
-                return false;
+                return "MISSING — check " + PrismManagersPrefabPath;
             }
 
             var instance = (GameObject)PrefabUtility.InstantiatePrefab(prefab, scene);
             Undo.RegisterCreatedObjectUndo(instance, "Create PrismManagers");
-            return true;
+            return "added";
         }
 
         /// <summary>

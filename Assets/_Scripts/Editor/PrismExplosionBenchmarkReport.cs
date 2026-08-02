@@ -69,12 +69,23 @@ namespace CosmicShore.Editor
             md.AppendLine();
 
             // ── Setup comparability check ────────────────────────────────────
-            var setups = runs.Select(r => (r.prismTotal, r.countsX, r.countsY, r.countsZ, r.gap, r.blastRadius)).Distinct().ToList();
+            var setups = runs.Select(r => (r.prismTotal, r.countsX, r.countsY, r.countsZ,
+                    r.gapX, r.gapY, r.gapZ, r.blastRadius, r.explosionDuration, r.throttlesLifted))
+                .Distinct().ToList();
             if (setups.Count > 1)
             {
-                md.AppendLine("> ⚠ **Runs use differing grid setups** — the comparison is only apples-to-apples per setup:");
+                md.AppendLine("> ⚠ **Runs use differing setups** — the comparison is only apples-to-apples per setup:");
                 foreach (var s in setups)
-                    md.AppendLine($"> - {s.countsX}×{s.countsY}×{s.countsZ} gap {s.gap:F1} → {s.prismTotal:N0} prisms, blast r {s.blastRadius:F0}");
+                    md.AppendLine($"> - {s.countsX}×{s.countsY}×{s.countsZ} gaps {s.gapX:F1}/{s.gapY:F1}/{s.gapZ:F1} " +
+                                  $"→ {s.prismTotal:N0} prisms, blast r {s.blastRadius:F0} in {s.explosionDuration:F1}s, " +
+                                  $"throttles {(s.throttlesLifted ? "lifted" : "default")}");
+                md.AppendLine();
+            }
+            if (runs.Select(r => r.throttlesLifted).Distinct().Count() > 1)
+            {
+                md.AppendLine("> ⚠ **Runs MIX lifted and default safety throttles** — throttled runs " +
+                              "spread destruction over ~19s (48/frame) while lifted runs land it inside the " +
+                              "wavefront; their envelopes measure different workloads. Re-run one side.");
                 md.AppendLine();
             }
 

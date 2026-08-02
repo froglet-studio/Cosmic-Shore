@@ -625,11 +625,32 @@ namespace CosmicShore.Gameplay
         private const int MAX_NEW_HITS_PER_FRAME = 48;
 
         /// <summary>
-        /// Upper bound on backlog entries a single frame may dequeue. Entries whose
-        /// prism died (or whose slot was recycled) resolve for free, so without this
-        /// a queue full of dead entries would be walked in one frame.
+        /// Benchmark/diagnostic override of the per-frame damage budget (0 = the
+        /// authored default above). The budget was sized for the CPU-per-effect era;
+        /// the stress rig lifts it to measure what the clock-material system can
+        /// take UNWEAKENED — the wavefront then destroys prisms the frame it reaches
+        /// them instead of trickling at 48/frame. Gameplay never sets this.
         /// </summary>
-        private const int MAX_DRAIN_EXAMINED_PER_FRAME = MAX_NEW_HITS_PER_FRAME * 8;
+        public static int DamageBudgetPerFrameOverride = 0;
+
+        static int EffectiveDamageBudget =>
+            DamageBudgetPerFrameOverride > 0 ? DamageBudgetPerFrameOverride : MAX_NEW_HITS_PER_FRAME;
+
+        /// <summary>
+        /// Upper bound on backlog entries a single frame may dequeue — 8× the damage
+        /// budget, tracking any override. Entries whose prism died (or whose slot was
+        /// recycled) resolve for free, so without this a queue full of dead entries
+        /// would be walked in one frame.
+        /// </summary>
+        static int EffectiveDrainExamined
+        {
+            get
+            {
+                // long: an int.MaxValue override must not wrap the *8.
+                long scaled = (long)EffectiveDamageBudget * 8;
+                return scaled > int.MaxValue ? int.MaxValue : (int)scaled;
+            }
+        }
 
         /// <summary>
         /// Sentinel for "no generation check" - used by same-frame hits, which have no
@@ -1978,7 +1999,7 @@ namespace CosmicShore.Gameplay
                 // Skip if already hit by this explosion (mirrors OnTriggerEnter once-per-pair behavior)
                 if (alreadyHit.Contains(idx)) continue;
 
-                if (budgetSpent >= MAX_NEW_HITS_PER_FRAME)
+                if (budgetSpent >= EffectiveDamageBudget)
                 {
                     // Over budget. Defer with this frame's impact direction so the hit
                     // resolves identically later even once the blast has moved on, and
@@ -2125,9 +2146,9 @@ namespace CosmicShore.Gameplay
 
             int spent = 0;
             int examined = 0;
-            int cap = MAX_NEW_HITS_PER_FRAME - alreadySpent;
+            int cap = EffectiveDamageBudget - alreadySpent;
 
-            while (pending.Count > 0 && spent < cap && examined < MAX_DRAIN_EXAMINED_PER_FRAME)
+            while (pending.Count > 0 && spent < cap && examined < EffectiveDrainExamined)
             {
                 examined++;
                 var deferred = pending.Dequeue();

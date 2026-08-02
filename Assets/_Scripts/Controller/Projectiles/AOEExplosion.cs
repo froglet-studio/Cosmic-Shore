@@ -36,6 +36,10 @@ namespace CosmicShore.Gameplay
         public bool AnonymousExplosion { get; protected set; }
         public float MaxScale { get; protected set; } = 200f;
 
+        /// <summary>The visual wavefront's full-expansion time (authored on the prefab,
+        /// or the per-instance <see cref="InitializeStruct.DurationOverride"/>).</summary>
+        public float Duration => ExplosionDuration;
+
         protected ExplosionImpactor _explosionImpactor;
         private float _colliderRadius = 0.5f; // Default sphere collider radius
         private MaterialPropertyBlock _mpb;
@@ -121,6 +125,13 @@ namespace CosmicShore.Gameplay
             Vessel = initStruct.Vessel;
             Domain = initStruct.OwnDomain;
             MaxScale = initStruct.MaxScale;
+
+            // Optional per-instance duration (0 = keep the authored value). Callers
+            // that want a fixed physical EXPANSION SPEED rather than a fixed sweep
+            // time pass radius/speed here — everything downstream (wavefront ease,
+            // batch damage radius, impact speed) already derives from this one field.
+            if (initStruct.DurationOverride > 0f)
+                ExplosionDuration = initStruct.DurationOverride;
 
             MaxScaleVector = new Vector3(MaxScale, MaxScale, MaxScale);
             speed = MaxScale / ExplosionDuration;
@@ -333,6 +344,9 @@ namespace CosmicShore.Gameplay
             public float MaxScale;
             public Vector3 SpawnPosition;
             public Quaternion SpawnRotation;
+            /// <summary>Replaces the prefab's authored ExplosionDuration for this
+            /// instance; 0 (the default) keeps the authored value.</summary>
+            public float DurationOverride;
         }
     }
 }

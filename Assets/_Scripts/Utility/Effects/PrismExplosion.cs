@@ -71,6 +71,14 @@ namespace CosmicShore.Utility
         /// </summary>
         static float PressuredDuration(int activeCount)
         {
+            // Benchmark/diagnostic lift (PrismFactory.EffectPressureScalingDisabled):
+            // every death animates at full length no matter how many effects are
+            // live, so the stress rig measures the clock system UNWEAKENED. On the
+            // clock path an effect costs one stamp + one entity — the pressure model
+            // bounds pool/entity count, not a per-frame animation pass — so lifting
+            // it is a memory/entity-count experiment, not a frame-cost cheat.
+            if (Gameplay.PrismFactory.EffectPressureScalingDisabled) return DefaultDuration;
+
             const float pressureFloor = PressureCeiling * 0.5f;
             if (activeCount <= pressureFloor) return DefaultDuration;
 

@@ -23,9 +23,10 @@ namespace CosmicShore.ScriptableObjects
                  "face (the inscribed blast's end condition is 'face-centre prisms destroyed').")]
         [SerializeField] private Vector3Int defaultCounts = new(47, 47, 47);
 
-        [Tooltip("Default gap 'A' between adjacent prisms, as CENTRE-TO-CENTRE pitch in world units. " +
-                 "Cuboid extent along an axis = (count - 1) * gap.")]
-        [SerializeField] private float defaultGap = 30f;
+        [Tooltip("Default gap between adjacent prisms PER AXIS, as CENTRE-TO-CENTRE pitch in world " +
+                 "units. Cuboid extent along an axis = (count - 1) * gap. Unequal gaps make the " +
+                 "inscribed blast bind to the tightest axis.")]
+        [SerializeField] private Vector3 defaultGaps = new(30f, 30f, 30f);
 
         [Tooltip("Hard ceiling on countX * countY * countZ. A spawn request above this is rejected " +
                  "before any prism is laid, so a fat-fingered 100^3 cannot lock up the editor.")]
@@ -69,6 +70,13 @@ namespace CosmicShore.ScriptableObjects
                  "edges and corners survive. This is the benchmark's spec'd end condition.")]
         [SerializeField] private bool fitBlastToLattice = true;
 
+        [Tooltip("Wavefront expansion speed in RADIUS world-units per second. 0 keeps the explosion " +
+                 "prefab's authored duration (AOEExplosion ships 2s — the wavefront then crosses any " +
+                 "lattice in 2s regardless of size, i.e. bigger blasts sweep FASTER). A non-zero " +
+                 "value pins the physical expansion rate instead: duration = final radius / speed, " +
+                 "so doubling the lattice doubles the sweep time.")]
+        [SerializeField, Min(0f)] private float explosionSpeed = 0f;
+
         [Tooltip("Domain the blast belongs to. MUST differ from the grid domain to be destructive.")]
         [SerializeField] private Domains explosionDomain = Domains.Ruby;
 
@@ -76,6 +84,16 @@ namespace CosmicShore.ScriptableObjects
                  "— AOEExplosion assigns Material to its renderer, so a null here would render the " +
                  "blast invisible.")]
         [SerializeField] private Material overrideMaterial;
+
+        [Header("Safety throttles")]
+        [Tooltip("Lift the gameplay safety throttles for the duration of this scene: the per-frame " +
+                 "AOE damage budget (PrismSpatialIndex, 48/frame), the per-frame destruction-VFX " +
+                 "spawn caps (PrismFactory, 64/frame), and the live-effect pressure model that " +
+                 "shortens explosion durations under load. Those guards were sized for the " +
+                 "CPU-per-effect era; on the clock path a running effect costs no per-frame CPU, so " +
+                 "the benchmark measures the system UNWEAKENED by default. The harness restores " +
+                 "every override on destroy — gameplay scenes are never affected.")]
+        [SerializeField] private bool liftSafetyThrottles = true;
 
         [Header("Camera")]
         [Tooltip("Camera distance from the origin at zoom = 0. Never zero: LookAt from exactly the " +
@@ -90,7 +108,10 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField] private float defaultZoom = 0.6f;
 
         public Vector3Int DefaultCounts => defaultCounts;
-        public float DefaultGap => defaultGap;
+        public Vector3 DefaultGaps => new(
+            Mathf.Max(0.01f, defaultGaps.x),
+            Mathf.Max(0.01f, defaultGaps.y),
+            Mathf.Max(0.01f, defaultGaps.z));
         public int MaxTotalPrisms => maxTotalPrisms;
         public int PrismsPerFrame => Mathf.Max(1, prismsPerFrame);
         public Prism PrismPrefab => prismPrefab;
@@ -100,6 +121,8 @@ namespace CosmicShore.ScriptableObjects
         public AOEExplosion ExplosionPrefab => explosionPrefab;
         public float MaxScale => maxScale;
         public bool FitBlastToLattice => fitBlastToLattice;
+        public float ExplosionSpeed => Mathf.Max(0f, explosionSpeed);
+        public bool LiftSafetyThrottles => liftSafetyThrottles;
         public Domains ExplosionDomain => explosionDomain;
         public Material OverrideMaterial => overrideMaterial;
         public float NearDistance => Mathf.Max(1f, nearDistance);
