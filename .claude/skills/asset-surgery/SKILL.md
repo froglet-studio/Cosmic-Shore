@@ -107,7 +107,33 @@ its GameObject lists it in `m_Component`.
 - **Re-author SO numbers**: regex with `re.subn(..., count=1)` + assert n==1
   per field; print the before/after table so the human can eyeball the math.
 
-## 4. Technique: C# verification without a compiler
+## 4. Technique: C# verification — get a real compiler first
+
+**Try to actually compile before falling back to inspection.** `apt-get install
+mono-mcs` gives you `mcs`, and a Unity gameplay file usually touches a small,
+stubbable surface. Recipe (validated 2026-08 on two ~400-line generators, both
+of which compiled clean and shipped):
+
+1. Write `Stubs.cs` covering ONLY the API the target files touch — the
+   `UnityEngine` types (`Vector3` with its operators, `Quaternion`, `Mathf`,
+   `Debug`), the project enums, and the base class with the exact protected
+   members used. Bodies can return anything; you are checking names, types,
+   arity, and control flow, not behaviour.
+2. **Desugar what mcs 6.8 (C# 7.x) cannot parse but Unity (C# 9) can** — in a
+   THROWAWAY COPY, never the real file: target-typed `new(...)` → `new T(...)`,
+   `x is A or B` → `(x == A || x == B)`. Assert zero bare `new(` remain, or the
+   parse dies at the first one and every later error is cascade noise that will
+   waste your time.
+3. `mcs -target:library -langversion:latest -out:/dev/null Stubs.cs <files>`.
+4. Ignore a `CS0436` warning about a type you stubbed that Mono's BCL also has
+   (e.g. `System.HashCode`) — harness artifact, not a finding.
+
+Cost is minutes and it catches the whole class of errors inspection misses
+(wrong member name, wrong arity, a `ref readonly` misuse, an unreachable
+branch). Do NOT commit the harness — stubs rot against the real API. Rebuild it
+per task; it is cheap.
+
+### Fallback: verification without a compiler
 
 - **Brace balance**: a naive count fails on interpolated strings. Use the
   tokenizer that tracks modes (`//`, `/* */`, `"str"`, `@"verbatim"`, `'c'`,
