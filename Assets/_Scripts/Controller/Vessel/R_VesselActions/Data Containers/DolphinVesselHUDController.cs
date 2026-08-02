@@ -80,6 +80,17 @@ namespace CosmicShore.Gameplay
             SeedFromResources();
         }
 
+        // Symmetric with OnDisable, so a disable/enable cycle re-binds instead of silently leaving
+        // the gauges dead. A no-op before Initialize - there are no resources to bind to yet.
+        void OnEnable()
+        {
+            if (_resources == null || view == null) return;
+            _energy ??= Bind(_energyIndex, HandleEnergyChanged);
+            _driftBoost ??= Bind(_driftBoostIndex, HandleDriftBoostChanged);
+            ExplosionImpactor.OnBlastResolved -= HandleBlastResolved;
+            ExplosionImpactor.OnBlastResolved += HandleBlastResolved;
+        }
+
         void OnDisable()
         {
             // Detach from the resources we actually attached to, not by re-deriving indices - the
