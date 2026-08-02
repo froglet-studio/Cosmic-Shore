@@ -22,7 +22,7 @@ MonoBehaviour:
   accentColor: {r: 0.55, g: 0.75, b: 1, a: 1}
   cells: []
   clearLooseTrailMass: 1
-  stationSpacing: 55
-  stationRadius: 9
+  stationSpacing: 110
+  stationRadius: 18
   matrixDistanceFactor: 3
   modelPointBudget: 1200

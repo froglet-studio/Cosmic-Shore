@@ -47,11 +47,11 @@ namespace CosmicShore.ScriptableObjects
 
         [Header("Layout")]
         [SerializeField, Min(10f), Tooltip("Spacing between mini-cells in the matrix.")]
-        float stationSpacing = 55f;
+        float stationSpacing = 110f;
 
         [SerializeField, Min(1f), Tooltip("Radius of one mini-cell (its membrane rings). The scale " +
                                           "model inside is fitted to just under this.")]
-        float stationRadius = 9f;
+        float stationRadius = 18f;
 
         [SerializeField, Min(0.5f), Tooltip("How far out the matrix blooms, in multiples of Station " +
                                             "Spacing, measured from the toy along the outward radial " +
