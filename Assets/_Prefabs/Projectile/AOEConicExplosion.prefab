@@ -4890,7 +4890,7 @@ MonoBehaviour:
     type: 2}
   ExplosionDuration: 2.7
   ExplosionDelay: 0
-  Inertia: 3
+  Inertia: 1.8
   proportionalDebris: 1
   debrisRestitution: 0.33333334
   height: 2400
