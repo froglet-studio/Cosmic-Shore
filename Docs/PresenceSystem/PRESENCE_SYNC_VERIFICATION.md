@@ -250,15 +250,19 @@ host close path previously never despawned chips.
 
 ## After verification passes
 
-1. **Relax the safety poll.** Once Step 2a confirms push works, raise
-   `PartyServices.prefab` → `Refresh Interval Seconds` from **1.5 → 10**. This is
-   where the rate-limit budget is actually reclaimed (~0.1 reads/s steady state).
-   It was left at 1.5 so push could be additive and risk-free until proven.
-   **Prefab-only, no code.**
-2. **Report the Step 1c counter** — it decides whether RC-2 mattered, and it is
-   the data `REFACTOR.md`'s `LobbyMembershipMonitor` extraction has been blocked
-   on.
+1. ~~**Relax the safety poll** 1.5 → 10.~~ **BLOCKED — do not do this yet.**
+   Step 1c has now been measured (see `BUGS.md` § MEASURED) and the presence read
+   is voided ~20% of the time by the SDK stale-index fault, the party-session read
+   ~43%. A 10 s nominal poll would be a ~12.5 s effective backstop. Re-measure
+   after push is confirmed and after any write-coalescing work, then decide.
+2. ~~**Report the Step 1c counter.**~~ **DONE** — `presence=13 / partySession=22`
+   over ~96 s, recorded in `BUGS.md`. Consequence: `LobbyMembershipMonitor`
+   (`REFACTOR.md`) is **no longer blocked**, and it must treat `SdkStaleIndex` as
+   explicitly *not* membership loss.
 3. **Rewrite `TESTS.md` P5** per Step 2d.
+4. **Re-measure the fault rate.** The numbers above predate `40226752` (push ticks
+   no longer fetch), so only poll ticks can now produce the fault — the absolute
+   count should fall even if the per-fetch rate does not.
 
 ## Known gaps (deliberate, not oversights)
 
