@@ -138,9 +138,12 @@ namespace CosmicShore.Editor
 
         static bool EnsurePrismManagers(Scene scene)
         {
-            // PrismScaleManager / MaterialStateManager are Singleton<T> — they never auto-create,
-            // so without this prefab prisms spawn but never animate or theme.
-            if (Object.FindFirstObjectByType<PrismScaleManager>() != null) return false;
+            // The prism managers are Singleton<T> — they never auto-create, so without
+            // this prefab prisms spawn but never theme/state-manage (and on legacy
+            // branches never animate). BRANCH-PORTABLE presence check: PrismStateManager
+            // lives on the same prefab and exists on both the legacy-CPU and gpu-clock
+            // branches (PrismScaleManager only exists on legacy branches).
+            if (Object.FindFirstObjectByType<PrismStateManager>() != null) return false;
 
             var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(PrismManagersPrefabPath);
             if (prefab == null)
@@ -163,6 +166,11 @@ namespace CosmicShore.Editor
                 var go = NewRoot("[PrismGridHarness]", scene);
                 harness = Undo.AddComponent<PrismGridExplosionHarness>(go);
             }
+
+            // A/B envelope recorder rides the same GameObject (Bench button /
+            // 'bench' console command / context menu).
+            if (harness.GetComponent<PrismExplosionBenchmark>() == null)
+                Undo.AddComponent<PrismExplosionBenchmark>(harness.gameObject);
 
             var so = new SerializedObject(harness);
             SetObject(so, "config", config);

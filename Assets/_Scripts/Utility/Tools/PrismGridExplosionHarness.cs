@@ -104,6 +104,26 @@ namespace CosmicShore.Utility
         float _gap;
         float _zoom;
 
+        // ── Benchmark-driver surface (PrismExplosionBenchmark) ──────────────
+
+        /// <summary>Lattice fully laid, materialized, and index-registered — safe to detonate into.</summary>
+        public bool IsReady => _phase == GridPhase.Ready;
+
+        /// <summary>No lattice (fresh scene or post-Clear) — safe to Spawn.</summary>
+        public bool IsIdle => _phase == GridPhase.Idle;
+
+        /// <summary>Live prisms currently in the lattice list.</summary>
+        public int LivePrismCount => _prisms.Count;
+
+        /// <summary>The lattice dimensions the next Spawn will build.</summary>
+        public Vector3Int Counts => _counts;
+
+        /// <summary>The lattice gap the next Spawn will use.</summary>
+        public float Gap => _gap;
+
+        /// <summary>The tunables asset (blast radius etc.) — read-only for the recorder's metadata.</summary>
+        public PrismGridTestConfigSO Config => config;
+
         // ── UI ───────────────────────────────────────────────────────────────
 
         Font _font;
@@ -138,9 +158,18 @@ namespace CosmicShore.Utility
 
         void Start()
         {
-            // Prism animation/material managers are Singleton<T>, which never auto-creates —
-            // without PrismManagers.prefab in the scene prisms spawn but never animate.
-            if (PrismScaleManager.Instance == null)
+            // BRANCH-PORTABLE manager check (this file runs on both the legacy-CPU
+            // baseline branch and the gpu-clock branch for A/B benchmarking): the
+            // legacy branches animate through PrismScaleManager, a Singleton<T> that
+            // never auto-creates — without PrismManagers.prefab in the scene prisms
+            // spawn but never animate. On clock branches the type does not exist
+            // (animation rides the GPU clock) and no manager is required. Resolved
+            // by reflection so the same source compiles everywhere.
+            var legacyManagerType = Type.GetType("CosmicShore.Gameplay.PrismScaleManager, Assembly-CSharp");
+            if (legacyManagerType != null &&
+                legacyManagerType.GetProperty("Instance",
+                    System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static |
+                    System.Reflection.BindingFlags.FlattenHierarchy)?.GetValue(null) == null)
             {
                 Debug.LogError("[PrismGridExplosionHarness] PrismScaleManager.Instance is null — " +
                                "add _Prefabs/Environment/PrismManagers.prefab to the scene.");
@@ -688,6 +717,8 @@ namespace CosmicShore.Utility
             CreateButton("Spawn", panel, new Vector2(8, -40), 90, Spawn);
             CreateButton("Explode", panel, new Vector2(104, -40), 90, Explode);
             CreateButton("Clear", panel, new Vector2(200, -40), 90, Clear);
+            CreateButton("Bench", panel, new Vector2(296, -40), 90,
+                () => GetComponent<PrismExplosionBenchmark>()?.StartSeries());
 
             // Row 3 — zoom.
             CreateLabel("zoom", panel, new Vector2(8, -72), 40);
