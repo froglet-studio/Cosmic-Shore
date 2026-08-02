@@ -461,6 +461,27 @@ Fix these DURING the migration (most disappear by construction under stamp+clock
 9. **Spindles** (flora/fauna limb rods — prism-adjacent, same law family): per-frame MPB
    `_DeathAnimation` fade breaks SRP batching mid-fade; migrate alongside with clock
    inputs on the spindle material.
+10. **✅ FIXED 2026-08-02 — the shield engage-morph ate the grow stamp of every
+    shielded environment prism** (the C13 live repro: `[PrismClock] STRICT MODE: no
+    companion render entity to stamp (grow:SpawnablePrism (Clone))`). Two independent
+    defects compounded, both now closed — see §4.5:
+    - `Prism.ApplyRenderPath` only created the companion entity on the frame it wanted
+      to SHOW the prism, and refused while `_exoticVisualActive`. A shield `Engage()`
+      runs a 0.35 s per-face bloom, but `CreateBlockCoroutine` reveals the prism after
+      `waitTime` = 0.1 s (**one frame** under the load gate) — so the reveal landed
+      *inside* the exotic window, `EnsureRenderEntity` was skipped, and the ONE-SHOT
+      grow stamp had no target. Deterministic, not a race.
+    - Nothing suppressed the morph at spawn. Every `ShieldedSpawnablePrism`
+      (`prismProperties.IsShielded` baked true → `Prism.Initialize` calls
+      `ActivateShield()`) and every environment prism carrying `PrismKind.Shielded` /
+      `SuperShielded` via `PrismKinds.Apply` (Yggdra, Orrery, Zephyr, Caldera, Geode,
+      Atlantis, the Wanderway conveyor's palette) hit it — i.e. the HexRace track and
+      the freestyle six.
+    Collateral now gone with it: those prisms drew from the un-batched GameObject
+    MeshRenderer for the whole morph, each registered with
+    `PrismOctahedronShieldManager` and rebuilt a per-prism morph mesh **every frame**
+    during the heaviest frames of an arena build, and each fired a `ShieldActivate`
+    SFX at lay time.
 
 **Verified clean (no prism update path — do not re-audit)**: Rewind system, warp/flow
 fields, `SkimmerAlignPrismEffectSO` (reads prisms, writes the vessel), network sync
@@ -760,6 +781,50 @@ in-branch — or they snap (loudly) while opaque prisms animate.
 - Hitstop/pause: prism animations freeze with `Time.timeScale` (the clock is scaled
   time) — expected and desired.
 
+### 4.5 Two corollaries of "the stamp is one-shot" (shipped 2026-08-02)
+
+A stamp is not retried and not polled: it writes initial conditions at ONE instant and
+the GPU runs the rest. Everything upstream of that instant is therefore load-bearing,
+and §3.8 #10 is what happens when it isn't. Two rules now hold the line.
+
+**(a) Companion-entity EXISTENCE is independent of which path DRAWS.**
+`Prism.ApplyRenderPath` used to create the entity only when it was about to *show* the
+prism, and never while `_exoticVisualActive` (the shield morph's per-prism geometry
+owns the GameObject renderer). Creation and visibility are now separate concerns: the
+entity is created as soon as the prism is renderable at all, hidden if something else
+is drawing, and queued visible when the instanced path takes over. Consequences to
+respect when adding any future exotic visual:
+
+- `Prism.EffectiveRenderMesh()` is the single definition of a prism's *batchable*
+  geometry — settled shield override, else the live mesh, else `_authoredMesh` (cached
+  at `Awake`). **Never register `meshFilter.sharedMesh` while an exotic visual is
+  animating**: that is transient per-prism morph geometry, and registering it mints a
+  unique `BatchMeshID` per prism (a draw-call storm plus a registration leak).
+- `Prism.SyncRenderMesh()` is the only writer of the entity's mesh (cached, so the
+  no-change case is free) and runs whenever the instanced path re-engages — which also
+  closes the case where a shield disengages without ever having set an override, so
+  `ClearRenderMeshOverride` had nothing to push.
+- Every clock stamp site gets ONE self-heal: `Prism.TryEnsureRenderEntityForStamp()`
+  before the strict-mode scream (`PrismScaleAnimator.StampClockGrowth` does this).
+  When it still fails, `Prism.DescribeRenderEntityState()` names the exact gate — the
+  diagnostics report a *fact*, not the old list of suspects.
+
+**(b) Creation-time state is not a transition — the birth rule.**
+`PrismStateManager.IsBirthTransition` (`!prism.IsCreationComplete`) makes a shield
+engaged/disengaged during a prism's creation SNAP: no per-face bloom, no shatter
+overlay, no state SFX. This is the continuity law applied correctly, not an exemption
+from it — the prism has never been on screen, and the grow-in bloom that follows *is*
+its transition into existence. It is the same reading `MaterialPropertyAnimator`
+already applies to spawn-paint ("a creation, not a recolor"). `ApplyShieldedPose` /
+`ApplyUnshieldedPose` correspondingly stop force-enabling the BoxCollider during that
+window (`Prism.Initialize` deliberately holds it off until reveal; the non-instant path
+already respected this via `KeepGameplayColliderDuringMorph`).
+
+A shield engaged **later**, on live mass — a skim, a steal, an ability — still blooms
+its faces exactly as before. `SegmentSpawner.SuperShieldSpawnedPrisms`, which pokes the
+shield component directly rather than going through `PrismStateManager`, honours the
+same rule explicitly.
+
 ## 5. Migration tracker (the deduplicated work list)
 
 Phase A — infrastructure (everything else rides on it):
@@ -795,7 +860,8 @@ Phase C — rogue paths & ecosystem visuals (each is standalone):
 | C10 | Worm segment make-room shift → stamped slide (locomotion stays mover-contract) | ☐ not started |
 | C11 | Spindle `_DeathAnimation` fade (prism-adjacent) → clock inputs on spindle material | ☐ not started |
 | C12 | `PrismImplosion` watchdog → scheduler; orphan cleanup; `SkimFxRunner` stretch beam review; `CloakSeedWall` dead code removal | ◐ 2026-08-01: `TrailBlockBufferManager` deleted; `TrailViewer` removed from Urchin.prefab + deleted (D2, 2026-08-02); watchdog / SkimFxRunner / CloakSeedWall pending |
-| C13 | Environment lay pooling: `PrismTrailBuilder.LayOne` → pooled pull with final domain material (kills spawn repaint) | ☐ not started |
+| C13a | Environment-laid prisms miss the clock path (the live repro: `grow:SpawnablePrism (Clone)`) | ✅ FIXED 2026-08-02 — root cause was NOT the raw-`Instantiate` lay: the shield engage-morph held `_exoticVisualActive` across the creation reveal, so `EnsureRenderEntity` was skipped at the exact instant the one-shot grow stamp fired. Fixed by §4.5 (a) entity existence ⊥ visibility + stamp-site self-heal + fact-based diagnosis, and (b) the birth rule (spawn-time shields snap). §3.8 #10 has the full anatomy. Pooling is orthogonal — a pooled prism with a `Shielded` kind failed identically; `BoostRingBuilder` only escaped because it defers shield kinds to `onGrown` |
+| C13b | Environment lay pooling: `PrismTrailBuilder.LayOne` → pooled pull with final domain material (kills the `Domains.Blue` → domain spawn repaint) | ☐ not started — still worth doing on its own merits (spawn repaint, alloc churn), but it is NOT a clock-path fix. Note the pools are `maxSize`-bounded and environment mass is never released, so a naive pool-through would either destroy conserved mass on release or instantiate forever; it needs its own environment-prefab pool design |
 
 Phase D — lock-in:
 
