@@ -20,5 +20,10 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField] private bool useInstancedRendering;
 
         public bool UseInstancedRendering => useInstancedRendering;
+
+        // Clock-material animation has NO toggle (STRICT MODE — Docs/PRISM_ANIMATION.md):
+        // it is the only prism animation path. The former useClockAnimation opt-in was
+        // removed 2026-08-01 at the prompter's direction ("no legacy fallback"). Unwired
+        // graphs fail LOUD at the stamp sites, they do not fall back.
     }
 }

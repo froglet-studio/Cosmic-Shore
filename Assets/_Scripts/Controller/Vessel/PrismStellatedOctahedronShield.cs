@@ -37,7 +37,7 @@ namespace CosmicShore.Gameplay
     /// stellated state, with the octahedron being merely "shielded".
     /// </summary>
     [DisallowMultipleComponent]
-    public class PrismStellatedOctahedronShield : MonoBehaviour
+    public class PrismStellatedOctahedronShield : MonoBehaviour, IPrismShieldMorphTicker
     {
         [Header("Collider Sources")]
         [Tooltip("The authored BoxCollider that defines the unshielded shape. Its center/size drive the stellation geometry.")]
@@ -168,6 +168,9 @@ namespace CosmicShore.Gameplay
 
         private void OnDisable()
         {
+            // No stale central-ticker registration across pool reuse.
+            PrismOctahedronShieldManager.Instance?.Unregister(this);
+
             // Snap to clean state when the GameObject is disabled (e.g. pooled
             // back). Prevents stale visuals on pool reuse.
             if (_isShielded || _isEngaging || _isShattering)
@@ -276,6 +279,9 @@ namespace CosmicShore.Gameplay
                 _isEngaging = true;
                 KeepGameplayColliderDuringMorph();
                 UpdateEngageMesh(engageCurve.Evaluate(_engageT));
+                // Central ticker drives the morph — no per-prism Update() (the
+                // idle-forever self-tick was the audit's B4 interim finding).
+                PrismOctahedronShieldManager.EnsureInstance()?.Register(this);
             }
         }
 
@@ -316,6 +322,7 @@ namespace CosmicShore.Gameplay
                     _meshRenderer != null ? _meshRenderer.sharedMaterial : null;
                 _shatterChild.SetActive(true);
                 UpdateShatterMesh(0f);
+                PrismOctahedronShieldManager.EnsureInstance()?.Register(this);
             }
         }
 
@@ -332,19 +339,33 @@ namespace CosmicShore.Gameplay
         }
 
         // --- Transition driver -----------------------------------------------
+        // Driven by PrismOctahedronShieldManager's central ticker while a morph is
+        // in flight — registered at Engage/Disengage, dropped when Tick returns
+        // false. The former per-prism Update() persisted idle FOREVER once the
+        // component was lazily added (thousands of standing early-return Updates
+        // on super-shielded tracks — the exact cost the manager kills).
 
-        private void Update()
+        /// <summary>
+        /// Advances any in-progress engage/shatter morph. Called by
+        /// <see cref="PrismOctahedronShieldManager"/> ONLY while registered.
+        /// Returns true while still transitioning.
+        /// </summary>
+        internal bool Tick(float dt)
         {
             if (_isEngaging)
-                DriveEngage();
+                DriveEngage(dt);
 
             if (_isShattering)
-                DriveShatter();
+                DriveShatter(dt);
+
+            return _isEngaging || _isShattering;
         }
 
-        private void DriveEngage()
+        bool IPrismShieldMorphTicker.Tick(float dt) => Tick(dt);
+
+        private void DriveEngage(float dt)
         {
-            float step = engageDuration > 0f ? Time.deltaTime / engageDuration : 1f;
+            float step = engageDuration > 0f ? dt / engageDuration : 1f;
             _engageT = Mathf.Clamp01(_engageT + step);
 
             UpdateEngageMesh(engageCurve.Evaluate(_engageT));
@@ -356,9 +377,9 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        private void DriveShatter()
+        private void DriveShatter(float dt)
         {
-            float step = shatterDuration > 0f ? Time.deltaTime / shatterDuration : 1f;
+            float step = shatterDuration > 0f ? dt / shatterDuration : 1f;
             _shatterT = Mathf.Clamp01(_shatterT + step);
 
             float t = shatterCurve.Evaluate(_shatterT);

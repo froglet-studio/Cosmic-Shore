@@ -337,7 +337,7 @@ namespace CosmicShore.UI
                 // (PrismTrailBuilder.PollArenaReady): every announced build executed, every streamed
                 // lay drained, AND every laid prism fully grown — the whole structure exists at full
                 // scale before the player gets past the connecting screen. Nothing lays or blooms in
-                // view during play. SetLoadGateHolding lets PrismScaleManager boost grow-in stepping
+                // view during play. SetLoadGateHolding lets Prism boost creation-queue draining
                 // while the screen is covered (gameplay slicing untouched).
                 if (connectingPanel != null)
                 {

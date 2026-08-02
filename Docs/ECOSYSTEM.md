@@ -1484,11 +1484,14 @@ consume it, and nothing ever ages it out. A prepopulated garden slowly weathers 
 whatever the food web makes of it — which is the point.
 
 **Phase thresholds must ride the baseline.** The phase ladder reads TOTAL `LiveVolume`
-(plus the count backstop), so a config that prepopulates ~950k volume of structure must
-author `PhaseThresholds` above that baseline or the cell boots straight into Frenzy. The
-Yggdra config authors the Blob ladder's deltas on top of the measured baseline
-(~69.1k prisms / ~950.8k volume): Restless at 962k / 958.8k, Frenzy at 1,008.4k / 998.8k,
-counts 69.8k/69.6k/72.7k/72.1k. As grazing wears the garden down the cell relaxes deeper
+(plus the count backstop), so a config that prepopulates hundreds of thousands of volume
+must author `PhaseThresholds` above that baseline or the cell boots straight into Frenzy.
+Each of the freestyle six authors the Blob ladder's deltas (+700/+500/+3600/+3000 count,
++11.2k/+8k/+57.6k/+48k volume) on top of its own measured baseline (Tools > Cosmic Shore >
+Measure Cell Environment Baselines). Re-baselined 2026-08-02 post clock-material migration
+(volume is final at spawn now) — e.g. Yggdra measures 34,340 prisms / 541,156 volume →
+Restless at 552,356 / 549,156, Frenzy at 598,756 / 589,156, counts
+35,040/34,840/37,940/37,340. As grazing wears the garden down the cell relaxes deeper
 into Calm — an emergent "aging" of the biome with no clock anywhere.
 
 **The Yggdra cell** (`_SO_Assets/Cell Configs/Yggdra Cell/Yggdra Cell Config.asset`) is

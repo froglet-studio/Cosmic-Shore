@@ -25,7 +25,7 @@ namespace CosmicShore.Gameplay
     /// full physics collider.
     /// </summary>
     [DisallowMultipleComponent]
-    public class PrismOctahedronShield : MonoBehaviour
+    public class PrismOctahedronShield : MonoBehaviour, IPrismShieldMorphTicker
     {
         [Header("Collider Sources")]
         [Tooltip("The authored BoxCollider that defines the unshielded shape. Its center/size drive the octahedron geometry.")]
@@ -358,6 +358,8 @@ namespace CosmicShore.Gameplay
 
             return _isEngaging || _isShattering;
         }
+
+        bool IPrismShieldMorphTicker.Tick(float dt) => Tick(dt);
 
         private void DriveEngage(float dt)
         {

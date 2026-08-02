@@ -179,8 +179,10 @@ blocked for up to 5s). `AssembledFlora` orders its random-skip *before*
 | `UpdateShieldState(index, ...)` | `PrismStateManager` **only** | Shield flags for AOE + publishes/clears the shell view entry |
 | `UpdateShellTransform(index)` | `Prism.RefreshVolumeCache` (growers) + `Prism.NotifyPositionChanged` (movers) | Re-capture a shielded slot's world shell pose; O(1) single-byte no-op for the unshielded majority |
 | `CollectShellContacts(probes, count, hits)` | `PrismShellContactManager` **only** | Shell-contact tier: one synchronous Burst pass testing every shield-flagged slot's analytic shell (octahedron / stella two-tet union, exact) against the frame's probe set |
-| `GetRegisteredPrism(index)` | `PrismShellContactManager` (same-frame resolve) | Managed back-reference for a query-result slot — same parallel-array resolve `ProcessExplosionFrame` uses |
-| `ProcessExplosionFrame(center, radius, blastOrigin, ...)` | `ExplosionImpactor` **only** | Batch AOE damage (Burst). `center`/`radius` are the frame's blast **wavefront** — the spherical explosion passes its stationary center, the conic explosion passes a different, forward-traveling sphere each frame (riding the growing cone's leading base plane). `blastOrigin` is the fixed emission point (cone apex / sphere center) every impact vector radiates from; the job emits `AOEHit {index, unit direction}` pairs, normalizing in-job via `math.rsqrt` so the main-thread damage pass never pays a per-hit managed sqrt |
+| `GetRegisteredPrism(index)` | `PrismShellContactManager` (same-frame resolve) | Managed back-reference for a query-result slot — same parallel-array resolve the explosion path uses |
+| `ProcessExplosionFrame(center, radius, blastOrigin, …, alreadyHit, pending)` | `ExplosionImpactor` **only** | Batch AOE damage for the **spherical** explosion (Burst). `center` is stationary and `radius` grows, so each frame's query volume strictly CONTAINS the previous frame's. `blastOrigin` is the emission point every impact vector radiates from; the job emits `AOEHit {index, unit direction}` pairs, normalizing in-job via `math.rsqrt` so the main-thread damage pass never pays a per-hit managed sqrt |
+| `ProcessExplosionConeFrame(apex, axis, sliceMin, sliceMax, tanHalfAngle, …)` | `ExplosionImpactor` **only** | Batch AOE damage for the **conic** explosion (Burst, `AOEConicSweepQueryJob`). An EXACT test against the rendered cone over the axial slab `[sliceMin, sliceMax]` it newly covers this frame; successive slabs tile the swept cone, so coverage is frame-rate independent and never reaches past the visible tip. `tanHalfAngle` = baseRadius/height, invariant as the self-similar cone grows. The apex is both cone origin and blast origin |
+| `DrainPendingExplosionDamage(pending, …)` | `ExplosionImpactor` **only** | Resolves budget-deferred damage without a new query. Called after the visual ends so a blast dense enough to exceed the per-frame budget still damages everything it enclosed |
 | `SetCellBinding(index, cellId, envMass, domain)` | `Cell.AddBlock` **only** | Bind a slot into a cell's summation view |
 | `ClearCellBinding(index, cellId)` | `Cell.RemoveBlock` **only** | Release a slot from the owning cell's summation view (no-op for non-owners) |
 | `ClearAllCellBindings(cellId)` | `Cell.Initialize` / `Cell.ResetCell` **only** | Bulk-release a cell's summation-view bindings (packed counterpart of the old massTracked.Clear) |
@@ -188,8 +190,9 @@ blocked for up to 5s). `AssembledFlora` orders its random-skip *before*
 | `SumCellVolumes(cellId, centre, nucleusRadiusSqr, results)` | Tests / benchmarks (sync reference path) | One synchronous `.Run()` pass producing the cell's per-domain volume / env-volume / nucleus-env-volume sums + totals |
 | `TryScheduleCellVolumeSum(cellId, centre, nucleusRadiusSqr, results, out handle)` | `Cell.EnsureVolumeFresh` **only** | The production path: snapshots `_spatial`+`_cellData` (one per-frame-shared memcpy) and `Schedule()`s the same job to a worker thread; the caller harvests with `IsCompleted` on a later read and must keep `results` quiescent until then. Result-equivalent to the sync path (pinned by an edit-mode test) |
 
-All methods are **main-thread only**. The Burst job inside
-`ProcessExplosionFrame` is scheduled and completed synchronously.
+All methods are **main-thread only**. The Burst jobs inside
+`ProcessExplosionFrame` and `ProcessExplosionConeFrame` are scheduled and
+completed synchronously.
 
 `QuerySphere` results are an unordered **snapshot**: the caller's own side
 effects (consume, predate, steal/convert) can destroy entries mid-iteration,
@@ -286,9 +289,10 @@ at the editor:
   quo). Promoting `ProjectileImpactor` to a probe owner is mechanical
   (register on `Projectile.OnEnable`/`OnDisable`, which already exist) once
   the feel is wanted.
-- **The AOE tier ignores shells**: `ProcessExplosionFrame` still tests the
-  stored point against the sphere, so explosions and the shell tier disagree
-  about where a shielded prism's surface is. Point the AOE hit test at
+- **The AOE tier ignores shells**: both explosion entry points test the stored
+  POINT against their query volume (`ProcessExplosionFrame` a sphere,
+  `ProcessExplosionConeFrame` a cone slab), so explosions and the shell tier
+  disagree about where a shielded prism's surface is. Point the AOE hit test at
   `ShieldShellMath` when tier consistency matters.
 - **`AOEDangerHemisphereBlocks.MakeDangerousAsync`** writes
   `prismProperties.IsShielded = true` directly (no `ActivateShield()`): a
@@ -339,6 +343,41 @@ world-space index cannot express. The rule is that **world-space occupancy** —
 only this index. `SchwarzPAssembler.GetGrowthInfo` shows the pattern: frame
 registry for its own lattice, `TryReserve` for the world.
 
+## The AOE damage budget — bounds COST, never COVERAGE
+
+`MAX_NEW_HITS_PER_FRAME` (48) caps how many prisms one explosion may **damage**
+per frame, because destroying prisms is the expensive half (2000 in one frame
+measured 426 ms). It is a throughput limit, and it must never turn into a
+coverage limit. Two rules keep that true:
+
+1. **Over-budget hits are deferred, not dropped.** They are claimed into the
+   explosion's `alreadyHit` set *and* pushed onto its `Queue<AOEHit>` backlog
+   (`ExplosionImpactor._batchPending`), which drains FIFO at the top of every
+   later frame and — via `DrainPendingExplosionDamage` — past the end of the
+   visual. A prism's fate is decided by whether the blast **contained** it,
+   never by how long the VFX happened to run.
+2. **The budget is spent only on a real `Prism.Damage` call.** Dead slots,
+   super-shield blocks and same-domain shield activations resolve for free
+   (still claimed in `alreadyHit`), so friendly mass sharing a blast can no
+   longer starve enemy mass out of the budget.
+
+> **Why this matters — the bug it fixed.** The original contract skipped
+> over-budget prisms *without* claiming them, on the comment "the Burst job will
+> re-find these prisms next frame". That holds only while the query volume is
+> **nested** frame-to-frame. It is true for the spherical explosion (stationary
+> centre, growing radius) and **false for the conic explosion**, whose volume
+> *translates*: nesting would need `MaxScale >= 2 * height` (4800 for the
+> Dolphin, whose actual range is 400–1600), so the slab advanced past every
+> deferred prism and never returned. Those prisms sat inside the cone the player
+> saw and took zero damage. **Any new query volume that translates rather than
+> grows must pass a backlog queue.**
+
+Residual, by design: a blast containing more prisms than `48 × frames` keeps
+damaging for extra frames after its visual ends (≈ 0.06 s for 8k prisms at
+60 fps, seconds at the extremes). That is the deliberate trade — latency, not
+lost coverage. The lever for shortening it is the per-prism destruction cost
+(`Prism.Damage` → `Explode` VFX), not the budget.
+
 ## Known gaps (intentional, tracked)
 
 - `UpdateVolume` has **no callers**: a grown prism keeps its spawn-time volume
@@ -356,6 +395,22 @@ registry for its own lattice, `TryReserve` for the world.
   the latter excluded from this view anyway) crosses a cell membrane. Same
   behavior the old `Prism.RegisterWithCell` had; revisit only if movers start
   crossing cells at scale.
+- The conic AOE tier is a **one-pass sweep over a mutating population**: `sweptTo`
+  advances monotonically, so a depth band is queried exactly once. A prism that
+  spawns into — or moves into — a band the cone already passed is never tested.
+  (The spherical tier re-tests its whole ball each frame and does catch these.)
+  Deliberate: re-querying the full cone every frame costs an emitted hit +
+  `alreadyHit` probe for every prism in it, every frame, and the window is one
+  blast long. Revisit if mass starts appearing inside live blasts at scale.
+- The explosion backlog is the **one sanctioned holder of registry indices across
+  frames**. It is safe only because `PendingExplosionHit` also captures
+  `_slotGeneration[index]` (bumped by every `Register`) and the drain drops any
+  entry whose stamp no longer matches. Any future consumer that outlives the frame
+  needs the same guard — the raw index is not a stable handle, because the free
+  list recycles slots LIFO. Note an object reference is **not** sufficient here:
+  prisms are pooled, so the same instance can re-enter the same slot for a new
+  life, and a Unity-destroyed reference compares fake-null, which would disable
+  the check in precisely the case it exists for. Compare generations, not refs.
 - `Boid.NewBlock` mound blocks bypass `Prism.Initialize` and therefore never
   register (no AOE, no occupancy, no neighborhood visibility) — mound
   mate-finding compensates with a Mound-layer collider probe (see "What NOT to

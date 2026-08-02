@@ -182,8 +182,8 @@ namespace CosmicShore.Gameplay
         static int s_pendingArenaBuilds;
 
         // Load-gate session state: set while MiniGameHUD holds the connecting screen on this
-        // gate. Read by PrismScaleManager (grow-in stepping boost) and Prism (creation-queue
-        // boost) so the arena finishes materializing behind the covered screen.
+        // gate. Read by Prism (creation-queue boost) and EnvironmentLoadVeil so the arena
+        // finishes materializing behind the covered screen.
         static bool s_loadGateHolding;
         static float s_loadGateStartTime;
         static float s_allClearSince = -1f;
@@ -228,7 +228,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// True while the loading gate is holding the connecting screen on this builder.
-        /// PrismScaleManager boosts grow-in stepping while this is set — the screen is covered,
+        /// Prism boosts creation-queue draining while this is set — the screen is covered,
         /// so frames are free to settle the arena cohort at full tempo.
         /// </summary>
         public static bool IsLoadGateHolding => s_loadGateHolding;

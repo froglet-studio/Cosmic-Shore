@@ -12,6 +12,14 @@ post PR #573 merge).
 are ordered by value-for-cost. After every fix, run the §5 verification
 protocol and update this doc (status + measured numbers).
 
+**Prism animation work has its own locked law:** `Docs/PRISM_ANIMATION.md` — no
+prism may need multiframe CPU updates to animate (one stamp → GPU clock → one
+scheduled end swap; gameplay state final at start). The CPU animation managers
+(`PrismScaleManager` / `MaterialStateManager` / `AdaptiveAnimationManager` and
+`PrismEffectsManager`'s animation passes) were DELETED in the D2 pass
+(2026-08-02) — historical task entries below that reference them describe a
+retired architecture; do not resurrect a per-frame pass to "optimize" anything.
+
 ---
 
 ## 0. SESSION HANDOFF (2026-07-15) — next session starts here
@@ -154,6 +162,19 @@ per-capture analyses; `Docs/SPATIAL_INDEX.md` documents the summation view
 - DiagnosticsHUD "Frame Time" is wall clock (CPU + GPU/present wait +
   editor loop) — the profiler's CPU number will always read lower; use the
   HUD's busy-CPU/GPU split + bound verdict to pick the next lever.
+- `List.Remove(this)` on a static enabled-instance registry is an O(n)
+  UnityEngine.Object-equality scan, and a pool MISS pays it too: the
+  create-then-deactivate cycle runs `OnDisable` for an instance that was never
+  added, scanning the WHOLE registry for nothing. Under a mass burst this was
+  1,863 ms of one frame (2,408 misses × ~50k live effects, 2026-08-02).
+  Registries with no order contract use stored-index swap-remove, O(1).
+- When the GPU owns an animation, the GameObject CARRIER becomes the cost:
+  a pooled effect object whose only jobs are one stamp and holding a pool
+  slot charges Instantiate + registry churn + a timer entry per death,
+  orders of magnitude above the entity work it wraps. Batch-instantiate
+  entities from the prototype instead (`PrismDebris` pattern: queue → one
+  `em.Instantiate(prototype, N)` per frame → sweep-based batch destroy) and
+  keep the pooled object only as the no-ECS fallback.
 
 ---
 
@@ -778,6 +799,7 @@ fix spreads or de-allocates the same work.
 | `481a7ad8` | Domain-volume gauge: colors on sample cadence, push gated on real change (was 1.02 ms/frame flat) |
 | `fb5e6643` | Cell volume recompute is one Burst `CellVolumeSumJob` over the index's new packed summation view (`PrismCellData`); managed 8000-prism slice deleted (was a ~10 ms reader-attributed spike billed to `DomainVolumeIndicator.Update`); `Cell.VolumeSum` + `DomainVolumeIndicator.Sample`/`.Push` markers (closes TODO C2) |
 | `71b51a28` | Collider-LOD hysteresis band (`lodExitRadiusMultiplier`, kills moving-focus boundary flapping); drain budget charged per re-validated entry (was unbounded transform reads on churny queues); `LOD.Sweep`/`LOD.Drain` markers; LOD tick de-phased half an interval from the volume recompute |
+| `f0ddfc21` | Batched pure-entity debris: prism-death explosion VFX spawn as ONE `em.Instantiate(prototype, N)` batch per frame (`PrismDebris` + `PrismRenderService.SpawnExplosionDebrisBatch`), retire via time-ordered sweep into ONE batched destroy — no GameObject/pool/per-effect timer per death, full 5s duration always. Root cause it kills: a lifted-throttle 30³ blast put 2,408 deaths in one frame, all pool misses, `PrismExplosion.OnDisable` alone 1,863 ms (its `EnabledInstances` `List.Remove` O(n) scan — now O(1) swap-remove on both effect classes for the surviving pooled uses). `PrismDebris.Drain`/`.Sweep` markers. Remainder (implosion port, `AOE.ResolveDamage` 0.43 ms/kill self + per-kill `PrismEventData` alloc): `Docs/PRISM_CLOCK_FOLLOWUP_PROMPTS.md` Prompt 9 |
 
 ---
 

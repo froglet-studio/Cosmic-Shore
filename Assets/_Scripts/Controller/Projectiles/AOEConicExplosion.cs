@@ -51,6 +51,9 @@ namespace CosmicShore.Gameplay
             transform.localRotation = Quaternion.Euler(-90f, 0f, 0f);
             transform.localPosition = new Vector3(0f, 0f, 0.5f);
 
+            _visualComplete = false;
+            if (_sphereCollider) _sphereCollider.enabled = true;
+
             // create CTS for explosion
             explosionCts = new CancellationTokenSource();
         }
@@ -81,46 +84,72 @@ namespace CosmicShore.Gameplay
                     PlayerLoopTiming.Update,
                     ct);
 
-                if (TryGetComponent<MeshRenderer>(out var meshRenderer))
-                    meshRenderer.material = Material;
+                if (meshRenderer) meshRenderer.material = Material;
 
                 float elapsed = 0f;
 
-                var sphereCol = GetComponent<SphereCollider>();
                 var containerTransform = coneContainer.transform;
                 float maxScaleMag = MaxScaleVector.magnitude; // invariant for this explosion - hoist out of the per-frame loop
+
+                // The cone is self-similar as it grows, so its half-angle is fixed:
+                // base radius (MaxScale/2) over height. One value for the whole blast.
+                float tanHalfAngle = height > 0f ? (MaxScale * 0.5f) / height : 0f;
+#if DEVELOPMENT_BUILD || UNITY_EDITOR
+                // A degenerate half-angle renders a cone that damages nothing - the
+                // exact failure mode this path was rewritten to eliminate, so say so
+                // rather than fail silently.
+                if (tanHalfAngle <= 0f)
+                    Debug.LogWarning(
+                        $"[AOEConicExplosion] Degenerate cone (MaxScale={MaxScale}, height={height}) " +
+                        "- the blast will render but damage nothing.", this);
+#endif
+
+                // Axial distance already swept. Each frame damages the slab between
+                // this and the new cone height, so successive slabs tile the swept
+                // cone EXACTLY - no coverage gaps at any frame rate, and never past
+                // the visible tip.
+                float sweptTo = 0f;
 
                 while (elapsed < ExplosionDuration)
                 {
                     ct.ThrowIfCancellationRequested();
 
                     elapsed += Time.deltaTime;
-                    float t = elapsed / ExplosionDuration;
+                    // Clamp before easing: elapsed overshoots ExplosionDuration on the
+                    // final iteration, and sin() past 90 degrees DECREASES - so an
+                    // unclamped t both shrinks the cone on its last frame and leaves a
+                    // tip shell that no slab ever reaches.
+                    float t = Mathf.Min(elapsed / ExplosionDuration, 1f);
                     float lerp = Mathf.Sin(t * PI_OVER_TWO);
 
                     // Scale cone
                     containerTransform.localScale =
                         Vector3.Lerp(Vector3.zero, MaxScaleVector, lerp);
 
-                    // Parametric coupling: the damage sphere IS the rendered cone's
-                    // leading cross-section - centered on the growing cone's base plane
-                    // (container z = current height), radius = half the current base
-                    // width (container x). Growth and translation both derive from the
-                    // same container scale that shapes the mesh, so a sphere sweeping
-                    // this path covers exactly the conic volume the player sees, and
+                    // Parametric coupling: the damage volume IS the rendered cone.
+                    // Container z is the current height and container x the current
+                    // base width, both driving the same mesh the player sees, so
                     // editing MaxScale or height moves visuals and damage together.
+                    //
+                    // This used to be a single ball per frame riding the leading base
+                    // plane. Those balls are tangent to the cone - their envelope
+                    // half-angle asin(k) beats the cone's atan(k) by only 0.37% at the
+                    // Dolphin's min charge (k = 1/12) - so discrete frames left a
+                    // scalloped shell along the mantle and a never-sampled plug at the
+                    // muzzle, while the ball simultaneously over-reached a hemisphere
+                    // past the visible tip. The slab is exact on both counts.
                     Vector3 scale = containerTransform.localScale;
-                    float sphereWorldRadius = scale.x * 0.5f;
-                    Vector3 sphereWorldCenter =
-                        containerTransform.position + containerTransform.forward * scale.z;
+                    float coneHeight = scale.z;
 
                     // Blast origin = the cone APEX (container origin, the spawn
-                    // point). The wavefront sphere travels; the impact vectors all
-                    // radiate from the apex at the blast-wave speed, so every
-                    // struck prism flies outward with the expanding blast.
-                    bool shouldContinue = impactor?.ProcessBatchFrame(
-                        sphereWorldCenter, sphereWorldRadius, containerTransform.position,
+                    // point): impact vectors radiate from it at the blast-wave speed,
+                    // so every struck prism flies outward with the expanding blast.
+                    bool shouldContinue = impactor?.ProcessBatchConeFrame(
+                        containerTransform.position, containerTransform.forward,
+                        sweptTo, coneHeight, tanHalfAngle,
                         speed, Inertia) ?? true;
+
+                    sweptTo = Mathf.Max(sweptTo, coneHeight);
 
                     if (!shouldContinue)
                     {
@@ -137,8 +166,8 @@ namespace CosmicShore.Gameplay
                     // its transform's LARGEST lossy axis - max(x, z) here - so divide
                     // it back out; the historical x/(2z) form assumed z >= x and lost
                     // the coupling whenever the base outgrew the height.
-                    if (sphereCol)
-                        sphereCol.radius =
+                    if (_sphereCollider)
+                        _sphereCollider.radius =
                             scale.x / (2f * Mathf.Max(Mathf.Max(scale.x, scale.z), 0.01f));
 
                     // Opacity fade
@@ -151,6 +180,26 @@ namespace CosmicShore.Gameplay
 
                     Material.SetFloat("_Opacity", opacity);
 
+                    await UniTask.Yield(PlayerLoopTiming.Update, ct);
+                }
+
+                // A cone dense enough to exceed the per-frame budget still owes work to
+                // everything it enclosed. Keep draining that backlog past the end of the
+                // visual - a prism's fate is decided by whether the blast CONTAINED it,
+                // never by how long the VFX happened to run.
+                //
+                // The blast is over as far as the world is concerned, so retire it
+                // first: hide the mesh AND disable the trigger. The trigger still holds
+                // vessel pairs live (only TrailBlocks is excluded), so leaving it
+                // enabled would park an invisible, full-size vessel hitbox here for the
+                // whole drain.
+                _visualComplete = true;
+                if (meshRenderer) meshRenderer.enabled = false;
+                if (_sphereCollider) _sphereCollider.enabled = false;
+                while (impactor != null && impactor.HasPendingBatchWork)
+                {
+                    ct.ThrowIfCancellationRequested();
+                    impactor.DrainPendingBatchFrame(speed, Inertia);
                     await UniTask.Yield(PlayerLoopTiming.Update, ct);
                 }
 
@@ -170,6 +219,16 @@ namespace CosmicShore.Gameplay
                 // fire OnTriggerEnter for every overlapping prism after the turn
                 // ended. It is restored lazily on the next run or discarded with the
                 // GameObject on reset.
+                //
+                // Exception: once the visual is done we are only draining bookkeeping,
+                // and the frozen-cone reasoning no longer applies - the mesh is hidden
+                // and the trigger is off. Leaving it would strand the container, so
+                // tear it down as the normal completion path would.
+                if (_visualComplete)
+                {
+                    DestroyContainer();
+                    if (this) Destroy(gameObject);
+                }
             }
             catch (Exception e)
             {

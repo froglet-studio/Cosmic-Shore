@@ -77,9 +77,6 @@ namespace CosmicShore.Gameplay
         CancellationTokenSource cts;
         
         bool     _dangerMode;
-        Material _dangerMaterial;
-        float    _dangerBlendSeconds; 
-        bool     _dangerAppend;  
 
         // Properties
         /// <summary>The prism type this vessel lays (read by the painting toy's capture/restore).</summary>
@@ -271,15 +268,13 @@ namespace CosmicShore.Gameplay
 
             if (_dangerMode)
             {
+                // The flag is the whole job: Prism.Initialize sees IsDangerous and runs
+                // MakeDangerous() through the real pipeline — per-domain theme danger
+                // material + the one color-transition engine (clock-material or legacy;
+                // Docs/PRISM_ANIMATION.md). The former direct blend/sharedMaterial write
+                // here cloned materials, fought that pipeline, and was invisible on the
+                // instanced render path (disabled MeshRenderer).
                 try { prism.prismProperties.IsDangerous = true; } catch { /* ignore */ }
-
-                if (_dangerMaterial && prism.TryGetComponent<Renderer>(out var rend))
-                {
-                    if (_dangerBlendSeconds > 0f)
-                        MaterialBlendUtility.BeginBlend(rend, _dangerMaterial, _dangerBlendSeconds, _dangerAppend);
-                    else
-                        rend.sharedMaterial = _dangerMaterial;
-                }
 
                 OnDangerBlockCreated?.Invoke(vesselStatus.PlayerName);
             }
@@ -309,22 +304,20 @@ namespace CosmicShore.Gameplay
             return null;
         }
         
+        /// <param name="dangerMat">LEGACY — ignored. The danger paint comes from the
+        /// state pipeline (per-domain theme danger material via IsDangerous →
+        /// Prism.Initialize → MakeDangerous), never a direct renderer write
+        /// (Docs/PRISM_ANIMATION.md §3.8). Parameter kept for caller compatibility.</param>
         public void EnableDangerMode(Material dangerMat, Vector3 scaleMult, float lerpSeconds = 0f,
             float blendSeconds = 0f, bool append = true)
         {
-            _dangerMode         = true;
-            _dangerMaterial     = dangerMat;
-            _dangerBlendSeconds = blendSeconds;
-            _dangerAppend       = append;
+            _dangerMode = true;
             LerpScaleMultipliers(scaleMult, lerpSeconds);
         }
 
         public void DisableDangerMode(float lerpSeconds = 0f)
         {
-            _dangerMode         = false;
-            _dangerMaterial     = null;
-            _dangerBlendSeconds = 0f;
-            _dangerAppend       = true;
+            _dangerMode = false;
             LerpScaleMultipliers(Vector3.one, lerpSeconds);
         }
 

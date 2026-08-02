@@ -22,7 +22,7 @@ namespace CosmicShore.Gameplay
         [Header("Explosion Settings")]
         [SerializeField] protected float ExplosionDuration = 2f;
         [SerializeField] protected float ExplosionDelay = 0.2f;
-        [FormerlySerializedAs("renderer")] [SerializeField] MeshRenderer meshRenderer;
+        [FormerlySerializedAs("renderer")] [SerializeField] protected MeshRenderer meshRenderer;
 
         protected Vector3 MaxScaleVector;
         protected float Inertia = 1;
@@ -36,12 +36,23 @@ namespace CosmicShore.Gameplay
         public bool AnonymousExplosion { get; protected set; }
         public float MaxScale { get; protected set; } = 200f;
 
+        /// <summary>The visual wavefront's full-expansion time (authored on the prefab,
+        /// or the per-instance <see cref="InitializeStruct.DurationOverride"/>).</summary>
+        public float Duration => ExplosionDuration;
+
         protected ExplosionImpactor _explosionImpactor;
         private float _colliderRadius = 0.5f; // Default sphere collider radius
         private MaterialPropertyBlock _mpb;
-        private SphereCollider _sphereCollider;
+        protected SphereCollider _sphereCollider;
         private LayerMask _originalExcludeLayers;
         private bool _prismExclusionApplied;
+
+        /// <summary>
+        /// Set once the growth animation finishes and only the deferred-damage drain
+        /// remains. A cancellation after that point should tear the explosion down
+        /// rather than leave the frozen-at-scale husk the mid-animation case wants.
+        /// </summary>
+        protected bool _visualComplete;
         private static int s_trailBlocksMask = -1;
         private static readonly int OpacityID = Shader.PropertyToID("_Opacity");
         private static readonly ProfilerMarker s_explodeFrame = new("AOE.ExplodeAsync.Frame");
@@ -115,10 +126,20 @@ namespace CosmicShore.Gameplay
             Domain = initStruct.OwnDomain;
             MaxScale = initStruct.MaxScale;
 
+            // Optional per-instance duration (0 = keep the authored value). Callers
+            // that want a fixed physical EXPANSION SPEED rather than a fixed sweep
+            // time pass radius/speed here — everything downstream (wavefront ease,
+            // batch damage radius, impact speed) already derives from this one field.
+            if (initStruct.DurationOverride > 0f)
+                ExplosionDuration = initStruct.DurationOverride;
+
             MaxScaleVector = new Vector3(MaxScale, MaxScale, MaxScale);
             speed = MaxScale / ExplosionDuration;
 
             Material = initStruct.OverrideMaterial;
+
+            _visualComplete = false;
+            if (_sphereCollider) _sphereCollider.enabled = true;
 
             explosionCts = new CancellationTokenSource();
 
@@ -264,6 +285,24 @@ namespace CosmicShore.Gameplay
                     await UniTask.Yield(PlayerLoopTiming.Update, ct);
                 }
 
+                // Work the blast owes but could not afford within its per-frame budget
+                // still has to land - a prism's fate is decided by whether the blast
+                // CONTAINED it, never by how long the VFX happened to run.
+                //
+                // Retire the blast from the world first: hide the mesh AND disable the
+                // trigger. The trigger keeps vessel pairs live (only TrailBlocks is
+                // excluded), so leaving it on would park an invisible, full-size vessel
+                // hitbox here for the whole drain.
+                _visualComplete = true;
+                if (meshRenderer) meshRenderer.enabled = false;
+                if (_sphereCollider) _sphereCollider.enabled = false;
+                while (impactor != null && impactor.HasPendingBatchWork)
+                {
+                    ct.ThrowIfCancellationRequested();
+                    impactor.DrainPendingBatchFrame(speed, Inertia);
+                    await UniTask.Yield(PlayerLoopTiming.Update, ct);
+                }
+
                 impactor?.EndBatchProcessing();
                 if (colliderDisabledForBatch) RestorePrismExclusion();
                 if (this) Destroy(gameObject);
@@ -278,6 +317,11 @@ namespace CosmicShore.Gameplay
                 // burst through the Physics fallback path after the turn ended.
                 // The exclusion is restored lazily at the start of the next
                 // ExplodeAsync run, or discarded with the GameObject on reset.
+                //
+                // Exception: once the visual is done we are only draining bookkeeping -
+                // the mesh is hidden and the trigger is off, so there is no frozen cone
+                // to preserve and leaving it would strand the GameObject.
+                if (_visualComplete && this) Destroy(gameObject);
             }
             catch (System.Exception e)
             {
@@ -300,6 +344,9 @@ namespace CosmicShore.Gameplay
             public float MaxScale;
             public Vector3 SpawnPosition;
             public Quaternion SpawnRotation;
+            /// <summary>Replaces the prefab's authored ExplosionDuration for this
+            /// instance; 0 (the default) keeps the authored value.</summary>
+            public float DurationOverride;
         }
     }
 }
