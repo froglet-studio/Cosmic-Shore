@@ -37,11 +37,11 @@ Falcon, Shrike) fail parts of this today — that is the backlog, not a pattern 
 | 1.2 | Prefab at `Assets/_Prefabs/Spacevessels/{Vessel}.prefab`, **named exactly after the enum member** — the auditors and `ElementalAbilityMapSO.LoadFor` key off the name | `VesselAbilityRowAuditor` flags unparseable names |
 | 1.3 | Prefab root: `NetworkObject` (+ `ClientNetworkTransform`, `NetcodeHooks`), `VesselController`, `VesselStatus` with serialized `vesselType` = the enum value (this IS the registration key — lookup scans `IVesselStatus.VesselType`, no dictionary) | `ServerPlayerVesselInitializer.SpawnVesselForPlayer` hard-errors without NetworkObject; `VesselPrefabContainer` warns+skips without VesselStatus |
 | 1.4 | The `[RequireComponent]` set on VesselStatus satisfied: `VesselPrismController`, `ResourceSystem`, `VesselTransformer`, `AIPilot`, `ElementalBarsController`, `VesselCameraCustomizer`, a **concrete** `VesselAnimation` subclass, `R_VesselActionHandler`, `VesselCustomization`, `R_ShipElementStatsHandler` | RequireComponent + lazy GetOrAdd accessors (self-heal, but unconfigured) |
-| 1.5 | `VesselStatus._shipInstance` → the VesselController; `vesselHUDController` → an `IVesselHUDController`; `_nearFieldSkimmer`/`_farFieldSkimmer` wired; `VesselController.gameData` → GameData.asset | runtime LogError/LogWarning ("ShipInstance is not referenced", "HUD will not function", "Ship properties will not be set") |
-| 1.6 | Registered in `Assets/_SO_Assets/Vessel Prefab Container.asset` (`_shipPrefabs`) — BOTH spawn paths resolve exclusively through it | runtime LogError "No Vessel Prefab found" — note `VesselSpawner` resolves Random/Any over ALL enum values, so a Random roll can land on an unregistered class and silently fail |
+| 1.5 | `VesselStatus._shipInstance` → the VesselController; `vesselHUDController` → an `IVesselHUDController`; `_nearFieldSkimmer`/`_farFieldSkimmer` wired; `VesselController.gameData` → `Runtime GameData.asset` (`Assets/_SO_Assets/Game Data/`) | runtime LogError/LogWarning ("ShipInstance is not referenced", "HUD will not function", "Ship properties will not be set") |
+| 1.6 | Registered in `Assets/_SO_Assets/Vessel Prefab Container.asset` (`_shipPrefabs`) — BOTH spawn paths resolve exclusively through it | runtime LogError "No Vessel Prefab found" — note `VesselSpawner` resolves Random/Any over ALL enum values, so a Random roll can land on an unregistered class and fail loudly (three LogErrors, no vessel, the orphaned player is destroyed) |
 | 1.7 | Listed in `Assets/DefaultNetworkPrefabs.asset` — clients cannot replicate an unregistered NetworkObject | nothing audits container↔network-list sync; manual |
 | 1.8 | `Assets/_SO_Assets/Camera/{Vessel}CameraSettingsSO.asset` assigned to `VesselCameraCustomizer.settings` | unguarded deref → NRE on local-player camera apply |
-| 1.9 | `SO_Vessel` meta asset (`SO_Class_{Name}.asset` in `Assets/_SO_Assets/Classes/`, menu `CosmicShore/Vessel/Vessel`) with Class, Name, `InitialResourceLevels` (feeds Arcade → `GameDataSO.ResourceCollection` → `ResourceSystem.InitializeElementLevels`), icons; added to the relevant `SO_Classlist_*` | absence = invisible in hangar/arcade; Arcade falls back to flat 0.5 levels |
+| 1.9 | `SO_Vessel` meta asset (`SO_Class_{Name}.asset` in `Assets/_SO_Assets/Classes/`, menu `CosmicShore/Vessel/Vessel`) with Class, Name, `InitialResourceLevels`, icons; added to the relevant `SO_Classlist_*`. NOTE: Arcade writes `InitialResourceLevels` into `GameDataSO.ResourceCollection`, but the downstream hop to `ResourceSystem.InitializeElementLevels` is currently **dead** — both `SetResourceLevels` call sites are commented out; the live element seed is `ResourceSystem.Start()` | absence = invisible in hangar/arcade selection |
 | 1.10 | `VesselCustomization._shipGeometries` populated; every hull MeshRenderer needs ≥2 material slots (`ShipHelper.ApplyShipMaterial` writes `materials[1]`; SkinnedMeshRenderer uses `materials[0]`) | LogError "Vessel geometries are not set"; IndexOutOfRange at theming |
 | 1.11 | Telemetry: a per-vessel `VesselTelemetry` subclass **on the prefab** with its `VesselStatEventSO` refs wired (Sparrow/Squirrel pattern). `VesselTelemetryBootstrapper` is the degraded stopgap (runtime AddComponent, null stat SOs, warns every spawn); a new subclass must also extend its VesselType switch | warning every spawn in degraded mode |
 
@@ -53,7 +53,8 @@ Swaps go through `ReInitializePair`/`MenuServerPlayerVesselInitializer.RequestSw
 domain from `NetDomain` before repaint, inherits pose + speed). A bespoke `Instantiate` leaves
 `[Inject]` fields null. Domain theming is automatic (`ShipHelper.SetShipProperties` at Initialize
 and on every NetDomain replication) — never hand-wire team materials, and never run theming
-before `VesselStatus.Player` is set (Domain silently falls back to Jade).
+before `VesselStatus.Player` is set (Domain LogErrors "No Player found to get domain!" and
+falls back to Jade — the wrong paint plus a console error).
 
 ---
 
@@ -113,7 +114,8 @@ mapping to satisfy the auditor** (BACKLOG.md, locked).
 
 ## 4. Element levels & level-5 upgrades
 
-- **`ResourceSystem`** (plain MonoBehaviour on every vessel) is the single elemental state home:
+- **`ResourceSystem`** (a non-networked MonoBehaviour, via `ElementalShipComponent` — levels
+  never replicate) is the single elemental state home on every vessel:
   `GetLevel(element) = floor(effective × 10)` ∈ **[-5, 15]**; level 5 = the all-petals-white
   flower. The one signal is the per-vessel C# event **`OnElementLevelChange`** (deduped integer
   transitions; NOT SOAP — vessel-internal). Subscribe idempotently, detach in OnDestroy.
@@ -134,10 +136,11 @@ mapping to satisfy the auditor** (BACKLOG.md, locked).
   `SetFaunaBuffModifier`). The **maintained-mechanism law**: nothing sustained may HOLD a level
   above 10 — `SustainedCeiling` + `RecoverBaseLevels` enforce it structurally; convert
   over-ceiling sustained gains into decaying transients, and never write base levels per tick
-  (the comeback system's original clobber bug). Upgrade design ground rules (FLEET_MAPS §2):
-  reuse existing primitives; regular shield only, never SuperShield; no timers/decay; gate in
-  the acting system's layer (explosion/collection), never `Prism.Damage`, never danger effects;
-  danger stays domain-blind.
+  (the comeback system's original clobber bug). Upgrade design ground rules (FLEET_MAPS §2–§3):
+  reuse existing primitives; regular shield only, never SuperShield; no timers/decay; gate
+  strictly in the acting system's layer — domain-sparing in the explosion/collection layer only,
+  never `Prism.Damage`, never `*ByDangerPrismEffectSO`. Danger stays domain-blind (CLAUDE.md's
+  locked danger-prism design).
 
 ## 5. The four-icon ability row
 
@@ -190,9 +193,11 @@ then assign the view to `ElementalBarsController.elementBars`. All look/feel liv
 fields. Petals are pure-white silhouettes multiply-tinted per `DistributePetalValues`
 (level [-5,15] round-robin over 5 petals → {fire, grey, white, blue, lime}) — **never
 hue-shift**, never author pre-coloured petal art. Event-driven only (`OnElementLevelChange`,
-re-seed on OnEnable); tweens `SetLink`ed and rest-snapped in OnDisable. Juice
-(`JuiceCrystalCollected`/`JuiceJoust`/`JuiceDriftStart`) routes from the HUD controller through
-`IVesselStatus.ElementalBarsController.ElementBars`.
+re-seed on OnEnable); tweens `SetLink`ed and rest-snapped in OnDisable. The view's juice API
+(`JuiceCrystalCollected`/`JuiceJoust`/`JuiceDriftStart`) and its designed access point
+(`ElementalBarsController.ElementBars`) currently have **zero callers** — an open hook, not
+shipped routing (the Squirrel HUD controller juices its own view's icons instead). Wire flower
+juice through `ElementBars` when a vessel wants it.
 
 ## 7. Hull morphs & vessel animation
 
@@ -228,10 +233,13 @@ re-seed on OnEnable); tweens `SetLink`ed and rest-snapped in OnDisable. Juice
 
 - **Shape**: a controller extending `VesselHUDController` on the **vessel prefab root**, wired
   into `VesselStatus.vesselHUDController`; a view extending the abstract `VesselHUDView` inside
-  the per-vessel HUD prefab variant (`Assets/_Prefabs/UI Elements/VesselHUD/{Vessel}HUDVariant.prefab`,
-  a variant of `VesselHUDPrefab.prefab` — root "ShipHUDPrefab", NO Canvas of its own), nested in
-  the vessel prefab under a `ShipHUDContainer` child that carries the ScreenSpaceOverlay Canvas,
-  instance starting **inactive**. New controllers go in `Assets/_Scripts/UI/Controller/` and
+  the per-vessel HUD prefab (`Assets/_Prefabs/UI Elements/VesselHUD/{Vessel}HUDVariant.prefab` —
+  Squirrel/Manta/Serpent are true variants of `VesselHUDPrefab.prefab` (root "ShipHUDPrefab");
+  Sparrow/Rhino/Dolphin are standalone prefabs with the same structure; none carries a Canvas of
+  its own), nested in the vessel prefab under a `ShipHUDContainer` child that carries the
+  ScreenSpaceOverlay Canvas. The instance is authored **active** — it starts hidden at runtime
+  because `VesselController.Initialize` calls `HideHUD()` (CanvasGroup fade to 0, then
+  SetActive(false)). New controllers go in `Assets/_Scripts/UI/Controller/` and
   views in `Assets/_Scripts/UI/View/` (Squirrel/Dolphin's controllers under
   `R_VesselActions/Data Containers/` are historical drift, not the pattern).
 - **`IVesselHUDView` is a trap**: an empty marker interface implemented by nothing —
@@ -248,8 +256,9 @@ re-seed on OnEnable); tweens `SetLink`ed and rest-snapped in OnDisable. Juice
   live components; Rhino's Unsubscribe-then-Subscribe exists because a re-init double-counted),
   OnEnable (gated) and OnDisable/OnDestroy. Gate everything on
   `IsInitializedAsAI || !IsLocalUser` — **the base class does not gate for you** — and
-  sender-filter shared SOAP channels (every vessel raises `boostChanged`; an unfiltered handler
-  lets a remote vessel pin your energy bar).
+  sender-filter shared SOAP channels (every vessel that wires `boostChanged` raises it — today
+  every Squirrel instance, **including remote ones**, per-frame via `DecayBoost` — so an
+  unfiltered handler lets a remote vessel pin your energy bar).
 - **Data discipline**: bind resources **by name** with serialized index as fallback; only bind
   meters whose writers raise the per-resource event; adopt displayed constants from the gameplay
   component (one authored number); per-shot objects get a static presentation event with
@@ -274,15 +283,18 @@ warning). Be exhaustive here; this is the contract's least-guarded clause.
   system. Multi-collider hulls are fine (0.5 s crystal latch dedupes).
 - **Skimmer**: nest `Assets/_Prefabs/Spacevessels/Components/Skimmer.prefab` (or
   `ForceFieldSkimmer Variant.prefab` for sword capsules) and **override the nested
-  SkimmerImpactor's container** with `.../SkimmerContainers/{Vessel}Skimmer...asset` — the base
+  SkimmerImpactor's container** with `.../SkimmerContainers/{Vessel}*SkimmerImpactorDataContainer.asset`
+  (Manta's is `MantaOvercharge…`, Rhino's `RhinoForceField…`) — the base
   prefab ships a NULL container (stale field names only), so an un-overridden nested skimmer
   NREs on first prism contact. Wire the skimmer into `VesselStatus._nearFieldSkimmer` /
   `_farFieldSkimmer` — `VesselController.Initialize` only initializes those two references; an
   unwired skimmer stack is permanently inert dead weight (current Dolphin/Sparrow state).
 - **Locked rules**: the mirrored vessel↔own-skimmer self-guards in both `AcceptImpactee`
   switches stay (the Rhino sword used to mute its own pilot); skimmer-vs-own-DOMAIN-prism is the
-  separate serialized `Skimmer.affectSelf` flag (true only when self-skim is the vessel's loop —
-  Squirrel's danger trail); danger-prism effect SOs never gate on domain; shell-tier
+  separate serialized `Skimmer.affectSelf` flag — **the C# default AND the base Skimmer.prefab
+  are both `true`**, and it ships true on Squirrel (danger-trail loop), Dolphin's wired skimmer,
+  and Rhino's sword; explicitly override it to 0 unless self-skim is the vessel's design (Manta,
+  Serpent do); danger-prism effect SOs never gate on domain; shell-tier
   cooperation (`ShellOwnsContact` suppression + probe registration) must survive any collider
   rearrangement.
 - **Joust**: vessels participating in Joust wire a `VesselExplosionBySkimmerEffectSO` in their
@@ -306,7 +318,9 @@ warning). Be exhaustive here; this is the contract's least-guarded clause.
   file:line, REPORTED = re-verify at fix time), and the sequenced plan; per-ability deep docs
   live beside the code in `Assets/_Scripts/Controller/Vessel/R_VesselActions/*.md`
   (`RHINO_SHIELD_SWIPE.md`, `RHINO_RAMP_BOOST.md`, `SQUIRREL_TUBE.md` are the exemplars).
-  `Docs/README.md`'s tree does NOT index the vessel docs — CLAUDE.md's Documentation Index does.
+  `Docs/README.md`'s tree does NOT index the vessel docs; CLAUDE.md's Documentation Index
+  carries the `ElementalAbilitySystem/` row (added alongside this skill) and CLAUDE.md cites the
+  per-ability docs in prose (Impact Effects §, Key Systems table).
 - **On shipping vessel work**, update in-branch: FLEET_MAPS §1 live table + §2 status (→
   "APPROVED + SHIPPED" with the shipped table, Squirrel-style) · ARCHITECTURE §7.2 fleet status
   · BACKLOG item → SHIPPED with deltas · **CLAUDE.md's fleet table** · the map asset's
@@ -322,14 +336,15 @@ warning). Be exhaustive here; this is the contract's least-guarded clause.
 ## 11. Fleet status snapshot
 
 Dated **2026-08-02** — this table goes stale; re-establish ground truth per SKILL.md §2 before
-trusting it. "Registered" = in Vessel Prefab Container + DefaultNetworkPrefabs.
+trusting it. "Registered" = in `Vessel Prefab Container.asset` (`DefaultNetworkPrefabs.asset`
+already lists all 11 prefabs).
 
 | Vessel | Registered | Map | Row icons | Morph shapes | Impact/skimmer | Notes |
 |---|---|---|---|---|---|---|
 | Squirrel | ✅ | 4/4 + 4 upgrades SHIPPED | ✅ compliant | ✅ (spliced FBX — re-export carefully) | ✅ reference | the reference vessel |
 | Sparrow | ✅ | 4/4 + 4 upgrades SHIPPED | ✅ row; no switcher (hints static, both glyph sets render); glyph art wrong | ✅ | skimmer containers all-empty; 2nd inline skimmer unwired | |
 | Manta | ✅ | 3/4 quantitative, 0 upgrades — **open slots** | 0 found (re-survey at vessel-prefab level) | ✅ (Manta meshes, also Termite/Falcon/Shrike) | ✅ | blocked on design |
-| Dolphin | ✅ | HEAD: 2/4, 0 upgrades — **open slots** (a full map ships on `claude/dolphin-energy-crystal-cooldown-zpvc07`, HUD row still unwired there) | 0 bound; wirer exists on that branch, never run | ❌ placeholder art — rig swap pending | ✅ containers; 2nd skimmer stack unwired | branch adds energy/cooldown/cone pass |
+| Dolphin | ✅ | HEAD: 2/4, 0 upgrades — **open slots**. The unmerged branch `claude/dolphin-energy-crystal-cooldown-zpvc07` ships a full 4/4 map + upgrades AND binds the four-icon row (`c26c2632`; its `DolphinHUDRowWirer` is an idempotent re-bind tool) | HEAD: 0 bound (branch: 4/4 bound) | ❌ placeholder art — rig swap pending | ✅ containers; 2nd skimmer stack unwired | branch adds energy/cooldown/cone pass |
 | Rhino | ✅ | 1/4, 0 upgrades — **open slots** | 4 icons exist (3 in vessel prefab), unbound | ❌ placeholder — rig swap pending | ✅ (sword variant) | bind once map approved |
 | Serpent | ✅ | 1/4, 0 upgrades — **open slots** | 0 bound; HUD root was centre-collapsed (fixed) | ✅ | "VacuumSkimmer" has no SkimmerImpactor/container — cannot vacuum | |
-| Urchin / Grizzly / Termite / Falcon / Shrike | ❌ | none | none | Urchin ❌ (rig pending) · Grizzly ❌ (no art) · Termite/Falcon/Shrike ✅ | none (nested base skimmer would NRE) | prefabs exist; registration unstarted; Falcon/Shrike also lack SO_Class + camera assets |
+| Urchin / Grizzly / Termite / Falcon / Shrike | ❌ | none | none | Urchin ❌ (rig pending) · Grizzly ❌ (no art) · Termite/Falcon/Shrike ✅ | none (nested base skimmer would NRE) | prefabs exist and are already in DefaultNetworkPrefabs (all 11 are — don't re-add); Vessel Prefab Container registration unstarted; NONE of the five has a `{Vessel}CameraSettingsSO.asset`; Falcon/Shrike additionally lack SO_Class assets |

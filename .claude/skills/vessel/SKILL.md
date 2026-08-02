@@ -8,10 +8,11 @@ description: Use for ANY work on a Cosmic Shore vessel class — creating or reg
 You are working on a **vessel** — one of the 11 classes that are the player-facing fundamental of
 Cosmic Shore. Every vessel satisfies one fleet-wide contract, and that contract has historically
 been **re-derived from scratch on every vessel branch**, at real cost: on the Dolphin elemental
-pass, three of four commits were corrections, each re-discovering a rule the fleet had already
-paid for once (asymmetric event bindings ×3, a permanently-latched init race, a gauge bound to a
-meter that never raises events, doc/asset drift within a single branch). This skill exists so
-that never happens again. Follow it exactly.
+pass, three of four commits were corrections, and the branch re-discovered rules the fleet had
+already paid for once — asymmetric event bindings (three separate instances), a
+permanently-latched init race, a gauge bound to a meter that never raises events, doc/asset
+drift within the branch itself. This skill exists so that never happens again. Follow it
+exactly.
 
 ## 1. The contract (what every vessel is)
 
@@ -104,8 +105,8 @@ applies to new abilities, new resources on the meter list, and anything that add
 ## 5. Audit, then hand back verification (you cannot run Unity; the human is the gate)
 
 - State which auditors to run and the expected result: **Audit Vessel Ability Rows**,
-  **Audit Vessel Elemental Morphs**, plus **Wire/Bake Elemental Petal Bars** and
-  **Plan Vessel Rig Swap** where relevant. Impact/skimmer wiring has **no auditor** — hand back
+  **Audit Vessel Elemental Morphs**, plus **Wire Elemental Petal Bars** (or **Bake Elemental
+  Petal Bars Into All Vessel HUDs**) and **Plan Vessel Rig Swap** where relevant. Impact/skimmer wiring has **no auditor** — hand back
   explicit play-mode checks for it (prism hit, crystal collect ×1, skim, no NREs).
 - Give numbered in-editor verification steps: scene, action, concrete observable, the SO knobs
   to tune, and an MPPM two-client step wherever replicated state (unlock bits, swaps) changed.
