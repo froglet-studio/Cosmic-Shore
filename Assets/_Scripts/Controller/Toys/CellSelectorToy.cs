@@ -49,6 +49,91 @@ namespace CosmicShore.Gameplay
 
         public void Configure(CellSelectorToyDefinitionSO definition) => _def = definition;
 
+        // ── The toy's own emblem: the world you are in, in miniature ─────────
+
+        protected override void OnInitialized() => AttachEmblem(new EmblemSource(this), 0f);
+
+        /// <summary>
+        /// The Cell Selector's root shows <b>the world you are in right now</b> - core only.
+        ///
+        /// <see cref="IEmblemSource.SatelliteCount"/> is 0 by construction, not by tuning: a
+        /// satellite here would be another world, and every world that is not already loaded costs
+        /// a full environment generation to picture. The core itself is free or it is nothing -
+        /// it reads the miniature the matrix already built, else the LIVE environment's cached
+        /// lays, else stays empty. At Menu_Main boot the cell is EnvironmentFree, so the emblem is
+        /// a small bare core: iconographically exact - you are in the empty one.
+        /// </summary>
+        sealed class EmblemSource : ToyEmblem.IEmblemSource
+        {
+            readonly CellSelectorToy _toy;
+            public EmblemSource(CellSelectorToy toy) => _toy = toy;
+
+            public int SatelliteCount => 0;
+
+            public bool TryBuildSlot(int slot, Transform holder, float radius, Material shared, out bool heavy)
+            {
+                heavy = true; // mesh assembly - give the streamer a clear frame after it
+                var cell = _toy.HostCell;
+                if (!cell || cell.IsSwappingConfig) return false;
+                if (!_toy.TryGetEmblemMiniature(cell.Config, out var miniature)) return false;
+
+                // NOT Own()ed: these meshes live in _miniatures and are freed by OnDestroy.
+                var go = _toy.AttachMiniature(holder, miniature, spinRate: 8f, bloom: false);
+                if (!go) return false;
+
+                // Every cached miniature is fitted to the STATION radius (one canonical size, so
+                // the emblem and the matrix share one mesh); the emblem wears it smaller.
+                go.transform.localScale = Vector3.one * (radius / Mathf.Max(0.01f, _toy._def.StationRadius));
+                return true;
+            }
+
+            public bool TryGetLiveKey(out object key)
+            {
+                key = null;
+                var cell = _toy.HostCell;
+                // Mid-swap the cell has no settled identity - returning false holds the current
+                // emblem until it does, instead of rebuilding against a half-changed world.
+                if (!cell || cell.IsSwappingConfig) return false;
+                key = cell.Config;
+                return true;
+            }
+
+            public bool TryGetLiveTint(out Color tint)
+            {
+                tint = default;
+                return false; // the model wears the world's real domain materials
+            }
+        }
+
+        /// <summary>
+        /// A miniature of <paramref name="config"/> WITHOUT ever generating an environment: the
+        /// matrix's cache first, else the live environment's already-generated lays. Anything else
+        /// returns false - <see cref="CellMiniatureBuilder.Build"/> would trigger a full ~34k-lay
+        /// generation, which is exactly the cost the whole EnvironmentFree boot exists to avoid.
+        /// </summary>
+        bool TryGetEmblemMiniature(CellConfigDataSO config, out CellMiniatureBuilder.Miniature miniature)
+        {
+            miniature = default;
+            if (!config || !_def) return false;
+
+            if (_miniatures.TryGetValue(config, out var cached) && cached.Mesh)
+            {
+                miniature = cached;
+                return true;
+            }
+
+            if (config.EnvironmentPrefab is not CellEnvironmentSpawnableBase env) return false;
+            if (env.CachedLays is not { Count: > 0 } lays) return false;
+
+            miniature = CellMiniatureBuilder.BuildFromLays(lays, _def.StationRadius, _def.ModelPointBudget,
+                _def.SignatureCoverage, config.name);
+            if (!miniature.IsValid) return false;
+
+            // Cached against the config, so a later matrix open reuses this one mesh.
+            _miniatures[config] = miniature;
+            return true;
+        }
+
         // ── Layout ───────────────────────────────────────────────────────────
 
         protected override int StationCount => _offered.Count;
@@ -262,51 +347,19 @@ namespace CosmicShore.Gameplay
             return built;
         }
 
-        void AttachMiniature(Transform host, CellMiniatureBuilder.Miniature miniature)
+        GameObject AttachMiniature(Transform host, CellMiniatureBuilder.Miniature miniature,
+            float spinRate = 12f, bool bloom = true)
         {
-            var go = new GameObject("ScaleModel");
-            go.transform.SetParent(host, false);
-
-            go.AddComponent<MeshFilter>().sharedMesh = miniature.Mesh;
-
-            // One material per domain submesh - the model wears the world's REAL domain
-            // composition, in the same prism materials the world itself is built from.
-            var materials = new Material[miniature.SubmeshDomains.Length];
-            for (int i = 0; i < materials.Length; i++)
-            {
-                var domain = miniature.SubmeshDomains[i];
-                var material = ToyFactory.DomainPrismMaterial(Context, domain);
-                materials[i] = material
-                    ? material
-                    : ToyFactory.AccentMaterial(ToyFactory.DomainAccentColor(Context, domain));
-            }
-
-            var renderer = go.AddComponent<MeshRenderer>();
-            renderer.sharedMaterials = materials;
-            renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-            renderer.receiveShadows = false;
+            var go = ToyFactory.AddMiniatureBody(host, miniature, Context, "ScaleModel");
+            if (!go) return null;
 
             // The world turns in place - a thing you can watch.
-            go.AddComponent<ToyIdleSpin>().Configure(Vector3.up, 12f);
+            go.AddComponent<ToyIdleSpin>().Configure(Vector3.up, spinRate);
 
-            // Continuity of existence: the model grows in rather than appearing. Zeroed here,
-            // before the first tick, so it can never render at full size for a frame first.
-            go.transform.localScale = Vector3.zero;
-            BloomModelIn(go.transform, 0.6f, this.GetCancellationTokenOnDestroy()).Forget();
-        }
-
-        static async UniTaskVoid BloomModelIn(Transform target, float seconds, CancellationToken ct)
-        {
-            float elapsed = 0f;
-            while (elapsed < seconds)
-            {
-                if (!target) return;
-                elapsed += Time.unscaledDeltaTime;
-                float t = Mathf.Clamp01(elapsed / seconds);
-                target.localScale = Vector3.one * (t * t * (3f - 2f * t));
-                await UniTask.Yield(PlayerLoopTiming.Update, ct);
-            }
-            if (target) target.localScale = Vector3.one;
+            // Continuity of existence: the model grows in rather than appearing. Zeroed inside the
+            // helper before the first tick, so it can never render at full size for a frame first.
+            if (bloom) ToyFactory.ScaleInFromZero(go.transform, 0.6f).Forget();
+            return go;
         }
     }
 }

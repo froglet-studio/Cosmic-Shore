@@ -30,6 +30,97 @@ namespace CosmicShore.Gameplay
 
         public void Configure(PaintingToyDefinitionSO definition) => _def = definition;
 
+        // ── The toy's own emblem: the gallery in four canvases ───────────────
+
+        int[] _emblemOrder;
+
+        protected override void OnInitialized()
+        {
+            ResolveGalleryList();
+            AttachEmblem(new EmblemSource(this), 6f);
+        }
+
+        /// <summary>
+        /// The gallery in one glyph: the CORE is the on-ramp painting you have taken furthest,
+        /// the SATELLITES are the rest of the on-ramp - four real canvases in signature strokes,
+        /// each in its own domain colours. This is the only multi-coloured emblem in the toybox,
+        /// which is itself an identity channel.
+        ///
+        /// Deliberately restricted to the four on-ramp entries: the late gallery (Phoenix's 260
+        /// strokes, Peacock's 236, Starry Night's 173) pays a real curl-noise generation on first
+        /// stroke access, and an icon is never a reason to pay it.
+        /// </summary>
+        sealed class EmblemSource : ToyEmblem.IEmblemSource
+        {
+            readonly PaintingGalleryToy _toy;
+            public EmblemSource(PaintingGalleryToy toy) => _toy = toy;
+
+            public int SatelliteCount => 3;
+
+            public bool TryBuildSlot(int slot, Transform holder, float radius, Material shared, out bool heavy)
+            {
+                // Slot 0 also forces the on-ramp's stroke generation (which the gallery pays
+                // anyway on first open - this is a prepay, not an addition).
+                heavy = slot == 0;
+
+                var painting = _toy.EmblemPainting(slot);
+                if (!painting) return false;
+
+                // Parents itself under the holder, brings its own turntable, and paints with the
+                // shared vertex-coloured line material - so it allocates nothing and ignores
+                // `shared`, keeping every stroke's own domain colour.
+                return MiniaturePaintingBuilder.TryBuild(holder, painting, radius, _toy.Context);
+            }
+
+            public bool TryGetLiveKey(out object key)
+            {
+                key = null;
+                return false; // the gallery's line-up doesn't change while the toy exists
+            }
+
+            public bool TryGetLiveTint(out Color tint)
+            {
+                tint = default;
+                return false; // per-stroke domain colours, never one tint
+            }
+        }
+
+        /// <summary>
+        /// Which on-ramp painting goes in which emblem slot. Core = the one with the most strokes
+        /// completed (ties to the earliest in ladder order); satellites = the others, in order.
+        /// </summary>
+        PaintingDefinitionSO EmblemPainting(int slot)
+        {
+            _emblemOrder ??= BuildEmblemOrder();
+            return slot >= 0 && slot < _emblemOrder.Length ? _gallery[_emblemOrder[slot]] : null;
+        }
+
+        int[] BuildEmblemOrder()
+        {
+            const int onRamp = 4;
+            int count = Mathf.Min(onRamp, _gallery.Count);
+            if (count <= 0) return System.Array.Empty<int>();
+
+            int best = 0, bestProgress = -1;
+            for (int i = 0; i < count; i++)
+            {
+                var painting = _gallery[i];
+                if (!painting) continue;
+                int total = painting.Strokes?.Count ?? 0;
+                int done = total > 0 ? PaintingProgressStore.GetStrokesCompleted(painting.PaintingId, total) : 0;
+                if (done <= bestProgress) continue;
+                bestProgress = done;
+                best = i;
+            }
+
+            var order = new int[count];
+            order[0] = best;
+            int next = 1;
+            for (int i = 0; i < count && next < count; i++)
+                if (i != best) order[next++] = i;
+            return order;
+        }
+
         // ── Layout ───────────────────────────────────────────────────────────
 
         protected override int StationCount => _gallery.Count;
@@ -55,19 +146,29 @@ namespace CosmicShore.Gameplay
 
         bool ResolveGallery()
         {
-            if (_gallery.Count > 0) return true; // resolved + packed on the first open
-
-            foreach (var painting in _def.ResolvePaintings())
-                if (painting) _gallery.Add(painting);
-
+            ResolveGalleryList();
             if (_gallery.Count == 0)
             {
                 CSDebug.LogWarning($"[PaintingGallery] '{DisplayName}' has no paintings.");
                 return false;
             }
 
-            PackAnchors();
+            if (_anchorPositions == null) PackAnchors();
             return true;
+        }
+
+        /// <summary>
+        /// Fill the gallery list once, at init. Hoisted out of <see cref="ResolveGallery"/> so
+        /// <c>ResolvePaintings()</c> is called EXACTLY once for the toy's life: with no authored
+        /// list it returns 16 freshly-created definition instances with cold stroke caches every
+        /// call, so a second call would silently double the gallery's generation cost and hand the
+        /// emblem different objects than the stations use.
+        /// </summary>
+        void ResolveGalleryList()
+        {
+            if (_gallery.Count > 0) return;
+            foreach (var painting in _def.ResolvePaintings())
+                if (painting) _gallery.Add(painting);
         }
 
         /// <summary>

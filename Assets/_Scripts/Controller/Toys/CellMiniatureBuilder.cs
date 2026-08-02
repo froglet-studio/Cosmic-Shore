@@ -67,6 +67,38 @@ namespace CosmicShore.Gameplay
             var samples = CollectSamples(prefab, Mathf.Max(16, pointBudget));
             if (samples.Count == 0) return default;
 
+            return Assemble(samples, radius, signatureCoverage, prefab.name);
+        }
+
+        /// <summary>
+        /// Build a model from lays a caller ALREADY has - the currently-loaded environment's
+        /// <see cref="CellEnvironmentSpawnableBase.CachedLays"/>, or a microscene's planned prisms.
+        ///
+        /// This entry point <b>cannot reach <see cref="SpawnableBase.GetTrailData"/></b>, and that
+        /// is the point: one generation is a full ~34k-lay pass, so anything that must never pay it
+        /// (a toy-root emblem built on the frame the toybox spawns) calls this instead of
+        /// <see cref="Build"/>. The restriction is enforced by the API, not by a comment.
+        /// </summary>
+        public static Miniature BuildFromLays(IReadOnlyList<PrismLay> lays, float radius,
+            int pointBudget, float signatureCoverage, string label)
+        {
+            if (lays == null || lays.Count == 0 || radius <= 0f) return default;
+
+            int budget = Mathf.Max(16, pointBudget);
+            int stride = Mathf.Max(1, lays.Count / budget);
+            var samples = new List<Sample>(Mathf.Min(lays.Count, budget) + 1);
+            for (int i = 0; i < lays.Count; i += stride)
+            {
+                var lay = lays[i];
+                samples.Add(new Sample(lay.Point.Position, lay.Point.Rotation, lay.Point.Scale, lay.Domain));
+            }
+
+            return Assemble(samples, radius, signatureCoverage, label);
+        }
+
+        /// <summary>The shared tail: signature filter → fit to radius → one mesh, submesh per domain.</summary>
+        static Miniature Assemble(List<Sample> samples, float radius, float signatureCoverage, string label)
+        {
             samples = KeepSignatureStructures(samples, signatureCoverage);
             if (samples.Count == 0) return default;
 
@@ -83,7 +115,7 @@ namespace CosmicShore.Gameplay
             // thumbnail size.
             float shardFloor = radius * 0.011f;
 
-            return BuildMesh(samples, bounds.center, fit, shardFloor, prefab.name);
+            return BuildMesh(samples, bounds.center, fit, shardFloor, label);
         }
 
         // ── Sampling ─────────────────────────────────────────────────────────

@@ -30,24 +30,112 @@ namespace CosmicShore.Gameplay
 
         public void Configure(LifeformMatrixToyDefinitionSO definition) => _def = definition;
 
+        static readonly Element[] Elements = { Element.Charge, Element.Mass, Element.Space, Element.Time };
+
         protected override void OnInitialized()
         {
-            // Findability + identity: the tuning bench wears the four element CRYSTAL MODELS
-            // as orbiting moons - elements have SHAPE signatures, not colour signatures
-            // (colour belongs to domains) - and logs its spot.
-            var elements = new[] { Element.Charge, Element.Mass, Element.Space, Element.Time };
-            for (int i = 0; i < elements.Length; i++)
+            AttachEmblem(new EmblemSource(this), 8f);
+            CSDebug.Log($"[LifeformMatrix] Toy placed at {transform.position} " +
+                        "(the four element crystals, orbited by its menagerie).");
+        }
+
+        /// <summary>
+        /// The menagerie in one glyph: the CORE is the four element crystal MODELS clustered on a
+        /// sub-ring (elements are told apart by SHAPE - all four share the emblem's one material,
+        /// so nothing here can accidentally encode an element as a colour), and the SATELLITES are
+        /// four real species from the bench's own lists.
+        ///
+        /// This replaces the four "moons" that used to hang off the root: at a 2.2-unit offset
+        /// inside a 44-unit sphere they were invisible, and they were built by Instantiating a
+        /// gameplay crystal prefab - dragging a live fade-in coroutine and a transparent gameplay
+        /// material into an icon. The crystals keep their load-bearing home at the VARIANT
+        /// stations, where element identity IS the choice.
+        /// </summary>
+        sealed class EmblemSource : ToyEmblem.IEmblemSource
+        {
+            readonly LifeformMatrixToy _toy;
+            public EmblemSource(LifeformMatrixToy toy) => _toy = toy;
+
+            public int SatelliteCount => 4;
+
+            public bool TryBuildSlot(int slot, Transform holder, float radius, Material shared, out bool heavy)
             {
-                float a = i / (float)elements.Length * Mathf.PI * 2f;
-                var moon = AddElementCrystalVisual(transform, elements[i], 0.35f);
-                if (!moon) continue;
-                moon.name = $"Moon_{elements[i]}";
-                moon.transform.localPosition =
-                    new Vector3(Mathf.Cos(a), 0.25f * ((i % 2 == 0) ? 1f : -1f), Mathf.Sin(a)) * 2.2f;
+                heavy = false;
+                return slot == 0
+                    ? BuildCrystalCore(holder, radius, shared)
+                    : _toy.TryBuildSpeciesSatellite(slot - 1, holder, radius, shared);
             }
 
-            CSDebug.Log($"[LifeformMatrix] Toy placed at {transform.position} " +
-                        $"(the sphere orbited by the four element crystals).");
+            static bool BuildCrystalCore(Transform holder, float radius, Material shared)
+            {
+                float ring = radius * 0.62f;
+                float each = radius * 0.42f;
+                bool any = false;
+
+                for (int i = 0; i < Elements.Length; i++)
+                {
+                    if (!ElementCrystalModelBuilder.TryBuild(Elements[i], each, shared, out var model)) continue;
+                    model.transform.SetParent(holder, false);
+                    float a = i / (float)Elements.Length * Mathf.PI * 2f;
+                    model.transform.localPosition = new Vector3(Mathf.Cos(a), Mathf.Sin(a), 0f) * ring;
+                    any = true;
+                }
+                return any;
+            }
+
+            public bool TryGetLiveKey(out object key)
+            {
+                key = null;
+                return false; // the menagerie's roster is authored, not live
+            }
+
+            public bool TryGetLiveTint(out Color tint)
+            {
+                tint = default;
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Satellite <paramref name="index"/> of the emblem: first and middle fauna, then first and
+        /// middle flora, so the ring samples both halves of the menagerie. A short list skips its
+        /// slot rather than showing the same creature twice.
+        /// </summary>
+        bool TryBuildSpeciesSatellite(int index, Transform holder, float radius, Material shared)
+        {
+            var fauna = _def ? _def.Fauna : null;
+            var flora = _def ? _def.Flora : null;
+
+            FaunaConfigurationSO[] faunaConfigs = null;
+            FloraConfigurationSO[] floraConfigs = null;
+
+            switch (index)
+            {
+                case 0: faunaConfigs = SpeciesConfigs(fauna, 0); break;
+                case 1: faunaConfigs = SpeciesConfigs(fauna, fauna?.Length / 2 ?? 0); break;
+                case 2: floraConfigs = SpeciesConfigs(flora, 0); break;
+                default: floraConfigs = SpeciesConfigs(flora, flora?.Length / 2 ?? 0); break;
+            }
+
+            if (faunaConfigs == null && floraConfigs == null) return false;
+            if (!AddSpeciesModel(faunaConfigs, floraConfigs, radius, out var model, shared)) return false;
+
+            model.transform.SetParent(holder, false);
+            return true;
+        }
+
+        static FaunaConfigurationSO[] SpeciesConfigs(LifeformMatrixToyDefinitionSO.FaunaSpecies[] list, int index)
+        {
+            if (list == null || index < 0 || index >= list.Length) return null;
+            var species = list[index];
+            return species?.ElementConfigs is { Length: > 0 } ? species.ElementConfigs : null;
+        }
+
+        static FloraConfigurationSO[] SpeciesConfigs(LifeformMatrixToyDefinitionSO.FloraSpecies[] list, int index)
+        {
+            if (list == null || index < 0 || index >= list.Length) return null;
+            var species = list[index];
+            return species?.ElementConfigs is { Length: > 0 } ? species.ElementConfigs : null;
         }
 
         /// <summary>
@@ -308,7 +396,7 @@ namespace CosmicShore.Gameplay
         /// (an all-prism flora, say), and the caller keeps the anonymous sphere.
         /// </summary>
         bool AddSpeciesModel(FaunaConfigurationSO[] fauna, FloraConfigurationSO[] flora,
-            float radius, out GameObject model)
+            float radius, out GameObject model, Material shared = null)
         {
             model = null;
             Transform source = null;
@@ -321,10 +409,13 @@ namespace CosmicShore.Gameplay
                     if (cfg && cfg.FloraPrefab) { source = cfg.FloraPrefab.transform; break; }
             if (!source) return false;
 
-            if (!ToyModelBuilder.TryBuild(source, radius, Definition.AccentColor, out model,
-                    (root, node, mesh, renderer) =>
-                        !ToyModelBuilder.AnyAncestorNameContains(node, root, NonBodyNameHints)))
-                return false;
+            ToyModelBuilder.RendererFilter bodyOnly = (root, node, mesh, renderer) =>
+                !ToyModelBuilder.AnyAncestorNameContains(node, root, NonBodyNameHints);
+
+            bool built = shared
+                ? ToyModelBuilder.TryBuild(source, radius, shared, out model, bodyOnly)
+                : ToyModelBuilder.TryBuild(source, radius, Definition.AccentColor, out model, bodyOnly);
+            if (!built) return false;
 
             // Turntable, like every other toy icon - a creature you can walk around before you
             // decide to release it.

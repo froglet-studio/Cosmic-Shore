@@ -36,12 +36,22 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public static bool TryBuild(Transform prefabRoot, float targetRadius, Color previewColor,
             out GameObject model, RendererFilter filter = null)
+            => TryBuild(prefabRoot, targetRadius, BuildPreviewMaterial(previewColor), out model, filter);
+
+        /// <summary>
+        /// As above, but painted with a material the CALLER owns. Prefer this when one owner builds
+        /// several models (a toy emblem's core + satellites): they then share one material, a
+        /// re-tint is a handful of writes rather than a walk, and the owner can destroy it - the
+        /// colour overload allocates a `Material` per call that nothing frees.
+        /// </summary>
+        public static bool TryBuild(Transform prefabRoot, float targetRadius, Material sharedMaterial,
+            out GameObject model, RendererFilter filter = null)
         {
             model = null;
             if (!prefabRoot) return false;
 
             var root = new GameObject("ToyModel");
-            var previewMat = BuildPreviewMaterial(previewColor);
+            var previewMat = sharedMaterial ? sharedMaterial : BuildPreviewMaterial(Color.white);
             bool any = false;
 
             foreach (var mf in prefabRoot.GetComponentsInChildren<MeshFilter>(true))

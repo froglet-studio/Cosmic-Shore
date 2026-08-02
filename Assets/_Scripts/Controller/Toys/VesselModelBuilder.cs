@@ -33,6 +33,14 @@ namespace CosmicShore.Gameplay
             return built;
         }
 
+        /// <summary>As above, painted with a material the caller owns (see the ToyModelBuilder overload).</summary>
+        public static bool TryBuild(Transform prefabRoot, float targetRadius, Material sharedMaterial, out GameObject model)
+        {
+            bool built = ToyModelBuilder.TryBuild(prefabRoot, targetRadius, sharedMaterial, out model, IsHull);
+            if (built && model) model.name = "VesselModel";
+            return built;
+        }
+
         /// <summary>Whether this renderer is part of the ship hull we want to display.</summary>
         static bool IsHull(Transform prefabRoot, Transform node, Mesh mesh, Renderer renderer)
         {

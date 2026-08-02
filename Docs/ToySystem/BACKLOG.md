@@ -193,8 +193,11 @@ cell with all canonical gates; no bare-`Destroy` of visible prisms/crystals on t
 teardown). Everything below is remaining polish / not-yet-play-verified.
 
 - **In-editor verification (second pass — post play-test rework).** Enter freestyle in
-  Menu_Main, fly through the Wanderway toy. Confirm: (1) the toy flips bright + relabels
-  "flowing — fly through to stop", and a second pass turns the flow off (label flips back);
+  Menu_Main, fly through the Wanderway toy. Confirm: (1) the toy's emblem **spins up** to flowing
+  speed over ~0.8s and it relabels "flowing — fly through to stop", a second pass stops the orbit
+  (label flips back), and leaving freestyle with the belt running drops the orbit to a dormant
+  crawl rather than to a stop — and no OTHER toy's body changes colour (the old shared-material
+  write that did exactly that has been deleted);
   (2) a field of ~7 scenes builds ahead and holds at ANY speed — cruise, full throttle, boost —
   with spacing visibly stretching as you speed up; (3) the belt follows you OUT of the cell and
   keeps streaming in open space (prisms + crystals; no flora/fauna out there), and living
@@ -259,9 +262,11 @@ teardown). Everything below is remaining polish / not-yet-play-verified.
   `OnToyboxChanged` are the hooks; implement persistence (the `FavoriteSystem` JSON pattern:
   load on sign-in → `SetToyUnlocked`, subscribe to `OnToyboxChanged` → save) and real unlock
   conditions when the unlock order is decided.
-- **Authored art.** Replace the procedural sphere bodies (domain/painting) with authored art
-  prefabs — `ToyDefinitionSO` could reference an optional body prefab that `ToyFactory` uses
-  instead of a sphere.
+- ~~**Authored art.** Replace the procedural sphere bodies with authored art prefabs.~~
+  **Answered procedurally instead** (and better): every toy root is now a `ToyEmblem` built from
+  the toy's own real content — mini hulls, real painting strokes, real species, real microscenes,
+  the live world. An authored art prefab would be a decorative stand-in, which is the thing the
+  station-icon rule forbids. See `ARCHITECTURE.md` § "Toy-root emblems".
 - **Audio / haptics** on activation (`AudioSystem` gameplay SFX; NiceVibrations).
 - **Tests.** Extract the `SwapToySetCoordinator` reconcile/flip logic into a pure, unit-testable
   helper and add EditMode tests (the "used toy flips to previous; set = universe\{current}"
@@ -418,3 +423,21 @@ station, its options unfold out ahead; fly it again, they fold away. Architectur
   field behind it; `Toy_Painting` never serialized `clusterSpacingBodies`, so that knob read 0
   and was masked by the `max()`). `Toy_Painting` still carries a stale `shape:` key — harmless,
   Unity drops unknown keys on the next save.
+
+
+## Toy-root emblems — known-remaining follow-ups
+
+- **Ring-distance legibility pass (gate for removing the labels).** Fly the full membrane ring and
+  record which toys are NOT identifiable without reading their label. Expect the Lifeform bench and
+  the Cell Selector to be the first to fail. The only levers are the const block at the top of
+  `ToyEmblem` — raise `SatelliteRadiusBodies` first, then `OrbitRadiusBodies`, but the outer extent
+  (`OrbitRadiusBodies + SatelliteRadiusBodies`) × R must stay under the 42u trigger radius.
+- **Two pre-existing material leaks, deliberately left in scope-free.** `VesselChangerToy.BuildStation`
+  and `LifeformMatrixToy.AddSpeciesModel` still call the COLOUR overload of `ToyModelBuilder.TryBuild`
+  on the matrix-station path, orphaning one `Material` per model per matrix open (UnityEngine.Objects
+  are never GC'd). The new `Material` overload — which the emblems use, and which lets one owner
+  share and destroy a single material — makes adopting the same pattern there a small follow-up. Not
+  done here so this change doesn't also alter matrix-station behaviour.
+- **Emblem legibility vs. the label position.** The emblem's outer extent (33.4u) and the label
+  height (41.8u) are independent numbers that happen to clear each other at R=22. If the toybox's
+  `toyBodyRadius` is ever retuned, re-check both against the trigger radius.

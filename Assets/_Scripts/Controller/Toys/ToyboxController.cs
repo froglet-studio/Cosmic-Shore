@@ -125,6 +125,12 @@ namespace CosmicShore.Gameplay
                 _root.SetParent(transform, false);
             }
 
+            // Toy-root emblems build nothing on this frame (it is already the menu's most expensive
+            // one) - they queue with this pump, which fills one slot per frame. Added before the
+            // spawn loop so every toy finds it with a 2-level GetComponentInParent, never a search.
+            if (!_root.TryGetComponent(out ToyEmblemStreamer _))
+                _root.gameObject.AddComponent<ToyEmblemStreamer>();
+
             var initializer = FindFirstObjectByType<MenuServerPlayerVesselInitializer>();
             var context = new ToyContext
             {

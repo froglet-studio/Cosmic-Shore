@@ -70,6 +70,9 @@ detection. On top of that base the `Toy` class adds:
 | Painting progress persistence | `Assets/_Scripts/Controller/Toys/PaintingProgressStore.cs` |
 | Drawing state (per-prism pose/domain) | `Assets/_Scripts/Controller/Toys/PaintingPrismStore.cs` |
 | Web share export (inline-WebGL viewer) | `Assets/_Scripts/Controller/Toys/PaintingShareExporter.cs` |
+| Toy-root emblem (core + orbiting satellites) | `Assets/_Scripts/Controller/Toys/ToyEmblem.cs` |
+| Emblem build pump (one slot per frame) | `Assets/_Scripts/Controller/Toys/ToyEmblemStreamer.cs` |
+| Element crystal model (shape signature) | `Assets/_Scripts/Controller/Toys/ElementCrystalModelBuilder.cs` |
 | Idle spin for toy bodies | `Assets/_Scripts/Controller/Toys/ToyIdleSpin.cs` |
 | Conveyor ("Wanderway") toy | `Assets/_Scripts/Controller/Toys/ConveyorToy.cs` |
 | Conveyor belt runner | `Assets/_Scripts/Controller/Toys/MicrosceneConveyor.cs` |
@@ -84,9 +87,10 @@ detection. On top of that base the `Toy` class adds:
 
 ## Lifeform Matrix (`LifeformMatrixToy` + `LifeformMatrixToyDefinitionSO`)
 
-The **ecology tuning bench** (`Toy_LifeformMatrix.asset`, placement angle 180°). Fly the toy
-(a sphere orbited by the four element crystal MODELS — elements have SHAPE signatures, never
-colours) and the SPECIES matrix blooms one layer OUTWARD from the cell centre: fauna on the
+The **ecology tuning bench** (`Toy_LifeformMatrix.asset`, placement angle 180°). Its root wears
+an emblem (see "Toy-root emblems"): a core of the four element crystal MODELS — elements have
+SHAPE signatures, never colours — orbited by four of its own species. Fly it and the SPECIES
+matrix blooms one layer OUTWARD from the cell centre: fauna on the
 lower row, flora on the upper (12 species) — **each species station is a mini MODEL of that
 creature**, built from its first element config's prefab asset by `ToyModelBuilder` (never
 instantiated, so no Fauna/Flora behaviour, registry entry or spawn); a species whose prefab
@@ -221,6 +225,73 @@ creature bodies. **Any new toy that offers prefabs gets its icons from this, not
 State that used to be text is becoming shape too: the Cell Selector marks the world you are
 already in with a **halo ring** instead of the word `RESET` (an environment-free config has
 nothing to model, so its empty slot already reads as "instant").
+
+### Toy-root emblems (`ToyEmblem` + `ToyEmblemStreamer`)
+
+The same rule, applied one level up: **a toy root is an icon of the toy**, not a tinted ball with
+a name over it. The grammar is the third strategy —
+
+> **core = what you are · orbiting satellites = what a pass would offer you**
+
+— which is the `SwapToySetCoordinator` semantic ("you are this, these are the others") lifted onto
+the roots that don't unfold. Every item is real content, built by the same builders the matrix
+stations use.
+
+| toy | core | satellites | orbit |
+|---|---|---|---|
+| **Vessel Changer** | the hull you're flying now | the next 3 you'd be offered | 10°/s |
+| **Connect the Dots** | the on-ramp painting you've taken furthest | the other 3 on-ramp canvases | 6°/s |
+| **Lifeform bench** | the 4 element crystals on a sub-ring | 2 fauna + 2 flora species | 8°/s |
+| **Wanderway** | a real microscene ("Gate Run") | 3 more recipes (Tunnel, Archway, Torus Knot) | **0 / 3 / 18** = off / dormant / flowing |
+| **Cell Selector** | the world you're in right now | **none, structurally** | core spins at 8°/s |
+| **Domain Changer** | *(no emblem — see below)* | | |
+
+**Geometry** — one const block in `ToyEmblem`, all multiples of the toy's body radius `R` (22 in
+Menu_Main): core `0.46R`, orbit `1.18R`, satellite `0.34R`, halo tilt 32°. Outer extent `1.52R`
+= 33.4u, deliberately **inside** both the 42u trigger radius and the 41.8u label height — an
+emblem never reads bigger than its own interaction volume. First satellite sits at 6 o'clock so
+12 o'clock stays clear under the label.
+
+**Motion is the second identity channel.** Silhouette carries the far read (~250u, "that's a
+different toy"); real content carries the near read (~100u, "that's the hangar"); distinct orbit
+rates carry both. The rates stay clear of the reserved body spins (cone 45, jack 22, ring 15).
+
+**Nothing is built on the spawn frame.** `ToyboxController.PlaceToys` runs on the `OnClientReady`
+frame of *every* entry to Menu_Main and is already the menu's most expensive. So `Attach` creates
+**holders only** (~23 GameObjects toybox-wide; zero meshes, zero materials, zero `Shader.Find`,
+zero `Instantiate`), and `ToyEmblemStreamer` fills one slot per frame — **round-robin,
+breadth-first**, so every toy's core lands before any satellite. 18 items ≈ 0.3s, entirely inside
+the toys' 1.2s bloom-in, so the emblem assembles *inside* the growth and nothing pops in. A slot
+that reports itself `heavy` gets a clear frame after it.
+
+> **Coupling with no compile-time guard:** that property depends on `Toy.bloomDuration` (1.2s)
+> exceeding the stream (~0.3s). Drop it below ~0.5s and emblems visibly assemble.
+
+**The Cell Selector's zero satellites are structural, not tuning.** A satellite would be another
+world, and any world not already loaded costs a full ~34k-lay generation to picture — the exact
+cost `CellTypeChoiceOptions.EnvironmentFree` exists to defer. Its core is free or it is nothing:
+the matrix's cached miniature, else the live environment's `CachedLays` via the new
+`CellMiniatureBuilder.BuildFromLays` (which **cannot reach `GetTrailData()`** — the restriction is
+enforced by API, not by comment), else empty. At boot the cell is environment-free, so the emblem
+is a small bare core: *you are in the empty one.* Zero cost on every entry to Menu_Main.
+
+**Fail-soft.** `Attach` doesn't replace the factory's sphere — it **rescales it to core size** and
+keeps it as a placeholder, cross-fading it out when a real core lands and restoring it to full
+size if the whole stream built nothing. That is why `ToyFactory.CreateRoot` and all five `Spawn`
+overrides are untouched.
+
+**Liveness** is a 0.5s poll of the source's own key/tint (there is no cell-config-changed event to
+subscribe to, and the vessel source's existing mid-swap guard is exactly the "hold, don't rebuild"
+signal we want). A changed key rebuilds every slot; a changed tint writes the emblem's **own** one
+material — never `ToyFactory.AccentMaterial`'s shared per-colour cache and never a theme asset.
+
+**The Domain Changer deliberately has none.** Its slots already wear a domain-tinted cone in the
+domain's live *prism* material — content-derived, unique in silhouette, and the locked shape-
+language read for "this changes your trail." It also rebuilds its body on every flip, so an emblem
+there would be re-emitted constantly for no legibility gain. Do not "complete the set."
+
+**Labels stay for now.** They come off once the ring-distance legibility pass confirms each toy is
+identifiable without them — a separate, gated change.
 
 ### Layout tuning (matrix scale & distance)
 
@@ -453,10 +524,17 @@ shader the painted trail wears — `ToyFactory.DomainPrismMaterial` →
 | **Cone** (apex = "this way next") | *turns / keeps your trail ON* | stroke-gate hubs, every intermediate stroke point (apex points at the stroke's next point), and the **Domain Changer** bodies (apex points the way you fly through) |
 | **Jack** (three rods through a centre) | *turns your trail OFF* | each stroke's final point (reaching it ends the stroke and pens up) |
 | **Ring** (fly-through portal) | *crossing commits a choice* | stroke start gates, the SHARE/REPAINT completion gates |
+| **Emblem** (tilted ring of discrete objects around a hub) | *this is what I am, and what I'd offer* | the toy roots — see "Toy-root emblems" |
 
 The domain changer and the painting gates deliberately share the cone so meeting either one
 first sets up expectations for the other. Builders live in `ToyFactory` (`AddConeBody`,
 `AddJackBody`, `AddRingBody`).
+
+**Ring vs. emblem, the disambiguation rule:** *one continuous ring square across your flight
+path is a portal — cross it and something commits. A tilted ring of separate objects orbiting a
+hub is an emblem — it is a label, not an interactable.* Emblems are therefore built from models,
+never from `AddRingBody`, and they are tilted 32° so they never present as a portal. An emblem
+adds **no collider**: the toy's own trigger sphere remains the entire interaction surface.
 
 #### Stroke order — flight continuity first, computed at runtime
 
@@ -540,8 +618,10 @@ always works.
 
 ### Wanderway / Microscene Conveyor (`ConveyorToy` + `MicrosceneConveyor` + `Microscene`)
 
-Fly through → the belt switches **ON** (the toy flips bright + relabels "flowing — fly through
-to stop"; another pass switches it off) and a field of **microscenes** blooms in ahead of your
+Fly through → the belt switches **ON** (the toy's emblem **spins up** to flowing speed and it
+relabels "flowing — fly through to stop"; another pass switches it off and the orbit stops) —
+and, uniquely, the emblem tells the truth about the *third* state: a belt that is running while
+you are out of freestyle is **dormant**, and orbits at a crawl rather than lying about being off and a field of **microscenes** blooms in ahead of your
 flight path, scene after scene — open-world exploring crossed with an infinite runner. **40
 recipes** built from a shared geometry vocabulary (`PrismGeometry`): gate runs, helix weaves,
 tunnels, slaloms, starbursts, orchards, meadows, menageries, polygon gates, serpent ribbons,
