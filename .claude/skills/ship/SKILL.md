@@ -46,6 +46,32 @@ current — update them if not:
   run Unity - the human is the gate; hand them the exact steps and knobs).
 - Follow-up work goes in the relevant BACKLOG/TODOS doc, not in your head.
 
+## 3.5 Skill-capture retrospective (harvest what the session learned)
+
+Before the go/no-go, review the SESSION (not just the diff) for knowledge worth
+keeping — the things that were painful to figure out and would be re-invented
+next time:
+
+- **Findings & techniques**: did the session discover a repeatable method (a new
+  way to edit an asset class, a validation pattern, a debugging shortcut)?
+- **Workarounds & traps**: did anything cost more than ~15 minutes to a
+  non-obvious cause (a format quirk, an API that lies, a normalization surprise,
+  a clock/coordinate-space mismatch)? Each of those is a trap entry.
+- **Pushed-back punts**: did the prompter have to say "you can do this" about
+  work you were deferring to them? That gap between assumed and actual
+  capability is EXACTLY what a skill exists to close.
+
+Then act on it — this step produces edits, not intentions:
+
+- **Extend an existing skill** when the learning fits one (`ls .claude/skills/`;
+  add the trap/technique to the closest skill's list).
+- **Create a new skill** when the session established a coherent new capability
+  with its own method and trap list (see `/asset-surgery` for the shape: doctrine
+  → safety pattern → techniques → traps → limits).
+- **At minimum**, name the candidates in the ship report so the prompter can
+  decide — silence is the only wrong output. A session that learned nothing
+  reusable says so explicitly.
+
 ## 4. Go / no-go (push back when warranted)
 
 Say **NO** — and list the concrete iterations needed — when any of these hold:
@@ -72,5 +98,6 @@ scoped, and assigned a doc home — not reasons to sit on finished work.
 
 ## 6. Report
 
-Tell the prompter: the go/no-go call and why, the PR link (or the iteration list), and
-the follow-ups you recorded.
+Tell the prompter: the go/no-go call and why, the PR link (or the iteration list), the
+follow-ups you recorded, and the §3.5 skill-capture outcome (skills created/extended, or
+the explicit "nothing reusable this session").

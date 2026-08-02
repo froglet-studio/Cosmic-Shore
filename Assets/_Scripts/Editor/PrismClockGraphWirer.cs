@@ -19,12 +19,12 @@ namespace CosmicShore.Editor
     /// asset is reimported synchronously, and ANY import/compile error restores the
     /// original file automatically — a failed attempt costs nothing.
     ///
-    /// What remains manual after this runs: dropping the Custom Function nodes and
-    /// dragging wires (Docs/PRISM_CLOCK_WIRING_CHECKLIST.md) — node splicing changes
-    /// existing connections, whose correctness is semantic (a wrong splice can
-    /// compile clean and render wrong), so it belongs to eyes-on editing. Tip: after
-    /// wiring one graph's nodes, copy-paste the Custom Function node into the other
-    /// graphs — Shader Graph paste carries the node + slots across graphs.
+    /// Node wiring is NOT manual: all four graphs' Custom Function nodes and edge
+    /// splices were synthesized out-of-editor with machine validation (donor-clone
+    /// JSON, every node/slot/edge reference resolved before writing — the
+    /// /asset-surgery skill documents the technique). This tool remains as the
+    /// idempotent PROPERTY repair path (e.g. after a graph revert); a reverted
+    /// node graph is restored from git, not re-drawn by hand.
     ///
     /// Tools > Cosmic Shore > Prism Animation > Auto-Wire Clock Properties.
     /// </summary>

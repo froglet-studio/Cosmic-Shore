@@ -119,7 +119,10 @@ steal/repaint instead of snapping, and the last expected one-time
 
 **Test: steal a TRANSPARENT prism with your skimmer** (or watch a danger/shield
 repaint on one) — the recolor fades over ~0.8s like the opaque prisms do, with
-zero `[PrismClock]` errors.
+zero `[PrismClock]` errors. **DEFERRED**: the transparent-prism occlusion system
+(camera↔vessel corridor transparency) is currently down, so this test waits for
+its restoration branch — `Docs/PRISM_CLOCK_FOLLOWUP_PROMPTS.md` Prompt 1, which
+carries this test as its closing verification.
 
 <details><summary>Manual steps (reference only — already done)</summary>
 
@@ -185,6 +188,12 @@ suction), staying visible across the whole collapse.
 
 ## Phase 5 — Full verification (§4.4 protocol)
 
+**Known open issue (expected during verification):** `[PrismClock] STRICT MODE:
+no companion render entity to stamp (grow:SpawnablePrism (Clone))` — the
+SegmentSpawner/environment raw-Instantiate path declines entity creation before
+the grow stamp. Tracked with a live repro + branch prompt:
+`Docs/PRISM_CLOCK_FOLLOWUP_PROMPTS.md` Prompt 2 (C13). Not a wiring regression.
+
 - [ ] **Validate Clock Wiring** → `RESULT: ✅ ALL REQUIRED WIRING PRESENT`
 - [ ] Full play session (menu freestyle + one HexRace) with **zero `[PrismClock]`
       errors**
@@ -214,9 +223,11 @@ across code AND scenes/prefabs before deletion):
       re-sourced (`GameLoadSampler` → `PrismSpatialIndex.LiveCount` +
       effect `EnabledInstances`)
 - [x] `TrailViewer` component removed from `Urchin.prefab`; file deleted
-- [ ] **YOURS, in-editor** — re-baseline PhaseThresholds (volume is final at spawn
-      now): `Tools > Cosmic Shore > Measure Cell Environment Baselines` + update
-      cell configs per `Docs/ECOSYSTEM.md` §18
+- [x] Re-baseline PhaseThresholds — ✅ DONE 2026-08-02: the prompter ran
+      `Measure Cell Environment Baselines` and the six freestyle configs were
+      re-authored from the pasted output (fresh baseline + Blob deltas, exact;
+      `Docs/ECOSYSTEM.md` §18 example updated). Atlantis has no cell config
+      (Scurry segment-spawner path), so nothing to author there.
 
 **In-editor sanity after pulling this phase**: open `PrismManagers.prefab` and
 `Urchin.prefab` in the inspector — there must be NO "Missing (Mono Script)" rows
