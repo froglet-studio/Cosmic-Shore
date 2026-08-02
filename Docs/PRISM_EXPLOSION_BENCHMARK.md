@@ -41,6 +41,13 @@ coverage work (`claude/dolphin-explosion-prism-coverage-qtbstp`).
   capable of" question. Gameplay scenes never see the overrides. Runs record
   `throttlesLifted` and the report refuses to average lifted and default runs
   silently (they are different workloads).
+- **Batched pure-entity debris (gpu-clock side, `f0ddfc21`)**: on this branch a
+  prism death's explosion VFX is a batch-instantiated ENTITY, not a pooled
+  GameObject — the first lifted-throttle profile showed the pooled carrier
+  (2,408 pool misses, `PrismExplosion.OnDisable` 1,863 ms in one frame) costing
+  orders of magnitude more than the effect itself. The lifted burst therefore
+  measures entity + GPU cost, not pool churn. Legacy keeps its authored effect
+  path — that architectural difference is exactly what the A/B measures.
 
 ## What one run records
 
@@ -98,6 +105,10 @@ git cherry-pick 02aceaae            # 100k-cube spec + inscribed blast + load-ga
                                     # PressuredDuration/DefaultDuration block if absent —
                                     # f913f7e4 already gave legacy its own pressure path,
                                     # so on conflict simply keep THEIRS=legacy for that file)
+                                    # Do NOT cherry-pick f0ddfc21 (batched pure-entity
+                                    # debris): it IS part of the gpu-clock architecture
+                                    # being measured, not benchmark tooling — legacy runs
+                                    # its pooled-GameObject effect path as authored.
 git cherry-pick ca92704d            # per-axis gaps + explosion speed + throttle lifts +
                                     # manager dedupe. Conflict guidance:
                                     #  - PrismExplosion.cs: keep LEGACY's file wholesale

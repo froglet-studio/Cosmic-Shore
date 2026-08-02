@@ -153,32 +153,30 @@ surgery, machine validation) are captured in the `/asset-surgery` skill — use 
 > (turret flight properties, shield morph properties) so Validate Clock Wiring
 > stays the one-stop wiring truth.
 
-## Prompt 9 — Batched pure-entity debris (the untapped DOTS headroom)
+## Prompt 9 — Batched pure-entity debris: the REMAINDER (implosions + death-path self cost)
 
-> Read `PrismRenderService.Create`/`GetPrototype` (the prototype-instantiate
-> pattern) and `PrismExplosion`/`PrismImplosion`. Today the DOTS side is
-> already right-sized per effect: mesh/material are dictionary-cached
-> `BatchRendererGroup` registrations (`GetMeshID`/`GetMaterialID` — no per-
-> effect material load), and each effect entity is ONE `em.Instantiate` from a
-> prebuilt prototype + `SetComponentData` stamps. What is NOT entity-native is
-> the effect's carrier: every prism death still checks a pooled **GameObject**
-> out (`PrismExplosion` MonoBehaviour) whose only jobs are (a) stamp the
-> entity once and (b) hold the pool slot until the scheduled completion. Under
-> the lifted-throttle stress test (~54k deaths in one blast) the pool
-> instantiates tens of thousands of GameObjects whose per-object cost —
-> `Instantiate`, `OnEnable`/`OnDisable` registry churn, transform — dwarfs the
-> entity work; the GameObject is pure overhead on a path where the GPU already
-> owns the animation. Build the batch path: a debris request queue drained
-> once per frame with the BATCH overload `em.Instantiate(prototype, count,
-> Allocator.Temp)`, per-entity stamps written directly (position matrix, clock
-> stamp, team colors, bounds), NO GameObject and NO per-effect
-> `PrismTimerManager` entry — completion is one per-frame sweep (or one
-> scheduled action per batch) that destroys every entity whose
-> `startTime + duration < PrismClock.Now`. Keep the pooled-GameObject path for
-> gameplay callers that need `ReturnToPool` semantics until parity is proven;
-> route `PrismFactory`'s deferred-VFX drain through the batch path first (it
-> is already a queue). Measure with the prism-grid benchmark
-> (`Docs/PRISM_EXPLOSION_BENCHMARK.md`), throttles lifted, before/after.
+> The explosion half SHIPPED on the audit branch (2026-08-02): `PrismDebris` +
+> `PrismRenderService.SpawnExplosionDebrisBatch` spawn every prism-death
+> explosion as batched entities (one `em.Instantiate(prototype, N)`, one
+> batched visibility strip, sweep-based batch retirement, full 5s duration,
+> pooled path = fallback only), after a lifted-throttle profile showed 2,408
+> pool misses costing 1.9s of one frame in `PrismExplosion.OnDisable` alone.
+> Read `PrismDebris.cs` for the shipped pattern, then finish the job:
+> (1) **Implosions/suction-grow on the same carrier** — add an Implosion-set
+> batch spawn (suction stamps `{t₀, duration, ±direction, growDelay,
+> location}`); the moving-convergence refresh needs a records list carrying
+> the target Transform so the sweep can also update `_Location` for live
+> targets (one float3 per record per frame, the §1 documented exception) —
+> or keep moving-target implosions pooled and batch only the fixed-point
+> majority. (2) **Death-path self cost** — with the carrier fixed, re-profile
+> the lifted-throttle blast: `AOE.ResolveDamage` showed ~0.43ms SELF per
+> death (1,047ms for 2,408) plus ~1.4KB GC per death (`PrismEventData` is a
+> class allocated per kill). Split it with markers (SetupDestruction /
+> spatial-index MarkDestroyed / event-channel raise), pool or struct-ify the
+> event data, and kill whatever per-death work doesn't earn its keep.
+> (3) Once implosions are batched and parity is proven, consider retiring the
+> pooled explosion fallback entirely. Measure before/after with the prism-grid
+> benchmark (`Docs/PRISM_EXPLOSION_BENCHMARK.md`), throttles lifted.
 
 ---
 

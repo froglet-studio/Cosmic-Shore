@@ -659,6 +659,23 @@ the prompter's direction.** `ClockAnimationEnabled` is constant `true`; the form
   Pool return / re-trigger cancels the scheduled completion and retires
   the stamp (`ClearExplosionClockStamp`/`ClearSuctionClockStamp`) so a legacy-path
   reuse of the same entity can never replay a stale clock animation.
+- **Batched pure-entity debris (B3 mass-death carrier, 2026-08-02)** — prism-death
+  explosion VFX no longer check out a pooled GameObject at all: `PrismFactory.
+  SpawnExplosion` routes to **`PrismDebris`**, which queues each death and, once per
+  frame at LateUpdate, spawns the whole burst via `PrismRenderService.
+  SpawnExplosionDebrisBatch` — ONE `em.Instantiate(prototype, N)`, ONE batched
+  `DisableRendering` strip, per-entity `SetComponentData` stamps (pose, colors,
+  explode clock, flight-envelope `RenderBounds`), all at **full `DefaultDuration`**
+  (no pressure shortening — a live entity effect costs zero per-frame CPU).
+  Retirement is a flat time-ordered sweep (`PrismDebris.Sweep`) ending in ONE
+  batched `DestroyEntity` — never a per-effect timer entry. Why: profiled on a 30³
+  lattice with throttles lifted, 2,408 deaths in one frame were 2,408 pool misses
+  and `PrismExplosion.OnDisable` alone cost **1,863 ms** (its `EnabledInstances`
+  `List.Remove` was an O(n) scan; now O(1) swap-remove for the surviving pooled
+  uses). The pooled `PrismExplosion` path remains ONLY as the fallback when the
+  render service is off (and for implosions — their batch port is the Prompt 9
+  remainder). Clamp semantics (`minSpeed`/`maxSpeed`/`DebrisSpeedLimit` override)
+  are read off the pool prefab so both carriers ship identical debris.
 - **Color/state transitions (B2)** — `MaterialPropertyAnimator.UpdateMaterial` binds
   the END-STATE material immediately (its authored values are the lerp targets),
   stamps `{t₀, duration, start colors}` (start = analytic current of any in-flight
@@ -759,7 +776,7 @@ Phase B — migrate the engines (each retires a per-frame pass):
 |---|---|---|
 | B1 | Grow-in → clock (all ~12 feeder paths ride the one engine); gameplay-final-at-start (volume/spatial stamps, clock predicates, `ExecuteOnScaleComplete` → start) | ✅ LIVE (strict, the only path) 2026-08-01 — `PrismScaleManager` DELETED (D2, 2026-08-02). Graph wiring ✅ (playtest-confirmed smooth). Pending: `HoldColliderAtFullSize` deletion, `CreateBlockCoroutine` window simplification, arena-gate simplification, PhaseThresholds re-baseline |
 | B2 | Color/state transitions → clock lerp (start colors + t₀; target = material authored; end-state material bound at START, settle scheduled) | ✅ LIVE (strict, the only path) 2026-08-01 — `MaterialStateManager` DELETED (D2, 2026-08-02). Graph wiring ✅ (playtest-confirmed smooth on BlockGraph; the transparent-prism color cluster on ExplodingBlockGraph is wired too — 2026-08-02 — so transparent steals/repaints fade instead of snapping) |
-| B3 | Explosion/implosion → clock (stamp `{t₀, velocity, speed, duration}` / `{t₀, duration, direction, delay, location}`) | ✅ LIVE (strict, the only path) 2026-08-01 — moving-target DECIDED as the §1 exception (a snapshot would suck prisms toward where the fauna WAS): progress rides the clock, `PrismEffectsManager` refreshes `_Location` only (one float3/frame) while the target lives. Animation passes + Burst jobs DELETED (D2, 2026-08-02 — the manager keeps only convergence refresh + zombie audit). Graph wiring ✅ both graphs, PLAYTEST-CONFIRMED 2026-08-02: explosions ✅ (GPU-side world→object conversion inside `PrismExplosionClock` — raw inverse-model multiply, never the normalizing Direction-mode Transform — + flight-envelope bounds) and suction ✅ (`EncapsulateBoundsPoint` envelope) |
+| B3 | Explosion/implosion → clock (stamp `{t₀, velocity, speed, duration}` / `{t₀, duration, direction, delay, location}`) | ✅ LIVE (strict, the only path) 2026-08-01 — moving-target DECIDED as the §1 exception (a snapshot would suck prisms toward where the fauna WAS): progress rides the clock, `PrismEffectsManager` refreshes `_Location` only (one float3/frame) while the target lives. Animation passes + Burst jobs DELETED (D2, 2026-08-02 — the manager keeps only convergence refresh + zombie audit). Graph wiring ✅ both graphs, PLAYTEST-CONFIRMED 2026-08-02: explosions ✅ (GPU-side world→object conversion inside `PrismExplosionClock` — raw inverse-model multiply, never the normalizing Direction-mode Transform — + flight-envelope bounds) and suction ✅ (`EncapsulateBoundsPoint` envelope). **Mass-death carrier upgraded 2026-08-02**: prism-death explosions spawn as BATCHED PURE-ENTITY debris (`PrismDebris` + `PrismRenderService.SpawnExplosionDebrisBatch` — no GameObject/pool/per-effect timer; full duration always); pooled path = fallback only. Implosion batch port = Prompt 9 remainder |
 | B4 | Shield morphs → GPU (vertex-shader bloom/shatter from per-vertex face data + t₀; settled shared-mesh swap already conforms) | ◐ interim shipped 2026-08-01: stellated idle per-prism `Update()` KILLED — both shield tiers now ride the central `PrismOctahedronShieldManager` ticker (`IPrismShieldMorphTicker`), registered only while morphing. GPU morph itself still pending |
 
 Phase C — rogue paths & ecosystem visuals (each is standalone):
