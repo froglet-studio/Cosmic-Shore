@@ -3,18 +3,38 @@
 The pre-merge performance comparison for the clock-material migration: FPS as a
 function of time across the FULL explosion interval, repeated runs per variant,
 one report comparing the envelopes. Built on Yash's prism-grid explosion rig
-(`claude/prism-grid-explosion-scene-bi74f9`).
+(`claude/prism-grid-explosion-scene-bi74f9`) plus the salvaged dolphin-explosion
+coverage work (`claude/dolphin-explosion-prism-coverage-qtbstp`).
+
+## The spec'd workload
+
+- **The lattice**: a **47³ = 103,823-prism cube** (the nearest odd-sided cube to
+  100k — odd so an exact centre prism exists on every face). Authored by the
+  setup tool; both experiments must use it unchanged.
+- **The blast**: the spherical AOEExplosion's own wavefront — **progressively
+  larger overlap spheres each frame**, expanding at
+  `speed = MaxScale / ExplosionDuration`, with the salvaged lossless deferral
+  guaranteeing every prism the sphere contains actually dies (never capped by
+  how long the VFX ran).
+- **The end condition**: the blast **ends inscribed** (Fit Blast To Lattice,
+  default ON) — the final overlap sphere reaches the centre of each cube face,
+  so the **face-centre prisms are destroyed** while edges and corners survive
+  (~π/6 ≈ 52% of the cube dies, ~54k prisms).
 
 ## What one run records
 
-Rebuild the lattice from scratch (identical initial conditions every run) →
-wait Ready + settle 1.5s → record **1s pre-roll baseline** (resting lattice) →
-**detonate** → record every frame's unscaled delta time for **6s** (the
-explosion runs 5s; the margin catches the tail). Each run is one JSON in
-project-root **`BenchmarkResults/PrismExplosion/`** — outside Assets, so
-results **survive branch switches** and the two experiments accumulate into
-the same folder. The variant label is auto-detected (`legacy-cpu` when
-`PrismScaleManager` exists, else `gpu-clock`) along with the git branch.
+Rebuild the lattice from scratch (identical initial conditions every run;
+the harness holds the global load gate during builds, so 100k materializes in
+seconds, not minutes) → settle 1.5s → record **1s pre-roll baseline** →
+**detonate** → record every frame's unscaled delta time for **20s**: the ~2s
+visual wavefront, the per-prism debris/fade effects (5s unpressured, shortened
+under load), and the damage-backlog drain (48 destructions/frame — ~19s for the
+inscribed kill at 60fps; the frame-locked drain makes slower variants show
+longer tails, which is signal). Each run is one JSON in project-root
+**`BenchmarkResults/PrismExplosion/`** — outside Assets, so results **survive
+branch switches** and the two experiments accumulate into the same folder. The
+variant label is auto-detected (`legacy-cpu` when `PrismScaleManager` exists,
+else `gpu-clock`) along with the git branch.
 
 ## Experiment protocol (run both, any order)
 
@@ -26,9 +46,10 @@ the same folder. The variant label is auto-detected (`legacy-cpu` when
 3. Disable Bootstrap auto-load
    (`Tools > Cosmic Shore > Testing Multiplayer > Do not load Bootstrap Scene on Play`),
    press Play.
-4. Set the grid size you want to stress (the X/Y/Z/gap fields — the SAME size
-   for both experiments), then press **Bench** (or console `bench 5`).
-   Five runs execute unattended; watch the "Bench" rows on the DiagnosticsHUD
+4. The setup tool authors the spec'd 47³ grid — leave the X/Y/Z/gap fields
+   alone so both experiments run the identical workload. Press **Bench** (or
+   console `bench 5`). Five runs execute unattended (each ≈ 20s recording +
+   a fast gate-boosted rebuild); watch the "Bench" rows on the DiagnosticsHUD
    (F7). `bench stop` cancels.
 
 ### OLD — legacy-cpu (bleeding-edge baseline)
@@ -36,10 +57,21 @@ the same folder. The variant label is auto-detected (`legacy-cpu` when
 ```bash
 git checkout -b bench-legacy origin/bleeding-edge
 git cherry-pick 8436342f cf382420   # Yash's harness (grid rig + readiness fix)
+git cherry-pick 6090f42e 060d160c f913f7e4
+                                    # dolphin-explosion coverage salvage, ORIGINALS —
+                                    # authored against bleeding-edge, so they apply clean
+                                    # there (the audit branch carries reconciled ports).
+                                    # Same blast semantics on both variants = fair A/B.
 git cherry-pick 0af666b4            # the A/B benchmark layer (branch-portable)
 git cherry-pick c08024bd            # loud lay failures + 'prisms N' + empty-lattice guard
 git cherry-pick 3b9efbf5            # ThemeManager self-provisioning (zero-prism root cause —
                                     # present on bleeding-edge too; re-run the setup tool after)
+git cherry-pick 02aceaae            # 100k-cube spec + inscribed blast + load-gate rebuilds
+                                    # (expect a small PrismExplosion conflict: keep the
+                                    # legacy file's manager plumbing, take the incoming
+                                    # PressuredDuration/DefaultDuration block if absent —
+                                    # f913f7e4 already gave legacy its own pressure path,
+                                    # so on conflict simply keep THEIRS=legacy for that file)
 ```
 
 Then steps 2–4 exactly as above — same scene tool, same grid size, same Bench
@@ -72,11 +104,13 @@ two variants were run with different grid sizes.
   variants pay the same editor overhead); a development build tightens the
   absolute numbers if wanted.
 - Runs rebuild the lattice every time — materialization is ~6 prisms/frame
-  process-wide, so a 6k lattice takes ~1,000 frames between runs. That wait is
-  correctness (detonating into a half-registered lattice measures nothing).
+  process-wide during play — the harness sidesteps this by holding the global
+  load gate during builds (512/frame), which is safe because nothing records
+  until Ready. Detonating into a half-registered lattice measures nothing; the
+  Ready gate is correctness.
 - The husk sweep runs in the Ready phase on both branches (same rig cost both
   sides).
-- **Gyroid-scale gate (prompter's rule)**: the comparison runs AFTER the
-  gyroid prism scale matches bleeding-edge (see the diagnosis machinery in
-  `PrismRenderService.DescribeGrowStampTarget` — the strict-mode error now
-  names the broken gate), so the two variants render equivalent work.
+- Both variants must carry the SAME blast-coverage semantics (the dolphin
+  salvage commits) — otherwise the new branch destroys more prisms than the
+  old and the comparison measures workload, not architecture. The cherry-pick
+  recipe above guarantees this.
