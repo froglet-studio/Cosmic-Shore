@@ -147,7 +147,7 @@ namespace CosmicShore.Gameplay
                     bool shouldContinue = impactor?.ProcessBatchConeFrame(
                         containerTransform.position, containerTransform.forward,
                         sweptTo, coneHeight, tanHalfAngle,
-                        speed, Inertia) ?? true;
+                        Impulse) ?? true;
 
                     sweptTo = Mathf.Max(sweptTo, coneHeight);
 
@@ -199,7 +199,7 @@ namespace CosmicShore.Gameplay
                 while (impactor != null && impactor.HasPendingBatchWork)
                 {
                     ct.ThrowIfCancellationRequested();
-                    impactor.DrainPendingBatchFrame(speed, Inertia);
+                    impactor.DrainPendingBatchFrame(Impulse);
                     await UniTask.Yield(PlayerLoopTiming.Update, ct);
                 }
 
@@ -253,7 +253,7 @@ namespace CosmicShore.Gameplay
         public override Vector3 CalculateImpactVector(Vector3 impacteePosition)
         {
             Vector3 origin = coneContainer ? coneContainer.transform.position : transform.position;
-            return (impacteePosition - origin).normalized * speed * Inertia;
+            return Impulse.Along((impacteePosition - origin).normalized);
         }
 
         protected override void PerformResetCleanup()
