@@ -4,7 +4,7 @@ using CosmicShore.Data;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// "Hesperides" - the GARDEN cell (~13.5k authored prisms). The freestyle six are worlds you
+    /// "Hesperides" - the GARDEN cell (~12k authored prisms). The freestyle six are worlds you
     /// fly through; this one is a world that <b>grows</b>. It authors only the garden's
     /// architecture - a five-terrace bowl of planting beds inside a walled rim, radial pergola
     /// arcades, trellis towers, an aqueduct ring feeding cascades into a central pool, a ring of
@@ -12,12 +12,14 @@ namespace CosmicShore.Gameplay
     /// fruit lanterns, and two bramble arcs of true danger prisms - and then <b>sows planting
     /// sites</b> (<see cref="FloraPlantingSite"/>) all over it: along every terrace, at every
     /// pergola foot and trellis foot, inside every hanging basket (normal pointing DOWN, so what
-    /// roots there trails), and around the pool rim.
+    /// roots there trails), and around the pool rim. Each site is TAGGED with its ground kind
+    /// (<see cref="FloraSiteKind"/>) so species plant where they belong - reeds at the water,
+    /// climbers at the column feet, bells in the baskets.
     ///
     /// The Cell's ordinary flora spawner plants into those sites through the ordinary spawn path,
     /// so the garden's canopy is made of LIVING flora - grazeable, joustable, starvable,
-    /// crystal-dropping food-web citizens - not laid scenery. Authored bones (~13.5k) plus a
-    /// mature planting (~20k) is the ~34k of <see cref="SpawnableYggdra"/>, but reached by growth
+    /// crystal-dropping food-web citizens - not laid scenery. Authored bones (~12k) plus a
+    /// mature planting (~21k) is the ~34k of <see cref="SpawnableYggdra"/>, but reached by growth
     /// instead of by lay: the cell arrives sparse and fills, and it stays full only while the food
     /// web lets it. Nothing here is on a clock; nothing decays. A garden the fauna strip back is
     /// a correct outcome, and the beds are still prepared ground when the pressure lifts.
@@ -99,7 +101,8 @@ namespace CosmicShore.Gameplay
                     if (i % 2 == 0)
                     {
                         float rr = r + ((i / 2) % 2 == 0 ? -12f : 12f);
-                        Sow(new Vector3(radial.x * rr, y + 3f, radial.z * rr), Vector3.up);
+                        Sow(new Vector3(radial.x * rr, y + 3f, radial.z * rr), Vector3.up,
+                            FloraSiteKind.Bed);
                     }
                 }
             }
@@ -161,7 +164,7 @@ namespace CosmicShore.Gameplay
                                 Jit(new Vector3(2.8f, 7.2f, 2.8f)), Domains.Gold);
 
                         // Prepared ground at the column foot, growing straight up the column.
-                        Sow(basePos + Vector3.up * 2f, Vector3.up);
+                        Sow(basePos + Vector3.up * 2f, Vector3.up, FloraSiteKind.Climb);
                     }
 
                     // The arch over the bay (fly under it).
@@ -231,10 +234,10 @@ namespace CosmicShore.Gameplay
                     }
                 }
 
-                Sow(foot + Vector3.up * 3f, Vector3.up);
+                Sow(foot + Vector3.up * 3f, Vector3.up, FloraSiteKind.Climb);
                 Sow(foot + Vector3.up * (height * 0.5f) + new Vector3(Mathf.Cos(a), 0f, Mathf.Sin(a)) * half,
-                    new Vector3(Mathf.Cos(a), 0.35f, Mathf.Sin(a)));
-                Sow(foot + Vector3.up * (height * 0.85f), Vector3.up);
+                    new Vector3(Mathf.Cos(a), 0.35f, Mathf.Sin(a)), FloraSiteKind.Climb);
+                Sow(foot + Vector3.up * (height * 0.85f), Vector3.up, FloraSiteKind.Ledge);
             }
         }
 
@@ -294,7 +297,8 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < 24; i++)
             {
                 float a = 2f * Mathf.PI * i / 24f;
-                Sow(new Vector3(Mathf.Cos(a) * 118f, Floor + 3f, Mathf.Sin(a) * 118f), Vector3.up);
+                Sow(new Vector3(Mathf.Cos(a) * 118f, Floor + 3f, Mathf.Sin(a) * 118f), Vector3.up,
+                    FloraSiteKind.Water);
             }
         }
 
@@ -331,7 +335,7 @@ namespace CosmicShore.Gameplay
                             Jit(new Vector3(1.2f, 4f, 1.2f)), Domains.Gold);
                 }
 
-                Sow(centre + Vector3.down * 3f, Vector3.down);
+                Sow(centre + Vector3.down * 3f, Vector3.down, FloraSiteKind.Basket);
             }
         }
 

@@ -17,10 +17,11 @@ MonoBehaviour:
   InitialSpawnCount: 1
   OverrideDefaultPlantPeriod: 0
   NewPlantPeriod: 2147483647
+  PreferredSites: 1
   Element: 2
   Variant:
     Enabled: 1
-    LeafSize: {x: 5.625, y: 5.625, z: 1.92}
+    LeafSize: {x: 6.075, y: 6.075, z: 1.2}
     GrowPeriod: 1.56
     ShieldPeriod: 0.0
     MaxTotalSpawnedObjects: 312

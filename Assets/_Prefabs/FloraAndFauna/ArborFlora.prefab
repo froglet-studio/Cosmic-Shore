@@ -69,9 +69,16 @@ MonoBehaviour:
   maxSpawnsPerFrame: 1
   segmentLength: 17
   segmentTaper: 0.96
+  stemScale: {x: 0.5, y: 0.5, z: 0.9}
+  leafScale: {x: 1, y: 0.28, z: 0.95}
+  depthTaper: 0.965
+  prismJitter: 0.2
+  whorlAlternateScale: 0.62
   tropism: 0.6
   wander: 0.16
   spreadDegrees: 8
+  gravityDroop: 0.05
+  spiralTwist: 7
   branchStartDepth: 3
   branchChance: 0.32
   branchAngle: 36
@@ -80,6 +87,8 @@ MonoBehaviour:
   whorlLeaves: 5
   whorlRadius: 11
   whorlFlare: 1.1
+  leafPitchDegrees: 28
+  terminalWhorlScale: 1.8
 --- !u!1001 &5588088495769702632
 PrefabInstance:
   m_ObjectHideFlags: 0

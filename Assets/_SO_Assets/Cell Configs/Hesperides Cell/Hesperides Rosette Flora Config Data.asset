@@ -14,13 +14,14 @@ MonoBehaviour:
   m_EditorClassIdentifier:
   FloraPrefab: {fileID: 7514956980722975813, guid: 6fa03dc8992ff35c13b3d9ef4bfa02d6, type: 3}
   SpawnProbability: 1
-  InitialSpawnCount: 18
+  InitialSpawnCount: 16
   OverrideDefaultPlantPeriod: 1
-  NewPlantPeriod: 7
+  NewPlantPeriod: 8
+  PreferredSites: 1
   Element: 2
   Variant:
     Enabled: 1
-    LeafSize: {x: 7, y: 7, z: 1.6}
+    LeafSize: {x: 7.56, y: 7.56, z: 1}
     GrowPeriod: 2.08
     ShieldPeriod: 0.0
     MaxTotalSpawnedObjects: 108

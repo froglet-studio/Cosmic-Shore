@@ -1782,11 +1782,44 @@ a set of growing **tips**, each advancing along its heading, pulled toward a gro
 wandering, occasionally forking, and past a depth opening **whorls** of leaves at the golden
 angle. Three prefabs express it:
 
-| prefab | tips | tropism / wander | whorls | live-prism budget | role |
-|---|---|---|---|---|---|
-| `ArborFlora` | 1, forks to 10 | 0.60 / 0.16 | 5 leaves every 3 nodes from depth 6, flaring | 260 | the canopy tree |
-| `TendrilFlora` | 3, forks to 8 | 0.12 / 0.50 | 2 leaves every 3 nodes | 120 | the climber |
-| `RosetteFlora` | 1, no forking | 0.90 / 0.05 | 8 leaves every node from depth 0 | 90 | the bed cover |
+| prefab | tips | tropism / wander / droop | whorls | budget | prefers | role |
+|---|---|---|---|---|---|---|
+| `ArborFlora` | 1, forks to 10 | 0.60 / 0.16 / 0.05 | 5 leaves every 3 nodes from depth 6, flaring, big terminal head | 260 | Bed | the canopy tree |
+| `RosetteFlora` | 1, no forking | 0.90 / 0.05 / 0 | 8 steeply-cupped leaves at **every** node | 90 | Bed | the bed carpet |
+| `FrondFlora` | 4, no forking | 0.45 / 0.10 / **0.35** | paired leaflets the whole way along an arching stem | 150 | Bed·Water | the fern |
+| `CoralFlora` | 3, forks to 14 | 0.30 / 0.34 / 0 | **none** — stubby forking only | 200 | Bed·Water | the low thicket |
+| `SpireFlora` | 1, forks to 3 | 0.92 / 0.05 / 0 | small whorls corkscrewing (twist 26°), huge terminal head | 170 | Ledge·Bed | the accent mast |
+| `TendrilFlora` | 3, forks to 8 | 0.12 / 0.50 / 0.18 | 2 leaves every 3 nodes | 120 | Climb | the climber |
+| `ReedFlora` | 5, no forking | 0.95 / 0.07 / 0.08 | one blade pair every 6 nodes, near the top | 110 | Water | the pool margin |
+| `LanternFlora` | 1, no forking | 0.85 / 0.08 / 0 | one big **down-cupped** head (pitch −55°) | 70 | Basket | the hanging bell |
+
+Two shipping species round it out as **topiary** — `GyroidFlora` and `SchwarzPFlora` on small
+prism budgets, planted sparsely on bed ground, so they read as clipped specimen pieces among the
+grown plants. The garden borrows the platform's flora rather than making everything new.
+
+**The prisms themselves.** Every prism used to be the one `leafSize` box, which is what made the
+first pass read as stamped rather than grown. Now shape follows role:
+
+- **Stem prisms** take their cross-section from the element's leaf identity and their LENGTH from
+  the actual segment (`stemScale.z` is a *fraction of the segment*), so successive segments meet
+  into a continuous stalk instead of a string of beads.
+- **Leaf prisms** span their own reach and are placed at **half their own length out from the
+  node**, so a leaf runs from the stalk outward and is attached. Placing them *at* the reach —
+  the first pass — left every leaf floating at the end of an invisible stem, which is the single
+  biggest reason the whorls read as a wheel of chips.
+- **Whorls are cupped, not flat** (`leafPitchDegrees`) and **alternate long/short**
+  (`whorlAlternateScale`), giving a head an inner and an outer rank. A flat wheel of equal leaves
+  reads as a gear.
+- **Depth taper + per-prism jitter** (`depthTaper`, `prismJitter`) — a mature trunk is heavy at
+  the base and fine at the crown, and nothing in the garden is machined.
+- **Gravity droop and spiral twist** (`gravityDroop`, `spiralTwist`) bend and corkscrew the stem
+  without competing with the growth axis — an arching frond, a spiralling spire.
+- **A terminal whorl** (`terminalWhorlScale`) opens at the end of a stalk whatever the whorl
+  cadence says: the bloom.
+
+Because prism lengths are now structural, this flora reads `LeafSize.x/y` (the element's
+cross-section — a Space garden is wiry, a Mass garden thick) and not `LeafSize.z`. The assembled
+species keep using `LeafSize.z` as their thin axis, unchanged.
 
 Everything else is inherited and unchanged: prisms are conserved mass laid through the ordinary
 health-prism path, growth is gated only on `Cell.FloraGrowingEnabled` (steady until Frenzy, no
@@ -1795,7 +1828,7 @@ are blind for a prism's first 0.6s), instantiation drains at `maxSpawnsPerFrame`
 is never a burst, death withers spindle-by-spindle from the extremities and drops the elemental
 crystal, and the heart is joustable while it lives. **No clock removes anything.**
 
-Twelve canonical configs (3 species × Charge/Mass/Space/Time) live in `_SO_Assets/Lifeforms/`,
+Thirty-two canonical configs (8 species × Charge/Mass/Space/Time) live in `_SO_Assets/Lifeforms/`,
 following the gyroid convention that an element's identity is its leaf PRISM and its growth
 TEMPO — matching the authored gyroid ordering (Space: long thin needles, slowest, smallest
 budget; Mass: fat slabs, biggest budget; Charge: ships shielded leaves; Time: the baseline shape,
@@ -1810,16 +1843,25 @@ environment publishes **sites** and the ordinary spawner uses them:
 
 ```
 SpawnableHesperides.BuildEnvironment()
-  ├─ Emit(...)  →  _cachedLays        (prisms, exactly as every environment does)
-  └─ Sow(pos, up) →  PlantingSites    (NEW: prepared ground + the bed's normal)
+  ├─ Emit(...)  →  _cachedLays               (prisms, exactly as every environment does)
+  └─ Sow(pos, up, kind) →  PlantingSites     (prepared ground + normal + FloraSiteKind)
                           │
-Cell.BuildEnvironmentNow() ─ AdoptPlantingSites()   copy + seeded shuffle (so the first
-                          │                          batch spreads over the whole bowl)
+Cell.BuildEnvironmentNow() ─ AdoptPlantingSites()   copy, seeded shuffle, bucket by kind
+                          │
 RandomLifeSpawner.PlantOne()
-  └─ Cell.TryTakePlantingSite(out pos, out up)      round-robin, WRAPS
+  └─ Cell.TryTakePlantingSite(cfg.PreferredSites, out pos, out up)   per-kind round-robin, WRAPS
         └─ CellLifeSpawnerBase.SpawnFlora(..., pos, up)
               └─ Flora.SetPlantPositionOverride(pos, up)   →  Flora.GrowthUp
 ```
+
+**Ground has a kind.** `FloraSiteKind` is a flags enum — `Bed`, `Climb`, `Basket`, `Water`,
+`Ledge` — the environment tags each site with, and `FloraConfigurationSO.PreferredSites` is what
+a species declares it wants. Reeds go to the pool, climbers to the column feet, bells to the
+baskets, and a tree never ends up in a hanging basket. It is a *preference*, not a requirement:
+a garden with none of the preferred ground falls back to any prepared site, and a cell with no
+prepared ground at all disperses across the membrane exactly as before, so nothing new can mute
+a species. Each kind carries its own cursor, so two species preferring different ground never
+advance each other's rotation.
 
 Four properties worth naming:
 
@@ -1866,8 +1908,8 @@ modifiers as Yggdra:
 | mature planting (~140 plants) | ~21,000 | ~478k | grown, not laid |
 | **mature total** | **~33,000** | **~985k** | ≈ Yggdra (34.3k / 541k) |
 
-563 planting sites: 306 along the terraces, 192 at pergola column feet, 27 on the trellises, 24
-around the pool rim, 14 in the baskets.
+563 planting sites, tagged by ground: **306 Bed** (terraces), **210 Climb** (192 pergola column
+feet + 18 trellis foot/mid), **24 Water** (pool rim), **14 Basket**, **9 Ledge** (trellis crowns).
 
 **PhaseThresholds ride the baseline** (§18's rule), but with the headroom sized for *growth*
 rather than for a trail: Restless at 16,300 / 602k (fauna start hunting once the garden is
@@ -1922,9 +1964,11 @@ counts × authored scales × the 1.04 expected `Jit` volume factor), not measure
    enter freestyle, fly the **Cell Selector**. Hesperides is the 8th mini-cell and must draw a
    real scale model (terraces + wall + dome) with a `LOAD` label. Select it: the old world
    suctions, the garden blooms in behind the veil.
-4. **The planting is the test.** Within ~30s of the swap, ~54 plants should appear *in the beds,
-   on the pergola feet, and hanging under the baskets* — not on a random sphere. Trailing growth
-   from the baskets is the direct check that the site normal is being honoured.
+4. **The planting is the test.** Within ~30s of the swap, ~93 plants should appear on the ground
+   each species prefers — arbors/rosettes/ferns/corals in the beds, tendrils on the pergola and
+   trellis feet, reeds at the pool rim, lanterns hanging *downward* under the baskets, spires on
+   the trellis crowns. Nothing on a random sphere. The trailing lanterns are the direct check
+   that the site normal is honoured; a reed in a basket means the kind tagging is wrong.
 5. **Growth + grazing.** Watch a few minutes: the canopy should thicken toward the Frenzy ceiling
    and then stop; tadpoles/quadfish should graze it and the architecture back down and growth
    should resume on its own. Confirm no plant ever vanishes — a grazed one withers and drops a
@@ -1941,5 +1985,8 @@ counts × authored scales × the 1.04 expected `Jit` volume factor), not measure
 - The wider dangling-`cellData` finding in §21.1 is unaddressed.
 - Hesperides authors no `Icon`; the Cell Selector uses the scale model, so this only matters if
   a future surface wants a sprite.
+- The eight forms' parameters are authored blind — they are geometrically reasoned, not looked
+  at. Expect a tuning pass on `whorlRadius` / `segmentLength` / `leafScale` per species once
+  they can be seen growing.
 - `Tools/ecosim/gen_hesperides_assets.py` regenerates the whole asset set deterministically —
   retune there rather than hand-editing twelve configs.

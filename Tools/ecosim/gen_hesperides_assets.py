@@ -113,49 +113,148 @@ ELEMENTS = {"Charge": 1, "Mass": 2, "Space": 3, "Time": 4}
 
 
 # ── Flora species: form is prefab data, element is config data ───────────────
+# Eight forms out of ONE growth model. What separates them is entirely parameters -
+# how many tips, how hard they seek the growth axis, how much they wander and droop,
+# how often and how wide they open a whorl, and the PROPORTIONS of their prisms
+# (stem vs leaf, as multiples of the element's leaf identity).
 SPECIES = {
-    # Arbor: one trunk, strong tropism, branching, wide flaring whorls. The canopy.
+    # The canopy tree: one trunk, strong tropism, forking, wide flaring cupped whorls.
     "Arbor": dict(
         initialTips=1, maxTips=10, maxDepth=24, maxTotalSpawnedObjects=260,
         growthsPerTick=3, maxSpawnsPerFrame=1,
         segmentLength=17, segmentTaper=0.96,
-        tropism=0.6, wander=0.16, spreadDegrees=8,
+        stemScale=(0.50, 0.50, 0.90), leafScale=(1.00, 0.28, 0.95),
+        depthTaper=0.965, prismJitter=0.20, whorlAlternateScale=0.62,
+        tropism=0.60, wander=0.16, spreadDegrees=8, gravityDroop=0.05, spiralTwist=7,
         branchStartDepth=3, branchChance=0.32, branchAngle=36,
         whorlStartDepth=6, whorlEvery=3, whorlLeaves=5, whorlRadius=11, whorlFlare=1.1,
+        leafPitchDegrees=28, terminalWhorlScale=1.8,
         leafSize=(4.5, 4.5, 1.2), growPeriod=1.2, plantPeriod=14, plantRadiusFraction=0.55,
-        healthBlocksForMaturity=1, minHealthBlocks=0,
+        sites="Bed",
     ),
-    # Tendril: several tips, weak tropism, heavy wander, sparse paired leaves. The climber.
+    # The climber: several tips, weak tropism, heavy wander, sparse paired leaves.
     "Tendril": dict(
         initialTips=3, maxTips=8, maxDepth=34, maxTotalSpawnedObjects=120,
         growthsPerTick=4, maxSpawnsPerFrame=1,
         segmentLength=11, segmentTaper=1.0,
-        tropism=0.12, wander=0.5, spreadDegrees=55,
+        stemScale=(0.30, 0.12, 0.95), leafScale=(0.55, 0.22, 0.90),
+        depthTaper=1.0, prismJitter=0.22, whorlAlternateScale=0.70,
+        tropism=0.12, wander=0.50, spreadDegrees=55, gravityDroop=0.18, spiralTwist=18,
         branchStartDepth=6, branchChance=0.12, branchAngle=48,
         whorlStartDepth=4, whorlEvery=3, whorlLeaves=2, whorlRadius=5, whorlFlare=0.2,
+        leafPitchDegrees=55, terminalWhorlScale=1.2,
         leafSize=(2.2, 5.4, 1.1), growPeriod=0.7, plantPeriod=9, plantRadiusFraction=0.5,
-        healthBlocksForMaturity=1, minHealthBlocks=0,
+        sites="Climb",
     ),
-    # Rosette: no rise to speak of, whorls from the first node, many leaves. The bed cover.
+    # The bed cover: no rise to speak of, a whorl at every node, steeply cupped.
     "Rosette": dict(
         initialTips=1, maxTips=4, maxDepth=8, maxTotalSpawnedObjects=90,
         growthsPerTick=2, maxSpawnsPerFrame=1,
         segmentLength=5, segmentTaper=1.05,
-        tropism=0.9, wander=0.05, spreadDegrees=4,
+        stemScale=(0.35, 0.35, 0.90), leafScale=(0.90, 0.16, 1.15),
+        depthTaper=0.99, prismJitter=0.16, whorlAlternateScale=0.50,
+        tropism=0.90, wander=0.05, spreadDegrees=4, gravityDroop=0.0, spiralTwist=0,
         branchStartDepth=99, branchChance=0.0, branchAngle=20,
         whorlStartDepth=0, whorlEvery=1, whorlLeaves=8, whorlRadius=9, whorlFlare=2.4,
+        leafPitchDegrees=62, terminalWhorlScale=0.0,
         leafSize=(5.6, 5.6, 1.0), growPeriod=1.6, plantPeriod=7, plantRadiusFraction=0.6,
-        healthBlocksForMaturity=1, minHealthBlocks=0,
+        sites="Bed",
+    ),
+    # The fern: a clump of arching stems, leaflets in pairs the whole way along.
+    "Frond": dict(
+        initialTips=4, maxTips=6, maxDepth=20, maxTotalSpawnedObjects=150,
+        growthsPerTick=3, maxSpawnsPerFrame=1,
+        segmentLength=12, segmentTaper=0.94,
+        stemScale=(0.22, 0.22, 0.95), leafScale=(0.50, 0.20, 1.00),
+        depthTaper=0.95, prismJitter=0.18, whorlAlternateScale=0.85,
+        tropism=0.45, wander=0.10, spreadDegrees=42, gravityDroop=0.35, spiralTwist=3,
+        branchStartDepth=99, branchChance=0.0, branchAngle=20,
+        whorlStartDepth=1, whorlEvery=1, whorlLeaves=2, whorlRadius=6, whorlFlare=0.9,
+        leafPitchDegrees=42, terminalWhorlScale=1.4,
+        leafSize=(3.0, 3.0, 1.4), growPeriod=0.9, plantPeriod=10, plantRadiusFraction=0.55,
+        sites="Bed|Water",
+    ),
+    # The spire: a narrow mast whose small whorls corkscrew, opening a big head at the top.
+    "Spire": dict(
+        initialTips=1, maxTips=3, maxDepth=30, maxTotalSpawnedObjects=170,
+        growthsPerTick=2, maxSpawnsPerFrame=1,
+        segmentLength=13, segmentTaper=0.985,
+        stemScale=(0.28, 0.28, 0.95), leafScale=(0.70, 0.25, 1.00),
+        depthTaper=0.985, prismJitter=0.14, whorlAlternateScale=0.55,
+        tropism=0.92, wander=0.05, spreadDegrees=3, gravityDroop=0.0, spiralTwist=26,
+        branchStartDepth=12, branchChance=0.08, branchAngle=14,
+        whorlStartDepth=2, whorlEvery=2, whorlLeaves=3, whorlRadius=4.5, whorlFlare=1.6,
+        leafPitchDegrees=15, terminalWhorlScale=2.6,
+        leafSize=(3.4, 3.4, 1.3), growPeriod=1.0, plantPeriod=18, plantRadiusFraction=0.5,
+        sites="Ledge|Bed",
+    ),
+    # The bell: a short stalk and one big open head. In a basket the growth axis points
+    # DOWN, so it hangs - which is the whole reason a site carries a normal.
+    "Lantern": dict(
+        initialTips=1, maxTips=2, maxDepth=6, maxTotalSpawnedObjects=70,
+        growthsPerTick=2, maxSpawnsPerFrame=1,
+        segmentLength=9, segmentTaper=1.0,
+        stemScale=(0.22, 0.22, 0.92), leafScale=(1.00, 0.22, 1.05),
+        depthTaper=1.0, prismJitter=0.15, whorlAlternateScale=0.75,
+        tropism=0.85, wander=0.08, spreadDegrees=6, gravityDroop=0.0, spiralTwist=0,
+        branchStartDepth=99, branchChance=0.0, branchAngle=20,
+        whorlStartDepth=5, whorlEvery=1, whorlLeaves=9, whorlRadius=12, whorlFlare=0.4,
+        leafPitchDegrees=-55, terminalWhorlScale=2.2,
+        leafSize=(4.0, 4.0, 1.5), growPeriod=1.1, plantPeriod=11, plantRadiusFraction=0.45,
+        sites="Basket",
+    ),
+    # The thicket: dense low forking, stubby prisms, no whorls at all - brain-coral cover.
+    "Coral": dict(
+        initialTips=3, maxTips=14, maxDepth=16, maxTotalSpawnedObjects=200,
+        growthsPerTick=4, maxSpawnsPerFrame=1,
+        segmentLength=7, segmentTaper=0.93,
+        stemScale=(0.50, 0.50, 0.90), leafScale=(1.00, 1.00, 1.00),
+        depthTaper=0.94, prismJitter=0.26, whorlAlternateScale=1.0,
+        tropism=0.30, wander=0.34, spreadDegrees=48, gravityDroop=0.0, spiralTwist=0,
+        branchStartDepth=1, branchChance=0.55, branchAngle=42,
+        whorlStartDepth=99, whorlEvery=1, whorlLeaves=0, whorlRadius=3, whorlFlare=0.0,
+        leafPitchDegrees=0, terminalWhorlScale=0.0,
+        leafSize=(2.6, 2.6, 2.0), growPeriod=1.0, plantPeriod=15, plantRadiusFraction=0.55,
+        sites="Bed|Water",
+    ),
+    # The reeds: a clump of tall bare stalks with the odd blade near the top.
+    "Reed": dict(
+        initialTips=5, maxTips=6, maxDepth=22, maxTotalSpawnedObjects=110,
+        growthsPerTick=3, maxSpawnsPerFrame=1,
+        segmentLength=14, segmentTaper=1.0,
+        stemScale=(0.22, 0.22, 0.97), leafScale=(0.55, 0.22, 1.00),
+        depthTaper=0.99, prismJitter=0.20, whorlAlternateScale=0.6,
+        tropism=0.95, wander=0.07, spreadDegrees=12, gravityDroop=0.08, spiralTwist=11,
+        branchStartDepth=99, branchChance=0.0, branchAngle=20,
+        whorlStartDepth=8, whorlEvery=6, whorlLeaves=2, whorlRadius=7, whorlFlare=0.3,
+        leafPitchDegrees=68, terminalWhorlScale=1.6,
+        leafSize=(2.4, 2.4, 1.6), growPeriod=0.8, plantPeriod=12, plantRadiusFraction=0.5,
+        sites="Water",
     ),
 }
 
-# Per-element expression (FloraVariantTuning), following the authored gyroid convention:
-# the element's identity is largely the leaf PRISM and the growth TEMPO.
+# FloraSiteKind bit values (must track the C# [Flags] enum).
+SITE_KIND = {"Bed": 1, "Climb": 2, "Basket": 4, "Water": 8, "Ledge": 16}
+
+
+def site_mask(spec):
+    return sum(SITE_KIND[k] for k in spec.split("|"))
+
+
+# Per-element expression (FloraVariantTuning), following the authored gyroid convention that an
+# element's identity is its leaf PRISM and its growth TEMPO.
+#
+# For PhyllotacticFlora the identity lands in the prism CROSS-SECTION: prism LENGTHS are
+# structural (a stem spans its segment, a leaf spans its reach - see StemPrismScale /
+# LeafPrismScale), so LeafSize.z is not read and only x,y carry the element. That still reads
+# clearly in-world - a Space garden is wiry and fine, a Mass garden is thick and heavy - and it
+# stacks with the tempo and budget differences below. The assembled species (gyroid, Schwarz P)
+# keep using LeafSize.z as their thin axis, unchanged.
 ELEMENT_TUNING = {
-    "Charge": dict(leaf_mul=(0.9, 0.9, 1.0), grow_mul=1.0, shield=1.0, budget_mul=0.85),
-    "Mass":   dict(leaf_mul=(1.25, 1.25, 1.6), grow_mul=1.3, shield=0.0, budget_mul=1.2),
-    "Space":  dict(leaf_mul=(0.55, 0.55, 3.2), grow_mul=1.8, shield=0.0, budget_mul=0.7),
-    "Time":   dict(leaf_mul=(1.0, 1.0, 1.0), grow_mul=0.5, shield=0.0, budget_mul=1.0),
+    "Charge": dict(leaf_mul=(0.85, 0.85, 1.0), grow_mul=1.0, shield=1.0, budget_mul=0.85),
+    "Mass":   dict(leaf_mul=(1.35, 1.35, 1.0), grow_mul=1.3, shield=0.0, budget_mul=1.2),
+    "Space":  dict(leaf_mul=(0.50, 0.50, 1.0), grow_mul=1.8, shield=0.0, budget_mul=0.7),
+    "Time":   dict(leaf_mul=(1.00, 1.00, 1.0), grow_mul=0.5, shield=0.0, budget_mul=1.0),
 }
 
 
@@ -216,8 +315,8 @@ MonoBehaviour:
   cellData: {{fileID: 11400000, guid: {RUNTIME_CELL_DATA}, type: 2}}
   healthPrism: {{fileID: {HEALTH_BLOCK[0]}, guid: {HEALTH_BLOCK[1]}, type: 3}}
   spindle: {{fileID: {BRANCH_SPINDLE[0]}, guid: {BRANCH_SPINDLE[1]}, type: 3}}
-  healthBlocksForMaturity: {s['healthBlocksForMaturity']}
-  minHealthBlocks: {s['minHealthBlocks']}
+  healthBlocksForMaturity: 1
+  minHealthBlocks: 0
   shieldPeriod: 0
   autoInitialize: 1
   domain: 0
@@ -236,9 +335,16 @@ MonoBehaviour:
   maxSpawnsPerFrame: {s['maxSpawnsPerFrame']}
   segmentLength: {s['segmentLength']}
   segmentTaper: {s['segmentTaper']}
+  stemScale: {v3(s['stemScale'])}
+  leafScale: {v3(s['leafScale'])}
+  depthTaper: {s['depthTaper']}
+  prismJitter: {s['prismJitter']}
+  whorlAlternateScale: {s['whorlAlternateScale']}
   tropism: {s['tropism']}
   wander: {s['wander']}
   spreadDegrees: {s['spreadDegrees']}
+  gravityDroop: {s['gravityDroop']}
+  spiralTwist: {s['spiralTwist']}
   branchStartDepth: {s['branchStartDepth']}
   branchChance: {s['branchChance']}
   branchAngle: {s['branchAngle']}
@@ -247,6 +353,8 @@ MonoBehaviour:
   whorlLeaves: {s['whorlLeaves']}
   whorlRadius: {s['whorlRadius']}
   whorlFlare: {s['whorlFlare']}
+  leafPitchDegrees: {s['leafPitchDegrees']}
+  terminalWhorlScale: {s['terminalWhorlScale']}
 {CRYSTAL_CHILD}"""
 
 
@@ -435,12 +543,15 @@ MonoBehaviour:
 
 def flora_config(asset_name, species, element, prefab_fileid, prefab_guid,
                  initial_count, probability, plant_period_override,
-                 spread, palette_guids):
+                 spread, palette_guids, sites=None, leaf_override=None, budget_override=None):
     s = SPECIES[species]
     e = ELEMENT_TUNING[element]
-    leaf = tuple(round(s["leafSize"][i] * e["leaf_mul"][i], 3) for i in range(3))
+    sites = site_mask(sites if sites else s["sites"])
+    base_leaf = leaf_override if leaf_override else s["leafSize"]
+    leaf = tuple(round(base_leaf[i] * e["leaf_mul"][i], 3) for i in range(3))
     grow = round(s["growPeriod"] * e["grow_mul"], 3)
-    budget = int(round(s["maxTotalSpawnedObjects"] * e["budget_mul"]))
+    base_budget = budget_override if budget_override else s["maxTotalSpawnedObjects"]
+    budget = int(round(base_budget * e["budget_mul"]))
     if palette_guids:
         palette_block = "  ElementPalette:\n" + "\n".join(
             f"  - {{fileID: 11400000, guid: {g}, type: 2}}" for g in palette_guids)
@@ -467,6 +578,7 @@ MonoBehaviour:
   InitialSpawnCount: {initial_count}
   OverrideDefaultPlantPeriod: {override}
   NewPlantPeriod: {period}
+  PreferredSites: {sites}
   Element: {ELEMENTS[element]}
   Variant:
     Enabled: 1
@@ -480,6 +592,54 @@ MonoBehaviour:
   CrystalScalePerLevel: 1.2
   SpreadElements: {1 if spread else 0}
 {palette_block}
+  Levels:
+    Enabled: 1
+    MinLevel: 1
+    MaxLevel: 5
+    RarityFalloff: 2
+"""
+
+
+def topiary_config(asset_name, spec, _g):
+    """
+    A config for one of the SHIPPING assembled flora (gyroid / Schwarz P), tuned small and
+    planted sparsely on bed ground. Element spreads across the species' own four canonical
+    library configs in _SO_Assets/Lifeforms, exactly like every other cell does it.
+    """
+    fid, pguid = spec["prefab"]
+    return f"""%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {{fileID: 0}}
+  m_PrefabInstance: {{fileID: 0}}
+  m_PrefabAsset: {{fileID: 0}}
+  m_GameObject: {{fileID: 0}}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {{fileID: 11500000, guid: {SCRIPT_FLORA_CONFIG}, type: 3}}
+  m_Name: {asset_name}
+  m_EditorClassIdentifier:
+  FloraPrefab: {{fileID: {fid}, guid: {pguid}, type: 3}}
+  SpawnProbability: 1
+  InitialSpawnCount: {spec['initial']}
+  OverrideDefaultPlantPeriod: 1
+  NewPlantPeriod: {spec['period']}
+  PreferredSites: {SITE_KIND['Bed']}
+  Element: 2
+  Variant:
+    Enabled: 1
+    LeafSize: {v3(spec['leaf'])}
+    GrowPeriod: {spec['grow']}
+    ShieldPeriod: 0
+    MaxTotalSpawnedObjects: {spec['budget']}
+    PlantRadiusCellFraction: 0.5
+  InitialLevel: 1
+  LeafScalePerLevel: 1.15
+  CrystalScalePerLevel: 1.2
+  SpreadElements: 1
+  ElementPalette: []
   Levels:
     Enabled: 1
     MinLevel: 1
@@ -592,8 +752,22 @@ MonoBehaviour:
 
     # The cell's own flora config data: element SPREAD across the canonical palette (so the
     # garden carries all four elemental crystals), planting counts owned here.
+    #
+    # The initial batch is what the garden looks like the moment it finishes building; the
+    # period is how fast it keeps filling toward the Frenzy ceiling. Counts are weighted to
+    # the ground each species prefers (306 bed sites, 210 climb, 24 water, 14 basket, 9 ledge)
+    # so no kind of ground sits conspicuously bare or conspicuously stacked.
     cell_flora = {}
-    seeding = {"Arbor": (14, 14), "Tendril": (22, 9), "Rosette": (18, 7)}
+    seeding = {
+        "Arbor": (10, 16),     # bed - the canopy, sparse and large
+        "Rosette": (16, 8),    # bed - carpet
+        "Frond": (12, 10),     # bed + water
+        "Coral": (8, 15),      # bed + water - low thicket
+        "Spire": (6, 18),      # ledge + bed - the accents
+        "Tendril": (20, 9),    # climb - the pergolas and trellises
+        "Reed": (8, 12),       # water - the pool margin
+        "Lantern": (8, 11),    # basket - the hanging bells
+    }
     for name, (initial, period) in seeding.items():
         asset = f"Hesperides {name} Flora Config Data"
         rel = f"{folder}/{asset}.asset"
@@ -605,10 +779,30 @@ MonoBehaviour:
             spread=True, palette_guids=[library[(name, e)] for e in ELEMENTS])))
         meta_asset(rel, g)
 
+    # Topiary: the two SHIPPING assembled species (gyroid + Schwarz P minimal surfaces) planted
+    # sparsely on bed ground with a small prism budget, so they read as clipped specimen
+    # topiary among the grown plants. Cross-species diversity for free - the garden borrows the
+    # platform's flora rather than making everything a new species.
+    TOPIARY = {
+        "Gyroid": dict(prefab=("8186157953239024492", "a84d160ac0bcaf94da22c5368e4d3962"),
+                       leaf=(3.6, 3.0, 2.2), grow=0.5, budget=190, initial=3, period=90),
+        "SchwarzP": dict(prefab=("8186157953239024492", "3bbc2887bdb944b39945e4a926291007"),
+                         leaf=(4.2, 4.2, 1.0), grow=0.8, budget=150, initial=2, period=110),
+    }
+    topiary_guids = {}
+    for name, spec in TOPIARY.items():
+        asset = f"Hesperides {name} Topiary Config Data"
+        rel = f"{folder}/{asset}.asset"
+        g = guid(f"topiary/{asset}")
+        topiary_guids[name] = g
+        made.append(write(rel, topiary_config(asset, spec, g)))
+        meta_asset(rel, g)
+
     profile_guid = guid("profile/Hesperides")
     profile_rel = f"{folder}/Hesperides Cell Spawn Profile.asset"
     flora_refs = "\n".join(
-        f"  - {{fileID: 11400000, guid: {cell_flora[n]}, type: 2}}" for n in seeding)
+        [f"  - {{fileID: 11400000, guid: {cell_flora[n]}, type: 2}}" for n in seeding] +
+        [f"  - {{fileID: 11400000, guid: {topiary_guids[n]}, type: 2}}" for n in topiary_guids])
     made.append(write(profile_rel, f"""%YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
 --- !u!114 &11400000

@@ -1155,8 +1155,7 @@ namespace CosmicShore.Gameplay
         {
             // Cleared unconditionally: a swap into a config with no environment (or none at all)
             // must not leave the previous world's beds addressable.
-            _plantingSites.Clear();
-            _nextPlantingSite = 0;
+            ClearPlantingSites();
 
             if (!cellConfigData || cellConfigData.EnvironmentPrefab == null) return;
             using (LoadInsights.Measure(LoadInsightCategory.Environment,
@@ -1185,6 +1184,17 @@ namespace CosmicShore.Gameplay
         readonly List<FloraPlantingSite> _plantingSites = new();
         int _nextPlantingSite;
 
+        // Sites bucketed by ground kind, each with its own cursor, so a species that prefers
+        // basket ground walks the baskets rather than scanning past every terrace bed - and two
+        // species preferring different ground never advance each other's rotation.
+        readonly Dictionary<FloraSiteKind, List<FloraPlantingSite>> _sitesByKind = new();
+        readonly Dictionary<FloraSiteKind, int> _kindCursor = new();
+        static readonly FloraSiteKind[] SiteKinds =
+        {
+            FloraSiteKind.Bed, FloraSiteKind.Climb, FloraSiteKind.Basket,
+            FloraSiteKind.Water, FloraSiteKind.Ledge,
+        };
+
         /// <summary>True when this cell's environment prepared ground for planting.</summary>
         public bool HasPlantingSites => _plantingSites.Count > 0;
 
@@ -1203,23 +1213,70 @@ namespace CosmicShore.Gameplay
         /// again, so the garden regrows where it was planted. Returns false (and the caller
         /// falls back to the legacy shell dispersal) when the environment prepared none.
         /// </summary>
-        public bool TryTakePlantingSite(out Vector3 position, out Vector3 up)
+        public bool TryTakePlantingSite(out Vector3 position, out Vector3 up) =>
+            TryTakePlantingSite(FloraSiteKind.Any, out position, out up);
+
+        /// <summary>
+        /// The next prepared spot whose ground is one of <paramref name="preferred"/>. A species
+        /// that prefers ground the garden doesn't have falls back to any site rather than never
+        /// planting - a preference is a preference, not a requirement.
+        /// </summary>
+        public bool TryTakePlantingSite(FloraSiteKind preferred, out Vector3 position, out Vector3 up)
         {
             position = default;
             up = Vector3.up;
             if (_plantingSites.Count == 0) return false;
 
+            if (preferred != FloraSiteKind.None && preferred != FloraSiteKind.Any &&
+                TryTakeFromKinds(preferred, out var match))
+            {
+                Project(match, out position, out up);
+                return true;
+            }
+
             var site = _plantingSites[_nextPlantingSite % _plantingSites.Count];
             _nextPlantingSite++;
+            Project(site, out position, out up);
+            return true;
+        }
+
+        void Project(in FloraPlantingSite site, out Vector3 position, out Vector3 up)
+        {
             position = transform.TransformPoint(site.Position);
             up = transform.TransformDirection(site.Up);
-            return true;
+        }
+
+        /// <summary>
+        /// Round-robin across the preferred kinds AND within each kind: the per-kind cursors
+        /// advance together so a species asking for Bed|Ledge alternates between them instead of
+        /// draining one. Returns false when the garden prepared none of the preferred kinds.
+        /// </summary>
+        bool TryTakeFromKinds(FloraSiteKind preferred, out FloraPlantingSite site)
+        {
+            site = default;
+            int matched = 0;
+            // Deterministic starting offset that advances per call, so successive plants of the
+            // same species rotate through the preferred kinds rather than always taking the first.
+            int offset = _nextPlantingSite++;
+
+            for (int pass = 0; pass < SiteKinds.Length; pass++)
+            {
+                var kind = SiteKinds[(offset + pass) % SiteKinds.Length];
+                if ((preferred & kind) == 0) continue;
+                if (!_sitesByKind.TryGetValue(kind, out var list) || list.Count == 0) continue;
+
+                int cursor = _kindCursor.TryGetValue(kind, out var c) ? c : 0;
+                site = list[cursor % list.Count];
+                _kindCursor[kind] = cursor + 1;
+                matched++;
+                break;
+            }
+            return matched > 0;
         }
 
         void AdoptPlantingSites()
         {
-            _plantingSites.Clear();
-            _nextPlantingSite = 0;
+            ClearPlantingSites();
 
             if (cellConfigData.EnvironmentPrefab is not CellEnvironmentSpawnableBase garden) return;
             var sites = garden.PlantingSites;
@@ -1237,6 +1294,22 @@ namespace CosmicShore.Gameplay
                 int j = rng.Next(i + 1);
                 (_plantingSites[i], _plantingSites[j]) = (_plantingSites[j], _plantingSites[i]);
             }
+
+            // Bucket the (already shuffled) sites by ground kind for the preference path.
+            foreach (var site in _plantingSites)
+            {
+                if (!_sitesByKind.TryGetValue(site.Kind, out var list))
+                    _sitesByKind[site.Kind] = list = new List<FloraPlantingSite>();
+                list.Add(site);
+            }
+        }
+
+        void ClearPlantingSites()
+        {
+            _plantingSites.Clear();
+            _sitesByKind.Clear();
+            _kindCursor.Clear();
+            _nextPlantingSite = 0;
         }
 
         // =====================================================================

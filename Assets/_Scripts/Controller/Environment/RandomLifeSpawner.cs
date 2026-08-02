@@ -129,7 +129,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         static void PlantOne(Cell host, FloraConfigurationSO floraCfg, Domains? excluded)
         {
-            if (host.TryTakePlantingSite(out var pos, out var up))
+            if (host.TryTakePlantingSite(floraCfg.PreferredSites, out var pos, out var up))
                 SpawnFlora(host, floraCfg.FloraPrefab, excluded, floraCfg, pos, up);
             else
                 SpawnFlora(host, floraCfg.FloraPrefab, excluded, floraCfg);

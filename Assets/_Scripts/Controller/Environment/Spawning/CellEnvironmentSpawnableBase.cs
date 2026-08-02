@@ -216,7 +216,7 @@ namespace CosmicShore.Gameplay
         /// clearance as prisms - a pad the player spawns on should not have a tree growing out of
         /// it either.
         /// </summary>
-        protected void Sow(Vector3 pos, Vector3 up)
+        protected void Sow(Vector3 pos, Vector3 up, FloraSiteKind kind = FloraSiteKind.Bed)
         {
             if (_plantingSites == null) return;
             if (spawnClearPoints != null && spawnClearRadius > 0f)
@@ -226,7 +226,7 @@ namespace CosmicShore.Gameplay
                     if ((pos - spawnClearPoints[i]).sqrMagnitude < rr)
                         return;
             }
-            _plantingSites.Add(new FloraPlantingSite(pos, up));
+            _plantingSites.Add(new FloraPlantingSite(pos, up, kind));
         }
     }
 }

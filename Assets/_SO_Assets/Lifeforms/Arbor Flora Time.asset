@@ -17,6 +17,7 @@ MonoBehaviour:
   InitialSpawnCount: 1
   OverrideDefaultPlantPeriod: 0
   NewPlantPeriod: 2147483647
+  PreferredSites: 1
   Element: 4
   Variant:
     Enabled: 1

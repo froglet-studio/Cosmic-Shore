@@ -55,6 +55,32 @@ namespace CosmicShore.Gameplay
         [Tooltip("Length multiplier per depth - <1 tapers the plant toward its tips.")]
         [SerializeField, Range(0.6f, 1.2f)] float segmentTaper = 0.97f;
 
+        // Prism shape note: LENGTHS here are structural - a stem prism spans its own segment, a
+        // leaf prism spans its own reach - so this flora reads LeafSize.x/y (the element's
+        // cross-section identity: a Space plant is wiry, a Mass plant is thick) and does NOT
+        // read LeafSize.z. The assembled species keep using LeafSize.z as their thin axis.
+        [Header("Form - prism shape")]
+        [Tooltip("STEM prism: x,y are cross-section multiples of the flora's leafSize (so the " +
+                 "per-element leaf identity - the Space needle, the Mass slab - carries into the " +
+                 "stalk), and z is the fraction of the ACTUAL SEGMENT LENGTH the prism spans. " +
+                 "z near 1 chains the segments into a continuous stalk; a fixed length would " +
+                 "leave a long-segmented plant looking like a string of beads.")]
+        [SerializeField] Vector3 stemScale = new(0.5f, 0.5f, 0.9f);
+        [Tooltip("WHORL LEAF prism: x,y are cross-section multiples of leafSize, z is the " +
+                 "fraction of the leaf's REACH it spans. The leaf is then placed at half its " +
+                 "own length out from the node, so it runs from the stalk outward and is " +
+                 "ATTACHED rather than floating at the end of an invisible stalk.")]
+        [SerializeField] Vector3 leafScale = new(1f, 0.28f, 0.95f);
+        [Tooltip("Scale multiplier per depth - <1 thins the plant toward its tips, so a mature " +
+                 "trunk reads heavy at the base and fine at the crown.")]
+        [SerializeField, Range(0.8f, 1.1f)] float depthTaper = 0.97f;
+        [Tooltip("Per-prism uniform size jitter (±fraction). Nothing in a garden is machined; " +
+                 "a little variation is most of what separates 'grown' from 'stamped'.")]
+        [SerializeField, Range(0f, 0.5f)] float prismJitter = 0.18f;
+        [Tooltip("Every other leaf in a whorl takes this fraction of full length - the long/short " +
+                 "alternation real whorls have. 1 = every leaf the same.")]
+        [SerializeField, Range(0.2f, 1f)] float whorlAlternateScale = 0.62f;
+
         [Header("Form - heading")]
         [Tooltip("Per-step pull toward the growth axis (the planting site's normal, or outward " +
                  "from the cell centre when unplanted ground). 0 = a creeper that ignores up.")]
@@ -64,6 +90,12 @@ namespace CosmicShore.Gameplay
         [SerializeField, Range(0f, 1f)] float wander = 0.2f;
         [Tooltip("Half-angle of the cone the initial tips are seeded into, around the growth axis.")]
         [SerializeField, Range(0f, 90f)] float spreadDegrees = 20f;
+        [Tooltip("Constant downward bias added to every heading step (world -Y). Turns a mast " +
+                 "into an arching frond or a weeping form; 0 for anything that should stand up.")]
+        [SerializeField, Range(0f, 1f)] float gravityDroop;
+        [Tooltip("Extra roll about the heading per node, in degrees, on top of the golden angle - " +
+                 "a stem whose whorls corkscrew rather than stacking in register.")]
+        [SerializeField, Range(-40f, 40f)] float spiralTwist;
 
         [Header("Form - branching")]
         [SerializeField, Min(0)] int branchStartDepth = 3;
@@ -81,6 +113,12 @@ namespace CosmicShore.Gameplay
         [Tooltip("Extra whorl radius at full depth, as a fraction of the base radius - a crown " +
                  "that opens as it climbs.")]
         [SerializeField, Range(0f, 3f)] float whorlFlare = 0.8f;
+        [Tooltip("Tilt of each whorl leaf toward the tip (+) or the root (-), in degrees. A flat " +
+                 "wheel of leaves reads as a gear; a cupped one reads as a flower.")]
+        [SerializeField, Range(-80f, 80f)] float leafPitchDegrees = 24f;
+        [Tooltip("A tip that reaches maxDepth opens one final whorl at this size multiple - the " +
+                 "bloom at the end of the stalk. 0 = no terminal head.")]
+        [SerializeField, Range(0f, 4f)] float terminalWhorlScale = 1.7f;
 
         /// <summary>The phyllotaxis constant - the same golden angle the authored canopies use.</summary>
         const float GoldenAngle = 2.39996323f;
@@ -103,6 +141,7 @@ namespace CosmicShore.Gameplay
             public Vector3 position;
             public Quaternion rotation;
             public Vector3 heading;
+            public Vector3 scale;
             public bool becomesTip;
             public float decidedAt;
         }
@@ -177,6 +216,9 @@ namespace CosmicShore.Gameplay
 
             Vector3 heading = Vector3.Slerp(tip.heading, _axis, tropism * 0.3f);
             if (wander > 0f) heading += Random.onUnitSphere * wander;
+            // Gravity is not a tropism: it does not compete with the growth axis, it bends the
+            // result. A frond climbs and arches over; a mast with droop 0 is unaffected.
+            if (gravityDroop > 0f) heading += Vector3.down * gravityDroop;
             if (heading.sqrMagnitude < 0.0001f) heading = _axis;
             heading.Normalize();
 
@@ -190,28 +232,41 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
+            int nodeDepth = tip.depth + 1;
+
             _pending.Enqueue(new SpawnOrder
             {
                 parent = tip,
                 position = pos,
                 rotation = SpawnPoint.LookRotation(heading, _axis),
                 heading = heading,
+                // The stem prism runs ALONG the segment (long axis +z == heading), so successive
+                // segments overlap into one stalk instead of reading as beads.
+                scale = StemPrismScale(nodeDepth, len, 1f),
                 becomesTip = true,
                 decidedAt = Time.time,
             });
 
             // A whorl at this node - the leaf head. Terminal leaves (they never become tips),
             // which is what bounds a mature plant's cost.
-            int nodeDepth = tip.depth + 1;
+            bool atTip = nodeDepth >= maxDepth;
             if (whorlLeaves > 0 && nodeDepth >= whorlStartDepth &&
                 (nodeDepth - whorlStartDepth) % whorlEvery == 0)
-                DecideWhorl(tip, pos, heading, nodeDepth);
+                DecideWhorl(tip, pos, heading, nodeDepth, 1f);
+            // ...and the bloom at the end of the stalk, whatever the whorl cadence says.
+            else if (whorlLeaves > 0 && atTip && terminalWhorlScale > 0f)
+                DecideWhorl(tip, pos, heading, nodeDepth, terminalWhorlScale);
         }
 
-        void DecideWhorl(Tip tip, Vector3 node, Vector3 heading, int depth)
+        /// <summary>
+        /// A whorl of leaves spaced at the golden angle around the heading, cupped toward the tip
+        /// by <see cref="leafPitchDegrees"/> and alternating long/short. The flat wheel this
+        /// replaces read as a gear; the cup and the alternation are what make it read as a head.
+        /// </summary>
+        void DecideWhorl(Tip tip, Vector3 node, Vector3 heading, int depth, float sizeScale)
         {
             float t = maxDepth > 0 ? Mathf.Clamp01(depth / (float)maxDepth) : 0f;
-            float radius = whorlRadius * (1f + whorlFlare * t);
+            float radius = whorlRadius * (1f + whorlFlare * t) * sizeScale;
             Vector3 basis = Vector3.Cross(heading, Mathf.Abs(Vector3.Dot(heading, _axis)) > 0.95f
                 ? Vector3.right : _axis);
             if (basis.sqrMagnitude < 0.0001f) basis = Vector3.Cross(heading, Vector3.forward);
@@ -221,8 +276,23 @@ namespace CosmicShore.Gameplay
             {
                 float angle = tip.roll + i * GoldenAngle;
                 Vector3 outward = Quaternion.AngleAxis(angle * Mathf.Rad2Deg, heading) * basis;
-                Vector3 pos = node + outward * radius;
-                if (!Claim(pos, radius)) continue;
+
+                // Cup: tilt the leaf toward (or away from) the growing tip.
+                Vector3 hinge = Vector3.Cross(outward, heading);
+                if (hinge.sqrMagnitude > 0.0001f)
+                    outward = Quaternion.AngleAxis(-leafPitchDegrees, hinge.normalized) * outward;
+                outward.Normalize();
+
+                // Long/short alternation: a head with an inner and an outer rank, not one flat rim.
+                float reach = radius * ((i % 2 == 0) ? 1f : whorlAlternateScale);
+                var scale = LeafPrismScale(depth, reach);
+
+                // Placed at HALF its own length out from the node, so the leaf runs from the
+                // stalk outward and is attached to the plant. Placing it AT the reach left every
+                // leaf floating at the end of an invisible stem - the single biggest reason the
+                // whorls read as a wheel of chips rather than a head of leaves.
+                Vector3 pos = node + outward * (scale.z * 0.5f);
+                if (!Claim(pos, scale.z * 0.35f)) continue;
 
                 _pending.Enqueue(new SpawnOrder
                 {
@@ -230,11 +300,47 @@ namespace CosmicShore.Gameplay
                     position = pos,
                     rotation = SpawnPoint.LookRotation(outward, heading),
                     heading = outward,
+                    scale = scale,
                     becomesTip = false,
                     decidedAt = Time.time,
                 });
             }
         }
+
+        /// <summary>
+        /// The stem prism for a node: cross-section from the element's leaf identity
+        /// (<c>FloraVariantTuning.LeafSize</c>, already level-scaled), long axis spanning
+        /// <paramref name="segment"/> so successive segments meet.
+        /// </summary>
+        Vector3 StemPrismScale(int depth, float segment, float lengthMul)
+        {
+            float taper = Mathf.Pow(depthTaper, depth);
+            float j = Jitter();
+            return Floor(new Vector3(
+                LeafSize.x * stemScale.x * taper * j,
+                LeafSize.y * stemScale.y * taper * j,
+                segment * stemScale.z * lengthMul * j));
+        }
+
+        /// <summary>
+        /// The leaf prism for a whorl position: cross-section from the element's leaf identity,
+        /// long axis spanning <paramref name="reach"/> outward from the stalk.
+        /// </summary>
+        Vector3 LeafPrismScale(int depth, float reach)
+        {
+            float taper = Mathf.Pow(depthTaper, depth);
+            float j = Jitter();
+            return Floor(new Vector3(
+                LeafSize.x * leafScale.x * taper * j,
+                LeafSize.y * leafScale.y * taper * j,
+                reach * leafScale.z * j));
+        }
+
+        float Jitter() => prismJitter > 0f ? 1f + Random.Range(-prismJitter, prismJitter) : 1f;
+
+        /// <summary>Floored at the prism scale animator's 0.5 minimum so nothing silently clamps.</summary>
+        static Vector3 Floor(Vector3 s) =>
+            new(Mathf.Max(0.5f, s.x), Mathf.Max(0.5f, s.y), Mathf.Max(0.5f, s.z));
 
         static bool Claim(Vector3 position, float spacing)
         {
@@ -262,6 +368,19 @@ namespace CosmicShore.Gameplay
             }
         }
 
+        // The scale the next AddHealthBlock should apply. Flora.AddHealthBlock stamps every prism
+        // with the one leafSize; this flora shapes its prisms per ROLE (stem vs leaf) and per
+        // depth, so it overrides that stamp for the prism it is currently placing.
+        Vector3? _pendingPrismScale;
+
+        public override void AddHealthBlock(HealthPrism healthPrism)
+        {
+            base.AddHealthBlock(healthPrism);
+            if (healthPrism && _pendingPrismScale.HasValue)
+                healthPrism.TargetScale = _pendingPrismScale.Value;
+            _pendingPrismScale = null;
+        }
+
         void Execute(SpawnOrder order)
         {
             // The parent spindle may have been eaten between decision and drain; the claimed site
@@ -280,17 +399,20 @@ namespace CosmicShore.Gameplay
             leaf.transform.localRotation = Quaternion.identity;
             leaf.LifeForm = this;
             leaf.ChangeTeam(domain);
+            _pendingPrismScale = order.scale;
             AddHealthBlock(leaf);
             leaf.Initialize("flora");
 
             if (!order.becomesTip) return;
+
+            float nextRoll = order.parent.roll + GoldenAngle + spiralTwist * Mathf.Deg2Rad;
 
             Keep(new Tip
             {
                 gameObject = newSpindle.gameObject,
                 heading = order.heading,
                 depth = order.parent.depth + 1,
-                roll = order.parent.roll + GoldenAngle,
+                roll = nextRoll,
             });
 
             // Split: past the branch depth a node may fork, so the plant fills volume instead of
@@ -332,6 +454,10 @@ namespace CosmicShore.Gameplay
                 leaf.transform.localPosition = Vector3.zero;
                 leaf.LifeForm = this;
                 leaf.ChangeTeam(domain);
+                // The root collar: shorter than a segment but half again as thick - a plant sits
+                // on a base, it does not sprout from a twig.
+                var collar = StemPrismScale(0, segmentLength * 0.55f, 1f);
+                _pendingPrismScale = new Vector3(collar.x * 1.5f, collar.y * 1.5f, collar.z);
                 AddHealthBlock(leaf);
                 leaf.Initialize("flora");
 
