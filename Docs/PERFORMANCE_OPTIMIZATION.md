@@ -162,6 +162,19 @@ per-capture analyses; `Docs/SPATIAL_INDEX.md` documents the summation view
 - DiagnosticsHUD "Frame Time" is wall clock (CPU + GPU/present wait +
   editor loop) — the profiler's CPU number will always read lower; use the
   HUD's busy-CPU/GPU split + bound verdict to pick the next lever.
+- `List.Remove(this)` on a static enabled-instance registry is an O(n)
+  UnityEngine.Object-equality scan, and a pool MISS pays it too: the
+  create-then-deactivate cycle runs `OnDisable` for an instance that was never
+  added, scanning the WHOLE registry for nothing. Under a mass burst this was
+  1,863 ms of one frame (2,408 misses × ~50k live effects, 2026-08-02).
+  Registries with no order contract use stored-index swap-remove, O(1).
+- When the GPU owns an animation, the GameObject CARRIER becomes the cost:
+  a pooled effect object whose only jobs are one stamp and holding a pool
+  slot charges Instantiate + registry churn + a timer entry per death,
+  orders of magnitude above the entity work it wraps. Batch-instantiate
+  entities from the prototype instead (`PrismDebris` pattern: queue → one
+  `em.Instantiate(prototype, N)` per frame → sweep-based batch destroy) and
+  keep the pooled object only as the no-ECS fallback.
 
 ---
 

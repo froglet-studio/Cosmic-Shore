@@ -3,8 +3,21 @@
 Ready-to-paste prompts for the work remaining after the clock-material migration
 branch (`claude/prism-animation-audit-*`). Each is self-contained for a FRESH
 session: it names the docs to read first, the scope, the constraints, and the
-in-editor test that closes it. Run them as separate branches in roughly this
-order — Prompt 1 unblocks a deferred verification, and the rest are independent.
+in-editor test that closes it. Run them as separate branches.
+
+**PRIORITY ORDER (set at ship, 2026-08-02) — work top-down:**
+
+| # | Prompt | Why this rank |
+|---|---|---|
+| 1 | **Prompt 2** — C13 environment-lay prisms miss the clock path | The one VISIBLE defect the migration branch ships with: SegmentSpawner/conveyor prisms snap + log `[PrismClock]` errors in real modes (HexRace, Wanderway). Strict mode's forcing function worked — now answer it. |
+| 2 | **Prompt 9** — batched entity debris remainder | Completes the proven, playtest-loved carrier: implosions on the batch path + the measured next bottleneck (`AOE.ResolveDamage` 0.43 ms/kill self, per-kill `PrismEventData` alloc). The benchmark rig is already built to measure it. |
+| 3 | **Prompt 1** — transparent-prism occlusion restore | Pre-existing broken system (predates this branch) + it gates the one deferred wiring verification (transparent color fades). |
+| 4 | **Prompt 3** — fauna/flora on the clock (ecology) | Per-frame CPU prism writes in every cell scene; wither/devour are ecology-locked visuals that must ride the law. |
+| 5 | **Prompt 4** — conveyor + cell-swap suction | The two biggest world-scale per-frame CPU flows left. |
+| 6 | **Prompt 6** — B4 shield morphs on the GPU | Retires the last sanctioned CPU ticker (`PrismOctahedronShieldManager`). |
+| 7 | **Prompt 5** — projectile prism paths | Real but lower-traffic (Sparrow volleys, fire trails). |
+| 8 | **Prompt 7** — C12/B1 cleanup sweep | Simplifications unblocked by the migration; no player-visible change. |
+| 9 | **Prompt 8** — HUD/validator upkeep | Ride-along with any of the above, not its own branch. |
 
 Shared context every prompt inherits (do not restate in the session):
 `Docs/PRISM_ANIMATION.md` is the LOCKED law — one stamp → GPU clock → one

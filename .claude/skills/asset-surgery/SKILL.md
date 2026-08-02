@@ -113,6 +113,13 @@ its GameObject lists it in `m_Component`.
   tokenizer that tracks modes (`//`, `/* */`, `"str"`, `@"verbatim"`, `'c'`,
   `$"interp"` with `{...}` holes — compare hole-close depth BEFORE
   decrementing) — the session's checker caught its own bug that way.
+- **NESTED interpolated strings** (`$"{string.Join(",", xs.Select(x => $"{x}"))}"`):
+  when a `"` closes a string in interp mode, return to **code** mode
+  unconditionally — a string literal is an expression inside the hole's code.
+  The outer interp string's BODY is only re-entered via its hole-closing `}`
+  (matched by recorded brace depth), never by a quote. Modeling it as a
+  string-mode stack falsely flags valid files (this bit the checker on
+  `Debug.Log($"... {string.Join(", ", xs.Select(g => $"{g.Key}"))}")`).
 - **Blast radius**: before deleting/renaming any member, grep for every caller
   (`\.Member\b` patterns); after editing, sweep again — the deleted surface
   must appear ZERO times outside historical docs.
