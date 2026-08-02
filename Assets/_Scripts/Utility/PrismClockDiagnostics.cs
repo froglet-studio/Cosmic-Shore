@@ -18,11 +18,17 @@ namespace CosmicShore.Utility
         static readonly HashSet<int> _warnedMaterials = new();
         static readonly HashSet<string> _warnedContexts = new();
 
+        // Edit-mode tooling (baseline measurers, track previews, prefab spawns)
+        // legitimately runs the prism lifecycle without the instanced service or
+        // a play-mode clock — strict-mode screaming is a RUNTIME contract. The
+        // visual still settles immediately either way.
+        static bool Muted => !Application.isPlaying;
+
         /// <summary>The bound material's graph lacks a clock property — visuals
         /// snap until it is wired. Logged once per material asset.</summary>
         public static void WarnUnwiredMaterial(Material material, string propertyName, Object context)
         {
-            if (material == null || !_warnedMaterials.Add(material.GetInstanceID())) return;
+            if (Muted || material == null || !_warnedMaterials.Add(material.GetInstanceID())) return;
             Debug.LogError(
                 $"[PrismClock] STRICT MODE: material '{material.name}' does not declare '{propertyName}' — " +
                 $"its ShaderGraph is not wired for clock-material animation, so this visual SNAPS to its end state " +
@@ -32,14 +38,18 @@ namespace CosmicShore.Utility
         }
 
         /// <summary>No usable companion render entity to stamp — the clock path
-        /// REQUIRES the instanced renderer. Logged once per reason key.</summary>
-        public static void WarnNoRenderEntity(string reasonKey, Object context)
+        /// REQUIRES the instanced renderer. Logged once per reason key. Pass a
+        /// detail line (e.g. PrismRenderService.DescribeGrowStampTarget) so the
+        /// error names the exact broken gate instead of a generic pointer.</summary>
+        public static void WarnNoRenderEntity(string reasonKey, Object context, string detail = null)
         {
-            if (string.IsNullOrEmpty(reasonKey) || !_warnedContexts.Add(reasonKey)) return;
+            if (Muted || string.IsNullOrEmpty(reasonKey) || !_warnedContexts.Add(reasonKey)) return;
             Debug.LogError(
                 $"[PrismClock] STRICT MODE: no companion render entity to stamp ({reasonKey}) — " +
                 $"clock-material animation rides the instanced render path (PrismRenderService), and no legacy " +
-                $"fallback exists. Check PrismRenderService.StatusLine() / the PrismRenderConfig asset. " +
+                $"fallback exists. " +
+                (string.IsNullOrEmpty(detail) ? "Check PrismRenderService.StatusLine() / the PrismRenderConfig asset. "
+                                              : $"DIAGNOSIS: {detail}. ") +
                 $"Gameplay state is final (law-correct); the visual transition is skipped.",
                 context);
         }

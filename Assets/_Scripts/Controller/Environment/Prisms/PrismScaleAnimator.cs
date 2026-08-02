@@ -158,7 +158,8 @@ namespace CosmicShore.Gameplay
             // cannot ride the clock — gameplay state goes final regardless.
             bool stamped = PrismRenderService.StampGrow(in prism.RenderHandle, now, k, in startFrac);
             if (!stamped)
-                PrismClockDiagnostics.WarnNoRenderEntity($"grow:{name}", this);
+                PrismClockDiagnostics.WarnNoRenderEntity($"grow:{name}", this,
+                    PrismRenderService.DescribeGrowStampTarget(in prism.RenderHandle));
             else if (meshRenderer != null && meshRenderer.sharedMaterial != null &&
                      !meshRenderer.sharedMaterial.HasProperty(GrowStartTimeId))
                 PrismClockDiagnostics.WarnUnwiredMaterial(meshRenderer.sharedMaterial, "_GrowStartTime", this);

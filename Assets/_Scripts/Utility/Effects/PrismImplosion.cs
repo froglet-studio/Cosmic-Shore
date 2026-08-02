@@ -284,7 +284,8 @@ namespace CosmicShore.Utility
             }
             else
             {
-                PrismClockDiagnostics.WarnNoRenderEntity($"implosion:{name}", this);
+                PrismClockDiagnostics.WarnNoRenderEntity($"implosion:{name}", this,
+                    $"entity never created for this pooled effect [service: {PrismRenderService.StatusLine()}]");
             }
 
             var timers = PrismTimerManager.EnsureInstance();

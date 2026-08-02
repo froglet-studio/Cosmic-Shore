@@ -271,6 +271,33 @@ namespace CosmicShore.ECS
         /// <summary>True when the handle points at a live entity in the current world.</summary>
         public static bool IsHandleUsable(in PrismRenderHandle handle) => IsUsable(in handle);
 
+        /// <summary>
+        /// One-line diagnosis of WHY a grow stamp found no usable target — the
+        /// strict-mode diagnostics quote this so a single repro run names the broken
+        /// gate instead of a generic "no entity". Distinguishes: never created
+        /// (EnsureRenderEntity declined), service off (with the StatusLine reason),
+        /// stale epoch (service reset invalidated the handle), destroyed entity, and
+        /// the masquerading case — an entity that EXISTS but lacks the grow clock
+        /// overrides, which StampGrow also reports as failure.
+        /// </summary>
+        public static string DescribeGrowStampTarget(in PrismRenderHandle handle)
+        {
+            if (handle.Entity == Entity.Null)
+                return "no companion entity was ever created — EnsureRenderEntity declined " +
+                       "(null mesh/material/renderer, inactive hierarchy, or exotic visual active) " +
+                       $"or the service was off at creation [service: {StatusLine()}]";
+            if (_world == null || !_world.IsCreated)
+                return $"ECS world gone [service: {StatusLine()}]";
+            if (handle.Epoch != _epoch)
+                return $"stale handle (created in service epoch {handle.Epoch}, current {_epoch} — " +
+                       "a service/world reset invalidated it and the prism never re-created its entity)";
+            if (!_world.EntityManager.Exists(handle.Entity))
+                return "entity destroyed while the prism still holds the handle";
+            if (!_world.EntityManager.HasComponent<PrismGrowStartTimeOverride>(handle.Entity))
+                return "entity EXISTS but lacks the grow clock overrides (created with a non-Prism override set?)";
+            return "target looks usable — if the stamp failed, re-check the call path";
+        }
+
         static BatchMeshID GetMeshID(Mesh mesh)
         {
             if (!_meshIds.TryGetValue(mesh, out var id))

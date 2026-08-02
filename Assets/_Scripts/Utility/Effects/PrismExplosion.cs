@@ -231,7 +231,8 @@ namespace CosmicShore.Utility
             }
             else
             {
-                PrismClockDiagnostics.WarnNoRenderEntity($"explosion:{name}", this);
+                PrismClockDiagnostics.WarnNoRenderEntity($"explosion:{name}", this,
+                    $"entity never created for this pooled effect [service: {PrismRenderService.StatusLine()}]");
             }
 
             // Touchpoint 3: the analytic end (pool return), on both outcomes so the
