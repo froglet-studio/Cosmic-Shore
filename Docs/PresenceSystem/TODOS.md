@@ -67,7 +67,7 @@ Costed in full in `LIVENESS_COST_ANALYSIS.md`. Summary of why it is closed:
   server-tracked and push-based, costs no property slots, and fans out per
   friend rather than O(N²) over all 100 lobby members.
 
-### TODO-P9. Re-diff from the in-memory roster instead of re-fetching on push
+### TODO-P9. Re-diff from the in-memory roster instead of re-fetching on push — ✅ DONE
 
 **Why.** `HostConnectionService.Update` drains the push flag by calling
 `RefreshAsync()`, which issues a `GetLobby`. The SDK has already applied the
@@ -81,6 +81,16 @@ read cost at any lobby size — and is what makes relaxing the safety poll from
 
 **Introduced by** `8a146795`, which routed push through the existing
 poll-shaped refresh because it was the smallest diff. Correct, but not cheap.
+
+**Shipped.** `RefreshAsync(bool fetchFromServer)`; push ticks pass `false` and do
+zero network I/O. The converge `QuerySessions` and the party-session refresh are
+fetch-only too, and the reconnect watchdog is now fed *only* by fetch ticks (a
+push tick can neither clear nor increment the counter — letting it increment
+while only fetch ticks cleared would have been a one-way ratchet toward a false
+reconnect during an invite burst). The scheduler is no longer `Reset()` on push:
+that was there to avoid a redundant read, and with no read there is nothing
+redundant — while suppressing the safety poll because push fired is backwards,
+since the poll exists to catch what push misses.
 
 ## Diagnostics
 

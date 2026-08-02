@@ -555,19 +555,27 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
-            // Push: a roster-affecting event arrived since the last frame.
-            // Refresh now rather than waiting out the remaining interval - this
-            // is what turns "discovered on the next tick" into "delivered when it
-            // happens". Reset the scheduler so the safety poll re-arms from now
-            // and we do not immediately follow the push with a redundant read.
+            // Push: a roster-affecting event arrived since the last frame. Turns
+            // "discovered on the next tick" into "delivered when it happens".
             bool pushed = _lobbyService.ConsumeRosterDirty();
-            if (pushed) _scheduler.Reset();
 
             // Consume only once eligible, so a tick blocked by the gates keeps its
             // accumulated time and fires as soon as it can rather than restarting
             // the interval. Cannot burst - the accumulator zeroes on consume.
-            if (pushed || _scheduler.TryConsumeFire())
-                RefreshAsync().Forget();
+            bool polled = _scheduler.TryConsumeFire();
+
+            // A push tick reads nothing from the network - the SDK has already
+            // patched the roster in memory - so it costs one diff and no UGS
+            // call. Only a poll tick fetches.
+            //
+            // The scheduler is deliberately NOT reset on a push. An earlier
+            // revision did that to avoid "a redundant read right behind the
+            // push", but with the push tick no longer reading there is nothing
+            // redundant to avoid - and suppressing the safety poll because push
+            // fired is backwards: the poll exists precisely to catch what push
+            // misses, so a steady stream of pushes must not be able to starve it.
+            if (pushed || polled)
+                RefreshAsync(fetchFromServer: polled).Forget();
         }
 
         /// <summary>
@@ -1398,7 +1406,44 @@ namespace CosmicShore.Gameplay
         // ║  Refresh Loop                                                     ║
         // ╚═══════════════════════════════════════════════════════════════════╝
 
-        private async UniTaskVoid RefreshAsync()
+        /// <summary>
+        /// One presence reconcile cycle.
+        /// </summary>
+        /// <param name="fetchFromServer">
+        /// <c>true</c> for a safety-poll tick: issue the network reads
+        /// (<c>GetLobby</c>, and the periodic converge <c>QuerySessions</c>) before
+        /// diffing. <c>false</c> for a PUSH tick: diff against the roster the SDK
+        /// has already patched in memory, with no network call at all.
+        ///
+        /// <para>
+        /// A push tick needs no fetch. Unity documents <c>PlayerJoined</c> /
+        /// <c>PlayerHasLeft</c> as firing "right after the session gets updated",
+        /// and <c>PlayerPropertiesChanged</c> as not firing at all "if the
+        /// properties are already up to date locally" - a statement that only
+        /// means anything if the SDK maintains the local copy. This repo carries
+        /// its own proof: <see cref="IsBenignLobbyPatcherError"/> exists because
+        /// <c>LobbyPatcher.ApplyPatchesToLobby</c> throws while patching the local
+        /// lobby from a WebSocket delta. So by the time we drain the flag, the
+        /// data is already here.
+        /// </para>
+        ///
+        /// <para>
+        /// Fetching anyway cost a <c>GetLobby</c> per inbound delta per client -
+        /// the dominant read cost at any lobby size, since every member's property
+        /// write fans out to every other member - and put a network round-trip
+        /// between "the delta arrived" and "the UI updated", which defeats the
+        /// point of having a push channel. Introduced in <c>8a146795</c> by routing
+        /// push through the existing poll-shaped path because it was the smallest
+        /// diff: correct, but not cheap.
+        /// </para>
+        ///
+        /// <para>
+        /// Safe by construction: the safety poll still fetches on its own cadence,
+        /// so if the SDK ever fails to keep the local roster current the worst case
+        /// degrades to poll latency rather than a stale list.
+        /// </para>
+        /// </param>
+        private async UniTaskVoid RefreshAsync(bool fetchFromServer = true)
         {
             if (_lobbyService.ActiveLobby == null) return;
 
@@ -1423,7 +1468,8 @@ namespace CosmicShore.Gameplay
             bool shouldReconnect = false;
             try
             {
-                await _lobbyService.RefreshAsync();
+                if (fetchFromServer)
+                    await _lobbyService.RefreshAsync();
 
                 // Periodic self-heal: if a simultaneous-create split left us in our
                 // own presence lobby while a peer sits in theirs, converge everyone
@@ -1442,7 +1488,9 @@ namespace CosmicShore.Gameplay
                 // player was being invited into an existing party - the B4 failure
                 // (invite never delivered, partied rows vanish). See
                 // Docs/PresenceSystem/BUGS.md B4 and INVITE_ENHANCEMENTS.md Task 4.
-                if (Time.unscaledTime >= _nextConvergeAllowed)
+                // Fetch ticks only - this is a QuerySessions network call, and a
+                // burst of pushes must not turn into a burst of queries.
+                if (fetchFromServer && Time.unscaledTime >= _nextConvergeAllowed)
                 {
                     _nextConvergeAllowed = Time.unscaledTime + PRESENCE_CONVERGE_INTERVAL_SECONDS;
                     await _lobbyService.ConvergeToCanonicalAsync(presenceLobbyMaxPlayers);
@@ -1499,12 +1547,22 @@ namespace CosmicShore.Gameplay
                 if (_partySessionService.ActiveSession != null && connectionData.IsPartyHost)
                     ScanPresenceForJoinedPartyMembers();
 
-                if (_partySessionService.ActiveSession != null)
+                // Fetch ticks only. This refreshes the PARTY session - a
+                // different session entirely - so a presence-lobby delta is no
+                // reason to hit it. Its own push (PartySessionService subscribes
+                // PlayerLeaving) and the safety poll cover it.
+                if (fetchFromServer && _partySessionService.ActiveSession != null)
                     await RefreshPartyMembersAsync();
 
+                // Change-gated, so free on a tick where nothing moved.
                 await PublishPartyStateIfChangedAsync();
 
-                _consecutiveRefreshErrors = 0;
+                // Only a tick that actually talked to the server is evidence the
+                // connection is healthy. Clearing the counter on a push tick -
+                // which does no network I/O - would let pushes mask a genuinely
+                // failing fetch and suppress the reconnect watchdog entirely.
+                if (fetchFromServer)
+                    _consecutiveRefreshErrors = 0;
             }
             catch (Exception e)
             {
@@ -1556,6 +1614,14 @@ namespace CosmicShore.Gameplay
                         _consecutiveRefreshErrors = 0;
                         return;
                     }
+
+                    // The watchdog measures CONNECTION health, so only a tick that
+                    // actually talked to the server may feed it. A push tick does
+                    // no network read; letting it increment while only fetch ticks
+                    // clear the counter would make this a one-way ratchet, and a
+                    // burst of pushes during an invite handshake could trip a
+                    // reconnect on a perfectly healthy connection.
+                    if (!fetchFromServer) return;
 
                     _consecutiveRefreshErrors++;
                     if (_consecutiveRefreshErrors >= MAX_REFRESH_ERRORS_BEFORE_RECONNECT)
