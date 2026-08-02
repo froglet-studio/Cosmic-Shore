@@ -153,6 +153,33 @@ surgery, machine validation) are captured in the `/asset-surgery` skill — use 
 > (turret flight properties, shield morph properties) so Validate Clock Wiring
 > stays the one-stop wiring truth.
 
+## Prompt 9 — Batched pure-entity debris (the untapped DOTS headroom)
+
+> Read `PrismRenderService.Create`/`GetPrototype` (the prototype-instantiate
+> pattern) and `PrismExplosion`/`PrismImplosion`. Today the DOTS side is
+> already right-sized per effect: mesh/material are dictionary-cached
+> `BatchRendererGroup` registrations (`GetMeshID`/`GetMaterialID` — no per-
+> effect material load), and each effect entity is ONE `em.Instantiate` from a
+> prebuilt prototype + `SetComponentData` stamps. What is NOT entity-native is
+> the effect's carrier: every prism death still checks a pooled **GameObject**
+> out (`PrismExplosion` MonoBehaviour) whose only jobs are (a) stamp the
+> entity once and (b) hold the pool slot until the scheduled completion. Under
+> the lifted-throttle stress test (~54k deaths in one blast) the pool
+> instantiates tens of thousands of GameObjects whose per-object cost —
+> `Instantiate`, `OnEnable`/`OnDisable` registry churn, transform — dwarfs the
+> entity work; the GameObject is pure overhead on a path where the GPU already
+> owns the animation. Build the batch path: a debris request queue drained
+> once per frame with the BATCH overload `em.Instantiate(prototype, count,
+> Allocator.Temp)`, per-entity stamps written directly (position matrix, clock
+> stamp, team colors, bounds), NO GameObject and NO per-effect
+> `PrismTimerManager` entry — completion is one per-frame sweep (or one
+> scheduled action per batch) that destroys every entity whose
+> `startTime + duration < PrismClock.Now`. Keep the pooled-GameObject path for
+> gameplay callers that need `ReturnToPool` semantics until parity is proven;
+> route `PrismFactory`'s deferred-VFX drain through the batch path first (it
+> is already a queue). Measure with the prism-grid benchmark
+> (`Docs/PRISM_EXPLOSION_BENCHMARK.md`), throttles lifted, before/after.
+
 ---
 
 Maintenance: when a prompt ships, delete its section and update
