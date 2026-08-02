@@ -185,7 +185,7 @@ namespace CosmicShore.Gameplay
 
         // Re-tint in place (no rebuild) so the recolour is instant and pop-free. Each mini model /
         // fallback sphere owns its own preview material, so tinting its renderers only affects that
-        // station; mirrors the property writes in VesselModelBuilder.BuildPreviewMaterial.
+        // station; mirrors the property writes in ToyModelBuilder.BuildPreviewMaterial.
         static void Recolor(Transform body, Color color)
         {
             if (!body) return;

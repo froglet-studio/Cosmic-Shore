@@ -57,7 +57,8 @@ detection. On top of that base the `Toy` class adds:
 | Shared "set + flip" coordinator (generic) | `Assets/_Scripts/Controller/Toys/SwapToySetCoordinator.cs` |
 | Shared runtime refs handed to each toy | `Assets/_Scripts/Controller/Toys/ToyContext.cs` (`ToyContext` + `ToyPlacement`) |
 | Procedural body/label/collider builder | `Assets/_Scripts/Controller/Toys/ToyFactory.cs` |
-| Mini vessel model (mesh-extract from prefab) | `Assets/_Scripts/Controller/Toys/VesselModelBuilder.cs` |
+| Prefab → display-only model (shared icon engine) | `Assets/_Scripts/Controller/Toys/ToyModelBuilder.cs` |
+| Mini vessel model (hull filter over the above) | `Assets/_Scripts/Controller/Toys/VesselModelBuilder.cs` |
 | Vessel Changer (matrix of ships) | `Assets/_Scripts/Controller/Toys/VesselChangerToy.cs` |
 | Domain Changer set | `Assets/_Scripts/Controller/Toys/DomainChangerToySet.cs` |
 | Painting gallery (matrix of paintings) | `Assets/_Scripts/Controller/Toys/PaintingGalleryToy.cs` |
@@ -86,7 +87,10 @@ detection. On top of that base the `Toy` class adds:
 The **ecology tuning bench** (`Toy_LifeformMatrix.asset`, placement angle 180°). Fly the toy
 (a sphere orbited by the four element crystal MODELS — elements have SHAPE signatures, never
 colours) and the SPECIES matrix blooms one layer OUTWARD from the cell centre: fauna on the
-lower row, flora on the upper (12 species). Fly a species and its VARIANT matrix blooms a
+lower row, flora on the upper (12 species) — **each species station is a mini MODEL of that
+creature**, built from its first element config's prefab asset by `ToyModelBuilder` (never
+instantiated, so no Fauna/Flora behaviour, registry entry or spawn); a species whose prefab
+carries no visible geometry keeps the anonymous sphere. Fly a species and its VARIANT matrix blooms a
 further layer outward: 4 element columns × level rows {1, 3, 5}, each station wearing the
 element's crystal model sized by level. Fly a variant and a POPULATION of that exact lifeform
 (fauna `PopulationSize` / flora `InitialSpawnCount`) spawns live through the canonical cell
@@ -113,8 +117,11 @@ matrix of **mini-cells** blooms outward, `matrixDistanceFactor` × `stationSpaci
 toy along the outward radial: you fly AT the toy and keep going, and the choices are ahead — the Lifeform Matrix's "fly at a wall of choices" pattern, now sharing
 `ToyMatrixStation`. Fly a mini-cell and the cell becomes that world. **Fly the mini-cell of the
 world you are already in and you get the same cycle on the same config — that is the reset.**
-Labels say what a pass costs before you take it: `RESET` (the current cell), `INSTANT` (an
-environment-free cell), `LOAD` (a world that builds behind the veil).
+What a pass costs is told by **shape**, not by a word (see "Station icons"): the world you are
+already in wears a **halo ring** — that one is the reset — and an environment-free config has
+nothing to model, so its slot draws visibly empty, which is what "instant" looks like. Everything
+else is a plain model and builds behind the veil. (The former `RESET` / `INSTANT` / `LOAD` label
+line is gone; only the world's name remains, and that is the next label to retire.)
 
 **No parallel list.** With `cells` left empty (the default and the recommendation) the toy
 reads `Cell.AvailableConfigs` — the Cell's own `CellConfigs` rotation. The Cell owns the
@@ -174,6 +181,61 @@ Anything a station starts that must **outlive the matrix** parents to `MatrixToy
 not to the grid — that is how a painting run survives folding the gallery away.
 
 Users: **Cell Selector** (worlds), **Connect the Dots** (paintings), **Vessel Changer** (ships).
+
+## Station icons: a choice shows itself (heading toward no text labels)
+
+**Every selection station is a 3D icon of the thing it selects.** The text label is a crutch we
+are actively removing: a station whose icon reads at a glance doesn't need a name floating over
+it, and a matrix of named spheres is a menu, not a toy. Two icon strategies, both drawn from the
+selection itself — never a decorative stand-in, and never a hand-authored symbol library:
+
+| Strategy | Meaning | Used by |
+|---|---|---|
+| **Scaled-down view** | the whole thing, small | Vessel Changer (mini hulls), Lifeform bench (mini creatures) |
+| **Signature extract** | the few parts that identify it | Connect the Dots (signature strokes), Cell Selector (signature structures) |
+
+The split is a legibility call, not a taste one. A ship is one compact object and survives being
+shrunk. A 55-stroke painting or a 34k-prism world does **not**: drawn whole at thumbnail size they
+cross-hatch into a fuzzy ball that reads identically for every entry — which is exactly the
+failure a text label then has to paper over. So those two take the few most identifying parts and
+draw them boldly:
+
+- **Connect the Dots** — `MiniaturePaintingBuilder` keeps **5 signature strokes** (the longest of
+  *each* domain first, so the composition's colour identity survives, then longest-remaining),
+  each at up to 24 points so its curvature reads, drawn ~1.7× thicker, and frames the icon on the
+  bounds of the **chosen** strokes rather than the whole canvas.
+- **Cell Selector** — `CellMiniatureBuilder.KeepSignatureStructures` bins the generator's samples
+  into a 12³ voxel grid and keeps the densest voxels until they hold `signatureCoverage` (0.7) of
+  the mass. What survives is the motifs the generator actually builds, at their true relative
+  positions, with the haze between them gone. Nothing is moved, invented, or re-coloured — it is
+  still an honest scale model, just the recognisable part of one. Ties break on the voxel key, so
+  a given environment always yields the same icon.
+
+`ToyModelBuilder` is the shared scaled-down-view engine: it harvests meshes off a **prefab asset**
+(never instantiated — no NetworkObject, no registry entry, no controllers), paints them with one
+opaque self-lit preview material, and fits the result to the station radius. Callers pass a
+`RendererFilter` for what to leave out — `VesselModelBuilder` is now exactly that filter (hull
+only: no skimmer sphere, trails, jets, VFX), and the lifeform bench passes the equivalent for
+creature bodies. **Any new toy that offers prefabs gets its icons from this, not from a sphere.**
+
+State that used to be text is becoming shape too: the Cell Selector marks the world you are
+already in with a **halo ring** instead of the word `RESET` (an environment-free config has
+nothing to model, so its empty slot already reads as "instant").
+
+### Layout tuning (matrix scale & distance)
+
+Icons only pay off if they're big enough to read on approach, so the matrices were re-tuned:
+
+| Toy | Station radius | Spacing | Distance factor |
+|---|---|---|---|
+| Cell Selector | 9 → **18** | 55 → **110** | 3 (distance 165 → **330**, since distance = spacing × factor) |
+| Connect the Dots | body radius → **×2** (`iconScaleBodies`) | derived from radius, so ×2 | 3 → **4** |
+| Lifeform bench | 6 → **12** | 45 → **90** | derived (×1.5 / ×3.5 of spacing), so ×2 |
+| Vessel Changer | **unchanged** | **unchanged** (60) | 3 → **6** |
+
+Everything lands at roughly **2× size and 2× distance**. The Vessel Changer is the deliberate
+exception: mini ships already read at their current size, so only the distance doubles — with the
+spacing unchanged, the factor has to carry the approach on its own.
 
 ## The "swap set" pattern (domain)
 
@@ -293,7 +355,7 @@ dozen **grandiose non-planar constructions** that dwarf the Taj (every one is >2
 | 16 | Peacock | 1300 | 236 | **baked from a real scan**: YahooJAPAN's peafowl photogrammetry (CC-BY 4.0 — attribution ships in the asset description) — the fanned train, scalloped eye-feather rim, body and legs |
 
 **Gallery stations are miniatures in a wall, not balls in a line.** Each station's body IS its
-painting in miniature (`MiniaturePaintingBuilder`: the ~24 longest strokes, decimated, domain-
+painting in miniature (`MiniaturePaintingBuilder`: 5 SIGNATURE strokes — see "Station icons" — domain-
 tinted, on a slow turntable) — a sphere only as fallback for stroke-less paintings. The sixteen
 stations arrange as a roughly-square matrix cluster at the toybox slot (columns along the ring
 tangent, rows climbing the off-plane vertical), and the monuments anchor behind their column in
@@ -736,7 +798,7 @@ each area can be its own branch.
 | Area | Files |
 |---|---|
 | Re-arm / escape | `Controller/Toys/Toy.cs`, `Controller/Toys/SwapToySetCoordinator.cs` |
-| Mini-model rendering | `Controller/Toys/VesselModelBuilder.cs`, `Controller/Toys/VesselChangerToy.cs` |
+| Mini-model rendering | `Controller/Toys/ToyModelBuilder.cs`, `Controller/Toys/VesselModelBuilder.cs`, `Controller/Toys/VesselChangerToy.cs` |
 | Recolour on domain change | `Controller/Toys/VesselChangerToy.cs` (`Update`) |
 | Domain preserved on swap | `Controller/Multiplayer/ClientPlayerVesselInitializer.cs` (`ReInitializePair`) |
 | Speed inherited on swap | `Controller/Multiplayer/MenuServerPlayerVesselInitializer.cs`, `Controller/Vessel/IVessel.cs`, `Controller/Vessel/VesselController.cs`, `Controller/Vessel/VesselTransformer.cs` |

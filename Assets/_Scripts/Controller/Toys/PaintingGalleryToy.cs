@@ -33,7 +33,8 @@ namespace CosmicShore.Gameplay
         // ── Layout ───────────────────────────────────────────────────────────
 
         protected override int StationCount => _gallery.Count;
-        protected override float StationRadius => Placement.BodyRadius > 0.01f ? Placement.BodyRadius : 20f;
+        protected override float StationRadius =>
+            (Placement.BodyRadius > 0.01f ? Placement.BodyRadius : 20f) * Mathf.Max(0.25f, _def.IconScaleBodies);
         protected override float MatrixDistanceFactor => _def.MatrixDistanceFactor;
 
         protected override float StationSpacing =>

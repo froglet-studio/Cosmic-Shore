@@ -127,12 +127,6 @@ namespace CosmicShore.Gameplay
         {
             var config = _offered[index];
             bool isCurrent = config == _offeringCell.Config;
-            bool hasEnvironment = config.EnvironmentPrefab != null;
-
-            // The label says exactly what the pass will cost you: the cell you are in rebuilds
-            // (the reset), an environment-free cell is instant, everything else pays a build
-            // behind the veil.
-            string cost = isCurrent ? "RESET" : hasEnvironment ? "LOAD" : "INSTANT";
 
             var station = CreateStation(parent, position, DisplayNameOf(config), radius * 1.6f);
             _stationRoots.Add(station.transform);
@@ -140,8 +134,16 @@ namespace CosmicShore.Gameplay
             // No shell, no cage: the scale model is the station. It streams in after every
             // station exists (see OnMatrixOpened), so the matrix is legible immediately and the
             // generation cost is spread.
-            var text = ToyFactory.AddLabel(station.transform,
-                $"{DisplayNameOf(config)}\n<size=60%>{cost}</size>", Definition.AccentColor, radius * 1.9f);
+            //
+            // "The world you are in" is told by a SHAPE, not by the word RESET: the current cell's
+            // model wears a halo ring, the one piece of the toy shape vocabulary that means "this
+            // one is already yours". Everything else is a plain model, and an environment-free
+            // config has nothing to model, so its slot reads visibly empty (= instant).
+            if (isCurrent)
+                ToyFactory.AddRingBody(station.transform, radius * 1.25f, Definition.AccentColor);
+
+            var text = ToyFactory.AddLabel(station.transform, DisplayNameOf(config),
+                Definition.AccentColor, radius * 1.9f);
             if (isCurrent && text) text.fontStyle = TMPro.FontStyles.Bold;
 
             var capturedConfig = config;
@@ -250,7 +252,8 @@ namespace CosmicShore.Gameplay
             var prefab = config.EnvironmentPrefab;
             if (!prefab) return default;
 
-            var built = CellMiniatureBuilder.Build(prefab, _def.StationRadius, _def.ModelPointBudget);
+            var built = CellMiniatureBuilder.Build(prefab, _def.StationRadius, _def.ModelPointBudget,
+                _def.SignatureCoverage);
             if (prefab is CellEnvironmentSpawnableBase env) env.ReleaseGeneratedData();
 
             if (built.IsValid) _miniatures[config] = built;

@@ -65,7 +65,15 @@ namespace CosmicShore.ScriptableObjects
                                                    "vertices each). The silhouette is what reads at " +
                                                    "thumbnail size, so ~1k carries it; higher just costs " +
                                                    "vertices. No prisms are ever spawned for a model.")]
-        int modelPointBudget = 1200;
+        int modelPointBudget = 2400;
+
+        [SerializeField, Range(0.2f, 1f), Tooltip("How much of an environment's mass the model keeps, " +
+                                                  "densest structures first. Below 1 the diffuse scatter " +
+                                                  "is dropped and only the world's SIGNATURE structures " +
+                                                  "survive - a whole cell at thumbnail size is a uniform " +
+                                                  "dust cloud that reads the same for every world. 1 = the " +
+                                                  "entire world, haze included.")]
+        float signatureCoverage = 0.7f;
 
         public IReadOnlyList<CellConfigDataSO> Cells => cells;
         public bool ClearLooseTrailMass => clearLooseTrailMass;
@@ -73,6 +81,7 @@ namespace CosmicShore.ScriptableObjects
         public float StationRadius => stationRadius;
         public float MatrixDistanceFactor => matrixDistanceFactor;
         public int ModelPointBudget => modelPointBudget;
+        public float SignatureCoverage => signatureCoverage;
 
         public override void Spawn(Transform parent, ToyPlacement placement, ToyContext context)
         {

@@ -59,11 +59,15 @@ namespace CosmicShore.Gameplay
         /// <param name="pointBudget">Samples taken across the whole structure. The silhouette is
         /// what reads at thumbnail size, so a stride sample of ~1k carries it; higher just costs
         /// vertices (24 per sample).</param>
-        public static Miniature Build(SpawnableBase prefab, float radius, int pointBudget)
+        public static Miniature Build(SpawnableBase prefab, float radius, int pointBudget,
+            float signatureCoverage = 1f)
         {
             if (!prefab || radius <= 0f) return default;
 
             var samples = CollectSamples(prefab, Mathf.Max(16, pointBudget));
+            if (samples.Count == 0) return default;
+
+            samples = KeepSignatureStructures(samples, signatureCoverage);
             if (samples.Count == 0) return default;
 
             // Fit the structure into the mini-cell: centre on its own bounds, scale the longest
@@ -139,6 +143,82 @@ namespace CosmicShore.Gameplay
                 }
             }
             return samples;
+        }
+
+        // ── Signature structures ─────────────────────────────────────────────
+
+        /// <summary>Voxels per axis used to find where an environment's mass actually lives.</summary>
+        const int SignatureGridResolution = 12;
+
+        /// <summary>
+        /// Keep the environment's <b>signature structures</b> and drop its diffuse scatter.
+        ///
+        /// A whole cell rendered at thumbnail size is a uniform dust cloud - every world reads the
+        /// same, which is exactly the failure a text label then has to paper over. So the samples
+        /// are binned into a coarse voxel grid and only the densest voxels are kept, in order,
+        /// until they account for <paramref name="coverage"/> of the mass: what survives is the few
+        /// motifs the generator actually builds (the orrery's rings, Yggdra's trunk), at their true
+        /// relative positions, with the haze between them gone. Still an honest scale model -
+        /// nothing is moved, invented, or re-coloured - just the recognisable part of one.
+        ///
+        /// <paramref name="coverage"/> ≥ 1 keeps everything (the previous whole-world behaviour).
+        /// </summary>
+        static List<Sample> KeepSignatureStructures(List<Sample> samples, float coverage)
+        {
+            if (coverage >= 1f || samples.Count < 64) return samples;
+            coverage = Mathf.Clamp(coverage, 0.05f, 1f);
+
+            var bounds = new Bounds(samples[0].Position, Vector3.zero);
+            for (int i = 1; i < samples.Count; i++) bounds.Encapsulate(samples[i].Position);
+            Vector3 size = bounds.size;
+            if (size.x <= 1e-4f && size.y <= 1e-4f && size.z <= 1e-4f) return samples;
+
+            Vector3 cell = new(
+                Mathf.Max(size.x, 1e-4f) / SignatureGridResolution,
+                Mathf.Max(size.y, 1e-4f) / SignatureGridResolution,
+                Mathf.Max(size.z, 1e-4f) / SignatureGridResolution);
+
+            var counts = new Dictionary<long, int>();
+            var keys = new long[samples.Count];
+            for (int i = 0; i < samples.Count; i++)
+            {
+                long key = VoxelKey(samples[i].Position, bounds.min, cell);
+                keys[i] = key;
+                counts.TryGetValue(key, out int c);
+                counts[key] = c + 1;
+            }
+
+            // Densest voxels first, until they hold `coverage` of the samples. Ties break on the
+            // key so the same environment always yields the same icon (generation is deterministic
+            // and the model is cached against the config - a wobbling icon would be a bug).
+            var ranked = new List<KeyValuePair<long, int>>(counts);
+            ranked.Sort((a, b) => a.Value != b.Value
+                ? b.Value.CompareTo(a.Value)
+                : a.Key.CompareTo(b.Key));
+
+            int target = Mathf.CeilToInt(samples.Count * coverage);
+            var kept = new HashSet<long>();
+            int running = 0;
+            foreach (var voxel in ranked)
+            {
+                kept.Add(voxel.Key);
+                running += voxel.Value;
+                if (running >= target) break;
+            }
+
+            var result = new List<Sample>(running);
+            for (int i = 0; i < samples.Count; i++)
+                if (kept.Contains(keys[i])) result.Add(samples[i]);
+            return result.Count > 0 ? result : samples;
+        }
+
+        static long VoxelKey(Vector3 position, Vector3 min, Vector3 cell)
+        {
+            long x = (long)Mathf.Floor((position.x - min.x) / cell.x);
+            long y = (long)Mathf.Floor((position.y - min.y) / cell.y);
+            long z = (long)Mathf.Floor((position.z - min.z) / cell.z);
+            // Grid is 12^3 with a possible edge overflow - 1024 per axis is room to spare.
+            return ((x & 0x3FF) << 20) | ((y & 0x3FF) << 10) | (z & 0x3FF);
         }
 
         // ── Mesh assembly ────────────────────────────────────────────────────

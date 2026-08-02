@@ -25,4 +25,5 @@ MonoBehaviour:
   stationSpacing: 110
   stationRadius: 18
   matrixDistanceFactor: 3
-  modelPointBudget: 1200
+  modelPointBudget: 2400
+  signatureCoverage: 0.7

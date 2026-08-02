@@ -124,8 +124,13 @@ namespace CosmicShore.Gameplay
                     if (species?.ElementConfigs is not { Length: > 0 }) continue;
                     var pos = origin - up * (spacing * 0.5f)
                               + right * (spacing * (faunaCount - (_def.Fauna.Length - 1) * 0.5f));
+                    // The station IS its creature: a mini model of the species, anonymous sphere
+                    // only when the prefab carries no visible geometry.
+                    bool builtFauna = AddSpeciesModel(species.ElementConfigs, null,
+                        _def.StationRadius, out var faunaModel);
                     var station = CreateStation(_speciesGrid.transform, pos, species.Name,
-                        _def.StationRadius, Definition.AccentColor);
+                        _def.StationRadius, Definition.AccentColor,
+                        bodySphere: !builtFauna, model: faunaModel);
                     var captured = species;
                     station.OnVesselPassed = () => BuildVariantGrid(captured.Name, captured.ElementConfigs, null);
                     faunaCount++;
@@ -138,8 +143,11 @@ namespace CosmicShore.Gameplay
                     if (species?.ElementConfigs is not { Length: > 0 }) continue;
                     var pos = origin + up * (spacing * 0.5f)
                               + right * (spacing * (floraCount - (_def.Flora.Length - 1) * 0.5f));
+                    bool builtFlora = AddSpeciesModel(null, species.ElementConfigs,
+                        _def.StationRadius, out var floraModel);
                     var station = CreateStation(_speciesGrid.transform, pos, species.Name,
-                        _def.StationRadius, Definition.AccentColor);
+                        _def.StationRadius, Definition.AccentColor,
+                        bodySphere: !builtFlora, model: floraModel);
                     var captured = species;
                     station.OnVesselPassed = () => BuildVariantGrid(captured.Name, null, captured.ElementConfigs);
                     floraCount++;
@@ -289,12 +297,48 @@ namespace CosmicShore.Gameplay
 
         // ── Stations ─────────────────────────────────────────────────────────
 
+        // Non-body subsystems on a lifeform prefab - the same class of thing the vessel hull filter
+        // drops, so a creature icon is the creature, not its effects.
+        static readonly string[] NonBodyNameHints = { "trail", "vfx", "pip", "explosion", "particle" };
+
+        /// <summary>
+        /// A species station SHOWS ITS SPECIES: a display-only model harvested from the first
+        /// element config's prefab asset (never instantiated - no Fauna/Flora behaviour, no
+        /// registry entry, no spawn). Returns false when the prefab carries no visible geometry
+        /// (an all-prism flora, say), and the caller keeps the anonymous sphere.
+        /// </summary>
+        bool AddSpeciesModel(FaunaConfigurationSO[] fauna, FloraConfigurationSO[] flora,
+            float radius, out GameObject model)
+        {
+            model = null;
+            Transform source = null;
+
+            if (fauna != null)
+                foreach (var cfg in fauna)
+                    if (cfg && cfg.FaunaPrefab) { source = cfg.FaunaPrefab.transform; break; }
+            if (!source && flora != null)
+                foreach (var cfg in flora)
+                    if (cfg && cfg.FloraPrefab) { source = cfg.FloraPrefab.transform; break; }
+            if (!source) return false;
+
+            if (!ToyModelBuilder.TryBuild(source, radius, Definition.AccentColor, out model,
+                    (root, node, mesh, renderer) =>
+                        !ToyModelBuilder.AnyAncestorNameContains(node, root, NonBodyNameHints)))
+                return false;
+
+            // Turntable, like every other toy icon - a creature you can walk around before you
+            // decide to release it.
+            model.AddComponent<ToyIdleSpin>().Configure(Vector3.up, 16f);
+            return true;
+        }
+
         ToyMatrixStation CreateStation(Transform parent, Vector3 position, string label,
-            float radius, Color accent, bool bodySphere = true)
+            float radius, Color accent, bool bodySphere = true, GameObject model = null)
         {
             var go = ToyFactory.CreateBareRoot(label, parent, position, transform.position, radius * 1.6f);
             if (bodySphere)
                 ToyFactory.AddSphereBody(go.transform, radius, accent);
+            if (model) model.transform.SetParent(go.transform, false);
             ToyFactory.AddLabel(go.transform, label, accent, radius * 1.9f);
 
             var station = go.AddComponent<ToyMatrixStation>();
