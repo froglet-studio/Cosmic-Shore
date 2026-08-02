@@ -35,14 +35,50 @@ namespace CosmicShore.Gameplay
         // toy's spawn-here stations) sets this before Initialize and Plant() honors it.
         Vector3? _plantPositionOverride;
 
+        /// <summary>
+        /// The surface normal at the pinned spot, when one was supplied - an authored garden bed
+        /// has an UP and a plant rooted in it should grow away from the bed, not toward the cell
+        /// crystal. Vector3.zero when the caller pinned a position only.
+        /// </summary>
+        Vector3 _plantUpOverride;
+
         /// <summary>Pin where this flora plants itself. Call before Initialize.</summary>
         public void SetPlantPositionOverride(Vector3 position) => _plantPositionOverride = position;
+
+        /// <summary>
+        /// Pin where this flora plants itself AND which way is up there (an authored planting
+        /// site - <see cref="FloraPlantingSite"/>). Call before Initialize.
+        /// </summary>
+        public void SetPlantPositionOverride(Vector3 position, Vector3 up)
+        {
+            _plantPositionOverride = position;
+            _plantUpOverride = up;
+        }
 
         /// <summary>True (with the spot) when a caller pinned the planting position.</summary>
         protected bool TryGetPlantPositionOverride(out Vector3 position)
         {
             position = _plantPositionOverride ?? default;
             return _plantPositionOverride.HasValue;
+        }
+
+        /// <summary>
+        /// The pinned growth axis: the site's normal when one was supplied, else the direction
+        /// away from the cell centre (a plant on an unstructured cell still grows outward, which
+        /// is what the legacy shell dispersal implies). Only meaningful after Plant().
+        /// </summary>
+        protected Vector3 GrowthUp
+        {
+            get
+            {
+                if (_plantUpOverride.sqrMagnitude > 0.0001f) return _plantUpOverride.normalized;
+                if (cell)
+                {
+                    var radial = transform.position - cell.transform.position;
+                    if (radial.sqrMagnitude > 0.0001f) return radial.normalized;
+                }
+                return Vector3.up;
+            }
         }
 
         /// <summary>

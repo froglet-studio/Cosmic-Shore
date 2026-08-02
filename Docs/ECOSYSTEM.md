@@ -1721,3 +1721,225 @@ radius and needs its own verification pass. Fix shape, when someone takes it: ca
 
 Do not "fix" this by pre-multiplying an impact vector by volume somewhere else — that is the
 trap this section exists to document (see §20.1).
+
+---
+
+## 21. Hesperides — the garden cell, and flora as the world (August 2026)
+
+The freestyle six (§18) are worlds you **fly through**: ~31–36k authored prisms laid behind a
+veil, with flora and fauna seeded on top afterwards. **Hesperides** is the first cell where the
+world is the **planting**. It authors only ~12k prisms of *architecture* and then hands the
+cell's ordinary flora spawner a list of **prepared ground**; everything else — the canopy, the
+climbers, the bed cover — is grown by living flora that the food web can eat.
+
+Mature, that is ~33k prisms / ~985k volume: Yggdra's weight, reached by growth rather than by
+lay. A stripped Hesperides is a *correct* Hesperides, and the beds are still prepared ground
+when the pressure lifts.
+
+### 21.1 Audit — which flora actually work
+
+Eight flora prefabs exist. What each one is, and whether it can be planted today:
+
+| prefab | script | growth | verdict |
+|---|---|---|---|
+| `GyroidFlora` | `AssembledFlora` + `GyroidAssembler` | gyroid minimal surface from bonded lattice sites | **works** — the shipping species (Blob plants Mass/Space/Time) |
+| `SchwarzPFlora` | `AssembledFlora` + `SchwarzPAssembler` | Schwarz P minimal surface | **works** — shipping (Blob) |
+| `BranchingFlora` | `BranchingFlora` | crystaltropic random branch scribble | **works**, unused by any cell config |
+| `CactiFlora` | `BranchingFlora` | same, non-crystaltropic, `leafChance -2` | **works**, unused |
+| `PineFlora` | `BranchingFlora` | same, `leafChance -3` | **was broken** — see below |
+| `NerveFlora` | `BranchingFlora` | same + `SecondaryNerveFlora` secondary spawn | **was broken** |
+| `WallFlora` | `AssembledFlora` + `WallAssembler` | wall lattice | **was broken** |
+| `SeaweedFlora` | *(none)* | — | **dead prefab**: carries no `Flora` component at all, so nothing can plant it. Left in place; it is referenced by no config. |
+
+**The break.** `PineFlora`, `NerveFlora`, `WallFlora` and `SecondaryNerveFlora` pointed their
+`cellData` field at guid `16d80244d807ac84493fff643826a0a0` — a `CellRuntimeDataSO` that does
+not exist in the project. `Flora.Plant()` dereferences `cellData.CrystalTransform` on every
+unpinned plant and `LifeForm.Start()` reads `cellData.Cell`, so any attempt to plant one threw.
+Repointed at the live `Runtime Cell Data.asset` (`8d4e8398…`), which is what every working flora
+and fauna prefab uses. That restores three species and makes their eight existing
+`_SO_Assets/Lifeforms/` configs usable.
+
+> **Wider finding, deliberately NOT fixed here.** The same dangling guid is referenced by
+> `Clawfish`, `QuadFish`, `TermiteDrone`, the three `Worm*` prefabs, `oldWallFlora`, both
+> cytoplasm prefabs, and three scenes including `Menu_Main`. Those are live shipping objects, so
+> a blanket rewrite of scenes and fauna prefabs is its own change with its own verification —
+> flagged, not swept in. Worth a dedicated pass.
+
+**How they grow (the shape of the seam).** Both existing models are *surfaces*, not plants.
+`AssembledFlora` asks an `Assembler` for the next bonded lattice site, claims it in
+`PrismSpatialIndex`, and crystallises a triply-periodic minimal surface; `BranchingFlora` grows
+a random branch scribble that only reads as structure in bulk. Both plant themselves on a random
+shell of the membrane (`plantRadiusCellFraction × MembraneRadius`), grow one step per
+`growPeriod` while `Cell.FloraGrowingEnabled`, hold at most `maxTotalSpawnedObjects` LIVE prisms
+(consumption frees budget, so a grazed flora regrows), and re-sprout branches when every active
+branch has been eaten or exhausted.
+
+### 21.2 The new species — `PhyllotacticFlora`
+
+A garden needs plants with a **silhouette**, and it needs them to be one species varying by
+parameter rather than three bespoke behaviours. `PhyllotacticFlora` is one growth model:
+a set of growing **tips**, each advancing along its heading, pulled toward a growth axis,
+wandering, occasionally forking, and past a depth opening **whorls** of leaves at the golden
+angle. Three prefabs express it:
+
+| prefab | tips | tropism / wander | whorls | live-prism budget | role |
+|---|---|---|---|---|---|
+| `ArborFlora` | 1, forks to 10 | 0.60 / 0.16 | 5 leaves every 3 nodes from depth 6, flaring | 260 | the canopy tree |
+| `TendrilFlora` | 3, forks to 8 | 0.12 / 0.50 | 2 leaves every 3 nodes | 120 | the climber |
+| `RosetteFlora` | 1, no forking | 0.90 / 0.05 | 8 leaves every node from depth 0 | 90 | the bed cover |
+
+Everything else is inherited and unchanged: prisms are conserved mass laid through the ordinary
+health-prism path, growth is gated only on `Cell.FloraGrowingEnabled` (steady until Frenzy, no
+self-limit), sites are claimed with `PrismSpatialIndex.TryReserve` before the spawn (colliders
+are blind for a prism's first 0.6s), instantiation drains at `maxSpawnsPerFrame` so a grow tick
+is never a burst, death withers spindle-by-spindle from the extremities and drops the elemental
+crystal, and the heart is joustable while it lives. **No clock removes anything.**
+
+Twelve canonical configs (3 species × Charge/Mass/Space/Time) live in `_SO_Assets/Lifeforms/`,
+following the gyroid convention that an element's identity is its leaf PRISM and its growth
+TEMPO — matching the authored gyroid ordering (Space: long thin needles, slowest, smallest
+budget; Mass: fat slabs, biggest budget; Charge: ships shielded leaves; Time: the baseline shape,
+fastest). The cell's own configs `SpreadElements` across
+that palette, so a Hesperides garden carries all four elemental crystals.
+
+### 21.3 Seeding — the environment prepares ground, the Cell plants it
+
+The garden's architecture and its planting are one composition, so they cannot be authored
+apart. But an environment must not spawn lifeforms — **the Cell owns the ecology**. So the
+environment publishes **sites** and the ordinary spawner uses them:
+
+```
+SpawnableHesperides.BuildEnvironment()
+  ├─ Emit(...)  →  _cachedLays        (prisms, exactly as every environment does)
+  └─ Sow(pos, up) →  PlantingSites    (NEW: prepared ground + the bed's normal)
+                          │
+Cell.BuildEnvironmentNow() ─ AdoptPlantingSites()   copy + seeded shuffle (so the first
+                          │                          batch spreads over the whole bowl)
+RandomLifeSpawner.PlantOne()
+  └─ Cell.TryTakePlantingSite(out pos, out up)      round-robin, WRAPS
+        └─ CellLifeSpawnerBase.SpawnFlora(..., pos, up)
+              └─ Flora.SetPlantPositionOverride(pos, up)   →  Flora.GrowthUp
+```
+
+Four properties worth naming:
+
+- **Same spawn path.** A garden gets no privileged spawner — only better-chosen ground. The
+  plants are ordinary food-web citizens from the first frame: grazeable, joustable, starvable,
+  crystal-dropping.
+- **The ring wraps.** Sites are never consumed. A bed whose plant was grazed to nothing is
+  prepared ground again, so the garden regrows *where it was planted*. This is emergent
+  recovery, not a respawn timer — planting still only happens below Frenzy.
+- **The normal is load-bearing.** `FloraPlantingSite.Up` is why the hanging baskets work: their
+  normal points **down**, so what roots in them trails toward the floor. `Flora.GrowthUp` falls
+  back to "away from the cell centre" for unstructured ground, which is what the legacy shell
+  dispersal already implied.
+- **Flora wait for the world.** `Cell.IsEnvironmentBuildPending` is true from Initialize until
+  the deferred boot build lands (§18); the flora loop waits on it (25s ceiling) and then honors
+  the profile's `FloraInitialDelaySeconds` — which `RandomLifeSpawner` had been ignoring
+  outright. Without this the entire initial batch disperses over empty space seconds before the
+  world arrives underneath it.
+
+Every existing environment sows nothing, so `PlantingSites` is empty for the freestyle six and
+`TryTakePlantingSite` returns false — the legacy shell dispersal is untouched.
+
+### 21.4 The garden
+
+`SpawnableHesperides` (seed 137), a Blob-family cell — same membrane / nucleus / cytoplasm /
+modifiers as Yggdra:
+
+| structure | prisms | volume | notes |
+|---|---|---|---|
+| terrace beds (5 rings × 3 courses) | 1,830 | 83k | deliberately thin slabs — the bed is the stage |
+| terrace kerbs | 610 | 71k | the readable step between terraces |
+| outer wall (8 courses, crenellated) | 1,464 | 110k | gaps to fly through, not a sealed drum |
+| pergola columns + arches (12 × 8 bays) | 2,496 | 118k | fly under; every column foot is sown |
+| fruit lanterns | 48 | 4k | **shielded** |
+| trellis towers (9) | 1,656 | 25k | woven uprights + rungs; sown at foot, mid, top |
+| aqueduct ring + 6 cascades | 800 | 36k | |
+| central pool | 500 | 20k | phyllotaxis disc |
+| hanging baskets (14) | 700 | 10k | planting normal points **down** |
+| vine dome (10 ribs + crown) | 640 | 19k | the frame a mature garden roofs over |
+| orchard gate | 96 | 5k | **super-shielded** — the permanent bones |
+| brambles (2 arcs) | 320 | 4k | **true danger prisms** — a garden has thorns |
+| pollen | 900 | 2k | curl-field drift; the air is not empty |
+| **authored total** | **12,060** | **~507k** | |
+| mature planting (~140 plants) | ~21,000 | ~478k | grown, not laid |
+| **mature total** | **~33,000** | **~985k** | ≈ Yggdra (34.3k / 541k) |
+
+563 planting sites: 306 along the terraces, 192 at pergola column feet, 27 on the trellises, 24
+around the pool rim, 14 in the baskets.
+
+**PhaseThresholds ride the baseline** (§18's rule), but with the headroom sized for *growth*
+rather than for a trail: Restless at 16,300 / 602k (fauna start hunting once the garden is
+perhaps a fifth grown), Frenzy at 33,000 / 985k. **Frenzy is therefore the garden's planting
+budget** — flora plant and grow at a steady rate until the mature figure above, then freeze, and
+resume on their own when grazing or a vessel brings the mass back down. The ladder is the only
+thing bounding the canopy; there is no cap, TTL or culler anywhere in it.
+
+### 21.5 Invariants
+
+- **Continuity of existence** — upheld. Architecture blooms in prism-by-prism through
+  `PrismTrailBuilder`; plants grow leaf by leaf through the health-prism path; death withers
+  from the extremities inward and drops a crystal. Nothing pops.
+- **No imposed death** — nothing here is on a clock. The garden is bounded by the phase ladder
+  on the way up and by the food web on the way down, and by nothing else.
+- **No domain asymmetry** — flora seed in all three playable domains (`PickRandomDomain`);
+  fauna spawn in the controlling colour. The garden's own architecture is laid across Jade /
+  Gold / Ruby.
+- **Wither-to-crystal + mass conservation** — inherited unchanged from `LifeForm.Die`.
+- **Volume is the spine** — the ladder is authored in volume with the count backstop tracking
+  it; the thin bed slabs exist so authored mass does not eat the headroom the planting fills.
+- **Territorial permanence** — the orchard gate is super-shielded, so no force in the food web
+  can take it: the gate still stands whatever happens to the planting. Everything else is
+  deliberately contested.
+- **Endogenous selection** — untouched; no fitness function anywhere.
+
+### 21.6 Collider budget
+
+Per-prism colliders are the same LOD-cullable `BoxCollider` every prism carries (active count
+bounded by `PrismColliderLodManager` radius, not by population), and the mature garden's ~33k
+prisms sits *at* Yggdra's count, not above it. The always-on convex `MeshCollider` tier is **144**
+(96 super-shielded gate + 48 shielded lanterns) against Yggdra's 225 — comfortably inside the
+same ration. The one genuinely new cost is the lifeform **heart**: +1 always-on `SphereCollider`
+per live plant, ~140 at maturity (flora hearts are bounded by the profile's planting counts and
+the Frenzy ceiling, exactly as fauna hearts are bounded by `MaxLivePopulation`). No new spatial
+query type is introduced — growth uses `PrismSpatialIndex.TryReserve`, the same claim the
+gyroid assembler already makes, and no `Physics.OverlapSphere` is added anywhere.
+
+### 21.7 Verification (in-editor — NOT yet run)
+
+Nothing below has been observed running; the prism/volume figures are analytic (exact loop
+counts × authored scales × the 1.04 expected `Jit` volume factor), not measured.
+
+1. **Baseline.** Tools ▸ Cosmic Shore ▸ **Measure Cell Environment Baselines** with
+   `SpawnableHesperides`. Expect ≈ 12,060 prisms / ≈ 507k volume. If it lands more than a few
+   hundred count / few thousand volume off, re-author `PhaseThresholds` on the same rule:
+   Restless = baseline + ~4.2k count / +95k volume, Frenzy = baseline + ~21k count / +478k volume.
+2. **Lifeform crystals.** Tools ▸ Cosmic Shore ▸ **Validate Lifeform Crystals** — the three new
+   flora prefabs must pass (each carries an authored elemental crystal; configs replace it per
+   element at spawn).
+3. **Menu_Main.** Boot the menu (it still opens on Blob — `EnvironmentFree`, index 0, unchanged),
+   enter freestyle, fly the **Cell Selector**. Hesperides is the 8th mini-cell and must draw a
+   real scale model (terraces + wall + dome) with a `LOAD` label. Select it: the old world
+   suctions, the garden blooms in behind the veil.
+4. **The planting is the test.** Within ~30s of the swap, ~54 plants should appear *in the beds,
+   on the pergola feet, and hanging under the baskets* — not on a random sphere. Trailing growth
+   from the baskets is the direct check that the site normal is being honoured.
+5. **Growth + grazing.** Watch a few minutes: the canopy should thicken toward the Frenzy ceiling
+   and then stop; tadpoles/quadfish should graze it and the architecture back down and growth
+   should resume on its own. Confirm no plant ever vanishes — a grazed one withers and drops a
+   crystal.
+6. **Perf.** Soak Menu_Main on Hesperides and record steady-state numbers in
+   `Docs/PERFORMANCE_OPTIMIZATION.md`. Levers, in order: the profile's planting counts /
+   `PlantPeriod`, the per-species `maxTotalSpawnedObjects`, then the prefab's `density`
+   (0.5–1.3). The Frenzy ceiling is the hard budget dial.
+
+### 21.8 Known gaps
+
+- The three repaired flora (`Pine`, `Nerve`, `Wall`) are structurally complete and now point at
+  the live runtime data, but have not been planted in-editor since the repair.
+- The wider dangling-`cellData` finding in §21.1 is unaddressed.
+- Hesperides authors no `Icon`; the Cell Selector uses the scale model, so this only matters if
+  a future surface wants a sprite.
+- `Tools/ecosim/gen_hesperides_assets.py` regenerates the whole asset set deterministically —
+  retune there rather than hand-editing twelve configs.

@@ -1153,6 +1153,11 @@ namespace CosmicShore.Gameplay
 
         void BuildEnvironmentNow()
         {
+            // Cleared unconditionally: a swap into a config with no environment (or none at all)
+            // must not leave the previous world's beds addressable.
+            _plantingSites.Clear();
+            _nextPlantingSite = 0;
+
             if (!cellConfigData || cellConfigData.EnvironmentPrefab == null) return;
             using (LoadInsights.Measure(LoadInsightCategory.Environment,
                        $"Cell environment spawn (cell {ID}, {cellConfigData.EnvironmentPrefab.name})"))
@@ -1165,6 +1170,72 @@ namespace CosmicShore.Gameplay
                 environment.transform.SetParent(transform, false);
                 environment.transform.localPosition = Vector3.zero;
                 environment.transform.localRotation = Quaternion.identity;
+                AdoptPlantingSites();
+            }
+        }
+
+        // ---------------------------------------------------------------------
+        //  Planting sites - an authored GARDEN environment tells the cell where it
+        //  prepared ground; the ordinary flora spawner plants there instead of on a
+        //  random membrane shell. The environment never spawns a lifeform itself:
+        //  the Cell owns the ecology, so the sites flow into the SAME spawn path
+        //  every other flora uses and the plants are ordinary food-web citizens.
+        // ---------------------------------------------------------------------
+
+        readonly List<FloraPlantingSite> _plantingSites = new();
+        int _nextPlantingSite;
+
+        /// <summary>True when this cell's environment prepared ground for planting.</summary>
+        public bool HasPlantingSites => _plantingSites.Count > 0;
+
+        /// <summary>
+        /// True while an authored environment has been claimed but not yet built - the boot-path
+        /// deferred build (<see cref="DeferredEnvironmentBuild"/>) pre-claims the field with this
+        /// cell's own GameObject as a double-book guard. The flora spawner waits on it so plants
+        /// seed into a world that exists (and into its prepared beds), instead of dispersing over
+        /// empty space seconds before the garden arrives underneath them.
+        /// </summary>
+        public bool IsEnvironmentBuildPending => environment == gameObject;
+
+        /// <summary>
+        /// The next prepared planting spot in WORLD space, walked round-robin. The ring WRAPS
+        /// rather than exhausting: a bed whose plant was grazed to nothing is prepared ground
+        /// again, so the garden regrows where it was planted. Returns false (and the caller
+        /// falls back to the legacy shell dispersal) when the environment prepared none.
+        /// </summary>
+        public bool TryTakePlantingSite(out Vector3 position, out Vector3 up)
+        {
+            position = default;
+            up = Vector3.up;
+            if (_plantingSites.Count == 0) return false;
+
+            var site = _plantingSites[_nextPlantingSite % _plantingSites.Count];
+            _nextPlantingSite++;
+            position = transform.TransformPoint(site.Position);
+            up = transform.TransformDirection(site.Up);
+            return true;
+        }
+
+        void AdoptPlantingSites()
+        {
+            _plantingSites.Clear();
+            _nextPlantingSite = 0;
+
+            if (cellConfigData.EnvironmentPrefab is not CellEnvironmentSpawnableBase garden) return;
+            var sites = garden.PlantingSites;
+            if (sites is not { Count: > 0 }) return;
+
+            _plantingSites.AddRange(sites);
+
+            // Deal the sites in a fixed but shuffled order (seeded off the cell so a client
+            // can't diverge): planting walks the list, and generation order groups sites by
+            // structure - unshuffled, the first seeding batch would fill one terrace solid
+            // and leave the rest bare until much later.
+            var rng = new System.Random(ID * 7919 + _plantingSites.Count);
+            for (int i = _plantingSites.Count - 1; i > 0; i--)
+            {
+                int j = rng.Next(i + 1);
+                (_plantingSites[i], _plantingSites[j]) = (_plantingSites[j], _plantingSites[i]);
             }
         }
 
