@@ -87,6 +87,25 @@ every other block is one object keyed by 32-hex `m_ObjectId`.
   the same input slot — assert exactly one feeder per input).
 - **Remove**: drop the block, drop its entry from every registry
   (`m_Nodes`/`m_Properties`/category child list), assert no edge references it.
+- **READ a graph before you touch it — dump the edge list, don't eyeball JSON.**
+  To answer "what does property X actually do?", stream-parse the file with
+  `json.JSONDecoder().raw_decode` in a loop (plain `json.load` throws
+  `Extra data` — it is CONCATENATED objects, not one document), index every
+  block by `m_ObjectId`, then print each `m_Edges` entry as
+  `srcNode.srcSlot -> dstNode.dstSlot` with nodes labeled by type + resolved
+  property name (`PropertyNode.m_Property.m_Id` → that property's `m_Name`)
+  and slots resolved through the owner's `m_Slots`. The semantics fall out in
+  one screen. Follow `SubGraphNode.m_SerializedSubGraph.guid` into the
+  `.shadersubgraph` (find it via `grep -rl <guid> Assets --include=*.meta`)
+  and repeat — the meaning usually lives one level down. Also dump unconnected
+  input-slot `m_Value`s: an input with no edge is a hardcoded constant.
+- **Which properties are tunable per material**: an exposed property that is
+  NOT Hybrid Per Instance and is never written by a `Stamp*`/`SetFloat` call
+  is a plain material constant — tune it in the `.mat` (`m_Floats`), and the
+  instanced/entity draw path picks it up with no code change. Confirm the
+  entity path reads the SAME asset (e.g. `PrismDebris` copies
+  `PrismExplosion.prefab`'s `sharedMaterial`) or you will tune a material
+  nothing draws with.
 - Unity reimports on pull; the in-editor validator + a shader-error check
   (`ShaderUtil.ShaderHasError`) confirm; magenta = `git checkout` the graph.
 
