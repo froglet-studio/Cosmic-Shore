@@ -90,6 +90,30 @@ every other block is one object keyed by 32-hex `m_ObjectId`.
 - Unity reimports on pull; the in-editor validator + a shader-error check
   (`ShaderUtil.ShaderHasError`) confirm; magenta = `git checkout` the graph.
 
+### 2a. Reading a graph to learn what a property MEANS
+
+Before tuning any value a shader consumes, find out what the shader does with it —
+the field name lies often enough to be worth 5 minutes. (`OutsideBlockColor` /
+`InsideBlockColor` are actually the prism's base face and its fresnel rim; nothing
+about them is "outside" or "inside".)
+
+- **Parse robustly**: `.shadergraph`/`.shadersubgraph` are CONCATENATED JSON
+  documents, so `json.loads(whole_file)` dies with
+  `JSONDecodeError: Extra data: line N`. Don't split on blank lines (CRLF, §5);
+  loop `JSONDecoder().raw_decode(s, i)`, skipping whitespace between documents.
+  Robust against any separator.
+- **Build the model**: index every doc by `m_ObjectId`; the one doc whose
+  `m_Type` contains `GraphData` holds `m_Edges`. Each edge is
+  `{m_OutputSlot:{m_Node:{m_Id},m_SlotId}, m_InputSlot:{...}}` — resolve
+  `m_Node.m_Id` through the index to get the node, and for a `PropertyNode`
+  follow `m_Property.m_Id` to the property doc for its `m_Name`.
+- **Follow it down**: `SubGraphNode`s carry `m_SerializedSubGraph` with the
+  subgraph's **guid** — resolve it by grepping `.meta` files, then repeat. A
+  property's real meaning is usually two subgraphs deep.
+- Print the edge list as `label(out) --> label(in)`; the semantics fall out of
+  reading ~20 lines. This is how you replace "I think this is the rim colour"
+  with "I traced it."
+
 ## 3. Technique: prefab/scene YAML surgery
 
 Unity YAML = documents headed `--- !u!<class> &<fileID>`. A MonoBehaviour is
@@ -158,6 +182,29 @@ its GameObject lists it in `m_Component`.
 - **Unity asset edits the editor must bless**: after out-of-editor edits the
   human's next pull triggers reimport — if visuals look unchanged, suspect a
   stale Library (ask them to Reimport the asset) before suspecting the edit.
+- **HDR colour fields are LINEAR, and scaling them is not tuning**: in a Linear
+  project (`ProjectSettings: m_ActiveColorSpace: 1`) a `[ColorUsage(true, true)]`
+  field serialises **linear intensity** — Rec.709 luminance and CIELAB apply
+  directly (no de-gamma), and channels >1 are legitimate, not corruption to clamp.
+  Two traps follow: (1) **multiplying a colour PAIR by a constant changes
+  brightness but leaves contrast identical** — a "halve it, it's too bright" pass
+  fixes nothing (this is exactly how a prior shielded-prism fix shipped a no-op);
+  (2) **HSV misleads across hues** — equal `V` is not equal brightness and HSV
+  "saturation" is not perceptual chroma. Judge colour pairs in CIELAB: `L*` for
+  brightness, `ΔL*` between them for contrast, `C*` for harshness. Derive new
+  values in LCh (keep the asset's own hue, transplant the reference's `L*`),
+  convert back, and assert no channel went negative before writing.
+- **Shallow clone hides most of the repo** (Claude Code on the web): the working
+  clone can be `--depth`-limited with only ~2 remote refs fetched while the server
+  has hundreds. A "scan every branch" sweep over `git for-each-ref refs/remotes`
+  then silently reports a CONFIDENT WRONG answer ("that work exists nowhere").
+  Before any cross-branch history search, check `[ -f .git/shallow ]` and compare
+  `git ls-remote --heads origin | wc -l` against `git for-each-ref refs/remotes | wc -l`;
+  if they disagree,
+  `git fetch --filter=blob:none --no-tags origin '+refs/heads/*:refs/remotes/origin/*'`
+  first (blob-filtered, so hundreds of branches of a Unity repo land in ~a minute).
+  Then dedupe by BLOB: `git rev-parse "$ref:$path"` per ref and group — N branches
+  usually collapse to a handful of distinct file versions worth reading.
 
 ## 6. When the editor genuinely IS required
 
@@ -166,3 +213,15 @@ judgment. Even then: build the measuring tool + validator so the human runs ONE
 menu item and pastes ONE output back — then YOU act on the numbers
 (the PhaseThresholds re-baseline pattern: they ran the measurer, the session
 authored the six configs from the pasted output).
+
+**Visual judgment is the softest of these — simulate it rather than punting it.**
+Once §2a has told you what the shader does with a value, you can reimplement that
+one path offline and RENDER the candidates: rasterise/raytrace the actual geometry
+(a box is a 10-line slab intersection), apply the traced formula, tonemap (ACES) and
+sRGB-encode, and lay the options out as a labelled before/after sheet. `pip install
+numpy pillow` if the sandbox lacks them. This turns "which of these four palettes is
+best?" from a question you ask the human into one you answer and then have them
+confirm — and it catches the option that's numerically perfect and ugly (matching a
+cool reference hue's chroma exactly turns a warm hue to khaki; only the render shows
+it). Ship the sheet WITH the change so the human's playtest starts from your read,
+and still say plainly that the sheet is a simulation, not the engine.
