@@ -97,6 +97,34 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public override bool Predated(string predatorName, Transform devourTarget) => false;
 
+        // The element a per-element species config picked for this colony (None = the
+        // config didn't say; segments keep their authored hearts and wounds use the
+        // WormColonyConfigSO.RegrownEndElement fallback).
+        Element _pickedHeartElement = Element.None;
+
+        /// <summary>The element wounds differentiate into: the config pick when present, else the tuning default.</summary>
+        Element RegrowElement =>
+            _pickedHeartElement != Element.None ? _pickedHeartElement : config.RegrownEndElement;
+
+        /// <summary>
+        /// Element-as-data for a COMPOSITE creature: the colony root stays heartless
+        /// (its crystal contract lives on its capital segments — Docs/ECOSYSTEM.md
+        /// §21), so a per-element species config (the Lifeform Matrix toy, an
+        /// element-authored SpawnProfile entry) forwards its pick to the head/tail
+        /// hearts instead of provisioning a crystal on this empty anchor. Remembered
+        /// so wound differentiation regrows hearts of the same element.
+        /// </summary>
+        protected override void ProvisionHeart(Element element)
+        {
+            _pickedHeartElement = element;
+            for (int i = 0; i < segments.Count; i++)
+            {
+                var seg = segments[i];
+                if (seg && seg.Role != WormSegmentRole.Body)
+                    seg.ReprovisionHeart(element);
+            }
+        }
+
         public override void Initialize(Cell cell)
         {
             base.Initialize(cell); // record the explicit host cell
@@ -538,7 +566,7 @@ namespace CosmicShore.Gameplay
                 var leader = segments[0];
                 if (leader.Role == WormSegmentRole.Body)
                 {
-                    leader.DifferentiateTo(WormSegmentRole.Head, config.RegrownEndElement);
+                    leader.DifferentiateTo(WormSegmentRole.Head, RegrowElement);
                     _headWoundedAt = -1f;
                 }
                 else if (leader.Role == WormSegmentRole.Head)
@@ -555,7 +583,7 @@ namespace CosmicShore.Gameplay
                 var last = segments[segments.Count - 1];
                 if (last.Role == WormSegmentRole.Body)
                 {
-                    last.DifferentiateTo(WormSegmentRole.Tail, config.RegrownEndElement);
+                    last.DifferentiateTo(WormSegmentRole.Tail, RegrowElement);
                     _tailWoundedAt = -1f;
                 }
                 else if (last.Role == WormSegmentRole.Tail)

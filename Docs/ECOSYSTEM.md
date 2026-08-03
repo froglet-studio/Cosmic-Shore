@@ -1820,12 +1820,24 @@ deleted 2024 worm cost 28 colliders per worm *and grew unboundedly on a timer*.
 
 ### 21.5 Deployment + tuning
 
-`WormColonyFaunaConfig.asset` (`_SO_Assets/Lifeforms/`) is the species entry —
-`PopulationSize=1` (a lone kaiju; the seed floor sees split-children via lineage
-registration, so it never re-seeds while any worm lives). **Deliberately wired into no
-SpawnProfile** — a boss is opt-in. To deploy: add it to a cell's
-`SpawnProfileSO.SupportedFaunas`. Natural host for the co-op fight:
-`MinigameWildlifeBlitzMultuplayerCoOp` (note §10.3: that scene uses
+Species entries in `_SO_Assets/Lifeforms/`: `WormColonyFaunaConfig.asset`
+(Element=None — keeps the prefab-authored Mass hearts) plus the menagerie-convention
+four `Worm Colony Charge/Mass/Space/Time.asset` (Element authored; the colony root
+forwards the pick to its capital segments' hearts via the `Fauna.ProvisionHeart`
+override — the root itself stays heartless, and wounds differentiate into the picked
+element). All are `PopulationSize=1` (a lone kaiju; the seed floor sees split-children
+via lineage registration, so it never re-seeds while any worm lives).
+
+**Spawnable NOW from the Lifeform Matrix toy** (freestyle): the four element configs
+are wired as the "Worm Colony" species in `Toy_LifeformMatrix.asset` — fly the toy →
+fly "Worm Colony" → fly an element/level station and the kaiju spawns live into the
+cell in your domain. (Level is inert for the colony in v1 — `SetLevel` scales only the
+empty root anchor, so L1/L3/L5 stations spawn the same-size worm; size lives on
+`KaijuScale`.)
+
+**Deliberately wired into no SpawnProfile** — a boss is opt-in. To deploy ambiently:
+add a worm config to a cell's `SpawnProfileSO.SupportedFaunas`. Natural host for the
+co-op fight: `MinigameWildlifeBlitzMultuplayerCoOp` (note §10.3: that scene uses
 `IntensityWiseLifeSpawner`, which spawns 1/tick — fine for a PopulationSize-1 boss).
 All feel/fight tuning lives on `WormColonyConfig.asset` (`WormColonyConfigSO`).
 

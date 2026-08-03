@@ -165,10 +165,7 @@ namespace CosmicShore.Gameplay
                 _variantPick = pick;
 
                 if (pick.Element != Element.None)
-                {
-                    crystal = LifeFormCrystal.EnsureElementalCrystal(this, pick.Element);
-                    if (crystal) crystal.SetEmbeddedIn(this);
-                }
+                    ProvisionHeart(pick.Element);
                 if (pick.Tuning is { Enabled: true })
                     ApplyVariantTuning(pick.Tuning);
                 SetLevel(pick.Level, animate: false);
@@ -177,6 +174,20 @@ namespace CosmicShore.Gameplay
             // A new living heart entered the world - let the domain fauna buff re-sum now
             // instead of on its next reconcile sweep.
             RaiseFaunaHeartsChanged();
+        }
+
+        /// <summary>
+        /// Element-as-data landing point: gives this creature its heart of the config's
+        /// picked element. Default = the standard embedded-crystal provisioning every
+        /// simple fauna uses. A COMPOSITE creature overrides to route the element where
+        /// its hearts actually live — the worm colony forwards it to its capital
+        /// segments (the colony root itself is deliberately heartless,
+        /// Docs/ECOSYSTEM.md §21).
+        /// </summary>
+        protected virtual void ProvisionHeart(Element element)
+        {
+            crystal = LifeFormCrystal.EnsureElementalCrystal(this, element);
+            if (crystal) crystal.SetEmbeddedIn(this);
         }
 
         /// <summary>

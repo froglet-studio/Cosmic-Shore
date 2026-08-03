@@ -156,6 +156,19 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public void WitherAway(string reason) => Die(reason);
 
+        /// <summary>
+        /// Element-as-data forwarding from the colony (see WormFauna.ProvisionHeart):
+        /// re-provisions this capital segment's heart to the picked element.
+        /// EnsureElementalCrystal keeps a matching authored crystal and replaces a
+        /// mismatched one with the set's model for the requested element.
+        /// </summary>
+        public void ReprovisionHeart(Element element)
+        {
+            if (_dead || element == Element.None) return;
+            crystal = LifeFormCrystal.EnsureElementalCrystal(this, element);
+            if (crystal) crystal.SetEmbeddedIn(this);
+        }
+
         protected override void OnDeath(string killerName = "")
         {
             if (_dead) return;
