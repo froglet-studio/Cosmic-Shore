@@ -57,6 +57,32 @@ namespace CosmicShore.UI
         public long LifetimeCrystalsSpent;
 
         public List<string> UnlockedRewardIds = new();
+
+        // ----- Episode tokens (real-money entitlement) -----
+
+        /// <summary>
+        /// Unspent episode tokens. One token unlocks one episode. Only ever incremented by
+        /// <c>EpisodeTokenService.GrantTokens</c>, which requires a verified order - never by the
+        /// client on its own.
+        /// </summary>
+        public int EpisodeTokenBalance;
+
+        /// <summary>Lifetime totals, for support/refund questions and funnel analysis.</summary>
+        public long LifetimeEpisodeTokensPurchased;
+        public long LifetimeEpisodeTokensSpent;
+
+        /// <summary>
+        /// Episode ids the player owns. Ownership is permanent: spending a token writes here and
+        /// the entitlement is never revoked by gameplay.
+        /// </summary>
+        public List<string> OwnedEpisodeIds = new();
+
+        /// <summary>
+        /// Order ids already redeemed, so a replayed or duplicated grant cannot mint free tokens.
+        /// This is what makes <c>GrantTokens</c> idempotent across retries, app restarts, and a
+        /// player opening the same receipt twice.
+        /// </summary>
+        public List<string> RedeemedOrderIds = new();
     }
 
     /// <summary>
