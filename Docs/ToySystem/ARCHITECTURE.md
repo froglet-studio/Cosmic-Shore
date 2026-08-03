@@ -644,25 +644,33 @@ back from. Starting one does three things, and all three are undone when it ends
   stacking two covers. Authored off (`revertCellOnStart`) if a designer wants the wander to happen
   inside whatever world is up; with no environment-free config in the cell's list it warns and
   leaves the world alone.
-- **A finite tether.** The trail you lay on the way out is a budget (`tetherPrisms`, default 120),
-  not an endless ribbon. When it completes, the vessel's spawner goes **pen-up**
-  (`VesselPrismController.SetSpawnerPaused` — the same mechanism the painting toy uses between
-  strokes). **Nothing is removed, aged out, or capped**: not creating mass is allowed, un-creating
-  it is not, and the reverted `maxTrailBlocks` ring buffer is the named counter-example
-  (CLAUDE.md ▸ *Mass is conserved* / *Don't cheat emergence*). Pen-up is a single last-writer-wins
-  flag shared with the painting runner; the run only sets it when its tether completes and clears
-  it when the run ends, and the painting runner re-asserts on its next stroke gate.
-- **A way home at its end.** The instant the tether completes, the **return station** blooms at the
-  last prism you laid — the far end of your lifeline. It is a full `Toy`, not a bespoke trigger, so
-  it inherits local-user detection, freestyle gating, the bloom-in, deferred activation, and the
-  exit-gated re-arm (which is load-bearing here: the station blooms right where the vessel just
-  was, so the gate is what stops it firing the instant it appears).
+- **A rolling tether.** The trail follows you as a ribbon of exactly `tetherPrisms` (100): as you
+  lay at the head, the oldest prism at the tail withers and **recycles back into the pool it came
+  from**, so the next prism you lay is very often the one that just left. Turn around and your trail
+  is there; fly on and a little flying lays a fresh path home. That closed loop is what makes the
+  wander a *truly infinite runner at fixed memory* — see the invariant note below.
+- **A way home at its tail.** The **return station** rides the oldest end of that ribbon, so the way
+  out is always exactly one tether-length behind you, for the whole wander. It is a full `Toy`, not
+  a bespoke trigger, so it inherits local-user detection, freestyle gating, the bloom-in, deferred
+  activation, and the exit-gated re-arm. It glides onto the tail every frame rather than snapping on
+  the run's tick — the tail advances a prism at a time and a station that teleported after it would
+  read as a pop.
+
+> **The rolling tether is an AUTHORIZED EXCEPTION to mass conservation** — the one sanctioned place
+> trail mass is recycled, granted by explicit sign-off so the Wanderway can be an endless runner
+> without an ever-growing world. It is mechanically the reverted `maxTrailBlocks` cap, and it is
+> fenced so it cannot leak: `WanderwayRun.RollTether` is the ONLY caller of `Trail.RemoveOldest`,
+> it runs only while a run is live, and `VesselPrismController` grew no cap field — outside a run
+> the trail is untouched and the law holds in full. **Continuity of existence is not waived**: a
+> retiring prism withers on the GPU clock (one grow-clock re-stamp toward a near-zero scale — the
+> belt's own collapse, `Docs/PRISM_ANIMATION.md` §5 C8) and returns to the pool only once it has
+> shrunk away. Full record: `Docs/ECOSYSTEM.md` §0. Do not generalise it; do not revert it.
 
 **Three exits, one path.** The return station, another pass through the Wanderway toy, and the
 **overview button** (the freestyle HUD's Volume/Pause button, and gamepad **Start**) all call
 `WanderwayRun.End(returnToCell: true)`. The overview route needs no new wiring: that button routes
 through `MenuCrystalClickHandler.ToggleTransition`, which drops freestyle, and the run watches
-`ToyContext.IsFreestyleActive` for that edge. Ending a run stops the belt, clears the pen, retires
+`ToyContext.IsFreestyleActive` for that edge. Ending a run stops the belt, stops recycling, retires
 the station, flips the toy's label, and puts the vessel back where the wander started
 (`IVessel.SetPose` + `SetInitialSpeed`, the same repose the menu vessel-swap uses, so speed carries
 through) — skipped when they are already home, so ending the run AT the toy never jerks their pose.

@@ -36,6 +36,38 @@ namespace CosmicShore.Gameplay
             // block.prismProperties.Index = (ushort) trailBlockIndices.Count;
         }
 
+        /// <summary>
+        /// Detach the OLDEST prism from the trail and hand it back to the caller, keeping the
+        /// index map consistent (every survivor shifts one toward the head, so
+        /// <see cref="GetBlockIndex"/> and <see cref="GetBlock"/> stay in agreement for anything
+        /// riding the trail).
+        ///
+        /// <b>This is not a general-purpose trail cap.</b> Passive removal of trail mass is
+        /// forbidden platform-wide (CLAUDE.md ▸ <i>Mass is conserved</i> / <i>Don't cheat
+        /// emergence</i>; the reverted <c>maxTrailBlocks</c> ring buffer is the named
+        /// counter-example). The ONE caller is <see cref="WanderwayRun"/>'s rolling tether, an
+        /// explicitly authorized carve-out for the Wanderway's infinite-runner illusion — see the
+        /// exception recorded in <c>Docs/ECOSYSTEM.md</c> §0. Do not call it from anywhere else,
+        /// and do not generalise it into a length limit on <see cref="Add"/>.
+        /// </summary>
+        /// <returns>The removed prism, or null when the trail is empty.</returns>
+        public Prism RemoveOldest()
+        {
+            if (TrailList.Count == 0) return null;
+
+            var oldest = TrailList[0];
+            TrailList.RemoveAt(0);
+            if (oldest) trailBlockIndices.Remove(oldest);
+
+            for (int i = 0; i < TrailList.Count; i++)
+            {
+                var block = TrailList[i];
+                if (block) trailBlockIndices[block] = (ushort)i;
+            }
+
+            return oldest;
+        }
+
         public void Clear()
         {
             TrailList.Clear();

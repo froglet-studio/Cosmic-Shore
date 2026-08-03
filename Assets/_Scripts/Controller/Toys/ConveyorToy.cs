@@ -7,8 +7,9 @@ namespace CosmicShore.Gameplay
     /// <summary>
     /// The Wanderway toy: fly through it and you LEAVE for a wander. The cell reverts to its bare
     /// environment-free canvas, a belt of little worlds — grand assemblies and gate runs, tunnels,
-    /// orchards, menageries — starts streaming ahead of your flight path, and the trail you lay on
-    /// the way out is a finite tether whose far end carries the station that brings you home.
+    /// orchards, menageries — starts streaming ahead of your flight path, and your trail becomes a
+    /// rolling tether: a fixed-length ribbon that follows you (the tail recycles into the pool the
+    /// head lays from) with the station that brings you home riding its far end.
     ///
     /// Two things end the wander and both do the same thing (see <see cref="WanderwayRun"/>): the
     /// return station at the end of your tether, and the overview button (or gamepad Start), which

@@ -70,6 +70,6 @@ MonoBehaviour:
   minPlacementDistance: 380
   offscreenMargin: 80
   revertCellOnStart: 1
-  tetherPrisms: 120
+  tetherPrisms: 100
   returnStationRadius: 22
   returnStationColor: {r: 1, g: 0.78, b: 0.25, a: 1}

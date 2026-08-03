@@ -119,12 +119,16 @@ namespace CosmicShore.ScriptableObjects
                                  "with none it warns and leaves the world alone.")]
         bool revertCellOnStart = true;
 
-        [SerializeField, Min(1), Tooltip("Trail prisms the vessel may lay per wander before the spawner " +
-                                         "goes PEN-UP and the return station blooms at the last one. The " +
-                                         "trail is a finite TETHER, not an endless ribbon - and nothing is " +
-                                         "removed to achieve that: not creating mass is allowed, un-creating " +
-                                         "it is not (CLAUDE.md ▸ Mass is conserved).")]
-        int tetherPrisms = 120;
+        [SerializeField, Min(1), Tooltip("Length of the ROLLING tether, in prisms. The trail follows " +
+                                         "you as a ribbon of exactly this many: as you lay at the head, " +
+                                         "the oldest prism withers and recycles back into the pool, so " +
+                                         "the wander is endless at fixed memory. The return station rides " +
+                                         "the tail, so the way home is always this far behind you. " +
+                                         "This is a per-ribbon LENGTH: a vessel that lays a double " +
+                                         "trail holds 2× the prisms for the same visible tether. " +
+                                         "AUTHORIZED EXCEPTION to mass conservation, scoped to a live " +
+                                         "WanderwayRun - see Docs/ECOSYSTEM.md §0.")]
+        int tetherPrisms = 100;
 
         [SerializeField, Min(4f), Tooltip("Body radius of the return station at the end of the tether. " +
                                           "It has to read at wander distances, so keep it well above the " +
