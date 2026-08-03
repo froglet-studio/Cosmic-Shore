@@ -2148,8 +2148,17 @@ gyroid assembler already makes, and no `Physics.OverlapSphere` is added anywhere
 
 ### 21.7 Verification (in-editor — NOT yet run)
 
-Nothing below has been observed running; the prism/volume figures are analytic (exact loop
-counts × authored scales × the 1.04 expected `Jit` volume factor), not measured.
+**Compile status (August 2026): the C# is compiler-verified, not just inspected.** Using the
+offline `mcs` + stubs harness (`/asset-surgery` §4), `PhyllotacticFlora`, `SpawnableHesperides`
+and `FloraPlantingSite` compile clean — and `PhyllotacticFlora` was compiled against the **real**
+`Flora.cs` and `LifeForm.cs` sources (not stubs of them), so every base member it touches
+(`AddSpindle`, `AddHealthBlock`, `healthTracker`, `LeafSize`, `TryGetPlantPositionOverride`,
+`ResolvePlantRadius`, `GrowthUp`, `Die`, `RemoveSpindle`) is verified against the actual
+declarations. What that does NOT cover: the 65 hand-authored prefab/SO assets (Unity import is
+still the first proof), and behaviour of any kind.
+
+The prism/volume figures below are analytic (exact loop counts × authored scales × the 1.04
+expected `Jit` volume factor), not measured — nothing has been observed running.
 
 1. **Baseline.** FrogletTools ▸ Ecology ▸ **Measure Cell Environment Baselines** with
    `SpawnableHesperides`. Expect ≈ 12,060 prisms / ≈ 507k volume. If it lands more than a few
