@@ -180,19 +180,22 @@ part of GameCanvas, so pointing a scene at its config never creates an override 
 prefab. Consumers call `GameModeSceneConfig.Resolve()` instead of holding a serialized field —
 that is what keeps new inspector references off the canvas.
 
-**Every field is opt-in.** `ScoreLayout = Inherit` and an empty `EndGameStats` mean "behave exactly
-as before", so adding a config asset to a scene changes nothing until you set something. A scene
-with no config at all is unaffected. This is what makes it safe to migrate one mode at a time.
+**Every field is opt-in.** An empty `EndGameStats` falls through to the scene's own list and then
+to vessel-telemetry discovery, and `ScoreLayout = Inherit` derives the layout from the controller
+type — so most modes need no config asset at all, and a scene without one still behaves correctly.
+This is what makes it safe to migrate one mode at a time.
 
 | Field | Replaces | Neutral value |
 |---|---|---|
 | `EndGameStats` | `EventDrivenStatsProvider.statsToTrack` overridden per scene | empty → scene list, then vessel-telemetry discovery |
-| `ScoreLayout` | the fact that the *only* way to get per-player cards was to ship a canvas without domain wiring | `Inherit` → decide from prefab wiring, as today |
+| `ScoreLayout` | the fact that the *only* way to get per-player cards was to ship a canvas without domain wiring | `Inherit` → per-domain if the scene's controller is a `MultiplayerDomainGamesController`, else per-player |
 
 `ScoreLayout` is the field that actually unblocks the merge. Today the two canvas forks differ in
-whether the domain containers exist at all, and `MultiplayerHUD` picks its layout from whether they
-happen to be wired. A single unified canvas carries the superset, so the wiring is always present
-and the choice has to become data.
+whether the domain containers exist at all, and `MultiplayerHUD` picked its layout from whether they
+happened to be wired — shipping a canvas *without* the wiring was the only way to get per-player
+cards, which is precisely why a second prefab had to exist. A single unified canvas always carries
+the wiring, so that signal is gone and the choice moves to the controller type, overridable per
+mode by this field.
 
 **Net effect:** a brand-new game-mode scene can drop GameCanvas in, add one `GameModeSceneConfig`
 object, and the Ready button, Play Again, stat list and score layout all work with no inspector
@@ -202,62 +205,134 @@ wiring on the canvas itself.
 
 ## 6. What to do in Unity
 
-### Step 0 — the tooling does NOT do this for you
+**Decision: `CORE/GameCanvas.prefab` is the survivor. `GameCanvas-HexRace.prefab` gets deleted.**
 
-**FrogletTools ▸ Game Modes ▸ Game Mode Prefab Kit ▸ Validate** is a *read-only report*. It tells
-you which scenes carry unapplied overrides on a shared prefab, and it has an **Ignore** button for
-scenes that are meant to differ. It does not merge prefabs and it does not apply overrides — an
-earlier automated "Consolidate" did, and it was removed: reverting a scene's overrides is a large,
-hard-to-review edit, and it addresses drift, not unification. Fix drift in Unity's own Overrides
-dropdown where you can see each change first.
+This is the cheaper direction, and by a wide margin. The base prefab's GUID is already referenced
+by **10 scenes**; the fork by **6**. Keeping the base means only those 6 scenes need their canvas
+re-instantiated — the other 10 keep working untouched. (Promoting the fork instead would have
+meant redoing 10.) The fork's extra content moves *into* the base, so nothing is lost.
 
-**Maelstrom is excluded by default** and should stay excluded. It is the tournament **hub**, not a
-playable mode — it chains the real modes as a sequence of rounds, so its canvas deliberately strips
-the gameplay HUD (8 removed GameObjects) and adds `Intro Panel` / `Summary Panel`. That is correct,
-not drift.
+### Step 0 — what the tooling does and does not do
 
-### Step 1 — merge the two prefabs
+**FrogletTools ▸ Game Modes ▸ Game Mode Prefab Kit ▸ Validate** is a *read-only report*: prefab
+health, presence in the open scene, and which other scenes carry unapplied overrides. It has an
+**Ignore** button for scenes that are meant to differ. It does not merge prefabs and does not apply
+overrides. Use it to check your work after each step, not to do the work.
 
-`GameCanvas-HexRace` is the superset (101 of 105 GameObjects shared, +40, −4), so it becomes the
-single canvas:
+**Maelstrom is excluded by default** and should stay that way. It is the tournament **hub**, not a
+playable mode — it chains the real modes as rounds, so its canvas deliberately strips the gameplay
+HUD (8 removed GameObjects) and adds `Intro Panel` / `Summary Panel`. Correct, not drift. Leave it
+completely alone until every playable mode is done, then re-check it last.
 
-1. Restore the two things only the base has: the legacy `PlayerFour` row under
-   `Scoreboard/MultiplayerView/MultiplayerScores` — or delete it from the base too, if the
-   TeamScorecards have replaced it.
-2. Re-point the 8 dangling references in §4 at objects inside the *same* prefab.
-3. Confirm the HUD object carries `MultiplayerHUD` + `MultiplayerHUDView` **with** the domain
-   containers wired. `MultiplayerHUD : MiniGameHUD` and `MultiplayerHUDView : MiniGameHUDView`, so
-   this is a strict superset — single-player modes select `ScoreLayout = PerPlayer` and get the
-   old cards.
-4. Rename it `GameCanvas`, move it to `_Prefabs/CORE/`.
+---
 
-### Step 2 — author one config asset per mode
+### Step 1 — bring the base prefab up to the superset
 
-Create ▸ ScriptableObjects ▸ Game Modes ▸ Game Mode UI Config, one per mode. Fill in:
+Open `Assets/_Prefabs/CORE/GameCanvas.prefab` and, copying from `GameCanvas-HexRace.prefab`:
+
+1. **Swap the HUD scripts.** On the `MiniGameHUD` object, change the Script field:
+   - `MiniGameHUD` → `MultiplayerHUD`
+   - `MiniGameHUDView` → `MultiplayerHUDView`
+
+   Both are subclasses, so every inherited field keeps its value and the component fileIDs do not
+   change — existing scene overrides that target these components survive. Verify the inherited
+   references (view, scoreboard, connectingPanel, event channels) are still populated afterwards.
+
+2. **Add the domain-score wiring** under `MiniGameHUD`: `AllyDomainContainer`,
+   `MultiplayerPlayerScoreCard`, and assign them plus the `DomainScorePanel` prefab on
+   `MultiplayerHUDView` (ally container / opposing container / panel prefab).
+
+3. **Add the end-game scoreboard additions**: the three `TeamScorecard` objects under
+   `Scoreboard/MultiplayerView/MultiplayerView`, `Scoreboard/Buttons/Continue` (+ its text and
+   controller-button image), and the `Goodies/XPEarned` + `XPIcon` under
+   `Scoreboard/MultiplayerView/BackgroundBottom`.
+
+4. **Add `CrystalDisplayBG`** (+ `Icon`, `XPEarnedText`) and **`XPDisplayBG`** (+ `XPEarnedText`).
+
+5. **Add `EventDrivenStatsProvider`** to the `ScoreboardController` object. Leave its
+   `statsToTrack` list **empty** — the per-mode list comes from the config asset now.
+
+6. **Replace the plain `NotificationUI` GameObject** with the nested `NotificationUI.prefab` the
+   fork uses.
+
+7. Decide on `Scoreboard/MultiplayerView/MultiplayerScores/PlayerFour`: keep it if the legacy
+   4-player row is still used anywhere, delete it if the TeamScorecards have replaced it.
+
+8. **Do not copy the 8 dangling references** listed in §4. When you add `GameOverPanel` /
+   `EndGameStatsPanel` content, point `animatedRoot`, `bestScoreText`, `highScoreText`,
+   `continueButton`, `endGameStatsPanel`, the Home button's `onClick` target, and
+   `EndGameStatsPanel.view` / `.connectingPanel` at objects **inside this same prefab**.
+
+Save. At this point the 10 base scenes still work — the additions are inert until a mode asks for
+them.
+
+---
+
+### Step 2 — author the per-mode config assets
+
+Create ▸ ScriptableObjects ▸ Game Modes ▸ Game Mode UI Config, one asset per mode. Suggested home:
+`Assets/_SO_Assets/Game Modes/`.
+
+You only need to fill in what differs from the automatic default:
 
 | Mode | `ScoreLayout` | `EndGameStats` |
 |---|---|---|
-| HexRace | PerDomain | CleanCrystals, Jousts Won, Longest Drift, MaxBoost, PrismsDamaged |
-| Joust | PerDomain | Jousts Won, MaxBoost, PrismsDamaged |
-| Crystal Capture, AstroLeague, NucleusRush, Rampage | PerDomain | Longest Drift, MaxBoost, PrismsDamaged |
-| Cellular Duel, Wildlife Blitz, 2v2 CoOp, Freestyle MP | PerPlayer | leave empty (telemetry discovery) |
+| HexRace | leave `Inherit` | CleanCrystals, Jousts Won, Longest Drift, MaxBoost, PrismsDamaged |
+| Joust | leave `Inherit` | Jousts Won, MaxBoost, PrismsDamaged |
+| Crystal Capture | leave `Inherit` | Longest Drift, MaxBoost, PrismsDamaged |
+| AstroLeague | leave `Inherit` | Longest Drift, MaxBoost, PrismsDamaged |
+| NucleusRush | leave `Inherit` | Longest Drift, MaxBoost, PrismsDamaged |
+| Rampage | leave `Inherit` | Longest Drift, MaxBoost, PrismsDamaged |
+| **Multiplayer Cellular Duel** | **`PerPlayer`** ⚠ | leave empty |
+| Wildlife Blitz, 2v2 CoOp, Freestyle MP, single-player modes | leave `Inherit` | leave empty |
 
-(The stat lists are the values currently living as scene overrides — read out of the six scenes in
-§3, so this is a transcription, not a redesign.)
+`Inherit` resolves to **per-domain when the scene's controller derives from
+`MultiplayerDomainGamesController`**, per-player otherwise — right for every mode except
+**Multiplayer Cellular Duel**, which is a domain controller that currently ships the per-player
+cards. Set that one explicitly, or accept the flip deliberately.
 
-### Step 3 — per scene
+The stat lists above are transcribed from the values currently sitting as scene overrides (§3), so
+this is copying, not redesigning.
 
-For each game-mode scene, one at a time, play-testing between:
+---
 
-1. Add an empty GameObject, add **Game Mode Scene Config**, assign that mode's asset.
-2. Replace the canvas instance with the unified prefab. **A GUID swap does not work** — the two
-   forks have different fileIDs, so every override would dangle.
-3. Delete the now-redundant overrides: the ReadyButton `onClick`, the `Scoreboard.gameController` /
-   `hexRaceController` references, and `EventDrivenStatsProvider.statsToTrack`. All four are
-   resolved in code or by the config now.
-4. Run Validate. What is left should be layout you actually want.
+### Step 3 — the 6 fork scenes, one at a time
 
-Leave Maelstrom alone until every playable mode is done — it consumes them.
+For `MinigameHexRace`, then Joust, Crystal Capture, AstroLeague, NucleusRush, Rampage:
+
+1. Note the scene's own wiring first: the `ReadyButton` onClick target, `ScoreboardController`'s
+   controller reference, and `statsToTrack`. You will not need to re-create any of them.
+2. Delete the `GameCanvas-HexRace` instance from the scene.
+3. Drag in `CORE/GameCanvas.prefab`. **A GUID swap in YAML does not work** — the two prefabs have
+   different fileIDs, so every override would dangle.
+4. Add an empty GameObject, add **Game Mode Scene Config**, assign that mode's config asset.
+5. Re-apply only the layout values you actually want (position/size). Leave everything else at
+   prefab defaults.
+6. Play-test: countdown, Ready button, live score panels, end-game scoreboard, Play Again.
+7. Run Validate on the GameCanvas row. What remains should be layout you chose on purpose.
+
+Do **not** batch these. One scene, one play-test, one commit.
+
+---
+
+### Step 4 — delete the fork
+
+Once no scene references `abd30ad4cfca9ae4a8aecfde9f650cf3`:
+
+1. Delete `Assets/_Prefabs/GameCanvas-HexRace.prefab` (and its `.meta`).
+2. Remove its entry from the Prefab Kit list (**Edit list** in the tool).
+3. Re-check Maelstrom last — it should still open, run its rounds, and show Intro/Summary.
+
+---
+
+### What you no longer have to wire, ever again
+
+| Was a per-scene override | Now |
+|---|---|
+| `ReadyButton.onClick` → concrete controller | `MiniGameHUD.EnsureReadyButtonWiring()` finds the controller |
+| `Scoreboard.gameController` | `Scoreboard.ResolveGameController()` |
+| `EventDrivenStatsProvider.statsToTrack` | `GameModeUIConfigSO.EndGameStats` |
+| A whole second prefab, just to get per-player cards | `GameModeUIConfigSO.ScoreLayout` |
 
 ---
 

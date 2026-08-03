@@ -136,29 +136,33 @@ namespace CosmicShore.UI
         /// Chooses the per-domain or per-player layout.
         ///
         /// Historically this was decided purely by whether the domain containers happened to be
-        /// wired on this scene's canvas - which is precisely why the canvas had to be a different
-        /// prefab per mode family. With one unified GameCanvas the wiring is ALWAYS present, so the
-        /// choice has to come from data: the scene's <see cref="GameModeSceneConfig"/> names the
-        /// layout its mode wants.
+        /// wired on this scene's canvas - which is exactly why there had to be TWO canvas prefabs:
+        /// shipping a canvas without the wiring was the only way to get per-player cards. Once one
+        /// unified GameCanvas carries the wiring for everyone, that signal is gone and the choice
+        /// has to come from somewhere else.
         ///
-        /// No config, or <see cref="HudScoreLayout.Inherit"/>, falls back to the wiring check, so
-        /// every scene that has not been migrated behaves exactly as it does today. A mode that
-        /// asks for <see cref="HudScoreLayout.PerDomain"/> without the wiring present still can't
-        /// get it, so a half-migrated scene degrades instead of rendering nothing.
+        /// Resolution order:
+        ///   1. The scene's <see cref="GameModeSceneConfig"/>, when it names a layout explicitly.
+        ///   2. Otherwise the controller type: every domain mode derives from
+        ///      <see cref="MultiplayerDomainGamesController"/>, so "is this a domain game?" is
+        ///      already encoded in the class hierarchy and a NEW domain mode gets the right layout
+        ///      for free.
+        ///   3. Otherwise per-player.
+        ///
+        /// A mode that asks for <see cref="HudScoreLayout.PerDomain"/> on a canvas that lacks the
+        /// wiring still can't have it, so a half-migrated scene degrades to cards rather than
+        /// rendering nothing.
         /// </summary>
         bool ResolveUseDomainView()
         {
-            bool wired = multiplayerView != null && multiplayerView.HasDomainPanelWiring;
+            if (multiplayerView == null || !multiplayerView.HasDomainPanelWiring)
+                return false;
 
             var modeConfig = GameModeSceneConfig.Resolve();
-            if (modeConfig == null) return wired;
+            if (modeConfig != null && modeConfig.ScoreLayout != HudScoreLayout.Inherit)
+                return modeConfig.ScoreLayout == HudScoreLayout.PerDomain;
 
-            return modeConfig.ScoreLayout switch
-            {
-                HudScoreLayout.PerDomain => wired,
-                HudScoreLayout.PerPlayer => false,
-                _ => wired,
-            };
+            return FindAnyObjectByType<MultiplayerDomainGamesController>(FindObjectsInactive.Include) != null;
         }
 
         protected override void OnMiniGameTurnEnd()

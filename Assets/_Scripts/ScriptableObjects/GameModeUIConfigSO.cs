@@ -11,7 +11,12 @@ namespace CosmicShore.ScriptableObjects
     /// </summary>
     public enum HudScoreLayout
     {
-        /// <summary>Decide from the prefab wiring, as before. Safe default.</summary>
+        /// <summary>
+        /// Decide automatically: per-domain when the scene's controller derives from
+        /// <c>MultiplayerDomainGamesController</c>, per-player otherwise. Correct for every mode
+        /// today except Multiplayer Cellular Duel, which is a domain controller currently shipping
+        /// the per-player layout - set that one explicitly.
+        /// </summary>
         Inherit = 0,
         /// <summary>One card per player, in PlayerScoreContainer.</summary>
         PerPlayer = 1,
@@ -64,8 +69,9 @@ namespace CosmicShore.ScriptableObjects
                  "prefab carries the superset - MultiplayerHUD + the domain containers - so the " +
                  "wiring is always present; this says whether the mode actually wants the " +
                  "per-domain layout or the per-player cards.\n\n" +
-                 "Inherit = decide from the prefab wiring exactly as before, so a scene with no " +
-                 "config behaves identically to today.")]
+                 "Inherit decides from the controller type (MultiplayerDomainGamesController = " +
+                 "per-domain), which is right for every mode except Multiplayer Cellular Duel - " +
+                 "set that one to PerPlayer explicitly if you want to keep its current cards.")]
         public HudScoreLayout ScoreLayout = HudScoreLayout.Inherit;
 
         public string ResolvedName =>
