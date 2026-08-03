@@ -283,6 +283,17 @@ namespace CosmicShore.UI
 
         // ----------------- Public API -----------------
 
+        /// <summary>
+        /// Flushes the profile to Cloud Save immediately, on top of the debounced save.
+        /// Use for writes where a dropped save is player-visible and unacceptable - notably
+        /// real-money entitlements (<see cref="CosmicShore.Core.EpisodeTokenService"/>).
+        /// </summary>
+        public void PersistProfileNow()
+        {
+            ScheduleSave();
+            SaveProfileImmediateAsync();
+        }
+
         public void SetAvatarId(int avatarId)
         {
             if (CurrentProfile == null)
