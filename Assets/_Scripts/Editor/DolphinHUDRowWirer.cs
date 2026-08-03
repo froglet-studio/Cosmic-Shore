@@ -17,10 +17,15 @@ namespace CosmicShore.Editor
     /// 80×80 <c>Icon</c>. The numbers below are lifted verbatim from SquirrelHUDVariant.prefab,
     /// which established them — change them here and you are changing the fleet, so don't.
     ///
-    ///   Charge → CrystalIcon (+2 carry pips)     "Twin Seed"
-    ///   Mass   → DriftIcon   (radial boost fill) "Hard Wake"
-    ///   Space  → BlastIcon   (+ a prism tally)   "Clean Blast"
-    ///   Time   → JawIcon     (two jaw halves)    "Live Current"
+    ///   Charge → CrystalIcon   (+2 omni-crystal carry pips)  "Twin Seed"
+    ///   Mass   → Boost Display (the authored 11-step ring)    "Hard Wake"
+    ///   Space  → BlastIcon     (+ a prism tally)              "Clean Blast"
+    ///   Time   → JawIcon       (the vessel's own jaw halves)  "Live Current"
+    ///
+    /// The Mass slot is the Dolphin's PRE-EXISTING boost gauge, adopted into the row rather than
+    /// replaced. This tool never creates it — if 'Boost Display' is missing from the Mass band the
+    /// slot is left unbound and reported, because re-authoring that widget from scratch would throw
+    /// away art the vessel already ships.
     ///
     /// Idempotent: it finds objects by name and only re-binds, so running it on the authored prefab
     /// changes nothing. Sprites are never touched — art is an authoring decision.
@@ -81,7 +86,10 @@ namespace CosmicShore.Editor
                 brt.anchoredPosition = Vector2.zero;
                 brt.sizeDelta = Vector2.zero;
 
-                icons[i] = EnsureIcon(button.transform, $"{slot}Icon");
+                // Mass is the adopted boost ring, not a generated icon.
+                icons[i] = slot == "Drift"
+                    ? FindBoostRing(button.transform)
+                    : EnsureIcon(button.transform, $"{slot}Icon");
             }
 
             var crystal = icons[0];
@@ -89,11 +97,14 @@ namespace CosmicShore.Editor
             var blast = icons[2];
             var jaw = icons[3];
 
-            // Radial fills: the recharge wipe and the drift-boost meter.
+            if (!drift)
+                Debug.LogWarning("[DolphinHUDRowWirer] The Mass band has no 'Boost Display' — the " +
+                                 "boost ring is missing from this HUD. Restore it rather than " +
+                                 "letting this tool draw a replacement.", view);
+
+            // The recharge wipe. (The boost ring steps through authored sprites instead.)
             crystal.type = Image.Type.Filled;
             crystal.fillMethod = Image.FillMethod.Radial360;
-            drift.type = Image.Type.Filled;
-            drift.fillMethod = Image.FillMethod.Radial360;
 
             var pip0 = EnsurePip(crystal.transform, "CrystalPip0", -18f);
             var pip1 = EnsurePip(crystal.transform, "CrystalPip1", 18f);
@@ -155,6 +166,17 @@ namespace CosmicShore.Editor
             prop.arraySize = values.Length;
             for (int i = 0; i < values.Length; i++)
                 prop.GetArrayElementAtIndex(i).objectReferenceValue = values[i];
+        }
+
+        /// <summary>
+        /// The adopted boost gauge's own Image — the stepped ring. Never created here: it is
+        /// authored art with a nested glyph, so a missing one is a fault to report, not to paper
+        /// over with a generated square.
+        /// </summary>
+        static Image FindBoostRing(Transform band)
+        {
+            var existing = band.Find("Boost Display");
+            return existing ? existing.GetComponent<Image>() : null;
         }
 
         static GameObject EnsureChild(Transform parent, string name)

@@ -13,7 +13,7 @@ namespace CosmicShore.UI
     /// upgrades it:
     ///
     ///   Charge → crystal seeding (crystalIcon + the carry pips)   → "Twin Seed"
-    ///   Mass   → drift trail     (driftBoostIcon)                 → "Hard Wake"
+    ///   Mass   → drift trail     (the authored boost ring)         → "Hard Wake"
     ///   Space  → cone blast      (blastIcon)                      → "Clean Blast"
     ///   Time   → skim energy     (the jaw pair)                   → "Live Current"
     ///
@@ -23,10 +23,14 @@ namespace CosmicShore.UI
     /// this prefab), and the local rest scales below are re-anchored on every upgrade flip so this
     /// view's own tweens can never wipe the bump.
     ///
-    /// The TIME icon is the answer to "how much energy have I banked": a pair of jaws that open
-    /// exactly as wide as the hull's do, because both are showing the same thing — the half-angle
-    /// of the cone the next crystal impact will release. Every reference is optional; an unwired
-    /// slot is simply not drawn (opt-in rollout).
+    /// The MASS slot is the Dolphin's own pre-existing boost gauge — an authored 11-step ring
+    /// with the boost glyph nested inside it — folded into the row rather than replaced, so the
+    /// elemental badge and upgrade bump land on the gauge the pilot already watches.
+    ///
+    /// The TIME icon is the answer to "how much energy have I banked": a pair of jaws (the vessel's
+    /// own isolated silhouettes) that open exactly as wide as the hull's do, because both show the
+    /// same thing — the half-angle of the cone the next crystal impact will release. Every
+    /// reference is optional; an unwired slot is simply not drawn (opt-in rollout).
     /// </summary>
     public class DolphinVesselHUDView : VesselHUDView
     {
@@ -51,12 +55,17 @@ namespace CosmicShore.UI
         [SerializeField] private Color crystalArmedFlashColor = Color.white;
 
         // ---- Mass: drift trail / boost charge ----------------------------------------
-        [Header("Mass — drift trail")]
-        [Tooltip("Drift ability icon. Filled type shows the boost being charged while drifting.")]
+        [Header("Mass — boost charged while drifting")]
+        [Tooltip("The boost gauge itself — the Dolphin's authored 11-step ring (Boost Display). " +
+                 "Bound as the Mass ability icon, so the elemental badge and upgrade bump land on " +
+                 "the gauge the pilot is already watching. Filled-type images additionally show a " +
+                 "radial wipe; the ring instead steps through chargeSteps below.")]
         [SerializeField] private Image driftBoostIcon;
-        [SerializeField] private Color driftRestColor = Color.white;
-        [Tooltip("Colour the drift icon ramps toward as the drift boost fills.")]
-        [SerializeField] private Color driftChargedColor = new(1f, 0.72f, 0.25f, 1f);
+        [SerializeField] private Color driftRestColor = new(0.877f, 0.877f, 0.877f, 1f);
+        [Tooltip("Colour the boost gauge ramps toward as it fills.")]
+        [SerializeField] private Color driftChargedColor = new(1f, 0.82f, 0.45f, 1f);
+        [Tooltip("The 11 authored ring steps, ordered EMPTY → FULL. Driven by the boost meter.")]
+        [SerializeField] private List<Sprite> chargeSteps = new();
 
         // ---- Space: cone blast --------------------------------------------------------
         [Header("Space — cone blast")]
@@ -80,11 +89,6 @@ namespace CosmicShore.UI
         [Tooltip("Seconds the jaws take to glide to a new gape. Energy steps arrive per skim, so " +
                  "this is what keeps the readout from stuttering.")]
         [SerializeField, Min(0.01f)] private float jawGlideDuration = 0.12f;
-        [Tooltip("Optional legacy stepped-sprite energy bar, kept for prefabs that still author " +
-                 "it. Ordered low → high. Leave empty when the jaws carry the readout.")]
-        [SerializeField] private List<Sprite> chargeSteps = new();
-        [SerializeField] private Image chargeBoostImage;
-
         [Header("Icon juice")]
         [SerializeField] private float iconPunchScale = 1.35f;
         [SerializeField] private float iconPunchDuration = 0.25f;
@@ -109,8 +113,6 @@ namespace CosmicShore.UI
         public override void Initialize()
         {
             _stepsMinusOne = Mathf.Max(0, (chargeSteps?.Count ?? 0) - 1);
-
-            if (chargeBoostImage) chargeBoostImage.enabled = false;
 
             if (crystalIcon)
             {
@@ -252,6 +254,9 @@ namespace CosmicShore.UI
             if (driftBoostIcon.type == Image.Type.Filled)
                 driftBoostIcon.fillAmount = charge01;
 
+            // The authored ring encodes the level in its lit segments - step it.
+            SetBoostStepNormalized(charge01);
+
             driftBoostIcon.color = Color.Lerp(driftRestColor, driftChargedColor, charge01);
 
             // Drifting reads as "the icon is working": a gentle swell with the charge. Kill the
@@ -326,7 +331,6 @@ namespace CosmicShore.UI
         {
             norm01 = Mathf.Clamp01(norm01);
             SetJawAngle(maxJawAngle * norm01);
-            SetChargeNormalized(norm01);
         }
 
         void SetJawAngle(float angle)
@@ -391,14 +395,15 @@ namespace CosmicShore.UI
         }
 
         // ---------------------------------------------------------------
-        // Legacy stepped-sprite energy bar. Kept so prefabs that still author
-        // chargeSteps keep working; the jaws are the primary readout now.
+        // The boost ring's authored steps. This is the Dolphin's own gauge -
+        // eleven sprites lighting 0..10 segments - so the level is read off
+        // the art rather than off a fill amount.
         // ---------------------------------------------------------------
 
-        /// <summary>0–1 normalized energy → choose the matching step sprite.</summary>
-        public void SetChargeNormalized(float norm01)
+        /// <summary>0–1 normalized boost → the matching ring step.</summary>
+        public void SetBoostStepNormalized(float norm01)
         {
-            if (!chargeBoostImage || chargeSteps == null || chargeSteps.Count == 0)
+            if (!driftBoostIcon || chargeSteps == null || chargeSteps.Count == 0)
                 return;
 
             norm01 = Mathf.Clamp01(norm01);
@@ -407,20 +412,19 @@ namespace CosmicShore.UI
                 ? 0
                 : Mathf.Clamp(Mathf.RoundToInt(norm01 * _stepsMinusOne), 0, _stepsMinusOne);
 
-            SetChargeStepIndex(idx);
+            SetBoostStepIndex(idx);
         }
 
-        public void SetChargeStepIndex(int idx)
+        public void SetBoostStepIndex(int idx)
         {
-            if (!chargeBoostImage || chargeSteps == null || chargeSteps.Count == 0)
+            if (!driftBoostIcon || chargeSteps == null || chargeSteps.Count == 0)
                 return;
             if (idx < 0 || idx >= chargeSteps.Count) return;
 
             var sprite = chargeSteps[idx];
-            if (!sprite) return;
+            if (!sprite || driftBoostIcon.sprite == sprite) return;
 
-            chargeBoostImage.enabled = true;
-            chargeBoostImage.sprite  = sprite;
+            driftBoostIcon.sprite = sprite;
         }
 
         protected override void OnDestroy()
