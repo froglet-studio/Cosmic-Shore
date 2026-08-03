@@ -107,8 +107,8 @@ without an update.
 > quests and vessel unlocks. This is not a prototype or a demo.
 
 > **Will the game be priced differently during and after Early Access?**
-> The price may rise modestly as we add content. Anyone who buys during Early Access keeps the game
-> and every update at no extra cost.
+> No. The price stays the same when we leave Early Access. Anyone who buys during Early Access keeps
+> the game and every update at no extra cost.
 
 > **How are you planning on involving the Community?**
 > Our Discord is where development actually happens: build announcements, playtests on a public beta
@@ -116,6 +116,8 @@ without an update.
 > on the Steam forums.
 
 ### A6 · Pricing *(Garrett)*
+**Base price: $15.00 USD.** The price does **not** rise at 1.0. Regional pricing: accept Valve's
+suggested conversions. Launch discount is still undecided.
 Set the base price and any launch discount. Two things to know: Steam requires a **minimum interval
 between discounts**, and there are rules about how soon after launch you may discount — plan the
 launch discount deliberately rather than adding one late. Regional pricing can be generated from
