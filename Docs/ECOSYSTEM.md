@@ -58,6 +58,35 @@ mechanism attached to it is gameplay decay.
 > the food web, §6–§7) or **pause/throttle the spawner** while idling (not creating
 > mass is allowed; aging it out is not).
 
+> **AUTHORIZED EXCEPTION (2026-08-03): the Wanderway rolling tether.** The one
+> sanctioned place trail mass is recycled. During a live `WanderwayRun` — and
+> ONLY then — the local vessel's trail is held at a fixed length
+> (`ConveyorConfig.TetherPrisms`, 100): as the vessel lays at the head, the
+> oldest prism at the tail withers and returns to the pool it came from, and the
+> return station rides that tail so the way home is always one tether-length
+> behind you. This is mechanically the same thing as the reverted cap above, and
+> it is here **by explicit sign-off**, for a reason the cap never had: the
+> Wanderway is a *truly infinite runner*, and recycling everything is what buys
+> an endless world at fixed memory. Turn around and your trail is there; fly on
+> and a little flying lays a fresh path home.
+>
+> Its scope is the fence — do not widen it, and do not "fix" it by reverting:
+>
+> - **Live-run only.** `WanderwayRun.RollTether` is the sole caller of
+>   `Trail.RemoveOldest`. Outside a run — everywhere else in freestyle, every game
+>   mode, the menu lava lamp — the trail is untouched and §0 holds in full.
+> - **No length limit on the trail itself.** `VesselPrismController` grew no
+>   `maxTrailBlocks` field; nothing about laying a prism consults a cap. The run
+>   reaches in from outside and only while it exists.
+> - **Recycle, not decay.** Prisms go back to the pool the next lay draws from —
+>   the same closed-stock idea as the belt, which is why memory is bounded.
+> - **Continuity of existence is NOT waived** (a separate law): a retiring prism
+>   withers on the GPU clock — one grow-clock re-stamp toward a near-zero scale,
+>   the belt's own collapse (`Docs/PRISM_ANIMATION.md` §5 C8) — and returns to the
+>   pool only once it has shrunk away. Nothing pops.
+>
+> Detail: `Docs/ToySystem/ARCHITECTURE.md` § "The run".
+
 **Growth-side cheats — all retired.** Two artificial throttles used to fake the
 homeostasis the food web is meant to produce, both now gone:
 

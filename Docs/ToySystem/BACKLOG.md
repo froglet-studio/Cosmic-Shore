@@ -428,6 +428,52 @@ station, its options unfold out ahead; fly it again, they fold away. Architectur
   and was masked by the `max()`). `Toy_Painting` still carries a stale `shape:` key — harmless,
   Unity drops unknown keys on the next save.
 
+---
+
+## Wanderway — the run (bare canvas · rolling tether · way home)
+
+**In-editor verification (a human at the editor is the gate — none of this was play-tested):**
+
+1. **Enter Menu_Main, take freestyle, fly the Wanderway toy.** The cell should suction away and come
+   back as the bare Blob behind ONE load veil (not two covers back to back) — the run requests the
+   cell swap before the belt's stock build so they share the hold. The toy relabels
+   "wandering — fly through to come home".
+2. **Fly out and watch the trail.** It should stabilise at ~100 prisms of length and stay there:
+   the tail withers (shrinks away, never pops) and the head keeps laying. Confirm the total does
+   NOT keep climbing — if it does, one of the two ribbons is not being rolled.
+3. **Turn around.** Your trail is behind you and the RETURN station sits at its far end, gliding
+   (not snapping) as the tail advances. Fly through it: belt stops, toy relabels, vessel returns to
+   where the wander started with its speed intact.
+4. **Repeat the wander.** The belt must RESUME, not re-prime — watch for a second veiled build or a
+   doubled prism count, which would mean the stock was minted twice.
+5. **Exit via the overview button and via gamepad Start** (instead of the station). Both should end
+   the run and bring the vessel home, since both drop freestyle.
+6. **Squirrel specifically:** ride your own tether (tube-riding attaches a `TrailFollower`). The
+   rider must stay on the prism it attached to as the tail recycles — if it races forward along the
+   ribbon, the `Trail.OnOldestRemoved` compensation is not firing.
+7. **Tuning knob:** `Toy_Conveyor.asset ▸ tetherPrisms` (100). It is a per-ribbon LENGTH — a
+   double-trail vessel holds 2× the prisms for the same visible tether.
+
+**Collider-budget impact:** *negative* (an improvement). The rolling tether bounds the local
+vessel's live trail at ~100 prisms/ribbon for the duration of a run, where it was previously
+unbounded; recycled prisms return to the pool with their colliders. The belt's 30k stock is
+unchanged by this work.
+
+**Known limitations / follow-up work:**
+
+- **Ending a wander leaves you in the Blob cell.** Restoring the world you had before is
+  deliberately the Cell Selector's job, not the wander's. If "put my world back" is wanted, it needs
+  a remembered-config hook on `WanderwayRun` and a second veiled swap on exit.
+- **The belt's scenes stay in the world after a run ends.** Conserved mass and released citizens are
+  not toy props to vanish; they are strewn along wherever the player wandered. Harmless today, but a
+  long session accumulates them far from the cell.
+- **Pen-up is untouched by the run now** (the rolling tether replaced the pen-up tether), so the
+  cross-toy last-writer-wins note above applies only to the cell swap vs. the painting runner.
+- **`WanderwayRun` ticks at 0.2s.** At very high speed a burst of lays drains over a few ticks
+  (bounded to 64 removals/tick/ribbon). If a boosted Squirrel visibly overshoots the tether length
+  before it settles, lower `TickSeconds` or raise the per-tick guard.
+- **Only the LOCAL player's trail is tethered.** Wanderway is a solo freestyle mode today; if a
+  party ever wanders together, each client tethers its own vessel and remote trails are untouched.
 
 ## Toy-root emblems — known-remaining follow-ups
 

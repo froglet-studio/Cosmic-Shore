@@ -1332,6 +1332,24 @@ namespace CosmicShore.Gameplay
         /// <summary>True while a <see cref="RequestCellSwap"/> is retiring + rebuilding.</summary>
         public bool IsSwappingConfig => _swapping;
 
+        /// <summary>
+        /// The first config with no authored <c>EnvironmentPrefab</c> — the cheap "empty" world
+        /// (Blob) that <see cref="CellTypeChoiceOptions.EnvironmentFree"/> boots into. Null when
+        /// every config authors an environment. Exposed so a mode that wants a bare canvas (the
+        /// Wanderway run) can ask for it by MEANING rather than by index or by name.
+        /// </summary>
+        public CellConfigDataSO EnvironmentFreeConfig
+        {
+            get
+            {
+                if (CellConfigs == null) return null;
+                for (int i = 0; i < CellConfigs.Count; i++)
+                    if (CellConfigs[i] && CellConfigs[i].EnvironmentPrefab == null)
+                        return CellConfigs[i];
+                return null;
+            }
+        }
+
         bool _swapping;
 
         /// <summary>

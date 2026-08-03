@@ -331,6 +331,10 @@ namespace CosmicShore.Gameplay
             meshFilter = GetComponent<MeshFilter>();
             blockCollider = GetComponent<BoxCollider>();
 
+            // The prism's stable render identity — see _authoredMesh. Captured before
+            // any shield component can swap the MeshFilter to morph geometry.
+            if (meshFilter) _authoredMesh = meshFilter.sharedMesh;
+
             if (blockCollider)
             {
                 _authoredColliderSize = blockCollider.size;
@@ -392,7 +396,16 @@ namespace CosmicShore.Gameplay
             // entity until pool reuse.
             bool show = _renderVisible && gameObject.activeInHierarchy;
 
-            if (show && !_exoticVisualActive && PrismRenderService.Enabled)
+            // Entity EXISTENCE is deliberately independent of which path currently
+            // DRAWS. Clock stamps are one-shot initial-conditions writes
+            // (Docs/PRISM_ANIMATION.md §4): a prism with no companion entity at the
+            // instant it is stamped loses that animation permanently. Gating creation
+            // on !_exoticVisualActive meant any prism whose shield engage-morph
+            // straddled its creation reveal (every shielded/super-shielded
+            // environment-laid prism — the C13 repro) had nothing to stamp and snapped.
+            // The entity is simply created hidden while the exotic visual draws, and
+            // queued visible when rendering returns to the instanced path.
+            if (show && PrismRenderService.Enabled)
                 EnsureRenderEntity();
 
             bool entityPath = !_exoticVisualActive && PrismRenderService.IsHandleUsable(in RenderHandle);
@@ -401,6 +414,11 @@ namespace CosmicShore.Gameplay
                 if (meshRenderer && meshRenderer.enabled) meshRenderer.enabled = false;
                 if (show)
                 {
+                    // Re-assert geometry first: an entity created during an exotic
+                    // window holds the authored mesh, and a shield that disengages
+                    // without ever setting an override leaves ClearRenderMeshOverride
+                    // with nothing to push.
+                    SyncRenderMesh();
                     SyncRenderMaterial();
                     SyncRenderTransform();
                 }
@@ -426,15 +444,99 @@ namespace CosmicShore.Gameplay
         // the GameObject renderer handles only the brief per-prism morph/shatter animations.
         Mesh _renderMeshOverride;
 
+        // The prefab's own mesh, cached at Awake. This is the prism's STABLE render
+        // identity: while an exotic visual is animating, meshFilter.sharedMesh holds a
+        // per-prism morph mesh, and registering that with Entities Graphics would mint
+        // a unique BatchMeshID per prism — a draw-call storm plus a registration leak.
+        Mesh _authoredMesh;
+
+        // Why the last EnsureRenderEntity declined. Assigned from const literals only
+        // (the decline path runs per prism whenever the instanced path is off, so it
+        // must not allocate); the service StatusLine is composed only when a
+        // diagnostic actually asks. Null = no decline recorded.
+        string _renderEntityDecline;
+
+        // The mesh the companion entity currently holds — lets SyncRenderMesh skip the
+        // ECS write (the overwhelmingly common case) instead of re-pushing every show.
+        Mesh _renderEntityMesh;
+
+        /// <summary>
+        /// The prism's batchable render geometry: the settled shield override wins;
+        /// otherwise the live prism mesh — except while an exotic visual owns rendering,
+        /// where <c>meshFilter.sharedMesh</c> is transient per-prism morph geometry that
+        /// must never reach Entities Graphics (see <see cref="_authoredMesh"/>).
+        /// </summary>
+        Mesh EffectiveRenderMesh()
+        {
+            if (_renderMeshOverride != null) return _renderMeshOverride;
+            if (_exoticVisualActive) return _authoredMesh;
+            var live = meshFilter != null ? meshFilter.sharedMesh : null;
+            return live != null ? live : _authoredMesh;
+        }
+
         void EnsureRenderEntity()
         {
-            if (PrismRenderService.IsHandleUsable(in RenderHandle)) return;
-            if (!meshRenderer || !meshFilter) return;
-            Mesh renderMesh = _renderMeshOverride != null ? _renderMeshOverride : meshFilter.sharedMesh;
-            if (renderMesh == null || meshRenderer.sharedMaterial == null) return;
+            if (PrismRenderService.IsHandleUsable(in RenderHandle)) { _renderEntityDecline = null; return; }
+            if (!meshRenderer || !meshFilter) { _renderEntityDecline = "the prism has no MeshRenderer/MeshFilter"; return; }
+
+            var renderMesh = EffectiveRenderMesh();
+            if (renderMesh == null) { _renderEntityDecline = "no mesh to register (MeshFilter.sharedMesh and the authored mesh are both null)"; return; }
+            var renderMaterial = meshRenderer.sharedMaterial;
+            if (renderMaterial == null) { _renderEntityDecline = "MeshRenderer.sharedMaterial is null"; return; }
+
             RenderHandle = PrismRenderService.Create(
-                renderMesh, meshRenderer.sharedMaterial,
+                renderMesh, renderMaterial,
                 transform.localToWorldMatrix, gameObject.layer);
+
+            if (PrismRenderService.IsHandleUsable(in RenderHandle))
+            {
+                _renderEntityDecline = null;
+                _renderEntityMesh = renderMesh;
+            }
+            else
+            {
+                _renderEntityDecline = "PrismRenderService.Create declined (no ECS world / EntitiesGraphicsSystem, or the master toggle is off)";
+                _renderEntityMesh = null;
+            }
+        }
+
+        /// <summary>
+        /// Last-chance companion-entity creation from a clock STAMP site. Clock stamps
+        /// are one-shot initial-conditions writes (Docs/PRISM_ANIMATION.md §4) — miss
+        /// the instant and that animation is gone for this life — so every stamp site
+        /// gets exactly one self-heal before the strict-mode diagnostics fire.
+        /// Returns true when a usable entity exists afterwards.
+        /// </summary>
+        internal bool TryEnsureRenderEntityForStamp()
+        {
+            if (PrismRenderService.IsHandleUsable(in RenderHandle)) return true;
+            if (!PrismRenderService.Enabled || !gameObject.activeInHierarchy) return false;
+
+            EnsureRenderEntity();
+            if (!PrismRenderService.IsHandleUsable(in RenderHandle)) return false;
+
+            // A freshly minted entity is born hidden — re-run the path so it inherits
+            // this prism's current visibility/mesh/material/transform immediately
+            // instead of waiting for the next lifecycle event.
+            ApplyRenderPath();
+            return true;
+        }
+
+        /// <summary>
+        /// One-line, allocation-on-demand diagnosis of this prism's companion-entity
+        /// state — quoted by the strict-mode stamp diagnostics so a single repro run
+        /// names the exact broken gate instead of listing suspects.
+        /// </summary>
+        internal string DescribeRenderEntityState()
+        {
+            if (PrismRenderService.IsHandleUsable(in RenderHandle)) return "companion entity is live";
+            if (!PrismRenderService.Enabled)
+                return $"instanced render path is OFF [service: {PrismRenderService.StatusLine()}]";
+            if (!gameObject.activeInHierarchy) return "the prism GameObject is inactive in the hierarchy";
+            if (_renderEntityDecline != null)
+                return $"EnsureRenderEntity declined: {_renderEntityDecline} [service: {PrismRenderService.StatusLine()}]";
+            return $"EnsureRenderEntity was never reached (renderVisible={_renderVisible}, " +
+                   $"exoticVisual={_exoticVisualActive}) [service: {PrismRenderService.StatusLine()}]";
         }
 
         /// <summary>Renders the companion entity with a shared mesh (settled octahedron
@@ -443,8 +545,7 @@ namespace CosmicShore.Gameplay
         internal void SetRenderMeshOverride(Mesh sharedMesh)
         {
             _renderMeshOverride = sharedMesh;
-            if (sharedMesh != null && PrismRenderService.IsHandleUsable(in RenderHandle))
-                PrismRenderService.SetMesh(in RenderHandle, sharedMesh);
+            SyncRenderMesh();
         }
 
         /// <summary>Returns the companion entity to the prism's own mesh (disengage /
@@ -453,12 +554,28 @@ namespace CosmicShore.Gameplay
         {
             if (_renderMeshOverride == null) return;
             _renderMeshOverride = null;
-            if (PrismRenderService.IsHandleUsable(in RenderHandle) && meshFilter != null && meshFilter.sharedMesh != null)
-            {
-                PrismRenderService.SetMesh(in RenderHandle, meshFilter.sharedMesh);
-                SyncRenderMaterial();
-                SyncRenderTransform();
-            }
+            if (!PrismRenderService.IsHandleUsable(in RenderHandle)) return;
+            SyncRenderMesh();
+            SyncRenderMaterial();
+            SyncRenderTransform();
+        }
+
+        /// <summary>
+        /// Re-asserts the entity's mesh from this prism's STABLE geometry (settled
+        /// shield override, else the live prism mesh, else the authored mesh). Called
+        /// when the instanced path (re)engages: an entity created during an exotic
+        /// window carries the authored mesh, and <see cref="ClearRenderMeshOverride"/>
+        /// early-outs when no override was ever set — so without this a shield that
+        /// engaged before the prism's first show could leave the entity drawing the
+        /// wrong geometry.
+        /// </summary>
+        internal void SyncRenderMesh()
+        {
+            if (!PrismRenderService.IsHandleUsable(in RenderHandle)) return;
+            var mesh = EffectiveRenderMesh();
+            if (mesh == null || ReferenceEquals(mesh, _renderEntityMesh)) return;
+            PrismRenderService.SetMesh(in RenderHandle, mesh);
+            _renderEntityMesh = mesh;
         }
 
         /// <summary>Pushes the live transform to the companion entity. Called on
@@ -514,6 +631,22 @@ namespace CosmicShore.Gameplay
             // visual was shown, so it resumes at the analytically-correct colors.
             if (active)
                 materialAnimator?.FlushDisplayedColorsToRenderer();
+        }
+
+        /// <summary>
+        /// Drops this prism out of sight and out of collision for a BULK TRANSPORT (the Wanderway
+        /// conveyor relocating a whole microscene's conserved stock). Not a death and not a
+        /// despawn: the prism keeps its spatial-index registration and its mass, and re-enters
+        /// through the standard creation bloom when the transport re-poses it.
+        ///
+        /// Only legitimate where the mass is provably unseen — the conveyor recycles a scene only
+        /// once it is wholly outside the camera frustum, so nothing the player can watch vanishes
+        /// (CLAUDE.md ▸ continuity of existence). Do NOT reach for this to hide live mass.
+        /// </summary>
+        public void HideForTransport()
+        {
+            if (blockCollider) blockCollider.enabled = false;
+            SetRenderVisible(false);
         }
 
         /// <summary>
@@ -645,6 +778,25 @@ namespace CosmicShore.Gameplay
         // rationale is void (there is no visible frame to protect), so the queue drains in a
         // handful of frames instead. Gameplay frames keep the authored cap untouched.
         const int LoadGateCreationCompletionsPerFrame = 512;
+
+        // Creation budget while a BULK TRANSPORT of already-existing mass is in flight (the
+        // Wanderway conveyor re-posing a whole microscene's conserved stock into a fresh
+        // arrangement). At the gameplay cap a 1,500-prism scene would trickle back into
+        // existence over ~4 seconds — the player flies to the arrival point in less than that
+        // and watches it assemble. This is NOT a load gate: frames are live, so the tier sits
+        // an order of magnitude below the covered-screen budget and stays a slice, not a dump.
+        // Bracketed by BeginBulkTransport/EndBulkTransport; the arrival is far away
+        // (ConveyorConfig.MinPlacementDistance) so the faster drain is invisible either way.
+        const int BulkTransportCreationCompletionsPerFrame = 64;
+        static int s_bulkTransportsInFlight;
+
+        /// <summary>Open a bulk-transport bracket (raises the per-frame creation-completion
+        /// budget). ALWAYS pair with <see cref="EndBulkTransport"/> in a finally.</summary>
+        public static void BeginBulkTransport() => s_bulkTransportsInFlight++;
+
+        /// <summary>Close a bulk-transport bracket.</summary>
+        public static void EndBulkTransport() => s_bulkTransportsInFlight = Mathf.Max(0, s_bulkTransportsInFlight - 1);
+
         static int s_creationCompletionsThisFrame;
         static int s_creationBudgetFrame = -1;
 
@@ -691,7 +843,9 @@ namespace CosmicShore.Gameplay
                 }
                 int creationBudget = PrismTrailBuilder.IsLoadGateHolding
                     ? LoadGateCreationCompletionsPerFrame
-                    : MaxCreationCompletionsPerFrame;
+                    : s_bulkTransportsInFlight > 0
+                        ? BulkTransportCreationCompletionsPerFrame
+                        : MaxCreationCompletionsPerFrame;
                 if (s_creationCompletionsThisFrame < creationBudget)
                     break;
 

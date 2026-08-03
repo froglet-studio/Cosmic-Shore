@@ -24,6 +24,58 @@ crystal invariant · territorial permanence (don't cull the dominant canopy) · 
 selection only (survival = fitness, never a scripted fitness function) · the collider budget.
 **If a change might violate one, STOP and ask (AskUserQuestion). Do not guess the design.**
 
+## 2.5 When sign-off IS granted — landing a carve-out that neither leaks nor gets reverted
+
+§2 ends at "STOP and ask." Sometimes the answer is **yes, break it** (the Wanderway rolling
+tether, `Docs/ECOSYSTEM.md` §0, is the worked example: recycling trail mass to buy a truly
+infinite runner at fixed memory). A granted exception is not a free hand — it is a *fenced*
+one, and the fence is half code, half record. Do both.
+
+**Fence it in code.** The exception must be impossible to invoke by accident:
+- **One caller, reachable only from the feature.** The removal/override API gets exactly one
+  call site, inside the feature's own runtime object. Grep and confirm it before you commit.
+- **No knob on the shared system.** Do NOT add a cap/TTL/limit field to the general-purpose class
+  (`VesselPrismController` grew no `maxTrailBlocks`). The feature reaches in from outside and only
+  while it is live; the shared system stays innocent.
+- **The API's own doc-comment names the exception, the sole caller, and the doc that records it** —
+  so the next reader who finds it by grep learns it is fenced before they reuse it.
+- **Waive only the invariant that was actually granted.** Continuity of existence is a *separate*
+  law from mass conservation: a sanctioned removal still has to wither/suction/fade out. Check each
+  invariant in the §2 list independently rather than treating "approved" as blanket.
+
+**Record it in three places** (a carve-out recorded once reads as a bug the next time someone greps):
+1. `Docs/ECOSYSTEM.md` §0, **beside the rejected version it resembles** — state what it does, the
+   reason it was granted, and the fence. Without this, the next session finds the mechanism, matches
+   it to the rejected cheat, and reverts it.
+2. `CLAUDE.md`, on the invariant's own bullet — the absolute wording ("there is no context in
+   which…") needs the exception attached to it or it reads as a contradiction.
+3. The system's `Docs/<System>/ARCHITECTURE.md`.
+
+**Frame it as an exception, never a precedent.** Say plainly that it holds *because it was asked
+for*, that the protocol still stands, and that the next one needs its own sign-off. Then go find
+what the carve-out silently broke — see the traps below.
+
+## 2.6 Prism / trail traps (each of these cost real time)
+
+- **A vessel lays TWO ribbons.** `VesselPrismController.Trail` is only half the trail; the
+  double-trail spawn pattern puts every other prism in `SecondaryTrail` (`Trail2`). Anything
+  reasoning about "the vessel's whole trail" — length, mass, cleanup, recycling — must walk both,
+  or it silently misses half the mass and any budget it enforces never converges.
+- **Cached trail indices go stale on front-removal.** `TrailFollower` caches `attachedBlockIndex`
+  and advances it itself; removing from the head of a `Trail` shifts every survivor and the rider
+  starts racing forward along the ribbon. `Trail.OnOldestRemoved` exists for exactly this — any new
+  index-cacher must ride it (hold a prism reference instead, where you can).
+- **`OnReturnToPool != null` is the canonical pooled-vs-instantiated test.** It is how `Cell` tells
+  a vessel's loose trail mass from instantiated environment mass (flora health prisms, a toy
+  conveyor's transported stock). Use it before recycling anything; an unpooled prism handed
+  `ReturnToPool()` silently stays in the world as an invisible collider.
+- **Continuity-preserving removal, the recipe:** stamp `prism.TargetScale = <near-zero>` (the
+  setter IS the grow-clock stamp — one write, GPU runs it), wait the wither duration, *then*
+  `ReturnToPool()`. Never pool-return a prism at full scale; that is a pop.
+- **A visual state applied before `Prism.IsCreationComplete` is part of BIRTH and must snap.**
+  Engaging a morph there holds the exotic-visual window across the creation reveal and eats the
+  one-shot grow stamp, so the prism snaps in instead of blooming (`Docs/PRISM_ANIMATION.md` §4).
+
 ## 3. Implement (emergence first, surgically)
 - **Favor emergence:** never hard-code an outcome that should emerge from the fundamentals
   (Domain · Mass/prisms · Cells · Elementals · Flora & Fauna · Vessels) interacting. A scripted
