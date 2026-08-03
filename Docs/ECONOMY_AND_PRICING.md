@@ -9,15 +9,14 @@ Owner: Shombith · Related: `Docs/MENU_PROGRESSION_AND_IAP.md`, `Docs/STEAM_EA_I
 
 ## 1. Currency inventory
 
-Five things behave like currency. Only two of them are real economies today.
+Four things behave like currency. Only two of them are real economies today.
 
 | # | Currency | Type | Earned by | Spent on | State |
 |---|---|---|---|---|---|
-| 1 | **Crystals** | Soft, cloud-persisted (`ProfileEconomy.CrystalBalance`) | End-of-game award only | Vessel unlocks only | **Live, and badly tuned — see §2** |
-| 2 | **XP** | Progression counter (`ProfileProgression.Xp`) | +25 per game, win or lose | **Nothing** | Cosmetic odometer. `UnlockReward` has no callers. |
-| 3 | **Elemental crystals** (Charge / Mass / Space / Time) | In-run gameplay resource | Collected while flying | Buffs and abilities during a run | Not a wallet. Never persists between runs. |
-| 4 | **Episode tokens** | Hard, real-money entitlement | Purchase | 1 token = 1 episode | **Built this pass — see §4.** No storefront wired. |
-| 5 | **Real money (USD)** | — | — | Episode tokens; the app itself on Steam | Web-checkout path exists but is inert and **not Steam-compliant** (§5) |
+| 1 | **Crystals** | Soft, cloud-persisted (`ProfileEconomy.CrystalBalance`) | Placement payout at game end | Vessel unlocks only | Live. Retuned — see §2 |
+| 2 | **Elemental crystals** (Charge / Mass / Space / Time) | In-run gameplay resource | Collected while flying | Buffs and abilities during a run | Not a wallet. Never persists between runs. |
+| 3 | **Episode tokens** | Hard, real-money entitlement | Purchase | 1 token = 1 episode | **Built this pass — see §4.** No storefront wired. |
+| 4 | **Real money (USD)** | — | — | Episode tokens; the app itself on Steam | Web-checkout path exists but is inert and **not Steam-compliant** (§5) |
 
 ### Priceable items — the list for whoever sets prices
 
@@ -48,11 +47,14 @@ Five things behave like currency. Only two of them are real economies today.
 
 ---
 
-## 2. Economy audit — **the answer is no, it is not OK**
+## 2. Economy audit — findings, all now resolved
+
+> The three findings below were the state **before** the pricing pass. All three are fixed; the
+> current numbers live in `Docs/ECONOMY_TABLES.md`, which is the source of truth for pricing.
 
 Three findings, in severity order.
 
-### 🔴 A vessel costs 800 wins
+### 🔴 ~~A vessel costs 800 wins~~ — FIXED (payout raised 5 → 200; a vessel is now 20 wins)
 
 This is the headline problem and it makes vessel unlocks effectively unreachable.
 
@@ -63,13 +65,12 @@ This is the headline problem and it makes vessel unlocks effectively unreachable
 | Lose anything | 0 | never |
 
 At a realistic 50% win rate that is **~1,600 games played** for a single vessel, and there are five
-to buy. For comparison, the XP track hands out 25 XP per game *regardless of result* — the crystal
-economy is 5× stingier than the currency that buys nothing.
+to buy.
 
 Either the payout is roughly 100× too small or the price is roughly 100× too large. Someone has to
 choose which; §3 is the questionnaire for that conversation.
 
-### 🟠 Three vessels are free by accident
+### 🟠 ~~Three vessels are free by accident~~ — FIXED (Grizzly, Urchin, Termite locked at 4000)
 
 `SO_Class_Grizzly`, `SO_Class_Urchin`, and `SO_Class_Termite` serialize **neither** `isLocked` nor
 `UnlockCost`, so they fall back to the C# defaults: `isLocked = false`, `UnlockCost = 100`. They are
@@ -78,7 +79,7 @@ unlocked and free. Termite is not even a playable vessel per the class table.
 This is almost certainly unintentional — the five real vessels all carry explicit `isLocked: 1` and
 `UnlockCost: 4000`. Decide per vessel and set the fields explicitly rather than relying on defaults.
 
-### 🟡 One earn path, and no floor
+### 🟡 One earn path, and no floor — partly addressed (losing still pays nothing, by decision)
 
 `Scoreboard.AwardCrystalsToLocalPlayer` is the **only** place crystals are ever created outside
 debug tools. Consequences:
@@ -87,8 +88,7 @@ debug tools. Consequences:
   4000-crystal price tag, and has no visible path to it.
 - **`Quest.CrystalRewards` exists and is never granted** — the field is `List<(Element, int)>` on
   quests, but nothing reads it. A designed reward path was built and left unwired.
-- **No daily, first-win, or milestone payouts.** The XP track's milestone rewards likewise grant
-  nothing (`PlayerDataService.UnlockReward` has no callers).
+- **No daily, first-win, or milestone payouts.**
 
 A participation payout — even 1 crystal for finishing — changes the shape of this materially.
 
@@ -103,9 +103,10 @@ A participation payout — even 1 crystal for finishing — changes the shape of
 
 ---
 
-## 3. Pricing questionnaire — copy into Notion
+## 3. Pricing questionnaire — ANSWERED
 
-Questions whose answers we cannot derive from code. Everything else follows from these.
+> Answered in full; the resulting values are in `Docs/ECONOMY_TABLES.md`. Kept here as the record
+> of what was asked and why.
 
 ### A. Vessels
 
@@ -275,8 +276,6 @@ Not legal advice — this is the list to take to counsel.
    failure, and spend are not. Add them before the first real transaction or the funnel is blind.
 5. **Episode content does not exist yet.** One episode asset, `isAvailable: 1`, no real content
    behind it. Selling tokens against unbuilt content is the fastest route to refunds and bad reviews.
-6. **XP grants nothing.** Players earn it every game and it buys nothing. Either wire the milestone
-   rewards or stop showing a progress bar that does not pay.
 
 ---
 

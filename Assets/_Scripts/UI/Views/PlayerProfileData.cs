@@ -17,13 +17,14 @@ namespace CosmicShore.UI
     [Serializable]
     public class PlayerProfileData
     {
-        public const int CurrentSchemaVersion = 1;
+        // v2: the Progression group (player XP) was removed. Profiles saved at v1 still carry a
+        // "Progression" key; it is ignored on load, which is the intended no-op migration.
+        public const int CurrentSchemaVersion = 2;
 
         public int SchemaVersion = CurrentSchemaVersion;
 
         public ProfileIdentity Identity = new();
         public ProfileEconomy Economy = new();
-        public ProfileProgression Progression = new();
         public ProfileLifecycle Lifecycle = new();
     }
 
@@ -83,16 +84,6 @@ namespace CosmicShore.UI
         /// player opening the same receipt twice.
         /// </summary>
         public List<string> RedeemedOrderIds = new();
-    }
-
-    /// <summary>
-    /// Earned, monotonic. Level is intentionally NOT stored - it is derived from
-    /// <see cref="Xp"/>, so retuning the curve cannot leave a stale level behind.
-    /// </summary>
-    [Serializable]
-    public class ProfileProgression
-    {
-        public int Xp;
     }
 
     /// <summary>Account timeline and last-known client facts. Retention/segmentation denominators.</summary>

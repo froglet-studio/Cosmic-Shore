@@ -44,7 +44,7 @@ play-style summary. Plus diagnostic events (e.g., failed cloud saves). These car
 anonymous player ID and gameplay parameters — **no real-world identifiers**.
 
 **c. Saved game data (Cloud Save)**
-Your profile (display name, avatar, in-game currency balance, XP, unlocked rewards,
+Your profile (display name, avatar, in-game currency balance, unlocked rewards,
 first-seen timestamp), per-mode and per-vessel statistics, mode/intensity progression,
 unlocked vessels and preferences, audio/control settings, and (where applicable) daily
 challenge, training, squad, and loadout progress.
