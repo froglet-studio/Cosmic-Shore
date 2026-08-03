@@ -48,7 +48,7 @@ whether it may leave the device).
 |---|---|---|---|
 | `IDENTITY` | Who the account is | Account is unrecoverable | `UserId`, `DisplayName`, `AvatarId` |
 | `ECONOMY` | Anything with a balance or a purchase | Player-visible loss, support tickets | `CrystalBalance`, `UnlockedRewardIds` |
-| `PROGRESSION` | Earned, monotonic, gated | Player-visible loss | `Xp`, `UnlockedModes`, `Unlocked` per vessel |
+| `PROGRESSION` | Earned, monotonic, gated | Player-visible loss | `UnlockedModes`, `Unlocked` per vessel |
 | `PREFERENCE` | Player-chosen, re-choosable | Mild annoyance | `SelectedVessel`, audio/invert settings |
 | `TELEMETRY` | Derived from play, informational | No player-visible loss | `BestDriftTimeSeconds`, `TotalPrismsDamaged` |
 | `SOCIAL` | Relationships and party state | Rebuildable from UGS | friends, party roster |
@@ -167,7 +167,6 @@ correlation across two payloads.
     "UnlockedRewardIds": []
   },
   "Progression": {
-    "Xp": 250
   },
   "Lifecycle": {
     "FirstSeenUtcMs": 1784063404202,
@@ -196,8 +195,6 @@ correlation across two payloads.
   reconciled and a drift between them is a real instrumentation alarm.
 - **New — `LastAppVersion`, `LastPlatform`.** We currently emit no build or platform anywhere. Every
   "is this regression real" question needs them and none can be answered today.
-- `Progression.Xp` stays raw; **level is derived, never stored** — a stored level would drift the
-  moment the XP curve is retuned.
 
 ---
 

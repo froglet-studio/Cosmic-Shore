@@ -1,6 +1,7 @@
 using CosmicShore.Gameplay;
 using UnityEditor;
 using UnityEngine;
+using CosmicShore.Editor.Froglet;
 
 namespace CosmicShore.Editor
 {
@@ -9,11 +10,13 @@ namespace CosmicShore.Editor
     /// exactly one elemental crystal (Charge / Mass / Space / Time) - the powerup it drops on
     /// death. The runtime guard (<see cref="LifeFormCrystal"/>) fixes/provisions violations at
     /// play time and logs them; this surfaces the same prefabs in the editor so they get fixed
-    /// properly. Run via Tools ▸ Cosmic Shore ▸ Validate Lifeform Crystals.
+    /// properly. Run via FrogletTools ▸ Validation ▸ Validate Lifeform Crystals.
     /// </summary>
     public static class LifeFormCrystalValidator
     {
-        [MenuItem("Tools/Cosmic Shore/Validate Lifeform Crystals")]
+        [MenuItem("FrogletTools/Validation/Validate Lifeform Crystals")]
+        [FrogletTool(FrogletToolCategory.Validation, Importance = 4,
+            Description = "Every lifeform must drop exactly one elemental crystal.")]
         public static void Validate()
         {
             int checkedCount = 0, issues = 0;

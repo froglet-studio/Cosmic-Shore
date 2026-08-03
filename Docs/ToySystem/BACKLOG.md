@@ -15,7 +15,7 @@ limitations and verification status. Architecture: `ARCHITECTURE.md`.
   keeps your domain colour + inherits pose/speed and shows the new HUD; the vessel-changer ships
   recolour when you use the domain changer; gamepad Start exits freestyle and the pad stops
   double-driving the UI; and a swap toy can't switch you back before you fly clear.
-- Assets authored by `Tools > Cosmic Shore > Setup Freestyle Toybox` are committed
+- Assets authored by `FrogletTools > Scene Setup > Setup Freestyle Toybox` are committed
   (`Resources/Toybox.asset`, `_SO_Assets/Toys/Toy_*.asset`) and `ToyboxController` is wired into
   `Menu_Main`; GUID references verified consistent.
 
