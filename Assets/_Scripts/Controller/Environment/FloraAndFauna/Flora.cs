@@ -29,7 +29,8 @@ namespace CosmicShore.Gameplay
         protected bool isGrowing = true;
 
         /// <summary>
-        /// The per-element leaf PRISM size (authored on the prefab, overridden by
+        /// The prism size this species' leaves grow to, and the unit its lattice bonds at: the
+        /// per-element leaf PRISM size (authored on the prefab, overridden by
         /// <c>FloraVariantTuning.LeafSize</c>, scaled by level). Exposed so a flora that shapes
         /// its prisms per ROLE - a stem segment is not a leaf - can derive those shapes from the
         /// element's identity instead of re-authoring it. See <see cref="PhyllotacticFlora"/>.
@@ -38,9 +39,6 @@ namespace CosmicShore.Gameplay
 
         public abstract void Grow();
         public abstract void Plant();
-
-        /// <summary>The prism size this species' leaves grow to. Also the unit its lattice bonds at.</summary>
-        protected Vector3 LeafSize => leafSize;
 
         /// <summary>
         /// A <b>pure preview of this species' growth pattern</b>: run the growth rule in local
