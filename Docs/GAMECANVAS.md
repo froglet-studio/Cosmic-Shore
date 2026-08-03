@@ -159,62 +159,105 @@ error without it. There is exactly one `MiniGameControllerBase` per gameplay sce
 resolves itself when unassigned. Menu and tool scenes with no controller log an informational line
 instead of an error.
 
-**Net effect:** a brand-new game-mode scene can drop GameCanvas in and the Ready button and Play
-Again work with zero inspector wiring.
+### `GameModeUIConfigSO` + `GameModeSceneConfig` — where per-mode differences live now
+
+The remaining per-mode values needed a home that is **not** a prefab override. That home is a
+ScriptableObject:
+
+```
+GameModeUIConfigSO   (one asset per mode)          <- the data
+   ^
+   | referenced by
+GameModeSceneConfig  (one GameObject in the scene) <- how the scene points at it
+   ^
+   | resolved at runtime by
+EventDrivenStatsProvider  (end-game stat list)
+MultiplayerHUD            (per-domain vs per-player score layout)
+```
+
+`GameModeSceneConfig` is a plain component holding one SO reference. It is deliberately **not**
+part of GameCanvas, so pointing a scene at its config never creates an override on the shared
+prefab. Consumers call `GameModeSceneConfig.Resolve()` instead of holding a serialized field —
+that is what keeps new inspector references off the canvas.
+
+**Every field is opt-in.** `ScoreLayout = Inherit` and an empty `EndGameStats` mean "behave exactly
+as before", so adding a config asset to a scene changes nothing until you set something. A scene
+with no config at all is unaffected. This is what makes it safe to migrate one mode at a time.
+
+| Field | Replaces | Neutral value |
+|---|---|---|
+| `EndGameStats` | `EventDrivenStatsProvider.statsToTrack` overridden per scene | empty → scene list, then vessel-telemetry discovery |
+| `ScoreLayout` | the fact that the *only* way to get per-player cards was to ship a canvas without domain wiring | `Inherit` → decide from prefab wiring, as today |
+
+`ScoreLayout` is the field that actually unblocks the merge. Today the two canvas forks differ in
+whether the domain containers exist at all, and `MultiplayerHUD` picks its layout from whether they
+happen to be wired. A single unified canvas carries the superset, so the wiring is always present
+and the choice has to become data.
+
+**Net effect:** a brand-new game-mode scene can drop GameCanvas in, add one `GameModeSceneConfig`
+object, and the Ready button, Play Again, stat list and score layout all work with no inspector
+wiring on the canvas itself.
 
 ---
 
 ## 6. What to do in Unity
 
-Tooling: **FrogletTools ▸ Game Modes ▸ Game Mode Prefab Kit**. Its **Validate** pass reads scene
-YAML directly (no scenes are opened), reports every instance carrying unapplied overrides, and
-separates the *identical-everywhere* set from the *genuinely-different* set. Every write goes back
-through `PrefabUtility`.
+### Step 0 — the tooling does NOT do this for you
 
-### Step 1 — Consolidate the 1,734 (low risk, reversible)
+**FrogletTools ▸ Game Modes ▸ Game Mode Prefab Kit ▸ Validate** is a *read-only report*. It tells
+you which scenes carry unapplied overrides on a shared prefab, and it has an **Ignore** button for
+scenes that are meant to differ. It does not merge prefabs and it does not apply overrides — an
+earlier automated "Consolidate" did, and it was removed: reverting a scene's overrides is a large,
+hard-to-review edit, and it addresses drift, not unification. Fix drift in Unity's own Overrides
+dropdown where you can see each change first.
 
-1. Open the Prefab Kit, find the **GameCanvas** row, press **Validate**.
-2. The first issue reads *"N override(s) are IDENTICAL in all 6 scenes"*. Press **Consolidate**.
-   It applies them to the prefab from a donor scene, then reverts them in the other five, and
-   saves each scene.
-3. Re-run **Validate**. The remaining per-scene overrides should be ~20 keys, all listed in §3.
-4. Play-test the six modes. Commit scenes and prefab together.
+**Maelstrom is excluded by default** and should stay excluded. It is the tournament **hub**, not a
+playable mode — it chains the real modes as a sequence of rounds, so its canvas deliberately strips
+the gameplay HUD (8 removed GameObjects) and adds `Intro Panel` / `Summary Panel`. That is correct,
+not drift.
 
-> Both `GameCanvas.prefab` and `GameCanvas-HexRace.prefab` should be rows in the kit so each fork
-> consolidates against its own scenes.
+### Step 1 — merge the two prefabs
 
-### Step 2 — Normalise the accidental drift (manual, small)
-
-In the prefab (not the scenes), settle one value for each and revert the scene overrides:
-
-- `NotificationUI` RectTransform → adopt the 3-scene majority `(-314.4, 90)`, size `(489.08, 420)`.
-- `Scoreboard/Buttons/Continue|HomeButton|PlayAgainButton` → adopt the 5-scene majority
-  (`Continue.x = 537.6`, `HomeButton.x = 912`, `PlayAgain.x = 163.2`).
-
-### Step 3 — Retire the fork (the real unification)
-
-`GameCanvas-HexRace` is the superset, so it becomes the single canvas:
+`GameCanvas-HexRace` is the superset (101 of 105 GameObjects shared, +40, −4), so it becomes the
+single canvas:
 
 1. Restore the two things only the base has: the legacy `PlayerFour` row under
-   `Scoreboard/MultiplayerView/MultiplayerScores` (or delete it from the base too if the
-   TeamScorecards have replaced it).
-2. Re-point the 8 dangling references in §4 at the objects inside the *same* prefab.
-3. Rename it `GameCanvas` and move it to `_Prefabs/CORE/`.
-4. For each of the 10 scenes still on the old fork: delete the old instance, drag the unified
-   prefab in, and re-do only the ~20 real per-scene values.
-   *A GUID swap does not work* — the two forks have different fileIDs, so every override would
-   dangle.
-5. Delete the old asset once no scene references its GUID.
+   `Scoreboard/MultiplayerView/MultiplayerScores` — or delete it from the base too, if the
+   TeamScorecards have replaced it.
+2. Re-point the 8 dangling references in §4 at objects inside the *same* prefab.
+3. Confirm the HUD object carries `MultiplayerHUD` + `MultiplayerHUDView` **with** the domain
+   containers wired. `MultiplayerHUD : MiniGameHUD` and `MultiplayerHUDView : MiniGameHUDView`, so
+   this is a strict superset — single-player modes select `ScoreLayout = PerPlayer` and get the
+   old cards.
+4. Rename it `GameCanvas`, move it to `_Prefabs/CORE/`.
 
-Step 3 is the one that needs judgement and play-testing per scene; steps 1 and 2 are safe and
-should land first.
+### Step 2 — author one config asset per mode
 
-### Step 4 — Close the last override (optional)
+Create ▸ ScriptableObjects ▸ Game Modes ▸ Game Mode UI Config, one per mode. Fill in:
 
-`statsToTrack` is the only genuinely per-mode value that must live on the canvas. To reach zero
-overrides, move it into a `GameModeStatsProfileSO` keyed by `GameDataSO.GameMode` and have
-`EventDrivenStatsProvider` consult it when its explicit list is empty (it already falls back to
-vessel-telemetry discovery, so the priority chain becomes explicit → profile → telemetry).
+| Mode | `ScoreLayout` | `EndGameStats` |
+|---|---|---|
+| HexRace | PerDomain | CleanCrystals, Jousts Won, Longest Drift, MaxBoost, PrismsDamaged |
+| Joust | PerDomain | Jousts Won, MaxBoost, PrismsDamaged |
+| Crystal Capture, AstroLeague, NucleusRush, Rampage | PerDomain | Longest Drift, MaxBoost, PrismsDamaged |
+| Cellular Duel, Wildlife Blitz, 2v2 CoOp, Freestyle MP | PerPlayer | leave empty (telemetry discovery) |
+
+(The stat lists are the values currently living as scene overrides — read out of the six scenes in
+§3, so this is a transcription, not a redesign.)
+
+### Step 3 — per scene
+
+For each game-mode scene, one at a time, play-testing between:
+
+1. Add an empty GameObject, add **Game Mode Scene Config**, assign that mode's asset.
+2. Replace the canvas instance with the unified prefab. **A GUID swap does not work** — the two
+   forks have different fileIDs, so every override would dangle.
+3. Delete the now-redundant overrides: the ReadyButton `onClick`, the `Scoreboard.gameController` /
+   `hexRaceController` references, and `EventDrivenStatsProvider.statsToTrack`. All four are
+   resolved in code or by the config now.
+4. Run Validate. What is left should be layout you actually want.
+
+Leave Maelstrom alone until every playable mode is done — it consumes them.
 
 ---
 
@@ -245,8 +288,9 @@ vessel-telemetry discovery, so the priority chain becomes explicit → profile �
 | HUD views | `Assets/_Scripts/UI/View/MinigameHUDView.cs`, `MultiplayerHUDView.cs` |
 | End-game scoreboard | `Assets/_Scripts/UI/Scoreboard.cs` |
 | Per-mode stats | `Assets/_Scripts/Controller/Vessel/EventDrivenStatsProvider.cs` |
+| Per-mode config asset | `Assets/_Scripts/ScriptableObjects/GameModeUIConfigSO.cs` |
+| Scene -> config link | `Assets/_Scripts/Controller/Arcade/GameModeSceneConfig.cs` |
 | Kit config asset | `Assets/Resources/GameModePrefabKit.asset` |
 | Kit window | `Assets/_Scripts/Editor/FrogletTools/GameModePrefabKitWindow.cs` |
 | Drift scanner (read) | `Assets/_Scripts/Editor/FrogletTools/PrefabInstanceSceneScanner.cs` |
-| Drift fixer (write) | `Assets/_Scripts/Editor/FrogletTools/PrefabDriftFixer.cs` |
 | Validation rules | `Assets/_Scripts/Editor/FrogletTools/KitValidator.cs` |

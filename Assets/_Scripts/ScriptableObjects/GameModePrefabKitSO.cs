@@ -84,8 +84,12 @@ namespace CosmicShore.ScriptableObjects
                  "(instances carrying overrides that were never applied back to the prefab).")]
         public List<string> SceneSearchFolders = new() { "Assets/_Scenes" };
 
-        [Tooltip("Scene path fragments excluded from the drift scan for every entry.")]
-        public List<string> GloballyExcludedScenes = new() { "/Tools/" };
+        [Tooltip("Scene path fragments excluded from the drift scan for every entry.\n\n" +
+                 "Maelstrom is excluded by default: it is the tournament HUB, not a playable mode. " +
+                 "It chains the real modes as a sequence of rounds, so its canvas deliberately " +
+                 "strips the gameplay HUD and adds tournament panels - reporting that as drift " +
+                 "would be a permanent false alarm.")]
+        public List<string> GloballyExcludedScenes = new() { "/Tools/", "Maelstrom" };
 
         [Tooltip("Property paths that are legitimately per-scene and never count as drift. " +
                  "Matched as a prefix against the modification's propertyPath.")]

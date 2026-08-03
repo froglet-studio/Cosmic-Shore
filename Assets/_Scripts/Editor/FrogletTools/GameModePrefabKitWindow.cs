@@ -91,6 +91,7 @@ namespace CosmicShore.Editor.Froglet
             }
 
             DrawToolbar();
+            DrawValidateExplainer();
             DrawSceneContextStrip();
 
             var entries = _kit.Entries
@@ -150,9 +151,15 @@ namespace CosmicShore.Editor.Froglet
                     ValidateAll();
 
                 GUILayout.Space(6);
-                if (FrogletEditorPalette.ColorButton("CLEAR RESULTS", FrogletEditorPalette.Muted, 116f, 30f,
-                        "Forget the current validation report.", outline: true))
+                bool hasResults = _reports.Count > 0;
+                if (FrogletEditorPalette.ColorButton(
+                        hasResults ? $"✕  CLEAR ({_reports.Count})" : "✕  CLEAR",
+                        FrogletEditorPalette.Coral, 116f, 30f,
+                        "Discard the validation report and collapse every row.", hasResults))
+                {
                     _reports.Clear();
+                    _expanded.Clear();
+                }
 
                 GUILayout.FlexibleSpace();
                 DrawOverallStatus();
@@ -175,6 +182,22 @@ namespace CosmicShore.Editor.Froglet
             var half2 = new Rect(r.x + 96f, r.y + 3f, 90f, 24f);
             FrogletEditorPalette.StatusPill(half2, warns == 0 ? "0 WARNINGS" : $"{warns} WARNINGS",
                 warns == 0 ? FrogletEditorPalette.Ok : FrogletEditorPalette.Warn);
+        }
+
+        /// <summary>Spells out what Validate actually checks, so the report is readable cold.</summary>
+        static void DrawValidateExplainer()
+        {
+            var r = GUILayoutUtility.GetRect(0, 32f, GUILayout.ExpandWidth(true));
+            FrogletEditorPalette.DrawRect(r, FrogletEditorPalette.Surface);
+            FrogletEditorPalette.DrawAccentStripe(r, FrogletEditorPalette.Adapt(FrogletEditorPalette.Info), 3f);
+            GUI.Label(new Rect(r.x + 10f, r.y + 1f, r.width - 14f, r.height - 2f),
+                "VALIDATE checks three things and never writes:  (1) the prefab asset is healthy - assigned, " +
+                "loadable, no missing scripts;  (2) it is in the scene you have open, exactly once;  " +
+                "(3) no OTHER scene carries unapplied overrides on it - i.e. a scene running its own edited " +
+                "copy, which would mask changes you make to the prefab.  Fix those in Unity's Overrides " +
+                "dropdown; use Ignore for scenes that are meant to differ.",
+                new GUIStyle(FrogletEditorPalette.CardBody) { wordWrap = true });
+            GUILayout.Space(4);
         }
 
         void DrawSceneContextStrip()
@@ -365,6 +388,7 @@ namespace CosmicShore.Editor.Froglet
         void ValidateAll()
         {
             _reports.Clear();
+            _expanded.Clear();
             try
             {
                 for (int i = 0; i < _kit.Entries.Count; i++)

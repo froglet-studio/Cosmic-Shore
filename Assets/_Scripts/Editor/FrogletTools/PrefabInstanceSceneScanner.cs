@@ -63,8 +63,11 @@ namespace CosmicShore.Editor.Froglet
     /// same question costs minutes and mutates the editor's scene setup. The parser only needs the
     /// <c>PrefabInstance</c> documents, whose shape is fixed by Unity's serializer.
     ///
-    /// Reading is advisory - every WRITE still goes through <c>PrefabUtility</c> on a properly
-    /// loaded scene (see <see cref="PrefabDriftFixer"/>), so Unity owns the serialization.
+    /// This is READ-ONLY, deliberately. It reports which scenes carry unapplied overrides and
+    /// leaves fixing them to Unity's own Overrides dropdown, where you can see each change before
+    /// applying it. An automated bulk apply/revert was tried and removed: it made a large,
+    /// hard-to-review edit across many scenes at once, which is the opposite of what you want when
+    /// the thing you are repairing is scene/prefab divergence.
     /// </summary>
     public static class PrefabInstanceSceneScanner
     {
@@ -306,41 +309,6 @@ namespace CosmicShore.Editor.Froglet
         }
 
         // ── Cross-scene analysis ─────────────────────────────────────────────────
-
-        /// <summary>
-        /// Splits a prefab's overrides into the ones that are IDENTICAL in every scene that has
-        /// them (so they belong applied to the prefab itself) and the ones whose value genuinely
-        /// differs between scenes (real per-scene configuration).
-        ///
-        /// This is the distinction that turns "1,700 overrides per scene" from a wall of noise
-        /// into a short, reviewable list.
-        /// </summary>
-        public static (List<string> uniform, List<string> divergent) ClassifyOverrides(
-            IReadOnlyList<ScenePrefabInstance> instances, IEnumerable<string> ignoredPrefixes = null)
-        {
-            var ignore = ignoredPrefixes?.Where(s => !string.IsNullOrWhiteSpace(s)).ToArray() ?? Array.Empty<string>();
-            var uniform = new List<string>();
-            var divergent = new List<string>();
-            if (instances == null || instances.Count < 2) return (uniform, divergent);
-
-            var byKey = new Dictionary<string, HashSet<string>>();
-            foreach (var inst in instances)
-            foreach (var o in inst.Overrides)
-            {
-                if (o.PropertyPath == null) continue;
-                if (ignore.Any(p => o.PropertyPath.StartsWith(p, StringComparison.Ordinal))) continue;
-                if (!byKey.TryGetValue(o.Key, out var set))
-                    byKey[o.Key] = set = new HashSet<string>();
-                set.Add(o.ValueKey);
-            }
-
-            foreach (var (key, values) in byKey)
-            {
-                if (values.Count == 1) uniform.Add(key);
-                else divergent.Add(key);
-            }
-            return (uniform, divergent);
-        }
 
         /// <summary>Overrides on this instance that are not pure per-scene layout noise.</summary>
         public static int MeaningfulOverrideCount(ScenePrefabInstance inst, IEnumerable<string> ignoredPrefixes)

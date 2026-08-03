@@ -12,11 +12,15 @@ namespace CosmicShore.Gameplay
     /// Subscribes to VesselStatEventSO assets and caches their latest values
     /// for the end-game scoreboard.
     ///
-    /// Supports two modes:
-    /// 1. Explicit (recommended): Wire stat SOs directly via <see cref="statsToTrack"/>.
+    /// Three sources, first one that has anything wins:
+    /// 1. Explicit instance list: stat SOs wired directly via <see cref="statsToTrack"/>.
     ///    Subscription happens on OnEnable - no timing dependency on vessel spawn.
-    /// 2. Dynamic fallback: If <see cref="statsToTrack"/> is empty, discovers stats
-    ///    from the local vessel's VesselTelemetry at OnClientReady / OnMiniGameTurnStarted.
+    /// 2. Per-mode config (preferred for shared prefabs): the scene's
+    ///    <see cref="GameModeSceneConfig"/> -&gt; <c>GameModeUIConfigSO.EndGameStats</c>. This is
+    ///    how a mode gets its own stat list WITHOUT overriding anything on the shared GameCanvas
+    ///    prefab - the list lives in an asset the scene points at.
+    /// 3. Dynamic fallback: discovers stats from the local vessel's VesselTelemetry at
+    ///    OnClientReady / OnMiniGameTurnStarted.
     ///
     /// Stats are only cleared on explicit reset - they persist across turn boundaries
     /// until the game ends, so the scoreboard always shows the final values.
@@ -44,6 +48,17 @@ namespace CosmicShore.Gameplay
             if (statsToTrack != null && statsToTrack.Count > 0)
             {
                 SubscribeToStats(statsToTrack);
+            }
+            else
+            {
+                // No explicit list on this instance: take the mode's list from the scene's
+                // GameModeUIConfigSO if one is present. This is the route that lets the shared
+                // GameCanvas prefab stay byte-identical in every scene - the per-mode stat list
+                // lives in an asset the scene points at, not in an override on the canvas.
+                // Missing config is normal and means "fall through to telemetry discovery".
+                var modeConfig = GameModeSceneConfig.Resolve();
+                if (modeConfig != null && modeConfig.HasEndGameStats)
+                    SubscribeToStats(modeConfig.EndGameStats);
             }
 
             if (gameData == null) return;

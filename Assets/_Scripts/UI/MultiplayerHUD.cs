@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using CosmicShore.Data;
+using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using UnityEngine;
@@ -116,7 +117,7 @@ namespace CosmicShore.UI
             if (localRoundStats != null)
                 localRoundStats.OnScoreChanged += UpdateScoreUI;
 
-            _useDomainView = multiplayerView != null && multiplayerView.HasDomainPanelWiring;
+            _useDomainView = ResolveUseDomainView();
 
             if (_useDomainView)
                 InitializeDomainPanels();
@@ -129,6 +130,35 @@ namespace CosmicShore.UI
                 gameData.OnPlayerAdded += HandlePlayerAdded;
 
             SubscribeToGameSpecificEvents();
+        }
+
+        /// <summary>
+        /// Chooses the per-domain or per-player layout.
+        ///
+        /// Historically this was decided purely by whether the domain containers happened to be
+        /// wired on this scene's canvas - which is precisely why the canvas had to be a different
+        /// prefab per mode family. With one unified GameCanvas the wiring is ALWAYS present, so the
+        /// choice has to come from data: the scene's <see cref="GameModeSceneConfig"/> names the
+        /// layout its mode wants.
+        ///
+        /// No config, or <see cref="HudScoreLayout.Inherit"/>, falls back to the wiring check, so
+        /// every scene that has not been migrated behaves exactly as it does today. A mode that
+        /// asks for <see cref="HudScoreLayout.PerDomain"/> without the wiring present still can't
+        /// get it, so a half-migrated scene degrades instead of rendering nothing.
+        /// </summary>
+        bool ResolveUseDomainView()
+        {
+            bool wired = multiplayerView != null && multiplayerView.HasDomainPanelWiring;
+
+            var modeConfig = GameModeSceneConfig.Resolve();
+            if (modeConfig == null) return wired;
+
+            return modeConfig.ScoreLayout switch
+            {
+                HudScoreLayout.PerDomain => wired,
+                HudScoreLayout.PerPlayer => false,
+                _ => wired,
+            };
         }
 
         protected override void OnMiniGameTurnEnd()

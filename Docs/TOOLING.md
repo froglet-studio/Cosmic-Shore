@@ -131,9 +131,9 @@ their paths do not start with `FrogletTools/`.
 
 ## Tool index
 
-| Lane | Tool | What it is for |
+| Section | Tool | What it is for |
 |---|---|---|
-| Game Modes | **Game Mode Prefab Kit** | The prefabs a new game-mode scene needs; Add to Scene / Open Prefab / Validate, plus cross-scene drift detection and consolidation. See `Docs/GAMECANVAS.md`. |
+| Game Modes | **Game Mode Prefab Kit** | The prefabs a new game-mode scene needs; Add to Scene / Open Prefab / Validate. Validate is read-only: asset health, presence in the open scene, and which other scenes carry unapplied overrides. See `Docs/GAMECANVAS.md`. |
 | Game Modes | End Game Conditions | The one place win conditions are authored for the domain modes. |
 | Build | Windows x64 (Release / Development), Reveal Build Folder | Player builds. |
 | Ecology | Prism Animation ▸ Validate Clock Wiring / Auto-Wire Clock Properties | The clock-material law gate. |
@@ -158,5 +158,4 @@ their paths do not start with `FrogletTools/`.
 | Prefab kit window | `Assets/_Scripts/Editor/FrogletTools/GameModePrefabKitWindow.cs` |
 | Prefab kit validation | `Assets/_Scripts/Editor/FrogletTools/KitValidator.cs` |
 | Scene drift scanner (read-only) | `Assets/_Scripts/Editor/FrogletTools/PrefabInstanceSceneScanner.cs` |
-| Drift fixer (writes via PrefabUtility) | `Assets/_Scripts/Editor/FrogletTools/PrefabDriftFixer.cs` |
 | Kit config SO | `Assets/_Scripts/ScriptableObjects/GameModePrefabKitSO.cs` |

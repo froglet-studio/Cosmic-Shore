@@ -26,8 +26,6 @@ namespace CosmicShore.Editor.Froglet
     {
         public readonly List<KitIssue> Issues = new();
         public List<ScenePrefabInstance> Instances = new();
-        public List<string> UniformKeys = new();
-        public List<string> DivergentKeys = new();
     }
 
     /// <summary>
@@ -74,7 +72,7 @@ namespace CosmicShore.Editor.Froglet
 
             CheckAssetHealth(entry, assetPath, report);
             CheckActiveScene(entry, report);
-            CheckCrossSceneDrift(entry, kit, guid, assetPath, report);
+            CheckCrossSceneDrift(entry, kit, guid, report);
 
             if (report.Issues.Count == 0)
             {
@@ -167,7 +165,7 @@ namespace CosmicShore.Editor.Froglet
         // ── 3. Cross-scene drift - the one that matters ──────────────────────────
 
         static void CheckCrossSceneDrift(GameModePrefabEntry entry, GameModePrefabKitSO kit,
-                                         string guid, string assetPath, KitEntryReport report)
+                                         string guid, KitEntryReport report)
         {
             var excludes = new List<string>();
             if (kit.GloballyExcludedScenes != null) excludes.AddRange(kit.GloballyExcludedScenes);
@@ -185,39 +183,6 @@ namespace CosmicShore.Editor.Froglet
                 .ToList();
 
             if (drifted.Count == 0) return;
-
-            var (uniform, divergent) = PrefabInstanceSceneScanner.ClassifyOverrides(
-                drifted.Select(t => t.inst).ToList(), ignored);
-            report.UniformKeys = uniform;
-            report.DivergentKeys = divergent;
-
-            // Headline: the consolidation opportunity.
-            if (uniform.Count > 0 && drifted.Count > 1)
-            {
-                var scenePaths = drifted.Select(t => t.inst.ScenePath).Distinct().ToList();
-                var donor = scenePaths[0];
-                report.Issues.Add(new KitIssue
-                {
-                    Severity = KitSeverity.Warning,
-                    Message = $"{uniform.Count} override(s) are IDENTICAL in all {scenePaths.Count} scenes - " +
-                              $"they belong in the prefab, not the scenes. {divergent.Count} genuinely differ per scene.",
-                    FixLabel = "Consolidate",
-                    NeedsConfirm = true,
-                    FixTooltip =
-                        $"Apply {uniform.Count} identical override(s) to '{System.IO.Path.GetFileName(assetPath)}' " +
-                        $"from '{System.IO.Path.GetFileNameWithoutExtension(donor)}', then revert them in the other " +
-                        $"{scenePaths.Count - 1} scene(s).\n\nEvery listed scene will be opened and SAVED. " +
-                        "The per-scene values that genuinely differ are left untouched.",
-                    Fix = () =>
-                    {
-                        if (!PrefabDriftFixer.PrepareForSceneWork()) return;
-                        var res = PrefabDriftFixer.ConsolidateUniform(
-                            guid, scenePaths, new HashSet<string>(uniform), donor);
-                        Debug.Log($"[PrefabKit] Consolidated '{assetPath}': {res}");
-                        foreach (var w in res.Warnings) Debug.LogWarning($"[PrefabKit] {w}");
-                    },
-                });
-            }
 
             // Per-scene detail.
             foreach (var (inst, count) in drifted)
@@ -241,17 +206,24 @@ namespace CosmicShore.Editor.Froglet
                         var asset = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(scenePath);
                         if (asset != null) { EditorGUIUtility.PingObject(asset); Selection.activeObject = asset; }
                     },
-                    FixLabel = "Revert scene",
-                    NeedsConfirm = true,
-                    FixTooltip = $"Open '{scenePath}', discard ALL local overrides on this instance so it matches " +
-                                 "the prefab exactly, and save the scene.\n\nUse Consolidate instead if the scene's " +
-                                 "values are the ones you want to keep.",
+                    // Ignore, not fix. Some scenes SHOULD look different - Maelstrom is a hub that
+                    // chains the playable modes, so it strips the gameplay HUD and adds its own
+                    // tournament panels on purpose. Marking it ignored records that judgement in
+                    // the kit config instead of leaving a permanent false alarm.
+                    FixLabel = "Ignore scene",
+                    NeedsConfirm = false,
+                    FixTooltip = $"Stop reporting '{System.IO.Path.GetFileNameWithoutExtension(scenePath)}' " +
+                                 "for this prefab. Use this for hub / tool scenes that are meant to " +
+                                 "customise the prefab. Writes to the kit config; nothing in the scene changes.",
                     Fix = () =>
                     {
-                        if (!PrefabDriftFixer.PrepareForSceneWork()) return;
-                        var res = PrefabDriftFixer.RevertInstance(scenePath, guid);
-                        Debug.Log($"[PrefabKit] Reverted '{scenePath}': {res}");
-                        foreach (var w in res.Warnings) Debug.LogWarning($"[PrefabKit] {w}");
+                        entry.ExcludeScenesContaining ??= new List<string>();
+                        var key = System.IO.Path.GetFileNameWithoutExtension(scenePath);
+                        if (!entry.ExcludeScenesContaining.Contains(key))
+                            entry.ExcludeScenesContaining.Add(key);
+                        EditorUtility.SetDirty(kit);
+                        AssetDatabase.SaveAssets();
+                        Debug.Log($"[PrefabKit] '{key}' is now ignored for '{entry.ResolvedName}'.");
                     },
                 });
             }

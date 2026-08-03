@@ -2122,11 +2122,12 @@ automatically in `FrogletTools > Froglet Master Tool`.** The `Tools/Cosmic Shore
   accent stripes, semantic Ok/Warn/Error/Info colours, light-skin adaptation) so every Froglet
   window reads as one product. Do not hand-roll `GUI.color` juggling in a new window — extend the
   palette instead.
-- **Prefab drift is a first-class check.** `PrefabInstanceSceneScanner` reads prefab-instance
-  overrides straight out of scene YAML (fast, read-only, no scenes opened) and
-  `PrefabDriftFixer` performs every write through `PrefabUtility` on a properly loaded scene.
-  Use these rather than opening scenes to interrogate `PrefabUtility`, and never hand-edit scene
-  or prefab YAML to "apply" an override.
+- **Prefab drift is a read-only check.** `PrefabInstanceSceneScanner` reads prefab-instance
+  overrides straight out of scene YAML (fast, no scenes opened) so the Prefab Kit can report which
+  scenes run an edited copy of a shared prefab. It never writes: fixing drift is done in Unity's
+  own Overrides dropdown, where each change is visible before it is applied. A bulk apply/revert
+  was tried and removed — a large unreviewable edit across many scenes is the wrong tool for
+  repairing scene/prefab divergence. Never hand-edit scene or prefab YAML to "apply" an override.
 - **Editor-tool config belongs in a ScriptableObject**, not a hard-coded list in the window
   (`GameModePrefabKitSO` is the reference) — same config-separation rule as gameplay.
 
