@@ -233,6 +233,40 @@ per task; it is cheap.
   become false doctrine — this session found its own outdated rationalization
   quoted in a header comment).
 
+### Trap: a clean merge can still be a semantic conflict (duplicate members)
+
+Origin: `Flora.LeafSize` (2026-08). Two branches each added the SAME member to
+the same class at DIFFERENT file offsets — one above `Grow()/Plant()`, one below.
+Git saw two non-overlapping hunks, auto-merged both, reported no conflict, and
+shipped a `CS0102: already contains a definition` that only surfaced when Unity
+compiled. **Zero conflict markers is not evidence the merge is correct.** Two
+branches converging on the same idea is exactly when this fires — and the more
+similar the sibling branches, the likelier it is.
+
+Detection, after any merge of long-lived sibling branches:
+
+1. **Find the files the merge actually combined** — the ones changed relative to
+   BOTH parents. Everything else is a fast-forward of one side and cannot have
+   this defect:
+   ```sh
+   for f in $(git diff --name-only $M^1 $M -- '*.cs'); do
+     git diff --quiet $M^1 $M -- "$f" || a=y
+     git diff --quiet $M^2 $M -- "$f" || b=y
+     [ "$a$b" = yy ] && echo "BOTH-SIDES: $f"; a= b=
+   done
+   ```
+   This narrowed a 26-file merge to the single genuinely-combined file.
+2. **Scan those files for repeated member names** (regex the
+   `public|protected|private|internal … Name =>` / `{ get` declarations per file
+   and report `Counter` entries > 1). Expect false positives from generated
+   input-action assets (per-map wrapper classes) and generic `Singleton<T>`
+   variants — same name, different enclosing type. Verify the enclosing class
+   before calling one a defect.
+
+Fix by MERGING the two doc comments into one declaration, not by deleting one —
+each side wrote its comment for a reason and the surviving comment should carry
+both meanings.
+
 ## 4.5 Technique: offline simulation of a deterministic generator
 
 Origin: the Caldera/Ourobor cell rework (2026-08). §6 below used to list
