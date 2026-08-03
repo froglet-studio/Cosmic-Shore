@@ -93,5 +93,5 @@ MonoBehaviour:
     - {fileID: 11400000, guid: 0abdfac5a80d40789934b73f4e838046, type: 2}
     - {fileID: 11400000, guid: 951335f3d27448a3a496ab8ec29279a0, type: 2}
     - {fileID: 11400000, guid: 801c826e68b0477e89de35fae8ff128e, type: 2}
-  stationSpacing: 45
-  stationRadius: 6
+  stationSpacing: 90
+  stationRadius: 12

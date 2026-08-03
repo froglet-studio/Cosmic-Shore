@@ -20,4 +20,4 @@ MonoBehaviour:
   accentColor: {r: 1, g: 0.85, b: 0.2, a: 1}
   vesselCollection: []
   stationSpacing: 60
-  matrixDistanceFactor: 3
+  matrixDistanceFactor: 6

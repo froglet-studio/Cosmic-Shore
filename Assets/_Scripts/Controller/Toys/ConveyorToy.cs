@@ -6,41 +6,118 @@ namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// The Wanderway toy: fly through it and you LEAVE for a wander. The cell reverts to its bare
-    /// environment-free canvas, a belt of little worlds — grand assemblies and gate runs, tunnels,
-    /// orchards, menageries — starts streaming ahead of your flight path, and your trail becomes a
-    /// rolling tether: a fixed-length ribbon that follows you (the tail recycles into the pool the
-    /// head lays from) with the station that brings you home riding its far end.
+    /// environment-free canvas, a belt of little worlds - grand assemblies and gate runs, tunnels,
+    /// canyons, orchards, meadows, menageries - starts streaming ahead of your flight path scene
+    /// after scene, and your trail becomes a rolling tether: a fixed-length ribbon that follows you
+    /// (the tail recycles into the pool the head lays from) with the station that brings you home
+    /// riding its far end.
     ///
-    /// Two things end the wander and both do the same thing (see <see cref="WanderwayRun"/>): the
-    /// return station at the end of your tether, and the overview button (or gamepad Start), which
-    /// drops freestyle. Another pass through this toy ends it too. The toy's body and label flip to
-    /// show which way the next pass will toggle it.
+    /// Three things end the wander and all do the same thing (see <see cref="WanderwayRun"/>): the
+    /// return station at the tail of your tether, another pass through this toy, and the overview
+    /// button (or gamepad Start), which drops freestyle. The label flips to show which way the next
+    /// pass will toggle it; the emblem's orbit speed carries the live state.
     ///
-    /// The belt itself is a closed system: its whole conserved stock is built once, behind a load
-    /// veil, on the first wander, and every arrival after that is transport. No score, no end
-    /// condition — wander as long as you like.
+    /// The belt is a closed system: its whole conserved stock is built ONCE, behind a load veil, on
+    /// the first wander, and every arrival after that is transport (the same mass, endlessly
+    /// re-arranged). No score, no end condition - wander as long as you like.
     /// </summary>
     public class ConveyorToy : Toy
     {
+        /// <summary>The recipes the emblem shows: a gate run, a tunnel, an archway, a torus knot.</summary>
+        static readonly int[] EmblemRecipes = { 0, 2, 16, 30 };
+
+        // Orbit rates that ARE the belt state. Motion is the one identity channel that survives
+        // distance, and unlike the old two-state label/tint it tells the truth about all three:
+        // a belt that is running but dormant (you left freestyle) is neither off nor flowing.
+        const float OrbitStopped = 0f;
+        const float OrbitDormant = 3f;
+        const float OrbitFlowing = 18f;
+
         ConveyorConfig _cfg;
         MicrosceneConveyor _conveyor;
         WanderwayRun _run;
         bool _conveyorPrimed;   // the stock is built ONCE - a later wander resumes, never re-primes
         TMP_Text _label;
-        MeshRenderer _body;
-        Color _accent = Color.white;
 
         public void Configure(ConveyorConfig cfg) => _cfg = cfg;
 
         protected override void OnInitialized()
         {
             _label = GetComponentInChildren<TMP_Text>(true);
-            _body = GetComponentInChildren<MeshRenderer>(true);
-            if (Definition) _accent = Definition.AccentColor;
 
             // Show the "off" affordance from the start so the first pass reads as a switch.
             if (_label)
                 _label.text = $"{DisplayName}\n<size=60%>fly through to wander</size>";
+
+            AttachEmblem(new EmblemSource(this), OrbitStopped);
+        }
+
+        /// <summary>
+        /// The Wanderway in one glyph: four real microscenes - built by the same
+        /// <see cref="MicroscenePatterns"/> planner the belt itself runs, so they are literally
+        /// scenes you will fly through - orbiting a fifth. The orbit's SPEED is the belt state.
+        ///
+        /// Planning is pure trig against a seeded RNG and lays no prism: the belt's conserved stock
+        /// is untouched, and the emblem costs a mesh, not mass.
+        /// </summary>
+        sealed class EmblemSource : ToyEmblem.IEmblemSource
+        {
+            readonly ConveyorToy _toy;
+            public EmblemSource(ConveyorToy toy) => _toy = toy;
+
+            public int SatelliteCount => 3;
+
+            // Microscenes wear the real per-domain prism materials.
+            public bool UsesSharedMaterial => false;
+
+            public bool TryBuildSlot(int slot, Transform holder, float radius, Material shared, out bool heavy)
+            {
+                heavy = false;
+                var cfg = _toy._cfg;
+                if (cfg == null || slot < 0 || slot >= EmblemRecipes.Length) return false;
+
+                // Seeded off the config, never re-rolled: recipes randomise their parameters on
+                // every Plan call, and an icon that changes shape between rebuilds is a bug.
+                var rng = new System.Random(cfg.Seed * 31 + slot);
+                var plan = MicroscenePatterns.Plan(EmblemRecipes[slot], rng, prismBudget: 60,
+                    radius: cfg.SceneRadius, maxCrystals: 0, cfg.Palette);
+                if (plan?.Prisms is not { Count: > 0 }) return false;
+
+                var miniature = CellMiniatureBuilder.BuildFromLays(plan.Prisms, radius, 120, 1f,
+                    $"Micro_{EmblemRecipes[slot]}");
+                if (!miniature.IsValid) return false;
+
+                var go = ToyFactory.AddMiniatureBody(holder, miniature, _toy.Context, "Microscene");
+                if (!go) return false;
+
+                // The emblem built these meshes, so the emblem frees them.
+                _toy.Emblem?.Own(miniature.Mesh);
+                return true;
+            }
+
+            public bool TryGetLiveKey(out object key)
+            {
+                key = null;
+                return false; // state is carried by orbit speed, not by a rebuild
+            }
+
+            public bool TryGetLiveTint(out Color tint)
+            {
+                tint = default;
+                return false; // microscenes wear their own real domain materials
+            }
+        }
+
+        // The belt has THREE states and the emblem shows all three. Must call base.Update() -
+        // Toy.Update owns the exit-gated re-arm, and shadowing it ships a toy that never fires.
+        protected override void Update()
+        {
+            base.Update();
+            if (!Emblem) return;
+
+            bool running = _run && _run.IsRunning;
+            bool freestyle = Context?.IsFreestyleActive == null || Context.IsFreestyleActive();
+            Emblem.SetOrbitRate(!running ? OrbitStopped : freestyle ? OrbitFlowing : OrbitDormant);
         }
 
         protected override void OnActivated(IVesselStatus localVessel)
@@ -74,9 +151,9 @@ namespace CosmicShore.Gameplay
             // stacking a second cover on top of it.
             _run.Begin(localVessel);
 
-            // Begin BUILDS the belt's whole conserved stock; every later wander resumes the
-            // stock that already exists. Keyed off an explicit flag, not IsRunning: a stopped belt
-            // is not an unbuilt one, and re-priming would mint a second pool.
+            // Begin BUILDS the belt's whole conserved stock; every later wander resumes the stock
+            // that already exists. Keyed off an explicit flag, not IsRunning: a stopped belt is not
+            // an unbuilt one, and re-priming would mint a second pool.
             if (_conveyorPrimed)
             {
                 _conveyor.Resume(localVessel);
@@ -113,10 +190,15 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Flip the toy's look so the player can read the wander state at a glance - and know the
-        /// next pass toggles it the other way. ON = bright white-hot body + "wandering" label;
-        /// OFF = the definition's accent + the invitation. Rebloom signals the in-place change
-        /// (the established flip-set pattern).
+        /// Flip the toy's look so the player can read the belt state at a glance - and know the
+        /// next pass toggles it the other way. The STATE itself is carried by the emblem's orbit
+        /// speed (see <see cref="Update"/>); this just retexts the label and reblooms to signal the
+        /// in-place change (the established flip-set pattern).
+        ///
+        /// It used to also write <c>_body.sharedMaterial.color</c> - which was the SHARED, cached
+        /// per-accent material from <see cref="ToyFactory.AccentMaterial"/> ("nothing mutates these
+        /// after creation"): it repainted every body using that accent and desynchronised the
+        /// cache's colour key. Latent only because this toy's accent happened to be unique.
         /// </summary>
         void ShowState(bool on)
         {
@@ -124,9 +206,6 @@ namespace CosmicShore.Gameplay
                 _label.text = on
                     ? $"{DisplayName}\n<size=60%>wandering - fly through to come home</size>"
                     : $"{DisplayName}\n<size=60%>fly through to wander</size>";
-
-            if (_body && _body.sharedMaterial)
-                _body.sharedMaterial.color = on ? Color.Lerp(_accent, Color.white, 0.55f) : _accent;
 
             Rebloom();
         }

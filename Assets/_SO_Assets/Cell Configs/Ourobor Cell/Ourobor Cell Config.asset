@@ -10,10 +10,10 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 01f934d50526431a9392a6ceca1dc33d, type: 3}
-  m_Name: Caldera Cell Config
+  m_Name: Ourobor Cell Config
   m_EditorClassIdentifier: 
-  CellName: Caldera
-  Description: Four forges ringing the core - lava runs for the brave
+  CellName: Ourobor
+  Description: One-sided country - cities on both faces, no up anywhere
   Icon: {fileID: 21300000, guid: 6aa1c06e11b265744a5f9fa8858ac72a, type: 3}
   Difficulty: 2
   CellEndGameScore: 0
@@ -26,15 +26,15 @@ MonoBehaviour:
   CellModifiers:
   - {fileID: 8058406376250941529, guid: daa37ae0e7af4b04383c1c4e6e76817d, type: 3}
   SpawnProfile: {fileID: 11400000, guid: 4c06f97afbda28c4ea70d435976318d2, type: 2}
-  EnvironmentPrefab: {fileID: 5250000000000103, guid: 127adedb7cdf456fba9c480b62344de9, type: 3}
+  EnvironmentPrefab: {fileID: 5250000000000203, guid: 22766614bbb74e99a8fdd1ee048deb6a, type: 3}
   EnvironmentIntensity: 1
   SenseRadiusOverride: 0
   PhaseThresholds:
-    RestlessEnter: 42053
-    RestlessExit: 41853
-    FrenzyEnter: 44953
-    FrenzyExit: 44353
-    RestlessEnterVolume: 1221953
-    RestlessExitVolume: 1218753
-    FrenzyEnterVolume: 1268353
-    FrenzyExitVolume: 1258753
+    RestlessEnter: 38589
+    RestlessExit: 38389
+    FrenzyEnter: 41489
+    FrenzyExit: 40889
+    RestlessEnterVolume: 762649
+    RestlessExitVolume: 759449
+    FrenzyEnterVolume: 809049
+    FrenzyExitVolume: 799449
