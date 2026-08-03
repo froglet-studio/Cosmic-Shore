@@ -246,7 +246,7 @@ namespace CosmicShore.Editor.Froglet
 
             // Expand toggle over the text area
             var expandZone = new Rect(row.x, row.y, row.width - 372f, row.height);
-            if (report is { Issues.Count: > 0 })
+            if (report != null && report.Issues.Count > 0)
             {
                 EditorGUIUtility.AddCursorRect(expandZone, MouseCursor.Link);
                 if (GUI.Button(expandZone, GUIContent.none, GUIStyle.none))
