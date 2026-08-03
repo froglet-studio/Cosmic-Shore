@@ -1009,7 +1009,6 @@ namespace CosmicShore.Gameplay
 
             SpawnCytoplasm();
             ApplyModifiers();
-            SpawnCytoplasm();
             StartSpawnerForMode();
         }
 
@@ -1745,6 +1744,13 @@ namespace CosmicShore.Gameplay
         void SpawnCytoplasm()
         {
             if (!cellConfigData || cellConfigData.CytoplasmPrefab == null) return;
+
+            // Guarded for repeat passes, exactly like the environment spawn: the field holds ONE
+            // cytoplasm and every cleanup path (ResetCell, the swap retire, the toy re-parent) reads
+            // only that field, so a second Instantiate would orphan the first - an untracked
+            // SnowChanger drifting in the scene forever, invisible to the Cell that made it. The
+            // Cell owns its visuals; owning them means never losing one.
+            if (spawnedCytoplasm) return;
 
             using (LoadInsights.Measure(LoadInsightCategory.Environment,
                        $"Cytoplasm (SnowChanger) instantiate+init (cell {ID})"))

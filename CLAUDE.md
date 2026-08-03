@@ -74,6 +74,18 @@ outcome is optimization, not life). Use the `/ecology` skill for any change here
   `*EnterVolume`/`*ExitVolume` (else the ×16 count-derivation sets the ladder ~5× too high and fauna
   never hunt) and lower `SpawnProfile.FaunaFoodFloor` so herbivores seed against the thinner prey.
   Full table + rationale: `Docs/ECOSYSTEM_MASTERPLAN.md §5.1`.
+  **Corollary — never hand-place a membrane/nucleus/cytoplasm in a scene.** The Cell instantiates
+  each of them itself in `SpawnVisuals` from the config, and *only* that instance is tracked: every
+  nucleus consumer (`NucleusWorldRadius`, `RefreshNucleusControlRadius`, `IsInsideNucleus`,
+  `SetNucleusWorldRadius`) reads the Cell's private `nucleus` field, and the cleanup/swap paths read
+  `membrane`/`nucleus`/`spawnedCytoplasm`. A scene-placed copy is therefore a *pure* duplicate — it
+  renders on top of the real one and no bookkeeping can see it (three scenes shipped a coincident
+  `Nucleus.prefab` this way). Same rule inside `Cell` itself: `SpawnCytoplasm` is guarded, because
+  a second call overwrote the field and orphaned an untracked `SnowChanger` per init. **To change a
+  Cell-owned visual's size, author a new `CellConfigDataSO` pointing at a resized prefab** (Scurry's
+  `Scurry Cell Config` → `HalfNucleus.prefab`) — do not place, scale, or duplicate one in a scene.
+  Note a scene backdrop is NOT this: `SkyboxModel` (`MembraneBase`/`BigMembraneVariant`) is a
+  different asset from any config's `MembranePrefab` and is the only geometry in the tool scenes.
 - **A world you load is opt-in, and swapping one is ACTIVE removal — not decay.** An authored
   `EnvironmentPrefab` costs a multi-second veiled build, so a scene may boot
   `CellTypeChoiceOptions.EnvironmentFree` (the first config with no environment — Menu_Main does)
