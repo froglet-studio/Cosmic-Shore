@@ -42,9 +42,6 @@ namespace CosmicShore.Gameplay
             DebrisSpeedLimit = debrisSpeedLimit;
         }
 
-        /// <summary>Speed the impact vector carries before any clamp.</summary>
-        public float Magnitude => Speed * Inertia;
-
         /// <summary>Impact vector along an already-normalized direction (Burst job output).</summary>
         public Vector3 Along(float3 unitDirection) => (Vector3)(unitDirection * (Speed * Inertia));
 

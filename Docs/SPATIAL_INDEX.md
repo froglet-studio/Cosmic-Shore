@@ -448,6 +448,17 @@ lost coverage. The lever for shortening it is the per-prism destruction cost
   use it for"). Routing mound blocks through the real `Initialize` lifecycle
   would retire that probe, but changes their layer/collider/grow behavior and
   must be its own tested change.
+- The conic explosion's **vessel** hit volume is still a sphere, not the cone.
+  Prisms go through the exact `ProcessExplosionConeFrame` slab, but
+  explosion->vessel effects resolve through `AOEConicExplosion`'s trigger
+  `SphereCollider`, which rides the cone's MIDPOINT with radius = half the
+  current base width. At the Dolphin's max charge that ball spans roughly
+  z in [400, 2000] of a 2400-long cone: it bulges outside the mantle mid-cone,
+  never reaches the tip, and never covers the apex region. The impact VECTOR is
+  already apex-radial (`CalculateImpactVector` overrides to the cone container),
+  so only WHO gets hit is wrong. Fixing it means a cone containment test on the
+  vessel path — a gameplay change to the blast's reach, so it wants its own
+  branch and a play test, not a drive-by.
 
 ## Roadmap
 
