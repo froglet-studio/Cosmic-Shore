@@ -1,7 +1,11 @@
+// UnityEngine stays OUTSIDE the guard: the class declaration below is unconditional, so
+// MonoBehaviour must resolve in Release too (where neither symbol is defined). Guarding this
+// one using is what broke the Release player build with CS0246 - see DiagnosticsHUD, which
+// this type mirrors, for the same layout.
+using UnityEngine;
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
 using System;
 using Unity.Netcode;
-using UnityEngine;
 using UnityEngine.SceneManagement;
 #endif
 

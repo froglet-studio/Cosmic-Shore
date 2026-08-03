@@ -36,11 +36,19 @@ namespace CosmicShore.ScriptableObjects
                                             "spacing, measured from the toy along the outward radial (away from " +
                                             "the cell centre). You fly AT the toy and keep going, so this is the " +
                                             "gap you cross before the paintings.")]
-        float matrixDistanceFactor = 3f;
+        float matrixDistanceFactor = 4f;
+
+        [SerializeField, Min(0.25f), Tooltip("Station size as a multiple of the toy's own body radius. The " +
+                                             "station IS a miniature of its painting, so it has to be big " +
+                                             "enough to identify without reading the label - which is where " +
+                                             "the toybox is heading. Spacing rides along (it is derived from " +
+                                             "this radius).")]
+        float iconScaleBodies = 2f;
 
         public float PaintingClearance => paintingClearance;
         public float ClusterSpacingBodies => clusterSpacingBodies;
         public float MatrixDistanceFactor => matrixDistanceFactor;
+        public float IconScaleBodies => iconScaleBodies;
 
         public override void Spawn(Transform parent, ToyPlacement placement, ToyContext context)
         {

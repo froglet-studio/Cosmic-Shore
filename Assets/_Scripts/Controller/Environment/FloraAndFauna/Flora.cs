@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using CosmicShore.Gameplay;
 using CosmicShore.Utility;
 using UnityEngine;
@@ -29,6 +30,29 @@ namespace CosmicShore.Gameplay
 
         public abstract void Grow();
         public abstract void Plant();
+
+        /// <summary>The prism size this species' leaves grow to. Also the unit its lattice bonds at.</summary>
+        protected Vector3 LeafSize => leafSize;
+
+        /// <summary>
+        /// A <b>pure preview of this species' growth pattern</b>: run the growth rule in local
+        /// space and report where prisms WOULD land, spawning nothing at all.
+        ///
+        /// Flora have no art model - a species IS its growth rule - so this is the only honest way
+        /// to draw one as an icon (the Lifeform bench's stations and its toy emblem). It is not a
+        /// second implementation of growth for gameplay: no prism, no spindle, no GameObject, no
+        /// cell, no spatial-index reservation, no config mutation, and it must never touch
+        /// <c>UnityEngine.Random</c> (that would perturb a shared deterministic sequence) - the
+        /// caller passes a seed and gets the same shape every time.
+        ///
+        /// Default is false = "this species has no preview", and the caller falls back. Overrides
+        /// mirror their own <see cref="Grow"/> and are expected to drift only in ways a thumbnail
+        /// cannot show.
+        /// </summary>
+        /// <param name="budget">Maximum prisms to report.</param>
+        /// <param name="seed">Deterministic seed for any branching choices.</param>
+        /// <param name="into">Receives local-space prism poses.</param>
+        public virtual bool TryPreviewGrowth(int budget, int seed, List<SpawnPoint> into) => false;
 
         // Optional pinned planting spot. Plant() implementations normally disperse the flora
         // across the cell; a caller that needs it to root at a KNOWN spot (the Lifeform Matrix

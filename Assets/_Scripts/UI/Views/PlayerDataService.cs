@@ -98,12 +98,10 @@ namespace CosmicShore.UI
             IsInitialized = true;
             OnProfileChanged?.Invoke(CurrentProfile);
 
-            // Notify currency/XP displays of the freshly-loaded cloud values. These views
-            // subscribe to the static balance/xp events but those are otherwise only raised on
-            // mutation (AddCrystals/AddXP), so without this they'd show the local-default 0
-            // until the next change.
+            // Notify currency displays of the freshly-loaded cloud value. Those views subscribe
+            // to the static balance event, which is otherwise only raised on mutation
+            // (AddCrystals), so without this they'd show the local-default 0 until the next change.
             OnCrystalBalanceChanged?.Invoke(GetCrystalBalance());
-            OnXPChanged?.Invoke(GetXP());
         }
 
         /// <summary>
@@ -249,7 +247,6 @@ namespace CosmicShore.UI
             repoData.SchemaVersion = CurrentProfile.SchemaVersion;
             repoData.Identity = CurrentProfile.Identity;
             repoData.Economy = CurrentProfile.Economy;
-            repoData.Progression = CurrentProfile.Progression;
             repoData.Lifecycle = CurrentProfile.Lifecycle;
 
             ds.ProfileRepo.MarkDirty();
@@ -282,6 +279,17 @@ namespace CosmicShore.UI
         }
 
         // ----------------- Public API -----------------
+
+        /// <summary>
+        /// Flushes the profile to Cloud Save immediately, on top of the debounced save.
+        /// Use for writes where a dropped save is player-visible and unacceptable - notably
+        /// real-money entitlements (<see cref="CosmicShore.Core.EpisodeTokenService"/>).
+        /// </summary>
+        public void PersistProfileNow()
+        {
+            ScheduleSave();
+            SaveProfileImmediateAsync();
+        }
 
         public void SetAvatarId(int avatarId)
         {
@@ -334,34 +342,9 @@ namespace CosmicShore.UI
 
         public static event Action<int> OnCrystalBalanceChanged;
 
-        // Raised whenever the player's XP total changes (and once on cloud load).
-        public static event Action<int> OnXPChanged;
-
         public int GetCrystalBalance()
         {
             return CurrentProfile?.Economy?.CrystalBalance ?? 0;
-        }
-
-        public int GetXP()
-        {
-            return CurrentProfile?.Progression?.Xp ?? 0;
-        }
-
-        /// <summary>
-        /// Adds XP to the player's profile, persists it, and notifies listeners.
-        /// Mirrors <see cref="AddCrystals"/> so the XP progress bar has a single,
-        /// authoritative earning + persistence path.
-        /// </summary>
-        public int AddXP(int amount)
-        {
-            if (CurrentProfile == null || amount <= 0) return GetXP();
-
-            CurrentProfile.Progression.Xp += amount;
-            ScheduleSave();
-            OnXPChanged?.Invoke(CurrentProfile.Progression.Xp);
-            OnProfileChanged?.Invoke(CurrentProfile);
-            CSDebug.Log($"[PlayerDataService] Added {amount} XP. Total: {CurrentProfile.Progression.Xp}");
-            return CurrentProfile.Progression.Xp;
         }
 
         public int AddCrystals(int amount, string source = null)

@@ -16,7 +16,7 @@ namespace CosmicShore.Gameplay
     ///   • no crystal at all                   → a default elemental crystal is provisioned from
     ///                                           ElementalCrystalSet (Resources), random element
     ///
-    /// The misconfigured branches log loudly; the editor validator (Tools ▸ Cosmic Shore ▸
+    /// The misconfigured branches log loudly; the editor validator (FrogletTools ▸ Validation ▸
     /// Validate Lifeform Crystals) flags the same prefabs at author time so they get fixed.
     /// Per the prompter: element is per-lifeform AUTHORED - random is only the misconfig fallback.
     /// </summary>

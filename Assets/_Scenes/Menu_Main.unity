@@ -729,13 +729,13 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3197094124088707225, guid: cb702179ff5b42f41a3521ccd59e6934,
         type: 3}
-      propertyPath: CellConfigs.Array.size
-      value: 7
+      propertyPath: cellTypeChoiceOptions
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 3197094124088707225, guid: cb702179ff5b42f41a3521ccd59e6934,
         type: 3}
-      propertyPath: cellTypeChoiceOptions
-      value: 2
+      propertyPath: CellConfigs.Array.size
+      value: 8
       objectReference: {fileID: 0}
     - target: {fileID: 3197094124088707225, guid: cb702179ff5b42f41a3521ccd59e6934,
         type: 3}
@@ -807,6 +807,12 @@ PrefabInstance:
       propertyPath: 'CellConfigs.Array.data[6]'
       value: 
       objectReference: {fileID: 11400000, guid: d4601f67eef74f77a459d65deea3f94d,
+        type: 2}
+    - target: {fileID: 3197094124088707225, guid: cb702179ff5b42f41a3521ccd59e6934,
+        type: 3}
+      propertyPath: 'CellConfigs.Array.data[7]'
+      value: 
+      objectReference: {fileID: 11400000, guid: 25badd433d2d40dca4fa32e60efd9af1,
         type: 2}
     - target: {fileID: 7817456538282590180, guid: cb702179ff5b42f41a3521ccd59e6934,
         type: 3}
@@ -5042,7 +5048,6 @@ MonoBehaviour:
   - {fileID: 1419570605}
   - {fileID: 1867942830}
   menuVesselClass: 6
-  menuPlayerCount: 3
   menuIntensity: 1
 --- !u!114 &1486013852
 MonoBehaviour:
@@ -22380,11 +22385,6 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 6818916199485298600}
     m_Modifications:
-    - target: {fileID: 1111638120248792970, guid: 0b36fa278f9a30d4c8f44e846674c904,
-        type: 3}
-      propertyPath: screenSwitcher
-      value: 
-      objectReference: {fileID: 4216411968520269688}
     - target: {fileID: 38250029498242172, guid: 0b36fa278f9a30d4c8f44e846674c904,
         type: 3}
       propertyPath: m_AnchorMax.x
@@ -23265,6 +23265,11 @@ PrefabInstance:
       propertyPath: m_fontSizeBase
       value: 33.600002
       objectReference: {fileID: 0}
+    - target: {fileID: 1111638120248792970, guid: 0b36fa278f9a30d4c8f44e846674c904,
+        type: 3}
+      propertyPath: screenSwitcher
+      value: 
+      objectReference: {fileID: 4216411968520269688}
     - target: {fileID: 1181871370443078396, guid: 0b36fa278f9a30d4c8f44e846674c904,
         type: 3}
       propertyPath: m_SizeDelta.x
@@ -46225,7 +46230,7 @@ PrefabInstance:
   serializedVersion: 2
   m_Modification:
     serializedVersion: 3
-    m_TransformParent: {fileID: 4432980322083613555}
+    m_TransformParent: {fileID: 3251318990371052344}
     m_Modifications:
     - target: {fileID: 1255148168928009669, guid: 41fed1c4dafc82a4fbda27caacb9752c,
         type: 3}
@@ -46345,6 +46350,11 @@ PrefabInstance:
     - target: {fileID: 2608508882855771985, guid: 41fed1c4dafc82a4fbda27caacb9752c,
         type: 3}
       propertyPath: m_AnchoredPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3342902082054966767, guid: 41fed1c4dafc82a4fbda27caacb9752c,
+        type: 3}
+      propertyPath: m_Alpha
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 3940027759893028709, guid: 41fed1c4dafc82a4fbda27caacb9752c,
@@ -46470,7 +46480,7 @@ PrefabInstance:
     - target: {fileID: 8951568391810790107, guid: 41fed1c4dafc82a4fbda27caacb9752c,
         type: 3}
       propertyPath: m_SizeDelta.x
-      value: 0
+      value: -0.000061035156
       objectReference: {fileID: 0}
     - target: {fileID: 8951568391810790107, guid: 41fed1c4dafc82a4fbda27caacb9752c,
         type: 3}
@@ -46500,22 +46510,22 @@ PrefabInstance:
     - target: {fileID: 8951568391810790107, guid: 41fed1c4dafc82a4fbda27caacb9752c,
         type: 3}
       propertyPath: m_LocalRotation.x
-      value: 0
+      value: -0
       objectReference: {fileID: 0}
     - target: {fileID: 8951568391810790107, guid: 41fed1c4dafc82a4fbda27caacb9752c,
         type: 3}
       propertyPath: m_LocalRotation.y
-      value: 0
+      value: -0
       objectReference: {fileID: 0}
     - target: {fileID: 8951568391810790107, guid: 41fed1c4dafc82a4fbda27caacb9752c,
         type: 3}
       propertyPath: m_LocalRotation.z
-      value: 0
+      value: -0
       objectReference: {fileID: 0}
     - target: {fileID: 8951568391810790107, guid: 41fed1c4dafc82a4fbda27caacb9752c,
         type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: 0
+      value: -4800
       objectReference: {fileID: 0}
     - target: {fileID: 8951568391810790107, guid: 41fed1c4dafc82a4fbda27caacb9752c,
         type: 3}
@@ -58620,6 +58630,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   sharpAnimations: 1
   closeOnGamepadB: 1
+  blockUIBehind: 1
   ModalType: 3
   windowAnimator: {fileID: 0}
   screenSwitcher: {fileID: 4216411968520269688}
@@ -61806,6 +61817,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   sharpAnimations: 1
   closeOnGamepadB: 1
+  blockUIBehind: 1
   ModalType: 8
   windowAnimator: {fileID: 0}
   screenSwitcher: {fileID: 4216411968520269688}
@@ -62893,6 +62905,7 @@ RectTransform:
   m_Children:
   - {fileID: 1769152617528871830}
   - {fileID: 797780468}
+  - {fileID: 1078298652}
   m_Father: {fileID: 2525219157635147276}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -69066,6 +69079,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   sharpAnimations: 1
   closeOnGamepadB: 1
+  blockUIBehind: 1
   ModalType: 9
   windowAnimator: {fileID: 0}
   screenSwitcher: {fileID: 4216411968520269688}
@@ -74167,6 +74181,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   sharpAnimations: 1
   closeOnGamepadB: 1
+  blockUIBehind: 1
   ModalType: 10
   windowAnimator: {fileID: 9200687658501214766}
   screenSwitcher: {fileID: 4216411968520269688}
@@ -74738,7 +74753,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   easing: 0.25
   currentScreen: 0
-  activeModalStack: 
+  activeModalStack: []
   screens:
   - id: 4
     root: {fileID: 38145210908179955}
@@ -77765,7 +77780,6 @@ RectTransform:
   - {fileID: 5804654115376219870}
   - {fileID: 1210044415}
   - {fileID: 1799603819}
-  - {fileID: 1078298652}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -91463,6 +91477,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   sharpAnimations: 1
   closeOnGamepadB: 1
+  blockUIBehind: 1
   ModalType: 0
   windowAnimator: {fileID: 0}
   screenSwitcher: {fileID: 4216411968520269688}
@@ -130648,6 +130663,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   sharpAnimations: 0
   closeOnGamepadB: 1
+  blockUIBehind: 1
   ModalType: 7
   windowAnimator: {fileID: 0}
   screenSwitcher: {fileID: 4216411968520269688}
@@ -131754,6 +131770,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   sharpAnimations: 0
   closeOnGamepadB: 1
+  blockUIBehind: 1
   ModalType: 4
   windowAnimator: {fileID: 0}
   screenSwitcher: {fileID: 4216411968520269688}
@@ -134326,6 +134343,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   sharpAnimations: 1
   closeOnGamepadB: 1
+  blockUIBehind: 1
   ModalType: 2
   windowAnimator: {fileID: 0}
   screenSwitcher: {fileID: 4216411968520269688}

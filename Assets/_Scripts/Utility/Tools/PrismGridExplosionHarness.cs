@@ -234,7 +234,7 @@ namespace CosmicShore.Utility
             if (config == null)
             {
                 Debug.LogError("[PrismGridExplosionHarness] No PrismGridTestConfigSO assigned or found " +
-                               "in Resources. Run Tools > Cosmic Shore > Setup Prism Grid Explosion Scene.");
+                               "in Resources. Run FrogletTools > Scene Setup > Setup Prism Grid Explosion Scene.");
                 enabled = false;
                 return;
             }
@@ -275,7 +275,7 @@ namespace CosmicShore.Utility
             // Without it, the FIRST laid prism NREs and Spawn appears to do nothing.
             if (FindFirstObjectByType<ThemeManager>() == null)
                 Warn("No ThemeManager in scene — Spawn will fail on the first prism. " +
-                     "Re-run Tools > Cosmic Shore > Setup Prism Grid Explosion Scene.");
+                     "Re-run FrogletTools > Scene Setup > Setup Prism Grid Explosion Scene.");
 
             DiagnosticsHUD.RegisterCommand(CommandName, HandleGridCommand);
             // Alias: operators consistently type `prisms 50000` — meet them there.

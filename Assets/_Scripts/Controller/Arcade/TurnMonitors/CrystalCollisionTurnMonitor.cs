@@ -12,7 +12,7 @@ namespace CosmicShore.Gameplay
     public class CrystalCollisionTurnMonitor : TurnMonitor
     {
         // The RESOLVED crystal target for this turn - set in StartMonitor from
-        // EndConditionOverridesSO (Tools > Cosmic Shore > End Game Conditions) → waypoints → 39.
+        // EndConditionOverridesSO (FrogletTools > Game Modes > End Game Conditions)→ waypoints → 39.
         // Intentionally NOT a [SerializeField]: end-game counts are authored only via the tool,
         // never per-scene. Do not re-add [SerializeField] here (see /EndGameConditions skill).
         protected int CrystalCollisions;
@@ -83,7 +83,7 @@ namespace CosmicShore.Gameplay
         {
             int autoCalc = ComputeAutoCalcCount();
 
-            // End-game counts are the tool's authority: Tools > Cosmic Shore > End Game Conditions
+            // End-game counts are the tool's authority: FrogletTools > Game Modes > End Game Conditions
             // (Resources/EndConditionOverrides). A 0 there means "auto" → this autoCalc.
             // Keyed by GameMode so HexRace and Crystal Capture (same monitor class) stay independent.
             var overrides = EndConditionOverridesSO.Instance;

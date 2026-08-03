@@ -135,3 +135,9 @@ auditor shipped. Squirrel and Sparrow are compliant. What is left, in rough prio
    gameplay and start disabled — the badge must carry the signal there regardless.
 8. **Squirrel hint labels say `L1`/`R1`** in the inspector while the bindings are triggers (LT/RT).
    Designer notes only — used by `SetHintActive(label, …)` for unbound hints — but misleading.
+9. **Author an impact-effect/skimmer container auditor** (`FrogletTools > Vessels`, modeled on
+   `VesselAbilityRowAuditor`). This is the vessel contract's least-guarded clause — null containers,
+   unwired skimmer stacks, orphaned effect assets, and stale serialized blocks have only runtime
+   symptoms today (`.claude/skills/vessel/references/CONTRACT.md` §9 catalogues the live
+   misconfigurations: Serpent's dead VacuumSkimmer, Sparrow's all-empty containers, the five
+   unregistered hulls' null nested-skimmer containers).

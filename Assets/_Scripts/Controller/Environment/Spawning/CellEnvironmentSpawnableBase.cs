@@ -8,8 +8,8 @@ namespace CosmicShore.Gameplay
     /// <summary>
     /// Shared plumbing for the authored CELL ENVIRONMENTS - the large deterministic prism
     /// gardens a <c>CellConfigDataSO.EnvironmentPrefab</c> (or a SegmentSpawner slot) spawns:
-    /// Atlantis and the freestyle six (Yggdra, Daedala, Orrery, Zephyr, Caldera, Geode).
-    /// One definition of the lay/stream/noise contract so seven generators cannot drift:
+    /// Atlantis and the freestyle seven (Yggdra, Daedala, Orrery, Zephyr, Caldera, Geode,
+    /// Ourobor). One definition of the lay/stream/noise contract so eight generators cannot drift:
     ///
     ///   • DETERMINISM - clients build environments locally with no seed sync, so all
     ///     randomness flows from the serialized seed through one System.Random plus the

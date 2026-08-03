@@ -9,6 +9,7 @@ using CosmicShore.UI;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UI;
+using CosmicShore.Editor.Froglet;
 
 namespace CosmicShore.Editor
 {
@@ -33,7 +34,9 @@ namespace CosmicShore.Editor
         const float PitchTolerancePx = 1.5f;
         const float SizeTolerancePx = 1.5f;
 
-        [MenuItem("Tools/Cosmic Shore/Audit Vessel Ability Rows")]
+        [MenuItem("FrogletTools/Vessels/Audit Vessel Ability Rows")]
+        [FrogletTool(FrogletToolCategory.Vessels, Importance = 4,
+            Description = "Four icons, charge-mass-space-time order, per vessel HUD.")]
         public static void Audit()
         {
             var report = new StringBuilder();
