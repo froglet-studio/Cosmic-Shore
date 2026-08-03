@@ -45,7 +45,7 @@ selection only (survival = fitness, never a scripted fitness function) · the co
 ## 4.5 Cell-environment baselines: measure them, don't guess them
 
 `CellConfigDataSO.PhaseThresholds` must ride the environment's MEASURED baseline
-(count + volume) or the cell boots into the wrong phase. `Tools > Cosmic Shore >
+(count + volume) or the cell boots into the wrong phase. `FrogletTools > Ecology >
 Measure Cell Environment Baselines` is the in-engine ground truth — but you do
 NOT have to block on the human for it. Cell environments are deterministic by
 contract (pure function of the serialized seed), so port the generator and
@@ -69,4 +69,4 @@ check over the point cloud found it.
 ## 6. Commit
 One coherent step per commit; conventional-commit message; develop on the feature branch (never
 `bleeding-edge`); open a PR only when asked. After lifeform-prefab changes, note to run
-`Tools ▸ Cosmic Shore ▸ Validate Lifeform Crystals`.
+`FrogletTools ▸ Validation ▸ Validate Lifeform Crystals`.

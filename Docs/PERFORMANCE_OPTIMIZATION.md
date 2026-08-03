@@ -225,7 +225,7 @@ BEFORE editor testing; every blocker found was fixed in a follow-up commit
 3. **Collect the three open datums**: (a) `PoolActivate.<prefab>` — who owns
    the 0.27 ms activations, first-Awake or heavy OnEnable? (b) `PoolRefill.*`
    typical clean ms; (c) whether `GC.Collect` ever fires mid-gameplay now.
-4. **Task 2 (user action)**: run `Tools > Cosmic Shore > UI > Raycast Target
+4. **Task 2 (user action)**: run `FrogletTools > Interface > Raycast Target
    Audit` on Menu_Main + vessel/UI prefabs (scene edits Undo-able; PREFAB
    edits are NOT — rely on git). Expect `EventSystem.Update` 0.5 → ~0.1 ms.
 5. **Task 3 (user action)**: record the shader-variant collection over
@@ -866,7 +866,7 @@ fix spreads or de-allocates the same work.
   view).
 - **Benchmark tool**: `Assets/_Scripts/Utility/PerformanceBenchmark/`
   (`BENCHMARK_TOOL.md` — tabs, score/hints, sweep).
-- **Raycast audit tool**: `Tools > Cosmic Shore > UI > Raycast Target Audit`
+- **Raycast audit tool**: `FrogletTools > Interface > Raycast Target Audit`
   (`Assets/_Scripts/Editor/RaycastTargetAuditTool.cs`).
 
 ---
@@ -1001,7 +1001,7 @@ display. Real Selectables are interleaved (the Squirrel HUD holds 5), so a
 blind batch edit was rejected.
 
 **Tool behavior (verified,** `Assets/_Scripts/Editor/RaycastTargetAuditTool.cs`**):**
-menu `Tools/Cosmic Shore/UI/Raycast Target Audit` (line 33). Classifier
+menu `FrogletTools/Interface/Raycast Target Audit` (line 33). Classifier
 (`NeedsRaycast`, lines 163-178) keeps any Graphic with a `Selectable`
 (`GetComponentInParent`, inactive included) or an `IEventSystemHandler` on
 self-or-ancestor; everything else is a disable candidate. Scan scope: Project

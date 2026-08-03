@@ -5,6 +5,7 @@ using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
 using UnityEditor;
 using UnityEngine;
+using CosmicShore.Editor.Froglet;
 
 namespace CosmicShore.Editor
 {
@@ -19,7 +20,9 @@ namespace CosmicShore.Editor
     {
         const string VesselFolder = "Assets/_Prefabs/Spacevessels";
 
-        [MenuItem("Tools/Cosmic Shore/Audit Vessel Elemental Morphs")]
+        [MenuItem("FrogletTools/Vessels/Audit Vessel Elemental Morphs")]
+        [FrogletTool(FrogletToolCategory.Vessels, Importance = 4,
+            Description = "Which vessel models carry element-labelled blend shapes.")]
         public static void Audit()
         {
             var report = new StringBuilder();

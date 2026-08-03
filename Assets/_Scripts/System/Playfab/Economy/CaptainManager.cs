@@ -63,19 +63,16 @@ namespace CosmicShore.Core
         void OnEnable()
         {
             // [PLAYFAB DISABLED] Captain management will be rebuilt on UGS. Pending removal.
-            return;
-
-            XpHandler.OnCaptainDataLoaded += LoadCaptainsData;
-
-            CatalogManager.OnLoadInventory += LoadCaptainsData;
-            CatalogManager.OnInventoryChange += LoadCaptainsData;
         }
 
         void OnDisable()
         {
+            // Teardown only. These are no-ops while OnEnable is disabled, but they must stay
+            // detaches: OnLoadInventory used to be a '+=' here, which subscribed this handler
+            // to a STATIC event on disable and leaked it for the rest of the process.
             XpHandler.OnCaptainDataLoaded -= LoadCaptainsData;
 
-            CatalogManager.OnLoadInventory += LoadCaptainsData;
+            CatalogManager.OnLoadInventory -= LoadCaptainsData;
             CatalogManager.OnInventoryChange -= LoadCaptainsData;
         }
 

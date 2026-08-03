@@ -1057,9 +1057,6 @@ namespace CosmicShore.Utility
                     ? string.Join(", ", d.Economy.UnlockedRewardIds)
                     : "(none)");
 
-                DrawFieldHeader("Progression");
-                DrawSubField("XP", d.Progression.Xp.ToString());
-
                 DrawFieldHeader("Lifecycle");
                 DrawSubField("First Seen", FormatUtcMs(d.Lifecycle.FirstSeenUtcMs));
                 DrawSubField("Last Seen", FormatUtcMs(d.Lifecycle.LastSeenUtcMs));
