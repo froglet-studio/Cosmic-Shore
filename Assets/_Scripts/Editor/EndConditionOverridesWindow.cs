@@ -1,6 +1,7 @@
 using CosmicShore.ScriptableObjects;
 using UnityEditor;
 using UnityEngine;
+using CosmicShore.Editor.Froglet;
 
 namespace CosmicShore.Editor
 {
@@ -23,7 +24,9 @@ namespace CosmicShore.Editor
 
         EndConditionOverridesSO _config;
 
-        [MenuItem("Tools/Cosmic Shore/End Game Conditions")]
+        [MenuItem("FrogletTools/Game Modes/End Game Conditions")]
+        [FrogletTool(FrogletToolCategory.GameModes, Importance = 5,
+            Description = "The one place win conditions are authored for the domain modes.")]
         static void Open()
         {
             var w = GetWindow<EndConditionOverridesWindow>("End Game Conditions");

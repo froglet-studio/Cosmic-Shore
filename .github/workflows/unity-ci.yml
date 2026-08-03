@@ -7,11 +7,14 @@
 #   il2cpp   - Full IL2CPP release build. Weekly. The only tier that catches AOT/generic failures
 #              and native link errors, i.e. the ones that only appear in a shipping build.
 #
-# RUNNER IS NOT DECIDED YET. `runs-on` reads the repository variable UNITY_RUNNER_LABEL and falls
-# back to `self-hosted`. Nothing runs until that runner exists - jobs queue rather than silently
-# doing the wrong thing. See Docs/BUILD_AND_DELIVERY.md section 10 for what each hosting option
-# requires (a GitHub-hosted runner additionally needs Unity license secrets and almost certainly
-# more disk than the standard image provides).
+# RUNNER IS NOT DECIDED YET. The `unity` job is SKIPPED until the repository variable
+# UNITY_RUNNER_LABEL is set, and then targets whatever label it names. Skipping (rather than
+# defaulting to a label that may not exist) matters: a job queued for a non-existent runner shows as
+# a permanently pending check on every PR and is only reaped by GitHub after ~24h - `timeout-minutes`
+# does not apply to queue time. Set the variable the day a runner is registered; no other edit is
+# needed. See Docs/BUILD_AND_DELIVERY.md section 10 for what each hosting option requires (a
+# GitHub-hosted runner additionally needs Unity license secrets and almost certainly more disk than
+# the standard image provides).
 #
 # The runner is expected to have Unity 6000.3.17f1 installed and activated, with UNITY_PATH set
 # as an environment variable or repository variable pointing at the editor executable.
@@ -74,11 +77,45 @@ jobs:
           echo "Tier: $MODE   ref: ${REF:-<event default>}"
 
   # ──────────────────────────────────────────────
+  #  Release-build static checks (no Unity, no license)
+  #
+  #  Deliberately on ubuntu-latest, NOT the Unity runner: this must actually run
+  #  on every PR, including while the Unity tiers sit queued waiting for a
+  #  self-hosted runner to exist. It reproduces the Release preprocessor in
+  #  Python and catches the guard mistakes that are invisible in the Editor and
+  #  only ever surface as a red automated build.
+  #
+  #  See Docs/CONDITIONAL_COMPILATION.md.
+  # ──────────────────────────────────────────────
+  conditional-compilation:
+    needs: resolve      # only for outputs.ref, so scheduled runs pin to bleeding-edge
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.resolve.outputs.ref }}
+          lfs: false          # source-only check; binary assets are not needed
+          fetch-depth: 1
+
+      # The checker has no-opped before while still reporting "OK". Prove it can
+      # still detect its own fixtures BEFORE trusting a clean scan.
+      - name: Verify the checker still detects
+        run: python3 Tools/Build/check_conditional_compilation.py --self-test
+
+      - name: Check conditional compilation
+        run: python3 Tools/Build/check_conditional_compilation.py --root Assets
+
+  # ──────────────────────────────────────────────
   #  Run it
   # ──────────────────────────────────────────────
   unity:
     needs: resolve
-    runs-on: ${{ vars.UNITY_RUNNER_LABEL || 'self-hosted' }}
+    # No runner configured yet -> skip cleanly instead of queueing forever against a label that
+    # does not exist. Set UNITY_RUNNER_LABEL (repo Settings > Variables) to switch this on.
+    if: vars.UNITY_RUNNER_LABEL != ''
+    runs-on: ${{ vars.UNITY_RUNNER_LABEL }}
     timeout-minutes: 240
 
     env:

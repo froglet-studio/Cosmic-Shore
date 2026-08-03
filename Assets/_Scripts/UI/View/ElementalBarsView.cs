@@ -221,12 +221,12 @@ namespace CosmicShore.UI
                 petals[p] = img;
             }
 
-            // Authored-in-prefab is the norm (Tools > Cosmic Shore > Wire Elemental Petal Bars, or
+            // Authored-in-prefab is the norm (FrogletTools > Vessels > Wire Elemental Petal Bars, or
             // the bake-all variant). Runtime creation is a fallback so the fleet-required display
             // can never silently ship missing - but it should be loud, not invisible.
             if (runtimeCreated > 0)
                 Debug.LogWarning($"[ElementalBarsView] Created {runtimeCreated} petal(s) for '{bar.element}' at " +
-                                 "RUNTIME. Author them into the prefab instead: Tools > Cosmic Shore > " +
+                                 "RUNTIME. Author them into the prefab instead: FrogletTools > Vessels > " +
                                  "Bake Elemental Petal Bars Into All Vessel HUDs.", this);
             return petals;
         }
@@ -257,7 +257,7 @@ namespace CosmicShore.UI
             if (bar.petalRoot) return bar.petalRoot;
 
             Debug.LogWarning($"[ElementalBarsView] Auto-creating the '{bar.element}' flower container at " +
-                             "RUNTIME - no petalRoot is authored in the prefab. Run Tools > Cosmic Shore > " +
+                             "RUNTIME - no petalRoot is authored in the prefab. Run FrogletTools > Vessels > " +
                              "Bake Elemental Petal Bars Into All Vessel HUDs to author it.", this);
             var go = new GameObject($"{bar.element}_Flower", typeof(RectTransform));
             var rt = (RectTransform)go.transform;

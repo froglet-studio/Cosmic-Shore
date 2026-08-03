@@ -18,13 +18,13 @@ one `[PrismClock]` error per unwired material.
 
 **Your tools:**
 
-- `Tools > Cosmic Shore > Prism Animation > Validate Clock Wiring` — run after every
+- `FrogletTools > Ecology > Prism Animation> Validate Clock Wiring` — run after every
   phase. Out of the box it should show every property row ✅ and the Custom Function
   node rows ❌ — the node wiring is exactly what's left.
-- `Tools > Cosmic Shore > Prism Animation > Auto-Wire Clock Properties` — idempotent
+- `FrogletTools > Ecology > Prism Animation> Auto-Wire Clock Properties` — idempotent
   repair tool: re-adds any clock property that's missing (e.g. after a graph revert).
   Normally reports "already present".
-- `Tools > Cosmic Shore > Prism Animation > Smoke Test - Re-Bloom Nearby Prisms`
+- `FrogletTools > Ecology > Prism Animation> Smoke Test - Re-Bloom Nearby Prisms`
   (play mode) — stamps a from-zero regrow on nearby prisms: wired = smooth GPU
   bloom with 0 active CPU animators; unwired = snap + errors.
 

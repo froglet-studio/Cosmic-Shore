@@ -63,7 +63,7 @@ namespace CosmicShore.Gameplay
             if (!_cfg.PrismPrefab)
                 CSDebug.LogWarning("[ConveyorToy] No prism prefab wired - scenes will carry only " +
                                    "crystals and lifeforms. Author the definition asset (or run " +
-                                   "Tools > Cosmic Shore > Setup Freestyle Toybox) to wire one.");
+                                   "FrogletTools > Scene Setup > Setup Freestyle Toybox) to wire one.");
 
             // Sibling of the toy under the toybox root (NOT a child of the toy - the toy's root
             // scale animates on bloom/rebloom and must never scale the belt's laid mass). Still
