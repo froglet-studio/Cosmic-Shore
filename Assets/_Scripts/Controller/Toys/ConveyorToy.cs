@@ -80,7 +80,7 @@ namespace CosmicShore.Gameplay
                 // every Plan call, and an icon that changes shape between rebuilds is a bug.
                 var rng = new System.Random(cfg.Seed * 31 + slot);
                 var plan = MicroscenePatterns.Plan(EmblemRecipes[slot], rng, prismBudget: 60,
-                    radius: cfg.SceneRadius, maxCrystals: 0, cfg.Palette);
+                    sceneRadius: cfg.SceneRadius, maxCrystals: 0, palette: cfg.Palette);
                 if (plan?.Prisms is not { Count: > 0 }) return false;
 
                 var miniature = CellMiniatureBuilder.BuildFromLays(plan.Prisms, radius, 120, 1f,
