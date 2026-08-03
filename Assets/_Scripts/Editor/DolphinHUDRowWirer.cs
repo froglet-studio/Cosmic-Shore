@@ -97,8 +97,8 @@ namespace CosmicShore.Editor
 
             var pip0 = EnsurePip(crystal.transform, "CrystalPip0", -18f);
             var pip1 = EnsurePip(crystal.transform, "CrystalPip1", 18f);
-            var jawUpper = EnsureJawHalf(jaw.transform, "JawUpper", 1f);
-            var jawLower = EnsureJawHalf(jaw.transform, "JawLower", -1f);
+            var jawUpper = EnsureJawHalf(jaw.transform, "JawUpper");
+            var jawLower = EnsureJawHalf(jaw.transform, "JawLower");
             var blastText = EnsureBlastText(blast.transform);
 
             var so = new SerializedObject(view);
@@ -197,18 +197,19 @@ namespace CosmicShore.Editor
             return image;
         }
 
-        static RectTransform EnsureJawHalf(Transform parent, string name, float dir)
+        static RectTransform EnsureJawHalf(Transform parent, string name)
         {
             var go = EnsureChild(parent, name);
             var image = go.GetComponent<Image>() ? go.GetComponent<Image>() : go.AddComponent<Image>();
 
             var rect = go.GetComponent<RectTransform>();
-            // Pivot at the hinge (the jaw's inner edge) so a Z rotation opens the gape rather than
-            // spinning the half about its own middle.
+            // Pivot on the LEFT edge — the hinge — so a Z rotation swings the tip and opens the
+            // gape. Both halves share the hinge exactly (no Y offset): at zero energy they overlap
+            // into one closed snout with no seam, and rotation alone splits them into a maw.
             rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 0.5f);
             rect.pivot = new Vector2(0f, 0.5f);
-            rect.sizeDelta = new Vector2(IconSize * 0.6f, IconSize * 0.3f);
-            rect.anchoredPosition = new Vector2(-IconSize * 0.3f, dir * 6f);
+            rect.sizeDelta = new Vector2(64f, 32f);
+            rect.anchoredPosition = new Vector2(-32f, 0f);
             image.raycastTarget = false;
             image.preserveAspect = true;
             return rect;
