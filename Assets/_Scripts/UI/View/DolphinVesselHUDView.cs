@@ -38,10 +38,15 @@ namespace CosmicShore.UI
                  "Charge's level-5 upgrade raises the carry limit; above the limit pips are hidden " +
                  "entirely, so the row shows capacity as well as stock.")]
         [SerializeField] private List<Image> crystalPips = new();
+        [Tooltip("Pip sprite for a crystal that is LOADED - the omni crystal's active art.")]
+        [SerializeField] private Sprite crystalPipFilled;
+        [Tooltip("Pip sprite for a slot still recharging - the omni crystal's inactive art. " +
+                 "Leave both empty to fall back to tinting one sprite with the colours below.")]
+        [SerializeField] private Sprite crystalPipEmpty;
         [Tooltip("Pip colour for a crystal that is loaded and ready to plant.")]
-        [SerializeField] private Color crystalReadyColor = new(0.55f, 0.95f, 1f, 1f);
+        [SerializeField] private Color crystalReadyColor = Color.white;
         [Tooltip("Pip colour for a slot that is still recharging - reads as 'not available'.")]
-        [SerializeField] private Color crystalChargingColor = new(0.4f, 0.4f, 0.45f, 0.75f);
+        [SerializeField] private Color crystalChargingColor = new(0.55f, 0.55f, 0.6f, 0.8f);
         [Tooltip("Flash colour when a crystal finishes recharging and the slot arms.")]
         [SerializeField] private Color crystalArmedFlashColor = Color.white;
 
@@ -184,7 +189,18 @@ namespace CosmicShore.UI
                 if (!withinLimit) continue;
 
                 bool loaded = i < charges;
-                pip.color = loaded ? crystalReadyColor : crystalChargingColor;
+
+                // The omni crystal ships its own loaded/empty art, so swap the sprite when both are
+                // authored and only fall back to tinting a single sprite when they are not.
+                if (crystalPipFilled && crystalPipEmpty)
+                {
+                    pip.sprite = loaded ? crystalPipFilled : crystalPipEmpty;
+                    pip.color = Color.white;
+                }
+                else
+                {
+                    pip.color = loaded ? crystalReadyColor : crystalChargingColor;
+                }
 
                 // The slot currently recharging shows its progress when it can.
                 if (!loaded && i == charges && pip.type == Image.Type.Filled)
@@ -326,20 +342,29 @@ namespace CosmicShore.UI
 
             if (jawUpper)
                 _jawUpperTween = DOVirtual.Float(from, angle, jawGlideDuration,
-                        v => { if (jawUpper) jawUpper.localRotation = Quaternion.Euler(0f, 0f, v); })
+                        v => { if (jawUpper) jawUpper.localRotation = Quaternion.Euler(0f, 0f, UpperSign * v); })
                     .SetEase(Ease.OutQuad).SetLink(jawUpper.gameObject);
 
             if (jawLower)
                 _jawLowerTween = DOVirtual.Float(from, angle, jawGlideDuration,
-                        v => { if (jawLower) jawLower.localRotation = Quaternion.Euler(0f, 0f, -v); })
+                        v => { if (jawLower) jawLower.localRotation = Quaternion.Euler(0f, 0f, -UpperSign * v); })
                     .SetEase(Ease.OutQuad).SetLink(jawLower.gameObject);
         }
+
+        /// <summary>
+        /// Which way the upper jaw swings. The vessel's own jaw art (DolphinTopJaw / DolphinBottomJaw)
+        /// runs blunt-end-RIGHT and tapers to the tip on the LEFT, so the rects hinge on their RIGHT
+        /// edge (pivot 1, 0.5) and the tip sits at local -X. Rotating a point at -X by θ moves it to
+        /// y = -|x|·sinθ, so lifting the upper tip needs a NEGATIVE angle. Flip this if the art is
+        /// ever re-exported facing the other way.
+        /// </summary>
+        const float UpperSign = -1f;
 
         void SetJawAngleImmediate(float angle)
         {
             _currentJawAngle = angle;
-            if (jawUpper) jawUpper.localRotation = Quaternion.Euler(0f, 0f, angle);
-            if (jawLower) jawLower.localRotation = Quaternion.Euler(0f, 0f, -angle);
+            if (jawUpper) jawUpper.localRotation = Quaternion.Euler(0f, 0f, UpperSign * angle);
+            if (jawLower) jawLower.localRotation = Quaternion.Euler(0f, 0f, -UpperSign * angle);
             ApplyJawRestScale();
         }
 

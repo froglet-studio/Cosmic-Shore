@@ -203,13 +203,15 @@ namespace CosmicShore.Editor
             var image = go.GetComponent<Image>() ? go.GetComponent<Image>() : go.AddComponent<Image>();
 
             var rect = go.GetComponent<RectTransform>();
-            // Pivot on the LEFT edge — the hinge — so a Z rotation swings the tip and opens the
-            // gape. Both halves share the hinge exactly (no Y offset): at zero energy they overlap
-            // into one closed snout with no seam, and rotation alone splits them into a maw.
+            // The vessel's own jaw art (DolphinTopJaw / DolphinBottomJaw) runs blunt-end-RIGHT and
+            // tapers to the tip on the LEFT, so the hinge is the RIGHT edge and the rect takes the
+            // sprite's 272:50 aspect (preserveAspect would letterbox anything else). Both halves
+            // share the hinge exactly: at zero energy they close with no seam, and rotation alone
+            // opens the maw.
             rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 0.5f);
-            rect.pivot = new Vector2(0f, 0.5f);
-            rect.sizeDelta = new Vector2(64f, 32f);
-            rect.anchoredPosition = new Vector2(-32f, 0f);
+            rect.pivot = new Vector2(1f, 0.5f);
+            rect.sizeDelta = new Vector2(78f, 14f);
+            rect.anchoredPosition = new Vector2(39f, 0f);
             image.raycastTarget = false;
             image.preserveAspect = true;
             return rect;
