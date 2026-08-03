@@ -46,7 +46,7 @@ namespace CosmicShore.ScriptableObjects
         /// <summary>Rampage hostile-prism target used when <see cref="rampagePrismTarget"/> is 0 (auto/default).</summary>
         public const int DefaultRampagePrismTarget = 2000;
 
-        [Header("Live counts - used at runtime. 0 = auto/default (edit via Tools > Cosmic Shore > End Game Conditions)")]
+        [Header("Live counts - used at runtime. 0 = auto/default (edit via FrogletTools > Game Modes > End Game Conditions)")]
         [Tooltip("HexRace crystals to end the race. 0 = auto-calc from the track waypoints.")]
         [Min(0)] public int hexRaceCrystalCount = 0;
 

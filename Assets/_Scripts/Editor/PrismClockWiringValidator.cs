@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using UnityEditor;
 using UnityEngine;
+using CosmicShore.Editor.Froglet;
 
 namespace CosmicShore.Editor
 {
@@ -14,7 +15,7 @@ namespace CosmicShore.Editor
     /// material actually compiled against those graphs via HasProperty (the same
     /// ground truth the runtime PrismClockDiagnostics use). Run after every wiring
     /// step — the report enumerates exactly what remains.
-    /// Tools > Cosmic Shore > Prism Animation > Validate Clock Wiring.
+    /// FrogletTools > Ecology > Prism Animation> Validate Clock Wiring.
     /// </summary>
     public static class PrismClockWiringValidator
     {
@@ -65,7 +66,9 @@ namespace CosmicShore.Editor
             },
         };
 
-        [MenuItem("Tools/Cosmic Shore/Prism Animation/Validate Clock Wiring")]
+        [MenuItem("FrogletTools/Ecology/Prism Animation/Validate Clock Wiring")]
+        [FrogletTool(FrogletToolCategory.Ecology, Importance = 5,
+            Description = "Clock-material law gate - unwired graphs fail loud here.")]
         public static void Validate()
         {
             var report = new StringBuilder();

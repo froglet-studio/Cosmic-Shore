@@ -238,7 +238,7 @@ namespace CosmicShore.Gameplay
         // overcharge band (10,15] holds the level-10 extreme). Discovery is by NAME, so a vessel
         // opts in simply by shipping labeled shape keys - no per-prefab wiring - and models
         // without them (or with unrelated art shapes) are untouched. Feel lives in the shared
-        // VesselElementalMorphConfigSO; fleet report: Tools > Cosmic Shore > Audit Vessel
+        // VesselElementalMorphConfigSO; fleet report: FrogletTools > Vessels > Audit Vessel
         // Elemental Morphs.
 
         /// <summary>One element-labeled blend shape on one of the vessel model's skinned meshes.</summary>
