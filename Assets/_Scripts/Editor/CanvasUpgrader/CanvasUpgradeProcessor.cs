@@ -239,9 +239,16 @@ namespace CosmicShore.Editor
         {
             const float k = UpgradeScale;
 
+            // A hierarchy can contain NESTED prefab instances that were already upgraded on
+            // their own asset (the canvas-less fragment path). Their values are already x2.4,
+            // so scaling them again as part of this walk compounds to x5.76. The fragment path
+            // guards its own re-runs via the prefab log; this is the same guard for descendants.
+            var skipNested = CollectAlreadyUpgradedNested(pathRoot, report);
+
             foreach (var rt in pathRoot.GetComponentsInChildren<RectTransform>(true))
             {
                 if (!includeRoot && rt == pathRoot) continue;
+                if (skipNested.Contains(rt)) continue;
                 Vector2 ap = rt.anchoredPosition;
                 Vector2 sd = rt.sizeDelta;
                 bool apChanges = ap.sqrMagnitude > 0f;
@@ -264,6 +271,7 @@ namespace CosmicShore.Editor
             // --- TextMeshProUGUI ---
             foreach (var tmp in pathRoot.GetComponentsInChildren<TextMeshProUGUI>(true))
             {
+                if (skipNested.Contains(tmp.transform)) continue;
                 report.AppendLine($"  {LabelPath(tmp.transform, pathRoot)} :: TextMeshProUGUI");
                 report.AppendLine($"      fontSize: {Fmt(tmp.fontSize)} -> {Fmt(tmp.fontSize * k)}, fontSizeMin: {Fmt(tmp.fontSizeMin)} -> {Fmt(tmp.fontSizeMin * k)}, fontSizeMax: {Fmt(tmp.fontSizeMax)} -> {Fmt(tmp.fontSizeMax * k)}");
                 bool marginChanges = tmp.margin.sqrMagnitude > 0f;
@@ -284,6 +292,7 @@ namespace CosmicShore.Editor
             // --- Legacy UnityEngine.UI.Text ---
             foreach (var text in pathRoot.GetComponentsInChildren<Text>(true))
             {
+                if (skipNested.Contains(text.transform)) continue;
                 int newSize = ScaleInt(text.fontSize, c);
                 int newMin = ScaleInt(text.resizeTextMinSize, c);
                 int newMax = ScaleInt(text.resizeTextMaxSize, c);
@@ -303,6 +312,7 @@ namespace CosmicShore.Editor
             // --- Layout groups (padding on the shared base; spacing/cellSize per subtype) ---
             foreach (var group in pathRoot.GetComponentsInChildren<LayoutGroup>(true))
             {
+                if (skipNested.Contains(group.transform)) continue;
                 var p = group.padding;
                 var newPadding = new RectOffset(ScaleInt(p.left, c), ScaleInt(p.right, c), ScaleInt(p.top, c), ScaleInt(p.bottom, c));
                 report.AppendLine($"  {LabelPath(group.transform, pathRoot)} :: {group.GetType().Name}");
@@ -342,6 +352,7 @@ namespace CosmicShore.Editor
             var pendingWrites = new List<System.Action>();
             foreach (var le in pathRoot.GetComponentsInChildren<LayoutElement>(true))
             {
+                if (skipNested.Contains(le.transform)) continue;
                 var sub = new StringBuilder();
                 pendingWrites.Clear();
                 ScaleLayoutSize(le.minWidth, v => pendingWrites.Add(() => le.minWidth = v), "minWidth", sub);
@@ -366,6 +377,7 @@ namespace CosmicShore.Editor
             // --- Shadow / Outline (Outline derives from Shadow) ---
             foreach (var shadow in pathRoot.GetComponentsInChildren<Shadow>(true))
             {
+                if (skipNested.Contains(shadow.transform)) continue;
                 report.AppendLine($"  {LabelPath(shadow.transform, pathRoot)} :: {shadow.GetType().Name} effectDistance: {Fmt(shadow.effectDistance)} -> {Fmt(shadow.effectDistance * k)}");
                 if (apply)
                 {
@@ -379,6 +391,7 @@ namespace CosmicShore.Editor
             // --- RectMask2D (padding/softness are canvas-unit values) ---
             foreach (var mask in pathRoot.GetComponentsInChildren<RectMask2D>(true))
             {
+                if (skipNested.Contains(mask.transform)) continue;
                 bool paddingChanges = mask.padding.sqrMagnitude > 0f;
                 bool softnessChanges = mask.softness != Vector2Int.zero;
                 if (!paddingChanges && !softnessChanges) continue;
@@ -911,6 +924,60 @@ namespace CosmicShore.Editor
             EditorUtility.SetDirty(obj);
             if (PrefabUtility.IsPartOfPrefabInstance(obj))
                 PrefabUtility.RecordPrefabInstancePropertyModifications(obj);
+        }
+
+        /// <summary>
+        /// Collects every transform belonging to a NESTED prefab instance whose source asset is
+        /// already recorded in the upgraded-prefab log, so the hierarchy walk leaves it alone.
+        ///
+        /// Why this exists: a canvas-less UI fragment (PlayerScoreCard, an EndGameStatsPanel, a
+        /// vessel HUD variant) is upgraded x2.4 on its OWN asset via <see cref="UpgradePrefabRoot"/>,
+        /// which records it in <see cref="UpgradedPrefabLogPath"/>. When that fragment is also
+        /// nested inside a canvas being upgraded, the canvas walk would scale it a SECOND time and
+        /// compound to x5.76. The fragment path already guards its own re-runs against the log;
+        /// this applies the same guard to descendants.
+        ///
+        /// Conservative by construction: a transform is skipped ONLY when its nested instance root
+        /// resolves to a real source asset with a GUID that is positively present in the log.
+        /// Anything unresolvable is left in the walk and scaled as before.
+        /// </summary>
+        static HashSet<Transform> CollectAlreadyUpgradedNested(RectTransform pathRoot, StringBuilder report)
+        {
+            var skip = new HashSet<Transform>();
+            var log = LoadLog(UpgradedPrefabLogPath);
+            if (log.Count == 0) return skip;
+
+            foreach (var t in pathRoot.GetComponentsInChildren<Transform>(true))
+            {
+                if (t == pathRoot) continue;
+                if (!PrefabUtility.IsAnyPrefabInstanceRoot(t.gameObject)) continue;
+
+                var source = PrefabUtility.GetCorrespondingObjectFromSource(t.gameObject);
+                if (!source) continue;
+
+                string assetPath = AssetDatabase.GetAssetPath(source);
+                if (string.IsNullOrEmpty(assetPath)) continue;
+
+                string guid = AssetDatabase.AssetPathToGUID(assetPath);
+                if (string.IsNullOrEmpty(guid)) continue;
+
+                bool logged = false;
+                foreach (var line in log)
+                {
+                    if (!line.StartsWith(guid)) continue;
+                    logged = true;
+                    break;
+                }
+                if (!logged) continue;
+
+                report.AppendLine($"  SKIP nested prefab instance '{LabelPath(t, pathRoot)}' ({assetPath}) — " +
+                                  $"already upgraded per {UpgradedPrefabLogPath}; scaling it again would compound to x{UpgradeScale * UpgradeScale:0.##}.");
+
+                foreach (var descendant in t.GetComponentsInChildren<Transform>(true))
+                    skip.Add(descendant);
+            }
+
+            return skip;
         }
 
         static int ScaleInt(int value, UpgradeCounters c)

@@ -9,8 +9,16 @@ namespace CosmicShore.Editor
     public static class ToastNotificationSetup
     {
         private const string PrefabFolder = "Assets/_Prefabs/UI Elements";
-        private const string SOFolder = "Assets/_SO_Assets";
         private const string ChannelFolder = "Assets/Resources/Channels";
+
+        // MUST live under a Resources/ folder: ToastNotificationAPI fetches it with
+        // Resources.Load<ToastNotificationSettingsSO>(...) at runtime, so an asset written
+        // anywhere else is invisible to the shipping game. This constant is the single
+        // source of the path - CreateSettingsAsset and AddManagerToScene previously
+        // disagreed (writing to Assets/_SO_Assets, loading from Assets/Resources), so a
+        // run authored a second settings asset that nothing ever read.
+        private const string SettingsFolder = "Assets/Resources";
+        private const string SettingsPath = SettingsFolder + "/ToastNotificationSettings.asset";
 
         [MenuItem("Cosmic Shore/Toast Notification/Create All Assets", priority = 0)]
         public static void CreateAllAssets()
@@ -27,14 +35,14 @@ namespace CosmicShore.Editor
         [MenuItem("Cosmic Shore/Toast Notification/Create Settings Asset")]
         public static void CreateSettingsAsset()
         {
-            var path = SOFolder + "/ToastNotificationSettings.asset";
+            var path = SettingsPath;
             if (AssetDatabase.LoadAssetAtPath<ToastNotificationSettingsSO>(path) != null)
             {
                 Debug.Log("[ToastNotification] Settings asset already exists at " + path);
                 return;
             }
 
-            EnsureFolder(SOFolder);
+            EnsureFolder(SettingsFolder);
             var settings = ScriptableObject.CreateInstance<ToastNotificationSettingsSO>();
             AssetDatabase.CreateAsset(settings, path);
             AssetDatabase.SaveAssets();
@@ -135,8 +143,7 @@ namespace CosmicShore.Editor
             var mgr = go.AddComponent<ToastNotificationManager>();
 
             // Wire settings
-            var settings = AssetDatabase.LoadAssetAtPath<ToastNotificationSettingsSO>(
-                "Assets/Resources/ToastNotificationSettings.asset");
+            var settings = AssetDatabase.LoadAssetAtPath<ToastNotificationSettingsSO>(SettingsPath);
             if (settings != null)
             {
                 var settingsField = typeof(ToastNotificationManager).GetField("settings",

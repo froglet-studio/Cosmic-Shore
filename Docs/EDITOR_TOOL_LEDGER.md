@@ -75,13 +75,25 @@ claims**, which is a bug to report rather than a run to skip.
 | [D5](#d5--raycast-target-audit--prefab-pass) | `RaycastTargetAuditTool.cs` | The **scene** half is done (`9c5dd537`: 177 scene-native flips + 45 prefab-instance overrides in `Menu_Main.unity`). The **prefab** half is not: `GameCanvas.prefab` still has 71 `m_RaycastTarget: 1`, `GameCanvas-HexRace.prefab` 114, `ArcadeGameConfigureModal.prefab` 107, `R_GameOverPanel.prefab` 57. |
 | [D6](#d6--prism-grid-explosion-scene--decide-first) | `PrismGridTestSceneSetupTool.cs` | Both declared outputs are **absent**: `Assets/Resources/PrismGridTestConfig.asset` and `Assets/_Scenes/Game_TestDesign/PrismGridExplosionTest.unity`. (`PrismInstancingStressTest.unity` is a *different* scene — do not mistake it for this one.) **Needs a decision before a click.** |
 
-# 🔧 Fix before running
+# ✅ Fixed on this branch (were "fix before running")
 
-| Tool | Defect | Why running it now is wrong |
+All three defects below are **fixed in code** — they need no editor time, only the review
+that comes with the branch. Machine-verified as far as is possible without Unity (brace
+balance, symbol resolution, call-site signatures, no dangling references).
+
+| Tool | Defect | Fix |
 |---|---|---|
-| `CanvasUpgraderWindow.cs` | `UpgradeRectHierarchy` has **no nested-prefab guard** (the fragment path already has one, keyed off `ProjectSettings/CanvasUpgraderUpgradedPrefabs.txt`). | Running it on `GameCanvas.prefab` would re-scale the already-×2.4 nested `EndGameStatsPanel` instance to **×5.76**. Add the guard, then run on `GameCanvas.prefab` in Prefab Stage. See the D2-canvas note below. |
-| `LifeFormCrystalValidator.cs` | Filters on the wrong type (lines 27-30), so `Boid`-based fauna are never scanned. | It reports a clean bill of health it did not actually verify — worse than not running. Test the base type (`LifeForm`/`Fauna`) first. |
-| `Assets/Editor/ToastNotificationSetup.cs` | `CreateSettingsAsset` and `CreateManagerInScene` disagree on the asset path; the live asset is at `Assets/Resources/ToastNotificationSettings.asset`. | A run would author a second settings asset at the wrong path and wire the manager to it. |
+| `CanvasUpgradeProcessor.cs` | `UpgradeRectHierarchy` had **no nested-prefab guard**, so upgrading a canvas re-scaled any already-×2.4 nested fragment to **×5.76**. The fragment path guarded its own re-runs via `ProjectSettings/CanvasUpgraderUpgradedPrefabs.txt`; descendants had no such guard. | New `CollectAlreadyUpgradedNested` computes the skip-set once per walk and all **7** scaling loops consult it. Conservative by construction: a transform is skipped only when its nested instance root resolves to a real source asset whose GUID is positively in the log — anything unresolvable is scaled exactly as before. This unblocks the `GameCanvas.prefab` run. |
+| `LifeFormCrystalValidator.cs` | Filtered on `LifeForm \|\| LightFauna`. But `LightFauna` and `Boid` are **siblings** under `Fauna`, so every `Boid` prefab was silently skipped — `TadPoleFauna.prefab` and `TermiteDrone.prefab` were never checked, and the tool reported a clean bill it had not verified. | Now filters on `ILifeFormEntity`, the interface both branches implement (`LifeForm → Flora`, `Fauna → LightFauna / Boid`), so future lifeform types are covered automatically. |
+| `Assets/Editor/ToastNotificationSetup.cs` | `CreateSettingsAsset` wrote to `Assets/_SO_Assets/` while `AddManagerToScene` read from `Assets/Resources/`. Since `ToastNotificationAPI` uses `Resources.Load`, the write path was **invisible to the shipping game** — a run authored a second settings asset nothing would ever read. | Single `SettingsPath` constant under `Assets/Resources/`, used by both methods; the now-unused `SOFolder` constant is gone. |
+
+**Still needs the editor:** the canvas fix only *unblocks* `GameCanvas.prefab` — that run is
+still owed, and it is the one genuine gap in the canvas migration (see the note below).
+The lifeform validator should be re-run now that it actually scans `Boid` fauna; expect it
+to report on `TadPoleFauna` and `TermiteDrone` for the first time.
+
+Neither is blocking: the canvas fix is fail-safe (it can only skip, never over-scale), and
+the validator is read-only.
 
 ## The Canvas migration is mostly a doc bug, not a pending run
 
@@ -99,13 +111,17 @@ across 5 commits (latest 2026-07-28) plus 7 scenes carrying the ×2.4 signature.
 `grep` for `m_ReferenceResolution: {x: 800, y: 450}` is **structurally blind** to where
 that output actually landed — do not re-derive the old claim from it.
 
-# 🗑️ Retire (vestigial — no run owed, just deletion)
+# 🗑️ RETIRED on this branch
 
-| Tool | Why it is dead |
+Deleted, each verified to have **zero** references across `.cs`/`.prefab`/`.unity`/`.asset`
+before removal. Recover any of them with
+`git show 3193f058 -- <path>` (the commit immediately before deletion).
+
+| Tool | Why it was dead |
 |---|---|
-| `ProfileAvatarBinder.cs` | Binds a `ProfileImage` component that appears in **zero** scenes/prefabs; superseded by `ProfileDisplayWidget`. (`ProfileImage.cs` itself has zero instances and zero callers — deleting it too is a design call, not a tool run.) |
-| `PlayfabProductGenerator.cs` | Generates catalog products for PlayFab, which CLAUDE.md documents as **legacy/inert**; economy is UGS now. A revival would be a rewrite against UGS Economy, not a recovery. |
-| `TriangleWindowMeshGenerator.cs` | No consumer of its generated mesh exists, past or present. |
+| `Assets/_Scripts/Editor/ProfileAvatarBinder.cs` | Binds a `ProfileImage` component with **0 instances** in any scene or prefab and **0 code references**; superseded by `ProfileDisplayWidget`. (`ProfileImage.cs` is now fully orphaned — deleting it too is a design call, not a tool discharge, so it was left in place.) |
+| `Assets/_Scripts/Editor/PlayfabProductGenerator.cs` | Authored PlayFab catalog products against `AuthenticationManager.PlayFabAccount` — the deprecated PlayFab auth. CLAUDE.md documents PlayFab as legacy/inert and the store is UGS Purchasing; the only remaining `PlayFabEconomyAPI` caller is `Utility/ChoppingBlock/AndroidIAPExample.cs`. A revival would be a rewrite against UGS Economy, not a recovery of this file. |
+| `Assets/_Scripts/Editor/TriangleWindowMeshGenerator.cs` | Despite the name, generated a procedural **cube** into the open scene and wrote **nothing to disk** (no `AssetDatabase.CreateAsset` anywhere). No mesh asset by that name exists; no consumer past or present. Deleting it cannot break a reference because it never produced one. |
 
 # 📝 Doc bugs (no editor needed)
 
@@ -133,7 +149,9 @@ that output actually landed — do not re-derive the old claim from it.
 | `PerformanceBenchmarkWindow.cs` | `FrogletTools > Performance Benchmark` | Standing instrumentation (`BENCHMARK_TOOL.md`). |
 | `CosmicShoreBuildPipeline.cs` | `… > Build > …` | Build entry points (`Docs/BUILD_AND_DELIVERY.md`). |
 | `ForceReserializeScriptableObjects.cs` | `FrogletTools > Legacy > Force Re-Serialize …` | Maintenance utility for serialization drift. |
-| `CanvasUpgraderWindow.cs` | `… > Canvas Upgrader` | Standing *after* the fix above — new UI keeps arriving at the old reference resolution. |
+| `CanvasUpgraderWindow.cs` | `… > Canvas Upgrader` | Standing — new UI keeps arriving at the old reference resolution. Nested-prefab guard fixed on this branch; the `GameCanvas.prefab` run is still owed. |
+| `LifeFormCrystalValidator.cs` | `… > Validate Lifeform Crystals` | Enforces the every-lifeform-drops-a-crystal invariant. Now scans `Boid` fauna too (fixed on this branch) — **re-run it**, it will report on `TadPoleFauna` / `TermiteDrone` for the first time. |
+| `Assets/Editor/ToastNotificationSetup.cs` | `Cosmic Shore > Toast Notification > …` | Authors the toast settings/channel/prefab. Settings path fixed on this branch (`Assets/Resources/`, where `Resources.Load` can see it). |
 | `RaycastTargetAuditTool.cs` | `… > UI > Raycast Target Audit` | Standing — re-run as UI grows. Has an un-discharged prefab pass (D5). |
 | `DialogueEditorWindow.cs`, `ElementalFloatEditor.cs`, `ComponentCopierWindow.cs`, `FindAssetByGUID.cs`, `SceneObjectCounter.cs`, `TextureMemoryUseWindow.cs`, `RuntimeTextureMemoryUsageWindow.cs`, `LogControlWindow.cs`, `FrogletTools.cs`, `AnimationRecorderWindow.cs`, `SceneBootstrapper.cs`, `ProfilerCsvLoggerMenu.cs` | various | Authoring/inspection utilities. No output obligation. |
 | `Assets/Editor/CreateNewClass.cs`, `CreateNewMiniGame.cs`, `MeshGeneration/PrismMesh.cs` | various | First-party scaffolding generators outside `_Scripts/`. |
