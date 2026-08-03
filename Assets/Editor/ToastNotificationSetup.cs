@@ -101,7 +101,7 @@ namespace CosmicShore.Editor
             tmp.fontSize = 22;
             tmp.color = Color.white;
             tmp.alignment = TextAlignmentOptions.MidlineLeft;
-            tmp.enableWordWrapping = true;
+            tmp.textWrappingMode = TextWrappingModes.Normal;
             tmp.overflowMode = TextOverflowModes.Ellipsis;
             tmp.raycastTarget = false;
 

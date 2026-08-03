@@ -74,6 +74,37 @@ jobs:
           echo "Tier: $MODE   ref: ${REF:-<event default>}"
 
   # ──────────────────────────────────────────────
+  #  Release-build static checks (no Unity, no license)
+  #
+  #  Deliberately on ubuntu-latest, NOT the Unity runner: this must actually run
+  #  on every PR, including while the Unity tiers sit queued waiting for a
+  #  self-hosted runner to exist. It reproduces the Release preprocessor in
+  #  Python and catches the guard mistakes that are invisible in the Editor and
+  #  only ever surface as a red automated build.
+  #
+  #  See Docs/CONDITIONAL_COMPILATION.md.
+  # ──────────────────────────────────────────────
+  conditional-compilation:
+    needs: resolve      # only for outputs.ref, so scheduled runs pin to bleeding-edge
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.resolve.outputs.ref }}
+          lfs: false          # source-only check; binary assets are not needed
+          fetch-depth: 1
+
+      # The checker has no-opped before while still reporting "OK". Prove it can
+      # still detect its own fixtures BEFORE trusting a clean scan.
+      - name: Verify the checker still detects
+        run: python3 Tools/Build/check_conditional_compilation.py --self-test
+
+      - name: Check conditional compilation
+        run: python3 Tools/Build/check_conditional_compilation.py --root Assets
+
+  # ──────────────────────────────────────────────
   #  Run it
   # ──────────────────────────────────────────────
   unity:
