@@ -175,7 +175,7 @@ Canon: `Docs/ElementalAbilitySystem/ARCHITECTURE.md` §7.1–7.4. The distilled 
   write a hint's size** (zero-sizeDelta stretch rects — collapsing the anchor span destroys
   their size); use `InverseLerpUnclamped` (anchor fractions far outside 0..1 are correct);
   `WarnIfPlacedOffScreen` closes the loop.
-- **Auditor**: `Tools > Cosmic Shore > Audit Vessel Ability Rows` — asset-only; checks map
+- **Auditor**: `FrogletTools > Vessels > Audit Vessel Ability Rows` — asset-only; checks map
   completeness, 4 icons one-per-element, order, uniform size/pitch (1.5 px on a deterministic
   1920×1080 canvas), switcher + hint coverage. Blind spots: <2 resolved icons skips geometry;
   slot geometry reads the icon's PARENT rect.
@@ -186,7 +186,7 @@ The flower display is **fleet-required** (CLAUDE.md's "opt-in rollout" phrasing 
 `[RequireComponent(typeof(ElementalBarsController))]` on VesselStatus,
 `VesselController.Initialize` drives it, and every missing piece is runtime-created **with a
 loud warning naming the authoring tool** — warnings mean the prefab authoring was skipped, they
-are not the contract. Author via `Tools > Cosmic Shore > Wire Elemental Petal Bars` (selected
+are not the contract. Author via `FrogletTools > Vessels > Wire Elemental Petal Bars` (selected
 HUD prefab in Prefab Mode) or `Bake Elemental Petal Bars Into All Vessel HUDs` (fleet pass),
 then assign the view to `ElementalBarsController.elementBars`. All look/feel lives in
 `Assets/Resources/ElementalBarsConfig.asset` (`ElementalBarsConfigSO`) — never per-prefab
@@ -221,11 +221,11 @@ juice through `ElementBars` when a vessel wants it.
   `ResetAnimation` — driving bones toward absolute rotations assumes identity rest and flattens
   a rig (two shipped Dolphin bugs came from this root).
 - **Rig swaps** (Dolphin/Urchin/Rhino placeholders → their `*_shapekey_with_animations` rigs)
-  are a hands-on editor pass: run `Tools > Cosmic Shore > Plan Vessel Rig Swap` (report-only)
+  are a hands-on editor pass: run `FrogletTools > Vessels > Plan Vessel Rig Swap` (report-only)
   and follow its printed procedure — migrate gameplay objects to mapped bones, retire legacy
   MeshRenderers, re-fit colliders by eye, re-point ship geometry, **clear the animation's part
   fields** so they re-resolve to bones, re-run the morph audit.
-- Audit: `Tools > Cosmic Shore > Audit Vessel Elemental Morphs` (asset-only, exact runtime
+- Audit: `FrogletTools > Vessels > Audit Vessel Elemental Morphs` (asset-only, exact runtime
   discovery). Mislabeled shapes fail **silently** in game — the audit is the only detector.
   Edit-mode tests: `VesselElementalMorphTests`, `VesselRigPartResolutionTests`.
 

@@ -49,13 +49,17 @@ asset, the prefab, and the code are the record.** Before changing a vessel:
    including HUD icons that live in the **vessel** prefab, not the HUD variant (the Rhino's row
    was missed for exactly this reason), and `m_Modifications` overrides on nested prefabs.
 3. Run (or, since you cannot run Unity, reason from the source of) the fleet auditors:
-   **Tools > Cosmic Shore > Audit Vessel Ability Rows** and **Audit Vessel Elemental Morphs** —
+   **FrogletTools > Vessels > Audit Vessel Ability Rows** and **Audit Vessel Elemental Morphs** —
    both asset-only, both reuse the exact runtime discovery code, so report and game cannot
    disagree.
 4. Grep by **class name**, not file name — the vessel layer renamed Ship→Vessel in file names
    only: `VesselActionSO.cs` declares `ShipActionSO`, `VesselHelper.cs` declares `ShipHelper`,
    `R_VesselElementStatsHandler.cs` declares `R_ShipElementStatsHandler`, `VesselActions.cs`
    declares `enum ShipActions`.
+5. **Re-fetch any branch you cite immediately before asserting its state** — branches and
+   bleeding-edge move mid-session. This skill's own fleet snapshot went stale twice while being
+   written: the Dolphin branch grew its row-wiring commit between research and verification, and
+   a tooling refactor renamed every editor menu before ship.
 
 ## 3. The design-approval gate (do not break this)
 
@@ -136,7 +140,7 @@ up the enforcement ladder the shipped systems use:
    runtime init path (`ValidateAbilityIconRow` pattern).
 3. **Runtime**: warn-and-degrade with the fix named in the warning
    (`CreateDefaultElementBars` pattern) — visible degradation, never silent, never a crash.
-4. **Fleet audit**: an asset-only `Tools > Cosmic Shore` auditor that reuses the exact runtime
+4. **Fleet audit**: an asset-only `FrogletTools > Vessels` auditor (`[MenuItem]` + `[FrogletTool(FrogletToolCategory.Vessels, ...)]` so it shows in the master window) that reuses the exact runtime
    discovery code (`VesselElementalMorphAuditor` pattern).
 5. **Record it**: CLAUDE.md + this skill's CONTRACT.md + the ship checklist.
 
