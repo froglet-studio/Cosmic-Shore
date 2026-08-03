@@ -549,7 +549,7 @@ namespace CosmicShore.Gameplay
         /// A prism of this creature's BODY was destroyed by an active force (vessel,
         /// projectile, AOE). Raised by <see cref="HealthPrism.Explode"/> through the
         /// stamped owner, so a creature can react to being shot — the worm colony's
-        /// segments die when their body is stripped (Docs/ECOSYSTEM.md §20).
+        /// segments die when their body is stripped (Docs/ECOSYSTEM.md §21).
         /// <paramref name="killerName"/> is the attribution the destruction pipeline
         /// carried. Default is empty: most fauna (LightFauna, Boid) keep their
         /// historical behavior of swimming on with a thinner body.

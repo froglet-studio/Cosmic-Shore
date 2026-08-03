@@ -7,7 +7,7 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// The worm colony brain — the kaiju boss (Docs/ECOSYSTEM.md §20). A connected
+    /// The worm colony brain — the kaiju boss (Docs/ECOSYSTEM.md §21). A connected
     /// population of three segment fauna types (<see cref="WormSegmentFauna"/>:
     /// Head / Body / Tail) driven by one coordinator so the whole chain costs one
     /// behavior tick and one movement pass, however long it grows.
@@ -500,9 +500,11 @@ namespace CosmicShore.Gameplay
             var seg = Instantiate(bodyPrefab, pos, head.rotation);
             // Blooms from zero (continuity): the root grows in over SegmentBloomSeconds
             // while its prisms run their own growth stamps; the chain's follow springs
-            // absorb the insertion — no bespoke make-room animation.
+            // absorb the insertion — no bespoke make-room animation. The bloom runs ON
+            // THE SEGMENT so it survives a mid-bloom split adoption (and this brain's
+            // death) and stops if the segment is killed mid-grow.
             AddSegmentToChain(seg, 1, Vector3.zero);
-            StartCoroutine(BloomSegmentCoroutine(seg));
+            seg.StartCoroutine(BloomSegmentCoroutine(seg));
         }
 
         IEnumerator BloomSegmentCoroutine(WormSegmentFauna seg)
@@ -512,7 +514,7 @@ namespace CosmicShore.Gameplay
             float t = 0f;
             while (t < 1f)
             {
-                if (!seg) yield break;
+                if (!seg || seg.IsDead) yield break;
                 t += Time.deltaTime / seconds;
                 seg.transform.localScale = Vector3.Lerp(Vector3.zero, target, Mathf.Clamp01(t));
                 seg.SyncBodyPrismsToIndex(); // keep the index honest while the body grows
@@ -535,18 +537,36 @@ namespace CosmicShore.Gameplay
             {
                 var leader = segments[0];
                 if (leader.Role == WormSegmentRole.Body)
+                {
                     leader.DifferentiateTo(WormSegmentRole.Head, config.RegrownEndElement);
-                // A capital segment already leads (lone tail, regrown head) — either
-                // way the wound is resolved.
-                _headWoundedAt = -1f;
+                    _headWoundedAt = -1f;
+                }
+                else if (leader.Role == WormSegmentRole.Head)
+                {
+                    _headWoundedAt = -1f; // already resolved
+                }
+                // A lone TAIL leads: no tissue to differentiate — keep the wound
+                // armed so the moment a Body exists it hardens. (In practice a
+                // headless worm can't feed, so this resolves as starvation.)
             }
 
             if (_tailWoundedAt >= 0f && now - _tailWoundedAt >= config.EndRegrowSeconds)
             {
                 var last = segments[segments.Count - 1];
                 if (last.Role == WormSegmentRole.Body)
+                {
                     last.DifferentiateTo(WormSegmentRole.Tail, config.RegrownEndElement);
-                _tailWoundedAt = -1f;
+                    _tailWoundedAt = -1f;
+                }
+                else if (last.Role == WormSegmentRole.Tail)
+                {
+                    _tailWoundedAt = -1f; // already resolved
+                }
+                // A lone HEAD holds the rear: keep the wound armed — it keeps
+                // feeding, and the first Body it grows differentiates into the
+                // missing Tail on the next tick (the wound is already past its
+                // window). Clearing here would leave a worm that regrows to full
+                // length with no tail danger prisms, ever.
             }
         }
 

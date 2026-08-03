@@ -4,7 +4,7 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// All tuning for the worm colony kaiju (Docs/ECOSYSTEM.md §20) — the boss-scale
+    /// All tuning for the worm colony kaiju (Docs/ECOSYSTEM.md §21) — the boss-scale
     /// connected population of Head / Body / Tail segment fauna. One shared asset per
     /// deployment; per CLAUDE.md Config Separation no numbers live on the prefabs.
     ///
