@@ -8,8 +8,10 @@ namespace CosmicShore.Gameplay
     /// <summary>
     /// Shared plumbing for the authored CELL ENVIRONMENTS - the large deterministic prism
     /// gardens a <c>CellConfigDataSO.EnvironmentPrefab</c> (or a SegmentSpawner slot) spawns:
-    /// Atlantis and the freestyle six (Yggdra, Daedala, Orrery, Zephyr, Caldera, Geode).
-    /// One definition of the lay/stream/noise contract so seven generators cannot drift:
+    /// Atlantis, the freestyle seven (Yggdra, Daedala, Orrery, Zephyr, Caldera, Geode, Ourobor)
+    /// and the GARDEN cell Hesperides (which also SOWS planting sites - see
+    /// <see cref="PlantingSites"/>). One definition of the lay/stream/noise contract so nine
+    /// generators cannot drift:
     ///
     ///   • DETERMINISM - clients build environments locally with no seed sync, so all
     ///     randomness flows from the serialized seed through one System.Random plus the
@@ -87,7 +89,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Spots this environment has prepared for LIVING flora - see <see cref="FloraPlantingSite"/>.
-        /// Empty for every structural environment (the freestyle six author none); a GARDEN
+        /// Empty for every structural environment (the freestyle seven author none); a GARDEN
         /// environment sows them with <see cref="Sow"/> from the same seeded math that lays its
         /// beds, so the planting and the architecture cannot drift apart. <see cref="Cell"/> reads
         /// the list once the build starts and hands the sites to its ordinary flora spawner -

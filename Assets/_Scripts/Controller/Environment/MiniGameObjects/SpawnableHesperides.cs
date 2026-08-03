@@ -4,7 +4,7 @@ using CosmicShore.Data;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// "Hesperides" - the GARDEN cell (~12k authored prisms). The freestyle six are worlds you
+    /// "Hesperides" - the GARDEN cell (~12k authored prisms). The freestyle seven are worlds you
     /// fly through; this one is a world that <b>grows</b>. It authors only the garden's
     /// architecture - a five-terrace bowl of planting beds inside a walled rim, radial pergola
     /// arcades, trellis towers, an aqueduct ring feeding cascades into a central pool, a ring of

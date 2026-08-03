@@ -90,6 +90,30 @@ every other block is one object keyed by 32-hex `m_ObjectId`.
 - Unity reimports on pull; the in-editor validator + a shader-error check
   (`ShaderUtil.ShaderHasError`) confirm; magenta = `git checkout` the graph.
 
+### 2a. Reading a graph to learn what a property MEANS
+
+Before tuning any value a shader consumes, find out what the shader does with it —
+the field name lies often enough to be worth 5 minutes. (`OutsideBlockColor` /
+`InsideBlockColor` are actually the prism's base face and its fresnel rim; nothing
+about them is "outside" or "inside".)
+
+- **Parse robustly**: `.shadergraph`/`.shadersubgraph` are CONCATENATED JSON
+  documents, so `json.loads(whole_file)` dies with
+  `JSONDecodeError: Extra data: line N`. Don't split on blank lines (CRLF, §5);
+  loop `JSONDecoder().raw_decode(s, i)`, skipping whitespace between documents.
+  Robust against any separator.
+- **Build the model**: index every doc by `m_ObjectId`; the one doc whose
+  `m_Type` contains `GraphData` holds `m_Edges`. Each edge is
+  `{m_OutputSlot:{m_Node:{m_Id},m_SlotId}, m_InputSlot:{...}}` — resolve
+  `m_Node.m_Id` through the index to get the node, and for a `PropertyNode`
+  follow `m_Property.m_Id` to the property doc for its `m_Name`.
+- **Follow it down**: `SubGraphNode`s carry `m_SerializedSubGraph` with the
+  subgraph's **guid** — resolve it by grepping `.meta` files, then repeat. A
+  property's real meaning is usually two subgraphs deep.
+- Print the edge list as `label(out) --> label(in)`; the semantics fall out of
+  reading ~20 lines. This is how you replace "I think this is the rim colour"
+  with "I traced it."
+
 ## 3. Technique: prefab/scene YAML surgery
 
 Unity YAML = documents headed `--- !u!<class> &<fileID>`. A MonoBehaviour is
@@ -118,7 +142,33 @@ its GameObject lists it in `m_Component`.
   emit silently takes its initializer; a key you misspelled is silently
   dropped — and neither shows up until someone plays the scene.
 
-## 4. Technique: C# verification without a compiler
+## 4. Technique: C# verification — get a real compiler first
+
+**Try to actually compile before falling back to inspection.** `apt-get install
+mono-mcs` gives you `mcs`, and a Unity gameplay file usually touches a small,
+stubbable surface. Recipe (validated 2026-08 on two ~400-line generators, both
+of which compiled clean and shipped):
+
+1. Write `Stubs.cs` covering ONLY the API the target files touch — the
+   `UnityEngine` types (`Vector3` with its operators, `Quaternion`, `Mathf`,
+   `Debug`), the project enums, and the base class with the exact protected
+   members used. Bodies can return anything; you are checking names, types,
+   arity, and control flow, not behaviour.
+2. **Desugar what mcs 6.8 (C# 7.x) cannot parse but Unity (C# 9) can** — in a
+   THROWAWAY COPY, never the real file: target-typed `new(...)` → `new T(...)`,
+   `x is A or B` → `(x == A || x == B)`. Assert zero bare `new(` remain, or the
+   parse dies at the first one and every later error is cascade noise that will
+   waste your time.
+3. `mcs -target:library -langversion:latest -out:/dev/null Stubs.cs <files>`.
+4. Ignore a `CS0436` warning about a type you stubbed that Mono's BCL also has
+   (e.g. `System.HashCode`) — harness artifact, not a finding.
+
+Cost is minutes and it catches the whole class of errors inspection misses
+(wrong member name, wrong arity, a `ref readonly` misuse, an unreachable
+branch). Do NOT commit the harness — stubs rot against the real API. Rebuild it
+per task; it is cheap.
+
+### Fallback: verification without a compiler
 
 - **Brace balance**: a naive count fails on interpolated strings. Use the
   tokenizer that tracks modes (`//`, `/* */`, `"str"`, `@"verbatim"`, `'c'`,
@@ -138,6 +188,69 @@ its GameObject lists it in `m_Component`.
   docs; rewrite comments that describe the dead architecture as live (they
   become false doctrine — this session found its own outdated rationalization
   quoted in a header comment).
+
+## 4.5 Technique: offline simulation of a deterministic generator
+
+Origin: the Caldera/Ourobor cell rework (2026-08). §6 below used to list
+"play-mode measurements (baselines)" as editor-only, with the workflow being
+"human runs the measurer, pastes the output, you author from it." For a
+**deterministic** generator you can skip the human entirely — port it and
+measure offline.
+
+When it applies: the generator's output is a pure function of serialized inputs
+(a seed + authored constants), which is exactly the contract
+`CellEnvironmentSpawnableBase` already enforces so clients agree without seed
+sync. Anything driven by play-mode state (physics, timing, live gameplay) is
+NOT this and still needs the editor.
+
+**The method — and the step that makes it trustworthy:**
+
+1. Port the generator to Python (or any host), mirroring emit ORDER exactly.
+2. **Validate the port against a KNOWN-GOOD baseline before trusting it for a
+   new one.** The shipped Caldera's authored `PhaseThresholds` encoded its
+   baseline (thresholds = baseline + fixed deltas), so the port had a target to
+   hit: it reproduced 31,194 prisms / 430,691 volume **to the unit**. Only then
+   was it used to author new numbers. Without this step you have a plausible
+   number, not a measured one — which is worse than no number.
+3. Measure whatever the authored asset needs (count, volume, per-kind and
+   per-domain splits, min/max radius, per-family breakdown for tuning).
+4. Iterate design changes against the sim, then hand-sync to the C#.
+5. **Cross-check the sync mechanically.** After hand-syncing, extract every
+   numeric literal of a given class from BOTH files and compare as multisets
+   (e.g. every `new Vector3(x,y,z)` / `Plate(x,y,z)` scale tuple). A silent
+   divergence between generator and sim means wrong authored numbers with no
+   symptom until someone re-measures in-engine.
+6. **Render the point cloud** (matplotlib, three orthographic projections,
+   coloured by domain). This catches geometry errors no assertion will — a pass
+   that measured fine read as squat blobs rather than mountains until it was
+   plotted, and the fix was an aspect-ratio change, not a count change.
+
+Also: assert the spatial invariants the design claims. "Nothing inside the
+nucleus control radius" is one line over the emitted points, and it caught that
+the SHIPPED build had 89% of its mass in there.
+
+## 4.6 Technique: hand-authoring a new asset trio
+
+Adding a new SO-configured, prefab-backed thing (here: a cell) means four
+hand-authored files plus a scene array entry. The recipe:
+
+1. `uuid4().hex` for every new GUID; **sweep `Assets/**/*.meta` and assert each
+   appears exactly once** before proceeding.
+2. **Donor-clone the prefab** from a working sibling (§1.3) and diff the
+   serialized field NAME LIST against the donor — an identical set proves you
+   did not miss an inherited `[SerializeField]`. A missing one silently
+   defaults (a null `prism` = a cell that builds zero prisms and says nothing).
+3. The SO's `m_Script` GUID comes from the SO class's own `.cs.meta`, never
+   from memory. Component references (`EnvironmentPrefab`) point at the
+   **MonoBehaviour's fileID inside the prefab**, not the GameObject's.
+4. Registering into a serialized array on a **prefab instance in a scene** is
+   two coordinated edits: bump `<Field>.Array.size` AND append a
+   `'<Field>.Array.data[n]'` override with the same `target` fileID/guid as its
+   siblings. Validate by parsing back: size == count of `data[]` entries ==
+   contiguous 0..n-1, and every `objectReference` GUID resolves to a real asset.
+5. Order can be load-bearing — appending is safe, inserting may not be. Here
+   index 0 must stay the environment-free config (`CellTypeChoiceOptions.
+   EnvironmentFree` boots on the first config with no environment).
 
 ## 5. Traps learned the hard way (check these BEFORE debugging for an hour)
 
@@ -187,6 +300,68 @@ its GameObject lists it in `m_Component`.
 - **Unity asset edits the editor must bless**: after out-of-editor edits the
   human's next pull triggers reimport — if visuals look unchanged, suspect a
   stale Library (ask them to Reimport the asset) before suspecting the edit.
+- **`System.Random` is the LEGACY Knuth subtractive generator when seeded**
+  (not .NET Core's xoshiro — that is only the parameterless ctor). To mirror a
+  Unity generator you must replicate it exactly, AND replicate the order it is
+  consumed in: a helper like `Jit()` pulls from the shared stream, so reordering
+  two emit families silently changes every jittered scale downstream.
+- **Unity FBX import applies a cm→m conversion**: with `useFileUnits: 1` and the
+  file's `UnitScaleFactor: 1`, mesh extents are divided by 100. A mesh whose FBX
+  vertices span ±98 is ±0.98 Unity units, so a prefab at `localScale 400` has a
+  world radius of ~392, not 400. Derive world sizes from the FBX + importer
+  settings, never from `localScale` alone.
+- **Two different "radius" values can coexist on the same object.** `Cell.
+  NucleusRadius` returns `localScale.x` (400) while the node-control zone comes
+  from `RefreshNucleusControlRadius` → **renderer bounds** (392). They are close
+  enough to look interchangeable and are not; read the one the consumer reads.
+- **Prism pose convention: `z` is forward.** `SpawnPoint.LookRotation(fwd, up)`
+  puts local +Z on `fwd`, so a flat plate lying ON a surface is
+  `LookRotation(normal, tangent)` with a SMALL z, and a chained ribbon is
+  `LookRotation(p - prev, up)` with a LARGE z. Getting this backwards produces
+  geometry that measures perfectly and renders as confetti.
+- **Constant-coverage scaling**: to scale a sampled surface by k, multiply
+  sampling spacing AND footprint by the same factor — coverage
+  (count × footprint / area) is then exactly 1 by construction. The trap is a
+  family whose count is **explicit** rather than spacing-derived: it does not
+  self-correct and silently over-covers (one such family measured 32% of a
+  cell's volume from 10% of its prisms). Set those to `base × k² / detail²`.
+  Corollary worth stating out loud: at constant coverage and thickness, a 2×
+  surface costs exactly 4× volume. That is geometry, not a tuning miss.
+
+## 6. When the editor genuinely IS required
+
+Device soak tests, profiling, visual judgment, play-mode-state measurements,
+and final import verification of hand-authored assets. Even then: build the
+measuring tool + validator so the human runs ONE menu item and pastes ONE
+output back — then YOU act on the numbers.
+
+**Narrowed 2026-08:** "play-mode measurement" no longer covers a *deterministic*
+generator's baseline — see §4.5, which measures it offline and uses the in-editor
+measurer as a CONFIRMATION step rather than the source. Keep asking which half of
+a measurement is actually play-mode-dependent; often it is neither.
+- **HDR colour fields are LINEAR, and scaling them is not tuning**: in a Linear
+  project (`ProjectSettings: m_ActiveColorSpace: 1`) a `[ColorUsage(true, true)]`
+  field serialises **linear intensity** — Rec.709 luminance and CIELAB apply
+  directly (no de-gamma), and channels >1 are legitimate, not corruption to clamp.
+  Two traps follow: (1) **multiplying a colour PAIR by a constant changes
+  brightness but leaves contrast identical** — a "halve it, it's too bright" pass
+  fixes nothing (this is exactly how a prior shielded-prism fix shipped a no-op);
+  (2) **HSV misleads across hues** — equal `V` is not equal brightness and HSV
+  "saturation" is not perceptual chroma. Judge colour pairs in CIELAB: `L*` for
+  brightness, `ΔL*` between them for contrast, `C*` for harshness. Derive new
+  values in LCh (keep the asset's own hue, transplant the reference's `L*`),
+  convert back, and assert no channel went negative before writing.
+- **Shallow clone hides most of the repo** (Claude Code on the web): the working
+  clone can be `--depth`-limited with only ~2 remote refs fetched while the server
+  has hundreds. A "scan every branch" sweep over `git for-each-ref refs/remotes`
+  then silently reports a CONFIDENT WRONG answer ("that work exists nowhere").
+  Before any cross-branch history search, check `[ -f .git/shallow ]` and compare
+  `git ls-remote --heads origin | wc -l` against `git for-each-ref refs/remotes | wc -l`;
+  if they disagree,
+  `git fetch --filter=blob:none --no-tags origin '+refs/heads/*:refs/remotes/origin/*'`
+  first (blob-filtered, so hundreds of branches of a Unity repo land in ~a minute).
+  Then dedupe by BLOB: `git rev-parse "$ref:$path"` per ref and group — N branches
+  usually collapse to a handful of distinct file versions worth reading.
 
 ## 6. When the editor genuinely IS required
 
@@ -195,3 +370,15 @@ judgment. Even then: build the measuring tool + validator so the human runs ONE
 menu item and pastes ONE output back — then YOU act on the numbers
 (the PhaseThresholds re-baseline pattern: they ran the measurer, the session
 authored the six configs from the pasted output).
+
+**Visual judgment is the softest of these — simulate it rather than punting it.**
+Once §2a has told you what the shader does with a value, you can reimplement that
+one path offline and RENDER the candidates: rasterise/raytrace the actual geometry
+(a box is a 10-line slab intersection), apply the traced formula, tonemap (ACES) and
+sRGB-encode, and lay the options out as a labelled before/after sheet. `pip install
+numpy pillow` if the sandbox lacks them. This turns "which of these four palettes is
+best?" from a question you ask the human into one you answer and then have them
+confirm — and it catches the option that's numerically perfect and ugly (matching a
+cool reference hue's chroma exactly turns a warm hue to khaki; only the render shows
+it). Ship the sheet WITH the change so the human's playtest starts from your read,
+and still say plainly that the sheet is a simulation, not the engine.
