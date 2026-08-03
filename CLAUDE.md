@@ -2106,14 +2106,18 @@ automatically in `FrogletTools > Froglet Master Tool`.** The `Tools/Cosmic Shore
 
 - **Discovery is automatic, never registered.** `FrogletToolRegistry` reflects over `[MenuItem]`
   attributes; a tool shows up on the board the moment its path starts with `FrogletTools/` and it
-  compiles. There is no manifest to update. Tools declared outside that root are still discovered
-  and listed in the board's **"Needs migration"** strip, so the convention enforces itself.
+  compiles. There is no manifest to update. That prefix is also the only filter, so third-party
+  package menus (PlayFab, FMOD, Soap, Quick Scene Pro) are never picked up and are left where
+  their vendors put them.
+- **The board is a card grid**: one collapsible colour-coded section per category, one card per
+  tool (title, description, five-dot importance), most important first, flowing into as many
+  columns as the window is wide enough for.
 - **`[FrogletTool(category, Importance, Description)]`** on the same static method as the
-  `[MenuItem]` controls the swimlane, the ranking (1–5, which is also the bar length on the
-  Gantt-style board) and the blurb. It is optional — omit it and the registry infers a category
-  from the path/type name and uses importance 3. The attribute compiles into the **editor**
-  assembly, so only files under an `Editor/` folder can use it; a runtime-assembly tool behind
-  `#if UNITY_EDITOR` still appears, just with inferred metadata.
+  `[MenuItem]` controls the section, the ranking (1–5, which is also the dot rating on the card)
+  and the blurb. It is optional — omit it and the registry infers a category from the path/type
+  name and uses importance 3. The attribute compiles into the **editor** assembly, so only files
+  under an `Editor/` folder can use it; a runtime-assembly tool behind `#if UNITY_EDITOR` still
+  appears, just with inferred metadata.
 - **Draw through `FrogletEditorPalette`** (banner, `ColorButton`, `StatusPill`, `DrawCard`,
   accent stripes, semantic Ok/Warn/Error/Info colours, light-skin adaptation) so every Froglet
   window reads as one product. Do not hand-roll `GUI.color` juggling in a new window — extend the

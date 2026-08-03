@@ -40,10 +40,10 @@ public static void Open() { ... }
 
 | Field | Meaning |
 |---|---|
-| `Category` | Swimlane + accent colour. Ten lanes, see `FrogletToolCategory`. |
-| `Importance` | **1** (niche) … **5** (used every day). Drives sort order *and* bar length on the board. Default 3. |
-| `Description` | One line rendered beside the bar. |
-| `DisplayName` | Overrides the menu leaf as the label. |
+| `Category` | Section + accent colour. Ten sections, see `FrogletToolCategory`. |
+| `Importance` | **1** (niche) … **5** (used every day). Drives sort order within a section and the five-dot rating on the card. Default 3. |
+| `Description` | One line rendered on the card body. |
+| `DisplayName` | Overrides the menu leaf as the card title. |
 
 **Where the attribute can go:** `FrogletToolAttribute` compiles into the *editor* assembly, so it
 can only be used from a file under an `Editor/` folder. A tool that lives in the runtime assembly
@@ -54,22 +54,25 @@ to the inferred category and importance 3.
 
 ## The board
 
-**FrogletTools ▸ Froglet Master Tool** renders the registry as a Gantt-style roadmap:
+**FrogletTools ▸ Froglet Master Tool** renders the registry as a card grid:
 
-- One **colour-coded swimlane per category**, collapsible, with a count pill.
-- One **bar per tool**, its length proportional to `Importance` against the ruler at the top.
-  Click a bar to launch the tool.
-- **Right-click a row** for Launch / Copy menu path / Ping script / Open script.
+- One **collapsible, colour-coded section per category**, with a count pill. Expand all /
+  Collapse all live in the toolbar.
+- One **card per tool** — title, what it does, and a five-dot importance rating in the section's
+  accent colour. Click a card to launch it. Cards flow into as many columns as the window is wide
+  enough for, most important first.
+- **Right-click a card** for Launch / Copy menu path / Ping script / Open script.
 - Search filters across name, menu path, description and category.
-- A **"Needs migration"** strip lists any tool still declaring a `[MenuItem]` outside
-  `FrogletTools/`, so the convention enforces itself instead of relying on this document.
 
 Launching routes through `EditorApplication.ExecuteMenuItem`, so validate functions and editor
 context behave exactly as a manual menu click would, with a direct reflection call as fallback.
 
-### Lanes
+The `FrogletTools/` prefix is also the registry's only filter, so third-party menus (PlayFab,
+FMOD, Soap, Quick Scene Pro, …) are never picked up — the board shows only tools we own.
 
-| Category | Lane | Colour |
+### Sections
+
+| Category | Section | Colour |
 |---|---|---|
 | `Build` | Build & Release | coral |
 | `SceneSetup` | Scene Setup | azure |
@@ -117,8 +120,9 @@ Menu items previously lived under three roots. All first-party items were moved 
 | `Cosmic Shore/Toast Notification/…` | `FrogletTools/Interface/Toast Notification/…` |
 | `Window/Animation Recorder` | `FrogletTools/Misc/Animation Recorder` |
 
-Third-party menus (PlayFab, FMOD, Obvious Soap, Primitive Plus, Quick Scene Pro) were left alone —
-they are not ours to move, and the registry filters them out.
+Third-party menus (PlayFab, FMOD, Obvious Soap, Primitive Plus, **Quick Scene Pro**) were left
+exactly where they were — they are not ours to move, and the registry never picks them up because
+their paths do not start with `FrogletTools/`.
 
 **Doc references to the old paths are stale.** When you touch a doc that says
 "Tools > Cosmic Shore > X", update it to the `FrogletTools/` path.

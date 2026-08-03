@@ -8,27 +8,27 @@ namespace CosmicShore.Editor.Froglet
 {
     /// <summary>
     /// FrogletTools &gt; Froglet Master Tool - the single front door to every editor tool in the
-    /// project, laid out as a Gantt-style board: one colour-coded swimlane per category, one bar
-    /// per tool, bar length = importance. Click a bar to launch the tool.
+    /// project.
+    ///
+    /// Layout is a card grid grouped into collapsible, colour-coded sections: one card per tool
+    /// with its name, what it does, and a five-dot importance rating. Click a card to launch it.
+    /// Within a section the most important tools come first.
     ///
     /// Tools are DISCOVERED, never registered: see <see cref="FrogletToolRegistry"/>. Any
-    /// <c>[MenuItem("FrogletTools/...")]</c> in the project's editor assembly shows up here the
-    /// moment it compiles. Tools still parked under a legacy root (<c>Tools/Cosmic Shore/...</c>,
-    /// <c>Cosmic Shore/...</c>) are surfaced in the "Needs migration" strip so the convention
-    /// enforces itself.
+    /// <c>[MenuItem("FrogletTools/...")]</c> in the project's assemblies shows up here the moment
+    /// it compiles - nothing else to wire up.
     /// </summary>
     public sealed class FrogletMasterToolWindow : EditorWindow
     {
-        const float LaneLabelWidth = 132f;
-        const float RowHeight = 26f;
-        const float RowGap = 3f;
-        const float LaneHeaderHeight = 22f;
-        const float TrackPadding = 10f;
+        const float CardMinWidth = 256f;
+        const float CardHeight = 74f;
+        const float CardGap = 8f;
+        const float SectionHeaderHeight = 24f;
+        const float SidePadding = 10f;
+        const float ScrollbarAllowance = 16f;
 
         string _search = "";
         Vector2 _scroll;
-        bool _showMigration = true;
-        bool _groupByCategory = true;
         readonly HashSet<FrogletToolCategory> _collapsed = new();
 
         [MenuItem("FrogletTools/Froglet Master Tool", false, -100)]
@@ -37,7 +37,7 @@ namespace CosmicShore.Editor.Froglet
         public static void Open()
         {
             var w = GetWindow<FrogletMasterToolWindow>("Froglet Tools");
-            w.minSize = new Vector2(720f, 420f);
+            w.minSize = new Vector2(620f, 420f);
             w.Show();
         }
 
@@ -47,8 +47,7 @@ namespace CosmicShore.Editor.Froglet
         {
             FrogletEditorPalette.Banner(
                 "Froglet Master Tool",
-                "Every editor tool in the project, ranked by importance. Bars are sized by how load-bearing a tool is - " +
-                "click one to launch it.",
+                "Every editor tool in the project, grouped by what it touches. Click a card to open it.",
                 FrogletEditorPalette.Jade);
 
             DrawToolbar();
@@ -60,31 +59,24 @@ namespace CosmicShore.Editor.Froglet
                 EditorGUILayout.Space(8);
                 EditorGUILayout.HelpBox(
                     string.IsNullOrWhiteSpace(_search)
-                        ? "No tools discovered. Check that at least one [MenuItem(\"FrogletTools/...\")] exists in the editor assembly."
+                        ? "No tools discovered. A tool appears here as soon as its [MenuItem] path starts with \"FrogletTools/\"."
                         : $"No tool matches \"{_search}\".",
                     MessageType.Info);
+                DrawFooter(0);
                 return;
             }
 
-            DrawRuler();
-
             _scroll = EditorGUILayout.BeginScrollView(_scroll);
             {
-                if (_groupByCategory)
+                GUILayout.Space(6);
+                foreach (var section in tools.GroupBy(t => t.Category).OrderBy(g => g.Key))
                 {
-                    foreach (var lane in tools.GroupBy(t => t.Category).OrderBy(g => g.Key))
-                        DrawLane(lane.Key, lane.OrderByDescending(t => t.Importance)
-                                               .ThenBy(t => t.DisplayName, StringComparer.OrdinalIgnoreCase)
-                                               .ToList());
+                    var ordered = section
+                        .OrderByDescending(t => t.Importance)
+                        .ThenBy(t => t.DisplayName, StringComparer.OrdinalIgnoreCase)
+                        .ToList();
+                    DrawSection(section.Key, ordered);
                 }
-                else
-                {
-                    DrawRows(tools.OrderByDescending(t => t.Importance)
-                                  .ThenBy(t => t.DisplayName, StringComparer.OrdinalIgnoreCase)
-                                  .ToList(), showLaneColor: true);
-                }
-
-                DrawMigrationStrip();
                 GUILayout.Space(10);
             }
             EditorGUILayout.EndScrollView();
@@ -100,7 +92,8 @@ namespace CosmicShore.Editor.Froglet
             {
                 GUILayout.Label("Search", EditorStyles.miniLabel, GUILayout.Width(44));
                 _search = GUILayout.TextField(_search, EditorStyles.toolbarSearchField, GUILayout.MinWidth(140));
-                if (!string.IsNullOrEmpty(_search) && GUILayout.Button("x", EditorStyles.toolbarButton, GUILayout.Width(20)))
+                if (!string.IsNullOrEmpty(_search) &&
+                    GUILayout.Button("x", EditorStyles.toolbarButton, GUILayout.Width(20)))
                 {
                     _search = "";
                     GUI.FocusControl(null);
@@ -108,10 +101,12 @@ namespace CosmicShore.Editor.Froglet
 
                 GUILayout.FlexibleSpace();
 
-                _groupByCategory = GUILayout.Toggle(_groupByCategory, "Swimlanes",
-                    EditorStyles.toolbarButton, GUILayout.Width(78));
-                _showMigration = GUILayout.Toggle(_showMigration, "Migration",
-                    EditorStyles.toolbarButton, GUILayout.Width(74));
+                if (GUILayout.Button("Expand all", EditorStyles.toolbarButton, GUILayout.Width(72)))
+                    _collapsed.Clear();
+
+                if (GUILayout.Button("Collapse all", EditorStyles.toolbarButton, GUILayout.Width(80)))
+                    foreach (var c in FrogletToolRegistry.All.Select(t => t.Category).Distinct())
+                        _collapsed.Add(c);
 
                 if (GUILayout.Button("Rescan", EditorStyles.toolbarButton, GUILayout.Width(56)))
                 {
@@ -122,75 +117,36 @@ namespace CosmicShore.Editor.Froglet
             EditorGUILayout.EndHorizontal();
         }
 
-        /// <summary>Importance axis, drawn once so the bar lengths read as a scale, not decoration.</summary>
-        void DrawRuler()
+        static void DrawFooter(int shown)
         {
-            var r = GUILayoutUtility.GetRect(0, 18f, GUILayout.ExpandWidth(true));
-            var track = TrackRect(r);
-
-            FrogletEditorPalette.DrawRect(new Rect(r.x, r.yMax - 1f, r.width, 1f),
-                FrogletEditorPalette.Muted.WithAlpha(0.25f));
-
-            var label = new GUIStyle(EditorStyles.miniLabel)
-            {
-                fontSize = 9,
-                normal = { textColor = FrogletEditorPalette.Muted },
-            };
-            GUI.Label(new Rect(r.x + 4f, r.y, LaneLabelWidth, 16f), "IMPORTANCE", label);
-
-            for (int i = 1; i <= 5; i++)
-            {
-                float x = track.x + track.width * (i / 5f);
-                FrogletEditorPalette.DrawRect(new Rect(x - 1f, r.y + 4f, 1f, 10f),
-                    FrogletEditorPalette.Muted.WithAlpha(0.22f));
-                var lr = new Rect(x - 26f, r.y, 24f, 16f);
-                GUI.Label(lr, i.ToString(), new GUIStyle(label) { alignment = TextAnchor.MiddleRight });
-            }
-        }
-
-        void DrawFooter(int shown)
-        {
-            var all = FrogletToolRegistry.All;
-            int legacy = all.Count(t => !t.IsConforming);
-
             EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
             {
-                GUILayout.Label($"{shown} shown / {all.Count} discovered", EditorStyles.miniLabel);
+                GUILayout.Label($"{shown} shown / {FrogletToolRegistry.All.Count} tools", EditorStyles.miniLabel);
                 GUILayout.FlexibleSpace();
-                if (legacy > 0)
-                {
-                    var s = new GUIStyle(EditorStyles.miniLabel)
-                    { normal = { textColor = FrogletEditorPalette.Adapt(FrogletEditorPalette.Warn) } };
-                    GUILayout.Label($"{legacy} outside FrogletTools/", s);
-                }
-                else
-                {
-                    var s = new GUIStyle(EditorStyles.miniLabel)
-                    { normal = { textColor = FrogletEditorPalette.Adapt(FrogletEditorPalette.Ok) } };
-                    GUILayout.Label("all tools conform", s);
-                }
+                GUILayout.Label("Add a [MenuItem(\"FrogletTools/…\")] and it appears here automatically",
+                    EditorStyles.miniLabel);
             }
             EditorGUILayout.EndHorizontal();
         }
 
-        // ── Board ────────────────────────────────────────────────────────────────
+        // ── Sections ─────────────────────────────────────────────────────────────
 
-        void DrawLane(FrogletToolCategory category, List<FrogletToolEntry> tools)
+        void DrawSection(FrogletToolCategory category, List<FrogletToolEntry> tools)
         {
-            var accent = FrogletEditorPalette.ColorFor(category);
+            var accent = FrogletEditorPalette.Adapt(FrogletEditorPalette.ColorFor(category));
             bool collapsed = _collapsed.Contains(category);
 
-            var header = GUILayoutUtility.GetRect(0, LaneHeaderHeight, GUILayout.ExpandWidth(true));
-            FrogletEditorPalette.DrawRect(header, FrogletEditorPalette.Adapt(accent).WithAlpha(0.13f));
-            FrogletEditorPalette.DrawAccentStripe(header, FrogletEditorPalette.Adapt(accent), 4f);
+            var header = GUILayoutUtility.GetRect(0, SectionHeaderHeight, GUILayout.ExpandWidth(true));
+            FrogletEditorPalette.DrawRect(header, accent.WithAlpha(0.14f));
+            FrogletEditorPalette.DrawAccentStripe(header, accent, 4f);
 
-            var titleRect = new Rect(header.x + 12f, header.y, header.width - 80f, header.height);
-            var style = new GUIStyle(FrogletEditorPalette.LaneLabel)
-            { normal = { textColor = FrogletEditorPalette.Adapt(accent) } };
-            GUI.Label(titleRect, $"{(collapsed ? "▸" : "▾")}  {FrogletEditorPalette.LabelFor(category).ToUpperInvariant()}", style);
+            GUI.Label(new Rect(header.x + 13f, header.y, header.width - 70f, header.height),
+                $"{(collapsed ? "▸" : "▾")}  {FrogletEditorPalette.LabelFor(category).ToUpperInvariant()}",
+                new GUIStyle(FrogletEditorPalette.SectionLabel) { normal = { textColor = accent } });
 
-            var countRect = new Rect(header.xMax - 46f, header.y + 3f, 38f, header.height - 6f);
-            FrogletEditorPalette.StatusPill(countRect, tools.Count.ToString(), accent);
+            FrogletEditorPalette.StatusPill(
+                new Rect(header.xMax - 46f, header.y + 4f, 38f, header.height - 8f),
+                tools.Count.ToString(), FrogletEditorPalette.ColorFor(category));
 
             if (GUI.Button(header, GUIContent.none, GUIStyle.none))
             {
@@ -199,80 +155,100 @@ namespace CosmicShore.Editor.Froglet
             }
             EditorGUIUtility.AddCursorRect(header, MouseCursor.Link);
 
-            if (collapsed) { GUILayout.Space(RowGap); return; }
-
-            GUILayout.Space(RowGap);
-            DrawRows(tools, showLaneColor: false);
-            GUILayout.Space(6f);
+            GUILayout.Space(CardGap);
+            if (!collapsed)
+            {
+                DrawCardGrid(tools);
+                GUILayout.Space(6f);
+            }
         }
 
-        void DrawRows(List<FrogletToolEntry> tools, bool showLaneColor)
+        /// <summary>
+        /// Flows the cards into as many columns as the window is wide enough for.
+        ///
+        /// Column count is derived from <see cref="EditorGUIUtility.currentViewWidth"/> rather than
+        /// from a laid-out rect, because a rect's width is meaningless during the Layout event -
+        /// deriving it from the rect would emit a different number of controls in Layout than in
+        /// Repaint and trip IMGUI's control-count check.
+        /// </summary>
+        void DrawCardGrid(List<FrogletToolEntry> tools)
         {
-            foreach (var tool in tools)
-                DrawToolRow(tool, showLaneColor);
+            float avail = Mathf.Max(CardMinWidth,
+                EditorGUIUtility.currentViewWidth - SidePadding * 2f - ScrollbarAllowance);
+
+            int columns = Mathf.Max(1, Mathf.FloorToInt((avail + CardGap) / (CardMinWidth + CardGap)));
+            float cardWidth = (avail - CardGap * (columns - 1)) / columns;
+
+            for (int i = 0; i < tools.Count; i += columns)
+            {
+                var row = GUILayoutUtility.GetRect(0, CardHeight, GUILayout.ExpandWidth(true));
+                for (int c = 0; c < columns && i + c < tools.Count; c++)
+                {
+                    var rect = new Rect(row.x + SidePadding + c * (cardWidth + CardGap),
+                                        row.y, cardWidth, row.height);
+                    DrawToolCard(rect, tools[i + c]);
+                }
+                GUILayout.Space(CardGap);
+            }
         }
 
-        void DrawToolRow(FrogletToolEntry tool, bool showCategoryTag)
+        // ── The card ─────────────────────────────────────────────────────────────
+
+        void DrawToolCard(Rect r, FrogletToolEntry tool)
         {
-            var row = GUILayoutUtility.GetRect(0, RowHeight, GUILayout.ExpandWidth(true));
             var accent = FrogletEditorPalette.Adapt(FrogletEditorPalette.ColorFor(tool.Category));
-            var track = TrackRect(row);
+            bool hover = r.Contains(Event.current.mousePosition);
 
-            bool hoverRow = row.Contains(Event.current.mousePosition);
-            if (hoverRow)
-                FrogletEditorPalette.DrawRect(row, FrogletEditorPalette.SurfaceRaised.WithAlpha(0.55f));
+            FrogletEditorPalette.DrawCard(
+                r,
+                hover ? FrogletEditorPalette.SurfaceRaised : FrogletEditorPalette.Surface,
+                accent.WithAlpha(hover ? 0.95f : 0.4f));
+            FrogletEditorPalette.DrawAccentStripe(r, accent, 3f);
 
-            // Lane gutter: the tool's own label, so the board is readable with lanes collapsed too.
-            var gutter = new Rect(row.x + 10f, row.y, LaneLabelWidth - 14f, row.height);
-            var gutterStyle = new GUIStyle(FrogletEditorPalette.CardBody)
+            const float pad = 11f;
+            float dotsWidth = 5 * 7f;
+
+            var titleRect = new Rect(r.x + pad, r.y + 8f, r.width - pad * 2f - dotsWidth - 6f, 17f);
+            GUI.Label(titleRect, tool.DisplayName, new GUIStyle(FrogletEditorPalette.CardTitle)
             {
-                alignment = TextAnchor.MiddleRight,
-                normal = { textColor = FrogletEditorPalette.Muted },
-            };
-            GUI.Label(gutter, showCategoryTag ? FrogletEditorPalette.LabelFor(tool.Category) : tool.Group ?? "", gutterStyle);
+                normal = { textColor = hover ? accent : FrogletEditorPalette.HeaderText },
+            });
 
-            // Track baseline so short bars still read as "on a scale".
-            FrogletEditorPalette.DrawRect(new Rect(track.x, row.y + row.height * 0.5f - 0.5f, track.width, 1f),
-                FrogletEditorPalette.Muted.WithAlpha(0.10f));
+            DrawImportanceDots(new Rect(r.xMax - pad - dotsWidth, r.y + 13f, dotsWidth, 6f),
+                tool.Importance, accent);
 
-            // The Gantt bar: length is the tool's importance.
-            float barW = Mathf.Max(96f, track.width * (tool.Importance / 5f));
-            var bar = new Rect(track.x, row.y + 2f, barW, row.height - 4f);
-            bool hoverBar = bar.Contains(Event.current.mousePosition);
+            var body = tool.Description;
+            if (string.IsNullOrEmpty(body))
+                body = tool.Group != null ? $"FrogletTools ▸ {tool.Group}" : "FrogletTools";
 
-            var fill = hoverBar ? Color.Lerp(accent, Color.white, 0.16f) : accent.WithAlpha(0.88f);
-            FrogletEditorPalette.DrawCard(bar, fill, Color.Lerp(accent, Color.black, 0.3f));
+            var descRect = new Rect(r.x + pad, r.y + 27f, r.width - pad * 2f, r.height - 34f);
+            GUI.Label(descRect, body, new GUIStyle(FrogletEditorPalette.CardBody) { wordWrap = true });
 
-            var nameRect = new Rect(bar.x + 9f, bar.y, bar.width - 18f, bar.height);
-            GUI.Label(nameRect, tool.DisplayName,
-                new GUIStyle(FrogletEditorPalette.CardTitle) { normal = { textColor = Color.white } });
-
-            // Description trails the bar so long text never squashes the bar itself.
-            if (!string.IsNullOrEmpty(tool.Description))
-            {
-                var descRect = new Rect(bar.xMax + 8f, row.y, Mathf.Max(0f, track.xMax - bar.xMax - 78f), row.height);
-                if (descRect.width > 40f)
-                    GUI.Label(descRect, tool.Description, FrogletEditorPalette.CardBody);
-            }
-
-            if (!tool.IsConforming)
-            {
-                var warn = new Rect(track.xMax - 68f, row.y + 5f, 62f, row.height - 10f);
-                FrogletEditorPalette.StatusPill(warn, "LEGACY", FrogletEditorPalette.Warn);
-            }
-
-            if (GUI.Button(bar, new GUIContent("", $"{tool.MenuPath}\n{tool.DeclaringType}"), GUIStyle.none))
+            if (GUI.Button(r, new GUIContent("", $"{tool.MenuPath}\n{tool.DeclaringType}"), GUIStyle.none))
                 tool.Invoke();
-            if (hoverBar) EditorGUIUtility.AddCursorRect(bar, MouseCursor.Link);
+            if (hover) EditorGUIUtility.AddCursorRect(r, MouseCursor.Link);
 
-            HandleRowContextMenu(row, tool);
-            GUILayout.Space(RowGap);
+            HandleCardContextMenu(r, tool);
         }
 
-        static void HandleRowContextMenu(Rect row, FrogletToolEntry tool)
+        /// <summary>Five dots, filled up to the tool's importance - the ranking without a chart.</summary>
+        static void DrawImportanceDots(Rect r, int importance, Color accent)
+        {
+            const float dot = 5f;
+            const float step = 7f;
+            for (int i = 0; i < 5; i++)
+            {
+                var d = new Rect(r.x + i * step, r.y, dot, dot);
+                FrogletEditorPalette.DrawRect(d, i < importance
+                    ? accent
+                    : FrogletEditorPalette.Muted.WithAlpha(0.28f));
+            }
+        }
+
+        static void HandleCardContextMenu(Rect r, FrogletToolEntry tool)
         {
             var e = Event.current;
-            if (e.type != EventType.ContextClick || !row.Contains(e.mousePosition)) return;
+            if (e.type != EventType.ContextClick || !r.Contains(e.mousePosition)) return;
 
             var menu = new GenericMenu();
             menu.AddItem(new GUIContent("Launch"), false, tool.Invoke);
@@ -288,7 +264,8 @@ namespace CosmicShore.Editor.Froglet
                     if (asset != null) { EditorGUIUtility.PingObject(asset); Selection.activeObject = asset; }
                 });
                 menu.AddItem(new GUIContent("Open script"), false,
-                    () => AssetDatabase.OpenAsset(AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(tool.SourceFile)));
+                    () => AssetDatabase.OpenAsset(
+                        AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(tool.SourceFile)));
             }
             else
             {
@@ -299,53 +276,7 @@ namespace CosmicShore.Editor.Froglet
             e.Use();
         }
 
-        void DrawMigrationStrip()
-        {
-            if (!_showMigration) return;
-            var legacy = FrogletToolRegistry.NonConforming().ToList();
-            if (legacy.Count == 0) return;
-
-            GUILayout.Space(10);
-            FrogletEditorPalette.HorizontalRule();
-
-            EditorGUILayout.LabelField("Needs migration", FrogletEditorPalette.SectionHeader);
-            EditorGUILayout.LabelField(
-                $"{legacy.Count} tool(s) still declare a [MenuItem] outside \"FrogletTools/\". " +
-                "Move the path under FrogletTools/<Category>/ so the menu bar stays single-rooted.",
-                FrogletEditorPalette.Subtitle);
-            GUILayout.Space(4);
-
-            foreach (var t in legacy.OrderBy(t => t.MenuPath, StringComparer.OrdinalIgnoreCase))
-            {
-                var row = GUILayoutUtility.GetRect(0, 22f, GUILayout.ExpandWidth(true));
-                FrogletEditorPalette.DrawAccentStripe(row, FrogletEditorPalette.Adapt(FrogletEditorPalette.Warn), 3f);
-                GUI.Label(new Rect(row.x + 10f, row.y, row.width - 190f, row.height),
-                    t.MenuPath, FrogletEditorPalette.CardBody);
-
-                var btn = new Rect(row.xMax - 172f, row.y + 1f, 82f, row.height - 2f);
-                if (FrogletEditorPalette.ColorButton(btn, "Launch", FrogletEditorPalette.Info, t.MenuPath, outline: true))
-                    t.Invoke();
-
-                var btn2 = new Rect(row.xMax - 86f, row.y + 1f, 82f, row.height - 2f);
-                bool hasScript = !string.IsNullOrEmpty(t.SourceFile);
-                if (FrogletEditorPalette.ColorButton(btn2, "Script", FrogletEditorPalette.Muted,
-                        hasScript ? t.SourceFile : "Script not found", hasScript, outline: true) && hasScript)
-                {
-                    var asset = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(t.SourceFile);
-                    if (asset != null) { EditorGUIUtility.PingObject(asset); Selection.activeObject = asset; }
-                }
-
-                GUILayout.Space(2);
-            }
-        }
-
         // ── Helpers ──────────────────────────────────────────────────────────────
-
-        static Rect TrackRect(Rect row) => new(
-            row.x + LaneLabelWidth,
-            row.y,
-            Mathf.Max(120f, row.width - LaneLabelWidth - TrackPadding),
-            row.height);
 
         List<FrogletToolEntry> Filter(IReadOnlyList<FrogletToolEntry> src)
         {

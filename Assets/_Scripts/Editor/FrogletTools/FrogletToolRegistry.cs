@@ -19,7 +19,6 @@ namespace CosmicShore.Editor.Froglet
         public MethodInfo Method;
         public string DeclaringType;
         public string SourceFile;        // best-effort script asset path, for "Ping script"
-        public bool IsConforming;        // lives under the FrogletTools root
         public bool HasAttribute;
 
         public void Invoke()
@@ -45,25 +44,16 @@ namespace CosmicShore.Editor.Froglet
     /// THE CONVENTION: a tool appears in the Froglet Master Tool automatically as soon as its
     /// <c>[MenuItem]</c> path starts with <see cref="Root"/> ("FrogletTools/"). Nothing else is
     /// required - no registration list to maintain, no asset to update. Add
-    /// <see cref="FrogletToolAttribute"/> when you want a specific lane, importance or description.
+    /// <see cref="FrogletToolAttribute"/> when you want a specific section, importance or
+    /// description.
     ///
-    /// Tools declared in the project's editor assembly that sit OUTSIDE that root are still
-    /// discovered, flagged as non-conforming, and surfaced in the window so the convention is
-    /// self-enforcing rather than a doc nobody reads.
+    /// That prefix is also the only filter: menus belonging to third-party packages (PlayFab,
+    /// FMOD, Soap, Quick Scene Pro, ...) live under their own roots and are simply never picked
+    /// up, so the board only ever shows tools we own.
     /// </summary>
     public static class FrogletToolRegistry
     {
         public const string Root = "FrogletTools/";
-
-        /// <summary>Menu roots that are ours historically; anything here should be migrated under <see cref="Root"/>.</summary>
-        static readonly string[] LegacyRoots = { "Tools/Cosmic Shore/", "Cosmic Shore/" };
-
-        /// <summary>Third-party menu paths that live in our editor assembly but are not ours to move.</summary>
-        static readonly string[] ForeignPrefixes =
-        {
-            "Assets/", "GameObject/", "Component/", "CONTEXT/", "Window/PlayFab", "PlayFab/",
-            "FMOD/", "Window/Obvious", "Tools/Obvious", "Help/", "Edit/", "File/",
-        };
 
         static List<FrogletToolEntry> _cache;
 
@@ -102,7 +92,7 @@ namespace CosmicShore.Editor.Froglet
                             var path = mi.menuItem;
                             if (string.IsNullOrEmpty(path)) continue;
                             path = StripHotkey(path);
-                            if (IsForeign(path)) continue;
+                            if (!path.StartsWith(Root, StringComparison.Ordinal)) continue;
                             if (!seen.Add(path)) continue;
 
                             found.Add(Build(path, m, mi));
@@ -123,12 +113,11 @@ namespace CosmicShore.Editor.Froglet
             var attr = m.GetCustomAttribute<FrogletToolAttribute>(false);
             var segments = path.Split('/');
             var leaf = segments[^1];
-            var conforming = path.StartsWith(Root, StringComparison.Ordinal);
 
             // "FrogletTools/Game Modes/Prefab Kit" -> group "Game Modes".
             // "FrogletTools/Prefab Kit"            -> no group.
             string group = null;
-            if (conforming && segments.Length >= 3)
+            if (segments.Length >= 3)
                 group = string.Join("/", segments.Skip(1).Take(segments.Length - 2));
 
             return new FrogletToolEntry
@@ -142,7 +131,6 @@ namespace CosmicShore.Editor.Froglet
                 Method = m,
                 DeclaringType = m.DeclaringType?.Name,
                 SourceFile = FindScriptPath(m.DeclaringType),
-                IsConforming = conforming,
                 HasAttribute = attr != null,
             };
         }
@@ -192,9 +180,6 @@ namespace CosmicShore.Editor.Froglet
                    || n.StartsWith("CosmicShore.", StringComparison.Ordinal);
         }
 
-        static bool IsForeign(string path)
-            => ForeignPrefixes.Any(p => path.StartsWith(p, StringComparison.Ordinal));
-
         /// <summary>MenuItem paths may carry a hotkey suffix (" %&amp;m"); strip it for display.</summary>
         public static string StripHotkey(string path)
         {
@@ -222,12 +207,5 @@ namespace CosmicShore.Editor.Froglet
             ScriptPathCache[t] = result;
             return result;
         }
-
-        /// <summary>Tools that still sit under a legacy root and should be migrated.</summary>
-        public static IEnumerable<FrogletToolEntry> NonConforming()
-            => All.Where(e => !e.IsConforming);
-
-        public static bool IsLegacyPath(string path)
-            => LegacyRoots.Any(r => path.StartsWith(r, StringComparison.Ordinal));
     }
 }

@@ -198,7 +198,7 @@ namespace CosmicShore.Editor.Froglet
             FrogletEditorPalette.DrawAccentStripe(r, accent, 4f);
             GUI.Label(new Rect(r.x + 12f, r.y, r.width - 60f, r.height),
                 role.ToString().ToUpperInvariant(),
-                new GUIStyle(FrogletEditorPalette.LaneLabel) { normal = { textColor = accent } });
+                new GUIStyle(FrogletEditorPalette.SectionLabel) { normal = { textColor = accent } });
             FrogletEditorPalette.StatusPill(new Rect(r.xMax - 44f, r.y + 2f, 36f, r.height - 4f),
                 count.ToString(), AccentFor(role));
             GUILayout.Space(3);

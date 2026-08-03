@@ -3,8 +3,9 @@ using System;
 namespace CosmicShore.Editor.Froglet
 {
     /// <summary>
-    /// Lane a tool is filed under in the Froglet Master Tool board. Purely presentational -
-    /// it decides the swimlane and the accent colour, never what the tool does.
+    /// Section a tool is filed under in the Froglet Master Tool board. Purely presentational -
+    /// it decides which section of the board the tool sits in and its accent colour, never what the
+    /// tool does.
     /// </summary>
     public enum FrogletToolCategory
     {
@@ -35,7 +36,7 @@ namespace CosmicShore.Editor.Froglet
     ///
     /// You do NOT need this attribute for a tool to appear - the registry discovers every
     /// <c>[MenuItem("FrogletTools/...")]</c> in the editor assembly automatically. Add it when you
-    /// want the tool to sit in a specific lane, carry a description, or rank above its neighbours.
+    /// want the tool in a specific section, carrying a description, or ranked above its neighbours.
     ///
     /// Put it on the same static method that carries the <see cref="UnityEditor.MenuItem"/>
     /// attribute:
@@ -54,12 +55,12 @@ namespace CosmicShore.Editor.Froglet
             Category = category;
         }
 
-        /// <summary>Swimlane the tool is drawn in.</summary>
+        /// <summary>Section of the board the tool is drawn in.</summary>
         public FrogletToolCategory Category { get; }
 
         /// <summary>
-        /// 1 (niche) .. 5 (load-bearing, used every day). Drives both the sort order inside a lane
-        /// and the length of the tool's bar on the board. Defaults to 3.
+        /// 1 (niche) .. 5 (load-bearing, used every day). Drives both the sort order inside a section
+        /// and the five-dot rating shown on the card. Defaults to 3.
         /// </summary>
         public int Importance { get; set; } = 3;
 

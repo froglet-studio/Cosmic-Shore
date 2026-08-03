@@ -126,7 +126,7 @@ namespace CosmicShore.Editor.Froglet
 
         // ── Styles ───────────────────────────────────────────────────────────────
 
-        static GUIStyle _title, _subtitle, _lane, _cardTitle, _cardBody, _pill, _sectionHeader;
+        static GUIStyle _title, _subtitle, _section, _cardTitle, _cardBody, _pill, _sectionHeader;
 
         public static GUIStyle Title => _title ??= new GUIStyle(EditorStyles.boldLabel)
         {
@@ -148,7 +148,7 @@ namespace CosmicShore.Editor.Froglet
             normal = { textColor = HeaderText },
         };
 
-        public static GUIStyle LaneLabel => _lane ??= new GUIStyle(EditorStyles.boldLabel)
+        public static GUIStyle SectionLabel => _section ??= new GUIStyle(EditorStyles.boldLabel)
         {
             fontSize = 11,
             alignment = TextAnchor.MiddleLeft,
