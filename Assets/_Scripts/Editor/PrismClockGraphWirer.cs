@@ -6,6 +6,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using UnityEditor;
 using UnityEngine;
+using CosmicShore.Editor.Froglet;
 
 namespace CosmicShore.Editor
 {
@@ -26,7 +27,7 @@ namespace CosmicShore.Editor
     /// idempotent PROPERTY repair path (e.g. after a graph revert); a reverted
     /// node graph is restored from git, not re-drawn by hand.
     ///
-    /// Tools > Cosmic Shore > Prism Animation > Auto-Wire Clock Properties.
+    /// FrogletTools > Ecology > Prism Animation> Auto-Wire Clock Properties.
     /// </summary>
     public static class PrismClockGraphWirer
     {
@@ -127,7 +128,9 @@ namespace CosmicShore.Editor
             },
         };
 
-        [MenuItem("Tools/Cosmic Shore/Prism Animation/Auto-Wire Clock Properties (All Graphs)")]
+        [MenuItem("FrogletTools/Ecology/Prism Animation/Auto-Wire Clock Properties (All Graphs)")]
+        [FrogletTool(FrogletToolCategory.Ecology, Importance = 4,
+            Description = "Stamp clock properties across every prism shader graph.")]
         public static void AutoWireAll()
         {
             var report = new StringBuilder();

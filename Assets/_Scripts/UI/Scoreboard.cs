@@ -115,7 +115,33 @@ namespace CosmicShore.UI
             statsProvider = GetComponent<ScoreboardStatsProvider>();
             if (!statsProvider)
                 CSDebug.LogWarning("[Scoreboard] No ScoreboardStatsProvider found.");
+
+            ResolveGameController();
             HideScoreboard();
+        }
+
+        /// <summary>
+        /// Finds the scene's game controller when the inspector reference is empty.
+        ///
+        /// This exists so GameCanvas.prefab can be dropped into a NEW game-mode scene and work
+        /// without hand-wiring: there is exactly one <see cref="MiniGameControllerBase"/> per
+        /// gameplay scene, and it is always the one Play Again must talk to. An explicit inspector
+        /// assignment still wins, so existing scenes are unaffected.
+        ///
+        /// Leaving this to per-scene wiring is what turned a shared prefab into N hand-maintained
+        /// copies - every scene had to carry its own override just to point at its own controller.
+        /// </summary>
+        void ResolveGameController()
+        {
+            if (gameController != null) return;
+
+            gameController = FindAnyObjectByType<MiniGameControllerBase>(FindObjectsInactive.Include);
+
+            if (gameController == null)
+            {
+                // Not an error: menu / tool scenes legitimately host GameCanvas with no controller.
+                CSDebug.Log("[Scoreboard] No MiniGameControllerBase in this scene - Play Again is unavailable.");
+            }
         }
 
         void OnEnable()

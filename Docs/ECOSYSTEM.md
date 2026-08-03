@@ -1487,7 +1487,7 @@ whatever the food web makes of it — which is the point.
 (plus the count backstop), so a config that prepopulates hundreds of thousands of volume
 must author `PhaseThresholds` above that baseline or the cell boots straight into Frenzy.
 Each of the freestyle six authors the Blob ladder's deltas (+700/+500/+3600/+3000 count,
-+11.2k/+8k/+57.6k/+48k volume) on top of its own measured baseline (Tools > Cosmic Shore >
++11.2k/+8k/+57.6k/+48k volume) on top of its own measured baseline (FrogletTools > Ecology >
 Measure Cell Environment Baselines). Re-baselined 2026-08-02 post clock-material migration
 (volume is final at spawn now) — e.g. Yggdra measures 34,340 prisms / 541,156 volume →
 Restless at 552,356 / 549,156, Frenzy at 598,756 / 589,156, counts
@@ -1547,7 +1547,7 @@ danger). All extend `CellEnvironmentSpawnableBase` (one deterministic lay/stream
 contract, per-cell fixed seed); per-cell PhaseThresholds ride each baseline measured with
 a bit-exact simulation of the C# noise (count/volume): Yggdra 34.3k/541k, Daedala
 33.9k/638k, Orrery 34.6k/197k, Zephyr 36.1k/427k, Caldera 31.2k/433k, Geode 34.4k/561k —
-confirm in-engine via Tools > Cosmic Shore > Measure Cell Environment Baselines before
+confirm in-engine via FrogletTools > Ecology > Measure Cell Environment Baselines before
 retuning any ladder. Same soak-before-ship rule as §17 above; each prefab's
 `density` knob (0.5-1.3) is the per-cell fallback lever.
 
@@ -1556,7 +1556,7 @@ retuning any ladder. Same soak-before-ship rule as §17 above; each prefab's
    watchdog fix shipped after the 10,496 freeze but has not yet been confirmed in-editor.
 2. **Device soak per cell + Scurry Atlantis** — record steady-state numbers in
    `Docs/PERFORMANCE_OPTIMIZATION.md`; per-prefab `density` (0.5-1.3) is the fallback lever.
-3. **Confirm simulated baselines in-engine** (Tools > Cosmic Shore > Measure Cell Environment
+3. **Confirm simulated baselines in-engine** (FrogletTools > Ecology > Measure Cell Environment
    Baselines) and re-author any PhaseThresholds off by more than a few hundred count / few
    thousand volume.
 4. ~~**Menu load-time UX call**~~ — **SHIPPED, see §19.** The veil hold *was* long for a menu,

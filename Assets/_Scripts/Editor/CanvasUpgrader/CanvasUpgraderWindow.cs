@@ -5,6 +5,7 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using CosmicShore.Editor.Froglet;
 
 namespace CosmicShore.Editor
 {
@@ -61,7 +62,9 @@ namespace CosmicShore.Editor
 
         const int ReportDisplayCap = 40000;   // TextArea slows down beyond this; full text always goes to the Console/Editor.log
 
-        [MenuItem("Tools/Cosmic Shore/Canvas Upgrader")]
+        [MenuItem("FrogletTools/Interface/Canvas Upgrader")]
+        [FrogletTool(FrogletToolCategory.Interface, Importance = 3,
+            Description = "Bring a legacy canvas up to the current UI conventions.")]
         static void Open()
         {
             var w = GetWindow<CanvasUpgraderWindow>("Canvas Upgrader");
@@ -198,7 +201,7 @@ namespace CosmicShore.Editor
 
             EditorGUILayout.HelpBox(
                 "Perf, while you're in here: the 'raycast targets on' counts above drive EventSystem cost and are " +
-                "worth auditing per upgraded scene with Tools > Cosmic Shore > UI > Raycast Target Audit " +
+                "worth auditing per upgraded scene with FrogletTools > Interface > Raycast Target Audit " +
                 "(scan, review candidates, disable, click through the UI once).",
                 MessageType.None);
 
