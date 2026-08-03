@@ -160,6 +160,24 @@ its GameObject lists it in `m_Component`.
   document's `^  (\w+):` key set, and diff BOTH ways. A field you forgot to
   emit silently takes its initializer; a key you misspelled is silently
   dropped — and neither shows up until someone plays the scene.
+- **Author a NEWLY-serialized field into an existing prefab/SO**: Unity's YAML
+  is name-KEYED, not positional or exhaustive — a key the file lacks simply
+  deserializes to the C# initializer. So adding `[SerializeField] float Foo`
+  needs NO mass re-save: insert `Foo: <value>` into the component's `!u!114`
+  block for the instances whose value differs from the default, leave the rest
+  alone, and every untouched prefab keeps working. Match the C# identifier
+  EXACTLY (case-sensitive, no `m_` prefix on your own fields); a typo'd key is
+  silently ignored and the field reads its default forever — assert the key
+  count after writing, and grep the C# declaration to confirm spelling.
+- **Read authored MESH geometry without opening Unity** (which end is the apex?
+  where's the pivot? is +Y up?): a `.asset` mesh carries `m_LocalAABB` for
+  extents and the vertex buffer as hex in `m_VertexData`/`_typelessData`.
+  Derive the stride from `m_Channels` (offsets + dimensions; pos is offset 0,
+  3 floats), then `struct.unpack_from('<fff', bytes.fromhex(h), i*stride)` per
+  vertex. Bucketing the positions by one axis answers orientation questions
+  outright — a cone's apex is the axis end with ONE unique (x,z), the base is
+  the end with a ring of them. This is how a claim like "the apex sits at the
+  container origin" gets PROVEN instead of assumed from a comment.
 
 ## 4. Technique: C# verification — get a real compiler first
 
@@ -200,6 +218,13 @@ per task; it is cheap.
   (matched by recorded brace depth), never by a quote. Modeling it as a
   string-mode stack falsely flags valid files (this bit the checker on
   `Debug.Log($"... {string.Join(", ", xs.Select(g => $"{g.Key}"))}")`).
+- **Check the brace balance DIFFERENTIALLY, not absolutely.** Run the checker
+  on the file at the BASE revision (`git show <base>:<path>`) and on your
+  edited copy, then compare (depth, mode) pairs. Equal = your edit is
+  balance-neutral, which is the actual question; a non-zero absolute depth is
+  usually the checker tripping over interpolated-string handling, not a real
+  imbalance, and chasing it wastes the pass. This session's two "BAD" files
+  flagged identically before and after the edit.
 - **Blast radius**: before deleting/renaming any member, grep for every caller
   (`\.Member\b` patterns); after editing, sweep again — the deleted surface
   must appear ZERO times outside historical docs.
@@ -356,6 +381,21 @@ hand-authored files plus a scene array entry. The recipe:
   cell's volume from 10% of its prisms). Set those to `base × k² / detail²`.
   Corollary worth stating out loud: at constant coverage and thickness, a 2×
   surface costs exactly 4× volume. That is geometry, not a tuning miss.
+- **A tuning dial that a downstream clamp already saturates**: before "let's
+  try turning X up", trace X to the value the SCREEN reads and check every
+  clamp in between. If the input already exceeds the ceiling, the dial is dead
+  — turning it up changes literally nothing, and you will burn a play-test
+  round proving that. Cosmic Shore has bitten twice here (AOE blast `Inertia`
+  vs `PrismExplosion.maxSpeed` 33.33 with a ~222 u/s input; the hull ram vs the
+  same clamp's FLOOR). Symptom to recognize: every instance produces the
+  IDENTICAL magnitude regardless of cause. Fix by putting the path on a
+  true-velocity contract that supplies its own ceiling — never by widening the
+  shared clamp, which retunes every other consumer of it.
+- **Verify the bug before fixing it.** A report describing code behaviour
+  ("it's using the sphere centre") may predate a fix that already landed. Read
+  the live path end to end and check `git log` on the file FIRST; report
+  "already fixed in <sha>, here's the proof" rather than re-fixing correct code
+  or, worse, inventing a change to look responsive.
 
 ## 6. When the editor genuinely IS required
 

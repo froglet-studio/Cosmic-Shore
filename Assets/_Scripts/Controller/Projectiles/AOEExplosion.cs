@@ -24,8 +24,25 @@ namespace CosmicShore.Gameplay
         [SerializeField] protected float ExplosionDelay = 0.2f;
         [FormerlySerializedAs("renderer")] [SerializeField] protected MeshRenderer meshRenderer;
 
+        [Header("Impact")]
+        [Tooltip("Gain on the blast-wave speed handed to the mass this blast destroys. 1 = debris leaves at the wavefront's own speed. NOTE: this dial only reaches the screen with Proportional Debris ON - see below.")]
+        [SerializeField] protected float Inertia = 1f;
+
+        [Tooltip("ON: the impact vector is a TRUE debris velocity and the blast supplies its own speed ceiling, so Inertia scales what the player actually sees. OFF (legacy): debris is clamped to the explosion prefab's authored max (33.33 u/s), which every AOE blast already exceeds several times over - the Dolphin cone hands over ~222 u/s - so every blast saturates to the same speed and Inertia does nothing.")]
+        [SerializeField] protected bool proportionalDebris;
+
+        [Tooltip("Debris speed as a fraction of the blast wave that threw it, before Inertia. 1/3 matches the physical read the vessel and skimmer damage paths ship at, so all three stay one tuning group. Only used when Proportional Debris is ON.")]
+        [Range(0.05f, 3f)]
+        [SerializeField] protected float debrisRestitution = 1f / 3f;
+
+        // Debris speed and SHATTER RATE are one number on the proportional contract
+        // (PrismExplosion.TriggerExplosion re-reads Speed off the clamped velocity when
+        // an override is supplied, deliberately - otherwise raising the ceiling finishes
+        // the shatter in a frame while the debris crawls). So Inertia scales BOTH, and
+        // restitution x Inertia = 1 reproduces today's shatter rate exactly while
+        // unclipping the throw. Tune with the single Inertia dial; do not split them.
+
         protected Vector3 MaxScaleVector;
-        protected float Inertia = 1;
         protected float speed;
 
         protected CancellationTokenSource explosionCts;
@@ -39,6 +56,25 @@ namespace CosmicShore.Gameplay
         /// <summary>The visual wavefront's full-expansion time (authored on the prefab,
         /// or the per-instance <see cref="InitializeStruct.DurationOverride"/>).</summary>
         public float Duration => ExplosionDuration;
+
+        /// <summary>
+        /// What this blast hands the mass it destroys. On the proportional contract the
+        /// vector IS the debris velocity, so the blast supplies a ceiling in the same
+        /// units and <see cref="Inertia"/> scales the result linearly. On the legacy
+        /// contract there is no ceiling of our own, the explosion prefab's clamp applies,
+        /// and - since every AOE magnitude sits several times above it - the speed reads
+        /// the same no matter what <see cref="Inertia"/> says.
+        /// </summary>
+        public ExplosionImpulse Impulse
+        {
+            get
+            {
+                if (!proportionalDebris) return new ExplosionImpulse(speed, Inertia);
+
+                float debrisSpeed = speed * debrisRestitution;
+                return new ExplosionImpulse(debrisSpeed, Inertia, debrisSpeed * Inertia);
+            }
+        }
 
         protected ExplosionImpactor _explosionImpactor;
         private float _colliderRadius = 0.5f; // Default sphere collider radius
@@ -189,7 +225,7 @@ namespace CosmicShore.Gameplay
         public virtual Vector3 CalculateImpactVector(Vector3 impacteePosition)
         {
             Vector3 direction = (impacteePosition - transform.position).normalized;
-            return direction * speed * Inertia;
+            return Impulse.Along(direction);
         }
 
         protected virtual async UniTaskVoid ExplodeAsync(CancellationToken ct)
@@ -259,7 +295,7 @@ namespace CosmicShore.Gameplay
                         // Spherical explosion: wavefront and blast origin share the
                         // stationary center - impacts radiate from the spawn point.
                         bool shouldContinue = impactor?.ProcessBatchFrame(
-                            cachedTransform.position, currentRadius, cachedTransform.position, speed, Inertia) ?? true;
+                            cachedTransform.position, currentRadius, cachedTransform.position, Impulse) ?? true;
 
                         if (!shouldContinue)
                         {
@@ -299,7 +335,7 @@ namespace CosmicShore.Gameplay
                 while (impactor != null && impactor.HasPendingBatchWork)
                 {
                     ct.ThrowIfCancellationRequested();
-                    impactor.DrainPendingBatchFrame(speed, Inertia);
+                    impactor.DrainPendingBatchFrame(Impulse);
                     await UniTask.Yield(PlayerLoopTiming.Update, ct);
                 }
 
