@@ -224,8 +224,12 @@ Any tier can also be run on demand from the Actions tab (**Run workflow** → pi
 
 ### The runner is not chosen yet
 
-`runs-on` reads the repository variable **`UNITY_RUNNER_LABEL`** and falls back to `self-hosted`.
-Until a matching runner exists the job queues rather than doing anything wrong. Options:
+The `unity` job is **skipped entirely until the repository variable `UNITY_RUNNER_LABEL` is set**,
+and then targets whatever runner label it names. Skipping rather than defaulting to a label is
+deliberate: a job queued against a runner that does not exist shows as a *permanently pending* check
+on every PR, and GitHub only reaps it after roughly 24 hours — `timeout-minutes` governs execution
+time, not queue time. Set the variable the day a runner is registered; nothing else needs editing.
+Options:
 
 | Option | What it needs | Notes |
 |---|---|---|
@@ -238,7 +242,7 @@ Until a matching runner exists the job queues rather than doing anything wrong. 
 | Variable | Where | Purpose |
 |---|---|---|
 | `UNITY_PATH` | Runner env **or** repo variable | Absolute path to the Unity 6000.3.17f1 executable. The job fails fast with a clear message if unset. |
-| `UNITY_RUNNER_LABEL` | Repo variable | Runner label to target. Defaults to `self-hosted`. |
+| `UNITY_RUNNER_LABEL` | Repo variable | Runner label to target. **While unset, the `unity` job is skipped** and only the `resolve` job runs. |
 | `UNITY_TESTS_BLOCKING` | Repo variable | Set to `false` to report edit-mode failures as a warning instead of failing the PR. See the caveat below. |
 
 ### Two things to know before turning it on
@@ -247,8 +251,10 @@ Until a matching runner exists the job queues rather than doing anything wrong. 
   on day one. Either green it up first, or set `UNITY_TESTS_BLOCKING=false` for a grace period —
   but treat that as temporary, since a non-blocking gate is not a gate.
 - **Scheduled workflows run the default branch's copy of the file** and check out the default
-  branch. The `resolve` job therefore pins scheduled runs to `bleeding-edge` explicitly, and this
-  workflow must be merged to the default branch before any nightly will fire at all.
+  branch. The `resolve` job therefore pins scheduled runs to `bleeding-edge` explicitly, but the
+  workflow file itself still has to reach the **default branch** before any nightly fires. Merging
+  `bleeding-edge` *into* a feature branch does not move the file the other way — it travels only
+  when the PR merges. Until then the per-PR `compile` tier is the only thing that can trigger.
 
 ### Security
 

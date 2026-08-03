@@ -21,8 +21,10 @@ namespace CosmicShore.UI
             CatalogManager.OnInventoryChange += SetTicketBalance;
         }
 
-        void OnDisable()
+        protected override void OnDisable()
         {
+            base.OnDisable();
+
             CatalogManager.OnLoadInventory -= SetTicketBalance;
             CatalogManager.OnInventoryChange -= SetTicketBalance;
         }
