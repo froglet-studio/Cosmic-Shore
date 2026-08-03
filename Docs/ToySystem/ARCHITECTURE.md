@@ -237,9 +237,11 @@ same stuff, in the same domain prism materials, as a mini-cell or a microscene.
 | `BranchingFlora` (Branching, Cacti, Pine, Nerve) | the branch walk | its own serialized params — branch angles, counts, the `leafChance` climb, the 1/depth step and scale falloff |
 | `AssembledFlora` + `GyroidAssembler` (Gyroid) | a patch of the real gyroid | `GyroidBondMateDataContainer`'s bond table, composed exactly as `CalculateGlobalBondSite` + `CalculateRotation` do |
 | `AssembledFlora` + `WallAssembler` (Wall) | the square sheet | its four in-plane bond offsets |
-| `AssembledFlora` + `SchwarzPAssembler` (SchwarzP) | **none — falls back to the sphere** | a walk on a parametric minimal surface with live occupancy claims; it cannot be reproduced honestly here, and an invented shape is worse than an honest blank |
+| `AssembledFlora` + `SchwarzPAssembler` (SchwarzP) | a patch of the tunnel network | `SchwarzPAssembler.TryPreviewLattice` — the same seed anchor, tangent sites, Newton projection and parallel-transported heading as live growth, sharing the now-static `SiteDirection` / `TryStepAlongSurface`, with the occupancy claims swapped for a local visited set |
 
-The previews deliberately skip what a thumbnail cannot show: `growthChance` (it paces growth over
+Every one of the four is the species' real rule, shared with live growth rather than re-derived —
+the Schwarz P walk in particular reuses the assembler's own surface math, so an edit to the surface
+moves the icon with it. The previews deliberately skip what a thumbnail cannot show: `growthChance` (it paces growth over
 time, it does not change the shape a branch eventually takes), the Frenzy gate, and prism budgets.
 They preview *form*; they are not a second implementation of growth for gameplay.
 

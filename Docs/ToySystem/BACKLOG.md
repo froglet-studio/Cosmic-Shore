@@ -438,6 +438,11 @@ station, its options unfold out ahead; fly it again, they fold away. Architectur
   are never GC'd). The new `Material` overload — which the emblems use, and which lets one owner
   share and destroy a single material — makes adopting the same pattern there a small follow-up. Not
   done here so this change doesn't also alter matrix-station behaviour.
+- **Flora icons are previews, not a second growth implementation.** Each `TryPreviewGrowth` mirrors
+  its species' own rule and shares code with it where the rule is static (the Schwarz P surface math,
+  the gyroid bond table). The two places they can drift are `BranchingFlora`'s branch step/scale
+  falloff and `WallAssembler`'s bond offsets, which are re-expressed rather than shared. If either
+  changes, re-check the icon.
 - **Emblem legibility vs. the label position.** The emblem's outer extent (33.4u) and the label
   height (41.8u) are independent numbers that happen to clear each other at R=22. If the toybox's
   `toyBodyRadius` is ever retuned, re-check both against the trigger radius.

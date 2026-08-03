@@ -403,9 +403,9 @@ namespace CosmicShore.Gameplay
         ///   preview IS a patch of the gyroid the species actually grows.
         /// • <see cref="WallAssembler"/> - its four in-plane bond offsets
         ///   (±up, ±right by half-extent + separation).
-        /// • <see cref="SchwarzPAssembler"/> - NOT previewed. Its growth is a walk on a parametric
-        ///   minimal surface with live occupancy claims, which cannot be reproduced honestly here;
-        ///   it returns false and the caller falls back rather than showing an invented shape.
+        /// • <see cref="SchwarzPAssembler"/> - its own <c>TryPreviewLattice</c>: the same seed
+        ///   anchor, tangent sites, Newton projection and parallel-transported heading the live
+        ///   growth uses, with the occupancy claims replaced by a local visited set.
         /// </summary>
         public override bool TryPreviewGrowth(int budget, int seed, List<SpawnPoint> into)
         {
@@ -415,6 +415,8 @@ namespace CosmicShore.Gameplay
 
             if (healthPrism.TryGetComponent(out GyroidAssembler gyroid))
                 return PreviewGyroid(gyroid, scale, budget, into);
+            if (healthPrism.TryGetComponent(out SchwarzPAssembler schwarz))
+                return schwarz.TryPreviewLattice(budget, scale, into);
             if (healthPrism.TryGetComponent(out WallAssembler wall))
                 return PreviewWall(wall, scale, budget, into);
 
