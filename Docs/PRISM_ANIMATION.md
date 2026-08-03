@@ -877,7 +877,7 @@ Phase D — lock-in:
 
 > **The step-by-step, self-verifying checklist lives in
 > `Docs/PRISM_CLOCK_WIRING_CHECKLIST.md`** — phases 1–7 with exact clicks, the
-> validator (`Tools > Cosmic Shore > Prism Animation > Validate Clock Wiring`),
+> validator (`FrogletTools > Ecology > Prism Animation> Validate Clock Wiring`),
 > the play-mode smoke test, and a troubleshooting table. This section is the
 > summary.
 
@@ -904,7 +904,7 @@ unwired material. That is the intended forcing function. The session:
    the grow engine, already migrated).
 5. `TrailViewer` ✅ removed from `Urchin.prefab` + file deleted (D2, 2026-08-02).
    Remaining in-editor chore: re-baseline PhaseThresholds
-   (volume-final-at-spawn — Tools > Cosmic Shore > Measure Cell Environment
+   (volume-final-at-spawn — FrogletTools > Ecology > Measure Cell Environment
    Baselines).
 
 ## 7. Enforcement

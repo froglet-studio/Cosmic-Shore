@@ -5,6 +5,7 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using CosmicShore.Editor.Froglet;
 
 namespace CosmicShore.Editor
 {
@@ -31,7 +32,9 @@ namespace CosmicShore.Editor
         const string ToyboxAssetPath = "Assets/Resources/Toybox.asset";
         const string MenuScenePath = "Assets/_Scenes/Menu_Main.unity";
 
-        [MenuItem("Tools/Cosmic Shore/Setup Freestyle Toybox")]
+        [MenuItem("FrogletTools/Scene Setup/Setup Freestyle Toybox")]
+        [FrogletTool(FrogletToolCategory.SceneSetup, Importance = 4,
+            Description = "Author the freestyle toybox assets and wire them into Menu_Main.")]
         static void SetupToybox()
         {
             var gallery = CreatePaintingGallery();

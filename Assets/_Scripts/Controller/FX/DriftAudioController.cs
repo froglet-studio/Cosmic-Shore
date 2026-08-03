@@ -515,7 +515,7 @@ namespace CosmicShore.Gameplay.Audio
                 }
             }
 
-            RuntimeManager.AttachInstanceToGameObject(_instance, target);
+            RuntimeManager.AttachInstanceToGameObject(_instance, target.gameObject);
             _attachMode = mode;
         }
 

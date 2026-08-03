@@ -71,13 +71,13 @@ else `gpu-clock`) along with the git branch.
 ### NEW — gpu-clock (this branch)
 
 1. Check out `claude/prism-animation-audit-95mlpu`, open the project.
-2. `Tools > Cosmic Shore > Setup Prism Grid Explosion Scene` (idempotent —
+2. `FrogletTools > Scene Setup > Setup Prism Grid Explosion Scene` (idempotent —
    authors the config, scene, managers, harness + benchmark component; it is
    also SELF-HEALING: a scene that somehow carries duplicate PrismManagers
    instances — the Singleton<T> managers must exist exactly once — gets the
    extras deleted, with inactive instances counted too).
 3. Disable Bootstrap auto-load
-   (`Tools > Cosmic Shore > Testing Multiplayer > Do not load Bootstrap Scene on Play`),
+   (`FrogletTools > Scene Setup > Testing Multiplayer> Do not load Bootstrap Scene on Play`),
    press Play.
 4. The setup tool authors the spec'd 47³ grid — leave the X/Y/Z/gap fields
    alone so both experiments run the identical workload. Press **Bench** (or
@@ -138,7 +138,7 @@ branch-specific API.)
 
 ### Report
 
-On either branch: `Tools > Cosmic Shore > Prism Grid Benchmark >
+On either branch: `FrogletTools > Performance > Prism Grid Benchmark>
 Generate Comparison Report`. Reads every run JSON in the folder and writes:
 
 - **`report.md`** — per-variant summary (mean / p50 / 1% low / min FPS +

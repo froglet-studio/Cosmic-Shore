@@ -102,4 +102,4 @@ what the carve-out silently broke — see the traps below.
 ## 6. Commit
 One coherent step per commit; conventional-commit message; develop on the feature branch (never
 `bleeding-edge`); open a PR only when asked. After lifeform-prefab changes, note to run
-`Tools ▸ Cosmic Shore ▸ Validate Lifeform Crystals`.
+`FrogletTools ▸ Validation ▸ Validate Lifeform Crystals`.

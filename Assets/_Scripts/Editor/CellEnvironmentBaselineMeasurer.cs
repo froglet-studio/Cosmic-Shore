@@ -2,6 +2,7 @@ using System.Text;
 using CosmicShore.Gameplay;
 using UnityEditor;
 using UnityEngine;
+using CosmicShore.Editor.Froglet;
 
 namespace CosmicShore.Editor
 {
@@ -15,7 +16,9 @@ namespace CosmicShore.Editor
     /// </summary>
     public static class CellEnvironmentBaselineMeasurer
     {
-        [MenuItem("Tools/Cosmic Shore/Measure Cell Environment Baselines")]
+        [MenuItem("FrogletTools/Ecology/Measure Cell Environment Baselines")]
+        [FrogletTool(FrogletToolCategory.Ecology, Importance = 4,
+            Description = "Measure per-cell prism baselines that phase thresholds ride on.")]
         public static void Measure()
         {
             var report = new StringBuilder("Cell environment baselines (count / summed volume):\n");

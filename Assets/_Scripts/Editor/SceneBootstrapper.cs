@@ -39,8 +39,8 @@ namespace CosmicShore.Editor
         private const string SHOULD_LOAD_BOOTSTRAP_SCENE_KEY = "Load Main_Menu Scene";
         private const string WAS_DIRTY_BEFORE_RELOAD_KEY = "SceneBootstrapper_WasDirtyBeforeReload";
 
-        private const string LOAD_BOOTSTRAP_SCENE_ON_PLAY = "Tools/Cosmic Shore/Testing Multiplayer/Load Bootstrap Scene on Play";
-        private const string DO_NOT_LOAD_BOOTSTRAP_SCENE_ON_PLAY = "Tools/Cosmic Shore/Testing Multiplayer/Do not load Bootstrap Scene on Play";
+        private const string LOAD_BOOTSTRAP_SCENE_ON_PLAY = "FrogletTools/Scene Setup/Testing Multiplayer/Load Bootstrap Scene on Play";
+        private const string DO_NOT_LOAD_BOOTSTRAP_SCENE_ON_PLAY = "FrogletTools/Scene Setup/Testing Multiplayer/Do not load Bootstrap Scene on Play";
 
         // To run tests, we need to open a specific scene that has the test runner in it.
         private const string TESTRUNNER_SCENE_NAME = "InitTestScene";
@@ -76,7 +76,7 @@ namespace CosmicShore.Editor
 
         /// <summary>
         /// Programmatic access to the "load Bootstrap scene on play" toggle (the same setting as the
-        /// Tools > Cosmic Shore > Testing Multiplayer menu items). The Performance Benchmark tool flips
+        /// FrogletTools > Scene Setup > Testing Multiplayer menu items). The Performance Benchmark tool flips
         /// this off to capture a chosen scene directly, then restores it on play-exit.
         /// </summary>
         public static bool LoadBootstrapSceneOnPlay

@@ -64,7 +64,7 @@ namespace CosmicShore.Gameplay
             if (!_cfg.PrismPrefab)
                 CSDebug.LogWarning("[ConveyorToy] No prism prefab wired - scenes will carry only " +
                                    "crystals and lifeforms. Author the definition asset (or run " +
-                                   "Tools > Cosmic Shore > Setup Freestyle Toybox) to wire one.");
+                                   "FrogletTools > Scene Setup > Setup Freestyle Toybox) to wire one.");
 
             EnsureConveyor();
             EnsureRun();
