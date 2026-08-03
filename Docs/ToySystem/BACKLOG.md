@@ -353,7 +353,11 @@ Shipped on `claude/freestyle-cell-selector-toy-*`. Design + invariant analysis:
   activation, clients following. Needs a design call on who owns the menu world.
 - **The player flies blind under the veil.** They opted in, and it matches a scene load, but a
   danger prism from a Caldera build could land on them. Options if it bites: park/autopilot the
-  vessel for the hold, or re-pose it to the cell centre before the build.
+  vessel for the hold, or re-pose it to the cell centre before the build. **Got worse, twice:**
+  Caldera's danger count went 858 → 1,503 in the de-gravitized rework and its total mass 25k →
+  41.4k prisms in the 2× pass, so it is now both the spiciest and the longest-to-build world in
+  the rotation (`Docs/ECOSYSTEM.md` §18.1). Ourobor (§18.2, 37.9k) is the second-longest but
+  carries zero danger.
 - **Toy placement does not re-derive after a swap.** `ToyboxController` rings the membrane once
   at `OnClientReady`. Every freestyle config shares one membrane prefab so the radius does not
   change today; a config with a different membrane would leave the toys mis-ringed.

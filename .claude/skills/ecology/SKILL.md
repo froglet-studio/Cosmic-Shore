@@ -42,6 +42,25 @@ selection only (survival = fitness, never a scripted fitness function) · the co
 - Honor collider-LOD-by-phase (prism colliders disabled at Frozen) and the per-cell budget.
 - If a change adds colliders or queries, say explicitly how the budget stays met.
 
+## 4.5 Cell-environment baselines: measure them, don't guess them
+
+`CellConfigDataSO.PhaseThresholds` must ride the environment's MEASURED baseline
+(count + volume) or the cell boots into the wrong phase. `FrogletTools > Ecology >
+Measure Cell Environment Baselines` is the in-engine ground truth — but you do
+NOT have to block on the human for it. Cell environments are deterministic by
+contract (pure function of the serialized seed), so port the generator and
+measure offline; the in-editor measurer then CONFIRMS rather than supplies.
+Method + the validate-against-a-shipped-baseline rule that makes it trustworthy:
+`/asset-surgery` §4.5. Author thresholds as baseline + the Blob deltas
+(+700/+500/+3600/+3000 count, +11200/+8000/+57600/+48000 volume).
+
+While you have the emitted points in hand, assert the spatial invariants too —
+in particular that **nothing is laid inside the nucleus control radius** (~392u;
+see `Docs/ECOSYSTEM.md` §13 + §18.1). An authored environment sitting in the
+nucleus hands `DominantDomain` to whatever colour it favours before anyone flies.
+That defect shipped undetected in Caldera (89% of its mass) until a one-line
+check over the point cloud found it.
+
 ## 5. Hand back verification — you cannot run Unity; the human is the gate
 - State the exact in-editor steps to verify, the scene to test, and the precise SO knobs to tune.
 - Use the collider/volume telemetry overlay when it exists to make the budget observable.
