@@ -87,6 +87,25 @@ every other block is one object keyed by 32-hex `m_ObjectId`.
   the same input slot — assert exactly one feeder per input).
 - **Remove**: drop the block, drop its entry from every registry
   (`m_Nodes`/`m_Properties`/category child list), assert no edge references it.
+- **READ a graph before you touch it — dump the edge list, don't eyeball JSON.**
+  To answer "what does property X actually do?", stream-parse the file with
+  `json.JSONDecoder().raw_decode` in a loop (plain `json.load` throws
+  `Extra data` — it is CONCATENATED objects, not one document), index every
+  block by `m_ObjectId`, then print each `m_Edges` entry as
+  `srcNode.srcSlot -> dstNode.dstSlot` with nodes labeled by type + resolved
+  property name (`PropertyNode.m_Property.m_Id` → that property's `m_Name`)
+  and slots resolved through the owner's `m_Slots`. The semantics fall out in
+  one screen. Follow `SubGraphNode.m_SerializedSubGraph.guid` into the
+  `.shadersubgraph` (find it via `grep -rl <guid> Assets --include=*.meta`)
+  and repeat — the meaning usually lives one level down. Also dump unconnected
+  input-slot `m_Value`s: an input with no edge is a hardcoded constant.
+- **Which properties are tunable per material**: an exposed property that is
+  NOT Hybrid Per Instance and is never written by a `Stamp*`/`SetFloat` call
+  is a plain material constant — tune it in the `.mat` (`m_Floats`), and the
+  instanced/entity draw path picks it up with no code change. Confirm the
+  entity path reads the SAME asset (e.g. `PrismDebris` copies
+  `PrismExplosion.prefab`'s `sharedMaterial`) or you will tune a material
+  nothing draws with.
 - Unity reimports on pull; the in-editor validator + a shader-error check
   (`ShaderUtil.ShaderHasError`) confirm; magenta = `git checkout` the graph.
 
@@ -130,6 +149,17 @@ its GameObject lists it in `m_Component`.
   BEFORE deleting; excise components first, delete `.cs` + `.meta` together.
 - **Re-author SO numbers**: regex with `re.subn(..., count=1)` + assert n==1
   per field; print the before/after table so the human can eyeball the math.
+- **Author a whole asset FAMILY from a generator, not by hand.** When a change
+  needs N sibling assets (per-element configs, per-species prefabs), write an
+  in-repo Python generator: guid = `md5("<project>/<stable name>")` so re-runs
+  are idempotent and reviewable, and retuning is ONE edit + re-run instead of N
+  hand edits that drift. Keep the generator committed — it is the source, the
+  assets are the build.
+- **Validate hand-authored MonoBehaviour YAML against the C#.** Extract the
+  class's `[SerializeField]`/public field names by regex, extract the prefab
+  document's `^  (\w+):` key set, and diff BOTH ways. A field you forgot to
+  emit silently takes its initializer; a key you misspelled is silently
+  dropped — and neither shows up until someone plays the scene.
 - **Author a NEWLY-serialized field into an existing prefab/SO**: Unity's YAML
   is name-KEYED, not positional or exhaustive — a key the file lacks simply
   deserializes to the C# initializer. So adding `[SerializeField] float Foo`
@@ -267,6 +297,34 @@ hand-authored files plus a scene array entry. The recipe:
    EnvironmentFree` boots on the first config with no environment).
 
 ## 5. Traps learned the hard way (check these BEFORE debugging for an hour)
+
+- **`sed -i ... $(grep -rl ...)` SHREDS paths with spaces** — and Unity paths
+  are full of them (`Assets/_SO_Assets/Cell Configs/...`). The unquoted
+  expansion splits one path into two nonexistent ones, so those files are
+  skipped while every space-free path IS rewritten: a half-applied edit across
+  a scene and a dozen prefabs. Always drive multi-file rewrites from Python
+  with an explicit file list, and `git status` immediately after.
+- **A "dangling GUID on this prefab" is usually project-wide.** Before treating
+  a missing asset reference as a local bug, grep the WHOLE Assets tree for that
+  guid: a reference broken on four flora prefabs turned out to be broken on
+  fauna prefabs, cytoplasm prefabs and three scenes too. That changes the fix
+  from a one-liner into its own change with its own verification — decide
+  deliberately, and say so, rather than sweeping scenes into an unrelated diff.
+- **Missing keys take the C# field INITIALIZER, stale keys are ignored.**
+  Adding a serialized field is safe for existing assets *iff* its initializer
+  is the correct legacy default (verify that, don't assume). Conversely, YAML
+  containing a key for a field that is no longer serialized (e.g. a
+  `[Inject] protected` field) is harmless residue — not evidence the field is
+  still serialized.
+- **NEVER delete a code block with a regex.** A pattern like
+  `r'public static X\(...\)\n\{(?:.*?\n)*?\}\n'` looks bounded but the lazy
+  block matches across method boundaries: one such "remove two unused helpers"
+  script silently ate 250 lines of `ToyFactory.cs` (every shape builder + the
+  gate factory). Use `Edit` with exact anchors for deletions, and if you must
+  script one, **verify after**: line count before/after, plus an inventory grep
+  of the file's public API (`grep -n "public static ..."`). Recovery is
+  `git checkout HEAD -- <file>` when the file was already committed — which is
+  another reason to commit before scripted edits.
 
 - **CRLF**: Windows checkouts deliver `\r\n`; `split("\n\n")` sees ONE block.
   Normalize line endings before splitting; preserve the file's own separator

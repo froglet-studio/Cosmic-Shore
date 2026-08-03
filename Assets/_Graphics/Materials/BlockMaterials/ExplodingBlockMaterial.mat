@@ -103,7 +103,7 @@ Material:
     - _DstBlendAlpha: 10
     - _EnvironmentReflections: 1
     - _ExplosionAmount: 20.7
-    - _ExplosiveRotation: 0.01
+    - _ExplosiveRotation: 0.0169
     - _ExplosiveSpead: 0.05
     - _GlossMapScale: 0
     - _Glossiness: 0

@@ -32,6 +32,31 @@ namespace CosmicShore.Gameplay
 
         public BlockState CurrentState { get; private set; } = BlockState.Normal;
 
+        /// <summary>
+        /// True while this prism is still being CREATED — a shield engaged here is part
+        /// of the prism's birth, not a transition on live mass, so it engages/disengages
+        /// INSTANTLY (no per-face bloom, no shatter overlay, no state SFX).
+        ///
+        /// Why this is the correct reading of the continuity law rather than a shortcut:
+        /// the prism has never been on screen (Prism.CreateBlockCoroutine holds the
+        /// renderer off until reveal), and the grow-in bloom that follows already carries
+        /// its "nothing pops into existence" transition — exactly the reasoning
+        /// MaterialPropertyAnimator already applies to spawn-paint ("a creation, not a
+        /// recolor"). A morph here is invisible by construction and it costs a great deal:
+        ///   • it holds _exoticVisualActive across the reveal instant, so the prism has no
+        ///     companion render entity when BeginGrowthAnimation stamps the ONE-SHOT grow
+        ///     clock — the bloom is lost and the prism SNAPS (the C13 repro:
+        ///     "[PrismClock] STRICT MODE: no companion render entity to stamp");
+        ///   • it keeps the prism on the un-batched GameObject MeshRenderer for the whole
+        ///     morph — thousands of extra draw calls during an arena build;
+        ///   • it registers every such prism with PrismOctahedronShieldManager and rebuilds
+        ///     a per-prism morph mesh EVERY FRAME for engageDuration, on the frames a mass
+        ///     environment lay can least afford it;
+        ///   • it fires one ShieldActivate SFX per prism laid.
+        /// A shield engaged later, on a live prism (skim/steal/ability), still blooms.
+        /// </summary>
+        bool IsBirthTransition => prism != null && !prism.IsCreationComplete;
+
         private void Awake()
         {
             prism = GetComponent<Prism>();
@@ -66,8 +91,9 @@ namespace CosmicShore.Gameplay
             );
             CurrentState = BlockState.Dangerous;
 
-            if (octahedronShield != null) octahedronShield.Disengage();
-            if (stellatedShield != null) stellatedShield.Disengage();
+            bool birth = IsBirthTransition;
+            if (octahedronShield != null) octahedronShield.Disengage(birth);
+            if (stellatedShield != null) stellatedShield.Disengage(birth);
 
             // Mirror the cleared IsShielded flag into the spatial index so the
             // shell view retires this prism's analytic shell. Without this, a
@@ -111,11 +137,12 @@ namespace CosmicShore.Gameplay
             // Restore the box pose first (a shield→super transition would otherwise let the
             // lazily-added stellation cache the octahedron mesh as its "original"), then engage
             // the stellation - lazily added so only super-shielded prisms pay its mesh cost.
-            if (octahedronShield != null) octahedronShield.Disengage();
+            bool birth = IsBirthTransition;
+            if (octahedronShield != null) octahedronShield.Disengage(birth);
             if (stellatedShield == null)
                 stellatedShield = GetComponent<PrismStellatedOctahedronShield>()
                                   ?? gameObject.AddComponent<PrismStellatedOctahedronShield>();
-            stellatedShield.Engage();
+            stellatedShield.Engage(birth);
 
             SyncAOERegistryShieldState();
         }
@@ -155,10 +182,11 @@ namespace CosmicShore.Gameplay
 
             // Engage the octahedron visual/collider swap for the regular
             // shield state too, matching super shield behavior.
-            if (octahedronShield != null) octahedronShield.Engage();
+            bool birth = IsBirthTransition;
+            if (octahedronShield != null) octahedronShield.Engage(birth);
 
             SyncAOERegistryShieldState();
-            AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.ShieldActivate);
+            if (!birth) AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.ShieldActivate);
         }
 
         private void ApplyNormalState()
@@ -174,12 +202,13 @@ namespace CosmicShore.Gameplay
             prism.prismProperties.IsSuperShielded = false;
             CurrentState = BlockState.Normal;
 
-            if (octahedronShield != null) octahedronShield.Disengage();
-            if (stellatedShield != null) stellatedShield.Disengage();
+            bool birth = IsBirthTransition;
+            if (octahedronShield != null) octahedronShield.Disengage(birth);
+            if (stellatedShield != null) stellatedShield.Disengage(birth);
 
             SyncAOERegistryShieldState();
 
-            if (wasShielded)
+            if (wasShielded && !birth)
                 AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.ShieldDeactivate);
         }
 

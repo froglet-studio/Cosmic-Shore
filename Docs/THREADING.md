@@ -176,6 +176,41 @@ There are exactly three `Yield(PlayerLoopTiming.Update)` calls remaining in
 `Controller/Party/PartyInviteController.cs` (in catch / recovery blocks) — they're "wait for the
 next PlayerLoop tick" semantics, not threading. Leave them alone.
 
+### 5.1 An `async UniTaskVoid` "pump" does its first unit of work on the CALLER's frame
+
+Not a thread-affinity issue — a *scheduling* one, and it defeats the entire point of a
+work-spreading loop if you miss it. **A C# async method body runs synchronously on the caller's
+stack until its first suspension.** So this:
+
+```csharp
+async UniTaskVoid Pump(CancellationToken ct)
+{
+    while (...)
+    {
+        DoOneExpensiveThing();                              // <-- runs on the caller's frame
+        await UniTask.Yield(PlayerLoopTiming.Update, ct);
+    }
+}
+```
+
+started from a hot frame (`OnClientReady`, a spawn loop, an `Update` that noticed a state change)
+does `DoOneExpensiveThing()` **on that frame**, no matter how carefully the rest is spread out.
+The toy-emblem streamer shipped this way: the first toy's icon — a `Shader.Find` chain, a save-file
+read and a mesh build — landed on the exact Menu_Main spawn frame the streamer existed to protect,
+and a later rebuild ran a 57k-vertex mesh assembly inline inside `Update`.
+
+**Fix: yield before the first unit of work**, not after it.
+
+```csharp
+await UniTask.Yield(PlayerLoopTiming.Update, ct);   // first statement
+while (...) { DoOneExpensiveThing(); await UniTask.Yield(...); }
+```
+
+Note that the same synchronous prefix is load-bearing elsewhere and must NOT be "fixed": a
+bloom-in helper relies on it to zero a transform's scale before the first render
+(`ToyFactory.ScaleInFromZero`), and a `_running` re-entrancy guard set before the first await only
+works because of it. Know which one you're writing.
+
 ---
 
 ## 6. History of the fix (for future regressions)
