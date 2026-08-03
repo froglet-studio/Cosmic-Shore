@@ -65,8 +65,18 @@ namespace CosmicShore.Gameplay
                 if (block) trailBlockIndices[block] = (ushort)i;
             }
 
+            OnOldestRemoved?.Invoke();
             return oldest;
         }
+
+        /// <summary>
+        /// Raised after <see cref="RemoveOldest"/> has shifted every surviving prism one slot
+        /// toward the head. Anything holding a CACHED index into this trail (rather than a prism
+        /// reference) must decrement it here or it will silently start pointing at a prism further
+        /// along the ribbon — <see cref="TrailFollower"/> caches exactly such an index and advances
+        /// it itself, so it rides this event.
+        /// </summary>
+        public event Action OnOldestRemoved;
 
         public void Clear()
         {
