@@ -15,7 +15,6 @@ Source of truth: `SO_Vessel` assets, `Scoreboard.placementCrystalRewards`, `SO_E
 | Episode tokens | Hard currency (real money) | Consumable | Cloud Save, across devices | Purchase; grant on game purchase | Episode unlocks |
 | Episode ownership | Entitlement | **Non-consumable** | Cloud Save, permanent | Spending 1 token | — |
 | Vessel ownership | Entitlement | **Non-consumable** | Cloud Save, permanent | Spending crystals | — |
-| XP | Progression counter | Non-consumable | Cloud Save | +25 per game, win or lose | Nothing (cosmetic) |
 | Elemental crystals | In-run resource | Consumable | Not persisted | Pickups during a run | Buffs during that run |
 
 ---
@@ -52,9 +51,9 @@ Flat pricing. All purchasable vessels cost the same.
 | Rhino | Vessel | Non-consumable | **4,000 crystals** | Locked |
 | Serpent | Vessel | Non-consumable | **4,000 crystals** | Locked |
 | Sparrow | Vessel | Non-consumable | **4,000 crystals** | Locked |
-| Grizzly | Vessel | Non-consumable | **4,000 crystals** | Locked — *fixed this pass, was free by accident* |
-| Urchin | Vessel | Non-consumable | **4,000 crystals** | Locked — *fixed this pass, was free by accident* |
-| Termite | Vessel | Non-consumable | **4,000 crystals** | Locked — *fixed this pass. Not playable; see note* |
+| Grizzly | Vessel | Non-consumable | **4,000 crystals** | Locked |
+| Urchin | Vessel | Non-consumable | **4,000 crystals** | Locked |
+| Termite | Vessel | Non-consumable | **4,000 crystals** | Locked |
 
 **Time to earn one vessel:** 4,000 ÷ 200 = **20 wins.**
 Vessels cannot be bought at all until the Hangar unlocks via the quest chain (3 games), so crystals

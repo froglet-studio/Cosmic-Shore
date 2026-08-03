@@ -172,7 +172,6 @@ Assets/
 │   │   ├── UserAction/        # User action tracking
 │   │   ├── UserJourney/       # Funnel analytics
 │   │   ├── Favorites/         # Favorites system
-│   │   ├── Xp/                # XP leveling
 │   │   ├── Ads/               # Ad integration
 │   │   └── Architectures/     # Shared architectural base classes
 │   ├── UI/                    # Game & app UI (~188 files)
@@ -180,7 +179,7 @@ Assets/
 │   │   ├── View/              # VesselHUD views (all vessel types + Minigame, Multiplayer)
 │   │   ├── Interfaces/        # IVesselHUDController, IVesselHUDView, IMinigameHUDController, IScreen
 │   │   ├── Elements/          # Reusable UI components (NavLink, NavGroup, ProfileDisplayWidget, etc.)
-│   │   ├── Views/             # Screen/view implementations (VesselSelection, XPTrack, Profile)
+│   │   ├── Views/             # Screen/view implementations (VesselSelection, Profile)
 │   │   ├── Modals/            # Modal dialogs (Settings, Profile, PurchaseConfirmation)
 │   │   ├── Screens/           # Screen containers
 │   │   ├── ToastSystem/       # ToastService, ToastChannel, ToastAnimation
