@@ -104,8 +104,9 @@ game alike.
 
 **The fix is two halves.** The Cell now boots on `CellTypeChoiceOptions.EnvironmentFree` — the
 first config authoring no `EnvironmentPrefab` (Blob), so the menu opens with nothing to build.
-The six heavy worlds stay in the Cell's list and become **opt-in**: this toy is the only place
-that load is ever paid.
+The **seven** heavy worlds stay in the Cell's list and become **opt-in**: this toy is the only
+place that load is ever paid. (The toy authors no cell list — it reads `Cell.AvailableConfigs` —
+so adding a world is a config-asset + scene-array change, never a toy change.)
 
 Fly the toy (a sphere ringed by three empty little worlds — they stay empty because filling
 them would mean generating environments at menu boot, the exact cost this toy defers) and a

@@ -80,7 +80,7 @@ namespace CosmicShore.Gameplay
 
             CSDebug.LogWarning($"[ElementalBarsController] '{name}' has no authored ElementalBarsView - " +
                                "creating one at RUNTIME so the fleet-required display still shows. " +
-                               "Author it into the HUD prefab: Tools > Cosmic Shore > Bake Elemental " +
+                               "Author it into the HUD prefab: FrogletTools > Vessels > Bake Elemental " +
                                "Petal Bars Into All Vessel HUDs, then wire it to elementBars.");
             var go = new GameObject("ElementalBars (auto)", typeof(RectTransform));
             var rt = (RectTransform)go.transform;

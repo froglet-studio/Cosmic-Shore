@@ -7,6 +7,7 @@ using System.Text;
 using CosmicShore.Utility;
 using UnityEditor;
 using UnityEngine;
+using CosmicShore.Editor.Froglet;
 
 namespace CosmicShore.Editor
 {
@@ -17,13 +18,15 @@ namespace CosmicShore.Editor
     /// stats, per-phase means, and a time-binned FPS envelope (mean/min/max per
     /// 100 ms bin across all runs) written as <c>report.md</c> + <c>curves.csv</c>.
     /// Run each branch's series first (same scene, same grid), then this.
-    /// Tools ▸ Cosmic Shore ▸ Prism Grid Benchmark ▸ Generate Comparison Report.
+    /// FrogletTools ▸ Performance ▸ Prism Grid Benchmark▸ Generate Comparison Report.
     /// </summary>
     public static class PrismExplosionBenchmarkReport
     {
         const float BinSeconds = 0.1f;
 
-        [MenuItem("Tools/Cosmic Shore/Prism Grid Benchmark/Generate Comparison Report")]
+        [MenuItem("FrogletTools/Performance/Prism Grid Benchmark/Generate Comparison Report")]
+        [FrogletTool(FrogletToolCategory.Performance, Importance = 4,
+            Description = "Diff prism-grid benchmark runs into a comparison report.")]
         public static void Generate()
         {
             string dir = PrismExplosionBenchmark.OutputDirectory;
@@ -225,7 +228,9 @@ namespace CosmicShore.Editor
             EditorUtility.RevealInFinder(reportPath);
         }
 
-        [MenuItem("Tools/Cosmic Shore/Prism Grid Benchmark/Open Results Folder")]
+        [MenuItem("FrogletTools/Performance/Prism Grid Benchmark/Open Results Folder")]
+        [FrogletTool(FrogletToolCategory.Performance, Importance = 2,
+            Description = "Open the benchmark results directory.")]
         public static void OpenFolder()
         {
             Directory.CreateDirectory(PrismExplosionBenchmark.OutputDirectory);

@@ -331,14 +331,14 @@ namespace CosmicShore.UI
             // The row is a fleet-wide REQUIREMENT, not an opt-in. A vessel that does not author it
             // says so once per class instead of failing silently - silence is how the Squirrel shipped
             // a reversed row and a mis-bound Charge slot unnoticed. Run
-            // Tools > Cosmic Shore > Audit Vessel Ability Rows for the whole fleet at once.
+            // FrogletTools > Vessels > Audit Vessel Ability Rows for the whole fleet at once.
             if (abilityIcons == null || abilityIcons.Count == 0)
             {
                 if (_missingRowReported.Add(vesselClass))
                     Debug.LogWarning($"[VesselHUDView] {vesselClass} ({name}) binds NO abilityIcons - the " +
                                      "four-icon ability row is missing on this vessel. Every vessel is " +
                                      "expected to show one icon per element in charge/mass/space/time order. " +
-                                     "Audit the fleet with Tools > Cosmic Shore > Audit Vessel Ability Rows.", this);
+                                     "Audit the fleet with FrogletTools > Vessels > Audit Vessel Ability Rows.", this);
                 return;
             }
 

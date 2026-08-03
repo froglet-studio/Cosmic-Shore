@@ -8,11 +8,11 @@ namespace CosmicShore.Editor
     /// <summary>
     /// Editor menu wrapper around <see cref="ProfilerCsvLogger"/> so a per-frame CSV capture
     /// can be started/stopped during Play Mode without wiring a component into the scene.
-    /// Menu: Tools > Cosmic Shore > Profiler CSV Logger.
+    /// Menu: FrogletTools > Performance > Profiler CSV Logger.
     /// </summary>
     static class ProfilerCsvLoggerMenu
     {
-        const string Root = "Tools/Cosmic Shore/Profiler CSV Logger/";
+        const string Root = "FrogletTools/Performance/Profiler CSV Logger/";
         const string DefaultFolder = "ProfilerCaptures";
 
         [MenuItem(Root + "Start Capture", priority = 100)]

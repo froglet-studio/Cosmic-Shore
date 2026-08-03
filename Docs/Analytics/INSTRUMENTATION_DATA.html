@@ -354,7 +354,7 @@
 <!-- ═══════════════════════════════════════════════════ RETENTION -->
 <div class="stage">
   <div class="stage-header"><span class="stage-pill a3-pill">Retention</span><span class="stage-title">Do they come back?</span></div>
-  <p class="stage-question">Multiple retention loops layered: daily challenge, mode/intensity progression, training tiers, XP track. All four have persistent state in code today — none emit events.</p>
+  <p class="stage-question">Multiple retention loops layered: daily challenge, mode/intensity progression, training tiers. All three have persistent state in code today — none emit events.</p>
 
   <div class="block" data-tier="vslice">
   <div class="section-label">Session lifecycle <span class="ver-badge vs">VSlice</span></div>
@@ -384,8 +384,6 @@
   <div class="events-grid">
     <div class="event-row"><div><span class="event-name">game_started</span><span class="st st-live">LIVE</span></div><div class="event-desc">Any game began — mode, intensity, vessel, player count, AI count, is_multiplayer</div><div class="impl">AnalyticsServiceFacade ← GameDataSO.OnMiniGameTurnStarted</div></div>
     <div class="event-row"><div><span class="event-name">game_completed</span><span class="st st-live">LIVE</span></div><div class="event-desc">Game ended — start params + duration_seconds (score/win-loss params are a P2 refinement)</div><div class="impl">AnalyticsServiceFacade ← GameDataSO.OnMiniGameEnd</div></div>
-    <div class="event-row"><div><span class="event-name">xp_track_inspected</span><span class="st st-build">BUILD</span></div><div class="event-desc">Viewed XP track / progression path</div><div class="impl">XPTrack view (UI/Views) OnScreenEnter</div></div>
-    <div class="event-row"><div><span class="event-name">xp_reward_earned</span><span class="st st-build">BUILD</span></div><div class="event-desc">Unlocked something from XP track</div><div class="impl">PlayerDataService.UnlockReward — log: reward_id, xp_level</div></div>
     <div class="event-row"><div><span class="event-name">vessel_upgraded</span><span class="st st-dormant">DORMANT</span></div><div class="event-desc">Captain/vessel upgrade confirmed</div><div class="impl">CaptainManager is PlayFab-disabled; cs_upgrade_captain collector defines params — blocked on UGS captain re-enable (CAPTAIN_PROGRESS key ready)</div></div>
     <div class="event-row"><div><span class="event-name">training_completed</span><span class="st st-dormant">DORMANT</span></div><div class="event-desc">Finished a training game — intensity, vessel, score, tier satisfied</div><div class="impl">cs_complete_training collector + TrainingGameProgressSystem; also migrate file → TRAINING_PROGRESS cloud key</div></div>
     <div class="event-row"><div><span class="event-name">quest_completed</span><span class="st st-build">BUILD</span></div><div class="event-desc">UserJourney quest stage cleared — the funnel system that currently emits nothing</div><div class="impl">UserJourneySystem / QuestSystem.OnQuestCompleted</div></div>
@@ -429,7 +427,7 @@
   <div class="block" data-tier="vslice">
   <div class="section-label">Crystal economy (live currency) <span class="ver-badge vs">VSlice</span></div>
   <div class="events-grid">
-    <div class="event-row"><div><span class="event-name">crystals_earned</span><span class="st st-build">BUILD</span></div><div class="event-desc">Crystals received — source param (xp_track_reward, daily_challenge, game_reward)</div><div class="impl">PlayerDataService.AddCrystals — one-line hook</div></div>
+    <div class="event-row"><div><span class="event-name">crystals_earned</span><span class="st st-build">BUILD</span></div><div class="event-desc">Crystals received — source param (game_placement, tournament_placement)</div><div class="impl">PlayerDataService.AddCrystals — one-line hook</div></div>
     <div class="event-row"><div><span class="event-name">crystals_spent</span><span class="st st-build">BUILD</span></div><div class="event-desc">Crystals spent — on_what param</div><div class="impl">PlayerDataService.TrySpendCrystals (success branch)</div></div>
     <div class="event-row"><div><span class="event-name">crystal_spend_blocked</span><span class="st st-build">BUILD</span></div><div class="event-desc">Tried to spend with insufficient balance — friction/starvation signal</div><div class="impl">PlayerDataService.TrySpendCrystals (false branch) — log: wanted, balance, item</div></div>
     <div class="event-row"><div><span class="event-name">vessel_unlocked</span><span class="st st-build">BUILD</span></div><div class="event-desc">Bought vessel with crystals</div><div class="impl">VesselUnlockSystem.UnlockVessel + SO_Vessel.UnlockCost — log: vessel, cost, balance_after</div></div>
