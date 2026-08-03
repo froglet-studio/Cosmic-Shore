@@ -85,21 +85,60 @@ echo
 
 # --------------------------------------------------------------- 3. pending ledger rows
 echo "--- 3. open ledger obligations ($LEDGER)"
-if [ -f "$LEDGER" ]; then
-  if grep -q 'PENDING' "$LEDGER"; then
-    grep -n 'PENDING' "$LEDGER" | sed 's/^/    /'
+if [ ! -f "$LEDGER" ]; then
+  echo "    !! $LEDGER missing — create it (see /ship §2.5 step 6)"
+else
+  echo "    open discharge blocks (a human owes each of these a run + push):"
+  if grep -qE '^### D[0-9]+' "$LEDGER"; then
+    grep -nE '^### D[0-9]+' "$LEDGER" | sed 's/^/        /'
   else
-    echo "    (no PENDING rows)"
+    echo "        (none)"
   fi
   echo
-  echo "    one-shot rows marked RUN whose tool file still exists (retire these):"
-  found=0
-  while IFS= read -r path; do
-    [ -n "$path" ] && [ -f "$path" ] && { echo "        $path"; found=1; }
-  done < <(grep -oE 'Assets/[A-Za-z0-9_/.-]+\.cs' "$LEDGER" 2>/dev/null | sort -u)
-  [ "$found" -eq 0 ] && echo "        (none)"
+  echo "    rows marked RUN — these owe RETIREMENT (delete the tool + rewrite its docs):"
+  runrows=$(grep -n '✅ RUN' "$LEDGER" | grep -v 'One-shot, output committed' || true)
+  if [ -n "$runrows" ]; then
+    printf '%s\n' "$runrows" | cut -c1-140 | sed 's/^/        /'
+  else
+    echo "        (none)"
+  fi
+  echo
+  echo "    tools on disk with NO ledger row at all (unregistered — classify them):"
+  unreg=0
+  while IFS= read -r f; do
+    [ -n "$f" ] || continue
+    base=$(basename "$f" .cs)
+    grep -q "$base" "$LEDGER" 2>/dev/null || { echo "        $f"; unreg=1; }
+  done < <(grep -rl '\[MenuItem' Assets --include=*.cs 2>/dev/null \
+             | grep -viE 'Plugins/|PlayFabSDK/|NiceVibrations/|Wwise/|PrimitivePlus/|YethGameDev/|PlayFabEditorExtensions/' \
+             | sort)
+  [ "$unreg" -eq 0 ] && echo "        (none)"
+fi
+echo
+
+# ------------------------------------------------- 4. assets committed without their .meta
+# A session that authors a file but never opens Unity commits the .cs/.asset WITHOUT its
+# .meta. Unity then mints a different GUID on every teammate's machine, so any prefab or
+# scene reference to it binds differently per checkout. Same root cause as an un-run tool:
+# the editor step never happened.
+echo "--- 4. tracked first-party files missing their .meta"
+THIRD_PARTY='Plugins/|PlayFabSDK/|NiceVibrations/|Wwise/|PrimitivePlus/|YethGameDev/|PlayFabEditorExtensions/|SerializeInterface/'
+missing_total=0
+for ext in cs asset prefab unity shadergraph hlsl mat; do
+  n=$(comm -23 \
+        <(git ls-files "Assets/*.$ext" | grep -viE "$THIRD_PARTY" | sort) \
+        <(git ls-files "Assets/*.$ext.meta" | sed 's/\.meta$//' | sort))
+  c=$(printf '%s' "$n" | grep -c . || true)
+  if [ "$c" -gt 0 ]; then
+    echo "    .$ext ($c):"
+    printf '%s\n' "$n" | sed 's/^/        /'
+    missing_total=$((missing_total + c))
+  fi
+done
+if [ "$missing_total" -eq 0 ]; then
+  echo "    (none)"
 else
-  echo "    !! $LEDGER missing — create it (see /ship §2.5 step 6)"
+  echo "    → open the project in Unity once, then commit the generated .meta files."
 fi
 echo
 

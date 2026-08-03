@@ -92,6 +92,12 @@ reader to run it** — past tense, pointing at where the tool now lives, e.g.
 Docs must never point at a menu item that no longer exists, and a retired tool must always
 be recoverable by commit reference. Standing tools keep their menu path in the docs.
 
+**5.5 Same failure class, one step earlier: missing `.meta` files.** A session that authors
+a file without ever opening Unity commits the `.cs`/`.asset` **without its `.meta`**, so every
+teammate's editor mints a different GUID and any prefab/scene reference binds differently per
+checkout. Section 4 of the script lists these; committing them is part of the discharge, and
+it goes **before** any tool-output commit so those diffs stay clean.
+
 **6. Record it in `Docs/EDITOR_TOOL_LEDGER.md`.** Every tool the branch adds, runs, or
 retires gets its row updated. A one-shot tool that genuinely cannot be discharged before
 merge stays as a `⏳ PENDING` row carrying the owner and the full discharge block from

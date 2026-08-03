@@ -225,9 +225,15 @@ BEFORE editor testing; every blocker found was fixed in a follow-up commit
 3. **Collect the three open datums**: (a) `PoolActivate.<prefab>` — who owns
    the 0.27 ms activations, first-Awake or heavy OnEnable? (b) `PoolRefill.*`
    typical clean ms; (c) whether `GC.Collect` ever fires mid-gameplay now.
-4. **Task 2 (user action)**: run `Tools > Cosmic Shore > UI > Raycast Target
-   Audit` on Menu_Main + vessel/UI prefabs (scene edits Undo-able; PREFAB
-   edits are NOT — rely on git). Expect `EventSystem.Update` 0.5 → ~0.1 ms.
+4. **Task 2 (user action, HALF DONE)**: the **scene** pass landed at `9c5dd537`
+   (177 scene-native flips + 45 prefab-instance overrides in Menu_Main). The
+   **prefab** pass has not: `GameCanvas.prefab` still carries 71
+   `m_RaycastTarget: 1`, `GameCanvas-HexRace.prefab` 114,
+   `ArcadeGameConfigureModal.prefab` 107, `R_GameOverPanel.prefab` 57. Run
+   `Tools > Cosmic Shore > UI > Raycast Target Audit` with those prefabs +
+   `_Prefabs/UI Elements` + `_Prefabs/Spacevessels` selected (PREFAB edits are
+   NOT Undo-able — rely on git). Expect `EventSystem.Update` 0.5 → ~0.1 ms.
+   Discharge block: `Docs/EDITOR_TOOL_LEDGER.md` D5.
 5. **Task 3 (user action)**: record the shader-variant collection over
    `Assets/_SO_Assets/GameplayShaderWarmup.shadervariants` (procedure in Task
    3 section) — it is still EMPTY, warmup is a no-op until recorded. Needs
@@ -592,8 +598,9 @@ same invariant statement as `19b7b5a4`). Expected: the 13.79 ms tick spreads to
 **Also on the 70 fps path:** `DomainVolumeIndicator.Update` reads 1.22 ms self
 in this capture — the push gate helps static menus but during active feeding
 the fills/cycle change every frame, so the per-push cost itself needs a marker
-split next round (follow-up filed). `EventSystem.Update` 0.52 ms — the Raycast
-Target Audit (Task 2) has still not been run in-editor. `DiagnosticsHUD` 0.64 ms
+split next round (follow-up filed). `EventSystem.Update` 0.52 ms — captured 2026-07-09, which
+predates the 2026-07-17 scene pass (`9c5dd537`); the Raycast Target Audit's
+**prefab** half (Task 2) is still un-run in-editor. `DiagnosticsHUD` 0.64 ms
 + 21.5 KB is editor-only.
 
 ### 2026-07-09 fixes for the soak findings (SHIPPED — verify per §5 + the soak section)
