@@ -178,6 +178,101 @@ per-capture analyses; `Docs/SPATIAL_INDEX.md` documents the summation view
 
 ---
 
+## 0.2 PLATFORM NOTE — macOS / Metal (2026-08-03)
+
+Branch `claude/mac-game-unity-performance-p35x60`. Triggered by a report of
+**~3 fps in the editor on an Apple Silicon Mac** (native ARM editor, not
+Rosetta) against ~26–40 ms frames on the Windows dev machines.
+
+### Read this before blaming the Mac
+
+A sustained ~10× deficit is **not** a platform-cost profile. Retina costs at
+most ~4× and only when GPU-bound; shader compilation is transient. A flat 10×
+across every frame is the signature of an **editor diagnostic toggle**, and
+§0's standing rule already caught this exact class once on Windows (Burst
+compilation was off the whole session, running every job managed at ~20×).
+Check these **before** taking any Mac capture seriously — all are per-machine
+editor state, none are committed, so a new machine starts with none of the
+project's history:
+
+| Check | Where | Cost when wrong |
+|---|---|---|
+| **Deep Profile** off | Profiler window toggle | ~10× whole frame — the single most likely cause of 3 fps |
+| **Burst ▸ Enable Compilation** ON | `Jobs ▸ Burst` | ~20× on every job (§0's rule) |
+| **Burst ▸ Safety Checks** off | `Jobs ▸ Burst` | large on job-heavy frames |
+| **Jobs Debugger** off | `Jobs` menu | large on job-heavy frames |
+| **Leak Detection** off / not "with stack trace" | `Jobs` menu | large, allocation-proportional |
+| Burst cache warm | first play-mode entry on a new machine compiles from cold | one-off stall, not sustained |
+
+The Hierarchy-view tell for managed jobs is unchanged: a row showing
+`ExecuteJobFunction.Invoke() [Invoke]` is executing managed; Burst-compiled
+rows show the job type name.
+
+### Shipped this session
+
+1. **`metalAPIValidation: 0`** (`ProjectSettings/ProjectSettings.asset`) — was
+   **1**. Metal's API validation layer runs per-draw in the editor on macOS;
+   on a frame with this project's draw count it is pure overhead and it
+   surfaces as errors things D3D12 silently tolerates. Off by default; turn it
+   back on deliberately when debugging a Metal-specific rendering bug.
+2. **Mac graphics API pinned to Metal** (same file, `m_BuildTargetGraphicsAPIs`
+   gained a `MacStandaloneSupport` entry, `m_APIs: 10000000`,
+   `m_Automatic: 0`). There was **no Mac entry at all** — only
+   `WindowsStandaloneSupport` pinned to D3D12. Automatic resolves to Metal in
+   practice, but pinning removes any chance of an OpenGLCore fallback (a
+   deprecated, dramatically slower path) on an older Mac.
+3. **`SettingsAutoDetector` is pixel-aware**
+   (`Assets/_Scripts/Controller/Settings/SettingsAutoDetector.cs`). The
+   heuristic scored cores/RAM/VRAM and **never asked how many pixels it had to
+   fill**, then handed `MSAA4x` to anything scoring High or above. A Retina
+   MacBook and a 1080p desktop score identically while the Mac renders ~4× the
+   pixels — and per capture #4 the frontier here is transparent-prism
+   overdraw, so pixel count is a first-order term. Now: a per-tier pixel budget
+   drives `RenderScalePercent` (square-rooted, since render scale is linear per
+   axis; clamped 50–100, never supersamples), FSR is selected when scaling
+   down, and the AA choice reads the **effective** post-render-scale pixel
+   count instead of the tier. Helps 4K Windows monitors identically — it is not
+   a Mac special case. 13 edit-mode tests in `SettingsAutoDetectorTests`.
+4. **`ExclusiveFullScreen` no longer requested on macOS**
+   (`GraphicsSettingsApplier.ToFullScreenMode`). Unity only implements it on
+   Windows; asking for it on a Mac alongside a Retina `SetResolution` is the
+   standard recipe for a black window / wrong backbuffer / offset mouse.
+   Runtime platform check, not a compile guard (`Docs/CONDITIONAL_COMPILATION.md`).
+
+**Scope honesty:** items 1–4 are real Mac costs but they do **not** add up to
+10×. If 3 fps survives the editor-toggle checklist above, the next step is a
+capture on the Mac, not more speculative settings work.
+
+### Known-open macOS gaps (not addressed here)
+
+- **Graphics Jobs are off for Mac only** (`m_BuildTargetGraphicsJobs`:
+  `MacStandaloneSupport: 0`, while Windows and Linux are `1`). Left alone
+  deliberately — Metal graphics-jobs support in 6000.3 was not verified in this
+  session, and flipping it blind risks instability for an unmeasured win. Test
+  it explicitly before changing.
+- **The shader warmup collection is empty AND would be Windows-recorded**
+  (Task 3). `GameplayShaderWarmup.shadervariants` holds 0 variants, so warmup
+  is a no-op everywhere. Worth knowing when it does get recorded: a
+  ShaderVariantCollection is per-graphics-API, so a collection recorded on
+  D3D12 does nothing for Metal. macOS needs its own recording pass.
+- **No macOS build target exists.** `CosmicShoreBuildPipeline` builds
+  `StandaloneWindows64` only (`ExecutableName = "CosmicShore.exe"`),
+  `Tools/Build/build_windows.sh` is the only wrapper, and there is no
+  `BurstAotSettings_StandaloneOSX.json`. Editor-on-Mac works; shipping a Mac
+  player is unscoped work.
+- **Standalone defaults to the lowest quality tier**
+  (`QualitySettings.asset` → `m_PerPlatformDefaultQuality: Standalone: 0` =
+  Very Low). Affects how a fresh machine *looks* before auto-detect seeds, not
+  its framerate. Flagged, untouched.
+- **Dual-mouse input does not exist on Mac.** `Win32RawInputMultiMouseProvider`
+  is 11 `user32.dll` P/Invokes behind `#if UNITY_STANDALONE_WIN || UNITY_EDITOR_WIN`,
+  and `MultiMouseService` is guarded the same way, so `dualMouseEngaged` is
+  permanently false there. The Escape→fullscreen toggle and the
+  `!Application.isFocused` input guard are inside the same block
+  (`InputController.cs:72-78`). Correctness, not performance.
+
+---
+
 ## 0.1 PREVIOUS SESSION HANDOFF (2026-07-09)
 
 Branch `claude/cosmic-shore-perf-opt-g8j6n0` — tracked by
