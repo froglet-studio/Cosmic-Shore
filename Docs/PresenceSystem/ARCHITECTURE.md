@@ -91,6 +91,56 @@ splits self-heal in every phase. Single-writer is preserved: HCS
 remains the sole author of the values; `PresenceLobbyService` only
 carries them.
 
+### Membership-mutation rules (B13 fix, 2026-08-03) — LOCKED
+
+Three flows reassign `_activeLobby` across an `await`:
+`JoinOrCreateAsync`, `ConvergeToCanonicalAsync`, and `LeaveAsync`. Two of
+them running at once is what produced permanent
+`SessionException [Error: NotInLobby]` (BUGS.md B13), so these rules are
+load-bearing — do not "simplify" them away:
+
+1. **Serialised by `_membershipBusy`.** Join/create and converge collapse
+   to one in-flight mutation; the loser skips (its caller re-arms on its
+   own timer). Deliberately a service-local flag, **not** the lobby
+   mutex: the reconnect path calls in without the mutex while a refresh
+   tick calls in holding it, so reusing the mutex would deadlock.
+2. **Capture before, release after.** A migration captures the outgoing
+   session *before* its join `await` and releases **that reference**.
+   Re-reading `_activeLobby` after an await and releasing whatever it now
+   points at is the exact defect B13 documents — it left, or as host
+   `DeleteAsync()`'d, the lobby just joined (and, when that was the shared
+   canonical lobby, evicted every other client).
+3. **Install first, release second.** `_activeLobby = joined` precedes the
+   release, so there is never a window where the active reference names a
+   session being deleted.
+4. **Release takes an explicit target.** `ReleaseQuietlyAsync(session,
+   reason)` never touches `_activeLobby` and hard-refuses (LogError) to
+   release the session currently presented as active. Any new release
+   call site must go through it.
+5. **Post-await re-validation.** If `_activeLobby` moved during a join,
+   the winner stands and the losing flow releases the handle *it* opened.
+
+### Presence-loss recovery
+
+`NotInLobby` / `SessionNotFound` / `SessionDeleted` / 404 on the presence
+refresh is **definite**, not transient: the SDK throws the identical
+error on every subsequent tick against that handle. The refresh catch
+rejoins on the first occurrence (`IsDefiniteSessionGoneException`, the
+same predicate the party-session path uses) instead of waiting out
+`MAX_REFRESH_ERRORS_BEFORE_RECONNECT` generic failures. The
+`[transition]` guard is checked **first** — a deliberate leave during an
+accept/leave surfaces as `NotInLobby` on the OLD handle and must not read
+as a real loss.
+
+Rejoins funnel through `HostConnectionService.RejoinPresenceLobbyAsync`:
+single-flight, geometric backoff (2→4→8→16→30 s, cleared by one clean
+refresh) so a persistently failing lobby cannot spin
+`ForceReset → JoinOrCreate` and abandon a UGS lobby per cycle. `Update`
+carries a watchdog on the same ladder: initialized but
+`ActiveLobby == null` re-arms a rejoin, which is the only thing that
+recovers a service whose rejoin was skipped or whose `CreateAsync`
+swallowed its error (previously a permanent silent stall).
+
 ## Identity propagation (display name / avatar) — how a rename reaches every surface
 
 **Source of truth:** `PlayerDataService.CurrentProfile` (Cloud Save).
@@ -173,9 +223,17 @@ events / lists on `HostConnectionDataSO`. Nothing else reaches into
 
 `PresenceLobbyService.ForceReset()` clears the internal `_activeLobby`
 reference so the next `JoinOrCreateAsync` will proceed (rather than
-no-op). Called only by `HostConnectionService.RefreshAsync` when the
-consecutive-error counter exceeds the reconnect threshold (and the
-catch-guard at the top of `RefreshAsync` did not fire).
+no-op). Called only by `HostConnectionService.RefreshAsync` — either when
+the consecutive-error counter exceeds the reconnect threshold, or
+immediately on a definite presence loss (see "Presence-loss recovery"
+above) — and in both cases only after the catch-guard at the top of
+`RefreshAsync` and the `[transition]` branch did not fire.
+
+ForceReset does **not** clear `_membershipBusy`. If a membership mutation
+is in flight when it lands, that flow's post-await re-validation sees
+`_activeLobby` changed, releases the handle it opened, and returns; the
+`Update` watchdog then drives the rejoin. This is the intended order —
+never add an override that lets a second join start while one is running.
 
 **False ForceReset is the main historical failure surface** — the YS2
 bug (commit `a1a8eb9`) was an in-flight refresh that fired ForceReset

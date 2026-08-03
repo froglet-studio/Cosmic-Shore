@@ -152,6 +152,41 @@ VP1+VP2 partied (S1) to also exercise the party-slot path.
 > `../PartySystem/TESTS.md` § "MPPM prerequisites"). That is account
 > switching, not a sync failure.
 
+### P8. Converge under reconnect churn (B13 regression)
+
+Targets the converge/join race that left a client holding a session it
+had already left — after which every refresh threw `SessionException
+[Error: NotInLobby]` forever. See `BUGS.md` B13.
+
+**Setup.** 3+ tagged VPs. Start them **as close to simultaneously as
+possible** (the split that drives convergence needs near-simultaneous
+creates), let them settle ~15 s, then force churn: sign one VP out and
+back in twice, ~5 s apart, while the others keep running.
+
+**Pass criterion.**
+- No `[Error: NotInLobby]` line survives more than one refresh tick on
+  any VP. A single one followed by `Presence lobby gone server-side …
+  rejoining.` is the fix WORKING; the same line repeating every ~1.5 s is
+  the bug.
+- No VP ever logs `ReleaseQuietly(...) refused - target <id> is the
+  ACTIVE lobby.` That LogError is the last-ditch guard; it firing means a
+  caller still tries to release the live lobby and the ordering fix
+  regressed.
+- `JoinOrCreateAsync skipped - a membership change is already in flight`
+  may appear (the serialisation working). It must be followed within one
+  backoff window by a successful
+  `Rejoining presence lobby (watchdog, …)` → `JoinOrCreateAsync complete
+  - lobby: <id>`, never by silence.
+- After churn settles, all VPs report the **same** lobby id and see each
+  other in the Online list (P2 criterion).
+- No VP is left with `ActiveLobby: NULL` and no further logs — that is
+  the permanent-silence stall the watchdog exists to prevent.
+
+**Backoff check (post-hoc).** Consecutive
+`Rejoining presence lobby (…, attempt N, next retry gate Ms)` lines must
+show M growing 2→4→8→16→30 and capping. A flat 2 s cadence means the
+ladder is being reset every attempt.
+
 ## What success on these tests means
 
 | Gate | Required for |

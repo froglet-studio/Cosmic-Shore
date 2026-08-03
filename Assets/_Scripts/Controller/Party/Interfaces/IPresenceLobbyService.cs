@@ -44,6 +44,19 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Joins an existing presence lobby or creates one if none exists.
         /// Safe to call multiple times - returns early if already joined.
+        ///
+        /// <para>
+        /// <b>May complete without joining.</b> It no-ops when another
+        /// membership mutation (a join or a
+        /// <see cref="ConvergeToCanonicalAsync"/> migration) is already in
+        /// flight - two of them interleaving is what left a client holding a
+        /// session it had already left, throwing
+        /// <c>SessionException [Error: NotInLobby]</c> on every subsequent
+        /// <see cref="RefreshAsync"/> (Docs/PresenceSystem/BUGS.md B13).
+        /// Callers must therefore treat a null <see cref="ActiveLobby"/> after
+        /// this returns as "retry later", never as a fatal error;
+        /// <c>HostConnectionService</c>'s Update watchdog re-arms on a backoff.
+        /// </para>
         /// </summary>
         /// <param name="maxPlayers">
         /// Maximum simultaneous players in the global lobby (typically 100).
@@ -104,9 +117,22 @@ namespace CosmicShore.Gameplay
         ///
         /// <para>
         /// Idempotent and swap-free: the smallest-id holder stays put; everyone else
-        /// leaves their lobby and joins the canonical one.  A no-op once the set has
-        /// converged, so it is safe to call on a timer to self-heal late splits.
-        /// Must NOT touch NetworkManager or Relay (presence lobby is lobby-only).
+        /// JOINS the canonical lobby first and only then releases the one it was
+        /// holding, so a failed migration never leaves the caller lobby-less.  A
+        /// no-op once the set has converged, so it is safe to call on a timer to
+        /// self-heal late splits.  Must NOT touch NetworkManager or Relay
+        /// (presence lobby is lobby-only).
+        /// </para>
+        ///
+        /// <para>
+        /// Also a no-op while another membership mutation is in flight (see
+        /// <see cref="JoinOrCreateAsync"/>) - skipping is free because callers
+        /// drive this on a timer.  Implementations MUST capture the outgoing
+        /// session before the join await and release that captured reference,
+        /// never a post-await re-read of <see cref="ActiveLobby"/>: the re-read
+        /// is what released the just-joined lobby (and, when host, DELETED the
+        /// shared canonical lobby for every other client) in
+        /// Docs/PresenceSystem/BUGS.md B13.
         /// </para>
         /// </summary>
         /// <param name="maxPlayers">Capacity to use if a (re)join is required.</param>

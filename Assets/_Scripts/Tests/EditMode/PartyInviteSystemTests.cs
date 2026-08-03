@@ -1309,6 +1309,57 @@ namespace CosmicShore.Tests
             Assert.AreEqual(CosmicShore.Gameplay.PartyState.InParty, sm.CurrentState);
         }
 
+        // ── Presence-loss recovery edges (B13) ───────────────────────────────
+        // A definite presence-lobby loss (NotInLobby / SessionNotFound / 404) is
+        // detected by the HostConnectionService refresh tick, which runs in every
+        // state - so the two transient states it can land in need an edge to
+        // Reconnecting, or recovery logs "Illegal transition" instead of
+        // recovering. See Docs/PresenceSystem/BUGS.md B13.
+
+        [Test]
+        public void StateMachine_InPresenceLobbyToReconnecting_IsLegal()
+        {
+            var sm = new CosmicShore.Gameplay.PartyStateMachine();
+            sm.TryTransition(CosmicShore.Gameplay.PartyState.InPresenceLobby);
+
+            bool result = sm.TryTransition(CosmicShore.Gameplay.PartyState.Reconnecting);
+
+            Assert.IsTrue(result, "Losing the presence lobby before the solo Relay comes up must be recoverable.");
+            Assert.AreEqual(CosmicShore.Gameplay.PartyState.Reconnecting, sm.CurrentState);
+        }
+
+        [Test]
+        public void StateMachine_HostingPartyToReconnecting_IsLegal()
+        {
+            var sm = new CosmicShore.Gameplay.PartyStateMachine();
+            sm.TryTransition(CosmicShore.Gameplay.PartyState.InPresenceLobby);
+            sm.TryTransition(CosmicShore.Gameplay.PartyState.HostingParty);
+
+            bool result = sm.TryTransition(CosmicShore.Gameplay.PartyState.Reconnecting);
+
+            Assert.IsTrue(result, "Losing the presence lobby mid Relay-creation must be recoverable.");
+            Assert.AreEqual(CosmicShore.Gameplay.PartyState.Reconnecting, sm.CurrentState);
+        }
+
+        [Test]
+        public void StateMachine_ReconnectingToReconnecting_IsIllegal()
+        {
+            // No state self-transitions. Repeat presence losses are absorbed by
+            // HostConnectionService.EnterReconnecting's already-Reconnecting
+            // guard - if that guard is ever removed, a lobby that keeps failing
+            // trades the NotInLobby warning storm for an illegal-transition one.
+            var sm = new CosmicShore.Gameplay.PartyStateMachine();
+            sm.TryTransition(CosmicShore.Gameplay.PartyState.InPresenceLobby);
+            sm.TryTransition(CosmicShore.Gameplay.PartyState.HostingParty);
+            sm.TryTransition(CosmicShore.Gameplay.PartyState.InParty);
+            sm.TryTransition(CosmicShore.Gameplay.PartyState.Reconnecting);
+
+            bool result = sm.TryTransition(CosmicShore.Gameplay.PartyState.Reconnecting);
+
+            Assert.IsFalse(result);
+            Assert.AreEqual(CosmicShore.Gameplay.PartyState.Reconnecting, sm.CurrentState);
+        }
+
         [Test]
         public void StateMachine_InvitingToHostingParty_IsLegal()
         {

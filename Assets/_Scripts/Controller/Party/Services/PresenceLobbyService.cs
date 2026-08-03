@@ -99,6 +99,29 @@ namespace CosmicShore.Gameplay
         private ISession _activeLobby;
         private bool     _leaving;
 
+        /// <summary>
+        /// True while a flow that MUTATES lobby membership (join / create /
+        /// converge-migration) is in flight.  Every such flow reassigns
+        /// <see cref="_activeLobby"/> across an <c>await</c>, so two of them
+        /// running concurrently can interleave into "we hold a session handle we
+        /// already left" - after which every <see cref="RefreshAsync"/> throws
+        /// <c>SessionException [Error: NotInLobby]</c> forever.
+        ///
+        /// <para>
+        /// The race is real, not theoretical: the reconnect tail of
+        /// <c>HostConnectionService.RefreshAsync</c> calls
+        /// <see cref="JoinOrCreateAsync"/> AFTER releasing the lobby mutex, and
+        /// <see cref="CreateAsync"/> publishes <see cref="_activeLobby"/> before
+        /// the 1.5s settle delay - so a refresh tick can fire its own
+        /// <see cref="ConvergeToCanonicalAsync"/> (under the mutex) while
+        /// <see cref="JoinOrCreateAsync"/> is inside its own converge (no mutex).
+        /// This flag is deliberately local to this service rather than reusing
+        /// the lobby mutex: it cannot deadlock against a caller that already
+        /// holds that mutex.  See Docs/PresenceSystem/BUGS.md B13.
+        /// </para>
+        /// </summary>
+        private bool _membershipBusy;
+
         // ─────────────────────────────────────────────────────────────────────
         // Construction
         // ─────────────────────────────────────────────────────────────────────
@@ -145,6 +168,14 @@ namespace CosmicShore.Gameplay
         {
             if (_activeLobby != null) return;
 
+            // Serialised against the periodic converge - see _membershipBusy.
+            if (_membershipBusy)
+            {
+                Debug.LogWarning("[PresenceLobbyService] JoinOrCreateAsync skipped - a membership change is already in flight.");
+                return;
+            }
+            _membershipBusy = true;
+
             Debug.Log("[PresenceLobbyService] JoinOrCreateAsync - joining presence lobby...");
             try
             {
@@ -161,7 +192,7 @@ namespace CosmicShore.Gameplay
                     // split.  A symmetric "join the first rival" merge could have both
                     // sides swap into each other's lobby and end up split again.
                     await UniTask.Delay(LOBBY_RACE_SETTLE_MS);
-                    await ConvergeToCanonicalAsync(maxPlayers);
+                    await ConvergeToCanonicalCoreAsync(maxPlayers);
                 }
             }
             catch (Exception e)
@@ -171,12 +202,29 @@ namespace CosmicShore.Gameplay
                 if (_activeLobby == null)
                     await CreateAsync(maxPlayers);
             }
+            finally { _membershipBusy = false; }
 
             Debug.Log($"[PresenceLobbyService] JoinOrCreateAsync complete - lobby: {_activeLobby?.Id ?? "NULL"}");
         }
 
         /// <inheritdoc/>
         public async UniTask ConvergeToCanonicalAsync(int maxPlayers)
+        {
+            // Serialised against join/create and against another converge - see
+            // _membershipBusy.  Skipping is free: the caller re-arms on its own
+            // timer (PRESENCE_CONVERGE_INTERVAL_SECONDS).
+            if (_membershipBusy) return;
+            _membershipBusy = true;
+            try { await ConvergeToCanonicalCoreAsync(maxPlayers); }
+            finally { _membershipBusy = false; }
+        }
+
+        /// <summary>
+        /// Converge implementation.  Callers MUST hold <see cref="_membershipBusy"/>.
+        /// Split from the public entry point so <see cref="JoinOrCreateAsync"/> can
+        /// run its post-create converge without re-entering the guard it already owns.
+        /// </summary>
+        private async UniTask ConvergeToCanonicalCoreAsync(int maxPlayers)
         {
             // Query the full presence-lobby set (rate-limit aware, like the join path).
             var queryOptions = new QuerySessionsOptions();
@@ -220,26 +268,64 @@ namespace CosmicShore.Gameplay
 
             // Nothing to converge to, or we already hold the canonical lobby.
             if (canonicalId == null) return;
-            if (_activeLobby != null && _activeLobby.Id == canonicalId) return;
+
+            // Capture the lobby we are migrating OFF here, BEFORE the join await.
+            // Everything below releases this captured reference and never a
+            // post-await re-read of _activeLobby (see the release step).
+            var outgoing = _activeLobby;
+            if (outgoing != null && outgoing.Id == canonicalId) return;
 
             // Migrate down to the canonical lobby: join it FIRST so a failed join
             // never leaves us lobby-less, then release the one we were holding.
+            ISession joined = null;
             try
             {
-                var joined = await _multiplayerService.JoinSessionByIdAsync(
+                joined = await _multiplayerService.JoinSessionByIdAsync(
                     canonicalId,
                     new JoinSessionOptions { PlayerProperties = BuildLocalPlayerProperties() }).AsMainThread();
-
-                await DeleteOwnLobbyQuietlyAsync();   // releases the previous _activeLobby
-                _activeLobby = joined;
-                Debug.Log($"[PresenceLobbyService] Converged to canonical presence lobby {joined.Id}.");
             }
             catch (Exception e)
             {
                 // Canonical lobby may have died between query and join - keep our
                 // current lobby; the next periodic converge retries.
                 Debug.LogWarning($"[PresenceLobbyService] Converge join to {canonicalId} failed ({e.GetType().Name}): {e.Message}");
+                return;
             }
+
+            if (joined == null) return;
+
+            // The SDK may hand back the session object we are already holding
+            // (same lobby reached by a different id spelling, or an internal
+            // cache hit). Releasing it here would leave the lobby we believe we
+            // are in. Install and stop - there was no migration to finish.
+            if (ReferenceEquals(joined, outgoing) ||
+                (outgoing != null && string.Equals(joined.Id, outgoing.Id, StringComparison.Ordinal)))
+            {
+                _activeLobby = joined;
+                return;
+            }
+
+            // Post-await re-validation. If _activeLobby moved while we were
+            // joining, another membership flow owns the state now. Releasing
+            // whatever _activeLobby currently points at would leave/delete a
+            // lobby we (or that flow) still believe we are in - and if we were
+            // its host, DeleteAsync() takes it out from under every other
+            // player. Release the handle WE just opened instead and let the
+            // winner stand. See Docs/PresenceSystem/BUGS.md B13.
+            if (!ReferenceEquals(_activeLobby, outgoing))
+            {
+                Debug.LogWarning(
+                    $"[PresenceLobbyService] Converge to {canonicalId} superseded mid-join " +
+                    $"(active lobby changed to {_activeLobby?.Id ?? "NULL"}) - releasing the join we opened.");
+                await ReleaseQuietlyAsync(joined, "superseded converge join");
+                return;
+            }
+
+            // Install FIRST, release SECOND. The reverse order leaves a window
+            // where _activeLobby points at the session being deleted.
+            _activeLobby = joined;
+            await ReleaseQuietlyAsync(outgoing, "race-lost lobby");
+            Debug.Log($"[PresenceLobbyService] Converged to canonical presence lobby {joined.Id}.");
         }
 
         /// <inheritdoc/>
@@ -491,28 +577,46 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Leaves or deletes the active lobby without throwing.  Used to release
-        /// a lobby that lost a race condition (a rival lobby was created at the
-        /// same moment and we are merging into theirs).
+        /// Leaves or deletes an EXPLICITLY NAMED session without throwing.  Used
+        /// to release a lobby that lost a race condition (a rival lobby was
+        /// created at the same moment and we are merging into theirs), and to
+        /// release a join whose migration was superseded mid-flight.
+        ///
+        /// <para>
+        /// Takes the session as a parameter and does NOT touch
+        /// <see cref="_activeLobby"/>.  The predecessor read <c>_activeLobby</c>
+        /// after its own <c>await</c> and nulled it in a <c>finally</c>, so a
+        /// concurrent membership change could redirect it onto the lobby we had
+        /// just joined - leaving (or, as host, DELETING) the live lobby while the
+        /// caller went on to install a handle to it.  Every later
+        /// <see cref="RefreshAsync"/> then threw <c>NotInLobby</c>, permanently.
+        /// Naming the target removes the class of bug entirely.
+        /// </para>
         /// </summary>
-        private async UniTask DeleteOwnLobbyQuietlyAsync()
+        private async UniTask ReleaseQuietlyAsync(ISession session, string reason)
         {
-            if (_activeLobby == null) return;
-            Debug.Log($"[PresenceLobbyService] DeleteOwnLobbyQuietly - releasing race-lost lobby {_activeLobby.Id}.");
+            if (session == null) return;
+
+            // Never release the lobby we are currently presenting as active.
+            if (ReferenceEquals(session, _activeLobby))
+            {
+                Debug.LogError(
+                    $"[PresenceLobbyService] ReleaseQuietly({reason}) refused - target {session.Id} " +
+                    "is the ACTIVE lobby. This would have desynced membership; leaving it intact.");
+                return;
+            }
+
+            Debug.Log($"[PresenceLobbyService] ReleaseQuietly - releasing {session.Id} ({reason}).");
             try
             {
-                if (_activeLobby.IsHost)
-                    await _activeLobby.AsHost().DeleteAsync().AsMainThread();
+                if (session.IsHost)
+                    await session.AsHost().DeleteAsync().AsMainThread();
                 else
-                    await _activeLobby.LeaveAsync().AsMainThread();
+                    await session.LeaveAsync().AsMainThread();
             }
             catch (Exception e)
             {
-                Debug.LogWarning($"[PresenceLobbyService] DeleteOwnLobby error: {e.Message}");
-            }
-            finally
-            {
-                _activeLobby = null;
+                Debug.LogWarning($"[PresenceLobbyService] ReleaseQuietly({reason}) error: {e.Message}");
             }
         }
 

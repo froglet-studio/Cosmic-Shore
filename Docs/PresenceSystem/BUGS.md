@@ -15,6 +15,7 @@ Statuses: 🔴 open · 🟡 investigating · 🟢 fixed (commit) · ⚪ deferred
 | B1 | `ArgumentOutOfRangeException` (LobbyPatcher) spam at game start | High (cause) | 🟢 (needs Editor retest) |
 | B4 | TC1 second invite not delivered + party members vanish from 3rd player's panel | High, needs retest | 🔴 |
 | B6 | TC3 NRE (`WrappedLobbyService`) + empty online/request lists | Medium | 🔴 |
+| B13 | `SessionException [Error: NotInLobby]` refresh spam — converge race releases the lobby it just joined | High (cause), needs Editor retest | 🟢 (fixed, unverified in MPPM) |
 
 > **Working order.** Diagnostics-first. The presence-lobby cluster (B4,
 > B6) is the locked-design area — read `ARCHITECTURE.md` and
@@ -309,6 +310,111 @@ B1 write-path churn (see B1's Session 1 note). So B6's NRE and B1's
 stale-index are the same SDK defect — B6 is the read-path symptom, B1
 the write/delta-path symptom. Overlay classifies the read-path NRE
 `Transient` and recovers (keeps session, retries next tick).
+
+---
+
+## B13 — `SessionException [Error: NotInLobby]` refresh spam 🟢 (fixed 2026-08-03; needs MPPM retest)
+
+**Symptom.** The presence refresh loop logs, repeatedly:
+
+```
+[HostConnectionService] Refresh error (SessionException): SessionException:
+  [Error: NotInLobby] [Message: Player is not part of an active lobby.]
+  … HostConnectionService.cs:1192 (RefreshAsync) ← HostConnectionService.cs:387 (Update)
+```
+
+Reported as "this causes a crash but I don't know how to reproduce it."
+Not reproducible on demand — it is a timing race (see below).
+
+> **The pasted stack is a LOG record, not a crash stack.** Every frame in
+> it is Unity's own logging path (`DebugStringToFile` ←
+> `Debug.LogWarning` ← our catch at `HostConnectionService.cs:1192`)
+> reached from `Update`. It proves this warning was logged; it does not
+> show a crash. What it *does* prove is that the error recurs from the
+> `Update` refresh tick, which is the storm described below. To attribute
+> an actual crash, capture `%LOCALAPPDATA%\Temp\Unity\Editor\Crashes\`
+> (the `.dmp` + `error.log`), not the console tail.
+
+**Root cause (high confidence) — `ConvergeToCanonicalAsync` could
+release the lobby it had just joined.** The migration step read
+`_activeLobby` *after* its join `await`:
+
+```csharp
+var joined = await JoinSessionByIdAsync(canonicalId, …);
+await DeleteOwnLobbyQuietlyAsync();   // re-reads _activeLobby, nulls it in finally
+_activeLobby = joined;
+```
+
+`DeleteOwnLobbyQuietlyAsync` operated on whatever `_activeLobby` pointed
+at *at that moment*. If any concurrent membership flow moved
+`_activeLobby` onto the canonical lobby during the join await, the
+"cleanup" left — or, when we were its host, **`DeleteAsync()`'d** — the
+lobby we had just joined, and the next line installed a handle to it.
+From then on the local player holds a live `ISession` for a lobby they
+are not a member of, so **every** `ISession.RefreshAsync()` throws
+exactly `[Error: NotInLobby]`, forever. When the released lobby was the
+shared canonical one, every *other* client is evicted too and the whole
+cluster storms.
+
+The concurrency was reachable, not theoretical:
+
+1. `HostConnectionService.RefreshAsync` calls `ConvergeToCanonicalAsync`
+   **inside** the lobby mutex (`HostConnectionService.cs`, converge tick).
+2. The reconnect tail of that same method calls
+   `_lobbyService.JoinOrCreateAsync` **after** the `finally` released the
+   mutex — and `JoinOrCreateAsync` runs its own converge.
+3. `CreateAsync` publishes `_activeLobby` *before* the 1.5 s
+   `LOBBY_RACE_SETTLE_MS` delay, so `Update` sees `IsInPresenceLobby ==
+   true` mid-flight, takes the free mutex, and fires a refresh tick whose
+   converge (interval 4 s, long since due after ≥3 error ticks) runs
+   concurrently with the un-mutexed one.
+
+A deterministic variant needed no concurrency at all: if
+`JoinSessionByIdAsync` returned the `ISession` we were already holding
+(SDK cache hit / same lobby via a different id), the old code left it and
+then re-installed it.
+
+**Secondary trigger (same symptom, different cause).** Two MPPM virtual
+players sharing ONE UGS identity — the missing-unique-tag case in
+`TESTS.md` § "MPPM prerequisites" — produce `NotInLobby` on whichever
+clone the server evicts. If the symptom survives this fix, check VP tags
+first.
+
+**Why it stormed rather than recovered.** Three separate gaps, all fixed:
+
+| Gap | Effect | Fix |
+|---|---|---|
+| `NotInLobby` was unclassified in the presence-refresh catch | fell to the generic branch: full `{e}` ToString logged 3× before recovery, discovery dead throughout | `[definite]` branch — `IsDefiniteSessionGoneException` already covers `NotInLobby`/`SessionNotFound`/`SessionDeleted`/404; rejoin on the **first** occurrence, matching how `RefreshPartyMembersAsync` already treats the same class |
+| reconnect had no backoff | `ForceReset → JoinOrCreate → fail` every ~4.5 s indefinitely, minting and abandoning a UGS lobby per cycle → rate limiting → more errors | geometric backoff 2→4→8→16→30 s cap, cleared by one clean refresh |
+| nothing re-armed a lobby-less service | `Update` returned on `ActiveLobby == null`; a skipped/failed rejoin (or a `CreateAsync` that swallowed its error) left presence permanently silent until app restart | `Update` watchdog → `RejoinPresenceLobbyAsync` (single-flight, shares the backoff ladder) |
+
+**Fix (commit on `claude/host-connection-refresh-error-85c6a2`).**
+
+- `PresenceLobbyService.ConvergeToCanonicalAsync` split into a public
+  guard + `ConvergeToCanonicalCoreAsync`. The core captures `outgoing =
+  _activeLobby` **before** the join await, re-validates after it, installs
+  `_activeLobby = joined` **before** releasing, and releases the captured
+  `outgoing` — never a post-await re-read. If `_activeLobby` moved during
+  the join, the join *we* opened is released instead and the winner
+  stands. Same-session returns (`ReferenceEquals` or equal `Id`) install
+  and stop.
+- `DeleteOwnLobbyQuietlyAsync()` → `ReleaseQuietlyAsync(ISession, reason)`:
+  takes its target explicitly, never touches `_activeLobby`, and hard-refuses
+  (LogError) to release the session currently presented as active. This
+  removes the bug *class*, not just the instance.
+- `_membershipBusy` serialises `JoinOrCreateAsync` against
+  `ConvergeToCanonicalAsync` and against another converge. Deliberately a
+  service-local flag rather than the lobby mutex: the reconnect path calls
+  in without the mutex and a refresh tick calls in with it held, so reusing
+  the mutex here would deadlock.
+- `HostConnectionService`: `[transition]` check hoisted above the new
+  `[definite]` branch (a deliberate leave mid accept/leave surfaces as
+  `NotInLobby` on the OLD handle and must not read as a real loss);
+  `RejoinPresenceLobbyAsync` owns the backoff ladder shared by the
+  reconnect tail and the watchdog.
+
+**Retest.** `TESTS.md` P8 (converge under reconnect churn). Until that
+runs in MPPM this is 🟢-by-reasoning, not 🟢-by-observation.
 
 ---
 

@@ -108,6 +108,19 @@ namespace CosmicShore.Gameplay
         private const float PRESENCE_CONVERGE_INTERVAL_SECONDS = 4f;
 
         /// <summary>
+        /// Backoff schedule for presence-lobby reconnects. A lobby that fails
+        /// again immediately after a rejoin (UGS outage, auth lapse, sustained
+        /// throttling) would otherwise spin ForceReset → JoinOrCreate → fail
+        /// every few seconds indefinitely, minting and abandoning a UGS lobby per
+        /// cycle and hammering the console with the same exception. The gap
+        /// doubles per consecutive attempt from BASE up to MAX; one clean refresh
+        /// resets it to zero. See Docs/PresenceSystem/BUGS.md B13.
+        /// </summary>
+        private const float PRESENCE_RECONNECT_BASE_BACKOFF_SECONDS = 2f;
+        private const float PRESENCE_RECONNECT_MAX_BACKOFF_SECONDS  = 30f;
+        private const int   PRESENCE_RECONNECT_MAX_BACKOFF_SHIFTS   = 4;   // 2,4,8,16,32→capped
+
+        /// <summary>
         /// After session creation, suppress <see cref="RefreshPartyMembersAsync"/>
         /// for this many seconds.  A freshly-provisioned session can transiently
         /// fail RefreshAsync; nulling the session in response would cause
@@ -200,6 +213,9 @@ namespace CosmicShore.Gameplay
         private float  _nextForcedRefreshAllowed;
         private float  _nextConvergeAllowed;
         private int    _consecutiveRefreshErrors;
+        private float  _presenceReconnectBackoffUntil;
+        private int    _presenceReconnectAttempts;
+        private bool   _presenceRejoinInFlight;
         private int    _publishedPartyCount = -1;
         private string _publishedMatchName  = "<UNSET>";
         // Identity (displayName/avatarId) rides the same change-gated per-tick
@@ -376,15 +392,111 @@ namespace CosmicShore.Gameplay
 
         void Update()
         {
-            if (!IsInPresenceLobby) return;
+            if (!IsInitialized) return;
+            if (!IsOnMenuScene()) return;
+            if (Time.unscaledTime < _presenceReconnectBackoffUntil) return;
+
+            // Watchdog: initialized but holding no presence lobby. Every path
+            // that can land here is a failure - a reconnect whose rejoin was
+            // skipped or threw, or a CreateAsync that swallowed its error and
+            // left the reference null. Without this re-arm the service is
+            // permanently silent (the old guard returned on ActiveLobby == null
+            // and nothing else drives a rejoin), so discovery, invites and the
+            // party panel stay dead until the app restarts.
+            if (_lobbyService.ActiveLobby == null)
+            {
+                // _joining: EnsureInitializedAsync owns the first join and holds
+                // a null ActiveLobby across it - never race it.
+                if (!_joining)
+                    RejoinPresenceLobbyAsync("watchdog").Forget();
+                return;
+            }
+
             if (_lobbyMutex.CurrentCount == 0) return;                   // someone is already inside the mutex
             if (Time.unscaledTime < _rateLimitBackoffUntil) return;
-            if (!IsOnMenuScene()) return;
 
             ExpireOutgoingInvites();
 
             if (_scheduler.ShouldFireNow(Time.unscaledDeltaTime))
                 RefreshAsync().Forget();
+        }
+
+        /// <summary>
+        /// Enters <see cref="PartyState.Reconnecting"/> for a presence-lobby
+        /// loss, absorbing the repeat case. A definite loss now recovers on
+        /// every occurrence, so a lobby that fails again right after a rejoin
+        /// would otherwise ask for Reconnecting → Reconnecting - not a legal
+        /// edge (no state self-transitions) - and trade the old NotInLobby
+        /// warning storm for an "Illegal transition" one.
+        /// </summary>
+        private void EnterReconnecting()
+        {
+            if (_stateMachine.CurrentState == PartyState.Reconnecting) return;
+            _stateMachine.TryTransition(PartyState.Reconnecting);
+        }
+
+        /// <summary>
+        /// Re-establishes the presence lobby after a loss, with geometric
+        /// backoff so a persistent failure cannot spin lobby create/join
+        /// forever. Single-flight: concurrent callers collapse to one attempt.
+        /// The backoff window is armed BEFORE the attempt (so a throw still
+        /// spaces the next one) and re-armed from completion.
+        /// </summary>
+        private async UniTask RejoinPresenceLobbyAsync(string reason)
+        {
+            if (_presenceRejoinInFlight) return;
+
+            // Sign-out sets Disconnected BEFORE leaving the lobby, so this also
+            // stops a rejoin racing a sign-out into re-creating a lobby the user
+            // just left.
+            if (!IsInitialized) return;
+
+            _presenceRejoinInFlight = true;
+
+            _presenceReconnectAttempts++;
+            float backoff = Mathf.Min(
+                PRESENCE_RECONNECT_BASE_BACKOFF_SECONDS *
+                    (1 << Mathf.Min(_presenceReconnectAttempts - 1, PRESENCE_RECONNECT_MAX_BACKOFF_SHIFTS)),
+                PRESENCE_RECONNECT_MAX_BACKOFF_SECONDS);
+            _presenceReconnectBackoffUntil = Time.unscaledTime + backoff;
+
+            Debug.LogWarning(
+                $"[HostConnectionService] Rejoining presence lobby ({reason}, attempt {_presenceReconnectAttempts}, " +
+                $"next retry gate {backoff:F0}s).");
+            try
+            {
+                await _lobbyService.JoinOrCreateAsync(presenceLobbyMaxPlayers);
+                ApplyPostLobbyJoinState();
+
+                // Leaving Reconnecting is NOT optional. Nothing else in the
+                // service exits that state, and its only legal outgoing edges
+                // are → HostingParty / → InParty - so a client stranded there
+                // shows "reconnecting…" forever and its next invite asks for the
+                // illegal Reconnecting → Inviting. The Relay session is
+                // independent of the presence lobby and is normally untouched by
+                // a presence loss, so restore InParty when it is still live.
+                // When it is NOT, stay put deliberately: recreating Relay from
+                // this background loop would shut down the NetworkManager and
+                // respawn every menu vessel, which is why that recovery belongs
+                // to the user-tapped boot-status retry
+                // (→ EnsurePartySessionAsync → HostingParty → InParty).
+                if (_lobbyService.ActiveLobby != null &&
+                    _stateMachine.CurrentState == PartyState.Reconnecting &&
+                    _partySessionService.ActiveSession != null)
+                    _stateMachine.TryTransition(PartyState.InParty);
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning($"[HostConnectionService] Presence rejoin failed ({e.GetType().Name}): {e.Message}");
+                CSDebug.Log($"[HostConnectionService] NetDiag: class={NetworkDiagnostics.ClassifyException(e)} | {NetworkDiagnostics.GetSnapshot()}");
+            }
+            finally
+            {
+                // Measure the gate from completion, not from dispatch - a slow
+                // join/create must not consume its own backoff window.
+                _presenceReconnectBackoffUntil = Time.unscaledTime + backoff;
+                _presenceRejoinInFlight = false;
+            }
         }
 
         async void OnDestroy()
@@ -1167,6 +1279,7 @@ namespace CosmicShore.Gameplay
                 await PublishPartyStateIfChangedAsync();
 
                 _consecutiveRefreshErrors = 0;
+                _presenceReconnectAttempts = 0;   // a clean tick clears the reconnect backoff ladder
             }
             catch (Exception e)
             {
@@ -1187,25 +1300,49 @@ namespace CosmicShore.Gameplay
                     _rateLimitBackoffUntil = Time.unscaledTime + refreshIntervalSeconds * 2;
                     Debug.LogWarning("[HostConnectionService] Rate limited during refresh - backing off");
                 }
+                // [transition] Companion to the entry guard at the top of RefreshAsync - this
+                // branch catches an in-flight tick that was already past the entry guard (holding
+                // the lobby mutex, awaiting _lobbyService.RefreshAsync) when _transitioning
+                // flipped to true. Counting that transport-teardown failure would combine
+                // with any pre-transition jitter (LobbyRefreshScheduler enters its boost
+                // window on invite-receive, so the counter can already be at 1-2) and
+                // falsely escalate to ForceReset + Reconnecting + a throwaway lobby on a
+                // *successful* join. Reset wipes any stale accumulation too.  The finally
+                // block below still releases _lobbyMutex / clears _insideRefreshCycle.
+                //
+                // Checked BEFORE the [definite] branch below: a deliberate leave during an
+                // accept/leave transition surfaces as NotInLobby on the OLD lobby handle and
+                // must not be read as a real loss.
+                else if (PartyInviteController.Instance != null && PartyInviteController.Instance.IsTransitioning)
+                {
+                    _consecutiveRefreshErrors = 0;
+                    CosmicShore.Utility.CSDebug.Log(
+                        $"[HostConnectionService] Refresh error during party transition - ignored ({e.GetType().Name}): {e.Message}");
+                }
+                // [definite] We are no longer a member of this presence lobby server-side
+                // (NotInLobby / SessionNotFound / SessionDeleted / 404). This is terminal for
+                // the session handle we hold - the SDK will throw the identical error on every
+                // subsequent tick - so waiting out MAX_REFRESH_ERRORS_BEFORE_RECONNECT generic
+                // failures only logs the same full exception three times while discovery,
+                // invites and the party panel stay dead. Rejoin on the first occurrence, which
+                // is exactly how RefreshPartyMembersAsync already treats this error class on
+                // the party-session side. See Docs/PresenceSystem/BUGS.md B13.
+                else if (IsDefiniteSessionGoneException(e))
+                {
+                    Debug.LogWarning(
+                        $"[HostConnectionService] Presence lobby gone server-side " +
+                        $"({e.GetType().Name}): {e.Message} - rejoining.");
+                    CosmicShore.Utility.CSDebug.Log($"[HostConnectionService] NetDiag: class={CosmicShore.Utility.NetworkDiagnostics.ClassifyException(e)} | {CosmicShore.Utility.NetworkDiagnostics.GetSnapshot()}");
+
+                    _consecutiveRefreshErrors = 0;
+                    _lobbyService.ForceReset();
+                    shouldReconnect = true;
+                    EnterReconnecting();
+                }
                 else
                 {
                     Debug.LogWarning($"[HostConnectionService] Refresh error ({e.GetType().Name}): {e}");
                     CosmicShore.Utility.CSDebug.Log($"[HostConnectionService] NetDiag: class={CosmicShore.Utility.NetworkDiagnostics.ClassifyException(e)} | {CosmicShore.Utility.NetworkDiagnostics.GetSnapshot()}");
-
-                    // Companion to the entry guard at the top of RefreshAsync - this branch
-                    // catches an in-flight tick that was already past the entry guard (holding
-                    // the lobby mutex, awaiting _lobbyService.RefreshAsync) when _transitioning
-                    // flipped to true. Counting that transport-teardown failure would combine
-                    // with any pre-transition jitter (LobbyRefreshScheduler enters its boost
-                    // window on invite-receive, so the counter can already be at 1-2) and
-                    // falsely escalate to ForceReset + Reconnecting + a throwaway lobby on a
-                    // *successful* join. Reset wipes any stale accumulation too.  The finally
-                    // block below still releases _lobbyMutex / clears _insideRefreshCycle.
-                    if (PartyInviteController.Instance != null && PartyInviteController.Instance.IsTransitioning)
-                    {
-                        _consecutiveRefreshErrors = 0;
-                        return;
-                    }
 
                     _consecutiveRefreshErrors++;
                     if (_consecutiveRefreshErrors >= MAX_REFRESH_ERRORS_BEFORE_RECONNECT)
@@ -1217,7 +1354,7 @@ namespace CosmicShore.Gameplay
                         shouldReconnect = true;
                         // Connection was lost - enter Reconnecting so callers and UI
                         // can show a "reconnecting…" indicator.
-                        _stateMachine.TryTransition(PartyState.Reconnecting);
+                        EnterReconnecting();
                     }
                 }
             }
@@ -1239,8 +1376,13 @@ namespace CosmicShore.Gameplay
                 // which keeps the user-visible recovery in one place.
                 _eventBus.RaiseHostConnectionLost();
 
-                await _lobbyService.JoinOrCreateAsync(presenceLobbyMaxPlayers);
-                ApplyPostLobbyJoinState();
+                // Backed-off, single-flight rejoin. Awaited here so the caller's
+                // frame still owns the recovery, but the attempt counter and the
+                // retry gate live in RejoinPresenceLobbyAsync so the Update
+                // watchdog and this path share one ladder - a lobby that keeps
+                // failing backs off instead of spinning ForceReset → JoinOrCreate
+                // every few seconds and abandoning a UGS lobby per cycle.
+                await RejoinPresenceLobbyAsync("refresh-error");
             }
         }
 

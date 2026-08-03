@@ -72,6 +72,7 @@ namespace CosmicShore.Gameplay
             // Inviting and JoiningParty are only reachable from InParty (Relay always exists).
             (PartyState.InPresenceLobby, PartyState.HostingParty),      // auto: create solo Relay after lobby join
             (PartyState.InPresenceLobby, PartyState.Disconnected),      // sign-out / network loss
+            (PartyState.InPresenceLobby, PartyState.Reconnecting),      // presence lobby lost before the solo Relay came up
 
             (PartyState.Inviting,        PartyState.HostingParty),      // acceptance signal detected (legacy path; session already exists)
             (PartyState.Inviting,        PartyState.InParty),           // all invites cancelled, or joiner NM-connected
@@ -83,6 +84,15 @@ namespace CosmicShore.Gameplay
 
             // HostingParty is now also used as the "recreating solo session" transient state.
             (PartyState.HostingParty,    PartyState.InParty),           // session live (solo or first joiner NM-connected)
+            (PartyState.HostingParty,    PartyState.Reconnecting),      // presence lobby lost while the Relay session was being created
+
+            // Presence-lobby loss is detected by the HCS refresh tick, which runs in
+            // every state - so every state that can be resting or transient when a
+            // definite loss lands needs an edge to Reconnecting, or the recovery
+            // path spams "Illegal transition" warnings instead of recovering.
+            // Reconnecting → Reconnecting is deliberately NOT an entry: repeat
+            // losses are absorbed by the caller's already-Reconnecting guard, the
+            // same way no other state self-transitions here.
 
             // InParty is the persistent baseline - every player has a live Relay session.
             (PartyState.InParty,         PartyState.Inviting),          // sent first invite (no NM change)
