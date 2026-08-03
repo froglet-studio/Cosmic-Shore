@@ -89,8 +89,9 @@ if [ ! -f "$LEDGER" ]; then
   echo "    !! $LEDGER missing — create it (see /ship §2.5 step 6)"
 else
   echo "    open discharge blocks (a human owes each of these a run + push):"
-  if grep -qE '^### D[0-9]+' "$LEDGER"; then
-    grep -nE '^### D[0-9]+' "$LEDGER" | sed 's/^/        /'
+  openblocks=$(grep -nE '^### D[0-9]+' "$LEDGER" | grep -v 'DISCHARGED' || true)
+  if [ -n "$openblocks" ]; then
+    printf '%s\n' "$openblocks" | sed 's/^/        /'
   else
     echo "        (none)"
   fi

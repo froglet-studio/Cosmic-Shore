@@ -53,7 +53,7 @@ work its output:
 | Kind | Definition | Fate |
 |---|---|---|
 | **Standing** | Validator, auditor, report, or generator meant to be re-run on demand (`Validate Clock Wiring`, `Audit Vessel Ability Rows`, `Measure Cell Environment Baselines`). | Keep. Ledger row = `standing`. |
-| **One-shot** | Authors/migrates/wires assets once, then is dead weight (`Setup Freestyle Toybox`, `Canvas Upgrader`, `Strip Crystal AudioSources`). | Must be **discharged**, then **retired**. |
+| **One-shot** | Authors/migrates/wires assets once, then is dead weight (e.g. the retired `Strip Crystal AudioSources` — discharged via `/asset-surgery`, then deleted). | Must be **discharged**, then **retired**. |
 
 **2. Prefer eliminating the obligation over documenting it.** Before writing a menu-item
 tool at all, check whether `/asset-surgery` can author the asset directly — a programmatic

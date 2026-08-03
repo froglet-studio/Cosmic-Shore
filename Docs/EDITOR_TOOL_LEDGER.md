@@ -61,19 +61,20 @@ Enforced by `/ship` §2.5 (the editor-tool discharge gate), whose evidence-gathe
 
 # ⏳ Owed a run
 
-Discharge blocks are below in [§ Discharge blocks](#discharge-blocks). They touch disjoint
-assets, so order does not matter. After each, confirm the expected paths appear in
-`git status` before committing — **an empty diff means the tool did not do what the block
-claims**, which is a bug to report rather than a run to skip.
+Discharge blocks are below in [§ Discharge blocks](#discharge-blocks).
 
-| # | Tool | Evidence it has not been discharged |
+**2026-08-03 update: D1–D4 were discharged programmatically on this branch** via
+`/asset-surgery` — no editor run needed, the asset diffs are in the branch. What remains
+for a human is D5, D6, and the verification pass (see § Remaining human steps).
+
+| # | Tool | Status |
 |---|---|---|
-| [D1](#d1--strip-crystal-audiosources) | `StripCrystalAudioSourceTool.cs` | 9 crystal prefabs under `_Prefabs/Environment` still carry a live `!u!82` AudioSource **and** the `Crystal` script. `AssetDatabase.FindAssets(searchInFolders)` recurses, so the real target set is larger — see the block. Its own header: *"One-shot… Run this tool once after pulling this change."* |
-| [D2](#d2--restore-toy_conveyors-omnicrystalprefab) | `ToyboxSetupTool.cs` (one field) | `Toy_Conveyor.asset:25` reads `omniCrystalPrefab: {fileID: 0}`. This is **not** a never-run — `a0b32006` ("pushing from unity") set it correctly, then `c8e0dae6` ("pushing automatic unity changes") byte-reverted the file. Never restored since. |
-| [D3](#d3--bake-elemental-petal-bars-into-sparrow) | `ElementalPetalBarWirer.cs` | `Sparrow.prefab` has an `ElementalBarsView` with **all four `petalRoot`s null** and 0 petals; `SquirrelHUDVariant.prefab` has its 20. Scope is **Sparrow only** — see the block for why. |
-| [D4](#d4--commit-the-five-missing-meta-files) | *(not a menu item)* | 5 tracked first-party `.cs` files have **no tracked `.meta`**, all from PR #642: `PrismClock{GraphWirer,SmokeTest,WiringValidator}.cs` and the runtime `PrismClock.cs`, `PrismClockDiagnostics.cs`. Every other authored asset type is clean (0 missing across `.asset`/`.prefab`/`.shadergraph`/`.hlsl`/`.unity`). |
-| [D5](#d5--raycast-target-audit--prefab-pass) | `RaycastTargetAuditTool.cs` | The **scene** half is done (`9c5dd537`: 177 scene-native flips + 45 prefab-instance overrides in `Menu_Main.unity`). The **prefab** half is not: `GameCanvas.prefab` still has 71 `m_RaycastTarget: 1`, `GameCanvas-HexRace.prefab` 114, `ArcadeGameConfigureModal.prefab` 107, `R_GameOverPanel.prefab` 57. |
-| [D6](#d6--prism-grid-explosion-scene--decide-first) | `PrismGridTestSceneSetupTool.cs` | Both declared outputs are **absent**: `Assets/Resources/PrismGridTestConfig.asset` and `Assets/_Scenes/Game_TestDesign/PrismGridExplosionTest.unity`. (`PrismInstancingStressTest.unity` is a *different* scene — do not mistake it for this one.) **Needs a decision before a click.** |
+| [D1](#d1--strip-crystal-audiosources--discharged-by-surgery) | `StripCrystalAudioSourceTool.cs` | ✅ **DISCHARGED by surgery + tool RETIRED.** All 1,017 `!u!82` AudioSource docs removed across the 10 Crystal-carrying prefabs (9 crystals + `SpawnedSegments.prefab`'s 1,008), pure-deletion diffs, reference closure machine-verified. `BigCrystalVariant` inherits the stripped base — no dangling override (a hazard the editor-tool path had). One stale dormant `m_Enabled` override remains in `TadPoleFauna.prefab` targeting the removed component — Unity ignores it; an editor run would have left it identically. |
+| [D2](#d2--restore-toy_conveyors-omnicrystalprefab--discharged) | `ToyboxSetupTool.cs` (one field) | ✅ **DISCHARGED.** `Toy_Conveyor.asset` `omniCrystalPrefab` restored to the exact reference `a0b32006` wrote (verified live against `Crystal.prefab`'s root component). |
+| [D3](#d3--bake-elemental-petal-bars-into-sparrow--discharged) | `ElementalPetalBarWirer.cs` | ✅ **DISCHARGED by surgery.** 88 documents authored into `Sparrow.prefab` (4 `*_Flower` containers at the wirer's default row + 20 petals), donor-cloned from `SquirrelHUDVariant.prefab`'s wirer-authored output; sprites/rotations/grey verified against the donors and the ElementPetals metas; full parent/child reference closure verified. Flowers sit at the wirer's default positions — reposition to taste (optional aesthetics). |
+| [D4](#d4--commit-the-five-missing-meta-files--discharged) | *(not a menu item)* | ✅ **DISCHARGED.** Five `.meta` files minted (donor-cloned `MonoImporter` format, repo-wide GUID collision sweep) and committed. If your local Unity already generated untracked `.meta` files for these five, delete the local copies and take the committed ones — nothing in-repo can reference a GUID that was never committed. |
+| [D5](#d5--raycast-target-audit--prefab-pass) | `RaycastTargetAuditTool.cs` | ⏳ **HUMAN.** The **scene** half is done (`9c5dd537`); the **prefab** half is not: `GameCanvas.prefab` 71 × `m_RaycastTarget: 1`, `GameCanvas-HexRace.prefab` 114, `ArcadeGameConfigureModal.prefab` 107, `R_GameOverPanel.prefab` 57. Not surgically dischargeable: the tool's candidate classifier runs over the **composed** prefab (nested instances included) and the flips must be play-validated — both need the editor. |
+| [D6](#d6--prism-grid-explosion-scene--decide-first) | `PrismGridTestSceneSetupTool.cs` | ⏳ **HUMAN (decision).** Both declared outputs absent: `Assets/Resources/PrismGridTestConfig.asset`, `PrismGridExplosionTest.unity`. Whether that is a debt depends on whether `BenchmarkResults/PrismExplosion/*.json` exists on the prompter's machine — unknowable from the repo. |
 
 # ✅ Fixed on this branch (were "fix before running")
 
@@ -150,7 +151,7 @@ before removal. Recover any of them with
 | `CosmicShoreBuildPipeline.cs` | `… > Build > …` | Build entry points (`Docs/BUILD_AND_DELIVERY.md`). |
 | `ForceReserializeScriptableObjects.cs` | `FrogletTools > Legacy > Force Re-Serialize …` | Maintenance utility for serialization drift. |
 | `CanvasUpgraderWindow.cs` | `… > Canvas Upgrader` | Standing — new UI keeps arriving at the old reference resolution. Nested-prefab guard fixed on this branch; the `GameCanvas.prefab` run is still owed. |
-| `LifeFormCrystalValidator.cs` | `… > Validate Lifeform Crystals` | Enforces the every-lifeform-drops-a-crystal invariant. Now scans `Boid` fauna too (fixed on this branch) — **re-run it**, it will report on `TadPoleFauna` / `TermiteDrone` for the first time. |
+| `LifeFormCrystalValidator.cs` | `… > Validate Lifeform Crystals` | Enforces the every-lifeform-drops-a-crystal invariant. Now scans `Boid` fauna too (fixed on this branch). A composition-aware static run (2026-08-03) found 8 violations — see § Remaining human steps #5. |
 | `Assets/Editor/ToastNotificationSetup.cs` | `Cosmic Shore > Toast Notification > …` | Authors the toast settings/channel/prefab. Settings path fixed on this branch (`Assets/Resources/`, where `Resources.Load` can see it). |
 | `RaycastTargetAuditTool.cs` | `… > UI > Raycast Target Audit` | Standing — re-run as UI grows. Has an un-discharged prefab pass (D5). |
 | `DialogueEditorWindow.cs`, `ElementalFloatEditor.cs`, `ComponentCopierWindow.cs`, `FindAssetByGUID.cs`, `SceneObjectCounter.cs`, `TextureMemoryUseWindow.cs`, `RuntimeTextureMemoryUsageWindow.cs`, `LogControlWindow.cs`, `FrogletTools.cs`, `AnimationRecorderWindow.cs`, `SceneBootstrapper.cs`, `ProfilerCsvLoggerMenu.cs` | various | Authoring/inspection utilities. No output obligation. |
@@ -160,130 +161,55 @@ before removal. Recover any of them with
 
 # Discharge blocks
 
-### D1 — Strip Crystal AudioSources
+### D1 — Strip Crystal AudioSources — DISCHARGED BY SURGERY
 
-```
-Unity ▸ Tools > Cosmic Shore > Strip Crystal AudioSources
+Done programmatically on branch `claude/ship-safeguards-tool-cleanup-fn6lk6` (2026-08-03):
+all 1,017 `!u!82` AudioSource documents and their `m_Component` entries removed across the
+10 Crystal-carrying prefabs under `_Prefabs/Environment` (the 9 crystals + 1,008 inlined in
+`SpawnedSegments.prefab`). Machine-verified per file: removed ids appear nowhere, document
+count dropped exactly, no non-stripped GameObject left componentless, every remaining
+component reference resolves. `Mine.prefab` untouched (no Crystal — the tool's own filter).
+`BigCrystalVariant.prefab` needed nothing: it inherits the stripped base, avoiding the
+dangling `m_RemovedComponents` override the editor-tool path risked. Known leftover: one
+dormant `m_Enabled` override in `TadPoleFauna.prefab` targeting the removed component —
+Unity ignores it; an editor run would have left it identically.
 
-expect console: "[StripCrystalAudioSourceTool] Stripped AudioSource from N prefab(s)"
-                N will be 10-11, NOT 9 — FindAssets(searchInFolders) recurses.
-                A "nothing to remove" line means it already ran — report that.
+The tool is **RETIRED** (deleted in the same branch). Recover:
+`git show 5ac234f8:Assets/_Scripts/Editor/StripCrystalAudioSourceTool.cs` *(any commit
+before the deletion)*. Verify in editor: collect a crystal, explosion SFX still plays (it
+comes from `AudioSystem.PlayGameplaySFX`, not the deleted AudioSources).
 
-writes: Assets/_Prefabs/Environment/{ActiveCrystalMass,ActiveCrystalSpace,Crystal,
-        CrystalCharge,CrystalMass,CrystalSpace,CrystalTime,MazeCrystal,OldCrystalTime}.prefab
-        Assets/_Prefabs/Environment/Spawners/SpawnedSegments.prefab   ← 25 MB, 1008 inlined
-                                                                        AudioSources
-        Assets/_Prefabs/Environment/BigCrystalVariant.prefab (variant of Crystal.prefab)
-```
+### D2 — Restore `Toy_Conveyor`'s `omniCrystalPrefab` — DISCHARGED
 
-**Brace for the diff.** `SpawnedSegments.prefab` alone accounts for ~1008 of the removals.
-Before committing, sanity-check that only AudioSource blocks went:
+Done on the same branch: `Assets/_SO_Assets/Toys/Toy_Conveyor.asset` line 25 restored to
+`{fileID: 5535990081244205891, guid: 54802b89e00a0ed4281025fa5e770811, type: 3}` — the
+exact reference `a0b32006` wrote before `c8e0dae6` byte-reverted it, re-verified live
+against `Crystal.prefab` (that fileID is the `Crystal` MonoBehaviour on its root). Verify
+in editor: fly the Wanderway toy; ~16% of scenes should carry the big body-collected omni
+crystal (`MicroscenePalette.OmniCrystalChance` = 0.16).
 
-```bash
-git diff --numstat -- Assets/_Prefabs/Environment/Spawners/SpawnedSegments.prefab
-git diff -- Assets/_Prefabs/Environment/Spawners/SpawnedSegments.prefab | grep '^-' | grep -v '^---' | grep -vcE '!u!82|AudioSource|m_[A-Za-z]+:'   # want 0
-```
+### D3 — Bake elemental petal bars into Sparrow — DISCHARGED BY SURGERY
 
-**Variant ordering caveat.** If Unity processes `BigCrystalVariant.prefab` before its base
-`Crystal.prefab`, the variant can be left with a dangling `m_RemovedComponents` override.
-Open it afterwards and confirm no "Missing" rows; if there are, revert that one file and
-re-run once the base is already stripped.
+Done on the same branch: 88 documents authored into `Sparrow.prefab` — 4 `*_Flower`
+containers under the `ElementalBars` RectTransform at the wirer's default row
+(x = −156/−52/52/156, y = 0) and 20 petals (RectTransform + CanvasRenderer + Image),
+donor-cloned from `SquirrelHUDVariant.prefab`'s wirer-authored output. Verified: sprite
+GUIDs match `Resources/ElementPetals/*.png.meta` per element; petal quaternions match
+`ConfigurePetal`'s `Euler(0,0,−72p)`; rest color is `ColorForTick(0)` grey; the view's four
+`bars[i].petalRoot` references wired; full bidirectional parent/child closure; the 4
+pre-existing stripped-doc structures byte-identical to HEAD. The flowers sit at default
+positions — **repositioning them per Sparrow's HUD layout is optional aesthetics**, in
+Prefab Mode, whenever convenient.
 
-```bash
-git add "Assets/_Prefabs/Environment"
-git commit -m "chore(assets): strip dead AudioSources from crystal prefabs"
-git push -u origin <branch>
-```
+### D4 — Commit the five missing `.meta` files — DISCHARGED
 
-Then retire: delete `Assets/_Scripts/Editor/StripCrystalAudioSourceTool.cs` + `.meta` and
-move its row to 🗑️ RETIRED with the SHA.
-
-### D2 — Restore `Toy_Conveyor`'s `omniCrystalPrefab`
-
-The value was correct once and got clobbered by a blanket "pushing automatic unity changes"
-commit. Two equivalent routes — **(b) is safer** because it produces a one-line diff:
-
-**(a) Re-run the tool**
-
-```
-Unity ▸ Tools > Cosmic Shore > Setup Freestyle Toybox
-```
-Commit **only** `Assets/_SO_Assets/Toys/Toy_Conveyor.asset`; review and discard the
-incidental `Menu_Main.unity` re-save (the tool saves the scene unconditionally).
-
-**(b) Hand-edit — no editor needed**
-
-`Assets/_SO_Assets/Toys/Toy_Conveyor.asset` line 25:
-
-```yaml
-# from
-  omniCrystalPrefab: {fileID: 0}
-# to  (the exact reference commit a0b32006 wrote; fileID is the Crystal MonoBehaviour
-#      on Crystal.prefab's root, guid is Crystal.prefab)
-  omniCrystalPrefab: {fileID: 5535990081244205891, guid: 54802b89e00a0ed4281025fa5e770811, type: 3}
-```
-
-```bash
-git add Assets/_SO_Assets/Toys/Toy_Conveyor.asset
-git commit -m "fix(toys): restore Wanderway omni-crystal prefab reference"
-git push -u origin <branch>
-```
-
-**Why it matters:** `Microscene.cs:283` falls back to a plain elemental crystal when the
-prefab is null, and `MicroscenePalette.OmniCrystalChance` is authored at 0.16 — so ~16% of
-Wanderway crystals that should be the omni jackpot silently degrade. Verify by flying the
-Wanderway toy and confirming some scenes carry the big body-collected omni crystal.
-
-### D3 — Bake elemental petal bars into Sparrow
-
-**Scope is one prefab, and that is correct.** The tool only re-authors prefabs that
-*already* carry an `ElementalBarsView`; it does **not** add the view. Two vessels have one
-(Squirrel — already baked, 20 petals; Sparrow — view present, all four `petalRoot`s null).
-The other nine vessels get their view created at runtime by `ElementalBarsController` and
-are not this tool's business.
-
-```
-Unity ▸ Tools > Cosmic Shore > Bake Elemental Petal Bars Into All Vessel HUDs
-
-expect dialog: "Baked 20 petal(s) across 1 prefab(s)"
-writes: Assets/_Prefabs/Spacevessels/Sparrow.prefab
-        (4 *_Flower containers + 20 Petal children)
-verify: grep -c 'm_Name: Petal' Assets/_Prefabs/Spacevessels/Sparrow.prefab   # 0 -> 20
-```
-
-Do **not** expect the view-GUID count to rise above 3 — that would mean the tool did
-something it is not supposed to do.
-
-```bash
-git add Assets/_Prefabs/Spacevessels/Sparrow.prefab
-git commit -m "chore(assets): bake elemental petal bars into Sparrow HUD"
-git push -u origin <branch>
-```
-
-### D4 — Commit the five missing `.meta` files
-
-Not a menu item — the same failure class, one step earlier. Five `.cs` files are tracked
-without their `.meta`, so every teammate's Unity mints a **different GUID** for them, and
-any future prefab/scene reference to `PrismClockDiagnostics` would bind differently per
-machine.
-
-```
-Unity ▸ open the project once and let it import (it generates the five .meta files)
-```
-
-```bash
-git status --short Assets/_Scripts/Editor/PrismClock* Assets/_Scripts/Utility/PrismClock*
-git add Assets/_Scripts/Editor/PrismClockGraphWirer.cs.meta \
-        Assets/_Scripts/Editor/PrismClockSmokeTest.cs.meta \
-        Assets/_Scripts/Editor/PrismClockWiringValidator.cs.meta \
-        Assets/_Scripts/Utility/PrismClock.cs.meta \
-        Assets/_Scripts/Utility/PrismClockDiagnostics.cs.meta
-git commit -m "chore: commit missing .meta files for the PrismClock sources"
-git push -u origin <branch>
-```
-
-Do this **before** D1/D3 so the tool-output commits stay clean. Re-check the whole tree
-any time with:
+Done on the same branch: five `.meta` files minted (donor-cloned `MonoImporter` block,
+fresh GUIDs, repo-wide collision sweep) for `PrismClockGraphWirer.cs`,
+`PrismClockSmokeTest.cs`, `PrismClockWiringValidator.cs`, `PrismClock.cs`,
+`PrismClockDiagnostics.cs`. If your working copy has local untracked `.meta` files for
+these (your Unity imported them before this landed), **delete the local copies and take
+the committed ones** — no committed asset can reference the locally-minted GUIDs.
+Re-check the whole tree any time:
 
 ```bash
 comm -23 <(git ls-files 'Assets/*.cs' | grep -viE 'Plugins/|PlayFabSDK/|NiceVibrations/|Wwise/|PrimitivePlus/|YethGameDev/|PlayFabEditorExtensions/' | sort) \
@@ -325,6 +251,42 @@ machine with both a `legacy-cpu` and a `gpu-clock` run?**
   `Docs/PRISM_EXPLOSION_BENCHMARK.md`, and commit
   `Assets/Resources/PrismGridTestConfig.asset` +
   `Assets/_Scenes/Game_TestDesign/PrismGridExplosionTest.unity` + the report.
+
+---
+
+# Remaining human steps (2026-08-03)
+
+Everything mechanically dischargeable has been discharged in-branch. What is left needs
+the running editor, play-validation, or knowledge only the prompter has:
+
+1. **Open Unity once, confirm a clean import** — zero console errors, no "Missing (Mono
+   Script)" rows. This blesses all of the branch's surgery (10 stripped prefabs, Sparrow's
+   88 new documents, `Toy_Conveyor`, the five `.meta` files). If local untracked `.meta`
+   files conflict, keep the committed ones (D4 note).
+2. **D5 — raycast prefab pass**: select `GameCanvas.prefab`, `GameCanvas-HexRace.prefab`,
+   `ArcadeGameConfigureModal.prefab`, `R_GameOverPanel.prefab`, `_Prefabs/UI Elements`,
+   `_Prefabs/Spacevessels` in the Project window ▸ `Tools > Cosmic Shore > UI > Raycast
+   Target Audit` ▸ disable candidates ▸ click through one race + the modals ▸ commit.
+3. **GameCanvas.prefab canvas upgrade** (unblocked by the nested-instance guard, fixed +
+   corrected on this branch): open it in Prefab Stage ▸ `Tools > Cosmic Shore > Canvas
+   Upgrader` ▸ Scan ▸ Dry Run — the report must say it SKIPS the internals of nested
+   already-upgraded fragments (e.g. `EndGameStatsPanel`) while still scaling their root
+   RectTransforms ▸ Upgrade ▸ save ▸ commit.
+4. **D6 — decide**: does `BenchmarkResults/PrismExplosion/*.json` exist on your machine
+   with both `legacy-cpu` and `gpu-clock` runs? Yes → tell the next session to mark D6
+   done. No → PR #642's A/B numbers were never measured; run
+   `Tools > Cosmic Shore > Setup Prism Grid Explosion Scene` + the protocol in
+   `Docs/PRISM_EXPLOSION_BENCHMARK.md`.
+5. **Lifeform crystal violations — design decision**: a composition-aware static run of
+   the (now Boid-aware) validator finds 8 prefabs with no elemental crystal, direct or
+   nested: `TermiteDrone.prefab`, `worm.prefab` (live spawn path), plus 6 under
+   `Populations/` (the dead spawn path per `Docs/ECOSYSTEM.md` §7). Which element each
+   creature drops is a design choice — pick, then any session can author the crystals
+   (or run the editor validator to confirm after authoring). Until then the runtime
+   `LifeFormCrystal` guard provisions at play time with a warning.
+6. **Play-verify the restored/authored content**: Wanderway omni crystal appears
+   (~16% of scenes); crystal collect still plays its SFX; Sparrow's HUD shows four grey
+   flowers (reposition to taste); toast assets still resolve.
 
 ---
 
