@@ -38,9 +38,10 @@ namespace CosmicShore.UI
         [Header("Charge — crystal seeding")]
         [Tooltip("The ability icon. If its Image type is Filled it doubles as the recharge wipe.")]
         [SerializeField] private Image crystalIcon;
-        [Tooltip("One pip per carryable crystal, left to right. The second only lights up once " +
-                 "Charge's level-5 upgrade raises the carry limit; above the limit pips are hidden " +
-                 "entirely, so the row shows capacity as well as stock.")]
+        [Tooltip("One pip per SAVED crystal - a crystal carried beyond the first, which the main " +
+                 "icon already stands for. So an un-upgraded Dolphin shows none, and the mini " +
+                 "crystal appearing IS Twin Seed becoming visible. Pips past the carry limit are " +
+                 "hidden outright, so the slot reads capacity as well as stock.")]
         [SerializeField] private List<Image> crystalPips = new();
         [Tooltip("Pip sprite for a crystal that is LOADED - the omni crystal's active art.")]
         [SerializeField] private Sprite crystalPipFilled;
@@ -184,13 +185,16 @@ namespace CosmicShore.UI
                 var pip = crystalPips[i];
                 if (!pip) continue;
 
-                // Pips past the carry limit are not dim - they are absent, so the row reads as
-                // capacity too. The second pip only appears once Twin Seed lands.
-                bool withinLimit = i < maxCharges;
+                // A pip stands for a SAVED crystal - one carried beyond the first, which the main
+                // icon already represents. So pip[i] is charge i+2, and an un-upgraded Dolphin
+                // (limit 1) shows no pips at all: the mini crystal IS the Twin Seed upgrade made
+                // visible, not a second copy of the ability icon.
+                int chargeShown = i + 2;
+                bool withinLimit = chargeShown <= maxCharges;
                 if (pip.gameObject.activeSelf != withinLimit) pip.gameObject.SetActive(withinLimit);
                 if (!withinLimit) continue;
 
-                bool loaded = i < charges;
+                bool loaded = chargeShown <= charges;
 
                 // The omni crystal ships its own loaded/empty art, so swap the sprite when both are
                 // authored and only fall back to tinting a single sprite when they are not.
@@ -205,7 +209,7 @@ namespace CosmicShore.UI
                 }
 
                 // The slot currently recharging shows its progress when it can.
-                if (!loaded && i == charges && pip.type == Image.Type.Filled)
+                if (!loaded && chargeShown == charges + 1 && pip.type == Image.Type.Filled)
                     pip.fillAmount = ready01;
                 else if (pip.type == Image.Type.Filled)
                     pip.fillAmount = loaded ? 1f : 0f;
