@@ -248,10 +248,17 @@ namespace CosmicShore.Gameplay
             frame.Settle(seedParam, this);
         }
 
-        Vector3 SiteDirection(int site)
+        Vector3 SiteDirection(int site) => SiteDirection(site, paramPosition, paramHeading);
+
+        /// <summary>
+        /// The four tangent-plane growth directions at a point on the surface. Static so a pure
+        /// PREVIEW of the lattice (a flora icon - see <see cref="TryPreviewLattice"/>) walks the
+        /// exact same geometry as live growth instead of a second copy of it.
+        /// </summary>
+        static Vector3 SiteDirection(int site, Vector3 atParam, Vector3 heading)
         {
-            Vector3 normal = SurfaceNormal(paramPosition);
-            Vector3 ahead = Vector3.ProjectOnPlane(paramHeading, normal);
+            Vector3 normal = SurfaceNormal(atParam);
+            Vector3 ahead = Vector3.ProjectOnPlane(heading, normal);
             ahead = ahead.sqrMagnitude > 1e-6f ? ahead.normalized : AnyTangent(normal);
             Vector3 right = Vector3.Cross(normal, ahead).normalized;
 
@@ -269,8 +276,16 @@ namespace CosmicShore.Gameplay
         /// across curvature, full step, then Newton-project back onto the zero level set.
         /// </summary>
         bool TryStepAlongSurface(Vector3 fromParam, Vector3 tangentDirection, out Vector3 result, out Vector3 resultNormal)
+            => TryStepAlongSurface(fromParam, tangentDirection, frame.ParamStep, out result, out resultNormal);
+
+        /// <summary>
+        /// One lattice step along the surface - static so the preview shares it (see
+        /// <see cref="SiteDirection(int, Vector3, Vector3)"/>).
+        /// </summary>
+        static bool TryStepAlongSurface(Vector3 fromParam, Vector3 tangentDirection, float paramStep,
+            out Vector3 result, out Vector3 resultNormal)
         {
-            Vector3 midpoint = fromParam + tangentDirection * (frame.ParamStep * 0.5f);
+            Vector3 midpoint = fromParam + tangentDirection * (paramStep * 0.5f);
             if (ProjectToSurface(ref midpoint))
             {
                 Vector3 midTangent = Vector3.ProjectOnPlane(tangentDirection, SurfaceNormal(midpoint));
@@ -278,7 +293,7 @@ namespace CosmicShore.Gameplay
                     tangentDirection = midTangent.normalized;
             }
 
-            result = fromParam + tangentDirection * frame.ParamStep;
+            result = fromParam + tangentDirection * paramStep;
             if (!ProjectToSurface(ref result))
             {
                 resultNormal = Vector3.up;
@@ -314,6 +329,83 @@ namespace CosmicShore.Gameplay
                 p -= gradient * (f / magnitudeSqr);
             }
             return Mathf.Abs(SurfaceValue(p)) < SurfaceTolerance * 10f;
+        }
+
+        /// <summary>
+        /// A pure PREVIEW of the surface this assembler grows - the tunnel network as an icon,
+        /// in the flora's own local space, spawning nothing.
+        ///
+        /// It is the real thing, not an impression: the same seed anchor (π/2, π/2, π/2), the same
+        /// <see cref="SiteDirection(int, Vector3, Vector3)"/> tangent sites, the same
+        /// <see cref="TryStepAlongSurface(Vector3, Vector3, float, out Vector3, out Vector3)"/>
+        /// midpoint-probe + Newton projection, the same parallel-transported heading, and the same
+        /// param→local mapping the live <see cref="SchwarzPSurfaceFrame"/> uses. What it does NOT
+        /// do is claim anything: the live occupancy registry (frame-scoped reservations, live
+        /// prism residents) and the cross-structure <c>PrismSpatialIndex</c> reservation are
+        /// replaced by a local visited set, because a preview must not touch shared state.
+        ///
+        /// Growth order is breadth-first, so a small budget still reads as a patch of surface
+        /// spreading out from the seed rather than one long tendril.
+        /// </summary>
+        /// <param name="budget">Maximum tiles to report.</param>
+        /// <param name="tileScale">Prism scale to report for each tile.</param>
+        /// <param name="into">Receives local-space tile poses.</param>
+        public bool TryPreviewLattice(int budget, Vector3 tileScale, List<SpawnPoint> into)
+        {
+            if (into == null || budget <= 0) return false;
+
+            float worldScale = periodScale / (2f * Mathf.PI);
+            if (worldScale <= 1e-4f) return false;
+            float paramStep = separationDistance / worldScale;
+            if (paramStep <= 1e-4f) return false;
+
+            Vector3 seedParam = new(Mathf.PI / 2f, Mathf.PI / 2f, Mathf.PI / 2f);
+            Vector3 seedNormal = SurfaceNormal(seedParam);
+            Vector3 seedTangent = AnyTangent(seedNormal);
+
+            // The frame's mapping with the flora at identity: local = rotation * (param - anchor) * scale.
+            Quaternion frameRotation = Quaternion.Inverse(Quaternion.LookRotation(seedNormal, seedTangent));
+
+            Vector3 ToLocal(Vector3 param) => frameRotation * ((param - seedParam) * worldScale);
+            Quaternion ToLocalRotation(Vector3 normal, Vector3 heading) =>
+                Quaternion.LookRotation(frameRotation * normal, frameRotation * heading);
+
+            float cell = paramStep * 0.5f;
+            Vector3Int Quantize(Vector3 param) => new(
+                Mathf.RoundToInt(param.x / cell),
+                Mathf.RoundToInt(param.y / cell),
+                Mathf.RoundToInt(param.z / cell));
+
+            var visited = new HashSet<Vector3Int> { Quantize(seedParam) };
+            var frontier = new Queue<(Vector3 param, Vector3 heading)>();
+            frontier.Enqueue((seedParam, seedTangent));
+            into.Add(new SpawnPoint(Vector3.zero, ToLocalRotation(seedNormal, seedTangent), tileScale));
+
+            while (frontier.Count > 0 && into.Count < budget)
+            {
+                var (param, heading) = frontier.Dequeue();
+
+                for (int site = 0; site < SiteCount && into.Count < budget; site++)
+                {
+                    Vector3 stepDirection = SiteDirection(site, param, heading);
+                    if (!TryStepAlongSurface(param, stepDirection, paramStep,
+                            out Vector3 childParam, out Vector3 childNormal))
+                        continue;
+                    if (!visited.Add(Quantize(childParam))) continue;
+
+                    // Parallel-transport, exactly as GetGrowthInfo does, so the front stays coherent.
+                    Vector3 childHeading = Vector3.ProjectOnPlane(stepDirection, childNormal);
+                    childHeading = childHeading.sqrMagnitude > 1e-6f
+                        ? childHeading.normalized
+                        : AnyTangent(childNormal);
+
+                    into.Add(new SpawnPoint(ToLocal(childParam),
+                        ToLocalRotation(childNormal, childHeading), tileScale));
+                    frontier.Enqueue((childParam, childHeading));
+                }
+            }
+
+            return into.Count > 1;
         }
 
         static Vector3 AnyTangent(Vector3 normal)

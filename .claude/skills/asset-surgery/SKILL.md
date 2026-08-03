@@ -87,6 +87,25 @@ every other block is one object keyed by 32-hex `m_ObjectId`.
   the same input slot — assert exactly one feeder per input).
 - **Remove**: drop the block, drop its entry from every registry
   (`m_Nodes`/`m_Properties`/category child list), assert no edge references it.
+- **READ a graph before you touch it — dump the edge list, don't eyeball JSON.**
+  To answer "what does property X actually do?", stream-parse the file with
+  `json.JSONDecoder().raw_decode` in a loop (plain `json.load` throws
+  `Extra data` — it is CONCATENATED objects, not one document), index every
+  block by `m_ObjectId`, then print each `m_Edges` entry as
+  `srcNode.srcSlot -> dstNode.dstSlot` with nodes labeled by type + resolved
+  property name (`PropertyNode.m_Property.m_Id` → that property's `m_Name`)
+  and slots resolved through the owner's `m_Slots`. The semantics fall out in
+  one screen. Follow `SubGraphNode.m_SerializedSubGraph.guid` into the
+  `.shadersubgraph` (find it via `grep -rl <guid> Assets --include=*.meta`)
+  and repeat — the meaning usually lives one level down. Also dump unconnected
+  input-slot `m_Value`s: an input with no edge is a hardcoded constant.
+- **Which properties are tunable per material**: an exposed property that is
+  NOT Hybrid Per Instance and is never written by a `Stamp*`/`SetFloat` call
+  is a plain material constant — tune it in the `.mat` (`m_Floats`), and the
+  instanced/entity draw path picks it up with no code change. Confirm the
+  entity path reads the SAME asset (e.g. `PrismDebris` copies
+  `PrismExplosion.prefab`'s `sharedMaterial`) or you will tune a material
+  nothing draws with.
 - Unity reimports on pull; the in-editor validator + a shader-error check
   (`ShaderUtil.ShaderHasError`) confirm; magenta = `git checkout` the graph.
 
@@ -272,6 +291,16 @@ hand-authored files plus a scene array entry. The recipe:
   containing a key for a field that is no longer serialized (e.g. a
   `[Inject] protected` field) is harmless residue — not evidence the field is
   still serialized.
+- **NEVER delete a code block with a regex.** A pattern like
+  `r'public static X\(...\)\n\{(?:.*?\n)*?\}\n'` looks bounded but the lazy
+  block matches across method boundaries: one such "remove two unused helpers"
+  script silently ate 250 lines of `ToyFactory.cs` (every shape builder + the
+  gate factory). Use `Edit` with exact anchors for deletions, and if you must
+  script one, **verify after**: line count before/after, plus an inventory grep
+  of the file's public API (`grep -n "public static ..."`). Recovery is
+  `git checkout HEAD -- <file>` when the file was already committed — which is
+  another reason to commit before scripted edits.
+
 - **CRLF**: Windows checkouts deliver `\r\n`; `split("\n\n")` sees ONE block.
   Normalize line endings before splitting; preserve the file's own separator
   when writing.
