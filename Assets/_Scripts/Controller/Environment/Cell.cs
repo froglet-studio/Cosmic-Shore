@@ -83,6 +83,31 @@ namespace CosmicShore.Gameplay
         Mesh _pendingNucleusMesh;
 
         public float NucleusRadius => nucleus ? nucleus.transform.localScale.x : 0f;
+
+        /// <summary>
+        /// The nucleus control zone's WORLD radius - renderer-bounds derived, so it is correct
+        /// regardless of the prefab mesh's base size, and it is the SAME number
+        /// <see cref="IsInsideNucleus"/> tests against (unlike <see cref="NucleusRadius"/>, which
+        /// is a raw localScale read). 0 when the cell has no nucleus.
+        ///
+        /// This is the canonical "size of this intensity's cell core": crystal placement and the
+        /// cell-relative player spawn ring both measure off it, so they stay consistent with the
+        /// nucleus the config actually spawned.
+        /// </summary>
+        public float NucleusWorldRadius =>
+            _nucleusControlRadiusSqr > 0f ? Mathf.Sqrt(_nucleusControlRadiusSqr) : 0f;
+
+        /// <summary>
+        /// Runs <see cref="Initialize"/> if the cell has not picked up its config yet, so a caller
+        /// that needs the nucleus (crystal placement, spawn-ring placement) is never racing the
+        /// OnInitializeGame ordering. Same lazy-init nudge <see cref="InitilizePostFirstCellItem"/>
+        /// already performs; idempotent once the config is assigned.
+        /// </summary>
+        public void EnsureInitialized()
+        {
+            if (cellConfigData) return;
+            Initialize();
+        }
         public float MembraneRadius
         {
             get

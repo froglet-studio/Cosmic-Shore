@@ -827,6 +827,25 @@ namespace CosmicShore.Utility
             return true;
         }
         
+        /// <summary>
+        /// Set the spawn poses directly, for callers that COMPUTE the arrangement instead of reading
+        /// authored scene transforms (see <see cref="Utility.CellSpawnFormation"/>, which places
+        /// players symmetrically around the cell nucleus). Resets the draw pool, exactly like
+        /// <see cref="SetSpawnPositions"/>.
+        /// </summary>
+        public void SetSpawnPoses(Pose[] poses)
+        {
+            if (poses == null || poses.Length == 0)
+            {
+                CSDebug.LogError("[GameDataSO] SetSpawnPoses called with no poses.");
+                return;
+            }
+
+            SpawnPoses = poses;
+            _playerSpawnPoseList?.Clear();
+            _playerSpawnPoseList = new List<Pose>(poses);
+        }
+
         public void SetSpawnPositions(Transform[] spawnTransforms)
         {
             if (spawnTransforms == null)

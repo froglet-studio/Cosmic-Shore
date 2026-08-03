@@ -56,10 +56,11 @@ namespace CosmicShore.Gameplay
                  "Only used when listOfCrystalPositions has anchors for the current intensity.")]
         [SerializeField, Min(0f)] private float anchorJitterRadius = 35f;
 
-        [Tooltip("Radius of the ball around the cell centre that crystals spawn in when NO anchors " +
-                 "are authored (Scurry / Crystal Capture). Used by BOTH the initial batch and every " +
-                 "respawn, so the placement volume never changes over the course of a match. " +
-                 "0 = derive from the crystal prefab's SphereRadius.")]
+        [Tooltip("Overrides the radius of the ball around the cell centre that crystals spawn in " +
+                 "when NO anchors are authored (Scurry / Crystal Capture). Used by BOTH the initial " +
+                 "batch and every respawn, so the placement volume never changes over a match. " +
+                 "0 (default) = the cell's NUCLEUS radius, which is per-intensity - leave it at 0 " +
+                 "unless a mode genuinely needs to decouple crystals from its cell core.")]
         [SerializeField, Min(0f)] private float anchorlessSpawnRadius;
 
         [Header("Crystal Count")]
@@ -353,10 +354,28 @@ namespace CosmicShore.Gameplay
             return centerPos + Random.insideUnitSphere * GetAnchorlessSpawnRadius();
         }
 
-        /// <summary>Configured anchorless radius, or the crystal's own SphereRadius when left at 0.</summary>
+        /// <summary>
+        /// The reference size for anchorless crystal placement: the CELL NUCLEUS radius, which is
+        /// per-intensity (an IntensityWise cell picks a different config, hence a different nucleus,
+        /// per level). Crystals therefore live inside the cell core at whatever scale that
+        /// intensity's core is, and the reference is identical for the initial batch and every
+        /// respawn. The serialized override wins when non-zero; the crystal's own SphereRadius is
+        /// the last-resort fallback for a cell with no nucleus at all.
+        /// </summary>
         protected float GetAnchorlessSpawnRadius()
         {
             if (anchorlessSpawnRadius > 0f) return anchorlessSpawnRadius;
+
+            var cell = cellData != null ? cellData.Cell : null;
+            if (cell != null)
+            {
+                // The nucleus is spawned in Cell.Initialize; nudge it so placement never depends on
+                // whether OnInitializeGame beat the first crystal spawn.
+                cell.EnsureInitialized();
+                float nucleusRadius = cell.NucleusWorldRadius;
+                if (nucleusRadius > 0f) return nucleusRadius;
+            }
+
             if (crystalPrefab != null) return crystalPrefab.SphereRadius;
             return cellData.TryGetLocalCrystal(out Crystal crystal) ? crystal.SphereRadius : 10f;
         }
