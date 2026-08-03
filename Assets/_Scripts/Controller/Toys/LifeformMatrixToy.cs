@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
@@ -181,10 +182,25 @@ namespace CosmicShore.Gameplay
             BuildSpeciesGrid();
         }
 
+        // Meshes this toy generated for its flora icons. Instance-scoped and freed here, so they
+        // cannot outlive the scene across Menu_Main re-entries.
+        readonly List<Mesh> _iconMeshes = new();
+
+        /// <summary>
+        /// The domain a species icon wears. The local player's, matching what a station would
+        /// actually spawn (see SpawnFaunaVariant), with Jade as the neutral fallback.
+        /// </summary>
+        Domains IconDomain =>
+            Context?.GameData?.LocalPlayer?.Vessel?.VesselStatus?.Domain ?? Domains.Jade;
+
         void OnDestroy() // teardown with the toybox
         {
             if (_variantGrid) Destroy(_variantGrid);
             if (_speciesGrid) Destroy(_speciesGrid);
+
+            foreach (var mesh in _iconMeshes)
+                if (mesh) Destroy(mesh);
+            _iconMeshes.Clear();
         }
 
         static void ClearGrid(ref GameObject grid)
@@ -408,9 +424,29 @@ namespace CosmicShore.Gameplay
             if (fauna != null)
                 foreach (var cfg in fauna)
                     if (cfg && cfg.FaunaPrefab) { source = cfg.FaunaPrefab.transform; break; }
+
+            // FLORA HAVE NO MODEL - a species is its GROWTH PATTERN. So instead of harvesting
+            // meshes that aren't there (which is why these stations were anonymous spheres), ask
+            // the species to run its own growth rule in the abstract and draw the result. See
+            // Flora.TryPreviewGrowth / FloraIconBuilder.
             if (!source && flora != null)
+            {
                 foreach (var cfg in flora)
-                    if (cfg && cfg.FloraPrefab) { source = cfg.FloraPrefab.transform; break; }
+                {
+                    if (!cfg || !cfg.FloraPrefab) continue;
+                    if (FloraIconBuilder.TryBuild(cfg.FloraPrefab, radius, Context, IconDomain,
+                            out model, out var iconMesh))
+                    {
+                        _iconMeshes.Add(iconMesh);   // this toy owns every mesh it builds
+                        model.AddComponent<ToyIdleSpin>().Configure(Vector3.up, 16f);
+                        return true;
+                    }
+                    // A species whose pattern can't be previewed (the Schwarz-P walk) falls through
+                    // to the mesh path, then to the sphere - never to an invented shape.
+                    source = cfg.FloraPrefab.transform;
+                    break;
+                }
+            }
             if (!source) return false;
 
             ToyModelBuilder.RendererFilter bodyOnly = (root, node, mesh, renderer) =>

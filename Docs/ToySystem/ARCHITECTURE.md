@@ -73,6 +73,8 @@ detection. On top of that base the `Toy` class adds:
 | Toy-root emblem (core + orbiting satellites) | `Assets/_Scripts/Controller/Toys/ToyEmblem.cs` |
 | Emblem build pump (one slot per frame) | `Assets/_Scripts/Controller/Toys/ToyEmblemStreamer.cs` |
 | Element crystal model (shape signature) | `Assets/_Scripts/Controller/Toys/ElementCrystalModelBuilder.cs` |
+| Flora icon (growth-pattern simulation) | `Assets/_Scripts/Controller/Toys/FloraIconBuilder.cs` |
+| Growth-preview contract (pure, spawns nothing) | `Assets/_Scripts/Controller/Environment/FloraAndFauna/Flora.cs` (`TryPreviewGrowth`) |
 | Idle spin for toy bodies | `Assets/_Scripts/Controller/Toys/ToyIdleSpin.cs` |
 | Conveyor ("Wanderway") toy | `Assets/_Scripts/Controller/Toys/ConveyorToy.cs` |
 | Conveyor belt runner | `Assets/_Scripts/Controller/Toys/MicrosceneConveyor.cs` |
@@ -92,9 +94,9 @@ an emblem (see "Toy-root emblems"): a core of the four element crystal MODELS �
 SHAPE signatures, never colours — orbited by four of its own species. Fly it and the SPECIES
 matrix blooms one layer OUTWARD from the cell centre: fauna on the
 lower row, flora on the upper (12 species) — **each species station is a mini MODEL of that
-creature**, built from its first element config's prefab asset by `ToyModelBuilder` (never
-instantiated, so no Fauna/Flora behaviour, registry entry or spawn); a species whose prefab
-carries no visible geometry keeps the anonymous sphere. Fly a species and its VARIANT matrix blooms a
+creature** (fauna: meshes harvested off the prefab asset by `ToyModelBuilder`, never instantiated)
+or **of its growth pattern** (flora: simulated via `Flora.TryPreviewGrowth` — see "Station icons");
+only a species that can offer neither keeps the anonymous sphere. Fly a species and its VARIANT matrix blooms a
 further layer outward: 4 element columns × level rows {1, 3, 5}, each station wearing the
 element's crystal model sized by level. Fly a variant and a POPULATION of that exact lifeform
 (fauna `PopulationSize` / flora `InitialSpawnCount`) spawns live through the canonical cell
@@ -196,7 +198,8 @@ selection itself — never a decorative stand-in, and never a hand-authored symb
 | Strategy | Meaning | Used by |
 |---|---|---|
 | **Scaled-down view** | the whole thing, small | Vessel Changer (mini hulls), Lifeform bench (mini creatures) |
-| **Signature extract** | the few parts that identify it | Connect the Dots (signature strokes), Cell Selector (signature structures) |
+| **Signature extract** | the few parts that identify it | Connect the Dots (under-budget icons), Cell Selector (signature structures) |
+| **Growth simulation** | the rule it grows by, run in the abstract | Lifeform bench flora (no model exists to shrink) |
 
 The split is a legibility call, not a taste one. A ship is one compact object and survives being
 shrunk. A 55-stroke painting or a 34k-prism world does **not**: drawn whole at thumbnail size they
@@ -204,16 +207,41 @@ cross-hatch into a fuzzy ball that reads identically for every entry — which i
 failure a text label then has to paper over. So those two take the few most identifying parts and
 draw them boldly:
 
-- **Connect the Dots** — `MiniaturePaintingBuilder` keeps **5 signature strokes** (the longest of
-  *each* domain first, so the composition's colour identity survives, then longest-remaining),
-  each at up to 24 points so its curvature reads, drawn ~1.7× thicker, and frames the icon on the
-  bounds of the **chosen** strokes rather than the whole canvas.
+- **Connect the Dots** — `MiniaturePaintingBuilder` scales fidelity to the icon: the stroke budget
+  is `radius × 1.1` (clamped 5–64), so a gallery station (radius 44) draws ~48 strokes — a Rose
+  shows all four petal whorls — while an emblem satellite (7.5) draws 8. Line width comes down as
+  density goes up so a full icon doesn't blob. When everything fits, everything is drawn; when it
+  doesn't, strokes are chosen by **farthest-point dispersion** over their centroids, seeded with the
+  longest stroke of each domain (colour identity). Dispersion is the load-bearing part: longest-first
+  clusters, and on a radially symmetric painting it took several strokes from one side — the icon
+  showed *half a rose*. The frame is fitted to the strokes actually drawn.
 - **Cell Selector** — `CellMiniatureBuilder.KeepSignatureStructures` bins the generator's samples
   into a 12³ voxel grid and keeps the densest voxels until they hold `signatureCoverage` (0.7) of
   the mass. What survives is the motifs the generator actually builds, at their true relative
   positions, with the haze between them gone. Nothing is moved, invented, or re-coloured — it is
   still an honest scale model, just the recognisable part of one. Ties break on the voxel key, so
   a given environment always yields the same icon.
+
+**Flora are the third case: they have no model to shrink.** A flora species *is* a growth rule — it
+builds itself out of prisms at runtime — so there is nothing for `ToyModelBuilder` to harvest, which
+is why those stations were anonymous spheres. `Flora.TryPreviewGrowth(budget, seed, into)` is the
+answer: the species runs **its own growth rule in the abstract** and reports where prisms would land
+— no prism, no spindle, no GameObject, no cell, no spatial-index reservation, no config mutation,
+and never `UnityEngine.Random` (a preview must not advance a sequence the simulation draws from).
+`FloraIconBuilder` then feeds those poses through the *existing* icon pipeline —
+`CellMiniatureBuilder.BuildFromLays` → `ToyFactory.AddMiniatureBody` — so a flora icon is made of the
+same stuff, in the same domain prism materials, as a mini-cell or a microscene.
+
+| species family | preview | source of the rule |
+|---|---|---|
+| `BranchingFlora` (Branching, Cacti, Pine, Nerve) | the branch walk | its own serialized params — branch angles, counts, the `leafChance` climb, the 1/depth step and scale falloff |
+| `AssembledFlora` + `GyroidAssembler` (Gyroid) | a patch of the real gyroid | `GyroidBondMateDataContainer`'s bond table, composed exactly as `CalculateGlobalBondSite` + `CalculateRotation` do |
+| `AssembledFlora` + `WallAssembler` (Wall) | the square sheet | its four in-plane bond offsets |
+| `AssembledFlora` + `SchwarzPAssembler` (SchwarzP) | **none — falls back to the sphere** | a walk on a parametric minimal surface with live occupancy claims; it cannot be reproduced honestly here, and an invented shape is worse than an honest blank |
+
+The previews deliberately skip what a thumbnail cannot show: `growthChance` (it paces growth over
+time, it does not change the shape a branch eventually takes), the Frenzy gate, and prism budgets.
+They preview *form*; they are not a second implementation of growth for gameplay.
 
 `ToyModelBuilder` is the shared scaled-down-view engine: it harvests meshes off a **prefab asset**
 (never instantiated — no NetworkObject, no registry entry, no controllers), paints them with one

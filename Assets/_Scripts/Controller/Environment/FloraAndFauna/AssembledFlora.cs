@@ -391,5 +391,105 @@ namespace CosmicShore.Gameplay
 
             return newAssembler;
         }
+
+        /// <summary>
+        /// Pure preview of the LATTICE this flora assembles - see <see cref="Flora.TryPreviewGrowth"/>.
+        /// The growth rule here belongs to the <see cref="Assembler"/> on the health prism, so this
+        /// walks that assembler's own bonding geometry and spawns nothing:
+        ///
+        /// • <see cref="GyroidAssembler"/> - the real bond-mate table
+        ///   (<see cref="GyroidBondMateDataContainer"/>): each site's delta position/up/forward,
+        ///   composed exactly as <c>CalculateGlobalBondSite</c> + <c>CalculateRotation</c> do, so the
+        ///   preview IS a patch of the gyroid the species actually grows.
+        /// • <see cref="WallAssembler"/> - its four in-plane bond offsets
+        ///   (±up, ±right by half-extent + separation).
+        /// • <see cref="SchwarzPAssembler"/> - NOT previewed. Its growth is a walk on a parametric
+        ///   minimal surface with live occupancy claims, which cannot be reproduced honestly here;
+        ///   it returns false and the caller falls back rather than showing an invented shape.
+        /// </summary>
+        public override bool TryPreviewGrowth(int budget, int seed, List<SpawnPoint> into)
+        {
+            if (into == null || budget <= 0 || !healthPrism) return false;
+
+            Vector3 scale = LeafSize != Vector3.zero ? LeafSize : Vector3.one;
+
+            if (healthPrism.TryGetComponent(out GyroidAssembler gyroid))
+                return PreviewGyroid(gyroid, scale, budget, into);
+            if (healthPrism.TryGetComponent(out WallAssembler wall))
+                return PreviewWall(wall, scale, budget, into);
+
+            return false;
+        }
+
+        static readonly CornerSiteType[] GyroidSites =
+        {
+            CornerSiteType.TopRight, CornerSiteType.TopLeft,
+            CornerSiteType.BottomLeft, CornerSiteType.BottomRight,
+        };
+
+        static bool PreviewGyroid(GyroidAssembler prototype, Vector3 scale, int budget, List<SpawnPoint> into)
+        {
+            float separation = prototype.SeparationDistance;
+            var frontier = new Queue<(Vector3 pos, Quaternion rot, GyroidBlockType type)>();
+            var occupied = new HashSet<Vector3Int>();
+
+            frontier.Enqueue((Vector3.zero, Quaternion.identity, prototype.BlockType));
+            occupied.Add(Quantize(Vector3.zero, separation));
+            into.Add(new SpawnPoint(Vector3.zero, Quaternion.identity, scale));
+
+            while (frontier.Count > 0 && into.Count < budget)
+            {
+                var (pos, rot, type) = frontier.Dequeue();
+
+                foreach (var site in GyroidSites)
+                {
+                    if (into.Count >= budget) break;
+                    if (!GyroidBondMateDataContainer.BondMateDataMap.TryGetValue((type, site), out var bond)) continue;
+
+                    // transform.ToGlobal(local) == position + rotation * local (unscaled basis).
+                    Vector3 childPos = pos + rot * (bond.DeltaPosition * separation);
+
+                    var key = Quantize(childPos, separation);
+                    if (!occupied.Add(key)) continue; // the site is already filled - as in the real bond
+
+                    Vector3 forward = rot * (bond.DeltaForward + Vector3.forward);
+                    Vector3 up = rot * (bond.DeltaUp + Vector3.up);
+                    if (forward.sqrMagnitude < 1e-6f || up.sqrMagnitude < 1e-6f) continue;
+                    Quaternion childRot = Quaternion.LookRotation(forward, up);
+
+                    into.Add(new SpawnPoint(childPos, childRot, scale));
+                    frontier.Enqueue((childPos, childRot, bond.BlockType));
+                }
+            }
+
+            return into.Count > 1;
+        }
+
+        static bool PreviewWall(WallAssembler prototype, Vector3 scale, int budget, List<SpawnPoint> into)
+        {
+            float separation = prototype.SeparationDistance;
+            float stepX = scale.x + separation;
+            float stepY = scale.y + separation;
+
+            // The wall bonds ±up / ±right in its own plane: a square sheet, grown outward from the
+            // seed so a partial budget still reads as a wall rather than a stripe.
+            int side = Mathf.Max(1, Mathf.FloorToInt(Mathf.Sqrt(budget)));
+            int half = side / 2;
+            for (int y = -half; y <= half && into.Count < budget; y++)
+            for (int x = -half; x <= half && into.Count < budget; x++)
+                into.Add(new SpawnPoint(new Vector3(x * stepX, y * stepY, 0f), Quaternion.identity, scale));
+
+            return into.Count > 0;
+        }
+
+        /// <summary>Lattice-cell key, so a site already bonded is never filled twice.</summary>
+        static Vector3Int Quantize(Vector3 position, float separation)
+        {
+            float cell = Mathf.Max(0.01f, separation * 0.5f);
+            return new Vector3Int(
+                Mathf.RoundToInt(position.x / cell),
+                Mathf.RoundToInt(position.y / cell),
+                Mathf.RoundToInt(position.z / cell));
+        }
     }
 }
