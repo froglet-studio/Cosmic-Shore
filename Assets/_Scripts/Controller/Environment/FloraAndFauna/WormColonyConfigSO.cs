@@ -27,11 +27,25 @@ namespace CosmicShore.Gameplay
         [Tooltip("Segments a fresh colony spawns with (1 head + N-2 bodies + 1 tail). " +
                  "Minimum 3 so the spawned worm has all three fauna types.")]
         [Min(3)] public int SpawnSegmentCount = 8;
-        [Tooltip("Rest distance between segment centres (world units), before kaiju scale.")]
+        [Tooltip("Rest distance between BODY segment centres (world units, before kaiju " +
+                 "scale and taper). Recovered from the 2024 worm authoring (~8.4 local at " +
+                 "the old ×5 root ≈ 14 here at ×3).")]
         [Min(0.1f)] public float SegmentSpacing = 14f;
         [Tooltip("Uniform scale applied to every segment root at spawn — the kaiju dial. " +
                  "Also scales the effective spacing so the body stays connected.")]
         [Min(0.1f)] public float KaijuScale = 3f;
+        [Tooltip("Per-segment size taper down the chain (segment i scales by this^i) — " +
+                 "the head is the biggest thing on the worm and the tail tapers away. " +
+                 "Recovered from the 2024 chain's authored 0.9-per-segment shrink. Links' " +
+                 "rest spacing tapers with it so the gaps close toward the tail. Segments " +
+                 "GLIDE to their taper target when topology changes (growth, splits) — " +
+                 "the worm visibly re-proportions, never snaps.")]
+        [Range(0.5f, 1f)] public float TaperPerSegment = 0.9f;
+        [Tooltip("The head-to-first-segment gap, as a multiple of the body gap — the head " +
+                 "needs room (recovered ratio from the 2024 chain: 21.5 vs ~8.4 ≈ 2.6).")]
+        [Min(1f)] public float HeadGapMultiplier = 2.6f;
+        [Tooltip("The into-tail gap, as a multiple of the body gap (2024 ratio: 15 vs ~8.4 ≈ 1.8).")]
+        [Min(1f)] public float TailGapMultiplier = 1.8f;
         [Tooltip("Per-colony segment cap — a PERFORMANCE backstop (collider budget), not " +
                  "the population control (starvation is). Growth pauses at the cap; splits " +
                  "conserve the total so they can never exceed it.")]
@@ -73,8 +87,10 @@ namespace CosmicShore.Gameplay
                  "behind the head. This is the only source of new worm mass — length is a " +
                  "readable record of how much the colony has eaten.")]
         [Min(1)] public int FeedsPerSegment = 24;
-        [Tooltip("Seconds a new segment's root grows from zero to full scale (continuity " +
-                 "— nothing pops in). Its prisms bloom via their own growth stamp.")]
+        [Tooltip("Scale-glide time constant (~95% settled in this many seconds): a grown " +
+                 "segment blooms from zero, and every segment glides to its taper target " +
+                 "when the chain re-proportions (growth, splits, differentiation) — " +
+                 "continuity, nothing pops or snaps.")]
         [Min(0.05f)] public float SegmentBloomSeconds = 2f;
 
         [Header("Wound differentiation (head/tail regrow)")]

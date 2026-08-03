@@ -36,6 +36,17 @@ namespace CosmicShore.Gameplay
                  "as FaunaConfigurationSO.Element provisions other species. Authored, " +
                  "per the elemental contract — never rolled at random.")]
         [SerializeField] Element heartElement = Element.Mass;
+        [Tooltip("Where the provisioned heart sits in segment space (recovered from the " +
+                 "2024 wormhead authoring: the heart nests INSIDE the head's armor cage " +
+                 "at (0,0,-13.14)). Zero = crystal-set default (segment centre).")]
+        [SerializeField] Vector3 heartLocalPosition = Vector3.zero;
+        [Tooltip("Local scale of the provisioned heart. 0 = keep the crystal-set default.")]
+        [Min(0f)] [SerializeField] float heartLocalScale = 0f;
+        [Tooltip("Engage the shield on this segment's non-danger body prisms at spawn — " +
+                 "the head's authored armor plates (shield sheds on the first hit, then " +
+                 "the plate is vulnerable: a two-stage kill). Danger prisms are skipped " +
+                 "(danger and shield are mutually exclusive by locked design).")]
+        [SerializeField] bool shieldArmor = false;
 
         /// <summary>The colony this segment belongs to. Set by <see cref="WormFauna"/> on adoption.</summary>
         public WormFauna Colony { get; set; }
@@ -75,6 +86,11 @@ namespace CosmicShore.Gameplay
                 if (!hp) continue;
                 hp.ChangeTeam(domain);
                 hp.Initialize("WormColony");
+                // Armor: the head's recovered plate cage spawns shielded (first hit
+                // sheds the shield, second destroys the plate). Danger prisms skip —
+                // danger and shield are mutually exclusive by locked design.
+                if (shieldArmor && hp.prismProperties is { IsDangerous: false })
+                    hp.ActivateShield();
             }
 
             // Capital segments carry the colony's hearts, provisioned to the AUTHORED
@@ -87,7 +103,18 @@ namespace CosmicShore.Gameplay
             {
                 crystal = LifeFormCrystal.EnsureElementalCrystal(this, heartElement);
                 if (crystal) crystal.SetEmbeddedIn(this);
+                PlaceHeart();
             }
+        }
+
+        /// <summary>Seats the provisioned heart at the authored anchor (see heartLocalPosition).</summary>
+        void PlaceHeart()
+        {
+            if (!crystal) return;
+            if (heartLocalPosition != Vector3.zero)
+                crystal.transform.localPosition = heartLocalPosition;
+            if (heartLocalScale > 0f)
+                crystal.transform.localScale = Vector3.one * heartLocalScale;
         }
 
         /// <summary>Public bridge so the colony can keep the spatial index honest each frame.</summary>
@@ -167,6 +194,7 @@ namespace CosmicShore.Gameplay
             if (_dead || element == Element.None) return;
             crystal = LifeFormCrystal.EnsureElementalCrystal(this, element);
             if (crystal) crystal.SetEmbeddedIn(this);
+            PlaceHeart();
         }
 
         protected override void OnDeath(string killerName = "")

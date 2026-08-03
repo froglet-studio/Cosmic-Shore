@@ -13,8 +13,11 @@ MonoBehaviour:
   m_Name: WormColonyConfig
   m_EditorClassIdentifier: 
   SpawnSegmentCount: 8
-  SegmentSpacing: 12
+  SegmentSpacing: 14
   KaijuScale: 3
+  TaperPerSegment: 0.9
+  HeadGapMultiplier: 2.6
+  TailGapMultiplier: 1.8
   MaxSegmentsPerWorm: 16
   CruiseSpeed: 18
   TurnDegreesPerSecond: 40

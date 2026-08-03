@@ -157,20 +157,55 @@ namespace CosmicShore.Gameplay
             StartCoroutine(BehaviorTickCoroutine());
         }
 
-        /// <summary>Fresh spawn: head + bodies + tail laid out along -forward, kaiju-scaled.</summary>
+        /// <summary>
+        /// Kaiju proportions, recovered from the 2024 worm authoring: segment i tapers
+        /// by TaperPerSegment^i (the head is the biggest thing on the worm).
+        /// </summary>
+        float SegmentTargetScale(int index) =>
+            config.KaijuScale * Mathf.Pow(config.TaperPerSegment, index);
+
+        /// <summary>
+        /// Rest distance between segments[linkIndex-1] and segments[linkIndex]: the body
+        /// gap, tapered down the chain, widened behind the HEAD (it needs room —
+        /// HeadGapMultiplier) and into the TAIL (TailGapMultiplier). Ratios recovered
+        /// from the 2024 chain layout.
+        /// </summary>
+        float RestSpacing(int linkIndex)
+        {
+            float s = config.SegmentSpacing * config.KaijuScale
+                      * Mathf.Pow(config.TaperPerSegment, linkIndex - 1);
+            if (segments[linkIndex - 1].Role == WormSegmentRole.Head) s *= config.HeadGapMultiplier;
+            if (segments[linkIndex].Role == WormSegmentRole.Tail) s *= config.TailGapMultiplier;
+            return s;
+        }
+
+        /// <summary>Fresh spawn: head + bodies + tail laid out along -forward, kaiju-scaled and tapered.</summary>
         void BuildChain()
         {
-            float spacing = config.SegmentSpacing * config.KaijuScale;
             Vector3 dir = transform.forward;
             Quaternion facing = SafeLookRotation.TryGet(dir, out var rot, this) ? rot : Quaternion.identity;
             int count = Mathf.Max(3, config.SpawnSegmentCount);
 
+            Vector3 pos = transform.position;
             for (int i = 0; i < count; i++)
             {
                 var prefab = i == 0 ? headPrefab : i == count - 1 ? tailPrefab : bodyPrefab;
-                Vector3 pos = transform.position - dir * (spacing * i);
-                AddSegmentToChain(Instantiate(prefab, pos, facing), segments.Count, Vector3.one * config.KaijuScale);
+                AddSegmentToChain(Instantiate(prefab, pos, facing), segments.Count,
+                    Vector3.one * SegmentTargetScale(i));
+                if (i + 1 < count)
+                    pos -= dir * RestSpacingForBuild(i, i + 1 == count - 1);
             }
+        }
+
+        // BuildChain-time spacing: RestSpacing reads roles from the live list, but during
+        // the build the NEXT segment doesn't exist yet — same math, roles known up front.
+        float RestSpacingForBuild(int prevIndex, bool nextIsTail)
+        {
+            float s = config.SegmentSpacing * config.KaijuScale
+                      * Mathf.Pow(config.TaperPerSegment, prevIndex);
+            if (prevIndex == 0) s *= config.HeadGapMultiplier;
+            if (nextIsTail) s *= config.TailGapMultiplier;
+            return s;
         }
 
         /// <summary>Split adoption: the severed rear half becomes this colony's chain.</summary>
@@ -216,6 +251,7 @@ namespace CosmicShore.Gameplay
             UpdateAttackState();
             MoveLeader(dt);
             FollowChain(dt);
+            GlideScales(dt);
 
             // Root anchors at the head so registry/cell distance reads track the
             // creature; then the movers contract — keep the spatial index honest.
@@ -347,9 +383,25 @@ namespace CosmicShore.Gameplay
             leader.position += leader.forward * (_currentSpeed * dt);
         }
 
+        /// <summary>
+        /// Every segment glides to its taper target (continuity): a freshly grown
+        /// segment blooms from zero, and the whole chain re-proportions smoothly when
+        /// topology changes (growth, splits, end deaths). Early-outs once settled.
+        /// </summary>
+        void GlideScales(float dt)
+        {
+            float glideT = 1f - Mathf.Exp(-(3f / Mathf.Max(0.05f, config.SegmentBloomSeconds)) * dt);
+            for (int i = 0; i < segments.Count; i++)
+            {
+                var seg = segments[i].transform;
+                Vector3 target = Vector3.one * SegmentTargetScale(i);
+                if ((seg.localScale - target).sqrMagnitude <= 1e-4f) continue;
+                seg.localScale = Vector3.Lerp(seg.localScale, target, glideT);
+            }
+        }
+
         void FollowChain(float dt)
         {
-            float spacing = config.SegmentSpacing * config.KaijuScale;
             float followT = 1f - Mathf.Exp(-config.FollowSharpness * dt);
             float rotateT = 1f - Mathf.Exp(-config.RotationSharpness * dt);
             bool whipping = Time.time < _whipUntil;
@@ -360,7 +412,7 @@ namespace CosmicShore.Gameplay
                 Transform prev = segments[i - 1].transform;
                 Transform seg = segments[i].transform;
 
-                Vector3 followPoint = prev.position - prev.forward * spacing;
+                Vector3 followPoint = prev.position - prev.forward * RestSpacing(i);
 
                 // Tail whip: the rear segments' follow points swing laterally so the
                 // danger tail sweeps its neighborhood. Contact damage is the danger
@@ -522,32 +574,16 @@ namespace CosmicShore.Gameplay
             _feedsBanked -= config.FeedsPerSegment;
 
             Transform head = segments[0].transform;
-            float spacing = config.SegmentSpacing * config.KaijuScale;
-            Vector3 pos = head.position - head.forward * spacing;
+            Vector3 pos = head.position
+                          - head.forward * (config.SegmentSpacing * config.KaijuScale * config.HeadGapMultiplier);
 
             var seg = Instantiate(bodyPrefab, pos, head.rotation);
-            // Blooms from zero (continuity): the root grows in over SegmentBloomSeconds
-            // while its prisms run their own growth stamps; the chain's follow springs
-            // absorb the insertion — no bespoke make-room animation. The bloom runs ON
-            // THE SEGMENT so it survives a mid-bloom split adoption (and this brain's
-            // death) and stops if the segment is killed mid-grow.
+            // Blooms from zero (continuity): inserted at scale zero, the per-frame
+            // GlideScales pass grows it to its taper target while its prisms run their
+            // own growth stamps; the chain's follow springs absorb the insertion — no
+            // bespoke make-room animation. Every downstream segment re-proportions
+            // through the same glide (their taper index just shifted by one).
             AddSegmentToChain(seg, 1, Vector3.zero);
-            seg.StartCoroutine(BloomSegmentCoroutine(seg));
-        }
-
-        IEnumerator BloomSegmentCoroutine(WormSegmentFauna seg)
-        {
-            float seconds = Mathf.Max(0.05f, config.SegmentBloomSeconds);
-            Vector3 target = Vector3.one * config.KaijuScale;
-            float t = 0f;
-            while (t < 1f)
-            {
-                if (!seg || seg.IsDead) yield break;
-                t += Time.deltaTime / seconds;
-                seg.transform.localScale = Vector3.Lerp(Vector3.zero, target, Mathf.Clamp01(t));
-                seg.SyncBodyPrismsToIndex(); // keep the index honest while the body grows
-                yield return null;
-            }
         }
 
         /// <summary>

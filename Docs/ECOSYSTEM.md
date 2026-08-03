@@ -2006,12 +2006,41 @@ movement model — plus the `Sharks-and-worms` branch's telegraph→burst attack
 
 ### 21.4 Collider budget (the hard gate, stated)
 
-Per segment: body = 1 BoxCollider (one high-volume core prism); head = 3 (fangs);
-tail = 3 (stinger); + 1 heart SphereCollider on each capital segment. A spawn-size-8
-worm = 3+3+6×1+2 = **14 active colliders**; at the `MaxSegmentsPerWorm=16` growth cap
-= **22**. Splits conserve segment totals (never exceed the cap) and add at most one
-heart per differentiated end. Against the ~1,500/cell target this is negligible — the
-deleted 2024 worm cost 28 colliders per worm *and grew unboundedly on a timer*.
+Per segment: body = 1 BoxCollider (one high-volume core prism); head = 11 (the 8
+recovered armor plates + 3 danger fangs); tail = 8 (the recovered two-tier stinger:
+4 blades + 4 tip spikes); + 1 heart SphereCollider on each capital segment. A
+spawn-size-8 worm = 12+6×1+9 = **27 active colliders**; at the
+`MaxSegmentsPerWorm=16` growth cap = **35**. Splits conserve segment totals (never
+exceed the cap) and add at most one heart per differentiated end. Against the
+~1,500/cell target this is negligible — the deleted 2024 worm cost 28 colliders per
+worm *and grew unboundedly on a timer*.
+
+### 21.4.1 The recovered 2024 geometry (Aug 2026 second pass)
+
+The first rebuild carried the design but invented its geometry; the prompter called
+it: the ORIGINAL authoring had the good bones. Recovered verbatim from git history
+(`f065c8f76^`) into the new prefabs:
+
+- **Head armor cage**: the 8 mirrored plates of `WormHeadSpindle` (4 z-stations,
+  ±y pairs, angled quaternions, 4.7→6.2 widths) wrap the head's rear — now authored
+  as GENUINELY shielded prisms (`prismProperties.IsShielded=1` + the segment's
+  `shieldArmor` engage — the old asset only had the *naming*): each plate takes one
+  hit to shed its shield and a second to destroy. The 3 danger fangs sit at the
+  mouth. The **heart nests inside the cage** at the authored (0,0,−13.14), scale 2.5
+  (`WormSegmentFauna.heartLocalPosition/Scale`).
+- **Chain proportions**: head-gap ≈ 2.6× the body gap (`HeadGapMultiplier`), into-
+  tail gap ≈ 1.8× (`TailGapMultiplier`), and the authored **0.9-per-segment taper**
+  (`TaperPerSegment`) — segment scale AND link spacing shrink down the chain, so the
+  head is the biggest thing on the worm and the tail trails away. Segments GLIDE to
+  their taper targets when topology changes (growth, splits) — the worm visibly
+  re-proportions, never snaps; a grown segment blooms from zero through the same
+  glide (which replaced the bloom coroutine).
+- **Tail stinger**: `ParentTailSpindle`'s four giant X-blades (20×2×3.75 at ±7.6
+  x/y) plus `ChildTailSpindle`'s four tip spikes as a nested spindle tier at
+  (0,0,−2.15) — the tip withers before the blades (extremity-inward). The old asset
+  authored the child tier at scale ZERO (invisible — a bug); recovered at scale 1.
+- **Natural-scale visuals**: the worm meshes render at their authored natural size
+  (the first pass over-scaled them 4×); `KaijuScale` remains the one size dial.
 
 ### 21.5 Deployment + tuning
 
