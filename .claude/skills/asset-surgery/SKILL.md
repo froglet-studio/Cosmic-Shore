@@ -262,6 +262,16 @@ hand-authored files plus a scene array entry. The recipe:
 
 ## 5. Traps learned the hard way (check these BEFORE debugging for an hour)
 
+- **NEVER delete a code block with a regex.** A pattern like
+  `r'public static X\(...\)\n\{(?:.*?\n)*?\}\n'` looks bounded but the lazy
+  block matches across method boundaries: one such "remove two unused helpers"
+  script silently ate 250 lines of `ToyFactory.cs` (every shape builder + the
+  gate factory). Use `Edit` with exact anchors for deletions, and if you must
+  script one, **verify after**: line count before/after, plus an inventory grep
+  of the file's public API (`grep -n "public static ..."`). Recovery is
+  `git checkout HEAD -- <file>` when the file was already committed — which is
+  another reason to commit before scripted edits.
+
 - **CRLF**: Windows checkouts deliver `\r\n`; `split("\n\n")` sees ONE block.
   Normalize line endings before splitting; preserve the file's own separator
   when writing.
