@@ -32,7 +32,25 @@ namespace CosmicShore.Gameplay
                  "otherwise creates a depletion zone where fauna repeatedly consume " +
                  "the same prism configuration.")]
         [SerializeField] float goalOrbitRadius = 60f;
-        public Vector3 Goal;
+
+        Vector3 _goal;
+
+        /// <summary>
+        /// Where this creature is currently heading. A PROPERTY rather than a field so the
+        /// cell's fauna containment (<see cref="Cell.ClampToFaunaContainment"/>) applies at the
+        /// single point every writer must pass through - and there are many: this class's
+        /// <see cref="ResolveGoal"/>, Boid's override, LightFauna's half-dozen direct writes on
+        /// its own behavior tick, the spawner's initial goal, and the inheritance in
+        /// <see cref="TryReproduce"/>. Clamping in each of them would be a rule you could forget
+        /// to apply in the next grazer; clamping here is a rule that cannot be bypassed.
+        /// No-op (returns the value unchanged) for every cell that authors no containment,
+        /// which is all of them except a mode that pens its brood.
+        /// </summary>
+        public Vector3 Goal
+        {
+            get => _goal;
+            set => _goal = cell ? cell.ClampToFaunaContainment(value) : value;
+        }
 
         // Stable per-instance offset so each fauna orbits its resolved goal at a
         // different point. Seeded once at Start so the spread is deterministic per
@@ -182,7 +200,7 @@ namespace CosmicShore.Gameplay
         /// simple fauna uses. A COMPOSITE creature overrides to route the element where
         /// its hearts actually live — the worm colony forwards it to its capital
         /// segments (the colony root itself is deliberately heartless,
-        /// Docs/ECOSYSTEM.md §21).
+        /// Docs/ECOSYSTEM.md §23).
         /// </summary>
         protected virtual void ProvisionHeart(Element element)
         {
@@ -560,7 +578,7 @@ namespace CosmicShore.Gameplay
         /// A prism of this creature's BODY was destroyed by an active force (vessel,
         /// projectile, AOE). Raised by <see cref="HealthPrism.Explode"/> through the
         /// stamped owner, so a creature can react to being shot — the worm colony's
-        /// segments die when their body is stripped (Docs/ECOSYSTEM.md §21).
+        /// segments die when their body is stripped (Docs/ECOSYSTEM.md §23).
         /// <paramref name="killerName"/> is the attribution the destruction pipeline
         /// carried. Default is empty: most fauna (LightFauna, Boid) keep their
         /// historical behavior of swimming on with a thinner body.

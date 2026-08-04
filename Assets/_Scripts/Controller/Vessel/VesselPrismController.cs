@@ -85,6 +85,14 @@ namespace CosmicShore.Gameplay
         public PrismEventChannelWithReturnSO PrismSpawnChannel => _onPrismSpawnedEventChannel;
         public float MinWaveLength => minWavelength;
         public ushort TrailLength => (ushort)Trail.TrailList.Count;
+
+        /// <summary>
+        /// The SECOND ribbon. Vessels whose spawn pattern lays a double trail put every other
+        /// prism here (see <see cref="CreateBlock"/>), so anything reasoning about "the vessel's
+        /// whole trail" has to walk both — reading only <see cref="Trail"/> silently misses half
+        /// the mass. Read-only on purpose: the controller owns what goes in.
+        /// </summary>
+        public Trail SecondaryTrail => Trail2;
         public float TrailZScale => BaseScale.z; // <- from BaseScale now
         public event Action<Prism> OnBlockSpawned;
         /// <summary>Static event: fired each time a danger block is created during overheat. Param = owner player name.</summary>

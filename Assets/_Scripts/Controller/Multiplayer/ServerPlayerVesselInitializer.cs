@@ -49,6 +49,33 @@ namespace CosmicShore.Gameplay
         [Tooltip("Scene-placed spawn transforms. If set, overrides GameDataSO.SpawnPoses on network spawn.")]
         [SerializeField] protected Transform[] playerSpawnPoints;
 
+        [Tooltip("Ignore the authored spawn transforms and COMPUTE the spawn ring from the cell: " +
+                 "players are placed symmetrically on a sphere around the cell centre, all facing " +
+                 "it, at the cell nucleus radius + Spawn Distance Outside Nucleus. 4 players get " +
+                 "tetrahedral symmetry, 3 an equilateral triangle, 2 opposite ends of one axis.")]
+        [SerializeField] protected bool arrangeSpawnPointsAroundCell;
+
+        [Tooltip("How far OUTSIDE the cell nucleus surface each player starts. Only used when " +
+                 "Arrange Spawn Points Around Cell is on.")]
+        [SerializeField, Min(0f)] protected float spawnDistanceOutsideNucleus = 40f;
+
+        [Tooltip("Floor for the computed spawn-ring radius, for a cell whose 'core' is NOT a " +
+                 "nucleus. The ring is max(nucleus radius + Spawn Distance Outside Nucleus, this). " +
+                 "Ribcage needs it: its cell has no NucleusPrefab (a nucleus control zone would " +
+                 "break the mode's fauna diet), so the nucleus radius is 0 and the ring would " +
+                 "collapse to the cell centre - INSIDE the 300u cage the players are meant to be " +
+                 "attacking from outside. 0 = no floor (every existing scene is unchanged).")]
+        [SerializeField, Min(0f)] protected float spawnRingRadiusFloor;
+
+        [Tooltip("The cell whose nucleus the computed spawn ring measures off. Only used when " +
+                 "Arrange Spawn Points Around Cell is on.")]
+        [SerializeField] protected CellRuntimeDataSO cellData;
+
+        // The computed ring is built ONCE per scene: GameDataSO draws spawn poses from a pool it
+        // pops from, so recomputing mid-spawn would refill the pool and hand two players the
+        // same pose.
+        bool _cellSpawnRingBuilt;
+
         [Header("Timing")]
         [Tooltip("Delay in ms after OnPlayerNetworkSpawned before reading NetworkVariables.")]
         [SerializeField] protected int preSpawnDelayMs = 200;
@@ -102,7 +129,10 @@ namespace CosmicShore.Gameplay
 
             Debug.Log($"<color=#00FF00>[FLOW-5] [ServerVesselInit] OnNetworkSpawn - IsServer=true, subscribing to OnPlayerNetworkSpawnedUlong. gameData.Players.Count={gameData.Players.Count}</color>");
 
-            if (playerSpawnPoints != null && playerSpawnPoints.Length > 0)
+            // The computed ring needs the cell's nucleus, which the Cell spawns in Initialize -
+            // deferred to the first vessel spawn (EnsureSpawnPosesReady) so it can't read a
+            // nucleus that doesn't exist yet.
+            if (!arrangeSpawnPointsAroundCell && playerSpawnPoints != null && playerSpawnPoints.Length > 0)
                 gameData.SetSpawnPositions(playerSpawnPoints);
 
             _cts = new CancellationTokenSource();
@@ -156,6 +186,7 @@ namespace CosmicShore.Gameplay
             if (clientPlayerVesselInitializer != null)
                 clientPlayerVesselInitializer.OnRosterRequested = null;
             _processedPlayers.Clear();
+            _cellSpawnRingBuilt = false; // a replay re-spawns the cell; rebuild against the new nucleus
 
             _cts?.Cancel();
             _cts?.Dispose();
@@ -254,12 +285,74 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// Builds the cell-relative spawn ring on first use. Players land on a sphere of
+        /// <c>nucleus radius + spawnDistanceOutsideNucleus</c> centred on the cell, all facing the
+        /// centre, arranged by count: 4 tetrahedral, 3 equilateral triangle, 2 opposite ends of one
+        /// axis (see <see cref="CellSpawnFormation"/>). Falls back to the authored transforms if the
+        /// cell isn't reachable. No-op unless <c>arrangeSpawnPointsAroundCell</c> is on.
+        /// </summary>
+        protected void EnsureSpawnPosesReady()
+        {
+            if (!arrangeSpawnPointsAroundCell || _cellSpawnRingBuilt) return;
+
+            // NOT cellData.Cell: that is assigned in Cell.Initialize, which runs on
+            // OnInitializeGame behind InitDelayMs (1000 ms), while this runs at preSpawnDelayMs
+            // (200 ms) and, for AI, at OnNetworkSpawn. FindByRuntimeData reads the registry the
+            // Cell joins in OnEnable, so it resolves immediately.
+            var cell = Cell.FindByRuntimeData(cellData);
+
+            // Likewise ExpectedNucleusWorldRadius, not NucleusWorldRadius: the nucleus object does
+            // not exist yet this early, and a 0 there would put every player at
+            // spawnDistanceOutsideNucleus from the cell CENTRE - inside the core.
+            float nucleusRadius = cell ? cell.ExpectedNucleusWorldRadius : 0f;
+
+            // A radius floor makes the ring usable for a cell whose core is a STRUCTURE rather
+            // than a nucleus (Ribcage's cage), where nucleusRadius is legitimately 0. Without a
+            // floor that case is indistinguishable from "cell not resolvable yet" below.
+            if (nucleusRadius <= 0f && spawnRingRadiusFloor <= 0f)
+            {
+                // Transient (cell not resolvable yet) - do NOT latch, so a later spawn can still
+                // install the real ring. Permanent (a cell with no nucleus configured) - latch,
+                // because the authored points are then the only answer there is.
+                bool permanent = cell != null && cell.HasConfigAssigned;
+                _cellSpawnRingBuilt = permanent;
+
+                CSDebug.LogWarning(
+                    "[ServerPlayerVesselInitializer] Arrange Spawn Points Around Cell is on but the " +
+                    $"cell nucleus radius is unavailable (cell={(cell ? cell.name : "null")}, " +
+                    $"configAssigned={(cell && cell.HasConfigAssigned)}) - using authored spawn points" +
+                    (permanent ? "." : " for now; will retry on the next spawn."));
+
+                if (playerSpawnPoints != null && playerSpawnPoints.Length > 0)
+                    gameData.SetSpawnPositions(playerSpawnPoints);
+                return;
+            }
+
+            _cellSpawnRingBuilt = true;
+
+            // Total players in the match (humans + AI backfill) - the formation's symmetry is
+            // chosen from this, so a 2-player match gets the axis, not two corners of a tetrahedron.
+            int count = gameData.SelectedPlayerCount != null
+                ? Mathf.Max(1, gameData.SelectedPlayerCount.Value)
+                : Mathf.Max(1, gameData.Players.Count);
+
+            float radius = Mathf.Max(nucleusRadius + spawnDistanceOutsideNucleus, spawnRingRadiusFloor);
+            gameData.SetSpawnPoses(CellSpawnFormation.Build(count, cell.transform.position, radius));
+
+            CSDebug.Log($"[ServerPlayerVesselInitializer] Spawn ring: {count} players at " +
+                        $"{radius:0.#}u (nucleus {nucleusRadius:0.#} + {spawnDistanceOutsideNucleus:0.#}, " +
+                        $"floor {spawnRingRadiusFloor:0.#}) around {cell.name}.");
+        }
+
+        /// <summary>
         /// Called when a player's vessel type is confirmed.
         /// Spawns the vessel, initializes on server, waits, then notifies clients via RPCs.
         /// Virtual so derived classes (Menu) can add post-init behavior.
         /// </summary>
         protected virtual async UniTask OnPlayerReadyToSpawnAsync(Player player, CancellationToken ct)
         {
+            EnsureSpawnPosesReady();
+
             Debug.Log($"<color=#00FF00>[FLOW-5] [ServerVesselInit] OnPlayerReadyToSpawnAsync - SpawnVesselAndInitialize for {player.NetName.Value}</color>");
             SpawnVesselAndInitialize(player.OwnerClientId, player);
 

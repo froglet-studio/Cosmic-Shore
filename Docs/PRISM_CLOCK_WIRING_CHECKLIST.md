@@ -119,10 +119,36 @@ steal/repaint instead of snapping, and the last expected one-time
 
 **Test: steal a TRANSPARENT prism with your skimmer** (or watch a danger/shield
 repaint on one) — the recolor fades over ~0.8s like the opaque prisms do, with
-zero `[PrismClock]` errors. **DEFERRED**: the transparent-prism occlusion system
-(camera↔vessel corridor transparency) is currently down, so this test waits for
-its restoration branch — `Docs/PRISM_CLOCK_FOLLOWUP_PROMPTS.md` Prompt 1, which
-carries this test as its closing verification.
+zero `[PrismClock]` errors.
+
+**UN-DEFERRED 2026-08-04, and re-pointed.** This test used to wait on the
+camera↔vessel occlusion system. That system is restored (C1, `Docs/PRISM_ANIMATION.md`
+§4.7) — but it is now a **shader-side fade off global uniforms** and deliberately
+never sets `prismProperties.IsTransparent`, so it is no longer a source of transparent
+prisms to steal. The surviving producer is the **Serpent's cloak**:
+
+1. Fly the **Serpent** (its `CloakSeedWallAction` is bound to
+   `InputEvents.RightStickAction` — the right trigger; 15s cooldown).
+2. Trigger it to lay a cloaked seed wall. Those prisms take
+   `GetTeamTransparentBlockMaterial` (the domain clone of `TransparentPrismMaterial`,
+   which rests on ExplodingBlockGraph) and carry `IsTransparent = true`.
+3. **Skim one to steal it** (or let a danger/shield repaint land on one).
+4. Expect: the recolor **fades over ~0.8s** exactly like an opaque prism, and **zero
+   `[PrismClock]` errors** in the console.
+
+Machine-verified already (so a failure here means the graph reverted, not that the
+plumbing is wrong): ExplodingBlockGraph declares all five color properties
+(`_ColorStartTime`, `_ColorDuration`, `_StartBrightColor`, `_StartDarkColor`,
+`_StartSpread`) as Hybrid Per Instance, `TransparentPrismMaterial` compiles against that
+graph, and `MaterialPropertyAnimator.ClockColorTransition` binds the transparent material
+whenever `IsTransparent` is set — so `bindMaterial.HasProperty("_ColorStartTime")` is true
+and `WarnUnwiredMaterial` cannot fire. Re-confirm any time with
+**FrogletTools > Ecology > Prism Animation > Validate Clock Wiring**.
+
+If it SNAPS instead of fading, the one live variable is the entity sink:
+`Prism.UsesEntityColorSink` is false while an exotic visual (a shield morph) owns the
+renderer, and a bind-only transition is the documented behaviour there — steal a plain
+cloaked prism, not a cloaked-and-shielded one.
 
 <details><summary>Manual steps (reference only — already done)</summary>
 
@@ -188,11 +214,14 @@ suction), staying visible across the whole collapse.
 
 ## Phase 5 — Full verification (§4.4 protocol)
 
-**Known open issue (expected during verification):** `[PrismClock] STRICT MODE:
-no companion render entity to stamp (grow:SpawnablePrism (Clone))` — the
-SegmentSpawner/environment raw-Instantiate path declines entity creation before
-the grow stamp. Tracked with a live repro + branch prompt:
-`Docs/PRISM_CLOCK_FOLLOWUP_PROMPTS.md` Prompt 2 (C13). Not a wiring regression.
+**~~Known open issue~~ — ✅ FIXED 2026-08-02 (C13a).** `[PrismClock] STRICT MODE:
+no companion render entity to stamp (grow:SpawnablePrism (Clone))` was never a
+wiring regression, and it was not the raw-`Instantiate` lay either: a shield
+engage-morph held the exotic-visual window across the prism's creation reveal, so
+`EnsureRenderEntity` was skipped at the exact instant the one-shot grow stamp
+fired. Anatomy: `Docs/PRISM_ANIMATION.md` §3.8 #10; the two rules that close it:
+§4.5. Expect **zero** such errors now — if one reappears, the message names the
+exact broken gate (`Prism.DescribeRenderEntityState`), so paste it verbatim.
 
 - [ ] **Validate Clock Wiring** → `RESULT: ✅ ALL REQUIRED WIRING PRESENT`
 - [ ] Full play session (menu freestyle + one HexRace) with **zero `[PrismClock]`
@@ -237,12 +266,61 @@ must show no compile errors and no `[PrismClock]` errors.
 ## Phase 7 — Follow-up branches (post-wiring, own PRs)
 
 Tracker items (`Docs/PRISM_ANIMATION.md` §5 C-phase) landing per-path on the wired
-graphs, each following the shipped B1/B3 templates: C1 `ClearPrisms` shader-side
-occlusion fade · C4 `FireTrailBlock` pool/Destroy fix · C5 turret anchor flight ·
+graphs, each following the shipped B1/B3 templates: ~~C1 `ClearPrisms` shader-side
+occlusion fade~~ (✅ shipped 2026-08-04 — `PrismOcclusionCorridor`, now a PLATFORM LAW wired into every
+live-prism graph and bound at `VesselController.Initialize`, §4.7; gates: the `PrismOcclusionCoverageTests`
+edit-mode test + FrogletTools > Ecology > Prism Animation > **Validate Occlusion Corridor**) ·
+C4 `FireTrailBlock` pool/Destroy fix · C5 turret anchor flight ·
 C6 fauna wither/devour/level-up · C7 flora growth · C8 microscene conveyor ·
 C9 cell-swap suction · C11 spindle fade · C13 environment-lay
 pooling · B4 GPU shield morphs. (C10 worm shift is resolved by deletion — the
-worm-colony rebuild removed the legacy shift; see Docs/ECOSYSTEM.md §21.)
+worm-colony rebuild removed the legacy shift; see Docs/ECOSYSTEM.md §23.)
+
+## Phase 8 — Occlusion corridor (C1) — WIRED PROGRAMMATICALLY, **PLAYTEST OUTSTANDING**
+
+Everything machine-checkable is verified and gated (see below). What no tool here can
+answer is whether it *feels* right — that needs a human at the editor.
+
+**Gates that already pass** (re-run them if anything looks wrong; both are asset-only,
+no play mode):
+
+- `FrogletTools > Ecology > Prism Animation > **Validate Occlusion Corridor**` — checks
+  the HLSL GUID, both graphs' unexposed globals + custom-function node + compile state,
+  every material on those graphs, and every prefab carrying a `Prism`.
+- `PrismOcclusionCoverageTests` (edit-mode) — the same rules as an automated test, so new
+  content authored outside the corridor fails CI-style rather than silently going opaque.
+
+**The playtest.** Load any scene with a local vessel and a dense prism environment
+(Menu_Main freestyle is the fastest — fly into the cell wall):
+
+1. Fly so a prism wall sits between the camera and your ship. A cone of prisms centred on
+   the ship dissolves; the ship stays visible through it.
+2. Move off. The wall returns to fully opaque **immediately** — the gradient band is
+   deliberately short, so there should be no lingering half-dissolved mass.
+3. Watch the boundary. Sides and base grade at the same rate; there should be **no seam**
+   anywhere on the cone, and in particular no crisp semicircular edge on a large plate
+   level with the ship.
+4. Hold still ~10s and watch the stipple. The pattern should slowly **evolve** — cells
+   drifting and merging — reading as flow, never as flicker or shimmer.
+5. Swap vessels (the freestyle vessel-changer toy). The corridor should re-scale to the
+   new hull automatically — a bigger ship clears a proportionally bigger cone.
+6. Check the console: zero `[PrismOcclusion]` errors. Any that appear name the vessel and
+   the number, and mean either an unmeasurable hull or an implausible radius.
+
+**The knobs**, if it needs tuning (all in
+`Assets/_Graphics/Materials/Graphs/PrismOcclusionCorridor.hlsl` unless noted):
+
+| Knob | Default | What it does |
+|---|---|---|
+| `PRISM_OCCLUSION_KERNEL` | `..._WORLEY` | The dither look. `..._WORLEY` organic flecking · `..._SPIRAL` a corridor-anchored iris · `..._IGN` an even screen-space dissolve. |
+| `PRISM_OCCLUSION_MORPH_RATE` | `0.12` | Pattern evolution, cycles/sec. `0` freezes it; past ~`0.25` it reads as noise. Cannot affect the fade — coverage is flat across the range. |
+| `PRISM_OCCLUSION_WORLEY_CELL` | `6.0` | Fleck size in pixels. **Re-fit `..._CDF_LO`/`..._CDF_HI` if you change it** — they are fitted to this value and the fade degrades ~19× without a re-fit. |
+| `PRISM_OCCLUSION_SPIRAL_ARMS` | `3.0` | Spiral only. **Must stay an integer** or a radial scar appears down one side. |
+| `OuterRadiusScale` / `InnerRadiusScale` / `CoreAlpha` | `1` / `0.25` / `0` | `Resources/PrismOcclusionConfig` — corridor width and how solid the clear centre is. Multiples of the vessel's own circumscribing radius, so they are vessel-independent. |
+
+**If the corridor does nothing at all**, check in this order: the config asset's `Enabled`;
+that the vessel spawned through `VesselController.Initialize` with `IPlayer.IsLocalPilot`
+true; then run the validator above.
 
 ## Troubleshooting
 

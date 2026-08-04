@@ -160,6 +160,8 @@ namespace CosmicShore.Gameplay
             _initialBatchAnchor = batchAnchor;
             _initialBatchStarted = true;
 
+            bool hasAnchors = HasAuthoredAnchors();
+
             for (int i = 0; i < n_Slots.Count; i++)
             {
                 var domain = Domains.Blue;
@@ -171,7 +173,9 @@ namespace CosmicShore.Gameplay
                 // and client always has both values available together.
                 n_Slots[i] = new CrystalSlotData
                 {
-                    Position = GetSpawnPointAroundAnchor(batchAnchor),
+                    Position = hasAnchors
+                        ? GetSpawnPointAroundAnchor(batchAnchor)
+                        : GetAnchorlessSpawnPoint(),
                     Domain = (int)domain
                 };
             }
@@ -191,6 +195,8 @@ namespace CosmicShore.Gameplay
 
             EnsureListSizedToSelectedPlayerCount();
 
+            bool hasAnchors = HasAuthoredAnchors();
+
             for (int i = 0; i < n_Slots.Count; i++)
             {
                 if (n_Slots[i].IsEmpty)
@@ -201,7 +207,9 @@ namespace CosmicShore.Gameplay
 
                     n_Slots[i] = new CrystalSlotData
                     {
-                        Position = GetSpawnPointAroundAnchor(_initialBatchAnchor),
+                        Position = hasAnchors
+                            ? GetSpawnPointAroundAnchor(_initialBatchAnchor)
+                            : GetAnchorlessSpawnPoint(),
                         Domain = (int)domain
                     };
                 }

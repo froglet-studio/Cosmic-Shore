@@ -284,6 +284,45 @@ namespace CosmicShore.Utility
             GameMode = game.Mode;
             IsMultiplayerMode = game.IsMultiplayer;
             ComebackRatePerScoreDeficit = game.ComebackRatePerScoreDeficit;
+            ClampSelectedVesselToGame(game);
+        }
+
+        /// <summary>
+        /// Forces <see cref="selectedVesselClass"/> into the set this game actually allows
+        /// (<see cref="SO_ArcadeGame.Vessels"/>). `Vessels` was previously only the UI's list of
+        /// CHOICES: nothing validated the selection at launch, so a vessel picked in an earlier
+        /// game persisted into a mode that does not permit it - a Dolphin flew Ribcage, which is
+        /// Rhino-only, while its AI opponents correctly spawned Rhinos (their class comes from
+        /// the scene's own aiInitializeDatas).
+        ///
+        /// Enforced HERE, at the one call every launch path funnels through, rather than in the
+        /// configure modal: the modal's ship picker is only one entry point (rematch, the
+        /// Tournament chain, and a launch whose vessel screen was never opened all bypass it),
+        /// and a per-mode fork would have to be repeated for every restricted-vessel game.
+        /// A single-vessel game therefore cannot be entered in the wrong hull by any route.
+        /// </summary>
+        void ClampSelectedVesselToGame(SO_ArcadeGame game)
+        {
+            if (selectedVesselClass == null || game.Vessels == null || game.Vessels.Count == 0) return;
+
+            var current = selectedVesselClass.Value;
+            for (int i = 0; i < game.Vessels.Count; i++)
+                if (game.Vessels[i] != null && game.Vessels[i].Class == current)
+                    return; // already legal for this mode
+
+            // Fall back to the game's first authored vessel - for a single-vessel mode that IS
+            // the mode's vessel; for a multi-vessel one it is the authored default.
+            for (int i = 0; i < game.Vessels.Count; i++)
+            {
+                if (game.Vessels[i] == null) continue;
+                var fallback = game.Vessels[i].Class;
+                Debug.Log($"<color=#FFD700>[GameDataSO] {game.Mode} does not allow {current}; " +
+                          $"clamping selected vessel to {fallback}.</color>");
+                selectedVesselClass.Value = fallback;
+                if (VesselClassSelectedIndex != null)
+                    VesselClassSelectedIndex.Value = (int)fallback;
+                return;
+            }
         }
 
         /// <summary>
@@ -827,6 +866,25 @@ namespace CosmicShore.Utility
             return true;
         }
         
+        /// <summary>
+        /// Set the spawn poses directly, for callers that COMPUTE the arrangement instead of reading
+        /// authored scene transforms (see <see cref="Utility.CellSpawnFormation"/>, which places
+        /// players symmetrically around the cell nucleus). Resets the draw pool, exactly like
+        /// <see cref="SetSpawnPositions"/>.
+        /// </summary>
+        public void SetSpawnPoses(Pose[] poses)
+        {
+            if (poses == null || poses.Length == 0)
+            {
+                CSDebug.LogError("[GameDataSO] SetSpawnPoses called with no poses.");
+                return;
+            }
+
+            SpawnPoses = poses;
+            _playerSpawnPoseList?.Clear();
+            _playerSpawnPoseList = new List<Pose>(poses);
+        }
+
         public void SetSpawnPositions(Transform[] spawnTransforms)
         {
             if (spawnTransforms == null)
@@ -975,11 +1033,33 @@ namespace CosmicShore.Utility
         // -----------------------------------------------------------------------------------------
         // Helpers (private)
 
-        IRoundStats FindByTeam(Domains domain) =>
-            RoundStatsList.FirstOrDefault(rs => rs.Domain == domain);
+        // Index loops, not LINQ, deliberately. `RoundStatsList.FirstOrDefault(rs => ...)`
+        // allocates THREE objects per call on a List<T> reached through IEnumerable<T>:
+        // a display class capturing the parameter, the Func<> delegate, and a boxed
+        // List<T>.Enumerator. That is fine once a frame and not fine here —
+        // FindByName is on the per-prism-DEATH path (StatsManager.PrismDestroyed looks
+        // up BOTH the attacker and the victim for every prism destroyed), so a
+        // 2,400-death AOE frame paid ~4,800 of these lookups and their garbage. The
+        // list is a handful of entries; a linear scan was always the right shape.
+        IRoundStats FindByTeam(Domains domain)
+        {
+            for (int i = 0, n = RoundStatsList.Count; i < n; i++)
+            {
+                var rs = RoundStatsList[i];
+                if (rs != null && rs.Domain == domain) return rs;
+            }
+            return null;
+        }
 
-        IRoundStats FindByName(string name) =>
-            RoundStatsList.FirstOrDefault(rs => rs.Name == name);
+        IRoundStats FindByName(string name)
+        {
+            for (int i = 0, n = RoundStatsList.Count; i < n; i++)
+            {
+                var rs = RoundStatsList[i];
+                if (rs != null && rs.Name == name) return rs;
+            }
+            return null;
+        }
 
         float VolumeOf(Domains domain) =>
             FindByTeam(domain)?.VolumeRemaining ?? 0f;

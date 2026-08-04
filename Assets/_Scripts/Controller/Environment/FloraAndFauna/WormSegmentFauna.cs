@@ -5,7 +5,7 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// One segment of a worm colony (Docs/ECOSYSTEM.md §21) — the killable unit of the
+    /// One segment of a worm colony (Docs/ECOSYSTEM.md §23) — the killable unit of the
     /// kaiju boss. Three fauna types share this class, distinguished by
     /// <see cref="WormSegmentRole"/> on three prefabs: the HEAD (danger-prism fangs +
     /// elemental heart), a BODY segment (soft connective tissue — killing one SPLITS
@@ -98,7 +98,7 @@ namespace CosmicShore.Gameplay
             // uses): joustable while the segment lives, dropped by the sealed Die on
             // death. Body segments are connective tissue and deliberately carry no
             // heart (the colony's lifeform-level crystal contract lives on its ends —
-            // Docs/ECOSYSTEM.md §21 records the ruling).
+            // Docs/ECOSYSTEM.md §23 records the ruling).
             if (role != WormSegmentRole.Body)
             {
                 crystal = LifeFormCrystal.EnsureElementalCrystal(this, heartElement);

@@ -182,6 +182,14 @@ namespace CosmicShore.Gameplay
 
         void TrySpawnFauna(Cell host, CellRuntimeDataSO runtime, FaunaConfigurationSO faunaCfg)
         {
+            // Staged release, same rule the RandomLifeSpawner enforces: a species seeds only
+            // while its ReleaseTier is at or below the cell's. Gated HERE, at the single spawn
+            // funnel this class has, so both the initial batch and the continuous loop obey it.
+            // The gate belongs to the CELL, so which spawner a biome happens to use must never
+            // decide whether a mode's seal holds. Defaults (config tier 0, cell int.MaxValue via
+            // SpawnProfileSO.InitialFaunaReleaseTier) leave every shipped biome unchanged.
+            if (faunaCfg.ReleaseTier > host.FaunaReleaseTier) return;
+
             // Prefer the crystal as the initial goal, but fall back to the cell's own
             // position. The previous implementation silently skipped spawning when no
             // crystal existed, which contributed to fauna never appearing in cells

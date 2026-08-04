@@ -1211,6 +1211,23 @@ namespace CosmicShore.Gameplay
             if (cell && prism) cell.NotifyBlockDomainChanged(prism);
         }
 
+        /// <summary>
+        /// Re-files a tracked prism whose SHIELD state changed in its bound cell's
+        /// targeting grids - shielded mass is not food (Docs/ECOSYSTEM.md §16.2) and so
+        /// must not be a fauna steering target either (see Cell.AddBlock). Caller:
+        /// PrismStateManager.SyncAOERegistryShieldState only, which is the single funnel
+        /// every shield transition already passes through - it pairs this with
+        /// UpdateShieldState so the analytic shell view and the cell grids move together.
+        /// </summary>
+        public void ForwardShieldChangeToCell(int index)
+        {
+            if (index < 0 || index >= _highWaterMark) return;
+
+            var prism = _prisms[index];
+            var cell = _cells[index];
+            if (cell && prism) cell.NotifyBlockShieldStateChanged(prism);
+        }
+
         // ------------------------------------------------------------------
         //  Cell-volume summation view (CellVolumeSumJob)
         //  Binding is written ONLY by Cell.AddBlock/RemoveBlock (both membership
@@ -1821,7 +1838,8 @@ namespace CosmicShore.Gameplay
         /// radius, so each frame's volume strictly contains the previous frame's -
         /// the nesting the deferred-hit backlog and the once-per-pair alreadyHit set
         /// both rely on. blastOrigin is the emission point all impact vectors radiate
-        /// from, at magnitude speed * inertia.
+        /// from; <see cref="ExplosionImpulse"/> carries the magnitude they leave at and
+        /// the debris ceiling that magnitude is measured against.
         /// The conic explosion does NOT use this entry point: its volume translates,
         /// so it queries an exact cone slab via <see cref="ProcessExplosionConeFrame"/>.
         ///
@@ -1832,8 +1850,7 @@ namespace CosmicShore.Gameplay
             Vector3 center,
             float radius,
             Vector3 blastOrigin,
-            float speed,
-            float inertia,
+            in ExplosionImpulse impulse,
             Domains explosionDomain,
             bool affectSelf,
             bool destructive,
@@ -1852,7 +1869,7 @@ namespace CosmicShore.Gameplay
             // A degenerate query must not stall the backlog - resolve the debt anyway.
             if (_highWaterMark == 0 || !_spatial.IsCreated)
                 return ResolveExplosionHits(
-                    speed, inertia, explosionDomain, affectSelf, destructive, devastating,
+                    impulse, explosionDomain, affectSelf, destructive, devastating,
                     shielding, anonymous, vessel, alreadyHit, pending);
 
             // Ensure NativeList capacity can hold all prisms - AddNoResize in
@@ -1876,7 +1893,7 @@ namespace CosmicShore.Gameplay
             }
 
             return ResolveExplosionHits(
-                speed, inertia, explosionDomain, affectSelf, destructive, devastating,
+                impulse, explosionDomain, affectSelf, destructive, devastating,
                 shielding, anonymous, vessel, alreadyHit, pending);
         }
 
@@ -1898,8 +1915,7 @@ namespace CosmicShore.Gameplay
             float sliceMin,
             float sliceMax,
             float tanHalfAngle,
-            float speed,
-            float inertia,
+            in ExplosionImpulse impulse,
             Domains explosionDomain,
             bool affectSelf,
             bool destructive,
@@ -1921,7 +1937,7 @@ namespace CosmicShore.Gameplay
             _aoeHits.Clear();
             if (!queryable)
                 return ResolveExplosionHits(
-                    speed, inertia, explosionDomain, affectSelf, destructive, devastating,
+                    impulse, explosionDomain, affectSelf, destructive, devastating,
                     shielding, anonymous, vessel, alreadyHit, pending);
 
             if (_aoeHits.Capacity < _highWaterMark)
@@ -1944,7 +1960,7 @@ namespace CosmicShore.Gameplay
             }
 
             return ResolveExplosionHits(
-                speed, inertia, explosionDomain, affectSelf, destructive, devastating,
+                impulse, explosionDomain, affectSelf, destructive, devastating,
                 shielding, anonymous, vessel, alreadyHit, pending);
         }
 
@@ -1954,8 +1970,7 @@ namespace CosmicShore.Gameplay
         /// <c>_aoeHits</c>.
         /// </summary>
         private bool ResolveExplosionHits(
-            float speed,
-            float inertia,
+            in ExplosionImpulse impulse,
             Domains explosionDomain,
             bool affectSelf,
             bool destructive,
@@ -1988,7 +2003,7 @@ namespace CosmicShore.Gameplay
             // These were already claimed in alreadyHit, so the query can never
             // re-emit them; draining here is their ONLY resolution path.
             budgetSpent += DrainBacklog(
-                pending, budgetSpent, speed, inertia, expDomain, affectSelf, destructive,
+                pending, budgetSpent, impulse, expDomain, affectSelf, destructive,
                 devastating, shielding, anonymous, vesselDomain, vesselPlayerName,
                 ref shouldContinue);
 
@@ -2025,7 +2040,7 @@ namespace CosmicShore.Gameplay
                 alreadyHit.Add(idx);
 
                 if (ResolveExplosionHit(idx, AnyGeneration, _aoeHits[i].ImpactDir,
-                        speed, inertia, expDomain, affectSelf, destructive, devastating,
+                        impulse, expDomain, affectSelf, destructive, devastating,
                         shielding, anonymous, vesselDomain, vesselPlayerName, ref shouldContinue))
                     budgetSpent++;
             }
@@ -2056,8 +2071,7 @@ namespace CosmicShore.Gameplay
             int idx,
             int expectedGeneration,
             float3 impactDir,
-            float speed,
-            float inertia,
+            in ExplosionImpulse impulse,
             int expDomain,
             bool affectSelf,
             bool destructive,
@@ -2103,13 +2117,18 @@ namespace CosmicShore.Gameplay
             }
 
             // Impact vector: the in-job unit direction (blastOrigin → prism)
-            // at the blast-wave speed - no managed normalize per hit.
-            Vector3 impactVector = (Vector3)(impactDir * (speed * inertia));
+            // at the blast-wave speed - no managed normalize per hit. The impulse's own
+            // ceiling rides along: without it the explosion prefab's authored clamp
+            // applies, and every AOE magnitude sits far enough above that clamp to
+            // saturate, flattening blasts of every strength to one debris speed.
+            Vector3 impactVector = impulse.Along(impactDir);
 
             if (anonymous)
-                prism.Damage(impactVector, Domains.Blue, "🔥GuyFawkes🔥", devastating);
+                prism.Damage(impactVector, Domains.Blue, "🔥GuyFawkes🔥", devastating,
+                             debrisSpeedLimit: impulse.DebrisSpeedLimit);
             else
-                prism.Damage(impactVector, vesselDomain, vesselPlayerName, devastating);
+                prism.Damage(impactVector, vesselDomain, vesselPlayerName, devastating,
+                             debrisSpeedLimit: impulse.DebrisSpeedLimit);
 
             // Sync registry with the result of Damage()
             if (prism.destroyed)
@@ -2130,8 +2149,7 @@ namespace CosmicShore.Gameplay
         private int DrainBacklog(
             Queue<PendingExplosionHit> pending,
             int alreadySpent,
-            float speed,
-            float inertia,
+            in ExplosionImpulse impulse,
             int expDomain,
             bool affectSelf,
             bool destructive,
@@ -2153,7 +2171,7 @@ namespace CosmicShore.Gameplay
                 examined++;
                 var deferred = pending.Dequeue();
                 if (ResolveExplosionHit(deferred.Index, deferred.Generation, deferred.ImpactDir,
-                        speed, inertia, expDomain, affectSelf, destructive, devastating,
+                        impulse, expDomain, affectSelf, destructive, devastating,
                         shielding, anonymous, vesselDomain, vesselPlayerName, ref shouldContinue))
                     spent++;
             }
@@ -2171,8 +2189,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public bool DrainPendingExplosionDamage(
             Queue<PendingExplosionHit> pending,
-            float speed,
-            float inertia,
+            in ExplosionImpulse impulse,
             Domains explosionDomain,
             bool affectSelf,
             bool destructive,
@@ -2196,7 +2213,7 @@ namespace CosmicShore.Gameplay
             }
 
             bool ignored = true;
-            DrainBacklog(pending, 0, speed, inertia, (int)explosionDomain, affectSelf,
+            DrainBacklog(pending, 0, impulse, (int)explosionDomain, affectSelf,
                 destructive, devastating, shielding, anonymous, vesselDomain,
                 vesselPlayerName, ref ignored);
 

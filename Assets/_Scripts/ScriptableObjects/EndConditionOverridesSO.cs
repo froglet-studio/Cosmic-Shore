@@ -46,6 +46,9 @@ namespace CosmicShore.ScriptableObjects
         /// <summary>Rampage hostile-prism target used when <see cref="rampagePrismTarget"/> is 0 (auto/default).</summary>
         public const int DefaultRampagePrismTarget = 2000;
 
+        /// <summary>Ribcage cage-destruction target used when <see cref="ribcagePrismTarget"/> is 0 (auto/default).</summary>
+        public const int DefaultRibcagePrismTarget = 2000;
+
         [Header("Live counts - used at runtime. 0 = auto/default (edit via FrogletTools > Game Modes > End Game Conditions)")]
         [Tooltip("HexRace crystals to end the race. 0 = auto-calc from the track waypoints.")]
         [Min(0)] public int hexRaceCrystalCount = 0;
@@ -68,6 +71,12 @@ namespace CosmicShore.ScriptableObjects
                  "(race to N). 0 = default (2000).")]
         [Min(0)] public int rampagePrismTarget = 2000;
 
+        [Tooltip("Ribcage: hostile prisms a domain must DESTROY to win (race to N) - cage bars, " +
+                 "rival trails and fauna bodies all count; your own team's trail never does. The " +
+                 "25%/50% fauna-release rungs are fractions of THIS, so moving it moves the whole " +
+                 "escalation ladder with it. 0 = default (2000).")]
+        [Min(0)] public int ribcagePrismTarget = 2000;
+
         [Header("Build baseline - what a shipping build uses. Set via the tool's \"Set Build Values\" button.")]
         [Min(0)] public int hexRaceCrystalCountBuild = 0;
         [Min(0)] public int crystalCaptureCrystalCountBuild = 20;
@@ -75,6 +84,7 @@ namespace CosmicShore.ScriptableObjects
         [Min(0)] public int maelstromWinTargetBuild = 6;
         [Min(0)] public int nucleusRushWaveTargetBuild = 3;
         [Min(0)] public int rampagePrismTargetBuild = 2000;
+        [Min(0)] public int ribcagePrismTargetBuild = 2000;
 
         [Tooltip("When on, a build first copies the Build baseline onto the Live counts, so test values are never shipped.")]
         public bool autoRestoreBuildValuesBeforeBuild = true;
@@ -131,6 +141,12 @@ namespace CosmicShore.ScriptableObjects
         /// </summary>
         public int GetRampagePrismTarget() => rampagePrismTarget > 0 ? rampagePrismTarget : DefaultRampagePrismTarget;
 
+        /// <summary>
+        /// Ribcage target ("race to N" hostile prisms destroyed): the configured value when
+        /// &gt; 0, otherwise <see cref="DefaultRibcagePrismTarget"/>.
+        /// </summary>
+        public int GetRibcagePrismTarget() => ribcagePrismTarget > 0 ? ribcagePrismTarget : DefaultRibcagePrismTarget;
+
         /// <summary>True when every Live count (used at runtime) already equals its Build baseline.</summary>
         public bool LiveMatchesBuild =>
             hexRaceCrystalCount == hexRaceCrystalCountBuild &&
@@ -138,7 +154,8 @@ namespace CosmicShore.ScriptableObjects
             joustCount == joustCountBuild &&
             maelstromWinTarget == maelstromWinTargetBuild &&
             nucleusRushWaveTarget == nucleusRushWaveTargetBuild &&
-            rampagePrismTarget == rampagePrismTargetBuild;
+            rampagePrismTarget == rampagePrismTargetBuild &&
+            ribcagePrismTarget == ribcagePrismTargetBuild;
 
         /// <summary>Copy the Build baseline onto the Live counts (build → live) - used by the build auto-restore.</summary>
         public void ApplyBuildValues()
@@ -149,6 +166,7 @@ namespace CosmicShore.ScriptableObjects
             maelstromWinTarget = maelstromWinTargetBuild;
             nucleusRushWaveTarget = nucleusRushWaveTargetBuild;
             rampagePrismTarget = rampagePrismTargetBuild;
+            ribcagePrismTarget = ribcagePrismTargetBuild;
         }
 
         /// <summary>Snapshot the current Live counts as the Build baseline (live → build) - used by "Set Build Values".</summary>
@@ -160,6 +178,7 @@ namespace CosmicShore.ScriptableObjects
             maelstromWinTargetBuild = maelstromWinTarget;
             nucleusRushWaveTargetBuild = nucleusRushWaveTarget;
             rampagePrismTargetBuild = rampagePrismTarget;
+            ribcagePrismTargetBuild = ribcagePrismTarget;
         }
     }
 }

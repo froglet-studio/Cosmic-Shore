@@ -7,7 +7,7 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// The worm colony brain — the kaiju boss (Docs/ECOSYSTEM.md §21). A connected
+    /// The worm colony brain — the kaiju boss (Docs/ECOSYSTEM.md §23). A connected
     /// population of three segment fauna types (<see cref="WormSegmentFauna"/>:
     /// Head / Body / Tail) driven by one coordinator so the whole chain costs one
     /// behavior tick and one movement pass, however long it grows.

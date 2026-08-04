@@ -52,7 +52,6 @@ MonoBehaviour:
   - 0.55
   - 0.25
   goalOrbitRadius: 60
-  Goal: {x: 0, y: 0, z: 0}
   diet: 1
   predationImmunitySeconds: 6
   starvationSeconds: 60

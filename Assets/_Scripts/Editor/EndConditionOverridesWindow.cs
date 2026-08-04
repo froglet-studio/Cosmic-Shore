@@ -74,7 +74,10 @@ namespace CosmicShore.Editor
                 "  • Brood Rush: claimed fauna waves to win (race to N), default " +
                 EndConditionOverridesSO.DefaultNucleusRushWaveTarget + ".\n" +
                 "  • Rampage: hostile prisms destroyed to win (race to N), default " +
-                EndConditionOverridesSO.DefaultRampagePrismTarget + ".",
+                EndConditionOverridesSO.DefaultRampagePrismTarget + ".\n" +
+                "  • Ribcage: hostile prisms destroyed to win (race to N), default " +
+                EndConditionOverridesSO.DefaultRibcagePrismTarget +
+                ". The 25%/50% fauna-release rungs are fractions of this.",
                 MessageType.Info);
 
             // ---- Live input fields (used at runtime) ----
@@ -87,6 +90,7 @@ namespace CosmicShore.Editor
             int mw  = Mathf.Max(0, EditorGUILayout.IntField("Maelstrom - Win Target (points)", _config.maelstromWinTarget));
             int nr  = Mathf.Max(0, EditorGUILayout.IntField("Brood Rush - Wave Target", _config.nucleusRushWaveTarget));
             int ra  = Mathf.Max(0, EditorGUILayout.IntField("Rampage - Prism Target", _config.rampagePrismTarget));
+            int rc  = Mathf.Max(0, EditorGUILayout.IntField("Ribcage - Prism Target", _config.ribcagePrismTarget));
             if (EditorGUI.EndChangeCheck())
                 Persist("Edit End Game Conditions", () =>
                 {
@@ -96,6 +100,7 @@ namespace CosmicShore.Editor
                     _config.maelstromWinTarget = mw;
                     _config.nucleusRushWaveTarget = nr;
                     _config.rampagePrismTarget = ra;
+                    _config.ribcagePrismTarget = rc;
                 });
 
             EditorGUILayout.Space();
@@ -107,6 +112,7 @@ namespace CosmicShore.Editor
             EditorGUILayout.LabelField("Maelstrom", mw > 0 ? mw.ToString() : EndConditionOverridesSO.DefaultMaelstromWinTarget + " (default)");
             EditorGUILayout.LabelField("Brood Rush", nr > 0 ? nr.ToString() : EndConditionOverridesSO.DefaultNucleusRushWaveTarget + " (default)");
             EditorGUILayout.LabelField("Rampage", ra > 0 ? ra.ToString() : EndConditionOverridesSO.DefaultRampagePrismTarget + " (default)");
+            EditorGUILayout.LabelField("Ribcage", rc > 0 ? rc.ToString() : EndConditionOverridesSO.DefaultRibcagePrismTarget + " (default)");
             EditorGUI.indentLevel--;
 
             // ---- Build baseline (read-only display + capture button) ----
@@ -141,7 +147,8 @@ namespace CosmicShore.Editor
                    "Joust: " + Fmt(_config.joustCountBuild, "default " + EndConditionOverridesSO.DefaultJoustCount) + "\n" +
                    "Maelstrom: " + Fmt(_config.maelstromWinTargetBuild, "default " + EndConditionOverridesSO.DefaultMaelstromWinTarget) + "\n" +
                    "Brood Rush: " + Fmt(_config.nucleusRushWaveTargetBuild, "default " + EndConditionOverridesSO.DefaultNucleusRushWaveTarget) + "\n" +
-                   "Rampage: " + Fmt(_config.rampagePrismTargetBuild, "default " + EndConditionOverridesSO.DefaultRampagePrismTarget);
+                   "Rampage: " + Fmt(_config.rampagePrismTargetBuild, "default " + EndConditionOverridesSO.DefaultRampagePrismTarget) + "\n" +
+                   "Ribcage: " + Fmt(_config.ribcagePrismTargetBuild, "default " + EndConditionOverridesSO.DefaultRibcagePrismTarget);
 
             static string Fmt(int value, string zeroMeaning) => value > 0 ? value.ToString() : "0 (" + zeroMeaning + ")";
         }

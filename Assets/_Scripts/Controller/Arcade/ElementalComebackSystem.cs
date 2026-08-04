@@ -38,6 +38,7 @@ namespace CosmicShore.Gameplay
             CrystalsCollected,
             Goals,
             PrismsDestroyed,
+            PrismsRemaining,
         }
 
         [Header("Config")]
@@ -74,6 +75,7 @@ namespace CosmicShore.Gameplay
                     system.differenceSource = ScoreDifferenceSource.Goals;
                     break;
                 case GameModes.Rampage: // Score lands only at game end - destruction is the live stat
+                case GameModes.Ribcage: // same: the race metric is hostile prisms destroyed
                     system.differenceSource = ScoreDifferenceSource.PrismsDestroyed;
                     break;
                 default:
@@ -348,6 +350,8 @@ namespace CosmicShore.Gameplay
                     return gameData.SumCrystalsCollectedByDomain(domain);
                 case ScoreDifferenceSource.Goals:
                     return ScoringMetrics.SumByDomain(gameData, ScoringMetric.Goals, domain);
+                case ScoreDifferenceSource.PrismsRemaining:
+                    return ScoringMetrics.SumByDomain(gameData, ScoringMetric.PrismsRemaining, domain);
                 case ScoreDifferenceSource.PrismsDestroyed:
                     return ScoringMetrics.SumByDomain(gameData, ScoringMetric.PrismsDestroyed, domain);
                 case ScoreDifferenceSource.Score:
@@ -371,6 +375,7 @@ namespace CosmicShore.Gameplay
                 ScoreDifferenceSource.CrystalsCollected => true,
                 ScoreDifferenceSource.Goals => true,
                 ScoreDifferenceSource.PrismsDestroyed => true,
+                ScoreDifferenceSource.PrismsRemaining => true,
                 ScoreDifferenceSource.Score => !useGolfRules,
                 _ => !useGolfRules
             };
