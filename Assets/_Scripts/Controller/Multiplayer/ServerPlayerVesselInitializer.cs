@@ -98,6 +98,14 @@ namespace CosmicShore.Gameplay
         /// </summary>
         protected readonly HashSet<ulong> _processedPlayers = new();
 
+        /// <summary>
+        /// Players whose persistent state has been re-initialized for THIS scene
+        /// (<see cref="Player.PrepareForNewScene"/>, which zeroes RoundStats). Separate from
+        /// <see cref="_processedPlayers"/> because that set is removed from on the not-ready
+        /// retry path - a player can be processed more than once, but must be reset exactly once.
+        /// </summary>
+        readonly HashSet<ulong> _preparedForScene = new();
+
         protected virtual void Awake()
         {
             _netcodeHooks = GetComponent<NetcodeHooks>();
@@ -162,9 +170,9 @@ namespace CosmicShore.Gameplay
             // but are cleared from gameData.Players by ResetRuntimeData().
             // Their OnNetworkSpawn() won't re-fire, so we initiate the spawn chain here.
             // Actual re-initialization (PrepareForNewScene) happens in
-            // FindUnprocessedPlayerByOwnerClientId() after the preSpawnDelay,
-            // which ensures it runs after any Start()-based list clearing
-            // (e.g. scene-placed MultiplayerSetup.DestroyPlayerAndVessel).
+            // HandlePlayerNetworkSpawnedAsync() after the preSpawnDelay, which ensures it runs
+            // after any Start()-based list clearing (e.g. scene-placed
+            // MultiplayerSetup.DestroyPlayerAndVessel).
             var nm = NetworkManager.Singleton;
             if (nm == null) return;
 
@@ -186,6 +194,7 @@ namespace CosmicShore.Gameplay
             if (clientPlayerVesselInitializer != null)
                 clientPlayerVesselInitializer.OnRosterRequested = null;
             _processedPlayers.Clear();
+            _preparedForScene.Clear();
             _cellSpawnRingBuilt = false; // a replay re-spawns the cell; rebuild against the new nucleus
 
             _cts?.Cancel();
@@ -228,6 +237,22 @@ namespace CosmicShore.Gameplay
             }
 
             Debug.Log($"<color=#00FF00>[FLOW-5] [ServerVesselInit] Found player: Name={player.NetName.Value}, VesselType={player.NetDefaultVesselType.Value}, NetworkObjectId={player.NetworkObjectId}</color>");
+
+            // Re-initialize the PERSISTENT Player for this scene - exactly once, for every player,
+            // whichever way it was found. RoundStats lives on the Player NetworkObject and survives
+            // every scene load, so skipping this carries the previous game's stats straight into
+            // the new one: players began a match with a non-zero score.
+            //
+            // This used to live inside FindUnprocessedPlayerByOwnerClientId, on its FALLBACK branch
+            // only - so whether a player's score started at zero depended on which lookup branch
+            // happened to find them, which is why it hit "some" players and not others. A finder
+            // must not mutate; the reset belongs on the processing path where it is unconditional.
+            //
+            // Server-only by design: Cleanup() writes through the RoundStats property setters,
+            // which push the server's zeroes onto the NetworkVariables, and replication clears
+            // every client's local mirror. Clients never reset stats themselves.
+            if (_preparedForScene.Add(player.NetworkObjectId))
+                player.PrepareForNewScene();
 
             // Domain is server-writable: human players route their selections through
             // Player.RequestSetDomain_ServerRpc (called from DomainSelectionPanel and the
@@ -567,8 +592,12 @@ namespace CosmicShore.Gameplay
         /// Finds the first unprocessed Player owned by the given clientId.
         /// Falls back to NetworkManager.ConnectedClients for persistent Players
         /// that may have been cleared from gameData.Players during scene transition
-        /// (by ResetRuntimeData or DestroyPlayerAndVessel). If found via fallback,
-        /// calls PrepareForNewScene() to re-initialize for the current game config.
+        /// (by ResetRuntimeData or DestroyPlayerAndVessel).
+        ///
+        /// PURE LOOKUP - it must not mutate the player it returns. Re-initializing for the new
+        /// scene (PrepareForNewScene) used to happen here on the fallback branch only, which made
+        /// the RoundStats reset depend on which branch found the player; it now runs
+        /// unconditionally in HandlePlayerNetworkSpawnedAsync.
         /// </summary>
         Player FindUnprocessedPlayerByOwnerClientId(ulong ownerClientId)
         {
@@ -600,8 +629,6 @@ namespace CosmicShore.Gameplay
             if (!player.IsSpawned || _processedPlayers.Contains(player.NetworkObjectId))
                 return null;
 
-            // Re-initialize the persistent Player for the current game scene.
-            player.PrepareForNewScene();
             return player;
         }
 

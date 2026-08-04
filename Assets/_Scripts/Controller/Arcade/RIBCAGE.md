@@ -351,20 +351,25 @@ YAML. `Tools/Build/ribcage_budget.py` is the cage's analytic budget model and th
    game scene.
 9. **Spawn outside.** All players start on a ring ~576u out, facing the cage, with the whole cage
    visible ahead — nobody starts inside it.
-10. **Smashing scores; laying does not.** The HUD domain sum should rise as you break bars and not at
+10. **Everyone starts at 0.** In a real multiplayer lobby (host + at least one client), check
+    every score panel reads 0 at the countdown — including after a rematch and after playing a
+    previous game in the same session. `RoundStats` lives on the PERSISTENT Player object, so a
+    missed reset carries the last game's stats in; this regressed once because the reset was
+    called from only one branch of the player lookup.
+11. **Smashing scores; laying does not.** The HUD domain sum should rise as you break bars and not at
     all from laying trail. Shatter one of your OWN team's trail prisms — the sum must not move; a
     rival's trail must.
-11. **Milestones.** When the leading domain reaches **500** destroyed the device should shake hard
+12. **Milestones.** When the leading domain reaches **500** destroyed the device should shake hard
     for ~1.2 s; again at **1,000**. Nothing else should change.
-12. **Win + scoreboard.** First domain to **2,000 destroyed** ends the turn; winners show a time,
+13. **Win + scoreboard.** First domain to **2,000 destroyed** ends the turn; winners show a time,
     losers "N Bars Left". Replay (scene reload) resets the milestones.
-13. **Pacing.** Time intensity 1 end to end — see the pacing flag under "End condition". If it
+14. **Pacing.** Time intensity 1 end to end — see the pacing flag under "End condition". If it
     finishes in well under a minute, lower the target.
-14. **AI stays outside.** Watch an AI Rhino for a minute: it should orbit outside, cross the cage on
+15. **AI stays outside.** Watch an AI Rhino for a minute: it should orbit outside, cross the cage on
     transits, and only be inside briefly. If it settles inside, `AiStationStandoff` has been set ≤ 1.
-15. **Regression — the grid change.** Play **Skim Race** (intensity 3) and **Astro League**: fauna
+16. **Regression — the grid change.** Play **Skim Race** (intensity 3) and **Astro League**: fauna
     should behave normally and should no longer park against the super-shielded track / edge lining.
-16. **Collider telemetry** on device via DiagnosticsHUD / the Benchmark tool, at intensity 4 (the
+17. **Collider telemetry** on device via DiagnosticsHUD / the Benchmark tool, at intensity 4 (the
     worst case, 20,153).
 
 ## Known limitations / follow-ups
