@@ -275,6 +275,52 @@ C6 fauna wither/devour/level-up · C7 flora growth · C8 microscene conveyor ·
 C9 cell-swap suction · C10 worm shift · C11 spindle fade · C13 environment-lay
 pooling · B4 GPU shield morphs.
 
+## Phase 8 — Occlusion corridor (C1) — WIRED PROGRAMMATICALLY, **PLAYTEST OUTSTANDING**
+
+Everything machine-checkable is verified and gated (see below). What no tool here can
+answer is whether it *feels* right — that needs a human at the editor.
+
+**Gates that already pass** (re-run them if anything looks wrong; both are asset-only,
+no play mode):
+
+- `FrogletTools > Ecology > Prism Animation > **Validate Occlusion Corridor**` — checks
+  the HLSL GUID, both graphs' unexposed globals + custom-function node + compile state,
+  every material on those graphs, and every prefab carrying a `Prism`.
+- `PrismOcclusionCoverageTests` (edit-mode) — the same rules as an automated test, so new
+  content authored outside the corridor fails CI-style rather than silently going opaque.
+
+**The playtest.** Load any scene with a local vessel and a dense prism environment
+(Menu_Main freestyle is the fastest — fly into the cell wall):
+
+1. Fly so a prism wall sits between the camera and your ship. A cone of prisms centred on
+   the ship dissolves; the ship stays visible through it.
+2. Move off. The wall returns to fully opaque **immediately** — the gradient band is
+   deliberately short, so there should be no lingering half-dissolved mass.
+3. Watch the boundary. Sides and base grade at the same rate; there should be **no seam**
+   anywhere on the cone, and in particular no crisp semicircular edge on a large plate
+   level with the ship.
+4. Hold still ~10s and watch the stipple. The pattern should slowly **evolve** — cells
+   drifting and merging — reading as flow, never as flicker or shimmer.
+5. Swap vessels (the freestyle vessel-changer toy). The corridor should re-scale to the
+   new hull automatically — a bigger ship clears a proportionally bigger cone.
+6. Check the console: zero `[PrismOcclusion]` errors. Any that appear name the vessel and
+   the number, and mean either an unmeasurable hull or an implausible radius.
+
+**The knobs**, if it needs tuning (all in
+`Assets/_Graphics/Materials/Graphs/PrismOcclusionCorridor.hlsl` unless noted):
+
+| Knob | Default | What it does |
+|---|---|---|
+| `PRISM_OCCLUSION_KERNEL` | `..._WORLEY` | The dither look. `..._WORLEY` organic flecking · `..._SPIRAL` a corridor-anchored iris · `..._IGN` an even screen-space dissolve. |
+| `PRISM_OCCLUSION_MORPH_RATE` | `0.12` | Pattern evolution, cycles/sec. `0` freezes it; past ~`0.25` it reads as noise. Cannot affect the fade — coverage is flat across the range. |
+| `PRISM_OCCLUSION_WORLEY_CELL` | `6.0` | Fleck size in pixels. **Re-fit `..._CDF_LO`/`..._CDF_HI` if you change it** — they are fitted to this value and the fade degrades ~19× without a re-fit. |
+| `PRISM_OCCLUSION_SPIRAL_ARMS` | `3.0` | Spiral only. **Must stay an integer** or a radial scar appears down one side. |
+| `OuterRadiusScale` / `InnerRadiusScale` / `CoreAlpha` | `1` / `0.25` / `0` | `Resources/PrismOcclusionConfig` — corridor width and how solid the clear centre is. Multiples of the vessel's own circumscribing radius, so they are vessel-independent. |
+
+**If the corridor does nothing at all**, check in this order: the config asset's `Enabled`;
+that the vessel spawned through `VesselController.Initialize` with `IPlayer.IsLocalPilot`
+true; then run the validator above.
+
 ## Troubleshooting
 
 | Symptom | Cause | Fix |

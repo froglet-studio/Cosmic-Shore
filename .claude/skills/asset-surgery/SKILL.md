@@ -353,6 +353,47 @@ Also: assert the spatial invariants the design claims. "Nothing inside the
 nucleus control radius" is one line over the emitted points, and it caught that
 the SHIPPED build had 89% of its mass in there.
 
+## 4.5b Technique: offline simulation of a FRAGMENT SHADER
+
+Origin: the prism occlusion corridor (2026-08-04). §4.5 covers deterministic
+*generators*; the same move works on a fragment shader, and it answers questions
+the editor is slow at: what shape is this field, does this gradient read as an
+edge, which of twelve dither kernels looks right.
+
+**Port the SHIPPED HLSL, not an idealized version of it.** Every constant, every
+early-out, every clamp — including the ugly ones (the strictly-inside-(0,1) nudge,
+the epsilon in a divide). A sim of what you *meant* to write validates nothing. When
+the port and the HLSL disagree later, that divergence is the finding.
+
+The method:
+1. Port the fade/threshold function to numpy, vectorized over a pixel grid.
+2. Add a trivial ray-cast rasterizer (AABB slabs + a depth buffer, ~40 lines) so you
+   can render the effect *in situ* — on a wall of boxes, at real hull scale — not
+   just as an abstract ramp. In-situ and abstract disagree: a kernel measured at a
+   fixed radius made corridor-relative patterns look perfect and screen-space ones
+   look bad, exactly backwards from how they render.
+3. Rasterize only inside each box's projected screen bbox. A full-image raycast per
+   box is what turns a 20-second render into a 10-minute one that times out.
+4. Render candidate sheets and **look at them** before implementing anything.
+5. Re-render from the shipped code after implementing, and confirm it matches.
+
+**Measure coverage fidelity for any dithered/screen-door effect.** The number that
+decides whether a short gradient reads as a fade or as a hard edge is
+|kept-fraction − alpha|, binned by alpha over a real render. Under ~0.01 reads
+smooth; 0.1+ reads as banding. Measure it, don't eyeball it — of twelve kernels
+tried, the three that survived were not the three that looked best on a ramp.
+
+**A bad metric is usually fixable by remapping it through its own CDF.** Raw Worley
+cell-distance clusters around 0.43 with nothing at the extremes, so it scored 0.140 —
+unusable. Fitting a `smoothstep(a,b,·)` to its measured CDF took it to 0.0048, a 19×
+improvement for ONE instruction, and because the remap is monotonic the pattern's
+shape is completely unchanged: only the rate at which it fills in as alpha sweeps.
+Two consequences worth internalising: any monotone threshold field can be made
+coverage-correct this way, and **the fit is tied to the field's parameters** — change
+the cell size, the jitter, or add animation, and the constants must be re-fitted or
+the error silently returns. Verify the fit across the whole range you intend to use
+(here: rate 0 through t=400s).
+
 ## 4.6 Technique: hand-authoring a new asset trio
 
 Adding a new SO-configured, prefab-backed thing (here: a cell) means four
@@ -391,6 +432,20 @@ hand-authored files plus a scene array entry. The recipe:
   skipped while every space-free path IS rewritten: a half-applied edit across
   a scene and a dozen prefabs. Always drive multi-file rewrites from Python
   with an explicit file list, and `git status` immediately after.
+- **`Material.HasProperty` can NEVER see an unexposed ShaderGraph property.**
+  Unexposed properties are declared outside the `UnityPerMaterial` cbuffer and
+  never enter the shader's property list, so a validator built on `HasProperty`
+  reports "missing" for every material — including correctly-wired ones. Global
+  uniforms set with `Shader.SetGlobalVector` are exactly this case. Check the
+  **graph text** for the property reference instead (the existing
+  `PrismClockWiringValidator` already did this; copying its shape would have
+  saved the detour), or census by shader NAME.
+- **`clip(0)` KEEPS the fragment, it does not discard it.** `frac()` can return
+  exactly 0, so a dither threshold of 0 against an alpha of 0 survives on the URP
+  variants that clip directly rather than through `AlphaDiscard`'s epsilon —
+  leaving a sparse confetti of survivors in a region that is supposed to be
+  completely gone. Nudge any computed clip threshold strictly inside (0,1)
+  (`n * 0.998 + 0.001`).
 - **A "dangling GUID on this prefab" is usually project-wide.** Before treating
   a missing asset reference as a local bug, grep the WHOLE Assets tree for that
   guid: a reference broken on four flora prefabs turned out to be broken on
