@@ -994,11 +994,33 @@ namespace CosmicShore.Utility
         // -----------------------------------------------------------------------------------------
         // Helpers (private)
 
-        IRoundStats FindByTeam(Domains domain) =>
-            RoundStatsList.FirstOrDefault(rs => rs.Domain == domain);
+        // Index loops, not LINQ, deliberately. `RoundStatsList.FirstOrDefault(rs => ...)`
+        // allocates THREE objects per call on a List<T> reached through IEnumerable<T>:
+        // a display class capturing the parameter, the Func<> delegate, and a boxed
+        // List<T>.Enumerator. That is fine once a frame and not fine here —
+        // FindByName is on the per-prism-DEATH path (StatsManager.PrismDestroyed looks
+        // up BOTH the attacker and the victim for every prism destroyed), so a
+        // 2,400-death AOE frame paid ~4,800 of these lookups and their garbage. The
+        // list is a handful of entries; a linear scan was always the right shape.
+        IRoundStats FindByTeam(Domains domain)
+        {
+            for (int i = 0, n = RoundStatsList.Count; i < n; i++)
+            {
+                var rs = RoundStatsList[i];
+                if (rs != null && rs.Domain == domain) return rs;
+            }
+            return null;
+        }
 
-        IRoundStats FindByName(string name) =>
-            RoundStatsList.FirstOrDefault(rs => rs.Name == name);
+        IRoundStats FindByName(string name)
+        {
+            for (int i = 0, n = RoundStatsList.Count; i < n; i++)
+            {
+                var rs = RoundStatsList[i];
+                if (rs != null && rs.Name == name) return rs;
+            }
+            return null;
+        }
 
         float VolumeOf(Domains domain) =>
             FindByTeam(domain)?.VolumeRemaining ?? 0f;
