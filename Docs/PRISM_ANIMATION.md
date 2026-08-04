@@ -898,18 +898,23 @@ shader's very first branch, so a disabled corridor costs a compare.
 `innerRadius` — fully tapered to nothing, so no dithered ghost survives anywhere the ship
 can be — and **exactly 1** at and beyond `outerRadius`.
 
-**The shape is a CONE — the minimal volume that can occlude the ship (2026-08-04).** It is
-a *point* at the lens, widening to the sphere that circumscribes the hull, and capped by
-that sphere. Nothing outside the eye→silhouette cone can be in front of the ship, and
-nothing past the hull can either, so the corridor never dissolves a prism it does not have
-to.
+**The shape is a BARE CONE — the minimal volume that can occlude the ship (2026-08-04).**
+It is a *point* at the lens, widening to the circle that circumscribes the hull, and it
+ends **flat at the vessel's plane** — no cap at either end. Nothing outside the
+eye→silhouette cone can be in front of the ship, and nothing level with or behind it can
+either, so the corridor never dissolves a prism it does not have to.
 
-It is one multiply in the shader — `outerAtT = outerRadius * t` — and the clamped `t`
-supplies both ends for free: at `t ≥ 1` the closest point pins to the vessel, so the metric
-there is distance-to-the-ship-point (the sphere cap, which IS the ship rather than an
-extension past it); at `t ≤ 0` the radius is zero, so the near end closes to a point instead
-of a cap. Cone and sphere meet exactly on the circle of radius `outerRadius` in the vessel's
-plane, so the field stays continuous across the join.
+Two lines make it: `t` is left **unclamped** and the cone is bounded by rejecting
+`t ∉ (0,1)`, then `outerAtT = outerRadius * t` tapers the radius. Saturating `t` instead —
+the earlier version — pinned the closest point to the vessel past `t = 1`, which turns the
+metric there into distance-to-the-ship-point: that is precisely the hemispherical cap the
+rejection now removes.
+
+**Known and accepted:** the flat base is a *discontinuity*. A prism spanning the vessel's
+plane is faded on the camera side and solid on the far side, with a hard cut between. The
+ship's own body sits in that plane, so the seam is mostly behind it — but on a large plate
+at exactly that depth it will read as a crisp edge. That is the price of "no more than it
+needs", and it was chosen deliberately over the sphere cap.
 
 **Why not the capsule it replaced:** the constant radius was an artefact of the retired
 `ClearPrisms` `CapsuleCollider`, carried into the first shader version unexamined. A fixed
@@ -928,6 +933,11 @@ platform law rests on. Note the consequence, which is deliberate and is sharpene
 cone: the cleared disc is now *exactly* the ship's screen silhouette, with the fully-opaque
 edge on it and zero margin around it. `outerRadiusScale` is the one dial if that reads too
 tight.
+
+`innerRadiusScale` is **0.25** — deliberately much narrower than the outer edge, so three
+quarters of the cone's cross-section is gradient and only a small centre is hard-clear. The
+dissolve reads as a soft column rather than a hole with a rim. 0 would make the whole cone
+a gradient, clear only on the axis itself.
 
 The measurement is **rotation-invariant** (max distance from the vessel origin to the mesh
 bounds' corners in world space — a rigid rotation preserves those distances, whereas

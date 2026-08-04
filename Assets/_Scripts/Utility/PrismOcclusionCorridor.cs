@@ -9,10 +9,10 @@ namespace CosmicShore.Utility
     /// the player's camera and the player's vessel dissolve so the ship is never hidden
     /// (Docs/PRISM_ANIMATION.md §4.6).
     ///
-    /// The corridor is a CONE, and it is SHIP-SIZED: a point at the lens, widening to the
-    /// circle that circumscribes the bound vessel's hull (fully-clear core at half that) and
-    /// capped by that sphere. Both radii are measured from the vessel itself at bind time, so
-    /// nothing about the size is authored per vessel.
+    /// The corridor is a BARE CONE, and it is SHIP-SIZED: a point at the lens, widening to
+    /// the circle that circumscribes the bound vessel's hull, ending flat at the vessel's
+    /// plane with no cap at either end. Both radii are measured from the vessel itself at
+    /// bind time, so nothing about the size is authored per vessel.
     ///
     /// It publishes exactly TWO global shader uniforms once per frame and does nothing
     /// else. There is no per-prism work of any kind — no trigger volumes, no material

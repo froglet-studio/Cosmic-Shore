@@ -7,10 +7,11 @@ namespace CosmicShore.ScriptableObjects
     /// (<c>PrismOcclusionCorridor</c>, <c>PrismOcclusionCorridor.hlsl</c>,
     /// Docs/PRISM_ANIMATION.md §5 C1).
     ///
-    /// Prisms inside the CONE from the player's camera to the player's vessel dissolve so
-    /// the ship is never hidden by its own trail or by the environment. The cone is a point
-    /// at the lens and reaches these radii only at the hull, so the cleared region is a
-    /// constant angular size — the ship's silhouette — at every depth.
+    /// Prisms inside the BARE CONE from the player's camera to the player's vessel dissolve
+    /// so the ship is never hidden by its own trail or by the environment. The cone is a
+    /// point at the lens, reaches these radii only at the hull, and ends flat at the
+    /// vessel's plane — so the cleared region is a constant angular size (the ship's
+    /// silhouette) at every depth, and nothing level with or behind the ship is touched.
     /// Everything here is a GLOBAL shader uniform written once per frame — there is no
     /// per-prism state to tune, and no per-prism cost to pay for widening the corridor.
     ///
@@ -42,11 +43,13 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField] float outerRadiusScale = 1f;
 
         [Tooltip("Inner edge of the gradient — the fully-clear core — as a multiple of the same " +
-                 "circumscribing radius, tapering with the outer cone. 0.5 makes the band run from " +
-                 "R/2 to R at the vessel: proportionally generous enough to read smooth, and short " +
-                 "in absolute terms because it is scaled to the ship rather than to the world.")]
+                 "circumscribing radius, tapering with the outer cone. Deliberately much narrower " +
+                 "than the outer edge: at 0.25 three quarters of the cone's cross-section is " +
+                 "gradient, so the dissolve reads as a soft column with a small solid-clear centre " +
+                 "rather than a hard hole with a rim. 0 makes the whole cone a gradient, clear only " +
+                 "on the axis itself.")]
         [Range(0f, 1f)]
-        [SerializeField] float innerRadiusScale = 0.5f;
+        [SerializeField] float innerRadiusScale = 0.25f;
 
         [Tooltip("Alpha at the corridor core. 0 (the default) tapers fully to nothing, so no " +
                  "dithered ghost survives anywhere the ship can be. A small positive value leaves a " +

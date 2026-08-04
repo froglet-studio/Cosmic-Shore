@@ -2,11 +2,12 @@
 // (Docs/PRISM_ANIMATION.md §3 C1 / §5 C1, the "moving-target exception" class of §1).
 //
 // PURPOSE. Prisms that sit between the player's camera and the player's vessel must
-// not hide the ship. The corridor is the CONE from the camera to the vessel — a point
-// at the lens, widening to the sphere that circumscribes the hull, capped by that
-// sphere. That is the minimal volume able to occlude the ship: nothing outside the
-// eye->silhouette cone can be in front of it, and nothing past the hull can either.
-// A fragment inside fades out; a fragment outside is untouched.
+// not hide the ship. The corridor is a BARE CONE from the camera to the vessel — a
+// point at the lens, widening to the circle that circumscribes the hull, ending flat at
+// the vessel's plane with no cap at either end. That is the minimal volume able to
+// occlude the ship: nothing outside the eye->silhouette cone can be in front of it, and
+// nothing at or past the vessel's own depth can either. A fragment inside fades out; a
+// fragment outside is untouched.
 //
 // WHY IT LIVES HERE AND NOT ON THE CPU. Occlusion is camera-relative LIVE data — it
 // can never be a per-prism stamp, because the answer changes every frame for every
@@ -33,9 +34,10 @@
 // fully tapered to nothing, so no dithered ghost survives anywhere the ship can be); at
 // and beyond the outer cone it is EXACTLY 1. Because the radius grows in proportion to
 // depth, the cleared region has a CONSTANT ANGULAR size — the ship's own silhouette —
-// rather than a constant world size. The shell between them is deliberately SHORT so
-// the world snaps back to opaque the moment you move off, and C2-smooth so a short band
-// still reads as a fade rather than an edge.
+// rather than a constant world size. The inner cone is deliberately much narrower than
+// the outer one (a quarter of it by default), so most of the corridor's cross-section
+// is gradient rather than hard clearance and the dissolve reads as a soft column with a
+// small solid-clear centre.
 //
 // COST CONTRACT. A fragment outside the corridor executes: one compare (radius > 0),
 // one segment-distance evaluation (~10 ALU), one compare, then returns the alpha it
@@ -133,15 +135,25 @@ void PrismOcclusionFade_float(float3 PositionWS, float3 Target, float3 Params, f
     float3 cameraWS = _WorldSpaceCameraPos.xyz;
 #endif
 
-    // Distance from the fragment to the camera->vessel SEGMENT (not the infinite line).
-    // Clamping t is what gives the shape its head and its tail: at t >= 1 the closest
-    // point pins to the VESSEL, so the metric there is distance-to-the-ship-point (a
-    // sphere); at t <= 0 it pins to the CAMERA, and since the radius below is zero there
-    // that end closes to a point instead of a cap.
     float3 axis = Target - cameraWS;
     float3 rel = PositionWS - cameraWS;
     float axisLenSq = dot(axis, axis);
-    float t = (axisLenSq > 1e-6) ? saturate(dot(rel, axis) / axisLenSq) : 0.0;
+    if (axisLenSq <= 1e-6)
+        return; // camera sitting on the vessel: no axis, no cone
+
+    // t is UNCLAMPED, and the cone is bounded by rejecting t outside (0,1). This makes it
+    // a BARE cone: it ends flat at the vessel's plane, with no spherical cap past the base
+    // and none behind the camera. Mass level with or behind the ship cannot be in front of
+    // it, so clearing any of it would be more than the corridor needs. (Saturating t
+    // instead would pin the closest point to the vessel past t = 1, and the metric there
+    // becomes distance-to-the-ship-point — that is exactly the hemispherical cap this
+    // rejection removes.)
+    float t = dot(rel, axis) / axisLenSq;
+    if (t <= 0.0 || t >= 1.0)
+        return; // behind the camera, or at/past the vessel — outside the cone entirely
+
+    // Within (0,1) the closest point on the segment IS the perpendicular foot, so this is
+    // the perpendicular distance to the axis.
     float distanceToAxis = distance(rel, axis * t);
 
     // THE RADIUS TAPERS WITH t — this one multiply is what makes the corridor a CONE
@@ -153,16 +165,10 @@ void PrismOcclusionFade_float(float3 PositionWS, float3 Target, float3 Params, f
     // subtends a huge solid angle. Tapering makes the cleared region a CONSTANT ANGULAR
     // SIZE — exactly the ship's own silhouette, at every depth — so the corridor never
     // dissolves a single prism more than it must.
-    //
-    // t saturates at 1, so past the vessel the radius holds at outerRadius while the
-    // metric is already distance-to-the-ship-point: the cone is capped by the sphere
-    // that circumscribes the hull, which is the ship itself and not an extension beyond
-    // it. Cone and sphere meet exactly on the circle of radius outerRadius in the
-    // vessel's plane, so the field stays continuous across the join.
     float outerAtT = outerRadius * t;
 
     if (distanceToAxis >= outerAtT)
-        return; // outside the cone: costs nothing beyond the test above
+        return; // outside the cone: costs nothing beyond the tests above
 
     // The profile: EXACTLY coreAlpha (0 by default — fully tapered to nothing, no
     // residual ghost anywhere the ship can be) inside the inner cone, EXACTLY 1 at and
