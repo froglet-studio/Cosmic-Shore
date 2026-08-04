@@ -275,7 +275,7 @@ emit("Assets/_SO_Assets/Games/ArcadeGameRibcage.asset",
   CallToActionTargetType: 404
   ViewUserAction: 0
   PlayUserAction: 0
-  ComebackRatePerScoreDeficit: 0.03
+  ComebackRatePerScoreDeficit: 0.003
 """)
 emit("Assets/_SO_Assets/Games/ArcadeGameRibcage.asset.meta", asset_meta(G_ASSET["ArcadeGameRibcage"]))
 

@@ -2,7 +2,7 @@
 
 ## Overview
 
-Ribcage is the **Rhino-only cage race**. Domains race to be first to hold **300 prisms
+Ribcage is the **Rhino-only cage race**. Domains race to be first to hold **3,000 prisms
 standing**; a hollow sphere of shielded prism bone pens the cell's brood, and smashing it
 **scores nothing** — it arms the ecology.
 
@@ -67,7 +67,7 @@ anyone back and the whole ecology would be decoration.
   players `Score = finish time`, losers the `GolfScoreSentinels` sentinel (displayed
   "N To Go")
 - **Turn monitor**: `RibcagePrismTurnMonitor` — resolves the STANDING-prism target from
-  `EndConditionOverridesSO.GetRibcagePrismTarget()` (default **300**, FrogletTools ▸
+  `EndConditionOverridesSO.GetRibcagePrismTarget()` (default **3000**, FrogletTools ▸
   Game Modes ▸ End Game Conditions — never a per-scene field), syncs it via
   NetworkVariable → `GameDataSO.PrismTargetCount`. The fauna rungs are *separate*,
   absolute cage-destruction counts on `RibcageController` (150 / 350)
@@ -172,13 +172,18 @@ flora batch" caveat on that method does not apply here.
 
 ### Why the leader gets *helped* rather than punished
 
-The swarm is a snowball, and the counterweight is already in the box: destruction feeds
-`ElementalComebackSystem` (`ScoreDifferenceSource.PrismsDestroyed`), so the further
-ahead the leader gets the stronger the trailing teams' all-element buffs become. Pull
-too far ahead and you are fighting buffed Rhinos while your own swarm chews mass that
-no longer scores for you. `ComebackRatePerScoreDeficit` is **0.03** (vs Rampage's 0.01
-at a 2000 target) so a ~300-bar deficit against a 600 target reaches the same buff
-ceiling a ~10-crystal deficit does in Scurry.
+The swarm is a snowball, and the counterweight is already in the box:
+`ElementalComebackSystem` runs on `ScoreDifferenceSource.PrismsRemaining` — the same live
+stock that decides the race — so the further ahead the leader gets, the stronger every
+trailing team's all-element buffs become. Pull too far ahead and you are fighting buffed
+Rhinos while your own pets chew mass that no longer scores for you.
+
+**The rate must track the target.** `ComebackRatePerScoreDeficit` is **0.003**, chosen so
+the 10-level ceiling lands at a deficit of ~3,333 — about one full target, matching how the
+300-target version behaved at 0.03. Leaving it at 0.03 after the 10× target change would
+have pinned every trailing team at maximum buff from a 333-prism gap (11% of the target),
+i.e. for essentially the whole match, which makes the comeback meaningless rather than
+generous. If you re-tune the target, re-tune this with it: `rate ≈ 10 / target`.
 
 ## Ecology configuration
 
@@ -345,7 +350,7 @@ feedback**. More is planned — this is the first layer, not the finished treatm
 ## End condition
 
 Authored ONLY through **FrogletTools ▸ Game Modes ▸ End Game Conditions**
-(`EndConditionOverridesSO.ribcagePrismTarget`, 0 = default **300**) — the number of
+(`EndConditionOverridesSO.ribcagePrismTarget`, 0 = default **3000**) — the number of
 prisms a domain must hold STANDING to win. Live/Build split + build auto-restore work
 like every other mode.
 
@@ -449,7 +454,7 @@ with `SpawnableRibcage.cs` when the geometry changes.
    sharks join; the cell reads Frenzy on the DiagnosticsHUD.
 11. **Lead change flips the swarm.** Let a second domain take the lead — the *live*
    creatures should re-colour and switch which trails they eat.
-12. **Win + scoreboard.** First domain to **300 standing prisms** ends the turn; winners
+12. **Win + scoreboard.** First domain to **3,000 standing prisms** ends the turn; winners
     show a time, losers "N To Go". Replay (scene reload) re-pens the brood and resets both
     axes.
 13. **AI stays outside.** Watch an AI Rhino for a minute: it should orbit outside, cross
