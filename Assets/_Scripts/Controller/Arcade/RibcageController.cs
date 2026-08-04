@@ -10,9 +10,8 @@ using CosmicShore.Utility;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Ribcage - the Rhino-only cage-breaking race. Domains race to be first to hold the
-    /// target number of prisms STANDING; a shielded prism sphere pens the cell's brood, and
-    /// smashing it arms the ecology rather than scoring. Structurally a sibling
+    /// Ribcage - the Rhino-only cage-breaking race. Domains race to smash a shielded prism
+    /// sphere; the first to the destruction target breaks out and wins. Structurally a sibling
     /// of <see cref="RampageController"/> (1 round / 1 turn, HasEndGame=false, server winner
     /// detection in OnTurnEndedCustom, snapshot SyncFinalScores_ClientRpc) - the destruction
     /// stat itself auto-increments via StatsManager.PrismDestroyed, so no per-event listener
@@ -30,15 +29,10 @@ namespace CosmicShore.Gameplay
     ///      the live swarm and its diet flips with it. There is no "target the loser" code
     ///      anywhere; the diet rule was always this.
     ///   2. HOW HARD the cell is running (<see cref="Cell.ModePhaseFloor"/> +
-    ///      <see cref="Cell.FaunaReleaseTier"/>), gated on TOTAL cage destruction: the brood
-    ///      rung opens the pen and floors the cell at Restless, the pack rung adds the predator
-    ///      and floors it at Frenzy. Aggression bands, steering, danger immunity and speed all
-    ///      come from the existing CellPhase → CellAggressionLevel mapping.
-    ///
-    /// NOTE the two axes: the RACE is creation (first domain to hold PrismTargetCount standing
-    /// prisms wins), and smashing the cage scores nothing - it only arms the ecology. Since the
-    /// swarm eats standing mass, and standing mass is the score, breaking the cage is a real
-    /// decision: you stop laying to arm a swarm that then serves whoever is ahead.
+    ///      <see cref="Cell.FaunaReleaseTier"/>). 25% of the target floors the cell at Restless
+    ///      and opens the grazer swarm; 50% floors it at Frenzy and adds the predator.
+    ///      Aggression bands, steering, danger immunity and speed all come from the existing
+    ///      CellPhase → CellAggressionLevel mapping.
     ///
     /// Neither publication removes a prism or starts a clock, so the conserved-mass law is
     /// untouched: the cage falls only to vessel abilities, and holding fauna PRODUCTION closed
@@ -59,15 +53,15 @@ namespace CosmicShore.Gameplay
                  "team including the leader's and break the whole hook.")]
         [SerializeField] Cell arenaCell;
 
-        [Tooltip("CAGE PRISMS DESTROYED (summed across every domain) at which the pen opens: " +
-                 "the brood pours out in the race leader's colour and the cell is floored at " +
-                 "Restless. Absolute, not a fraction of the win target - destruction and " +
-                 "creation are different axes in this mode.")]
-        [SerializeField, Min(1)] int broodReleasePrisms = 150;
+        [Tooltip("Fraction of the win target at which the pen opens: the brood pours out in the " +
+                 "leader's colour and the cell is floored at Restless. A FRACTION because the " +
+                 "race and the trigger are the same axis again (destruction) - move the target " +
+                 "and the whole ladder moves with it.")]
+        [SerializeField, Range(0.05f, 0.9f)] float broodReleaseFraction = 0.25f;
 
-        [Tooltip("CAGE PRISMS DESTROYED (all domains) at which the predator joins and the cell " +
-                 "is floored at Frenzy.")]
-        [SerializeField, Min(1)] int packReleasePrisms = 350;
+        [Tooltip("Fraction of the win target at which the predator joins and the cell is " +
+                 "floored at Frenzy.")]
+        [SerializeField, Range(0.1f, 0.95f)] float packReleaseFraction = 0.5f;
 
         [Tooltip("Seconds between server-side leadership/escalation samples. The ladder is a " +
                  "coarse state machine, so this does not need to be per-frame.")]
@@ -93,10 +87,9 @@ namespace CosmicShore.Gameplay
         // floor) in ApplyStage - one place, so the three levers can never disagree.
         //   Caged  - the brood is penned in the cage, visible through the bars. It eats the
         //            trail of anything that comes IN and cannot touch the match outside.
-        //   Loosed - broodReleasePrisms of cage destroyed: containment lifted, cell floored at
-        //            Restless. The swarm pours out wearing the RACE leader's colours and eats
-        //            the trailing teams' standing mass - which is their score.
-        //   Pack   - packReleasePrisms destroyed: the predator joins, cell floored at Frenzy.
+        //   Loosed - 25% of the target: containment lifted, cell floored at Restless. The swarm
+        //            pours out wearing the leader's colours and hunts the trailing teams' mass.
+        //   Pack   - 50%: the predator species joins, cell floored at Frenzy.
         const int StageCaged = 0;
         const int StageLoosed = 1;
         const int StagePack = 2;
@@ -188,10 +181,10 @@ namespace CosmicShore.Gameplay
             int target = gameData.PrismTargetCount;
             if (target <= 0) return; // monitor hasn't resolved the target yet
 
-            // ── who the brood serves: the RACE leader, by the scoring metric (standing prisms).
-            // NOT the destruction leader. The swarm eats the trailing teams' standing mass, and
-            // standing mass IS the score, so pointing it at everyone-but-the-leader is what makes
-            // breaking the cage a decision instead of a chore.
+            // Leading domain by the scoring metric (hostile prisms destroyed), Jade→Ruby→Gold
+            // on ties (fixed order, so every machine would agree - though only the server ever
+            // computes this). The brood hatches in this colour and the legacy herbivore diet
+            // then points it at every trailing team's mass.
             var leader = Domains.Blue;
             int best = 0;
             int dc = Mathf.Clamp(gameData.RequestedDomainCount, 1, GameDataSO.ActiveDomains.Length);
@@ -206,21 +199,15 @@ namespace CosmicShore.Gameplay
                 }
             }
 
-            // Nobody has laid anything yet - leave the cell unclaimed rather than handing the
+            // Nobody has broken a bar yet - leave the cell unclaimed rather than handing the
             // brood to Jade for winning a 0-0 tie-break.
             if (leader == Domains.Blue || best <= 0) return;
 
-            // ── what opens the pen: TOTAL cage destruction, by anybody. Destruction is a
-            // separate axis from the race, so these are absolute counts, not fractions of the
-            // win target. Summed across domains because the cage is one shared structure - it
-            // does not matter who broke which bar, only that the bone is open.
-            int cageBroken = 0;
-            for (int i = 0; i < dc; i++)
-                cageBroken += ScoringMetrics.SumByDomain(
-                    gameData, ScoringMetric.PrismsDestroyed, GameDataSO.ActiveDomains[i]);
-
-            int stage = cageBroken >= packReleasePrisms ? StagePack
-                : cageBroken >= broodReleasePrisms ? StageLoosed
+            // The rungs ride the LEADER's own progress toward the win target: the race and the
+            // trigger are one axis, so "the leader is a quarter of the way out" is the signal.
+            float progress = best / (float)target;
+            int stage = progress >= packReleaseFraction ? StagePack
+                : progress >= broodReleaseFraction ? StageLoosed
                 : StageCaged;
 
             bool leaderChanged = leader != _leader;
@@ -233,7 +220,7 @@ namespace CosmicShore.Gameplay
             if (stageChanged)
             {
                 _stage = stage;
-                PublishRelease_ClientRpc(stage, (int)leader, cageBroken, target);
+                PublishRelease_ClientRpc(stage, (int)leader, best, target);
             }
             else if (leaderChanged && stage > StageCaged)
             {
@@ -451,7 +438,7 @@ namespace CosmicShore.Gameplay
 
             var winnerRep = gameData.RoundStatsList
                 .Where(s => s.Domain == winningDomain)
-                .OrderByDescending(s => s.PrismsRemaining)
+                .OrderByDescending(s => s.HostilePrismsDestroyed)
                 .FirstOrDefault();
             if (winnerRep == null) return;
 
@@ -494,7 +481,7 @@ namespace CosmicShore.Gameplay
                 nameArray[i] = new FixedString64Bytes(statsList[i].Name);
                 scoreArray[i] = statsList[i].Score;
                 domainArray[i] = (int)statsList[i].Domain;
-                prismsArray[i] = statsList[i].PrismsRemaining;
+                prismsArray[i] = statsList[i].HostilePrismsDestroyed;
             }
 
             SyncFinalScores_ClientRpc(nameArray, scoreArray, domainArray, prismsArray,
@@ -506,7 +493,7 @@ namespace CosmicShore.Gameplay
             FixedString64Bytes[] names,
             float[] scores,
             int[] domains,
-            int[] prismsRemaining,
+            int[] prismsDestroyed,
             FixedString64Bytes winnerName,
             int winnerDomain)
         {
@@ -522,7 +509,7 @@ namespace CosmicShore.Gameplay
                 }
                 stat.Score = scores[i];
                 stat.Domain = (Domains)domains[i];
-                stat.PrismsRemaining = prismsRemaining[i];
+                stat.HostilePrismsDestroyed = prismsDestroyed[i];
             }
 
             gameData.WinnerName = winnerName.ToString();
@@ -550,8 +537,7 @@ namespace CosmicShore.Gameplay
 
             foreach (var s in gameData.RoundStatsList)
             {
-                s.PrismsRemaining = 0;          // the scored metric
-                s.HostilePrismsDestroyed = 0;   // the fauna-ladder trigger
+                s.HostilePrismsDestroyed = 0;   // the scored metric AND the ladder trigger
                 s.Score = 0f;
             }
 

@@ -67,7 +67,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public const float ContainmentRadius = CageR * 0.94f;
 
-        const int RibCount = 48;       // meridian great circles (pole to pole)
+        const int RibCount = 68;       // meridian great circles (pole to pole)
         const float BarStep = 17f;     // arc-length spacing along every rib and hoop
         const int LatticeBands = 6;    // diagonal strut bands between adjacent ribs
         const int StrutPrisms = 3;
@@ -90,7 +90,7 @@ namespace CosmicShore.Gameplay
         // Latitude hoops, GENERATED rather than hand-listed so the count is one number to
         // turn and the Python budget model can mirror it exactly. Equator first, then
         // symmetric pairs out to +/-HoopSpanDeg.
-        const int HoopCount = 21;
+        const int HoopCount = 29;
         const float HoopSpanDeg = 78f;
 
         static readonly float[] HoopLats = BuildHoopLats();
@@ -119,7 +119,7 @@ namespace CosmicShore.Gameplay
             nameof(SpawnableRibcage), CageR, RibCount, BarStep,
             System.HashCode.Combine(HoopCount, HoopSpanDeg, LatticeBands, StrutPrisms),
             System.HashCode.Combine(CrownLat, CrownCount, DangerEveryNthRibPrism));
-        protected override int LayCapacity => 11000;
+        protected override int LayCapacity => 15500;
 
         protected override void BuildEnvironment()
         {

@@ -75,10 +75,8 @@ namespace CosmicShore.Gameplay
                     system.differenceSource = ScoreDifferenceSource.Goals;
                     break;
                 case GameModes.Rampage: // Score lands only at game end - destruction is the live stat
+                case GameModes.Ribcage: // same: the race metric is hostile prisms destroyed
                     system.differenceSource = ScoreDifferenceSource.PrismsDestroyed;
-                    break;
-                case GameModes.Ribcage: // the live stat is STANDING prisms (the race metric)
-                    system.differenceSource = ScoreDifferenceSource.PrismsRemaining;
                     break;
                 default:
                     system.differenceSource = ScoreDifferenceSource.Score;

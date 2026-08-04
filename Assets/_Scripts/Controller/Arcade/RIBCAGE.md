@@ -2,29 +2,39 @@
 
 ## Overview
 
-Ribcage is the **Rhino-only cage race**. Domains race to be first to hold **3,000 prisms
-standing**; a hollow sphere of shielded prism bone pens the cell's brood, and smashing it
-**scores nothing** — it arms the ecology.
+Ribcage is the **Rhino-only cage race**. Domains race to be first to **destroy 2,000
+hostile prisms**; a hollow sphere of shielded prism bone pens the cell's brood, and
+breaking out of it is both the score and the trigger that arms the ecology.
 
-**The two axes are the mode.** *Creation* is the race: `PrismsRemaining`, a LIVE stock
-that rises as you lay trail and falls whenever anything destroys one of your prisms.
-*Destruction* of the cage is the trigger: pass a rung and the brood is released, wearing
-the **race leader's** colour, and it eats every trailing team's standing mass — which is
-their score. So breaking the cage is a real decision, not a chore: you stop laying (and
-fall behind) to arm a swarm that then serves whoever is ahead. Break it too early and you
-have fed the leader's pets your own trail.
+**One axis, two consequences.** Destruction is the race — `HostilePrismsDestroyed`, the
+same platform stat Rampage runs on. It is also the escalation clock: as the **leading**
+domain passes a quarter and then half of the target, the brood is released, wearing the
+**leader's** colour, and hunts every trailing team's mass. So the mode's pressure builds
+on itself — the further ahead you get, the more of the cell fights for you, while the
+comeback system feeds your rivals bigger buffs to compensate.
 
-The metric is a live stock rather than a cumulative "prisms created" counter for exactly
-this reason — a cumulative counter only ever goes up, so nothing the swarm did could set
-anyone back and the whole ecology would be decoration.
+Scoring mass is everything that is not your own team's laid trail: the cage (environment
+mass, non-roster owner ⇒ hostile whatever colour it wears), rival trails, and fauna
+bodies. Your own and your teammates' trails never score, so there is no lay-and-smash
+farming loop.
 
-- **The cage is the arena and the objective.** ~10,229 prisms at radius **360** in
-  forty-eight meridian ribs, twenty-one latitude hoops, a woven cross-lattice and two
-  polar crowns. The grille opening is ~**47u × 49u** — a near-square weave, not the wide
-  141u stripes sixteen ribs gave. Every shielded bar takes **two hits** — the first sheds
-  the shield, the second shatters it — unless the hit *devastates*, which is the mode's
-  core skill surface.
-- **336 of the bars are DANGER traps, and they are the SOFT ones.** A danger prism is
+> **The honest cost of this metric** (chosen deliberately, and recorded in
+> `RibcageScoringRuleSO`'s header): fauna are not rostered attackers, so a creature eating
+> a player's trail credits nobody and does not directly move anyone's score. The swarm is
+> an **obstacle**, not a scoring instrument — it costs the trailing teams time at the bone,
+> and its multi-prism bodies are themselves hostile mass worth points to whoever kills
+> them. `ScoringMetric.PrismsRemaining` (a live standing-mass stock, which *would* let the
+> swarm un-score you) exists and is wired end-to-end; Ribcage was briefly authored on it
+> and moved back. Do not switch the metric without asking — the trade was made with eyes
+> open.
+
+- **The cage is the arena and the objective.** **14,977 prisms** at radius **360** in
+  sixty-eight meridian ribs, twenty-nine latitude hoops, a woven cross-lattice and two
+  polar crowns. The grille opening is ~**33u × 35u** — a near-square weave (squareness
+  1.05), not the wide stripes a sparse rib count gives. Every shielded bar takes **two
+  hits** — the first sheds the shield, the second shatters it — unless the hit
+  *devastates*, which is the mode's core skill surface.
+- **476 of the bars are DANGER traps, and they are the SOFT ones.** A danger prism is
   not a tougher bar — danger is mutually exclusive with both shield tiers
   (`PrismStateManager.MakeDangerous` clears them), so a trap bar shatters in **one** hit
   with no shield to shed. What it costs is contact: the standard danger punishment
@@ -64,15 +74,16 @@ anyone back and the whole ecology would be decoration.
   sibling of `RampageController` (1 round / 1 turn, `HasEndGame=false`, server winner
   detection in `OnTurnEndedCustom`, snapshot `SyncFinalScores_ClientRpc`), plus the
   fauna ladder
-- **Scoring**: `RibcageScoringRuleSO` (`metric = ScoringMetric.PrismsRemaining` — new,
-  reads `IRoundStats.PrismsRemaining`; golf-timed like HexRace/Scurry) — winning-domain
-  players `Score = finish time`, losers the `GolfScoreSentinels` sentinel (displayed
-  "N To Go")
-- **Turn monitor**: `RibcagePrismTurnMonitor` — resolves the STANDING-prism target from
-  `EndConditionOverridesSO.GetRibcagePrismTarget()` (default **3000**, FrogletTools ▸
+- **Scoring**: `RibcageScoringRuleSO` (`metric = ScoringMetric.PrismsDestroyed`, reads
+  `IRoundStats.HostilePrismsDestroyed`; golf-timed like HexRace/Scurry/Rampage) —
+  winning-domain players `Score = finish time`, losers the `GolfScoreSentinels` sentinel
+  (displayed "N Bars Left")
+- **Turn monitor**: `RibcagePrismTurnMonitor` — resolves the destruction target from
+  `EndConditionOverridesSO.GetRibcagePrismTarget()` (default **2000**, FrogletTools ▸
   Game Modes ▸ End Game Conditions — never a per-scene field), syncs it via
-  NetworkVariable → `GameDataSO.PrismTargetCount`. The fauna rungs are *separate*,
-  absolute cage-destruction counts on `RibcageController` (150 / 350)
+  NetworkVariable → `GameDataSO.PrismTargetCount`. The fauna rungs are **fractions of that
+  target** on `RibcageController` (0.25 / 0.5 ⇒ 500 / 1000), so moving the target moves the
+  whole escalation ladder with it
 - **Domains**: `MinDomainsAllowed = 2` (like Joust — a cage race with everyone on one
   team has no one to feed the swarm), `MaxDomainsAllowed = 3`; players **2–4** with AI
   backfill
@@ -88,42 +99,32 @@ anyone back and the whole ecology would be decoration.
 - **Config**: `_SO_Assets/Games/ArcadeGameRibcage.asset` (registered in
   `GameLists/OrganicRematchGames.asset`, `ProgressionConfig.alwaysUnlockedModes`)
 
-## The two pipelines (zero bespoke tracking)
+## The pipeline (zero bespoke tracking)
 
-Both stats were already plumbed platform-wide; the mode only picks which drives what.
-
-**Creation → score.** `PrismsRemaining` is maintained by `StatsManager`: `++` when you lay
-a prism, `--` when *anything* destroys it — a rival's ram, an AOE, or a fauna's bite. That
-last one is why the swarm is a scoring force rather than an annoyance.
-
-```
-Rhino lays a trail prism → StatsManager … PrismsRemaining++
-a fauna eats one of yours → StatsManager.PrismDestroyed → victim PrismsRemaining--
-              ▼
-ScoringMetrics.Read(stats, PrismsRemaining) → SumByDomain
-  ├─ MultiplayerDomainGamesController.SyncDomainSumsRoutine → HUD domain panels
-  ├─ RibcagePrismTurnMonitor.CheckForEndOfTurn → rule.IsObjectiveReached   [server]
-  ├─ RibcageController.SampleLadder → who the brood serves                 [server]
-  └─ ElementalComebackSystem (source PrismsRemaining) → trailing-team buff
-              │  turn end
-              ▼
-RibcageController.OnTurnEndedCustom → AssignScores → SyncFinalScores_ClientRpc
-```
-
-**Destruction → the fauna trigger.** Smashing bone feeds `HostilePrismsDestroyed`, which
-scores nothing here and only advances the ladder:
+The stat was already plumbed platform-wide (Rampage runs on it); the mode only picks it and
+reads it twice — once to end the turn, once to drive the ladder.
 
 ```
 Rhino shatters a bar (2nd hit; 1st sheds the shield, or 1 hit on a danger trap)
   └─ Prism.Damage → SetupDestruction → onTrailBlockDestroyed.Raise(PrismStats{…})
               ▼
-StatsManager.PrismDestroyed → HostilePrismsDestroyed++   (cage mass is non-roster ⇒ hostile)
+StatsManager.PrismDestroyed → HostilePrismsDestroyed++   (cage mass is non-roster ⇒ hostile;
+                                                          your own team's trail is filtered out)
               ▼
-RibcageController.SampleLadder: SUM across all domains → release rung   [server]
+ScoringMetrics.Read(stats, PrismsDestroyed) → SumByDomain
+  ├─ MultiplayerDomainGamesController.SyncDomainSumsRoutine → HUD domain panels
+  ├─ RibcagePrismTurnMonitor.CheckForEndOfTurn → rule.IsObjectiveReached   [server]
+  ├─ RibcageController.SampleLadder → leader + release rung                [server]
+  └─ ElementalComebackSystem (source PrismsDestroyed) → trailing-team buff
+              │  turn end
+              ▼
+RibcageController.OnTurnEndedCustom → AssignScores → SyncFinalScores_ClientRpc
 ```
 
-The rung is keyed on the **total** across domains because the cage is one shared
-structure — it does not matter who broke which bar, only that the bone is open.
+The rung is keyed on the **leader's own** progress (`best / target`), not a cross-domain
+total: the race and the trigger are one axis, so "the leader is a quarter of the way out"
+is the signal — and it means the swarm arrives at a fixed point in the *race*, not at a
+point that a busy lobby reaches four times faster than a duel.
 
 ## The fauna ladder (zero bespoke ecology)
 
@@ -132,9 +133,8 @@ draw every consequence. It contains no fauna targeting code at all.
 
 ```
 RibcageController.SampleLadder            [server, every ladderSampleSeconds = 0.5s]
-  │  leader    = active domain with the highest PrismsRemaining sum (the RACE leader,
-  │              NOT the destruction leader - the swarm serves whoever is winning)
-  │  cageBroken = HostilePrismsDestroyed summed across ALL domains
+  │  leader   = active domain with the highest HostilePrismsDestroyed sum
+  │  progress = that leader's own sum / PrismTargetCount  (the race IS the clock)
   │
   ├─ PublishLeader_ClientRpc  → Cell.SetModeControlOverride(leader)   [EVERY peer]
   │     ├─ Cell.DominantDomain now returns the leader
@@ -150,15 +150,15 @@ RibcageController.SampleLadder            [server, every ladderSampleSeconds = 0
   └─ PublishRelease_ClientRpc → RibcageController.ApplyStage                 [EVERY peer]
         one place sets all three levers, so they can never disagree:
         Cell.FaunaReleaseTier · Cell.FaunaContainmentRadius · Cell.ModePhaseFloor
-        Caged  (cageBroken < 150) : brood seeds (species tier 0) but
+        Caged  (progress < 0.25) : brood seeds (species tier 0) but
                           Cell.FaunaContainmentRadius pens it, so mass OUTSIDE is not prey
                           and every goal is clamped inside. No phase floor - Calm, so they
                           idle at the core. They eat the trail of anything that flies IN.
-        Loosed (>= 150)  : containment cleared; floor = Restless → CellAggressionLevel
-                          .Level1 (steer at the opposing-colour centroid = every trailing
-                          team's standing mass). The swarm pours out through the bone.
-        Pack   (>= 350)  : Ribcage Shark (ReleaseTier 1) joins; floor = Frenzy → Level2
-                          (any-colour steering, friendly avoidance off, danger-immune)
+        Loosed (>= 0.25, i.e. 500 of 2000) : containment cleared; floor = Restless →
+                          CellAggressionLevel.Level1 (steer at the opposing-colour centroid
+                          = every trailing team's mass). The swarm pours out through the bone.
+        Pack   (>= 0.50, i.e. 1000) : Ribcage Shark (ReleaseTier 1) joins; floor = Frenzy →
+                          Level2 (any-colour steering, friendly avoidance off, danger-immune)
 ```
 
 Both publications are ClientRpcs because **fauna are client-local** (no NetworkObject),
@@ -175,17 +175,15 @@ flora batch" caveat on that method does not apply here.
 ### Why the leader gets *helped* rather than punished
 
 The swarm is a snowball, and the counterweight is already in the box:
-`ElementalComebackSystem` runs on `ScoreDifferenceSource.PrismsRemaining` — the same live
-stock that decides the race — so the further ahead the leader gets, the stronger every
-trailing team's all-element buffs become. Pull too far ahead and you are fighting buffed
-Rhinos while your own pets chew mass that no longer scores for you.
+`ElementalComebackSystem` runs on `ScoreDifferenceSource.PrismsDestroyed` — the same stat
+that decides the race — so the further ahead the leader gets, the stronger every trailing
+team's all-element buffs become. Pull too far ahead and you are fighting buffed Rhinos
+whose comeback elements make them faster at the bone than you were.
 
-**The rate must track the target.** `ComebackRatePerScoreDeficit` is **0.003**, chosen so
-the 10-level ceiling lands at a deficit of ~3,333 — about one full target, matching how the
-300-target version behaved at 0.03. Leaving it at 0.03 after the 10× target change would
-have pinned every trailing team at maximum buff from a 333-prism gap (11% of the target),
-i.e. for essentially the whole match, which makes the comeback meaningless rather than
-generous. If you re-tune the target, re-tune this with it: `rate ≈ 10 / target`.
+**The rate tracks the target.** `ComebackRatePerScoreDeficit` is **0.01** — identical to
+Rampage, which races to the same 2,000 destruction target, so the 10-level ceiling lands at
+a deficit of 1,000 (half the target). If you re-tune the target, re-tune this with it:
+`rate ≈ 10 / (target / 2)`.
 
 ## Ecology configuration
 
@@ -198,8 +196,8 @@ generous. If you re-tune the target, re-tune this with it: `rate ≈ 10 / target
   team including the leader's and break the entire hook. Ribcage needs the legacy
   opposing-domain diet.
   `PhaseThresholds` ride the measured cage baseline + the standard Blob deltas
-  (`Docs/ECOSYSTEM.md` §18): Restless 3421/3221 (volume 1,080,580/1,077,380),
-  Frenzy 6321/5721 (volume 1,126,980/1,117,380). The cell therefore boots **Calm**,
+  (`Docs/ECOSYSTEM.md` §18): Restless 15,677/15,477 (volume 5,893,312/5,890,112),
+  Frenzy 18,577/17,977 (volume 5,939,712/5,930,112). The cell therefore boots **Calm**,
   and since destruction only *lowers* volume the ladder never climbs on its own — the
   mode's phase floor is the only thing that raises it, which is exactly the intent.
 - **Ribcage Spawn Profile** — **no flora** (the cage is the arena; flora would add
@@ -208,9 +206,10 @@ generous. If you re-tune the target, re-tune this with it: `rate ≈ 10 / target
   it, not a spawn gate; authoring the start state as biome DATA is what keeps it
   independent of the controller's `OnNetworkSpawn` beating the cell's own bootstrap
   clock, a race the runtime-only seal lost), `InitialFaunaSpawnWaitTime 0`,
-  `BaseFaunaSpawnTime 15`, `FaunaFoodFloor 0`. Herbivore ring: 3 points at radius
-  **180** and predator ring 2 points at **220** — both **inside** the 300-unit cage, so
-  the brood hatches within the ribs and pours out through the bars the players break.
+  `BaseFaunaSpawnTime 15`, `FaunaFoodFloor 0`. Herbivore ring: 4 points at radius
+  **200** and predator ring 2 points at **250** — both **inside** the 338-unit pen (and so
+  inside the 360-unit shell), so the brood hatches within the ribs and pours out through
+  the bars the players break.
 ### The brood — five species
 
 Four herbivore species share the pen and the predator joins at 50%. Seeds hatch
@@ -256,57 +255,54 @@ powerups mid-match.
 
 ## The cage
 
-`SpawnableRibcage : CellEnvironmentSpawnableBase`, radius **300**, seed 39,
+`SpawnableRibcage : CellEnvironmentSpawnableBase`, radius **360**, seed 39,
 deterministic per seed like every cell environment. Analytic budget
 (`Tools/Build/ribcage_budget.py`; confirm with FrogletTools ▸ Ecology ▸ Measure Cell
 Environment Baselines):
 
 | structure | count | vol/prism | volume | detail |
 |---|---:|---:|---:|---|
-| meridian ribs (shielded) | 6048 | 431.3 | 2,608,556 | 48 ribs × 133, minus the traps |
-| — of which DANGER traps | 336 | 431.3 | 144,920 | every 19th rib prism |
-| latitude hoops | 1937 | 431.3 | 835,445 | 21 hoops out to ±78° |
-| cross-lattice | 864 | 131.8 | 113,866 | 48 pairs × 6 bands × 3 |
-| joints | 1008 | 327.5 | 330,145 | 48 × 21 crossings |
+| meridian ribs (shielded) | 8,568 | 431.3 | 3,695,454 | 68 ribs × 133, minus the traps |
+| — of which DANGER traps | 476 | 431.3 | 205,303 | every 19th rib prism |
+| latitude hoops | 2,701 | 431.3 | 1,164,965 | 29 hoops out to ±78° |
+| cross-lattice | 1,224 | 131.8 | 161,309 | 68 × 6 bands × 3 |
+| joints | 1,972 | 327.5 | 645,880 | 68 × 29 crossings |
 | polar crowns | 36 | 255.6 | 9,201 | 2 × 18 at lat ±84 |
-| **TOTAL** | **10,229** | | **4,042,133** | |
+| **TOTAL** | **14,977** | | **5,882,112** | |
 
-The rib-to-rib gap at the equator is ~47u, so this is a **ribcage, not a prison
-grille**: you fly between the bones freely. Sealing the sphere to vessel-tight spacing
-would cost ~6k prisms of always-on collider for no gameplay — the goal is to smash the
-structure, never to be locked inside it.
+The grille opening is ~**33.3u × 35.0u** (squareness 1.05), so this is a **ribcage, not a
+prison grille**: you fly between the bones freely. Sealing the sphere to vessel-tight
+spacing would cost tens of thousands more prisms of always-on collider for no gameplay —
+the goal is to smash the structure, never to be locked inside it.
 
-**Collider-budget impact — read this before tuning anything else.** ~10,229 box colliders
-for the cage, plus the brood (~1 `HealthPrism` per creature, so the caged cap of 149 / 158
-with sharks adds ~150 more). Shielded prisms keep the authored BoxCollider trigger, so the
-octahedron look is free.
+**Collider-budget impact — read this before tuning anything else. This is the branch's
+headline performance risk.** ~14,977 box colliders for the cage, plus the brood (~1
+`HealthPrism` per creature, so the caged cap of 149 / 158 with sharks adds ~150 more).
+Shielded prisms keep the authored **BoxCollider trigger** (`PrismOctahedronShield` changes
+the LOOK only — a convex-mesh collider is invisible to one skimmer family or the other), so
+a shielded bar costs exactly what a plain prism costs and the octahedron look is free.
 
-That is **~6.8× the masterplan's ≤1500 per-cell target** and squarely at Rampage's
-deliberate **10,000-prism arena gate** — the precedent exists, but Ribcage now sits at the
-top of it rather than comfortably under. It is spent deliberately: density is what makes
-the thing read as a cage, and the mode's whole verb actively removes colliders as the match
-runs. Mitigations are the standing ones (collider-LOD by phase, Burst density-grid fauna
-queries, no new physics queries anywhere).
+That is **~10× the masterplan's ≤1,500 per-cell target** and **~1.5× Rampage's deliberate
+10,000-prism arena gate** — precedent exists for a heavy arena, but Ribcage is now the
+heaviest in the game by a clear margin. It is spent deliberately: density is what makes the
+thing read as a cage, the cell authors **no flora**, and the mode's whole verb actively
+removes colliders as the match runs. Mitigations are the standing ones (collider-LOD by
+phase, Burst density-grid fauna queries, no new physics queries anywhere — fauna senses ride
+`PrismSpatialIndex`, scoring rides the StatsManager SOAP channel, and the AI aims
+analytically, see below).
 
-**This is the number most likely to force a retreat on device.** Measure it first
-(DiagnosticsHUD / Benchmark tool). The cheapest dial is `RibCount` — the ribs are 63% of
-the cage, and 48 → 36 drops ~1,900 prisms while keeping the weave square-ish; after that,
-`HoopCount`. Shielded prisms keep the
-authored **BoxCollider trigger** (`PrismOctahedronShield` changes the LOOK only — a
-convex-mesh collider is invisible to one skimmer family or the other), so a shielded
-bar costs exactly what a plain prism costs and the octahedron look is free. That is
-~2.1× the masterplan's ≤1500 per-cell target and **~3× *under* Rampage's deliberate
-10,000-prism arena gate**, with no flora in the cell and no new physics queries
-anywhere — fauna senses ride `PrismSpatialIndex`, scoring rides the StatsManager SOAP
-channel, and the AI aims analytically (below). Destruction actively removes colliders
-as the match runs. Watch the collider/prism telemetry (DiagnosticsHUD / Benchmark tool)
-on device; `RibCount` / `BarStep` are the two numbers to turn down.
+**Measure it on device first** (DiagnosticsHUD / Benchmark tool). The cheapest dial is
+`RibCount` — the ribs plus their joints are ~70% of the cage, and every rib removed takes
+~220 prisms with it (133 bar + 29 joint + 18 strut, ×(1 − danger share)); after that,
+`HoopCount`, then `BarStep`. Re-run **both** Python tools after any change:
+`ribcage_budget.py` for the new baseline and `author_ribcage_assets.py` to push it into
+`PhaseThresholds`.
 
 ## Spawning outside the cage
 
 Players start on the computed cell spawn ring (`CellSpawnFormation` — symmetric, all
 facing the cell), NOT on authored transforms: the donor scene's four points sat at ±50,
-which is deep inside the 300u cage, so everyone started penned in with the brood.
+which is deep inside the cage, so everyone started penned in with the brood.
 
 The ring normally measures off the cell's nucleus radius, and Ribcage's cell
 deliberately has none — so it would have collapsed to the cell centre, i.e. the same
@@ -365,14 +361,16 @@ feedback**. More is planned — this is the first layer, not the finished treatm
 ## End condition
 
 Authored ONLY through **FrogletTools ▸ Game Modes ▸ End Game Conditions**
-(`EndConditionOverridesSO.ribcagePrismTarget`, 0 = default **3000**) — the number of
-prisms a domain must hold STANDING to win. Live/Build split + build auto-restore work
-like every other mode.
+(`EndConditionOverridesSO.ribcagePrismTarget`, 0 = default **2000**) — the number of
+hostile prisms a domain must DESTROY to win, the same target Rampage races to. Live/Build
+split + build auto-restore work like every other mode.
 
-The fauna rungs are deliberately **not** derived from it. Creation and destruction are
-different axes now, so the rungs are absolute cage-destruction counts serialized on
-`RibcageController` (`broodReleasePrisms` 150, `packReleasePrisms` 350, out of a
-3,175-prism cage). Tune them against how fast a Rhino actually chews bone.
+The fauna rungs **are** derived from it: `broodReleaseFraction` 0.25 and
+`packReleaseFraction` 0.5 on `RibcageController`, evaluated against the **leader's** own
+sum (⇒ 500 and 1,000 at the default target). Move the target and the whole escalation
+ladder moves with it, which is the point — a fraction cannot drift out of step with the
+race the way an absolute count did. 2,000 of a 14,977-prism cage is ~13% of the bone, so
+rival trails and fauna bodies are a meaningful share of a realistic winning line.
 
 ## Shared-code touchpoints (added for this mode)
 
@@ -391,9 +389,9 @@ different axes now, so the rungs are absolute cage-destruction counts serialized
 | `PrismStateManager` | `SyncAOERegistryShieldState` also re-files the prism in its cell's grids |
 | `RandomLifeSpawner` | staged-release gate (`faunaCfg.ReleaseTier <= host.FaunaReleaseTier`) |
 | `FaunaConfigurationSO` | `ReleaseTier` (default 0 — no shipped biome changes) |
-| `EndConditionOverridesSO` (+ window + asset) | `ribcagePrismTarget` live/build/getter, default 600 |
-| `ElementalComebackSystem` | `ScoreDifferenceSource.PrismsRemaining` + `GameModes.Ribcage` default-source case |
-| `ScoringMetric` / `ScoringMetrics.Read` | `PrismsRemaining = 6` → `stats.PrismsRemaining` (the live stock) |
+| `EndConditionOverridesSO` (+ window + asset) | `ribcagePrismTarget` live/build/getter, default 2000 |
+| `ElementalComebackSystem` | `GameModes.Ribcage` shares Rampage's `ScoreDifferenceSource.PrismsDestroyed` case |
+| `ScoringMetric` / `ScoringMetrics.Read` | `PrismsRemaining = 6` → `stats.PrismsRemaining` — added for the standing-mass variant of this mode, kept as an available-but-unused metric rather than churning a shared serialized enum a second time |
 
 ### The one cross-mode behaviour change: shielded mass leaves the targeting grids
 
@@ -444,7 +442,7 @@ with `SpawnableRibcage.cs` when the geometry changes.
    deferred build starts after the connecting screen releases, an `EnvironmentLoadVeil`
    takes over instead; either path is correct, but confirm which one you see.
 3. **Baseline confirm.** FrogletTools ▸ Ecology ▸ Measure Cell Environment Baselines
-   should report **2,721 prisms / ~1,069,380 volume** for the Ribcage cell. If it
+   should report **14,977 prisms / 5,882,112 volume** for the Ribcage cell. If it
    disagrees, the generator and `ribcage_budget.py` have drifted — fix both.
 4. **Bars are two-hit — except the traps.** Ram a rib: first contact sheds the shield
    (octahedron disengages), second shatters it and the HUD sum increments. Then find a
@@ -459,28 +457,30 @@ with `SpawnableRibcage.cs` when the geometry changes.
    fly around the outside laying trail; it should be ignored. Then fly IN: the cell
    should jump to **Frenzy** on the DiagnosticsHUD and the whole pen should converge on
    your trail. Leave, and it should settle back to Calm once your mass is gone.
-8. **Laying scores; smashing does not.** The HUD domain sum should rise as you lay trail
-   and rise *not at all* from breaking bars. Have a rival ram your trail (or wait for the
-   swarm) and watch your sum go back DOWN — that is the whole point of the live stock.
-9. **Brood rung.** At **150 total cage prisms destroyed** (any domain) the pen opens and
-   the swarm leaves wearing the **race leader's** colour to eat the *trailing* domains'
-   standing mass. **The device should shake hard for ~1.2 s** (the alert feel).
-10. **Pack rung.** At **350** destroyed the pack toast fires, the device shakes again, and
-   sharks join; the cell reads Frenzy on the DiagnosticsHUD.
+8. **Smashing scores; laying does not.** The HUD domain sum should rise as you break bars
+   and rise *not at all* from laying trail. Then shatter one of your OWN team's trail
+   prisms — the sum must not move (rostered same-domain mass is filtered out), while a
+   rival's trail and a fauna body both count.
+9. **Brood rung.** When the LEADING domain reaches **500** destroyed (25% of 2,000) the pen
+   opens and the swarm leaves wearing that leader's colour to eat the *trailing* domains'
+   mass. **The device should shake hard for ~1.2 s** (the alert feel).
+10. **Pack rung.** At **1,000** by the leader the pack toast fires, the device shakes again,
+   and sharks join; the cell reads Frenzy on the DiagnosticsHUD.
 11. **Lead change flips the swarm.** Let a second domain take the lead — the *live*
    creatures should re-colour and switch which trails they eat.
-12. **Win + scoreboard.** First domain to **3,000 standing prisms** ends the turn; winners
-    show a time, losers "N To Go". Replay (scene reload) re-pens the brood and resets both
-    axes.
+12. **Win + scoreboard.** First domain to **2,000 destroyed** ends the turn; winners show a
+    time, losers "N Bars Left". Replay (scene reload) re-pens the brood and resets the
+    ladder.
 13. **AI stays outside.** Watch an AI Rhino for a minute: it should orbit outside, cross
     the cage on transits, and only be inside briefly — during a crossing or a raid. If it
     settles inside, `AiStationStandoff` has been set ≤ 1.
 14. **Regression — the grid change.** Play **Skim Race** (intensity 3) and **Astro
     League**: fauna should behave normally and should no longer park against the
     super-shielded track / edge lining.
-15. **Collider telemetry** on device via DiagnosticsHUD / the Benchmark tool; if the
-    cage is too heavy, lower `RibCount` (16) or raise `BarStep` (17) in
-    `SpawnableRibcage.cs` and re-run both Python tools.
+15. **Collider telemetry** on device via DiagnosticsHUD / the Benchmark tool — at ~15k
+    colliders this is the most likely thing to force a retreat. If the cage is too heavy,
+    lower `RibCount` (68) or `HoopCount` (29), or raise `BarStep` (17) in
+    `SpawnableRibcage.cs`, then re-run **both** Python tools.
 
 ## Known limitations / follow-ups
 
@@ -493,13 +493,18 @@ with `SpawnableRibcage.cs` when the geometry changes.
   surrounds you, so there is no single point to aim at.
 - **No UGS stats reporter yet** (a "most bars smashed" leaderboard is a clean
   follow-up), and no dedicated end-game controller — the shared scoreboard handles it.
-- **Danger bars are a first pass.** 112 of 3,175 (one in 19 rib prisms), evenly spread by
+- **Danger bars are a first pass.** 476 of 14,977 (one in 19 rib prisms), evenly spread by
   a deterministic index walk. If they read as noise rather than as traps, cluster them
   instead (e.g. whole trap *segments* of a rib) — one constant,
   `SpawnableRibcage.DangerEveryNthRibPrism`.
-- **Target 600 is a first guess.** Nobody has measured how fast a Rhino clears
-  two-hit bars. It is one editor field; expect to tune it on the first playtest, and
-  the release rungs follow it automatically.
+- **Target 2,000 is inherited from Rampage, not measured for Ribcage.** Rampage's mass is
+  unshielded; every cage bar here takes two hits, so the same number is a longer match.
+  It is one editor field, and the release rungs follow it automatically.
+- **The fauna do not move the score directly.** See the metric note at the top — this is a
+  known, deliberate consequence of racing on destruction rather than on standing mass. If
+  playtests say the swarm feels inert, the options are (a) switch the rule asset to
+  `ScoringMetric.PrismsRemaining` (already wired end-to-end) — **ask first**, or (b) make
+  fauna kills worth more by leaning on their multi-prism bodies.
 - **`Cell.OpposingVolume` still counts shielded mass** as the fauna prey signal, so a
   shielded structure satisfies `FaunaFoodFloor` without being food. Ribcage sidesteps
   it (`FaunaFoodFloor 0` — the release tier is the real gate), but the honest fix is to

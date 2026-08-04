@@ -2281,8 +2281,9 @@ expected `Jit` volume factor), not measured — nothing has been observed runnin
 ## 22. Ribcage — a mode redefining "control", and the shielded-steering finish (August 2026)
 
 Ribcage (`GameModes.Ribcage = 39`, `_Scripts/Controller/Arcade/RIBCAGE.md`) is the
-Rhino-only cage-breaking race: a hollow sphere of ~2,700 **shielded** prisms pens the
-cell's brood, and domains race to smash their way out. Ecologically it is interesting
+Rhino-only cage-breaking race: a hollow sphere of ~15,000 **shielded** prisms pens the
+cell's brood, and domains race to smash their way out — the bone IS the score
+(`ScoringMetric.PrismsDestroyed`, target 2,000). Ecologically it is interesting
 for one reason — **the whole "the fauna hunt whoever is losing" feature is written in
 zero lines of fauna code**, and getting there needed one honest generalization.
 
@@ -2332,9 +2333,11 @@ that is the point of the override being a domain rather than a rule.
 
 `Cell.ModePhaseFloor` (nullable, default null) lets a mode hold the cell at or above a
 phase. The volume ladder still runs every tick; the floor only ever **raises** the
-answer. Ribcage floors the cell at Restless at 25% of the cage target and Frenzy at
-50%, so fauna aggression, steering, danger-immunity and speed all come from the
-existing `CellPhase → CellAggressionLevel` mapping.
+answer. Ribcage floors the cell at Restless once the LEADING domain reaches 25% of the win
+target and Frenzy at 50%, so fauna aggression, steering, danger-immunity and speed all come
+from the existing `CellPhase → CellAggressionLevel` mapping. Keying the rungs to the
+leader's own progress rather than a cross-domain total is what keeps the escalation
+arriving at a fixed point in the RACE, independent of lobby size.
 
 This is **not** the growth/decay oscillator §0 rejects: it is monotonic in an ACTIVE
 player force (mass destroyed by vessel abilities), it removes no prism, and it starts no
@@ -2342,8 +2345,9 @@ clock. Note the direction of travel — destruction *lowers* the cell's volume, 
 ordinary ladder would only ever descend here; the floor is the sole thing that climbs.
 
 `Cell.FaunaReleaseTier` + `FaunaConfigurationSO.ReleaseTier` stage which species may
-seed (Ribcage: nothing until 25%, grazers at 25%, predator at 50%). Defaults — config
-tier 0, cell `int.MaxValue` — leave every shipped biome released from the first tick.
+seed (Ribcage: the four grazer species from the first tick — penned, not gated — and the
+predator at 50%). Defaults — config tier 0, cell `int.MaxValue` — leave every shipped
+biome released from the first tick.
 Gating **production** is the explicitly-allowed lever ("not creating mass is allowed;
 aging it out is not"); nothing here culls.
 

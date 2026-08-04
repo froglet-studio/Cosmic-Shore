@@ -6,9 +6,9 @@ Counts are exact loop arithmetic; volume uses E[k^3] ~ 1.04 for Jit(s, 0.2)
 import math
 
 R          = 360.0     # cage shell radius
-RIBS       = 48        # meridian great circles
+RIBS       = 68        # meridian great circles
 BAR_STEP   = 17.0      # arc spacing along ribs and hoops
-HOOP_COUNT = 21        # latitude hoops (odd, symmetric about the equator)
+HOOP_COUNT = 29        # latitude hoops (odd, symmetric about the equator)
 HOOP_SPAN  = 78.0      # outermost hoop latitude, degrees
 BANDS, PER_STRUT = 6, 3
 CROWN_LAT, CROWN_N = 84.0, 18

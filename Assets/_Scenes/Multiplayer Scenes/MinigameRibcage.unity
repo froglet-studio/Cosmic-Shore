@@ -982,8 +982,8 @@ MonoBehaviour:
   _onToggleReadyButton: {fileID: 11400000, guid: 49189b231ecf3ab4ea602699f3401cf2, type: 2}
   rule: {fileID: 11400000, guid: 334ba679ea1406a625cd77611e9868eb, type: 2}
   arenaCell: {fileID: 1700000065}
-  broodReleasePrisms: 150
-  packReleasePrisms: 350
+  broodReleaseFraction: 0.25
+  packReleaseFraction: 0.5
   ladderSampleSeconds: 0.5
   aiRetargetSeconds: 2
   aiCageRadiusOverride: 0

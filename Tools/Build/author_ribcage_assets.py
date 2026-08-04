@@ -112,8 +112,11 @@ CAGE_RADIUS = 360         # +20% arena
 SPAWN_RING_RADIUS = 576   # 1.6x the cage, well inside the 1200u membrane
 HERBIVORE_RING = 200      # inside the pen (338) so the brood hatches within the bone
 PREDATOR_RING = 250
-CAGE_PRISMS = 10229
-CAGE_VOLUME = 4042133
+# Destruction target - the race metric. The 25%/50% fauna rungs are fractions of this,
+# so moving it moves the whole escalation ladder. Matches Rampage's 2000.
+RIBCAGE_PRISM_TARGET = 2000
+CAGE_PRISMS = 14977
+CAGE_VOLUME = 5882112
 # PhaseThresholds = measured baseline + the standard Blob deltas (Docs/ECOSYSTEM.md §18).
 BLOB_DELTAS = dict(re=700, rx=500, fe=3600, fx=3000, rev=11200, rxv=8000, fev=57600, fxv=48000)
 
@@ -245,7 +248,7 @@ emit("Assets/_Prefabs/Spawnables/SpawnableRibcage.prefab.meta",
 # ── 3. Scoring rule ──────────────────────────────────────────────────────────
 emit("Assets/_SO_Assets/Scoring Rules/RibcageScoringRule.asset",
      HEADER_FOR(G_SCRIPT["RibcageScoringRuleSO"], "RibcageScoringRule") +
-     "  metric: 6\n  golfRules: 1\n")   # 6 = ScoringMetric.PrismsRemaining (STANDING mass)
+     "  metric: 5\n  golfRules: 1\n")   # 5 = ScoringMetric.PrismsDestroyed (the race metric)
 emit("Assets/_SO_Assets/Scoring Rules/RibcageScoringRule.asset.meta",
      asset_meta(G_ASSET["RibcageScoringRule"]))
 
@@ -275,7 +278,7 @@ emit("Assets/_SO_Assets/Games/ArcadeGameRibcage.asset",
   CallToActionTargetType: 404
   ViewUserAction: 0
   PlayUserAction: 0
-  ComebackRatePerScoreDeficit: 0.003
+  ComebackRatePerScoreDeficit: 0.01
 """)
 emit("Assets/_SO_Assets/Games/ArcadeGameRibcage.asset.meta", asset_meta(G_ASSET["ArcadeGameRibcage"]))
 
@@ -436,8 +439,8 @@ OLD_FIELDS = f"""  rule: {{fileID: 11400000, guid: {EXISTING['RampageScoringRule
 """
 NEW_FIELDS = f"""  rule: {{fileID: 11400000, guid: {G_ASSET['RibcageScoringRule']}, type: 2}}
   arenaCell: {{fileID: 1700000065}}
-  broodReleasePrisms: 150
-  packReleasePrisms: 350
+  broodReleaseFraction: 0.25
+  packReleaseFraction: 0.5
   ladderSampleSeconds: 0.5
   aiRetargetSeconds: 2
   aiCageRadiusOverride: 0
@@ -450,10 +453,11 @@ scene, n = re.subn(EXISTING["RampageCellConfig"], G_ASSET["RibcageCellConfig"], 
 assert n == 1, f"cell config guid appeared {n} times"
 
 # 6d. Spawn OUTSIDE the cage. The donor's four authored transforms sit at +/-50 - deep inside
-# the 300u cage, so players started penned in with the brood. Switch the initializer to the
+# the cage, so players started penned in with the brood. Switch the initializer to the
 # computed cell spawn ring (CellSpawnFormation: symmetric, all facing the cell) with a radius
-# FLOOR, because this cell has no nucleus for the ring to measure off. 480u sits well outside
-# the cage (300) and well inside the membrane (1200), giving a clear run at the bone.
+# FLOOR, because this cell has no nucleus for the ring to measure off. SPAWN_RING_RADIUS sits
+# well outside the cage (CAGE_RADIUS) and well inside the membrane (1200), giving a clear run
+# at the bone.
 OLD_SPAWN = """  playerSpawnPoints:
   - {fileID: 1468661147}
   - {fileID: 1074736317}
@@ -514,6 +518,23 @@ if "MinigameRibcage.unity" not in build:
                           "  - enabled: 1\n    path: Assets/_Scenes/Multiplayer Scenes/MinigameRibcage.unity\n"
                           f"    guid: {G_ASSET['MinigameRibcage.unity']}\n")
 emit(BUILD_PATH, build)
+
+
+# ── 10. End-game condition target ────────────────────────────────────────────
+# The shared overrides asset is what FrogletTools > Game Modes > End Game Conditions edits.
+# A missing key would silently fall back to the C# field initializer, so author both the live
+# and the build-baseline value explicitly, next to Rampage's (same 2000 destruction target).
+END_PATH = "Assets/Resources/EndConditionOverrides.asset"
+with open(os.path.join(ROOT, END_PATH), encoding="utf-8") as fh:
+    endcond = fh.read()
+for live_key, new_key in (("rampagePrismTarget", "ribcagePrismTarget"),
+                          ("rampagePrismTargetBuild", "ribcagePrismTargetBuild")):
+    if f"\n  {new_key}: " in endcond:
+        continue
+    m = re.search(rf"^  {live_key}: (\d+)\n", endcond, re.M)
+    assert m, f"{live_key} not found in {END_PATH}"
+    endcond = endcond.replace(m.group(0), m.group(0) + f"  {new_key}: {RIBCAGE_PRISM_TARGET}\n", 1)
+emit(END_PATH, endcond)
 
 
 # ══ VALIDATE EVERYTHING BEFORE WRITING ANYTHING ═════════════════════════════
