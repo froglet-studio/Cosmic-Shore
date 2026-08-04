@@ -37,10 +37,12 @@ namespace CosmicShore.Gameplay
         [SerializeField] int JawResourceIndex;
 
         [Tooltip("Jaw gape in degrees at FULL energy, per jaw. This is the hull's copy of the " +
-                 "blast readout, so it should equal the crystal-impact cone's HALF-ANGLE at full " +
-                 "energy: atan((maxExplosionScale / 2) / cone height). Keep it in step with " +
-                 "VesselExplosionByCrystalEffectSO and the AOEConicExplosion prefab.")]
-        [SerializeField] float MaxJawAngle = 21f;
+                 "blast readout, so it MUST equal the crystal-impact cone's HALF-ANGLE at full " +
+                 "energy: atan((maxExplosionScale / 2) / cone height). Today that is " +
+                 "atan((1600 / 2) / 2400) = 18.43 degrees — DolphinVesselExplosionByCrystalEffect's " +
+                 "_maxExplosionScale over AOEConicExplosion.prefab's height. Space scales both " +
+                 "together, so the angle is invariant; change either number and this must follow.")]
+        [SerializeField] float MaxJawAngle = 18.435f;
 
         /// <summary>Jaw gape in degrees at full energy - the HUD's jaw icon mirrors this so the
         /// cockpit and the hull never disagree about how wide the next blast will be.</summary>
@@ -246,10 +248,11 @@ namespace CosmicShore.Gameplay
         //
         // This is the Dolphin's energy meter rendered on the HULL: the gape IS the width of the
         // cone the next crystal impact will release, so a pilot can read their blast without
-        // looking at the HUD (which shows the same angle on its Time icon). Keep MaxJawAngle equal
-        // to the cone's half-angle at full energy - atan((maxExplosionScale / 2) / coneHeight) on
+        // looking at the HUD (which shows the same angle on its Time icon, taking its maximum from
+        // MaxJawAngleDegrees so the two can never disagree). MaxJawAngle must equal the cone's
+        // half-angle at full energy - atan((maxExplosionScale / 2) / coneHeight) on
         // VesselExplosionByCrystalEffectSO + the AOEConicExplosion prefab - or the hull lies about
-        // the blast.
+        // the blast. It was 21 degrees against an 18.43-degree cone until this was measured.
         private void calculateBlastAngle(float currentAmmo)
         {
             float angle = MaxJawAngle * Mathf.Clamp01(currentAmmo);

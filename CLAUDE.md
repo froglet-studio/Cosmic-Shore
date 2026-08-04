@@ -808,6 +808,27 @@ Key interfaces: `IImpactor` / `IImpactCollider`
 
 **A vessel and its own skimmer never impact each other.** `SkimmerImpactor` and `VesselImpactor` carry mirrored self-guards on their vessel<->skimmer dispatch — required because the Rhino's sword capsule permanently overlaps its own hull, which otherwise ran the full victim-effect chain against the pilot (muting their own `RightStickAction` via `VesselDamageBySkimmerEffect`, impact-SFX spam). Skimmer-vs-own-PRISM handling is separate and stays flag-controlled (`Skimmer.AffectSelf`). See `_Scripts/Controller/Vessel/R_VesselActions/RHINO_SHIELD_SWIPE.md`.
 
+**A skimmer only skims if `VesselStatus` points AT it — and the failure is silent.**
+`VesselController.Initialize` initializes **only** `VesselStatus.NearFieldSkimmer` /
+`FarFieldSkimmer`, and `SkimmerImpactor` drops every contact while `skimmer.IsInitialized` is
+false. So a vessel can carry a perfectly wired skimmer — trigger sphere, kinematic rigidbody,
+`ImpactCollider`, effect container, layer 7 — and skim **nothing at all**, with no error
+anywhere, because the reference points at a different (or disabled) skimmer object. The Dolphin
+shipped that way for its whole life: an active `EnergySkimmer` doing the physics and a disabled
+legacy nested `Skimmer.prefab` holding the reference. **Audit it, don't infer it from feel:**
+`FrogletTools > Vessels > Audit Vessel Skimmers` checks assignment, active state up the whole
+ancestor chain, the components the trigger path needs, and whether the container holds any
+prism effects — asset-only, no play mode. *(Serpent currently fails it.)* Note that a skim's
+three feedback signals are each individually invisible — the haptic is a **no-op on desktop**,
+the beam VFX only draws when the skimmed prism authors a `ParticleEffect`, and a gauge that
+moves a tenth of its range per skim reads as nothing — so "I feel no skimming" is not evidence
+about the wiring in either direction. The forcefield crackle needs **three** pieces to be
+present or `SkimmerForcefieldCracklePrismEffectSO.Execute` returns silently: the effect in the
+container, a `ForcefieldCrackleController` on the impactor's own GameObject, and an overlay
+`MeshRenderer` assigned to it (vessels whose skimmer IS `Skimmer.prefab` get the last two free;
+standalone skimmer objects do not). Detail:
+`_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_ENERGY_ECONOMY.md` §5.
+
 **Danger prisms are not safe to their own domain (locked design).** `IsDangerous` effects apply to every vessel that touches the prism, regardless of domain — friendly fire included (the fire-trail action literally sets `IsDangerous` from a `FriendlyFire` flag). Danger-prism effect SOs must not gate on domain. **Danger is mutually exclusive with BOTH shield tiers**: `PrismStateManager.MakeDangerous` clears `IsShielded` AND `IsSuperShielded` (and disengages the shield visuals), just as `ActivateSuperShield` clears `IsDangerous` — a danger prism carrying a stale super-shield flag is invulnerable and kills any AOE explosion that touches it. `Prism.ResetState` also clears `IsSuperShielded` on pool reuse (no spawner requests super-shield pre-`Initialize`; it is always engaged post-spawn). This is what makes danger trails a risk/reward surface: the Squirrel's own overheat trail grants 10x skim energy (`SkimmerBoostPrismEffect.dangerEnergyMultiplier`, gated behind the skimming vessel's Charge level-5 "Live Wire" upgrade — below it danger skims pay base energy) but slams its owner on contact — volume-independent full-stop slow at the danger max (`VesselChangeSpeedByPrismEffectSO`: `maxSlowStrength * dangerSlowMultiplier`), all-element decaying debuff for 4s (`VesselElementalDebuffByDangerPrismEffectSO`), and boost reset.
 
 **AOE blast impulse — `Inertia` only reaches the screen with a ceiling of its own.** Every
@@ -1989,12 +2010,17 @@ scale bump** with a one-shot unlock punch.
   |---|---|---|---|---|---|
   | Squirrel | complete | 4/4 | ✅ | ✅ | ✅ bound |
   | Sparrow | complete | 4/4 | ✅ | ✅ | ⚠ no switcher on its HUD |
+  | Dolphin | complete | 4/4 | ✅ | ✅ | ⚠ no switcher on its HUD |
   | Manta | 3/4 named, 0/4 upgrades | 0/4 | — | — | n/a |
-  | Dolphin | 2/4 named, 0/4 upgrades | 0/4 | — | — | n/a |
   | Rhino | 1/4 named, 0/4 upgrades | 0/4 | — | — | n/a |
   | Serpent | 1/4 named, 0/4 upgrades | 0/4 | — | — | n/a |
 
-  Manta / Dolphin / Rhino / Serpent are blocked on **design, not wiring**: their
+  The Dolphin deliberately runs with **both** `tintIconOnUpgrade` and `showUpgradeBadge` off —
+  all four of its icons are live gauges, so the persistent scale bump is its only upgrade
+  signal, which is why nothing in `DolphinVesselHUDView` writes an icon transform per event.
+  Mechanics: `_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_ENERGY_ECONOMY.md`.
+
+  Manta / Rhino / Serpent are blocked on **design, not wiring**: their
   `ElementalAbilityMapSO` entries are still `(open design slot)` with `Input = 0` and no
   `UpgradeLabel`, and their HUDs have 0–2 lower-right icons rather than four. Author the map
   (`Docs/ElementalAbilitySystem/FLEET_MAPS.md` §2 holds the un-approved proposals) and the icons

@@ -59,6 +59,10 @@ The proposal table below was superseded by Garrett's design; the shipped map is
 `Assets/Resources/ElementalAbilityMaps/Dolphin.asset`. **The asset is the record — do not
 re-litigate from the superseded proposal.**
 
+Mechanics detail (energy economy, drift boost, the four gauges, the skimmer traps, and the
+in-editor verification table) lives beside the code:
+`_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_ENERGY_ECONOMY.md`.
+
 The Dolphin's spine is an ENERGY economy: skimming banks energy, hitting a prism halves it,
 and hitting a crystal spends it ALL at once to release a cone. Energy sets the cone's ANGLE,
 and the hull's jaws open to that same angle so the blast is readable before it fires.
