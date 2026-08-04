@@ -11,7 +11,7 @@ in-editor test that closes it. Run them as separate branches.
 |---|---|---|
 | ~~1~~ | ~~**Prompt 2** — C13 environment-lay prisms miss the clock path~~ | ✅ **DONE 2026-08-02** — the cause was the shield engage-morph straddling the creation reveal (not the raw-`Instantiate` lay). Residual **C13b** (pooled lay / spawn repaint) is not a clock fix — re-rank it with the rest. |
 | 2 | **Prompt 9** — batched entity debris remainder | Completes the proven, playtest-loved carrier: implosions on the batch path + the measured next bottleneck (`AOE.ResolveDamage` 0.43 ms/kill self, per-kill `PrismEventData` alloc). The benchmark rig is already built to measure it. |
-| 3 | **Prompt 1** — transparent-prism occlusion restore | Pre-existing broken system (predates this branch) + it gates the one deferred wiring verification (transparent color fades). |
+| ~~3~~ | ~~**Prompt 1** — transparent-prism occlusion restore~~ | ✅ **DONE 2026-08-04** — restored as a shader-side corridor off two global uniforms (`PrismOcclusionCorridor`, `Docs/PRISM_ANIMATION.md` §4.6); `ClearPrisms` deleted. The gated Phase-3 verification is un-deferred and re-pointed at the Serpent cloak (`Docs/PRISM_CLOCK_WIRING_CHECKLIST.md` Phase 3). |
 | 4 | **Prompt 3** — fauna/flora on the clock (ecology) | Per-frame CPU prism writes in every cell scene; wither/devour are ecology-locked visuals that must ride the law. |
 | 5 | **Prompt 4** — conveyor + cell-swap suction | The two biggest world-scale per-frame CPU flows left. |
 | 6 | **Prompt 6** — B4 shield morphs on the GPU | Retires the last sanctioned CPU ticker (`PrismOctahedronShieldManager`). |
@@ -31,6 +31,25 @@ surgery, machine validation) are captured in the `/asset-surgery` skill — use 
 ---
 
 ## Prompt 1 — Restore the transparent-prism occlusion system (then verify its color fades)
+
+> **✅ DONE 2026-08-04** (branch `claude/transparent-prism-occlusion-3fwjky`). The
+> investigation found the system was dead three times over, not once: (1) the
+> `_Alpha` MaterialPropertyBlock write never reached the screen, because prisms draw
+> through companion entities and instanced rendering is ON; (2) the trigger capsule
+> sat on layer `TrailBlockOcclusion` while prisms sit on `Default`, a pair the
+> collision matrix does not enable, so `OnTriggerEnter` never fired; and (3) even if
+> both had worked, `_Alpha` feeds `SurfaceDescription.Alpha` on an **Opaque**
+> BlockGraph with alpha clip off, where URP compiles the alpha output away entirely.
+> The Rhino prefab also still carried an override for a `prismLayer` field the script
+> had lost. Restored per the prompt's own prescription — two global uniforms
+> (`_PrismOcclusionTarget`, `_PrismOcclusionParams`) published once per frame, camera
+> end read on the GPU from `_WorldSpaceCameraPos`, per-fragment segment test + ordered
+> Bayer screen-door in `PrismOcclusionCorridor.hlsl` — with zero per-prism CPU and no
+> render-queue change. Design, cost statement and the alpha-test trade:
+> `Docs/PRISM_ANIMATION.md` §4.6. The closing verification is un-deferred and
+> re-pointed at the Serpent's cloak (the corridor deliberately no longer produces
+> `IsTransparent` prisms): `Docs/PRISM_CLOCK_WIRING_CHECKLIST.md` Phase 3.
+
 
 > The transparent prism system is not working. Its purpose: limit prism
 > occlusion between the camera and the vessel — prisms in that corridor render

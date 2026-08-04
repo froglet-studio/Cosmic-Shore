@@ -150,6 +150,11 @@ namespace CosmicShore.Gameplay
             _playerCamera?.SetFollowTarget(_playerFollowTarget);
             _deathCamera?.SetFollowTarget(_playerFollowTarget);
 
+            // The follow target IS "the local player's ship" — the far end of the prism
+            // occlusion corridor (Docs/PRISM_ANIMATION.md §5 C1). Setting it here is the
+            // whole CPU-side wiring: one global uniform, no per-prism anything.
+            PrismOcclusionCorridor.SetTarget(_playerFollowTarget);
+
             SetCloseCameraActive();
             // Use the camera we just activated directly - Camera.main can return null in the
             // first frame after a scene transition because the tag-based lookup hasn't
@@ -179,6 +184,8 @@ namespace CosmicShore.Gameplay
             if (!gameObject.activeInHierarchy) gameObject.SetActive(true);
 
             endCamera.SetFollowTarget(followTarget);
+            // Menu freestyle (the lava lamp) runs on the end camera — same corridor.
+            PrismOcclusionCorridor.SetTarget(followTarget);
 
             var customizer = followTarget.GetComponent<VesselCameraCustomizer>();
             customizer.Configure(endCamera);
@@ -203,6 +210,9 @@ namespace CosmicShore.Gameplay
             if (!gameObject.activeInHierarchy) gameObject.SetActive(true);
 
             endCamera.SetFollowTarget(null);
+            // A manually-posed replay camera is not watching the local ship, so there is no
+            // corridor to open.
+            PrismOcclusionCorridor.ClearTarget();
             SetEndCameraActive();
             ApplyCameraGraphicsSettings();
             return endCamera.transform;
@@ -219,6 +229,7 @@ namespace CosmicShore.Gameplay
         public void RestoreGameplayCamera()
         {
             if (_playerFollowTarget == null) return;
+            PrismOcclusionCorridor.SetTarget(_playerFollowTarget);
             SetCloseCameraActive();
             SnapPlayerCameraToTarget();
         }
@@ -243,6 +254,8 @@ namespace CosmicShore.Gameplay
                 endCamera.Deactivate();
 
             _activeController = null;
+            // The menu camera watches the crystal, not a vessel — no corridor.
+            PrismOcclusionCorridor.ClearTarget();
             Invoke("LookAtCrystal", 1f);
         }
 
@@ -282,6 +295,7 @@ namespace CosmicShore.Gameplay
             if (_deathCamera != null) _deathCamera.Deactivate();
             if (endCamera != null) endCamera.Deactivate();
             _activeController = null;
+            PrismOcclusionCorridor.ClearTarget();
         }
 
         /// <summary>

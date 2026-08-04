@@ -158,7 +158,7 @@ per-tick `smoothstep` color lerp → `PrismRenderService.SetColors` or MPB write
 | Steal / ChangeTeam repaint | `PrismTeamManager.Steal/ChangeTeam` → `HandleTeamChange` | ❌ (lerp) |
 | Danger state | `PrismStateManager.MakeDangerous` | ❌ (lerp) |
 | Shield engage/disengage repaint | `PrismStateManager.ApplyShieldState/ApplyNormalState/ActivateSuperShield` | ❌ (lerp) |
-| Transparency toggle | `MaterialPropertyAnimator.SetTransparency` | ✅ one-shot `sharedMaterial` swap |
+| Transparency toggle | `MaterialPropertyAnimator.SetTransparency` | ✅ one-shot `sharedMaterial` swap. NOTE (2026-08-04, C1): the camera-occlusion corridor no longer routes through this — it is a shader-side fade off globals (§4.6), and never sets `IsTransparent`. The remaining producers are the Serpent's `CloakSeedWall` (cloak/uncloak) and `FullAutoBlockShoot`. |
 | Timed shield drop | `ActivateShield(duration)` → `PrismTimerManager.ScheduleShieldDeactivation` | ✅ scheduler (the deactivation itself then runs the ❌ lerp) |
 
 ### 3.3 Destruction / restoration
@@ -235,7 +235,7 @@ conveyor recycle — all inventoried in §3.7 lenses A, F, G, J, K.)*
 | ActivateSuperShield repaint + stellated engage (self-Update violation) | per-frame CPU | ❌ | `Controller/Managers/PrismStateManager.cs:94-121` | Same as path 5: one-shot opaque end material + GPU color clock; stellation morph as GPU vertex morph off _EngageStartTime; scheduled single callback swaps to StellatedOctahedronMeshGenerator.GetSharedShieldMesh. |
 | DeactivateShields / ApplyNormalState repaint (+ PrismTimerManager scheduled path) | scheduled | ❌ | `Controller/Managers/PrismStateManager.cs:123-143` | Keep PrismTimerManager as the generic end-frame scheduler (rename/generalize: it is exactly the 'at the right frame, swap for the end-state prism' mechanism). |
 | SetTransparency — one-shot material swap (CONFORMING) | one-shot | ✅ | `Controller/Environment/Prisms/MaterialPropertyAnimator.cs:225-233` | None required. (If a fade-in/out is ever wanted for continuity-of-existence polish, do it as a GPU clock via the same _TransitionStartTime inputs — not by reintroducing a lerp manager.) |
-| ClearPrisms per-physics-tick _Alpha MPB fade (rogue, and blind on the instanced path) | per-frame CPU | ❌ | `Controller/Vessel/ClearPrisms.cs:117-127` | Pure shader solution, zero per-prism writes: publish the camera→vessel line (two float4 globals) once per frame via Shader.SetGlobalVector; the prism shader computes distance-from-line per vertex/pixel and derives _Alpha itself. |
+| ClearPrisms per-physics-tick _Alpha MPB fade (rogue, and blind on the instanced path) | per-frame CPU | ✅ FIXED 2026-08-04 (C1) | `Controller/Vessel/ClearPrisms.cs` (DELETED — component excised from Rhino/Dolphin/Serpent, prefab deleted) | Shipped exactly as prescribed: two globals published once per frame by `Utility/PrismOcclusionCorridor.cs`, the fade computed per fragment in `PrismOcclusionCorridor.hlsl`. Zero per-prism writes. See §4.6. |
 | MaterialBlendUtility.BeginBlend — rogue per-object coroutine blend (overheat danger trail + skim overcharge ma… | per-frame CPU | ❌ | `Controller/ImpactEffects/EffectsSO/Skimmer Prism Effects/MaterialBlendUtility.cs:31-128` | Delete MaterialBlendUtility. Overheat: VesselPrismController._dangerMode already sets IsDangerous — route the visual through prism.MakeDangerous()/PrismStateManager so it inherits the migrated GPU transition (and spawn-time danger needs no transition at all — the prism grows from zero). |
 | Initial domain paint via Prism.Domain setter (SetInitialTeam) | per-frame CPU | ❌ | `Controller/Vessel/Prism.cs:129-136` | Fold into the pool-pull contract: Initialize/factory pull writes the final domain material one-shot (refreshColors:true) before the prism becomes visible — no transition, since the grow-in from scale zero already satisfies continuity. |
 | ThemeManager domain material set generation (end-state material pool source) — CONFORMING | one-shot | ✅ | `Controller/Managers/ThemeManager.cs:14-110` | Extend, don't change: the BaseMaterialSet block shaders gain the transition inputs (_FromBright/_FromDark/_FromSpread/_TransitionStartTime/_TransitionDuration, defaulting to no-op), making every generated end-state material also a transition-accepting material — no new material count, batching prese… |
@@ -376,7 +376,7 @@ conveyor recycle — all inventoried in §3.7 lenses A, F, G, J, K.)*
 
 | Path | Cadence | Verdict | Where | Migration |
 |---|---|---|---|---|
-| ClearPrisms camera-occlusion transparency | per-frame CPU | ❌ | `Controller/Vessel/ClearPrisms.cs:84-105` | This is view-dependent (live camera+vessel line) so it can never be stamp-once per prism — but it needs ZERO per-prism CPU: write the camera→vessel segment + capsule radius as 2-3 GLOBAL shader uniforms once per frame and compute the occlusion alpha in the prism shader from world position vs the lin… |
+| ClearPrisms camera-occlusion transparency | per-frame CPU | ✅ FIXED 2026-08-04 (C1) | `Controller/Vessel/ClearPrisms.cs` (DELETED) → `Utility/PrismOcclusionCorridor.cs` + `_Graphics/Materials/Graphs/PrismOcclusionCorridor.hlsl` | Shipped as prescribed: the vessel position + corridor params are 2 GLOBAL uniforms written once per frame; the camera end is read on the GPU from `_WorldSpaceCameraPos`; the fade is computed per fragment from world position vs the segment. The old trigger capsule + per-prism material swaps + MPB writes are gone. See §4.6. |
 | MaterialBlendUtility per-renderer coroutine blends | per-frame CPU | ❌ | `Controller/ImpactEffects/EffectsSO/Skimmer Prism Effects/MaterialBlendUtility.cs:31-70` | Delete the utility. Overcharge mark: stamp per-instance blend params through the existing PrismRenderService color sinks (_BrightColor/_DarkColor/_Spread) — {_BlendStartTime, from/to colors} — and let the shader lerp off the clock; at blend end the prism is already in the end-state colors (no swap n… |
 | VesselPrismController danger-material stamp on spawn | one-shot | ❌ | `Controller/Vessel/VesselPrismController.cs:272-285` | One-shot in shape but wrong in mechanism: a bare sharedMaterial swap without Prism.SyncRenderMaterial() is invisible under the companion-entity path (the documented renders-nothing anti-pattern), and it bypasses PrismStateManager.MakeDangerous (which owns danger state + shield mutual-exclusion). |
 | CloakSeedWall cloak/uncloak (Serpent) | one-shot | ❌ | `Controller/Vessel/R_VesselActions/Executors/CloakSeedWallActionExecutor.cs:360-398` | The triggers are one-shot but they feed the multi-frame CPU color-lerp manager. Migrate the blend itself to the clock-material: stamp {_CloakStartTime, _CloakDirection, from/to color pairs} per instance via PrismRenderService sinks, GPU runs the dissolve; at the scheduled end swap the prism to the t… |
@@ -430,8 +430,9 @@ Fix these DURING the migration (most disappear by construction under stamp+clock
    The per-prism suction stamp fixes this by construction. (`Microscene.AnimateScaleAsync`
    shows the expensive-but-correct per-frame notify alternative — both extremes collapse
    into the stamp.)
-2. **Rogue color writers are blind on the instanced path**: `ClearPrisms`' per-physics-tick
-   `_Alpha` MPB fade, `MaterialBlendUtility`'s `_Color`/`_EmissionColor` coroutine blends
+2. **Rogue color writers are blind on the instanced path**: ~~`ClearPrisms`' per-physics-tick
+   `_Alpha` MPB fade~~ (deleted 2026-08-04, C1 — §4.6),
+   `MaterialBlendUtility`'s `_Color`/`_EmissionColor` coroutine blends
    (also the wrong property names for the prism shader), and bare `sharedMaterial` swaps
    without `SyncRenderMaterial` in `VesselPrismController`/`TrailViewer` — all write the
    disabled MeshRenderer.
@@ -825,6 +826,77 @@ its faces exactly as before. `SegmentSpawner.SuperShieldSpawnedPrisms`, which po
 shield component directly rather than going through `PrismStateManager`, honours the
 same rule explicitly.
 
+### 4.6 The global-uniform shape — camera↔vessel occlusion corridor (shipped 2026-08-04, C1)
+
+§1 draws a line between **animation** (a pure function of the clock and stamped initial
+conditions) and **live gameplay data** (a value that depends on the running simulation).
+Camera-relative occlusion is squarely the second kind: whether a given prism sits between
+the camera and the ship changes every frame, for every prism, as both ends move. It can
+never be a per-prism stamp — and that is not a licence for a per-frame per-prism write.
+
+**The sanctioned shape is a GLOBAL uniform: ONE O(1) publish per frame that every prism
+reads, with zero per-prism CPU.** §1 already lists it as conforming ("a single O(1) global
+uniform write per frame (a clock publisher) — it is not per-prism"). The corridor is the
+reference implementation, and the same shape is the prescribed migration for every other
+view-dependent prism effect in §3.7 (`SkimFxRunner`'s live ship end, the retired
+`TrailViewer` window).
+
+| Piece | Where |
+|---|---|
+| Publisher (2 `Shader.SetGlobalVector` per frame, `LateUpdate`, self-installing like `PrismClock`) | `Utility/PrismOcclusionCorridor.cs` |
+| Tuning (radius / feather / core alpha) | `ScriptableObjects/PrismOcclusionConfigSO.cs` → `Resources/PrismOcclusionConfig.asset` |
+| GPU test + dither | `_Graphics/Materials/Graphs/PrismOcclusionCorridor.hlsl` |
+| Graph wiring (idempotent, validate-before-write) | `Tools/Shaders/wire_prism_occlusion_corridor.py` |
+| Material alpha-test opt-in (idempotent) | `Tools/Shaders/enable_prism_alpha_clip.py` |
+| Gate | FrogletTools > Ecology > Prism Animation > **Validate Occlusion Corridor** |
+
+The two globals are `_PrismOcclusionTarget` (the vessel's world position) and
+`_PrismOcclusionParams` (`outerRadius, innerRadius, coreAlpha`). The **near** end of the
+corridor is never published: the shader reads `_WorldSpaceCameraPos`, so it is always
+exactly the camera that is rendering. `outerRadius <= 0` is the off sentinel and is the
+shader's very first branch, so a disabled corridor costs a compare.
+
+Four properties of the design worth preserving if it is ever touched:
+
+- **Nothing is per-prism.** No trigger volume, no tracked set, no material swap, no
+  per-instance override. Widening the corridor costs nothing.
+- **Prisms stay in the opaque queue.** The fade is screen-door (ordered 4×4 Bayer fed into
+  `SurfaceDescription.AlphaClipThreshold`), not blending. Moving corridor prisms into the
+  transparent queue would need a per-prism material swap AND would pay sorting + blend
+  overdraw for a set that changes every frame — precisely the cost this feature exists to
+  avoid. The trade is that the opaque prism materials are now **alpha-tested**
+  (`_AlphaClip: 1` + `_ALPHATEST_ON`), which is the change's one real cost (§4.6 note below).
+- **The corridor test is per-fragment**, from the Position(World) node — the same
+  post-vertex-animation position the rasterizer used. A per-object test would make a large
+  environment plate flip wholesale between solid and dissolved.
+- **`_Alpha` is multiplied, not replaced.** BlockGraph hosts transparent materials too
+  (cloak, transparent shielded/danger/super-shielded); their authored alpha still applies
+  and they need no clip, so the alpha-test opt-in is opaque-materials-only.
+
+**Cost, stated:** per fragment, outside the corridor — one compare against the off
+sentinel, ~10 ALU of segment-distance, one compare, done (no dither, no texture). Draw
+calls, batches, render queue and collider count are unchanged; corridor prisms stay in the
+same instanced batch as everything else. The one non-zero cost is structural: enabling
+`_ALPHATEST_ON` on the seven opaque BlockGraph materials makes prism fragments
+alpha-tested, which forfeits early-Z rejection for those draws on tile-based GPUs. Prisms
+are unlit boxes with a trivial fragment shader, and the alternative (per-prism transparent
+material swaps) is strictly worse, but it is a real trade and it is the thing to measure if
+prism fill cost regresses. Reverting it is one command
+(`Tools/Shaders/enable_prism_alpha_clip.py` inverted, or clear `_AlphaClip`/`_ALPHATEST_ON`),
+after which prisms render exactly as they did before and the corridor silently does nothing
+to them.
+
+**What it replaced.** `ClearPrisms` (deleted, with its prefab): a per-vessel kinematic
+Rigidbody + `CapsuleCollider` trigger that swapped each entered prism's `sharedMaterial` to
+the team transparent material and wrote a `MaterialPropertyBlock` per tracked prism per
+physics tick. It had been dead for a long time in three independent ways — the MPB never
+reaches the instanced batch (§3.8 #2), its capsule sat on layer `TrailBlockOcclusion` while
+prisms sit on `Default` so the collision matrix never paired them, and the Rhino prefab
+still carried an override for a `prismLayer` field the script no longer had. Removing it
+also removes 3 trigger colliders + 3 kinematic Rigidbodies from the vessel fleet
+(Rhino/Dolphin/Serpent) and the `OnTriggerStay` traffic they generated against every prism
+they overlapped.
+
 ## 5. Migration tracker (the deduplicated work list)
 
 Phase A — infrastructure (everything else rides on it):
@@ -848,7 +920,7 @@ Phase C — rogue paths & ecosystem visuals (each is standalone):
 
 | # | Item | Status |
 |---|---|---|
-| C1 | `ClearPrisms` `_Alpha` fade → clock (also fix instanced-path blindness) | ☐ not started |
+| C1 | `ClearPrisms` `_Alpha` fade → GLOBAL-uniform shader corridor (also fixed instanced-path blindness) | ✅ SHIPPED 2026-08-04 — `ClearPrisms.cs` + its prefab DELETED and excised from Rhino/Dolphin/Serpent (−3 trigger colliders, −3 kinematic Rigidbodies); replaced by `PrismOcclusionCorridor` (2 globals/frame) + `PrismOcclusionCorridor.hlsl` wired into BlockGraph, with the opaque prism materials opted into alpha test so the screen-door fade reaches the screen. Full design + stated cost: §4.6. Gate: FrogletTools > Ecology > Prism Animation > Validate Occlusion Corridor |
 | C2 | `MaterialBlendUtility` (overheat danger trail + skim overcharge) → the one color pipeline | ✅ shipped 2026-08-01: utility DELETED. Overheat danger trail: the redundant direct blend removed — `IsDangerous` pre-`Initialize` already runs `MakeDangerous()` through the pipeline (per-domain danger material, clock or legacy transition); `EnableDangerMode`'s material param is legacy-ignored. Skim overcharge: rides `MaterialPropertyAnimator.UpdateMaterial(overchargedMaterial, …)` — visible on both render paths; the multi-material append semantic retired |
 | C3 | AOE double-growers (`AOERadialBlocks`, `AOEDangerHemisphereBlocks`) → single engine stamp; fix dead `growthRate` field writes + `renderer.material` clone | ✅ shipped 2026-08-01: both bespoke `GrowToScale` loops deleted (growth = the one engine via `TargetScale` + `SetGrowthRate`); `MakeDangerousAsync` deleted — danger/shield now ride the pre-`Initialize` flag contract so `PrismStateManager` applies the proper per-domain theme materials (the `renderer.material` clone and the instanced-path-blind restyle are gone); hemisphere prisms now get the firing vessel's Domain like the radial sibling |
 | C4 | `FireTrailBlockActionExecutor` → pooled + mover-contract or stamped ballistic clock; remove `Destroy()` timer (ecosystem law) | ☐ not started |

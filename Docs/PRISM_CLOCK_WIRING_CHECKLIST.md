@@ -119,10 +119,36 @@ steal/repaint instead of snapping, and the last expected one-time
 
 **Test: steal a TRANSPARENT prism with your skimmer** (or watch a danger/shield
 repaint on one) — the recolor fades over ~0.8s like the opaque prisms do, with
-zero `[PrismClock]` errors. **DEFERRED**: the transparent-prism occlusion system
-(camera↔vessel corridor transparency) is currently down, so this test waits for
-its restoration branch — `Docs/PRISM_CLOCK_FOLLOWUP_PROMPTS.md` Prompt 1, which
-carries this test as its closing verification.
+zero `[PrismClock]` errors.
+
+**UN-DEFERRED 2026-08-04, and re-pointed.** This test used to wait on the
+camera↔vessel occlusion system. That system is restored (C1, `Docs/PRISM_ANIMATION.md`
+§4.6) — but it is now a **shader-side fade off global uniforms** and deliberately
+never sets `prismProperties.IsTransparent`, so it is no longer a source of transparent
+prisms to steal. The surviving producer is the **Serpent's cloak**:
+
+1. Fly the **Serpent** (its `CloakSeedWallAction` is bound to
+   `InputEvents.RightStickAction` — the right trigger; 15s cooldown).
+2. Trigger it to lay a cloaked seed wall. Those prisms take
+   `GetTeamTransparentBlockMaterial` (the domain clone of `TransparentPrismMaterial`,
+   which rests on ExplodingBlockGraph) and carry `IsTransparent = true`.
+3. **Skim one to steal it** (or let a danger/shield repaint land on one).
+4. Expect: the recolor **fades over ~0.8s** exactly like an opaque prism, and **zero
+   `[PrismClock]` errors** in the console.
+
+Machine-verified already (so a failure here means the graph reverted, not that the
+plumbing is wrong): ExplodingBlockGraph declares all five color properties
+(`_ColorStartTime`, `_ColorDuration`, `_StartBrightColor`, `_StartDarkColor`,
+`_StartSpread`) as Hybrid Per Instance, `TransparentPrismMaterial` compiles against that
+graph, and `MaterialPropertyAnimator.ClockColorTransition` binds the transparent material
+whenever `IsTransparent` is set — so `bindMaterial.HasProperty("_ColorStartTime")` is true
+and `WarnUnwiredMaterial` cannot fire. Re-confirm any time with
+**FrogletTools > Ecology > Prism Animation > Validate Clock Wiring**.
+
+If it SNAPS instead of fading, the one live variable is the entity sink:
+`Prism.UsesEntityColorSink` is false while an exotic visual (a shield morph) owns the
+renderer, and a bind-only transition is the documented behaviour there — steal a plain
+cloaked prism, not a cloaked-and-shielded one.
 
 <details><summary>Manual steps (reference only — already done)</summary>
 
@@ -240,8 +266,10 @@ must show no compile errors and no `[PrismClock]` errors.
 ## Phase 7 — Follow-up branches (post-wiring, own PRs)
 
 Tracker items (`Docs/PRISM_ANIMATION.md` §5 C-phase) landing per-path on the wired
-graphs, each following the shipped B1/B3 templates: C1 `ClearPrisms` shader-side
-occlusion fade · C4 `FireTrailBlock` pool/Destroy fix · C5 turret anchor flight ·
+graphs, each following the shipped B1/B3 templates: ~~C1 `ClearPrisms` shader-side
+occlusion fade~~ (✅ shipped 2026-08-04 — `PrismOcclusionCorridor`, §4.6; validate with
+FrogletTools > Ecology > Prism Animation > **Validate Occlusion Corridor**) ·
+C4 `FireTrailBlock` pool/Destroy fix · C5 turret anchor flight ·
 C6 fauna wither/devour/level-up · C7 flora growth · C8 microscene conveyor ·
 C9 cell-swap suction · C10 worm shift · C11 spindle fade · C13 environment-lay
 pooling · B4 GPU shield morphs.
