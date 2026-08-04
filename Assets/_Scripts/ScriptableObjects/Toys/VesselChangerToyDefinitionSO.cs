@@ -28,8 +28,10 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Min(0.5f), Tooltip("How far out the matrix blooms, in multiples of Station Spacing, " +
                                             "measured from the toy along the outward radial (away from the cell " +
                                             "centre). You fly AT the toy and keep going, so this is the gap you " +
-                                            "cross before the choices.")]
-        float matrixDistanceFactor = 3f;
+                                            "cross before the choices. Twice the other toys' factor because the " +
+                                            "ships are deliberately NOT scaled up - the spacing stays, so the " +
+                                            "distance has to carry the approach on its own.")]
+        float matrixDistanceFactor = 6f;
 
         public VesselClassType[] VesselCollection => vesselCollection;
         public float StationSpacing => stationSpacing;

@@ -49,8 +49,9 @@ namespace CosmicShore.Core
         [SerializeField, Tooltip("Vessel class displayed as the autopilot in the menu background.")]
         VesselClassType menuVesselClass = VesselClassType.Squirrel;
 
-        [SerializeField, Tooltip("Number of AI players for the menu background scene.")]
-        int menuPlayerCount = 3;
+        // No menuPlayerCount knob: the menu autopilot spawns exactly one Player via the Netcode
+        // pipeline, so GameDataSO.SelectedPlayerCount is deliberately left alone here (see
+        // ConfigureMenuGameData). A serialized player-count field would only misrepresent that.
 
         [SerializeField, Tooltip("Game intensity for the menu background scene.")]
         int menuIntensity = 1;

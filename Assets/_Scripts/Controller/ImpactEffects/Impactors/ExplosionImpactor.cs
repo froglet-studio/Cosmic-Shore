@@ -101,7 +101,7 @@ namespace CosmicShore.Gameplay
         /// Returns true if the explosion should continue, false if it should be destroyed
         /// (e.g. hit a super-shielded enemy prism).
         /// </summary>
-        public bool ProcessBatchFrame(Vector3 center, float radius, Vector3 blastOrigin, float speed, float inertia)
+        public bool ProcessBatchFrame(Vector3 center, float radius, Vector3 blastOrigin, in ExplosionImpulse impulse)
         {
             using (s_processBatch.Auto())
             {
@@ -110,7 +110,7 @@ namespace CosmicShore.Gameplay
                 if (registry == null) return true;
 
                 return registry.ProcessExplosionFrame(
-                    center, radius, blastOrigin, speed, inertia,
+                    center, radius, blastOrigin, impulse,
                     explosion.Domain,
                     affectSelf, destructive, devastating, shielding,
                     explosion.AnonymousExplosion,
@@ -132,7 +132,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public bool ProcessBatchConeFrame(
             Vector3 apex, Vector3 axis, float sliceMin, float sliceMax,
-            float tanHalfAngle, float speed, float inertia)
+            float tanHalfAngle, in ExplosionImpulse impulse)
         {
             using (s_processBatch.Auto())
             {
@@ -141,7 +141,7 @@ namespace CosmicShore.Gameplay
                 if (registry == null) return true;
 
                 return registry.ProcessExplosionConeFrame(
-                    apex, axis, sliceMin, sliceMax, tanHalfAngle, speed, inertia,
+                    apex, axis, sliceMin, sliceMax, tanHalfAngle, impulse,
                     explosion.Domain,
                     affectSelf, destructive, devastating, shielding,
                     explosion.AnonymousExplosion,
@@ -157,7 +157,7 @@ namespace CosmicShore.Gameplay
         /// dense enough to exceed the per-frame budget still damages everything it
         /// enclosed. Returns true while work remains.
         /// </summary>
-        public bool DrainPendingBatchFrame(float speed, float inertia)
+        public bool DrainPendingBatchFrame(in ExplosionImpulse impulse)
         {
             using (s_processBatch.Auto())
             {
@@ -166,7 +166,7 @@ namespace CosmicShore.Gameplay
                 if (registry == null) { _batchPending.Clear(); return false; }
 
                 return registry.DrainPendingExplosionDamage(
-                    _batchPending, speed, inertia,
+                    _batchPending, impulse,
                     explosion.Domain,
                     affectSelf, destructive, devastating, shielding,
                     explosion.AnonymousExplosion, explosion.Vessel);
@@ -252,6 +252,12 @@ namespace CosmicShore.Gameplay
             }
         }
         
+        /// <summary>
+        /// The Physics-trigger fallback's per-prism resolution. Mirrors
+        /// <c>PrismSpatialIndex.ResolveExplosionHit</c>, INCLUDING the debris ceiling:
+        /// the batch path and this path must hand a prism the same impulse, or a blast
+        /// throws mass at one speed with the spatial index up and another without it.
+        /// </summary>
         void ExecuteCommonPrismCommands(Prism prism, Vector3 impactVector)
         {
             // Super-shielded prisms are fully invulnerable. The explosion is
@@ -275,12 +281,16 @@ namespace CosmicShore.Gameplay
                 return;
             }
             
+            float debrisSpeedLimit = explosion.Impulse.DebrisSpeedLimit;
+
             if (explosion.AnonymousExplosion) // Vessel Status will be null here
-                prism.Damage(impactVector, Domains.Blue, "🔥GuyFawkes🔥", devastating);
+                prism.Damage(impactVector, Domains.Blue, "🔥GuyFawkes🔥", devastating,
+                             debrisSpeedLimit: debrisSpeedLimit);
             else
             {
                 var shipStatus = explosion.Vessel.VesselStatus;
-                prism.Damage(impactVector, shipStatus.Domain, shipStatus.Player.Name, devastating);
+                prism.Damage(impactVector, shipStatus.Domain, shipStatus.Player.Name, devastating,
+                             debrisSpeedLimit: debrisSpeedLimit);
             }
         }
     }

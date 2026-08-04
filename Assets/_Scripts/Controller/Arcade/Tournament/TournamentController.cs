@@ -232,7 +232,7 @@ namespace CosmicShore.Gameplay
             _tournament.IsActive = true;
 
             // Resolve the race-to-N win target from the End Game Conditions tool (Resources/EndConditionOverrides,
-            // edited via Tools > Cosmic Shore > End Game Conditions) once per shuffle start. Runs on every peer
+            // edited via FrogletTools > Game Modes > End Game Conditions) once per shuffle start. Runs on every peer
             // from the same committed asset, so IsShuffleComplete stays deterministic across the party; falls
             // back to the asset's serialized WinTarget if the tool asset is missing.
             var endConditions = EndConditionOverridesSO.Instance;

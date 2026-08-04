@@ -231,7 +231,12 @@ namespace CosmicShore.Gameplay
 
                 var shield = prism.gameObject.GetComponent<PrismStellatedOctahedronShield>()
                              ?? prism.gameObject.AddComponent<PrismStellatedOctahedronShield>();
-                shield.Engage(instant: superShieldEngageInstant);
+                // This runs during the track's spawn window, so honour the same birth rule
+                // PrismStateManager applies: a shield engaged before the prism has ever been
+                // on screen must snap, or its morph holds the exotic-visual window across the
+                // creation reveal and the one-shot grow-clock stamp is lost
+                // (Docs/PRISM_ANIMATION.md §4 — the prism would snap instead of blooming).
+                shield.Engage(instant: superShieldEngageInstant || !prism.IsCreationComplete);
 
                 // Mark the prism super-shielded AFTER DeactivateShields so the
                 // legacy state machine sees Normal first, then we set the

@@ -9,7 +9,7 @@ in-editor test that closes it. Run them as separate branches.
 
 | # | Prompt | Why this rank |
 |---|---|---|
-| 1 | **Prompt 2** — C13 environment-lay prisms miss the clock path | The one VISIBLE defect the migration branch ships with: SegmentSpawner/conveyor prisms snap + log `[PrismClock]` errors in real modes (HexRace, Wanderway). Strict mode's forcing function worked — now answer it. |
+| ~~1~~ | ~~**Prompt 2** — C13 environment-lay prisms miss the clock path~~ | ✅ **DONE 2026-08-02** — the cause was the shield engage-morph straddling the creation reveal (not the raw-`Instantiate` lay). Residual **C13b** (pooled lay / spawn repaint) is not a clock fix — re-rank it with the rest. |
 | 2 | **Prompt 9** — batched entity debris remainder | Completes the proven, playtest-loved carrier: implosions on the batch path + the measured next bottleneck (`AOE.ResolveDamage` 0.43 ms/kill self, per-kill `PrismEventData` alloc). The benchmark rig is already built to measure it. |
 | 3 | **Prompt 1** — transparent-prism occlusion restore | Pre-existing broken system (predates this branch) + it gates the one deferred wiring verification (transparent color fades). |
 | 4 | **Prompt 3** — fauna/flora on the clock (ecology) | Per-frame CPU prism writes in every cell scene; wither/devour are ecology-locked visuals that must ride the law. |
@@ -58,6 +58,27 @@ surgery, machine validation) are captured in the `/asset-surgery` skill — use 
 > system being down).
 
 ## Prompt 2 — C13: environment-lay / SegmentSpawner prisms miss the clock path (live repro)
+
+> **✅ DONE 2026-08-02** (branch `claude/prismclock-render-entity-bug-fe3z2d`). The
+> prompt's three suspects were all wrong, and so was its preferred fix: the raw
+> `Instantiate` lay is innocent (a *pooled* prism with a `Shielded` kind failed
+> identically — `BoostRingBuilder` only escaped by deferring shield kinds to
+> `onGrown`). The real cause: a shield **engage-morph** holds `_exoticVisualActive`
+> for 0.35 s, `Prism.ApplyRenderPath` refused to create the companion entity while
+> that flag was set, and `CreateBlockCoroutine` reveals the prism after 0.1 s — one
+> frame under the load gate — so the reveal landed inside the morph and the ONE-SHOT
+> grow stamp had nothing to stamp. It hit every `ShieldedSpawnablePrism` (the HexRace
+> track block) and every `PrismKind.Shielded`/`SuperShielded` environment prism (the
+> freestyle six + the Wanderway palette). Fixed by separating entity existence from
+> entity visibility, adding a stamp-site self-heal + fact-based diagnosis, and the
+> "birth rule" (a shield engaged during creation snaps — the grow-in bloom is the
+> continuity). See `Docs/PRISM_ANIMATION.md` §3.8 #10 + §4.5.
+>
+> **Residual, still open:** C13b — the *pooling* half (`PrismTrailBuilder.LayOne` →
+> pooled pull with the final domain material, killing the `Domains.Blue` → domain
+> spawn repaint). Worth doing, but it is not a clock fix and it needs its own
+> environment-prefab pool design (the existing pools are `maxSize`-bounded and
+> environment mass is never released).
 
 > Live repro from the editor: `[PrismClock] STRICT MODE: no companion render
 > entity to stamp (grow:SpawnablePrism (Clone))` raised from

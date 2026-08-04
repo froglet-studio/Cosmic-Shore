@@ -127,7 +127,7 @@ namespace CosmicShore.Gameplay
         }
 
         public static Flora SpawnFlora(Cell host, Flora floraPrefab, Domains? excludedDomain,
-            FloraConfigurationSO config = null, Vector3? spawnPosition = null)
+            FloraConfigurationSO config = null, Vector3? spawnPosition = null, Vector3? spawnUp = null)
         {
             if (!host || !floraPrefab) return null;
 
@@ -145,7 +145,11 @@ namespace CosmicShore.Gameplay
             // A caller-specified position PINS the planting spot - Plant() implementations
             // honor it instead of dispersing the flora across the cell (the Lifeform Matrix
             // toy roots the spawn where the player triggered it).
-            if (spawnPosition.HasValue)
+            // An authored planting site also carries the ground's normal, so a plant rooted in a
+            // garden bed grows away from the bed instead of toward the cell crystal.
+            if (spawnPosition.HasValue && spawnUp.HasValue)
+                flora.SetPlantPositionOverride(spawnPosition.Value, spawnUp.Value);
+            else if (spawnPosition.HasValue)
                 flora.SetPlantPositionOverride(spawnPosition.Value);
 
             // Elemental contract: the config may define the ELEMENT and the variant expression

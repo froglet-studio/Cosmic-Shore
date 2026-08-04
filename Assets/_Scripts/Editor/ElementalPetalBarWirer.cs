@@ -3,6 +3,7 @@ using UnityEngine;
 using CosmicShore.Data;
 using CosmicShore.UI;
 using CosmicShore.ScriptableObjects;
+using CosmicShore.Editor.Froglet;
 
 namespace CosmicShore.Editor
 {
@@ -30,7 +31,9 @@ namespace CosmicShore.Editor
         // Standard element bars created when the view has none yet.
         static readonly string[] DefaultElements = { "Charge", "Mass", "Space", "Time" };
 
-        [MenuItem("Tools/Cosmic Shore/Wire Elemental Petal Bars")]
+        [MenuItem("FrogletTools/Vessels/Wire Elemental Petal Bars")]
+        [FrogletTool(FrogletToolCategory.Vessels, Importance = 3,
+            Description = "Author the 5-petal element flowers onto a vessel HUD.")]
         static void WireSelected()
         {
             var go = Selection.activeGameObject;
@@ -54,7 +57,9 @@ namespace CosmicShore.Editor
                 "OK");
         }
 
-        [MenuItem("Tools/Cosmic Shore/Bake Elemental Petal Bars Into All Vessel HUDs")]
+        [MenuItem("FrogletTools/Vessels/Bake Elemental Petal Bars Into All Vessel HUDs")]
+        [FrogletTool(FrogletToolCategory.Vessels, Importance = 3,
+            Description = "Bulk-apply the petal flower wiring across the fleet.")]
         static void BakeAllPrefabs()
         {
             int prefabsBaked = 0, petalsBaked = 0;

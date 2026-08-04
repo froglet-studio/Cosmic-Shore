@@ -18,13 +18,13 @@ one `[PrismClock]` error per unwired material.
 
 **Your tools:**
 
-- `Tools > Cosmic Shore > Prism Animation > Validate Clock Wiring` — run after every
+- `FrogletTools > Ecology > Prism Animation> Validate Clock Wiring` — run after every
   phase. Out of the box it should show every property row ✅ and the Custom Function
   node rows ❌ — the node wiring is exactly what's left.
-- `Tools > Cosmic Shore > Prism Animation > Auto-Wire Clock Properties` — idempotent
+- `FrogletTools > Ecology > Prism Animation> Auto-Wire Clock Properties` — idempotent
   repair tool: re-adds any clock property that's missing (e.g. after a graph revert).
   Normally reports "already present".
-- `Tools > Cosmic Shore > Prism Animation > Smoke Test - Re-Bloom Nearby Prisms`
+- `FrogletTools > Ecology > Prism Animation> Smoke Test - Re-Bloom Nearby Prisms`
   (play mode) — stamps a from-zero regrow on nearby prisms: wired = smooth GPU
   bloom with 0 active CPU animators; unwired = snap + errors.
 
@@ -188,11 +188,14 @@ suction), staying visible across the whole collapse.
 
 ## Phase 5 — Full verification (§4.4 protocol)
 
-**Known open issue (expected during verification):** `[PrismClock] STRICT MODE:
-no companion render entity to stamp (grow:SpawnablePrism (Clone))` — the
-SegmentSpawner/environment raw-Instantiate path declines entity creation before
-the grow stamp. Tracked with a live repro + branch prompt:
-`Docs/PRISM_CLOCK_FOLLOWUP_PROMPTS.md` Prompt 2 (C13). Not a wiring regression.
+**~~Known open issue~~ — ✅ FIXED 2026-08-02 (C13a).** `[PrismClock] STRICT MODE:
+no companion render entity to stamp (grow:SpawnablePrism (Clone))` was never a
+wiring regression, and it was not the raw-`Instantiate` lay either: a shield
+engage-morph held the exotic-visual window across the prism's creation reveal, so
+`EnsureRenderEntity` was skipped at the exact instant the one-shot grow stamp
+fired. Anatomy: `Docs/PRISM_ANIMATION.md` §3.8 #10; the two rules that close it:
+§4.5. Expect **zero** such errors now — if one reappears, the message names the
+exact broken gate (`Prism.DescribeRenderEntityState`), so paste it verbatim.
 
 - [ ] **Validate Clock Wiring** → `RESULT: ✅ ALL REQUIRED WIRING PRESENT`
 - [ ] Full play session (menu freestyle + one HexRace) with **zero `[PrismClock]`

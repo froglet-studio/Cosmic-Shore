@@ -328,7 +328,7 @@ deltas on top of the adopted foundation** — not to rebuild anything:
    via `LightFaunaDataSO.witherRingInterval`), `Boid.OnDeath` shrinks out; both then remove the
    spent husk. `LightFauna`/`Boid` provision the crystal in `Initialize` via
    `LifeFormCrystal.EnsureElementalCrystal`.
-   *Follow-up:* author one elemental crystal on each fauna prefab + run **Tools ▸ Cosmic Shore ▸
+   *Follow-up:* author one elemental crystal on each fauna prefab + run **FrogletTools ▸ Validation ▸
    Validate Lifeform Crystals**, so `EnsureElementalCrystal` is a no-op fast path (budget-neutral).
 
 2. **No domain asymmetry in spawning.** ✅ *(done — adopted onto the merge line)*
@@ -393,7 +393,7 @@ code was deliberately **not** adopted.
 1. **Crystal authoring sweep:** one **active** elemental crystal child on every fauna prefab,
    `cellData` wired (`ActivateCrystal` reads `cellData.Cell`; a missing wire is an NRE on first
    death), check the carried crystal's collider/component start state, then
-   **Tools ▸ Cosmic Shore ▸ Validate Lifeform Crystals** until clean — makes
+   **FrogletTools ▸ Validation ▸ Validate Lifeform Crystals** until clean — makes
    `EnsureElementalCrystal` the no-op fast path (budget-neutral).
 2. **Per-biome retune with the probe** (`[ECOSIM] prisms= volume= colliders=near/live fauna=
    phase= fps=`): volume thresholds per CellConfig (author `*Volume` fields to override the ×16

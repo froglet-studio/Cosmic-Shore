@@ -1,0 +1,37 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 01f934d50526431a9392a6ceca1dc33d, type: 3}
+  m_Name: Hesperides Cell Config
+  m_EditorClassIdentifier:
+  CellName: Hesperides
+  Description: The Garden - terraced beds, pergolas and hanging baskets, planted with living flora
+  Icon: {fileID: 0}
+  Difficulty: 1
+  CellEndGameScore: 0
+  MembranePrefab: {fileID: 346633111830028674, guid: 6e330f85972faf843b8a128e7166f7b5, type: 3}
+  NucleusPrefab: {fileID: 7555898194514117247, guid: b9cf1833fa2493d4b8724ccb6740fb3a, type: 3}
+  CytoplasmPrefab: {fileID: 639495419069806261, guid: 9cacd903fcf4643459f5f14ac811bb20, type: 3}
+  CellModifiers:
+  - {fileID: 8058406376250941529, guid: daa37ae0e7af4b04383c1c4e6e76817d, type: 3}
+  SpawnProfile: {fileID: 11400000, guid: 7023ae3aadb6b3c44deb935605dd420a, type: 2}
+  EnvironmentPrefab: {fileID: 5210000000000103, guid: 2a8f659db0cc41a0059347856f5aa6da, type: 3}
+  EnvironmentIntensity: 1
+  SenseRadiusOverride: 0
+  PhaseThresholds:
+    RestlessEnter: 16300
+    RestlessExit: 15900
+    FrenzyEnter: 33000
+    FrenzyExit: 32200
+    RestlessEnterVolume: 602000
+    RestlessExitVolume: 592000
+    FrenzyEnterVolume: 985000
+    FrenzyExitVolume: 960000

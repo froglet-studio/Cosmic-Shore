@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
+using CosmicShore.Editor.Froglet;
 
 namespace CosmicShore.Editor
 {
@@ -13,13 +14,15 @@ namespace CosmicShore.Editor
     /// instead. Run this tool once after pulling this change to clean up the
     /// dead components from all prefabs.
     ///
-    /// Menu: Tools > Cosmic Shore > Strip Crystal AudioSources
+    /// Menu: FrogletTools > Ecology > Strip Crystal AudioSources
     /// </summary>
     public static class StripCrystalAudioSourceTool
     {
         const string PrefabFolder = "Assets/_Prefabs/Environment";
 
-        [MenuItem("Tools/Cosmic Shore/Strip Crystal AudioSources")]
+        [MenuItem("FrogletTools/Ecology/Strip Crystal AudioSources")]
+        [FrogletTool(FrogletToolCategory.Ecology, Importance = 2,
+            Description = "Remove stray AudioSources from crystal prefabs.")]
         public static void StripAudioSources()
         {
             string[] guids = AssetDatabase.FindAssets("t:Prefab", new[] { PrefabFolder });

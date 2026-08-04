@@ -61,9 +61,11 @@ namespace CosmicShore.UI
         [Tooltip("AI profile list used to resolve AI avatars by name.")]
         [SerializeField] protected SO_AIProfileList aiProfileList;
 
-        [Header("Winner Crystal Reward")]
-        [Tooltip("Crystals awarded to the winning player's card (+N indicator). Set 0 to disable.")]
-        [SerializeField] protected int winnerCrystalReward = 5;
+        [Header("Crystal Rewards")]
+        [Tooltip("Crystals by finishing place, best first: index 0 = 1st, index 1 = 2nd, and so on. " +
+                 "Places past the end of the list earn 0, and LAST place always earns 0 regardless " +
+                 "of the list. Applies to every mode, tournament included.")]
+        [SerializeField] protected List<int> placementCrystalRewards = new() { 200, 50, 0 };
 
         [Header("Play Again")]
         [Tooltip("Play Again button - host only in multiplayer. Hidden for non-host clients; the host's Play Again forces everyone to replay.")]
@@ -113,7 +115,33 @@ namespace CosmicShore.UI
             statsProvider = GetComponent<ScoreboardStatsProvider>();
             if (!statsProvider)
                 CSDebug.LogWarning("[Scoreboard] No ScoreboardStatsProvider found.");
+
+            ResolveGameController();
             HideScoreboard();
+        }
+
+        /// <summary>
+        /// Finds the scene's game controller when the inspector reference is empty.
+        ///
+        /// This exists so GameCanvas.prefab can be dropped into a NEW game-mode scene and work
+        /// without hand-wiring: there is exactly one <see cref="MiniGameControllerBase"/> per
+        /// gameplay scene, and it is always the one Play Again must talk to. An explicit inspector
+        /// assignment still wins, so existing scenes are unaffected.
+        ///
+        /// Leaving this to per-scene wiring is what turned a shared prefab into N hand-maintained
+        /// copies - every scene had to carry its own override just to point at its own controller.
+        /// </summary>
+        void ResolveGameController()
+        {
+            if (gameController != null) return;
+
+            gameController = FindAnyObjectByType<MiniGameControllerBase>(FindObjectsInactive.Include);
+
+            if (gameController == null)
+            {
+                // Not an error: menu / tool scenes legitimately host GameCanvas with no controller.
+                CSDebug.Log("[Scoreboard] No MiniGameControllerBase in this scene - Play Again is unavailable.");
+            }
         }
 
         void OnEnable()
@@ -154,7 +182,10 @@ namespace CosmicShore.UI
             // once per show, while RoundStatsList still holds the synced final stats. Without the
             // rule (non-tournament scenes / legacy) CrystalsForDomain falls back to rank-derived
             // placement from Results.
-            _shufflePlacement = gameData.IsTournamentMode && gameData.ScoringRule != null
+            // Crystal payouts are placement-based in EVERY mode now, so resolve the team-total
+            // domain order whenever a rule exists - not only in tournament. Without a rule,
+            // CrystalsForPlacement falls back to the rank order already present in Results.
+            _shufflePlacement = gameData.ScoringRule != null
                 ? gameData.ScoringRule.ResolvePlacementOrder(gameData)
                 : null;
 
@@ -477,10 +508,10 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// The single crystal-award path (the Scoreboard is the only writer of the wallet). In
-        /// shuffle/tournament mode the local player earns their DOMAIN's per-game placement crystals
-        /// ({2,1,0}; 3rd place earns 0) - credited on every peer for its own local human, once per
-        /// game. In every other mode it stays the original winner-only flat <see cref="winnerCrystalReward"/>.
+        /// The single crystal-award path (the Scoreboard is the only writer of the wallet). The
+        /// local player earns their DOMAIN's placement crystals from
+        /// <see cref="placementCrystalRewards"/> - the same table in every mode, tournament
+        /// included - credited on every peer for its own local human, once per game.
         /// </summary>
         void AwardCrystalsToLocalPlayer(string winnerName)
         {
@@ -490,21 +521,9 @@ namespace CosmicShore.UI
             var service = PlayerDataService.Instance;
             if (service == null) return;
 
-            int amount;
-            string source;
-            if (gameData.IsTournamentMode && tournamentData != null)
-            {
-                var localDomain = gameData.LocalRoundStats != null ? gameData.LocalRoundStats.Domain : Domains.Blue;
-                amount = tournamentData.CrystalsForDomain(gameData.Results, localDomain, _shufflePlacement);
-                source = "shuffle_placement";
-            }
-            else
-            {
-                // Original behavior: only the winner earns the flat reward.
-                if (winnerCrystalReward <= 0 || localName != winnerName) return;
-                amount = winnerCrystalReward;
-                source = "game_reward";
-            }
+            var localDomain = gameData.LocalRoundStats != null ? gameData.LocalRoundStats.Domain : Domains.Blue;
+            int amount = CrystalsForPlacement(localDomain);
+            string source = gameData.IsTournamentMode ? "tournament_placement" : "game_placement";
 
             if (amount <= 0) return;   // e.g. a last-place domain earns nothing this game
 
@@ -526,11 +545,41 @@ namespace CosmicShore.UI
         /// The "+N crystals" badge amount for one card. Shuffle/tournament: the card's DOMAIN per-game
         /// placement ({2,1,0}); otherwise the winner-only flat reward (0 for non-winners). 0 = no badge.
         /// </summary>
-        int CardCrystalReward(Domains domain, string name, string winnerName)
+        int CardCrystalReward(Domains domain, string name, string winnerName) =>
+            CrystalsForPlacement(domain);
+
+        /// <summary>
+        /// Crystals earned by a domain, from its finishing place. One table for every mode:
+        /// 1st and 2nd pay out, last place always pays nothing.
+        ///
+        /// Placement comes from the mode rule's team-total order when one exists (the same
+        /// aggregation that decides WinnerDomain), otherwise from the rank order already baked into
+        /// <c>gameData.Results</c>. A domain that never appears earns nothing.
+        /// </summary>
+        int CrystalsForPlacement(Domains domain)
         {
-            if (gameData.IsTournamentMode && tournamentData != null)
-                return tournamentData.CrystalsForDomain(gameData.Results, domain, _shufflePlacement);
-            return (winnerCrystalReward > 0 && name == winnerName) ? winnerCrystalReward : 0;
+            if (placementCrystalRewards == null || placementCrystalRewards.Count == 0) return 0;
+
+            var order = _shufflePlacement;
+            if (order == null || order.Count == 0)
+            {
+                // Rank-derived fallback: Results are already sorted best-first by the mode.
+                if (gameData.Results == null || gameData.Results.Count == 0) return 0;
+                order = new List<Domains>();
+                foreach (var r in gameData.Results)
+                    if (!order.Contains(r.Domain)) order.Add(r.Domain);
+            }
+
+            int index = order.IndexOf(domain);
+            if (index < 0) return 0;
+
+            // Last place earns nothing even if the table would pay it - with two domains that makes
+            // the runner-up a loser, not a silver medallist, which is the intended read.
+            if (order.Count > 1 && index == order.Count - 1) return 0;
+
+            return index < placementCrystalRewards.Count
+                ? Mathf.Max(0, placementCrystalRewards[index])
+                : 0;
         }
 
         // Single source of truth for domain color: the same ColorSet the vessels and

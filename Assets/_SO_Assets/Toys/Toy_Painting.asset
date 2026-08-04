@@ -38,4 +38,5 @@ MonoBehaviour:
   - {fileID: 11400000, guid: a38fa7d176e549be97fa8ac045bdab8a, type: 2}
   paintingClearance: 150
   clusterSpacingBodies: 3.2
-  matrixDistanceFactor: 3
+  matrixDistanceFactor: 4
+  iconScaleBodies: 2

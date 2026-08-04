@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Caldera Cell Config
   m_EditorClassIdentifier: 
   CellName: Caldera
-  Description: Fire and stone - lava runs for the brave
+  Description: Four forges ringing the core - lava runs for the brave
   Icon: {fileID: 21300000, guid: 6aa1c06e11b265744a5f9fa8858ac72a, type: 3}
   Difficulty: 2
   CellEndGameScore: 0
@@ -30,11 +30,11 @@ MonoBehaviour:
   EnvironmentIntensity: 1
   SenseRadiusOverride: 0
   PhaseThresholds:
-    RestlessEnter: 31894
-    RestlessExit: 31694
-    FrenzyEnter: 34794
-    FrenzyExit: 34194
-    RestlessEnterVolume: 441891
-    RestlessExitVolume: 438691
-    FrenzyEnterVolume: 488291
-    FrenzyExitVolume: 478691
+    RestlessEnter: 42053
+    RestlessExit: 41853
+    FrenzyEnter: 44953
+    FrenzyExit: 44353
+    RestlessEnterVolume: 1221953
+    RestlessExitVolume: 1218753
+    FrenzyEnterVolume: 1268353
+    FrenzyExitVolume: 1258753
