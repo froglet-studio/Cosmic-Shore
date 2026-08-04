@@ -112,8 +112,8 @@ CAGE_RADIUS = 360         # +20% arena
 SPAWN_RING_RADIUS = 576   # 1.6x the cage, well inside the 1200u membrane
 HERBIVORE_RING = 200      # inside the pen (338) so the brood hatches within the bone
 PREDATOR_RING = 250
-CAGE_PRISMS = 3175
-CAGE_VOLUME = 1265194
+CAGE_PRISMS = 10229
+CAGE_VOLUME = 4042133
 # PhaseThresholds = measured baseline + the standard Blob deltas (Docs/ECOSYSTEM.md §18).
 BLOB_DELTAS = dict(re=700, rx=500, fe=3600, fx=3000, rev=11200, rxv=8000, fev=57600, fxv=48000)
 

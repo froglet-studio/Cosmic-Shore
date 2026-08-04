@@ -18,11 +18,13 @@ The metric is a live stock rather than a cumulative "prisms created" counter for
 this reason — a cumulative counter only ever goes up, so nothing the swarm did could set
 anyone back and the whole ecology would be decoration.
 
-- **The cage is the arena and the objective.** ~3,175 prisms at radius **360** in
-  sixteen meridian ribs, seven latitude hoops, a woven cross-lattice and two polar
-  crowns. Every shielded bar takes **two hits** — the first sheds the shield, the second
-  shatters it — unless the hit *devastates*, which is the mode's core skill surface.
-- **112 of the bars are DANGER traps, and they are the SOFT ones.** A danger prism is
+- **The cage is the arena and the objective.** ~10,229 prisms at radius **360** in
+  forty-eight meridian ribs, twenty-one latitude hoops, a woven cross-lattice and two
+  polar crowns. The grille opening is ~**47u × 49u** — a near-square weave, not the wide
+  141u stripes sixteen ribs gave. Every shielded bar takes **two hits** — the first sheds
+  the shield, the second shatters it — unless the hit *devastates*, which is the mode's
+  core skill surface.
+- **336 of the bars are DANGER traps, and they are the SOFT ones.** A danger prism is
   not a tougher bar — danger is mutually exclusive with both shield tiers
   (`PrismStateManager.MakeDangerous` clears them), so a trap bar shatters in **one** hit
   with no shield to shed. What it costs is contact: the standard danger punishment
@@ -261,22 +263,35 @@ Environment Baselines):
 
 | structure | count | vol/prism | volume | detail |
 |---|---:|---:|---:|---|
-| meridian ribs (shielded) | 2016 | 431.3 | 869,519 | 16 ribs × 133, minus the traps |
-| — of which DANGER traps | 112 | 431.3 | 48,307 | every 19th rib prism |
-| latitude hoops | 611 | 431.3 | 263,530 | lats 0, ±26, ±52, ±74 |
-| cross-lattice | 288 | 131.8 | 37,955 | 16 pairs × 6 bands × 3 |
-| joints | 112 | 327.5 | 36,683 | 16 × 7 crossings |
+| meridian ribs (shielded) | 6048 | 431.3 | 2,608,556 | 48 ribs × 133, minus the traps |
+| — of which DANGER traps | 336 | 431.3 | 144,920 | every 19th rib prism |
+| latitude hoops | 1937 | 431.3 | 835,445 | 21 hoops out to ±78° |
+| cross-lattice | 864 | 131.8 | 113,866 | 48 pairs × 6 bands × 3 |
+| joints | 1008 | 327.5 | 330,145 | 48 × 21 crossings |
 | polar crowns | 36 | 255.6 | 9,201 | 2 × 18 at lat ±84 |
-| **TOTAL** | **3,175** | | **1,265,194** | |
+| **TOTAL** | **10,229** | | **4,042,133** | |
 
-The rib-to-rib gap at the equator is ~141u, so this is a **ribcage, not a prison
+The rib-to-rib gap at the equator is ~47u, so this is a **ribcage, not a prison
 grille**: you fly between the bones freely. Sealing the sphere to vessel-tight spacing
 would cost ~6k prisms of always-on collider for no gameplay — the goal is to smash the
 structure, never to be locked inside it.
 
-**Collider-budget impact.** ~3,175 box colliders for the cage, plus the brood: each species
-carries ~1 `HealthPrism` body, so the caged cap of 149 (158 once the sharks land) adds ~150
-prisms — under 5% on top of the cage. Shielded prisms keep the
+**Collider-budget impact — read this before tuning anything else.** ~10,229 box colliders
+for the cage, plus the brood (~1 `HealthPrism` per creature, so the caged cap of 149 / 158
+with sharks adds ~150 more). Shielded prisms keep the authored BoxCollider trigger, so the
+octahedron look is free.
+
+That is **~6.8× the masterplan's ≤1500 per-cell target** and squarely at Rampage's
+deliberate **10,000-prism arena gate** — the precedent exists, but Ribcage now sits at the
+top of it rather than comfortably under. It is spent deliberately: density is what makes
+the thing read as a cage, and the mode's whole verb actively removes colliders as the match
+runs. Mitigations are the standing ones (collider-LOD by phase, Burst density-grid fauna
+queries, no new physics queries anywhere).
+
+**This is the number most likely to force a retreat on device.** Measure it first
+(DiagnosticsHUD / Benchmark tool). The cheapest dial is `RibCount` — the ribs are 63% of
+the cage, and 48 → 36 drops ~1,900 prisms while keeping the weave square-ish; after that,
+`HoopCount`. Shielded prisms keep the
 authored **BoxCollider trigger** (`PrismOctahedronShield` changes the LOOK only — a
 convex-mesh collider is invisible to one skimmer family or the other), so a shielded
 bar costs exactly what a plain prism costs and the octahedron look is free. That is

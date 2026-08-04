@@ -2382,8 +2382,11 @@ a penned brood from quietly eating its own cage — which matters because a cage
 legitimately contain unshielded prisms (Ribcage's danger traps) that would otherwise be
 food, and would also read as a permanent "intruder".
 
-Collider budget: unchanged. Containment adds two squared-distance compares on paths that
-already ran; the intruder probe is one existing-index sphere query per 0.4 s.
+Collider budget: unchanged by the containment mechanism itself. Containment adds two
+squared-distance compares on paths that already ran; the intruder probe is one
+existing-index sphere query per 0.4 s. The CELL it is used in is another matter — Ribcage's
+cage is ~10,229 prisms (Rampage's deliberate arena gate) plus ~150 creature bodies, which
+is the branch's headline perf risk and is stated as such in RIBCAGE.md.
 
 **The start state is authored as biome DATA, not set at runtime.** `SpawnProfileSO.
 InitialFaunaReleaseTier` seeds `Cell.FaunaReleaseTier` in `AssignConfig`, upstream of

@@ -4,10 +4,10 @@ using CosmicShore.Data;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// "Ribcage" - the cage cell environment (~3.2k prisms) and the arena of
+    /// "Ribcage" - the cage cell environment (~10.2k prisms) and the arena of
     /// <see cref="GameModes.Ribcage"/>: a hollow sphere of SHIELDED prism bone that pens the
-    /// cell's brood. Sixteen meridian ribs run pole to pole, seven latitude hoops bind them,
-    /// short diagonal struts weave the widest bands into lattice, chunky joints sit at every
+    /// cell's brood. Forty-eight meridian ribs run pole to pole, twenty-one latitude hoops
+    /// bind them, short diagonal struts weave the bands into lattice, chunky joints sit at every
     /// rib x hoop crossing, and a crown closes each pole where the ribs converge. The interior
     /// is deliberately empty of STRUCTURE - it is where the brood lives and where the
     /// fighting happens.
@@ -34,15 +34,18 @@ namespace CosmicShore.Gameplay
     /// no seed sync.
     ///
     /// Budget (analytic, confirm with FrogletTools > Ecology > Measure Cell Environment
-    /// Baselines): 3,175 prisms / ~1,265,194 volume, of which 112 are DANGER bars. See
-    /// RIBCAGE.md for the per-structure table and Tools/Build/ribcage_budget.py for the model.
+    /// Baselines): 10,229 prisms / ~4,042,133 volume, of which 336 are DANGER bars. That is the
+    /// same order as Rampage's deliberate 10,000-prism arena gate - see RIBCAGE.md for the
+    /// per-structure table, the collider-budget statement, and
+    /// Tools/Build/ribcage_budget.py for the model.
     /// </summary>
     public class SpawnableRibcage : CellEnvironmentSpawnableBase
     {
-        // Cage radius. The rib-to-rib gap at the equator is 2*pi*R/RibCount ~ 141u, so this is
-        // a RIBCAGE, not a prison grille: you fly between the bones freely. Sealing the sphere
-        // to vessel-tight spacing would cost ~6k prisms of always-on collider for no gameplay -
-        // the goal is to smash the structure, never to be locked inside it.
+        // Cage radius. With 48 ribs and 21 hoops the grille opening is ~47u x ~49u - a near
+        // SQUARE weave rather than the wide stripes 16 ribs gave (141u x 61u). Density is where
+        // the prism budget goes, not radius: a bigger sphere would just move the arena out,
+        // while a tighter weave is what makes the thing read as a cage. You can still fly
+        // through an opening - the goal is to smash the structure, never to be locked inside.
         const float CageR = 360f;
 
         /// <summary>
@@ -64,7 +67,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public const float ContainmentRadius = CageR * 0.94f;
 
-        const int RibCount = 16;       // meridian great circles (pole to pole)
+        const int RibCount = 48;       // meridian great circles (pole to pole)
         const float BarStep = 17f;     // arc-length spacing along every rib and hoop
         const int LatticeBands = 6;    // diagonal strut bands between adjacent ribs
         const int StrutPrisms = 3;
@@ -84,15 +87,39 @@ namespace CosmicShore.Gameplay
         /// </summary>
         const int DangerEveryNthRibPrism = 19;
 
-        // Latitude hoops. Equator first so the widest band reads as the cage's belt.
-        static readonly float[] HoopLats = { 0f, 26f, -26f, 52f, -52f, 74f, -74f };
+        // Latitude hoops, GENERATED rather than hand-listed so the count is one number to
+        // turn and the Python budget model can mirror it exactly. Equator first, then
+        // symmetric pairs out to +/-HoopSpanDeg.
+        const int HoopCount = 21;
+        const float HoopSpanDeg = 78f;
+
+        static readonly float[] HoopLats = BuildHoopLats();
+
+        static float[] BuildHoopLats()
+        {
+            int half = (HoopCount - 1) / 2;
+            var lats = new float[1 + half * 2];
+            lats[0] = 0f;
+            for (int i = 1; i <= half; i++)
+            {
+                float lat = HoopSpanDeg * i / half;
+                lats[i * 2 - 1] = lat;
+                lats[i * 2] = -lat;
+            }
+            return lats;
+        }
 
         // Structural triad - all three domains present, per the no-domain-asymmetry spirit.
         static readonly Domains[] BoneDoms = { Domains.Jade, Domains.Ruby, Domains.Gold };
 
         protected override int DefaultSeed => 39;
-        protected override int BuildParameterHash() => System.HashCode.Combine(nameof(SpawnableRibcage), 1);
-        protected override int LayCapacity => 3600;
+        // Hashes the real generation parameters, not a bump-me constant: change the weave and
+        // the SpawnableBase cache invalidates itself rather than serving a stale point cloud.
+        protected override int BuildParameterHash() => System.HashCode.Combine(
+            nameof(SpawnableRibcage), CageR, RibCount, BarStep,
+            System.HashCode.Combine(HoopCount, HoopSpanDeg, LatticeBands, StrutPrisms),
+            System.HashCode.Combine(CrownLat, CrownCount, DangerEveryNthRibPrism));
+        protected override int LayCapacity => 11000;
 
         protected override void BuildEnvironment()
         {
