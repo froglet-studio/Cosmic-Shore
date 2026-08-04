@@ -267,8 +267,9 @@ must show no compile errors and no `[PrismClock]` errors.
 
 Tracker items (`Docs/PRISM_ANIMATION.md` §5 C-phase) landing per-path on the wired
 graphs, each following the shipped B1/B3 templates: ~~C1 `ClearPrisms` shader-side
-occlusion fade~~ (✅ shipped 2026-08-04 — `PrismOcclusionCorridor`, §4.6; validate with
-FrogletTools > Ecology > Prism Animation > **Validate Occlusion Corridor**) ·
+occlusion fade~~ (✅ shipped 2026-08-04 — `PrismOcclusionCorridor`, now a PLATFORM LAW wired into every
+live-prism graph and bound at `VesselController.Initialize`, §4.6; gates: the `PrismOcclusionCoverageTests`
+edit-mode test + FrogletTools > Ecology > Prism Animation > **Validate Occlusion Corridor**) ·
 C4 `FireTrailBlock` pool/Destroy fix · C5 turret anchor flight ·
 C6 fauna wither/devour/level-up · C7 flora growth · C8 microscene conveyor ·
 C9 cell-swap suction · C10 worm shift · C11 spindle fade · C13 environment-lay

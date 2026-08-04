@@ -1,30 +1,45 @@
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
 using UnityEditor;
 using UnityEngine;
 using CosmicShore.Editor.Froglet;
+using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 
 namespace CosmicShore.Editor
 {
     /// <summary>
-    /// One-click audit of the camera↔vessel prism occlusion corridor
-    /// (Docs/PRISM_ANIMATION.md §5 C1). The corridor is entirely shader-side, driven by
-    /// two global uniforms, so there is nothing in a scene to eyeball — every failure
-    /// mode is a missing property, a missing Custom Function node, or a material that
-    /// did not opt into alpha test. All three are checkable from assets alone.
+    /// Asset-side gate for the camera↔vessel prism occlusion corridor
+    /// (Docs/PRISM_ANIMATION.md §4.6 — a PLATFORM LAW: it must not be possible to author a
+    /// vessel or a minigame in which the corridor is off).
     ///
-    /// The nastiest failure is silent: a prism material without <c>_ALPHATEST_ON</c>
-    /// compiles the alpha output away entirely on an Opaque surface, so that prism
-    /// simply never fades and the corridor has an invisible hole in it. This reports it.
+    /// The corridor has no per-scene wiring to eyeball, so every way it can be broken is an
+    /// asset fact, and all of them are checked here:
+    ///
+    ///   1. Each wired prism graph declares the two UNEXPOSED globals + the Custom Function.
+    ///      (Checked against the graph TEXT — an unexposed ShaderGraph property is declared
+    ///      outside UnityPerMaterial, so Material.HasProperty can never see it. Same trap
+    ///      the clock validator documents for _PrismClock.)
+    ///   2. Every material on those graphs is corridor-capable — opaque ones alpha-tested
+    ///      with _Alpha 1. A material that misses this is an INVISIBLE HOLE: that prism
+    ///      silently stays solid in front of the ship.
+    ///   3. Every PREFAB carrying a Prism renders with a wired prism shader. This is the
+    ///      check that makes the law enforceable at authoring time: a new prism prefab on a
+    ///      new or legacy shader is caught here, not by someone noticing their ship is hidden.
     ///
     /// FrogletTools > Ecology > Prism Animation > Validate Occlusion Corridor.
     /// </summary>
     public static class PrismOcclusionWiringValidator
     {
-        const string GraphPath = "Assets/_Graphics/Materials/Graphs/BlockGraph.shadergraph";
+        static readonly string[] GraphPaths =
+        {
+            "Assets/_Graphics/Materials/Graphs/BlockGraph.shadergraph",
+            "Assets/_Graphics/Materials/Graphs/ExplodingBlockGraph.shadergraph",
+        };
+
         const string HlslPath = "Assets/_Graphics/Materials/Graphs/PrismOcclusionCorridor.hlsl";
         const string HlslGuid = "bf8e2c1fa76142c89ba03b2e1ae46201";
         const string FunctionName = "PrismOcclusionFade";
@@ -32,16 +47,31 @@ namespace CosmicShore.Editor
 
         static readonly string[] GlobalProps = { "_PrismOcclusionTarget", "_PrismOcclusionParams" };
 
+        // Known, deliberate exclusions from the prism-prefab census (Docs/PRISM_ANIMATION.md
+        // §4.6) — legacy prism prefabs on pre-corridor shaders, every one of them DEAD.
+        // GreenDartBlock/TriangleBlock are the SpreadFresnel/TriangleFresnel family §3.7 I
+        // says not to extend (referenced only by the Recording Studio scenes); TrailRing and
+        // TrailPentagon are referenced by nothing at all. Listed rather than silently skipped
+        // so the exclusion stays visible: if one is ever revived as live gameplay mass it
+        // must be rebased, not added to this list.
+        static readonly string[] KnownLegacyPrismPrefabs =
+        {
+            "Assets/_Prefabs/Trails/GreenDartBlock.prefab",
+            "Assets/_Prefabs/Trails/TriangleBlock.prefab",
+            "Assets/_Prefabs/Trails/TrailRing.prefab",
+            "Assets/_Prefabs/Trails/TrailPentagon.prefab",
+        };
+
         [MenuItem("FrogletTools/Ecology/Prism Animation/Validate Occlusion Corridor")]
-        [FrogletTool(FrogletToolCategory.Ecology, Importance = 4,
-            Description = "Camera-to-vessel see-through corridor - catches silent holes (a prism material without alpha test never fades).")]
+        [FrogletTool(FrogletToolCategory.Ecology, Importance = 5,
+            Description = "Occlusion-corridor platform law - catches silent holes (a prism that can never fade hides the ship).")]
         public static void Validate()
         {
             var report = new StringBuilder();
-            report.AppendLine("[PrismOcclusion] CORRIDOR WIRING — Docs/PRISM_ANIMATION.md §5 C1");
+            report.AppendLine("[PrismOcclusion] CORRIDOR WIRING — Docs/PRISM_ANIMATION.md §4.6 (PLATFORM LAW: no vessel and no minigame may opt out)");
             bool pass = true;
 
-            // ---- 1. the HLSL asset, at the GUID the graph pins ----
+            // ---- 1. the HLSL asset, at the GUID the graphs pin ----
             string hlslGuidOnDisk = AssetDatabase.AssetPathToGUID(HlslPath);
             if (string.IsNullOrEmpty(hlslGuidOnDisk))
             {
@@ -50,24 +80,26 @@ namespace CosmicShore.Editor
             }
             else if (hlslGuidOnDisk != HlslGuid)
             {
-                report.AppendLine($"❌ {HlslPath} GUID drifted ({hlslGuidOnDisk} != {HlslGuid}) — the graph's Custom Function points at the old one");
+                report.AppendLine($"❌ {HlslPath} GUID drifted ({hlslGuidOnDisk} != {HlslGuid}) — the graphs' Custom Functions point at the old one");
                 pass = false;
             }
             else
                 report.AppendLine($"✅ {HlslPath} (GUID pinned)");
 
-            // ---- 2. the graph: two UNEXPOSED globals + the Custom Function node ----
-            if (!File.Exists(GraphPath))
+            // ---- 2. each graph: two UNEXPOSED globals + the Custom Function node ----
+            foreach (var graphPath in GraphPaths)
             {
-                report.AppendLine($"❌ {GraphPath} NOT FOUND");
-                pass = false;
-            }
-            else
-            {
-                // Normalize CRLF before splitting — a Windows checkout otherwise
-                // collapses the whole file into one "block" (same trap the clock
-                // validator hit).
-                string text = File.ReadAllText(GraphPath).Replace("\r\n", "\n");
+                report.AppendLine($"— {Path.GetFileNameWithoutExtension(graphPath)}");
+                if (!File.Exists(graphPath))
+                {
+                    report.AppendLine($"   ❌ {graphPath} NOT FOUND");
+                    pass = false;
+                    continue;
+                }
+
+                // Normalize CRLF before splitting — a Windows checkout otherwise collapses
+                // the whole file into one "block" (the same trap the clock validator hit).
+                string text = File.ReadAllText(graphPath).Replace("\r\n", "\n");
                 var blocks = text.Split(new[] { "\n\n" }, System.StringSplitOptions.RemoveEmptyEntries);
 
                 foreach (var prop in GlobalProps)
@@ -109,69 +141,86 @@ namespace CosmicShore.Editor
                     report.AppendLine($"   ❌ Custom Function node '{FunctionName}' NOT found — re-run Tools/Shaders/wire_prism_occlusion_corridor.py");
                     pass = false;
                 }
+
+                var shader = AssetDatabase.LoadAssetAtPath<Shader>(graphPath);
+                if (shader != null && ShaderUtil.ShaderHasError(shader))
+                {
+                    report.AppendLine("   ❌ HAS COMPILE ERRORS — check the shader inspector (git checkout the .shadergraph and re-run the wirer)");
+                    pass = false;
+                }
+                else if (shader != null)
+                    report.AppendLine("   ✅ compiles clean");
             }
 
-            // ---- 3. materials: the silent-hole check ----
-            report.AppendLine("— Materials compiled against BlockGraph:");
-            int opaque = 0, transparent = 0, failed = 0;
+            // ---- 3. materials on those graphs: the silent-hole check ----
+            report.AppendLine("— Materials on the wired prism graphs:");
+            int opaque = 0, transparent = 0, matFailed = 0;
             foreach (var guid in AssetDatabase.FindAssets("t:Material"))
             {
                 var mat = AssetDatabase.LoadAssetAtPath<Material>(AssetDatabase.GUIDToAssetPath(guid));
                 if (mat == null || mat.shader == null) continue;
-                // Exact suffix match: EndsWith("BlockGraph") would also swallow
-                // "ExplodingBlockGraph".
-                if (mat.shader.name != "Shader Graphs/BlockGraph" && !mat.shader.name.EndsWith("/BlockGraph"))
-                    continue;
-
-                var missing = GlobalProps.Where(p => !mat.HasProperty(p)).ToList();
-                if (missing.Count > 0)
-                {
-                    report.AppendLine($"   ❌ {mat.name}: shader does not declare {string.Join(", ", missing)} (reimport the graph)");
-                    failed++;
-                    continue;
-                }
+                if (!PrismOcclusionDiagnostics.IsWiredPrismShader(mat.shader.name)) continue;
 
                 bool isTransparent = mat.HasProperty("_Surface") && mat.GetFloat("_Surface") > 0.5f;
-                if (isTransparent)
+                if (isTransparent) transparent++; else opaque++;
+
+                // ONE rule, shared with the runtime scream (PrismOcclusionDiagnostics) and the
+                // edit-mode coverage test, so the gates can never drift apart.
+                if (!PrismOcclusionDiagnostics.IsCorridorCapable(mat, out string fault))
                 {
-                    // Blending materials need no clip — the corridor's alpha multiply is enough.
-                    transparent++;
+                    report.AppendLine($"   ❌ {mat.name}: {fault}");
+                    matFailed++;
+                }
+            }
+            report.AppendLine(matFailed == 0
+                ? $"   ✅ {opaque} opaque material(s) alpha-test enabled, {transparent} transparent material(s) blend as-is"
+                : $"   ❌ {matFailed} material(s) misconfigured — run `python3 Tools/Shaders/enable_prism_alpha_clip.py`");
+            pass &= matFailed == 0;
+
+            // ---- 4. prism PREFAB census — the authoring-time gate ----
+            report.AppendLine("— Prefabs carrying a Prism (every one must render on a wired prism graph):");
+            int prismPrefabs = 0, prefabFailed = 0, legacyExcluded = 0;
+            foreach (var guid in AssetDatabase.FindAssets("t:Prefab"))
+            {
+                string path = AssetDatabase.GUIDToAssetPath(guid);
+                var go = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+                if (go == null || go.GetComponentInChildren<Prism>(true) == null) continue;
+
+                prismPrefabs++;
+                if (KnownLegacyPrismPrefabs.Contains(path))
+                {
+                    legacyExcluded++;
                     continue;
                 }
 
-                opaque++;
-                bool clipOn = mat.HasProperty("_AlphaClip") && mat.GetFloat("_AlphaClip") > 0.5f;
-                bool keywordOn = mat.IsKeywordEnabled(AlphaTestKeyword);
-                float alpha = mat.HasProperty("_Alpha") ? mat.GetFloat("_Alpha") : 1f;
-
-                if (!clipOn || !keywordOn)
+                // Only the renderer ON the Prism GameObject is prism mass — a prefab that
+                // merely CONTAINS a prism (TermiteDrone's drone body) renders other things
+                // with other shaders, quite legitimately.
+                var offenders = new List<string>();
+                foreach (var prism in go.GetComponentsInChildren<Prism>(true))
                 {
-                    report.AppendLine($"   ❌ {mat.name}: OPAQUE without alpha test "
-                                      + $"(_AlphaClip={(clipOn ? 1 : 0)}, {AlphaTestKeyword}={(keywordOn ? "on" : "OFF")}) "
-                                      + "— this prism will NEVER fade (a silent hole in the corridor). "
-                                      + "Fix: python3 Tools/Shaders/enable_prism_alpha_clip.py");
-                    failed++;
+                    var renderer = prism.GetComponent<Renderer>();
+                    if (renderer == null) continue;
+                    foreach (var mat in renderer.sharedMaterials)
+                    {
+                        if (mat == null || mat.shader == null) continue;
+                        if (!PrismOcclusionDiagnostics.IsWiredPrismShader(mat.shader.name))
+                            offenders.Add($"{mat.name} ({mat.shader.name})");
+                    }
                 }
-                else if (!Mathf.Approximately(alpha, 1f))
+                if (offenders.Count > 0)
                 {
-                    report.AppendLine($"   ❌ {mat.name}: _Alpha is {alpha}, not 1 — with alpha test on, this prism is clipped away ENTIRELY");
-                    failed++;
+                    report.AppendLine($"   ❌ {path}: renders with non-corridor shader(s) {string.Join(", ", offenders.Distinct())} — "
+                                      + "live prism mass on an unwired shader can never fade and WILL hide the ship. "
+                                      + "Rebase onto a wired prism graph, or add its graph to the census in "
+                                      + "Tools/Shaders/wire_prism_occlusion_corridor.py.");
+                    prefabFailed++;
                 }
             }
-            report.AppendLine(failed == 0
-                ? $"   ✅ {opaque} opaque material(s) alpha-test enabled, {transparent} transparent material(s) blend as-is"
-                : $"   ❌ {failed} material(s) misconfigured (see above)");
-            pass &= failed == 0;
-
-            // ---- 4. shader compile state ----
-            var shader = AssetDatabase.LoadAssetAtPath<Shader>(GraphPath);
-            if (shader != null && ShaderUtil.ShaderHasError(shader))
-            {
-                report.AppendLine("   ❌ BlockGraph HAS COMPILE ERRORS — check the shader inspector (git checkout the .shadergraph and re-run the wirer)");
-                pass = false;
-            }
-            else if (shader != null)
-                report.AppendLine("   ✅ BlockGraph compiles clean");
+            report.AppendLine(prefabFailed == 0
+                ? $"   ✅ {prismPrefabs - legacyExcluded} prism prefab(s) on wired graphs ({legacyExcluded} known legacy decor prefab(s) excluded by name)"
+                : $"   ❌ {prefabFailed}/{prismPrefabs} prism prefab(s) render outside the corridor");
+            pass &= prefabFailed == 0;
 
             // ---- 5. config ----
             var config = Resources.Load<PrismOcclusionConfigSO>("PrismOcclusionConfig");
@@ -191,15 +240,18 @@ namespace CosmicShore.Editor
             {
                 report.AppendLine(PrismOcclusionCorridor.IsActive
                     ? $"   ▶ live: corridor open onto '{PrismOcclusionCorridor.Target?.name}'"
-                    : "   ▶ live: corridor OFF (no camera follow target — expected in the menu camera / replay camera states)");
+                    : PrismOcclusionCorridor.IsSuppressed
+                        ? "   ▶ live: corridor SUPPRESSED (manual replay camera — expected)"
+                        : "   ▶ live: corridor OFF (no local pilot vessel yet)");
             }
 
             report.AppendLine(pass
-                ? "RESULT: ✅ OCCLUSION CORRIDOR WIRED — fly so a prism wall sits between the camera and the ship; the corridor should dissolve."
-                : "RESULT: ❌ CORRIDOR INCOMPLETE — every ❌ above is a prism that will not fade.");
+                ? "RESULT: ✅ OCCLUSION CORRIDOR WIRED EVERYWHERE — fly so a prism wall sits between the camera and the ship; the corridor should dissolve."
+                : "RESULT: ❌ CORRIDOR INCOMPLETE — every ❌ above is prism mass that will hide the player's ship.");
 
             if (pass) Debug.Log(report.ToString());
             else Debug.LogWarning(report.ToString());
         }
+
     }
 }

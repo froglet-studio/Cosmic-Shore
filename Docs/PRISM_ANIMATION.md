@@ -826,7 +826,42 @@ its faces exactly as before. `SegmentSpawner.SuperShieldSpawnedPrisms`, which po
 shield component directly rather than going through `PrismStateManager`, honours the
 same rule explicitly.
 
-### 4.6 The global-uniform shape — camera↔vessel occlusion corridor (shipped 2026-08-04, C1)
+### 4.6 The camera↔vessel occlusion corridor — a PLATFORM LAW (shipped 2026-08-04, C1)
+
+> **The law:** prisms between the player's camera and the player's vessel go see-through so
+> the ship is never hidden. It is **not a feature a vessel or a game mode may choose.** It
+> must not be possible to author a vessel, a prism, or a minigame in which it is off.
+>
+> The previous implementation was per-vessel opt-in — a `ClearPrisms` component present on
+> three of eleven vessels, with a dead `IVessel.AllowClearPrismInitialization()` gate — and
+> it had been silently dead on all three for a long time. Opt-in is what made that possible,
+> so the restoration removed the ability to opt in at all.
+
+**How the law is made un-authorable** (four layers; the first two make it structural, the
+last two make a violation loud):
+
+| Layer | Mechanism | What it forecloses |
+|---|---|---|
+| The **shader** half lives in the prism graphs | `PrismOcclusionFade` is spliced into `SurfaceDescription.Alpha` on **every graph a live prism can render with** (BlockGraph, ExplodingBlockGraph) | A new prism, trail, or environment lay inherits the corridor by construction. There is no per-prism, per-material or per-instance switch to forget. |
+| The **target** binds at the universal vessel entry point | `VesselController.Initialize` under `IPlayer.IsLocalPilot` — the one method every vessel must call to become a player's vessel (single-player spawn, multiplayer spawn, menu autopilot, runtime swap) | A new vessel needs no component and no prefab wiring. A new minigame needs no scene wiring, and cannot dodge it by using the non-networked spawn path (that is what `IsLocalPilot` covers over `IsLocalUser`). |
+| **Runtime** fail-loud | `PrismOcclusionDiagnostics.VerifyCorridorCapable`, called from `Prism.SyncRenderMaterial` — every material a prism ever binds passes through it. One error per offending material, naming it | A prism on an unwired shader, or an opaque material without alpha test, screams instead of silently staying solid. |
+| **Asset** gate | Edit-mode test `PrismOcclusionCoverageTests` (graphs wired · every material on them dissolvable · **every prefab carrying a `Prism` renders on a wired graph**) + FrogletTools > Ecology > Prism Animation > **Validate Occlusion Corridor** | New prism content authored outside the corridor fails a test, not a playtest. All three gates share ONE rule (`PrismOcclusionDiagnostics.IsCorridorCapable`) so they cannot drift. |
+
+The **one** sanctioned hold is `PrismOcclusionCorridor.SetSuppressed`, used by exactly one
+caller — `CameraManager`'s manual replay camera, a broadcast vantage that is not looking at
+the local ship, where a camera→ship capsule would cut a hole through unrelated mass. It is
+symmetric (`RestoreGameplayCamera` lifts it) and it is a HOLD, not an opt-out: the vessel
+binding survives it, so nothing has to remember to re-point the corridor afterwards.
+
+**Deliberate exclusions, named rather than hidden.** `SuctionGraph` renders a prism DURING
+consumption (a sub-second implode of mass being removed), never standing mass that can
+occlude. Four legacy prism prefabs on pre-corridor shaders — `GreenDartBlock`,
+`TriangleBlock` (the SpreadFresnel family §3.7 I says not to extend, referenced only by the
+Recording Studio scenes) and `TrailRing`, `TrailPentagon` (referenced by nothing at all) —
+are listed by name in the validator and the test. If any is revived as live gameplay mass,
+**rebase it onto a wired prism graph; do not grow the exclusion list.**
+
+---
 
 §1 draws a line between **animation** (a pure function of the clock and stamped initial
 conditions) and **live gameplay data** (a value that depends on the running simulation).
@@ -844,11 +879,14 @@ view-dependent prism effect in §3.7 (`SkimFxRunner`'s live ship end, the retire
 | Piece | Where |
 |---|---|
 | Publisher (2 `Shader.SetGlobalVector` per frame, `LateUpdate`, self-installing like `PrismClock`) | `Utility/PrismOcclusionCorridor.cs` |
+| Target binding (the platform-law choke point) | `Controller/Vessel/VesselController.cs` `Initialize` / `OnDestroy`, on `IPlayer.IsLocalPilot` |
+| Runtime fail-loud | `Utility/PrismOcclusionDiagnostics.cs`, called from `Prism.SyncRenderMaterial` |
+| Automated asset gate | `Tests/EditMode/PrismOcclusionCoverageTests.cs` |
 | Tuning (radius / feather / core alpha) | `ScriptableObjects/PrismOcclusionConfigSO.cs` → `Resources/PrismOcclusionConfig.asset` |
 | GPU test + dither | `_Graphics/Materials/Graphs/PrismOcclusionCorridor.hlsl` |
 | Graph wiring (idempotent, validate-before-write) | `Tools/Shaders/wire_prism_occlusion_corridor.py` |
 | Material alpha-test opt-in (idempotent) | `Tools/Shaders/enable_prism_alpha_clip.py` |
-| Gate | FrogletTools > Ecology > Prism Animation > **Validate Occlusion Corridor** |
+| Interactive gate | FrogletTools > Ecology > Prism Animation > **Validate Occlusion Corridor** |
 
 The two globals are `_PrismOcclusionTarget` (the vessel's world position) and
 `_PrismOcclusionParams` (`outerRadius, innerRadius, coreAlpha`). The **near** end of the
@@ -860,6 +898,10 @@ Four properties of the design worth preserving if it is ever touched:
 
 - **Nothing is per-prism.** No trigger volume, no tracked set, no material swap, no
   per-instance override. Widening the corridor costs nothing.
+- **Coverage is the point.** A prism material that cannot fade is an *invisible hole* in the
+  corridor — no error, no visual tell, nothing to notice until someone says they can't see
+  their ship. That is how the old system stayed broken; every gate above exists to make that
+  state impossible to reach silently.
 - **Prisms stay in the opaque queue.** The fade is screen-door (ordered 4×4 Bayer fed into
   `SurfaceDescription.AlphaClipThreshold`), not blending. Moving corridor prisms into the
   transparent queue would need a per-prism material swap AND would pay sorting + blend
@@ -886,7 +928,8 @@ prism fill cost regresses. Reverting it is one command
 after which prisms render exactly as they did before and the corridor silently does nothing
 to them.
 
-**What it replaced.** `ClearPrisms` (deleted, with its prefab): a per-vessel kinematic
+**What it replaced.** `ClearPrisms` (deleted, with its prefab and the dead
+`IVessel.AllowClearPrismInitialization()` opt-out gate): a per-vessel kinematic
 Rigidbody + `CapsuleCollider` trigger that swapped each entered prism's `sharedMaterial` to
 the team transparent material and wrote a `MaterialPropertyBlock` per tracked prism per
 physics tick. It had been dead for a long time in three independent ways — the MPB never
@@ -920,7 +963,7 @@ Phase C — rogue paths & ecosystem visuals (each is standalone):
 
 | # | Item | Status |
 |---|---|---|
-| C1 | `ClearPrisms` `_Alpha` fade → GLOBAL-uniform shader corridor (also fixed instanced-path blindness) | ✅ SHIPPED 2026-08-04 — `ClearPrisms.cs` + its prefab DELETED and excised from Rhino/Dolphin/Serpent (−3 trigger colliders, −3 kinematic Rigidbodies); replaced by `PrismOcclusionCorridor` (2 globals/frame) + `PrismOcclusionCorridor.hlsl` wired into BlockGraph, with the opaque prism materials opted into alpha test so the screen-door fade reaches the screen. Full design + stated cost: §4.6. Gate: FrogletTools > Ecology > Prism Animation > Validate Occlusion Corridor |
+| C1 | `ClearPrisms` `_Alpha` fade → GLOBAL-uniform shader corridor, **promoted to a platform law** | ✅ SHIPPED 2026-08-04 — `ClearPrisms.cs` + its prefab DELETED and excised from Rhino/Dolphin/Serpent (−3 trigger colliders, −3 kinematic Rigidbodies), along with the dead `IVessel.AllowClearPrismInitialization()` opt-out. Replaced by `PrismOcclusionCorridor` (2 globals/frame) + `PrismOcclusionCorridor.hlsl` wired into **every graph a live prism can render with** (BlockGraph + ExplodingBlockGraph), bound at `VesselController.Initialize` so no vessel or mode can omit it, with runtime fail-loud (`PrismOcclusionDiagnostics`) and an edit-mode coverage test. Full design, the four enforcement layers, and the stated cost: §4.6 |
 | C2 | `MaterialBlendUtility` (overheat danger trail + skim overcharge) → the one color pipeline | ✅ shipped 2026-08-01: utility DELETED. Overheat danger trail: the redundant direct blend removed — `IsDangerous` pre-`Initialize` already runs `MakeDangerous()` through the pipeline (per-domain danger material, clock or legacy transition); `EnableDangerMode`'s material param is legacy-ignored. Skim overcharge: rides `MaterialPropertyAnimator.UpdateMaterial(overchargedMaterial, …)` — visible on both render paths; the multi-material append semantic retired |
 | C3 | AOE double-growers (`AOERadialBlocks`, `AOEDangerHemisphereBlocks`) → single engine stamp; fix dead `growthRate` field writes + `renderer.material` clone | ✅ shipped 2026-08-01: both bespoke `GrowToScale` loops deleted (growth = the one engine via `TargetScale` + `SetGrowthRate`); `MakeDangerousAsync` deleted — danger/shield now ride the pre-`Initialize` flag contract so `PrismStateManager` applies the proper per-domain theme materials (the `renderer.material` clone and the instanced-path-blind restyle are gone); hemisphere prisms now get the firing vessel's Domain like the radial sibling |
 | C4 | `FireTrailBlockActionExecutor` → pooled + mover-contract or stamped ballistic clock; remove `Destroy()` timer (ecosystem law) | ☐ not started |

@@ -1,15 +1,18 @@
 #!/usr/bin/env python3
 """
-Turn on alpha clipping for the OPAQUE prism materials so the camera->vessel occlusion
-corridor (Docs/PRISM_ANIMATION.md §5 C1) can dissolve them without ever moving a prism
+Turn on alpha clipping for EVERY opaque prism material so the camera->vessel occlusion
+corridor (Docs/PRISM_ANIMATION.md §4.6) can dissolve them without ever moving a prism
 into the transparent queue.
 
-Why this is needed: BlockGraph is an Opaque surface, and URP compiles the Alpha output
-away entirely on an opaque material unless `_ALPHATEST_ON` is enabled. The corridor's
-shader-side fade therefore reaches the screen only on materials that opt into alpha
-test. Transparent BlockGraph materials (cloak / transparent shielded / danger /
-super-shielded) need no change: they already blend, so the corridor's alpha multiply
-works on them as-is.
+Why this is needed: URP compiles the Alpha output away entirely on an OPAQUE material
+unless `_ALPHATEST_ON` is enabled, so the corridor's shader-side fade reaches the screen
+only on materials that opt into alpha test. A prism material that skips it is an
+INVISIBLE HOLE in the corridor — which is exactly the per-material opt-in this system
+exists to abolish. Transparent materials need no change: they already blend, so the
+corridor's alpha multiply works on them as-is.
+
+Covers every graph a live prism can render with (the same census as
+wire_prism_occlusion_corridor.py): BlockGraph and ExplodingBlockGraph.
 
 Also normalises `_Alpha` to 1 on the opaque materials. It was dead data before (opaque
 + no clip => the Alpha output is discarded), so several of them carry a stale 0 — which
@@ -24,12 +27,15 @@ import re
 import sys
 
 REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-BLOCKGRAPH_SHADER_GUID = "bf8c159f627e64b439094797bff88611"
+PRISM_GRAPH_SHADER_GUIDS = {
+    "bf8c159f627e64b439094797bff88611": "BlockGraph",
+    "de59ec1f616f51044a23e6c1368d6660": "ExplodingBlockGraph",
+}
 MATERIAL_ROOTS = ["Assets/_Graphics/Materials"]
 KEYWORD = "_ALPHATEST_ON"
 
 
-def find_blockgraph_materials():
+def find_prism_materials():
     hits = []
     for root in MATERIAL_ROOTS:
         for dirpath, _dirs, files in os.walk(os.path.join(REPO, root)):
@@ -38,8 +44,11 @@ def find_blockgraph_materials():
                     continue
                 path = os.path.join(dirpath, f)
                 text = open(path, encoding="utf-8", errors="ignore").read()
-                if BLOCKGRAPH_SHADER_GUID in text:
-                    hits.append((path, text))
+                for guid, graph in PRISM_GRAPH_SHADER_GUIDS.items():
+                    if f"m_Shader: {{fileID: -6465566751694194690, guid: {guid}" in text.replace("\n", " ").replace("  ", " ") \
+                            or re.search(rf"m_Shader: \{{fileID: -?\d+, guid: {guid}", text):
+                        hits.append((path, text, graph))
+                        break
     return sorted(hits)
 
 
@@ -105,12 +114,12 @@ def verify(path):
 
 def main():
     check_only = "--check" in sys.argv
-    mats = find_blockgraph_materials()
-    assert mats, "no BlockGraph materials found — did the shader GUID change?"
+    mats = find_prism_materials()
+    assert mats, "no prism-graph materials found — did a shader GUID change?"
 
-    opaque = [(p, t) for p, t in mats if is_opaque(t)]
-    transparent = [p for p, t in mats if not is_opaque(t)]
-    assert opaque, "no opaque BlockGraph materials found"
+    opaque = [(p, t) for p, t, _g in mats if is_opaque(t)]
+    transparent = [(p, g) for p, t, g in mats if not is_opaque(t)]
+    assert opaque, "no opaque prism-graph materials found"
 
     pending = []
     for path, text in opaque:
@@ -122,8 +131,8 @@ def main():
         else:
             print(f"  {'ok':11s} {rel}")
 
-    for path in transparent:
-        print(f"  {'skip (blend)':11s} {os.path.relpath(path, REPO)}")
+    for path, graph in transparent:
+        print(f"  {'skip (blend)':11s} {os.path.relpath(path, REPO)}  [{graph}]")
 
     if check_only:
         if pending:
@@ -131,14 +140,14 @@ def main():
             return 1
         for path, _ in opaque:
             verify(path)
-        print("\nAll opaque BlockGraph materials are alpha-clip enabled (verified).")
+        print("\nAll opaque prism-graph materials are alpha-clip enabled (verified).")
         return 0
 
     for path, text, _ in pending:
         apply(path, text, check_only=False)
     for path, _ in opaque:
         verify(path)
-    print(f"\nPatched {len(pending)} of {len(opaque)} opaque BlockGraph materials; "
+    print(f"\nPatched {len(pending)} of {len(opaque)} opaque prism-graph materials; "
           f"{len(transparent)} transparent material(s) left alone (they blend). Verified.")
     return 0
 

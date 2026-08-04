@@ -1,6 +1,23 @@
 #!/usr/bin/env python3
 """
-Wire the camera->vessel occlusion corridor into BlockGraph.shadergraph.
+Wire the camera->vessel occlusion corridor into EVERY shader graph a LIVE prism can
+render with.
+
+Coverage is the whole point (see Docs/PRISM_ANIMATION.md 4.6 "the corridor is a platform
+law"): a prism material that cannot fade is an invisible hole in the corridor, and holes
+are exactly what per-vessel / per-mode opt-in used to produce. The census:
+
+  BlockGraph           PrismMaterial, Shielded, SuperShielded, Danger + their transparent
+                       variants + the cloak material  -> every trail and environment prism
+  ExplodingBlockGraph  TransparentPrismMaterial (LIVE transparent prisms), MazeDangerBlockMateral
+                       (live maze/overheat prisms) and the explosion debris material
+
+SuctionGraph is deliberately excluded: it renders a prism DURING consumption (a sub-second
+implode of mass that is being removed), never standing mass the player can be occluded by.
+The legacy SpreadFresnel/TriangleFresnel prism family is also excluded - it is decor/tool-
+scene only (its two Prism-carrying prefabs are referenced by nothing but the Recording
+Studio scenes) and PRISM_ANIMATION.md 3.7 I says do not extend it. Both are reported by
+PrismOcclusionDiagnostics at runtime if they ever carry live mass.
 
 Docs/PRISM_ANIMATION.md §5 C1. Out-of-editor ShaderGraph JSON synthesis, following
 the /asset-surgery protocol: parse the whole file, clone same-file donors for schema
@@ -9,7 +26,7 @@ exactness, rebuild in memory, assert every invariant, and only then write.
 Idempotent: re-running after a successful pass prints "already wired" and exits 0.
 Re-run it after a graph revert to repair the wiring.
 
-What it adds to BlockGraph:
+What it adds to each graph:
 
   properties (both UNEXPOSED -> declared as globals, driven by Shader.SetGlobalVector
   from PrismOcclusionCorridor.cs; same shape as the existing _PrismClock global):
@@ -21,9 +38,12 @@ What it adds to BlockGraph:
       Property x2                            -> the two globals
       PrismOcclusionFade (Custom Function)    -> PrismOcclusionCorridor.hlsl
 
-  edges (the splice):
-      BEFORE:  Alpha(property) ------------------------> SurfaceDescription.Alpha
-      AFTER:   Alpha(property) -> CF.BaseAlpha
+  edges (the splice - whatever fed SurfaceDescription.Alpha is RETARGETED into the
+  custom function's BaseAlpha input, so the graph's own alpha still applies and the
+  corridor only scales it; that is `_Alpha` on BlockGraph and PrismExplosionClock.Opacity
+  on ExplodingBlockGraph):
+      BEFORE:  <alpha source> ------------------------> SurfaceDescription.Alpha
+      AFTER:   <alpha source> -> CF.BaseAlpha
                Position(World) -> CF.PositionWS
                _PrismOcclusionTarget -> CF.Target
                _PrismOcclusionParams -> CF.Params
@@ -40,8 +60,13 @@ import sys
 import uuid
 
 REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-GRAPH = os.path.join(REPO, "Assets/_Graphics/Materials/Graphs/BlockGraph.shadergraph")
-POSITION_DONOR = os.path.join(REPO, "Assets/_Graphics/Materials/Graphs/CageGraph.shadergraph")
+GRAPHS = [
+    "Assets/_Graphics/Materials/Graphs/BlockGraph.shadergraph",
+    "Assets/_Graphics/Materials/Graphs/ExplodingBlockGraph.shadergraph",
+]
+# BlockGraph has no Position node to clone; CageGraph does, and it is the same
+# ShaderGraph version, so the schema is exact by construction.
+POSITION_DONOR = "Assets/_Graphics/Materials/Graphs/CageGraph.shadergraph"
 
 # GUID of Assets/_Graphics/Materials/Graphs/PrismOcclusionCorridor.hlsl, pinned by its
 # committed .meta so this reference can never drift.
@@ -291,41 +316,42 @@ def validate(docs, expect_wired):
     assert sources.get((clip_block["m_ObjectId"], 0)) == (cf["m_ObjectId"], 5), \
         "SurfaceDescription.AlphaClipThreshold is not fed by PrismOcclusionFade.ClipThreshold"
 
-    # the ORIGINAL _Alpha feed was retargeted, not duplicated
-    alpha_prop = find_property(docs, "Alpha")
-    alpha_nodes = [idx[r["m_Id"]] for r in graph["m_Nodes"]
-                   if idx[r["m_Id"]].get("m_Property", {}).get("m_Id") == alpha_prop["m_ObjectId"]]
-    assert len(alpha_nodes) == 1, "expected exactly one _Alpha property node"
-    assert sources.get((cf["m_ObjectId"], 3)) == (alpha_nodes[0]["m_ObjectId"], 0), \
-        "PrismOcclusionFade.BaseAlpha is not fed by the _Alpha property node"
+    # The graph's ORIGINAL alpha source was RETARGETED into BaseAlpha, not dropped and
+    # not duplicated — so the graph's own alpha still applies and the corridor only
+    # scales it. (That source is the `_Alpha` property on BlockGraph and
+    # PrismExplosionClock.Opacity on ExplodingBlockGraph — this asserts the shape, not
+    # the identity, so it holds for any graph.)
+    assert (cf["m_ObjectId"], 3) in sources, \
+        "PrismOcclusionFade.BaseAlpha is unconnected — the graph's original alpha source was dropped"
+    base_src = sources[(cf["m_ObjectId"], 3)]
+    assert base_src[0] != cf["m_ObjectId"], "BaseAlpha is fed by the custom function itself"
 
 
 # ---------------------------------------------------------------------------
 # main
 # ---------------------------------------------------------------------------
 
-def main():
-    check_only = "--check" in sys.argv
-    docs = load_docs(GRAPH)
+def wire_graph(rel_path, check_only):
+    """Returns (changed, message). Raises on any invariant failure (before writing)."""
+    path = os.path.join(REPO, rel_path)
+    docs = load_docs(path)
     graph = find_graph(docs)
 
-    already = find_property(docs, TARGET_PROP[0]) is not None
-    if already:
+    if find_property(docs, TARGET_PROP[0]) is not None:
         validate(docs, expect_wired=True)
-        print("BlockGraph: occlusion corridor already wired — nothing to do (validated).")
-        return 0
+        return False, f"{os.path.basename(rel_path)}: already wired (validated)."
     if check_only:
-        print("BlockGraph: occlusion corridor NOT wired.", file=sys.stderr)
-        return 1
+        return False, None  # signals NOT wired
 
     validate(docs, expect_wired=False)  # the file we are about to edit must be sane
-
     idx = index(docs)
 
-    # ---- donors (all same-file except the Position node, which BlockGraph lacks) ----
-    donor_v3_prop = find_property(docs, "Spread")
+    # ---- donors (all same-file except the Position node, which these graphs lack) ----
+    donor_v3_prop = next((find_property(docs, n) for n in ("Spread", "StartSpread", "GrowStartFrac")
+                          if find_property(docs, n) is not None), None)
     donor_unexposed = find_property(docs, "PrismClock")
-    assert donor_v3_prop and donor_unexposed, "donor properties missing"
+    assert donor_v3_prop is not None, f"{rel_path}: no Vector3 property to clone"
+    assert donor_unexposed is not None, f"{rel_path}: no unexposed _PrismClock property to clone exposure flags from"
     donor_prop_node = next(idx[r["m_Id"]] for r in graph["m_Nodes"]
                            if idx[r["m_Id"]].get("m_Type", "").endswith("PropertyNode"))
     donor_cf = next(idx[r["m_Id"]] for r in graph["m_Nodes"]
@@ -335,7 +361,7 @@ def main():
     donor_slot_v1 = next(idx[s["m_Id"]] for s in donor_cf["m_Slots"]
                          if "Vector1MaterialSlot" in idx[s["m_Id"]]["m_Type"])
 
-    pos_docs = load_docs(POSITION_DONOR)
+    pos_docs = load_docs(os.path.join(REPO, POSITION_DONOR))
     pos_idx = index(pos_docs)
     donor_pos = next(d for d in pos_docs if d.get("m_Type", "").endswith("PositionNode"))
     donor_pos_slot = pos_idx[donor_pos["m_Slots"][0]["m_Id"]]
@@ -367,20 +393,23 @@ def main():
         graph["m_Nodes"].append({"m_Id": node["m_ObjectId"]})
 
     # ---- edges ----
-    alpha_prop = find_property(docs, "Alpha")
-    alpha_node = next(idx[r["m_Id"]] for r in graph["m_Nodes"]
-                      if idx[r["m_Id"]].get("m_Property", {}).get("m_Id") == alpha_prop["m_ObjectId"])
     alpha_block = find_block(docs, "SurfaceDescription.Alpha")
     clip_block = find_block(docs, "SurfaceDescription.AlphaClipThreshold")
+    assert alpha_block is not None, f"{rel_path}: no SurfaceDescription.Alpha block"
+    assert clip_block is not None, (
+        f"{rel_path}: no SurfaceDescription.AlphaClipThreshold block — the graph target must have "
+        "Allow Material Override (or Alpha Clip) on, or an opaque material can never dissolve")
 
-    # RETARGET the one existing feed (never add a second feeder into the same input).
+    # RETARGET the graph's ONE existing alpha feeder into BaseAlpha (never add a second
+    # feeder into the same input). Whatever it is — a property node on BlockGraph, the
+    # explosion clock's Opacity on ExplodingBlockGraph — the corridor multiplies it.
     retargeted = 0
     for e in graph["m_Edges"]:
-        if (e["m_InputSlot"]["m_Node"]["m_Id"] == alpha_block["m_ObjectId"]
-                and e["m_OutputSlot"]["m_Node"]["m_Id"] == alpha_node["m_ObjectId"]):
+        if e["m_InputSlot"]["m_Node"]["m_Id"] == alpha_block["m_ObjectId"]:
             e["m_InputSlot"] = {"m_Node": {"m_Id": cf_node["m_ObjectId"]}, "m_SlotId": 3}
             retargeted += 1
-    assert retargeted == 1, f"expected exactly one _Alpha -> SurfaceDescription.Alpha edge, found {retargeted}"
+    assert retargeted == 1, (
+        f"{rel_path}: expected exactly one feeder into SurfaceDescription.Alpha, found {retargeted}")
 
     graph["m_Edges"] += [
         edge(position_node["m_ObjectId"], 0, cf_node["m_ObjectId"], 0),
@@ -393,12 +422,24 @@ def main():
     docs += new_docs
     validate(docs, expect_wired=True)  # nothing has been written yet
 
-    open(GRAPH, "w", encoding="utf-8").write(dump_docs(docs))
+    open(path, "w", encoding="utf-8").write(dump_docs(docs))
+    validate(load_docs(path), expect_wired=True)  # re-read from disk and re-check
+    return True, (f"{os.path.basename(rel_path)}: wired and validated "
+                  f"(+2 globals, +4 nodes, +{len(new_docs) - 6} slots, 5 new edges, 1 retargeted).")
 
-    # re-read from disk and validate again
-    validate(load_docs(GRAPH), expect_wired=True)
-    print("BlockGraph: occlusion corridor wired and validated "
-          f"(+2 global properties, +4 nodes, +{len(new_docs) - 6} slots, 5 new edges, 1 retargeted).")
+
+def main():
+    check_only = "--check" in sys.argv
+    unwired = []
+    for rel in GRAPHS:
+        changed, message = wire_graph(rel, check_only)
+        if message is None:
+            unwired.append(rel)
+            print(f"  {os.path.basename(rel)}: NOT wired.", file=sys.stderr)
+        else:
+            print("  " + message)
+    if unwired:
+        return 1
     return 0
 
 

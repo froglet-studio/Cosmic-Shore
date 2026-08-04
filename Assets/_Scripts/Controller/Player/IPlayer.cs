@@ -51,6 +51,18 @@ namespace CosmicShore.Gameplay
         /// </summary>
         bool IsLocalUser { get; }
         /// <summary>
+        /// The human pilot ON THIS MACHINE — the player whose camera and input this client owns.
+        /// Broader than <see cref="IsLocalUser"/> by exactly one case: the legacy NON-NETWORKED
+        /// single-player spawn path (<see cref="PlayerSpawner"/> → <c>InitializeForSinglePlayerMode</c>,
+        /// used by the single-player minigame scenes) never network-spawns its Player, so
+        /// <c>IsSpawned</c> is false there and <see cref="IsLocalUser"/> reports false for a human.
+        ///
+        /// Use this — never <see cref="IsLocalUser"/> — for anything that must hold in EVERY game
+        /// mode, so a mode cannot opt out of a platform system by using the other spawn path. The
+        /// prism occlusion corridor (Docs/PRISM_ANIMATION.md §4.6) binds on exactly this.
+        /// </summary>
+        bool IsLocalPilot { get; }
+        /// <summary>
         /// In multiplayer session, this stores the network object id.
         /// </summary>
         ulong PlayerNetId { get; }

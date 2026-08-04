@@ -31,6 +31,15 @@ namespace CosmicShore.Utility
     /// Only ONE target is ever published — the local player's vessel. The camera end of
     /// the corridor is read on the GPU (<c>_WorldSpaceCameraPos</c>), so it is always
     /// exactly the camera that is rendering and never needs to be resolved or published.
+    ///
+    /// PLATFORM LAW (see Docs/PRISM_ANIMATION.md §4.6). The corridor is not a feature a
+    /// vessel or a game mode may choose. It is bound in <c>VesselController.Initialize</c> —
+    /// the one method every vessel must call to become a player's vessel, on every spawn
+    /// path (single-player, multiplayer, menu autopilot, runtime swap) — so there is
+    /// nothing per-vessel and nothing per-scene to wire, and therefore nothing to forget.
+    /// The shader half is in the prism graphs themselves, so a new prism, a new vessel or a
+    /// new minigame inherits it by construction. The only sanctioned hold is
+    /// <see cref="SetSuppressed"/>, used by exactly one caller.
     /// </summary>
     public static class PrismOcclusionCorridor
     {
@@ -40,6 +49,7 @@ namespace CosmicShore.Utility
         const string ConfigResourcePath = "PrismOcclusionConfig";
 
         static Transform _target;
+        static bool _suppressed;
         static PrismOcclusionConfigSO _config;
         static bool _configResolved;
         static bool _publishedActive;
@@ -71,12 +81,26 @@ namespace CosmicShore.Utility
         }
 
         /// <summary>
-        /// Point the corridor at the thing the local player's camera is watching — their
-        /// vessel. Called from <c>CameraManager</c> wherever a follow target is installed,
-        /// which is the one place in the codebase that already means "this is the local
-        /// player's ship". Passing null turns the corridor off.
+        /// Point the corridor at the local pilot's vessel. The ONLY caller is
+        /// <c>VesselController.Initialize</c> under <c>IPlayer.IsLocalPilot</c> — deliberately
+        /// the universal vessel entry point rather than any camera, mode, or per-vessel
+        /// component, so the corridor cannot be omitted by authoring. Do not add call sites
+        /// that give a mode a way to point it somewhere else.
         /// </summary>
         public static void SetTarget(Transform target) => _target = target;
+
+        /// <summary>
+        /// Temporarily hold the corridor closed WITHOUT unbinding the vessel. The one
+        /// sanctioned caller is <c>CameraManager</c>'s manual replay camera: a broadcast
+        /// vantage is not looking at the local ship, so a camera→ship capsule would cut a
+        /// hole through unrelated mass. Symmetric — <c>RestoreGameplayCamera</c> lifts it —
+        /// and it is a HOLD, not an opt-out: the vessel binding survives it, so nothing has
+        /// to remember to re-point the corridor afterwards.
+        /// </summary>
+        public static void SetSuppressed(bool suppressed) => _suppressed = suppressed;
+
+        /// <summary>True while <see cref="SetSuppressed"/> is holding the corridor closed.</summary>
+        public static bool IsSuppressed => _suppressed;
 
         /// <summary>
         /// Turn the corridor off, but only if <paramref name="target"/> is still the one in
@@ -102,6 +126,7 @@ namespace CosmicShore.Utility
         static void InstallPublisher()
         {
             _target = null;
+            _suppressed = false;
             // Shader globals survive play-mode exit in the editor, so a stale corridor from
             // the previous session would fade prisms around a vessel that no longer exists.
             // Publish the off state before anything renders.
@@ -124,7 +149,7 @@ namespace CosmicShore.Utility
         static void Publish()
         {
             var config = Config;
-            bool active = _target != null && _target.gameObject.activeInHierarchy
+            bool active = !_suppressed && _target != null && _target.gameObject.activeInHierarchy
                           && config.Enabled && config.OuterRadius > 0f;
 
             if (!active)
