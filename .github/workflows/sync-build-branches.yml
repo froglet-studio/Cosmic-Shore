@@ -1,13 +1,22 @@
 name: Sync build branches
 
-# Promotes bleeding-edge into the Unity Build Automation branches ahead of the
+# Promotes the trunk into the Unity Build Automation branches ahead of the
 # Thursday test build. UGS watches build/android and build/windows and starts
 # its own builds when it sees the push, so all this workflow has to do is move
 # those two refs and leave a paper trail behind.
 #
+# The trunk is whatever the repository's DEFAULT BRANCH is at the time the
+# workflow runs. It is bleeding-edge today and is expected to become
+# development later; changing the default branch on GitHub is the only action
+# needed to move the pipeline over. Nothing here hardcodes a branch name.
+#
 # The refs are moved through the GitHub API rather than by checking the repo
 # out. Cosmic Shore is a ~2.7 GB Unity project and a full-history clone would
 # dominate the runtime for what is ultimately a two-pointer update.
+#
+# Reporting: every run comments on a single tracking issue, which is CLOSED
+# while the pipeline is healthy and REOPENED the moment a run fails. Watch that
+# one issue to get an email every Thursday. See Docs/BUILD_AND_DELIVERY.md §11.
 
 on:
   schedule:
@@ -19,9 +28,9 @@ on:
   workflow_dispatch:
     inputs:
       source_ref:
-        description: Branch or commit SHA to promote into the build branches.
-        default: bleeding-edge
-        required: true
+        description: Branch or commit SHA to promote. Blank uses the default branch.
+        default: ''
+        required: false
       targets:
         description: Which build branches to move.
         type: choice
@@ -32,7 +41,8 @@ on:
         default: both
 
 permissions:
-  contents: write
+  contents: write   # move refs and tags
+  issues: write     # write the run report
 
 # Never let a manual run and the Thursday run move the same refs at once.
 concurrency:
@@ -42,6 +52,8 @@ concurrency:
 env:
   ANDROID_BRANCH: build/android
   WINDOWS_BRANCH: build/windows
+  REPORT_LABEL: build-promotion
+  REPORT_TITLE: Weekly build branch promotion
 
 jobs:
   sync:
@@ -72,17 +84,53 @@ jobs:
         if: steps.gate.outputs.proceed == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
-          SOURCE_REF: ${{ github.event.inputs.source_ref || 'bleeding-edge' }}
+          INPUT_REF: ${{ github.event.inputs.source_ref }}
         run: |
           set -euo pipefail
-          if ! sha=$(gh api "repos/$GITHUB_REPOSITORY/commits/$SOURCE_REF" --jq .sha); then
-            echo "::error::Could not resolve '$SOURCE_REF' to a commit in $GITHUB_REPOSITORY."
+
+          # No explicit ref means "promote the trunk", and the trunk is defined
+          # as the repository default branch rather than a name baked in here.
+          ref="${INPUT_REF:-}"
+          if [ -z "$ref" ]; then
+            ref=$(gh api "repos/$GITHUB_REPOSITORY" --jq .default_branch)
+            echo "No source_ref given; using the default branch '$ref'."
+          fi
+
+          if ! sha=$(gh api "repos/$GITHUB_REPOSITORY/commits/$ref" --jq .sha); then
+            echo "::error::Could not resolve '$ref' to a commit in $GITHUB_REPOSITORY."
             exit 1
           fi
           subject=$(gh api "repos/$GITHUB_REPOSITORY/commits/$sha" --jq '.commit.message' | head -1)
-          echo "Promoting $SOURCE_REF -> ${sha:0:8} ($subject)"
-          echo "sha=$sha" >> "$GITHUB_OUTPUT"
-          echo "subject=$subject" >> "$GITHUB_OUTPUT"
+
+          echo "Promoting $ref -> ${sha:0:8} ($subject)"
+          {
+            echo "ref=$ref"
+            echo "sha=$sha"
+            echo "subject=$subject"
+          } >> "$GITHUB_OUTPUT"
+
+      # Static validation, first line of defence. No Unity and no runner, so it
+      # can block a promotion in seconds. Only the code trees are checked out:
+      # Assets/_Scripts is 22 MB against 1.4 GB for all of Assets, and the
+      # blocking check only ever reads .cs files.
+      - name: Check out code for validation
+        if: steps.gate.outputs.proceed == 'true'
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.source.outputs.sha }}
+          fetch-depth: 1
+          sparse-checkout: |
+            Assets/_Scripts
+            Tools/CI
+          sparse-checkout-cone-mode: false
+
+      - name: Validate project
+        if: steps.gate.outputs.proceed == 'true'
+        run: |
+          set -euo pipefail
+          # meta needs the whole Assets tree, which is deliberately not checked
+          # out here. build-branch-ci.yml runs the full set after promotion.
+          python3 Tools/CI/validate_project.py --github --skip meta
 
       - name: Require a green source commit
         if: steps.gate.outputs.proceed == 'true'
@@ -133,19 +181,19 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           SHA: ${{ steps.source.outputs.sha }}
           SUBJECT: ${{ steps.source.outputs.subject }}
-          SOURCE_REF: ${{ github.event.inputs.source_ref || 'bleeding-edge' }}
+          SOURCE_REF: ${{ steps.source.outputs.ref }}
           TARGETS: ${{ github.event.inputs.targets || 'both' }}
         run: |
           set -euo pipefail
 
+          # Built once here, then reused for both the job summary and the
+          # tracking issue comment so the two can never disagree.
           {
-            echo "### Build branch promotion"
-            echo
             echo "Source \`$SOURCE_REF\` at \`${SHA:0:8}\` — $SUBJECT"
             echo
             echo "| Branch | Was | Now |"
             echo "| --- | --- | --- |"
-          } >> "$GITHUB_STEP_SUMMARY"
+          } > "$RUNNER_TEMP/report.md"
 
           promote () {
             branch="$1"
@@ -155,17 +203,17 @@ jobs:
               gh api -X POST "repos/$GITHUB_REPOSITORY/git/refs" \
                 -f "ref=refs/heads/$branch" -f "sha=$SHA" >/dev/null
               echo "Created $branch at ${SHA:0:8}"
-              echo "| \`$branch\` | did not exist | \`${SHA:0:8}\` |" >> "$GITHUB_STEP_SUMMARY"
+              echo "| \`$branch\` | did not exist | \`${SHA:0:8}\` |" >> "$RUNNER_TEMP/report.md"
             elif [ "$current" = "$SHA" ]; then
               echo "$branch is already at ${SHA:0:8}; nothing to do."
-              echo "| \`$branch\` | \`${current:0:8}\` | \`${SHA:0:8}\` (unchanged) |" >> "$GITHUB_STEP_SUMMARY"
+              echo "| \`$branch\` | \`${current:0:8}\` | \`${SHA:0:8}\` (unchanged) |" >> "$RUNNER_TEMP/report.md"
             else
               # force, because build branches are disposable snapshots of the
               # source ref and are never committed to directly.
               gh api -X PATCH "repos/$GITHUB_REPOSITORY/git/refs/heads/$branch" \
                 -f "sha=$SHA" -F force=true >/dev/null
               echo "Moved $branch from ${current:0:8} to ${SHA:0:8}"
-              echo "| \`$branch\` | \`${current:0:8}\` | \`${SHA:0:8}\` |" >> "$GITHUB_STEP_SUMMARY"
+              echo "| \`$branch\` | \`${current:0:8}\` | \`${SHA:0:8}\` |" >> "$RUNNER_TEMP/report.md"
             fi
           }
 
@@ -197,10 +245,76 @@ jobs:
             echo "Tagged ${SHA:0:8} as $tag"
           fi
 
+          echo "" >> "$RUNNER_TEMP/report.md"
+          echo "Tagged \`$tag\`." >> "$RUNNER_TEMP/report.md"
+
+      # ──────────────────────────────────────────────
+      #  Report. Runs whatever happened above.
+      # ──────────────────────────────────────────────
+      - name: Report
+        if: always() && steps.gate.outputs.proceed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          STATUS: ${{ job.status }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+
+          body="$RUNNER_TEMP/body.md"
+          if [ "$STATUS" = "success" ]; then
+            echo "### Build branches promoted" > "$body"
+          else
+            echo "### Build branch promotion FAILED" > "$body"
+          fi
+          echo "" >> "$body"
+
+          if [ -s "$RUNNER_TEMP/report.md" ]; then
+            cat "$RUNNER_TEMP/report.md" >> "$body"
+          else
+            echo "The run failed before it moved any refs." >> "$body"
+          fi
+
           {
-            echo
-            echo "Tagged \`$tag\`."
-          } >> "$GITHUB_STEP_SUMMARY"
+            echo ""
+            if [ "$STATUS" != "success" ]; then
+              echo "**The Thursday test build will be stale or missing until this is fixed.**"
+              echo ""
+            fi
+            echo "[Full log]($RUN_URL) · $(TZ=America/Los_Angeles date '+%Y-%m-%d %H:%M %Z')"
+          } >> "$body"
+
+          cat "$body" >> "$GITHUB_STEP_SUMMARY"
+
+          # The label is how the tracking issue is found again next week; the
+          # title is only cosmetic. Creating it is idempotent.
+          gh api -X POST "repos/$GITHUB_REPOSITORY/labels" \
+            -f name="$REPORT_LABEL" -f color="1d76db" \
+            -f description="Weekly build branch promotion reports" >/dev/null 2>&1 || true
+
+          num=$(gh api "repos/$GITHUB_REPOSITORY/issues?state=all&labels=$REPORT_LABEL&per_page=1" \
+            --jq '.[0].number // empty' 2>/dev/null || true)
+
+          if [ -z "$num" ]; then
+            num=$(gh api -X POST "repos/$GITHUB_REPOSITORY/issues" \
+              -f title="$REPORT_TITLE" -f body="$(cat "$body")" \
+              -f "labels[]=$REPORT_LABEL" --jq .number)
+            echo "Opened tracking issue #$num"
+          else
+            gh api -X POST "repos/$GITHUB_REPOSITORY/issues/$num/comments" \
+              -f body="$(cat "$body")" >/dev/null
+            echo "Commented on tracking issue #$num"
+          fi
+
+          # Issue state IS the health signal: closed means the last run was
+          # good, open means the pipeline needs attention. Comments notify
+          # subscribers either way, so a healthy week is never silent.
+          if [ "$STATUS" = "success" ]; then
+            gh api -X PATCH "repos/$GITHUB_REPOSITORY/issues/$num" -f state=closed >/dev/null
+            echo "Pipeline healthy; issue #$num closed."
+          else
+            gh api -X PATCH "repos/$GITHUB_REPOSITORY/issues/$num" -f state=open >/dev/null
+            echo "::warning::Promotion failed. Tracking issue #$num is open."
+          fi
 
       - name: Report skipped run
         if: steps.gate.outputs.proceed != 'true'

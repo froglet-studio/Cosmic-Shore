@@ -279,24 +279,30 @@ for outside-contributor runs, or drop the PR trigger and keep only `schedule` +
 
 `.github/workflows/sync-build-branches.yml`.
 
+> Branch model, defence-in-depth layers, and the improvement roadmap live in
+> **`Docs/BRANCHING_AND_RELEASE.md`**. This section covers the build mechanics only.
+
 The Thursday test build runs out of Unity Build Automation, and UGS watches a branch rather than
-being told what to build. Pointing a UGS target straight at `bleeding-edge` would mean the build
-picks up whatever landed in the minutes before it started, and there would be no stable name for
-"the build QA is testing". So there are two disposable snapshot branches instead:
+being told what to build. Pointing a UGS target straight at trunk would mean the build picks up
+whatever landed in the minutes before it started, and there would be no stable name for "the build
+QA is testing". So there are two disposable snapshot branches instead:
 
 | Branch | Platform |
 |---|---|
 | `build/android` | Android test build |
 | `build/windows` | Windows x64 test build |
 
-**Nobody commits to these branches.** They are force-moved to a commit on `bleeding-edge` and hold
-no unique history. If you need to fix something in a build, fix it on `bleeding-edge` and re-run the
-promotion.
+**Nobody commits to these branches.** They are force-moved to a commit on trunk and hold no unique
+history. If you need to fix something in a build, fix it on trunk and re-run the promotion.
 
 ### The schedule
 
-The workflow promotes `bleeding-edge` into both branches at **06:00 America/Los_Angeles every
-Thursday**, then UGS takes over.
+The workflow promotes trunk into both branches at **06:00 America/Los_Angeles every Thursday**,
+then UGS takes over.
+
+"Trunk" means **the repository default branch, read at run time**, which is `bleeding-edge` today
+and is expected to become `development` later. Nothing in the workflow hardcodes a branch name, so
+switching trunk is a GitHub setting change rather than a code change.
 
 GitHub's scheduler is UTC-only and does not observe daylight saving, so a single cron entry drifts
 by an hour twice a year. The workflow registers `0 13,14 * * 4` (both 06:00 PDT and 06:00 PST) and
@@ -317,18 +323,41 @@ force-moved every week.
 
 Actions tab, **Sync build branches**, **Run workflow**. Two inputs:
 
-- `source_ref` (default `bleeding-edge`): any branch or commit SHA. Use a SHA to promote a known
-  good commit when the branch tip has since broken.
+- `source_ref` (blank means the default branch): any branch or commit SHA. Use a SHA to promote a
+  known good commit when the branch tip has since broken.
 - `targets` (default `both`): promote only `android` or only `windows` when one platform needs a
   respin and the other build is fine.
 
 Manual runs skip the Pacific clock guard.
+
+### Verification before and after
+
+The promotion is gated on `Tools/CI/validate_project.py`, which runs over a sparse checkout of
+`Assets/_Scripts` (22 MB against 1.4 GB for all of `Assets`) and needs no Unity install. It blocks
+on editor-only API reaching player code, the recurring "namespace error" class that produced the
+commits *Move editor scripts to Editor folder to fix player build errors* and *Fully qualify Editor
+base class to avoid namespace conflict*. A known-bad commit therefore never reaches UGS.
+
+After promotion, `build-branch-ci.yml` re-runs the full static set on the build branch and compiles
+it where a Unity runner exists, then attempts an autofix PR **against trunk** if anything failed.
+Details and the reasoning in `Docs/BRANCHING_AND_RELEASE.md` §2.
+
+### Notifications
+
+Every run comments on a single tracking issue labelled `build-promotion`, and the issue state is
+the health signal: **closed means the last run was good, open means the pipeline needs attention**.
+Subscribe to that issue to get the weekly report by email. Successful runs comment too, on purpose,
+because a workflow that silently stops firing otherwise looks exactly like a quiet week.
+
+Do not rely on GitHub's own failure email here: for *scheduled* workflows it goes only to whoever
+last edited the cron line.
 
 ### Configuration
 
 | Variable | Where | Purpose |
 |---|---|---|
 | `BUILD_PROMOTION_REQUIRES_GREEN` | Repo variable | Set to `true` to refuse promotion of a commit whose check runs are red or absent. **Leave unset until Unity CI is actually running** (see §10), or every promotion blocks on evidence that does not exist yet. |
+| `ANTHROPIC_API_KEY` | Repo secret | Enables the autofix job in `build-branch-ci.yml`. Inert while unset. |
 
 ### Where the workflow file has to live
 
