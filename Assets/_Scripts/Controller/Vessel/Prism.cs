@@ -593,6 +593,12 @@ namespace CosmicShore.Gameplay
         internal void SyncRenderMaterial()
         {
             if (meshRenderer == null) return;
+            // Fail loud once per material if this prism cannot be dissolved by the
+            // camera↔vessel occlusion corridor. Every material a prism ever binds passes
+            // through here, so this is the enforcement point for §4.7's platform law —
+            // an unfadeable prism is an invisible hole in the corridor, and silence is
+            // exactly how the previous opt-in system stayed broken for so long.
+            PrismOcclusionDiagnostics.VerifyCorridorCapable(meshRenderer.sharedMaterial, this);
             if (!PrismRenderService.IsHandleUsable(in RenderHandle))
             {
                 // The material may only now have arrived (a prism shown before its
