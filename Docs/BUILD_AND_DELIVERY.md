@@ -19,6 +19,7 @@ Owner: Shombith. Related: `Docs/STEAM_EA_INVESTOR_CHECKPOINT.pdf`, `Tools/Steam/
 | B6 | Crash reporting behind consent | **Done** — `CrashReportingService`, gated by the existing analytics consent. |
 | B7 | Steam overlay verification | **Blocked** — needs a real Steam build on the beta branch. Do it during the closed playtest (E7). |
 | — | Nightly build verification (CI) | **Authored, not running** — `.github/workflows/unity-ci.yml`. Needs a runner, see §10. |
+| — | Weekly test build promotion | **Authored** — `.github/workflows/sync-build-branches.yml`. Moves `bleeding-edge` into `build/android` and `build/windows` every Thursday 06:00 PT for UGS, see §11. |
 
 ---
 
@@ -271,3 +272,75 @@ for outside-contributor runs, or drop the PR trigger and keep only `schedule` +
   retained. SteamPipe uploads run from the build machine (§4), not from CI.
 - No notifications beyond GitHub's own. Failures surface in the Actions tab and via GitHub's default
   email; wiring Discord is a later addition if the signal gets missed.
+
+---
+
+## 11. Build branches for the weekly test build
+
+`.github/workflows/sync-build-branches.yml`.
+
+The Thursday test build runs out of Unity Build Automation, and UGS watches a branch rather than
+being told what to build. Pointing a UGS target straight at `bleeding-edge` would mean the build
+picks up whatever landed in the minutes before it started, and there would be no stable name for
+"the build QA is testing". So there are two disposable snapshot branches instead:
+
+| Branch | Platform |
+|---|---|
+| `build/android` | Android test build |
+| `build/windows` | Windows x64 test build |
+
+**Nobody commits to these branches.** They are force-moved to a commit on `bleeding-edge` and hold
+no unique history. If you need to fix something in a build, fix it on `bleeding-edge` and re-run the
+promotion.
+
+### The schedule
+
+The workflow promotes `bleeding-edge` into both branches at **06:00 America/Los_Angeles every
+Thursday**, then UGS takes over.
+
+GitHub's scheduler is UTC-only and does not observe daylight saving, so a single cron entry drifts
+by an hour twice a year. The workflow registers `0 13,14 * * 4` (both 06:00 PDT and 06:00 PST) and
+the first step checks the real Pacific hour, letting the twin that is an hour off exit quietly. The
+slot stays at 06:00 Pacific year round without anyone editing the cron.
+
+The refs are moved through the GitHub API, not by checking the repository out. This is a ~2.7 GB
+Unity project and a full-history clone would take longer than everything else in the job combined.
+
+### The tag
+
+Each promotion also writes a lightweight tag, `testbuild/YYYY-MM-DD`, on the promoted commit. This
+exists so a bug filed three months from now against "the August 6th build" resolves to an exact
+commit instead of a guess. It is the cheapest traceability that survives the branches being
+force-moved every week.
+
+### Running it by hand
+
+Actions tab, **Sync build branches**, **Run workflow**. Two inputs:
+
+- `source_ref` (default `bleeding-edge`): any branch or commit SHA. Use a SHA to promote a known
+  good commit when the branch tip has since broken.
+- `targets` (default `both`): promote only `android` or only `windows` when one platform needs a
+  respin and the other build is fine.
+
+Manual runs skip the Pacific clock guard.
+
+### Configuration
+
+| Variable | Where | Purpose |
+|---|---|---|
+| `BUILD_PROMOTION_REQUIRES_GREEN` | Repo variable | Set to `true` to refuse promotion of a commit whose check runs are red or absent. **Leave unset until Unity CI is actually running** (see §10), or every promotion blocks on evidence that does not exist yet. |
+
+### Where the workflow file has to live
+
+Scheduled workflows only fire from the **default branch**, which for this repository is
+`bleeding-edge`. The file has to be merged into `bleeding-edge` before any Thursday run happens.
+Merging it onto `master` or a feature branch does nothing for the schedule, though
+`workflow_dispatch` still works from the Actions tab once it is on the default branch.
+
+### UGS side
+
+Each build target in Unity Build Automation needs its branch field set to `build/android` or
+`build/windows` respectively, with auto-build on push enabled. Nothing else in UGS needs to change
+week to week. Note that pushes made with `GITHUB_TOKEN` do not trigger *GitHub Actions* workflows,
+but they do still deliver the ordinary push webhook that UGS listens on, so the auto-build fires
+normally.

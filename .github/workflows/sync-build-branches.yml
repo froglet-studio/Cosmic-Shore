@@ -1,0 +1,209 @@
+name: Sync build branches
+
+# Promotes bleeding-edge into the Unity Build Automation branches ahead of the
+# Thursday test build. UGS watches build/android and build/windows and starts
+# its own builds when it sees the push, so all this workflow has to do is move
+# those two refs and leave a paper trail behind.
+#
+# The refs are moved through the GitHub API rather than by checking the repo
+# out. Cosmic Shore is a ~2.7 GB Unity project and a full-history clone would
+# dominate the runtime for what is ultimately a two-pointer update.
+
+on:
+  schedule:
+    # GitHub's scheduler runs on UTC and never observes daylight saving, but the
+    # build slot is 06:00 Pacific year round. 13:00 UTC is 06:00 PDT and 14:00
+    # UTC is 06:00 PST, so both fire every Thursday and the clock guard in the
+    # first step drops whichever one is an hour off on the day.
+    - cron: '0 13,14 * * 4'
+  workflow_dispatch:
+    inputs:
+      source_ref:
+        description: Branch or commit SHA to promote into the build branches.
+        default: bleeding-edge
+        required: true
+      targets:
+        description: Which build branches to move.
+        type: choice
+        options:
+          - both
+          - android
+          - windows
+        default: both
+
+permissions:
+  contents: write
+
+# Never let a manual run and the Thursday run move the same refs at once.
+concurrency:
+  group: sync-build-branches
+  cancel-in-progress: false
+
+env:
+  ANDROID_BRANCH: build/android
+  WINDOWS_BRANCH: build/windows
+
+jobs:
+  sync:
+    name: Promote to build branches
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check the Pacific clock
+        id: gate
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" != "schedule" ]; then
+            echo "Triggered manually; skipping the clock guard."
+            echo "proceed=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          hour=$(TZ=America/Los_Angeles date +%H)
+          if [ "$hour" = "06" ]; then
+            echo "06:00 in America/Los_Angeles. Proceeding."
+            echo "proceed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "It is ${hour}:00 in America/Los_Angeles, not 06:00."
+            echo "This is the daylight-saving twin of today's real slot. Skipping."
+            echo "proceed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Resolve source commit
+        id: source
+        if: steps.gate.outputs.proceed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_REF: ${{ github.event.inputs.source_ref || 'bleeding-edge' }}
+        run: |
+          set -euo pipefail
+          if ! sha=$(gh api "repos/$GITHUB_REPOSITORY/commits/$SOURCE_REF" --jq .sha); then
+            echo "::error::Could not resolve '$SOURCE_REF' to a commit in $GITHUB_REPOSITORY."
+            exit 1
+          fi
+          subject=$(gh api "repos/$GITHUB_REPOSITORY/commits/$sha" --jq '.commit.message' | head -1)
+          echo "Promoting $SOURCE_REF -> ${sha:0:8} ($subject)"
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+          echo "subject=$subject" >> "$GITHUB_OUTPUT"
+
+      - name: Require a green source commit
+        if: steps.gate.outputs.proceed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ steps.source.outputs.sha }}
+          REQUIRE_GREEN: ${{ vars.BUILD_PROMOTION_REQUIRES_GREEN }}
+        run: |
+          set -euo pipefail
+          conclusions=$(gh api "repos/$GITHUB_REPOSITORY/commits/$SHA/check-runs" \
+            --jq '[.check_runs[] | select(.status == "completed") | .conclusion] | join(" ")' \
+            2>/dev/null || true)
+
+          failed=""
+          for c in $conclusions; do
+            case "$c" in
+              failure|timed_out|cancelled|action_required) failed="yes" ;;
+            esac
+          done
+
+          if [ -n "$conclusions" ]; then
+            echo "Check runs on ${SHA:0:8}: $conclusions"
+          else
+            echo "No completed check runs on ${SHA:0:8}."
+          fi
+
+          # Inert until someone opts in, exactly like UNITY_RUNNER_LABEL in
+          # unity-ci.yml. Turning this on before Unity CI actually runs would
+          # block every promotion on evidence that does not exist yet.
+          if [ "${REQUIRE_GREEN:-false}" != "true" ]; then
+            echo "BUILD_PROMOTION_REQUIRES_GREEN is not 'true'; promoting without a CI gate."
+            exit 0
+          fi
+
+          if [ -n "$failed" ]; then
+            echo "::error::Refusing to promote ${SHA:0:8} into the build branches: CI is red."
+            exit 1
+          fi
+          if [ -z "$conclusions" ]; then
+            echo "::error::Refusing to promote ${SHA:0:8}: no completed check runs to trust."
+            exit 1
+          fi
+          echo "Source commit is green."
+
+      - name: Promote build branches
+        if: steps.gate.outputs.proceed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ steps.source.outputs.sha }}
+          SUBJECT: ${{ steps.source.outputs.subject }}
+          SOURCE_REF: ${{ github.event.inputs.source_ref || 'bleeding-edge' }}
+          TARGETS: ${{ github.event.inputs.targets || 'both' }}
+        run: |
+          set -euo pipefail
+
+          {
+            echo "### Build branch promotion"
+            echo
+            echo "Source \`$SOURCE_REF\` at \`${SHA:0:8}\` — $SUBJECT"
+            echo
+            echo "| Branch | Was | Now |"
+            echo "| --- | --- | --- |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          promote () {
+            branch="$1"
+            current=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/$branch" --jq .object.sha 2>/dev/null || true)
+
+            if [ -z "$current" ]; then
+              gh api -X POST "repos/$GITHUB_REPOSITORY/git/refs" \
+                -f "ref=refs/heads/$branch" -f "sha=$SHA" >/dev/null
+              echo "Created $branch at ${SHA:0:8}"
+              echo "| \`$branch\` | did not exist | \`${SHA:0:8}\` |" >> "$GITHUB_STEP_SUMMARY"
+            elif [ "$current" = "$SHA" ]; then
+              echo "$branch is already at ${SHA:0:8}; nothing to do."
+              echo "| \`$branch\` | \`${current:0:8}\` | \`${SHA:0:8}\` (unchanged) |" >> "$GITHUB_STEP_SUMMARY"
+            else
+              # force, because build branches are disposable snapshots of the
+              # source ref and are never committed to directly.
+              gh api -X PATCH "repos/$GITHUB_REPOSITORY/git/refs/heads/$branch" \
+                -f "sha=$SHA" -F force=true >/dev/null
+              echo "Moved $branch from ${current:0:8} to ${SHA:0:8}"
+              echo "| \`$branch\` | \`${current:0:8}\` | \`${SHA:0:8}\` |" >> "$GITHUB_STEP_SUMMARY"
+            fi
+          }
+
+          case "$TARGETS" in
+            both)    promote "$ANDROID_BRANCH"; promote "$WINDOWS_BRANCH" ;;
+            android) promote "$ANDROID_BRANCH" ;;
+            windows) promote "$WINDOWS_BRANCH" ;;
+            *)       echo "::error::Unknown target '$TARGETS'."; exit 1 ;;
+          esac
+
+      - name: Tag the build
+        if: steps.gate.outputs.proceed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ steps.source.outputs.sha }}
+        run: |
+          set -euo pipefail
+          # A single dated tag per weekly build, so a QA report that says
+          # "the Thursday build" resolves to an exact commit months later.
+          tag="testbuild/$(TZ=America/Los_Angeles date +%Y-%m-%d)"
+
+          if gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$tag" >/dev/null 2>&1; then
+            gh api -X PATCH "repos/$GITHUB_REPOSITORY/git/refs/tags/$tag" \
+              -f "sha=$SHA" -F force=true >/dev/null
+            echo "Re-pointed existing tag $tag at ${SHA:0:8}"
+          else
+            gh api -X POST "repos/$GITHUB_REPOSITORY/git/refs" \
+              -f "ref=refs/tags/$tag" -f "sha=$SHA" >/dev/null
+            echo "Tagged ${SHA:0:8} as $tag"
+          fi
+
+          {
+            echo
+            echo "Tagged \`$tag\`."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Report skipped run
+        if: steps.gate.outputs.proceed != 'true'
+        run: |
+          echo "Daylight-saving twin run; the real slot fires an hour away." \
+            >> "$GITHUB_STEP_SUMMARY"
