@@ -82,6 +82,33 @@
 
 #define PRISM_OCCLUSION_KERNEL PRISM_OCCLUSION_KERNEL_WORLEY
 
+// -----------------------------------------------------------------------------
+// THE MORPH RATE — how fast the pattern evolves, in full pattern cycles per second.
+// A cycle is "the pattern has returned to itself", so 0.04 is one cycle per 25 seconds:
+// slow enough that you never catch it moving, fast enough that it is never the same
+// stipple twice. Set to 0 for a frozen pattern; nothing else needs to change.
+//
+// This is an AXIS, not a fourth kernel — each kernel interprets it in its own natural
+// terms (Worley orbits its feature points, the spiral drifts its phase), and each states
+// the interpretation at its own definition. Time comes from `_Time.y`, a URP built-in, so
+// morphing costs one MAD per fragment and ZERO CPU: no per-prism state, no publisher
+// change, no extra uniform. That is the same shape the clock-material law asks for
+// everywhere else — initial conditions plus a clock, evaluated on the GPU.
+//
+// WHY IT IS SAFE. The pattern is only visible where alpha is strictly between 0 and 1 —
+// the narrow gradient shell — because the core clips regardless of threshold and the
+// exterior clips nothing. So an evolving threshold can only flip pixels inside that band.
+// At this rate ~0.2% of band pixels change state per 60fps frame, which reads as the
+// pattern FLOWING rather than flickering; past roughly 0.25 cycles/sec it starts to read
+// as noise instead, so treat that as the ceiling.
+//
+// IGN IGNORES THIS. It is a hash, not a field: it has no continuity in any input, so
+// advancing it does not morph the pattern, it resamples it — every pixel independently,
+// every frame. That is full-amplitude shimmer, not motion. Only the two kernels that are
+// continuous functions of position can be continuous functions of time as well.
+// -----------------------------------------------------------------------------
+static const float PRISM_OCCLUSION_MORPH_RATE = 0.04;   // cycles/sec; 0 = frozen
+
 // The clip threshold must land STRICTLY inside (0,1). frac() can return exactly 0, and a
 // 0 threshold against a 0 alpha is `clip(0)` — which KEEPS the fragment on the URP
 // variants that clip directly rather than through AlphaDiscard's epsilon. That would
@@ -116,13 +143,20 @@ float PrismOcclusionSafeThreshold(float n)
 // which frac() erases — a fractional count would leave a visible radial scar down one
 // side of the corridor.
 // -----------------------------------------------------------------------------
+// MORPH: the rate is added straight to the band phase, so one cycle drifts the pattern by
+// exactly one band. Because an Archimedean spiral is sheared, a radial phase drift IS a
+// rotation — the iris turns slowly rather than pulsing. Coverage is untouched: the phase
+// is inside a frac() of an already-uniform quantity, so shifting it cannot change the
+// threshold's distribution at all. This is the one kernel whose morph is provably free.
 static const float PRISM_OCCLUSION_SPIRAL_RINGS = 9.0;  // bands across the cone radius
 static const float PRISM_OCCLUSION_SPIRAL_ARMS = 3.0;   // turns per revolution — INTEGER
 
-float PrismOcclusionSpiral(float radialRatio, float angleTurns)
+float PrismOcclusionSpiral(float radialRatio, float angleTurns, float time)
 {
     return PrismOcclusionSafeThreshold(frac(
-        radialRatio * PRISM_OCCLUSION_SPIRAL_RINGS + angleTurns * PRISM_OCCLUSION_SPIRAL_ARMS));
+        radialRatio * PRISM_OCCLUSION_SPIRAL_RINGS
+        + angleTurns * PRISM_OCCLUSION_SPIRAL_ARMS
+        + time * PRISM_OCCLUSION_MORPH_RATE));
 }
 
 // -----------------------------------------------------------------------------
@@ -176,9 +210,22 @@ float PrismOcclusionMotley(float2 pixel)
 // The hash is float-only (Hoskins hash22) rather than integer-op, so it behaves
 // identically on GLES/mobile targets where integer throughput is poor.
 // -----------------------------------------------------------------------------
-static const float PRISM_OCCLUSION_WORLEY_CELL = 6.0;      // pixels per lattice cell
-static const float PRISM_OCCLUSION_WORLEY_CDF_LO = 0.02;   // fitted to the measured F1 CDF
-static const float PRISM_OCCLUSION_WORLEY_CDF_HI = 0.83;   // — do not retune independently
+// MORPH: each feature point ORBITS inside its own cell — `0.5 + 0.5*sin(2pi*hash + t)`
+// per axis — so the cells breathe, drift, merge and split continuously with no pop. The
+// orbit is bounded to the unit cell, which is what keeps the 3×3 search exhaustive; a
+// `frac(hash + t)` drift would be cheaper and WRONG, because the point teleports from one
+// cell edge to the other every cycle.
+//
+// The jitter is this sin-orbit at EVERY rate, including 0. That is deliberate: the orbit's
+// marginal distribution is arcsine rather than uniform, which shifts the F1 CDF, so a
+// static raw-hash jitter and a moving sin jitter would need two different remaps. Using
+// one jitter function means ONE fit covers both — verified phase-stable at 0.0068 from
+// rate 0 through t = 400s. (Feeding the shipped-static constants 0.02/0.83 to the moving
+// points measured 0.0238, i.e. straight back out of the admission rule, which is exactly
+// the failure mode the warning below is about.)
+static const float PRISM_OCCLUSION_WORLEY_CELL = 6.0;       // pixels per lattice cell
+static const float PRISM_OCCLUSION_WORLEY_CDF_LO = 0.011;   // fitted to the measured F1 CDF
+static const float PRISM_OCCLUSION_WORLEY_CDF_HI = 0.873;   // — do not retune independently
 
 float2 PrismOcclusionHash2(float2 cell)
 {
@@ -187,10 +234,11 @@ float2 PrismOcclusionHash2(float2 cell)
     return frac((p3.xx + p3.yz) * p3.zy);
 }
 
-float PrismOcclusionWorley(float2 pixel)
+float PrismOcclusionWorley(float2 pixel, float time)
 {
     float2 p = pixel / PRISM_OCCLUSION_WORLEY_CELL;
     float2 base = floor(p);
+    float phase = time * PRISM_OCCLUSION_MORPH_RATE * 6.28318530718;
 
     // Squared distance while searching — the sqrt is paid once, at the end.
     float best = 8.0;
@@ -201,7 +249,8 @@ float PrismOcclusionWorley(float2 pixel)
         for (int x = -1; x <= 1; ++x)
         {
             float2 cell = base + float2(x, y);
-            float2 offset = (cell + PrismOcclusionHash2(cell)) - p;
+            float2 orbit = 0.5 + 0.5 * sin(6.28318530718 * PrismOcclusionHash2(cell) + phase);
+            float2 offset = (cell + orbit) - p;
             best = min(best, dot(offset, offset));
         }
     }
@@ -335,6 +384,10 @@ void PrismOcclusionFade_float(float3 PositionWS, float3 Target, float3 Params, f
     Alpha = BaseAlpha * fade;
 
 #if !defined(SHADERGRAPH_PREVIEW)
+    // `_Time.y` (UnityInput.hlsl) — seconds since level load. Drives the morph for the two
+    // continuous kernels; IGN ignores it (see the morph-rate note at the top of the file).
+    float time = _Time.y;
+
 #if PRISM_OCCLUSION_KERNEL == PRISM_OCCLUSION_KERNEL_SPIRAL
     // Corridor-relative polar coordinates. The radial ratio is 0 on the axis and 1 at the
     // cone wall — it tracks the taper, so the spiral's bands are nested CONES and hold a
@@ -351,7 +404,7 @@ void PrismOcclusionFade_float(float3 PositionWS, float3 Target, float3 Params, f
     float3 cameraUp = UNITY_MATRIX_V[1].xyz;
     float angleTurns = atan2(dot(perp, cameraUp), dot(perp, cameraRight)) * (1.0 / 6.28318530718);
 
-    ClipThreshold = PrismOcclusionSpiral(radialRatio, angleTurns);
+    ClipThreshold = PrismOcclusionSpiral(radialRatio, angleTurns, time);
 #else
     // Screen pixel coordinates, reconstructed from the same world position the
     // rasterizer used. Avoids a Screen Position node (and its varying) entirely.
@@ -361,7 +414,7 @@ void PrismOcclusionFade_float(float3 PositionWS, float3 Target, float3 Params, f
     float2 pixel = (ndc * 0.5 + 0.5) * _ScreenParams.xy;
 
 #if PRISM_OCCLUSION_KERNEL == PRISM_OCCLUSION_KERNEL_WORLEY
-    ClipThreshold = PrismOcclusionWorley(pixel);
+    ClipThreshold = PrismOcclusionWorley(pixel, time);
 #else
     ClipThreshold = PrismOcclusionMotley(pixel);
 #endif

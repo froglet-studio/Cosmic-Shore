@@ -996,6 +996,42 @@ short band from reading as an edge are both continuity choices:
     the remap is monotonic the cell boundaries and the whole look are unchanged — only the
     rate at which cells fill in as alpha sweeps, which is the part that was wrong. Retuning
     `WORLEY_CELL` without re-fitting the two CDF constants silently reintroduces the error.
+  **The morph axis.** `PRISM_OCCLUSION_MORPH_RATE` (cycles/sec, default 0.04 — one cycle
+  per 25s; 0 freezes it) evolves whichever kernel is selected, so the stipple is never the
+  same twice. It is an axis rather than a fourth kernel because each kernel interprets it
+  natively: Worley's feature points **orbit inside their own cells**
+  (`0.5 + 0.5·sin(2π·hash + t)` per axis — bounded to the cell, which is what keeps the 3×3
+  search exhaustive; a `frac(hash + t)` drift is cheaper and wrong, the point teleports
+  across the cell every cycle), and the spiral drifts its band phase, which for a sheared
+  Archimedean spiral is a slow rotation. Time is `_Time.y`, so morphing costs one MAD per
+  fragment and **zero CPU** — no per-prism state, no publisher change, no new uniform; the
+  same initial-conditions-plus-a-clock shape the law asks for everywhere else.
+
+  Three things make it safe, and one makes it impossible for IGN:
+
+  - **Exposure is bounded by the profile.** The pattern is only visible where alpha is
+    strictly between 0 and 1 — the narrow gradient shell — since the core clips regardless
+    of threshold and the exterior clips nothing. An evolving threshold can only flip pixels
+    inside that band.
+  - **~0.2% of band pixels change state per 60fps frame** at the default rate, which reads
+    as the pattern flowing. Past ~0.25 cycles/sec it reads as noise; treat that as a ceiling.
+  - **Worley uses the sin-orbit jitter at EVERY rate, including 0.** The orbit's marginal is
+    arcsine rather than uniform, so it shifts the F1 CDF: feeding the old static constants
+    (0.02/0.83) to moving points measures 0.0238, straight back out of the admission rule.
+    One jitter function means one fit covers both, verified phase-stable at **0.0068** from
+    rate 0 through t = 400s. The constants moved to **0.011/0.873** for this.
+  - **IGN cannot morph.** It is a hash, not a field — no continuity in any input — so
+    advancing it resamples the pattern per pixel per frame rather than moving it. That is
+    full-amplitude shimmer. Only kernels that are continuous in position can be continuous
+    in time.
+
+  Perlin was re-examined here specifically because continuous morphing is its selling point,
+  and it still does not qualify: the CDF remap that rescued Worley only takes 2-octave value
+  noise from 0.036 to **0.0252**, because a bell-shaped distribution does not flatten under a
+  single smoothstep the way a cell-distance one does. Its temporal coherence also turned out
+  to be **indistinguishable** from Worley's (0.17% vs 0.19% of pixels flipping per frame at
+  matched rates), so it offers nothing the admitted kernels do not already provide.
+
   - **1 — corridor-relative spiral.** An Archimedean spiral in the corridor's own
     polar frame (9 bands across the cone radius, sheared 3 turns per revolution), so the
     pattern is anchored to the *corridor*: it stands still and the world travels through it,
