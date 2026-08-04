@@ -24,21 +24,26 @@ namespace CosmicShore.ScriptableObjects
                  "this feature existed.")]
         [SerializeField] bool enabled = true;
 
-        [Tooltip("World-space radius of the camera→vessel capsule. A prism farther than this from " +
-                 "the segment is never touched. The retired ClearPrisms capsule used 20.")]
+        [Tooltip("World-space radius at which the corridor is fully opaque again. A prism farther " +
+                 "than this from the camera→vessel segment is never touched. Keep it close to " +
+                 "innerRadius: the band between them is the only mass ever in transition, and a " +
+                 "SHORT band is what makes the world snap back to opaque as you move off.")]
         [Min(0f)]
-        [SerializeField] float outerRadius = 18f;
+        [SerializeField] float outerRadius = 13f;
 
-        [Tooltip("Inside this radius the fade is at its floor. Between inner and outer the fade " +
-                 "smoothsteps back to fully opaque, so the corridor has a soft edge instead of a " +
-                 "hard cylinder.")]
+        [Tooltip("Radius of the FULLY CLEAR core — inside it the fade sits at coreAlpha (0 by " +
+                 "default, i.e. gone). Make it comfortably wider than the ship so the vessel is " +
+                 "never inside the gradient itself. Between inner and outer the fade eases back to " +
+                 "opaque on a C2-continuous quintic.")]
         [Min(0f)]
-        [SerializeField] float innerRadius = 5f;
+        [SerializeField] float innerRadius = 9f;
 
-        [Tooltip("Alpha at the corridor core. 0 removes the prism completely; a small value leaves " +
-                 "a faint dithered ghost so the player can still read that mass is there.")]
+        [Tooltip("Alpha at the corridor core. 0 (the default) tapers fully to nothing, so no " +
+                 "dithered ghost survives anywhere the ship can be. A small positive value leaves a " +
+                 "faint speckle instead, if reading 'there is mass here' ever matters more than " +
+                 "reading the ship.")]
         [Range(0f, 1f)]
-        [SerializeField] float coreAlpha = 0.05f;
+        [SerializeField] float coreAlpha = 0f;
 
         public bool Enabled => enabled;
         public float OuterRadius => outerRadius;

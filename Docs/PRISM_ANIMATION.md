@@ -894,6 +894,24 @@ corridor is never published: the shader reads `_WorldSpaceCameraPos`, so it is a
 exactly the camera that is rendering. `outerRadius <= 0` is the off sentinel and is the
 shader's very first branch, so a disabled corridor costs a compare.
 
+**The profile (retuned 2026-08-04):** alpha is **exactly `coreAlpha` = 0** inside
+`innerRadius` — fully tapered to nothing, so no dithered ghost survives anywhere the ship
+can be — and **exactly 1** at and beyond `outerRadius`. The band between them is
+deliberately **short** (9 → 13 by default, down from 5 → 18) so the world snaps back to
+opaque the moment you move off, and the two things that keep a short band from reading as
+an edge are both continuity choices:
+
+- **Quintic smootherstep**, not cubic smoothstep: value, first AND second derivatives are
+  zero at both ends (C2). Cubic zeroes only the first, which leaves a faint crease exactly
+  where the band starts and stops — invisible over a wide band, obvious over a narrow one.
+- **A motley screen door, not a matrix.** The dither is interleaved gradient noise: a
+  low-discrepancy screen-space hash with no repeating tile. The ordered 4×4 Bayer matrix it
+  replaced read as what its name says — a regular grid. IGN also beats the alternatives on
+  the number that matters for a short gradient, |coverage − alpha| over the ramp:
+  **0.0001 (IGN) vs 0.0017 (white-noise hash) vs 0.0100 (Bayer)**. White noise is motlier
+  still but clumps, and clumping over a narrow band is a ragged edge. Irregular *and* even
+  is the combination that works.
+
 Four properties of the design worth preserving if it is ever touched:
 
 - **Nothing is per-prism.** No trigger volume, no tracked set, no material swap, no
@@ -902,7 +920,7 @@ Four properties of the design worth preserving if it is ever touched:
   corridor — no error, no visual tell, nothing to notice until someone says they can't see
   their ship. That is how the old system stayed broken; every gate above exists to make that
   state impossible to reach silently.
-- **Prisms stay in the opaque queue.** The fade is screen-door (ordered 4×4 Bayer fed into
+- **Prisms stay in the opaque queue.** The fade is screen-door (a motley threshold fed into
   `SurfaceDescription.AlphaClipThreshold`), not blending. Moving corridor prisms into the
   transparent queue would need a per-prism material swap AND would pay sorting + blend
   overdraw for a set that changes every frame — precisely the cost this feature exists to

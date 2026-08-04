@@ -44,7 +44,7 @@ surgery, machine validation) are captured in the `/asset-surgery` skill — use 
 > had lost. Restored per the prompt's own prescription — two global uniforms
 > (`_PrismOcclusionTarget`, `_PrismOcclusionParams`) published once per frame, camera
 > end read on the GPU from `_WorldSpaceCameraPos`, per-fragment segment test + ordered
-> Bayer screen-door in `PrismOcclusionCorridor.hlsl` — with zero per-prism CPU and no
+> motley screen-door in `PrismOcclusionCorridor.hlsl` — with zero per-prism CPU and no
 > render-queue change. Design, cost statement and the alpha-test trade:
 > `Docs/PRISM_ANIMATION.md` §4.6. The closing verification is un-deferred and
 > re-pointed at the Serpent's cloak (the corridor deliberately no longer produces

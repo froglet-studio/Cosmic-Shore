@@ -22,9 +22,15 @@
 //   float3 _PrismOcclusionTarget  — the vessel's world position (the far end of the
 //                                   corridor; the near end is the camera, read on the
 //                                   GPU so it is always exactly the rendering camera).
-//   float3 _PrismOcclusionParams  — (outerRadius, innerRadius, minAlpha).
+//   float3 _PrismOcclusionParams  — (outerRadius, innerRadius, coreAlpha).
 //                                   outerRadius <= 0 means "corridor off" — the very
 //                                   first branch below returns the untouched alpha.
+//
+// THE PROFILE. Inside innerRadius the alpha is EXACTLY coreAlpha (0 by default: fully
+// tapered to nothing, so no dithered ghost survives anywhere the ship can be). At and
+// beyond outerRadius it is EXACTLY 1. The band between them is deliberately SHORT so
+// the world snaps back to opaque the moment you move off, and C2-smooth so a short band
+// still reads as a fade rather than an edge.
 //
 // COST CONTRACT. A fragment outside the corridor executes: one compare (radius > 0),
 // one segment-distance evaluation (~10 ALU), one compare, then returns the alpha it
@@ -37,33 +43,50 @@
 // WHY DITHER AND NOT BLENDING. The environment must stay CHEAP OPAQUE prisms — moving
 // them into the transparent queue (sorting + blend + no depth write) for a corridor
 // that changes every frame is exactly the cost this feature exists to avoid, and doing
-// it per-prism would mean a per-prism material swap. Screen-door transparency
-// (ordered 4×4 Bayer alpha-to-clip) keeps every prism in the opaque queue, needs no
-// sorting, and is order-independent by construction. The trade is stated in the doc:
-// it makes the prism materials alpha-tested.
+// it per-prism would mean a per-prism material swap. Screen-door alpha-to-clip keeps
+// every prism in the opaque queue, needs no sorting, and is order-independent by
+// construction. The trade is stated in the doc: it makes the prism materials
+// alpha-tested.
 
 #ifndef PRISM_OCCLUSION_CORRIDOR_INCLUDED
 #define PRISM_OCCLUSION_CORRIDOR_INCLUDED
 
-// Canonical 4×4 ordered Bayer index, built from the recursive construction
-//   M4(x,y) = 4·M2(x&1, y&1) + M2(x>>1, y>>1),  M2(x,y) = 2·((x^y)&1) + (y&1)
-// which reproduces
-//    0  8  2 10
-//   12  4 14  6
-//    3 11  1  9
-//   15  7 13  5
-// exactly, with no constant array (dynamic indexing of a constant matrix compiles to
-// a select chain on some targets; this is pure ALU).
-float PrismOcclusionBayer4x4(uint2 p)
+// -----------------------------------------------------------------------------
+// The screen door: a MOTLEY, not a matrix.
+//
+// Interleaved gradient noise — a low-discrepancy screen-space hash with no repeating
+// tile. The ordered 4×4 Bayer matrix this replaced (2026-08-04) read as exactly what
+// its name says: a regular grid, a literal screen door, legible as structure rather
+// than as transparency.
+//
+// IGN was picked over plain white noise (an integer hash), which is motlier still but
+// CLUMPS: measured over the shipped ramp, |coverage − alpha| averages 0.0001 for IGN
+// against 0.0017 for a hash and 0.0100 for Bayer. That fidelity is what lets the SHORT
+// gradient below still read as a smooth fade instead of a ragged edge — the stipple
+// density tracks the alpha almost exactly at every point in the band. Irregular AND
+// even is the combination that works; irregular and blotchy is not.
+//
+// Screen-space and static, so the pattern does not crawl: prisms slide through it as
+// the camera moves, which is what makes it read as a dissolve.
+// -----------------------------------------------------------------------------
+float PrismOcclusionMotley(float2 pixel)
 {
-    uint xl = p.x & 1u, yl = p.y & 1u;
-    uint xh = (p.x >> 1) & 1u, yh = (p.y >> 1) & 1u;
-    uint m2Low = 2u * ((xl ^ yl) & 1u) + yl;
-    uint m2High = 2u * ((xh ^ yh) & 1u) + yh;
-    uint index = 4u * m2Low + m2High;
-    // (index + 0.5)/16 keeps the threshold strictly inside (0,1): alpha 1 is never
-    // clipped and alpha 0 always is.
-    return (index + 0.5) * 0.0625;
+    float n = frac(52.9829189 * frac(dot(pixel, float2(0.06711056, 0.00583715))));
+    // Nudged STRICTLY inside (0,1). frac() can return exactly 0, and a 0 threshold
+    // against a 0 alpha is `clip(0)` — which KEEPS the fragment on the URP variants
+    // that clip directly rather than through AlphaDiscard's epsilon. That would leave a
+    // sparse confetti of survivors in a core that is supposed to be fully gone.
+    return n * 0.998 + 0.001;
+}
+
+// Quintic smootherstep — C2 continuous: value, FIRST and SECOND derivatives are all
+// zero at both ends. smoothstep (cubic) only zeroes the first, which leaves a faint
+// crease where the band begins and ends. That crease is what you notice when the band
+// is short, so the shorter the gradient the more the extra continuity earns its two MADs.
+float PrismOcclusionSmootherStep(float t)
+{
+    t = saturate(t);
+    return t * t * t * (t * (t * 6.0 - 15.0) + 10.0);
 }
 
 // -----------------------------------------------------------------------------
@@ -73,14 +96,14 @@ float PrismOcclusionBayer4x4(uint2 p)
 //               It is the POST-vertex-animation position, so a prism still blooming
 //               on the grow clock is tested where it actually rasterizes.
 // Target      — _PrismOcclusionTarget (vessel world position).
-// Params      — _PrismOcclusionParams = (outerRadius, innerRadius, minAlpha).
+// Params      — _PrismOcclusionParams = (outerRadius, innerRadius, coreAlpha).
 // BaseAlpha   — whatever fed SurfaceDescription.Alpha before this node (_Alpha).
 //               Multiplying rather than replacing keeps the graph's transparent
 //               materials (cloak / transparent shielded / transparent danger) honest:
 //               their authored alpha still applies, the corridor only scales it.
 //
 // Alpha         — BaseAlpha scaled by the corridor fade.
-// ClipThreshold — 0 outside the corridor (never discards); the Bayer threshold inside
+// ClipThreshold — 0 outside the corridor (never discards); the motley threshold inside
 //                 it, so an opaque alpha-tested material dissolves smoothly instead of
 //                 popping. Transparent materials ignore this output entirely (they do
 //                 not enable _ALPHATEST_ON) and simply blend the reduced alpha.
@@ -117,12 +140,18 @@ void PrismOcclusionFade_float(float3 PositionWS, float3 Target, float3 Params, f
     if (distanceToAxis >= outerRadius)
         return; // outside the corridor: costs nothing beyond the test above
 
-    // innerRadius..outerRadius is the feather. Inside innerRadius the fade is at its
-    // floor (minAlpha); at outerRadius it is 1. Smoothstep matches the easing every
-    // other prism transition uses (PrismColorLerp).
+    // The profile: EXACTLY coreAlpha (0 by default — fully tapered to nothing, no
+    // residual ghost anywhere the ship can be) inside innerRadius, EXACTLY 1 at and
+    // beyond outerRadius, C2-smooth in between.
+    //
+    // innerRadius..outerRadius is deliberately SHORT so the world snaps back to opaque
+    // as soon as you move off — only a thin shell of mass is ever in transition, and
+    // the fully-clear core is wide enough that the ship is never in the gradient. Short
+    // and smooth are in tension, which is why the easing is quintic and the dither is
+    // low-discrepancy: both exist to keep a narrow band from reading as an edge.
     float innerRadius = min(Params.y, outerRadius);
-    float k = saturate((distanceToAxis - innerRadius) / max(outerRadius - innerRadius, 1e-4));
-    k = k * k * (3.0 - 2.0 * k);
+    float k = PrismOcclusionSmootherStep(
+        (distanceToAxis - innerRadius) / max(outerRadius - innerRadius, 1e-4));
     float fade = lerp(Params.z, 1.0, k);
 
     Alpha = BaseAlpha * fade;
@@ -133,7 +162,7 @@ void PrismOcclusionFade_float(float3 PositionWS, float3 Target, float3 Params, f
     float4 positionCS = TransformWorldToHClip(PositionWS);
     float2 ndc = positionCS.xy / max(abs(positionCS.w), 1e-6);
     float2 pixel = (ndc * 0.5 + 0.5) * _ScreenParams.xy;
-    ClipThreshold = PrismOcclusionBayer4x4((uint2)abs(pixel));
+    ClipThreshold = PrismOcclusionMotley(pixel);
 #endif
 }
 

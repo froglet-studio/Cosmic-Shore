@@ -13,6 +13,6 @@ MonoBehaviour:
   m_Name: PrismOcclusionConfig
   m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.ScriptableObjects.PrismOcclusionConfigSO
   enabled: 1
-  outerRadius: 18
-  innerRadius: 5
-  coreAlpha: 0.05
+  outerRadius: 13
+  innerRadius: 9
+  coreAlpha: 0
