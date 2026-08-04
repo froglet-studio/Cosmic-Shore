@@ -971,16 +971,32 @@ short band from reading as an edge are both continuity choices:
   number that decides whether a *short* band reads as a fade or as an edge is
   |coverage − alpha| — how closely the kept-fragment fraction tracks the alpha at every point
   in the band. Measured in situ (kept fraction per alpha bin over a rendered prism wall):
-  **0.0021 (IGN) · 0.0042 (spiral) · 0.038 (perlin) · 0.097 (hex) · 0.100 (halftone) ·
-  0.128 (rings×IGN) · 0.132 (quasicrystal) · 0.212 (concentric rings)**. Only the first two
-  hold a smooth fade over a narrow band; the structured kernels buy their look by trading
-  that away, which is why the file carries exactly those two and not the rest.
+  **0.0021 (IGN) · 0.0042 (spiral) · 0.0048 (Worley, CDF-remapped) · 0.038 (perlin) ·
+  0.097 (hex) · 0.100 (halftone) · 0.128 (rings×IGN) · 0.132 (quasicrystal) ·
+  0.140 (Worley, raw) · 0.212 (concentric rings)**. A kernel is admitted to the file only
+  under ~0.01; the rest buy their look by trading that away, which is why the twelve
+  candidates rendered on 2026-08-04 reduced to the three below. Worley appears twice on
+  purpose — it is the one candidate a cheap monotonic remap moves from one side of the
+  admission line to the other.
 
-  `PRISM_OCCLUSION_KERNEL_SPIRAL` in `PrismOcclusionCorridor.hlsl` selects between them.
-  Both are procedural — no texture, no sampler, no asset — and both cost less than the
+  `PRISM_OCCLUSION_KERNEL` in `PrismOcclusionCorridor.hlsl` selects between the survivors.
+  All are procedural — no texture, no sampler, no asset — and all cost less than the
   corridor test itself:
 
-  - **1 — corridor-relative spiral (current).** An Archimedean spiral in the corridor's own
+  - **2 — screen-space Worley (current).** Distance to the nearest jittered lattice point
+    over the 3×3 neighbourhood that can contain it. Reads as **organic flecking** — irregular
+    blobs with visible cell structure — rather than IGN's even stipple or the spiral's
+    standing bands; screen-anchored, so prisms dissolve through it. The most expensive kernel
+    carried (9 cells × one float-only Hoskins `hash22` each, ~18 hashes, vs IGN's one
+    frac-chain and the spiral's zero), though still ALU-only and still paid on corridor
+    fragments only. **Its CDF remap is load-bearing, not polish**: raw F1 distance clusters
+    around 0.43 with nothing at either extreme, so a plain `F1 / max` threshold measures
+    0.1401 — outside the admission rule. A `smoothstep` fitted to the measured F1 CDF
+    (`0.02 → 0.83`) takes it to 0.0048, a 19× improvement for one instruction, and because
+    the remap is monotonic the cell boundaries and the whole look are unchanged — only the
+    rate at which cells fill in as alpha sweeps, which is the part that was wrong. Retuning
+    `WORLEY_CELL` without re-fitting the two CDF constants silently reintroduces the error.
+  - **1 — corridor-relative spiral.** An Archimedean spiral in the corridor's own
     polar frame (9 bands across the cone radius, sheared 3 turns per revolution), so the
     pattern is anchored to the *corridor*: it stands still and the world travels through it,
     which reads as an **iris around the ship** rather than a dissolve. Cheapest of the set —
