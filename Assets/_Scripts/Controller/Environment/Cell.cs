@@ -181,6 +181,18 @@ namespace CosmicShore.Gameplay
         // every recompute a ~10 ms reader-attributed frame spike at high prism
         // counts (Docs/PERFORMANCE_OPTIMIZATION.md).
         static readonly Domains[] s_volumeDomainSlots = { Domains.Jade, Domains.Ruby, Domains.Gold, Domains.Blue };
+
+        /// <summary>The three playable domains, hoisted to a static. These used to be
+        /// built as a fresh <c>Domains[3]</c> inside AddBlock / RemoveBlock — i.e. a
+        /// managed allocation on the per-prism CREATION and per-prism DEATH paths, so a
+        /// 2,400-death AOE frame allocated 2,400 throwaway arrays inside the spatial
+        /// index's UnbindCell. Same list, no garbage.</summary>
+        static readonly Domains[] s_playableDomains = { Domains.Jade, Domains.Ruby, Domains.Gold };
+
+        /// <summary>Dominant-domain scan order — playable domains first, Blue (the
+        /// "no team" sentinel) last. Hoisted for the same reason: DominantDomain is a
+        /// hot read (phase ladder, HUD, fauna spawning), not a once-per-round one.</summary>
+        static readonly Domains[] s_dominantScanOrder = { Domains.Jade, Domains.Ruby, Domains.Gold, Domains.Blue };
         static readonly ProfilerMarker s_volumeSumMarker = new("Cell.VolumeSum");
         NativeArray<float> _volumeSumNative;
         JobHandle _volumeSumHandle;
@@ -288,8 +300,7 @@ namespace CosmicShore.Gameplay
                 var source = HasNucleusControlZone ? nucleusEnvVolumeByDomain : liveVolumeByDomain;
                 Domains leader = Domains.Blue;
                 float leaderVolume = 0f;
-                Domains[] order = { Domains.Jade, Domains.Ruby, Domains.Gold, Domains.Blue };
-                foreach (var d in order)
+                foreach (var d in s_dominantScanOrder)
                 {
                     if (!source.TryGetValue(d, out float v)) continue;
                     if (v > leaderVolume)
@@ -1059,9 +1070,8 @@ namespace CosmicShore.Gameplay
             foreach (var existing in countGrids.Values)
                 existing?.Dispose();
 
-            Domains[] teams = { Domains.Jade, Domains.Ruby, Domains.Gold };
             countGrids.Clear();
-            foreach (Domains t in teams)
+            foreach (Domains t in s_playableDomains)
                 countGrids[t] = new BlockCountDensityGrid(t, cellCenter, worldDiameter);
 
             // Blue-keyed grid accumulates every block regardless of domain so
@@ -1818,16 +1828,19 @@ namespace CosmicShore.Gameplay
                     // cannot eat) while still counting toward volume, per-domain counts,
                     // and the phase backstop. gridTracked remembers the classification so
                     // RemoveBlock stays symmetric even if the nucleus radius changes.
-                    if (!IsInsideNucleus(block.transform.position))
+                    // One transform.position read for the nucleus test AND all four
+                    // grid writes — it is the same instant, and the read is a
+                    // managed→engine interop on the per-prism creation path.
+                    Vector3 blockPosition = block.transform.position;
+                    if (!IsInsideNucleus(blockPosition))
                     {
                         gridTracked.Add(block);
 
-                        Domains[] teams = { Domains.Jade, Domains.Ruby, Domains.Gold };
-                        foreach (var t in teams)
-                            if (t != registeredDomain) countGrids[t].AddBlock(block);
+                        foreach (var t in s_playableDomains)
+                            if (t != registeredDomain) countGrids[t].AddBlockAt(blockPosition);
 
                         if (countGrids.TryGetValue(Domains.Blue, out var anyGrid))
-                            anyGrid.AddBlock(block);
+                            anyGrid.AddBlockAt(blockPosition);
                     }
 
                     domainBlockCounts.TryGetValue(registeredDomain, out int count);
@@ -1867,12 +1880,15 @@ namespace CosmicShore.Gameplay
                 // never entered them - see AddBlock).
                 if (wasGridTracked)
                 {
-                    Domains[] teams = { Domains.Jade, Domains.Ruby, Domains.Gold };
-                    foreach (Domains t in teams)
-                        if (t != registeredDomain) countGrids[t].RemoveBlock(block);
+                    // Read once, not once per grid — this is the per-prism DEATH path
+                    // (PrismSpatialIndex.MarkDestroyed → UnbindCell lands here).
+                    Vector3 blockPosition = block.transform.position;
+
+                    foreach (Domains t in s_playableDomains)
+                        if (t != registeredDomain) countGrids[t].RemoveBlockAt(blockPosition);
 
                     if (countGrids.TryGetValue(Domains.Blue, out var anyGrid))
-                        anyGrid.RemoveBlock(block);
+                        anyGrid.RemoveBlockAt(blockPosition);
                 }
 
                 if (domainBlockCounts.TryGetValue(registeredDomain, out int count) && count > 0)
