@@ -900,7 +900,7 @@ can be — and **exactly 1** at and beyond `outerRadius`.
 
 **The shape is a BARE CONE — the minimal volume that can occlude the ship (2026-08-04).**
 It is a *point* at the lens, widening to the circle that circumscribes the hull, and it
-ends **flat at the vessel's plane** — no cap at either end. Nothing outside the
+ends **at the vessel's plane** — no cap at either end. Nothing outside the
 eye→silhouette cone can be in front of the ship, and nothing level with or behind it can
 either, so the corridor never dissolves a prism it does not have to.
 
@@ -910,11 +910,22 @@ the earlier version — pinned the closest point to the vessel past `t = 1`, whi
 metric there into distance-to-the-ship-point: that is precisely the hemispherical cap the
 rejection now removes.
 
-**Known and accepted:** the flat base is a *discontinuity*. A prism spanning the vessel's
-plane is faded on the camera side and solid on the far side, with a hard cut between. The
-ship's own body sits in that plane, so the seam is mostly behind it — but on a large plate
-at exactly that depth it will read as a crisp edge. That is the price of "no more than it
-needs", and it was chosen deliberately over the sphere cap.
+**The base is graded too, on a derived band.** The bare cone initially ended in a hard cut
+at the vessel's plane — a prism spanning it was faded on the camera side and solid on the
+far side, which reads as a crisp semicircular edge on any large plate at that depth. A
+second, *axial* clearance term now closes it: 1 up to the base band, 0 at the vessel's
+plane.
+
+Its thickness is **derived, not authored** — it is the radial shell's own world thickness
+(`outerRadius − innerRadius`) expressed in units of `t`. That makes the gradient shell
+**isotropic**: the same thickness across the base as around the sides, so the whole
+boundary fades at one rate and there is no seam anywhere on it. It self-scales too (a long
+corridor gets a proportionally short axial band), and it adds no config field — the
+`float3` params are untouched, so no graph surgery.
+
+The two clearances are combined by **product, not `min()`**: multiplying two C2 curves
+stays C2, whereas `min()` would crease wherever they cross — precisely the artefact the
+grading exists to remove.
 
 **Why not the capsule it replaced:** the constant radius was an artefact of the retired
 `ClearPrisms` `CapsuleCollider`, carried into the first shader version unexamined. A fixed

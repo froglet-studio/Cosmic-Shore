@@ -3,11 +3,12 @@
 //
 // PURPOSE. Prisms that sit between the player's camera and the player's vessel must
 // not hide the ship. The corridor is a BARE CONE from the camera to the vessel — a
-// point at the lens, widening to the circle that circumscribes the hull, ending flat at
-// the vessel's plane with no cap at either end. That is the minimal volume able to
-// occlude the ship: nothing outside the eye->silhouette cone can be in front of it, and
-// nothing at or past the vessel's own depth can either. A fragment inside fades out; a
-// fragment outside is untouched.
+// point at the lens, widening to the circle that circumscribes the hull, ending at the
+// vessel's plane with no cap at either end. That is the minimal volume able to occlude
+// the ship: nothing outside the eye->silhouette cone can be in front of it, and nothing
+// at or past the vessel's own depth can either. A fragment inside fades out; a fragment
+// outside is untouched, and the ENTIRE boundary — sides and base alike — is one
+// gradient shell of uniform thickness, so the shape has no seam anywhere on it.
 //
 // WHY IT LIVES HERE AND NOT ON THE CPU. Occlusion is camera-relative LIVE data — it
 // can never be a per-prism stamp, because the answer changes every frame for every
@@ -37,7 +38,9 @@
 // rather than a constant world size. The inner cone is deliberately much narrower than
 // the outer one (a quarter of it by default), so most of the corridor's cross-section
 // is gradient rather than hard clearance and the dissolve reads as a soft column with a
-// small solid-clear centre.
+// small solid-clear centre. The BASE is graded on the same shell thickness (see
+// clearAxial below), so the corridor closes toward the vessel as softly as it feathers
+// outward.
 //
 // COST CONTRACT. A fragment outside the corridor executes: one compare (radius > 0),
 // one segment-distance evaluation (~10 ALU), one compare, then returns the alpha it
@@ -178,10 +181,32 @@ void PrismOcclusionFade_float(float3 PositionWS, float3 Target, float3 Params, f
     // move off — only a thin shell is ever in transition. Short and smooth are in
     // tension, which is why the easing is quintic and the dither is low-discrepancy:
     // both exist to keep a narrow band from reading as an edge.
-    float innerAtT = min(Params.y, outerRadius) * t;
-    float k = PrismOcclusionSmootherStep(
+    float innerRadius = min(Params.y, outerRadius);
+    float innerAtT = innerRadius * t;
+
+    // Radial clearance: 1 inside the inner cone, 0 at the outer cone's surface.
+    float clearRadial = 1.0 - PrismOcclusionSmootherStep(
         (distanceToAxis - innerAtT) / max(outerAtT - innerAtT, 1e-4));
-    float fade = lerp(Params.z, 1.0, k);
+
+    // Axial clearance: 1 up to the base band, 0 at the vessel's plane. This grades the
+    // BASE. Without it the cone ended in a hard cut — a prism spanning the vessel's plane
+    // was faded on the camera side and solid on the far side, which reads as a crisp
+    // semicircular edge on any large plate at that depth.
+    //
+    // The band's thickness is DERIVED, not authored: it is the radial shell's own world
+    // thickness (outerRadius - innerRadius) expressed in units of t. That makes the
+    // gradient shell ISOTROPIC — the same thickness across the base as around the sides —
+    // so the corridor's whole boundary fades at one rate and there is no seam anywhere on
+    // it. It also self-scales: a long corridor gets a proportionally short axial band, a
+    // short one a longer band, with nothing to tune. Clamped to 1 for the degenerate case
+    // where the camera is closer to the ship than the shell is thick.
+    float baseBand = clamp((outerRadius - innerRadius) / sqrt(axisLenSq), 1e-4, 1.0);
+    float clearAxial = 1.0 - PrismOcclusionSmootherStep((t - (1.0 - baseBand)) / baseBand);
+
+    // PRODUCT, not min(): a fragment is cleared only where it is inside the cone AND
+    // before the base, and multiplying two C2 curves stays C2 — min() would crease
+    // wherever the two cross, which is exactly the artefact this pass exists to remove.
+    float fade = lerp(1.0, Params.z, clearRadial * clearAxial);
 
     Alpha = BaseAlpha * fade;
 
