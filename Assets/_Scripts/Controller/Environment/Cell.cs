@@ -438,9 +438,51 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public bool IsPreyForHerbivore(Vector3 position, Domains faunaDomain, Domains preyDomain)
         {
+            // Containment first: a PENNED brood cannot reach the world outside its pen, so
+            // nothing out there is food no matter whose domain it wears. Ribcage's cage starts
+            // contained - the brood is visibly penned inside and will eat the trail of any
+            // vessel that ventures IN (that is the whole point of respecting the cage), but it
+            // cannot touch the match going on outside. The 25% release clears the radius and
+            // the ordinary rules below resume.
+            if (FaunaContainmentRadius > 0f && !IsInsideFaunaContainment(position))
+                return false;
+
             if (HasNucleusControlZone)
                 return !IsInsideNucleus(position);
             return preyDomain != faunaDomain;
+        }
+
+        /// <summary>
+        /// Radius (world units, centred on the cell) the cell's fauna are penned inside, or 0
+        /// for no containment - the default, and what every biome that is not a mode's pen
+        /// uses. While set: mass outside is not prey (<see cref="IsPreyForHerbivore"/>) and
+        /// every creature's goal is clamped inside (<see cref="ClampToFaunaContainment"/>).
+        ///
+        /// This is a spatial DIET + STEERING rule, not a wall: nothing is teleported and no
+        /// collider is added, so a creature can still drift out on its own momentum - it just
+        /// has no reason to and nothing to eat there. Ribcage sets it to the cage's shell
+        /// radius while the cage is sealed and clears it on the first release.
+        /// </summary>
+        public float FaunaContainmentRadius { get; set; }
+
+        /// <summary>True when <paramref name="position"/> is inside the fauna pen (always true when there is none).</summary>
+        public bool IsInsideFaunaContainment(Vector3 position) =>
+            FaunaContainmentRadius <= 0f ||
+            (position - transform.position).sqrMagnitude <= FaunaContainmentRadius * FaunaContainmentRadius;
+
+        /// <summary>
+        /// Pulls a fauna goal back inside the pen. Returns the point unchanged when there is no
+        /// containment or the goal is already inside, so the common path costs one compare.
+        /// </summary>
+        public Vector3 ClampToFaunaContainment(Vector3 goal)
+        {
+            if (FaunaContainmentRadius <= 0f) return goal;
+
+            Vector3 offset = goal - transform.position;
+            float sqr = offset.sqrMagnitude;
+            if (sqr <= FaunaContainmentRadius * FaunaContainmentRadius) return goal;
+
+            return transform.position + offset / Mathf.Sqrt(sqr) * FaunaContainmentRadius;
         }
 
         /// <summary>
@@ -1195,6 +1237,16 @@ namespace CosmicShore.Gameplay
             };
 
             runtime.Config = CellConfigs[index];
+
+            // Seed the fauna release gate from the biome BEFORE any spawner can tick. A mode
+            // that seals its cell (Ribcage) must not depend on its controller's OnNetworkSpawn
+            // beating the cell's own bootstrap clock - AssignConfig is upstream of
+            // StartSpawnerForMode by construction, so the seal is in place from the first tick.
+            // Mode writes (Cell.FaunaReleaseTier) always win afterwards, and RestartSpawnerForMode
+            // does not come back through here, so a release is never silently re-sealed.
+            var assigned = CellConfigs[index];
+            if (assigned && assigned.SpawnProfile)
+                FaunaReleaseTier = assigned.SpawnProfile.InitialFaunaReleaseTier;
         }
 
         /// <summary>

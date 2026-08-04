@@ -2330,6 +2330,38 @@ tier 0, cell `int.MaxValue` — leave every shipped biome released from the firs
 Gating **production** is the explicitly-allowed lever ("not creating mass is allowed;
 aging it out is not"); nothing here culls.
 
+### 22.2b Containment — a pen is a spatial diet, not a wall
+
+The cage is stocked from the first frame (the fiction needs a visible brood, not empty
+scenery) but the brood must not join the match going on outside it. `Cell.
+FaunaContainmentRadius` (0 = none, the default everywhere else) expresses that with the
+two rules fauna already run on:
+
+- **Diet.** `IsPreyForHerbivore` returns false for anything outside the radius, checked
+  before the domain/nucleus rules. A penned creature has nothing to eat out there
+  whatever colour it wears — so flying INTO the cage puts your trail on the menu, and
+  that is the only way to feed them before the release.
+- **Steering.** `Fauna.Goal` became a PROPERTY whose setter clamps through
+  `Cell.ClampToFaunaContainment`. That matters more than it looks: goals are written
+  from six places (Fauna.ResolveGoal, Boid's override, LightFauna's direct writes on its
+  own behavior tick, the spawner's initial goal, reproduction inheritance), and clamping
+  in each of them would be a rule the next grazer could forget. Clamping in the setter
+  is a rule that cannot be bypassed.
+
+It is deliberately **not a wall**: nothing is teleported, no collider is added, and a
+creature can still drift out on its own momentum — it just has no reason to and nothing
+to eat there. Collider budget: unchanged (two squared-distance compares on paths that
+already ran).
+
+**The start state is authored as biome DATA, not set at runtime.** `SpawnProfileSO.
+InitialFaunaReleaseTier` seeds `Cell.FaunaReleaseTier` in `AssignConfig`, upstream of
+`StartSpawnerForMode` by construction. The first version set the gate from the mode
+controller's `OnNetworkSpawn` and lost the race against the cell's own bootstrap clock,
+so the brood spawned ungated. A mode's *escalation* is a runtime concern; a biome's
+*starting* state is data, and treating it as data is what makes it race-free.
+`IntensityWiseLifeSpawner` honours the tier too, so which spawner a biome happens to use
+can never decide whether the gate holds.
+
 ### 22.3 The shielded-steering finish (the generalization §16 left half-done)
 
 **Symptom this would have caused.** Ribcage's arena is a huge shielded structure. Under

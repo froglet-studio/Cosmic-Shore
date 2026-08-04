@@ -19,6 +19,7 @@ MonoBehaviour:
   SupportedFloras: []
   FaunaExcludeLocalDomain: 0
   InitialFaunaSpawnWaitTime: 0
+  InitialFaunaReleaseTier: 0
   FaunaSpawnVolumeThreshold: 1
   BaseFaunaSpawnTime: 15
   SeedFullWaveEveryTick: 0

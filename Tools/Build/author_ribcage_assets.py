@@ -73,6 +73,8 @@ EXISTING = {
     "TadpolePrefab":      "c7fd418d426de8740ac888dcc23a5d24",
     "SharkPrefab":        "a67ba7ddaecf6624ab37cd9f5f2210a6",
     "TadpoleBodyMat":     "5140ec1c42866e849927f442d5965f7f",
+    # the cell's CellRuntimeDataSO - the spawn ring resolves its Cell through this
+    "RuntimeCellData":    "8d4e8398eedc76c4dadb8604f89b9e1b",
 }
 
 PRISM_FILEID = 4563009547826722997
@@ -89,6 +91,7 @@ SHARK_PALETTE = ["58835b82ea284255855af2649ef185a5", "a690f25bf21e486ba0e500563b
                  "eaf56c14345740849f35fc84467059e9", "78ce842bb8554d748af1e96abf430137"]
 
 # ── Measured cage baseline (Tools/Build/ribcage_budget.py; analytic, exact) ───
+SPAWN_RING_RADIUS = 480   # outside the 300u cage, inside the 1200u membrane
 CAGE_PRISMS = 2721
 CAGE_VOLUME = 1069380
 # PhaseThresholds = measured baseline + the standard Blob deltas (Docs/ECOSYSTEM.md §18).
@@ -298,6 +301,7 @@ emit("Assets/_SO_Assets/Cell Configs/Ribcage Cell/Ribcage Spawn Profile.asset",
   SupportedFloras: []
   FaunaExcludeLocalDomain: 0
   InitialFaunaSpawnWaitTime: 0
+  InitialFaunaReleaseTier: 0
   FaunaSpawnVolumeThreshold: 1
   BaseFaunaSpawnTime: 15
   SeedFullWaveEveryTick: 0
@@ -418,6 +422,32 @@ scene = scene.replace(OLD_FIELDS, NEW_FIELDS)
 # 6c. cell config swap
 scene, n = re.subn(EXISTING["RampageCellConfig"], G_ASSET["RibcageCellConfig"], scene)
 assert n == 1, f"cell config guid appeared {n} times"
+
+# 6d. Spawn OUTSIDE the cage. The donor's four authored transforms sit at +/-50 - deep inside
+# the 300u cage, so players started penned in with the brood. Switch the initializer to the
+# computed cell spawn ring (CellSpawnFormation: symmetric, all facing the cell) with a radius
+# FLOOR, because this cell has no nucleus for the ring to measure off. 480u sits well outside
+# the cage (300) and well inside the membrane (1200), giving a clear run at the bone.
+OLD_SPAWN = """  playerSpawnPoints:
+  - {fileID: 1468661147}
+  - {fileID: 1074736317}
+  - {fileID: 1323644424}
+  - {fileID: 1564881929}
+  preSpawnDelayMs: 200
+"""
+NEW_SPAWN = f"""  playerSpawnPoints:
+  - {{fileID: 1468661147}}
+  - {{fileID: 1074736317}}
+  - {{fileID: 1323644424}}
+  - {{fileID: 1564881929}}
+  arrangeSpawnPointsAroundCell: 1
+  spawnDistanceOutsideNucleus: 40
+  spawnRingRadiusFloor: {SPAWN_RING_RADIUS}
+  cellData: {{fileID: 11400000, guid: {EXISTING['RuntimeCellData']}, type: 2}}
+  preSpawnDelayMs: 200
+"""
+assert OLD_SPAWN in scene, "donor spawn-point block not found"
+scene = scene.replace(OLD_SPAWN, NEW_SPAWN)
 
 emit("Assets/_Scenes/Multiplayer Scenes/MinigameRibcage.unity", scene)
 emit("Assets/_Scenes/Multiplayer Scenes/MinigameRibcage.unity.meta",

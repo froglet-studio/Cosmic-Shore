@@ -24,9 +24,12 @@ front wears the swarm's colours.
   the leader's colours and hunts every trailing team's trails. **There is no
   "target the loser" code anywhere; the diet rule was always this.** When the lead
   changes hands the override re-colours the live swarm and its diet flips with it.
-- **Two release rungs.** 25% of the target releases the grazer swarm and floors the
-  cell at Restless; 50% adds the predator and floors it at Frenzy. Aggression,
-  steering, danger-immunity and speed all fall out of the existing
+- **The brood starts penned, and it bites.** The cage is stocked from the first
+  frame - visible through the bars - but *contained*: while penned, mass outside the
+  cage is not food, so the brood cannot touch the match going on outside. Fly INTO
+  the cage and your trail is on the menu. 25% opens the pen and floors the cell at
+  Restless; 50% adds the predator and floors it at Frenzy. Aggression, steering,
+  danger-immunity and speed all fall out of the existing
   `CellPhase → CellAggressionLevel` mapping.
 
 **Key architectural facts:**
@@ -50,7 +53,14 @@ front wears the swarm's colours.
   team has no one to feed the swarm), `MaxDomainsAllowed = 3`; players **2–4** with AI
   backfill
 - **Vessels**: **Rhino only** (`ArcadeGameRibcage.Vessels` has one entry). The mode is
-  built around the ram and the two-hit shielded bar.
+  built around the ram and the two-hit shielded bar. `SO_ArcadeGame.Vessels` used to be
+  only the UI's list of CHOICES - nothing validated the selection at launch, so a
+  vessel picked in an earlier game persisted into a mode that does not allow it (a
+  Dolphin flew Ribcage while its AI opponents correctly spawned Rhinos, whose class
+  comes from the scene's own `aiInitializeDatas`). `GameDataSO.SyncFromArcadeGame` now
+  clamps `selectedVesselClass` into the game's allowed set, so a single-vessel mode
+  cannot be entered in the wrong hull by ANY route - modal, rematch, or the Tournament
+  chain.
 - **Config**: `_SO_Assets/Games/ArcadeGameRibcage.asset` (registered in
   `GameLists/OrganicRematchGames.asset`, `ProgressionConfig.alwaysUnlockedModes`)
 
@@ -99,15 +109,18 @@ RibcageController.SampleLadder            [server, every ladderSampleSeconds = 0
   │     └─ live swarm re-coloured via Fauna.SetTeam, so a lead change flips the
   │        targets of the creatures already in the air, not just the next wave
   │
-  └─ PublishRelease_ClientRpc → Cell.FaunaReleaseTier + Cell.ModePhaseFloor  [EVERY peer]
-        tier -1  (sealed, < 25%) : no species may seed; no phase floor
-        tier  0  (>= 25%)        : Ribcage Tadpole (ReleaseTier 0) seeds;
-                                   floor = Restless → CellAggressionLevel.Level1
-                                   (steer at the opposing-colour centroid = the
-                                   trailing teams' trails)
-        tier  1  (>= 50%)        : Ribcage Shark (ReleaseTier 1) joins;
-                                   floor = Frenzy → Level2 (any-colour steering,
-                                   friendly avoidance off, danger-immune, faster)
+  └─ PublishRelease_ClientRpc → RibcageController.ApplyStage                 [EVERY peer]
+        one place sets all three levers, so they can never disagree:
+        Cell.FaunaReleaseTier · Cell.FaunaContainmentRadius · Cell.ModePhaseFloor
+        Caged  (< 25%)  : brood seeds (species tier 0) but Cell.FaunaContainmentRadius
+                          = the cage shell, so mass OUTSIDE is not prey and every goal
+                          is clamped inside. No phase floor - Calm, so they idle on the
+                          crystal at the core. They eat the trail of anything that flies IN.
+        Loosed (>= 25%) : containment cleared; floor = Restless → CellAggressionLevel
+                          .Level1 (steer at the opposing-colour centroid = the trailing
+                          teams' trails). The swarm pours out through the broken bars.
+        Pack   (>= 50%) : Ribcage Shark (ReleaseTier 1) joins; floor = Frenzy → Level2
+                          (any-colour steering, friendly avoidance off, danger-immune)
 ```
 
 Both publications are ClientRpcs because **fauna are client-local** (no NetworkObject),
@@ -148,7 +161,10 @@ ceiling a ~10-crystal deficit does in Scurry.
   mode's phase floor is the only thing that raises it, which is exactly the intent.
 - **Ribcage Spawn Profile** — **no flora** (the cage is the arena; flora would add
   unshielded mass that fauna erode and that dilutes the cage as the scoring target).
-  `InitialFaunaSpawnWaitTime 0` (the release tier is the gate, not a clock),
+  `InitialFaunaReleaseTier 0` (the brood exists from the first tick - the CAGE contains
+  it, not a spawn gate; authoring the start state as biome DATA is what keeps it
+  independent of the controller's `OnNetworkSpawn` beating the cell's own bootstrap
+  clock, a race the runtime-only seal lost), `InitialFaunaSpawnWaitTime 0`,
   `BaseFaunaSpawnTime 15`, `FaunaFoodFloor 0`. Herbivore ring: 3 points at radius
   **180** and predator ring 2 points at **220** — both **inside** the 300-unit cage, so
   the brood hatches within the ribs and pours out through the bars the players break.
@@ -192,6 +208,20 @@ channel, and the AI aims analytically (below). Destruction actively removes coll
 as the match runs. Watch the collider/prism telemetry (DiagnosticsHUD / Benchmark tool)
 on device; `RibCount` / `BarStep` are the two numbers to turn down.
 
+## Spawning outside the cage
+
+Players start on the computed cell spawn ring (`CellSpawnFormation` — symmetric, all
+facing the cell), NOT on authored transforms: the donor scene's four points sat at ±50,
+which is deep inside the 300u cage, so everyone started penned in with the brood.
+
+The ring normally measures off the cell's nucleus radius, and Ribcage's cell
+deliberately has none — so it would have collapsed to the cell centre, i.e. the same
+bug. `ServerPlayerVesselInitializer.spawnRingRadiusFloor` (new, default 0 = every
+existing scene unchanged) gives the ring a floor for exactly this case: a cell whose
+"core" is a structure rather than a nucleus. Ribcage authors **480** — outside the 300u
+cage, well inside the 1200u membrane, and far enough back to see the whole cage and
+line up a charge.
+
 ## AI cage-breakers
 
 Deliberately **not** Rampage's `Cell.GetExplosionTarget` density-grid mass hunt: the
@@ -222,7 +252,12 @@ vanishing mid-race.
 |---|---|
 | `GameModes` | `Ribcage = 39` |
 | `GameToastSituation` | `RibcageBroodReleased = 50`, `RibcagePackReleased = 51`, `RibcageLeaderChanged = 52` |
-| `Cell` | `SetModeControlOverride` (+ live-swarm re-colour), `ModePhaseFloor`, `FaunaReleaseTier`, `NotifyBlockShieldStateChanged`, shielded mass excluded from the targeting grids |
+| `Cell` | `SetModeControlOverride` (+ live-swarm re-colour), `ModePhaseFloor`, `FaunaReleaseTier`, `FaunaContainmentRadius` / `IsInsideFaunaContainment` / `ClampToFaunaContainment`, `NotifyBlockShieldStateChanged`, shielded mass excluded from the targeting grids, release tier seeded from the spawn profile at config-assign |
+| `Fauna` | `Goal` becomes a PROPERTY so containment clamps at the one point every writer passes through (this class, Boid's override, LightFauna's direct writes, the spawner, reproduction inheritance) |
+| `GameDataSO` | `SyncFromArcadeGame` clamps `selectedVesselClass` into `SO_ArcadeGame.Vessels` - enforces every restricted-vessel mode on every launch path |
+| `ServerPlayerVesselInitializer` | `spawnRingRadiusFloor` - lets the computed spawn ring serve a cell whose core is a STRUCTURE rather than a nucleus |
+| `SpawnProfileSO` | `InitialFaunaReleaseTier` - the biome's START tier, seeded before any spawner can tick |
+| `IntensityWiseLifeSpawner` | honours `ReleaseTier` too, so which spawner a biome uses cannot decide whether a mode's gate holds |
 | `PrismSpatialIndex` | `ForwardShieldChangeToCell` |
 | `PrismStateManager` | `SyncAOERegistryShieldState` also re-files the prism in its cell's grids |
 | `RandomLifeSpawner` | staged-release gate (`faunaCfg.ReleaseTier <= host.FaunaReleaseTier`) |
@@ -283,20 +318,26 @@ with `SpawnableRibcage.cs` when the geometry changes.
    disagrees, the generator and `ribcage_budget.py` have drifted — fix both.
 4. **Bars are two-hit.** Ram a rib: first contact sheds the shield (octahedron
    disengages), second shatters it and the HUD sum increments by one.
-5. **No fauna before 25%.** Nothing hatches while the cage is sealed.
-6. **25% release.** At 150 bars (default target 600) the brood toast fires, tadpoles
-   hatch **inside** the cage wearing the **leading domain's** colour, and they leave to
-   graze the *trailing* domains' trails — never the leader's, never the cage.
-7. **50% release.** At 300 bars the pack toast fires and a shark joins; the cell reads
+5. **Rhino only.** Pick a different vessel in an earlier game, then launch Ribcage —
+   you should spawn a Rhino anyway, with a `clamping selected vessel` line in the log.
+6. **Spawn outside.** All players start on a ring ~480u out, facing the cage, with the
+   whole cage visible ahead — nobody starts inside it.
+7. **The penned brood.** The cage is stocked from the start and the brood stays inside.
+   While it is penned it must NOT eat anything outside the cage — fly around the outside
+   and lay trail; it should be ignored. Then fly IN: your trail becomes food.
+8. **25% release.** At 150 bars (default target 600) the brood toast fires, the pen
+   opens, and the swarm leaves wearing the **leading domain's** colour to graze the
+   *trailing* domains' trails — never the leader's, never the cage.
+9. **50% release.** At 300 bars the pack toast fires and a shark joins; the cell reads
    Frenzy on the DiagnosticsHUD.
-8. **Lead change flips the swarm.** Let a second domain take the lead — the *live*
+10. **Lead change flips the swarm.** Let a second domain take the lead — the *live*
    creatures should re-colour and switch which trails they eat.
-9. **Win + scoreboard.** First domain to 600 ends the turn; winners show a time,
+11. **Win + scoreboard.** First domain to 600 ends the turn; winners show a time,
    losers "N Bars Left". Replay (scene reload) re-seals the cage and resets the ladder.
-10. **Regression — the grid change.** Play **Skim Race** (intensity 3) and **Astro
+12. **Regression — the grid change.** Play **Skim Race** (intensity 3) and **Astro
     League**: fauna should behave normally and should no longer park against the
     super-shielded track / edge lining.
-11. **Collider telemetry** on device via DiagnosticsHUD / the Benchmark tool; if the
+13. **Collider telemetry** on device via DiagnosticsHUD / the Benchmark tool; if the
     cage is too heavy, lower `RibCount` (16) or raise `BarStep` (17) in
     `SpawnableRibcage.cs` and re-run both Python tools.
 

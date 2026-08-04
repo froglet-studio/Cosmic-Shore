@@ -74,14 +74,24 @@ namespace CosmicShore.Gameplay
                  "value the generator actually builds at). Override only for a resized arena.")]
         [SerializeField, Min(0f)] float aiCageRadiusOverride = 0f;
 
-        // Release tiers published to the cell. -1 = nothing released (the cage is sealed).
-        const int TierSealed = -1;
-        const int TierBrood = 0;
-        const int TierPack = 1;
+        // The ladder's three stages. Each maps to (species release tier, containment, phase
+        // floor) in ApplyStage - one place, so the three levers can never disagree.
+        //   Caged  - the brood is penned in the cage, visible through the bars. It eats the
+        //            trail of anything that comes IN and cannot touch the match outside.
+        //   Loosed - 25%: containment lifted, cell floored at Restless. The swarm pours out
+        //            wearing the leader's colours and hunts the trailing teams' trails.
+        //   Pack   - 50%: the predator species joins, cell floored at Frenzy.
+        const int StageCaged = 0;
+        const int StageLoosed = 1;
+        const int StagePack = 2;
+
+        // Species release tiers authored on the fauna configs (grazer 0, predator 1).
+        const int SpeciesBrood = 0;
+        const int SpeciesPack = 1;
 
         bool _finalResultsSent;
         Coroutine _ladderRoutine;
-        int _releaseTier = TierSealed;
+        int _stage = StageCaged;
         Domains _leader = Domains.Blue;
 
         // Golf: winners carry their finish time, losers a DnfThreshold+remaining sentinel
@@ -103,9 +113,12 @@ namespace CosmicShore.Gameplay
             numberOfTurnsPerRound = 1;
             _finalResultsSent = false;
 
-            // Seal the cage on every peer before anything can tick: fauna are client-local, so
-            // each machine must hold its own brood closed until the ladder opens it.
-            ApplyRelease(TierSealed);
+            // Pen the brood on every peer before anything can tick: fauna are client-local, so
+            // each machine must contain its own cage until the ladder opens it. (The cell also
+            // seeds its release tier from the spawn profile at config-assign time, which is what
+            // makes the START state independent of this call winning the race - see
+            // SpawnProfileSO.InitialFaunaReleaseTier.)
+            ApplyStage(StageCaged);
         }
 
         public override void OnNetworkDespawn()
@@ -180,23 +193,23 @@ namespace CosmicShore.Gameplay
             if (leader == Domains.Blue || best <= 0) return;
 
             float progress = best / (float)target;
-            int tier = progress >= packReleaseFraction ? TierPack
-                : progress >= broodReleaseFraction ? TierBrood
-                : TierSealed;
+            int stage = progress >= packReleaseFraction ? StagePack
+                : progress >= broodReleaseFraction ? StageLoosed
+                : StageCaged;
 
             bool leaderChanged = leader != _leader;
-            bool tierChanged = tier != _releaseTier;
-            if (!leaderChanged && !tierChanged) return;
+            bool stageChanged = stage != _stage;
+            if (!leaderChanged && !stageChanged) return;
 
             _leader = leader;
             PublishLeader_ClientRpc((int)leader);
 
-            if (tierChanged)
+            if (stageChanged)
             {
-                _releaseTier = tier;
-                PublishRelease_ClientRpc(tier, (int)leader, best, target);
+                _stage = stage;
+                PublishRelease_ClientRpc(stage, (int)leader, best, target);
             }
-            else if (leaderChanged && tier > TierSealed)
+            else if (leaderChanged && stage > StageCaged)
             {
                 // The swarm changes hands mid-match: worth announcing, since every trailing
                 // team's trails just became the menu.
@@ -216,15 +229,15 @@ namespace CosmicShore.Gameplay
         }
 
         [ClientRpc]
-        void PublishRelease_ClientRpc(int tier, int domain, int sum, int target)
+        void PublishRelease_ClientRpc(int stage, int domain, int sum, int target)
         {
-            ApplyRelease(tier);
+            ApplyStage(stage);
 
             var d = (Domains)domain;
-            if (tier == TierBrood)
+            if (stage == StageLoosed)
                 GameToastAPI.Post(GameToastSituation.RibcageBroodReleased, d,
                     d.ToString(), sum.ToString(), target.ToString());
-            else if (tier == TierPack)
+            else if (stage == StagePack)
                 GameToastAPI.Post(GameToastSituation.RibcagePackReleased, d,
                     d.ToString(), sum.ToString(), target.ToString());
         }
@@ -238,28 +251,55 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Applies an escalation tier to the local cell: which species may seed, and the phase
-        /// the cell is held at (which IS the fauna aggression band - see CellAggressionLevel).
+        /// Applies a ladder STAGE to the local cell - the one place the three levers are set
+        /// together, so they can never disagree:
+        ///   • which species may seed   (Cell.FaunaReleaseTier vs FaunaConfigurationSO.ReleaseTier)
+        ///   • whether the brood is penned (Cell.FaunaContainmentRadius)
+        ///   • how hard the cell runs   (Cell.ModePhaseFloor → CellAggressionLevel)
         /// Runs on every peer because fauna are client-local.
         /// </summary>
-        void ApplyRelease(int tier)
+        void ApplyStage(int stage)
         {
-            if (!arenaCell) return;
-
-            arenaCell.FaunaReleaseTier = tier;
-            arenaCell.ModePhaseFloor = tier switch
+            if (!arenaCell)
             {
-                TierPack => CellPhase.Frenzy,     // any-colour steering, no friendly avoidance, danger-immune
-                TierBrood => CellPhase.Restless,  // hunt the opposing-colour centroid = the trailing teams
-                _ => null,                        // sealed: the volume ladder alone (an emptying cage is Calm)
-            };
+                // Fail loud: a silent return here leaves the cell at its authored stage and the
+                // ladder simply never advances, which reads in play as "the fauna reward never
+                // arrived" with nothing in the log to explain it.
+                CSDebug.LogError("[Ribcage] arenaCell is not wired on RibcageController - the fauna " +
+                                 "ladder cannot publish. Assign the scene's Cell in the inspector.");
+                return;
+            }
 
-            // Realign the fauna spawn clock to the RELEASE moment. Without this the gate opens
-            // mid-period and the brood can take up to a full BaseFaunaSpawnTime to appear, which
-            // reads as the reward simply not arriving. The profile authors no flora, so the
-            // "restart re-runs the initial flora batch" caveat on RestartSpawnerForMode does not
-            // apply here.
-            if (tier > TierSealed) arenaCell.RestartSpawnerForMode();
+            float cageRadius = aiCageRadiusOverride > 0f ? aiCageRadiusOverride : SpawnableRibcage.ShellRadius;
+
+            switch (stage)
+            {
+                case StagePack:
+                    arenaCell.FaunaReleaseTier = SpeciesPack;      // predator joins the grazers
+                    arenaCell.FaunaContainmentRadius = 0f;
+                    arenaCell.ModePhaseFloor = CellPhase.Frenzy;   // any-colour steering, no friendly avoidance, danger-immune
+                    break;
+
+                case StageLoosed:
+                    arenaCell.FaunaReleaseTier = SpeciesBrood;
+                    arenaCell.FaunaContainmentRadius = 0f;         // the pen is open - the swarm pours out
+                    arenaCell.ModePhaseFloor = CellPhase.Restless; // hunt the opposing-colour centroid = the trailing teams
+                    break;
+
+                default: // StageCaged
+                    arenaCell.FaunaReleaseTier = SpeciesBrood;     // the brood exists from the start...
+                    arenaCell.FaunaContainmentRadius = cageRadius; // ...but is penned inside the cage
+                    arenaCell.ModePhaseFloor = null;               // Calm: they idle at the core, on the crystal
+                    break;
+            }
+
+            // Realign the fauna spawn clock to the RELEASE moment. Without this the stage
+            // advances mid-period and the reinforcement wave can take a full BaseFaunaSpawnTime
+            // to appear, which reads as the reward simply not arriving. Not done for the caged
+            // stage: that one is the cell's own bootstrap and must not restart its clock.
+            // The profile authors no flora, so the "restart re-runs the initial flora batch"
+            // caveat on RestartSpawnerForMode does not apply here.
+            if (stage > StageCaged) arenaCell.RestartSpawnerForMode();
         }
 
         void ReleaseCellOverrides()
@@ -267,6 +307,7 @@ namespace CosmicShore.Gameplay
             if (!arenaCell) return;
             arenaCell.SetModeControlOverride(null);
             arenaCell.ModePhaseFloor = null;
+            arenaCell.FaunaContainmentRadius = 0f;
             arenaCell.FaunaReleaseTier = int.MaxValue;
         }
 
@@ -430,11 +471,11 @@ namespace CosmicShore.Gameplay
         {
             base.OnResetForReplayCustom();
             _finalResultsSent = false;
-            _releaseTier = TierSealed;
+            _stage = StageCaged;
             _leader = Domains.Blue;
 
             StopLadder();
-            ApplyRelease(TierSealed);
+            ApplyStage(StageCaged);
             if (arenaCell) arenaCell.SetModeControlOverride(null);
 
             foreach (var s in gameData.RoundStatsList)

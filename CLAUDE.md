@@ -40,7 +40,11 @@ outcome is optimization, not life). Use the `/ecology` skill for any change here
   A mode may redefine what "controls" a cell — Brood Rush makes it the nucleus claim, Ribcage
   pins it to the race leader (`Cell.SetModeControlOverride`) — but the spawn colour is still
   exactly ONE colour, the controller's, and that setter also re-colours the LIVE swarm so a
-  cell can never hold two fauna colours at once.
+  cell can never hold two fauna colours at once. A mode may also PEN a cell's fauna
+  (`Cell.FaunaContainmentRadius`): outside the pen nothing is prey and every goal is
+  clamped back in — a spatial diet + steering rule, never a wall, and never a cull.
+  A biome's STARTING release state is authored data (`SpawnProfileSO.InitialFaunaReleaseTier`),
+  not a runtime call — a runtime-only gate races the cell's own bootstrap and loses.
 - **Starvation = wither-to-crystal.** A starving (or predated) creature withers from its extremity
   spindles inward — a shark's fins / a brittlestar's arms evaporate *before* the core body
   (farthest-from-centre first, emergent from geometry) — and leaves a collectible elemental crystal.
