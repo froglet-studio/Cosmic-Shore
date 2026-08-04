@@ -70,8 +70,10 @@ earned before that point bank toward the first purchase rather than being wasted
 | Item | Type | Consumable? | Price (USD) | Notes |
 |---|---|---|---|---|
 | Cosmic Shore (Early Access) | Base game | Non-consumable | **$15.00** | Price does **not** rise at 1.0 |
-| Episode ×1 | Entitlement | Non-consumable | **$5.00** | Single episode |
+| Episode ×1 | Entitlement | Non-consumable | **$5.00** | Player picks which |
 | All 12 Episodes | Entitlement / token pack | Non-consumable | **$30.00** | Half off ($2.50 each) |
+| Lifetime pass | Entitlement | Non-consumable | **$90.00** | All episodes: past, present, future |
+| **Lifetime spend cap** | — | — | **$120.00** | Ceiling. At $120 the pass is granted; we take no more |
 | Episode (via token) | Entitlement | Non-consumable | 1 token | Permanent, all devices |
 
 | Rule | Value |
@@ -82,7 +84,12 @@ earned before that point bank toward the first purchase rather than being wasted
 | Launch discount | *Pending — not yet decided* |
 | Episodes at launch | **6** |
 | Free tokens granted on game purchase | *Pending — how many?* |
-| Delivery mechanism | *Pending — DLC vs token packs, see `Docs/Legal/DLC_VS_TOKENS_ANALYSIS.md`* |
+| Delivery mechanism | *Pending — see `Docs/Legal/DLC_VS_TOKENS_ANALYSIS.md`* |
+| Mid tier (6 for $20) | *Proposed — decides DLC vs tokens* |
+
+> ⚠️ **The $120 cap only holds on the pack path.** 12-pack ($30) + pass ($90) = $120 exactly, but
+> twelve singles ($60) + pass ($90) = $150. The cap has to be delivered by crediting prior
+> purchases — Steam cannot enforce a spend ceiling. See the analysis §4.
 
 ---
 
