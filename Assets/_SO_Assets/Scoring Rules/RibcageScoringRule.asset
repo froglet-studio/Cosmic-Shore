@@ -12,5 +12,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 15ffd2e63c99523ef44c6f6363b300f1, type: 3}
   m_Name: RibcageScoringRule
   m_EditorClassIdentifier:
-  metric: 5
+  metric: 6
   golfRules: 1

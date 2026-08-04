@@ -2311,6 +2311,23 @@ so a lead change flips the targets of creatures already in the air rather than o
 next wave — and so a cell can never hold two fauna colours at once, which is what the
 invariant actually forbids.
 
+### 22.1b What the swarm is actually FOR (the axis inversion)
+
+The mode's race is **creation** — first domain to hold `PrismTargetCount` prisms STANDING
+(`ScoringMetric.PrismsRemaining`, a live stock). Smashing the cage scores nothing; it only
+advances the fauna rungs. That inversion is what makes the ecology load-bearing instead of
+decorative: the swarm eats standing mass, standing mass IS the score, so releasing the
+brood directly un-scores every team the leader is ahead of.
+
+It also puts a genuine cost on the trigger — time spent breaking bone is time not spent
+laying, so you fall behind to arm a swarm that then serves whoever is ahead. A cumulative
+"prisms created" counter would have killed all of this: it only ever rises, so nothing a
+creature did could set anyone back.
+
+Note the leader the cell is pinned to is the **race** leader (creation), not the
+destruction leader. `Cell.SetModeControlOverride` does not care which stat decided it —
+that is the point of the override being a domain rather than a rule.
+
 ### 22.2 Escalation rides the phase ladder, not a new system
 
 `Cell.ModePhaseFloor` (nullable, default null) lets a mode hold the cell at or above a

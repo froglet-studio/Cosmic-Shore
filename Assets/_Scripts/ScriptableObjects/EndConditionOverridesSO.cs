@@ -46,8 +46,8 @@ namespace CosmicShore.ScriptableObjects
         /// <summary>Rampage hostile-prism target used when <see cref="rampagePrismTarget"/> is 0 (auto/default).</summary>
         public const int DefaultRampagePrismTarget = 2000;
 
-        /// <summary>Ribcage cage-destruction target used when <see cref="ribcagePrismTarget"/> is 0 (auto/default).</summary>
-        public const int DefaultRibcagePrismTarget = 600;
+        /// <summary>Ribcage STANDING-PRISM target used when <see cref="ribcagePrismTarget"/> is 0 (auto/default).</summary>
+        public const int DefaultRibcagePrismTarget = 300;
 
         [Header("Live counts - used at runtime. 0 = auto/default (edit via FrogletTools > Game Modes > End Game Conditions)")]
         [Tooltip("HexRace crystals to end the race. 0 = auto-calc from the track waypoints.")]
@@ -71,10 +71,12 @@ namespace CosmicShore.ScriptableObjects
                  "(race to N). 0 = default (2000).")]
         [Min(0)] public int rampagePrismTarget = 2000;
 
-        [Tooltip("Ribcage: prisms a domain must destroy to break out of the cage and win " +
-                 "(race to N). The 25%/50% fauna-release thresholds are fractions of THIS, so " +
-                 "moving it moves the whole escalation ladder with it. 0 = default (900).")]
-        [Min(0)] public int ribcagePrismTarget = 600;
+        [Tooltip("Ribcage: prisms a domain must have STANDING to win (race to N). This is a " +
+                 "LIVE stock - laying raises it, and anything that destroys your prisms (a rival " +
+                 "ram, a fauna bite) lowers it again. Smashing the cage does not score; it only " +
+                 "triggers the fauna rungs, which are absolute destruction counts on " +
+                 "RibcageController. 0 = default (300).")]
+        [Min(0)] public int ribcagePrismTarget = 300;
 
         [Header("Build baseline - what a shipping build uses. Set via the tool's \"Set Build Values\" button.")]
         [Min(0)] public int hexRaceCrystalCountBuild = 0;
@@ -83,7 +85,7 @@ namespace CosmicShore.ScriptableObjects
         [Min(0)] public int maelstromWinTargetBuild = 6;
         [Min(0)] public int nucleusRushWaveTargetBuild = 3;
         [Min(0)] public int rampagePrismTargetBuild = 2000;
-        [Min(0)] public int ribcagePrismTargetBuild = 600;
+        [Min(0)] public int ribcagePrismTargetBuild = 300;
 
         [Tooltip("When on, a build first copies the Build baseline onto the Live counts, so test values are never shipped.")]
         public bool autoRestoreBuildValuesBeforeBuild = true;
@@ -141,7 +143,7 @@ namespace CosmicShore.ScriptableObjects
         public int GetRampagePrismTarget() => rampagePrismTarget > 0 ? rampagePrismTarget : DefaultRampagePrismTarget;
 
         /// <summary>
-        /// Ribcage cage target ("race to N" prisms destroyed): the configured value when
+        /// Ribcage target ("race to N" STANDING prisms): the configured value when
         /// &gt; 0, otherwise <see cref="DefaultRibcagePrismTarget"/>.
         /// </summary>
         public int GetRibcagePrismTarget() => ribcagePrismTarget > 0 ? ribcagePrismTarget : DefaultRibcagePrismTarget;

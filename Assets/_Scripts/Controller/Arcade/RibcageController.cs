@@ -10,8 +10,9 @@ using CosmicShore.Utility;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Ribcage - the Rhino-only cage-breaking race. Domains race to smash a shielded prism
-    /// sphere; the first to the destruction target breaks out and wins. Structurally a sibling
+    /// Ribcage - the Rhino-only cage-breaking race. Domains race to be first to hold the
+    /// target number of prisms STANDING; a shielded prism sphere pens the cell's brood, and
+    /// smashing it arms the ecology rather than scoring. Structurally a sibling
     /// of <see cref="RampageController"/> (1 round / 1 turn, HasEndGame=false, server winner
     /// detection in OnTurnEndedCustom, snapshot SyncFinalScores_ClientRpc) - the destruction
     /// stat itself auto-increments via StatsManager.PrismDestroyed, so no per-event listener
@@ -29,10 +30,15 @@ namespace CosmicShore.Gameplay
     ///      the live swarm and its diet flips with it. There is no "target the loser" code
     ///      anywhere; the diet rule was always this.
     ///   2. HOW HARD the cell is running (<see cref="Cell.ModePhaseFloor"/> +
-    ///      <see cref="Cell.FaunaReleaseTier"/>). 25% of the target floors the cell at Restless
-    ///      and opens tier 0 (the grazer swarm); 50% floors it at Frenzy and opens tier 1 (the
-    ///      predator). Aggression bands, steering, danger immunity and speed all come from the
-    ///      existing CellPhase → CellAggressionLevel mapping.
+    ///      <see cref="Cell.FaunaReleaseTier"/>), gated on TOTAL cage destruction: the brood
+    ///      rung opens the pen and floors the cell at Restless, the pack rung adds the predator
+    ///      and floors it at Frenzy. Aggression bands, steering, danger immunity and speed all
+    ///      come from the existing CellPhase → CellAggressionLevel mapping.
+    ///
+    /// NOTE the two axes: the RACE is creation (first domain to hold PrismTargetCount standing
+    /// prisms wins), and smashing the cage scores nothing - it only arms the ecology. Since the
+    /// swarm eats standing mass, and standing mass is the score, breaking the cage is a real
+    /// decision: you stop laying to arm a swarm that then serves whoever is ahead.
     ///
     /// Neither publication removes a prism or starts a clock, so the conserved-mass law is
     /// untouched: the cage falls only to vessel abilities, and holding fauna PRODUCTION closed
@@ -53,13 +59,15 @@ namespace CosmicShore.Gameplay
                  "team including the leader's and break the whole hook.")]
         [SerializeField] Cell arenaCell;
 
-        [Tooltip("Fraction of the cage target at which the grazer swarm is released for the " +
-                 "leader and the cell is floored at Restless.")]
-        [SerializeField, Range(0.05f, 0.9f)] float broodReleaseFraction = 0.25f;
+        [Tooltip("CAGE PRISMS DESTROYED (summed across every domain) at which the pen opens: " +
+                 "the brood pours out in the race leader's colour and the cell is floored at " +
+                 "Restless. Absolute, not a fraction of the win target - destruction and " +
+                 "creation are different axes in this mode.")]
+        [SerializeField, Min(1)] int broodReleasePrisms = 150;
 
-        [Tooltip("Fraction of the cage target at which the predator joins and the cell is " +
-                 "floored at Frenzy.")]
-        [SerializeField, Range(0.1f, 0.95f)] float packReleaseFraction = 0.5f;
+        [Tooltip("CAGE PRISMS DESTROYED (all domains) at which the predator joins and the cell " +
+                 "is floored at Frenzy.")]
+        [SerializeField, Min(1)] int packReleasePrisms = 350;
 
         [Tooltip("Seconds between server-side leadership/escalation samples. The ladder is a " +
                  "coarse state machine, so this does not need to be per-frame.")]
@@ -74,10 +82,10 @@ namespace CosmicShore.Gameplay
                  "value the generator actually builds at). Override only for a resized arena.")]
         [SerializeField, Min(0f)] float aiCageRadiusOverride = 0f;
 
-        // Strike geometry, as multiples of the shell radius. Approach is outside the cage, punch
-        // just inside it: the leg between them is the one that shatters bars.
-        const float AiApproachStandoff = 1.45f;
-        const float AiPunchDepth = 0.55f;
+        // Where the AI's cage stations sit, as a multiple of the shell radius. STRICTLY > 1:
+        // AIPilot has no arrive-and-stop behaviour, so any station inside the cage becomes a
+        // point the AI orbits from within. Stations live outside; the bars break on the transit.
+        const float AiStationStandoff = 1.3f;
         // One strike in N is a raid on live opposing mass instead of the cage.
         const int AiRaidEveryNthStrike = 4;
 
@@ -85,9 +93,10 @@ namespace CosmicShore.Gameplay
         // floor) in ApplyStage - one place, so the three levers can never disagree.
         //   Caged  - the brood is penned in the cage, visible through the bars. It eats the
         //            trail of anything that comes IN and cannot touch the match outside.
-        //   Loosed - 25%: containment lifted, cell floored at Restless. The swarm pours out
-        //            wearing the leader's colours and hunts the trailing teams' trails.
-        //   Pack   - 50%: the predator species joins, cell floored at Frenzy.
+        //   Loosed - broodReleasePrisms of cage destroyed: containment lifted, cell floored at
+        //            Restless. The swarm pours out wearing the RACE leader's colours and eats
+        //            the trailing teams' standing mass - which is their score.
+        //   Pack   - packReleasePrisms destroyed: the predator joins, cell floored at Frenzy.
         const int StageCaged = 0;
         const int StageLoosed = 1;
         const int StagePack = 2;
@@ -179,8 +188,10 @@ namespace CosmicShore.Gameplay
             int target = gameData.PrismTargetCount;
             if (target <= 0) return; // monitor hasn't resolved the target yet
 
-            // Leading domain by destruction sum, Jade→Ruby→Gold on ties (fixed order, so every
-            // machine would agree - though only the server ever computes this).
+            // ── who the brood serves: the RACE leader, by the scoring metric (standing prisms).
+            // NOT the destruction leader. The swarm eats the trailing teams' standing mass, and
+            // standing mass IS the score, so pointing it at everyone-but-the-leader is what makes
+            // breaking the cage a decision instead of a chore.
             var leader = Domains.Blue;
             int best = 0;
             int dc = Mathf.Clamp(gameData.RequestedDomainCount, 1, GameDataSO.ActiveDomains.Length);
@@ -195,13 +206,21 @@ namespace CosmicShore.Gameplay
                 }
             }
 
-            // Nobody has broken a bar yet - leave the cell unclaimed rather than handing the
+            // Nobody has laid anything yet - leave the cell unclaimed rather than handing the
             // brood to Jade for winning a 0-0 tie-break.
             if (leader == Domains.Blue || best <= 0) return;
 
-            float progress = best / (float)target;
-            int stage = progress >= packReleaseFraction ? StagePack
-                : progress >= broodReleaseFraction ? StageLoosed
+            // ── what opens the pen: TOTAL cage destruction, by anybody. Destruction is a
+            // separate axis from the race, so these are absolute counts, not fractions of the
+            // win target. Summed across domains because the cage is one shared structure - it
+            // does not matter who broke which bar, only that the bone is open.
+            int cageBroken = 0;
+            for (int i = 0; i < dc; i++)
+                cageBroken += ScoringMetrics.SumByDomain(
+                    gameData, ScoringMetric.PrismsDestroyed, GameDataSO.ActiveDomains[i]);
+
+            int stage = cageBroken >= packReleasePrisms ? StagePack
+                : cageBroken >= broodReleasePrisms ? StageLoosed
                 : StageCaged;
 
             bool leaderChanged = leader != _leader;
@@ -214,7 +233,7 @@ namespace CosmicShore.Gameplay
             if (stageChanged)
             {
                 _stage = stage;
-                PublishRelease_ClientRpc(stage, (int)leader, best, target);
+                PublishRelease_ClientRpc(stage, (int)leader, cageBroken, target);
             }
             else if (leaderChanged && stage > StageCaged)
             {
@@ -383,9 +402,7 @@ namespace CosmicShore.Gameplay
                     if (Time.time < nextSample) return cached;
                     nextSample = Time.time + aiRetargetSeconds;
 
-                    int strike = beat / 2;    // two waypoints (approach, punch) per strike
-                    bool punching = (beat & 1) == 1;
-                    beat++;
+                    int strike = beat++;
 
                     // Every 4th strike is a raid on live opposing mass instead of the cage.
                     // Offset by seat so the AIs don't all raid on the same beat.
@@ -395,16 +412,22 @@ namespace CosmicShore.Gameplay
                         return cached;
                     }
 
-                    // Golden-angle spiral over the sphere: successive strikes are far apart,
-                    // deterministic, and never repeat a spot, so it keeps finding intact bone.
+                    // Golden-angle spiral over the sphere: successive strikes are ~137 degrees
+                    // apart, so the CHORD between one station and the next passes close to the
+                    // centre - a full crossing of the cage, which is what shatters bars. It is
+                    // also deterministic and never repeats a spot, so it keeps finding intact bone.
                     float a = phase + strike * 2.39996323f;
                     float y = 1f - 2f * ((strike * 0.37f) % 1f);
                     float r = Mathf.Sqrt(Mathf.Max(0f, 1f - y * y));
                     var dir = new Vector3(r * Mathf.Cos(a), y, r * Mathf.Sin(a));
 
-                    // Approach sits OUTSIDE the shell, punch just INSIDE it, both on the same
-                    // radial - so the run between them crosses the bone head-on.
-                    cached = centre + dir * (shell * (punching ? AiPunchDepth : AiApproachStandoff));
+                    // ALWAYS outside the shell. This is the whole fix: AIPilot steers at its
+                    // target forever and simply flies through on arrival, so a target INSIDE the
+                    // cage means an AI that loops around that interior point indefinitely - which
+                    // is exactly what "the AI just stays inside" was. Park the station outside and
+                    // the loitering happens outside; the damage happens on the transit between
+                    // stations, which crosses the bone twice.
+                    cached = centre + dir * (shell * AiStationStandoff);
                     return cached;
                 });
             }
@@ -428,7 +451,7 @@ namespace CosmicShore.Gameplay
 
             var winnerRep = gameData.RoundStatsList
                 .Where(s => s.Domain == winningDomain)
-                .OrderByDescending(s => s.HostilePrismsDestroyed)
+                .OrderByDescending(s => s.PrismsRemaining)
                 .FirstOrDefault();
             if (winnerRep == null) return;
 
@@ -471,7 +494,7 @@ namespace CosmicShore.Gameplay
                 nameArray[i] = new FixedString64Bytes(statsList[i].Name);
                 scoreArray[i] = statsList[i].Score;
                 domainArray[i] = (int)statsList[i].Domain;
-                prismsArray[i] = statsList[i].HostilePrismsDestroyed;
+                prismsArray[i] = statsList[i].PrismsRemaining;
             }
 
             SyncFinalScores_ClientRpc(nameArray, scoreArray, domainArray, prismsArray,
@@ -483,7 +506,7 @@ namespace CosmicShore.Gameplay
             FixedString64Bytes[] names,
             float[] scores,
             int[] domains,
-            int[] prismsDestroyed,
+            int[] prismsRemaining,
             FixedString64Bytes winnerName,
             int winnerDomain)
         {
@@ -499,7 +522,7 @@ namespace CosmicShore.Gameplay
                 }
                 stat.Score = scores[i];
                 stat.Domain = (Domains)domains[i];
-                stat.HostilePrismsDestroyed = prismsDestroyed[i];
+                stat.PrismsRemaining = prismsRemaining[i];
             }
 
             gameData.WinnerName = winnerName.ToString();
@@ -527,7 +550,8 @@ namespace CosmicShore.Gameplay
 
             foreach (var s in gameData.RoundStatsList)
             {
-                s.HostilePrismsDestroyed = 0;
+                s.PrismsRemaining = 0;          // the scored metric
+                s.HostilePrismsDestroyed = 0;   // the fauna-ladder trigger
                 s.Score = 0f;
             }
 

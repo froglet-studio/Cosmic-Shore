@@ -75,9 +75,9 @@ namespace CosmicShore.Editor
                 EndConditionOverridesSO.DefaultNucleusRushWaveTarget + ".\n" +
                 "  • Rampage: hostile prisms destroyed to win (race to N), default " +
                 EndConditionOverridesSO.DefaultRampagePrismTarget + ".\n" +
-                "  • Ribcage: cage prisms destroyed to win (race to N), default " +
+                "  • Ribcage: prisms STANDING to win (race to N), default " +
                 EndConditionOverridesSO.DefaultRibcagePrismTarget +
-                ". The 25%/50% fauna-release thresholds are fractions of this.",
+                ". Destroying the cage does not score - it only triggers the fauna.",
                 MessageType.Info);
 
             // ---- Live input fields (used at runtime) ----
@@ -90,7 +90,7 @@ namespace CosmicShore.Editor
             int mw  = Mathf.Max(0, EditorGUILayout.IntField("Maelstrom - Win Target (points)", _config.maelstromWinTarget));
             int nr  = Mathf.Max(0, EditorGUILayout.IntField("Brood Rush - Wave Target", _config.nucleusRushWaveTarget));
             int ra  = Mathf.Max(0, EditorGUILayout.IntField("Rampage - Prism Target", _config.rampagePrismTarget));
-            int rc  = Mathf.Max(0, EditorGUILayout.IntField("Ribcage - Cage Target", _config.ribcagePrismTarget));
+            int rc  = Mathf.Max(0, EditorGUILayout.IntField("Ribcage - Standing Prism Target", _config.ribcagePrismTarget));
             if (EditorGUI.EndChangeCheck())
                 Persist("Edit End Game Conditions", () =>
                 {

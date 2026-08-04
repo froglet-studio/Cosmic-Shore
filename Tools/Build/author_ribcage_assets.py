@@ -245,7 +245,7 @@ emit("Assets/_Prefabs/Spawnables/SpawnableRibcage.prefab.meta",
 # ── 3. Scoring rule ──────────────────────────────────────────────────────────
 emit("Assets/_SO_Assets/Scoring Rules/RibcageScoringRule.asset",
      HEADER_FOR(G_SCRIPT["RibcageScoringRuleSO"], "RibcageScoringRule") +
-     "  metric: 5\n  golfRules: 1\n")
+     "  metric: 6\n  golfRules: 1\n")   # 6 = ScoringMetric.PrismsRemaining (STANDING mass)
 emit("Assets/_SO_Assets/Scoring Rules/RibcageScoringRule.asset.meta",
      asset_meta(G_ASSET["RibcageScoringRule"]))
 
@@ -288,26 +288,26 @@ emit("Assets/_SO_Assets/Games/ArcadeGameRibcage.asset.meta", asset_meta(G_ASSET[
 # per-species performance backstop the food web works under.
 #
 #   species      tier  seed  MaxLive   role
-#   Tadpole        0     16     30      the shoal - fast, numerous, the "swarm" read
-#   QuadFish       0      8     14      mid-size rovers
-#   Clawfish       0      6     10      heavier, slower, most threatening silhouette
-#   Brittlestar    0      5      8      drifting arms - fills the volume
-#   Shark          1      2      4      the 50% predator (eats HERBIVORES, not prisms)
+#   Tadpole        0     26     48      the shoal - fast, numerous, the "swarm" read
+#   QuadFish       0     13     22      mid-size rovers
+#   Clawfish       0      9     16      heavier, slower, most threatening silhouette
+#   Brittlestar    0      8     13      drifting arms - fills the volume
+#   Shark          1      3      6      the 50% predator (eats HERBIVORES, not prisms)
 #                       ---    ---
-#   caged totals          35     62     (+4 sharks once the pack rung lands)
+#   caged totals          56     99      (+6 sharks once the pack rung lands)  [+60% pass]
 FAUNA_SPECIES = [
-    dict(key="Tadpole",     asset="RibcageTadpoleFauna",     tier=0, seed=16, cap=30, initial=16,
+    dict(key="Tadpole",     asset="RibcageTadpoleFauna",     tier=0, seed=26, cap=48, initial=26,
          element=2, center=0.15, prefab="TadpolePrefab", palette="TADPOLE",
          variant=dict(scale=0.4, prism="{x: 0.8, y: 0.8, z: 7}", mat="TadpoleBodyMat",
                       starve=90, forager=1, cohesion=50, tick=1.2, reach=22, goalw=3,
                       minspd=12, maxspd=18)),
-    dict(key="QuadFish",    asset="RibcageQuadFishFauna",    tier=0, seed=8,  cap=14, initial=8,
+    dict(key="QuadFish",    asset="RibcageQuadFishFauna",    tier=0, seed=13, cap=22, initial=13,
          element=1, center=0.25, prefab="QuadFishPrefab", palette="TADPOLE", variant=None),
-    dict(key="Clawfish",    asset="RibcageClawfishFauna",    tier=0, seed=6,  cap=10, initial=6,
+    dict(key="Clawfish",    asset="RibcageClawfishFauna",    tier=0, seed=9,  cap=16, initial=9,
          element=3, center=0.3,  prefab="ClawfishPrefab", palette="TADPOLE", variant=None),
-    dict(key="Brittlestar", asset="RibcageBrittlestarFauna", tier=0, seed=5,  cap=8,  initial=5,
+    dict(key="Brittlestar", asset="RibcageBrittlestarFauna", tier=0, seed=8,  cap=13, initial=8,
          element=4, center=0.35, prefab="BrittlestarPrefab", palette="TADPOLE", variant=None),
-    dict(key="Shark",       asset="RibcageSharkFauna",       tier=1, seed=2,  cap=4,  initial=1,
+    dict(key="Shark",       asset="RibcageSharkFauna",       tier=1, seed=3,  cap=6,  initial=2,
          element=0, center=0.2,  prefab="SharkPrefab", palette="SHARK", variant=None),
 ]
 
@@ -433,8 +433,8 @@ OLD_FIELDS = f"""  rule: {{fileID: 11400000, guid: {EXISTING['RampageScoringRule
 """
 NEW_FIELDS = f"""  rule: {{fileID: 11400000, guid: {G_ASSET['RibcageScoringRule']}, type: 2}}
   arenaCell: {{fileID: 1700000065}}
-  broodReleaseFraction: 0.25
-  packReleaseFraction: 0.5
+  broodReleasePrisms: 150
+  packReleasePrisms: 350
   ladderSampleSeconds: 0.5
   aiRetargetSeconds: 2
   aiCageRadiusOverride: 0

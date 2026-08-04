@@ -13,13 +13,13 @@ MonoBehaviour:
   m_Name: Ribcage QuadFish Fauna Config Data
   m_EditorClassIdentifier:
   FaunaPrefab: {fileID: 4652232322436628206, guid: 19615ed0c903b1041973d70593d4b0a3, type: 3}
-  InitialSpawnCount: 8
-  PopulationSize: 8
+  InitialSpawnCount: 13
+  PopulationSize: 13
   SpawnProbability: 1
   FeedsPerOffspring: 20
   OffspringPerBirth: 1
   ReproductionCooldownSeconds: 10
-  MaxLivePopulation: 14
+  MaxLivePopulation: 22
   ReleaseTier: 0
   CenterFocusBias: 0.25
   Element: 1

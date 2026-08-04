@@ -7,22 +7,23 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Ribcage: golf-timed like Rampage/HexRace/Scurry. Domains race to smash their way out of
-    /// the shielded cage; the turn ends (<c>RibcagePrismTurnMonitor</c>) when an active domain's
-    /// summed <see cref="IRoundStats.HostilePrismsDestroyed"/> reaches
-    /// <see cref="GameDataSO.PrismTargetCount"/> (authored via FrogletTools ▸ Game Modes ▸ End
-    /// Game Conditions). Winning-domain players score their FINISH TIME; losing players a
-    /// sentinel encoding their team's remaining prisms.
+    /// Ribcage: the race is CREATION, not destruction. The turn ends
+    /// (<c>RibcagePrismTurnMonitor</c>) when an active domain's summed
+    /// <see cref="IRoundStats.PrismsRemaining"/> - the prisms it currently has STANDING -
+    /// reaches <see cref="GameDataSO.PrismTargetCount"/> (authored via FrogletTools ▸ Game
+    /// Modes ▸ End Game Conditions). Winning-domain players score their FINISH TIME; losing
+    /// players a sentinel encoding how far their team still is from the target.
     ///
-    /// Shares Rampage's metric and encoding deliberately - the difference between the two modes
-    /// is the ARENA and the fauna ladder, not the arithmetic - but it is its own rule asset so
-    /// the two can be tuned apart without one silently retuning the other, and so
-    /// <see cref="TargetCount"/> can read Ribcage's own end-condition field.
+    /// Smashing the cage does NOT score. It is the fauna TRIGGER: destruction rungs release the
+    /// brood, the brood wears the creation leader's colour, and it eats every trailing team's
+    /// standing mass - which is their score. That is why the metric is a LIVE stock
+    /// (PrismsRemaining, decremented whenever anything destroys one of your prisms) rather than
+    /// a cumulative "prisms created" counter: a cumulative counter only ever goes up, so nothing
+    /// the swarm did could set anyone back and the whole ecology would be decoration.
     ///
-    /// Scoring mass is everything that is not your own team's laid trail: the cage (environment
-    /// mass, non-roster owner ⇒ StatsManager classifies it hostile whatever colour it wears) and
-    /// rival trails. Your own and your teammates' trails never score, so there is no
-    /// lay-and-smash farming loop.
+    /// The strategic consequence is the mode: time spent breaking the cage is time NOT spent
+    /// laying, so you fall behind to arm a swarm that then serves whoever is ahead. Break it too
+    /// early and you feed the leader's pets your own trail.
     /// </summary>
     [CreateAssetMenu(menuName = "ScriptableObjects/Scoring Rules/Ribcage", fileName = "RibcageScoringRule")]
     public class RibcageScoringRuleSO : ScoringRuleSO
@@ -67,11 +68,11 @@ namespace CosmicShore.Gameplay
         public override List<ScoreResult> BuildResults(GameDataSO gameData)
         {
             // Golf order = TEAM-major by construction: finish times (winners) below every loser
-            // sentinel, loser sentinels ordered by team deficit. Individual bars smashed order
-            // teammates; name is the final tiebreak so every peer builds an identical list.
+            // sentinel, loser sentinels ordered by team deficit. Individual standing prisms
+            // order teammates; name is the final tiebreak so every peer builds an identical list.
             var ordered = gameData.RoundStatsList
                 .OrderBy(s => s.Score)
-                .ThenByDescending(s => s.HostilePrismsDestroyed)
+                .ThenByDescending(s => s.PrismsRemaining)
                 .ThenBy(s => s.Name, System.StringComparer.Ordinal);
 
             var rows = ordered.Select(s => new ScoreResultBuilder.Row(
@@ -80,8 +81,8 @@ namespace CosmicShore.Gameplay
                 s.Score,
                 GolfScoreSentinels.IsFinishTime(s.Score)
                     ? ScoreResultBuilder.FormatTime(s.Score)
-                    : $"{Remaining(gameData, s.Domain)} Bars Left",
-                $"{LiveMetric(s)} Bars")).ToList();
+                    : $"{Remaining(gameData, s.Domain)} To Go",
+                $"{LiveMetric(s)} Prisms")).ToList();
 
             return ScoreResultBuilder.BuildRanked(rows);
         }
@@ -89,6 +90,6 @@ namespace CosmicShore.Gameplay
         public override ScoreReveal BuildReveal(GameDataSO gameData, IRoundStats localStats, bool didWin) =>
             didWin
                 ? new ScoreReveal("VICTORY", "BREAKOUT TIME", (int)localStats.Score, true)
-                : new ScoreReveal("DEFEAT", "BARS LEFT", Remaining(gameData, localStats.Domain), false);
+                : new ScoreReveal("DEFEAT", "PRISMS SHORT", Remaining(gameData, localStats.Domain), false);
     }
 }
