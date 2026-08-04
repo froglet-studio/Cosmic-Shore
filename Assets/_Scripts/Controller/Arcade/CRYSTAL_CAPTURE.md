@@ -375,3 +375,16 @@ Also reports vessel telemetry via `ugsStatsManager.ReportVesselTelemetry()`.
     Fixed on three fronts, none of which depends on timing: `Cell.FindByRuntimeData(runtime)` resolves through the static `ActiveCells` registry the Cell joins in `OnEnable` (immediately available); `Cell.ExpectedNucleusWorldRadius` measures the config's `NucleusPrefab` asset directly (`MeasurePrefabRadius` — mesh bounds × authored scale × `nucleusScaleMultiplier`, the asset-time counterpart of `RefreshNucleusControlRadius`'s `Renderer.bounds` read, and equal to it: 400 → 391.911, 200 → 195.956); and `EnsureSpawnPosesReady` now **latches only on success**, distinguishing a transient miss (retry on the next spawn) from a cell that genuinely has no nucleus configured (authored points are then the only answer). It also logs the ring it built, so the radius is visible in the console rather than inferred from where you woke up. `CrystalManager.GetAnchorlessSpawnRadius` was carrying the same exposure and now takes the same path.
 
     The retired `Cell.EnsureInitialized()` nudge was the wrong shape for this: forcing `Initialize` early would have picked an `IntensityWise` config before intensity syncs, and — until `SpawnVisuals` was guarded per field in the same pass — a second `Initialize` duplicated the membrane and nucleus, orphaning the first pair.
+
+### Follow-ups (open, deliberately not done in the nucleus/spawn branch)
+
+- **Spawn-ring rollout is a per-mode design call.** `arrangeSpawnPointsAroundCell` is on for
+  this scene only. It is wrong for HexRace (deterministic track, its own start line) and
+  arguable for Joust / Cellular Duel / 2v2 CoOp, whose authored starts may be intentional.
+  Decide per mode, then flip the bool + wire `cellData` in that scene.
+- **The `SkyboxModel` backdrop is legacy, but not this branch's call.** `MembraneBase` /
+  `BigMembraneVariant` instances sit in seven scenes. They are NOT Cell duplicates (note 13),
+  and in both Recording Studio tool scenes — which wire no `CellConfigs` and have
+  `m_SkyboxMaterial: {fileID: 0}` — the scene copy is the only geometry that renders.
+  Retiring them in favour of the procedural HyperSea skybox is an art decision across all
+  seven; do not do it piecemeal.

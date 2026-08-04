@@ -147,6 +147,40 @@ its GameObject lists it in `m_Component`.
 - **Delete a script safely**: get its GUID from the `.meta`, sweep ALL of
   Assets (`.unity`/`.prefab`/`.asset`/`.cs`) for the GUID and the class name
   BEFORE deleting; excise components first, delete `.cs` + `.meta` together.
+- **Excise a whole PREFAB INSTANCE from a scene** (a hand-placed object that
+  should not be there). It is more than one document, so drive it by PARSING,
+  never by the line numbers a report handed you — the first deletion invalidates
+  every later one. Split the file on `^--- !u!`, then: (1) find the `!u!1001`
+  `PrefabInstance` whose `m_SourcePrefab` carries the guid; (2) collect every
+  `stripped` document whose `m_PrefabInstance` points back at it — those are how
+  other objects reference its children; (3) drop those documents; (4) drop every
+  `  - {fileID: N}` line naming a dropped id (`m_Children`, `SceneRoots.m_Roots`);
+  (5) **assert** no dropped id survives as a whole-word token and the prefab guid
+  is gone. A word-boundary regex matters — fileIDs are substrings of each other.
+  One parser then runs over N scenes identically and self-checks each.
+- **A variant's component fileIDs are DERIVED, so a literal id will not match
+  them**: `variantFileID = baseFileID XOR prefabInstanceFileID` (unsigned 64-bit,
+  the instance being the variant's own `!u!1001` anchor). This is why a sweep for
+  "modifications targeting component X" silently misses every prefab variant.
+  Either compute the XOR, or — better — let Unity resolve it:
+  `AssetDatabase.LoadAllAssetsAtPath` + `TryGetGUIDAndLocalFileIdentifier` gives a
+  fileID→object map per prefab that covers base and variant alike, so you can ask
+  `obj is MyComponent` instead of matching numbers.
+- **Prefer a FLAT COPY over a variant when the repo already does.** "A variant,
+  never a copy" is the rule for *shared behaviour*; for "the same prop at another
+  size" check the folder first. Sibling flat copies (identical internal fileIDs,
+  differing only in name + scale) mean the referencing SO field stays byte-identical
+  and the whole malformed-variant-YAML risk class disappears. Authoring a variant by
+  hand requires deriving three XOR'd fileIDs correctly; a flat copy requires none.
+- **Sweep DEAD prefab-instance modifications.** Unity never prunes an override whose
+  `propertyPath` names a field the script no longer has — it survives every reserialize,
+  often pointing at a guid no asset carries, and reads as real wiring to the next
+  person. Find them with a TWO-part test, or you will delete live data: the
+  modification's `target` must resolve to the component type you mean (previous
+  bullet), AND its `propertyPath` root (split on `.`, so `Foo.Array.data[0]` → `Foo`)
+  must not be a serialized field on that type. Skip `m_*` (Unity built-ins). Get the
+  valid names from the C# by reflection, not by hand — a hand list is how
+  `CrystalSkimAudioClip` nearly gets eaten by a filter meant for `Crystal`.
 - **Re-author SO numbers**: regex with `re.subn(..., count=1)` + assert n==1
   per field; print the before/after table so the human can eyeball the math.
 - **Author a whole asset FAMILY from a generator, not by hand.** When a change

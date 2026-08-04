@@ -89,9 +89,10 @@ namespace CosmicShore.Editor
 
                 foreach (var inst in visualInstances)
                 {
+                    if (!ownedVisuals.TryGetValue(inst.SourcePrefabGuid, out var owners)) continue;
+
                     string name = inst.RootNameOverride ?? AssetName(inst.SourcePrefabGuid);
-                    var spawners = ownedVisuals[inst.SourcePrefabGuid]
-                        .Where(c => sceneConfigs.Contains(c)).ToList();
+                    var spawners = owners.Where(c => sceneConfigs.Contains(c)).ToList();
 
                     if (spawners.Count > 0)
                         duplicates.Add(
