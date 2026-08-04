@@ -360,13 +360,13 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// Which way the upper jaw swings. The vessel's own jaw art (DolphinTopJaw / DolphinBottomJaw)
-        /// runs blunt-end-RIGHT and tapers to the tip on the LEFT, so the rects hinge on their RIGHT
-        /// edge (pivot 1, 0.5) and the tip sits at local -X. Rotating a point at -X by θ moves it to
-        /// y = -|x|·sinθ, so lifting the upper tip needs a NEGATIVE angle. Flip this if the art is
-        /// ever re-exported facing the other way.
+        /// Which way the upper jaw swings. The rects hinge on their LEFT edge (pivot 0, 0.5) - the
+        /// same pivot the vessel silhouette uses - so the jaw body sits at local +X and the gape
+        /// opens to the RIGHT, reading as '&lt;'. Rotating a point at +X by θ moves it to
+        /// y = |x|·sinθ, so lifting the upper half needs a POSITIVE angle. Flip this if the hinge
+        /// ever moves back to the other edge.
         /// </summary>
-        const float UpperSign = -1f;
+        const float UpperSign = 1f;
 
         void SetJawAngleImmediate(float angle)
         {

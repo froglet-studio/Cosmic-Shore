@@ -192,9 +192,10 @@ namespace CosmicShore.Gameplay
             if (!view) return;
             float norm = max > 0f ? Mathf.Clamp01(current / max) : 0f;
 
-            // "Charging" is the fill phase - once the meter starts discharging it is spending, not
-            // banking, and the icon should settle instead of swelling.
-            bool charging = norm > 0f && _status != null && !_status.IsChargedBoostDischarging;
+            // The swell means "you are banking boost right now", so it gates on the DRIFT itself,
+            // not on "not discharging" - otherwise a full meter sat swollen the whole time the
+            // pilot was flying straight, which reads as the gauge growing when nothing is happening.
+            bool charging = _status != null && _status.IsDrifting && !_status.IsChargedBoostDischarging;
             view.SetDriftBoost(norm, charging);
             if (!charging && norm <= 0f) view.ReleaseDriftBoost();
         }

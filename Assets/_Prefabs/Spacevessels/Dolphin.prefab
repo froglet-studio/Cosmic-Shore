@@ -2540,7 +2540,7 @@ MonoBehaviour:
     initialAmount: 0
   - Name: Boost
     initialResourceGainRate: 0
-    resourceGainRate: 0.1
+    resourceGainRate: 0
     maxAmount: 1
     initialAmount: 0
   ChargeTestHarness: 0
