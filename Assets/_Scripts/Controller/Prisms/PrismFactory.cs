@@ -291,9 +291,8 @@ namespace CosmicShore.Gameplay
             // Batched pure-entity debris path (Docs/PRISM_ANIMATION.md B3): no
             // GameObject, no pool, no per-frame budget — a whole burst spawns as
             // one prototype-instantiate batch at LateUpdate and the GPU animates
-            // every piece at full length. The pooled path below survives as the
-            // fallback for a disabled render service / misconfigured prefab, and
-            // its per-frame caps + deferral only ever engage in that world.
+            // every piece at full length. The pooled path below is a ROUTE, not a
+            // working visual fallback — see the note on SpawnImplosion.
             if (CosmicShore.Utility.PrismDebris.Configure(explosionPool != null ? explosionPool.Prefab : null) &&
                 TryGetTeamColors(data.ownDomain, out var bright, out var dark) &&
                 CosmicShore.Utility.PrismDebris.TryRequestExplosion(
@@ -327,9 +326,15 @@ namespace CosmicShore.Gameplay
             // ONE prototype-instantiate batch and the GPU runs every suction off the
             // shader clock. The moving convergence target keeps working — PrismDebris
             // retains the target Transform per record and refreshes _Location while
-            // it lives (the §1 exception). The pooled path below survives as the
-            // fallback for a disabled render service / misconfigured prefab, and its
-            // per-frame caps + deferral only ever engage in that world.
+            // it lives (the §1 exception).
+            //
+            // The pooled path below is a ROUTE, not a working visual fallback: under
+            // strict clock mode PrismImplosion with no render entity draws a static,
+            // un-animated block and logs, and PrismExplosion draws nothing at all
+            // (TriggerExplosion disables the renderer unconditionally). It is reached
+            // only if the effect prefab is misconfigured or PrismRenderService is off —
+            // and being loud there is the intended forcing function, not a degradation.
+            // See Docs/PRISM_ANIMATION.md §4.6 for what retiring it actually requires.
             if (CosmicShore.Utility.PrismDebris.ConfigureImplosion(implosionPool != null ? implosionPool.Prefab : null) &&
                 TryGetTeamColors(data.ownDomain, out var bright, out var dark) &&
                 CosmicShore.Utility.PrismDebris.TryRequestImplosion(

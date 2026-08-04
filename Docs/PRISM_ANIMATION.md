@@ -891,6 +891,61 @@ predicate is cached, the density grids take a `Vector3` instead of re-reading
 `transform.position` once per grid, and a death reads its own pose once instead of four
 times.
 
+#### 4.6.1 Retiring the pooled effect path — assessed 2026-08-04, NOT YET
+
+The obvious next step is to delete the pooled `PrismExplosion` / `PrismImplosion`
+spawn path now that both families batch. The audit says the *behavioural* case is
+already made and the *mechanical* case is not. Both halves matter, so both are
+recorded here rather than left to be re-derived.
+
+**Why it is already dead weight, not a safety net.** The comment that used to call
+it a "fallback for a disabled render service" was wrong, and that mattering is the
+point of writing this down:
+
+- With `PrismRenderService.Enabled` false, `Create` returns an invalid handle, and
+  `PrismExplosion.TriggerExplosion` disables its renderer *unconditionally* before
+  the branch — so a pooled explosion in that world renders **nothing** and logs.
+  A pooled implosion fares slightly better and still fails: `ApplyInitialVisualState`
+  re-enables the renderer, but `StampClockStrict`'s no-entity branch only warns, so
+  it draws a **static, un-animated block** for its full duration. Strict clock mode
+  has no CPU animation tier by design (§4.4) — "loud and frozen" IS the contract.
+- `PrismRenderService.SetRuntimeOverride` has **no caller anywhere in Assets**, and
+  the shipped `Resources/PrismRenderConfig.asset` has `useInstancedRendering: 1`.
+  The legacy A/B variant in `Docs/PRISM_EXPLOSION_BENCHMARK.md` is produced by
+  checking out a different *branch*, not by flipping this toggle. There is no
+  shipping configuration in which the pooled path is what the player sees.
+- No consumer needs a GameObject back. `Prism.Explode` / `Prism.Implode` are the
+  only raisers of `PrismType.Explosion` / `.Implosion` and both discard the
+  channel's `PrismReturnEventData`; `PrismFactory` is the only caller of
+  `TriggerExplosion` / `StartImplosion` / `StartGrow`; `StopEffect()` has zero
+  callers. `PrismType.Grow` has no producer at all.
+
+**Why it is a refactor, not a deletion — the three real dependencies.**
+
+1. **The pool prefabs are the CONFIG SOURCE for the batched path.**
+   `PrismDebris.Configure` / `ConfigureImplosion` read the mesh, material, layer,
+   debris clamp band and suction duration straight off `explosionPool.Prefab` /
+   `implosionPool.Prefab`. That is deliberate — it is what guarantees both paths
+   ship identical debris — but it means deleting the pooled path first requires
+   deciding where that authored data lives (an SO, or the prefabs demoted to pure
+   config assets that are never spawned).
+2. **The dev-build zombie audit** in `PrismEffectsManager` walks
+   `PrismExplosion.EnabledInstances` / `PrismImplosion.EnabledInstances` and pokes
+   `Renderer` / `IsActive` / `UsesEntityRenderPath`. With nothing pooled it audits
+   an empty set — harmless, but it stops being the safety net it was written to be,
+   and the batched carrier has no equivalent (its records ARE the live set).
+3. **`GameLoadSampler`** folds `EnabledInstances.Count` into its benchmark metrics.
+   The debris counters exist (`PrismDebris.LiveDebrisCount`,
+   `LiveImplosionDebrisCount`) but the sampler must be re-sourced or its numbers
+   silently drop to the batched half only.
+
+**The gate.** Do not retire until the implosion batch has been *measured*, not just
+shipped: an in-editor playtest of fauna feeding (suction converges on the moving
+eater, no stuck `imp` count on the harness HUD) plus a benchmark pass per
+`Docs/PRISM_EXPLOSION_BENCHMARK.md`. Retiring in the same change that introduces
+the batch would remove the ability to A/B it by flipping the config asset — which
+is exactly the tool that would diagnose a regression.
+
 ## 5. Migration tracker (the deduplicated work list)
 
 Phase A — infrastructure (everything else rides on it):
@@ -936,6 +991,7 @@ Phase D — lock-in:
 | D1 | Docs locked (this file + CLAUDE.md anti-pattern + manager banners + cross-refs) | ✅ shipped (2026-07-31) |
 | D2 | Delete the retired classes + scene components (`PrismScaleManager`, `MaterialStateManager`, `PrismEffectsManager`'s animation passes + Burst jobs, `AdaptiveAnimationManager` frame-skip machinery, retired animator fields, `TrailViewer`) | ✅ DONE 2026-08-02, programmatically: classes deleted; components excised from `PrismManagers.prefab` + `Urchin.prefab` by fileID (machine-verified reference-free); `PrismEffectsManager` slimmed to convergence refresh + zombie audit; animator dead surface stripped (`IsAnimating`/`IsScaling`/registration/…); `GameLoadSampler` re-sourced to `PrismSpatialIndex.LiveCount` + effect `EnabledInstances`; `AdaptivePerformanceSetting` documented INERT. Remaining in-editor: PhaseThresholds re-baseline (needs the measuring tool) |
 | D3 | In-editor verification pass (all migrated paths, both render paths, load-gate + hitstop + pause) | ☐ not started |
+| D4 | Retire the pooled `PrismExplosion` / `PrismImplosion` spawn path | ☐ **gated, not blocked** — the behavioural case is made (§4.6.1: no GameObject consumers, no working visual fallback, no runtime-override caller, shipped config instanced-ON), but it is a refactor not a deletion: the pool prefabs are the batched path's CONFIG source, and the zombie audit + `GameLoadSampler` read `EnabledInstances`. Gate = measured implosion parity (fauna playtest + a benchmark pass); do not do it in the same change as the batch |
 
 ---
 

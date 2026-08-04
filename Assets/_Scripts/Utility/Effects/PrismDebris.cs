@@ -40,9 +40,14 @@ namespace CosmicShore.Utility
     /// retirement (the sweep — a flat time-ordered walk, never per-entity
     /// progress polling).
     ///
-    /// The pooled path remains as the fallback for when the render service is
-    /// off (strict-mode diagnostics already cover that world) and for callers
-    /// needing GameObject semantics.
+    /// The pooled path still exists as the route taken when this one declines a
+    /// request, but do NOT read it as a visual fallback: with the render service
+    /// off, a pooled explosion draws nothing and a pooled implosion draws a
+    /// static block, both loudly (strict clock mode has no CPU animation tier by
+    /// design). The pool prefabs' real remaining job is being the CONFIG source
+    /// this class reads — mesh, material, layer, clamp band, duration — which is
+    /// why retiring the pooled spawn path is a refactor rather than a deletion.
+    /// Docs/PRISM_ANIMATION.md §4.6.
     /// </summary>
     public static class PrismDebris
     {
@@ -99,6 +104,12 @@ namespace CosmicShore.Utility
         }
 
         static readonly List<PrismRenderService.ExplosionDebrisSpawn> s_pending = new(256);
+
+        /// <summary>Shared spawn/retire scratch. Safe ONLY because TickHost.LateUpdate
+        /// runs Drain → DrainImplosions → Sweep → SweepImplosions strictly
+        /// sequentially and each clears it before and after use. Reordering them,
+        /// making any of them async, or calling one from outside the tick aliases the
+        /// two families' batches — give the new caller its own list instead.</summary>
         static readonly List<Entity> s_scratchEntities = new(256);
 
         static readonly List<PrismRenderService.ImplosionDebrisSpawn> s_pendingImplosions = new(256);
@@ -203,6 +214,12 @@ namespace CosmicShore.Utility
             if (prefab == null) return s_impConfigured;
             if (s_impConfigured && prefab == s_impSourcePrefab) return true;
 
+            // Renderer, not MeshRenderer: PrismImplosion is only
+            // [RequireComponent(typeof(Renderer))] and serializes its renderer as a
+            // Renderer, so this matches the component's own contract. The mesh still
+            // comes from the MeshFilter — a prefab whose Renderer were NOT the
+            // MeshFilter's own MeshRenderer would pair a mesh with a foreign material,
+            // so both must resolve or the whole config is refused.
             var meshFilter = prefab.GetComponent<MeshFilter>();
             var renderer = prefab.GetComponent<Renderer>();
             if (meshFilter == null || meshFilter.sharedMesh == null ||
