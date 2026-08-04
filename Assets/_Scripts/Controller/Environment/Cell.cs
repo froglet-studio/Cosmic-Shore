@@ -465,6 +465,62 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public float FaunaContainmentRadius { get; set; }
 
+        /// <summary>
+        /// While the brood is penned, does a creature that DETECTS prey inside the pen go to full
+        /// aggression? Off by default. Ribcage turns it on: the cage is meant to be intimidating,
+        /// so flying in does not merely put your trail on the menu - it sends the whole penned
+        /// population berserk (Frenzy → CellAggressionLevel.Level2: any-colour steering, friendly
+        /// avoidance off, danger-immune, fastest cadence and widest consume radius) until you
+        /// leave and the mass you laid is gone.
+        ///
+        /// This is a confinement response, not a new fundamental: it only raises the SAME phase
+        /// floor a mode could set by hand, and only while a pen exists.
+        /// </summary>
+        public bool ContainmentIntruderFrenzy { get; set; }
+
+        /// <summary>
+        /// True when the pen currently holds edible mass - i.e. somebody flew in and laid trail.
+        /// Sampled on the PHASE tick (not per frame) through the canonical spatial index
+        /// (Docs/SPATIAL_INDEX.md), never a physics query, and only while a pen exists.
+        ///
+        /// The pen radius deliberately sits inside the cage shell, so the cage's own bars - the
+        /// shielded ones AND the unshielded danger traps - are outside it and can never register
+        /// as an intruder. Shielded mass is filtered anyway (it is not food), which also keeps a
+        /// player's own shielded prisms from tripping it.
+        /// </summary>
+        public bool HasPreyInsideFaunaContainment
+        {
+            get
+            {
+                if (FaunaContainmentRadius <= 0f) return false;
+                if (Time.time < _nextContainmentProbeAt) return _containmentHasPrey;
+                _nextContainmentProbeAt = Time.time + ContainmentProbeIntervalSeconds;
+
+                _containmentProbe.Clear();
+                var index = PrismSpatialIndex.Instance;
+                _containmentHasPrey = false;
+                if (index == null) return false;
+
+                index.QuerySphere(transform.position, FaunaContainmentRadius, _containmentProbe);
+                for (int i = 0; i < _containmentProbe.Count; i++)
+                {
+                    var p = _containmentProbe[i];
+                    if (!p || IsShieldedMass(p)) continue;   // shields are not food, so not an intruder
+                    _containmentHasPrey = true;
+                    break;
+                }
+                _containmentProbe.Clear();
+                return _containmentHasPrey;
+            }
+        }
+
+        // Reused buffer + cadence for the pen's intruder probe - one Burst sphere query per
+        // interval, shared across every reader in the frame.
+        static readonly List<Prism> _containmentProbe = new();
+        const float ContainmentProbeIntervalSeconds = 0.4f;
+        float _nextContainmentProbeAt = float.NegativeInfinity;
+        bool _containmentHasPrey;
+
         /// <summary>True when <paramref name="position"/> is inside the fauna pen (always true when there is none).</summary>
         public bool IsInsideFaunaContainment(Vector3 position) =>
             FaunaContainmentRadius <= 0f ||
@@ -908,6 +964,13 @@ namespace CosmicShore.Gameplay
             // so volume remains the spine and the floor is pure escalation on top.
             if (ModePhaseFloor.HasValue && newPhase < ModePhaseFloor.Value)
                 newPhase = ModePhaseFloor.Value;
+
+            // A penned population that detects an intruder's mass goes berserk (see
+            // ContainmentIntruderFrenzy). Same ladder, same floor mechanism - just driven by the
+            // pen instead of by the mode's progress.
+            if (ContainmentIntruderFrenzy && FaunaContainmentRadius > 0f &&
+                newPhase < CellPhase.Frenzy && HasPreyInsideFaunaContainment)
+                newPhase = CellPhase.Frenzy;
 
             ApplyAuthoritativePhaseAndDomain(newPhase, DominantDomain);
         }

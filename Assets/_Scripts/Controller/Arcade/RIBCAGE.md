@@ -6,10 +6,18 @@ Ribcage is the **Rhino-only cage-breaking race**. A hollow sphere of SHIELDED pr
 bone pens the cell's brood; domains race to smash their way out, and the team in
 front wears the swarm's colours.
 
-- **The cage is the arena and the objective.** ~2,700 shielded prisms in sixteen
-  meridian ribs, seven latitude hoops, a woven cross-lattice and two polar crowns.
-  Every bar takes **two hits** — the first sheds the shield, the second shatters it —
-  unless the hit *devastates*, which is the mode's whole skill surface.
+- **The cage is the arena and the objective.** ~3,175 prisms at radius **360** in
+  sixteen meridian ribs, seven latitude hoops, a woven cross-lattice and two polar
+  crowns. Every shielded bar takes **two hits** — the first sheds the shield, the second
+  shatters it — unless the hit *devastates*, which is the mode's core skill surface.
+- **112 of the bars are DANGER traps, and they are the SOFT ones.** A danger prism is
+  not a tougher bar — danger is mutually exclusive with both shield tiers
+  (`PrismStateManager.MakeDangerous` clears them), so a trap bar shatters in **one** hit
+  with no shield to shed. What it costs is contact: the standard danger punishment
+  (volume-independent full-stop slow, a 4 s all-element debuff, boost reset). The bar
+  that breaks fastest is the one that hurts, so "ram everything" stops being the answer.
+  (They are also the only cage prisms fauna *could* eat, which is why the pen radius
+  sits inside the shell.)
 - **Fauna cannot touch the cage, by construction.** Shielded mass is not food for any
   herbivore (`Docs/ECOSYSTEM.md` §16.2) and — since this branch — is not a fauna
   steering target either. So the race can neither be eaten out from under the players
@@ -168,9 +176,38 @@ ceiling a ~10-crystal deficit does in Scurry.
   `BaseFaunaSpawnTime 15`, `FaunaFoodFloor 0`. Herbivore ring: 3 points at radius
   **180** and predator ring 2 points at **220** — both **inside** the 300-unit cage, so
   the brood hatches within the ribs and pours out through the bars the players break.
-- **Ribcage Tadpole Fauna Config Data** (`ReleaseTier 0`) — the grazer swarm, 6 per
-  seed, cap 14.
-- **Ribcage Shark Fauna Config Data** (`ReleaseTier 1`) — the 50% predator, cap 3.
+### The brood — five species
+
+Four herbivore species share the pen and the predator joins at 50%. Seeds hatch
+immediately; MaxLive is the per-species performance backstop the food web works under.
+
+| species | prefab | tier | seed | MaxLive | role |
+|---|---|---:|---:|---:|---|
+| Tadpole | `TadPoleFauna` (Boid) | 0 | 16 | 30 | the shoal — fast, numerous, the "swarm" read |
+| QuadFish | `QuadFish` (LightFauna) | 0 | 8 | 14 | mid-size rovers |
+| Clawfish | `Clawfish` (QuadFish) | 0 | 6 | 10 | heavier, slower, most threatening silhouette |
+| Brittlestar | `MassBrittlestarFauna` (LightFauna) | 0 | 5 | 8 | drifting arms — fills the volume |
+| **caged total** | | | **35** | **62** | |
+| Shark | `MassSharkFauna` (LightFauna) | 1 | 2 | 4 | the 50% **predator** — eats herbivores, not prisms |
+
+All five drop elemental crystals on death like every lifeform, so a cleared cage is also
+a powerup field.
+
+### Intruder frenzy — why going inside is a mistake
+
+`Cell.ContainmentIntruderFrenzy` (off by default; Ribcage turns it on): while the brood is
+penned, a creature that DETECTS edible mass inside the pen sends the whole population to
+**Frenzy** — `CellAggressionLevel.Level2`: any-colour steering, friendly avoidance off,
+danger-immune, fastest cadence and widest consume radius. Flying in does not merely put
+your trail on the menu; it turns 60-odd creatures onto it at once, and they stay berserk
+until you and your mass are gone.
+
+Detection is `Cell.HasPreyInsideFaunaContainment`: one Burst `PrismSpatialIndex.QuerySphere`
+on the **phase tick** (0.4 s cadence, shared buffer), never a physics query, and only while
+a pen exists. Shielded mass is filtered out, and the pen radius (**338**) deliberately sits
+inside the cage shell (**360**) so the cage's own bars — the shielded ones *and* the
+unshielded danger traps — are outside the pen and can never register as an intruder or be
+eaten.
 
 Both species are Blob-lineage clones (same prefabs, element palettes and level spread),
 so they drop elemental crystals on death like every other lifeform — skimmable
@@ -185,23 +222,24 @@ Environment Baselines):
 
 | structure | count | vol/prism | volume | detail |
 |---|---:|---:|---:|---|
-| meridian ribs | 1776 | 431.3 | 766,004 | 16 ribs × 111 |
-| latitude hoops | 509 | 431.3 | 219,536 | lats 0, ±26, ±52, ±74 |
+| meridian ribs (shielded) | 2016 | 431.3 | 869,519 | 16 ribs × 133, minus the traps |
+| — of which DANGER traps | 112 | 431.3 | 48,307 | every 19th rib prism |
+| latitude hoops | 611 | 431.3 | 263,530 | lats 0, ±26, ±52, ±74 |
 | cross-lattice | 288 | 131.8 | 37,955 | 16 pairs × 6 bands × 3 |
 | joints | 112 | 327.5 | 36,683 | 16 × 7 crossings |
 | polar crowns | 36 | 255.6 | 9,201 | 2 × 18 at lat ±84 |
-| **TOTAL** | **2,721** | | **1,069,380** | |
+| **TOTAL** | **3,175** | | **1,265,194** | |
 
-The rib-to-rib gap at the equator is ~118u, so this is a **ribcage, not a prison
+The rib-to-rib gap at the equator is ~141u, so this is a **ribcage, not a prison
 grille**: you fly between the bones freely. Sealing the sphere to vessel-tight spacing
 would cost ~6k prisms of always-on collider for no gameplay — the goal is to smash the
 structure, never to be locked inside it.
 
-**Collider-budget impact.** ~2,721 box colliders for the cage. Shielded prisms keep the
+**Collider-budget impact.** ~3,175 box colliders for the cage, plus up to ~62 caged creatures (66 once the shark rung lands), whose bodies are prism-bodied. Shielded prisms keep the
 authored **BoxCollider trigger** (`PrismOctahedronShield` changes the LOOK only — a
 convex-mesh collider is invisible to one skimmer family or the other), so a shielded
 bar costs exactly what a plain prism costs and the octahedron look is free. That is
-~1.8× the masterplan's ≤1500 per-cell target and **~3.7× *under* Rampage's deliberate
+~2.1× the masterplan's ≤1500 per-cell target and **~3× *under* Rampage's deliberate
 10,000-prism arena gate**, with no flora in the cell and no new physics queries
 anywhere — fauna senses ride `PrismSpatialIndex`, scoring rides the StatsManager SOAP
 channel, and the AI aims analytically (below). Destruction actively removes colliders
@@ -218,20 +256,48 @@ The ring normally measures off the cell's nucleus radius, and Ribcage's cell
 deliberately has none — so it would have collapsed to the cell centre, i.e. the same
 bug. `ServerPlayerVesselInitializer.spawnRingRadiusFloor` (new, default 0 = every
 existing scene unchanged) gives the ring a floor for exactly this case: a cell whose
-"core" is a structure rather than a nucleus. Ribcage authors **480** — outside the 300u
+"core" is a structure rather than a nucleus. Ribcage authors **576** — outside the 360u
 cage, well inside the 1200u membrane, and far enough back to see the whole cage and
 line up a charge.
 
 ## AI cage-breakers
 
-Deliberately **not** Rampage's `Cell.GetExplosionTarget` density-grid mass hunt: the
-cage is shielded and shielded mass is now kept out of the targeting grids, so the grids
-here hold only player trails and would send every AI chasing vessels instead of
-breaking out. The shell is an analytic sphere, so `RibcageController.ArmCageBreakers`
-walks a golden-angle spiral over it — successive targets far apart, deterministic,
-never repeating a spot — refreshed every `aiRetargetSeconds` (2s). Each AI is phased
-onto its own arc so a full lobby spreads around the sphere instead of queueing at one
-rib. Ramming *through* the aimed point is what breaks the bars.
+**A strike is TWO waypoints, not one.** The first version aimed straight at a point ON
+the shell, which is exactly why the AI lived inside the cage: a vessel that flies to a
+point on a sphere does not stop there, it carries through — and the next shell point is
+across the middle, so it just rattled around the interior. Now each strike is an
+**approach** point outside the shell (1.45×R) followed by a **punch** point just inside
+it (0.55×R) on the *same radial*. The vessel arrives from outside, crosses the bone
+roughly perpendicular (which is what breaks bars), exits, and swings out for the next
+one. Successive strikes walk a golden-angle spiral so it never re-rams a hole, and each
+AI is phased onto its own arc so a full lobby spreads around the sphere.
+
+**Every 4th strike is a RAID** on `Cell.GetExplosionTarget` — the densest mass hostile to
+its domain, which since the shielded-grid change means opponents' trails and anything a
+rival left inside the cage. That is where "sometimes it goes inside / hits opponent
+prisms" comes from, and it is a real strategy rather than a scripted detour: the same
+density query aggression-1 fauna use. The raid beat is offset by seat so the AIs never
+all raid at once.
+
+Deliberately **not** a pure density-grid mass hunt for the cage itself (Rampage's
+pattern): the cage is shielded and shielded mass is kept out of the targeting grids, so
+the grids would send every AI chasing vessels instead of breaking out. The shell is an
+analytic sphere, so aiming at it needs no query at all.
+
+Kept beatable on purpose: one waypoint per `aiRetargetSeconds` (2 s), so it is methodical
+rather than twitchy, and raids are a minority of strikes.
+
+## Feedback — the alert shake
+
+Reaching a release rung fires `HapticController.PlayAlert()` on every peer: ~1.2 s of hard
+rattling. This is the game's **third** haptic feel and Ribcage's rungs are the only thing
+that fires it — added deliberately under `Docs/HAPTICS.md` ▸ "Adding / changing a feel"
+(dedicated method, gate extended so it outranks both the skim pulse and the punish thud
+for its duration, rate-limited so it can never stack into a drone). It is safe to call on
+every peer because `HapticController` gates on the local player's own haptics setting.
+
+Toast copy for the rungs is still unauthored, so **right now the shake IS the release
+feedback**. More is planned — this is the first layer, not the finished treatment.
 
 ## End condition
 
@@ -252,7 +318,8 @@ vanishing mid-race.
 |---|---|
 | `GameModes` | `Ribcage = 39` |
 | `GameToastSituation` | `RibcageBroodReleased = 50`, `RibcagePackReleased = 51`, `RibcageLeaderChanged = 52` |
-| `Cell` | `SetModeControlOverride` (+ live-swarm re-colour), `ModePhaseFloor`, `FaunaReleaseTier`, `FaunaContainmentRadius` / `IsInsideFaunaContainment` / `ClampToFaunaContainment`, `NotifyBlockShieldStateChanged`, shielded mass excluded from the targeting grids, release tier seeded from the spawn profile at config-assign |
+| `Cell` | `SetModeControlOverride` (+ live-swarm re-colour), `ModePhaseFloor`, `FaunaReleaseTier`, `FaunaContainmentRadius` / `IsInsideFaunaContainment` / `ClampToFaunaContainment`, `ContainmentIntruderFrenzy` + `HasPreyInsideFaunaContainment`, `NotifyBlockShieldStateChanged`, shielded mass excluded from the targeting grids, release tier seeded from the spawn profile at config-assign |
+| `HapticController` | `PlayAlert()` — the third feel, gate extended (`s_alertBusyUntil` outranks skim + punish) per `Docs/HAPTICS.md` |
 | `Fauna` | `Goal` becomes a PROPERTY so containment clamps at the one point every writer passes through (this class, Boid's override, LightFauna's direct writes, the spawner, reproduction inheritance) |
 | `GameDataSO` | `SyncFromArcadeGame` clamps `selectedVesselClass` into `SO_ArcadeGame.Vessels` - enforces every restricted-vessel mode on every launch path |
 | `ServerPlayerVesselInitializer` | `spawnRingRadiusFloor` - lets the computed spawn ring serve a cell whose core is a STRUCTURE rather than a nucleus |
@@ -291,7 +358,7 @@ Verify both in-editor (below) rather than assuming.
 | Scoring rule | `_SO_Assets/Scoring Rules/RibcageScoringRule.asset` |
 | Cell config | `_SO_Assets/Cell Configs/Ribcage Cell/Ribcage Cell Config.asset` |
 | Spawn profile | `_SO_Assets/Cell Configs/Ribcage Cell/Ribcage Spawn Profile.asset` |
-| Fauna species | `…/Ribcage Tadpole Fauna Config Data.asset`, `…/Ribcage Shark Fauna Config Data.asset` |
+| Fauna species (5) | `…/Ribcage {Tadpole,QuadFish,Clawfish,Brittlestar,Shark} Fauna Config Data.asset` |
 | Cage prefab | `_Prefabs/Spawnables/SpawnableRibcage.prefab` |
 | Scene | `_Scenes/Multiplayer Scenes/MinigameRibcage.unity` (in `EditorBuildSettings`) |
 | End conditions | `Assets/Resources/EndConditionOverrides.asset` (`ribcagePrismTarget`) |
@@ -316,20 +383,25 @@ with `SpawnableRibcage.cs` when the geometry changes.
 3. **Baseline confirm.** FrogletTools ▸ Ecology ▸ Measure Cell Environment Baselines
    should report **2,721 prisms / ~1,069,380 volume** for the Ribcage cell. If it
    disagrees, the generator and `ribcage_budget.py` have drifted — fix both.
-4. **Bars are two-hit.** Ram a rib: first contact sheds the shield (octahedron
-   disengages), second shatters it and the HUD sum increments by one.
+4. **Bars are two-hit — except the traps.** Ram a rib: first contact sheds the shield
+   (octahedron disengages), second shatters it and the HUD sum increments. Then find a
+   **danger** bar (distinct material): it shatters in ONE hit but full-stops you, debuffs
+   all four elements for 4 s and resets boost.
 5. **Rhino only.** Pick a different vessel in an earlier game, then launch Ribcage —
    you should spawn a Rhino anyway, with a `clamping selected vessel` line in the log.
 6. **Spawn outside.** All players start on a ring ~480u out, facing the cage, with the
    whole cage visible ahead — nobody starts inside it.
-7. **The penned brood.** The cage is stocked from the start and the brood stays inside.
-   While it is penned it must NOT eat anything outside the cage — fly around the outside
-   and lay trail; it should be ignored. Then fly IN: your trail becomes food.
-8. **25% release.** At 150 bars (default target 600) the brood toast fires, the pen
-   opens, and the swarm leaves wearing the **leading domain's** colour to graze the
-   *trailing* domains' trails — never the leader's, never the cage.
-9. **50% release.** At 300 bars the pack toast fires and a shark joins; the cell reads
-   Frenzy on the DiagnosticsHUD.
+7. **The penned brood + intruder frenzy.** The cage is visibly full (~35 creatures of
+   four species) and they stay inside. While penned they must NOT eat anything outside —
+   fly around the outside laying trail; it should be ignored. Then fly IN: the cell
+   should jump to **Frenzy** on the DiagnosticsHUD and the whole pen should converge on
+   your trail. Leave, and it should settle back to Calm once your mass is gone.
+8. **25% release.** At 150 bars (default target 600) the pen opens and the swarm leaves
+   wearing the **leading domain's** colour to graze the *trailing* domains' trails —
+   never the leader's, never the cage. **The device should shake hard for ~1.2 s** (the
+   alert feel — the only thing in the game that fires it).
+9. **50% release.** At 300 bars the pack toast fires, the device shakes again, and a
+   shark joins; the cell reads Frenzy on the DiagnosticsHUD.
 10. **Lead change flips the swarm.** Let a second domain take the lead — the *live*
    creatures should re-colour and switch which trails they eat.
 11. **Win + scoreboard.** First domain to 600 ends the turn; winners show a time,
@@ -352,6 +424,10 @@ with `SpawnableRibcage.cs` when the geometry changes.
   surrounds you, so there is no single point to aim at.
 - **No UGS stats reporter yet** (a "most bars smashed" leaderboard is a clean
   follow-up), and no dedicated end-game controller — the shared scoreboard handles it.
+- **Danger bars are a first pass.** 112 of 3,175 (one in 19 rib prisms), evenly spread by
+  a deterministic index walk. If they read as noise rather than as traps, cluster them
+  instead (e.g. whole trap *segments* of a rib) — one constant,
+  `SpawnableRibcage.DangerEveryNthRibPrism`.
 - **Target 600 is a first guess.** Nobody has measured how fast a Rhino clears
   two-hit bars. It is one editor field; expect to tune it on the first playtest, and
   the release rungs follow it automatically.

@@ -4,16 +4,18 @@ using CosmicShore.Data;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// "Ribcage" - the cage cell environment (~2.7k prisms) and the arena of
+    /// "Ribcage" - the cage cell environment (~3.2k prisms) and the arena of
     /// <see cref="GameModes.Ribcage"/>: a hollow sphere of SHIELDED prism bone that pens the
     /// cell's brood. Sixteen meridian ribs run pole to pole, seven latitude hoops bind them,
     /// short diagonal struts weave the widest bands into lattice, chunky joints sit at every
     /// rib x hoop crossing, and a crown closes each pole where the ribs converge. The interior
-    /// is deliberately EMPTY - it is where the fauna live and where the fighting happens.
+    /// is deliberately empty of STRUCTURE - it is where the brood lives and where the
+    /// fighting happens.
     ///
     /// Two properties of this structure are load-bearing for the mode, not decoration:
     ///
-    ///   • EVERY prism is <see cref="PrismKind.Shielded"/>. Shielded mass is not food for any
+    ///   • Every bar is <see cref="PrismKind.Shielded"/> except the sparse
+    ///     <see cref="PrismKind.Danger"/> traps. Shielded mass is not food for any
     ///     herbivore (Docs/ECOSYSTEM.md §16.2) and - since the matching grid change - not a
     ///     fauna steering target either, so the cage can only ever be broken by a VESSEL. The
     ///     race can neither be eaten out from under the players nor stall with a swarm parked
@@ -32,15 +34,16 @@ namespace CosmicShore.Gameplay
     /// no seed sync.
     ///
     /// Budget (analytic, confirm with FrogletTools > Ecology > Measure Cell Environment
-    /// Baselines): 2,721 prisms / ~1,069,380 volume. See RIBCAGE.md for the per-structure table.
+    /// Baselines): 3,175 prisms / ~1,265,194 volume, of which 112 are DANGER bars. See
+    /// RIBCAGE.md for the per-structure table and Tools/Build/ribcage_budget.py for the model.
     /// </summary>
     public class SpawnableRibcage : CellEnvironmentSpawnableBase
     {
-        // Cage radius. The rib-to-rib gap at the equator is 2*pi*R/RibCount ~ 118u, so this is
+        // Cage radius. The rib-to-rib gap at the equator is 2*pi*R/RibCount ~ 141u, so this is
         // a RIBCAGE, not a prison grille: you fly between the bones freely. Sealing the sphere
         // to vessel-tight spacing would cost ~6k prisms of always-on collider for no gameplay -
         // the goal is to smash the structure, never to be locked inside it.
-        const float CageR = 300f;
+        const float CageR = 360f;
 
         /// <summary>
         /// The cage's shell radius, exposed so <c>RibcageController</c> can aim its AI
@@ -51,12 +54,35 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public const float ShellRadius = CageR;
 
+        /// <summary>
+        /// Radius the mode pens its brood inside - deliberately a little SMALLER than the shell
+        /// (<see cref="ShellRadius"/>) so the cage's own bars sit OUTSIDE the pen. That is what
+        /// keeps the danger bars below from being fauna food: shielded bars are already excluded
+        /// from every herbivore diet, but a DANGER bar is unshielded and would otherwise be
+        /// edible, letting the penned brood quietly eat the arena (and feed itself without an
+        /// intruder ever showing up).
+        /// </summary>
+        public const float ContainmentRadius = CageR * 0.94f;
+
         const int RibCount = 16;       // meridian great circles (pole to pole)
         const float BarStep = 17f;     // arc-length spacing along every rib and hoop
         const int LatticeBands = 6;    // diagonal strut bands between adjacent ribs
         const int StrutPrisms = 3;
         const float CrownLat = 84f;
         const int CrownCount = 18;
+
+        /// <summary>
+        /// Every Nth rib prism is laid as a DANGER bar instead of a shielded one - the arena's
+        /// trap. A danger prism is NOT a tougher bar: danger is mutually exclusive with both
+        /// shield tiers (<c>PrismStateManager.MakeDangerous</c> clears them), so these are the
+        /// SOFTEST bars in the cage - one hit and they shatter, no shield to shed. What they cost
+        /// you is contact: the standard danger-prism punishment (volume-independent full-stop
+        /// slow, a 4s all-element debuff, boost reset). So the bar that breaks fastest is the one
+        /// that hurts, and "just ram everything" stops being the answer. They are also the only
+        /// cage prisms fauna could eat, which is exactly why the pen radius above excludes the
+        /// shell.
+        /// </summary>
+        const int DangerEveryNthRibPrism = 19;
 
         // Latitude hoops. Equator first so the widest band reads as the cage's belt.
         static readonly float[] HoopLats = { 0f, 26f, -26f, 52f, -52f, 74f, -74f };
@@ -66,7 +92,7 @@ namespace CosmicShore.Gameplay
 
         protected override int DefaultSeed => 39;
         protected override int BuildParameterHash() => System.HashCode.Combine(nameof(SpawnableRibcage), 1);
-        protected override int LayCapacity => 3200;
+        protected override int LayCapacity => 3600;
 
         protected override void BuildEnvironment()
         {
@@ -100,6 +126,11 @@ namespace CosmicShore.Gameplay
 
                 for (int i = 0; i < perRib; i++)
                 {
+                    // Deterministic, evenly-spread trap bars (see DangerEveryNthRibPrism). Indexed
+                    // on the GLOBAL rib prism counter so the pattern walks around the cage instead
+                    // of stacking the traps at the same latitude on every rib.
+                    bool danger = (rib * perRib + i) % DangerEveryNthRibPrism == 0;
+
                     // Sweep the full great circle: theta is the angle around it, so the same
                     // loop covers both hemispheres and both poles.
                     float theta = i * Mathf.PI * 2f / perRib;
@@ -112,7 +143,8 @@ namespace CosmicShore.Gameplay
                         -Mathf.Sin(theta) * Mathf.Sin(lon));
 
                     Emit(pos, SpawnPoint.LookRotation(tangent, pos.normalized),
-                        Jit(new Vector3(3.6f, 3.6f, 16f)), dom, PrismKind.Shielded);
+                        Jit(new Vector3(3.6f, 3.6f, 16f)), dom,
+                        danger ? PrismKind.Danger : PrismKind.Shielded);
                 }
             }
         }

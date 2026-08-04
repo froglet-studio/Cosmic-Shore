@@ -2350,8 +2350,23 @@ two rules fauna already run on:
 
 It is deliberately **not a wall**: nothing is teleported, no collider is added, and a
 creature can still drift out on its own momentum — it just has no reason to and nothing
-to eat there. Collider budget: unchanged (two squared-distance compares on paths that
-already ran).
+to eat there.
+
+**The intruder response.** `Cell.ContainmentIntruderFrenzy` (opt-in) raises the pen to
+**Frenzy** while `HasPreyInsideFaunaContainment` is true — a confined population that
+detects food goes berserk on it. That is the same phase floor a mode could set by hand,
+driven by the pen instead of by mode progress, so it adds no new ladder. Detection is one
+Burst `PrismSpatialIndex.QuerySphere` on the PHASE tick (0.4 s, shared buffer, shielded
+mass filtered) — never a physics query, and only while a pen exists.
+
+The pen radius deliberately sits INSIDE the structure that visually encloses it (Ribcage:
+338 vs a 360 shell), so the enclosure's own prisms are outside the pen. That is what stops
+a penned brood from quietly eating its own cage — which matters because a cage may
+legitimately contain unshielded prisms (Ribcage's danger traps) that would otherwise be
+food, and would also read as a permanent "intruder".
+
+Collider budget: unchanged. Containment adds two squared-distance compares on paths that
+already ran; the intruder probe is one existing-index sphere query per 0.4 s.
 
 **The start state is authored as biome DATA, not set at runtime.** `SpawnProfileSO.
 InitialFaunaReleaseTier` seeds `Cell.FaunaReleaseTier` in `AssignConfig`, upstream of

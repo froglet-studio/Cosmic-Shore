@@ -10,46 +10,23 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c778cfbe4dfc4c5c8401e40c17802311, type: 3}
-  m_Name: Ribcage Tadpole Fauna Config Data
+  m_Name: Ribcage QuadFish Fauna Config Data
   m_EditorClassIdentifier:
-  FaunaPrefab: {fileID: 5945480239701989318, guid: c7fd418d426de8740ac888dcc23a5d24, type: 3}
-  InitialSpawnCount: 16
-  PopulationSize: 16
+  FaunaPrefab: {fileID: 4652232322436628206, guid: 19615ed0c903b1041973d70593d4b0a3, type: 3}
+  InitialSpawnCount: 8
+  PopulationSize: 8
   SpawnProbability: 1
   FeedsPerOffspring: 20
   OffspringPerBirth: 1
   ReproductionCooldownSeconds: 10
-  MaxLivePopulation: 30
+  MaxLivePopulation: 14
   ReleaseTier: 0
-  CenterFocusBias: 0.15
-  Element: 2
+  CenterFocusBias: 0.25
+  Element: 1
   InitialLevel: 1
   BodyScalePerLevel: 1.15
   CrystalScalePerLevel: 1.2
   LevelGrowSeconds: 1
-  Variant:
-    Enabled: 1
-    BaseBodyScale: 0.4
-    BodyPrismScale: {x: 0.8, y: 0.8, z: 7}
-    BodyMaterial: {fileID: 2100000, guid: 5140ec1c42866e849927f442d5965f7f, type: 2}
-    StarvationSeconds: 90
-    Forager: 1
-    CohesionRadius: 50
-    BehaviorUpdateRate: 1.2
-    TrailBlockInteractionRadius: 22
-    GoalWeight: 3
-    MinSpeed: 12
-    MaxSpeed: 18
-    OverrideAudio: 0
-    AudioLoopEvent:
-      Guid:
-        Data1: 0
-        Data2: 0
-        Data3: 0
-        Data4: 0
-      Path:
-    AudioMinDistance: -1
-    AudioMaxDistance: -1
   SpreadElements: 1
   ElementPalette:
   - {fileID: 11400000, guid: ede43cd3ab5943c58c646065c1f57a1f, type: 2}

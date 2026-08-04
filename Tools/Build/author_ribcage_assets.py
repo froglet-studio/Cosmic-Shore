@@ -42,6 +42,9 @@ G_ASSET = {
     "RibcageCellConfig":         guid("asset/RibcageCellConfig"),
     "RibcageSpawnProfile":       guid("asset/RibcageSpawnProfile"),
     "RibcageTadpoleFauna":       guid("asset/RibcageTadpoleFauna"),
+    "RibcageQuadFishFauna":      guid("asset/RibcageQuadFishFauna"),
+    "RibcageClawfishFauna":      guid("asset/RibcageClawfishFauna"),
+    "RibcageBrittlestarFauna":   guid("asset/RibcageBrittlestarFauna"),
     "RibcageSharkFauna":         guid("asset/RibcageSharkFauna"),
     "MinigameRibcage.unity":     guid("asset/MinigameRibcage.unity"),
 }
@@ -71,10 +74,23 @@ EXISTING = {
     "PreviewClip":        "4396864d799a6154bb82e5346ac0093b",
     # fauna prefabs + element palettes (cloned from the Blob species definitions)
     "TadpolePrefab":      "c7fd418d426de8740ac888dcc23a5d24",
+    "QuadFishPrefab":     "19615ed0c903b1041973d70593d4b0a3",
+    "ClawfishPrefab":     "a525483096f54bc44a73646161623bf5",
+    "BrittlestarPrefab":  "c719f00ea7596c24185379994f7dc824",
     "SharkPrefab":        "a67ba7ddaecf6624ab37cd9f5f2210a6",
     "TadpoleBodyMat":     "5140ec1c42866e849927f442d5965f7f",
     # the cell's CellRuntimeDataSO - the spawn ring resolves its Cell through this
     "RuntimeCellData":    "8d4e8398eedc76c4dadb8604f89b9e1b",
+}
+
+# Fauna COMPONENT fileIDs (FaunaConfigurationSO.FaunaPrefab is typed Fauna, so it points at
+# the MonoBehaviour inside the prefab, never the GameObject).
+FAUNA_FILEID = {
+    "Tadpole":     5945480239701989318,   # Boid,       herbivore
+    "QuadFish":    4652232322436628206,   # LightFauna, herbivore
+    "Clawfish":     369859875180954115,   # QuadFish,   herbivore
+    "Brittlestar": 5351160486092638538,   # LightFauna, herbivore
+    "Shark":       5351160486092638538,   # LightFauna, PREDATOR
 }
 
 PRISM_FILEID = 4563009547826722997
@@ -91,9 +107,13 @@ SHARK_PALETTE = ["58835b82ea284255855af2649ef185a5", "a690f25bf21e486ba0e500563b
                  "eaf56c14345740849f35fc84467059e9", "78ce842bb8554d748af1e96abf430137"]
 
 # ── Measured cage baseline (Tools/Build/ribcage_budget.py; analytic, exact) ───
-SPAWN_RING_RADIUS = 480   # outside the 300u cage, inside the 1200u membrane
-CAGE_PRISMS = 2721
-CAGE_VOLUME = 1069380
+# Cage geometry (SpawnableRibcage.cs — keep in sync; Tools/Build/ribcage_budget.py models it)
+CAGE_RADIUS = 360         # +20% arena
+SPAWN_RING_RADIUS = 576   # 1.6x the cage, well inside the 1200u membrane
+HERBIVORE_RING = 200      # inside the pen (338) so the brood hatches within the bone
+PREDATOR_RING = 250
+CAGE_PRISMS = 3175
+CAGE_VOLUME = 1265194
 # PhaseThresholds = measured baseline + the standard Blob deltas (Docs/ECOSYSTEM.md §18).
 BLOB_DELTAS = dict(re=700, rx=500, fe=3600, fx=3000, rev=11200, rxv=8000, fev=57600, fxv=48000)
 
@@ -260,6 +280,40 @@ emit("Assets/_SO_Assets/Games/ArcadeGameRibcage.asset",
 emit("Assets/_SO_Assets/Games/ArcadeGameRibcage.asset.meta", asset_meta(G_ASSET["ArcadeGameRibcage"]))
 
 
+# ── 5b. The brood: five species, table-driven ───────────────────────────────
+#
+# The cage is meant to look FULL and read as dangerous, so the caged tier carries four
+# herbivore species (a dense tadpole shoal plus three larger, slower bodies for silhouette
+# variety) and the predator joins at 50%. Seeds are what hatch immediately; MaxLive is the
+# per-species performance backstop the food web works under.
+#
+#   species      tier  seed  MaxLive   role
+#   Tadpole        0     16     30      the shoal - fast, numerous, the "swarm" read
+#   QuadFish       0      8     14      mid-size rovers
+#   Clawfish       0      6     10      heavier, slower, most threatening silhouette
+#   Brittlestar    0      5      8      drifting arms - fills the volume
+#   Shark          1      2      4      the 50% predator (eats HERBIVORES, not prisms)
+#                       ---    ---
+#   caged totals          35     62     (+4 sharks once the pack rung lands)
+FAUNA_SPECIES = [
+    dict(key="Tadpole",     asset="RibcageTadpoleFauna",     tier=0, seed=16, cap=30, initial=16,
+         element=2, center=0.15, prefab="TadpolePrefab", palette="TADPOLE",
+         variant=dict(scale=0.4, prism="{x: 0.8, y: 0.8, z: 7}", mat="TadpoleBodyMat",
+                      starve=90, forager=1, cohesion=50, tick=1.2, reach=22, goalw=3,
+                      minspd=12, maxspd=18)),
+    dict(key="QuadFish",    asset="RibcageQuadFishFauna",    tier=0, seed=8,  cap=14, initial=8,
+         element=1, center=0.25, prefab="QuadFishPrefab", palette="TADPOLE", variant=None),
+    dict(key="Clawfish",    asset="RibcageClawfishFauna",    tier=0, seed=6,  cap=10, initial=6,
+         element=3, center=0.3,  prefab="ClawfishPrefab", palette="TADPOLE", variant=None),
+    dict(key="Brittlestar", asset="RibcageBrittlestarFauna", tier=0, seed=5,  cap=8,  initial=5,
+         element=4, center=0.35, prefab="BrittlestarPrefab", palette="TADPOLE", variant=None),
+    dict(key="Shark",       asset="RibcageSharkFauna",       tier=1, seed=2,  cap=4,  initial=1,
+         element=0, center=0.2,  prefab="SharkPrefab", palette="SHARK", variant=None),
+]
+
+PALETTES = {"TADPOLE": TADPOLE_PALETTE, "SHARK": SHARK_PALETTE}
+
+
 # ── 5. Cell config + spawn profile + fauna ───────────────────────────────────
 emit("Assets/_SO_Assets/Cell Configs/Ribcage Cell.meta", meta(guid("folder/RibcageCell"), folder=True))
 
@@ -308,87 +362,56 @@ emit("Assets/_SO_Assets/Cell Configs/Ribcage Cell/Ribcage Spawn Profile.asset",
   FaunaFoodFloor: 0
   FaunaInitialDelaySeconds: 0
   FaunaSpawnIntervalSeconds: 0.5
-  HerbivoreSpawnPointCount: 3
-  HerbivoreSpawnRadius: 180
+  HerbivoreSpawnPointCount: 4
+  HerbivoreSpawnRadius: {HERBIVORE_RING}
   PredatorSpawnPointCount: 2
-  PredatorSpawnRadius: 220
+  PredatorSpawnRadius: {PREDATOR_RING}
   SupportedFaunas:
-  - {{fileID: 11400000, guid: {G_ASSET['RibcageTadpoleFauna']}, type: 2}}
-  - {{fileID: 11400000, guid: {G_ASSET['RibcageSharkFauna']}, type: 2}}
-""")
+""" + "".join(
+    f"  - {{fileID: 11400000, guid: {G_ASSET[sp['asset']]}, type: 2}}\n"
+    for sp in FAUNA_SPECIES))
 emit("Assets/_SO_Assets/Cell Configs/Ribcage Cell/Ribcage Spawn Profile.asset.meta",
      asset_meta(G_ASSET["RibcageSpawnProfile"]))
 
-emit("Assets/_SO_Assets/Cell Configs/Ribcage Cell/Ribcage Tadpole Fauna Config Data.asset",
-     HEADER_FOR(EXISTING["FaunaConfigurationSO"], "Ribcage Tadpole Fauna Config Data") + f"""  FaunaPrefab: {{fileID: {TADPOLE_FILEID}, guid: {EXISTING['TadpolePrefab']}, type: 3}}
-  InitialSpawnCount: 6
-  PopulationSize: 6
-  SpawnProbability: 1
-  FeedsPerOffspring: 20
-  OffspringPerBirth: 1
-  ReproductionCooldownSeconds: 10
-  MaxLivePopulation: 14
-  ReleaseTier: 0
-  CenterFocusBias: 0.2
-  Element: 2
-  InitialLevel: 1
-  BodyScalePerLevel: 1.15
-  CrystalScalePerLevel: 1.2
-  LevelGrowSeconds: 1
-  Variant:
-    Enabled: 1
-    BaseBodyScale: 0.4
-    BodyPrismScale: {{x: 0.8, y: 0.8, z: 7}}
-    BodyMaterial: {{fileID: 2100000, guid: {EXISTING['TadpoleBodyMat']}, type: 2}}
-    StarvationSeconds: 90
-    Forager: 1
-    CohesionRadius: 50
-    BehaviorUpdateRate: 1.5
-    TrailBlockInteractionRadius: 20
-    GoalWeight: 3
-    MinSpeed: 10
-    MaxSpeed: 15
-    OverrideAudio: 0
-    AudioLoopEvent:
-      Guid:
-        Data1: 0
-        Data2: 0
-        Data3: 0
-        Data4: 0
-      Path:
-    AudioMinDistance: -1
-    AudioMaxDistance: -1
-  SpreadElements: 1
-  ElementPalette:
-""" + "".join(f"  - {{fileID: 11400000, guid: {g}, type: 2}}\n" for g in TADPOLE_PALETTE) + """  Levels:
-    Enabled: 1
-    MinLevel: 1
-    MaxLevel: 5
-    RarityFalloff: 2
-""")
-emit("Assets/_SO_Assets/Cell Configs/Ribcage Cell/Ribcage Tadpole Fauna Config Data.asset.meta",
-     asset_meta(G_ASSET["RibcageTadpoleFauna"]))
 
-emit("Assets/_SO_Assets/Cell Configs/Ribcage Cell/Ribcage Shark Fauna Config Data.asset",
-     HEADER_FOR(EXISTING["FaunaConfigurationSO"], "Ribcage Shark Fauna Config Data") + f"""  FaunaPrefab: {{fileID: {SHARK_FILEID}, guid: {EXISTING['SharkPrefab']}, type: 3}}
-  InitialSpawnCount: 1
-  PopulationSize: 2
-  SpawnProbability: 1
-  FeedsPerOffspring: 6
-  OffspringPerBirth: 1
-  ReproductionCooldownSeconds: 30
-  MaxLivePopulation: 3
-  ReleaseTier: 1
-  SpreadElements: 1
-  ElementPalette:
-""" + "".join(f"  - {{fileID: 11400000, guid: {g}, type: 2}}\n" for g in SHARK_PALETTE) + """  Levels:
-    Enabled: 1
-    MinLevel: 1
-    MaxLevel: 5
-    RarityFalloff: 2
-""")
-emit("Assets/_SO_Assets/Cell Configs/Ribcage Cell/Ribcage Shark Fauna Config Data.asset.meta",
-     asset_meta(G_ASSET["RibcageSharkFauna"]))
+for sp in FAUNA_SPECIES:
+    body = HEADER_FOR(EXISTING["FaunaConfigurationSO"], f"Ribcage {sp['key']} Fauna Config Data")
+    body += (f"  FaunaPrefab: {{fileID: {FAUNA_FILEID[sp['key']]}, "
+             f"guid: {EXISTING[sp['prefab']]}, type: 3}}\n")
+    body += f"  InitialSpawnCount: {sp['initial']}\n"
+    body += f"  PopulationSize: {sp['seed']}\n"
+    body += "  SpawnProbability: 1\n"
+    # Reproduction ON for the grazers (the food web drives the population once an intruder
+    # feeds them); the predator keeps Blob's slower cadence.
+    body += "  FeedsPerOffspring: 20\n" if sp["tier"] == 0 else "  FeedsPerOffspring: 6\n"
+    body += "  OffspringPerBirth: 1\n"
+    body += "  ReproductionCooldownSeconds: 10\n" if sp["tier"] == 0 else "  ReproductionCooldownSeconds: 30\n"
+    body += f"  MaxLivePopulation: {sp['cap']}\n"
+    body += f"  ReleaseTier: {sp['tier']}\n"
+    body += f"  CenterFocusBias: {sp['center']}\n"
+    if sp["element"]:
+        body += f"  Element: {sp['element']}\n"
+    body += "  InitialLevel: 1\n  BodyScalePerLevel: 1.15\n  CrystalScalePerLevel: 1.2\n  LevelGrowSeconds: 1\n"
+    v = sp["variant"]
+    if v:
+        body += (f"  Variant:\n    Enabled: 1\n    BaseBodyScale: {v['scale']}\n"
+                 f"    BodyPrismScale: {v['prism']}\n"
+                 f"    BodyMaterial: {{fileID: 2100000, guid: {EXISTING[v['mat']]}, type: 2}}\n"
+                 f"    StarvationSeconds: {v['starve']}\n    Forager: {v['forager']}\n"
+                 f"    CohesionRadius: {v['cohesion']}\n    BehaviorUpdateRate: {v['tick']}\n"
+                 f"    TrailBlockInteractionRadius: {v['reach']}\n    GoalWeight: {v['goalw']}\n"
+                 f"    MinSpeed: {v['minspd']}\n    MaxSpeed: {v['maxspd']}\n"
+                 "    OverrideAudio: 0\n    AudioLoopEvent:\n      Guid:\n        Data1: 0\n"
+                 "        Data2: 0\n        Data3: 0\n        Data4: 0\n      Path:\n"
+                 "    AudioMinDistance: -1\n    AudioMaxDistance: -1\n")
+    body += "  SpreadElements: 1\n  ElementPalette:\n"
+    for g in PALETTES[sp["palette"]]:
+        body += f"  - {{fileID: 11400000, guid: {g}, type: 2}}\n"
+    body += "  Levels:\n    Enabled: 1\n    MinLevel: 1\n    MaxLevel: 5\n    RarityFalloff: 2\n"
+
+    path = f"Assets/_SO_Assets/Cell Configs/Ribcage Cell/Ribcage {sp['key']} Fauna Config Data.asset"
+    emit(path, body)
+    emit(path + ".meta", asset_meta(G_ASSET[sp["asset"]]))
 
 
 # ── 6. Scene: clone MinigameRampage, swap the mode-specific wiring ───────────

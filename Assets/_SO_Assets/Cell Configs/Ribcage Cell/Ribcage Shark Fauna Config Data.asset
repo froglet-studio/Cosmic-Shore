@@ -19,8 +19,13 @@ MonoBehaviour:
   FeedsPerOffspring: 6
   OffspringPerBirth: 1
   ReproductionCooldownSeconds: 30
-  MaxLivePopulation: 3
+  MaxLivePopulation: 4
   ReleaseTier: 1
+  CenterFocusBias: 0.2
+  InitialLevel: 1
+  BodyScalePerLevel: 1.15
+  CrystalScalePerLevel: 1.2
+  LevelGrowSeconds: 1
   SpreadElements: 1
   ElementPalette:
   - {fileID: 11400000, guid: 58835b82ea284255855af2649ef185a5, type: 2}

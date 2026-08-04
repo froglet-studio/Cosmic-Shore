@@ -74,6 +74,13 @@ namespace CosmicShore.Gameplay
                  "value the generator actually builds at). Override only for a resized arena.")]
         [SerializeField, Min(0f)] float aiCageRadiusOverride = 0f;
 
+        // Strike geometry, as multiples of the shell radius. Approach is outside the cage, punch
+        // just inside it: the leg between them is the one that shatters bars.
+        const float AiApproachStandoff = 1.45f;
+        const float AiPunchDepth = 0.55f;
+        // One strike in N is a raid on live opposing mass instead of the cage.
+        const int AiRaidEveryNthStrike = 4;
+
         // The ladder's three stages. Each maps to (species release tier, containment, phase
         // floor) in ApplyStage - one place, so the three levers can never disagree.
         //   Caged  - the brood is penned in the cage, visible through the bars. It eats the
@@ -240,6 +247,14 @@ namespace CosmicShore.Gameplay
             else if (stage == StagePack)
                 GameToastAPI.Post(GameToastSituation.RibcagePackReleased, d,
                     d.ToString(), sum.ToString(), target.ToString());
+
+            // Rung reached: shake the device hard for ~1.2s. This is the game's THIRD haptic feel
+            // and the only thing that fires it - added deliberately per Docs/HAPTICS.md ▸ "Adding
+            // / changing a feel" (dedicated method + extended gate, never the silenced legacy
+            // API). It is safe to call on every peer: HapticController gates on the local
+            // player's own haptics setting, so each human device buzzes once and nothing else
+            // does. Toast copy is unauthored today, so right now this IS the release feedback.
+            if (stage > StageCaged) HapticController.PlayAlert();
         }
 
         [ClientRpc]
@@ -270,26 +285,31 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
-            float cageRadius = aiCageRadiusOverride > 0f ? aiCageRadiusOverride : SpawnableRibcage.ShellRadius;
-
             switch (stage)
             {
                 case StagePack:
                     arenaCell.FaunaReleaseTier = SpeciesPack;      // predator joins the grazers
                     arenaCell.FaunaContainmentRadius = 0f;
+                    arenaCell.ContainmentIntruderFrenzy = false;
                     arenaCell.ModePhaseFloor = CellPhase.Frenzy;   // any-colour steering, no friendly avoidance, danger-immune
                     break;
 
                 case StageLoosed:
                     arenaCell.FaunaReleaseTier = SpeciesBrood;
                     arenaCell.FaunaContainmentRadius = 0f;         // the pen is open - the swarm pours out
+                    arenaCell.ContainmentIntruderFrenzy = false;
                     arenaCell.ModePhaseFloor = CellPhase.Restless; // hunt the opposing-colour centroid = the trailing teams
                     break;
 
                 default: // StageCaged
                     arenaCell.FaunaReleaseTier = SpeciesBrood;     // the brood exists from the start...
-                    arenaCell.FaunaContainmentRadius = cageRadius; // ...but is penned inside the cage
-                    arenaCell.ModePhaseFloor = null;               // Calm: they idle at the core, on the crystal
+                    // ...penned INSIDE the shell. ContainmentRadius, not ShellRadius: the pen sits
+                    // just inside the bone so the cage's own prisms - including the unshielded
+                    // DANGER traps - are outside it and can never be eaten or read as an intruder.
+                    arenaCell.FaunaContainmentRadius = SpawnableRibcage.ContainmentRadius;
+                    // Fly in and the whole pen goes berserk (Frenzy) until you and your mass leave.
+                    arenaCell.ContainmentIntruderFrenzy = true;
+                    arenaCell.ModePhaseFloor = null;               // otherwise Calm: they idle at the core
                     break;
             }
 
@@ -308,24 +328,36 @@ namespace CosmicShore.Gameplay
             arenaCell.SetModeControlOverride(null);
             arenaCell.ModePhaseFloor = null;
             arenaCell.FaunaContainmentRadius = 0f;
+            arenaCell.ContainmentIntruderFrenzy = false;
             arenaCell.FaunaReleaseTier = int.MaxValue;
         }
 
         // ── AI cage-breakers (server) ────────────────────────────────────
 
         /// <summary>
-        /// Points every AI Rhino at a stretch of the cage shell and refreshes it periodically so
-        /// each one rams through fresh bone instead of orbiting one hole.
+        /// Drives every AI Rhino as a cage-breaker that works from the OUTSIDE.
         ///
-        /// Deliberately NOT <see cref="Cell.GetExplosionTarget"/> (Rampage's density-grid mass
-        /// hunt): the cage is shielded, and shielded mass is kept out of the targeting grids
-        /// precisely so nothing is steered onto mass it cannot eat - so the grids here hold only
-        /// player trails and would send every AI chasing vessels instead of breaking out. The
-        /// shell is an analytic sphere, so aiming at it needs no query at all.
+        /// The first version aimed straight at a point ON the shell, which is why the AI lived
+        /// inside the cage: a vessel that flies to a point on a sphere does not stop there, it
+        /// carries through, and the next shell point is across the middle - so it just rattled
+        /// around the interior. The fix is that a strike is TWO waypoints, not one: an APPROACH
+        /// point out beyond the shell on the target bar's radial, then a PUNCH point just inside
+        /// it on the same radial. The vessel therefore arrives from outside, crosses the bone
+        /// roughly perpendicular (which is what breaks bars), exits, and swings out for the next
+        /// one. Successive strikes walk a golden-angle spiral so it never re-rams a hole.
+        ///
+        /// Every few strikes it RAIDS instead - <see cref="Cell.GetExplosionTarget"/>, the densest
+        /// mass hostile to its domain, which since the shielded-grid change means opponents'
+        /// trails and anything a rival left inside the cage. That is where "sometimes it goes
+        /// inside / hits opponent prisms" comes from, and it is a real strategy rather than a
+        /// scripted detour: the same density query aggression-1 fauna use.
+        ///
+        /// Kept deliberately beatable: one waypoint per aiRetargetSeconds (2s), so it is
+        /// methodical rather than twitchy, and the raid share is a minority of strikes.
         /// </summary>
         void ArmCageBreakers()
         {
-            float radius = aiCageRadiusOverride > 0f ? aiCageRadiusOverride : SpawnableRibcage.ShellRadius;
+            float shell = aiCageRadiusOverride > 0f ? aiCageRadiusOverride : SpawnableRibcage.ShellRadius;
             Vector3 centre = arenaCell ? arenaCell.transform.position : Vector3.zero;
 
             int seat = 0;
@@ -335,29 +367,44 @@ namespace CosmicShore.Gameplay
                 var pilot = p.Vessel?.VesselStatus?.AIPilot;
                 if (pilot == null) continue;
 
-                // Phase each AI onto its own arc of the cage so a full lobby spreads around the
-                // sphere rather than queueing at one rib.
-                float phase = seat++ * Mathf.PI * 2f / 4f;
-                int step = 0;
+                var captured = p;
+                // Phase each AI onto its own arc so a full lobby spreads around the sphere
+                // instead of queueing at one rib.
+                float phase = seat * Mathf.PI * 2f / 4f;
+                int seatIndex = seat;
+                seat++;
+
+                int beat = 0;                 // advances one waypoint per sample
                 Vector3 cached = centre;
                 float nextSample = 0f;
 
                 pilot.SetExternalTargetProvider(() =>
                 {
-                    if (Time.time >= nextSample)
+                    if (Time.time < nextSample) return cached;
+                    nextSample = Time.time + aiRetargetSeconds;
+
+                    int strike = beat / 2;    // two waypoints (approach, punch) per strike
+                    bool punching = (beat & 1) == 1;
+                    beat++;
+
+                    // Every 4th strike is a raid on live opposing mass instead of the cage.
+                    // Offset by seat so the AIs don't all raid on the same beat.
+                    if (arenaCell != null && (strike + seatIndex) % AiRaidEveryNthStrike == 0)
                     {
-                        nextSample = Time.time + aiRetargetSeconds;
-
-                        // Walk the shell on a golden-angle spiral: successive targets are far
-                        // apart, deterministic, and never repeat a spot, so the AI keeps finding
-                        // intact bone. Ramming THROUGH the aimed point is what breaks the bars.
-                        float a = phase + step * 2.39996323f;
-                        float y = 1f - 2f * ((step * 0.37f) % 1f);
-                        float r = Mathf.Sqrt(Mathf.Max(0f, 1f - y * y));
-                        step++;
-
-                        cached = centre + new Vector3(r * Mathf.Cos(a), y, r * Mathf.Sin(a)) * radius;
+                        cached = arenaCell.GetExplosionTarget(captured.Domain);
+                        return cached;
                     }
+
+                    // Golden-angle spiral over the sphere: successive strikes are far apart,
+                    // deterministic, and never repeat a spot, so it keeps finding intact bone.
+                    float a = phase + strike * 2.39996323f;
+                    float y = 1f - 2f * ((strike * 0.37f) % 1f);
+                    float r = Mathf.Sqrt(Mathf.Max(0f, 1f - y * y));
+                    var dir = new Vector3(r * Mathf.Cos(a), y, r * Mathf.Sin(a));
+
+                    // Approach sits OUTSIDE the shell, punch just INSIDE it, both on the same
+                    // radial - so the run between them crosses the bone head-on.
+                    cached = centre + dir * (shell * (punching ? AiPunchDepth : AiApproachStandoff));
                     return cached;
                 });
             }

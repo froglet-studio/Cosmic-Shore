@@ -26,10 +26,13 @@ MonoBehaviour:
   FaunaFoodFloor: 0
   FaunaInitialDelaySeconds: 0
   FaunaSpawnIntervalSeconds: 0.5
-  HerbivoreSpawnPointCount: 3
-  HerbivoreSpawnRadius: 180
+  HerbivoreSpawnPointCount: 4
+  HerbivoreSpawnRadius: 200
   PredatorSpawnPointCount: 2
-  PredatorSpawnRadius: 220
+  PredatorSpawnRadius: 250
   SupportedFaunas:
   - {fileID: 11400000, guid: f1d9964b4c81ff5ca7a93d0c3f77f2a6, type: 2}
+  - {fileID: 11400000, guid: e99b9957b09d0bd42d3e632d0c34c17e, type: 2}
+  - {fileID: 11400000, guid: ae2b97df99239ce0958b8b04ac70c08d, type: 2}
+  - {fileID: 11400000, guid: 299de396a328f7565ced98d9cda7a45b, type: 2}
   - {fileID: 11400000, guid: d90c8f838d5f29d8bed698e8def3d61a, type: 2}
