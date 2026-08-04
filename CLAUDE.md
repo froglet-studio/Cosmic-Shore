@@ -80,8 +80,16 @@ outcome is optimization, not life). Use the `/ecology` skill for any change here
   `SetNucleusWorldRadius`) reads the Cell's private `nucleus` field, and the cleanup/swap paths read
   `membrane`/`nucleus`/`spawnedCytoplasm`. A scene-placed copy is therefore a *pure* duplicate — it
   renders on top of the real one and no bookkeeping can see it (three scenes shipped a coincident
-  `Nucleus.prefab` this way). Same rule inside `Cell` itself: `SpawnCytoplasm` is guarded, because
-  a second call overwrote the field and orphaned an untracked `SnowChanger` per init. **To change a
+  `Nucleus.prefab` this way). Same rule inside `Cell` itself: every spawn in `SpawnVisuals` plus
+  `SpawnCytoplasm` is guarded on its own field, because a repeat `Initialize` pass overwrote the
+  field and orphaned an untracked membrane/nucleus/`SnowChanger` that no cleanup path could reach.
+  **Anything placing objects relative to the core during the SPAWN CHAIN must read
+  `Cell.ExpectedNucleusWorldRadius`, not `NucleusWorldRadius`, and resolve the cell with
+  `Cell.FindByRuntimeData` rather than `CellRuntimeDataSO.Cell`** — `Cell.Initialize` runs on
+  `OnInitializeGame` behind `InitDelayMs` (1000 ms) while vessels spawn at `preSpawnDelayMs`
+  (200 ms) and AI at `OnNetworkSpawn`, so both the field and the radius are still empty then. That
+  race shipped once: the player spawn ring silently fell back and put everyone 70u from the centre,
+  inside the nucleus. **To change a
   Cell-owned visual's size, author a new `CellConfigDataSO` pointing at a resized prefab** (Scurry's
   `Scurry Cell Config` → `HalfNucleus.prefab`) — do not place, scale, or duplicate one in a scene.
   Guarded by **FrogletTools > Ecology > Audit Cell-Owned Visuals**, which also sweeps the dead

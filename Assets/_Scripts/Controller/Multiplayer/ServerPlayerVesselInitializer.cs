@@ -286,19 +286,38 @@ namespace CosmicShore.Gameplay
         protected void EnsureSpawnPosesReady()
         {
             if (!arrangeSpawnPointsAroundCell || _cellSpawnRingBuilt) return;
-            _cellSpawnRingBuilt = true;
 
-            var cell = cellData != null ? cellData.Cell : null;
-            if (cell == null)
+            // NOT cellData.Cell: that is assigned in Cell.Initialize, which runs on
+            // OnInitializeGame behind InitDelayMs (1000 ms), while this runs at preSpawnDelayMs
+            // (200 ms) and, for AI, at OnNetworkSpawn. FindByRuntimeData reads the registry the
+            // Cell joins in OnEnable, so it resolves immediately.
+            var cell = Cell.FindByRuntimeData(cellData);
+
+            // Likewise ExpectedNucleusWorldRadius, not NucleusWorldRadius: the nucleus object does
+            // not exist yet this early, and a 0 there would put every player at
+            // spawnDistanceOutsideNucleus from the cell CENTRE - inside the core.
+            float nucleusRadius = cell ? cell.ExpectedNucleusWorldRadius : 0f;
+
+            if (nucleusRadius <= 0f)
             {
-                CSDebug.LogWarning("[ServerPlayerVesselInitializer] Arrange Spawn Points Around Cell " +
-                                   "is on but no Cell is bound - falling back to authored spawn points.");
+                // Transient (cell not resolvable yet) - do NOT latch, so a later spawn can still
+                // install the real ring. Permanent (a cell with no nucleus configured) - latch,
+                // because the authored points are then the only answer there is.
+                bool permanent = cell != null && cell.HasConfigAssigned;
+                _cellSpawnRingBuilt = permanent;
+
+                CSDebug.LogWarning(
+                    "[ServerPlayerVesselInitializer] Arrange Spawn Points Around Cell is on but the " +
+                    $"cell nucleus radius is unavailable (cell={(cell ? cell.name : "null")}, " +
+                    $"configAssigned={(cell && cell.HasConfigAssigned)}) - using authored spawn points" +
+                    (permanent ? "." : " for now; will retry on the next spawn."));
+
                 if (playerSpawnPoints != null && playerSpawnPoints.Length > 0)
                     gameData.SetSpawnPositions(playerSpawnPoints);
                 return;
             }
 
-            cell.EnsureInitialized();
+            _cellSpawnRingBuilt = true;
 
             // Total players in the match (humans + AI backfill) - the formation's symmetry is
             // chosen from this, so a 2-player match gets the axis, not two corners of a tetrahedron.
@@ -306,8 +325,12 @@ namespace CosmicShore.Gameplay
                 ? Mathf.Max(1, gameData.SelectedPlayerCount.Value)
                 : Mathf.Max(1, gameData.Players.Count);
 
-            float radius = cell.NucleusWorldRadius + spawnDistanceOutsideNucleus;
+            float radius = nucleusRadius + spawnDistanceOutsideNucleus;
             gameData.SetSpawnPoses(CellSpawnFormation.Build(count, cell.transform.position, radius));
+
+            CSDebug.Log($"[ServerPlayerVesselInitializer] Spawn ring: {count} players at " +
+                        $"{radius:0.#}u (nucleus {nucleusRadius:0.#} + {spawnDistanceOutsideNucleus:0.#}) " +
+                        $"around {cell.name}.");
         }
 
         /// <summary>

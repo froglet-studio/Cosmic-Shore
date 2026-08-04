@@ -98,15 +98,77 @@ namespace CosmicShore.Gameplay
             _nucleusControlRadiusSqr > 0f ? Mathf.Sqrt(_nucleusControlRadiusSqr) : 0f;
 
         /// <summary>
-        /// Runs <see cref="Initialize"/> if the cell has not picked up its config yet, so a caller
-        /// that needs the nucleus (crystal placement, spawn-ring placement) is never racing the
-        /// OnInitializeGame ordering. Same lazy-init nudge <see cref="InitilizePostFirstCellItem"/>
-        /// already performs; idempotent once the config is assigned.
+        /// The world radius the nucleus HAS, or WILL have once <see cref="SpawnVisuals"/> runs —
+        /// measured off the config's <c>NucleusPrefab</c> asset without instantiating anything.
+        ///
+        /// This exists because the vessel-spawn chain has to place things relative to the core
+        /// LONG before the cell initializes: <c>Cell.Initialize</c> runs on <c>OnInitializeGame</c>,
+        /// gated by <c>MultiplayerMiniGameControllerBase.InitDelayMs</c> (1000 ms), while vessels
+        /// spawn at <c>preSpawnDelayMs</c> (200 ms) and AI spawn at <c>OnNetworkSpawn</c> (t≈0).
+        /// Reading <see cref="NucleusWorldRadius"/> that early silently returns 0 — which is how
+        /// the spawn ring first shipped placing players 40u from the cell CENTRE, deep inside the
+        /// nucleus. Prefer this property for any placement decision made during the spawn chain.
+        ///
+        /// 0 when the cell has no nucleus configured, or when the config is not knowable yet
+        /// (a multi-config cell that has not rolled) — callers must handle 0 rather than adding
+        /// an offset to it.
         /// </summary>
-        public void EnsureInitialized()
+        public float ExpectedNucleusWorldRadius
         {
-            if (cellConfigData) return;
-            Initialize();
+            get
+            {
+                if (_nucleusControlRadiusSqr > 0f) return Mathf.Sqrt(_nucleusControlRadiusSqr);
+
+                // Before AssignConfig, only a single-config cell has a knowable answer.
+                var cfg = cellConfigData;
+                if (cfg == null && CellConfigs != null && CellConfigs.Count == 1) cfg = CellConfigs[0];
+                if (cfg == null || cfg.NucleusPrefab == null) return 0f;
+
+                return MeasurePrefabRadius(cfg.NucleusPrefab) * nucleusScaleMultiplier;
+            }
+        }
+
+        /// <summary>
+        /// Max half-extent of a prefab ASSET's meshes about its root, at the authored scale — the
+        /// asset-time counterpart of <see cref="RefreshNucleusControlRadius"/>'s
+        /// <c>Renderer.bounds</c> read, and equal to it for a centred mesh.
+        /// </summary>
+        static float MeasurePrefabRadius(GameObject prefab)
+        {
+            if (prefab == null) return 0f;
+
+            float best = 0f;
+            var root = prefab.transform;
+            foreach (var mf in prefab.GetComponentsInChildren<MeshFilter>(true))
+            {
+                var mesh = mf.sharedMesh;
+                if (mesh == null) continue;
+
+                var b = mesh.bounds;
+                Vector3 ext = Vector3.Scale(b.extents, mf.transform.lossyScale);
+                Vector3 centre = root.InverseTransformPoint(mf.transform.TransformPoint(b.center));
+
+                best = Mathf.Max(best, Mathf.Abs(centre.x) + Mathf.Abs(ext.x));
+                best = Mathf.Max(best, Mathf.Abs(centre.y) + Mathf.Abs(ext.y));
+                best = Mathf.Max(best, Mathf.Abs(centre.z) + Mathf.Abs(ext.z));
+            }
+            return best;
+        }
+
+        /// <summary>
+        /// The live cell bound to <paramref name="runtimeData"/>. <c>CellRuntimeDataSO.Cell</c> is
+        /// assigned in <see cref="Initialize"/>, so it is null for the first second of a scene;
+        /// the static registry is populated in <c>OnEnable</c> and is therefore usable immediately.
+        /// </summary>
+        public static Cell FindByRuntimeData(CellRuntimeDataSO runtimeData)
+        {
+            if (runtimeData == null) return null;
+            if (runtimeData.Cell) return runtimeData.Cell;
+
+            foreach (var c in ActiveCells)
+                if (c && c.runtime == runtimeData) return c;
+
+            return null;
         }
         public float MembraneRadius
         {
@@ -1109,15 +1171,19 @@ namespace CosmicShore.Gameplay
         {
             if (!cellConfigData) return;
 
-            if (cellConfigData.MembranePrefab != null)
+            // Every spawn here is guarded for repeat Initialize passes (the lazy-init nudge in
+            // InitilizePostFirstCellItem, then OnInitializeGame). The fields hold ONE of each and
+            // every cleanup path - ResetCell, the swap retire, the toy re-parent - reads only the
+            // field, so a second Instantiate orphans the first: an untracked membrane/nucleus
+            // rendering on top of the real one that nothing can ever collect. Same reason a
+            // duplicated 70k-prism environment would double the cell's mass.
+            if (cellConfigData.MembranePrefab != null && membrane == null)
                 membrane = Instantiate(cellConfigData.MembranePrefab, transform.position, Quaternion.identity);
 
-            // Guarded for repeat Initialize passes - a duplicated membrane is a visual
-            // wart, but a duplicated 70k-prism environment would double the cell's mass.
             if (spawnEnvironment && cellConfigData.EnvironmentPrefab != null && environment == null)
                 SpawnEnvironment();
 
-            if (cellConfigData.NucleusPrefab == null) return;
+            if (cellConfigData.NucleusPrefab == null || nucleus != null) return;
             nucleus = Instantiate(cellConfigData.NucleusPrefab, transform.position, Quaternion.identity);
             nucleus.transform.localScale *= nucleusScaleMultiplier;
             ApplyNucleusWorldRadius(); // honor any radius a mode requested before the nucleus existed

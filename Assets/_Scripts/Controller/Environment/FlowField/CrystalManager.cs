@@ -366,13 +366,12 @@ namespace CosmicShore.Gameplay
         {
             if (anchorlessSpawnRadius > 0f) return anchorlessSpawnRadius;
 
-            var cell = cellData != null ? cellData.Cell : null;
+            // Resolved through the registry + ExpectedNucleusWorldRadius so placement never depends
+            // on whether Cell.Initialize beat the first crystal spawn (see Cell.ExpectedNucleusWorldRadius).
+            var cell = Cell.FindByRuntimeData(cellData);
             if (cell != null)
             {
-                // The nucleus is spawned in Cell.Initialize; nudge it so placement never depends on
-                // whether OnInitializeGame beat the first crystal spawn.
-                cell.EnsureInitialized();
-                float nucleusRadius = cell.NucleusWorldRadius;
+                float nucleusRadius = cell.ExpectedNucleusWorldRadius;
                 if (nucleusRadius > 0f) return nucleusRadius;
             }
 
