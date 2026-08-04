@@ -5,19 +5,25 @@ branch (`claude/prism-animation-audit-*`). Each is self-contained for a FRESH
 session: it names the docs to read first, the scope, the constraints, and the
 in-editor test that closes it. Run them as separate branches.
 
-**PRIORITY ORDER (set at ship, 2026-08-02) — work top-down:**
+**PRIORITY ORDER (set at ship, 2026-08-02) — work top-down.**
 
-| # | Prompt | Why this rank |
+> **Rank is NOT the prompt number.** The `Rank` column is the order to work in; the
+> prompt numbers are permanent section names and never change. "Prompt 2" always
+> means the C13 section below, never "the second-ranked item". Say "Prompt N" when
+> you mean a section and "rank N" when you mean priority — they have collided at
+> least once.
+
+| Rank | Prompt (section below) | Why this rank |
 |---|---|---|
-| ~~1~~ | ~~**Prompt 2** — C13 environment-lay prisms miss the clock path~~ | ✅ **DONE 2026-08-02** — the cause was the shield engage-morph straddling the creation reveal (not the raw-`Instantiate` lay). Residual **C13b** (pooled lay / spawn repaint) is not a clock fix — re-rank it with the rest. |
-| 2 | **Prompt 9** — batched entity debris remainder | Completes the proven, playtest-loved carrier: implosions on the batch path + the measured next bottleneck (`AOE.ResolveDamage` 0.43 ms/kill self, per-kill `PrismEventData` alloc). The benchmark rig is already built to measure it. |
-| 3 | **Prompt 1** — transparent-prism occlusion restore | Pre-existing broken system (predates this branch) + it gates the one deferred wiring verification (transparent color fades). |
-| 4 | **Prompt 3** — fauna/flora on the clock (ecology) | Per-frame CPU prism writes in every cell scene; wither/devour are ecology-locked visuals that must ride the law. |
-| 5 | **Prompt 4** — conveyor + cell-swap suction | The two biggest world-scale per-frame CPU flows left. |
-| 6 | **Prompt 6** — B4 shield morphs on the GPU | Retires the last sanctioned CPU ticker (`PrismOctahedronShieldManager`). |
-| 7 | **Prompt 5** — projectile prism paths | Real but lower-traffic (Sparrow volleys, fire trails). |
-| 8 | **Prompt 7** — C12/B1 cleanup sweep | Simplifications unblocked by the migration; no player-visible change. |
-| 9 | **Prompt 8** — HUD/validator upkeep | Ride-along with any of the above, not its own branch. |
+| ✅ | ~~**Prompt 2** — C13 environment-lay prisms miss the clock path~~ | **DONE 2026-08-02** — the cause was the shield engage-morph straddling the creation reveal (not the raw-`Instantiate` lay). Residual **C13b** (pooled lay / spawn repaint) is not a clock fix — re-rank it with the rest. **Code-complete, NOT play-tested** — the section's in-editor test still owes a run. |
+| 1 | **Prompt 9** — batched entity debris remainder | Completes the proven, playtest-loved carrier: implosions on the batch path + the measured next bottleneck (`AOE.ResolveDamage` 0.43 ms/kill self, per-kill `PrismEventData` alloc). The benchmark rig is already built to measure it. |
+| 2 | **Prompt 1** — transparent-prism occlusion restore | Pre-existing broken system (predates this branch) + it gates the one deferred wiring verification (transparent color fades). |
+| 3 | **Prompt 3** — fauna/flora on the clock (ecology) | Per-frame CPU prism writes in every cell scene; wither/devour are ecology-locked visuals that must ride the law. |
+| 4 | **Prompt 4** — conveyor + cell-swap suction | The two biggest world-scale per-frame CPU flows left. |
+| 5 | **Prompt 6** — B4 shield morphs on the GPU | Retires the last sanctioned CPU ticker (`PrismOctahedronShieldManager`). |
+| 6 | **Prompt 5** — projectile prism paths | Real but lower-traffic (Sparrow volleys, fire trails). |
+| 7 | **Prompt 7** — C12/B1 cleanup sweep | Simplifications unblocked by the migration; no player-visible change. |
+| 8 | **Prompt 8** — HUD/validator upkeep | Ride-along with any of the above, not its own branch. |
 
 Shared context every prompt inherits (do not restate in the session):
 `Docs/PRISM_ANIMATION.md` is the LOCKED law — one stamp → GPU clock → one
@@ -57,7 +63,7 @@ surgery, machine validation) are captured in the `/asset-surgery` skill — use 
 > already wired into ExplodingBlockGraph; this test was deferred solely on this
 > system being down).
 
-## Prompt 2 — C13: environment-lay / SegmentSpawner prisms miss the clock path (live repro)
+## Prompt 2 — ✅ DONE — C13: environment-lay / SegmentSpawner prisms miss the clock path (live repro)
 
 > **✅ DONE 2026-08-02** (branch `claude/prismclock-render-entity-bug-fe3z2d`). The
 > prompt's three suspects were all wrong, and so was its preferred fix: the raw
@@ -79,6 +85,32 @@ surgery, machine validation) are captured in the `/asset-surgery` skill — use 
 > spawn repaint). Worth doing, but it is not a clock fix and it needs its own
 > environment-prefab pool design (the existing pools are `maxSize`-bounded and
 > environment mass is never released).
+>
+> **Audit 2026-08-04 — one birth-rule hole found and closed.** A verification pass
+> over the shipped fix confirmed every claimed mechanism is on disk (entity
+> existence ⊥ visibility at `Prism.cs:408`, `EffectiveRenderMesh` keeping the morph
+> mesh out of Entities Graphics, `TryEnsureRenderEntityForStamp` at
+> `PrismScaleAnimator.cs:165`, `IsBirthTransition` at `PrismStateManager.cs:58`) and
+> that C13b is accurately scoped. It also found the birth rule applied
+> ASYMMETRICALLY on the Wanderway recycle — one of the two surfaces this prompt's
+> own test names. `Microscene.RearrangeIntoAsync` cleared the old kind BEFORE
+> `Prism.Initialize`, so `IsCreationComplete` was still true from the prism's
+> PREVIOUS life and the disengage ran as a live transition: a 0.6 s shatter overlay
+> with a per-frame morph-mesh rebuild plus one `ShieldDeactivate` SFX per recycled
+> shielded prism, layered over its fresh grow-in bloom. It did not break the grow
+> stamp (`Disengage` clears the exotic flag unconditionally), which is why C13a
+> still stood. Fixed by collapsing the split clear/apply into the purpose-built
+> `PrismKinds.Retheme` AFTER `Initialize` — which is what `Microscene`'s own class
+> doc already claimed it used. **Generalise the lesson:** the birth rule keys off
+> `IsCreationComplete`, so ANY kind/state wipe on a recycled prism must run after
+> `Initialize`, never before it.
+>
+> **Still owed: the in-editor test.** This shipped code-complete and was never
+> play-tested (PR #654 says so explicitly). The closing test below — HexRace track
+> build + Menu_Main Wanderway conveyor, zero `[PrismClock]` errors, smooth blooms,
+> batched draw calls — has not been run. Run it before treating C13a as verified,
+> and watch the conveyor recycle specifically for the shatter-overlay regression
+> the audit fix removed.
 
 > Live repro from the editor: `[PrismClock] STRICT MODE: no companion render
 > entity to stamp (grow:SpawnablePrism (Clone))` raised from

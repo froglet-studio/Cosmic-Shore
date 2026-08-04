@@ -243,11 +243,6 @@ namespace CosmicShore.Gameplay
 
                 var lay = plan.Prisms[i];
 
-                // Wipe any previous kind BACK to plain before re-init, so a shielded/supershielded/
-                // danger prism from the last arrangement can't leak its state (or its always-on
-                // convex MeshCollider) into a plain slot. Reversible by construction.
-                PrismKinds.Clear(block);
-
                 block.ChangeTeam(lay.Domain);
                 block.transform.localPosition = lay.Point.Position;
                 block.transform.localRotation = lay.Point.Rotation;
@@ -271,12 +266,18 @@ namespace CosmicShore.Gameplay
                 // so an earlier write would be silently dropped.
                 block.TargetScale = lay.Point.Scale;
 
-                // Apply the new kind AFTER Initialize (which may have re-applied a stale baked flag);
-                // additive on a now-plain prism. Initialize has already cleared IsCreationComplete,
-                // so PrismStateManager reads this as a BIRTH transition and the shield snaps
-                // silently instead of opening a 0.35s morph across the creation reveal
-                // (Docs/PRISM_ANIMATION.md §4.5).
-                PrismKinds.Apply(block, lay.Kind);
+                // Re-theme AFTER Initialize, clear AND apply together: Initialize has cleared
+                // IsCreationComplete, so PrismStateManager reads BOTH halves as a BIRTH transition
+                // and the shield snaps silently instead of opening a morph across the creation
+                // reveal (Docs/PRISM_ANIMATION.md §4.5). Clearing BEFORE Initialize looks safer but
+                // is the bug: the prism is still IsCreationComplete from its PREVIOUS life, so the
+                // disengage reads as a transition on live mass — a 0.6s shatter overlay with a
+                // per-frame morph-mesh rebuild and one ShieldDeactivate SFX per recycled shielded
+                // prism, layered over the fresh grow-in bloom. Clearing here also reverses any stale
+                // baked flag Initialize just re-applied (prismProperties.IsShielded/IsDangerous),
+                // which is why a plain slot cannot inherit the last arrangement's kind (or its
+                // always-on convex MeshCollider) despite the wipe now running later.
+                PrismKinds.Retheme(block, lay.Kind);
 
                 if (!SliceExhausted(slice)) continue;
                 await UniTask.Yield(PlayerLoopTiming.Update, ct);

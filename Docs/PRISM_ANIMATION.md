@@ -825,6 +825,22 @@ its faces exactly as before. `SegmentSpawner.SuperShieldSpawnedPrisms`, which po
 shield component directly rather than going through `PrismStateManager`, honours the
 same rule explicitly.
 
+**The ordering corollary — wipe AFTER `Initialize`, never before it** (added 2026-08-04,
+from a hole the audit found on the Wanderway recycle). `IsCreationComplete` is what opens
+the birth window, and `Prism.Initialize` is what clears it. A recycled prism is therefore
+still `IsCreationComplete` from its PREVIOUS life until `Initialize` runs, so **clearing
+a kind/state before `Initialize` is a LIVE transition on a prism that is about to be
+reborn** — it buys the full 0.6 s shatter overlay, the per-frame morph-mesh rebuild and a
+state SFX, per prism, layered over the grow-in bloom that is about to start. Clearing
+early *looks* like the safe order (wipe before re-init) and is exactly backwards. It also
+does not even achieve the leak-proofing it was written for, because `Initialize` re-applies
+baked `prismProperties.IsShielded` / `IsDangerous` afterwards anyway. Use
+`PrismKinds.Retheme` (clear-then-apply, both inside the birth window) *after* `Initialize`
+— `Microscene.RearrangeIntoAsync` is the reference call site. This is a distinct failure
+from §3.8 #10: the grow stamp survives it (`Disengage` clears `_exoticVisualActive`
+unconditionally), so nothing screams — it is pure invisible cost plus a wrong-looking
+recycle.
+
 ## 5. Migration tracker (the deduplicated work list)
 
 Phase A — infrastructure (everything else rides on it):
@@ -860,7 +876,7 @@ Phase C — rogue paths & ecosystem visuals (each is standalone):
 | C10 | Worm segment make-room shift → stamped slide (locomotion stays mover-contract) | ☐ not started |
 | C11 | Spindle `_DeathAnimation` fade (prism-adjacent) → clock inputs on spindle material | ☐ not started |
 | C12 | `PrismImplosion` watchdog → scheduler; orphan cleanup; `SkimFxRunner` stretch beam review; `CloakSeedWall` dead code removal | ◐ 2026-08-01: `TrailBlockBufferManager` deleted; `TrailViewer` removed from Urchin.prefab + deleted (D2, 2026-08-02); watchdog / SkimFxRunner / CloakSeedWall pending |
-| C13a | Environment-laid prisms miss the clock path (the live repro: `grow:SpawnablePrism (Clone)`) | ✅ FIXED 2026-08-02 — root cause was NOT the raw-`Instantiate` lay: the shield engage-morph held `_exoticVisualActive` across the creation reveal, so `EnsureRenderEntity` was skipped at the exact instant the one-shot grow stamp fired. Fixed by §4.5 (a) entity existence ⊥ visibility + stamp-site self-heal + fact-based diagnosis, and (b) the birth rule (spawn-time shields snap). §3.8 #10 has the full anatomy. Pooling is orthogonal — a pooled prism with a `Shielded` kind failed identically; `BoostRingBuilder` only escaped because it defers shield kinds to `onGrown` |
+| C13a | Environment-laid prisms miss the clock path (the live repro: `grow:SpawnablePrism (Clone)`) | ✅ FIXED 2026-08-02 — root cause was NOT the raw-`Instantiate` lay: the shield engage-morph held `_exoticVisualActive` across the creation reveal, so `EnsureRenderEntity` was skipped at the exact instant the one-shot grow stamp fired. Fixed by §4.5 (a) entity existence ⊥ visibility + stamp-site self-heal + fact-based diagnosis, and (b) the birth rule (spawn-time shields snap). §3.8 #10 has the full anatomy. Pooling is orthogonal — a pooled prism with a `Shielded` kind failed identically; `BoostRingBuilder` only escaped because it defers shield kinds to `onGrown`. **Audit 2026-08-04:** every claimed mechanism verified on disk (`Prism.cs:408`, `EffectiveRenderMesh`, `TryEnsureRenderEntityForStamp` at `PrismScaleAnimator.cs:165`, `IsBirthTransition` at `PrismStateManager.cs:58`), and one asymmetry closed — `Microscene.RearrangeIntoAsync` wiped the old kind BEFORE `Initialize`, so the *disengage* half missed the birth window on every recycled shielded conveyor prism (shatter overlay + per-frame morph rebuild + SFX, no stamp loss). Now one `PrismKinds.Retheme` after `Initialize`; see the ordering corollary in §4.5(b). **Code-complete but NOT play-tested** — the in-editor test (HexRace track build + Wanderway conveyor) is still owed |
 | C13b | Environment lay pooling: `PrismTrailBuilder.LayOne` → pooled pull with final domain material (kills the `Domains.Blue` → domain spawn repaint) | ☐ not started — still worth doing on its own merits (spawn repaint, alloc churn), but it is NOT a clock-path fix. Note the pools are `maxSize`-bounded and environment mass is never released, so a naive pool-through would either destroy conserved mass on release or instantiate forever; it needs its own environment-prefab pool design |
 
 Phase D — lock-in:
