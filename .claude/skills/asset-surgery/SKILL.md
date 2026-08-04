@@ -57,6 +57,20 @@ so the confidence doesn't have to be re-learned.
    requirement, and fail-loud runtime diagnostics (once-per-offender errors
    naming exactly what's unwired). These catch reverts and future drift — and
    they're what makes strict no-fallback modes safe to ship.
+7. **If the tool WRITES assets, its output is the deliverable — wire it to
+   ship.** You cannot see that output: the tool runs in the human's editor,
+   minutes or days later, and the result lands in THEIR working tree while your
+   branch carries only the tool. That is how a migration merges half-landed —
+   code that expects a scene nobody pushed, broken everywhere, with nothing in
+   the diff to explain it. So: `FrogletToolChangeLedger.Record(ToolName, path)`
+   in the same block that writes each asset, and
+   `FrogletToolShipPanel.Draw(Ship, this)` at the bottom of `OnGUI` — that gives
+   the human **Validate & Push** (stages only this tool's paths) and **Retire
+   Tool** (deletes the one-off once its output is safely pushed). Contract and
+   rules: `Docs/TOOLING.md` § "Tool output is a deliverable"; the end-of-branch
+   gate is `/ship-tools` (and `/ship` §2.5, which no ship mode may skip). A
+   READER tool that only logs needs none of it — say so in its doc comment so
+   nobody hunts for output that was never meant to exist.
 
 ## 2. Technique: ShaderGraph JSON synthesis
 
