@@ -45,10 +45,11 @@ namespace CosmicShore.ScriptableObjects
 
         [Header("Layout")]
         [SerializeField, Min(10f), Tooltip("Spacing between stations in a matrix row/column.")]
-        float stationSpacing = 45f;
-        [SerializeField, Min(1f), Tooltip("Body radius of a station sphere (variant stations also " +
-                                          "scale with level so level 5 reads biggest).")]
-        float stationRadius = 6f;
+        float stationSpacing = 90f;
+        [SerializeField, Min(1f), Tooltip("Body radius of a station (a species station shows a mini " +
+                                          "MODEL of its creature; variant stations show the element's " +
+                                          "crystal and scale with level so level 5 reads biggest).")]
+        float stationRadius = 12f;
 
         // NOTE: elements have SHAPE signatures, not colour signatures (colour belongs to
         // DOMAINS). Stations identify their element with the element's crystal MODEL - the

@@ -26,7 +26,6 @@ namespace CosmicShore.Gameplay
         [SerializeField] GameObject playerPrefab;
         [SerializeField] GameObject PlayerOrigin;
         [SerializeField] float EndOfTurnDelay = 0f;
-        [SerializeField] bool EnableTrails = true;
         [FormerlySerializedAs("DefaultPlayerShipType")] [SerializeField] VesselClassType defaultPlayerVesselType = VesselClassType.Dolphin;
         [FormerlySerializedAs("DefaultPlayerCaptain")]
         [SerializeField] SO_Vessel DefaultPlayerShip;
@@ -236,12 +235,6 @@ namespace CosmicShore.Gameplay
             CSDebug.Log($"Player {activePlayerId + 1} Get Ready! {Time.time}");
             
             ActivePlayer.InputController.InputStatus.Paused = false;
-
-            /*if (EnableTrails)
-            {
-                LocalPlayer.Vessel.VesselStatus.TrailSpawner.ForceStartSpawningTrail();
-                LocalPlayer.Vessel.VesselStatus.TrailSpawner.RestartTrailSpawnerAfterDelay(2f);
-            }*/
         }
 
         protected virtual void EndTurn()

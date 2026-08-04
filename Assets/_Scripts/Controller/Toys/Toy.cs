@@ -39,6 +39,15 @@ namespace CosmicShore.Gameplay
         protected ToyDefinitionSO Definition { get; private set; }
         protected ToyContext Context { get; private set; }
 
+        /// <summary>
+        /// Where and how big this toy was placed. Kept so subclasses can size their own
+        /// decoration against the ACTUAL body radius (the toybox places toys at menu scale -
+        /// tens of world units - so decoration authored in raw units disappears inside the
+        /// body sphere). <c>default</c> for toys built through
+        /// <see cref="ToyFactory.CreateGate"/>, which places them itself.
+        /// </summary>
+        protected ToyPlacement Placement { get; private set; }
+
         Vector3 _targetScale = Vector3.one;
         float _triggerWorldRadius;
         bool _armed;
@@ -56,6 +65,7 @@ namespace CosmicShore.Gameplay
         {
             Definition = definition;
             Context = context;
+            Placement = placement;
             _targetScale = transform.localScale;
 
             if (TryGetComponent(out Collider col))
@@ -70,6 +80,26 @@ namespace CosmicShore.Gameplay
 
         /// <summary>Hook for subclasses to do extra setup after <see cref="Initialize"/>.</summary>
         protected virtual void OnInitialized() { }
+
+        /// <summary>This toy's emblem, or null when it has none (see <see cref="AttachEmblem"/>).</summary>
+        protected ToyEmblem Emblem { get; private set; }
+
+        /// <summary>
+        /// Give this toy an <b>iconographic root</b>: a core showing what you are, ringed by
+        /// satellites showing what a pass would offer - all built from the toy's OWN content. Call
+        /// from <see cref="OnInitialized"/>; it allocates holders only, and the toybox-wide
+        /// <see cref="ToyEmblemStreamer"/> fills them one slot per frame inside the bloom-in.
+        ///
+        /// Opt-in: a toy that already wears a meaningful shape (the domain changer's prism-material
+        /// cone) must not have one.
+        /// </summary>
+        protected ToyEmblem AttachEmblem(ToyEmblem.IEmblemSource source, float orbitRate)
+        {
+            if (Emblem) return Emblem;
+            Color tint = Definition ? Definition.AccentColor : Color.white;
+            Emblem = ToyEmblem.Attach(this, Placement.BodyRadius, source, orbitRate, tint);
+            return Emblem;
+        }
 
         /// <summary>
         /// Slowly re-grow (a scale-from-zero) to signal an in-place visual change (e.g. a swap-toy

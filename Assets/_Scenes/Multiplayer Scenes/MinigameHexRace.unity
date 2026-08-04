@@ -9152,12 +9152,6 @@ PrefabInstance:
         type: 2}
     - target: {fileID: 3995624959153467944, guid: d262ca9df284a7940985455518ad5442,
         type: 3}
-      propertyPath: randomSpawnProfile
-      value: 
-      objectReference: {fileID: 11400000, guid: 5d05ceb9b047c3b499be3bbd45c036f6,
-        type: 2}
-    - target: {fileID: 3995624959153467944, guid: d262ca9df284a7940985455518ad5442,
-        type: 3}
       propertyPath: cellTypeChoiceOptions
       value: 0
       objectReference: {fileID: 0}
@@ -9408,66 +9402,6 @@ PrefabInstance:
       propertyPath: m_Name
       value: ConnectingPanel
       objectReference: {fileID: 0}
-    - target: {fileID: 470661231859203382, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
-        type: 3}
-      propertyPath: m_IsActive
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 1901962995261546283, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
-        type: 3}
-      propertyPath: m_fontSize
-      value: 60.000004
-      objectReference: {fileID: 0}
-    - target: {fileID: 1901962995261546283, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
-        type: 3}
-      propertyPath: m_fontSizeMax
-      value: 57.600002
-      objectReference: {fileID: 0}
-    - target: {fileID: 1901962995261546283, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
-        type: 3}
-      propertyPath: m_fontSizeMin
-      value: 43.2
-      objectReference: {fileID: 0}
-    - target: {fileID: 1901962995261546283, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
-        type: 3}
-      propertyPath: m_fontSizeBase
-      value: 60.000004
-      objectReference: {fileID: 0}
-    - target: {fileID: 1901962995261546283, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
-        type: 3}
-      propertyPath: m_RaycastTarget
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 2388631188305556708, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
-        type: 3}
-      propertyPath: m_RaycastTarget
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5105126948944046106, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
-        type: 3}
-      propertyPath: m_fontSize
-      value: 57.600002
-      objectReference: {fileID: 0}
-    - target: {fileID: 5105126948944046106, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
-        type: 3}
-      propertyPath: m_fontSizeMax
-      value: 57.600002
-      objectReference: {fileID: 0}
-    - target: {fileID: 5105126948944046106, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
-        type: 3}
-      propertyPath: m_fontSizeMin
-      value: 43.2
-      objectReference: {fileID: 0}
-    - target: {fileID: 5105126948944046106, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
-        type: 3}
-      propertyPath: m_fontSizeBase
-      value: 57.600002
-      objectReference: {fileID: 0}
-    - target: {fileID: 5105126948944046106, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
-        type: 3}
-      propertyPath: m_RaycastTarget
-      value: 0
-      objectReference: {fileID: 0}
     - target: {fileID: 5402023128368193864, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
         type: 3}
       propertyPath: m_Pivot.x
@@ -9568,95 +9502,25 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 6280339008487199906, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
-        type: 3}
-      propertyPath: m_fontSize
-      value: 43.2
-      objectReference: {fileID: 0}
-    - target: {fileID: 6280339008487199906, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
-        type: 3}
-      propertyPath: m_fontSizeMax
-      value: 57.600002
-      objectReference: {fileID: 0}
-    - target: {fileID: 6280339008487199906, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
-        type: 3}
-      propertyPath: m_fontSizeMin
-      value: 43.2
-      objectReference: {fileID: 0}
-    - target: {fileID: 6280339008487199906, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
-        type: 3}
-      propertyPath: m_fontSizeBase
-      value: 43.2
-      objectReference: {fileID: 0}
-    - target: {fileID: 6280339008487199906, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
-        type: 3}
-      propertyPath: m_RaycastTarget
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 6369488707559300757, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
-        type: 3}
-      propertyPath: m_SizeDelta.x
-      value: 480.00003
-      objectReference: {fileID: 0}
-    - target: {fileID: 6369488707559300757, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
-        type: 3}
-      propertyPath: m_SizeDelta.y
-      value: 120.00001
-      objectReference: {fileID: 0}
-    - target: {fileID: 6369488707559300757, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
-        type: 3}
-      propertyPath: m_AnchoredPosition.x
-      value: -4.8
-      objectReference: {fileID: 0}
-    - target: {fileID: 6369488707559300757, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
-        type: 3}
-      propertyPath: m_AnchoredPosition.y
-      value: 31.2
-      objectReference: {fileID: 0}
-    - target: {fileID: 7234322143272291273, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
-        type: 3}
-      propertyPath: m_SizeDelta.x
-      value: 1107.9275
-      objectReference: {fileID: 0}
-    - target: {fileID: 7234322143272291273, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
-        type: 3}
-      propertyPath: m_SizeDelta.y
-      value: 120.00001
-      objectReference: {fileID: 0}
-    - target: {fileID: 7234322143272291273, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
-        type: 3}
-      propertyPath: m_AnchoredPosition.x
-      value: -381.6
-      objectReference: {fileID: 0}
-    - target: {fileID: 7234322143272291273, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
-        type: 3}
-      propertyPath: m_AnchoredPosition.y
-      value: -470.40002
-      objectReference: {fileID: 0}
     - target: {fileID: 7647039353653187114, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
         type: 3}
       propertyPath: m_SizeDelta.x
-      value: 480.00003
+      value: 715.39
       objectReference: {fileID: 0}
     - target: {fileID: 7647039353653187114, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
         type: 3}
       propertyPath: m_SizeDelta.y
-      value: 120.00001
+      value: 247.4009
       objectReference: {fileID: 0}
     - target: {fileID: 7647039353653187114, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
         type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: 696
+      value: 592.89
       objectReference: {fileID: 0}
     - target: {fileID: 7647039353653187114, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
         type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: 436.80002
-      objectReference: {fileID: 0}
-    - target: {fileID: 8977132114304303436, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
-        type: 3}
-      propertyPath: m_IsActive
-      value: 0
+      value: 407.76562
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -9931,11 +9795,7 @@ MonoBehaviour:
   onUpdateTurnMonitorDisplay: {fileID: 11400000, guid: eeddfa759c802804cb806e62ab076f4d,
     type: 2}
   optionalEnvironment: {fileID: 1899528610}
-  lapsPerIntensity:
-  - 3
-  - 3
-  - 2
-  - 2
+  lapsPerIntensity: 03000000030000000200000002000000
   optionalLaps: 3
 --- !u!114 &1078953729
 MonoBehaviour:
@@ -10580,6 +10440,8 @@ MonoBehaviour:
   domain: 3
   children: []
   leafPrefab: {fileID: 0}
+  layAcrossFrames: 0
+  layBudgetMsPerFrame: 6
   intensityLevel: 1
   waypoints:
   - positions:

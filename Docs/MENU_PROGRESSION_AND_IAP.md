@@ -27,7 +27,7 @@ In `Menu_Main.unity` the `ScreenSwitcher.disabledScreens` list = **{ ARK, PORT }
 | ARK | **Locked** (intentional — stays as-is) |
 | PORT | **Locked** (intentional — stays as-is) |
 
-**Key point:** Hangar, Home, and Profile are *not* code-disabled. There is nothing in code to "turn back on." If a screen appears empty/missing, it is a **scene/prefab wiring** issue (the rich Profile/Episode/XP widgets historically lived in the `MIgration_Prefabs (DELETE LATER)/` prefabs and may not be instantiated in the live `Menu_Main` `ProfileScreen` root). See the wiring checklist in §4.
+**Key point:** Hangar, Home, and Profile are *not* code-disabled. There is nothing in code to "turn back on." If a screen appears empty/missing, it is a **scene/prefab wiring** issue (the rich Profile/Episode widgets historically lived in the `MIgration_Prefabs (DELETE LATER)/` prefabs and may not be instantiated in the live `Menu_Main` `ProfileScreen` root). See the wiring checklist in §4.
 
 ### Hangar — already the "development" design
 

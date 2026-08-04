@@ -25,6 +25,10 @@ namespace CosmicShore.Utility
         [Tooltip("Raised once per periodic fauna spawn-cycle tick (per species loop) with the " +
                  "wave's domain + nucleus-claim state. Scoring systems (Brood Rush) listen here.")]
         [SerializeField] public ScriptableEventFaunaWave OnFaunaWaveSpawned;
+        [Tooltip("Raised when the set of living fauna hearts changes (a fauna gained its " +
+                 "lineage heart, or died and dropped it). The domain fauna buff system listens " +
+                 "here to re-sum domain elemental power without waiting for its reconcile sweep.")]
+        [SerializeField] public ScriptableEventNoParam OnFaunaHeartsChanged;
         
         [Header("Run Time References")]
         public CellConfigDataSO Config; // <- your "CellConfigData"

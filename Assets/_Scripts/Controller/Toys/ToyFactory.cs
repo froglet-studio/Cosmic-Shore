@@ -265,6 +265,60 @@ namespace CosmicShore.Gameplay
             return root;
         }
 
+        /// <summary>
+        /// Render a built <see cref="CellMiniatureBuilder.Miniature"/> as a child of
+        /// <paramref name="parent"/>: one material per domain submesh, so the model wears the
+        /// world's REAL domain composition in the same prism materials the world itself is built
+        /// from (accent tint only where no theme is available). Shared by the Cell Selector's
+        /// mini-cells and the toy-root emblems that show a scale model.
+        /// </summary>
+        public static GameObject AddMiniatureBody(Transform parent, CellMiniatureBuilder.Miniature miniature,
+            ToyContext context, string bodyName)
+        {
+            if (!miniature.IsValid) return null;
+
+            var go = new GameObject(bodyName);
+            go.transform.SetParent(parent, false);
+            go.AddComponent<MeshFilter>().sharedMesh = miniature.Mesh;
+
+            var materials = new Material[miniature.SubmeshDomains.Length];
+            for (int i = 0; i < materials.Length; i++)
+            {
+                var domain = miniature.SubmeshDomains[i];
+                var material = DomainPrismMaterial(context, domain);
+                materials[i] = material ? material : AccentMaterial(DomainAccentColor(context, domain));
+            }
+
+            var renderer = go.AddComponent<MeshRenderer>();
+            renderer.sharedMaterials = materials;
+            renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            renderer.receiveShadows = false;
+            return go;
+        }
+
+        /// <summary>
+        /// Continuity-law arrival: grow from zero to the transform's current scale over
+        /// <paramref name="seconds"/>. Callers zero the scale BEFORE the first tick so nothing ever
+        /// renders at full size for a frame first.
+        /// </summary>
+        public static async UniTaskVoid ScaleInFromZero(Transform target, float seconds)
+        {
+            if (!target) return;
+            var ct = target.gameObject.GetCancellationTokenOnDestroy();
+            target.localScale = Vector3.zero;
+
+            float elapsed = 0f;
+            while (elapsed < seconds)
+            {
+                if (!target) return;
+                elapsed += Time.unscaledDeltaTime;
+                float t = Mathf.Clamp01(elapsed / seconds);
+                target.localScale = Vector3.one * (t * t * (3f - 2f * t)); // smoothstep
+                await UniTask.Yield(PlayerLoopTiming.Update, ct);
+            }
+            if (target) target.localScale = Vector3.one;
+        }
+
         /// <summary>Continuity-law teardown: shrink to zero over <paramref name="seconds"/>, then destroy.</summary>
         public static async UniTaskVoid ScaleOutAndDestroy(GameObject go, float seconds)
         {
@@ -318,7 +372,9 @@ namespace CosmicShore.Gameplay
         // (UnityEngine.Objects are never GC'd). Nothing mutates these after creation.
         static readonly System.Collections.Generic.Dictionary<int, Material> s_accentMaterials = new();
 
-        static Material AccentMaterial(Color accent)
+        /// <summary>Shared unlit material for an accent colour (cached per colour). Public so
+        /// toys that build their own meshes can use the same tint path as the primitive bodies.</summary>
+        public static Material AccentMaterial(Color accent)
         {
             Color32 c = accent;
             int key = (c.r << 24) | (c.g << 16) | (c.b << 8) | c.a;

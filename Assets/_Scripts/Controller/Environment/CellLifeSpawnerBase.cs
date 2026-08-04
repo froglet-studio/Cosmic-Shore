@@ -127,7 +127,7 @@ namespace CosmicShore.Gameplay
         }
 
         public static Flora SpawnFlora(Cell host, Flora floraPrefab, Domains? excludedDomain,
-            FloraConfigurationSO config = null, Vector3? spawnPosition = null)
+            FloraConfigurationSO config = null, Vector3? spawnPosition = null, Vector3? spawnUp = null)
         {
             if (!host || !floraPrefab) return null;
 
@@ -145,7 +145,11 @@ namespace CosmicShore.Gameplay
             // A caller-specified position PINS the planting spot - Plant() implementations
             // honor it instead of dispersing the flora across the cell (the Lifeform Matrix
             // toy roots the spawn where the player triggered it).
-            if (spawnPosition.HasValue)
+            // An authored planting site also carries the ground's normal, so a plant rooted in a
+            // garden bed grows away from the bed instead of toward the cell crystal.
+            if (spawnPosition.HasValue && spawnUp.HasValue)
+                flora.SetPlantPositionOverride(spawnPosition.Value, spawnUp.Value);
+            else if (spawnPosition.HasValue)
                 flora.SetPlantPositionOverride(spawnPosition.Value);
 
             // Elemental contract: the config may define the ELEMENT and the variant expression
@@ -153,10 +157,16 @@ namespace CosmicShore.Gameplay
             // Initialize - the leaf prism size and crystal lookup are consumed there.
             if (config)
             {
-                flora.ApplyElement(config.Element);
-                if (config.Variant is { Enabled: true })
-                    flora.ApplyVariantTuning(config.Variant);
-                flora.ApplyLevel(config.InitialLevel, config.LeafScalePerLevel, config.CrystalScalePerLevel);
+                // One roll decides this plant's variant: which element it carries, the block
+                // that expresses that element, and the level it seeds at. With spread off the
+                // roll returns the config's authored Element / Variant / InitialLevel, so the
+                // legacy per-element-config path is unchanged.
+                var pick = config.RollVariant();
+
+                flora.ApplyElement(pick.Element);
+                if (pick.Tuning is { Enabled: true })
+                    flora.ApplyVariantTuning(pick.Tuning);
+                flora.ApplyLevel(pick.Level, config.LeafScalePerLevel, config.CrystalScalePerLevel);
             }
 
             flora.Initialize(host);

@@ -1,7 +1,9 @@
+using System.Collections.Generic;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using Unity.Entities.UI;
 using UnityEngine;
+using Random = UnityEngine.Random;
 
 namespace CosmicShore.Utility
 {
@@ -16,6 +18,14 @@ namespace CosmicShore.Utility
         public int InitialSpawnCount;
         public bool OverrideDefaultPlantPeriod;
         public int NewPlantPeriod = int.MaxValue;
+
+        [Tooltip("Ground this species prefers when the cell's authored environment prepared " +
+                 "planting sites (a garden's beds, trellis feet, hanging baskets, pool rim). " +
+                 "A preference, not a requirement: a garden with none of the preferred kinds " +
+                 "falls back to any prepared site, and a cell with no prepared ground at all " +
+                 "disperses the flora across the membrane exactly as before. Leave as Any " +
+                 "for a species with no opinion.")]
+        public FloraSiteKind PreferredSites = FloraSiteKind.Any;
 
         [Header("Elemental contract (element as data - one base prefab, variants from config)")]
         [Tooltip("The element this flora config spawns as. None = keep the prefab-authored " +
@@ -39,6 +49,70 @@ namespace CosmicShore.Utility
         [Tooltip("Crystal scale multiplier per level above 1 - the death-drop powerup grows " +
                  "with level (mass rewarded, still conserved).")]
         [Min(1f)] public float CrystalScalePerLevel = 1.2f;
+
+        [Header("Variant spread - one config spans the element x level matrix")]
+        [Tooltip("Roll the ELEMENT per spawn instead of planting this config's single element. " +
+                 "The element's identity (leaf prism shape, growth tempo, shield cadence, prism " +
+                 "budget) comes from the palette below, so a rolled element is expressed as " +
+                 "authored - not just a recoloured crystal. Empty palette = roll the element " +
+                 "alone and keep this config's own Variant tuning.")]
+        public bool SpreadElements = false;
+
+        [Tooltip("Per-element sibling configs that define each element's identity (normally the " +
+                 "four canonical assets in _SO_Assets/Lifeforms for this species). Only Element " +
+                 "and Variant are read from them - planting counts, periods and probability stay " +
+                 "on THIS config, so the cell keeps its own density tuning.")]
+        public List<FloraConfigurationSO> ElementPalette = new();
+
+        [Tooltip("Spawn across a band of LEVELS instead of always InitialLevel. Level is a pure " +
+                 "scale curve (leaves + dropped crystal), so this costs no extra colliders.")]
+        public LifeformLevelSpread Levels = new();
+
+        /// <summary>
+        /// What a single plant of this species is: element + the variant block expressing it +
+        /// the level it seeds at. Pass <paramref name="inherit"/> to keep an existing lineage's
+        /// identity (a re-plant of the same flora) instead of rolling a fresh one.
+        /// </summary>
+        public LifeformVariantPick<FloraVariantTuning> RollVariant(
+            LifeformVariantPick<FloraVariantTuning>? inherit = null)
+        {
+            if (inherit.HasValue) return inherit.Value;
+
+            var element = Element;
+            var tuning = Variant;
+
+            if (SpreadElements)
+            {
+                var sibling = RollPaletteSibling();
+                if (sibling)
+                {
+                    element = sibling.Element;
+                    tuning = sibling.Variant;
+                }
+                else
+                {
+                    // No palette authored: still spread the element, expressed with this
+                    // config's own Variant tuning.
+                    element = CosmicShore.ScriptableObjects.ElementalCrystalSetSO.RandomElement();
+                }
+            }
+
+            return new LifeformVariantPick<FloraVariantTuning>(element, tuning, Levels.Roll(InitialLevel));
+        }
+
+        FloraConfigurationSO RollPaletteSibling()
+        {
+            if (ElementPalette is not { Count: > 0 }) return null;
+
+            // Uniform over the authored palette - richness comes from what a biome authors into
+            // it, not from a weight table nobody tunes.
+            for (int attempt = 0; attempt < ElementPalette.Count; attempt++)
+            {
+                var candidate = ElementPalette[Random.Range(0, ElementPalette.Count)];
+                if (candidate && candidate.Element != CosmicShore.Data.Element.None) return candidate;
+            }
+            return null;
+        }
     }
 
     /// <summary>

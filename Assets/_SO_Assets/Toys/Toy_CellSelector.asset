@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7e2b58d1c94a4f36a05d17c8e3b96420, type: 3}
+  m_Name: Toy_CellSelector
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.ScriptableObjects.CellSelectorToyDefinitionSO
+  id: cell_selector
+  displayName: Cell Selector
+  description: The freestyle world picker - and the freestyle reset. Fly through for
+    a matrix of mini-cells; fly a mini-cell to become that world. Fly the one you are
+    already in to reset it.
+  unlockedByDefault: 1
+  placementAngleDegrees: 300
+  accentColor: {r: 0.55, g: 0.75, b: 1, a: 1}
+  cells: []
+  clearLooseTrailMass: 1
+  stationSpacing: 110
+  stationRadius: 18
+  matrixDistanceFactor: 3
+  modelPointBudget: 2400
+  signatureCoverage: 0.7

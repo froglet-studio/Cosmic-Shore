@@ -46,15 +46,38 @@ namespace CosmicShore.Gameplay
         public void Attach(Prism prism)
         {
             CSDebug.Log($"Attaching: trail:{prism.Trail}");
+            if (attachedTrail != null) attachedTrail.OnOldestRemoved -= HandleOldestRemoved;
             attachedTrail = prism.Trail;
             attachedBlockIndex = attachedTrail.GetBlockIndex(prism);
+            attachedTrail.OnOldestRemoved += HandleOldestRemoved;
             percentTowardNextBlock = 0; // TODO: calculate initial percentTowardNextBlock
             direction = TrailFollowerDirection.Forward; // TODO: use dot product to capture initial direction
         }
 
         public void Detach()
         {
+            if (attachedTrail != null) attachedTrail.OnOldestRemoved -= HandleOldestRemoved;
             attachedTrail = null;
+        }
+
+        /// <summary>
+        /// The trail dropped its oldest prism, so every survivor - including the one being ridden -
+        /// shifted one slot toward the head. Follow the MASS, not the slot: decrement the cached
+        /// index so the rider stays on the prism it was actually on. Reaching -1 means the ridden
+        /// prism is the one that just left, so let go.
+        ///
+        /// Only the Wanderway's rolling tether removes from the front today
+        /// (<see cref="Trail.RemoveOldest"/>); without this the rider would race forward along the
+        /// ribbon at the recycle rate.
+        /// </summary>
+        void HandleOldestRemoved()
+        {
+            if (--attachedBlockIndex < 0) Detach();
+        }
+
+        void OnDestroy()
+        {
+            if (attachedTrail != null) attachedTrail.OnOldestRemoved -= HandleOldestRemoved;
         }
 
         public void RideTheTrail()

@@ -50,7 +50,6 @@ namespace CosmicShore.UI
         [Header("Event Channels")]
         [SerializeField] private ScriptableEventInt onMoundDroneSpawned;
         [SerializeField] private ScriptableEventInt onQueenDroneSpawned;
-        [SerializeField] private ScriptableEventSilhouetteData onSilhouetteInitialized;
         [SerializeField] private ScriptableEventShipHUDData onShipHUDInitialized;
         [SerializeField] private ScriptableEventNoParam OnResetForReplay;
 
@@ -152,6 +151,7 @@ namespace CosmicShore.UI
         {
             SubscribeToEvents();
 
+            EnsureReadyButtonWiring();
             EnsureObjectiveIndicator();
             EnsureVolumeIndicator();
 
@@ -162,6 +162,52 @@ namespace CosmicShore.UI
             {
                 HandleClientReady().Forget();
             }
+        }
+
+        /// <summary>
+        /// Connects the Ready button to the scene's game controller in code when it is not already
+        /// wired through a persistent UnityEvent.
+        ///
+        /// <see cref="MiniGameControllerBase.OnReadyClicked"/> is public on the BASE class, so the
+        /// per-scene UnityEvent hookups that name a concrete controller type
+        /// (<c>HexRaceController</c>, <c>MultiplayerJoustController</c>, ...) never needed to be
+        /// per-scene at all - and each one was an override parked in the scene, masking the shared
+        /// prefab. Resolving it here means a NEW game-mode scene can drop GameCanvas.prefab in and
+        /// the Ready button works with zero inspector wiring.
+        ///
+        /// A scene that already carries a persistent listener targeting a controller is left
+        /// completely alone, so nothing double-fires while the old wiring is still in place.
+        /// </summary>
+        protected virtual void EnsureReadyButtonWiring()
+        {
+            var button = view != null ? view.ReadyButton : null;
+            if (button == null) return;
+
+            if (HasPersistentControllerListener(button)) return;
+
+            var controller = FindAnyObjectByType<MiniGameControllerBase>(FindObjectsInactive.Include);
+            if (controller == null) return;   // menu / tool scenes have no controller - nothing to wire
+
+            // Idempotent: removing first means a re-entry (scene reload replay, HUD re-enable)
+            // can never stack a second runtime listener on the same button.
+            button.onClick.RemoveListener(controller.OnReadyClicked);
+            button.onClick.AddListener(controller.OnReadyClicked);
+        }
+
+        /// <summary>
+        /// True when the button already has an inspector-authored call into a game controller.
+        /// Checked against the live target object rather than the serialized type name, so a
+        /// renamed or subclassed controller still counts.
+        /// </summary>
+        static bool HasPersistentControllerListener(Button button)
+        {
+            for (int i = 0, n = button.onClick.GetPersistentEventCount(); i < n; i++)
+            {
+                var target = button.onClick.GetPersistentTarget(i);
+                if (target is MiniGameControllerBase) return true;
+                if (target is Component c && c.GetComponent<MiniGameControllerBase>() != null) return true;
+            }
+            return false;
         }
 
         /// <summary>
@@ -293,7 +339,6 @@ namespace CosmicShore.UI
 
             if (onMoundDroneSpawned != null) onMoundDroneSpawned.OnRaised += OnMoundDroneSpawned;
             if (onQueenDroneSpawned != null) onQueenDroneSpawned.OnRaised += OnQueenDroneSpawned;
-            if (onSilhouetteInitialized != null) onSilhouetteInitialized.OnRaised += OnSilhouetteInitialized;
             if (onShipHUDInitialized != null) onShipHUDInitialized.OnRaised += OnShipHUDInitialized;
         }
 
@@ -312,7 +357,6 @@ namespace CosmicShore.UI
 
             if (onMoundDroneSpawned != null) onMoundDroneSpawned.OnRaised -= OnMoundDroneSpawned;
             if (onQueenDroneSpawned != null) onQueenDroneSpawned.OnRaised -= OnQueenDroneSpawned;
-            if (onSilhouetteInitialized != null) onSilhouetteInitialized.OnRaised -= OnSilhouetteInitialized;
             if (onShipHUDInitialized != null) onShipHUDInitialized.OnRaised -= OnShipHUDInitialized;
         }
 
@@ -340,7 +384,7 @@ namespace CosmicShore.UI
                 // (PrismTrailBuilder.PollArenaReady): every announced build executed, every streamed
                 // lay drained, AND every laid prism fully grown — the whole structure exists at full
                 // scale before the player gets past the connecting screen. Nothing lays or blooms in
-                // view during play. SetLoadGateHolding lets PrismScaleManager boost grow-in stepping
+                // view during play. SetLoadGateHolding lets Prism boost creation-queue draining
                 // while the screen is covered (gameplay slicing untouched).
                 if (connectingPanel != null)
                 {
@@ -597,21 +641,6 @@ namespace CosmicShore.UI
         {
             view.RightNumberDisplay.transform.parent.parent.gameObject.SetActive(count > 0);
             view.RightNumberDisplay.text = count.ToString();
-        }
-
-        private void OnSilhouetteInitialized(SilhouetteData data)
-        {
-            var sil = view.Silhouette;
-            sil.SetActive(data.IsSilhouetteActive);
-
-            var trail = view.TrailDisplay;
-            trail.SetActive(data.IsTrailDisplayActive);
-
-            foreach (var part in data.Silhouettes)
-            {
-                part.transform.SetParent(sil.transform, false);
-                part.SetActive(true);
-            }
         }
 
         private void OnShipHUDInitialized(ShipHUDData data)

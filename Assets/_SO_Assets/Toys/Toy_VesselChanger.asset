@@ -18,4 +18,6 @@ MonoBehaviour:
   unlockedByDefault: 1
   placementAngleDegrees: 120
   accentColor: {r: 1, g: 0.85, b: 0.2, a: 1}
-  vesselCycle: 
+  vesselCollection: []
+  stationSpacing: 60
+  matrixDistanceFactor: 6

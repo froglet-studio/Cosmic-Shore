@@ -5,6 +5,7 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using CosmicShore.Editor.Froglet;
 
 namespace CosmicShore.Editor
 {
@@ -31,7 +32,9 @@ namespace CosmicShore.Editor
         const string ToyboxAssetPath = "Assets/Resources/Toybox.asset";
         const string MenuScenePath = "Assets/_Scenes/Menu_Main.unity";
 
-        [MenuItem("Tools/Cosmic Shore/Setup Freestyle Toybox")]
+        [MenuItem("FrogletTools/Scene Setup/Setup Freestyle Toybox")]
+        [FrogletTool(FrogletToolCategory.SceneSetup, Importance = 4,
+            Description = "Author the freestyle toybox assets and wire them into Menu_Main.")]
         static void SetupToybox()
         {
             var gallery = CreatePaintingGallery();
@@ -48,9 +51,15 @@ namespace CosmicShore.Editor
             var conveyor = LoadOrCreateToy<ConveyorToyDefinitionSO>(
                 "Toy_Conveyor", "conveyor", "Wanderway", "Fly through to summon an endless trail of little worlds.",
                 new Color(0.35f, 1.00f, 0.55f), 60f, AssignConveyorContent);
+            // No content wiring: with no cells authored the toy reads the containing Cell's own
+            // CellConfigs rotation, which is the single source of truth for this scene's cell.
+            var cellSelector = LoadOrCreateToy<CellSelectorToyDefinitionSO>(
+                "Toy_CellSelector", "cell_selector", "Cell Selector",
+                "Fly through to pick the world you fly in - or reset it.",
+                new Color(0.55f, 0.75f, 1.00f), 300f);
 
             var toybox = LoadOrCreateToybox();
-            RegisterToys(toybox, new ToyDefinitionSO[] { painting, vessel, domain, conveyor });
+            RegisterToys(toybox, new ToyDefinitionSO[] { painting, vessel, domain, conveyor, cellSelector });
 
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
@@ -58,7 +67,8 @@ namespace CosmicShore.Editor
             bool wiredScene = AddControllerToMenuScene(toybox);
 
             EditorUtility.DisplayDialog("Setup Freestyle Toybox",
-                "Toybox ready with 4 toys (Connect the Dots, Vessel Changer, Domain Changer, Wanderway).\n\n" +
+                "Toybox ready with 5 toys (Connect the Dots, Vessel Changer, Domain Changer, Wanderway, " +
+                "Cell Selector).\n\n" +
                 $"• Toy assets:  {ToysFolder}/\n" +
                 $"• Paintings:   {PaintingsFolder}/ (16 masterpieces: Star → Taj Mahal → Torus Knot, " +
                 "Buckyball, Double Helix, Nautilus, Lotus, Rose, Spiral Galaxy, Phoenix, Almighty " +
@@ -67,10 +77,14 @@ namespace CosmicShore.Editor
                 (wiredScene
                     ? "• ToyboxController added to Menu_Main and saved.\n"
                     : "• Could not auto-add the ToyboxController - add it to the Menu_Main 'Game' object manually.\n") +
-                "\nAll four toys work as-is. The vessel changer shows mini ship models; the domain " +
+                "\nAll five toys work as-is. The vessel changer shows mini ship models; the domain " +
                 "changer shows the two colours you're not; the painting toy spawns one station per " +
                 "painting (multi-stroke, multi-domain connect-the-dots with start gates that recolour " +
-                "your trail); the Wanderway conveyor streams shuffled microscenes ahead of your flight path.\n" +
+                "your trail); the Wanderway conveyor streams shuffled microscenes ahead of your flight " +
+                "path; the Cell Selector blooms a matrix of mini-cells that swap (or reset) the world " +
+                "you fly in.\n\n" +
+                "REMINDER: set the Menu_Main Cell's 'Cell Type Choice Options' to EnvironmentFree so " +
+                "freestyle boots empty and the heavy worlds stay opt-in.\n" +
                 "See Docs/ToySystem/ARCHITECTURE.md.",
                 "OK");
         }

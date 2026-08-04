@@ -72,12 +72,10 @@ namespace CosmicShore.Gameplay
         // Session Bootstrapping
         // --------------------------
 
+        // Synchronous by design: nothing here is awaited. ExecuteMultiplayerSetup is the only
+        // async work and it is explicitly fire-and-forget, so wrapping this in an async
+        // UniTaskVoid added a state machine without changing when any of it ran.
         void OnAuthenticationSignedIn()
-        {
-            OnAuthenticationSignedInAsync().Forget();
-        }
-
-        async UniTaskVoid OnAuthenticationSignedInAsync()
         {
             EnsureHostStarted();
 

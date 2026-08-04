@@ -91,3 +91,82 @@ Sparrow HUD indicators (roll armed, shielded turret, piercing, domain-safe). Cle
    *Recommendation:* re-lock; debuffs stripping your upgrade is legible elemental counterplay.
 5. **`origin/claude/falcon-brittlestar-reintro-oyx1q1`**: if it is ever merged, it must not land
    without `f1f278ab4` (its prewarm cap makes the pool-injection NRE strictly worse — AUDIT §2#1).
+
+## Four-icon ability row — follow-ups (from the `vessel-ability-icons` branch)
+
+The row contract, the level-5 upgrade signal, the ability-bound control hints and the fleet
+auditor shipped. Squirrel and Sparrow are compliant. What is left, in rough priority order:
+
+### Blocked on design (cannot be wired until someone authors the map)
+
+1. **Author the open `ElementalAbilityMapSO` slots** for Manta, Dolphin, Rhino and Serpent. Each
+   still has `(open design slot)` entries with `Input = 0` and **no `UpgradeLabel` on any element**.
+   Proposals live in `FLEET_MAPS.md` §2 and are un-approved. Until the element→ability→input
+   mapping exists, an icon row cannot be bound — do not guess it to satisfy the auditor.
+
+### Wiring, once the maps land
+
+2. **Rhino already has four icons** — `LaserTargeting`, `Crystal`, `ForceField` (all three are
+   vessel-prefab objects parented into the HUD instance) plus `BoostContainer` from the HUD variant.
+   They sit at x 1288.6 / 1461.6 / 1639.6 / 1814.6, y 116.7, 99.8×99.8 — a real row needing only
+   ~3 px of pitch evening. Bind + reorder once the Rhino map is authored.
+3. **Re-survey Dolphin and Manta at the vessel level.** The Rhino's icons were missed because the
+   first survey only read HUD prefabs; three of its four icons live in the vessel prefab. Assume the
+   same may be true of Dolphin (1 icon found) and Manta (0 found) until checked the same way.
+
+### Independent of the maps
+
+4. **Add an `InputDeviceIconSetSwitcher` to the Sparrow HUD.** It has four Xbox + four PlayStation
+   `ControllerIcon` glyphs but no switcher, so (a) both sets render simultaneously, and (b)
+   `BindHintsToAbilities` never runs there — its glyphs are currently placed *statically* and will
+   strand again if the row is reordered. This is the fix that makes them self-placing.
+5. **Sparrow glyph art is wrong** independently of position: the Xbox set uses `R1 Active` where the
+   control is the right TRIGGER and `R2 Active` where it is the LEFT trigger; the PlayStation set uses
+   `triangle` where the control is ✕ and `square` where it is R2. `Buttons/XBOX/` contains **no
+   left-trigger art at all** — this needs an artist, not a wiring change.
+6. **`ControllerButtonIconReferences` is vestigial and destructive.** Zero callers in the codebase;
+   its only runtime effect is `Awake()` doing `_img.sprite = inactiveIcon` unconditionally, which
+   stomps the authored per-side sprite. On the Squirrel all four pad glyphs share one `inactiveIcon`
+   (`XBOX/R1.png`), so both the left and right glyph render as R1. Either delete the component or
+   make it non-destructive and author per-side sprites.
+7. **Author `upgradedSprite` art** for the wired vessels. The sprite-swap layer of the upgrade signal
+   is in place but no vessel authors upgraded art, so only the element badge and the scale bump are
+   visible today. Note two Sparrow icons (`missileIcon`, `weaponModeIcon`) have their sprite driven by
+   gameplay and start disabled — the badge must carry the signal there regardless.
+8. **Squirrel hint labels say `L1`/`R1`** in the inspector while the bindings are triggers (LT/RT).
+   Designer notes only — used by `SetHintActive(label, …)` for unbound hints — but misleading.
+9. **Author an impact-effect/skimmer container auditor** (`FrogletTools > Vessels`, modeled on
+   `VesselAbilityRowAuditor`). This is the vessel contract's least-guarded clause — null containers,
+   unwired skimmer stacks, orphaned effect assets, and stale serialized blocks have only runtime
+   symptoms today (`.claude/skills/vessel/references/CONTRACT.md` §9 catalogues the live
+   misconfigurations: Serpent's dead VacuumSkimmer, Sparrow's all-empty containers, the five
+   unregistered hulls' null nested-skimmer containers).
+
+---
+
+## Dolphin follow-ups (opened by `claude/dolphin-energy-crystal-cooldown-zpvc07`)
+
+Mechanics reference: `_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_ENERGY_ECONOMY.md`.
+
+10. **Serpent's skimmer is dead.** `_nearFieldSkimmer` resolves to a `VacuumSkimmer` whose
+    GameObject is INACTIVE *and* which carries no `SkimmerImpactor`/container. Same class of
+    fault the Dolphin had; deliberately left untouched by that branch (different vessel).
+    Confirm with `FrogletTools > Vessels > Audit Vessel Skimmers`.
+11. **`ExplosionImpactor.OnBlastResolved` is a static C# event.** CLAUDE.md's anti-patterns
+    forbid static events for cross-system communication. It is presentation-only, has one
+    self-filtering listener (the Dolphin HUD's prism tally), and subscribes/unsubscribes
+    symmetrically — but it is a deviation. Convert it to a SOAP channel the moment a second
+    consumer appears, or if the reviewer wants it converted now: the payload needs the firing
+    vessel plus the count, so it is a new `ScriptableBlastResult` type (struct + event +
+    listener), which is why it was not minted for one HUD tally.
+12. **The jaw gape is a linear approximation of the cone's half-angle.** Exact at full energy
+    (18.435°, and `MaxJawAngle` is now measured against it); below that the jaws are linear in
+    energy while the true half-angle is `atan(lerp(400,1600,e) / 4800)` — so an empty meter shows
+    closed jaws against a cone that still has a 4.76° floor. Closing the gap means
+    `RiptideAnimation` reading the effect SO's min/max, a vessel-animation → impact-effect
+    dependency judged not worth it.
+13. **The Dolphin's Space icon is still placeholder art** (`ConeBlastIcon-PLACEHOLDER.png`,
+    accepted by Garrett as "the blast seems fine"). The other three slots use shipped art (the
+    vessel's own jaw silhouettes, the omni crystal, the authored boost ring).
+14. **The Dolphin HUD has no `InputDeviceIconSetSwitcher`**, so `BindHintsToAbilities` never runs
+    there and its control hints are unbound — same gap as the Sparrow (item 4).

@@ -51,6 +51,18 @@ namespace CosmicShore.Gameplay
         [SerializeField] private IntVariable intensityLevelData;
         [SerializeField] private List<CrystalPositionSet> listOfCrystalPositions;
 
+        [Header("Spawn Volume")]
+        [Tooltip("Radius of the random shell around an authored anchor that a crystal spawns on. " +
+                 "Only used when listOfCrystalPositions has anchors for the current intensity.")]
+        [SerializeField, Min(0f)] private float anchorJitterRadius = 35f;
+
+        [Tooltip("Overrides the radius of the ball around the cell centre that crystals spawn in " +
+                 "when NO anchors are authored (Scurry / Crystal Capture). Used by BOTH the initial " +
+                 "batch and every respawn, so the placement volume never changes over a match. " +
+                 "0 (default) = the cell's NUCLEUS radius, which is per-intensity - leave it at 0 " +
+                 "unless a mode genuinely needs to decouple crystals from its cell core.")]
+        [SerializeField, Min(0f)] private float anchorlessSpawnRadius;
+
         [Header("Crystal Count")]
         [SerializeField] private CrystalCountMode crystalCountMode = CrystalCountMode.PlayerCountPlusExtra;
         [SerializeField, Min(0)] private int fixedCrystalCount = 1;
@@ -171,6 +183,7 @@ namespace CosmicShore.Gameplay
             int count = GetCrystalCountToSpawn();
 
             // 1) Choose ONE anchor for the whole batch
+            bool hasAnchors = HasAuthoredAnchors();
             Vector3 batchAnchor = GetAnchorForBatchIndex(batchAnchorIndex);
 
             // 2) Spawn each missing crystal around that same anchor
@@ -178,7 +191,11 @@ namespace CosmicShore.Gameplay
             {
                 if (!cellData.TryGetCrystalById(id, out _))
                 {
-                    Vector3 spawnPos = GetSpawnPointAroundAnchor(batchAnchor);
+                    // With no authored anchors the batch anchor is a placeholder, so the
+                    // initial batch draws from the SAME volume every respawn draws from.
+                    Vector3 spawnPos = hasAnchors
+                        ? GetSpawnPointAroundAnchor(batchAnchor)
+                        : GetAnchorlessSpawnPoint();
                     var crystal = Spawn(id, spawnPos);
                     cellData.AddCrystalToList(crystal);
 
@@ -200,20 +217,19 @@ namespace CosmicShore.Gameplay
         /// </summary>
         protected Vector3 CalculateNewSpawnPos(int crystalId)
         {
-            // If no anchor list exists, fallback to random in sphere.
-            if (!TryGetCrystalPositionListByIntensity(out Vector3[] anchors) || anchors == null || anchors.Length == 0)
-            {
-                var crystalRadius = cellData.TryGetLocalCrystal(out Crystal crystal) ? crystal.SphereRadius : 10f;
-                var centerPos = cellData.CellTransform != null ? cellData.CellTransform.position : transform.position;
-                Vector3 fallback = Random.insideUnitSphere * crystalRadius + centerPos;
-                lastSpawnPosById[crystalId] = fallback;
-                return fallback;
-            }
-
             // Last position this crystal spawned at (for distance check)
             Vector3 last = lastSpawnPosById.TryGetValue(crystalId, out var lastPos)
                 ? lastPos
                 : Vector3.positiveInfinity;
+
+            // If no anchor list exists, draw from the anchorless volume - the same volume
+            // SpawnBatchIfMissing seeds the initial batch from.
+            if (!TryGetCrystalPositionListByIntensity(out Vector3[] anchors) || anchors == null || anchors.Length == 0)
+            {
+                Vector3 fallback = PickSpawnPointAwayFromLast(last, GetAnchorlessSpawnPoint);
+                lastSpawnPosById[crystalId] = fallback;
+                return fallback;
+            }
 
             // Get last anchor index used by this crystal (default 0)
             int lastAnchorIndex = lastAnchorIndexByCrystalId.TryGetValue(crystalId, out var idx) ? idx : 0;
@@ -223,17 +239,7 @@ namespace CosmicShore.Gameplay
             Vector3 anchor = anchors[nextAnchorIndex];
 
             // Try multiple random points around the same anchor
-            const int MAX_TRIES = 50;
-            Vector3 spawnPos = anchor;
-
-            for (int t = 0; t < MAX_TRIES; t++)
-            {
-                spawnPos = GetSpawnPointAroundAnchor(anchor);
-
-                // Accept if sufficiently far from last spawn
-                if (Vector3.SqrMagnitude(last - spawnPos) > MIN_SQR_SPACE_BTWN_CURRENT_AND_LAST_SPAWN_POS)
-                    break;
-            }
+            Vector3 spawnPos = PickSpawnPointAwayFromLast(last, () => GetSpawnPointAroundAnchor(anchor));
 
             // Store new "lasts"
             lastSpawnPosById[crystalId] = spawnPos;
@@ -329,8 +335,68 @@ namespace CosmicShore.Gameplay
         /// </summary>
         protected Vector3 GetSpawnPointAroundAnchor(Vector3 anchor)
         {
-            // If you ever want different radius, expose this as a serialized field.
-            return anchor + Random.onUnitSphere * 35f;
+            return anchor + Random.onUnitSphere * anchorJitterRadius;
+        }
+
+        /// <summary>True when the current intensity has an authored anchor list to spawn against.</summary>
+        protected bool HasAuthoredAnchors() =>
+            TryGetCrystalPositionListByIntensity(out var anchors) && anchors != null && anchors.Length > 0;
+
+        /// <summary>
+        /// The spawn point used when NO anchors are authored (Scurry / Crystal Capture):
+        /// a random point in a ball of <see cref="anchorlessSpawnRadius"/> around the cell centre.
+        /// This is the SINGLE definition of that volume - the initial batch and every respawn
+        /// both draw from it, so the placement radius does not change over a match.
+        /// </summary>
+        protected Vector3 GetAnchorlessSpawnPoint()
+        {
+            var centerPos = cellData.CellTransform != null ? cellData.CellTransform.position : transform.position;
+            return centerPos + Random.insideUnitSphere * GetAnchorlessSpawnRadius();
+        }
+
+        /// <summary>
+        /// The reference size for anchorless crystal placement: the CELL NUCLEUS radius, which is
+        /// per-intensity (an IntensityWise cell picks a different config, hence a different nucleus,
+        /// per level). Crystals therefore live inside the cell core at whatever scale that
+        /// intensity's core is, and the reference is identical for the initial batch and every
+        /// respawn. The serialized override wins when non-zero; the crystal's own SphereRadius is
+        /// the last-resort fallback for a cell with no nucleus at all.
+        /// </summary>
+        protected float GetAnchorlessSpawnRadius()
+        {
+            if (anchorlessSpawnRadius > 0f) return anchorlessSpawnRadius;
+
+            // Resolved through the registry + ExpectedNucleusWorldRadius so placement never depends
+            // on whether Cell.Initialize beat the first crystal spawn (see Cell.ExpectedNucleusWorldRadius).
+            var cell = Cell.FindByRuntimeData(cellData);
+            if (cell != null)
+            {
+                float nucleusRadius = cell.ExpectedNucleusWorldRadius;
+                if (nucleusRadius > 0f) return nucleusRadius;
+            }
+
+            if (crystalPrefab != null) return crystalPrefab.SphereRadius;
+            return cellData.TryGetLocalCrystal(out Crystal crystal) ? crystal.SphereRadius : 10f;
+        }
+
+        /// <summary>
+        /// Draws candidate spawn points until one is far enough from this crystal's previous
+        /// position (or the try budget runs out). Shared by the anchored and anchorless paths so
+        /// both honour MIN_SQR_SPACE_BTWN_CURRENT_AND_LAST_SPAWN_POS.
+        /// </summary>
+        static Vector3 PickSpawnPointAwayFromLast(Vector3 last, Func<Vector3> draw)
+        {
+            const int MAX_TRIES = 50;
+            Vector3 spawnPos = draw();
+
+            for (int t = 1; t < MAX_TRIES; t++)
+            {
+                if (Vector3.SqrMagnitude(last - spawnPos) > MIN_SQR_SPACE_BTWN_CURRENT_AND_LAST_SPAWN_POS)
+                    break;
+                spawnPos = draw();
+            }
+
+            return spawnPos;
         }
 
         // ------------------------------------------------------------

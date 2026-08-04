@@ -136,7 +136,6 @@ namespace CosmicShore.Gameplay
                         var scaleAnimator = prism.GetComponent<PrismScaleAnimator>();
                         if (scaleAnimator)
                         {
-                            scaleAnimator.Initialize();
                             prism.transform.localScale = Vector3.zero;
                             scaleAnimator.SetTargetScale(blockScale);
                             scaleAnimator.BeginGrowthAnimation();
@@ -236,9 +235,6 @@ namespace CosmicShore.Gameplay
                 var mr = matAnim.MeshRenderer;
                 mr.enabled = false;
                 prism.Domain = domain;
-                matAnim.IsAnimating        = false;
-                matAnim.AnimationProgress  = 1f;
-                matAnim.OnAnimationComplete = null;
                 matAnim.MarkMaterialsDirty();
 
                 matAnim.SetTransparency(false);

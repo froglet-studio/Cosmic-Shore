@@ -52,6 +52,18 @@ namespace CosmicShore.Gameplay
             var block = UnityEngine.Object.Instantiate(prefab, parent);
             t = LoadInsights.AccumulateSample("Prism lay: Instantiate + component Awakes", t);
 
+            ConfigureLaid(block, e, trail, ownerId, t);
+            return block;
+        }
+
+        /// <summary>
+        /// Everything after the clone exists: team, pose, scale, trail wiring, Initialize, kind,
+        /// reveal-watch. Split out of <see cref="LayOne"/> so the BATCHED clone path shares one
+        /// definition of the prism spawn contract with the per-item path (the drift surface the
+        /// environment audit flagged — now it cannot diverge).
+        /// </summary>
+        static void ConfigureLaid(Prism block, in PrismLay e, Trail trail, string ownerId, long t)
+        {
             block.ChangeTeam(e.Domain);
             block.ownerID = ownerId;
             block.transform.localPosition = e.Point.Position;
@@ -74,7 +86,6 @@ namespace CosmicShore.Gameplay
             // prism stays invisible until the queue reaches it) AND at final scale. Laid or
             // grown is not enough: un-created prisms pop in batches after the match starts.
             WatchForReveal(block);
-            return block;
         }
 
         /// <summary>
@@ -171,16 +182,26 @@ namespace CosmicShore.Gameplay
         static int s_pendingArenaBuilds;
 
         // Load-gate session state: set while MiniGameHUD holds the connecting screen on this
-        // gate. Read by PrismScaleManager (grow-in stepping boost) and Prism (creation-queue
-        // boost) so the arena finishes materializing behind the covered screen.
+        // gate. Read by Prism (creation-queue boost) and EnvironmentLoadVeil so the arena
+        // finishes materializing behind the covered screen.
         static bool s_loadGateHolding;
         static float s_loadGateStartTime;
         static float s_allClearSince = -1f;
         static int s_settleSpan = -1;
 
-        /// <summary>Hard cap on the load-gate hold — releases with an error instead of holding a
-        /// broken build forever (a wedged build must surface loud, not as an infinite screen).</summary>
+        /// <summary>Hard cap on load-gate STALL — releases with an error when the build makes no
+        /// progress (no prism laid or settled) for this long, instead of holding a broken build
+        /// forever (a wedged build must surface loud, not as an infinite screen). Measured as
+        /// stall rather than total hold time so a slow-but-progressing lay (e.g. a 70k-prism
+        /// arena on the per-item clone fallback) finishes behind the screen instead of being
+        /// force-released into a mid-match pop-in cascade.</summary>
         const float LoadGateHardCapSeconds = 180f;
+
+        // Progress snapshot for the stall cap: the gate releases only when BOTH counters hold
+        // still for LoadGateHardCapSeconds. Reset when the hold begins.
+        static int s_lastLayDone = -1;
+        static int s_lastGrowRemaining = -1;
+        static float s_lastProgressTime;
 
         /// <summary>The all-clear must hold this long before the gate releases — bridges any
         /// same-frame gaps between async build steps (a lay finishing while another spawnable
@@ -207,7 +228,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// True while the loading gate is holding the connecting screen on this builder.
-        /// PrismScaleManager boosts grow-in stepping while this is set — the screen is covered,
+        /// Prism boosts creation-queue draining while this is set — the screen is covered,
         /// so frames are free to settle the arena cohort at full tempo.
         /// </summary>
         public static bool IsLoadGateHolding => s_loadGateHolding;
@@ -222,6 +243,9 @@ namespace CosmicShore.Gameplay
             if (holding)
             {
                 s_loadGateStartTime = Time.unscaledTime;
+                s_lastLayDone = -1;
+                s_lastGrowRemaining = -1;
+                s_lastProgressTime = Time.unscaledTime;
                 // Fresh readout for this load: purge last match's (destroyed) entries so the
                 // panel never shows a stale grow count during the dwell.
                 SweepGrowWatch();
@@ -239,13 +263,22 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public static bool PollArenaReady()
         {
-            if (s_loadGateHolding && Time.unscaledTime - s_loadGateStartTime > LoadGateHardCapSeconds)
+            // Stall detection: any advance in laying or settling counts as progress (readings
+            // lag one poll for GrowRemainingCount, which is updated by the sweep below - fine).
+            if (s_layDoneTotal != s_lastLayDone || GrowRemainingCount != s_lastGrowRemaining)
             {
-                Debug.LogError($"[PrismTrailBuilder] Arena build exceeded the {LoadGateHardCapSeconds:F0}s " +
-                               $"hold cap (pendingBuilds={s_pendingArenaBuilds}, lays={s_activeBudgetedLays}, " +
-                               $"settling={GrowRemainingCount}) — releasing the gate so the match can start. " +
-                               "Either the build wedged or the load is pathologically slow; capture a " +
-                               "Load Time Insights recording to see which.");
+                s_lastLayDone = s_layDoneTotal;
+                s_lastGrowRemaining = GrowRemainingCount;
+                s_lastProgressTime = Time.unscaledTime;
+            }
+
+            if (s_loadGateHolding && Time.unscaledTime - s_lastProgressTime > LoadGateHardCapSeconds)
+            {
+                Debug.LogError($"[PrismTrailBuilder] Arena build made no progress for {LoadGateHardCapSeconds:F0}s " +
+                               $"(pendingBuilds={s_pendingArenaBuilds}, lays={s_activeBudgetedLays}, " +
+                               $"settling={GrowRemainingCount}, held {Time.unscaledTime - s_loadGateStartTime:F0}s total) — " +
+                               "releasing the gate so the match can start. The build wedged; capture a " +
+                               "Load Time Insights recording to see where.");
                 EndSettleSpan();
                 return true;
             }
@@ -363,22 +396,118 @@ namespace CosmicShore.Gameplay
             return s_budgetSpentMs >= budgetMs;
         }
 
+        // ── Batched clone (Unity 6 multithreaded InstantiateAsync) ───────────
+
         /// <summary>
-        /// Frame-time-budgeted lay for BIG decorative structures: lays prisms until
-        /// <paramref name="budgetMsPerFrame"/> of laying time has been spent this frame (across
-        /// ALL budgeted lays), then yields — the structure blooms in over frames instead of
-        /// freezing one (Load Time Insights measured a 25k-prism geodesic shell at ~95s in a
-        /// single frame, ~97% of it raw Instantiate cost; per-prism cost varies with scene size,
-        /// so a count-per-frame batch can't hold a frame budget — a time budget can). Bails
-        /// silently if <paramref name="parent"/> dies (scene unload / container nuked) — the
-        /// remaining prisms are simply never born, which conserves mass.
+        /// Prisms cloned per InstantiateAsync call. The engine spreads the clone/deserialize work
+        /// for one call across worker threads, so bigger batches parallelize better — but the
+        /// whole batch integrates before we can configure any of it, so an oversized batch stalls
+        /// the progress readout. A few hundred keeps both.
         /// </summary>
-        public static async UniTaskVoid LayBudgetedAsync(Prism prefab, SpawnPoint[] points, Domains domain,
+        const int CloneBatchSize = 256;
+
+        /// <summary>Seconds an async clone batch may sit unintegrated before the watchdog
+        /// forces synchronous completion (normal integration is well under a second).</summary>
+        const float CloneStallSeconds = 4f;
+
+        /// <summary>
+        /// Set false to force the per-item clone path (kept as a live escape hatch: batched
+        /// instantiate is an engine fast path, and the sync path is the behavioural baseline).
+        /// Flipped automatically if the batched call ever fails.
+        /// </summary>
+        public static bool UseBatchedInstantiate = true;
+
+        /// <summary>
+        /// Clone <paramref name="count"/> prisms as children of <paramref name="parent"/> using
+        /// Unity 6's multithreaded batched instantiate. Raw per-item Instantiate was ~97% of a
+        /// mass environment lay and is the one part the engine can parallelize; everything after
+        /// the clone (Awake integration, our spawn contract) still runs on the main thread.
+        /// Falls back to per-item cloning if the batched path is unavailable or returns short.
+        /// </summary>
+        static async UniTask<Prism[]> CloneBatchAsync(Prism prefab, int count, Transform parent)
+        {
+            if (UseBatchedInstantiate)
+            {
+                try
+                {
+                    var op = UnityEngine.Object.InstantiateAsync(prefab, count, parent);
+                    float waitStart = Time.unscaledTime;
+                    while (!op.isDone)
+                    {
+                        await UniTask.Yield(PlayerLoopTiming.Update);
+                        if (!parent) return null; // container destroyed mid-flight
+
+                        // Watchdog: batched instantiate integration shares the engine's async
+                        // loading budget, and a busy scene (Menu_Main boot: Netcode spawn chain,
+                        // Relay/session setup, audio banks) can starve it indefinitely - observed
+                        // as a build frozen at an exact 256-batch boundary. Force the batch to
+                        // integrate synchronously rather than wedging the whole lay.
+                        if (Time.unscaledTime - waitStart > CloneStallSeconds)
+                        {
+                            Debug.LogWarning($"[PrismTrailBuilder] Async clone batch ({count} prisms) not " +
+                                             $"integrated after {CloneStallSeconds:F0}s — forcing WaitForCompletion. " +
+                                             "The engine's async-instantiate budget is being starved by other loading.");
+                            op.WaitForCompletion();
+                            break;
+                        }
+                    }
+
+                    var result = op.Result;
+                    if (result != null && result.Length == count) return result;
+                }
+                catch (Exception ex)
+                {
+                    // Any failure demotes the whole session to the per-item path — the sync
+                    // clone below is the behavioural baseline, so a level still builds.
+                    UseBatchedInstantiate = false;
+                    Debug.LogWarning($"[PrismTrailBuilder] Batched InstantiateAsync failed " +
+                                     $"({ex.GetType().Name}: {ex.Message}) — falling back to per-item cloning.");
+                }
+            }
+
+            if (!parent) return null;
+            var clones = new Prism[count];
+            for (int i = 0; i < count; i++)
+                clones[i] = UnityEngine.Object.Instantiate(prefab, parent);
+            return clones;
+        }
+
+        /// <summary>
+        /// Frame-time-budgeted lay for BIG structures: clones prisms in multithreaded batches,
+        /// then applies the spawn contract until <paramref name="budgetMsPerFrame"/> of laying
+        /// time has been spent this frame (across ALL budgeted lays) and yields — the structure
+        /// builds over frames instead of freezing one (Load Time Insights measured a 25k-prism
+        /// geodesic shell at ~95s in a single frame, ~97% of it raw Instantiate cost; per-prism
+        /// cost varies with scene size, so a count-per-frame batch can't hold a frame budget — a
+        /// time budget can). While the load gate holds the connecting screen the budget is raised
+        /// (the screen is covered, so a bigger slice per frame is pure throughput — only the
+        /// progress readout needs frames). Bails silently if <paramref name="parent"/> dies
+        /// (scene unload / container nuked) — the remaining prisms are simply never born, which
+        /// conserves mass.
+        /// </summary>
+        public static UniTask LayBudgetedAsync(Prism prefab, SpawnPoint[] points, Domains domain,
             Transform parent, Trail trail, string ownerPrefix, float budgetMsPerFrame)
         {
-            if (!prefab || points == null || points.Length == 0) return;
+            if (!prefab || points == null || points.Length == 0) return UniTask.CompletedTask;
+            var elems = new PrismLay[points.Length];
+            for (int i = 0; i < points.Length; i++) elems[i] = new PrismLay(points[i], domain);
+            return LayBudgetedAsync(prefab, elems, parent, trail, ownerPrefix, budgetMsPerFrame);
+        }
 
-            float budget = Mathf.Max(0.5f, budgetMsPerFrame);
+        /// <summary>
+        /// Per-item-domain overload (custom assembler loops: gyroid, SchwarzP surface, the
+        /// Wanderway conveyor's grand assemblies…). Returns an awaitable so a caller that must
+        /// know when its structure is fully laid can wait for it; fire-and-forget callers keep
+        /// using <c>.Forget()</c>. <paramref name="collected"/> receives the laid prisms in plan
+        /// order — the conveyor needs the instance list to transport its conserved stock.
+        /// </summary>
+        public static async UniTask LayBudgetedAsync(Prism prefab, IReadOnlyList<PrismLay> elems,
+            Transform parent, Trail trail, string ownerPrefix, float budgetMsPerFrame,
+            List<Prism> collected = null, CancellationToken ct = default)
+        {
+            if (!prefab || elems == null || elems.Count == 0) return;
+
+            int count = elems.Count;
 
             // Fresh batch: reset the shared progress counters once the previous batch fully drained.
             if (s_activeBudgetedLays == 0)
@@ -386,31 +515,47 @@ namespace CosmicShore.Gameplay
                 s_layQueuedTotal = 0;
                 s_layDoneTotal = 0;
             }
-            s_layQueuedTotal += points.Length;
+            s_layQueuedTotal += count;
             s_activeBudgetedLays++;
 
             // Wall-clock span for the whole streamed lay: with the connecting panel holding on
-            // IsLayingInProgress, this span is what attributes the hold window to the
+            // the arena-ready gate, this span is what attributes the hold window to the
             // environment in a Load Time Insights recording (the per-stage detail lives in the
-            // LayOne accumulators). No-op when not recording.
+            // ConfigureLaid accumulators). No-op when not recording.
             int laySpan = LoadInsights.Begin(LoadInsightCategory.Environment,
-                $"Streamed prism lay ({ownerPrefix}, {points.Length} prisms)");
+                $"Streamed prism lay ({ownerPrefix}, {count} prisms)");
             try
             {
-                for (int i = 0; i < points.Length; i++)
+                int i = 0;
+                while (i < count)
                 {
-                    if (!parent) return; // container destroyed — stop laying
+                    if (!parent || ct.IsCancellationRequested) return; // container destroyed — stop laying
 
-                    while (BudgetExhausted(budget))
+                    int batch = Mathf.Min(CloneBatchSize, count - i);
+                    var clones = await CloneBatchAsync(prefab, batch, parent);
+                    if (clones == null || !parent) return;
+
+                    for (int k = 0; k < batch; k++)
                     {
-                        await UniTask.Yield(PlayerLoopTiming.Update);
-                        if (!parent) return;
+                        var block = clones[k];
+                        if (!block) continue;
+
+                        long t0 = System.Diagnostics.Stopwatch.GetTimestamp();
+                        long acc = LoadInsights.AccumulateStart();
+                        if (acc != 0L) LoadInsights.Count("Prisms laid during load");
+                        ConfigureLaid(block, elems[i + k], trail, $"{ownerPrefix}::{i + k}", acc);
+                        collected?.Add(block);
+                        s_budgetSpentMs += (System.Diagnostics.Stopwatch.GetTimestamp() - t0) * s_msPerTick;
+                        s_layDoneTotal++;
+
+                        while (BudgetExhausted(EffectiveLayBudget(budgetMsPerFrame)))
+                        {
+                            await UniTask.Yield(PlayerLoopTiming.Update);
+                            if (!parent || ct.IsCancellationRequested) return;
+                        }
                     }
 
-                    long t0 = System.Diagnostics.Stopwatch.GetTimestamp();
-                    LayOne(prefab, new PrismLay(points[i], domain), parent, trail, $"{ownerPrefix}::{i}");
-                    s_budgetSpentMs += (System.Diagnostics.Stopwatch.GetTimestamp() - t0) * s_msPerTick;
-                    s_layDoneTotal++;
+                    i += batch;
                 }
             }
             finally
@@ -419,5 +564,30 @@ namespace CosmicShore.Gameplay
                 LoadInsights.End(laySpan);
             }
         }
+
+        /// <summary>
+        /// Per-frame laying slice. Behind the covered connecting screen there is nothing to keep
+        /// smooth, so the slice is raised: the only reason to yield at all there is to tick the
+        /// build readout, and a bigger slice means less of each frame lost to non-laying overhead.
+        /// </summary>
+        static float EffectiveLayBudget(float authoredBudgetMs)
+        {
+            float budget = Mathf.Max(0.5f, authoredBudgetMs);
+            if (!s_loadGateHolding) return budget;
+            float boost = LoadGateLayBudgetOverrideMs > 0f ? LoadGateLayBudgetOverrideMs : LoadGateLayBudgetMs;
+            return Mathf.Max(budget, boost);
+        }
+
+        /// <summary>Laying slice per frame while the load gate holds (~4 readout updates/second).</summary>
+        const float LoadGateLayBudgetMs = 250f;
+
+        /// <summary>
+        /// Optional gentler boost for gate holds in scenes that must keep breathing while they
+        /// build (Menu_Main's EnvironmentLoadVeil: Netcode heartbeats, Relay/session setup, and
+        /// audio all run under the veil, and the full 250ms slice starved them into buffer
+        /// underruns and wedged async work). 0 = use the full connecting-screen slice. Owned by
+        /// whoever holds the gate; cleared with the hold.
+        /// </summary>
+        public static float LoadGateLayBudgetOverrideMs { get; set; }
     }
 }

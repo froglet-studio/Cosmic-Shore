@@ -61,12 +61,24 @@ namespace CosmicShore.UI
             public RectTransform root;
         }
 
+        /// <summary>
+        /// One open modal. The owning <see cref="ModalWindowManager"/> is carried alongside
+        /// the type so the stack can be unwound by identity (a type alone cannot tell two
+        /// instances apart) and reconciled against what is actually on screen.
+        /// </summary>
+        [System.Serializable]
+        private struct ModalStackEntry
+        {
+            public ModalWindows type;
+            public ModalWindowManager modal;
+        }
+
         [Header("Swipe Settings")]
         [SerializeField] private float easing = 0.5f;           // Slide duration
 
         [Header("State")]
         [SerializeField] private int currentScreen; // index into visual order
-        [SerializeField] private List<ModalWindows> activeModalStack = new();
+        [SerializeField] private List<ModalStackEntry> activeModalStack = new();
 
         [Header("Screens (manual mapping)")]
         [Tooltip("Explicit mapping of MenuScreens enum to their root panels.\nIf left empty, will fall back to transform children order.")]
@@ -129,22 +141,57 @@ namespace CosmicShore.UI
 
         #region Modal Stack API
 
-        public void PushModal(ModalWindows modalType)
+        public void PushModal(ModalWindows modalType, ModalWindowManager modal)
         {
-            activeModalStack.Add(modalType);
-            SetReturnToModal(activeModalStack.Last());
-            UpdateScreensInteractable();
-            UpdateModalStackInteractable();
+            PruneClosedModals();
+            activeModalStack.Add(new ModalStackEntry { type = modalType, modal = modal });
+            CommitModalStackState();
         }
 
-        public void PopModal()
+        /// <summary>
+        /// Unwinds <paramref name="modal"/>'s entry - by identity, not by stack position, so
+        /// modals closing out of order (or twice) can never remove somebody else's entry.
+        /// </summary>
+        public void PopModal(ModalWindows modalType, ModalWindowManager modal)
         {
-            if (activeModalStack.Count == 0)
-                return;
+            int index = modal
+                ? activeModalStack.FindLastIndex(entry => entry.modal == modal)
+                : activeModalStack.FindLastIndex(entry => entry.type == modalType);
 
-            activeModalStack.RemoveAt(activeModalStack.Count - 1);
+            if (index >= 0)
+                activeModalStack.RemoveAt(index);
 
-            SetReturnToModal(activeModalStack.Count == 0 ? ModalWindows.NONE : activeModalStack.Last());
+            PruneClosedModals();
+            CommitModalStackState();
+        }
+
+        /// <summary>
+        /// Drops entries whose modal was destroyed or is no longer being shown. A modal can
+        /// be closed without ModalWindowOut ever running - the Arcade panel's back button
+        /// SetActive(false)s the modal root, and a scene unload destroys them outright - and
+        /// a stranded entry holds <see cref="UpdateScreensInteractable"/> shut forever, which
+        /// reads to the player as "every button on the menu is dead".
+        /// Returns true when the stack changed.
+        /// </summary>
+        private bool PruneClosedModals()
+        {
+            bool changed = false;
+
+            for (int i = activeModalStack.Count - 1; i >= 0; i--)
+            {
+                var modal = activeModalStack[i].modal;
+                if (modal && modal.IsOpen) continue;
+
+                activeModalStack.RemoveAt(i);
+                changed = true;
+            }
+
+            return changed;
+        }
+
+        private void CommitModalStackState()
+        {
+            SetReturnToModal(activeModalStack.Count == 0 ? ModalWindows.NONE : activeModalStack.Last().type);
             UpdateScreensInteractable();
             UpdateModalStackInteractable();
         }
@@ -174,17 +221,13 @@ namespace CosmicShore.UI
         /// </summary>
         private void UpdateModalStackInteractable()
         {
-            if (Modals == null || activeModalStack.Count == 0) return;
-
-            var top = activeModalStack.Last();
-
-            foreach (var modal in Modals)
+            for (int i = 0; i < activeModalStack.Count; i++)
             {
+                var modal = activeModalStack[i].modal;
                 if (!modal) continue;
-                if (!activeModalStack.Contains(modal.ModalType)) continue;
                 if (!modal.TryGetComponent<CanvasGroup>(out var cg)) continue;
 
-                cg.interactable = modal.ModalType == top;
+                cg.interactable = i == activeModalStack.Count - 1;
             }
         }
 
@@ -227,7 +270,7 @@ namespace CosmicShore.UI
             if (activeModalStack.Count == 0)
                 return false;
 
-            return activeModalStack.Last() == modal;
+            return activeModalStack.Last().type == modal;
         }
 
         [RuntimeInitializeOnLoadMethod]
@@ -373,6 +416,12 @@ namespace CosmicShore.UI
             bool inFreestyle = InFreestyle;
             if (inFreestyle != _appliedFreestyleGate)
                 ApplyFreestyleInputGate(inFreestyle);
+
+            // Same self-healing contract for the modal gate: a modal that went away without
+            // ModalWindowOut would otherwise hold every screen non-interactable forever.
+            // Ahead of the gamepad early-out below - this must run on mouse/touch too.
+            if (activeModalStack.Count > 0 && PruneClosedModals())
+                CommitModalStackState();
 
             if (Gamepad.current == null) return;
 

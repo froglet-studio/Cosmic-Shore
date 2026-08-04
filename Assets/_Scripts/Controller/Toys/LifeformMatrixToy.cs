@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
@@ -30,24 +31,116 @@ namespace CosmicShore.Gameplay
 
         public void Configure(LifeformMatrixToyDefinitionSO definition) => _def = definition;
 
+        static readonly Element[] Elements = { Element.Charge, Element.Mass, Element.Space, Element.Time };
+
         protected override void OnInitialized()
         {
-            // Findability + identity: the tuning bench wears the four element CRYSTAL MODELS
-            // as orbiting moons - elements have SHAPE signatures, not colour signatures
-            // (colour belongs to domains) - and logs its spot.
-            var elements = new[] { Element.Charge, Element.Mass, Element.Space, Element.Time };
-            for (int i = 0; i < elements.Length; i++)
+            AttachEmblem(new EmblemSource(this), 8f);
+            CSDebug.Log($"[LifeformMatrix] Toy placed at {transform.position} " +
+                        "(the four element crystals, orbited by its menagerie).");
+        }
+
+        /// <summary>
+        /// The menagerie in one glyph: the CORE is the four element crystal MODELS clustered on a
+        /// sub-ring (elements are told apart by SHAPE - all four share the emblem's one material,
+        /// so nothing here can accidentally encode an element as a colour), and the SATELLITES are
+        /// four real species from the bench's own lists.
+        ///
+        /// This replaces the four "moons" that used to hang off the root: at a 2.2-unit offset
+        /// inside a 44-unit sphere they were invisible, and they were built by Instantiating a
+        /// gameplay crystal prefab - dragging a live fade-in coroutine and a transparent gameplay
+        /// material into an icon. The crystals keep their load-bearing home at the VARIANT
+        /// stations, where element identity IS the choice.
+        /// </summary>
+        sealed class EmblemSource : ToyEmblem.IEmblemSource
+        {
+            readonly LifeformMatrixToy _toy;
+            public EmblemSource(LifeformMatrixToy toy) => _toy = toy;
+
+            public int SatelliteCount => 4;
+
+            // One material for all four crystals AND the species: that is what makes "elements
+            // have SHAPE signatures, never colour signatures" true by construction here.
+            public bool UsesSharedMaterial => true;
+
+            public bool TryBuildSlot(int slot, Transform holder, float radius, Material shared, out bool heavy)
             {
-                float a = i / (float)elements.Length * Mathf.PI * 2f;
-                var moon = AddElementCrystalVisual(transform, elements[i], 0.35f);
-                if (!moon) continue;
-                moon.name = $"Moon_{elements[i]}";
-                moon.transform.localPosition =
-                    new Vector3(Mathf.Cos(a), 0.25f * ((i % 2 == 0) ? 1f : -1f), Mathf.Sin(a)) * 2.2f;
+                heavy = false;
+                return slot == 0
+                    ? BuildCrystalCore(holder, radius, shared)
+                    : _toy.TryBuildSpeciesSatellite(slot - 1, holder, radius, shared);
             }
 
-            CSDebug.Log($"[LifeformMatrix] Toy placed at {transform.position} " +
-                        $"(the sphere orbited by the four element crystals).");
+            static bool BuildCrystalCore(Transform holder, float radius, Material shared)
+            {
+                float ring = radius * 0.62f;
+                float each = radius * 0.42f;
+                bool any = false;
+
+                for (int i = 0; i < Elements.Length; i++)
+                {
+                    if (!ElementCrystalModelBuilder.TryBuild(Elements[i], each, shared, out var model)) continue;
+                    model.transform.SetParent(holder, false);
+                    float a = i / (float)Elements.Length * Mathf.PI * 2f;
+                    model.transform.localPosition = new Vector3(Mathf.Cos(a), Mathf.Sin(a), 0f) * ring;
+                    any = true;
+                }
+                return any;
+            }
+
+            public bool TryGetLiveKey(out object key)
+            {
+                key = null;
+                return false; // the menagerie's roster is authored, not live
+            }
+
+            public bool TryGetLiveTint(out Color tint)
+            {
+                tint = default;
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Satellite <paramref name="index"/> of the emblem: first and middle fauna, then first and
+        /// middle flora, so the ring samples both halves of the menagerie. A short list skips its
+        /// slot rather than showing the same creature twice.
+        /// </summary>
+        bool TryBuildSpeciesSatellite(int index, Transform holder, float radius, Material shared)
+        {
+            var fauna = _def ? _def.Fauna : null;
+            var flora = _def ? _def.Flora : null;
+
+            FaunaConfigurationSO[] faunaConfigs = null;
+            FloraConfigurationSO[] floraConfigs = null;
+
+            switch (index)
+            {
+                case 0: faunaConfigs = SpeciesConfigs(fauna, 0); break;
+                case 1: faunaConfigs = SpeciesConfigs(fauna, fauna?.Length / 2 ?? 0); break;
+                case 2: floraConfigs = SpeciesConfigs(flora, 0); break;
+                default: floraConfigs = SpeciesConfigs(flora, flora?.Length / 2 ?? 0); break;
+            }
+
+            if (faunaConfigs == null && floraConfigs == null) return false;
+            if (!AddSpeciesModel(faunaConfigs, floraConfigs, radius, out var model, shared)) return false;
+
+            model.transform.SetParent(holder, false);
+            return true;
+        }
+
+        static FaunaConfigurationSO[] SpeciesConfigs(LifeformMatrixToyDefinitionSO.FaunaSpecies[] list, int index)
+        {
+            if (list == null || index < 0 || index >= list.Length) return null;
+            var species = list[index];
+            return species?.ElementConfigs is { Length: > 0 } ? species.ElementConfigs : null;
+        }
+
+        static FloraConfigurationSO[] SpeciesConfigs(LifeformMatrixToyDefinitionSO.FloraSpecies[] list, int index)
+        {
+            if (list == null || index < 0 || index >= list.Length) return null;
+            var species = list[index];
+            return species?.ElementConfigs is { Length: > 0 } ? species.ElementConfigs : null;
         }
 
         /// <summary>
@@ -89,10 +182,25 @@ namespace CosmicShore.Gameplay
             BuildSpeciesGrid();
         }
 
+        // Meshes this toy generated for its flora icons. Instance-scoped and freed here, so they
+        // cannot outlive the scene across Menu_Main re-entries.
+        readonly List<Mesh> _iconMeshes = new();
+
+        /// <summary>
+        /// The domain a species icon wears. The local player's, matching what a station would
+        /// actually spawn (see SpawnFaunaVariant), with Jade as the neutral fallback.
+        /// </summary>
+        Domains IconDomain =>
+            Context?.GameData?.LocalPlayer?.Vessel?.VesselStatus?.Domain ?? Domains.Jade;
+
         void OnDestroy() // teardown with the toybox
         {
             if (_variantGrid) Destroy(_variantGrid);
             if (_speciesGrid) Destroy(_speciesGrid);
+
+            foreach (var mesh in _iconMeshes)
+                if (mesh) Destroy(mesh);
+            _iconMeshes.Clear();
         }
 
         static void ClearGrid(ref GameObject grid)
@@ -124,8 +232,13 @@ namespace CosmicShore.Gameplay
                     if (species?.ElementConfigs is not { Length: > 0 }) continue;
                     var pos = origin - up * (spacing * 0.5f)
                               + right * (spacing * (faunaCount - (_def.Fauna.Length - 1) * 0.5f));
+                    // The station IS its creature: a mini model of the species, anonymous sphere
+                    // only when the prefab carries no visible geometry.
+                    bool builtFauna = AddSpeciesModel(species.ElementConfigs, null,
+                        _def.StationRadius, out var faunaModel);
                     var station = CreateStation(_speciesGrid.transform, pos, species.Name,
-                        _def.StationRadius, Definition.AccentColor);
+                        _def.StationRadius, Definition.AccentColor,
+                        bodySphere: !builtFauna, model: faunaModel);
                     var captured = species;
                     station.OnVesselPassed = () => BuildVariantGrid(captured.Name, captured.ElementConfigs, null);
                     faunaCount++;
@@ -138,8 +251,11 @@ namespace CosmicShore.Gameplay
                     if (species?.ElementConfigs is not { Length: > 0 }) continue;
                     var pos = origin + up * (spacing * 0.5f)
                               + right * (spacing * (floraCount - (_def.Flora.Length - 1) * 0.5f));
+                    bool builtFlora = AddSpeciesModel(null, species.ElementConfigs,
+                        _def.StationRadius, out var floraModel);
                     var station = CreateStation(_speciesGrid.transform, pos, species.Name,
-                        _def.StationRadius, Definition.AccentColor);
+                        _def.StationRadius, Definition.AccentColor,
+                        bodySphere: !builtFlora, model: floraModel);
                     var captured = species;
                     station.OnVesselPassed = () => BuildVariantGrid(captured.Name, null, captured.ElementConfigs);
                     floraCount++;
@@ -229,6 +345,10 @@ namespace CosmicShore.Gameplay
             var clone = Instantiate(config);
             clone.name = $"{config.name} (L{level})";
             clone.InitialLevel = level;
+            // The matrix is the tuning BENCH: a station spawns the EXACT variant it shows, so
+            // the cell's element/level spread must not re-roll it here.
+            clone.SpreadElements = false;
+            clone.Levels.Enabled = false;
 
             // A POPULATION, not an individual - the same seed-floor count the cell spawner
             // uses, jittered around the station so the group disperses like a spawner wave.
@@ -259,6 +379,9 @@ namespace CosmicShore.Gameplay
             var clone = Instantiate(config);
             clone.name = $"{config.name} (L{level})";
             clone.InitialLevel = level;
+            // Bench semantics - see SpawnFaunaVariant.
+            clone.SpreadElements = false;
+            clone.Levels.Enabled = false;
 
             // A POPULATION (InitialSpawnCount), rooted AT the station so the tester sees it
             // grow right where they flew - Plant() would otherwise disperse it across the cell.
@@ -282,46 +405,76 @@ namespace CosmicShore.Gameplay
 
         // ── Stations ─────────────────────────────────────────────────────────
 
-        LifeformMatrixStation CreateStation(Transform parent, Vector3 position, string label,
-            float radius, Color accent, bool bodySphere = true)
+        // Non-body subsystems on a lifeform prefab - the same class of thing the vessel hull filter
+        // drops, so a creature icon is the creature, not its effects.
+        static readonly string[] NonBodyNameHints = { "trail", "vfx", "pip", "explosion", "particle" };
+
+        /// <summary>
+        /// A species station SHOWS ITS SPECIES: a display-only model harvested from the first
+        /// element config's prefab asset (never instantiated - no Fauna/Flora behaviour, no
+        /// registry entry, no spawn). Returns false when the prefab carries no visible geometry
+        /// (an all-prism flora, say), and the caller keeps the anonymous sphere.
+        /// </summary>
+        bool AddSpeciesModel(FaunaConfigurationSO[] fauna, FloraConfigurationSO[] flora,
+            float radius, out GameObject model, Material shared = null)
+        {
+            model = null;
+            Transform source = null;
+
+            if (fauna != null)
+                foreach (var cfg in fauna)
+                    if (cfg && cfg.FaunaPrefab) { source = cfg.FaunaPrefab.transform; break; }
+
+            // FLORA HAVE NO MODEL - a species is its GROWTH PATTERN. So instead of harvesting
+            // meshes that aren't there (which is why these stations were anonymous spheres), ask
+            // the species to run its own growth rule in the abstract and draw the result. See
+            // Flora.TryPreviewGrowth / FloraIconBuilder.
+            if (!source && flora != null)
+            {
+                foreach (var cfg in flora)
+                {
+                    if (!cfg || !cfg.FloraPrefab) continue;
+                    if (FloraIconBuilder.TryBuild(cfg.FloraPrefab, radius, Context, IconDomain,
+                            out model, out var iconMesh))
+                    {
+                        _iconMeshes.Add(iconMesh);   // this toy owns every mesh it builds
+                        model.AddComponent<ToyIdleSpin>().Configure(Vector3.up, 16f);
+                        return true;
+                    }
+                    // A species whose pattern can't be previewed (the Schwarz-P walk) falls through
+                    // to the mesh path, then to the sphere - never to an invented shape.
+                    source = cfg.FloraPrefab.transform;
+                    break;
+                }
+            }
+            if (!source) return false;
+
+            ToyModelBuilder.RendererFilter bodyOnly = (root, node, mesh, renderer) =>
+                !ToyModelBuilder.AnyAncestorNameContains(node, root, NonBodyNameHints);
+
+            bool built = shared
+                ? ToyModelBuilder.TryBuild(source, radius, shared, out model, bodyOnly)
+                : ToyModelBuilder.TryBuild(source, radius, Definition.AccentColor, out model, bodyOnly);
+            if (!built) return false;
+
+            // Turntable, like every other toy icon - a creature you can walk around before you
+            // decide to release it.
+            model.AddComponent<ToyIdleSpin>().Configure(Vector3.up, 16f);
+            return true;
+        }
+
+        ToyMatrixStation CreateStation(Transform parent, Vector3 position, string label,
+            float radius, Color accent, bool bodySphere = true, GameObject model = null)
         {
             var go = ToyFactory.CreateBareRoot(label, parent, position, transform.position, radius * 1.6f);
             if (bodySphere)
                 ToyFactory.AddSphereBody(go.transform, radius, accent);
+            if (model) model.transform.SetParent(go.transform, false);
             ToyFactory.AddLabel(go.transform, label, accent, radius * 1.9f);
 
-            var station = go.AddComponent<LifeformMatrixStation>();
+            var station = go.AddComponent<ToyMatrixStation>();
             station.Bind(Context);
             return station;
-        }
-    }
-
-    /// <summary>
-    /// A single fly-through station of the lifeform matrix. Same local-vessel + freestyle
-    /// gating as <see cref="Toy"/>, with a short per-station cooldown instead of the full
-    /// exit-gated re-arm (stations sit close together; the cooldown stops one pass from
-    /// double-firing while still allowing rapid A/B spawning).
-    /// </summary>
-    public sealed class LifeformMatrixStation : MonoBehaviour
-    {
-        const float CooldownSeconds = 1.5f;
-
-        ToyContext _context;
-        float _readyTime;
-
-        /// <summary>What happens when the local vessel passes through.</summary>
-        public System.Action OnVesselPassed;
-
-        public void Bind(ToyContext context) => _context = context;
-
-        void OnTriggerEnter(Collider other)
-        {
-            if (Time.time < _readyTime) return;
-            if (!Toy.TryGetLocalVessel(other, out _)) return;
-            if (_context?.IsFreestyleActive != null && !_context.IsFreestyleActive()) return;
-
-            _readyTime = Time.time + CooldownSeconds;
-            OnVesselPassed?.Invoke();
         }
     }
 }

@@ -29,6 +29,18 @@ namespace CosmicShore.Gameplay
             // color only (see StartFaunaLoops below).
             Domains? excluded = null;
 
+            // Seed into a world that EXISTS. A config with an authored environment claims its
+            // build immediately but defers it past scene boot (Cell.DeferredEnvironmentBuild),
+            // so without this the whole initial planting batch disperses over empty space
+            // seconds before the world - and its prepared beds - arrive underneath it. Bounded,
+            // so a build that never lands can't mute the cell's flora forever.
+            float deadline = Time.time + 25f;
+            while (host && host.IsEnvironmentBuildPending && Time.time < deadline)
+                yield return null;
+
+            if (spawnProfile.FloraInitialDelaySeconds > 0f)
+                yield return new WaitForSeconds(spawnProfile.FloraInitialDelaySeconds);
+
             foreach (var floraCfg in spawnProfile.SupportedFloras)
             {
                 if (!floraCfg || !floraCfg.FloraPrefab) continue;
@@ -78,7 +90,7 @@ namespace CosmicShore.Gameplay
                 // and the food web (fauna grazing) is the only down-force. Replaces the
                 // old scored-volume ceiling (~0 in Menu_Main, so it never bounded planting).
                 if (host && host.FloraPlantingEnabled)
-                    SpawnFlora(host, floraCfg.FloraPrefab, excluded, floraCfg);
+                    PlantOne(host, floraCfg, excluded);
 
                 // Spread instantiation across frames. WaitForSeconds when an interval
                 // is configured; otherwise yield a single frame so a large InitialSpawnCount
@@ -104,8 +116,23 @@ namespace CosmicShore.Gameplay
 
                 if (!host) yield break;
                 if (host.FloraPlantingEnabled)
-                    SpawnFlora(host, floraCfg.FloraPrefab, excluded, floraCfg);
+                    PlantOne(host, floraCfg, excluded);
             }
+        }
+
+        /// <summary>
+        /// Plant one flora of this species. When the cell's authored environment prepared ground
+        /// (a garden's beds, trellis feet and hanging baskets - <see cref="FloraPlantingSite"/>),
+        /// the plant roots THERE, oriented to the bed; otherwise it disperses itself across the
+        /// membrane shell exactly as before. Same spawn path either way - a garden gets no
+        /// privileged spawner, only better-chosen ground.
+        /// </summary>
+        static void PlantOne(Cell host, FloraConfigurationSO floraCfg, Domains? excluded)
+        {
+            if (host.TryTakePlantingSite(floraCfg.PreferredSites, out var pos, out var up))
+                SpawnFlora(host, floraCfg.FloraPrefab, excluded, floraCfg, pos, up);
+            else
+                SpawnFlora(host, floraCfg.FloraPrefab, excluded, floraCfg);
         }
 
         IEnumerator SpawnFaunaTypeLoop_Random(
@@ -137,6 +164,14 @@ namespace CosmicShore.Gameplay
             // herbivore volume check, and read directly as N herbivores for a
             // predator. (Docs/ECOSYSTEM.md §6-§7.)
             bool isPredator = faunaCfg.FaunaPrefab && faunaCfg.FaunaPrefab.Diet == FaunaDiet.Predator;
+
+            // Wave number on the fixed spawn clock - the herbivore spawn-point ring
+            // rotates on THIS, not on how many waves happened to hatch (see
+            // HerbivoreSpawnPoint). Every species loop is started in the same frame by
+            // StartFaunaLoops and shares InitialFaunaSpawnWaitTime + period, so all
+            // herbivore species agree on the wave number and land on the same point,
+            // and the point steps once per period.
+            int wave = 0;
 
             while (true)
             {
@@ -171,7 +206,7 @@ namespace CosmicShore.Gameplay
                 int spawned = 0;
                 if (toSpawn > 0 && preyAvailable)
                 {
-                    SpawnFaunaPopulation(host, runtime, spawnProfile, faunaCfg, color, toSpawn);
+                    SpawnFaunaPopulation(host, runtime, spawnProfile, faunaCfg, color, toSpawn, wave);
                     spawned = toSpawn;
                 }
 
@@ -188,6 +223,7 @@ namespace CosmicShore.Gameplay
                     new FaunaWaveData(host.ID, color, spawned, nucleusControlled));
 
                 yield return new WaitForSeconds(period);
+                wave++;
             }
         }
 
@@ -197,21 +233,21 @@ namespace CosmicShore.Gameplay
         /// when Jade controls" and lets the dominant color's fauna hunt the minority.
         /// Each spawn is lineage-bound to its species config so it counts toward the
         /// per-cell population and can reproduce. Predators spawn on the densest mass
-        /// concentration (crystal/cell anchor when empty); herbivores rotate around the
-        /// profile's spawn-point ring when one is configured (see SpawnProfileSO).
+        /// concentration (crystal/cell anchor when empty); herbivores land on the point
+        /// this <paramref name="wave"/> of the spawn clock owns on the profile's ring
+        /// when one is configured (see <see cref="HerbivoreSpawnPoint"/>).
         /// </summary>
         // Jitter radius around the mass concentration when spawning a population, so the
         // swarm spreads over the buildup instead of stacking on one point.
         const float FaunaSpawnJitter = 150f;
 
-        // Rotates herbivore/predator waves around their spawn-point rings. Instance
-        // state — one spawner per cell — so interleaved species advance the same
-        // rotation and successive groups land on different points.
-        int _herbivoreSpawnPointIndex;
+        // Rotates predator waves around the predator ring. Instance state — one spawner
+        // per cell — so successive predators alternate poles. The HERBIVORE ring is not
+        // an index: it rides the wave clock (see HerbivoreSpawnPoint).
         int _predatorSpawnPointIndex;
 
         void SpawnFaunaPopulation(Cell host, CellRuntimeDataSO runtime, SpawnProfileSO spawnProfile,
-            FaunaConfigurationSO faunaCfg, Domains color, int count)
+            FaunaConfigurationSO faunaCfg, Domains color, int count, int wave)
         {
             bool isPredator = faunaCfg.FaunaPrefab && faunaCfg.FaunaPrefab.Diet == FaunaDiet.Predator;
             bool useHerbivoreRing = !isPredator &&
@@ -226,7 +262,7 @@ namespace CosmicShore.Gameplay
             // mass concentration so they start clearing immediately
             // (GetDensestRegionAnyDomain falls back to the crystal/cell anchor when
             // there's no mass yet).
-            Vector3 goal = useHerbivoreRing ? NextHerbivoreSpawnPoint(host, spawnProfile)
+            Vector3 goal = useHerbivoreRing ? HerbivoreSpawnPoint(host, spawnProfile, wave)
                 : usePredatorRing ? NextPredatorSpawnPoint(host, spawnProfile)
                 : host.GetDensestRegionAnyDomain();
 
@@ -238,10 +274,25 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        Vector3 NextHerbivoreSpawnPoint(Cell host, SpawnProfileSO spawnProfile)
+        /// <summary>
+        /// The herbivore feeding ground for a given WAVE of the fixed spawn clock: point
+        /// <c>wave % HerbivoreSpawnPointCount</c> on the equatorial ring, so successive
+        /// waves walk the ring in succession — N points × BaseFaunaSpawnTime covers the
+        /// whole ring, then repeats (Blob: 3 points at 15s ⇒ 45s a lap).
+        ///
+        /// Keying on the wave rather than on a spawn COUNTER is the fix for "every
+        /// herbivore hatches at the same point": the old index only advanced when a wave
+        /// actually hatched, and the seeder only hatches while a species is under its
+        /// floor. Reproduction holds a fed population at its cap, so after the bootstrap
+        /// wave the counter could sit on one point for the whole session — pinning every
+        /// later seed, and the crystals its creatures eventually drop, to one patch of
+        /// the cell. The wave clock advances whether or not the food web called for a
+        /// seed, so the next hatch is always somewhere new.
+        /// </summary>
+        static Vector3 HerbivoreSpawnPoint(Cell host, SpawnProfileSO spawnProfile, int wave)
         {
             int pointCount = spawnProfile.HerbivoreSpawnPointCount;
-            float angle = (_herbivoreSpawnPointIndex++ % pointCount) * (Mathf.PI * 2f / pointCount);
+            float angle = (wave % pointCount) * (Mathf.PI * 2f / pointCount);
             return host.transform.position
                    + new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle)) * spawnProfile.HerbivoreSpawnRadius;
         }

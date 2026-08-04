@@ -259,7 +259,11 @@ namespace CosmicShore.Gameplay
         {
             if (isAttached)
             {
-                desiredDirection = (target - transform.position).normalized;
+                Vector3 toTarget = target - transform.position;
+                if (toTarget.sqrMagnitude > DegenerateSteeringSqr)
+                    desiredDirection = toTarget.normalized;
+                else if (desiredDirection.sqrMagnitude <= DegenerateSteeringSqr)
+                    desiredDirection = transform.forward;
                 currentVelocity = desiredDirection * Mathf.Clamp(currentVelocity.magnitude, minSpeed, maxSpeed);
 
                 if (SafeLookRotation.TryGet(currentVelocity, out var rotation, this))
@@ -425,11 +429,19 @@ namespace CosmicShore.Gameplay
 
             averageSpeed = separatedBoidCount > 0 ? averageSpeed / separatedBoidCount : currentVelocity.magnitude;
 
-            desiredDirection = ((separation * separationWeight)
+            // Same permanent-stall guard as LightFauna: a steering sum that cancels to
+            // ~zero normalizes to Vector3.zero, which zeroes currentVelocity - and a
+            // motionless boid recomputes the identical zero from the identical position
+            // every tick, so it never recovers. Hold the last heading instead.
+            Vector3 steering = (separation * separationWeight)
                                + (alignment * alignmentWeight)
                                + (cohesion * cohesionWeight)
                                + (goalDirection * goalWeight)
-                               + blockAttraction).normalized;
+                               + blockAttraction;
+            if (steering.sqrMagnitude > DegenerateSteeringSqr)
+                desiredDirection = steering.normalized;
+            else if (desiredDirection.sqrMagnitude <= DegenerateSteeringSqr)
+                desiredDirection = transform.forward;
 
             // Foragers DASH (huntSpeedMultiplier, e.g. 10x) toward a mass concentration so
             // the swarm covers the arena quickly. The dash is ARRIVAL-CAPPED: never faster
@@ -479,10 +491,8 @@ namespace CosmicShore.Gameplay
 
             if (forager)
             {
-                var pp = prism.prismProperties;
-                bool shielded = pp != null && (pp.IsShielded || pp.IsSuperShielded);
                 bool isFaunaBody = prism is HealthPrism bodyPrism && bodyPrism.ResolveOwnerFauna() != null;
-                if (shielded || isFaunaBody) return;
+                if (IsShieldedMass(prism) || isFaunaBody) return;
                 // Nucleus-interior mass is the territorial claim, never forager food -
                 // same check as the scan, re-applied in case the nucleus radius
                 // refreshed inside the pacing window.
@@ -498,8 +508,12 @@ namespace CosmicShore.Gameplay
             else
             {
                 if (prism.Domain == embeddedHealthPrism.Domain) return;
-                prism.Damage(currentVelocity * embeddedHealthPrism.Volume, embeddedHealthPrism.Domain,
-                    _damagerName, true, true);
+                // The debris leaves at the creature's own speed. This used to be scaled by
+                // embeddedHealthPrism.Volume to cancel Prism.Explode's divide, but that divide
+                // is a no-op (SetupDestruction pins prismProperties.volume to 1 before it runs)
+                // AND the factor was the volume of the BOID's health prism, not the victim's -
+                // so it survived as a straight, unrelated multiplier on the debris speed.
+                prism.Damage(currentVelocity, embeddedHealthPrism.Domain, _damagerName, true, true);
             }
         }
 
@@ -643,8 +657,7 @@ namespace CosmicShore.Gameplay
         {
             if (!prism || prism.destroyed) return false;
             if (blockCollider && prism.gameObject == blockCollider.gameObject) return false;
-            var pp = prism.prismProperties;
-            if (pp != null && (pp.IsShielded || pp.IsSuperShielded)) return false;
+            if (IsShieldedMass(prism)) return false;
             if (prism is HealthPrism && prism.GetComponentInParent<Fauna>() != null) return false;
             return cell == null || !cell.IsInsideNucleus(prism.transform.position);
         }

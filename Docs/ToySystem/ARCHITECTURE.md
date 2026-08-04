@@ -47,13 +47,21 @@ detection. On top of that base the `Toy` class adds:
 | Role | File |
 |---|---|
 | Toy base (trigger, bloom, gating, re-arm) | `Assets/_Scripts/Controller/Toys/Toy.cs` |
+| One-toy-opens-into-many base | `Assets/_Scripts/Controller/Toys/MatrixToy.cs` |
+| Shared matrix station (fly-through choice) | `Assets/_Scripts/Controller/Toys/ToyMatrixStation.cs` |
+| Cell Selector (world picker + reset) | `Assets/_Scripts/Controller/Toys/CellSelectorToy.cs` |
+| Scale model of a cell environment | `Assets/_Scripts/Controller/Toys/CellMiniatureBuilder.cs` |
+| Cell Selector config | `Assets/_Scripts/ScriptableObjects/Toys/CellSelectorToyDefinitionSO.cs` |
+| Runtime cell swap (the toy's one entry point) | `Assets/_Scripts/Controller/Environment/Cell.cs` (`RequestCellSwap`) |
 | Coordinated toy (reports activation to its set) | `Assets/_Scripts/Controller/Toys/SwapToy.cs` |
 | Shared "set + flip" coordinator (generic) | `Assets/_Scripts/Controller/Toys/SwapToySetCoordinator.cs` |
 | Shared runtime refs handed to each toy | `Assets/_Scripts/Controller/Toys/ToyContext.cs` (`ToyContext` + `ToyPlacement`) |
 | Procedural body/label/collider builder | `Assets/_Scripts/Controller/Toys/ToyFactory.cs` |
-| Mini vessel model (mesh-extract from prefab) | `Assets/_Scripts/Controller/Toys/VesselModelBuilder.cs` |
-| Vessel Changer set | `Assets/_Scripts/Controller/Toys/VesselChangerToySet.cs` |
+| Prefab → display-only model (shared icon engine) | `Assets/_Scripts/Controller/Toys/ToyModelBuilder.cs` |
+| Mini vessel model (hull filter over the above) | `Assets/_Scripts/Controller/Toys/VesselModelBuilder.cs` |
+| Vessel Changer (matrix of ships) | `Assets/_Scripts/Controller/Toys/VesselChangerToy.cs` |
 | Domain Changer set | `Assets/_Scripts/Controller/Toys/DomainChangerToySet.cs` |
+| Painting gallery (matrix of paintings) | `Assets/_Scripts/Controller/Toys/PaintingGalleryToy.cs` |
 | Painting station (one per painting) | `Assets/_Scripts/Controller/Toys/PaintingToy.cs` |
 | Multi-stroke fly-by-numbers runner | `Assets/_Scripts/Controller/Toys/PaintingRunner.cs` |
 | Painting data (strokes + domains) | `Assets/_Scripts/ScriptableObjects/Toys/PaintingDefinitionSO.cs` |
@@ -62,10 +70,18 @@ detection. On top of that base the `Toy` class adds:
 | Painting progress persistence | `Assets/_Scripts/Controller/Toys/PaintingProgressStore.cs` |
 | Drawing state (per-prism pose/domain) | `Assets/_Scripts/Controller/Toys/PaintingPrismStore.cs` |
 | Web share export (inline-WebGL viewer) | `Assets/_Scripts/Controller/Toys/PaintingShareExporter.cs` |
+| Toy-root emblem (core + orbiting satellites) | `Assets/_Scripts/Controller/Toys/ToyEmblem.cs` |
+| Emblem build pump (one slot per frame) | `Assets/_Scripts/Controller/Toys/ToyEmblemStreamer.cs` |
+| Element crystal model (shape signature) | `Assets/_Scripts/Controller/Toys/ElementCrystalModelBuilder.cs` |
+| Flora icon (growth-pattern simulation) | `Assets/_Scripts/Controller/Toys/FloraIconBuilder.cs` |
+| Growth-preview contract (pure, spawns nothing) | `Assets/_Scripts/Controller/Environment/FloraAndFauna/Flora.cs` (`TryPreviewGrowth`) |
 | Idle spin for toy bodies | `Assets/_Scripts/Controller/Toys/ToyIdleSpin.cs` |
 | Conveyor ("Wanderway") toy | `Assets/_Scripts/Controller/Toys/ConveyorToy.cs` |
-| Conveyor belt runner | `Assets/_Scripts/Controller/Toys/MicrosceneConveyor.cs` |
+| The wander run (canvas + tether + exits) | `Assets/_Scripts/Controller/Toys/WanderwayRun.cs` |
+| Return station at the tether's end | `Assets/_Scripts/Controller/Toys/WanderwayReturnToy.cs` |
+| Conveyor belt runner (+ the load-veil prime) | `Assets/_Scripts/Controller/Toys/MicrosceneConveyor.cs` |
 | One conveyor scene (lay/transport/re-arrange) | `Assets/_Scripts/Controller/Toys/Microscene.cs` |
+| Grand assemblies (the monument-scale eight) | `Assets/_Scripts/Controller/Toys/MicroscenePatternsGrand.cs` |
 | Microscene recipe generators (pure) | `Assets/_Scripts/Controller/Toys/MicroscenePatterns.cs` |
 | Microscene structural painter (domain/kind/scale) | `Assets/_Scripts/Controller/Toys/MicroscenePainter.cs` |
 | Placement + lifecycle | `Assets/_Scripts/Controller/Toys/ToyboxController.cs` |
@@ -76,10 +92,14 @@ detection. On top of that base the `Toy` class adds:
 
 ## Lifeform Matrix (`LifeformMatrixToy` + `LifeformMatrixToyDefinitionSO`)
 
-The **ecology tuning bench** (`Toy_LifeformMatrix.asset`, placement angle 180°). Fly the toy
-(a sphere orbited by the four element crystal MODELS — elements have SHAPE signatures, never
-colours) and the SPECIES matrix blooms one layer OUTWARD from the cell centre: fauna on the
-lower row, flora on the upper (12 species). Fly a species and its VARIANT matrix blooms a
+The **ecology tuning bench** (`Toy_LifeformMatrix.asset`, placement angle 180°). Its root wears
+an emblem (see "Toy-root emblems"): a core of the four element crystal MODELS — elements have
+SHAPE signatures, never colours — orbited by four of its own species. Fly it and the SPECIES
+matrix blooms one layer OUTWARD from the cell centre: fauna on the
+lower row, flora on the upper (12 species) — **each species station is a mini MODEL of that
+creature** (fauna: meshes harvested off the prefab asset by `ToyModelBuilder`, never instantiated)
+or **of its growth pattern** (flora: simulated via `Flora.TryPreviewGrowth` — see "Station icons");
+only a species that can offer neither keeps the anonymous sphere. Fly a species and its VARIANT matrix blooms a
 further layer outward: 4 element columns × level rows {1, 3, 5}, each station wearing the
 element's crystal model sized by level. Fly a variant and a POPULATION of that exact lifeform
 (fauna `PopulationSize` / flora `InitialSpawnCount`) spawns live through the canonical cell
@@ -88,24 +108,270 @@ root AT the station via `Flora.SetPlantPositionOverride`. Every spawn logs, incl
 cell's Frenzy growth-freeze state. Layered outward on purpose: the player flies at a matrix
 and keeps flying — each pass carries them toward the next layer, never back through the last.
 
-## The "swap set" pattern (vessel + domain)
+## Cell Selector (`CellSelectorToy` + `CellSelectorToyDefinitionSO`)
 
-Both the vessel and domain changers are **sets** of toys managed by a shared generic
-coordinator, `SwapToySetCoordinator<T>`. The set always shows *the options you are not
-currently on* (`universe \ {current}`), each toy visually *being* the option it will switch
-you to. Flying through a toy applies the change; the coordinator then **flips the used toy to
-the option you just left**, so the set continuously mirrors "everything except where you are
-now". Current state is polled each frame, so external changes (a panel, a menu reset) reconcile
-the same way. `SwapToy` is the per-option toy; it just reports activation and lets the
-coordinator own the option→visual mapping and the flip.
+The freestyle **world picker** — and the freestyle **reset** (`Toy_CellSelector.asset`,
+placement angle 300°). It exists because the freestyle six cost a multi-second
+`EnvironmentLoadVeil` hold on *every* entry to Menu_Main, boot and every return from an arcade
+game alike.
 
-### Vessel Changer (`VesselChangerToySet`)
-A **collection** of toys, each a **mini 3D model** of a ship you can switch into (every vessel
-in the collection except the one you're flying). The model is built by `VesselModelBuilder`,
-which reads mesh data straight off the ship **prefab asset** (never instantiates it, so no
-NetworkObject/VesselStatus/controllers ever run). Flying through one swaps you into that ship
-via `MenuServerPlayerVesselInitializer.RequestSwap` (the existing networked pipeline), and the
-toy flips to a mini model of the ship you just left.
+**The fix is two halves.** The Cell now boots on `CellTypeChoiceOptions.EnvironmentFree` — the
+first config authoring no `EnvironmentPrefab` (Blob), so the menu opens with nothing to build.
+The **seven** heavy worlds stay in the Cell's list and become **opt-in**: this toy is the only
+place that load is ever paid. (The toy authors no cell list — it reads `Cell.AvailableConfigs` —
+so adding a world is a config-asset + scene-array change, never a toy change.)
+
+Fly the toy (a sphere ringed by three empty little worlds — they stay empty because filling
+them would mean generating environments at menu boot, the exact cost this toy defers) and a
+matrix of **mini-cells** blooms outward, `matrixDistanceFactor` × `stationSpacing` clear of the
+toy along the outward radial: you fly AT the toy and keep going, and the choices are ahead — the Lifeform Matrix's "fly at a wall of choices" pattern, now sharing
+`ToyMatrixStation`. Fly a mini-cell and the cell becomes that world. **Fly the mini-cell of the
+world you are already in and you get the same cycle on the same config — that is the reset.**
+What a pass costs is told by **shape**, not by a word (see "Station icons"): the world you are
+already in wears a **halo ring** — that one is the reset — and an environment-free config has
+nothing to model, so its slot draws visibly empty, which is what "instant" looks like. Everything
+else is a plain model and builds behind the veil. (The former `RESET` / `INSTANT` / `LOAD` label
+line is gone; only the world's name remains, and that is the next label to retire.)
+
+**No parallel list.** With `cells` left empty (the default and the recommendation) the toy
+reads `Cell.AvailableConfigs` — the Cell's own `CellConfigs` rotation. The Cell owns the
+environment, so there is one source of truth for what a scene's cell can be and the toy cannot
+drift from it. Authoring the list is an override for scenes that want a curated subset.
+
+**A station IS its world — no cage, no orb.** Each slot is a genuine **scale model of the world
+that config creates**, standing on its own with only its label. (An earlier pass wrapped each one
+in gyroscopic membrane rings; they were removed — the model speaks for itself.)
+`CellMiniatureBuilder` reads the generator's own output
+— `SpawnableBase.GetTrailData()` plus `CellEnvironmentSpawnableBase.CachedLays` for the per-*prism*
+domain that `SpawnTrailData` flattens away — strides it down to a point budget (~1.2k), and emits
+one small box per sample into **one mesh with a submesh per domain**. So a mini-cell shows the real
+silhouette, the real structure, and the real domain composition, in the same prism materials the
+world itself is built from. **No prism is ever spawned for a model**: generation is pure math, and
+the ~97%-of-cost per-prism `Instantiate` never happens.
+
+Cost control: models stream in **one per frame** after the shells are already up (each blooms in as
+it lands), the built meshes are cached on the toy for the session, and the generator's point data is
+**released immediately after sampling** (`ReleaseGeneratedData`) — holding seven 34k-entry lay lists
+so the menu can show seven thumbnails is the wrong trade on mobile, and re-generating on load is a
+small fraction of the lay cost. A config with no environment has nothing to model and draws visibly
+**empty** — which is now literally true rather than a stand-in.
+
+**What a selection does** is `Cell.RequestCellSwap` — suction the old world away over a visible
+transition, drain it in 500-prism-per-frame slices while it is invisible, then rebuild behind
+the standard veil. Full step table, ordering constraints (grids before the immediate build),
+and the invariant analysis (continuity upheld; this is active removal, not decay) live in
+**`Docs/ECOSYSTEM.md §19`**.
+
+**Reset scope.** `clearLooseTrailMass` (default on) also retires the **pooled** prisms the cell
+tracks — the vessels' accumulated freestyle trail — which is what makes a selection a scene
+reset rather than an environment swap. Prisms owned by a closed toy system (the Wanderway
+conveyor transports its own fixed stock, instantiated not pooled) are never touched either way,
+so a cell swap cannot break the conveyor's conservation.
+
+## The "one toy, then many" pattern (`MatrixToy`)
+
+Three toys share one shape: **one station until you fly it, then many.** A pass unfolds a
+MATRIX of choices out ahead; another pass folds it away. A toybox of a dozen permanently-visible
+stations is clutter — a single toy that opens into its options reads as one thing you can pick up
+and put down.
+
+`MatrixToy` owns the whole of it: the toggle, the grid geometry, and the teardown. The matrix
+blooms `matrixDistanceFactor` × `stationSpacing` from the toy along the **outward radial** (away
+from the cell centre — the toy faces the centre, so outward is `-forward`), laid out as a
+roughly-square grid in the toy's own right × up plane. You fly AT the toy and keep going: the
+choices are ahead, never back through where you came from. Subclasses supply the item count, the
+spacing knobs, and `BuildStation(index, parent, position, radius)`; `OnMatrixOpened` /
+`OnMatrixClosed` hook whatever streaming the toy needs.
+
+Stations may be light (`ToyMatrixStation` — a trigger with a short cooldown, via
+`MatrixToy.CreateStation`) or a full `Toy` when the station needs its own bloom, exit-gated
+re-arm, and `Update` (the painting stations are full toys for exactly that reason).
+
+Anything a station starts that must **outlive the matrix** parents to `MatrixToy.ToyboxRoot`,
+not to the grid — that is how a painting run survives folding the gallery away.
+
+Users: **Cell Selector** (worlds), **Connect the Dots** (paintings), **Vessel Changer** (ships).
+
+## Station icons: a choice shows itself (heading toward no text labels)
+
+**Every selection station is a 3D icon of the thing it selects.** The text label is a crutch we
+are actively removing: a station whose icon reads at a glance doesn't need a name floating over
+it, and a matrix of named spheres is a menu, not a toy. Two icon strategies, both drawn from the
+selection itself — never a decorative stand-in, and never a hand-authored symbol library:
+
+| Strategy | Meaning | Used by |
+|---|---|---|
+| **Scaled-down view** | the whole thing, small | Vessel Changer (mini hulls), Lifeform bench (mini creatures) |
+| **Signature extract** | the few parts that identify it | Connect the Dots (under-budget icons), Cell Selector (signature structures) |
+| **Growth simulation** | the rule it grows by, run in the abstract | Lifeform bench flora (no model exists to shrink) |
+
+The split is a legibility call, not a taste one. A ship is one compact object and survives being
+shrunk. A 55-stroke painting or a 34k-prism world does **not**: drawn whole at thumbnail size they
+cross-hatch into a fuzzy ball that reads identically for every entry — which is exactly the
+failure a text label then has to paper over. So those two take the few most identifying parts and
+draw them boldly:
+
+- **Connect the Dots** — `MiniaturePaintingBuilder` scales fidelity to the icon: the stroke budget
+  is `radius × 1.1` (clamped 5–64), so a gallery station (radius 44) draws ~48 strokes — a Rose
+  shows all four petal whorls — while an emblem satellite (7.5) draws 8. Line width comes down as
+  density goes up so a full icon doesn't blob. When everything fits, everything is drawn; when it
+  doesn't, strokes are chosen by **farthest-point dispersion** over their centroids, seeded with the
+  longest stroke of each domain (colour identity). Dispersion is the load-bearing part: longest-first
+  clusters, and on a radially symmetric painting it took several strokes from one side — the icon
+  showed *half a rose*. The frame is fitted to the strokes actually drawn.
+- **Cell Selector** — `CellMiniatureBuilder.KeepSignatureStructures` bins the generator's samples
+  into a 12³ voxel grid and keeps the densest voxels until they hold `signatureCoverage` (0.7) of
+  the mass. What survives is the motifs the generator actually builds, at their true relative
+  positions, with the haze between them gone. Nothing is moved, invented, or re-coloured — it is
+  still an honest scale model, just the recognisable part of one. Ties break on the voxel key, so
+  a given environment always yields the same icon.
+
+**Flora are the third case: they have no model to shrink.** A flora species *is* a growth rule — it
+builds itself out of prisms at runtime — so there is nothing for `ToyModelBuilder` to harvest, which
+is why those stations were anonymous spheres. `Flora.TryPreviewGrowth(budget, seed, into)` is the
+answer: the species runs **its own growth rule in the abstract** and reports where prisms would land
+— no prism, no spindle, no GameObject, no cell, no spatial-index reservation, no config mutation,
+and never `UnityEngine.Random` (a preview must not advance a sequence the simulation draws from).
+`FloraIconBuilder` then feeds those poses through the *existing* icon pipeline —
+`CellMiniatureBuilder.BuildFromLays` → `ToyFactory.AddMiniatureBody` — so a flora icon is made of the
+same stuff, in the same domain prism materials, as a mini-cell or a microscene.
+
+| species family | preview | source of the rule |
+|---|---|---|
+| `BranchingFlora` (Branching, Cacti, Pine, Nerve) | the branch walk | its own serialized params — branch angles, counts, the `leafChance` climb, the 1/depth step and scale falloff |
+| `AssembledFlora` + `GyroidAssembler` (Gyroid) | a patch of the real gyroid | `GyroidBondMateDataContainer`'s bond table, composed exactly as `CalculateGlobalBondSite` + `CalculateRotation` do |
+| `AssembledFlora` + `WallAssembler` (Wall) | the square sheet | its four in-plane bond offsets |
+| `AssembledFlora` + `SchwarzPAssembler` (SchwarzP) | a patch of the tunnel network | `SchwarzPAssembler.TryPreviewLattice` — the same seed anchor, tangent sites, Newton projection and parallel-transported heading as live growth, sharing the now-static `SiteDirection` / `TryStepAlongSurface`, with the occupancy claims swapped for a local visited set |
+
+Every one of the four is the species' real rule, shared with live growth rather than re-derived —
+the Schwarz P walk in particular reuses the assembler's own surface math, so an edit to the surface
+moves the icon with it. The previews deliberately skip what a thumbnail cannot show: `growthChance` (it paces growth over
+time, it does not change the shape a branch eventually takes), the Frenzy gate, and prism budgets.
+They preview *form*; they are not a second implementation of growth for gameplay.
+
+`ToyModelBuilder` is the shared scaled-down-view engine: it harvests meshes off a **prefab asset**
+(never instantiated — no NetworkObject, no registry entry, no controllers), paints them with one
+opaque self-lit preview material, and fits the result to the station radius. Callers pass a
+`RendererFilter` for what to leave out — `VesselModelBuilder` is now exactly that filter (hull
+only: no skimmer sphere, trails, jets, VFX), and the lifeform bench passes the equivalent for
+creature bodies. **Any new toy that offers prefabs gets its icons from this, not from a sphere.**
+
+State that used to be text is becoming shape too: the Cell Selector marks the world you are
+already in with a **halo ring** instead of the word `RESET` (an environment-free config has
+nothing to model, so its empty slot already reads as "instant").
+
+### Toy-root emblems (`ToyEmblem` + `ToyEmblemStreamer`)
+
+The same rule, applied one level up: **a toy root is an icon of the toy**, not a tinted ball with
+a name over it. The grammar is the third strategy —
+
+> **core = what you are · orbiting satellites = what a pass would offer you**
+
+— which is the `SwapToySetCoordinator` semantic ("you are this, these are the others") lifted onto
+the roots that don't unfold. Every item is real content, built by the same builders the matrix
+stations use.
+
+| toy | core | satellites | orbit |
+|---|---|---|---|
+| **Vessel Changer** | the hull you're flying now | the next 3 you'd be offered | 10°/s |
+| **Connect the Dots** | the on-ramp painting you've taken furthest | the other 3 on-ramp canvases | 6°/s |
+| **Lifeform bench** | the 4 element crystals on a sub-ring | 2 fauna + 2 flora species | 8°/s |
+| **Wanderway** | a real microscene ("Gate Run") | 3 more recipes (Tunnel, Archway, Torus Knot) | **0 / 3 / 18** = off / dormant / flowing |
+| **Cell Selector** | the world you're in right now | **none, structurally** | core spins at 8°/s |
+| **Domain Changer** | *(no emblem — see below)* | | |
+
+**Geometry** — one const block in `ToyEmblem`, all multiples of the toy's body radius `R` (22 in
+Menu_Main): core `0.46R`, orbit `1.18R`, satellite `0.34R`, halo tilt 32°. Outer extent `1.52R`
+= 33.4u, deliberately **inside** both the 42u trigger radius and the 41.8u label height — an
+emblem never reads bigger than its own interaction volume. First satellite sits at 6 o'clock so
+12 o'clock stays clear under the label.
+
+**Motion is the second identity channel.** Silhouette carries the far read (~250u, "that's a
+different toy"); real content carries the near read (~100u, "that's the hangar"); distinct orbit
+rates carry both. The rates stay clear of the reserved body spins (cone 45, jack 22, ring 15).
+
+**Nothing is built on the caller's frame.** `ToyboxController.PlaceToys` runs on the
+`OnClientReady` frame of *every* entry to Menu_Main and is already the menu's most expensive. So
+`Attach` creates **holders only** (~23 GameObjects toybox-wide; zero meshes, zero materials, zero
+`Shader.Find`, zero `Instantiate`), and `ToyEmblemStreamer` fills one slot per frame. The pump
+**yields before its first build** — an `async UniTaskVoid` body runs synchronously up to its first
+suspension, so without that yield the first registered emblem's core would build on the stack of
+whoever started the pump: the spawn frame on registration, and inside `ToyEmblem.Update` on a
+live-key rebuild (where the Cell Selector's `heavy` mesh assembly would land on the frame right
+after a cell swap). A source that ignores the shared material declares `UsesSharedMaterial =>
+false`, so it never triggers the `Shader.Find` chain behind it — **round-robin,
+breadth-first**, so every toy's core lands before any satellite. 18 items ≈ 0.3s, entirely inside
+the toys' 1.2s bloom-in, so the emblem assembles *inside* the growth and nothing pops in. A slot
+that reports itself `heavy` gets a clear frame after it.
+
+> **Coupling with no compile-time guard:** that property depends on `Toy.bloomDuration` (1.2s)
+> exceeding the stream (~0.3s). Drop it below ~0.5s and emblems visibly assemble.
+
+**The Cell Selector's zero satellites are structural, not tuning.** A satellite would be another
+world, and any world not already loaded costs a full ~34k-lay generation to picture — the exact
+cost `CellTypeChoiceOptions.EnvironmentFree` exists to defer. Its core is free or it is nothing:
+the matrix's cached miniature, else the live environment's `CachedLays` via the new
+`CellMiniatureBuilder.BuildFromLays` (which **cannot reach `GetTrailData()`** — the restriction is
+enforced by API, not by comment), else empty. At boot the cell is environment-free, so the emblem
+is a small bare core: *you are in the empty one.* Zero cost on every entry to Menu_Main.
+
+**Fail-soft.** `Attach` doesn't replace the factory's sphere — it **rescales it to core size** and
+keeps it as a placeholder, fading it out when a real core lands. It is **withdrawn, never
+destroyed**: a rebuild can legitimately produce nothing (pick a world, then pick the
+environment-free one) and the fallback has to have something to bring back, or the toy becomes an
+invisible trigger under a floating label. On an empty stream it returns — animated, since it is a
+body already on screen — to the plain full-size body, *except* for a core-only source, which stays
+small: that is the Cell Selector at boot, where "a small bare core" is the honest read. That is
+also why `ToyFactory.CreateRoot` and all five `Spawn` overrides are untouched.
+
+**Liveness** is a 0.5s poll of the source's own key/tint (there is no cell-config-changed event to
+subscribe to, and the vessel source's existing mid-swap guard is exactly the "hold, don't rebuild"
+signal we want). A changed key rebuilds every slot; a changed tint writes the emblem's **own** one
+material — never `ToyFactory.AccentMaterial`'s shared per-colour cache and never a theme asset.
+
+**The Domain Changer deliberately has none.** Its slots already wear a domain-tinted cone in the
+domain's live *prism* material — content-derived, unique in silhouette, and the locked shape-
+language read for "this changes your trail." It also rebuilds its body on every flip, so an emblem
+there would be re-emitted constantly for no legibility gain. Do not "complete the set."
+
+**Labels stay for now.** They come off once the ring-distance legibility pass confirms each toy is
+identifiable without them — a separate, gated change.
+
+### Layout tuning (matrix scale & distance)
+
+Icons only pay off if they're big enough to read on approach, so the matrices were re-tuned:
+
+| Toy | Station radius | Spacing | Distance factor |
+|---|---|---|---|
+| Cell Selector | 9 → **18** | 55 → **110** | 3 (distance 165 → **330**, since distance = spacing × factor) |
+| Connect the Dots | body radius → **×2** (`iconScaleBodies`) | derived from radius, so ×2 | 3 → **4** |
+| Lifeform bench | 6 → **12** | 45 → **90** | derived (×1.5 / ×3.5 of spacing), so ×2 |
+| Vessel Changer | **unchanged** | **unchanged** (60) | 3 → **6** |
+
+Everything lands at roughly **2× size and 2× distance**. The Vessel Changer is the deliberate
+exception: mini ships already read at their current size, so only the distance doubles — with the
+spacing unchanged, the factor has to carry the approach on its own.
+
+## The "swap set" pattern (domain)
+
+The domain changer is a **set** of toys managed by the generic coordinator
+`SwapToySetCoordinator<T>` — its universe is small enough (two toys in a 3-domain session) that
+showing it laid out around you beats unfolding it. The set always shows *the options you are not
+currently on* (`universe \ {current}`), each toy visually *being* the option it will switch you
+to. Flying through a toy applies the change; the coordinator then **flips the used toy to the
+option you just left**, so the set continuously mirrors "everything except where you are now".
+Current state is polled each frame, so external changes (a panel, a menu reset) reconcile the
+same way. `SwapToy` is the per-option toy; it just reports activation and lets the coordinator
+own the option→visual mapping and the flip.
+
+### Vessel Changer (`VesselChangerToy`)
+**One toy that opens into the hangar.** Fly it and a matrix of **mini 3D ship models** blooms
+out ahead — every vessel in the collection except the one you're flying. The model is built by
+`VesselModelBuilder`, which reads mesh data straight off the ship **prefab asset** (never
+instantiates it, so no NetworkObject/VesselStatus/controllers ever run). Fly a ship and you swap
+into it via `MenuServerPlayerVesselInitializer.RequestSwap` (the existing networked pipeline);
+the matrix closes behind you, since it was "everything except what you fly" and what you fly just
+changed.
 
 **Mini-model rendering.** `VesselModelBuilder` extracts only the **hull**: it skips builtin-
 primitive meshes (the skimmer sphere, scaled 15–60× — it otherwise dominated `NormalizeToRadius`
@@ -119,11 +385,10 @@ material is a transparent, runtime-theme-driven shader that renders dim/invisibl
 different hull". Vessels whose body isn't statically extractable fall back to the labelled
 tinted sphere.
 
-**Recolour on domain change.** The mini ships are tinted to your domain, but `ConfigureVisual`
-only runs on create/flip. So the set watches the local player's domain each frame
-(`SwapToySetCoordinator.OnTick` → `VesselChangerToySet`) and, on a change, re-tints **every** mini
-ship + label in place (`ForEachSlot` → `RecolorSlot`, no rebuild → instant, pop-free) so they all
-follow the domain changer, not just the one slot that flips on the next swap.
+**Recolour on domain change.** The mini ships are tinted to your domain, but they are built once
+when the matrix opens. So `VesselChangerToy.Update` watches the local player's domain and, on a
+change, re-tints **every** open mini ship in place (no rebuild → instant, pop-free) so they all
+follow the domain changer.
 
 **Swap continuity.** A swap is seamless — the new vessel inherits the old one's:
 - **Domain / colour** — the swap re-syncs `Player.Domain` from the authoritative `NetDomain`
@@ -138,7 +403,7 @@ follow the domain changer, not just the one slot that flips on the next swap.
   avoiding the post-`ResetForPlay` dead stop.
 
 **Lost-control fix:** the swap pipeline drops the new vessel into autopilot with input paused
-(that's why the old toy left you unable to steer). `VesselChangerToySet.RestoreControlAfterSwap`
+(that's why the old toy left you unable to steer). `VesselChangerToy.RestoreControlAfterSwap`
 waits for `IsSwapping` to clear, then re-hands freestyle control — mirroring
 `MenuVesselSelectionPanelController.RestoreFreestyleAfterSwapAsync`.
 
@@ -148,8 +413,9 @@ So `ReInitializePair` re-raises `GameDataSO.OnPlayerPairInitialized` (as the ini
 does) and `MenuMiniGameHUD` re-shows the local HUD on that event while in freestyle (gated on
 freestyle + local player). Covers both the toy swap and the vessel-selection panel swap.
 
-Collection defaults to a curated set (Manta, Dolphin, Rhino, Squirrel, Serpent, Sparrow) so
-the ring isn't crowded with all 11; override per-asset via `vesselCollection`.
+Collection defaults to a curated set (Manta, Dolphin, Rhino, Squirrel, Serpent, Sparrow) rather
+than all 11; override per-asset via `vesselCollection`. Layout knobs: `stationSpacing`,
+`matrixDistanceFactor`.
 
 ### Domain Changer (`DomainChangerToySet`)
 Two toys (in a 3-domain session), each **tinted the domain it will switch you to**
@@ -158,7 +424,21 @@ colours you are *not*. Flying through one requests that domain via the server-au
 `Player.RequestSetDomain_ServerRpc` (**never** a client-local write — CLAUDE.md), and the toy
 flips to the colour you just left.
 
-### Painting / Connect the Dots (`PaintingToy` + `PaintingRunner`)
+### Painting / Connect the Dots (`PaintingGalleryToy` + `PaintingToy` + `PaintingRunner`)
+
+**One toy that opens into the whole gallery.** `PaintingGalleryToy` is a `MatrixToy`: fly it and
+the collection unfolds out ahead, one `PaintingToy` station per painting, each a miniature of its
+own canvas with its name and live progress. Fly it again and the gallery folds away. (Sixteen
+permanently-visible stations fanned around the membrane was clutter — and the gallery's stroke
+generation used to be paid at menu **boot**, which is exactly the cost this branch moves off the
+boot path. The first open now pays it instead.)
+
+**A run outlives the matrix.** `PaintingRunner` is parented to `MatrixToy.ToyboxRoot`, not to the
+grid, so folding the gallery away mid-painting leaves the canvas untouched; `PaintingToy` keeps a
+static id→runner map and **re-adopts** a live run when the matrix re-opens, so re-flying a
+painting resumes it instead of starting a second run on the same canvas. Monument anchors come
+from the same proximity-first sphere packing as before, computed once on the first open.
+
 
 The painting toy (player-facing name **"Connect the Dots"**, formerly "Fly by Numbers") is a
 **gallery**: `PaintingToyDefinitionSO` spawns one `PaintingToy` station per `PaintingDefinitionSO`,
@@ -190,7 +470,7 @@ dozen **grandiose non-planar constructions** that dwarf the Taj (every one is >2
 | 16 | Peacock | 1300 | 236 | **baked from a real scan**: YahooJAPAN's peafowl photogrammetry (CC-BY 4.0 — attribution ships in the asset description) — the fanned train, scalloped eye-feather rim, body and legs |
 
 **Gallery stations are miniatures in a wall, not balls in a line.** Each station's body IS its
-painting in miniature (`MiniaturePaintingBuilder`: the ~24 longest strokes, decimated, domain-
+painting in miniature (`MiniaturePaintingBuilder`: 5 SIGNATURE strokes — see "Station icons" — domain-
 tinted, on a slow turntable) — a sphere only as fallback for stroke-less paintings. The sixteen
 stations arrange as a roughly-square matrix cluster at the toybox slot (columns along the ring
 tangent, rows climbing the off-plane vertical), and the monuments anchor behind their column in
@@ -288,10 +568,17 @@ shader the painted trail wears — `ToyFactory.DomainPrismMaterial` →
 | **Cone** (apex = "this way next") | *turns / keeps your trail ON* | stroke-gate hubs, every intermediate stroke point (apex points at the stroke's next point), and the **Domain Changer** bodies (apex points the way you fly through) |
 | **Jack** (three rods through a centre) | *turns your trail OFF* | each stroke's final point (reaching it ends the stroke and pens up) |
 | **Ring** (fly-through portal) | *crossing commits a choice* | stroke start gates, the SHARE/REPAINT completion gates |
+| **Emblem** (tilted ring of discrete objects around a hub) | *this is what I am, and what I'd offer* | the toy roots — see "Toy-root emblems" |
 
 The domain changer and the painting gates deliberately share the cone so meeting either one
 first sets up expectations for the other. Builders live in `ToyFactory` (`AddConeBody`,
 `AddJackBody`, `AddRingBody`).
+
+**Ring vs. emblem, the disambiguation rule:** *one continuous ring square across your flight
+path is a portal — cross it and something commits. A tilted ring of separate objects orbiting a
+hub is an emblem — it is a label, not an interactable.* Emblems are therefore built from models,
+never from `AddRingBody`, and they are tilted 32° so they never present as a portal. An emblem
+adds **no collider**: the toy's own trigger sphere remains the entire interaction surface.
 
 #### Stroke order — flight continuity first, computed at runtime
 
@@ -375,10 +662,20 @@ always works.
 
 ### Wanderway / Microscene Conveyor (`ConveyorToy` + `MicrosceneConveyor` + `Microscene`)
 
-Fly through → the belt switches **ON** (the toy flips bright + relabels "flowing — fly through
-to stop"; another pass switches it off) and a field of **microscenes** blooms in ahead of your
-flight path, scene after scene — open-world exploring crossed with an infinite runner. **40
-recipes** built from a shared geometry vocabulary (`PrismGeometry`): gate runs, helix weaves,
+Fly through and you **leave for a wander** (`WanderwayRun` — see *The run* below): the cell reverts
+to its bare canvas, the belt builds its **entire conserved stock behind a load veil** (see *Scale*),
+and a field of **microscenes** stands ahead of your flight path, scene after scene — open-world
+exploring crossed with an infinite runner.
+
+The toy's **emblem carries the live state in its orbit speed**, and uniquely it tells the truth
+about all *three* states rather than the two a label can hold: stopped, **flowing** (spun up, you
+are wandering), and **dormant** — a belt that is still running while you are out of freestyle
+orbits at a crawl rather than lying about being off. The label flips alongside it to say which way
+the next pass will toggle the toy.
+
+**48 recipes** built from a shared geometry vocabulary (`PrismGeometry`), in two families.
+
+**The classic forty** (`MicroscenePatterns`): gate runs, helix weaves,
 tunnels, slaloms, starbursts, orchards, meadows, menageries, polygon gates, serpent ribbons,
 colonnades, orbitals, canyons, lattices, comet tails, spiral ramps, archways, vortices (converging
 lines with an open convergence + an inviting crystal), slot corridors (parallel plates with gaps to
@@ -390,9 +687,53 @@ turns), split tubes (facing curved shell walls), and four **Medley** slots that 
 (straight / arc / S-curve / helix drift) with alternating motifs (hoops, polygon gates, torus
 rings, shell dishes, blade crosses, clusters) — a combinatorial space no fixed recipe list could
 enumerate. Each recipe re-rolls its own radii/counts/twists/bends on every arrival, so the same
-recipe never lands the same way twice. The belt **follows you anywhere at any
-speed**: effective spacing = `max(sceneSpacing, speed × minSceneIntervalSeconds)` and lookahead =
-`aheadTargetScenes × spacing`, so there is always a field of ~7 structures ahead.
+recipe never lands the same way twice.
+
+**The grand eight** (`MicroscenePatternsGrand`) — monument-scale set pieces for a belt whose
+per-scene budget is measured in thousands: a **Cathedral** (nave of piers, ribbed vault, clerestory,
+flying buttresses, rose window), a **World Tree** (braided trunk, curl-noise boughs, phyllotaxis
+canopy, root buttresses), an **Orrery** (nested tilted torus rings each carrying a body, around a
+core), a **Sunken City** (terraced ziggurats on a plaza, causeways slung between rooftops, a spire),
+a **Leviathan** (serpentine spine, ribs, dorsal fins, a jaw-arch at the head), a **Geode Vault**
+(shingled shell with a mouth cut through it and the interior bristling inward), an **Aurora Veil**
+(layered curl-noise ribbon curtains to weave), and a **Hypersphere** (nested geodesic shells with a
+bore drilled clean through). They borrow the construction idioms of the authored cell environments
+(`SpawnableYggdra`, `SpawnableOrrery`, `SpawnableAtlantis`, `SpawnableGeode`, `SpawnableZephyr`) —
+the freestyle six are the proof that a 30k-prism world reads as a *place*, and the conveyor now
+transports one.
+
+**Why two families, and how they scale.** The classic forty are hand-tuned in ABSOLUTE world units
+around `MicroscenePatterns.DesignRadius` (80) and derive their part counts by *dividing* the budget
+(a gate run is always 3–6 gates however much mass it is handed) — so at grand budgets they get
+denser, never bigger: solid rings inside a mostly-empty envelope. They are therefore generated at
+their design radius and scaled **bodily** to the live scene (`ScaleToScene`), POSITIONS only — never
+prism scales, so a grand scene reads as *more architecture at the same grain*, and per-prism volume
+(which feeds the host cell's phase ladder) does not inflate just because the belt got bigger. The
+grand eight instead take the scene radius as their own basis and *multiply* their part counts with
+the budget: more mass buys more bays, more branches, more shells. They join the shuffle bag only at
+`prismBudgetPerScene ≥ MicroscenePatterns.GrandBudgetThreshold` (400), weighted ×3 so a grand ride
+lands a landmark roughly every third scene while the classic forty carry the variety between them.
+Edit-mode tests lock both properties: every recipe emits exactly the budget, stays inside the
+advertised scene envelope, and — for the grand family — fills its budget with *architecture* rather
+than letting `FitToBudget` pad it with ambient scatter.
+
+The belt **follows you anywhere at any speed**: effective spacing =
+`max(sceneSpacing, speed × minSceneIntervalSeconds)` and lookahead = `aheadTargetScenes × spacing`,
+so there is always a field of structures ahead.
+
+**Scale — 30,000 conserved prisms, built once behind a veil.** The belt's whole stock is
+`poolSize × prismBudgetPerScene` (**20 × 1500 = 30,000** at the authored defaults — the same order as
+an authored cell environment, which is the proven envelope for the instanced render path + collider
+LOD). It is built **up front**, on the first pass through the toy, behind the same
+`EnvironmentLoadVeil` the Cell Selector raises for a world swap: `MicrosceneConveyor.PrimeAsync`
+brackets `PrismTrailBuilder.BeginArenaBuild`/`EndArenaBuild`, raises the veil, and lays all
+`poolSize` scenes concurrently through `PrismTrailBuilder.LayBudgetedAsync` — the time-budgeted,
+multithreaded-clone lay the cell environments use. The gate raises the lay slice ~10× while the veil
+holds and releases only when every prism is laid, created AND grown, so the ride opens on a world
+that is simply *there*. **After the prime the belt never instantiates again**: every arrival is
+transport of mass that already exists. (The predecessor created one scene per belt tick, which at
+grand scale would drip structures into view for the first minute of the ride and instantiate under
+live gameplay — the exact failure the cell environments already learned.)
 
 **Geometry vs. theming (why it stays fresh, not chaotic).** A recipe produces pure *shape* plus
 **structural metadata** — `MicroscenePlan.CloseStructure()` after each gate/strand/tree/wall stamps
@@ -433,10 +774,24 @@ A **sharp turn** drops the whole old ribbon out of the cone: its measured reach 
 re-lays straight down the **new** heading from `firstSceneDistance` outward, and the now-lateral
 leftovers become the farthest-first recycle candidates that rebuild ahead — so the ribbon *breaks and
 restarts in front of you* on a hard turn while staying a continuous ribbon through gentler ones.
-Passed scenes and a turn's leftovers clear (suction) as new ones arrive — spawn frequency IS the
-clear frequency, because the pool is finite and **closed**: a reclaimable scene (off the flight cone,
-or dropped far behind) is *suctioned* to a point, relocated onto the ribbon ahead, re-posed into a
-fresh recipe with new domain colour, and *bloomed* back out. Scenes still in the cone ahead (what
+Passed scenes and a turn's leftovers clear as new ones arrive — spawn frequency IS the clear
+frequency, because the pool is finite and **closed**: a reclaimable scene (off the flight cone, or
+dropped far behind) *collapses*, is relocated onto the ribbon ahead, re-posed into a fresh recipe
+with new domain colour, and *bloomed* back out. The transport runs in three phases, **none of which
+costs a per-frame CPU pass over the scene's prisms** (`Docs/PRISM_ANIMATION.md` §5 C8):
+
+1. **Collapse** — one grow-clock re-stamp per prism toward the animator's min scale, budgeted at
+   `Microscene.TransportBudgetMsPerFrame`. The GPU runs the shrink; gameplay state goes final at the
+   stamp. *(The predecessor scaled the CONTAINER over ~2.4 s and re-synced every child prism's
+   spatial entry AND companion render entity every frame to make that visible — because a container
+   scale is invisible on the instanced path otherwise. At 1,500 prisms/scene that was ~180,000
+   writes per recycle.)*
+2. **Transport** — the stock is hidden (`Prism.HideForTransport`) and the container moves in ONE
+   transform write. Unseen by construction: the off-screen removal gate below is what licenses it.
+3. **Re-pose + bloom** — the same prism instances take fresh slots, domains and kinds, budgeted, and
+   bloom back in from zero on the clock. `Prism.BeginBulkTransport` raises the creation-completion
+   budget for the duration so a grand scene re-enters in about a second instead of trickling back
+   over four. Scenes still in the cone ahead (what
 you're flying toward) are never reclaimed, and a scene mid-recycle **claims its destination slot
 immediately** (`Microscene.PendingAnchor`) so a rebuild never piles several arrivals onto one point
 while the blooms are in flight. No score, no end condition; every belt advance is driven by the
@@ -446,25 +801,77 @@ flow — either way its scenes stay in the world.
 **Visibility guards — the transport itself is invisible.** The belt should read as a world that is
 simply *there*, never as props spawning and despawning in view, so two gates constrain where the
 continuity transitions may run:
-- **Placement floor** (`minPlacementDistance`, default 140 u) — a scene never blooms in closer than
+- **Placement floor** (`minPlacementDistance`, default 380 u) — a scene never blooms in closer than
   this to the vessel. Near-fill (`≥ firstSceneDistance`) and extend already target far ahead; this is
   the hard floor (squared compare) that also covers degenerate geometry, so a structure never
   materialises in the player's face. Keep it at or below `firstSceneDistance` so it never fights
   normal near-fill.
-- **Off-screen removal** (`offscreenMargin`, default 40 u) — a scene is only reclaimed (suctioned
-  away at its old anchor) once its whole body — a `sceneRadius + offscreenMargin` sphere — lies
+- **Off-screen removal** (`offscreenMargin`, default 80 u) — a scene is only reclaimed (collapsed
+  and carried away from its old anchor) once its whole body — a `sceneRadius + offscreenMargin`
+  sphere — lies
   **fully outside the player camera's view frustum** (`GeometryUtility.CalculateFrustumPlanes`,
-  non-allocating overload; a straddling sphere counts as *visible* and is left alone). The suction is
-  therefore never watched; the bloom then happens far ahead at the new pose. If every pooled scene is
+  non-allocating overload; a straddling sphere counts as *visible* and is left alone). The collapse
+  and the hide are therefore never watched; the bloom then happens far ahead at the new pose. This
+  gate is load-bearing twice over: it is also what makes phase 2's outright hide legitimate rather
+  than a continuity breach. If every pooled scene is
   on screen the belt simply idles — placing nothing — until the player's motion pushes a scene out of
   view, at which point the field self-heals. Camera-less fallback (rare): a scene clearly behind the
   flight course, which the follow camera cannot see. The pool still *fills* to `poolSize` regardless
   (new placements don't remove anything), so this gate only ever throttles recycling, never growth.
 
+### The run — Wanderway as its own mode (`WanderwayRun` + `WanderwayReturnToy`)
+
+The belt is what you fly *through*; the **run** is what makes the wander a place you go to and come
+back from. Starting one does three things, and all three are undone when it ends:
+
+- **A bare canvas.** The host cell is handed back to its environment-free config — the Blob
+  (`Cell.EnvironmentFreeConfig`, new accessor) — through the one sanctioned entry point,
+  `Cell.RequestCellSwap(blob, clearLooseTrailMass: true)`. Re-selecting the config the cell is
+  already on is the documented freestyle **reset**, which is exactly what starting a wander should
+  mean. It is requested *before* the belt's stock build so both join ONE load-veil hold instead of
+  stacking two covers. Authored off (`revertCellOnStart`) if a designer wants the wander to happen
+  inside whatever world is up; with no environment-free config in the cell's list it warns and
+  leaves the world alone.
+- **A rolling tether.** The trail follows you as a ribbon of exactly `tetherPrisms` (100): as you
+  lay at the head, the oldest prism at the tail withers and **recycles back into the pool it came
+  from**, so the next prism you lay is very often the one that just left. Turn around and your trail
+  is there; fly on and a little flying lays a fresh path home. That closed loop is what makes the
+  wander a *truly infinite runner at fixed memory* — see the invariant note below.
+- **A way home at its tail.** The **return station** rides the oldest end of that ribbon, so the way
+  out is always exactly one tether-length behind you, for the whole wander. It is a full `Toy`, not
+  a bespoke trigger, so it inherits local-user detection, freestyle gating, the bloom-in, deferred
+  activation, and the exit-gated re-arm. It glides onto the tail every frame rather than snapping on
+  the run's tick — the tail advances a prism at a time and a station that teleported after it would
+  read as a pop.
+
+> **The rolling tether is an AUTHORIZED EXCEPTION to mass conservation** — the one sanctioned place
+> trail mass is recycled, granted by explicit sign-off so the Wanderway can be an endless runner
+> without an ever-growing world. It is mechanically the reverted `maxTrailBlocks` cap, and it is
+> fenced so it cannot leak: `WanderwayRun.RollTether` is the ONLY caller of `Trail.RemoveOldest`,
+> it runs only while a run is live, and `VesselPrismController` grew no cap field — outside a run
+> the trail is untouched and the law holds in full. **Continuity of existence is not waived**: a
+> retiring prism withers on the GPU clock (one grow-clock re-stamp toward a near-zero scale — the
+> belt's own collapse, `Docs/PRISM_ANIMATION.md` §5 C8) and returns to the pool only once it has
+> shrunk away. Full record: `Docs/ECOSYSTEM.md` §0. Do not generalise it; do not revert it.
+
+**Three exits, one path.** The return station, another pass through the Wanderway toy, and the
+**overview button** (the freestyle HUD's Volume/Pause button, and gamepad **Start**) all call
+`WanderwayRun.End(returnToCell: true)`. The overview route needs no new wiring: that button routes
+through `MenuCrystalClickHandler.ToggleTransition`, which drops freestyle, and the run watches
+`ToyContext.IsFreestyleActive` for that edge. Ending a run stops the belt, stops recycling, retires
+the station, flips the toy's label, and puts the vessel back where the wander started
+(`IVessel.SetPose` + `SetInitialSpeed`, the same repose the menu vessel-swap uses, so speed carries
+through) — skipped when they are already home, so ending the run AT the toy never jerks their pose.
+The belt's **scenes stay in the world**: conserved mass and released citizens are not toy props to
+vanish. So does the Blob cell — restoring a previous world is the Cell Selector's job, not the
+wander's.
+
 **Ecosystem invariants (this toy is ecology-adjacent — all hold by construction):**
 
-- *Continuity of existence* — prisms grow in via their own `PrismScaleAnimator`; crystals
-  `FadeIn`; recycling is suction-out → bloom-in (both sanctioned transitions). Nothing pops.
+- *Continuity of existence* — prisms grow in via their own `PrismScaleAnimator` (the GPU clock);
+  crystals `FadeIn`; recycling is collapse-out → bloom-in (both sanctioned transitions), and the one
+  step that is neither — the hide before the move — is provably unseen (off-screen removal gate).
+  Nothing pops.
 - *Mass conservation / no passive removal* — the belt never destroys a prism; recycling
   **transports the same prism instances** (movers contract: `Prism.NotifyPositionChanged`).
   The only sink is fauna grazing belt prisms (an active force); grazed slots are re-minted
@@ -481,8 +888,9 @@ continuity transitions may run:
   Multi-domain colouring applies only to *prisms* (neutral mass), distributed per-scene by a
   coherent domain scheme (incl. optional neutral-Blue veins) — not a per-domain spawn bias.
 - *Volume is the spine / collider budget* — belt mass is bounded at
-  `poolSize × prismBudgetPerScene` prisms (default 10 × 42 = 420 BoxColliders + ≤3 crystal
-  triggers per scene + 1 toy trigger, well under the ~1,500/cell target); distant scenes are
+  `poolSize × prismBudgetPerScene` prisms (default 20 × 1500 = **30,000** BoxColliders + ≤6 crystal
+  triggers per scene + 1 toy trigger — the same order as an authored cell environment, and the belt
+  is spread over ~10 km of ribbon so only the near scenes are ever un-culled); distant scenes are
   collider-LOD-culled by `PrismColliderLodManager` automatically. **Shielded / supershielded**
   prisms now KEEP their authored cullable `BoxCollider` trigger (the octahedron / stellation is a
   look-only change — no convex MeshCollider, no convex cook), so they cost the same as any other
@@ -564,9 +972,10 @@ No central switch — definitions are polymorphic factories, so the framework ne
 
 Run **Tools → Cosmic Shore → Setup Freestyle Toybox**. It:
 
-1. authors the four toy definition assets under `Assets/_SO_Assets/Toys/` (the conveyor's
+1. authors the toy definition assets under `Assets/_SO_Assets/Toys/` (the conveyor's
    prism prefab + crystal effect are auto-wired: `SpawnablePrism.prefab` +
-   `SkimmerAdjustElementLevelByCrystalEffect.asset`),
+   `SkimmerAdjustElementLevelByCrystalEffect.asset`; the Cell Selector needs no wiring — it
+   reads the Cell's own rotation),
 2. creates `Assets/Resources/Toybox.asset` and registers them, and
 3. adds a `ToyboxController` to Menu_Main (on the `MenuCrystalClickHandler` object) pointing
    at the toybox.
@@ -574,8 +983,17 @@ Run **Tools → Cosmic Shore → Setup Freestyle Toybox**. It:
 Idempotent — safe to re-run. (Or simply drop a `ToyboxController` on any Menu_Main object and
 rely on the runtime default toybox.)
 
+**One scene setting the tool cannot infer:** the Menu_Main `Cell`'s **Cell Type Choice Options**
+must be **EnvironmentFree** for the fast boot (it is already set in the committed scene). Leave
+it on `Random` and the menu goes back to rolling a heavy world on every entry — the Cell
+Selector still works, it just is not the only place the load is paid.
+
 ## Networking notes
 
+- **Cell selection is local**, like every other toy effect with no server-authoritative path:
+  in a party each client would run its own cell. Not a regression — environments already build
+  locally with no seed sync, and the `Random` roll it replaces already gave each client a
+  *different* cell. Making it authoritative means an RPC on the menu cell (`BACKLOG.md`).
 - Each client runs its own `ToyboxController` and spawns its own local toy GameObjects
   (deterministic placement → they overlap visually across clients). Toys are **local
   interaction stations**, not networked objects; only the *effects* (vessel swap, domain
@@ -586,8 +1004,9 @@ rely on the runtime default toybox.)
 
 ## Status & follow-up
 
-The framework + **four toys** are in (Vessel Changer, Domain Changer, Painting, and the Wanderway
-microscene conveyor), plus the vessel-changer second-pass fixes above: mini-model hull rendering,
+The framework + **six toys** are in (Vessel Changer, Domain Changer, Painting, the Wanderway
+microscene conveyor, the Lifeform Matrix, and the Cell Selector),
+plus the vessel-changer second-pass fixes above: mini-model hull rendering,
 exit-gated re-arm + slow flip re-grow, swap continuity (domain / pose / speed), recolour-on-domain,
 HUD-after-swap, and gamepad-Start / input-ownership. The conveyor has been through two adversarial
 review passes (compile, logic, ecology invariants, game-feel, assets, docs). All are
@@ -597,13 +1016,33 @@ the authoring environment) — an in-editor pass is the last step before/after m
 recipe/pacing tuning + audio, unlock persistence, tests) is tracked in **`BACKLOG.md`**, grouped so
 each area can be its own branch.
 
-### Files touched this pass (for review)
+### Files touched — one-toy-opens-into-many pass (for review)
+
+| Area | Files |
+|---|---|
+| Shared base | `Controller/Toys/MatrixToy.cs` (new) |
+| Cell Selector (orbs removed, moved onto the base) | `Controller/Toys/CellSelectorToy.cs` |
+| Vessel Changer (set → matrix) | `Controller/Toys/VesselChangerToy.cs` (new), `ScriptableObjects/Toys/VesselChangerToyDefinitionSO.cs`, `Controller/Toys/VesselChangerToySet.cs` (deleted), `Controller/Toys/SwapToySetCoordinator.cs` (docs) |
+| Painting gallery (16 stations → matrix) | `Controller/Toys/PaintingGalleryToy.cs` (new), `ScriptableObjects/Toys/PaintingToyDefinitionSO.cs`, `Controller/Toys/PaintingToy.cs` (run survives the fold) |
+| Assets | `_SO_Assets/Toys/Toy_VesselChanger.asset`, `_SO_Assets/Toys/Toy_Painting.asset` |
+
+### Files touched — Cell Selector pass (for review)
+
+| Area | Files |
+|---|---|
+| Environment-free boot | `Controller/Environment/Cell.cs` (`CellTypeChoiceOptions.EnvironmentFree`, `FirstEnvironmentFreeIndex`), `_Scenes/Menu_Main.unity` |
+| Runtime cell swap | `Controller/Environment/Cell.cs` (`AvailableConfigs`, `RequestCellSwap`, `SwapCellConfigRoutine`, `ReleaseRetiredWorld`, `RetireWorldIntoSuctionRoot`, `SetVesselTrailsDetached`, `SpawnVisuals(spawnEnvironment)`) |
+| The toy | `Controller/Toys/CellSelectorToy.cs`, `ScriptableObjects/Toys/CellSelectorToyDefinitionSO.cs` |
+| Shared matrix station (extracted) | `Controller/Toys/ToyMatrixStation.cs`, `Controller/Toys/LifeformMatrixToy.cs` |
+| Registration | `Controller/Toys/ToyboxController.cs`, `Editor/ToyboxSetupTool.cs`, `_SO_Assets/Toys/Toy_CellSelector.asset`, `Resources/Toybox.asset` |
+
+### Files touched — vessel-changer pass (for review)
 
 | Area | Files |
 |---|---|
 | Re-arm / escape | `Controller/Toys/Toy.cs`, `Controller/Toys/SwapToySetCoordinator.cs` |
-| Mini-model rendering | `Controller/Toys/VesselModelBuilder.cs`, `Controller/Toys/VesselChangerToySet.cs` |
-| Recolour on domain change | `Controller/Toys/SwapToySetCoordinator.cs` (`OnTick`/`ForEachSlot`), `Controller/Toys/VesselChangerToySet.cs` |
+| Mini-model rendering | `Controller/Toys/ToyModelBuilder.cs`, `Controller/Toys/VesselModelBuilder.cs`, `Controller/Toys/VesselChangerToy.cs` |
+| Recolour on domain change | `Controller/Toys/VesselChangerToy.cs` (`Update`) |
 | Domain preserved on swap | `Controller/Multiplayer/ClientPlayerVesselInitializer.cs` (`ReInitializePair`) |
 | Speed inherited on swap | `Controller/Multiplayer/MenuServerPlayerVesselInitializer.cs`, `Controller/Vessel/IVessel.cs`, `Controller/Vessel/VesselController.cs`, `Controller/Vessel/VesselTransformer.cs` |
 | HUD re-show after swap | `Controller/Multiplayer/ClientPlayerVesselInitializer.cs`, `UI/MenuMiniGameHUD.cs` |

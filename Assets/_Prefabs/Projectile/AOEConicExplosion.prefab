@@ -4890,7 +4890,10 @@ MonoBehaviour:
     type: 2}
   ExplosionDuration: 2.7
   ExplosionDelay: 0
-  height: 800
+  Inertia: 1.8
+  proportionalDebris: 1
+  debrisRestitution: 0.33333334
+  height: 2400
   coneContainer: {fileID: 0}
 --- !u!33 &520348123677097672
 MeshFilter:

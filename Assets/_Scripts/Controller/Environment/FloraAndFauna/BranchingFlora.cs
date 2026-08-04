@@ -222,6 +222,79 @@ namespace CosmicShore.Gameplay
             newBranch.depth = branch.depth + 1;
         }
 
+        /// <summary>
+        /// Pure preview of the branch walk - see <see cref="Flora.TryPreviewGrowth"/>. Mirrors
+        /// <see cref="Grow"/>'s rule (branch, or leaf with <c>leafChance</c> which climbs by
+        /// <c>leafChanceIncrement</c>; children step <c>branchingScaleFactor</c> forward, foreshortened
+        /// past depth 1; scale falls as 1/depth) with two deliberate differences, neither of which a
+        /// thumbnail can show: <c>growthChance</c> is skipped (it paces growth over time, it does not
+        /// change the shape a branch eventually takes) and there is no Frenzy gate or prism budget.
+        ///
+        /// Spindles are reported as well as leaves: the branch structure IS the silhouette here,
+        /// and a leaves-only preview would read as scattered confetti.
+        /// </summary>
+        public override bool TryPreviewGrowth(int budget, int seed, List<SpawnPoint> into)
+        {
+            if (into == null || budget <= 0) return false;
+
+            // System.Random, never UnityEngine.Random: a preview must not advance a shared
+            // deterministic sequence the simulation is drawing from.
+            var rng = new System.Random(seed);
+            Vector3 spindleScale = spindle ? spindle.transform.localScale : Vector3.one;
+            Vector3 leafScale = LeafSize != Vector3.zero ? LeafSize : Vector3.one;
+
+            var frontier = new List<(Vector3 pos, Quaternion rot, int depth)>();
+            int trunks = Mathf.Max(1, minTrunks + rng.Next(0, Mathf.Max(1, maxTrunks - minTrunks + 1)));
+            for (int i = 0; i < trunks; i++)
+                frontier.Add((Vector3.zero, RandomRotation(rng, 0f, 180f), 0));
+
+            float leaf = leafChance;
+            var next = new List<(Vector3 pos, Quaternion rot, int depth)>();
+
+            while (frontier.Count > 0 && into.Count < budget)
+            {
+                next.Clear();
+                foreach (var (pos, rot, depth) in frontier)
+                {
+                    if (into.Count >= budget) break;
+                    if (depth >= maxDepth) continue;
+
+                    // Same step the real ScaleAndPositionBranch takes.
+                    float step = depth <= 1 ? branchingScaleFactor : branchingScaleFactor / (depth - 1);
+                    Vector3 childPos = pos + rot * Vector3.forward * step;
+                    Vector3 childScale = depth == 0 ? spindleScale : spindleScale / depth;
+
+                    if (rng.NextDouble() < leaf)
+                    {
+                        into.Add(new SpawnPoint(childPos, rot, leafScale));
+                        continue; // a leaf terminates the branch, as in Grow()
+                    }
+
+                    into.Add(new SpawnPoint(childPos, rot, childScale));
+
+                    int branches = Mathf.Max(1, minBranches + rng.Next(0, Mathf.Max(1, maxBranches - minBranches + 1)));
+                    for (int b = 0; b < branches && into.Count < budget; b++)
+                    {
+                        Quaternion childRot = rot * RandomRotation(rng, minBranchAngle, maxBranchAngle);
+                        next.Add((childPos, childRot, depth + 1));
+                        leaf += leafChanceIncrement;
+                    }
+                }
+
+                (frontier, next) = (next, frontier);
+            }
+
+            return into.Count > 0;
+        }
+
+        /// <summary>Seeded mirror of <see cref="RandomVectorRotation"/> (no UnityEngine.Random).</summary>
+        static Quaternion RandomRotation(System.Random rng, float minAngle, float maxAngle)
+        {
+            float altitude = minAngle + (float)rng.NextDouble() * (maxAngle - minAngle);
+            float azimuth = (float)rng.NextDouble() * 360f;
+            return Quaternion.Euler(0f, 0f, azimuth) * Quaternion.Euler(altitude, 0f, 0f);
+        }
+
         private Quaternion RandomVectorRotation(float minBranchAngle, float maxBranchAngle) // TODO: move to utility class
         {
             float altitude = Random.Range(minBranchAngle, maxBranchAngle);
