@@ -37,7 +37,7 @@ namespace CosmicShore.Gameplay
         [SerializeField] public int ID;
 
         [Header("Cell Config Selection")]
-        [SerializeField] List<CellConfigDataSO> CellConfigs;   // NEW (replaces CellTypes)
+        [SerializeField] List<CellConfigDataSO> CellConfigs;
         [SerializeField] CellTypeChoiceOptions cellTypeChoiceOptions = CellTypeChoiceOptions.Random;
 
         [Header("Runtime Cell Swap (freestyle Cell Selector toy)")]

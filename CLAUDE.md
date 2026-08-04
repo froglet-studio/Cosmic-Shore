@@ -84,6 +84,8 @@ outcome is optimization, not life). Use the `/ecology` skill for any change here
   a second call overwrote the field and orphaned an untracked `SnowChanger` per init. **To change a
   Cell-owned visual's size, author a new `CellConfigDataSO` pointing at a resized prefab** (Scurry's
   `Scurry Cell Config` → `HalfNucleus.prefab`) — do not place, scale, or duplicate one in a scene.
+  Guarded by **FrogletTools > Ecology > Audit Cell-Owned Visuals**, which also sweeps the dead
+  `Cell` overrides scenes accumulate (72 of them across 12 scenes on the day it was written).
   Note a scene backdrop is NOT this: `SkyboxModel` (`MembraneBase`/`BigMembraneVariant`) is a
   different asset from any config's `MembranePrefab` and is the only geometry in the tool scenes.
 - **A world you load is opt-in, and swapping one is ACTIVE removal — not decay.** An authored
@@ -2166,7 +2168,11 @@ automatically in `FrogletTools > Froglet Master Tool`.** The `Tools/Cosmic Shore
   overrides straight out of scene YAML (fast, read-only, no scenes opened) and
   `PrefabDriftFixer` performs every write through `PrefabUtility` on a properly loaded scene.
   Use these rather than opening scenes to interrogate `PrefabUtility`, and never hand-edit scene
-  or prefab YAML to "apply" an override.
+  or prefab YAML to "apply" an override. **FrogletTools > Ecology > Audit Cell-Owned Visuals**
+  rides the same scanner for the Cell's half of this: it reports scene-placed membrane/nucleus/
+  cytoplasm instances that duplicate what the scene's Cell already spawns, and Cell overrides whose
+  `propertyPath` names a field the script no longer has (Unity never prunes an unresolvable
+  modification, so retired fields linger for years pointing at guids no asset carries).
 - **Editor-tool config belongs in a ScriptableObject**, not a hard-coded list in the window
   (`GameModePrefabKitSO` is the reference) — same config-separation rule as gameplay.
 
