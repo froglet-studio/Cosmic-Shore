@@ -12,8 +12,22 @@ namespace CosmicShore.ScriptableObjects
         public GameObject SpawnedObject;
     }
 
+    /// <summary>
+    /// One prism spawn/effect request. A STRUCT, deliberately: this is the payload of
+    /// the highest-frequency channel in the game — every prism laid and every prism
+    /// death raises one — and as a class it was a managed allocation per event, i.e.
+    /// per kill in a mass-death burst (a 2,400-death AOE frame allocated 2,400 of
+    /// them). The channel is <see cref="GenericEventChannelWithReturnSO{T,Y}"/>, whose
+    /// Func&lt;T,Y&gt; is generic over T, so a struct payload passes by value with no
+    /// boxing. Nothing retains one beyond the synchronous raise except PrismFactory's
+    /// deferred queues, which copy.
+    ///
+    /// Consequence for callers: there is no null payload any more. A handler must not
+    /// test the argument against null (it will not compile), and every field a spawner
+    /// reads must be assigned by the raiser — an omitted field is default, not an NRE.
+    /// </summary>
     [System.Serializable]
-    public class PrismEventData
+    public struct PrismEventData
     {
         [FormerlySerializedAs("OwnTeam")] public Domains ownDomain;
         public Quaternion Rotation;

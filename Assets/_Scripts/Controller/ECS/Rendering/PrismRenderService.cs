@@ -1001,6 +1001,140 @@ namespace CosmicShore.ECS
             arr.Dispose();
         }
 
+        // ------------------------------------------------------------------
+        // Batched pure-entity SUCTION debris — the implosion half of the same
+        // pattern. An implosion carries one extra piece of live state the
+        // explosion does not: the convergence point tracks a MOVING target (a
+        // fauna swims a long way during the ~2s suction), so the caller keeps a
+        // record per entity and refreshes _Location while the target lives.
+        // That is the documented §1 exception (Docs/PRISM_ANIMATION.md) — ONE
+        // float3 per live effect per frame and nothing else; the progress
+        // itself never touches the CPU.
+        // ------------------------------------------------------------------
+
+        /// <summary>One suction entity's complete initial conditions. Everything
+        /// except <see cref="PrismImplosionLocationOverride"/> is stamped once and
+        /// never written again.</summary>
+        public struct ImplosionDebrisSpawn
+        {
+            /// <summary>Initial pose. The entity matrix never moves.</summary>
+            public Matrix4x4 LocalToWorld;
+            public float4 BrightColor;
+            public float4 DarkColor;
+            /// <summary>Suction length in seconds (excludes <see cref="GrowDelay"/>).</summary>
+            public float Duration;
+            /// <summary>&gt;= 0 implode (progress 0→1); &lt; 0 reverse grow (1→0).</summary>
+            public float Direction;
+            /// <summary>Start delay baked into the stamp (the grow path's 0.25s).</summary>
+            public float GrowDelay;
+            /// <summary>WORLD-space convergence point (the shader lerps vertices toward it).</summary>
+            public float3 Location;
+            /// <summary>Object-space AABB that already covers mesh ∪ convergence point —
+            /// the suction culling envelope (see <see cref="EncapsulateBoundsPoint"/>).</summary>
+            public AABB Bounds;
+        }
+
+        /// <summary>
+        /// Spawns every entry as a suction entity in ONE prototype-instantiate + ONE
+        /// batched visibility strip, exactly like
+        /// <see cref="SpawnExplosionDebrisBatch"/>. Entities are appended to
+        /// <paramref name="appendEntitiesTo"/> index-aligned with
+        /// <paramref name="spawns"/>. Returns false — spawning nothing — when the
+        /// service is off, so the caller can fall back to the pooled path.
+        /// </summary>
+        public static bool SpawnImplosionDebrisBatch(Mesh mesh, Material material, int layer,
+            System.Collections.Generic.List<ImplosionDebrisSpawn> spawns, float startTime,
+            System.Collections.Generic.List<Entity> appendEntitiesTo)
+        {
+            if (!Enabled || mesh == null || material == null ||
+                spawns == null || spawns.Count == 0 || !TryEnsure())
+                return false;
+
+            var em = _world.EntityManager;
+            var prototype = GetPrototype(layer, PrismRenderOverrideSet.Implosion, mesh, material);
+
+            var entities = new Unity.Collections.NativeArray<Entity>(
+                spawns.Count, Unity.Collections.Allocator.Temp);
+            em.Instantiate(prototype, entities);
+            // Clones are born hidden (prototype ships DisableRendering); strip the
+            // whole batch in one structural op. An implosion is visible from frame
+            // zero — progress 0 IS the whole, unconsumed block.
+            em.RemoveComponent(entities, ComponentType.ReadWrite<DisableRendering>());
+
+            var mmi = new MaterialMeshInfo(GetMaterialID(material), GetMeshID(mesh));
+            float3 spread = ReadVector3(material, SpreadId);
+
+            for (int i = 0; i < spawns.Count; i++)
+            {
+                var s = spawns[i];
+                var entity = entities[i];
+                em.SetComponentData(entity, mmi);
+                em.SetComponentData(entity, new LocalToWorld { Value = ToFloat4x4(in s.LocalToWorld) });
+                em.SetComponentData(entity, new PrismBrightColorOverride { Value = ApplyColorSpace(in s.BrightColor) });
+                em.SetComponentData(entity, new PrismDarkColorOverride { Value = ApplyColorSpace(in s.DarkColor) });
+                em.SetComponentData(entity, new PrismSpreadOverride { Value = spread });
+                // Legacy _State fallback value. Only read when Duration <= 0 (see
+                // PrismSuctionClock_float) — which a stamped entity never is — but a
+                // correct static frame costs one write.
+                em.SetComponentData(entity, new PrismImplosionStateOverride
+                {
+                    Value = s.Direction < 0f ? 1f : 0f
+                });
+                em.SetComponentData(entity, new PrismImplosionLocationOverride { Value = s.Location });
+                em.SetComponentData(entity, new PrismSuctionStartTimeOverride { Value = startTime });
+                em.SetComponentData(entity, new PrismSuctionDurationOverride { Value = s.Duration });
+                em.SetComponentData(entity, new PrismSuctionDirectionOverride { Value = s.Direction });
+                em.SetComponentData(entity, new PrismSuctionGrowDelayOverride { Value = s.GrowDelay });
+                em.SetComponentData(entity, new RenderBounds { Value = s.Bounds });
+
+                appendEntitiesTo.Add(entity);
+            }
+
+            LiveEntityCount += spawns.Count;
+            entities.Dispose();
+            return true;
+        }
+
+        /// <summary>One live suction entity's moving-target update.</summary>
+        public struct ImplosionDebrisRefresh
+        {
+            public Entity Entity;
+            /// <summary>New WORLD-space convergence point.</summary>
+            public float3 Location;
+            /// <summary>True when the point wandered outside the stamped envelope and
+            /// <see cref="Bounds"/> must replace it. False on the common path (the
+            /// creature approaches its meal), which then costs exactly one float3 write.</summary>
+            public bool GrowBounds;
+            /// <summary>Object-space replacement envelope. Only read when
+            /// <see cref="GrowBounds"/>. The caller mirrors the AABB CPU-side so this
+            /// path never has to read a component back per entity per frame.</summary>
+            public AABB Bounds;
+        }
+
+        /// <summary>
+        /// Applies a whole frame's moving-target refreshes in one pass — one epoch
+        /// check and one EntityManager fetch for the batch instead of per entity.
+        /// A stale epoch is a no-op (those entities died with their world). Entries
+        /// are assumed live: the caller owns these lifetimes and destroys them only
+        /// through <see cref="DestroyDebrisBatch"/>.
+        /// </summary>
+        public static void RefreshImplosionDebrisBatch(
+            System.Collections.Generic.List<ImplosionDebrisRefresh> refreshes, int epoch)
+        {
+            if (refreshes == null || refreshes.Count == 0) return;
+            if (epoch != _epoch || _world == null || !_world.IsCreated) return;
+
+            var em = _world.EntityManager;
+            for (int i = 0; i < refreshes.Count; i++)
+            {
+                var r = refreshes[i];
+                if (r.Entity == Entity.Null || !em.Exists(r.Entity)) continue;
+                em.SetComponentData(r.Entity, new PrismImplosionLocationOverride { Value = r.Location });
+                if (r.GrowBounds)
+                    em.SetComponentData(r.Entity, new RenderBounds { Value = r.Bounds });
+            }
+        }
+
         /// <summary>Destroys the companion entity (prism GameObject destruction / scene teardown).</summary>
         public static void Destroy(ref PrismRenderHandle handle)
         {
