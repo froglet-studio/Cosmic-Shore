@@ -1043,8 +1043,10 @@ namespace CosmicShore.Gameplay
 
         // Death-path split (Docs/PRISM_ANIMATION.md §4.6). AOE.ResolveDamage wraps a
         // whole drain, so everything a death does landed in ONE self-time bucket and
-        // could not be attributed. These four name the phases a mass-death burst
-        // actually spends its frame in; they sit on the per-death path deliberately —
+        // could not be attributed. These five name the phases a mass-death burst
+        // actually spends its frame in (Setup NESTS SpatialIndex and StatRaise, so its
+        // self time is the prism-local work); they sit on the per-death path
+        // deliberately —
         // a disabled profiler makes each Begin/End a predicted branch, and without
         // them the only honest statement about the burst is "it costs something".
         static readonly ProfilerMarker s_destroySetupMarker = new("Prism.Destroy.Setup");
