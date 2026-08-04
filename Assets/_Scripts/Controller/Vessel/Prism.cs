@@ -1041,9 +1041,35 @@ namespace CosmicShore.Gameplay
                 ActivateShield(2.0f);
         }
 
+        // Death-path split (Docs/PRISM_ANIMATION.md §4.6). AOE.ResolveDamage wraps a
+        // whole drain, so everything a death does landed in ONE self-time bucket and
+        // could not be attributed. These five name the phases a mass-death burst
+        // actually spends its frame in (Setup NESTS SpatialIndex and StatRaise, so its
+        // self time is the prism-local work); they sit on the per-death path
+        // deliberately —
+        // a disabled profiler makes each Begin/End a predicted branch, and without
+        // them the only honest statement about the burst is "it costs something".
+        static readonly ProfilerMarker s_destroySetupMarker = new("Prism.Destroy.Setup");
+        static readonly ProfilerMarker s_destroySpatialMarker = new("Prism.Destroy.SpatialIndex");
+        static readonly ProfilerMarker s_destroyStatMarker = new("Prism.Destroy.StatRaise");
+        static readonly ProfilerMarker s_destroySfxMarker = new("Prism.Destroy.SFX");
+        static readonly ProfilerMarker s_destroyEffectMarker = new("Prism.Destroy.EffectRequest");
+
+        // Pose captured ONCE per death and reused by the effect request and the SFX.
+        // transform.position/rotation/lossyScale are native property calls (lossyScale
+        // walks the parent chain); a death read them four times over for one instant
+        // that cannot change in between.
+        private Vector3 _lastDestructionPosition;
+        private Quaternion _lastDestructionRotation = Quaternion.identity;
+
         protected virtual GameObject SetupDestruction(Domains domain, string attackerPlayerName, bool devastate = false)
         {
-            var destructionScale = transform.lossyScale; // Use lossyScale to get the actual world scale, which accounts for parent scaling
+            using var setupScope = s_destroySetupMarker.Auto();
+
+            // lossyScale gets the actual world scale, which accounts for parent scaling.
+            var destructionScale = transform.lossyScale;
+            _lastDestructionPosition = transform.position;
+            _lastDestructionRotation = transform.rotation;
 
             if (scaleAnimator)
             {
@@ -1068,14 +1094,20 @@ namespace CosmicShore.Gameplay
             // attracting fauna, and the cell's LiveBlockCount must fall so the
             // phase system can descend (the consumption half of the oscillation).
             if (SpatialIndexId >= 0)
-                PrismSpatialIndex.Instance?.MarkDestroyed(SpatialIndexId);
-
-            _onTrailBlockDestroyedEventChannel.Raise(new PrismStats
             {
-                OwnName = PlayerName,
-                Volume = prismProperties.volume,
-                AttackerName = attackerPlayerName,
-            });
+                using var spatialScope = s_destroySpatialMarker.Auto();
+                PrismSpatialIndex.Instance?.MarkDestroyed(SpatialIndexId);
+            }
+
+            using (s_destroyStatMarker.Auto())
+            {
+                _onTrailBlockDestroyedEventChannel.Raise(new PrismStats
+                {
+                    OwnName = PlayerName,
+                    Volume = prismProperties.volume,
+                    AttackerName = attackerPlayerName,
+                });
+            }
 
             _lastDestructionScale = destructionScale;
             return null;
@@ -1098,10 +1130,12 @@ namespace CosmicShore.Gameplay
         /// </summary>
         void PlayDestructionSFX()
         {
+            using var sfxScope = s_destroySfxMarker.Auto();
             var sfx = DestructionSFX;
             if (_destroyedByCreature && sfx == GameplaySFXCategory.BlockDestroy)
                 sfx = GameplaySFXCategory.CreatureBlockHit;
-            AudioSystem.Instance?.PlayGameplaySFX(sfx, transform.position);
+            // Reuse the pose SetupDestruction just captured — this is the same instant.
+            AudioSystem.Instance?.PlayGameplaySFX(sfx, _lastDestructionPosition);
         }
 
         // Explosion Methods
@@ -1122,11 +1156,12 @@ namespace CosmicShore.Gameplay
             // EVERY prism regardless of size. The divide is therefore a no-op today and the
             // legacy gain is just `inertia`. Do not pre-multiply by a volume expecting it to
             // cancel here - it will not, and the result is a straight volume multiplier.
-            var returnData = OnBlockImpactedEventChannel.RaiseEvent(new PrismEventData
+            using var effectScope = s_destroyEffectMarker.Auto();
+            OnBlockImpactedEventChannel.RaiseEvent(new PrismEventData
             {
                 ownDomain = Domain,
-                SpawnPosition = transform.position,
-                Rotation = transform.rotation,
+                SpawnPosition = _lastDestructionPosition,
+                Rotation = _lastDestructionRotation,
                 Scale = _lastDestructionScale,
                 Velocity = debrisSpeedLimit > 0f ? impactVector : impactVector / prismProperties.volume,
                 DebrisSpeedLimit = debrisSpeedLimit,
@@ -1140,11 +1175,12 @@ namespace CosmicShore.Gameplay
             SetupDestruction(domain, playerName, devastate);
             PlayDestructionSFX();
 
-            var returnData = OnBlockImpactedEventChannel.RaiseEvent(new PrismEventData
+            using var effectScope = s_destroyEffectMarker.Auto();
+            OnBlockImpactedEventChannel.RaiseEvent(new PrismEventData
             {
                 ownDomain = Domain,
-                SpawnPosition = transform.position,
-                Rotation = transform.rotation,
+                SpawnPosition = _lastDestructionPosition,
+                Rotation = _lastDestructionRotation,
                 Scale = _lastDestructionScale,
                 TargetTransform = targetTransform,
                 Volume = prismProperties.volume,
