@@ -84,9 +84,9 @@
 
 // -----------------------------------------------------------------------------
 // THE MORPH RATE — how fast the pattern evolves, in full pattern cycles per second.
-// A cycle is "the pattern has returned to itself", so 0.04 is one cycle per 25 seconds:
-// slow enough that you never catch it moving, fast enough that it is never the same
-// stipple twice. Set to 0 for a frozen pattern; nothing else needs to change.
+// A cycle is "the pattern has returned to itself", so 0.12 is one cycle per ~8 seconds:
+// legibly alive without ever drawing the eye off the ship. Set to 0 for a frozen pattern;
+// nothing else needs to change.
 //
 // This is an AXIS, not a fourth kernel — each kernel interprets it in its own natural
 // terms (Worley orbits its feature points, the spiral drifts its phase), and each states
@@ -98,16 +98,18 @@
 // WHY IT IS SAFE. The pattern is only visible where alpha is strictly between 0 and 1 —
 // the narrow gradient shell — because the core clips regardless of threshold and the
 // exterior clips nothing. So an evolving threshold can only flip pixels inside that band.
-// At this rate ~0.2% of band pixels change state per 60fps frame, which reads as the
-// pattern FLOWING rather than flickering; past roughly 0.25 cycles/sec it starts to read
-// as noise instead, so treat that as the ceiling.
+// At this rate 0.69% of band pixels change state per 60fps frame, which reads as the
+// pattern FLOWING rather than flickering; past roughly 0.25 cycles/sec (1.45%) it starts
+// to read as noise instead, so treat that as the ceiling. Coverage fidelity is INDEPENDENT
+// of the rate — measured 0.0065-0.0070 across 0.04 through 0.25 — so the rate is purely a
+// motion dial and moving it cannot break the fade.
 //
 // IGN IGNORES THIS. It is a hash, not a field: it has no continuity in any input, so
 // advancing it does not morph the pattern, it resamples it — every pixel independently,
 // every frame. That is full-amplitude shimmer, not motion. Only the two kernels that are
 // continuous functions of position can be continuous functions of time as well.
 // -----------------------------------------------------------------------------
-static const float PRISM_OCCLUSION_MORPH_RATE = 0.04;   // cycles/sec; 0 = frozen
+static const float PRISM_OCCLUSION_MORPH_RATE = 0.12;   // cycles/sec; 0 = frozen
 
 // The clip threshold must land STRICTLY inside (0,1). frac() can return exactly 0, and a
 // 0 threshold against a 0 alpha is `clip(0)` — which KEEPS the fragment on the URP

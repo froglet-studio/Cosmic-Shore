@@ -996,8 +996,8 @@ short band from reading as an edge are both continuity choices:
     the remap is monotonic the cell boundaries and the whole look are unchanged — only the
     rate at which cells fill in as alpha sweeps, which is the part that was wrong. Retuning
     `WORLEY_CELL` without re-fitting the two CDF constants silently reintroduces the error.
-  **The morph axis.** `PRISM_OCCLUSION_MORPH_RATE` (cycles/sec, default 0.04 — one cycle
-  per 25s; 0 freezes it) evolves whichever kernel is selected, so the stipple is never the
+  **The morph axis.** `PRISM_OCCLUSION_MORPH_RATE` (cycles/sec, default 0.12 — one cycle
+  per ~8s; 0 freezes it) evolves whichever kernel is selected, so the stipple is never the
   same twice. It is an axis rather than a fourth kernel because each kernel interprets it
   natively: Worley's feature points **orbit inside their own cells**
   (`0.5 + 0.5·sin(2π·hash + t)` per axis — bounded to the cell, which is what keeps the 3×3
@@ -1013,8 +1013,10 @@ short band from reading as an edge are both continuity choices:
     strictly between 0 and 1 — the narrow gradient shell — since the core clips regardless
     of threshold and the exterior clips nothing. An evolving threshold can only flip pixels
     inside that band.
-  - **~0.2% of band pixels change state per 60fps frame** at the default rate, which reads
-    as the pattern flowing. Past ~0.25 cycles/sec it reads as noise; treat that as a ceiling.
+  - **0.69% of band pixels change state per 60fps frame** at the default rate, which reads as
+    the pattern flowing. Past ~0.25 cycles/sec (1.45%) it reads as noise; treat that as a
+    ceiling. Coverage fidelity is **independent of the rate** — 0.0065–0.0070 measured across
+    0.04 through 0.25 — so the rate is purely a motion dial and cannot break the fade.
   - **Worley uses the sin-orbit jitter at EVERY rate, including 0.** The orbit's marginal is
     arcsine rather than uniform, so it shifts the F1 CDF: feeding the old static constants
     (0.02/0.83) to moving points measures 0.0238, straight back out of the admission rule.
