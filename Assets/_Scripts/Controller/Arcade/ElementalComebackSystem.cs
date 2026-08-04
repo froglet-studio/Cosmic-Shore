@@ -353,7 +353,7 @@ namespace CosmicShore.Gameplay
                 case ScoreDifferenceSource.Goals:
                     return ScoringMetrics.SumByDomain(gameData, ScoringMetric.Goals, domain);
                 case ScoreDifferenceSource.PrismsRemaining:
-                    return stats.PrismsRemaining;
+                    return ScoringMetrics.SumByDomain(gameData, ScoringMetric.PrismsRemaining, domain);
                 case ScoreDifferenceSource.PrismsDestroyed:
                     return ScoringMetrics.SumByDomain(gameData, ScoringMetric.PrismsDestroyed, domain);
                 case ScoreDifferenceSource.Score:
