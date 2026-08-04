@@ -859,6 +859,22 @@ same degradation the pooled path always had (starvation and predation outlive th
 
 Rules for anything added to this carrier:
 
+- **The moving target is genuinely moving — never "optimize" it into a snapshot.**
+  The feed tuning brakes a grazing eater to a hover for exactly the suction duration
+  (`consumeHoldSeconds` 2 s = `PrismImplosion.implosionDuration`), which invites the
+  conclusion that the eater is stationary enough to snapshot the convergence point.
+  It is not. The hover decays from `maxSpeed`, and `LightFaunaDataSO`'s `6f` is a
+  **stale field initializer that both shipped assets override**:
+  `MassBrittleStarFaunaDataSO` authors **25**, `MassSharkFaunaDataSO` **35** (neither
+  authors `feedingBrakeSharpness`, `feedingClusterRadius` or `consumeHoldSeconds`, so
+  those do take the 4/s, 12 u, 2 s initializers). Residual drift for the braking
+  grazer is ~`v0/k` ≈ **6.25 world units** — about half the 12-unit feeding cluster
+  radius. The predation path is worse by construction: `DevouredCoroutine` passes the
+  predator's `mouth` while it keeps swimming, with no brake at all, so a 35-speed
+  shark can carry the convergence point tens of units during one suction. Two
+  consequences: a snapshot would visibly suck mass toward where the creature *was*,
+  and the culling envelope's growth write is a few-times-per-effect event rather than
+  the rare case the pooled path's comment implied.
 - **Uniform durations keep the sweep O(retired), not O(live).** Append order is expiry
   order, so the sweep only inspects the head. Per-spawn durations may vary, but a
   shorter-lived entry queued behind a longer one is destroyed late (harmless — opacity

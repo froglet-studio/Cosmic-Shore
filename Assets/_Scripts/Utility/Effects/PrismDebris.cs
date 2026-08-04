@@ -593,8 +593,17 @@ namespace CosmicShore.Utility
         /// The §1 documented exception: refresh each live suction's convergence point
         /// to its target's CURRENT position — one float3 per live implosion per frame,
         /// and a bounds write only when the point wanders outside the stamped envelope
-        /// (the common case is a creature approaching its meal, which stays inside).
         /// Nothing here touches the animation's progress; the GPU owns that.
+        ///
+        /// Do NOT read the bounds write as rare. A grazing eater brakes to a hover for
+        /// the feed hold, but it decays from maxSpeed — and LightFaunaDataSO's 6f is a
+        /// stale initializer both shipped assets override (BrittleStar 25, Shark 35),
+        /// so residual drift over the 2s suction is ~v0/k ≈ 6.25 world units, about
+        /// half the 12-unit feeding cluster radius. The predation path does not brake
+        /// at all (the predator's mouth keeps swimming), so it drifts further still.
+        /// The envelope therefore grows a few times per effect, not never — and this
+        /// is exactly why the convergence point may never be snapshotted at stamp time
+        /// as an "optimization": the mass would converge on where the creature WAS.
         ///
         /// A target that dies mid-suction drops out (real-null'd) and the sink freezes
         /// at the last known point — the same degradation PrismImplosion has always had,
