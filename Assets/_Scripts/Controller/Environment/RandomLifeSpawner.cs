@@ -203,10 +203,20 @@ namespace CosmicShore.Gameplay
                 bool preyAvailable = FaunaReproductionRules.PreyAvailable(
                     isPredator, host.GetLiveHerbivoreCount(), host.OpposingVolume(color), spawnProfile.FaunaFoodFloor);
 
+                // Staged release: a mode may hold a species closed until its own scored
+                // signal opens it (Ribcage releases the brood at 25% of the cage, the
+                // predator at 50%). Default tiers - config 0, cell int.MaxValue - leave
+                // every shipped biome released from the first tick.
+                bool released = faunaCfg.ReleaseTier <= host.FaunaReleaseTier;
+
                 int spawned = 0;
-                if (toSpawn > 0 && preyAvailable)
+                if (toSpawn > 0 && preyAvailable && released)
                 {
-                    SpawnFaunaPopulation(host, runtime, spawnProfile, faunaCfg, color, toSpawn, wave);
+                    // Spread across frames - a densely-stocked biome seeds tens of prism-bodied
+                    // creatures on one tick (Ribcage hatches 85 across four species loops that all
+                    // start in the same frame), and instantiating them together is the same frame
+                    // spike the flora batch above already yields to avoid.
+                    yield return SpawnFaunaPopulation(host, runtime, spawnProfile, faunaCfg, color, toSpawn, wave);
                     spawned = toSpawn;
                 }
 
@@ -246,7 +256,10 @@ namespace CosmicShore.Gameplay
         // an index: it rides the wave clock (see HerbivoreSpawnPoint).
         int _predatorSpawnPointIndex;
 
-        void SpawnFaunaPopulation(Cell host, CellRuntimeDataSO runtime, SpawnProfileSO spawnProfile,
+        /// <summary>Creatures instantiated per frame while seeding a population (see the caller).</summary>
+        const int FaunaSpawnBatchPerFrame = 6;
+
+        IEnumerator SpawnFaunaPopulation(Cell host, CellRuntimeDataSO runtime, SpawnProfileSO spawnProfile,
             FaunaConfigurationSO faunaCfg, Domains color, int count, int wave)
         {
             bool isPredator = faunaCfg.FaunaPrefab && faunaCfg.FaunaPrefab.Diet == FaunaDiet.Predator;
@@ -268,9 +281,14 @@ namespace CosmicShore.Gameplay
 
             for (int i = 0; i < count; i++)
             {
+                if (!host) yield break;   // cell torn down mid-seed (scene change)
+
                 Vector3 spawnPos = goal + UnityEngine.Random.insideUnitSphere * FaunaSpawnJitter;
                 var fauna = SpawnFaunaWithDomain(host, faunaCfg.FaunaPrefab, goal, color, spawnPos);
                 if (fauna) fauna.AssignLineage(host, faunaCfg);
+
+                if (i + 1 < count && (i + 1) % FaunaSpawnBatchPerFrame == 0)
+                    yield return null;
             }
         }
 

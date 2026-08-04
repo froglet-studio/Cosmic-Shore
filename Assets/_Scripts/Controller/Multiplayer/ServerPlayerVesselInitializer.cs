@@ -59,6 +59,14 @@ namespace CosmicShore.Gameplay
                  "Arrange Spawn Points Around Cell is on.")]
         [SerializeField, Min(0f)] protected float spawnDistanceOutsideNucleus = 40f;
 
+        [Tooltip("Floor for the computed spawn-ring radius, for a cell whose 'core' is NOT a " +
+                 "nucleus. The ring is max(nucleus radius + Spawn Distance Outside Nucleus, this). " +
+                 "Ribcage needs it: its cell has no NucleusPrefab (a nucleus control zone would " +
+                 "break the mode's fauna diet), so the nucleus radius is 0 and the ring would " +
+                 "collapse to the cell centre - INSIDE the 300u cage the players are meant to be " +
+                 "attacking from outside. 0 = no floor (every existing scene is unchanged).")]
+        [SerializeField, Min(0f)] protected float spawnRingRadiusFloor;
+
         [Tooltip("The cell whose nucleus the computed spawn ring measures off. Only used when " +
                  "Arrange Spawn Points Around Cell is on.")]
         [SerializeField] protected CellRuntimeDataSO cellData;
@@ -298,7 +306,10 @@ namespace CosmicShore.Gameplay
             // spawnDistanceOutsideNucleus from the cell CENTRE - inside the core.
             float nucleusRadius = cell ? cell.ExpectedNucleusWorldRadius : 0f;
 
-            if (nucleusRadius <= 0f)
+            // A radius floor makes the ring usable for a cell whose core is a STRUCTURE rather
+            // than a nucleus (Ribcage's cage), where nucleusRadius is legitimately 0. Without a
+            // floor that case is indistinguishable from "cell not resolvable yet" below.
+            if (nucleusRadius <= 0f && spawnRingRadiusFloor <= 0f)
             {
                 // Transient (cell not resolvable yet) - do NOT latch, so a later spawn can still
                 // install the real ring. Permanent (a cell with no nucleus configured) - latch,
@@ -325,12 +336,12 @@ namespace CosmicShore.Gameplay
                 ? Mathf.Max(1, gameData.SelectedPlayerCount.Value)
                 : Mathf.Max(1, gameData.Players.Count);
 
-            float radius = nucleusRadius + spawnDistanceOutsideNucleus;
+            float radius = Mathf.Max(nucleusRadius + spawnDistanceOutsideNucleus, spawnRingRadiusFloor);
             gameData.SetSpawnPoses(CellSpawnFormation.Build(count, cell.transform.position, radius));
 
             CSDebug.Log($"[ServerPlayerVesselInitializer] Spawn ring: {count} players at " +
-                        $"{radius:0.#}u (nucleus {nucleusRadius:0.#} + {spawnDistanceOutsideNucleus:0.#}) " +
-                        $"around {cell.name}.");
+                        $"{radius:0.#}u (nucleus {nucleusRadius:0.#} + {spawnDistanceOutsideNucleus:0.#}, " +
+                        $"floor {spawnRingRadiusFloor:0.#}) around {cell.name}.");
         }
 
         /// <summary>

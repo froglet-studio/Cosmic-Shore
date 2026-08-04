@@ -57,5 +57,12 @@ namespace CosmicShore.Data
         // scores a point; first domain to the wave target (default 3) wins. See
         // _Scripts/Controller/Arcade/NUCLEUSRUSH.md.
         NucleusRush = 38,
+        // Ribcage (39): Rhino-only cage-breaking race. A hollow SHIELDED prism sphere
+        // pens the cell's brood; domains race to smash the destruction target, and the
+        // leader IS the cell's controlling domain - so the fauna wave hatches in the
+        // leader's colour and the legacy herbivore diet (eat opposing-domain mass) turns
+        // the swarm loose on every trailing team's trails. See
+        // _Scripts/Controller/Arcade/RIBCAGE.md.
+        Ribcage = 39,
     }
 }

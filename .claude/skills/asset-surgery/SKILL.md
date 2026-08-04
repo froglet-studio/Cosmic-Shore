@@ -239,6 +239,18 @@ of which compiled clean and shipped):
    `Debug`), the project enums, and the base class with the exact protected
    members used. Bodies can return anything; you are checking names, types,
    arity, and control flow, not behaviour.
+   **Declare every stub in the type's REAL namespace, and verify that namespace
+   from the repo rather than assuming it.** A harness that parks everything in
+   one convenient namespace cannot see a missing `using`, which is the single
+   most likely error in a new file — it compiles clean and Unity then rejects it.
+   Cosmic Shore has bitten here once: `GameDataSO` lives in `CosmicShore.Utility`,
+   not `CosmicShore.Gameplay` with the controllers that consume it, so a new
+   `ScoringRuleSO` subclass shipped without `using CosmicShore.Utility;` and
+   surfaced as `CS0246` plus a cascade of `CS0534 does not implement inherited
+   abstract member` (every override whose signature mentions the unresolved type
+   stops matching its base). Harvest the namespaces mechanically — walk the
+   `.cs` files building a `type → namespace` map — and, once the harness is
+   fixed, prove it by deleting the `using` again and watching it fail.
 2. **Desugar what mcs 6.8 (C# 7.x) cannot parse but Unity (C# 9) can** — in a
    THROWAWAY COPY, never the real file: target-typed `new(...)` → `new T(...)`,
    `x is A or B` → `(x == A || x == B)`. Assert zero bare `new(` remain, or the

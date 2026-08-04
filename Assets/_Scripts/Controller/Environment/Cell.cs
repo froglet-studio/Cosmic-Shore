@@ -438,9 +438,107 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public bool IsPreyForHerbivore(Vector3 position, Domains faunaDomain, Domains preyDomain)
         {
+            // Containment first: a PENNED brood cannot reach the world outside its pen, so
+            // nothing out there is food no matter whose domain it wears. Ribcage's cage starts
+            // contained - the brood is visibly penned inside and will eat the trail of any
+            // vessel that ventures IN (that is the whole point of respecting the cage), but it
+            // cannot touch the match going on outside. The 25% release clears the radius and
+            // the ordinary rules below resume.
+            if (FaunaContainmentRadius > 0f && !IsInsideFaunaContainment(position))
+                return false;
+
             if (HasNucleusControlZone)
                 return !IsInsideNucleus(position);
             return preyDomain != faunaDomain;
+        }
+
+        /// <summary>
+        /// Radius (world units, centred on the cell) the cell's fauna are penned inside, or 0
+        /// for no containment - the default, and what every biome that is not a mode's pen
+        /// uses. While set: mass outside is not prey (<see cref="IsPreyForHerbivore"/>) and
+        /// every creature's goal is clamped inside (<see cref="ClampToFaunaContainment"/>).
+        ///
+        /// This is a spatial DIET + STEERING rule, not a wall: nothing is teleported and no
+        /// collider is added, so a creature can still drift out on its own momentum - it just
+        /// has no reason to and nothing to eat there. Ribcage sets it to the cage's shell
+        /// radius while the cage is sealed and clears it on the first release.
+        /// </summary>
+        public float FaunaContainmentRadius { get; set; }
+
+        /// <summary>
+        /// While the brood is penned, does a creature that DETECTS prey inside the pen go to full
+        /// aggression? Off by default. Ribcage turns it on: the cage is meant to be intimidating,
+        /// so flying in does not merely put your trail on the menu - it sends the whole penned
+        /// population berserk (Frenzy → CellAggressionLevel.Level2: any-colour steering, friendly
+        /// avoidance off, danger-immune, fastest cadence and widest consume radius) until you
+        /// leave and the mass you laid is gone.
+        ///
+        /// This is a confinement response, not a new fundamental: it only raises the SAME phase
+        /// floor a mode could set by hand, and only while a pen exists.
+        /// </summary>
+        public bool ContainmentIntruderFrenzy { get; set; }
+
+        /// <summary>
+        /// True when the pen currently holds edible mass - i.e. somebody flew in and laid trail.
+        /// Sampled on the PHASE tick (not per frame) through the canonical spatial index
+        /// (Docs/SPATIAL_INDEX.md), never a physics query, and only while a pen exists.
+        ///
+        /// The pen radius deliberately sits inside the cage shell, so the cage's own bars - the
+        /// shielded ones AND the unshielded danger traps - are outside it and can never register
+        /// as an intruder. Shielded mass is filtered anyway (it is not food), which also keeps a
+        /// player's own shielded prisms from tripping it.
+        /// </summary>
+        public bool HasPreyInsideFaunaContainment
+        {
+            get
+            {
+                if (FaunaContainmentRadius <= 0f) return false;
+                if (Time.time < _nextContainmentProbeAt) return _containmentHasPrey;
+                _nextContainmentProbeAt = Time.time + ContainmentProbeIntervalSeconds;
+
+                _containmentProbe.Clear();
+                var index = PrismSpatialIndex.Instance;
+                _containmentHasPrey = false;
+                if (index == null) return false;
+
+                index.QuerySphere(transform.position, FaunaContainmentRadius, _containmentProbe);
+                for (int i = 0; i < _containmentProbe.Count; i++)
+                {
+                    var p = _containmentProbe[i];
+                    if (!p || IsShieldedMass(p)) continue;   // shields are not food, so not an intruder
+                    _containmentHasPrey = true;
+                    break;
+                }
+                _containmentProbe.Clear();
+                return _containmentHasPrey;
+            }
+        }
+
+        // Reused buffer + cadence for the pen's intruder probe - one Burst sphere query per
+        // interval, shared across every reader in the frame.
+        static readonly List<Prism> _containmentProbe = new();
+        const float ContainmentProbeIntervalSeconds = 0.4f;
+        float _nextContainmentProbeAt = float.NegativeInfinity;
+        bool _containmentHasPrey;
+
+        /// <summary>True when <paramref name="position"/> is inside the fauna pen (always true when there is none).</summary>
+        public bool IsInsideFaunaContainment(Vector3 position) =>
+            FaunaContainmentRadius <= 0f ||
+            (position - transform.position).sqrMagnitude <= FaunaContainmentRadius * FaunaContainmentRadius;
+
+        /// <summary>
+        /// Pulls a fauna goal back inside the pen. Returns the point unchanged when there is no
+        /// containment or the goal is already inside, so the common path costs one compare.
+        /// </summary>
+        public Vector3 ClampToFaunaContainment(Vector3 goal)
+        {
+            if (FaunaContainmentRadius <= 0f) return goal;
+
+            Vector3 offset = goal - transform.position;
+            float sqr = offset.sqrMagnitude;
+            if (sqr <= FaunaContainmentRadius * FaunaContainmentRadius) return goal;
+
+            return transform.position + offset / Mathf.Sqrt(sqr) * FaunaContainmentRadius;
         }
 
         /// <summary>
@@ -456,6 +554,77 @@ namespace CosmicShore.Gameplay
         /// from the scored value. Pass null (server / single-player) to clear.
         /// </summary>
         public void SetReplicatedDominantDomain(Domains? domain) => _replicatedDominantDomain = domain;
+
+        /// <summary>
+        /// SERVER-side hook for a game mode that defines "control" by its own scored rule
+        /// rather than by laid volume - the same authority move Brood Rush makes when it
+        /// says node control IS the nucleus, expressed here as a pin instead of a
+        /// different volume source. Ribcage uses it: the cell's controlling domain is the
+        /// team currently leading the cage-destruction race, so the fauna wave that hatches
+        /// wears the leader's colour and the untouched legacy herbivore diet (eat
+        /// opposing-domain mass) points the swarm at every trailing team's trails. No
+        /// bespoke fauna targeting exists anywhere - the diet rule was already this.
+        ///
+        /// Writes the same field the client-side replication pin uses, and that is
+        /// deliberate: only ONE side ever writes it (the mode on the server, where
+        /// <see cref="CellNetworkSync"/> deliberately skips its own writes; CellNetworkSync
+        /// on clients, mirroring the server's already-pinned answer). So a mode pin
+        /// replicates to every peer through the existing phase/domain sync for free.
+        ///
+        /// Re-colours the LIVE swarm as well as the next wave - the no-domain-asymmetry
+        /// invariant says a cell's fauna are the CONTROLLER's fauna, and letting the
+        /// standing swarm keep a deposed team's colour would leave two fauna colours in
+        /// one cell. Doing it inside this setter is what keeps the two from drifting.
+        /// Pass null to release the pin.
+        /// </summary>
+        public void SetModeControlOverride(Domains? domain)
+        {
+            _replicatedDominantDomain = domain;
+
+            if (!domain.HasValue || domain.Value == Domains.Blue) return;
+
+            // Re-colour UNCONDITIONALLY - deliberately not gated on "the value changed".
+            // On a client both writers touch this field: CellNetworkSync's replication
+            // callback (which does NOT re-colour) and this setter, and the NetworkVariable
+            // delta can land BEFORE the mode's RPC. An equality early-return would then see
+            // the field already correct and skip the swarm, leaving that client's creatures
+            // wearing the deposed team's colour - hunting the wrong trails - for the rest of
+            // the match. Callers only invoke this on control TRANSITIONS and the loop is
+            // O(live fauna) (tens), so paying it every call is the cheap side of the trade.
+            for (int i = 0; i < liveFauna.Count; i++)
+            {
+                var f = liveFauna[i];
+                if (f) f.SetTeam(domain.Value);
+            }
+        }
+
+        /// <summary>
+        /// Minimum phase this cell may sit at, or null for "no floor" (the default -
+        /// every cell that does not opt in behaves exactly as before). The volume ladder
+        /// still runs every tick; the floor only ever RAISES the result, so a mode can
+        /// escalate its ecology on its own scored signal without the phase compute
+        /// becoming a mode concern.
+        ///
+        /// Ribcage drives it from race progress: the leader passing 25% of the cage
+        /// target floors the cell at Restless (fauna hunt the opposing-colour centroid),
+        /// 50% floors it at Frenzy (any-colour steering, no friendly avoidance,
+        /// danger-immune). This is NOT a decay/growth oscillator - it is monotonic in an
+        /// ACTIVE player force (mass destroyed) and never removes a prism.
+        /// </summary>
+        public CellPhase? ModePhaseFloor { get; set; }
+
+        /// <summary>
+        /// Staged fauna release: a species may seed only when its
+        /// <see cref="FaunaConfigurationSO.ReleaseTier"/> is at or below this value.
+        /// Defaults to <see cref="int.MaxValue"/> ("everything released"), and every
+        /// existing config authors tier 0, so no shipped biome changes behaviour.
+        ///
+        /// Ribcage holds the cage's brood at -1 (nothing released) until the leader
+        /// cracks 25% of the target, then 0 (the grazer swarm), then 1 at 50% (the
+        /// predator joins). Gating PRODUCTION is explicitly allowed by the conserved-mass
+        /// law - not creating mass is fine, aging it out is not.
+        /// </summary>
+        public int FaunaReleaseTier { get; set; } = int.MaxValue;
 
         // ------------------------------------------------------------------
         //  Live volume - the spine. Recomputed from live prism state on a short
@@ -789,6 +958,20 @@ namespace CosmicShore.Gameplay
             // Volume is the spine: the ladder climbs on live volume; prism count is
             // only the Frenzy perf backstop inside Compute.
             var newPhase = CellPhaseRules.Compute(LiveVolume, LiveBlockCount, phase, in thresholds);
+
+            // A mode may hold the cell at or above a phase (see ModePhaseFloor). The
+            // ladder is unchanged - the floor can only raise the answer, never lower it,
+            // so volume remains the spine and the floor is pure escalation on top.
+            if (ModePhaseFloor.HasValue && newPhase < ModePhaseFloor.Value)
+                newPhase = ModePhaseFloor.Value;
+
+            // A penned population that detects an intruder's mass goes berserk (see
+            // ContainmentIntruderFrenzy). Same ladder, same floor mechanism - just driven by the
+            // pen instead of by the mode's progress.
+            if (ContainmentIntruderFrenzy && FaunaContainmentRadius > 0f &&
+                newPhase < CellPhase.Frenzy && HasPreyInsideFaunaContainment)
+                newPhase = CellPhase.Frenzy;
+
             ApplyAuthoritativePhaseAndDomain(newPhase, DominantDomain);
         }
 
@@ -1117,6 +1300,16 @@ namespace CosmicShore.Gameplay
             };
 
             runtime.Config = CellConfigs[index];
+
+            // Seed the fauna release gate from the biome BEFORE any spawner can tick. A mode
+            // that seals its cell (Ribcage) must not depend on its controller's OnNetworkSpawn
+            // beating the cell's own bootstrap clock - AssignConfig is upstream of
+            // StartSpawnerForMode by construction, so the seal is in place from the first tick.
+            // Mode writes (Cell.FaunaReleaseTier) always win afterwards, and RestartSpawnerForMode
+            // does not come back through here, so a release is never silently re-sealed.
+            var assigned = CellConfigs[index];
+            if (assigned && assigned.SpawnProfile)
+                FaunaReleaseTier = assigned.SpawnProfile.InitialFaunaReleaseTier;
         }
 
         /// <summary>
@@ -1925,11 +2118,22 @@ namespace CosmicShore.Gameplay
                     // cannot eat) while still counting toward volume, per-domain counts,
                     // and the phase backstop. gridTracked remembers the classification so
                     // RemoveBlock stays symmetric even if the nucleus radius changes.
+                    //
+                    // SHIELDED mass is excluded for exactly the same reason, and it is the
+                    // same rule: Docs/ECOSYSTEM.md §16.2 already removed shielded prisms
+                    // from every herbivore's DIET (Consume is a no-op on super-shielded and
+                    // only sheds the shield on shielded), but they stayed in the grids, so
+                    // the density centroids kept STEERING swarms onto mass they had just
+                    // been told they cannot eat - the residue behind §16.3's Skim Race
+                    // stall, and fatal to a mode like Ribcage whose arena IS a shielded
+                    // structure. Shield state can change at runtime, so
+                    // NotifyBlockShieldStateChanged re-files the prism on the transition.
+                    //
                     // One transform.position read for the nucleus test AND all four
                     // grid writes — it is the same instant, and the read is a
                     // managed→engine interop on the per-prism creation path.
                     Vector3 blockPosition = block.transform.position;
-                    if (!IsInsideNucleus(blockPosition))
+                    if (!IsInsideNucleus(blockPosition) && !IsShieldedMass(block))
                     {
                         gridTracked.Add(block);
 
@@ -2003,6 +2207,37 @@ namespace CosmicShore.Gameplay
             if (block is null || !trackedBlocks.ContainsKey(block)) return;
             RemoveBlock(block);
             AddBlock(block);
+        }
+
+        /// <summary>
+        /// Re-registers a tracked prism whose SHIELD state changed, so it leaves the
+        /// targeting grids when a shield engages and re-enters them when one is shed.
+        /// Shielded mass is not food (Docs/ECOSYSTEM.md §16.2), so it must not be a
+        /// steering target either - see AddBlock. Called from
+        /// <c>PrismStateManager.SyncAOERegistryShieldState</c>, the single funnel every
+        /// shield transition already passes through. No-op when the classification did
+        /// not actually change, so the common "shield re-applied" path costs one bool
+        /// compare rather than a grid remove/add.
+        /// </summary>
+        public void NotifyBlockShieldStateChanged(Prism block)
+        {
+            if (block is null || !trackedBlocks.ContainsKey(block)) return;
+
+            bool shouldBeGridTracked = !IsShieldedMass(block) && !IsInsideNucleus(block.transform.position);
+            if (shouldBeGridTracked == gridTracked.Contains(block)) return;
+
+            RemoveBlock(block);
+            AddBlock(block);
+        }
+
+        /// <summary>
+        /// Shield-state test used for grid membership. Mirrors <c>Fauna.IsShieldedMass</c>
+        /// (the diet rule) so "not food" and "not a steering target" can never disagree.
+        /// </summary>
+        static bool IsShieldedMass(Prism block)
+        {
+            var props = block ? block.prismProperties : null;
+            return props != null && (props.IsShielded || props.IsSuperShielded);
         }
 
         /// <summary>

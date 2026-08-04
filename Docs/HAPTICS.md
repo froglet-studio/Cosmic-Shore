@@ -1,6 +1,7 @@
-# Haptics — the two-feel policy
+# Haptics — the two-feel policy (+ one rare alert)
 
-Cosmic Shore ships **exactly two haptic feels**, both **local-human-pilot-only**. Everything else
+Cosmic Shore ships **two everyday haptic feels**, both **local-human-pilot-only**, plus **one
+rare alert** reserved for match-changing events. Everything else
 is deliberately silent. This is a design decision, not an omission: minimal, legible haptics that
 never fight each other read as *intentional*; a buzz on every UI tap, drift, boost, joust, and
 explosion reads as noise. Keep it this way — see "Adding/changing a feel" before touching it.
@@ -9,6 +10,7 @@ explosion reads as noise. Keep it this way — see "Adding/changing a feel" befo
 |---|---|---|
 | **Skim pulse** (reward) | Short (~70 ms), bright, sharp transient at high haptic frequency. Strength scales with how close the prism passed to the skimmer centre. Many in sequence read as a rapid, continuously rewarding pulse train. | Each prism entering a skimmer (Squirrel etc.) |
 | **Punish thud** (mistake) | Short (~200 ms), heavy, **low**-frequency thud — the deliberate opposite of the bright skim. | The vessel **body** slamming a prism |
+| **Alert shake** (event) | Long (~1.2 s) hard **rattle** — full-amplitude sawtooth at mid frequency, both gamepad motors out of phase. Unmistakably neither of the above, and long enough to read as "something happened" rather than "you hit something". | Ribcage's fauna release rungs (25% / 50%) — **nothing else** |
 
 ## Where it lives
 
@@ -70,9 +72,16 @@ it's already silent.
 
 ## Adding / changing a feel
 
-- **Do not** add a third feel or re-enable a legacy category without a deliberate decision — the whole
-  point is that two feels stay legible. If you must, route it through a new dedicated method on
+- **Do not** add a further feel or re-enable a legacy category without a deliberate decision — the whole
+  point is that the set stays legible. If you must, route it through a new dedicated method on
   `HapticController` (never through the silenced `PlayHaptic`/`PlayConstant`) and extend the gate.
+- **The alert shake is the one exercise of that clause so far** (requested for Ribcage, 2026-08): a
+  third feel, added via a dedicated `HapticController.PlayAlert()` with the gate extended so it
+  outranks BOTH other feels for its duration (`s_alertBusyUntil` suppresses skim *and* punish) and
+  is rate-limited (`AlertMinIntervalSec` 1.5 s) so it can never stack into a drone. It is fenced to
+  **rare, match-changing state changes** — currently only the two Ribcage release rungs, which fire
+  at most twice per match. Do NOT hang it on anything frequent: the policy exists because haptics
+  stop meaning anything once they are common. A third *everyday* feel would still be a regression.
 - Tuning the skim strength floor: `SkimmerHapticsByPrismEffectSO.minStrength` (SerializeField on the asset).
 - Tuning the gate cadence / clip shape: constants + `EnsureClips()` in `HapticController.cs`. These are
   intentionally hard-coded (the feature was scoped to "no per-category tables, no editor tooling"). If the

@@ -1,0 +1,40 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c778cfbe4dfc4c5c8401e40c17802311, type: 3}
+  m_Name: Ribcage Brittlestar Fauna Config Data
+  m_EditorClassIdentifier:
+  FaunaPrefab: {fileID: 5351160486092638538, guid: c719f00ea7596c24185379994f7dc824, type: 3}
+  InitialSpawnCount: 12
+  PopulationSize: 12
+  SpawnProbability: 1
+  FeedsPerOffspring: 20
+  OffspringPerBirth: 1
+  ReproductionCooldownSeconds: 10
+  MaxLivePopulation: 20
+  ReleaseTier: 0
+  CenterFocusBias: 0.35
+  Element: 4
+  InitialLevel: 1
+  BodyScalePerLevel: 1.15
+  CrystalScalePerLevel: 1.2
+  LevelGrowSeconds: 1
+  SpreadElements: 1
+  ElementPalette:
+  - {fileID: 11400000, guid: ede43cd3ab5943c58c646065c1f57a1f, type: 2}
+  - {fileID: 11400000, guid: 28c9a96388684fa0b3b10b9dbea56c70, type: 2}
+  - {fileID: 11400000, guid: 72fa98519b534214b89e9c29c44b89da, type: 2}
+  - {fileID: 11400000, guid: 62a30981533145a5b66304c04e7c50e0, type: 2}
+  Levels:
+    Enabled: 1
+    MinLevel: 1
+    MaxLevel: 5
+    RarityFalloff: 2
