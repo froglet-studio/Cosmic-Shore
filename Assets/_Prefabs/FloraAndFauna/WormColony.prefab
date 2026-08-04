@@ -60,4 +60,3 @@ MonoBehaviour:
   headPrefab: {fileID: 1002, guid: 76d26128fc6c47f08c1ba8f433289457, type: 3}
   bodyPrefab: {fileID: 1002, guid: 6e4e4bd430d0494c82c4fe517080787c, type: 3}
   tailPrefab: {fileID: 1002, guid: 27f5ee5c97774ea6a5572bacca1713c1, type: 3}
-  colonyPrefab: {fileID: 1002, guid: 8f79c97ef2bd4624a730a96900e4daaa, type: 3}

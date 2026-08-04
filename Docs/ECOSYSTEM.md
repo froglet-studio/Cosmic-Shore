@@ -2115,10 +2115,55 @@ co-op fight: `MinigameWildlifeBlitzMultuplayerCoOp` (note §10.3: that scene use
 `IntensityWiseLifeSpawner`, which spawns 1/tick — fine for a PopulationSize-1 boss).
 All feel/fight tuning lives on `WormColonyConfig.asset` (`WormColonyConfigSO`).
 
-Known gaps, stated honestly: fauna are client-local (§7 caveat 4) — in multiplayer each
-client fights its own worm until fauna sync lands; segment kills raise no scoring event
-(fauna deaths are invisible to `LifeForm.OnLifeFormDeath`-based WildlifeBlitz scoring —
-a SOAP channel is the follow-up, `OnFaunaWaveSpawned` pattern); a differentiated end
-keeps its body-segment mesh (a battle-scarred stump head — danger prisms and behavior
-carry the read); the wither/bloom transitions ride per-frame CPU like all fauna today
-(C6 in the clock-material tracker covers the migration).
+### 21.6 In-editor verification (the human is the gate)
+
+Nothing here has run in Unity — the whole branch is machine-validated only (see §21.7).
+First pass, in Menu_Main freestyle:
+
+1. **Import clean.** Pull, let Unity reimport, confirm zero compile errors and that the
+   four new prefabs open without "Missing (Mono Script)" rows. Run
+   **FrogletTools > Validation > Validate Lifeform Crystals** — head/tail hearts are
+   runtime-provisioned by design, so it should stay quiet about the worm.
+2. **Spawn**: freestyle → Lifeform Matrix toy → "Worm Colony" → any element station.
+   Expect 8 segments hatching **on the cell's densest mass** in your domain: a plated
+   head, 6 tapering bodies, a bladed tail — segments nearly touching, tapering to the
+   tail, with a wide head gap.
+3. **Swim**: head seeks mass and slithers; the body follows the wave. It should GRAZE
+   (prisms suction into the head) and DEVOUR creatures that stray into its jaws.
+4. **Fight**: fly near it during a hunt window → it pursues nose-on, rears back and
+   coils (~1.2s), lunges at the locked point (dodgeable by moving), then drifts slow
+   through recovery. Loiter at the tail for the whip.
+5. **Kill**: shoot a mid-body core prism → the worm splits in two. Strip a head plate
+   twice (shield sheds, then the plate dies) — kill all 11 head prisms, or joust the
+   caged heart, and the head drops its crystal; ~18s later the next segment hardens
+   into a new danger head.
+6. **Two worms**: spawn a second — they should visibly repel and orbit the same
+   buildup from different sides rather than interpenetrating.
+
+Dials if it reads wrong, all on `WormColonyConfig.asset`: size `KaijuScale`;
+spacing `SegmentSpacing`/`TaperPerSegment`; aggression `AggroRadius`/`StrikeRange`/
+`HuntIntervalSeconds`; appetite `MouthRadius`/`FaunaBiteRange`/`FeedsPerSegment`;
+crowding `ColonySeparationRadius`/`ColonySeparationWeight`.
+
+### 21.7 Known gaps + follow-ups (scoped, not blockers)
+
+- **Not play-verified.** No Unity in the authoring environment: everything is
+  compile-reviewed and machine-validated (YAML structure, every GUID resolves, every
+  serialized key matches a real C# field, brace/token balance, the conditional-
+  compilation CI gate). First in-editor pass is §21.6.
+- **Client-local.** Fauna have no NetworkObject (§7 caveat 4), so in multiplayer each
+  client fights its own worm until fauna sync lands. A co-op kaiju eventually needs
+  server-authoritative colony state (NucleusRush's SOAP-over-NetworkVariable pattern).
+- **Segment kills raise no scoring event.** Fauna deaths are invisible to the
+  `LifeForm.OnLifeFormDeath`-based WildlifeBlitz scoring; a boss-hunt mode needs its own
+  SOAP channel (model: `CellRuntimeDataSO.OnFaunaWaveSpawned`).
+- **Level is inert for the colony.** `SetLevel` scales the empty root anchor, so the
+  matrix's L1/L3/L5 stations all spawn the same-size worm; size lives on `KaijuScale`.
+  Wiring level → `KaijuScale`/segment count is a clean follow-up.
+- **A differentiated end keeps its body-segment mesh** (a battle-scarred stump head —
+  the danger prisms and behavior carry the read; a mesh swap would be the polish).
+- **Wither/bloom ride per-frame CPU** like all fauna today (C6 in the clock-material
+  tracker covers that migration; the worm added no new CPU animation tier).
+- **The Lifeform Matrix station for the colony is an anonymous labeled sphere** — the
+  root prefab carries no renderer for `ToyModelBuilder` to sample. A mini-worm station
+  model is cosmetic follow-up.

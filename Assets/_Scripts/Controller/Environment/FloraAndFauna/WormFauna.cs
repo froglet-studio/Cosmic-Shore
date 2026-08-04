@@ -38,6 +38,7 @@ namespace CosmicShore.Gameplay
     public class WormFauna : Fauna
     {
         const string PLAYER_NAME = "WormColony";
+        const string MouthName = "Mouth";
 
         [Header("Worm Colony")]
         [SerializeField] WormColonyConfigSO config;
@@ -46,9 +47,6 @@ namespace CosmicShore.Gameplay
         [SerializeField] WormSegmentFauna headPrefab;
         [SerializeField] WormSegmentFauna bodyPrefab;
         [SerializeField] WormSegmentFauna tailPrefab;
-        [Tooltip("This prefab's own asset — instantiated for the rear half when a " +
-                 "mid-body kill splits the worm in two.")]
-        [SerializeField] WormFauna colonyPrefab;
 
         // The chain, head-first. The list IS the topology — segment order, wounds,
         // and splits all operate on it (simpler than per-segment prev/next links,
@@ -193,9 +191,15 @@ namespace CosmicShore.Gameplay
             // The jaws: a light transform tracking the head's fang centroid each frame.
             // Deliberately NOT a danger prism's own transform — the sink must keep
             // tracking the swimming worm even after players shoot the fangs off.
-            var mouthGO = new GameObject("Mouth");
-            mouthGO.transform.SetParent(transform, false);
-            _mouth = mouthGO.transform;
+            // A split-born colony is a clone of its parent root, so it may already
+            // carry one — reuse it rather than stacking a second.
+            _mouth = transform.Find(MouthName);
+            if (!_mouth)
+            {
+                var mouthGO = new GameObject(MouthName);
+                mouthGO.transform.SetParent(transform, false);
+                _mouth = mouthGO.transform;
+            }
 
             // Attack pulses start in the REST stretch (the shark's pattern): the
             // first hunt window opens (interval - duration) seconds from now, so a
@@ -848,16 +852,20 @@ namespace CosmicShore.Gameplay
             }
         }
 
+        /// <summary>
+        /// The severed rear half becomes its own colony. The new brain is a CLONE OF
+        /// THIS ONE rather than a fresh prefab instantiation, which is both simpler and
+        /// biologically right: the two halves of a split worm are the same animal, so
+        /// the child inherits this colony's exact tuning (config, segment prefabs, diet,
+        /// starvation clock) with no serialized self-reference to keep wired. The
+        /// segments are not children of the root, so the clone brings no body with it —
+        /// it adopts the severed half in Initialize.
+        /// </summary>
         void SpawnSplitColony(List<WormSegmentFauna> rear)
         {
             if (rear == null || rear.Count == 0) return;
 
-            var prefab = colonyPrefab ? colonyPrefab : this;
-            if (!colonyPrefab)
-                CSDebug.LogError($"{nameof(WormFauna)} on {name}: colonyPrefab is unwired — " +
-                                 "splitting by cloning the live colony instead. Wire the prefab self-reference.");
-
-            var colony = Instantiate(prefab, rear[0].transform.position, rear[0].transform.rotation);
+            var colony = Instantiate(this, rear[0].transform.position, rear[0].transform.rotation);
             colony.domain = domain;
             colony.Goal = Goal;
             colony._pendingAdoption = rear;

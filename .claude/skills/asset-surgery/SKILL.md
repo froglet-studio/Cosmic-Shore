@@ -260,7 +260,59 @@ hand-authored files plus a scene array entry. The recipe:
    index 0 must stay the environment-free config (`CellTypeChoiceOptions.
    EnvironmentFree` boots on the first config with no environment).
 
+## 4.7 Technique: recovering authored values from DELETED assets
+
+Origin: the worm-colony rebuild (2026-08). The session deleted a decade-old
+prefab family as "dead content" and rebuilt the system cleanly — then the
+prompter pushed back twice: *"the old prefab had the proper placement… take the
+good from the old and leave the bad"*, and *"spaced too far. again use the model
+for reference."* Both times the session had **invented geometry it could have
+read**. The lesson generalizes:
+
+- **Deleting the CODE does not mean discarding the AUTHORING.** Structure, wiring
+  and broken behavior are what you delete; hand-placed transforms, proportions and
+  arrangements are somebody's craft and are still in git. Before authoring any
+  replacement geometry, mine the deleted asset:
+  `git show <sha>^:path/to/Old.prefab` and parse it.
+- **Extract verbatim, don't eyeball.** Each nested prefab instance's transform
+  lives in its `m_Modification.m_Modifications` list as `m_LocalPosition.{x,y,z}` /
+  `m_LocalRotation.{x,y,z,w}` / `m_LocalScale.{x,y,z}` rows. Pull them into
+  literal tables and emit them unchanged — quaternions especially, which are
+  impossible to re-derive by eye.
+- **Ratios transfer, absolutes don't.** When the replacement renders at a
+  different root scale, the invariant is the RATIO (e.g. `gap ÷ model scale`).
+  The session guessed a segment spacing of 14 and was 1.67× too wide; the
+  authored chain stated it exactly (gaps of 8.05/8.39/8.63/8.71 at model
+  scale 1 → the value is 8.4). Derive the ratio from the old data, then
+  re-express it in the new scale — and put the derivation in the config
+  tooltip so the next person doesn't re-guess it.
+- **Audit what you recover.** The old asset also encodes its BUGS: this one had
+  a whole spindle tier authored at scale ZERO (invisible) and prisms named
+  "Shielded…" whose `IsShielded` flag was actually `0`. Recover the geometry,
+  fix the defects, and say which was which in the commit.
+
 ## 5. Traps learned the hard way (check these BEFORE debugging for an hour)
+
+- **Stripping `[...]` attributes globally also eats `float[]`.** A C#-field
+  scraper that does `re.sub(r'\[[^\]]*\]\s*', '', line)` turns
+  `[SerializeField] float[] foo = …` into `floatfoo = …`, so the declaration
+  stops matching and the field vanishes from your "serialized fields" set —
+  which then reports FALSE mismatches against a perfectly good asset. Anchor the
+  strip to the line start: `^(?:\[[^\]\n]*\]\s*)+`. (Same class of bug: a
+  `^public` regex misses `[Min(1)] public int Foo` — strip first, then match.)
+- **A prefab field pointing at its OWN asset GUID is an unknown — avoid needing
+  one.** For "instantiate another of me" semantics, `Instantiate(this)` on the
+  live component is simpler, deterministic, and inherits the runtime-correct
+  serialized state; it needs no wiring to keep valid and no fallback path. Two
+  caveats: cloning a live root also clones any RUNTIME-created children (find
+  them by name and reuse instead of stacking duplicates), and private fields
+  without `[SerializeField]` come back fresh on the clone (usually what you want
+  for runtime lists).
+- **Unity serializes by NAME, so the parity check is per-COMPONENT-document.**
+  Validate hand-authored YAML by splitting on `--- !u!114`, mapping each doc's
+  `m_Script` guid → its `.cs`, and asserting every top-level key is a serialized
+  field of THAT class (plus its bases). Checking a whole file against one class
+  produces noise — a prefab legitimately contains several components' fields.
 
 - **NEVER delete a code block with a regex.** A pattern like
   `r'public static X\(...\)\n\{(?:.*?\n)*?\}\n'` looks bounded but the lazy
@@ -327,6 +379,15 @@ hand-authored files plus a scene array entry. The recipe:
   cell's volume from 10% of its prisms). Set those to `base × k² / detail²`.
   Corollary worth stating out loud: at constant coverage and thickness, a 2×
   surface costs exactly 4× volume. That is geometry, not a tuning miss.
+
+### Bundled tool: `field_parity.py`
+
+Beside this skill. `serialized_fields(cs_path)` returns what Unity would serialize
+from a C# file (the attribute-stripping trap above is already handled);
+`asset_docs(asset_path)` yields `(script_guid, [top-level keys])` per MonoBehaviour
+document. ~20 lines of glue maps guid → `.cs` and asserts `keys` are a subset of
+`fields` for every doc in every asset you authored. Run it before committing any
+hand-written YAML — it is what turns "looks right" into "provably resolves".
 
 ## 6. When the editor genuinely IS required
 
