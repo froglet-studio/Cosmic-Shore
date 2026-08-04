@@ -13,11 +13,11 @@ MonoBehaviour:
   m_Name: WormColonyConfig
   m_EditorClassIdentifier: 
   SpawnSegmentCount: 8
-  SegmentSpacing: 14
+  SegmentSpacing: 8.4
   KaijuScale: 3
   TaperPerSegment: 0.9
-  HeadGapMultiplier: 2.6
-  TailGapMultiplier: 1.8
+  HeadGapMultiplier: 2.56
+  TailGapMultiplier: 1.79
   MaxSegmentsPerWorm: 16
   CruiseSpeed: 18
   TurnDegreesPerSecond: 40
@@ -36,13 +36,17 @@ MonoBehaviour:
   - 0.45
   BehaviorTickSeconds: 1.5
   MouthRadius: 28
+  FaunaBiteRange: 34
   MaxBitesPerTick: 6
   FeedsPerSegment: 24
   SegmentBloomSeconds: 2
   EndRegrowSeconds: 18
   RegrownEndElement: 2
   StarvationShedIntervalSeconds: 12
-  AggroRadius: 130
+  AggroRadius: 220
+  StrikeRange: 90
+  PursuitSpeedMultiplier: 1.45
+  PursuitTurnMultiplier: 2
   HuntIntervalSeconds: 26
   HuntDurationSeconds: 12
   TelegraphSeconds: 1.2

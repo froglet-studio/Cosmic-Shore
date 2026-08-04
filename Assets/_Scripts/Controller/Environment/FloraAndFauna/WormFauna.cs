@@ -69,12 +69,15 @@ namespace CosmicShore.Gameplay
         float _lastStarvationShed;
 
         // --- Attack state machine (souls-like grammar) ---
-        enum AttackState { Cruise = 0, Telegraph = 1, Lunge = 2, Recover = 3 }
+        //  Cruise → (pilot sensed in a hunt window) Pursue → (inside StrikeRange)
+        //  Telegraph → Lunge → Recover → Cruise.
+        enum AttackState { Cruise = 0, Pursue = 1, Telegraph = 2, Lunge = 3, Recover = 4 }
         AttackState _state = AttackState.Cruise;
         float _stateSince;
         Transform _threat;        // acquired on the behavior tick, hunt windows only
         Vector3 _lungePoint;      // locked at telegraph end — dodge by moving after
         float _huntCycleAnchor;
+        Transform _mouth;         // suction sink for devoured creatures (head fang centroid)
         float _whipUntil = -1f;
         float _lastWhip = float.NegativeInfinity;
 
@@ -143,6 +146,13 @@ namespace CosmicShore.Gameplay
 
             if (segments.Count > 0)
                 _leaderBaseRotation = segments[0].transform.rotation;
+
+            // The jaws: a light transform tracking the head's fang centroid each frame.
+            // Deliberately NOT a danger prism's own transform — the sink must keep
+            // tracking the swimming worm even after players shoot the fangs off.
+            var mouthGO = new GameObject("Mouth");
+            mouthGO.transform.SetParent(transform, false);
+            _mouth = mouthGO.transform;
 
             // Attack pulses start in the REST stretch (the shark's pattern): the
             // first hunt window opens (interval - duration) seconds from now, so a
@@ -254,8 +264,10 @@ namespace CosmicShore.Gameplay
             GlideScales(dt);
 
             // Root anchors at the head so registry/cell distance reads track the
-            // creature; then the movers contract — keep the spatial index honest.
+            // creature; the jaws track the head's fang centroid so a devoured
+            // creature suctions into the actual mouth as the worm swims.
             transform.position = segments[0].transform.position;
+            if (_mouth) _mouth.position = segments[0].MouthPoint;
             for (int i = 0; i < segments.Count; i++)
                 segments[i].SyncBodyPrismsToIndex();
         }
@@ -291,6 +303,17 @@ namespace CosmicShore.Gameplay
             {
                 case AttackState.Cruise:
                     if (_threat && IsHuntWindow)
+                        SetState(AttackState.Pursue);
+                    break;
+
+                case AttackState.Pursue:
+                    // The chase: nose-on and faster until the pilot is inside striking
+                    // distance, then the wind-up. Lose them (or the window closes) and
+                    // the kaiju goes back to grazing.
+                    if (!_threat || !IsHuntWindow)
+                        SetState(AttackState.Cruise);
+                    else if ((segments[0].transform.position - _threat.position).sqrMagnitude
+                             <= config.StrikeRange * config.StrikeRange)
                         SetState(AttackState.Telegraph);
                     break;
 
@@ -336,6 +359,15 @@ namespace CosmicShore.Gameplay
 
             switch (_state)
             {
+                case AttackState.Pursue:
+                    // Nose-on chase — tracks a juking pilot between behavior ticks.
+                    desiredDirection = _threat
+                        ? (_threat.position - leader.position).normalized
+                        : leader.forward;
+                    targetSpeed = config.CruiseSpeed * config.PursuitSpeedMultiplier * speedMult;
+                    turnRate *= config.PursuitTurnMultiplier;
+                    break;
+
                 case AttackState.Telegraph:
                     // Rear back and coil: pull away from the threat with an upward
                     // arch, near-stopped, slither exaggerated — the readable wind-up.
@@ -451,6 +483,7 @@ namespace CosmicShore.Gameplay
 
                 TickThreatScan();
                 TickFeeding();
+                TickPredation();
                 TickGrowth();
                 TickDifferentiation();
                 TickTailWhip();
@@ -533,6 +566,43 @@ namespace CosmicShore.Gameplay
                 NotifyFed();
                 _feedsBanked++;
                 bites++;
+            }
+        }
+
+        /// <summary>
+        /// The PREDATOR half of the apex omnivore: any live creature whose root comes
+        /// within FaunaBiteRange of the jaws is devoured — it breaks apart and suctions
+        /// into the mouth (Predated with a devour target), exactly the shark's kill.
+        /// Every catch feeds the colony, so hunting also grows it.
+        ///
+        /// Unlike the shark this is NOT limited to herbivores: an apex kaiju eats
+        /// sharks too. It skips its own segments (they aren't in the registry anyway),
+        /// other worm colonies (kaiju don't cannibalise), and predation-immune
+        /// newborns. Pure math against the cell's small fauna registry — no physics.
+        /// </summary>
+        void TickPredation()
+        {
+            if (config.FaunaBiteRange <= 0f || !_mouth) return;
+            var host = cell;
+            if (host == null) return;
+
+            float rangeSqr = config.FaunaBiteRange * config.FaunaBiteRange;
+            Vector3 mouthPos = _mouth.position;
+            var fauna = host.LiveFauna;
+            for (int i = 0; i < fauna.Count; i++)
+            {
+                var f = fauna[i];
+                if (!f || f == this || f is WormFauna or WormSegmentFauna) continue;
+                if (!f.IsAlivePrey || f.IsPredationImmune) continue;
+                if ((f.transform.position - mouthPos).sqrMagnitude > rangeSqr) continue;
+
+                // Predated respects the prey's immunity and returns false if it
+                // couldn't be eaten — only feed on a real kill.
+                if (f.Predated(PLAYER_NAME, _mouth))
+                {
+                    NotifyFed();
+                    _feedsBanked++;
+                }
             }
         }
 

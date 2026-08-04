@@ -27,10 +27,13 @@ namespace CosmicShore.Gameplay
         [Tooltip("Segments a fresh colony spawns with (1 head + N-2 bodies + 1 tail). " +
                  "Minimum 3 so the spawned worm has all three fauna types.")]
         [Min(3)] public int SpawnSegmentCount = 8;
-        [Tooltip("Rest distance between BODY segment centres (world units, before kaiju " +
-                 "scale and taper). Recovered from the 2024 worm authoring (~8.4 local at " +
-                 "the old ×5 root ≈ 14 here at ×3).")]
-        [Min(0.1f)] public float SegmentSpacing = 14f;
+        [Tooltip("Rest distance between BODY segment centres, in MODEL units (multiplied " +
+                 "by KaijuScale and the taper). Derived from the 2024 authoring, where the " +
+                 "body model rendered at localScale 1 and the authored chain gaps were " +
+                 "8.05 / 8.39 / 8.63 / 8.71 — so the segments nearly touch. gap÷modelScale " +
+                 "is the invariant: keep this ≈ the body mesh's length or the worm reads " +
+                 "as beads on a string instead of one animal.")]
+        [Min(0.1f)] public float SegmentSpacing = 8.4f;
         [Tooltip("Uniform scale applied to every segment root at spawn — the kaiju dial. " +
                  "Also scales the effective spacing so the body stays connected.")]
         [Min(0.1f)] public float KaijuScale = 3f;
@@ -42,10 +45,10 @@ namespace CosmicShore.Gameplay
                  "the worm visibly re-proportions, never snaps.")]
         [Range(0.5f, 1f)] public float TaperPerSegment = 0.9f;
         [Tooltip("The head-to-first-segment gap, as a multiple of the body gap — the head " +
-                 "needs room (recovered ratio from the 2024 chain: 21.5 vs ~8.4 ≈ 2.6).")]
-        [Min(1f)] public float HeadGapMultiplier = 2.6f;
-        [Tooltip("The into-tail gap, as a multiple of the body gap (2024 ratio: 15 vs ~8.4 ≈ 1.8).")]
-        [Min(1f)] public float TailGapMultiplier = 1.8f;
+                 "needs room (recovered ratio from the 2024 chain: 21.5 ÷ 8.4 = 2.56).")]
+        [Min(1f)] public float HeadGapMultiplier = 2.56f;
+        [Tooltip("The into-tail gap, as a multiple of the body gap (2024 ratio: 15 ÷ 8.4 = 1.79).")]
+        [Min(1f)] public float TailGapMultiplier = 1.79f;
         [Tooltip("Per-colony segment cap — a PERFORMANCE backstop (collider budget), not " +
                  "the population control (starvation is). Growth pauses at the cap; splits " +
                  "conserve the total so they can never exceed it.")]
@@ -74,13 +77,18 @@ namespace CosmicShore.Gameplay
         [Tooltip("Behavior-tick cadence multipliers indexed by CellAggressionLevel.")]
         public float[] CadenceByAggression = { 1f, 0.7f, 0.45f };
 
-        [Header("Feeding (the head is the colony's mouth)")]
+        [Header("Feeding — an APEX OMNIVORE (the head is the colony's mouth)")]
         [Tooltip("Seconds between colony behavior ticks (senses, feeding, growth, attacks).")]
         [Min(0.1f)] public float BehaviorTickSeconds = 1.5f;
         [Tooltip("Graze radius around the head. Edibility follows the canonical herbivore " +
-                 "rule (Cell.IsPreyForHerbivore + Fauna.IsShieldedMass) — the kaiju is a " +
-                 "voracious grazer of prism mass, not of fauna.")]
+                 "rule (Cell.IsPreyForHerbivore + Fauna.IsShieldedMass) — the kaiju grazes " +
+                 "prism mass voraciously, AND hunts creatures (below), AND attacks players.")]
         [Min(0f)] public float MouthRadius = 28f;
+        [Tooltip("PREDATOR half: any live creature whose root comes within this distance of " +
+                 "the mouth (the head's fang centroid) is devoured — it breaks apart and " +
+                 "suctions into the jaws, exactly like the shark's kill. Feeds the colony " +
+                 "(so eating creatures also grows it). 0 = pure herbivore.")]
+        [Min(0f)] public float FaunaBiteRange = 34f;
         [Tooltip("Cap on prisms suctioned per tick — bounds the implosion-VFX burst.")]
         [Min(1)] public int MaxBitesPerTick = 6;
         [Tooltip("Feeds (consumed prisms) that fund ONE new body segment blooming in " +
@@ -112,9 +120,18 @@ namespace CosmicShore.Gameplay
         [Min(0.5f)] public float StarvationShedIntervalSeconds = 12f;
 
         [Header("Attacks (souls-like telegraph grammar)")]
-        [Tooltip("Vessel detection radius around the head. Uses the shared physics " +
-                 "scratch masked to non-prism layers — never a prism query.")]
-        [Min(0f)] public float AggroRadius = 130f;
+        [Tooltip("Vessel detection radius around the head — inside it, during a hunt " +
+                 "window, the kaiju PURSUES the pilot. Uses the shared physics scratch " +
+                 "masked to non-prism layers — never a prism query.")]
+        [Min(0f)] public float AggroRadius = 220f;
+        [Tooltip("Distance at which a pursued pilot triggers the strike wind-up. Outside " +
+                 "it the worm chases (nose-on, faster); inside it, it rears back and lunges.")]
+        [Min(1f)] public float StrikeRange = 90f;
+        [Tooltip("Speed multiplier while actively chasing a pilot — the pursuit visibly " +
+                 "closes rather than drifts.")]
+        [Min(1f)] public float PursuitSpeedMultiplier = 1.45f;
+        [Tooltip("Turn-rate multiplier while chasing (the head tracks a juking pilot).")]
+        [Min(1f)] public float PursuitTurnMultiplier = 2f;
         [Tooltip("Attack pulses: a hunt window opens every this many seconds (0 = always " +
                  "hunting). Outside the window the worm only cruises and grazes — " +
                  "guaranteed downtime between assaults, same pattern as the shark.")]

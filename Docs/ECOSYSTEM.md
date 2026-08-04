@@ -1967,15 +1967,30 @@ movement model — plus the `Sharks-and-worms` branch's telegraph→burst attack
   window and you always face soft tissue; slower, and every kill is armored. This is
   the "best killed tail-to-head or head-to-tail, and fast" rule — never scripted,
   purely a consequence of split + differentiation timing.
-- **Growth is feeding-funded ONLY**: the head is the colony's mouth, grazing by the
-  canonical herbivore edibility rule (`Cell.IsPreyForHerbivore` + `Fauna.IsShieldedMass`
-  — shielded mass is never food). Every `FeedsPerSegment` consumed prisms, one body
-  segment **blooms in** behind the head. Length is a readable record of consumption.
-  A headless worm cannot feed — regrow the head or starve.
+- **An APEX OMNIVORE that also hunts pilots.** The head is the colony's mouth and it
+  works three ways at once: it **grazes prism mass** by the canonical herbivore rule
+  (`Cell.IsPreyForHerbivore` + `Fauna.IsShieldedMass` — shielded mass is never food);
+  it **devours creatures** whose root comes within `FaunaBiteRange` of the jaws (the
+  head's fang centroid) — the shark's own break-apart-and-suction kill via
+  `Predated(name, mouth)`, and unlike the shark it is not limited to herbivores: an
+  apex kaiju eats sharks too (it skips its own segments, other worm colonies, and
+  predation-immune newborns); and it **hunts players** (below). All three feed the same
+  clock, so hunting and grazing alike fund growth. Nothing in the food web preys on it
+  in return: the colony root is classified Predator and its `Predated` is sealed false,
+  and segments are Predator too so no shark can pick one as dinner. A headless worm
+  cannot feed at all — regrow the head or starve.
+- **Growth is feeding-funded ONLY**: every `FeedsPerSegment` feeds (prisms grazed or
+  creatures eaten), one body segment **blooms in** behind the head. Length is a
+  readable record of consumption.
 - **Starvation digests the colony tail-first** (one segment per
   `StarvationShedIntervalSeconds`): deny the kaiju food and it shrinks; keep denying and
   it dies. Population bounded by consumption, never a lifespan. A starving worm also
   cannot differentiate its wounds — denial is a real co-op strategy.
+- **The pilot hunt**: inside a hunt window, a vessel within `AggroRadius` (220) is
+  **pursued** — the head goes nose-on, faster (`PursuitSpeedMultiplier`) and turning
+  harder (`PursuitTurnMultiplier`) so it tracks a juking pilot. Closing inside
+  `StrikeRange` (90) triggers the wind-up. Lose it, or let the window close, and the
+  kaiju drops back to grazing.
 - **Souls-like attack grammar** (hunt pulses, rest-first, same clock math as the
   shark): telegraph (head rears back, coiling, near-stopped — `TelegraphSeconds` of
   readable wind-up) → lunge (point locked at telegraph end, so dodging works) →
@@ -2028,8 +2043,14 @@ it: the ORIGINAL authoring had the good bones. Recovered verbatim from git histo
   hit to shed its shield and a second to destroy. The 3 danger fangs sit at the
   mouth. The **heart nests inside the cage** at the authored (0,0,−13.14), scale 2.5
   (`WormSegmentFauna.heartLocalPosition/Scale`).
-- **Chain proportions**: head-gap ≈ 2.6× the body gap (`HeadGapMultiplier`), into-
-  tail gap ≈ 1.8× (`TailGapMultiplier`), and the authored **0.9-per-segment taper**
+- **Chain proportions, measured off the model** (Aug 2026 correction — the first pass
+  authored `SegmentSpacing = 14` and the worm read as beads on a string). The
+  invariant is **gap ÷ model scale**: the 2024 chain rendered its body model at
+  localScale 1 with authored gaps of 8.05 / 8.39 / 8.63 / 8.71, so `SegmentSpacing`
+  is **8.4 model units** (× `KaijuScale` × taper) and the segments nearly touch.
+  Head-gap = 2.56× the body gap (`HeadGapMultiplier`, from the authored 21.5 ÷ 8.4),
+  into-tail gap = 1.79× (`TailGapMultiplier`, 15 ÷ 8.4), and the authored
+  **0.9-per-segment taper**
   (`TaperPerSegment`) — segment scale AND link spacing shrink down the chain, so the
   head is the biggest thing on the worm and the tail trails away. Segments GLIDE to
   their taper targets when topology changes (growth, splits) — the worm visibly

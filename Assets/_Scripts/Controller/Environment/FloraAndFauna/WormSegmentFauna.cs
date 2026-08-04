@@ -120,6 +120,33 @@ namespace CosmicShore.Gameplay
         /// <summary>Public bridge so the colony can keep the spatial index honest each frame.</summary>
         public void SyncBodyPrismsToIndex() => NotifyBodyPrismsMoved();
 
+        /// <summary>
+        /// The jaws: centroid of this segment's live DANGER prisms (the head's fangs /
+        /// the tail's stinger) — the suction sink a devoured creature implodes toward,
+        /// same construction as the shark's mouth. Falls back to just ahead of the
+        /// segment centre when the danger prisms are shot off.
+        /// </summary>
+        public Vector3 MouthPoint
+        {
+            get
+            {
+                var prisms = BodyPrisms;
+                Vector3 sum = Vector3.zero;
+                int count = 0;
+                if (prisms != null)
+                {
+                    for (int i = 0; i < prisms.Length; i++)
+                    {
+                        var hp = prisms[i];
+                        if (!hp || hp.destroyed || hp.prismProperties is not { IsDangerous: true }) continue;
+                        sum += hp.transform.position;
+                        count++;
+                    }
+                }
+                return count > 0 ? sum / count : transform.position + transform.forward * 2f;
+            }
+        }
+
         /// <summary>True while any body prism is alive — the segment's health read.</summary>
         public bool HasLiveBodyPrisms
         {
