@@ -94,16 +94,53 @@ path is the existing behavior — not the test target.
 
 ### P5. Mid-game lobby leave
 
-**Setup.** Start VP1 + VP2 partied (per `../PartySystem/TESTS.md` S1).
+> **Rewritten 2026-08-04.** The old single "within 5 s" criterion was
+> wrong, and it was wrong in a way that makes a *correct* build look
+> broken. Removal latency depends entirely on **how** the player went
+> away, and the three cases differ by more than an order of magnitude.
+> There is no single number.
 
-**Steps.** Stop VP2's editor instance.
+**Setup.** VP1 + VP2 partied (per `../PartySystem/TESTS.md` S1), or
+merely both present in the presence lobby for the non-party cases.
 
-**Pass criterion.**
-- VP1's `RefreshOnlinePlayersDiff` removes VP2 from `OnlinePlayers`
-  within 5 s.
-- VP1's `PartyMembers` list removes VP2 within 5 s (via the
-  Netcode-backstop `OnClientDisconnected` callback).
-- VP1's party slot for VP2 frees in the UI.
+**The three departure classes.**
+
+| How VP2 goes away | Mechanism | Expected removal on VP1 |
+|---|---|---|
+| **Graceful quit** — in-game quit button, alt-F4, window close | `Application.wantsToQuit` → 1.5 s drain → **awaited** UGS leave → `PlayerHasLeft` push | **< 1 s** |
+| **Editor play-mode stop** | `EditorApplication.playModeStateChanged / ExitingPlayMode` → leave **dispatched but not awaited** (the exit cannot be deferred) | **< 1 s if the request made it onto the wire; otherwise falls back to reap** |
+| **Hard kill** — process termination, crash, OS kill, **MPPM virtual-player deactivation** | nothing runs | **service-side reap, ~30–50 s** |
+
+**⚠ MPPM cannot test the graceful path by "turning off" a player.**
+Deactivating a virtual player in the Multiplayer Play Mode window
+**terminates the clone process**. That is the third row, not the second —
+no `ExitingPlayMode`, no leave, nothing to push. A 30–50 s disappearance
+there is the **expected** result and not a regression of B12. Stopping
+play mode in the *main* editor does fire `ExitingPlayMode`, but it stops
+every virtual player at once, so there is no surviving observer left to
+watch the removal.
+
+**To actually exercise the graceful path:** run a **standalone build**
+alongside the editor (or on a second machine) and quit the build with its
+in-game quit button or alt-F4. That is the only route in this project
+today that reaches `Application.wantsToQuit` with a peer still watching.
+An editor-only test hook that fires the departure on demand is tracked as
+`TODOS.md` § TODO-P10.
+
+**Pass criteria.**
+- **Graceful quit:** VP2 logs `Departure leave complete (leaveParty=True)`
+  and pauses ~1.5 s before closing. VP1 removes VP2 from `OnlinePlayers`
+  in **< 1 s** — via the named-id eviction path
+  (`TryConsumeDepartedPlayerIds`), *not* the two-strike absence rule.
+- **Hard kill / MPPM deactivate:** VP1 removes VP2 within **~30–50 s**.
+  Faster is impossible: there is no transport between non-party presence
+  members, so only the UGS service can observe the disconnect. See
+  `PRESENCE_SYNC_PLAN.md` § 6.
+- **Party members only** additionally free their party slot via the
+  Netcode-backstop `OnClientDisconnected` callback, which *does* have a
+  transport and therefore fires promptly in every case including a hard
+  kill. A killed peer disappearing from `PartyMembers` quickly while
+  lingering in `OnlinePlayers` is correct, not a contradiction.
 
 ### P6. Refresh-error escalation
 

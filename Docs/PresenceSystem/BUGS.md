@@ -15,10 +15,10 @@ Statuses: 🔴 open · 🟡 investigating · 🟢 fixed (commit) · ⚪ deferred
 | B1 | `ArgumentOutOfRangeException` (LobbyPatcher) spam at game start | High (cause) | 🟢 (needs Editor retest) |
 | B4 | TC1 second invite not delivered + party members vanish from 3rd player's panel | High, needs retest | 🔴 |
 | B6 | TC3 NRE (`WrappedLobbyService`) + empty online/request lists | Medium | 🔴 |
-| B11 | Presence stuck at `Announced` - peers render "CONNECTING…" forever | High (root-caused) | 🟢 `a510bd51` (needs Editor retest) |
-| B12 | Explicit leave took ~30 s to remove the player | High (root-caused) | 🟢 `a510bd51` (needs Editor retest) |
-| B13 | Relay 500 on boot bricks the loading splash (no retry, no recovery) | High (root-caused) | 🟢 (needs Editor retest) |
-| B14 | `presenceState` change never repainted the row - "CONNECTING…" forever | High (root-caused) | 🟢 (needs Editor retest) |
+| B11 | Presence stuck at `Announced` - peers render "CONNECTING…" forever | Confirmed | ✅ `a510bd51` **VERIFIED 2026-08-04** |
+| B12 | Explicit leave took ~30 s to remove the player | Confirmed | 🟡 `a510bd51` — graceful path **untested**; see retest note below |
+| B13 | Relay 500 on boot bricks the loading splash (no retry, no recovery) | Confirmed | ✅ `c3dbf682` **VERIFIED 2026-08-04** (4 instances; wider run pending) |
+| B14 | `presenceState` change never repainted the row - "CONNECTING…" forever | Confirmed | ✅ `c49c8c91` **VERIFIED 2026-08-04** |
 
 > **Working order.** Diagnostics-first. The presence-lobby cluster (B4,
 > B6) is the locked-design area — read `ARCHITECTURE.md` and
@@ -27,7 +27,51 @@ Statuses: 🔴 open · 🟡 investigating · 🟢 fixed (commit) · ⚪ deferred
 
 ---
 
-## MEASURED: B1/B6 stale-index fault rate (2026-08-02)
+## MEASURED (run 2): fault rate after `40226752` (2026-08-04)
+
+Second sample, same counters, on a longer window and **after** push ticks
+stopped fetching. Reported by the owner from a live Editor run:
+
+```
+[HostConnectionService] Benign SDK fault on the presence read - refresh tick VOIDED
+  (roster diff / invite scan / member sync / publish all skipped this tick).
+  defect=SdkStaleIndex | skips: presence=16, partySession=39
+  NetDiag: class=Transient | reach=ReachableViaLocalAreaNetwork|monitor=Online|sinceChange=206.5s
+```
+
+Denominator assumption unchanged from run 1: only *poll* ticks fetch, so
+fetch ticks ≈ elapsed / 1.5 s. `sinceChange` is used as the elapsed proxy.
+Both are **upper bounds on the denominator** — the tick is additionally
+gated on `IsOnMenuScene()` and the lobby mutex — so the true rates are at
+least this high.
+
+| Path | Run 1 (95.8 s) | Run 2 (206.5 s) |
+|---|---|---|
+| presence read | 13 / ~64 = **~20%** | 16 / ~138 = **~12%** |
+| party-session read | 22 / ~51 = **~43%** | 39 / ~122 = **~32%** |
+
+**Both rates fell by roughly a third.** Two effects, pointing the same way:
+
+1. `40226752` — push ticks no longer fetch, so the SDK sees fewer reads
+   against a cache it is concurrently patching.
+2. **The fault is concentrated at startup.** Run 2 is 2.2× longer than run 1
+   but carries only 1.2× the presence skips. A defect whose rate falls as
+   the window lengthens is one that fires mostly in the first seconds —
+   which is exactly the multi-client property-write burst B1 describes.
+
+**This upgrades `TODO-P2` (coalesce startup property writes) from
+"speculative" to the single highest-value lever on this defect**, and it is
+now supported by two independent samples rather than one. Fewer startup
+writes → fewer deltas → fewer stale-index opportunities, at the exact point
+in the session where they cluster.
+
+**Still not enough to unblock the safety-poll relaxation.** At ~12% a 10 s
+nominal poll is a ~11.4 s effective backstop, and the party-session path is
+still voided a third of the time. Re-measure *after* TODO-P2 lands.
+
+---
+
+## MEASURED (run 1): B1/B6 stale-index fault rate (2026-08-02)
 
 First real numbers, from the Commit 1 counters. **This is the data
 `REFACTOR.md`'s `LobbyMembershipMonitor` extraction and `TODOS.md` TODO-P5 were
@@ -74,9 +118,19 @@ produce this fault, so the absolute count should drop even if the per-fetch rate
 does not. These numbers predate that change taking effect in a measured run —
 re-measure.
 
+**Re-measured — see § MEASURED (run 2) above.** The per-fetch rate fell too
+(~20%→~12% presence, ~43%→~32% party-session), and the shape of the fall
+identifies startup as the concentration point. Run 2 supersedes this block's
+consequence list; the conclusions are unchanged in direction, sharper in
+priority.
+
 ---
 
-## B14. `presenceState` changes never repainted the row — "CONNECTING…" forever — FIXED (unverified)
+## B14. `presenceState` changes never repainted the row — "CONNECTING…" forever — ✅ VERIFIED FIXED
+
+> **Verified 2026-08-04** (owner, MPPM). Peers now promote from CONNECTING… to
+> ONLINE. This was the larger half of the CONNECTING symptom; B11 was the
+> smaller one.
 
 **Found.** 2-instance MPPM run, 2026-08-02, immediately after the B11 fix. Both
 instances flying the lava lamp; each showed the other as `CONNECTING…`.
@@ -130,7 +184,14 @@ the 3-arg constructor, which defaults `presenceState` to `Present`.
 
 ---
 
-## B13. Relay 500 on boot bricks the loading splash — FIXED (unverified)
+## B13. Relay 500 on boot bricks the loading splash — ✅ VERIFIED FIXED (4 instances)
+
+> **Verified 2026-08-04** (owner, 4-instance MPPM run — all four booted to
+> Menu_Main, no permanent splash). Wider runs (4+ instances, where the Relay
+> 500 is more likely to actually fire) still pending; the fault is upstream and
+> intermittent, so absence of the error in one run is weak evidence. Keep an
+> eye out for `Internal Server Error: allocation call failure` and confirm the
+> instance either self-heals within ~31 s or lands on the **Retry** surface.
 
 **Found.** 2026-08-02, intermittently on one MPPM instance at startup.
 
@@ -195,7 +256,12 @@ still reads "Loading" with no indication that a retry is in progress. Surfacing
 
 ---
 
-## B11. Presence stuck at `Announced` — peers render "CONNECTING…" forever — FIXED (unverified)
+## B11. Presence stuck at `Announced` — peers render "CONNECTING…" forever — ✅ VERIFIED FIXED
+
+> **Verified 2026-08-04** (owner, MPPM). All instances reach `Present`; every
+> peer renders ONLINE. Closed together with B14 — the two had to be fixed
+> together to clear the symptom, since B11 dropped the signal and B14 dropped
+> the repaint that would have shown it arriving.
 
 **Found.** 4-instance MPPM run, 2026-08-01. Every instance flying the lava lamp
 normally. `FriendsListPanel` on each:
@@ -241,7 +307,42 @@ symptom independently:
 
 ---
 
-## B12. Explicit leave took ~30 s to remove the player — FIXED (unverified)
+## B12. Explicit leave took ~30 s to remove the player — 🟡 fix shipped, graceful path still UNTESTED
+
+> **Retest 2026-08-04 — the observation is expected; the test was wrong.**
+> Owner deactivated one MPPM virtual player (Ys4) and its row took **30–50 s**
+> to clear on the peers, i.e. no better than before the fix.
+>
+> **That is the correct result for what was actually tested, and it does not
+> mean B12 regressed.** Deactivating a virtual player in the Multiplayer Play
+> Mode window **terminates the clone process**. No `Application.wantsToQuit`,
+> no `EditorApplication.playModeStateChanged`, no code runs at all — it is a
+> hard kill, the one class this bug's *Remaining floor* section already says
+> cannot be beaten. 30–50 s is the UGS service-side reap.
+>
+> **The error was mine, in the test table**, not in the fix:
+> `PRESENCE_SYNC_VERIFICATION.md` Step 2d listed
+> *"MPPM: toggle the virtual player off / stop play mode → **< 1 s**"* as a
+> single row. Those are two different mechanisms and only the second runs any
+> code. Both that table and `TESTS.md` P5 are corrected.
+>
+> **Will it be faster on a separate PC?** Only if the app is *quit*, not
+> killed. A second machine whose process is killed behaves identically — the
+> latency is a property of the departure mechanism, not of MPPM. What MPPM
+> genuinely cannot do is let one player quit gracefully while others keep
+> watching: deactivation kills, and stopping play mode stops every virtual
+> player at once, leaving no observer.
+>
+> **How to actually verify the fix:** run a **standalone build** alongside the
+> editor (or on a second machine) and quit the build with alt-F4 / the in-game
+> quit button. Expect a ~1.5 s pause, `Departure leave complete
+> (leaveParty=True)` on the leaver, and the row gone from the editor in **< 1 s**.
+> An editor-only "simulate departure" hook that would make this testable inside
+> MPPM is tracked as `TODOS.md` § TODO-P10.
+>
+> **Status stays 🟡** until the graceful path is observed end-to-end. The
+> named-id eviction path (`TryConsumeDepartedPlayerIds`) has never been
+> exercised by a test — everything observed so far went through the reap.
 
 **Found.** Same run. Turning off Ys2 left its row on Ys1/Ys3/Ys4 for ~30 s (the
 UGS reap window) before it disappeared.

@@ -23,6 +23,42 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🟡 Presence sync — CONSOLIDATED STATUS (read this before the four entries below)
+
+Branch `claude/multiplayer-presence-lobby-sync-6j924k`, 27 commits. **Partially
+verified 2026-08-04.** The four per-commit entries below are kept for their
+detail, but this block is the current truth; work
+`Docs/PresenceSystem/PRESENCE_SYNC_VERIFICATION.md` § Progress for the live table.
+
+**Verified in editor ✅**
+
+- **B11** — presence reaches `Present`; no instance stalls at `Announced`.
+- **B14** — a `presenceState` change repaints the roster row; peers promote
+  CONNECTING… → ONLINE. *(This pair was the branch's headline symptom.)*
+- **B13** — 4-instance boot, no permanent loading splash. Wider runs pending;
+  the Relay 500 is upstream and intermittent, so one clean run is weak evidence.
+- **Benign-skip counters** — firing, stackless, and now measured twice
+  (`PresenceSystem/BUGS.md` § MEASURED runs 1 and 2).
+
+**Partially verified 🟡**
+
+- **B12 (explicit leave)** — the *hard-kill* case is confirmed at ~30–50 s,
+  which is the correct and unimprovable answer. The **graceful path has never
+  run**: deactivating an MPPM virtual player kills the process, so no leave is
+  emitted, and stopping play mode stops every VP at once leaving no observer.
+  Needs a standalone build (guide Step 5a) or `PresenceSystem/TODOS.md`
+  § TODO-P10. The verification guide's old departure table was wrong about this
+  and has been corrected.
+
+**Still unverified 🔴** — Steps 3 (`ArcadeLobbyList` / RC-9, **the branch's
+stated goal**), 4 (party smoke), 5 (quit / background / in-match), 6 (icons),
+7 (rate-limit budget), and 1b/1d/2a/2e.
+
+**The two editor actions below are still outstanding** and Step 6 cannot start
+without the first one.
+
+---
+
 ### 🔴 Presence sync — Commits 5-8 (state machine, tombstones, UI binding, icons)
 
 Commits `641ec251`, `c9c6db17`, `24a9b420`, `3b9a30fa` on

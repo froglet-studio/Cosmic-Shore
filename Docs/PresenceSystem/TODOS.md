@@ -10,6 +10,25 @@ up cold.
 > staleness bug we're fixing (`ArcadeLobbyList` never receives an enable
 > event at all, because arcade modals hide by CanvasGroup).
 
+## Priority as of 2026-08-04
+
+| | Item | State |
+|---|---|---|
+| 1 | Finish the verification pass — Step 3 (`ArcadeLobbyList`) is the branch's stated goal and is still unrun | see `PRESENCE_SYNC_VERIFICATION.md` § Progress |
+| 2 | **TODO-P2** — coalesce startup property writes | ⬆ promoted; now the highest-value code item, backed by two measurements |
+| 3 | **TODO-P10** — editor departure hook | 🆕 unblocks the one B12 path no test can reach today |
+| 4 | `LobbyMembershipMonitor` extraction (`REFACTOR.md`) | 🔓 unblocked by TODO-P5's answer |
+| 5 | B4 / B6 retest with tagged VPs | pre-existing 🔴, may close for free |
+| — | Safety poll 1.5 s → 10 s | ⛔ **BLOCKED** on TODO-P2 — see below |
+| — | **TODO-P8** — presence heartbeat | ⛔ **CLOSED, do not build** — costed and rejected |
+
+**⛔ Safety-poll relaxation (1.5 s → 10 s) — do not land this.** It is staged
+in `PRESENCE_SYNC_PLAN.md` as a trivial prefab-only edit once push was
+confirmed, so it will look free to whoever reads that next. It is not: with
+the presence read voided ~12% of the time and the party-session read ~32%, a
+10 s nominal poll is a ~11.4 s effective backstop and worse on the party path.
+Land TODO-P2, re-measure with the Step 1c counters, then decide.
+
 ## Code health
 
 ### TODO-P1. Document `BuildLocalPlayerProperties` `invite_payloads` reset
@@ -24,19 +43,36 @@ travel" explaining the reset semantics and why
 (`BuildLocalPlayerProperties` is called on rejoin / reconnect, and
 preserving stale invites across a rejoin would mis-deliver them).
 
-### TODO-P2. Coalesce startup property writes
+### TODO-P2. Coalesce startup property writes — ⬆ **PROMOTED: highest-value item on this list**
 
 **Why.** Multiple clients joining the presence lobby
 near-simultaneously and writing player properties rapidly is one of
 the contributors to B1 (`LobbyPatcher` exception spam). Coalescing the
 property writes at startup would reduce SDK delta churn.
 
-**Touchpoint.** `LobbyPropertyWriter.SaveWithRetryAsync` (already does
-post-save refresh — may need to batch).
+**Now backed by data, not speculation (2026-08-04).** Two independent
+measurements of the benign-skip counters (`BUGS.md` § MEASURED runs 1 and 2)
+show the stale-index fault voiding **~12% of presence reads and ~32% of
+party-session reads** — and, decisively, show the rate **falling as the
+window lengthens**: run 2 covers 2.2× the wall time of run 1 but carries
+only 1.2× the presence skips. A defect whose per-tick rate decays with
+session age is one that fires mostly in the opening seconds, which is
+exactly the multi-client write burst this item targets.
 
-**Risk.** Touches the fragile lobby property write path. Worth doing
-*only* if B1 returns after the `BenignLobbyLogFilter` proves
-insufficient.
+**What it unblocks.** The safety-poll relaxation (1.5 s → 10 s) is blocked
+solely on this number. A voided tick skips the roster diff, invite scan,
+acceptance scan, member sync *and* the presence publish, so the fault is a
+direct multiplier on the effective poll cadence — at ~32% the party-session
+backstop is a third slower than it reads on the inspector.
+
+**Touchpoint.** `LobbyPropertyWriter.SaveWithRetryAsync` (already does
+post-save refresh — may need to batch), plus whatever fires multiple
+distinct writes during `ApplyPostLobbyJoinState`.
+
+**Risk.** Touches the fragile lobby property write path — the locked-design
+area. Read `ARCHITECTURE.md` first. Measure before and after with the
+existing counters; this item now has a numeric pass criterion, which it did
+not before.
 
 ### TODO-P3. Add jitter to base refresh interval
 
@@ -66,6 +102,45 @@ Costed in full in `LIVENESS_COST_ANALYSIS.md`. Summary of why it is closed:
 - The planned private friend list makes it moot: UGS Friends presence is
   server-tracked and push-based, costs no property slots, and fans out per
   friend rather than O(N²) over all 100 lobby members.
+
+### TODO-P10. Editor hook to fire a graceful departure on demand
+
+**Why.** The named-id eviction path added for B12
+(`PresenceLobbyService.TryConsumeDepartedPlayerIds` →
+`RefreshOnlinePlayersDiff` immediate evict) has **never been executed by a
+test.** Every departure observed in MPPM so far went through the UGS reap,
+because there is no way to make one virtual player quit gracefully while the
+others keep watching:
+
+- **Deactivating a virtual player kills the clone process** — no
+  `Application.wantsToQuit`, no `EditorApplication.playModeStateChanged`, no
+  code runs at all. This is a hard kill and correctly lands on the ~30–50 s
+  reap floor. It is *not* a B12 regression, though it looks exactly like one
+  (and did: `BUGS.md` § B12 retest 2026-08-04).
+- **Stopping play mode in the main editor** does fire `ExitingPlayMode`, but
+  it stops every virtual player at once, leaving no observer.
+
+The only route that reaches `wantsToQuit` today is quitting a **standalone
+build**, which means the fastest, most-used multiplayer test harness in the
+project cannot verify one of its own fixes.
+
+**Action.** An editor-only menu item / debug key that calls
+`HostConnectionService.HandleAppQuitRequested` (or raises
+`ApplicationLifecycleManager.OnAppQuitRequested` directly) **without**
+quitting. The instance stays alive but leaves the presence lobby, so a peer
+can watch the row vanish. `Tools > Cosmic Shore > Simulate Departure` fits
+the existing tool-menu convention.
+
+**Value.** Turns a build-only, seldom-run test into a two-click one, on the
+exact path most likely to silently rot — a leave that never fires is
+indistinguishable from a leave that fires and is ignored, since both end at
+the reap.
+
+**Size.** ~20 lines, editor-only, no runtime behaviour change.
+
+**Note.** Leaving without quitting is a state the app never reaches in
+production, so the hook should log loudly and the instance should be treated
+as expendable afterwards — do not fold it into a rejoin flow.
 
 ### TODO-P9. Re-diff from the in-memory roster instead of re-fetching on push — ✅ DONE
 
@@ -101,7 +176,7 @@ mechanism for detecting simultaneous-creation races. The exact value
 and the merge-into-rival logic deserve a short doc-comment expansion
 in `PresenceLobbyService` and a callout in `ARCHITECTURE.md`.
 
-### TODO-P5. NetDiag class breakdown of presence-side failures
+### TODO-P5. NetDiag class breakdown of presence-side failures — ✅ ANSWERED (2026-08-04)
 
 **Why.** Once NetDiag data accumulates from MPPM runs, a count of
 `PresenceLobbyService` catch-class occurrences (`Offline` /
@@ -109,10 +184,24 @@ in `PresenceLobbyService` and a callout in `ARCHITECTURE.md`.
 inform whether `LobbyMembershipMonitor` (see `REFACTOR.md`) needs the
 `StaleReference` state, the `RemovedFromLobby` state, or both.
 
-**Action.** When investigating a presence-side bug, capture the
-NetDiag log lines from the previous 24 hours of MPPM runs and tally
-the class frequencies. File the tally in `BUGS.md` under the relevant
-bug.
+**Answer.** Two measured runs (`BUGS.md` § MEASURED) are dominated by a
+single class: `class=Transient`, defect `SdkStaleIndex`, on both the
+presence and party-session read paths, at ~12% / ~32% of fetch ticks. No
+`SessionGone` and no `Offline` appeared in either run.
+
+**Consequences — both actionable now:**
+
+1. **`LobbyMembershipMonitor` is no longer blocked.** It was gated on exactly
+   this data (`REFACTOR.md`).
+2. **It must treat `SdkStaleIndex` as explicitly NOT membership loss.** At
+   this rate an error-count watchdog that counted it would escalate to a
+   false reconnect constantly. The `StaleReference` state is required; a
+   `RemovedFromLobby` state has no observed evidence behind it and should
+   wait for a run that actually produces one (the definite-loss pushes,
+   `RemovedFromSession` / `Deleted`, already cover that case without a
+   heuristic).
+
+**Re-run** after TODO-P2 to confirm the class mix does not shift.
 
 **Mechanism.** The generic class-count aggregation tool is tracked in
 `../NetworkDiagnostics/TODOS.md` § "TODO-8. Aggregate NetDiag class
