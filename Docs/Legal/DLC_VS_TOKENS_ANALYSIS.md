@@ -172,6 +172,66 @@ holds natively for every purchase path — no ledger, no revoke, no inference.
 
 ---
 
+## 4b. The threshold-credit model — "every dollar over $30 discounts the pass"
+
+**The formula:** `pass price = $90 − max(0, spend − $30)`
+
+It is self-consistent, and the arithmetic is genuinely elegant:
+
+| Spend so far | Credited | Pass price | **Total** |
+|---|---|---|---|
+| $0 | $0 | $90 | **$90** |
+| $5 (1 episode) | $0 | $90 | $95 |
+| $25 (5 episodes) | $0 | $90 | $115 |
+| $30 (12-pack) | $0 | $90 | **$120** |
+| $40 | $10 | $80 | **$120** |
+| $60 (12 singles) | $30 | $60 | **$120** |
+| $90 | $60 | $30 | **$120** |
+| $120 | $90 | **$0 — granted** | **$120** |
+
+**Above $30 of spend the total is exactly $120, on every path.** At $120 the pass costs nothing and
+is simply granted, which is precisely the "unlock the pass at $120" rule. The uncredited first $30 is
+what makes the ceiling $120 rather than $90 — credit from dollar one and the ceiling drops to $90.
+
+### Can Steam enforce it?
+
+**Not as a store-page price.** There is no API that sets a DLC's price per player. Steam prices are
+per-SKU and per-region, never per-user. Five ways to land it anyway:
+
+| Mechanism | Exact formula? | Backend? | Verdict |
+|---|---|---|---|
+| **MicroTxn** — you specify the amount on each transaction | ✅ exact, continuous | ✅ required | The **only** route that computes an arbitrary per-player price |
+| **Tiered upgrade SKUs** — e.g. Pass at $90/$75/$60/$45/$30/$15/free, hidden from the store, opened via the overlay | ≈ stepped | ❌ none | Best no-backend approximation |
+| **Complete-the-Set bundle** | ❌ Steam's own math | ❌ none | Automatic ownership credit, but the arithmetic is Valve's, not yours |
+| **Grant-on-threshold** — never discount, just *give* the pass once owned value crosses $120 | ✅ for the cap | ❌ none | Delivers the promise, not the sliding price |
+| **Manual refund of the overage** | ✅ exact | ❌ none | Backstop only; operationally costly |
+
+> **Recommended if you want this model:** tiered upgrade SKUs. Author the pass at ~6 price points,
+> mark them **not visible on the store**, and open the correct one through the Steam overlay from
+> in-game. No backend, and the player sees one price — the right one. Confirm with Valve that DLC can
+> be hidden from the store page before committing.
+>
+> If the sliding price must be continuous rather than stepped, that is **MicroTxn, and a backend**.
+
+### The constraint from §4 still applies
+
+"Spend" is **not knowable** from Steam. Sales, regional pricing, gifts, and refunds all break any
+inference from dollars. So the credit must be computed from **which SKUs the player owns**, valued at
+your own list prices — not from what they actually paid. Write the rule as *"own the 12-pack → the
+pass is $60"*, never *"spent $30 → the pass is $60"*.
+
+### One wrinkle worth fixing
+
+Below $30 of spend, buying à la carte first **costs more than going straight to the pass**: one
+episode ($5) then the pass ($90) is $95, against $90 for the pass alone. It does not break the "never
+more than $120" promise, but players notice paying extra for having sampled first. Two fixes:
+
+- **Credit from dollar one** (`pass = $90 − spend`) — fair at every point, ceiling becomes $90.
+- **Keep the $30 threshold** and make sure the store never shows a single-episode price to someone
+  who is one click from the pass.
+
+---
+
 ## 5. Legality — the cap and the "lifetime" claim
 
 Not legal advice. These are the specific issues to put in front of counsel.
@@ -239,6 +299,9 @@ one requirement only tokens satisfy, and Route B becomes correct instead.
 
 **Decision rule:** if the 6-of-12 mid tier is real → **Route B**. If not → **Route A**.
 
+**If the §4b sliding-credit model is a hard requirement**, that changes the answer again: stepped
+upgrade SKUs keep you on Route A/B with no backend, and a continuous sliding price forces Route C.
+
 ---
 
 ## 8. What this means for what is already built
@@ -268,8 +331,11 @@ was for.
 4. **How many free tokens ship with the base game?** Still unanswered; only meaningful under a token
    route.
 5. **Does a refund revoke the pass** once auto-granted? (§6)
-6. **Confirm with Valve**: that a DLC granting redeemable credit is acceptable, and that a
-   Complete-the-Set bundle can contain both the episodes and the pass.
+6. **Is the sliding credit (§4b) a requirement, or is a stepped approximation acceptable?** Stepped
+   keeps the no-backend routes open; continuous forces MicroTxn.
+7. **Confirm with Valve**: that a DLC granting redeemable credit is acceptable, and that a
+   Complete-the-Set bundle can contain both the episodes and the pass, and that DLC can be hidden
+   from the store page.
 
 > Platform rules change and none of this is legal advice. Verify DLC, bundle, and Complete-the-Set
 > behaviour in Steamworks before committing, and take §5 to counsel.

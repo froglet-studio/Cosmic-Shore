@@ -87,9 +87,25 @@ earned before that point bank toward the first purchase rather than being wasted
 | Delivery mechanism | *Pending — see `Docs/Legal/DLC_VS_TOKENS_ANALYSIS.md`* |
 | Mid tier (6 for $20) | *Proposed — decides DLC vs tokens* |
 
-> ⚠️ **The $120 cap only holds on the pack path.** 12-pack ($30) + pass ($90) = $120 exactly, but
-> twelve singles ($60) + pass ($90) = $150. The cap has to be delivered by crediting prior
-> purchases — Steam cannot enforce a spend ceiling. See the analysis §4.
+### Threshold credit — how the $120 cap is delivered
+
+`pass price = $90 − max(0, spend − $30)`
+
+| Spend so far | Credited | Pass price | **Total** |
+|---|---|---|---|
+| $0 | $0 | $90 | $90 |
+| $25 (5 episodes) | $0 | $90 | $115 |
+| $30 (12-pack) | $0 | $90 | **$120** |
+| $40 | $10 | $80 | **$120** |
+| $60 (12 singles) | $30 | $60 | **$120** |
+| $120 | $90 | **free** | **$120** |
+
+Above $30 of spend the total is **exactly $120 on every path**, and at $120 the pass is granted.
+
+> ⚠️ **Steam cannot price a SKU per player.** The credit must be computed from **which SKUs the
+> player owns** at our list prices, never from dollars paid — sales, regional pricing and gifts break
+> any dollar inference. Delivering the sliding price with no backend means **stepped upgrade SKUs**;
+> a continuous price means the Microtransaction API and a backend. See the analysis §4 and §4b.
 
 ---
 
