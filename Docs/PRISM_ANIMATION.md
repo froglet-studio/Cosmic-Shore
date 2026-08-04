@@ -825,6 +825,417 @@ its faces exactly as before. `SegmentSpawner.SuperShieldSpawnedPrisms`, which po
 shield component directly rather than going through `PrismStateManager`, honours the
 same rule explicitly.
 
+### 4.6 The batched pure-entity debris carrier (both death visuals, shipped 2026-08-02/04)
+
+The clock law says an effect's animation is a stamp plus a scheduled end. It does not
+say the *carrier* of that stamp has to be a GameObject — and once the animation stopped
+costing per-frame CPU, the carrier was the entire remaining cost. A pooled effect
+charges `Instantiate`-or-pool-miss, `OnEnable`/`OnDisable` registry churn, a Transform,
+a per-effect `PrismTimerManager` entry, and (for implosions) a per-instance MonoBehaviour
+`Update` watchdog — all to hold **one pose and one clock stamp**.
+
+**Both death visuals now spawn as batched entities.** `PrismDebris` accumulates a frame's
+deaths and, in `LateUpdate` at execution order 29000 (after gameplay has queued them,
+before the render service's visibility flush at 30000, so a prism hidden in `Update` has
+its debris drawing the *same* frame), issues:
+
+| family | batch spawn | per-frame CPU while live | retirement |
+|---|---|---|---|
+| explosion | `PrismRenderService.SpawnExplosionDebrisBatch` — ONE `em.Instantiate(prototype, N)` + ONE batched `RemoveComponent<DisableRendering>` | **zero** | time-ordered sweep → ONE `DestroyEntity` batch |
+| suction / implosion | `SpawnImplosionDebrisBatch` — same shape, Implosion override set | ONE `float3` per live effect (the §1 exception) | same sweep |
+
+Why the implosion needs a record and the explosion does not: the suction converges on a
+**moving** target. Every implosion in the game comes from `Prism.Consume` → `Implode`,
+and all eight `Consume` call sites are fauna passing a live creature `Transform` (the
+eater, or a predator's `mouth`) — AOE, projectiles, skimmers and vessel rams all route to
+`Damage` → `Explode` instead. So there is no fixed-point majority to batch separately:
+`PrismDebris` keeps an `ImplosionRecord` per live suction carrying the target Transform,
+the (fixed) world→object matrix, and a **CPU mirror of the object-space culling
+envelope**. The refresh then costs one `_Location` write per effect per frame, with a
+`RenderBounds` write only when the point wanders outside the stamped envelope — the
+mirror exists precisely so the refresh never reads a component back per entity. A target
+that dies mid-suction is real-null'd and the sink freezes at its last known point, the
+same degradation the pooled path always had (starvation and predation outlive the VFX).
+
+Rules for anything added to this carrier:
+
+- **The moving target is genuinely moving — never "optimize" it into a snapshot.**
+  The feed tuning brakes a grazing eater to a hover for exactly the suction duration
+  (`consumeHoldSeconds` 2 s = `PrismImplosion.implosionDuration`), which invites the
+  conclusion that the eater is stationary enough to snapshot the convergence point.
+  It is not. The hover decays from `maxSpeed`, and `LightFaunaDataSO`'s `6f` is a
+  **stale field initializer that both shipped assets override**:
+  `MassBrittleStarFaunaDataSO` authors **25**, `MassSharkFaunaDataSO` **35** (neither
+  authors `feedingBrakeSharpness`, `feedingClusterRadius` or `consumeHoldSeconds`, so
+  those do take the 4/s, 12 u, 2 s initializers). Residual drift for the braking
+  grazer is ~`v0/k` ≈ **6.25 world units** — about half the 12-unit feeding cluster
+  radius. The predation path is worse by construction: `DevouredCoroutine` passes the
+  predator's `mouth` while it keeps swimming, with no brake at all, so a 35-speed
+  shark can carry the convergence point tens of units during one suction. Two
+  consequences: a snapshot would visibly suck mass toward where the creature *was*,
+  and the culling envelope's growth write is a few-times-per-effect event rather than
+  the rare case the pooled path's comment implied.
+- **Uniform durations keep the sweep O(retired), not O(live).** Append order is expiry
+  order, so the sweep only inspects the head. Per-spawn durations may vary, but a
+  shorter-lived entry queued behind a longer one is destroyed late (harmless — opacity
+  is already 0), bounded by the spread.
+- **Epoch-tag every batch.** `PrismRenderService.CurrentEpoch` at spawn; a mismatch at
+  sweep time means the world died and took the entities with it, so records are dropped
+  without a destroy.
+- **A failed batch spawn SUSPENDS the path** for 5 s rather than silently accepting and
+  dropping the next requests — that is what routes them to the pooled fallback.
+- **No pressure shortening.** The pooled path squeezes effect duration under load to
+  bound pool size and per-instance churn; an entity has neither, so batched effects
+  always animate at full length. Continuity of existence is *stronger* here, not weaker.
+- **`PrismType.Grow` has no producer** anywhere in the project, so `PrismFactory.SpawnGrow`
+  and its `OnGrowCompleted` per-effect callback are unreachable. That is why the batch
+  carries no completion-callback machinery: fire-and-forget is not a limitation here, it
+  is the whole live contract. The stamp still carries `GrowDelay` so the shader contract
+  stays complete if a grow producer ever lands.
+
+**The death path is now split by markers.** `AOE.ResolveDamage` wraps a whole drain, so
+everything a death did landed in one unattributable self-time bucket. `Prism` now emits
+`Prism.Destroy.Setup` / `.SpatialIndex` / `.StatRaise` / `.SFX` / `.EffectRequest`, which
+is what makes "re-profile the lifted-throttle blast" a measurement rather than a guess.
+Alongside them, the per-death allocations and redundant interop that the split exposed
+are gone: `PrismEventData` is a **struct** (it was a class allocated per raise — i.e. per
+kill), `Cell`'s `Domains[3]` literals in `AddBlock`/`RemoveBlock`/`DominantDomain` are
+hoisted to statics, `GameDataSO.FindByName`/`FindByTeam` are index loops instead of
+`FirstOrDefault(lambda)` (three allocations per call, and `StatsManager.PrismDestroyed`
+calls it **twice per death**), `HealthBlockTracker`'s cell-forwarding `RemoveWhere`
+predicate is cached, the density grids take a `Vector3` instead of re-reading
+`transform.position` once per grid, and a death reads its own pose once instead of four
+times.
+
+#### 4.6.1 Retiring the pooled effect path — assessed 2026-08-04, NOT YET
+
+The obvious next step is to delete the pooled `PrismExplosion` / `PrismImplosion`
+spawn path now that both families batch. The audit says the *behavioural* case is
+already made and the *mechanical* case is not. Both halves matter, so both are
+recorded here rather than left to be re-derived.
+
+**Why it is already dead weight, not a safety net.** The comment that used to call
+it a "fallback for a disabled render service" was wrong, and that mattering is the
+point of writing this down:
+
+- With `PrismRenderService.Enabled` false, `Create` returns an invalid handle, and
+  `PrismExplosion.TriggerExplosion` disables its renderer *unconditionally* before
+  the branch — so a pooled explosion in that world renders **nothing** and logs.
+  A pooled implosion fares slightly better and still fails: `ApplyInitialVisualState`
+  re-enables the renderer, but `StampClockStrict`'s no-entity branch only warns, so
+  it draws a **static, un-animated block** for its full duration. Strict clock mode
+  has no CPU animation tier by design (§4.4) — "loud and frozen" IS the contract.
+- `PrismRenderService.SetRuntimeOverride` has **no caller anywhere in Assets**, and
+  the shipped `Resources/PrismRenderConfig.asset` has `useInstancedRendering: 1`.
+  The legacy A/B variant in `Docs/PRISM_EXPLOSION_BENCHMARK.md` is produced by
+  checking out a different *branch*, not by flipping this toggle. There is no
+  shipping configuration in which the pooled path is what the player sees.
+- No consumer needs a GameObject back. `Prism.Explode` / `Prism.Implode` are the
+  only raisers of `PrismType.Explosion` / `.Implosion` and both discard the
+  channel's `PrismReturnEventData`; `PrismFactory` is the only caller of
+  `TriggerExplosion` / `StartImplosion` / `StartGrow`; `StopEffect()` has zero
+  callers. `PrismType.Grow` has no producer at all.
+
+**Why it is a refactor, not a deletion — the three real dependencies.**
+
+1. **The pool prefabs are the CONFIG SOURCE for the batched path.**
+   `PrismDebris.Configure` / `ConfigureImplosion` read the mesh, material, layer,
+   debris clamp band and suction duration straight off `explosionPool.Prefab` /
+   `implosionPool.Prefab`. That is deliberate — it is what guarantees both paths
+   ship identical debris — but it means deleting the pooled path first requires
+   deciding where that authored data lives (an SO, or the prefabs demoted to pure
+   config assets that are never spawned).
+2. **The dev-build zombie audit** in `PrismEffectsManager` walks
+   `PrismExplosion.EnabledInstances` / `PrismImplosion.EnabledInstances` and pokes
+   `Renderer` / `IsActive` / `UsesEntityRenderPath`. With nothing pooled it audits
+   an empty set — harmless, but it stops being the safety net it was written to be,
+   and the batched carrier has no equivalent (its records ARE the live set).
+3. **`GameLoadSampler`** folds `EnabledInstances.Count` into its benchmark metrics.
+   The debris counters exist (`PrismDebris.LiveDebrisCount`,
+   `LiveImplosionDebrisCount`) but the sampler must be re-sourced or its numbers
+   silently drop to the batched half only.
+
+**The gate.** Do not retire until the implosion batch has been *measured*, not just
+shipped: an in-editor playtest of fauna feeding (suction converges on the moving
+eater, no stuck `imp` count on the harness HUD) plus a benchmark pass per
+`Docs/PRISM_EXPLOSION_BENCHMARK.md`. Retiring in the same change that introduces
+the batch would remove the ability to A/B it by flipping the config asset — which
+is exactly the tool that would diagnose a regression.
+
+### 4.7 The camera↔vessel occlusion corridor — a PLATFORM LAW (shipped 2026-08-04, C1)
+
+> **The law:** prisms between the player's camera and the player's vessel go see-through so
+> the ship is never hidden. It is **not a feature a vessel or a game mode may choose.** It
+> must not be possible to author a vessel, a prism, or a minigame in which it is off.
+>
+> The previous implementation was per-vessel opt-in — a `ClearPrisms` component present on
+> three of eleven vessels, with a dead `IVessel.AllowClearPrismInitialization()` gate — and
+> it had been silently dead on all three for a long time. Opt-in is what made that possible,
+> so the restoration removed the ability to opt in at all.
+
+**How the law is made un-authorable** (four layers; the first two make it structural, the
+last two make a violation loud):
+
+| Layer | Mechanism | What it forecloses |
+|---|---|---|
+| The **shader** half lives in the prism graphs | `PrismOcclusionFade` is spliced into `SurfaceDescription.Alpha` on **every graph a live prism can render with** (BlockGraph, ExplodingBlockGraph) | A new prism, trail, or environment lay inherits the corridor by construction. There is no per-prism, per-material or per-instance switch to forget. |
+| The **target** binds at the universal vessel entry point | `VesselController.Initialize` under `IPlayer.IsLocalPilot` — the one method every vessel must call to become a player's vessel (single-player spawn, multiplayer spawn, menu autopilot, runtime swap) | A new vessel needs no component and no prefab wiring. A new minigame needs no scene wiring, and cannot dodge it by using the non-networked spawn path (that is what `IsLocalPilot` covers over `IsLocalUser`). |
+| **Runtime** fail-loud | `PrismOcclusionDiagnostics.VerifyCorridorCapable`, called from `Prism.SyncRenderMaterial` — every material a prism ever binds passes through it. One error per offending material, naming it | A prism on an unwired shader, or an opaque material without alpha test, screams instead of silently staying solid. |
+| **Asset** gate | Edit-mode test `PrismOcclusionCoverageTests` (graphs wired · every material on them dissolvable · **every prefab carrying a `Prism` renders on a wired graph**) + FrogletTools > Ecology > Prism Animation > **Validate Occlusion Corridor** | New prism content authored outside the corridor fails a test, not a playtest. All three gates share ONE rule (`PrismOcclusionDiagnostics.IsCorridorCapable`) so they cannot drift. |
+
+The **one** sanctioned hold is `PrismOcclusionCorridor.SetSuppressed`, used by exactly one
+caller — `CameraManager`'s manual replay camera, a broadcast vantage that is not looking at
+the local ship, where a camera→ship capsule would cut a hole through unrelated mass. It is
+symmetric (`RestoreGameplayCamera` lifts it) and it is a HOLD, not an opt-out: the vessel
+binding survives it, so nothing has to remember to re-point the corridor afterwards.
+
+**Deliberate exclusions, named rather than hidden.** `SuctionGraph` renders a prism DURING
+consumption (a sub-second implode of mass being removed), never standing mass that can
+occlude. Four legacy prism prefabs on pre-corridor shaders — `GreenDartBlock`,
+`TriangleBlock` (the SpreadFresnel family §3.7 I says not to extend, referenced only by the
+Recording Studio scenes) and `TrailRing`, `TrailPentagon` (referenced by nothing at all) —
+are listed by name in the validator and the test. If any is revived as live gameplay mass,
+**rebase it onto a wired prism graph; do not grow the exclusion list.**
+
+---
+
+§1 draws a line between **animation** (a pure function of the clock and stamped initial
+conditions) and **live gameplay data** (a value that depends on the running simulation).
+Camera-relative occlusion is squarely the second kind: whether a given prism sits between
+the camera and the ship changes every frame, for every prism, as both ends move. It can
+never be a per-prism stamp — and that is not a licence for a per-frame per-prism write.
+
+**The sanctioned shape is a GLOBAL uniform: ONE O(1) publish per frame that every prism
+reads, with zero per-prism CPU.** §1 already lists it as conforming ("a single O(1) global
+uniform write per frame (a clock publisher) — it is not per-prism"). The corridor is the
+reference implementation, and the same shape is the prescribed migration for every other
+view-dependent prism effect in §3.7 (`SkimFxRunner`'s live ship end, the retired
+`TrailViewer` window).
+
+| Piece | Where |
+|---|---|
+| Publisher (2 `Shader.SetGlobalVector` per frame, `LateUpdate`, self-installing like `PrismClock`) | `Utility/PrismOcclusionCorridor.cs` |
+| Target binding (the platform-law choke point) | `Controller/Vessel/VesselController.cs` `Initialize` / `OnDestroy`, on `IPlayer.IsLocalPilot` |
+| Runtime fail-loud | `Utility/PrismOcclusionDiagnostics.cs`, called from `Prism.SyncRenderMaterial` |
+| Automated asset gate | `Tests/EditMode/PrismOcclusionCoverageTests.cs` |
+| Tuning (radius SCALES / core alpha / sanity band) | `ScriptableObjects/PrismOcclusionConfigSO.cs` → `Resources/PrismOcclusionConfig.asset` |
+| GPU test + dither | `_Graphics/Materials/Graphs/PrismOcclusionCorridor.hlsl` |
+| Graph wiring (idempotent, validate-before-write) | `Tools/Shaders/wire_prism_occlusion_corridor.py` |
+| Material alpha-test opt-in (idempotent) | `Tools/Shaders/enable_prism_alpha_clip.py` |
+| Interactive gate | FrogletTools > Ecology > Prism Animation > **Validate Occlusion Corridor** |
+
+The two globals are `_PrismOcclusionTarget` (the vessel's world position) and
+`_PrismOcclusionParams` (`outerRadius, innerRadius, coreAlpha`). The **near** end of the
+corridor is never published: the shader reads `_WorldSpaceCameraPos`, so it is always
+exactly the camera that is rendering. `outerRadius <= 0` is the off sentinel and is the
+shader's very first branch, so a disabled corridor costs a compare.
+
+**The profile (retuned 2026-08-04).** Alpha is **exactly `coreAlpha` = 0** inside
+`innerRadius` — fully tapered to nothing, so no dithered ghost survives anywhere the ship
+can be — and **exactly 1** at and beyond `outerRadius`.
+
+**The shape is a BARE CONE — the minimal volume that can occlude the ship (2026-08-04).**
+It is a *point* at the lens, widening to the circle that circumscribes the hull, and it
+ends **at the vessel's plane** — no cap at either end. Nothing outside the
+eye→silhouette cone can be in front of the ship, and nothing level with or behind it can
+either, so the corridor never dissolves a prism it does not have to.
+
+Two lines make it: `t` is left **unclamped** and the cone is bounded by rejecting
+`t ∉ (0,1)`, then `outerAtT = outerRadius * t` tapers the radius. Saturating `t` instead —
+the earlier version — pinned the closest point to the vessel past `t = 1`, which turns the
+metric there into distance-to-the-ship-point: that is precisely the hemispherical cap the
+rejection now removes.
+
+**The base is graded too, on a derived band.** The bare cone initially ended in a hard cut
+at the vessel's plane — a prism spanning it was faded on the camera side and solid on the
+far side, which reads as a crisp semicircular edge on any large plate at that depth. A
+second, *axial* clearance term now closes it: 1 up to the base band, 0 at the vessel's
+plane.
+
+Its thickness is **derived, not authored** — it is the radial shell's own world thickness
+(`outerRadius − innerRadius`) expressed in units of `t`. That makes the gradient shell
+**isotropic**: the same thickness across the base as around the sides, so the whole
+boundary fades at one rate and there is no seam anywhere on it. It self-scales too (a long
+corridor gets a proportionally short axial band), and it adds no config field — the
+`float3` params are untouched, so no graph surgery.
+
+The two clearances are combined by **product, not `min()`**: multiplying two C2 curves
+stays C2, whereas `min()` would crease wherever they cross — precisely the artefact the
+grading exists to remove.
+
+**Why not the capsule it replaced:** the constant radius was an artefact of the retired
+`ClearPrisms` `CapsuleCollider`, carried into the first shader version unexamined. A fixed
+world radius subtends a *huge* solid angle near the camera, so a capsule massively
+over-clears there. Tapering makes the cleared region a **constant angular size** — exactly
+the ship's own silhouette, at every depth.
+
+**The corridor is SHIP-SIZED, not world-sized.** The two radii are not authored in world
+units at all: they are multiples of the vessel's own **circumscribing radius**, measured
+from its hull by `PrismOcclusionCorridor.MeasureCircumscribedRadius` at bind time. The
+authored defaults put the gradient's **outer edge exactly on the circle that circumscribes
+the vessel** (`outerRadiusScale = 1`) and its **fully-clear core at half that**
+(`innerRadiusScale = 0.5`). A new vessel of any size therefore gets a correctly-scaled
+corridor with nothing to author — the same "no per-vessel wiring" property the rest of the
+platform law rests on. Note the consequence, which is deliberate and is sharpened by the
+cone: the cleared disc is now *exactly* the ship's screen silhouette, with the fully-opaque
+edge on it and zero margin around it. `outerRadiusScale` is the one dial if that reads too
+tight.
+
+`innerRadiusScale` is **0.25** — deliberately much narrower than the outer edge, so three
+quarters of the cone's cross-section is gradient and only a small centre is hard-clear. The
+dissolve reads as a soft column rather than a hole with a rim. 0 would make the whole cone
+a gradient, clear only on the axis itself.
+
+The measurement is **rotation-invariant** (max distance from the vessel origin to the mesh
+bounds' corners in world space — a rigid rotation preserves those distances, whereas
+`Renderer.bounds`, a world AABB, would swing with attitude and size the corridor differently
+on every spawn), and it is **hull-only**: anything under a `Skimmer` is excluded, because a
+skimmer is a field volume deliberately far larger than the ship (the shared Skimmer prefab is
+scaled 15× around a 0.5 sphere — a 7.5-unit world radius) and would peg every vessel's
+corridor to the skimmer instead of the hull. Because size is now derived, a bad measurement
+is not cosmetic — too small hides the ship anyway, too large dissolves the world in front of
+it — so measured radii are clamped into a config sanity band and both the clamp and an
+unmeasurable hull scream once, naming the vessel and the number.
+
+The band between the two radii is deliberately **short**, and the two things that keep a
+short band from reading as an edge are both continuity choices:
+
+- **Quintic smootherstep**, not cubic smoothstep: value, first AND second derivatives are
+  zero at both ends (C2). Cubic zeroes only the first, which leaves a faint crease exactly
+  where the band starts and stops — invisible over a wide band, obvious over a narrow one.
+- **A dither kernel that keeps coverage honest.** Whatever pattern the screen door uses, the
+  number that decides whether a *short* band reads as a fade or as an edge is
+  |coverage − alpha| — how closely the kept-fragment fraction tracks the alpha at every point
+  in the band. Measured in situ (kept fraction per alpha bin over a rendered prism wall):
+  **0.0021 (IGN) · 0.0042 (spiral) · 0.0048 (Worley, CDF-remapped) · 0.038 (perlin) ·
+  0.097 (hex) · 0.100 (halftone) · 0.128 (rings×IGN) · 0.132 (quasicrystal) ·
+  0.140 (Worley, raw) · 0.212 (concentric rings)**. A kernel is admitted to the file only
+  under ~0.01; the rest buy their look by trading that away, which is why the twelve
+  candidates rendered on 2026-08-04 reduced to the three below. Worley appears twice on
+  purpose — it is the one candidate a cheap monotonic remap moves from one side of the
+  admission line to the other.
+
+  `PRISM_OCCLUSION_KERNEL` in `PrismOcclusionCorridor.hlsl` selects between the survivors.
+  All are procedural — no texture, no sampler, no asset — and all cost less than the
+  corridor test itself:
+
+  - **2 — screen-space Worley (current).** Distance to the nearest jittered lattice point
+    over the 3×3 neighbourhood that can contain it. Reads as **organic flecking** — irregular
+    blobs with visible cell structure — rather than IGN's even stipple or the spiral's
+    standing bands; screen-anchored, so prisms dissolve through it. The most expensive kernel
+    carried (9 cells × one float-only Hoskins `hash22` each, ~18 hashes, vs IGN's one
+    frac-chain and the spiral's zero), though still ALU-only and still paid on corridor
+    fragments only. **Its CDF remap is load-bearing, not polish**: raw F1 distance clusters
+    around 0.43 with nothing at either extreme, so a plain `F1 / max` threshold measures
+    0.1401 — outside the admission rule. A `smoothstep` fitted to the measured F1 CDF
+    (`0.02 → 0.83`) takes it to 0.0048, a 19× improvement for one instruction, and because
+    the remap is monotonic the cell boundaries and the whole look are unchanged — only the
+    rate at which cells fill in as alpha sweeps, which is the part that was wrong. Retuning
+    `WORLEY_CELL` without re-fitting the two CDF constants silently reintroduces the error.
+  **The morph axis.** `PRISM_OCCLUSION_MORPH_RATE` (cycles/sec, default 0.12 — one cycle
+  per ~8s; 0 freezes it) evolves whichever kernel is selected, so the stipple is never the
+  same twice. It is an axis rather than a fourth kernel because each kernel interprets it
+  natively: Worley's feature points **orbit inside their own cells**
+  (`0.5 + 0.5·sin(2π·hash + t)` per axis — bounded to the cell, which is what keeps the 3×3
+  search exhaustive; a `frac(hash + t)` drift is cheaper and wrong, the point teleports
+  across the cell every cycle), and the spiral drifts its band phase, which for a sheared
+  Archimedean spiral is a slow rotation. Time is `_Time.y`, so morphing costs one MAD per
+  fragment and **zero CPU** — no per-prism state, no publisher change, no new uniform; the
+  same initial-conditions-plus-a-clock shape the law asks for everywhere else.
+
+  Three things make it safe, and one makes it impossible for IGN:
+
+  - **Exposure is bounded by the profile.** The pattern is only visible where alpha is
+    strictly between 0 and 1 — the narrow gradient shell — since the core clips regardless
+    of threshold and the exterior clips nothing. An evolving threshold can only flip pixels
+    inside that band.
+  - **0.69% of band pixels change state per 60fps frame** at the default rate, which reads as
+    the pattern flowing. Past ~0.25 cycles/sec (1.45%) it reads as noise; treat that as a
+    ceiling. Coverage fidelity is **independent of the rate** — 0.0065–0.0070 measured across
+    0.04 through 0.25 — so the rate is purely a motion dial and cannot break the fade.
+  - **Worley uses the sin-orbit jitter at EVERY rate, including 0.** The orbit's marginal is
+    arcsine rather than uniform, so it shifts the F1 CDF: feeding the old static constants
+    (0.02/0.83) to moving points measures 0.0238, straight back out of the admission rule.
+    One jitter function means one fit covers both, verified phase-stable at **0.0068** from
+    rate 0 through t = 400s. The constants moved to **0.011/0.873** for this.
+  - **IGN cannot morph.** It is a hash, not a field — no continuity in any input — so
+    advancing it resamples the pattern per pixel per frame rather than moving it. That is
+    full-amplitude shimmer. Only kernels that are continuous in position can be continuous
+    in time.
+
+  Perlin was re-examined here specifically because continuous morphing is its selling point,
+  and it still does not qualify: the CDF remap that rescued Worley only takes 2-octave value
+  noise from 0.036 to **0.0252**, because a bell-shaped distribution does not flatten under a
+  single smoothstep the way a cell-distance one does. Its temporal coherence also turned out
+  to be **indistinguishable** from Worley's (0.17% vs 0.19% of pixels flipping per frame at
+  matched rates), so it offers nothing the admitted kernels do not already provide.
+
+  - **1 — corridor-relative spiral.** An Archimedean spiral in the corridor's own
+    polar frame (9 bands across the cone radius, sheared 3 turns per revolution), so the
+    pattern is anchored to the *corridor*: it stands still and the world travels through it,
+    which reads as an **iris around the ship** rather than a dissolve. Cheapest of the set —
+    both coordinates are already paid for (the radial ratio is the profile's own, the angle
+    comes from the perpendicular vector the distance came from), so it costs two dots, an
+    `atan2` and a `frac`, with no hash. Two invariants: the arm count **must stay an integer**
+    (`atan2`'s ±π seam jumps the phase by exactly one turn, which `frac` erases only for an
+    integer count — a fractional one leaves a radial scar), and the angle is measured in the
+    **camera's** right/up frame, because any basis built from the corridor axis alone has to
+    pick a reference vector and visibly snaps the whole spiral around when the axis swings
+    past it.
+  - **0 — screen-space interleaved gradient noise.** A low-discrepancy screen-space hash with
+    no repeating tile, anchored to the screen so prisms dissolve *through* it. The ordered 4×4
+    Bayer matrix it replaced read as what its name says — a regular grid. IGN also beats plain
+    white noise, which is motlier still but clumps, and clumping over a narrow band is a ragged
+    edge; irregular *and* even is the combination that works.
+
+Four properties of the design worth preserving if it is ever touched:
+
+- **Nothing is per-prism.** No trigger volume, no tracked set, no material swap, no
+  per-instance override. Widening the corridor costs nothing.
+- **The shape is chosen, not inherited.** The capsule was a leftover from a physics
+  collider; a shader is free to describe any field, so it describes the right one.
+- **Coverage is the point.** A prism material that cannot fade is an *invisible hole* in the
+  corridor — no error, no visual tell, nothing to notice until someone says they can't see
+  their ship. That is how the old system stayed broken; every gate above exists to make that
+  state impossible to reach silently.
+- **Prisms stay in the opaque queue.** The fade is screen-door (a dither threshold fed into
+  `SurfaceDescription.AlphaClipThreshold`), not blending. Moving corridor prisms into the
+  transparent queue would need a per-prism material swap AND would pay sorting + blend
+  overdraw for a set that changes every frame — precisely the cost this feature exists to
+  avoid. The trade is that the opaque prism materials are now **alpha-tested**
+  (`_AlphaClip: 1` + `_ALPHATEST_ON`), which is the change's one real cost (§4.7 note below).
+- **The corridor test is per-fragment**, from the Position(World) node — the same
+  post-vertex-animation position the rasterizer used. A per-object test would make a large
+  environment plate flip wholesale between solid and dissolved.
+- **`_Alpha` is multiplied, not replaced.** BlockGraph hosts transparent materials too
+  (cloak, transparent shielded/danger/super-shielded); their authored alpha still applies
+  and they need no clip, so the alpha-test opt-in is opaque-materials-only.
+
+**Cost, stated:** per fragment, outside the corridor — one compare against the off
+sentinel, ~10 ALU of segment-distance, one compare, done (no dither, no texture). Draw
+calls, batches, render queue and collider count are unchanged; corridor prisms stay in the
+same instanced batch as everything else. The one non-zero cost is structural: enabling
+`_ALPHATEST_ON` on the seven opaque BlockGraph materials makes prism fragments
+alpha-tested, which forfeits early-Z rejection for those draws on tile-based GPUs. Prisms
+are unlit boxes with a trivial fragment shader, and the alternative (per-prism transparent
+material swaps) is strictly worse, but it is a real trade and it is the thing to measure if
+prism fill cost regresses. Reverting it is one command
+(`Tools/Shaders/enable_prism_alpha_clip.py` inverted, or clear `_AlphaClip`/`_ALPHATEST_ON`),
+after which prisms render exactly as they did before and the corridor silently does nothing
+to them.
+
+**What it replaced.** `ClearPrisms` (deleted, with its prefab and the dead
+`IVessel.AllowClearPrismInitialization()` opt-out gate): a per-vessel kinematic
+Rigidbody + `CapsuleCollider` trigger that swapped each entered prism's `sharedMaterial` to
+the team transparent material and wrote a `MaterialPropertyBlock` per tracked prism per
+physics tick. It had been dead for a long time in three independent ways — the MPB never
+reaches the instanced batch (§3.8 #2), its capsule sat on layer `TrailBlockOcclusion` while
+prisms sit on `Default` so the collision matrix never paired them, and the Rhino prefab
+still carried an override for a `prismLayer` field the script no longer had. Removing it
+also removes 3 trigger colliders + 3 kinematic Rigidbodies from the vessel fleet
+(Rhino/Dolphin/Serpent) and the `OnTriggerStay` traffic they generated against every prism
+they overlapped.
+
 ## 5. Migration tracker (the deduplicated work list)
 
 Phase A — infrastructure (everything else rides on it):
@@ -841,14 +1252,14 @@ Phase B — migrate the engines (each retires a per-frame pass):
 |---|---|---|
 | B1 | Grow-in → clock (all ~12 feeder paths ride the one engine); gameplay-final-at-start (volume/spatial stamps, clock predicates, `ExecuteOnScaleComplete` → start) | ✅ LIVE (strict, the only path) 2026-08-01 — `PrismScaleManager` DELETED (D2, 2026-08-02). Graph wiring ✅ (playtest-confirmed smooth). Pending: `HoldColliderAtFullSize` deletion, `CreateBlockCoroutine` window simplification, arena-gate simplification, PhaseThresholds re-baseline |
 | B2 | Color/state transitions → clock lerp (start colors + t₀; target = material authored; end-state material bound at START, settle scheduled) | ✅ LIVE (strict, the only path) 2026-08-01 — `MaterialStateManager` DELETED (D2, 2026-08-02). Graph wiring ✅ (playtest-confirmed smooth on BlockGraph; the transparent-prism color cluster on ExplodingBlockGraph is wired too — 2026-08-02 — so transparent steals/repaints fade instead of snapping) |
-| B3 | Explosion/implosion → clock (stamp `{t₀, velocity, speed, duration}` / `{t₀, duration, direction, delay, location}`) | ✅ LIVE (strict, the only path) 2026-08-01 — moving-target DECIDED as the §1 exception (a snapshot would suck prisms toward where the fauna WAS): progress rides the clock, `PrismEffectsManager` refreshes `_Location` only (one float3/frame) while the target lives. Animation passes + Burst jobs DELETED (D2, 2026-08-02 — the manager keeps only convergence refresh + zombie audit). Graph wiring ✅ both graphs, PLAYTEST-CONFIRMED 2026-08-02: explosions ✅ (GPU-side world→object conversion inside `PrismExplosionClock` — raw inverse-model multiply, never the normalizing Direction-mode Transform — + flight-envelope bounds) and suction ✅ (`EncapsulateBoundsPoint` envelope). **Mass-death carrier upgraded 2026-08-02**: prism-death explosions spawn as BATCHED PURE-ENTITY debris (`PrismDebris` + `PrismRenderService.SpawnExplosionDebrisBatch` — no GameObject/pool/per-effect timer; full duration always); pooled path = fallback only. Implosion batch port = Prompt 9 remainder |
+| B3 | Explosion/implosion → clock (stamp `{t₀, velocity, speed, duration}` / `{t₀, duration, direction, delay, location}`) | ✅ LIVE (strict, the only path) 2026-08-01 — moving-target DECIDED as the §1 exception (a snapshot would suck prisms toward where the fauna WAS): progress rides the clock, `PrismEffectsManager` refreshes `_Location` only (one float3/frame) while the target lives. Animation passes + Burst jobs DELETED (D2, 2026-08-02 — the manager keeps only convergence refresh + zombie audit). Graph wiring ✅ both graphs, PLAYTEST-CONFIRMED 2026-08-02: explosions ✅ (GPU-side world→object conversion inside `PrismExplosionClock` — raw inverse-model multiply, never the normalizing Direction-mode Transform — + flight-envelope bounds) and suction ✅ (`EncapsulateBoundsPoint` envelope). **Mass-death carrier upgraded 2026-08-02**: prism-death explosions spawn as BATCHED PURE-ENTITY debris (`PrismDebris` + `PrismRenderService.SpawnExplosionDebrisBatch` — no GameObject/pool/per-effect timer; full duration always); pooled path = fallback only. **Implosion batch port shipped 2026-08-04** (`SpawnImplosionDebrisBatch` + `RefreshImplosionDebrisBatch`): suctions ride the same carrier, and the moving-target §1 exception moved onto it as a per-record `_Location` refresh with a CPU-mirrored culling envelope — see §4.6 for the carrier's rules and the death-path marker split that shipped with it |
 | B4 | Shield morphs → GPU (vertex-shader bloom/shatter from per-vertex face data + t₀; settled shared-mesh swap already conforms) | ◐ interim shipped 2026-08-01: stellated idle per-prism `Update()` KILLED — both shield tiers now ride the central `PrismOctahedronShieldManager` ticker (`IPrismShieldMorphTicker`), registered only while morphing. GPU morph itself still pending |
 
 Phase C — rogue paths & ecosystem visuals (each is standalone):
 
 | # | Item | Status |
 |---|---|---|
-| C1 | `ClearPrisms` `_Alpha` fade → clock (also fix instanced-path blindness) | ☐ not started |
+| C1 | `ClearPrisms` `_Alpha` fade → GLOBAL-uniform shader corridor, **promoted to a platform law** | ✅ SHIPPED 2026-08-04 — `ClearPrisms.cs` + its prefab DELETED and excised from Rhino/Dolphin/Serpent (−3 trigger colliders, −3 kinematic Rigidbodies), along with the dead `IVessel.AllowClearPrismInitialization()` opt-out. Replaced by `PrismOcclusionCorridor` (2 globals/frame) + `PrismOcclusionCorridor.hlsl` wired into **every graph a live prism can render with** (BlockGraph + ExplodingBlockGraph), bound at `VesselController.Initialize` so no vessel or mode can omit it, with runtime fail-loud (`PrismOcclusionDiagnostics`) and an edit-mode coverage test. Full design, the four enforcement layers, and the stated cost: §4.7 |
 | C2 | `MaterialBlendUtility` (overheat danger trail + skim overcharge) → the one color pipeline | ✅ shipped 2026-08-01: utility DELETED. Overheat danger trail: the redundant direct blend removed — `IsDangerous` pre-`Initialize` already runs `MakeDangerous()` through the pipeline (per-domain danger material, clock or legacy transition); `EnableDangerMode`'s material param is legacy-ignored. Skim overcharge: rides `MaterialPropertyAnimator.UpdateMaterial(overchargedMaterial, …)` — visible on both render paths; the multi-material append semantic retired |
 | C3 | AOE double-growers (`AOERadialBlocks`, `AOEDangerHemisphereBlocks`) → single engine stamp; fix dead `growthRate` field writes + `renderer.material` clone | ✅ shipped 2026-08-01: both bespoke `GrowToScale` loops deleted (growth = the one engine via `TargetScale` + `SetGrowthRate`); `MakeDangerousAsync` deleted — danger/shield now ride the pre-`Initialize` flag contract so `PrismStateManager` applies the proper per-domain theme materials (the `renderer.material` clone and the instanced-path-blind restyle are gone); hemisphere prisms now get the firing vessel's Domain like the radial sibling |
 | C4 | `FireTrailBlockActionExecutor` → pooled + mover-contract or stamped ballistic clock; remove `Destroy()` timer (ecosystem law) | ☐ not started |
@@ -870,6 +1281,7 @@ Phase D — lock-in:
 | D1 | Docs locked (this file + CLAUDE.md anti-pattern + manager banners + cross-refs) | ✅ shipped (2026-07-31) |
 | D2 | Delete the retired classes + scene components (`PrismScaleManager`, `MaterialStateManager`, `PrismEffectsManager`'s animation passes + Burst jobs, `AdaptiveAnimationManager` frame-skip machinery, retired animator fields, `TrailViewer`) | ✅ DONE 2026-08-02, programmatically: classes deleted; components excised from `PrismManagers.prefab` + `Urchin.prefab` by fileID (machine-verified reference-free); `PrismEffectsManager` slimmed to convergence refresh + zombie audit; animator dead surface stripped (`IsAnimating`/`IsScaling`/registration/…); `GameLoadSampler` re-sourced to `PrismSpatialIndex.LiveCount` + effect `EnabledInstances`; `AdaptivePerformanceSetting` documented INERT. Remaining in-editor: PhaseThresholds re-baseline (needs the measuring tool) |
 | D3 | In-editor verification pass (all migrated paths, both render paths, load-gate + hitstop + pause) | ☐ not started |
+| D4 | Retire the pooled `PrismExplosion` / `PrismImplosion` spawn path | ☐ **gated, not blocked** — the behavioural case is made (§4.6.1: no GameObject consumers, no working visual fallback, no runtime-override caller, shipped config instanced-ON), but it is a refactor not a deletion: the pool prefabs are the batched path's CONFIG source, and the zombie audit + `GameLoadSampler` read `EnabledInstances`. Gate = measured implosion parity (fauna playtest + a benchmark pass); do not do it in the same change as the batch |
 
 ---
 

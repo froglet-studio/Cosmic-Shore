@@ -169,6 +169,8 @@ namespace CosmicShore.Gameplay
             if (initStruct.DurationOverride > 0f)
                 ExplosionDuration = initStruct.DurationOverride;
 
+            ApplyAffectSelfOverride(initStruct);
+
             MaxScaleVector = new Vector3(MaxScale, MaxScale, MaxScale);
             speed = MaxScale / ExplosionDuration;
 
@@ -188,6 +190,18 @@ namespace CosmicShore.Gameplay
             // Subscribe to game events - OnEnable fires before DI injection
             // for runtime-spawned objects, so retry here after injection.
             SubscribeToGameEvents();
+        }
+
+        /// <summary>
+        /// Pushes a per-instance friendly-fire decision onto this explosion's impactor. Each
+        /// explosion is instantiated fresh from its prefab, so writing the instance's flag cannot
+        /// leak into the next blast. No override leaves the authored prefab value alone.
+        /// </summary>
+        protected void ApplyAffectSelfOverride(InitializeStruct initStruct)
+        {
+            if (!initStruct.AffectSelfOverride.HasValue) return;
+            if (!_explosionImpactor) _explosionImpactor = GetComponent<ExplosionImpactor>();
+            if (_explosionImpactor) _explosionImpactor.SetAffectSelf(initStruct.AffectSelfOverride.Value);
         }
 
         private void SubscribeToGameEvents()
@@ -383,6 +397,24 @@ namespace CosmicShore.Gameplay
             /// <summary>Replaces the prefab's authored ExplosionDuration for this
             /// instance; 0 (the default) keeps the authored value.</summary>
             public float DurationOverride;
+
+            /// <summary>
+            /// Replaces the CONIC explosion's authored axial length (how far down-range the
+            /// blast reaches) for this instance; 0 (the default) keeps the authored value.
+            /// MaxScale is the cone's BASE DIAMETER, so the two together set the half-angle -
+            /// which is why a caller that wants to widen the cone without lengthening it
+            /// (the Dolphin's energy-driven blast) must control them independently.
+            /// Ignored by the spherical base explosion.
+            /// </summary>
+            public float HeightOverride;
+
+            /// <summary>
+            /// Per-instance friendly-fire override for the spawned <see cref="ExplosionImpactor"/>:
+            /// false spares the blast's own domain, true lets it damage allies. null (the default)
+            /// keeps whatever the prefab authored. Used by elemental upgrades that turn
+            /// friendly fire off as a reward.
+            /// </summary>
+            public bool? AffectSelfOverride;
         }
     }
 }

@@ -16,9 +16,18 @@ run the `/reorient` skill first and act on its verdict before shipping.
 
 ## 1. Survey the branch
 
-- `git log --oneline <base>..HEAD` and `git diff --stat <base>..HEAD` (base is
-  `bleeding-edge` unless told otherwise). Read the full commit list; re-read any diff
-  hunk you can't summarize from memory.
+- `git log --oneline <base>..HEAD` and `git diff --stat <base>..HEAD`. **`<base>` is the
+  MERGE BASE, not the base branch's tip** — `git merge-base origin/bleeding-edge HEAD`.
+  Diffing against the tip of a branch that moved while you worked reports every commit
+  THEY landed as deletions in YOUR diff, which reads as a catastrophic branch and is
+  entirely an artefact. Read the full commit list; re-read any diff hunk you can't
+  summarize from memory.
+- **Merge the base branch in before reviewing**, so you resolve conflicts rather than
+  leaving them for a reviewer, and so §2 reviews the tree that will actually land.
+  Watch for conflicts a text merge CANNOT see: two branches independently claiming the
+  same new **doc section number** (both took `§4.6`) merges clean per-hunk and produces a
+  document with two of them. When you renumber, renumber every inbound reference — and
+  only YOURS: grep the whole repo, then split the hits by which section they mean.
 - Restate, in a few sentences, WHAT the branch delivers and WHY. If you can't, you are
   not ready to ship — go re-read the diff.
 
