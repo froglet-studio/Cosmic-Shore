@@ -172,11 +172,13 @@ holds natively for every purchase path — no ledger, no revoke, no inference.
 
 ---
 
-## 4b. The threshold-credit model — "every dollar over $30 discounts the pass"
+## 4b. The credit model — how the $120 cap is actually delivered
 
-**The formula:** `pass price = $90 − max(0, spend − $30)`
+Two formulations were considered. The second is the one to build.
 
-It is self-consistent, and the arithmetic is genuinely elegant:
+### The dollar formulation (the original idea)
+
+`pass price = $90 − max(0, spend − $30)`
 
 | Spend so far | Credited | Pass price | **Total** |
 |---|---|---|---|
@@ -186,49 +188,109 @@ It is self-consistent, and the arithmetic is genuinely elegant:
 | $30 (12-pack) | $0 | $90 | **$120** |
 | $40 | $10 | $80 | **$120** |
 | $60 (12 singles) | $30 | $60 | **$120** |
-| $90 | $60 | $30 | **$120** |
 | $120 | $90 | **$0 — granted** | **$120** |
 
-**Above $30 of spend the total is exactly $120, on every path.** At $120 the pass costs nothing and
-is simply granted, which is precisely the "unlock the pass at $120" rule. The uncredited first $30 is
-what makes the ceiling $120 rather than $90 — credit from dollar one and the ceiling drops to $90.
+Above $30 of spend the total is exactly **$120 on every path**, and at $120 the pass is granted. The
+uncredited first $30 is what sets the ceiling at $120 rather than $90 — credit from dollar one and
+the ceiling drops to $90.
 
-### Can Steam enforce it?
+**But "spend" is not knowable from Steam** (§4). Sales, regional pricing, gifts, and refunds all
+break any dollar inference, and there is no lifetime-spend API at all. So this formulation cannot be
+implemented as written.
 
-**Not as a store-page price.** There is no API that sets a DLC's price per player. Steam prices are
-per-SKU and per-region, never per-user. Five ways to land it anyway:
+### The entitlement formulation ⭐ build this
 
-| Mechanism | Exact formula? | Backend? | Verdict |
+Same outcome, computed from something Steam actually reports — **which SKUs the player owns**, valued
+at *our* list prices:
+
+> **credit = (list value of everything owned) − $30**, clamped to $0–$90
+> where list value = `$5 × singles owned` + `$30 if the 12-pack is owned`
+
+| Case | List value | Credit | Pass | **Total** |
+|---|---|---|---|---|
+| 12-pack only | $30 | $0 | $90 | **$120** |
+| 12 singles | $60 | $30 | $60 | **$120** |
+| Pack + 6 later singles | $60 | $30 | $60 | **$120** |
+| Pack + 12 later singles | $90 | $60 | $30 | **$120** |
+| 3 singles | $15 | $0 | $90 | $105 |
+
+Caps at exactly $120 on every path, keeps working as the catalogue grows, and **cannot be corrupted
+by sales, regions, gifts, or refunds** — because it never asks what the player paid, only what they
+own. In episode terms it reads as **$5 credit per single-episode SKU owned beyond the sixth**, since
+six singles at $5 is precisely the $30 uncredited base.
+
+### ❌ Rejected: "$2.50 per episode owned beyond 12"
+
+The per-episode shape is right, but this coefficient breaks the cap:
+
+| Case | Paid | Credit | Pass | Total |
+|---|---|---|---|---|
+| 12-pack only | $30 | $0 | $90 | $120 ✅ |
+| 12 singles | $60 | $0 | $90 | **$150** ❌ |
+| Pack + 6 later singles | $60 | $15 | $75 | **$135** ❌ |
+| Pack + 12 later singles | $90 | $30 | $60 | **$150** ❌ |
+
+Two reasons it fails. **$2.50 is the pack rate, but singles cost $5** — it credits half of what an
+à-la-carte buyer actually paid, so every one of them overshoots. And **"beyond 12" never fires**:
+with 6 episodes at launch nobody can own a 13th for a long time, so the rule does nothing until the
+catalogue outgrows the pack.
+
+### Can Steam enforce a sliding price?
+
+**Not as a store-page price.** There is no API that prices a SKU per player — prices are per-SKU and
+per-region, never per-user. Five ways to land it anyway:
+
+| Mechanism | Exact? | Backend? | Verdict |
 |---|---|---|---|
-| **MicroTxn** — you specify the amount on each transaction | ✅ exact, continuous | ✅ required | The **only** route that computes an arbitrary per-player price |
-| **Tiered upgrade SKUs** — e.g. Pass at $90/$75/$60/$45/$30/$15/free, hidden from the store, opened via the overlay | ≈ stepped | ❌ none | Best no-backend approximation |
-| **Complete-the-Set bundle** | ❌ Steam's own math | ❌ none | Automatic ownership credit, but the arithmetic is Valve's, not yours |
-| **Grant-on-threshold** — never discount, just *give* the pass once owned value crosses $120 | ✅ for the cap | ❌ none | Delivers the promise, not the sliding price |
+| **MicroTxn** — you specify the amount per transaction | ✅ exact, continuous | ✅ required | The **only** route that computes an arbitrary per-player price |
+| **Tiered upgrade SKUs** — pass authored at several price points, hidden from the store, opened via the overlay | ≈ stepped | ❌ none | Best no-backend approximation of the sliding price |
+| **Complete-the-Set bundle** | ❌ Valve's own math | ❌ none | Automatic ownership credit, arithmetic is Valve's not yours |
+| **Grant-on-threshold** — never discount, just *give* the pass once owned value reaches $120 | ✅ for the cap | ❌ none | Delivers the promise, not the sliding price |
 | **Manual refund of the overage** | ✅ exact | ❌ none | Backstop only; operationally costly |
 
-> **Recommended if you want this model:** tiered upgrade SKUs. Author the pass at ~6 price points,
-> mark them **not visible on the store**, and open the correct one through the Steam overlay from
-> in-game. No backend, and the player sees one price — the right one. Confirm with Valve that DLC can
-> be hidden from the store page before committing.
->
-> If the sliding price must be continuous rather than stepped, that is **MicroTxn, and a backend**.
+The full entitlement formula needs the pass at **$90 → $0 in $5 steps — about 19 SKUs**. That is a
+lot of authoring for a case most players never reach.
 
-### The constraint from §4 still applies
+### ⭐ The shipping simplification — cap à-la-carte at $30 of list value
 
-"Spend" is **not knowable** from Steam. Sales, regional pricing, gifts, and refunds all break any
-inference from dollars. So the credit must be computed from **which SKUs the player owns**, valued at
-your own list prices — not from what they actually paid. Write the rule as *"own the 12-pack → the
-pass is $60"*, never *"spent $30 → the pass is $60"*.
+Stop selling singles once a player's list value reaches $30 (six singles, or the pack), and show only
+the pass from then on. Then `list value − $30` is **always zero**, and:
+
+- **One pass SKU at $90.** No stepped SKUs, no hidden-DLC question for Valve.
+- **No credit formula, no ledger, no reconciliation, no revoke path.**
+- Total is **structurally ≤ $120 on every path** — the cap holds by construction rather than by a
+  rule you have to police across regions and sales.
+
+Make the 12-pack a **Complete-the-Set bundle** and Steam even handles "I already own 4 singles"
+natively. Same player-facing outcome as the full formula, with almost none of the machinery.
+
+### The evolution path
+
+Ship the simplification, keep the formula as the target. The two are compatible — the simplification
+is the formula with the credit term pinned at zero, so moving to the full version later means
+authoring more SKUs, not redesigning the model.
+
+| Stage | What ships | Cost |
+|---|---|---|
+| **1. Launch** | À-la-carte capped at $30 of list value; one $90 pass; 12-pack as a Complete-the-Set bundle | Ownership checks only |
+| **2. Catalogue grows past 12** | Stepped pass SKUs so the credit becomes real | Author ~6 price points, hide from store |
+| **3. If a continuous price is ever required** | MicroTxn | Backend |
 
 ### One wrinkle worth fixing
 
-Below $30 of spend, buying à la carte first **costs more than going straight to the pass**: one
+Below $30 of list value, buying à la carte first **costs more than going straight to the pass**: one
 episode ($5) then the pass ($90) is $95, against $90 for the pass alone. It does not break the "never
 more than $120" promise, but players notice paying extra for having sampled first. Two fixes:
 
-- **Credit from dollar one** (`pass = $90 − spend`) — fair at every point, ceiling becomes $90.
+- **Credit from dollar one** (`credit = list value`) — fair at every point, ceiling becomes $90.
 - **Keep the $30 threshold** and make sure the store never shows a single-episode price to someone
   who is one click from the pass.
+
+### ⚠️ Inconsistency to resolve
+
+The tables say **6 episodes at launch**, but the pack is **12 for $30**. Until twelve exist that SKU
+cannot be sold as described — either the launch pack is "all 6" at a proportionate price, or the
+12-pack ships later and only singles are available at launch.
 
 ---
 
@@ -299,8 +361,10 @@ one requirement only tokens satisfy, and Route B becomes correct instead.
 
 **Decision rule:** if the 6-of-12 mid tier is real → **Route B**. If not → **Route A**.
 
-**If the §4b sliding-credit model is a hard requirement**, that changes the answer again: stepped
-upgrade SKUs keep you on Route A/B with no backend, and a continuous sliding price forces Route C.
+**The §4b credit model does not change the route.** Ship the simplification (à-la-carte capped at
+$30 of list value, one $90 pass), which makes the credit term zero and the $120 ceiling structural.
+The full entitlement formula is the same model with the credit switched on, so growing into it later
+means authoring more SKUs — not redesigning anything.
 
 ---
 
