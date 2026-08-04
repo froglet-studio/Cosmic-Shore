@@ -70,17 +70,19 @@ earned before that point bank toward the first purchase rather than being wasted
 | Item | Type | Consumable? | Price (USD) | Notes |
 |---|---|---|---|---|
 | Cosmic Shore (Early Access) | Base game | Non-consumable | **$15.00** | Price does **not** rise at 1.0 |
-| Episode Token ×1 | Currency | Consumable | **$2.00** | 1 token = 1 episode |
+| Episode ×1 | Entitlement | Non-consumable | **$5.00** | Single episode |
+| All 12 Episodes | Entitlement / token pack | Non-consumable | **$30.00** | Half off ($2.50 each) |
 | Episode (via token) | Entitlement | Non-consumable | 1 token | Permanent, all devices |
 
 | Rule | Value |
 |---|---|
-| Bundles / volume discounts | None at launch |
+| Bundles / volume discounts | 12-for-$30 (half off). Mid-tier 6-for-$20 proposed — see analysis |
 | Crystals → tokens | **Never.** No soft-to-hard conversion. |
 | Regional pricing | Accept Valve's suggested conversions |
 | Launch discount | *Pending — not yet decided* |
 | Episodes at launch | **6** |
 | Free tokens granted on game purchase | *Pending — how many?* |
+| Delivery mechanism | *Pending — DLC vs token packs, see `Docs/Legal/DLC_VS_TOKENS_ANALYSIS.md`* |
 
 ---
 

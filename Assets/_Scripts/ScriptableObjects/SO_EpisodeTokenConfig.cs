@@ -36,7 +36,7 @@ namespace CosmicShore.ScriptableObjects
             [Min(1)] public int tokenCount = 1;
 
             [Tooltip("Display price in USD. The storefront is authoritative; this is for UI only.")]
-            [Min(0f)] public float displayPriceUsd = 2f;
+            [Min(0f)] public float displayPriceUsd = 5f;
 
             [Tooltip("Optional 'best value' flag for the UI to badge.")]
             public bool highlight;
@@ -46,10 +46,12 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("Tokens required to unlock one episode. 1 = the shipped design (1 episode = 1 token).")]
         [Min(1)] public int tokensPerEpisode = 1;
 
-        [Tooltip("Purchasable bundles, in display order.")]
+        [Tooltip("Purchasable bundles, in display order. Product ids must match the storefront SKUs " +
+                 "(Steam DLC app ids under the recommended DLC route).")]
         public List<TokenBundle> bundles = new()
         {
-            new TokenBundle { productId = "episode_token_1", displayName = "Episode Token",   tokenCount = 1, displayPriceUsd = 2f },
+            new TokenBundle { productId = "episode_token_1",  displayName = "Episode Token",     tokenCount = 1,  displayPriceUsd = 5f },
+            new TokenBundle { productId = "episode_token_12", displayName = "All 12 Episodes",   tokenCount = 12, displayPriceUsd = 30f, highlight = true },
         };
 
         [Header("Display")]
