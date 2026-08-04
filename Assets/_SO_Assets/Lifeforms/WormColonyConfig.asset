@@ -34,6 +34,8 @@ MonoBehaviour:
   - 1
   - 0.7
   - 0.45
+  ColonySeparationRadius: 160
+  ColonySeparationWeight: 2.5
   BehaviorTickSeconds: 1.5
   MouthRadius: 28
   FaunaBiteRange: 34

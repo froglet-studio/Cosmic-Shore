@@ -86,11 +86,54 @@ namespace CosmicShore.Gameplay
         Quaternion _leaderBaseRotation = Quaternion.identity;
         float _currentSpeed;
 
+        // Boid separation from OTHER colonies, recomputed per behavior tick and held
+        // between ticks (the goal pull is likewise tick-scoped).
+        Vector3 _separation;
+
         /// <summary>Live head speed — jousting a segment heart means outracing the kaiju.</summary>
         public override float CurrentSpeed => _currentSpeed;
 
         /// <summary>Current chain length (the boss's visible health-and-history bar).</summary>
         public int SegmentCount => segments.Count;
+
+        /// <summary>
+        /// Squared distance from <paramref name="from"/> to the nearest point of this
+        /// colony's BODY, and that point. A worm is long, so head-to-head distance is
+        /// the wrong read for separation — neighbours must repel from the part of each
+        /// other that is actually close.
+        /// </summary>
+        public bool TryGetNearestBodyPoint(Vector3 from, out Vector3 point, out float sqrDistance)
+        {
+            point = default;
+            sqrDistance = float.PositiveInfinity;
+            for (int i = 0; i < segments.Count; i++)
+            {
+                var seg = segments[i];
+                if (!seg) continue;
+                float d = (seg.transform.position - from).sqrMagnitude;
+                if (d < sqrDistance)
+                {
+                    sqrDistance = d;
+                    point = seg.transform.position;
+                }
+            }
+            return sqrDistance < float.PositiveInfinity;
+        }
+
+        /// <summary>
+        /// An apex FORAGER hunts mass, so the colony overrides the base fauna goal
+        /// (which idles at the cell crystal while Calm): head for the densest sensed
+        /// region at every phase — the same "voracious" read LightFauna gets in nucleus
+        /// cells, and the reason a worm dropped outside the membrane comes home instead
+        /// of drifting in empty space. The per-instance orbit offset is kept so two
+        /// colonies never converge on the identical point (the base class's
+        /// anti-convergence rule — load-bearing now that worms also repel each other).
+        /// </summary>
+        protected override Vector3 ResolveGoal()
+        {
+            if (cell == null) return Goal;
+            return cell.GetDensestRegionAnyDomain() + GoalOrbitOffset;
+        }
 
         /// <summary>
         /// Nothing in the food web preys on the kaiju: the root is not devourable or
@@ -356,6 +399,10 @@ namespace CosmicShore.Gameplay
             Vector3 desiredDirection;
             float swayMultiplier = 1f;
             float turnRate = config.TurnDegreesPerSecond;
+            // Separation applies while the worm is free to steer. A committed strike
+            // (Telegraph/Lunge) ignores it — the wind-up must stay readable and the
+            // locked lunge must stay dodgeable-by-moving, not deflected by a neighbour.
+            bool separates = false;
 
             switch (_state)
             {
@@ -366,6 +413,7 @@ namespace CosmicShore.Gameplay
                         : leader.forward;
                     targetSpeed = config.CruiseSpeed * config.PursuitSpeedMultiplier * speedMult;
                     turnRate *= config.PursuitTurnMultiplier;
+                    separates = true;
                     break;
 
                 case AttackState.Telegraph:
@@ -392,13 +440,21 @@ namespace CosmicShore.Gameplay
                     desiredDirection = leader.forward;
                     targetSpeed = config.CruiseSpeed * config.RecoverSpeedFraction * speedMult;
                     swayMultiplier = 0.3f;
+                    separates = true;
                     break;
 
                 default:
                     desiredDirection = (Goal - leader.position).normalized;
                     targetSpeed = config.CruiseSpeed * speedMult;
+                    separates = true;
                     break;
             }
+
+            // Boid steering: goal pull (weight 1) + neighbour repulsion. The degenerate
+            // guard below keeps a cancelling sum from zeroing the heading (a zeroed
+            // heading is a PERMANENT stall — see Fauna.DegenerateSteeringSqr).
+            if (separates && _separation != Vector3.zero)
+                desiredDirection = (desiredDirection + _separation * config.ColonySeparationWeight).normalized;
 
             if (desiredDirection.sqrMagnitude > DegenerateSteeringSqr &&
                 SafeLookRotation.TryGet(desiredDirection, out var targetRotation, this))
@@ -481,6 +537,7 @@ namespace CosmicShore.Gameplay
                 TickStarvation();
                 if (segments.Count == 0) yield break; // starvation took the last segment
 
+                TickSeparation();
                 TickThreatScan();
                 TickFeeding();
                 TickPredation();
@@ -502,6 +559,33 @@ namespace CosmicShore.Gameplay
 
             _lastStarvationShed = Time.time;
             segments[segments.Count - 1].WitherAway("starvation");
+        }
+
+        /// <summary>
+        /// Boid separation from other colonies: each neighbour pushes this worm's head
+        /// away from ITS NEAREST SEGMENT, inverse-square weighted, so two kaiju sharing
+        /// a cell swim around each other instead of interpenetrating. Colonies are
+        /// lineage-registered, so this is a walk of the cell's small fauna registry —
+        /// no physics, no prism queries. O(colonies × segments) at the tick cadence.
+        /// </summary>
+        void TickSeparation()
+        {
+            _separation = Vector3.zero;
+            if (config.ColonySeparationRadius <= 0f) return;
+            var host = cell;
+            if (host == null) return;
+
+            Vector3 head = segments[0].transform.position;
+            float radiusSqr = config.ColonySeparationRadius * config.ColonySeparationRadius;
+            var fauna = host.LiveFauna;
+            for (int i = 0; i < fauna.Count; i++)
+            {
+                if (fauna[i] is not WormFauna other || ReferenceEquals(other, this)) continue;
+                if (!other.TryGetNearestBodyPoint(head, out var point, out float sqr)) continue;
+                if (sqr > radiusSqr || sqr <= DegenerateSteeringSqr) continue;
+                // Inverse-square falloff: diff/|diff|² == diff.normalized/|diff|.
+                _separation += (head - point) / sqr;
+            }
         }
 
         void TickThreatScan()

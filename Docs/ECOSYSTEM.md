@@ -2017,7 +2017,36 @@ movement model — plus the `Sharks-and-worms` branch's telegraph→burst attack
   pipeline (`RandomLifeSpawner` → `SpawnFaunaWithDomain`); nothing special-cases color.
 - **Fauna senses**: prism sensing via `PrismSpatialIndex.QuerySphere`; vessel sensing
   via the shared `OverlapScratch` + `NonPrismOverlapMask` physics path on the behavior
-  tick — never a physics query against prisms.
+  tick; colony-vs-colony sensing via the cell's fauna registry — never a physics query
+  against prisms.
+
+### 21.3.1 Boid separation + mass-seeking (Aug 2026, playtest round 3)
+
+Two things the first passes left out, both found in play:
+
+- **Worms didn't repel each other.** Colonies are boids like everything else in the
+  cell: `TickSeparation` walks the cell's fauna registry for other `WormFauna` and
+  pushes this worm's HEAD away from each neighbour's **nearest segment** (a worm is
+  long — head-to-head distance is the wrong read), inverse-square weighted, summed
+  into the steering alongside the goal pull (`ColonySeparationRadius` /
+  `ColonySeparationWeight`). Separation applies while free-steering (Cruise, Pursue,
+  Recover) but **not** during Telegraph or Lunge: a committed strike must stay
+  readable and dodgeable-by-moving, not get deflected by a neighbour. The per-instance
+  `GoalOrbitOffset` is kept in the goal (below) so two colonies never seek the
+  identical point — separation and anti-convergence are complementary, not redundant.
+- **The kaiju idled at the crystal instead of hunting mass.** The base fauna goal
+  parks a Calm creature at the cell crystal; an apex forager should hunt food.
+  `WormFauna.ResolveGoal` now returns the **densest sensed region at every phase**
+  (`Cell.GetDensestRegionAnyDomain`, which falls back to the cell anchor in an empty
+  cell) plus the orbit offset — so a worm is drawn to the cell's mass, and one
+  dropped outside the membrane comes home instead of drifting in empty space.
+- **The Lifeform Matrix hatched creatures into the void.** The bench's variant
+  stations are layered outward and can sit hundreds of units BEYOND the membrane, and
+  `SpawnFaunaVariant` hatched the population AT the station — in empty space, with
+  nothing to graze, which defeats the bench's purpose. Fauna now hatch on the cell's
+  densest sensed mass (the same target every forager seeks), jittered like a spawner
+  wave. Flora still plant at their station: a rooted structure is placed deliberately,
+  a creature roams anyway.
 
 ### 21.4 Collider budget (the hard gate, stated)
 

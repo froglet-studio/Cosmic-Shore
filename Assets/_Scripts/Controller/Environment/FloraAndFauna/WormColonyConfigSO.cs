@@ -77,6 +77,17 @@ namespace CosmicShore.Gameplay
         [Tooltip("Behavior-tick cadence multipliers indexed by CellAggressionLevel.")]
         public float[] CadenceByAggression = { 1f, 0.7f, 0.45f };
 
+        [Header("Colony separation (boid repulsion between worms)")]
+        [Tooltip("Another colony's body within this distance of this worm's HEAD pushes " +
+                 "it away — the standard boid separation term, measured to the nearest " +
+                 "SEGMENT of the other worm (a worm is long; head-to-head distance is the " +
+                 "wrong read). Size it around a body length so two kaiju share a cell " +
+                 "without interpenetrating. 0 = off.")]
+        [Min(0f)] public float ColonySeparationRadius = 160f;
+        [Tooltip("Weight of the separation term against the goal pull (goal weight is 1). " +
+                 "Higher = worms give each other a wider berth and commit less to food.")]
+        [Min(0f)] public float ColonySeparationWeight = 2.5f;
+
         [Header("Feeding — an APEX OMNIVORE (the head is the colony's mouth)")]
         [Tooltip("Seconds between colony behavior ticks (senses, feeding, growth, attacks).")]
         [Min(0.1f)] public float BehaviorTickSeconds = 1.5f;
