@@ -49,9 +49,9 @@ asset, the prefab, and the code are the record.** Before changing a vessel:
    including HUD icons that live in the **vessel** prefab, not the HUD variant (the Rhino's row
    was missed for exactly this reason), and `m_Modifications` overrides on nested prefabs.
 3. Run (or, since you cannot run Unity, reason from the source of) the fleet auditors:
-   **FrogletTools > Vessels > Audit Vessel Ability Rows** and **Audit Vessel Elemental Morphs** —
-   both asset-only, both reuse the exact runtime discovery code, so report and game cannot
-   disagree.
+   **FrogletTools > Vessels > Audit Vessel Ability Rows**, **Audit Vessel Skimmers** and **Audit
+   Vessel Elemental Morphs** — all asset-only, all reuse the exact runtime discovery code, so
+   report and game cannot disagree.
 4. Grep by **class name**, not file name — the vessel layer renamed Ship→Vessel in file names
    only: `VesselActionSO.cs` declares `ShipActionSO`, `VesselHelper.cs` declares `ShipHelper`,
    `R_VesselElementStatsHandler.cs` declares `R_ShipElementStatsHandler`, `VesselActions.cs`
@@ -70,7 +70,7 @@ un-implemented until Garrett marks them up. If your task requires a mapping that
 STOP and ask (AskUserQuestion), presenting the FLEET_MAPS proposal for that row. The same gate
 applies to new abilities, new resources on the meter list, and anything that adds a fundamental.
 
-## 4. Implement — the ten rules that keep getting relearned
+## 4. Implement — the thirteen rules that keep getting relearned
 
 1. **Ability SOs are shared and stateless.** Per-vessel state lives in executors / vessel-root
    MonoBehaviours; SOs receive `(registry, status)` per call. Never bind state to an SO asset.
@@ -105,13 +105,40 @@ applies to new abilities, new resources on the meter list, and anything that add
     every vessel surface: continuity of existence (even previews bloom/wither),
     MaterialPropertyBlock over `renderer.material`, fail-loud SOAP, implicit-bool over `??` for
     UnityEngine.Object.
+11. **A skimmer only skims if `VesselStatus` points AT it.** `VesselController.Initialize`
+    initializes **only** `NearFieldSkimmer`/`FarFieldSkimmer`, and `SkimmerImpactor` drops every
+    contact while `skimmer.IsInitialized` is false — so a vessel can carry a flawless skimmer
+    (trigger sphere, kinematic rigidbody, `ImpactCollider`, container, layer 7) and skim nothing,
+    silently, because the reference points at a disabled twin. Run **Audit Vessel Skimmers**
+    first; never conclude from the prefab looking right.
+12. **Before removing a "redundant" writer, enumerate ALL writers of that meter.** A resource can
+    be fed by both `ResourceSystem`'s per-second `resourceGainRate` and an action executor, and
+    an executor's own cooldown can block its path entirely — so deleting the passive trickle
+    "because gain should come from the ability" left the Dolphin's boost with no working fill
+    path at all. The trickle and `rechargeCooldownSeconds` had to move together. Grep every
+    writer, then change the set.
+13. **A cancelled UniTask never runs its tail.** `catch (OperationCanceledException) { }` means
+    any status the routine set *before* its loop stays set forever. Interrupting a discharge left
+    `BoostMultiplier`/`IsBoosting` frozen — a permanent free speed bonus. Restore that state in
+    the routine's *starter*, not only in its completion path.
 
 ## 5. Audit, then hand back verification (you cannot run Unity; the human is the gate)
 
 - State which auditors to run and the expected result: **Audit Vessel Ability Rows**,
-  **Audit Vessel Elemental Morphs**, plus **Wire Elemental Petal Bars** (or **Bake Elemental
-  Petal Bars Into All Vessel HUDs**) and **Plan Vessel Rig Swap** where relevant. Impact/skimmer wiring has **no auditor** — hand back
-  explicit play-mode checks for it (prism hit, crystal collect ×1, skim, no NREs).
+  **Audit Vessel Skimmers**, **Audit Vessel Elemental Morphs**, plus **Wire Elemental Petal
+  Bars** (or **Bake Elemental Petal Bars Into All Vessel HUDs**) and **Plan Vessel Rig Swap**
+  where relevant. Vessel-impactor container wiring still has no auditor — hand back explicit
+  play-mode checks for that half (prism hit, crystal collect ×1, no NREs).
+- **Check that the feedback you are asking a human to judge is OBSERVABLE before you ask.** A
+  skim's three signals are each individually invisible on a desktop editor: the haptic is a
+  NO-OP (NiceVibrations does nothing there), the beam VFX only draws if the skimmed prism
+  authored a `ParticleEffect` (several prefabs, incl. the menu trail prism, leave it empty —
+  and `Instantiate(null)` throws inside a `.Forget()`ed UniTaskVoid, so it fails invisibly),
+  and a gauge that moves a tenth of its range per event reads as nothing. "I feel no X" then
+  carries **zero** information about whether X is wired, and three round-trips can be spent
+  debugging a chain that was working. Enumerate the signals, ask which of them can actually
+  reach the human on their platform, and add a discrete unmistakable beat if the answer is
+  none.
 - Give numbered in-editor verification steps: scene, action, concrete observable, the SO knobs
   to tune, and an MPPM two-client step wherever replicated state (unlock bits, swaps) changed.
 - Anything you could not editor-verify gets a 🔴 entry in `Docs/UNITY_VERIFICATION_CHECKLIST.md`
@@ -144,9 +171,17 @@ up the enforcement ladder the shipped systems use:
    discovery code (`VesselElementalMorphAuditor` pattern).
 5. **Record it**: CLAUDE.md + this skill's CONTRACT.md + the ship checklist.
 
-Known gap, first candidate for step 4: **impact-effect/skimmer container wiring has no
-auditor** — misconfigurations there (null containers, unwired skimmers, orphaned effect assets)
-have only runtime symptoms today.
+**Worked example (2026-08):** the skimmer half of that gap is now closed —
+`VesselSkimmerAudit` (`FrogletTools > Vessels > Audit Vessel Skimmers`) walks every vessel
+prefab's `NearFieldSkimmer`/`FarFieldSkimmer` to its GameObject and checks active state up the
+whole ancestor chain, the impactor/`ImpactCollider`/trigger-collider/`Rigidbody` the trigger path
+needs, and whether the container holds prism effects; when a container asks for the forcefield
+crackle it also checks the `ForcefieldCrackleController` + its `overlayRenderer`, because that
+effect needs **three** pieces across three files and returns silently without any of them.
+
+Remaining gap, next candidate: **vessel-impactor container wiring** (null containers, orphaned
+effect assets, an effect authored but never added to the vessel's container) still has only
+runtime symptoms.
 
 ## 8. Commit
 

@@ -375,6 +375,13 @@ hand-authored files plus a scene array entry. The recipe:
 5. Order can be load-bearing — appending is safe, inserting may not be. Here
    index 0 must stay the environment-free config (`CellTypeChoiceOptions.
    EnvironmentFree` boots on the first config with no environment).
+6. **Machine-check every hand-authored asset against its script before ship.**
+   Parse the `[SerializeField]`/public field names out of the `m_Script` GUID's
+   `.cs` **and its base classes**, then diff against the asset's top-level YAML
+   keys. An unknown key is a typo or a stale rename that will silently default;
+   this catches in one second what an editor import round-trip catches in ten
+   minutes, and it works on files you never opened. Run it over the whole set
+   the branch touched, not just the ones you remember editing.
 
 ## 5. Traps learned the hard way (check these BEFORE debugging for an hour)
 
@@ -499,6 +506,17 @@ hand-authored files plus a scene array entry. The recipe:
   IDENTICAL magnitude regardless of cause. Fix by putting the path on a
   true-velocity contract that supplies its own ceiling — never by widening the
   shared clamp, which retunes every other consumer of it.
+- **A reference field can point at a DISABLED TWIN of the object doing the
+  work.** When a prefab was migrated from a nested component-prefab to a
+  bespoke object, the old instance often survives, inactive, still holding
+  every reference — so the object with perfect wiring is not the object the
+  system runs, and the object the system runs was never initialized. Nothing
+  errors: the live one just never gets its `Initialize`, and whatever gates on
+  "am I initialized" silently drops every event forever. The Dolphin's skimmer
+  shipped this way for its whole life. **Resolve every `{fileID: N}` you rely
+  on to its GameObject and assert `m_IsActive: 1` up the entire ancestor
+  chain** — do not stop at "the component exists and looks right". Then write
+  the fleet auditor, because if one prefab has it, others do (the Serpent did).
 - **Verify the bug before fixing it.** A report describing code behaviour
   ("it's using the sphere centre") may predate a fix that already landed. Read
   the live path end to end and check `git log` on the file FIRST; report
