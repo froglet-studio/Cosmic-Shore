@@ -1,6 +1,6 @@
 ---
 name: ship
-description: End-of-branch shipping protocol - review everything on the branch, complete the documentation so the work is ready to build from, make an honest go/no-go call (pushing back with a concrete iteration list when the branch needs another pass), and only then open the pull request. Use when a feature branch feels done ("wrap this up", "open the PR", "ship it"), before ANY pull request is created, or at the end of a long working session. Pairs with /reorient (run it first when the session has run long or bleeding-edge may have moved).
+description: End-of-branch shipping protocol - review everything on the branch, prove any editor tool's ASSET OUTPUT actually landed (§2.5, never skipped), complete the documentation so the work is ready to build from, make an honest go/no-go call (pushing back with a concrete iteration list when the branch needs another pass), and only then open the pull request. Use when a feature branch feels done ("wrap this up", "open the PR", "ship it"), before ANY pull request is created, or at the end of a long working session. Depth variants: /ship-quick (fast), /ship-deep (thorough), /ship-tools (tool output + retirement only). Pairs with /reorient (run it first when the session has run long or bleeding-edge may have moved).
 ---
 
 # Ship Protocol — review, document, decide, then PR
@@ -9,7 +9,22 @@ You are closing out a feature branch. The goal is a pull request another develop
 review, build on, and trust — or an honest "not yet" with a concrete list of what one or
 two more iterations should fix. **Opening the PR is the last step, never the first.**
 
-## 0. Reorient first (when in doubt)
+## 0. Pick the depth
+
+| You want | Use | What changes |
+|---|---|---|
+| The default, full protocol | `/ship` | Everything below. |
+| A small, already-reviewed branch out the door | `/ship-quick` | Trims the §2 review and §3 doc passes. **Never** trims §2.5. |
+| A big branch, a LOCKED system, or a long session | `/ship-deep` | Adds an adversarial re-read, a blast-radius sweep, and a doc-drift sweep. |
+| Only to land an editor tool's OUTPUT (no PR) | `/ship-tools` | Runs §2.5 alone, then retires the tool and pushes. |
+
+`/ship <mode>` works too (`/ship quick`, `/ship deep`, `/ship tools`).
+
+**§2.5 is in every mode. Speed comes out of review depth, never out of the gate** — a
+fast path that can silently drop a tool's output is the exact failure this protocol
+exists to prevent.
+
+## 0.1 Reorient first (when in doubt)
 
 If the session has run long, or bleeding-edge may have moved since the branch was cut,
 run the `/reorient` skill first and act on its verdict before shipping.
@@ -43,6 +58,62 @@ Walk every changed file against these gates:
   migrated? Renamed/deleted assets - every GUID reference updated?
 - **Verification honesty**: list what was actually verified (in-editor play, tests) vs.
   what only compiles-by-inspection. Unverified risk goes in the PR body, not under the rug.
+
+## 2.5 Tool-output gate — NEVER SKIPPED, IN EVERY MODE
+
+**An editor tool's deliverable is the DATA it writes, not the tool.** The tool lands in
+the branch because you committed it; its output lands in the human's *working tree*,
+where nothing forces anyone to notice it. Merge the PR and you have shipped code that
+expects a scene / prefab / SO nobody pushed — broken on every other machine, with
+nothing in the diff to explain it. This gate is the only thing standing between that
+and a green PR, so it runs even in `/ship-quick`.
+
+**1. Classify every tool the branch adds or changes.** Find them:
+
+```sh
+git diff --name-only <merge-base>..HEAD -- '*.cs' | xargs -r grep -l 'MenuItem("FrogletTools/'
+```
+
+For each hit, read it and decide from the CODE, not the name:
+
+| Kind | Evidence in the source | What the branch must contain |
+|---|---|---|
+| **READER** | only logs / `Debug.Log` / builds a report; no `AssetDatabase.Save*`, `PrefabUtility.*`, `EditorSceneManager.Mark*`, `ApplyModifiedProperties`, `CreateAsset`, `File.Write*` | nothing — say so explicitly in the report |
+| **WRITER** | any of the above | its output, committed |
+
+**2. Prove a WRITER's output is on the branch.** Two independent checks, both required:
+
+```sh
+git status --porcelain -- Assets ProjectSettings          # nothing tool-shaped may be dirty
+git diff --stat <merge-base>..HEAD -- '*.unity' '*.prefab' '*.asset'
+```
+
+- Dirty `Assets/**` in the first command is the smoking gun. Do not commit it blind —
+  read it, confirm it is that tool's output, then commit it *as its own commit*.
+- A WRITER in the diff with **zero** asset changes in the second is the silent failure.
+  It means one of: the human has not run it yet, they ran it and never saved, or they
+  saved and never committed. You cannot tell from here — **ask** (step 3).
+- Also check `Library/FrogletToolChangeLedger.json` when it exists (machine-local, and
+  absent in a remote container): it names the exact paths each tool wrote.
+
+**3. Prompt the human — this is a blocking question, not a note.** Use
+`AskUserQuestion`, name each WRITER tool and the asset paths it targets, and ask which
+is true: *ran it and it is saved* / *ran it, not sure it saved* / *have not run it yet* /
+*it is read-only, no output expected*. Anything but the first or last means **NO-GO**
+until it is resolved. In-editor, `FrogletTools ▸ Build ▸ Pending Tool Changes` answers
+this in one click and can push the output itself.
+
+**4. Verify what came back**, then re-run step 2 — the human saving in Unity changes the
+working tree under you. Check the recovered output the way §2 checks anything else:
+every new asset has its `.meta`, no orphan `.meta`, no `Missing (Mono Script)` rows, GUID
+references resolve.
+
+**5. Retire the one-offs.** A tool written to perform one migration is scaffolding, not
+surface area: once its output is verified and pushed, delete the tool and its scratch
+assets in their own commit (`chore(tools): retire <name> after verification`). Keep it
+only if it is idempotent and re-runnable — an auditor, a validator, a wirer someone will
+need again — and if you keep it, say why in the PR body. `/ship-tools` automates this
+whole section.
 
 ## 3. Documentation pass ("ready to build from")
 
@@ -86,6 +157,9 @@ Then act on it — this step produces edits, not intentions:
 Say **NO** — and list the concrete iterations needed — when any of these hold:
 
 - A review gate in §2 failed and the fix isn't a quick one.
+- **§2.5 is unresolved** — a WRITER tool is on the branch and its output is not, or the
+  human has not confirmed they ran it. This one is not a judgment call: no amount of
+  otherwise-good work makes a half-landed migration shippable.
 - The branch mixes an unfinished experiment with finished work (split it instead).
 - A change is known-broken or known-untested in a way that would block another dev
   building on it (compile risk on hand-authored assets counts).
@@ -100,13 +174,16 @@ scoped, and assigned a doc home — not reasons to sit on finished work.
 - Check for a PR template (`.github/pull_request_template.md` and variants); mirror its
   structure if present.
 - PR body: what & why, per-system summary, **verification status** (what a human must
-  still verify in-editor, with steps), **Follow-ups** list, collider/perf impact where
-  the ecology gate applies.
+  still verify in-editor, with steps), **Tool output** (every tool the branch touched,
+  reader vs writer, which commit carries its output, which tools were retired and which
+  were kept and why — §2.5), **Follow-ups** list, collider/perf impact where the ecology
+  gate applies.
 - Base is `bleeding-edge` unless told otherwise. After creating, subscribe to PR
   activity and keep watch (CI, reviews) until merged or told to stop.
 
 ## 6. Report
 
 Tell the prompter: the go/no-go call and why, the PR link (or the iteration list), the
-follow-ups you recorded, and the §3.5 skill-capture outcome (skills created/extended, or
-the explicit "nothing reusable this session").
+**§2.5 tool-output verdict** (every tool classified, whose output landed in which commit,
+what was retired), the follow-ups you recorded, and the §3.5 skill-capture outcome
+(skills created/extended, or the explicit "nothing reusable this session").

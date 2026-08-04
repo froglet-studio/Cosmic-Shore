@@ -384,7 +384,7 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
 | `PRISM_PERFORMANCE_AUDIT.md` | `_Scripts/Game/Prisms/` | Prism system performance analysis (vestigial location) |
 | `UNIT_TESTING_GUIDE.md` | `_Scripts/Tests/` | Unit testing guidelines and inventory |
 | `BENCHMARK_TOOL.md` | `_Scripts/Utility/PerformanceBenchmark/` | Performance Benchmark tool guide (tabs, score/hints, sweep, Load Time Insights, customization) |
-| `TOOLING.md` | `Docs/` | **The editor-tooling convention.** One menu root (`FrogletTools/`), one auto-discovering board (Froglet Master Tool), one shared palette. **Read before adding ANY `[MenuItem]`** — a tool outside `FrogletTools/` is flagged as non-conforming by the board itself. |
+| `TOOLING.md` | `Docs/` | **The editor-tooling convention.** One menu root (`FrogletTools/`), one auto-discovering board (Froglet Master Tool), one shared palette, and — for any tool that WRITES assets — the ship contract: record what you wrote, draw `FrogletToolShipPanel` (Validate & Push / Retire Tool), because a tool's output is the deliverable and it lands in the working tree, not the branch. **Read before adding ANY `[MenuItem]`** — a tool outside `FrogletTools/` is flagged as non-conforming by the board itself. |
 | `GAMECANVAS.md` | `Docs/` | GameCanvas as one source of truth: the two forked prefabs, the 1,734 identical-in-every-scene overrides that masked the prefab, the ~20 that are genuinely per-mode, the dangling cross-prefab refs, the code fixes that removed per-scene wiring, and the in-editor unification steps. **Read before touching any game-mode scene's canvas.** |
 | `GIT_RULES.md` | Project root | Git commit conventions |
 
@@ -2213,6 +2213,19 @@ automatically in `FrogletTools > Froglet Master Tool`.** The `Tools/Cosmic Shore
   modification, so retired fields linger for years pointing at guids no asset carries).
 - **Editor-tool config belongs in a ScriptableObject**, not a hard-coded list in the window
   (`GameModePrefabKitSO` is the reference) — same config-separation rule as gameplay.
+- **A tool's OUTPUT is the deliverable; the tool is scaffolding.** A wirer/setup/migration tool
+  writes a scene, prefab or SO into the human's **working tree**, while the branch carries only
+  the tool — so the tool merges and its data does not, and the feature is broken on every other
+  machine with nothing in the diff to explain it. Any tool that writes assets therefore
+  `FrogletToolChangeLedger.Record(ToolName, path)`s in the same block that writes each one and
+  draws `FrogletToolShipPanel.Draw(Ship, this)`: **Validate & Push** (saves, validates, stages
+  ONLY that tool's recorded paths — never `-A` — commits, pushes; protected branches refused) and
+  **Retire Tool** (deletes the one-off + scratch assets, refusing while its output is still
+  unpushed, so retirement can't strand it). The catch-all is **FrogletTools > Build > Pending Tool
+  Changes**, which also lists dirty files no tool claimed. Contract:
+  `Docs/TOOLING.md` § "Tool output is a deliverable". Agent-side gate: the `/ship-tools` skill,
+  and `/ship` §2.5 — which `/ship-quick` and `/ship-deep` inherit and **no mode may skip**. A
+  READER tool (audit/report only) needs none of this; say so in its doc comment.
 
 ## Shared prefabs are single sources of truth (see `Docs/GAMECANVAS.md`)
 
