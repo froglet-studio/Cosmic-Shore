@@ -51,6 +51,11 @@ the ramp up and the fast return down symmetrically, with nothing to desync.
 game is ACTUALLY running with and returns there exactly. Never anchor to a constant or a
 settings default — that reads as a snap onto foreign values the moment the boost engages.
 
+**The effect is not Rhino-only any more.** The Manta's analog two-trigger boost carries the
+same `SpeedTunnelEffectController` with the identical window, as a trial for making the speed
+tunnel a fleet-wide fundamental — see `MANTA_TRIGGER_BOOST_TUNNEL.md`. Retuning the numbers
+below now moves the Rhino only; keep the two in step until that decision is made.
+
 ## Tuning knobs
 
 | Knob | Where | Shipped value |
