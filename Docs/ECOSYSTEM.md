@@ -1173,6 +1173,55 @@ gyroid fringes are grazed domain-blind. If a biome's equilibrium shifts too far
 toward stripped exteriors, the levers are the same as §6.2 (per-species caps,
 reproduction knobs) — never decay.
 
+## 13.1 Sizing the control zone — a cell per core size (August 2026, Scurry)
+
+The nucleus radius is not a tuning knob on the Cell; it is whatever the config's
+`NucleusPrefab` measures. So **to change a cell's control-zone size you author a new
+`CellConfigDataSO` pointing at a resized nucleus prefab** — never a scene override, a
+`localScale` tweak on a shared prefab, or a scene-placed copy (see §13's radius source and
+CLAUDE.md's "The Cell owns the environment" corollary).
+
+Worked example — Crystal Capture ("Scurry") shared `Barren Cell Config` with five other
+scenes, so its core was not its own to tune. It now has `Scurry Cell Config`, a clone of
+Barren differing in exactly one reference: `NucleusPrefab` → `HalfNucleus.prefab`
+(`localScale 200`, a flat copy of `Nucleus.prefab` following the `BigNucleus` /
+`BrightNucleus` convention in that folder). Barren's `SpawnProfile` is deliberately shared —
+the ecology is identical, only the core size differs.
+
+| | Barren (400) | Scurry (200) |
+|---|---|---|
+| `NucleusWorldRadius` | 391.911 | **195.956** |
+| node-control zone volume | 2.52e8 | **3.15e7** (×⅛) |
+| crystal spawn ball | 391.911 | **195.956** (8× crystal density) |
+| player spawn ring | 431.911 | **235.956** |
+| membrane (`CapsuleMembrane`) | 1200 | 1200 (unchanged) |
+
+All of these derive from `Node2.fbx`'s ~0.97977875u mesh half-extent — the same figure
+behind the `const float NucleusR = 392f` that `SpawnableCaldera` / `SpawnableOurobor` lay
+against (§18.1, §18.2). A *smaller* nucleus keeps their "lay nothing inside the control
+radius" invariant satisfied with room to spare; a larger one would not, which is why
+`Nucleus.prefab`'s 400 must not move.
+
+**Invariants: none violated.** Node control still reads per-domain environment volume inside
+the nucleus, the herbivore diet is still spatialized on `IsInsideNucleus` (interior sanctuary
+/ exterior feeding ground), `HasNucleusControlZone` stays true, and a centred sphere stays
+domain-neutral. It is a size tune, not a semantics change. Second-order: the territorial claim
+and the fauna sanctuary both shrink to ⅛ volume, and the ⅞ of the old interior that is now
+exterior becomes voraciously grazeable.
+
+**Collider budget: zero delta** — `Nucleus.prefab` carries no collider. But note the
+*density-grid* side, which is the real cost: `Cell.AddBlock` grid-registers a prism only when
+it is OUTSIDE the nucleus, so mass in the freed shell now takes up to four
+`BlockCountDensityGrid.AddBlock` calls it previously skipped.
+
+**Reading the radius during the SPAWN CHAIN is a trap.** `CellRuntimeDataSO.Cell` is assigned
+inside `Cell.Initialize`, which runs on `OnInitializeGame` behind `InitDelayMs` (1000 ms),
+while vessels spawn at `preSpawnDelayMs` (200 ms) and AI at `OnNetworkSpawn` (t≈0). Both the
+field and `NucleusWorldRadius` are empty then. Use `Cell.FindByRuntimeData` (static registry,
+joined in `OnEnable`) and `Cell.ExpectedNucleusWorldRadius` (measures the config's prefab
+asset, no instantiate) instead. This shipped wrong once: the player spawn ring silently fell
+back to authored points 70.7u from the centre — inside the nucleus.
+
 ## 14. Super-shielded structure binds volume-only (July 2026, Astro League edge lining)
 
 Astro League lines its court edges with **super-shielded (fully invulnerable) neutral

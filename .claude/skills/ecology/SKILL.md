@@ -72,6 +72,22 @@ what the carve-out silently broke — see the traps below.
 - **Continuity-preserving removal, the recipe:** stamp `prism.TargetScale = <near-zero>` (the
   setter IS the grow-clock stamp — one write, GPU runs it), wait the wither duration, *then*
   `ReturnToPool()`. Never pool-return a prism at full scale; that is a pop.
+- **The Cell's own visuals are single-instance fields, and the spawn chain reads them too
+  early.** Two traps, one root: `Cell` holds ONE `membrane` / `nucleus` / `spawnedCytoplasm`
+  and every cleanup path reads only the field, so any *unguarded* re-`Instantiate` (a repeat
+  `Initialize`, a lazy-init nudge) orphans the previous one — it renders on top of the real
+  one and nothing can ever collect it. Guard each spawn on its own field. And do not size one
+  by hand: **a new core size means a new `CellConfigDataSO` pointing at a resized prefab**,
+  never a scene-placed copy, a `localScale` tweak on the shared prefab, or a scene override
+  (`Docs/ECOSYSTEM.md` §13.1).
+  Reading the radius is the second half: `CellRuntimeDataSO.Cell` is assigned *inside*
+  `Cell.Initialize`, which runs on `OnInitializeGame` behind `InitDelayMs` (1000 ms), while
+  vessels spawn at `preSpawnDelayMs` (200 ms) and AI at `OnNetworkSpawn` (t≈0). Anything
+  placing objects relative to the core during the spawn chain must use
+  `Cell.FindByRuntimeData` (static registry, joined in `OnEnable`) and
+  `Cell.ExpectedNucleusWorldRadius` (measures the config's prefab asset, no instantiate) —
+  `cellData.Cell` is null then and `NucleusWorldRadius` returns 0, and a fallback built on
+  either silently placed every player *inside* the nucleus.
 - **A visual state applied before `Prism.IsCreationComplete` is part of BIRTH and must snap.**
   Engaging a morph there holds the exotic-visual window across the creation reveal and eats the
   one-shot grow stamp, so the prism snaps in instead of blooming (`Docs/PRISM_ANIMATION.md` §4).

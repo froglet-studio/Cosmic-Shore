@@ -689,44 +689,10 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 3197094124088707225, guid: cb702179ff5b42f41a3521ccd59e6934,
         type: 3}
-      propertyPath: fauna2
-      value: 
-      objectReference: {fileID: 8812619448024686939, guid: 3b344872fac297f448d202dd574c2a3e,
-        type: 3}
-    - target: {fileID: 3197094124088707225, guid: cb702179ff5b42f41a3521ccd59e6934,
-        type: 3}
-      propertyPath: Crystal
-      value: 
-      objectReference: {fileID: 0}
-    - target: {fileID: 3197094124088707225, guid: cb702179ff5b42f41a3521ccd59e6934,
-        type: 3}
       propertyPath: runtime
       value: 
       objectReference: {fileID: 11400000, guid: 8d4e8398eedc76c4dadb8604f89b9e1b,
         type: 2}
-    - target: {fileID: 3197094124088707225, guid: cb702179ff5b42f41a3521ccd59e6934,
-        type: 3}
-      propertyPath: cellData
-      value: 
-      objectReference: {fileID: 11400000, guid: 16d80244d807ac84493fff643826a0a0,
-        type: 2}
-    - target: {fileID: 3197094124088707225, guid: cb702179ff5b42f41a3521ccd59e6934,
-        type: 3}
-      propertyPath: miniGameData
-      value: 
-      objectReference: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa,
-        type: 2}
-    - target: {fileID: 3197094124088707225, guid: cb702179ff5b42f41a3521ccd59e6934,
-        type: 3}
-      propertyPath: randomSpawnProfile
-      value: 
-      objectReference: {fileID: 11400000, guid: 4abc50b8711720a41a64db5db3604ee1,
-        type: 2}
-    - target: {fileID: 3197094124088707225, guid: cb702179ff5b42f41a3521ccd59e6934,
-        type: 3}
-      propertyPath: CellTypes.Array.size
-      value: 1
-      objectReference: {fileID: 0}
     - target: {fileID: 3197094124088707225, guid: cb702179ff5b42f41a3521ccd59e6934,
         type: 3}
       propertyPath: cellTypeChoiceOptions
@@ -737,35 +703,6 @@ PrefabInstance:
       propertyPath: CellConfigs.Array.size
       value: 9
       objectReference: {fileID: 0}
-    - target: {fileID: 3197094124088707225, guid: cb702179ff5b42f41a3521ccd59e6934,
-        type: 3}
-      propertyPath: hasRandomFloraAndFauna
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 3197094124088707225, guid: cb702179ff5b42f41a3521ccd59e6934,
-        type: 3}
-      propertyPath: 'CellTypes.Array.data[0]'
-      value: 
-      objectReference: {fileID: 11400000, guid: 36999bb97c4204943bec39ef90cf958c,
-        type: 2}
-    - target: {fileID: 3197094124088707225, guid: cb702179ff5b42f41a3521ccd59e6934,
-        type: 3}
-      propertyPath: 'CellTypes.Array.data[1]'
-      value: 
-      objectReference: {fileID: 11400000, guid: 5ce96f4772e6a7941ab472e13d16a96f,
-        type: 2}
-    - target: {fileID: 3197094124088707225, guid: cb702179ff5b42f41a3521ccd59e6934,
-        type: 3}
-      propertyPath: 'CellTypes.Array.data[2]'
-      value: 
-      objectReference: {fileID: 11400000, guid: eb597a600e9c4e142b45420370ce0993,
-        type: 2}
-    - target: {fileID: 3197094124088707225, guid: cb702179ff5b42f41a3521ccd59e6934,
-        type: 3}
-      propertyPath: 'CellTypes.Array.data[3]'
-      value: 
-      objectReference: {fileID: 11400000, guid: f6868bd3ece61954193f871dcd19f8f1,
-        type: 2}
     - target: {fileID: 3197094124088707225, guid: cb702179ff5b42f41a3521ccd59e6934,
         type: 3}
       propertyPath: 'CellConfigs.Array.data[0]'

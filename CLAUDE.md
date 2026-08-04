@@ -74,6 +74,28 @@ outcome is optimization, not life). Use the `/ecology` skill for any change here
   `*EnterVolume`/`*ExitVolume` (else the ×16 count-derivation sets the ladder ~5× too high and fauna
   never hunt) and lower `SpawnProfile.FaunaFoodFloor` so herbivores seed against the thinner prey.
   Full table + rationale: `Docs/ECOSYSTEM_MASTERPLAN.md §5.1`.
+  **Corollary — never hand-place a membrane/nucleus/cytoplasm in a scene.** The Cell instantiates
+  each of them itself in `SpawnVisuals` from the config, and *only* that instance is tracked: every
+  nucleus consumer (`NucleusWorldRadius`, `RefreshNucleusControlRadius`, `IsInsideNucleus`,
+  `SetNucleusWorldRadius`) reads the Cell's private `nucleus` field, and the cleanup/swap paths read
+  `membrane`/`nucleus`/`spawnedCytoplasm`. A scene-placed copy is therefore a *pure* duplicate — it
+  renders on top of the real one and no bookkeeping can see it (three scenes shipped a coincident
+  `Nucleus.prefab` this way). Same rule inside `Cell` itself: every spawn in `SpawnVisuals` plus
+  `SpawnCytoplasm` is guarded on its own field, because a repeat `Initialize` pass overwrote the
+  field and orphaned an untracked membrane/nucleus/`SnowChanger` that no cleanup path could reach.
+  **Anything placing objects relative to the core during the SPAWN CHAIN must read
+  `Cell.ExpectedNucleusWorldRadius`, not `NucleusWorldRadius`, and resolve the cell with
+  `Cell.FindByRuntimeData` rather than `CellRuntimeDataSO.Cell`** — `Cell.Initialize` runs on
+  `OnInitializeGame` behind `InitDelayMs` (1000 ms) while vessels spawn at `preSpawnDelayMs`
+  (200 ms) and AI at `OnNetworkSpawn`, so both the field and the radius are still empty then. That
+  race shipped once: the player spawn ring silently fell back and put everyone 70u from the centre,
+  inside the nucleus. **To change a
+  Cell-owned visual's size, author a new `CellConfigDataSO` pointing at a resized prefab** (Scurry's
+  `Scurry Cell Config` → `HalfNucleus.prefab`) — do not place, scale, or duplicate one in a scene.
+  Guarded by **FrogletTools > Ecology > Audit Cell-Owned Visuals**, which also sweeps the dead
+  `Cell` overrides scenes accumulate (72 of them across 12 scenes on the day it was written).
+  Note a scene backdrop is NOT this: `SkyboxModel` (`MembraneBase`/`BigMembraneVariant`) is a
+  different asset from any config's `MembranePrefab` and is the only geometry in the tool scenes.
 - **A world you load is opt-in, and swapping one is ACTIVE removal — not decay.** An authored
   `EnvironmentPrefab` costs a multi-second veiled build, so a scene may boot
   `CellTypeChoiceOptions.EnvironmentFree` (the first config with no environment — Menu_Main does)
@@ -2025,6 +2047,7 @@ All game code lives under `CosmicShore.*` with 8 primary namespaces:
 | Resource system | `ResourceSystem`, `R_VesselActionHandler`, `R_VesselElementStatsHandler` | `_Scripts/Controller/Vessel/` |
 | Object pooling | `GenericPoolManager` (Unity `ObjectPool<T>` with async buffer maintenance) | `_Scripts/Utility/PoolsAndBuffers/` |
 | Player system | `Player` (NetworkBehaviour, `IPlayer`), `PlayerSpawner`, `PlayerSpawnerAdapterBase`, `MiniGamePlayerSpawnerAdapter`, `VolumeTestPlayerSpawnerAdapter` | `_Scripts/Controller/Player/` |
+| Cell-relative spawn ring | `CellSpawnFormation` (pure math: N players on a sphere around the cell, all facing it — 4 tetrahedral, 3 equilateral triangle, 2 antipodal, 5+ Fibonacci), driven by `ServerPlayerVesselInitializer.arrangeSpawnPointsAroundCell` at `Cell.ExpectedNucleusWorldRadius + spawnDistanceOutsideNucleus`. Opt-in per scene (on for Crystal Capture). Tests: `CellSpawnFormationTests` | `_Scripts/Utility/`, `_Scripts/Controller/Multiplayer/` |
 | Menu navigation | `ScreenSwitcher`, `IScreen`, `ModalWindowManager`, `ProfileDisplayWidget`, `NavLink`/`NavGroup` | `_Scripts/UI/`, `_Scripts/UI/Interfaces/`, `_Scripts/UI/Elements/`, `_Scripts/UI/Modals/` |
 | Freestyle toys | `Toy` (base world-trigger; bloom, local-user + freestyle gating, exit-gated re-arm), `MatrixToy` (the one-toy-opens-into-many base: a pass unfolds a matrix of choices out along the outward radial, another folds it away — shared by the cell selector, painting gallery, and vessel changer), `SwapToy` + `SwapToySetCoordinator<T>` (a small set of toys showing "the options you're not on", each flips to your previous option on use — the domain changer), `VesselChangerToy` (one toy opening into a matrix of mini ship models via `VesselModelBuilder`, reuses `RequestSwap` + restores freestyle control after swap), `DomainChangerToySet` (two toys tinted the domains you're not, `RequestSetDomain_ServerRpc`), `PaintingGalleryToy` + `PaintingToy` + `PaintingRunner` (one toy opening into a matrix of painting stations; multi-stroke multi-domain connect-the-dots: domain gates, pen-up, cone/jack stroke markers in prism material, resumable progress that survives folding the gallery away) + `PaintingDefinitionSO`/`PaintingPresetLibrary`/`PaintingStrokeToolkit` (stroke data + 16 grandiose 3D presets + the curl-field stroke library + Star/Rainbow/Saturn/Taj Mahal generators; runtime flight-continuity stroke ordering via `OrderForFlightContinuity`) + `PaintingProgressStore`/`PaintingPrismStore` (local JSON progress + per-prism drawing state, regrown on return) + `PaintingShareExporter` (self-contained WebGL HTML → NativeShare), `ConveyorToy` + `MicrosceneConveyor` + `Microscene` + `MicroscenePatterns` + `MicroscenePatternsGrand` + `MicroscenePainter` (Wanderway: on/off toggle streaming a speed-scaled field of procedurally-varied microscenes — 48 recipes: the classic forty incl. spine×motif Medley composers, plus the monument-scale grand eight — ahead of the vessel, structurally painted across the full domain triad with capped danger/shield accents; a closed conveyor of a 30k-prism conserved stock built once behind an `EnvironmentLoadVeil` + skimmable crystals + cell-released lifeforms), `CellSelectorToy` + `CellSelectorToyDefinitionSO` (the world picker AND the freestyle reset: a matrix of bare `CellMiniatureBuilder` scale models over `Cell.AvailableConfigs`, sampled from the generator's real output with no prisms spawned; selection routes through `Cell.RequestCellSwap`), `ToyMatrixStation` (shared fly-through choice station), `ToyboxController` (places toys near the membrane), `ToyboxSO`/`ToyDefinitionSO` (registry + deferred unlock state), `ToyboxSetupTool` (editor) | `_Scripts/Controller/Toys/`, `_Scripts/ScriptableObjects/Toys/`, `_Scripts/Editor/` |
 | Menu screens | `HomeScreen`, `ArcadeScreen`, `StoreScreen`, `HangarScreen`, `LeaderboardsMenu`, `EpisodeScreen` | `_Scripts/UI/Screens/` |
@@ -2154,7 +2177,11 @@ automatically in `FrogletTools > Froglet Master Tool`.** The `Tools/Cosmic Shore
   overrides straight out of scene YAML (fast, read-only, no scenes opened) and
   `PrefabDriftFixer` performs every write through `PrefabUtility` on a properly loaded scene.
   Use these rather than opening scenes to interrogate `PrefabUtility`, and never hand-edit scene
-  or prefab YAML to "apply" an override.
+  or prefab YAML to "apply" an override. **FrogletTools > Ecology > Audit Cell-Owned Visuals**
+  rides the same scanner for the Cell's half of this: it reports scene-placed membrane/nucleus/
+  cytoplasm instances that duplicate what the scene's Cell already spawns, and Cell overrides whose
+  `propertyPath` names a field the script no longer has (Unity never prunes an unresolvable
+  modification, so retired fields linger for years pointing at guids no asset carries).
 - **Editor-tool config belongs in a ScriptableObject**, not a hard-coded list in the window
   (`GameModePrefabKitSO` is the reference) — same config-separation rule as gameplay.
 
