@@ -20,7 +20,9 @@ In one or two lines, state which invariants the change touches and confirm it vi
 **continuity of existence** (nothing pops in/out — everything grows/fades/suctions/withers; PLATFORM-WIDE) ·
 no imposed death/decay/lifespan · no domain asymmetry (controlling-color spawn only) ·
 wither-to-crystal + mass conservation · volume is the spine (not count) · the lifeform→elemental-
-crystal invariant · territorial permanence (don't cull the dominant canopy) · endogenous
+crystal invariant (COMPOSITE creatures satisfy it at the CREATURE level — the worm
+colony's capital segments carry the hearts, its body segments are body-parts and carry
+none; `Docs/ECOSYSTEM.md` §23.3) · territorial permanence (don't cull the dominant canopy) · endogenous
 selection only (survival = fitness, never a scripted fitness function) · the collider budget.
 **If a change might violate one, STOP and ask (AskUserQuestion). Do not guess the design.**
 

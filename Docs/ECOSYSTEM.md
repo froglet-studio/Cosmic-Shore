@@ -1345,8 +1345,11 @@ as a petal surge that settles back to 10.
 - **Manager-spawned fauna** (`LightFaunaManager.SpawnGroup`, `BoidManager.SpawnBoids` — the
   dead scene-population paths wired through the removed `Cell.fauna2` field, §7) never enter
   `Cell.LiveFauna`, so they would drop collectibles without having granted a buff — acceptable
-  while those paths stay dead; fold them into `AssignLineage` if they ever revive. Segment
-  fauna (worms) carry no per-segment crystal → no buff, no drop → consistent.
+  while those paths stay dead; fold them into `AssignLineage` if they ever revive. Worm colony
+  segments (§21): body segments carry no crystal (body parts, not lifeforms — no buff, no
+  drop); head/tail capital segments DO carry and drop hearts but are not lineage-registered,
+  so they grant no buff either — drop-without-buff is a deliberate §21 ruling (a kaiju must
+  not destabilize the elemental economy), not the manager-fauna accident described above.
 - **Client-local divergence:** fauna have no NetworkObject and element levels don't replicate,
   so peers can disagree on exact buff values — the same accepted divergence the fauna sim
   itself has (§7 caveat 4). Each client is self-consistent. Server-authoritative pools are the
@@ -2460,3 +2463,251 @@ food. Ribcage sidesteps it (`FaunaFoodFloor 0` — the release tier is the real 
 the honest fix is to net shielded volume out of that signal. It is the population bound
 for every biome, so it deserves its own change and its own verification rather than
 riding along here.
+
+## 23. The worm colony kaiju — a connected population as a boss fight (Aug 2026)
+
+The worm returns as what it was always meant to be: a **colony fauna** — head, body
+segment, and tail are three fauna types forming one connected population — rebuilt from
+scratch on the modern `Fauna` substrate as a cooperative **kaiju boss**. The 2024 trio
+(`Worm`/`WormManager`/`BodySegmentFauna`) and its ten orphaned prefabs were audited across
+every prior attempt (shipped shell, ancient commits, the `Sharks-and-worms` branch) and
+**deleted**: movement had been commented out since Aug 2024, growth ran on a wall clock,
+segments died crystal-less into immortal zombies, and the parent-chained transforms made
+slither structurally impossible. What survived is the *design*: the three-type colony
+decomposition, split-on-mid-death, regrow-the-missing-end, danger-armed extremities (the
+danger-block system was literally born for this worm in 2024), and the follow-the-leader
+movement model — plus the `Sharks-and-worms` branch's telegraph→burst attack grammar.
+
+### 23.1 The creature
+
+- **`WormFauna`** (colony brain, `FloraAndFauna/WormFauna.cs`) — the lineage-registered
+  Fauna the spawner sees (`WormColonyFaunaConfig.asset` → `WormColony.prefab`). One
+  behavior tick and one movement pass drive the whole chain. Classified **Predator** so
+  the food web never targets it (nothing eats a kaiju); `Predated` is sealed to false —
+  the segments are the killable surface. Its `ResolveGoal` inheritance means the boss
+  hunts the same density targets every fauna does, phase-escalated by the cell.
+- **`WormSegmentFauna`** (`WormSegmentRole` Head/Body/Tail, three prefabs:
+  `WormHeadSegment`/`WormBodySegment`/`WormTailSegment.prefab`) — each segment is a
+  genuine fauna: body `HealthPrism`s under a `Spindle` (LifeForm deliberately null — a
+  creature body, not consumable cell mass), registered in `PrismSpatialIndex` and synced
+  per frame (movers contract). Head and tail author **danger prisms** (`DangerBlock`
+  instances — the standard domain-blind danger effect chain does all contact damage) and
+  carry an elemental **heart** provisioned to the authored element
+  (`LifeFormCrystal.EnsureElementalCrystal(this, heartElement)` — the element-as-data
+  channel). Body segments carry one high-volume core prism (volume is the spine — big
+  volume, ONE collider).
+
+### 23.2 The fight (all of it emergent from the rules)
+
+- **Kill a BODY segment** (its core prism) → the worm **splits in two**; both halves
+  begin regrowing their missing ends. Mid-body kills multiply the problem.
+- **Kill an END** (strip its danger prisms, or joust its heart — hearts are joustable,
+  and `CurrentSpeed` is the live head speed, so out-race the kaiju to joust it) → the
+  heart drops as a collectible (mass conserved), and the wound's neighbor
+  **differentiates** into the missing role after `EndRegrowSeconds` — danger prisms
+  engage through `MakeDangerous` (a state change of existing mass, the same legal class
+  as shield regen; the worm still net-shrank by one segment).
+- **The optimal strategy emerges**: chain end-kills faster than the differentiation
+  window and you always face soft tissue; slower, and every kill is armored. This is
+  the "best killed tail-to-head or head-to-tail, and fast" rule — never scripted,
+  purely a consequence of split + differentiation timing.
+- **An APEX OMNIVORE that also hunts pilots.** The head is the colony's mouth and it
+  works three ways at once: it **grazes prism mass** by the canonical herbivore rule
+  (`Cell.IsPreyForHerbivore` + `Fauna.IsShieldedMass` — shielded mass is never food);
+  it **devours creatures** whose root comes within `FaunaBiteRange` of the jaws (the
+  head's fang centroid) — the shark's own break-apart-and-suction kill via
+  `Predated(name, mouth)`, and unlike the shark it is not limited to herbivores: an
+  apex kaiju eats sharks too (it skips its own segments, other worm colonies, and
+  predation-immune newborns); and it **hunts players** (below). All three feed the same
+  clock, so hunting and grazing alike fund growth. Nothing in the food web preys on it
+  in return: the colony root is classified Predator and its `Predated` is sealed false,
+  and segments are Predator too so no shark can pick one as dinner. A headless worm
+  cannot feed at all — regrow the head or starve.
+- **Growth is feeding-funded ONLY**: every `FeedsPerSegment` feeds (prisms grazed or
+  creatures eaten), one body segment **blooms in** behind the head. Length is a
+  readable record of consumption.
+- **Starvation digests the colony tail-first** (one segment per
+  `StarvationShedIntervalSeconds`): deny the kaiju food and it shrinks; keep denying and
+  it dies. Population bounded by consumption, never a lifespan. A starving worm also
+  cannot differentiate its wounds — denial is a real co-op strategy.
+- **The pilot hunt**: inside a hunt window, a vessel within `AggroRadius` (220) is
+  **pursued** — the head goes nose-on, faster (`PursuitSpeedMultiplier`) and turning
+  harder (`PursuitTurnMultiplier`) so it tracks a juking pilot. Closing inside
+  `StrikeRange` (90) triggers the wind-up. Lose it, or let the window close, and the
+  kaiju drops back to grazing.
+- **Souls-like attack grammar** (hunt pulses, rest-first, same clock math as the
+  shark): telegraph (head rears back, coiling, near-stopped — `TelegraphSeconds` of
+  readable wind-up) → lunge (point locked at telegraph end, so dodging works) →
+  recovery (slow, straightened — the punish window). A vessel loitering at the rear
+  provokes a **tail whip** (rear follow-points swing laterally; the danger stinger does
+  the rest). All contact damage is the existing danger-prism impact pipeline.
+
+### 23.3 Invariant review (the rulings, recorded)
+
+- **Continuity**: segments bloom in (prism growth stamps + root scale bloom), husks
+  wither out (prisms suction inward, spindles evaporate, bounded-wait husk removal).
+  Nothing pops, either direction.
+- **No imposed death**: the only clocks are differentiation (state change of existing
+  mass, gated on being fed) and starvation shedding (the standard
+  consumption-bounded-population channel). Growth has NO clock — feeds only.
+- **Crystal contract**: the colony's hearts live on its capital segments (head + tail,
+  one each; a split provisions the new worm's ends as they differentiate). Body
+  segments are connective tissue — body parts, not lifeforms — per the §15 stance,
+  which this section supersedes in part: worm capital segments now DO carry and drop
+  hearts. Colony hearts deliberately do not join the §15 domain buff pool in v1
+  (segments are not lineage-registered), so a kaiju can't destabilize the elemental
+  economy — revisit deliberately if wanted.
+- **No domain asymmetry**: the colony spawns through the standard controlling-color
+  pipeline (`RandomLifeSpawner` → `SpawnFaunaWithDomain`); nothing special-cases color.
+- **Fauna senses**: prism sensing via `PrismSpatialIndex.QuerySphere`; vessel sensing
+  via the shared `OverlapScratch` + `NonPrismOverlapMask` physics path on the behavior
+  tick; colony-vs-colony sensing via the cell's fauna registry — never a physics query
+  against prisms.
+
+### 23.3.1 Boid separation + mass-seeking (Aug 2026, playtest round 3)
+
+Two things the first passes left out, both found in play:
+
+- **Worms didn't repel each other.** Colonies are boids like everything else in the
+  cell: `TickSeparation` walks the cell's fauna registry for other `WormFauna` and
+  pushes this worm's HEAD away from each neighbour's **nearest segment** (a worm is
+  long — head-to-head distance is the wrong read), inverse-square weighted, summed
+  into the steering alongside the goal pull (`ColonySeparationRadius` /
+  `ColonySeparationWeight`). Separation applies while free-steering (Cruise, Pursue,
+  Recover) but **not** during Telegraph or Lunge: a committed strike must stay
+  readable and dodgeable-by-moving, not get deflected by a neighbour. The per-instance
+  `GoalOrbitOffset` is kept in the goal (below) so two colonies never seek the
+  identical point — separation and anti-convergence are complementary, not redundant.
+- **The kaiju idled at the crystal instead of hunting mass.** The base fauna goal
+  parks a Calm creature at the cell crystal; an apex forager should hunt food.
+  `WormFauna.ResolveGoal` now returns the **densest sensed region at every phase**
+  (`Cell.GetDensestRegionAnyDomain`, which falls back to the cell anchor in an empty
+  cell) plus the orbit offset — so a worm is drawn to the cell's mass, and one
+  dropped outside the membrane comes home instead of drifting in empty space.
+- **The Lifeform Matrix hatched creatures into the void.** The bench's variant
+  stations are layered outward and can sit hundreds of units BEYOND the membrane, and
+  `SpawnFaunaVariant` hatched the population AT the station — in empty space, with
+  nothing to graze, which defeats the bench's purpose. Fauna now hatch on the cell's
+  densest sensed mass (the same target every forager seeks), jittered like a spawner
+  wave. Flora still plant at their station: a rooted structure is placed deliberately,
+  a creature roams anyway.
+
+### 23.4 Collider budget (the hard gate, stated)
+
+Per segment: body = 1 BoxCollider (one high-volume core prism); head = 11 (the 8
+recovered armor plates + 3 danger fangs); tail = 8 (the recovered two-tier stinger:
+4 blades + 4 tip spikes); + 1 heart SphereCollider on each capital segment. A
+spawn-size-8 worm = 12+6×1+9 = **27 active colliders**; at the
+`MaxSegmentsPerWorm=16` growth cap = **35**. Splits conserve segment totals (never
+exceed the cap) and add at most one heart per differentiated end. Against the
+~1,500/cell target this is negligible — the deleted 2024 worm cost 28 colliders per
+worm *and grew unboundedly on a timer*.
+
+### 23.4.1 The recovered 2024 geometry (Aug 2026 second pass)
+
+The first rebuild carried the design but invented its geometry; the prompter called
+it: the ORIGINAL authoring had the good bones. Recovered verbatim from git history
+(`f065c8f76^`) into the new prefabs:
+
+- **Head armor cage**: the 8 mirrored plates of `WormHeadSpindle` (4 z-stations,
+  ±y pairs, angled quaternions, 4.7→6.2 widths) wrap the head's rear — now authored
+  as GENUINELY shielded prisms (`prismProperties.IsShielded=1` + the segment's
+  `shieldArmor` engage — the old asset only had the *naming*): each plate takes one
+  hit to shed its shield and a second to destroy. The 3 danger fangs sit at the
+  mouth. The **heart nests inside the cage** at the authored (0,0,−13.14), scale 2.5
+  (`WormSegmentFauna.heartLocalPosition/Scale`).
+- **Chain proportions, measured off the model** (Aug 2026 correction — the first pass
+  authored `SegmentSpacing = 14` and the worm read as beads on a string). The
+  invariant is **gap ÷ model scale**: the 2024 chain rendered its body model at
+  localScale 1 with authored gaps of 8.05 / 8.39 / 8.63 / 8.71, so `SegmentSpacing`
+  is **8.4 model units** (× `KaijuScale` × taper) and the segments nearly touch.
+  Head-gap = 2.56× the body gap (`HeadGapMultiplier`, from the authored 21.5 ÷ 8.4),
+  into-tail gap = 1.79× (`TailGapMultiplier`, 15 ÷ 8.4), and the authored
+  **0.9-per-segment taper**
+  (`TaperPerSegment`) — segment scale AND link spacing shrink down the chain, so the
+  head is the biggest thing on the worm and the tail trails away. Segments GLIDE to
+  their taper targets when topology changes (growth, splits) — the worm visibly
+  re-proportions, never snaps; a grown segment blooms from zero through the same
+  glide (which replaced the bloom coroutine).
+- **Tail stinger**: `ParentTailSpindle`'s four giant X-blades (20×2×3.75 at ±7.6
+  x/y) plus `ChildTailSpindle`'s four tip spikes as a nested spindle tier at
+  (0,0,−2.15) — the tip withers before the blades (extremity-inward). The old asset
+  authored the child tier at scale ZERO (invisible — a bug); recovered at scale 1.
+- **Natural-scale visuals**: the worm meshes render at their authored natural size
+  (the first pass over-scaled them 4×); `KaijuScale` remains the one size dial.
+
+### 23.5 Deployment + tuning
+
+Species entries in `_SO_Assets/Lifeforms/`: `WormColonyFaunaConfig.asset`
+(Element=None — keeps the prefab-authored Mass hearts) plus the menagerie-convention
+four `Worm Colony Charge/Mass/Space/Time.asset` (Element authored; the colony root
+forwards the pick to its capital segments' hearts via the `Fauna.ProvisionHeart`
+override — the root itself stays heartless, and wounds differentiate into the picked
+element). All are `PopulationSize=1` (a lone kaiju; the seed floor sees split-children
+via lineage registration, so it never re-seeds while any worm lives).
+
+**Spawnable NOW from the Lifeform Matrix toy** (freestyle): the four element configs
+are wired as the "Worm Colony" species in `Toy_LifeformMatrix.asset` — fly the toy →
+fly "Worm Colony" → fly an element/level station and the kaiju spawns live into the
+cell in your domain. (Level is inert for the colony in v1 — `SetLevel` scales only the
+empty root anchor, so L1/L3/L5 stations spawn the same-size worm; size lives on
+`KaijuScale`.)
+
+**Deliberately wired into no SpawnProfile** — a boss is opt-in. To deploy ambiently:
+add a worm config to a cell's `SpawnProfileSO.SupportedFaunas`. Natural host for the
+co-op fight: `MinigameWildlifeBlitzMultuplayerCoOp` (note §10.3: that scene uses
+`IntensityWiseLifeSpawner`, which spawns 1/tick — fine for a PopulationSize-1 boss).
+All feel/fight tuning lives on `WormColonyConfig.asset` (`WormColonyConfigSO`).
+
+### 23.6 In-editor verification (the human is the gate)
+
+Nothing here has run in Unity — the whole branch is machine-validated only (see §23.7).
+First pass, in Menu_Main freestyle:
+
+1. **Import clean.** Pull, let Unity reimport, confirm zero compile errors and that the
+   four new prefabs open without "Missing (Mono Script)" rows. Run
+   **FrogletTools > Validation > Validate Lifeform Crystals** — head/tail hearts are
+   runtime-provisioned by design, so it should stay quiet about the worm.
+2. **Spawn**: freestyle → Lifeform Matrix toy → "Worm Colony" → any element station.
+   Expect 8 segments hatching **on the cell's densest mass** in your domain: a plated
+   head, 6 tapering bodies, a bladed tail — segments nearly touching, tapering to the
+   tail, with a wide head gap.
+3. **Swim**: head seeks mass and slithers; the body follows the wave. It should GRAZE
+   (prisms suction into the head) and DEVOUR creatures that stray into its jaws.
+4. **Fight**: fly near it during a hunt window → it pursues nose-on, rears back and
+   coils (~1.2s), lunges at the locked point (dodgeable by moving), then drifts slow
+   through recovery. Loiter at the tail for the whip.
+5. **Kill**: shoot a mid-body core prism → the worm splits in two. Strip a head plate
+   twice (shield sheds, then the plate dies) — kill all 11 head prisms, or joust the
+   caged heart, and the head drops its crystal; ~18s later the next segment hardens
+   into a new danger head.
+6. **Two worms**: spawn a second — they should visibly repel and orbit the same
+   buildup from different sides rather than interpenetrating.
+
+Dials if it reads wrong, all on `WormColonyConfig.asset`: size `KaijuScale`;
+spacing `SegmentSpacing`/`TaperPerSegment`; aggression `AggroRadius`/`StrikeRange`/
+`HuntIntervalSeconds`; appetite `MouthRadius`/`FaunaBiteRange`/`FeedsPerSegment`;
+crowding `ColonySeparationRadius`/`ColonySeparationWeight`.
+
+### 23.7 Known gaps + follow-ups (scoped, not blockers)
+
+- **Not play-verified.** No Unity in the authoring environment: everything is
+  compile-reviewed and machine-validated (YAML structure, every GUID resolves, every
+  serialized key matches a real C# field, brace/token balance, the conditional-
+  compilation CI gate). First in-editor pass is §23.6.
+- **Client-local.** Fauna have no NetworkObject (§7 caveat 4), so in multiplayer each
+  client fights its own worm until fauna sync lands. A co-op kaiju eventually needs
+  server-authoritative colony state (NucleusRush's SOAP-over-NetworkVariable pattern).
+- **Segment kills raise no scoring event.** Fauna deaths are invisible to the
+  `LifeForm.OnLifeFormDeath`-based WildlifeBlitz scoring; a boss-hunt mode needs its own
+  SOAP channel (model: `CellRuntimeDataSO.OnFaunaWaveSpawned`).
+- **Level is inert for the colony.** `SetLevel` scales the empty root anchor, so the
+  matrix's L1/L3/L5 stations all spawn the same-size worm; size lives on `KaijuScale`.
+  Wiring level → `KaijuScale`/segment count is a clean follow-up.
+- **A differentiated end keeps its body-segment mesh** (a battle-scarred stump head —
+  the danger prisms and behavior carry the read; a mesh swap would be the polish).
+- **Wither/bloom ride per-frame CPU** like all fauna today (C6 in the clock-material
+  tracker covers that migration; the worm added no new CPU animation tier).
+- **The Lifeform Matrix station for the colony is an anonymous labeled sphere** — the
+  root prefab carries no renderer for `ToyModelBuilder` to sample. A mini-worm station
+  model is cosmetic follow-up.

@@ -272,8 +272,9 @@ live-prism graph and bound at `VesselController.Initialize`, §4.7; gates: the `
 edit-mode test + FrogletTools > Ecology > Prism Animation > **Validate Occlusion Corridor**) ·
 C4 `FireTrailBlock` pool/Destroy fix · C5 turret anchor flight ·
 C6 fauna wither/devour/level-up · C7 flora growth · C8 microscene conveyor ·
-C9 cell-swap suction · C10 worm shift · C11 spindle fade · C13 environment-lay
-pooling · B4 GPU shield morphs.
+C9 cell-swap suction · C11 spindle fade · C13 environment-lay
+pooling · B4 GPU shield morphs. (C10 worm shift is resolved by deletion — the
+worm-colony rebuild removed the legacy shift; see Docs/ECOSYSTEM.md §23.)
 
 ## Phase 8 — Occlusion corridor (C1) — WIRED PROGRAMMATICALLY, **PLAYTEST OUTSTANDING**
 
