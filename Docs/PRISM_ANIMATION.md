@@ -882,7 +882,7 @@ view-dependent prism effect in §3.7 (`SkimFxRunner`'s live ship end, the retire
 | Target binding (the platform-law choke point) | `Controller/Vessel/VesselController.cs` `Initialize` / `OnDestroy`, on `IPlayer.IsLocalPilot` |
 | Runtime fail-loud | `Utility/PrismOcclusionDiagnostics.cs`, called from `Prism.SyncRenderMaterial` |
 | Automated asset gate | `Tests/EditMode/PrismOcclusionCoverageTests.cs` |
-| Tuning (radius / feather / core alpha) | `ScriptableObjects/PrismOcclusionConfigSO.cs` → `Resources/PrismOcclusionConfig.asset` |
+| Tuning (radius SCALES / core alpha / sanity band) | `ScriptableObjects/PrismOcclusionConfigSO.cs` → `Resources/PrismOcclusionConfig.asset` |
 | GPU test + dither | `_Graphics/Materials/Graphs/PrismOcclusionCorridor.hlsl` |
 | Graph wiring (idempotent, validate-before-write) | `Tools/Shaders/wire_prism_occlusion_corridor.py` |
 | Material alpha-test opt-in (idempotent) | `Tools/Shaders/enable_prism_alpha_clip.py` |
@@ -894,12 +894,34 @@ corridor is never published: the shader reads `_WorldSpaceCameraPos`, so it is a
 exactly the camera that is rendering. `outerRadius <= 0` is the off sentinel and is the
 shader's very first branch, so a disabled corridor costs a compare.
 
-**The profile (retuned 2026-08-04):** alpha is **exactly `coreAlpha` = 0** inside
+**The profile (retuned 2026-08-04).** Alpha is **exactly `coreAlpha` = 0** inside
 `innerRadius` — fully tapered to nothing, so no dithered ghost survives anywhere the ship
-can be — and **exactly 1** at and beyond `outerRadius`. The band between them is
-deliberately **short** (9 → 13 by default, down from 5 → 18) so the world snaps back to
-opaque the moment you move off, and the two things that keep a short band from reading as
-an edge are both continuity choices:
+can be — and **exactly 1** at and beyond `outerRadius`.
+
+**The corridor is SHIP-SIZED, not world-sized.** The two radii are not authored in world
+units at all: they are multiples of the vessel's own **circumscribing radius**, measured
+from its hull by `PrismOcclusionCorridor.MeasureCircumscribedRadius` at bind time. The
+authored defaults put the gradient's **outer edge exactly on the circle that circumscribes
+the vessel** (`outerRadiusScale = 1`) and its **fully-clear core at half that**
+(`innerRadiusScale = 0.5`). A new vessel of any size therefore gets a correctly-scaled
+corridor with nothing to author — the same "no per-vessel wiring" property the rest of the
+platform law rests on. Note the consequence, which is deliberate: the ship's silhouette
+edge sits at the *fully-opaque* end of the gradient, so the outer half of its own footprint
+is in the band rather than fully clear. Widen `outerRadiusScale` if that reads too tight.
+
+The measurement is **rotation-invariant** (max distance from the vessel origin to the mesh
+bounds' corners in world space — a rigid rotation preserves those distances, whereas
+`Renderer.bounds`, a world AABB, would swing with attitude and size the corridor differently
+on every spawn), and it is **hull-only**: anything under a `Skimmer` is excluded, because a
+skimmer is a field volume deliberately far larger than the ship (the shared Skimmer prefab is
+scaled 15× around a 0.5 sphere — a 7.5-unit world radius) and would peg every vessel's
+corridor to the skimmer instead of the hull. Because size is now derived, a bad measurement
+is not cosmetic — too small hides the ship anyway, too large dissolves the world in front of
+it — so measured radii are clamped into a config sanity band and both the clamp and an
+unmeasurable hull scream once, naming the vessel and the number.
+
+The band between the two radii is deliberately **short**, and the two things that keep a
+short band from reading as an edge are both continuity choices:
 
 - **Quintic smootherstep**, not cubic smoothstep: value, first AND second derivatives are
   zero at both ends (C2). Cubic zeroes only the first, which leaves a faint crease exactly

@@ -228,18 +228,23 @@ namespace CosmicShore.Editor
                 report.AppendLine("   ⚠ No Resources/PrismOcclusionConfig asset — the SO's own defaults apply (corridor on, radius 18).");
             else if (!config.Enabled)
                 report.AppendLine("   ⚠ PrismOcclusionConfig: DISABLED — the publisher writes a zero radius and the shader early-outs.");
-            else if (config.OuterRadius <= 0f)
+            else if (config.OuterRadiusScale <= 0f)
             {
-                report.AppendLine("   ❌ PrismOcclusionConfig: outerRadius <= 0 reads as 'off' — set a positive radius or clear 'enabled'.");
+                report.AppendLine("   ❌ PrismOcclusionConfig: outerRadiusScale <= 0 reads as 'off' — set a positive scale or clear 'enabled'.");
                 pass = false;
             }
             else
-                report.AppendLine($"   ✅ PrismOcclusionConfig: radius {config.OuterRadius} (feather from {config.InnerRadius}), core alpha {config.CoreAlpha}");
+                report.AppendLine($"   ✅ PrismOcclusionConfig: outer edge at {config.OuterRadiusScale}× the vessel's circumscribing radius, "
+                                  + $"clear core at {config.InnerRadiusScale}×, core alpha {config.CoreAlpha}");
 
             if (Application.isPlaying)
             {
+                float hull = PrismOcclusionCorridor.TargetRadius;
+                float outerScale = config != null ? config.OuterRadiusScale : 1f;
+                float innerScale = config != null ? config.InnerRadiusScale : 0.5f;
                 report.AppendLine(PrismOcclusionCorridor.IsActive
-                    ? $"   ▶ live: corridor open onto '{PrismOcclusionCorridor.Target?.name}'"
+                    ? $"   ▶ live: corridor open onto '{PrismOcclusionCorridor.Target?.name}' — measured hull radius "
+                      + $"{hull:F2}, so the gradient runs {hull * innerScale:F2} (fully clear) → {hull * outerScale:F2} (fully opaque)"
                     : PrismOcclusionCorridor.IsSuppressed
                         ? "   ▶ live: corridor SUPPRESSED (manual replay camera — expected)"
                         : "   ▶ live: corridor OFF (no local pilot vessel yet)");

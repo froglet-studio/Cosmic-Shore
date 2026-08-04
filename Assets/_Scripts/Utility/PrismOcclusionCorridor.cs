@@ -1,4 +1,5 @@
 using UnityEngine;
+using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
 
 namespace CosmicShore.Utility
@@ -6,7 +7,11 @@ namespace CosmicShore.Utility
     /// <summary>
     /// The CPU half of the camera↔vessel prism occlusion corridor: prisms sitting between
     /// the player's camera and the player's vessel dissolve so the ship is never hidden
-    /// (Docs/PRISM_ANIMATION.md §5 C1).
+    /// (Docs/PRISM_ANIMATION.md §4.6).
+    ///
+    /// The corridor is SHIP-SIZED: its outer edge sits on the circle that circumscribes the
+    /// bound vessel's hull and its fully-clear core at half that, both measured from the
+    /// vessel itself at bind time. Nothing about the size is authored per vessel.
     ///
     /// It publishes exactly TWO global shader uniforms once per frame and does nothing
     /// else. There is no per-prism work of any kind — no trigger volumes, no material
@@ -49,6 +54,7 @@ namespace CosmicShore.Utility
         const string ConfigResourcePath = "PrismOcclusionConfig";
 
         static Transform _target;
+        static float _targetRadius;
         static bool _suppressed;
         static PrismOcclusionConfigSO _config;
         static bool _configResolved;
@@ -59,6 +65,13 @@ namespace CosmicShore.Utility
 
         /// <summary>True while the corridor is publishing a live capsule.</summary>
         public static bool IsActive => _publishedActive;
+
+        /// <summary>
+        /// The bound vessel's circumscribing radius in world units — the sphere that encloses
+        /// its hull, measured once at bind. The corridor's outer edge sits exactly here (times
+        /// the config's outer scale), so the corridor is ship-sized rather than world-sized.
+        /// </summary>
+        public static float TargetRadius => _targetRadius;
 
         /// <summary>
         /// Tuning (radius / feather / core alpha). Falls back to the SO's own defaults when
@@ -87,7 +100,69 @@ namespace CosmicShore.Utility
         /// component, so the corridor cannot be omitted by authoring. Do not add call sites
         /// that give a mode a way to point it somewhere else.
         /// </summary>
-        public static void SetTarget(Transform target) => _target = target;
+        public static void SetTarget(Transform target)
+        {
+            _target = target;
+            _targetRadius = target != null ? MeasureCircumscribedRadius(target) : 0f;
+        }
+
+        /// <summary>
+        /// The radius of the sphere that circumscribes a vessel's HULL, in world units,
+        /// measured about the vessel's own origin.
+        ///
+        /// Rotation-invariant by construction: a rigid rotation about the vessel origin
+        /// preserves every corner's distance from that origin, so this returns the same
+        /// number whatever attitude the ship happens to be in when it spawns. (Taking
+        /// <c>Renderer.bounds</c> — a world AABB — instead would swing by tens of percent
+        /// with attitude and make the corridor a different size on every spawn.)
+        ///
+        /// Hull only, and that exclusion is load-bearing:
+        /// - MeshFilter + SkinnedMeshRenderer only, so particle/trail/UI renderers (which are
+        ///   <c>Renderer</c>s but carry no mesh here) cannot inflate it.
+        /// - Anything under a <see cref="Skimmer"/> is skipped. A skimmer is a FIELD volume,
+        ///   deliberately far larger than the ship — the shared Skimmer prefab is scaled 15×
+        ///   around a 0.5 sphere, a 7.5-unit world radius — so including its forcefield
+        ///   overlay would peg every vessel's corridor to the skimmer instead of the hull.
+        /// </summary>
+        public static float MeasureCircumscribedRadius(Transform vessel)
+        {
+            if (vessel == null) return 0f;
+
+            Vector3 origin = vessel.position;
+            float maxSqr = 0f;
+
+            foreach (var filter in vessel.GetComponentsInChildren<MeshFilter>())
+            {
+                if (filter.sharedMesh == null) continue;
+                if (!filter.TryGetComponent<MeshRenderer>(out _)) continue; // collider-only mesh
+                if (filter.GetComponentInParent<Skimmer>() != null) continue;
+                Accumulate(filter.sharedMesh.bounds, filter.transform, origin, ref maxSqr);
+            }
+
+            foreach (var skinned in vessel.GetComponentsInChildren<SkinnedMeshRenderer>())
+            {
+                if (skinned.sharedMesh == null) continue;
+                if (skinned.GetComponentInParent<Skimmer>() != null) continue;
+                Accumulate(skinned.sharedMesh.bounds, skinned.transform, origin, ref maxSqr);
+            }
+
+            return Mathf.Sqrt(maxSqr);
+        }
+
+        /// <summary>Farthest of a local AABB's 8 corners from <paramref name="origin"/>, in world space.</summary>
+        static void Accumulate(Bounds localBounds, Transform space, Vector3 origin, ref float maxSqr)
+        {
+            Vector3 c = localBounds.center, e = localBounds.extents;
+            for (int i = 0; i < 8; i++)
+            {
+                var corner = new Vector3(
+                    c.x + ((i & 1) == 0 ? -e.x : e.x),
+                    c.y + ((i & 2) == 0 ? -e.y : e.y),
+                    c.z + ((i & 4) == 0 ? -e.z : e.z));
+                float sqr = (space.TransformPoint(corner) - origin).sqrMagnitude;
+                if (sqr > maxSqr) maxSqr = sqr;
+            }
+        }
 
         /// <summary>
         /// Temporarily hold the corridor closed WITHOUT unbinding the vessel. The one
@@ -109,11 +184,18 @@ namespace CosmicShore.Utility
         public static void ClearTarget(Transform target)
         {
             if (_target == target)
+            {
                 _target = null;
+                _targetRadius = 0f;
+            }
         }
 
         /// <summary>Unconditional off (scene teardown, returning to a vessel-less camera).</summary>
-        public static void ClearTarget() => _target = null;
+        public static void ClearTarget()
+        {
+            _target = null;
+            _targetRadius = 0f;
+        }
 
         /// <summary>Drop the cached config so the next frame re-reads the asset (editor tooling).</summary>
         public static void InvalidateConfig()
@@ -126,6 +208,7 @@ namespace CosmicShore.Utility
         static void InstallPublisher()
         {
             _target = null;
+            _targetRadius = 0f;
             _suppressed = false;
             // Shader globals survive play-mode exit in the editor, so a stale corridor from
             // the previous session would fade prisms around a vessel that no longer exists.
@@ -149,10 +232,35 @@ namespace CosmicShore.Utility
         static void Publish()
         {
             var config = Config;
-            bool active = !_suppressed && _target != null && _target.gameObject.activeInHierarchy
-                          && config.Enabled && config.OuterRadius > 0f;
+            if (_suppressed || _target == null || !_target.gameObject.activeInHierarchy || !config.Enabled)
+            {
+                if (_publishedActive)
+                    PublishOff();
+                return;
+            }
 
-            if (!active)
+            // The corridor is sized ENTIRELY by the hull measurement now, so a bad measurement
+            // is not cosmetic: too small and the ship stays hidden, too large and the world
+            // dissolves in front of the player. Both degrade to a sane corridor and scream —
+            // never to a silently-absent one, which is the platform law failing quietly.
+            float radius = _targetRadius;
+            if (radius <= 0f)
+            {
+                radius = config.FallbackVesselRadius;
+                PrismOcclusionDiagnostics.WarnUnmeasurableVessel(_target, radius);
+            }
+            else
+            {
+                float clamped = Mathf.Clamp(radius, config.MinVesselRadius, config.MaxVesselRadius);
+                if (clamped != radius)
+                {
+                    PrismOcclusionDiagnostics.WarnImplausibleVesselRadius(_target, radius, clamped);
+                    radius = clamped;
+                }
+            }
+
+            var packed = config.PackParams(radius);
+            if (packed.x <= 0f)
             {
                 if (_publishedActive)
                     PublishOff();
@@ -161,7 +269,7 @@ namespace CosmicShore.Utility
 
             Vector3 p = _target.position;
             Shader.SetGlobalVector(TargetId, new Vector4(p.x, p.y, p.z, 0f));
-            Shader.SetGlobalVector(ParamsId, config.PackedParams);
+            Shader.SetGlobalVector(ParamsId, packed);
             _publishedActive = true;
         }
 

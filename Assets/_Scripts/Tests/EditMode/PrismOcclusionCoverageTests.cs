@@ -161,10 +161,15 @@ namespace CosmicShore.Tests
             if (config == null) return; // no asset is legal — the SO's own defaults apply
             if (!config.Enabled) return; // deliberately off is legal, and reads as a zero radius
 
-            Assert.Greater(config.OuterRadius, 0f,
-                "PrismOcclusionConfig is enabled but outerRadius <= 0, which the shader reads as 'corridor off'.");
-            Assert.LessOrEqual(config.InnerRadius, config.OuterRadius,
-                "PrismOcclusionConfig innerRadius must not exceed outerRadius (the feather would invert).");
+            // The radii are multiples of the vessel's own circumscribing radius, measured at
+            // bind — so what is authored here is the SHAPE of the gradient, not its size.
+            Assert.Greater(config.OuterRadiusScale, 0f,
+                "PrismOcclusionConfig is enabled but outerRadiusScale <= 0, which the shader reads as 'corridor off'.");
+            Assert.LessOrEqual(config.InnerRadiusScale, config.OuterRadiusScale,
+                "PrismOcclusionConfig innerRadiusScale must not exceed outerRadiusScale (the feather would invert).");
+            Assert.Greater(config.FallbackVesselRadius, 0f,
+                "fallbackVesselRadius must be positive — a vessel whose hull cannot be measured would otherwise " +
+                "switch the corridor off silently, which is the platform law failing quietly.");
         }
     }
 }

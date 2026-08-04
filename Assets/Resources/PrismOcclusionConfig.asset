@@ -13,6 +13,9 @@ MonoBehaviour:
   m_Name: PrismOcclusionConfig
   m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.ScriptableObjects.PrismOcclusionConfigSO
   enabled: 1
-  outerRadius: 13
-  innerRadius: 9
+  outerRadiusScale: 1
+  innerRadiusScale: 0.5
   coreAlpha: 0
+  fallbackVesselRadius: 6
+  minVesselRadius: 2
+  maxVesselRadius: 80

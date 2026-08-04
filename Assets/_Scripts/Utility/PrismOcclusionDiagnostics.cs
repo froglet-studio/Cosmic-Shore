@@ -117,6 +117,48 @@ namespace CosmicShore.Utility
             return true;
         }
 
+        static bool _warnedUnmeasurableVessel;
+
+        /// <summary>
+        /// The bound vessel's hull measured to nothing, so the corridor cannot be sized from
+        /// it. Screams ONCE and the corridor falls back to the config's radius rather than
+        /// switching off — a corridor that silently disappears because a vessel has no mesh
+        /// renderers would be the platform law failing quietly, which is the failure class
+        /// this whole system was rebuilt to remove.
+        /// </summary>
+        public static void WarnUnmeasurableVessel(Object vessel, float fallbackRadius)
+        {
+            if (!Application.isPlaying || _warnedUnmeasurableVessel) return;
+            _warnedUnmeasurableVessel = true;
+            Debug.LogError(
+                $"[PrismOcclusion] could not measure a circumscribing radius for vessel '{(vessel != null ? vessel.name : "<null>")}' — " +
+                "it has no MeshFilter/SkinnedMeshRenderer hull outside its skimmers. The occlusion corridor is sized " +
+                $"from the vessel's own hull, so it has fallen back to PrismOcclusionConfig.fallbackVesselRadius " +
+                $"({fallbackRadius}). Give the vessel a renderable hull, or the corridor around it is a guess. " +
+                "Docs/PRISM_ANIMATION.md §4.6.",
+                vessel);
+        }
+
+        static readonly HashSet<int> _warnedRadiusVessels = new();
+
+        /// <summary>
+        /// A vessel's hull measured to an implausible radius and was clamped into the config's
+        /// sanity band. Once per vessel, naming the measured and used values — the number the
+        /// corridor is sized from should never be a surprise.
+        /// </summary>
+        public static void WarnImplausibleVesselRadius(Object vessel, float measured, float used)
+        {
+            if (!Application.isPlaying || vessel == null) return;
+            if (!_warnedRadiusVessels.Add(vessel.GetInstanceID())) return;
+            Debug.LogError(
+                $"[PrismOcclusion] vessel '{vessel.name}' measured a circumscribing radius of {measured:F2} world " +
+                $"units, outside PrismOcclusionConfig's sanity band — clamped to {used:F2}. The occlusion corridor " +
+                "is sized entirely from this number, so an unclamped value would either leave the ship hidden or " +
+                "dissolve the world in front of it. Check the vessel's hull renderers (a stray oversized mesh, or a " +
+                "mis-scaled model), or widen the band if the hull really is this size. Docs/PRISM_ANIMATION.md §4.6.",
+                vessel);
+        }
+
         /// <summary>
         /// Verify that a material a prism is about to render with can be dissolved by the
         /// corridor, and scream once per offending material if not. Cheap after the first

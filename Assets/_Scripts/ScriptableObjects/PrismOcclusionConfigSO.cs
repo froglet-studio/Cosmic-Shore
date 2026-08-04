@@ -12,6 +12,13 @@ namespace CosmicShore.ScriptableObjects
     /// Everything here is a GLOBAL shader uniform written once per frame — there is no
     /// per-prism state to tune, and no per-prism cost to pay for widening the corridor.
     ///
+    /// The radii are NOT authored in world units: they are multiples of the vessel's own
+    /// circumscribing radius, measured from its hull at bind time
+    /// (<c>PrismOcclusionCorridor.MeasureCircumscribedRadius</c>). The corridor is therefore
+    /// ship-sized by construction — a new vessel of any size gets a correctly-scaled corridor
+    /// with nothing to author, which is the same "no per-vessel wiring" property the rest of
+    /// the platform law rests on.
+    ///
     /// Place the asset at <c>Resources/PrismOcclusionConfig</c>. With no asset the
     /// defaults below apply, so the feature works out of the box.
     /// </summary>
@@ -24,19 +31,20 @@ namespace CosmicShore.ScriptableObjects
                  "this feature existed.")]
         [SerializeField] bool enabled = true;
 
-        [Tooltip("World-space radius at which the corridor is fully opaque again. A prism farther " +
-                 "than this from the camera→vessel segment is never touched. Keep it close to " +
-                 "innerRadius: the band between them is the only mass ever in transition, and a " +
-                 "SHORT band is what makes the world snap back to opaque as you move off.")]
+        [Tooltip("Outer edge of the gradient, as a multiple of the VESSEL'S OWN circumscribing " +
+                 "radius (the sphere that encloses its hull). 1 puts the fully-opaque edge exactly " +
+                 "on that circle, which is the authored intent — the corridor is ship-sized, so a " +
+                 "big hull opens a big corridor and a small one opens a small corridor, with no " +
+                 "per-vessel authoring.")]
         [Min(0f)]
-        [SerializeField] float outerRadius = 13f;
+        [SerializeField] float outerRadiusScale = 1f;
 
-        [Tooltip("Radius of the FULLY CLEAR core — inside it the fade sits at coreAlpha (0 by " +
-                 "default, i.e. gone). Make it comfortably wider than the ship so the vessel is " +
-                 "never inside the gradient itself. Between inner and outer the fade eases back to " +
-                 "opaque on a C2-continuous quintic.")]
-        [Min(0f)]
-        [SerializeField] float innerRadius = 9f;
+        [Tooltip("Inner edge of the gradient — the fully-clear core — as a multiple of the same " +
+                 "circumscribing radius. 0.5 is half the circumscribing circle, so the band runs " +
+                 "from R/2 to R: proportionally generous enough to read smooth, and short in " +
+                 "absolute terms because it is scaled to the ship rather than to the world.")]
+        [Range(0f, 1f)]
+        [SerializeField] float innerRadiusScale = 0.5f;
 
         [Tooltip("Alpha at the corridor core. 0 (the default) tapers fully to nothing, so no " +
                  "dithered ghost survives anywhere the ship can be. A small positive value leaves a " +
@@ -45,20 +53,47 @@ namespace CosmicShore.ScriptableObjects
         [Range(0f, 1f)]
         [SerializeField] float coreAlpha = 0f;
 
+        [Header("Sanity band (world units)")]
+        [Tooltip("World-space radius used when a vessel's hull cannot be measured at all (no mesh " +
+                 "renderers). Never expected — PrismOcclusionDiagnostics screams if it is used — " +
+                 "but the corridor is a platform law, so it degrades to a sane corridor rather " +
+                 "than silently switching off.")]
+        [Min(0f)]
+        [SerializeField] float fallbackVesselRadius = 6f;
+
+        [Tooltip("Measured hull radii are clamped into [min, max] and the clamp screams once. " +
+                 "Since the corridor is now sized ENTIRELY by the measurement, a bad one is not " +
+                 "cosmetic: too small and the ship is hidden anyway, too large and the world " +
+                 "dissolves in front of you. The clamp turns either into a visible, named error.")]
+        [Min(0f)]
+        [SerializeField] float minVesselRadius = 2f;
+
+        [Min(0f)]
+        [SerializeField] float maxVesselRadius = 80f;
+
         public bool Enabled => enabled;
-        public float OuterRadius => outerRadius;
+        public float OuterRadiusScale => outerRadiusScale;
 
         /// <summary>Clamped so a mis-authored asset can never invert the feather.</summary>
-        public float InnerRadius => Mathf.Min(innerRadius, outerRadius);
+        public float InnerRadiusScale => Mathf.Min(innerRadiusScale, outerRadiusScale);
 
         public float CoreAlpha => coreAlpha;
+        public float FallbackVesselRadius => fallbackVesselRadius;
+        public float MinVesselRadius => minVesselRadius;
+        public float MaxVesselRadius => Mathf.Max(maxVesselRadius, minVesselRadius);
 
         /// <summary>
-        /// The packed <c>_PrismOcclusionParams</c> uniform: (outerRadius, innerRadius, coreAlpha).
-        /// A non-positive x is the shader's "corridor off" sentinel.
+        /// The packed <c>_PrismOcclusionParams</c> uniform for a vessel whose circumscribing
+        /// radius is <paramref name="vesselRadius"/>: (outerRadius, innerRadius, coreAlpha),
+        /// all in world units. A non-positive x is the shader's "corridor off" sentinel.
         /// </summary>
-        public Vector4 PackedParams => enabled
-            ? new Vector4(outerRadius, InnerRadius, coreAlpha, 0f)
-            : Vector4.zero;
+        public Vector4 PackParams(float vesselRadius)
+        {
+            if (!enabled || vesselRadius <= 0f)
+                return Vector4.zero;
+            return new Vector4(vesselRadius * outerRadiusScale,
+                               vesselRadius * InnerRadiusScale,
+                               coreAlpha, 0f);
+        }
     }
 }
