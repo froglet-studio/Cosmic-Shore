@@ -203,8 +203,14 @@ namespace CosmicShore.Gameplay
                 bool preyAvailable = FaunaReproductionRules.PreyAvailable(
                     isPredator, host.GetLiveHerbivoreCount(), host.OpposingVolume(color), spawnProfile.FaunaFoodFloor);
 
+                // Staged release: a mode may hold a species closed until its own scored
+                // signal opens it (Ribcage releases the brood at 25% of the cage, the
+                // predator at 50%). Default tiers - config 0, cell int.MaxValue - leave
+                // every shipped biome released from the first tick.
+                bool released = faunaCfg.ReleaseTier <= host.FaunaReleaseTier;
+
                 int spawned = 0;
-                if (toSpawn > 0 && preyAvailable)
+                if (toSpawn > 0 && preyAvailable && released)
                 {
                     SpawnFaunaPopulation(host, runtime, spawnProfile, faunaCfg, color, toSpawn, wave);
                     spawned = toSpawn;

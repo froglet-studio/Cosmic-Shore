@@ -33,7 +33,14 @@ outcome is optimization, not life). Use the `/ecology` skill for any change here
   `Prism.Consume` is a no-op on super-shielded mass and only sheds the shield on shielded mass,
   so targeting one is a feed-hold the creature can never finish. Every herbivore edibility
   predicate routes through `Fauna.IsShieldedMass`; do not write a grazer that tests shield state
-  itself. (`Docs/ECOSYSTEM.md §16`.)
+  itself. Shielded mass is likewise **not a steering target** — it is excluded from the cell's
+  targeting grids (`Cell.AddBlock`, re-filed on any shield transition by
+  `Cell.NotifyBlockShieldStateChanged`), because "fauna must never be led to mass they cannot
+  eat" is one rule, not two. (`Docs/ECOSYSTEM.md §16`, `§22`.)
+  A mode may redefine what "controls" a cell — Brood Rush makes it the nucleus claim, Ribcage
+  pins it to the race leader (`Cell.SetModeControlOverride`) — but the spawn colour is still
+  exactly ONE colour, the controller's, and that setter also re-colours the LIVE swarm so a
+  cell can never hold two fauna colours at once.
 - **Starvation = wither-to-crystal.** A starving (or predated) creature withers from its extremity
   spindles inward — a shark's fins / a brittlestar's arms evaporate *before* the core body
   (farthest-from-centre first, emergent from geometry) — and leaves a collectible elemental crystal.
@@ -279,6 +286,7 @@ All in `Assets/_Scenes/Singleplayer Scenes/`.
 | `MinigameAstroLeague` | `AstroLeague (36)` | `AstroLeagueController` |
 | `MinigameNucleusRush` | `NucleusRush (38)` | `NucleusRushController` |
 | `MinigameRampage` | `Rampage (2)` | `RampageController` |
+| `MinigameRibcage` | `Ribcage (39)` | `RibcageController` |
 | `ArcadeGameMultiplayer2v2CoOpVsAI` | `Multiplayer2v2CoOpVsAI (30)` | Domain games variant |
 
 All in `Assets/_Scenes/Multiplayer Scenes/`.
@@ -291,7 +299,7 @@ All in `Assets/_Scenes/Multiplayer Scenes/`.
 
 #### GameModes Enum (`Assets/_Scripts/Data/Enums/GameModes.cs`)
 
-38 game modes with explicit numeric IDs (highest is `NucleusRush(38)`; IDs 7 and 31 are skipped). Single-player: `Elimination(1)` through `ProtectMission(27)` — except `Rampage(2)`, repurposed as a multiplayer party game (the destruction race, Scurry's destructive analog; see `_Scripts/Controller/Arcade/RAMPAGE.md`). Multiplayer: `Rampage(2)`, `MultiplayerFreestyle(28)`, `MultiplayerCellularDuel(29)`, `Multiplayer2v2CoOpVsAI(30)`, `MultiplayerWildlifeBlitzGame(32)`, `HexRace(33)`, `MultiplayerJoust(34)`, `MultiplayerCrystalCapture(35)`, `AstroLeague(37)`, `NucleusRush(38)`. Meta-mode: `Tournament(36)` — the session-level meta that chains HexRace → Joust → Crystal Capture back-to-back via sequential `Single` loads (see `Docs/TournamentSystem/ARCHITECTURE.md`). `AstroLeague(37)` is hypersea soccer (a standalone domain minigame, see `_Scripts/Controller/Arcade/ASTROLEAGUE.md`). `NucleusRush(38)` (display name "Brood Rush") is the nucleus-control fauna-wave race (see `_Scripts/Controller/Arcade/NUCLEUSRUSH.md`). Meta sentinel: `Random(0)`. Note: IDs 7 and 31 are skipped — 7 was the retired standalone arcade Freestyle game (freestyle now lives in Menu_Main as the lava lamp; see "Lava-Lamp Mode"), 31 was never assigned. Do not reuse either ID.
+39 game modes with explicit numeric IDs (highest is `Ribcage(39)`; IDs 7 and 31 are skipped). Single-player: `Elimination(1)` through `ProtectMission(27)` — except `Rampage(2)`, repurposed as a multiplayer party game (the destruction race, Scurry's destructive analog; see `_Scripts/Controller/Arcade/RAMPAGE.md`). Multiplayer: `Rampage(2)`, `MultiplayerFreestyle(28)`, `MultiplayerCellularDuel(29)`, `Multiplayer2v2CoOpVsAI(30)`, `MultiplayerWildlifeBlitzGame(32)`, `HexRace(33)`, `MultiplayerJoust(34)`, `MultiplayerCrystalCapture(35)`, `AstroLeague(37)`, `NucleusRush(38)`, `Ribcage(39)`. Meta-mode: `Tournament(36)` — the session-level meta that chains HexRace → Joust → Crystal Capture back-to-back via sequential `Single` loads (see `Docs/TournamentSystem/ARCHITECTURE.md`). `AstroLeague(37)` is hypersea soccer (a standalone domain minigame, see `_Scripts/Controller/Arcade/ASTROLEAGUE.md`). `NucleusRush(38)` (display name "Brood Rush") is the nucleus-control fauna-wave race (see `_Scripts/Controller/Arcade/NUCLEUSRUSH.md`). `Ribcage(39)` is the Rhino-only cage-breaking race — a hollow SHIELDED prism sphere penning the cell's brood, where the race LEADER is pinned as the cell's controlling domain so the fauna wave hatches in their colour and the untouched legacy herbivore diet (eat opposing-domain mass) turns the swarm loose on the trailing teams (see `_Scripts/Controller/Arcade/RIBCAGE.md`). Meta sentinel: `Random(0)`. Note: IDs 7 and 31 are skipped — 7 was the retired standalone arcade Freestyle game (freestyle now lives in Menu_Main as the lava lamp; see "Lava-Lamp Mode"), 31 was never assigned. Do not reuse either ID.
 
 Many single-player modes (1, 3-6, 9-25, 27) reference scenes that no longer exist on disk — their `SO_ArcadeGame` assets still exist and appear in the Arcade UI, but launching them would fail. (`Rampage(2)` used to be in this set; it now has a real scene as a multiplayer mode.)
 
@@ -320,6 +328,7 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
         ├── MultiplayerCrystalCaptureController — minimal (1 round, 1 turn)
         ├── AstroLeagueController             — hypersea soccer, server-simulated ball, golden goal
         ├── NucleusRushController             — nucleus-control fauna-wave race, brood scoring
+        ├── RibcageController                 — Rhino-only cage-breaking race, fauna ladder
         └── RampageController                 — destruction race (Scurry's destructive analog), prisms-destroyed scoring
 ```
 
@@ -359,6 +368,7 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
 | `JOUST.md` | `_Scripts/Controller/Arcade/` | Joust game mode technical reference |
 | `ASTROLEAGUE.md` | `_Scripts/Controller/Arcade/` | Astro League game mode technical reference |
 | `RAMPAGE.md` | `_Scripts/Controller/Arcade/` | Rampage game mode technical reference (multiplayer destruction race) |
+| `RIBCAGE.md` | `_Scripts/Controller/Arcade/` | Ribcage game mode technical reference (Rhino-only cage-breaking race; the leader-pinned fauna ladder, the shielded-cage generator, the shielded-mass targeting-grid rule) |
 | `PRISM_PERFORMANCE_AUDIT.md` | `_Scripts/Game/Prisms/` | Prism system performance analysis (vestigial location) |
 | `UNIT_TESTING_GUIDE.md` | `_Scripts/Tests/` | Unit testing guidelines and inventory |
 | `BENCHMARK_TOOL.md` | `_Scripts/Utility/PerformanceBenchmark/` | Performance Benchmark tool guide (tabs, score/hints, sweep, Load Time Insights, customization) |

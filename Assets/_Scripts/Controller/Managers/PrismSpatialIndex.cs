@@ -1211,6 +1211,23 @@ namespace CosmicShore.Gameplay
             if (cell && prism) cell.NotifyBlockDomainChanged(prism);
         }
 
+        /// <summary>
+        /// Re-files a tracked prism whose SHIELD state changed in its bound cell's
+        /// targeting grids - shielded mass is not food (Docs/ECOSYSTEM.md §16.2) and so
+        /// must not be a fauna steering target either (see Cell.AddBlock). Caller:
+        /// PrismStateManager.SyncAOERegistryShieldState only, which is the single funnel
+        /// every shield transition already passes through - it pairs this with
+        /// UpdateShieldState so the analytic shell view and the cell grids move together.
+        /// </summary>
+        public void ForwardShieldChangeToCell(int index)
+        {
+            if (index < 0 || index >= _highWaterMark) return;
+
+            var prism = _prisms[index];
+            var cell = _cells[index];
+            if (cell && prism) cell.NotifyBlockShieldStateChanged(prism);
+        }
+
         // ------------------------------------------------------------------
         //  Cell-volume summation view (CellVolumeSumJob)
         //  Binding is written ONLY by Cell.AddBlock/RemoveBlock (both membership

@@ -2226,3 +2226,102 @@ expected `Jit` volume factor), not measured — nothing has been observed runnin
   they can be seen growing.
 - `Tools/ecosim/gen_hesperides_assets.py` regenerates the whole asset set deterministically —
   retune there rather than hand-editing twelve configs.
+
+---
+
+## 22. Ribcage — a mode redefining "control", and the shielded-steering finish (August 2026)
+
+Ribcage (`GameModes.Ribcage = 39`, `_Scripts/Controller/Arcade/RIBCAGE.md`) is the
+Rhino-only cage-breaking race: a hollow sphere of ~2,700 **shielded** prisms pens the
+cell's brood, and domains race to smash their way out. Ecologically it is interesting
+for one reason — **the whole "the fauna hunt whoever is losing" feature is written in
+zero lines of fauna code**, and getting there needed one honest generalization.
+
+### 22.1 The leader IS the controlling domain
+
+`Cell.SetModeControlOverride(Domains?)` pins the cell's `DominantDomain`. Ribcage's
+controller sets it to whichever domain leads the destruction race. Everything else is
+existing machinery:
+
+- `Cell.ControllingDomain` → `RandomLifeSpawner` spawns the wave in that colour. The
+  **no-domain-asymmetry invariant is untouched**: still exactly ONE colour, still the
+  cell's controller. The mode changed what "control" *means*, not how many colours
+  spawn — the same authority move Brood Rush made when it declared node control to be
+  the nucleus claim (§13).
+- `Cell.IsPreyForHerbivore` in a **nucleus-less** cell is the legacy rule
+  `preyDomain != faunaDomain`. So the leader's swarm eats every *trailing* team's
+  mass. That is the entire feature. There is no targeting code, no per-player fauna
+  steering, no "find the loser" query — the diet rule was always this, and the mode
+  merely arranged for the fauna to wear the right colour.
+- Ribcage's cell config therefore has **no `NucleusPrefab`**, and that is load-bearing:
+  a nucleus control zone switches herbivores to the spatial "eat anything outside the
+  nucleus" diet, which would point the swarm at every team including the leader's.
+
+The setter also re-colours the **live** swarm (`Fauna.SetTeam` over `Cell.LiveFauna`),
+so a lead change flips the targets of creatures already in the air rather than only the
+next wave — and so a cell can never hold two fauna colours at once, which is what the
+invariant actually forbids.
+
+### 22.2 Escalation rides the phase ladder, not a new system
+
+`Cell.ModePhaseFloor` (nullable, default null) lets a mode hold the cell at or above a
+phase. The volume ladder still runs every tick; the floor only ever **raises** the
+answer. Ribcage floors the cell at Restless at 25% of the cage target and Frenzy at
+50%, so fauna aggression, steering, danger-immunity and speed all come from the
+existing `CellPhase → CellAggressionLevel` mapping.
+
+This is **not** the growth/decay oscillator §0 rejects: it is monotonic in an ACTIVE
+player force (mass destroyed by vessel abilities), it removes no prism, and it starts no
+clock. Note the direction of travel — destruction *lowers* the cell's volume, so the
+ordinary ladder would only ever descend here; the floor is the sole thing that climbs.
+
+`Cell.FaunaReleaseTier` + `FaunaConfigurationSO.ReleaseTier` stage which species may
+seed (Ribcage: nothing until 25%, grazers at 25%, predator at 50%). Defaults — config
+tier 0, cell `int.MaxValue` — leave every shipped biome released from the first tick.
+Gating **production** is the explicitly-allowed lever ("not creating mass is allowed;
+aging it out is not"); nothing here culls.
+
+### 22.3 The shielded-steering finish (the generalization §16 left half-done)
+
+**Symptom this would have caused.** Ribcage's arena is a huge shielded structure. Under
+the pre-existing rules the cage sat in the cell's density grids, so every density
+centroid — the goal at aggression Level1 and Level2 — pointed at mass §16.2 had already
+declared inedible. The swarm would have flown to the cage and found nothing to eat.
+
+**Cause.** `Cell.AddBlock`'s own comment states the rule — *"fauna must never be led to
+mass they cannot eat"* — but applied it only to nucleus-interior mass. §16.2 removed
+shielded prisms from every herbivore's **diet**; nobody removed them from the
+**grids**. That gap is the residue behind §16.3's Skim Race stall: the stall itself was
+fixed with the orbit offset and the degenerate-steering guard, but swarms were still
+being *aimed* at track prisms they could never consume.
+
+**Fix.** Shielded prisms are excluded from the targeting grids at `AddBlock`, and
+`Cell.NotifyBlockShieldStateChanged` re-files a prism when a shield engages or is shed
+(shield state is runtime-mutable, so the classification has to be able to change). It is
+routed from `PrismStateManager.SyncAOERegistryShieldState` — the single funnel every
+shield transition already passes through — via
+`PrismSpatialIndex.ForwardShieldChangeToCell`, mirroring the existing
+`ForwardDomainChangeToCell` steal path exactly.
+
+"Not food" and "not a steering target" are now one rule with one predicate on each side
+(`Fauna.IsShieldedMass` for the diet, `Cell.IsShieldedMass` for the grids), which is why
+a future grazer cannot re-acquire either half of the bug.
+
+**Cross-mode effect, and it is the correct one.** Skim Race's super-shielded track and
+Astro League's super-shielded edge lining no longer pull fauna steering. Both need an
+in-editor regression pass (RIBCAGE.md § verification, step 10).
+
+**Collider budget: unchanged, and strictly less work.** No collider, no physics query,
+no index query is added. Shielded prisms are *removed* from the grids, so every density
+query scans fewer entries; `NotifyBlockShieldStateChanged` costs one bool compare on the
+common "shield re-applied" path and a grid remove/add only on a genuine transition. The
+cage itself is ~2,721 box colliders — shielded prisms keep the authored BoxCollider
+trigger, so the octahedron look is free — which is ~1.8× the masterplan's ≤1500 target
+and ~3.7× *under* Rampage's deliberate 10,000-prism arena gate, in a cell with no flora.
+
+**Known gap, left deliberately.** `Cell.OpposingVolume` still counts shielded mass as
+the fauna prey signal, so a shielded structure satisfies `FaunaFoodFloor` without being
+food. Ribcage sidesteps it (`FaunaFoodFloor 0` — the release tier is the real gate), but
+the honest fix is to net shielded volume out of that signal. It is the population bound
+for every biome, so it deserves its own change and its own verification rather than
+riding along here.

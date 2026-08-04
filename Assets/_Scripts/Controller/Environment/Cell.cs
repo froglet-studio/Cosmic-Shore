@@ -359,6 +359,77 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public void SetReplicatedDominantDomain(Domains? domain) => _replicatedDominantDomain = domain;
 
+        /// <summary>
+        /// SERVER-side hook for a game mode that defines "control" by its own scored rule
+        /// rather than by laid volume - the same authority move Brood Rush makes when it
+        /// says node control IS the nucleus, expressed here as a pin instead of a
+        /// different volume source. Ribcage uses it: the cell's controlling domain is the
+        /// team currently leading the cage-destruction race, so the fauna wave that hatches
+        /// wears the leader's colour and the untouched legacy herbivore diet (eat
+        /// opposing-domain mass) points the swarm at every trailing team's trails. No
+        /// bespoke fauna targeting exists anywhere - the diet rule was already this.
+        ///
+        /// Writes the same field the client-side replication pin uses, and that is
+        /// deliberate: only ONE side ever writes it (the mode on the server, where
+        /// <see cref="CellNetworkSync"/> deliberately skips its own writes; CellNetworkSync
+        /// on clients, mirroring the server's already-pinned answer). So a mode pin
+        /// replicates to every peer through the existing phase/domain sync for free.
+        ///
+        /// Re-colours the LIVE swarm as well as the next wave - the no-domain-asymmetry
+        /// invariant says a cell's fauna are the CONTROLLER's fauna, and letting the
+        /// standing swarm keep a deposed team's colour would leave two fauna colours in
+        /// one cell. Doing it inside this setter is what keeps the two from drifting.
+        /// Pass null to release the pin.
+        /// </summary>
+        public void SetModeControlOverride(Domains? domain)
+        {
+            _replicatedDominantDomain = domain;
+
+            if (!domain.HasValue || domain.Value == Domains.Blue) return;
+
+            // Re-colour UNCONDITIONALLY - deliberately not gated on "the value changed".
+            // On a client both writers touch this field: CellNetworkSync's replication
+            // callback (which does NOT re-colour) and this setter, and the NetworkVariable
+            // delta can land BEFORE the mode's RPC. An equality early-return would then see
+            // the field already correct and skip the swarm, leaving that client's creatures
+            // wearing the deposed team's colour - hunting the wrong trails - for the rest of
+            // the match. Callers only invoke this on control TRANSITIONS and the loop is
+            // O(live fauna) (tens), so paying it every call is the cheap side of the trade.
+            for (int i = 0; i < liveFauna.Count; i++)
+            {
+                var f = liveFauna[i];
+                if (f) f.SetTeam(domain.Value);
+            }
+        }
+
+        /// <summary>
+        /// Minimum phase this cell may sit at, or null for "no floor" (the default -
+        /// every cell that does not opt in behaves exactly as before). The volume ladder
+        /// still runs every tick; the floor only ever RAISES the result, so a mode can
+        /// escalate its ecology on its own scored signal without the phase compute
+        /// becoming a mode concern.
+        ///
+        /// Ribcage drives it from race progress: the leader passing 25% of the cage
+        /// target floors the cell at Restless (fauna hunt the opposing-colour centroid),
+        /// 50% floors it at Frenzy (any-colour steering, no friendly avoidance,
+        /// danger-immune). This is NOT a decay/growth oscillator - it is monotonic in an
+        /// ACTIVE player force (mass destroyed) and never removes a prism.
+        /// </summary>
+        public CellPhase? ModePhaseFloor { get; set; }
+
+        /// <summary>
+        /// Staged fauna release: a species may seed only when its
+        /// <see cref="FaunaConfigurationSO.ReleaseTier"/> is at or below this value.
+        /// Defaults to <see cref="int.MaxValue"/> ("everything released"), and every
+        /// existing config authors tier 0, so no shipped biome changes behaviour.
+        ///
+        /// Ribcage holds the cage's brood at -1 (nothing released) until the leader
+        /// cracks 25% of the target, then 0 (the grazer swarm), then 1 at 50% (the
+        /// predator joins). Gating PRODUCTION is explicitly allowed by the conserved-mass
+        /// law - not creating mass is fine, aging it out is not.
+        /// </summary>
+        public int FaunaReleaseTier { get; set; } = int.MaxValue;
+
         // ------------------------------------------------------------------
         //  Live volume - the spine. Recomputed from live prism state on a short
         //  cadence (growth animates continuously, so event-driven deltas would
@@ -691,6 +762,13 @@ namespace CosmicShore.Gameplay
             // Volume is the spine: the ladder climbs on live volume; prism count is
             // only the Frenzy perf backstop inside Compute.
             var newPhase = CellPhaseRules.Compute(LiveVolume, LiveBlockCount, phase, in thresholds);
+
+            // A mode may hold the cell at or above a phase (see ModePhaseFloor). The
+            // ladder is unchanged - the floor can only raise the answer, never lower it,
+            // so volume remains the spine and the floor is pure escalation on top.
+            if (ModePhaseFloor.HasValue && newPhase < ModePhaseFloor.Value)
+                newPhase = ModePhaseFloor.Value;
+
             ApplyAuthoritativePhaseAndDomain(newPhase, DominantDomain);
         }
 
@@ -1818,7 +1896,17 @@ namespace CosmicShore.Gameplay
                     // cannot eat) while still counting toward volume, per-domain counts,
                     // and the phase backstop. gridTracked remembers the classification so
                     // RemoveBlock stays symmetric even if the nucleus radius changes.
-                    if (!IsInsideNucleus(block.transform.position))
+                    //
+                    // SHIELDED mass is excluded for exactly the same reason, and it is the
+                    // same rule: Docs/ECOSYSTEM.md §16.2 already removed shielded prisms
+                    // from every herbivore's DIET (Consume is a no-op on super-shielded and
+                    // only sheds the shield on shielded), but they stayed in the grids, so
+                    // the density centroids kept STEERING swarms onto mass they had just
+                    // been told they cannot eat - the residue behind §16.3's Skim Race
+                    // stall, and fatal to a mode like Ribcage whose arena IS a shielded
+                    // structure. Shield state can change at runtime, so
+                    // NotifyBlockShieldStateChanged re-files the prism on the transition.
+                    if (!IsInsideNucleus(block.transform.position) && !IsShieldedMass(block))
                     {
                         gridTracked.Add(block);
 
@@ -1890,6 +1978,37 @@ namespace CosmicShore.Gameplay
             if (block is null || !trackedBlocks.ContainsKey(block)) return;
             RemoveBlock(block);
             AddBlock(block);
+        }
+
+        /// <summary>
+        /// Re-registers a tracked prism whose SHIELD state changed, so it leaves the
+        /// targeting grids when a shield engages and re-enters them when one is shed.
+        /// Shielded mass is not food (Docs/ECOSYSTEM.md §16.2), so it must not be a
+        /// steering target either - see AddBlock. Called from
+        /// <c>PrismStateManager.SyncAOERegistryShieldState</c>, the single funnel every
+        /// shield transition already passes through. No-op when the classification did
+        /// not actually change, so the common "shield re-applied" path costs one bool
+        /// compare rather than a grid remove/add.
+        /// </summary>
+        public void NotifyBlockShieldStateChanged(Prism block)
+        {
+            if (block is null || !trackedBlocks.ContainsKey(block)) return;
+
+            bool shouldBeGridTracked = !IsShieldedMass(block) && !IsInsideNucleus(block.transform.position);
+            if (shouldBeGridTracked == gridTracked.Contains(block)) return;
+
+            RemoveBlock(block);
+            AddBlock(block);
+        }
+
+        /// <summary>
+        /// Shield-state test used for grid membership. Mirrors <c>Fauna.IsShieldedMass</c>
+        /// (the diet rule) so "not food" and "not a steering target" can never disagree.
+        /// </summary>
+        static bool IsShieldedMass(Prism block)
+        {
+            var props = block ? block.prismProperties : null;
+            return props != null && (props.IsShielded || props.IsSuperShielded);
         }
 
         /// <summary>

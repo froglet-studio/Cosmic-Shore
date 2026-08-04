@@ -214,11 +214,18 @@ namespace CosmicShore.Gameplay
 
         private void SyncAOERegistryShieldState()
         {
-            if (prism.SpatialIndexId >= 0)
-                PrismSpatialIndex.Instance?.UpdateShieldState(
-                    prism.SpatialIndexId,
-                    prism.prismProperties.IsShielded,
-                    prism.prismProperties.IsSuperShielded);
+            if (prism.SpatialIndexId < 0) return;
+
+            PrismSpatialIndex.Instance?.UpdateShieldState(
+                prism.SpatialIndexId,
+                prism.prismProperties.IsShielded,
+                prism.prismProperties.IsSuperShielded);
+
+            // Shielded mass is not food (Docs/ECOSYSTEM.md §16.2), so it must not be a
+            // fauna steering target either: re-file the prism in its cell's targeting
+            // grids on every shield transition. The cell no-ops when the classification
+            // did not actually change, so re-applying an existing shield costs a compare.
+            PrismSpatialIndex.Instance?.ForwardShieldChangeToCell(prism.SpatialIndexId);
         }
 
         private void OnDisable()

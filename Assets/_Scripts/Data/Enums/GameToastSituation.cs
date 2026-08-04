@@ -30,5 +30,11 @@ namespace CosmicShore.Data
 
         // Brood Rush (NucleusRush)
         BroodWaveScored = 40,
+
+        // Ribcage
+        // {0}=leading domain, {1}=that domain's bars smashed, {2}=cage target
+        RibcageBroodReleased = 50,   // 25% - the grazer swarm hatches for the leader
+        RibcagePackReleased = 51,    // 50% - the predator joins and the cell goes Frenzy
+        RibcageLeaderChanged = 52,   // the swarm changes hands (and therefore targets)
     }
 }
