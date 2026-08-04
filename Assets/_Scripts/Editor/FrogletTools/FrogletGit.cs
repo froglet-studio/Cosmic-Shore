@@ -297,12 +297,13 @@ namespace CosmicShore.Editor.Froglet
             return list;
         }
 
-        /// <summary>True when something is staged and ready to commit.</summary>
-        public static bool HasStagedChanges()
-        {
-            // `diff --cached --quiet` exits 1 when the index differs from HEAD.
-            return Run("diff", "--cached", "--quiet").ExitCode == 1;
-        }
+        /// <summary>
+        /// Did this commit fail only because there was nothing to record? That is a normal
+        /// outcome, not an error.
+        /// </summary>
+        public static bool NothingToCommit(FrogletGitResult r)
+            => r.Text.IndexOf("nothing to commit", StringComparison.OrdinalIgnoreCase) >= 0
+               || r.Text.IndexOf("no changes added to commit", StringComparison.OrdinalIgnoreCase) >= 0;
 
         // ── Mutations ────────────────────────────────────────────────────────────
 
@@ -321,7 +322,35 @@ namespace CosmicShore.Editor.Froglet
             return Run(args.ToArray());
         }
 
-        public static FrogletGitResult Commit(string message) => Run("commit", "-m", message);
+        /// <summary>
+        /// Commit, limited to <paramref name="paths"/> when given.
+        ///
+        /// The pathspec is load-bearing, not decoration: a bare <c>git commit</c> records the
+        /// WHOLE index, so if the human had already staged something of their own before pressing
+        /// the button, a tool would sweep it into its commit — breaking the "only my own output"
+        /// promise at the last step, after `add` had been careful about it all along. With the
+        /// pathspec, their staged work stays staged and untouched.
+        /// </summary>
+        public static FrogletGitResult Commit(string message, IEnumerable<string> paths = null)
+        {
+            var args = new List<string> { "commit", "-m", message };
+
+            if (paths != null)
+            {
+                var scoped = new List<string>();
+                foreach (var p in paths)
+                    if (!string.IsNullOrWhiteSpace(p))
+                        scoped.Add(p);
+
+                if (scoped.Count > 0)
+                {
+                    args.Add("--");
+                    args.AddRange(scoped);
+                }
+            }
+
+            return Run(args.ToArray());
+        }
 
         public static FrogletGitResult Push(string branch) => Run("push", "-u", "origin", branch);
 

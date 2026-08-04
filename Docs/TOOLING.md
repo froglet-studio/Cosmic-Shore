@@ -155,9 +155,11 @@ machine and every reference to it breaks.
 
 - **Record as you write, not at the end.** A path recorded in the same block that wrote it cannot
   be missed by an early return or an exception.
-- **Never stage by wildcard.** `FrogletGit` has no `-A` path by design: a tool commits its own
-  output or nothing. Someone else's half-finished edit sitting next to it in the tree is not
-  yours to sweep up.
+- **Never stage by wildcard, and scope the commit too.** `FrogletGit` has no `-A` path by design:
+  a tool commits its own output or nothing. Someone else's half-finished edit sitting next to it
+  in the tree is not yours to sweep up. The commit carries the same pathspec — a bare
+  `git commit` records the WHOLE index, so anything the human had already staged of their own
+  would ride along and undo, at the last step, the care `add` took all the way up to it.
 - **Output first, retirement second.** Deleting a tool while its output is uncommitted strands the
   output with nothing left that could reproduce it. The panel enforces the order.
 - **Retire the one-offs; keep the re-runnables.** A tool written to perform ONE migration is

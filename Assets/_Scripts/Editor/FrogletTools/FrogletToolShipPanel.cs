@@ -304,17 +304,20 @@ namespace CosmicShore.Editor.Froglet
             if (!add.Ok)
                 return Report(ctx, "git add failed:\n" + add.Text, true, interactive);
 
-            if (!FrogletGit.HasStagedChanges())
-                return Report(ctx, "Nothing ended up staged — the working tree may already be clean.", false, interactive);
-
             var subject = ctx.CommitSubject != null
                 ? ctx.CommitSubject(ctx.CachedStaging.Count)
                 : $"{ctx.CommitType}({ctx.CommitScope}): {ctx.ToolName} output — " +
                   $"{ctx.CachedStaging.Count} file(s)";
 
-            var commit = FrogletGit.Commit(subject);
+            // Path-scoped: anything the human had already staged of their own stays staged and
+            // out of this commit.
+            var commit = FrogletGit.Commit(subject, ctx.CachedStaging);
             if (!commit.Ok)
+            {
+                if (FrogletGit.NothingToCommit(commit))
+                    return Report(ctx, "Nothing to commit — these files already match HEAD.", false, interactive);
                 return Report(ctx, "git commit failed:\n" + commit.Text, true, interactive);
+            }
 
             var push = FrogletGit.PushWithRetry(branch);
             if (!push.Ok)
@@ -386,7 +389,7 @@ namespace CosmicShore.Editor.Froglet
                 return Report(ctx, "Files deleted, but git add failed:\n" + add.Text, true, interactive);
 
             var subject = $"chore(tools): retire {ctx.ToolName} after verification";
-            var commit = FrogletGit.Commit(subject);
+            var commit = FrogletGit.Commit(subject, deleted);
             if (!commit.Ok)
                 return Report(ctx, "Files deleted, but git commit failed:\n" + commit.Text, true, interactive);
 
