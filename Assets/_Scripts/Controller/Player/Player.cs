@@ -155,6 +155,13 @@ namespace CosmicShore.Gameplay
         // is the owner of a non-AI Player on this machine - AI shares the host's OwnerClientId, so
         // it is still excluded (IsMultiplayerOwner == IsSpawned && IsOwner && !IsInitializedAsAI).
         public bool IsLocalUser => IsMultiplayerOwner;
+
+        // The human pilot on THIS machine, in every mode. IsLocalUser covers the networked
+        // path; the second clause covers the legacy non-networked single-player spawn
+        // (PlayerSpawner → InitializeForSinglePlayerMode), where the Player is a plain
+        // Instantiate and IsSpawned is false, so IsLocalUser reports false for a human.
+        // Platform systems bind on THIS so a mode cannot escape them by spawn path.
+        public bool IsLocalPilot => IsLocalUser || (!IsSpawned && !IsInitializedAsAI);
        
         IPlayer.InitializeData InitializeData;
         

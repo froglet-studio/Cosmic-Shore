@@ -41,6 +41,14 @@ namespace CosmicShore.Utility
 
         internal Vector3 TargetPosition { get; private set; }
         internal float Duration => implosionDuration;
+
+        /// <summary>Authored suction length — PrismDebris reads it off the pool prefab
+        /// so the batched entity path animates for exactly as long as the pooled one
+        /// (same reasoning as PrismExplosion.MinDebrisSpeed/MaxDebrisSpeed). growDelay
+        /// is deliberately not exposed: it belongs to StartGrow, whose producer
+        /// (PrismType.Grow) does not exist, so no batched effect ever delays.</summary>
+        public float ImplosionDuration => implosionDuration;
+
         internal bool IsActive { get; private set; }
         internal Renderer Renderer => prismRenderer;
 

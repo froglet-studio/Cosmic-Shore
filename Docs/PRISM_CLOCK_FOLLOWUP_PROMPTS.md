@@ -10,8 +10,9 @@ in-editor test that closes it. Run them as separate branches.
 | # | Prompt | Why this rank |
 |---|---|---|
 | ~~1~~ | ~~**Prompt 2** — C13 environment-lay prisms miss the clock path~~ | ✅ **DONE 2026-08-02** — the cause was the shield engage-morph straddling the creation reveal (not the raw-`Instantiate` lay). Residual **C13b** (pooled lay / spawn repaint) is not a clock fix — re-rank it with the rest. |
-| 2 | **Prompt 9** — batched entity debris remainder | Completes the proven, playtest-loved carrier: implosions on the batch path + the measured next bottleneck (`AOE.ResolveDamage` 0.43 ms/kill self, per-kill `PrismEventData` alloc). The benchmark rig is already built to measure it. |
-| 3 | **Prompt 1** — transparent-prism occlusion restore | Pre-existing broken system (predates this branch) + it gates the one deferred wiring verification (transparent color fades). |
+| ~~2~~ | ~~**Prompt 9** — batched entity debris remainder~~ | ✅ **BUILD HALF DONE 2026-08-04** — implosions on the batch carrier + the death-path marker split + its per-death allocations removed. What remains is **Prompt 9b**, which needs the editor (measure + fauna playtest) and gates **D4** (retiring the pooled path). |
+| 2 | **Prompt 9b** — measure the carrier, then retire the pooled path | Small and editor-bound, but it is the gate on D4 and on trusting every frame-cost claim the batch work makes. Do it before starting another build prompt on this system. |
+| ~~3~~ | ~~**Prompt 1** — transparent-prism occlusion restore~~ | ✅ **DONE 2026-08-04** — restored as a shader-side corridor off two global uniforms (`PrismOcclusionCorridor`, `Docs/PRISM_ANIMATION.md` §4.7); `ClearPrisms` deleted. The gated Phase-3 verification is un-deferred and re-pointed at the Serpent cloak (`Docs/PRISM_CLOCK_WIRING_CHECKLIST.md` Phase 3). |
 | 4 | **Prompt 3** — fauna/flora on the clock (ecology) | Per-frame CPU prism writes in every cell scene; wither/devour are ecology-locked visuals that must ride the law. |
 | 5 | **Prompt 4** — conveyor + cell-swap suction | The two biggest world-scale per-frame CPU flows left. |
 | 6 | **Prompt 6** — B4 shield morphs on the GPU | Retires the last sanctioned CPU ticker (`PrismOctahedronShieldManager`). |
@@ -31,6 +32,25 @@ surgery, machine validation) are captured in the `/asset-surgery` skill — use 
 ---
 
 ## Prompt 1 — Restore the transparent-prism occlusion system (then verify its color fades)
+
+> **✅ DONE 2026-08-04** (branch `claude/transparent-prism-occlusion-3fwjky`). The
+> investigation found the system was dead three times over, not once: (1) the
+> `_Alpha` MaterialPropertyBlock write never reached the screen, because prisms draw
+> through companion entities and instanced rendering is ON; (2) the trigger capsule
+> sat on layer `TrailBlockOcclusion` while prisms sit on `Default`, a pair the
+> collision matrix does not enable, so `OnTriggerEnter` never fired; and (3) even if
+> both had worked, `_Alpha` feeds `SurfaceDescription.Alpha` on an **Opaque**
+> BlockGraph with alpha clip off, where URP compiles the alpha output away entirely.
+> The Rhino prefab also still carried an override for a `prismLayer` field the script
+> had lost. Restored per the prompt's own prescription — two global uniforms
+> (`_PrismOcclusionTarget`, `_PrismOcclusionParams`) published once per frame, camera
+> end read on the GPU from `_WorldSpaceCameraPos`, per-fragment cone test + a screen-door
+> dither kernel in `PrismOcclusionCorridor.hlsl` — with zero per-prism CPU and no
+> render-queue change. Design, cost statement and the alpha-test trade:
+> `Docs/PRISM_ANIMATION.md` §4.7. The closing verification is un-deferred and
+> re-pointed at the Serpent's cloak (the corridor deliberately no longer produces
+> `IsTransparent` prisms): `Docs/PRISM_CLOCK_WIRING_CHECKLIST.md` Phase 3.
+
 
 > The transparent prism system is not working. Its purpose: limit prism
 > occlusion between the camera and the vessel — prisms in that corridor render
@@ -187,30 +207,37 @@ surgery, machine validation) are captured in the `/asset-surgery` skill — use 
 > (turret flight properties, shield morph properties) so Validate Clock Wiring
 > stays the one-stop wiring truth.
 
-## Prompt 9 — Batched pure-entity debris: the REMAINDER (implosions + death-path self cost)
+## Prompt 9b — Measure the batched-debris carrier, then retire the pooled path (D4)
 
-> The explosion half SHIPPED on the audit branch (2026-08-02): `PrismDebris` +
-> `PrismRenderService.SpawnExplosionDebrisBatch` spawn every prism-death
-> explosion as batched entities (one `em.Instantiate(prototype, N)`, one
-> batched visibility strip, sweep-based batch retirement, full 5s duration,
-> pooled path = fallback only), after a lifted-throttle profile showed 2,408
-> pool misses costing 1.9s of one frame in `PrismExplosion.OnDisable` alone.
-> Read `PrismDebris.cs` for the shipped pattern, then finish the job:
-> (1) **Implosions/suction-grow on the same carrier** — add an Implosion-set
-> batch spawn (suction stamps `{t₀, duration, ±direction, growDelay,
-> location}`); the moving-convergence refresh needs a records list carrying
-> the target Transform so the sweep can also update `_Location` for live
-> targets (one float3 per record per frame, the §1 documented exception) —
-> or keep moving-target implosions pooled and batch only the fixed-point
-> majority. (2) **Death-path self cost** — with the carrier fixed, re-profile
-> the lifted-throttle blast: `AOE.ResolveDamage` showed ~0.43ms SELF per
-> death (1,047ms for 2,408) plus ~1.4KB GC per death (`PrismEventData` is a
-> class allocated per kill). Split it with markers (SetupDestruction /
-> spatial-index MarkDestroyed / event-channel raise), pool or struct-ify the
-> event data, and kill whatever per-death work doesn't earn its keep.
-> (3) Once implosions are batched and parity is proven, consider retiring the
-> pooled explosion fallback entirely. Measure before/after with the prism-grid
-> benchmark (`Docs/PRISM_EXPLOSION_BENCHMARK.md`), throttles lifted.
+> Prompt 9's build half SHIPPED 2026-08-04 (branch
+> `claude/prism-explosion-batching-*`): implosions ride the same batched
+> pure-entity carrier as explosions (`SpawnImplosionDebrisBatch` +
+> `RefreshImplosionDebrisBatch`), the death path is split by five
+> `Prism.Destroy.*` markers, and its per-death allocations + redundant
+> transform interop are gone. Read `Docs/PRISM_ANIMATION.md` §4.6 + §4.6.1
+> first — they carry the carrier's rules and the retirement assessment.
+> What is left is the half that NEEDS THE EDITOR, and it gates D4:
+> (1) **Measure.** Run the prism-grid benchmark per
+> `Docs/PRISM_EXPLOSION_BENCHMARK.md` § "Re-profiling the death path",
+> throttles lifted, and record the five markers' total+self ms plus GC/frame
+> for the detonation frame against a run at `f0ddfc21`. Note the old
+> ~0.43 ms SELF/death figure is STALE — it was measured with
+> `PrismExplosion.OnDisable` (1,863 ms) sitting unmarked inside the same
+> region, which `f0ddfc21` removed. The markers exist so this is an
+> attribution, not a guess.
+> (2) **Playtest the suction half.** The grid rig produces ZERO implosions
+> (every AOE death routes `Damage → Explode`); the only producer is
+> `Prism.Consume`, i.e. fauna feeding. Watch a cell with fauna: mass converges
+> on the eater as it moves, nothing pops, and the harness HUD's `debris` row
+> (`N exp / N imp`) returns to 0 imp when feeding stops.
+> (3) **Then retire the pooled path (D4)** — but read §4.6.1 before starting:
+> it is a refactor, not a deletion. The pool prefabs are the batched path's
+> CONFIG source (`PrismDebris.Configure` reads mesh/material/layer/clamp
+> band/duration off them), and the dev zombie audit + `GameLoadSampler` read
+> `EnabledInstances`. Decide where the authored effect config lives first.
+> Also fold in the now-provably-dead `PrismType.Grow` surface
+> (`PrismFactory.SpawnGrow`, `PrismImplosion.StartGrow`/`growDelay`,
+> `PrismEventData.OnGrowCompleted`) — it has no producer anywhere in Assets.
 
 ---
 

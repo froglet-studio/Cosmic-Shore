@@ -59,8 +59,12 @@ namespace CosmicShore.Gameplay
             // Set scene-specific spawn positions before AI spawning.
             // base.OnNetworkSpawn() also sets them, but AI spawns happen first
             // (before base runs), so positions must be configured here.
-            if (playerSpawnPoints != null && playerSpawnPoints.Length > 0)
+            // The cell-relative ring is built on first vessel spawn instead (it needs the cell's
+            // nucleus), so skip the authored transforms entirely when it is enabled.
+            if (!arrangeSpawnPointsAroundCell && playerSpawnPoints != null && playerSpawnPoints.Length > 0)
                 gameData.SetSpawnPositions(playerSpawnPoints);
+            else
+                EnsureSpawnPosesReady(); // AI draw poses during SpawnAIs below - the ring must exist first
 
             // Active set is the contiguous slice ActiveDomains[0..DC-1]. Strictly
             // deterministic - no humans-picks-influence-the-set logic. DC < 3 means
