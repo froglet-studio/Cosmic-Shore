@@ -291,7 +291,7 @@ until a switcher is added.
 
 Manta, Dolphin, Rhino and Serpent are blocked on **design**: their maps are still `(open design slot)`
 with `Input = 0` and no `UpgradeLabel`, and their HUDs carry 0–2 lower-right icons. Run
-**Tools > Cosmic Shore > Audit Vessel Ability Rows** (`VesselAbilityRowAuditor`) for the live table — it
+**FrogletTools > Vessels > Audit Vessel Ability Rows** (`VesselAbilityRowAuditor`) for the live table — it
 checks map completeness, icon count and order, pitch/size uniformity and hint coverage across the whole
 fleet from assets alone. At runtime a vessel with no row now warns once per class instead of failing
 silently. The

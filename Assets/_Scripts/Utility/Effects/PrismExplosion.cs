@@ -9,8 +9,8 @@ namespace CosmicShore.Utility
 {
     /// <summary>
     /// Handles visual + positional explosion effect for prism destruction.
-    /// Animation is driven by PrismEffectsManager via batched Burst jobs
-    /// instead of per-instance async loops.
+    /// Clock-material driven (Docs/PRISM_ANIMATION.md B3): ONE stamp, the GPU
+    /// flies/shatters/fades the debris, ONE scheduled completion.
     /// Uses MaterialPropertyBlock to keep prefab-assigned materials intact.
     /// </summary>
     [RequireComponent(typeof(MeshRenderer))]
@@ -31,21 +31,68 @@ namespace CosmicShore.Utility
         // Pool callback (set by PoolManager)
         public Action<PrismExplosion> OnReturnToPool;
 
-        // Cache shader property IDs for performance
-        private static readonly int VelocityID = Shader.PropertyToID("_Velocity");
-        private static readonly int ExplosionAmountID = Shader.PropertyToID("_ExplosionAmount");
-        private static readonly int OpacityID = Shader.PropertyToID("_Opacity");
-        private static readonly int BrightColorID = Shader.PropertyToID("_BrightColor");
-        private static readonly int DarkColorID = Shader.PropertyToID("_DarkColor");
+        // Cache shader property IDs for performance (strict clock mode: only the
+        // wiring diagnostic reads a property by name — stamps go through
+        // PrismRenderService's per-instance overrides)
+        private static readonly int ExplodeStartTimeId = Shader.PropertyToID("_ExplodeStartTime");
 
-        // State exposed to PrismEffectsManager for batched updates
-        internal Vector3 InitialPosition { get; private set; }
-        internal Vector3 Velocity { get; private set; }
-        internal float Speed { get; private set; }
-        internal float Elapsed { get; set; }
-        internal float MaxDuration => 5f;
+        /// <summary>The unpressured animation length - what a death looks like when the
+        /// scene is not saturated with them.</summary>
+        internal const float DefaultDuration = 5f;
+
+        // Shortest an explosion is squeezed to under full pressure. Still long enough
+        // to read as a death (~13 frames at 60fps) while raising the sustainable
+        // effect throughput ~20x — the headroom a dense blast needs for every prism
+        // to animate out rather than pop (continuity law).
+        const float MinPressuredDuration = 0.22f;
+
+        // Live-effect count at which pressure shortening starts (full length below
+        // half of this, eased to MinPressuredDuration at/above it). On the clock
+        // path effects cost no per-frame CPU, so this bounds POOL size and entity
+        // count rather than an animation pass — same product-of-concurrency-and-
+        // duration reasoning as the retired manager's ceiling.
+        const int PressureCeiling = 256;
+
+        /// <summary>
+        /// This instance's animation length. Assigned by TriggerExplosion on every
+        /// spawn from the live-effect pressure (so a pooled instance can never
+        /// inherit a previous life's value): it shortens under load so a dense
+        /// blast's effects COMPLETE as smaller, quicker puffs instead of piling up.
+        /// </summary>
+        internal float MaxDuration { get; private set; } = DefaultDuration;
+
+        /// <summary>
+        /// Animation length for an effect starting while <paramref name="activeCount"/>
+        /// are already running (the EnabledInstances registry — the live set). Full
+        /// length until half the ceiling, then eased down to the pressured minimum.
+        /// Expansion and drift are speed·elapsed, so a pressured effect is a SMALLER,
+        /// quicker puff rather than the same bloom fast-forwarded — deliberate
+        /// (scaling speed to compensate would fling debris at up to 22x).
+        /// </summary>
+        static float PressuredDuration(int activeCount)
+        {
+            // Benchmark/diagnostic lift (PrismFactory.EffectPressureScalingDisabled):
+            // every death animates at full length no matter how many effects are
+            // live, so the stress rig measures the clock system UNWEAKENED. On the
+            // clock path an effect costs one stamp + one entity — the pressure model
+            // bounds pool/entity count, not a per-frame animation pass — so lifting
+            // it is a memory/entity-count experiment, not a frame-cost cheat.
+            if (Gameplay.PrismFactory.EffectPressureScalingDisabled) return DefaultDuration;
+
+            const float pressureFloor = PressureCeiling * 0.5f;
+            if (activeCount <= pressureFloor) return DefaultDuration;
+
+            float pressure = Mathf.InverseLerp(pressureFloor, PressureCeiling, activeCount);
+            return Mathf.Lerp(DefaultDuration, MinPressuredDuration, pressure);
+        }
+
         internal bool IsActive { get; private set; }
         internal MeshRenderer Renderer => _renderer;
+
+        /// <summary>Authored debris-speed clamp band — PrismDebris reads these off the
+        /// pool prefab so the batched entity path ships identical clamp semantics.</summary>
+        public float MinDebrisSpeed => minSpeed;
+        public float MaxDebrisSpeed => maxSpeed;
 
         // --- Instanced rendering (Entities Graphics companion entity) -----------
         // Mirrors the prism path: the MeshRenderer stays disabled and a companion
@@ -86,17 +133,6 @@ namespace CosmicShore.Utility
             PrismRenderService.SetTransform(in RenderHandle, transform.localToWorldMatrix);
         }
 
-        /// <summary>First-animated-frame show, called by PrismEffectsManager (the
-        /// visual stays hidden until real values are applied to avoid a one-frame
-        /// flash of the unanimated mesh — same contract as the legacy path).</summary>
-        internal void EnableVisual()
-        {
-            if (UsesEntityRenderPath)
-                PrismRenderService.SetVisible(in RenderHandle, true);
-            else if (_renderer != null && !_renderer.enabled)
-                _renderer.enabled = true;
-        }
-
 #if UNITY_EDITOR
         private void OnValidate()
         {
@@ -113,27 +149,49 @@ namespace CosmicShore.Utility
 
             _mpb = new MaterialPropertyBlock();
 
-            // Start with renderer disabled - only PrismEffectsManager should enable it
-            // during active animation. This prevents pool-retrieved objects from flashing.
+            // Start with renderer disabled — the companion entity draws.
+            // This prevents pool-retrieved objects from flashing.
             if (_renderer != null)
                 _renderer.enabled = false;
         }
 
         // Enabled-instance registry for PrismEffectsManager's zombie audit — replaces the
         // periodic FindObjectsByType full-scene scans (a recurring dev-build profiler spike).
+        //
+        // Removal is O(1) swap-remove keyed by a stored index: List.Remove(this) is an
+        // O(n) scan with UnityEngine.Object equality per element, and under a mass-death
+        // burst it ran once per pool interaction against a registry tens of thousands
+        // long — profiled at 1,863 ms of a single frame (2,408 pool-miss deactivations
+        // scanning ~50k live effects each, most for an instance not even in the list).
+        // Order is not part of the registry's contract: the audit walks it backwards
+        // with idempotent checks, so a swap moving an already-visited entry into the
+        // current slot is harmless.
         internal static readonly List<PrismExplosion> EnabledInstances = new();
+        int _enabledIndex = -1;
 
-        private void OnEnable() => EnabledInstances.Add(this);
+        private void OnEnable()
+        {
+            _enabledIndex = EnabledInstances.Count;
+            EnabledInstances.Add(this);
+        }
 
         private void OnDisable()
         {
-            EnabledInstances.Remove(this);
-
-            if (IsActive)
+            if (_enabledIndex >= 0)
             {
-                IsActive = false;
-                PrismEffectsManager.Instance?.UnregisterExplosion(this);
+                int last = EnabledInstances.Count - 1;
+                var moved = EnabledInstances[last];
+                EnabledInstances[_enabledIndex] = moved;
+                moved._enabledIndex = _enabledIndex;
+                EnabledInstances.RemoveAt(last);
+                _enabledIndex = -1;
             }
+
+            IsActive = false;
+
+            // A pooled-out clock explosion must not fire a stale completion later.
+            PrismTimerManager.Instance?.CancelScheduledActions(this);
+            PrismRenderService.ClearExplosionClockStamp(in RenderHandle);
 
             if (PrismRenderService.IsHandleUsable(in RenderHandle))
                 PrismRenderService.SetVisible(in RenderHandle, false);
@@ -146,7 +204,7 @@ namespace CosmicShore.Utility
             if (_renderer != null)
             {
                 // Keep renderer disabled so pool-reactivated objects are invisible
-                // until PrismEffectsManager explicitly enables during animation.
+                // (the companion entity draws; the GameObject renderer never shows).
                 _renderer.enabled = false;
                 if (_mpb != null)
                 {
@@ -162,8 +220,8 @@ namespace CosmicShore.Utility
         }
 
         /// <summary>
-        /// Fire the explosion animation. Sets up state and registers with the
-        /// centralized PrismEffectsManager for batched Burst-compiled updates.
+        /// Fire the explosion animation: ONE clock stamp + ONE scheduled completion
+        /// (Docs/PRISM_ANIMATION.md B3 — no per-frame stepping anywhere).
         /// </summary>
         /// <param name="speedLimitOverride">
         /// Per-impact ceiling replacing <see cref="maxSpeed"/>; 0 keeps the authored value.
@@ -178,10 +236,6 @@ namespace CosmicShore.Utility
 
             if (float.IsNaN(velocity.x) || float.IsNaN(velocity.y) || float.IsNaN(velocity.z))
                 velocity = Vector3.up * minSpeed;
-
-            // If already active, unregister first
-            if (IsActive)
-                PrismEffectsManager.Instance?.UnregisterExplosion(this);
 
             bool hasOverride = speedLimitOverride > 0f;
             float ceiling = hasOverride ? speedLimitOverride : maxSpeed;
@@ -198,53 +252,75 @@ namespace CosmicShore.Utility
             if (hasOverride)
                 speed = velocity.magnitude;
 
-            // Store state for manager to read
-            InitialPosition = transform.position;
-            Velocity = velocity;
-            Speed = speed;
-            Elapsed = 0f;
             IsActive = true;
 
+            // Pressure-scale THIS life's duration before anything reads it — the
+            // clock stamp, the bounds envelope, and the scheduled completion all
+            // key off MaxDuration. EnabledInstances is the live-effect registry.
+            MaxDuration = PressuredDuration(EnabledInstances.Count);
+
             EnsureRenderEntity();
+
+            // Clock-material path (Docs/PRISM_ANIMATION.md §4.4, B3) — STRICT MODE,
+            // the ONLY path: ONE stamp of {t0, speed, duration, velocity}; the shader
+            // flies/shatters/fades the debris off _Time.y (offset = v·t,
+            // amount = speed·t, opacity = 1−t/dur) with zero further CPU writes; ONE
+            // scheduled completion returns it to the pool. The entity transform holds
+            // the initial pose and never moves. PrismEffectsManager is never engaged.
+            // No fallback: a missing entity or unwired graph fails LOUD and the
+            // effect is skipped/frozen until the wiring lands.
+            _renderer.enabled = false;
+
             if (UsesEntityRenderPath)
             {
-                // Entity path: initial shader params + team colors on the
-                // companion entity; stays hidden until the manager's first frame.
+                if (_renderer.sharedMaterial == null ||
+                    !_renderer.sharedMaterial.HasProperty(ExplodeStartTimeId))
+                    PrismClockDiagnostics.WarnUnwiredMaterial(_renderer.sharedMaterial, "_ExplodeStartTime", this);
+
+                // ONE stamped vector: the WORLD-space velocity. The world->object
+                // conversion for the flight offset happens on the GPU inside
+                // PrismExplosionClock (raw inverse-model multiply) — no CPU-side
+                // matrix math on the animation path, and the shatter-spin axis
+                // chain reads the same vector.
+                PrismRenderService.StampExplosionClock(in RenderHandle,
+                    PrismClock.Now, speed, MaxDuration,
+                    new Unity.Mathematics.float3(velocity.x, velocity.y, velocity.z));
                 SyncRenderTransform();
-                PrismRenderService.SetExplosionParams(in RenderHandle,
-                    new Unity.Mathematics.float3(velocity.x, velocity.y, velocity.z), 0f, 1f);
+
+                // Culling envelope: bounds must cover the WHOLE deterministic flight
+                // (the entity matrix never moves), else debris culls against the
+                // unexploded box. RenderBounds is a CPU-owned Entities Graphics
+                // structure (frustum culling runs on the CPU), so this one-shot
+                // object-space sizing at the stamp is the envelope's home — it is
+                // initial-conditions data, not animation. Reset first: pooled reuse
+                // must not compound envelopes run over run.
+                if (_meshFilter != null)
+                    PrismRenderService.ResetBoundsToMesh(in RenderHandle, _meshFilter.sharedMesh);
+                Vector3 objDispV = transform.InverseTransformVector(velocity) * MaxDuration;
+                var objDisp = new Unity.Mathematics.float3(objDispV.x, objDispV.y, objDispV.z);
+                float pad = 4f + 0.25f * Unity.Mathematics.math.length(objDisp);
+                PrismRenderService.ExpandBoundsForClockAnimation(in RenderHandle, in objDisp, pad);
                 if (_hasPendingTeamColors)
                 {
                     PrismRenderService.SetTeamColors(in RenderHandle,
                         PrismRenderService.ToFloat4(_pendingBrightColor),
                         PrismRenderService.ToFloat4(_pendingDarkColor));
                 }
-                PrismRenderService.SetVisible(in RenderHandle, false);
-                _renderer.enabled = false;
+                // Visible immediately: the stamp itself IS the correct initial state
+                // (amount 0, opacity 1 at t = t0) — no unanimated-mesh flash to hide.
+                PrismRenderService.SetVisible(in RenderHandle, true);
             }
             else
             {
-                // Legacy path. Set ALL animated shader properties to their initial
-                // values so we never fall back to the material's baked defaults
-                // (ExplodingBlockMaterial has _ExplosionAmount: 20.7 which looks fully exploded)
-                _renderer.GetPropertyBlock(_mpb);
-                _mpb.SetVector(VelocityID, velocity);
-                _mpb.SetFloat(ExplosionAmountID, 0f);
-                _mpb.SetFloat(OpacityID, 1f);
-                if (_hasPendingTeamColors)
-                {
-                    _mpb.SetColor(BrightColorID, _pendingBrightColor);
-                    _mpb.SetColor(DarkColorID, _pendingDarkColor);
-                }
-                _renderer.SetPropertyBlock(_mpb);
-
-                // Keep renderer disabled until PrismEffectsManager applies the first animated
-                // frame. The manager will set renderer.enabled = true once real values are applied.
-                _renderer.enabled = false;
+                PrismClockDiagnostics.WarnNoRenderEntity($"explosion:{name}", this,
+                    $"entity never created for this pooled effect [service: {PrismRenderService.StatusLine()}]");
             }
 
-            // Register with batched manager for frame updates (auto-creates if not in scene)
-            PrismEffectsManager.EnsureInstance().RegisterExplosion(this);
+            // Touchpoint 3: the analytic end (pool return), on both outcomes so the
+            // pool flow never wedges.
+            var timers = PrismTimerManager.EnsureInstance();
+            timers.CancelScheduledActions(this);
+            timers.ScheduleAction(this, MaxDuration, OnEffectComplete);
         }
 
         /// <summary>
@@ -258,24 +334,26 @@ namespace CosmicShore.Utility
         }
 
         /// <summary>
-        /// Called internally or by PrismEffectsManager to stop the animation and clear overrides.
+        /// Stops the animation and clears overrides.
         /// </summary>
         internal void CompleteEffect()
         {
-            if (IsActive)
-            {
-                IsActive = false;
-                PrismEffectsManager.Instance?.UnregisterExplosion(this);
-            }
+            IsActive = false;
+
+            // Clock path cleanup: cancel the scheduled completion (idempotent) and
+            // retire the stamp so a later reuse of this entity can't replay a
+            // stale clock animation.
+            PrismTimerManager.Instance?.CancelScheduledActions(this);
+            PrismRenderService.ClearExplosionClockStamp(in RenderHandle);
 
             if (PrismRenderService.IsHandleUsable(in RenderHandle))
                 PrismRenderService.SetVisible(in RenderHandle, false);
 
             if (_renderer != null)
             {
-                // Disable renderer - only PrismEffectsManager should enable it during
-                // active animation. Leaving it enabled here caused undistorted sphere
-                // flashes when OnReturnToPool was null or pool deactivation was delayed.
+                // Keep the renderer disabled (the companion entity draws). Leaving
+                // it enabled here caused undistorted sphere flashes when
+                // OnReturnToPool was null or pool deactivation was delayed.
                 _renderer.enabled = false;
                 if (_mpb != null)
                 {
@@ -286,7 +364,7 @@ namespace CosmicShore.Utility
         }
 
         /// <summary>
-        /// Called by PrismEffectsManager when the animation finishes naturally (elapsed >= maxDuration).
+        /// Fired by the scheduled completion at MaxDuration (touchpoint 3).
         /// Cleans up and notifies pool.
         /// </summary>
         internal void OnEffectComplete()

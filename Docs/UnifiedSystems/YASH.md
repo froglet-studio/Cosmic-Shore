@@ -255,7 +255,8 @@ no tombstones and no temporary shims.
 - **C10** Wildlife Blitz (26) retired — the whole stack; the benchmark scene was decoupled from it
   first so it no longer borrows a blitz `GameMode`.
 - **C11** Retired-ID purge: `GameModes.WildlifeBlitz` and friends erased (not tombstoned), the
-  benchmark got its own `GameModes.Benchmark = 39`, `BlitzStats` removed from the cloud profile,
+  benchmark got its own `GameModes.Benchmark` (authored 39, renumbered to 40 on the merge
+  with bleeding-edge, which had already shipped `Ribcage = 39`), `BlitzStats` removed from the cloud profile,
   `LaunchPartyAllGames` deleted with its holders rewired to `OrganicRematchGames`.
 - **C12** `2v2CoOpVsAI` (30) retired — the stack was player-unreachable (card in no game list).
 

@@ -2085,7 +2085,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   SkinnedMeshRenderer: {fileID: 0}
   SaveNewPositions: 1
-  UseShapeKeys: 0
   brakeThreshold: 0.65
   lerpAmount: 2
   smallLerpAmount: 0.7
@@ -2105,7 +2104,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   SkinnedMeshRenderer: {fileID: 7720489361082621337}
   SaveNewPositions: 1
-  UseShapeKeys: 1
   brakeThreshold: 0.65
   lerpAmount: 2
   smallLerpAmount: 0.7

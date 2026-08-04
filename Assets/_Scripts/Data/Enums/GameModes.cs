@@ -66,10 +66,18 @@ namespace CosmicShore.Data
         // scores a point; first domain to the wave target (default 3) wins. See
         // _Scripts/Controller/Arcade/NUCLEUSRUSH.md.
         NucleusRush = 38,
-        // Benchmark (39): the Settings > Run Benchmark stress-test context - not an
+        // Ribcage (39, display name "Peel the Cage"): Rhino-only cage-breaking race.
+        // A layered orange of hollow prism-bone shells pens the cell's core; domains
+        // race to DESTROY the hostile-prism target (2000, the same metric and target as
+        // Rampage). Intensity is how many rinds you peel. See
+        // _Scripts/Controller/Arcade/RIBCAGE.md.
+        Ribcage = 39,
+        // Benchmark (40): the Settings > Run Benchmark stress-test context - not an
         // arcade mode (no card, no scoring, endless). Set by BenchmarkSceneLauncher so
         // mode-keyed consumers (presence/connecting-panel display, comeback default,
         // HUD objective default) resolve honestly instead of borrowing a retired id.
-        Benchmark = 39,
+        // (Authored as 39 on Ys-bleeding-edge; moved to 40 on the merge with
+        // bleeding-edge, which had already shipped Ribcage at 39 in serialized data.)
+        Benchmark = 40,
     }
 }

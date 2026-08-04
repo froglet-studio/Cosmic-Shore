@@ -91,7 +91,7 @@ namespace CosmicShore.Gameplay.Audio
             if (!instance.isValid()) return;
 
             instance.setVolume(volume);
-            RuntimeManager.AttachInstanceToGameObject(instance, attachTo.transform);
+            RuntimeManager.AttachInstanceToGameObject(instance, attachTo);
             instance.start();
             instance.release();
         }

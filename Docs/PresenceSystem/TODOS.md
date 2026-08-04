@@ -128,7 +128,7 @@ project cannot verify one of its own fixes.
 `HostConnectionService.HandleAppQuitRequested` (or raises
 `ApplicationLifecycleManager.OnAppQuitRequested` directly) **without**
 quitting. The instance stays alive but leaves the presence lobby, so a peer
-can watch the row vanish. `Tools > Cosmic Shore > Simulate Departure` fits
+can watch the row vanish. `FrogletTools > Multiplayer > Simulate Departure` fits
 the existing tool-menu convention.
 
 **Value.** Turns a build-only, seldom-run test into a two-click one, on the

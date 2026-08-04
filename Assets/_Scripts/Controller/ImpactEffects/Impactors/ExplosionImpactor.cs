@@ -19,12 +19,29 @@ namespace CosmicShore.Gameplay
 
         public override Domains OwnDomain => explosion.Domain;
 
+        /// <summary>
+        /// Per-instance friendly fire. False spares the blast's own domain (allied prisms are
+        /// shielded rather than damaged, allied vessels are skipped entirely); true lets the blast
+        /// hit everyone. Set by <see cref="AOEExplosion.InitializeStruct.AffectSelfOverride"/> so an
+        /// elemental upgrade can hand a pilot a blast that no longer eats their own team's mass.
+        /// Safe on the instance: every explosion is a fresh Instantiate of its prefab.
+        /// </summary>
+        public void SetAffectSelf(bool value) => affectSelf = value;
+
         // Batch AOE processing - bypasses Physics for prisms entirely
         private bool _useBatchProcessing;
         private static int _trailBlockLayer = -1;
         private HashSet<int> _batchHitTracker;
 
+        // Damage deferred by the per-frame budget. Entries here are already claimed
+        // in _batchHitTracker, so the spatial query will never re-emit them - this
+        // queue is their only resolution path. See MAX_NEW_HITS_PER_FRAME.
+        private Queue<PendingExplosionHit> _batchPending;
+
         public bool IsBatchProcessing => _useBatchProcessing;
+
+        /// <summary>True while budget-deferred damage is still waiting to resolve.</summary>
+        public bool HasPendingBatchWork => _batchPending != null && _batchPending.Count > 0;
 
         /// <summary>
         /// When true, BeginBatchProcessing() is a no-op - forces Physics OnTriggerEnter
@@ -67,18 +84,24 @@ namespace CosmicShore.Gameplay
                 _batchHitTracker = new HashSet<int>(256);
             else
                 _batchHitTracker.Clear();
+
+            if (_batchPending == null)
+                _batchPending = new Queue<PendingExplosionHit>(256);
+            else
+                _batchPending.Clear();
         }
 
         /// <summary>
         /// Processes one frame of batch AOE damage via the PrismSpatialIndex.
         /// Called from AOEExplosion.ExplodeAsync each frame instead of relying on Physics.
-        /// center/radius describe this frame's blast wavefront (a conic explosion
-        /// passes a different, forward-traveling sphere each frame); blastOrigin is
-        /// the fixed emission point all impact vectors radiate from.
+        /// center/radius describe this frame's blast sphere (stationary centre,
+        /// growing radius - so each frame's volume strictly contains the last);
+        /// blastOrigin is the emission point all impact vectors radiate from.
+        /// The conic explosion uses <see cref="ProcessBatchConeFrame"/> instead.
         /// Returns true if the explosion should continue, false if it should be destroyed
         /// (e.g. hit a super-shielded enemy prism).
         /// </summary>
-        public bool ProcessBatchFrame(Vector3 center, float radius, Vector3 blastOrigin, float speed, float inertia)
+        public bool ProcessBatchFrame(Vector3 center, float radius, Vector3 blastOrigin, in ExplosionImpulse impulse)
         {
             using (s_processBatch.Auto())
             {
@@ -87,22 +110,98 @@ namespace CosmicShore.Gameplay
                 if (registry == null) return true;
 
                 return registry.ProcessExplosionFrame(
-                    center, radius, blastOrigin, speed, inertia,
+                    center, radius, blastOrigin, impulse,
                     explosion.Domain,
                     affectSelf, destructive, devastating, shielding,
                     explosion.AnonymousExplosion,
                     explosion.Vessel,
-                    _batchHitTracker);
+                    _batchHitTracker,
+                    _batchPending);
             }
         }
+
+        /// <summary>
+        /// Processes one frame of batch AOE damage for the CONIC explosion: an exact
+        /// test against the rendered cone over the axial slab [sliceMin, sliceMax]
+        /// it newly covers this frame. Successive slabs tile the swept cone exactly,
+        /// so coverage does not depend on frame rate and never reaches past the
+        /// visible tip. tanHalfAngle is baseRadius/height - invariant as the
+        /// self-similar cone grows.
+        /// Returns true if the explosion should continue, false if it should be
+        /// destroyed (e.g. hit a super-shielded enemy prism).
+        /// </summary>
+        public bool ProcessBatchConeFrame(
+            Vector3 apex, Vector3 axis, float sliceMin, float sliceMax,
+            float tanHalfAngle, in ExplosionImpulse impulse)
+        {
+            using (s_processBatch.Auto())
+            {
+                if (!_useBatchProcessing) return true;
+                var registry = PrismSpatialIndex.Instance;
+                if (registry == null) return true;
+
+                return registry.ProcessExplosionConeFrame(
+                    apex, axis, sliceMin, sliceMax, tanHalfAngle, impulse,
+                    explosion.Domain,
+                    affectSelf, destructive, devastating, shielding,
+                    explosion.AnonymousExplosion,
+                    explosion.Vessel,
+                    _batchHitTracker,
+                    _batchPending);
+            }
+        }
+
+        /// <summary>
+        /// Drains one frame's worth of budget-deferred damage without running a new
+        /// spatial query. Called after the explosion's visual finishes so a blast
+        /// dense enough to exceed the per-frame budget still damages everything it
+        /// enclosed. Returns true while work remains.
+        /// </summary>
+        public bool DrainPendingBatchFrame(in ExplosionImpulse impulse)
+        {
+            using (s_processBatch.Auto())
+            {
+                if (!HasPendingBatchWork) return false;
+                var registry = PrismSpatialIndex.Instance;
+                if (registry == null) { _batchPending.Clear(); return false; }
+
+                return registry.DrainPendingExplosionDamage(
+                    _batchPending, impulse,
+                    explosion.Domain,
+                    affectSelf, destructive, devastating, shielding,
+                    explosion.AnonymousExplosion, explosion.Vessel);
+            }
+        }
+
+        /// <summary>
+        /// How many distinct prisms this blast has claimed so far. The batch tracker already keys
+        /// every prism the blast reached, so this is free — it is the blast's own footprint, not a
+        /// second count kept alongside it.
+        /// </summary>
+        public int BatchHitCount => _batchHitTracker?.Count ?? 0;
+
+        /// <summary>
+        /// Raised once per blast as it retires, with the vessel that fired it and how many prisms
+        /// it claimed. Presentation only (a HUD tally) — listeners must not change outcomes.
+        /// Static because explosions are spawned and destroyed per shot, so there is nothing
+        /// durable for a HUD to subscribe to; listeners filter by the vessel they own.
+        /// </summary>
+        public static event System.Action<IVessel, int> OnBlastResolved;
 
         /// <summary>
         /// Ends batch processing and cleans up tracking data.
         /// </summary>
         public void EndBatchProcessing()
         {
+            if (_useBatchProcessing && explosion != null && explosion.Vessel != null)
+                OnBlastResolved?.Invoke(explosion.Vessel, BatchHitCount);
+
             _useBatchProcessing = false;
-            // Keep HashSet allocated for reuse - just clear on next BeginBatchProcessing
+            // Keep HashSet/Queue allocated for reuse - cleared on next BeginBatchProcessing.
+            // Any hits still pending here are abandoned deliberately: EndBatchProcessing
+            // runs on cancellation (turn end) and on the destroy paths, where further
+            // damage must not land.
+            _batchPending?.Clear();
         }
 
         protected override void OnTriggerEnter(Collider other)
@@ -153,6 +252,12 @@ namespace CosmicShore.Gameplay
             }
         }
         
+        /// <summary>
+        /// The Physics-trigger fallback's per-prism resolution. Mirrors
+        /// <c>PrismSpatialIndex.ResolveExplosionHit</c>, INCLUDING the debris ceiling:
+        /// the batch path and this path must hand a prism the same impulse, or a blast
+        /// throws mass at one speed with the spatial index up and another without it.
+        /// </summary>
         void ExecuteCommonPrismCommands(Prism prism, Vector3 impactVector)
         {
             // Super-shielded prisms are fully invulnerable. The explosion is
@@ -176,12 +281,16 @@ namespace CosmicShore.Gameplay
                 return;
             }
             
+            float debrisSpeedLimit = explosion.Impulse.DebrisSpeedLimit;
+
             if (explosion.AnonymousExplosion) // Vessel Status will be null here
-                prism.Damage(impactVector, Domains.Blue, "🔥GuyFawkes🔥", devastating);
+                prism.Damage(impactVector, Domains.Blue, "🔥GuyFawkes🔥", devastating,
+                             debrisSpeedLimit: debrisSpeedLimit);
             else
             {
                 var shipStatus = explosion.Vessel.VesselStatus;
-                prism.Damage(impactVector, shipStatus.Domain, shipStatus.Player.Name, devastating);
+                prism.Damage(impactVector, shipStatus.Domain, shipStatus.Player.Name, devastating,
+                             debrisSpeedLimit: debrisSpeedLimit);
             }
         }
     }

@@ -55,7 +55,7 @@ namespace CosmicShore.Gameplay
         [Tooltip("\"ROUND N\".")]
         [SerializeField] TMP_Text roundCounterText;
         [Tooltip("Subtitle - auto-filled \"First domain to N points wins\", where N is the Maelstrom " +
-                 "win target from Tools > Cosmic Shore > End Game Conditions (TournamentDataSO.EffectiveWinTarget).")]
+                 "win target from FrogletTools > Game Modes > End Game Conditions (TournamentDataSO.EffectiveWinTarget).")]
         [SerializeField] TMP_Text raceRuleText;
         [Tooltip("\"LEADING DOMAIN : JADE\" (domain name coloured from the theme accent).")]
         [SerializeField] TMP_Text leadingDomainText;

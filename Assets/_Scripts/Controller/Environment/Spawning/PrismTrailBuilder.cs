@@ -182,8 +182,8 @@ namespace CosmicShore.Gameplay
         static int s_pendingArenaBuilds;
 
         // Load-gate session state: set while MiniGameHUD holds the connecting screen on this
-        // gate. Read by PrismScaleManager (grow-in stepping boost) and Prism (creation-queue
-        // boost) so the arena finishes materializing behind the covered screen.
+        // gate. Read by Prism (creation-queue boost) and EnvironmentLoadVeil so the arena
+        // finishes materializing behind the covered screen.
         static bool s_loadGateHolding;
         static float s_loadGateStartTime;
         static float s_allClearSince = -1f;
@@ -228,7 +228,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// True while the loading gate is holding the connecting screen on this builder.
-        /// PrismScaleManager boosts grow-in stepping while this is set — the screen is covered,
+        /// Prism boosts creation-queue draining while this is set — the screen is covered,
         /// so frames are free to settle the arena cohort at full tempo.
         /// </summary>
         public static bool IsLoadGateHolding => s_loadGateHolding;
@@ -485,18 +485,25 @@ namespace CosmicShore.Gameplay
         /// (scene unload / container nuked) — the remaining prisms are simply never born, which
         /// conserves mass.
         /// </summary>
-        public static UniTaskVoid LayBudgetedAsync(Prism prefab, SpawnPoint[] points, Domains domain,
+        public static UniTask LayBudgetedAsync(Prism prefab, SpawnPoint[] points, Domains domain,
             Transform parent, Trail trail, string ownerPrefix, float budgetMsPerFrame)
         {
-            if (!prefab || points == null || points.Length == 0) return default;
+            if (!prefab || points == null || points.Length == 0) return UniTask.CompletedTask;
             var elems = new PrismLay[points.Length];
             for (int i = 0; i < points.Length; i++) elems[i] = new PrismLay(points[i], domain);
             return LayBudgetedAsync(prefab, elems, parent, trail, ownerPrefix, budgetMsPerFrame);
         }
 
-        /// <summary>Per-item-domain overload (custom assembler loops: gyroid, SchwarzP surface…).</summary>
-        public static async UniTaskVoid LayBudgetedAsync(Prism prefab, IReadOnlyList<PrismLay> elems,
-            Transform parent, Trail trail, string ownerPrefix, float budgetMsPerFrame)
+        /// <summary>
+        /// Per-item-domain overload (custom assembler loops: gyroid, SchwarzP surface, the
+        /// Wanderway conveyor's grand assemblies…). Returns an awaitable so a caller that must
+        /// know when its structure is fully laid can wait for it; fire-and-forget callers keep
+        /// using <c>.Forget()</c>. <paramref name="collected"/> receives the laid prisms in plan
+        /// order — the conveyor needs the instance list to transport its conserved stock.
+        /// </summary>
+        public static async UniTask LayBudgetedAsync(Prism prefab, IReadOnlyList<PrismLay> elems,
+            Transform parent, Trail trail, string ownerPrefix, float budgetMsPerFrame,
+            List<Prism> collected = null, CancellationToken ct = default)
         {
             if (!prefab || elems == null || elems.Count == 0) return;
 
@@ -522,7 +529,7 @@ namespace CosmicShore.Gameplay
                 int i = 0;
                 while (i < count)
                 {
-                    if (!parent) return; // container destroyed — stop laying
+                    if (!parent || ct.IsCancellationRequested) return; // container destroyed — stop laying
 
                     int batch = Mathf.Min(CloneBatchSize, count - i);
                     var clones = await CloneBatchAsync(prefab, batch, parent);
@@ -537,13 +544,14 @@ namespace CosmicShore.Gameplay
                         long acc = LoadInsights.AccumulateStart();
                         if (acc != 0L) LoadInsights.Count("Prisms laid during load");
                         ConfigureLaid(block, elems[i + k], trail, $"{ownerPrefix}::{i + k}", acc);
+                        collected?.Add(block);
                         s_budgetSpentMs += (System.Diagnostics.Stopwatch.GetTimestamp() - t0) * s_msPerTick;
                         s_layDoneTotal++;
 
                         while (BudgetExhausted(EffectiveLayBudget(budgetMsPerFrame)))
                         {
                             await UniTask.Yield(PlayerLoopTiming.Update);
-                            if (!parent) return;
+                            if (!parent || ct.IsCancellationRequested) return;
                         }
                     }
 

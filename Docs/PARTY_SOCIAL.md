@@ -81,7 +81,11 @@ Location: `_SO_Assets/Host Connection Data/`
 
 Location: `_Prefabs/UI Elements/Panels/Party/`
 
-Run `Tools > Cosmic Shore > Create Party Prefabs` in Unity Editor to generate missing prefabs with auto-wired component references. SO data container references (`HostConnectionDataSO`, `FriendsDataSO`, `SO_ProfileIconList`) must be wired manually in the inspector after creation.
+> **Stale reference:** this section used to point at a `Create Party Prefabs` editor tool. No such
+> `[MenuItem]` exists anywhere in the project — create the party prefabs by hand, or write the tool
+> under `FrogletTools/Interface/` (see `Docs/TOOLING.md`) if it is worth automating. SO data
+> container references (`HostConnectionDataSO`, `FriendsDataSO`, `SO_ProfileIconList`) must be wired
+> manually in the inspector either way.
 
 #### Scene Setup Checklist (Menu_Main)
 

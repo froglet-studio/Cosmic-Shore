@@ -388,7 +388,6 @@ namespace CosmicShore.Core
                 properties["crystal_balance"] = profile.Economy.CrystalBalance;
                 properties["lifetime_crystals_earned"] = profile.Economy.LifetimeCrystalsEarned;
                 properties["lifetime_crystals_spent"] = profile.Economy.LifetimeCrystalsSpent;
-                properties["xp"] = profile.Progression.Xp;
                 properties["first_seen_utc_ms"] = profile.Lifecycle.FirstSeenUtcMs;
                 properties["session_count"] = profile.Lifecycle.SessionCount;
                 properties["games_completed"] = profile.Lifecycle.GamesCompleted;

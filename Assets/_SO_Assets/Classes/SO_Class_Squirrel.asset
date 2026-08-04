@@ -53,4 +53,5 @@ MonoBehaviour:
     RightHandLabel: Social
     Value: 0.1
   UnlockedByDefault: 1
-  UnlockCost: 100
+  UnlockCost: 0
+  isLocked: 0

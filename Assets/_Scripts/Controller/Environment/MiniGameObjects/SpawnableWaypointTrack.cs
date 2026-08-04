@@ -208,7 +208,7 @@ public class SpawnableWaypointTrack : SpawnableBase
     /// but yield each block's position/rotation/scale instead of instantiating
     /// a prefab. Used by editor preview tools to draw the track layout without
     /// running the runtime Prism lifecycle (which collapses prisms to scale
-    /// zero in edit mode and depends on the PrismScaleManager singleton).
+    /// zero in edit mode and depends on runtime-only prism systems).
     /// </summary>
     public IEnumerable<PreviewBlock> GetPreviewBlocks(int intensityLevelArg)
     {

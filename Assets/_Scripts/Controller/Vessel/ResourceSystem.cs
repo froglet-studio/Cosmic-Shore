@@ -173,6 +173,15 @@ namespace CosmicShore.Gameplay
             ElementalLevels[Element.Mass]   = resourceGroup.Mass;
             ElementalLevels[Element.Space]  = resourceGroup.Space;
             ElementalLevels[Element.Time]   = resourceGroup.Time;
+
+            // A (re)seed is a real level change to every subscriber (HUD flowers, ability
+            // unlock state, hull morphs), so route it through the dedup'd emit. NOTE: both
+            // historical SetResourceLevels call sites (MiniGame.SetupTurn's turn reset,
+            // Hangar's captain assignment) are currently commented out - the live initial
+            // seed is Start(). This emit exists so any revived re-seed path repaints
+            // consumers instead of leaving them stuck on the previous levels.
+            foreach (var element in AllElements)
+                EmitElementLevel(element);
         }
 
         // THE MAINTAINED-MECHANISM LAW: no sustained/held mechanism may HOLD an element above

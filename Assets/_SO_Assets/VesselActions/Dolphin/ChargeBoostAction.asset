@@ -18,5 +18,5 @@ MonoBehaviour:
   dischargeTimeToEmpty: 2
   tickSeconds: 0.1
   boostResourceIndex: 1
-  rechargeCooldownSeconds: 4
+  rechargeCooldownSeconds: 0
   verbose: 0

@@ -19,6 +19,7 @@ Owner: Shombith. Related: `Docs/STEAM_EA_INVESTOR_CHECKPOINT.pdf`, `Tools/Steam/
 | B6 | Crash reporting behind consent | **Done** — `CrashReportingService`, gated by the existing analytics consent. |
 | B7 | Steam overlay verification | **Blocked** — needs a real Steam build on the beta branch. Do it during the closed playtest (E7). |
 | — | Nightly build verification (CI) | **Authored, not running** — `.github/workflows/unity-ci.yml`. Needs a runner, see §10. |
+| — | Weekly test build promotion | **Authored** — `.github/workflows/sync-build-branches.yml`. Moves `bleeding-edge` into `build/android` and `build/windows` every Thursday 06:00 PT for UGS, see §11. |
 
 ---
 
@@ -224,8 +225,12 @@ Any tier can also be run on demand from the Actions tab (**Run workflow** → pi
 
 ### The runner is not chosen yet
 
-`runs-on` reads the repository variable **`UNITY_RUNNER_LABEL`** and falls back to `self-hosted`.
-Until a matching runner exists the job queues rather than doing anything wrong. Options:
+The `unity` job is **skipped entirely until the repository variable `UNITY_RUNNER_LABEL` is set**,
+and then targets whatever runner label it names. Skipping rather than defaulting to a label is
+deliberate: a job queued against a runner that does not exist shows as a *permanently pending* check
+on every PR, and GitHub only reaps it after roughly 24 hours — `timeout-minutes` governs execution
+time, not queue time. Set the variable the day a runner is registered; nothing else needs editing.
+Options:
 
 | Option | What it needs | Notes |
 |---|---|---|
@@ -238,7 +243,7 @@ Until a matching runner exists the job queues rather than doing anything wrong. 
 | Variable | Where | Purpose |
 |---|---|---|
 | `UNITY_PATH` | Runner env **or** repo variable | Absolute path to the Unity 6000.3.17f1 executable. The job fails fast with a clear message if unset. |
-| `UNITY_RUNNER_LABEL` | Repo variable | Runner label to target. Defaults to `self-hosted`. |
+| `UNITY_RUNNER_LABEL` | Repo variable | Runner label to target. **While unset, the `unity` job is skipped** and only the `resolve` job runs. |
 | `UNITY_TESTS_BLOCKING` | Repo variable | Set to `false` to report edit-mode failures as a warning instead of failing the PR. See the caveat below. |
 
 ### Two things to know before turning it on
@@ -247,8 +252,10 @@ Until a matching runner exists the job queues rather than doing anything wrong. 
   on day one. Either green it up first, or set `UNITY_TESTS_BLOCKING=false` for a grace period —
   but treat that as temporary, since a non-blocking gate is not a gate.
 - **Scheduled workflows run the default branch's copy of the file** and check out the default
-  branch. The `resolve` job therefore pins scheduled runs to `bleeding-edge` explicitly, and this
-  workflow must be merged to the default branch before any nightly will fire at all.
+  branch. The `resolve` job therefore pins scheduled runs to `bleeding-edge` explicitly, but the
+  workflow file itself still has to reach the **default branch** before any nightly fires. Merging
+  `bleeding-edge` *into* a feature branch does not move the file the other way — it travels only
+  when the PR merges. Until then the per-PR `compile` tier is the only thing that can trigger.
 
 ### Security
 
@@ -265,3 +272,104 @@ for outside-contributor runs, or drop the PR trigger and keep only `schedule` +
   retained. SteamPipe uploads run from the build machine (§4), not from CI.
 - No notifications beyond GitHub's own. Failures surface in the Actions tab and via GitHub's default
   email; wiring Discord is a later addition if the signal gets missed.
+
+---
+
+## 11. Build branches for the weekly test build
+
+`.github/workflows/sync-build-branches.yml`.
+
+> Branch model, defence-in-depth layers, and the improvement roadmap live in
+> **`Docs/BRANCHING_AND_RELEASE.md`**. This section covers the build mechanics only.
+
+The Thursday test build runs out of Unity Build Automation, and UGS watches a branch rather than
+being told what to build. Pointing a UGS target straight at trunk would mean the build picks up
+whatever landed in the minutes before it started, and there would be no stable name for "the build
+QA is testing". So there are two disposable snapshot branches instead:
+
+| Branch | Platform |
+|---|---|
+| `build/android` | Android test build |
+| `build/windows` | Windows x64 test build |
+
+**Nobody commits to these branches.** They are force-moved to a commit on trunk and hold no unique
+history. If you need to fix something in a build, fix it on trunk and re-run the promotion.
+
+### The schedule
+
+The workflow promotes trunk into both branches at **06:00 America/Los_Angeles every Thursday**,
+then UGS takes over.
+
+"Trunk" means **the repository default branch, read at run time**, which is `bleeding-edge` today
+and is expected to become `development` later. Nothing in the workflow hardcodes a branch name, so
+switching trunk is a GitHub setting change rather than a code change.
+
+GitHub's scheduler is UTC-only and does not observe daylight saving, so a single cron entry drifts
+by an hour twice a year. The workflow registers `0 13,14 * * 4` (both 06:00 PDT and 06:00 PST) and
+the first step checks the real Pacific hour, letting the twin that is an hour off exit quietly. The
+slot stays at 06:00 Pacific year round without anyone editing the cron.
+
+The refs are moved through the GitHub API, not by checking the repository out. This is a ~2.7 GB
+Unity project and a full-history clone would take longer than everything else in the job combined.
+
+### The tag
+
+Each promotion also writes a lightweight tag, `testbuild/YYYY-MM-DD`, on the promoted commit. This
+exists so a bug filed three months from now against "the August 6th build" resolves to an exact
+commit instead of a guess. It is the cheapest traceability that survives the branches being
+force-moved every week.
+
+### Running it by hand
+
+Actions tab, **Sync build branches**, **Run workflow**. Two inputs:
+
+- `source_ref` (blank means the default branch): any branch or commit SHA. Use a SHA to promote a
+  known good commit when the branch tip has since broken.
+- `targets` (default `both`): promote only `android` or only `windows` when one platform needs a
+  respin and the other build is fine.
+
+Manual runs skip the Pacific clock guard.
+
+### Verification before and after
+
+The promotion is gated on `Tools/CI/validate_project.py`, which runs over a sparse checkout of
+`Assets/_Scripts` (22 MB against 1.4 GB for all of `Assets`) and needs no Unity install. It blocks
+on editor-only API reaching player code, the recurring "namespace error" class that produced the
+commits *Move editor scripts to Editor folder to fix player build errors* and *Fully qualify Editor
+base class to avoid namespace conflict*. A known-bad commit therefore never reaches UGS.
+
+After promotion, `build-branch-ci.yml` re-runs the full static set on the build branch and compiles
+it where a Unity runner exists, then attempts an autofix PR **against trunk** if anything failed.
+Details and the reasoning in `Docs/BRANCHING_AND_RELEASE.md` §2.
+
+### Notifications
+
+Every run comments on a single tracking issue labelled `build-promotion`, and the issue state is
+the health signal: **closed means the last run was good, open means the pipeline needs attention**.
+Subscribe to that issue to get the weekly report by email. Successful runs comment too, on purpose,
+because a workflow that silently stops firing otherwise looks exactly like a quiet week.
+
+Do not rely on GitHub's own failure email here: for *scheduled* workflows it goes only to whoever
+last edited the cron line.
+
+### Configuration
+
+| Variable | Where | Purpose |
+|---|---|---|
+| `BUILD_PROMOTION_REQUIRES_GREEN` | Repo variable | Set to `true` to refuse promotion of a commit whose check runs are red or absent. **Leave unset until Unity CI is actually running** (see §10), or every promotion blocks on evidence that does not exist yet. |
+| `ANTHROPIC_API_KEY` | Repo secret | Enables the autofix job in `build-branch-ci.yml`. Inert while unset. |
+
+### Where the workflow file has to live
+
+Scheduled workflows only fire from the **default branch**, which for this repository is
+`bleeding-edge`. The file has to be merged into `bleeding-edge` before any Thursday run happens.
+Merging it onto `master` or a feature branch does nothing for the schedule, though
+`workflow_dispatch` still works from the Actions tab once it is on the default branch.
+
+### UGS side
+
+Each build target in Unity Build Automation needs its branch field set to `build/android` or
+`build/windows` respectively, with auto-build on push enabled. Nothing else in UGS needs to change
+week to week. Note that pushes made with `GITHUB_TOKEN` do not trigger *GitHub Actions* workflows,
+but they do still deliver the ordinary push webhook that UGS listens on, so the auto-build fires
+normally.

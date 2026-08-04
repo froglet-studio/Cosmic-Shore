@@ -188,7 +188,7 @@ segmentSpawner.Initialize();
 
 `lapsPerIntensity` is a `List<int>` matched to the waypoint sets by index (index 0 = intensity 1), the same convention `SpawnableWaypointTrack.useSplinePerIntensity` uses. An entry ≤ 0, or an intensity the list doesn't cover, falls back to the scalar `optionalLaps` — so scenes authored before the list (e.g. Crystal Capture) keep their original single-value behavior.
 
-Note the target is a crystal *count*, not a literal lap counter — crystals respawn at the next anchor in traversal order, so "2 laps" means 2 passes' worth of anchors. Changing the resolved count outright (rather than the lap multiplier) is done in **Tools ▸ Cosmic Shore ▸ End Game Conditions**; HexRace's entry there is `0` = auto, which is what routes through this table.
+Note the target is a crystal *count*, not a literal lap counter — crystals respawn at the next anchor in traversal order, so "2 laps" means 2 passes' worth of anchors. Changing the resolved count outright (rather than the lap multiplier) is done in **FrogletTools ▸ Game Modes ▸ End Game Conditions**; HexRace's entry there is `0` = auto, which is what routes through this table.
 
 ### 6. Ready State & Countdown
 
@@ -456,7 +456,7 @@ ugsStatsManager.ReportHexRaceStats(
 
 3. **Deterministic track**: All clients must produce identical tracks from the same seed + intensity. The `SegmentSpawner` uses `Random.InitState(seed)` before spawning to ensure determinism.
 
-4. **Crystal target resolution**: The crystal target is resolved by `NetworkCrystalCollisionTurnMonitor.GetCrystalCollisionCount()` in priority order: (1) `EndConditionOverridesSO` (Tools ▸ Cosmic Shore ▸ End Game Conditions) if its HexRace count is non-zero, (2) `SpawnableWaypointTrack` waypoint count × laps for the current intensity — `lapsPerIntensity[intensity - 1]` when authored and positive, else the flat `optionalLaps` — (3) default 39. There is no per-scene `CrystalCollisions` inspector field — that was removed on purpose; see the `/EndGameConditions` skill. The resolved target is synced to all clients via `NetworkCrystalCollisionTurnMonitor._netCrystalCollisions` NetworkVariable and published to `gameData.CrystalTargetCount`.
+4. **Crystal target resolution**: The crystal target is resolved by `NetworkCrystalCollisionTurnMonitor.GetCrystalCollisionCount()` in priority order: (1) `EndConditionOverridesSO` (FrogletTools ▸ Game Modes ▸ End Game Conditions) if its HexRace count is non-zero, (2) `SpawnableWaypointTrack` waypoint count × laps for the current intensity — `lapsPerIntensity[intensity - 1]` when authored and positive, else the flat `optionalLaps` — (3) default 39. There is no per-scene `CrystalCollisions` inspector field — that was removed on purpose; see the `/EndGameConditions` skill. The resolved target is synced to all clients via `NetworkCrystalCollisionTurnMonitor._netCrystalCollisions` NetworkVariable and published to `gameData.CrystalTargetCount`.
 
    > The non-network `CrystalCollisionTurnMonitor` base this monitor used to inherit from was collapsed into it (Y1.3) — `NetworkCrystalCollisionTurnMonitor` now extends `ObjectiveTurnMonitor` directly, and carries `optionalEnvironment` / `lapsPerIntensity` / `optionalLaps` itself. HexRace runs **3 / 3 / 2 / 2** laps: I1 8wp×3=24, I2 10wp×3=30, I3 28wp×2=56, I4 27wp×2=54.
 

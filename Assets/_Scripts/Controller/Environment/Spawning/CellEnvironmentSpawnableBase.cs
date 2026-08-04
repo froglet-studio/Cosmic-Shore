@@ -8,8 +8,10 @@ namespace CosmicShore.Gameplay
     /// <summary>
     /// Shared plumbing for the authored CELL ENVIRONMENTS - the large deterministic prism
     /// gardens a <c>CellConfigDataSO.EnvironmentPrefab</c> (or a SegmentSpawner slot) spawns:
-    /// Atlantis and the freestyle six (Yggdra, Daedala, Orrery, Zephyr, Caldera, Geode).
-    /// One definition of the lay/stream/noise contract so seven generators cannot drift:
+    /// Atlantis, the freestyle seven (Yggdra, Daedala, Orrery, Zephyr, Caldera, Geode, Ourobor)
+    /// and the GARDEN cell Hesperides (which also SOWS planting sites - see
+    /// <see cref="PlantingSites"/>). One definition of the lay/stream/noise contract so nine
+    /// generators cannot drift:
     ///
     ///   • DETERMINISM - clients build environments locally with no seed sync, so all
     ///     randomness flows from the serialized seed through one System.Random plus the
@@ -86,6 +88,20 @@ namespace CosmicShore.Gameplay
         public IReadOnlyList<PrismLay> CachedLays => _cachedLays;
 
         /// <summary>
+        /// Spots this environment has prepared for LIVING flora - see <see cref="FloraPlantingSite"/>.
+        /// Empty for every structural environment (the freestyle seven author none); a GARDEN
+        /// environment sows them with <see cref="Sow"/> from the same seeded math that lays its
+        /// beds, so the planting and the architecture cannot drift apart. <see cref="Cell"/> reads
+        /// the list once the build starts and hands the sites to its ordinary flora spawner -
+        /// the environment never spawns a lifeform itself.
+        ///
+        /// Null until a generation has run (call <see cref="SpawnableBase.GetTrailData"/> first).
+        /// </summary>
+        public IReadOnlyList<FloraPlantingSite> PlantingSites => _plantingSites;
+
+        protected List<FloraPlantingSite> _plantingSites;
+
+        /// <summary>
         /// Drop the generated point data (both the <see cref="SpawnableBase"/> trail cache and
         /// <see cref="CachedLays"/>). For a PREVIEW consumer that generated an environment only to
         /// sample it: a freestyle cell's lay list is tens of thousands of structs, and holding
@@ -97,6 +113,7 @@ namespace CosmicShore.Gameplay
         {
             InvalidateCache();
             _cachedLays = null;
+            _plantingSites = null;
         }
 
         protected override SpawnTrailData[] GenerateTrailData()
@@ -104,6 +121,7 @@ namespace CosmicShore.Gameplay
             _noiseSeed = seed != 0 ? seed : DefaultSeed;
             _r = new System.Random(_noiseSeed);
             _cachedLays = new List<PrismLay>(LayCapacity);
+            _plantingSites = new List<FloraPlantingSite>();
 
             BuildEnvironment();
 
@@ -193,6 +211,24 @@ namespace CosmicShore.Gameplay
                         return;
             }
             _cachedLays.Add(new PrismLay(new SpawnPoint(pos, rot, scale), dom, kind));
+        }
+
+        /// <summary>
+        /// Prepare a planting site (see <see cref="PlantingSites"/>). Sites respect the same spawn
+        /// clearance as prisms - a pad the player spawns on should not have a tree growing out of
+        /// it either.
+        /// </summary>
+        protected void Sow(Vector3 pos, Vector3 up, FloraSiteKind kind = FloraSiteKind.Bed)
+        {
+            if (_plantingSites == null) return;
+            if (spawnClearPoints != null && spawnClearRadius > 0f)
+            {
+                float rr = spawnClearRadius * spawnClearRadius;
+                for (int i = 0; i < spawnClearPoints.Length; i++)
+                    if ((pos - spawnClearPoints[i]).sqrMagnitude < rr)
+                        return;
+            }
+            _plantingSites.Add(new FloraPlantingSite(pos, up, kind));
         }
     }
 }

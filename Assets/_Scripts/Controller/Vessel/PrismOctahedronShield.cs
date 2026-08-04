@@ -25,7 +25,7 @@ namespace CosmicShore.Gameplay
     /// full physics collider.
     /// </summary>
     [DisallowMultipleComponent]
-    public class PrismOctahedronShield : MonoBehaviour
+    public class PrismOctahedronShield : MonoBehaviour, IPrismShieldMorphTicker
     {
         [Header("Collider Sources")]
         [Tooltip("The authored BoxCollider that defines the unshielded shape. Its center/size drive the octahedron geometry.")]
@@ -359,6 +359,8 @@ namespace CosmicShore.Gameplay
             return _isEngaging || _isShattering;
         }
 
+        bool IPrismShieldMorphTicker.Tick(float dt) => Tick(dt);
+
         private void DriveEngage(float dt)
         {
             float step = engageDuration > 0f ? dt / engageDuration : 1f;
@@ -434,7 +436,11 @@ namespace CosmicShore.Gameplay
             // box is a PRIMITIVE trigger, which BOTH see (trigger-vs-trigger works for primitives;
             // solid-vs-trigger works) - exactly how unshielded prisms already skim for everyone.
             // Bonus: the box is LOD-cullable (PrismColliderLodManager) and needs no convex cook.
-            if (boxCollider != null)
+            // NOT while the prism is still being created: Prism.Initialize deliberately holds the
+            // collider off until CreateBlockCoroutine reveals it, and a spawn-time INSTANT engage
+            // (PrismStateManager.IsBirthTransition) reaches here inside that window. The
+            // non-instant path already respected this via KeepGameplayColliderDuringMorph.
+            if (boxCollider != null && (_prism == null || _prism.IsCreationComplete))
                 boxCollider.enabled = true;
 
             if (shieldMeshCollider != null)
@@ -461,7 +467,8 @@ namespace CosmicShore.Gameplay
             if (meshFilter != null)
                 meshFilter.sharedMesh = _originalMesh;
 
-            if (boxCollider != null)
+            // See ApplyShieldedPose: the spawn window owns the collider until reveal.
+            if (boxCollider != null && (_prism == null || _prism.IsCreationComplete))
                 boxCollider.enabled = true;
 
             if (shieldMeshCollider != null)

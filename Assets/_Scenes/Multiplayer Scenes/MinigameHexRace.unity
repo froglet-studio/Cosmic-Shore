@@ -9152,12 +9152,6 @@ PrefabInstance:
         type: 2}
     - target: {fileID: 3995624959153467944, guid: d262ca9df284a7940985455518ad5442,
         type: 3}
-      propertyPath: randomSpawnProfile
-      value: 
-      objectReference: {fileID: 11400000, guid: 5d05ceb9b047c3b499be3bbd45c036f6,
-        type: 2}
-    - target: {fileID: 3995624959153467944, guid: d262ca9df284a7940985455518ad5442,
-        type: 3}
       propertyPath: cellTypeChoiceOptions
       value: 0
       objectReference: {fileID: 0}

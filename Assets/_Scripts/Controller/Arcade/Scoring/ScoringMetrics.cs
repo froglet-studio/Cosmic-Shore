@@ -21,6 +21,7 @@ namespace CosmicShore.Gameplay
             ScoringMetric.Jousts            => stats.JoustCollisions,
             ScoringMetric.Goals             => stats.GoalsScored,
             ScoringMetric.PrismsDestroyed   => stats.HostilePrismsDestroyed,
+            ScoringMetric.PrismsRemaining   => stats.PrismsRemaining,
             _                               => 0,
         };
 

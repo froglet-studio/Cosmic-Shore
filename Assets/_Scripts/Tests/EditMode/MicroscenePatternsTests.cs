@@ -24,7 +24,9 @@ namespace CosmicShore.Tests
     [TestFixture]
     public class MicroscenePatternsTests
     {
-        static readonly int[] Budgets = { 12, 42, 60, 100 }; // 100 = the shipped Toy_Conveyor budget
+        // 1500 = the shipped Toy_Conveyor budget (20 scenes × 1500 = the belt's 30,000-prism
+        // conserved stock); the small values keep the low-budget paths honest.
+        static readonly int[] Budgets = { 12, 42, 60, 100, 1500 };
         static readonly int[] Seeds = { 1, 7, 12345 };
         const float Radius = 55f;
         const int MaxCrystals = 3;
@@ -216,6 +218,50 @@ namespace CosmicShore.Tests
                     foreach (var p in MicroscenePatterns.Plan(recipe, new System.Random(seed), 42, Radius, MaxCrystals, pal).Prisms)
                         Assert.IsTrue(p.Domain is Domains.Jade or Domains.Ruby or Domains.Blue,
                             $"recipe {recipe} seed {seed}: unexpected domain {p.Domain}");
+        }
+
+        [Test]
+        public void GrandAssemblies_FillTheirBudgetWithArchitecture_NotAmbientPad()
+        {
+            // The failure mode a monument-scale recipe must not have: emitting a few hundred points
+            // and letting FitToBudget pad the rest with an ambient scatter sphere - which reads as
+            // confetti around a small structure, exactly what the grand family exists to replace.
+            // Proxies, both cheap and robust: the plan must be built from MANY substructures, and no
+            // single one (the pad is one) may dominate it.
+            const int ShippedBudget = 1500;
+
+            for (int recipe = 0; recipe < MicroscenePatterns.RecipeCount; recipe++)
+            {
+                if (!MicroscenePatterns.IsGrandRecipe(recipe)) continue;
+                string name = MicroscenePatterns.RecipeName(recipe);
+
+                foreach (int seed in Seeds)
+                {
+                    var plan = MicroscenePatterns.Plan(recipe, new System.Random(seed), ShippedBudget,
+                        Radius, MaxCrystals);
+
+                    Assert.GreaterOrEqual(plan.StructureCount, 6,
+                        $"{name} (seed {seed}) built only {plan.StructureCount} substructures");
+
+                    var perStructure = new int[plan.StructureCount];
+                    foreach (var meta in plan.Metas) perStructure[meta.Structure]++;
+
+                    int biggest = 0;
+                    foreach (int n in perStructure) biggest = Mathf.Max(biggest, n);
+                    Assert.Less(biggest, plan.PrismPoints.Count * 0.6f,
+                        $"{name} (seed {seed}): one substructure holds {biggest} of " +
+                        $"{plan.PrismPoints.Count} points - the recipe is padding, not building");
+                }
+            }
+        }
+
+        [Test]
+        public void GrandRecipes_AreArchitecture_NotLifeformScenes()
+        {
+            for (int recipe = 0; recipe < MicroscenePatterns.RecipeCount; recipe++)
+                if (MicroscenePatterns.IsGrandRecipe(recipe))
+                    Assert.IsFalse(MicroscenePatterns.IsLifeformRecipe(recipe),
+                        $"{MicroscenePatterns.RecipeName(recipe)} must not be a living recipe");
         }
     }
 }

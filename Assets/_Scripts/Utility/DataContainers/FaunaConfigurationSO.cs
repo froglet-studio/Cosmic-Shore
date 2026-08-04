@@ -37,6 +37,15 @@ namespace CosmicShore.Utility
         [Min(0)] public int MaxLivePopulation = 0;
 
         [Header("Deployment behavior")]
+        [Tooltip("Staged release: this species may seed only once its cell's " +
+                 "Cell.FaunaReleaseTier reaches this value. 0 (the default, and what every " +
+                 "shipped biome authors) means 'released from the start' - a cell's tier " +
+                 "defaults to int.MaxValue, so nothing changes unless a mode stages it. " +
+                 "Ribcage holds its brood closed until the leader cracks 25% of the cage " +
+                 "(tier 0 = the grazer swarm) and adds the predator at 50% (tier 1). " +
+                 "Gating PRODUCTION is allowed by the conserved-mass law; culling is not.")]
+        [Min(0)] public int ReleaseTier = 0;
+
         [Tooltip("0-1: pulls this species' roaming goal toward the cell centre so it spends " +
                  "more time on the central canopy (the gyroids around the nucleus). Herbivores " +
                  "only — predators hunt prey, not places. Leave 0 (default) for deployments " +

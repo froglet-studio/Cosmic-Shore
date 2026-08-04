@@ -34,7 +34,6 @@ namespace CosmicShore.Gameplay
         [SerializeField] private CinemachineCamera mainMenuCamera;
         [SerializeField] private Transform endCameraFollowTarget;
         [SerializeField] private Transform endCameraLookAtTarget;
-        [SerializeField] private float startTransitionDistance = 40f;
 
         private Transform _playerFollowTarget;
         private const int ActivePriority = 10;
@@ -204,6 +203,12 @@ namespace CosmicShore.Gameplay
             if (!gameObject.activeInHierarchy) gameObject.SetActive(true);
 
             endCamera.SetFollowTarget(null);
+            // The ONE sanctioned suppression of the prism occlusion corridor
+            // (Docs/PRISM_ANIMATION.md §4.7): a manually-posed replay camera is a broadcast
+            // vantage that is not looking at the local ship, so a camera→ship capsule would
+            // cut a hole through unrelated mass. This is a narrow, symmetric hold — NOT an
+            // opt-out: the binding on the vessel stays, and RestoreGameplayCamera lifts it.
+            PrismOcclusionCorridor.SetSuppressed(true);
             SetEndCameraActive();
             ApplyCameraGraphicsSettings();
             return endCamera.transform;
@@ -220,6 +225,7 @@ namespace CosmicShore.Gameplay
         public void RestoreGameplayCamera()
         {
             if (_playerFollowTarget == null) return;
+            PrismOcclusionCorridor.SetSuppressed(false);
             SetCloseCameraActive();
             SnapPlayerCameraToTarget();
         }

@@ -17,7 +17,6 @@ namespace CosmicShore.Core
         {
             data.Identity ??= new ProfileIdentity();
             data.Economy ??= new ProfileEconomy();
-            data.Progression ??= new ProfileProgression();
             data.Lifecycle ??= new ProfileLifecycle();
 
             data.Economy.UnlockedRewardIds ??= new List<string>();

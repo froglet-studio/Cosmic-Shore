@@ -44,6 +44,13 @@ namespace CosmicShore.UI
         [Header("Scene References")]
         [SerializeField] ScreenSwitcher screenSwitcher;
 
+        /// <summary>
+        /// True while this modal is actually being presented. ScreenSwitcher reads it to
+        /// reconcile its modal stack against reality: an entry whose modal reports false
+        /// is dropped, so a modal closed outside this API can never strand the stack.
+        /// </summary>
+        public bool IsOpen => isOn && gameObject.activeInHierarchy;
+
         CanvasGroup _canvasGroup;
         Coroutine _disableCoroutine;
         RectTransform _backdrop;
@@ -149,6 +156,29 @@ namespace CosmicShore.UI
                 _backdrop.gameObject.SetActive(active);
         }
 
+        /// <summary>
+        /// Deactivating the GameObject is a legitimate close path in this project - the
+        /// Arcade panel's back button SetActive(false)s the modal root directly instead of
+        /// calling ModalWindowOut - so unwind the modal stack here too. A leaked stack entry
+        /// leaves ScreenSwitcher holding the screens' CanvasGroup non-interactable, which
+        /// kills every button on every menu screen with no way back in.
+        ///
+        /// OnModalClosed is deliberately NOT raised: OnDisable also fires on scene unload and
+        /// destruction, where subscribers (e.g. PauseMenu resuming the game) must not be woken.
+        /// Subclasses that declare OnDisable must call base.OnDisable() - Unity dispatches the
+        /// message to the most-derived declaration only.
+        /// </summary>
+        protected virtual void OnDisable()
+        {
+            if (!isOn) return;
+
+            isOn = false;
+            SetBackdropActive(false);
+
+            if (screenSwitcher != null)
+                screenSwitcher.PopModal(ModalType, this);
+        }
+
         protected virtual void Update()
         {
             if (!isOn || !closeOnGamepadB) return;
@@ -194,7 +224,7 @@ namespace CosmicShore.UI
                 isOn = false;
 
                 if (screenSwitcher != null)
-                    screenSwitcher.PopModal();
+                    screenSwitcher.PopModal(ModalType, this);
             }
 
             if (!gameObject.activeSelf)
@@ -205,7 +235,7 @@ namespace CosmicShore.UI
             if (isOn == false)
             {
                 if (screenSwitcher != null)
-                    screenSwitcher.PushModal(ModalType);
+                    screenSwitcher.PushModal(ModalType, this);
 
                 if (windowAnimator)
                 {
@@ -234,7 +264,7 @@ namespace CosmicShore.UI
             SetBackdropActive(false);
 
             if (screenSwitcher != null)
-                screenSwitcher.PopModal();
+                screenSwitcher.PopModal(ModalType, this);
 
             if (windowAnimator)
             {
