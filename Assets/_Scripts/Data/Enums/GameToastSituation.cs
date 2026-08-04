@@ -31,10 +31,14 @@ namespace CosmicShore.Data
         // Brood Rush (NucleusRush)
         BroodWaveScored = 40,
 
-        // Ribcage
-        // {0}=leading domain, {1}=that domain's bars smashed, {2}=cage target
-        RibcageBroodReleased = 50,   // 25% - the grazer swarm hatches for the leader
-        RibcagePackReleased = 51,    // 50% - the predator joins and the cell goes Frenzy
-        RibcageLeaderChanged = 52,   // the swarm changes hands (and therefore targets)
+        // Ribcage ("Peel the Cage")
+        // {0}=leading domain, {1}=that domain's bars smashed, {2}=destruction target
+        // Values 50/51 were RibcageBroodReleased/RibcagePackReleased when the mode ran a fauna
+        // ladder; the fauna were removed from the level and the same two rungs now mark pure
+        // race progress. Renamed rather than retired because no GameToastConfigSO authors them
+        // yet, so nothing serialized points at the old names.
+        RibcageQuarterPeeled = 50,   // leader is a quarter of the way to the target
+        RibcageHalfPeeled = 51,      // leader is halfway
+        RibcageLeaderChanged = 52,   // the lead changes hands after a milestone
     }
 }

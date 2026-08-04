@@ -37,8 +37,9 @@ outcome is optimization, not life). Use the `/ecology` skill for any change here
   targeting grids (`Cell.AddBlock`, re-filed on any shield transition by
   `Cell.NotifyBlockShieldStateChanged`), because "fauna must never be led to mass they cannot
   eat" is one rule, not two. (`Docs/ECOSYSTEM.md §16`, `§22`.)
-  A mode may redefine what "controls" a cell — Brood Rush makes it the nucleus claim, Ribcage
-  pins it to the race leader (`Cell.SetModeControlOverride`) — but the spawn colour is still
+  A mode may redefine what "controls" a cell — Brood Rush makes it the nucleus claim (Ribcage
+  pinned it to the race leader until its fauna were removed; `Cell.SetModeControlOverride`
+  survives as the platform capability) — but the spawn colour is still
   exactly ONE colour, the controller's, and that setter also re-colours the LIVE swarm so a
   cell can never hold two fauna colours at once. A mode may also PEN a cell's fauna
   (`Cell.FaunaContainmentRadius`): outside the pen nothing is prey and every goal is
@@ -177,7 +178,7 @@ Do not snapshot domain at component-creation time. Either subscribe to `Player.N
 - **VFX**: VFX Graph 17.0.4, custom HLSL shaders, Shader Graph
 - **Input**: Unity Input System 1.14.2 with strategy pattern (`IInputStrategy` → platform-specific implementations)
 - **Audio**: Wwise integration
-- **Haptics**: NiceVibrations for mobile/gamepad haptics. **Two everyday feels**, both local-human-pilot-only (skim-pulse reward + prism-punish thud), plus **one rare alert shake** fenced to match-changing events (only Ribcage's two fauna-release rungs today); everything else is silent. See `Docs/HAPTICS.md`.
+- **Haptics**: NiceVibrations for mobile/gamepad haptics. **Two everyday feels**, both local-human-pilot-only (skim-pulse reward + prism-punish thud), plus **one rare alert shake** fenced to match-changing events (only Ribcage's two progress-milestone rungs today); everything else is silent. See `Docs/HAPTICS.md`.
 - **Animation**: Timeline 1.8.9, DOTween for procedural animation
 - **DI**: Reflex (`com.gustavopsantos.reflex` 14.1.0) for dependency injection
 - **Performance**: Unity Jobs + Burst Compiler, Adaptive Performance 5.1.6, DOTS Entities 1.4.2 (installed, incremental adoption)
@@ -325,7 +326,7 @@ All in `Assets/_Scenes/Multiplayer Scenes/`.
 
 #### GameModes Enum (`Assets/_Scripts/Data/Enums/GameModes.cs`)
 
-39 game modes with explicit numeric IDs (highest is `Ribcage(39)`; IDs 7 and 31 are skipped). Single-player: `Elimination(1)` through `ProtectMission(27)` — except `Rampage(2)`, repurposed as a multiplayer party game (the destruction race, Scurry's destructive analog; see `_Scripts/Controller/Arcade/RAMPAGE.md`). Multiplayer: `Rampage(2)`, `MultiplayerFreestyle(28)`, `MultiplayerCellularDuel(29)`, `Multiplayer2v2CoOpVsAI(30)`, `MultiplayerWildlifeBlitzGame(32)`, `HexRace(33)`, `MultiplayerJoust(34)`, `MultiplayerCrystalCapture(35)`, `AstroLeague(37)`, `NucleusRush(38)`, `Ribcage(39)`. Meta-mode: `Tournament(36)` — the session-level meta that chains HexRace → Joust → Crystal Capture back-to-back via sequential `Single` loads (see `Docs/TournamentSystem/ARCHITECTURE.md`). `AstroLeague(37)` is hypersea soccer (a standalone domain minigame, see `_Scripts/Controller/Arcade/ASTROLEAGUE.md`). `NucleusRush(38)` (display name "Brood Rush") is the nucleus-control fauna-wave race (see `_Scripts/Controller/Arcade/NUCLEUSRUSH.md`). `Ribcage(39)` is the Rhino-only cage race — first domain to DESTROY 2000 hostile prisms wins (`ScoringMetric.PrismsDestroyed`, the same metric and target as Rampage). The arena IS the objective: a ~15k-prism hollow SHIELDED cage (two hits per bar) whose bone is hostile mass, so breaking out is the score. It is also the escalation clock — as the LEADING domain passes 25%/50% of the target the brood the cage pens is released, hatching in that leader's colour (`Cell.SetModeControlOverride`) so the untouched legacy herbivore diet (eat opposing-domain mass) turns it loose on every trailing team's mass as a running obstacle (see `_Scripts/Controller/Arcade/RIBCAGE.md`). Meta sentinel: `Random(0)`. Note: IDs 7 and 31 are skipped — 7 was the retired standalone arcade Freestyle game (freestyle now lives in Menu_Main as the lava lamp; see "Lava-Lamp Mode"), 31 was never assigned. Do not reuse either ID.
+39 game modes with explicit numeric IDs (highest is `Ribcage(39)`; IDs 7 and 31 are skipped). Single-player: `Elimination(1)` through `ProtectMission(27)` — except `Rampage(2)`, repurposed as a multiplayer party game (the destruction race, Scurry's destructive analog; see `_Scripts/Controller/Arcade/RAMPAGE.md`). Multiplayer: `Rampage(2)`, `MultiplayerFreestyle(28)`, `MultiplayerCellularDuel(29)`, `Multiplayer2v2CoOpVsAI(30)`, `MultiplayerWildlifeBlitzGame(32)`, `HexRace(33)`, `MultiplayerJoust(34)`, `MultiplayerCrystalCapture(35)`, `AstroLeague(37)`, `NucleusRush(38)`, `Ribcage(39)`. Meta-mode: `Tournament(36)` — the session-level meta that chains HexRace → Joust → Crystal Capture back-to-back via sequential `Single` loads (see `Docs/TournamentSystem/ARCHITECTURE.md`). `AstroLeague(37)` is hypersea soccer (a standalone domain minigame, see `_Scripts/Controller/Arcade/ASTROLEAGUE.md`). `NucleusRush(38)` (display name "Brood Rush") is the nucleus-control fauna-wave race (see `_Scripts/Controller/Arcade/NUCLEUSRUSH.md`). `Ribcage(39)` (display name "Peel the Cage") is the Rhino-only cage race — first domain to DESTROY 2000 hostile prisms wins (`ScoringMetric.PrismsDestroyed`, the same metric and target as Rampage). The arena IS the objective: a **layered orange** of hollow prism-bone shells added INWARD from a fixed 360u outer radius, deliberately woven OPEN (~87u x 82u grille) so you fly between the bones and see the next rind behind this one. **Intensity is how many rinds you peel** — 1..4 shells (5,471 / 9,902 / 13,316 / 15,690 prisms) selected the platform way, one `CellConfigDataSO` per intensity via `CellTypeChoiceOptions.IntensityWise`, each pointing at a `SpawnableRibcage` prefab variant whose `shellCount` differs and carrying ITS OWN PhaseThresholds. Every bar is a one-hit PLAIN prism except the sparse danger traps; nothing is shielded or super-shielded. No fauna — the mode's former leader-pinned brood ladder was removed, though every platform capability it used is kept (see `_Scripts/Controller/Arcade/RIBCAGE.md`). Meta sentinel: `Random(0)`. Note: IDs 7 and 31 are skipped — 7 was the retired standalone arcade Freestyle game (freestyle now lives in Menu_Main as the lava lamp; see "Lava-Lamp Mode"), 31 was never assigned. Do not reuse either ID.
 
 Many single-player modes (1, 3-6, 9-25, 27) reference scenes that no longer exist on disk — their `SO_ArcadeGame` assets still exist and appear in the Arcade UI, but launching them would fail. (`Rampage(2)` used to be in this set; it now has a real scene as a multiplayer mode.)
 
@@ -354,7 +355,7 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
         ├── MultiplayerCrystalCaptureController — minimal (1 round, 1 turn)
         ├── AstroLeagueController             — hypersea soccer, server-simulated ball, golden goal
         ├── NucleusRushController             — nucleus-control fauna-wave race, brood scoring
-        ├── RibcageController                 — Rhino-only cage-breaking race, fauna ladder
+        ├── RibcageController                 — Rhino-only layered-cage race ("Peel the Cage")
         └── RampageController                 — destruction race (Scurry's destructive analog), prisms-destroyed scoring
 ```
 
@@ -394,7 +395,7 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
 | `JOUST.md` | `_Scripts/Controller/Arcade/` | Joust game mode technical reference |
 | `ASTROLEAGUE.md` | `_Scripts/Controller/Arcade/` | Astro League game mode technical reference |
 | `RAMPAGE.md` | `_Scripts/Controller/Arcade/` | Rampage game mode technical reference (multiplayer destruction race) |
-| `RIBCAGE.md` | `_Scripts/Controller/Arcade/` | Ribcage game mode technical reference (Rhino-only cage-breaking race; the leader-pinned fauna ladder, the shielded-cage generator, the shielded-mass targeting-grid rule) |
+| `RIBCAGE.md` | `_Scripts/Controller/Arcade/` | Ribcage / "Peel the Cage" technical reference (Rhino-only cage-breaking race; the layered-orange intensity model, the open-weave generator, the shielded-mass targeting-grid rule, and the record of the removed fauna ladder) |
 | `PRISM_PERFORMANCE_AUDIT.md` | `_Scripts/Game/Prisms/` | Prism system performance analysis (vestigial location) |
 | `UNIT_TESTING_GUIDE.md` | `_Scripts/Tests/` | Unit testing guidelines and inventory |
 | `BENCHMARK_TOOL.md` | `_Scripts/Utility/PerformanceBenchmark/` | Performance Benchmark tool guide (tabs, score/hints, sweep, Load Time Insights, customization) |

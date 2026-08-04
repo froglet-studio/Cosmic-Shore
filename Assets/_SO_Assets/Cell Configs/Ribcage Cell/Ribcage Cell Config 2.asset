@@ -10,13 +10,13 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 01f934d50526431a9392a6ceca1dc33d, type: 3}
-  m_Name: Ribcage Cell Config
+  m_Name: Ribcage Cell Config 2
   m_EditorClassIdentifier:
   CellName: Ribcage
-  Description: The cage cell - a hollow sphere of shielded prism bone penning the
-    brood. NO NUCLEUS by design - a nucleus control zone would switch herbivores to
-    the spatial 'eat anything outside the nucleus' diet, and Ribcage needs the legacy
-    opposing-domain diet so the leader's swarm hunts the trailing teams only.
+  Description: The cage cell at intensity 2 - 2 concentric rind(s) of prism bone at
+    radius 360 / 280, 9902 prisms in total. NO NUCLEUS by design, and no fauna. PhaseThresholds
+    ride THIS intensity's own baseline; regenerate with Tools/Build/author_ribcage_assets.py
+    after any geometry change rather than hand-editing.
   Icon: {fileID: 21300000, guid: 6aa1c06e11b265744a5f9fa8858ac72a, type: 3}
   Difficulty: 2
   CellEndGameScore: 0
@@ -25,15 +25,15 @@ MonoBehaviour:
   CytoplasmPrefab: {fileID: 639495419069806261, guid: 9cacd903fcf4643459f5f14ac811bb20, type: 3}
   CellModifiers: []
   SpawnProfile: {fileID: 11400000, guid: cd48ee57babf1969b767be400358c056, type: 2}
-  EnvironmentPrefab: {fileID: 5260000000000203, guid: 7ed94b0399a1addfc81c5fb0def2b19c, type: 3}
-  EnvironmentIntensity: 1
+  EnvironmentPrefab: {fileID: 5260000000000203, guid: 2d7caa6702443bcbf505e6ae6ca75d35, type: 3}
+  EnvironmentIntensity: 2
   SenseRadiusOverride: 0
   PhaseThresholds:
-    RestlessEnter: 15677
-    RestlessExit: 15477
-    FrenzyEnter: 18577
-    FrenzyExit: 17977
-    RestlessEnterVolume: 5893312
-    RestlessExitVolume: 5890112
-    FrenzyEnterVolume: 5939712
-    FrenzyExitVolume: 5930112
+    RestlessEnter: 10602
+    RestlessExit: 10402
+    FrenzyEnter: 13502
+    FrenzyExit: 12902
+    RestlessEnterVolume: 3918860
+    RestlessExitVolume: 3915660
+    FrenzyEnterVolume: 3965260
+    FrenzyExitVolume: 3955660

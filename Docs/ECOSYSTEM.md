@@ -2280,12 +2280,27 @@ expected `Jit` volume factor), not measured — nothing has been observed runnin
 
 ## 22. Ribcage — a mode redefining "control", and the shielded-steering finish (August 2026)
 
-Ribcage (`GameModes.Ribcage = 39`, `_Scripts/Controller/Arcade/RIBCAGE.md`) is the
-Rhino-only cage-breaking race: a hollow sphere of ~15,000 **shielded** prisms pens the
-cell's brood, and domains race to smash their way out — the bone IS the score
-(`ScoringMetric.PrismsDestroyed`, target 2,000). Ecologically it is interesting
-for one reason — **the whole "the fauna hunt whoever is losing" feature is written in
-zero lines of fauna code**, and getting there needed one honest generalization.
+> **STATUS (2026-08, later the same month): Ribcage no longer has fauna.** The brood was removed
+> from the level on request, and with it the controller's ladder. Everything §22.1–§22.2b describes
+> is therefore a record of a SHIPPED-THEN-RETIRED consumer, not live behaviour — but the **platform
+> capabilities it drove all remain** (`Cell.SetModeControlOverride` / `ModePhaseFloor` /
+> `FaunaReleaseTier` / `FaunaContainmentRadius` / `ContainmentIntruderFrenzy`,
+> `SpawnProfileSO.InitialFaunaReleaseTier`, `FaunaConfigurationSO.ReleaseTier`, the batched fauna
+> seeding), several now with no caller. They are kept deliberately: the design work below is the
+> reusable part, and re-adding a brood to any mode is a data change against these APIs.
+> **§22.3 (shielded mass leaves the targeting grids) is live and cross-mode — it is unaffected.**
+
+Ribcage (`GameModes.Ribcage = 39`, display name "Peel the Cage",
+`_Scripts/Controller/Arcade/RIBCAGE.md`) is the Rhino-only cage-breaking race: concentric hollow
+shells of prism bone that domains race to smash their way out of — the bone IS the score
+(`ScoringMetric.PrismsDestroyed`, target 2,000), and intensity picks how many shells there are
+(1–4, one `CellConfigDataSO` each via `CellTypeChoiceOptions.IntensityWise`). Its bars are now
+plain one-hit prisms, so §22.3 no longer applies to its own arena.
+
+While it HAD fauna it was ecologically interesting for one reason — **the whole "the fauna hunt
+whoever is losing" feature was written in zero lines of fauna code**, and getting there needed one
+honest generalization. That reasoning is preserved below because it is the template for the next
+mode that wants it.
 
 ### 22.1 The leader IS the controlling domain
 
