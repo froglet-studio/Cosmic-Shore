@@ -3,11 +3,12 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Prism-hit punish that ROLLS the vessel instead of redirecting it: a barrel roll in a
-    /// randomly chosen direction (left or right), reusing the vessel's existing
-    /// <see cref="BarrelRollController"/> roll rather than a bespoke spin. The sideways
-    /// displacement is opt-in and defaults to zero, so the hit costs the pilot their
-    /// orientation, not their heading.
+    /// Prism-hit punish that ROLLS the vessel instead of redirecting it. This is the same
+    /// roll the pilot flies with — a rotation about the vessel's forward axis folded into
+    /// VesselTransformer.accumulatedRotation, exactly as VesselTransformer.Roll() integrates
+    /// InputStatus.YDiff — so the transformer's own slerp carries the ship into the new bank
+    /// and it keeps flying from there. No animation, no displacement: the hit costs the pilot
+    /// their orientation, not their heading.
     /// </summary>
     [CreateAssetMenu(
         fileName = "VesselRollByPrismEffect",
@@ -15,14 +16,15 @@ namespace CosmicShore.Gameplay
     public class VesselRollByPrismEffectSO : VesselPrismEffectSO
     {
         [Header("Roll")]
+        [SerializeField, Range(0f, 180f),
+         Tooltip("How far to roll about the vessel's forward axis on each hit. The " +
+                 "transformer slerps the ship into it, so this is a bank the pilot has to " +
+                 "fly out of, not a snap.")]
+        private float rollDegrees = 60f;
+
         [SerializeField, Tooltip("If false, the roll direction follows which side of the " +
                                  "vessel the prism was struck on instead of a coin flip.")]
         private bool randomizeRollDirection = true;
-
-        [SerializeField, Min(0f),
-         Tooltip("Optional sideways displacement injected for the roll's duration (world " +
-                 "units/second). 0 = pure roll, no redirect.")]
-        private float nudgeSpeed;
 
         public override void Execute(VesselImpactor vesselImpactor, PrismImpactor prismImpactee)
         {
@@ -30,12 +32,8 @@ namespace CosmicShore.Gameplay
             if (vesselStatus == null || vesselStatus.IsTranslationRestricted) return;
 
             var shipTransform = vesselStatus.ShipTransform;
-            if (shipTransform == null) return;
-
-            // BarrelRollController lives on the vessel root, beside VesselStatus — the same
-            // transform IVesselStatus.ShipTransform resolves to.
-            if (!shipTransform.TryGetComponent(out BarrelRollController roller))
-                return;
+            var transformer = vesselStatus.VesselTransformer;
+            if (shipTransform == null || transformer == null) return;
 
             float rollSign;
             if (randomizeRollDirection)
@@ -44,14 +42,15 @@ namespace CosmicShore.Gameplay
             }
             else
             {
-                // Struck on the right → roll right (clockwise from the pilot's seat).
+                // Struck on the right → roll right (positive about +forward is clockwise
+                // from the pilot's seat in Unity's left-handed space).
                 var prismTf = prismImpactee.Prism.prismProperties.prism.transform;
                 float side = Vector3.Dot(prismTf.position - shipTransform.position,
                                          shipTransform.right);
                 rollSign = side >= 0f ? 1f : -1f;
             }
 
-            roller.TriggerRoll(rollSign, shipTransform.right * rollSign, nudgeSpeed);
+            transformer.ApplyRotation(rollSign * rollDegrees, shipTransform.forward);
         }
     }
 }

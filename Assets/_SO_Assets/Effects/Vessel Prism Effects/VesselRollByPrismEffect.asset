@@ -12,5 +12,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e9a2558fc65c4ea39792e4ffa0b14aaf, type: 3}
   m_Name: VesselRollByPrismEffect
   m_EditorClassIdentifier: 
+  rollDegrees: 60
   randomizeRollDirection: 1
-  nudgeSpeed: 0
