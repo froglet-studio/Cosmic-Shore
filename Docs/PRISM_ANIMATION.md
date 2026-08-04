@@ -898,6 +898,25 @@ shader's very first branch, so a disabled corridor costs a compare.
 `innerRadius` — fully tapered to nothing, so no dithered ghost survives anywhere the ship
 can be — and **exactly 1** at and beyond `outerRadius`.
 
+**The shape is a CONE — the minimal volume that can occlude the ship (2026-08-04).** It is
+a *point* at the lens, widening to the sphere that circumscribes the hull, and capped by
+that sphere. Nothing outside the eye→silhouette cone can be in front of the ship, and
+nothing past the hull can either, so the corridor never dissolves a prism it does not have
+to.
+
+It is one multiply in the shader — `outerAtT = outerRadius * t` — and the clamped `t`
+supplies both ends for free: at `t ≥ 1` the closest point pins to the vessel, so the metric
+there is distance-to-the-ship-point (the sphere cap, which IS the ship rather than an
+extension past it); at `t ≤ 0` the radius is zero, so the near end closes to a point instead
+of a cap. Cone and sphere meet exactly on the circle of radius `outerRadius` in the vessel's
+plane, so the field stays continuous across the join.
+
+**Why not the capsule it replaced:** the constant radius was an artefact of the retired
+`ClearPrisms` `CapsuleCollider`, carried into the first shader version unexamined. A fixed
+world radius subtends a *huge* solid angle near the camera, so a capsule massively
+over-clears there. Tapering makes the cleared region a **constant angular size** — exactly
+the ship's own silhouette, at every depth.
+
 **The corridor is SHIP-SIZED, not world-sized.** The two radii are not authored in world
 units at all: they are multiples of the vessel's own **circumscribing radius**, measured
 from its hull by `PrismOcclusionCorridor.MeasureCircumscribedRadius` at bind time. The
@@ -905,9 +924,10 @@ authored defaults put the gradient's **outer edge exactly on the circle that cir
 the vessel** (`outerRadiusScale = 1`) and its **fully-clear core at half that**
 (`innerRadiusScale = 0.5`). A new vessel of any size therefore gets a correctly-scaled
 corridor with nothing to author — the same "no per-vessel wiring" property the rest of the
-platform law rests on. Note the consequence, which is deliberate: the ship's silhouette
-edge sits at the *fully-opaque* end of the gradient, so the outer half of its own footprint
-is in the band rather than fully clear. Widen `outerRadiusScale` if that reads too tight.
+platform law rests on. Note the consequence, which is deliberate and is sharpened by the
+cone: the cleared disc is now *exactly* the ship's screen silhouette, with the fully-opaque
+edge on it and zero margin around it. `outerRadiusScale` is the one dial if that reads too
+tight.
 
 The measurement is **rotation-invariant** (max distance from the vessel origin to the mesh
 bounds' corners in world space — a rigid rotation preserves those distances, whereas
@@ -938,6 +958,8 @@ Four properties of the design worth preserving if it is ever touched:
 
 - **Nothing is per-prism.** No trigger volume, no tracked set, no material swap, no
   per-instance override. Widening the corridor costs nothing.
+- **The shape is chosen, not inherited.** The capsule was a leftover from a physics
+  collider; a shader is free to describe any field, so it describes the right one.
 - **Coverage is the point.** A prism material that cannot fade is an *invisible hole* in the
   corridor — no error, no visual tell, nothing to notice until someone says they can't see
   their ship. That is how the old system stayed broken; every gate above exists to make that

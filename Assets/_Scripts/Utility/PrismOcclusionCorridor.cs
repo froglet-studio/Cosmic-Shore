@@ -9,9 +9,10 @@ namespace CosmicShore.Utility
     /// the player's camera and the player's vessel dissolve so the ship is never hidden
     /// (Docs/PRISM_ANIMATION.md §4.6).
     ///
-    /// The corridor is SHIP-SIZED: its outer edge sits on the circle that circumscribes the
-    /// bound vessel's hull and its fully-clear core at half that, both measured from the
-    /// vessel itself at bind time. Nothing about the size is authored per vessel.
+    /// The corridor is a CONE, and it is SHIP-SIZED: a point at the lens, widening to the
+    /// circle that circumscribes the bound vessel's hull (fully-clear core at half that) and
+    /// capped by that sphere. Both radii are measured from the vessel itself at bind time, so
+    /// nothing about the size is authored per vessel.
     ///
     /// It publishes exactly TWO global shader uniforms once per frame and does nothing
     /// else. There is no per-prism work of any kind — no trigger volumes, no material
@@ -63,13 +64,14 @@ namespace CosmicShore.Utility
         /// <summary>The vessel the corridor currently opens onto, or null when it is off.</summary>
         public static Transform Target => _target;
 
-        /// <summary>True while the corridor is publishing a live capsule.</summary>
+        /// <summary>True while the corridor is publishing a live cone.</summary>
         public static bool IsActive => _publishedActive;
 
         /// <summary>
         /// The bound vessel's circumscribing radius in world units — the sphere that encloses
-        /// its hull, measured once at bind. The corridor's outer edge sits exactly here (times
-        /// the config's outer scale), so the corridor is ship-sized rather than world-sized.
+        /// its hull, measured once at bind. This is the corridor cone's radius AT THE VESSEL
+        /// (times the config's outer scale); it tapers to zero at the camera, so the corridor
+        /// is ship-sized rather than world-sized.
         /// </summary>
         public static float TargetRadius => _targetRadius;
 
