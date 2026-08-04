@@ -122,8 +122,29 @@ namespace CosmicShore.Gameplay
                         $"stick ({stick.x:F2}, {stick.y:F2}), nudge dir {nudge.normalized}");
 
             _rollArmed = false;
-            transformer.ModifyVelocity(nudge.normalized * nudgeSpeed, rollDurationSeconds);
-            StartCoroutine(RollRoutine(rollSign, transformer));
+            TriggerRoll(rollSign, nudge.normalized, nudgeSpeed);
+        }
+
+        /// <summary>
+        /// Runs one roll from outside the input path (impact effects, scripted beats). Same
+        /// visual 360° + small real root bank as the ability roll; the caller supplies the
+        /// handedness and the sideways displacement (pass a zero nudge or zero speed for a
+        /// pure roll with no redirect). Ignored while a roll is already running, so a burst
+        /// of contacts can't stack spins. Returns true if a roll started.
+        /// </summary>
+        public bool TriggerRoll(float rollSign, Vector3 nudgeDirection, float nudgeSpeedOverride)
+        {
+            if (_rolling || _status == null) return false;
+
+            var transformer = _status.VesselTransformer;
+            if (!transformer) return false;
+
+            if (nudgeSpeedOverride > 0f && nudgeDirection.sqrMagnitude > 1e-4f)
+                transformer.ModifyVelocity(nudgeDirection.normalized * nudgeSpeedOverride,
+                                           rollDurationSeconds);
+
+            StartCoroutine(RollRoutine(Mathf.Sign(rollSign), transformer));
+            return true;
         }
 
         IEnumerator RollRoutine(float rollSign, VesselTransformer transformer)
