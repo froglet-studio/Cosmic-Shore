@@ -92,6 +92,8 @@ namespace CosmicShore.Editor
                     problems.Add("SkimmerImpactor has no effect container");
                 else if (impactor.EffectContainer.SkimmerPrismEffects is not { Length: > 0 })
                     problems.Add($"container '{impactor.EffectContainer.name}' has no prism effects");
+                else
+                    AuditCrackle(problems, go, impactor.EffectContainer);
             }
 
             if (!go.TryGetComponent<ImpactCollider>(out _))
@@ -117,6 +119,33 @@ namespace CosmicShore.Editor
 
             report.AppendLine($"   {slot}: '{go.name}' *** {string.Join("; ", problems)}");
             return 1;
+        }
+
+        /// <summary>
+        /// The forcefield crackle needs three pieces that live in different files — the effect in
+        /// the container, a <see cref="ForcefieldCrackleController"/> on the impactor's own
+        /// GameObject, and an overlay MeshRenderer for it to push the property block into. Miss any
+        /// one and <c>SkimmerForcefieldCracklePrismEffectSO.Execute</c> just returns: no crackle, no
+        /// error. Only checked when the container actually asks for it.
+        /// </summary>
+        static void AuditCrackle(List<string> problems, GameObject go,
+                                 SkimmerImpactorDataContainerSO container)
+        {
+            bool wantsCrackle = false;
+            foreach (var effect in container.SkimmerPrismEffects)
+                if (effect is SkimmerForcefieldCracklePrismEffectSO) { wantsCrackle = true; break; }
+            if (!wantsCrackle) return;
+
+            if (!go.TryGetComponent<ForcefieldCrackleController>(out var crackle))
+            {
+                problems.Add("container asks for the forcefield crackle but the skimmer has no " +
+                             "ForcefieldCrackleController");
+                return;
+            }
+
+            var overlay = new SerializedObject(crackle).FindProperty("overlayRenderer");
+            if (overlay is { objectReferenceValue: null })
+                problems.Add("ForcefieldCrackleController has no overlayRenderer (crackle draws nothing)");
         }
     }
 }
