@@ -23,6 +23,48 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Dolphin elemental pass — skim feedback, drift boost, cone blast (`claude/dolphin-energy-crystal-cooldown-zpvc07`)
+
+Authored without a Unity compile or play-test. Garrett play-tested the HUD/boost
+rounds mid-branch, but **the final skim-feedback fix is unconfirmed** — the last
+report was still "no skimming indication", after which the branch found (a) the
+crackle needs three pieces the Dolphin had none of, and (b) all three skim signals
+are individually invisible on desktop. Nobody has yet seen a Dolphin skim work.
+Mechanics + full knob list: `_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_ENERGY_ECONOMY.md`.
+
+**Verify in editor (highest risk first):**
+
+1. **Run `FrogletTools > Vessels > Audit Vessel Skimmers`.** Expect
+   `Dolphin  NearFieldSkimmer: 'EnergySkimmer' OK`. This is the branch's headline fix —
+   `VesselStatus._nearFieldSkimmer` pointed at a DISABLED legacy skimmer, so
+   `Skimmer.Initialize` never reached the object whose trigger fires and
+   `SkimmerImpactor` dropped every contact silently. (Serpent is expected to FAIL —
+   known, untouched.)
+2. **Skim in Menu_Main freestyle.** Fly the Dolphin through cell mass: crackle arcs
+   should sweep the skimmer sphere per prism, the HUD jaw icon should punch per skim,
+   and the gape (icon + the model's own jaws) should widen toward 18.4° per side as
+   energy fills. Watch the console — an unauthored `Prism.ParticleEffect` now logs one
+   named warning per prefab instead of throwing per contact.
+3. **The boost loop.** Hold drift → the ring steps up; release → speed rises and decays
+   as it drains. Flying straight must NOT fill the ring (the passive `resourceGainRate`
+   is gone). Drift → release → drift again must return to normal speed (the interrupted
+   discharge used to leave `BoostMultiplier` stuck).
+4. **Crystal impact.** The cone fires, energy empties, the jaws snap shut, and the Space
+   icon flashes with a prism count. At Space L5 the cone must stop damaging your own
+   domain's prisms.
+5. **Charge L5.** A second crystal pip appears and two team crystals can be planted back
+   to back. The deploy preview must be tinted your domain, and bloom/wither rather than
+   pop (continuity of existence).
+6. **MPPM two-client:** the L5 upgrade effects are gated on the replicated
+   `IsUpgradeActive`, so confirm both peers agree on Clean Blast and Twin Seed.
+
+**Hand-authored assets that have never had an editor import round-trip:** the Dolphin
+HUD variant's four-icon row, the Dolphin prefab's crackle overlay + controller, and
+`DolphinSkimmerChangeResourceByPrismEffect.asset`. Their YAML keys were machine-checked
+against the scripts' serialized field sets, but Unity has not re-serialized them.
+
+---
+
 ### 🔴 Fauna consumption v3 + shark jaw rig (fauna-consumption-behavior branch, merged)
 
 Landed via PR #614 (`claude/fauna-consumption-behavior-*`) plus the shark-jaw

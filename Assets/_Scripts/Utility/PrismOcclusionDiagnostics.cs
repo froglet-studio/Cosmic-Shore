@@ -5,7 +5,7 @@ namespace CosmicShore.Utility
 {
     /// <summary>
     /// Fail-loud enforcement for the prism occlusion corridor
-    /// (Docs/PRISM_ANIMATION.md §4.6 — a platform law, not a per-vessel or per-mode feature).
+    /// (Docs/PRISM_ANIMATION.md §4.7 — a platform law, not a per-vessel or per-mode feature).
     ///
     /// The corridor's failure modes are SILENT: a prism whose material cannot fade simply
     /// stays solid, leaving an invisible hole in the corridor that nothing reports. That is
@@ -135,7 +135,7 @@ namespace CosmicShore.Utility
                 "it has no MeshFilter/SkinnedMeshRenderer hull outside its skimmers. The occlusion corridor is sized " +
                 $"from the vessel's own hull, so it has fallen back to PrismOcclusionConfig.fallbackVesselRadius " +
                 $"({fallbackRadius}). Give the vessel a renderable hull, or the corridor around it is a guess. " +
-                "Docs/PRISM_ANIMATION.md §4.6.",
+                "Docs/PRISM_ANIMATION.md §4.7.",
                 vessel);
         }
 
@@ -155,7 +155,7 @@ namespace CosmicShore.Utility
                 $"units, outside PrismOcclusionConfig's sanity band — clamped to {used:F2}. The occlusion corridor " +
                 "is sized entirely from this number, so an unclamped value would either leave the ship hidden or " +
                 "dissolve the world in front of it. Check the vessel's hull renderers (a stray oversized mesh, or a " +
-                "mis-scaled model), or widen the band if the hull really is this size. Docs/PRISM_ANIMATION.md §4.6.",
+                "mis-scaled model), or widen the band if the hull really is this size. Docs/PRISM_ANIMATION.md §4.7.",
                 vessel);
         }
 
@@ -175,7 +175,7 @@ namespace CosmicShore.Utility
             Debug.LogError(
                 $"[PrismOcclusion] prism material '{material.name}' {fault}. " +
                 "The camera↔vessel occlusion corridor is a PLATFORM LAW " +
-                "(Docs/PRISM_ANIMATION.md §4.6), not an opt-in: no vessel and no minigame may render live prism " +
+                "(Docs/PRISM_ANIMATION.md §4.7), not an opt-in: no vessel and no minigame may render live prism " +
                 "mass outside it.",
                 context);
         }

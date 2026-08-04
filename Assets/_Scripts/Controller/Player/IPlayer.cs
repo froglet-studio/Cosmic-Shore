@@ -59,7 +59,7 @@ namespace CosmicShore.Gameplay
         ///
         /// Use this — never <see cref="IsLocalUser"/> — for anything that must hold in EVERY game
         /// mode, so a mode cannot opt out of a platform system by using the other spawn path. The
-        /// prism occlusion corridor (Docs/PRISM_ANIMATION.md §4.6) binds on exactly this.
+        /// prism occlusion corridor (Docs/PRISM_ANIMATION.md §4.7) binds on exactly this.
         /// </summary>
         bool IsLocalPilot { get; }
         /// <summary>

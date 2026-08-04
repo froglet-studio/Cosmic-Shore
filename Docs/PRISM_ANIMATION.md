@@ -158,7 +158,7 @@ per-tick `smoothstep` color lerp → `PrismRenderService.SetColors` or MPB write
 | Steal / ChangeTeam repaint | `PrismTeamManager.Steal/ChangeTeam` → `HandleTeamChange` | ❌ (lerp) |
 | Danger state | `PrismStateManager.MakeDangerous` | ❌ (lerp) |
 | Shield engage/disengage repaint | `PrismStateManager.ApplyShieldState/ApplyNormalState/ActivateSuperShield` | ❌ (lerp) |
-| Transparency toggle | `MaterialPropertyAnimator.SetTransparency` | ✅ one-shot `sharedMaterial` swap. NOTE (2026-08-04, C1): the camera-occlusion corridor no longer routes through this — it is a shader-side fade off globals (§4.6), and never sets `IsTransparent`. The remaining producers are the Serpent's `CloakSeedWall` (cloak/uncloak) and `FullAutoBlockShoot`. |
+| Transparency toggle | `MaterialPropertyAnimator.SetTransparency` | ✅ one-shot `sharedMaterial` swap |
 | Timed shield drop | `ActivateShield(duration)` → `PrismTimerManager.ScheduleShieldDeactivation` | ✅ scheduler (the deactivation itself then runs the ❌ lerp) |
 
 ### 3.3 Destruction / restoration
@@ -235,7 +235,7 @@ conveyor recycle — all inventoried in §3.7 lenses A, F, G, J, K.)*
 | ActivateSuperShield repaint + stellated engage (self-Update violation) | per-frame CPU | ❌ | `Controller/Managers/PrismStateManager.cs:94-121` | Same as path 5: one-shot opaque end material + GPU color clock; stellation morph as GPU vertex morph off _EngageStartTime; scheduled single callback swaps to StellatedOctahedronMeshGenerator.GetSharedShieldMesh. |
 | DeactivateShields / ApplyNormalState repaint (+ PrismTimerManager scheduled path) | scheduled | ❌ | `Controller/Managers/PrismStateManager.cs:123-143` | Keep PrismTimerManager as the generic end-frame scheduler (rename/generalize: it is exactly the 'at the right frame, swap for the end-state prism' mechanism). |
 | SetTransparency — one-shot material swap (CONFORMING) | one-shot | ✅ | `Controller/Environment/Prisms/MaterialPropertyAnimator.cs:225-233` | None required. (If a fade-in/out is ever wanted for continuity-of-existence polish, do it as a GPU clock via the same _TransitionStartTime inputs — not by reintroducing a lerp manager.) |
-| ClearPrisms per-physics-tick _Alpha MPB fade (rogue, and blind on the instanced path) | per-frame CPU | ✅ FIXED 2026-08-04 (C1) | `Controller/Vessel/ClearPrisms.cs` (DELETED — component excised from Rhino/Dolphin/Serpent, prefab deleted) | Shipped exactly as prescribed: two globals published once per frame by `Utility/PrismOcclusionCorridor.cs`, the fade computed per fragment in `PrismOcclusionCorridor.hlsl`. Zero per-prism writes. See §4.6. |
+| ClearPrisms per-physics-tick _Alpha MPB fade (rogue, and blind on the instanced path) | per-frame CPU | ❌ | `Controller/Vessel/ClearPrisms.cs:117-127` | Pure shader solution, zero per-prism writes: publish the camera→vessel line (two float4 globals) once per frame via Shader.SetGlobalVector; the prism shader computes distance-from-line per vertex/pixel and derives _Alpha itself. |
 | MaterialBlendUtility.BeginBlend — rogue per-object coroutine blend (overheat danger trail + skim overcharge ma… | per-frame CPU | ❌ | `Controller/ImpactEffects/EffectsSO/Skimmer Prism Effects/MaterialBlendUtility.cs:31-128` | Delete MaterialBlendUtility. Overheat: VesselPrismController._dangerMode already sets IsDangerous — route the visual through prism.MakeDangerous()/PrismStateManager so it inherits the migrated GPU transition (and spawn-time danger needs no transition at all — the prism grows from zero). |
 | Initial domain paint via Prism.Domain setter (SetInitialTeam) | per-frame CPU | ❌ | `Controller/Vessel/Prism.cs:129-136` | Fold into the pool-pull contract: Initialize/factory pull writes the final domain material one-shot (refreshColors:true) before the prism becomes visible — no transition, since the grow-in from scale zero already satisfies continuity. |
 | ThemeManager domain material set generation (end-state material pool source) — CONFORMING | one-shot | ✅ | `Controller/Managers/ThemeManager.cs:14-110` | Extend, don't change: the BaseMaterialSet block shaders gain the transition inputs (_FromBright/_FromDark/_FromSpread/_TransitionStartTime/_TransitionDuration, defaulting to no-op), making every generated end-state material also a transition-accepting material — no new material count, batching prese… |
@@ -376,7 +376,7 @@ conveyor recycle — all inventoried in §3.7 lenses A, F, G, J, K.)*
 
 | Path | Cadence | Verdict | Where | Migration |
 |---|---|---|---|---|
-| ClearPrisms camera-occlusion transparency | per-frame CPU | ✅ FIXED 2026-08-04 (C1) | `Controller/Vessel/ClearPrisms.cs` (DELETED) → `Utility/PrismOcclusionCorridor.cs` + `_Graphics/Materials/Graphs/PrismOcclusionCorridor.hlsl` | Shipped as prescribed: the vessel position + corridor params are 2 GLOBAL uniforms written once per frame; the camera end is read on the GPU from `_WorldSpaceCameraPos`; the fade is computed per fragment from world position vs the segment. The old trigger capsule + per-prism material swaps + MPB writes are gone. See §4.6. |
+| ClearPrisms camera-occlusion transparency | per-frame CPU | ❌ | `Controller/Vessel/ClearPrisms.cs:84-105` | This is view-dependent (live camera+vessel line) so it can never be stamp-once per prism — but it needs ZERO per-prism CPU: write the camera→vessel segment + capsule radius as 2-3 GLOBAL shader uniforms once per frame and compute the occlusion alpha in the prism shader from world position vs the lin… |
 | MaterialBlendUtility per-renderer coroutine blends | per-frame CPU | ❌ | `Controller/ImpactEffects/EffectsSO/Skimmer Prism Effects/MaterialBlendUtility.cs:31-70` | Delete the utility. Overcharge mark: stamp per-instance blend params through the existing PrismRenderService color sinks (_BrightColor/_DarkColor/_Spread) — {_BlendStartTime, from/to colors} — and let the shader lerp off the clock; at blend end the prism is already in the end-state colors (no swap n… |
 | VesselPrismController danger-material stamp on spawn | one-shot | ❌ | `Controller/Vessel/VesselPrismController.cs:272-285` | One-shot in shape but wrong in mechanism: a bare sharedMaterial swap without Prism.SyncRenderMaterial() is invisible under the companion-entity path (the documented renders-nothing anti-pattern), and it bypasses PrismStateManager.MakeDangerous (which owns danger state + shield mutual-exclusion). |
 | CloakSeedWall cloak/uncloak (Serpent) | one-shot | ❌ | `Controller/Vessel/R_VesselActions/Executors/CloakSeedWallActionExecutor.cs:360-398` | The triggers are one-shot but they feed the multi-frame CPU color-lerp manager. Migrate the blend itself to the clock-material: stamp {_CloakStartTime, _CloakDirection, from/to color pairs} per instance via PrismRenderService sinks, GPU runs the dissolve; at the scheduled end swap the prism to the t… |
@@ -430,9 +430,8 @@ Fix these DURING the migration (most disappear by construction under stamp+clock
    The per-prism suction stamp fixes this by construction. (`Microscene.AnimateScaleAsync`
    shows the expensive-but-correct per-frame notify alternative — both extremes collapse
    into the stamp.)
-2. **Rogue color writers are blind on the instanced path**: ~~`ClearPrisms`' per-physics-tick
-   `_Alpha` MPB fade~~ (deleted 2026-08-04, C1 — §4.6),
-   `MaterialBlendUtility`'s `_Color`/`_EmissionColor` coroutine blends
+2. **Rogue color writers are blind on the instanced path**: `ClearPrisms`' per-physics-tick
+   `_Alpha` MPB fade, `MaterialBlendUtility`'s `_Color`/`_EmissionColor` coroutine blends
    (also the wrong property names for the prism shader), and bare `sharedMaterial` swaps
    without `SyncRenderMaterial` in `VesselPrismController`/`TrailViewer` — all write the
    disabled MeshRenderer.
@@ -826,7 +825,144 @@ its faces exactly as before. `SegmentSpawner.SuperShieldSpawnedPrisms`, which po
 shield component directly rather than going through `PrismStateManager`, honours the
 same rule explicitly.
 
-### 4.6 The camera↔vessel occlusion corridor — a PLATFORM LAW (shipped 2026-08-04, C1)
+### 4.6 The batched pure-entity debris carrier (both death visuals, shipped 2026-08-02/04)
+
+The clock law says an effect's animation is a stamp plus a scheduled end. It does not
+say the *carrier* of that stamp has to be a GameObject — and once the animation stopped
+costing per-frame CPU, the carrier was the entire remaining cost. A pooled effect
+charges `Instantiate`-or-pool-miss, `OnEnable`/`OnDisable` registry churn, a Transform,
+a per-effect `PrismTimerManager` entry, and (for implosions) a per-instance MonoBehaviour
+`Update` watchdog — all to hold **one pose and one clock stamp**.
+
+**Both death visuals now spawn as batched entities.** `PrismDebris` accumulates a frame's
+deaths and, in `LateUpdate` at execution order 29000 (after gameplay has queued them,
+before the render service's visibility flush at 30000, so a prism hidden in `Update` has
+its debris drawing the *same* frame), issues:
+
+| family | batch spawn | per-frame CPU while live | retirement |
+|---|---|---|---|
+| explosion | `PrismRenderService.SpawnExplosionDebrisBatch` — ONE `em.Instantiate(prototype, N)` + ONE batched `RemoveComponent<DisableRendering>` | **zero** | time-ordered sweep → ONE `DestroyEntity` batch |
+| suction / implosion | `SpawnImplosionDebrisBatch` — same shape, Implosion override set | ONE `float3` per live effect (the §1 exception) | same sweep |
+
+Why the implosion needs a record and the explosion does not: the suction converges on a
+**moving** target. Every implosion in the game comes from `Prism.Consume` → `Implode`,
+and all eight `Consume` call sites are fauna passing a live creature `Transform` (the
+eater, or a predator's `mouth`) — AOE, projectiles, skimmers and vessel rams all route to
+`Damage` → `Explode` instead. So there is no fixed-point majority to batch separately:
+`PrismDebris` keeps an `ImplosionRecord` per live suction carrying the target Transform,
+the (fixed) world→object matrix, and a **CPU mirror of the object-space culling
+envelope**. The refresh then costs one `_Location` write per effect per frame, with a
+`RenderBounds` write only when the point wanders outside the stamped envelope — the
+mirror exists precisely so the refresh never reads a component back per entity. A target
+that dies mid-suction is real-null'd and the sink freezes at its last known point, the
+same degradation the pooled path always had (starvation and predation outlive the VFX).
+
+Rules for anything added to this carrier:
+
+- **The moving target is genuinely moving — never "optimize" it into a snapshot.**
+  The feed tuning brakes a grazing eater to a hover for exactly the suction duration
+  (`consumeHoldSeconds` 2 s = `PrismImplosion.implosionDuration`), which invites the
+  conclusion that the eater is stationary enough to snapshot the convergence point.
+  It is not. The hover decays from `maxSpeed`, and `LightFaunaDataSO`'s `6f` is a
+  **stale field initializer that both shipped assets override**:
+  `MassBrittleStarFaunaDataSO` authors **25**, `MassSharkFaunaDataSO` **35** (neither
+  authors `feedingBrakeSharpness`, `feedingClusterRadius` or `consumeHoldSeconds`, so
+  those do take the 4/s, 12 u, 2 s initializers). Residual drift for the braking
+  grazer is ~`v0/k` ≈ **6.25 world units** — about half the 12-unit feeding cluster
+  radius. The predation path is worse by construction: `DevouredCoroutine` passes the
+  predator's `mouth` while it keeps swimming, with no brake at all, so a 35-speed
+  shark can carry the convergence point tens of units during one suction. Two
+  consequences: a snapshot would visibly suck mass toward where the creature *was*,
+  and the culling envelope's growth write is a few-times-per-effect event rather than
+  the rare case the pooled path's comment implied.
+- **Uniform durations keep the sweep O(retired), not O(live).** Append order is expiry
+  order, so the sweep only inspects the head. Per-spawn durations may vary, but a
+  shorter-lived entry queued behind a longer one is destroyed late (harmless — opacity
+  is already 0), bounded by the spread.
+- **Epoch-tag every batch.** `PrismRenderService.CurrentEpoch` at spawn; a mismatch at
+  sweep time means the world died and took the entities with it, so records are dropped
+  without a destroy.
+- **A failed batch spawn SUSPENDS the path** for 5 s rather than silently accepting and
+  dropping the next requests — that is what routes them to the pooled fallback.
+- **No pressure shortening.** The pooled path squeezes effect duration under load to
+  bound pool size and per-instance churn; an entity has neither, so batched effects
+  always animate at full length. Continuity of existence is *stronger* here, not weaker.
+- **`PrismType.Grow` has no producer** anywhere in the project, so `PrismFactory.SpawnGrow`
+  and its `OnGrowCompleted` per-effect callback are unreachable. That is why the batch
+  carries no completion-callback machinery: fire-and-forget is not a limitation here, it
+  is the whole live contract. The stamp still carries `GrowDelay` so the shader contract
+  stays complete if a grow producer ever lands.
+
+**The death path is now split by markers.** `AOE.ResolveDamage` wraps a whole drain, so
+everything a death did landed in one unattributable self-time bucket. `Prism` now emits
+`Prism.Destroy.Setup` / `.SpatialIndex` / `.StatRaise` / `.SFX` / `.EffectRequest`, which
+is what makes "re-profile the lifted-throttle blast" a measurement rather than a guess.
+Alongside them, the per-death allocations and redundant interop that the split exposed
+are gone: `PrismEventData` is a **struct** (it was a class allocated per raise — i.e. per
+kill), `Cell`'s `Domains[3]` literals in `AddBlock`/`RemoveBlock`/`DominantDomain` are
+hoisted to statics, `GameDataSO.FindByName`/`FindByTeam` are index loops instead of
+`FirstOrDefault(lambda)` (three allocations per call, and `StatsManager.PrismDestroyed`
+calls it **twice per death**), `HealthBlockTracker`'s cell-forwarding `RemoveWhere`
+predicate is cached, the density grids take a `Vector3` instead of re-reading
+`transform.position` once per grid, and a death reads its own pose once instead of four
+times.
+
+#### 4.6.1 Retiring the pooled effect path — assessed 2026-08-04, NOT YET
+
+The obvious next step is to delete the pooled `PrismExplosion` / `PrismImplosion`
+spawn path now that both families batch. The audit says the *behavioural* case is
+already made and the *mechanical* case is not. Both halves matter, so both are
+recorded here rather than left to be re-derived.
+
+**Why it is already dead weight, not a safety net.** The comment that used to call
+it a "fallback for a disabled render service" was wrong, and that mattering is the
+point of writing this down:
+
+- With `PrismRenderService.Enabled` false, `Create` returns an invalid handle, and
+  `PrismExplosion.TriggerExplosion` disables its renderer *unconditionally* before
+  the branch — so a pooled explosion in that world renders **nothing** and logs.
+  A pooled implosion fares slightly better and still fails: `ApplyInitialVisualState`
+  re-enables the renderer, but `StampClockStrict`'s no-entity branch only warns, so
+  it draws a **static, un-animated block** for its full duration. Strict clock mode
+  has no CPU animation tier by design (§4.4) — "loud and frozen" IS the contract.
+- `PrismRenderService.SetRuntimeOverride` has **no caller anywhere in Assets**, and
+  the shipped `Resources/PrismRenderConfig.asset` has `useInstancedRendering: 1`.
+  The legacy A/B variant in `Docs/PRISM_EXPLOSION_BENCHMARK.md` is produced by
+  checking out a different *branch*, not by flipping this toggle. There is no
+  shipping configuration in which the pooled path is what the player sees.
+- No consumer needs a GameObject back. `Prism.Explode` / `Prism.Implode` are the
+  only raisers of `PrismType.Explosion` / `.Implosion` and both discard the
+  channel's `PrismReturnEventData`; `PrismFactory` is the only caller of
+  `TriggerExplosion` / `StartImplosion` / `StartGrow`; `StopEffect()` has zero
+  callers. `PrismType.Grow` has no producer at all.
+
+**Why it is a refactor, not a deletion — the three real dependencies.**
+
+1. **The pool prefabs are the CONFIG SOURCE for the batched path.**
+   `PrismDebris.Configure` / `ConfigureImplosion` read the mesh, material, layer,
+   debris clamp band and suction duration straight off `explosionPool.Prefab` /
+   `implosionPool.Prefab`. That is deliberate — it is what guarantees both paths
+   ship identical debris — but it means deleting the pooled path first requires
+   deciding where that authored data lives (an SO, or the prefabs demoted to pure
+   config assets that are never spawned).
+2. **The dev-build zombie audit** in `PrismEffectsManager` walks
+   `PrismExplosion.EnabledInstances` / `PrismImplosion.EnabledInstances` and pokes
+   `Renderer` / `IsActive` / `UsesEntityRenderPath`. With nothing pooled it audits
+   an empty set — harmless, but it stops being the safety net it was written to be,
+   and the batched carrier has no equivalent (its records ARE the live set).
+3. **`GameLoadSampler`** folds `EnabledInstances.Count` into its benchmark metrics.
+   The debris counters exist (`PrismDebris.LiveDebrisCount`,
+   `LiveImplosionDebrisCount`) but the sampler must be re-sourced or its numbers
+   silently drop to the batched half only.
+
+**The gate.** Do not retire until the implosion batch has been *measured*, not just
+shipped: an in-editor playtest of fauna feeding (suction converges on the moving
+eater, no stuck `imp` count on the harness HUD) plus a benchmark pass per
+`Docs/PRISM_EXPLOSION_BENCHMARK.md`. Retiring in the same change that introduces
+the batch would remove the ability to A/B it by flipping the config asset — which
+is exactly the tool that would diagnose a regression.
+
+### 4.7 The camera↔vessel occlusion corridor — a PLATFORM LAW (shipped 2026-08-04, C1)
 
 > **The law:** prisms between the player's camera and the player's vessel go see-through so
 > the ship is never hidden. It is **not a feature a vessel or a game mode may choose.** It
@@ -1067,7 +1203,7 @@ Four properties of the design worth preserving if it is ever touched:
   transparent queue would need a per-prism material swap AND would pay sorting + blend
   overdraw for a set that changes every frame — precisely the cost this feature exists to
   avoid. The trade is that the opaque prism materials are now **alpha-tested**
-  (`_AlphaClip: 1` + `_ALPHATEST_ON`), which is the change's one real cost (§4.6 note below).
+  (`_AlphaClip: 1` + `_ALPHATEST_ON`), which is the change's one real cost (§4.7 note below).
 - **The corridor test is per-fragment**, from the Position(World) node — the same
   post-vertex-animation position the rasterizer used. A per-object test would make a large
   environment plate flip wholesale between solid and dissolved.
@@ -1116,14 +1252,14 @@ Phase B — migrate the engines (each retires a per-frame pass):
 |---|---|---|
 | B1 | Grow-in → clock (all ~12 feeder paths ride the one engine); gameplay-final-at-start (volume/spatial stamps, clock predicates, `ExecuteOnScaleComplete` → start) | ✅ LIVE (strict, the only path) 2026-08-01 — `PrismScaleManager` DELETED (D2, 2026-08-02). Graph wiring ✅ (playtest-confirmed smooth). Pending: `HoldColliderAtFullSize` deletion, `CreateBlockCoroutine` window simplification, arena-gate simplification, PhaseThresholds re-baseline |
 | B2 | Color/state transitions → clock lerp (start colors + t₀; target = material authored; end-state material bound at START, settle scheduled) | ✅ LIVE (strict, the only path) 2026-08-01 — `MaterialStateManager` DELETED (D2, 2026-08-02). Graph wiring ✅ (playtest-confirmed smooth on BlockGraph; the transparent-prism color cluster on ExplodingBlockGraph is wired too — 2026-08-02 — so transparent steals/repaints fade instead of snapping) |
-| B3 | Explosion/implosion → clock (stamp `{t₀, velocity, speed, duration}` / `{t₀, duration, direction, delay, location}`) | ✅ LIVE (strict, the only path) 2026-08-01 — moving-target DECIDED as the §1 exception (a snapshot would suck prisms toward where the fauna WAS): progress rides the clock, `PrismEffectsManager` refreshes `_Location` only (one float3/frame) while the target lives. Animation passes + Burst jobs DELETED (D2, 2026-08-02 — the manager keeps only convergence refresh + zombie audit). Graph wiring ✅ both graphs, PLAYTEST-CONFIRMED 2026-08-02: explosions ✅ (GPU-side world→object conversion inside `PrismExplosionClock` — raw inverse-model multiply, never the normalizing Direction-mode Transform — + flight-envelope bounds) and suction ✅ (`EncapsulateBoundsPoint` envelope). **Mass-death carrier upgraded 2026-08-02**: prism-death explosions spawn as BATCHED PURE-ENTITY debris (`PrismDebris` + `PrismRenderService.SpawnExplosionDebrisBatch` — no GameObject/pool/per-effect timer; full duration always); pooled path = fallback only. Implosion batch port = Prompt 9 remainder |
+| B3 | Explosion/implosion → clock (stamp `{t₀, velocity, speed, duration}` / `{t₀, duration, direction, delay, location}`) | ✅ LIVE (strict, the only path) 2026-08-01 — moving-target DECIDED as the §1 exception (a snapshot would suck prisms toward where the fauna WAS): progress rides the clock, `PrismEffectsManager` refreshes `_Location` only (one float3/frame) while the target lives. Animation passes + Burst jobs DELETED (D2, 2026-08-02 — the manager keeps only convergence refresh + zombie audit). Graph wiring ✅ both graphs, PLAYTEST-CONFIRMED 2026-08-02: explosions ✅ (GPU-side world→object conversion inside `PrismExplosionClock` — raw inverse-model multiply, never the normalizing Direction-mode Transform — + flight-envelope bounds) and suction ✅ (`EncapsulateBoundsPoint` envelope). **Mass-death carrier upgraded 2026-08-02**: prism-death explosions spawn as BATCHED PURE-ENTITY debris (`PrismDebris` + `PrismRenderService.SpawnExplosionDebrisBatch` — no GameObject/pool/per-effect timer; full duration always); pooled path = fallback only. **Implosion batch port shipped 2026-08-04** (`SpawnImplosionDebrisBatch` + `RefreshImplosionDebrisBatch`): suctions ride the same carrier, and the moving-target §1 exception moved onto it as a per-record `_Location` refresh with a CPU-mirrored culling envelope — see §4.6 for the carrier's rules and the death-path marker split that shipped with it |
 | B4 | Shield morphs → GPU (vertex-shader bloom/shatter from per-vertex face data + t₀; settled shared-mesh swap already conforms) | ◐ interim shipped 2026-08-01: stellated idle per-prism `Update()` KILLED — both shield tiers now ride the central `PrismOctahedronShieldManager` ticker (`IPrismShieldMorphTicker`), registered only while morphing. GPU morph itself still pending |
 
 Phase C — rogue paths & ecosystem visuals (each is standalone):
 
 | # | Item | Status |
 |---|---|---|
-| C1 | `ClearPrisms` `_Alpha` fade → GLOBAL-uniform shader corridor, **promoted to a platform law** | ✅ SHIPPED 2026-08-04 — `ClearPrisms.cs` + its prefab DELETED and excised from Rhino/Dolphin/Serpent (−3 trigger colliders, −3 kinematic Rigidbodies), along with the dead `IVessel.AllowClearPrismInitialization()` opt-out. Replaced by `PrismOcclusionCorridor` (2 globals/frame) + `PrismOcclusionCorridor.hlsl` wired into **every graph a live prism can render with** (BlockGraph + ExplodingBlockGraph), bound at `VesselController.Initialize` so no vessel or mode can omit it, with runtime fail-loud (`PrismOcclusionDiagnostics`) and an edit-mode coverage test. Full design, the four enforcement layers, and the stated cost: §4.6 |
+| C1 | `ClearPrisms` `_Alpha` fade → GLOBAL-uniform shader corridor, **promoted to a platform law** | ✅ SHIPPED 2026-08-04 — `ClearPrisms.cs` + its prefab DELETED and excised from Rhino/Dolphin/Serpent (−3 trigger colliders, −3 kinematic Rigidbodies), along with the dead `IVessel.AllowClearPrismInitialization()` opt-out. Replaced by `PrismOcclusionCorridor` (2 globals/frame) + `PrismOcclusionCorridor.hlsl` wired into **every graph a live prism can render with** (BlockGraph + ExplodingBlockGraph), bound at `VesselController.Initialize` so no vessel or mode can omit it, with runtime fail-loud (`PrismOcclusionDiagnostics`) and an edit-mode coverage test. Full design, the four enforcement layers, and the stated cost: §4.7 |
 | C2 | `MaterialBlendUtility` (overheat danger trail + skim overcharge) → the one color pipeline | ✅ shipped 2026-08-01: utility DELETED. Overheat danger trail: the redundant direct blend removed — `IsDangerous` pre-`Initialize` already runs `MakeDangerous()` through the pipeline (per-domain danger material, clock or legacy transition); `EnableDangerMode`'s material param is legacy-ignored. Skim overcharge: rides `MaterialPropertyAnimator.UpdateMaterial(overchargedMaterial, …)` — visible on both render paths; the multi-material append semantic retired |
 | C3 | AOE double-growers (`AOERadialBlocks`, `AOEDangerHemisphereBlocks`) → single engine stamp; fix dead `growthRate` field writes + `renderer.material` clone | ✅ shipped 2026-08-01: both bespoke `GrowToScale` loops deleted (growth = the one engine via `TargetScale` + `SetGrowthRate`); `MakeDangerousAsync` deleted — danger/shield now ride the pre-`Initialize` flag contract so `PrismStateManager` applies the proper per-domain theme materials (the `renderer.material` clone and the instanced-path-blind restyle are gone); hemisphere prisms now get the firing vessel's Domain like the radial sibling |
 | C4 | `FireTrailBlockActionExecutor` → pooled + mover-contract or stamped ballistic clock; remove `Destroy()` timer (ecosystem law) | ☐ not started |
@@ -1145,6 +1281,7 @@ Phase D — lock-in:
 | D1 | Docs locked (this file + CLAUDE.md anti-pattern + manager banners + cross-refs) | ✅ shipped (2026-07-31) |
 | D2 | Delete the retired classes + scene components (`PrismScaleManager`, `MaterialStateManager`, `PrismEffectsManager`'s animation passes + Burst jobs, `AdaptiveAnimationManager` frame-skip machinery, retired animator fields, `TrailViewer`) | ✅ DONE 2026-08-02, programmatically: classes deleted; components excised from `PrismManagers.prefab` + `Urchin.prefab` by fileID (machine-verified reference-free); `PrismEffectsManager` slimmed to convergence refresh + zombie audit; animator dead surface stripped (`IsAnimating`/`IsScaling`/registration/…); `GameLoadSampler` re-sourced to `PrismSpatialIndex.LiveCount` + effect `EnabledInstances`; `AdaptivePerformanceSetting` documented INERT. Remaining in-editor: PhaseThresholds re-baseline (needs the measuring tool) |
 | D3 | In-editor verification pass (all migrated paths, both render paths, load-gate + hitstop + pause) | ☐ not started |
+| D4 | Retire the pooled `PrismExplosion` / `PrismImplosion` spawn path | ☐ **gated, not blocked** — the behavioural case is made (§4.6.1: no GameObject consumers, no working visual fallback, no runtime-override caller, shipped config instanced-ON), but it is a refactor not a deletion: the pool prefabs are the batched path's CONFIG source, and the zombie audit + `GameLoadSampler` read `EnabledInstances`. Gate = measured implosion parity (fauna playtest + a benchmark pass); do not do it in the same change as the batch |
 
 ---
 

@@ -140,7 +140,7 @@ namespace CosmicShore.Gameplay
             }
 
             // PLATFORM LAW — the prism occlusion corridor is bound HERE, not per vessel and
-            // not per game mode (Docs/PRISM_ANIMATION.md §4.6). Initialize is the one method
+            // not per game mode (Docs/PRISM_ANIMATION.md §4.7). Initialize is the one method
             // every vessel must call to become a player's vessel: single-player spawn,
             // multiplayer spawn, the menu autopilot, and every runtime vessel swap all route
             // through it. Binding here is what makes it impossible to author a vessel or a

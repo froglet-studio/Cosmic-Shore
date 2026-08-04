@@ -13,7 +13,7 @@ namespace CosmicShore.Editor
 {
     /// <summary>
     /// Asset-side gate for the camera↔vessel prism occlusion corridor
-    /// (Docs/PRISM_ANIMATION.md §4.6 — a PLATFORM LAW: it must not be possible to author a
+    /// (Docs/PRISM_ANIMATION.md §4.7 — a PLATFORM LAW: it must not be possible to author a
     /// vessel or a minigame in which the corridor is off).
     ///
     /// The corridor has no per-scene wiring to eyeball, so every way it can be broken is an
@@ -48,7 +48,7 @@ namespace CosmicShore.Editor
         static readonly string[] GlobalProps = { "_PrismOcclusionTarget", "_PrismOcclusionParams" };
 
         // Known, deliberate exclusions from the prism-prefab census (Docs/PRISM_ANIMATION.md
-        // §4.6) — legacy prism prefabs on pre-corridor shaders, every one of them DEAD.
+        // §4.7) — legacy prism prefabs on pre-corridor shaders, every one of them DEAD.
         // GreenDartBlock/TriangleBlock are the SpreadFresnel/TriangleFresnel family §3.7 I
         // says not to extend (referenced only by the Recording Studio scenes); TrailRing and
         // TrailPentagon are referenced by nothing at all. Listed rather than silently skipped
@@ -68,7 +68,7 @@ namespace CosmicShore.Editor
         public static void Validate()
         {
             var report = new StringBuilder();
-            report.AppendLine("[PrismOcclusion] CORRIDOR WIRING — Docs/PRISM_ANIMATION.md §4.6 (PLATFORM LAW: no vessel and no minigame may opt out)");
+            report.AppendLine("[PrismOcclusion] CORRIDOR WIRING — Docs/PRISM_ANIMATION.md §4.7 (PLATFORM LAW: no vessel and no minigame may opt out)");
             bool pass = true;
 
             // ---- 1. the HLSL asset, at the GUID the graphs pin ----

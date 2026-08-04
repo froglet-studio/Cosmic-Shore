@@ -147,6 +147,40 @@ its GameObject lists it in `m_Component`.
 - **Delete a script safely**: get its GUID from the `.meta`, sweep ALL of
   Assets (`.unity`/`.prefab`/`.asset`/`.cs`) for the GUID and the class name
   BEFORE deleting; excise components first, delete `.cs` + `.meta` together.
+- **Excise a whole PREFAB INSTANCE from a scene** (a hand-placed object that
+  should not be there). It is more than one document, so drive it by PARSING,
+  never by the line numbers a report handed you — the first deletion invalidates
+  every later one. Split the file on `^--- !u!`, then: (1) find the `!u!1001`
+  `PrefabInstance` whose `m_SourcePrefab` carries the guid; (2) collect every
+  `stripped` document whose `m_PrefabInstance` points back at it — those are how
+  other objects reference its children; (3) drop those documents; (4) drop every
+  `  - {fileID: N}` line naming a dropped id (`m_Children`, `SceneRoots.m_Roots`);
+  (5) **assert** no dropped id survives as a whole-word token and the prefab guid
+  is gone. A word-boundary regex matters — fileIDs are substrings of each other.
+  One parser then runs over N scenes identically and self-checks each.
+- **A variant's component fileIDs are DERIVED, so a literal id will not match
+  them**: `variantFileID = baseFileID XOR prefabInstanceFileID` (unsigned 64-bit,
+  the instance being the variant's own `!u!1001` anchor). This is why a sweep for
+  "modifications targeting component X" silently misses every prefab variant.
+  Either compute the XOR, or — better — let Unity resolve it:
+  `AssetDatabase.LoadAllAssetsAtPath` + `TryGetGUIDAndLocalFileIdentifier` gives a
+  fileID→object map per prefab that covers base and variant alike, so you can ask
+  `obj is MyComponent` instead of matching numbers.
+- **Prefer a FLAT COPY over a variant when the repo already does.** "A variant,
+  never a copy" is the rule for *shared behaviour*; for "the same prop at another
+  size" check the folder first. Sibling flat copies (identical internal fileIDs,
+  differing only in name + scale) mean the referencing SO field stays byte-identical
+  and the whole malformed-variant-YAML risk class disappears. Authoring a variant by
+  hand requires deriving three XOR'd fileIDs correctly; a flat copy requires none.
+- **Sweep DEAD prefab-instance modifications.** Unity never prunes an override whose
+  `propertyPath` names a field the script no longer has — it survives every reserialize,
+  often pointing at a guid no asset carries, and reads as real wiring to the next
+  person. Find them with a TWO-part test, or you will delete live data: the
+  modification's `target` must resolve to the component type you mean (previous
+  bullet), AND its `propertyPath` root (split on `.`, so `Foo.Array.data[0]` → `Foo`)
+  must not be a serialized field on that type. Skip `m_*` (Unity built-ins). Get the
+  valid names from the C# by reflection, not by hand — a hand list is how
+  `CrystalSkimAudioClip` nearly gets eaten by a filter meant for `Crystal`.
 - **Re-author SO numbers**: regex with `re.subn(..., count=1)` + assert n==1
   per field; print the before/after table so the human can eyeball the math.
 - **Author a whole asset FAMILY from a generator, not by hand.** When a change
@@ -232,6 +266,18 @@ per task; it is cheap.
   docs; rewrite comments that describe the dead architecture as live (they
   become false doctrine — this session found its own outdated rationalization
   quoted in a header comment).
+- **Comment hygiene, harder case: the system SURVIVED but its ROLE changed.**
+  Deleting a system is the easy sweep, because the name goes to zero. When a
+  strict/no-fallback mode lands, the retired tier usually still *compiles and
+  runs* — it just no longer does what its comments claim. Prism debris: the
+  pooled `PrismExplosion` path was described as "the fallback for a disabled
+  render service" in three places including a doc, and under strict clock mode
+  it actually renders NOTHING (the renderer is disabled unconditionally before
+  the entity branch). Every such comment routes the next reader — or the next
+  agent — to the wrong conclusion about whether the path is safe to delete.
+  After adopting a strict mode, grep the retired tier's name for the words
+  *fallback / fall back / legacy path / degrades to* and re-read each hit
+  against what the code now does.
 
 ### Trap: a clean merge can still be a semantic conflict (duplicate members)
 
@@ -329,6 +375,13 @@ hand-authored files plus a scene array entry. The recipe:
 5. Order can be load-bearing — appending is safe, inserting may not be. Here
    index 0 must stay the environment-free config (`CellTypeChoiceOptions.
    EnvironmentFree` boots on the first config with no environment).
+6. **Machine-check every hand-authored asset against its script before ship.**
+   Parse the `[SerializeField]`/public field names out of the `m_Script` GUID's
+   `.cs` **and its base classes**, then diff against the asset's top-level YAML
+   keys. An unknown key is a typo or a stale rename that will silently default;
+   this catches in one second what an editor import round-trip catches in ten
+   minutes, and it works on files you never opened. Run it over the whole set
+   the branch touched, not just the ones you remember editing.
 
 ## 5. Traps learned the hard way (check these BEFORE debugging for an hour)
 
@@ -350,6 +403,34 @@ hand-authored files plus a scene array entry. The recipe:
   containing a key for a field that is no longer serialized (e.g. a
   `[Inject] protected` field) is harmless residue — not evidence the field is
   still serialized.
+- **A serialized field's C# initializer is NOT its runtime value — never reason
+  from it.** The corollary of the rule above, and the one that actually bites:
+  when the asset DOES author the key, the initializer in the `.cs` is dead text
+  that only a fresh in-editor asset would ever see. Reading it and reasoning
+  onward produces a confident wrong number. Live case: `LightFaunaDataSO.
+  maxSpeed = 6f`, while both shipped assets author **25**
+  (`MassBrittleStarFaunaDataSO`) and **35** (`MassSharkFaunaDataSO`) — a 4-6x
+  error, which turned "the feeding creature is basically stationary, ~1.5u of
+  drift" into the true ~6.25u (half the feeding cluster radius) and would have
+  justified 'optimizing' a per-frame convergence refresh into a snapshot that
+  visibly sucks mass toward where the creature was. **Before quoting any tuning
+  constant, resolve the SO's script GUID from its `.cs.meta`, grep
+  `Assets/**/*.asset` for it, and read the authored value from every instance**
+  — and say which asset you read. Sibling assets often disagree (grazer vs
+  predator), so "the value" may not be singular.
+- **Validate an instanced-render contract by COUNT-MATCHING, not by reading.**
+  For a `.shadergraph` + per-instance-ECS-component pair (Entities Graphics
+  Hybrid Per Instance), dump the graph's properties with
+  `overrideHLSLDeclaration:true, hlslDeclarationOverride:3` and compare that set
+  one-for-one against the components the prototype adds and the spawn path
+  writes. An exact match is strong evidence the stamp will land; a graph
+  property with no component is a value stuck at its material default, and a
+  component with no HPI property is a silently ignored write. This caught
+  nothing on the suction batch (9 vs 9, clean) — which is precisely the value:
+  it converts "I mirrored the explosion path, it should work" into a checkable
+  claim before anyone opens Unity. Properties that are exposed but NOT hybrid
+  (`_Move`, `_SqrDistance`) are per-material constants and correctly absent
+  from the component set.
 - **NEVER delete a code block with a regex.** A pattern like
   `r'public static X\(...\)\n\{(?:.*?\n)*?\}\n'` looks bounded but the lazy
   block matches across method boundaries: one such "remove two unused helpers"
@@ -425,6 +506,17 @@ hand-authored files plus a scene array entry. The recipe:
   IDENTICAL magnitude regardless of cause. Fix by putting the path on a
   true-velocity contract that supplies its own ceiling — never by widening the
   shared clamp, which retunes every other consumer of it.
+- **A reference field can point at a DISABLED TWIN of the object doing the
+  work.** When a prefab was migrated from a nested component-prefab to a
+  bespoke object, the old instance often survives, inactive, still holding
+  every reference — so the object with perfect wiring is not the object the
+  system runs, and the object the system runs was never initialized. Nothing
+  errors: the live one just never gets its `Initialize`, and whatever gates on
+  "am I initialized" silently drops every event forever. The Dolphin's skimmer
+  shipped this way for its whole life. **Resolve every `{fileID: N}` you rely
+  on to its GameObject and assert `m_IsActive: 1` up the entire ancestor
+  chain** — do not stop at "the component exists and looks right". Then write
+  the fleet auditor, because if one prefab has it, others do (the Serpent did).
 - **Verify the bug before fixing it.** A report describing code behaviour
   ("it's using the sphere centre") may predate a fix that already landed. Read
   the live path end to end and check `git log` on the file FIRST; report

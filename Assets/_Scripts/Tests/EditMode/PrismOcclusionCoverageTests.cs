@@ -12,7 +12,7 @@ namespace CosmicShore.Tests
 {
     /// <summary>
     /// The automated gate for the camera↔vessel prism occlusion corridor as a PLATFORM LAW
-    /// (Docs/PRISM_ANIMATION.md §4.6): it must not be possible to author a vessel, a prism,
+    /// (Docs/PRISM_ANIMATION.md §4.7): it must not be possible to author a vessel, a prism,
     /// or a minigame in which the corridor is off.
     ///
     /// Why a test and not just the validator menu item: the corridor's failure mode is
@@ -148,7 +148,7 @@ namespace CosmicShore.Tests
 
             Assert.IsEmpty(failures,
                 "Prefab(s) carrying a Prism render with a shader the occlusion corridor is not wired into, so that " +
-                "mass can never go see-through. The corridor is a platform law (Docs/PRISM_ANIMATION.md §4.6): " +
+                "mass can never go see-through. The corridor is a platform law (Docs/PRISM_ANIMATION.md §4.7): " +
                 "rebase onto a wired prism graph, or add the graph to the census in " +
                 "Tools/Shaders/wire_prism_occlusion_corridor.py and re-run it.\n" +
                 string.Join("\n", failures));

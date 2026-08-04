@@ -123,7 +123,7 @@ zero `[PrismClock]` errors.
 
 **UN-DEFERRED 2026-08-04, and re-pointed.** This test used to wait on the
 camera↔vessel occlusion system. That system is restored (C1, `Docs/PRISM_ANIMATION.md`
-§4.6) — but it is now a **shader-side fade off global uniforms** and deliberately
+§4.7) — but it is now a **shader-side fade off global uniforms** and deliberately
 never sets `prismProperties.IsTransparent`, so it is no longer a source of transparent
 prisms to steal. The surviving producer is the **Serpent's cloak**:
 
@@ -268,7 +268,7 @@ must show no compile errors and no `[PrismClock]` errors.
 Tracker items (`Docs/PRISM_ANIMATION.md` §5 C-phase) landing per-path on the wired
 graphs, each following the shipped B1/B3 templates: ~~C1 `ClearPrisms` shader-side
 occlusion fade~~ (✅ shipped 2026-08-04 — `PrismOcclusionCorridor`, now a PLATFORM LAW wired into every
-live-prism graph and bound at `VesselController.Initialize`, §4.6; gates: the `PrismOcclusionCoverageTests`
+live-prism graph and bound at `VesselController.Initialize`, §4.7; gates: the `PrismOcclusionCoverageTests`
 edit-mode test + FrogletTools > Ecology > Prism Animation > **Validate Occlusion Corridor**) ·
 C4 `FireTrailBlock` pool/Destroy fix · C5 turret anchor flight ·
 C6 fauna wither/devour/level-up · C7 flora growth · C8 microscene conveyor ·

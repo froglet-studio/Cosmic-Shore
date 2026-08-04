@@ -7,7 +7,7 @@ namespace CosmicShore.Utility
     /// <summary>
     /// The CPU half of the camera↔vessel prism occlusion corridor: prisms sitting between
     /// the player's camera and the player's vessel dissolve so the ship is never hidden
-    /// (Docs/PRISM_ANIMATION.md §4.6).
+    /// (Docs/PRISM_ANIMATION.md §4.7).
     ///
     /// The corridor is a BARE CONE, and it is SHIP-SIZED: a point at the lens, widening to
     /// the circle that circumscribes the bound vessel's hull, ending flat at the vessel's
@@ -38,7 +38,7 @@ namespace CosmicShore.Utility
     /// the corridor is read on the GPU (<c>_WorldSpaceCameraPos</c>), so it is always
     /// exactly the camera that is rendering and never needs to be resolved or published.
     ///
-    /// PLATFORM LAW (see Docs/PRISM_ANIMATION.md §4.6). The corridor is not a feature a
+    /// PLATFORM LAW (see Docs/PRISM_ANIMATION.md §4.7). The corridor is not a feature a
     /// vessel or a game mode may choose. It is bound in <c>VesselController.Initialize</c> —
     /// the one method every vessel must call to become a player's vessel, on every spawn
     /// path (single-player, multiplayer, menu autopilot, runtime swap) — so there is

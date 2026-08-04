@@ -204,7 +204,7 @@ namespace CosmicShore.Gameplay
 
             endCamera.SetFollowTarget(null);
             // The ONE sanctioned suppression of the prism occlusion corridor
-            // (Docs/PRISM_ANIMATION.md §4.6): a manually-posed replay camera is a broadcast
+            // (Docs/PRISM_ANIMATION.md §4.7): a manually-posed replay camera is a broadcast
             // vantage that is not looking at the local ship, so a camera→ship capsule would
             // cut a hole through unrelated mass. This is a narrow, symmetric hold — NOT an
             // opt-out: the binding on the vessel stays, and RestoreGameplayCamera lifts it.

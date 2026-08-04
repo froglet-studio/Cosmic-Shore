@@ -148,14 +148,11 @@ namespace CosmicShore.Gameplay
         #endregion
 
         #region Event Handling
+        // PrismEventData is a STRUCT (see its declaration): the payload can no longer
+        // be null, so the old null-guard is gone rather than made unreachable. An
+        // unset field arrives as default, which every spawner below already tolerates.
         private PrismReturnEventData OnPrismSpawnedEventRaised(PrismEventData data)
         {
-            if (data == null)
-            {
-                CSDebug.LogError("[PrismFactory] Received null PrismEventData");
-                return new PrismReturnEventData { SpawnedObject = null };
-            }
-
             GameObject spawned = null;
 
             switch (data.PrismType)
@@ -294,9 +291,8 @@ namespace CosmicShore.Gameplay
             // Batched pure-entity debris path (Docs/PRISM_ANIMATION.md B3): no
             // GameObject, no pool, no per-frame budget — a whole burst spawns as
             // one prototype-instantiate batch at LateUpdate and the GPU animates
-            // every piece at full length. The pooled path below survives as the
-            // fallback for a disabled render service / misconfigured prefab, and
-            // its per-frame caps + deferral only ever engage in that world.
+            // every piece at full length. The pooled path below is a ROUTE, not a
+            // working visual fallback — see the note on SpawnImplosion.
             if (CosmicShore.Utility.PrismDebris.Configure(explosionPool != null ? explosionPool.Prefab : null) &&
                 TryGetTeamColors(data.ownDomain, out var bright, out var dark) &&
                 CosmicShore.Utility.PrismDebris.TryRequestExplosion(
@@ -323,6 +319,33 @@ namespace CosmicShore.Gameplay
 
         GameObject SpawnImplosion(PrismEventData data)
         {
+            // Batched pure-entity suction path (Docs/PRISM_ANIMATION.md B3) — the
+            // implosion half of the explosion batch above. No GameObject, no pool,
+            // no per-frame budget, and no per-instance MonoBehaviour Update (the
+            // pooled carrier's watchdog): a swarm-eat frame's consumptions spawn as
+            // ONE prototype-instantiate batch and the GPU runs every suction off the
+            // shader clock. The moving convergence target keeps working — PrismDebris
+            // retains the target Transform per record and refreshes _Location while
+            // it lives (the §1 exception).
+            //
+            // The pooled path below is a ROUTE, not a working visual fallback: under
+            // strict clock mode PrismImplosion with no render entity draws a static,
+            // un-animated block and logs, and PrismExplosion draws nothing at all
+            // (TriggerExplosion disables the renderer unconditionally). It is reached
+            // only if the effect prefab is misconfigured or PrismRenderService is off —
+            // and being loud there is the intended forcing function, not a degradation.
+            // See Docs/PRISM_ANIMATION.md §4.6 for what retiring it actually requires.
+            if (CosmicShore.Utility.PrismDebris.ConfigureImplosion(implosionPool != null ? implosionPool.Prefab : null) &&
+                TryGetTeamColors(data.ownDomain, out var bright, out var dark) &&
+                CosmicShore.Utility.PrismDebris.TryRequestImplosion(
+                    data.SpawnPosition, data.Rotation, data.Scale,
+                    bright, dark, data.TargetTransform))
+            {
+                // Callers treat a null spawn as fire-and-forget (the deferral
+                // branch below has always returned null).
+                return null;
+            }
+
             RollImplosionFrameBudget();
 
             // Same reasoning as explosions - defer, never drop.

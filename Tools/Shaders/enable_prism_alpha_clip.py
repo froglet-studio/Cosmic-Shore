@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Turn on alpha clipping for EVERY opaque prism material so the camera->vessel occlusion
-corridor (Docs/PRISM_ANIMATION.md §4.6) can dissolve them without ever moving a prism
+corridor (Docs/PRISM_ANIMATION.md §4.7) can dissolve them without ever moving a prism
 into the transparent queue.
 
 Why this is needed: URP compiles the Alpha output away entirely on an OPAQUE material
