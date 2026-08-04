@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 74d37e6ee726b6e2d4e17482eb936a8c, type: 3}
+  m_Name: SkimmerForcefieldCracklePrismEffect
+  m_EditorClassIdentifier: 
+  impactDuration: 0.6
+  rippleSpeed: 1
+  impactIntensity: 1.5
+  impactRadius: 0.25
+  arcDensity: 8
+  arcSharpness: 0.06
+  ringThickness: 0.4
+  centerFillAmount: 0.3
+  crackleColorA: {r: 0.2980392, g: 0.35886303, b: 1, a: 1}
+  crackleColorB: {r: 0.19496846, g: 0.08154339, b: 0.09488753, a: 1}
+  fresnelRimIntensity: 0.08
+  fresnelRimPower: 7.85
+  fresnelRimColor: {r: 0.3, g: 0.5, b: 0.8, a: 1}
+  particleBurstPrefab: {fileID: 0}
+  particleBurstScale: 2.38

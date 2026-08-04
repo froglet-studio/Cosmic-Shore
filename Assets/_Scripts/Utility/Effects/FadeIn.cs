@@ -1,41 +1,65 @@
 using System.Collections;
 using UnityEngine;
 
-public class FadeIn : MonoBehaviour
+namespace CosmicShore.Utility
 {
-    [SerializeField] float fadeInRate;
-
-    Material material;
-    Coroutine fadeInCoroutine;
-
-    void Start()
+    /// <summary>
+    /// Fades a renderer in by driving its shader's _opacity through a
+    /// MaterialPropertyBlock — no material clone, no per-frame GetComponent.
+    /// The override is cleared once the fade completes so material swaps
+    /// (crystal activation, domain changes) always show their authored opacity.
+    /// </summary>
+    public class FadeIn : MonoBehaviour
     {
-        StartFadeIn();
-        material = new Material(gameObject.GetComponent<Renderer>().material);
-        gameObject.GetComponent<Renderer>().material = material;
-    }
+        static readonly int OpacityID = Shader.PropertyToID("_opacity");
 
-    public void StartFadeIn()
-    {
-        // Set the opacity to zero before starting the coroutine so there is no delay in the start of the effect
-        gameObject.GetComponent<Renderer>().material.SetFloat("_opacity", 0f);
-        
-        if (fadeInCoroutine != null)
-            StopCoroutine(fadeInCoroutine);
+        [SerializeField] float fadeInRate;
 
-        fadeInCoroutine = StartCoroutine(FadeInCoroutine());
-    }
+        Renderer _renderer;
+        MaterialPropertyBlock _mpb;
+        Coroutine fadeInCoroutine;
 
-    IEnumerator FadeInCoroutine()
-    {
-        fadeInRate = .001f;
-        var opacity = 0f;
-        while (opacity < 1)
+        void Awake()
         {
-            yield return null;
-            fadeInRate *= 1.00f + Time.deltaTime;
-            opacity += fadeInRate;
-            gameObject.GetComponent<Renderer>().material.SetFloat("_opacity", opacity);
+            _renderer = GetComponent<Renderer>();
+            _mpb = new MaterialPropertyBlock();
+        }
+
+        void Start()
+        {
+            StartFadeIn();
+        }
+
+        public void StartFadeIn()
+        {
+            // Zero the opacity before starting the coroutine so there is no
+            // one-frame flash at full opacity.
+            _mpb.SetFloat(OpacityID, 0f);
+            _renderer.SetPropertyBlock(_mpb);
+
+            if (fadeInCoroutine != null)
+                StopCoroutine(fadeInCoroutine);
+
+            fadeInCoroutine = StartCoroutine(FadeInCoroutine());
+        }
+
+        IEnumerator FadeInCoroutine()
+        {
+            fadeInRate = .001f;
+            var opacity = 0f;
+            while (opacity < 1)
+            {
+                yield return null;
+                fadeInRate *= 1.00f + Time.deltaTime;
+                opacity += fadeInRate;
+                _mpb.SetFloat(OpacityID, opacity);
+                _renderer.SetPropertyBlock(_mpb);
+            }
+
+            // Drop the override so the material's own opacity wins from here on.
+            _mpb.Clear();
+            _renderer.SetPropertyBlock(_mpb);
+            fadeInCoroutine = null;
         }
     }
 }

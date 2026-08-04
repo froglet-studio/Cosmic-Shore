@@ -1,7 +1,7 @@
 using Unity.Collections;
 using Unity.Netcode;
 
-namespace CosmicShore.Utilities.Network
+namespace CosmicShore.Utility
 {
     /// <summary>
     /// Wrapping FixedString so that if we want to change player name max size in the future, we only do it once here.
@@ -12,7 +12,12 @@ namespace CosmicShore.Utilities.Network
 
         public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
         {
-            serializer.SerializeValue(ref _name);
+            using (serializer.IsReader
+                ? CosmicShore.Utility.PerformanceBenchmark.NetMarkers.Deserialize.Auto()
+                : CosmicShore.Utility.PerformanceBenchmark.NetMarkers.Serialize.Auto())
+            {
+                serializer.SerializeValue(ref _name);
+            }
         }
 
         public override string ToString()

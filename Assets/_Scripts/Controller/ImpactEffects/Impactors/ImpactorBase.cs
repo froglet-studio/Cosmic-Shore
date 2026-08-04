@@ -1,0 +1,109 @@
+using System;
+using Unity.Netcode;
+using Unity.Profiling;
+using UnityEngine;
+using CosmicShore.Data;
+using CosmicShore.Gameplay;
+using Reflex.Attributes;
+using Reflex.Core;
+
+namespace CosmicShore.Gameplay
+{
+    public abstract class ImpactorBase : MonoBehaviour, IImpactor
+    {
+        [Inject] Container _diContainer;
+        public Container DIContainer => _diContainer;
+
+        protected virtual bool isInitialized => true;
+
+        public Transform Transform => transform;
+        public abstract Domains OwnDomain { get; }
+        
+        protected abstract void AcceptImpactee(IImpactor impactee);
+
+        protected bool DoesEffectExist(ImpactEffectSO[] effects) => effects is { Length: > 0 };
+
+        // Per-concrete-type profiler marker so an impact storm shows up in captures as
+        // e.g. 'SkimmerImpactor.AcceptImpactee' with real timings instead of vanishing
+        // into Physics.SendEvents self-time. Lazily created (one string per component
+        // lifetime) — no Awake added here, since most subclasses declare their own.
+        ProfilerMarker _acceptMarker;
+        bool _acceptMarkerInit;
+
+        /// <summary>
+        /// True while <see cref="AcceptImpactee"/> is running for a shell contact
+        /// dispatched by <see cref="PrismShellContactManager"/> (the analytic
+        /// shielded-prism tier) rather than a PhysX trigger. Lets the shielded-prism
+        /// suppression check in subclasses pass shell dispatches through while
+        /// short-circuiting the box-trigger path for the same prism.
+        /// </summary>
+        protected bool IsShellDispatch { get; private set; }
+
+        /// <summary>
+        /// Exposes the trigger gate to <see cref="PrismShellContactManager"/> so the
+        /// shell tier honors the exact same initialization gating as OnTriggerEnter
+        /// (e.g. a skimmer goes inert when its Player deactivates mid-scene).
+        /// </summary>
+        internal bool IsInitializedForImpact => isInitialized;
+
+        /// <summary>
+        /// Shell-tier entry point: dispatches an impactee through the same
+        /// isInitialized gate, profiler marker, and AcceptImpactee chain as the
+        /// trigger path, with <see cref="IsShellDispatch"/> raised so subclass
+        /// suppression checks let it through.
+        /// </summary>
+        internal void AcceptImpacteeFromShellContact(IImpactor impactee)
+        {
+            if (!isInitialized)
+                return;
+
+            EnsureAcceptMarker();
+            using (_acceptMarker.Auto())
+            {
+                IsShellDispatch = true;
+                try
+                {
+                    AcceptImpactee(impactee);
+                }
+                finally
+                {
+                    IsShellDispatch = false;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Shell-tier exit notification — the analogue of OnTriggerExit for a shell
+        /// contact ending. Base does nothing; SkimmerImpactor overrides to mirror its
+        /// trigger-exit skim bookkeeping.
+        /// </summary>
+        internal virtual void NotifyShellContactExit(PrismImpactor prismImpactor) { }
+
+        void EnsureAcceptMarker()
+        {
+            if (_acceptMarkerInit)
+                return;
+            _acceptMarkerInit = true;
+            _acceptMarker = new ProfilerMarker(GetType().Name + ".AcceptImpactee");
+        }
+
+        protected virtual void OnTriggerEnter(Collider other)
+        {
+            if (!isInitialized)
+                return;
+
+            // Use the concrete ImpactCollider (the sole IImpactCollider implementer)
+            // rather than TryGetComponent<IImpactCollider>. An interface-typed
+            // GetComponent forces Unity to iterate and type-check every component on
+            // the GameObject; this runs per prism-enter across dense trails and was
+            // ~26% self-time inside Physics.SendEvents. The concrete type uses Unity's
+            // native typed-lookup fast path.
+            if (!other.TryGetComponent(out ImpactCollider impacteeCollider))
+                return;
+
+            EnsureAcceptMarker();
+            using (_acceptMarker.Auto())
+                AcceptImpactee(impacteeCollider.Impactor);
+        }
+    }
+}

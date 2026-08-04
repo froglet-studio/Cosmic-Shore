@@ -1,6 +1,7 @@
 using UnityEngine;
+using System;
 
-namespace CosmicShore
+namespace CosmicShore.Utility
 {
     /// <summary>
     /// Can't figure out what's disabling a gameobject? Throw this script on the object and monitor the console.

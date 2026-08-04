@@ -1,0 +1,59 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3f08b515ec8340d19010875c705330ff, type: 3}
+  m_Name: Infinity_Shape
+  m_EditorClassIdentifier: 
+  shapeName: Infinity
+  description: This is a Star Shape
+  thumbnail: {fileID: 21300000, guid: badec3d57590b2e479701bb3abcbe5b8, type: 3}
+  autoGeneratePreset: 0
+  autoGenerateRadius: 100
+  waypoints:
+  - {x: 100, y: 0, z: 0}
+  - {x: 94.482506, y: 18.432623, z: 0}
+  - {x: 80.58636, y: 30.839064, z: 0}
+  - {x: 63.536037, y: 35.298733, z: 0}
+  - {x: 47.14045, y: 33.333332, z: 0}
+  - {x: 32.847897, y: 27.312029, z: 0}
+  - {x: 20.645935, y: 19.074358, z: 0}
+  - {x: 9.943742, y: 9.752676, z: 0}
+  - {x: -0.0000021855694, y: -0.0000021855694, z: 0}
+  - {x: -9.9437475, y: -9.752681, z: 0}
+  - {x: -20.64594, y: -19.074362, z: 0}
+  - {x: -32.847908, y: -27.312037, z: 0}
+  - {x: -47.14045, y: -33.333332, z: 0}
+  - {x: -63.53604, y: -35.29873, z: 0}
+  - {x: -80.58637, y: -30.839058, z: 0}
+  - {x: -94.482506, y: -18.432621, z: 0}
+  - {x: -100, y: 0.000008742278, z: 0}
+  - {x: -94.48249, y: 18.432636, z: 0}
+  - {x: -80.58636, y: 30.839062, z: 0}
+  - {x: -63.536026, y: 35.29873, z: 0}
+  - {x: -47.140438, y: 33.33333, z: 0}
+  - {x: -32.84788, y: 27.31202, z: 0}
+  - {x: -20.645916, y: 19.074343, z: 0}
+  - {x: -9.94375, y: 9.752684, z: 0}
+  - {x: 0.00000059624404, y: -0.00000059624404, z: 0}
+  - {x: 9.943751, y: -9.752686, z: 0}
+  - {x: 20.645947, y: -19.074366, z: 0}
+  - {x: 32.847916, y: -27.312038, z: 0}
+  - {x: 47.14048, y: -33.33334, z: 0}
+  - {x: 63.536034, y: -35.298733, z: 0}
+  - {x: 80.58636, y: -30.839064, z: 0}
+  - {x: 94.482506, y: -18.432615, z: 0}
+  - {x: 100, y: 0.000017484555, z: 0}
+  trailEnabledPerSegment: 010101010101010101010101010101010101010101010101010101010101010101
+  playerStartOffset: {x: 0, y: 0, z: -150}
+  playerStartEuler: {x: 0, y: 0, z: 0}
+  revealCameraEuler: {x: 90, y: 0, z: 0}
+  revealCameraDistance: 400
+  parTime: 360

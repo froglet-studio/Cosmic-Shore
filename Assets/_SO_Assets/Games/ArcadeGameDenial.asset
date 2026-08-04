@@ -25,8 +25,8 @@ MonoBehaviour:
   SceneName: MinigameDenial
   Captains:
   - {fileID: 11400000, guid: fc050e89d9973cf4ab7fa683bb1722b1, type: 2}
-  MinPlayers: 1
-  MaxPlayers: 3
+  MinPlayersAllowed: 1
+  MaxPlayersAllowed: 3
   MinIntensity: 1
   MaxIntensity: 4
   CallToActionTargetType: 414

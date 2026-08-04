@@ -5,7 +5,7 @@ using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-namespace Unity.Multiplayer.Samples.Utilities
+namespace CosmicShore.Utility
 {
     /// <summary>
     /// This NetworkBehavior, when added to a GameObject containing a collider (or multiple colliders) with the

@@ -1,0 +1,38 @@
+using CosmicShore.Data;
+using CosmicShore.Utility;
+using UnityEngine;
+
+namespace CosmicShore.Gameplay
+{
+    public class VolumeAndBlocksStolenScoring : BaseScoring
+    {
+        private readonly bool trackBlocks;
+
+        public VolumeAndBlocksStolenScoring(IScoreTracker tracker, GameDataSO data, float scoreNormalizationQuotient, bool trackBlocks = false) 
+            : base(tracker, data, scoreNormalizationQuotient)
+        {
+            this.trackBlocks = trackBlocks;
+        }
+        
+        /*public override void CalculateScore()
+        {
+            foreach (var playerScore in GameData.RoundStatsList)
+            {
+                if (!TryGetRoundStats(playerScore.Name, out IRoundStats roundStats))
+                    return;
+                
+                playerScore.Score += (trackBlocks ? roundStats.PrismStolen : roundStats.VolumeStolen) * scoreMultiplier;
+            }
+        }*/
+
+        public override void Subscribe()
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public override void Unsubscribe()
+        {
+            throw new System.NotImplementedException();
+        }
+    }
+}

@@ -1,0 +1,57 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3f08b515ec8340d19010875c705330ff, type: 3}
+  m_Name: Heart_Shape
+  m_EditorClassIdentifier: 
+  shapeName: Heart
+  description: This is a Heart Shape
+  thumbnail: {fileID: 21300000, guid: f891eac8a4e23514f8896ba0e34647cc, type: 3}
+  autoGeneratePreset: 0
+  autoGenerateRadius: 100
+  waypoints:
+  - {x: 0, y: 31.25, z: 0}
+  - {x: 0.8088711, y: 36.63142, z: 0}
+  - {x: 6.0559516, y: 50.105827, z: 0}
+  - {x: 18.276731, y: 64.99492, z: 0}
+  - {x: 36.93711, y: 73.85951, z: 0}
+  - {x: 58.456722, y: 71.875, z: 0}
+  - {x: 77.421486, y: 58.570766, z: 0}
+  - {x: 88.52901, y: 37.2131, z: 0}
+  - {x: 88.52901, y: 12.501798, z: 0}
+  - {x: 77.42147, y: -11.869925, z: 0}
+  - {x: 58.45671, y: -34.375008, z: 0}
+  - {x: 36.937103, y: -55.099648, z: 0}
+  - {x: 18.276726, y: -74.19578, z: 0}
+  - {x: 6.055949, y: -90.61989, z: 0}
+  - {x: 0.80886996, y: -102.09215, z: 0}
+  - {x: -6.013348e-20, y: -106.25, z: 0}
+  - {x: -0.8088721, y: -102.09214, z: 0}
+  - {x: -6.055956, y: -90.61988, z: 0}
+  - {x: -18.276743, y: -74.19576, z: 0}
+  - {x: -36.93711, y: -55.099625, z: 0}
+  - {x: -58.456722, y: -34.37499, z: 0}
+  - {x: -77.42147, y: -11.869929, z: 0}
+  - {x: -88.52901, y: 12.501812, z: 0}
+  - {x: -88.52899, y: 37.213146, z: 0}
+  - {x: -77.42147, y: 58.570778, z: 0}
+  - {x: -58.456722, y: 71.875, z: 0}
+  - {x: -36.937096, y: 73.859505, z: 0}
+  - {x: -18.276705, y: 64.994896, z: 0}
+  - {x: -6.055945, y: 50.105827, z: 0}
+  - {x: -0.80887175, y: 36.63142, z: 0}
+  - {x: 4.810678e-19, y: 31.25, z: 0}
+  trailEnabledPerSegment: 01010101010101010101010101010101010101010101010101010101010101
+  playerStartOffset: {x: 0, y: 0, z: -150}
+  playerStartEuler: {x: 0, y: 0, z: 0}
+  revealCameraEuler: {x: 90, y: 0, z: 0}
+  revealCameraDistance: 400
+  parTime: 360

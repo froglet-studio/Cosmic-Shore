@@ -1,0 +1,69 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4b3f2a8c8f344355b16a4d4296ae3f98, type: 3}
+  m_Name: Sparrow
+  m_EditorClassIdentifier:
+  vesselClass: 11
+  entries:
+  - Element: 3
+    AbilityLabel: Pulsefire Cannons
+    AbilityDescription: Full-auto cannons. Space extends their range; at level 5
+      the bullets pierce through prisms instead of stopping at first impact.
+    Input: 1
+    MultiplierAtFullLevel: 2.5
+    MinMultiplier: 0.4
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: Piercing Bullets
+    UpgradeDescription: Bullets pierce through prisms instead of being destroyed
+      on first impact.
+  - Element: 4
+    AbilityLabel: Overheat Boost
+    AbilityDescription: Boost while building heat. Time raises the boost speed;
+      at level 5 boosting at full stick deflection performs a barrel roll.
+    Input: 7
+    MultiplierAtFullLevel: 1.5
+    MinMultiplier: 0.5
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: Barrel Roll
+    UpgradeDescription: Boost with the stick at the circle's perimeter to roll,
+      displacing sideways while a bridging trail follows your true path.
+  - Element: 2
+    AbilityLabel: Turret Stance
+    AbilityDescription: Stop and fire prisms instead of bullets. Mass stretches
+      the fired prisms; at level 5 they arrive shielded.
+    Input: 6
+    MultiplierAtFullLevel: 2.5
+    MinMultiplier: 0.4
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: Shielded Prisms
+    UpgradeDescription: Turret-fired prisms arrive shielded (one-hit ablative
+      armor).
+  - Element: 1
+    AbilityLabel: Skyburst Rockets
+    AbilityDescription: Crystal-stocked rockets that detonate on impact. Charge
+      widens the blast radius (authored on the skyburst effect assets); at level
+      5 the explosions spare your own domain.
+    Input: 2
+    MultiplierAtFullLevel: 1
+    MinMultiplier: 1
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: Domain-Safe Skybursts
+    UpgradeDescription: Skyburst explosions no longer destroy your own domain's
+      prisms.

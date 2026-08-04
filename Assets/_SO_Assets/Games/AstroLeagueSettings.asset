@@ -1,0 +1,87 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: afa9b701ce084be58a39d0c237666e26, type: 3}
+  m_Name: AstroLeagueSettings
+  m_EditorClassIdentifier: 
+  matchDurationSeconds: 180
+  goalLimit: 5
+  goldenGoalOvertime: 1
+  intensityScaleAtMax: 2
+  maxIntensityLevel: 4
+  boundaryShapesByIntensity:
+  - 4
+  - 3
+  - 6
+  - 0
+  centralGoalByIntensity:
+  - 0
+  - 0
+  - 0
+  - 1
+  centralBallSpawnOffset: 70
+  boundaryRadius: 190
+  octagonBevelFraction: 0.5
+  beveledBoxBevelFraction: 0.45
+  notchedRingOuterShape: 6
+  ringMajorRadiusFraction: 0.5
+  ringTubeRadiusFraction: 0.18
+  notchCenterDegrees: 0
+  notchHalfWidthDegrees: 30
+  vesselRecoilSpeed: 0
+  vesselRecoilDuration: 0.12
+  celebrationSeconds: 2.2
+  celebrationTimeScale: 0.35
+  kickoffFreezeSeconds: 2.4
+  winnerBannerSeconds: 2.5
+  kickoffLineDistance: 110
+  kickoffLateralSpacing: 30
+  hitBoostMultiplier: 2.5
+  directionalBias: 0.45
+  minimumHitSpeed: 5
+  vesselStrikeCooldown: 0.12
+  vesselClearRadius: 12
+  maxSpeed: 220
+  ballMass: 3
+  ballBounciness: 1
+  prismDragMassScale: 0.05
+  ballAngularDamping: 0.3
+  maxAngularSpeed: 40
+  ballMeshSubdivisions: 2
+  prismScanRadiusFactor: 1.1
+  clientSmoothingRate: 12
+  clientSnapDistance: 30
+  hitstopDuration: 0.045
+  hitstopTimeScale: 0.1
+  hitstopSpeedThreshold: 70
+  strikeShakeIntensity: 1
+  strikeShakeDuration: 0.18
+  goalShakeIntensity: 2.5
+  goalShakeDuration: 0.5
+  shakeFalloffRadius: 180
+  wallJuiceMinIntensity: 0.12
+  wallJuiceCooldown: 0.2
+  impactFlashDuration: 0.12
+  impactFlashIntensity: 14
+  impactParticleBurst: 28
+  goalParticleBurst: 120
+  minTrailWidth: 0.6
+  maxTrailWidth: 5
+  minEmissionIntensity: 2.5
+  maxEmissionIntensity: 11
+  minLightRange: 25
+  maxLightRange: 90
+  speedForMaxVisuals: 160
+  strikerApproachLead: 18
+  strikerRecoverDistance: 60
+  jadeGoalColor: {r: 0.18695846, g: 0.8200566, b: 0.8616352, a: 0.5}
+  rubyGoalColor: {r: 0.9056604, g: 0.15094331, b: 0.66856146, a: 0.5}
+  goldGoalColor: {r: 1, g: 0.82, b: 0.2, a: 0.5}

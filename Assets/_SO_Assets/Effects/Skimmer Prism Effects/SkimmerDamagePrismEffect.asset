@@ -15,3 +15,8 @@ MonoBehaviour:
   inertia: 70
   overrideCourse: {x: 0, y: 0, z: 0}
   overrideSpeed: 0
+  swingVelocityScale: 1
+  maxImpactSpeed: 0
+  proportionalDebris: 1
+  restitution: 0.3333333
+  debrisSpeedLimit: 200

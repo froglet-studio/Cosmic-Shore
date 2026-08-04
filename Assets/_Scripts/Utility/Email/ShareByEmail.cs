@@ -1,6 +1,7 @@
+using CosmicShore.Core;
 using UnityEngine;
 
-namespace CosmicShore.Utility.Email
+namespace CosmicShore.Utility
 {
     public class ShareByEmail //: MonoBehaviour
     {
@@ -18,6 +19,14 @@ namespace CosmicShore.Utility.Email
 
         public void SendEmail()
         {
+            // NativeShare has no desktop implementation - on a Steam build it silently does nothing,
+            // so the support button would look broken. Hand desktop players their mail client.
+            if (DesktopPlatformServices.IsDesktop)
+            {
+                DesktopPlatformServices.TryOpenMailClient(recipient, subject, text);
+                return;
+            }
+
             NativeShare nativeShare = new();
 
             // Set email
@@ -31,6 +40,18 @@ namespace CosmicShore.Utility.Email
 
         public void SendEmailwithAttachment(string attachmentPath)
         {
+            // Desktop mail clients cannot be handed an attachment through mailto:, so put the file
+            // somewhere the player can find it and open the composer alongside.
+            if (DesktopPlatformServices.IsDesktop)
+            {
+                string saved = DesktopPlatformServices.SaveAndReveal(attachmentPath);
+                string body = string.IsNullOrEmpty(saved)
+                    ? text
+                    : $"{text}\n\n(Attachment saved to: {saved} - please attach it to this email.)";
+                DesktopPlatformServices.TryOpenMailClient(recipient, subject, body);
+                return;
+            }
+
             NativeShare nativeShare = new NativeShare();
 
             // Set email
@@ -45,8 +66,8 @@ namespace CosmicShore.Utility.Email
 
         void HelpEmailCallback(NativeShare.ShareResult result, string shareTarget)
         {
-            Debug.Log("Send Email - Result: " + result.ToString());
-            Debug.Log("Send Email - shareTarget: " + shareTarget);
+            CSDebug.Log("Send Email - Result: " + result.ToString());
+            CSDebug.Log("Send Email - shareTarget: " + shareTarget);
 
             // TODO Give the player a thumbs up if the result was successful
         }

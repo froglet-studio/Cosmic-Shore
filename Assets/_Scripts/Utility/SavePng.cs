@@ -1,6 +1,7 @@
 using UnityEngine;
+using System.IO;
 
-namespace CosmicShore
+namespace CosmicShore.Utility
 {
     public class SavePng : MonoBehaviour
     {

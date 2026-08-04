@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e8d8aa5d835249798a256e18f2f7d912, type: 3}
+  m_Name: Skim Race Spawn Profile
+  m_EditorClassIdentifier:
+  FloraExcludeLocalDomain: 1
+  FloraSpawnVolumeCeiling: 0
+  FloraInitialDelaySeconds: 0
+  FloraSpawnIntervalSeconds: 0
+  SupportedFloras: []
+  FaunaExcludeLocalDomain: 1
+  InitialFaunaSpawnWaitTime: 5
+  FaunaSpawnVolumeThreshold: 1
+  BaseFaunaSpawnTime: 30
+  FaunaFoodFloor: 10
+  FaunaInitialDelaySeconds: 0
+  FaunaSpawnIntervalSeconds: 1
+  SupportedFaunas:
+  - {fileID: 11400000, guid: 25d148d3058b434ea219fe0e5a5783f5, type: 2}
+  - {fileID: 11400000, guid: ab0dc8255c7c41f0a2f94c3e5f094da2, type: 2}

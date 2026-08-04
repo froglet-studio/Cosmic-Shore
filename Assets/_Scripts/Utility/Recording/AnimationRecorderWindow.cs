@@ -107,11 +107,6 @@ namespace CosmicShore.Utility
         private static float timer = 0;
 
         /// <summary>
-        /// Moment when the current recording started.
-        /// </summary>
-        private float animationStart = 0;
-
-        /// <summary>
         /// Number for each recording of the same object.
         /// If object X is recorded 3 times in one session, add 0, 1, and 2 to each of its
         /// recording's temp files.
@@ -147,7 +142,7 @@ namespace CosmicShore.Utility
         /// Creates the menu item "Window/Animation Recorder" and sets it to open the Animation Recorder
         /// window when activated.
         /// </summary>
-        [MenuItem("Window/Animation Recorder")]
+        [MenuItem("FrogletTools/Misc/Animation Recorder")]
         public static void ShowWindow()
         {
             EditorWindow recorder = EditorWindow.GetWindow(typeof(AnimationRecorder), false, AnimationRecorderName);
@@ -201,7 +196,6 @@ namespace CosmicShore.Utility
                 isRecording = true;
                 SetupRecording();
                 timer = recordingDelay;
-                animationStart = Time.time;
             }
             GUILayout.Space(LAYOUT_VERTICAL_GAP * 2);
             GUI.enabled = isRecording;
@@ -317,7 +311,7 @@ namespace CosmicShore.Utility
 
             if (!currentAssetsPath.StartsWith("Assets/"))
             {
-                Debug.LogError("The set asset path must start with \"Assets/\".");
+                CSDebug.LogError("The set asset path must start with \"Assets/\".");
             }
             AssetDatabase.CreateFolder(parentPath, last);
 
@@ -343,7 +337,7 @@ namespace CosmicShore.Utility
                     Animator currentAnimator = currentGameObject.GetComponent<Animator>();
                     AnimationTrack animationTrack = currentTimelineAsset.CreateTrack<AnimationTrack>($"{currentGameObject.name} #{crn}");
                     string newAssetPath = GameObjectAssetPath(currentGameObject, currentRecordingNumber);
-                    Debug.Log($"new asset path: {newAssetPath}");
+                    CSDebug.Log($"new asset path: {newAssetPath}");
                     AnimationClip animationClip = AssetDatabase.LoadAssetAtPath<AnimationClip>(newAssetPath);
                     animationTrack.CreateClip(animationClip);
                     director.SetGenericBinding(animationTrack, currentAnimator);
@@ -405,7 +399,7 @@ namespace CosmicShore.Utility
             GameObject gameObject = GameObject.Find(AnimationRecorderName);
             if (gameObject == null)
             {
-                Debug.LogWarning($"There needs to be an object in the scene called \"{AnimationRecorderName}\". One will be added now.");
+                CSDebug.LogWarning($"There needs to be an object in the scene called \"{AnimationRecorderName}\". One will be added now.");
                 gameObject = new GameObject(AnimationRecorderName);
             }
             DataHolder sceneData = gameObject.GetComponent<DataHolder>();

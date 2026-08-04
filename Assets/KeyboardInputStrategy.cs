@@ -1,7 +1,8 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using CosmicShore.Data;
 
-namespace CosmicShore.Game.IO
+namespace CosmicShore.Gameplay
 {
     public class KeyboardInputStrategy : BaseInputStrategy
     {
@@ -80,9 +81,9 @@ namespace CosmicShore.Game.IO
             );
 
             // Normalize diagonal inputs to prevent faster diagonal movement
-            if (leftStickTarget.magnitude > 1f)
+            if (leftStickTarget.sqrMagnitude > 1f)
                 leftStickTarget.Normalize();
-            if (rightStickTarget.magnitude > 1f)
+            if (rightStickTarget.sqrMagnitude > 1f)
                 rightStickTarget.Normalize();
 
             // Smooth interpolation for analog-like feel
@@ -91,9 +92,9 @@ namespace CosmicShore.Game.IO
             rightStickCurrent = Vector2.Lerp(rightStickCurrent, rightStickTarget, RAMP_SPEED * deltaTime);
 
             // Apply dead zone
-            if (leftStickCurrent.magnitude < DEAD_ZONE)
+            if (leftStickCurrent.sqrMagnitude < DEAD_ZONE * DEAD_ZONE)
                 leftStickCurrent = Vector2.zero;
-            if (rightStickCurrent.magnitude < DEAD_ZONE)
+            if (rightStickCurrent.sqrMagnitude < DEAD_ZONE * DEAD_ZONE)
                 rightStickCurrent = Vector2.zero;
 
             // Throttle: E key (binary like gamepad shoulder button)
@@ -134,6 +135,10 @@ namespace CosmicShore.Game.IO
                 inputStatus.OnButtonReleased.Raise(InputEvents.FlipAction);
             wasFlipPressed = isFlipPressed;
 
+
+            // Left/Right Trigger analog values (binary for keyboard)
+            inputStatus.LeftTriggerAnalog = keyboard.leftShiftKey.isPressed ? 1f : 0f;
+            inputStatus.RightTriggerAnalog = keyboard.rightShiftKey.isPressed ? 1f : 0f;
 
             // Left Trigger - Left Shift
             bool isLeftTriggerPressed = keyboard.leftShiftKey.isPressed;
@@ -258,6 +263,7 @@ namespace CosmicShore.Game.IO
         public override void OnStrategyActivated()
         {
             ResetSmoothingState();
+            inputStatus.ActiveInputDevice = InputDeviceType.Keyboard;
         }
 
         public override void OnStrategyDeactivated()

@@ -1,8 +1,12 @@
-public enum TutorialStepType
+
+namespace CosmicShore.Core
 {
-    None,
-    IntroWelcome,
-    OpenArcadeMenu,
-    LockModesExceptFreestyle,
-    FreestylePrompt
+    public enum TutorialStepType
+    {
+        None,
+        IntroWelcome,
+        OpenArcadeMenu,
+        LockModesExceptFreestyle,
+        FreestylePrompt
+    }
 }

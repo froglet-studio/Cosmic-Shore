@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b7369ee528f04c29b25d63318d7e6280, type: 3}
+  m_Name: EndConditionOverrides
+  m_EditorClassIdentifier:
+  hexRaceCrystalCount: 0
+  crystalCaptureCrystalCount: 20
+  joustCount: 3
+  maelstromWinTarget: 6
+  nucleusRushWaveTarget: 3
+  rampagePrismTarget: 2000
+  hexRaceCrystalCountBuild: 0
+  crystalCaptureCrystalCountBuild: 20
+  joustCountBuild: 3
+  maelstromWinTargetBuild: 6
+  nucleusRushWaveTargetBuild: 3
+  rampagePrismTargetBuild: 2000
+  autoRestoreBuildValuesBeforeBuild: 1

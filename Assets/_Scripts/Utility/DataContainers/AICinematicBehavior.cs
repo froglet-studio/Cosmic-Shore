@@ -1,15 +1,32 @@
-﻿using CosmicShore.Game.AI;
+﻿using CosmicShore.Gameplay;
 using UnityEngine;
+using CosmicShore.Utility;
+using CosmicShore.Data;
 
-namespace CosmicShore.Game.Cinematics
+namespace CosmicShore.Utility
 {
+    /// <summary>
+    /// The style of AI flourish a vessel can perform. Lives with its only consumer
+    /// (<see cref="AICinematicBehavior"/>) now that the end-game cinematic that defined
+    /// it was removed. Currently dormant - nothing drives these behaviors.
+    /// </summary>
+    public enum AICinematicBehaviorType
+    {
+        MoveForward,    // Simple forward flight (most common)
+        Loop,           // Perform loop maneuver
+        Drift,          // Drift while moving
+        Spiral,         // Spiral upward
+        BarrelRoll,     // Barrel roll (future)
+        FlyBy,          // Victory fly-by (future)
+        HoverSpin       // Hover and spin (future)
+    }
+
     /// <summary>
     /// Handles AI-driven cinematic behaviors for vessels during end-game sequences.
     /// This component is separate from AIPilot to maintain SOLID principles.
     /// </summary>
     public class AICinematicBehavior : MonoBehaviour
     {
-        [SerializeField] private float forwardSpeed = 20f;
         [SerializeField] private float loopRadius = 15f;
         [SerializeField] private float loopSpeed = 2f;
         
@@ -35,7 +52,7 @@ namespace CosmicShore.Game.Cinematics
             isActive = true;
             behaviorStartTime = Time.time;
             
-            Debug.Log($"[AICinematicBehavior] Starting behavior: {behaviorType}");
+            CSDebug.Log($"[AICinematicBehavior] Starting behavior: {behaviorType}");
             
             // Setup behavior-specific initialization
             switch (behaviorType)
@@ -53,15 +70,15 @@ namespace CosmicShore.Game.Cinematics
                     InitializeSpiral();
                     break;
                 case AICinematicBehaviorType.BarrelRoll:
-                    Debug.LogWarning("BarrelRoll not yet implemented - using MoveForward");
+                    CSDebug.LogWarning("BarrelRoll not yet implemented - using MoveForward");
                     InitializeMoveForward();
                     break;
                 case AICinematicBehaviorType.FlyBy:
-                    Debug.LogWarning("FlyBy not yet implemented - using MoveForward");
+                    CSDebug.LogWarning("FlyBy not yet implemented - using MoveForward");
                     InitializeMoveForward();
                     break;
                 case AICinematicBehaviorType.HoverSpin:
-                    Debug.LogWarning("HoverSpin not yet implemented - using MoveForward");
+                    CSDebug.LogWarning("HoverSpin not yet implemented - using MoveForward");
                     InitializeMoveForward();
                     break;
                 default:
@@ -76,7 +93,7 @@ namespace CosmicShore.Game.Cinematics
         public void StopCinematicBehavior()
         {
             isActive = false;
-            Debug.Log($"[AICinematicBehavior] Stopped behavior: {currentBehavior}");
+            CSDebug.Log($"[AICinematicBehavior] Stopped behavior: {currentBehavior}");
         }
 
         private void Update()
@@ -239,7 +256,7 @@ namespace CosmicShore.Game.Cinematics
         void ExecuteBarrelRoll()
         {
             // Will be implemented in future
-            Debug.Log("Barrel roll cinematic - To be implemented");
+            CSDebug.Log("Barrel roll cinematic - To be implemented");
         }
 
         /// <summary>
@@ -248,7 +265,7 @@ namespace CosmicShore.Game.Cinematics
         void ExecuteFlyBy()
         {
             // Will be implemented in future
-            Debug.Log("Fly-by cinematic - To be implemented");
+            CSDebug.Log("Fly-by cinematic - To be implemented");
         }
 
         /// <summary>
@@ -257,7 +274,7 @@ namespace CosmicShore.Game.Cinematics
         void ExecuteHoverSpin()
         {
             // Will be implemented in future
-            Debug.Log("Hover spin cinematic - To be implemented");
+            CSDebug.Log("Hover spin cinematic - To be implemented");
         }
 
         #endregion

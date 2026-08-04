@@ -1,23 +1,26 @@
-using CosmicShore.FTUE;
+using CosmicShore.Core;
 using System.Collections;
 using UnityEngine;
 
-[AddComponentMenu("FTUE/Adapters/FTUEIntroAnimatorAdapter")]
-public class FTUEIntroAnimatorAdapter : MonoBehaviour, IAnimator
+namespace CosmicShore.Core
 {
-    [SerializeField] private FTUEIntroAnimator _inner;
-
-    public IEnumerator PlayIntro()
+    [AddComponentMenu("FTUE/Adapters/FTUEIntroAnimatorAdapter")]
+    public class FTUEIntroAnimatorAdapter : MonoBehaviour, IAnimator
     {
-        bool done = false;
-        yield return _inner.PlayIntro(() => done = true);
-        while (!done) yield return null;
-    }
+        [SerializeField] private FTUEIntroAnimator _inner;
 
-    public IEnumerator PlayOutro()
-    {
-        bool done = false;
-        yield return _inner.PlayOutro(() => done = true);
-        while (!done) yield return null;
+        public IEnumerator PlayIntro()
+        {
+            bool done = false;
+            yield return _inner.PlayIntro(() => done = true);
+            while (!done) yield return null;
+        }
+
+        public IEnumerator PlayOutro()
+        {
+            bool done = false;
+            yield return _inner.PlayOutro(() => done = true);
+            while (!done) yield return null;
+        }
     }
 }

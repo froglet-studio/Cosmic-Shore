@@ -1,0 +1,407 @@
+using System.Collections.Generic;
+using CosmicShore.Core;
+using CosmicShore.Gameplay;
+using CosmicShore.Utility;
+using Reflex.Attributes;
+using UnityEngine;
+using CosmicShore.Data;
+using CosmicShore.ScriptableObjects;
+using CosmicShore.UI;
+using System.Linq;
+namespace CosmicShore.Gameplay
+{
+    /// <summary>
+    /// REQUIRED component of every party game: buffs trailing players by their team's score
+    /// deficit behind first place. ALL FOUR elements rise EQUALLY - the per-game strength is
+    /// `SO_ArcadeGame.ComebackRatePerScoreDeficit` (synced to every machine via
+    /// GameDataSO.ComebackRatePerScoreDeficit): bonusLevels = deficit x rate. The comeback
+    /// layer can never lift an element above level 10 (ResourceSystem.SustainedCeiling).
+    ///
+    /// Scene-authored instances keep their authored score-source settings; a scene without one
+    /// gets it auto-created by MultiplayerMiniGameControllerBase (EnsureExists) with per-mode
+    /// defaults. The optional comeback profile only seeds per-vessel INITIAL levels now - the
+    /// old per-vessel/per-element weights are retired (equal-elements is the law).
+    /// </summary>
+    public class ElementalComebackSystem : MonoBehaviour
+    {
+        /// <summary>
+        /// Which stat to use when calculating who is ahead/behind.
+        /// HexRace tracks elapsed time as Score (same for everyone) so use CrystalsCollected.
+        /// CrystalCapture also uses CrystalsCollected and Rampage PrismsDestroyed - in the
+        /// finish-time-scored modes Score is only assigned at game end (winners a time,
+        /// losers a sentinel), so the Score source would be dead during live play.
+        /// AstroLeague uses GoalsScored.
+        /// </summary>
+        public enum ScoreDifferenceSource
+        {
+            Score,
+            CrystalsCollected,
+            Goals,
+            PrismsDestroyed,
+        }
+
+        [Header("Config")]
+        [Tooltip("Optional: only per-vessel INITIAL levels are read from the profile now. The " +
+                 "comeback strength itself comes from the game's ComebackRatePerScoreDeficit " +
+                 "and applies to all four elements equally.")]
+        [SerializeField] SO_ElementalComebackProfile comebackProfile;
+        [Inject] GameDataSO gameData;
+
+        /// <summary>
+        /// Guarantees a party-game scene has the comeback system (the REQUIRED-component rule).
+        /// A scene-authored instance is respected as-is; otherwise one is added to the host
+        /// (Reflex injection has already run for scene objects, so the added instance receives
+        /// gameData directly) and configured with per-mode score-source defaults.
+        /// </summary>
+        public static ElementalComebackSystem EnsureExists(GameObject host, GameDataSO gameData)
+        {
+            var existing = FindFirstObjectByType<ElementalComebackSystem>(FindObjectsInactive.Include);
+            if (existing)
+            {
+                existing.gameData ??= gameData;
+                return existing;
+            }
+
+            var system = host.AddComponent<ElementalComebackSystem>();
+            system.gameData = gameData;
+            switch (gameData ? gameData.GameMode : GameModes.Random)
+            {
+                case GameModes.HexRace: // Score is elapsed time - crystals are the honest stat
+                case GameModes.MultiplayerCrystalCapture: // Score lands only at game end (time/sentinel)
+                    system.differenceSource = ScoreDifferenceSource.CrystalsCollected;
+                    break;
+                case GameModes.AstroLeague:
+                    system.differenceSource = ScoreDifferenceSource.Goals;
+                    break;
+                case GameModes.Rampage: // Score lands only at game end - destruction is the live stat
+                    system.differenceSource = ScoreDifferenceSource.PrismsDestroyed;
+                    break;
+                default:
+                    system.differenceSource = ScoreDifferenceSource.Score;
+                    break;
+            }
+            CSDebug.Log($"[ElementalComebackSystem] Auto-created for {gameData?.GameMode} " +
+                        $"(source={system.differenceSource}, rate={gameData?.ComebackRatePerScoreDeficit ?? 0f}).");
+            return system;
+        }
+
+        [Header("Scoring")]
+        [Tooltip("Which stat drives the comeback calculation")]
+        [SerializeField] ScoreDifferenceSource differenceSource = ScoreDifferenceSource.CrystalsCollected;
+        [Tooltip("For Score source: enable when lower score is better (e.g. race times)")]
+        [SerializeField] bool useGolfRules;
+
+        [Header("Update Settings")]
+        [Tooltip("How often (in seconds) to recalculate comeback buffs")]
+        [SerializeField] float updateInterval = 1f;
+
+        [Header("Audio")]
+        [Tooltip("Minimum seconds between comeback audio events for the same element. " +
+                 "Prevents the sound firing every update tick while the buff is held.")]
+        [SerializeField, Min(0f)] float comebackAudioCooldown = 3f;
+
+        [Header("Debug")]
+        [SerializeField] bool debugLogging;
+
+        static readonly Element[] AllElements =
+            { Element.Mass, Element.Charge, Element.Space, Element.Time };
+
+        float _lastUpdateTime;
+        bool _isActive;
+
+        // Rising-edge tracker for the local player's "comeback system is on" toast - fires
+        // once when their buff activates, re-arms when the deficit closes. Only modes whose
+        // GameToastConfigSO authors ComebackActivated display it (e.g. Skim Race).
+        bool _localComebackActive;
+
+        // Per-element last-played timestamp for the local player's comeback audio.
+        // Index matches AllElements order: Mass=0, Charge=1, Space=2, Time=3.
+        readonly float[] _lastComebackAudioTime = { -999f, -999f, -999f, -999f };
+
+        void OnEnable()
+        {
+            if (gameData == null)
+            {
+                CSDebug.LogError("[ElementalComebackSystem] GameDataSO is not assigned!");
+                return;
+            }
+            // Profile is optional now (initial-levels only) - the system runs without one.
+
+            gameData.OnMiniGameTurnStarted.OnRaised += OnTurnStarted;
+            gameData.OnMiniGameTurnEnd.OnRaised += OnTurnEnded;
+            gameData.OnMiniGameEnd.OnRaised += OnGameEnded;
+
+            if (debugLogging)
+                CSDebug.Log("[ElementalComebackSystem] Enabled and subscribed to game events.");
+        }
+
+        void OnDisable()
+        {
+            if (gameData == null) return;
+            gameData.OnMiniGameTurnStarted.OnRaised -= OnTurnStarted;
+            gameData.OnMiniGameTurnEnd.OnRaised -= OnTurnEnded;
+            gameData.OnMiniGameEnd.OnRaised -= OnGameEnded;
+        }
+
+        void OnTurnStarted()
+        {
+            if (debugLogging)
+                CSDebug.Log($"[ElementalComebackSystem] OnTurnStarted fired. " +
+                          $"Rate={gameData.ComebackRatePerScoreDeficit}, " +
+                          $"Players={gameData.Players?.Count ?? 0}, " +
+                          $"Source={differenceSource}");
+
+            _isActive = true;
+            _localComebackActive = false;
+            ResetComebackAudioTimestamps();
+
+            if (comebackProfile == null) return; // profile only seeds optional initial levels
+
+            foreach (var player in gameData.Players)
+            {
+                var rs = GetResourceSystem(player);
+                if (rs == null)
+                {
+                    if (debugLogging)
+                        CSDebug.LogWarning($"[ElementalComebackSystem] Player '{player?.Name}' has no ResourceSystem. Skipping.");
+                    continue;
+                }
+
+                var vesselType = player.Vessel.VesselStatus.VesselType;
+                var config = comebackProfile.GetConfig(vesselType);
+
+                ApplyInitialValues(rs, config);
+
+                if (debugLogging)
+                    CSDebug.Log($"[ElementalComebackSystem] Initial levels for {player.Name} ({vesselType}): " +
+                              $"M={rs.GetLevel(Element.Mass)} C={rs.GetLevel(Element.Charge)} " +
+                              $"S={rs.GetLevel(Element.Space)} T={rs.GetLevel(Element.Time)}");
+            }
+        }
+
+        void OnTurnEnded()
+        {
+            if (debugLogging && _isActive)
+                CSDebug.Log("[ElementalComebackSystem] Turn ended. Deactivating.");
+            Deactivate();
+        }
+
+        void OnGameEnded()
+        {
+            Deactivate();
+        }
+
+        void Deactivate()
+        {
+            if (!_isActive) return;
+            _isActive = false;
+            ClearAllComebackModifiers();
+        }
+
+        void ClearAllComebackModifiers()
+        {
+            var players = gameData.Players;
+            if (players == null) return;
+            foreach (var player in players)
+                GetResourceSystem(player)?.ClearComebackModifiers();
+        }
+
+        void Update()
+        {
+            if (!_isActive) return;
+
+            if (Time.time - _lastUpdateTime < updateInterval) return;
+
+            _lastUpdateTime = Time.time;
+            ApplyComebackBuffs();
+        }
+
+        void ApplyComebackBuffs()
+        {
+            var players = gameData.Players;
+            if (players == null || players.Count < 2) return;
+
+            float leaderValue = GetLeaderValue();
+            float rate = gameData.ComebackRatePerScoreDeficit;
+            if (rate <= 0f) return; // this game opted out of comeback
+
+            for (int p = 0; p < players.Count; p++)
+            {
+                var player = players[p];
+                var rs = GetResourceSystem(player);
+                if (rs == null) continue;
+
+                float playerValue = GetPlayerValue(player);
+                float scoreDiff = CalculateScoreDifference(leaderValue, playerValue);
+
+                // ALL FOUR elements rise EQUALLY - the game's authored rate is the only dial.
+                // The ResourceSystem caps the comeback contribution so it can never lift an
+                // element above level 10 (earned progression alone reaches the overcharge band).
+                float bonusLevels = scoreDiff * rate;
+                float normalizedBonus = Mathf.Max(0f, bonusLevels / 10f);
+
+                bool isLocalPlayer = player.IsLocalUser;
+                if (isLocalPlayer)
+                    UpdateLocalComebackToast(player, bonusLevels);
+
+                for (int i = 0; i < AllElements.Length; i++)
+                {
+                    var element = AllElements[i];
+
+                    // Composited through the ResourceSystem's comeback-modifier layer instead
+                    // of overwriting the base level - mid-turn crystal gains (AdjustLevel)
+                    // persist underneath the comeback bonus instead of being erased each tick.
+                    rs.SetComebackModifier(element, normalizedBonus);
+
+                    // Fire comeback audio for the local player when a buff activates,
+                    // gated by per-element cooldown so it doesn't fire every tick.
+                    if (isLocalPlayer && bonusLevels > 0f)
+                    {
+                        float now = Time.unscaledTime;
+                        if (now - _lastComebackAudioTime[i] >= comebackAudioCooldown)
+                        {
+                            _lastComebackAudioTime[i] = now;
+                            AudioSystem.Instance?.PlayGameplaySFX(ComebackCategoryForElement(element));
+                        }
+                    }
+                }
+
+                if (debugLogging)
+                    CSDebug.Log($"[ElementalComebackSystem] {player.Name}: " +
+                              $"value={playerValue:F1}, leader={leaderValue:F1}, diff={scoreDiff:F1}, " +
+                              $"bonus={bonusLevels:F1} → " +
+                              $"M={rs.GetLevel(Element.Mass)} C={rs.GetLevel(Element.Charge)} " +
+                              $"S={rs.GetLevel(Element.Space)} T={rs.GetLevel(Element.Time)}");
+            }
+        }
+
+        /// <summary>
+        /// Posts the ComebackActivated toast situation on the rising edge of the LOCAL
+        /// player's comeback buff, and re-arms once the buff drops back to zero. Whether it
+        /// displays is up to the current mode's toast config (unauthored = silent).
+        /// </summary>
+        void UpdateLocalComebackToast(IPlayer player, float bonusLevels)
+        {
+            if (bonusLevels > 0f)
+            {
+                if (_localComebackActive) return;
+                _localComebackActive = true;
+                GameToastAPI.Post(GameToastSituation.ComebackActivated, player.Domain, player.Name);
+            }
+            else
+            {
+                _localComebackActive = false;
+            }
+        }
+
+        void ApplyInitialValues(ResourceSystem rs, SO_ElementalComebackProfile.VesselComebackConfig config)
+        {
+            for (int i = 0; i < AllElements.Length; i++)
+            {
+                float initialLevel = config.GetInitialLevel(AllElements[i]);
+                // Clamp initial values to 0.0–1.5 range
+                float normalized = Mathf.Clamp(initialLevel / 10f, 0f, 1.5f);
+                rs.SetElementLevel(AllElements[i], normalized);
+            }
+        }
+
+        // ---------------------------------------------------------------
+        // Value reading - uses the configured ScoreDifferenceSource
+        // ---------------------------------------------------------------
+        // Comeback buffs are now keyed off DOMAIN aggregates: a player on the
+        // leading domain doesn't get a comeback buff even if they personally
+        // contribute less than the team leader. The "deficit" each player
+        // experiences is their team's deficit, not their individual one.
+
+        float GetLeaderValue()
+        {
+            var list = gameData.RoundStatsList;
+            if (list == null || list.Count == 0) return 0f;
+
+            float leader = 0f;
+            bool first = true;
+            int dc = Mathf.Clamp(gameData.RequestedDomainCount, 1, GameDataSO.ActiveDomains.Length);
+            for (int i = 0; i < dc; i++)
+            {
+                var d = GameDataSO.ActiveDomains[i];
+                float v = ReadDomainValue(d);
+                if (first || (IsHigherBetter() ? v > leader : v < leader))
+                {
+                    leader = v;
+                    first = false;
+                }
+            }
+            return first ? 0f : leader;
+        }
+
+        float GetPlayerValue(IPlayer player)
+        {
+            // A player's "value" for comeback purposes is their domain's aggregate.
+            return player != null ? ReadDomainValue(player.Domain) : 0f;
+        }
+
+        float ReadDomainValue(Domains domain)
+        {
+            switch (differenceSource)
+            {
+                case ScoreDifferenceSource.CrystalsCollected:
+                    return gameData.SumCrystalsCollectedByDomain(domain);
+                case ScoreDifferenceSource.Goals:
+                    return ScoringMetrics.SumByDomain(gameData, ScoringMetric.Goals, domain);
+                case ScoreDifferenceSource.PrismsDestroyed:
+                    return ScoringMetrics.SumByDomain(gameData, ScoringMetric.PrismsDestroyed, domain);
+                case ScoreDifferenceSource.Score:
+                    float sum = 0f;
+                    var list = gameData.RoundStatsList;
+                    for (int i = 0, count = list.Count; i < count; i++)
+                    {
+                        var s = list[i];
+                        if (s != null && s.Domain == domain) sum += s.Score;
+                    }
+                    return sum;
+                default:
+                    return 0f;
+            }
+        }
+
+        bool IsHigherBetter()
+        {
+            return differenceSource switch
+            {
+                ScoreDifferenceSource.CrystalsCollected => true,
+                ScoreDifferenceSource.Goals => true,
+                ScoreDifferenceSource.PrismsDestroyed => true,
+                ScoreDifferenceSource.Score => !useGolfRules,
+                _ => !useGolfRules
+            };
+        }
+
+        float CalculateScoreDifference(float leaderValue, float playerValue)
+        {
+            return IsHigherBetter()
+                ? Mathf.Max(0f, leaderValue - playerValue)
+                : Mathf.Max(0f, playerValue - leaderValue);
+        }
+
+        static ResourceSystem GetResourceSystem(IPlayer player)
+        {
+            return player?.Vessel?.VesselStatus?.ResourceSystem;
+        }
+
+        // Reset audio timestamps so the sound can fire immediately at the start of each turn.
+        void ResetComebackAudioTimestamps()
+        {
+            for (int i = 0; i < _lastComebackAudioTime.Length; i++)
+                _lastComebackAudioTime[i] = -999f;
+        }
+
+        static GameplaySFXCategory ComebackCategoryForElement(Element element) => element switch
+        {
+            Element.Charge => GameplaySFXCategory.ComebackCharge,
+            Element.Mass   => GameplaySFXCategory.ComebackMass,
+            Element.Space  => GameplaySFXCategory.ComebackSpace,
+            Element.Time   => GameplaySFXCategory.ComebackTime,
+            _              => GameplaySFXCategory.ComebackCharge,
+        };
+    }
+}
