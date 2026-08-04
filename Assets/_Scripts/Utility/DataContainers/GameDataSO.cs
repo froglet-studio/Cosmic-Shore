@@ -284,7 +284,48 @@ namespace CosmicShore.Utility
             GameMode = game.Mode;
             IsMultiplayerMode = game.IsMultiplayer;
             ComebackRatePerScoreDeficit = game.ComebackRatePerScoreDeficit;
+
+            // Publish the mode's legal hulls BEFORE clamping, so the clamp and every later
+            // server-side check read the same list. Deliberately NOT cleared by
+            // ResetRuntimeData(): like RequestedAIBackfillCount this is pre-launch config that
+            // must survive SceneLoader.LoadSceneAsync() into the game scene, where the vessel
+            // spawner reads it.
+            AllowedVesselClasses.Clear();
+            if (game.Vessels != null)
+                for (int i = 0; i < game.Vessels.Count; i++)
+                    if (game.Vessels[i] != null)
+                        AllowedVesselClasses.Add(game.Vessels[i].Class);
+
             ClampSelectedVesselToGame(game);
+        }
+
+        /// <summary>
+        /// The vessel classes the CURRENT game permits (<see cref="SO_ArcadeGame.Vessels"/>),
+        /// published by <see cref="SyncFromArcadeGame"/>. Empty means "no restriction" - which is
+        /// also the state in Menu_Main before any game has been launched.
+        /// </summary>
+        public readonly List<VesselClassType> AllowedVesselClasses = new();
+
+        /// <summary>
+        /// Returns <paramref name="requested"/> when this game permits it, otherwise the game's
+        /// first authored vessel (for a single-vessel mode, THE mode's vessel). An empty
+        /// <see cref="AllowedVesselClasses"/> means no restriction and returns the input
+        /// unchanged, so this is safe to call from a shared spawn path.
+        ///
+        /// Exists because <see cref="selectedVesselClass"/> is NOT the whole story in
+        /// multiplayer: <c>Player.NetDefaultVesselType</c> is an OWNER-write NetworkVariable that
+        /// each client sets from its OWN local config (and from the menu's vessel-changer toy), so
+        /// a client walks into a restricted mode still wearing the hull it last flew. Clamping
+        /// only the launcher's selectedVesselClass fixed the host and left every client wrong -
+        /// which is why the SERVER re-clamps at spawn.
+        /// </summary>
+        public VesselClassType ClampVesselToGame(VesselClassType requested)
+        {
+            if (AllowedVesselClasses.Count == 0) return requested;
+            for (int i = 0; i < AllowedVesselClasses.Count; i++)
+                if (AllowedVesselClasses[i] == requested)
+                    return requested;
+            return AllowedVesselClasses[0];
         }
 
         /// <summary>
@@ -303,26 +344,17 @@ namespace CosmicShore.Utility
         /// </summary>
         void ClampSelectedVesselToGame(SO_ArcadeGame game)
         {
-            if (selectedVesselClass == null || game.Vessels == null || game.Vessels.Count == 0) return;
+            if (selectedVesselClass == null || AllowedVesselClasses.Count == 0) return;
 
             var current = selectedVesselClass.Value;
-            for (int i = 0; i < game.Vessels.Count; i++)
-                if (game.Vessels[i] != null && game.Vessels[i].Class == current)
-                    return; // already legal for this mode
+            var clamped = ClampVesselToGame(current);
+            if (clamped == current) return;
 
-            // Fall back to the game's first authored vessel - for a single-vessel mode that IS
-            // the mode's vessel; for a multi-vessel one it is the authored default.
-            for (int i = 0; i < game.Vessels.Count; i++)
-            {
-                if (game.Vessels[i] == null) continue;
-                var fallback = game.Vessels[i].Class;
-                Debug.Log($"<color=#FFD700>[GameDataSO] {game.Mode} does not allow {current}; " +
-                          $"clamping selected vessel to {fallback}.</color>");
-                selectedVesselClass.Value = fallback;
-                if (VesselClassSelectedIndex != null)
-                    VesselClassSelectedIndex.Value = (int)fallback;
-                return;
-            }
+            Debug.Log($"<color=#FFD700>[GameDataSO] {game.Mode} does not allow {current}; " +
+                      $"clamping selected vessel to {clamped}.</color>");
+            selectedVesselClass.Value = clamped;
+            if (VesselClassSelectedIndex != null)
+                VesselClassSelectedIndex.Value = (int)clamped;
         }
 
         /// <summary>

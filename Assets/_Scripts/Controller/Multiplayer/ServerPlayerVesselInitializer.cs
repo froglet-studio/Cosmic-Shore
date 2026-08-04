@@ -483,7 +483,40 @@ namespace CosmicShore.Gameplay
         }
 
         protected NetworkObject SpawnVesselForPlayer(ulong clientId, Player networkPlayer) =>
-            SpawnVesselForPlayer(clientId, networkPlayer, networkPlayer.NetDefaultVesselType.Value);
+            SpawnVesselForPlayer(clientId, networkPlayer, ResolveSpawnVesselType(networkPlayer));
+
+        /// <summary>
+        /// The vessel class this player actually spawns in, clamped to what the game MODE allows.
+        ///
+        /// <c>Player.NetDefaultVesselType</c> is an OWNER-write NetworkVariable: every client
+        /// writes its own from its own local <c>gameData.selectedVesselClass</c>, and the menu's
+        /// vessel-changer toy writes it too. So a client walks into a restricted mode still
+        /// wearing the hull it last flew, and the launcher-side clamp in
+        /// <c>GameDataSO.SyncFromArcadeGame</c> never sees it - that call only runs on the machine
+        /// that pressed Start, and the config ClientRpc lands later than this spawn. A Dolphin
+        /// therefore flew Rhino-only Ribcage on every client while the AI (whose class comes from
+        /// the scene's aiInitializeDatas) correctly spawned Rhinos.
+        ///
+        /// The SERVER is the only authority that sees every player's request and the mode's rules
+        /// at the same time, so the clamp belongs here - same principle as never writing domain
+        /// state from client code. Empty <c>AllowedVesselClasses</c> = no restriction.
+        /// </summary>
+        protected virtual VesselClassType ResolveSpawnVesselType(Player networkPlayer)
+        {
+            var requested = networkPlayer.NetDefaultVesselType.Value;
+            var allowed = gameData.ClampVesselToGame(requested);
+            if (allowed == requested) return requested;
+
+            CSDebug.LogWarning(
+                $"[ServerPlayerVesselInitializer] {gameData.GameMode} does not allow {requested} " +
+                $"(player {networkPlayer.NetName.Value}); spawning {allowed} instead.");
+
+            // Keep the NetworkVariable honest too, or anything that re-reads it later (a respawn,
+            // a HUD, telemetry) would disagree with the hull that is actually flying. The server
+            // cannot write an owner-write variable directly, so Player routes it to the owner.
+            networkPlayer.ServerForceVesselType(allowed);
+            return allowed;
+        }
 
         /// <summary>
         /// Spawns a vessel of the given type, assigns ownership to <paramref name="clientId"/>,

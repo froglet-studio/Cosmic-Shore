@@ -50,9 +50,9 @@ MonoBehaviour:
   leafPrefab: {fileID: 0}
   layAcrossFrames: 0
   layBudgetMsPerFrame: 6
-  intensityLevel: 3
+  intensityLevel: 5
   prism: {fileID: 4563009547826722997, guid: ed9defc56162b4b4588e61c20984b6d9, type: 3}
   density: 1
   spawnClearRadius: 0
   spawnClearPoints: []
-  shellCount: 4
+  shellCount: 5

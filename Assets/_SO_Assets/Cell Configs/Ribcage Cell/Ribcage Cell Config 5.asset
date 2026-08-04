@@ -10,30 +10,30 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 01f934d50526431a9392a6ceca1dc33d, type: 3}
-  m_Name: Ribcage Cell Config 1
+  m_Name: Ribcage Cell Config 5
   m_EditorClassIdentifier:
   CellName: Ribcage
-  Description: The cage cell at intensity 1 - 2 concentric rinds of prism bone at
-    radius 360 / 295, 10620 prisms in total. NO NUCLEUS by design, and no fauna. PhaseThresholds
+  Description: The cage cell at intensity 5 - 5 concentric rinds of prism bone at
+    radius 360 / 295 / 230 / 165 / 100, 20153 prisms in total. NO NUCLEUS by design, and no fauna. PhaseThresholds
     ride THIS intensity's own baseline; regenerate with Tools/Build/author_ribcage_assets.py
     after any geometry change rather than hand-editing.
   Icon: {fileID: 21300000, guid: 6aa1c06e11b265744a5f9fa8858ac72a, type: 3}
-  Difficulty: 1
+  Difficulty: 5
   CellEndGameScore: 0
   MembranePrefab: {fileID: 346633111830028674, guid: 6e330f85972faf843b8a128e7166f7b5, type: 3}
   NucleusPrefab: {fileID: 0}
   CytoplasmPrefab: {fileID: 639495419069806261, guid: 9cacd903fcf4643459f5f14ac811bb20, type: 3}
   CellModifiers: []
   SpawnProfile: {fileID: 11400000, guid: cd48ee57babf1969b767be400358c056, type: 2}
-  EnvironmentPrefab: {fileID: 5260000000000203, guid: ada5aeeb08b8b82184d1fb9cfd7440fe, type: 3}
-  EnvironmentIntensity: 1
+  EnvironmentPrefab: {fileID: 5260000000000203, guid: 12a77c95e77d30c514d46c65eabce62a, type: 3}
+  EnvironmentIntensity: 5
   SenseRadiusOverride: 0
   PhaseThresholds:
-    RestlessEnter: 11320
-    RestlessExit: 11120
-    FrenzyEnter: 14220
-    FrenzyExit: 13620
-    RestlessEnterVolume: 4215428
-    RestlessExitVolume: 4212228
-    FrenzyEnterVolume: 4261828
-    FrenzyExitVolume: 4252228
+    RestlessEnter: 20853
+    RestlessExit: 20653
+    FrenzyEnter: 23753
+    FrenzyExit: 23153
+    RestlessEnterVolume: 7945400
+    RestlessExitVolume: 7942200
+    FrenzyEnterVolume: 7991800
+    FrenzyExitVolume: 7982200

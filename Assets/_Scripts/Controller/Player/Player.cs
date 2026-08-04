@@ -529,6 +529,36 @@ namespace CosmicShore.Gameplay
             TryRaiseDeferredSpawnEvent();
         }
 
+        /// <summary>
+        /// Server asks this player to adopt <paramref name="type"/> as its vessel class.
+        /// <see cref="NetDefaultVesselType"/> is OWNER-write, so the server cannot set it for a
+        /// remote client - it targets the owner with an RPC and the owner performs the write.
+        /// Used by <c>ServerPlayerVesselInitializer.ResolveSpawnVesselType</c> so a mode-clamped
+        /// hull and the replicated variable can never disagree.
+        /// </summary>
+        public void ServerForceVesselType(VesselClassType type)
+        {
+            if (!IsServer) return;
+
+            if (IsOwner)                       // the host's own player - write directly
+            {
+                if (NetDefaultVesselType.Value != type) NetDefaultVesselType.Value = type;
+                return;
+            }
+
+            ForceVesselType_ClientRpc(type, new ClientRpcParams
+            {
+                Send = new ClientRpcSendParams { TargetClientIds = new[] { OwnerClientId } }
+            });
+        }
+
+        [ClientRpc]
+        void ForceVesselType_ClientRpc(VesselClassType type, ClientRpcParams _ = default)
+        {
+            if (!IsOwner) return;              // only the owner may write an owner-write variable
+            if (NetDefaultVesselType.Value != type) NetDefaultVesselType.Value = type;
+        }
+
         void OnNetDefaultVesselTypeChanged(VesselClassType previousValue, VesselClassType newValue)
         {
             TryRaiseDeferredSpawnEvent();
