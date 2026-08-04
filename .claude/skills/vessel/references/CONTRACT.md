@@ -344,7 +344,14 @@ already lists all 11 prefabs).
 | Squirrel | ✅ | 4/4 + 4 upgrades SHIPPED | ✅ compliant | ✅ (spliced FBX — re-export carefully) | ✅ reference | the reference vessel |
 | Sparrow | ✅ | 4/4 + 4 upgrades SHIPPED | ✅ row; no switcher (hints static, both glyph sets render); glyph art wrong | ✅ | skimmer containers all-empty; 2nd inline skimmer unwired | |
 | Manta | ✅ | 3/4 quantitative, 0 upgrades — **open slots** | 0 found (re-survey at vessel-prefab level) | ✅ (Manta meshes, also Termite/Falcon/Shrike) | ✅ | blocked on design |
-| Dolphin | ✅ | HEAD: 2/4, 0 upgrades — **open slots**. The unmerged branch `claude/dolphin-energy-crystal-cooldown-zpvc07` ships a full 4/4 map + upgrades AND binds the four-icon row (`c26c2632`; its `DolphinHUDRowWirer` is an idempotent re-bind tool) | HEAD: 0 bound (branch: 4/4 bound) | ❌ placeholder art — rig swap pending | ✅ containers; 2nd skimmer stack unwired | branch adds energy/cooldown/cone pass |
+| Dolphin | ✅ | 4/4 + 4 upgrades SHIPPED (`claude/dolphin-energy-crystal-cooldown-zpvc07`) | 4/4 bound; no switcher (hints unbound) | ❌ placeholder art — rig swap pending | ✅ **since the branch** — the reference pointed at a DISABLED twin | energy economy + drift boost + cone; see `R_VesselActions/DOLPHIN_ENERGY_ECONOMY.md` |
 | Rhino | ✅ | 1/4, 0 upgrades — **open slots** | 4 icons exist (3 in vessel prefab), unbound | ❌ placeholder — rig swap pending | ✅ (sword variant) | bind once map approved |
-| Serpent | ✅ | 1/4, 0 upgrades — **open slots** | 0 bound; HUD root was centre-collapsed (fixed) | ✅ | "VacuumSkimmer" has no SkimmerImpactor/container — cannot vacuum | |
+| Serpent | ✅ | 1/4, 0 upgrades — **open slots** | 0 bound; HUD root was centre-collapsed (fixed) | ✅ | ❌ "VacuumSkimmer" has no SkimmerImpactor/container AND its GameObject is INACTIVE — cannot vacuum | fails Audit Vessel Skimmers |
 | Urchin / Grizzly / Termite / Falcon / Shrike | ❌ | none | none | Urchin ❌ (rig pending) · Grizzly ❌ (no art) · Termite/Falcon/Shrike ✅ | none (nested base skimmer would NRE) | prefabs exist and are already in DefaultNetworkPrefabs (all 11 are — don't re-add); Vessel Prefab Container registration unstarted; NONE of the five has a `{Vessel}CameraSettingsSO.asset`; Falcon/Shrike additionally lack SO_Class assets |
+
+**This table was WRONG about the Dolphin's impact/skimmer column until 2026-08** — it read
+"✅ containers; 2nd skimmer stack unwired" when the truth was the exact inverse: the *second*
+stack (`EnergySkimmer`) was the live one doing the physics, and the stack the vessel actually
+REFERENCED was a disabled leftover. Reading a prefab and concluding "looks wired" is not
+evidence; resolve the reference to its GameObject and check `m_IsActive` up the ancestor chain,
+or just run **FrogletTools > Vessels > Audit Vessel Skimmers**, which does exactly that.

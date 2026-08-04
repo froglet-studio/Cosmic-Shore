@@ -141,3 +141,32 @@ auditor shipped. Squirrel and Sparrow are compliant. What is left, in rough prio
    symptoms today (`.claude/skills/vessel/references/CONTRACT.md` §9 catalogues the live
    misconfigurations: Serpent's dead VacuumSkimmer, Sparrow's all-empty containers, the five
    unregistered hulls' null nested-skimmer containers).
+
+---
+
+## Dolphin follow-ups (opened by `claude/dolphin-energy-crystal-cooldown-zpvc07`)
+
+Mechanics reference: `_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_ENERGY_ECONOMY.md`.
+
+10. **Serpent's skimmer is dead.** `_nearFieldSkimmer` resolves to a `VacuumSkimmer` whose
+    GameObject is INACTIVE *and* which carries no `SkimmerImpactor`/container. Same class of
+    fault the Dolphin had; deliberately left untouched by that branch (different vessel).
+    Confirm with `FrogletTools > Vessels > Audit Vessel Skimmers`.
+11. **`ExplosionImpactor.OnBlastResolved` is a static C# event.** CLAUDE.md's anti-patterns
+    forbid static events for cross-system communication. It is presentation-only, has one
+    self-filtering listener (the Dolphin HUD's prism tally), and subscribes/unsubscribes
+    symmetrically — but it is a deviation. Convert it to a SOAP channel the moment a second
+    consumer appears, or if the reviewer wants it converted now: the payload needs the firing
+    vessel plus the count, so it is a new `ScriptableBlastResult` type (struct + event +
+    listener), which is why it was not minted for one HUD tally.
+12. **The jaw gape is a linear approximation of the cone's half-angle.** Exact at full energy
+    (18.435°, and `MaxJawAngle` is now measured against it); below that the jaws are linear in
+    energy while the true half-angle is `atan(lerp(400,1600,e) / 4800)` — so an empty meter shows
+    closed jaws against a cone that still has a 4.76° floor. Closing the gap means
+    `RiptideAnimation` reading the effect SO's min/max, a vessel-animation → impact-effect
+    dependency judged not worth it.
+13. **The Dolphin's Space icon is still placeholder art** (`ConeBlastIcon-PLACEHOLDER.png`,
+    accepted by Garrett as "the blast seems fine"). The other three slots use shipped art (the
+    vessel's own jaw silhouettes, the omni crystal, the authored boost ring).
+14. **The Dolphin HUD has no `InputDeviceIconSetSwitcher`**, so `BindHintsToAbilities` never runs
+    there and its control hints are unbound — same gap as the Sparrow (item 4).
