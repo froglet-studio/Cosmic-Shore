@@ -31,7 +31,7 @@ namespace CosmicShore.Editor
     /// changes nothing. Sprites are never touched — art is an authoring decision.
     ///
     /// Open the prefab in Prefab Mode, select the root, then
-    /// Tools > Cosmic Shore > Wire Dolphin Ability Row.
+    /// FrogletTools > Vessels > Wire Dolphin Ability Row.
     /// </summary>
     public static class DolphinHUDRowWirer
     {
@@ -48,7 +48,7 @@ namespace CosmicShore.Editor
             ("Jaw",     0.89996143f, 0.97808643f),
         };
 
-        [MenuItem("Tools/Cosmic Shore/Wire Dolphin Ability Row")]
+        [MenuItem("FrogletTools/Vessels/Wire Dolphin Ability Row")]
         static void WireSelected()
         {
             var go = Selection.activeGameObject;
@@ -65,7 +65,7 @@ namespace CosmicShore.Editor
             EditorUtility.SetDirty(view);
             EditorUtility.DisplayDialog("Wire Dolphin Ability Row",
                 $"Re-bound the four-icon ability row on '{view.name}' to the fleet-standard bands.\n\n" +
-                "Verify with Tools > Cosmic Shore > Audit Vessel Ability Rows.", "OK");
+                "Verify with FrogletTools > Vessels > Audit Vessel Ability Rows.", "OK");
         }
 
         static void Wire(DolphinVesselHUDView view)
