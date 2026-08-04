@@ -726,6 +726,30 @@ correct-looking for 30 s.
 
 **`PresenceSystem/TESTS.md` P5 must be rewritten** — its "departure within 5 s" criterion is
 unachievable for an editor Stop. Split it: **≤1 s graceful exit, ≤35 s hard kill.**
+✅ **Done 2026-08-04** — and the rewrite had to go further than this, see below.
+
+**(e) MEASURED 2026-08-04 — MPPM puts almost everything in case (c).** Owner
+deactivated one virtual player and its row took **30–50 s** to clear on the peers.
+That is case (c) behaving exactly as this section predicts, but it was recorded
+as a B12 failure because the verification guide's departure table had lumped
+"toggle the virtual player off" in with "quit button" at <1 s.
+
+**Deactivating an MPPM virtual player terminates the clone process.** No
+`wantsToQuit`, no `playModeStateChanged`, no code runs — it is a force-kill, case
+(c), not case (a). And stopping play mode in the *main* editor, which does reach
+case (a) via `ExitingPlayMode`, stops every virtual player simultaneously, so
+there is no surviving observer.
+
+**Consequence for this plan: case (a) has no test harness.** MPPM structurally
+cannot produce "one player exits gracefully while peers watch". Verifying it
+today requires a standalone build quit alongside a running editor. `TODOS.md`
+§ TODO-P10 proposes the editor-only hook that would fix this, and until one of
+those two happens the sub-second claim for case (a) is **design intent, not a
+measured result** — the named-id eviction path has never executed in a test.
+
+Also note the measured reap is **30–50 s**, not the ~30 s estimated at
+`HostConnectionService.cs:419-420`. Any UI copy or timeout derived from that
+constant should use the upper end.
 
 ---
 

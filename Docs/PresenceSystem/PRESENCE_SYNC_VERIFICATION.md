@@ -16,6 +16,28 @@ Work top to bottom, stop at the first failure. Record outcomes in
 
 ---
 
+## Progress — updated 2026-08-04
+
+| Step | State | Note |
+|---|---|---|
+| 0 — compile / assets | ✅ done | implied by everything below running |
+| 1a — presence timeline | ✅ **pass** | B11 verified |
+| 1c — benign-skip counter | ✅ **measured twice** | `presence=16, partySession=39` @ 206.5 s — see `BUGS.md` § MEASURED (run 2) |
+| 2b — CONNECTING → ONLINE | ✅ **pass** | B14 verified; this was the headline symptom |
+| 2d — departure | 🟡 **partial** | hard-kill case confirmed at ~30–50 s (correct); **graceful path never tested** — see the rewritten table below |
+| B13 — Relay 500 boot | ✅ **pass** | 4 instances; wider run pending |
+| 1b · 1d · 2a · 2c · 2e | ⬜ not run | |
+| 3 — ArcadeLobbyList (RC-9) | ⬜ not run | **this is the branch's main goal — highest-value remaining step** |
+| 4 — party smoke | ⬜ not run | |
+| 5 — quit / background / in-match | ⬜ not run | 5a is what closes B12 |
+| 6 — profile icons | ⬜ not run | blocked on the `Unknown Icon` editor action |
+| 7 — rate-limit budget | ⬜ not run | |
+
+**Recommended order for the next session:** Step 6's editor action → Step 3 →
+Step 5 → Step 6 → Steps 1b/1d/2a/2e → Steps 4, 7.
+
+---
+
 ## Two editor actions required before testing
 
 Neither could be done from a headless environment. **Steps 1 and 6 will look
@@ -45,6 +67,16 @@ broken until you do these.**
 | 7 | `24a9b420` | **`IModalPanel`** — panels re-read every time the modal opens |
 | 8 | `3b9a30fa` | Nine avatar resolvers collapsed to one; unknown ≠ icon #1 |
 
+Landed after the first MPPM run, in response to what it found:
+
+| Commits | Effect |
+|---|---|
+| `a510bd51` | B11 latch + reconcile; B12 named-id eviction; `ExitingPlayMode` departure |
+| `40226752` | Push ticks do zero network I/O |
+| `c3dbf682` | B13 — a Relay 500 on boot no longer bricks the splash |
+| `c49c8c91` | B14 — `HasSameDisplayDataAs` so a `presenceState` change repaints the row |
+| `dd1df6de` | Stackless benign-skip line (`CSDebug.LogNoStack`) |
+
 ---
 
 ## Step 0 — It compiles and the hand-authored files imported
@@ -62,21 +94,17 @@ broken until you do these.**
 
 ---
 
-## Retest after the B11 / B12 fix (`a510bd51`)
+## Retest after the B11 / B12 / B14 fixes — ✅ mostly closed 2026-08-04
 
-The first 4-instance MPPM run found two bugs; both are fixed and unverified.
-Re-run **Step 1a**, **2b** and **2d** first — they are the direct regression
-checks:
-
-| Was | Now expected |
+| Was | Result |
 |---|---|
-| 3 of 4 instances stuck on `CONNECTING…` forever | all four reach `Present`; every peer shows ONLINE |
-| turning an instance off left its row for ~30 s | row disappears in well under a second |
+| 3 of 4 instances stuck on `CONNECTING…` forever | ✅ **fixed** — every instance reaches `Present`, every peer shows ONLINE (B11 + B14 together) |
+| turning an instance off left its row for ~30 s | 🟡 **still ~30–50 s, and that is the correct answer** — deactivating an MPPM virtual player is a *process kill*, not a graceful leave. See the corrected Step 2d. The graceful path is still untested. |
 
-If an instance is still stuck at `Announced`, the console now says so explicitly
-(`Presence reconciled to Present …` should appear if the one-shot was missed and
-the per-tick reconcile caught it). If you see that line, the race is real and the
-reconcile is doing its job — not a failure.
+If an instance is ever stuck at `Announced` again, the console says so explicitly
+(`Presence reconciled to Present …` appears when the one-shot was missed and the
+per-tick reconcile caught it). That line means the race is real and the reconcile
+is doing its job — not a failure.
 
 ---
 
@@ -95,13 +123,14 @@ If it stalls at `Announced`, `GameDataSO.OnClientReady` is not reaching
 
 **1b. Cadence** ~1.5 s, not 3 s.
 
-**1c. Benign-skip counter.** Watch for
-`[HostConnectionService] Benign SDK fault … skips: presence=N`, at most one line
-per 10 s. **Both outcomes are informative:**
-- **N climbing** → confirms RC-2; the SDK stale-index defect (B1/B6) is live.
-- **N stays 0 for two minutes** → **the more interesting result.** B1 is not
-  firing on this path; RC-2 is not your staleness cause, and the weight sits on
-  RC-1/RC-9. Record either in `BUGS.md`.
+**1c. Benign-skip counter.** ✅ **Answered — measured twice.** The line appears
+at most once per 10 s, carries no stack trace (`CSDebug.LogNoStack`), and N
+climbs: the SDK stale-index defect (B1/B6) is live, ~12% of presence reads and
+~32% of party-session reads. Full numbers and consequences in `BUGS.md`
+§ MEASURED (runs 1 and 2).
+
+Re-run this **after TODO-P2 lands** — that is the change expected to move the
+number, and the safety-poll relaxation is gated on it.
 
 **1d. The interval field is live.** Set it to 6, play, confirm the cadence
 follows, set it back to **1.5**. Untestable before Commit 2 — the field was inert.
@@ -138,20 +167,33 @@ against the compiled assembly. Add a temporary `Debug.Log` in
 - Fires but the row is late → the drain in `HostConnectionService.Update` is
   blocked by one of its four gates; check the lobby mutex.
 
-**2d. Departure.** Three distinct cases, three different expectations:
+**2d. Departure.** Three distinct cases, three different expectations.
 
-| How B goes away | Expected removal on A |
-|---|---|
-| In-game quit button | **< 1 s** |
-| **MPPM: toggle the virtual player off / stop play mode** | **< 1 s** (this is what B12 fixed — it was ~30 s) |
-| Hard kill (kill the process) | up to ~30 s |
+> **Corrected 2026-08-04.** The previous version of this table put "toggle the
+> virtual player off" and "stop play mode" in the same row at **< 1 s**. That
+> was wrong and it caused a false-negative retest of B12: deactivating an MPPM
+> virtual player **kills the clone process**, so it belongs in the bottom row
+> with the other hard kills, where ~30–50 s is the *correct* answer.
 
-The first two now emit an explicit UGS leave, which pushes `PlayerLeaving`
-carrying B's id; A evicts that id on the spot rather than waiting out the
-two-strike rule. The third cannot notify anyone. **That asymmetry is correct and
+| How B goes away | What runs | Expected removal on A |
+|---|---|---|
+| In-game quit button / alt-F4 / window close **(build)** | `Application.wantsToQuit` → 1.5 s drain → **awaited** leave | **< 1 s** |
+| Editor: stop play mode | `ExitingPlayMode` → leave dispatched, **not awaited** | **< 1 s** if the request reached the wire, else reap |
+| Hard kill · crash · OS kill · **MPPM virtual-player deactivation** | *nothing* | **~30–50 s** (UGS reap) |
+
+The first two emit an explicit UGS leave, which pushes `PlayerLeaving` carrying
+B's id; A evicts that id on the spot rather than waiting out the two-strike
+rule. The third cannot notify anyone. **That asymmetry is correct and
 unavoidable** — there is no transport between non-party lobby members, so a hard
-kill can only be caught by the UGS reap. `TESTS.md` P5's "within 5 s" is wrong
-for this case; rewrite as "≤1 s graceful / ≤35 s hard kill".
+kill can only be caught by the UGS reap.
+
+**MPPM cannot test row 1 or row 2 in isolation.** Deactivating a VP is row 3;
+stopping play mode stops *every* VP simultaneously, so no observer survives to
+watch the removal. To test the graceful path, run a **standalone build** next to
+the editor and quit the build. `TODOS.md` § TODO-P10 tracks the editor-only hook
+that would make this testable inside MPPM.
+
+`TESTS.md` P5 has been rewritten to match this table.
 
 **2e. No flicker.** Both VPs idle two minutes: no rows appearing and
 disappearing, no 429 warnings, no `Reconnecting`. Commit 6's two-strike rule
@@ -250,19 +292,23 @@ host close path previously never despawned chips.
 
 ## After verification passes
 
-1. ~~**Relax the safety poll** 1.5 → 10.~~ **BLOCKED — do not do this yet.**
-   Step 1c has now been measured (see `BUGS.md` § MEASURED) and the presence read
-   is voided ~20% of the time by the SDK stale-index fault, the party-session read
-   ~43%. A 10 s nominal poll would be a ~12.5 s effective backstop. Re-measure
-   after push is confirmed and after any write-coalescing work, then decide.
-2. ~~**Report the Step 1c counter.**~~ **DONE** — `presence=13 / partySession=22`
-   over ~96 s, recorded in `BUGS.md`. Consequence: `LobbyMembershipMonitor`
-   (`REFACTOR.md`) is **no longer blocked**, and it must treat `SdkStaleIndex` as
-   explicitly *not* membership loss.
-3. **Rewrite `TESTS.md` P5** per Step 2d.
-4. **Re-measure the fault rate.** The numbers above predate `40226752` (push ticks
-   no longer fetch), so only poll ticks can now produce the fault — the absolute
-   count should fall even if the per-fetch rate does not.
+1. ~~**Relax the safety poll** 1.5 → 10.~~ **STILL BLOCKED.** Measured twice
+   (`BUGS.md` § MEASURED runs 1 and 2). The presence read is voided ~12% of the
+   time by the SDK stale-index fault and the party-session read ~32% — improved
+   from ~20% / ~43%, but a 10 s nominal poll would still be a ~11.4 s effective
+   backstop. Revisit only **after TODO-P2** lands and is re-measured.
+2. ~~**Report the Step 1c counter.**~~ **DONE, twice.** Consequences:
+   `LobbyMembershipMonitor` (`REFACTOR.md`) is **no longer blocked**, and it must
+   treat `SdkStaleIndex` as explicitly *not* membership loss.
+3. ~~**Rewrite `TESTS.md` P5** per Step 2d.~~ **DONE** — and Step 2d itself was
+   the thing that was wrong; both are corrected.
+4. ~~**Re-measure the fault rate** after `40226752`.~~ **DONE** — run 2. The rate
+   fell by ~⅓ on both paths, and the *shape* of the fall (2.2× the window, only
+   1.2× the skips) localises the fault to **startup**, which promotes TODO-P2 to
+   the highest-value lever against it.
+5. **NEW — close B12 properly.** The named-id eviction path has never been
+   exercised: every departure observed so far went through the reap. Needs a
+   standalone build (Step 5a) or TODO-P10.
 
 ## Known gaps (deliberate, not oversights)
 
