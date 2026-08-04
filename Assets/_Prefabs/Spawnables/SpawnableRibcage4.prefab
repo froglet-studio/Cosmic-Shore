@@ -55,4 +55,4 @@ MonoBehaviour:
   density: 1
   spawnClearRadius: 0
   spawnClearPoints: []
-  shellCount: 4
+  shellCount: 5

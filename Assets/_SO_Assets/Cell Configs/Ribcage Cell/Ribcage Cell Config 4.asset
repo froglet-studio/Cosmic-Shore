@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: Ribcage Cell Config 4
   m_EditorClassIdentifier:
   CellName: Ribcage
-  Description: The cage cell at intensity 4 - 4 concentric rind(s) of prism bone at
-    radius 360 / 280 / 200 / 120, 15690 prisms in total. NO NUCLEUS by design, and no fauna. PhaseThresholds
+  Description: The cage cell at intensity 4 - 5 concentric rinds of prism bone at
+    radius 360 / 295 / 230 / 165 / 100, 20153 prisms in total. NO NUCLEUS by design, and no fauna. PhaseThresholds
     ride THIS intensity's own baseline; regenerate with Tools/Build/author_ribcage_assets.py
     after any geometry change rather than hand-editing.
   Icon: {fileID: 21300000, guid: 6aa1c06e11b265744a5f9fa8858ac72a, type: 3}
@@ -29,11 +29,11 @@ MonoBehaviour:
   EnvironmentIntensity: 4
   SenseRadiusOverride: 0
   PhaseThresholds:
-    RestlessEnter: 16390
-    RestlessExit: 16190
-    FrenzyEnter: 19290
-    FrenzyExit: 18690
-    RestlessEnterVolume: 6052115
-    RestlessExitVolume: 6048915
-    FrenzyEnterVolume: 6098515
-    FrenzyExitVolume: 6088915
+    RestlessEnter: 20853
+    RestlessExit: 20653
+    FrenzyEnter: 23753
+    FrenzyExit: 23153
+    RestlessEnterVolume: 7945400
+    RestlessExitVolume: 7942200
+    FrenzyEnterVolume: 7991800
+    FrenzyExitVolume: 7982200

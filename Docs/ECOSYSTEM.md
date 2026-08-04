@@ -2297,7 +2297,7 @@ Ribcage (`GameModes.Ribcage = 39`, display name "Peel the Cage",
 `_Scripts/Controller/Arcade/RIBCAGE.md`) is the Rhino-only cage-breaking race: concentric hollow
 shells of prism bone that domains race to smash their way out of — the bone IS the score
 (`ScoringMetric.PrismsDestroyed`, target 2,000), and intensity picks how many shells there are
-(1–4, one `CellConfigDataSO` each via `CellTypeChoiceOptions.IntensityWise`). Its bars are now
+(2–5, one `CellConfigDataSO` each via `CellTypeChoiceOptions.IntensityWise`). Its bars are now
 plain one-hit prisms, so §22.3 no longer applies to its own arena.
 
 While it HAD fauna it was ecologically interesting for one reason — **the whole "the fauna hunt
