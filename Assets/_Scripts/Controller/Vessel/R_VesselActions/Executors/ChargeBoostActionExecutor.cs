@@ -62,6 +62,15 @@ namespace CosmicShore.Gameplay
             End(); // stop any running task
             if (!_resources) return;
 
+            // Re-entering the charge INTERRUPTS a running discharge, and cancelling that task only
+            // throws inside the loop - it never reaches the tail that puts the speed back. So clear
+            // the boost here. Without this, drift -> release -> drift again left BoostMultiplier
+            // frozen at whatever the discharge had reached and IsBoosting stuck true for the rest
+            // of the vessel's life, which is a permanent free speed bonus for anyone who drifts
+            // twice in a row.
+            status.BoostMultiplier = 1f;
+            status.IsBoosting = false;
+
             _charging = true;
             float start = GetUnits(so);
             status.IsChargedBoostDischarging = false;

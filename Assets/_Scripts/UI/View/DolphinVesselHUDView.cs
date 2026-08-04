@@ -87,6 +87,9 @@ namespace CosmicShore.UI
         [Tooltip("Seconds the jaws take to glide to a new gape. Energy steps arrive per skim, so " +
                  "this is what keeps the readout from stuttering.")]
         [SerializeField, Min(0.01f)] private float jawGlideDuration = 0.12f;
+        [Tooltip("Scale punch on the jaw pair each time a skim banks energy — the per-skim beat on " +
+                 "top of the gape, which only moves ~1/10th of its range per skim.")]
+        [SerializeField, Min(1f)] private float skimPunchScale = 1.3f;
         [Header("Icon juice")]
         [SerializeField] private float iconPunchScale = 1.35f;
         [SerializeField] private float iconPunchDuration = 0.25f;
@@ -100,7 +103,7 @@ namespace CosmicShore.UI
 
         Tween _crystalScaleTween, _crystalColorTween;
         Tween _blastScaleTween, _blastColorTween;
-        Tween _jawUpperTween, _jawLowerTween;
+        Tween _jawUpperTween, _jawLowerTween, _jawPunchTween;
 
         float _blastCountTimer;
         int _lastChargesShown = -1;
@@ -318,6 +321,34 @@ namespace CosmicShore.UI
             SetJawAngle(maxJawAngle * norm01);
         }
 
+        /// <summary>
+        /// A skim just banked energy: punch the jaw pair. One skim only widens the gape by
+        /// maxJawAngle/10 (about 2 degrees on a 78x14 rect), which is invisible - so the DISCRETE
+        /// event gets its own beat on top of the continuous readout. This is the only skim signal
+        /// the pilot can perceive on a desktop, where the haptic pulse is a no-op and the beam VFX
+        /// depends on the skimmed prism authoring one.
+        /// </summary>
+        public void ReportSkim()
+        {
+            if (!jawUpper && !jawLower) return;
+
+            _jawPunchTween?.Kill();
+            ApplyJawRestScale();
+
+            var punch = _jawRestScale * skimPunchScale;
+            _jawPunchTween = DOVirtual.Float(0f, 1f, iconPunchDuration, v =>
+                {
+                    // Out and back within the one tween, so a rapid skim train re-punches from
+                    // rest instead of stacking scales.
+                    var s = Vector3.LerpUnclamped(_jawRestScale, punch, v < 0.35f ? v / 0.35f : (1f - v) / 0.65f);
+                    if (jawUpper) jawUpper.localScale = s;
+                    if (jawLower) jawLower.localScale = s;
+                })
+                .SetEase(Ease.OutQuad)
+                .OnComplete(ApplyJawRestScale)
+                .SetLink(jawUpper ? jawUpper.gameObject : jawLower.gameObject);
+        }
+
         void SetJawAngle(float angle)
         {
             if (!jawUpper && !jawLower) return;
@@ -421,6 +452,7 @@ namespace CosmicShore.UI
             _blastColorTween?.Kill();
             _jawUpperTween?.Kill();
             _jawLowerTween?.Kill();
+            _jawPunchTween?.Kill();
         }
     }
 }

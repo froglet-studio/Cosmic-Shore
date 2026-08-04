@@ -42,6 +42,10 @@ namespace CosmicShore.Gameplay
         Resource _energy;
         Resource _driftBoost;
 
+        // Last energy pushed to the view, so a RISE (the skim) can be told from the crystal spend
+        // and the prism-ram halving. Seeded to +inf so the initial seed can never read as a skim.
+        float _lastEnergy = float.PositiveInfinity;
+
         // True only for a local human pilot's Dolphin - the one cockpit that actually gets drawn.
         bool _drawGauges;
 
@@ -57,6 +61,7 @@ namespace CosmicShore.Gameplay
             // Cleared up front: a re-init can hand this controller an AI or remote pilot, and a
             // stale true would let OnEnable resume driving a hidden HUD.
             _drawGauges = false;
+            _lastEnergy = float.PositiveInfinity; // a re-init's seed is not a skim either
             Unbind();
 
             if (_resources == null || view == null) return;
@@ -184,6 +189,14 @@ namespace CosmicShore.Gameplay
         void PushEnergy(float current, float max)
         {
             if (!view) return;
+
+            // Energy only ever RISES from a skim - the crystal blast spends it all and a prism ram
+            // halves it - so a rise is the skim event, and the jaws get a beat for it. Without this
+            // a single skim is a ~2 degree change in gape, which on a desktop (silent haptics, and
+            // no beam at all on prisms that author no ParticleEffect) is the whole feedback budget.
+            if (current > _lastEnergy + 1e-4f) view.ReportSkim();
+            _lastEnergy = current;
+
             view.SetEnergyNormalized(max > 0f ? Mathf.Clamp01(current / max) : 0f);
         }
 
