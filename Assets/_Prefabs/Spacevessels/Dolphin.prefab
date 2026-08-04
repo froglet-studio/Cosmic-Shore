@@ -2445,7 +2445,7 @@ MonoBehaviour:
   boostMultiplier: 4
   _name: Dolphin
   vesselType: 2
-  _nearFieldSkimmer: {fileID: 3137873377420312160}
+  _nearFieldSkimmer: {fileID: 8521779231947063012}
   _farFieldSkimmer: {fileID: 0}
   orientationHandle: {fileID: 6807910618444506966}
 --- !u!114 &7130701667458031224
@@ -2540,7 +2540,7 @@ MonoBehaviour:
     initialAmount: 0
   - Name: Boost
     initialResourceGainRate: 0
-    resourceGainRate: 0
+    resourceGainRate: 0.1
     maxAmount: 1
     initialAmount: 0
   ChargeTestHarness: 0

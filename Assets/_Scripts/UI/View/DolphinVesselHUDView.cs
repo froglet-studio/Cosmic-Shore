@@ -58,13 +58,10 @@ namespace CosmicShore.UI
         // ---- Mass: drift trail / boost charge ----------------------------------------
         [Header("Mass — boost charged while drifting")]
         [Tooltip("The boost gauge itself — the Dolphin's authored 11-step ring (Boost Display). " +
-                 "Bound as the Mass ability icon, so the elemental badge and upgrade bump land on " +
-                 "the gauge the pilot is already watching. Filled-type images additionally show a " +
-                 "radial wipe; the ring instead steps through chargeSteps below.")]
+                 "Bound as the Mass ability icon, so the upgrade bump lands on the gauge the pilot " +
+                 "is already watching. The ring encodes its own level by stepping through " +
+                 "chargeSteps below — this view writes NOTHING else on it (see SetDriftBoost).")]
         [SerializeField] private Image driftBoostIcon;
-        [SerializeField] private Color driftRestColor = new(0.877f, 0.877f, 0.877f, 1f);
-        [Tooltip("Colour the boost gauge ramps toward as it fills.")]
-        [SerializeField] private Color driftChargedColor = new(1f, 0.82f, 0.45f, 1f);
         [Tooltip("The 11 authored ring steps, ordered EMPTY → FULL. Driven by the boost meter.")]
         [SerializeField] private List<Sprite> chargeSteps = new();
 
@@ -98,12 +95,10 @@ namespace CosmicShore.UI
         int _stepsMinusOne;
 
         Vector3 _crystalIconRestScale = Vector3.one;
-        Vector3 _driftIconRestScale = Vector3.one;
         Vector3 _blastIconRestScale = Vector3.one;
         Vector3 _jawRestScale = Vector3.one;
 
         Tween _crystalScaleTween, _crystalColorTween;
-        Tween _driftScaleTween;
         Tween _blastScaleTween, _blastColorTween;
         Tween _jawUpperTween, _jawLowerTween;
 
@@ -121,12 +116,9 @@ namespace CosmicShore.UI
                 if (crystalIcon.type == Image.Type.Filled) crystalIcon.fillAmount = 1f;
             }
 
-            if (driftBoostIcon)
-            {
-                _driftIconRestScale = AbilityIconRestScale(Element.Mass);
-                driftBoostIcon.color = driftRestColor;
-                if (driftBoostIcon.type == Image.Type.Filled) driftBoostIcon.fillAmount = 0f;
-            }
+            // The ring's colour is authored art - never repainted from here.
+            if (driftBoostIcon && driftBoostIcon.type == Image.Type.Filled)
+                driftBoostIcon.fillAmount = 0f;
 
             if (blastIcon)
             {
@@ -144,9 +136,9 @@ namespace CosmicShore.UI
 
         /// <summary>
         /// Re-anchors this view's per-icon rest scales to the shared upgrade rest scale, so the
-        /// crystal arm-punch, the drift pulse, the blast flash and the jaw glide all settle back to
-        /// the UPGRADED size instead of snapping the bump away. The base call does the sprite swap,
-        /// the element badge and the one-shot unlock punch.
+        /// crystal arm-punch, the blast flash and the jaw glide all settle back to the UPGRADED
+        /// size instead of snapping the bump away. The base call does the sprite swap, the element
+        /// badge and the one-shot unlock punch.
         /// </summary>
         public override void SetAbilityUpgraded(Element element, bool upgraded)
         {
@@ -159,7 +151,8 @@ namespace CosmicShore.UI
                     _crystalIconRestScale = rest;
                     _lastChargesShown = -1; // the carry limit just moved - repaint the pip row
                     break;
-                case Element.Mass:  _driftIconRestScale = rest; break;
+                // Mass needs no re-anchor: nothing in this view writes the boost ring's scale, so
+                // the base class's bump is never contested.
                 case Element.Space: _blastIconRestScale = rest; break;
                 case Element.Time:
                     _jawRestScale = rest;
@@ -249,8 +242,16 @@ namespace CosmicShore.UI
 
         // ---------------------------------------------------------------
         // Mass: how much boost the drift has banked, 0-1.
+        //
+        // The ring is an ELEVEN-SPRITE authored gauge, so stepping the sprite is the whole
+        // readout. This deliberately writes nothing else: a swell keyed to charge01 and a colour
+        // ramp both landed on EVERY resource tick - the 1 Hz passive regen, each charge tick, each
+        // discharge tick - so the icon jittered between discrete scales and killed its own tween
+        // doing it. Leaving the transform alone also means the level-5 scale bump the base class
+        // applies survives, which matters more here than juice: this HUD has upgrade tint and the
+        // element badge both turned off, so the bump is the only upgrade signal the slot has left.
         // ---------------------------------------------------------------
-        public void SetDriftBoost(float charge01, bool isDrifting)
+        public void SetDriftBoost(float charge01)
         {
             if (!driftBoostIcon) return;
 
@@ -260,26 +261,6 @@ namespace CosmicShore.UI
 
             // The authored ring encodes the level in its lit segments - step it.
             SetBoostStepNormalized(charge01);
-
-            driftBoostIcon.color = Color.Lerp(driftRestColor, driftChargedColor, charge01);
-
-            // Drifting reads as "the icon is working": a gentle swell with the charge. Kill the
-            // release tween first — it settles toward rest, and the two would fight for the scale.
-            if (!isDrifting) return;
-            _driftScaleTween?.Kill();
-            _driftScaleTween = null;
-            float target = Mathf.Lerp(1f, 1.12f, charge01);
-            driftBoostIcon.rectTransform.localScale = _driftIconRestScale * target;
-        }
-
-        public void ReleaseDriftBoost()
-        {
-            if (!driftBoostIcon) return;
-            _driftScaleTween?.Kill();
-            _driftScaleTween = driftBoostIcon.rectTransform
-                .DOScale(_driftIconRestScale, iconPunchDuration)
-                .SetEase(Ease.OutBack)
-                .SetLink(driftBoostIcon.gameObject);
         }
 
         // ---------------------------------------------------------------
@@ -436,7 +417,6 @@ namespace CosmicShore.UI
             base.OnDestroy();
             _crystalScaleTween?.Kill();
             _crystalColorTween?.Kill();
-            _driftScaleTween?.Kill();
             _blastScaleTween?.Kill();
             _blastColorTween?.Kill();
             _jawUpperTween?.Kill();

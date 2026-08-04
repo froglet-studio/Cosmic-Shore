@@ -121,10 +121,13 @@ namespace CosmicShore.Editor
             Bind(so, "jawUpper", jawUpper);
             Bind(so, "jawLower", jawLower);
 
-            // Every Dolphin icon is a live gauge, so colour is already spoken for - the upgrade
-            // signal rides the element badge and the scale bump instead.
+            // Every Dolphin icon is a live gauge, so colour is already spoken for, and these four
+            // are busy enough (pip row, stepped ring, tally, jaw pair) that a corner badge just
+            // clutters them - the upgrade signal rides the persistent scale bump alone here.
             var tint = so.FindProperty("tintIconOnUpgrade");
             if (tint != null) tint.boolValue = false;
+            var badge = so.FindProperty("showUpgradeBadge");
+            if (badge != null) badge.boolValue = false;
 
             BindAbilityRow(so, icons);
             so.ApplyModifiedPropertiesWithoutUndo();

@@ -187,17 +187,13 @@ namespace CosmicShore.Gameplay
             view.SetEnergyNormalized(max > 0f ? Mathf.Clamp01(current / max) : 0f);
         }
 
+        // The ring reads the meter and nothing else. It used to also take an "am I drifting" flag
+        // that drove a scale swell, but that arrived on every tick of a 1 Hz passive regen plus
+        // every charge/discharge tick, so the icon stuttered between discrete sizes.
         void PushDriftBoost(float current, float max)
         {
             if (!view) return;
-            float norm = max > 0f ? Mathf.Clamp01(current / max) : 0f;
-
-            // The swell means "you are banking boost right now", so it gates on the DRIFT itself,
-            // not on "not discharging" - otherwise a full meter sat swollen the whole time the
-            // pilot was flying straight, which reads as the gauge growing when nothing is happening.
-            bool charging = _status != null && _status.IsDrifting && !_status.IsChargedBoostDischarging;
-            view.SetDriftBoost(norm, charging);
-            if (!charging && norm <= 0f) view.ReleaseDriftBoost();
+            view.SetDriftBoost(max > 0f ? Mathf.Clamp01(current / max) : 0f);
         }
 
         // The blast tally is presentation only: a global channel filtered down to our own vessel,
