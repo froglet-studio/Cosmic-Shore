@@ -212,7 +212,11 @@ namespace CosmicShore.Gameplay
                 int spawned = 0;
                 if (toSpawn > 0 && preyAvailable && released)
                 {
-                    SpawnFaunaPopulation(host, runtime, spawnProfile, faunaCfg, color, toSpawn, wave);
+                    // Spread across frames - a densely-stocked biome seeds tens of prism-bodied
+                    // creatures on one tick (Ribcage hatches 85 across four species loops that all
+                    // start in the same frame), and instantiating them together is the same frame
+                    // spike the flora batch above already yields to avoid.
+                    yield return SpawnFaunaPopulation(host, runtime, spawnProfile, faunaCfg, color, toSpawn, wave);
                     spawned = toSpawn;
                 }
 
@@ -252,7 +256,10 @@ namespace CosmicShore.Gameplay
         // an index: it rides the wave clock (see HerbivoreSpawnPoint).
         int _predatorSpawnPointIndex;
 
-        void SpawnFaunaPopulation(Cell host, CellRuntimeDataSO runtime, SpawnProfileSO spawnProfile,
+        /// <summary>Creatures instantiated per frame while seeding a population (see the caller).</summary>
+        const int FaunaSpawnBatchPerFrame = 6;
+
+        IEnumerator SpawnFaunaPopulation(Cell host, CellRuntimeDataSO runtime, SpawnProfileSO spawnProfile,
             FaunaConfigurationSO faunaCfg, Domains color, int count, int wave)
         {
             bool isPredator = faunaCfg.FaunaPrefab && faunaCfg.FaunaPrefab.Diet == FaunaDiet.Predator;
@@ -274,9 +281,14 @@ namespace CosmicShore.Gameplay
 
             for (int i = 0; i < count; i++)
             {
+                if (!host) yield break;   // cell torn down mid-seed (scene change)
+
                 Vector3 spawnPos = goal + UnityEngine.Random.insideUnitSphere * FaunaSpawnJitter;
                 var fauna = SpawnFaunaWithDomain(host, faunaCfg.FaunaPrefab, goal, color, spawnPos);
                 if (fauna) fauna.AssignLineage(host, faunaCfg);
+
+                if (i + 1 < count && (i + 1) % FaunaSpawnBatchPerFrame == 0)
+                    yield return null;
             }
         }
 

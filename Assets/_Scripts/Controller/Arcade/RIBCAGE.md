@@ -211,15 +211,21 @@ immediately; MaxLive is the per-species performance backstop the food web works 
 
 | species | prefab | tier | seed | MaxLive | role |
 |---|---|---:|---:|---:|---|
-| Tadpole | `TadPoleFauna` (Boid) | 0 | 26 | 48 | the shoal — fast, numerous, the "swarm" read |
-| QuadFish | `QuadFish` (LightFauna) | 0 | 13 | 22 | mid-size rovers |
-| Clawfish | `Clawfish` (QuadFish) | 0 | 9 | 16 | heavier, slower, most threatening silhouette |
-| Brittlestar | `MassBrittlestarFauna` (LightFauna) | 0 | 8 | 13 | drifting arms — fills the volume |
-| **caged total** | | | **56** | **99** | |
-| Shark | `MassSharkFauna` (LightFauna) | 1 | 3 | 6 | the 50% **predator** — eats herbivores, not prisms |
+| Tadpole | `TadPoleFauna` (Boid) | 0 | 39 | 72 | the shoal — fast, numerous, the "swarm" read |
+| QuadFish | `QuadFish` (LightFauna) | 0 | 20 | 33 | mid-size rovers |
+| Clawfish | `Clawfish` (QuadFish) | 0 | 14 | 24 | heavier, slower, most threatening silhouette |
+| Brittlestar | `MassBrittlestarFauna` (LightFauna) | 0 | 12 | 20 | drifting arms — fills the volume |
+| **caged total** | | | **85** | **149** | |
+| Shark | `MassSharkFauna` (LightFauna) | 1 | 5 | 9 | the 50% **predator** — eats herbivores, not prisms |
 
 All five drop elemental crystals on death like every lifeform, so a cleared cage is also
 a powerup field.
+
+Seeding 85 prism-bodied creatures on one tick would be a frame spike, so
+`RandomLifeSpawner.SpawnFaunaPopulation` is now a coroutine that yields every
+`FaunaSpawnBatchPerFrame` (6) — the same treatment the flora batch beside it already had.
+That is a shared-spawner improvement, not a Ribcage special case: any densely-stocked
+biome gets it.
 
 ### Intruder frenzy — why going inside is a mistake
 
@@ -227,7 +233,7 @@ a powerup field.
 penned, a creature that DETECTS edible mass inside the pen sends the whole population to
 **Frenzy** — `CellAggressionLevel.Level2`: any-colour steering, friendly avoidance off,
 danger-immune, fastest cadence and widest consume radius. Flying in does not merely put
-your trail on the menu; it turns ~100 creatures onto it at once, and they stay berserk
+your trail on the menu; it turns ~150 creatures onto it at once, and they stay berserk
 until you and your mass are gone.
 
 Detection is `Cell.HasPreyInsideFaunaContainment`: one Burst `PrismSpatialIndex.QuerySphere`
@@ -263,7 +269,9 @@ grille**: you fly between the bones freely. Sealing the sphere to vessel-tight s
 would cost ~6k prisms of always-on collider for no gameplay — the goal is to smash the
 structure, never to be locked inside it.
 
-**Collider-budget impact.** ~3,175 box colliders for the cage, plus up to ~62 caged creatures (66 once the shark rung lands), whose bodies are prism-bodied. Shielded prisms keep the
+**Collider-budget impact.** ~3,175 box colliders for the cage, plus the brood: each species
+carries ~1 `HealthPrism` body, so the caged cap of 149 (158 once the sharks land) adds ~150
+prisms — under 5% on top of the cage. Shielded prisms keep the
 authored **BoxCollider trigger** (`PrismOctahedronShield` changes the LOOK only — a
 convex-mesh collider is invisible to one skimmer family or the other), so a shielded
 bar costs exactly what a plain prism costs and the octahedron look is free. That is
@@ -426,7 +434,7 @@ with `SpawnableRibcage.cs` when the geometry changes.
    you should spawn a Rhino anyway, with a `clamping selected vessel` line in the log.
 6. **Spawn outside.** All players start on a ring ~576u out, facing the cage, with the
    whole cage visible ahead — nobody starts inside it.
-7. **The penned brood + intruder frenzy.** The cage is visibly full (~56 creatures of
+7. **The penned brood + intruder frenzy.** The cage is visibly full (~85 creatures of
    four species) and they stay inside. While penned they must NOT eat anything outside —
    fly around the outside laying trail; it should be ignored. Then fly IN: the cell
    should jump to **Frenzy** on the DiagnosticsHUD and the whole pen should converge on

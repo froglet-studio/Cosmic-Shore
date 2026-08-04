@@ -13,13 +13,13 @@ MonoBehaviour:
   m_Name: Ribcage Brittlestar Fauna Config Data
   m_EditorClassIdentifier:
   FaunaPrefab: {fileID: 5351160486092638538, guid: c719f00ea7596c24185379994f7dc824, type: 3}
-  InitialSpawnCount: 8
-  PopulationSize: 8
+  InitialSpawnCount: 12
+  PopulationSize: 12
   SpawnProbability: 1
   FeedsPerOffspring: 20
   OffspringPerBirth: 1
   ReproductionCooldownSeconds: 10
-  MaxLivePopulation: 13
+  MaxLivePopulation: 20
   ReleaseTier: 0
   CenterFocusBias: 0.35
   Element: 4

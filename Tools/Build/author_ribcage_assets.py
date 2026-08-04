@@ -288,26 +288,29 @@ emit("Assets/_SO_Assets/Games/ArcadeGameRibcage.asset.meta", asset_meta(G_ASSET[
 # per-species performance backstop the food web works under.
 #
 #   species      tier  seed  MaxLive   role
-#   Tadpole        0     26     48      the shoal - fast, numerous, the "swarm" read
-#   QuadFish       0     13     22      mid-size rovers
-#   Clawfish       0      9     16      heavier, slower, most threatening silhouette
-#   Brittlestar    0      8     13      drifting arms - fills the volume
-#   Shark          1      3      6      the 50% predator (eats HERBIVORES, not prisms)
+#   Tadpole        0     39     72      the shoal - fast, numerous, the "swarm" read
+#   QuadFish       0     20     33      mid-size rovers
+#   Clawfish       0     14     24      heavier, slower, most threatening silhouette
+#   Brittlestar    0     12     20      drifting arms - fills the volume
+#   Shark          1      5      9      the 50% predator (eats HERBIVORES, not prisms)
 #                       ---    ---
-#   caged totals          56     99      (+6 sharks once the pack rung lands)  [+60% pass]
+#   caged totals          85    149      (+9 sharks once the pack rung lands)
+#
+# Seeding 85 prism-bodied creatures on one tick would be a frame spike, so
+# RandomLifeSpawner.SpawnFaunaPopulation yields every FaunaSpawnBatchPerFrame (6).
 FAUNA_SPECIES = [
-    dict(key="Tadpole",     asset="RibcageTadpoleFauna",     tier=0, seed=26, cap=48, initial=26,
+    dict(key="Tadpole",     asset="RibcageTadpoleFauna",     tier=0, seed=39, cap=72, initial=39,
          element=2, center=0.15, prefab="TadpolePrefab", palette="TADPOLE",
          variant=dict(scale=0.4, prism="{x: 0.8, y: 0.8, z: 7}", mat="TadpoleBodyMat",
                       starve=90, forager=1, cohesion=50, tick=1.2, reach=22, goalw=3,
                       minspd=12, maxspd=18)),
-    dict(key="QuadFish",    asset="RibcageQuadFishFauna",    tier=0, seed=13, cap=22, initial=13,
+    dict(key="QuadFish",    asset="RibcageQuadFishFauna",    tier=0, seed=20, cap=33, initial=20,
          element=1, center=0.25, prefab="QuadFishPrefab", palette="TADPOLE", variant=None),
-    dict(key="Clawfish",    asset="RibcageClawfishFauna",    tier=0, seed=9,  cap=16, initial=9,
+    dict(key="Clawfish",    asset="RibcageClawfishFauna",    tier=0, seed=14, cap=24, initial=14,
          element=3, center=0.3,  prefab="ClawfishPrefab", palette="TADPOLE", variant=None),
-    dict(key="Brittlestar", asset="RibcageBrittlestarFauna", tier=0, seed=8,  cap=13, initial=8,
+    dict(key="Brittlestar", asset="RibcageBrittlestarFauna", tier=0, seed=12, cap=20, initial=12,
          element=4, center=0.35, prefab="BrittlestarPrefab", palette="TADPOLE", variant=None),
-    dict(key="Shark",       asset="RibcageSharkFauna",       tier=1, seed=3,  cap=6,  initial=2,
+    dict(key="Shark",       asset="RibcageSharkFauna",       tier=1, seed=5,  cap=9,  initial=3,
          element=0, center=0.2,  prefab="SharkPrefab", palette="SHARK", variant=None),
 ]
 

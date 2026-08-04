@@ -13,13 +13,13 @@ MonoBehaviour:
   m_Name: Ribcage Tadpole Fauna Config Data
   m_EditorClassIdentifier:
   FaunaPrefab: {fileID: 5945480239701989318, guid: c7fd418d426de8740ac888dcc23a5d24, type: 3}
-  InitialSpawnCount: 26
-  PopulationSize: 26
+  InitialSpawnCount: 39
+  PopulationSize: 39
   SpawnProbability: 1
   FeedsPerOffspring: 20
   OffspringPerBirth: 1
   ReproductionCooldownSeconds: 10
-  MaxLivePopulation: 48
+  MaxLivePopulation: 72
   ReleaseTier: 0
   CenterFocusBias: 0.15
   Element: 2
