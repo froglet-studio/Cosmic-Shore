@@ -14,10 +14,10 @@ MonoBehaviour:
   m_EditorClassIdentifier:
   Mode: 39
   IsMultiplayer: 1
-  DisplayName: Ribcage
-  Description: A hollow cage of shielded bone pens the cell's brood. Ram it, crack
-    it, break out - and the domain in front wears the swarm's colours, so every
-    beast you free hunts the teams behind you.
+  DisplayName: Peel the Cage
+  Description: A layered orange of prism bone, and you are the blade. Scrape one rind
+    away and the next is waiting behind it - intensity is how many you have to peel.
+    Danger bars are salted through the weave, so read before you ram.
   IconActive: {fileID: 21300000, guid: 1dc25875d7cbd3e478fc5a133e65eedb, type: 3}
   IconInactive: {fileID: 21300000, guid: fa9b62abd1b217b4ba3d7c5a4a2c0916, type: 3}
   CardBackground: {fileID: 21300000, guid: 587d2203114c8004c9985d0112c89585, type: 3}

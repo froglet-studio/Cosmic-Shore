@@ -20,6 +20,11 @@ import sys
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 CHECK_ONLY = "--check" in sys.argv
 
+# The cage baseline is IMPORTED, never copied: ribcage_budget.py mirrors the C# generator's
+# loops exactly, so PhaseThresholds cannot drift from the geometry behind a stale constant.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import ribcage_budget as budget  # noqa: E402
+
 
 def guid(name: str) -> str:
     """Deterministic GUID for a stable asset name (asset-surgery: generator-authored family)."""
@@ -35,19 +40,19 @@ G_SCRIPT = {
 }
 
 # ── New asset GUIDs ──────────────────────────────────────────────────────────
+# One prefab variant and one CellConfigDataSO per intensity - that is how the layered orange
+# is authored (Cell picks by CellTypeChoiceOptions.IntensityWise; see Cell.cs AssignConfig).
+INTENSITIES = list(range(1, budget.MAX_SHELLS + 1))
+
 G_ASSET = {
-    "SpawnableRibcage.prefab":   guid("asset/SpawnableRibcage.prefab"),
     "ArcadeGameRibcage":         guid("asset/ArcadeGameRibcage"),
     "RibcageScoringRule":        guid("asset/RibcageScoringRule"),
-    "RibcageCellConfig":         guid("asset/RibcageCellConfig"),
     "RibcageSpawnProfile":       guid("asset/RibcageSpawnProfile"),
-    "RibcageTadpoleFauna":       guid("asset/RibcageTadpoleFauna"),
-    "RibcageQuadFishFauna":      guid("asset/RibcageQuadFishFauna"),
-    "RibcageClawfishFauna":      guid("asset/RibcageClawfishFauna"),
-    "RibcageBrittlestarFauna":   guid("asset/RibcageBrittlestarFauna"),
-    "RibcageSharkFauna":         guid("asset/RibcageSharkFauna"),
     "MinigameRibcage.unity":     guid("asset/MinigameRibcage.unity"),
 }
+for _i in INTENSITIES:
+    G_ASSET[f"SpawnableRibcage{_i}.prefab"] = guid(f"asset/SpawnableRibcage{_i}.prefab")
+    G_ASSET[f"RibcageCellConfig{_i}"] = guid(f"asset/RibcageCellConfig{_i}")
 
 # ── Existing GUIDs we reference (read from the repo, never invented) ──────────
 EXISTING = {
@@ -106,19 +111,12 @@ TADPOLE_PALETTE = ["ede43cd3ab5943c58c646065c1f57a1f", "28c9a96388684fa0b3b10b9d
 SHARK_PALETTE = ["58835b82ea284255855af2649ef185a5", "a690f25bf21e486ba0e500563b90f1ea",
                  "eaf56c14345740849f35fc84467059e9", "78ce842bb8554d748af1e96abf430137"]
 
-# ── Measured cage baseline (Tools/Build/ribcage_budget.py; analytic, exact) ───
-# Cage geometry (SpawnableRibcage.cs — keep in sync; Tools/Build/ribcage_budget.py models it)
-CAGE_RADIUS = 360         # +20% arena
-SPAWN_RING_RADIUS = 576   # 1.6x the cage, well inside the 1200u membrane
-HERBIVORE_RING = 200      # inside the pen (338) so the brood hatches within the bone
-PREDATOR_RING = 250
-# Destruction target - the race metric. The 25%/50% fauna rungs are fractions of this,
-# so moving it moves the whole escalation ladder. Matches Rampage's 2000.
+# ── Cage baseline: IMPORTED from ribcage_budget, never copied ────────────────
+CAGE_RADIUS = budget.OUTER_R
+SPAWN_RING_RADIUS = round(budget.OUTER_R * 1.6)  # outside the cage, inside the 1200u membrane
+# Destruction target - the race metric. The 25%/50% milestone rungs are fractions of this,
+# so moving it moves the whole progress ladder. Matches Rampage's 2000.
 RIBCAGE_PRISM_TARGET = 2000
-CAGE_PRISMS = 14977
-CAGE_VOLUME = 5882112
-# PhaseThresholds = measured baseline + the standard Blob deltas (Docs/ECOSYSTEM.md §18).
-BLOB_DELTAS = dict(re=700, rx=500, fe=3600, fx=3000, rev=11200, rxv=8000, fev=57600, fxv=48000)
 
 _HEADER_TMPL = """%YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
@@ -182,8 +180,12 @@ for k, p in SCRIPT_PATHS.items():
     emit(p + ".meta", meta(G_SCRIPT[k]))
 
 
-# ── 2. SpawnableRibcage.prefab (donor-cloned from SpawnableGeode.prefab) ─────
-emit("Assets/_Prefabs/Spawnables/SpawnableRibcage.prefab", f"""%YAML 1.1
+# ── 2. SpawnableRibcage prefabs - ONE VARIANT PER INTENSITY ─────────────────
+# The layered orange: variant i builds i concentric rinds inward from the fixed outer
+# shell. Same script, same seed, only shellCount differs - so the four arenas are the
+# same cage with more to peel, and BuildParameterHash keeps their caches distinct.
+for i in INTENSITIES:
+    emit(f"Assets/_Prefabs/Spawnables/SpawnableRibcage{i}.prefab", f"""%YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
 --- !u!1 &5260000000000201
 GameObject:
@@ -235,14 +237,15 @@ MonoBehaviour:
   leafPrefab: {{fileID: 0}}
   layAcrossFrames: 0
   layBudgetMsPerFrame: 6
-  intensityLevel: 1
+  intensityLevel: {i}
   prism: {{fileID: {PRISM_FILEID}, guid: {EXISTING['Prism_prefab']}, type: 3}}
   density: 1
   spawnClearRadius: 0
   spawnClearPoints: []
+  shellCount: {i}
 """)
-emit("Assets/_Prefabs/Spawnables/SpawnableRibcage.prefab.meta",
-     prefab_meta(G_ASSET["SpawnableRibcage.prefab"]))
+    emit(f"Assets/_Prefabs/Spawnables/SpawnableRibcage{i}.prefab.meta",
+         prefab_meta(G_ASSET[f"SpawnableRibcage{i}.prefab"]))
 
 
 # ── 3. Scoring rule ──────────────────────────────────────────────────────────
@@ -257,10 +260,10 @@ emit("Assets/_SO_Assets/Scoring Rules/RibcageScoringRule.asset.meta",
 emit("Assets/_SO_Assets/Games/ArcadeGameRibcage.asset",
      HEADER_FOR(EXISTING["SO_ArcadeGame"], "ArcadeGameRibcage") + f"""  Mode: 39
   IsMultiplayer: 1
-  DisplayName: Ribcage
-  Description: A hollow cage of shielded bone pens the cell's brood. Ram it, crack
-    it, break out - and the domain in front wears the swarm's colours, so every
-    beast you free hunts the teams behind you.
+  DisplayName: Peel the Cage
+  Description: A layered orange of prism bone, and you are the blade. Scrape one rind
+    away and the next is waiting behind it - intensity is how many you have to peel.
+    Danger bars are salted through the weave, so read before you ram.
   IconActive: {{fileID: 21300000, guid: {EXISTING['IconActive']}, type: 3}}
   IconInactive: {{fileID: 21300000, guid: {EXISTING['IconInactive']}, type: 3}}
   CardBackground: {{fileID: 21300000, guid: {EXISTING['CardBackground']}, type: 3}}
@@ -283,78 +286,58 @@ emit("Assets/_SO_Assets/Games/ArcadeGameRibcage.asset",
 emit("Assets/_SO_Assets/Games/ArcadeGameRibcage.asset.meta", asset_meta(G_ASSET["ArcadeGameRibcage"]))
 
 
-# ── 5b. The brood: five species, table-driven ───────────────────────────────
+# ── 5. Cell configs (ONE PER INTENSITY) + spawn profile ──────────────────────
 #
-# The cage is meant to look FULL and read as dangerous, so the caged tier carries four
-# herbivore species (a dense tadpole shoal plus three larger, slower bodies for silhouette
-# variety) and the predator joins at 50%. Seeds are what hatch immediately; MaxLive is the
-# per-species performance backstop the food web works under.
+# NO FAUNA. The brood was removed from this level on request (2026-08); the cell keeps its
+# membrane / cytoplasm / phase machinery because the Cell owns the environment, but it
+# authors no species, so SupportedFaunas is empty and nothing hatches. The platform fauna
+# capabilities the old ladder used (Cell.FaunaReleaseTier / FaunaContainmentRadius /
+# ModePhaseFloor / SetModeControlOverride, SpawnProfileSO.InitialFaunaReleaseTier) are all
+# still there - re-adding the brood is a data change here, not a code change.
 #
-#   species      tier  seed  MaxLive   role
-#   Tadpole        0     39     72      the shoal - fast, numerous, the "swarm" read
-#   QuadFish       0     20     33      mid-size rovers
-#   Clawfish       0     14     24      heavier, slower, most threatening silhouette
-#   Brittlestar    0     12     20      drifting arms - fills the volume
-#   Shark          1      5      9      the 50% predator (eats HERBIVORES, not prisms)
-#                       ---    ---
-#   caged totals          85    149      (+9 sharks once the pack rung lands)
-#
-# Seeding 85 prism-bodied creatures on one tick would be a frame spike, so
-# RandomLifeSpawner.SpawnFaunaPopulation yields every FaunaSpawnBatchPerFrame (6).
-FAUNA_SPECIES = [
-    dict(key="Tadpole",     asset="RibcageTadpoleFauna",     tier=0, seed=39, cap=72, initial=39,
-         element=2, center=0.15, prefab="TadpolePrefab", palette="TADPOLE",
-         variant=dict(scale=0.4, prism="{x: 0.8, y: 0.8, z: 7}", mat="TadpoleBodyMat",
-                      starve=90, forager=1, cohesion=50, tick=1.2, reach=22, goalw=3,
-                      minspd=12, maxspd=18)),
-    dict(key="QuadFish",    asset="RibcageQuadFishFauna",    tier=0, seed=20, cap=33, initial=20,
-         element=1, center=0.25, prefab="QuadFishPrefab", palette="TADPOLE", variant=None),
-    dict(key="Clawfish",    asset="RibcageClawfishFauna",    tier=0, seed=14, cap=24, initial=14,
-         element=3, center=0.3,  prefab="ClawfishPrefab", palette="TADPOLE", variant=None),
-    dict(key="Brittlestar", asset="RibcageBrittlestarFauna", tier=0, seed=12, cap=20, initial=12,
-         element=4, center=0.35, prefab="BrittlestarPrefab", palette="TADPOLE", variant=None),
-    dict(key="Shark",       asset="RibcageSharkFauna",       tier=1, seed=5,  cap=9,  initial=3,
-         element=0, center=0.2,  prefab="SharkPrefab", palette="SHARK", variant=None),
-]
-
-PALETTES = {"TADPOLE": TADPOLE_PALETTE, "SHARK": SHARK_PALETTE}
-
-
-# ── 5. Cell config + spawn profile + fauna ───────────────────────────────────
+# Each intensity gets its OWN CellConfigDataSO because PhaseThresholds must ride ITS OWN
+# baseline: a four-rind cage starts at ~15.7k prisms and a one-rind cage at ~5.5k, so a
+# shared threshold block would put three of the four arenas in the wrong phase from frame
+# one. Cell.AssignConfig picks by CellTypeChoiceOptions.IntensityWise (index = intensity-1).
 emit("Assets/_SO_Assets/Cell Configs/Ribcage Cell.meta", meta(guid("folder/RibcageCell"), folder=True))
 
-emit("Assets/_SO_Assets/Cell Configs/Ribcage Cell/Ribcage Cell Config.asset",
-     HEADER_FOR(EXISTING["CellConfigDataSO"], "Ribcage Cell Config") + f"""  CellName: Ribcage
-  Description: The cage cell - a hollow sphere of shielded prism bone penning the
-    brood. NO NUCLEUS by design - a nucleus control zone would switch herbivores to
-    the spatial 'eat anything outside the nucleus' diet, and Ribcage needs the legacy
-    opposing-domain diet so the leader's swarm hunts the trailing teams only.
+for i in INTENSITIES:
+    n, v, danger = budget.cumulative(i)
+    th = budget.phase_thresholds(n, v)
+    radii = " / ".join(f"{budget.shell_radius(k):.0f}" for k in range(i))
+    emit(f"Assets/_SO_Assets/Cell Configs/Ribcage Cell/Ribcage Cell Config {i}.asset",
+         HEADER_FOR(EXISTING["CellConfigDataSO"], f"Ribcage Cell Config {i}") + f"""  CellName: Ribcage
+  Description: The cage cell at intensity {i} - {i} concentric rind(s) of prism bone at
+    radius {radii}, {n} prisms in total. NO NUCLEUS by design, and no fauna. PhaseThresholds
+    ride THIS intensity's own baseline; regenerate with Tools/Build/author_ribcage_assets.py
+    after any geometry change rather than hand-editing.
   Icon: {{fileID: 21300000, guid: {EXISTING['CellIcon']}, type: 3}}
-  Difficulty: 2
+  Difficulty: {i}
   CellEndGameScore: 0
   MembranePrefab: {{fileID: {MEMBRANE_FILEID}, guid: {EXISTING['Membrane_prefab']}, type: 3}}
   NucleusPrefab: {{fileID: 0}}
   CytoplasmPrefab: {{fileID: {CYTOPLASM_FILEID}, guid: {EXISTING['Cytoplasm_prefab']}, type: 3}}
   CellModifiers: []
   SpawnProfile: {{fileID: 11400000, guid: {G_ASSET['RibcageSpawnProfile']}, type: 2}}
-  EnvironmentPrefab: {{fileID: 5260000000000203, guid: {G_ASSET['SpawnableRibcage.prefab']}, type: 3}}
-  EnvironmentIntensity: 1
+  EnvironmentPrefab: {{fileID: 5260000000000203, guid: {G_ASSET[f'SpawnableRibcage{i}.prefab']}, type: 3}}
+  EnvironmentIntensity: {i}
   SenseRadiusOverride: 0
   PhaseThresholds:
-    RestlessEnter: {CAGE_PRISMS + BLOB_DELTAS['re']}
-    RestlessExit: {CAGE_PRISMS + BLOB_DELTAS['rx']}
-    FrenzyEnter: {CAGE_PRISMS + BLOB_DELTAS['fe']}
-    FrenzyExit: {CAGE_PRISMS + BLOB_DELTAS['fx']}
-    RestlessEnterVolume: {CAGE_VOLUME + BLOB_DELTAS['rev']}
-    RestlessExitVolume: {CAGE_VOLUME + BLOB_DELTAS['rxv']}
-    FrenzyEnterVolume: {CAGE_VOLUME + BLOB_DELTAS['fev']}
-    FrenzyExitVolume: {CAGE_VOLUME + BLOB_DELTAS['fxv']}
+    RestlessEnter: {th['RestlessEnter']}
+    RestlessExit: {th['RestlessExit']}
+    FrenzyEnter: {th['FrenzyEnter']}
+    FrenzyExit: {th['FrenzyExit']}
+    RestlessEnterVolume: {th['RestlessEnterVolume']}
+    RestlessExitVolume: {th['RestlessExitVolume']}
+    FrenzyEnterVolume: {th['FrenzyEnterVolume']}
+    FrenzyExitVolume: {th['FrenzyExitVolume']}
 """)
-emit("Assets/_SO_Assets/Cell Configs/Ribcage Cell/Ribcage Cell Config.asset.meta",
-     asset_meta(G_ASSET["RibcageCellConfig"]))
+    emit(f"Assets/_SO_Assets/Cell Configs/Ribcage Cell/Ribcage Cell Config {i}.asset.meta",
+         asset_meta(G_ASSET[f"RibcageCellConfig{i}"]))
 
+# One spawn profile, shared by all four configs: it authors nothing to spawn.
 emit("Assets/_SO_Assets/Cell Configs/Ribcage Cell/Ribcage Spawn Profile.asset",
-     HEADER_FOR(EXISTING["SpawnProfileSO"], "Ribcage Spawn Profile") + f"""  FloraExcludeLocalDomain: 0
+     HEADER_FOR(EXISTING["SpawnProfileSO"], "Ribcage Spawn Profile") + """  FloraExcludeLocalDomain: 0
   FloraSpawnVolumeCeiling: 0
   FloraInitialDelaySeconds: 0
   FloraSpawnIntervalSeconds: 0
@@ -368,56 +351,14 @@ emit("Assets/_SO_Assets/Cell Configs/Ribcage Cell/Ribcage Spawn Profile.asset",
   FaunaFoodFloor: 0
   FaunaInitialDelaySeconds: 0
   FaunaSpawnIntervalSeconds: 0.5
-  HerbivoreSpawnPointCount: 4
-  HerbivoreSpawnRadius: {HERBIVORE_RING}
-  PredatorSpawnPointCount: 2
-  PredatorSpawnRadius: {PREDATOR_RING}
-  SupportedFaunas:
-""" + "".join(
-    f"  - {{fileID: 11400000, guid: {G_ASSET[sp['asset']]}, type: 2}}\n"
-    for sp in FAUNA_SPECIES))
+  HerbivoreSpawnPointCount: 0
+  HerbivoreSpawnRadius: 0
+  PredatorSpawnPointCount: 0
+  PredatorSpawnRadius: 0
+  SupportedFaunas: []
+""")
 emit("Assets/_SO_Assets/Cell Configs/Ribcage Cell/Ribcage Spawn Profile.asset.meta",
      asset_meta(G_ASSET["RibcageSpawnProfile"]))
-
-
-for sp in FAUNA_SPECIES:
-    body = HEADER_FOR(EXISTING["FaunaConfigurationSO"], f"Ribcage {sp['key']} Fauna Config Data")
-    body += (f"  FaunaPrefab: {{fileID: {FAUNA_FILEID[sp['key']]}, "
-             f"guid: {EXISTING[sp['prefab']]}, type: 3}}\n")
-    body += f"  InitialSpawnCount: {sp['initial']}\n"
-    body += f"  PopulationSize: {sp['seed']}\n"
-    body += "  SpawnProbability: 1\n"
-    # Reproduction ON for the grazers (the food web drives the population once an intruder
-    # feeds them); the predator keeps Blob's slower cadence.
-    body += "  FeedsPerOffspring: 20\n" if sp["tier"] == 0 else "  FeedsPerOffspring: 6\n"
-    body += "  OffspringPerBirth: 1\n"
-    body += "  ReproductionCooldownSeconds: 10\n" if sp["tier"] == 0 else "  ReproductionCooldownSeconds: 30\n"
-    body += f"  MaxLivePopulation: {sp['cap']}\n"
-    body += f"  ReleaseTier: {sp['tier']}\n"
-    body += f"  CenterFocusBias: {sp['center']}\n"
-    if sp["element"]:
-        body += f"  Element: {sp['element']}\n"
-    body += "  InitialLevel: 1\n  BodyScalePerLevel: 1.15\n  CrystalScalePerLevel: 1.2\n  LevelGrowSeconds: 1\n"
-    v = sp["variant"]
-    if v:
-        body += (f"  Variant:\n    Enabled: 1\n    BaseBodyScale: {v['scale']}\n"
-                 f"    BodyPrismScale: {v['prism']}\n"
-                 f"    BodyMaterial: {{fileID: 2100000, guid: {EXISTING[v['mat']]}, type: 2}}\n"
-                 f"    StarvationSeconds: {v['starve']}\n    Forager: {v['forager']}\n"
-                 f"    CohesionRadius: {v['cohesion']}\n    BehaviorUpdateRate: {v['tick']}\n"
-                 f"    TrailBlockInteractionRadius: {v['reach']}\n    GoalWeight: {v['goalw']}\n"
-                 f"    MinSpeed: {v['minspd']}\n    MaxSpeed: {v['maxspd']}\n"
-                 "    OverrideAudio: 0\n    AudioLoopEvent:\n      Guid:\n        Data1: 0\n"
-                 "        Data2: 0\n        Data3: 0\n        Data4: 0\n      Path:\n"
-                 "    AudioMinDistance: -1\n    AudioMaxDistance: -1\n")
-    body += "  SpreadElements: 1\n  ElementPalette:\n"
-    for g in PALETTES[sp["palette"]]:
-        body += f"  - {{fileID: 11400000, guid: {g}, type: 2}}\n"
-    body += "  Levels:\n    Enabled: 1\n    MinLevel: 1\n    MaxLevel: 5\n    RarityFalloff: 2\n"
-
-    path = f"Assets/_SO_Assets/Cell Configs/Ribcage Cell/Ribcage {sp['key']} Fauna Config Data.asset"
-    emit(path, body)
-    emit(path + ".meta", asset_meta(G_ASSET[sp["asset"]]))
 
 
 # ── 6. Scene: clone MinigameRampage, swap the mode-specific wiring ───────────
@@ -439,18 +380,28 @@ OLD_FIELDS = f"""  rule: {{fileID: 11400000, guid: {EXISTING['RampageScoringRule
 """
 NEW_FIELDS = f"""  rule: {{fileID: 11400000, guid: {G_ASSET['RibcageScoringRule']}, type: 2}}
   arenaCell: {{fileID: 1700000065}}
-  broodReleaseFraction: 0.25
-  packReleaseFraction: 0.5
-  ladderSampleSeconds: 0.5
+  firstMilestoneFraction: 0.25
+  secondMilestoneFraction: 0.5
+  progressSampleSeconds: 0.5
   aiRetargetSeconds: 2
   aiCageRadiusOverride: 0
 """
 assert OLD_FIELDS in scene, "controller field block not found in donor scene"
 scene = scene.replace(OLD_FIELDS, NEW_FIELDS)
 
-# 6c. cell config swap
-scene, n = re.subn(EXISTING["RampageCellConfig"], G_ASSET["RibcageCellConfig"], scene)
-assert n == 1, f"cell config guid appeared {n} times"
+# 6c. Cell: swap the donor's single config for the FOUR per-intensity configs and flip the
+# choice mode to IntensityWise, which is the platform's own way to vary a cell by intensity
+# (Cell.AssignConfig: index = SelectedIntensity - 1, clamped). The donor scene lists exactly
+# one config under Random(0); replacing that pair is the whole change.
+OLD_CELL = f"""  CellConfigs:
+  - {{fileID: 11400000, guid: {EXISTING['RampageCellConfig']}, type: 2}}
+  cellTypeChoiceOptions: 0
+"""
+NEW_CELL = "  CellConfigs:\n" + "".join(
+    f"  - {{fileID: 11400000, guid: {G_ASSET[f'RibcageCellConfig{i}']}, type: 2}}\n"
+    for i in INTENSITIES) + "  cellTypeChoiceOptions: 1\n"
+assert OLD_CELL in scene, "donor Cell config block not found"
+scene = scene.replace(OLD_CELL, NEW_CELL)
 
 # 6d. Spawn OUTSIDE the cage. The donor's four authored transforms sit at +/-50 - deep inside
 # the cage, so players started penned in with the brood. Switch the initializer to the
@@ -582,31 +533,51 @@ for name in ("RampageController", "RampagePrismTurnMonitor", "RampageCellConfig"
 for name in ("RibcageController", "RibcagePrismTurnMonitor"):
     if G_SCRIPT[name if name in G_SCRIPT else name] not in sc:
         errors.append(f"cloned scene missing {name}")
-if G_ASSET["RibcageCellConfig"] not in sc or G_ASSET["RibcageScoringRule"] not in sc:
-    errors.append("cloned scene missing Ribcage cell config / scoring rule reference")
+if G_ASSET["RibcageScoringRule"] not in sc:
+    errors.append("cloned scene missing Ribcage scoring rule reference")
+for i in INTENSITIES:
+    if G_ASSET[f"RibcageCellConfig{i}"] not in sc:
+        errors.append(f"cloned scene missing Ribcage cell config {i}")
+if "  cellTypeChoiceOptions: 1\n" not in sc:
+    errors.append("scene Cell is not on CellTypeChoiceOptions.IntensityWise - "
+                  "the per-intensity configs would never be selected")
 
 # serialized MonoBehaviour keys must exist on the C# class (asset-surgery §3)
 def cs_fields(path):
     with open(os.path.join(ROOT, path), encoding="utf-8") as fh:
         src = fh.read()
     out = set()
-    for m in re.finditer(r"(?:\[SerializeField\]\s*)?(?:public|protected|private|internal)\s+"
-                         r"(?:readonly\s+)?[\w<>,\[\]\?\.]+\s+(\w+)\s*(?:=|;|\{)", src):
+    TYPE = r"[\w<>,\[\]\?\.]+"
+    # (1) fields with an explicit access modifier
+    for m in re.finditer(r"(?:public|protected|private|internal)\s+"
+                         r"(?:readonly\s+)?" + TYPE + r"\s+(\w+)\s*(?:=|;|\{)", src):
+        out.add(m.group(1))
+    # (2) modifier-less [SerializeField] fields - the house style ("[SerializeField] with
+    #     private fields"), including attribute lists like [SerializeField, Range(1, 4)].
+    #     Without this the extractor silently reports a field as MISSING and the caller
+    #     concludes the C# is wrong when it is the regex that is too narrow.
+    for m in re.finditer(r"\[SerializeField[^\]]*\]\s*(?:\[[^\]]*\]\s*)*"
+                         r"(?:(?:public|protected|private|internal)\s+)?"
+                         + TYPE + r"\s+(\w+)\s*(?:=|;)", src):
         out.add(m.group(1))
     return out
 
 CHECKS = [
-    ("Assets/_SO_Assets/Cell Configs/Ribcage Cell/Ribcage Cell Config.asset",
-     "Assets/_Scripts/Utility/DataContainers/CellConfigDataSO.cs"),
+    (f"Assets/_SO_Assets/Cell Configs/Ribcage Cell/Ribcage Cell Config {i}.asset",
+     "Assets/_Scripts/Utility/DataContainers/CellConfigDataSO.cs") for i in INTENSITIES
+] + [
     ("Assets/_SO_Assets/Cell Configs/Ribcage Cell/Ribcage Spawn Profile.asset",
      "Assets/_Scripts/Utility/DataContainers/SpawnProfileSO.cs"),
-    ("Assets/_SO_Assets/Cell Configs/Ribcage Cell/Ribcage Tadpole Fauna Config Data.asset",
-     "Assets/_Scripts/Utility/DataContainers/FaunaConfigurationSO.cs"),
-    ("Assets/_SO_Assets/Cell Configs/Ribcage Cell/Ribcage Shark Fauna Config Data.asset",
-     "Assets/_Scripts/Utility/DataContainers/FaunaConfigurationSO.cs"),
     ("Assets/_SO_Assets/Games/ArcadeGameRibcage.asset",
      "Assets/_Scripts/ScriptableObjects/SO_ArcadeGame.cs"),
 ]
+# The prefabs are NOT run through CHECKS: a prefab file carries GameObject/Transform blocks
+# and every field inherited from SpawnableBase / CellEnvironmentSpawnableBase, none of which
+# live on SpawnableRibcage.cs. Only the one key this script actually introduces is checked.
+if "shellCount" not in cs_fields(
+        "Assets/_Scripts/Controller/Environment/MiniGameObjects/SpawnableRibcage.cs"):
+    errors.append("SpawnableRibcage.cs has no 'shellCount' field - the per-intensity prefab "
+                  "variants would all build one shell")
 SO_BASE = {"CellName", "Description", "Icon", "Difficulty", "CellEndGameScore", "Mode",
            "IsMultiplayer", "DisplayName", "IconActive", "IconInactive", "CardBackground",
            "PreviewClip", "GolfScoring", "SceneName"}

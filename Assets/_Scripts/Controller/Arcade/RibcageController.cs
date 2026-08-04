@@ -10,34 +10,34 @@ using CosmicShore.Utility;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Ribcage - the Rhino-only cage-breaking race. Domains race to smash a shielded prism
-    /// sphere; the first to the destruction target breaks out and wins. Structurally a sibling
-    /// of <see cref="RampageController"/> (1 round / 1 turn, HasEndGame=false, server winner
-    /// detection in OnTurnEndedCustom, snapshot SyncFinalScores_ClientRpc) - the destruction
-    /// stat itself auto-increments via StatsManager.PrismDestroyed, so no per-event listener
-    /// lives here either.
+    /// Ribcage (player-facing "Peel the Cage") - the Rhino-only cage-breaking race. Domains race
+    /// to smash a LAYERED ORANGE of prism bone; the first to the destruction target has peeled
+    /// its way out and wins. Structurally a sibling of <see cref="RampageController"/> (1 round /
+    /// 1 turn, HasEndGame=false, server winner detection in OnTurnEndedCustom, snapshot
+    /// SyncFinalScores_ClientRpc) - the destruction stat itself auto-increments via
+    /// StatsManager.PrismDestroyed, so no per-event listener lives here either.
     ///
-    /// What this controller adds over Rampage is the FAUNA LADDER, and the point of its design
-    /// is that it contains no fauna targeting code at all. It only publishes two facts to the
-    /// arena cell and lets the existing ecology draw every consequence:
+    /// The arena's difficulty is authored, not driven from here: intensity picks the
+    /// <c>CellConfigDataSO</c> (<c>CellTypeChoiceOptions.IntensityWise</c>) and therefore the
+    /// <see cref="SpawnableRibcage"/> variant, which is how one rind becomes four. This
+    /// controller adds only two things over Rampage:
     ///
-    ///   1. WHO CONTROLS THE CELL = who leads the race (<see cref="Cell.SetModeControlOverride"/>).
-    ///      Fauna already spawn in exactly one colour - the cell's controlling colour (the locked
-    ///      no-domain-asymmetry invariant) - and herbivores in a nucleus-less cell already eat
-    ///      opposing-domain mass. So the brood hatches wearing the leader's colours and hunts
-    ///      every trailing team's trails, and when the lead changes hands the override recolours
-    ///      the live swarm and its diet flips with it. There is no "target the loser" code
-    ///      anywhere; the diet rule was always this.
-    ///   2. HOW HARD the cell is running (<see cref="Cell.ModePhaseFloor"/> +
-    ///      <see cref="Cell.FaunaReleaseTier"/>). 25% of the target floors the cell at Restless
-    ///      and opens the grazer swarm; 50% floors it at Frenzy and adds the predator.
-    ///      Aggression bands, steering, danger immunity and speed all come from the existing
-    ///      CellPhase → CellAggressionLevel mapping.
+    ///   1. PROGRESS MILESTONES. At a quarter and a half of the win target the leading domain
+    ///      crosses a rung, which fires a toast and the alert haptic on every peer. These are
+    ///      pure FEEDBACK - they change no game state - and they exist so the match has an
+    ///      audible/tactile shape between "go" and "won".
+    ///   2. AI CAGE-BREAKERS. AIPilot has no arrive-and-stop behaviour, so the AI needs stations
+    ///      OUTSIDE the shell and damage on the transit (see ArmCageBreakers).
     ///
-    /// Neither publication removes a prism or starts a clock, so the conserved-mass law is
-    /// untouched: the cage falls only to vessel abilities, and holding fauna PRODUCTION closed
-    /// until the ladder opens it is the explicitly-allowed "don't create mass" lever, never a
-    /// culler. See RIBCAGE.md and Docs/ECOSYSTEM.md.
+    /// HISTORY - this mode used to run a FAUNA LADDER here: the cell's controlling domain was
+    /// pinned to the race leader (<see cref="Cell.SetModeControlOverride"/>) so the penned brood
+    /// hatched in the leader's colours and the untouched legacy herbivore diet turned it loose on
+    /// every trailing team's mass, with the same two rungs opening the pen and adding a predator.
+    /// The fauna were removed from the level on request (2026-08), so that machinery is gone from
+    /// this controller - but the PLATFORM capabilities it was built on are deliberately kept
+    /// (Cell.SetModeControlOverride / ModePhaseFloor / FaunaReleaseTier / FaunaContainmentRadius,
+    /// SpawnProfileSO.InitialFaunaReleaseTier). They are general, documented, and one data change
+    /// away from bringing the ladder back. See RIBCAGE.md and Docs/ECOSYSTEM.md §22.
     /// </summary>
     public class RibcageController : MultiplayerDomainGamesController
     {
@@ -46,26 +46,23 @@ namespace CosmicShore.Gameplay
         [SerializeField] ScoringRuleSO rule;
 
         [Header("Arena")]
-        [Tooltip("The cage cell. The controller publishes race leadership and the escalation " +
-                 "ladder onto it; the cell's own ecology does the rest. Must be a cell with NO " +
-                 "NucleusPrefab - a nucleus control zone switches herbivores to the spatial " +
-                 "'eat anything outside the nucleus' diet, which would point the swarm at every " +
-                 "team including the leader's and break the whole hook.")]
+        [Tooltip("The cage cell. Read-only to this controller now: it supplies the arena CENTRE " +
+                 "the AI orbits and the density-grid raid target (Cell.GetExplosionTarget). The " +
+                 "cage geometry itself comes from the cell's config for the selected intensity.")]
         [SerializeField] Cell arenaCell;
 
-        [Tooltip("Fraction of the win target at which the pen opens: the brood pours out in the " +
-                 "leader's colour and the cell is floored at Restless. A FRACTION because the " +
-                 "race and the trigger are the same axis again (destruction) - move the target " +
-                 "and the whole ladder moves with it.")]
-        [SerializeField, Range(0.05f, 0.9f)] float broodReleaseFraction = 0.25f;
+        [Tooltip("Fraction of the win target at which the leading domain crosses the first " +
+                 "milestone (toast + alert haptic). A FRACTION, so moving the target moves the " +
+                 "milestones with it. Feedback only - no game state changes here.")]
+        [SerializeField, Range(0.05f, 0.9f)] float firstMilestoneFraction = 0.25f;
 
-        [Tooltip("Fraction of the win target at which the predator joins and the cell is " +
-                 "floored at Frenzy.")]
-        [SerializeField, Range(0.1f, 0.95f)] float packReleaseFraction = 0.5f;
+        [Tooltip("Fraction of the win target at which the leading domain crosses the second " +
+                 "milestone. Feedback only.")]
+        [SerializeField, Range(0.1f, 0.95f)] float secondMilestoneFraction = 0.5f;
 
-        [Tooltip("Seconds between server-side leadership/escalation samples. The ladder is a " +
-                 "coarse state machine, so this does not need to be per-frame.")]
-        [SerializeField, Min(0.1f)] float ladderSampleSeconds = 0.5f;
+        [Tooltip("Seconds between server-side progress samples. Milestones are a coarse state " +
+                 "machine, so this does not need to be per-frame.")]
+        [SerializeField, Min(0.1f)] float progressSampleSeconds = 0.5f;
 
         [Header("AI")]
         [Tooltip("Seconds between AI cage-breaker target refreshes - how often each AI Rhino " +
@@ -83,24 +80,15 @@ namespace CosmicShore.Gameplay
         // One strike in N is a raid on live opposing mass instead of the cage.
         const int AiRaidEveryNthStrike = 4;
 
-        // The ladder's three stages. Each maps to (species release tier, containment, phase
-        // floor) in ApplyStage - one place, so the three levers can never disagree.
-        //   Caged  - the brood is penned in the cage, visible through the bars. It eats the
-        //            trail of anything that comes IN and cannot touch the match outside.
-        //   Loosed - 25% of the target: containment lifted, cell floored at Restless. The swarm
-        //            pours out wearing the leader's colours and hunts the trailing teams' mass.
-        //   Pack   - 50%: the predator species joins, cell floored at Frenzy.
-        const int StageCaged = 0;
-        const int StageLoosed = 1;
-        const int StagePack = 2;
-
-        // Species release tiers authored on the fauna configs (grazer 0, predator 1).
-        const int SpeciesBrood = 0;
-        const int SpeciesPack = 1;
+        // Milestone rungs the leading domain crosses. Feedback only - nothing here changes
+        // game state, so a missed or late sample costs a toast, never a rule.
+        const int MilestoneNone = 0;
+        const int MilestoneFirst = 1;   // firstMilestoneFraction of the win target
+        const int MilestoneSecond = 2;  // secondMilestoneFraction
 
         bool _finalResultsSent;
-        Coroutine _ladderRoutine;
-        int _stage = StageCaged;
+        Coroutine _progressRoutine;
+        int _milestone = MilestoneNone;
         Domains _leader = Domains.Blue;
 
         // Golf: winners carry their finish time, losers a DnfThreshold+remaining sentinel
@@ -121,23 +109,17 @@ namespace CosmicShore.Gameplay
             numberOfRounds = 1;
             numberOfTurnsPerRound = 1;
             _finalResultsSent = false;
-
-            // Pen the brood on every peer before anything can tick: fauna are client-local, so
-            // each machine must contain its own cage until the ladder opens it. (The cell also
-            // seeds its release tier from the spawn profile at config-assign time, which is what
-            // makes the START state independent of this call winning the race - see
-            // SpawnProfileSO.InitialFaunaReleaseTier.)
-            ApplyStage(StageCaged);
+            _milestone = MilestoneNone;
+            _leader = Domains.Blue;
         }
 
         public override void OnNetworkDespawn()
         {
-            StopLadder();
-            ReleaseCellOverrides();
+            StopProgressSampler();
             base.OnNetworkDespawn();
         }
 
-        // ── The ladder (server publishes; the cell's ecology reacts) ──────
+        // ── Progress milestones (server samples, every peer gets the feedback) ──
 
         protected override void OnCountdownTimerEnded()
         {
@@ -145,36 +127,36 @@ namespace CosmicShore.Gameplay
             base.OnCountdownTimerEnded(); // ClientRpc: SetPlayersActive + StartTurn
             ArmCageBreakers();
 
-            StopLadder();
-            _ladderRoutine = StartCoroutine(LadderRoutine());
+            StopProgressSampler();
+            _progressRoutine = StartCoroutine(ProgressRoutine());
         }
 
-        void StopLadder()
+        void StopProgressSampler()
         {
-            if (_ladderRoutine == null) return;
-            StopCoroutine(_ladderRoutine);
-            _ladderRoutine = null;
+            if (_progressRoutine == null) return;
+            StopCoroutine(_progressRoutine);
+            _progressRoutine = null;
         }
 
         /// <summary>
-        /// Server-side sampler: publishes who leads (the cell's controlling domain) and how far
-        /// the leader has got (the escalation tier). Both are coarse states, so a half-second
-        /// cadence is ample and costs one SumByDomain per active domain per sample.
+        /// Server-side sampler: tracks who leads and how far the leader has got, and announces
+        /// the crossings. Both are coarse states, so a half-second cadence is ample and costs one
+        /// SumByDomain per active domain per sample.
         /// </summary>
-        IEnumerator LadderRoutine()
+        IEnumerator ProgressRoutine()
         {
-            var wait = new WaitForSeconds(Mathf.Max(0.1f, ladderSampleSeconds));
+            var wait = new WaitForSeconds(Mathf.Max(0.1f, progressSampleSeconds));
 
             while (!_finalResultsSent)
             {
-                SampleLadder();
+                SampleProgress();
                 yield return wait;
             }
 
-            _ladderRoutine = null;
+            _progressRoutine = null;
         }
 
-        void SampleLadder()
+        void SampleProgress()
         {
             if (!IsServer || rule == null) return;
 
@@ -183,8 +165,7 @@ namespace CosmicShore.Gameplay
 
             // Leading domain by the scoring metric (hostile prisms destroyed), Jade→Ruby→Gold
             // on ties (fixed order, so every machine would agree - though only the server ever
-            // computes this). The brood hatches in this colour and the legacy herbivore diet
-            // then points it at every trailing team's mass.
+            // computes this).
             var leader = Domains.Blue;
             int best = 0;
             int dc = Mathf.Clamp(gameData.RequestedDomainCount, 1, GameDataSO.ActiveDomains.Length);
@@ -199,68 +180,53 @@ namespace CosmicShore.Gameplay
                 }
             }
 
-            // Nobody has broken a bar yet - leave the cell unclaimed rather than handing the
-            // brood to Jade for winning a 0-0 tie-break.
+            // Nobody has broken a bar yet - no leader to announce rather than handing the lead
+            // to Jade for winning a 0-0 tie-break.
             if (leader == Domains.Blue || best <= 0) return;
 
-            // The rungs ride the LEADER's own progress toward the win target: the race and the
-            // trigger are one axis, so "the leader is a quarter of the way out" is the signal.
+            // Rungs ride the LEADER's own progress toward the win target, so they land at a fixed
+            // point in the RACE rather than at a point a busy lobby reaches several times faster.
             float progress = best / (float)target;
-            int stage = progress >= packReleaseFraction ? StagePack
-                : progress >= broodReleaseFraction ? StageLoosed
-                : StageCaged;
+            int milestone = progress >= secondMilestoneFraction ? MilestoneSecond
+                : progress >= firstMilestoneFraction ? MilestoneFirst
+                : MilestoneNone;
 
             bool leaderChanged = leader != _leader;
-            bool stageChanged = stage != _stage;
-            if (!leaderChanged && !stageChanged) return;
+            bool milestoneChanged = milestone != _milestone;
+            if (!leaderChanged && !milestoneChanged) return;
 
             _leader = leader;
-            PublishLeader_ClientRpc((int)leader);
 
-            if (stageChanged)
+            if (milestoneChanged)
             {
-                _stage = stage;
-                PublishRelease_ClientRpc(stage, (int)leader, best, target);
+                _milestone = milestone;
+                if (milestone > MilestoneNone)
+                    AnnounceMilestone_ClientRpc(milestone, (int)leader, best, target);
             }
-            else if (leaderChanged && stage > StageCaged)
+            else if (leaderChanged && milestone > MilestoneNone)
             {
-                // The swarm changes hands mid-match: worth announcing, since every trailing
-                // team's trails just became the menu.
+                // The lead changes hands late in the race - worth calling out.
                 AnnounceLeaderChanged_ClientRpc((int)leader, best, target);
             }
         }
 
-        /// <summary>
-        /// Pins the cell's controlling domain on EVERY peer. The server's own pin would
-        /// replicate through CellNetworkSync anyway, but fauna are client-local and a client's
-        /// swarm should change colour on the same event rather than on the next 0.5s mirror.
-        /// </summary>
         [ClientRpc]
-        void PublishLeader_ClientRpc(int domain)
+        void AnnounceMilestone_ClientRpc(int milestone, int domain, int sum, int target)
         {
-            if (arenaCell) arenaCell.SetModeControlOverride((Domains)domain);
-        }
-
-        [ClientRpc]
-        void PublishRelease_ClientRpc(int stage, int domain, int sum, int target)
-        {
-            ApplyStage(stage);
-
             var d = (Domains)domain;
-            if (stage == StageLoosed)
-                GameToastAPI.Post(GameToastSituation.RibcageBroodReleased, d,
-                    d.ToString(), sum.ToString(), target.ToString());
-            else if (stage == StagePack)
-                GameToastAPI.Post(GameToastSituation.RibcagePackReleased, d,
-                    d.ToString(), sum.ToString(), target.ToString());
+            GameToastAPI.Post(
+                milestone == MilestoneSecond
+                    ? GameToastSituation.RibcageHalfPeeled
+                    : GameToastSituation.RibcageQuarterPeeled,
+                d, d.ToString(), sum.ToString(), target.ToString());
 
-            // Rung reached: shake the device hard for ~1.2s. This is the game's THIRD haptic feel
-            // and the only thing that fires it - added deliberately per Docs/HAPTICS.md ▸ "Adding
-            // / changing a feel" (dedicated method + extended gate, never the silenced legacy
-            // API). It is safe to call on every peer: HapticController gates on the local
+            // Milestone reached: shake the device hard for ~1.2s. This is the game's THIRD haptic
+            // feel and the only thing that fires it - added deliberately per Docs/HAPTICS.md ▸
+            // "Adding / changing a feel" (dedicated method + extended gate, never the silenced
+            // legacy API). It is safe to call on every peer: HapticController gates on the local
             // player's own haptics setting, so each human device buzzes once and nothing else
-            // does. Toast copy is unauthored today, so right now this IS the release feedback.
-            if (stage > StageCaged) HapticController.PlayAlert();
+            // does. Toast copy is unauthored today, so right now this IS the milestone feedback.
+            HapticController.PlayAlert();
         }
 
         [ClientRpc]
@@ -269,73 +235,6 @@ namespace CosmicShore.Gameplay
             var d = (Domains)domain;
             GameToastAPI.Post(GameToastSituation.RibcageLeaderChanged, d,
                 d.ToString(), sum.ToString(), target.ToString());
-        }
-
-        /// <summary>
-        /// Applies a ladder STAGE to the local cell - the one place the three levers are set
-        /// together, so they can never disagree:
-        ///   • which species may seed   (Cell.FaunaReleaseTier vs FaunaConfigurationSO.ReleaseTier)
-        ///   • whether the brood is penned (Cell.FaunaContainmentRadius)
-        ///   • how hard the cell runs   (Cell.ModePhaseFloor → CellAggressionLevel)
-        /// Runs on every peer because fauna are client-local.
-        /// </summary>
-        void ApplyStage(int stage)
-        {
-            if (!arenaCell)
-            {
-                // Fail loud: a silent return here leaves the cell at its authored stage and the
-                // ladder simply never advances, which reads in play as "the fauna reward never
-                // arrived" with nothing in the log to explain it.
-                CSDebug.LogError("[Ribcage] arenaCell is not wired on RibcageController - the fauna " +
-                                 "ladder cannot publish. Assign the scene's Cell in the inspector.");
-                return;
-            }
-
-            switch (stage)
-            {
-                case StagePack:
-                    arenaCell.FaunaReleaseTier = SpeciesPack;      // predator joins the grazers
-                    arenaCell.FaunaContainmentRadius = 0f;
-                    arenaCell.ContainmentIntruderFrenzy = false;
-                    arenaCell.ModePhaseFloor = CellPhase.Frenzy;   // any-colour steering, no friendly avoidance, danger-immune
-                    break;
-
-                case StageLoosed:
-                    arenaCell.FaunaReleaseTier = SpeciesBrood;
-                    arenaCell.FaunaContainmentRadius = 0f;         // the pen is open - the swarm pours out
-                    arenaCell.ContainmentIntruderFrenzy = false;
-                    arenaCell.ModePhaseFloor = CellPhase.Restless; // hunt the opposing-colour centroid = the trailing teams
-                    break;
-
-                default: // StageCaged
-                    arenaCell.FaunaReleaseTier = SpeciesBrood;     // the brood exists from the start...
-                    // ...penned INSIDE the shell. ContainmentRadius, not ShellRadius: the pen sits
-                    // just inside the bone so the cage's own prisms - including the unshielded
-                    // DANGER traps - are outside it and can never be eaten or read as an intruder.
-                    arenaCell.FaunaContainmentRadius = SpawnableRibcage.ContainmentRadius;
-                    // Fly in and the whole pen goes berserk (Frenzy) until you and your mass leave.
-                    arenaCell.ContainmentIntruderFrenzy = true;
-                    arenaCell.ModePhaseFloor = null;               // otherwise Calm: they idle at the core
-                    break;
-            }
-
-            // Realign the fauna spawn clock to the RELEASE moment. Without this the stage
-            // advances mid-period and the reinforcement wave can take a full BaseFaunaSpawnTime
-            // to appear, which reads as the reward simply not arriving. Not done for the caged
-            // stage: that one is the cell's own bootstrap and must not restart its clock.
-            // The profile authors no flora, so the "restart re-runs the initial flora batch"
-            // caveat on RestartSpawnerForMode does not apply here.
-            if (stage > StageCaged) arenaCell.RestartSpawnerForMode();
-        }
-
-        void ReleaseCellOverrides()
-        {
-            if (!arenaCell) return;
-            arenaCell.SetModeControlOverride(null);
-            arenaCell.ModePhaseFloor = null;
-            arenaCell.FaunaContainmentRadius = 0f;
-            arenaCell.ContainmentIntruderFrenzy = false;
-            arenaCell.FaunaReleaseTier = int.MaxValue;
         }
 
         // ── AI cage-breakers (server) ────────────────────────────────────
@@ -449,7 +348,7 @@ namespace CosmicShore.Gameplay
             gameData.CalculateDomainStats(UseGolfRules);
 
             _finalResultsSent = true;
-            StopLadder();
+            StopProgressSampler();
             SyncFinalScoresSnapshot(winnerRep.Name, winningDomain);
         }
 
@@ -528,16 +427,14 @@ namespace CosmicShore.Gameplay
         {
             base.OnResetForReplayCustom();
             _finalResultsSent = false;
-            _stage = StageCaged;
+            _milestone = MilestoneNone;
             _leader = Domains.Blue;
 
-            StopLadder();
-            ApplyStage(StageCaged);
-            if (arenaCell) arenaCell.SetModeControlOverride(null);
+            StopProgressSampler();
 
             foreach (var s in gameData.RoundStatsList)
             {
-                s.HostilePrismsDestroyed = 0;   // the scored metric AND the ladder trigger
+                s.HostilePrismsDestroyed = 0;   // the scored metric AND the milestone trigger
                 s.Score = 0f;
             }
 

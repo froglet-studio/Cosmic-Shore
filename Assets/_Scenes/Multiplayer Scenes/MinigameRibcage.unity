@@ -982,9 +982,9 @@ MonoBehaviour:
   _onToggleReadyButton: {fileID: 11400000, guid: 49189b231ecf3ab4ea602699f3401cf2, type: 2}
   rule: {fileID: 11400000, guid: 334ba679ea1406a625cd77611e9868eb, type: 2}
   arenaCell: {fileID: 1700000065}
-  broodReleaseFraction: 0.25
-  packReleaseFraction: 0.5
-  ladderSampleSeconds: 0.5
+  firstMilestoneFraction: 0.25
+  secondMilestoneFraction: 0.5
+  progressSampleSeconds: 0.5
   aiRetargetSeconds: 2
   aiCageRadiusOverride: 0
 --- !u!114 &1628508400
@@ -1116,8 +1116,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ID: 0
   CellConfigs:
-  - {fileID: 11400000, guid: 2ef86d4fc8ffa5632072633db128b270, type: 2}
-  cellTypeChoiceOptions: 0
+  - {fileID: 11400000, guid: 919fc3cbaa210b46ebacd865c8688b44, type: 2}
+  - {fileID: 11400000, guid: f43c4cc32c5bae18a25a9047d2cdff06, type: 2}
+  - {fileID: 11400000, guid: 6c76217c610119d0f2c76ea4c0858bf0, type: 2}
+  - {fileID: 11400000, guid: 02bfa044b1857c9bba123e6dba4804fe, type: 2}
+  cellTypeChoiceOptions: 1
   runtime: {fileID: 11400000, guid: 8d4e8398eedc76c4dadb8604f89b9e1b, type: 2}
   nucleusScaleMultiplier: 1
 --- !u!114 &1700000901
