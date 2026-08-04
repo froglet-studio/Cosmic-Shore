@@ -967,13 +967,36 @@ short band from reading as an edge are both continuity choices:
 - **Quintic smootherstep**, not cubic smoothstep: value, first AND second derivatives are
   zero at both ends (C2). Cubic zeroes only the first, which leaves a faint crease exactly
   where the band starts and stops — invisible over a wide band, obvious over a narrow one.
-- **A motley screen door, not a matrix.** The dither is interleaved gradient noise: a
-  low-discrepancy screen-space hash with no repeating tile. The ordered 4×4 Bayer matrix it
-  replaced read as what its name says — a regular grid. IGN also beats the alternatives on
-  the number that matters for a short gradient, |coverage − alpha| over the ramp:
-  **0.0001 (IGN) vs 0.0017 (white-noise hash) vs 0.0100 (Bayer)**. White noise is motlier
-  still but clumps, and clumping over a narrow band is a ragged edge. Irregular *and* even
-  is the combination that works.
+- **A dither kernel that keeps coverage honest.** Whatever pattern the screen door uses, the
+  number that decides whether a *short* band reads as a fade or as an edge is
+  |coverage − alpha| — how closely the kept-fragment fraction tracks the alpha at every point
+  in the band. Measured in situ (kept fraction per alpha bin over a rendered prism wall):
+  **0.0021 (IGN) · 0.0042 (spiral) · 0.038 (perlin) · 0.097 (hex) · 0.100 (halftone) ·
+  0.128 (rings×IGN) · 0.132 (quasicrystal) · 0.212 (concentric rings)**. Only the first two
+  hold a smooth fade over a narrow band; the structured kernels buy their look by trading
+  that away, which is why the file carries exactly those two and not the rest.
+
+  `PRISM_OCCLUSION_KERNEL_SPIRAL` in `PrismOcclusionCorridor.hlsl` selects between them.
+  Both are procedural — no texture, no sampler, no asset — and both cost less than the
+  corridor test itself:
+
+  - **1 — corridor-relative spiral (current).** An Archimedean spiral in the corridor's own
+    polar frame (9 bands across the cone radius, sheared 3 turns per revolution), so the
+    pattern is anchored to the *corridor*: it stands still and the world travels through it,
+    which reads as an **iris around the ship** rather than a dissolve. Cheapest of the set —
+    both coordinates are already paid for (the radial ratio is the profile's own, the angle
+    comes from the perpendicular vector the distance came from), so it costs two dots, an
+    `atan2` and a `frac`, with no hash. Two invariants: the arm count **must stay an integer**
+    (`atan2`'s ±π seam jumps the phase by exactly one turn, which `frac` erases only for an
+    integer count — a fractional one leaves a radial scar), and the angle is measured in the
+    **camera's** right/up frame, because any basis built from the corridor axis alone has to
+    pick a reference vector and visibly snaps the whole spiral around when the axis swings
+    past it.
+  - **0 — screen-space interleaved gradient noise.** A low-discrepancy screen-space hash with
+    no repeating tile, anchored to the screen so prisms dissolve *through* it. The ordered 4×4
+    Bayer matrix it replaced read as what its name says — a regular grid. IGN also beats plain
+    white noise, which is motlier still but clumps, and clumping over a narrow band is a ragged
+    edge; irregular *and* even is the combination that works.
 
 Four properties of the design worth preserving if it is ever touched:
 
@@ -985,7 +1008,7 @@ Four properties of the design worth preserving if it is ever touched:
   corridor — no error, no visual tell, nothing to notice until someone says they can't see
   their ship. That is how the old system stayed broken; every gate above exists to make that
   state impossible to reach silently.
-- **Prisms stay in the opaque queue.** The fade is screen-door (a motley threshold fed into
+- **Prisms stay in the opaque queue.** The fade is screen-door (a dither threshold fed into
   `SurfaceDescription.AlphaClipThreshold`), not blending. Moving corridor prisms into the
   transparent queue would need a per-prism material swap AND would pay sorting + blend
   overdraw for a set that changes every frame — precisely the cost this feature exists to

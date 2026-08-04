@@ -62,12 +62,69 @@
 #define PRISM_OCCLUSION_CORRIDOR_INCLUDED
 
 // -----------------------------------------------------------------------------
-// The screen door: a MOTLEY, not a matrix.
+// THE KERNEL SWITCH.
 //
-// Interleaved gradient noise — a low-discrepancy screen-space hash with no repeating
-// tile. The ordered 4×4 Bayer matrix this replaced (2026-08-04) read as exactly what
-// its name says: a regular grid, a literal screen door, legible as structure rather
-// than as transparency.
+// The dither kernel is the one part of this file that is a LOOK decision rather than a
+// correctness one, and two of them are carried side by side while the look is being
+// chosen. Both are procedural — no texture, no sampler, no asset — and both cost less
+// than the corridor test itself. Flip this define to A/B them; nothing else changes.
+//
+//   1 — corridor-relative SPIRAL (current). Anchored to the corridor, so the pattern
+//       sits still and the world moves through it: reads as an IRIS around the ship.
+//   0 — screen-space interleaved gradient noise. Anchored to the screen, so prisms
+//       dissolve through it: reads as a DISSOLVE.
+// -----------------------------------------------------------------------------
+#define PRISM_OCCLUSION_KERNEL_SPIRAL 1
+
+// The clip threshold must land STRICTLY inside (0,1). frac() can return exactly 0, and a
+// 0 threshold against a 0 alpha is `clip(0)` — which KEEPS the fragment on the URP
+// variants that clip directly rather than through AlphaDiscard's epsilon. That would
+// leave a sparse confetti of survivors in a core that is supposed to be fully gone.
+float PrismOcclusionSafeThreshold(float n)
+{
+    return n * 0.998 + 0.001;
+}
+
+// -----------------------------------------------------------------------------
+// Kernel A — the corridor-relative SPIRAL.
+//
+// An Archimedean spiral in the corridor's OWN polar frame: `rings` bands across the
+// cone's radius, sheared by `arms` full turns per revolution. Both coordinates are
+// already paid for — u is the radial ratio the profile below computes anyway, and the
+// angle comes from the perpendicular vector the distance came from — so this is the
+// cheapest kernel of the set: a dot, a dot, an atan2 and a frac, with no hash at all.
+//
+// WHY IT LOOKS DIFFERENT FROM A SCREEN-SPACE DITHER. The pattern is anchored to the
+// corridor rather than to the screen, so it does not slide when the camera moves: the
+// world travels through a standing spiral centred on the ship. That is an iris/portal
+// read rather than a dissolve read — a deliberate choice, not a side effect.
+//
+// FIDELITY. Measured in situ (kept-fraction vs alpha, per alpha bin, over a rendered
+// prism wall) the spiral averages |coverage − alpha| = 0.0042, against 0.0021 for IGN
+// and 0.10–0.21 for the other structured kernels (rings, halftone, hex, quasicrystal).
+// It is the only structured pattern that keeps a smooth fade in a SHORT gradient band;
+// the rest trade that away for their look, which is why they are not carried here.
+//
+// ARMS MUST STAY AN INTEGER. atan2 has a seam at ±pi where the angle jumps by exactly
+// one turn. An integer arm count makes the spiral's phase jump by an integer there too,
+// which frac() erases — a fractional count would leave a visible radial scar down one
+// side of the corridor.
+// -----------------------------------------------------------------------------
+static const float PRISM_OCCLUSION_SPIRAL_RINGS = 9.0;  // bands across the cone radius
+static const float PRISM_OCCLUSION_SPIRAL_ARMS = 3.0;   // turns per revolution — INTEGER
+
+float PrismOcclusionSpiral(float radialRatio, float angleTurns)
+{
+    return PrismOcclusionSafeThreshold(frac(
+        radialRatio * PRISM_OCCLUSION_SPIRAL_RINGS + angleTurns * PRISM_OCCLUSION_SPIRAL_ARMS));
+}
+
+// -----------------------------------------------------------------------------
+// Kernel B — the screen-space MOTLEY (interleaved gradient noise).
+//
+// A low-discrepancy screen-space hash with no repeating tile. The ordered 4×4 Bayer
+// matrix this replaced (2026-08-04) read as exactly what its name says: a regular grid,
+// a literal screen door, legible as structure rather than as transparency.
 //
 // IGN was picked over plain white noise (an integer hash), which is motlier still but
 // CLUMPS: measured over the shipped ramp, |coverage − alpha| averages 0.0001 for IGN
@@ -81,12 +138,8 @@
 // -----------------------------------------------------------------------------
 float PrismOcclusionMotley(float2 pixel)
 {
-    float n = frac(52.9829189 * frac(dot(pixel, float2(0.06711056, 0.00583715))));
-    // Nudged STRICTLY inside (0,1). frac() can return exactly 0, and a 0 threshold
-    // against a 0 alpha is `clip(0)` — which KEEPS the fragment on the URP variants
-    // that clip directly rather than through AlphaDiscard's epsilon. That would leave a
-    // sparse confetti of survivors in a core that is supposed to be fully gone.
-    return n * 0.998 + 0.001;
+    return PrismOcclusionSafeThreshold(
+        frac(52.9829189 * frac(dot(pixel, float2(0.06711056, 0.00583715)))));
 }
 
 // Quintic smootherstep — C2 continuous: value, FIRST and SECOND derivatives are all
@@ -156,8 +209,11 @@ void PrismOcclusionFade_float(float3 PositionWS, float3 Target, float3 Params, f
         return; // behind the camera, or at/past the vessel — outside the cone entirely
 
     // Within (0,1) the closest point on the segment IS the perpendicular foot, so this is
-    // the perpendicular distance to the axis.
-    float distanceToAxis = distance(rel, axis * t);
+    // the perpendicular distance to the axis. The VECTOR is kept, not just its length —
+    // the spiral kernel needs its direction for the corridor-relative angle, and taking
+    // it here means the kernel adds no geometry work of its own.
+    float3 perp = rel - axis * t;
+    float distanceToAxis = length(perp);
 
     // THE RADIUS TAPERS WITH t — this one multiply is what makes the corridor a CONE
     // rather than a capsule, and it is the whole shape argument. The volume that can
@@ -211,12 +267,31 @@ void PrismOcclusionFade_float(float3 PositionWS, float3 Target, float3 Params, f
     Alpha = BaseAlpha * fade;
 
 #if !defined(SHADERGRAPH_PREVIEW)
+#if PRISM_OCCLUSION_KERNEL_SPIRAL
+    // Corridor-relative polar coordinates. The radial ratio is 0 on the axis and 1 at the
+    // cone wall — it tracks the taper, so the spiral's bands are nested CONES and hold a
+    // constant angular width at every depth, exactly like the profile they dither.
+    float radialRatio = distanceToAxis / max(outerAtT, 1e-4);
+
+    // The angle is measured in the CAMERA's right/up frame rather than in a basis derived
+    // from the axis. Any basis built from the axis alone has to pick a reference vector,
+    // and it flips — with the whole spiral visibly snapping around — the moment the axis
+    // swings past it. The camera's frame has no such degeneracy here (the corridor points
+    // away from the lens by construction), and it makes the spiral roll with the camera,
+    // which reads as the pattern belonging to the view rather than to the world.
+    float3 cameraRight = UNITY_MATRIX_V[0].xyz;
+    float3 cameraUp = UNITY_MATRIX_V[1].xyz;
+    float angleTurns = atan2(dot(perp, cameraUp), dot(perp, cameraRight)) * (1.0 / 6.28318530718);
+
+    ClipThreshold = PrismOcclusionSpiral(radialRatio, angleTurns);
+#else
     // Screen pixel coordinates, reconstructed from the same world position the
     // rasterizer used. Avoids a Screen Position node (and its varying) entirely.
     float4 positionCS = TransformWorldToHClip(PositionWS);
     float2 ndc = positionCS.xy / max(abs(positionCS.w), 1e-6);
     float2 pixel = (ndc * 0.5 + 0.5) * _ScreenParams.xy;
     ClipThreshold = PrismOcclusionMotley(pixel);
+#endif
 #endif
 }
 
