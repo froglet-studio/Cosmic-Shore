@@ -171,8 +171,11 @@ namespace CosmicShore.Utility
         }
 
         /// <summary>
-        /// One frame of the law. Public so the edit-mode tests can step it deterministically
-        /// without a play-mode session; the only production caller is <see cref="Driver"/>.
+        /// One frame of the law. The only caller is <see cref="Driver"/>; it is public so the
+        /// effect can be stepped deterministically from a test or a diagnostic without a
+        /// play-mode session (nothing does today — the shipped tests cover the pure math and
+        /// the source-level gates instead, since the camera and post volume this touches only
+        /// exist in play mode).
         /// </summary>
         public static void Tick(float deltaTime)
         {

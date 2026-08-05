@@ -151,6 +151,22 @@ throttle change, which is a flight-feel decision that belongs to whoever tuned i
 8. **Gates**: run **FrogletTools > Vessels > Validate Speed Tunnel Law** (expect PASS + the fleet
    table) and the `SpeedTunnelLawTests` fixture in the Test Runner (expect all green).
 
+## §5.1 Verification matrix
+
+What was actually verified, and how. "Compiles by inspection" means exactly that — **no C#
+compiler and no Unity ran on this branch**; every runtime claim below is the human's gate.
+
+| System | Verified how |
+|---|---|
+| `SpeedTunnelConfigSO` math (`Effect01`, `FovFor`, `PaniniOffsetFor`, `IsSane`, inverted-window clamp) | Edit-mode tests (`SpeedTunnelLawTests`), values hand-checked |
+| `SpeedTunnelLawSource` predicates (bind-gating, raw-drive-site, retired-GUID probe) | Executed offline against the real source + prefab files; the GUID probe additionally proven to fire on `HEAD~1`'s prefabs and not on HEAD's |
+| Prefab surgery (component removed from Manta + Rhino) | Structural: no dangling component refs, no duplicate fileIDs, script-guid delta vs merge-base is exactly the retired driver on Rhino and empty on Manta |
+| `SpeedTunnelConfig.asset` | Key-by-key diff against the class's `[SerializeField]` names, both directions — no silent drops, no silent defaults |
+| `VesselSpeedTunnel` runtime behaviour (bind, decay, camera swap, home capture/restore, warn-once) | **Compiles by inspection only — not run.** In-editor §5 below is the gate |
+| Suppression hold (immediacy + unconditional lift) | **Compiles by inspection only — not run.** §5 step 7 is the gate |
+| `ChangePlayer` re-binding (both laws) | **Compiles by inspection only — not run.** §5 step 4 is the gate |
+| Fleet table numbers | Recomputed from each prefab's serialized `DefaultThrottleScaler` / `DefaultMinimumSpeed` / `boostMultiplier`; boosted tops read from the action SOs by hand |
+
 ## §6 Follow-ups
 
 - The **pre-game cinematic** poses the camera while `CustomCameraController` is disabled but
@@ -158,6 +174,10 @@ throttle change, which is a flight-feel decision that belongs to whoever tuned i
   is not moving fast), but it is the second candidate for `SetSuppressed` if it ever isn't.
 - `Camera.orthographic` is sticky and one-way (`VesselCameraCustomizer` only ever sets it true).
   An orthographic vessel would permanently disable the FOV half on the shared camera, silently.
+- A `PostProcessingManager` whose `Volume` is missing makes the Panini half a silent no-op —
+  `SetSpeedTunnelPanini` returns early and the driver's warn-once only fires when the manager
+  itself is absent. Broken-prefab territory rather than a normal state, but it is the one
+  remaining way the law can be half-inert without saying so.
 - **Residual home-FOV seam.** `CameraManager.ApplyCameraGraphicsSettings` writes the settings
   FOV straight onto every managed camera, and it runs from `SetupGamePlayCameras` /
   `SetupEndCameraFollow` as well as from the settings events. The settings-event case is
