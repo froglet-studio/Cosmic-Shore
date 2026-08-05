@@ -17,6 +17,83 @@ namespace CosmicShore.Tests
 
         static Pose[] Build(int count) => CellSpawnFormation.Build(count, Center, Radius);
 
+        static Pose[] BuildRing(int count) => CellSpawnFormation.Build(
+            count, Center, Radius, CellSpawnFormation.Formation.EquatorialRing);
+
+        // ── EquatorialRing: Joust-style, everyone level with the arena's equator ──
+
+        [Test]
+        public void Ring_PlacesEveryPlayerOnTheRequestedSphere([Values(1, 2, 3, 4, 6)] int count)
+        {
+            foreach (var pose in BuildRing(count))
+                Assert.AreEqual(Radius, Vector3.Distance(pose.position, Center), Tolerance,
+                    $"{count}-player ring put a spawn off the sphere.");
+        }
+
+        [Test]
+        public void Ring_KeepsEveryPlayerLevelWithTheCenter([Values(1, 2, 3, 4, 6)] int count)
+        {
+            // The whole point of the ring: no player is handed the poles, where a
+            // latitude-hoop cage is densest.
+            foreach (var pose in BuildRing(count))
+                Assert.AreEqual(Center.y, pose.position.y, Tolerance,
+                    $"{count}-player ring put a spawn off the equator.");
+        }
+
+        [Test]
+        public void Ring_OrientsEveryPlayerTowardTheCenter([Values(1, 2, 3, 4, 6)] int count)
+        {
+            foreach (var pose in BuildRing(count))
+            {
+                var toCenter = (Center - pose.position).normalized;
+                Assert.AreEqual(1f, Vector3.Dot(pose.rotation * Vector3.forward, toCenter), Tolerance,
+                    $"{count}-player ring left a spawn not facing the arena.");
+            }
+        }
+
+        [Test]
+        public void Ring_SpacesPlayersEvenly([Values(2, 3, 4, 6)] int count)
+        {
+            var poses = BuildRing(count);
+            float expected = Vector3.Distance(poses[0].position, poses[1].position);
+
+            for (int i = 0; i < count; i++)
+            {
+                var a = poses[i].position;
+                var b = poses[(i + 1) % count].position;
+                Assert.AreEqual(expected, Vector3.Distance(a, b), 1e-2f,
+                    $"{count}-player ring is not evenly spaced at slot {i}.");
+            }
+        }
+
+        [Test]
+        public void Ring_FourPlayersFormARightAngledCross()
+        {
+            // Joust's authored layout: 90 degrees apart on one horizontal circle.
+            var poses = BuildRing(4);
+            for (int i = 0; i < 4; i++)
+            {
+                var a = (poses[i].position - Center).normalized;
+                var b = (poses[(i + 1) % 4].position - Center).normalized;
+                Assert.AreEqual(0f, Vector3.Dot(a, b), 1e-2f,
+                    $"Ring slots {i} and {(i + 1) % 4} are not 90 degrees apart.");
+            }
+        }
+
+        [Test]
+        public void Ring_DiffersFromSymmetricForFourPlayers()
+        {
+            // Guards the opt-in: the default formation must be untouched by the ring's arrival.
+            var sphere = Build(4);
+            var ring = BuildRing(4);
+            bool anyOffEquator = false;
+            foreach (var p in sphere)
+                if (Mathf.Abs(p.position.y - Center.y) > Tolerance) anyOffEquator = true;
+
+            Assert.IsTrue(anyOffEquator, "Symmetric 4-player formation should still be tetrahedral.");
+            Assert.AreEqual(4, ring.Length);
+        }
+
         [Test]
         public void Build_PlacesEveryPlayerOnTheRequestedSphere([Values(1, 2, 3, 4, 5, 8, 12)] int count)
         {
