@@ -13,8 +13,9 @@ MonoBehaviour:
   m_Name: PostHogConfig
   m_EditorClassIdentifier: 
   projectApiKey: 
-  host: https://us.i.posthog.com
+  host: https://eu.i.posthog.com
   batchSize: 20
   flushIntervalSeconds: 30
   maxQueuedEvents: 500
+  excludedEvents: []
   enabled: 1

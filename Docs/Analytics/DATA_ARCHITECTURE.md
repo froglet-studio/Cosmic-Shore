@@ -19,6 +19,24 @@
 
 ---
 
+## 0.1 Companion documents
+
+| Doc | What it is |
+|---|---|
+| `DATA_INVENTORY.md` | What we persisted before this rework |
+| `EVENT_SCHEMA.json` | Machine-readable event contract — the source for UGS Event Manager + PostHog config |
+| `POSTHOG_SETUP.md` | The out-of-repo checklist: create the project, paste the key, verify, insights, deletion runbook, free-tier guardrails |
+| `viability-report.md` | Why PostHog over the alternatives; the three attribution-bridging options |
+| `event-taxonomy.md` | Target event schema from the analysis pass |
+| `utm-conventions.md` | Campaign/UTM naming conventions |
+| `implementation-plan.md` | The original phased plan behind the sink layer |
+| `../../Tools/Analytics/README.md` | Bulk Cloud Save export + PostHog backfill scripts |
+
+The bottom five were written on the attribution/viability branch (PR #592) and salvaged here; each
+carries a provenance banner. **This document is the authority on implemented shape.**
+
+---
+
 ## 0. Why this document exists
 
 Two asks landed together and they turn out to be the same problem:
@@ -627,14 +645,31 @@ the payload personal data rather than pseudonymous, which raises almost every it
 - PostHog's **sub-processor list** must be reviewed and the categories disclosed in our policy. Any
   future sub-processor change is our problem to track, not theirs.
 
-### 8.3 International transfer — BLOCKING, and needs a fact from you
+### 8.3 International transfer — RESOLVED: EU Cloud
 
-- **Which region is the PostHog project in — US Cloud or EU Cloud?** This materially changes the
-  work. EU Cloud keeps EEA/UK player data in-region and removes the transfer question almost
-  entirely. US Cloud means a restricted transfer requiring **Standard Contractual Clauses** plus a
-  transfer impact assessment, or reliance on the EU–US Data Privacy Framework.
-- The cheap answer is to host the project in EU Cloud if there is any EEA/UK audience. Retrofitting
-  a region change after data exists means a project migration.
+**Decision: the PostHog project is EU Cloud (Frankfurt), and it stays there.** The client host is
+`https://eu.i.posthog.com` (`PostHogConfig.asset`). PostHog's region cannot be changed after the
+project is created, so this is effectively permanent.
+
+The question that prompted a re-think — *"should it be US, since Froglet is a Delaware C-corp?"* —
+rests on a premise worth correcting explicitly, because it will come up again:
+
+- **GDPR applies based on where the *players* are, not where the company is incorporated.** Art. 3(2)
+  gives it extraterritorial scope: a US entity offering a service to people in the EU is in scope.
+  A game on Steam and mobile stores will have EEA/UK players from day one, so incorporation in
+  Delaware changes nothing about the obligation.
+- **No US law requires US residency for consumer game analytics.** Data-residency mandates of that
+  kind attach to government/defense work, not to a game studio's telemetry. So US Cloud buys nothing
+  legally.
+- **US Cloud would cost real work.** Every EEA/UK player's events become a restricted transfer out
+  of the EEA, requiring Standard Contractual Clauses plus a transfer impact assessment, or reliance
+  on the EU–US Data Privacy Framework — whose two predecessors (Safe Harbour, Privacy Shield) were
+  both struck down, so it is a foundation that has failed twice before.
+- **EU Cloud costs nothing.** Same price, same features, and for batched analytics the latency
+  difference is irrelevant — events are queued and uploaded on an interval, not per-frame.
+
+So EU Cloud is strictly the cheaper option: it removes the transfer question for the strictest
+regime we are subject to, and gives up nothing for US players. Keeping it.
 
 ### 8.4 Children — BLOCKING if the game is rated for under-13s
 
@@ -769,7 +804,7 @@ path removes it.
 
 | Item | Owner | Blocking release? |
 |---|---|---|
-| **PostHog project region — US Cloud or EU Cloud?** Decides whether SCCs are needed (§8.3) | instrumentation → legal | **Yes** |
+| ~~PostHog project region~~ — **RESOLVED: EU Cloud**, client host set to `eu.i.posthog.com` (§8.3) | — | Done |
 | Privacy policy + consent copy must name PostHog and list categories sent (§8.1) | legal/product | **Yes** |
 | Execute the PostHog DPA, review sub-processors (§8.2) | legal | **Yes** |
 | Apple Nutrition Labels + Play Data Safety updated in the shipping release (§8.8) | product | **Yes** |
@@ -778,7 +813,7 @@ path removes it.
 | Define retention for PostHog and Cloud Save (§8.7) | instrumentation | No |
 | **Fill in the PostHog project API key** in `Assets/Resources/PostHogConfig.asset` (write-only project key, never a personal key) — the sink stays inert until then | instrumentation | **Yes** |
 | **Server-side PostHog person deletion** to complete right-to-erasure; the client can only flag it (§7.3, §8.6) | instrumentation | **Yes** |
-| Set the PostHog `host` to the EU endpoint if the project is EU Cloud | instrumentation | Yes, if EU |
+| Run `Tools/Analytics/export_cloud_save.py` + `import_snapshot_to_posthog.py` once to backfill existing players into PostHog People (needs a read-only UGS service account) | instrumentation | No |
 | One `SO_Vessel` asset has a blank `Name` — fix the asset (§3.2 stops it persisting, it does not fix the asset) | gameplay | No |
 | Publish `SO_Game.GolfScoring` onto `GameDataSO` so scoring direction has one source (§3.3) | gameplay | No |
 | Retire `IPlayer.PlayerUUID` (display name) in favour of `UgsPlayerId`, once AOE ownership strings are decoupled (§6.3) | gameplay | No |
