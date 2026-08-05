@@ -34,12 +34,17 @@ namespace CosmicShore.Gameplay
 
         protected override void OnCountdownTimerEnded()
         {
+            // Same rule as multiplayer: the game starts here, so the score starts here.
+            // StatsManager has no turn gate, so setup-phase destruction would otherwise count.
+            ZeroStatsForGameStartOnce();
+
             gameData.SetPlayersActive();
             gameData.StartTurn();
         }
 
         public override void RequestReplay()
         {
+            RearmGameStartStatsReset();
             gameData.ResetStatsDataForReplay();
             gameData.ResetForReplay();
 

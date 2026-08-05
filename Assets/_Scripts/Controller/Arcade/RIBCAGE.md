@@ -378,10 +378,14 @@ YAML. `Tools/Build/ribcage_budget.py` is the cage's analytic budget model and th
    nobody starts above or below the arena staring at a dense polar cap. Also check Crystal Capture
    still spawns on its sphere (tetrahedral) — that scene must be unchanged.
 10. **Everyone starts at 0.** In a real multiplayer lobby (host + at least one client), check
-    every score panel reads 0 at the countdown — including after a rematch and after playing a
-    previous game in the same session. `RoundStats` lives on the PERSISTENT Player object, so a
-    missed reset carries the last game's stats in; this regressed once because the reset was
-    called from only one branch of the player lookup.
+    every score panel reads 0 **the instant the countdown ends** — including after a rematch and
+    after playing a previous game in the same session. Two independent causes were fixed here, so
+    check both: `RoundStats` lives on the PERSISTENT Player object (a missed per-scene reset
+    carries the last game's stats in), and `StatsManager` has **no turn gate** — it records from
+    the moment it network-spawns, so everything destroyed during the multi-second arena build and
+    the countdown used to land in someone's score. The authoritative guarantee is now
+    `MiniGameControllerBase.ZeroStatsForGameStartOnce`, which runs on every peer as the first turn
+    begins.
 11. **Smashing scores; laying does not.** The HUD domain sum should rise as you break bars and not at
     all from laying trail. Shatter one of your OWN team's trail prisms — the sum must not move; a
     rival's trail must.

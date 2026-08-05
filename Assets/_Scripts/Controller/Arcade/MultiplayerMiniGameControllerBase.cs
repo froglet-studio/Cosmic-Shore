@@ -31,6 +31,8 @@ namespace CosmicShore.Gameplay
         {
             base.OnNetworkSpawn();
 
+            RearmGameStartStatsReset();   // fresh scene = fresh game
+
             LoadInsights.Mark($"Game controller spawned ({GetType().Name}, IsServer={IsServer})");
 
             if (IsServer)
@@ -207,6 +209,20 @@ namespace CosmicShore.Gameplay
         [ClientRpc]
         void OnCountdownTimerEnded_ClientRpc()
         {
+            // THE GAME STARTS HERE, so the score starts here. Zero every player's stats before
+            // the first turn begins: StatsManager has no turn gate, so it has been recording
+            // since the scene's network spawn - through the arena build, the vessel spawns and
+            // the countdown. Without this a match could start with players already above zero.
+            //
+            // Once per GAME, not per turn: modes with several turns per round accumulate across
+            // them deliberately, and wiping at every countdown would erase earlier turns.
+            //
+            // Runs on every peer (this is the ClientRpc, not the server-only branch above) so a
+            // client's local mirror is cleared too - the server's replicated zero only fires
+            // OnValueChanged when the value actually changes, so it cannot fix a client that
+            // drifted on its own.
+            ZeroStatsForGameStartOnce();
+
             gameData.SetPlayersActive();
             gameData.StartTurn();
             EnsureLocalHumanCanMove();
@@ -345,6 +361,9 @@ namespace CosmicShore.Gameplay
 
         protected override void OnResetForReplay()
         {
+            // A replay is a new GAME: re-arm the game-start zeroing so the next countdown
+            // clears whatever the finished match left behind.
+            RearmGameStartStatsReset();
         }
 
         /// <summary>
