@@ -54,8 +54,8 @@ MonoBehaviour:
   height: 400
   innerRadius: 20
   outerRadius: 500
-  samplesPerTurn: 40
-  radialSamples: 80
+  samplesPerTurn: 30
+  radialSamples: 40
   sheets: 3
   colorBySheet: 1
   sheetDomains: 030000000400000001000000
