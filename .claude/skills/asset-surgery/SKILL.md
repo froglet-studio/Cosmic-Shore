@@ -649,6 +649,28 @@ read**. The lesson generalizes:
   on to its GameObject and assert `m_IsActive: 1` up the entire ancestor
   chain** — do not stop at "the component exists and looks right". Then write
   the fleet auditor, because if one prefab has it, others do (the Serpent did).
+- **A gate that greps prefab YAML for a CLASS NAME can never fire.** Unity records a
+  component only as `m_Script: {fileID: 11500000, guid: …, type: 3}`;
+  `m_EditorClassIdentifier` is empty for default-assembly scripts, so the type name is
+  simply not in the file. Worse, once the class is DELETED that component deserializes to
+  a null entry, which every `GetComponentsInChildren<Component>()` sweep skips — so the
+  two obvious ways to detect "this prefab still carries the retired component" are both
+  blind, and a validator written from either reports a confident PASS on exactly the state
+  it exists to catch. **Probe the script GUID**, and prove the probe works by running it
+  against the commit BEFORE the removal (it must be true there and false now) — a gate you
+  have not seen fail is not a gate.
+- **A whole-file `Contains("<token>")` stops being a gate the moment the file grows a
+  second occurrence of that token.** "The binding is guarded because the file mentions the
+  guard somewhere" holds right up until an unrelated method adds its own mention; then the
+  guard can be deleted from the site that matters with the check still green. Check each
+  CALL SITE (token within N characters above it), not the file.
+- **Edit-mode tests and `FrogletTools` validators cannot see each other.** Tests compile
+  into `Assembly-CSharp` (there is no test asmdef here), validators into
+  `Assembly-CSharp-Editor`, and the runtime assembly cannot reference the editor one. So a
+  predicate both gates must share CANNOT live in the validator — put it in a runtime file
+  whose whole body is `#if UNITY_EDITOR` (pattern 2 of
+  `Docs/CONDITIONAL_COMPILATION.md`), which both can reach and which never enters a player
+  build. Writing the rule twice is how the two gates drift apart.
 - **Verify the bug before fixing it.** A report describing code behaviour
   ("it's using the sphere centre") may predate a fix that already landed. Read
   the live path end to end and check `git log` on the file FIRST; report

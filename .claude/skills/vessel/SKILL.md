@@ -52,11 +52,19 @@ asset, the prefab, and the code are the record.** Before changing a vessel:
    **FrogletTools > Vessels > Audit Vessel Ability Rows**, **Audit Vessel Skimmers** and **Audit
    Vessel Elemental Morphs** — all asset-only, all reuse the exact runtime discovery code, so
    report and game cannot disagree.
-4. Grep by **class name**, not file name — the vessel layer renamed Ship→Vessel in file names
+4. **Per-vessel NUMBERS come from the prefab, never the class default.** Reasoning about a
+   vessel's speed, boost, or scaling from the `VesselTransformer` field initializers you can
+   see in the `.cs` will be wrong for whichever vessel overrides them — the Manta serializes
+   `DefaultThrottleScaler: 180` against a class default of 50, so its cruise is 180 and its
+   boosted top 720, not 60/210. Read the prefab YAML. (And note `ThrottleScaler`/`MinimumSpeed`
+   are `[HideInInspector] public` runtime mirrors that serialize STALE garbage — `0` on most
+   prefabs — and are only correct after `ResetTransformer()`; the authored truth is the
+   `Default*` pair.)
+5. Grep by **class name**, not file name — the vessel layer renamed Ship→Vessel in file names
    only: `VesselActionSO.cs` declares `ShipActionSO`, `VesselHelper.cs` declares `ShipHelper`,
    `R_VesselElementStatsHandler.cs` declares `R_ShipElementStatsHandler`, `VesselActions.cs`
    declares `enum ShipActions`.
-5. **Re-fetch any branch you cite immediately before asserting its state** — branches and
+6. **Re-fetch any branch you cite immediately before asserting its state** — branches and
    bleeding-edge move mid-session. This skill's own fleet snapshot went stale twice while being
    written: the Dolphin branch grew its row-wiring commit between research and verification, and
    a tooling refactor renamed every editor menu before ship.

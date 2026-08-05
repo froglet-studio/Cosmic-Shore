@@ -979,7 +979,7 @@ last two make a violation loud):
 | Layer | Mechanism | What it forecloses |
 |---|---|---|
 | The **shader** half lives in the prism graphs | `PrismOcclusionFade` is spliced into `SurfaceDescription.Alpha` on **every graph a live prism can render with** (BlockGraph, ExplodingBlockGraph) | A new prism, trail, or environment lay inherits the corridor by construction. There is no per-prism, per-material or per-instance switch to forget. |
-| The **target** binds at the universal vessel entry point | `VesselController.Initialize` under `IPlayer.IsLocalPilot` — the one method every vessel must call to become a player's vessel (single-player spawn, multiplayer spawn, menu autopilot, runtime swap) | A new vessel needs no component and no prefab wiring. A new minigame needs no scene wiring, and cannot dodge it by using the non-networked spawn path (that is what `IsLocalPilot` covers over `IsLocalUser`). |
+| The **target** binds at the universal vessel entry point | `VesselController.Initialize` under `IPlayer.IsLocalPilot` — the one method every vessel must call to become a player's vessel (single-player spawn, multiplayer spawn, menu autopilot, runtime swap) — **plus `ChangePlayer`**, which hands a LIVE vessel to a different player and never reaches `Initialize` | A new vessel needs no component and no prefab wiring. A new minigame needs no scene wiring, and cannot dodge it by using the non-networked spawn path (that is what `IsLocalPilot` covers over `IsLocalUser`). The `ChangePlayer` arm closed a real seam found 2026-08-05: the Cellular Duel round-boundary ownership swap (`GameDataSO.SwapVessels`) left the corridor bound to the hull the AI inherited, so for the whole next round the cone cut its hole around the AI's ship while the local pilot's own ship could sit hidden behind prism mass — the exact condition the law exists to prevent. |
 | **Runtime** fail-loud | `PrismOcclusionDiagnostics.VerifyCorridorCapable`, called from `Prism.SyncRenderMaterial` — every material a prism ever binds passes through it. One error per offending material, naming it | A prism on an unwired shader, or an opaque material without alpha test, screams instead of silently staying solid. |
 | **Asset** gate | Edit-mode test `PrismOcclusionCoverageTests` (graphs wired · every material on them dissolvable · **every prefab carrying a `Prism` renders on a wired graph**) + FrogletTools > Ecology > Prism Animation > **Validate Occlusion Corridor** | New prism content authored outside the corridor fails a test, not a playtest. All three gates share ONE rule (`PrismOcclusionDiagnostics.IsCorridorCapable`) so they cannot drift. |
 
@@ -987,7 +987,12 @@ The **one** sanctioned hold is `PrismOcclusionCorridor.SetSuppressed`, used by e
 caller — `CameraManager`'s manual replay camera, a broadcast vantage that is not looking at
 the local ship, where a camera→ship capsule would cut a hole through unrelated mass. It is
 symmetric (`RestoreGameplayCamera` lifts it) and it is a HOLD, not an opt-out: the vessel
-binding survives it, so nothing has to remember to re-point the corridor afterwards.
+binding survives it, so nothing has to remember to re-point the corridor afterwards. That lift
+is **unconditional and first**, above `RestoreGameplayCamera`'s own follow-target early return
+(fixed 2026-08-05): a replay can finish a frame after its scene tore down, when the follow
+target is a destroyed Transform, and returning before the lift latched the hold on for the rest
+of the session — `_suppressed` is otherwise reset only by the `RuntimeInitializeOnLoadMethod`
+installer, once per app launch, so every subsequent match ran with the corridor off.
 
 **Deliberate exclusions, named rather than hidden.** `SuctionGraph` renders a prism DURING
 consumption (a sub-second implode of mass being removed), never standing mass that can

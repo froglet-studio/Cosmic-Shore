@@ -209,6 +209,11 @@ namespace CosmicShore.Gameplay
             // cut a hole through unrelated mass. This is a narrow, symmetric hold — NOT an
             // opt-out: the binding on the vessel stays, and RestoreGameplayCamera lifts it.
             PrismOcclusionCorridor.SetSuppressed(true);
+            // Same shape, same reason, for the speed-tunnel law (Docs/SPEED_TUNNEL.md): the
+            // replay camera is posed by hand and AstroLeagueGoalReplay reads its field of view
+            // to fit the shot, so a live FOV write would fight the pose AND silently mis-frame
+            // the replay. A hold, not an opt-out — the vessel binding survives it.
+            VesselSpeedTunnel.SetSuppressed(true);
             SetEndCameraActive();
             ApplyCameraGraphicsSettings();
             return endCamera.transform;
@@ -224,8 +229,18 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public void RestoreGameplayCamera()
         {
-            if (_playerFollowTarget == null) return;
+            // Lifting the holds is UNCONDITIONAL and comes FIRST. A replay can finish after its
+            // scene has torn down — AstroLeagueGoalReplay.OnDestroy cancels playback, but the
+            // pending untokened UniTask.Yield resumes a frame later and runs its finally — and by
+            // then _playerFollowTarget is a destroyed Transform. Returning before the lifts would
+            // latch BOTH platform laws off for the rest of the session: these statics are
+            // otherwise only reset by their RuntimeInitializeOnLoadMethod installers, which run
+            // once per app launch, not per scene load. Lifting with no vessel bound is a no-op
+            // (both drivers gate on a live target), so there is nothing to protect here.
             PrismOcclusionCorridor.SetSuppressed(false);
+            VesselSpeedTunnel.SetSuppressed(false);
+
+            if (_playerFollowTarget == null) return;
             SetCloseCameraActive();
             SnapPlayerCameraToTarget();
         }
