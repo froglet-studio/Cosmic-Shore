@@ -16,3 +16,5 @@ MonoBehaviour:
     type: 2}
   boostMaxMultiplier: {fileID: 11400000, guid: 10388f8ccaeb8b44f9c950ed00af3fbb, type: 2}
   boostChanged: {fileID: 11400000, guid: 15e07b33eab9e2e47b84bb74fb591a3f, type: 2}
+  onSkimmerShipCollision: {fileID: 11400000, guid: 0753d1e84dfca8a41a5bdc1e4c6e1746,
+    type: 2}

@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cosmic Shore Instrumentation Data</title>
+<style>
+  :root {
+    --bg: #f9f8f5;
+    --fg: #1a1a18;
+    --fg-soft: #6b6a63;
+    --fg-faint: #9b9a93;
+    --card: #ffffff;
+    --card-alt: #fafaf8;
+    --card-label: #f5f4f0;
+    --border: #e2e0d8;
+    --border-soft: #f0ede6;
+    --code-bg: rgba(0,0,0,0.06);
+    --chip-border: #d8d6ce;
+    --chip-fg: #5a5954;
+
+    --blue-bg: #dceefb;  --blue-fg: #0c3d6e;  --blue-border: #b5d4f4;  --blue-note: #edf5fc;
+    --green-bg: #d4f0e4; --green-fg: #074d38; --green-border: #9fe1cb; --green-note: #edf7f2;
+    --purple-bg: #e8e6fd;--purple-fg: #312a7a;--purple-border: #c8c2f0;--purple-note: #f0effe;
+    --amber-bg: #fde9c8; --amber-fg: #5a3205; --amber-border: #f5d48a; --amber-note: #fef5e4;
+    --red-bg: #fbe0d5;   --red-fg: #612410;
+
+    --st-live-bg: #d4f0e4;   --st-live-fg: #074d38;
+    --st-dormant-bg: #fde9c8;--st-dormant-fg: #5a3205;
+    --st-build-bg: #dceefb;  --st-build-fg: #0c3d6e;
+    --st-none-bg: #eceae4;   --st-none-fg: #75746d;
+
+    --shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  html[data-theme="dark"] {
+    --bg: #15151a;
+    --fg: #e8e6e0;
+    --fg-soft: #a3a29a;
+    --fg-faint: #76756e;
+    --card: #1e1e24;
+    --card-alt: #1a1a20;
+    --card-label: #24242b;
+    --border: #32323a;
+    --border-soft: #2a2a31;
+    --code-bg: rgba(255,255,255,0.09);
+    --chip-border: #3d3d46;
+    --chip-fg: #b8b7af;
+
+    --blue-bg: #1a3a55;  --blue-fg: #9ecdf3;  --blue-border: #2c567c; --blue-note: #182c3e;
+    --green-bg: #15433a; --green-fg: #8fe0c4; --green-border: #246b54;--green-note: #14302a;
+    --purple-bg: #2f2a5e;--purple-fg: #c0b9f5;--purple-border: #4a4290;--purple-note: #232040;
+    --amber-bg: #4d3a12; --amber-fg: #f3cf8a; --amber-border: #7a5c1e;--amber-note: #352a10;
+    --red-bg: #54281a;   --red-fg: #f3a98c;
+
+    --st-live-bg: #15433a;   --st-live-fg: #8fe0c4;
+    --st-dormant-bg: #4d3a12;--st-dormant-fg: #f3cf8a;
+    --st-build-bg: #1a3a55;  --st-build-fg: #9ecdf3;
+    --st-none-bg: #2b2b32;   --st-none-fg: #8a8982;
+
+    --shadow: 0 1px 3px rgba(0,0,0,0.4);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: var(--bg); color: var(--fg); padding: 32px 24px 64px; max-width: 980px; margin: 0 auto; transition: background 0.25s, color 0.25s; }
+  h1 { font-size: 20px; font-weight: 500; margin-bottom: 4px; }
+  .subtitle { font-size: 13px; color: var(--fg-soft); margin-bottom: 6px; }
+
+  .topbar { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+  .theme-toggle { flex-shrink: 0; font-size: 12px; padding: 6px 14px; border-radius: 20px; border: 1px solid var(--border); background: var(--card); color: var(--fg); cursor: pointer; box-shadow: var(--shadow); }
+  .theme-toggle:hover { border-color: var(--fg-faint); }
+
+  .version-chips { display: flex; gap: 6px; margin: 10px 0 6px; flex-wrap: wrap; }
+  .ver { font-size: 10px; font-weight: 600; padding: 3px 9px; border-radius: 4px; letter-spacing: 0.05em; border: 1px solid transparent; cursor: pointer; }
+  .vs  { background: var(--blue-bg);  color: var(--blue-fg); }
+  .vd  { background: var(--amber-bg); color: var(--amber-fg); }
+  .vl  { background: var(--purple-bg);color: var(--purple-fg); }
+  .vall{ background: var(--card-label); color: var(--fg-soft); border-color: var(--border); }
+  .ver.active { outline: 2px solid var(--fg-faint); }
+  .filter-hint { font-size: 11px; color: var(--fg-faint); margin-bottom: 14px; }
+
+  .legend { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; font-size: 11px; align-items: center; color: var(--fg-soft); }
+
+  .summary { display: flex; gap: 10px; flex-wrap: wrap; margin: 14px 0 28px; }
+  .sumcard { flex: 1 1 120px; background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; box-shadow: var(--shadow); }
+  .sumcard .num { font-size: 22px; font-weight: 600; }
+  .sumcard .lbl { font-size: 11px; color: var(--fg-soft); }
+
+  .stage { margin-bottom: 24px; border-radius: 12px; overflow: hidden; border: 1px solid var(--border); background: var(--card); box-shadow: var(--shadow); }
+  .stage-header { padding: 14px 18px 8px; display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+  .stage-pill { font-size: 11px; font-weight: 500; padding: 3px 10px; border-radius: 20px; letter-spacing: 0.04em; flex-shrink: 0; }
+  .stage-title { font-size: 15px; font-weight: 500; }
+  .stage-question { font-size: 12px; color: var(--fg-soft); padding: 0 18px 10px; }
+
+  .section-label { font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; padding: 6px 18px 4px; color: var(--fg-faint); background: var(--card-label); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .ver-badge { font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 4px; letter-spacing: 0.04em; }
+
+  .events-grid { display: grid; grid-template-columns: 1fr 1fr; }
+  .event-row { padding: 9px 18px; border-bottom: 1px solid var(--border-soft); }
+  .event-name { font-size: 12px; font-weight: 500; font-family: "SF Mono","Fira Code",monospace; color: var(--fg); display: inline; }
+  .event-desc { font-size: 12px; color: var(--fg-soft); margin-top: 1px; }
+  .meta-hint { font-size: 11px; color: var(--fg-faint); font-style: italic; margin-top: 2px; }
+  .impl { font-size: 10.5px; font-family: "SF Mono","Fira Code",monospace; color: var(--fg-faint); margin-top: 3px; word-break: break-all; }
+  .impl::before { content: "→ "; }
+
+  .st { font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 4px; letter-spacing: 0.05em; margin-left: 6px; vertical-align: 1px; white-space: nowrap; }
+  .st-live    { background: var(--st-live-bg);    color: var(--st-live-fg); }
+  .st-dormant { background: var(--st-dormant-bg); color: var(--st-dormant-fg); }
+  .st-build   { background: var(--st-build-bg);   color: var(--st-build-fg); }
+  .st-none    { background: var(--st-none-bg);    color: var(--st-none-fg); }
+
+  .note-box { border-radius: 8px; padding: 12px 16px; margin: 12px 18px 14px; font-size: 12px; line-height: 1.65; }
+  .note-box.blue  { background: var(--blue-note);  border: 1px solid var(--blue-border);  color: var(--blue-fg); }
+  .note-box.amber { background: var(--amber-note); border: 1px solid var(--amber-border); color: var(--amber-fg); }
+  .note-box.purple{ background: var(--purple-note);border: 1px solid var(--purple-border);color: var(--purple-fg); }
+  .note-box.green { background: var(--green-note); border: 1px solid var(--green-border); color: var(--green-fg); }
+  .note-box strong { font-weight: 600; }
+  code { font-family: "SF Mono","Fira Code",monospace; font-size: 11px; background: var(--code-bg); padding: 1px 4px; border-radius: 3px; }
+
+  .metrics-row { display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 18px 12px; background: var(--card-alt); border-top: 1px solid var(--border); }
+  .metric-chip { font-size: 11px; padding: 3px 10px; border-radius: 20px; border: 1px solid var(--chip-border); color: var(--chip-fg); background: var(--card); }
+  .metric-chip.adv    { border-color: var(--purple-border); color: var(--purple-fg); background: var(--purple-note); }
+  .metric-chip.econ   { border-color: var(--amber-border);  color: var(--amber-fg);  background: var(--amber-note); }
+  .metric-chip.social { border-color: var(--green-border);  color: var(--green-fg);  background: var(--green-note); }
+
+  .a1-pill { background: var(--blue-bg);  color: var(--blue-fg); }
+  .a2-pill { background: var(--green-bg); color: var(--green-fg); }
+  .a3-pill { background: var(--purple-bg);color: var(--purple-fg); }
+  .a4-pill { background: var(--amber-bg); color: var(--amber-fg); }
+  .a5-pill { background: var(--red-bg);   color: var(--red-fg); }
+  .fly-pill { background: var(--green-bg); color: var(--green-fg); }
+  .econ-pill { background: var(--amber-bg); color: var(--amber-fg); }
+  .live-pill { background: var(--st-live-bg); color: var(--st-live-fg); }
+  .pipe-pill { background: var(--st-none-bg); color: var(--st-none-fg); }
+
+  table.inv { width: 100%; border-collapse: collapse; font-size: 12px; margin: 0; }
+  table.inv th { text-align: left; font-size: 10px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--fg-faint); padding: 8px 18px 4px; border-bottom: 1px solid var(--border); }
+  table.inv td { padding: 7px 18px; border-bottom: 1px solid var(--border-soft); vertical-align: top; color: var(--fg-soft); }
+  table.inv td:first-child { font-family: "SF Mono","Fira Code",monospace; font-size: 11.5px; color: var(--fg); white-space: nowrap; }
+  details.schema { margin: 0 18px 10px; font-size: 12px; }
+  details.schema summary { cursor: pointer; color: var(--fg-soft); font-size: 11.5px; padding: 4px 0; }
+  details.schema pre { background: var(--card-alt); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; font-size: 11px; overflow-x: auto; margin-top: 6px; line-height: 1.5; }
+
+  @media (max-width: 600px) { .events-grid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div>
+    <h1>Cosmic Shore Instrumentation Data</h1>
+    <p class="subtitle">Data-team event wishlist mapped onto the actual codebase: every event carries an implementation status and a hook point. Focus: <strong>VSlice + VDemo</strong>.</p>
+  </div>
+  <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark/light mode">🌙 Dark</button>
+</div>
+
+<div class="version-chips" id="tierFilter">
+  <span class="ver vall active" data-filter="all">ALL</span>
+  <span class="ver vs" data-filter="vslice">VSlice — instrument now</span>
+  <span class="ver vd" data-filter="vdemo">VDemo — add when ready</span>
+  <span class="ver vl" data-filter="vlater">VLater — plan ahead</span>
+</div>
+<p class="filter-hint">Click a tier to filter the sections below. Statuses: <span class="st st-live">LIVE</span> firing to UGS today &nbsp;·&nbsp; <span class="st st-dormant">DORMANT</span> code exists, disabled or Firebase-only &nbsp;·&nbsp; <span class="st st-build">BUILD</span> system exists, add the hook &nbsp;·&nbsp; <span class="st st-none">NO SYSTEM</span> feature doesn't exist yet</p>
+
+<div class="summary" id="summary">
+  <div class="sumcard"><div class="num" id="cnt-live">0</div><div class="lbl">Live in UGS</div></div>
+  <div class="sumcard"><div class="num" id="cnt-dormant">0</div><div class="lbl">Dormant (re-wire)</div></div>
+  <div class="sumcard"><div class="num" id="cnt-build">0</div><div class="lbl">To build (hook exists)</div></div>
+  <div class="sumcard"><div class="num" id="cnt-none">0</div><div class="lbl">No system yet</div></div>
+  <div class="sumcard"><div class="num">12</div><div class="lbl">Cloud Save keys (6 active, 4 wired)</div></div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ STAGE 0: WHAT'S LIVE -->
+<div class="stage" data-tier="vslice">
+  <div class="stage-header"><span class="stage-pill live-pill">Current footprint</span><span class="stage-title">What we already send to UGS today</span></div>
+  <p class="stage-question">Ground truth before adding anything. The custom-event surface is nearly empty — almost all current value flows through Cloud Save and Leaderboards.</p>
+
+  <div class="block" data-tier="vslice">
+  <div class="section-label">UGS Analytics — custom events (facade shipped 2026-06-11) <span class="ver-badge vs">VSlice</span></div>
+  <div class="note-box green"><strong>P0+P1 shipped:</strong> all events route through <code>AnalyticsServiceFacade</code> (single writer, DI lazy singleton, constructed at bootstrap). It owns the collection lifecycle — StartDataCollection after sign-in, gated by consent + network — and flushes only on app pause/quit. <strong>Action required: declare every event + its parameters in the UGS dashboard Event Manager</strong>, or the backend silently discards them.</div>
+  <div class="events-grid">
+    <div class="event-row"><div><span class="event-name">play_again_pressed</span><span class="st st-live">LIVE</span></div><div class="event-desc">Scoreboard "Play Again" button</div><div class="impl">UGSStatsManager.TrackPlayAgain() → AnalyticsServiceFacade (batched; per-event Flush removed)</div></div>
+    <div class="event-row"><div><span class="event-name">(built-in auto events)</span><span class="st st-live">LIVE</span></div><div class="event-desc">Session, device, newPlayer — collected automatically once StartDataCollection runs</div><div class="impl">AnalyticsServiceFacade.StartCollectionIfReady() on sign-in (old owner UnityAnalytics.cs was orphaned — collection never actually started before this)</div></div>
+    <div class="event-row"><div><span class="event-name">game_started / game_completed</span><span class="st st-live">LIVE</span></div><div class="event-desc">game_mode, intensity, vessel_class, player_count, ai_count, is_multiplayer (+ duration_seconds on complete)</div><div class="impl">AnalyticsServiceFacade ← GameDataSO.OnMiniGameTurnStarted / OnMiniGameEnd (first-turn flag = one event per game)</div></div>
+    <div class="event-row"><div><span class="event-name">session_ended</span><span class="st st-live">LIVE</span></div><div class="event-desc">reason (pause/quit), last_ui_action, app_state — the churn-forensics event</div><div class="impl">AnalyticsServiceFacade ← ApplicationLifecycleManager OnAppPaused / OnAppQuitting</div></div>
+    <div class="event-row"><div><span class="event-name">ui_action</span><span class="st st-live">LIVE</span></div><div class="event-desc">Menu navigation funnel (PlayGame, ViewHangarMenu, ViewArcadeMenu…) — ported from Firebase</div><div class="impl">AnalyticsServiceFacade ← UserActionSystem.OnUserActionCompleted</div></div>
+    <div class="event-row"><div><span class="event-name">ad_impression</span><span class="st st-live">LIVE</span></div><div class="event-desc">Rewarded ad loaded — ported from Firebase</div><div class="impl">AnalyticsServiceFacade ← AdsSystem.AdLoaded (note: AdManager prefab is not currently placed in any scene)</div></div>
+  </div>
+  </div>
+
+  <div class="block" data-tier="vslice">
+  <div class="section-label">UGS Leaderboards <span class="ver-badge vs">VSlice</span></div>
+  <div class="events-grid">
+    <div class="event-row"><div><span class="event-name">hexrace_time</span><span class="st st-live">LIVE</span></div><div class="event-desc">Best race time per intensity (1–4)</div><div class="impl">HexRaceScoreTracker → UGSStatsManager.SubmitScoreInternal()</div></div>
+    <div class="event-row"><div><span class="event-name">blitz_score</span><span class="st st-live">LIVE</span></div><div class="event-desc">Wildlife Blitz high score per intensity</div><div class="impl">SinglePlayerWildlifeBlitzScoreTracker</div></div>
+    <div class="event-row"><div><span class="event-name">joust_time</span><span class="st st-live">LIVE</span></div><div class="event-desc">Joust best time per intensity</div><div class="impl">JoustStatsReporter</div></div>
+    <div class="event-row"><div><span class="event-name">crystal_capture_score</span><span class="st st-live">LIVE</span></div><div class="event-desc">Crystals collected per intensity</div><div class="impl">CrystalCaptureStatsReporter — IDs from LeaderboardConfigSO</div></div>
+  </div>
+  </div>
+
+  <div class="block" data-tier="vslice">
+  <div class="section-label">Firebase analytics path — deleted 2026-06-11 (UGS-only) <span class="ver-badge vs">VSlice</span></div>
+  <div class="note-box blue">Removed: <code>FirebaseAnalyticsController</code>, <code>CSAnalyticsManager</code> + 7 collectors + Firebase implementations, <code>UnityAnalytics.cs</code>, and the orphaned <code>CSAnalyticsManager.prefab</code>. <code>ui_action</code> and <code>ad_impression</code> were ported to UGS (above); the dormant <code>cs_*</code> taxonomy (training/mission/daily-challenge start+complete, purchases) lives on as the spec for Phase 2/3 UGS events. Removing the Firebase SDK itself from the project is a separate ticket.</div>
+  </div>
+
+  <div class="note-box green"><strong>Consent — opt-in shipped (code):</strong> the facade is now <strong>opt-in and decision-gated</strong> — collection starts only for an age-eligible (13+) player who explicitly grants consent (undecided / declined / under-13 all stay off). Age gate (COPPA) + consent dialog + Settings opt-out + "delete my data" controllers are in <code>_Scripts/UI/Privacy/</code> (<code>PrivacyConsentController</code>, <code>AnalyticsPrivacySettingsController</code>). <strong>Remaining (human):</strong> build/wire the panels in an early scene + Settings, host the privacy policy and paste its URL, declare events in the UGS dashboard. See <code>Docs/Legal/CONSENT_SETUP.md</code> + <code>PRIVACY_POLICY_TEMPLATE.md</code>. Fail-safe: until wired, nothing collects.</div>
+
+  <div class="note-box green"><strong>Phase 2 shipped 2026-06-15 — these are now LIVE</strong> (the <span class="st st-build">BUILD</span>/<span class="st st-dormant">DORMANT</span> badges on individual rows below predate this where they overlap):<br>
+  <em>Activation:</em> <code>game_first_launched</code>, <code>menu_ready</code>, <code>freestyle_entered</code>, <code>mode_unlocked</code>, <code>intensity_unlocked</code>, <code>setting_changed</code> (covers invert-Y/throttle/joystick + volumes) · <em>Economy:</em> <code>crystals_earned</code>, <code>crystals_spent</code>, <code>crystal_spend_blocked</code>, <code>vessel_unlocked</code>, <code>crystal_balance_snapshot</code> · <em>Social:</em> <code>friend_request_sent</code>/<code>received</code>, <code>friend_added</code>, <code>party_invite_sent</code>/<code>received</code>, <code>party_joined</code>, <code>minigame_favorited</code>, <code>share_triggered</code> · <em>Retention:</em> <code>quest_completed</code>, <code>repeated_game_fail</code>, plus <code>player_won</code> on <code>game_completed</code> and <code>firstSeenUtc</code> on the profile.<br>
+  All route through <code>AnalyticsServiceFacade</code> typed methods + SO-asset SOAP subscriptions. Constants in <code>UGSKeys.cs</code>; per-row status in <code>DATA_TRACKER.html</code>. <strong>Still required: declare every event + params in the UGS dashboard Event Manager.</strong></div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ CLOUD SAVE INVENTORY -->
+<div class="stage" data-tier="vslice">
+  <div class="stage-header"><span class="stage-pill live-pill">Cloud Save</span><span class="stage-title">Player data inventory (12 keys)</span></div>
+  <p class="stage-question">Everything persisted per-player via UGS Cloud Save. Full JSON schemas: expand each row, or see <code>Docs/Analytics/DATA_INVENTORY.md</code>. All keys defined in <code>UGSKeys.cs</code>, owned by one repository each under <code>_Scripts/System/CloudData/</code>.</p>
+
+  <table class="inv">
+    <tr><th>Key</th><th>Contents</th><th>Status</th><th>Writes</th></tr>
+    <tr><td>player_profile</td><td>userId, displayName, avatarId, <strong>crystalBalance</strong> (== "omnicrystals"), xp, unlockedRewardIds</td><td><span class="st st-live">LIVE</span></td><td>per mutation, 1.5s debounce</td></tr>
+    <tr><td>PLAYER_STATS_PROFILE</td><td>Per-mode-per-intensity bests: Blitz/CrystalCapture high scores, HexRace/Joust best times, LastLoginTick</td><td><span class="st st-live">LIVE</span></td><td>game end (on new best), 2s debounce</td></tr>
+    <tr><td>VESSEL_STATS</td><td>Per-vessel lifetime: GamesPlayed, BestDriftTime, BestBoostTime, TotalPrismsDamaged + Counters dict (Sparrow: PrismBlocksShot, SkyburstMissilesShot, DangerBlocksSpawned · Squirrel: JoustsWon, PrismsStolen, BestCleanStreak)</td><td><span class="st st-live">LIVE</span></td><td>every game end, 2s debounce</td></tr>
+    <tr><td>GAME_MODE_PROGRESSION</td><td>UnlockedModes, CompletedQuests, BestStats, MaxUnlockedIntensity, IntensityPlayCounts</td><td><span class="st st-live">LIVE</span></td><td>quest/intensity = immediate; stats = debounced</td></tr>
+    <tr><td>HANGAR_DATA</td><td>UnlockedVessels, per-vessel {LastUsedTicks, Favorited}, SelectedVessel</td><td><span class="st st-live">LIVE</span></td><td>per unlock/lock</td></tr>
+    <tr><td>PLAYER_SETTINGS</td><td>Music/SFX/Haptics enabled+level, InvertY, InvertThrottle, JoystickVisuals</td><td><span class="st st-live">LIVE</span></td><td>per setting change</td></tr>
+    <tr><td>DAILY_CHALLENGE</td><td>ChallengeDate, TicketBalance, GameMode, Intensity, HighScore, 3× RewardTiers {Satisfied, Claimed}</td><td><span class="st st-dormant">WIRED · DEFERRED</span></td><td>repo loads/flushes; system still on PlayerPrefs+PlayFab. Migration deferred (PlayFab economy coupling)</td></tr>
+    <tr><td>TRAINING_PROGRESS</td><td>Per-mode {CurrentIntensity, 4× Tiers {Satisfied, Claimed}}</td><td><span class="st st-dormant">WIRED · held</span></td><td>repo loads/flushes; system still writes local file. Migration held for Unity review</td></tr>
+    <tr><td>CAPTAIN_PROGRESS</td><td>Per-captain {XP, Level, Unlocked, Encountered, UpgradeCount}</td><td><span class="st st-dormant">DORMANT</span></td><td>CaptainManager disabled since PlayFab retirement (repo not wired)</td></tr>
+    <tr><td>EPISODE_PROGRESS</td><td>UnlockedEpisodes, CompletedEpisodes, per-episode {MissionsCompleted, TotalMissions, BestScore, StarsEarned}</td><td><span class="st st-none">NO SYSTEM</span></td><td>scaffold — ReportMissionCompleted has no callers</td></tr>
+    <tr><td>SQUAD_DATA</td><td>Leader + 2 rogues (VesselClass + Element each), Initialized</td><td><span class="st st-dormant">WIRED · held</span></td><td>new repo loads/flushes; system still writes squad.data. Migration held for Unity review</td></tr>
+    <tr><td>LOADOUT_DATA</td><td>PlayerLoadouts[], GameLoadouts[], ActiveLoadoutIndex</td><td><span class="st st-dormant">WIRED · held</span></td><td>new repo loads/flushes; system still writes local files. Migration held for Unity review</td></tr>
+  </table>
+
+  <details class="schema"><summary>Example payloads (the JSON we actually store)</summary>
+<pre>// player_profile
+{ "userId": "ugsPlayerId", "displayName": "Pilot####", "avatarId": 3,
+  "crystalBalance": 250, "xp": 1275, "unlockedRewardIds": ["..."] }
+
+// PLAYER_STATS_PROFILE        (keys are "{GameMode}_{Intensity}")
+{ "LastLoginTick": 638537251200000000,
+  "BlitzStats":          { "HighScores": { "WildlifeBlitz_2": 1840 } },
+  "MultiHexStats":       { "BestMultiplayerRaceTimes": { "HexRace_2": 93.41 } },
+  "JoustStats":          { "BestRaceTimes": { "MultiplayerJoust_1": 75.2 } },
+  "CrystalCaptureStats": { "HighScores": { "MultiplayerCrystalCapture_3": 42 } } }
+
+// VESSEL_STATS
+{ "Vessels": { "Sparrow": {
+    "BestDriftTime": 12.7, "BestBoostTime": 8.3,
+    "TotalPrismsDamaged": 4210, "GamesPlayed": 57,
+    "Counters": { "PrismBlocksShot": 1894, "SkyburstMissilesShot": 230 } } } }
+
+// GAME_MODE_PROGRESSION
+{ "UnlockedModes": ["WildlifeBlitz","HexRace"], "CompletedQuests": ["HexRace"],
+  "BestStats": { "WildlifeBlitz": 1840.0 },
+  "MaxUnlockedIntensity": { "WildlifeBlitz": 3 },
+  "IntensityPlayCounts": { "WildlifeBlitz_2": 11 } }</pre>
+  </details>
+
+  <div class="note-box blue"><strong>Local-only stragglers</strong> that should join Cloud Save when we instrument them: <code>squad.data</code> (squad config — an activation gate below), <code>game_favorites.data</code> (referral signal), loadout file, and the daily-challenge PlayerPrefs block. A device wipe currently loses all of these.</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ ACQUISITION -->
+<div class="stage">
+  <div class="stage-header"><span class="stage-pill a1-pill">Acquisition</span><span class="stage-title">Where do players come from?</span></div>
+  <p class="stage-question">Track before they touch the game — and close the loop with the friend/referral system</p>
+
+  <div class="block" data-tier="vslice">
+  <div class="section-label">Storefront &amp; UTM <span class="ver-badge vs">VSlice</span></div>
+  <div class="events-grid">
+    <div class="event-row"><div><span class="event-name">store_page_view</span><span class="st st-none">NO SYSTEM</span></div><div class="event-desc">Landed on Steam / App Store page</div><div class="meta-hint">Storefront-side tooling (Steamworks / App Store Connect), not a client event</div></div>
+    <div class="event-row"><div><span class="event-name">wishlist_add</span><span class="st st-none">NO SYSTEM</span></div><div class="event-desc">Added to wishlist before launch</div><div class="meta-hint">Same — pull from storefront dashboards</div></div>
+    <div class="event-row"><div><span class="event-name">episode_token_store_view</span><span class="st st-none">NO SYSTEM</span></div><div class="event-desc">Viewed episode token pricing screen</div><div class="meta-hint">No token store exists; IAPManager is a stub — blocked on Unity IAP integration</div></div>
+    <div class="event-row"><div><span class="event-name">utm_source / utm_campaign</span><span class="st st-none">NO SYSTEM</span></div><div class="event-desc">Referral channel on every session row</div><div class="meta-hint">Needs an attribution decision (UGS acquisition source / install referrer)</div></div>
+  </div>
+  </div>
+
+  <div class="block" data-tier="vslice">
+  <div class="section-label">Friend &amp; referral system <span class="ver-badge vs">VSlice</span></div>
+  <div class="note-box blue">
+    Reality check: we have <strong>no friend-code system</strong>. We use the UGS Friends SDK via <code>FriendsServiceFacade</code> — requests by display name (<code>Name#1234</code>) or playerId from the presence lobby. The name+suffix is the nearest primitive to a "code"; a true referral code (carrying referrer playerId, redeemable at install) is a feature to build. The friend-request events below are one-line hooks in the facade today.
+  </div>
+  <div class="events-grid">
+    <div class="event-row"><div><span class="event-name">friend_code_generated / shared / redeemed</span><span class="st st-none">NO SYSTEM</span></div><div class="event-desc">Referral-code loop</div><div class="meta-hint">Feature to build; until then K-factor comes from friend requests + party invites</div></div>
+    <div class="event-row"><div><span class="event-name">friend_request_sent</span><span class="st st-build">BUILD</span></div><div class="event-desc">Request fired by name or playerId</div><div class="impl">FriendsServiceFacade.SendFriendRequestAsync / ByNameAsync — log: from, to, entry_point (no UI entry point currently; facade-only until an add-friend control is re-added)</div></div>
+    <div class="event-row"><div><span class="event-name">friend_request_accepted</span><span class="st st-build">BUILD</span></div><div class="event-desc">Social graph edge created</div><div class="impl">FriendsServiceFacade.AcceptFriendRequestAsync</div></div>
+    <div class="event-row"><div><span class="event-name">friend_request_declined</span><span class="st st-build">BUILD</span></div><div class="event-desc">Declined — track the ratio</div><div class="impl">FriendsServiceFacade.DeclineFriendRequestAsync</div></div>
+  </div>
+  </div>
+
+  <div class="block" data-tier="vlater">
+  <div class="section-label">VLater: special invite unlock <span class="ver-badge vl">VLater</span></div>
+  <div class="events-grid">
+    <div class="event-row"><div><span class="event-name">episode_invite_unlocked</span><span class="st st-none">NO SYSTEM</span></div><div class="event-desc">Free token invite unlocked with episode purchase</div></div>
+    <div class="event-row"><div><span class="event-name">episode_invite_sent</span><span class="st st-none">NO SYSTEM</span></div><div class="event-desc">Player used the unlocked free invite</div></div>
+  </div>
+  </div>
+
+  <div class="metrics-row">
+    <span class="metric-chip">Friend request accept rate</span>
+    <span class="metric-chip">Wishlist-to-purchase rate (storefront)</span>
+    <span class="metric-chip adv">Referral chain depth — needs code system</span>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ ACTIVATION -->
+<div class="stage">
+  <div class="stage-header"><span class="stage-pill a2-pill">Activation</span><span class="stage-title">Did they have a good first experience?</span></div>
+  <p class="stage-question">Our actual unlock path is data-driven via <code>GameModeProgressionService</code> (quest → next mode, play counts → intensity). Each unlock is an activation checkpoint and is already persisted in Cloud Save — we just need to emit events.</p>
+
+  <div class="block" data-tier="vslice">
+  <div class="section-label">Core onboarding funnel <span class="ver-badge vs">VSlice</span></div>
+  <div class="note-box green">
+    Mapping to our IA: "lava lamp" == freestyle in Menu_Main (<code>MenuCrystalClickHandler</code>), "lobby" == Menu_Main Ready state (<code>MainMenuController</code>), mode/intensity gates == <code>GAME_MODE_PROGRESSION</code> Cloud Save key. The unlock data already exists — the funnel events are thin hooks on systems that already fire SOAP events.
+  </div>
+  <div class="events-grid">
+    <div class="event-row"><div><span class="event-name">game_first_launched</span><span class="st st-build">BUILD</span></div><div class="event-desc">App opened for the very first time</div><div class="impl">AppManager bootstrap + existing PlayerPrefs IsInitialPlay flag</div></div>
+    <div class="event-row"><div><span class="event-name">freestyle_entered</span><span class="st st-build">BUILD</span></div><div class="event-desc">Took control of the lava-lamp vessel (first tap = first flight)</div><div class="impl">MenuCrystalClickHandler.ToggleTransition / OnEnterFreestyle SOAP event — log: is_first</div></div>
+    <div class="event-row"><div><span class="event-name">menu_ready</span><span class="st st-build">BUILD</span></div><div class="event-desc">Menu fully interactive (vessel spawned)</div><div class="impl">MainMenuController.HandleMenuReady — log: is_first, seconds_since_launch</div></div>
+    <div class="event-row"><div><span class="event-name">vessel_inspected</span><span class="st st-live">LIVE</span></div><div class="event-desc">Opened a vessel in Hangar</div><div class="impl">UserActionType.ViewShipManta/Rhino/Squirrel → now flows through the UGS ui_action event</div></div>
+    <div class="event-row"><div><span class="event-name">training_first_started</span><span class="st st-dormant">DORMANT</span></div><div class="event-desc">Entered first training game</div><div class="impl">cs_start_training collector defines params (intensity, vessel) — port to UGS</div></div>
+    <div class="event-row"><div><span class="event-name">squad_configured</span><span class="st st-build">BUILD</span></div><div class="event-desc">Completed squad setup (leader + 2 rogues, class + element)</div><div class="impl">SquadSystem.SaveSquad — also migrate squad.data to Cloud Save</div></div>
+    <div class="event-row"><div><span class="event-name">mode_unlocked</span><span class="st st-build">BUILD</span></div><div class="event-desc">New game mode became available</div><div class="impl">GameModeProgressionService.ClaimQuestAndUnlockNext — log: mode, quest</div></div>
+    <div class="event-row"><div><span class="event-name">intensity_unlocked</span><span class="st st-build">BUILD</span></div><div class="event-desc">Intensity 3/4 unlocked for a mode</div><div class="impl">GameModeProgressionService.RecordIntensityPlay — log: mode, intensity</div></div>
+  </div>
+  </div>
+
+  <div class="block" data-tier="vslice">
+  <div class="section-label">Control scheme — critical for a flying game <span class="ver-badge vs">VSlice</span></div>
+  <div class="events-grid">
+    <div class="event-row"><div><span class="event-name">invert_y_toggled</span><span class="st st-build">BUILD</span></div><div class="event-desc">Y-axis inversion changed</div><div class="impl">GameSetting.OnChangeInvertYEnabledStatus — already cloud-synced in PLAYER_SETTINGS</div></div>
+    <div class="event-row"><div><span class="event-name">invert_throttle_toggled</span><span class="st st-build">BUILD</span></div><div class="event-desc">Throttle inversion changed</div><div class="impl">GameSetting.OnChangeInvertThrottleEnabledStatus</div></div>
+    <div class="event-row"><div><span class="event-name">joystick_visual_toggled</span><span class="st st-build">BUILD</span></div><div class="event-desc">Joystick overlay shown/hidden — hides it = experienced-player signal</div><div class="impl">GameSetting.OnChangeJoystickVisualsStatus</div></div>
+    <div class="event-row"><div><span class="event-name">setting_changed</span><span class="st st-build">BUILD</span></div><div class="event-desc">Any setting change, with seconds_since_install — early changes = friction signal</div><div class="impl">One generic event over all 9 GameSetting.OnChange* events</div></div>
+  </div>
+  </div>
+
+  <div class="block" data-tier="vslice">
+  <div class="section-label">Time-to-value <span class="ver-badge vs">VSlice</span></div>
+  <div class="events-grid">
+    <div class="event-row"><div><span class="event-name">time_to_first_flight</span><span class="st st-build">BUILD</span></div><div class="event-desc">Seconds from install to first freestyle control or first game start</div><div class="meta-hint">Single most important activation metric — derived client timer</div></div>
+    <div class="event-row"><div><span class="event-name">time_to_second_mode</span><span class="st st-build">BUILD</span></div><div class="event-desc">Install → second game mode unlocked (our equivalent of "mission unlock")</div><div class="impl">Derived from mode_unlocked timestamps</div></div>
+  </div>
+  </div>
+
+  <div class="metrics-row">
+    <span class="metric-chip">Launch → freestyle rate</span>
+    <span class="metric-chip">Freestyle → first game rate</span>
+    <span class="metric-chip">First game → mode 2 unlock rate</span>
+    <span class="metric-chip adv">Median time-to-first-flight</span>
+    <span class="metric-chip adv">Retention by control scheme preference</span>
+    <span class="metric-chip adv">Drop-off point in activation funnel</span>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ RETENTION -->
+<div class="stage">
+  <div class="stage-header"><span class="stage-pill a3-pill">Retention</span><span class="stage-title">Do they come back?</span></div>
+  <p class="stage-question">Multiple retention loops layered: daily challenge, mode/intensity progression, training tiers. All three have persistent state in code today — none emit events.</p>
+
+  <div class="block" data-tier="vslice">
+  <div class="section-label">Session lifecycle <span class="ver-badge vs">VSlice</span></div>
+  <div class="events-grid">
+    <div class="event-row"><div><span class="event-name">session_started</span><span class="st st-live">LIVE</span></div><div class="event-desc">Auto-collected by UGS Analytics once collection starts</div><div class="impl">AnalyticsServiceFacade.StartCollectionIfReady() on sign-in</div></div>
+    <div class="event-row"><div><span class="event-name">session_ended</span><span class="st st-live">LIVE</span></div><div class="event-desc">reason (pause/quit), last_ui_action, app_state</div><div class="impl">AnalyticsServiceFacade ← OnAppPaused/OnAppQuitting; ScreenSwitcher-precise last_screen is a P2 refinement</div></div>
+    <div class="event-row"><div><span class="event-name">daily_challenge_played</span><span class="st st-dormant">DORMANT</span></div><div class="event-desc">Completed the daily challenge</div><div class="impl">cs_start/complete_daily_challenge collectors define params; DailyChallengeSystem fully implemented — also finish PlayerPrefs → DAILY_CHALLENGE cloud migration</div></div>
+    <div class="event-row"><div><span class="event-name">daily_challenge_skipped</span><span class="st st-build">BUILD</span></div><div class="event-desc">Session occurred but tickets unspent</div><div class="impl">Derived at session_ended from DailyChallengeSystem.TicketBalance</div></div>
+  </div>
+  </div>
+
+  <div class="block" data-tier="vslice">
+  <div class="section-label">Last-action-before-churn <span class="ver-badge vs">VSlice</span></div>
+  <div class="note-box purple">
+    Every <code>session_ended</code> carries <strong>last_screen</strong> (ScreenSwitcher: STORE / ARK / HOME / PORT / HANGAR, or game scene) and <strong>last_event_type</strong>. Query players who never returned after day 7 and the churn surface falls out — e.g. "62% of churned players' last screen was the Hangar." That's a design problem disguised as a churn stat.
+  </div>
+  <div class="events-grid">
+    <div class="event-row"><div><span class="event-name">quit_from_screen</span><span class="st st-build">BUILD</span></div><div class="event-desc">Generic: param on session_ended, not separate events per screen</div><div class="impl">ScreenSwitcher tracks current screen; modal stack gives sub-context</div></div>
+    <div class="event-row"><div><span class="event-name">repeated_game_fail</span><span class="st st-build">BUILD</span></div><div class="event-desc">N consecutive losses in one mode</div><div class="impl">Counter on game_completed (win/loss already known at game end)</div></div>
+    <div class="event-row"><div><span class="event-name">idle_timeout</span><span class="st st-build">BUILD</span></div><div class="event-desc">No input for X min — walked away</div><div class="impl">InputController / IInputStatus — log: last_screen</div></div>
+    <div class="event-row"><div><span class="event-name">rage_quit_detected</span><span class="st st-build">BUILD</span></div><div class="event-desc">Quit within 10s of a loss</div><div class="meta-hint">Heuristic — derive from game_completed(loss) + session_ended timestamps</div></div>
+  </div>
+  </div>
+
+  <div class="block" data-tier="vslice">
+  <div class="section-label">Progression loop retention <span class="ver-badge vs">VSlice</span></div>
+  <div class="events-grid">
+    <div class="event-row"><div><span class="event-name">game_started</span><span class="st st-live">LIVE</span></div><div class="event-desc">Any game began — mode, intensity, vessel, player count, AI count, is_multiplayer</div><div class="impl">AnalyticsServiceFacade ← GameDataSO.OnMiniGameTurnStarted</div></div>
+    <div class="event-row"><div><span class="event-name">game_completed</span><span class="st st-live">LIVE</span></div><div class="event-desc">Game ended — start params + duration_seconds (score/win-loss params are a P2 refinement)</div><div class="impl">AnalyticsServiceFacade ← GameDataSO.OnMiniGameEnd</div></div>
+    <div class="event-row"><div><span class="event-name">vessel_upgraded</span><span class="st st-dormant">DORMANT</span></div><div class="event-desc">Captain/vessel upgrade confirmed</div><div class="impl">CaptainManager is PlayFab-disabled; cs_upgrade_captain collector defines params — blocked on UGS captain re-enable (CAPTAIN_PROGRESS key ready)</div></div>
+    <div class="event-row"><div><span class="event-name">training_completed</span><span class="st st-dormant">DORMANT</span></div><div class="event-desc">Finished a training game — intensity, vessel, score, tier satisfied</div><div class="impl">cs_complete_training collector + TrainingGameProgressSystem; also migrate file → TRAINING_PROGRESS cloud key</div></div>
+    <div class="event-row"><div><span class="event-name">quest_completed</span><span class="st st-build">BUILD</span></div><div class="event-desc">UserJourney quest stage cleared — the funnel system that currently emits nothing</div><div class="impl">UserJourneySystem / QuestSystem.OnQuestCompleted</div></div>
+    <div class="event-row"><div><span class="event-name">training_tier_claimed</span><span class="st st-build">BUILD</span></div><div class="event-desc">Reward claimed for a satisfied tier</div><div class="impl">TrainingGameProgressSystem.ClaimIntensityTierReward</div></div>
+  </div>
+  </div>
+
+  <div class="block" data-tier="vdemo">
+  <div class="section-label">Pilot and crew engagement <span class="ver-badge vd">VDemo</span></div>
+  <div class="note-box amber"><strong>Prerequisite:</strong> captains ("pilots") are persistence-disabled since the PlayFab retirement. Re-enabling <code>CAPTAIN_PROGRESS</code> on UGS (model + repo already exist) unblocks this whole section.</div>
+  <div class="events-grid">
+    <div class="event-row"><div><span class="event-name">pilot_recruited</span><span class="st st-dormant">DORMANT</span></div><div class="event-desc">Captain unlocked/purchased</div><div class="impl">cs_purchase_captain collector defines shape; CaptainManager.UnlockCaptain stubbed</div></div>
+    <div class="event-row"><div><span class="event-name">pilot_backstory_viewed</span><span class="st st-build">BUILD</span></div><div class="event-desc">Opened captain lore — narrative engagement correlates with retention</div><div class="impl">Hangar captain detail UI</div></div>
+    <div class="event-row"><div><span class="event-name">pilot_search_performed</span><span class="st st-none">NO SYSTEM</span></div><div class="event-desc">Search pilots by vessel/faction</div><div class="meta-hint">No search feature exists</div></div>
+    <div class="event-row"><div><span class="event-name">pilot_discontinued</span><span class="st st-none">NO SYSTEM</span></div><div class="event-desc">Pilot removed from crew</div><div class="meta-hint">No remove flow exists</div></div>
+  </div>
+  </div>
+
+  <div class="block" data-tier="vlater">
+  <div class="section-label">Faction engagement <span class="ver-badge vl">VLater</span></div>
+  <div class="note-box purple">Factions are a stub — <code>PortFactionView</code> throws NotImplementedException. All six faction events (joined, chat, artifact bids, missions, rank, emissary) wait on the system itself.</div>
+  <div class="events-grid">
+    <div class="event-row"><div><span class="event-name">faction_* (6 events)</span><span class="st st-none">NO SYSTEM</span></div><div class="event-desc">joined · chat_posted · artifact_bid · mission_completed · rank_changed · emissary_sent</div></div>
+  </div>
+  </div>
+
+  <div class="metrics-row">
+    <span class="metric-chip">Day 1 / 7 / 30 retention</span>
+    <span class="metric-chip">Daily challenge completion rate</span>
+    <span class="metric-chip">Last screen before churn heatmap</span>
+    <span class="metric-chip adv">Retention: 2nd mode unlocked vs. not</span>
+    <span class="metric-chip adv">Retention by max intensity reached</span>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ REVENUE -->
+<div class="stage">
+  <div class="stage-header"><span class="stage-pill a4-pill">Revenue</span><span class="stage-title">Crystals today, episode tokens when IAP lands</span></div>
+  <p class="stage-question">Reality: the live economy is the crystal balance in <code>player_profile</code> (earn → spend on vessel unlocks). The episode-token store needs Unity IAP (<code>IAPManager</code> is a stub) — flagging that dependency to production. Instrument the crystal loop now; token funnel events are specced and waiting.</p>
+
+  <div class="block" data-tier="vslice">
+  <div class="section-label">Crystal economy (live currency) <span class="ver-badge vs">VSlice</span></div>
+  <div class="events-grid">
+    <div class="event-row"><div><span class="event-name">crystals_earned</span><span class="st st-build">BUILD</span></div><div class="event-desc">Crystals received — source param (game_placement, tournament_placement)</div><div class="impl">PlayerDataService.AddCrystals — one-line hook</div></div>
+    <div class="event-row"><div><span class="event-name">crystals_spent</span><span class="st st-build">BUILD</span></div><div class="event-desc">Crystals spent — on_what param</div><div class="impl">PlayerDataService.TrySpendCrystals (success branch)</div></div>
+    <div class="event-row"><div><span class="event-name">crystal_spend_blocked</span><span class="st st-build">BUILD</span></div><div class="event-desc">Tried to spend with insufficient balance — friction/starvation signal</div><div class="impl">PlayerDataService.TrySpendCrystals (false branch) — log: wanted, balance, item</div></div>
+    <div class="event-row"><div><span class="event-name">vessel_unlocked</span><span class="st st-build">BUILD</span></div><div class="event-desc">Bought vessel with crystals</div><div class="impl">VesselUnlockSystem.UnlockVessel + SO_Vessel.UnlockCost — log: vessel, cost, balance_after</div></div>
+  </div>
+  </div>
+
+  <div class="block" data-tier="vslice">
+  <div class="section-label">Episode token purchase funnel <span class="ver-badge vs">VSlice</span></div>
+  <div class="note-box amber">
+    The progressive pricing model (every $ after $30 discounts the infinite bundle, etc.) still holds as the spec. <strong>Blocked on: Unity IAP package + token store UI — neither exists.</strong> When built, log cumulative spend per player alongside each transaction, not just the transaction. <code>EPISODE_PROGRESS</code> Cloud Save key is already scaffolded for the unlock state.
+  </div>
+  <div class="events-grid">
+    <div class="event-row"><div><span class="event-name">token_store_viewed / tier_inspected / purchase_initiated / purchase_completed / purchase_abandoned / infinite_progress_viewed</span><span class="st st-none">NO SYSTEM</span></div><div class="event-desc">Full funnel specced, waiting on IAP + store UI</div><div class="impl">IAPManager (stub) — flag dependency to production</div></div>
+    <div class="event-row"><div><span class="event-name">episode_browsed</span><span class="st st-build">BUILD</span></div><div class="event-desc">Viewed episode content</div><div class="impl">EpisodeScreen exists — hook panel open</div></div>
+    <div class="event-row"><div><span class="event-name">episode_completed</span><span class="st st-dormant">DORMANT</span></div><div class="event-desc">Finished all content in an episode</div><div class="impl">EpisodeProgressCloudData.ReportMissionCompleted exists, no callers — wire when missions land</div></div>
+  </div>
+  </div>
+
+  <div class="block" data-tier="vdemo">
+  <div class="section-label">Elemental crystal economy <span class="ver-badge vd">VDemo</span></div>
+  <div class="events-grid">
+    <div class="event-row"><div><span class="event-name">elemental_xp_earned</span><span class="st st-build">BUILD</span></div><div class="event-desc">Per-element progression (Charge/Mass/Space/Time)</div><div class="impl">XpHandler tracks per-element XP per vessel class — elemental crystals as a wallet currency don't exist yet</div></div>
+    <div class="event-row"><div><span class="event-name">elemental_crystal_converted / prism_converted</span><span class="st st-none">NO SYSTEM</span></div><div class="event-desc">Conversion paths</div><div class="meta-hint">No converter exists</div></div>
+  </div>
+  </div>
+
+  <div class="metrics-row">
+    <span class="metric-chip econ">Crystal earn/spend ratio by player segment</span>
+    <span class="metric-chip econ">Spend-blocked rate (starvation)</span>
+    <span class="metric-chip econ">Token tier distribution — when IAP lands</span>
+    <span class="metric-chip adv">Revenue by acquisition source — when attribution lands</span>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ REFERRAL -->
+<div class="stage">
+  <div class="stage-header"><span class="stage-pill a5-pill">Referral</span><span class="stage-title">Do they bring others?</span></div>
+  <p class="stage-question">The live referral surface is the party system (presence lobby → invite → Relay join) plus native share. Both fully built, neither instrumented.</p>
+
+  <div class="block" data-tier="vslice">
+  <div class="section-label">Party &amp; invite loop <span class="ver-badge vs">VSlice</span></div>
+  <div class="events-grid">
+    <div class="event-row"><div><span class="event-name">party_invite_sent</span><span class="st st-build">BUILD</span></div><div class="event-desc">Invite sent from party slot / friends panel</div><div class="impl">HostConnectionService.SendInviteAsync / OnInviteSent SOAP event — log: source (slot, friend row)</div></div>
+    <div class="event-row"><div><span class="event-name">party_invite_accepted</span><span class="st st-build">BUILD</span></div><div class="event-desc">Recipient joined the party session</div><div class="impl">PartyInviteController.AcceptInviteAsync / OnPartyJoinCompleted</div></div>
+    <div class="event-row"><div><span class="event-name">party_invite_declined</span><span class="st st-build">BUILD</span></div><div class="event-desc">Declined or auto-decline timeout</div><div class="impl">PartyInviteNotificationPanel — log: was_timeout</div></div>
+    <div class="event-row"><div><span class="event-name">party_game_launched</span><span class="st st-build">BUILD</span></div><div class="event-desc">Game launched with ≥2 humans — the payoff event</div><div class="impl">GameDataSO.ConfigurePlayerCounts humanCount — param on game_started</div></div>
+  </div>
+  </div>
+
+  <div class="block" data-tier="vslice">
+  <div class="section-label">Shareworthy moment detection <span class="ver-badge vs">VSlice</span></div>
+  <div class="events-grid">
+    <div class="event-row"><div><span class="event-name">share_triggered</span><span class="st st-build">BUILD</span></div><div class="event-desc">Post-game screenshot share opened</div><div class="impl">SnsShare (NativeShare) — log: target app from callback, prior screen, game mode</div></div>
+    <div class="event-row"><div><span class="event-name">share_context_snapshot</span><span class="st st-build">BUILD</span></div><div class="event-desc">Game state at share time (mode, score, vessel) — which moments drive sharing</div><div class="meta-hint">Start with end-of-game params; 30s event ring buffer is a later refinement</div></div>
+    <div class="event-row"><div><span class="event-name">minigame_favorited</span><span class="st st-build">BUILD</span></div><div class="event-desc">Player favorited a minigame — endorsement signal</div><div class="impl">FavoriteSystem.ToggleFavorite — also migrate game_favorites.data to cloud</div></div>
+    <div class="event-row"><div><span class="event-name">review_submitted</span><span class="st st-none">NO SYSTEM</span></div><div class="event-desc">Store review prompt</div><div class="meta-hint">No review prompt exists — small feature, best timed after a daily-challenge win</div></div>
+  </div>
+  </div>
+
+  <div class="block" data-tier="vlater">
+  <div class="section-label">Faction as viral loop <span class="ver-badge vl">VLater</span></div>
+  <div class="events-grid">
+    <div class="event-row"><div><span class="event-name">emissary_* / faction_media_* / ark_link_invite_sent</span><span class="st st-none">NO SYSTEM</span></div><div class="event-desc">All faction-viral events wait on the faction system</div></div>
+  </div>
+  </div>
+
+  <div class="metrics-row">
+    <span class="metric-chip">Party invite conversion rate</span>
+    <span class="metric-chip">Invited → multiplayer game rate</span>
+    <span class="metric-chip social">Referred player LTV vs. organic — needs referral codes</span>
+    <span class="metric-chip adv">Shareworthy moment map by mode</span>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ FLIGHT TELEMETRY -->
+<div class="stage">
+  <div class="stage-header"><span class="stage-pill fly-pill">Flight telemetry</span><span class="stage-title">Play style and behavioral analytics</span></div>
+  <p class="stage-question">We already have a working telemetry pipeline (<code>VesselTelemetry</code> → <code>VESSEL_STATS</code> Cloud Save). The VDemo work is extending it, not building it.</p>
+
+  <div class="block" data-tier="vslice">
+  <div class="section-label">Already collected per vessel <span class="ver-badge vs">VSlice</span></div>
+  <div class="events-grid">
+    <div class="event-row"><div><span class="event-name">best_drift_time / best_boost_time</span><span class="st st-live">LIVE</span></div><div class="event-desc">Longest continuous drift / boost above threshold, per vessel lifetime</div><div class="impl">VesselTelemetry base → UGSStatsManager.ReportVesselTelemetry → VESSEL_STATS</div></div>
+    <div class="event-row"><div><span class="event-name">prisms_damaged / games_played</span><span class="st st-live">LIVE</span></div><div class="event-desc">Lifetime per-vessel counts</div><div class="impl">VesselTelemetry.HandlePrismDamaged</div></div>
+    <div class="event-row"><div><span class="event-name">sparrow: blocks_shot, missiles_shot, danger_blocks</span><span class="st st-live">LIVE</span></div><div class="event-desc">Shooter-style counters</div><div class="impl">SparrowVesselTelemetry</div></div>
+    <div class="event-row"><div><span class="event-name">squirrel: jousts_won, prisms_stolen, clean_streak</span><span class="st st-live">LIVE</span></div><div class="event-desc">Racer-style counters</div><div class="impl">SquirrelVesselTelemetry — the Counters dict extends without schema changes</div></div>
+  </div>
+  </div>
+
+  <div class="block" data-tier="vdemo">
+  <div class="section-label">Input and control behavior <span class="ver-badge vd">VDemo</span></div>
+  <div class="events-grid">
+    <div class="event-row"><div><span class="event-name">input_intensity_sample</span><span class="st st-build">BUILD</span></div><div class="event-desc">Avg input magnitude per turn — aggregate per game, not per 5s (event volume)</div><div class="impl">IInputStatus via InputController — accumulate in VesselTelemetry, emit on game_completed</div></div>
+    <div class="event-row"><div><span class="event-name">rapid_direction_changes</span><span class="st st-build">BUILD</span></div><div class="event-desc">Count of sharp reversals per game — aggression profile</div><div class="impl">VesselTransformer heading delta in telemetry update loop</div></div>
+    <div class="event-row"><div><span class="event-name">near_prism_pass</span><span class="st st-build">BUILD</span></div><div class="event-desc">Close pass without collision — thrill-seeker signal</div><div class="impl">BlockDensityGrid proximity query — NOT a physics query per frame</div></div>
+    <div class="event-row"><div><span class="event-name">ability_usage_counts</span><span class="st st-build">BUILD</span></div><div class="event-desc">Per-action usage per game — tactical depth</div><div class="impl">ActionExecutorRegistry / VesselActionExecutorBase — counter per ShipAction</div></div>
+  </div>
+  </div>
+
+  <div class="block" data-tier="vdemo">
+  <div class="section-label">Spatial behavior — adapted to our IA <span class="ver-badge vd">VDemo</span></div>
+  <div class="note-box green">
+    Translation note for the data team: Cosmic Shore is a volumetric cell world, not a terrain flyer. "Altitude bands" → <strong>cell occupancy time</strong>; "map coverage %" → <strong>cells visited / cell volume coverage</strong>; "terrain proximity" → <strong>prism/prismscape proximity</strong>. Same behavioral signals, our fundamentals (Cells, Prisms) as the frame.
+  </div>
+  <div class="events-grid">
+    <div class="event-row"><div><span class="event-name">cell_occupancy_time</span><span class="st st-build">BUILD</span></div><div class="event-desc">Time per cell per game</div><div class="impl">Cell system (Controller/Environment) + vessel position sampling</div></div>
+    <div class="event-row"><div><span class="event-name">cell_coverage_pct</span><span class="st st-build">BUILD</span></div><div class="event-desc">Explorer score</div><div class="impl">Coarse spatial hash over visited positions, emit at game end</div></div>
+    <div class="event-row"><div><span class="event-name">element_selected</span><span class="st st-build">BUILD</span></div><div class="event-desc">Element preference = play-style proxy</div><div class="impl">Squad/loadout selection (SquadSystem, LoadoutSystem)</div></div>
+    <div class="event-row"><div><span class="event-name">intensity_chosen</span><span class="st st-dormant">DORMANT</span></div><div class="event-desc">Direct difficulty preference</div><div class="impl">Loadout.Intensity; cs_start_training already carried this param</div></div>
+  </div>
+  </div>
+
+  <div class="block" data-tier="vdemo">
+  <div class="section-label">Derived play style tag — write to player record <span class="ver-badge vd">VDemo</span></div>
+  <div class="note-box green">
+    Compute a <strong>style tag</strong> at game end from the aggregates above — simple rules, no ML: <strong>Speed demon</strong> (boost time high + near-pass count high) · <strong>Tactician</strong> (ability variety high + low crash) · <strong>Explorer</strong> (cell coverage &gt; 70%) · <strong>Brawler</strong> (prisms damaged high + input intensity high) · <strong>Cautious</strong> (low everything, high survival). Persist to <code>player_profile</code> (or a new <code>PLAYER_STYLE</code> Cloud Save key) and set as a UGS Analytics <em>user property</em> so every event row segments by style for free.
+  </div>
+  </div>
+
+  <div class="metrics-row">
+    <span class="metric-chip social">Play style distribution across playerbase</span>
+    <span class="metric-chip">Retention rate by style segment</span>
+    <span class="metric-chip adv">Style tag vs. vessel choice alignment</span>
+    <span class="metric-chip adv">Element preference vs. conversion rate</span>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ ECONOMY HEALTH -->
+<div class="stage">
+  <div class="stage-header"><span class="stage-pill econ-pill">Economy health</span><span class="stage-title">Is the crystal economy balanced?</span></div>
+  <p class="stage-question">An unbalanced economy destroys retention and revenue simultaneously. Every source and sink below already routes through <code>PlayerDataService</code> — single choke point, easy instrumentation.</p>
+
+  <div class="block" data-tier="vslice">
+  <div class="section-label">Currency flow monitoring <span class="ver-badge vs">VSlice</span></div>
+  <div class="note-box amber">
+    Compute a daily <strong>earn/spend ratio</strong> per player and watch the distribution shift over patches. The question to answer: <em>are players earning enough crystals to feel progression without devaluing the future token store?</em>
+  </div>
+  <div class="events-grid">
+    <div class="event-row"><div><span class="event-name">crystal_balance_snapshot</span><span class="st st-build">BUILD</span></div><div class="event-desc">Balance at session end — hoarding vs. spending</div><div class="impl">player_profile.crystalBalance, emit on session_ended</div></div>
+    <div class="event-row"><div><span class="event-name">crystal_spend_blocked</span><span class="st st-build">BUILD</span></div><div class="event-desc">(same event as Revenue section — one event, two dashboards)</div><div class="impl">PlayerDataService.TrySpendCrystals false branch</div></div>
+    <div class="event-row"><div><span class="event-name">bunk_space_purchased</span><span class="st st-none">NO SYSTEM</span></div><div class="event-desc">Crew depth investment</div><div class="meta-hint">VLater concept, no system</div></div>
+    <div class="event-row"><div><span class="event-name">conversion_rate_used</span><span class="st st-none">NO SYSTEM</span></div><div class="event-desc">Prism → crystal converter</div><div class="meta-hint">No converter exists</div></div>
+  </div>
+  </div>
+
+  <div class="metrics-row">
+    <span class="metric-chip econ">Crystal earn/spend ratio over time</span>
+    <span class="metric-chip econ">Starvation rate by player segment</span>
+    <span class="metric-chip adv">Economy balance drift after each patch</span>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ PIPELINE -->
+<div class="stage" data-tier="vslice">
+  <div class="stage-header"><span class="stage-pill pipe-pill">Pipeline</span><span class="stage-title">Implementation order &amp; transport hygiene</span></div>
+  <p class="stage-question">How the events above actually ship. Full detail in <code>Docs/Analytics/DATA_INVENTORY.md</code> §3–4.</p>
+
+  <div class="block" data-tier="vslice">
+  <div class="note-box blue">
+    <strong>Build order (VSlice):</strong><br>
+    0. Retire the Firebase analytics path — port <code>ui_action</code> + <code>ad_impression</code> to UGS, delete the dead collectors (decision: UGS for everything)<br>
+    1. UGS Analytics event facade (SOAP-driven, replaces the dead Firebase collectors — reuse their event taxonomy)<br>
+    2. <code>game_started</code> / <code>game_completed</code> (the two commented-out subscriptions — highest value per line of code)<br>
+    3. Consent dialog + opt-out (compliance blocker)<br>
+    4. Activation funnel + settings + economy hooks (all one-liners on existing methods)<br>
+    5. <code>session_ended</code> with last_screen · daily-challenge cloud migration + events<br>
+    <strong>Then (VDemo):</strong> training migration, captain re-enable → pilot events, episode funnel (flag IAP dependency), telemetry extensions + style tag.
+  </div>
+  <div class="note-box purple">
+    <strong>Transport hygiene (from the push/pull review):</strong>
+    don't call <code>AnalyticsService.Flush()</code> per event (the SDK batches; flush only on pause/quit) ·
+    add bounded retry/backoff to <code>UGSCloudSaveProvider.SaveAsync</code> and keep dirty-on-failure ·
+    skip clean repos in <code>FlushAllAsync</code> ·
+    finish the two local→cloud migrations (daily challenge, training) ·
+    fix the legacy JsonUtility load fallback that silently drops Dictionary fields ·
+    keep event payloads to enums/ints — no free-text strings.
+  </div>
+  </div>
+</div>
+
+<p class="filter-hint">Maintained at <code>Docs/Analytics/INSTRUMENTATION_DATA.html</code> · data inventory &amp; optimization review at <code>Docs/Analytics/DATA_INVENTORY.md</code> · statuses audited against the codebase on 2026-06-11.</p>
+
+<script>
+(function () {
+  // ── Theme toggle ──
+  var root = document.documentElement;
+  var btn = document.getElementById('themeToggle');
+  function applyTheme(t) {
+    root.setAttribute('data-theme', t);
+    btn.textContent = t === 'dark' ? '☀️ Light' : '🌙 Dark';
+  }
+  var saved = null;
+  try { saved = localStorage.getItem('cs-instrumentation-theme'); } catch (e) {}
+  var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  applyTheme(saved || (prefersDark ? 'dark' : 'light'));
+  btn.addEventListener('click', function () {
+    var next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    applyTheme(next);
+    try { localStorage.setItem('cs-instrumentation-theme', next); } catch (e) {}
+  });
+
+  // ── Status counts ──
+  function count(sel) { return document.querySelectorAll('.event-row ' + sel + ', table.inv ' + sel).length; }
+  document.getElementById('cnt-live').textContent = count('.st-live');
+  document.getElementById('cnt-dormant').textContent = count('.st-dormant');
+  document.getElementById('cnt-build').textContent = count('.st-build');
+  document.getElementById('cnt-none').textContent = count('.st-none');
+
+  // ── Tier filter ──
+  var chips = document.querySelectorAll('#tierFilter .ver');
+  chips.forEach(function (chip) {
+    chip.addEventListener('click', function () {
+      chips.forEach(function (c) { c.classList.remove('active'); });
+      chip.classList.add('active');
+      var f = chip.getAttribute('data-filter');
+      document.querySelectorAll('.block').forEach(function (b) {
+        b.style.display = (f === 'all' || b.getAttribute('data-tier') === f) ? '' : 'none';
+      });
+      // Hide stages whose blocks are all hidden
+      document.querySelectorAll('.stage').forEach(function (s) {
+        var blocks = s.querySelectorAll('.block');
+        if (blocks.length === 0) { s.style.display = ''; return; }
+        var anyVisible = Array.prototype.some.call(blocks, function (b) { return b.style.display !== 'none'; });
+        s.style.display = anyVisible ? '' : 'none';
+      });
+    });
+  });
+})();
+</script>
+
+</body>
+</html>

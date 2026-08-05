@@ -1,7 +1,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
-using CosmicShore.Models.Enums;
+using CosmicShore.Data;
+using CosmicShore.ScriptableObjects;
 
 /*
     get class name
@@ -23,7 +24,7 @@ using CosmicShore.Models.Enums;
  
  */
 
-namespace CosmicShore
+namespace CosmicShore.Editor
 {
     public class CreateNewClass : EditorWindow
     {

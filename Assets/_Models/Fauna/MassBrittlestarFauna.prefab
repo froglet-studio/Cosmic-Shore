@@ -571,6 +571,8 @@ GameObject:
   m_Component:
   - component: {fileID: 340238951869932971}
   - component: {fileID: 5351160486092638538}
+  - component: {fileID: -6829949661265628279}
+  - component: {fileID: 3199367615162716265}
   m_Layer: 0
   m_Name: MassBrittlestarFauna
   m_TagString: Untagged
@@ -607,23 +609,82 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9117ee7c8d6921843b1da29d1d1a8d33, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
-  cellData: {fileID: 11400000, guid: 16d80244d807ac84493fff643826a0a0, type: 2}
-  healthPrism: {fileID: 6313579230210663873, guid: 1488a2ac58b2b4c43b14f84206bd9195,
-    type: 3}
-  spindle: {fileID: 0}
-  healthBlocksForMaturity: 1
-  minHealthBlocks: 0
-  shieldPeriod: 0
+  cellData: {fileID: 11400000, guid: 8d4e8398eedc76c4dadb8604f89b9e1b, type: 2}
   domain: 0
-  onLifeFormCreated: {fileID: 11400000, guid: 0ec64678e3c91034faed17b6e66ded9d, type: 2}
-  onLifeFormDestroyed: {fileID: 11400000, guid: af79f31492a261e49826374c21ee2234,
-    type: 2}
-  autoInitialize: 1
-  Population: {fileID: 1594903950002975183, guid: cf5d9d162b969ed4e92bf8388c703723,
-    type: 3}
+  goalUpdateInterval: 5
+  goalUpdateIntervalByAggression:
+  - 1
+  - 0.55
+  - 0.25
+  goalOrbitRadius: 60
+  Goal: {x: 0, y: 0, z: 0}
+  diet: 0
+  predationImmunitySeconds: 6
+  starvationSeconds: 30
   data: {fileID: 11400000, guid: eef0ed7d081bc854ebbeb3b75668eab4, type: 2}
   Phase: 0
+--- !u!114 &-6829949661265628279
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2988268804875292915}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9a6610d2e704f1648819acc8d7460285, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: FMODUnity::FMODUnity.StudioEventEmitter
+  CollisionTag: 
+  EventReference:
+    Guid:
+      Data1: 1944612624
+      Data2: 1173228001
+      Data3: -1868829007
+      Data4: 275873818
+    Path: event:/SFX/Loops/Mass brittle star
+  Event: 
+  EventPlayTrigger: 1
+  EventStopTrigger: 2
+  AllowFadeout: 1
+  TriggerOnce: 0
+  Preload: 0
+  NonRigidbodyVelocity: 0
+  Params: []
+  OverrideAttenuation: 0
+  OverrideMinDistance: 0
+  OverrideMaxDistance: 200
+--- !u!114 &3199367615162716265
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2988268804875292915}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9a6610d2e704f1648819acc8d7460285, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: FMODUnity::FMODUnity.StudioEventEmitter
+  CollisionTag: 
+  EventReference:
+    Guid:
+      Data1: -2144686006
+      Data2: 1203677490
+      Data3: 1188687745
+      Data4: -1802949205
+    Path: event:/SFX/Oneshots/Gameplay sfx/massshark spawn
+  Event: 
+  EventPlayTrigger: 1
+  EventStopTrigger: 0
+  AllowFadeout: 1
+  TriggerOnce: 0
+  Preload: 0
+  NonRigidbodyVelocity: 0
+  Params: []
+  OverrideAttenuation: 0
+  OverrideMinDistance: 0
+  OverrideMaxDistance: 200
 --- !u!1 &3284225655831354852
 GameObject:
   m_ObjectHideFlags: 0
@@ -1543,7 +1604,7 @@ PrefabInstance:
         type: 3}
       propertyPath: LifeForm
       value: 
-      objectReference: {fileID: 5351160486092638538}
+      objectReference: {fileID: 0}
     - target: {fileID: 6474806432604849291, guid: aad956930fb933f4b82b992b1bc2b773,
         type: 3}
       propertyPath: usePrefabScaleAsDefaultTarget
@@ -1642,7 +1703,7 @@ PrefabInstance:
         type: 3}
       propertyPath: LifeForm
       value: 
-      objectReference: {fileID: 5351160486092638538}
+      objectReference: {fileID: 0}
     - target: {fileID: 6313579230210663873, guid: 4a31e01f8b69a584ca245a1687beb4c2,
         type: 3}
       propertyPath: m_Enabled
@@ -1746,7 +1807,7 @@ PrefabInstance:
         type: 3}
       propertyPath: LifeForm
       value: 
-      objectReference: {fileID: 5351160486092638538}
+      objectReference: {fileID: 0}
     - target: {fileID: 6474806432604849291, guid: aad956930fb933f4b82b992b1bc2b773,
         type: 3}
       propertyPath: usePrefabScaleAsDefaultTarget
@@ -1845,7 +1906,7 @@ PrefabInstance:
         type: 3}
       propertyPath: LifeForm
       value: 
-      objectReference: {fileID: 5351160486092638538}
+      objectReference: {fileID: 0}
     - target: {fileID: 6313579230210663873, guid: 4a31e01f8b69a584ca245a1687beb4c2,
         type: 3}
       propertyPath: m_Enabled
@@ -1949,7 +2010,7 @@ PrefabInstance:
         type: 3}
       propertyPath: LifeForm
       value: 
-      objectReference: {fileID: 5351160486092638538}
+      objectReference: {fileID: 0}
     - target: {fileID: 6313579230210663873, guid: 4a31e01f8b69a584ca245a1687beb4c2,
         type: 3}
       propertyPath: m_Enabled
@@ -2053,7 +2114,7 @@ PrefabInstance:
         type: 3}
       propertyPath: LifeForm
       value: 
-      objectReference: {fileID: 5351160486092638538}
+      objectReference: {fileID: 0}
     - target: {fileID: 6313579230210663873, guid: 4a31e01f8b69a584ca245a1687beb4c2,
         type: 3}
       propertyPath: m_Enabled
@@ -2157,7 +2218,7 @@ PrefabInstance:
         type: 3}
       propertyPath: LifeForm
       value: 
-      objectReference: {fileID: 5351160486092638538}
+      objectReference: {fileID: 0}
     - target: {fileID: 6474806432604849291, guid: aad956930fb933f4b82b992b1bc2b773,
         type: 3}
       propertyPath: usePrefabScaleAsDefaultTarget
@@ -2256,7 +2317,7 @@ PrefabInstance:
         type: 3}
       propertyPath: LifeForm
       value: 
-      objectReference: {fileID: 5351160486092638538}
+      objectReference: {fileID: 0}
     - target: {fileID: 6474806432604849291, guid: aad956930fb933f4b82b992b1bc2b773,
         type: 3}
       propertyPath: usePrefabScaleAsDefaultTarget
@@ -2456,6 +2517,8 @@ SkinnedMeshRenderer:
   m_RayTracingAccelStructBuildFlagsOverride: 0
   m_RayTracingAccelStructBuildFlags: 1
   m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
@@ -2477,9 +2540,11 @@ SkinnedMeshRenderer:
   m_AutoUVMaxDistance: 0.5
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   serializedVersion: 2
   m_Quality: 0
   m_UpdateWhenOffscreen: 0
@@ -2558,6 +2623,8 @@ SkinnedMeshRenderer:
   m_RayTracingAccelStructBuildFlagsOverride: 0
   m_RayTracingAccelStructBuildFlags: 1
   m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
@@ -2579,9 +2646,11 @@ SkinnedMeshRenderer:
   m_AutoUVMaxDistance: 0.5
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   serializedVersion: 2
   m_Quality: 0
   m_UpdateWhenOffscreen: 0
@@ -2653,6 +2722,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Crystal: {fileID: 4559214594932282260}
+  elementalCrystalShipEffects:
+  - {fileID: 11400000, guid: 0ac04a748b4c4ad8825e811431df45f4, type: 2}
   moveToVesselDuration: 1
   easeMoveToVessel: 1
 --- !u!114 &1575115670240927157
@@ -2712,6 +2783,8 @@ SkinnedMeshRenderer:
   m_RayTracingAccelStructBuildFlagsOverride: 0
   m_RayTracingAccelStructBuildFlags: 1
   m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
@@ -2733,9 +2806,11 @@ SkinnedMeshRenderer:
   m_AutoUVMaxDistance: 0.5
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   serializedVersion: 2
   m_Quality: 0
   m_UpdateWhenOffscreen: 0
@@ -2814,6 +2889,8 @@ SkinnedMeshRenderer:
   m_RayTracingAccelStructBuildFlagsOverride: 0
   m_RayTracingAccelStructBuildFlags: 1
   m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
@@ -2835,9 +2912,11 @@ SkinnedMeshRenderer:
   m_AutoUVMaxDistance: 0.5
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   serializedVersion: 2
   m_Quality: 0
   m_UpdateWhenOffscreen: 0
@@ -2972,7 +3051,7 @@ PrefabInstance:
         type: 3}
       propertyPath: LifeForm
       value: 
-      objectReference: {fileID: 5351160486092638538}
+      objectReference: {fileID: 0}
     - target: {fileID: 6313579230210663873, guid: 4a31e01f8b69a584ca245a1687beb4c2,
         type: 3}
       propertyPath: m_Enabled
@@ -4094,7 +4173,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   RenderedObject: {fileID: 7699484790300655702}
   parentSpindle: {fileID: 0}
-  LifeForm: {fileID: 5351160486092638538}
+  LifeForm: {fileID: 0}
   retainSpindle: 1
   permanentWither: 1
 --- !u!1 &585916357807653721 stripped
@@ -4117,7 +4196,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   RenderedObject: {fileID: 5432386326847444093}
   parentSpindle: {fileID: 0}
-  LifeForm: {fileID: 5351160486092638538}
+  LifeForm: {fileID: 0}
   retainSpindle: 1
   permanentWither: 1
 --- !u!4 &679641959953746121 stripped
@@ -4176,7 +4255,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   RenderedObject: {fileID: 2292046433133831624}
   parentSpindle: {fileID: 0}
-  LifeForm: {fileID: 5351160486092638538}
+  LifeForm: {fileID: 0}
   retainSpindle: 1
   permanentWither: 1
 --- !u!4 &2269529865910479451 stripped
@@ -4217,7 +4296,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   RenderedObject: {fileID: 6316916111718758181}
   parentSpindle: {fileID: 0}
-  LifeForm: {fileID: 5351160486092638538}
+  LifeForm: {fileID: 0}
   retainSpindle: 1
   permanentWither: 1
 --- !u!4 &3554068086279396861 stripped
@@ -4264,7 +4343,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   RenderedObject: {fileID: 7306882521846822617}
   parentSpindle: {fileID: 0}
-  LifeForm: {fileID: 5351160486092638538}
+  LifeForm: {fileID: 0}
   retainSpindle: 1
   permanentWither: 1
 --- !u!137 &4327607367266289235 stripped
@@ -4317,7 +4396,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   RenderedObject: {fileID: 7430114606653773022}
   parentSpindle: {fileID: 0}
-  LifeForm: {fileID: 5351160486092638538}
+  LifeForm: {fileID: 0}
   retainSpindle: 1
   permanentWither: 1
 --- !u!4 &5221145117695997993 stripped
@@ -4346,7 +4425,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   RenderedObject: {fileID: 7430970055095401836}
   parentSpindle: {fileID: 0}
-  LifeForm: {fileID: 5351160486092638538}
+  LifeForm: {fileID: 0}
   retainSpindle: 1
   permanentWither: 1
 --- !u!4 &5344061542172889966 stripped
@@ -4399,7 +4478,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   RenderedObject: {fileID: 7216297290027478408}
   parentSpindle: {fileID: 0}
-  LifeForm: {fileID: 5351160486092638538}
+  LifeForm: {fileID: 0}
   retainSpindle: 1
   permanentWither: 1
 --- !u!4 &5788596559538480950 stripped
@@ -4494,7 +4573,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   RenderedObject: {fileID: 5881214667817304712}
   parentSpindle: {fileID: 0}
-  LifeForm: {fileID: 5351160486092638538}
+  LifeForm: {fileID: 0}
   retainSpindle: 1
   permanentWither: 1
 --- !u!4 &8355103734535059089 stripped
@@ -4539,7 +4618,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   RenderedObject: {fileID: 4327607367266289235}
   parentSpindle: {fileID: 0}
-  LifeForm: {fileID: 5351160486092638538}
+  LifeForm: {fileID: 0}
   retainSpindle: 0
   permanentWither: 1
 --- !u!1 &9032908022955757271 stripped
@@ -4562,6 +4641,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   RenderedObject: {fileID: 5367215629879417128}
   parentSpindle: {fileID: 0}
-  LifeForm: {fileID: 5351160486092638538}
+  LifeForm: {fileID: 0}
   retainSpindle: 1
   permanentWither: 1

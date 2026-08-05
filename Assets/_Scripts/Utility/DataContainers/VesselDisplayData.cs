@@ -1,4 +1,6 @@
-﻿namespace CosmicShore.Game.Cinematics
+using CosmicShore.Data;
+
+namespace CosmicShore.Utility
 {
     /// <summary>
     /// Data structure for vessel display information

@@ -1,0 +1,25 @@
+stateDiagram-v2
+  direction LR
+  [*] --> Disconnected
+  Disconnected --> InPresenceLobby: auth sign-in + lobby join
+  InPresenceLobby --> HostingParty: auto — create solo Relay
+  InPresenceLobby --> Disconnected: sign-out / net loss
+  HostingParty --> InParty: session live (solo or joiner connected)
+  InParty --> Inviting: sent first invite (no NM change)
+  InParty --> JoiningParty: accepted invite (leave own Relay)
+  InParty --> HostingParty: leave party — recreate solo
+  InParty --> Reconnecting: connection lost
+  Inviting --> InParty: invites cancelled / joiner connected
+  Inviting --> HostingParty: acceptance signal (legacy)
+  Inviting --> Reconnecting: lobby lost
+  JoiningParty --> InParty: Relay join + NM connect
+  JoiningParty --> HostingParty: join failed — recreate solo
+  JoiningParty --> Reconnecting: dropped mid-join
+  Reconnecting --> InParty: rejoin succeeded
+  Reconnecting --> HostingParty: recovery — recreate solo
+
+  note right of InParty
+    Persistent baseline:
+    every player always has
+    a live Relay session
+  end note

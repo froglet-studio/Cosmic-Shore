@@ -2,14 +2,13 @@ using UnityEngine;
 using UnityEditor;
 using PlayFab;
 using System;
-using CosmicShore.Integrations.PlayFab.Economy;
-using CosmicShore.Integrations.PlayFab.Authentication;
+using CosmicShore.Core;
 using CosmicShore.Utility;
+using CosmicShore.Editor.Froglet;
 
 public class PlayFabProductGenerator : EditorWindow
 {
     SO_Vessel selectedShip;
-    SO_Captain selectedCaptain;
     static PlayFabEconomyInstanceAPI _playFabEconomyInstanceAPI;
 
     //static readonly string TitleId = "5B7B3";
@@ -26,6 +25,8 @@ public class PlayFabProductGenerator : EditorWindow
 
     /* Uncomment here to add the tool to the menu when it is working
     [MenuItem("FrogletTools/PlayFab Product Generator")]
+    [FrogletTool(FrogletToolCategory.Services, Importance = 3,
+        Description = "Generate PlayFab catalog product definitions.")]
     public static void ShowWindow()
     {
         GetWindow<PlayFabProductGenerator>("PlayFab Product Generator");

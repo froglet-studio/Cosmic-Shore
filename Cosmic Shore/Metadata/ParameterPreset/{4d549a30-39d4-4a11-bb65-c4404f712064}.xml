@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.02.00">
+	<object class="ParameterPreset" id="{4d549a30-39d4-4a11-bb65-c4404f712064}">
+		<property name="name">
+			<value>Trigger let go</value>
+		</property>
+		<relationship name="folder">
+			<destination>{13129644-f1bd-481c-a39a-9d5da342acdb}</destination>
+		</relationship>
+		<relationship name="parameter">
+			<destination>{ed585945-c087-4a0a-86c1-b0a8dc2a84c9}</destination>
+		</relationship>
+	</object>
+	<object class="GameParameter" id="{ed585945-c087-4a0a-86c1-b0a8dc2a84c9}">
+		<property name="parameterType">
+			<value>1</value>
+		</property>
+		<property name="maximum">
+			<value>2</value>
+		</property>
+		<property name="initialValue">
+			<value>0</value>
+		</property>
+	</object>
+</objects>

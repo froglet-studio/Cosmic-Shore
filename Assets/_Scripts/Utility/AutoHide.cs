@@ -1,7 +1,7 @@
 using System.Collections;
 using UnityEngine;
 
-namespace CosmicShore.Utilities
+namespace CosmicShore.Utility
 {
     public class AutoHide : MonoBehaviour
     {

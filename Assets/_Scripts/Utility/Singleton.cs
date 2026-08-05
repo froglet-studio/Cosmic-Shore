@@ -1,3 +1,4 @@
+using CosmicShore.Core;
 using Unity.Netcode;
 using UnityEngine;
 using CosmicShore.Utility;
@@ -10,7 +11,7 @@ using CosmicShore.Utility;
         - Persistent -> when we need to make sure that the object is not destroyed during the session.
 */
 
-namespace CosmicShore.Utilities
+namespace CosmicShore.Utility
 {
     public class Singleton<T> : MonoBehaviour where T : Component
     {
@@ -22,16 +23,10 @@ namespace CosmicShore.Utilities
             {
                 Instance = this as T;
             }
-            else
+            else if (!ApplicationLifecycleManager.IsQuitting)
             {
                 Destroy(gameObject);
             }
-        }
-
-        protected virtual void OnDestroy()
-        {
-            if (Instance == this)
-                Instance = null;
         }
     }
 
@@ -46,16 +41,10 @@ namespace CosmicShore.Utilities
                 Instance = this as T;
                 DontDestroyOnLoad(this);
             }
-            else
+            else if (!ApplicationLifecycleManager.IsQuitting)
             {
                 Destroy(gameObject);
             }
-        }
-
-        protected virtual void OnDestroy()
-        {
-            if (Instance == this)
-                Instance = null;
         }
     }
 
@@ -69,17 +58,10 @@ namespace CosmicShore.Utilities
             {
                 Instance = this as T;
             }
-            else
+            else if (!ApplicationLifecycleManager.IsQuitting)
             {
                 Destroy(gameObject);
             }
-        }
-
-        public override void OnDestroy()
-        {
-            if (Instance == this)
-                Instance = null;
-            base.OnDestroy();
         }
     }
 
@@ -94,17 +76,10 @@ namespace CosmicShore.Utilities
                 Instance = this as T;
                 DontDestroyOnLoad(this);
             }
-            else
+            else if (!ApplicationLifecycleManager.IsQuitting)
             {
                 Destroy(gameObject);
             }
-        }
-
-        public override void OnDestroy()
-        {
-            if (Instance == this)
-                Instance = null;
-            base.OnDestroy();
         }
     }
 

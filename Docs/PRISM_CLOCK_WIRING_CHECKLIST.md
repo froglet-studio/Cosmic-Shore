@@ -1,0 +1,338 @@
+# Prism Clock Wiring — In-Editor Checklist
+
+Companion to `Docs/PRISM_ANIMATION.md` (§4.4, §6). **STRICT MODE is live: no legacy
+fallback.** All four wiring phases below are ✅ wired programmatically in-branch —
+what remains is in-editor verification (Phase 5) and the deletion pass (Phase 6).
+If any graph reverts to unwired, prisms SNAP to end states and the console logs
+one `[PrismClock]` error per unwired material.
+
+**Already done programmatically on this branch — not your job:**
+
+- ✅ All 18 clock **properties** are inserted into the three graphs
+  (donor-cloned, Hybrid Per Instance, registered in the blackboard): BlockGraph
+  (grow trio + color five), ExplodingBlockGraph (explode trio + grow trio for
+  transparent live prisms), SuctionGraph (suction four). They should appear on each
+  graph's Blackboard when you open it.
+- ✅ The HLSL (`PrismClockAnimation.hlsl`), all C# stamps/scheduling/diagnostics,
+  and the tools below.
+
+**Your tools:**
+
+- `FrogletTools > Ecology > Prism Animation> Validate Clock Wiring` — run after every
+  phase. Out of the box it should show every property row ✅ and the Custom Function
+  node rows ❌ — the node wiring is exactly what's left.
+- `FrogletTools > Ecology > Prism Animation> Auto-Wire Clock Properties` — idempotent
+  repair tool: re-adds any clock property that's missing (e.g. after a graph revert).
+  Normally reports "already present".
+- `FrogletTools > Ecology > Prism Animation> Smoke Test - Re-Bloom Nearby Prisms`
+  (play mode) — stamps a from-zero regrow on nearby prisms: wired = smooth GPU
+  bloom with 0 active CPU animators; unwired = snap + errors.
+
+**First open**: if Unity flags anything on importing the modified graphs (they were
+edited out-of-editor — expected clean, every block is schema-exact), the recovery is
+`git checkout` of the `.shadergraph` + run Auto-Wire Clock Properties in-editor,
+which does the identical insertion with automatic rollback on import error.
+
+---
+
+## Phase 1 — BlockGraph grow nodes — ✅ WIRED + PLAYTEST-CONFIRMED
+
+Done out-of-editor and committed: `_PrismClock` global feed + `PrismGrowScale` Custom Function
+(source = `PrismClockAnimation.hlsl`, GUID pinned by its committed `.meta`) +
+property feeds + Multiply spliced into the one edge that fed Vertex ▸ Position
+(`Prism Sub Graph #1 → Multiply.A`, `Scale → Multiply.B`, `Multiply → Position`).
+Every object reference machine-validated.
+
+**✅ PLAYTEST-CONFIRMED** — Squirrel right-trigger ring, trail lay, and gyroid
+growth all bloom smoothly on the GPU clock.
+
+## Phase 2 — BlockGraph color nodes — ✅ WIRED + PLAYTEST-CONFIRMED
+
+Done and committed: `PrismColorLerp` CF intercepts the three property→subgraph
+feeds (existing `BrightColor`/`DarkColor`/`Spread` nodes → Target inputs; CF
+outputs → subgraph; start colors + times from new property nodes; Clock ←
+`_PrismClock`).
+
+**✅ PLAYTEST-CONFIRMED** — skimmer-steal repaints fade smoothly (0.8s)
+instead of snapping. Shield engage/danger repaints likewise. (The octahedron
+shield MORPH itself is still the CPU-ticked B4 item — only its color fade is
+clock-driven.)
+
+<details><summary>Manual steps (reference only — already done)</summary>
+
+- [ ] Add a **Custom Function** node — Source same file, Name **`PrismColorLerp`**.
+      Inputs: `Clock` Float · `StartTime` Float · `Duration` Float · `StartBright`
+      Vector4 · `StartDark` Vector4 · `StartSpread` Vector3 · `TargetBright` Vector4
+      · `TargetDark` Vector4 · `TargetSpread` Vector3. Outputs: `Bright` Vector4 ·
+      `Dark` Vector4 · `Spread` Vector3.
+- [ ] Wire: the `PrismClock` property node → `Clock`; `ColorStartTime` → `StartTime`, `ColorDuration` →
+      `Duration`, `StartBrightColor`/`StartDarkColor`/`StartSpread` → the Start
+      inputs; **the EXISTING `BrightColor`/`DarkColor`/`Spread` property nodes →
+      the Target inputs** (the bound material's values ARE the lerp targets).
+- [ ] Re-route: every place the graph consumed `_BrightColor`/`_DarkColor`/`_Spread`
+      directly now consumes the node's `Bright`/`Dark`/`Spread` outputs.
+- [ ] Save → Validate → play: shield engage / steal / danger transitions fade
+      smoothly; BlockGraph `[PrismClock]` errors gone.
+
+- Save → Validate → play: shield engage / steal / danger transitions fade
+  smoothly; BlockGraph `[PrismClock]` errors gone.
+
+</details>
+
+## Phase 3 — ExplodingBlockGraph nodes — ✅ WIRED + PLAYTEST-CONFIRMED (color cluster added after, one test left)
+
+Done and committed: `PrismExplosionClock` CF (Amount/Opacity re-routes + object-
+space flight offset added into the vertex chain) + the `PrismGrowScale` cluster
+(transparent live prisms bloom).
+
+**Fix round (after first playtest — wrong debris direction + wrong culling):**
+
+- **Direction (GPU-side, locked)**: the original wiring converted the velocity
+  world→object with a **Direction-mode Transform node**, which emits
+  `TransformWorldToObjectDir` — and that function **NORMALIZES**: the magnitude
+  is destroyed and the direction re-skews under the prism's non-uniform scale.
+  The conversion now lives **inside `PrismExplosionClock` itself** as a raw,
+  unnormalized `mul((float3x3)GetWorldToObjectMatrix(), Velocity·t)`. The CPU
+  stamps ONE world-space `_Velocity`, shared by the flight offset AND the
+  shatter-spin axis chain — all matrix math stays on the GPU. (An interim CPU
+  conversion (`_ExplodeVelocityOS`) shipped briefly and was reverted on the
+  prompter's direction: nothing moves from GPU to CPU, matrix math especially.)
+- **Culling**: `RenderBounds` are reset to the mesh's authored bounds then
+  expanded one-shot at stamp time to the whole flight envelope
+  (`PrismRenderService.ResetBoundsToMesh` + `ExpandBoundsForClockAnimation`) —
+  the entity matrix never moves, so without this the debris frustum-culled
+  against the unexploded box (visible faces vanished / off-screen faces drew).
+  Bounds are the one legitimate CPU-side computation: frustum culling itself
+  runs on the CPU, and the envelope is one-shot initial-conditions data, not
+  animation. Reset-before-expand keeps pooled reuse from compounding envelopes.
+
+**✅ PLAYTEST-CONFIRMED 2026-08-02** — debris flies in the impact direction,
+shatters, and fades smoothly on the GPU clock, and stays visible across the
+whole flight.
+
+**Color cluster added (post-confirmation wrap-up):** the color five properties +
+the `PrismColorLerp` cluster are now wired into this graph too (bright/dark
+intercepted at the Prism Sub Graph feeds, spread at the explosion spread-chain
+Add — same shape as BlockGraph). Transparent live prisms now FADE on
+steal/repaint instead of snapping, and the last expected one-time
+`[PrismClock] _ColorStartTime` errors on transparent materials are gone.
+
+**Test: steal a TRANSPARENT prism with your skimmer** (or watch a danger/shield
+repaint on one) — the recolor fades over ~0.8s like the opaque prisms do, with
+zero `[PrismClock]` errors.
+
+**UN-DEFERRED 2026-08-04, and re-pointed.** This test used to wait on the
+camera↔vessel occlusion system. That system is restored (C1, `Docs/PRISM_ANIMATION.md`
+§4.7) — but it is now a **shader-side fade off global uniforms** and deliberately
+never sets `prismProperties.IsTransparent`, so it is no longer a source of transparent
+prisms to steal. The surviving producer is the **Serpent's cloak**:
+
+1. Fly the **Serpent** (its `CloakSeedWallAction` is bound to
+   `InputEvents.RightStickAction` — the right trigger; 15s cooldown).
+2. Trigger it to lay a cloaked seed wall. Those prisms take
+   `GetTeamTransparentBlockMaterial` (the domain clone of `TransparentPrismMaterial`,
+   which rests on ExplodingBlockGraph) and carry `IsTransparent = true`.
+3. **Skim one to steal it** (or let a danger/shield repaint land on one).
+4. Expect: the recolor **fades over ~0.8s** exactly like an opaque prism, and **zero
+   `[PrismClock]` errors** in the console.
+
+Machine-verified already (so a failure here means the graph reverted, not that the
+plumbing is wrong): ExplodingBlockGraph declares all five color properties
+(`_ColorStartTime`, `_ColorDuration`, `_StartBrightColor`, `_StartDarkColor`,
+`_StartSpread`) as Hybrid Per Instance, `TransparentPrismMaterial` compiles against that
+graph, and `MaterialPropertyAnimator.ClockColorTransition` binds the transparent material
+whenever `IsTransparent` is set — so `bindMaterial.HasProperty("_ColorStartTime")` is true
+and `WarnUnwiredMaterial` cannot fire. Re-confirm any time with
+**FrogletTools > Ecology > Prism Animation > Validate Clock Wiring**.
+
+If it SNAPS instead of fading, the one live variable is the entity sink:
+`Prism.UsesEntityColorSink` is false while an exotic visual (a shield morph) owns the
+renderer, and a bind-only transition is the documented behaviour there — steal a plain
+cloaked prism, not a cloaked-and-shielded one.
+
+<details><summary>Manual steps (reference only — already done)</summary>
+
+- [ ] Custom Function **`PrismExplosionClock`** — Inputs: `Clock` Float ·
+      `StartTime` Float · `Speed` Float · `Duration` Float · `Velocity` Vector3 ·
+      `LegacyAmount` Float · `LegacyOpacity` Float. Outputs: `Amount` Float ·
+      `Opacity` Float · `ObjectOffset` Vector3.
+- [ ] Wire: the `PrismClock` property node → `Clock`; `ExplodeStartTime`/`ExplodeSpeed`/`ExplodeDuration`
+      → `StartTime`/`Speed`/`Duration`; the existing world-space `Velocity`
+      property → `Velocity` (the SAME node that feeds the shatter-spin chain —
+      the HLSL does the world→object conversion internally, unnormalized);
+      existing `ExplosionAmount` property → `LegacyAmount`; existing `Opacity`
+      property → `LegacyOpacity` (the Legacy inputs keep `TransparentPrismMaterial`
+      — a LIVE prism material resting at `_ExplosionAmount = 0` — rendering
+      correctly).
+- [ ] Re-route: `Amount` replaces downstream `_ExplosionAmount` uses; `Opacity`
+      replaces `_Opacity` uses.
+- [ ] `ObjectOffset` is OBJECT-space: **Add** it to the object-space vertex
+      position → Vertex ▸ Position. No Transform node anywhere in this chain.
+- [ ] **Transparent live prisms bloom**: also add the `PrismGrowScale` cluster here
+      (grow properties + `PrismClock` already exist on this graph's Blackboard).
+      Tip: copy-paste the Custom Function + Multiply nodes from BlockGraph, then
+      re-drag the LOCAL Blackboard properties (including `PrismClock`) into the
+      inputs — don't paste property nodes across graphs.
+- [ ] Save → Validate → play: debris flies/shatters/fades smoothly; transparent
+      prisms bloom on spawn and render correctly at rest.
+
+- Save → Validate → play: debris flies/shatters/fades smoothly; transparent
+  prisms bloom on spawn and render correctly at rest.
+
+</details>
+
+## Phase 4 — SuctionGraph nodes — ✅ WIRED + PLAYTEST-CONFIRMED
+
+Done and committed: `PrismSuctionClock` CF (Clock ← `_PrismClock`, the suction
+four → their inputs, existing `_State` property → `LegacyState`; the `State`
+output replaces the ONE downstream `_State` use — `SequentialFaceConverger`'s
+LerpAmount). `_Location` stays untouched (live moving-target exception, Position-
+mode world→object transform — correct math, unlike the explosion's Direction-mode
+transform that lost scale/magnitude). Bounds ship with it: the stamp sites
+(`PrismImplosion.StampClockStrict`) reset to the mesh then encapsulate the
+convergence point (`ResetBoundsToMesh` + `EncapsulateBoundsPoint`), and the
+per-frame location refresh keeps the envelope covering a wandering sink at
+no-op cost while it stays inside.
+
+**✅ PLAYTEST-CONFIRMED 2026-08-02** — prisms suck smoothly into the moving
+creature (and fauna-spawned prisms grow OUT of it via `StartGrow`, the reverse
+suction), staying visible across the whole collapse.
+
+<details><summary>Manual steps (reference only — already done)</summary>
+
+- [ ] Custom Function **`PrismSuctionClock`** — Inputs: `Clock` Float · `StartTime`
+      Float · `Duration` Float · `Direction` Float · `GrowDelay` Float ·
+      `LegacyState` Float. Output: `State` Float.
+- [ ] Wire: the `PrismClock` property node → `Clock`; `SuctionStartTime`/`SuctionDuration`/
+      `SuctionDirection`/`SuctionGrowDelay` → their inputs; existing `State`
+      property → `LegacyState`. The `State` output replaces every downstream
+      `_State` use. (`_Location` stays untouched — live moving-target exception.)
+- [ ] Save → Validate → play: fauna grazing sucks prisms into the moving creature
+      smoothly.
+
+</details>
+
+## Phase 5 — Full verification (§4.4 protocol)
+
+**~~Known open issue~~ — ✅ FIXED 2026-08-02 (C13a).** `[PrismClock] STRICT MODE:
+no companion render entity to stamp (grow:SpawnablePrism (Clone))` was never a
+wiring regression, and it was not the raw-`Instantiate` lay either: a shield
+engage-morph held the exotic-visual window across the prism's creation reveal, so
+`EnsureRenderEntity` was skipped at the exact instant the one-shot grow stamp
+fired. Anatomy: `Docs/PRISM_ANIMATION.md` §3.8 #10; the two rules that close it:
+§4.5. Expect **zero** such errors now — if one reappears, the message names the
+exact broken gate (`Prism.DescribeRenderEntityState`), so paste it verbatim.
+
+- [ ] **Validate Clock Wiring** → `RESULT: ✅ ALL REQUIRED WIRING PRESENT`
+- [ ] Full play session (menu freestyle + one HexRace) with **zero `[PrismClock]`
+      errors**
+- [ ] DiagnosticsHUD Animators: `PrismScaleManager` / `MaterialStateManager` **0
+      active** everywhere, under any load
+- [ ] A just-laid ring collides at full size while still visibly blooming
+- [ ] Hitstop / pause freezes prism animation (scaled clock — expected)
+
+## Phase 6 — Deletion pass (D2) + chores — ✅ DONE PROGRAMMATICALLY (one item left)
+
+Executed in-branch 2026-08-02 (every removal machine-verified reference-free
+across code AND scenes/prefabs before deletion):
+
+- [x] `PrismScaleManager.cs` deleted; its component removed from
+      `PrismManagers.prefab` (the only asset reference)
+- [x] `MaterialStateManager.cs` deleted; component removed from `PrismManagers.prefab`
+- [x] `PrismEffectsManager.cs` slimmed: `ProcessExplosions`/`ProcessImplosions`, both
+      Burst jobs, job-data structs, and the registration APIs/lists deleted — class
+      KEPT (clock convergence tracking + dev zombie audit)
+- [x] `AdaptiveAnimationManager.cs` deleted (no other subclasses; the
+      `AdaptivePerformanceSetting` graphics setting is documented INERT)
+- [x] Dead manager-era surface stripped: `MaterialPropertyAnimator` (`IsAnimating`,
+      `AnimationProgress`, `OnAnimationComplete`, `Current*`, `*4` mirrors,
+      `Duration`, manager registration) and `PrismScaleAnimator` (`IsScaling`,
+      `LastStepTime`, `OwnerPrism`, `Initialize`, manager registration); callers
+      updated (`Prism`, `FullAutoBlockShootActionExecutor`); benchmark counts
+      re-sourced (`GameLoadSampler` → `PrismSpatialIndex.LiveCount` +
+      effect `EnabledInstances`)
+- [x] `TrailViewer` component removed from `Urchin.prefab`; file deleted
+- [x] Re-baseline PhaseThresholds — ✅ DONE 2026-08-02: the prompter ran
+      `Measure Cell Environment Baselines` and the six freestyle configs were
+      re-authored from the pasted output (fresh baseline + Blob deltas, exact;
+      `Docs/ECOSYSTEM.md` §18 example updated). Atlantis has no cell config
+      (Scurry segment-spawner path), so nothing to author there.
+
+**In-editor sanity after pulling this phase**: open `PrismManagers.prefab` and
+`Urchin.prefab` in the inspector — there must be NO "Missing (Mono Script)" rows
+(the components were excised, not orphaned). Enter play mode once; the console
+must show no compile errors and no `[PrismClock]` errors.
+
+## Phase 7 — Follow-up branches (post-wiring, own PRs)
+
+Tracker items (`Docs/PRISM_ANIMATION.md` §5 C-phase) landing per-path on the wired
+graphs, each following the shipped B1/B3 templates: ~~C1 `ClearPrisms` shader-side
+occlusion fade~~ (✅ shipped 2026-08-04 — `PrismOcclusionCorridor`, now a PLATFORM LAW wired into every
+live-prism graph and bound at `VesselController.Initialize`, §4.7; gates: the `PrismOcclusionCoverageTests`
+edit-mode test + FrogletTools > Ecology > Prism Animation > **Validate Occlusion Corridor**) ·
+C4 `FireTrailBlock` pool/Destroy fix · C5 turret anchor flight ·
+C6 fauna wither/devour/level-up · C7 flora growth · C8 microscene conveyor ·
+C9 cell-swap suction · C11 spindle fade · C13 environment-lay
+pooling · B4 GPU shield morphs. (C10 worm shift is resolved by deletion — the
+worm-colony rebuild removed the legacy shift; see Docs/ECOSYSTEM.md §23.)
+
+## Phase 8 — Occlusion corridor (C1) — WIRED PROGRAMMATICALLY, **PLAYTEST OUTSTANDING**
+
+Everything machine-checkable is verified and gated (see below). What no tool here can
+answer is whether it *feels* right — that needs a human at the editor.
+
+**Gates that already pass** (re-run them if anything looks wrong; both are asset-only,
+no play mode):
+
+- `FrogletTools > Ecology > Prism Animation > **Validate Occlusion Corridor**` — checks
+  the HLSL GUID, both graphs' unexposed globals + custom-function node + compile state,
+  every material on those graphs, and every prefab carrying a `Prism`.
+- `PrismOcclusionCoverageTests` (edit-mode) — the same rules as an automated test, so new
+  content authored outside the corridor fails CI-style rather than silently going opaque.
+
+**The playtest.** Load any scene with a local vessel and a dense prism environment
+(Menu_Main freestyle is the fastest — fly into the cell wall):
+
+1. Fly so a prism wall sits between the camera and your ship. A cone of prisms centred on
+   the ship dissolves; the ship stays visible through it.
+2. Move off. The wall returns to fully opaque **immediately** — the gradient band is
+   deliberately short, so there should be no lingering half-dissolved mass.
+3. Watch the boundary. Sides and base grade at the same rate; there should be **no seam**
+   anywhere on the cone, and in particular no crisp semicircular edge on a large plate
+   level with the ship.
+4. Hold still ~10s and watch the stipple. The pattern should slowly **evolve** — cells
+   drifting and merging — reading as flow, never as flicker or shimmer.
+5. Swap vessels (the freestyle vessel-changer toy). The corridor should re-scale to the
+   new hull automatically — a bigger ship clears a proportionally bigger cone.
+6. Check the console: zero `[PrismOcclusion]` errors. Any that appear name the vessel and
+   the number, and mean either an unmeasurable hull or an implausible radius.
+
+**The knobs**, if it needs tuning (all in
+`Assets/_Graphics/Materials/Graphs/PrismOcclusionCorridor.hlsl` unless noted):
+
+| Knob | Default | What it does |
+|---|---|---|
+| `PRISM_OCCLUSION_KERNEL` | `..._WORLEY` | The dither look. `..._WORLEY` organic flecking · `..._SPIRAL` a corridor-anchored iris · `..._IGN` an even screen-space dissolve. |
+| `PRISM_OCCLUSION_MORPH_RATE` | `0.12` | Pattern evolution, cycles/sec. `0` freezes it; past ~`0.25` it reads as noise. Cannot affect the fade — coverage is flat across the range. |
+| `PRISM_OCCLUSION_WORLEY_CELL` | `6.0` | Fleck size in pixels. **Re-fit `..._CDF_LO`/`..._CDF_HI` if you change it** — they are fitted to this value and the fade degrades ~19× without a re-fit. |
+| `PRISM_OCCLUSION_SPIRAL_ARMS` | `3.0` | Spiral only. **Must stay an integer** or a radial scar appears down one side. |
+| `OuterRadiusScale` / `InnerRadiusScale` / `CoreAlpha` | `1` / `0.25` / `0` | `Resources/PrismOcclusionConfig` — corridor width and how solid the clear centre is. Multiples of the vessel's own circumscribing radius, so they are vessel-independent. |
+
+**If the corridor does nothing at all**, check in this order: the config asset's `Enabled`;
+that the vessel spawned through `VesselController.Initialize` with `IPlayer.IsLocalPilot`
+true; then run the validator above.
+
+## Troubleshooting
+
+| Symptom | Cause | Fix |
+|---|---|---|
+| Prism snaps + `[PrismClock] ... does not declare '_X'` | Property missing (graph reverted?) | Run **Auto-Wire Clock Properties**; reimport |
+| Pops in fully grown, NO errors | Clock domains mismatched (the original Time-node bug) or `_PrismClock` exposed/not published | Clock input must come from the `_PrismClock` property node (unexposed global); validator checks it |
+| Snaps, property exists, error persists | Not Hybrid Per Instance / wrong reference | Validator names it; fix Node Settings |
+| Everything magenta after a graph edit | Graph failed to compile | Undo / `git checkout` the `.shadergraph`, redo; Auto-Wire self-rolls-back |
+| Growth smooth but colors pop | Phase 2 outputs not re-routed | Finish the `Bright`/`Dark`/`Spread` re-route |
+| Transparent prisms snap on spawn | `PrismGrowScale` cluster missing on ExplodingBlockGraph | Phase 3 last step |
+| Debris flies in the wrong direction | A Direction-mode Transform node in the velocity chain — `TransformWorldToObjectDir` NORMALIZES (magnitude gone, skewed by non-uniform scale) | The conversion lives inside `PrismExplosionClock`'s HLSL (raw unnormalized `GetWorldToObjectMatrix()` multiply); feed it the world-space `_Velocity` directly |
+| Debris vanishes mid-flight / draws when it shouldn't | `RenderBounds` still the unexploded box | Stamp site must call `ResetBoundsToMesh` + `ExpandBoundsForClockAnimation` (any vertex-displacing clock animation needs this) |
+| `[PrismClock] ... no companion render entity` | Instanced rendering off / no ECS world | `PrismRenderConfig` ▸ Use Instanced Rendering ON |
+| DiagnosticsHUD shows active CPU animators | Something re-engaged a retired manager | Law regression — find the caller; it should not exist |

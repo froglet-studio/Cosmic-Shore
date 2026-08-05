@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace CosmicShore.Utilities
+namespace CosmicShore.Utility
 {
     [CreateAssetMenu(fileName = "TagSO", menuName = "ScriptableObjects/TagSO", order = 0)]
     public class TagSO : GuidSO

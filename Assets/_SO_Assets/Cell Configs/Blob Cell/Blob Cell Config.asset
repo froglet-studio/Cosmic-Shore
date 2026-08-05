@@ -26,3 +26,12 @@ MonoBehaviour:
   CellModifiers:
   - {fileID: 8058406376250941529, guid: daa37ae0e7af4b04383c1c4e6e76817d, type: 3}
   SpawnProfile: {fileID: 11400000, guid: 4c06f97afbda28c4ea70d435976318d2, type: 2}
+  PhaseThresholds:
+    RestlessEnter: 700
+    RestlessExit: 500
+    FrenzyEnter: 3600
+    FrenzyExit: 3000
+    RestlessEnterVolume: 11200
+    RestlessExitVolume: 8000
+    FrenzyEnterVolume: 57600
+    FrenzyExitVolume: 48000

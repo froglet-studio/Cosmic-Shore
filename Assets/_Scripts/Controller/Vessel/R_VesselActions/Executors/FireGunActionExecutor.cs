@@ -1,0 +1,155 @@
+using System;
+using CosmicShore.Core;
+using CosmicShore.Data;
+using Obvious.Soap;
+using CosmicShore.Gameplay;
+using Reflex.Attributes;
+using UnityEngine;
+namespace CosmicShore.Gameplay
+{
+    public class FireGunActionExecutor : ShipActionExecutorBase
+    {
+        [Inject] AudioSystem audioSystem;
+        /// <summary>Static event: each time a gun fires a single shot. Param = player name.</summary>
+        public static event Action<string> OnShotFired;
+
+        public event Action OnGunFired;
+        public event Action<float> OnAmmoChanged;
+
+        [Header("Scene Refs")]
+        [SerializeField] Gun gun;
+
+        [SerializeField] Transform projectileContainer;
+
+        [Header("Events")]
+        [SerializeField] private ScriptableEventNoParam OnMiniGameTurnEnd;
+
+        [Header("Ammo")]
+        [SerializeField] private int defaultAmmoIndex = 2;
+
+        IVesselStatus _status;
+        ResourceSystem _resources;
+        FireGunActionSO _soRef;
+        readonly bool _detachFromContainer = true;
+
+        Transform _worldMuzzleAnchor;
+
+        void Awake()
+        {
+            var go = new GameObject("[MuzzleWorldAnchor]")
+            {
+                hideFlags = HideFlags.HideAndDontSave
+            };
+            _worldMuzzleAnchor = go.transform;
+            _worldMuzzleAnchor.SetParent(null, true);
+        }
+
+        void OnEnable()
+        {
+            if (OnMiniGameTurnEnd) 
+                OnMiniGameTurnEnd.OnRaised += OnTurnEndOfMiniGame;
+        }
+
+        void OnDisable()
+        {
+            if (OnMiniGameTurnEnd) 
+                OnMiniGameTurnEnd.OnRaised -= OnTurnEndOfMiniGame;
+        }
+
+        void OnDestroy()
+        {
+            if (_worldMuzzleAnchor)
+                Destroy(_worldMuzzleAnchor.gameObject);
+
+            if (_resources != null)
+                _resources.OnResourceChanged -= HandleResourceChanged;
+        }
+
+        public float Ammo01
+        {
+            get
+            {
+                var index = _soRef ? _soRef.AmmoIndex : defaultAmmoIndex;
+
+                if (index < 0 || index >= _resources.Resources.Count) 
+                    return 0f;
+
+                var res = _resources.Resources[index];
+                if (res == null || res.MaxAmount <= 0f) 
+                    return 0f;
+
+                return Mathf.Clamp01(res.CurrentAmount / res.MaxAmount);
+            }
+        }
+
+        public override void Initialize(IVesselStatus shipStatus)
+        {
+            _status    = shipStatus;
+            _resources = shipStatus.ResourceSystem;
+
+            _resources.OnResourceChanged -= HandleResourceChanged;
+            _resources.OnResourceChanged += HandleResourceChanged;
+
+            if (gun != null)
+                gun.Initialize(shipStatus);
+        }
+
+        void HandleResourceChanged(int index, float current, float max)
+        {
+            var ammoIndex = _soRef ? _soRef.AmmoIndex : defaultAmmoIndex;
+            if (index != ammoIndex) 
+                return;
+
+            OnAmmoChanged?.Invoke(Ammo01);
+        }
+
+        public void Fire(FireGunActionSO so, IVesselStatus status)
+        {
+            if (_resources.Resources[so.AmmoIndex].CurrentAmount < so.AmmoCost)
+                return;
+
+            audioSystem.PlayGameplaySFX(GameplaySFXCategory.GunFire);
+            _soRef = so;
+            _resources.ChangeResourceAmount(so.AmmoIndex, -so.AmmoCost);
+
+            OnAmmoChanged?.Invoke(Ammo01);
+
+            var gunTf = gun ? gun.transform : transform;
+            _worldMuzzleAnchor.SetPositionAndRotation(gunTf.position, gunTf.rotation);
+
+            var inheritedVelocityWS = status.Course * status.Speed;
+
+            OnGunFired?.Invoke();
+            OnShotFired?.Invoke(_status?.PlayerName);
+
+            // CHARGE → blast radius: ProjectileDetonatorSO lerps each effect asset's
+            // MinScale..MaxScale by Projectile.Charge, so pass the live normalized Charge
+            // level (0 at resting → authored minimum; 1 at level 10 → authored maximum).
+            var charge01 = Mathf.Clamp01(ElementalScaling.Level01(status, Element.Charge));
+
+            // CHARGE level-5 'Domain-Safe Skybursts': the direct-hit damage spares the
+            // shooter's own domain. Per-shot snapshot at fire time.
+            var spareOwnDomain = status.ElementalAbilityHandler.IsUpgradeActive(Element.Charge);
+
+            gun.FireGun(
+                _worldMuzzleAnchor,
+                so.Speed,
+                inheritedVelocityWS,
+                so.ProjectileScale,
+                true,
+                so.ProjectileTime.Value,
+                charge01,
+                FiringPatterns.Default,
+                so.Energy,
+                detachAfterSpawn: _detachFromContainer,
+                spareOwnDomain: spareOwnDomain
+            );
+        }
+
+        void OnTurnEndOfMiniGame()
+        {
+            _soRef = null;
+            OnAmmoChanged?.Invoke(Ammo01);
+        }
+    }
+}

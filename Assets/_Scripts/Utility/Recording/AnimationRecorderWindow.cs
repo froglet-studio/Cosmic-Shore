@@ -107,11 +107,6 @@ namespace CosmicShore.Utility
         private static float timer = 0;
 
         /// <summary>
-        /// Moment when the current recording started.
-        /// </summary>
-        private float animationStart = 0;
-
-        /// <summary>
         /// Number for each recording of the same object.
         /// If object X is recorded 3 times in one session, add 0, 1, and 2 to each of its
         /// recording's temp files.
@@ -147,7 +142,7 @@ namespace CosmicShore.Utility
         /// Creates the menu item "Window/Animation Recorder" and sets it to open the Animation Recorder
         /// window when activated.
         /// </summary>
-        [MenuItem("Window/Animation Recorder")]
+        [MenuItem("FrogletTools/Misc/Animation Recorder")]
         public static void ShowWindow()
         {
             EditorWindow recorder = EditorWindow.GetWindow(typeof(AnimationRecorder), false, AnimationRecorderName);
@@ -201,7 +196,6 @@ namespace CosmicShore.Utility
                 isRecording = true;
                 SetupRecording();
                 timer = recordingDelay;
-                animationStart = Time.time;
             }
             GUILayout.Space(LAYOUT_VERTICAL_GAP * 2);
             GUI.enabled = isRecording;
