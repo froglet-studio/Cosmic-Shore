@@ -372,10 +372,39 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// Decides which Status enum value this remote player renders with.
-        /// Prefers published presence-lobby party state when available; falls
-        /// back to Online. Also flags LOBBY FULL when the player's party is
-        /// reported at max slots and we are not in it.
+        /// Decides which Status enum value this remote player renders with, and
+        /// the member counts that status renders.
+        ///
+        /// <para>
+        /// <b>The counts come from two different tiers and must not be
+        /// confused</b> (see <c>IPartyRoster</c>):
+        /// </para>
+        /// <list type="bullet">
+        ///   <item>
+        ///     A player in MY party → the LOCAL roster. Authoritative, zero
+        ///     latency, and identical on every machine in the party by
+        ///     construction.
+        ///   </item>
+        ///   <item>
+        ///     Anyone else → their ADVERTISED presence properties. A hint about a
+        ///     party we cannot see into, subject to their publish cadence and our
+        ///     read cadence.
+        ///   </item>
+        /// </list>
+        ///
+        /// <para>
+        /// This method used to assign the advertised count once, up front, for
+        /// every status - so an "IN YOUR PARTY n/4" row rendered the peer's own
+        /// stale scalar rather than the roster we were both members of. With
+        /// three players that produced three different party sizes on three
+        /// screens at the same instant (2/4, 1/4, 3/4), because there is no
+        /// mechanism that makes N independently-published scalars agree. It also
+        /// violated PartySystem/ARCHITECTURE.md exit criterion 3 ("host's view of
+        /// party membership matches every client's within one refresh tick") and
+        /// the locked "session is authoritative over presence" invariant.
+        /// Deciding the bucket FIRST and only then sourcing the numbers from the
+        /// matching tier is the fix.
+        /// </para>
         /// </summary>
         OnlineInfoEntry.Status ResolveRemoteStatus(
             PartyPlayerData player,
@@ -383,10 +412,13 @@ namespace CosmicShore.UI
             out int maxSlots,
             out string matchName)
         {
-            memberCount = Mathf.Max(0, player.PartyMemberCount);
-            maxSlots = player.PartyMaxSlots > 0 ? player.PartyMaxSlots
-                      : (connectionData != null ? connectionData.MaxPartySlots : 0);
             matchName = player.MatchName;
+
+            // Tier 2 defaults - what this peer claims about a party we are not in.
+            // Overwritten by the local roster below if they turn out to be ours.
+            memberCount = Mathf.Max(0, player.AdvertisedPartyMemberCount);
+            maxSlots = player.AdvertisedPartyMaxSlots > 0 ? player.AdvertisedPartyMaxSlots
+                      : (Roster != null ? Roster.MaxSlots : 0);
 
             // Not in the world yet: in the presence lobby, but their vessel has
             // not spawned (they published PresenceState.Joining or Announced).
@@ -399,19 +431,27 @@ namespace CosmicShore.UI
             if (!player.IsInWorld)
                 return OnlineInfoEntry.Status.Connecting;
 
-            // Already in MY party → non-invitable "IN YOUR PARTY" (Task 1). Highest
+            // Already in MY party → non-invitable "IN YOUR PARTY". Highest
             // priority: a party member is in *my* lobby, not somewhere else. OnlineInfoEntry
             // makes this status non-invitable, so the row disables + relabels (it is NOT
             // hidden - the party member stays visible as a status indicator).
             if (IsInSameParty(player.PlayerId))
+            {
+                // Tier 1. The party SESSION roster we are both in - not their
+                // advertised scalar. This is the whole fix; see the method doc.
+                memberCount = Roster.MemberCount;
+                maxSlots = Roster.MaxSlots;
                 return OnlineInfoEntry.Status.InYourParty;
+            }
 
             // In-match takes priority (over lobby states).
             if (!string.IsNullOrEmpty(matchName))
                 return OnlineInfoEntry.Status.InMatch;
 
-            // Lobby-full: remote has >= max members AND we aren't already in that lobby.
-            if (maxSlots > 0 && memberCount >= maxSlots && !IsInSameParty(player.PlayerId))
+            // Lobby-full: remote advertises >= max members. The IsInSameParty
+            // re-check the old code carried here is dead - the branch above
+            // already returned for every party member.
+            if (maxSlots > 0 && memberCount >= maxSlots)
                 return OnlineInfoEntry.Status.LobbyFull;
 
             // Advertised party with other members (count > 1 means they're not alone).
@@ -421,13 +461,26 @@ namespace CosmicShore.UI
             return OnlineInfoEntry.Status.Online;
         }
 
-        bool IsInSameParty(string remotePlayerId)
-        {
-            if (connectionData?.PartyMembers == null) return false;
-            foreach (var m in connectionData.PartyMembers)
-                if (m.PlayerId == remotePlayerId) return true;
-            return false;
-        }
+        /// <summary>
+        /// The local party roster - the authoritative source for anything about
+        /// MY party. Null only if <c>connectionData</c> is unwired.
+        ///
+        /// <para>
+        /// The ternary is load-bearing, not noise. <c>connectionData</c> is a
+        /// <c>UnityEngine.Object</c>, so an unassigned or destroyed reference is
+        /// "fake null" - it compares equal to null only through Unity's
+        /// overloaded <c>op_Equality</c>. Returning it directly would hand
+        /// callers an interface-typed reference on which <c>!= null</c> uses
+        /// plain reference equality and reports a destroyed SO as alive. The
+        /// implicit <c>bool</c> operator invoked here is the fake-null-aware
+        /// test, so this collapses a fake null into a real one exactly once, at
+        /// the boundary.
+        /// </para>
+        /// </summary>
+        IPartyRoster Roster => connectionData ? connectionData : null;
+
+        bool IsInSameParty(string remotePlayerId) =>
+            Roster != null && Roster.Contains(remotePlayerId);
 
         void HandleOnlinePlayerChanged(PartyPlayerData player)
         {

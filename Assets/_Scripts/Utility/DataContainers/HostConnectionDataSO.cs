@@ -12,7 +12,7 @@ namespace CosmicShore.Utility
     [CreateAssetMenu(
         fileName = "HostConnectionData",
         menuName = "ScriptableObjects/DataContainers/Host Connection Data")]
-    public class HostConnectionDataSO : ScriptableObject
+    public class HostConnectionDataSO : ScriptableObject, IPartyRoster
     {
         // ─────────────────────────────────────────────────────────────────────
         // Connection State
@@ -129,6 +129,35 @@ namespace CosmicShore.Utility
         // ─────────────────────────────────────────────────────────────────────
 
         public bool HasOpenSlots => PartyMembers == null || PartyMembers.Count < maxPartySlots;
+
+        // ─────────────────────────────────────────────────────────────────────
+        // IPartyRoster - the authoritative LOCAL answer to "how big is my party"
+        //
+        // These are thin aliases over state this SO already held. They exist as
+        // an interface so a consumer can depend on the QUESTION rather than on
+        // this concrete container, and so the two-tier rule (local roster for
+        // your own party, advertised presence properties only for other
+        // people's) has a name a call site can be checked against. See
+        // IPartyRoster.cs for why that mattered enough to formalise.
+        // ─────────────────────────────────────────────────────────────────────
+
+        /// <inheritdoc/>
+        public int MemberCount => PartyMembers?.Count ?? 0;
+
+        /// <inheritdoc/>
+        public int MaxSlots => maxPartySlots;
+
+        /// <inheritdoc/>
+        public bool IsHost => IsPartyHost;
+
+        /// <inheritdoc/>
+        public bool Contains(string playerId)
+        {
+            if (PartyMembers == null || string.IsNullOrEmpty(playerId)) return false;
+            foreach (var m in PartyMembers)
+                if (m.PlayerId == playerId) return true;
+            return false;
+        }
 
         /// <summary>
         /// Number of remote (non-local) human players in the party.
