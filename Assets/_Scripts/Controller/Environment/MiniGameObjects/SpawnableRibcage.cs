@@ -27,6 +27,12 @@ namespace CosmicShore.Gameplay
     ///     - a 4.3x tightening). Successive shells are also rotated by a fraction of a rib spacing
     ///     (<see cref="ShellLonOffsets"/>) so the gaps never line up radially - there is no free
     ///     corridor straight through to the core.
+    ///   • Every shell inside the outermost is TILTED onto its own axis
+    ///     (<see cref="ShellTilts"/>). A latitude-hoop sphere is inherently densest at its POLES,
+    ///     where the ribs converge; if every rind shared world-up, that dense cap would stack
+    ///     radially and the whole match would collapse into "everyone drills the top". Tilting each
+    ///     inner rind puts its hard cap somewhere else, so no single approach is cheap all the way
+    ///     down and the shape reads as a real orange rather than a stack of identical grids.
     ///   • Every bar is <see cref="PrismKind.Plain"/> except the sparse <see cref="PrismKind.Danger"/>
     ///     traps, so a bar is a ONE-hit prism. Nothing here is <see cref="PrismKind.Shielded"/> or
     ///     <see cref="PrismKind.SuperShielded"/>: a super-shielded prism is fully invulnerable
@@ -105,6 +111,26 @@ namespace CosmicShore.Gameplay
         static readonly float[] ShellLonOffsets = { 0f, 0.5f, 0.25f, 0.75f, 0.375f };
 
         /// <summary>
+        /// Per-shell axis tilt as (degrees FROM world-up, azimuth of the tilt). Shell 0 is
+        /// deliberately UNTILTED - the outer silhouette, the AI's aim point and the player spawn
+        /// ring are all defined against it. Every shell inside it leans onto its own axis, and both
+        /// the lean and its direction change per rind, so no two dense polar caps line up and there
+        /// is no orientation from which the whole cage is easy.
+        ///
+        /// Angles are authored rather than generated: they are a gameplay surface (which approach
+        /// is hard, and how much the shape "twists" as you peel it), and a formula would make them
+        /// harder to tune than to read.
+        /// </summary>
+        static readonly Vector2[] ShellTilts =
+        {
+            new Vector2(0f,   0f),     // outer rind - canonical orientation
+            new Vector2(34f,  0f),
+            new Vector2(61f,  110f),
+            new Vector2(48f,  215f),
+            new Vector2(76f,  305f),
+        };
+
+        /// <summary>
         /// Every Nth rib prism is laid as a DANGER bar instead of a plain one - the arena's trap.
         /// Now that the bars are plain, a danger bar is not harder or softer than its neighbours;
         /// it is pure downside. What it costs you is contact: the standard danger-prism punishment
@@ -128,6 +154,13 @@ namespace CosmicShore.Gameplay
             public readonly int Ribs;
             public readonly float[] Lats;      // degrees, ASCENDING (banding needs adjacency)
 
+            /// <summary>
+            /// Rotation from this shell's LOCAL frame (poles on +/-Y) into cell space. Every
+            /// position and direction the builders compute is local and passes through here, so
+            /// tilting a rind is one multiply rather than five special cases.
+            /// </summary>
+            public readonly Quaternion Orientation;
+
             public ShellSpec(int index)
             {
                 Index = index;
@@ -140,9 +173,18 @@ namespace CosmicShore.Gameplay
                 Lats = BuildHoopLats(hoops);
 
                 LonOffset = ShellLonOffsets[index % ShellLonOffsets.Length] * Mathf.PI * 2f / Ribs;
+
+                // Lean the shell's pole away from world-up by `tilt`, in the direction `azimuth`.
+                // Composing azimuth THEN tilt keeps the two readable and independent: the second
+                // number only decides WHICH way the cap leans, never how far.
+                var t = ShellTilts[index % ShellTilts.Length];
+                Orientation = Quaternion.AngleAxis(t.y, Vector3.up) * Quaternion.AngleAxis(t.x, Vector3.forward);
             }
 
             public float Longitude(int rib) => rib * Mathf.PI * 2f / Ribs + LonOffset;
+
+            /// <summary>Local shell point -> cell space.</summary>
+            public Vector3 ToCell(Vector3 local) => Orientation * local;
         }
 
         /// <summary>
@@ -170,7 +212,16 @@ namespace CosmicShore.Gameplay
             nameof(SpawnableRibcage), CageR, ShellGap, Shells,
             System.HashCode.Combine(BaseRibCount, BaseHoopCount, DensityStep, HoopSpanDeg),
             System.HashCode.Combine(BarStep, StrutStep, StrutLength, CrownLat, CrownCount,
-                                    DangerEveryNthRibPrism));
+                                    DangerEveryNthRibPrism, TiltHash()));
+
+        /// <summary>Folds the authored tilt table into the cache key - retuning a lean must
+        /// invalidate a cached point cloud exactly like retuning the weave does.</summary>
+        static int TiltHash()
+        {
+            int h = 17;
+            foreach (var t in ShellTilts) h = h * 31 + t.GetHashCode();
+            return h;
+        }
 
         // Pre-size for the worst case this variant can build. Shells shrink inward but densify, so
         // they all land in the same 2-5.6k band; 5800 apiece clears the measured maximum (5,575)
@@ -221,13 +272,13 @@ namespace CosmicShore.Gameplay
                     // Sweep the full great circle: theta is the angle around it, so the same
                     // loop covers both hemispheres and both poles.
                     float theta = i * Mathf.PI * 2f / perRib;
-                    var pos = Shell(lon, theta, s.Radius);
+                    var pos = s.ToCell(Shell(lon, theta, s.Radius));
 
-                    // Tangent along the great circle = d/dtheta of Shell.
-                    var tangent = new Vector3(
+                    // Tangent along the great circle = d/dtheta of Shell, in the shell's own frame.
+                    var tangent = s.ToCell(new Vector3(
                         -Mathf.Sin(theta) * Mathf.Cos(lon),
                         Mathf.Cos(theta),
-                        -Mathf.Sin(theta) * Mathf.Sin(lon));
+                        -Mathf.Sin(theta) * Mathf.Sin(lon)));
 
                     Emit(pos, SpawnPoint.LookRotation(tangent, pos.normalized),
                         Jit(new Vector3(3.6f, 3.6f, 16f)), dom,
@@ -248,8 +299,8 @@ namespace CosmicShore.Gameplay
                 for (int i = 0; i < n; i++)
                 {
                     float lon = i * Mathf.PI * 2f / n + s.LonOffset;
-                    var pos = Shell(lon, lat, s.Radius);
-                    var tangent = new Vector3(-Mathf.Sin(lon), 0f, Mathf.Cos(lon));
+                    var pos = s.ToCell(Shell(lon, lat, s.Radius));
+                    var tangent = s.ToCell(new Vector3(-Mathf.Sin(lon), 0f, Mathf.Cos(lon)));
 
                     Emit(pos, SpawnPoint.LookRotation(tangent, pos.normalized),
                         Jit(new Vector3(3.6f, 3.6f, 16f)), Domains.Blue, PrismKind.Plain);
@@ -277,8 +328,8 @@ namespace CosmicShore.Gameplay
 
                     // Alternating lean: "/" on one cell, "\" on its neighbours.
                     bool lean = ((rib + band) & 1) == 0;
-                    var from = Shell(lonA, lean ? latLo : latHi, s.Radius);
-                    var to = Shell(lonB, lean ? latHi : latLo, s.Radius);
+                    var from = s.ToCell(Shell(lonA, lean ? latLo : latHi, s.Radius));
+                    var to = s.ToCell(Shell(lonB, lean ? latHi : latLo, s.Radius));
                     var along = to - from;
 
                     int n = Mathf.Max(1, Mathf.RoundToInt(along.magnitude / StrutStep));
@@ -304,7 +355,7 @@ namespace CosmicShore.Gameplay
 
                 foreach (float latDeg in s.Lats)
                 {
-                    var pos = Shell(lon, latDeg * Mathf.Deg2Rad, s.Radius);
+                    var pos = s.ToCell(Shell(lon, latDeg * Mathf.Deg2Rad, s.Radius));
                     Emit(pos, SpawnPoint.LookRotation(pos.normalized, Vector3.up),
                         Jit(new Vector3(5.4f, 5.4f, 5.4f)), dom, PrismKind.Plain);
                 }
@@ -324,8 +375,8 @@ namespace CosmicShore.Gameplay
                 for (int i = 0; i < CrownCount; i++)
                 {
                     float lon = i * Mathf.PI * 2f / CrownCount + s.LonOffset;
-                    var pos = Shell(lon, lat, s.Radius);
-                    var tangent = new Vector3(-Mathf.Sin(lon), 0f, Mathf.Cos(lon));
+                    var pos = s.ToCell(Shell(lon, lat, s.Radius));
+                    var tangent = s.ToCell(new Vector3(-Mathf.Sin(lon), 0f, Mathf.Cos(lon)));
 
                     Emit(pos, SpawnPoint.LookRotation(tangent, pos.normalized),
                         Jit(new Vector3(3.2f, 3.2f, 12f)), BoneDoms[i % BoneDoms.Length],

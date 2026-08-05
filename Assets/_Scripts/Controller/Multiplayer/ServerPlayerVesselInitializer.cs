@@ -67,6 +67,15 @@ namespace CosmicShore.Gameplay
                  "attacking from outside. 0 = no floor (every existing scene is unchanged).")]
         [SerializeField, Min(0f)] protected float spawnRingRadiusFloor;
 
+        [Tooltip("How the computed ring distributes players. Symmetric spreads them over a SPHERE " +
+                 "(4 tetrahedral, 3 triangle, 2 antipodal). Equatorial Ring puts everyone on one " +
+                 "horizontal circle, evenly spaced, the way Joust authors its points by hand - use " +
+                 "it when the arena has a meaningful 'up' or a pole feature, so no player is handed " +
+                 "a harder approach than the others. Only used when Arrange Spawn Points Around " +
+                 "Cell is on.")]
+        [SerializeField] protected CellSpawnFormation.Formation spawnFormation =
+            CellSpawnFormation.Formation.Symmetric;
+
         [Tooltip("The cell whose nucleus the computed spawn ring measures off. Only used when " +
                  "Arrange Spawn Points Around Cell is on.")]
         [SerializeField] protected CellRuntimeDataSO cellData;
@@ -362,11 +371,12 @@ namespace CosmicShore.Gameplay
                 : Mathf.Max(1, gameData.Players.Count);
 
             float radius = Mathf.Max(nucleusRadius + spawnDistanceOutsideNucleus, spawnRingRadiusFloor);
-            gameData.SetSpawnPoses(CellSpawnFormation.Build(count, cell.transform.position, radius));
+            gameData.SetSpawnPoses(
+                CellSpawnFormation.Build(count, cell.transform.position, radius, spawnFormation));
 
             CSDebug.Log($"[ServerPlayerVesselInitializer] Spawn ring: {count} players at " +
                         $"{radius:0.#}u (nucleus {nucleusRadius:0.#} + {spawnDistanceOutsideNucleus:0.#}, " +
-                        $"floor {spawnRingRadiusFloor:0.#}) around {cell.name}.");
+                        $"floor {spawnRingRadiusFloor:0.#}) around {cell.name}, {spawnFormation}.");
         }
 
         /// <summary>

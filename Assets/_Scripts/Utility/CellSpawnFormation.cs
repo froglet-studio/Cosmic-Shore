@@ -18,9 +18,25 @@ namespace CosmicShore.Utility
     ///   3 - an equilateral triangle (a great circle, 120 deg apart).
     ///   4 - tetrahedral symmetry (the 4 alternating cube corners; every pair equidistant).
     ///   5+ - a Fibonacci sphere, the natural generalisation of "spread evenly over a sphere".
+    ///
+    /// <see cref="Formation.EquatorialRing"/> is the opt-in alternative: everyone on ONE horizontal
+    /// great circle, evenly spaced, like Joust's authored spawn points. Use it when the arena has a
+    /// meaningful "up" or a pole feature the sphere formation would drop players on top of - Ribcage
+    /// wants it because its cage is densest at the poles, so a tetrahedral spread hands two of four
+    /// players a much harder approach than the other two.
     /// </summary>
     public static class CellSpawnFormation
     {
+        /// <summary>How spawn slots are distributed around the cell.</summary>
+        public enum Formation
+        {
+            /// <summary>Maximally symmetric ON A SPHERE (tetrahedron / triangle / axis / Fibonacci).</summary>
+            Symmetric = 0,
+
+            /// <summary>Evenly spaced on the horizontal great circle through the centre.</summary>
+            EquatorialRing = 1,
+        }
+
         /// <summary>The four tetrahedron vertices (alternating corners of a cube), normalized.</summary>
         static readonly Vector3[] TetrahedronDirections =
         {
@@ -34,14 +50,15 @@ namespace CosmicShore.Utility
         /// Spawn poses for <paramref name="count"/> players on a sphere of <paramref name="radius"/>
         /// around <paramref name="center"/>, each rotated to face the centre.
         /// </summary>
-        public static Pose[] Build(int count, Vector3 center, float radius)
+        public static Pose[] Build(int count, Vector3 center, float radius,
+            Formation formation = Formation.Symmetric)
         {
             count = Mathf.Max(1, count);
             var poses = new Pose[count];
 
             for (int i = 0; i < count; i++)
             {
-                Vector3 dir = Direction(i, count);
+                Vector3 dir = Direction(i, count, formation);
                 Vector3 position = center + dir * Mathf.Max(0f, radius);
                 poses[i] = new Pose(position, FacingCenter(dir));
             }
@@ -51,8 +68,14 @@ namespace CosmicShore.Utility
 
         /// <summary>The outward unit direction of slot <paramref name="index"/> in a formation of
         /// <paramref name="count"/>. Deterministic - the same index always yields the same slot.</summary>
-        public static Vector3 Direction(int index, int count)
+        public static Vector3 Direction(int index, int count,
+            Formation formation = Formation.Symmetric)
         {
+            count = Mathf.Max(1, count);
+
+            if (formation == Formation.EquatorialRing)
+                return EquatorialDirection(index, count);
+
             switch (count)
             {
                 case 1:
@@ -75,6 +98,18 @@ namespace CosmicShore.Utility
                 default:
                     return FibonacciDirection(index, count);
             }
+        }
+
+        /// <summary>
+        /// Evenly spaced on the horizontal great circle (y = 0), so every player starts level with
+        /// the arena's equator and has an identical approach - no one is handed the poles. Slot 0
+        /// is on +Z and the ring walks anticlockwise, so a 4-player game is the 90-degree cross
+        /// Joust authors by hand.
+        /// </summary>
+        static Vector3 EquatorialDirection(int index, int count)
+        {
+            float theta = index * (2f * Mathf.PI / count);
+            return new Vector3(Mathf.Sin(theta), 0f, Mathf.Cos(theta));
         }
 
         /// <summary>

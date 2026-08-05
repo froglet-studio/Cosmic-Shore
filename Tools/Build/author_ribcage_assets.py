@@ -408,7 +408,10 @@ scene = scene.replace(OLD_CELL, NEW_CELL)
 # 6d. Spawn OUTSIDE the cage. The donor's four authored transforms sit at +/-50 - deep inside
 # the cage, so players started penned in with the brood. Switch the initializer to the
 # computed cell spawn ring (CellSpawnFormation: symmetric, all facing the cell) with a radius
-# FLOOR, because this cell has no nucleus for the ring to measure off. SPAWN_RING_RADIUS sits
+# FLOOR, because this cell has no nucleus for the ring to measure off. spawnFormation 1 =
+# EquatorialRing: everyone on ONE horizontal circle like Joust, so nobody is dropped on a pole -
+# a latitude-hoop cage is densest where the ribs converge, and the default tetrahedral spread
+# would hand two of four players a much harder approach. SPAWN_RING_RADIUS sits
 # well outside the cage (CAGE_RADIUS) and well inside the membrane (1200), giving a clear run
 # at the bone.
 OLD_SPAWN = """  playerSpawnPoints:
@@ -425,6 +428,7 @@ NEW_SPAWN = f"""  playerSpawnPoints:
   - {{fileID: 1564881929}}
   arrangeSpawnPointsAroundCell: 1
   spawnDistanceOutsideNucleus: 40
+  spawnFormation: 1
   spawnRingRadiusFloor: {SPAWN_RING_RADIUS}
   cellData: {{fileID: 11400000, guid: {EXISTING['RuntimeCellData']}, type: 2}}
   preSpawnDelayMs: 200

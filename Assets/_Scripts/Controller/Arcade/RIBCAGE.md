@@ -40,6 +40,14 @@ the design depends on. See "Intensity" below.
   ribs and hoops than the one outside it, which compounds with the tightening that shrinking radius
   already gives: cells run **94u → 74u → 56u → 37u → 22u**, a **4.3× tightening** from rind to
   pith. The last layer is the hardest to slip through, not the easiest.
+- **Every inner rind is TILTED onto its own axis.** A latitude-hoop sphere is inherently densest at
+  its **poles**, where the ribs converge. If every rind shared world-up, that hard cap would stack
+  radially and the match would collapse into "everyone drills the top". `ShellTilts` leans each
+  shell inside the outermost onto a different axis — authored as (tilt from up, azimuth), currently
+  `(0,0) (34,0) (61,110) (48,215) (76,305)`, whose pole axes are **at least 34° apart** pairwise. So
+  no single approach stays cheap all the way to the core, and the shape twists as you peel it. The
+  outer shell stays untilted: the silhouette, the AI's aim point and the spawn ring are all defined
+  against it.
 - **Every bar is a ONE-hit prism.** All plain (`PrismKind.Plain`) except the danger traps. Nothing
   is `Shielded` and nothing is `SuperShielded` — a super-shielded prism is fully invulnerable
   (`Prism.Damage` returns early), so one in the cage would be permanently unbreakable mass and
@@ -202,9 +210,17 @@ Toast copy is still unauthored, so **right now the shake IS the milestone feedba
 
 ## Spawning outside the cage
 
-Players start on the computed cell spawn ring (`CellSpawnFormation` — symmetric, all facing the
-cell), NOT on authored transforms: the donor scene's four points sat at ±50, deep inside the cage,
-so everyone started penned in.
+Players start on the computed cell spawn ring (`CellSpawnFormation`, all facing the cell), NOT on
+authored transforms: the donor scene's four points sat at ±50, deep inside the cage, so everyone
+started penned in.
+
+**The formation is `EquatorialRing`, not the default `Symmetric`** — everyone evenly spaced on one
+horizontal great circle, which for four players is the same 90° cross Joust authors by hand. This
+is a fairness requirement, not a style choice: the cage is densest at its poles, so the default
+tetrahedral spread would drop two of four players onto the hard cap and two onto open weave. On the
+ring every player gets the same approach. It is opt-in per scene
+(`ServerPlayerVesselInitializer.spawnFormation`), so Crystal Capture's sphere formation is
+untouched.
 
 The ring normally measures off the cell's nucleus radius, and Ribcage's cell deliberately has none
 — so it would have collapsed to the cell centre, i.e. the same bug.
@@ -333,6 +349,10 @@ YAML. `Tools/Build/ribcage_budget.py` is the cage's analytic budget model and th
    lean alternating cell to cell so it reads as a truss.
 4. **The weave tightens inward.** Outer cells ~94u; the innermost rind should be visibly the
    tightest skin (~22u). If the core looks as open as the surface, `DensityStep` is not applying.
+4b. **Inner rinds are TILTED.** Each layer's dense polar cap should point a different way — fly a
+   full orbit and the cage should visibly twist as you look through it. If every rind's poles line
+   up at the top, `ShellTilts` is not being applied (check `ShellSpec.ToCell` is used by every
+   builder).
 5. **No free corridor.** Line up on the centre from outside and fly straight in: the shells are
    phase-offset, so you should meet bone rather than thread every layer untouched.
 6. **Baseline confirm.** FrogletTools ▸ Ecology ▸ Measure Cell Environment Baselines should report
@@ -349,8 +369,10 @@ YAML. `Tools/Build/ribcage_budget.py` is the cage's analytic budget model and th
    with a `does not allow Dolphin; spawning Rhino instead` warning on the host. Then return to the
    menu and confirm the client can pick a Dolphin again — the restriction must not leak out of the
    game scene.
-9. **Spawn outside.** All players start on a ring ~576u out, facing the cage, with the whole cage
-   visible ahead — nobody starts inside it.
+9. **Spawn outside, on the equator.** All four players start on ONE horizontal circle ~576u out,
+   90° apart, facing the cage, with the whole cage visible ahead — nobody starts inside it, and
+   nobody starts above or below the arena staring at a dense polar cap. Also check Crystal Capture
+   still spawns on its sphere (tetrahedral) — that scene must be unchanged.
 10. **Everyone starts at 0.** In a real multiplayer lobby (host + at least one client), check
     every score panel reads 0 at the countdown — including after a rematch and after playing a
     previous game in the same session. `RoundStats` lives on the PERSISTENT Player object, so a
