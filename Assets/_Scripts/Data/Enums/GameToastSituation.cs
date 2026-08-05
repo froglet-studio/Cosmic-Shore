@@ -32,7 +32,7 @@ namespace CosmicShore.Data
         BroodWaveScored = 40,
 
         // Ribcage ("Peel the Cage")
-        // {0}=leading domain, {1}=that domain's bars smashed, {2}=destruction target
+        // {0}=leading domain, {1}=that domain's prisms destroyed, {2}=destruction target
         // Values 50/51 were RibcageBroodReleased/RibcagePackReleased when the mode ran a fauna
         // ladder; the fauna were removed from the level and the same two rungs now mark pure
         // race progress. Renamed rather than retired because no GameToastConfigSO authors them

@@ -69,7 +69,7 @@ namespace CosmicShore.Gameplay
         public override List<ScoreResult> BuildResults(GameDataSO gameData)
         {
             // Golf order = TEAM-major by construction: finish times (winners) below every loser
-            // sentinel, loser sentinels ordered by team deficit. Individual bars smashed order
+            // sentinel, loser sentinels ordered by team deficit. Individual prisms destroyed order
             // teammates; name is the final tiebreak so every peer builds an identical list.
             var ordered = gameData.RoundStatsList
                 .OrderBy(s => s.Score)
@@ -82,8 +82,8 @@ namespace CosmicShore.Gameplay
                 s.Score,
                 GolfScoreSentinels.IsFinishTime(s.Score)
                     ? ScoreResultBuilder.FormatTime(s.Score)
-                    : $"{Remaining(gameData, s.Domain)} Bars Left",
-                $"{LiveMetric(s)} Bars")).ToList();
+                    : $"{Remaining(gameData, s.Domain)} Prisms Left",
+                $"{LiveMetric(s)} Prisms")).ToList();
 
             return ScoreResultBuilder.BuildRanked(rows);
         }
@@ -91,6 +91,6 @@ namespace CosmicShore.Gameplay
         public override ScoreReveal BuildReveal(GameDataSO gameData, IRoundStats localStats, bool didWin) =>
             didWin
                 ? new ScoreReveal("VICTORY", "BREAKOUT TIME", (int)localStats.Score, true)
-                : new ScoreReveal("DEFEAT", "BARS LEFT", Remaining(gameData, localStats.Domain), false);
+                : new ScoreReveal("DEFEAT", "PRISMS LEFT", Remaining(gameData, localStats.Domain), false);
     }
 }
