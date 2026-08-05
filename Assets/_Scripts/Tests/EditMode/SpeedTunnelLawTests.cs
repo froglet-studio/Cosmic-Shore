@@ -3,6 +3,7 @@ using System.IO;
 using System.Linq;
 using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
+using CosmicShore.Utility;
 using NUnit.Framework;
 using UnityEditor;
 using UnityEngine;
@@ -32,6 +33,7 @@ namespace CosmicShore.Tests
 
         const string VesselFolder = "Assets/_Prefabs/Spacevessels";
         const string ControllerPath = "Assets/_Scripts/Controller/Vessel/VesselController.cs";
+        const string DriverPath = "Assets/_Scripts/Utility/VesselSpeedTunnel.cs";
         const string ConfigAssetPath = "Assets/Resources/SpeedTunnelConfig.asset";
 
         static SpeedTunnelConfigSO NewConfig() => ScriptableObject.CreateInstance<SpeedTunnelConfigSO>();
@@ -59,17 +61,31 @@ namespace CosmicShore.Tests
         {
             var config = NewConfig();
 
-            // The property the law exists to guarantee, stated as an assertion: nothing about
-            // the vessel enters this function. If a per-vessel scalar, a per-vessel window, or
-            // a normalization by the vessel's own top speed is ever introduced, Effect01 stops
-            // being a pure function of speed and this test is the thing that has to be deleted
-            // to allow it. Do not delete it — that is a design change, not a refactor.
+            // Half of the property the law exists to guarantee: nothing about the vessel can
+            // enter this function. The other half — that the CALL SITE passes raw speed rather
+            // than something normalized per vessel — is asserted by TheDriveSitePassesRawSpeed;
+            // neither test is sufficient alone. Deleting either is a design change, not a
+            // refactor.
             var method = typeof(SpeedTunnelConfigSO).GetMethod(nameof(SpeedTunnelConfigSO.Effect01));
             Assert.IsNotNull(method);
             var parameters = method.GetParameters();
             Assert.AreEqual(1, parameters.Length,
                 "Effect01 must take speed and nothing else — no vessel, no status, no context.");
             Assert.AreEqual(typeof(float), parameters[0].ParameterType);
+        }
+
+        [Test]
+        public void TheDriveSitePassesRawSpeed()
+        {
+            Assert.IsTrue(File.Exists(DriverPath), $"{DriverPath} is missing.");
+
+            // The signature check above is necessary but NOT sufficient: a per-vessel
+            // normalization can be folded in at the CALL SITE — Effect01(Speed / vesselTopSpeed
+            // * ...) — with every signature assertion still green, and that alone would break
+            // "the same speed on any vessel looks the same".
+            Assert.IsTrue(
+                SpeedTunnelLawSource.DriveSiteUsesRawSpeed(File.ReadAllText(DriverPath), out string why),
+                why);
         }
 
         [Test]
@@ -174,8 +190,15 @@ namespace CosmicShore.Tests
                         "global Panini override across a vessel swap.");
                 }
 
-                Assert.IsFalse(File.ReadAllText(path).Contains("SpeedTunnelEffectController"),
-                    $"{prefab.name} still references the retired per-vessel SpeedTunnelEffectController.");
+                // The GUID, not the class name: prefab YAML records a script only as
+                // `m_Script: {fileID: 11500000, guid: ..., type: 3}` with an empty
+                // m_EditorClassIdentifier, and with the class deleted the component also
+                // deserializes to the null the loop above skips. A type-name search is vacuous
+                // on exactly the state this exists to catch.
+                Assert.IsFalse(SpeedTunnelLawSource.ReferencesRetiredDriver(File.ReadAllText(path)),
+                    $"{prefab.name} still references the retired per-vessel " +
+                    $"SpeedTunnelEffectController (script guid " +
+                    $"{SpeedTunnelLawSource.RetiredDriverScriptGuid}) as a missing script.");
             }
 
             Assert.Greater(vessels, 0, "Found no vessel prefabs — the sweep is not actually checking anything.");
@@ -187,15 +210,16 @@ namespace CosmicShore.Tests
             Assert.IsTrue(File.Exists(ControllerPath), $"{ControllerPath} is missing.");
             string source = File.ReadAllText(ControllerPath);
 
-            Assert.IsTrue(source.Contains("VesselSpeedTunnel.SetTarget"),
-                "VesselController.Initialize is the ONE method every vessel calls on every spawn " +
-                "path. Binding anywhere else — a prefab component, a camera, a game mode — is what " +
-                "makes a platform law forgettable.");
             Assert.IsTrue(source.Contains("VesselSpeedTunnel.ClearTarget"),
                 "Without an identity-guarded release a destroyed vessel keeps driving the camera.");
-            Assert.IsTrue(source.Contains("player.IsLocalPilot"),
-                "IsLocalUser misses the legacy non-networked single-player spawn path — the exact " +
-                "escape hatch this law must not have.");
+
+            // EVERY bind site must sit under the guard. A whole-file Contains("IsLocalPilot")
+            // stopped being a gate the moment ChangePlayer grew a second occurrence: deleting the
+            // guard around the Initialize binding would then bind the tunnel to every remote and
+            // AI vessel — letting someone else's boost drive your camera — and still pass.
+            Assert.IsTrue(SpeedTunnelLawSource.EveryBindIsGatedOnLocalPilot(source, out string reason),
+                reason + " (IsLocalUser also misses the legacy non-networked single-player spawn " +
+                "path — the exact escape hatch this law must not have.)");
         }
 
         [Test]

@@ -5,6 +5,7 @@ using System.Text;
 using CosmicShore.Editor.Froglet;
 using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
+using CosmicShore.Utility;
 using UnityEditor;
 using UnityEngine;
 
@@ -34,13 +35,9 @@ namespace CosmicShore.Editor
     {
         const string VesselFolder = "Assets/_Prefabs/Spacevessels";
         const string ControllerPath = "Assets/_Scripts/Controller/Vessel/VesselController.cs";
+        const string DriverPath = "Assets/_Scripts/Utility/VesselSpeedTunnel.cs";
         const string ConfigAssetPath = "Assets/Resources/SpeedTunnelConfig.asset";
 
-        /// <summary>
-        /// Retired per-vessel driver. Kept as a literal because the type no longer exists to
-        /// reference — a prefab that still carries it shows up as a missing script, which is
-        /// exactly the state this catches.
-        /// </summary>
         const string RetiredComponentName = "SpeedTunnelEffectController";
 
         [MenuItem("FrogletTools/Vessels/Validate Speed Tunnel Law")]
@@ -102,12 +99,17 @@ namespace CosmicShore.Editor
                     }
                 }
 
-                // A raw-text check for the retired script, because a missing script has no type
-                // to inspect and GetComponentsInChildren simply yields null for it.
-                if (File.Exists(path) && File.ReadAllText(path).Contains(RetiredComponentName))
+                // Probe the retired script's GUID, not its type name: a missing script has no
+                // type to inspect (the loop above skips it as null) AND prefab YAML never records
+                // a class name, so a type-name search is vacuous on exactly the state this
+                // catches. SpeedTunnelLawSource owns that rule for both gates.
+                if (File.Exists(path) &&
+                    SpeedTunnelLawSource.ReferencesRetiredDriver(File.ReadAllText(path)))
                 {
                     report.AppendLine($"    FAIL {prefab.name}: still references the retired " +
-                                      $"{RetiredComponentName}.");
+                                      $"{RetiredComponentName} (script guid " +
+                                      $"{SpeedTunnelLawSource.RetiredDriverScriptGuid}) as a " +
+                                      "missing script.");
                     ok = false;
                 }
             }
@@ -125,7 +127,7 @@ namespace CosmicShore.Editor
         /// </summary>
         static bool CheckBinding(StringBuilder report)
         {
-            report.AppendLine("[2] Bound in VesselController.Initialize under IsLocalPilot");
+            report.AppendLine("[2] Bound under IsLocalPilot at every site; drive site is raw speed");
 
             if (!File.Exists(ControllerPath))
             {
@@ -136,10 +138,12 @@ namespace CosmicShore.Editor
             string source = File.ReadAllText(ControllerPath);
             bool ok = true;
 
-            if (!source.Contains("VesselSpeedTunnel.SetTarget"))
+            // Every bind site must sit under the guard — not merely "the file mentions
+            // IsLocalPilot somewhere", which stopped being a gate when ChangePlayer grew a
+            // second occurrence. Shared with the edit-mode test via SpeedTunnelLawSource.
+            if (!SpeedTunnelLawSource.EveryBindIsGatedOnLocalPilot(source, out string bindReason))
             {
-                report.AppendLine("    FAIL no VesselSpeedTunnel.SetTarget call — the law is bound " +
-                                  "nowhere, so no vessel tunnels at all.");
+                report.AppendLine($"    FAIL {bindReason}");
                 ok = false;
             }
 
@@ -150,15 +154,19 @@ namespace CosmicShore.Editor
                 ok = false;
             }
 
-            if (!source.Contains("player.IsLocalPilot"))
+            if (!File.Exists(DriverPath))
             {
-                report.AppendLine("    FAIL the binding is not gated on IsLocalPilot. IsLocalUser " +
-                                  "misses the legacy non-networked single-player spawn path, which is " +
-                                  "exactly the escape hatch this law must not have.");
+                report.AppendLine($"    FAIL {DriverPath} not found.");
+                ok = false;
+            }
+            else if (!SpeedTunnelLawSource.DriveSiteUsesRawSpeed(File.ReadAllText(DriverPath),
+                                                                 out string driveReason))
+            {
+                report.AppendLine($"    FAIL {driveReason}");
                 ok = false;
             }
 
-            if (ok) report.AppendLine("    ok - one binding, on the universal vessel entry point");
+            if (ok) report.AppendLine("    ok - every bind gated, absolute mapping intact");
             return ok;
         }
 
@@ -205,9 +213,15 @@ namespace CosmicShore.Editor
         /// </summary>
         static void AppendFleetTable(StringBuilder report, SpeedTunnelConfigSO config)
         {
-            report.AppendLine("    fleet at a glance (cruise = full throttle, unboosted; " +
-                              "top = cruise x VesselStatus.boostMultiplier)");
-            report.AppendLine("      vessel        cruise  effect   top   effect");
+            report.AppendLine("    fleet at a glance. cruise = DefaultThrottleScaler + " +
+                              "DefaultMinimumSpeed (full throttle, unboosted). top(rest) = " +
+                              "DefaultThrottleScaler x the prefab's RESTING VesselStatus." +
+                              "boostMultiplier + DefaultMinimumSpeed — the minimum is added AFTER " +
+                              "the multiply, per VesselTransformer.ComputeThrottleTarget.");
+            report.AppendLine("    NOTE top(rest) is NOT the real top speed for vessels whose boost " +
+                              "comes from an action SO or a skim effect (Rhino ramp x6, Squirrel " +
+                              "skim clamp x5, Serpent consume-boost) — see Docs/SPEED_TUNNEL.md §3.");
+            report.AppendLine("      vessel        cruise  effect  top(rest)  effect");
 
             foreach (var path in VesselPrefabPaths())
             {
@@ -217,7 +231,19 @@ namespace CosmicShore.Editor
                 var transformer = ResolveTransformer(prefab);
                 if (transformer == null) continue;
 
-                // Both live throttle models reduce to the same thing at full throttle today:
+                // CommandVesselTransformer overrides MoveShip without calling base and never
+                // assigns VesselStatus.Speed (it lerps the transform toward a 3D target), and
+                // nothing else writes Speed for a vessel that is neither a remote network mirror
+                // nor trail-attached. Its throttle fields are inert, so printing them would claim
+                // a tunnel the vessel structurally cannot have.
+                if (transformer is CommandVesselTransformer)
+                {
+                    report.AppendLine($"      {prefab.name,-12}      —       —       —       —   " +
+                                      "(CommandVesselTransformer never writes Speed)");
+                    continue;
+                }
+
+                // Both remaining throttle models reduce to the same thing at full throttle today:
                 // the base transformer is XDiff * scaler * ThrottleScalerMultiplier + minimum
                 // (XDiff = 1 at full throttle, and the multiplier is Enabled: 0 on every
                 // prefab, so it evaluates to 1), and SingleStickVesselTransformer drops both
@@ -228,7 +254,7 @@ namespace CosmicShore.Editor
                             + transformer.DefaultMinimumSpeed;
 
                 report.AppendLine($"      {prefab.name,-12} {cruise,6:0} {config.Effect01(cruise),7:0.00} " +
-                                  $"{top,5:0} {config.Effect01(top),7:0.00}");
+                                  $"{top,9:0} {config.Effect01(top),7:0.00}");
             }
         }
 

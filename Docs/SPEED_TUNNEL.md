@@ -44,16 +44,25 @@ Four structural properties, mirroring the occlusion corridor's four layers:
 
 | # | Layer | Mechanism |
 |---|---|---|
-| 1 | **Binding** | `VesselController.Initialize` under `IPlayer.IsLocalPilot` — the one method every vessel must call to become a player's vessel, on every spawn path (single-player, multiplayer, menu autopilot, runtime swap). Nothing per-vessel, nothing per-scene, therefore nothing to forget. `IsLocalPilot` (not `IsLocalUser`) so the legacy non-networked single-player path is covered — that gap is exactly the escape hatch the law must not have. `ChangePlayer` re-evaluates too, so the Cellular Duel ownership swap can't strand it. |
+| 1 | **Binding** | `VesselController.Initialize` under `IPlayer.IsLocalPilot` — the one method every vessel must call to become a player's vessel, on every spawn path (single-player, multiplayer, menu autopilot, runtime swap). Nothing per-vessel, nothing per-scene, therefore nothing to forget. `IsLocalPilot` (not `IsLocalUser`) so the legacy non-networked single-player path is covered — that gap is exactly the escape hatch the law must not have. `ChangePlayer` re-evaluates too (for BOTH platform laws), so the Cellular Duel ownership swap can't strand either of them on the hull the AI inherited. |
 | 2 | **One driver** | `VesselSpeedTunnel` is a **static class** with a single hidden `DontDestroyOnLoad` `LateUpdate` publisher installed by `[RuntimeInitializeOnLoadMethod(BeforeSceneLoad)]`. Not tidiness: `PostProcessingManager.SetSpeedTunnelPanini` is one global override with **no ref-counting**, so N per-vessel writers race it and an outgoing vessel's teardown stomps the incoming vessel's value mid-swap. One driver cannot race itself. |
 | 3 | **Fail loud** | Missing `PostProcessingManager` (Panini half inert) and an unexpected camera-controller type (FOV half inert) each warn **once per session**, naming the fix. A null controller — Cinemachine driving the menu — is a designed state and is deliberately silent. |
-| 4 | **Gates** | `SpeedTunnelLawTests` (edit-mode, asset-only) + **FrogletTools > Vessels > Validate Speed Tunnel Law**. Both assert no vessel prefab carries its own driver, that the binding exists on `IsLocalPilot`, and that the config is sane — the last via `SpeedTunnelConfigSO.IsSane`, the *same* predicate the runtime uses, so the gates cannot drift. |
+| 4 | **Gates** | `SpeedTunnelLawTests` (edit-mode, asset-only) + **FrogletTools > Vessels > Validate Speed Tunnel Law**. Both assert that no vessel prefab carries its own driver *or a missing-script residue of the retired one*, that **every** bind site sits under an `IsLocalPilot` guard, that the drive site passes **raw** speed, and that the config is sane. Every one of those predicates lives once — `SpeedTunnelConfigSO.IsSane` and `SpeedTunnelLawSource` — and all three gates call it, so they cannot drift. Two of these checks are written the way they are because the obvious version is *vacuous*: prefab YAML records a script by GUID and never by class name, and a whole-file `Contains("IsLocalPilot")` stopped being a gate the moment `ChangePlayer` grew a second occurrence. |
 
 The one sanctioned hold is `VesselSpeedTunnel.SetSuppressed`, called by exactly one caller:
 `CameraManager.BeginManualReplayCamera` / `RestoreGameplayCamera`. A replay camera is posed by
 hand and `AstroLeagueGoalReplay` reads its field of view to fit the shot, so a live FOV write
 would both fight the pose and silently mis-frame the replay. It is a **hold, not an opt-out** —
 the vessel binding survives it, so nothing has to remember to re-point the tunnel afterwards.
+
+Two details of that hold are load-bearing. It is **immediate**: `Tick` tests suppression at the
+point of application, not only when computing the target, because this driver carries smoothing
+state and the same call that suppresses also *cuts to* the replay camera — a target-only hold
+would spend the decay writing FOV onto exactly the camera it is protecting. And the lift in
+`RestoreGameplayCamera` is **unconditional and first**, above that method's own follow-target
+early return: a replay can finish a frame after its scene tore down, and returning before the
+lift would latch both platform laws off for the rest of the session (these statics are otherwise
+reset only by their `RuntimeInitializeOnLoadMethod` installers, once per app launch).
 
 ## §3 Tuning
 
@@ -72,9 +81,18 @@ zero authoring.
 
 ### Where the fleet lands in the shared window
 
-Cruise = full throttle, unboosted (`DefaultThrottleScaler + DefaultMinimumSpeed`). Top = cruise
-scaled by the vessel's real boost source. **FrogletTools > Vessels > Validate Speed Tunnel Law**
-prints this live, so it can't go stale here without being noticed.
+Cruise = full throttle, unboosted (`DefaultThrottleScaler + DefaultMinimumSpeed`). Top applies
+the vessel's **real** boost source to the *scaler only* and then adds the minimum
+(`DefaultThrottleScaler × boost + DefaultMinimumSpeed` — the minimum is added AFTER the multiply,
+per `VesselTransformer.ComputeThrottleTarget`; that is why the Rhino's ×6 gives 310 and not 360).
+
+**FrogletTools > Vessels > Validate Speed Tunnel Law** prints the **cruise** column live and is
+the gate for it. Its `top(rest)` column is NOT this table's top: the tool reads only the prefab's
+resting `VesselStatus.boostMultiplier`, while three vessels get their real top from elsewhere —
+the Rhino's ×6 from `RhinoRampBoostAction.asset`, the Squirrel's ×5 from the skim-boost clamp, the
+Serpent's from its consume-boost — none of which a prefab sweep can resolve. Teaching the tool to
+chase them is a much larger change for a column that is explicitly a report, not a check, so the
+boosted numbers below are maintained by hand.
 
 | Vessel | cruise | effect | top speed | effect | notes |
 |---|---|---|---|---|---|
@@ -87,7 +105,7 @@ prints this live, so it can't go stale here without being noticed.
 | Urchin | 50 | 0.00 | 200 | 0.62 | `Speed` is 0 while trail-attached |
 | Grizzly | 50 | 0.00 | 200 | 0.62 | |
 | Sparrow | 35 | 0.00 | 110 | 0.19 | |
-| Termite | — | — | — | — | `CommandVesselTransformer` never writes `Speed` |
+| Termite | — | — | — | — | `CommandVesselTransformer` never writes `Speed`, so the Termite structurally cannot tunnel. The validator prints "—" for it rather than its inert throttle fields. |
 
 **Read the Manta row before tuning.** It is not a bug and the fix is not a Manta-specific
 number — under an absolute law a vessel that cruises at 180 u/s *should* look faster than one
@@ -107,6 +125,7 @@ throttle change, which is a flight-feel decision that belongs to whoever tuned i
 | Binding site (the whole per-vessel wiring) | `Assets/_Scripts/Controller/Vessel/VesselController.cs` — `Initialize`, `ChangePlayer`, `OnDestroy` |
 | Panini override (single writer) | `Assets/_Scripts/Controller/Managers/PostProcessingManager.cs` — `SetSpeedTunnelPanini` |
 | Sanctioned suppression | `Assets/_Scripts/Controller/Managers/CameraManager.cs` — `BeginManualReplayCamera` / `RestoreGameplayCamera` |
+| Shared gate predicates | `Assets/_Scripts/Utility/SpeedTunnelLawSource.cs` (editor-only; the two gates live in assemblies that cannot see each other, so the rule is written once here) |
 | Asset gate (menu) | `Assets/_Scripts/Editor/SpeedTunnelLawValidator.cs` |
 | Asset gate (test) | `Assets/_Scripts/Tests/EditMode/SpeedTunnelLawTests.cs` |
 
@@ -137,9 +156,6 @@ throttle change, which is a flight-feel decision that belongs to whoever tuned i
 - The **pre-game cinematic** poses the camera while `CustomCameraController` is disabled but
   still the active controller, so the tunnel can write FOV during it. Harmless today (the vessel
   is not moving fast), but it is the second candidate for `SetSuppressed` if it ever isn't.
-- `PrismOcclusionCorridor` is **not** re-evaluated in `VesselController.ChangePlayer` — the
-  speed tunnel now is. That pre-existing seam in the corridor is left alone deliberately rather
-  than changed as a side effect of this work; it is worth its own fix.
 - `Camera.orthographic` is sticky and one-way (`VesselCameraCustomizer` only ever sets it true).
   An orthographic vessel would permanently disable the FOV half on the shared camera, silently.
 - **Residual home-FOV seam.** `CameraManager.ApplyCameraGraphicsSettings` writes the settings

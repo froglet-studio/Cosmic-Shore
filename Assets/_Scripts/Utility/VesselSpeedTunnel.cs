@@ -130,7 +130,14 @@ namespace CosmicShore.Utility
         /// caller is <c>CameraManager</c>'s manual replay camera: a broadcast vantage is posed
         /// by hand and its framing math reads the camera's field of view
         /// (<c>AstroLeagueGoalReplay</c>), so a live FOV write would both fight the pose and
-        /// silently mis-fit the shot. Symmetric — <c>RestoreGameplayCamera</c> lifts it.
+        /// silently mis-fit the shot. Symmetric — <c>RestoreGameplayCamera</c> lifts it,
+        /// unconditionally and before its own early return, so a replay that finishes after its
+        /// scene tore down cannot latch the hold on for the rest of the session.
+        ///
+        /// The hold is IMMEDIATE: <see cref="Tick"/> tests it at the point of application, not
+        /// only when computing the target. Unlike the occlusion corridor this driver carries
+        /// smoothing state, so a target-only hold would keep writing a decaying effect — onto
+        /// the very replay camera it exists to leave alone, since the same caller cuts to it.
         /// </summary>
         public static void SetSuppressed(bool suppressed) => _suppressed = suppressed;
 
@@ -178,7 +185,14 @@ namespace CosmicShore.Utility
             _effect01 = Mathf.Lerp(_effect01, target01,
                                    1f - Mathf.Exp(-config.Responsiveness * Mathf.Max(0f, deltaTime)));
 
-            if (_effect01 > 0.001f)
+            // Suppression is tested HERE, at the point of application, not only where target01 is
+            // computed — the hold has to be IMMEDIATE. This driver carries smoothing state, so
+            // zeroing the target alone would let the effect decay for ~0.5s (longer under a
+            // slow-motion timescale) while still writing every frame. Worse, the same call that
+            // suppresses also CUTS to the replay camera, so those writes would land on the
+            // hand-posed broadcast camera whose field of view the replay just read to fit its
+            // shot — precisely the outcome the hold exists to prevent.
+            if (!_suppressed && _effect01 > 0.001f)
                 Apply(config, _effect01);
             else if (_applied)
                 Release();

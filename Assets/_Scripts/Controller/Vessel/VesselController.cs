@@ -260,15 +260,24 @@ namespace CosmicShore.Gameplay
         {
             VesselStatus.Player = player;
 
-            // Re-evaluate the platform laws: ChangePlayer hands a LIVE vessel to a different
+            // Re-evaluate BOTH platform laws: ChangePlayer hands a LIVE vessel to a different
             // player (the Cellular Duel round-boundary ownership swap), which Initialize never
             // sees. Without this the tunnel would keep driving the local camera from a vessel
-            // the local player no longer flies. Identity-guarded clear, so the losing vessel's
-            // release cannot cancel the winning vessel's bind regardless of call order.
+            // the local player no longer flies, and the occlusion corridor would keep cutting
+            // its hole around the hull the AI inherited — leaving the local pilot's own ship
+            // hidden behind prism mass for the whole next round, the exact condition the
+            // corridor exists to prevent. Both clears are identity-guarded, so the losing
+            // vessel's release cannot cancel the winning vessel's bind whatever the call order.
             if (player.IsLocalPilot)
+            {
+                PrismOcclusionCorridor.SetTarget(transform);
                 VesselSpeedTunnel.SetTarget(VesselStatus, transform);
+            }
             else
+            {
+                PrismOcclusionCorridor.ClearTarget(transform);
                 VesselSpeedTunnel.ClearTarget(transform);
+            }
 
             // If the player is AI in general, or if it is a network client
             if (player.IsInitializedAsAI || player.IsNetworkClient)
