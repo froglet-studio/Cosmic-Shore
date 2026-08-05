@@ -1,0 +1,153 @@
+# The Speed Tunnel — PLATFORM LAW
+
+**Speed is a property of every vessel, so the visual language for speed belongs to every
+vessel.** As the local pilot's vessel gets faster, the gameplay camera's field of view narrows
+below its home value while the URP Panini projection distance falls below the profile's own
+baseline with it. The tightening FOV magnifies the frame centre (telephoto push-in) as the
+Panini compression relaxes toward rectilinear — tunnel vision, with **no camera-distance
+change at all**. A quasi dolly zoom, sold entirely through optics.
+
+This is **not a feature a vessel or a game mode may choose**, and it must not be possible to
+author one in which it is off — the same standing as the camera↔vessel prism occlusion
+corridor (`Docs/PRISM_ANIMATION.md` §4.7), whose enforcement shape this copies exactly.
+
+## §1 The law
+
+```
+effect01 = clamp01( inverseLerp(minEffectSpeed, maxEffectSpeed, VesselStatus.Speed) )
+fov      = max(1°, homeFov − fovDrop × effect01)
+panini   = profileBaseline − paniniDrop × effect01
+```
+
+Three properties are load-bearing. Do not relitigate them.
+
+- **The mapping is ABSOLUTE.** One global function of speed, shared by the entire fleet, so
+  **the same speed on any vessel produces the same visual**. A vessel that cruises faster sits
+  deeper in the tunnel than one that crawls — because it *is* going faster. There is no
+  per-vessel window, no per-vessel scalar, and no normalization that makes every vessel reach
+  full effect at its own top speed. That alternative was considered and rejected; it would
+  destroy the one property the law exists to guarantee. It is also *why* the law is
+  un-authorable: there is no per-vessel number anywhere, so there is nothing a vessel could
+  author to escape it.
+- **The drive signal is measured `VesselStatus.Speed`, never boost state.** The effect follows
+  every speed source that exists or will exist — trigger boosts, constant-acceleration ramps,
+  skim charges, throttle modifiers, crystal buffs — with nothing to bind and nothing to keep
+  in step. An ability that makes you fast gets the visual for free and cannot forget to.
+- **Home values are whatever the game is actually running with.** FOV home is captured from the
+  live camera the frame the effect takes over, and Panini home is the profile's own state; the
+  effect only ever moves DOWN from there and returns exactly. Never anchor either to a constant
+  or a settings default — that reads as a snap onto foreign values the instant speed rises.
+
+## §2 What makes it strict
+
+Four structural properties, mirroring the occlusion corridor's four layers:
+
+| # | Layer | Mechanism |
+|---|---|---|
+| 1 | **Binding** | `VesselController.Initialize` under `IPlayer.IsLocalPilot` — the one method every vessel must call to become a player's vessel, on every spawn path (single-player, multiplayer, menu autopilot, runtime swap). Nothing per-vessel, nothing per-scene, therefore nothing to forget. `IsLocalPilot` (not `IsLocalUser`) so the legacy non-networked single-player path is covered — that gap is exactly the escape hatch the law must not have. `ChangePlayer` re-evaluates too, so the Cellular Duel ownership swap can't strand it. |
+| 2 | **One driver** | `VesselSpeedTunnel` is a **static class** with a single hidden `DontDestroyOnLoad` `LateUpdate` publisher installed by `[RuntimeInitializeOnLoadMethod(BeforeSceneLoad)]`. Not tidiness: `PostProcessingManager.SetSpeedTunnelPanini` is one global override with **no ref-counting**, so N per-vessel writers race it and an outgoing vessel's teardown stomps the incoming vessel's value mid-swap. One driver cannot race itself. |
+| 3 | **Fail loud** | Missing `PostProcessingManager` (Panini half inert) and an unexpected camera-controller type (FOV half inert) each warn **once per session**, naming the fix. A null controller — Cinemachine driving the menu — is a designed state and is deliberately silent. |
+| 4 | **Gates** | `SpeedTunnelLawTests` (edit-mode, asset-only) + **FrogletTools > Vessels > Validate Speed Tunnel Law**. Both assert no vessel prefab carries its own driver, that the binding exists on `IsLocalPilot`, and that the config is sane — the last via `SpeedTunnelConfigSO.IsSane`, the *same* predicate the runtime uses, so the gates cannot drift. |
+
+The one sanctioned hold is `VesselSpeedTunnel.SetSuppressed`, called by exactly one caller:
+`CameraManager.BeginManualReplayCamera` / `RestoreGameplayCamera`. A replay camera is posed by
+hand and `AstroLeagueGoalReplay` reads its field of view to fit the shot, so a live FOV write
+would both fight the pose and silently mis-frame the replay. It is a **hold, not an opt-out** —
+the vessel binding survives it, so nothing has to remember to re-point the tunnel afterwards.
+
+## §3 Tuning
+
+`Assets/Resources/SpeedTunnelConfig.asset` (`SpeedTunnelConfigSO`) is the **only** tuning
+surface for the entire fleet. With no asset the SO's own defaults apply, so the law holds with
+zero authoring.
+
+| Knob | Shipped | Meaning |
+|---|---|---|
+| `minEffectSpeed` | 70 | Below this the effect is exactly zero and costs nothing. |
+| `maxEffectSpeed` | 280 | Full strength; faster saturates rather than distorting further. |
+| `fovDrop` | 25° | Degrees removed from home FOV at full effect. |
+| `paniniDrop` | 0.5 | Fall below the profile's Panini baseline (gameplay profile ships 0.7). |
+| `responsiveness` | 12/s | Rounds off discontinuities (spawns, teleports); speed is already continuous. |
+| `enabled` | on | Global debug switch for A/B-ing the law. **Not** an authoring surface. |
+
+### Where the fleet lands in the shared window
+
+Cruise = full throttle, unboosted (`DefaultThrottleScaler + DefaultMinimumSpeed`). Top = cruise
+scaled by the vessel's real boost source. **FrogletTools > Vessels > Validate Speed Tunnel Law**
+prints this live, so it can't go stale here without being noticed.
+
+| Vessel | cruise | effect | top speed | effect | notes |
+|---|---|---|---|---|---|
+| **Manta** | 180 | **0.52** | 720 | 1.00 | `DefaultThrottleScaler` 180 — 3.6× the fleet norm |
+| Rhino | 60 | 0.00 | 310 | 1.00 | ramp boost SO sets ×6 |
+| Squirrel | 60 | 0.00 | 300 | 1.00 | skim boost clamps to ×5 |
+| Serpent | 60 | 0.00 | 210 → 330 | 0.67 → 1.00 | Time elemental up to ×1.6 |
+| Dolphin | 60 | 0.00 | 210 | 0.67 | |
+| Falcon / Shrike | 60 | 0.00 | 210 | 0.67 | |
+| Urchin | 50 | 0.00 | 200 | 0.62 | `Speed` is 0 while trail-attached |
+| Grizzly | 50 | 0.00 | 200 | 0.62 | |
+| Sparrow | 35 | 0.00 | 110 | 0.19 | |
+| Termite | — | — | — | — | `CommandVesselTransformer` never writes `Speed` |
+
+**Read the Manta row before tuning.** It is not a bug and the fix is not a Manta-specific
+number — under an absolute law a vessel that cruises at 180 u/s *should* look faster than one
+cruising at 60, and the Manta genuinely does cruise three times faster than the rest of the
+fleet. It does mean the Manta flies with roughly half the tunnel applied at all times. If that
+reads as too much, the correct lever is **the shared floor** (`minEffectSpeed`), moved with the
+whole fleet in view — not a per-vessel exception, which the law forbids, and not a Manta
+throttle change, which is a flight-feel decision that belongs to whoever tuned it to 180.
+
+## §4 Files
+
+| Role | File |
+|---|---|
+| The law + driver | `Assets/_Scripts/Utility/VesselSpeedTunnel.cs` |
+| Tuning + the pure math | `Assets/_Scripts/ScriptableObjects/SpeedTunnelConfigSO.cs` |
+| Shipped tuning asset | `Assets/Resources/SpeedTunnelConfig.asset` |
+| Binding site (the whole per-vessel wiring) | `Assets/_Scripts/Controller/Vessel/VesselController.cs` — `Initialize`, `ChangePlayer`, `OnDestroy` |
+| Panini override (single writer) | `Assets/_Scripts/Controller/Managers/PostProcessingManager.cs` — `SetSpeedTunnelPanini` |
+| Sanctioned suppression | `Assets/_Scripts/Controller/Managers/CameraManager.cs` — `BeginManualReplayCamera` / `RestoreGameplayCamera` |
+| Asset gate (menu) | `Assets/_Scripts/Editor/SpeedTunnelLawValidator.cs` |
+| Asset gate (test) | `Assets/_Scripts/Tests/EditMode/SpeedTunnelLawTests.cs` |
+
+## §5 In-editor verification
+
+1. **Every vessel, not just two.** Fly Rhino, Manta, Dolphin, Squirrel, Sparrow and Serpent in
+   any game mode. Each should tunnel purely as a function of how fast it is going — the Rhino
+   only under its ramp boost, the Manta noticeably at plain cruise, the Sparrow barely at all.
+   Confirm nothing was wired per vessel: the effect is present on vessels that never had the
+   component.
+2. **Same speed, same look.** Boost a Dolphin (top ~210) and a Serpent (top ~210) side by side —
+   identical tunnel. That equality IS the law.
+3. **Return home exactly.** Drop back to cruise; FOV and Panini must land on their pre-boost
+   values. Change the FOV slider in Settings *while* boosting — the new setting must survive the
+   release rather than snapping back to the old home.
+4. **Vessel swap** (menu freestyle vessel changer, or Cellular Duel round boundary): the tunnel
+   follows the new hull with no stuck Panini and no flicker at the handover.
+5. **Menu freestyle**: Cinemachine drives the view, so only the Panini half applies — expected,
+   and no warning should be logged for it.
+6. **MPPM, two clients**: a remote or AI vessel boosting must not move YOUR camera or post stack.
+7. **Astro League goal replay**: during the replay the tunnel is held closed and the replay
+   framing is unaffected; it resumes on return to play.
+8. **Gates**: run **FrogletTools > Vessels > Validate Speed Tunnel Law** (expect PASS + the fleet
+   table) and the `SpeedTunnelLawTests` fixture in the Test Runner (expect all green).
+
+## §6 Follow-ups
+
+- The **pre-game cinematic** poses the camera while `CustomCameraController` is disabled but
+  still the active controller, so the tunnel can write FOV during it. Harmless today (the vessel
+  is not moving fast), but it is the second candidate for `SetSuppressed` if it ever isn't.
+- `PrismOcclusionCorridor` is **not** re-evaluated in `VesselController.ChangePlayer` — the
+  speed tunnel now is. That pre-existing seam in the corridor is left alone deliberately rather
+  than changed as a side effect of this work; it is worth its own fix.
+- `Camera.orthographic` is sticky and one-way (`VesselCameraCustomizer` only ever sets it true).
+  An orthographic vessel would permanently disable the FOV half on the shared camera, silently.
+- **Residual home-FOV seam.** `CameraManager.ApplyCameraGraphicsSettings` writes the settings
+  FOV straight onto every managed camera, and it runs from `SetupGamePlayCameras` /
+  `SetupEndCameraFollow` as well as from the settings events. The settings-event case is
+  handled (the driver re-captures home on `DisplayGraphicsSettings.OnFieldOfViewChanged`), and
+  the setup cases normally coincide with a camera change, which re-captures anyway — but a
+  setup call that keeps the SAME camera while the tunnel is engaged would leave home stale for
+  the rest of that engagement. Not reachable today (those calls happen at spawn, before speed
+  builds); the fix if it ever is would be to read home from
+  `DisplayGraphicsSettings.Current.FieldOfView` when available.

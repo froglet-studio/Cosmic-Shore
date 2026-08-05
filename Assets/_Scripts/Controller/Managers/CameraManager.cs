@@ -209,6 +209,11 @@ namespace CosmicShore.Gameplay
             // cut a hole through unrelated mass. This is a narrow, symmetric hold — NOT an
             // opt-out: the binding on the vessel stays, and RestoreGameplayCamera lifts it.
             PrismOcclusionCorridor.SetSuppressed(true);
+            // Same shape, same reason, for the speed-tunnel law (Docs/SPEED_TUNNEL.md): the
+            // replay camera is posed by hand and AstroLeagueGoalReplay reads its field of view
+            // to fit the shot, so a live FOV write would fight the pose AND silently mis-frame
+            // the replay. A hold, not an opt-out — the vessel binding survives it.
+            VesselSpeedTunnel.SetSuppressed(true);
             SetEndCameraActive();
             ApplyCameraGraphicsSettings();
             return endCamera.transform;
@@ -226,6 +231,7 @@ namespace CosmicShore.Gameplay
         {
             if (_playerFollowTarget == null) return;
             PrismOcclusionCorridor.SetSuppressed(false);
+            VesselSpeedTunnel.SetSuppressed(false);
             SetCloseCameraActive();
             SnapPlayerCameraToTarget();
         }
