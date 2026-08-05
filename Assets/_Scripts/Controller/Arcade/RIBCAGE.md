@@ -11,6 +11,10 @@ Ribcage is the **Rhino-only cage race**. Domains race to be first to **destroy 2
 prisms**. The arena is a **layered orange** of prism bone — concentric hollow shells you scrape
 your way through — and the bone *is* the score, so breaking out and winning are the same act.
 
+> **Player-facing unit is PRISMS, never "bars".** The cage's structural pieces are bars in this
+> document and in the generator's comments, but every number a player reads counts PRISMS - the
+> scoreboard, the reveal, and any toast copy. Two words for one counter reads as two counters.
+
 **One axis.** Destruction is the race: `HostilePrismsDestroyed`, the same platform stat Rampage
 runs on and the same 2,000 target. Scoring mass is everything that is not your own team's laid
 trail — the cage (environment mass, non-roster owner ⇒ hostile whatever colour it wears) and rival
@@ -71,7 +75,7 @@ the design depends on. See "Intensity" below.
   cage-breakers
 - **Scoring**: `RibcageScoringRuleSO` (`metric = ScoringMetric.PrismsDestroyed`; golf-timed like
   HexRace/Scurry/Rampage) — winning-domain players `Score = finish time`, losers the
-  `GolfScoreSentinels` sentinel (displayed "N Bars Left")
+  `GolfScoreSentinels` sentinel (displayed "N Prisms Left")
 - **Turn monitor**: `RibcagePrismTurnMonitor` — resolves the destruction target from
   `EndConditionOverridesSO.GetRibcagePrismTarget()` (default **2000**, FrogletTools ▸ Game Modes ▸
   End Game Conditions — never a per-scene field), syncs it via NetworkVariable →
@@ -384,7 +388,7 @@ YAML. `Tools/Build/ribcage_budget.py` is the cage's analytic budget model and th
 12. **Milestones.** When the leading domain reaches **500** destroyed the device should shake hard
     for ~1.2 s; again at **1,000**. Nothing else should change.
 13. **Win + scoreboard.** First domain to **2,000 destroyed** ends the turn; winners show a time,
-    losers "N Bars Left". Replay (scene reload) resets the milestones.
+    losers "N Prisms Left". Replay (scene reload) resets the milestones.
 14. **Pacing.** Time intensity 1 end to end — see the pacing flag under "End condition". If it
     finishes in well under a minute, lower the target.
 15. **AI stays outside.** Watch an AI Rhino for a minute: it should orbit outside, cross the cage on
@@ -398,13 +402,13 @@ YAML. `Tools/Build/ribcage_budget.py` is the cage's analytic budget model and th
 
 - **Toast copy is unauthored.** The three `GameToastSituation` values exist but no
   `GameToastConfigSO` authors a definition for them, so they are silently skipped (which is how a
-  mode opts out). Author a `GameToastConfig_Ribcage.asset` with `{0}`=domain, `{1}`=bars smashed,
-  `{2}`=target to make them visible.
+  mode opts out). Author a `GameToastConfig_Ribcage.asset` with `{0}`=domain, `{1}`=prisms
+  destroyed, `{2}`=target to make them visible.
 - **The 2,000 target is unmeasured for this arena** — see the pacing flag above. Most likely thing to
   need a change after the first playtest.
 - **No objective-arrow provider**: like Rampage, `MiniGameHUD.CreateObjectiveProviderForGameMode` has
   no Ribcage case — the cage surrounds you, so there is no single point to aim at.
-- **No UGS stats reporter yet** (a "most bars smashed" leaderboard is a clean follow-up), and no
+- **No UGS stats reporter yet** (a "most prisms destroyed" leaderboard is a clean follow-up), and no
   dedicated end-game controller — the shared scoreboard handles it.
 - **Danger bars are a first pass.** One in 19 rib prisms, evenly spread by a deterministic index walk
   with a per-shell phase offset. If they read as noise rather than as traps, cluster them instead
