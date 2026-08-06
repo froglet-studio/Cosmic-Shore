@@ -40,5 +40,11 @@ namespace CosmicShore.Data
         RibcageQuarterPeeled = 50,   // leader is a quarter of the way to the target
         RibcageHalfPeeled = 51,      // leader is halfway
         RibcageLeaderChanged = 52,   // the lead changes hands after a milestone
+
+        // Wildlife Liberation. {0} = player name, {1} = kills, {2} = target.
+        WildlifeHuntQuarter = 53,    // the leading hunter is a quarter of the way to the target
+        WildlifeHuntHalf = 54,       // the leading hunter is halfway
+        WildlifeLeadChanged = 55,    // the lead changes hands after a milestone
+        WildlifeCoreBreached = 56,   // a hunter has reached the innermost room ({0} = player name)
     }
 }

@@ -562,7 +562,7 @@ namespace CosmicShore.Gameplay
             if (Time.time - _lastStarvationShed < config.StarvationShedIntervalSeconds) return;
 
             _lastStarvationShed = Time.time;
-            segments[segments.Count - 1].WitherAway("starvation");
+            segments[segments.Count - 1].WitherAway(StarvationKiller);
         }
 
         /// <summary>
@@ -710,11 +710,11 @@ namespace CosmicShore.Gameplay
             {
                 if (!hp.LifeForm) return false;
                 return cell != null
-                    ? cell.IsPreyForHerbivore(prism.transform.position, domain, hp.LifeForm.domain)
+                    ? IsPreyForMe(prism.transform.position, hp.LifeForm.domain)
                     : hp.LifeForm.domain != domain;
             }
             return cell != null
-                ? cell.IsPreyForHerbivore(prism.transform.position, domain, prism.Domain)
+                ? IsPreyForMe(prism.transform.position, prism.Domain)
                 : prism.Domain != domain;
         }
 

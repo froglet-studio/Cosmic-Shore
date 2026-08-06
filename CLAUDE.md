@@ -42,10 +42,23 @@ outcome is optimization, not life). Use the `/ecology` skill for any change here
   survives as the platform capability) — but the spawn colour is still
   exactly ONE colour, the controller's, and that setter also re-colours the LIVE swarm so a
   cell can never hold two fauna colours at once. A mode may also PEN a cell's fauna
-  (`Cell.FaunaContainmentRadius`): outside the pen nothing is prey and every goal is
-  clamped back in — a spatial diet + steering rule, never a wall, and never a cull.
+  (`Cell.FaunaContainmentRadius`, one radius for the whole cell) or pen a single SPECIES to an
+  ANNULUS (`FaunaConfigurationSO.BandInner/BandOuterRadius` — Wildlife Liberation stacks three
+  nested cages and gives each tier of creature its own room): outside the pen nothing is prey
+  and every goal is clamped back in — a spatial diet + steering rule, never a wall, and never a
+  cull. Both compose, both default to off, and every grazer routes its edibility test through
+  `Fauna.IsPreyForMe` — "a creature must never be led to mass it cannot reach or eat" is ONE
+  rule, and a per-subclass copy is a rule you can forget to apply in the next grazer.
   A biome's STARTING release state is authored data (`SpawnProfileSO.InitialFaunaReleaseTier`),
   not a runtime call — a runtime-only gate races the cell's own bootstrap and loses.
+- **A creature dies when its last body prism is destroyed** — `Fauna.OnBodyPrismExploded`
+  (platform-wide since Wildlife Liberation; before it, only the worm colony implemented it, so
+  shooting any other creature stripped its body and left an immortal husk swimming). This is an
+  ACTIVE force removing mass and therefore squarely inside the conserved-mass law: no timer, no
+  lifespan, no cull, and a creature nobody shoots still only ever dies to starvation or
+  predation. It routes through the same sealed `Fauna.Die`, so the crystal drop and the wither
+  are not bypassable. A subclass may override to add bookkeeping first (the worm colony re-links
+  its chain), but an override that lets a creature survive losing its whole body breaks the rule.
 - **Starvation = wither-to-crystal.** A starving (or predated) creature withers from its extremity
   spindles inward — a shark's fins / a brittlestar's arms evaporate *before* the core body
   (farthest-from-centre first, emergent from geometry) — and leaves a collectible elemental crystal.
@@ -320,6 +333,7 @@ All in `Assets/_Scenes/Singleplayer Scenes/`.
 | `MinigameNucleusRush` | `NucleusRush (38)` | `NucleusRushController` |
 | `MinigameRampage` | `Rampage (2)` | `RampageController` |
 | `MinigameRibcage` | `Ribcage (39)` | `RibcageController` |
+| `MinigameWildlifeLiberation` | `WildlifeLiberation (40)` | `WildlifeLiberationController` |
 | `ArcadeGameMultiplayer2v2CoOpVsAI` | `Multiplayer2v2CoOpVsAI (30)` | Domain games variant |
 
 All in `Assets/_Scenes/Multiplayer Scenes/`.
@@ -333,6 +347,8 @@ All in `Assets/_Scenes/Multiplayer Scenes/`.
 #### GameModes Enum (`Assets/_Scripts/Data/Enums/GameModes.cs`)
 
 39 game modes with explicit numeric IDs (highest is `Ribcage(39)`; IDs 7 and 31 are skipped). Single-player: `Elimination(1)` through `ProtectMission(27)` — except `Rampage(2)`, repurposed as a multiplayer party game (the destruction race, Scurry's destructive analog; see `_Scripts/Controller/Arcade/RAMPAGE.md`). Multiplayer: `Rampage(2)`, `MultiplayerFreestyle(28)`, `MultiplayerCellularDuel(29)`, `Multiplayer2v2CoOpVsAI(30)`, `MultiplayerWildlifeBlitzGame(32)`, `HexRace(33)`, `MultiplayerJoust(34)`, `MultiplayerCrystalCapture(35)`, `AstroLeague(37)`, `NucleusRush(38)`, `Ribcage(39)`. Meta-mode: `Tournament(36)` — the session-level meta that chains HexRace → Joust → Crystal Capture back-to-back via sequential `Single` loads (see `Docs/TournamentSystem/ARCHITECTURE.md`). `AstroLeague(37)` is hypersea soccer (a standalone domain minigame, see `_Scripts/Controller/Arcade/ASTROLEAGUE.md`). `NucleusRush(38)` (display name "Brood Rush") is the nucleus-control fauna-wave race (see `_Scripts/Controller/Arcade/NUCLEUSRUSH.md`). `Ribcage(39)` (display name "Peel the Cage") is the Rhino-only cage race — first domain to DESTROY 2000 hostile prisms wins (`ScoringMetric.PrismsDestroyed`, the same metric and target as Rampage). The arena IS the objective: a **layered orange** of hollow prism-bone shells added INWARD from a fixed 360u outer radius, woven OPEN at the surface (~94u x 98u cells) and progressively TIGHTER inward (~22u at the core), with every rib x hoop cell split by a diagonal so the openings are TRIANGLES and every rind inside the outermost TILTED onto its own axis (`SpawnableRibcage.ShellTilts`, min 34 deg apart) so the dense polar caps never stack radially. **Intensity is how many rinds you peel** — 2..5 shells (10,620 / 14,731 / 17,992 / 20,153 prisms) selected the platform way, one `CellConfigDataSO` per intensity via `CellTypeChoiceOptions.IntensityWise`, each pointing at a `SpawnableRibcage` prefab variant whose `shellCount` differs and carrying ITS OWN PhaseThresholds. Every bar is a one-hit PLAIN prism except the sparse danger traps; nothing is shielded or super-shielded. No fauna — the mode's former leader-pinned brood ladder was removed, though every platform capability it used is kept (see `_Scripts/Controller/Arcade/RIBCAGE.md`). Meta sentinel: `Random(0)`. Note: IDs 7 and 31 are skipped — 7 was the retired standalone arcade Freestyle game (freestyle now lives in Menu_Main as the lava lamp; see "Lava-Lamp Mode"), 31 was never assigned. Do not reuse either ID.
+
+`WildlifeLiberation(40)` is the **Sparrow-only hunt** — three concentric cages at 1050 / 600 / 200 pen three tiers of wildlife (a very heavy swarm of small creatures outside, much bigger ones in the middle room, the biggest and toughest in the core), and the first **PLAYER** to kill 500 creatures wins. It is the platform's **first free-for-all race**: every other multiplayer mode resolves a winning DOMAIN from a per-domain sum, and pooling teammates here would let somebody win off a teammate's kills — so `WildlifeLiberationScoringRuleSO` resolves a winning PLAYER and the domain sums stay as a secondary HUD readout. Its metric, `ScoringMetric.LifeformsKilled`, is also the first whose source is the ECOLOGY rather than prisms or crystals. Shipping it made **every creature in the game killable by shooting its body prisms** (previously only the worm colony was — see `Docs/ECOSYSTEM.md §24`) and generalized the cell's single fauna pen into a per-species BAND. See `_Scripts/Controller/Arcade/WILDLIFE_LIBERATION.md`.
 
 Many single-player modes (1, 3-6, 9-25, 27) reference scenes that no longer exist on disk — their `SO_ArcadeGame` assets still exist and appear in the Arcade UI, but launching them would fail. (`Rampage(2)` used to be in this set; it now has a real scene as a multiplayer mode.)
 
@@ -363,6 +379,7 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
         ├── NucleusRushController             — nucleus-control fauna-wave race, brood scoring
         ├── RibcageController                 — Rhino-only layered-cage race ("Peel the Cage")
         └── RampageController                 — destruction race (Scurry's destructive analog), prisms-destroyed scoring
+        └── WildlifeLiberationController       — Sparrow-only three-cage hunt; FREE-FOR-ALL (first PLAYER to the kill target)
 ```
 
 #### Game Launch Pipeline
@@ -403,6 +420,7 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
 | `ASTROLEAGUE.md` | `_Scripts/Controller/Arcade/` | Astro League game mode technical reference |
 | `RAMPAGE.md` | `_Scripts/Controller/Arcade/` | Rampage game mode technical reference (multiplayer destruction race) |
 | `RIBCAGE.md` | `_Scripts/Controller/Arcade/` | Ribcage / "Peel the Cage" technical reference (Rhino-only cage-breaking race; the layered-orange intensity model, the open-weave generator, the shielded-mass targeting-grid rule, and the record of the removed fauna ladder) |
+| `WILDLIFE_LIBERATION.md` | `_Scripts/Controller/Arcade/` | Wildlife Liberation technical reference (Sparrow-only three-cage hunt). **Read before touching the fauna kill path or the per-species containment bands** — this mode made every creature in the game shootable, and generalized the cell's single fauna pen into a per-species annulus. Also documents the platform's first FREE-FOR-ALL race (winner is a PLAYER, not a domain) and the very-heavy collider budget. |
 | `PRISM_PERFORMANCE_AUDIT.md` | `_Scripts/Game/Prisms/` | Prism system performance analysis (vestigial location) |
 | `UNIT_TESTING_GUIDE.md` | `_Scripts/Tests/` | Unit testing guidelines and inventory |
 | `BENCHMARK_TOOL.md` | `_Scripts/Utility/PerformanceBenchmark/` | Performance Benchmark tool guide (tabs, score/hints, sweep, Load Time Insights, customization) |

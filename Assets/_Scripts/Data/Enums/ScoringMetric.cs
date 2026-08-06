@@ -30,5 +30,12 @@ namespace CosmicShore.Data
         // un-scores you. Ribcage was authored on this metric and deliberately moved back to
         // PrismsDestroyed (see RibcageScoringRuleSO's header for the trade).
         PrismsRemaining = 6,
+        // Wildlife Liberation: fauna a player has KILLED (reads IRoundStats.LifeformsKilled).
+        // Fed by CellRuntimeDataSO.OnFaunaKilled -> StatsManager.LifeformKilled, which only
+        // credits attributed player kills - a creature that starves or is eaten by a predator
+        // scores for nobody. Cumulative, so it is monotonic per player like every other race
+        // metric; it is the one metric whose source is the ECOLOGY rather than prisms or
+        // crystals, which is exactly the point of the mode that uses it.
+        LifeformsKilled = 7,
     }
 }

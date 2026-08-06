@@ -51,6 +51,7 @@ namespace CosmicShore.Tests
             public event Action<IRoundStats> OnSkimmerShipCollisionsChanged;
             public event Action<IRoundStats> OnJoustCollisionChanged;
             public event Action<IRoundStats> OnGoalsScoredChanged;
+            public event Action<IRoundStats> OnLifeformsKilledChanged;
             public event Action<IRoundStats> OnFullSpeedStraightAbilityActiveTimeChanged;
             public event Action<IRoundStats> OnRightStickAbilityActiveTimeChanged;
             public event Action<IRoundStats> OnLeftStickAbilityActiveTimeChanged;
@@ -87,6 +88,7 @@ namespace CosmicShore.Tests
             public int SkimmerShipCollisions { get; set; }
             public int JoustCollisions { get; set; }
             public int GoalsScored { get; set; }
+            public int LifeformsKilled { get; set; }
             public float FullSpeedStraightAbilityActiveTime { get; set; }
             public float RightStickAbilityActiveTime { get; set; }
             public float LeftStickAbilityActiveTime { get; set; }
@@ -130,6 +132,7 @@ namespace CosmicShore.Tests
                 SkimmerShipCollisions = 12,
                 JoustCollisions = 8,
                 GoalsScored = 3,
+                LifeformsKilled = 42,
                 FullSpeedStraightAbilityActiveTime = 10f,
                 RightStickAbilityActiveTime = 20f,
                 LeftStickAbilityActiveTime = 15f,
@@ -197,6 +200,11 @@ namespace CosmicShore.Tests
             Assert.AreEqual(0, _stats.SkimmerShipCollisions);
             Assert.AreEqual(0, _stats.JoustCollisions);
             Assert.AreEqual(0, _stats.GoalsScored);
+            // The Wildlife Liberation race metric. RoundStats lives on the PERSISTENT Player
+            // object, so a stat missing from Cleanup() carries the last match's kills into the
+            // next one - which is exactly how Ribcage shipped players starting on a non-zero
+            // score. Anything added to IRoundStats must be zeroed here and asserted here.
+            Assert.AreEqual(0, _stats.LifeformsKilled);
         }
 
         [Test]

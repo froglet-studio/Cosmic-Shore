@@ -49,6 +49,9 @@ namespace CosmicShore.ScriptableObjects
         /// <summary>Ribcage cage-destruction target used when <see cref="ribcagePrismTarget"/> is 0 (auto/default).</summary>
         public const int DefaultRibcagePrismTarget = 2000;
 
+        /// <summary>Wildlife Liberation kill target used when <see cref="wildlifeKillTarget"/> is 0 (auto/default).</summary>
+        public const int DefaultWildlifeKillTarget = 500;
+
         [Header("Live counts - used at runtime. 0 = auto/default (edit via FrogletTools > Game Modes > End Game Conditions)")]
         [Tooltip("HexRace crystals to end the race. 0 = auto-calc from the track waypoints.")]
         [Min(0)] public int hexRaceCrystalCount = 0;
@@ -77,6 +80,12 @@ namespace CosmicShore.ScriptableObjects
                  "escalation ladder with it. 0 = default (2000).")]
         [Min(0)] public int ribcagePrismTarget = 2000;
 
+        [Tooltip("Wildlife Liberation: creatures ONE PLAYER must kill to win. Unlike every " +
+                 "other target here this is compared against an INDIVIDUAL's stat, not a domain " +
+                 "sum - the hunt is a free-for-all, so a teammate's kills do not count toward " +
+                 "yours. 0 = default (500).")]
+        [Min(0)] public int wildlifeKillTarget = 500;
+
         [Header("Build baseline - what a shipping build uses. Set via the tool's \"Set Build Values\" button.")]
         [Min(0)] public int hexRaceCrystalCountBuild = 0;
         [Min(0)] public int crystalCaptureCrystalCountBuild = 20;
@@ -85,6 +94,7 @@ namespace CosmicShore.ScriptableObjects
         [Min(0)] public int nucleusRushWaveTargetBuild = 3;
         [Min(0)] public int rampagePrismTargetBuild = 2000;
         [Min(0)] public int ribcagePrismTargetBuild = 2000;
+        [Min(0)] public int wildlifeKillTargetBuild = 500;
 
         [Tooltip("When on, a build first copies the Build baseline onto the Live counts, so test values are never shipped.")]
         public bool autoRestoreBuildValuesBeforeBuild = true;
@@ -147,6 +157,13 @@ namespace CosmicShore.ScriptableObjects
         /// </summary>
         public int GetRibcagePrismTarget() => ribcagePrismTarget > 0 ? ribcagePrismTarget : DefaultRibcagePrismTarget;
 
+        /// <summary>
+        /// Wildlife Liberation kill target ("first hunter to N creatures"): the configured value
+        /// when &gt; 0, otherwise <see cref="DefaultWildlifeKillTarget"/>. Compared against ONE
+        /// PLAYER's kill count, not a domain sum.
+        /// </summary>
+        public int GetWildlifeKillTarget() => wildlifeKillTarget > 0 ? wildlifeKillTarget : DefaultWildlifeKillTarget;
+
         /// <summary>True when every Live count (used at runtime) already equals its Build baseline.</summary>
         public bool LiveMatchesBuild =>
             hexRaceCrystalCount == hexRaceCrystalCountBuild &&
@@ -155,7 +172,8 @@ namespace CosmicShore.ScriptableObjects
             maelstromWinTarget == maelstromWinTargetBuild &&
             nucleusRushWaveTarget == nucleusRushWaveTargetBuild &&
             rampagePrismTarget == rampagePrismTargetBuild &&
-            ribcagePrismTarget == ribcagePrismTargetBuild;
+            ribcagePrismTarget == ribcagePrismTargetBuild &&
+            wildlifeKillTarget == wildlifeKillTargetBuild;
 
         /// <summary>Copy the Build baseline onto the Live counts (build → live) - used by the build auto-restore.</summary>
         public void ApplyBuildValues()
@@ -167,6 +185,7 @@ namespace CosmicShore.ScriptableObjects
             nucleusRushWaveTarget = nucleusRushWaveTargetBuild;
             rampagePrismTarget = rampagePrismTargetBuild;
             ribcagePrismTarget = ribcagePrismTargetBuild;
+            wildlifeKillTarget = wildlifeKillTargetBuild;
         }
 
         /// <summary>Snapshot the current Live counts as the Build baseline (live → build) - used by "Set Build Values".</summary>
@@ -179,6 +198,7 @@ namespace CosmicShore.ScriptableObjects
             nucleusRushWaveTargetBuild = nucleusRushWaveTarget;
             rampagePrismTargetBuild = rampagePrismTarget;
             ribcagePrismTargetBuild = ribcagePrismTarget;
+            wildlifeKillTargetBuild = wildlifeKillTarget;
         }
     }
 }

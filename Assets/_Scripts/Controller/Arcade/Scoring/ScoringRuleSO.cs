@@ -36,6 +36,17 @@ namespace CosmicShore.Gameplay
             Mathf.Max(0, TargetCount(gameData) - ScoringMetrics.SumByDomain(gameData, metric, domain));
 
         /// <summary>
+        /// Remaining metric for ONE PLAYER - what a per-player HUD readout should show. Defaults
+        /// to that player's DOMAIN deficit, which is correct for every team-race mode (a
+        /// teammate's crystal shortens your race too). A FREE-FOR-ALL mode overrides it to read
+        /// the individual: Wildlife Liberation's win condition is one hunter reaching the kill
+        /// target, so showing them their team's deficit would be showing them someone else's
+        /// race.
+        /// </summary>
+        public virtual int RemainingForPlayer(GameDataSO gameData, IRoundStats stats) =>
+            stats == null ? 0 : Remaining(gameData, stats.Domain);
+
+        /// <summary>
         /// Server-side END condition for the current turn. HexRace/Joust/CrystalCapture all end
         /// when an active domain's summed metric reaches the target; override for other shapes.
         /// </summary>

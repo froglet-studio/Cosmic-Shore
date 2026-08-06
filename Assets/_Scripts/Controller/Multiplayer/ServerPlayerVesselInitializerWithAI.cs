@@ -183,6 +183,14 @@ namespace CosmicShore.Gameplay
                 if (aiVesselType is VesselClassType.Any or VesselClassType.Random)
                     aiVesselType = PickAIVesselType();
 
+                // A restricted-vessel mode restricts the AI too. The AI's class comes from the
+                // scene's aiInitializeDatas (or the captain roll), neither of which knows the
+                // mode's rules - so a scene authored with the wrong template, or a captain roll
+                // in a single-vessel mode, would field opponents in an illegal hull. Same clamp
+                // and same authority as the human path (ResolveSpawnVesselType); no-op when the
+                // game authors no Vessels list.
+                aiVesselType = gameData.ClampVesselToGame(aiVesselType);
+
                 var aiName = tournament && i < tournamentData.TournamentAINames.Count
                     ? tournamentData.TournamentAINames[i]
                     : profiles != null && i < profiles.Count

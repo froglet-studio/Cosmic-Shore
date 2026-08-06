@@ -42,6 +42,7 @@ namespace CosmicShore.Data
         public event Action<IRoundStats> OnSkimmerShipCollisionsChanged;
         public event Action<IRoundStats> OnJoustCollisionChanged;
         public event Action<IRoundStats> OnGoalsScoredChanged;
+        public event Action<IRoundStats> OnLifeformsKilledChanged;
 
         public event Action<IRoundStats> OnFullSpeedStraightAbilityActiveTimeChanged;
         public event Action<IRoundStats> OnRightStickAbilityActiveTimeChanged;
@@ -67,7 +68,7 @@ namespace CosmicShore.Data
 
         int _crystalsCollectedLocal, _omniCrystalsCollectedLocal, _elementalCrystalsCollectedLocal;
         float _chargeCrystalValueLocal, _massCrystalValueLocal, _spaceCrystalValueLocal, _timeCrystalValueLocal;
-        int _skimmerShipCollisionsLocal, _joustCollisionsLocal, _goalsScoredLocal;
+        int _skimmerShipCollisionsLocal, _joustCollisionsLocal, _goalsScoredLocal, _lifeformsKilledLocal;
 
         float _fullSpeedStraightAbilityActiveTimeLocal,
             _rightStickAbilityActiveTimeLocal,
@@ -165,6 +166,9 @@ namespace CosmicShore.Data
         readonly NetworkVariable<int> n_GoalsScored =
             new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
 
+        readonly NetworkVariable<int> n_LifeformsKilled =
+            new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
+
         readonly NetworkVariable<float> n_FullSpeedStraightAbilityActiveTime =
             new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
 
@@ -248,6 +252,8 @@ namespace CosmicShore.Data
 
             OnSkimmerShipCollisionsChanged = null;
             OnJoustCollisionChanged = null;
+            OnGoalsScoredChanged = null;
+            OnLifeformsKilledChanged = null;
 
             OnFullSpeedStraightAbilityActiveTimeChanged = null;
             OnRightStickAbilityActiveTimeChanged = null;
@@ -617,6 +623,21 @@ namespace CosmicShore.Data
             }
         }
 
+        public int LifeformsKilled
+        {
+            get => _lifeformsKilledLocal;
+            set
+            {
+                _lifeformsKilledLocal = value;
+                if (IsSpawned && IsServer) n_LifeformsKilled.Value = value;
+
+                // Raised unconditionally (like JoustCollisions / GoalsScored, not like the
+                // prism stats): the server is the only writer, and its own HUD must move on
+                // the write rather than waiting for a replication callback it never receives.
+                RaiseSpecific(OnLifeformsKilledChanged);
+            }
+        }
+
         public float FullSpeedStraightAbilityActiveTime
         {
             get => _fullSpeedStraightAbilityActiveTimeLocal;
@@ -749,6 +770,7 @@ namespace CosmicShore.Data
             _skimmerShipCollisionsLocal = n_SkimmerShipCollisions.Value;
             _joustCollisionsLocal       = n_JoustCollisions.Value;
             _goalsScoredLocal           = n_GoalsScored.Value;
+            _lifeformsKilledLocal       = n_LifeformsKilled.Value;
 
             _fullSpeedStraightAbilityActiveTimeLocal = n_FullSpeedStraightAbilityActiveTime.Value;
             _rightStickAbilityActiveTimeLocal        = n_RightStickAbilityActiveTime.Value;
@@ -922,6 +944,14 @@ namespace CosmicShore.Data
                 // only clients need the replication-driven event.
                 if (!IsServer)
                     RaiseSpecific(OnGoalsScoredChanged);
+            };
+
+            n_LifeformsKilled.OnValueChanged += (_, v) =>
+            {
+                _lifeformsKilledLocal = v;
+                // Server already raised it from the setter - clients only.
+                if (!IsServer)
+                    RaiseSpecific(OnLifeformsKilledChanged);
             };
 
             n_FullSpeedStraightAbilityActiveTime.OnValueChanged += (_, v) =>
