@@ -1025,6 +1025,7 @@ view-dependent prism effect in §3.7 (`SkimFxRunner`'s live ship end, the retire
 | Automated asset gate | `Tests/EditMode/PrismOcclusionCoverageTests.cs` |
 | Tuning (radius SCALES / core alpha / sanity band) | `ScriptableObjects/PrismOcclusionConfigSO.cs` → `Resources/PrismOcclusionConfig.asset` |
 | GPU test + dither | `_Graphics/Materials/Graphs/PrismOcclusionCorridor.hlsl` |
+| Live design surface (dials · preview · measure · bake) | FrogletTools > Ecology > Prism Animation > **Occlusion Dither Lab** — `Editor/PrismOcclusionDitherLab.cs` + `_Graphics/Materials/Graphs/PrismOcclusionDitherPreview.shader` |
 | Graph wiring (idempotent, validate-before-write) | `Tools/Shaders/wire_prism_occlusion_corridor.py` |
 | Material alpha-test opt-in (idempotent) | `Tools/Shaders/enable_prism_alpha_clip.py` |
 | Interactive gate | FrogletTools > Ecology > Prism Animation > **Validate Occlusion Corridor** |
@@ -1120,11 +1121,149 @@ short band from reading as an edge are both continuity choices:
   purpose — it is the one candidate a cheap monotonic remap moves from one side of the
   admission line to the other.
 
+  That list is the **2026-08-04 in-situ pass**, and every number in it is on that harness.
+  The 2026-08-06 hard-edge pass (SHARD, below) re-measured on a rebuilt harness that reads
+  the same shipped Worley at 0.0073/0.0117 — ~1.55× stricter — so its numbers are quoted
+  with the kernel they belong to and are **not** merged into this list. Compare within a
+  harness, never across one.
+
   `PRISM_OCCLUSION_KERNEL` in `PrismOcclusionCorridor.hlsl` selects between the survivors.
   All are procedural — no texture, no sampler, no asset — and all cost less than the
-  corridor test itself:
+  corridor test itself.
 
-  - **2 — screen-space Worley (current).** Distance to the nearest jittered lattice point
+  **Choose the look in the Lab, not by editing `#define`s.** FrogletTools > Ecology >
+  Prism Animation > **Occlusion Dither Lab** drives the kernel and every scale dial as
+  shader globals **live, including in play mode** — which is the only place a dither can
+  actually be judged, because it has to be read in motion against real trail mass. Three
+  things make it more than a slider panel:
+
+  - **The preview is the shipped GPU code.** `PrismOcclusionDitherPreview.shader` includes
+    the corridor's own HLSL and calls the same `PrismOcclusionDitherThreshold` dispatch,
+    reading the same globals. A C# re-implementation could drift from the game; this
+    cannot, and a kernel added to the corridor shows up in the Lab for free.
+  - **Measure runs the admission rule**, not a proxy: it renders threshold+alpha to a float
+    target, reads it back and computes |coverage − alpha| over real rendered output — the
+    same methodology as the in-situ numbers above — and measures the **shipped Worley
+    baseline in the same pass**, so the verdict is a ratio and cannot be flattered by
+    anything about the harness. Sliders that let someone silently break a platform law
+    would be a worse tool than no sliders.
+  - **Bake writes the values back** into the constants and flips design mode off, so nobody
+    hand-transcribes numbers out of a screenshot. Every rewrite is anchored and must match
+    exactly once, or the bake refuses; the trailing comments (which carry the measured
+    windows) survive it.
+
+  Design mode is the `PRISM_OCCLUSION_LIVE_TUNING` gate, and it is **not free** — it
+  compiles all five kernels into every prism shader and allocates registers for the
+  largest, which costs occupancy on exactly the draw class this game has most of. At 0 the
+  file compiles as though none of it existed: one kernel, no branch, no uniforms. It is
+  fail-safe in both directions — with nothing published every dial falls back to its
+  constant, so design mode with the Lab closed renders identically to shipped mode
+  (verified by compiling both modes and diffing the output).
+
+  - **3 — screen-space SHARD (carried, 2026-08-06).** Worley with the METRIC changed and
+    nothing else: same lattice, same Hoskins hash, same orbiting feature points, same 3×3
+    search, same CDF remap, but distance is measured with the **gauge of an equilateral
+    triangle** (`g(q) = max(q.y, 0.866·|q.x| − 0.5·q.y)`) instead of the Euclidean length.
+    Level sets of a gauge are its own polygon, so the flecks become **triangles with hard
+    straight edges** while the arrangement the eye reads as organic flecking is untouched.
+
+    **Why the shape is a design surface, not a dither detail.** The unit shape is the
+    smallest piece of the game the player sees, repeated thousands of times right beside
+    their ship. The house motif is **soft-hard-soft** — bloom (soft) around low-poly
+    prisms (hard) along a smooth flight curve (soft), and the UI borders doing the same
+    thing, graded at both ends but taking hard turns in their pathing: rigid geometry
+    sandwiched between the ambiguous. A circle is the one shape that cannot participate —
+    it is soft, with a soft gradient either side of it (soft-SOFT-soft), so Worley's round
+    flecks read as foam against everything else in frame. Triangles restore the sandwich:
+    hard unit shape, ambiguous placement, soft corridor profile around it.
+
+    **The area normalisation is load-bearing, twice.** The gauge is scaled by **1.28607**
+    so the triangle at a given threshold has the same AREA as the circle it replaces
+    (`r = d·√(π/3√3)`). That is what makes it "triangles of the same size" — the dissolve's
+    ink density at every alpha is unchanged — *and* it lands the distance distribution on
+    Worley's own measured CDF, so **one fitted remap serves both cellular kernels**
+    (the constants are `PRISM_OCCLUSION_CELL_CDF_*`, renamed from `..._WORLEY_CDF_*` to say
+    so). Independently re-fitting under the triangle metric lands at 0.0118/0.8775 — within
+    noise of the shipped 0.011/0.873. Change the area constant and both must be re-fitted.
+
+    **It is very slightly CHEAPER than Worley**: a gauge is homogeneous of degree 1, so the
+    `min` is taken on it directly and the final `sqrt` disappears; per cell it trades a
+    `mul/add` for an `abs/mul/max`.
+
+    **Fidelity: 0.0074 uniform / 0.0145 corridor**, against the shipped Worley's 0.0073 /
+    0.0117 measured in the same harness — so about **24% more corridor error** for the
+    shape, comfortably inside the admission rule, and phase-stable (0.0073–0.0074 across
+    t = 0…400s). Note the harness is ~1.55× stricter than the original in-situ pass that
+    produced the numbers in this section, so compare **within a harness, not across**.
+    Temporal coherence 0.64% of band pixels per 60fps frame (Worley 0.50%, ceiling ~1.45%).
+
+    **`PRISM_OCCLUSION_SHARD_ORIENT`** picks how the triangles are turned: `FIXED` (default
+    — all one heading, 0.0074/0.0145), `FLIP` (up/down for one free negation,
+    0.0066/0.0126), `SPIN` (per-cell rotation off the orbit phase, one extra `cos`,
+    0.0070/0.0129). The scattered ones measure marginally *better* — a uniformly oriented
+    gauge is more spatially correlated — so the default is a **look** call: FIXED is the
+    one whose shape is nameable at a glance, which is the entire point of the change.
+
+    **The 3×3 search is measured, not argued, under this metric.** Because an equilateral
+    triangle's circumradius is twice its inradius, a feature point outside the neighbourhood
+    can in principle beat one inside it (Euclidean distance forbids that). Against an
+    exhaustive 5×5: 0.216% of pixels differ at all, mean threshold delta **1.5e-5**. A 5×5
+    triples the hash count to buy back one part in 10⁵ — not taken.
+
+    **The lattice pitch is a free dial inside a measured window, and the old "re-fit the
+    CDF" warning was wrong.** The distance is measured in *cell* units, so its distribution
+    does not move with the pitch: re-fitting anywhere from 3 to 15 px lands within noise of
+    the shipped constants and buys nothing measurable (at 15 px a bespoke re-fit takes the
+    sweep from 0.0062 to 0.0059 and leaves the corridor error at 0.026 untouched). The "~19×
+    degradation" the file used to threaten is what dropping the remap **entirely** costs
+    (raw F1 = 0.140), not what moving the pitch costs. What actually bounds it is **sampling
+    at both ends, and neither end is fittable**: 3 px puts the shape under the pixel floor
+    (0.013 either way), and past 11 px too few cells span the gradient band, so corridor
+    error climbs — 0.0193 at 11 px, **0.0248 at 15 px, which reads as a chunky edge rather
+    than a fade**. Usable window **4.5–11 px, sweet spot 6–8** (8 px measures identically to
+    the shipped 6 and is the most legible *as a triangle*).
+
+    A triangular **tessellation** (simplex grid, per-facet phase, facets filling as nested
+    triangles) was measured in the same pass, passed the number at 0.0009/0.0056 and is
+    **not carried**: it dissolves into thin strokes at mid alpha and reads as scratchy
+    crosshatch rather than as facets, and with the per-facet stagger removed it measures
+    0.164 and is the literal wallpaper the Bayer grid was dropped for. **Passing the number
+    is necessary, not sufficient.**
+
+  - **4 — screen-space SHATTER (CURRENT — shipped 2026-08-06 at polygon 16.26 px /
+    wall 20 px).** The other way to get a hard-edged unit shape: instead of growing a polygon around a point, take the **Voronoi
+    cell itself** — an irregular convex polygon, nothing but straight edges — and fill it
+    between two parallel straight lines from a hashed phase and a hashed band direction.
+    Neighbouring cells are independent, so their boundaries are always visible and the
+    pattern reads as a **cracked lattice of walls** rather than as scattered flecks. It is a
+    different proposition from SHARD, not a variant: SHARD hardens the fleck, SHATTER makes
+    the *negative space* the motif. Both are legitimately soft-hard-soft, so which belongs
+    next to the ship is a look call that can only be made in motion — hence carried rather
+    than described.
+
+    **Two independent dials**, the only kernel here where wall thickness is authorable
+    separately from cell size: `PRISM_OCCLUSION_SHATTER_CELL` (polygon px) and `..._WALL`
+    (band repeat px — at alpha `a` the dark wall is `(1−a)·WALL` wide, so it is literally
+    "how thick the walls get as the corridor closes").
+
+    **The wall window is RELATIVE, not absolute — corrected 2026-08-06**, and the
+    correction came from a setting chosen by eye in the Lab that the first window wrongly
+    flagged as a failure. The original sweep held the polygon at a fixed 11 px, which made
+    a flat "wall 4–11 px" look like the rule. It is not: what fails is a wall wide relative
+    to *its own* polygon, because there is no lattice left to crack. Measured by ratio —
+    0.75× → 0.0063, 1.00× → 0.0094, **1.23× → 0.0102 (shipped)**, 1.30× → 0.0162,
+    1.64× → 0.0173. Read it as **polygon 8–20 px, wall up to ~1.25× the polygon**, and
+    measure past that rather than assuming in either direction.
+
+    The shipped 16.26 / 20 holds **0.0102–0.0128 across t = 0…400s** — at or inside the
+    Worley baseline's 0.0117, and better than SHARD's 0.0145.
+
+    **No CDF fit and none needed** — `frac` of a hash is uniform by construction, so
+    fidelity is exact in the large and there is no remap to keep in sync. Most expensive
+    kernel in the file: Worley's nine hashes and sines, plus a tenth hash for the owning
+    cell and one sin/cos for the band direction.
+
+  - **2 — screen-space Worley (the calibration reference).** Distance to the nearest jittered lattice point
     over the 3×3 neighbourhood that can contain it. Reads as **organic flecking** — irregular
     blobs with visible cell structure — rather than IGN's even stipple or the spiral's
     standing bands; screen-anchored, so prisms dissolve through it. The most expensive kernel
@@ -1135,8 +1274,11 @@ short band from reading as an edge are both continuity choices:
     0.1401 — outside the admission rule. A `smoothstep` fitted to the measured F1 CDF
     (`0.02 → 0.83`) takes it to 0.0048, a 19× improvement for one instruction, and because
     the remap is monotonic the cell boundaries and the whole look are unchanged — only the
-    rate at which cells fill in as alpha sweeps, which is the part that was wrong. Retuning
-    `WORLEY_CELL` without re-fitting the two CDF constants silently reintroduces the error.
+    rate at which cells fill in as alpha sweeps, which is the part that was wrong. Note the
+    remap is what is load-bearing, **not** its coupling to `PRISM_OCCLUSION_CELL_SIZE`: that
+    coupling was re-measured on 2026-08-06 and does not exist (see the size window under
+    kernel 3). Dropping the remap costs 19×; moving the pitch inside its window costs
+    nothing.
   **The morph axis.** `PRISM_OCCLUSION_MORPH_RATE` (cycles/sec, default 0.12 — one cycle
   per ~8s; 0 freezes it) evolves whichever kernel is selected, so the stipple is never the
   same twice. It is an axis rather than a fourth kernel because each kernel interprets it

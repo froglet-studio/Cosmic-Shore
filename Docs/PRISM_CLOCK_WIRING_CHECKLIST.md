@@ -300,21 +300,43 @@ no play mode):
 3. Watch the boundary. Sides and base grade at the same rate; there should be **no seam**
    anywhere on the cone, and in particular no crisp semicircular edge on a large plate
    level with the ship.
-4. Hold still ~10s and watch the stipple. The pattern should slowly **evolve** — cells
-   drifting and merging — reading as flow, never as flicker or shimmer.
+4. Hold still ~10s and watch the stipple. It should read as a **cracked lattice of walls**
+   (the shipped SHATTER kernel), and the pattern should **evolve** — polygons drifting, walls
+   re-drawing — reading as flow, never as flicker. Round flecks mean the kernel is back on
+   `..._WORLEY`; triangles mean `..._SHARD`.
 5. Swap vessels (the freestyle vessel-changer toy). The corridor should re-scale to the
    new hull automatically — a bigger ship clears a proportionally bigger cone.
 6. Check the console: zero `[PrismOcclusion]` errors. Any that appear name the vessel and
    the number, and mean either an unmeasurable hull or an implausible radius.
+
+**Do not hand-edit these to explore.** `FrogletTools > Ecology > Prism Animation >
+**Occlusion Dither Lab**` drives every knob below as a shader global — **live, including in
+play mode** — previews them through the shipped GPU code, measures the coverage fidelity
+against the shipped baseline, and bakes the result back into the constants. Editing the
+`#define`s by hand is for when you already know the number.
 
 **The knobs**, if it needs tuning (all in
 `Assets/_Graphics/Materials/Graphs/PrismOcclusionCorridor.hlsl` unless noted):
 
 | Knob | Default | What it does |
 |---|---|---|
-| `PRISM_OCCLUSION_KERNEL` | `..._WORLEY` | The dither look. `..._WORLEY` organic flecking · `..._SPIRAL` a corridor-anchored iris · `..._IGN` an even screen-space dissolve. |
-| `PRISM_OCCLUSION_MORPH_RATE` | `0.12` | Pattern evolution, cycles/sec. `0` freezes it; past ~`0.25` it reads as noise. Cannot affect the fade — coverage is flat across the range. |
-| `PRISM_OCCLUSION_WORLEY_CELL` | `6.0` | Fleck size in pixels. **Re-fit `..._CDF_LO`/`..._CDF_HI` if you change it** — they are fitted to this value and the fade degrades ~19× without a re-fit. |
+| `PRISM_OCCLUSION_KERNEL` | `..._SHATTER` | The dither look. `..._SHATTER` a cracked lattice of walls (**shipped**) · `..._SHARD` triangular flecking · `..._WORLEY` the same arrangement as SHARD with round flecks · `..._SPIRAL` a corridor-anchored iris · `..._IGN` an even screen-space dissolve. |
+| `PRISM_OCCLUSION_SHARD_ORIENT` | `..._FIXED` | Shard only. `..._FIXED` all triangles one heading (most legible as a triangle) · `..._FLIP` up/down · `..._SPIN` free per-cell rotation (reads as splinters). |
+| `PRISM_OCCLUSION_MORPH_RATE` | `0.3256` | Pattern evolution, cycles/sec. `0` freezes it. Shipped ABOVE the ~`0.25` guideline by deliberate choice after viewing it in motion (1.75% of band pixels flip per frame vs the 1.45% guideline) — a look call, and it cannot affect the fade: coverage is flat across the range. |
+| `PRISM_OCCLUSION_CELL_SIZE` | `6.0` | Fleck size in pixels, shared by SHARD and WORLEY. **Free dial inside 4.5–11 px** (sweet spot 6–8); the CDF fit is scale-invariant, so it does NOT need re-fitting — see the size window below. |
+| `PRISM_OCCLUSION_SHARD_AREA` | `1.28607` | Shard only. Normalises the triangle gauge to the same AREA as the circle it replaces — which is also what lets it share the CDF fit. **Changing this one DOES mean re-fitting `..._CDF_*`.** |
+| `PRISM_OCCLUSION_SHATTER_CELL` / `..._WALL` | `16.26` / `20.0` | Shatter only, and independent: polygon size and wall repeat, both in pixels. At alpha `a` the dark wall is `(1-a) × WALL` wide. Windows: polygon **8–20 px**, wall up to **~1.25× the polygon** — the wall window is RELATIVE, not absolute (corrected 2026-08-06). No CDF — `frac` of a hash is uniform by construction. |
+| `PRISM_OCCLUSION_LIVE_TUNING` | `0` (shipped) | **Design mode.** 1 promotes every knob above to two shader globals and makes the kernel a runtime branch, so the Lab can drive them live. 0 compiles the file exactly as if none of this existed — one kernel, no branch, no uniforms. Design mode costs GPU occupancy (all five kernels in every prism shader), so **bake and set it to 0 before shipping**; the Lab's "Bake to source + ship mode" button does both. Fail-safe: with nothing published, every dial falls back to its constant, so design mode with the Lab closed looks exactly like shipped mode. |
+
+**The size window (measured 2026-08-06).** `CELL_SIZE` used to carry a "re-fit the CDF or
+the fade degrades ~19×" warning. That was wrong: the distance is measured in *cell* units,
+so the distribution does not move with the pitch — re-fitting anywhere from 3 to 15 px lands
+within noise of the shipped constants and buys nothing. (The 19× figure is what dropping the
+remap *entirely* costs.) What actually bounds the dial is **sampling**, at both ends, and
+neither end is fittable: below ~4.5 px the shape falls under the pixel floor, and past ~11 px
+too few cells span the gradient band, so corridor error climbs (0.019 at 11 px, 0.025 at
+15 px — that last one reads as a chunky edge, not a fade). Same failure shape on SHATTER: a
+polygon or a wall as large as the gradient band cannot resolve the gradient.
 | `PRISM_OCCLUSION_SPIRAL_ARMS` | `3.0` | Spiral only. **Must stay an integer** or a radial scar appears down one side. |
 | `OuterRadiusScale` / `InnerRadiusScale` / `CoreAlpha` | `1` / `0.25` / `0` | `Resources/PrismOcclusionConfig` — corridor width and how solid the clear centre is. Multiples of the vessel's own circumscribing radius, so they are vessel-independent. |
 
