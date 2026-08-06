@@ -146,20 +146,24 @@ consumers scale symmetrically down through debuffs — codebase-consistent behav
 | Element | Quantitative (continuous) | Attach point | Level-5 upgrade | Attach point |
 |---|---|---|---|---|
 | **Space** | Gun range (projectile speed and/or lifetime; range = v·T·2/π) | `FullAutoActionExecutor` fire tick + `FireGunActionExecutor.Fire` — live `Multiplier(Space)` on speed/lifetime (the authored `speedValue` Min 1500→Max 4000 becomes the tuning range) | **Piercing bullets** (new default below L5: destroy on first prism impact — today's bullets already pierce, see AUDIT §4) | Per-shot `piercing` flag through `Gun.FireGun → Projectile.Initialize`; prism-impact flow returns the projectile to the factory after the damage effect when not piercing. Must not reuse `DisableColliderNow` until the dud bug is fixed |
-| **Time** | Boost speed | Boost path: scale the effective boost multiplier in the overheat/boost executor (`Multiplier(Time)` on top of `VesselStatus.BoostMultiplier`) — do not mutate the shared `BoostMultiplier` field | **Barrel roll**: right stick at perimeter + boost → roll (CW right half / CCW left half); visual roll on OrientationHandle/Animator; orthogonal displacement via `ModifyVelocity` (left stick picks the normal direction); **bridging prisms oriented along actual travel** via a `blockRotation` override for the roll duration (replicates via `n_BlockRotation`) | New `BarrelRollActionExecutor` on the vessel (polls the newly-published `RightNormalizedJoystickPosition` + `IsBoosting`, the `MantaAnalogTurnBoostExecutor` pattern), gated on `IsUpgradeActive(Time)`. AI: synthesize the trigger in the executor for `AutoPilotEnabled` vessels (AI never runs input strategies) |
+| **Time** | Boost speed, on an **indefinite** boost (no heat, no meter) | `VesselTransformer.CurrentBoostAmount()` — live `Multiplier(Time)` on top of `VesselStatus.BoostMultiplier`; the shared field is never mutated | **Elemental Ward**: while boosting, negative `ResourceSystem.ApplyElementalEffect` calls are dropped — buffs still land, live debuffs still decay, non-elemental danger punishments (slow, input mute) still apply | The general `ResourceSystem` immunity state + the shared `VesselElementalImmunity` driver (`WhileBoosting`, gated `Element.Time`). The **strafing roll is now BASE kit**, ungated, on `BarrelRollController` (left stick at perimeter + boost). Detail: `_Scripts/Controller/Vessel/R_VesselActions/SPARROW_AFTERBURNER.md` |
 | **Mass** | Turret prism stretch (long z-axis) | `FullAutoBlockShootActionExecutor` — multiply `BlockScale.z` by `Multiplier(Mass)` at fire time, routed through `TargetScale` + `Prism.Initialize` (prereq fix), curve in the SO | **Shielded turret prisms** (regular shield, never SuperShield — fauna must keep their devastate sink) | `prismProperties.IsShielded = true` before `Initialize` (the trail-spawner pattern), gated on `IsUpgradeActive(Mass)` |
 | **Charge** | Skyburst blast radius | `FireGunActionExecutor.Fire`: replace the literal `0` with `Clamp01(GetLevel(Charge)/10)`; author real min/max on the three skyburst effect assets (the `Lerp(MinScale, MaxScale, Charge)` pipe already exists in `ProjectileDetonatorSO`) | **Skybursts spare the shooter's own domain** | Gate the direct-hit damage in `SkyBurstProjectileDamagePrismEffectSO` on domain when unlocked (per-shot flag plumbed like piercing); AOE already spares own domain via `affectSelf:0`. Prereq: wire steal → `PrismSpatialIndex.UpdateDomain` so "own domain" is live |
 
 Presentation: `ElementalAbilityMaps/Sparrow.asset` re-authors the abandoned branch's verified
-input map — Fire (1) / SkyBurst (2) / Turret Stance (6) / Overheat Boost (7) — with the elements
-attached. The stale "Redirection" ability card is replaced by the turret-stance ability.
+input map — Fire (1) / SkyBurst (2) / Turret Stance (6) / Afterburner (7, formerly "Overheat
+Boost") — with the elements attached. The stale "Redirection" ability card is replaced by the
+turret-stance ability.
 
 ## 6. Design-law compliance
 
 - **Danger prisms**: the Charge-5 gate lives strictly in the explosion/projectile layer
   (Explosion→Prism), never in `Prism.Damage` and never in any `*ByDangerPrismEffectSO`
-  (Prism→Vessel). A L5 Sparrow is still slammed by its own overheat danger trail. No conflict
-  with the locked invariant (AUDIT §4-Charge).
+  (Prism→Vessel). No conflict with the locked invariant (AUDIT §4-Charge). The Sparrow's own
+  overheat danger trail is gone with the overheat mechanic, and the Time-5 Elemental Ward is
+  likewise NOT an exception to it: the ward denies only the elemental *drain*
+  (`VesselElementalDebuffByDangerPrismEffectSO`), while the danger prism's speed slam and input
+  mute still land on the warded pilot, own domain included.
 - **Mass conservation**: no new sinks or timers. Piercing *reduces* per-prism destruction odds per
   shot; domain-sparing *reduces* destruction; stretch adds volume through the normal spawn
   channel; shields convert destruction into shield-pop. Turret prisms remain permanent

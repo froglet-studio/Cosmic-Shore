@@ -1,15 +1,21 @@
+using System;
 using System.Collections;
-using CosmicShore.Data;
 using CosmicShore.Utility;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// TIME level-5 'Barrel Roll' (ElementalAbilityMapSO upgrade). One roll per BOOST press:
+    /// The Sparrow's strafing roll — a BASE part of the boost ability, available from level 0 with no
+    /// elemental unlock (it was the TIME level-5 upgrade until the boost redesign; TIME-5 is now the
+    /// elemental-debuff immunity held while boosting, see VesselElementalImmunity).
+    ///
+    /// One roll per BOOST press:
     /// while boosting with the stick at FULL deflection the vessel rolls once — holding the
     /// stick at the perimeter is fine (it never repeats; the next boost press grants the next
-    /// roll, and a stick already pinned at max when boost starts rolls immediately).
+    /// roll, and a stick already pinned at max when boost starts rolls immediately). That
+    /// once-per-press charge is what the boost ability icon displays
+    /// (<see cref="OnRollChargeChanged"/> → SparrowHUDView.SetRollCharge).
     /// Clockwise on the right half of the stick circle, counterclockwise on the left —
     /// animating the model about its
     /// forward axis while a ModifyVelocity displacement orthogonal to travel (direction picked
@@ -26,7 +32,7 @@ namespace CosmicShore.Gameplay
     ///
     /// Owner-driven: input polling only acts on the locally controlled vessel; the
     /// displacement replicates via the owner-authoritative NetworkTransform. Autopilot/AI
-    /// vessels never produce stick input, so the upgrade is inert for AI (trigger synthesis
+    /// vessels never produce stick input, so the roll is inert for AI (trigger synthesis
     /// is tracked in Docs/ElementalAbilitySystem/BACKLOG.md Phase 2.5).
     /// </summary>
     public class BarrelRollController : MonoBehaviour
@@ -68,6 +74,16 @@ namespace CosmicShore.Gameplay
         bool _rollArmed;
         Quaternion _visualRestRotation;
 
+        /// <summary>
+        /// Raised when the once-per-press roll charge is armed (true, on a fresh boost press) or spent
+        /// (false, the instant a roll triggers). The Sparrow HUD binds this to the boost ability icon's
+        /// charge ring, which is why the roll is legible without a heat gauge.
+        /// </summary>
+        public event Action<bool> OnRollChargeChanged;
+
+        /// <summary>True while a strafing roll is available on the current boost press.</summary>
+        public bool IsRollArmed => _rollArmed;
+
         void Awake()
         {
             _status = GetComponent<VesselStatus>();
@@ -83,14 +99,13 @@ namespace CosmicShore.Gameplay
             // rolls immediately, and holding it there never repeats (the next boost
             // press grants the next roll).
             bool boosting = _status.IsBoosting;
-            if (boosting && !_wasBoosting) _rollArmed = true;
+            if (boosting && !_wasBoosting) SetRollArmed(true);
             _wasBoosting = boosting;
 
             if (!_rollArmed || _rolling) return;
             if (!boosting) return;
             if (_status.AutoPilotEnabled) return;
             if (_status.IsTranslationRestricted) return;
-            if (!_status.ElementalAbilityHandler.IsUpgradeActive(Element.Time)) return;
 
             var input = _status.InputStatus;
             if (input == null) return;
@@ -121,9 +136,16 @@ namespace CosmicShore.Gameplay
             CSDebug.Log($"[BarrelRoll] Triggered: {(rollSign > 0f ? "CW" : "CCW")}, " +
                         $"stick ({stick.x:F2}, {stick.y:F2}), nudge dir {nudge.normalized}");
 
-            _rollArmed = false;
+            SetRollArmed(false);
             transformer.ModifyVelocity(nudge.normalized * nudgeSpeed, rollDurationSeconds);
             StartCoroutine(RollRoutine(rollSign, transformer));
+        }
+
+        void SetRollArmed(bool armed)
+        {
+            if (armed == _rollArmed) return;
+            _rollArmed = armed;
+            OnRollChargeChanged?.Invoke(armed);
         }
 
         IEnumerator RollRoutine(float rollSign, VesselTransformer transformer)
@@ -195,6 +217,11 @@ namespace CosmicShore.Gameplay
             if (rollVisualTarget && _rolling)
                 rollVisualTarget.localRotation = _visualRestRotation;
             _rolling = false;
+
+            // A re-enabled vessel must not inherit a stale charge — the next boost PRESS arms it,
+            // and the HUD re-seeds from IsRollArmed at init.
+            _wasBoosting = false;
+            SetRollArmed(false);
         }
     }
 }

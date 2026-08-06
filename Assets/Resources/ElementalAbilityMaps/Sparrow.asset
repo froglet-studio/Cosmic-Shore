@@ -28,18 +28,20 @@ MonoBehaviour:
     UpgradeDescription: Bullets pierce through prisms instead of being destroyed
       on first impact.
   - Element: 4
-    AbilityLabel: Overheat Boost
-    AbilityDescription: Boost while building heat. Time raises the boost speed;
-      at level 5 boosting at full stick deflection performs a barrel roll.
+    AbilityLabel: Afterburner
+    AbilityDescription: Hold to boost indefinitely - there is no heat and no meter.
+      Boosting at full stick deflection performs one strafing roll per press (base,
+      no unlock). Time raises the boost speed; at level 5 boosting also makes you
+      immune to elemental debuffs.
     Input: 7
     MultiplierAtFullLevel: 1.5
     MinMultiplier: 0.5
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: Barrel Roll
-    UpgradeDescription: Boost with the stick at the circle's perimeter to roll,
-      displacing sideways while a bridging trail follows your true path.
+    UpgradeLabel: Elemental Ward
+    UpgradeDescription: While boosting, elemental debuffs cannot land - danger prisms
+      and skimmer overtakes leave your levels untouched. Buffs still apply.
   - Element: 2
     AbilityLabel: Turret Stance
     AbilityDescription: Stop and fire prisms instead of bullets. Mass stretches
