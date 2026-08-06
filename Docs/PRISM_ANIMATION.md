@@ -1180,13 +1180,50 @@ short band from reading as an edge are both continuity choices:
     exhaustive 5×5: 0.216% of pixels differ at all, mean threshold delta **1.5e-5**. A 5×5
     triples the hash count to buy back one part in 10⁵ — not taken.
 
-    Two more polygonal candidates were measured in the same pass, passed the fidelity bar
-    and were **rejected on the look**: a triangular **tessellation** (simplex grid, per-facet
-    phase, facets filling as nested triangles — 0.0009/0.0056) and Voronoi **shatter**
-    (irregular polygons filling between parallel straight lines — 0.0009/0.0034). Both
-    dissolve into thin strokes at mid alpha and read as scratchy crosshatch rather than as
-    polygons; the unstaggered tessellation (0.164) is the literal wallpaper the Bayer grid
-    was dropped for. **Passing the number is necessary, not sufficient.**
+    **The lattice pitch is a free dial inside a measured window, and the old "re-fit the
+    CDF" warning was wrong.** The distance is measured in *cell* units, so its distribution
+    does not move with the pitch: re-fitting anywhere from 3 to 15 px lands within noise of
+    the shipped constants and buys nothing measurable (at 15 px a bespoke re-fit takes the
+    sweep from 0.0062 to 0.0059 and leaves the corridor error at 0.026 untouched). The "~19×
+    degradation" the file used to threaten is what dropping the remap **entirely** costs
+    (raw F1 = 0.140), not what moving the pitch costs. What actually bounds it is **sampling
+    at both ends, and neither end is fittable**: 3 px puts the shape under the pixel floor
+    (0.013 either way), and past 11 px too few cells span the gradient band, so corridor
+    error climbs — 0.0193 at 11 px, **0.0248 at 15 px, which reads as a chunky edge rather
+    than a fade**. Usable window **4.5–11 px, sweet spot 6–8** (8 px measures identically to
+    the shipped 6 and is the most legible *as a triangle*).
+
+    A triangular **tessellation** (simplex grid, per-facet phase, facets filling as nested
+    triangles) was measured in the same pass, passed the number at 0.0009/0.0056 and is
+    **not carried**: it dissolves into thin strokes at mid alpha and reads as scratchy
+    crosshatch rather than as facets, and with the per-facet stagger removed it measures
+    0.164 and is the literal wallpaper the Bayer grid was dropped for. **Passing the number
+    is necessary, not sufficient.**
+
+  - **4 — screen-space SHATTER (carried candidate, 2026-08-06).** The other way to get a
+    hard-edged unit shape: instead of growing a polygon around a point, take the **Voronoi
+    cell itself** — an irregular convex polygon, nothing but straight edges — and fill it
+    between two parallel straight lines from a hashed phase and a hashed band direction.
+    Neighbouring cells are independent, so their boundaries are always visible and the
+    pattern reads as a **cracked lattice of walls** rather than as scattered flecks. It is a
+    different proposition from SHARD, not a variant: SHARD hardens the fleck, SHATTER makes
+    the *negative space* the motif. Both are legitimately soft-hard-soft, so which belongs
+    next to the ship is a look call that can only be made in motion — hence carried rather
+    than described.
+
+    **Two independent dials**, the only kernel here where wall thickness is authorable
+    separately from cell size: `PRISM_OCCLUSION_SHATTER_CELL` (polygon px, window 8–18) and
+    `..._WALL` (band repeat px, window 4–11 — at alpha `a` the dark wall is `(1−a)·WALL`
+    wide, so it is literally "how thick the walls get as the corridor closes"). Shipped at
+    12/9 = 0.0009 / 0.0070.
+
+    **No CDF fit and none needed** — `frac` of a hash is uniform by construction, so
+    fidelity is exact in the large and there is no remap to keep in sync. The window is
+    again pure sampling: polygon 5 px against a 9 px wall measures 0.0258/0.0240 and an
+    18 px wall against an 11 px polygon measures 0.0197/0.0223, both the same failure (a
+    feature as large as the gradient band cannot resolve the gradient). Most expensive
+    kernel in the file: Worley's nine hashes and sines, plus a tenth hash for the owning
+    cell and one sin/cos for the band direction.
 
   - **2 — screen-space Worley (the calibration reference).** Distance to the nearest jittered lattice point
     over the 3×3 neighbourhood that can contain it. Reads as **organic flecking** — irregular
@@ -1199,9 +1236,11 @@ short band from reading as an edge are both continuity choices:
     0.1401 — outside the admission rule. A `smoothstep` fitted to the measured F1 CDF
     (`0.02 → 0.83`) takes it to 0.0048, a 19× improvement for one instruction, and because
     the remap is monotonic the cell boundaries and the whole look are unchanged — only the
-    rate at which cells fill in as alpha sweeps, which is the part that was wrong. Retuning
-    `PRISM_OCCLUSION_CELL_SIZE` without re-fitting the two CDF constants silently
-    reintroduces the error — and it is now shared, so it breaks SHARD as well.
+    rate at which cells fill in as alpha sweeps, which is the part that was wrong. Note the
+    remap is what is load-bearing, **not** its coupling to `PRISM_OCCLUSION_CELL_SIZE`: that
+    coupling was re-measured on 2026-08-06 and does not exist (see the size window under
+    kernel 3). Dropping the remap costs 19×; moving the pitch inside its window costs
+    nothing.
   **The morph axis.** `PRISM_OCCLUSION_MORPH_RATE` (cycles/sec, default 0.12 — one cycle
   per ~8s; 0 freezes it) evolves whichever kernel is selected, so the stipple is never the
   same twice. It is an axis rather than a fourth kernel because each kernel interprets it

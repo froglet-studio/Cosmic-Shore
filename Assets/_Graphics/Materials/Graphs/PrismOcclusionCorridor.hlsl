@@ -76,19 +76,19 @@
 // 2026-08-04 (concentric rings 0.21, quasicrystal 0.13, halftone 0.10, hex 0.10, perlin
 // 0.04, …) are not here: they buy their look by trading it away.
 //
-// A kernel must also EARN ITS SHAPE. The 2026-08-06 hard-edge pass measured two more
-// polygonal candidates that pass the fidelity bar and were still rejected, on the look:
-// a triangular TESSELLATION (simplex grid, per-facet phase, facets filling as nested
-// triangles — 0.0009 / 0.0056) and Voronoi SHATTER (irregular polygons filling between
-// parallel straight lines — 0.0009 / 0.0034). Both dissolve into thin strokes at mid
-// alpha and read as scratchy crosshatch rather than as polygons, and the unstaggered
-// tessellation (0.16) is the literal wallpaper the Bayer grid was dropped for. Passing
-// the number is necessary, not sufficient.
+// A kernel must also EARN ITS SHAPE — passing the number is necessary, not sufficient.
+// The 2026-08-06 hard-edge pass measured two more polygonal candidates. Voronoi SHATTER
+// passed both bars and is carried as kernel 4. The triangular TESSELLATION (simplex grid,
+// per-facet phase, facets filling as nested triangles) passed the number at 0.0009 / 0.0056
+// and is NOT here: it dissolves into thin strokes at mid alpha and reads as scratchy
+// crosshatch rather than as facets, and with the per-facet stagger removed it measures
+// 0.16 and is the literal wallpaper the Bayer grid was dropped for.
 // -----------------------------------------------------------------------------
 #define PRISM_OCCLUSION_KERNEL_IGN 0     // screen-space noise — reads as a DISSOLVE
 #define PRISM_OCCLUSION_KERNEL_SPIRAL 1  // corridor-relative — reads as an IRIS
 #define PRISM_OCCLUSION_KERNEL_WORLEY 2  // screen-space cells — reads as ROUND flecking
 #define PRISM_OCCLUSION_KERNEL_SHARD 3   // screen-space cells — reads as TRIANGULAR flecking
+#define PRISM_OCCLUSION_KERNEL_SHATTER 4 // screen-space cells — reads as a CRACKED LATTICE
 
 #define PRISM_OCCLUSION_KERNEL PRISM_OCCLUSION_KERNEL_SHARD
 
@@ -259,7 +259,7 @@ float PrismOcclusionMotley(float2 pixel)
 // the failure mode the warning below is about.)
 static const float PRISM_OCCLUSION_CELL_SIZE = 6.0;       // pixels per lattice cell
 static const float PRISM_OCCLUSION_CELL_CDF_LO = 0.011;   // fitted to the measured F1 CDF
-static const float PRISM_OCCLUSION_CELL_CDF_HI = 0.873;   // — do not retune independently
+static const float PRISM_OCCLUSION_CELL_CDF_HI = 0.873;   // — see THE SIZE WINDOW below
 
 // The fit is named CELL, not WORLEY, because BOTH cellular kernels use it: SHARD's
 // triangle gauge is area-normalised against the circle (see kernel D), which lands its
@@ -267,6 +267,31 @@ static const float PRISM_OCCLUSION_CELL_CDF_HI = 0.873;   // — do not retune i
 // independent best fit is 0.0118 / 0.8775 — within noise of these two, and the shipped
 // pair measures 0.0074 uniform on it. One fit, two metrics; that is the payoff for
 // normalising by area rather than by extent.
+//
+// -----------------------------------------------------------------------------
+// THE SIZE WINDOW — CELL_SIZE is a free dial inside a measured band (2026-08-06).
+//
+// CORRECTION to what this file and the checklist used to say. The fit is NOT bound to
+// the pitch: the distance is measured in CELL units, so the distribution does not move
+// when the lattice does. Refitting at every pitch from 3 to 15 px lands within noise of
+// the two constants above (lo 0.009–0.020, hi 0.859–0.878) and buys nothing measurable —
+// at 15 px a bespoke refit takes the sweep from 0.0062 to 0.0059 and leaves the corridor
+// error at 0.026 untouched. The "~19× degradation" this note used to threaten is what you
+// get from dropping the remap ENTIRELY (raw F1 = 0.140), not from moving the pitch.
+//
+// What actually bounds the pitch is SAMPLING at both ends, and neither end is fittable:
+//
+//   3.0 px   the shape falls under the pixel floor — quantisation, 0.013 either way
+//   4.5 px   fine grain; triangles present but not readable at 1:1
+//   6.0 px   SHIPPED. 0.0074 / 0.0145 (SHARD/FIXED); ~9 px tall triangles
+//   8.0 px   0.0060 / 0.0146 — the same fidelity, and the most legible AS a triangle
+//  11.0 px   0.0059 / 0.0193 — bold; too few cells now span the gradient band
+//  15.0 px   0.0060 / 0.0248 — BREAKS THE FADE. The band reads as chunky edge, not fade.
+//
+// So: 4.5–11 px is the usable window and 6–8 px is the sweet spot. Move it inside that
+// band freely; past 11 px the corridor error is a SPATIAL sampling failure and there is
+// no constant anywhere in this file that will buy it back.
+// -----------------------------------------------------------------------------
 
 float2 PrismOcclusionHash2(float2 cell)
 {
@@ -420,6 +445,95 @@ float PrismOcclusionShard(float2 pixel, float time)
 
     return PrismOcclusionSafeThreshold(smoothstep(
         PRISM_OCCLUSION_CELL_CDF_LO, PRISM_OCCLUSION_CELL_CDF_HI, best));
+}
+
+// -----------------------------------------------------------------------------
+// Kernel E — screen-space SHATTER (a cracked lattice of walls).
+//
+// The other way to make a hard-edged unit shape: instead of growing a polygon around a
+// point, take the VORONOI CELL itself — an irregular convex polygon with nothing but
+// straight edges — and fill it between two parallel straight lines. Each cell gets a
+// hashed phase and a hashed band direction, and `frac(phase + ramp)` sweeps a band across
+// it. Neighbouring cells are independent, so the cell boundaries are always visible: the
+// pattern reads as a cracked lattice / labyrinth of WALLS rather than as scattered flecks.
+//
+// It is a different design proposition from SHARD, not a variant of it. SHARD keeps
+// Worley's arrangement and hardens the shape; SHATTER abandons the fleck entirely and
+// makes the NEGATIVE space the motif. Both are legitimately soft-hard-soft; which one
+// belongs next to the ship is a look call that can only be made in motion, which is why
+// this is carried rather than described.
+//
+// TWO DIALS, and they are independent — this is the one kernel here where the wall
+// thickness is authorable separately from the cell size:
+//   CELL — the polygon size in pixels.
+//   WALL — the band repeat in pixels. At alpha a the dark wall is (1−a)·WALL wide, so
+//          this is literally "how thick the walls get as the corridor closes".
+//
+// FIDELITY, and the window (same harness as everywhere in this file; shipped Worley reads
+// 0.0073 / 0.0117 on it). Fidelity is exact by construction in the large — `frac` of a
+// hash is uniform, so there is no CDF to fit and no remap to keep in sync — and what
+// bounds the dials is again SAMPLING:
+//
+//   polygon  5 px / wall  9 px   0.0258 / 0.0240   BREAKS — polygons under the wall period
+//   polygon  8 px / wall  9 px   0.0027 / 0.0065
+//   polygon 12 px / wall  9 px   0.0009 / 0.0070   SHIPPED SETTING
+//   polygon 18 px / wall  9 px   0.0007 / 0.0068
+//   polygon 11 px / wall  4 px   0.0007 / 0.0029   fine crazing
+//   polygon 11 px / wall  7 px   0.0010 / 0.0052
+//   polygon 11 px / wall 11 px   0.0013 / 0.0092
+//   polygon 11 px / wall 18 px   0.0197 / 0.0223   BREAKS — one band spans the whole band
+//
+// So: polygon 8–18 px, wall 4–11 px. The failure at both ends is the same one — a feature
+// as large as the gradient band cannot resolve the gradient — and neither is fittable.
+//
+// COST. The most expensive kernel in the file: Worley's nine hashes and nine sines, plus
+// a tenth hash for the owning cell and one sin/cos pair for the band direction. Still
+// ALU-only, still no texture or sampler, still paid only on corridor fragments.
+// -----------------------------------------------------------------------------
+// MORPH: both halves move. The sites orbit exactly as in Worley (so the polygons drift,
+// and the walls re-draw themselves as cells trade territory), and the band phase advances
+// at the same rate (so each wall slides across its own cell). The phase term sits inside
+// the frac() of an already-uniform quantity, so — like the spiral — its contribution to
+// coverage is provably nil.
+static const float PRISM_OCCLUSION_SHATTER_CELL = 12.0;  // polygon size, px  (8–18)
+static const float PRISM_OCCLUSION_SHATTER_WALL = 9.0;   // band repeat, px   (4–11)
+
+float PrismOcclusionShatter(float2 pixel, float time)
+{
+    float2 p = pixel / PRISM_OCCLUSION_SHATTER_CELL;
+    float2 base = floor(p);
+    float phase = time * PRISM_OCCLUSION_MORPH_RATE * 6.28318530718;
+
+    // F1 as usual, but the ANSWER is which cell won, not how far away it was.
+    float best = 8.0;
+    float2 owner = base;
+    [unroll]
+    for (int y = -1; y <= 1; ++y)
+    {
+        [unroll]
+        for (int x = -1; x <= 1; ++x)
+        {
+            float2 cell = base + float2(x, y);
+            float2 orbit = 0.5 + 0.5 * sin(6.28318530718 * PrismOcclusionHash2(cell) + phase);
+            float2 offset = (cell + orbit) - p;
+            float d = dot(offset, offset);
+            if (d < best)
+            {
+                best = d;
+                owner = cell;
+            }
+        }
+    }
+
+    // The band is measured from the owning cell's INDEX, not from its jittered site, so an
+    // orbiting site slides its walls instead of rotating them about a moving centre.
+    float2 h = PrismOcclusionHash2(owner);
+    float ang = 6.28318530718 * h.y;
+    float ramp = dot(p - owner, float2(cos(ang), sin(ang)))
+               * (PRISM_OCCLUSION_SHATTER_CELL / PRISM_OCCLUSION_SHATTER_WALL);
+
+    return PrismOcclusionSafeThreshold(
+        frac(h.x + ramp + time * PRISM_OCCLUSION_MORPH_RATE));
 }
 
 // Quintic smootherstep — C2 continuous: value, FIRST and SECOND derivatives are all
@@ -578,6 +692,8 @@ void PrismOcclusionFade_float(float3 PositionWS, float3 Target, float3 Params, f
 
 #if PRISM_OCCLUSION_KERNEL == PRISM_OCCLUSION_KERNEL_SHARD
     ClipThreshold = PrismOcclusionShard(pixel, time);
+#elif PRISM_OCCLUSION_KERNEL == PRISM_OCCLUSION_KERNEL_SHATTER
+    ClipThreshold = PrismOcclusionShatter(pixel, time);
 #elif PRISM_OCCLUSION_KERNEL == PRISM_OCCLUSION_KERNEL_WORLEY
     ClipThreshold = PrismOcclusionWorley(pixel, time);
 #else
