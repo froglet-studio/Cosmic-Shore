@@ -368,8 +368,11 @@ namespace CosmicShore.Editor
                         _shatterWall, ShatterWallMin, ShatterWallMax);
                     float ratio = _shatterWall / Mathf.Max(_shatterCell, 1e-3f);
                     bool wallOutside = ratio > ShatterWallRatioMax || _shatterWall < ShatterWallMin;
+                    string wallNote = wallOutside
+                        ? "past " + ShatterWallRatioMax.ToString("0.00") + "x, measure before trusting it"
+                        : "in window";
                     EditorGUILayout.LabelField(" ",
-                        $"{ratio:0.00}× the polygon — {(wallOutside ? $"past {ShatterWallRatioMax:0.00}×, measure before trusting it" : "in window")}",
+                        ratio.ToString("0.00") + "x the polygon - " + wallNote,
                         Warn(wallOutside));
                     EditorGUILayout.LabelField(" ", "at alpha a the dark wall is (1−a) × period wide",
                         EditorStyles.miniLabel);
