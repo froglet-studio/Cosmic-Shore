@@ -70,16 +70,11 @@ namespace CosmicShore.Gameplay
         private const int TRANSIENT_MAX_RETRIES   = 5;
         private const int TRANSIENT_BASE_DELAY_MS = 1000;
 
-        // Lobby player-property keys - written during session create/join so
-        // other lobby members can see our display name, party info, etc.
-        private const string DISPLAY_NAME_KEY    = "displayName";
-        private const string AVATAR_ID_KEY       = "avatarId";
-        private const string PARTY_COUNT_KEY     = "partyCount";
-        private const string PARTY_MAX_KEY       = "partyMax";
-        private const string MATCH_NAME_KEY      = "matchName";
-        private const string JOINED_PARTY_KEY    = "joined_party";
-        private const string INVITE_PAYLOADS_KEY = "invite_payloads";
-        private const string ACCEPTED_INVITE_KEY = "accepted_invite";
+        // Session player-property keys. Identity only - see
+        // BuildLocalPlayerProperties for why the six party-state keys that used
+        // to live here were removed rather than left as unused declarations.
+        private const string DISPLAY_NAME_KEY = PartyLobbyKeys.DisplayName;
+        private const string AVATAR_ID_KEY    = PartyLobbyKeys.AvatarId;
 
         // ─────────────────────────────────────────────────────────────────────
         // Dependencies + state
@@ -455,19 +450,33 @@ namespace CosmicShore.Gameplay
         /// </summary>
         private Dictionary<string, PlayerProperty> BuildLocalPlayerProperties()
         {
-            int partyCount = _connectionData.PartyMembers != null ? _connectionData.PartyMembers.Count : 0;
-            int partyMax   = _connectionData.MaxPartySlots;
-
+            // Identity ONLY.
+            //
+            // This dictionary is written to the RELAY session, and the relay
+            // session's player properties have exactly one reader in the whole
+            // codebase: PartyMemberService.ReadMemberData, which takes
+            // displayName and avatarId. The six other keys this used to write -
+            // partyCount, partyMax, matchName, joined_party, invite_payloads,
+            // accepted_invite - are the PRESENCE LOBBY's vocabulary. Every
+            // consumer of them (ReadOnlinePlayerData, TryFindIncomingInvite,
+            // ScanPresenceForJoinedPartyMembers, AcceptanceSignalService) reads
+            // from _lobbyService.ActiveLobby.Players, never from the session.
+            // They were written here and read nowhere: four of them always
+            // string.Empty.
+            //
+            // Dropping them is not just tidiness. Property writes are the
+            // measured driver of the B1/B6 stale-index defect - the fault rate
+            // concentrates in the startup write burst - which is why
+            // "coalesce startup property writes" (TODO-P2) is the highest-value
+            // item on the presence list. Session create and join each carried
+            // six dead keys; now they carry none.
+            //
+            // If a future feature genuinely needs party state on the session, add
+            // the key back WITH its reader in the same commit.
             return new Dictionary<string, PlayerProperty>
             {
-                { DISPLAY_NAME_KEY,    new PlayerProperty(string.IsNullOrEmpty(_connectionData.LocalDisplayName) ? "Pilot" : _connectionData.LocalDisplayName, VisibilityPropertyOptions.Public) },
-                { AVATAR_ID_KEY,       new PlayerProperty(_connectionData.LocalAvatarId.ToString(),    VisibilityPropertyOptions.Public) },
-                { PARTY_COUNT_KEY,     new PlayerProperty(partyCount.ToString(), VisibilityPropertyOptions.Public) },
-                { PARTY_MAX_KEY,       new PlayerProperty(partyMax.ToString(),   VisibilityPropertyOptions.Public) },
-                { MATCH_NAME_KEY,      new PlayerProperty(string.Empty,          VisibilityPropertyOptions.Public) },
-                { JOINED_PARTY_KEY,    new PlayerProperty(string.Empty,          VisibilityPropertyOptions.Public) },
-                { INVITE_PAYLOADS_KEY, new PlayerProperty(string.Empty,          VisibilityPropertyOptions.Public) },
-                { ACCEPTED_INVITE_KEY, new PlayerProperty(string.Empty,          VisibilityPropertyOptions.Public) },
+                { DISPLAY_NAME_KEY, new PlayerProperty(string.IsNullOrEmpty(_connectionData.LocalDisplayName) ? "Pilot" : _connectionData.LocalDisplayName, VisibilityPropertyOptions.Public) },
+                { AVATAR_ID_KEY,    new PlayerProperty(_connectionData.LocalAvatarId.ToString(), VisibilityPropertyOptions.Public) },
             };
         }
 

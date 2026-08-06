@@ -55,8 +55,8 @@ namespace CosmicShore.Gameplay
 
         // Property key names mirror the values written by PresenceLobbyService
         // and PartySessionService so that player-property reads are consistent.
-        private const string DISPLAY_NAME_KEY = "displayName";
-        private const string AVATAR_ID_KEY    = "avatarId";
+        private const string DISPLAY_NAME_KEY = PartyLobbyKeys.DisplayName;
+        private const string AVATAR_ID_KEY    = PartyLobbyKeys.AvatarId;
 
         // ─────────────────────────────────────────────────────────────────────
         // Dependencies

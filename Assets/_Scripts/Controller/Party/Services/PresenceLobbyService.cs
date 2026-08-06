@@ -67,15 +67,15 @@ namespace CosmicShore.Gameplay
         // Constants - keys and tuning
         // ─────────────────────────────────────────────────────────────────────
 
-        private const string PRESENCE_LOBBY_GAME_MODE = "PRESENCE_LOBBY";
-        private const string DISPLAY_NAME_KEY         = "displayName";
-        private const string AVATAR_ID_KEY            = "avatarId";
-        private const string PARTY_COUNT_KEY          = "partyCount";
-        private const string PARTY_MAX_KEY            = "partyMax";
-        private const string MATCH_NAME_KEY           = "matchName";
-        private const string INVITE_PAYLOADS_KEY      = "invite_payloads";
-        private const string JOINED_PARTY_KEY         = "joined_party";
-        private const string ACCEPTED_INVITE_KEY      = "accepted_invite";
+        private const string PRESENCE_LOBBY_GAME_MODE = PartyLobbyKeys.PresenceLobbyGameMode;
+        private const string DISPLAY_NAME_KEY         = PartyLobbyKeys.DisplayName;
+        private const string AVATAR_ID_KEY            = PartyLobbyKeys.AvatarId;
+        private const string PARTY_COUNT_KEY          = PartyLobbyKeys.PartyCount;
+        private const string PARTY_MAX_KEY            = PartyLobbyKeys.PartyMax;
+        private const string MATCH_NAME_KEY           = PartyLobbyKeys.MatchName;
+        private const string INVITE_PAYLOADS_KEY      = PartyLobbyKeys.InvitePayloads;
+        private const string JOINED_PARTY_KEY         = PartyLobbyKeys.JoinedParty;
+        private const string ACCEPTED_INVITE_KEY      = PartyLobbyKeys.AcceptedInvite;
 
         /// <summary>
         /// After creating a lobby, wait this long before re-querying to detect
@@ -496,7 +496,7 @@ namespace CosmicShore.Gameplay
                     SessionProperties = new Dictionary<string, SessionProperty>
                     {
                         {
-                            "gameMode",
+                            PartyLobbyKeys.GameMode,
                             new SessionProperty(
                                 PRESENCE_LOBBY_GAME_MODE,
                                 VisibilityPropertyOptions.Public,

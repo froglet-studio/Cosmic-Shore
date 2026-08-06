@@ -66,7 +66,7 @@ namespace CosmicShore.Gameplay
         /// session is created.  Replaced by the real id via
         /// <see cref="UpdatePayloadsWithRealSessionId"/> once the session is live.
         /// </summary>
-        internal const string PENDING_SESSION_ID = "PENDING";
+        internal const string PENDING_SESSION_ID = PartyLobbyKeys.PendingSessionId;
 
         /// <summary>
         /// Separator between the fields of one invite line.
