@@ -1160,7 +1160,7 @@ short band from reading as an edge are both continuity choices:
   constant, so design mode with the Lab closed renders identically to shipped mode
   (verified by compiling both modes and diffing the output).
 
-  - **3 — screen-space SHARD (current, 2026-08-06).** Worley with the METRIC changed and
+  - **3 — screen-space SHARD (carried, 2026-08-06).** Worley with the METRIC changed and
     nothing else: same lattice, same Hoskins hash, same orbiting feature points, same 3×3
     search, same CDF remap, but distance is measured with the **gauge of an equilateral
     triangle** (`g(q) = max(q.y, 0.866·|q.x| − 0.5·q.y)`) instead of the Euclidean length.
@@ -1230,8 +1230,8 @@ short band from reading as an edge are both continuity choices:
     0.164 and is the literal wallpaper the Bayer grid was dropped for. **Passing the number
     is necessary, not sufficient.**
 
-  - **4 — screen-space SHATTER (carried candidate, 2026-08-06).** The other way to get a
-    hard-edged unit shape: instead of growing a polygon around a point, take the **Voronoi
+  - **4 — screen-space SHATTER (CURRENT — shipped 2026-08-06 at polygon 16.26 px /
+    wall 20 px).** The other way to get a hard-edged unit shape: instead of growing a polygon around a point, take the **Voronoi
     cell itself** — an irregular convex polygon, nothing but straight edges — and fill it
     between two parallel straight lines from a hashed phase and a hashed band direction.
     Neighbouring cells are independent, so their boundaries are always visible and the
@@ -1242,16 +1242,24 @@ short band from reading as an edge are both continuity choices:
     than described.
 
     **Two independent dials**, the only kernel here where wall thickness is authorable
-    separately from cell size: `PRISM_OCCLUSION_SHATTER_CELL` (polygon px, window 8–18) and
-    `..._WALL` (band repeat px, window 4–11 — at alpha `a` the dark wall is `(1−a)·WALL`
-    wide, so it is literally "how thick the walls get as the corridor closes"). Shipped at
-    12/9 = 0.0009 / 0.0070.
+    separately from cell size: `PRISM_OCCLUSION_SHATTER_CELL` (polygon px) and `..._WALL`
+    (band repeat px — at alpha `a` the dark wall is `(1−a)·WALL` wide, so it is literally
+    "how thick the walls get as the corridor closes").
+
+    **The wall window is RELATIVE, not absolute — corrected 2026-08-06**, and the
+    correction came from a setting chosen by eye in the Lab that the first window wrongly
+    flagged as a failure. The original sweep held the polygon at a fixed 11 px, which made
+    a flat "wall 4–11 px" look like the rule. It is not: what fails is a wall wide relative
+    to *its own* polygon, because there is no lattice left to crack. Measured by ratio —
+    0.75× → 0.0063, 1.00× → 0.0094, **1.23× → 0.0102 (shipped)**, 1.30× → 0.0162,
+    1.64× → 0.0173. Read it as **polygon 8–20 px, wall up to ~1.25× the polygon**, and
+    measure past that rather than assuming in either direction.
+
+    The shipped 16.26 / 20 holds **0.0102–0.0128 across t = 0…400s** — at or inside the
+    Worley baseline's 0.0117, and better than SHARD's 0.0145.
 
     **No CDF fit and none needed** — `frac` of a hash is uniform by construction, so
-    fidelity is exact in the large and there is no remap to keep in sync. The window is
-    again pure sampling: polygon 5 px against a 9 px wall measures 0.0258/0.0240 and an
-    18 px wall against an 11 px polygon measures 0.0197/0.0223, both the same failure (a
-    feature as large as the gradient band cannot resolve the gradient). Most expensive
+    fidelity is exact in the large and there is no remap to keep in sync. Most expensive
     kernel in the file: Worley's nine hashes and sines, plus a tenth hash for the owning
     cell and one sin/cos for the band direction.
 

@@ -300,9 +300,10 @@ no play mode):
 3. Watch the boundary. Sides and base grade at the same rate; there should be **no seam**
    anywhere on the cone, and in particular no crisp semicircular edge on a large plate
    level with the ship.
-4. Hold still ~10s and watch the stipple. The flecks should be **triangles**, and the
-   pattern should slowly **evolve** — cells drifting and merging — reading as flow, never
-   as flicker or shimmer. Round flecks mean the kernel is back on `..._WORLEY`.
+4. Hold still ~10s and watch the stipple. It should read as a **cracked lattice of walls**
+   (the shipped SHATTER kernel), and the pattern should **evolve** — polygons drifting, walls
+   re-drawing — reading as flow, never as flicker. Round flecks mean the kernel is back on
+   `..._WORLEY`; triangles mean `..._SHARD`.
 5. Swap vessels (the freestyle vessel-changer toy). The corridor should re-scale to the
    new hull automatically — a bigger ship clears a proportionally bigger cone.
 6. Check the console: zero `[PrismOcclusion]` errors. Any that appear name the vessel and
@@ -319,13 +320,13 @@ against the shipped baseline, and bakes the result back into the constants. Edit
 
 | Knob | Default | What it does |
 |---|---|---|
-| `PRISM_OCCLUSION_KERNEL` | `..._SHARD` | The dither look. `..._SHARD` triangular flecking · `..._SHATTER` a cracked lattice of walls · `..._WORLEY` the same arrangement as SHARD with round flecks · `..._SPIRAL` a corridor-anchored iris · `..._IGN` an even screen-space dissolve. |
+| `PRISM_OCCLUSION_KERNEL` | `..._SHATTER` | The dither look. `..._SHATTER` a cracked lattice of walls (**shipped**) · `..._SHARD` triangular flecking · `..._WORLEY` the same arrangement as SHARD with round flecks · `..._SPIRAL` a corridor-anchored iris · `..._IGN` an even screen-space dissolve. |
 | `PRISM_OCCLUSION_SHARD_ORIENT` | `..._FIXED` | Shard only. `..._FIXED` all triangles one heading (most legible as a triangle) · `..._FLIP` up/down · `..._SPIN` free per-cell rotation (reads as splinters). |
-| `PRISM_OCCLUSION_MORPH_RATE` | `0.12` | Pattern evolution, cycles/sec. `0` freezes it; past ~`0.25` it reads as noise. Cannot affect the fade — coverage is flat across the range. |
+| `PRISM_OCCLUSION_MORPH_RATE` | `0.3256` | Pattern evolution, cycles/sec. `0` freezes it. Shipped ABOVE the ~`0.25` guideline by deliberate choice after viewing it in motion (1.75% of band pixels flip per frame vs the 1.45% guideline) — a look call, and it cannot affect the fade: coverage is flat across the range. |
 | `PRISM_OCCLUSION_CELL_SIZE` | `6.0` | Fleck size in pixels, shared by SHARD and WORLEY. **Free dial inside 4.5–11 px** (sweet spot 6–8); the CDF fit is scale-invariant, so it does NOT need re-fitting — see the size window below. |
 | `PRISM_OCCLUSION_SHARD_AREA` | `1.28607` | Shard only. Normalises the triangle gauge to the same AREA as the circle it replaces — which is also what lets it share the CDF fit. **Changing this one DOES mean re-fitting `..._CDF_*`.** |
-| `PRISM_OCCLUSION_SHATTER_CELL` / `..._WALL` | `12.0` / `9.0` | Shatter only, and independent: polygon size and wall repeat, both in pixels. At alpha `a` the dark wall is `(1-a) × WALL` wide. Windows: polygon 8–18, wall 4–11. No CDF — `frac` of a hash is uniform by construction. |
-| `PRISM_OCCLUSION_LIVE_TUNING` | `1` | **Design mode.** 1 promotes every knob above to two shader globals and makes the kernel a runtime branch, so the Lab can drive them live. 0 compiles the file exactly as if none of this existed — one kernel, no branch, no uniforms. Design mode costs GPU occupancy (all five kernels in every prism shader), so **bake and set it to 0 before shipping**; the Lab's "Bake to source + ship mode" button does both. Fail-safe: with nothing published, every dial falls back to its constant, so design mode with the Lab closed looks exactly like shipped mode. |
+| `PRISM_OCCLUSION_SHATTER_CELL` / `..._WALL` | `16.26` / `20.0` | Shatter only, and independent: polygon size and wall repeat, both in pixels. At alpha `a` the dark wall is `(1-a) × WALL` wide. Windows: polygon **8–20 px**, wall up to **~1.25× the polygon** — the wall window is RELATIVE, not absolute (corrected 2026-08-06). No CDF — `frac` of a hash is uniform by construction. |
+| `PRISM_OCCLUSION_LIVE_TUNING` | `0` (shipped) | **Design mode.** 1 promotes every knob above to two shader globals and makes the kernel a runtime branch, so the Lab can drive them live. 0 compiles the file exactly as if none of this existed — one kernel, no branch, no uniforms. Design mode costs GPU occupancy (all five kernels in every prism shader), so **bake and set it to 0 before shipping**; the Lab's "Bake to source + ship mode" button does both. Fail-safe: with nothing published, every dial falls back to its constant, so design mode with the Lab closed looks exactly like shipped mode. |
 
 **The size window (measured 2026-08-06).** `CELL_SIZE` used to carry a "re-fit the CDF or
 the fade degrades ~19×" warning. That was wrong: the distance is measured in *cell* units,

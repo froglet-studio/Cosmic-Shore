@@ -69,7 +69,17 @@ namespace CosmicShore.Editor
         // or "inside the window" means nothing — and everything outside is flagged.
         const float CellMin = 2.5f, CellMax = 14f, CellGoodLo = 4.5f, CellGoodHi = 11f;
         const float ShatterCellMin = 4f, ShatterCellMax = 24f, ShatterCellGoodLo = 8f, ShatterCellGoodHi = 18f;
-        const float ShatterWallMin = 2f, ShatterWallMax = 20f, ShatterWallGoodLo = 4f, ShatterWallGoodHi = 11f;
+        const float ShatterWallMin = 2f, ShatterWallMax = 28f;
+
+        // The wall window is RELATIVE to the polygon, not absolute. The Lab shipped with a
+        // flat 4–11 px band lifted from a sweep taken at a FIXED 11 px polygon, and it
+        // promptly flagged a perfectly good setting (16.26 px polygon / 20 px wall) as out
+        // of window — that combination measures 0.0102 corridor, better than the shipped
+        // Worley baseline's 0.0117. What actually fails is a wall wide relative to its own
+        // polygon (11 px polygon / 18 px wall = 1.64× → 0.0173), because there is no
+        // lattice left to crack. Measured: 0.75× → 0.0063, 1.00× → 0.0094, 1.23× → 0.0102,
+        // 1.30× → 0.0162. Flag past 1.25× and say "measure it", rather than "it is wrong".
+        const float ShatterWallRatioMax = 1.25f;
         const float MorphMax = 0.35f, MorphCeiling = 0.25f;
 
         // ── Live dial state (EditorWindow fields survive domain reloads) ──────────
@@ -289,8 +299,16 @@ namespace CosmicShore.Editor
 
         void DrawSourceState()
         {
-            bool tuning = TryReadTuningFlag(out bool live) && live;
-            if (!tuning)
+            if (!TryReadTuningFlag(out bool live))
+            {
+                EditorGUILayout.HelpBox(
+                    "Could not read PRISM_OCCLUSION_LIVE_TUNING from the shader, so the Lab does not know " +
+                    "whether the dials below are driving anything. Run Validate & Push's checks — if the " +
+                    "anchors have drifted, fix them in PrismOcclusionDitherLab.cs.", MessageType.Error);
+                return;
+            }
+
+            if (!live)
             {
                 EditorGUILayout.HelpBox(
                     "PRISM_OCCLUSION_LIVE_TUNING is 0 in the shader, so the dials below do nothing — " +
@@ -341,11 +359,20 @@ namespace CosmicShore.Editor
                     DialSlider("Polygon size", ref _shatterCell, ShatterCellMin, ShatterCellMax,
                         ShatterCellGoodLo, ShatterCellGoodHi, "px", null,
                         "The Voronoi cell size — how big each facet of the cracked lattice is.");
-                    DialSlider("Wall period", ref _shatterWall, ShatterWallMin, ShatterWallMax,
-                        ShatterWallGoodLo, ShatterWallGoodHi, "px",
-                        "at alpha a the dark wall is (1−a) × period wide",
+
+                    // The wall window is RELATIVE, not absolute — see ShatterWallRatioMax.
+                    _shatterWall = EditorGUILayout.Slider(new GUIContent("Wall period",
                         "The band repeat. This is the one kernel whose wall thickness is authorable " +
-                        "independently of its cell size.");
+                        "independently of its cell size — but only within a ratio of it: a wall wider " +
+                        "than its own polygon has no lattice left to crack."),
+                        _shatterWall, ShatterWallMin, ShatterWallMax);
+                    float ratio = _shatterWall / Mathf.Max(_shatterCell, 1e-3f);
+                    bool wallOutside = ratio > ShatterWallRatioMax || _shatterWall < ShatterWallMin;
+                    EditorGUILayout.LabelField(" ",
+                        $"{ratio:0.00}× the polygon — {(wallOutside ? $"past {ShatterWallRatioMax:0.00}×, measure before trusting it" : "in window")}",
+                        Warn(wallOutside));
+                    EditorGUILayout.LabelField(" ", "at alpha a the dark wall is (1−a) × period wide",
+                        EditorStyles.miniLabel);
                     break;
 
                 case KernelSpiral:
@@ -677,6 +704,14 @@ namespace CosmicShore.Editor
         // group the pattern lacks — it emits the literal text "${3}" into the file. Getting
         // that wrong writes a shader that fails to compile, from a tool whose whole job is
         // to be safer than editing by hand.
+        //
+        // EVERY line-anchored pattern captures `(\r?)` as that third group. In .NET `$` in
+        // multiline mode matches before the '\n' but AFTER any '\r', so `...SHARD$` simply
+        // does not match on a CRLF checkout — which is every Windows clone of this repo.
+        // Shipped without it, the three #define anchors matched 0 times: the Lab reported
+        // design mode as OFF when the shader said 1, and refused to bake. Capturing the
+        // carriage return and re-emitting it also means a bake cannot silently convert a
+        // line's ending, which would show up as noise in the diff.
         readonly struct Anchor
         {
             public readonly string Key;
@@ -687,9 +722,9 @@ namespace CosmicShore.Editor
 
         static readonly Anchor[] Anchors =
         {
-            new Anchor("kernel",      @"(?m)^(#define PRISM_OCCLUSION_KERNEL )(PRISM_OCCLUSION_KERNEL_\w+)$", false),
-            new Anchor("orient",      @"(?m)^(#define PRISM_OCCLUSION_SHARD_ORIENT )(PRISM_OCCLUSION_SHARD_\w+)$", false),
-            new Anchor("tuning",      @"(?m)^(#define PRISM_OCCLUSION_LIVE_TUNING )(\d+)$", false),
+            new Anchor("kernel",      @"(?m)^(#define PRISM_OCCLUSION_KERNEL )(PRISM_OCCLUSION_KERNEL_\w+)(\r?)$", true),
+            new Anchor("orient",      @"(?m)^(#define PRISM_OCCLUSION_SHARD_ORIENT )(PRISM_OCCLUSION_SHARD_\w+)(\r?)$", true),
+            new Anchor("tuning",      @"(?m)^(#define PRISM_OCCLUSION_LIVE_TUNING )(\d+)(\r?)$", true),
             new Anchor("cell",        @"(?m)^(static const float PRISM_OCCLUSION_CELL_SIZE = )([^;]+)(;)", true),
             new Anchor("morph",       @"(?m)^(static const float PRISM_OCCLUSION_MORPH_RATE = )([^;]+)(;)", true),
             new Anchor("shatterCell", @"(?m)^(static const float PRISM_OCCLUSION_SHATTER_CELL = )([^;]+)(;)", true),
@@ -717,11 +752,15 @@ namespace CosmicShore.Editor
                 : FrogletToolValidation.Fail("PrismOcclusionCorridor.hlsl no longer matches the Lab's anchors.", problems);
         }
 
+        // Returns false only when the flag could not be READ. That distinction is
+        // load-bearing: the first version folded "unreadable" into "off" and told the human
+        // the shader said 0 when it said 1, which is the worst thing a tool can do — report
+        // a state the source does not hold.
         bool TryReadTuningFlag(out bool live)
         {
             live = false;
             if (!File.Exists(HlslPath)) return false;
-            var m = Regex.Match(File.ReadAllText(HlslPath), @"(?m)^#define PRISM_OCCLUSION_LIVE_TUNING (\d+)$");
+            var m = Regex.Match(File.ReadAllText(HlslPath), @"(?m)^#define PRISM_OCCLUSION_LIVE_TUNING (\d+)\r?$");
             if (!m.Success) return false;
             live = m.Groups[1].Value != "0";
             return true;

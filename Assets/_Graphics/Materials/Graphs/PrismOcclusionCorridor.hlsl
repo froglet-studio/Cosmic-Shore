@@ -90,7 +90,7 @@
 #define PRISM_OCCLUSION_KERNEL_SHARD 3   // screen-space cells — reads as TRIANGULAR flecking
 #define PRISM_OCCLUSION_KERNEL_SHATTER 4 // screen-space cells — reads as a CRACKED LATTICE
 
-#define PRISM_OCCLUSION_KERNEL PRISM_OCCLUSION_KERNEL_SHARD
+#define PRISM_OCCLUSION_KERNEL PRISM_OCCLUSION_KERNEL_SHATTER
 
 // -----------------------------------------------------------------------------
 // LIVE TUNING — the design-mode gate (FrogletTools > Ecology > Prism Animation >
@@ -118,7 +118,7 @@
 // reads as 0 and EVERY dial falls back to its compile-time constant. Design mode with
 // nobody driving it looks exactly like shipped mode.
 // -----------------------------------------------------------------------------
-#define PRISM_OCCLUSION_LIVE_TUNING 1
+#define PRISM_OCCLUSION_LIVE_TUNING 0
 
 #if PRISM_OCCLUSION_LIVE_TUNING
 float4 _PrismOcclusionDitherA;  // (kernel + 1, cellSize, shardOrient, morphRate)
@@ -142,13 +142,18 @@ float4 _PrismOcclusionDitherB;  // (shatterCell, shatterWall, spiralRings, spira
 //
 // A CIRCLE breaks that. It is a soft shape with a soft gradient on either side of it —
 // soft-SOFT-soft — so Worley's round flecks read as foam against everything else in the
-// frame. SHARD keeps Worley's arrangement exactly (same lattice, same jitter, same
-// orbit, same remap) and changes only the METRIC, so the flecks become equilateral
-// triangles of the same area: hard polygonal unit shape, ambiguous placement, still
-// feathered by the corridor's own soft profile. Hard shape, soft sandwich.
+// frame. Two kernels answer it, and both are carried: SHARD keeps Worley's arrangement
+// exactly and changes only the METRIC, so the flecks become equilateral triangles of the
+// same area; SHATTER abandons the fleck and makes the NEGATIVE space the motif, filling
+// each Voronoi polygon between straight lines so the lattice reads as cracked walls.
+//
+// SHATTER IS WHAT SHIPPED (2026-08-06), chosen in motion in the Occlusion Dither Lab
+// rather than from stills, at polygon 16.26 px / wall 20 px. Both candidates are hard-
+// edged and both sit inside the admission rule; the call between them was a look call and
+// could only be made against real trail mass at speed. SHARD stays one #define away.
 //
 // Kernel 2 is kept, not deleted — it is the calibration reference every fidelity number
-// in this file is quoted against, and it is one #define away if the triangles ever want
+// in this file is quoted against, and it is one #define away if the round flecks ever want
 // re-judging side by side.
 // -----------------------------------------------------------------------------
 
@@ -179,7 +184,7 @@ float4 _PrismOcclusionDitherB;  // (shatterCell, shatterWall, spiralRings, spira
 // every frame. That is full-amplitude shimmer, not motion. Only the two kernels that are
 // continuous functions of position can be continuous functions of time as well.
 // -----------------------------------------------------------------------------
-static const float PRISM_OCCLUSION_MORPH_RATE = 0.12;   // cycles/sec; 0 = frozen
+static const float PRISM_OCCLUSION_MORPH_RATE = 0.3256;   // cycles/sec; 0 = frozen
 
 // Every dial below is read through one of these accessors rather than named directly, so
 // that design mode and shipped mode differ in exactly one place each. Under
@@ -377,7 +382,7 @@ float PrismOcclusionWorley(float2 pixel, float time)
 }
 
 // -----------------------------------------------------------------------------
-// Kernel D — screen-space SHARD (triangular cells). CURRENT.
+// Kernel D — screen-space SHARD (triangular cells).
 //
 // Worley with one line changed. Same lattice, same Hoskins hash, same orbiting feature
 // points, same 3×3 search, same CDF remap — only the METRIC differs, from Euclidean
@@ -513,7 +518,7 @@ float PrismOcclusionShard(float2 pixel, float time)
 }
 
 // -----------------------------------------------------------------------------
-// Kernel E — screen-space SHATTER (a cracked lattice of walls).
+// Kernel E — screen-space SHATTER (a cracked lattice of walls). CURRENT.
 //
 // The other way to make a hard-edged unit shape: instead of growing a polygon around a
 // point, take the VORONOI CELL itself — an irregular convex polygon with nothing but
@@ -541,15 +546,24 @@ float PrismOcclusionShard(float2 pixel, float time)
 //
 //   polygon  5 px / wall  9 px   0.0258 / 0.0240   BREAKS — polygons under the wall period
 //   polygon  8 px / wall  9 px   0.0027 / 0.0065
-//   polygon 12 px / wall  9 px   0.0009 / 0.0070   SHIPPED SETTING
+//   polygon 12 px / wall  9 px   0.0009 / 0.0070
 //   polygon 18 px / wall  9 px   0.0007 / 0.0068
 //   polygon 11 px / wall  4 px   0.0007 / 0.0029   fine crazing
 //   polygon 11 px / wall  7 px   0.0010 / 0.0052
 //   polygon 11 px / wall 11 px   0.0013 / 0.0092
-//   polygon 11 px / wall 18 px   0.0197 / 0.0223   BREAKS — one band spans the whole band
+//   polygon 11 px / wall 18 px   0.0197 / 0.0223   BREAKS — 1.64x its own polygon
+//   polygon 16 px / wall 20 px   0.0051 / 0.0102   SHIPPED SETTING (1.23x)
 //
-// So: polygon 8–18 px, wall 4–11 px. The failure at both ends is the same one — a feature
-// as large as the gradient band cannot resolve the gradient — and neither is fittable.
+// THE WALL WINDOW IS RELATIVE, NOT ABSOLUTE — corrected 2026-08-06, and the correction
+// came from a setting chosen by eye that the first window wrongly called a failure. Every
+// row above except the last was swept at a FIXED 11 px polygon, which made a flat "wall
+// 4-11 px" look like the rule; it is not. What fails is a wall wide relative to ITS OWN
+// polygon, because there is no lattice left to crack: 0.75x -> 0.0063, 1.00x -> 0.0094,
+// 1.23x -> 0.0102, 1.30x -> 0.0162, 1.64x -> 0.0173. Read it as **polygon 8-20 px, wall
+// up to ~1.25x the polygon**, and measure past that rather than assuming either way.
+//
+// The shipped 16.26 / 20 holds 0.0102-0.0128 across t = 0…400s — at or inside the Worley
+// baseline, and better than SHARD's 0.0145.
 //
 // COST. The most expensive kernel in the file: Worley's nine hashes and nine sines, plus
 // a tenth hash for the owning cell and one sin/cos pair for the band direction. Still
@@ -560,8 +574,8 @@ float PrismOcclusionShard(float2 pixel, float time)
 // at the same rate (so each wall slides across its own cell). The phase term sits inside
 // the frac() of an already-uniform quantity, so — like the spiral — its contribution to
 // coverage is provably nil.
-static const float PRISM_OCCLUSION_SHATTER_CELL = 12.0;  // polygon size, px  (8–18)
-static const float PRISM_OCCLUSION_SHATTER_WALL = 9.0;   // band repeat, px   (4–11)
+static const float PRISM_OCCLUSION_SHATTER_CELL = 16.26;  // polygon size, px  (8-20)
+static const float PRISM_OCCLUSION_SHATTER_WALL = 20.0;   // band repeat, px   (<= 1.25x cell)
 
 float PrismOcclusionShatter(float2 pixel, float time)
 {
