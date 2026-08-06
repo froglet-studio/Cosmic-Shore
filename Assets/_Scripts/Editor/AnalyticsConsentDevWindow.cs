@@ -9,11 +9,11 @@ namespace CosmicShore.Editor.Froglet
     ///
     /// Analytics collection is opt-in: the COPPA age gate and the consent flag both default to
     /// DENIED, and until both are granted <c>AnalyticsServiceFacade</c> drops every event before
-    /// it reaches any sink - so UGS and PostHog go silent together. In a shipping build the
-    /// player answers <c>PrivacyConsentController</c>; that UI is not currently placed in any
-    /// scene, so on a dev machine there is no way to answer it at all.
+    /// it reaches any sink - so UGS and PostHog go silent together. In a build the player answers
+    /// <c>PrivacyConsentOverlay</c>, which AppManager creates on first run.
     ///
-    /// This window is that answer, and nothing more. It writes the same two PlayerPrefs the real
+    /// This window exists to skip that dialog while testing, and to re-open it: clearing the gates
+    /// makes the overlay appear again on the next run. It writes the same two PlayerPrefs the real
     /// dialog writes, on this machine only. It is EDITOR-ONLY BY LOCATION (an Editor/ folder), so
     /// no build - development or release - can auto-grant consent. That is deliberate: granting
     /// consent on a player's behalf is the exact thing the gate exists to prevent.
@@ -76,10 +76,11 @@ namespace CosmicShore.Editor.Froglet
 
             EditorGUILayout.Space(10f);
             EditorGUILayout.HelpBox(
-                "This is a stand-in for PrivacyConsentController, which exists in code but is not " +
-                "placed in any scene. Placing it is the real fix and a release blocker - a shipping " +
-                "build must never grant consent on the player's behalf.\n\n" +
-                "Granting while in Play Mode takes effect on the next sign-in, so restart Play Mode.",
+                "Players answer PrivacyConsentOverlay, which AppManager creates on first run. This " +
+                "window only skips it for testing - a build must never grant consent on the " +
+                "player's behalf.\n\n" +
+                "Use Clear to make the real dialog appear again on the next run. Granting while in " +
+                "Play Mode takes effect on the next sign-in, so restart Play Mode.",
                 MessageType.Info);
 
             if (Application.isPlaying)
