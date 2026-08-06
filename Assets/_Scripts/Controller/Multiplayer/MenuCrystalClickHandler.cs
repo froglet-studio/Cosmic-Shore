@@ -43,13 +43,14 @@ namespace CosmicShore.Gameplay
 
         [SerializeField, Tooltip("Fallback transition duration, used when no MainMenuCameraController " +
                                  "is assigned (or for initial warm-up). When a controller is wired " +
-                                 "below, its per-mode ActiveTransitionDuration takes precedence.")]
+                                 "below, its per-config ActiveTransitionDuration takes precedence.")]
         float cameraTransitionDuration = 2f;
 
         [SerializeField, Tooltip("Camera controller on the Game GameObject. If assigned, its " +
-                                 "ActiveTransitionDuration (per-mode) is used so CrystalOrbit reads " +
-                                 "~2s while VesselFollow / VesselChaseTight / VesselFixedAim read " +
-                                 "~0.5s. Leave null to always use the fallback duration above.")]
+                                 "ActiveTransitionDuration (from the active MenuCameraConfigSO's " +
+                                 "blendDuration) is used, so distant framings read long (~1.5-2s) " +
+                                 "while close chase framings read short (~0.7s). Leave null to " +
+                                 "always use the fallback duration above.")]
         MainMenuCameraController cameraController;
 
         [SerializeField, Tooltip("Keep player input paused until after the camera blend completes. " +
@@ -173,8 +174,8 @@ namespace CosmicShore.Gameplay
             player.Vessel.ToggleAIPilot(true);
 
             // Raise SOAP event early so the camera blend starts immediately.
-            // Camera controller captures CM PlayerCam position as a static snapshot,
-            // then blends back to orbit - runs in parallel with the UI fade.
+            // The camera controller freezes the CM PlayerCam framing in the vessel's local
+            // frame and eases back to the menu framing - runs in parallel with the UI fade.
             freestyleEvents.OnMenuStateTransitionStart.Raise();
 
             // Run UI fade and camera transition duration in parallel.
