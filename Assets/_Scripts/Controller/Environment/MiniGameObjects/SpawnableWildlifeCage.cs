@@ -88,10 +88,32 @@ namespace CosmicShore.Gameplay
         /// Authored here rather than on the fauna assets so the pens and the walls cannot drift.
         /// </summary>
         public static float BandInner(int shell) =>
-            shell + 1 < ShellCount ? ShellRadii[shell + 1] + BandWallClearance : 0f;
+            shell == OpenWaterRoom ? OpenWaterInner
+            : shell + 1 < ShellCount ? ShellRadii[shell + 1] + BandWallClearance
+            : 0f;
 
         /// <summary>Outer radius of <paramref name="shell"/>'s room - just inside that shell.</summary>
-        public static float BandOuter(int shell) => ShellRadii[shell] - BandWallClearance;
+        public static float BandOuter(int shell) =>
+            shell == OpenWaterRoom ? OpenWaterOuter : ShellRadii[shell] - BandWallClearance;
+
+        /// <summary>
+        /// The OPEN WATER outside the outer cage, between it and the 1200u membrane - a fourth
+        /// room, indexed <see cref="OpenWaterRoom"/>.
+        ///
+        /// It exists because the first pass put every creature inside the cages and every fight
+        /// therefore converged on the middle of the arena. Stocking the open water means there
+        /// is something to shoot from the moment you spawn (the player ring sits at 1150, INSIDE
+        /// this band), so the hunt starts spread out and breaking into a cage becomes a choice
+        /// rather than the only way to score.
+        /// </summary>
+        public const float OpenWaterInner = 1090f;
+        public const float OpenWaterOuter = 1180f;
+
+        /// <summary>Room index of the open water - one past the innermost shell.</summary>
+        public const int OpenWaterRoom = ShellCount;
+
+        /// <summary>Rooms wildlife can occupy: one per cage, plus the open water outside.</summary>
+        public const int RoomCount = ShellCount + 1;
 
         // ── Shape ────────────────────────────────────────────────────────────
 

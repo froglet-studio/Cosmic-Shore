@@ -137,11 +137,11 @@ MEMBRANE_FILEID = 346633111830028674
 CYTOPLASM_FILEID = 639495419069806261
 PREVIEW_FILEID = 241334157148977051
 
-ROOM_NAMES = ("Outer", "Middle", "Core")
+ROOM_NAMES = ("Outer", "Middle", "Core", "OpenWater")
 
-# The kill target - the race metric. The 25%/50% milestone rungs are fractions of this, so
-# moving it moves the whole progress ladder.
-WILDLIFE_KILL_TARGET = 500
+# The kill target - the race metric. The 25%/50% milestone rungs are fractions of this (so 30
+# and 60), and moving it moves the whole progress ladder.
+WILDLIFE_KILL_TARGET = 120
 
 SPAWN_RING_RADIUS = budget.SPAWN_RING_RADIUS
 # The cell must SENSE mass out to the outer room (~990) so penned creatures can find a player's
@@ -407,8 +407,7 @@ PLAIN_VARIANT = """  Variant:
 
 for i in INTENSITIES:
     for species, room, seed, cap, level, _prisms in budget.roster_for(i):
-        inner = budget.band_inner(room)
-        outer = budget.band_outer(room)
+        inner, outer = budget.room_band(room)
         palette = "".join(
             f"  - {{fileID: 11400000, guid: {g}, type: 2}}\n" for g in PALETTE[species])
 
@@ -722,8 +721,12 @@ def cs_fields(path):
         src = fh.read()
     out = set()
     TYPE = r"[\w<>,\[\]\?\.]+"
-    for m in re.finditer(r"(?:public|protected|private|internal)\s+"
-                         r"(?:readonly\s+)?" + TYPE + r"\s+(\w+)\s*(?:=|;|\{)", src):
+    # NOTE the modifier group must span static/const/readonly in any order, not just
+    # `readonly`. A narrower version silently reported `public const float OpenWaterInner` as
+    # MISSING, and the caller concluded the C# was wrong when it was the regex that was too
+    # tight - the same false-negative class the [SerializeField] branch below was added for.
+    MODS = r"(?:(?:public|protected|private|internal|static|const|readonly|new)\s+)+"
+    for m in re.finditer(MODS + TYPE + r"\s+(\w+)\s*(?:=|;|\{|=>)", src):
         out.add(m.group(1))
     for m in re.finditer(r"\[SerializeField[^\]]*\]\s*(?:\[[^\]]*\]\s*)*"
                          r"(?:(?:public|protected|private|internal)\s+)?"
@@ -751,6 +754,11 @@ if "intensityTier" not in cs_fields(
         "Assets/_Scripts/Controller/Environment/MiniGameObjects/SpawnableWildlifeCage.cs"):
     errors.append("SpawnableWildlifeCage.cs has no 'intensityTier' field - the per-intensity "
                   "prefab variants would all build the same cage")
+for cage_const in ("OpenWaterInner", "OpenWaterOuter", "RoomCount"):
+    if cage_const not in cs_fields(
+            "Assets/_Scripts/Controller/Environment/MiniGameObjects/SpawnableWildlifeCage.cs"):
+        errors.append(f"SpawnableWildlifeCage.cs has no '{cage_const}' - the open water outside "
+                      f"the cages would not exist as a room and the AI would never patrol it")
 for band_field in ("BandInnerRadius", "BandOuterRadius"):
     if band_field not in cs_fields("Assets/_Scripts/Utility/DataContainers/FaunaConfigurationSO.cs"):
         errors.append(f"FaunaConfigurationSO.cs has no '{band_field}' - the wildlife would not "
@@ -781,11 +789,37 @@ for i in INTENSITIES:
         body = files[fauna_asset_path(species, room, i)]
         inner = float(re.search(r"^  BandInnerRadius: ([\d.]+)", body, re.M).group(1))
         outer = float(re.search(r"^  BandOuterRadius: ([\d.]+)", body, re.M).group(1))
+        if room == budget.ROOM_OPEN_WATER:
+            # The open water is OUTSIDE the outer cage and inside the membrane. Both ends
+            # matter: creatures inside the cage would mix with the outer room's tier, and
+            # creatures past the membrane would be unreachable.
+            if not (budget.SHELL_RADII[0] < inner < outer < 1200.0):
+                errors.append(f"{fauna_asset_name(species, room, i)}: open-water band "
+                              f"{inner}..{outer} is not between the outer cage "
+                              f"({budget.SHELL_RADII[0]}) and the membrane (1200)")
+            continue
         wall_in = budget.SHELL_RADII[room + 1] if room + 1 < budget.SHELL_COUNT else 0.0
         wall_out = budget.SHELL_RADII[room]
         if not (wall_in < inner < outer < wall_out) and not (room == budget.SHELL_COUNT - 1 and inner == 0):
             errors.append(f"{fauna_asset_name(species, room, i)}: band {inner}..{outer} is not "
                           f"strictly inside its room's walls {wall_in}..{wall_out}")
+
+# ── PRUNE: assets this generator used to emit and no longer does ────────────
+# The roster changes shape between passes (a species is dropped, a room is added), and a
+# generator that only ever WRITES leaves the retired assets behind - stale FaunaConfigurationSOs
+# that nothing references but that read as live content to the next person. Scoped hard: only
+# this mode's own folder, only files matching this generator's own naming, and only ones this
+# run did not emit.
+stale = []
+_folder_abs = os.path.join(ROOT, FOLDER)
+if os.path.isdir(_folder_abs):
+    _emitted = {os.path.normpath(os.path.join(ROOT, rel)) for rel in files}
+    for fn in sorted(os.listdir(_folder_abs)):
+        if not fn.startswith("Wildlife ") or not fn.endswith((".asset", ".asset.meta")):
+            continue
+        full = os.path.normpath(os.path.join(_folder_abs, fn))
+        if full not in _emitted:
+            stale.append(full)
 
 if errors:
     print("VALIDATION FAILED — nothing written:")
@@ -796,10 +830,17 @@ if errors:
 print(f"Validation passed ({len(files)} files).")
 for rel in sorted(files):
     print("  ", rel)
+if stale:
+    print(f"\nStale (retired by this roster, will be DELETED): {len(stale)}")
+    for f in stale:
+        print("   -", os.path.relpath(f, ROOT))
 
 if CHECK_ONLY:
-    print("\n--check: no files written.")
+    print("\n--check: no files written, nothing deleted.")
     sys.exit(0)
+
+for f in stale:
+    os.remove(f)
 
 for rel, content in files.items():
     path = os.path.join(ROOT, rel)

@@ -10,19 +10,19 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c778cfbe4dfc4c5c8401e40c17802311, type: 3}
-  m_Name: Wildlife Outer QuadFish 3
+  m_Name: Wildlife OpenWater Brittlestar 2
   m_EditorClassIdentifier:
-  FaunaPrefab: {fileID: 4652232322436628206, guid: 19615ed0c903b1041973d70593d4b0a3, type: 3}
-  InitialSpawnCount: 320
-  PopulationSize: 320
+  FaunaPrefab: {fileID: 5351160486092638538, guid: c719f00ea7596c24185379994f7dc824, type: 3}
+  InitialSpawnCount: 28
+  PopulationSize: 28
   SpawnProbability: 1
-  FeedsPerOffspring: 20
+  FeedsPerOffspring: 16
   OffspringPerBirth: 1
-  ReproductionCooldownSeconds: 12
-  MaxLivePopulation: 750
+  ReproductionCooldownSeconds: 14
+  MaxLivePopulation: 65
   ReleaseTier: 0
-  BandInnerRadius: 660
-  BandOuterRadius: 990
+  BandInnerRadius: 1090
+  BandOuterRadius: 1180
   CenterFocusBias: 0
   Element: 0
   InitialLevel: 1
@@ -33,10 +33,10 @@ MonoBehaviour:
     Enabled: 0
   SpreadElements: 1
   ElementPalette:
-  - {fileID: 11400000, guid: 4053ff006892420d8ca5efa51365570c, type: 2}
-  - {fileID: 11400000, guid: 5697aa8685514f2ca9b9de9638fce1a1, type: 2}
-  - {fileID: 11400000, guid: 3107bcc776d54a74b110b883f10fba61, type: 2}
-  - {fileID: 11400000, guid: 414bce89d4dc495f87bbccfb02e5b847, type: 2}
+  - {fileID: 11400000, guid: 503de8d514bf4001a067b76f07c246c5, type: 2}
+  - {fileID: 11400000, guid: 26691ece54c94157aba5b832451ec2a2, type: 2}
+  - {fileID: 11400000, guid: eb3b0459459a4ee0b1212c181ce80a11, type: 2}
+  - {fileID: 11400000, guid: 135c28565d034815adaadd2e66233711, type: 2}
   Levels:
     Enabled: 0
     MinLevel: 1

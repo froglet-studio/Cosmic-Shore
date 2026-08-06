@@ -13,13 +13,13 @@ MonoBehaviour:
   m_Name: Wildlife Outer QuadFish 4
   m_EditorClassIdentifier:
   FaunaPrefab: {fileID: 4652232322436628206, guid: 19615ed0c903b1041973d70593d4b0a3, type: 3}
-  InitialSpawnCount: 150
-  PopulationSize: 150
+  InitialSpawnCount: 320
+  PopulationSize: 320
   SpawnProbability: 1
   FeedsPerOffspring: 20
   OffspringPerBirth: 1
   ReproductionCooldownSeconds: 12
-  MaxLivePopulation: 360
+  MaxLivePopulation: 750
   ReleaseTier: 0
   BandInnerRadius: 660
   BandOuterRadius: 990

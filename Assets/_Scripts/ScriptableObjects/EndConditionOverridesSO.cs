@@ -50,7 +50,7 @@ namespace CosmicShore.ScriptableObjects
         public const int DefaultRibcagePrismTarget = 2000;
 
         /// <summary>Wildlife Liberation kill target used when <see cref="wildlifeKillTarget"/> is 0 (auto/default).</summary>
-        public const int DefaultWildlifeKillTarget = 500;
+        public const int DefaultWildlifeKillTarget = 120;
 
         [Header("Live counts - used at runtime. 0 = auto/default (edit via FrogletTools > Game Modes > End Game Conditions)")]
         [Tooltip("HexRace crystals to end the race. 0 = auto-calc from the track waypoints.")]
@@ -83,8 +83,8 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("Wildlife Liberation: creatures ONE PLAYER must kill to win. Unlike every " +
                  "other target here this is compared against an INDIVIDUAL's stat, not a domain " +
                  "sum - the hunt is a free-for-all, so a teammate's kills do not count toward " +
-                 "yours. 0 = default (500).")]
-        [Min(0)] public int wildlifeKillTarget = 500;
+                 "yours. 0 = default (120).")]
+        [Min(0)] public int wildlifeKillTarget = 120;
 
         [Header("Build baseline - what a shipping build uses. Set via the tool's \"Set Build Values\" button.")]
         [Min(0)] public int hexRaceCrystalCountBuild = 0;
@@ -94,7 +94,7 @@ namespace CosmicShore.ScriptableObjects
         [Min(0)] public int nucleusRushWaveTargetBuild = 3;
         [Min(0)] public int rampagePrismTargetBuild = 2000;
         [Min(0)] public int ribcagePrismTargetBuild = 2000;
-        [Min(0)] public int wildlifeKillTargetBuild = 500;
+        [Min(0)] public int wildlifeKillTargetBuild = 120;
 
         [Tooltip("When on, a build first copies the Build baseline onto the Live counts, so test values are never shipped.")]
         public bool autoRestoreBuildValuesBeforeBuild = true;

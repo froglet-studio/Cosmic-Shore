@@ -190,10 +190,26 @@ namespace CosmicShore.Gameplay
             // SpawnProfileSO.InitialFaunaReleaseTier) leave every shipped biome unchanged.
             if (faunaCfg.ReleaseTier > host.FaunaReleaseTier) return;
 
+            // Honour the authored performance backstop. This loop spawns ONE creature per tick
+            // forever, so without a cap a long match walks a species past MaxLivePopulation -
+            // the number the collider budget was sized against - even though reproduction
+            // (Fauna.TryReproduce) respects it. The other spawner has always capped here
+            // (FaunaReproductionRules.SeedSpawnCount); 0 still means uncapped.
+            if (faunaCfg.MaxLivePopulation > 0 &&
+                host.GetLiveFaunaCount(faunaCfg) >= faunaCfg.MaxLivePopulation) return;
+
             // Prefer the crystal as the initial goal, but fall back to the cell's own
             // position. The previous implementation silently skipped spawning when no
             // crystal existed, which contributed to fauna never appearing in cells
             // whose crystal hadn't spawned yet.
+            //
+            // NOTE both of those fallbacks are AT OR NEAR THE CELL CENTRE, and this call used
+            // to pass no spawn POSITION at all - so SpawnFaunaWithDomain defaulted to the cell
+            // centre too. Every creature in the biome was therefore born at the centre and
+            // immediately swam to the crystal, which is fine for an ordinary cell and disastrous
+            // for a mode whose whole arena is concentric rooms. SpawnFaunaBanded gives a banded
+            // species its own point in its own room instead; an unbanded species still gets
+            // exactly this goal and the legacy centre spawn.
             Vector3 goal = TryGetCrystalGoal(runtime, out var crystalGoal)
                 ? crystalGoal
                 : host.transform.position;
@@ -201,11 +217,9 @@ namespace CosmicShore.Gameplay
             // Per user spec: fauna spawn in the cell's controlling color, not random.
             Domains color = host.ControllingDomain;
 
-            var fauna = SpawnFaunaWithDomain(host, faunaCfg.FaunaPrefab, goal, color);
-            // Lineage-bind so the species counts toward the cell's live population and
-            // can reproduce if its config authors FeedsPerOffspring > 0 (off by default
-            // on the WildlifeBlitz/Tournament configs - purely config-opt-in).
-            if (fauna) fauna.AssignLineage(host, faunaCfg);
+            // Lineage-bind (inside SpawnFaunaBanded) so the species counts toward the cell's
+            // live population and can reproduce if its config authors FeedsPerOffspring > 0.
+            SpawnFaunaBanded(host, faunaCfg, color, goal);
         }
     }
 }
