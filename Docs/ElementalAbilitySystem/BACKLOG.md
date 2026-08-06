@@ -62,14 +62,14 @@ isn't juicy enough.
 | 2.2 | **SPACE-5 piercing**: implement destroy-on-first-prism-impact as the sub-5 default (per-shot flag through `Gun.FireGun → Projectile.Initialize`); L5 restores today's pierce-through. Revisit full-auto pool `bufferSizeTarget` (piercing raises concurrent live projectiles). |
 | 2.3 | **MASS-5 shielded turret prisms**: `IsShielded` flag-before-Initialize; regular shield only. Collider-budget statement: RESOLVED — shields keep the authored `blockCollider` trigger (no convex MeshCollider), so shielded prisms are collider-LOD-cullable like any other. (Interaction is at authored box size; shape-precise shielded collision is the planned three-LOD follow-up.) |
 | 2.4 | **CHARGE-5 domain-sparing skyburst**: prereq — wire steal → `PrismSpatialIndex.UpdateDomain` (stale-domain gap is documented in `Docs/SPATIAL_INDEX.md`); then gate the direct-hit damage per-shot. Keep the two AOE damage paths (Burst batch + physics fallback) in lockstep. |
-| 2.5 | **TIME-5 barrel roll** (the largest item): publish `Left/RightNormalizedJoystickPosition` from all input strategies (adapt unmerged `676a8f994`); `BarrelRollActionExecutor` — perimeter detect (magnitude ≥ ~0.95 on the *radial* vector, never the eased one), CW/CCW by stick half, ramped `ModifyVelocity` orthogonal displacement (left-stick direction, rotation input attenuated during the roll), OrientationHandle/Animator visual roll (new animator state; note the prefab runs `MantaAnimationContoller`), `blockRotation` override for travel-aligned bridging prisms, AI trigger synthesis, camera check (per-frame delta < teleport-snap threshold). |
+| 2.5 | ~~**TIME-5 barrel roll**~~ — SHIPPED, then **RE-SCOPED (2026-08)**: the roll is no longer an upgrade at all. `BarrelRollController` ships it as BASE kit (left stick at perimeter + boost, one roll per press, ungated), and TIME-5 is now **Elemental Ward** — elemental-debuff immunity while boosting, built as the general `ResourceSystem.SetElementalDebuffImmunity` state + the shared `VesselElementalImmunity` driver (the Serpent holds the same state while stopped). Overheat is deleted; the boost is indefinite. See `_Scripts/Controller/Vessel/R_VesselActions/SPARROW_AFTERBURNER.md`. Still open from the original item: **AI trigger synthesis** (autopilot produces no stick input, so AI never rolls). |
 | 2.6 | In-editor verification pass per upgrade (repro steps + MPPM two-client check for the replicated bits). |
 
 ## Phase 3 — Presentation
 
 Petal flare on unlock via `OnUpgradeStateChanged` (juice in `ElementalBarsConfigSO`); ability-icon
 row only in the branch's final view-binding shape with authored sprites; unlocked-state icons;
-Sparrow HUD indicators (roll armed, shielded turret, piercing, domain-safe). Clean up dead code
+Sparrow HUD indicators (~~roll armed~~ SHIPPED — the boost icon's ring is now the roll-charge pip, `SparrowHUDView.SetRollCharge`; still open: shielded turret, piercing, domain-safe). Clean up dead code
 (`ElementPipsView`, `SparrowAnimationController` or adopt it properly, `AIGunner`,
 `ExplodableProjectile`, `StopGunsAction`, `SparrowExhaustProjectile.prefab`).
 

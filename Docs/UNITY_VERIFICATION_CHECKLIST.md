@@ -23,6 +23,79 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Sparrow boost redesign — no overheat, base strafing roll, Elemental Ward (`claude/sparrow-ability-redesign-norbgz`)
+
+Authored without a Unity compile or play-test. Touches a **platform** surface
+(`ResourceSystem.ApplyElementalEffect`) plus two vessel prefabs edited as YAML,
+so the editor-side risk is real: hand-written prefab documents, a removed
+GameObject, a removed resource slot, and renamed serialized fields.
+
+**What landed**
+
+- The Sparrow's overheat mechanic is **deleted** — `OverheatingActionSO`,
+  `OverheatingActionExecutor`, the legacy `OverheatingAction`, the
+  `OverheatingAction.asset`, the `Heat` resource on the Sparrow prefab, and
+  `VesselStatus.IsOverheating`. Input event 7 binds straight to the shared
+  `BoostAction.asset`; boost is now unlimited in duration.
+- The **strafing roll dropped to base kit** — `BarrelRollController` lost its
+  `IsUpgradeActive(Element.Time)` gate. Still one roll per boost press.
+- **TIME-5 is now "Elemental Ward"** — a general, source-keyed
+  elemental-debuff immunity on `ResourceSystem`
+  (`SetElementalDebuffImmunity` / `IsElementallyImmune`), gated in one place:
+  the negative branch of `ApplyElementalEffect`. Driven declaratively by the new
+  `VesselElementalImmunity` component: **Sparrow** `WhileBoosting` + Time gate,
+  **Serpent** `WhileTranslationRestricted` ungated.
+- The Sparrow boost icon's radial gauge became a **binary roll-charge pip**
+  (`SparrowHUDView.SetRollCharge`), driven by
+  `BarrelRollController.OnRollChargeChanged`.
+- `SquirrelVesselHUDController` lost its `OverheatingActionExecutor` lookup — it
+  compiled against a Sparrow-only component and always resolved to null on a
+  Squirrel, so the Squirrel's heat gauge never moved. Pure dead-code removal.
+
+**Verify in editor** (full steps + expected observables:
+`_Scripts/Controller/Vessel/R_VesselActions/SPARROW_AFTERBURNER.md` §
+"In-editor verification")
+
+1. Project compiles with zero errors; no new console warnings on Sparrow or
+   Serpent spawn. **Known pre-existing, not from this branch:** the Sparrow's
+   `ElementalBarsController.view` reference (`fileID 7416581124810081342`) is
+   already dangling on `bleeding-edge`.
+2. **Prefab integrity is the top risk.** Open `Sparrow.prefab` and confirm: no
+   missing-script slots; the `OverheatingBoostActionExecutor` child is gone; the
+   `ResourceSystem` list reads Missiles / FullAuto / ExhaustBarrage (3 entries,
+   no Heat); `SparrowHUDController.barrelRollController` points at the root's
+   `BarrelRollController`; `VesselElementalImmunity` is on the root reading
+   `WhileBoosting` + `Time`. Then `Serpent.prefab`: `VesselElementalImmunity`
+   on the root reading `WhileTranslationRestricted` + `None`.
+3. Hold boost 60 s — no force-release, no danger trail, no self-slam.
+4. Time at 0: boost + full stick deflection rolls **once** per press.
+5. The boost (rightmost) ability icon's ring: full on press, wipes empty with a
+   punch on roll, empty until the next press. Never a partial fill.
+6. Time ≥ 5 (`ResourceSystem.TimeTestHarness = 0.5`): danger prism **while
+   boosting** → element flowers do not dip; **not boosting** → they dip. Slow
+   and input-mute land either way (by design).
+7. Serpent stopped + danger prism → no flower dip, at any Time level.
+8. **MPPM two clients**, both Sparrows, one at Time 5: both machines must agree
+   on who resists the drain. This is the replicated-`NetElementUnlocks` path —
+   a local level read would pass step 6 and fail here.
+9. `FrogletTools > Vessels > Audit Vessel Ability Rows` — Sparrow still 4/4 in
+   charge → mass → space → time.
+
+**First-pass tuning** (starting points, not settled)
+
+| Knob | Where | Value |
+|---|---|---|
+| Boost speed at Time 10 | `Sparrow.asset` Time `MultiplierAtFullLevel` | 1.5 (unchanged — but the hold is now unbounded, so this is the first balance lever) |
+| Immunity window | `Sparrow.prefab` `VesselElementalImmunity.condition` | `WhileBoosting` (`Always` = passive ward at Time 5, one field) |
+| Roll pip colours | `SparrowHUDVariant.prefab` | armed cyan `0.55/0.9/1`, spent dim grey `0.35/0.4/0.45 @ a 0.5` |
+| Roll wipe / punch | same | 0.15 s / 0.3 |
+
+**Open design question the author could not resolve** — whether the ward should
+hold `WhileBoosting` (shipped, mirrors the Serpent's stopped stance) or `Always`
+at Time 5. With an indefinite boost, `WhileBoosting` means a pilot willing to
+fly permanently full-throttle is permanently warded. One inspector field either
+way; no code change.
+
 ### 🔴 Dolphin elemental pass — skim feedback, drift boost, cone blast (`claude/dolphin-energy-crystal-cooldown-zpvc07`)
 
 Authored without a Unity compile or play-test. Garrett play-tested the HUD/boost

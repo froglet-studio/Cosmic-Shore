@@ -31,7 +31,7 @@ executor, replicated unlock bits, no new fundamentals).
 
 | Vessel | Live quantitative entries (map value) |
 |---|---|
-| Sparrow | Space→gun range (2.5) · Time→boost speed (1.5) · Mass→turret prism stretch (2.5) · Charge→skyburst blast (asset range 100→170) |
+| Sparrow | Space→gun range (2.5) · Time→boost speed (1.5, now on an **indefinite** boost — see §2 Sparrow) · Mass→turret prism stretch (2.5) · Charge→skyburst blast (asset range 100→170) |
 | Manta | Charge→overcharge detonation blast (1.75) · Mass→overcharge harvest capacity (1.75) · Space→Yawstery turn rate (1.6) |
 | Dolphin | Charge→charge-boost peak (1.5) · Time→charge fill rate (1.5) |
 | Rhino | Mass→trail slab max size (1.5) |
@@ -43,6 +43,35 @@ executor, replicated unlock bits, no new fundamentals).
 Ground rules used: reuse existing primitives (regular shield, piercing/stop-on-impact,
 domain-sparing, steal, danger, the roll) — never SuperShield (no food-web sink), never
 timers/decay, gate strictly in the acting system's layer.
+
+### Sparrow — shooter (guns + turret + rockets + afterburner) — SHIPPED
+
+The Sparrow's map has been live since the system landed; only its **TIME** row changed in the
+boost redesign (2026-08). Mechanics detail, tuning knobs and the in-editor verification table live
+beside the code: `_Scripts/Controller/Vessel/R_VesselActions/SPARROW_AFTERBURNER.md`.
+
+| Element | Quantitative (LIVE) | L5 upgrade (LIVE) |
+|---|---|---|
+| Charge | skyburst blast radius (authored on the skyburst effect assets, 100→170) | **Domain-Safe Skybursts** — explosions spare your own domain's prisms |
+| Mass | turret-fired prism stretch (2.5) | **Shielded Prisms** — turret prisms arrive shielded |
+| Space | gun range (2.5) | **Piercing Bullets** — bullets pierce prisms instead of stopping at first impact |
+| Time | boost SPEED (1.5), consumed by `VesselTransformer.CurrentBoostAmount()` | **Elemental Ward** — while boosting, negative `ApplyElementalEffect` calls are dropped (`ResourceSystem.IsElementallyImmune`) |
+
+**TIME row, changed 2026-08 — do not restore the old design:**
+
+- **Overheat is removed.** The heat resource, `OverheatingActionSO`, `OverheatingActionExecutor`,
+  the legacy `OverheatingAction`, and `VesselStatus.IsOverheating` are all deleted; input 7 binds
+  straight to the shared `BoostAction.asset`. The boost is now unlimited in duration.
+- **The strafing roll dropped to BASE kit** (was the TIME-5 upgrade). `BarrelRollController` lost
+  its `IsUpgradeActive(Element.Time)` gate and nothing else. Still one roll per boost press.
+- **TIME-5 is now Elemental Ward**, and the immunity behind it is a **platform state, not a Sparrow
+  feature** — `ResourceSystem.SetElementalDebuffImmunity` / `IVesselStatus.IsElementallyImmune`,
+  driven declaratively by the shared `VesselElementalImmunity` component. The **Serpent holds the
+  same state while stopped, ungated** (`WhileTranslationRestricted`). Any vessel or mode can hold
+  it; grants are source-keyed so holders can't clear each other.
+- **The danger-trail machinery survives.** `VesselPrismController.EnableDangerMode` /
+  `DisableDangerMode` lost their only caller with the overheat executor. Keep them — the Serpent's
+  proposed "Venom Wake" below is exactly that machinery reused.
 
 ### Manta — "Reaper Ray" (skim + harvest)
 
@@ -99,7 +128,7 @@ Time→charge fill rate / "Instant Draw".
 
 | Element | Quantitative (live) | Proposed L5 upgrade |
 |---|---|---|
-| Charge | *(open)* → propose: boost stack potency | **Venom Wake** — boost trail becomes a danger trail for the boost duration (reuses the overheat danger-trail machinery; dangerous to everyone incl. self, per the locked law) |
+| Charge | *(open)* → propose: boost stack potency | **Venom Wake** — boost trail becomes a danger trail for the boost duration (reuses `VesselPrismController.EnableDangerMode`, now caller-less since the Sparrow's overheat was removed; dangerous to everyone incl. self, per the locked law) |
 | Mass | *(open)* → propose: wall prism scale | **Fortified Wall** — woven wall prisms arrive shielded |
 | Space | *(open)* → propose: skimmer scale | **Coil Reach** — skim energy from own wall at double rate |
 | Time | boost duration | **Endless Coil** — consuming a boost charge while boosting chains without the reload pause |

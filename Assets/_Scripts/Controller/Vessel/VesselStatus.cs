@@ -255,7 +255,6 @@ namespace CosmicShore.Gameplay
 
         public bool AlignmentEnabled { get; set; }
         public bool IsSlowed { get; set; }
-        public bool IsOverheating { get; set; }
         public bool IsAttached { get; set; }
         public bool GunsActive { get; set; }
         public float Speed { get; set; }
@@ -277,7 +276,6 @@ namespace CosmicShore.Gameplay
             GunsActive = false;
             ChargedBoostCharge = 1f;
             IsSlowed = false;
-            IsOverheating = false;
 
             ResourceSystem.Reset();
             VesselTransformer.ResetTransformer();

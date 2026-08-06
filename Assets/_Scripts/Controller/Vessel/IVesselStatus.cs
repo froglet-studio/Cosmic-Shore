@@ -46,7 +46,6 @@ namespace CosmicShore.Gameplay
         IInputStatus InputStatus => Player.InputStatus;
 
         bool HasLiveProjectiles { get; set; }
-        bool IsOverheating { get; set; }
 
         IPlayer Player { get; set; }
 
@@ -111,6 +110,16 @@ namespace CosmicShore.Gameplay
         bool IsSlowed { get; set; }
         bool IsStationary { get; set; }
         bool IsTranslationRestricted { get; set; }
+
+        /// <summary>
+        /// True while ANY system holds elemental-debuff immunity on this vessel — the general
+        /// "invulnerable to elemental debuffs" state. Negative <see cref="ResourceSystem.ApplyElementalEffect"/>
+        /// calls are dropped while it holds; buffs still land. Grant/revoke it through
+        /// <see cref="ResourceSystem.SetElementalDebuffImmunity"/>, or declare a condition on the
+        /// shared <c>VesselElementalImmunity</c> driver — it is not owned by any one vessel class
+        /// (the Sparrow holds it while boosting at Time 5; the Serpent holds it while stopped).
+        /// </summary>
+        bool IsElementallyImmune => ResourceSystem && ResourceSystem.IsElementallyImmune;
 
         VesselPrismController VesselPrismController { get; }
 
