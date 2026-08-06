@@ -4,8 +4,10 @@
 The arena is a THREE-LAYER JAIL: three concentric cages at a fixed 1050 / 600 / 200, with a
 very wide empty room between each pair, and one tier of wildlife locked in each room. Unlike
 Ribcage, intensity never changes the SHELL COUNT (each shell walls in a tier of creature) -
-it changes how tightly each cage is woven and, from intensity 3, its SHAPE: the outer cages
-become BOXES (square rail grids with corner posts, "the boxing ring") around a geodesic core.
+it changes how tightly each cage is woven and, from intensity 3, its SHAPE: the cages become
+BOXES (square rail grids with corner posts, "the boxing ring") - one at intensity 3, all three
+at intensity 4. The WILDLIFE ROSTER is identical at every intensity, so this table carries the
+entire difficulty curve.
 
 Counts are exact loop arithmetic - the icosahedral subdivision, the shared-edge dedupe and the
 per-segment prism walk are all simulated the same way the C# does, not estimated. Volume uses
@@ -36,10 +38,10 @@ GEODESIC, BOXED = 0, 1
 
 # [intensity-1][shell] -> (form, frequency). Mirrors SpawnableWildlifeCage.ShellPlans.
 SHELL_PLANS = [
-    [(GEODESIC,  5), (GEODESIC,  4), (GEODESIC, 3)],
-    [(GEODESIC,  6), (GEODESIC,  5), (GEODESIC, 4)],
-    [(BOXED,    13), (GEODESIC,  6), (GEODESIC, 5)],
-    [(BOXED,    14), (BOXED,    13), (GEODESIC, 6)],
+    [(GEODESIC,  5), (GEODESIC,  4), (GEODESIC,  3)],
+    [(GEODESIC,  7), (GEODESIC,  5), (GEODESIC,  4)],
+    [(BOXED,    14), (GEODESIC,  7), (GEODESIC,  5)],
+    [(BOXED,    18), (BOXED,    18), (BOXED,    12)],
 ]
 # The box frequencies are much higher than the geodesic ones on purpose: a cube face grid at
 # frequency f contributes 12f^2 segments against a geodesic's 30f^2, and the box is smaller
@@ -253,19 +255,27 @@ ROOM_OUTER, ROOM_MIDDLE, ROOM_CORE = 0, 1, 2
 
 #          species        room          seed  cap  level  prisms
 ROSTER = [
-    ("Tadpole",      ROOM_OUTER,        180,  260,   1,     1),
-    ("QuadFish",     ROOM_OUTER,         90,  130,   1,     1),
-    ("Brittlestar",  ROOM_OUTER,         14,   20,   1,    10),
-    ("Brittlestar",  ROOM_MIDDLE,        26,   40,   2,    10),
-    ("QuadFish",     ROOM_MIDDLE,        20,   30,   3,     1),
-    ("Shark",        ROOM_MIDDLE,        10,   16,   2,    11),
-    ("Shark",        ROOM_CORE,           6,   10,   5,    11),
-    ("WormColony",   ROOM_CORE,           3,    5,   3,    26),
+    ("Tadpole",      ROOM_OUTER,        320,  760,   1,     1),
+    ("QuadFish",     ROOM_OUTER,        150,  360,   1,     1),
+    ("Brittlestar",  ROOM_OUTER,         20,   45,   1,    10),
+    ("Brittlestar",  ROOM_MIDDLE,        36,   80,   2,    10),
+    ("QuadFish",     ROOM_MIDDLE,        40,   92,   3,     1),
+    ("Shark",        ROOM_MIDDLE,        14,   28,   2,    11),
+    ("Shark",        ROOM_CORE,          10,   19,   5,    11),
+    ("WormColony",   ROOM_CORE,           4,    7,   3,    26),
 ]
 
-# Populations scale with intensity - "later intensities will have more fauna". Applied to both
-# the seed floor and the cap, so the whole distribution grows rather than just its ceiling.
-POPULATION_SCALE = [1.0, 1.2, 1.45, 1.7]
+# ~594 creatures at seed rising to ~1391 at the caps, and DELIBERATELY THE SAME AT EVERY
+# INTENSITY (requested 2026-08: "keep around 600 rising to 1400 at all intensities - the later
+# levels can have more complexity"). The seed/cap gap is wide on purpose: the spawner only tops
+# each species back up to its floor, so everything between 594 and 1391 is REPRODUCTION - the
+# swarm visibly thickens as a match runs and thins again as hunters work it, which is the food
+# web doing the work rather than a spawner curve.
+#
+# The intensity ramp therefore lives entirely in SHELL_PLANS - tighter weaves and boxier cages -
+# not in the population. Left as a per-intensity array rather than a scalar so re-introducing a
+# population ramp is one edit; do not confuse "all 1.0" with "unused".
+POPULATION_SCALE = [1.0, 1.0, 1.0, 1.0]
 
 
 def roster_for(intensity):

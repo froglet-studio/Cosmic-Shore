@@ -2802,9 +2802,12 @@ Applied at three points, all of them existing chokepoints rather than new ones:
   composing the band with `Cell.IsPreyForHerbivore`. Same reasoning as `Fauna.IsShieldedMass`
   (§16.2): *"a creature must never be led to mass it cannot reach or eat"* is ONE rule, and a
   per-subclass copy is a rule you can forget to apply in the next grazer.
-- **`RandomLifeSpawner.BandGoal`** — a banded species HATCHES inside its room. Without this a
-  wave spends its first seconds swimming home through mass it may not eat, and a species banded
-  to the core would hatch outside the cage it is meant to be locked in.
+- **`RandomLifeSpawner`** — a banded species HATCHES inside its room, SCATTERED across it. The
+  spawner's wave model (one feeding ground per wave, everyone jittered around it) is right for an
+  ordinary biome and wrong for a pen: it drops a whole wave inside one 150u ball, and while the
+  density grid is still empty that ball sits on the CELL CENTRE — so a penned population appears
+  in the middle of the arena instead of in its room. Banded species take a per-creature point
+  (`RandomPointInBand`) for both spawn position and initial goal; unbanded species are untouched.
 
 **The band is also a collider-budget device, and that is worth stating.** Wildlife Liberation's
 bands stop 60u short of every wall, so a creature's own cage is outside its band and therefore

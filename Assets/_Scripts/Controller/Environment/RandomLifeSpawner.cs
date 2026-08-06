@@ -279,21 +279,43 @@ namespace CosmicShore.Gameplay
                 : usePredatorRing ? NextPredatorSpawnPoint(host, spawnProfile)
                 : host.GetDensestRegionAnyDomain();
 
-            // A BANDED species (FaunaConfigurationSO.BandInner/OuterRadius) hatches inside its
-            // own band. Without this the creature is born on the cell's ordinary spawn ring and
-            // only its GOAL is banded, so a whole wave spends its first seconds swimming home
-            // through mass it is not allowed to eat - and a species banded to the core would
-            // hatch outside the cage it is supposed to be locked in, which is the one thing the
-            // pen exists to prevent. Unbanded species (every shipped biome) are untouched.
-            goal = BandGoal(host, faunaCfg, goal);
+            // A BANDED species is SCATTERED THROUGH ITS ROOM, one point per creature.
+            //
+            // The wave-goal machinery above is right for an ordinary biome: one feeding ground
+            // per wave, everyone jittered around it by FaunaSpawnJitter, so a group arrives
+            // together and works the same buildup. Applied to a penned species it is exactly
+            // wrong - it drops a 300-creature wave inside a 150u ball, which in a 330u-thick
+            // room reads as "they all spawned in one spot" (and when the density grid is still
+            // empty that spot is the CELL CENTRE, so it reads as "they all spawned in the
+            // middle"). A room the player is meant to fly INTO wants its wildlife spread
+            // across it.
+            //
+            // So for a banded species every creature gets its own random direction and its own
+            // radius inside the band, for BOTH its spawn point and its initial goal. Unbanded
+            // species (every shipped biome) take the wave path below, unchanged.
+            bool banded = faunaCfg.BandOuterRadius > 0f;
+            if (!banded) goal = BandGoal(host, faunaCfg, goal);
 
             for (int i = 0; i < count; i++)
             {
                 if (!host) yield break;   // cell torn down mid-seed (scene change)
 
-                Vector3 spawnPos = goal + UnityEngine.Random.insideUnitSphere * FaunaSpawnJitter;
-                spawnPos = BandGoal(host, faunaCfg, spawnPos);   // jitter must not escape the band
-                var fauna = SpawnFaunaWithDomain(host, faunaCfg.FaunaPrefab, goal, color, spawnPos);
+                Vector3 creatureGoal, spawnPos;
+                if (banded)
+                {
+                    creatureGoal = RandomPointInBand(host, faunaCfg);
+                    // A short jitter off its own goal, re-projected, so a creature is not born
+                    // exactly on the point it is already seeking.
+                    spawnPos = BandGoal(host, faunaCfg,
+                        creatureGoal + UnityEngine.Random.insideUnitSphere * BandSpawnJitter);
+                }
+                else
+                {
+                    creatureGoal = goal;
+                    spawnPos = goal + UnityEngine.Random.insideUnitSphere * FaunaSpawnJitter;
+                }
+
+                var fauna = SpawnFaunaWithDomain(host, faunaCfg.FaunaPrefab, creatureGoal, color, spawnPos);
                 if (fauna) fauna.AssignLineage(host, faunaCfg);
 
                 if (i + 1 < count && (i + 1) % FaunaSpawnBatchPerFrame == 0)
@@ -301,11 +323,28 @@ namespace CosmicShore.Gameplay
             }
         }
 
+        /// <summary>How far a banded creature may be born from its own initial goal.</summary>
+        const float BandSpawnJitter = 40f;
+
         /// <summary>
-        /// Projects a point into a species' band, and picks a fresh point on the band's mid-shell
-        /// when the input sits at the cell centre (which is what <c>GetDensestRegionAnyDomain</c>
-        /// returns for an empty grid - projecting THAT would stack a whole wave on one radial).
-        /// Returns the point unchanged for an unbanded species, so the common path is one compare.
+        /// A fresh point somewhere in a species' band - uniform in DIRECTION and uniform in
+        /// radius across the shell. Each call is independent, which is the point: it is what
+        /// spreads a wave through its room instead of stacking it on one feeding ground.
+        /// </summary>
+        static Vector3 RandomPointInBand(Cell host, FaunaConfigurationSO cfg)
+        {
+            float inner = Mathf.Min(cfg.BandInnerRadius, cfg.BandOuterRadius);
+            float outer = Mathf.Max(cfg.BandInnerRadius, cfg.BandOuterRadius);
+            return host.transform.position
+                   + UnityEngine.Random.onUnitSphere * UnityEngine.Random.Range(inner, outer);
+        }
+
+        /// <summary>
+        /// Projects a point into a species' band. Returns the point unchanged for an unbanded
+        /// species (so the common path is one compare) or for a point already inside the band;
+        /// a degenerate input (the cell centre - what <c>GetDensestRegionAnyDomain</c> returns
+        /// for an empty grid) rolls a fresh point rather than collapsing a whole wave onto one
+        /// radial.
         /// </summary>
         static Vector3 BandGoal(Cell host, FaunaConfigurationSO cfg, Vector3 point)
         {
@@ -318,13 +357,7 @@ namespace CosmicShore.Gameplay
             Vector3 offset = point - centre;
             float d = offset.magnitude;
 
-            // The cell CENTRE is the "no mass sensed yet" fallback from
-            // GetDensestRegionAnyDomain, not a real destination. Treat it as needing a fresh
-            // point even when it is technically inside the band (which it always is for the
-            // core room, whose inner radius is 0) - otherwise a whole core wave stacks on one
-            // point at the origin.
-            if (d < 1f)
-                return centre + UnityEngine.Random.onUnitSphere * UnityEngine.Random.Range(inner, outer);
+            if (d < 1f) return RandomPointInBand(host, cfg);
 
             Vector3 dir = offset / d;
             if (d >= inner && d <= outer) return point;

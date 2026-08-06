@@ -111,10 +111,22 @@ namespace CosmicShore.Gameplay
 
             if (d >= _bandInner && d <= _bandOuter) return goal;
 
-            Vector3 dir = d > 0.0001f ? offset / d : (transform.position - centre).normalized;
-            if (dir.sqrMagnitude < 0.5f) dir = Vector3.up;   // degenerate: creature sits at centre
+            // A goal AT THE CENTRE is the ecology's "nothing sensed" answer
+            // (Cell.GetDensestRegionAnyDomain falls back to the cell anchor on an empty grid),
+            // not a destination. Clamping it radially would send every creature in the room to
+            // exactly _bandInner - the whole population collapsing onto the inner wall as a
+            // shell, which is the same clumping the spawner's per-creature spread exists to
+            // avoid. Project the creature's OWN position instead, so an unfed creature mills
+            // about where it already is inside its room.
+            if (d <= 0.0001f)
+            {
+                Vector3 own = transform.position - centre;
+                float ownD = own.magnitude;
+                if (ownD <= 0.0001f) return centre + Vector3.up * _bandInner;
+                return centre + own / ownD * Mathf.Clamp(ownD, _bandInner, _bandOuter);
+            }
 
-            return centre + dir * Mathf.Clamp(d, _bandInner, _bandOuter);
+            return centre + offset / d * Mathf.Clamp(d, _bandInner, _bandOuter);
         }
 
         /// <summary>

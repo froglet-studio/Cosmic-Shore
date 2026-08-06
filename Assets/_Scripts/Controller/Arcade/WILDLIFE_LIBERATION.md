@@ -158,8 +158,16 @@ species**: `FaunaConfigurationSO.BandInnerRadius` / `BandOuterRadius`, honoured 
   `TryReproduce`'s inheritance), which composes the cell pen first and then the band;
 - `Fauna.IsPreyForMe`, the shared edibility predicate every grazer now routes through
   (`LightFauna.IsEdibleForHerbivore`, `WormFauna.IsEdiblePrism`, `Boid.IsEdibleForForager`);
-- `RandomLifeSpawner.BandGoal`, so a wave **hatches** inside its room rather than swimming home
-  through mass it may not eat.
+- **`RandomLifeSpawner`**, so a banded species **hatches inside its room, scattered across it**.
+  That is two things, and the second matters as much as the first. `BandGoal` projects a point
+  into the band, so a species banded to the core cannot hatch outside the cage it is meant to be
+  locked in. But the spawner's *wave* model — one feeding ground per wave, everyone jittered
+  around it by 150u — is wrong for a penned species: it drops a 320-creature wave inside one
+  small ball, and while the density grid is still empty that ball is centred on the **cell
+  centre**, so the whole population appears in the middle of the arena. A banded species
+  therefore gets a **per-creature** point (`RandomPointInBand` — independent random direction,
+  independent radius across the shell) for both its spawn position and its initial goal.
+  Unbanded species keep the wave path exactly as before.
 
 Same contract as the cell pen and for the same reason (`Docs/ECOSYSTEM.md` §22): **a spatial
 DIET + STEERING rule, never a wall.** Nothing is teleported, no collider is added, nothing is
@@ -201,12 +209,12 @@ openings, so the arena reads as mostly empty space: here the prisms are only the
   That is a fairness property: a latitude sphere is densest at its poles, which is why Ribcage
   must tilt every rind onto its own axis so nobody drills the top. A geodesic has no poles —
   every approach meets the same weave — so this cage needs no tilt table at all.
-- **Intensity ramps the SHAPE and the WEAVE.** Intensities 1–2 are three geodesic spheres;
-  3 swaps the outer cage for a **BOX** (square rail grid, heavy corner posts — "the boxing
-  ring"), 4 makes the middle one a box too. The core stays geodesic at every intensity so the
-  innermost room keeps the "cell" read. A box is a genuinely different problem: its flat faces
-  mean an approach is either square-on at a long dense wall or into a corner where three walls
-  converge.
+- **Intensity ramps the SHAPE and the WEAVE — and nothing else.** The wildlife roster is
+  identical at every intensity (see below), so this table carries the *entire* difficulty curve.
+  Intensities 1–2 are three geodesic spheres that tighten; 3 swaps the outer cage for a **BOX**
+  (square rail grid, heavy corner posts — "the boxing ring"); 4 is **three nested boxes** at the
+  tightest weave in the mode. A box is a genuinely different problem: its flat faces mean an
+  approach is either square-on at a long dense wall or into a corner where three walls converge.
 - **Every bar is a ONE-hit PLAIN prism** except the danger traps. Nothing is `Shielded` or
   `SuperShielded` — see the bands section for why.
 - **50–99 danger traps, in the CORE cage only.** The innermost room holds the biggest, hardest
@@ -221,41 +229,46 @@ Measure Cell Environment Baselines):
 | intensity | outer | middle | core | prisms | danger | openings (o/m/c) |
 |---|---|---|---|---:|---:|---|
 | 1 | geodesic f5 | geodesic f4 | geodesic f3 | **9,206** | 50 | 251 / 179 / 79u |
-| 2 | geodesic f6 | geodesic f5 | geodesic f4 | **11,456** | 82 | 210 / 144 / 60u |
-| 3 | **box** f13 | geodesic f6 | geodesic f5 | **11,680** | 85 | 93 / 120 / 48u |
-| 4 | **box** f14 | **box** f13 | geodesic f6 | **12,870** | 99 | 87 / 53 / 40u |
+| 2 | geodesic f7 | geodesic f5 | geodesic f4 | **12,696** | 82 | 180 / 144 / 60u |
+| 3 | **box** f14 | geodesic f7 | geodesic f5 | **13,244** | 85 | 87 / 103 / 48u |
+| 4 | **box** f18 | **box** f18 | **box** f12 | **13,956** | 158 | 67 / 38 / 19u |
 
 > **The box frequencies are much higher than the geodesic ones and that is not a typo.** A cube
 > face grid at frequency *f* contributes 12*f*² segments against a geodesic's 30*f*², and the box
 > is smaller (corners on the radius ⇒ faces at 0.577·r). Matching frequencies would make the
 > *harder* intensities lighter **and** more open than the easy ones. The values come from the
 > measured table in `wildlife_cage_budget.py`. Re-tune **there** and re-run the generator, never
-> by eye.
+> by eye — the rounding in the per-segment prism walk is not monotonic in frequency, so an
+> eyeballed bump can easily make a cage *lighter*.
 
 ## The wildlife (the objective)
 
 One `FaunaConfigurationSO` per **(species, room, intensity)** — the spawner runs one loop per
 config — banded to its room and scaled by intensity ("later intensities will have more fauna").
 
-| species | room | seed | cap (I1) | level | body prisms ea. |
+| species | room | seed | cap | level | body prisms ea. |
 |---|---|---:|---:|---:|---:|
-| Tadpole | outer | 180 | 260 | 1 | 1 |
-| QuadFish | outer | 90 | 130 | 1 | 1 |
-| Brittlestar | outer | 14 | 20 | 1 | 10 |
-| Brittlestar | middle | 26 | 40 | 2 | 10 |
-| QuadFish | middle | 20 | 30 | 3 | 1 |
-| Shark (predator) | middle | 10 | 16 | 2 | 11 |
-| Shark (predator) | core | 6 | 10 | 5 | 11 |
-| Worm Colony (kaiju) | core | 3 | 5 | 3 | ~26 |
+| Tadpole | outer | 320 | 760 | 1 | 1 |
+| QuadFish | outer | 150 | 360 | 1 | 1 |
+| Brittlestar | outer | 20 | 45 | 1 | 10 |
+| Brittlestar | middle | 36 | 80 | 2 | 10 |
+| QuadFish | middle | 40 | 92 | 3 | 1 |
+| Shark (predator) | middle | 14 | 28 | 2 | 11 |
+| Shark (predator) | core | 10 | 19 | 5 | 11 |
+| Worm Colony (kaiju) | core | 4 | 7 | 3 | ~26 |
+| **total** | | **594** | **1,391** | | **3,161 prisms at cap** |
 
-Populations scale ×1.0 / ×1.2 / ×1.45 / ×1.7 with intensity:
+**The roster is identical at every intensity** (requested 2026-08: *"keep around 600 rising to
+1400 at all intensities — the later levels can have more complexity"*). `POPULATION_SCALE` is
+`[1, 1, 1, 1]`; it is kept as a per-intensity array rather than collapsed to a scalar so
+re-introducing a population ramp is one edit. **Do not read "all 1.0" as "unused".** The whole
+intensity ramp lives in the cage's `SHELL_PLANS` instead.
 
-| intensity | creatures (seed) | creatures (cap) | body prisms (cap) |
-|---|---:|---:|---:|
-| 1 | 349 | 511 | 1,436 |
-| 2 | 419 | 613 | 1,721 |
-| 3 | 505 | 740 | 2,068 |
-| 4 | 593 | 868 | 2,426 |
+**The seed→cap gap is wide on purpose.** 594 → 1,391 means well over half the eventual
+population is *born in play*: the spawner only tops each species back up to its floor, so
+everything above it is reproduction, bounded by starvation and the caps. The swarm visibly
+thickens as a match runs and thins where hunters have been working — the food web doing the
+shaping, not a spawner curve.
 
 `PopulationSize` is a **seed floor**, not a population: the spawner only tops a species back up
 to it (bootstrap + extinction recovery). Everything above comes from reproduction and is bounded
@@ -275,21 +288,24 @@ wildlife in them.
 
 | intensity | cage prisms | fauna body prisms (cap) | total |
 |---|---:|---:|---:|
-| 1 | 9,206 | 1,436 | **10,642** |
-| 2 | 11,456 | 1,721 | **13,177** |
-| 3 | 11,680 | 2,068 | **13,748** |
-| 4 | 12,870 | 2,426 | **15,296** |
+| 1 | 9,206 | 3,161 | **12,367** |
+| 2 | 12,696 | 3,161 | **15,857** |
+| 3 | 13,244 | 3,161 | **16,405** |
+| 4 | 13,956 | 3,161 | **17,117** |
 
 Comparable to Ribcage (10,620 → 20,153) in raw collider count — but **the fauna half is far more
 expensive per collider than the cage half**, and that is this branch's headline performance risk:
 
 - **Every fauna body prism is a MOVER.** It re-buckets in `PrismSpatialIndex` as the creature
   swims (`Fauna.NotifyBodyPrismsMoved`), where a cage prism is registered once and never moves.
-- **Every creature runs a behaviour coroutine** — 349 to 593 of them at seed, up to 868 at cap.
-  This is the number to watch, not the prism count.
-- **This is ~7× the masterplan's ≤1,500-per-cell fauna-prism target** and roughly **6× the
-  creature count of any shipped biome.** It is an explicit product decision ("very heavy",
-  requested 2026-08), not an accident of the roster.
+- **Every creature runs a behaviour coroutine** — **594 at seed, up to 1,391 at the caps.** This
+  is the number to watch, not the prism count.
+- **This is ~2× the masterplan's ≤1,500-per-cell fauna-prism target** and roughly **an order of
+  magnitude more creatures than any shipped biome.** It is an explicit product decision ("very
+  heavy… around 600 rising to 1400", requested 2026-08), not an accident of the roster.
+- **Bootstrap cost:** 594 creatures at 6 instantiations per frame (`FaunaSpawnBatchPerFrame`) is
+  ~100 frames of seeding at match start, spread across the species loops. Expect a visible
+  fill-in during the countdown rather than a hitch.
 
 **Measure on device before tuning.** Dials, in order of bluntness: `POPULATION_SCALE` and the
 `ROSTER` caps in `wildlife_cage_budget.py` (the creature count — start here), then the cage's
@@ -385,9 +401,10 @@ Authored ONLY through **FrogletTools ▸ Game Modes ▸ End Game Conditions**
 milestone rungs are fractions of it (0.25 / 0.5).
 
 > **⚠ Pacing flag — 500 has not been playtested.** It is the number that was asked for, not a
-> measured one. Intensity 1 holds 349 creatures at seed and re-seeds every 20 s, so 500 kills
-> across four hunters is reachable, but whether it lands at two minutes or ten is unknown. It is
-> one editor field, and the milestones follow it automatically.
+> measured one. Every intensity holds ~594 creatures at seed, re-seeds every 20 s and breeds up
+> toward ~1,391, so 500 kills for a single hunter is comfortably reachable — but whether it lands
+> at three minutes or fifteen is unknown. It is one editor field, and the milestones follow it
+> automatically.
 
 ## Assets
 
@@ -418,7 +435,7 @@ and the PhaseThresholds cannot drift apart.
 | `WormSegmentFauna` | override thinned to its `_dead` guard — the kill rule moved to the base |
 | `LightFauna` / `WormFauna` / `Boid` | edibility routed through `Fauna.IsPreyForMe` (adds the band to the existing cell rule) |
 | `FaunaConfigurationSO` | `BandInnerRadius` / `BandOuterRadius` |
-| `RandomLifeSpawner` | `BandGoal` — a banded species hatches inside its own room |
+| `RandomLifeSpawner` | `BandGoal` + `RandomPointInBand` — a banded species hatches inside its own room, scattered across it per creature rather than as one clumped wave |
 | `CellRuntimeDataSO` | `OnFaunaKilled` (`ScriptableEventString`) |
 | `StatsManager` | `LifeformKilled(string)` + a code-side SOAP subscription, and the class's ONLY client branch (see "Multiplayer") |
 | `Player` | `ReportFaunaKill_ServerRpc()` — owner-side kill report; identity comes from RPC ownership |
@@ -459,10 +476,17 @@ and the PhaseThresholds cannot drift apart.
    tick once per creature, not once per prism.
 8. **Only YOUR kills count.** Watch a shark eat a tadpole, and watch one starve. Neither should
    move any score. Shoot a cage bar — no score either.
-9. **The tiers stay in their rooms.** Fly a full lap of each room. The outer room should be
-   thick with tadpoles/quadfish plus a few brittlestars; the middle noticeably bigger creatures
-   and sharks; the core the kaiju. **Nothing should be swimming between rooms**, and nothing
-   should be chewing on a cage bar.
+9. **The tiers stay in their rooms, SPREAD ACROSS them.** Fly a full lap of each room. The
+   outer room should be thick with tadpoles/quadfish plus a few brittlestars, distributed all the
+   way round — **not a clump**, and above all **not a clump at the centre of the arena** (that is
+   the failure mode the per-creature band spread fixes; if you see it, `RandomPointInBand` is not
+   being reached). The middle room is noticeably bigger creatures and sharks; the core is the
+   kaiju. **Nothing should be swimming between rooms**, and nothing should be chewing on a cage
+   bar.
+9b. **Population grows.** Note the rough headcount at the countdown (~594 across all three rooms)
+   and again three minutes in: it should be visibly denser, heading toward ~1,391 — that is
+   reproduction, and it is what makes 500 kills reachable. If it is flat, the species are hitting
+   their caps immediately or nothing is feeding.
 10. **Sparrow only — SOLO.** Pick a different vessel in an earlier game, then launch this: you
     should spawn a Sparrow, with a `clamping selected vessel` line in the log.
 11. **Sparrow only — MULTIPLAYER (the Ribcage regression).** Have the CLIENT fly a Dolphin in the

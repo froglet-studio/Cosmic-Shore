@@ -13,13 +13,13 @@ MonoBehaviour:
   m_Name: Wildlife Core WormColony 1
   m_EditorClassIdentifier:
   FaunaPrefab: {fileID: 1002, guid: 8f79c97ef2bd4624a730a96900e4daaa, type: 3}
-  InitialSpawnCount: 3
-  PopulationSize: 3
+  InitialSpawnCount: 4
+  PopulationSize: 4
   SpawnProbability: 1
   FeedsPerOffspring: 0
   OffspringPerBirth: 1
   ReproductionCooldownSeconds: 60
-  MaxLivePopulation: 5
+  MaxLivePopulation: 7
   ReleaseTier: 0
   BandInnerRadius: 0
   BandOuterRadius: 140
