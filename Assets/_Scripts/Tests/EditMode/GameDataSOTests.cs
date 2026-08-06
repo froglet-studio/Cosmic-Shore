@@ -53,6 +53,7 @@ namespace CosmicShore.Tests
             public event Action<IRoundStats> OnSkimmerShipCollisionsChanged;
             public event Action<IRoundStats> OnJoustCollisionChanged;
             public event Action<IRoundStats> OnGoalsScoredChanged;
+            public event Action<IRoundStats> OnLifeformsKilledChanged;
             public event Action<IRoundStats> OnFullSpeedStraightAbilityActiveTimeChanged;
             public event Action<IRoundStats> OnRightStickAbilityActiveTimeChanged;
             public event Action<IRoundStats> OnLeftStickAbilityActiveTimeChanged;
@@ -89,6 +90,7 @@ namespace CosmicShore.Tests
             public int SkimmerShipCollisions { get; set; }
             public int JoustCollisions { get; set; }
             public int GoalsScored { get; set; }
+            public int LifeformsKilled { get; set; }
             public float FullSpeedStraightAbilityActiveTime { get; set; }
             public float RightStickAbilityActiveTime { get; set; }
             public float LeftStickAbilityActiveTime { get; set; }
