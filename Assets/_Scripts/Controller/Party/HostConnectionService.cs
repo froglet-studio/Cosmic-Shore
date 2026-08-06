@@ -306,6 +306,13 @@ namespace CosmicShore.Gameplay
         private int    _benignPartySessionSkips;
         private float  _nextBenignSkipLogAllowed;
 
+        /// <summary>
+        /// Set by <see cref="HandleRosterChangedPublish"/> when the local party
+        /// roster moves; drained by <see cref="Update"/> into a presence
+        /// re-publish. See that handler for why this cannot be a direct call.
+        /// </summary>
+        private bool   _rosterPublishRequested;
+
         private int    _publishedPartyCount = -1;
         private string _publishedMatchName  = "<UNSET>";
         // Identity (displayName/avatarId) rides the same change-gated per-tick
@@ -483,8 +490,39 @@ namespace CosmicShore.Gameplay
             // them across the rejoin.
             _lobbyService.LivePropertySource = BuildLivePresenceProperties;
 
+            // Our published partyCount is a function of the roster, so the roster
+            // moving is exactly when it needs re-publishing. Before this, the new
+            // value reached the wire only on the next SUCCESSFUL poll tick - and
+            // the presence read that gates that tick is voided ~12% of the time
+            // by the SDK stale-index defect, so peers could render a stale party
+            // size for many seconds after the party had actually changed.
+            if (connectionData.OnPartyRosterChanged != null)
+                connectionData.OnPartyRosterChanged.OnRaised += HandleRosterChangedPublish;
+
             HandleSignedInEvent();
         }
+
+        /// <summary>
+        /// Requests a presence re-publish because the local party roster moved.
+        ///
+        /// <para>
+        /// Sets a flag rather than publishing inline, and that is not incidental:
+        /// the roster raise fires from inside <see cref="RefreshAsync"/> and
+        /// <see cref="ScanPresenceForJoinedPartyMembers"/>, both of which are
+        /// already holding <c>_lobbyMutex</c>.
+        /// <see cref="PublishPresenceImmediateAsync"/> waits on that same mutex,
+        /// so calling it here would deadlock the refresh cycle against itself.
+        /// <see cref="Update"/> drains the flag once the mutex is free.
+        /// </para>
+        ///
+        /// <para>
+        /// The flag also debounces: several roster changes landing in one frame
+        /// collapse into a single publish, and
+        /// <see cref="PublishPartyStateIfChangedAsync"/>'s own change-gate makes
+        /// a publish whose values did not actually move free.
+        /// </para>
+        /// </summary>
+        private void HandleRosterChangedPublish() => _rosterPublishRequested = true;
 
         /// <summary>
         /// Live values for the stateful presence-lobby player properties, used by
@@ -552,6 +590,18 @@ namespace CosmicShore.Gameplay
             if (_lobbyService.ConsumeMembershipLost())
             {
                 HandlePresenceMembershipLostAsync().Forget();
+                return;
+            }
+
+            // The roster moved since the last frame - push our new partyCount out
+            // now rather than waiting for a poll tick that may be voided. Drained
+            // here because the raise fires with the lobby mutex held (see
+            // HandleRosterChangedPublish); by this line the gates above have
+            // already established the mutex is free.
+            if (_rosterPublishRequested)
+            {
+                _rosterPublishRequested = false;
+                PublishPresenceImmediateAsync().Forget();
                 return;
             }
 
@@ -644,6 +694,12 @@ namespace CosmicShore.Gameplay
             UnsubscribeFromGameLaunch();
             UnsubscribeFromVesselReady();
             UnsubscribeFromPartySessionEvents();
+
+            // HostConnectionDataSO is a project asset: it outlives every scene and
+            // every instance of this service, so a leaked handler here would keep
+            // being invoked on a destroyed component for the rest of the session.
+            if (connectionData != null && connectionData.OnPartyRosterChanged != null)
+                connectionData.OnPartyRosterChanged.OnRaised -= HandleRosterChangedPublish;
 
             if (bootStatusRetryRequestedEvent != null)
                 bootStatusRetryRequestedEvent.OnRaised -= HandleBootStatusRetryRequested;
