@@ -119,7 +119,10 @@ namespace CosmicShore.Gameplay
         /// shared <c>VesselElementalImmunity</c> driver — it is not owned by any one vessel class
         /// (the Sparrow holds it while boosting at Time 5; the Serpent holds it while stopped).
         /// </summary>
-        bool IsElementallyImmune => ResourceSystem && ResourceSystem.IsElementallyImmune;
+        // `this.` is deliberate: the property and its type share a name, and while the C# "Color
+        // Color" rule resolves that correctly, this file is the only place in the codebase that
+        // would rely on it in a value context — not worth the ambiguity.
+        bool IsElementallyImmune => this.ResourceSystem && this.ResourceSystem.IsElementallyImmune;
 
         VesselPrismController VesselPrismController { get; }
 

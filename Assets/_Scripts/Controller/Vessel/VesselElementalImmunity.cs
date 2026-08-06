@@ -52,7 +52,17 @@ namespace CosmicShore.Gameplay
         IVesselStatus _status;
         bool _granted;
 
-        void Awake() => _status = GetComponent<VesselStatus>();
+        void Awake()
+        {
+            _status = GetComponent<VesselStatus>();
+
+            // Warn and degrade, never fail silently: with no VesselStatus this component can only
+            // ever resolve to "not immune", which looks exactly like a correctly locked upgrade.
+            if (_status == null)
+                Debug.LogWarning($"[VesselElementalImmunity] {name} has no VesselStatus, so it can " +
+                                 "never grant elemental-debuff immunity. Move this component onto " +
+                                 "the vessel ROOT (the GameObject carrying VesselStatus).", this);
+        }
 
         void OnDisable() => Grant(false);
 

@@ -40,11 +40,12 @@ namespace CosmicShore.UI
 
         void Subscribe()
         {
-            if (_vesselStatus.IsInitializedAsAI || !_vesselStatus.IsLocalUser) return;
-
-            // Detach-first: a vessel swap re-runs Initialize on live components, and a second
-            // subscribe would double every callback.
+            // Detach-first, BEFORE the pilot gate: a vessel swap re-runs Initialize on live
+            // components, and if the re-init hands this HUD to an AI or a remote player the early
+            // return below must not leave the previous pilot's subscriptions attached.
             Unsubscribe();
+
+            if (_vesselStatus.IsInitializedAsAI || !_vesselStatus.IsLocalUser) return;
 
             if (stationaryModeChanged)
             {
@@ -68,9 +69,8 @@ namespace CosmicShore.UI
 
         void OnDisable()
         {
-            if (_vesselStatus != null && (_vesselStatus.IsInitializedAsAI || !_vesselStatus.IsLocalUser))
-                return;
-
+            // Unconditional and idempotent — gating teardown on the pilot flags would strand
+            // subscriptions on a vessel that was handed to an AI after it subscribed.
             Unsubscribe();
 
             if (_initialAmmoRoutine != null)
