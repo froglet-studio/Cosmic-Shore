@@ -68,11 +68,13 @@ exists to enable.
 2. **`VesselPreferences` was only ever `.Clear()`ed** — never written, by anything. It is
    replaced by `PreferredVessel` (singular, as you asked), *derived* as the most-flown vessel
    rather than stored. That required tracking per-vessel flight time, which nothing did.
-3. **`UnlockedVessels: [""]`** was a real data bug, not a display artifact: one `SO_Vessel`
-   asset ships with a blank `Name`, and the unlock writer persisted it verbatim. The flat list
-   is now a keyed map with an explicit `Unlocked` flag, and blank names are rejected at the
-   writer — so the shape no longer permits the bug. **The underlying asset still needs
-   fixing** (see §6, E2).
+3. **`UnlockedVessels: [""]`** was a real data bug, not a display artifact. The culprit was
+   **`FalconClassSO.asset`** (Class 9), which shipped with a blank `Name` while its sibling
+   `ShrikeClassSO` carried "Shrike". It is referenced by `SO_Classlist_All`, so it is a live
+   vessel, and `VesselUnlockSystem` persisted `vessel.Name` verbatim as the Cloud Save key. It
+   only surfaced for some saves because `isLocked` is unserialized on that asset and defaults to
+   false — it takes **Lock All** then **Unlock All** in the toolbox to push the empty key through.
+   The list is now a keyed map that rejects blank names at the writer, **and the asset is fixed**.
 
 ### 2.4 Why `MODE_STATS` matters more than it looks
 
@@ -171,6 +173,13 @@ Person properties mirrored from Cloud Save: display name, avatar, crystal balanc
 crystals earned/spent, first-seen, session count, games completed, total flight time, preferred
 vessel, selected vessel, unlocked vessel count, unlocked mode count.
 
+**The identity/build envelope lives in the PostHog sink, not in the facade.** `player_id`,
+`app_version`, `platform` and `schema_version` are stamped on the way out to PostHog only. UGS
+auto-collects the equivalents as core data, and — because every UGS parameter is a permanent,
+undeletable dashboard row against a 1,500 cap — sending them there would have been 168 rows of
+duplicated data. Event parameters override envelope keys, so `game_completed`'s own client-stamped
+timestamp still wins and reaches both sinks. See §6.1.
+
 **Region is locked to EU Cloud** — see §5.
 
 ---
@@ -205,7 +214,8 @@ PostHog sink beside the first and double-sent every event.
 
 ## 5. The EU vs US question — settled
 
-**Keep EU Cloud.** The client host is `https://eu.i.posthog.com`.
+**Keep EU Cloud — confirmed.** The project logs in at `eu.posthog.com`, and the client host is
+`https://eu.i.posthog.com`.
 
 The premise behind switching to US — *"Froglet is a Delaware C-corp"* — does not apply, and it
 is worth writing down because it will come up again:
@@ -233,14 +243,76 @@ PostHog regions **cannot be changed after project creation**, so this is effecti
 
 Ordered. Everything in **A** is required before any data arrives at all.
 
-### A · Turn the pipeline on — ~45 min, unblocks everything else
+### A · Turn the pipeline on
 
 | # | Action | Why it matters |
 |---|---|---|
-| **A1** | Open `Assets/Resources/PostHogConfig.asset` in Unity, paste the **Project API key** (starts with `phc_`) into `Project Api Key`. Confirm `Host` reads `https://eu.i.posthog.com`. Save, commit, push. | The sink is **inert** until this key exists. This is the single blocking step. |
+| **A1** | ~~Paste the PostHog **Project API key** into `Assets/Resources/PostHogConfig.asset`.~~ **DONE.** Key `phc_qixNiz…` is committed and the host is `https://eu.i.posthog.com`, confirmed against the `eu.posthog.com` login. | The sink was inert until this existed. PostHog now receives events. |
 | **A2** | PostHog → *Organization settings → Billing → Product analytics → Edit billing limit → **$0***. | Makes free-tier overage a hard drop instead of a surprise bill. |
-| **A3** | **Declare every event and every parameter in the UGS dashboard Event Manager**, from `Docs/Analytics/EVENT_SCHEMA.json`. | UGS **silently discards** any event or parameter not declared there. This is the most likely reason so little data has been arriving. |
-| **A4** | Play one full game. Check PostHog → *Activity* for `game_started` / `game_completed`, and the UGS dashboard for the same. | End-to-end proof. If PostHog is empty but UGS is not, the key or host is wrong. |
+| **A3** | **Hand-create 28 events and 67 parameters in the UGS Event Manager.** Full walkthrough in §6.1 — read it before starting, because the rows are permanent. | UGS rejects any custom event with no dashboard schema. This is why so little has reached UGS while the code has been recording all along. **UGS only — PostHog needs none of it.** |
+| **A4** | Play one full game. Check PostHog → *Activity* for `game_started` / `game_completed`. | End-to-end proof. Works today, independently of A3. |
+
+> **A4 is unblocked now.** A1 is done and PostHog accepts whatever the sink sends, so you can
+> confirm the PostHog half of the pipeline before touching the UGS list at all.
+
+### 6.1 · A3 in full — the UGS Event Manager
+
+Verified against Unity's current documentation (`com.unity.services.analytics` 6.3.0) rather than
+assumed, because this is real manual work and one earlier assumption of mine was wrong.
+
+**The three facts that shape the job:**
+
+1. **Custom events must exist in the dashboard before they are accepted.** Unity: *"Events must
+   conform to a schema that exists on the dashboard or else they are rejected as invalid."* The SDK
+   still uploads them — the backend rejects them, and they accumulate under
+   **Event Browser → Invalid Events** with a reason.
+2. **There is no auto-detect or approve-from-traffic flow, and no bulk import.** No CSV upload, no
+   admin API, and `ugs deploy` does not cover Analytics. (The *legacy* pre-UGS Analytics did list
+   events your game had sent — that is the deprecated service, not this one, and it is where the
+   belief that this is automatic comes from.)
+3. **Events and parameters can never be deleted once created**, and they count against a
+   **1,500-parameter-per-environment cap**. Every row is a permanent commitment. Get the names
+   right the first time.
+
+**That third fact is why the list shrank.** The original count was 233 rows, because the common
+envelope (`player_id`, `app_version`, `platform`, `schema_version`, both timestamps) was stamped on
+all 28 events. But **UGS already auto-collects the player id, platform and app version as core
+data** — declaring them would have permanently burned 168 schema rows duplicating what UGS has.
+The envelope exists because *PostHog* has no equivalent auto-collection, so it moved into the
+PostHog sink where it belongs. `game_completed` keeps its client-stamped completion timestamp as a
+real event parameter, since that was an explicit ask, and it goes to both sinks.
+
+**Net: 28 events, 67 parameters. Four events carry no parameters at all.**
+
+**Where:** `cloud.unity.com` → **Development → Products** → **Analytics** → **Event Manager**.
+Direct: `https://cloud.unity.com/analytics`
+
+**How:** per event, **Add New → Custom Event**, type the name exactly, then add each parameter with
+its type. Work from **`Docs/Analytics/ugs_event_manager_rows.csv`** (`event_name, parameter_name,
+type`), regenerated from `EVENT_SCHEMA.json` so the two cannot drift.
+
+**Order — highest value first, so stopping early still leaves you with working analysis:**
+
+| Order | What | Rows |
+|---|---|---|
+| 1 | `game_started` (12) + `game_completed` (13) | 25 of 67 — every field the instrumentation email asked for |
+| 2 | `play_again_pressed`, `ad_impression`, `game_first_launched`, `party_joined` | 0 each — name only, seconds apiece |
+| 3 | The remaining 22 events | 1–3 parameters each |
+
+**Then replicate:** build the schema in **one** environment and use **Copy to Environment** — the
+only bulk operation UGS offers.
+
+**Two traps:**
+
+- Event names are **case-sensitive**. Ours are all `snake_case`.
+- Do not confuse our custom `game_started` with UGS's built-in standard event `gameStarted`
+  (camelCase, sent automatically by the SDK). Different events, no clash — but don't "correct" one
+  to match the other.
+
+> **One documented gap, flagged rather than guessed.** Unity documents event-level rejection but
+> says nothing about what happens when an event carries a parameter that was *not* declared —
+> whole event dropped, parameter stripped, or accepted. I could not find a definitive answer, so
+> treat "declare every parameter you send" as required rather than assuming partial acceptance.
 
 ### B · Backfill the players you already have — ~1 hr, once
 
@@ -285,7 +357,8 @@ and paperwork, not engineering.
 | # | Action |
 |---|---|
 | **E1** | **Delete the branch `claude/analytics-attribution-viability-vwkunw`.** PR #592 is closed, but the git proxy in my environment refuses ref deletions (`send-pack: unexpected disconnect`), so I could not remove it. One click in the GitHub UI. |
-| **E2** | Find the `SO_Vessel` asset with a blank `Name` and fix it. The new schema stops it *persisting*, it does not fix the asset. |
+| **E2** | ~~Fix the `SO_Vessel` asset with a blank `Name`.~~ **DONE.** It was `FalconClassSO.asset` (Class 9); its sibling `ShrikeClassSO` carried "Shrike" and Falcon's was never filled in. All 11 vessel assets now have `Name` matching their `VesselClassType`. |
+| **E4** | Falcon and Shrike both have `isLocked` unserialized, so both default to **unlocked** despite being "Planned" vessels. Probably wrong, but changing lock state is a design call — left alone. |
 | **E3** | Set `Excluded Events` on `PostHogConfig.asset` to `ui_action` if you ever approach the 1M/month free tier. UGS keeps receiving it, so nothing leaves the system of record. |
 
 ---
