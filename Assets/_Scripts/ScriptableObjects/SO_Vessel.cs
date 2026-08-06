@@ -48,6 +48,13 @@ public class SO_Vessel : ScriptableObject
     [Tooltip("Whether this vessel is locked. Set to true for vessels that must be purchased.")]
     [SerializeField] bool isLocked;
 
+    [Tooltip("Owned from the very first launch, before any purchase - the starter vessel. " +
+             "This is the DURABLE answer to 'did the player earn this?', unlike isLocked, which " +
+             "Unlock() rewrites at runtime (and which the editor then persists into the asset). " +
+             "UGSDataService seeds every vessel with this flag into HANGAR_DATA on first load, so " +
+             "starters show up as owned in cloud data, and a debug unlock reset re-grants them.")]
+    [SerializeField] bool ownedFromStart;
+
     [Tooltip("Currency cost to unlock this vessel. 0 = free once currency system is bypassed.")]
     [SerializeField] public int UnlockCost = 100;
 
@@ -56,6 +63,13 @@ public class SO_Vessel : ScriptableObject
     /// Will be synced with UGS once backend integration is complete.
     /// </summary>
     public bool IsLocked => isLocked;
+
+    /// <summary>
+    /// Whether the player owns this vessel from first launch with nothing spent. Read this, not
+    /// <see cref="IsLocked"/>, when you need to know what was AUTHORED - <see cref="Unlock"/>
+    /// mutates isLocked at runtime and the editor writes that mutation back into the asset.
+    /// </summary>
+    public bool OwnedFromStart => ownedFromStart;
 
     /// <summary>
     /// Unlocks this vessel at runtime. In builds the change is lost on restart (by design until UGS sync).
