@@ -58,6 +58,48 @@ namespace CosmicShore.UI
                 settingsModalWindowManager.OnModalClosed += HandleModalClosed;
         }
 
+        /// <summary>
+        /// Pays the pause panel's one-time activation cost - child Awake/OnEnable, layout
+        /// rebuild, TMP mesh generation, the modal's backdrop creation - at scene start,
+        /// behind the loading veil, instead of on the player's first pause tap
+        /// mid-gameplay. The panel is activated invisible for two frames, then
+        /// deactivated again. Called by MiniGameHUD.Start; the panel starts inactive in
+        /// every scene, so it cannot warm itself.
+        /// </summary>
+        public void Prewarm() => PrewarmAsync().Forget();
+
+        async UniTaskVoid PrewarmAsync()
+        {
+            if (pauseMenuPanel == null || pauseMenuPanel.activeSelf) return;
+
+            var canvasGroup = pauseMenuPanel.GetComponent<CanvasGroup>();
+            if (canvasGroup == null)
+                canvasGroup = pauseMenuPanel.AddComponent<CanvasGroup>();
+
+            float restAlpha = canvasGroup.alpha;
+            bool restBlocksRaycasts = canvasGroup.blocksRaycasts;
+            bool restInteractable = canvasGroup.interactable;
+            canvasGroup.alpha = 0f;
+            canvasGroup.blocksRaycasts = false;
+            canvasGroup.interactable = false;
+
+            pauseMenuPanel.SetActive(true);
+
+            // Two frames: activation work runs this frame, Start-queued work and the
+            // resulting layout/TMP rebuilds complete on the next.
+            await UniTask.DelayFrame(2);
+            if (this == null || pauseMenuPanel == null) return;
+
+            // If the player managed to open the pause menu inside the warm window,
+            // leave it up - only restore the group so it is visible.
+            if (settingsModalWindowManager == null || !settingsModalWindowManager.IsOpen)
+                pauseMenuPanel.SetActive(false);
+
+            canvasGroup.alpha = restAlpha;
+            canvasGroup.blocksRaycasts = restBlocksRaycasts;
+            canvasGroup.interactable = restInteractable;
+        }
+
         void OnDestroy()
         {
             if (settingsModalWindowManager != null)
