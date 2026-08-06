@@ -258,6 +258,21 @@ namespace CosmicShore.Utility
         [NonSerialized] public int PrismTargetCount;
 
         /// <summary>
+        /// The resolved fauna-kill target for the current Wildlife Liberation session - the
+        /// PER-PLAYER <see cref="IRoundStats.LifeformsKilled"/> count that ends the turn.
+        /// Published by <c>WildlifeKillTurnMonitor</c> in StartMonitor (server), synced to
+        /// clients via NetworkVariable.OnValueChanged. Read by
+        /// <see cref="CosmicShore.Gameplay.WildlifeLiberationScoringRuleSO"/> for the end
+        /// condition and the "remaining" readout. Reset in <see cref="ResetRuntimeData"/> and
+        /// <see cref="ResetRuntimeDataForReplay"/>.
+        ///
+        /// Note this is the one target on this object that is compared against an INDIVIDUAL's
+        /// stat rather than a domain sum - Wildlife Liberation is a free-for-all hunt whose
+        /// domain sums are a secondary readout, not the win condition.
+        /// </summary>
+        [NonSerialized] public int LifeformTargetCount;
+
+        /// <summary>
         /// The active scoring strategy for the current mode, published by the mode's controller
         /// in OnNetworkSpawn (drag the matching <see cref="CosmicShore.Gameplay.ScoringRuleSO"/>
         /// asset onto the controller). Read by the network turn monitors for the end condition
@@ -532,6 +547,7 @@ namespace CosmicShore.Utility
             JoustTargetCount = 0;
             GoalTargetCount = 0;
             PrismTargetCount = 0;
+            LifeformTargetCount = 0;
             System.Array.Clear(_domainMetricSums, 0, _domainMetricSums.Length);
             // Note: RequestedAIBackfillCount and RequestedDomainCount are intentionally
             // NOT reset here. They are pre-launch config values set by
@@ -578,6 +594,7 @@ namespace CosmicShore.Utility
             JoustTargetCount = 0;
             GoalTargetCount = 0;
             PrismTargetCount = 0;
+            LifeformTargetCount = 0;
             System.Array.Clear(_domainMetricSums, 0, _domainMetricSums.Length);
         }
 

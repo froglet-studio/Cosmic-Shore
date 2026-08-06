@@ -2711,3 +2711,116 @@ crowding `ColonySeparationRadius`/`ColonySeparationWeight`.
 - **The Lifeform Matrix station for the colony is an anonymous labeled sphere** — the
   root prefab carries no renderer for `ToyModelBuilder` to sample. A mini-worm station
   model is cosmetic follow-up.
+
+---
+
+## 24. Wildlife Liberation — the creatures become killable, and a pen becomes a band (Aug 2026)
+
+`GameModes.WildlifeLiberation = 40` is the Sparrow-only hunt: three concentric cages at
+1050 / 600 / 200 pen three tiers of wildlife, and the first PLAYER to kill 500 creatures wins.
+Full mode reference: `_Scripts/Controller/Arcade/WILDLIFE_LIBERATION.md`. Two of its changes are
+**platform ecology** and belong here.
+
+### 24.1 A creature dies when its last body prism is destroyed
+
+**Before this branch, no creature in the game could be killed by shooting it.** Destroying a
+fauna's body prisms removed prisms and left the creature swimming with a thinner body. The only
+kill paths were starvation, predation, and the crystal joust
+(`VesselWitherLifeformByCrystalEffectSO` → `Fauna.Predated`). `WormSegmentFauna` was the sole
+exception — §23 gave it `OnBodyPrismExploded`, and that stayed a worm-only rule.
+
+The consequence was invisible until a mode needed it: the **Sparrow**, whose entire verb set is
+guns and missiles, could not kill wildlife at all. A "hunt the wildlife" mode was therefore
+impossible to build without either a bespoke damage path (a cheat) or this fix.
+
+`Fauna.OnBodyPrismExploded` is now the base behaviour: when the last body prism is gone the
+creature dies through the sealed `Fauna.Die`. Guarded once per creature (`_diedFromBodyLoss`),
+because a missile's AOE can strip the last several prisms inside one frame and every one of them
+calls back.
+
+**Why this is not a new sink in the §0 sense.** The conserved-mass law says a prism is only ever
+removed by an ACTIVE force — a vessel using an ability, or fauna eating it. A player shooting a
+creature is the first of those. Nothing here is a timer, a lifespan, or a cull: a creature nobody
+shoots still only ever dies to starvation or predation, and the population is still bounded by
+the food web. What changed is that an active force can now finish what it started.
+
+Invariants, checked one by one:
+
+| invariant | status |
+|---|---|
+| Continuity of existence | **Held** — `Boid.OnDeath` / `LightFauna.OnDeath` wither or suction the remains; both skip already-destroyed prisms, so a shot creature's surviving structure still leaves visibly rather than popping. |
+| No imposed death | **Held** — no clock added anywhere. |
+| Starvation = wither-to-crystal | **Held** — the kill path is the same sealed `Die`, so it withers from the extremities inward exactly like starvation. |
+| Every lifeform drops one elemental crystal | **Held** — `Die` drops it before `OnDeath` runs. Sealed, so no subclass can bypass it. |
+| No domain asymmetry | **Held** — nothing in the path reads domain. |
+| Mass is conserved | **Held** — the prisms were destroyed by the player through the ordinary destruction pipeline and accounted there; the creature's heart becomes a collectible. |
+
+**It affects every mode**, and in every case as an improvement: wildlife in Skim Race, Brood
+Rush, freestyle and the Wanderway are now killable by any vessel that can destroy a prism.
+Verify rather than assume (`WILDLIFE_LIBERATION.md` checklist item 17).
+
+**Attribution and scoring.** `Die` publishes PLAYER-attributed deaths only, on
+`CellRuntimeDataSO.OnFaunaKilled` (a `ScriptableEventString` carrying the killer's name — a SOAP
+channel, not a static event, and on the runtime SO rather than each fauna prefab so no creature
+prefab needed a new wire). Engine attribution (`Fauna.StarvationKiller`, a predator's name, a
+colony wither reason) is filtered there, and `StatsManager.LifeformKilled` filters again against
+the player roster. So **the ecology dying of its own accord can never move a scoreboard** — which
+is what keeps a hunt mode from being farmable by waiting.
+
+This is the fauna twin of `LifeForm.OnLifeFormDeath`, which has fed the flora side of
+WildlifeBlitz's scoring all along and answers §23's "segment kills raise no scoring event"
+follow-up.
+
+**One consequence of §7 caveat 4 lands here and is worth flagging for any future fauna-scored
+mode.** Because fauna have no `NetworkObject` and every peer simulates its own swarm, a creature
+a CLIENT just killed may not exist on the server at all — so recording server-side (the way every
+other stat here works, because a prism exists identically on every peer and the server's own
+physics sees a client's ram) would mean only the host could ever score. `StatsManager` therefore
+grew its only client branch: a client forwards its own kill through its own `Player` object
+(`Player.ReportFaunaKill_ServerRpc`), the same owner-detects → server-records round-trip
+`NetworkVesselImpactor` uses for jousts, with identity taken from RPC ownership rather than a
+name string. Server-authoritative fauna would retire it; until then, **any mode that scores on
+the ecology needs this shape.**
+
+### 24.2 A pen becomes a band
+
+§22 gave a mode one pen: `Cell.FaunaContainmentRadius`, a single radius for the whole cell.
+Three nested cages need three pens, so the capability is generalized to an **annulus authored per
+species** — `FaunaConfigurationSO.BandInnerRadius` / `BandOuterRadius`.
+
+Same contract as the cell pen, for the same reason: **a spatial DIET + STEERING rule, never a
+wall.** Nothing is teleported, no collider is added, nothing is culled for crossing a boundary. A
+creature can drift out on its own momentum — it simply has no reason to and nothing to eat there.
+`0 = no band` is the default and what every shipped biome authors.
+
+Applied at three points, all of them existing chokepoints rather than new ones:
+
+- **`Fauna.Goal`'s setter** — the single point every goal writer already passes through (§22's
+  reason for making `Goal` a property). The cell pen clamps first, then the band.
+- **`Fauna.IsPreyForMe`** — a new shared edibility predicate the three grazers now route through
+  (`LightFauna.IsEdibleForHerbivore`, `WormFauna.IsEdiblePrism`, `Boid.IsEdibleForForager`),
+  composing the band with `Cell.IsPreyForHerbivore`. Same reasoning as `Fauna.IsShieldedMass`
+  (§16.2): *"a creature must never be led to mass it cannot reach or eat"* is ONE rule, and a
+  per-subclass copy is a rule you can forget to apply in the next grazer.
+- **`RandomLifeSpawner.BandGoal`** — a banded species HATCHES inside its room. Without this a
+  wave spends its first seconds swimming home through mass it may not eat, and a species banded
+  to the core would hatch outside the cage it is meant to be locked in.
+
+**The band is also a collider-budget device, and that is worth stating.** Wildlife Liberation's
+bands stop 60u short of every wall, so a creature's own cage is outside its band and therefore
+not food. Without that the grazers would eat two thirds of their own jail (the bars are painted
+across the domain triad and the legacy diet eats opposing-domain mass), and the alternative —
+shielding the bars — would swap ~9,000 LOD-cullable BoxColliders for always-on convex
+MeshColliders (`PrismKinds`). A steering rule bought what a shield would have cost.
+
+Offspring inherit their parent's band for free: they bind the same config.
+
+### 24.3 Collider budget
+
+The mode's arena is 9,206–12,870 cage prisms plus **349–593 live creatures** (up to 868 at the
+population caps, 1,436–2,426 body prisms). That creature count is ~6× any shipped biome and is
+the branch's headline performance risk — every fauna body prism is a MOVER that re-buckets in
+`PrismSpatialIndex` each frame, and every creature runs a behaviour coroutine. It is an explicit
+product decision ("very heavy", requested 2026-08), not an accident of the roster. Full table,
+the tuning dials in order of bluntness, and the on-device measurement step:
+`WILDLIFE_LIBERATION.md` § "Collider-budget impact".

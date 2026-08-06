@@ -147,33 +147,18 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        /// <summary>True while any body prism is alive — the segment's health read.</summary>
-        public bool HasLiveBodyPrisms
-        {
-            get
-            {
-                var prisms = BodyPrisms;
-                if (prisms == null) return false;
-                for (int i = 0; i < prisms.Length; i++)
-                {
-                    var hp = prisms[i];
-                    if (hp && !hp.destroyed) return true;
-                }
-                return false;
-            }
-        }
-
         /// <summary>
-        /// The player-facing kill path: when the last body prism is destroyed the
-        /// segment dies. The prisms themselves already exploded through the standard
-        /// prism-destruction pipeline (their mass is accounted there); the sealed Die
-        /// then drops the heart (if this is a capital segment) and OnDeath handles
-        /// topology + the husk's wither.
+        /// The player-facing kill path: when the last body prism is destroyed the segment
+        /// dies. This is now the <see cref="Fauna"/> base behaviour (it was hoisted out of
+        /// here so EVERY creature is shootable, not just the worm — see
+        /// <see cref="Fauna.OnBodyPrismExploded"/>); the override survives only for the
+        /// segment's own <c>_dead</c> guard, which covers the colony-initiated death paths
+        /// (<see cref="WitherAway"/>, a split's shed) that the base's guard cannot see.
         /// </summary>
         public override void OnBodyPrismExploded(HealthPrism prism, string killerName)
         {
-            if (_dead || HasLiveBodyPrisms) return;
-            Die(killerName);
+            if (_dead) return;
+            base.OnBodyPrismExploded(prism, killerName);
         }
 
         /// <summary>

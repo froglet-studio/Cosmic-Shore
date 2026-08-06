@@ -58,12 +58,21 @@ namespace CosmicShore.Gameplay
         {
             if (_netcodeHooks != null)
                 _netcodeHooks.OnNetworkSpawnHook += OnNetworkSpawn;
+
+            // Subscribed in code rather than through a scene-wired EventListener, like
+            // SceneLoader's SOAP subscriptions: this manager already holds the cell runtime
+            // SO that owns the channel, so there is nothing per-scene to forget.
+            if (cellData != null)
+                cellData.OnFaunaKilled.OnRaised += LifeformKilled;
         }
 
         void OnDisable()
         {
             if (_netcodeHooks != null)
                 _netcodeHooks.OnNetworkSpawnHook -= OnNetworkSpawn;
+
+            if (cellData != null)
+                cellData.OnFaunaKilled.OnRaised -= LifeformKilled;
         }
 
         void OnNetworkSpawn()
@@ -103,6 +112,47 @@ namespace CosmicShore.Gameplay
             var cs = cellStatsList[cellID];
             cs.LifeFormsInCell--;
             cellStatsList[cellID] = cs;
+        }
+
+        /// <summary>
+        /// A fauna died to an attributed force - credit the killer. Raised on
+        /// <see cref="CellRuntimeDataSO.OnFaunaKilled"/> by the sealed <c>Fauna.Die</c>, which
+        /// only publishes PLAYER-attributed deaths (starvation and predation carry engine
+        /// attribution and are filtered there). The roster lookup is the second filter and the
+        /// authoritative one: a name that is not a player in this game simply credits nobody,
+        /// so an AI-vs-AI kill, a worm devouring a tadpole, or a stray attribution string can
+        /// never move a scoreboard.
+        ///
+        /// UNLIKE every other writer here this one has a CLIENT branch, and it has to. Every
+        /// other stat originates from something that exists identically on every peer - a
+        /// prism sits at the same place on the server, so the server's own physics sees a
+        /// client's ram and records it. Fauna do not: they have no NetworkObject and every peer
+        /// simulates its own swarm (Docs/ECOSYSTEM.md §7 caveat 4), so a creature a client just
+        /// shot may not exist on the server at all. Recording server-only would mean only the
+        /// host could ever score a kill.
+        ///
+        /// So a client forwards its OWN kill through its OWN Player object
+        /// (<see cref="Player.ReportFaunaKill_ServerRpc"/>), the same owner-detects →
+        /// server-records round-trip <c>NetworkVesselImpactor</c> uses for jousts. Identity
+        /// comes from RPC ownership, so a client cannot credit anyone but itself.
+        /// </summary>
+        public void LifeformKilled(string killerName)
+        {
+            if (string.IsNullOrEmpty(killerName)) return;
+
+            if (_allowRecord)
+            {
+                // Server: credit directly. Covers the host's own kills and every AI's (AI
+                // players are server-owned, so their creatures ARE the server's simulation).
+                if (gameData.TryGetRoundStats(killerName, out IRoundStats killerStats))
+                    killerStats.LifeformsKilled++;
+                return;
+            }
+
+            // Client: forward only this machine's own kill, and only through the Player it owns.
+            var local = gameData.LocalPlayer;
+            if (local is Player netPlayer && local.IsLocalUser && local.Name == killerName)
+                netPlayer.ReportFaunaKill_ServerRpc();
         }
 
         public void CrystalCollected(CrystalStats crystalStats)

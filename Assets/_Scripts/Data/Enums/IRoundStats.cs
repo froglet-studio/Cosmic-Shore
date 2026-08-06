@@ -43,6 +43,7 @@ namespace CosmicShore.Data
         event Action<IRoundStats> OnSkimmerShipCollisionsChanged;
         event Action<IRoundStats> OnJoustCollisionChanged;
         event Action<IRoundStats> OnGoalsScoredChanged;
+        event Action<IRoundStats> OnLifeformsKilledChanged;
 
         // Ability time events
         event Action<IRoundStats> OnFullSpeedStraightAbilityActiveTimeChanged;
@@ -95,6 +96,13 @@ namespace CosmicShore.Data
         int JoustCollisions { get; set; }
         int GoalsScored { get; set; }
 
+        /// <summary>
+        /// Fauna this player has KILLED - an attributed creature death (body prisms shot out,
+        /// or a crystal joust), never a starvation or predation death. The scoring metric of
+        /// Wildlife Liberation; fed by CellRuntimeDataSO.OnFaunaKilled -> StatsManager.
+        /// </summary>
+        int LifeformsKilled { get; set; }
+
         // Ability active times
         float FullSpeedStraightAbilityActiveTime { get; set; }
         float RightStickAbilityActiveTime { get; set; }
@@ -140,6 +148,7 @@ namespace CosmicShore.Data
             SkimmerShipCollisions = 0;
             JoustCollisions = 0;
             GoalsScored = 0;
+            LifeformsKilled = 0;
 
             FullSpeedStraightAbilityActiveTime = 0f;
             RightStickAbilityActiveTime = 0f;

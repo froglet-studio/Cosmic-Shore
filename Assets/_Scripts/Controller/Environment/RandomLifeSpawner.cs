@@ -279,17 +279,59 @@ namespace CosmicShore.Gameplay
                 : usePredatorRing ? NextPredatorSpawnPoint(host, spawnProfile)
                 : host.GetDensestRegionAnyDomain();
 
+            // A BANDED species (FaunaConfigurationSO.BandInner/OuterRadius) hatches inside its
+            // own band. Without this the creature is born on the cell's ordinary spawn ring and
+            // only its GOAL is banded, so a whole wave spends its first seconds swimming home
+            // through mass it is not allowed to eat - and a species banded to the core would
+            // hatch outside the cage it is supposed to be locked in, which is the one thing the
+            // pen exists to prevent. Unbanded species (every shipped biome) are untouched.
+            goal = BandGoal(host, faunaCfg, goal);
+
             for (int i = 0; i < count; i++)
             {
                 if (!host) yield break;   // cell torn down mid-seed (scene change)
 
                 Vector3 spawnPos = goal + UnityEngine.Random.insideUnitSphere * FaunaSpawnJitter;
+                spawnPos = BandGoal(host, faunaCfg, spawnPos);   // jitter must not escape the band
                 var fauna = SpawnFaunaWithDomain(host, faunaCfg.FaunaPrefab, goal, color, spawnPos);
                 if (fauna) fauna.AssignLineage(host, faunaCfg);
 
                 if (i + 1 < count && (i + 1) % FaunaSpawnBatchPerFrame == 0)
                     yield return null;
             }
+        }
+
+        /// <summary>
+        /// Projects a point into a species' band, and picks a fresh point on the band's mid-shell
+        /// when the input sits at the cell centre (which is what <c>GetDensestRegionAnyDomain</c>
+        /// returns for an empty grid - projecting THAT would stack a whole wave on one radial).
+        /// Returns the point unchanged for an unbanded species, so the common path is one compare.
+        /// </summary>
+        static Vector3 BandGoal(Cell host, FaunaConfigurationSO cfg, Vector3 point)
+        {
+            if (!host || !cfg || cfg.BandOuterRadius <= 0f) return point;
+
+            float inner = Mathf.Min(cfg.BandInnerRadius, cfg.BandOuterRadius);
+            float outer = Mathf.Max(cfg.BandInnerRadius, cfg.BandOuterRadius);
+
+            Vector3 centre = host.transform.position;
+            Vector3 offset = point - centre;
+            float d = offset.magnitude;
+
+            // The cell CENTRE is the "no mass sensed yet" fallback from
+            // GetDensestRegionAnyDomain, not a real destination. Treat it as needing a fresh
+            // point even when it is technically inside the band (which it always is for the
+            // core room, whose inner radius is 0) - otherwise a whole core wave stacks on one
+            // point at the origin.
+            if (d < 1f)
+                return centre + UnityEngine.Random.onUnitSphere * UnityEngine.Random.Range(inner, outer);
+
+            Vector3 dir = offset / d;
+            if (d >= inner && d <= outer) return point;
+
+            // Land anywhere in the shell rather than pinned to whichever wall was nearest -
+            // a wave that all lands on the outer wall reads as a ring, not a population.
+            return centre + dir * UnityEngine.Random.Range(inner, outer);
         }
 
         /// <summary>

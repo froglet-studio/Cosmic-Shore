@@ -101,6 +101,33 @@ namespace CosmicShore.Gameplay
             NetDomain.Value = domain;
             CosmicShore.Utility.PerformanceBenchmark.NetMarkers.CountNetVarDirty();
         }
+
+        /// <summary>
+        /// Owner-side report that THIS player killed a creature - the fauna counterpart of the
+        /// joust round-trip in <c>NetworkVesselImpactor</c>, and the only way a client's kill
+        /// can ever score.
+        ///
+        /// Fauna have no NetworkObject: every peer simulates its OWN swarm and the populations
+        /// diverge (Docs/ECOSYSTEM.md §7 caveat 4). So unlike a prism - which exists at the same
+        /// place on every peer, letting the server's own physics see a client's ram and record
+        /// it - a creature a client just shot may not exist on the server at all. Without this
+        /// RPC a client's kills would silently never register, and only the host could win
+        /// Wildlife Liberation.
+        ///
+        /// IDENTITY COMES FROM OWNERSHIP, NOT FROM A STRING. <c>RequireOwnership = true</c> is
+        /// the default, and the server credits the RoundStats of the Player object the RPC
+        /// arrived on - so a client can only ever credit ITSELF, no matter what it sends.
+        /// </summary>
+        [ServerRpc]
+        public void ReportFaunaKill_ServerRpc()
+        {
+            using var _ = CosmicShore.Utility.PerformanceBenchmark.NetMarkers.RpcDispatch.Auto();
+            CosmicShore.Utility.PerformanceBenchmark.NetMarkers.CountRpc();
+
+            if (RoundStats == null) return;
+            RoundStats.LifeformsKilled++;
+        }
+
         public string Name { get; private set; }
         public int AvatarId { get; private set; }
         // NOTE: PlayerUUID is the DISPLAY NAME, not a unique id - two players can choose the

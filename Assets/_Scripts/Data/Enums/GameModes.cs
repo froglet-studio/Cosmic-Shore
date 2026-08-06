@@ -64,5 +64,11 @@ namespace CosmicShore.Data
         // the swarm loose on every trailing team's trails. See
         // _Scripts/Controller/Arcade/RIBCAGE.md.
         Ribcage = 39,
+        // WildlifeLiberation (40): the Sparrow-only hunt. Three concentric cages at 1050 / 600
+        // / 200 pen three tiers of wildlife - a huge swarm of small creatures in the outer
+        // room, much bigger ones in the middle, the biggest and toughest in the core. Break in
+        // and shoot; first PLAYER (not domain - this one is a free-for-all) to the kill target
+        // wins. See _Scripts/Controller/Arcade/WILDLIFE_LIBERATION.md.
+        WildlifeLiberation = 40,
     }
 }
