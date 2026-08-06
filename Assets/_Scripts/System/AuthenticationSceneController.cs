@@ -339,12 +339,16 @@ namespace CosmicShore.Core
 
         async UniTaskVoid OnConfirmUsernameAsync(CancellationToken ct)
         {
-            string username = usernameInputField ? usernameInputField.text?.Trim() : string.Empty;
+            string username = usernameInputField ? usernameInputField.text : string.Empty;
 
-            if (string.IsNullOrEmpty(username) || username.Length < 3 || username.Length > 25)
+            // Local rules first (length, characters, profanity) - instant feedback with
+            // no service round-trip. The service call below re-validates and adds the
+            // global duplicate check.
+            var localCheck = DisplayNameValidator.Validate(username);
+            if (!localCheck.IsValid)
             {
                 if (usernameStatusText)
-                    usernameStatusText.text = "Username must be between 3 and 25 characters.";
+                    usernameStatusText.text = localCheck.Message;
                 return;
             }
 
@@ -352,17 +356,17 @@ namespace CosmicShore.Core
 
             try
             {
-                if (_playerDataService != null && _playerDataService.IsInitialized)
-                    _playerDataService.SetDisplayName(username);
+                if (_playerDataService != null)
+                {
+                    var result = await _playerDataService.TrySetDisplayNameAsync(username)
+                        .AttachExternalCancellation(ct);
 
-                try
-                {
-                    await AuthenticationService.Instance.UpdatePlayerNameAsync(username)
-                        .AsUniTask().AttachExternalCancellation(ct);
-                }
-                catch (Exception ex)
-                {
-                    CSDebug.LogWarning($"[AuthScene] UpdatePlayerNameAsync failed (non-critical): {ex.Message}");
+                    if (!result.IsValid)
+                    {
+                        if (usernameStatusText)
+                            usernameStatusText.text = result.Message;
+                        return;
+                    }
                 }
 
                 NavigateToMainMenu();
