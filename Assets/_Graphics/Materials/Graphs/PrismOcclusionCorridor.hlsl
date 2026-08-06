@@ -75,12 +75,44 @@
 // a fade instead of an edge, and it is the reason the other nine candidates rendered on
 // 2026-08-04 (concentric rings 0.21, quasicrystal 0.13, halftone 0.10, hex 0.10, perlin
 // 0.04, …) are not here: they buy their look by trading it away.
+//
+// A kernel must also EARN ITS SHAPE. The 2026-08-06 hard-edge pass measured two more
+// polygonal candidates that pass the fidelity bar and were still rejected, on the look:
+// a triangular TESSELLATION (simplex grid, per-facet phase, facets filling as nested
+// triangles — 0.0009 / 0.0056) and Voronoi SHATTER (irregular polygons filling between
+// parallel straight lines — 0.0009 / 0.0034). Both dissolve into thin strokes at mid
+// alpha and read as scratchy crosshatch rather than as polygons, and the unstaggered
+// tessellation (0.16) is the literal wallpaper the Bayer grid was dropped for. Passing
+// the number is necessary, not sufficient.
 // -----------------------------------------------------------------------------
 #define PRISM_OCCLUSION_KERNEL_IGN 0     // screen-space noise — reads as a DISSOLVE
 #define PRISM_OCCLUSION_KERNEL_SPIRAL 1  // corridor-relative — reads as an IRIS
-#define PRISM_OCCLUSION_KERNEL_WORLEY 2  // screen-space cells — reads as ORGANIC FLECKING
+#define PRISM_OCCLUSION_KERNEL_WORLEY 2  // screen-space cells — reads as ROUND flecking
+#define PRISM_OCCLUSION_KERNEL_SHARD 3   // screen-space cells — reads as TRIANGULAR flecking
 
-#define PRISM_OCCLUSION_KERNEL PRISM_OCCLUSION_KERNEL_WORLEY
+#define PRISM_OCCLUSION_KERNEL PRISM_OCCLUSION_KERNEL_SHARD
+
+// -----------------------------------------------------------------------------
+// THE SHAPE RULE — why the current kernel is SHARD and not WORLEY (2026-08-06).
+//
+// The unit shape of the dither is a design surface, not just a dither detail: it is
+// the smallest piece of the game the player sees, repeated thousands of times right
+// next to their ship. Cosmic Shore's motif is SOFT-HARD-SOFT — bloom (soft) around
+// low-poly prisms (hard) drawn along a smooth flight curve (soft); the UI borders do
+// the same thing, grading out at both ends while taking hard turns in their pathing.
+// Rigid geometry sandwiched between the ambiguous.
+//
+// A CIRCLE breaks that. It is a soft shape with a soft gradient on either side of it —
+// soft-SOFT-soft — so Worley's round flecks read as foam against everything else in the
+// frame. SHARD keeps Worley's arrangement exactly (same lattice, same jitter, same
+// orbit, same remap) and changes only the METRIC, so the flecks become equilateral
+// triangles of the same area: hard polygonal unit shape, ambiguous placement, still
+// feathered by the corridor's own soft profile. Hard shape, soft sandwich.
+//
+// Kernel 2 is kept, not deleted — it is the calibration reference every fidelity number
+// in this file is quoted against, and it is one #define away if the triangles ever want
+// re-judging side by side.
+// -----------------------------------------------------------------------------
 
 // -----------------------------------------------------------------------------
 // THE MORPH RATE — how fast the pattern evolves, in full pattern cycles per second.
@@ -88,9 +120,9 @@
 // legibly alive without ever drawing the eye off the ship. Set to 0 for a frozen pattern;
 // nothing else needs to change.
 //
-// This is an AXIS, not a fourth kernel — each kernel interprets it in its own natural
-// terms (Worley orbits its feature points, the spiral drifts its phase), and each states
-// the interpretation at its own definition. Time comes from `_Time.y`, a URP built-in, so
+// This is an AXIS, not another kernel — each kernel interprets it in its own natural terms
+// (the cellular kernels orbit their feature points, the spiral drifts its phase), and each
+// states the interpretation at its own definition. Time is `_Time.y`, a URP built-in, so
 // morphing costs one MAD per fragment and ZERO CPU: no per-prism state, no publisher
 // change, no extra uniform. That is the same shape the clock-material law asks for
 // everywhere else — initial conditions plus a clock, evaluated on the GPU.
@@ -225,9 +257,16 @@ float PrismOcclusionMotley(float2 pixel)
 // rate 0 through t = 400s. (Feeding the shipped-static constants 0.02/0.83 to the moving
 // points measured 0.0238, i.e. straight back out of the admission rule, which is exactly
 // the failure mode the warning below is about.)
-static const float PRISM_OCCLUSION_WORLEY_CELL = 6.0;       // pixels per lattice cell
-static const float PRISM_OCCLUSION_WORLEY_CDF_LO = 0.011;   // fitted to the measured F1 CDF
-static const float PRISM_OCCLUSION_WORLEY_CDF_HI = 0.873;   // — do not retune independently
+static const float PRISM_OCCLUSION_CELL_SIZE = 6.0;       // pixels per lattice cell
+static const float PRISM_OCCLUSION_CELL_CDF_LO = 0.011;   // fitted to the measured F1 CDF
+static const float PRISM_OCCLUSION_CELL_CDF_HI = 0.873;   // — do not retune independently
+
+// The fit is named CELL, not WORLEY, because BOTH cellular kernels use it: SHARD's
+// triangle gauge is area-normalised against the circle (see kernel D), which lands its
+// distance distribution on the same CDF. Re-measured under the triangle metric the
+// independent best fit is 0.0118 / 0.8775 — within noise of these two, and the shipped
+// pair measures 0.0074 uniform on it. One fit, two metrics; that is the payoff for
+// normalising by area rather than by extent.
 
 float2 PrismOcclusionHash2(float2 cell)
 {
@@ -238,7 +277,7 @@ float2 PrismOcclusionHash2(float2 cell)
 
 float PrismOcclusionWorley(float2 pixel, float time)
 {
-    float2 p = pixel / PRISM_OCCLUSION_WORLEY_CELL;
+    float2 p = pixel / PRISM_OCCLUSION_CELL_SIZE;
     float2 base = floor(p);
     float phase = time * PRISM_OCCLUSION_MORPH_RATE * 6.28318530718;
 
@@ -258,7 +297,129 @@ float PrismOcclusionWorley(float2 pixel, float time)
     }
 
     return PrismOcclusionSafeThreshold(smoothstep(
-        PRISM_OCCLUSION_WORLEY_CDF_LO, PRISM_OCCLUSION_WORLEY_CDF_HI, sqrt(best)));
+        PRISM_OCCLUSION_CELL_CDF_LO, PRISM_OCCLUSION_CELL_CDF_HI, sqrt(best)));
+}
+
+// -----------------------------------------------------------------------------
+// Kernel D — screen-space SHARD (triangular cells). CURRENT.
+//
+// Worley with one line changed. Same lattice, same Hoskins hash, same orbiting feature
+// points, same 3×3 search, same CDF remap — only the METRIC differs, from Euclidean
+// distance (whose level sets are circles) to the gauge of an equilateral triangle (whose
+// level sets are equilateral triangles). The arrangement the eye reads as "organic
+// flecking" is therefore untouched; only the unit shape's EDGES change, from curved to
+// three straight ones. That is the whole point: see THE SHAPE RULE at the top.
+//
+// THE GAUGE. A convex polygon's gauge is the max of its edges' half-plane functions. For
+// an equilateral triangle with normals 120° apart, two of the three collapse into one
+// abs():
+//
+//     g(q) = max(q.y, 0.86602540*|q.x| - 0.5*q.y)
+//
+// {g ≤ r} is the equilateral triangle of INRADIUS r (all three edges are exactly r from
+// the origin; the vertices are at 2r, since an equilateral triangle's circumradius is
+// twice its inradius).
+//
+// IT IS A GAUGE, NOT A SQUARED DISTANCE — homogeneous of degree 1, so `min` may be taken
+// on it directly and there is no final sqrt. SHARD is therefore very slightly CHEAPER
+// than Worley: same nine hashes and nine sines, one abs/mul/max per cell instead of a
+// mul/add, and one sqrt saved at the end.
+//
+// THE AREA NORMALISATION IS LOAD-BEARING — it is not a size preference. A circle of
+// radius d has area πd², the triangle at g=r has area 3√3·r², so the two carry the same
+// visual weight when r = d·√(π/3√3) — i.e. when the gauge is scaled by 1/0.77756 =
+// 1.28607 to read as an "equivalent circle radius". Two things follow, and both are why
+// the constant may not be casually retuned: the triangles occupy exactly the ink the
+// circles did at the same threshold (so the dissolve's density is unchanged, which is
+// what "triangles of the same size" means), AND the distance distribution lands on
+// Worley's own measured CDF, so the fitted remap above serves both kernels unchanged.
+// Change PRISM_OCCLUSION_SHARD_AREA and you must refit PRISM_OCCLUSION_CELL_CDF_*.
+//
+// FIDELITY. Measured in the same harness as every number quoted here (which reads the
+// shipped Worley at 0.0073 on a uniform alpha sweep and 0.0117 across the corridor
+// cross-section — ~1.55× stricter than the original in-situ pass that produced this
+// file's 0.0048/0.0074, so compare within the harness, not across): SHARD lands at
+// **0.0074 / 0.0145** with FIXED orientation, 0.0066 / 0.0126 with FLIP, 0.0070 / 0.0129
+// with SPIN. All three sit inside the admission rule. FIXED pays about 24% more corridor
+// error than Worley (0.0145 vs 0.0117) for the shape — stated rather than rounded away —
+// and it is bought back by the fit, not by the band: phase-stable at 0.0073–0.0074 across
+// t = 0 … 400s, exactly like Worley.
+//
+// THE 3×3 SEARCH IS STILL EXHAUSTIVE ENOUGH, but for a weaker reason than Worley's, so it
+// is measured rather than argued: because the circumradius is twice the inradius, a
+// feature point outside the neighbourhood can in principle beat one inside it, which
+// Euclidean distance forbids. Against an exhaustive 5×5 search, 0.216% of pixels differ
+// at all and the MEAN threshold delta is 1.5e-5 — invisible in a dither, and the same
+// class of approximation Worley already ships. A 5×5 would triple the hash count to buy
+// that back; it is not worth one part in 10⁵.
+// -----------------------------------------------------------------------------
+// MORPH: identical to Worley's — the feature points orbit inside their own cells, so the
+// triangles drift, merge and split continuously. Under SPIN they also rotate, because the
+// orientation is read from the same orbit phase (the sine is already computed for the
+// jitter, so spinning costs exactly one cos per cell). Measured 0.64% of band pixels
+// changing state per 60fps frame at the default rate, against Worley's 0.50% and the
+// ~1.45% ceiling above which a morphing dither reads as noise.
+#define PRISM_OCCLUSION_SHARD_FIXED 0  // every triangle points the same way — most legible
+#define PRISM_OCCLUSION_SHARD_FLIP 1   // up/down, via a free negation of the offset
+#define PRISM_OCCLUSION_SHARD_SPIN 2   // per-cell rotation off the orbit phase — shards
+
+// FIXED is the default because it is the most legible AS A TRIANGLE at 1:1 — the shape
+// the pattern is made of should be nameable at a glance, which is the entire ask. FLIP
+// and SPIN scatter the orientation and read progressively more as generic angular
+// splinters; both are one edit away and both measure marginally BETTER (a uniformly
+// oriented gauge is more spatially correlated), so this is a look call, not a numbers one.
+#define PRISM_OCCLUSION_SHARD_ORIENT PRISM_OCCLUSION_SHARD_FIXED
+
+static const float PRISM_OCCLUSION_SHARD_AREA = 1.28607;  // equal-area vs the circle
+
+// The gauge of the equilateral triangle, expressed as an equivalent circle radius.
+// Always >= 0: if q.y < 0 the second term is >= -0.5*q.y > 0, and if q.y >= 0 the first
+// term already is — so the smoothstep below is never fed a negative distance.
+float PrismOcclusionTriangleGauge(float2 q)
+{
+    return max(q.y, 0.86602540 * abs(q.x) - 0.5 * q.y) * PRISM_OCCLUSION_SHARD_AREA;
+}
+
+float PrismOcclusionShard(float2 pixel, float time)
+{
+    float2 p = pixel / PRISM_OCCLUSION_CELL_SIZE;
+    float2 base = floor(p);
+    float phase = time * PRISM_OCCLUSION_MORPH_RATE * 6.28318530718;
+
+    float best = 8.0;
+    [unroll]
+    for (int y = -1; y <= 1; ++y)
+    {
+        [unroll]
+        for (int x = -1; x <= 1; ++x)
+        {
+            float2 cell = base + float2(x, y);
+            float2 h = PrismOcclusionHash2(cell);
+            float2 wave = sin(6.28318530718 * h + phase);
+            float2 orbit = 0.5 + 0.5 * wave;
+
+            // Offset FROM the feature point TO the pixel. The direction matters here in a
+            // way it never did for Worley: the gauge is not radially symmetric, so
+            // reversing it would flip every triangle. Keep it this way round.
+            float2 q = p - (cell + orbit);
+
+#if PRISM_OCCLUSION_SHARD_ORIENT == PRISM_OCCLUSION_SHARD_FLIP
+            // A triangle's point reflection is the opposite-pointing triangle, so half the
+            // cells can be flipped for one multiply — no second gauge, no branch.
+            q *= (h.x < 0.5) ? -1.0 : 1.0;
+#elif PRISM_OCCLUSION_SHARD_ORIENT == PRISM_OCCLUSION_SHARD_SPIN
+            // wave.y is already sin(2pi*h.y + phase) from the orbit above, so a full
+            // per-cell rotation costs exactly one cos.
+            float c = cos(6.28318530718 * h.y + phase);
+            q = float2(q.x * c - q.y * wave.y, q.x * wave.y + q.y * c);
+#endif
+
+            best = min(best, PrismOcclusionTriangleGauge(q));
+        }
+    }
+
+    return PrismOcclusionSafeThreshold(smoothstep(
+        PRISM_OCCLUSION_CELL_CDF_LO, PRISM_OCCLUSION_CELL_CDF_HI, best));
 }
 
 // Quintic smootherstep — C2 continuous: value, FIRST and SECOND derivatives are all
@@ -285,7 +446,7 @@ float PrismOcclusionSmootherStep(float t)
 //               their authored alpha still applies, the corridor only scales it.
 //
 // Alpha         — BaseAlpha scaled by the corridor fade.
-// ClipThreshold — 0 outside the corridor (never discards); the motley threshold inside
+// ClipThreshold — 0 outside the corridor (never discards); the kernel's threshold inside
 //                 it, so an opaque alpha-tested material dissolves smoothly instead of
 //                 popping. Transparent materials ignore this output entirely (they do
 //                 not enable _ALPHATEST_ON) and simply blend the reduced alpha.
@@ -415,7 +576,9 @@ void PrismOcclusionFade_float(float3 PositionWS, float3 Target, float3 Params, f
     float2 ndc = positionCS.xy / max(abs(positionCS.w), 1e-6);
     float2 pixel = (ndc * 0.5 + 0.5) * _ScreenParams.xy;
 
-#if PRISM_OCCLUSION_KERNEL == PRISM_OCCLUSION_KERNEL_WORLEY
+#if PRISM_OCCLUSION_KERNEL == PRISM_OCCLUSION_KERNEL_SHARD
+    ClipThreshold = PrismOcclusionShard(pixel, time);
+#elif PRISM_OCCLUSION_KERNEL == PRISM_OCCLUSION_KERNEL_WORLEY
     ClipThreshold = PrismOcclusionWorley(pixel, time);
 #else
     ClipThreshold = PrismOcclusionMotley(pixel);

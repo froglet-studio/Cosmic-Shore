@@ -300,8 +300,9 @@ no play mode):
 3. Watch the boundary. Sides and base grade at the same rate; there should be **no seam**
    anywhere on the cone, and in particular no crisp semicircular edge on a large plate
    level with the ship.
-4. Hold still ~10s and watch the stipple. The pattern should slowly **evolve** — cells
-   drifting and merging — reading as flow, never as flicker or shimmer.
+4. Hold still ~10s and watch the stipple. The flecks should be **triangles**, and the
+   pattern should slowly **evolve** — cells drifting and merging — reading as flow, never
+   as flicker or shimmer. Round flecks mean the kernel is back on `..._WORLEY`.
 5. Swap vessels (the freestyle vessel-changer toy). The corridor should re-scale to the
    new hull automatically — a bigger ship clears a proportionally bigger cone.
 6. Check the console: zero `[PrismOcclusion]` errors. Any that appear name the vessel and
@@ -312,9 +313,11 @@ no play mode):
 
 | Knob | Default | What it does |
 |---|---|---|
-| `PRISM_OCCLUSION_KERNEL` | `..._WORLEY` | The dither look. `..._WORLEY` organic flecking · `..._SPIRAL` a corridor-anchored iris · `..._IGN` an even screen-space dissolve. |
+| `PRISM_OCCLUSION_KERNEL` | `..._SHARD` | The dither look. `..._SHARD` triangular flecking · `..._WORLEY` the same arrangement with round flecks · `..._SPIRAL` a corridor-anchored iris · `..._IGN` an even screen-space dissolve. |
+| `PRISM_OCCLUSION_SHARD_ORIENT` | `..._FIXED` | Shard only. `..._FIXED` all triangles one heading (most legible as a triangle) · `..._FLIP` up/down · `..._SPIN` free per-cell rotation (reads as splinters). |
 | `PRISM_OCCLUSION_MORPH_RATE` | `0.12` | Pattern evolution, cycles/sec. `0` freezes it; past ~`0.25` it reads as noise. Cannot affect the fade — coverage is flat across the range. |
-| `PRISM_OCCLUSION_WORLEY_CELL` | `6.0` | Fleck size in pixels. **Re-fit `..._CDF_LO`/`..._CDF_HI` if you change it** — they are fitted to this value and the fade degrades ~19× without a re-fit. |
+| `PRISM_OCCLUSION_CELL_SIZE` | `6.0` | Fleck size in pixels, shared by both cellular kernels. **Re-fit `..._CDF_LO`/`..._CDF_HI` if you change it** — they are fitted to this value and the fade degrades ~19× without a re-fit. |
+| `PRISM_OCCLUSION_SHARD_AREA` | `1.28607` | Shard only. Normalises the triangle gauge to the same AREA as the circle it replaces — which is also what lets it share the CDF fit. **Changing it means re-fitting `..._CDF_*` too.** |
 | `PRISM_OCCLUSION_SPIRAL_ARMS` | `3.0` | Spiral only. **Must stay an integer** or a radial scar appears down one side. |
 | `OuterRadiusScale` / `InnerRadiusScale` / `CoreAlpha` | `1` / `0.25` / `0` | `Resources/PrismOcclusionConfig` — corridor width and how solid the clear centre is. Multiples of the vessel's own circumscribing radius, so they are vessel-independent. |
 
