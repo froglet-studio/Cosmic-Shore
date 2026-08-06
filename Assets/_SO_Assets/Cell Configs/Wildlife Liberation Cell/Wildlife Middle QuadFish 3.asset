@@ -13,13 +13,13 @@ MonoBehaviour:
   m_Name: Wildlife Middle QuadFish 3
   m_EditorClassIdentifier:
   FaunaPrefab: {fileID: 4652232322436628206, guid: 19615ed0c903b1041973d70593d4b0a3, type: 3}
-  InitialSpawnCount: 29
-  PopulationSize: 29
+  InitialSpawnCount: 40
+  PopulationSize: 40
   SpawnProbability: 1
   FeedsPerOffspring: 20
   OffspringPerBirth: 1
   ReproductionCooldownSeconds: 12
-  MaxLivePopulation: 44
+  MaxLivePopulation: 92
   ReleaseTier: 0
   BandInnerRadius: 260
   BandOuterRadius: 540

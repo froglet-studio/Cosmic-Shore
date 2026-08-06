@@ -13,13 +13,13 @@ MonoBehaviour:
   m_Name: Wildlife Outer Tadpole 1
   m_EditorClassIdentifier:
   FaunaPrefab: {fileID: 5945480239701989318, guid: c7fd418d426de8740ac888dcc23a5d24, type: 3}
-  InitialSpawnCount: 180
-  PopulationSize: 180
+  InitialSpawnCount: 320
+  PopulationSize: 320
   SpawnProbability: 1
   FeedsPerOffspring: 24
   OffspringPerBirth: 1
   ReproductionCooldownSeconds: 10
-  MaxLivePopulation: 260
+  MaxLivePopulation: 760
   ReleaseTier: 0
   BandInnerRadius: 660
   BandOuterRadius: 990

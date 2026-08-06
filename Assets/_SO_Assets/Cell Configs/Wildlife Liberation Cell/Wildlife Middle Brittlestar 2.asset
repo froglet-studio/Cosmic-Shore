@@ -13,13 +13,13 @@ MonoBehaviour:
   m_Name: Wildlife Middle Brittlestar 2
   m_EditorClassIdentifier:
   FaunaPrefab: {fileID: 5351160486092638538, guid: c719f00ea7596c24185379994f7dc824, type: 3}
-  InitialSpawnCount: 31
-  PopulationSize: 31
+  InitialSpawnCount: 36
+  PopulationSize: 36
   SpawnProbability: 1
   FeedsPerOffspring: 16
   OffspringPerBirth: 1
   ReproductionCooldownSeconds: 14
-  MaxLivePopulation: 48
+  MaxLivePopulation: 80
   ReleaseTier: 0
   BandInnerRadius: 260
   BandOuterRadius: 540

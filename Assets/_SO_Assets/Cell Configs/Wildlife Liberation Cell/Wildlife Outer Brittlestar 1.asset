@@ -13,13 +13,13 @@ MonoBehaviour:
   m_Name: Wildlife Outer Brittlestar 1
   m_EditorClassIdentifier:
   FaunaPrefab: {fileID: 5351160486092638538, guid: c719f00ea7596c24185379994f7dc824, type: 3}
-  InitialSpawnCount: 14
-  PopulationSize: 14
+  InitialSpawnCount: 20
+  PopulationSize: 20
   SpawnProbability: 1
   FeedsPerOffspring: 16
   OffspringPerBirth: 1
   ReproductionCooldownSeconds: 14
-  MaxLivePopulation: 20
+  MaxLivePopulation: 45
   ReleaseTier: 0
   BandInnerRadius: 660
   BandOuterRadius: 990

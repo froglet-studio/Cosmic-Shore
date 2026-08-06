@@ -27,10 +27,12 @@ namespace CosmicShore.Gameplay
     ///     sphere is inherently densest at its poles, which is why Ribcage has to tilt every
     ///     rind onto its own axis to stop everyone drilling the top. A geodesic has no poles -
     ///     every approach meets the same weave - so this cage needs no tilt table at all.
-    ///   • INTENSITY RAMPS THE CAGE'S SHAPE AND WEAVE, not its layer count
-    ///     (<see cref="ShellPlans"/>): the low intensities are three geodesic spheres; the high
-    ///     ones swap the outer shells for BOXES - square-and-rectangle rail grids with heavy
-    ///     corner posts, the "boxing ring". Cell picks the variant per intensity through
+    ///   • INTENSITY IS THE ONLY THING THIS TABLE RAMPS, and it ramps SHAPE + WEAVE, never the
+    ///     layer count (<see cref="ShellPlans"/>): intensities 1-2 are three geodesic spheres
+    ///     that tighten; 3 swaps the outer cage for a BOX (square rail grid, heavy corner posts
+    ///     - the "boxing ring"); 4 is three nested boxes at the tightest weave in the mode. The
+    ///     WILDLIFE ROSTER is identical at every intensity, so this table carries the entire
+    ///     difficulty curve. Cell picks the variant per intensity through
     ///     <c>CellTypeChoiceOptions.IntensityWise</c>, exactly like Ribcage.
     ///
     /// Every bar is <see cref="PrismKind.Plain"/> except the sparse <see cref="PrismKind.Danger"/>
@@ -130,21 +132,32 @@ namespace CosmicShore.Gameplay
         static readonly ShellPlan[][] ShellPlans =
         {
             // intensity 1 - three spheres, the most open weave (openings 251 / 179 / 79u)
-            new[] { new ShellPlan(CageForm.Geodesic,  5), new ShellPlan(CageForm.Geodesic,  4), new ShellPlan(CageForm.Geodesic, 3) },
-            // intensity 2 - same shapes, every cage a step tighter (210 / 144 / 60u)
-            new[] { new ShellPlan(CageForm.Geodesic,  6), new ShellPlan(CageForm.Geodesic,  5), new ShellPlan(CageForm.Geodesic, 4) },
-            // intensity 3 - the outer cage becomes a boxing ring (93 / 120 / 48u)
-            new[] { new ShellPlan(CageForm.Boxed,    13), new ShellPlan(CageForm.Geodesic,  6), new ShellPlan(CageForm.Geodesic, 5) },
-            // intensity 4 - two boxes around a geodesic core (87 / 53 / 40u)
-            new[] { new ShellPlan(CageForm.Boxed,    14), new ShellPlan(CageForm.Boxed,    13), new ShellPlan(CageForm.Geodesic, 6) },
+            new[] { new ShellPlan(CageForm.Geodesic,  5), new ShellPlan(CageForm.Geodesic,  4), new ShellPlan(CageForm.Geodesic,  3) },
+            // intensity 2 - same shapes, every cage a step tighter (180 / 144 / 60u)
+            new[] { new ShellPlan(CageForm.Geodesic,  7), new ShellPlan(CageForm.Geodesic,  5), new ShellPlan(CageForm.Geodesic,  4) },
+            // intensity 3 - the outer cage becomes a boxing ring (87 / 103 / 48u)
+            new[] { new ShellPlan(CageForm.Boxed,    14), new ShellPlan(CageForm.Geodesic,  7), new ShellPlan(CageForm.Geodesic,  5) },
+            // intensity 4 - three nested boxing rings, the tightest weave (67 / 38 / 19u)
+            new[] { new ShellPlan(CageForm.Boxed,    18), new ShellPlan(CageForm.Boxed,    18), new ShellPlan(CageForm.Boxed,    12) },
         };
-        // NOTE the box frequencies are much higher than the geodesic ones and that is not a
-        // typo: a cube face grid at frequency f contributes 12f² segments against a geodesic's
-        // 30f², and the box is smaller (corners on the radius ⇒ faces at 0.577·r), so matching
-        // frequencies would make the "harder" intensities LIGHTER and more open than the easy
-        // ones. Frequencies here are chosen from the measured table in wildlife_cage_budget.py
-        // so both prism count and tightness rise monotonically: 9,206 → 11,456 → 11,680 →
-        // 12,870 prisms. Re-tune there and re-run the asset generator, never by eye.
+        // TWO things to know before retuning this table.
+        //
+        // (1) The box frequencies are much higher than the geodesic ones and that is not a
+        //     typo: a cube face grid at frequency f contributes 12f² segments against a
+        //     geodesic's 30f², and the box is smaller (corners on the radius ⇒ faces at
+        //     0.577·r), so matching frequencies would make the "harder" intensities LIGHTER and
+        //     more open than the easy ones.
+        //
+        // (2) THIS TABLE IS THE WHOLE INTENSITY RAMP. The wildlife roster is deliberately
+        //     IDENTICAL at every intensity (~594 creatures at seed, ~1,391 at the caps), so
+        //     everything that makes intensity 4 harder than intensity 1 is here: the weave
+        //     tightens (outer openings 251 → 180 → 87 → 67u) and the shape goes sphere →
+        //     sphere → one box → three nested boxes. Prism totals 9,206 → 12,696 → 13,244 →
+        //     13,956.
+        //
+        // Values come from the measured table in wildlife_cage_budget.py. Re-tune there and
+        // re-run the asset generator, never by eye - the rounding in the per-segment prism walk
+        // is not monotonic in frequency, so an eyeballed bump can easily make a cage lighter.
 
         [Header("Wildlife cage")]
         [Tooltip("Which row of the intensity ladder this prefab variant builds (1-4). THE " +

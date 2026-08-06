@@ -19,7 +19,7 @@ MonoBehaviour:
   FeedsPerOffspring: 8
   OffspringPerBirth: 1
   ReproductionCooldownSeconds: 30
-  MaxLivePopulation: 17
+  MaxLivePopulation: 19
   ReleaseTier: 0
   BandInnerRadius: 0
   BandOuterRadius: 140
