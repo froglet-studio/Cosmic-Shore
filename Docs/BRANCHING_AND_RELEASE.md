@@ -3,6 +3,10 @@
 What each branch is for, when builds happen, and what to do when something
 breaks.
 
+> **Setting the pipeline up for the first time?** Follow
+> [`BUILD_PIPELINE_SETUP.md`](BUILD_PIPELINE_SETUP.md) — the click-by-click
+> checklist for GitHub, CI and UGS. This document is the reasoning behind it.
+
 ---
 
 ## 1. The four branches, in one line each
