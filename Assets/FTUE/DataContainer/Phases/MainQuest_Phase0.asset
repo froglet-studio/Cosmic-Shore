@@ -25,30 +25,6 @@ MonoBehaviour:
   lines:
   - "This is your profile \u2014 every game mode and its intensity tiers live here."
   - "Tap the ARCADE button below. Your first real hypersea experience\n is waiting!"
---- !u!114 &-8543043296051100338
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fd7a88ac0fe54699b32116fcb4f17808, type: 3}
-  m_Name: 'Wait: Drift Both Ways'
-  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestWaitForDriftNode
-  nodeId: 62bc32852c844642b884e692791eebbf
-  displayName: 'Wait: Drift Both Ways'
-  nodeEnabled: 0
-  graphPosition: {x: 3100, y: 40}
-  outputs:
-  - portName: next
-    targetNodeId: 1de038df581042b9a3eaa9ea0e8c4152
-    delaySeconds: 0.8
-  requireBothDirections: 1
-  holdSeconds: 0.4
-  triggerDominance: 0.25
-  successHaptic: 1
 --- !u!114 &-7209950995935106413
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -69,7 +45,7 @@ MonoBehaviour:
   - portName: next
     targetNodeId: 4359e453bb1543d5ab60cdba3231c3dd
     delaySeconds: 0
-  text: Pull both thumbsticks INWARD to slow down.
+  text: Pull both thumbsticks INWARD to slow down or stop.
   haptic: 0
   panelKey: slow_down
   minDisplaySeconds: 0
@@ -309,13 +285,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestShowInstructionNode
   nodeId: cd1a84021b8f4c489211a176dc040455
   displayName: 'Prompt: Drift'
-  nodeEnabled: 0
-  graphPosition: {x: 2720, y: 40}
+  nodeEnabled: 1
+  graphPosition: {x: 2246.9812, y: 26.485168}
   outputs:
   - portName: next
-    targetNodeId: 62bc32852c844642b884e692791eebbf
+    targetNodeId: 71225af4112849d8884471110b4cf655
     delaySeconds: 0
-  text: Drift LEFT with LT, then RIGHT with RT!
+  text: Drift with LEFT TRIGGER!
   haptic: 0
   panelKey: drift
   minDisplaySeconds: 0
@@ -335,12 +311,12 @@ MonoBehaviour:
   nodeId: 1de038df581042b9a3eaa9ea0e8c4152
   displayName: 'Prompt: Skim'
   nodeEnabled: 1
-  graphPosition: {x: 3480, y: 40}
+  graphPosition: {x: 3287.4138, y: 21.417114}
   outputs:
   - portName: next
     targetNodeId: b55978264a4149d1a70fd4d2a46ebcd9
     delaySeconds: 0
-  text: Skim close over prisms to charge your boost
+  text: Skim energy from prisms by flying close without hitting them.
   haptic: 0
   panelKey: skim
   minDisplaySeconds: 0
@@ -360,12 +336,12 @@ MonoBehaviour:
   nodeId: 140d0136f41041f78b6b010b95e1552b
   displayName: 'Prompt: Look Around'
   nodeEnabled: 0
-  graphPosition: {x: 1960, y: 40}
+  graphPosition: {x: 1738.6565, y: -168.17188}
   outputs:
   - portName: next
     targetNodeId: e1a4553726bc41e89f2dbb23f2628519
     delaySeconds: 0
-  text: Use the movement thumbstick to look around.
+  text: Hold LEFT TRIGGER and use the thumbsticks to look around.
   haptic: 0
   panelKey: look_around
   minDisplaySeconds: 0
@@ -385,11 +361,8 @@ MonoBehaviour:
   nodeId: e1a4553726bc41e89f2dbb23f2628519
   displayName: 'Wait: Look Around'
   nodeEnabled: 0
-  graphPosition: {x: 2340, y: 40}
-  outputs:
-  - portName: next
-    targetNodeId: cd1a84021b8f4c489211a176dc040455
-    delaySeconds: 0.8
+  graphPosition: {x: 2026.4335, y: -169.13156}
+  outputs: []
   acceptedInputs: 02000000010000000c0000000b0000000d000000
   successHaptic: 1
 --- !u!114 &11400000
@@ -407,7 +380,8 @@ MonoBehaviour:
   graphId: MainQuest_Phase0
   phaseName: Onboarding & Crystal Capture
   phaseEnabled: 1
-  designerNotes: 
+  designerNotes: 1. Add a CTA serialized field for the 'ShowInstruction' node type.
+    Please. Fuck you, Shombith, and thank you.
   entryNode: {fileID: -2956468355650793072}
   nodes:
   - {fileID: -2956468355650793072}
@@ -418,7 +392,6 @@ MonoBehaviour:
   - {fileID: -1608882976268212544}
   - {fileID: -7998308981561737}
   - {fileID: -2046684644557656467}
-  - {fileID: -8543043296051100338}
   - {fileID: -1893556519558487257}
   - {fileID: 3330411192172384795}
   - {fileID: 5175772525551563659}
@@ -437,8 +410,35 @@ MonoBehaviour:
   - {fileID: 1157315426489254563}
   - {fileID: -2555887249423030796}
   - {fileID: -3574500432832461629}
-  canvasScroll: {x: 255.73218, y: 130.31976}
-  canvasZoom: 0.87716216
+  - {fileID: 207543556265919359}
+  - {fileID: 6983174059951728366}
+  - {fileID: 462440444792785267}
+  canvasScroll: {x: -1163.0215, y: -445.2633}
+  canvasZoom: 1.2554954
+--- !u!114 &207543556265919359
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dd54a9581c9f4ef5a35984a1bf6ea1c7, type: 3}
+  m_Name: QuestDialogueNode
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestDialogueNode
+  nodeId: dedaafb17978447c83612744ad1e967d
+  displayName: Dialogue
+  nodeEnabled: 1
+  graphPosition: {x: 2944.1655, y: 24.881073}
+  outputs:
+  - portName: next
+    targetNodeId: 1de038df581042b9a3eaa9ea0e8c4152
+    delaySeconds: 0
+  speakerName: Captain
+  portrait: {fileID: 0}
+  lines:
+  - Drifting is the best way to look around in a two-thumb vessel like the 'Squirrel.'
 --- !u!114 &355363919843681768
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -464,6 +464,32 @@ MonoBehaviour:
   forcedIntensity: 1
   forcedPlayerCount: 2
   forcedDomainCount: 3
+--- !u!114 &462440444792785267
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dd54a9581c9f4ef5a35984a1bf6ea1c7, type: 3}
+  m_Name: QuestDialogueNode
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestDialogueNode
+  nodeId: 553f33c0d90e4bd1a14bb7b3933e2104
+  displayName: Dialogue
+  nodeEnabled: 1
+  graphPosition: {x: 4011.1553, y: 30.605515}
+  outputs:
+  - portName: next
+    targetNodeId: cebd5a6ffdef4df080f7d5715edfd42b
+    delaySeconds: 0
+  speakerName: Captain
+  portrait: {fileID: 0}
+  lines:
+  - Skimming raises your TOP SPEED in the 'Squirrel' vessel.
+  - Head back to the Lobby for now by tapping the Overlay Menu button. START BUTTON
+    on gamepad.
 --- !u!114 &1157315426489254563
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -505,10 +531,10 @@ MonoBehaviour:
   nodeId: b55978264a4149d1a70fd4d2a46ebcd9
   displayName: 'Wait: Skim 10 Prisms'
   nodeEnabled: 1
-  graphPosition: {x: 3860, y: 40}
+  graphPosition: {x: 3630.248, y: 28.174591}
   outputs:
   - portName: next
-    targetNodeId: cebd5a6ffdef4df080f7d5715edfd42b
+    targetNodeId: 553f33c0d90e4bd1a14bb7b3933e2104
     delaySeconds: 1
   targetSkims: 10
   perSkimHaptic: 0
@@ -573,7 +599,7 @@ MonoBehaviour:
   nodeId: cebd5a6ffdef4df080f7d5715edfd42b
   displayName: 'Prompt: Exit Via Overlay Button'
   nodeEnabled: 1
-  graphPosition: {x: 4240, y: 40}
+  graphPosition: {x: 4365.581, y: 30.687042}
   outputs:
   - portName: next
     targetNodeId: bc7f51400cc641cb996b29b608f4f43b
@@ -581,8 +607,8 @@ MonoBehaviour:
   text: Training complete! Tap the OVERLAY button to head back to the menu.
   haptic: 0
   panelKey: exit_freestyle
-  minDisplaySeconds: 2
-  hideOnAdvance: 0
+  minDisplaySeconds: 10
+  hideOnAdvance: 1
 --- !u!114 &6449415289397938309
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -598,10 +624,10 @@ MonoBehaviour:
   nodeId: 4359e453bb1543d5ab60cdba3231c3dd
   displayName: 'Wait: Minimum Speed'
   nodeEnabled: 1
-  graphPosition: {x: 1580, y: 40}
+  graphPosition: {x: 1567.7523, y: 40}
   outputs:
   - portName: next
-    targetNodeId: 140d0136f41041f78b6b010b95e1552b
+    targetNodeId: cd1a84021b8f4c489211a176dc040455
     delaySeconds: 0.8
   acceptedInputs: 05000000
   successHaptic: 1
@@ -626,6 +652,28 @@ MonoBehaviour:
     targetNodeId: 8943a1eafac648e2917dd95481f4b9ae
     delaySeconds: 0.8
   acceptedInputs: 00000000
+  successHaptic: 1
+--- !u!114 &6983174059951728366
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 374bdf97082c49408dffd573e64cdb29, type: 3}
+  m_Name: QuestWaitForInputNode
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestWaitForInputNode
+  nodeId: 71225af4112849d8884471110b4cf655
+  displayName: Wait For Input
+  nodeEnabled: 1
+  graphPosition: {x: 2604.3389, y: 32.05551}
+  outputs:
+  - portName: next
+    targetNodeId: dedaafb17978447c83612744ad1e967d
+    delaySeconds: 3
+  acceptedInputs: 02000000
   successHaptic: 1
 --- !u!114 &7417181906152749787
 MonoBehaviour:
