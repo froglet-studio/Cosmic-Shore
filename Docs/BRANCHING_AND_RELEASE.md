@@ -314,11 +314,26 @@ build" all depend on it.
 
 ### R3. Anyone can push to the build branches
 
-**The fix.** Settings → Branches → ruleset targeting `build/*`:
+**The fix, and its ceiling.** Settings → Rules → Rulesets → new branch ruleset
+targeting `build/*`:
 
-- Restrict pushes to the GitHub Actions app only
-- Allow force pushes **for that actor** (promotion needs them)
-- Do not require PRs; the workflow pushes directly
+- Tick **Restrict deletions**
+- **Untick Block force pushes** (on by default), because the promotion
+  force-moves these branches every cycle
+- Leave everything else off
+
+**"Restrict updates" is the rule you actually want, and you probably cannot use
+it.** It means "only users with bypass permissions can push", and GitHub Actions
+is not an eligible bypass actor: the list is repo admins, org and enterprise
+owners, maintain/write-role users, teams, GitHub Apps, and Dependabot. Ticking it
+blocks the promotion workflow itself. Check **Add bypass** for a usable GitHub
+Actions entry first; if one exists, tick **Restrict updates**, keep **Block force
+pushes** on, and the rule becomes airtight.
+
+So on most plans this protects against accidental *deletion* only. A human can
+still push to a build branch. That is an accepted residual risk rather than a
+gap: such a push is destroyed by the next promotion, which is exactly what §1
+says these branches do.
 
 **Effort:** ten minutes.
 

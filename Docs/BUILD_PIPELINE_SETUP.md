@@ -78,12 +78,27 @@ broken.**
 
 **Settings → Rules → Rulesets → New branch ruleset**
 
-- Target branches: `build/*`
-- [ ] **Restrict updates** so only the GitHub Actions app can push
-- [ ] **Allow force pushes** for that actor (promotions require them)
+- Ruleset name: `Build branches`, enforcement **Active**
+- Target branches → **Add target → Include by pattern** → `build/*`
+- [ ] Tick **Restrict deletions**
+- [ ] **Untick Block force pushes** — it is on by default and **would break the
+      promotion**, which force-moves these branches every cycle
+- Leave every other rule off
 
-Without this, someone can commit to a build branch and lose the work on the next
-promotion.
+> **Do not tick "Restrict updates".** It means "only users with bypass
+> permissions can push", and GitHub Actions **cannot** be added to a bypass list
+> (eligible actors are repo admins, org/enterprise owners, maintain/write-role
+> users, teams, GitHub Apps and Dependabot). Ticking it stops your own promotion
+> workflow.
+>
+> Before settling for that, open **Add bypass** and search `actions`. If your
+> plan does surface a usable GitHub Actions entry, add it, and you can then tick
+> **Restrict updates** and leave **Block force pushes** on for the strong
+> version of this rule. If it is not there, use the settings above.
+
+This protects against accidental deletion, not against a human pushing to a
+build branch. That residual risk is accepted: such a push is overwritten by the
+next promotion, which is the documented behaviour of these branches.
 
 ---
 
