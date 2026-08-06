@@ -161,6 +161,30 @@ its GameObject lists it in `m_Component`.
 - **Delete a script safely**: get its GUID from the `.meta`, sweep ALL of
   Assets (`.unity`/`.prefab`/`.asset`/`.cs`) for the GUID and the class name
   BEFORE deleting; excise components first, delete `.cs` + `.meta` together.
+- **ADD a component to an existing GameObject** (the inverse of excise; this is
+  how a new MonoBehaviour gets onto N vessel/prop prefabs without the editor):
+  (1) write the script's `.meta` yourself with a fresh `uuid4().hex` guid and
+  **assert that guid appears in exactly one `.meta` repo-wide**; (2) pick a
+  fileID and assert the literal does not already occur in the target file —
+  any int64 works, but keep a readable family (e.g. `…778`, `…779`) so a human
+  reading the diff can see they are yours; (3) insert
+  `  - component: {fileID: X}` after the LAST existing entry of the owning
+  GameObject's `m_Component` list — anchor the regex on that document
+  (`^--- !u!1 &<goID>\nGameObject:\n.*?\n  m_Layer:`, DOTALL) rather than on a
+  line number; (4) append the `--- !u!114 &X` document with `m_GameObject`
+  pointing back, `m_Script` naming your guid, and one key per serialized field
+  you want non-default. Insert it **before the trailing `--- !u!1001`
+  PrefabInstance blocks**, not at EOF — a `!u!114` after them still loads, but
+  every human diffing the file reads it as misplaced. Serialize enum fields as
+  their INTEGER value (`condition: 1`), and get the integer from the C# —
+  an enum with explicit values is not its declaration order.
+- **Self-check the surgery by resolving every local fileID.** After any add or
+  excise, parse the file: collect `^--- !u!\d+ &(\d+)` as definitions and
+  `fileID: (\d+)\}` as references, then report references with no definition —
+  filtering the ones followed by `guid:` (those are cross-asset and legitimate).
+  A survivor is either a dangling ref you just created or, just as usefully, a
+  **pre-existing** one you must not be blamed for: run the same check against
+  `git show HEAD:<file>` to tell the two apart before reporting anything.
 - **Excise a whole PREFAB INSTANCE from a scene** (a hand-placed object that
   should not be there). It is more than one document, so drive it by PARSING,
   never by the line numbers a report handed you — the first deletion invalidates
@@ -535,6 +559,24 @@ read**. The lesson generalizes:
   containing a key for a field that is no longer serialized (e.g. a
   `[Inject] protected` field) is harmless residue — not evidence the field is
   still serialized.
+- **`[FormerlySerializedAs]` also resurrects stale prefab-instance OVERRIDES —
+  and an override BEATS the value you just authored.** The attribute is
+  described as "keep the asset's old value through a rename", which sounds
+  purely helpful. But a nested prefab instance stores overrides as
+  `propertyPath: <fieldName>` strings, and those get remapped by the same
+  attribute. So renaming `boostFullColor` → `rollArmedColor` silently carries a
+  *parent prefab's* year-old override onto the new field, and because an
+  override wins over the source prefab, the new default you carefully authored
+  never renders. Live case: the Sparrow's HUD instance overrode both retired
+  boost-gauge colours to white; inherited through `FormerlySerializedAs`, the
+  new "armed" and "spent" ring colours would both have been white — a state
+  indicator that indicates nothing, with correct-looking code and a
+  correct-looking source prefab. **Before renaming any serialized field, grep
+  the whole repo for `propertyPath: <oldName>`**, then decide per field: keep
+  the attribute where the old value is still the right one (object references,
+  durations), and DROP it — deleting the override blocks outright — where the
+  rename changed what the value MEANS. Say which you did, in a comment, next to
+  the field.
 - **A serialized field's C# initializer is NOT its runtime value — never reason
   from it.** The corollary of the rule above, and the one that actually bites:
   when the asset DOES author the key, the initializer in the `.cs` is dead text

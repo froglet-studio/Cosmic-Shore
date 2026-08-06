@@ -167,6 +167,19 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
+        /// Adds flight time to the lifetime total without counting a game. This is how menu
+        /// freestyle lands here: it is time at the stick, but no game was completed, so
+        /// <see cref="ProfileLifecycle.GamesCompleted"/> must not move.
+        /// </summary>
+        public void RecordFlightTime(float flightTimeSeconds)
+        {
+            if (CurrentProfile?.Lifecycle == null || flightTimeSeconds <= 0f) return;
+
+            CurrentProfile.Lifecycle.TotalFlightTimeSeconds += flightTimeSeconds;
+            ScheduleSave();
+        }
+
+        /// <summary>
         /// Merges cloud profile data from UGSDataService.ProfileRepo on top of local defaults.
         /// Performs union merge for unlocked rewards (local wins ties).
         /// </summary>

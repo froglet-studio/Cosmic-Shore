@@ -78,7 +78,7 @@ un-implemented until Garrett marks them up. If your task requires a mapping that
 STOP and ask (AskUserQuestion), presenting the FLEET_MAPS proposal for that row. The same gate
 applies to new abilities, new resources on the meter list, and anything that adds a fundamental.
 
-## 4. Implement — the thirteen rules that keep getting relearned
+## 4. Implement — the fifteen rules that keep getting relearned
 
 1. **Ability SOs are shared and stateless.** Per-vessel state lives in executors / vessel-root
    MonoBehaviours; SOs receive `(registry, status)` per call. Never bind state to an SO asset.
@@ -92,7 +92,11 @@ applies to new abilities, new resources on the meter list, and anything that add
 4. **All buffs/debuffs route through Elementals** (`ResourceSystem.ApplyElementalEffect`), and
    no sustained mechanism may HOLD a level above 10 (the maintained-mechanism law, LOCKED).
 5. **Event bindings are one symmetric Rebind/Unbind pair** on OnEnable/OnDisable, detach-first
-   in Initialize (vessel swaps re-run Initialize on live components), gated on
+   in Initialize (vessel swaps re-run Initialize on live components) — and the detach must sit
+   **ABOVE** the pilot gate, not below it: `Subscribe() { if (IsAI || !IsLocalUser) return; …}`
+   strands the previous pilot's handlers the moment a re-init hands that vessel to an AI or a
+   remote owner. Teardown (`OnDisable`) is unconditional and idempotent for the same reason. Gated
+   on
    `IsInitializedAsAI || !IsLocalUser` for HUD/pilot-only surfaces, and sender-filtered on
    shared SOAP channels. This exact bug shipped three times on one branch.
 6. **Executor→SO resolution retries until success** — `R_VesselActionHandler.Initialize` runs
@@ -129,6 +133,24 @@ applies to new abilities, new resources on the meter list, and anything that add
     any status the routine set *before* its loop stays set forever. Interrupting a discharge left
     `BoostMultiplier`/`IsBoosting` frozen — a permanent free speed bonus. Restore that state in
     the routine's *starter*, not only in its completion path.
+14. **A HUD controller must never reach for another vessel's executor by TYPE.**
+    `GetComponentInChildren<SomeOtherVesselsExecutor>(true)` compiles fine, returns null on every
+    vessel that isn't the one carrying it, and the gauge it feeds then simply never moves — no
+    error, no warning, nothing to notice. `SquirrelVesselHUDController` polled the Sparrow-only
+    `OverheatingActionExecutor` for its heat gauge for the component's entire life; the gauge was
+    dead the whole time and the bug only surfaced when the Sparrow branch DELETED the type and the
+    Squirrel stopped compiling. If a HUD needs a signal, bind it on the vessel's OWN component (a
+    serialized reference on that vessel's prefab, so a missing wire is visible in the inspector) or
+    route it through SOAP. Auditing tip: any `GetComponentInChildren<T>` in a per-vessel HUD
+    controller is worth one grep — if `T`'s script GUID appears in exactly one vessel prefab and
+    that is not this vessel, the call is dead.
+15. **A gauge whose METER is deleted becomes a lie, not a spare part.** Removing the mechanic
+    behind a HUD readout leaves an icon that still looks live. Either give it a new signal from the
+    same ability (the Sparrow's heat ring became a binary strafing-roll charge pip) or remove it —
+    never leave it stuck at a constant. If the new signal is BINARY, keep it visibly binary (0 or 1
+    plus a transition); a partial fill on a pip reads as a meter and reopens the question you just
+    closed. Drive it from a sibling image, never the ability icon itself, or you collide with the
+    four-icon upgrade tint/badge (rule 9).
 
 ## 5. Audit, then hand back verification (you cannot run Unity; the human is the gate)
 

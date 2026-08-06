@@ -5,16 +5,15 @@ using Cysharp.Threading.Tasks;
 using Unity.Services.Authentication;
 using Unity.Services.CloudSave;
 using Unity.Services.CloudSave.Models;
-using Unity.Services.CloudSave.Models.Data.Player;
 using Unity.Services.Core;
 
-// Cloud Save declares SaveOptions/QueryOptions in BOTH Unity.Services.CloudSave and
-// Unity.Services.CloudSave.Models.Data.Player, so naming either unqualified with both
-// namespaces imported is ambiguous (CS0104). The player-data ones are the pair that carry
-// the access-class options this file needs. Aliasing rather than fully qualifying at the
-// call site is Unity's own documented pattern for this exact collision.
-using SaveOptions = Unity.Services.CloudSave.Models.Data.Player.SaveOptions;
-using QueryOptions = Unity.Services.CloudSave.Models.Data.Player.QueryOptions;
+// Query/FieldFilter/EntityData live in Unity.Services.CloudSave.Models; the options types live in
+// Unity.Services.CloudSave.Models.Data.Player. That namespace is aliased per-type rather than
+// imported wholesale because its SaveOptions collides with the deprecated
+// Unity.Services.CloudSave.SaveOptions (CS0104).
+using PlayerQueryOptions = Unity.Services.CloudSave.Models.Data.Player.QueryOptions;
+using PlayerSaveOptions = Unity.Services.CloudSave.Models.Data.Player.SaveOptions;
+using PublicWriteAccessClassOptions = Unity.Services.CloudSave.Models.Data.Player.PublicWriteAccessClassOptions;
 
 namespace CosmicShore.Core
 {
@@ -86,10 +85,8 @@ namespace CosmicShore.Core
                     },
                     new HashSet<string> { PublicNameKey });
 
-                // QueryAsync has no single-argument overload — the options object is
-                // required even when it carries nothing but defaults.
                 var results = await CloudSaveService.Instance.Data.Player
-                    .QueryAsync(query, new QueryOptions())
+                    .QueryAsync(query, new PlayerQueryOptions())
                     .AsMainThread();
 
                 string ownPlayerId = AuthenticationService.Instance.PlayerId;
@@ -125,7 +122,7 @@ namespace CosmicShore.Core
             {
                 var data = new Dictionary<string, object> { { PublicNameKey, normalizedName } };
                 await CloudSaveService.Instance.Data.Player
-                    .SaveAsync(data, new SaveOptions(new PublicWriteAccessClassOptions()))
+                    .SaveAsync(data, new PlayerSaveOptions(new PublicWriteAccessClassOptions()))
                     .AsMainThread();
                 return true;
             }
