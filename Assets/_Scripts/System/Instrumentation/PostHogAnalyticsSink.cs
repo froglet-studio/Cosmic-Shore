@@ -32,6 +32,7 @@ namespace CosmicShore.Core
 
         readonly PostHogConfigSO _config;
         readonly Action<string> _log;
+        readonly Func<IDictionary<string, object>> _envelope;
         readonly List<PostHogEvent> _queue = new();
 
         bool _collecting;
@@ -43,10 +44,18 @@ namespace CosmicShore.Core
         public string Name => "PostHog";
         public bool IsCollecting => _collecting;
 
-        public PostHogAnalyticsSink(PostHogConfigSO config, Action<string> log)
+        /// <param name="envelope">
+        /// Supplies the identity/build context PostHog cannot collect on its own (player id,
+        /// app version, platform, schema version). It is stamped HERE rather than in the
+        /// facade because UGS auto-collects the equivalents, and every field sent to UGS costs
+        /// a permanent, undeletable row in its dashboard schema.
+        /// </param>
+        public PostHogAnalyticsSink(PostHogConfigSO config, Action<string> log,
+            Func<IDictionary<string, object>> envelope)
         {
             _config = config;
             _log = log;
+            _envelope = envelope;
         }
 
         string QueuePath => Path.Combine(Application.persistentDataPath, QueueFileName);
@@ -91,9 +100,18 @@ namespace CosmicShore.Core
             if (_config.IsExcluded(eventName))
                 return;
 
-            var properties = parameters != null
-                ? new Dictionary<string, object>(parameters)
-                : new Dictionary<string, object>();
+            var properties = new Dictionary<string, object>();
+
+            var envelope = _envelope?.Invoke();
+            if (envelope != null)
+                foreach (var kvp in envelope)
+                    properties[kvp.Key] = kvp.Value;
+
+            // Event parameters win over the envelope: game_completed carries its own
+            // client-stamped completion timestamp, and that is the meaningful one.
+            if (parameters != null)
+                foreach (var kvp in parameters)
+                    properties[kvp.Key] = kvp.Value;
 
             // player_ids travels as a comma-joined string because UGS parameters must be
             // scalar. PostHog can hold a real array, so expand it back here.

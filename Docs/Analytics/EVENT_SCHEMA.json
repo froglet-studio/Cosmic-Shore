@@ -1,115 +1,460 @@
 {
   "$comment": "Machine-readable event contract for Cosmic Shore. Source of truth for configuring the UGS dashboard Event Manager (every event AND parameter must be declared there or the backend silently discards the event) and for PostHog insight definitions. Keep in sync with UGSKeys.cs and AnalyticsServiceFacade.cs; bump schema_version when a field's meaning changes.",
   "schema_version": 1,
-  "sinks": ["ugs", "posthog"],
-
+  "sinks": [
+    "ugs",
+    "posthog"
+  ],
   "common_envelope": {
-    "$comment": "Added by AnalyticsServiceFacade.AddCommonEnvelope to EVERY event, so any two events join without a lookup.",
-    "player_id": { "type": "string", "privacy": "P1", "description": "UGS authentication PlayerId. Canonical identity and the PostHog distinct_id." },
-    "app_version": { "type": "string", "privacy": "P0" },
-    "platform": { "type": "string", "privacy": "P0" },
-    "schema_version": { "type": "int", "privacy": "P0" },
-    "timestamp_utc_ms": { "type": "long", "privacy": "P0", "description": "Client clock at emit, Unix epoch milliseconds UTC." },
-    "timestamp_utc_iso": { "type": "string", "privacy": "P0", "description": "Same instant, ISO-8601, for day/week/month bucketing without conversion." }
+    "$comment": "PostHog ONLY - stamped by PostHogAnalyticsSink, not by the facade. UGS Analytics auto-collects the player id, platform and app version as core data, and it validates every custom parameter against a schema hand-created in the dashboard Event Manager, where events and parameters can never be deleted and count against a 1,500-per-environment cap. Sending these to UGS would cost 168 permanent schema rows for data it already has. game_completed carries its own client-stamped timestamp as a real event parameter, and that one DOES go to both sinks.",
+    "player_id": {
+      "type": "string",
+      "privacy": "P1",
+      "description": "UGS authentication PlayerId. Canonical identity and the PostHog distinct_id."
+    },
+    "app_version": {
+      "type": "string",
+      "privacy": "P0"
+    },
+    "platform": {
+      "type": "string",
+      "privacy": "P0"
+    },
+    "schema_version": {
+      "type": "int",
+      "privacy": "P0"
+    },
+    "timestamp_utc_ms": {
+      "type": "long",
+      "privacy": "P0",
+      "description": "Client clock at emit, Unix epoch milliseconds UTC."
+    },
+    "timestamp_utc_iso": {
+      "type": "string",
+      "privacy": "P0",
+      "description": "Same instant, ISO-8601, for day/week/month bucketing without conversion."
+    }
   },
-
   "person_properties": {
     "$comment": "PostHog only. Set via $identify on collection start and at session end. Mirrors PLAYER_PROFILE / HANGAR_DATA / GAME_MODE_PROGRESSION.",
-    "display_name": { "type": "string", "privacy": "P2", "description": "Player-chosen free text. Searchable, never the identity key. Its presence is what makes the privacy-policy disclosure a release blocker." },
-    "avatar_id": { "type": "int", "privacy": "P2" },
-    "crystal_balance": { "type": "int", "privacy": "P0" },
-    "lifetime_crystals_earned": { "type": "long", "privacy": "P0" },
-    "lifetime_crystals_spent": { "type": "long", "privacy": "P0" },
-    "xp": { "type": "int", "privacy": "P0" },
-    "first_seen_utc_ms": { "type": "long", "privacy": "P0" },
-    "session_count": { "type": "int", "privacy": "P0" },
-    "games_completed": { "type": "int", "privacy": "P0" },
-    "total_flight_time_seconds": { "type": "float", "privacy": "P0" },
-    "preferred_vessel": { "type": "string", "privacy": "P0", "description": "Most-flown vessel, derived from HANGAR_DATA flight time." },
-    "selected_vessel": { "type": "string", "privacy": "P0" },
-    "unlocked_vessel_count": { "type": "int", "privacy": "P0" },
-    "unlocked_mode_count": { "type": "int", "privacy": "P0" },
-    "gdpr_deletion_requested": { "type": "bool", "privacy": "P0", "description": "Set by the in-game erasure button. The client cannot delete a PostHog person with a write-only key, so an operator or server-side automation must complete the deletion. See DATA_ARCHITECTURE.md 8.6." },
-    "gdpr_deletion_requested_utc_ms": { "type": "long", "privacy": "P0" }
+    "display_name": {
+      "type": "string",
+      "privacy": "P2",
+      "description": "Player-chosen free text. Searchable, never the identity key. Its presence is what makes the privacy-policy disclosure a release blocker."
+    },
+    "avatar_id": {
+      "type": "int",
+      "privacy": "P2"
+    },
+    "crystal_balance": {
+      "type": "int",
+      "privacy": "P0"
+    },
+    "lifetime_crystals_earned": {
+      "type": "long",
+      "privacy": "P0"
+    },
+    "lifetime_crystals_spent": {
+      "type": "long",
+      "privacy": "P0"
+    },
+    "xp": {
+      "type": "int",
+      "privacy": "P0"
+    },
+    "first_seen_utc_ms": {
+      "type": "long",
+      "privacy": "P0"
+    },
+    "session_count": {
+      "type": "int",
+      "privacy": "P0"
+    },
+    "games_completed": {
+      "type": "int",
+      "privacy": "P0"
+    },
+    "total_flight_time_seconds": {
+      "type": "float",
+      "privacy": "P0"
+    },
+    "preferred_vessel": {
+      "type": "string",
+      "privacy": "P0",
+      "description": "Most-flown vessel, derived from HANGAR_DATA flight time."
+    },
+    "selected_vessel": {
+      "type": "string",
+      "privacy": "P0"
+    },
+    "unlocked_vessel_count": {
+      "type": "int",
+      "privacy": "P0"
+    },
+    "unlocked_mode_count": {
+      "type": "int",
+      "privacy": "P0"
+    },
+    "gdpr_deletion_requested": {
+      "type": "bool",
+      "privacy": "P0",
+      "description": "Set by the in-game erasure button. The client cannot delete a PostHog person with a write-only key, so an operator or server-side automation must complete the deletion. See DATA_ARCHITECTURE.md 8.6."
+    },
+    "gdpr_deletion_requested_utc_ms": {
+      "type": "long",
+      "privacy": "P0"
+    }
   },
-
   "events": {
     "game_started": {
       "description": "First turn of a game begins. Collapsed to one per game across all controllers. Menu freestyle never raises it.",
       "parameters": {
-        "match_id": { "type": "string", "authority": "server", "description": "Unique per game instance. The 'same game instance' grouping key." },
-        "party_id": { "type": "string", "authority": "server", "description": "Relay party session id. Stable across consecutive matches by the same party. Sent alongside match_id, not instead of it." },
-        "player_ids": { "type": "string", "encoding": "comma-joined for UGS, real array in PostHog", "description": "Sorted human UGS ids, derived from replicated Player NetworkObjects so every peer agrees." },
-        "invite_triggered": { "type": "bool", "authority": "server", "description": "True when the party formed via a formal invite; false when players met through presence. This is what separates organic rematches from re-invited ones." },
-        "player_count_human": { "type": "int" },
-        "player_count_ai": { "type": "int" },
-        "game_mode": { "type": "string" },
-        "intensity": { "type": "int" },
-        "vessel_class": { "type": "string" },
-        "player_count": { "type": "int" },
-        "ai_count": { "type": "int" },
-        "is_multiplayer": { "type": "bool" }
+        "match_id": {
+          "type": "string",
+          "authority": "server",
+          "description": "Unique per game instance. The 'same game instance' grouping key."
+        },
+        "party_id": {
+          "type": "string",
+          "authority": "server",
+          "description": "Relay party session id. Stable across consecutive matches by the same party. Sent alongside match_id, not instead of it."
+        },
+        "player_ids": {
+          "type": "string",
+          "encoding": "comma-joined for UGS, real array in PostHog",
+          "description": "Sorted human UGS ids, derived from replicated Player NetworkObjects so every peer agrees."
+        },
+        "invite_triggered": {
+          "type": "bool",
+          "authority": "server",
+          "description": "True when the party formed via a formal invite; false when players met through presence. This is what separates organic rematches from re-invited ones."
+        },
+        "player_count_human": {
+          "type": "int"
+        },
+        "player_count_ai": {
+          "type": "int"
+        },
+        "game_mode": {
+          "type": "string"
+        },
+        "intensity": {
+          "type": "int"
+        },
+        "vessel_class": {
+          "type": "string"
+        },
+        "player_count": {
+          "type": "int"
+        },
+        "ai_count": {
+          "type": "int"
+        },
+        "is_multiplayer": {
+          "type": "bool"
+        }
       }
     },
     "game_completed": {
       "description": "Game ended. The flight clock is settled before the event fires.",
       "parameters": {
-        "flight_time_seconds": { "type": "float", "description": "Control granted (countdown end) to game end, pause and app-background excluded, immune to slow-mo. Accumulates across turns/rounds." },
-        "duration_seconds": { "type": "int", "description": "Wall clock, pause included. The DELTA against flight_time_seconds is pause + AFK + between-round time." },
-        "match_id": { "type": "string", "description": "Echoed from game_started so completion joins back to start." },
-        "party_id": { "type": "string" },
-        "player_won": { "type": "bool", "optional": true },
-        "game_mode": { "type": "string" },
-        "intensity": { "type": "int" },
-        "vessel_class": { "type": "string" },
-        "player_count": { "type": "int" },
-        "ai_count": { "type": "int" },
-        "is_multiplayer": { "type": "bool" }
+        "flight_time_seconds": {
+          "type": "float",
+          "description": "Control granted (countdown end) to game end, pause and app-background excluded, immune to slow-mo. Accumulates across turns/rounds."
+        },
+        "duration_seconds": {
+          "type": "int",
+          "description": "Wall clock, pause included. The DELTA against flight_time_seconds is pause + AFK + between-round time."
+        },
+        "match_id": {
+          "type": "string",
+          "description": "Echoed from game_started so completion joins back to start."
+        },
+        "party_id": {
+          "type": "string"
+        },
+        "player_won": {
+          "type": "bool",
+          "optional": true
+        },
+        "game_mode": {
+          "type": "string"
+        },
+        "intensity": {
+          "type": "int"
+        },
+        "vessel_class": {
+          "type": "string"
+        },
+        "player_count": {
+          "type": "int"
+        },
+        "ai_count": {
+          "type": "int"
+        },
+        "is_multiplayer": {
+          "type": "bool"
+        },
+        "timestamp_utc_ms": {
+          "type": "long",
+          "description": "Client clock at completion. A real event parameter (not envelope) - the instrumentation email asked for it explicitly, so it goes to both sinks."
+        },
+        "timestamp_utc_iso": {
+          "type": "string",
+          "description": "Same instant, ISO-8601, for day/week/month bucketing without conversion."
+        }
       }
     },
-
-    "session_ended": { "parameters": { "reason": { "type": "string" }, "last_ui_action": { "type": "string" }, "app_state": { "type": "string" } } },
-    "play_again_pressed": { "parameters": {} },
-    "ui_action": { "parameters": { "action_type": { "type": "string" }, "action_label": { "type": "string" }, "action_value": { "type": "string" } } },
-    "ad_impression": { "parameters": {} },
-
-    "game_first_launched": { "parameters": {} },
-    "menu_ready": { "parameters": { "is_first": { "type": "bool" }, "seconds_since_launch": { "type": "int" } } },
-    "freestyle_entered": { "parameters": { "is_first": { "type": "bool" }, "seconds_since_launch": { "type": "int" } } },
-    "mode_unlocked": { "parameters": { "game_mode": { "type": "string" } } },
-    "intensity_unlocked": { "parameters": { "game_mode": { "type": "string" }, "intensity": { "type": "int" } } },
-    "setting_changed": { "parameters": { "setting": { "type": "string" }, "value": { "type": "string" }, "seconds_since_launch": { "type": "int" } } },
-
-    "crystals_earned": { "parameters": { "amount": { "type": "int" }, "source": { "type": "string" }, "balance": { "type": "int" } } },
-    "crystals_spent": { "parameters": { "amount": { "type": "int" }, "source": { "type": "string" }, "balance": { "type": "int" } } },
-    "crystal_spend_blocked": { "parameters": { "amount": { "type": "int" }, "item": { "type": "string" }, "balance": { "type": "int" } } },
-    "vessel_unlocked": { "parameters": { "vessel": { "type": "string" }, "cost": { "type": "int" }, "balance": { "type": "int" } } },
-    "crystal_balance_snapshot": { "parameters": { "balance": { "type": "int" } } },
-
-    "friend_request_sent": { "parameters": { "target_id": { "type": "string", "privacy": "P1" } } },
-    "friend_request_received": { "parameters": { "from_id": { "type": "string", "privacy": "P1" } } },
-    "friend_added": { "parameters": { "friend_id": { "type": "string", "privacy": "P1" } } },
-    "party_invite_sent": { "parameters": { "target_id": { "type": "string", "privacy": "P1" } } },
-    "party_invite_received": { "parameters": { "host_id": { "type": "string", "privacy": "P1" } } },
-    "party_joined": { "parameters": {} },
-    "minigame_favorited": { "parameters": { "game_mode": { "type": "string" }, "favorited": { "type": "bool" } } },
-    "share_triggered": { "parameters": { "game_mode": { "type": "string" } } },
-
-    "quest_completed": { "parameters": { "quest": { "type": "string" }, "shard_value": { "type": "int" } } },
-    "repeated_game_fail": { "parameters": { "game_mode": { "type": "string" }, "fail_count": { "type": "int" } } },
-
-    "cloud_save_failed": { "parameters": { "key": { "type": "string" } } }
+    "session_ended": {
+      "parameters": {
+        "reason": {
+          "type": "string"
+        },
+        "last_ui_action": {
+          "type": "string"
+        },
+        "app_state": {
+          "type": "string"
+        }
+      }
+    },
+    "play_again_pressed": {
+      "parameters": {}
+    },
+    "ui_action": {
+      "parameters": {
+        "action_type": {
+          "type": "string"
+        },
+        "action_label": {
+          "type": "string"
+        },
+        "action_value": {
+          "type": "string"
+        }
+      }
+    },
+    "ad_impression": {
+      "parameters": {}
+    },
+    "game_first_launched": {
+      "parameters": {}
+    },
+    "menu_ready": {
+      "parameters": {
+        "is_first": {
+          "type": "bool"
+        },
+        "seconds_since_launch": {
+          "type": "int"
+        }
+      }
+    },
+    "freestyle_entered": {
+      "parameters": {
+        "is_first": {
+          "type": "bool"
+        },
+        "seconds_since_launch": {
+          "type": "int"
+        }
+      }
+    },
+    "mode_unlocked": {
+      "parameters": {
+        "game_mode": {
+          "type": "string"
+        }
+      }
+    },
+    "intensity_unlocked": {
+      "parameters": {
+        "game_mode": {
+          "type": "string"
+        },
+        "intensity": {
+          "type": "int"
+        }
+      }
+    },
+    "setting_changed": {
+      "parameters": {
+        "setting": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        },
+        "seconds_since_launch": {
+          "type": "int"
+        }
+      }
+    },
+    "crystals_earned": {
+      "parameters": {
+        "amount": {
+          "type": "int"
+        },
+        "source": {
+          "type": "string"
+        },
+        "balance": {
+          "type": "int"
+        }
+      }
+    },
+    "crystals_spent": {
+      "parameters": {
+        "amount": {
+          "type": "int"
+        },
+        "source": {
+          "type": "string"
+        },
+        "balance": {
+          "type": "int"
+        }
+      }
+    },
+    "crystal_spend_blocked": {
+      "parameters": {
+        "amount": {
+          "type": "int"
+        },
+        "item": {
+          "type": "string"
+        },
+        "balance": {
+          "type": "int"
+        }
+      }
+    },
+    "vessel_unlocked": {
+      "parameters": {
+        "vessel": {
+          "type": "string"
+        },
+        "cost": {
+          "type": "int"
+        },
+        "balance": {
+          "type": "int"
+        }
+      }
+    },
+    "crystal_balance_snapshot": {
+      "parameters": {
+        "balance": {
+          "type": "int"
+        }
+      }
+    },
+    "friend_request_sent": {
+      "parameters": {
+        "target_id": {
+          "type": "string",
+          "privacy": "P1"
+        }
+      }
+    },
+    "friend_request_received": {
+      "parameters": {
+        "from_id": {
+          "type": "string",
+          "privacy": "P1"
+        }
+      }
+    },
+    "friend_added": {
+      "parameters": {
+        "friend_id": {
+          "type": "string",
+          "privacy": "P1"
+        }
+      }
+    },
+    "party_invite_sent": {
+      "parameters": {
+        "target_id": {
+          "type": "string",
+          "privacy": "P1"
+        }
+      }
+    },
+    "party_invite_received": {
+      "parameters": {
+        "host_id": {
+          "type": "string",
+          "privacy": "P1"
+        }
+      }
+    },
+    "party_joined": {
+      "parameters": {}
+    },
+    "minigame_favorited": {
+      "parameters": {
+        "game_mode": {
+          "type": "string"
+        },
+        "favorited": {
+          "type": "bool"
+        }
+      }
+    },
+    "share_triggered": {
+      "parameters": {
+        "game_mode": {
+          "type": "string"
+        }
+      }
+    },
+    "quest_completed": {
+      "parameters": {
+        "quest": {
+          "type": "string"
+        },
+        "shard_value": {
+          "type": "int"
+        }
+      }
+    },
+    "repeated_game_fail": {
+      "parameters": {
+        "game_mode": {
+          "type": "string"
+        },
+        "fail_count": {
+          "type": "int"
+        }
+      }
+    },
+    "cloud_save_failed": {
+      "parameters": {
+        "key": {
+          "type": "string"
+        }
+      }
+    }
   },
-
   "queries": {
     "organic_rematch": {
       "description": "Two sessions by the same human subset, same mode, neither prompted by an invite, within X days - and in DIFFERENT sittings.",
-      "requires": ["player_ids", "game_mode", "invite_triggered", "party_id", "timestamp_utc_ms"],
+      "requires": [
+        "player_ids",
+        "game_mode",
+        "invite_triggered",
+        "party_id",
+        "timestamp_utc_ms"
+      ],
       "note": "The different-party_id clause is what stops three back-to-back games in one evening from registering as rematches. Rematch rate by game_mode = organic rematches / distinct player subsets that played that mode."
     },
     "pause_and_afk": {
       "description": "duration_seconds - flight_time_seconds per game_completed.",
-      "requires": ["duration_seconds", "flight_time_seconds"]
+      "requires": [
+        "duration_seconds",
+        "flight_time_seconds"
+      ]
     }
   }
 }
