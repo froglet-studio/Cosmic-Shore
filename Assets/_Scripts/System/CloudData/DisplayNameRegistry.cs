@@ -4,8 +4,17 @@ using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
 using Unity.Services.Authentication;
 using Unity.Services.CloudSave;
+using Unity.Services.CloudSave.Models;
 using Unity.Services.CloudSave.Models.Data.Player;
 using Unity.Services.Core;
+
+// Cloud Save declares SaveOptions/QueryOptions in BOTH Unity.Services.CloudSave and
+// Unity.Services.CloudSave.Models.Data.Player, so naming either unqualified with both
+// namespaces imported is ambiguous (CS0104). The player-data ones are the pair that carry
+// the access-class options this file needs. Aliasing rather than fully qualifying at the
+// call site is Unity's own documented pattern for this exact collision.
+using SaveOptions = Unity.Services.CloudSave.Models.Data.Player.SaveOptions;
+using QueryOptions = Unity.Services.CloudSave.Models.Data.Player.QueryOptions;
 
 namespace CosmicShore.Core
 {
@@ -77,7 +86,11 @@ namespace CosmicShore.Core
                     },
                     new HashSet<string> { PublicNameKey });
 
-                var results = await CloudSaveService.Instance.Data.Player.QueryAsync(query).AsMainThread();
+                // QueryAsync has no single-argument overload — the options object is
+                // required even when it carries nothing but defaults.
+                var results = await CloudSaveService.Instance.Data.Player
+                    .QueryAsync(query, new QueryOptions())
+                    .AsMainThread();
 
                 string ownPlayerId = AuthenticationService.Instance.PlayerId;
                 foreach (var entity in results)
