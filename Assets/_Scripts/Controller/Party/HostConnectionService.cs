@@ -574,10 +574,33 @@ namespace CosmicShore.Gameplay
             // LobbyRefreshScheduler.Accumulate.
             _scheduler.Accumulate(Time.unscaledDeltaTime);
 
+            if (!IsOnMenuScene()) return;
+
+            // ── Party-session push drain ─────────────────────────────────────
+            // Deliberately ABOVE the presence gates below, and it is not an
+            // ordering accident:
+            //
+            //   * The party session and the presence lobby are independent
+            //     layers (the locked two-level design). Gating a party-roster
+            //     update on presence-lobby membership would let a discovery-layer
+            //     problem freeze the party roster.
+            //   * It makes NO UGS call, so neither the lobby mutex nor the
+            //     rate-limit backoff applies. Gating it on the mutex would stall
+            //     the roster during an in-flight property write - i.e. exactly
+            //     when party state is changing, the same trap that made the
+            //     scheduler measure eligible time instead of wall time.
+            //
+            // Fires on the frame UGS pushes the event, so a join is visible
+            // locally in one frame instead of waiting on a poll read that is
+            // voided ~32% of the time.
+            if (_partySessionService != null &&
+                _partySessionService.ActiveSession != null &&
+                _partySessionService.TryConsumeRosterDirty())
+                DrainPartySessionPushAsync().Forget();
+
             if (!IsInPresenceLobby) return;
             if (_lobbyMutex.CurrentCount == 0) return;                   // someone is already inside the mutex
             if (Time.unscaledTime < _rateLimitBackoffUntil) return;
-            if (!IsOnMenuScene()) return;
 
             ExpireOutgoingInvites();
             ReconcilePresenceState();
@@ -2296,14 +2319,44 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
+            await SyncPartyMembersFromCacheAsync();
+        }
+
+        /// <summary>
+        /// Diffs <c>HostConnectionDataSO.PartyMembers</c> against the SDK's
+        /// IN-MEMORY session roster. Issues no UGS call whatsoever.
+        ///
+        /// <para>
+        /// <b>This is the push path, and its cost profile is the point.</b> UGS
+        /// patches <c>ISession.Players</c> before it raises
+        /// <c>PlayerJoined</c> / <c>PlayerHasLeft</c> / <c>Changed</c>, so by the
+        /// time we drain the flag the roster is already correct locally. A path
+        /// with no read cannot be voided by a read fault - and the party-session
+        /// read is voided ~32% of poll ticks by the SDK stale-index defect
+        /// (<c>Docs/PresenceSystem/BUGS.md</c>, MEASURED run 2). Discovering a
+        /// join used to depend entirely on that read; now the read is only the
+        /// backstop.
+        /// </para>
+        ///
+        /// <para>
+        /// Also called by <see cref="RefreshPartyMembersAsync"/> as the tail of
+        /// the poll path, after its read has succeeded - one diff implementation
+        /// for both, so push and poll can never drift apart.
+        /// </para>
+        /// </summary>
+        private async UniTask SyncPartyMembersFromCacheAsync()
+        {
+            var session = _partySessionService.ActiveSession;
+            if (session == null) return;
+            if (connectionData.PartyMembers == null) return;
+
             // Resolve an authoritative local id; if we can't (signed out), skip this
             // reconcile tick rather than risk adding our own session player as a phantom.
             string localId = ResolveLocalPlayerId();
             if (string.IsNullOrEmpty(localId))
                 return;
 
-            var joinedPlayerIds = _memberService.SyncFromSession(
-                _partySessionService.ActiveSession, localId);
+            var joinedPlayerIds = _memberService.SyncFromSession(session, localId);
 
             foreach (var joinedId in joinedPlayerIds)
                 await ClearOutgoingInviteIfPresentAsync(joinedId, "party-join");
@@ -2312,6 +2365,34 @@ namespace CosmicShore.Gameplay
             // If we're Inviting (sent an invite and they connected), transition to InParty.
             if (joinedPlayerIds.Count > 0 && _stateMachine.CurrentState == PartyState.Inviting)
                 _stateMachine.TryTransition(PartyState.InParty);
+        }
+
+        /// <summary>
+        /// Drains the party session's push flag and re-diffs the roster from the
+        /// SDK's in-memory player list. Runs outside the lobby mutex because it
+        /// makes no UGS call and touches only the party session and the SOAP list.
+        ///
+        /// <para>
+        /// Deliberately NOT gated on <c>SESSION_CREATION_GRACE_PERIOD_SECONDS</c>.
+        /// That gate exists to stop a freshly-provisioned session's READ from
+        /// 404ing and triggering recovery that kicks a joining client - there is
+        /// no read here to fail, and suppressing the push during exactly the
+        /// window when someone is joining would forfeit the whole benefit.
+        /// </para>
+        /// </summary>
+        private async UniTaskVoid DrainPartySessionPushAsync()
+        {
+            try
+            {
+                await SyncPartyMembersFromCacheAsync();
+            }
+            catch (Exception e)
+            {
+                // Cannot be an SDK read fault - there is no read. Anything landing
+                // here is a local bug in the diff, so it stays loud.
+                Debug.LogWarning(
+                    $"[HostConnectionService] Party-session push sync failed ({e.GetType().Name}): {e.Message}");
+            }
         }
 
         /// <summary>
