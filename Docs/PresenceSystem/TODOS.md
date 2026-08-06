@@ -15,7 +15,8 @@ up cold.
 | | Item | State |
 |---|---|---|
 | 1 | Finish the verification pass — Step 3 (`ArcadeLobbyList`) is the branch's stated goal and is still unrun | see `PRESENCE_SYNC_VERIFICATION.md` § Progress |
-| 2 | **TODO-P2** — coalesce startup property writes | ⬆ promoted; now the highest-value code item, backed by two measurements |
+| 2 | **TODO-P2** — coalesce startup property writes | ⬆ promoted; now the highest-value code item, backed by two measurements. **Partial down-payment shipped** — `4129b932` removed six write-only keys from every party-session create/join (see B15 RC5). The startup burst is still unbatched; re-measure the skip counters before deciding what is left. |
+| 3 | **NEW** — `HostConnectionService.Update()` is dead in-game (`IsOnMenuScene()` gate at the top), so party counts freeze at whatever was last published when the match started. Found during the B15 pass, deliberately left out of scope. Decide whether the roster should track in-match at all before changing it — `matchName` already covers the in-match *display*. | 🆕 unscoped |
 | 3 | **TODO-P10** — editor departure hook | 🆕 unblocks the one B12 path no test can reach today |
 | 4 | `LobbyMembershipMonitor` extraction (`REFACTOR.md`) | 🔓 unblocked by TODO-P5's answer |
 | 5 | B4 / B6 retest with tagged VPs | pre-existing 🔴, may close for free |

@@ -11,6 +11,41 @@ targets, in priority order.
 > `../NetworkDiagnostics/ARCHITECTURE.md` for the diagnostic overlay that
 > makes any regression interpretable.
 
+## Shipped — roster-truth pass (2026-08-06, `claude/lobby-sync-bugs-4n4nl2`)
+
+Six commits fixing `../PresenceSystem/BUGS.md` **B15** (three players in one
+party rendering three different sizes) and its companion 15–20 s join latency.
+Read B15 for the root-cause analysis; this is the change record.
+
+| | Commit | What |
+|---|---|---|
+| C1 | `3e8885c2` | `IPartyRoster` + `Advertised*` rename + `FriendsListPanel` sources counts per tier. **Fixes the divergence.** |
+| C2 | `f6aecb6a` | `OnPartyRosterChanged` — one raise per settled mutation, change-gated. Replaces 3 per-member subscriptions in each of 3 consumers. |
+| C3 | `111676ba` | Republish presence on roster change (drained flag — the raise fires with the lobby mutex held). |
+| C4 | `791c6d04` | Read and publish get separate `try`s; benign branches become exception filters carrying the rate-limit precedence explicitly. |
+| C5 | `090f61a6` | Party-session push channel; push path syncs from the SDK's in-memory roster with **zero UGS reads**. **Fixes the latency.** |
+| C6 | `4129b932` | `PartyLobbyKeys` single owner; drop 6 write-only Relay-session keys (partial TODO-P2). |
+
+**Two extractions were planned and deliberately NOT done.** Both were scoped as
+"extract a service", and in both cases the dependency count made the extracted
+class a worse design than the code it replaced:
+
+- **`PresencePublisher`** (planned for C4). The published-value trackers are
+  entangled with `_presence.CurrentState`, `ResolveCurrentMatchName`,
+  `_propertyWriter` and `_lobbyService`. The *decoupling* was the fix and it
+  shipped; the class would have been four constructor arguments of indirection.
+- **`PartyRosterCoordinator`** (planned for C7). Would need `_memberService`,
+  `_partySessionService`, `_stateMachine`, `connectionData`, plus HCS-private
+  `ResolveLocalPlayerId` and `ClearOutgoingInviteIfPresentAsync` (themselves
+  reaching `_inviteService`, `_propertyWriter`, `_lobbyService`) — **seven
+  dependencies to relocate ~60 lines**, producing a class that still could not
+  be understood without reading HCS.
+
+The real seam problem in `HostConnectionService` is that it owns presence AND
+party AND invites AND netcode AND publishing. Extracting one method cluster does
+not address that; the **cross-class refactor** below is where it gets addressed.
+Recorded here so the next person does not re-derive the same conclusion.
+
 ## Refactor 1 — `PartyInviteController` (highest priority)
 
 **Why first.** It's the most complex orchestrator in the party system.

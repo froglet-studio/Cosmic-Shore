@@ -19,6 +19,7 @@ Statuses: 🔴 open · 🟡 investigating · 🟢 fixed (commit) · ⚪ deferred
 | B12 | Explicit leave took ~30 s to remove the player | Confirmed | 🟡 `a510bd51` — graceful path **untested**; see retest note below |
 | B13 | Relay 500 on boot bricks the loading splash (no retry, no recovery) | Confirmed | ✅ `c3dbf682` **VERIFIED 2026-08-04** (4 instances; wider run pending) |
 | B14 | `presenceState` change never repainted the row - "CONNECTING…" forever | Confirmed | ✅ `c49c8c91` **VERIFIED 2026-08-04** |
+| B15 | Three players in ONE party render three different party sizes | Confirmed (root-caused) | 🟡 fixed, **MPPM retest required** |
 
 > **Working order.** Diagnostics-first. The presence-lobby cluster (B4,
 > B6) is the locked-design area — read `ARCHITECTURE.md` and
@@ -123,6 +124,100 @@ re-measure.
 identifies startup as the concentration point. Run 2 supersedes this block's
 consequence list; the conclusions are unchanged in direction, sharper in
 priority.
+
+---
+
+## B15. Three players in ONE party render three different party sizes — 🟡 fixed 2026-08-06, MPPM retest required
+
+**Symptom** (reported from a live 3-player session; A hosts, B joins, then C joins):
+
+| Panel | A's row | B's row | C's row |
+|---|---|---|---|
+| **A** | — | `IN YOUR PARTY 2/4` ❌ | `IN YOUR PARTY 1/4` ❌ |
+| **B** | `3/4` ✅ | — | `3/4` ✅ |
+| **C** | ❌ (like A) | ❌ (like A) | — |
+
+Plus: after a client joined, its own row took **15–20 s** to go `1/4 → 2/4`,
+alongside two `Benign SDK fault on party-session read - refresh tick VOIDED` logs.
+
+**These are two different bugs that presented as one.**
+
+### The count divergence is NOT a latency bug
+
+`FriendsListPanel.ResolveRemoteStatus` assigned the member count once, up front,
+from `player.PartyMemberCount` — the **remote peer's self-published `partyCount`
+presence property** — and used it for every status, including `InYourParty`. So
+the *bucket* ("is this person in my party?") came from local truth
+(`IsInSameParty` → `PartyMembers`), while the *number* came from the peer's stale
+self-report.
+
+With N members that is **N independently-published scalars and N×(N−1)
+independently-lossy read edges**, and nothing that reconciles them. No poll
+cadence can make N scalars agree — which is why every previous fix in this area
+(cadence, push channel, jitter, two-strike eviction, benign classification)
+left it standing.
+
+It violated two things already written down:
+
+- the locked *"Session is authoritative over presence — the lobby is a hint,
+  never the source of truth"* invariant (`MultiplayerArchitecture/ROADMAP.md`);
+- `PartySystem/ARCHITECTURE.md` **exit criterion 3** — "host's view of party
+  membership matches every client's view within one refresh tick".
+
+`FriendsListPanel:386` was the **only** display consumer of the advertised count
+in the codebase. `ArcadeGameConfigureModal:447`, `QuickPlayButton:95`,
+`ScreenSwitcher:637`, `FriendsInitializer:154` all already read the local roster.
+A lone outlier, not a pattern.
+
+### Root causes
+
+| | Cause |
+|---|---|
+| **RC1** | `FriendsListPanel:386` renders a party member's size from their advertised presence property instead of the local roster. **The reported divergence.** |
+| **RC2** | `RefreshAsync` was one linear pipeline in one `try`; the lobby read is the first `await`, so a fault there unwound past the publish. Read voided ~12% of ticks. |
+| **RC3** | No republish on roster change — `PublishPresenceImmediateAsync` fired only on Menu_Main load and presence-state transitions. |
+| **RC4** | `PartySessionService` wired **1** UGS push event (`PlayerLeaving`) vs `PresenceLobbyService`'s **7**, so a party JOIN was discoverable only by a poll read voided ~32% of the time. **The 15–20 s.** |
+| **RC5** | Three writers of `partyCount`; 12 key literals across 5 files; 6 keys written to the Relay session that nothing reads. |
+| **RC6** | Two traps for anyone fixing RC1: `PartyMemberService.ReadMemberData` uses the identity-only ctor so every `PartyMembers` entry reports `AdvertisedPartyMemberCount == 0`; and `FriendsInitializer` only republished presence on join, so a 3→2 shrink left the advertised count pinned at 3. |
+
+### The rule this established
+
+> **Local authoritative state is never answered from a remote-published mirror.**
+> "How big is MY party?" → `IPartyRoster` (local, 0 latency).
+> "How big is THEIR party?" → `PartyPlayerData.Advertised*` (a hint).
+
+Made structural by `IPartyRoster` (implemented by `HostConnectionDataSO`, no new
+writer) and by renaming `PartyMemberCount`/`PartyMaxSlots` →
+`AdvertisedPartyMemberCount`/`AdvertisedPartyMaxSlots`, so a call site cannot
+mistake a hint for a fact.
+
+### Fix (6 commits on `claude/lobby-sync-bugs-4n4nl2`)
+
+| | |
+|---|---|
+| C1 | `IPartyRoster` + the rename + `FriendsListPanel` sources counts per tier. **Fixes the divergence.** |
+| C2 | `OnPartyRosterChanged` — one raise per settled mutation, change-gated. Also fixes RC6's 3→2 shrink. |
+| C3 | Republish presence the moment the roster moves (drained flag — the raise fires with the lobby mutex held). |
+| C4 | Read and publish get separate `try`s, so a voided read no longer eats the publish. |
+| C5 | Party-session push channel; push path syncs from the SDK's in-memory roster with **zero UGS reads**. **Fixes the 15–20 s.** |
+| C6 | `PartyLobbyKeys` single owner; drop the 6 write-only Relay-session keys (partial TODO-P2). |
+
+### Retest (MPPM, **unique tags mandatory**)
+
+1. A starts, B starts, A invites B, B joins. C starts, A invites C, C joins.
+2. All three panels must read `IN YOUR PARTY 3/4`.
+3. C's row on A's panel must reach `3/4` **within a frame** of C's vessel
+   appearing, not after a poll.
+4. B leaves → all panels `2/4` within one refresh tick.
+5. No `RaisePartyMemberJoined`/`Left` oscillation (B8 regression check).
+6. `BenignPresenceSkips` / `BenignPartySessionSkips` should still climb — the SDK
+   defect is untouched — **but the counts stay correct anyway**. That is the proof
+   C4/C5 worked.
+
+> ⚠ **Untagged MPPM clones reproduce this exact symptom for an unrelated reason**
+> (shared `mppm-clone` auth profile → one UGS PlayerId → each join invalidates the
+> previous clone's membership). Confirm tags before drawing any conclusion, same
+> caveat as B4/B5.
 
 ---
 

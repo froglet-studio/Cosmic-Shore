@@ -44,6 +44,23 @@ common way recurring party-invite bugs return.
   See `Docs/THREADING.md`. Use `.AsMainThread()` — never
   `UniTask.SwitchToMainThread()` or
   `UniTask.Yield(PlayerLoopTiming.Update)` as a thread-marshaling fix.
+- **Local authoritative state is never answered from a remote-published
+  mirror.** This is the operational form of the ROADMAP invariant
+  *"session is authoritative over presence — the lobby is a hint, never
+  the source of truth"*, and of exit criterion 3 below. Two tiers:
+
+  | Question | Answer from | Latency |
+  |---|---|---|
+  | "How big is **my** party?" / "is X in it?" | `IPartyRoster` (backed by `HostConnectionDataSO.PartyMembers`, fed by the party **session**) | none — it is local |
+  | "How big is **their** party?" | `PartyPlayerData.AdvertisedPartyMemberCount` / `AdvertisedPartyMaxSlots` (presence **lobby** properties) | poll |
+
+  Answering the first question with the second's data is what let three
+  players in ONE party render `2/4`, `1/4` and `3/4` simultaneously
+  (`../PresenceSystem/BUGS.md` **B15**): with N members there are N
+  independently-published scalars and nothing that reconciles them, so
+  no polling cadence can ever make them agree. The `Advertised` prefix
+  and the `IPartyRoster` surface exist to make the mistake unspellable —
+  **do not remove either as "redundant"**.
 
 ## Two-level session architecture
 
@@ -68,8 +85,8 @@ doc focuses on the party (Relay-backed) layer.
 The orchestrator. Auto-creates its own party session on auth sign-in,
 auto-joins the presence lobby for discovery, runs the
 `MAX_REFRESH_ERRORS_BEFORE_RECONNECT` watchdog, and exposes the
-party-level operations (`AcceptInviteAsync`, `LeavePartyKeepHostAsync`,
-`KickPartyMemberAsync`, `EnsurePartySessionAsync`).
+party-level operations (`AcceptInviteAsync`, `LeavePartyAsync`,
+`LeavePartySessionAsync`, `KickPartyMemberAsync`, `EnsurePartySessionAsync`).
 
 **Single writer to `HostConnectionDataSO`** — every other system reads
 through SOAP events and lists on that data container.
@@ -111,7 +128,7 @@ The user-facing flow orchestrator. `AcceptInviteAsync`,
 `HostConnectionService.Instance` (today) and delegates to
 `INetworkTransitionService` for Netcode work. Recovery on failure runs
 through `RecoverFromFailedTransitionAsync` →
-`gameData.DestroyPlayerAndVessel` + `LeavePartyKeepHostAsync` +
+`gameData.DestroyPlayerAndVessel` + `LeavePartySessionAsync` +
 Menu_Main reload.
 
 `IsTransitioning` is a public predicate read by HCS as the catch-guard
@@ -333,9 +350,10 @@ predicate") — the matrix decides *what to do*, NetDiag only decides *what to l
 
 | Catch site | Failure class | Recovery |
 |---|---|---|
-| `RefreshPartyMembersAsync` benign Lobby-patcher noise | Spurious SDK NRE | Swallow silently (known SDK bug) |
+| `RefreshPartyMembersAsync` benign Lobby-patcher noise | Spurious SDK NRE | Swallow, but count it (`RecordBenignRefreshSkip`) — a voided tick must not look healthy. |
 | `RefreshPartyMembersAsync` `RateLimitedException` | UGS rate limit | Set `_rateLimitBackoffUntil`, skip this tick, retry next interval. State unchanged. |
-| `RefreshPartyMembersAsync` 404 / SessionNotFound | Server-side session deleted | Classify **definite**: call `LeavePartyKeepHostAsync` → fresh solo session. UI updates via `OnHostConnectionLost` + per-member `OnPartyMemberLeft`. |
+| `RefreshPartyMembersAsync` 404 / SessionNotFound | Server-side session deleted | Classify **definite**: `HandleDefiniteSessionGoneAsync` → fresh solo session. UI updates via `OnHostConnectionLost` + per-member `OnPartyMemberLeft`. |
+| `RefreshAsync` benign presence-read fault | SDK stale-index (B1/B6) | Absorbed by the **read's own inner try**, so the presence publish still runs. Counted, not silent. See `../PresenceSystem/BUGS.md` B15 RC2. |
 | `RefreshPartyMembersAsync` other `SessionException` | Transient | Log warning, increment `_consecutiveRefreshErrors`, retry next tick. After threshold (3), promote to definite. |
 | `PartySessionService.LeaveAsync` inner UGS throw | Session already gone | Already wrapped; ref cleared regardless. Caller ends in clean state. No change. |
 | `KickPartyMemberAsync` UGS throw | Dead session / disconnected target | Wrap in try/catch, log, state unchanged. Host can retry (target reappears on next refresh). |
