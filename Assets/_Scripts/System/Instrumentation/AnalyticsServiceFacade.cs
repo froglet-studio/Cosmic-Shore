@@ -29,14 +29,14 @@ namespace CosmicShore.Core
         /// (opt-in: do not collect), 1 = granted, 0 = denied. Written by the consent
         /// dialog and the Settings opt-out toggle via <see cref="SetConsent"/>.
         /// </summary>
-        const string ConsentPrefKey = "AnalyticsConsent";
+        public const string ConsentPrefKey = "AnalyticsConsent";
 
         /// <summary>
         /// PlayerPrefs key for the COPPA age gate. Tri-state: ABSENT = not asked,
         /// 1 = age-eligible (13+), 0 = under-13 (never collect). Written by the age
         /// gate via <see cref="SetAgeEligible"/> / <see cref="SubmitBirthYear"/>.
         /// </summary>
-        const string AgeGatePrefKey = "AnalyticsAgeEligible";
+        public const string AgeGatePrefKey = "AnalyticsAgeEligible";
 
         /// <summary>Minimum age (years) to be eligible for analytics collection (COPPA).</summary>
         const int MinimumAge = 13;
@@ -84,6 +84,8 @@ namespace CosmicShore.Core
         bool _menuReadyThisSession;
         bool _freestyleEnteredThisSession;
         int _consecutiveLosses;
+        int _droppedEvents;
+        bool _warnedNotCollecting;
 
         AuthenticationData AuthData => _authVariable.Value;
         NetworkMonitorData NetworkData => _networkVariable.Value;
@@ -312,7 +314,8 @@ namespace CosmicShore.Core
         {
             if (!_collecting)
             {
-                Log($"Dropped '{eventName}' - collection not active.");
+                _droppedEvents++;
+                WarnNotCollectingOnce(eventName);
                 return;
             }
 
@@ -325,6 +328,42 @@ namespace CosmicShore.Core
 
             Log($"Recorded '{eventName}'.");
         }
+
+        /// <summary>
+        /// Says out loud, once, why events are going nowhere.
+        ///
+        /// Collection is opt-in: both the COPPA age gate and consent default to denied, so an
+        /// unanswered privacy flow silently drops every event before it reaches any sink - both
+        /// UGS and PostHog go quiet at once, which looks like a backend or key problem and is
+        /// not. That failure has already cost this project one debugging session, so it warns
+        /// rather than whispering behind a verbose-logging flag.
+        /// </summary>
+        void WarnNotCollectingOnce(string eventName)
+        {
+            if (_warnedNotCollecting)
+                return;
+
+            _warnedNotCollecting = true;
+
+            string why = !AgeChecked ? "the age gate has not been answered"
+                : !AgeEligible ? "the player is not age-eligible (under 13)"
+                : !ConsentDecided ? "consent has not been answered"
+                : !ConsentGranted ? "consent was declined"
+                : !_signedIn ? "UGS sign-in has not completed"
+                : !_isConnected ? "there is no network connection"
+                : "collection has not started yet";
+
+            Debug.LogWarning(
+                $"[Analytics] DROPPING EVENTS - {why}. Nothing will reach UGS or PostHog until this " +
+                $"is resolved. First dropped event: '{eventName}'. " +
+                (NeedsPrivacyFlow
+                    ? "No privacy consent UI is reachable in this scene; in the editor use " +
+                      "FrogletTools > Analytics > Consent (Dev) to grant it."
+                    : "Check AnalyticsServiceFacade.StartCollectionIfReady."));
+        }
+
+        /// <summary>Events dropped because collection was not active. 0 is the healthy value.</summary>
+        public int DroppedEventCount => _droppedEvents;
 
         /// <summary>
         /// Identity + build context that PostHog has no way to collect on its own.
