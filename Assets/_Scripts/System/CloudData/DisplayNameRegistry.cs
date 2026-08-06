@@ -4,8 +4,16 @@ using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
 using Unity.Services.Authentication;
 using Unity.Services.CloudSave;
-using Unity.Services.CloudSave.Models.Data.Player;
+using Unity.Services.CloudSave.Models;
 using Unity.Services.Core;
+
+// Query/FieldFilter/EntityData live in Unity.Services.CloudSave.Models; the options types live in
+// Unity.Services.CloudSave.Models.Data.Player. That namespace is aliased per-type rather than
+// imported wholesale because its SaveOptions collides with the deprecated
+// Unity.Services.CloudSave.SaveOptions (CS0104).
+using PlayerQueryOptions = Unity.Services.CloudSave.Models.Data.Player.QueryOptions;
+using PlayerSaveOptions = Unity.Services.CloudSave.Models.Data.Player.SaveOptions;
+using PublicWriteAccessClassOptions = Unity.Services.CloudSave.Models.Data.Player.PublicWriteAccessClassOptions;
 
 namespace CosmicShore.Core
 {
@@ -77,7 +85,9 @@ namespace CosmicShore.Core
                     },
                     new HashSet<string> { PublicNameKey });
 
-                var results = await CloudSaveService.Instance.Data.Player.QueryAsync(query).AsMainThread();
+                var results = await CloudSaveService.Instance.Data.Player
+                    .QueryAsync(query, new PlayerQueryOptions())
+                    .AsMainThread();
 
                 string ownPlayerId = AuthenticationService.Instance.PlayerId;
                 foreach (var entity in results)
@@ -112,7 +122,7 @@ namespace CosmicShore.Core
             {
                 var data = new Dictionary<string, object> { { PublicNameKey, normalizedName } };
                 await CloudSaveService.Instance.Data.Player
-                    .SaveAsync(data, new SaveOptions(new PublicWriteAccessClassOptions()))
+                    .SaveAsync(data, new PlayerSaveOptions(new PublicWriteAccessClassOptions()))
                     .AsMainThread();
                 return true;
             }
