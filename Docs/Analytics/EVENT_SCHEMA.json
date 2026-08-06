@@ -1,5 +1,5 @@
 {
-  "$comment": "Machine-readable event contract for Cosmic Shore. Source of truth for configuring the UGS dashboard Event Manager (every event AND parameter must be declared there or the backend silently discards the event) and for PostHog insight definitions. Keep in sync with UGSKeys.cs and AnalyticsServiceFacade.cs; bump schema_version when a field's meaning changes.",
+  "$comment": "Machine-readable event contract for Cosmic Shore. Source of truth for configuring the UGS dashboard Event Manager (every event AND parameter must be declared there or the backend silently discards the event) and for PostHog insight definitions. Keep in sync with UGSKeys.cs and AnalyticsServiceFacade.cs; bump schema_version when a field's meaning changes. Descriptions are mandatory in the UGS Add Custom Event / Add Custom Parameter dialogs, so every event and parameter carries one here.",
   "schema_version": 1,
   "sinks": [
     "ugs",
@@ -107,334 +107,418 @@
   },
   "events": {
     "game_started": {
-      "description": "First turn of a game begins. Collapsed to one per game across all controllers. Menu freestyle never raises it.",
+      "description": "A game begins: fires once when the countdown ends and players are given control. Menu freestyle never raises it.",
       "parameters": {
         "match_id": {
           "type": "string",
           "authority": "server",
-          "description": "Unique per game instance. The 'same game instance' grouping key."
+          "description": "Unique id for one game instance. Groups every player who was in the same match."
         },
         "party_id": {
           "type": "string",
           "authority": "server",
-          "description": "Relay party session id. Stable across consecutive matches by the same party. Sent alongside match_id, not instead of it."
+          "description": "Relay party session id. Stable across consecutive matches by the same party, so a rematch is a different match_id but the same party_id."
         },
         "player_ids": {
           "type": "string",
           "encoding": "comma-joined for UGS, real array in PostHog",
-          "description": "Sorted human UGS ids, derived from replicated Player NetworkObjects so every peer agrees."
+          "description": "Comma-joined, sorted UGS player ids of the humans in the match. AI is excluded."
         },
         "invite_triggered": {
           "type": "bool",
           "authority": "server",
-          "description": "True when the party formed via a formal invite; false when players met through presence. This is what separates organic rematches from re-invited ones."
+          "description": "True when the party formed through a formal invite, false when players met through the presence lobby. Separates organic rematches from re-invited ones."
         },
         "player_count_human": {
-          "type": "int"
+          "type": "int",
+          "description": "Number of human players in the match."
         },
         "player_count_ai": {
-          "type": "int"
+          "type": "int",
+          "description": "Number of AI players backfilled into the match."
         },
         "game_mode": {
-          "type": "string"
+          "type": "string",
+          "description": "The game mode, as its GameModes enum name."
         },
         "intensity": {
-          "type": "int"
+          "type": "int",
+          "description": "Selected intensity tier for the game mode."
         },
         "vessel_class": {
-          "type": "string"
+          "type": "string",
+          "description": "The vessel the local player flew, as its VesselClassType enum name."
         },
         "player_count": {
-          "type": "int"
+          "type": "int",
+          "description": "Total configured player count for the session, humans plus AI."
         },
         "ai_count": {
-          "type": "int"
+          "type": "int",
+          "description": "Requested AI backfill count for the session."
         },
         "is_multiplayer": {
-          "type": "bool"
+          "type": "bool",
+          "description": "True when the session ran as a multiplayer game mode."
         }
       }
     },
     "game_completed": {
-      "description": "Game ended. The flight clock is settled before the event fires.",
+      "description": "A game ends. Carries flight time, wall-clock duration and the match grouping keys.",
       "parameters": {
         "flight_time_seconds": {
           "type": "float",
-          "description": "Control granted (countdown end) to game end, pause and app-background excluded, immune to slow-mo. Accumulates across turns/rounds."
+          "description": "Seconds the player actually spent at the controls: countdown end to game end, excluding pause and time in the background."
         },
         "duration_seconds": {
           "type": "int",
-          "description": "Wall clock, pause included. The DELTA against flight_time_seconds is pause + AFK + between-round time."
+          "description": "Wall-clock seconds from game start to game end, pause included. The gap against flight_time_seconds is pause plus idle time."
         },
         "match_id": {
           "type": "string",
-          "description": "Echoed from game_started so completion joins back to start."
+          "description": "Unique id for one game instance. Groups every player who was in the same match."
         },
         "party_id": {
-          "type": "string"
+          "type": "string",
+          "description": "Relay party session id. Stable across consecutive matches by the same party, so a rematch is a different match_id but the same party_id."
         },
         "player_won": {
           "type": "bool",
-          "optional": true
+          "optional": true,
+          "description": "True when the local player was on the winning side."
         },
         "game_mode": {
-          "type": "string"
+          "type": "string",
+          "description": "The game mode, as its GameModes enum name."
         },
         "intensity": {
-          "type": "int"
+          "type": "int",
+          "description": "Selected intensity tier for the game mode."
         },
         "vessel_class": {
-          "type": "string"
+          "type": "string",
+          "description": "The vessel the local player flew, as its VesselClassType enum name."
         },
         "player_count": {
-          "type": "int"
+          "type": "int",
+          "description": "Total configured player count for the session, humans plus AI."
         },
         "ai_count": {
-          "type": "int"
+          "type": "int",
+          "description": "Requested AI backfill count for the session."
         },
         "is_multiplayer": {
-          "type": "bool"
+          "type": "bool",
+          "description": "True when the session ran as a multiplayer game mode."
         },
         "timestamp_utc_ms": {
           "type": "long",
-          "description": "Client clock at completion. A real event parameter (not envelope) - the instrumentation email asked for it explicitly, so it goes to both sinks."
+          "description": "Client clock at game completion, Unix epoch milliseconds UTC."
         },
         "timestamp_utc_iso": {
           "type": "string",
-          "description": "Same instant, ISO-8601, for day/week/month bucketing without conversion."
+          "description": "Client clock at game completion, ISO-8601 UTC, for day, week and month bucketing."
         }
       }
     },
     "session_ended": {
       "parameters": {
         "reason": {
-          "type": "string"
+          "type": "string",
+          "description": "Why the session ended: pause or quit."
         },
         "last_ui_action": {
-          "type": "string"
+          "type": "string",
+          "description": "Label of the last UI action before the session ended. Churn forensics."
         },
         "app_state": {
-          "type": "string"
+          "type": "string",
+          "description": "Application state machine phase at the moment the session ended."
         }
-      }
+      },
+      "description": "The app was paused or quit. One per session."
     },
     "play_again_pressed": {
-      "parameters": {}
+      "parameters": {},
+      "description": "The player pressed Play Again on the end-of-game scoreboard."
     },
     "ui_action": {
       "parameters": {
         "action_type": {
-          "type": "string"
+          "type": "string",
+          "description": "Category of the UI action that was performed."
         },
         "action_label": {
-          "type": "string"
+          "type": "string",
+          "description": "Human-readable label of the UI element the player acted on."
         },
         "action_value": {
-          "type": "string"
+          "type": "string",
+          "description": "Optional value carried by the UI action."
         }
-      }
+      },
+      "description": "A tracked UI interaction, such as menu navigation or a button press."
     },
     "ad_impression": {
-      "parameters": {}
+      "parameters": {},
+      "description": "An ad finished loading and was shown to the player."
     },
     "game_first_launched": {
-      "parameters": {}
+      "parameters": {},
+      "description": "First ever launch on this device. Fires once, guarded by a device-local flag."
     },
     "menu_ready": {
       "parameters": {
         "is_first": {
-          "type": "bool"
+          "type": "bool",
+          "description": "True when this was the first occurrence in the current session."
         },
         "seconds_since_launch": {
-          "type": "int"
+          "type": "int",
+          "description": "Seconds elapsed since the app launched. Time-to-first-action analysis."
         }
-      }
+      },
+      "description": "The main menu became fully interactive and the player can act."
     },
     "freestyle_entered": {
       "parameters": {
         "is_first": {
-          "type": "bool"
+          "type": "bool",
+          "description": "True when this was the first occurrence in the current session."
         },
         "seconds_since_launch": {
-          "type": "int"
+          "type": "int",
+          "description": "Seconds elapsed since the app launched. Time-to-first-action analysis."
         }
-      }
+      },
+      "description": "The player took manual control of the menu vessel, entering freestyle flight."
     },
     "mode_unlocked": {
       "parameters": {
         "game_mode": {
-          "type": "string"
+          "type": "string",
+          "description": "The game mode, as its GameModes enum name."
         }
-      }
+      },
+      "description": "A game mode became available to the player through progression."
     },
     "intensity_unlocked": {
       "parameters": {
         "game_mode": {
-          "type": "string"
+          "type": "string",
+          "description": "The game mode, as its GameModes enum name."
         },
         "intensity": {
-          "type": "int"
+          "type": "int",
+          "description": "Selected intensity tier for the game mode."
         }
-      }
+      },
+      "description": "A new intensity tier became available for a game mode."
     },
     "setting_changed": {
       "parameters": {
         "setting": {
-          "type": "string"
+          "type": "string",
+          "description": "Which setting was changed, by key name."
         },
         "value": {
-          "type": "string"
+          "type": "string",
+          "description": "The setting's new value, as a string."
         },
         "seconds_since_launch": {
-          "type": "int"
+          "type": "int",
+          "description": "Seconds elapsed since the app launched. Time-to-first-action analysis."
         }
-      }
+      },
+      "description": "The player changed a setting in the options menu."
     },
     "crystals_earned": {
       "parameters": {
         "amount": {
-          "type": "int"
+          "type": "int",
+          "description": "Number of crystals moved by this transaction."
         },
         "source": {
-          "type": "string"
+          "type": "string",
+          "description": "What caused the crystal transaction, such as a game reward or a vessel purchase."
         },
         "balance": {
-          "type": "int"
+          "type": "int",
+          "description": "The player's crystal balance after this event."
         }
-      }
+      },
+      "description": "Crystals were credited to the player, from any source."
     },
     "crystals_spent": {
       "parameters": {
         "amount": {
-          "type": "int"
+          "type": "int",
+          "description": "Number of crystals moved by this transaction."
         },
         "source": {
-          "type": "string"
+          "type": "string",
+          "description": "What caused the crystal transaction, such as a game reward or a vessel purchase."
         },
         "balance": {
-          "type": "int"
+          "type": "int",
+          "description": "The player's crystal balance after this event."
         }
-      }
+      },
+      "description": "Crystals were debited from the player, for any purchase."
     },
     "crystal_spend_blocked": {
       "parameters": {
         "amount": {
-          "type": "int"
+          "type": "int",
+          "description": "Number of crystals moved by this transaction."
         },
         "item": {
-          "type": "string"
+          "type": "string",
+          "description": "What the player attempted to buy when the spend was blocked."
         },
         "balance": {
-          "type": "int"
+          "type": "int",
+          "description": "The player's crystal balance after this event."
         }
-      }
+      },
+      "description": "A purchase was attempted with an insufficient balance. The economy starvation signal."
     },
     "vessel_unlocked": {
       "parameters": {
         "vessel": {
-          "type": "string"
+          "type": "string",
+          "description": "The vessel involved, as its VesselClassType enum name."
         },
         "cost": {
-          "type": "int"
+          "type": "int",
+          "description": "Crystal cost paid to unlock the vessel."
         },
         "balance": {
-          "type": "int"
+          "type": "int",
+          "description": "The player's crystal balance after this event."
         }
-      }
+      },
+      "description": "A vessel was unlocked, whether purchased with crystals or granted."
     },
     "crystal_balance_snapshot": {
       "parameters": {
         "balance": {
-          "type": "int"
+          "type": "int",
+          "description": "The player's crystal balance after this event."
         }
-      }
+      },
+      "description": "The player's crystal balance at session end, for hoarding versus spending analysis."
     },
     "friend_request_sent": {
       "parameters": {
         "target_id": {
           "type": "string",
-          "privacy": "P1"
+          "privacy": "P1",
+          "description": "UGS player id of the person the request or invite was sent to."
         }
-      }
+      },
+      "description": "The player sent a friend request to another player."
     },
     "friend_request_received": {
       "parameters": {
         "from_id": {
           "type": "string",
-          "privacy": "P1"
+          "privacy": "P1",
+          "description": "UGS player id of the person the friend request came from."
         }
-      }
+      },
+      "description": "The player received a friend request from another player."
     },
     "friend_added": {
       "parameters": {
         "friend_id": {
           "type": "string",
-          "privacy": "P1"
+          "privacy": "P1",
+          "description": "UGS player id of the player who became a friend."
         }
-      }
+      },
+      "description": "A friendship was established after a request was accepted."
     },
     "party_invite_sent": {
       "parameters": {
         "target_id": {
           "type": "string",
-          "privacy": "P1"
+          "privacy": "P1",
+          "description": "UGS player id of the person the request or invite was sent to."
         }
-      }
+      },
+      "description": "The player invited another player to their party."
     },
     "party_invite_received": {
       "parameters": {
         "host_id": {
           "type": "string",
-          "privacy": "P1"
+          "privacy": "P1",
+          "description": "UGS player id of the party host who sent the invite."
         }
-      }
+      },
+      "description": "The player received a party invite."
     },
     "party_joined": {
-      "parameters": {}
+      "parameters": {},
+      "description": "The player successfully joined another player's party."
     },
     "minigame_favorited": {
       "parameters": {
         "game_mode": {
-          "type": "string"
+          "type": "string",
+          "description": "The game mode, as its GameModes enum name."
         },
         "favorited": {
-          "type": "bool"
+          "type": "bool",
+          "description": "True when the minigame was favorited, false when it was unfavorited."
         }
-      }
+      },
+      "description": "The player favorited or unfavorited a minigame."
     },
     "share_triggered": {
       "parameters": {
         "game_mode": {
-          "type": "string"
+          "type": "string",
+          "description": "The game mode, as its GameModes enum name."
         }
-      }
+      },
+      "description": "The player used the native share sheet to share something from the game."
     },
     "quest_completed": {
       "parameters": {
         "quest": {
-          "type": "string"
+          "type": "string",
+          "description": "Title of the quest that was completed."
         },
         "shard_value": {
-          "type": "int"
+          "type": "int",
+          "description": "Reward value granted for completing the quest."
         }
-      }
+      },
+      "description": "The player completed a quest and claimed its reward."
     },
     "repeated_game_fail": {
       "parameters": {
         "game_mode": {
-          "type": "string"
+          "type": "string",
+          "description": "The game mode, as its GameModes enum name."
         },
         "fail_count": {
-          "type": "int"
+          "type": "int",
+          "description": "How many games have now been lost consecutively."
         }
-      }
+      },
+      "description": "The player lost several games in a row. A frustration and churn-risk signal."
     },
     "cloud_save_failed": {
       "parameters": {
         "key": {
-          "type": "string"
+          "type": "string",
+          "description": "The Cloud Save key whose write failed."
         }
-      }
+      },
+      "description": "A Cloud Save write exhausted all retries while online. Backend health signal."
     }
   },
   "queries": {
