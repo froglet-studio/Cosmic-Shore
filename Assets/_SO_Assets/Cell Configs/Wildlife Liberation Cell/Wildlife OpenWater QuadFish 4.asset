@@ -10,22 +10,22 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c778cfbe4dfc4c5c8401e40c17802311, type: 3}
-  m_Name: Wildlife Middle QuadFish 1
+  m_Name: Wildlife OpenWater QuadFish 4
   m_EditorClassIdentifier:
   FaunaPrefab: {fileID: 4652232322436628206, guid: 19615ed0c903b1041973d70593d4b0a3, type: 3}
-  InitialSpawnCount: 40
-  PopulationSize: 40
+  InitialSpawnCount: 130
+  PopulationSize: 130
   SpawnProbability: 1
   FeedsPerOffspring: 20
   OffspringPerBirth: 1
   ReproductionCooldownSeconds: 12
-  MaxLivePopulation: 92
+  MaxLivePopulation: 300
   ReleaseTier: 0
-  BandInnerRadius: 260
-  BandOuterRadius: 540
+  BandInnerRadius: 1090
+  BandOuterRadius: 1180
   CenterFocusBias: 0
   Element: 0
-  InitialLevel: 3
+  InitialLevel: 1
   BodyScalePerLevel: 1.15
   CrystalScalePerLevel: 1.2
   LevelGrowSeconds: 1
@@ -39,6 +39,6 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 414bce89d4dc495f87bbccfb02e5b847, type: 2}
   Levels:
     Enabled: 0
-    MinLevel: 3
-    MaxLevel: 3
+    MinLevel: 1
+    MaxLevel: 1
     RarityFalloff: 2

@@ -9,8 +9,9 @@
 ## Overview
 
 Wildlife Liberation is the **Sparrow-only hunt**. Three concentric cages at **1050 / 600 /
-200** pen three tiers of wildlife, with a very wide empty room between each pair. Break in and
-shoot; the **first PLAYER** to the kill target (default **500**) wins.
+200** pen three tiers of wildlife, with a very wide empty room between each pair — and a fourth
+tier loose in the **open water outside the outer cage**, where the players spawn. Break in and
+shoot; the **first PLAYER** to the kill target (default **120**) wins.
 
 **One axis, and it is the ecology.** The scored stat is `IRoundStats.LifeformsKilled` — an
 *attributed creature death*. Nothing else scores: not cage prisms, not rival trails, not
@@ -37,7 +38,7 @@ doing" readout, not the win condition. See "Per-player scoring" below.
   golf-timed) — the winning hunter's `Score` is their finish time, everyone else the
   `GolfScoreSentinels` sentinel (displayed "N Kills Left")
 - **Turn monitor**: `WildlifeKillTurnMonitor` — resolves the target from
-  `EndConditionOverridesSO.GetWildlifeKillTarget()` (default **500**, FrogletTools ▸ Game Modes
+  `EndConditionOverridesSO.GetWildlifeKillTarget()` (default **120**, FrogletTools ▸ Game Modes
   ▸ End Game Conditions — never a per-scene field), syncs it via NetworkVariable →
   `GameDataSO.LifeformTargetCount`
 - **Players**: **1–4** with AI backfill. `MinDomainsAllowed = 1`, `MaxDomainsAllowed = 3`
@@ -158,16 +159,24 @@ species**: `FaunaConfigurationSO.BandInnerRadius` / `BandOuterRadius`, honoured 
   `TryReproduce`'s inheritance), which composes the cell pen first and then the band;
 - `Fauna.IsPreyForMe`, the shared edibility predicate every grazer now routes through
   (`LightFauna.IsEdibleForHerbivore`, `WormFauna.IsEdiblePrism`, `Boid.IsEdibleForForager`);
-- **`RandomLifeSpawner`**, so a banded species **hatches inside its room, scattered across it**.
-  That is two things, and the second matters as much as the first. `BandGoal` projects a point
-  into the band, so a species banded to the core cannot hatch outside the cage it is meant to be
-  locked in. But the spawner's *wave* model — one feeding ground per wave, everyone jittered
-  around it by 150u — is wrong for a penned species: it drops a 320-creature wave inside one
-  small ball, and while the density grid is still empty that ball is centred on the **cell
-  centre**, so the whole population appears in the middle of the arena. A banded species
-  therefore gets a **per-creature** point (`RandomPointInBand` — independent random direction,
-  independent radius across the shell) for both its spawn position and its initial goal.
-  Unbanded species keep the wave path exactly as before.
+- **`CellLifeSpawnerBase.SpawnFaunaBanded`**, so a banded species **hatches inside its room,
+  scattered across it** — an independent random direction and radius per creature, for both its
+  spawn position and its initial goal. Unbanded species keep the wave path exactly as before.
+
+  **This lives on the BASE, and that is the whole lesson of the bug it fixes.** The placement
+  was first written into `RandomLifeSpawner` — and never ran. `Cell.StartSpawnerForMode` picks
+  `IntensityWiseLifeSpawner` whenever the cell is on `CellTypeChoiceOptions.IntensityWise`,
+  which is also the *only* way to vary a cell by intensity. This mode needs per-intensity cages,
+  so it gets the intensity spawner whether it wanted it or not, and that spawner passed **no
+  spawn position at all** (`SpawnFaunaWithDomain` then defaults to `host.transform.position`)
+  with a goal of the cell crystal. Every creature in the biome was born at the centre and
+  immediately swam back to it — which is exactly what "all the fauna spawn at the centre, the
+  fight always happens at the centre" was. Both spawners now go through one call.
+
+  Two further centre-collapses were fixed with it: `Fauna.ClampToBand` used to clamp a
+  degenerate "nothing sensed" goal radially, which sent every creature in a room to exactly its
+  inner wall; and `IntensityWiseLifeSpawner` never honoured `MaxLivePopulation`, so its
+  one-per-tick loop walked a species past the cap the collider budget was sized against.
 
 Same contract as the cell pen and for the same reason (`Docs/ECOSYSTEM.md` §22): **a spatial
 DIET + STEERING rule, never a wall.** Nothing is teleported, no collider is added, nothing is
@@ -183,11 +192,19 @@ are painted across the domain triad, and the legacy diet eats opposing-domain ma
 alternative — shielding the bars — would swap ~9,000 LOD-cullable BoxColliders for always-on
 convex MeshColliders. **Do not shield the cage.**
 
-| room | band | wall |
+| room | band | bounded by |
 |---|---|---|
-| outer | 660 .. 990 | 1050 |
-| middle | 260 .. 540 | 600 |
-| core | 0 .. 140 | 200 |
+| **open water** | 1090 .. 1180 | outside the 1050 cage, inside the 1200 membrane |
+| outer | 660 .. 990 | the 1050 and 600 cages |
+| middle | 260 .. 540 | the 600 and 200 cages |
+| core | 0 .. 140 | the 200 cage |
+
+**The open water is a fourth room and it exists to move the fight.** The first pass put every
+creature inside the cages, so every fight converged on the middle of the arena. Stocking the
+water outside the outer cage — with big creatures, not filler — means there is something to
+shoot from the moment you spawn (the player ring is at **1150**, *inside* that band), so
+breaking into a cage becomes a choice rather than the only way to score. The AI hunters cycle
+through all four rooms for the same reason.
 
 Authored from **one source**: `SpawnableWildlifeCage.BandInner/BandOuter` in C#, mirrored by
 `wildlife_cage_budget.band_inner/band_outer`, which is what the asset generator writes into the
@@ -248,15 +265,20 @@ config — banded to its room and scaled by intensity ("later intensities will h
 
 | species | room | seed | cap | level | body prisms ea. |
 |---|---|---:|---:|---:|---:|
-| Tadpole | outer | 320 | 760 | 1 | 1 |
-| QuadFish | outer | 150 | 360 | 1 | 1 |
-| Brittlestar | outer | 20 | 45 | 1 | 10 |
-| Brittlestar | middle | 36 | 80 | 2 | 10 |
-| QuadFish | middle | 40 | 92 | 3 | 1 |
-| Shark (predator) | middle | 14 | 28 | 2 | 11 |
-| Shark (predator) | core | 10 | 19 | 5 | 11 |
-| Worm Colony (kaiju) | core | 4 | 7 | 3 | ~26 |
-| **total** | | **594** | **1,391** | | **3,161 prisms at cap** |
+| Brittlestar | **open water** | 28 | 65 | 1 | 10 |
+| QuadFish | **open water** | 130 | 300 | 1 | 1 |
+| QuadFish | outer | 320 | 750 | 1 | 1 |
+| Brittlestar | outer | 38 | 88 | 1 | 10 |
+| Brittlestar | middle | 50 | 115 | 2 | 10 |
+| Shark (predator) | middle | 24 | 52 | 2 | 11 |
+| Shark (predator) | core | 14 | 28 | 5 | 11 |
+| Worm Colony (kaiju) | core | 6 | 11 | 3 | ~26 |
+| **total** | | **610** | **1,409** | | **4,896 prisms at cap** |
+
+**No tadpoles** (removed on request, 2026-08). QuadFish inherits the swarm role — also a
+1-prism body, so the headcount survives, but the tadpoles were carrying a large share of it and
+redistributing that share across species that are not all 1-prism raised the body-prism total
+from 3,161 to 4,896. That is the cost of the swap and it is paid in the collider table below.
 
 **The roster is identical at every intensity** (requested 2026-08: *"keep around 600 rising to
 1400 at all intensities — the later levels can have more complexity"*). `POPULATION_SCALE` is
@@ -264,7 +286,7 @@ config — banded to its room and scaled by intensity ("later intensities will h
 re-introducing a population ramp is one edit. **Do not read "all 1.0" as "unused".** The whole
 intensity ramp lives in the cage's `SHELL_PLANS` instead.
 
-**The seed→cap gap is wide on purpose.** 594 → 1,391 means well over half the eventual
+**The seed→cap gap is wide on purpose.** 610 → 1,409 means well over half the eventual
 population is *born in play*: the spawner only tops each species back up to its floor, so
 everything above it is reproduction, bounded by starvation and the caps. The swarm visibly
 thickens as a match runs and thins where hunters have been working — the food web doing the
@@ -288,24 +310,24 @@ wildlife in them.
 
 | intensity | cage prisms | fauna body prisms (cap) | total |
 |---|---:|---:|---:|
-| 1 | 9,206 | 3,161 | **12,367** |
-| 2 | 12,696 | 3,161 | **15,857** |
-| 3 | 13,244 | 3,161 | **16,405** |
-| 4 | 13,956 | 3,161 | **17,117** |
+| 1 | 9,206 | 4,896 | **14,102** |
+| 2 | 12,696 | 4,896 | **17,592** |
+| 3 | 13,244 | 4,896 | **18,140** |
+| 4 | 13,956 | 4,896 | **18,852** |
 
 Comparable to Ribcage (10,620 → 20,153) in raw collider count — but **the fauna half is far more
 expensive per collider than the cage half**, and that is this branch's headline performance risk:
 
 - **Every fauna body prism is a MOVER.** It re-buckets in `PrismSpatialIndex` as the creature
   swims (`Fauna.NotifyBodyPrismsMoved`), where a cage prism is registered once and never moves.
-- **Every creature runs a behaviour coroutine** — **594 at seed, up to 1,391 at the caps.** This
+- **Every creature runs a behaviour coroutine** — **610 at seed, up to 1,409 at the caps.** This
   is the number to watch, not the prism count.
 - **This is ~2× the masterplan's ≤1,500-per-cell fauna-prism target** and roughly **an order of
   magnitude more creatures than any shipped biome.** It is an explicit product decision ("very
   heavy… around 600 rising to 1400", requested 2026-08), not an accident of the roster.
-- **Bootstrap cost:** 594 creatures at 6 instantiations per frame (`FaunaSpawnBatchPerFrame`) is
-  ~100 frames of seeding at match start, spread across the species loops. Expect a visible
-  fill-in during the countdown rather than a hitch.
+- **Bootstrap cost:** 610 creatures, seeded one per `InitialSpawnCount` step per species loop
+  with a frame yield between each. Expect a visible fill-in during the countdown rather than a
+  hitch.
 
 **Measure on device before tuning.** Dials, in order of bluntness: `POPULATION_SCALE` and the
 `ROSTER` caps in `wildlife_cage_budget.py` (the creature count — start here), then the cage's
@@ -396,15 +418,15 @@ feedback** (same state as Ribcage).
 ## End condition
 
 Authored ONLY through **FrogletTools ▸ Game Modes ▸ End Game Conditions**
-(`EndConditionOverridesSO.wildlifeKillTarget`, 0 = default **500**) — the number of creatures
+(`EndConditionOverridesSO.wildlifeKillTarget`, 0 = default **120**) — the number of creatures
 **one player** must kill. Live/Build split + build auto-restore work like every other mode. The
 milestone rungs are fractions of it (0.25 / 0.5).
 
-> **⚠ Pacing flag — 500 has not been playtested.** It is the number that was asked for, not a
-> measured one. Every intensity holds ~594 creatures at seed, re-seeds every 20 s and breeds up
-> toward ~1,391, so 500 kills for a single hunter is comfortably reachable — but whether it lands
-> at three minutes or fifteen is unknown. It is one editor field, and the milestones follow it
-> automatically.
+> **⚠ Pacing flag — 120 has not been playtested.** It is the number that was asked for, not a
+> measured one. Every intensity holds ~610 creatures at seed and breeds toward ~1,409, so 120
+> kills for a single hunter is a small fraction of the standing population and should be a short,
+> punchy match. Milestones land at **30** and **60**. It is one editor field, and the milestones
+> follow it automatically.
 
 ## Assets
 
@@ -435,7 +457,9 @@ and the PhaseThresholds cannot drift apart.
 | `WormSegmentFauna` | override thinned to its `_dead` guard — the kill rule moved to the base |
 | `LightFauna` / `WormFauna` / `Boid` | edibility routed through `Fauna.IsPreyForMe` (adds the band to the existing cell rule) |
 | `FaunaConfigurationSO` | `BandInnerRadius` / `BandOuterRadius` |
-| `RandomLifeSpawner` | `BandGoal` + `RandomPointInBand` — a banded species hatches inside its own room, scattered across it per creature rather than as one clumped wave |
+| `CellLifeSpawnerBase` | `SpawnFaunaBanded` / `RandomPointInBand` / `ClampToBand` / `IsBanded` — banded placement hoisted onto the BASE so both spawners share it |
+| `IntensityWiseLifeSpawner` | routed through `SpawnFaunaBanded` (it previously passed no spawn position, so everything spawned at the cell centre) + now honours `MaxLivePopulation` |
+| `RandomLifeSpawner` | routed through the same shared call |
 | `CellRuntimeDataSO` | `OnFaunaKilled` (`ScriptableEventString`) |
 | `StatsManager` | `LifeformKilled(string)` + a code-side SOAP subscription, and the class's ONLY client branch (see "Multiplayer") |
 | `Player` | `ReportFaunaKill_ServerRpc()` — owner-side kill report; identity comes from RPC ownership |
@@ -483,8 +507,8 @@ and the PhaseThresholds cannot drift apart.
    being reached). The middle room is noticeably bigger creatures and sharks; the core is the
    kaiju. **Nothing should be swimming between rooms**, and nothing should be chewing on a cage
    bar.
-9b. **Population grows.** Note the rough headcount at the countdown (~594 across all three rooms)
-   and again three minutes in: it should be visibly denser, heading toward ~1,391 — that is
+9b. **Population grows.** Note the rough headcount at the countdown (~610 across all four rooms)
+   and again three minutes in: it should be visibly denser, heading toward ~1,409 — that is
    reproduction, and it is what makes 500 kills reachable. If it is flat, the species are hitting
    their caps immediately or nothing is feeding.
 10. **Sparrow only — SOLO.** Pick a different vessel in an earlier game, then launch this: you

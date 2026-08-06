@@ -69,6 +69,25 @@ def band_outer(shell):
     return SHELL_RADII[shell] - BAND_WALL_CLEARANCE
 
 
+# The OPEN WATER outside the outer cage, between it and the 1200u membrane. A fourth room, and
+# the reason it exists: with wildlife only inside the cages, every fight converged on the middle
+# of the arena. Stocking the open water means there is something to shoot from the moment you
+# spawn (the player ring is at 1150, inside this band) and the action starts spread out.
+OPEN_WATER_INNER = 1090.0
+OPEN_WATER_OUTER = 1180.0
+ROOM_OPEN_WATER = 3
+
+
+def room_band(room):
+    """(inner, outer) for any room index, including the open water."""
+    if room == ROOM_OPEN_WATER:
+        return OPEN_WATER_INNER, OPEN_WATER_OUTER
+    return band_inner(room), band_outer(room)
+
+
+ROOM_COUNT = SHELL_COUNT + 1
+
+
 # ── Geodesic frame ───────────────────────────────────────────────────────────
 def _icosa():
     t = (1 + math.sqrt(5)) / 2
@@ -253,27 +272,38 @@ def phase_thresholds(n, v):
 # in a hunt. See WILDLIFE_LIBERATION.md "Known limitations".
 ROOM_OUTER, ROOM_MIDDLE, ROOM_CORE = 0, 1, 2
 
-#          species        room          seed  cap  level  prisms
+#          species        room             seed   cap  level  prisms
 ROSTER = [
-    ("Tadpole",      ROOM_OUTER,        320,  760,   1,     1),
-    ("QuadFish",     ROOM_OUTER,        150,  360,   1,     1),
-    ("Brittlestar",  ROOM_OUTER,         20,   45,   1,    10),
-    ("Brittlestar",  ROOM_MIDDLE,        36,   80,   2,    10),
-    ("QuadFish",     ROOM_MIDDLE,        40,   92,   3,     1),
-    ("Shark",        ROOM_MIDDLE,        14,   28,   2,    11),
-    ("Shark",        ROOM_CORE,          10,   19,   5,    11),
-    ("WormColony",   ROOM_CORE,           4,    7,   3,    26),
+    # OPEN WATER - outside the outer cage, where the players spawn. Big creatures here on
+    # purpose ("the big ones can spawn outside as well"): the hunt starts before you break in.
+    ("Brittlestar",  ROOM_OPEN_WATER,       28,   65,   1,    10),
+    ("QuadFish",     ROOM_OPEN_WATER,      130,  300,   1,     1),
+    # OUTER ROOM - the heavy swarm. QuadFish is the small-fauna species now that the tadpole
+    # is out of this mode, mixed with the big ones as before.
+    ("QuadFish",     ROOM_OUTER,           320,  750,   1,     1),
+    ("Brittlestar",  ROOM_OUTER,            38,   88,   1,    10),
+    # MIDDLE ROOM - noticeably bigger creatures, and the first predators.
+    ("Brittlestar",  ROOM_MIDDLE,           50,  115,   2,    10),
+    ("Shark",        ROOM_MIDDLE,           24,   52,   2,    11),
+    # CORE - the biggest and hardest, fewest in number.
+    ("Shark",        ROOM_CORE,             14,   28,   5,    11),
+    ("WormColony",   ROOM_CORE,              6,   11,   3,    26),
 ]
 
-# ~594 creatures at seed rising to ~1391 at the caps, and DELIBERATELY THE SAME AT EVERY
+# ~610 creatures at seed rising to ~1409 at the caps, and DELIBERATELY THE SAME AT EVERY
 # INTENSITY (requested 2026-08: "keep around 600 rising to 1400 at all intensities - the later
 # levels can have more complexity"). The seed/cap gap is wide on purpose: the spawner only tops
-# each species back up to its floor, so everything between 594 and 1391 is REPRODUCTION - the
-# swarm visibly thickens as a match runs and thins again as hunters work it, which is the food
-# web doing the work rather than a spawner curve.
+# each species back up to its floor, so everything between the two is REPRODUCTION - the swarm
+# visibly thickens as a match runs and thins where hunters have been working, which is the food
+# web doing the shaping rather than a spawner curve.
 #
-# The intensity ramp therefore lives entirely in SHELL_PLANS - tighter weaves and boxier cages -
-# not in the population. Left as a per-intensity array rather than a scalar so re-introducing a
+# NO TADPOLES (removed on request, 2026-08). QuadFish inherits the swarm role. This costs
+# collider budget - a tadpole is 1 body prism and so is a QuadFish, but the tadpoles were the
+# cheapest way to reach a big headcount and their share had to be spread across species that
+# are not all 1-prism. See the collider table in WILDLIFE_LIBERATION.md.
+#
+# The intensity ramp lives entirely in SHELL_PLANS - tighter weaves and boxier cages - not in
+# the population. Left as a per-intensity array rather than a scalar so re-introducing a
 # population ramp is one edit; do not confuse "all 1.0" with "unused".
 POPULATION_SCALE = [1.0, 1.0, 1.0, 1.0]
 
@@ -314,21 +344,22 @@ if __name__ == "__main__":
               f"  {th['FrenzyEnterVolume']}/{th['FrenzyExitVolume']}")
 
     print("\n== fauna bands (the rooms) " + "=" * 53)
-    for shell in range(SHELL_COUNT):
-        name = ("outer", "middle", "core")[shell]
-        print(f"  {name:<8} {band_inner(shell):>6.0f} .. {band_outer(shell):>6.0f}"
-              f"   (wall at {SHELL_RADII[shell]:.0f})")
+    for room in range(ROOM_COUNT):
+        name = ("outer", "middle", "core", "open water")[room]
+        lo, hi = room_band(room)
+        wall = f"(wall at {SHELL_RADII[room]:.0f})" if room < SHELL_COUNT else "(outside the outer cage)"
+        print(f"  {name:<11} {lo:>6.0f} .. {hi:>6.0f}   {wall}")
     print(f"\nplayer spawn ring {SPAWN_RING_RADIUS}  (outer cage {OUTER_R:.0f}, membrane 1200)")
 
     print("\n== the wildlife (per intensity) " + "=" * 48)
-    room_names = ("outer", "middle", "core")
+    room_names = ("outer", "middle", "core", "open water")
     for i in range(1, 5):
         seed, cap, prisms = fauna_totals(i)
         cage, _, _ = cumulative(i)
         print(f"\nintensity {i}: {seed} creatures at seed, {cap} at cap, "
               f"{prisms} body prisms at cap")
-        print(f"{'species':<14}{'room':>8}{'seed':>7}{'cap':>6}{'lvl':>5}{'prisms/ea':>11}{'prisms':>9}")
+        print(f"{'species':<14}{'room':>11}{'seed':>7}{'cap':>6}{'lvl':>5}{'prisms/ea':>11}{'prisms':>9}")
         for species, room, s, c, lvl, p in roster_for(i):
-            print(f"{species:<14}{room_names[room]:>8}{s:>7}{c:>6}{lvl:>5}{p:>11}{c * p:>9}")
+            print(f"{species:<14}{room_names[room]:>11}{s:>7}{c:>6}{lvl:>5}{p:>11}{c * p:>9}")
         print(f"  COLLIDER BUDGET  cage {cage} + fauna {prisms} = {cage + prisms} "
               f"(fauna are MOVERS - see WILDLIFE_LIBERATION.md)")

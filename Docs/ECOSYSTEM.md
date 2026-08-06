@@ -2802,12 +2802,20 @@ Applied at three points, all of them existing chokepoints rather than new ones:
   composing the band with `Cell.IsPreyForHerbivore`. Same reasoning as `Fauna.IsShieldedMass`
   (§16.2): *"a creature must never be led to mass it cannot reach or eat"* is ONE rule, and a
   per-subclass copy is a rule you can forget to apply in the next grazer.
-- **`RandomLifeSpawner`** — a banded species HATCHES inside its room, SCATTERED across it. The
-  spawner's wave model (one feeding ground per wave, everyone jittered around it) is right for an
-  ordinary biome and wrong for a pen: it drops a whole wave inside one 150u ball, and while the
-  density grid is still empty that ball sits on the CELL CENTRE — so a penned population appears
-  in the middle of the arena instead of in its room. Banded species take a per-creature point
-  (`RandomPointInBand`) for both spawn position and initial goal; unbanded species are untouched.
+- **`CellLifeSpawnerBase.SpawnFaunaBanded`** — a banded species HATCHES inside its room,
+  SCATTERED across it (independent direction + radius per creature, for spawn position and
+  initial goal). Unbanded species are untouched.
+
+  **It is on the BASE for a reason worth remembering.** `Cell.StartSpawnerForMode` picks
+  `IntensityWiseLifeSpawner` whenever the cell is on `CellTypeChoiceOptions.IntensityWise` —
+  which is also the only way to vary a cell by intensity. So a mode that wants per-intensity
+  cells AND penned fauna gets the intensity spawner whether or not it asked for it, and
+  placement written into the *other* spawner is dead code. That shipped: Wildlife Liberation's
+  entire population spawned at the cell centre, because `IntensityWiseLifeSpawner` passed no
+  spawn position (so `SpawnFaunaWithDomain` defaulted to `host.transform.position`) and used the
+  crystal as the goal. Two smaller centre-collapses went with it — `Fauna.ClampToBand` clamped a
+  degenerate goal radially and pinned every creature in a room to its inner wall, and
+  `IntensityWiseLifeSpawner` never honoured `MaxLivePopulation` at all.
 
 **The band is also a collider-budget device, and that is worth stating.** Wildlife Liberation's
 bands stop 60u short of every wall, so a creature's own cage is outside its band and therefore

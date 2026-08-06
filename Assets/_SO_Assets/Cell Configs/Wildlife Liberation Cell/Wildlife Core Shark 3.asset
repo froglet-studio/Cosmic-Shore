@@ -13,13 +13,13 @@ MonoBehaviour:
   m_Name: Wildlife Core Shark 3
   m_EditorClassIdentifier:
   FaunaPrefab: {fileID: 5351160486092638538, guid: a67ba7ddaecf6624ab37cd9f5f2210a6, type: 3}
-  InitialSpawnCount: 10
-  PopulationSize: 10
+  InitialSpawnCount: 14
+  PopulationSize: 14
   SpawnProbability: 1
   FeedsPerOffspring: 8
   OffspringPerBirth: 1
   ReproductionCooldownSeconds: 30
-  MaxLivePopulation: 19
+  MaxLivePopulation: 28
   ReleaseTier: 0
   BandInnerRadius: 0
   BandOuterRadius: 140

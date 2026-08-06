@@ -262,8 +262,9 @@ namespace CosmicShore.Gameplay
         /// MIDDLE of a room's radial band, where the creatures actually are.
         ///
         /// Each AI works one room for <see cref="AiWaypointsPerRoom"/> waypoints and then steps
-        /// inward, cycling outer → middle → core → outer, so a full lobby is spread through the
-        /// jail rather than queueing in the outer swarm. Waypoints walk a golden-angle spiral, so
+        /// inward, cycling outer → middle → core → OPEN WATER → outer (four rooms, including the
+        /// stocked water outside the cages), so a full lobby is spread through the whole arena
+        /// rather than queueing in one swarm. Waypoints walk a golden-angle spiral, so
         /// successive ones are ~137° apart and it keeps finding fresh, un-hunted wildlife.
         ///
         /// Every other waypoint is a HUNT on <see cref="Cell.GetExplosionTarget"/> - the densest
@@ -290,7 +291,7 @@ namespace CosmicShore.Gameplay
                 // Phase each AI onto its own arc AND its own starting room, so four AIs do not
                 // all begin in the outer swarm.
                 float phase = seat * Mathf.PI * 2f / 4f;
-                int startRoom = seat % SpawnableWildlifeCage.ShellCount;
+                int startRoom = seat % SpawnableWildlifeCage.RoomCount;
                 int seatIndex = seat;
                 seat++;
 
@@ -315,7 +316,7 @@ namespace CosmicShore.Gameplay
 
                     // Patrol beat: the middle of the current room's band, on a golden-angle
                     // spiral. INSIDE the room by construction - see the summary.
-                    int room = (startRoom + waypoint / AiWaypointsPerRoom) % SpawnableWildlifeCage.ShellCount;
+                    int room = (startRoom + waypoint / AiWaypointsPerRoom) % SpawnableWildlifeCage.RoomCount;
                     float mid = 0.5f * (SpawnableWildlifeCage.BandInner(room) + SpawnableWildlifeCage.BandOuter(room));
 
                     float a = phase + waypoint * 2.39996323f;

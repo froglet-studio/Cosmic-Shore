@@ -284,87 +284,23 @@ namespace CosmicShore.Gameplay
             // The wave-goal machinery above is right for an ordinary biome: one feeding ground
             // per wave, everyone jittered around it by FaunaSpawnJitter, so a group arrives
             // together and works the same buildup. Applied to a penned species it is exactly
-            // wrong - it drops a 300-creature wave inside a 150u ball, which in a 330u-thick
-            // room reads as "they all spawned in one spot" (and when the density grid is still
-            // empty that spot is the CELL CENTRE, so it reads as "they all spawned in the
-            // middle"). A room the player is meant to fly INTO wants its wildlife spread
-            // across it.
-            //
-            // So for a banded species every creature gets its own random direction and its own
-            // radius inside the band, for BOTH its spawn point and its initial goal. Unbanded
-            // species (every shipped biome) take the wave path below, unchanged.
-            bool banded = faunaCfg.BandOuterRadius > 0f;
-            if (!banded) goal = BandGoal(host, faunaCfg, goal);
+            // wrong - it drops a whole wave inside a 150u ball, which in a 330u-thick room
+            // reads as "they all spawned in one spot" (and while the density grid is still
+            // empty that spot is the CELL CENTRE). The placement itself lives on
+            // CellLifeSpawnerBase.SpawnFaunaBanded so BOTH spawners share it - see the warning
+            // there about which spawner a cell actually runs.
+            bool banded = IsBanded(faunaCfg);
 
             for (int i = 0; i < count; i++)
             {
                 if (!host) yield break;   // cell torn down mid-seed (scene change)
 
-                Vector3 creatureGoal, spawnPos;
-                if (banded)
-                {
-                    creatureGoal = RandomPointInBand(host, faunaCfg);
-                    // A short jitter off its own goal, re-projected, so a creature is not born
-                    // exactly on the point it is already seeking.
-                    spawnPos = BandGoal(host, faunaCfg,
-                        creatureGoal + UnityEngine.Random.insideUnitSphere * BandSpawnJitter);
-                }
-                else
-                {
-                    creatureGoal = goal;
-                    spawnPos = goal + UnityEngine.Random.insideUnitSphere * FaunaSpawnJitter;
-                }
-
-                var fauna = SpawnFaunaWithDomain(host, faunaCfg.FaunaPrefab, creatureGoal, color, spawnPos);
-                if (fauna) fauna.AssignLineage(host, faunaCfg);
+                SpawnFaunaBanded(host, faunaCfg, color, goal,
+                    banded ? null : goal + UnityEngine.Random.insideUnitSphere * FaunaSpawnJitter);
 
                 if (i + 1 < count && (i + 1) % FaunaSpawnBatchPerFrame == 0)
                     yield return null;
             }
-        }
-
-        /// <summary>How far a banded creature may be born from its own initial goal.</summary>
-        const float BandSpawnJitter = 40f;
-
-        /// <summary>
-        /// A fresh point somewhere in a species' band - uniform in DIRECTION and uniform in
-        /// radius across the shell. Each call is independent, which is the point: it is what
-        /// spreads a wave through its room instead of stacking it on one feeding ground.
-        /// </summary>
-        static Vector3 RandomPointInBand(Cell host, FaunaConfigurationSO cfg)
-        {
-            float inner = Mathf.Min(cfg.BandInnerRadius, cfg.BandOuterRadius);
-            float outer = Mathf.Max(cfg.BandInnerRadius, cfg.BandOuterRadius);
-            return host.transform.position
-                   + UnityEngine.Random.onUnitSphere * UnityEngine.Random.Range(inner, outer);
-        }
-
-        /// <summary>
-        /// Projects a point into a species' band. Returns the point unchanged for an unbanded
-        /// species (so the common path is one compare) or for a point already inside the band;
-        /// a degenerate input (the cell centre - what <c>GetDensestRegionAnyDomain</c> returns
-        /// for an empty grid) rolls a fresh point rather than collapsing a whole wave onto one
-        /// radial.
-        /// </summary>
-        static Vector3 BandGoal(Cell host, FaunaConfigurationSO cfg, Vector3 point)
-        {
-            if (!host || !cfg || cfg.BandOuterRadius <= 0f) return point;
-
-            float inner = Mathf.Min(cfg.BandInnerRadius, cfg.BandOuterRadius);
-            float outer = Mathf.Max(cfg.BandInnerRadius, cfg.BandOuterRadius);
-
-            Vector3 centre = host.transform.position;
-            Vector3 offset = point - centre;
-            float d = offset.magnitude;
-
-            if (d < 1f) return RandomPointInBand(host, cfg);
-
-            Vector3 dir = offset / d;
-            if (d >= inner && d <= outer) return point;
-
-            // Land anywhere in the shell rather than pinned to whichever wall was nearest -
-            // a wave that all lands on the outer wall reads as a ring, not a population.
-            return centre + dir * UnityEngine.Random.Range(inner, outer);
         }
 
         /// <summary>
