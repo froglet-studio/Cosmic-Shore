@@ -187,6 +187,31 @@ namespace CosmicShore.Gameplay
             _data.OnPartyMemberKicked?.Raise(member);
         }
 
+        /// <summary>
+        /// Raises <see cref="HostConnectionDataSO.OnPartyRosterChanged"/> - the
+        /// coalesced "the party roster moved, repaint" signal.
+        ///
+        /// <para>
+        /// Call this ONCE per settled mutation, never once per member. The whole
+        /// point of the channel is that a sync adding three members costs one
+        /// raise and therefore one repaint, where the per-member events cost
+        /// three of each. Raise it AFTER the roster has finished mutating, so
+        /// every listener reads a consistent list.
+        /// </para>
+        ///
+        /// <para>
+        /// No log line here, deliberately - unlike the per-member raises this
+        /// one fires on every roster settle including no-op syncs during normal
+        /// polling, and a per-tick console line would drown the timeline the
+        /// other raises exist to provide. The member-level raises already say
+        /// who moved.
+        /// </para>
+        /// </summary>
+        public void RaisePartyRosterChanged()
+        {
+            _data.OnPartyRosterChanged?.Raise();
+        }
+
         // ─────────────────────────────────────────────────────────────────────
         // Join-completed event
         // ─────────────────────────────────────────────────────────────────────

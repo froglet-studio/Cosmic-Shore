@@ -230,12 +230,21 @@ namespace CosmicShore.UI
                 if (connectionData.OnInviteResolved != null)
                     connectionData.OnInviteResolved.OnRaised += HandleInviteResolved;
 
+                // Per-member events: needed only because clearing the pending-invite
+                // tint requires knowing WHO moved. They no longer repaint.
                 if (connectionData.OnPartyMemberJoined != null)
                     connectionData.OnPartyMemberJoined.OnRaised += HandlePartyMemberChanged;
                 if (connectionData.OnPartyMemberLeft != null)
                     connectionData.OnPartyMemberLeft.OnRaised += HandlePartyMemberChanged;
                 if (connectionData.OnPartyMemberKicked != null)
                     connectionData.OnPartyMemberKicked.OnRaised += HandlePartyMemberChanged;
+
+                // The repaint. Coalesced, so a sync that moves three members
+                // rebuilds the section once instead of three times, and it fires
+                // AFTER the roster has settled so every row reads a consistent
+                // list.
+                if (connectionData.OnPartyRosterChanged != null)
+                    connectionData.OnPartyRosterChanged.OnRaised += HandlePartyRosterChanged;
             }
 
             if (friendsData && friendsData.IncomingRequests != null)
@@ -269,6 +278,9 @@ namespace CosmicShore.UI
                     connectionData.OnPartyMemberLeft.OnRaised -= HandlePartyMemberChanged;
                 if (connectionData.OnPartyMemberKicked != null)
                     connectionData.OnPartyMemberKicked.OnRaised -= HandlePartyMemberChanged;
+
+                if (connectionData.OnPartyRosterChanged != null)
+                    connectionData.OnPartyRosterChanged.OnRaised -= HandlePartyRosterChanged;
             }
 
             if (friendsData && friendsData.IncomingRequests != null)
@@ -350,7 +362,7 @@ namespace CosmicShore.UI
 
             // A full LOCAL party can't take another member - render every remote
             // row non-invitable instead of letting the send fail at the service.
-            // Re-evaluated on every party-member change (HandlePartyMemberChanged
+            // Re-evaluated on every roster settle (HandlePartyRosterChanged
             // repopulates the section), so rows free up when someone leaves.
             bool localPartyFull = connectionData != null && !connectionData.HasOpenSlots;
 
@@ -505,19 +517,36 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// When local party membership changes, re-render the online section so the
-        /// "LOBBY FULL" and "invitable" states for every row update correctly.
-        /// Also clears any outgoing "PENDING REQUEST" tint for the player that just
-        /// joined - otherwise the sender's row stays stuck on the yellow pulse
+        /// Clears any outgoing "PENDING REQUEST" tint for the player that just
+        /// moved - otherwise the sender's row stays stuck on the yellow pulse
         /// even though the invite has been accepted.
+        ///
+        /// <para>
+        /// This is the only part of the old combined handler that genuinely
+        /// needs to know WHO moved, which is why it stays on the per-member
+        /// events. The repaint it used to also do moved to
+        /// <see cref="HandlePartyRosterChanged"/>: firing it here meant a sync
+        /// that moved three members rebuilt the whole section three times, and
+        /// each rebuild ran against a roster that was still mid-mutation.
+        /// </para>
         /// </summary>
         void HandlePartyMemberChanged(PartyPlayerData member)
         {
             if (!string.IsNullOrEmpty(member.PlayerId))
                 _outgoingInvitePlayerIds.Remove(member.PlayerId);
-
-            PopulateOnlineSection();
         }
+
+        /// <summary>
+        /// The roster settled - re-render the online section so every row's
+        /// party size, "LOBBY FULL" state and invitability update together.
+        ///
+        /// <para>
+        /// Raised once per mutation and always after the per-member events, so
+        /// <c>_outgoingInvitePlayerIds</c> is already up to date by the time
+        /// this repaints.
+        /// </para>
+        /// </summary>
+        void HandlePartyRosterChanged() => PopulateOnlineSection();
 
         #endregion
 

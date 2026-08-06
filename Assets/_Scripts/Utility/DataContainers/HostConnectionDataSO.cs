@@ -50,6 +50,32 @@ namespace CosmicShore.Utility
         [Tooltip("Raised when the host kicks a remote player from the party.")]
         public ScriptableEventPartyPlayerData OnPartyMemberKicked;
 
+        /// <summary>
+        /// Raised ONCE after any mutation of <see cref="PartyMembers"/> settles.
+        ///
+        /// <para>
+        /// <b>Coalesced by design.</b> A sync that adds three members raises this
+        /// once, not three times - unlike the per-member
+        /// <see cref="OnPartyMemberJoined"/>/<see cref="OnPartyMemberLeft"/>
+        /// pair, which every consumer was subscribing to three times over and
+        /// then answering with the same full repopulate. This is the channel to
+        /// listen on for "repaint anything that renders party size or
+        /// membership"; the per-member events remain for consumers that
+        /// genuinely need to know WHO moved (invite-row clearing, presence
+        /// activity strings).
+        /// </para>
+        ///
+        /// <para>
+        /// Raised only by <c>SoapPartyEventBus.RaisePartyRosterChanged</c>, which
+        /// is the sole permitted raiser of every event on this container.
+        /// </para>
+        /// </summary>
+        [Tooltip("Raised ONCE per party-roster mutation, after the roster has settled. " +
+                 "Coalesced - a sync adding three members raises this once, not three times. " +
+                 "Listen to this (not OnPartyMemberJoined/Left) to repaint anything that " +
+                 "renders party size or membership.")]
+        public ScriptableEventNoParam OnPartyRosterChanged;
+
         [Header("Max Slots")]
         [Tooltip("Maximum number of party slots (including the local player).")]
         [SerializeField] private int maxPartySlots = 4;
@@ -176,6 +202,14 @@ namespace CosmicShore.Utility
 
         /// <summary>
         /// Removes a party member by player ID and fires OnPartyMemberKicked.
+        ///
+        /// <para>
+        /// One of only two roster mutations that do not go through
+        /// <c>PartyMemberService</c> (the other is the host-only presence-join
+        /// scan in <c>HostConnectionService</c>), which is why it raises
+        /// <see cref="OnPartyRosterChanged"/> itself. Leaving it out would make
+        /// the kick path the one roster change that never repainted a count.
+        /// </para>
         /// </summary>
         public bool RemovePartyMember(string playerId)
         {
@@ -189,6 +223,7 @@ namespace CosmicShore.Utility
                     PartyMembers.RemoveAt(i);
                     OnPartyMemberKicked?.Raise(removed);
                     OnPartyMemberLeft?.Raise(removed);
+                    OnPartyRosterChanged?.Raise();
                     return true;
                 }
             }

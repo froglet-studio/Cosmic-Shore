@@ -2053,6 +2053,14 @@ namespace CosmicShore.Gameplay
                 }
             }
 
+            // One coalesced repaint for the whole scan, after the roster has
+            // settled - this is the second of the two mutation sites that bypass
+            // PartyMemberService (the other is HostConnectionDataSO.RemovePartyMember),
+            // so the raise has to happen here or a presence-detected join would
+            // be the one roster change that never updated a count.
+            if (joinedPlayerIds.Count > 0)
+                _eventBus.RaisePartyRosterChanged();
+
             // Already inside RefreshAsync (mutex held) → fire-and-forget.
             foreach (var joinedId in joinedPlayerIds)
                 _ = ClearOutgoingInviteIfPresentAsync(joinedId, "presence-join");
