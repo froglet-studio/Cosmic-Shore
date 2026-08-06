@@ -259,9 +259,24 @@ correlation across two payloads.
   one record. Previously answering *"how much has this player flown the vessel they've unlocked?"*
   required correlating two Cloud Save payloads client-side on a bare string key, with no guarantee the
   two agreed on the vessel-name spelling.
-- **`SelectedVessel` gets a writer.** It has **none today** — the only reference outside the model is
-  a read in `LogControlWindow.cs:1130`. That is why the dump shows `""`. Written on vessel swap
-  confirm, so it is genuinely "last selected by the user".
+- **`SelectedVessel` gets a writer.** It had **none** — the only reference outside the model was a
+  read in `LogControlWindow.cs:1130`, which is why the dump showed `""`. Now written on vessel-swap
+  confirm (`UGSStatsManager.ReportVesselSelected`), so it is genuinely "last selected by the user"
+  — **plus a default**, because a deliberate pick is the only writer and a player who never opens
+  the vessel panel would still read `null`. `UGSDataService.SyncHangarToVessels` falls it back to the
+  starter vessel (below) on every load, and also repairs it if it names a vessel the player does not
+  own.
+- **The starter vessel is seeded into the record.** Ownership was only ever written by
+  `VesselUnlockSystem.UnlockVessel`, which early-returns on a vessel that is already unlocked — so
+  the one vessel the player owns from first launch (the Squirrel, authored `isLocked: 0`) was never
+  persisted and `HANGAR_DATA` reported an empty hangar for a player who could fly. The authored
+  truth now lives in a new **`SO_Vessel.OwnedFromStart`** flag rather than `isLocked`, because
+  `Unlock()` rewrites `isLocked` at runtime and the editor persists that mutation back into the
+  asset — so `isLocked` cannot answer "what did we author?" after the first play session.
+  `SyncHangarToVessels` seeds every `OwnedFromStart` vessel on load, and `ResetAllUnlocks` re-grants
+  them: a reset returns the player to a *fresh account*, not a locked-out one.
+  (Falcon and Shrike had no serialized `isLocked` at all, so they defaulted to **unlocked** —
+  both are `Planned` vessels and are now explicitly locked.)
 - **`VesselPreferences` (plural) → `PreferredVessel` (singular)**, exactly as asked, and it is now
   *derived, not chosen*: `argmax(FlightTimeSeconds)`, recomputed whenever a vessel's flight time is
   written. "Most hours played" needs hours played, which is why `FlightTimeSeconds` is new here — the
@@ -408,6 +423,43 @@ free churn signal we would otherwise have to instrument separately.
 The same clock feeds `PLAYER_PROFILE.Lifecycle.TotalFlightTimeSeconds`,
 `HANGAR_DATA.Vessels[v].FlightTimeSeconds` (which is what makes `PreferredVessel` computable) and
 `MODE_STATS[m:i].FlightTimeSeconds`. One clock, four consumers.
+
+### 5.5 Menu freestyle counts too
+
+The lava lamp **is** freestyle (one system, two names — see CLAUDE.md § "Lava-Lamp Mode"), so the
+vessel drifting behind the menu is the gameplay vessel and time spent flying it is time at the
+stick. But freestyle has no countdown, no turn and no end: `MenuCrystalClickHandler` never raises
+`GameDataSO.StartTurn`, so §5.1's gate can never open there and every minute of it was invisible.
+
+`FlightClock` therefore runs a **second segment** with the same integrator minus the turn gate:
+
+```
+accumulate Time.unscaledTime  while  freestyleActive
+                                &&  !PauseSystem.Paused
+                                &&  !appBackgrounded
+```
+
+- Driven by `MenuCrystalClickHandler` at exactly the two lines that grant and revoke control
+  (`InputController.SetPause(false/true)`), so the camera blend is not counted as flight.
+- Accumulated **separately** from the game segment, so a freestyle segment can never contaminate
+  `LastGameSeconds` — which `game_completed` reads.
+- Published per closed segment via `FlightClock.OnFreestyleSegmentCompleted`, rather than held to a
+  "last visit" total: freestyle has no end event to read one at. A segment closes on leaving
+  freestyle, on pause, **and on backgrounding** — the last one deliberately, so a mobile app killed
+  while suspended has already banked what it earned.
+- `MenuCrystalClickHandler.OnDisable` closes the segment, so launching a game from freestyle banks
+  the time instead of dropping it.
+
+Landed by `UGSStatsManager.ReportFreestyleFlight` into `PLAYER_PROFILE.Lifecycle.TotalFlightTimeSeconds`
+and `HANGAR_DATA.Vessels[v].FlightTimeSeconds` — the second one matters because "most hours played on
+a vessel" (`PreferredVessel`) is otherwise blind to the vessel the player spends the most time in.
+It deliberately does **not** touch `GamesCompleted` or `GamesPlayed`: no game was played.
+
+**No new event and no new parameter.** Menu flight reaches PostHog through the person properties
+`total_flight_time_seconds` / `preferred_vessel`, which `ReportFreestyleFlight` re-publishes via
+`AnalyticsServiceFacade.IdentifyPlayer()`. Nothing has to be added to the UGS Event Manager. If a
+discrete `freestyle_session_ended` event is wanted later for segmentation, it costs one event name
+and zero parameters (`flight_time_seconds` and `vessel_class` already exist and are reusable).
 
 ---
 

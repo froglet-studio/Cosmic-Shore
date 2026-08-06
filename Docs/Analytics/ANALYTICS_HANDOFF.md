@@ -65,7 +65,10 @@ exists to enable.
 
 1. **`SelectedVessel` had no writer at all.** The only reference outside the model was a debug
    read in the editor window. That is why it was always `""`. It now writes on vessel-select
-   confirm, so it genuinely means "last vessel the player chose".
+   confirm, so it genuinely means "last vessel the player chose" — **and it has a default**,
+   because a deliberate pick is still the only writer, so a player who never opens the vessel
+   panel would keep reading `null`. It now falls back to the starter vessel on every load, and
+   self-repairs if it names a vessel the player does not own.
 2. **`VesselPreferences` was only ever `.Clear()`ed** — never written, by anything. It is
    replaced by `PreferredVessel` (singular, as you asked), *derived* as the most-flown vessel
    rather than stored. That required tracking per-vessel flight time, which nothing did.
@@ -76,6 +79,24 @@ exists to enable.
    only surfaced for some saves because `isLocked` is unserialized on that asset and defaults to
    false — it takes **Lock All** then **Unlock All** in the toolbox to push the empty key through.
    The list is now a keyed map that rejects blank names at the writer, **and the asset is fixed**.
+4. **The starter vessel was never recorded as owned.** `VesselUnlockSystem.UnlockVessel`
+   early-returns on a vessel that is already unlocked, so the Squirrel — authored unlocked, the
+   one vessel every player can fly from launch — was never written to `HANGAR_DATA`. Every
+   player's hangar payload therefore reported an empty (or purchase-only) fleet. Starters are now
+   marked with a new authored `SO_Vessel.OwnedFromStart` flag and seeded on load. The flag is
+   separate from `isLocked` on purpose: `Unlock()` rewrites `isLocked` at runtime and the editor
+   persists that back into the asset, so `isLocked` stops being able to answer "what did we
+   author?" after the first play session.
+5. **Falcon and Shrike read as unlocked.** Neither asset serialized `isLocked` at all, so it
+   defaulted to `false`. Both are `Planned` vessels; both are now explicitly locked at the same
+   4000 cost as the rest of the purchasable fleet.
+6. **Menu freestyle contributed no flight time.** The lava lamp is the gameplay vessel, but it
+   never raises `StartTurn`, so the flight clock's gate could not open and every minute flown in
+   Menu_Main was invisible — including to `PreferredVessel` ("most hours played"), which is
+   exactly the vessel players spend idle menu time in. The clock now runs a second, separate
+   segment for freestyle. **This needs no new UGS event and no new parameter** — it surfaces in
+   PostHog through the existing `total_flight_time_seconds` / `preferred_vessel` person
+   properties.
 
 ### 2.4 Why `MODE_STATS` matters more than it looks
 
