@@ -50,7 +50,8 @@ batch size / flush interval / offline queue cap.
 3. Play one game to the end screen, then background/quit the app (that triggers the flush).
 4. In PostHog: **Activity** (left nav) — events appear within seconds of a flush:
    `game_started`, `game_completed`, `session_ended`, etc., each carrying
-   `session_id`, `install_id`, `build_version`, `platform`, and the gameplay parameters.
+   `player_id`, `install_id`, `app_version`, `platform`, `schema_version`, and the gameplay
+   parameters. (`session_id` / `build_version` never shipped - the envelope was reworked.)
 5. Cross-check identity: the event's *distinct ID* equals the UGS PlayerId (same ID you
    see in UGS dashboards and Cloud Save) — that's the join key across all our systems.
 
