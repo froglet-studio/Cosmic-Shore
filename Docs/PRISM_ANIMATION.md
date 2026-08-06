@@ -1025,6 +1025,7 @@ view-dependent prism effect in §3.7 (`SkimFxRunner`'s live ship end, the retire
 | Automated asset gate | `Tests/EditMode/PrismOcclusionCoverageTests.cs` |
 | Tuning (radius SCALES / core alpha / sanity band) | `ScriptableObjects/PrismOcclusionConfigSO.cs` → `Resources/PrismOcclusionConfig.asset` |
 | GPU test + dither | `_Graphics/Materials/Graphs/PrismOcclusionCorridor.hlsl` |
+| Live design surface (dials · preview · measure · bake) | FrogletTools > Ecology > Prism Animation > **Occlusion Dither Lab** — `Editor/PrismOcclusionDitherLab.cs` + `_Graphics/Materials/Graphs/PrismOcclusionDitherPreview.shader` |
 | Graph wiring (idempotent, validate-before-write) | `Tools/Shaders/wire_prism_occlusion_corridor.py` |
 | Material alpha-test opt-in (idempotent) | `Tools/Shaders/enable_prism_alpha_clip.py` |
 | Interactive gate | FrogletTools > Ecology > Prism Animation > **Validate Occlusion Corridor** |
@@ -1128,7 +1129,36 @@ short band from reading as an edge are both continuity choices:
 
   `PRISM_OCCLUSION_KERNEL` in `PrismOcclusionCorridor.hlsl` selects between the survivors.
   All are procedural — no texture, no sampler, no asset — and all cost less than the
-  corridor test itself:
+  corridor test itself.
+
+  **Choose the look in the Lab, not by editing `#define`s.** FrogletTools > Ecology >
+  Prism Animation > **Occlusion Dither Lab** drives the kernel and every scale dial as
+  shader globals **live, including in play mode** — which is the only place a dither can
+  actually be judged, because it has to be read in motion against real trail mass. Three
+  things make it more than a slider panel:
+
+  - **The preview is the shipped GPU code.** `PrismOcclusionDitherPreview.shader` includes
+    the corridor's own HLSL and calls the same `PrismOcclusionDitherThreshold` dispatch,
+    reading the same globals. A C# re-implementation could drift from the game; this
+    cannot, and a kernel added to the corridor shows up in the Lab for free.
+  - **Measure runs the admission rule**, not a proxy: it renders threshold+alpha to a float
+    target, reads it back and computes |coverage − alpha| over real rendered output — the
+    same methodology as the in-situ numbers above — and measures the **shipped Worley
+    baseline in the same pass**, so the verdict is a ratio and cannot be flattered by
+    anything about the harness. Sliders that let someone silently break a platform law
+    would be a worse tool than no sliders.
+  - **Bake writes the values back** into the constants and flips design mode off, so nobody
+    hand-transcribes numbers out of a screenshot. Every rewrite is anchored and must match
+    exactly once, or the bake refuses; the trailing comments (which carry the measured
+    windows) survive it.
+
+  Design mode is the `PRISM_OCCLUSION_LIVE_TUNING` gate, and it is **not free** — it
+  compiles all five kernels into every prism shader and allocates registers for the
+  largest, which costs occupancy on exactly the draw class this game has most of. At 0 the
+  file compiles as though none of it existed: one kernel, no branch, no uniforms. It is
+  fail-safe in both directions — with nothing published every dial falls back to its
+  constant, so design mode with the Lab closed renders identically to shipped mode
+  (verified by compiling both modes and diffing the output).
 
   - **3 — screen-space SHARD (current, 2026-08-06).** Worley with the METRIC changed and
     nothing else: same lattice, same Hoskins hash, same orbiting feature points, same 3×3

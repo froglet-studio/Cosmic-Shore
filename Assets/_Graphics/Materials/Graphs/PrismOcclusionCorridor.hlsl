@@ -93,6 +93,44 @@
 #define PRISM_OCCLUSION_KERNEL PRISM_OCCLUSION_KERNEL_SHARD
 
 // -----------------------------------------------------------------------------
+// LIVE TUNING — the design-mode gate (FrogletTools > Ecology > Prism Animation >
+// Occlusion Dither Lab).
+//
+// Every dial below is a compile-time constant, which is the right shape for shipping and
+// a terrible one for CHOOSING a look: you cannot slide a #define while flying. So the
+// whole dial set can be promoted to two global uniforms — the same O(1)-per-frame shape
+// the corridor's own params already use, published by the Lab window — and the kernel
+// choice becomes a runtime branch.
+//
+//   1 = DESIGN MODE. Dials are live; the Lab drives them while the game runs.
+//   0 = SHIPPED. This file compiles EXACTLY as it would have without any of this: the
+//       macros below expand to the constants themselves, the #if picks one kernel, and
+//       the other four plus the branch and the uniforms are not in the shader at all.
+//
+// It is not free, which is why it is a gate rather than a permanent feature: design mode
+// compiles all five kernels into every prism shader and allocates registers for the
+// largest, which costs occupancy on tile-based GPUs — on the one draw class this game has
+// most of. The Lab's **Bake to Source** button writes the chosen values into the constants
+// and flips this to 0, so the cost lasts exactly as long as the design session.
+//
+// FAIL-SAFE. `_PrismOcclusionDitherA.x` is the master: it holds kernel+1, so an
+// unpublished global (all zeros — a player build, or the editor before the Lab is opened)
+// reads as 0 and EVERY dial falls back to its compile-time constant. Design mode with
+// nobody driving it looks exactly like shipped mode.
+// -----------------------------------------------------------------------------
+#define PRISM_OCCLUSION_LIVE_TUNING 1
+
+#if PRISM_OCCLUSION_LIVE_TUNING
+float4 _PrismOcclusionDitherA;  // (kernel + 1, cellSize, shardOrient, morphRate)
+float4 _PrismOcclusionDitherB;  // (shatterCell, shatterWall, spiralRings, spiralArms)
+
+#define PRISM_OCCLUSION_TUNING_ON (_PrismOcclusionDitherA.x > 0.5)
+#define PRISM_OCCLUSION_DIAL(live, fallback) (PRISM_OCCLUSION_TUNING_ON ? (live) : (fallback))
+#else
+#define PRISM_OCCLUSION_DIAL(live, fallback) (fallback)
+#endif
+
+// -----------------------------------------------------------------------------
 // THE SHAPE RULE — why the current kernel is SHARD and not WORLEY (2026-08-06).
 //
 // The unit shape of the dither is a design surface, not just a dither detail: it is
@@ -143,6 +181,15 @@
 // -----------------------------------------------------------------------------
 static const float PRISM_OCCLUSION_MORPH_RATE = 0.12;   // cycles/sec; 0 = frozen
 
+// Every dial below is read through one of these accessors rather than named directly, so
+// that design mode and shipped mode differ in exactly one place each. Under
+// PRISM_OCCLUSION_LIVE_TUNING 0 each one collapses to its constant and the compiler folds
+// it away — the generated code is identical to naming the constant inline.
+float PrismOcclusionMorphRate()
+{
+    return PRISM_OCCLUSION_DIAL(_PrismOcclusionDitherA.w, PRISM_OCCLUSION_MORPH_RATE);
+}
+
 // The clip threshold must land STRICTLY inside (0,1). frac() can return exactly 0, and a
 // 0 threshold against a 0 alpha is `clip(0)` — which KEEPS the fragment on the URP
 // variants that clip directly rather than through AlphaDiscard's epsilon. That would
@@ -188,9 +235,9 @@ static const float PRISM_OCCLUSION_SPIRAL_ARMS = 3.0;   // turns per revolution 
 float PrismOcclusionSpiral(float radialRatio, float angleTurns, float time)
 {
     return PrismOcclusionSafeThreshold(frac(
-        radialRatio * PRISM_OCCLUSION_SPIRAL_RINGS
-        + angleTurns * PRISM_OCCLUSION_SPIRAL_ARMS
-        + time * PRISM_OCCLUSION_MORPH_RATE));
+        radialRatio * PRISM_OCCLUSION_DIAL(_PrismOcclusionDitherB.z, PRISM_OCCLUSION_SPIRAL_RINGS)
+        + angleTurns * PRISM_OCCLUSION_DIAL(_PrismOcclusionDitherB.w, PRISM_OCCLUSION_SPIRAL_ARMS)
+        + time * PrismOcclusionMorphRate()));
 }
 
 // -----------------------------------------------------------------------------
@@ -292,6 +339,10 @@ static const float PRISM_OCCLUSION_CELL_CDF_HI = 0.873;   // — see THE SIZE WI
 // band freely; past 11 px the corridor error is a SPATIAL sampling failure and there is
 // no constant anywhere in this file that will buy it back.
 // -----------------------------------------------------------------------------
+float PrismOcclusionCellSize()
+{
+    return PRISM_OCCLUSION_DIAL(_PrismOcclusionDitherA.y, PRISM_OCCLUSION_CELL_SIZE);
+}
 
 float2 PrismOcclusionHash2(float2 cell)
 {
@@ -302,9 +353,9 @@ float2 PrismOcclusionHash2(float2 cell)
 
 float PrismOcclusionWorley(float2 pixel, float time)
 {
-    float2 p = pixel / PRISM_OCCLUSION_CELL_SIZE;
+    float2 p = pixel / PrismOcclusionCellSize();
     float2 base = floor(p);
-    float phase = time * PRISM_OCCLUSION_MORPH_RATE * 6.28318530718;
+    float phase = time * PrismOcclusionMorphRate() * 6.28318530718;
 
     // Squared distance while searching — the sqrt is paid once, at the end.
     float best = 8.0;
@@ -407,9 +458,9 @@ float PrismOcclusionTriangleGauge(float2 q)
 
 float PrismOcclusionShard(float2 pixel, float time)
 {
-    float2 p = pixel / PRISM_OCCLUSION_CELL_SIZE;
+    float2 p = pixel / PrismOcclusionCellSize();
     float2 base = floor(p);
-    float phase = time * PRISM_OCCLUSION_MORPH_RATE * 6.28318530718;
+    float phase = time * PrismOcclusionMorphRate() * 6.28318530718;
 
     float best = 8.0;
     [unroll]
@@ -428,13 +479,27 @@ float PrismOcclusionShard(float2 pixel, float time)
             // reversing it would flip every triangle. Keep it this way round.
             float2 q = p - (cell + orbit);
 
-#if PRISM_OCCLUSION_SHARD_ORIENT == PRISM_OCCLUSION_SHARD_FLIP
-            // A triangle's point reflection is the opposite-pointing triangle, so half the
-            // cells can be flipped for one multiply — no second gauge, no branch.
+            // FLIP: a triangle's point reflection is the opposite-pointing triangle, so
+            //       half the cells flip for one multiply — no second gauge, no branch.
+            // SPIN: wave.y is already sin(2pi*h.y + phase) from the orbit above, so a full
+            //       per-cell rotation costs exactly one cos.
+            // Under design mode both are compiled in and selected at runtime; under
+            // PRISM_OCCLUSION_LIVE_TUNING 0 the #if keeps exactly one, as before.
+#if PRISM_OCCLUSION_LIVE_TUNING
+            int orient = (int)PRISM_OCCLUSION_DIAL(_PrismOcclusionDitherA.z,
+                                                   (float)PRISM_OCCLUSION_SHARD_ORIENT);
+            if (orient == PRISM_OCCLUSION_SHARD_FLIP)
+            {
+                q *= (h.x < 0.5) ? -1.0 : 1.0;
+            }
+            else if (orient == PRISM_OCCLUSION_SHARD_SPIN)
+            {
+                float c = cos(6.28318530718 * h.y + phase);
+                q = float2(q.x * c - q.y * wave.y, q.x * wave.y + q.y * c);
+            }
+#elif PRISM_OCCLUSION_SHARD_ORIENT == PRISM_OCCLUSION_SHARD_FLIP
             q *= (h.x < 0.5) ? -1.0 : 1.0;
 #elif PRISM_OCCLUSION_SHARD_ORIENT == PRISM_OCCLUSION_SHARD_SPIN
-            // wave.y is already sin(2pi*h.y + phase) from the orbit above, so a full
-            // per-cell rotation costs exactly one cos.
             float c = cos(6.28318530718 * h.y + phase);
             q = float2(q.x * c - q.y * wave.y, q.x * wave.y + q.y * c);
 #endif
@@ -500,9 +565,11 @@ static const float PRISM_OCCLUSION_SHATTER_WALL = 9.0;   // band repeat, px   (4
 
 float PrismOcclusionShatter(float2 pixel, float time)
 {
-    float2 p = pixel / PRISM_OCCLUSION_SHATTER_CELL;
+    float shatterCell = PRISM_OCCLUSION_DIAL(_PrismOcclusionDitherB.x, PRISM_OCCLUSION_SHATTER_CELL);
+    float shatterWall = PRISM_OCCLUSION_DIAL(_PrismOcclusionDitherB.y, PRISM_OCCLUSION_SHATTER_WALL);
+    float2 p = pixel / shatterCell;
     float2 base = floor(p);
-    float phase = time * PRISM_OCCLUSION_MORPH_RATE * 6.28318530718;
+    float phase = time * PrismOcclusionMorphRate() * 6.28318530718;
 
     // F1 as usual, but the ANSWER is which cell won, not how far away it was.
     float best = 8.0;
@@ -530,11 +597,67 @@ float PrismOcclusionShatter(float2 pixel, float time)
     float2 h = PrismOcclusionHash2(owner);
     float ang = 6.28318530718 * h.y;
     float ramp = dot(p - owner, float2(cos(ang), sin(ang)))
-               * (PRISM_OCCLUSION_SHATTER_CELL / PRISM_OCCLUSION_SHATTER_WALL);
+               * (shatterCell / shatterWall);
 
     return PrismOcclusionSafeThreshold(
-        frac(h.x + ramp + time * PRISM_OCCLUSION_MORPH_RATE));
+        frac(h.x + ramp + time * PrismOcclusionMorphRate()));
 }
+
+// -----------------------------------------------------------------------------
+// THE DISPATCH — the single point at which a kernel is chosen.
+//
+// It takes BOTH parameterisations because the kernels do not share one: the four
+// screen-anchored kernels want pixel coordinates, and the spiral wants the corridor's own
+// polar frame. Passing both keeps the selection in one function instead of duplicating it
+// at every call site, which matters because there are now two call sites — the corridor
+// itself, and the Occlusion Dither Lab's preview shader. The preview is therefore not a
+// reimplementation of the look: it is literally this function, so a preview cannot drift
+// from what the game draws.
+//
+// Under PRISM_OCCLUSION_LIVE_TUNING 0 the #if chain leaves exactly one call and the other
+// kernels are dead-stripped, so the shipped shader is what it always was.
+// -----------------------------------------------------------------------------
+float PrismOcclusionDitherThreshold(float2 pixel, float radialRatio, float angleTurns, float time)
+{
+#if PRISM_OCCLUSION_LIVE_TUNING
+    // The branch is on a GLOBAL, so it is uniform across the entire frame — fully
+    // coherent, never divergent. The cost of design mode is the four unused kernels
+    // sitting in the shader, not this compare.
+    int kernel = PRISM_OCCLUSION_TUNING_ON
+        ? (int)(_PrismOcclusionDitherA.x - 1.0)
+        : PRISM_OCCLUSION_KERNEL;
+
+    if (kernel == PRISM_OCCLUSION_KERNEL_SHARD)   return PrismOcclusionShard(pixel, time);
+    if (kernel == PRISM_OCCLUSION_KERNEL_SHATTER) return PrismOcclusionShatter(pixel, time);
+    if (kernel == PRISM_OCCLUSION_KERNEL_WORLEY)  return PrismOcclusionWorley(pixel, time);
+    if (kernel == PRISM_OCCLUSION_KERNEL_SPIRAL)  return PrismOcclusionSpiral(radialRatio, angleTurns, time);
+    return PrismOcclusionMotley(pixel);
+#elif PRISM_OCCLUSION_KERNEL == PRISM_OCCLUSION_KERNEL_SHARD
+    return PrismOcclusionShard(pixel, time);
+#elif PRISM_OCCLUSION_KERNEL == PRISM_OCCLUSION_KERNEL_SHATTER
+    return PrismOcclusionShatter(pixel, time);
+#elif PRISM_OCCLUSION_KERNEL == PRISM_OCCLUSION_KERNEL_WORLEY
+    return PrismOcclusionWorley(pixel, time);
+#elif PRISM_OCCLUSION_KERNEL == PRISM_OCCLUSION_KERNEL_SPIRAL
+    return PrismOcclusionSpiral(radialRatio, angleTurns, time);
+#else
+    return PrismOcclusionMotley(pixel);
+#endif
+}
+
+// Does the selected kernel need the corridor's polar frame? Only the spiral does, and
+// working it out costs an atan2 — so in shipped mode this folds to a compile-time
+// constant and the atan2 disappears entirely for the other four.
+#if PRISM_OCCLUSION_LIVE_TUNING
+#define PRISM_OCCLUSION_NEEDS_POLAR 1
+#define PRISM_OCCLUSION_NEEDS_PIXEL 1
+#elif PRISM_OCCLUSION_KERNEL == PRISM_OCCLUSION_KERNEL_SPIRAL
+#define PRISM_OCCLUSION_NEEDS_POLAR 1
+#define PRISM_OCCLUSION_NEEDS_PIXEL 0
+#else
+#define PRISM_OCCLUSION_NEEDS_POLAR 0
+#define PRISM_OCCLUSION_NEEDS_PIXEL 1
+#endif
 
 // Quintic smootherstep — C2 continuous: value, FIRST and SECOND derivatives are all
 // zero at both ends. smoothstep (cubic) only zeroes the first, which leaves a faint
@@ -665,11 +788,13 @@ void PrismOcclusionFade_float(float3 PositionWS, float3 Target, float3 Params, f
     // continuous kernels; IGN ignores it (see the morph-rate note at the top of the file).
     float time = _Time.y;
 
-#if PRISM_OCCLUSION_KERNEL == PRISM_OCCLUSION_KERNEL_SPIRAL
+    float radialRatio = 0.0;
+    float angleTurns = 0.0;
+#if PRISM_OCCLUSION_NEEDS_POLAR
     // Corridor-relative polar coordinates. The radial ratio is 0 on the axis and 1 at the
     // cone wall — it tracks the taper, so the spiral's bands are nested CONES and hold a
     // constant angular width at every depth, exactly like the profile they dither.
-    float radialRatio = distanceToAxis / max(outerAtT, 1e-4);
+    radialRatio = distanceToAxis / max(outerAtT, 1e-4);
 
     // The angle is measured in the CAMERA's right/up frame rather than in a basis derived
     // from the axis. Any basis built from the axis alone has to pick a reference vector,
@@ -679,27 +804,20 @@ void PrismOcclusionFade_float(float3 PositionWS, float3 Target, float3 Params, f
     // which reads as the pattern belonging to the view rather than to the world.
     float3 cameraRight = UNITY_MATRIX_V[0].xyz;
     float3 cameraUp = UNITY_MATRIX_V[1].xyz;
-    float angleTurns = atan2(dot(perp, cameraUp), dot(perp, cameraRight)) * (1.0 / 6.28318530718);
+    angleTurns = atan2(dot(perp, cameraUp), dot(perp, cameraRight)) * (1.0 / 6.28318530718);
+#endif
 
-    ClipThreshold = PrismOcclusionSpiral(radialRatio, angleTurns, time);
-#else
+    float2 pixel = 0.0;
+#if PRISM_OCCLUSION_NEEDS_PIXEL
     // Screen pixel coordinates, reconstructed from the same world position the
     // rasterizer used. Avoids a Screen Position node (and its varying) entirely.
     // Shared by every screen-anchored kernel.
     float4 positionCS = TransformWorldToHClip(PositionWS);
     float2 ndc = positionCS.xy / max(abs(positionCS.w), 1e-6);
-    float2 pixel = (ndc * 0.5 + 0.5) * _ScreenParams.xy;
+    pixel = (ndc * 0.5 + 0.5) * _ScreenParams.xy;
+#endif
 
-#if PRISM_OCCLUSION_KERNEL == PRISM_OCCLUSION_KERNEL_SHARD
-    ClipThreshold = PrismOcclusionShard(pixel, time);
-#elif PRISM_OCCLUSION_KERNEL == PRISM_OCCLUSION_KERNEL_SHATTER
-    ClipThreshold = PrismOcclusionShatter(pixel, time);
-#elif PRISM_OCCLUSION_KERNEL == PRISM_OCCLUSION_KERNEL_WORLEY
-    ClipThreshold = PrismOcclusionWorley(pixel, time);
-#else
-    ClipThreshold = PrismOcclusionMotley(pixel);
-#endif
-#endif
+    ClipThreshold = PrismOcclusionDitherThreshold(pixel, radialRatio, angleTurns, time);
 #endif
 }
 
