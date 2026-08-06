@@ -444,6 +444,46 @@ the cell size, the jitter, or add animation, and the constants must be re-fitted
 the error silently returns. Verify the fit across the whole range you intend to use
 (here: rate 0 through t=400s).
 
+## 4.5c Technique: COMPILE the shipped HLSL with clang (stronger than porting it)
+
+Origin: the occlusion corridor's triangle/shatter kernels (2026-08-06). §4.5b ports a
+shader to numpy to judge its LOOK. This compiles the **actual file from the repo** and
+runs it, which answers a different and harder question: *does the source I am about to
+commit compile, and does it do what my measurements say?*
+
+A numpy port validates the design. Only compiling the real file validates the FILE — a
+port cannot catch a typo, an unbalanced brace, a wrong swizzle, or a `#if` that excludes
+the wrong block.
+
+```python
+# Read the shader from the repo, apply a SHORT, LISTED set of mechanical substitutions,
+# #include it from a C++ shim, compile with -Wall, run it, diff against the numpy port.
+SUBS = [(r"\[unroll\]", ""),          # HLSL loop attribute
+        (r"\bout float\b", "float&"), # HLSL out-param -> C++ reference
+        (r"\bfloat2\(", "mk2(")]      # vector constructor spelling
+```
+
+- **`__attribute__((ext_vector_type(N)))` is the whole trick.** clang's vector types give
+  you elementwise arithmetic and *arbitrary swizzles* (`.xyx`, `.yzx`, `.zy`) for free, so
+  hash functions written for HLSL compile unmodified. Only the `floatN(a,b)` constructor
+  spelling needs substituting.
+- **Keep the substitution list short, listed, and auditable.** Every constant and every
+  expression must pass through untouched — those are what you are verifying. If the list
+  starts growing, you are rewriting the shader, not testing it.
+- **Stub the URP built-ins** (`_WorldSpaceCameraPos`, `_ScreenParams`, `_Time`,
+  `UNITY_MATRIX_V`, `TransformWorldToHClip`) as file-scope globals in the shim. Then the
+  entry point compiles too, not just the leaf functions.
+- **Compile EVERY `#if` branch.** A gate like `#define X_LIVE_TUNING 1|0` has two shapes;
+  build both and diff their output. That is how you prove a "design mode" is genuinely
+  free when it is off, instead of asserting it.
+- **Then assert the dials actually DRIVE.** Set the globals from the shim and check the
+  output changes — over a POPULATION of pixels, not one. A single sample matching proves
+  nothing (a flip that affects half the cells legitimately leaves any given pixel alone).
+
+This also verifies a source-rewriting tool end to end: bake values with the tool's own
+regexes, compile the result, and confirm the round-trip back to the original values is
+byte-identical.
+
 ## 4.6 Technique: hand-authoring a new asset trio
 
 Adding a new SO-configured, prefab-backed thing (here: a cell) means four
@@ -507,6 +547,29 @@ read**. The lesson generalizes:
 
 ## 5. Traps learned the hard way (check these BEFORE debugging for an hour)
 
+- **`$` in a .NET regex does NOT match before `\r`, so every line-anchored pattern
+  fails on a Windows checkout.** In multiline mode `$` matches before the `\n` but
+  *after* any `\r`, so `^#define FOO (\w+)$` matches 0 times in a CRLF file. This is
+  invisible on Linux and total on Windows: a source-rewriting tool shipped this way
+  reported the file's state wrongly AND refused to write. Capture the ending and
+  re-emit it — `(\r?)$` as a group, `${1}value${3}` in the replacement — which also
+  stops the rewrite from silently converting line endings into diff noise. (Reading
+  only? `\r?$` is enough. This repo's own `PrismOcclusionCoverageTests` carries the
+  same warning for `.shadergraph` — heed it BEFORE writing the regex.)
+- **.NET does not throw on a replacement naming a group the pattern lacks — it emits
+  the literal text.** `Regex.Replace(s, @"(a)(b)", "${1}x${3}")` writes `${3}` into
+  your file. A rewriter that varies its patterns must carry the group count
+  EXPLICITLY per pattern rather than inferring it. (Python is the opposite and throws
+  — so a Python prototype will not warn you.) Related: prefer `${1}` over `$1`; `$1`
+  followed by a digit (`$1` + `4.5`) parses as group 14.
+- **A window measured with the other variable held fixed does not transfer.** A sweep
+  of parameter B at one value of A yields a band for B that looks absolute and is not.
+  Shipping it as a validation rule then flags perfectly good settings as failures —
+  here a "wall 4–11 px" band, swept at a fixed 11 px polygon, condemned a 20 px wall
+  in a 16 px polygon that actually measured BETTER than the shipped baseline. Sweep
+  the RATIO (or the second variable at several values of the first) before publishing
+  a window, and when a tool enforces one, have it say *"outside the measured range —
+  measure it"* rather than *"wrong"*.
 - **Stripping `[...]` attributes globally also eats `float[]`.** A C#-field
   scraper that does `re.sub(r'\[[^\]]*\]\s*', '', line)` turns
   `[SerializeField] float[] foo = …` into `floatfoo = …`, so the declaration
