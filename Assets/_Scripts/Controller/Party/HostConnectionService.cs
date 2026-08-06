@@ -1576,101 +1576,148 @@ namespace CosmicShore.Gameplay
             bool shouldReconnect = false;
             try
             {
-                if (fetchFromServer)
-                    await _lobbyService.RefreshAsync();
-
-                // Periodic self-heal: if a simultaneous-create split left us in our
-                // own presence lobby while a peer sits in theirs, converge everyone
-                // onto the canonical (smallest-id) lobby so discovery and invites
-                // work regardless of who started when.  Throttled well under the UGS
-                // query rate limit.  Presence lobby is lobby-only - this never
-                // touches NetworkManager / Relay / vessels.  Runs inside the lobby
-                // mutex (held for this refresh cycle) so the rejoin can't race a
-                // concurrent lobby write.
+                // ── READ + DIFF ──────────────────────────────────────────────
+                // Wrapped in its own try so a benign SDK fault is absorbed HERE,
+                // at the read, instead of unwinding past the publish below.
                 //
-                // Runs even while an invite is outstanding or a party has formed:
-                // the rejoin is state-preserving (BuildLivePresenceProperties via
-                // LivePropertySource re-publishes invite_payloads / joined_party /
-                // matchName), so migrating mid-handshake no longer drops in-flight
-                // invites. The old pause froze lobby splits exactly when a 3rd
-                // player was being invited into an existing party - the B4 failure
-                // (invite never delivered, partied rows vanish). See
-                // Docs/PresenceSystem/BUGS.md B4 and INVITE_ENHANCEMENTS.md Task 4.
-                // Fetch ticks only - this is a QuerySessions network call, and a
-                // burst of pushes must not turn into a burst of queries.
-                if (fetchFromServer && Time.unscaledTime >= _nextConvergeAllowed)
+                // The lobby read is the first await in this block, and the
+                // publish used to sit downstream of it inside ONE try - so a
+                // fault the SDK self-corrects on the next tick also silently
+                // dropped our own partyCount write. That read is voided ~12% of
+                // poll ticks (Docs/PresenceSystem/BUGS.md, MEASURED run 2), which
+                // made "my party size reaches my peers" depend on a coin flip we
+                // do not control. Reading and publishing are independent
+                // operations and now fail independently.
+                //
+                // Only the two BENIGN classifications are absorbed here.
+                // Everything else - rate limit, definite, transient - propagates
+                // to the outer catch with its recovery matrix untouched: those
+                // mean the lobby itself is in trouble, and publishing into it is
+                // pointless.
+                try
                 {
-                    _nextConvergeAllowed = Time.unscaledTime + PRESENCE_CONVERGE_INTERVAL_SECONDS;
-                    await _lobbyService.ConvergeToCanonicalAsync(presenceLobbyMaxPlayers);
-                }
+                    if (fetchFromServer)
+                        await _lobbyService.RefreshAsync();
 
-                // Diff-based update - never Clear() + re-Add() (would flicker UI).
-                if (connectionData.OnlinePlayers != null)
-                    RefreshOnlinePlayersDiff();
-
-                // Scan composite invite_payloads for lines targeting us.
-                foreach (var p in _lobbyService.ActiveLobby.Players)
-                {
-                    if (p.Id == connectionData.LocalPlayerId) continue;
-                    if (TryFindIncomingInvite(p, out var invite))
-                        TryRaiseIncomingInvite(invite);
-                }
-
-                // Acceptance-signal scan. Must run BEFORE the JOINED_PARTY_KEY scan
-                // because recipients won't set joined_party until after they read the
-                // real session id. Gated on outgoing-invite count - no work to do if
-                // we haven't sent any invites.
-                if (_inviteService.OutgoingCount > 0)
-                {
-                    string acceptingId = _acceptanceService.ScanForSignals(
-                        _lobbyService.ActiveLobby,
-                        connectionData.LocalPlayerId,
-                        _inviteService.OutgoingTargets);
-
-                    if (acceptingId != null)
+                    // Periodic self-heal: if a simultaneous-create split left us in our
+                    // own presence lobby while a peer sits in theirs, converge everyone
+                    // onto the canonical (smallest-id) lobby so discovery and invites
+                    // work regardless of who started when.  Throttled well under the UGS
+                    // query rate limit.  Presence lobby is lobby-only - this never
+                    // touches NetworkManager / Relay / vessels.  Runs inside the lobby
+                    // mutex (held for this refresh cycle) so the rejoin can't race a
+                    // concurrent lobby write.
+                    //
+                    // Runs even while an invite is outstanding or a party has formed:
+                    // the rejoin is state-preserving (BuildLivePresenceProperties via
+                    // LivePropertySource re-publishes invite_payloads / joined_party /
+                    // matchName), so migrating mid-handshake no longer drops in-flight
+                    // invites. The old pause froze lobby splits exactly when a 3rd
+                    // player was being invited into an existing party - the B4 failure
+                    // (invite never delivered, partied rows vanish). See
+                    // Docs/PresenceSystem/BUGS.md B4 and INVITE_ENHANCEMENTS.md Task 4.
+                    // Fetch ticks only - this is a QuerySessions network call, and a
+                    // burst of pushes must not turn into a burst of queries.
+                    if (fetchFromServer && Time.unscaledTime >= _nextConvergeAllowed)
                     {
-                        // Every player hosts their own Relay session from menu entry
-                        // (eager creation), so the session already exists before the
-                        // invite was sent - no session creation needed here.
-                        // See Docs/PartySystem/ARCHITECTURE.md (Locked design).
-                        string activeSessionId = _partySessionService.ActiveSession?.Id;
-                        if (string.IsNullOrEmpty(activeSessionId))
+                        _nextConvergeAllowed = Time.unscaledTime + PRESENCE_CONVERGE_INTERVAL_SECONDS;
+                        await _lobbyService.ConvergeToCanonicalAsync(presenceLobbyMaxPlayers);
+                    }
+
+                    // Diff-based update - never Clear() + re-Add() (would flicker UI).
+                    if (connectionData.OnlinePlayers != null)
+                        RefreshOnlinePlayersDiff();
+
+                    // Scan composite invite_payloads for lines targeting us.
+                    foreach (var p in _lobbyService.ActiveLobby.Players)
+                    {
+                        if (p.Id == connectionData.LocalPlayerId) continue;
+                        if (TryFindIncomingInvite(p, out var invite))
+                            TryRaiseIncomingInvite(invite);
+                    }
+
+                    // Acceptance-signal scan. Must run BEFORE the JOINED_PARTY_KEY scan
+                    // because recipients won't set joined_party until after they read the
+                    // real session id. Gated on outgoing-invite count - no work to do if
+                    // we haven't sent any invites.
+                    if (_inviteService.OutgoingCount > 0)
+                    {
+                        string acceptingId = _acceptanceService.ScanForSignals(
+                            _lobbyService.ActiveLobby,
+                            connectionData.LocalPlayerId,
+                            _inviteService.OutgoingTargets);
+
+                        if (acceptingId != null)
                         {
-                            Debug.LogError($"[HostConnectionService] Acceptance signal from {acceptingId} but no active party session - joiner cannot connect.");
-                        }
-                        else
-                        {
-                            Debug.Log($"[HostConnectionService] Acceptance signal from {acceptingId} - joiner will connect to existing session {activeSessionId}.");
-                            await _acceptanceService.RepublishWithRealIdAsync(
-                                _lobbyService, activeSessionId, _inviteService, _propertyWriter);
+                            // Every player hosts their own Relay session from menu entry
+                            // (eager creation), so the session already exists before the
+                            // invite was sent - no session creation needed here.
+                            // See Docs/PartySystem/ARCHITECTURE.md (Locked design).
+                            string activeSessionId = _partySessionService.ActiveSession?.Id;
+                            if (string.IsNullOrEmpty(activeSessionId))
+                            {
+                                Debug.LogError($"[HostConnectionService] Acceptance signal from {acceptingId} but no active party session - joiner cannot connect.");
+                            }
+                            else
+                            {
+                                Debug.Log($"[HostConnectionService] Acceptance signal from {acceptingId} - joiner will connect to existing session {activeSessionId}.");
+                                await _acceptanceService.RepublishWithRealIdAsync(
+                                    _lobbyService, activeSessionId, _inviteService, _propertyWriter);
+                            }
                         }
                     }
+
+                    // ── Presence-lobby party-join scan (host only) ──────────────
+                    // Clients advertise their party join via JOINED_PARTY_KEY so we
+                    // can detect them even when the party-session Players list is
+                    // still stale. This is the authoritative fast path for the
+                    // sender's arcade lobby list.
+                    if (_partySessionService.ActiveSession != null && connectionData.IsPartyHost)
+                        ScanPresenceForJoinedPartyMembers();
+
+                    // Fetch ticks only. This refreshes the PARTY session - a
+                    // different session entirely - so a presence-lobby delta is no
+                    // reason to hit it. Its own push (PartySessionService subscribes
+                    // PlayerLeaving) and the safety poll cover it.
+                    if (fetchFromServer && _partySessionService.ActiveSession != null)
+                        await RefreshPartyMembersAsync();
+
+                    // Only a tick that actually talked to the server is evidence
+                    // the connection is healthy. Clearing the counter on a push
+                    // tick - which does no network I/O - would let pushes mask a
+                    // genuinely failing fetch and suppress the reconnect watchdog
+                    // entirely. Inside the inner try, so a voided read does not
+                    // count as evidence of health either.
+                    if (fetchFromServer)
+                        _consecutiveRefreshErrors = 0;
+                }
+                catch (Exception e) when (IsBenignLobbyPatcherError(e))
+                {
+                    // No state change and no console warning (B1 noise suppression),
+                    // but the READ is lost - account for it. The publish below still
+                    // runs. See RecordBenignRefreshSkip.
+                    RecordBenignRefreshSkip(ref _benignPresenceSkips, e, "presence", "LobbyPatcher");
+                }
+                catch (Exception e) when (!IsRateLimitException(e) && IsBenignSdkStaleIndexError(e))
+                {
+                    // Same SDK stale-index defect, read-path surface.
+                    //
+                    // The !IsRateLimitException guard preserves the documented
+                    // branch ordering now that these run as filters rather than
+                    // in an if/else chain: IsBenignSdkStaleIndexError matches ANY
+                    // SessionException whose Error is Unknown, and a wrapped 429
+                    // can present in exactly that shape. Absorbing one here would
+                    // swallow a throttle without arming the backoff - the bug the
+                    // original ordering comment exists to prevent. Excluded, it
+                    // falls through to the outer catch's rate-limit branch.
+                    RecordBenignRefreshSkip(ref _benignPresenceSkips, e, "presence", "SdkStaleIndex");
                 }
 
-                // ── Presence-lobby party-join scan (host only) ──────────────
-                // Clients advertise their party join via JOINED_PARTY_KEY so we
-                // can detect them even when the party-session Players list is
-                // still stale. This is the authoritative fast path for the
-                // sender's arcade lobby list.
-                if (_partySessionService.ActiveSession != null && connectionData.IsPartyHost)
-                    ScanPresenceForJoinedPartyMembers();
-
-                // Fetch ticks only. This refreshes the PARTY session - a
-                // different session entirely - so a presence-lobby delta is no
-                // reason to hit it. Its own push (PartySessionService subscribes
-                // PlayerLeaving) and the safety poll cover it.
-                if (fetchFromServer && _partySessionService.ActiveSession != null)
-                    await RefreshPartyMembersAsync();
-
-                // Change-gated, so free on a tick where nothing moved.
+                // ── PUBLISH ──────────────────────────────────────────────────
+                // Deliberately OUTSIDE the read's try. Change-gated, so free on a
+                // tick where nothing moved - and reached even on a tick whose read
+                // was voided, which is the entire point of the split above.
                 await PublishPartyStateIfChangedAsync();
-
-                // Only a tick that actually talked to the server is evidence the
-                // connection is healthy. Clearing the counter on a push tick -
-                // which does no network I/O - would let pushes mask a genuinely
-                // failing fetch and suppress the reconnect watchdog entirely.
-                if (fetchFromServer)
-                    _consecutiveRefreshErrors = 0;
             }
             catch (Exception e)
             {
@@ -1688,19 +1735,21 @@ namespace CosmicShore.Gameplay
                     _rateLimitBackoffUntil = Time.unscaledTime + RATE_LIMIT_BACKOFF_SECONDS;
                     Debug.LogWarning("[HostConnectionService] Rate limited during refresh - backing off");
                 }
-                // UGS SDK self-corrects on the next refresh tick. Treat as a
-                // no-op so the consecutive-error counter doesn't roll into
-                // the reconnect path on harmless SDK noise.
+                // Benign SDK noise reaching the OUTER catch. The read path no
+                // longer gets here - its own inner try absorbs both benign
+                // classifications so they cannot void the publish - so these
+                // branches now cover the publish itself and anything else that
+                // is ever added to the outer scope. Kept rather than deleted
+                // because PublishPartyStateIfChangedAsync swallowing its own
+                // exceptions is an implementation detail, and losing the
+                // classification if that changes would put SDK noise back into
+                // the reconnect watchdog.
                 else if (IsBenignLobbyPatcherError(e))
                 {
-                    // No state change and no console warning (B1 noise suppression),
-                    // but the tick IS lost - account for it. See RecordBenignRefreshSkip.
                     RecordBenignRefreshSkip(ref _benignPresenceSkips, e, "presence", "LobbyPatcher");
                 }
                 else if (IsBenignSdkStaleIndexError(e))
                 {
-                    // Same SDK stale-index defect, read-path surface. Same
-                    // treatment as the LobbyPatcher case above.
                     RecordBenignRefreshSkip(ref _benignPresenceSkips, e, "presence", "SdkStaleIndex");
                 }
                 else
@@ -1778,7 +1827,7 @@ namespace CosmicShore.Gameplay
         /// empty - no log, no counter, no state change - which made a voided tick
         /// byte-for-byte indistinguishable from a healthy one. Because the lobby
         /// read is the FIRST await in <see cref="RefreshAsync"/>, a benign throw
-        /// there skips the online-player diff, the invite scan, the acceptance
+        /// there skipped the online-player diff, the invite scan, the acceptance
         /// scan, the joined-member scan, the party-member sync AND the presence
         /// publish for that entire tick. A persistent SDK fault therefore froze
         /// every roster in the game while the console stayed clean. The counters
@@ -1786,6 +1835,14 @@ namespace CosmicShore.Gameplay
         /// <c>Docs/PresenceSystem/REFACTOR.md</c>) whether the reconnect watchdog
         /// is escalating on real membership loss or on SDK noise - the data its
         /// "wait for NetDiag data" prerequisite was blocked on.
+        /// </para>
+        ///
+        /// <para>
+        /// <b>The presence publish is no longer among the casualties.</b> It sits
+        /// outside the read's try, so a voided presence READ costs the reads and
+        /// nothing else - our own <c>partyCount</c> still reaches the lobby. The
+        /// log line still names the whole set because a voided read genuinely
+        /// does lose all of them; only the publish was pulled out.
         /// </para>
         ///
         /// <para>
@@ -1811,8 +1868,8 @@ namespace CosmicShore.Gameplay
             // occurrence - identical every time, and it buries the counters that
             // are the actual signal.
             CSDebug.LogNoStack(
-                $"[HostConnectionService] Benign SDK fault on the {readPath} read - refresh tick VOIDED " +
-                $"(roster diff / invite scan / member sync / publish all skipped this tick). " +
+                $"[HostConnectionService] Benign SDK fault on the {readPath} read - READS VOIDED this tick " +
+                $"(roster diff / invite scan / member sync skipped; the presence publish still ran). " +
                 $"defect={defect} | skips: presence={_benignPresenceSkips}, partySession={_benignPartySessionSkips} | " +
                 $"NetDiag: class={NetworkDiagnostics.ClassifyException(e)} | {NetworkDiagnostics.GetSnapshot()}");
         }
