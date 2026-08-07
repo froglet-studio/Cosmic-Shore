@@ -72,7 +72,7 @@ Source: PR #660 + `Docs/UNITY_VERIFICATION_CHECKLIST.md`. The Dolphin's `VesselS
 PASS: audit reports `Dolphin NearFieldSkimmer: 'EnergySkimmer' OK`; crackle arcs sweep the skimmer sphere per prism and the HUD jaw icon punches per skim; the gape widens as energy fills; drift fills the ring and flying straight does not; speed returns to normal after an interrupted discharge; the crystal fires the cone, empties energy and flashes the Space icon; two crystals plantable at Charge L5, preview tinted your domain and blooming (not popping); both peers agree. FAIL: audit reports anything else for Dolphin · no visible/audible skim feedback · ring fills while flying straight · speed stuck high after drift→release→drift · peers disagree on upgrade state. (Serpent is expected to FAIL the same audit — that is a known, separate item.)
 
 ### QA-RIBCAGE-MODE 🟡 — "Peel the Cage" has never been opened
-> **Last result:** 🟡 PARTIAL — Most of the steps seem fine, I'm not sure if the danger blocks work at all, but it not working isn't labeled as a failure  _(build claude/ftue-editor-tool-69acq5 @ 68d2dab · Unity 6000.4.11f1.x · Windows, Unity Editor, 2026-08-07, andrew)_
+> **Last result:** 🟡 PARTIAL — Most of the steps seem fine, I'm not sure if the danger blocks work at all, but it not working isn't labeled as a failure  _(build claude/untested-backlog-qa-workflow-7a0nb9 @ 68d2dab · Unity 6000.4.11f1.x · Windows, Unity Editor, 2026-08-07, andrew)_
 
 Source: PR #662 + later tuning. Whole new game mode (`GameModes.Ribcage = 39`), authored headless. Reference: `_Scripts/Controller/Arcade/RIBCAGE.md` § In-editor verification.
 
@@ -100,7 +100,7 @@ Source: PR #627. Reference: `Docs/SPATIAL_INDEX.md` § "Shell view — in-editor
 PASS: skims register at the stella surface (≈3× the box), spike-tip grazes hit, aimed-at-the-gap passes do not; boost is granted per shell touch; the Rhino pops at octahedron reach rather than point-blank; no prism becomes untouchable and no double-fire (pop and destroy in one contact); the two markers stay sub-ms and `Physics.SendEvents` is flat vs. the previous build; the A/B toggle reverts cleanly. FAIL: skims only at the box · gap false-positives · pop-then-destroy · any prism that cannot be hit at all · marker spikes or a rising `Physics.SendEvents` train.
 
 ### QA-EDITMODE-TESTS 🔴 — run the test suites that were written but never executed
-> **Last result:** 🔴 FAIL — None of the required tests were even there for me to test.  _(build claude/ftue-editor-tool-69acq5 @ 68d2dab · Unity 6000.4.11f1.x · Windows, Unity Editor, 2026-08-07, andrew)_
+> **Last result:** 🔴 FAIL — None of the required tests were even there for me to test.  _(build claude/untested-backlog-qa-workflow-7a0nb9 @ 68d2dab · Unity 6000.4.11f1.x · Windows, Unity Editor, 2026-08-07, andrew)_
 
 Source: PRs #659, #639, #627, #641, #668, #651. These are NUnit suites authored headless — they have literally never been run.
 

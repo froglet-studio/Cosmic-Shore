@@ -11,7 +11,7 @@ of duplicating it.
 
 <!-- devtask:QA-EDITMODE-TESTS -->
 ### QA-EDITMODE-TESTS — run the test suites that were written but never executed
-- **Failed on:** claude/ftue-editor-tool-69acq5 @ 68d2dab · Unity 6000.4.11f1.x · Windows, Unity Editor (2026-08-07, andrew)
+- **Failed on:** claude/untested-backlog-qa-workflow-7a0nb9 @ 68d2dab · Unity 6000.4.11f1.x · Windows, Unity Editor (2026-08-07, andrew)
 - **Symptom:** None of the required tests were even there for me to test.
 - **Definition of done:** QA item `QA-EDITMODE-TESTS` passes.
 <!-- /devtask:QA-EDITMODE-TESTS -->
