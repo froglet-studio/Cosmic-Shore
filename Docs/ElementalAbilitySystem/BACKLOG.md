@@ -159,12 +159,13 @@ Mechanics reference: `_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_ENERGY_
     consumer appears, or if the reviewer wants it converted now: the payload needs the firing
     vessel plus the count, so it is a new `ScriptableBlastResult` type (struct + event +
     listener), which is why it was not minted for one HUD tally.
-12. **The jaw gape is a linear approximation of the cone's half-angle.** Exact at full energy
-    (18.435°, and `MaxJawAngle` is now measured against it); below that the jaws are linear in
-    energy while the true half-angle is `atan(lerp(400,1600,e) / 4800)` — so an empty meter shows
-    closed jaws against a cone that still has a 4.76° floor. Closing the gap means
-    `RiptideAnimation` reading the effect SO's min/max, a vessel-animation → impact-effect
-    dependency judged not worth it.
+12. ~~**The jaw gape is a linear approximation of the cone's half-angle.**~~ **RESOLVED.** Both
+    the hull and the HUD icon now call `RiptideAnimation.GapeAngleAt(t, min, max)`, which lerps
+    the TANGENTS of the two authored angles and takes the arctangent — exact at every charge,
+    because `tan(angle(t)) = lerp(min, max, t) / (2 × height) = lerp(tan(minAngle), tan(maxAngle), t)`.
+    The feared `RiptideAnimation` → impact-effect dependency was never needed: the identity holds
+    with nothing but `MinJawAngle` / `MaxJawAngle`. The empty end reads its real 4.76° gape rather
+    than a shut jaw. See `DOLPHIN_ENERGY_ECONOMY.md` §3.
 13. **The Dolphin's Space icon is still placeholder art** (`ConeBlastIcon-PLACEHOLDER.png`,
     accepted by Garrett as "the blast seems fine"). The other three slots use shipped art (the
     vessel's own jaw silhouettes, the omni crystal, the authored boost ring).
