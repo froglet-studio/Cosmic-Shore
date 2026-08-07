@@ -110,6 +110,29 @@ stationary fire mode (`SparrowModeSwitchingFireSO` is untouched), and the trail 
 (so the roll skips its `BlockRotationOverride` bridging-prism work while restricted — there is no
 trail to bridge).
 
+### 2.2 Stopped, pitch and yaw run at 3×
+
+Not part of the roll — part of the same stance. A stopped Sparrow is an aiming platform rather
+than a flying one, so it swings onto targets three times as fast:
+`VesselTransformer.restrictedTurnMultiplier` (default **3**, serialized so it is per-vessel
+authorable) scales the whole pitch/yaw rate — the throttle-derived term as well as the
+`PitchScaler`/`YawScaler` — whenever `IsTranslationRestricted` is set, via the shared
+`TurnScalar` property read at use time.
+
+**It is applied in `SingleStickVesselTransformer` as well as the base class, and that is
+load-bearing:** both the Sparrow and the Serpent — the only two vessels with a stationary stance —
+run `SingleStickVesselTransformer`, which *overrides* `Pitch`/`Yaw`. A base-only change would have
+compiled, read correctly, and reached neither vessel.
+
+**Roll is deliberately not scaled.** In the single-stick transformer `Roll` is the bank *into* the
+turn and shares the yaw axis of the stick; tripling it would tip the vessel three times as far off
+level for the same push. The stopped turn will therefore read flatter than a flying one — that is
+the trade, and `RollScaler` is the knob if it wants a nudge.
+
+**This also reaches the Serpent** (same transformer, same default), so its stopped weave stance
+turns 3× too. If that is not wanted, set `restrictedTurnMultiplier` to `1` on `Serpent.prefab` —
+one inspector field, no code.
+
 New surface for the HUD (and nothing else):
 
 ```csharp
@@ -148,7 +171,8 @@ Time icon and blooms its Time petal badge), and rule 9 of the vessel contract do
 | `_Scripts/Controller/Vessel/VesselStatus.cs` | **−** `IsOverheating` (declaration + `ResetForPlay`) |
 | `_Scripts/Controller/Vessel/BarrelRollController.cs` | **−** the Time-upgrade gate; **+** `OnRollChargeChanged` / `IsRollArmed`; charge cleared on disable. **−** the `IsTranslationRestricted` gate (§2.1); facing-plane projection + no bridging-prism override while stopped |
 | `_Scripts/Data/Enums/VesselVelocityModifier.cs` | **+** `ignoresTranslationRestriction` + a 4-arg ctor; the 3-arg ctor delegates with `false` so every existing call site is unchanged |
-| `_Scripts/Controller/Vessel/VesselTransformer.cs` | **+** the restricted branch (`ApplyVelocityModifiers(translationRestricted: true)` + `MoveRestricted`), the 3-arg `ModifyVelocity` overload, and the edge-triggered body-flare write |
+| `_Scripts/Controller/Vessel/VesselTransformer.cs` | **+** the restricted branch (`ApplyVelocityModifiers(translationRestricted: true)` + `MoveRestricted`), the 3-arg `ModifyVelocity` overload, and the edge-triggered body-flare write. **+** `restrictedTurnMultiplier` / `TurnScalar` on `Pitch`+`Yaw` (§2.2) |
+| `_Scripts/Controller/Vessel/SingleStickVesselTransformer.cs` | **+** `TurnScalar` on its `Pitch`/`Yaw` overrides — the transformer the Sparrow and Serpent actually run (§2.2) |
 | `_Scripts/Tests/EditMode/ShipModifierTests.cs` | **+** two tests pinning the exemption flag's default-false and its 4-arg assignment |
 | `_Scripts/UI/View/SparrowHUDView.cs` | `SetBoostState(heat, overheated)` → `SetRollCharge(armed)`; `boostFill` → `rollChargeIndicator` |
 | `_Scripts/UI/Controller/SparrowHUDController.cs` | overheat executor → barrel-roll controller; `Update` poll removed; symmetric detach-first Subscribe/Unsubscribe |
@@ -172,6 +196,7 @@ Time icon and blooms its Time petal badge), and rule 9 of the vessel contract do
 | Immunity window | `Sparrow.prefab` → `VesselElementalImmunity.condition` | `WhileBoosting` | `Always` makes the ward passive at Time 5 — one field, no code. |
 | Immunity gate | `Serpent.prefab` → `VesselElementalImmunity.upgradeGate` | `None` | Set an element to make the Serpent's stopped ward an earned upgrade. |
 | Roll trigger threshold | `Sparrow.prefab` → `BarrelRollController.perimeterThreshold` | `1` | |
+| Stopped turn rate | `Sparrow.prefab` → `VesselTransformer.restrictedTurnMultiplier` | `3` | §2.2. Pitch + yaw only. Serialized, so per-vessel — `Serpent.prefab` currently inherits the same `3`. `1` = stopped turns at flying rate. |
 | Roll displacement | `…nudgeSpeed` / `rollDurationSeconds` / `rootRollDegrees` | `60` / `0.6` / `15` | One number for both stances — a stopped dodge covers exactly the same distance as a flying strafe (§2.1). If the stopped dodge wants its own reach, that is a new serialized field, not a scaling of this one. |
 | Roll pip colours + wipe | `SparrowHUDVariant.prefab` → `rollArmedColor` / `rollSpentColor` / `rollChargeTweenDuration` / `rollSpendPunchScale` | cyan / dim grey / `0.15` / `0.3` | |
 
@@ -207,6 +232,13 @@ Not editor-verified — I cannot run Unity. Every step below is unrun. Mirrored 
 4c. **No banked lurch.** Stopped, take a knockback (fly a Rhino into you, or clip a danger prism)
    — you must not move. Then release the stance: you must **not** lurch. (Before this branch the
    modifier froze and fired late.)
+4d. **Stopped turn rate (§2.2).** Flying, note how long a full 180° yaw takes. Toggle the stance
+   and repeat: it must take roughly **a third** as long. Pitch likewise. Release the stance —
+   the turn rate must drop straight back to the flying rate (the scalar is read per frame, so a
+   rate that stays fast after releasing means `TurnScalar` is being cached somewhere).
+   The bank into the turn is unchanged by design, so the stopped turn reads flatter.
+4e. **Serpent inherits it.** Serpent, stopped weave stance: its pitch/yaw are also 3×. Intended
+   or not, it is `restrictedTurnMultiplier` on `Serpent.prefab` — set it to `1` to opt out.
 5. **Ward, locked.** Time below 5, boost, fly into a danger prism (a Rhino's, or Ribcage traps):
    all four element flowers dip and recover over ~4 s.
 6. **Ward, unlocked.** Raise Time to 5 (`ResourceSystem.TimeTestHarness = 0.5` on the vessel, or

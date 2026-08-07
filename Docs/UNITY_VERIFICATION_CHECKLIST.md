@@ -23,7 +23,7 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
-### 🔴 Sparrow strafing roll works while stopped (`claude/sparrow-strafing-roll-stopped-d2yc7g`)
+### 🔴 Sparrow stationary stance — roll works stopped, pitch/yaw 3× (`claude/sparrow-strafing-roll-stopped-d2yc7g`)
 
 Authored without a Unity compile or play-test. **Code only — no prefab, scene or
 SO asset was touched**, so the editor-side risk is a compile check plus feel.
@@ -49,6 +49,16 @@ stance.
 - The roll projects its nudge on current **facing** while stopped, because
   `Course` is stale there (`MoveShip` is what refreshes it).
 
+**Also landed: pitch and yaw run at 3× while stopped.** New serialized
+`VesselTransformer.restrictedTurnMultiplier` (default **3**), applied through a
+shared `TurnScalar` property to the whole pitch/yaw rate whenever
+`IsTranslationRestricted` is set. Applied in **`SingleStickVesselTransformer`**
+as well as the base class — that subclass overrides `Pitch`/`Yaw` and is what
+both the Sparrow and the Serpent actually run, so a base-only change would have
+reached neither. Roll is deliberately unscaled (it is the bank into the turn,
+not a turn rate). **The Serpent inherits the same default** — one inspector
+field on `Serpent.prefab` to opt out.
+
 **Verify in editor**
 
 1. Project compiles with zero errors. Run the `CosmicShore.Tests.EditMode`
@@ -67,9 +77,17 @@ stance.
    projection plane is wrong.
 6. **No banked lurch.** Stopped, take a knockback (a Rhino ram, or clip a danger
    prism): you must not move. Release the stance: you must not lurch.
-7. **Other vessels unaffected.** Serpent — stop into its weave stance, take a
-   knockback, release: no movement while stopped, no lurch after. Any vessel:
-   confirm boosts/bounces/deviation nudges still displace normally while flying.
+7. **Stopped turn rate.** Flying, time a full 180° yaw. Toggle the stance and
+   repeat: roughly **a third** the time. Pitch likewise. Release the stance and
+   the rate must drop straight back (the scalar is read per frame — a rate that
+   stays fast means it got cached). The bank into the turn is unchanged by
+   design, so the stopped turn reads flatter than a flying one.
+7b. **Other vessels.** Serpent — stop into its weave stance, take a knockback,
+   release: no movement while stopped, no lurch after. Note its pitch/yaw are
+   **also 3×** while stopped (same transformer, same default); set
+   `restrictedTurnMultiplier` to `1` on `Serpent.prefab` if that is unwanted.
+   Any vessel: boosts/bounces/deviation nudges still displace normally while
+   flying, and flying turn rates are unchanged everywhere.
 8. **MPPM two clients.** Roll while stopped on client A; client B must see the
    same displacement (it replicates through the owner-authoritative
    NetworkTransform, same as the flying roll — no new networked state).
@@ -79,6 +97,7 @@ stance.
 | Knob | Where | Value |
 |---|---|---|
 | Dodge distance | `Sparrow.prefab` `BarrelRollController.nudgeSpeed` / `rollDurationSeconds` | 60 / 0.6 — **one number for both stances**. If the stopped dodge should reach further or less far than a flying strafe, that is a new serialized field, not a rescale of this one. |
+| Stopped turn rate | `Sparrow.prefab` `VesselTransformer.restrictedTurnMultiplier` | 3 (pitch + yaw only). Sparrow authors PitchScaler/YawScaler 80 with RotationThrottleScaler 0.1, so ~82 °/s flying → ~247 °/s stopped. |
 
 **Open question the author could not resolve** — whether a stopped dodge should
 cover the same ground as a flying strafe. Shipped as identical (the simplest

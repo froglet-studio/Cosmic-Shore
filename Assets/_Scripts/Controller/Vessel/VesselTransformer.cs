@@ -53,6 +53,21 @@ public class VesselTransformer : MonoBehaviour
         public float RollScaler = 130f;
         public float RotationThrottleScaler = 0f;
 
+        [Tooltip("Pitch and yaw rate multiplier while IsTranslationRestricted (the stationary / " +
+                 "turret stance). Stopped, the vessel is an aiming platform rather than a flying " +
+                 "one, so it swings onto targets faster. Applies to the WHOLE rate — the " +
+                 "throttle-derived term as well as the Pitch/Yaw scaler. ROLL is deliberately " +
+                 "not scaled. 1 = no change while stopped.")]
+        [SerializeField, Min(0f)] float restrictedTurnMultiplier = 3f;
+
+        /// <summary>Pitch/yaw rate scalar for this frame — <c>restrictedTurnMultiplier</c> while
+        /// the vessel is translation-restricted, 1 otherwise. Read at use time (the stance is
+        /// toggled mid-flight), and applied by both this class's Pitch/Yaw and the overrides in
+        /// <see cref="SingleStickVesselTransformer"/>, which is what the Sparrow and Serpent
+        /// actually run — a base-only change would not reach either of them.</summary>
+        protected float TurnScalar =>
+            VesselStatus != null && VesselStatus.IsTranslationRestricted ? restrictedTurnMultiplier : 1f;
+
         private readonly List<ShipThrottleModifier> ThrottleModifiers = new();
         private readonly List<ShipVelocityModifier> VelocityModifiers = new();
 
@@ -422,7 +437,7 @@ public class VesselTransformer : MonoBehaviour
         {
             if (InputStatus == null) return;
             accumulatedRotation = Quaternion.AngleAxis(
-                InputStatus.YSum * (speed * RotationThrottleScaler + PitchScaler) * Time.deltaTime,
+                InputStatus.YSum * (speed * RotationThrottleScaler + PitchScaler) * TurnScalar * Time.deltaTime,
                 transform.right) * accumulatedRotation;
         }
 
@@ -430,7 +445,7 @@ public class VesselTransformer : MonoBehaviour
         {
             if (InputStatus == null) return;
             accumulatedRotation = Quaternion.AngleAxis(
-                InputStatus.XSum * (speed * RotationThrottleScaler + YawScaler) * Time.deltaTime,
+                InputStatus.XSum * (speed * RotationThrottleScaler + YawScaler) * TurnScalar * Time.deltaTime,
                 transform.up) * accumulatedRotation;
         }
 
