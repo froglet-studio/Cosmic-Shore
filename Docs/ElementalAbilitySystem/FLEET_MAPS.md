@@ -48,7 +48,8 @@ timers/decay, gate strictly in the acting system's layer.
 
 The Sparrow's map has been live since the system landed; only its **TIME** row changed in the
 boost redesign (2026-08). Mechanics detail, tuning knobs and the in-editor verification table live
-beside the code: `_Scripts/Controller/Vessel/R_VesselActions/SPARROW_AFTERBURNER.md`.
+beside the code: `_Scripts/Controller/Vessel/R_VesselActions/SPARROW_AFTERBURNER.md` (TIME) and
+`SPARROW_TURRET_STANCE.md` (MASS).
 
 | Element | Quantitative (LIVE) | L5 upgrade (LIVE) |
 |---|---|---|
@@ -79,6 +80,20 @@ beside the code: `_Scripts/Controller/Vessel/R_VesselActions/SPARROW_AFTERBURNER
 - **The danger-trail machinery survives.** `VesselPrismController.EnableDangerMode` /
   `DisableDangerMode` lost their only caller with the overheat executor. Keep them — the Serpent's
   proposed "Venom Wake" below is exactly that machinery reused.
+
+**MASS row, clarified 2026-08 — the element map is unchanged, the stance beneath it is not:**
+
+The turret stance is now defined as *"a bullet that always pierces and stops somewhere instead of
+disappearing"*, and that parity is structural: `FullAutoBlockShootActionSO` holds a reference to
+`FullAutoActionSO` and **adopts** its fire rate, muzzle speed (SPACE-scaled, via the shared
+`FullAutoActionSO.ResolveSpeed`) and flight time rather than authoring its own. It had drifted to
+14 shots/s at 150 u/s against guns at 30 shots/s at 1500 u/s. Turret prisms also always pierce —
+`stopOnFirstPrismImpact: false` unconditionally, *not* gated on the SPACE-5 upgrade that governs
+bullets — and now run the bullets' own `ProjectileDamagePrismEffect`. The self-destroying
+`DomainCheckProjectilePrismHitEffectSO` that used to sit on that path is deleted. MASS itself is
+untouched: quantitative stretch on the prism's long axis, L5 *Shielded Prisms* at anchor.
+Budget note: the cadence fix roughly doubles anchored mass to ~60 prisms/s while held. Detail:
+`R_VesselActions/SPARROW_TURRET_STANCE.md`.
 
 ### Manta — "Reaper Ray" (skim + harvest)
 

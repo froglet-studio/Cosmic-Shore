@@ -86,11 +86,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 62654af5dd3d4bf1837331ac9a76a16a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  projectileShipEffects: []
-  projectilePrismEffects:
-  - {fileID: 11400000, guid: 4a7e177e7648c4f48afc533c7bb76c8b, type: 2}
-  projectileMineEffects: []
-  projectileEndEffects: []
   projectileImpactorDataContainer: {fileID: 11400000, guid: 741c757dd6a2f62489c5eddc5ff72460,
     type: 2}
 --- !u!114 &7164208397595106769

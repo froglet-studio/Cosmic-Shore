@@ -11,6 +11,16 @@ using CosmicShore.Data;
 using System.Linq;
 namespace CosmicShore.Gameplay
 {
+    /// <summary>
+    /// Turret Stance fire loop: while the Sparrow is stopped its guns launch PRISMS on the
+    /// bullets' terms — same cadence, same muzzle speed, same eased flight path, same impact
+    /// effects — differing only in that a turret prism always pierces (it keeps destroying
+    /// for the whole flight instead of dying on first contact) and, at the end of that
+    /// flight, anchors as permanent world mass.
+    ///
+    /// Every one of those numbers is read off <see cref="FullAutoBlockShootActionSO"/>'s
+    /// bullet action, so there is nothing here to keep in step by hand.
+    /// </summary>
     public class FullAutoBlockShootActionExecutor : ShipActionExecutorBase
     {
         [Inject] AudioSystem audioSystem;
@@ -23,7 +33,10 @@ namespace CosmicShore.Gameplay
         [SerializeField] private BlockProjectileFactory blockFactory;
 
         [Header("Visual")]
-        [SerializeField] private float spawnVisibilityDelay = 0.1f;
+        [Tooltip("Seconds the prism's renderer stays hidden after spawn while its domain " +
+                 "material settles. Keep at 0 (a single frame): turret prisms now leave the " +
+                 "muzzle at BULLET speed, so every 0.1s here is ~150 units of invisible flight.")]
+        [SerializeField] private float spawnVisibilityDelay;
 
         [Header("Events")]
         [SerializeField] private ScriptableEventNoParam OnMiniGameTurnEnd;
@@ -95,13 +108,27 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
+            if (!so.HasBulletAction)
+            {
+                CSDebug.LogError(
+                    "[FullAutoBlockShootActionExecutor] The action's bulletAction is unwired — " +
+                    "turret cadence and speed are adopted from it, so there is nothing to fire with.");
+                return;
+            }
+
+            // Cadence and flight are the BULLETS' numbers, read off the shared action asset.
             var interval  = 1f / Mathf.Max(0.1f, so.FireRate);
+            var flightTime = Mathf.Max(0.01f, so.FlightTime);
             var rotOffset = Quaternion.Euler(so.RotationOffsetEuler);
 
             try
             {
                 while (!token.IsCancellationRequested)
                 {
+                    // Muzzle speed is resolved per volley, not per hold: the SPACE level that
+                    // scales the guns can move mid-press (crystals, comeback buffs).
+                    var shotSpeed = so.ResolveSpeed(_status);
+
                     foreach (var m in muzzles)
                     {
                         if (!m) continue;
@@ -161,7 +188,31 @@ namespace CosmicShore.Gameplay
                         var childProjectile = prism.GetComponentInChildren<Projectile>();
                         if (childProjectile)
                         {
-                            childProjectile.Velocity = m.forward * so.BlockSpeed; // m.forward is already unit
+                            // Give the carried projectile the same identity a bullet gets at
+                            // fire time. Without it the impact chain has no VesselStatus (the
+                            // damage helper dereferences status.Player) and no OwnDomain, so
+                            // the friendly-fire check in ProjectileImpactor could never match
+                            // and hits were unattributable.
+                            //
+                            // stopOnFirstPrismImpact: FALSE, unconditionally — piercing is what
+                            // the Turret Stance IS. A bullet only earns pierce at SPACE 5; a
+                            // turret prism keeps destroying for the whole length of its path.
+                            //
+                            // No ProjectileFactory: this projectile is a part of a pooled PRISM,
+                            // not a pooled projectile. Nothing on this flight can call
+                            // ReturnToFactory — the pierce flag is off, the prism's impact
+                            // container authors no end effects, and movement is driven here
+                            // rather than through Projectile.LaunchProjectile.
+                            childProjectile.Initialize(
+                                null,
+                                domainAtShot,
+                                _status,
+                                charge: 0f,
+                                detachOnLaunch: false,
+                                stopOnFirstPrismImpact: false,
+                                spareOwnDomain: false);
+
+                            childProjectile.Velocity = m.forward * shotSpeed; // m.forward is already unit
 
                             if (childProjectile.TryGetComponent<Collider>(out var projCol))
                                 projCol.enabled = true;
@@ -171,8 +222,6 @@ namespace CosmicShore.Gameplay
                                 rb.isKinematic = false;
                             }
                         }
-
-                        float travelDistance = UnityEngine.Random.Range(so.MinStopDistance, so.MaxStopDistance);
 
                         OnBlockShot?.Invoke(_status?.PlayerName);
 
@@ -186,9 +235,8 @@ namespace CosmicShore.Gameplay
                         var movementToken = this.GetCancellationTokenOnDestroy();
                         MoveAndAnchorAsync(
                             prism.transform,
-                            m.forward,
-                            so.BlockSpeed,
-                            travelDistance,
+                            m.forward * shotSpeed,
+                            flightTime,
                             so.DisableCollidersOnLaunch,
                             prism,
                             childProjectile,
@@ -200,7 +248,7 @@ namespace CosmicShore.Gameplay
                     await UniTask.Delay(
                         TimeSpan.FromSeconds(interval),
                         DelayType.DeltaTime,
-                        PlayerLoopTiming.Update,
+                        PlayerLoopTiming.PreLateUpdate,
                         token);
                 }
             }
@@ -270,26 +318,35 @@ namespace CosmicShore.Gameplay
         #endregion
 
         #region Movement / Anchor
-        private async UniTaskVoid MoveAndAnchorAsync(Transform block, Vector3 dir, float speed, float distance, bool reactivateCollidersAtEnd, Prism prism, Projectile childProjectile, bool shieldOnAnchor, CancellationToken token)
+        /// <summary>
+        /// Fly the prism along a BULLET's path, then anchor it where that bullet's flight
+        /// would have ended.
+        ///
+        /// The step is eased by <c>cos(t·π/2T)</c> and yields at <c>PreLateUpdate</c> — both
+        /// copied deliberately from <c>Projectile.MoveProjectileAsync</c>, so a turret
+        /// prism and a bullet released at the same instant stay abreast for the whole flight
+        /// and stop at the same range. There is no separate travel distance to author: the
+        /// end of the path IS the end of the bullet's life.
+        /// </summary>
+        private async UniTaskVoid MoveAndAnchorAsync(Transform block, Vector3 velocity, float flightTime, bool reactivateCollidersAtEnd, Prism prism, Projectile childProjectile, bool shieldOnAnchor, CancellationToken token)
         {
-            Vector3 start  = block.position;
-            Vector3 target = start + dir * distance; // dir is m.forward (already unit)
+            float elapsedTime = 0f;
 
             try
             {
-                while ((block.position - target).sqrMagnitude > 0.01f)
+                while (elapsedTime < flightTime)
                 {
                     token.ThrowIfCancellationRequested();
 
                     if (!block || !block.gameObject.activeInHierarchy)
                         return;
 
-                    block.position = Vector3.MoveTowards(
-                        block.position,
-                        target,
-                        speed * Time.deltaTime);
+                    float deltaTime = Time.deltaTime;
+                    float factor = Mathf.Cos(elapsedTime * Mathf.PI / (2f * flightTime));
+                    block.position += velocity * (deltaTime * factor);
 
-                    await UniTask.Yield(PlayerLoopTiming.Update);
+                    elapsedTime += deltaTime;
+                    await UniTask.Yield(PlayerLoopTiming.PreLateUpdate, token);
                 }
 
                 if (reactivateCollidersAtEnd && prism && prism.gameObject.activeInHierarchy)
