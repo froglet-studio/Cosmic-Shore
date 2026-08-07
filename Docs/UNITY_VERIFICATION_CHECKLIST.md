@@ -23,6 +23,70 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Dolphin speed + charged-boost retune (`claude/dolphin-speed-boost-tuning-qgnojw`)
+
+Authored without a Unity compile or play-test. **Two authored numbers changed in
+existing serialized assets** — no new keys, no new components, no hand-built YAML
+structures — so the import risk is low, but nobody has flown the result.
+
+**What landed.** Four requested deltas, all data, no code:
+
+| quantity | before | after | delta |
+|---|---|---|---|
+| max cruise speed | 60 | **78** | +30.0% |
+| max boost speed (peak of a full discharge) | 210 | **357** | +70.0% |
+| boost charge fill rate | 0.250 /s | **0.275 /s** | +10.0% |
+| boost drain rate | 0.500 /s | **0.400 /s** | −20.0% |
+
+- `Dolphin.prefab` → `VesselTransformer.DefaultThrottleScaler: 50 → 68`.
+  `DefaultMinimumSpeed` deliberately left at **10** — the request was max speed, so the
+  throttle top moved and the drift/idle floor did not.
+- `ChargeBoostAction.asset` → `maxBoostMultiplier: 2 → 2.259`,
+  `chargeTimeToFull: 4 → 3.636`, `dischargeTimeToEmpty: 2 → 2.5`. That asset is
+  referenced only by `Dolphin.prefab`, so no other vessel moves.
+
+**The peak multiplier is squared, and that is why 2.259 is not a round number.**
+`VesselTransformer.CurrentBoostAmount()` multiplies `BoostMultiplier` (decaying live)
+by `ChargedBoostCharge` (pinned at the charge-end value), so the authored peak lands as
+`maxBoostMultiplier²`: the real ceiling was `50 × 2² + 10 = 210`, not the 110 the design
+doc implied. **This was NOT changed** — it is shipped behaviour on both the executor and
+the legacy `ChargeBoostAction`, and "fixing" it inside a tuning pass would halve the
+Dolphin's boost unasked. It is now documented in `DOLPHIN_ENERGY_ECONOMY.md` §2. If it
+should become a single factor, that is a one-line change plus its own retune — see
+Follow-ups there.
+
+**Verify in editor** (Menu_Main, freestyle, Dolphin)
+
+1. **Full throttle, no boost** — `VesselStatus.Speed` settles at **78** (was 60).
+2. **Hold drift from an empty meter** — the boost ring fills in **~3.6 s** (was 4).
+3. **Release a full meter** — speed peaks near **357** and takes **~2.5 s** to fall
+   back (was 210 over 2 s). This is the number most likely to want a balancing pass;
+   357 is a big jump and the speed tunnel amplifies how it reads.
+4. **Drift → release → drift again** — speed returns to normal, no stuck multiplier
+   (the `BeginCharge` clear is untouched, but this is the regression it guards).
+5. **The speed tunnel tracks it.** FOV should narrow noticeably harder at the new top
+   speed. That coupling is the platform law (`Docs/SPEED_TUNNEL.md`) — absolute and
+   fleet-wide, no per-vessel window — so it is the intended consequence, not a bug.
+6. **Nothing else moved.** Fly any other vessel; `ChargeBoostAction.asset` and the
+   Dolphin prefab are the only things touched.
+
+**Collider budget:** unchanged — no spawning, geometry, or query change.
+
+**First-pass tuning (expect a balancing pass — observe in context first):**
+
+| Knob | Value | Where it lives |
+|---|---|---|
+| Throttle top | **68** (+ `MinimumSpeed` 10 = 78) | `Dolphin.prefab` → `VesselTransformer.DefaultThrottleScaler` |
+| Speed floor | **10** (unchanged) | `Dolphin.prefab` → `VesselTransformer.DefaultMinimumSpeed` |
+| Boost peak multiplier | **2.259** (**squared** in use → ×5.103) | `ChargeBoostAction.maxBoostMultiplier` |
+| Charge time to full | **3.636 s** | `ChargeBoostAction.chargeTimeToFull` |
+| Discharge time to empty | **2.5 s** | `ChargeBoostAction.dischargeTimeToEmpty` |
+
+Max boost speed is `DefaultThrottleScaler × maxBoostMultiplier² + DefaultMinimumSpeed` —
+recompute it after touching **either** of the first two rows, they are not independent.
+
+---
+
 ### 🔴 Dolphin crystal blast — capsule sweep along the jaw gape (`claude/dolphin-echobliteration-capsule-a0vs26`)
 
 Authored without a Unity compile or play-test. **Unlike most entries here this one

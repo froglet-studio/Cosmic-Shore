@@ -194,3 +194,25 @@ Mechanics reference: `_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_ENERGY_
     them, which is the intended fallback (core = min = the plain circular cone) — but if one of
     those vessels ever moves to the conic prefab, it needs the field authored or its blast rests
     as a sphere.
+
+## Dolphin follow-ups (opened by `claude/dolphin-speed-boost-tuning-qgnojw`)
+
+18. **`maxBoostMultiplier` is applied TWICE, so the authored peak is squared.**
+    `VesselTransformer.CurrentBoostAmount()` multiplies `BoostMultiplier` (rewritten every
+    discharge tick as it decays toward 1) by `ChargedBoostCharge` (pinned at the value the
+    charge ended on) — both derive from the same `BoostMultiplierFrom`, so a full meter yields
+    `maxBoostMultiplier²`. The design doc described a single factor for the ability's whole life;
+    the code has always squared it. This is **shipped behaviour on both `ChargeBoostActionExecutor`
+    and the legacy `ChargeBoostAction`**, so it was documented rather than changed — a tuning
+    branch is the wrong place to halve a vessel's boost. Deciding it: either declare the square
+    intentional and rename the field to say so, or collapse it to one factor and re-tune
+    `maxBoostMultiplier` to `2.259² = 5.103` to hold the current feel. Do not change it silently
+    in either direction. `DOLPHIN_ENERGY_ECONOMY.md` §2.
+19. **`ChargedBoostCharge` is never cleared when a discharge ends** — only its gate
+    (`IsChargedBoostDischarging`) is. Harmless today because every read is behind that gate, but
+    it means the field holds a stale multiplier for the rest of the vessel's life, and any future
+    reader that forgets the gate silently inherits a free boost. Clear it alongside the flag in
+    `DischargeRoutineAsync`'s tail and in `VesselStatus`'s reset if this area is touched again.
+20. **The Dolphin's speed retune has not been flown.** 60 → 78 cruise and 210 → 357 boost are
+    arithmetic, not feel. 357 is a large jump and the speed tunnel amplifies how it reads — expect
+    a balancing pass. Steps + knob table: `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
