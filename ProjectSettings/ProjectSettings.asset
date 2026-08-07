@@ -989,7 +989,7 @@ PlayerSettings:
   cloudServicesEnabled:
     Purchasing: 1
     UNet: 1
-    Unity Ads: 0
+    Unity Ads: 1
   luminIcon:
     m_Name: 
     m_ModelFolderPath: 
@@ -1011,11 +1011,11 @@ PlayerSettings:
   captureStartupLogs: {}
   activeInputHandler: 1
   windowsGamepadBackendHint: 0
-  cloudProjectId: 5333c8cd-e1cd-4983-90c8-ab91b98e7488
+  cloudProjectId: 3030fd69-28ab-433f-b4bd-22b9b93c5118
   framebufferDepthMemorylessMode: 0
   qualitySettingsNames: []
   projectName: Cosmic Shore
-  organizationId: vonwaldhunter
+  organizationId: isaiah-merrill
   cloudEnabled: 0
   legacyClampBlendShapeWeights: 0
   hmiLoadingImage: {fileID: 0}
