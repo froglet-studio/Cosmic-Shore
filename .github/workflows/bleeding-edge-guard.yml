@@ -82,6 +82,10 @@ jobs:
     if: vars.UNITY_RUNNER_LABEL != ''
     runs-on: ${{ vars.UNITY_RUNNER_LABEL }}
     timeout-minutes: 60
+    outputs:
+      # 'compile' | 'tests' | 'ok' - read by the autofix job, which only acts on
+      # a compile break.
+      failure_kind: ${{ steps.compile.outputs.failure_kind }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -89,9 +93,10 @@ jobs:
           fetch-depth: 1
 
       - name: Compile check
+        id: compile
         shell: bash
         run: |
-          set -euo pipefail
+          set -uo pipefail        # NOT -e: the exit code is the signal, not an abort
           UNITY="${UNITY_PATH:-${{ vars.UNITY_PATH }}}"
           if [ -z "$UNITY" ]; then
             echo "::error::UNITY_PATH is not set. Point it at the Unity 6000.3.17f1 executable on the runner."
@@ -105,20 +110,61 @@ jobs:
           EXPECTED="$(grep '^m_EditorVersion:' ProjectSettings/ProjectVersion.txt | awk '{print $2}')"
           echo "Project expects Unity $EXPECTED"
 
+          RESULTS="$GITHUB_WORKSPACE/editmode-results.xml"
+          LOG="$GITHUB_WORKSPACE/unity-editmode.log"
+          rm -f "$RESULTS" "$LOG"
+
           # Edit-mode tests force a full compile of runtime, editor, and test
           # assemblies, which is what we actually care about here. -runTests must
           # NOT be combined with -quit.
           "$UNITY" -batchmode -nographics \
             -projectPath "$GITHUB_WORKSPACE" \
             -runTests -testPlatform EditMode \
-            -testResults "$GITHUB_WORKSPACE/editmode-results.xml" \
-            -logFile -
+            -testResults "$RESULTS" \
+            -logFile - | tee "$LOG"
+          CODE=${PIPESTATUS[0]}
+
+          # A non-zero exit means EITHER the project did not compile OR tests
+          # failed, and those are very different signals: a compile break is the
+          # thing that stops a Windows build and must always block, whereas a red
+          # test is a separate problem that should not trigger an autofix on
+          # gameplay code. Two independent discriminators, either one is enough:
+          #   - 'error CS' in the log is the definitive compiler marker
+          #   - no results XML means the run never reached the test phase
+          COMPILE_ERRORS=0
+          grep -qE '\berror CS[0-9]+' "$LOG" && COMPILE_ERRORS=1
+          [ -f "$RESULTS" ] || COMPILE_ERRORS=1
+
+          if [ "$CODE" -eq 0 ]; then
+            echo "failure_kind=ok" >> "$GITHUB_OUTPUT"
+            echo "Compile clean, edit-mode tests green."
+            exit 0
+          fi
+
+          if [ "$COMPILE_ERRORS" -eq 1 ]; then
+            echo "failure_kind=compile" >> "$GITHUB_OUTPUT"
+            echo "::error::The project did not compile. This is what breaks the Windows build."
+            grep -E '\berror CS[0-9]+' "$LOG" | head -40 || true
+            exit 1
+          fi
+
+          echo "failure_kind=tests" >> "$GITHUB_OUTPUT"
+          # Tests, not compilation. Blocking is a repo-variable decision, matching
+          # the UNITY_TESTS_BLOCKING convention already used by unity-ci.yml.
+          if [ "${{ vars.UNITY_TESTS_BLOCKING }}" = "false" ]; then
+            echo "::warning::Edit-mode tests failed, but UNITY_TESTS_BLOCKING is 'false', so this run is not being failed. The project DID compile."
+            exit 0
+          fi
+          echo "::error::Edit-mode tests failed. The project compiled, so this is not a build break. Set UNITY_TESTS_BLOCKING=false to downgrade this to a warning while the suite is greened up."
+          exit 1
 
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: editmode-results-${{ github.run_id }}
-          path: editmode-results.xml
+          path: |
+            editmode-results.xml
+            unity-editmode.log
           if-no-files-found: ignore
           retention-days: 14
 
@@ -128,9 +174,17 @@ jobs:
   autofix:
     name: Attempt autofix
     needs: [validate, unity]
-    # Runs when either verification stage failed. `always()` is required because
-    # a needs-failure would otherwise skip this job outright.
-    if: always() && contains(needs.*.result, 'failure')
+    # Fires on a static-validation failure or a COMPILE failure only. A red
+    # edit-mode test means the project compiled fine, so it is not a build break
+    # and must not send Claude editing gameplay code to make a test pass.
+    # `always()` is required because a needs-failure would otherwise skip this
+    # job outright. A skipped `unity` job yields an empty output, so the second
+    # clause is false and this stays correct while no runner is configured.
+    if: >-
+      always() && (
+        needs.validate.result == 'failure' ||
+        needs.unity.outputs.failure_kind == 'compile'
+      )
     runs-on: ubuntu-latest
     timeout-minutes: 45
     permissions:
@@ -173,8 +227,15 @@ jobs:
             Reproduce first. Run, in this order, and read the output:
               python3 Tools/CI/validate_project.py
               python3 Tools/Build/check_conditional_compilation.py --root Assets
-            If both pass, the failure came from the Unity compile stage instead;
-            read that job's log in this workflow run to see the compiler errors.
+            If both pass, the failure came from the Unity compile stage instead.
+            Read the "Unity compile" job's log in this workflow run; it prints the
+            first 40 `error CS...` lines directly, and the full editor log is
+            attached to this run as the `editmode-results-${{ github.run_id }}`
+            artifact.
+
+            You are only ever invoked for a COMPILE break or a static-validation
+            break. A failing edit-mode TEST does not reach you, so never change
+            gameplay code to make an assertion pass.
 
             Read CLAUDE.md and the skills in .claude/skills/ before changing
             anything. They carry this project's conventions and the traps

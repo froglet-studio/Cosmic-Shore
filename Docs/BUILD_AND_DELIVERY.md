@@ -328,6 +328,88 @@ runs.
 
 ---
 
+## 10.2 Turning the compile stage on — self-hosted runner runbook
+
+**Decision (2026-08-07): self-hosted, on the existing Windows build box.** No license activation, no
+billed minutes, and `Library/` stays warm between runs so a compile is minutes rather than tens of
+minutes. Nothing in any workflow needs editing — all three already target `vars.UNITY_RUNNER_LABEL`.
+
+### Prerequisites on the machine
+
+| Requirement | Value |
+|---|---|
+| Unity | **6000.3.17f1**, matching `ProjectSettings/ProjectVersion.txt` exactly |
+| Module | *Windows Build Support (IL2CPP)* |
+| Toolchain | Visual Studio Build Tools, **Desktop development with C++** workload |
+| Git LFS | `git lfs install` — the checkout pulls binary assets |
+| Disk | ~25 GB free for `Library/` plus build output |
+
+### Register the runner
+
+1. **Settings → Actions → Runners → New self-hosted runner**, architecture **Windows x64**. GitHub
+   shows a download-and-configure snippet containing a single-use registration token.
+2. Run it in an empty directory on the build box — **not** inside a checkout of this repository.
+3. When `config.cmd` asks for labels, add one memorable label, e.g. `cosmic-build-win`. Keep the
+   default `self-hosted`, `Windows`, `X64` labels it adds for you.
+4. Install it as a service so it survives reboot and does not need a logged-in session:
+   ```
+   .\svc.cmd install
+   .\svc.cmd start
+   ```
+5. Confirm the runner shows **Idle** on the Runners page.
+
+### Set the two repository variables
+
+**Settings → Secrets and variables → Actions → Variables tab.** These are variables, not secrets.
+
+| Variable | Value | Effect |
+|---|---|---|
+| `UNITY_PATH` | `C:\Program Files\Unity\Hub\Editor\6000.3.17f1\Editor\Unity.exe` | Which editor the jobs invoke. Jobs fail fast with a clear message if unset. |
+| `UNITY_RUNNER_LABEL` | `cosmic-build-win` | **This is the switch.** Setting it un-skips the `unity` job in `bleeding-edge-guard.yml`, `unity-ci.yml`, and `build-branch-ci.yml` simultaneously. |
+
+Set `UNITY_PATH` **first**. Setting the label first means the next push schedules a Unity job that
+immediately fails on the missing path.
+
+### Expect day one to be red, and plan for it
+
+The edit-mode suite has never been run in CI, so it is unknown whether it is currently green. The
+guard already separates the two failure modes (§10.1) — a compile break always blocks, a red test is
+reported separately — but if the suite turns out to be red you will still get a failing check on
+every push. Set a third variable during the grace period:
+
+| Variable | Value | Effect |
+|---|---|---|
+| `UNITY_TESTS_BLOCKING` | `false` | A red edit-mode test becomes a warning. A compile break still blocks and still triggers autofix. |
+
+Treat that as temporary and remove it once the suite is green; a non-blocking gate is not a gate.
+
+### Verify it actually took
+
+Push any commit to `bleeding-edge` (or **Actions → Bleeding-edge guard → Run workflow**), then open
+the run and read the job list:
+
+- `unity` shows **skipped** → `UNITY_RUNNER_LABEL` is still unset or misspelled. Nothing is being
+  compiled and the guard is static-only.
+- `unity` shows **queued** and stays there → the label does not match any registered runner. Fix the
+  label rather than waiting; GitHub only reaps such a job after roughly 24 hours.
+- `unity` shows **success** → the compile stage is live. This is the first commit in the repository's
+  history to have actually been compiled by CI.
+
+### Autofix prerequisite
+
+Stage 3 needs the `ANTHROPIC_API_KEY` **secret**, which already exists (`build-branch-ci.yml` uses
+it). With no key the job warns and exits cleanly; verification still fails, it is simply not
+repaired automatically.
+
+### Housekeeping
+
+- The runner keeps its workspace between jobs, which is exactly what makes compiles fast. Do not add
+  a clean step to these workflows.
+- If `Library/` corrupts and the compile starts failing for no diff-visible reason, delete
+  `Library/` in the runner's workspace once and let the next run rebuild it.
+
+---
+
 ## 11. Build branches and the promotion workflows
 
 > **The release model — which branch feeds which build, on what schedule, and what to do
