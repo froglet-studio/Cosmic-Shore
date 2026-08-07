@@ -178,6 +178,21 @@ its GameObject lists it in `m_Component`.
   every human diffing the file reads it as misplaced. Serialize enum fields as
   their INTEGER value (`condition: 1`), and get the integer from the C# —
   an enum with explicit values is not its declaration order.
+- **CHANGE a component's TYPE in place, by rewriting its class id and KEEPING its
+  fileID.** Swapping `SphereCollider` → `CapsuleCollider` reads like an excise+add,
+  and doing it that way is strictly worse: a new fileID means editing the owning
+  `m_Component` list and re-sweeping every external reference. Instead rewrite the
+  document header and body only — `--- !u!135 &<id>` / `SphereCollider:` becomes
+  `--- !u!136 &<id>` / `CapsuleCollider:` at the SAME `&<id>`, so the component-list
+  entry, and any `{fileID: <id>}` pointing at it, resolve unchanged. Get the class
+  id and the exact field set from a REAL instance of the target type already in the
+  repo (`grep -rn -A20 "^CapsuleCollider:" --include=*.prefab`), and copy its
+  `serializedVersion:` line verbatim — that key is per-class and per-Unity-version,
+  and it is the one thing you cannot infer from the type you are replacing.
+  Afterwards assert the fileID still appears in exactly one `m_Component` list and
+  the document count is unchanged. **This is an import check the human must run**
+  (open the prefab, confirm the new component type renders and is not "Missing") —
+  a rejected class id shows up nowhere else.
 - **Self-check the surgery by resolving every local fileID.** After any add or
   excise, parse the file: collect `^--- !u!\d+ &(\d+)` as definitions and
   `fileID: (\d+)\}` as references, then report references with no definition —
@@ -241,6 +256,14 @@ its GameObject lists it in `m_Component`.
   EXACTLY (case-sensitive, no `m_` prefix on your own fields); a typo'd key is
   silently ignored and the field reads its default forever — assert the key
   count after writing, and grep the C# declaration to confirm spelling.
+  **The corollary is a free retune, and a trap**: because the key is absent,
+  changing the C# INITIALIZER retroactively changes every instance that never
+  serialized it — re-tuning `MaxJawAngle` on the Dolphin needed no asset edit at
+  all, because neither `Dolphin.prefab` nor `DolphinHUDVariant.prefab` had ever
+  written the key. So **grep the prefabs for the key before deciding where to make
+  the change**: absent everywhere → edit the C# default and you are done; present
+  on some instances → the default reaches only the others, and editing it alone
+  produces a silent split. The grep is the decision, not a formality.
 - **Read authored MESH geometry without opening Unity** (which end is the apex?
   where's the pivot? is +Y up?): a `.asset` mesh carries `m_LocalAABB` for
   extents and the vertex buffer as hex in `m_VertexData`/`_typelessData`.
@@ -562,6 +585,22 @@ read**. The lesson generalizes:
   EXPLICITLY per pattern rather than inferring it. (Python is the opposite and throws
   — so a Python prototype will not warn you.) Related: prefer `${1}` over `$1`; `$1`
   followed by a digit (`$1` + `4.5`) parses as group 14.
+- **A `CapsuleCollider` is scaled ANISOTROPICALLY, so its two dimensions need two
+  different divisors.** Unity scales the `height` by the lossy scale along
+  `direction`, and the `radius` by the LARGER of the other two axes. Under a uniform
+  scale nobody notices; under a non-uniform parent — the Dolphin blast's container
+  runs `(base, base, reach)` — dividing both by one factor puts the capsule visibly
+  wrong in one dimension. Write each in local units as
+  `world / (its own lossy factor)`, and remember `direction` is an INDEX (0/1/2), so
+  the radial factor is `max(lossy[(d+1)%3], lossy[(d+2)%3])`. Two more edges on the
+  same component: (a) the internal `height >= 2*radius` clamp is applied in LOCAL
+  space, so with two different divisors it can bite at a world size where you'd
+  expect no clamp — check `localHeight >= 2*localRadius`, not the world numbers;
+  (b) a 90° child rotation under a non-uniform parent is an exact axis PERMUTATION,
+  so `lossyScale` is exact there (no skew) — but do not hand-derive which axis is
+  which. Resolve `direction` at runtime by dotting the world-space
+  `transform.TransformDirection` of each local axis against the direction you want;
+  it costs three dots once and survives someone changing the authored rotation.
 - **A window measured with the other variable held fixed does not transfer.** A sweep
   of parameter B at one value of A yields a band for B that looks absolute and is not.
   Shipping it as a validation rule then flags perfectly good settings as failures —

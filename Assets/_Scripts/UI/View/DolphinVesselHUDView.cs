@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using CosmicShore.Data;
+using CosmicShore.Gameplay;
 using DG.Tweening;
 using TMPro;
 using UnityEngine;
@@ -81,9 +82,13 @@ namespace CosmicShore.UI
         [SerializeField] private RectTransform jawUpper;
         [Tooltip("Lower jaw half. Rotates the opposite way by the same angle.")]
         [SerializeField] private RectTransform jawLower;
+        [Tooltip("Gape in degrees PER JAW at EMPTY energy. NOT zero: the blast is a short capsule " +
+                 "at rest, so the jaws start slightly open. Keep equal to RiptideAnimation's " +
+                 "MinJawAngle — the controller overwrites this from the hull at Initialize.")]
+        [SerializeField] private float minJawAngle = 4.7636f;
         [Tooltip("Gape in degrees PER JAW at full energy. Keep equal to RiptideAnimation's " +
                  "MaxJawAngle so the cockpit and the hull agree about the width of the next blast.")]
-        [SerializeField] private float maxJawAngle = 21f;
+        [SerializeField] private float maxJawAngle = 23.4287f;
         [Tooltip("Seconds the jaws take to glide to a new gape. Energy steps arrive per skim, so " +
                  "this is what keeps the readout from stuttering.")]
         [SerializeField, Min(0.01f)] private float jawGlideDuration = 0.12f;
@@ -130,7 +135,8 @@ namespace CosmicShore.UI
             }
 
             if (jawUpper) _jawRestScale = AbilityIconRestScale(Element.Time);
-            SetJawAngleImmediate(0f);
+            // Empty energy is the MIN gape, not a shut jaw - the blast is a short capsule at rest.
+            SetJawAngleImmediate(minJawAngle);
 
             if (blastCountText) blastCountText.text = string.Empty;
 
@@ -317,8 +323,10 @@ namespace CosmicShore.UI
         /// arrives in per-skim steps.</summary>
         public void SetEnergyNormalized(float norm01)
         {
-            norm01 = Mathf.Clamp01(norm01);
-            SetJawAngle(maxJawAngle * norm01);
+            // Same exact curve the hull uses (RiptideAnimation.GapeAngleAt): the blast's tip extent
+            // is linear in energy but the ANGLE is its arctangent, so lerping the angles would put
+            // the cockpit and the hull a few degrees apart mid-charge.
+            SetJawAngle(RiptideAnimation.GapeAngleAt(norm01, minJawAngle, maxJawAngle));
         }
 
         /// <summary>
@@ -400,14 +408,16 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// Adopts the HULL's authored gape as this icon's maximum, so the cockpit jaws and the
-        /// ship's own jaws open by the same angle — they are showing the same quantity (the
-        /// half-angle of the next blast) and must not drift apart through two authored numbers.
+        /// Adopts the HULL's authored gape RANGE, so the cockpit jaws and the ship's own jaws open
+        /// by the same angle at every charge — they are showing the same quantity (the gape
+        /// half-angle of the next blast) and must not drift apart through separately-authored
+        /// numbers. The minimum is not zero: the blast is a short capsule at rest.
         /// </summary>
-        public void SetMaxJawAngle(float degrees)
+        public void SetJawAngleRange(float minDegrees, float maxDegrees)
         {
-            if (degrees <= 0f) return;
-            maxJawAngle = degrees;
+            if (maxDegrees <= 0f) return;
+            maxJawAngle = maxDegrees;
+            minJawAngle = Mathf.Clamp(minDegrees, 0f, maxDegrees);
         }
 
         // ---------------------------------------------------------------
