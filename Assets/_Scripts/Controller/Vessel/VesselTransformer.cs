@@ -63,6 +63,11 @@ public class VesselTransformer : MonoBehaviour
 
         protected Vector3 velocityShift = Vector3.zero;
 
+        // Tracks whether the body flare is currently raised, so the rest-state material write
+        // happens on the transition instead of every frame. Starts true so the first
+        // ApplyVelocityModifiers pass normalizes the material once, as it always did.
+        bool _bodyFlaring = true;
+
         /// <summary>Current additive world-space displacement (the ModifyVelocity channel),
         /// summed on top of speed * Course by MoveShip. Read-only view for systems that need
         /// the vessel's ACTUAL travel direction (e.g. barrel-roll bridging prisms).</summary>
@@ -125,12 +130,32 @@ public class VesselTransformer : MonoBehaviour
             ApplyAnalogDrift();
             RotateShip();
         
-            if(VesselStatus.IsTranslationRestricted)
+            if (VesselStatus.IsTranslationRestricted)
+            {
+                // Restricted stance: no throttle, no course travel. Velocity modifiers still
+                // AGE here (previously they froze mid-flight and lurched out the instant the
+                // stance was released), but only those flagged ignoresTranslationRestriction
+                // actually displace — today just the Sparrow's strafing-roll dodge.
+                ApplyVelocityModifiers(translationRestricted: true);
+                MoveRestricted();
                 return;
-        
+            }
+
             ApplyThrottleModifiers();
             ApplyVelocityModifiers();
             MoveShip();
+        }
+
+        /// <summary>Position update while <c>IsTranslationRestricted</c>: throttle and course
+        /// travel are off, so the only displacement is the exempt ModifyVelocity channel (see
+        /// <see cref="ShipVelocityModifier.ignoresTranslationRestriction"/>). Deliberately does
+        /// NOT write <c>VesselStatus.Speed</c> or <c>Course</c> — a restricted vessel's reported
+        /// speed/heading is unchanged from before this branch existed, so nothing downstream
+        /// (gun velocity inheritance, telemetry, the speed tunnel) shifts behaviour.</summary>
+        protected virtual void MoveRestricted()
+        {
+            if (velocityShift.sqrMagnitude <= 0f) return;
+            transform.position += velocityShift * Time.deltaTime;
         }
 
         protected virtual void DecayBoost()
@@ -177,6 +202,7 @@ public class VesselTransformer : MonoBehaviour
 
             // Movement
             velocityShift = Vector3.zero;
+            _bodyFlaring = true;   // force one rest-state material write on the next pass
 
             // Drift
             _singleDriftActive = false;
@@ -561,7 +587,10 @@ public class VesselTransformer : MonoBehaviour
                 VesselStatus.VesselAnimation?.StopFlareEngine();
         }
 
-        private void ApplyVelocityModifiers()
+        /// <param name="translationRestricted">While true, every modifier still ages out, but
+        /// only those flagged <see cref="ShipVelocityModifier.ignoresTranslationRestriction"/>
+        /// contribute displacement.</param>
+        private void ApplyVelocityModifiers(bool translationRestricted = false)
         {
             Vector3 accumulatedVelocity = Vector3.zero;
 
@@ -573,7 +602,7 @@ public class VesselTransformer : MonoBehaviour
 
                 if (modifier.elapsedTime >= modifier.duration)
                     VelocityModifiers.RemoveAt(i);
-                else
+                else if (!translationRestricted || modifier.ignoresTranslationRestriction)
                     accumulatedVelocity += ((Mathf.Cos(modifier.elapsedTime * Mathf.PI / modifier.duration) / 2) + 1) * modifier.initialValue;
             }
 
@@ -582,9 +611,20 @@ public class VesselTransformer : MonoBehaviour
             var sqrMag = velocityShift.sqrMagnitude;
 
             if (sqrMag > 0.01f)
+            {
                 VesselStatus.VesselAnimation?.FlareBody(sqrMag / 4000);
-            else
+                _bodyFlaring = true;
+            }
+            else if (_bodyFlaring)
+            {
+                // Edge-triggered on the way DOWN only: StopFlareBody writes through
+                // `renderer.materials[0]`, which clones the material and allocates the array on
+                // every call. Harmless-looking when this method only ran while flying, but it
+                // now also runs for a stopped vessel, so pay it once per flare→rest transition.
+                // Seeded true so the first pass still normalizes the material exactly as before.
                 VesselStatus.VesselAnimation?.StopFlareBody();
+                _bodyFlaring = false;
+            }
         }
 
         public void TranslateShip(Vector3 nudgeVector)
@@ -593,8 +633,16 @@ public class VesselTransformer : MonoBehaviour
         }
 
         public void ModifyVelocity(Vector3 amount, float duration)
+            => ModifyVelocity(amount, duration, false);
+
+        /// <param name="ignoresTranslationRestriction">Opt this displacement out of the
+        /// <c>IsTranslationRestricted</c> hold (see
+        /// <see cref="ShipVelocityModifier.ignoresTranslationRestriction"/>). Reserved for
+        /// dodges that must remain available in a stance that pins the vessel — do not set it
+        /// to make an ordinary ability work while stopped.</param>
+        public void ModifyVelocity(Vector3 amount, float duration, bool ignoresTranslationRestriction)
         {
-            VelocityModifiers.Add(new ShipVelocityModifier(amount, duration, 0));
+            VelocityModifiers.Add(new ShipVelocityModifier(amount, duration, 0, ignoresTranslationRestriction));
         }
     }
 }

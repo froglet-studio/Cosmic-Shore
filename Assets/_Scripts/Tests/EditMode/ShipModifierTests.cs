@@ -126,6 +126,31 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void VelocityModifier_IgnoresTranslationRestriction_DefaultsFalse()
+        {
+            // The restriction exemption is opt-in per modifier: every legacy call site uses
+            // the 3-arg constructor and MUST stay held while IsTranslationRestricted.
+            Assert.IsFalse(new ShipVelocityModifier().ignoresTranslationRestriction,
+                "Default-constructed modifier must not bypass the translation restriction.");
+            Assert.IsFalse(new ShipVelocityModifier(Vector3.one, 1f, 0f).ignoresTranslationRestriction,
+                "The 3-arg constructor must not bypass the translation restriction.");
+        }
+
+        [Test]
+        public void VelocityModifier_IgnoresTranslationRestriction_IsSettable()
+        {
+            // Set by the Sparrow's strafing roll so the dodge survives the turret stance.
+            var mod = new ShipVelocityModifier(Vector3.right * 60f, 0.6f, 0f,
+                                               ignoresTranslationRestriction: true);
+
+            Assert.IsTrue(mod.ignoresTranslationRestriction);
+            Assert.AreEqual(Vector3.right * 60f, mod.initialValue,
+                "The 4-arg constructor must assign the same fields as the 3-arg one.");
+            Assert.AreEqual(0.6f, mod.duration, 0.001f);
+            Assert.AreEqual(0f, mod.elapsedTime, 0.001f);
+        }
+
+        [Test]
         public void VelocityModifier_ZeroDuration_IsValid()
         {
             // Instantaneous velocity impulse
