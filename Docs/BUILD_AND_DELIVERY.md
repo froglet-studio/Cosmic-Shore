@@ -19,6 +19,7 @@ Owner: Shombith. Related: `Docs/STEAM_EA_INVESTOR_CHECKPOINT.pdf`, `Tools/Steam/
 | B6 | Crash reporting behind consent | **Done** — `CrashReportingService`, gated by the existing analytics consent. |
 | B7 | Steam overlay verification | **Blocked** — needs a real Steam build on the beta branch. Do it during the closed playtest (E7). |
 | — | Nightly build verification (CI) | **Authored, not running** — `.github/workflows/unity-ci.yml`. Needs a runner, see §10. |
+| — | Bleeding-edge landing guard | **Authored, static half running** — `.github/workflows/bleeding-edge-guard.yml`. Checks every commit that lands on trunk and autofixes; the compile half needs the same runner, see §10.1. |
 | — | Test build promotion | **Authored** — `.github/workflows/sync-build-branches.yml`. Moves `development` into `build/android` and `build/windows` every 3 weeks, Wednesday 06:00 PT, see §11. |
 | — | Internal build tagging | **Authored** — `.github/workflows/tag-internal-build.yml`. Tags `bleeding-edge` every Friday 06:00 PT; UGS builds that branch directly. |
 
@@ -273,6 +274,57 @@ for outside-contributor runs, or drop the PR trigger and keep only `schedule` +
   retained. SteamPipe uploads run from the build machine (§4), not from CI.
 - No notifications beyond GitHub's own. Failures surface in the Actions tab and via GitHub's default
   email; wiring Discord is a later addition if the signal gets missed.
+
+---
+
+## 10.1 The bleeding-edge landing guard
+
+`.github/workflows/bleeding-edge-guard.yml`. Verifies every commit that **lands on** `bleeding-edge`
+and attempts a repair when one breaks.
+
+### Why it exists separately from §10
+
+`unity-ci.yml` triggers on `pull_request` into `bleeding-edge`. Most work does not arrive that way —
+it arrives as a direct merge push (`Merge remote-tracking branch 'origin/claude/…' into
+bleeding-edge`), which fires no `pull_request` event at all. Those commits were reaching trunk
+completely unverified, and the first thing to notice was a human running a Windows build by hand.
+
+### Stages
+
+| # | Job | Runs on | Gate | Catches |
+|---|---|---|---|---|
+| 1 | `validate` | `ubuntu-latest`, seconds, free | always | Editor-only API in player code, guard mistakes, `MonoBehaviour` name/file mismatch, missing `.meta` |
+| 2 | `unity` | `UNITY_RUNNER_LABEL` | skipped while that variable is unset | **Everything a real compile sees** — package-level errors, asset import breakage, AOT/IL2CPP |
+| 3 | `autofix` | `ubuntu-latest` | on failure of 1 or 2, and only if `ANTHROPIC_API_KEY` is set | Repairs the mechanical failure classes and opens a PR |
+
+### The load-bearing caveat
+
+**Stage 2 is the only stage that can see a build break, and it is skipped until `UNITY_RUNNER_LABEL`
+is set.** Until then this workflow catches the static classes only, and a red Windows build can still
+reach trunk. That is the same gate as §10 and it is the single configuration change that turns all
+three workflows on at once.
+
+Verify the state at any time by opening a recent **Unity CI** run and reading the job list: if
+`unity` shows *skipped*, no Unity has compiled the project in CI and every green check on that run
+came from the Python checkers alone.
+
+### Autofix rules
+
+- It opens a **pull request against `bleeding-edge`** and never pushes to the branch. An unreviewed
+  autofix landing on the integration trunk is worse than the break it was meant to repair.
+- It reuses an existing open `autofix/bleeding-edge*` PR rather than opening a second one, so a
+  repeated failure updates one PR instead of spawning a queue of them.
+- It is instructed to stop and explain when the failure is not one of the known mechanical classes,
+  rather than guessing at gameplay code.
+- With no `ANTHROPIC_API_KEY` configured the job warns and exits cleanly; verification still fails,
+  it simply is not repaired automatically.
+
+### Security note
+
+This repository is **public**. The guard is push-triggered on a branch that requires write access,
+so a self-hosted runner attached to it is not reachable from fork pull requests. Do not add a
+`pull_request` trigger to this workflow without first requiring approval for outside-contributor
+runs.
 
 ---
 

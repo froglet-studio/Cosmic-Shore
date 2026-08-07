@@ -1,0 +1,212 @@
+name: Bleeding-edge guard
+
+# Verifies every commit that LANDS on bleeding-edge, and attempts a repair when
+# one breaks. This is the workflow that exists so nobody has to discover a
+# broken trunk by hand at build time.
+#
+# Why a push trigger and not just the PR gate in unity-ci.yml:
+#   Most work reaches this branch as a direct merge push
+#   ("Merge remote-tracking branch 'origin/claude/...' into bleeding-edge"),
+#   which fires no pull_request event at all. unity-ci.yml therefore never sees
+#   those commits. This does.
+#
+# Defence in depth, cheapest first:
+#   1. validate  - static checks, ubuntu, seconds, no Unity and no license.
+#   2. unity     - a real compile (edit-mode tests force one). This is the only
+#                  stage that can see the failures Python cannot: package-level
+#                  compile errors, asset import breakage, AOT/IL2CPP problems.
+#   3. autofix   - Claude repairs the mechanical classes of failure and opens a
+#                  PR. It NEVER pushes to bleeding-edge directly; a bad autofix
+#                  landing unreviewed on trunk is worse than the original break.
+#
+# The unity job stays SKIPPED until the repository variable UNITY_RUNNER_LABEL
+# is set, exactly as in unity-ci.yml and build-branch-ci.yml. Skipping rather
+# than defaulting to a label matters: a job queued against a runner that does
+# not exist sits as a permanently pending check and GitHub only reaps it after
+# roughly 24 hours. Until that variable is set, only stage 1 runs and this
+# workflow cannot catch a compile break. See Docs/BUILD_AND_DELIVERY.md section 10.
+#
+# SECURITY: this repository is public. This workflow is push-only on a branch
+# that requires write access, so a self-hosted runner attached here is not
+# reachable by fork pull requests. Do not add a pull_request trigger to this
+# file without first restricting outside-contributor runs.
+
+on:
+  push:
+    branches: [bleeding-edge]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  # One guard per branch. A newer push supersedes an in-flight check; there is
+  # no value in verifying a commit that is already not the branch tip.
+  group: bleeding-edge-guard
+  cancel-in-progress: true
+
+jobs:
+  # ──────────────────────────────────────────────
+  #  1. Static validation - always runs, no Unity
+  # ──────────────────────────────────────────────
+  validate:
+    name: Static validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: false        # source-only checks; binary assets are not needed
+          fetch-depth: 1
+
+      # Both checkers have no-opped while still reporting OK. Prove they can
+      # detect their own fixtures BEFORE trusting a clean scan.
+      - name: Self-test the validators
+        run: |
+          set -euo pipefail
+          python3 Tools/CI/test_validate_project.py
+          python3 Tools/Build/check_conditional_compilation.py --self-test
+
+      - name: Validate project
+        run: python3 Tools/CI/validate_project.py --github
+
+      - name: Check conditional compilation
+        run: python3 Tools/Build/check_conditional_compilation.py --root Assets
+
+  # ──────────────────────────────────────────────
+  #  2. Unity compile - the only stage that sees a real build break
+  # ──────────────────────────────────────────────
+  unity:
+    name: Unity compile
+    needs: validate
+    if: vars.UNITY_RUNNER_LABEL != ''
+    runs-on: ${{ vars.UNITY_RUNNER_LABEL }}
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true         # the project stores binary assets in Git LFS
+          fetch-depth: 1
+
+      - name: Compile check
+        shell: bash
+        run: |
+          set -euo pipefail
+          UNITY="${UNITY_PATH:-${{ vars.UNITY_PATH }}}"
+          if [ -z "$UNITY" ]; then
+            echo "::error::UNITY_PATH is not set. Point it at the Unity 6000.3.17f1 executable on the runner."
+            exit 1
+          fi
+          if [ ! -x "$UNITY" ]; then
+            echo "::error::UNITY_PATH is not executable: $UNITY"
+            exit 1
+          fi
+
+          EXPECTED="$(grep '^m_EditorVersion:' ProjectSettings/ProjectVersion.txt | awk '{print $2}')"
+          echo "Project expects Unity $EXPECTED"
+
+          # Edit-mode tests force a full compile of runtime, editor, and test
+          # assemblies, which is what we actually care about here. -runTests must
+          # NOT be combined with -quit.
+          "$UNITY" -batchmode -nographics \
+            -projectPath "$GITHUB_WORKSPACE" \
+            -runTests -testPlatform EditMode \
+            -testResults "$GITHUB_WORKSPACE/editmode-results.xml" \
+            -logFile -
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: editmode-results-${{ github.run_id }}
+          path: editmode-results.xml
+          if-no-files-found: ignore
+          retention-days: 14
+
+  # ──────────────────────────────────────────────
+  #  3. Autofix - repair and open a PR, never push to trunk
+  # ──────────────────────────────────────────────
+  autofix:
+    name: Attempt autofix
+    needs: [validate, unity]
+    # Runs when either verification stage failed. `always()` is required because
+    # a needs-failure would otherwise skip this job outright.
+    if: always() && contains(needs.*.result, 'failure')
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: write
+      pull-requests: write
+    # Serialised and never cancelled: two overlapping failures must not race to
+    # open duplicate pull requests.
+    concurrency:
+      group: bleeding-edge-autofix
+      cancel-in-progress: false
+    steps:
+      - name: Check for an API key
+        id: key
+        env:
+          # Through env rather than inline interpolation, so the value is never
+          # pasted into the generated shell script.
+          KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          if [ -n "$KEY" ]; then
+            echo "have=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::ANTHROPIC_API_KEY is not set, so no autofix was attempted."
+            echo "have=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.key.outputs.have == 'true'
+        with:
+          lfs: false
+          fetch-depth: 0
+
+      - name: Fix and open a PR against bleeding-edge
+        if: steps.key.outputs.have == 'true'
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: |
+            Commit ${{ github.sha }} broke verification on bleeding-edge.
+
+            Reproduce first. Run, in this order, and read the output:
+              python3 Tools/CI/validate_project.py
+              python3 Tools/Build/check_conditional_compilation.py --root Assets
+            If both pass, the failure came from the Unity compile stage instead;
+            read that job's log in this workflow run to see the compiler errors.
+
+            Read CLAUDE.md and the skills in .claude/skills/ before changing
+            anything. They carry this project's conventions and the traps
+            specific to it, including Docs/CONDITIONAL_COMPILATION.md, which
+            covers the guard mistakes that are invisible in the Editor and only
+            ever surface as a red automated build.
+
+            Fix ONLY what the verification reports. The recurring cases are:
+              - editor-only API reaching player code, fixed by moving the file
+                under an Editor/ folder or wrapping it in #if UNITY_EDITOR
+              - a using directive guarded by #if UNITY_EDITOR above a class
+                declaration that is NOT guarded, so the Release player build
+                cannot resolve MonoBehaviour
+              - namespace and using-directive errors, including base classes
+                that need qualifying, such as UnityEditor.Editor
+              - a MonoBehaviour whose class name does not match its file name
+              - a scene listed in ProjectSettings/EditorBuildSettings.asset that
+                no longer exists on disk
+
+            Do not refactor, do not reformat untouched code, and do not change
+            gameplay behaviour. If the failure is not one of these mechanical
+            classes, stop and explain in the pull request body rather than
+            guessing. A wrong autofix on trunk costs more than a red check.
+
+            Re-run both validators until they pass, then open a pull request
+            against bleeding-edge.
+
+            NEVER push directly to bleeding-edge. It is the integration trunk
+            and an unreviewed autofix landing on it is worse than the break it
+            was meant to repair.
+
+            Before opening anything, check whether an open pull request from a
+            previous autofix attempt already exists (look for the head branch
+            prefix `autofix/bleeding-edge`). If one does, push to that branch and
+            update its description instead of opening a second pull request.
