@@ -63,7 +63,14 @@ beside the code: `_Scripts/Controller/Vessel/R_VesselActions/SPARROW_AFTERBURNER
   the legacy `OverheatingAction`, and `VesselStatus.IsOverheating` are all deleted; input 7 binds
   straight to the shared `BoostAction.asset`. The boost is now unlimited in duration.
 - **The strafing roll dropped to BASE kit** (was the TIME-5 upgrade). `BarrelRollController` lost
-  its `IsUpgradeActive(Element.Time)` gate and nothing else. Still one roll per boost press.
+  its `IsUpgradeActive(Element.Time)` gate. Still one roll per boost press.
+- **The roll also works in the stationary stance** (2026-08, a later branch). It lost its
+  `IsTranslationRestricted` gate too: stopped, the boost gives no speed but the roll still arms on
+  the press and still strafes — the stopped Sparrow's dodge. The displacement survives the
+  restriction through a narrow per-modifier opt-in
+  (`ShipVelocityModifier.ignoresTranslationRestriction`, default false; only the roll sets it), and
+  the same stance triples pitch/yaw (`VesselTransformer.restrictedTurnMultiplier`). Neither touches
+  the element map. Detail: `R_VesselActions/SPARROW_AFTERBURNER.md` §2.1–2.2.
 - **TIME-5 is now Elemental Ward**, and the immunity behind it is a **platform state, not a Sparrow
   feature** — `ResourceSystem.SetElementalDebuffImmunity` / `IVesselStatus.IsElementallyImmune`,
   driven declaratively by the shared `VesselElementalImmunity` component. The **Serpent holds the
