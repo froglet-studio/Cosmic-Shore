@@ -402,3 +402,43 @@ predator, tiger-shark territoriality, centre focus).
 These four are the ones the author flagged as guesses. The jaw transition is
 ~2.4s total per 20s hunt cycle; the driver early-outs on a single float compare
 whenever the mouth is settled, so re-tuning the timings has no perf cost.
+
+---
+
+## 🔴 Dolphin skim economy + jaw CTA + fleet silhouette removal (2026-08-07)
+
+Branch `claude/dolphin-prism-energy-5e4hbq`. None of this was editor-verified — the
+prefab surgery was done out-of-editor and machine-validated (no new dangling fileIDs,
+no surviving references, C# compiled against a stub harness), but Unity has not
+reimported any of it yet.
+
+**What landed**
+
+1. `DolphinSkimmerChangeResourceByPrismEffect._resourceAmount` **0.1 → 0.006666667**
+   (15× less energy per skim; ~150 skims to arm the blast, 50 on a danger trail).
+2. `DolphinVesselHUDView` blends the Time-slot jaw pair white → `ElementalBarsConfigSO.limeColor`
+   across the top 15% of energy (`jawArmingThreshold: 0.85`).
+3. The dead vessel **silhouette** removed from 13 vessel + HUD-variant prefabs, plus
+   dead `silhouette`/`silhouetteContainer`/`trailContainer` keys and their overrides
+   in 13 more files.
+
+**Verify in editor**
+
+1. Open each of the 15 edited prefabs — no *"Missing (Mono Script)"* row that was not
+   already there, no broken hierarchy, HUD still lays out. (Sparrow, Rhino, Squirrel,
+   Serpent, Manta and the six vessel prefabs lost real GameObjects; the rest lost keys.)
+2. Play Menu_Main → freestyle on the **Dolphin**: no `[ElementalBarsController]` runtime
+   warning that was not there before; the four ability icons still bind (FrogletTools >
+   Vessels > **Audit Vessel Ability Rows** → Dolphin 4/4, order ✅).
+3. Fly the other vessels' HUDs briefly (Sparrow, Squirrel, Rhino, Serpent, Manta) and
+   confirm nothing visually disappeared *except* the ship outline.
+4. Skim a long time → jaws blend to lime near full; ram a prism → they drop back to white.
+
+**Known pre-existing issues surfaced, NOT fixed here (own branch):**
+
+- `SerpentHUDVariant.prefab` and `VesselHUDPrefab.prefab` carry a component whose script
+  guid `57dc27a3f7264d548b51007c0615f701` resolves to **no script in the project** — an
+  existing *Missing (Mono Script)* component, unrelated to this change.
+- `Dolphin.prefab`'s `ElementalBarsController` has **no `elementBars` key**, so the element
+  flowers are created at runtime via `CreateDefaultElementBars()` (which logs a warning).
+  Fix with FrogletTools > Vessels > *Bake Elemental Petal Bars Into All Vessel HUDs*.

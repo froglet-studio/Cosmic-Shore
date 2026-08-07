@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
+using CosmicShore.ScriptableObjects;
 using DG.Tweening;
 using TMPro;
 using UnityEngine;
@@ -93,8 +94,22 @@ namespace CosmicShore.UI
                  "this is what keeps the readout from stuttering.")]
         [SerializeField, Min(0.01f)] private float jawGlideDuration = 0.12f;
         [Tooltip("Scale punch on the jaw pair each time a skim banks energy — the per-skim beat on " +
-                 "top of the gape, which only moves ~1/10th of its range per skim.")]
+                 "top of the gape, which only moves ~1/150th of its range per skim.")]
         [SerializeField, Min(1f)] private float skimPunchScale = 1.3f;
+
+        [Header("Time — the full-energy CTA")]
+        [Tooltip("Colour the jaws rest at. Matches the authored art (white); the CTA lime is " +
+                 "blended over it as the bank approaches full.")]
+        [SerializeField] private Color jawRestColor = Color.white;
+        [Tooltip("Normalized energy at which the jaws BEGIN turning lime; at 1.0 they are solid " +
+                 "lime. Deliberately not a hard switch at full — a bank takes ~150 skims, so a " +
+                 "binary flip would pop on one skim and drop off the instant you ram a prism.")]
+        [SerializeField, Range(0f, 0.99f)] private float jawArmingThreshold = 0.85f;
+        [Tooltip("Shared colour spec. The armed colour is its limeColor — the SAME lime a maxed " +
+                 "element flower shows, so 'this is full' reads identically across the HUD. " +
+                 "Loaded from Resources when left empty; never author a second copy of the colour.")]
+        [SerializeField] private ElementalBarsConfigSO barsConfig;
+        [SerializeField] private string barsConfigResourcePath = "ElementalBarsConfig";
         [Header("Icon juice")]
         [SerializeField] private float iconPunchScale = 1.35f;
         [SerializeField] private float iconPunchDuration = 0.25f;
@@ -108,7 +123,13 @@ namespace CosmicShore.UI
 
         Tween _crystalScaleTween, _crystalColorTween;
         Tween _blastScaleTween, _blastColorTween;
-        Tween _jawUpperTween, _jawLowerTween, _jawPunchTween;
+        Tween _jawUpperTween, _jawLowerTween, _jawPunchTween, _jawColorTween;
+
+        // The jaw halves' own Graphics. The row's Time icon (JawIcon) is a fully transparent
+        // container, so these two ARE the visible Time gauge and the only thing worth tinting.
+        Graphic _jawUpperGraphic, _jawLowerGraphic;
+        Color _jawArmedColor = Color.white;
+        float _jawArm01 = -1f;
 
         float _blastCountTimer;
         int _lastChargesShown = -1;
@@ -137,6 +158,10 @@ namespace CosmicShore.UI
             if (jawUpper) _jawRestScale = AbilityIconRestScale(Element.Time);
             // Empty energy is the MIN gape, not a shut jaw - the blast is a short capsule at rest.
             SetJawAngleImmediate(minJawAngle);
+
+            ResolveJawGraphics();
+            _jawArm01 = -1f;             // a re-init must repaint, not early-out on a stale value
+            ApplyJawArming(0f, immediate: true);
 
             if (blastCountText) blastCountText.text = string.Empty;
 
@@ -327,6 +352,55 @@ namespace CosmicShore.UI
             // is linear in energy but the ANGLE is its arctangent, so lerping the angles would put
             // the cockpit and the hull a few degrees apart mid-charge.
             SetJawAngle(RiptideAnimation.GapeAngleAt(norm01, minJawAngle, maxJawAngle));
+            ApplyJawArming(norm01, immediate: false);
+        }
+
+        /// <summary>
+        /// Caches the jaw halves' Graphics and the armed colour. The lime is read from the shared
+        /// <see cref="ElementalBarsConfigSO"/> rather than authored here, so the "this is maxed"
+        /// green is literally the same value a full element flower shows. With no config the jaws
+        /// simply never arm — better than minting a second copy of the colour that can drift.
+        /// </summary>
+        void ResolveJawGraphics()
+        {
+            _jawUpperGraphic = jawUpper ? jawUpper.GetComponent<Graphic>() : null;
+            _jawLowerGraphic = jawLower ? jawLower.GetComponent<Graphic>() : null;
+
+            if (!barsConfig) barsConfig = Resources.Load<ElementalBarsConfigSO>(barsConfigResourcePath);
+            _jawArmedColor = barsConfig ? barsConfig.limeColor : jawRestColor;
+        }
+
+        /// <summary>
+        /// Blends the jaws from their rest colour to the CTA lime over the last
+        /// (1 - <see cref="jawArmingThreshold"/>) of the bank, so a full meter reads as "fire this"
+        /// at a glance. This is the ONE colour writer on the jaw pair: the row's upgrade tint is off
+        /// on this HUD (every icon is a live gauge) and it targets JawIcon, not these halves — so
+        /// the gauge colour and the upgrade signal can never contest each other.
+        /// </summary>
+        void ApplyJawArming(float norm01, bool immediate)
+        {
+            if (!_jawUpperGraphic && !_jawLowerGraphic) return;
+
+            float span = Mathf.Max(1e-4f, 1f - jawArmingThreshold);
+            float arm = Mathf.Clamp01((Mathf.Clamp01(norm01) - jawArmingThreshold) / span);
+            if (!immediate && Mathf.Approximately(arm, _jawArm01)) return;
+            _jawArm01 = arm;
+
+            var target = Color.Lerp(jawRestColor, _jawArmedColor, arm);
+            _jawColorTween?.Kill();
+
+            if (immediate) { WriteJawColor(target); return; }
+
+            var from = _jawUpperGraphic ? _jawUpperGraphic.color : _jawLowerGraphic.color;
+            _jawColorTween = DOVirtual.Color(from, target, colorTweenDuration, WriteJawColor)
+                .SetEase(Ease.OutQuad)
+                .SetLink(jawUpper ? jawUpper.gameObject : jawLower.gameObject);
+        }
+
+        void WriteJawColor(Color c)
+        {
+            if (_jawUpperGraphic) _jawUpperGraphic.color = c;
+            if (_jawLowerGraphic) _jawLowerGraphic.color = c;
         }
 
         /// <summary>
@@ -463,6 +537,7 @@ namespace CosmicShore.UI
             _jawUpperTween?.Kill();
             _jawLowerTween?.Kill();
             _jawPunchTween?.Kill();
+            _jawColorTween?.Kill();
         }
     }
 }
