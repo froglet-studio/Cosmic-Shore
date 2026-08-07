@@ -23,6 +23,78 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Dolphin crystal blast — capsule sweep along the jaw gape (`claude/dolphin-echobliteration-capsule-a0vs26`)
+
+Authored without a Unity compile or play-test. **Unlike most entries here this one
+DID hand-author asset YAML** — a `SphereCollider` was rewritten into a
+`CapsuleCollider` in place (class id `135` → `136`) — so the first check below is a
+genuine import check, not a formality.
+
+**What landed.** The Dolphin's crystal-impact blast no longer sweeps a circular
+cone whose radius grows with skim energy. Its cross-section is now a **capsule**
+(a 2D stadium): the radius is pinned to a fixed width *across the beam*, and what
+energy buys is capsule **length**, extended along the axis the vessel's jaws open
+across (container-local up = ship up). A charged blast is a fan — wide in the jaw
+plane, narrow across it.
+
+- `AOEConicSweepQueryJob` (Burst) tests point-to-**segment** instead of
+  point-to-axis. Same cost class, no extra sqrt.
+- `AOEConicExplosion.prefab`'s trigger is a `CapsuleCollider` driven per frame by
+  `UpdateCapsuleTrigger`, so the vessel-impact volume and the Burst volume are the
+  same shape by construction. A dev-build warning fires if a conic blast opens a
+  gape without a capsule trigger.
+- `InitializeStruct.CoreScale` / `_coreExplosionScale` carry the capsule diameter,
+  authored separately from the empty-charge length so the blast can rest as a
+  short capsule instead of a sphere. `0` collapses everything back to the plain
+  circular cone — that is what every non-conic caller and the spherical blast get,
+  so **no other vessel's blast changed**.
+- The jaws (hull + HUD icon) were re-measured against the new geometry and their
+  linear approximation retired: both now call one shared
+  `RiptideAnimation.GapeAngleAt(t, min, max)`, exact at every charge.
+- `AOEExplosion._sphereCollider` → `_triggerCollider`, typed `Collider`, since the
+  shape is now the subclass's business.
+
+**Verify in editor**
+
+1. **The hand-authored collider imported.** Open `_Prefabs/Projectile/AOEConicExplosion.prefab`.
+   The root must show a **Capsule Collider** (Is Trigger ✓, Radius 0.0667,
+   Height 1, Direction **Z-Axis**, Center 0/-0.5/0) — *not* a missing component, a
+   Sphere Collider, or a second collider alongside it. If Unity rejected the YAML
+   this is where it shows.
+2. **It compiles.** Nothing in the branch is `#if`-guarded (the conditional-compilation
+   gate passes), but no C# compiler ran on the author's side at all.
+3. **Empty-energy blast is unchanged in feel, slightly lozenge-shaped.** Fly to a
+   crystal with no banked energy. The blast should look and destroy about as
+   before (it is 400 long × 320 wide instead of a 400 sphere).
+4. **Charged blast is a FAN.** Bank energy to full, then hit a crystal while flying
+   at a dense prism wall. Destruction should be wide in the jaw plane and narrow
+   perpendicular to it — roll 90° and fire again to confirm the fan rolls with the
+   ship (it is bound to ship-up, not world-up).
+5. **The jaws never read fully shut.** At zero energy both the hull's jaws and the
+   HUD's Time icon should sit slightly open (4.76°/side), and they should agree
+   with each other at *every* charge step, not just at the ends.
+6. **Nothing else regressed.** Fire a Manta / Rhino / Squirrel / Serpent crystal
+   blast (all spherical) and a Sparrow skyburst — they take the `CoreScale == 0`
+   fallback and must be identical to before.
+
+**Collider budget:** unchanged — the conic blast still carries exactly one trigger
+collider, swapped sphere → capsule.
+
+**First-pass tuning (expect a balancing pass — observe in context first):**
+
+| Knob | Value | Where it lives |
+|---|---|---|
+| Capsule length, empty → full | **400 → 2080** | `DolphinVesselExplosionByCrystalEffect._min/_maxExplosionScale` |
+| Capsule diameter (fixed) | **320** (radius 160) | `DolphinVesselExplosionByCrystalEffect._coreExplosionScale` |
+| Gape half-angle, empty → full | **4.7636° → 23.4287°** | `RiptideAnimation.MinJawAngle` / `MaxJawAngle` (derived from the two above over the prefab's `height: 2400` — **change a scale and these must follow**) |
+| Gape axis | **(0,1,0)** container-local = ship up | `AOEConicExplosion.gapeAxis` |
+
+The length/diameter pair is the whole feel: length is reach along the gape,
+diameter is how forgiving the aim is across the beam. The jaw angles are *derived*,
+not independent — recompute them as `atan((scale / 2) / height)` after any retune.
+
+---
+
 ### 🔴 Sparrow stationary stance — roll works stopped, pitch/yaw 3× (`claude/sparrow-strafing-roll-stopped-d2yc7g`)
 
 Authored without a Unity compile or play-test. **Code only — no prefab, scene or
