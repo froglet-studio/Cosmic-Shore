@@ -55,7 +55,14 @@ namespace CosmicShore.Gameplay
                     // time (restoring pierce-through). Detonating projectiles leave the flag
                     // false — their detonator owns the pool return.
                     if (Projectile.StopOnFirstPrismImpact)
+                    {
+                        // Death point #2. Signal BEFORE the return so a host that leaves
+                        // something behind (the Sparrow turret prism's anchor) sees the
+                        // impact position — this is the other half of "wherever the bullet
+                        // would be destroyed".
+                        Projectile.RaiseFlightEnded(stoppedByImpact: true);
                         Projectile.ReturnToFactory();
+                    }
                     break;
                 case MineImpactor mineImpactee:
                     if(!DoesEffectExist(projectileImpactorDataContainer.ProjectileMineEffect)) return;

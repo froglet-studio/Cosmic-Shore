@@ -23,45 +23,55 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
-### 🔴 Sparrow Turret Stance — bullet parity + always-pierce (`claude/sparrow-prism-attack-hg6n78`)
+### 🔴 Sparrow Turret Stance — the stance fired nothing; flight moved to the GPU clock (`claude/sparrow-prism-attack-hg6n78`)
 
-Authored without a Unity compile or play-test. Touches **code, two SO assets and two
-prefabs**, and **deletes** an effect SO + its asset — so both a compile check and an asset
-re-serialize check are needed. Full mechanics, tuning table and the 10-step in-editor
-procedure: `_Scripts/Controller/Vessel/R_VesselActions/SPARROW_TURRET_STANCE.md`
-§ "In-editor verification".
+Authored without a Unity compile or play-test, and this one touches **shader graphs**
+(hand-synthesized JSON), **new ECS per-instance material properties**, two prefabs, two SO
+assets, and a rewritten hot-path executor. Full mechanics + the 12-step procedure:
+`_Scripts/Controller/Vessel/R_VesselActions/SPARROW_TURRET_STANCE.md` § "In-editor verification".
 
-**What landed.** The stopped Sparrow's turret prisms now fire at the guns' rate (30/s, was
-14/s), at the guns' speed (1500 u/s × SPACE multiplier, was a flat 150), along the guns'
-eased flight path, running the guns' `ProjectileDamagePrismEffect`, and they **always
-pierce** instead of destroying themselves on first contact. They still anchor as permanent
-mass at the end of the path, and MASS still stretches them / shields them at level 5. The
-parity is structural — `FullAutoBlockShootActionSO.bulletAction` points at
-`FullAutoAction.asset` and derives rate/speed/flight time from it.
+**The headline.** The stopped Sparrow was firing **invisible, intangible** prisms — the path
+never called `Prism.Initialize`, so `IsCreationComplete` stayed false, `BeginGrowthAnimation`
+early-returned, and every shot lived its whole life at `localScale` zero (no visual; its child
+collider inherited `lossyScale` 0 so it could not register a hit either). Silently — the loop
+never threw. That is fixed at the root: turret prisms now spawn through the documented
+pool-spawn entry point.
 
-**Verify in editor (the four most likely to be wrong):**
+**What else landed.** The shot is now the bullet in every authored respect (rate 30/s, speed
+1500 × SPACE, the same eased flight, the same impact effect, and pierce on the **same SPACE-5
+gate** — not always-on as the previous commit had it). The flight itself moved to the GPU clock
+(`PRISM_ANIMATION.md` §5 C5, now SHIPPED): new `PrismFlightClock` HLSL + `_FlightStartTime` /
+`_FlightDuration` / `_FlightVelocity` Hybrid-Per-Instance properties spliced into **both**
+live-prism graphs. C4 was resolved by deleting `FireTrailBlockActionExecutor`/`SO` — unreachable
+dead code carrying two racing `Destroy` timers on a visible prism.
 
-1. **Asset re-serialize.** Open `FullAutoBlockShootAction.asset` in the inspector and
-   confirm the **Bullet Action** field really shows `FullAutoAction`, and that the removed
-   `fireRate` / `blockSpeed` / `min+maxStopDistance` fields are gone rather than lurking.
-   The YAML was hand-edited against the new field set; Unity has not re-serialized it.
-2. **Deleted effect leaves no holes.** `DomainCheckProjectilePrismHitEffectSO.cs` + its
-   asset were removed, and the stale `projectileShipEffects/projectilePrismEffects/…` arrays
-   were stripped from `Sparrow Projectile Prism.prefab`'s `ProjectileImpactor`. Open that
-   prefab: it must show a clean impactor with only its data container, no "missing script"
-   and no missing-reference warnings on load.
-3. **Pierce actually pierces.** One held turret prism must destroy **more than one** enemy
-   prism on its way out and continue to the end of its path. This is the whole feature; if it
-   still dies on first contact, the container swap (`SparrowPrismProjectileImpactContainer`
-   → `ProjectileDamagePrismEffect`) did not take.
-4. **No "No player found to deal damage to prism!" in the console.** That error means
-   `Projectile.Initialize` was skipped on the carried projectile and the impact chain has no
-   vessel status — the bug this pass fixed.
+**Verify in editor (the five most likely to be wrong):**
+
+1. **The graphs import clean.** BlockGraph and ExplodingBlockGraph were edited out-of-editor;
+   every block is schema-exact and machine-validated, but Unity has not imported them. Open each
+   and confirm no import errors and that `FlightStartTime` / `FlightDuration` / `FlightVelocity`
+   appear on the Blackboard. Recovery if not: `git checkout` the `.shadergraph` and run
+   `FrogletTools > Ecology > Prism Animation > Auto-Wire Clock Properties`.
+2. **Something comes out of the guns at all.** This is the bug the human reported. Stop, hold
+   fire, watch prisms leave the muzzles.
+3. **The flight is smooth, with no pop-in.** A prism that simply appears at maximum range means
+   the flight stamp failed (look for `[PrismClock] flight:` in the console); one that vanishes
+   and reappears partway means the `RenderBounds` envelope is wrong.
+4. **Pierce follows SPACE 5, both modes.** Below it a shot stops at the first prism and leaves
+   its prism there; at 5+ it destroys a line and leaves its prism at the far end.
+5. **Asset re-serialize.** `FullAutoBlockShootAction.asset` YAML was hand-edited against a
+   changed field set — confirm the inspector shows **Bullet Action** = `FullAutoAction` and no
+   ghost fields. Also confirm `Sparrow Projectile Prism.prefab` shows `waitTime` **0** (at 0.5 the
+   prism was still invisible when its 0.3 s flight ended).
+
+**Asset-only gates that should already pass** (run them first — they need no play mode):
+`python3 Tools/Shaders/wire_prism_flight_clock.py --check` (OK on both graphs) and
+`FrogletTools > Ecology > Prism Animation > Validate Clock Wiring`.
 
 **Budget note (deliberate, flag if it hurts).** Matching the gun cadence roughly doubles the
-permanent mass a held turret lays: **~60 anchored prisms/s** (2 muzzles × 30/s), ~600 in a
-ten-second hold, each one a `PrismSpatialIndex` registration plus a collider. The single
-lever is `FullAutoAction.firingRate` — and moving it retunes the guns too, by design.
+permanent mass a held turret lays: **~60 anchored prisms/s**, ~600 in a ten-second hold. The
+single lever is `FullAutoAction.firingRate` — and it moves the guns too, by design. Per-frame CPU
+went *down*: the deleted `MoveAndAnchorAsync` was a per-frame write per live prism.
 
 **First-pass tuning:**
 
@@ -71,7 +81,7 @@ lever is `FullAutoAction.firingRate` — and moving it retunes the guns too, by 
 | Muzzle speed base (both modes) | **1500** | `FullAutoAction.asset` → `speedValue.Value` |
 | Flight time → range | **0.3 s** → ~286 u | `FullAutoAction.asset` → `projectileTime` |
 | Prism shape before MASS stretch | **(0.8, 0.5, 5)** | `FullAutoBlockShootAction.asset` → `blockScale` |
-| Spawn visibility delay | **0** (was 0.1) | `Sparrow.prefab` → `FullAutoBlockShootActionExecutor` |
+| Creation delay | **0** (was 0.5) | `Sparrow Projectile Prism.prefab` → `waitTime` |
 
 ---
 

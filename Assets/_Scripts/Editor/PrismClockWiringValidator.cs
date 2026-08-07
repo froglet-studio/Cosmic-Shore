@@ -37,9 +37,10 @@ namespace CosmicShore.Editor
                     "_GrowStartTime", "_GrowRate", "_GrowStartFrac",
                     "_ColorStartTime", "_ColorDuration",
                     "_StartBrightColor", "_StartDarkColor", "_StartSpread",
+                    "_FlightStartTime", "_FlightDuration", "_FlightVelocity",
                 },
                 OptionalProps = new string[0],
-                Purpose = "grow-in bloom (PrismGrowScale, vertex) + color/state transitions (PrismColorLerp, fragment)",
+                Purpose = "grow-in bloom (PrismGrowScale, vertex) + color/state transitions (PrismColorLerp, fragment) + ballistic flight (PrismFlightClock, vertex)",
             },
             new GraphSpec
             {
@@ -53,9 +54,10 @@ namespace CosmicShore.Editor
                     "_GrowStartTime", "_GrowRate", "_GrowStartFrac",
                     "_ColorStartTime", "_ColorDuration",
                     "_StartBrightColor", "_StartDarkColor", "_StartSpread",
+                    "_FlightStartTime", "_FlightDuration", "_FlightVelocity",
                 },
                 OptionalProps = new string[0],
-                Purpose = "explosion debris flight/shatter/fade (PrismExplosionClock) + transparent live prism bloom/color",
+                Purpose = "explosion debris flight/shatter/fade (PrismExplosionClock) + transparent live prism bloom/color/flight",
             },
             new GraphSpec
             {
@@ -134,9 +136,9 @@ namespace CosmicShore.Editor
                 // ExplodingBlockGraph carries the grow + color clusters too
                 // (transparent live prisms bloom and fade colors on this graph).
                 string[] extraFunctions = spec.GraphName == "BlockGraph"
-                    ? new[] { "PrismColorLerp" }
+                    ? new[] { "PrismColorLerp", "PrismFlightClock" }
                     : spec.GraphName == "ExplodingBlockGraph"
-                        ? new[] { "PrismGrowScale", "PrismColorLerp" }
+                        ? new[] { "PrismGrowScale", "PrismColorLerp", "PrismFlightClock" }
                         : new string[0];
                 foreach (var fn in extraFunctions)
                 {

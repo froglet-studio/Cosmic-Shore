@@ -270,7 +270,12 @@ graphs, each following the shipped B1/B3 templates: ~~C1 `ClearPrisms` shader-si
 occlusion fade~~ (✅ shipped 2026-08-04 — `PrismOcclusionCorridor`, now a PLATFORM LAW wired into every
 live-prism graph and bound at `VesselController.Initialize`, §4.7; gates: the `PrismOcclusionCoverageTests`
 edit-mode test + FrogletTools > Ecology > Prism Animation > **Validate Occlusion Corridor**) ·
-C4 `FireTrailBlock` pool/Destroy fix · C5 turret anchor flight ·
+~~C4 `FireTrailBlock` pool/Destroy fix~~ (✅ 2026-08-07 — resolved by deletion; the
+scripts were unreachable dead code, see §5 C4) ·
+~~C5 turret anchor flight~~ (✅ shipped 2026-08-07 — `PrismFlightClock` +
+`_FlightStartTime`/`_FlightDuration`/`_FlightVelocity` on both live-prism graphs, wired by
+`Tools/Shaders/wire_prism_flight_clock.py`; gate: **Validate Clock Wiring** now requires
+them) ·
 C6 fauna wither/devour/level-up · C7 flora growth · C8 microscene conveyor ·
 C9 cell-swap suction · C11 spindle fade · C13 environment-lay
 pooling · B4 GPU shield morphs. (C10 worm shift is resolved by deletion — the

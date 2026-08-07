@@ -375,7 +375,6 @@ MonoBehaviour:
   - {fileID: 73056290272686649}
   - {fileID: 5078300575574787067}
   blockFactory: {fileID: 5112862195692938605}
-  spawnVisibilityDelay: 0
   OnMiniGameTurnEnd: {fileID: 11400000, guid: 498a06d44bde9184f985c938c803b2a1, type: 2}
 --- !u!1 &3140989280476861951
 GameObject:

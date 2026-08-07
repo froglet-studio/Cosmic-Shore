@@ -44,9 +44,9 @@ MonoBehaviour:
       and skimmer overtakes leave your levels untouched. Buffs still apply.
   - Element: 2
     AbilityLabel: Turret Stance
-    AbilityDescription: Stop and fire prisms instead of bullets - same rate, same
-      speed, same impact as your guns, but they always pierce and they stay where
-      they stop. Mass stretches the fired prisms; at level 5 they arrive shielded.
+    AbilityDescription: Stop and fire prisms instead of bullets - the same shot in
+      every way, except you watch a prism fly and it stays wherever the bullet would
+      have died. Mass stretches the fired prisms; at level 5 they arrive shielded.
     Input: 6
     MultiplierAtFullLevel: 2.5
     MinMultiplier: 0.4

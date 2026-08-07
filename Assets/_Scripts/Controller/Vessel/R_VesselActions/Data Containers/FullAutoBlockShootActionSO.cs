@@ -40,15 +40,9 @@ namespace CosmicShore.Gameplay
         [Header("Pooling")]
         [SerializeField] private PrismType prismType = PrismType.Sparrow;
 
-        [Header("Collision")]
-        [Tooltip("Hold the prism's own body colliders down while it is in flight, so only its " +
-                 "projectile trigger registers hits. Re-enabled when it anchors.")]
-        [SerializeField] private bool disableCollidersOnLaunch = true;
-
         public Vector3 BlockScale => blockScale;
         public Vector3 RotationOffsetEuler => rotationOffsetEuler;
         public PrismType PrismType => prismType;
-        public bool DisableCollidersOnLaunch => disableCollidersOnLaunch;
 
         /// <summary>True when the bullet action this stance mirrors is wired.</summary>
         public bool HasBulletAction => bulletAction;

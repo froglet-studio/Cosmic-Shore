@@ -273,7 +273,7 @@ MonoBehaviour:
     type: 3}
   GrowthVector: {x: 0, y: 2, z: 0}
   growthRate: 0.01
-  waitTime: 0.5
+  waitTime: 0
   destroyed: 0
   devastated: 0
   IsSmallest: 0

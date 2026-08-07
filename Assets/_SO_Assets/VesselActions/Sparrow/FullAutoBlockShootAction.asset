@@ -16,4 +16,3 @@ MonoBehaviour:
   blockScale: {x: 0.8, y: 0.5, z: 5}
   rotationOffsetEuler: {x: 0, y: 0, z: 0}
   prismType: 2
-  disableCollidersOnLaunch: 1

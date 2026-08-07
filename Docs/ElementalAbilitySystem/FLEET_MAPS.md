@@ -83,17 +83,26 @@ beside the code: `_Scripts/Controller/Vessel/R_VesselActions/SPARROW_AFTERBURNER
 
 **MASS row, clarified 2026-08 — the element map is unchanged, the stance beneath it is not:**
 
-The turret stance is now defined as *"a bullet that always pierces and stops somewhere instead of
-disappearing"*, and that parity is structural: `FullAutoBlockShootActionSO` holds a reference to
-`FullAutoActionSO` and **adopts** its fire rate, muzzle speed (SPACE-scaled, via the shared
-`FullAutoActionSO.ResolveSpeed`) and flight time rather than authoring its own. It had drifted to
-14 shots/s at 150 u/s against guns at 30 shots/s at 1500 u/s. Turret prisms also always pierce —
-`stopOnFirstPrismImpact: false` unconditionally, *not* gated on the SPACE-5 upgrade that governs
-bullets — and now run the bullets' own `ProjectileDamagePrismEffect`. The self-destroying
-`DomainCheckProjectilePrismHitEffectSO` that used to sit on that path is deleted. MASS itself is
-untouched: quantitative stretch on the prism's long axis, L5 *Shielded Prisms* at anchor.
-Budget note: the cadence fix roughly doubles anchored mass to ~60 prisms/s while held. Detail:
-`R_VesselActions/SPARROW_TURRET_STANCE.md`.
+The turret stance is now defined as *"a turret shot IS a bullet — you just see a prism flying, and
+where the bullet would have been destroyed the prism stays"*. That parity is structural:
+`FullAutoBlockShootActionSO` holds a reference to `FullAutoActionSO` and **adopts** its fire rate,
+muzzle speed (SPACE-scaled, via the shared `FullAutoActionSO.ResolveSpeed`) and flight time rather
+than authoring its own. It had drifted to 14 shots/s at 150 u/s against guns at 30 shots/s at
+1500 u/s. **Pierce is the bullets' SPACE-5 gate, on both modes** — below it the shot stops at the
+first prism it hits and anchors there, at 5+ it pierces to the end of its path and anchors there;
+piercing is not a turret perk. Turret shots also run the bullets' own `ProjectileDamagePrismEffect`;
+the self-destroying `DomainCheckProjectilePrismHitEffectSO` that used to sit on that path is deleted.
+
+Two things worth knowing beyond the element map. First, the stance had been firing **invisible**
+prisms: the path never called `Prism.Initialize`, so `IsCreationComplete` stayed false,
+`BeginGrowthAnimation` early-returned, and every shot lived at `localScale` zero — no visual, and a
+zero-volume collider that could not register a hit. Second, the flight is now GPU-side
+(`Docs/PRISM_ANIMATION.md` §5 C5 — SHIPPED): the prism is stamped at its end point and the vertex
+stage walks it in from the muzzle, while the prism's *carried* `Projectile` does the travelling and
+the colliding. MASS itself is untouched: quantitative stretch on the prism's long axis, L5
+*Shielded Prisms* — now applied as a pre-`Initialize` flag so the shield is part of the prism's
+birth rather than a morph on arrival. Budget note: the cadence fix roughly doubles anchored mass to
+~60 prisms/s while held. Detail: `R_VesselActions/SPARROW_TURRET_STANCE.md`.
 
 ### Manta — "Reaper Ray" (skim + harvest)
 

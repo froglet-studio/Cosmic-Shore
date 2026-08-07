@@ -3,23 +3,40 @@ using System.Threading;
 using Cysharp.Threading.Tasks;
 using Obvious.Soap;
 using CosmicShore.Core;
+using CosmicShore.ECS;
 using CosmicShore.Gameplay;
 using Reflex.Attributes;
 using UnityEngine;
 using CosmicShore.Utility;
 using CosmicShore.Data;
-using System.Linq;
+using Unity.Mathematics;
+
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Turret Stance fire loop: while the Sparrow is stopped its guns launch PRISMS on the
-    /// bullets' terms — same cadence, same muzzle speed, same eased flight path, same impact
-    /// effects — differing only in that a turret prism always pierces (it keeps destroying
-    /// for the whole flight instead of dying on first contact) and, at the end of that
-    /// flight, anchors as permanent world mass.
+    /// Turret Stance fire loop: while the Sparrow is stopped its guns fire PRISMS.
     ///
-    /// Every one of those numbers is read off <see cref="FullAutoBlockShootActionSO"/>'s
-    /// bullet action, so there is nothing here to keep in step by hand.
+    /// A turret shot IS a bullet. Same cadence, same muzzle speed, same eased flight,
+    /// same impact effects, and the same SPACE-5 gating on whether it pierces — all of
+    /// it adopted from the vessel's own Full Auto action rather than authored twice.
+    /// Exactly two things differ, and they are the two the design asks for:
+    ///
+    ///   1. what you SEE flying is the prism, not a tracer; and
+    ///   2. where the bullet would be DESTROYED — a stopping prism impact, or its
+    ///      lifetime expiring — the prism stays there as permanent world mass.
+    ///
+    /// The flight is GPU-side (Docs/PRISM_ANIMATION.md §5 C5). The prism is spawned at
+    /// the flight's END POINT with everything final — collider, volume, spatial
+    /// registration, MASS-5 shield — and <c>PrismFlightClock</c> walks the visual in
+    /// from the muzzle off one stamp. The CPU writes nothing to the prism between the
+    /// stamp and the anchor.
+    ///
+    /// The thing that actually collides along the path is the prism's carried
+    /// <see cref="Projectile"/>, detached at the muzzle and flown by the bullets' own
+    /// mover. That is a projectile, not prism animation, so it keeps the ordinary
+    /// gameplay-transform contract — and it is what answers C5's open question: gameplay
+    /// DOES collide mid-flight, which is why the prism's transform is final at the
+    /// destination while a separate collider travels.
     /// </summary>
     public class FullAutoBlockShootActionExecutor : ShipActionExecutorBase
     {
@@ -31,12 +48,6 @@ namespace CosmicShore.Gameplay
         [Header("Scene Refs")]
         [SerializeField] private Transform[] muzzles;
         [SerializeField] private BlockProjectileFactory blockFactory;
-
-        [Header("Visual")]
-        [Tooltip("Seconds the prism's renderer stays hidden after spawn while its domain " +
-                 "material settles. Keep at 0 (a single frame): turret prisms now leave the " +
-                 "muzzle at BULLET speed, so every 0.1s here is ~150 units of invisible flight.")]
-        [SerializeField] private float spawnVisibilityDelay;
 
         [Header("Events")]
         [SerializeField] private ScriptableEventNoParam OnMiniGameTurnEnd;
@@ -71,7 +82,13 @@ namespace CosmicShore.Gameplay
         #region Public API
         public void Begin(FullAutoBlockShootActionSO so)
         {
-            if (_cts != null) return;
+            // Always stop any previous loop first, exactly like the flying-mode guns
+            // (FullAutoActionExecutor.Begin). A bare `if (_cts != null) return;` is a
+            // sticky gate: any path that ends the loop without clearing _cts latches
+            // the turret off for the rest of the session, silently.
+            End();
+
+            if (!isActiveAndEnabled) return;
 
             _cts = CancellationTokenSource.CreateLinkedTokenSource(
                 this.GetCancellationTokenOnDestroy());
@@ -85,7 +102,8 @@ namespace CosmicShore.Gameplay
 
             try
             {
-                _cts.Cancel();
+                if (!_cts.IsCancellationRequested)
+                    _cts.Cancel();
             }
             catch
             {
@@ -105,6 +123,7 @@ namespace CosmicShore.Gameplay
             if (!blockFactory)
             {
                 CSDebug.LogError("[FullAutoBlockShootActionExecutor] BlockFactory not assigned.");
+                ClearLoopHandle();
                 return;
             }
 
@@ -112,12 +131,14 @@ namespace CosmicShore.Gameplay
             {
                 CSDebug.LogError(
                     "[FullAutoBlockShootActionExecutor] The action's bulletAction is unwired — " +
-                    "turret cadence and speed are adopted from it, so there is nothing to fire with.");
+                    "turret cadence, speed and flight time are adopted from it, so there is " +
+                    "nothing to fire with.");
+                ClearLoopHandle();
                 return;
             }
 
             // Cadence and flight are the BULLETS' numbers, read off the shared action asset.
-            var interval  = 1f / Mathf.Max(0.1f, so.FireRate);
+            var interval = 1f / Mathf.Max(0.1f, so.FireRate);
             var flightTime = Mathf.Max(0.01f, so.FlightTime);
             var rotOffset = Quaternion.Euler(so.RotationOffsetEuler);
 
@@ -125,124 +146,40 @@ namespace CosmicShore.Gameplay
             {
                 while (!token.IsCancellationRequested)
                 {
-                    // Muzzle speed is resolved per volley, not per hold: the SPACE level that
-                    // scales the guns can move mid-press (crystals, comeback buffs).
+                    var abilities = _status?.ElementalAbilityHandler;
+
+                    // Muzzle speed is resolved per volley, not per hold: the SPACE level
+                    // that scales the guns can move mid-press (crystals, comeback buffs).
                     var shotSpeed = so.ResolveSpeed(_status);
+
+                    // SPACE level-5 'Piercing Bullets' — the SAME gate the cannons use.
+                    // Below it the shot is stopped by the first prism it hits and leaves
+                    // its prism there; at 5+ it pierces on to the end of its path.
+                    var piercing = abilities && abilities.IsUpgradeActive(Element.Space);
+
+                    // MASS level-5 'Shielded Prisms': snapshot at fire time and applied as
+                    // a pre-Initialize flag, so the shield is part of the prism's BIRTH and
+                    // snaps (Docs/PRISM_ANIMATION.md §4.5) instead of morphing on arrival.
+                    // Regular shield only — one-hit ablative armor fauna can still eat via
+                    // devastate, which is what keeps the food-web sink intact.
+                    var shielded = abilities && abilities.IsUpgradeActive(Element.Mass);
+
+                    // MASS → turret prism stretch: the long z-axis scales with the vessel's
+                    // live Mass level. Volume = x·y·z of lossyScale, so the stretch feeds
+                    // Cell.LiveVolume — "volume is the spine".
+                    var blockScale = so.BlockScale;
+                    blockScale.z *= abilities ? abilities.Multiplier(Element.Mass) : 1f;
+
+                    // Distance the shot covers before its lifetime ends. The bullets' mover
+                    // eases each step by cos(t·π/2T), so the range is that integral —
+                    // speed · 2T/π, not speed · T.
+                    var range = shotSpeed * flightTime * (2f / Mathf.PI);
 
                     foreach (var m in muzzles)
                     {
                         if (!m) continue;
-
-                        var domainAtShot = _status.Domain;
-                        var prism = blockFactory.GetBlock(
-                            so.PrismType,
-                            m.position,
-                            m.rotation * rotOffset,
-                            null);
-
-                        if (!prism) continue;
-
-                        // Stationary blocks bypass Projectile.LaunchProjectile (movement is
-                        // driven by MoveAndAnchorAsync), so play the launch SFX here — the
-                        // flying-mode guns get theirs from LaunchProjectile.
-                        audioSystem.PlayGameplaySFX(GameplaySFXCategory.ProjectileLaunch, m.position);
-
-                        prism.transform.SetParent(null, true);
-
-                        // MASS → turret prism stretch: the long z-axis scales with the vessel's
-                        // live Mass level (ElementalAbilityMapSO). Volume = x·y·z of lossyScale,
-                        // so the stretch feeds Cell.LiveVolume — "volume is the spine".
-                        var blockScale = so.BlockScale;
-                        blockScale.z *= _status?.ElementalAbilityHandler.Multiplier(Element.Mass) ?? 1f;
-
-                        // Route sizing through the scale animator instead of a raw
-                        // localScale write: TargetScale stays truthful (a later
-                        // Grow/ChangeSize no longer snaps the prism back to its authored
-                        // size), live volume tracks, and the block blooms in from zero
-                        // during flight instead of popping in (continuity law).
-                        var scaleAnimator = prism.GetComponent<PrismScaleAnimator>();
-                        if (scaleAnimator)
-                        {
-                            prism.transform.localScale = Vector3.zero;
-                            scaleAnimator.SetTargetScale(blockScale);
-                            scaleAnimator.BeginGrowthAnimation();
-                        }
-                        else
-                        {
-                            prism.transform.localScale = blockScale;
-                        }
-
-                        //prism.ownerID = _status.PlayerName;
-                        prism.ChangeTeam(domainAtShot);
-                        prism.RegisterProjectileCreated(_status.PlayerName);
-
-                        SetupPrismVisualAsync(prism, domainAtShot, spawnVisibilityDelay,
-                            this.GetCancellationTokenOnDestroy()).Forget();
-
-                        if (so.DisableCollidersOnLaunch)
-                        {
-                            var rootColliders = prism.GetComponents<Collider>();
-                            foreach (var col in rootColliders)
-                                col.enabled = false;
-                        }
-                        var childProjectile = prism.GetComponentInChildren<Projectile>();
-                        if (childProjectile)
-                        {
-                            // Give the carried projectile the same identity a bullet gets at
-                            // fire time. Without it the impact chain has no VesselStatus (the
-                            // damage helper dereferences status.Player) and no OwnDomain, so
-                            // the friendly-fire check in ProjectileImpactor could never match
-                            // and hits were unattributable.
-                            //
-                            // stopOnFirstPrismImpact: FALSE, unconditionally — piercing is what
-                            // the Turret Stance IS. A bullet only earns pierce at SPACE 5; a
-                            // turret prism keeps destroying for the whole length of its path.
-                            //
-                            // No ProjectileFactory: this projectile is a part of a pooled PRISM,
-                            // not a pooled projectile. Nothing on this flight can call
-                            // ReturnToFactory — the pierce flag is off, the prism's impact
-                            // container authors no end effects, and movement is driven here
-                            // rather than through Projectile.LaunchProjectile.
-                            childProjectile.Initialize(
-                                null,
-                                domainAtShot,
-                                _status,
-                                charge: 0f,
-                                detachOnLaunch: false,
-                                stopOnFirstPrismImpact: false,
-                                spareOwnDomain: false);
-
-                            childProjectile.Velocity = m.forward * shotSpeed; // m.forward is already unit
-
-                            if (childProjectile.TryGetComponent<Collider>(out var projCol))
-                                projCol.enabled = true;
-
-                            if (childProjectile.TryGetComponent<Rigidbody>(out var rb))
-                            {
-                                rb.isKinematic = false;
-                            }
-                        }
-
-                        OnBlockShot?.Invoke(_status?.PlayerName);
-
-                        // MASS level-5 'Shielded Prisms': snapshot at fire time, applied at
-                        // anchor. Regular shield only — one-hit ablative armor that fauna can
-                        // still eat via devastate, preserving the food-web sink (SuperShield
-                        // would create mass with no active sink — an ecosystem freeze vector).
-                        bool shieldOnAnchor =
-                            _status?.ElementalAbilityHandler.IsUpgradeActive(Element.Mass) == true;
-
-                        var movementToken = this.GetCancellationTokenOnDestroy();
-                        MoveAndAnchorAsync(
-                            prism.transform,
-                            m.forward * shotSpeed,
-                            flightTime,
-                            so.DisableCollidersOnLaunch,
-                            prism,
-                            childProjectile,
-                            shieldOnAnchor,
-                            movementToken
-                        ).Forget();
+                        FireOne(so, m, rotOffset, blockScale, shotSpeed, flightTime, range,
+                            piercing, shielded);
                     }
 
                     await UniTask.Delay(
@@ -259,142 +196,208 @@ namespace CosmicShore.Gameplay
             {
                 CSDebug.LogError($"[FullAutoBlockShoot] loop error: {e}");
             }
+            finally
+            {
+                ClearLoopHandle();
+            }
         }
-        #endregion
 
-        #region Visual Setup
-        private async UniTaskVoid SetupPrismVisualAsync(
-            Prism prism,
-            Domains domain,
-            float delaySeconds,
-            CancellationToken token)
+        /// <summary>Drop the loop handle without cancelling — the loop is already over.
+        /// Leaving a live _cts behind is what would latch the next Begin() into a no-op.</summary>
+        private void ClearLoopHandle()
         {
-            try
-            {
-                if (!prism) return;
+            if (_cts == null) return;
+            _cts.Dispose();
+            _cts = null;
+        }
 
-                var matAnim = prism.GetComponent<MaterialPropertyAnimator>();
-                if (!matAnim || !matAnim.MeshRenderer)
-                {
-                    prism.Domain = domain;
-                    return;
-                }
+        private void FireOne(FullAutoBlockShootActionSO so, Transform muzzle, Quaternion rotOffset,
+            Vector3 blockScale, float shotSpeed, float flightTime, float range,
+            bool piercing, bool shielded)
+        {
+            var domainAtShot = _status.Domain;
+            var velocity = muzzle.forward * shotSpeed;   // muzzle.forward is already unit
 
-                var mr = matAnim.MeshRenderer;
-                mr.enabled = false;
-                prism.Domain = domain;
-                matAnim.MarkMaterialsDirty();
+            // The prism is born at the flight's END POINT: gameplay state belongs where
+            // the mass will rest, and the vertex stage draws it walking in from the barrel.
+            var anchorPoint = muzzle.position + muzzle.forward * range;
+            var prism = blockFactory.GetBlock(so.PrismType, anchorPoint, muzzle.rotation * rotOffset, null);
+            if (!prism) return;
 
-                matAnim.SetTransparency(false);
+            // Stationary shots bypass Projectile.LaunchProjectile's own SFX for the prism
+            // itself, so play the launch sound here — the flying-mode guns get theirs from
+            // LaunchProjectile.
+            if (audioSystem)
+                audioSystem.PlayGameplaySFX(GameplaySFXCategory.ProjectileLaunch, muzzle.position);
 
-                if (delaySeconds > 0f)
-                {
-                    await UniTask.Delay(
-                        TimeSpan.FromSeconds(delaySeconds),
-                        DelayType.DeltaTime,
-                        PlayerLoopTiming.Update,
-                        token);
-                }
-                else
-                {
-    
-                    await UniTask.Yield(PlayerLoopTiming.Update, token);
-                }
+            prism.transform.SetParent(null, true);
 
-                if (!prism || !prism.gameObject.activeInHierarchy)
-                    return;
+            // Target scale BEFORE Initialize: Prism.Initialize reads the authored target
+            // off the scale animator and hands it to the creation coroutine.
+            var scaleAnimator = prism.GetComponent<PrismScaleAnimator>();
+            if (scaleAnimator) scaleAnimator.SetTargetScale(blockScale);
+            else prism.transform.localScale = blockScale;
 
-                mr.enabled = true;
-            }
-            catch (OperationCanceledException)
-            {
+            prism.ChangeTeam(domainAtShot);
+            prism.prismProperties.IsShielded = shielded;
 
-            }
-            catch (Exception e)
-            {
-                CSDebug.LogError($"[FullAutoBlockShoot] SetupPrismVisual error: {e}");
-            }
+            // THE line this whole path was missing. Without it IsCreationComplete stays
+            // false, so BeginGrowthAnimation early-returns, the prism never leaves
+            // localScale zero, its collider has no volume, and SetRenderVisible(true) is
+            // never reached — every turret shot was an invisible, intangible nothing.
+            // Initialize is the documented pool-spawn entry point every other pooled-prism
+            // spawner in the project uses.
+            prism.Initialize(_status.PlayerName);
+            prism.RegisterProjectileCreated(_status.PlayerName);
+
+            StampFlight(prism, velocity, flightTime, range, blockScale);
+
+            LaunchCarriedProjectile(prism, muzzle, velocity, flightTime, domainAtShot,
+                piercing, anchorPoint);
+
+            OnBlockShot?.Invoke(_status?.PlayerName);
         }
         #endregion
 
-        #region Movement / Anchor
+        #region Flight (GPU clock)
         /// <summary>
-        /// Fly the prism along a BULLET's path, then anchor it where that bullet's flight
-        /// would have ended.
-        ///
-        /// The step is eased by <c>cos(t·π/2T)</c> and yields at <c>PreLateUpdate</c> — both
-        /// copied deliberately from <c>Projectile.MoveProjectileAsync</c>, so a turret
-        /// prism and a bullet released at the same instant stay abreast for the whole flight
-        /// and stop at the same range. There is no separate travel distance to author: the
-        /// end of the path IS the end of the bullet's life.
+        /// Touchpoint 1: one stamp of the flight's initial conditions. The GPU evaluates
+        /// the position for the whole flight; the CPU writes nothing until the anchor.
         /// </summary>
-        private async UniTaskVoid MoveAndAnchorAsync(Transform block, Vector3 velocity, float flightTime, bool reactivateCollidersAtEnd, Prism prism, Projectile childProjectile, bool shieldOnAnchor, CancellationToken token)
+        private void StampFlight(Prism prism, Vector3 velocity, float flightTime, float range,
+            Vector3 finalScale)
         {
-            float elapsedTime = 0f;
+            float now = PrismClock.Now;
+            var v = new float3(velocity.x, velocity.y, velocity.z);
 
-            try
+            bool stamped = PrismRenderService.StampFlight(in prism.RenderHandle, now, flightTime, in v);
+
+            // One self-heal before screaming: the stamp is a ONE-SHOT write, so a prism
+            // that reaches this instant without a companion entity loses its flight for
+            // good. Creation is idempotent and no-ops on the happy path.
+            if (!stamped && prism.TryEnsureRenderEntityForStamp())
+                stamped = PrismRenderService.StampFlight(in prism.RenderHandle, now, flightTime, in v);
+
+            if (!stamped)
             {
-                while (elapsedTime < flightTime)
-                {
-                    token.ThrowIfCancellationRequested();
-
-                    if (!block || !block.gameObject.activeInHierarchy)
-                        return;
-
-                    float deltaTime = Time.deltaTime;
-                    float factor = Mathf.Cos(elapsedTime * Mathf.PI / (2f * flightTime));
-                    block.position += velocity * (deltaTime * factor);
-
-                    elapsedTime += deltaTime;
-                    await UniTask.Yield(PlayerLoopTiming.PreLateUpdate, token);
-                }
-
-                if (reactivateCollidersAtEnd && prism && prism.gameObject.activeInHierarchy)
-                {
-                    var rootColliders = prism.GetComponents<Collider>();
-                    foreach (var col in rootColliders)
-                        col.enabled = true;
-                }
-
-                if (childProjectile && childProjectile.gameObject.activeInHierarchy)
-                {
-                    if (childProjectile.TryGetComponent<Collider>(out var projCol))
-                        projCol.gameObject.SetActive(false);
-
-                    if (childProjectile.TryGetComponent<Rigidbody>(out var rb))
-                    {
-                        rb.isKinematic     = true;
-                    }
-                }
-
-                // Anchored: the block is now permanent world mass. Register it with the
-                // spatial index (the one registration lifecycle) so it participates in
-                // Burst AOE damage, growth occupancy, fauna density queries, and the
-                // containing cell's LiveVolume — unregistered turret prisms were
-                // invisible to the entire ecosystem. Registered at rest, not at the
-                // muzzle, so the bucket grid files it at its true position.
-                if (prism && prism.gameObject.activeInHierarchy && prism.SpatialIndexId < 0)
-                {
-                    prism.prismProperties.position = prism.transform.position;
-                    var spatialIndex = PrismSpatialIndex.EnsureInstance();
-                    if (spatialIndex != null && spatialIndex.IsAvailable)
-                        prism.SpatialIndexId = spatialIndex.Register(prism);
-                }
-
-                // MASS level-5: engage the shield AFTER the collider re-enable and the index
-                // registration — the shield's Box→Mesh collider swap must run last so the
-                // reactivation loop can't re-enable the disabled BoxCollider, and the state
-                // manager's index flag sync needs SpatialIndexId ≥ 0. Collider budget: the
-                // swap is 1:1 (count-neutral); note shield MeshColliders are LOD-exempt today.
-                if (shieldOnAnchor && prism && prism.gameObject.activeInHierarchy)
-                    prism.ActivateShield();
+                // STRICT MODE: no CPU fallback. The prism simply appears at its anchor
+                // point with no flight — loudly, naming the broken gate.
+                PrismClockDiagnostics.WarnNoRenderEntity($"flight:{prism.name}", this,
+                    prism.DescribeRenderEntityState());
+                return;
             }
-            catch (OperationCanceledException)
+
+            // Culling envelope: the entity matrix never moves, so without this the prism
+            // frustum-culls against its ANCHOR box while the visual is still out at the
+            // barrel — it would pop in halfway down the shot. The sweep vector is the
+            // muzzle offset (minus the whole flight vector) in object space. Reset first:
+            // pooled reuse must not compound envelopes run over run.
+            var meshFilter = prism.GetComponent<MeshFilter>();
+            if (meshFilter) PrismRenderService.ResetBoundsToMesh(in prism.RenderHandle, meshFilter.sharedMesh);
+
+            // Object-space muzzle offset. NOT Transform.InverseTransformVector: a
+            // just-pulled prism sits at localScale ZERO until its creation coroutine
+            // completes (PrismScaleAnimator derives the bloom's start fraction from
+            // that zero, so it must not be pre-written), and inverting a degenerate
+            // matrix yields NaN bounds. Rotate-then-divide by the FINAL per-axis scale
+            // — which is what the entity's LocalToWorld will hold once it is visible —
+            // is the same math SpawnExplosionDebrisBatch uses for the same reason.
+            Vector3 muzzleOffsetWS = -velocity.normalized * range;
+            Vector3 local = Quaternion.Inverse(prism.transform.rotation) * muzzleOffsetWS;
+            var objDisp = new float3(
+                local.x / Mathf.Max(1e-4f, Mathf.Abs(finalScale.x)),
+                local.y / Mathf.Max(1e-4f, Mathf.Abs(finalScale.y)),
+                local.z / Mathf.Max(1e-4f, Mathf.Abs(finalScale.z)));
+            PrismRenderService.ExpandBoundsForClockAnimation(in prism.RenderHandle, in objDisp,
+                4f + 0.25f * math.length(objDisp));
+        }
+
+        /// <summary>
+        /// The travelling half: the prism's carried projectile, detached at the muzzle and
+        /// flown by <c>Projectile.LaunchProjectile</c> — literally the bullets' mover, so
+        /// the two modes cannot drift. It is what pierces, what destroys prisms along the
+        /// path, and what decides where the flight ends.
+        /// </summary>
+        private void LaunchCarriedProjectile(Prism prism, Transform muzzle, Vector3 velocity,
+            float flightTime, Domains domainAtShot, bool piercing, Vector3 anchorPoint)
+        {
+            var carried = prism.GetComponentInChildren<Projectile>(true);
+            if (!carried)
             {
+                CSDebug.LogWarning(
+                    $"[FullAutoBlockShoot] {prism.name} carries no Projectile — the shot will " +
+                    "fly and anchor but hit nothing.");
+                return;
             }
-            catch (Exception e)
+
+            var carriedTransform = carried.transform;
+            var homeParent = carriedTransform.parent;
+
+            // Give it the same identity a bullet gets at fire time. Without a VesselStatus
+            // the impact chain has no player (the damage helper dereferences status.Player)
+            // and OwnDomain stays default, so the friendly-fire check can never match.
+            carried.Initialize(
+                null,
+                domainAtShot,
+                _status,
+                charge: 0f,
+                detachOnLaunch: false,
+                stopOnFirstPrismImpact: !piercing,
+                spareOwnDomain: false,
+                carriedByHost: true);
+
+            carriedTransform.SetParent(null, true);
+            carriedTransform.SetPositionAndRotation(muzzle.position, muzzle.rotation);
+            carried.Velocity = velocity;
+
+            if (carried.TryGetComponent<Collider>(out var col)) col.enabled = true;
+            if (carried.TryGetComponent<Rigidbody>(out var rb)) rb.isKinematic = false;
+
+            carried.FlightEnded += (p, stoppedByImpact) =>
+                AnchorPrism(prism, p, homeParent, stoppedByImpact, anchorPoint);
+
+            carried.LaunchProjectile(flightTime);
+        }
+
+        /// <summary>
+        /// Touchpoint 3: the flight is over, so the prism BE its end state. One transform
+        /// write at most (only when an impact cut the flight short — a timeout lands
+        /// exactly on the anchor point the prism was already stamped at), then the flight
+        /// stamp is settled and the carried projectile goes home.
+        /// </summary>
+        private void AnchorPrism(Prism prism, Projectile carried, Transform homeParent,
+            bool stoppedByImpact, Vector3 anchorPoint)
+        {
+            if (prism)
             {
-                CSDebug.LogError($"[FullAutoBlockShoot] MoveAndAnchor error: {e}");
+                if (stoppedByImpact)
+                {
+                    // Interruption = re-stamp: the shot died early, so the mass belongs at
+                    // the impact point, not at maximum range. NotifyPositionChanged is the
+                    // sanctioned mover contract — spatial index, shell, and the render
+                    // entity matrix in one call.
+                    prism.transform.position = carried ? carried.transform.position : anchorPoint;
+                    prism.NotifyPositionChanged();
+                }
+
+                // The visual snaps to the transform, which is exactly where the shader had
+                // already drawn it — the stamp reaches zero offset at t = flightTime.
+                PrismRenderService.ClearFlightStamp(in prism.RenderHandle);
+            }
+
+            if (!carried) return;
+
+            // Home the carried projectile so a pooled reuse of this prism finds it intact.
+            // Note: the GameObject stays ACTIVE — deactivating it (as this path used to)
+            // is never undone, and the next prism drawn from the pool would fire as a dud.
+            if (carried.TryGetComponent<Collider>(out var col)) col.enabled = false;
+            if (carried.TryGetComponent<Rigidbody>(out var rb)) rb.isKinematic = true;
+
+            if (homeParent && carried.transform.parent != homeParent)
+            {
+                carried.transform.SetParent(homeParent, false);
+                carried.transform.localPosition = Vector3.zero;
+                carried.transform.localRotation = Quaternion.identity;
             }
         }
         #endregion
