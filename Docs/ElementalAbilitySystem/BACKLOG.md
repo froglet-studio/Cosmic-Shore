@@ -171,3 +171,26 @@ Mechanics reference: `_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_ENERGY_
     vessel's own jaw silhouettes, the omni crystal, the authored boost ring).
 14. **The Dolphin HUD has no `InputDeviceIconSetSwitcher`**, so `BindHintsToAbilities` never runs
     there and its control hints are unbound — same gap as the Sparrow (item 4).
+
+## Dolphin follow-ups (opened by `claude/dolphin-echobliteration-capsule-a0vs26`)
+
+15. **The rendered cone widens with the capsule's length, by construction.** `_maxExplosionScale`
+    is BOTH the capsule's length and the cone mesh's base diameter, because the capsule's tips ride
+    the visible base circle — that coupling is what keeps the damage volume inscribed in what the
+    player sees. Taking the length to 130% therefore widened the full-charge visual (base diameter
+    1600 → 2080) even though the blast destroys *less* mass than before off the gape axis. If the
+    visual reads too wide once observed in context, the fix is a decision, not a bug: either accept
+    it, retune the length, or decouple the mesh from the capsule and accept tips that reach past
+    the drawn cone. Do not silently do the third. `DOLPHIN_ENERGY_ECONOMY.md` §1.
+16. **The blast's vessel-impact volume is still one leading cross-section, not the swept solid.**
+    Prisms go through the exact Burst sweep, but explosion→vessel effects resolve through the
+    trigger collider riding the leading base plane — so a vessel the wavefront already passed is
+    only hit on the frame the plane reached it. The capsule change fixed the collider's SHAPE
+    (it now matches the sweep instead of contradicting it) but not its coverage in depth. Full
+    statement and why fixing it is a gameplay change needing its own branch:
+    `Docs/SPATIAL_INDEX.md` § Known limitations.
+17. **Only the Dolphin's crystal-blast asset carries `_coreExplosionScale`.** The other four
+    (`Manta`/`Rhino`/`Serpent`/`Squirrel`) will serialize it as `0` the next time Unity re-saves
+    them, which is the intended fallback (core = min = the plain circular cone) — but if one of
+    those vessels ever moves to the conic prefab, it needs the field authored or its blast rests
+    as a sphere.
