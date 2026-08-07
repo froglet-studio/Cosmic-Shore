@@ -1,6 +1,6 @@
 # QA Backlog — untested development on `bleeding-edge`
 
-Generated: 2026-08-06 · Scan covers: merges up to `2e2d3aaf` (PRs #583–#669) · **Owner of this file: the `/qa-backlog` skill — do not hand-edit.**
+Generated: 2026-08-07 · Scan covers: merges up to `9e8cf3f3` (PRs #583–#679) · **Owner of this file: the `/qa-backlog` skill — do not hand-edit.**
 
 Every item below landed on a shared branch without ever being opened in Unity by its author (or was play-tested only in part). Work top-down: P0 first.
 
@@ -106,7 +106,7 @@ Source: PRs #659, #639, #627, #641, #668, #651. These are NUnit suites authored 
 
 1. Window ▸ General ▸ Test Runner ▸ EditMode ▸ Run All.
 2. Record every failing test by name, plus the total pass/fail count.
-3. Specifically confirm these suites are present and green: `CellSpawnFormationTests`, `SkimmerSwingKinematicsTests`, `ShieldShellMathTests`, `VesselElementalMorphTests`, `VesselRigPartResolutionTests`, `SpeedTunnelLawTests`, `SettingsAutoDetectorTests`, `GeometryUtilsTests`, `PrismOcclusionCoverageTests`.
+3. Specifically confirm these suites are present and green: `CellSpawnFormationTests`, `SkimmerSwingKinematicsTests`, `ShieldShellMathTests`, `VesselElementalMorphTests`, `VesselRigPartResolutionTests`, `SpeedTunnelLawTests`, `SettingsAutoDetectorTests`, `GeometryUtilsTests`, `PrismOcclusionCoverageTests`, `ShipModifierTests` (PR #679), `DisplayNameValidatorTests` (PR #674/display-name-validation).
 
 PASS: all EditMode tests green and all nine suites present. FAIL: any red test (record the name + assertion message) or a suite that does not appear at all (means it did not compile into the test assembly).
 
@@ -125,6 +125,17 @@ Source: PRs #637, #641, #653, #659, #661, #668, #646, #650. Each auditor is a ch
 10. Build ▸ Pending Tool Changes (should list nothing unexpected)
 
 PASS: every tool runs without throwing, and each reports either clean or only the known exceptions: Serpent fails the skimmer audit; Manta/Rhino/Serpent are listed as design-blocked in the ability-row audit; Dolphin/Urchin/Rhino/Grizzly lack elemental morphs; `SkyboxModel` entries listed under OK in the cell-visual audit. FAIL: any tool that throws, or any new failure beyond the known exceptions above — especially "SCENE-PLACED DUPLICATES" or "DEAD CELL OVERRIDES" being non-empty.
+
+### QA-PRISM-OCCLUSION-SHATTER ⬜ — the corridor dither's new hard-edged SHATTER shape + Dither Lab tool
+Source: PR #677 (`prisms-occlusion-shapes`). 467 lines of new `PrismOcclusionCorridor.hlsl` (a new SHATTER kernel, triangular flecks, live scale dials) plus a brand-new editor tool `PrismOcclusionDitherLab.cs` (844 lines) — none of it compiled or run. This is the same platform-law surface as QA-PRISM-OCCLUSION; do that item too and treat this as the shape-specific delta.
+
+1. Load any scene with prisms. If any prism is magenta on load, the HLSL failed to compile — stop, FAIL, attach the shader error.
+2. Freestyle: put a wall of trail between the camera and your ship. The cleared region's stipple should now read as a **cracked lattice of hard-edged polygons** (SHATTER), not round or triangular flecks, and should not strobe.
+3. Hold still ~10 s: the pattern should slowly evolve/orbit, not freeze or twinkle.
+4. Open FrogletTools ▸ Ecology ▸ Prism Animation ▸ Occlusion Dither Lab. Confirm it opens without throwing, drives the kernel/scale live in play mode, and its coverage readout is sane. Change the kernel and scale and confirm the corridor updates in play.
+5. Console: zero `[PrismOcclusion]` errors.
+
+PASS: no magenta; the ship stays visible through corridor prisms; the SHATTER lattice reads as hard-edged cracked polygons and evolves smoothly; the Dither Lab opens, drives the effect live and reports coverage without throwing; no console errors. FAIL: magenta prisms · any HLSL/`[PrismOcclusion]` error · the Lab throwing or not affecting the corridor · a strobing/twinkling dither · the ship occluded.
 
 ## Priority 1 — merged features that have never been played
 
@@ -463,6 +474,80 @@ Source: PR #666 + `Docs/PartySystem/BUGS.md` (B2/B3/B5 open) + `Docs/PresenceSys
 
 PASS: B11/B13/B14 stay fixed (all instances reach `Present`; peers promote CONNECTING… → ONLINE; no Relay 500 on boot); the graceful-quit path evicts in < 1 s; fault rates are no worse than the last measurement. FAIL: any of B11/B13/B14 recurring, a graceful quit taking the reap path, or fault rates rising. Note B2/B3/B4/B5/B6 outcomes as data — they are known-open, so they do not fail this item, but their current behaviour is what we need recorded.
 
+### QA-SPARROW-BOOST-REDESIGN ⬜ — overheat removed, base strafing roll, Elemental Ward (Time-5)
+Source: PR #675 (`sparrow-ability-redesign`). Touches a **platform** surface (`ResourceSystem.ApplyElementalEffect`) plus two vessel prefabs edited as hand-written YAML — a removed GameObject, a removed resource slot, renamed serialized fields. Prefab integrity is the real risk. Reference: `SPARROW_AFTERBURNER.md` § In-editor verification.
+
+1. Project compiles with zero errors; no new console warnings on Sparrow or Serpent spawn. (Known pre-existing, not this branch: the Sparrow's `ElementalBarsController.view` reference is already dangling on `bleeding-edge`.)
+2. **Prefab integrity (top risk).** Open `Sparrow.prefab`: no missing-script slots; the `OverheatingBoostActionExecutor` child is gone; the `ResourceSystem` list reads Missiles / FullAuto / ExhaustBarrage (3 entries, no Heat); `SparrowHUDController.barrelRollController` points at the root's `BarrelRollController`; `VesselElementalImmunity` on the root reads `WhileBoosting` + `Time`. Then `Serpent.prefab`: `VesselElementalImmunity` on the root reads `WhileTranslationRestricted` + `None`.
+3. Hold boost 60 s — no force-release, no danger trail, no self-slam (overheat is gone).
+4. Time at 0: boost + full stick deflection rolls **once** per press (roll is now base kit, no Time gate).
+5. The boost (rightmost) ability icon's ring: full on press, wipes empty with a punch on roll, empty until the next press — never a partial fill.
+6. Time ≥ 5 (`ResourceSystem.TimeTestHarness = 0.5`): a danger prism **while boosting** → element flowers do not dip; **not boosting** → they dip. Slow and input-mute still land either way (by design).
+7. Serpent stopped + danger prism → no flower dip at any Time level.
+8. **MPPM two clients**, both Sparrows, one at Time 5: both machines agree on who resists the drain (replicated `NetElementUnlocks` path — a local read would pass step 6 and fail here).
+9. `FrogletTools ▸ Vessels ▸ Audit Vessel Ability Rows` — Sparrow still 4/4 in charge → mass → space → time.
+
+PASS: compiles clean; both prefabs intact per step 2; unlimited boost with no overheat side-effects; base-kit roll once per press; binary roll pip; Ward blocks only the elemental drain while boosting (Sparrow) / while stopped (Serpent), never the slow or mute; both peers agree; ability-row audit still 4/4. FAIL: compile error · any missing script or leftover Heat/overheat slot · boost force-releasing or laying a danger trail · roll not firing at Time 0 · Ward blocking the slow/mute, or blocking while not boosting · peers disagreeing · audit not 4/4.
+
+### QA-SPARROW-STOPPED-ROLL ⬜ — strafing roll works stopped, pitch/yaw 3× in the stationary stance
+Source: PR #679 (`sparrow-strafing-roll-stopped`). Code only — no prefab/scene/SO touched — so the risk is a compile check plus feel. Also raises the stopped turn rate on the **shared** `VesselTransformer`, so the **Serpent inherits it**. Adds `ShipModifierTests`. Reference: `SPARROW_AFTERBURNER.md`.
+
+1. Project compiles; run `CosmicShore.Tests.EditMode` — `ShipModifierTests` gained two cases pinning the new `ignoresTranslationRestriction` flag.
+2. Sparrow, **flying** roll first (regression risk): boost + full left stick → rolls and strafes once per press. Must be **unchanged**.
+3. Toggle the stationary/turret stance. Boost + full left stick → **rolls and strafes**; speed does not change; still once per press; charge ring arms and wipes as when flying.
+4. After the stopped roll: still stopped, still in fire mode, no trail/bridging prisms laid.
+5. **Stale-course check:** stopped, rotate to aim well away from your stop heading, then dodge — the strafe must go where the stick points relative to your **current** facing (a skew toward the old heading = wrong projection plane).
+6. **No banked lurch:** stopped, take a knockback (Rhino ram / danger prism) — you must not move; release the stance — you must not lurch.
+7. **Stopped turn rate:** flying, time a full 180° yaw; toggle the stance and repeat — roughly a third the time; pitch likewise; release and the rate drops straight back.
+7b. **Serpent:** stop into its weave stance, take a knockback, release — no movement stopped, no lurch after; note its pitch/yaw are **also 3×** stopped (same default). Any vessel: flying turn rates unchanged everywhere.
+8. **MPPM two clients:** roll while stopped on A; B sees the same displacement.
+
+PASS: compiles + `ShipModifierTests` green; flying roll unchanged; stopped roll strafes once per press with no speed/stance change and no prisms laid; strafe follows current facing; no movement/lurch from a stopped knockback; stopped pitch/yaw ~3× and snaps back on release; Serpent behaves the same; both peers agree. FAIL: compile/test failure · flying roll changed · stopped roll not firing, changing speed, or laying trail · strafe skewing to the old heading · a knockback moving or a release lurching a stopped vessel · stopped turn rate not ~3× or staying fast after release · peers disagreeing.
+
+### QA-DISPLAYNAME-VALIDATION ⬜ — one validated path for display names (filter/format/no-duplicates)
+Source: `display-name-validation` + PR #674 (`errors`) + the Cloud Save namespace fix in PR #677. A 494-line `DisplayNameValidator`, a `DisplayNameRegistry` over Cloud Save, and a 243-line `DisplayNameValidatorTests` suite — first import, and the registry needed two separate Cloud Save 3.4 API-namespace fixes (real compile risk).
+
+1. Project compiles with zero errors — specifically no unresolved Cloud Save / `Unity.Services.CloudSave.Models` namespace errors in `DisplayNameRegistry.cs`.
+2. Run `DisplayNameValidatorTests` in EditMode (also covered by QA-EDITMODE-TESTS) — all green.
+3. In the profile/username setup UI: try an empty name, an over-long name, disallowed characters, and profanity — each is rejected or auto-formatted per the rules, with clear feedback.
+4. Set a valid name; confirm it persists (Cloud Save) and shows in the profile widget and arcade profile.
+5. Attempt a name that collides with an existing one — the no-duplicates path must reject it.
+
+PASS: compiles clean; `DisplayNameValidatorTests` green; invalid names are filtered/formatted, valid ones persist and display, duplicates are rejected; no Cloud Save exceptions in the Console. FAIL: any compile/namespace error · a red validator test · an invalid name getting through or a valid one rejected · a duplicate accepted · a Cloud Save throw on save/load.
+
+### QA-MENU-CAMERA-RIG ⬜ — Cinemachine menu camera replaced by a vessel-framing config rig
+Source: `menu-camera-transitions`. `MainMenuCameraController` rewritten (~1,368 lines), new `MenuCameraConfigSO`, `Menu_Main.unity` edited, the old `CinemachineMatchTargetOrientation` deleted. Scene YAML + a large controller rewrite, never play-tested. Reference: CLAUDE.md § "Camera" / `Docs/CameraMigrationReview.md`.
+
+1. Open `Menu_Main.unity`: no `Missing (Mono Script)`, no dangling Cinemachine references, the menu camera object drives `MainMenuCameraController` with `MenuCameraConfigSO` assets assigned.
+2. Launch to `Menu_Main`: the autopilot vessel is framed cleanly (orbit / trail / chase / top-down configs each frame the local vessel), no jitter or wrong target.
+3. Tap the centre crystal → the camera blends onto the gameplay pose and hands to the player-cam; centre-tap back → it eases back to the menu framing. Both transitions are smooth, no snap.
+4. Navigate menu screens while the vessel drifts behind — camera stays stable.
+5. (If available) join a second client via party invite — each client's menu camera follows its own vessel.
+
+PASS: scene opens clean; every menu config frames the local vessel with no jitter/wrong target; the crystal in/out transitions are smooth with no snap; multi-client cameras stay independent. FAIL: missing scripts or dangling Cinemachine refs · a camera pointed at nothing / the wrong vessel · a hard snap or jitter on the freestyle transition · a camera that follows the wrong client's vessel.
+
+### QA-PAUSE-MENU-RETURN ⬜ — smoother game→menu return + pause-panel prewarm
+Source: `game-pause-menu-perf`. Changes the game→menu return path (`SceneLoader` +88 lines, `MultiplayerMiniGameControllerBase`) to unpause/veil/settle behind cover, and prewarms the pause panel so the first pause tap doesn't hitch. Return-flow changes can wedge, so this is play-verified, not read.
+
+1. Play any arcade game, then return to the menu (Home/return button). The return is smooth — no frozen frame, no visible half-loaded menu, no lingering pause state.
+2. In-game, open the pause menu on the **first** tap — it should appear without a hitch (prewarmed).
+3. Do a full round → return → launch another mode, twice, watching for a wedged return or a stuck veil.
+4. MPPM: a client returning to the menu is veiled and lands cleanly (no client racing the host's scene load).
+
+PASS: every game→menu return is smooth and lands on a clean menu; the first pause tap does not hitch; no wedged returns or stuck veils across repeated launches; clients return cleanly. FAIL: a frozen/half-loaded return · a first-pause hitch remaining · a return that wedges or leaves a veil up · a client desyncing on return.
+
+### QA-WILDLIFE-LIBERATION ⬜ — the Sparrow-only three-cage hunt (first free-for-all race)
+Source: `wildlifeliberation-game-mode` (merged and re-tuned through `9b9d9b60`, 2026-08-07; not previously on the QA list). `GameModes.WildlifeLiberation = 40` — three concentric cages at 1050/600/200 pen three tiers of wildlife; first PLAYER to 500 kills wins. Made every creature shootable and generalized the fauna pen into a per-species band. Reference: `_Scripts/Controller/Arcade/WILDLIFE_LIBERATION.md`.
+
+1. Launch `MinigameWildlifeLiberation` (any player count): no `Missing (Mono Script)`; the controller shows `WildlifeLiberationScoringRuleSO`; the Cell shows the three-cage containment.
+2. Confirm three nested cages at 1050 / 600 / 200 with three tiers of creatures — a heavy swarm of small ones outside, bigger in the middle, biggest/toughest in the core.
+3. As the Sparrow, shoot creatures' body prisms — every creature (not just the worm colony) dies to losing its body, withers (extremities first) and drops one elemental crystal.
+4. Confirm creatures stay penned to their band — outside their annulus nothing is prey and goals clamp back in; no creature is led to mass it cannot reach/eat.
+5. Play toward the target: the winner is resolved as a **PLAYER** (not a domain); domain sums stay as a secondary HUD readout. Reach 500 kills and confirm the round ends on that player.
+6. Watch the collider budget / frame time — this mode is deliberately very heavy.
+
+PASS: launches clean; three cages at the stated radii with the three tiers; every creature killable by body-prism destruction, withering to one crystal; creatures stay in their bands; the winner is a player at 500 kills with domain sums as secondary; frame time acceptable on target hardware. FAIL: missing scripts · a creature that can't be killed or that vanishes instead of withering · a body segment dropping a crystal or a capital dropping none · creatures escaping their band or being led to inedible mass · the mode resolving a winning domain instead of a player · a hard frame-time cliff.
+
 ## Priority 2 — lower risk, cosmetic, or data-gathering
 
 ### QA-P2-SERPENT-SKIMMER ⬜ — Serpent's dead skimmer (known, unfixed)
@@ -482,6 +567,16 @@ Known cosmetic gap: the prefab's world-space ParticleSystem child ignores the co
 
 ### QA-P2-LIFEFORM-MATRIX-MOONS ⬜ — element-crystal "moons" swallowed by the toy body
 Suspected pre-existing: the Lifeform Matrix's four crystal moons sit ~2.2 world units out while toys place at `toyBodyRadius = 22`. Look at the bench. PASS = the four moons are visible and distinct. FAIL = they are inside the sphere (then the fix is a placement value, not code).
+
+### QA-ANALYTICS-FLIGHT-TIME ⬜ — menu freestyle counts as flight time; starter/selected vessel to HANGAR_DATA
+Source: `game-data-json-schema`. `FlightClock`, `VesselUnlockSystem`, `UGSDataService` (Cloud Save +69) and `PlayerDataService` changed so menu-freestyle flight accrues flight time and the starter + `SelectedVessel` land in `HANGAR_DATA`. Data-path change with a Cloud Save save/load surface — mostly data-gathering, low gameplay risk.
+
+1. Menu_Main freestyle: take control and fly for a bit, return to menu.
+2. Confirm accrued flight time is recorded (analytics/HANGAR_DATA) rather than only in-game flight counting.
+3. Confirm the starter vessel and current `SelectedVessel` are written to `HANGAR_DATA` and survive a Cloud Save round-trip (relaunch).
+4. Watch the Console for any Cloud Save serialization error.
+
+PASS: menu-freestyle flight time is recorded; starter + selected vessel persist in `HANGAR_DATA` across a relaunch; no Cloud Save exceptions. FAIL: freestyle flight not counted · vessel fields missing or not persisting · a Cloud Save serialization throw. (Deliverable here is partly data — note the observed values.)
 
 ## Not covered by this list
 
