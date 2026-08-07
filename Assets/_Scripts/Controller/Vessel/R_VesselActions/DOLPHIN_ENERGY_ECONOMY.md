@@ -106,9 +106,37 @@ opacity fade, the impulse/debris contract, friendly fire, and the Space reach mu
 `LeftStickAction` (the Dolphin's drift) starts **four** actions, one of which is
 `ChargeBoostAction`. `StartAction` → `BeginCharge`, `StopAction` → `BeginDischarge`:
 
-- **hold drift** → the Boost meter fills over `chargeTimeToFull: 4` s (×1.5 at Time 10).
-- **release drift** → it drains over `dischargeTimeToEmpty: 2` s, `BoostMultiplier` riding the
-  remaining charge from `maxBoostMultiplier: 2` back down to 1.
+- **hold drift** → the Boost meter fills over `chargeTimeToFull: 3.636` s (×1.5 at Time 10).
+- **release drift** → it drains over `dischargeTimeToEmpty: 2.5` s, `BoostMultiplier` riding the
+  remaining charge from `maxBoostMultiplier: 2.259` back down to 1.
+
+### The speed ladder, and why the peak multiplier is squared
+
+`VesselTransformer.ComputeThrottleTarget` is `XDiff × ThrottleScaler × ThrottleScalerMultiplier
+× CurrentBoostAmount() + MinimumSpeed`, and `CurrentBoostAmount()` multiplies **two** boost
+terms during a discharge: `BoostMultiplier` (which the discharge routine rewrites every tick as
+it decays 2.259 → 1) **and** `ChargedBoostCharge` (pinned at the value the charge ended on, so
+2.259 off a full meter). The authored peak is therefore **squared** at the top of a discharge —
+`maxBoostMultiplier²`, not `maxBoostMultiplier`. That is shipped behaviour on both the executor
+and the legacy `ChargeBoostAction`, and it is what the numbers below are tuned against; do not
+change it as a side-effect of a tuning pass.
+
+| quantity | formula | value |
+|---|---|---|
+| max cruise speed | `ThrottleScaler(68) × 1 + MinimumSpeed(10)` | **78** |
+| max boost speed | `68 × 2.259² + 10` | **357** |
+| charge fill rate | `1 / chargeTimeToFull` | 0.275 /s |
+| boost drain rate | `1 / dischargeTimeToEmpty` | 0.40 /s |
+
+`ThrottleScalerMultiplier` is authored `Enabled: 0` on the Dolphin, so it evaluates to its
+serialized `Value: 1` and the map's Time multiplier reaches boost speed only through
+`CurrentBoostAmount` (also 1 at the resting level). `MinimumSpeed` is deliberately **not**
+scaled with the top speed — the floor is the drift/idle speed and was left as authored.
+
+Speed is a platform-law input, not a private number: the speed tunnel
+(`Docs/SPEED_TUNNEL.md`) maps speed to FOV **absolutely and fleet-wide**, so a faster Dolphin
+reaches deeper into the tunnel because it *is* faster. That is the intended coupling — there is
+no per-vessel window to re-normalize.
 
 **Do not re-add a passive `resourceGainRate` to the Boost slot, and do not re-add
 `rechargeCooldownSeconds`.** Both were present and both broke the stated design in the same
@@ -270,7 +298,10 @@ Play Menu_Main, enter freestyle on the Dolphin.
 | ram a prism | gape halves |
 | hit a crystal | blast fires, gape snaps back to the 4.76° rest, Space icon flashes with a prism count |
 | blast at full energy | destruction is a FAN — wide across the jaw plane, narrow across the beam |
+| full throttle, no boost | `VesselStatus.Speed` settles at **78** (was 60) |
 | hold drift | boost ring steps up; release → speed rises then decays; ring empties |
+| hold drift from empty to full | ring fills in **~3.6 s** (was 4) |
+| release a full meter | speed peaks near **357** and takes **~2.5 s** to fall back (was 210 / 2 s) |
 | fly straight without drifting | ring does **not** climb |
 | drift, release, drift again | speed returns to normal — no stuck multiplier |
 | Charge to level 5 | second crystal pip appears; two crystals plantable back to back |
