@@ -21,8 +21,8 @@ The Dolphin has **two** resources and they are not the same thing:
 
 | event | effect on Energy | authored in |
 |---|---|---|
-| skim a prism | **+0.1** (max 1.0, so ten skims fills it) | `DolphinSkimmerChangeResourceByPrismEffect` |
-| skim a DANGER prism, Time L5 active | **+0.3** (×3) | same asset, `_dangerBonusElement` / `_dangerBonusMultiplier` |
+| skim a prism | **+0.006667** (max 1.0, so 150 skims fills it) | `DolphinSkimmerChangeResourceByPrismEffect` |
+| skim a DANGER prism, Time L5 active | **+0.02** (×3, so 50 danger skims fills it) | same asset, `_dangerBonusElement` / `_dangerBonusMultiplier` |
 | ram a prism | **halved** | `DolphinVesselChangeResourceByPrismEffect` |
 | hit a crystal | **set to 0** — spent entirely | `DolphinVesselChangeResourceByCrystalEffect` (`_overrideAmount`) |
 
@@ -236,7 +236,7 @@ eleven-sprite gauge is the whole readout.
 
 ### Why a skim punches the jaws
 
-One skim moves the gape by a tenth of its range — about 2°, invisible. The three signals
+One skim moves the gape by a 150th of its range — about 0.12°, invisible. The three signals
 wired to a skim are otherwise: a haptic pulse that is a **no-op on desktop**, and a beam VFX
 that only draws if the skimmed prism authors a `ParticleEffect`. So the discrete event gets
 its own beat: `DolphinVesselHUDController` treats an energy **rise** as the skim (nothing
@@ -294,7 +294,7 @@ Play Menu_Main, enter freestyle on the Dolphin.
 | **FrogletTools > Vessels > Audit Vessel Ability Rows** | Dolphin: map complete, 4/4 icons, order ✅ |
 | fly through cell mass | crackle arcs across the skimmer sphere per prism; jaw icon punches; gape widens |
 | at zero energy | jaws sit slightly open (4.76°/side), NOT shut — hull and Time icon agree |
-| keep skimming | model's jaws open toward 23.4° per side; Time icon matches at every step |
+| keep skimming | model's jaws open toward 23.4° per side (**~150 skims** to full); Time icon matches at every step |
 | ram a prism | gape halves |
 | hit a crystal | blast fires, gape snaps back to the 4.76° rest, Space icon flashes with a prism count |
 | blast at full energy | destruction is a FAN — wide across the jaw plane, narrow across the beam |
