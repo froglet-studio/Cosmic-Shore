@@ -43,6 +43,11 @@ namespace CosmicShore.Gameplay
                 Vessel               = ss.Vessel,
                 MaxScale             = ComputeScaleForShip(ss, minExplosionScale, maxExplosionScale, resourceIndex)
                                        * Mathf.Max(0.01f, sizeMultiplier),
+                // The blast at EMPTY resource - the width a conic blast keeps across the beam at
+                // every charge, with charge buying capsule length along the vessel's gape instead
+                // of radius. Carries the same Space multiplier as MaxScale so the two stay one
+                // self-similar family and Space still cannot steal the angle the resource set.
+                CoreScale            = minExplosionScale * Mathf.Max(0.01f, sizeMultiplier),
                 OverrideMaterial     = overrideMaterial ? overrideMaterial : ss.AOEExplosionMaterial,
                 AnnonymousExplosion  = false,
                 SpawnPosition        = shipTransform.position + shipTransform.TransformDirection(localOffset),

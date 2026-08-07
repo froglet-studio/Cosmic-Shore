@@ -29,27 +29,60 @@ The Dolphin has **two** resources and they are not the same thing:
 Energy has **no passive regeneration** (`resourceGainRate: 0`), which is what makes the skim
 the only way to arm the blast.
 
-### Energy IS the cone's angle
+### Energy IS the jaw gape
 
 The crystal impact releases a conic AOE whose **base diameter** lerps with energy:
 
 ```
 MaxScale   = lerp(400, 1600, energy) × sizeMultiplier      (base DIAMETER)
-height     = 2400 × sizeMultiplier                          (axial reach)
-halfAngle  = atan((MaxScale / 2) / height)
+CoreScale  = 400                     × sizeMultiplier      (CLOSED-JAW diameter)
+height     = 2400                    × sizeMultiplier      (axial reach)
+gapeAngle  = atan((MaxScale / 2) / height)
            = atan(lerp(400, 1600, energy) / 4800)           ← sizeMultiplier cancels
+coreAngle  = atan((CoreScale / 2) / height) = atan(1/12) = 4.76°   (never moves)
 ```
 
-`sizeMultiplier` is the SPACE scaling, and it multiplies **both** — self-similarly — precisely
-so it cannot steal the angle energy just set. So:
+`sizeMultiplier` is the SPACE scaling, and it multiplies **all three** — self-similarly —
+precisely so it cannot steal the angle energy just set. So:
 
-- **Energy owns the ANGLE** (4.76° empty → **18.43°** full, per side).
-- **Space owns the SIZE** (×0.35 … ×2 of the whole cone, angle unchanged).
+- **Energy owns the GAPE** (4.76° empty → **18.43°** full, per side).
+- **Space owns the SIZE** (×0.35 … ×2 of the whole blast, angles unchanged).
 
 `AOEConicExplosion.prefab` authors `height: 2400`; `DolphinVesselExplosionByCrystalEffect`
 authors `_minExplosionScale: 400` / `_maxExplosionScale: 1600`.
 
 **Change either number and `RiptideAnimation.MaxJawAngle` must follow** (§3).
+
+#### The destruction volume is a CAPSULE sweep, not a circular cone
+
+The blast does not open out equally in every direction — it opens the way the **jaws** open.
+The swept volume's cross-section at axial depth `s` is a 2D **stadium**: a disc of the
+closed-jaw radius, dragged along the gape axis (the container is spawned with the ship's
+rotation, so the authored `AOEConicExplosion.gapeAxis = (0,1,0)` is ship UP — exactly the axis
+`RiptideAnimation` pivots `jaw.u` / `jaw.b` across).
+
+```
+core half-width  = 4.76° worth of s          fixed — never grows with energy
+gape half-length = (gapeAngle − 4.76°) worth of s     all of what energy buys
+tip extent       = core + gape = gapeAngle worth of s
+```
+
+So at **empty** energy `MaxScale == CoreScale`, the stadium has zero length and the volume is
+the plain circular cone it always was — bit for bit, same radius, same sweep. At **full**
+energy the blast is a fan: **18.43° across the gape, still 4.76° across the beam.** The
+capsule's tips land exactly on the rendered cone's base circle, so the damage volume stays
+inscribed in the cone the player sees; it simply no longer fills it off-axis.
+
+Both the Burst query (`AOEConicSweepQueryJob`, one point-to-segment distance instead of a
+point-to-axis one — same cost class) and the trigger collider carry the shape: the trigger is a
+`CapsuleCollider` whose radius is pinned to the core and whose length spans the base diameter
+(`AOEConicExplosion.UpdateCapsuleTrigger`), so the two can't diverge. **Do not put a
+`SphereCollider` back on `AOEConicExplosion.prefab`** — a dev-build warning fires if a blast
+opens a gape without a capsule trigger, because then vessel impacts silently keep the old
+circular envelope.
+
+Everything else about the blast is untouched: the rendered cone, the wavefront speed, the
+opacity fade, the impulse/debris contract, friendly fire, and the Space reach multiplier.
 
 ---
 
@@ -84,9 +117,14 @@ boost multiplier permanently.
 ## 3. The hull reads out the blast
 
 `RiptideAnimation` opens the model's jaws with Energy, so a pilot can see how wide their next
-blast is without looking at the HUD. `MaxJawAngle` **must equal the cone's half-angle at full
-energy** — today `atan((1600 / 2) / 2400) = 18.435°`. It was 21° against an 18.43° cone until
-this was measured.
+blast is without looking at the HUD. `MaxJawAngle` **must equal the blast's gape half-angle at
+full energy** — today `atan((1600 / 2) / 2400) = 18.435°`. It was 21° against an 18.43° cone
+until this was measured.
+
+Since the blast became a capsule sweep (§1), this is no longer just a matched number: the jaws
+and the blast open **across the same axis**, so the hull's silhouette IS the blast's silhouette
+in that plane. Perpendicular to the gape the blast stays at the 4.76° core the closed jaws
+already describe.
 
 The HUD's jaw icon takes its maximum from `RiptideAnimation.MaxJawAngleDegrees`
 (`DolphinVesselHUDController` → `view.SetMaxJawAngle`), so the cockpit and the hull cannot

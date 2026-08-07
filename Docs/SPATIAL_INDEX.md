@@ -181,7 +181,7 @@ blocked for up to 5s). `AssembledFlora` orders its random-skip *before*
 | `CollectShellContacts(probes, count, hits)` | `PrismShellContactManager` **only** | Shell-contact tier: one synchronous Burst pass testing every shield-flagged slot's analytic shell (octahedron / stella two-tet union, exact) against the frame's probe set |
 | `GetRegisteredPrism(index)` | `PrismShellContactManager` (same-frame resolve) | Managed back-reference for a query-result slot — same parallel-array resolve the explosion path uses |
 | `ProcessExplosionFrame(center, radius, blastOrigin, impulse, …, alreadyHit, pending)` | `ExplosionImpactor` **only** | Batch AOE damage for the **spherical** explosion (Burst). `center` is stationary and `radius` grows, so each frame's query volume strictly CONTAINS the previous frame's. `blastOrigin` is the emission point every impact vector radiates from; the job emits `AOEHit {index, unit direction}` pairs, normalizing in-job via `math.rsqrt` so the main-thread damage pass never pays a per-hit managed sqrt. `impulse` (`ExplosionImpulse`) carries speed x inertia AND the debris speed ceiling as one value — see "Impulse" below |
-| `ProcessExplosionConeFrame(apex, axis, sliceMin, sliceMax, tanHalfAngle, …)` | `ExplosionImpactor` **only** | Batch AOE damage for the **conic** explosion (Burst, `AOEConicSweepQueryJob`). An EXACT test against the rendered cone over the axial slab `[sliceMin, sliceMax]` it newly covers this frame; successive slabs tile the swept cone, so coverage is frame-rate independent and never reaches past the visible tip. `tanHalfAngle` = baseRadius/height, invariant as the self-similar cone grows. The apex is both cone origin and blast origin |
+| `ProcessExplosionConeFrame(apex, axis, gapeAxis, sliceMin, sliceMax, tanCoreHalfAngle, tanGapePerUnit, …)` | `ExplosionImpactor` **only** | Batch AOE damage for the **conic** explosion (Burst, `AOEConicSweepQueryJob`). An EXACT test against the swept blast over the axial slab `[sliceMin, sliceMax]` it newly covers this frame; successive slabs tile the sweep, so coverage is frame-rate independent and never reaches past the visible tip. The cross-section is a **capsule** (a 2D stadium), not a disc: radius `tanCoreHalfAngle * s`, half-length `tanGapePerUnit * s` along `gapeAxis` (the axis the emitting vessel's jaws open across). Both tangents are invariant as the self-similar blast grows, and their SUM is the rendered cone's base radius — so the capsule is inscribed in the visible cone, touching it exactly along the gape. `tanGapePerUnit == 0` collapses the test to the original circular cone term for term. The apex is both sweep origin and blast origin |
 | `DrainPendingExplosionDamage(pending, impulse, …)` | `ExplosionImpactor` **only** | Resolves budget-deferred damage without a new query. Called after the visual ends so a blast dense enough to exceed the per-frame budget still damages everything it enclosed |
 | `SetCellBinding(index, cellId, envMass, domain)` | `Cell.AddBlock` **only** | Bind a slot into a cell's summation view |
 | `ClearCellBinding(index, cellId)` | `Cell.RemoveBlock` **only** | Release a slot from the owning cell's summation view (no-op for non-owners) |
@@ -448,17 +448,20 @@ lost coverage. The lever for shortening it is the per-prism destruction cost
   use it for"). Routing mound blocks through the real `Initialize` lifecycle
   would retire that probe, but changes their layer/collider/grow behavior and
   must be its own tested change.
-- The conic explosion's **vessel** hit volume is still a sphere, not the cone.
-  Prisms go through the exact `ProcessExplosionConeFrame` slab, but
-  explosion->vessel effects resolve through `AOEConicExplosion`'s trigger
-  `SphereCollider`, which rides the cone's MIDPOINT with radius = half the
-  current base width. At the Dolphin's max charge that ball spans roughly
-  z in [400, 2000] of a 2400-long cone: it bulges outside the mantle mid-cone,
-  never reaches the tip, and never covers the apex region. The impact VECTOR is
-  already apex-radial (`CalculateImpactVector` overrides to the cone container),
-  so only WHO gets hit is wrong. Fixing it means a cone containment test on the
-  vessel path — a gameplay change to the blast's reach, so it wants its own
-  branch and a play test, not a drive-by.
+- The conic explosion's **vessel** hit volume is still a single leading
+  cross-section, not the whole swept solid. Prisms go through the exact
+  `ProcessExplosionConeFrame` slab, but explosion->vessel effects resolve through
+  `AOEConicExplosion`'s trigger collider, which rides the leading BASE PLANE with
+  the cross-section the Burst query is using there — since the capsule change, a
+  `CapsuleCollider` of the core radius extended along the gape axis
+  (`UpdateCapsuleTrigger`), so its SHAPE now matches the sweep instead of
+  contradicting it. What it still does not cover is the volume BEHIND that plane:
+  a vessel the wavefront already passed is only hit on the frame the plane
+  reached it. The impact VECTOR is already apex-radial
+  (`CalculateImpactVector` overrides to the cone container), so only WHO gets hit
+  is affected. Fixing it means a full sweep containment test on the vessel path —
+  a gameplay change to the blast's reach, so it wants its own branch and a play
+  test, not a drive-by.
 
 ## Roadmap
 
