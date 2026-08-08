@@ -196,17 +196,29 @@ jobs:
       group: bleeding-edge-autofix
       cancel-in-progress: false
     steps:
-      - name: Check for an API key
+      # Either credential works and they bill differently, so the choice is the
+      # repo owner's rather than this file's:
+      #   ANTHROPIC_API_KEY       - console.anthropic.com key, billed to the
+      #                             Anthropic org that owns it (API credits).
+      #   CLAUDE_CODE_OAUTH_TOKEN - Claude Code token, drawn against that
+      #                             account's Pro/Max subscription instead.
+      # Set whichever one you want to pay from; the key wins if both are set.
+      - name: Check for a credential
         id: key
         env:
-          # Through env rather than inline interpolation, so the value is never
-          # pasted into the generated shell script.
+          # Through env rather than inline interpolation, so neither value is
+          # ever pasted into the generated shell script.
           KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          OAUTH: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
         run: |
           if [ -n "$KEY" ]; then
             echo "have=true" >> "$GITHUB_OUTPUT"
+            echo "Authenticating with ANTHROPIC_API_KEY (billed to that Anthropic organization)."
+          elif [ -n "$OAUTH" ]; then
+            echo "have=true" >> "$GITHUB_OUTPUT"
+            echo "Authenticating with CLAUDE_CODE_OAUTH_TOKEN (drawn against that Claude Code subscription)."
           else
-            echo "::warning::ANTHROPIC_API_KEY is not set, so no autofix was attempted."
+            echo "::warning::Neither ANTHROPIC_API_KEY nor CLAUDE_CODE_OAUTH_TOKEN is set, so no autofix was attempted. Verification still failed; it simply was not repaired automatically."
             echo "have=false" >> "$GITHUB_OUTPUT"
           fi
 
@@ -220,7 +232,10 @@ jobs:
         if: steps.key.outputs.have == 'true'
         uses: anthropics/claude-code-action@v1
         with:
+          # Both are passed; the action ignores whichever is empty. See the
+          # credential check above for which one bills where.
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           prompt: |
             Commit ${{ github.sha }} broke verification on bleeding-edge.
 
