@@ -97,6 +97,13 @@ jobs:
         with:
           lfs: true         # the project stores binary assets in Git LFS
           fetch-depth: 1
+          # Do NOT clean. The default runs `git clean -ffdx`, which deletes
+          # Library/ every run and forces a full asset reimport - that is what
+          # made the first compile take 18 minutes, and it would have taken 18
+          # minutes on every push forever. A warm Library is the whole reason
+          # this job runs on an owned machine. Tracked files are still
+          # force-reset by the checkout, so the tree still matches the commit.
+          clean: false
 
       - name: Compile check
         id: compile

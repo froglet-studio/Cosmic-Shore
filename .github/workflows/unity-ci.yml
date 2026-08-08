@@ -130,6 +130,13 @@ jobs:
           ref: ${{ needs.resolve.outputs.ref }}
           lfs: true          # the project stores binary assets in Git LFS
           fetch-depth: 1
+          # Do NOT clean. The default runs `git clean -ffdx`, which deletes
+          # Library/ on every run and forces a full asset reimport - 18 minutes
+          # of the last compile run, and far worse for an IL2CPP build. A warm
+          # Library is the entire reason this tier runs on an owned machine.
+          # Tracked files are still force-reset by the checkout itself, so the
+          # working tree is faithful to the commit regardless.
+          clean: false
 
       - name: Resolve Unity
         shell: bash
@@ -177,7 +184,13 @@ jobs:
                 -projectPath "$PWD"
                 -executeMethod CosmicShore.Editor.CosmicShoreBuildPipeline.BuildWindowsRelease
                 -buildOutput "$BUILD_OUTPUT"
-                -buildCommit "$(git rev-parse HEAD)"
+                # github.sha, not `git rev-parse HEAD`: actions/checkout writes its
+                # safe.directory exception into a TEMPORARY gitconfig and removes it
+                # afterwards, so a later step shelling out to git hits "detected
+                # dubious ownership" and exits 128 whenever the workspace is owned by
+                # a different principal than the runner user. The SHA is already in
+                # the context; asking git for it was a dependency with no upside.
+                -buildCommit "${{ github.sha }}"
                 -logFile -)
 
           # The nightly tier uses Mono: it proves the project still produces a player in a third of
