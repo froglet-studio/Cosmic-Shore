@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
+using CosmicShore.Utility;
 using DG.Tweening;
 using TMPro;
 using UnityEngine;
@@ -130,6 +131,7 @@ namespace CosmicShore.UI
         Graphic _jawUpperGraphic, _jawLowerGraphic;
         Color _jawArmedColor = Color.white;
         float _jawArm01 = -1f;
+        bool _warnedArmingUnavailable;
 
         float _blastCountTimer;
         int _lastChargesShown = -1;
@@ -358,8 +360,9 @@ namespace CosmicShore.UI
         /// <summary>
         /// Caches the jaw halves' Graphics and the armed colour. The lime is read from the shared
         /// <see cref="ElementalBarsConfigSO"/> rather than authored here, so the "this is maxed"
-        /// green is literally the same value a full element flower shows. With no config the jaws
-        /// simply never arm — better than minting a second copy of the colour that can drift.
+        /// green is literally the same value a full element flower shows — never a second copy that
+        /// can drift. Both failure modes degrade to "the jaws never arm", which is invisible, so
+        /// each one says so once and names the fix.
         /// </summary>
         void ResolveJawGraphics()
         {
@@ -368,6 +371,24 @@ namespace CosmicShore.UI
 
             if (!barsConfig) barsConfig = Resources.Load<ElementalBarsConfigSO>(barsConfigResourcePath);
             _jawArmedColor = barsConfig ? barsConfig.limeColor : jawRestColor;
+
+            if (_warnedArmingUnavailable) return;
+
+            if (!barsConfig)
+            {
+                _warnedArmingUnavailable = true;
+                CSDebug.LogWarning($"[DolphinVesselHUDView] '{name}' found no ElementalBarsConfigSO at " +
+                                   $"Resources/{barsConfigResourcePath}, so the jaw gauge will never turn " +
+                                   "lime at full energy. Assign barsConfig on the HUD prefab, or restore " +
+                                   "the asset - the armed colour is deliberately not authored here.");
+            }
+            else if ((jawUpper || jawLower) && !_jawUpperGraphic && !_jawLowerGraphic)
+            {
+                _warnedArmingUnavailable = true;
+                CSDebug.LogWarning($"[DolphinVesselHUDView] '{name}' has jaw RectTransforms wired but " +
+                                   "neither carries a Graphic, so the full-energy lime cannot be drawn. " +
+                                   "Point jawUpper/jawLower at the Image objects (JawUpper/JawLower).");
+            }
         }
 
         /// <summary>

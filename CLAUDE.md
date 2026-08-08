@@ -2091,6 +2091,10 @@ scale bump** with a one-shot unlock punch.
   The Dolphin deliberately runs with **both** `tintIconOnUpgrade` and `showUpgradeBadge` off —
   all four of its icons are live gauges, so the persistent scale bump is its only upgrade
   signal, which is why nothing in `DolphinVesselHUDView` writes an icon transform per event.
+  Its Time slot **does** tint — the jaw pair blends to `ElementalBarsConfigSO.limeColor` over
+  the top 15% of banked skim energy — but that is a GAUGE colour carrying gauge meaning, and it
+  lands on the jaw halves, not on the row's (fully transparent) Time icon, so it never collides
+  with the upgrade path. Reading it as an upgrade tint is the mistake to avoid.
   Mechanics: `_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_ENERGY_ECONOMY.md`.
 
   Manta / Rhino / Serpent are blocked on **design, not wiring**: their

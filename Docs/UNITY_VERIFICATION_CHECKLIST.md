@@ -428,7 +428,9 @@ reimported any of it yet.
    already there, no broken hierarchy, HUD still lays out. (Sparrow, Rhino, Squirrel,
    Serpent, Manta and the six vessel prefabs lost real GameObjects; the rest lost keys.)
 2. Play Menu_Main → freestyle on the **Dolphin**: no `[ElementalBarsController]` runtime
-   warning that was not there before; the four ability icons still bind (FrogletTools >
+   warning that was not there before, and **no `[DolphinVesselHUDView]` warning at all** — it
+   fires once if the shared bars config is missing or the jaw refs carry no Graphic, either of
+   which means the lime CTA is silently dead. The four ability icons still bind (FrogletTools >
    Vessels > **Audit Vessel Ability Rows** → Dolphin 4/4, order ✅).
 3. Fly the other vessels' HUDs briefly (Sparrow, Squirrel, Rhino, Serpent, Manta) and
    confirm nothing visually disappeared *except* the ship outline.
