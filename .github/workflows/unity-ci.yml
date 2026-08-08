@@ -91,7 +91,26 @@ jobs:
           PROCEED=true
 
           if   [[ "$EVENT" == "workflow_dispatch" ]]; then MODE="${{ inputs.mode }}"; REF=""
-          elif [[ "$EVENT" == "pull_request"      ]]; then MODE="compile";            REF=""
+
+          # A pull request keeps the FREE static checks (the conditional-
+          # compilation job, ubuntu, seconds) but does NOT take the Unity runner.
+          #
+          # There is one build machine and dozens of open pull requests, so every
+          # push to any of them queued a compile - and bleeding-edge-guard.yml
+          # then compiled the very same code again once it merged. Paying twice
+          # for one answer is what starved the scheduled IL2CPP builds.
+          #
+          # What this gives up is prevention: trunk can now go red for the few
+          # minutes before the guard notices. That is an accepted trade, because
+          # the guard runs on every push INCLUDING the direct merge pushes a PR
+          # gate never sees, reports through a tracking issue, and can autofix.
+          # Detection minutes behind beats prevention that saturates the runner.
+          #
+          # Run it on demand for a PR you want proven before merge:
+          #   Actions > Unity CI > Run workflow > compile > pick the branch.
+          elif [[ "$EVENT" == "pull_request" ]]; then
+            MODE="compile"; REF=""; PROCEED=false
+            echo "Pull request: static checks only. The Unity compile runs post-merge in bleeding-edge-guard.yml."
 
           # ── Tuesday pre-flight, against development ──
           # development is what the Wednesday promotion moves into build/* for UGS
