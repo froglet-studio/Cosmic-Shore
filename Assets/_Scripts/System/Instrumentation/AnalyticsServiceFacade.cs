@@ -144,7 +144,6 @@ namespace CosmicShore.Core
             _gameData.OnMiniGameEnd.OnRaised += HandleMiniGameEnd;
             _lifecycleEvents.OnAppPaused.OnRaised += HandleAppPaused;
             _lifecycleEvents.OnAppQuitting.OnRaised += HandleAppQuitting;
-            AdsSystem.AdLoaded += HandleAdLoaded;
             TryWireUiActions();
 
             // Crash capture follows the same opt-in gate as analytics. Applied here so a returning
@@ -722,7 +721,6 @@ namespace CosmicShore.Core
             });
         }
 
-        void HandleAdLoaded() => RecordEvent(UGSKeys.EventAdImpression);
 
         #endregion
 
