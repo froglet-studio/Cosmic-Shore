@@ -45,6 +45,12 @@ concurrency:
   group: bleeding-edge-guard
   cancel-in-progress: true
 
+env:
+  # The label is how the tracking issue is found again on the next run, the same
+  # convention sync-build-branches.yml uses for its promotion report.
+  REPORT_LABEL: ci-bleeding-edge
+  REPORT_TITLE: 'Bleeding-edge is broken'
+
 jobs:
   # ──────────────────────────────────────────────
   #  1. Static validation - always runs, no Unity
@@ -169,7 +175,113 @@ jobs:
           retention-days: 14
 
   # ──────────────────────────────────────────────
-  #  3. Autofix - repair and open a PR, never push to trunk
+  #  3. Report - one tracking issue that says whether trunk is broken right now
+  #
+  #  GitHub's built-in email only reaches the person whose push failed, which is
+  #  the wrong audience: a broken trunk is everyone's problem and the person who
+  #  pushed may already be offline. A single labelled issue is opened when trunk
+  #  breaks, commented on if it breaks again, and CLOSED when trunk goes green,
+  #  so "is bleeding-edge healthy?" is answerable at a glance and everyone
+  #  watching the repository is notified. Same convention as the promotion
+  #  report in sync-build-branches.yml.
+  # ──────────────────────────────────────────────
+  report:
+    name: Report status
+    needs: [validate, unity]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - name: Open, update or close the tracking issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VALIDATE: ${{ needs.validate.result }}
+          UNITY: ${{ needs.unity.result }}
+          KIND: ${{ needs.unity.outputs.failure_kind }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          SHA: ${{ github.sha }}
+          ACTOR: ${{ github.actor }}
+        run: |
+          set -euo pipefail
+
+          # Classify. A skipped unity job means no runner is configured, which is
+          # a gap rather than a break, so it must not raise an alarm.
+          broken=false
+          summary=""
+          if [ "$VALIDATE" = "failure" ]; then
+            broken=true
+            summary="Static validation failed."
+          elif [ "$UNITY" = "failure" ]; then
+            broken=true
+            case "$KIND" in
+              compile) summary="**The project did not compile.** This is what breaks the Windows build." ;;
+              tests)   summary="Edit-mode tests failed. The project DID compile, so this is not a build break." ;;
+              *)       summary="The Unity job failed before it could classify the failure." ;;
+            esac
+          fi
+
+          # The label must exist before it can be filtered on. Creating it is
+          # idempotent; a 422 just means it is already there.
+          gh api -X POST "repos/$GITHUB_REPOSITORY/labels" \
+            -f name="$REPORT_LABEL" -f color="b60205" \
+            -f description="Bleeding-edge verification status" >/dev/null 2>&1 || true
+
+          num=$(gh api "repos/$GITHUB_REPOSITORY/issues?state=open&labels=$REPORT_LABEL&per_page=1" \
+                  --jq '.[0].number // empty')
+
+          if [ "$broken" = false ]; then
+            # Only speak on the transition back to green. Commenting on every
+            # healthy push would make the notification worthless.
+            if [ -n "$num" ]; then
+              gh api -X POST "repos/$GITHUB_REPOSITORY/issues/$num/comments" \
+                -f body="Recovered. \`$SHA\` verified clean. [Run]($RUN_URL)" >/dev/null
+              gh api -X PATCH "repos/$GITHUB_REPOSITORY/issues/$num" -f state=closed >/dev/null
+              echo "Trunk recovered; closed issue #$num."
+            else
+              echo "Trunk is green and no issue was open. Nothing to report."
+            fi
+            exit 0
+          fi
+
+          # Heredoc, not printf: the table rows must be separated by SINGLE
+          # newlines or GitHub does not render them as a table at all.
+          # Every line stays at the script's indentation: this is inside a YAML
+          # block scalar, and a line at column 1 ends the block. YAML strips the
+          # common indent, so the heredoc still reaches bash flush-left.
+          body=$(cat <<EOF
+          $summary
+
+          | | |
+          |---|---|
+          | Commit | \`$SHA\` |
+          | Pushed by | @$ACTOR |
+          | Run | $RUN_URL |
+          | Static validation | $VALIDATE |
+          | Unity compile | $UNITY${KIND:+ ($KIND)} |
+
+          Open the run above for the failing output. A compile break prints its
+          \`error CS\` lines inline and attaches the full editor log as an artifact.
+
+          This issue closes itself automatically when bleeding-edge next verifies clean.
+          EOF
+          )
+
+          if [ -z "$num" ]; then
+            num=$(gh api -X POST "repos/$GITHUB_REPOSITORY/issues" \
+                    -f title="$REPORT_TITLE" -f body="$body" \
+                    -f "labels[]=$REPORT_LABEL" --jq .number)
+            echo "Opened issue #$num."
+          else
+            gh api -X POST "repos/$GITHUB_REPOSITORY/issues/$num/comments" \
+              -f body="$body" >/dev/null
+            echo "Trunk still broken; commented on issue #$num."
+          fi
+
+  # ──────────────────────────────────────────────
+  #  4. Autofix - repair and open a PR, never push to trunk
   # ──────────────────────────────────────────────
   autofix:
     name: Attempt autofix
