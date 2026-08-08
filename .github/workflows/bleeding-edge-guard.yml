@@ -1,23 +1,34 @@
 name: Bleeding-edge guard
 
-# Verifies every commit that LANDS on bleeding-edge, and attempts a repair when
-# one breaks. This is the workflow that exists so nobody has to discover a
-# broken trunk by hand at build time.
+# Verifies every commit that LANDS on an integration branch, and attempts a
+# repair when one breaks. This is the workflow that exists so nobody has to
+# discover a broken trunk by hand at build time.
+#
+# Guards TWO branches, for different reasons:
+#   bleeding-edge  all work lands here, so a break is cheapest to fix while it
+#                  is still one push old rather than fifty commits deep.
+#   development    the source the Wednesday promotion reads. BUILD_PROMOTION_
+#                  REQUIRES_GREEN gates on check-runs against that commit, so
+#                  without CI here that gate can never be switched on.
 #
 # Why a push trigger and not just the PR gate in unity-ci.yml:
-#   Most work reaches this branch as a direct merge push
+#   Most work reaches these branches as a direct merge push
 #   ("Merge remote-tracking branch 'origin/claude/...' into bleeding-edge"),
 #   which fires no pull_request event at all. unity-ci.yml therefore never sees
 #   those commits. This does.
 #
 # Defence in depth, cheapest first:
-#   1. validate  - static checks, ubuntu, seconds, no Unity and no license.
+#   1. validate  - static checks, ubuntu, seconds, no Unity and no license. Also
+#                  decides whether stage 2 is warranted at all (see the scope
+#                  step): a docs-only push cannot break a Unity build.
 #   2. unity     - a real compile (edit-mode tests force one). This is the only
 #                  stage that can see the failures Python cannot: package-level
 #                  compile errors, asset import breakage, AOT/IL2CPP problems.
-#   3. autofix   - Claude repairs the mechanical classes of failure and opens a
-#                  PR. It NEVER pushes to bleeding-edge directly; a bad autofix
-#                  landing unreviewed on trunk is worse than the original break.
+#   3. report    - one self-closing tracking issue PER BRANCH saying whether
+#                  that branch is broken right now.
+#   4. autofix   - Claude repairs the mechanical classes of failure and opens a
+#                  PR. It NEVER pushes to the guarded branch directly; a bad
+#                  autofix landing unreviewed on trunk is worse than the break.
 #
 # The unity job stays SKIPPED until the repository variable UNITY_RUNNER_LABEL
 # is set, exactly as in unity-ci.yml and build-branch-ci.yml. Skipping rather
@@ -33,23 +44,31 @@ name: Bleeding-edge guard
 
 on:
   push:
-    branches: [bleeding-edge]
+    # bleeding-edge is where all work lands, so a break there is cheapest to fix
+    # while it is still one push old. development is the source the Wednesday
+    # promotion reads, and BUILD_PROMOTION_REQUIRES_GREEN gates on check-runs
+    # against THAT commit - without CI here that gate can never be switched on.
+    branches: [bleeding-edge, development]
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  # One guard per branch. A newer push supersedes an in-flight check; there is
-  # no value in verifying a commit that is already not the branch tip.
-  group: bleeding-edge-guard
+  # Keyed by ref, NOT a fixed string. A shared group would make a push to
+  # development cancel an in-flight bleeding-edge run and vice versa, silently
+  # leaving one of the two branches unverified. Within a single branch a newer
+  # push still supersedes: there is no value in verifying a commit that is
+  # already not the tip.
+  group: branch-guard-${{ github.ref }}
   cancel-in-progress: true
 
 env:
+  # Per-branch, so a broken development never reads as a broken bleeding-edge.
   # The label is how the tracking issue is found again on the next run, the same
   # convention sync-build-branches.yml uses for its promotion report.
-  REPORT_LABEL: ci-bleeding-edge
-  REPORT_TITLE: 'Bleeding-edge is broken'
+  REPORT_LABEL: ci-${{ github.ref_name }}
+  REPORT_TITLE: '${{ github.ref_name }} is broken'
 
 jobs:
   # ──────────────────────────────────────────────
@@ -59,11 +78,59 @@ jobs:
     name: Static validation
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    outputs:
+      # Whether this push touched anything a Unity compile could possibly care
+      # about. Read by the unity job to skip the expensive stage on pushes that
+      # cannot affect a build.
+      unity_relevant: ${{ steps.scope.outputs.unity_relevant }}
     steps:
       - uses: actions/checkout@v4
         with:
           lfs: false        # source-only checks; binary assets are not needed
           fetch-depth: 1
+
+      # A docs-, workflow- or tooling-only push cannot break a Unity build, and
+      # proving that costs minutes of the single self-hosted runner that IL2CPP
+      # builds also queue behind. Compare the pushed range through the API
+      # rather than deepening the checkout: this is a ~2.8 GB repository and
+      # fetch-depth 0 would cost more than the compile being avoided.
+      #
+      # Fail SAFE in every direction. A first push to a branch, a force-push, a
+      # manual dispatch, an API hiccup, or a range so large the compare endpoint
+      # truncates its file list - all resolve to "run the compile". Skipping is
+      # only ever chosen from positive evidence that nothing relevant changed.
+      - name: Decide whether a Unity compile is warranted
+        id: scope
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT: ${{ github.event_name }}
+          BEFORE: ${{ github.event.before }}
+          SHA: ${{ github.sha }}
+        run: |
+          set -uo pipefail
+          run_it() { echo "unity_relevant=true"  >> "$GITHUB_OUTPUT"; echo "Unity compile: RUN ($1)"; exit 0; }
+          skip_it(){ echo "unity_relevant=false" >> "$GITHUB_OUTPUT"; echo "Unity compile: SKIP ($1)"; exit 0; }
+
+          [ "$EVENT" = "push" ] || run_it "not a push event"
+          case "$BEFORE" in
+            ''|0000000000000000000000000000000000000000) run_it "no usable before-SHA (new branch or force-push)" ;;
+          esac
+
+          resp=$(gh api "repos/$GITHUB_REPOSITORY/compare/$BEFORE...$SHA" 2>/dev/null) \
+            || run_it "compare API unavailable"
+
+          # The compare endpoint caps its file list at 300. A truncated list
+          # cannot prove absence, so treat it as relevant.
+          total=$(echo "$resp" | jq -r '.files | length')
+          [ "$total" -ge 300 ] && run_it "$total files (compare list truncated)"
+
+          files=$(echo "$resp" | jq -r '.files[].filename')
+          echo "Changed files ($total):"; echo "$files" | sed 's/^/  /'
+
+          if echo "$files" | grep -qE '^(Assets/|Packages/|ProjectSettings/|Tools/CI/|Tools/Build/|\.github/workflows/)'; then
+            run_it "touched code, assets, project settings, CI tooling or a workflow"
+          fi
+          skip_it "nothing a Unity build reads was changed"
 
       # Both checkers have no-opped while still reporting OK. Prove they can
       # detect their own fixtures BEFORE trusting a clean scan.
@@ -85,7 +152,11 @@ jobs:
   unity:
     name: Unity compile
     needs: validate
-    if: vars.UNITY_RUNNER_LABEL != ''
+    # Two gates. No runner configured -> skip cleanly rather than queue forever
+    # against a label nobody answers. Nothing a build reads was touched -> skip,
+    # because this stage costs minutes of a single machine that IL2CPP player
+    # builds also queue behind.
+    if: vars.UNITY_RUNNER_LABEL != '' && needs.validate.outputs.unity_relevant == 'true'
     runs-on: ${{ vars.UNITY_RUNNER_LABEL }}
     timeout-minutes: 60
     outputs:
@@ -171,8 +242,11 @@ jobs:
           echo "::error::Edit-mode tests failed. The project compiled, so this is not a build break. Set UNITY_TESTS_BLOCKING=false to downgrade this to a warning while the suite is greened up."
           exit 1
 
+      # Only on failure. Nobody has ever opened the editor log of a green run,
+      # and uploading ~1 MB per push on a branch that sees dozens a day is pure
+      # noise. When it IS needed, it is the artifact the autofix reads.
       - uses: actions/upload-artifact@v4
-        if: always()
+        if: failure()
         with:
           name: editmode-results-${{ github.run_id }}
           path: |
@@ -272,7 +346,7 @@ jobs:
           Open the run above for the failing output. A compile break prints its
           \`error CS\` lines inline and attaches the full editor log as an artifact.
 
-          This issue closes itself automatically when bleeding-edge next verifies clean.
+          This issue closes itself automatically when ${{ github.ref_name }} next verifies clean.
           EOF
           )
 
@@ -312,7 +386,7 @@ jobs:
     # Serialised and never cancelled: two overlapping failures must not race to
     # open duplicate pull requests.
     concurrency:
-      group: bleeding-edge-autofix
+      group: branch-guard-autofix-${{ github.ref }}
       cancel-in-progress: false
     steps:
       # Either credential works and they bill differently, so the choice is the
@@ -347,7 +421,7 @@ jobs:
           lfs: false
           fetch-depth: 0
 
-      - name: Fix and open a PR against bleeding-edge
+      - name: Fix and open a PR against the guarded branch
         if: steps.key.outputs.have == 'true'
         uses: anthropics/claude-code-action@v1
         with:
@@ -356,7 +430,7 @@ jobs:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           prompt: |
-            Commit ${{ github.sha }} broke verification on bleeding-edge.
+            Commit ${{ github.sha }} broke verification on ${{ github.ref_name }}.
 
             Reproduce first. Run, in this order, and read the output:
               python3 Tools/CI/validate_project.py
@@ -395,13 +469,13 @@ jobs:
             guessing. A wrong autofix on trunk costs more than a red check.
 
             Re-run both validators until they pass, then open a pull request
-            against bleeding-edge.
+            against ${{ github.ref_name }}.
 
-            NEVER push directly to bleeding-edge. It is the integration trunk
+            NEVER push directly to ${{ github.ref_name }}. It is an integration trunk
             and an unreviewed autofix landing on it is worse than the break it
             was meant to repair.
 
             Before opening anything, check whether an open pull request from a
             previous autofix attempt already exists (look for the head branch
-            prefix `autofix/bleeding-edge`). If one does, push to that branch and
+            prefix `autofix/${{ github.ref_name }}`). If one does, push to that branch and
             update its description instead of opening a second pull request.
