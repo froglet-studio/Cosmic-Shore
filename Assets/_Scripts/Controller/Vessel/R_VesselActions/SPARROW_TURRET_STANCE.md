@@ -106,6 +106,34 @@ saying which. That event **is** "wherever the bullet would be destroyed", made a
 belongs to a pooled *prism*, not the projectile pool, and the null-factory branch would
 otherwise `Destroy` the host's child on the first stopping impact.
 
+### The one deliberate wart — judge this in play
+
+Because the prism is spawned at the destination with gameplay state final, its **own** collider
+and spatial-index registration go live there the moment the shot is fired — roughly 0.3 s before
+the visual arrives. For ~0.3 s there is tangible, ecosystem-visible mass at maximum range that the
+player watches the prism still flying toward, and on a stopping impact that mass then relocates to
+the impact point.
+
+This is what `PRISM_ANIMATION.md` §1 prescribes ("gameplay state goes final at start") and what C5
+asks for by name ("collider/gameplay at destination"), and it is the reason the flight can cost
+zero CPU. It was flagged in review as a possible gameplay bug, and that judgement genuinely needs a
+human at the controls — a third party flying through the anchor point during the flight would hit
+a prism they cannot see there yet.
+
+**If it feels wrong**, the remedy is small and local: keep the prism's `blockCollider` down and
+defer the `PrismSpatialIndex` registration until `AnchorPrism`, which is what the pre-clock code
+did. That costs a narrow suppression flag on `Prism` (because `CreateBlockCoroutine` owns the
+collider enable) and moves the mass accounting off "final at start". Do not solve it by putting the
+prism back on a CPU flight.
+
+### Degradation if a flight is cancelled
+
+`Projectile.MoveProjectileAsync` swallows `OperationCanceledException` without running its tail, so
+a flight cancelled by destruction never raises `FlightEnded` and its prism keeps a live flight
+stamp and an inflated bounds envelope. The visual is still correct — the shader clamps at
+`Duration`, so it rests exactly on the anchor — and the next `Prism.Initialize` on that pooled
+instance clears the stamp. It is a cull-efficiency loss on a torn-down scene, not a visible defect.
+
 ## MASS still owns the stance
 
 - **MASS quantitative** stretches the fired prism's long axis (`blockScale.z ×
@@ -204,6 +232,14 @@ hold fire (input 1).
     permanently and never re-activated it).
 12. **MPPM two-client.** Prisms appear in the same places on both; pierce state comes from the
     shooter's own replicated `NetElementUnlocks`.
+13. **The deliberate wart (see above).** With a second player, have them fly through the point a
+    held burst is anchoring at while shots are still in the air. They will collide with prisms
+    whose visuals have not arrived. Decide whether that is acceptable; the remedy is documented.
+14. **No hitching under a sustained hold.** The turret prism pool was resized for 60/s
+    (defaultCapacity 40, bufferSizeTarget 90, maxAddsPerFrame 8) because anchored prisms are never
+    returned, so every shot past the buffer is a fresh `Instantiate`. Watch the profiler during a
+    long hold; if it still spikes, raise `bufferSizeTarget`/`maxAddsPerFrame` on the Sparrow's
+    `BlockProjectilePoolManager` further.
 
 **Shader wiring gates** (asset-only, no play mode): `python3
 Tools/Shaders/wire_prism_flight_clock.py --check` must print OK for both graphs, and

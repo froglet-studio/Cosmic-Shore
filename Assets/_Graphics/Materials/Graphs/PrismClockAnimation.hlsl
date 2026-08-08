@@ -188,6 +188,15 @@ void PrismFlightClock_float(float Clock, float StartTime, float Duration, float3
 #else
     // Full inverse-model linear transform, unnormalized (see header comment).
     ObjectOffset = mul((float3x3)GetWorldToObjectMatrix(), worldOffset);
+    // A prism pulled fresh from the pool sits at localScale ZERO until its creation
+    // coroutine completes (the bloom's start fraction is derived from that zero, so it
+    // must not be pre-written). Its model matrix is degenerate for those frames and the
+    // inverse blows up. The entity is DisableRendering'd until SetRenderVisible(true),
+    // so this should never reach a raster — the guard is there so that "should" is not
+    // load-bearing. Written as a NEGATED finite test: every comparison against NaN is
+    // false, so NaN falls into the reset branch.
+    if (!(dot(ObjectOffset, ObjectOffset) < 1e12))
+        ObjectOffset = float3(0.0, 0.0, 0.0);
 #endif
 }
 

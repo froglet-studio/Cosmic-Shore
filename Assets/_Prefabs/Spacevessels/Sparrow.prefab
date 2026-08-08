@@ -1663,13 +1663,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   prefab: {fileID: 4563009547826722997, guid: 2de9e3b14a5518041ad99111194d0591, type: 3}
-  defaultCapacity: 10
-  maxSize: 100
+  defaultCapacity: 40
+  maxSize: 200
   enableBufferMaintenance: 1
-  bufferSizeTarget: 20
-  maxInstantiateRate: 20
-  baseInstantiateRate: 5
-  maxAddsPerFrame: 4
+  bufferSizeTarget: 90
+  maxInstantiateRate: 90
+  baseInstantiateRate: 30
+  maxAddsPerFrame: 8
 --- !u!114 &5511220033445566778
 MonoBehaviour:
   m_ObjectHideFlags: 0

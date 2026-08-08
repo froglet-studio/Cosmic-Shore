@@ -167,13 +167,17 @@ namespace CosmicShore.Gameplay
 
         public void LaunchProjectile(float projectileTime)
         {
-            if (!_factory)
+            // A carried projectile has no factory BY DESIGN — its lifetime belongs to the
+            // pooled host it is part of — so only shout about a missing one when there
+            // should have been one.
+            if (!_factory && !IsCarriedByHost)
             {
                 CSDebug.LogError("No factory for this projectile found. Can't return to pool!");
             }
 
             FlightGeneration++;
-            audioSystem.PlayGameplaySFX(GameplaySFXCategory.ProjectileLaunch, transform.position);
+            if (audioSystem)
+                audioSystem.PlayGameplaySFX(GameplaySFXCategory.ProjectileLaunch, transform.position);
             ProjectileTime = projectileTime;
 
             if (_detachOnLaunch && transform.parent)

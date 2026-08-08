@@ -64,6 +64,17 @@ dead code carrying two racing `Destroy` timers on a visible prism.
    ghost fields. Also confirm `Sparrow Projectile Prism.prefab` shows `waitTime` **0** (at 0.5 the
    prism was still invisible when its 0.3 s flight ended).
 
+**Two things review flagged that a play-test must settle:**
+
+- **The prism's own collider is live at the DESTINATION for the whole flight** (its transform is
+  final there from the stamp — that is what `PRISM_ANIMATION.md` §1 prescribes and what makes the
+  flight free). A third party flying through the anchor point mid-flight hits a prism whose visual
+  has not arrived. Judge it; the local remedy is written up in `SPARROW_TURRET_STANCE.md`
+  § "The one deliberate wart".
+- **Pool pressure.** Anchored prisms are never returned, so at 60/s every shot past the buffer is a
+  fresh `Instantiate`. The Sparrow's turret prism pool was resized for it (defaultCapacity 40,
+  bufferSizeTarget 90, maxAddsPerFrame 8) — watch the profiler on a long hold.
+
 **Asset-only gates that should already pass** (run them first — they need no play mode):
 `python3 Tools/Shaders/wire_prism_flight_clock.py --check` (OK on both graphs) and
 `FrogletTools > Ecology > Prism Animation > Validate Clock Wiring`.

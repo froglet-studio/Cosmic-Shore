@@ -465,8 +465,12 @@ namespace CosmicShore.Gameplay
         /// otherwise the live prism mesh — except while an exotic visual owns rendering,
         /// where <c>meshFilter.sharedMesh</c> is transient per-prism morph geometry that
         /// must never reach Entities Graphics (see <see cref="_authoredMesh"/>).
+        ///
+        /// Internal rather than private because it is also the right answer for anything
+        /// sizing a clock animation's <c>RenderBounds</c> envelope: a shielded prism must
+        /// be measured against its octahedron, not the box it would otherwise report.
         /// </summary>
-        Mesh EffectiveRenderMesh()
+        internal Mesh EffectiveRenderMesh()
         {
             if (_renderMeshOverride != null) return _renderMeshOverride;
             if (_exoticVisualActive) return _authoredMesh;

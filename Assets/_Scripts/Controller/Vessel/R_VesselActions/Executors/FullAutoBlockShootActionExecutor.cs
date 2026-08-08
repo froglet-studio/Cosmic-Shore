@@ -90,10 +90,11 @@ namespace CosmicShore.Gameplay
 
             if (!isActiveAndEnabled) return;
 
-            _cts = CancellationTokenSource.CreateLinkedTokenSource(
+            var cts = CancellationTokenSource.CreateLinkedTokenSource(
                 this.GetCancellationTokenOnDestroy());
+            _cts = cts;
 
-            FireLoopAsync(so, _cts.Token).Forget();
+            FireLoopAsync(so, cts).Forget();
         }
 
         public void End()
@@ -118,12 +119,14 @@ namespace CosmicShore.Gameplay
         #endregion
 
         #region Core Loop
-        private async UniTaskVoid FireLoopAsync(FullAutoBlockShootActionSO so, CancellationToken token)
+        private async UniTaskVoid FireLoopAsync(FullAutoBlockShootActionSO so, CancellationTokenSource cts)
         {
+            var token = cts.Token;
+
             if (!blockFactory)
             {
                 CSDebug.LogError("[FullAutoBlockShootActionExecutor] BlockFactory not assigned.");
-                ClearLoopHandle();
+                ClearLoopHandle(cts);
                 return;
             }
 
@@ -133,7 +136,7 @@ namespace CosmicShore.Gameplay
                     "[FullAutoBlockShootActionExecutor] The action's bulletAction is unwired — " +
                     "turret cadence, speed and flight time are adopted from it, so there is " +
                     "nothing to fire with.");
-                ClearLoopHandle();
+                ClearLoopHandle(cts);
                 return;
             }
 
@@ -198,17 +201,24 @@ namespace CosmicShore.Gameplay
             }
             finally
             {
-                ClearLoopHandle();
+                ClearLoopHandle(cts);
             }
         }
 
-        /// <summary>Drop the loop handle without cancelling — the loop is already over.
-        /// Leaving a live _cts behind is what would latch the next Begin() into a no-op.</summary>
-        private void ClearLoopHandle()
+        /// <summary>
+        /// Drop the loop handle without cancelling — the loop is already over. Leaving a
+        /// live _cts behind is what would latch the next Begin() into a no-op.
+        ///
+        /// The identity check is load-bearing: UniTask.Delay observes cancellation on the
+        /// NEXT PlayerLoop tick, so an outgoing loop's finally can run AFTER a replacement
+        /// loop has already installed its own source. Without it, the dying loop would
+        /// dispose the live one and End() would never be able to stop the turret again.
+        /// </summary>
+        private void ClearLoopHandle(CancellationTokenSource cts)
         {
-            if (_cts == null) return;
-            _cts.Dispose();
-            _cts = null;
+            if (cts == null) return;
+            if (ReferenceEquals(_cts, cts)) _cts = null;
+            cts.Dispose();
         }
 
         private void FireOne(FullAutoBlockShootActionSO so, Transform muzzle, Quaternion rotOffset,
@@ -224,11 +234,9 @@ namespace CosmicShore.Gameplay
             var prism = blockFactory.GetBlock(so.PrismType, anchorPoint, muzzle.rotation * rotOffset, null);
             if (!prism) return;
 
-            // Stationary shots bypass Projectile.LaunchProjectile's own SFX for the prism
-            // itself, so play the launch sound here — the flying-mode guns get theirs from
-            // LaunchProjectile.
-            if (audioSystem)
-                audioSystem.PlayGameplaySFX(GameplaySFXCategory.ProjectileLaunch, muzzle.position);
+            // No launch SFX here: the carried projectile's LaunchProjectile plays it, exactly
+            // as the flying-mode guns do. Playing one here too made every turret shot fire
+            // two launch sounds.
 
             prism.transform.SetParent(null, true);
 
@@ -248,12 +256,18 @@ namespace CosmicShore.Gameplay
             // Initialize is the documented pool-spawn entry point every other pooled-prism
             // spawner in the project uses.
             prism.Initialize(_status.PlayerName);
-            prism.RegisterProjectileCreated(_status.PlayerName);
+
+            // NOT RegisterProjectileCreated: it raises the same prism-created SOAP channel
+            // that Initialize's creation coroutine already raises, so every turret shot
+            // counted as two prisms created (and double-credited its volume) in
+            // StatsManager. Its other job — owner attribution — is one field.
+            prism.ownerID = _status.PlayerName;
+            prism.prismProperties.position = anchorPoint;
 
             StampFlight(prism, velocity, flightTime, range, blockScale);
 
             LaunchCarriedProjectile(prism, muzzle, velocity, flightTime, domainAtShot,
-                piercing, anchorPoint);
+                piercing, anchorPoint, blockScale);
 
             OnBlockShot?.Invoke(_status?.PlayerName);
         }
@@ -292,8 +306,8 @@ namespace CosmicShore.Gameplay
             // barrel — it would pop in halfway down the shot. The sweep vector is the
             // muzzle offset (minus the whole flight vector) in object space. Reset first:
             // pooled reuse must not compound envelopes run over run.
-            var meshFilter = prism.GetComponent<MeshFilter>();
-            if (meshFilter) PrismRenderService.ResetBoundsToMesh(in prism.RenderHandle, meshFilter.sharedMesh);
+            var mesh = prism.EffectiveRenderMesh();
+            if (mesh) PrismRenderService.ResetBoundsToMesh(in prism.RenderHandle, mesh);
 
             // Object-space muzzle offset. NOT Transform.InverseTransformVector: a
             // just-pulled prism sits at localScale ZERO until its creation coroutine
@@ -319,7 +333,8 @@ namespace CosmicShore.Gameplay
         /// path, and what decides where the flight ends.
         /// </summary>
         private void LaunchCarriedProjectile(Prism prism, Transform muzzle, Vector3 velocity,
-            float flightTime, Domains domainAtShot, bool piercing, Vector3 anchorPoint)
+            float flightTime, Domains domainAtShot, bool piercing, Vector3 anchorPoint,
+            Vector3 blockScale)
         {
             var carried = prism.GetComponentInChildren<Projectile>(true);
             if (!carried)
@@ -331,7 +346,14 @@ namespace CosmicShore.Gameplay
             }
 
             var carriedTransform = carried.transform;
-            var homeParent = carriedTransform.parent;
+
+            // Wake it for the flight. The anchor puts it back to sleep, and that
+            // deactivate/activate cycle is what keeps Projectile's OnEnable/OnDisable
+            // bookkeeping honest — most importantly PrismColliderLodManager's focus
+            // registration, which is how the prisms along the shot's path have their
+            // colliders awake by the time it arrives. Leaving it permanently active
+            // leaked one focus entry per anchored prism, forever.
+            if (!carried.gameObject.activeSelf) carried.gameObject.SetActive(true);
 
             // Give it the same identity a bullet gets at fire time. Without a VesselStatus
             // the impact chain has no player (the damage helper dereferences status.Player)
@@ -347,6 +369,15 @@ namespace CosmicShore.Gameplay
                 carriedByHost: true);
 
             carriedTransform.SetParent(null, true);
+
+            // Size it EXPLICITLY. The prism it just detached from is still at localScale
+            // ZERO — its creation coroutine has not run yet — and SetParent(worldPositionStays)
+            // preserves world scale, so the projectile would inherit a zero-volume trigger and
+            // the shot would collide with nothing. Parented under a grown prism its world
+            // scale is the prism's, so that is what it takes here. (This is the same class of
+            // failure as the zero-scale prism itself: a degenerate collider that fails
+            // silently.)
+            carriedTransform.localScale = blockScale;
             carriedTransform.SetPositionAndRotation(muzzle.position, muzzle.rotation);
             carried.Velocity = velocity;
 
@@ -354,7 +385,7 @@ namespace CosmicShore.Gameplay
             if (carried.TryGetComponent<Rigidbody>(out var rb)) rb.isKinematic = false;
 
             carried.FlightEnded += (p, stoppedByImpact) =>
-                AnchorPrism(prism, p, homeParent, stoppedByImpact, anchorPoint);
+                AnchorPrism(prism, p, stoppedByImpact, anchorPoint);
 
             carried.LaunchProjectile(flightTime);
         }
@@ -365,8 +396,8 @@ namespace CosmicShore.Gameplay
         /// exactly on the anchor point the prism was already stamped at), then the flight
         /// stamp is settled and the carried projectile goes home.
         /// </summary>
-        private void AnchorPrism(Prism prism, Projectile carried, Transform homeParent,
-            bool stoppedByImpact, Vector3 anchorPoint)
+        private void AnchorPrism(Prism prism, Projectile carried, bool stoppedByImpact,
+            Vector3 anchorPoint)
         {
             if (prism)
             {
@@ -377,28 +408,52 @@ namespace CosmicShore.Gameplay
                     // sanctioned mover contract — spatial index, shell, and the render
                     // entity matrix in one call.
                     prism.transform.position = carried ? carried.transform.position : anchorPoint;
+                    prism.prismProperties.position = prism.transform.position;
                     prism.NotifyPositionChanged();
                 }
 
                 // The visual snaps to the transform, which is exactly where the shader had
                 // already drawn it — the stamp reaches zero offset at t = flightTime.
                 PrismRenderService.ClearFlightStamp(in prism.RenderHandle);
+
+                // Give the culling envelope back. StampFlight inflated RenderBounds to cover
+                // the whole muzzle-to-anchor sweep (~470 object units on a 5-unit prism);
+                // anchored turret prisms are permanent mass that is never released, so
+                // without this every one of them would be un-cullable for the rest of the
+                // session — a held burst is hundreds of them.
+                var mesh = prism.EffectiveRenderMesh();
+                if (mesh) PrismRenderService.ResetBoundsToMesh(in prism.RenderHandle, mesh);
             }
 
             if (!carried) return;
 
-            // Home the carried projectile so a pooled reuse of this prism finds it intact.
-            // Note: the GameObject stays ACTIVE — deactivating it (as this path used to)
-            // is never undone, and the next prism drawn from the pool would fire as a dud.
+            // The prism died mid-flight (its collider is live at the anchor point from the
+            // stamp, so anyone can shoot it). The carried projectile is DETACHED at that
+            // moment, so it does not go down with its host — it would sit in the world
+            // forever. It is a part of a prism that no longer exists: destroy it.
+            if (!prism)
+            {
+                Destroy(carried.gameObject);
+                return;
+            }
+
+            // Home it under the prism it belongs to. The prefab parents ProjectileCollider
+            // directly to the prism root, so this is the authored home by construction —
+            // reading transform.parent at fire time would capture null on a prism whose
+            // previous flight had not landed.
+            var carriedTransform = carried.transform;
+            carriedTransform.SetParent(prism.transform, false);
+            carriedTransform.localPosition = Vector3.zero;
+            carriedTransform.localRotation = Quaternion.identity;
+
             if (carried.TryGetComponent<Collider>(out var col)) col.enabled = false;
             if (carried.TryGetComponent<Rigidbody>(out var rb)) rb.isKinematic = true;
 
-            if (homeParent && carried.transform.parent != homeParent)
-            {
-                carried.transform.SetParent(homeParent, false);
-                carried.transform.localPosition = Vector3.zero;
-                carried.transform.localRotation = Quaternion.identity;
-            }
+            // Sleep it: OnDisable releases the collider-LOD focus this flight registered,
+            // and the next shot from this pooled prism wakes it again in
+            // LaunchCarriedProjectile. (The old code deactivated it here and never
+            // re-activated, so a recycled prism fired as a dud.)
+            carried.gameObject.SetActive(false);
         }
         #endregion
     }
