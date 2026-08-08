@@ -25,8 +25,14 @@ on:
   pull_request:
     branches: [bleeding-edge]
   schedule:
-    - cron: '0 7 * * *'    # 07:00 UTC daily  -> mono player build
-    - cron: '0 8 * * 0'    # 08:00 UTC Sunday -> il2cpp release build
+    - cron: '0 7 * * *'    # 07:00 UTC daily   -> mono player build   (bleeding-edge)
+    - cron: '0 8 * * 0'    # 08:00 UTC Sunday  -> il2cpp release build (bleeding-edge)
+    # 13:00 UTC Tuesday -> il2cpp PRE-FLIGHT against development, the day before
+    # a promotion Wednesday. One cron, not the DST twin pair the promotion
+    # workflows use: 13:00 UTC is 06:00 PDT / 05:00 PST, and an hour of seasonal
+    # drift is immaterial for a check whose whole purpose is to leave a full day
+    # of slack. The twin machinery exists there to hit an exact business hour.
+    - cron: '0 13 * * 2'
   workflow_dispatch:
     inputs:
       mode:
@@ -53,6 +59,12 @@ jobs:
     outputs:
       mode: ${{ steps.pick.outputs.mode }}
       ref: ${{ steps.pick.outputs.ref }}
+      proceed: ${{ steps.pick.outputs.proceed }}
+    env:
+      # Must match sync-build-branches.yml. The pre-flight is only meaningful on
+      # the Tuesday before a promotion, so it counts the same cycle.
+      CYCLE_ANCHOR: '2026-08-12'
+      CYCLE_DAYS: '21'
     steps:
       - id: pick
         shell: bash
@@ -60,21 +72,49 @@ jobs:
           set -euo pipefail
           EVENT="${{ github.event_name }}"
           SCHEDULE="${{ github.event.schedule }}"
+          PROCEED=true
 
-          if   [[ "$EVENT" == "workflow_dispatch" ]]; then MODE="${{ inputs.mode }}"
-          elif [[ "$EVENT" == "pull_request"      ]]; then MODE="compile"
-          elif [[ "$SCHEDULE" == "0 8 * * 0"      ]]; then MODE="il2cpp"
-          else                                             MODE="mono"
+          if   [[ "$EVENT" == "workflow_dispatch" ]]; then MODE="${{ inputs.mode }}"; REF=""
+          elif [[ "$EVENT" == "pull_request"      ]]; then MODE="compile";            REF=""
+
+          # ── Tuesday pre-flight, against development ──
+          # development is what the Wednesday promotion moves into build/* for UGS
+          # to build. Nothing else ever player-builds it: the nightly and weekly
+          # tiers are pinned to bleeding-edge, and the branch guard only compiles.
+          # Without this, UGS produces the FIRST player build anyone has made of
+          # that code - which is the "find out at build time" failure this whole
+          # pipeline exists to prevent. IL2CPP, because that is the backend a
+          # shipping build uses; a Mono pass cannot see AOT or native link errors.
+          elif [[ "$SCHEDULE" == "0 13 * * 2" ]]; then
+            MODE="il2cpp"; REF="development"
+
+            # Only the Tuesday before an ON-CYCLE Wednesday. Promotion runs every
+            # three weeks, so firing every Tuesday would spend two IL2CPP builds
+            # in three on a commit nothing is about to ship.
+            tomorrow="$(date -u -d 'tomorrow' +%F)"
+            days=$(( ( $(date -u -d "$tomorrow" +%s) - $(date -u -d "$CYCLE_ANCHOR" +%s) ) / 86400 ))
+            if [[ "$days" -lt 0 ]]; then
+              PROCEED=false
+              echo "Tomorrow ($tomorrow) is before the cycle anchor $CYCLE_ANCHOR; no pre-flight."
+            elif [[ $(( days % CYCLE_DAYS )) -ne 0 ]]; then
+              PROCEED=false
+              echo "Tomorrow ($tomorrow) is day $days of the cycle, not a promotion Wednesday; no pre-flight."
+            else
+              echo "Tomorrow ($tomorrow) is a promotion Wednesday. Pre-flighting development."
+            fi
+
+          elif [[ "$SCHEDULE" == "0 8 * * 0" ]]; then MODE="il2cpp"; REF="bleeding-edge"
+          else                                        MODE="mono";   REF="bleeding-edge"
           fi
 
           # Scheduled workflows always run the DEFAULT branch's copy of this file and check out the
-          # default branch. Pin scheduled runs to bleeding-edge explicitly so the nightly verifies
-          # the integration branch regardless of what the default branch happens to be.
-          if [[ "$EVENT" == "schedule" ]]; then REF="bleeding-edge"; else REF=""; fi
+          # default branch, so every scheduled tier names its ref explicitly above rather than
+          # inheriting whatever the default branch happens to be.
 
-          echo "mode=$MODE" >> "$GITHUB_OUTPUT"
-          echo "ref=$REF"   >> "$GITHUB_OUTPUT"
-          echo "Tier: $MODE   ref: ${REF:-<event default>}"
+          echo "mode=$MODE"       >> "$GITHUB_OUTPUT"
+          echo "ref=$REF"         >> "$GITHUB_OUTPUT"
+          echo "proceed=$PROCEED" >> "$GITHUB_OUTPUT"
+          echo "Tier: $MODE   ref: ${REF:-<event default>}   proceed: $PROCEED"
 
   # ──────────────────────────────────────────────
   #  Release-build static checks (no Unity, no license)
@@ -114,7 +154,9 @@ jobs:
     needs: resolve
     # No runner configured yet -> skip cleanly instead of queueing forever against a label that
     # does not exist. Set UNITY_RUNNER_LABEL (repo Settings > Variables) to switch this on.
-    if: vars.UNITY_RUNNER_LABEL != ''
+    # `proceed` is false only for a Tuesday pre-flight landing on an off-cycle
+    # week; every other path leaves it true.
+    if: vars.UNITY_RUNNER_LABEL != '' && needs.resolve.outputs.proceed == 'true'
     runs-on: ${{ vars.UNITY_RUNNER_LABEL }}
     timeout-minutes: 240
 
