@@ -351,12 +351,48 @@ minutes. Nothing in any workflow needs editing — all three already target `var
 2. Run it in an empty directory on the build box — **not** inside a checkout of this repository.
 3. When `config.cmd` asks for labels, add one memorable label, e.g. `cosmic-build-win`. Keep the
    default `self-hosted`, `Windows`, `X64` labels it adds for you.
-4. Install it as a service so it survives reboot and does not need a logged-in session:
-   ```
-   .\svc.cmd install
-   .\svc.cmd start
-   ```
+4. **Answer `Y` to "Would you like to run the runner as service?"** when `config.cmd` asks.
+
+   On Windows the service is installed **by `config.cmd` itself** — this is the step that makes the
+   runner survive reboot and logout. There is **no `svc.cmd`**: that is the Linux pattern
+   (`svc.sh`), and running it here just returns
+   `The term '.\svc.cmd' is not recognized`. GitHub's own wording is *"Configuring the self-hosted
+   runner application as a service on Windows is part of the application configuration process."*
+
+   If you already configured the runner and answered `N` (or were never asked), you do not need to
+   start over — see "Converting an interactive runner to a service" below.
 5. Confirm the runner shows **Idle** on the Runners page.
+
+### Managing the Windows service
+
+All of these are PowerShell, **run as Administrator**:
+
+| Task | Command |
+|---|---|
+| Status | `Get-Service "actions.runner.*"` |
+| Start | `Start-Service "actions.runner.*"` |
+| Stop | `Stop-Service "actions.runner.*"` |
+| Uninstall | `Remove-Service "actions.runner.*"` |
+
+### Converting an interactive runner to a service
+
+A runner started with `.\run.cmd` goes offline the moment that window closes or the user logs out,
+and every job for its label then **queues forever** — the symptom is a job stuck in *Queued* with no
+runner assigned, on a label that served a job minutes earlier.
+
+To fix it permanently, in the runner folder:
+
+```powershell
+Get-Service "actions.runner.*"        # nothing listed = not a service
+.\config.cmd remove --token <REMOVAL TOKEN>
+.\config.cmd                          # answer Y to the service question this time
+```
+
+Get the removal token from **Settings → Actions → Runners → the runner → Remove**. Re-register with
+the same label (`cosmic-build-win`) so no workflow needs editing.
+
+To unblock a queued job *right now* without reconfiguring, just run `.\run.cmd` and leave the window
+open — the queued job starts within seconds. That is a stopgap, not the fix.
 
 ### Set the two repository variables
 
