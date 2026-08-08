@@ -220,8 +220,24 @@ Run top to bottom. Every step is either a command above or a box to tick.
 | Tier | Trigger | What runs | Catches | Rough time |
 |---|---|---|---|---|
 | `compile` | Every PR into `bleeding-edge` | Edit-mode tests (which force a full compile of runtime, editor, and test assemblies) | Non-compiling C#, broken tests | 5–15 min |
-| `mono` | Nightly, 07:00 UTC | Mono standalone player build | Above, plus broken scenes, missing assets, bad build settings | 20–40 min |
-| `il2cpp` | Weekly, Sunday 08:00 UTC | Full IL2CPP release build | Above, plus AOT/generic failures and native link errors — the ones that only appear in a shipping build | 60–150 min cold |
+| `il2cpp` | **Thursday 09:00 UTC**, against `bleeding-edge` | Full IL2CPP release build | Above, plus AOT/generic failures and native link errors — the ones that only appear in a shipping build | 60–150 min cold, far less warm |
+| `il2cpp` | **Tuesday 13:00 UTC**, against `development`, only when the next day is an on-cycle promotion Wednesday | Full IL2CPP release build | Same, on the branch UGS is about to build | as above |
+| `mono` | **Manual dispatch only** | Mono standalone player build | Produces a player in ~a third of the time, but is blind to AOT and native link errors — useful when iterating, never a gate | 20–40 min |
+
+**Nothing scheduled builds Mono.** A Mono player proves an executable can be produced; it cannot see
+the failure class this tier exists to catch. On an owned runner with a warm `Library/` there is no
+reason to verify something weaker than what ships.
+
+**Both scheduled tiers are pre-flights for a UGS build**, one working day ahead of it:
+
+| CI build | Runs | UGS build it protects |
+|---|---|---|
+| Thursday 09:00 UTC (02:00 PT) | `bleeding-edge` | Friday 06:00 PT internal build (`tag-internal-build.yml`) |
+| Tuesday 13:00 UTC (06:00 PT) | `development` | Wednesday 06:00 PT test-build promotion (`sync-build-branches.yml`) |
+
+Every branch UGS builds is now player-built by CI first, with a day of slack to fix what it finds.
+The Tuesday tier is cycle-gated on the same `CYCLE_ANCHOR` / `CYCLE_DAYS` as the promotion, so it
+fires exactly one Tuesday in three rather than burning an IL2CPP build on a commit nothing will ship.
 
 Any tier can also be run on demand from the Actions tab (**Run workflow** → pick a mode).
 

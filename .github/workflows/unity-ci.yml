@@ -25,8 +25,24 @@ on:
   pull_request:
     branches: [bleeding-edge]
   schedule:
-    - cron: '0 7 * * *'    # 07:00 UTC daily   -> mono player build   (bleeding-edge)
-    - cron: '0 8 * * 0'    # 08:00 UTC Sunday  -> il2cpp release build (bleeding-edge)
+    # 09:00 UTC Thursday -> IL2CPP player build against bleeding-edge.
+    # That is 02:00 Pacific / 05:00 Eastern, so the heavy build runs overnight
+    # and leaves the single runner free for push-triggered guard compiles during
+    # the working day.
+    #
+    # Thursday is not arbitrary: tag-internal-build.yml tags bleeding-edge every
+    # FRIDAY 06:00 PT for the internal build UGS makes from that branch. This is
+    # that build's pre-flight, roughly 28 hours ahead of it - the same
+    # relationship the Tuesday tier has to the Wednesday promotion. Every branch
+    # UGS builds is now player-built by CI first.
+    #
+    # IL2CPP, not Mono. A Mono player proves the project still produces AN
+    # executable, but it is structurally blind to AOT failures and native link
+    # errors - precisely the class that only ever appears in a shipping build,
+    # and the reason this tier exists at all. Mono survives as a manual dispatch
+    # option only. This also replaces the former nightly Mono cron and the
+    # Sunday-only IL2CPP cron.
+    - cron: '0 9 * * 4'
     # 13:00 UTC Tuesday -> il2cpp PRE-FLIGHT against development, the day before
     # a promotion Wednesday. One cron, not the DST twin pair the promotion
     # workflows use: 13:00 UTC is 06:00 PDT / 05:00 PST, and an hour of seasonal
@@ -103,8 +119,9 @@ jobs:
               echo "Tomorrow ($tomorrow) is a promotion Wednesday. Pre-flighting development."
             fi
 
-          elif [[ "$SCHEDULE" == "0 8 * * 0" ]]; then MODE="il2cpp"; REF="bleeding-edge"
-          else                                        MODE="mono";   REF="bleeding-edge"
+          # The nightly. IL2CPP because that is what ships; Mono survives only as
+          # a manual dispatch option for fast iteration, never on a schedule.
+          else MODE="il2cpp"; REF="bleeding-edge"
           fi
 
           # Scheduled workflows always run the DEFAULT branch's copy of this file and check out the
@@ -235,8 +252,9 @@ jobs:
                 -buildCommit "${{ github.sha }}"
                 -logFile -)
 
-          # The nightly tier uses Mono: it proves the project still produces a player in a third of
-          # the time. The weekly tier leaves IL2CPP on, which is what a shipping build uses.
+          # Mono is a manual-dispatch-only tier now: it produces a player in a third of the time,
+          # which is useful when iterating, but it cannot see AOT or native link errors so nothing
+          # scheduled uses it. Every scheduled tier builds IL2CPP, the backend that ships.
           if [[ "$MODE" == "mono" ]]; then ARGS+=(-useMono); fi
 
           "$UNITY" "${ARGS[@]}"
