@@ -180,7 +180,16 @@ jobs:
         id: compile
         shell: bash
         run: |
-          set -uo pipefail        # NOT -e: the exit code is the signal, not an abort
+          # `set +e` is REQUIRED and must be explicit. GitHub invokes `shell: bash`
+          # as `bash --noprofile --norc -e -o pipefail {0}`, passing -e as a shell
+          # FLAG. `set -uo pipefail` sets u and pipefail but does NOT clear an
+          # inherited -e, so the step aborted the instant Unity exited non-zero:
+          # before PIPESTATUS was read, before compile-vs-tests was decided, and
+          # before UNITY_TESTS_BLOCKING was ever consulted. The symptom was a bare
+          # "Process completed with exit code 2" and a red job no repository
+          # variable could soften. Here the exit code IS the signal, not an abort.
+          set +e
+          set -uo pipefail
           UNITY="${UNITY_PATH:-${{ vars.UNITY_PATH }}}"
           if [ -z "$UNITY" ]; then
             echo "::error::UNITY_PATH is not set. Point it at the Unity 6000.3.17f1 executable on the runner."
