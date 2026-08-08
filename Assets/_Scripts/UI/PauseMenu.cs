@@ -68,36 +68,64 @@ namespace CosmicShore.UI
         /// </summary>
         public void Prewarm() => PrewarmAsync().Forget();
 
+        /// <summary>
+        /// Pays the panel's first-activation cost up front so the player's first pause
+        /// tap does not hitch. This is PURELY an optimisation, which dictates two rules
+        /// it did not originally follow.
+        ///
+        /// It must not touch the hierarchy in the frame it is asked to. Both callers
+        /// (MiniGameHUD and MenuMiniGameHUD) invoke this immediately after Instantiate,
+        /// from inside their own Start(), and a UniTaskVoid runs synchronously up to its
+        /// first await - so the original code reached GetComponent/AddComponent on a
+        /// hierarchy created and deactivated microseconds earlier, mid-Start. The Editor
+        /// survives that; an IL2CPP player build crashed on it, taking down the game on
+        /// every entry to Menu_Main (stack: MenuMiniGameHUD.Start -> PauseMenu.Prewarm
+        /// -> PrewarmAsync -> GameObject.GetComponent).
+        ///
+        /// And it must never be able to break the game it is speeding up. A prewarm that
+        /// throws should cost a one-off hitch later, nothing more.
+        /// </summary>
         async UniTaskVoid PrewarmAsync()
         {
-            if (pauseMenuPanel == null || pauseMenuPanel.activeSelf) return;
+            // Let the frame that instantiated us finish before touching anything.
+            await UniTask.DelayFrame(1);
+            if (this == null || pauseMenuPanel == null || pauseMenuPanel.activeSelf) return;
 
-            var canvasGroup = pauseMenuPanel.GetComponent<CanvasGroup>();
-            if (canvasGroup == null)
-                canvasGroup = pauseMenuPanel.AddComponent<CanvasGroup>();
+            try
+            {
+                var canvasGroup = pauseMenuPanel.GetComponent<CanvasGroup>();
+                if (canvasGroup == null)
+                    canvasGroup = pauseMenuPanel.AddComponent<CanvasGroup>();
+                if (canvasGroup == null) return;
 
-            float restAlpha = canvasGroup.alpha;
-            bool restBlocksRaycasts = canvasGroup.blocksRaycasts;
-            bool restInteractable = canvasGroup.interactable;
-            canvasGroup.alpha = 0f;
-            canvasGroup.blocksRaycasts = false;
-            canvasGroup.interactable = false;
+                float restAlpha = canvasGroup.alpha;
+                bool restBlocksRaycasts = canvasGroup.blocksRaycasts;
+                bool restInteractable = canvasGroup.interactable;
+                canvasGroup.alpha = 0f;
+                canvasGroup.blocksRaycasts = false;
+                canvasGroup.interactable = false;
 
-            pauseMenuPanel.SetActive(true);
+                pauseMenuPanel.SetActive(true);
 
-            // Two frames: activation work runs this frame, Start-queued work and the
-            // resulting layout/TMP rebuilds complete on the next.
-            await UniTask.DelayFrame(2);
-            if (this == null || pauseMenuPanel == null) return;
+                // Two frames: activation work runs this frame, Start-queued work and the
+                // resulting layout/TMP rebuilds complete on the next.
+                await UniTask.DelayFrame(2);
+                if (this == null || pauseMenuPanel == null || canvasGroup == null) return;
 
-            // If the player managed to open the pause menu inside the warm window,
-            // leave it up - only restore the group so it is visible.
-            if (settingsModalWindowManager == null || !settingsModalWindowManager.IsOpen)
-                pauseMenuPanel.SetActive(false);
+                // If the player managed to open the pause menu inside the warm window,
+                // leave it up - only restore the group so it is visible.
+                if (settingsModalWindowManager == null || !settingsModalWindowManager.IsOpen)
+                    pauseMenuPanel.SetActive(false);
 
-            canvasGroup.alpha = restAlpha;
-            canvasGroup.blocksRaycasts = restBlocksRaycasts;
-            canvasGroup.interactable = restInteractable;
+                canvasGroup.alpha = restAlpha;
+                canvasGroup.blocksRaycasts = restBlocksRaycasts;
+                canvasGroup.interactable = restInteractable;
+            }
+            catch (System.Exception ex)
+            {
+                // Never fatal. The panel simply warms on first use instead.
+                CSDebug.LogWarning($"[PauseMenu] Prewarm skipped: {ex.Message}");
+            }
         }
 
         void OnDestroy()

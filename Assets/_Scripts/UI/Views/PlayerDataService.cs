@@ -279,24 +279,64 @@ namespace CosmicShore.UI
             SyncCurrentProfileToRepo();
         }
 
+        bool _immediateSaveInFlight;
+        bool _immediateSaveRequestedAgain;
+
         /// <summary>
         /// Pushes the profile to UGS Cloud Save immediately (in addition to the debounced save),
         /// so deliberate user actions like changing the avatar persist right away rather than
         /// after the ~1.5s debounce. Mirrors GameModeProgressionService.SaveImmediateAsync.
+        ///
+        /// Calls COALESCE rather than overlap. Every caller pairs this with ScheduleSave(), which
+        /// has already copied the current profile into the repo, so a flush that is already in
+        /// flight will carry any newer data anyway - and two concurrent SaveAsync calls against one
+        /// repository is a race worth not having. A request arriving mid-flush therefore sets a
+        /// flag and the loop below flushes exactly once more, instead of starting a second write.
+        ///
+        /// This was `async void`, which is why it mattered: two rapid deliberate actions (the
+        /// username confirm button was clickable twice, see AuthenticationSceneController) issued
+        /// overlapping saves, and an exception escaping an `async void` cannot be observed by any
+        /// caller - it goes straight to the runtime as unhandled.
         /// </summary>
-        async void SaveProfileImmediateAsync()
+        void SaveProfileImmediateAsync()
         {
-            var repo = _ugsDataService?.ProfileRepo;
-            if (repo == null) return;
+            if (_immediateSaveInFlight)
+            {
+                _immediateSaveRequestedAgain = true;
+                return;
+            }
 
+            RunImmediateSaveAsync().Forget();
+        }
+
+        async UniTaskVoid RunImmediateSaveAsync()
+        {
+            _immediateSaveInFlight = true;
             try
             {
-                await repo.SaveAsync();
+                do
+                {
+                    _immediateSaveRequestedAgain = false;
+
+                    var repo = _ugsDataService?.ProfileRepo;
+                    if (repo == null) return;
+
+                    try
+                    {
+                        await repo.SaveAsync();
+                    }
+                    catch (Exception e)
+                    {
+                        CSDebug.LogWarning($"[PlayerDataService] Immediate profile save failed: {e.Message}. " +
+                                           "Falling back to the debounced save.");
+                        return;
+                    }
+                }
+                while (_immediateSaveRequestedAgain);
             }
-            catch (Exception e)
+            finally
             {
-                CSDebug.LogWarning($"[PlayerDataService] Immediate profile save failed: {e.Message}. " +
-                                   "Falling back to the debounced save.");
+                _immediateSaveInFlight = false;
             }
         }
 
