@@ -200,6 +200,7 @@ jobs:
       MODE: ${{ needs.resolve.outputs.mode }}
       BUILD_OUTPUT: Builds/Windows64
       TEST_RESULTS: Artifacts/editmode-results.xml
+      UNITY_BUILD_LOG: unity-player-build.log
 
     steps:
       - name: Checkout
@@ -276,7 +277,29 @@ jobs:
           # scheduled uses it. Every scheduled tier builds IL2CPP, the backend that ships.
           if [[ "$MODE" == "mono" ]]; then ARGS+=(-useMono); fi
 
-          "$UNITY" "${ARGS[@]}"
+          # Tee the editor log to a file so a failure is diagnosable afterwards.
+          # GitHub's log API only serves roughly the last 44 KB of a job log, and
+          # a Unity player build ends with tens of kilobytes of shutdown noise -
+          # memory-leak dumps, allocator asserts, teardown stack walks. The real
+          # error is pushed out of reach before anyone can read it. That is not
+          # hypothetical: a UnityLinker crash was diagnosable only as far as its
+          # stack, with the exception message itself unreachable.
+          #
+          # set -e is dropped so the log is uploaded even when Unity fails, which
+          # is the only case anyone wants it.
+          set +e
+          "$UNITY" "${ARGS[@]}" 2>&1 | tee "$UNITY_BUILD_LOG"
+          CODE=${PIPESTATUS[0]}
+          set -e
+
+          if [[ "$CODE" -ne 0 ]]; then
+            echo "::group::Errors extracted from the editor log"
+            grep -nE 'error CS[0-9]+|^Error building|Build Finished, Result: Failure|Unhandled [Ee]xception|Fatal error|UnityLinker|Exception:|error MSB[0-9]+|IL2CPP' \
+              "$UNITY_BUILD_LOG" | tail -60 || echo "No recognised error pattern; read the uploaded artifact."
+            echo "::endgroup::"
+            echo "::error::Player build failed. Full editor log is attached to this run as build-log-${MODE}."
+          fi
+          exit "$CODE"
 
       - name: Verify build output
         if: env.MODE != 'compile'
@@ -295,6 +318,17 @@ jobs:
       # ── artifacts ───────────────────────────────
       # Test results and the manifest only. The player itself is multiple GB and is not worth
       # pushing through artifact storage nightly; SteamPipe uploads come from the build machine.
+      # The full editor log, on failure only. This is the artifact that makes a
+      # red player build diagnosable without anyone copying lines out of a web page.
+      - name: Upload build log
+        if: failure() && env.MODE != 'compile'
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log-${{ env.MODE }}-${{ github.run_id }}
+          path: ${{ env.UNITY_BUILD_LOG }}
+          if-no-files-found: warn
+          retention-days: 14
+
       - name: Upload test results
         if: always() && env.MODE == 'compile'
         uses: actions/upload-artifact@v4
