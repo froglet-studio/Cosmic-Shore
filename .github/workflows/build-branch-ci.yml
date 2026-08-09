@@ -56,6 +56,10 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 1
+          # Do NOT clean: the default `git clean -ffdx` deletes Library/ and
+          # forces a full asset reimport on every run. Same reasoning as
+          # unity-ci.yml and bleeding-edge-guard.yml.
+          clean: false
 
       - name: Compile check
         shell: bash

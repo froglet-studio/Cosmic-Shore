@@ -124,14 +124,21 @@ in-editor verification table) lives beside the code:
 `_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_ENERGY_ECONOMY.md`.
 
 The Dolphin's spine is an ENERGY economy: skimming banks energy, hitting a prism halves it,
-and hitting a crystal spends it ALL at once to release a cone. Energy sets the cone's ANGLE,
+and hitting a crystal spends it ALL at once to release a blast. Energy sets the blast's GAPE,
 and the hull's jaws open to that same angle so the blast is readable before it fires.
+
+The blast's destruction volume is a **capsule sweep**, not a circular cone: its cross-section is
+a stadium whose radius is fixed (the width across the beam) and whose LENGTH is what energy
+buys, extended along the very axis the jaws open across. So a charged blast is a **fan** — wide
+in the jaw plane (4.76° → 23.43°), narrow across it (3.81°) — and the hull's silhouette is
+literally the blast's silhouette in that plane, at every charge. Geometry, numbers and the
+exact jaw-angle curve: `DOLPHIN_ENERGY_ECONOMY.md` §1 and §3.
 
 | Element | Quantitative (LIVE) | L5 upgrade (LIVE) |
 |---|---|---|
 | Charge | team-crystal recharge ×0.5 at level 10 (`DeployTeamCrystalActionSO.cooldownMultiplierAtFullCharge`, floored by `minCooldown`) | **Twin Seed** — carry TWO team crystals instead of one (`upgradedCharges`), so two can be planted back to back |
 | Mass | drift prism VOLUME (`trailVolume` ElementalFloat 1→2.5 on `VesselPrismController`, cube-root per axis) | **Hard Wake** — drift prisms arrive shielded, gated on `IsDrifting` (`massUpgradeShieldsTrail`, the Squirrel's Heavy Trail machinery) |
-| Space | crystal-impact cone SIZE ×2 at level 10 (`VesselExplosionByCrystalEffectSO._heightMultiplierAtFullSpace`). Scales the blast **self-similarly** — reach and base diameter together — because the half-angle IS baseRadius/height, and energy owns the angle | **Clean Blast** — the cone spares the pilot's own domain (`_spaceUpgradeSparesAllies` → `InitializeStruct.AffectSelfOverride`). Below the unlock the cone is indiscriminate, which is what makes sparing allies worth earning |
+| Space | crystal-impact blast SIZE ×2 at level 10 (`VesselExplosionByCrystalEffectSO._heightMultiplierAtFullSpace`). Scales the blast **self-similarly** — reach, capsule length AND capsule diameter together — because the angles ARE those over height, and energy owns the gape | **Clean Blast** — the blast spares the pilot's own domain (`_spaceUpgradeSparesAllies` → `InitializeStruct.AffectSelfOverride`). Below the unlock the cone is indiscriminate, which is what makes sparing allies worth earning |
 | Time | boost charge RATE while drifting ×1.5 at level 10 (`ChargeBoostActionSO.chargeRateMultiplierAtFullTime`) | **Live Current** — skimming a DANGER prism grants 3× energy (`SkimmerChangeResourceByPrismEffectSO._dangerBonusElement/_dangerBonusMultiplier`; the Squirrel's Live Wire shape — the risk was always there, the reward is now earned) |
 
 All four map `MultiplierAtFullLevel` are pinned to **1** — every scaling above is authored on its

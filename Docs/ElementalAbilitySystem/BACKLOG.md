@@ -159,14 +159,60 @@ Mechanics reference: `_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_ENERGY_
     consumer appears, or if the reviewer wants it converted now: the payload needs the firing
     vessel plus the count, so it is a new `ScriptableBlastResult` type (struct + event +
     listener), which is why it was not minted for one HUD tally.
-12. **The jaw gape is a linear approximation of the cone's half-angle.** Exact at full energy
-    (18.435°, and `MaxJawAngle` is now measured against it); below that the jaws are linear in
-    energy while the true half-angle is `atan(lerp(400,1600,e) / 4800)` — so an empty meter shows
-    closed jaws against a cone that still has a 4.76° floor. Closing the gap means
-    `RiptideAnimation` reading the effect SO's min/max, a vessel-animation → impact-effect
-    dependency judged not worth it.
+12. ~~**The jaw gape is a linear approximation of the cone's half-angle.**~~ **RESOLVED.** Both
+    the hull and the HUD icon now call `RiptideAnimation.GapeAngleAt(t, min, max)`, which lerps
+    the TANGENTS of the two authored angles and takes the arctangent — exact at every charge,
+    because `tan(angle(t)) = lerp(min, max, t) / (2 × height) = lerp(tan(minAngle), tan(maxAngle), t)`.
+    The feared `RiptideAnimation` → impact-effect dependency was never needed: the identity holds
+    with nothing but `MinJawAngle` / `MaxJawAngle`. The empty end reads its real 4.76° gape rather
+    than a shut jaw. See `DOLPHIN_ENERGY_ECONOMY.md` §3.
 13. **The Dolphin's Space icon is still placeholder art** (`ConeBlastIcon-PLACEHOLDER.png`,
     accepted by Garrett as "the blast seems fine"). The other three slots use shipped art (the
     vessel's own jaw silhouettes, the omni crystal, the authored boost ring).
 14. **The Dolphin HUD has no `InputDeviceIconSetSwitcher`**, so `BindHintsToAbilities` never runs
     there and its control hints are unbound — same gap as the Sparrow (item 4).
+
+## Dolphin follow-ups (opened by `claude/dolphin-echobliteration-capsule-a0vs26`)
+
+15. **The rendered cone widens with the capsule's length, by construction.** `_maxExplosionScale`
+    is BOTH the capsule's length and the cone mesh's base diameter, because the capsule's tips ride
+    the visible base circle — that coupling is what keeps the damage volume inscribed in what the
+    player sees. Taking the length to 130% therefore widened the full-charge visual (base diameter
+    1600 → 2080) even though the blast destroys *less* mass than before off the gape axis. If the
+    visual reads too wide once observed in context, the fix is a decision, not a bug: either accept
+    it, retune the length, or decouple the mesh from the capsule and accept tips that reach past
+    the drawn cone. Do not silently do the third. `DOLPHIN_ENERGY_ECONOMY.md` §1.
+16. **The blast's vessel-impact volume is still one leading cross-section, not the swept solid.**
+    Prisms go through the exact Burst sweep, but explosion→vessel effects resolve through the
+    trigger collider riding the leading base plane — so a vessel the wavefront already passed is
+    only hit on the frame the plane reached it. The capsule change fixed the collider's SHAPE
+    (it now matches the sweep instead of contradicting it) but not its coverage in depth. Full
+    statement and why fixing it is a gameplay change needing its own branch:
+    `Docs/SPATIAL_INDEX.md` § Known limitations.
+17. **Only the Dolphin's crystal-blast asset carries `_coreExplosionScale`.** The other four
+    (`Manta`/`Rhino`/`Serpent`/`Squirrel`) will serialize it as `0` the next time Unity re-saves
+    them, which is the intended fallback (core = min = the plain circular cone) — but if one of
+    those vessels ever moves to the conic prefab, it needs the field authored or its blast rests
+    as a sphere.
+
+## Dolphin follow-ups (opened by `claude/dolphin-speed-boost-tuning-qgnojw`)
+
+18. **`maxBoostMultiplier` is applied TWICE, so the authored peak is squared.**
+    `VesselTransformer.CurrentBoostAmount()` multiplies `BoostMultiplier` (rewritten every
+    discharge tick as it decays toward 1) by `ChargedBoostCharge` (pinned at the value the
+    charge ended on) — both derive from the same `BoostMultiplierFrom`, so a full meter yields
+    `maxBoostMultiplier²`. The design doc described a single factor for the ability's whole life;
+    the code has always squared it. This is **shipped behaviour on both `ChargeBoostActionExecutor`
+    and the legacy `ChargeBoostAction`**, so it was documented rather than changed — a tuning
+    branch is the wrong place to halve a vessel's boost. Deciding it: either declare the square
+    intentional and rename the field to say so, or collapse it to one factor and re-tune
+    `maxBoostMultiplier` to `2.259² = 5.103` to hold the current feel. Do not change it silently
+    in either direction. `DOLPHIN_ENERGY_ECONOMY.md` §2.
+19. **`ChargedBoostCharge` is never cleared when a discharge ends** — only its gate
+    (`IsChargedBoostDischarging`) is. Harmless today because every read is behind that gate, but
+    it means the field holds a stale multiplier for the rest of the vessel's life, and any future
+    reader that forgets the gate silently inherits a free boost. Clear it alongside the flag in
+    `DischargeRoutineAsync`'s tail and in `VesselStatus`'s reset if this area is touched again.
+20. **The Dolphin's speed retune has not been flown.** 60 → 78 cruise and 210 → 357 boost are
+    arithmetic, not feel. 357 is a large jump and the speed tunnel amplifies how it reads — expect
+    a balancing pass. Steps + knob table: `Docs/UNITY_VERIFICATION_CHECKLIST.md`.

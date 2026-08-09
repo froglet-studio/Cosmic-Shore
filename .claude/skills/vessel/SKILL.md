@@ -60,6 +60,19 @@ asset, the prefab, and the code are the record.** Before changing a vessel:
    are `[HideInInspector] public` runtime mirrors that serialize STALE garbage — `0` on most
    prefabs — and are only correct after `ResetTransformer()`; the authored truth is the
    `Default*` pair.)
+4a. **…and the AUTHORED number is not the EFFECTIVE one — trace the consumer before you tune
+   against it.** Reading the field is only half the job; a tuning request is about the value
+   that reaches the screen. `VesselTransformer.CurrentBoostAmount()` multiplies
+   `BoostMultiplier` **by** `ChargedBoostCharge`, and both are `BoostMultiplierFrom(...)` of the
+   same meter — so a charged boost applies `maxBoostMultiplier` **squared**, and the Dolphin's
+   real ceiling was `50 × 2² + 10 = 210` while its own design doc described a single ×2 (110).
+   Tuning off the authored field would have missed by a factor of two. Read the formula that
+   consumes the number — `ComputeThrottleTarget`, `EvaluateLive`, `ElementalScaling.Multiplier`
+   — and write the derived value into the doc so the next pass starts from the effective number.
+   Corollary: when the code and a design doc disagree, **the code is the record and the doc is
+   the bug** — but do NOT correct the code inside a tuning branch. Halving a vessel's boost is
+   its own change with its own retune; document the discrepancy, log it as a follow-up, and tune
+   against shipped behaviour.
 5. Grep by **class name**, not file name — the vessel layer renamed Ship→Vessel in file names
    only: `VesselActionSO.cs` declares `ShipActionSO`, `VesselHelper.cs` declares `ShipHelper`,
    `R_VesselElementStatsHandler.cs` declares `R_ShipElementStatsHandler`, `VesselActions.cs`

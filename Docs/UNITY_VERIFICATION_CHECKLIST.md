@@ -96,6 +96,142 @@ went *down*: the deleted `MoveAndAnchorAsync` was a per-frame write per live pri
 
 ---
 
+### 🔴 Dolphin speed + charged-boost retune (`claude/dolphin-speed-boost-tuning-qgnojw`)
+
+Authored without a Unity compile or play-test. **Two authored numbers changed in
+existing serialized assets** — no new keys, no new components, no hand-built YAML
+structures — so the import risk is low, but nobody has flown the result.
+
+**What landed.** Four requested deltas, all data, no code:
+
+| quantity | before | after | delta |
+|---|---|---|---|
+| max cruise speed | 60 | **78** | +30.0% |
+| max boost speed (peak of a full discharge) | 210 | **357** | +70.0% |
+| boost charge fill rate | 0.250 /s | **0.275 /s** | +10.0% |
+| boost drain rate | 0.500 /s | **0.400 /s** | −20.0% |
+
+- `Dolphin.prefab` → `VesselTransformer.DefaultThrottleScaler: 50 → 68`.
+  `DefaultMinimumSpeed` deliberately left at **10** — the request was max speed, so the
+  throttle top moved and the drift/idle floor did not.
+- `ChargeBoostAction.asset` → `maxBoostMultiplier: 2 → 2.259`,
+  `chargeTimeToFull: 4 → 3.636`, `dischargeTimeToEmpty: 2 → 2.5`. That asset is
+  referenced only by `Dolphin.prefab`, so no other vessel moves.
+
+**The peak multiplier is squared, and that is why 2.259 is not a round number.**
+`VesselTransformer.CurrentBoostAmount()` multiplies `BoostMultiplier` (decaying live)
+by `ChargedBoostCharge` (pinned at the charge-end value), so the authored peak lands as
+`maxBoostMultiplier²`: the real ceiling was `50 × 2² + 10 = 210`, not the 110 the design
+doc implied. **This was NOT changed** — it is shipped behaviour on both the executor and
+the legacy `ChargeBoostAction`, and "fixing" it inside a tuning pass would halve the
+Dolphin's boost unasked. It is now documented in `DOLPHIN_ENERGY_ECONOMY.md` §2. If it
+should become a single factor, that is a one-line change plus its own retune — see
+Follow-ups there.
+
+**Verify in editor** (Menu_Main, freestyle, Dolphin)
+
+1. **Full throttle, no boost** — `VesselStatus.Speed` settles at **78** (was 60).
+2. **Hold drift from an empty meter** — the boost ring fills in **~3.6 s** (was 4).
+3. **Release a full meter** — speed peaks near **357** and takes **~2.5 s** to fall
+   back (was 210 over 2 s). This is the number most likely to want a balancing pass;
+   357 is a big jump and the speed tunnel amplifies how it reads.
+4. **Drift → release → drift again** — speed returns to normal, no stuck multiplier
+   (the `BeginCharge` clear is untouched, but this is the regression it guards).
+5. **The speed tunnel tracks it.** FOV should narrow noticeably harder at the new top
+   speed. That coupling is the platform law (`Docs/SPEED_TUNNEL.md`) — absolute and
+   fleet-wide, no per-vessel window — so it is the intended consequence, not a bug.
+6. **Nothing else moved.** Fly any other vessel; `ChargeBoostAction.asset` and the
+   Dolphin prefab are the only things touched.
+
+**Collider budget:** unchanged — no spawning, geometry, or query change.
+
+**First-pass tuning (expect a balancing pass — observe in context first):**
+
+| Knob | Value | Where it lives |
+|---|---|---|
+| Throttle top | **68** (+ `MinimumSpeed` 10 = 78) | `Dolphin.prefab` → `VesselTransformer.DefaultThrottleScaler` |
+| Speed floor | **10** (unchanged) | `Dolphin.prefab` → `VesselTransformer.DefaultMinimumSpeed` |
+| Boost peak multiplier | **2.259** (**squared** in use → ×5.103) | `ChargeBoostAction.maxBoostMultiplier` |
+| Charge time to full | **3.636 s** | `ChargeBoostAction.chargeTimeToFull` |
+| Discharge time to empty | **2.5 s** | `ChargeBoostAction.dischargeTimeToEmpty` |
+
+Max boost speed is `DefaultThrottleScaler × maxBoostMultiplier² + DefaultMinimumSpeed` —
+recompute it after touching **either** of the first two rows, they are not independent.
+
+---
+
+### 🔴 Dolphin crystal blast — capsule sweep along the jaw gape (`claude/dolphin-echobliteration-capsule-a0vs26`)
+
+Authored without a Unity compile or play-test. **Unlike most entries here this one
+DID hand-author asset YAML** — a `SphereCollider` was rewritten into a
+`CapsuleCollider` in place (class id `135` → `136`) — so the first check below is a
+genuine import check, not a formality.
+
+**What landed.** The Dolphin's crystal-impact blast no longer sweeps a circular
+cone whose radius grows with skim energy. Its cross-section is now a **capsule**
+(a 2D stadium): the radius is pinned to a fixed width *across the beam*, and what
+energy buys is capsule **length**, extended along the axis the vessel's jaws open
+across (container-local up = ship up). A charged blast is a fan — wide in the jaw
+plane, narrow across it.
+
+- `AOEConicSweepQueryJob` (Burst) tests point-to-**segment** instead of
+  point-to-axis. Same cost class, no extra sqrt.
+- `AOEConicExplosion.prefab`'s trigger is a `CapsuleCollider` driven per frame by
+  `UpdateCapsuleTrigger`, so the vessel-impact volume and the Burst volume are the
+  same shape by construction. A dev-build warning fires if a conic blast opens a
+  gape without a capsule trigger.
+- `InitializeStruct.CoreScale` / `_coreExplosionScale` carry the capsule diameter,
+  authored separately from the empty-charge length so the blast can rest as a
+  short capsule instead of a sphere. `0` collapses everything back to the plain
+  circular cone — that is what every non-conic caller and the spherical blast get,
+  so **no other vessel's blast changed**.
+- The jaws (hull + HUD icon) were re-measured against the new geometry and their
+  linear approximation retired: both now call one shared
+  `RiptideAnimation.GapeAngleAt(t, min, max)`, exact at every charge.
+- `AOEExplosion._sphereCollider` → `_triggerCollider`, typed `Collider`, since the
+  shape is now the subclass's business.
+
+**Verify in editor**
+
+1. **The hand-authored collider imported.** Open `_Prefabs/Projectile/AOEConicExplosion.prefab`.
+   The root must show a **Capsule Collider** (Is Trigger ✓, Radius 0.0667,
+   Height 1, Direction **Z-Axis**, Center 0/-0.5/0) — *not* a missing component, a
+   Sphere Collider, or a second collider alongside it. If Unity rejected the YAML
+   this is where it shows.
+2. **It compiles.** Nothing in the branch is `#if`-guarded (the conditional-compilation
+   gate passes), but no C# compiler ran on the author's side at all.
+3. **Empty-energy blast is unchanged in feel, slightly lozenge-shaped.** Fly to a
+   crystal with no banked energy. The blast should look and destroy about as
+   before (it is 400 long × 320 wide instead of a 400 sphere).
+4. **Charged blast is a FAN.** Bank energy to full, then hit a crystal while flying
+   at a dense prism wall. Destruction should be wide in the jaw plane and narrow
+   perpendicular to it — roll 90° and fire again to confirm the fan rolls with the
+   ship (it is bound to ship-up, not world-up).
+5. **The jaws never read fully shut.** At zero energy both the hull's jaws and the
+   HUD's Time icon should sit slightly open (4.76°/side), and they should agree
+   with each other at *every* charge step, not just at the ends.
+6. **Nothing else regressed.** Fire a Manta / Rhino / Squirrel / Serpent crystal
+   blast (all spherical) and a Sparrow skyburst — they take the `CoreScale == 0`
+   fallback and must be identical to before.
+
+**Collider budget:** unchanged — the conic blast still carries exactly one trigger
+collider, swapped sphere → capsule.
+
+**First-pass tuning (expect a balancing pass — observe in context first):**
+
+| Knob | Value | Where it lives |
+|---|---|---|
+| Capsule length, empty → full | **400 → 2080** | `DolphinVesselExplosionByCrystalEffect._min/_maxExplosionScale` |
+| Capsule diameter (fixed) | **320** (radius 160) | `DolphinVesselExplosionByCrystalEffect._coreExplosionScale` |
+| Gape half-angle, empty → full | **4.7636° → 23.4287°** | `RiptideAnimation.MinJawAngle` / `MaxJawAngle` (derived from the two above over the prefab's `height: 2400` — **change a scale and these must follow**) |
+| Gape axis | **(0,1,0)** container-local = ship up | `AOEConicExplosion.gapeAxis` |
+
+The length/diameter pair is the whole feel: length is reach along the gape,
+diameter is how forgiving the aim is across the beam. The jaw angles are *derived*,
+not independent — recompute them as `atan((scale / 2) / height)` after any retune.
+
+---
+
 ### 🔴 Sparrow stationary stance — roll works stopped, pitch/yaw 3× (`claude/sparrow-strafing-roll-stopped-d2yc7g`)
 
 Authored without a Unity compile or play-test. **Code only — no prefab, scene or
@@ -339,3 +475,45 @@ predator, tiger-shark territoriality, centre focus).
 These four are the ones the author flagged as guesses. The jaw transition is
 ~2.4s total per 20s hunt cycle; the driver early-outs on a single float compare
 whenever the mouth is settled, so re-tuning the timings has no perf cost.
+
+---
+
+## 🔴 Dolphin skim economy + jaw CTA + fleet silhouette removal (2026-08-07)
+
+Branch `claude/dolphin-prism-energy-5e4hbq`. None of this was editor-verified — the
+prefab surgery was done out-of-editor and machine-validated (no new dangling fileIDs,
+no surviving references, C# compiled against a stub harness), but Unity has not
+reimported any of it yet.
+
+**What landed**
+
+1. `DolphinSkimmerChangeResourceByPrismEffect._resourceAmount` **0.1 → 0.006666667**
+   (15× less energy per skim; ~150 skims to arm the blast, 50 on a danger trail).
+2. `DolphinVesselHUDView` blends the Time-slot jaw pair white → `ElementalBarsConfigSO.limeColor`
+   across the top 15% of energy (`jawArmingThreshold: 0.85`).
+3. The dead vessel **silhouette** removed from 13 vessel + HUD-variant prefabs, plus
+   dead `silhouette`/`silhouetteContainer`/`trailContainer` keys and their overrides
+   in 13 more files.
+
+**Verify in editor**
+
+1. Open each of the 15 edited prefabs — no *"Missing (Mono Script)"* row that was not
+   already there, no broken hierarchy, HUD still lays out. (Sparrow, Rhino, Squirrel,
+   Serpent, Manta and the six vessel prefabs lost real GameObjects; the rest lost keys.)
+2. Play Menu_Main → freestyle on the **Dolphin**: no `[ElementalBarsController]` runtime
+   warning that was not there before, and **no `[DolphinVesselHUDView]` warning at all** — it
+   fires once if the shared bars config is missing or the jaw refs carry no Graphic, either of
+   which means the lime CTA is silently dead. The four ability icons still bind (FrogletTools >
+   Vessels > **Audit Vessel Ability Rows** → Dolphin 4/4, order ✅).
+3. Fly the other vessels' HUDs briefly (Sparrow, Squirrel, Rhino, Serpent, Manta) and
+   confirm nothing visually disappeared *except* the ship outline.
+4. Skim a long time → jaws blend to lime near full; ram a prism → they drop back to white.
+
+**Known pre-existing issues surfaced, NOT fixed here (own branch):**
+
+- `SerpentHUDVariant.prefab` and `VesselHUDPrefab.prefab` carry a component whose script
+  guid `57dc27a3f7264d548b51007c0615f701` resolves to **no script in the project** — an
+  existing *Missing (Mono Script)* component, unrelated to this change.
+- `Dolphin.prefab`'s `ElementalBarsController` has **no `elementBars` key**, so the element
+  flowers are created at runtime via `CreateDefaultElementBars()` (which logs a warning).
+  Fix with FrogletTools > Vessels > *Bake Elemental Petal Bars Into All Vessel HUDs*.

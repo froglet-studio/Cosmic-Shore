@@ -287,14 +287,45 @@ Note: A vestigial `_Scripts/Game/` directory exists containing only non-code ass
 
 ### Assembly Definitions
 
-All first-party gameplay code compiles in Unity's default assembly (no runtime `.asmdef` files). Only test assemblies have explicit assembly definitions:
+All first-party gameplay code compiles in Unity's default assembly, `Assembly-CSharp` (no runtime
+`.asmdef` files). Exactly **one** first-party `.asmdef` exists:
 
 | Assembly | Scope |
 |---|---|
-| `CosmicShore.Bootstrap.Tests` | Bootstrap unit tests |
-| `CosmicShore.Multiplayer.Tests` | Multiplayer unit tests |
 | `CosmicShore.PlayFabTests` | PlayFab integration tests |
-| `CosmicShore.Tests.EditMode` | General edit-mode tests |
+
+> This table previously also listed `CosmicShore.Bootstrap.Tests`, `CosmicShore.Multiplayer.Tests`
+> and `CosmicShore.Tests.EditMode`. **Those assemblies never existed.** The tests therefore fell
+> into `Assembly-CSharp` and shipped into the player, where the IL2CPP linker hit their NUnit
+> attributes and killed the Windows build (`error IL1005` → `Failed to resolve assembly:
+> 'nunit.framework'`). Fixed by moving every test under an `Editor/` folder; see below.
+
+### **Tests live under an `Editor/` folder, never in an asmdef.**
+
+Every first-party test is under a folder literally named `Editor`, which puts it in
+`Assembly-CSharp-Editor`:
+
+| Suite | Location |
+|---|---|
+| General edit-mode tests | `_Scripts/Tests/Editor/` |
+| Bootstrap tests | `_Scripts/System/Bootstrap/Tests/Editor/` |
+| Multiplayer tests | `_Scripts/Controller/Multiplayer/Tests/Editor/` |
+| PlayFab tests | `_Scripts/System/Playfab/PlayFabTests/` (has its own `.asmdef`) |
+
+Two properties make this the only workable arrangement, and both are load-bearing:
+
+1. `Assembly-CSharp-Editor` is **never included in a player build**, so NUnit never reaches the
+   IL2CPP linker.
+2. It **implicitly references `Assembly-CSharp`**, so tests can still see every gameplay type.
+
+**Do not "fix" this by authoring test `.asmdef`s.** An asmdef-based assembly *cannot* reference
+`Assembly-CSharp`, and all gameplay code lives there by design, so an asmdef would break every test
+that touches a gameplay type. That constraint is almost certainly why the three documented
+assemblies were never actually created.
+
+**A new test file must be created under an `Editor/` folder.** A test anywhere else compiles into
+the player and breaks the Windows build at the linker stage, which the compile tier and the
+edit-mode suite are both structurally blind to; only a player build catches it.
 
 Third-party assemblies: `Obvious.Soap`, `PlayFab`, `Lofelt.NiceVibrations`, `NativeShare.Runtime`
 
@@ -1909,7 +1940,7 @@ At any total at most two adjacent colours show (e.g. +8 → 3 blue + 2 white). P
 
 **Single source of truth — `ElementalBarsConfigSO`** (`_Scripts/ScriptableObjects/`, asset at `Resources/ElementalBarsConfig.asset`). Per CLAUDE.md Config Separation, all shared look/feel lives here: the 5 tick colours, per-element petal sprites, and every juice timing/haptic. All vessels reference the one asset, so the spec can't drift between prefabs. Holds the petal math (`DistributePetalValues`, `ColorForTick`) and constants (`PetalCount=5`, `MinLevel=-5`, `MaxLevel=15`, `PetalSpacing=72`).
 
-**Per-vessel integration.** `ElementalBarsController` (on all 11 vessel prefabs — formerly named `SilhouetteController` before the vessel silhouette/trail-display HUD element it also drove was removed) is the driver: `InitializeElementBars()` calls `elementBars.Build()`, seeds levels, and subscribes to `ResourceSystem.OnElementLevelChange`. The `elementBars` reference is null-safe — vessels without the view wired simply show no bars (opt-in rollout). `SquirrelVesselHUDView` routes drift/joust/crystal juice into the view.
+**Per-vessel integration.** `ElementalBarsController` (on all 11 vessel prefabs — formerly named `SilhouetteController` before the vessel silhouette/trail-display HUD element it also drove was removed; the leftover `Silhouette` GameObjects were finally excised from all 13 vessel + HUD-variant prefabs in 2026-08, along with the dead `silhouette`/`silhouetteContainer`/`trailContainer` keys — do not re-add a vessel silhouette to a HUD) is the driver: `InitializeElementBars()` calls `elementBars.Build()`, seeds levels, and subscribes to `ResourceSystem.OnElementLevelChange`. The `elementBars` reference is null-safe — vessels without the view wired simply show no bars (opt-in rollout). `SquirrelVesselHUDView` routes drift/joust/crystal juice into the view.
 
 **Zero-wire by default.** With no config or petalRoot assigned, the view loads `Resources/ElementalBarsConfig`, auto-creates a centred flower container per element, and loads petal sprites from `Resources/ElementPetals/{element}_petal`. To author explicitly (recommended for real positioning), run **FrogletTools > Vessels > Wire Elemental Petal Bars** (assigns config + creates `*_Flower` containers), then position the containers. A petal authored in-prefab as `Petal{0..4}` under a container is reused (not duplicated) and normalised via `ElementalBarsView.ConfigurePetal`.
 
@@ -2060,6 +2091,10 @@ scale bump** with a one-shot unlock punch.
   The Dolphin deliberately runs with **both** `tintIconOnUpgrade` and `showUpgradeBadge` off —
   all four of its icons are live gauges, so the persistent scale bump is its only upgrade
   signal, which is why nothing in `DolphinVesselHUDView` writes an icon transform per event.
+  Its Time slot **does** tint — the jaw pair blends to `ElementalBarsConfigSO.limeColor` over
+  the top 15% of banked skim energy — but that is a GAUGE colour carrying gauge meaning, and it
+  lands on the jaw halves, not on the row's (fully transparent) Time icon, so it never collides
+  with the upgrade path. Reading it as an upgrade tint is the mistake to avoid.
   Mechanics: `_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_ENERGY_ECONOMY.md`.
 
   Manta / Rhino / Serpent are blocked on **design, not wiring**: their
@@ -2210,9 +2245,9 @@ The prism system is the most performance-critical gameplay system. See `Assets/_
 ### Test Infrastructure
 
 - **Framework**: Unity Test Framework 1.6.0 (NUnit-based)
-- **Edit-mode tests**: `Assets/_Scripts/Tests/EditMode/` — 17 test files covering enums, data SOs, geometry utils, party data, resource collection, disposable groups, camera settings, etc.
-- **Bootstrap tests**: `Assets/_Scripts/System/Bootstrap/Tests/` — `AppManagerBootstrapTests` (file: `BootstrapControllerTests.cs`), `BootstrapConfigSOTests`, `SceneTransitionManagerTests`, `ApplicationLifecycleManagerTests`, `ApplicationStateMachineTests`, `SceneFlowIntegrationTests`
-- **Multiplayer tests**: `Assets/_Scripts/Controller/Multiplayer/Tests/` — `DomainAssignerTests`
+- **Edit-mode tests**: `Assets/_Scripts/Tests/Editor/` — 17 test files covering enums, data SOs, geometry utils, party data, resource collection, disposable groups, camera settings, etc.
+- **Bootstrap tests**: `Assets/_Scripts/System/Bootstrap/Tests/Editor/` — `AppManagerBootstrapTests` (file: `BootstrapControllerTests.cs`), `BootstrapConfigSOTests`, `SceneTransitionManagerTests`, `ApplicationLifecycleManagerTests`, `ApplicationStateMachineTests`, `SceneFlowIntegrationTests`
+- **Multiplayer tests**: `Assets/_Scripts/Controller/Multiplayer/Tests/Editor/` — `DomainAssignerTests`
 - **PlayFab tests**: `Assets/_Scripts/System/Playfab/PlayFabTests/` — `PlayFabCatalogTests`
 - **SOAP framework tests**: `Assets/Plugins/Obvious/Soap/Core/Editor/Tests/`
 - **Test scenes**: `Assets/_Scenes/TestInput/`, `Assets/_Scenes/Game_TestDesign/`
