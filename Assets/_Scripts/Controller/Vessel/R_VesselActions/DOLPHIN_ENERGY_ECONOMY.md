@@ -21,8 +21,8 @@ The Dolphin has **two** resources and they are not the same thing:
 
 | event | effect on Energy | authored in |
 |---|---|---|
-| skim a prism | **+0.1** (max 1.0, so ten skims fills it) | `DolphinSkimmerChangeResourceByPrismEffect` |
-| skim a DANGER prism, Time L5 active | **+0.3** (×3) | same asset, `_dangerBonusElement` / `_dangerBonusMultiplier` |
+| skim a prism | **+0.006667** (max 1.0, so 150 skims fills it) | `DolphinSkimmerChangeResourceByPrismEffect` |
+| skim a DANGER prism, Time L5 active | **+0.02** (×3, so 50 danger skims fills it) | same asset, `_dangerBonusElement` / `_dangerBonusMultiplier` |
 | ram a prism | **halved** | `DolphinVesselChangeResourceByPrismEffect` |
 | hit a crystal | **set to 0** — spent entirely | `DolphinVesselChangeResourceByCrystalEffect` (`_overrideAmount`) |
 
@@ -213,7 +213,7 @@ re-deriving the layout.
 | Charge | omni-crystal + carry pips | crystals in hand, the carry limit, and the recharge fill |
 | Mass | the vessel's own 11-step boost ring | the boost banked by drifting |
 | Space | cone-blast icon + tally | prisms the last cone claimed |
-| Time | the vessel's own jaw silhouettes | banked energy, as a gape |
+| Time | the vessel's own jaw silhouettes | banked energy, as a gape — **lime when full** |
 
 Two conventions this HUD deviates on, both deliberate:
 
@@ -234,9 +234,29 @@ A swell keyed to the charge and a colour ramp both landed on **every** resource 
 ring stuttered between discrete scales and killed its own tween doing it. The authored
 eleven-sprite gauge is the whole readout.
 
+### The jaws go lime when the blast is armed
+
+The gape answers "how wide is my next blast"; it does **not** answer "am I done banking".
+Reading a full meter off an angle means eyeballing 23.4° against 21° — so the last stretch of
+the bank is also carried by colour: the jaw pair blends from its authored white to the CTA lime
+across the top **15%** of energy (`jawArmingThreshold: 0.85`) and sits solid lime at full.
+
+Three things make this legal on a HUD whose upgrade tint is deliberately off (§4):
+
+- **The lime is not authored here.** It is `ElementalBarsConfigSO.limeColor` — the *same* value a
+  maxed element flower shows — so "this is topped out" is one colour across the whole HUD. Do not
+  copy the literal into this view; a second copy is a second thing to retune.
+- **It cannot contest the upgrade signal.** The row's Time icon is `JawIcon`, a fully transparent
+  container (`a: 0`); the visible gauge is the two jaw halves beneath it. The base class tints the
+  icon, this view tints the halves, and `tintIconOnUpgrade` is off regardless — so the persistent
+  scale bump stays the sole upgrade signal, exactly as §4 requires.
+- **It is a ramp, not a switch.** A hard flip at exactly full would pop on a single skim out of
+  ~150 and vanish the instant you ram a prism (a ram halves energy). The 15% ramp reads as the
+  meter filling in.
+
 ### Why a skim punches the jaws
 
-One skim moves the gape by a tenth of its range — about 2°, invisible. The three signals
+One skim moves the gape by a 150th of its range — about 0.12°, invisible. The three signals
 wired to a skim are otherwise: a haptic pulse that is a **no-op on desktop**, and a beam VFX
 that only draws if the skimmed prism authors a `ParticleEffect`. So the discrete event gets
 its own beat: `DolphinVesselHUDController` treats an energy **rise** as the skim (nothing
@@ -294,7 +314,9 @@ Play Menu_Main, enter freestyle on the Dolphin.
 | **FrogletTools > Vessels > Audit Vessel Ability Rows** | Dolphin: map complete, 4/4 icons, order ✅ |
 | fly through cell mass | crackle arcs across the skimmer sphere per prism; jaw icon punches; gape widens |
 | at zero energy | jaws sit slightly open (4.76°/side), NOT shut — hull and Time icon agree |
-| keep skimming | model's jaws open toward 23.4° per side; Time icon matches at every step |
+| keep skimming | model's jaws open toward 23.4° per side (**~150 skims** to full); Time icon matches at every step |
+| cross ~85% energy | Time icon's jaws start blending white → lime; solid lime at full |
+| ram a prism at full | gape halves AND the jaws drop back to white |
 | ram a prism | gape halves |
 | hit a crystal | blast fires, gape snaps back to the 4.76° rest, Space icon flashes with a prism count |
 | blast at full energy | destruction is a FAN — wide across the jaw plane, narrow across the beam |
@@ -305,6 +327,14 @@ Play Menu_Main, enter freestyle on the Dolphin.
 | fly straight without drifting | ring does **not** climb |
 | drift, release, drift again | speed returns to normal — no stuck multiplier |
 | Charge to level 5 | second crystal pip appears; two crystals plantable back to back |
+
+The **vessel silhouette** that used to sit in this HUD is gone — it had been dead since its driver
+(`SilhouetteController`) became `ElementalBarsController`, but the GameObjects survived in 13 vessel
+and HUD prefabs, still rendering a static ship outline nothing updated. Removed fleet-wide, along
+with the dead `silhouette` / `silhouetteContainer` / `trailContainer` serialized keys and the
+prefab-instance overrides that wired them. The empty `Silhouette` containers in the *minigame* HUD
+family (`GameCanvas.prefab`, `Panels/MiniGameHUD.prefab`, `Panels/VesselHUD.prefab`) were left in
+place: they hold no renderers, and `GameCanvas` is the shared prefab of `Docs/GAMECANVAS.md`.
 
 Knobs, in order of likely tuning: `DolphinSkimmerChangeResourceByPrismEffect._resourceAmount`
 (skim gain), `ChargeBoostAction.chargeTimeToFull` / `dischargeTimeToEmpty` /

@@ -7521,7 +7521,6 @@ MonoBehaviour:
   countdownDisplay: {fileID: 5497835173011030734}
   readyButton: {fileID: 6862200546756341092}
   pip: {fileID: 2169239178018152565}
-  silhouette: {fileID: 5403362310282668432}
   trailDisplay: {fileID: 5004519655566375141}
   connectingPanelCanvasGroup: {fileID: 0}
   canvasGroup: {fileID: 5016443529595071928}

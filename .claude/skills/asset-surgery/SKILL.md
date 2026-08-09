@@ -200,6 +200,25 @@ its GameObject lists it in `m_Component`.
   A survivor is either a dangling ref you just created or, just as usefully, a
   **pre-existing** one you must not be blamed for: run the same check against
   `git show HEAD:<file>` to tell the two apart before reporting anything.
+- **Deleting a source object means purging FIVE record shapes, not one.** When you remove a
+  GameObject from a prefab, every consumer that instantiates that prefab may hold a record
+  naming it, and they do not all look alike. Sweep for all five or the leftovers are dangling
+  references: (1) `m_AddedGameObjects` entries whose `addedObject` is the doomed transform;
+  (2) `m_RemovedGameObjects` entries `- {fileID: N, guid: G, type: 3}` (a *removal* record for
+  an object that no longer exists — harmless to Unity, pure noise to a reader); (3)
+  `m_Modifications` whose **`target`** is the doomed object (transform overrides, `m_IsActive`);
+  (4) `m_Modifications` whose **`objectReference`** POINTS AT it — this is the one that gets
+  missed, because the entry's `target` is a completely different component and only the
+  reference is doomed; and (5) `stripped` documents whose `m_CorrespondingSourceObject` names
+  it. A validate-before-write assertion (`no doomed id survives as a whole word`) finds each
+  missed shape in one run instead of one Unity import per shape.
+- **A stale serialized KEY inside a component body is a sixth shape, and it needs the
+  two-part test.** A retired field (`silhouetteContainer:`) survives in YAML until something
+  re-saves the prefab, so it can still name an object you are deleting. Do NOT strip such a
+  line on sight: resolve the doc's `m_Script` guid → its `.cs` → its serialized-field set, and
+  drop the key only if the class no longer declares it. Note the degenerate case — a guid that
+  resolves to NO script is an existing *Missing (Mono Script)* component, so the key cannot be
+  live and dropping it is safe. Say which case each hit was.
 - **Excise a whole PREFAB INSTANCE from a scene** (a hand-placed object that
   should not be there). It is more than one document, so drive it by PARSING,
   never by the line numbers a report handed you — the first deletion invalidates
@@ -717,6 +736,31 @@ read**. The lesson generalizes:
   `git checkout HEAD -- <file>` when the file was already committed — which is
   another reason to commit before scripted edits.
 
+- **Splitting Unity YAML on `--- !u!` and rejoining DOUBLES the newline — silently, in every
+  document.** `^--- !u!(\d+) &(\d+)( stripped)?$` is line-anchored, so `$` matches BEFORE the
+  `\n` and `match.end()` points AT it: the body slice `txt[m.end():end]` already STARTS with
+  that newline. Rejoining as `header + '\n' + body` therefore inserts a blank line after every
+  single header. It parses, it reimports, and it turns a pure-deletion change into a diff with
+  thousands of phantom insertions — which is how you lose the ability to review your own work.
+  Rejoin as `header + body`, and **verify by counting NON-BLANK insertions**, not by reading
+  `git diff --stat`:
+  ```sh
+  git diff <base> -- "$f" | grep '^+' | grep -v '^+++' | sed 's/^+//' | grep -c '[^[:space:]]'
+  ```
+  For a deletion-only change that number must be **0**. Corollary: if two scripts each rewrote
+  the same file, the artifact COMPOUNDS — a repair regex matching `header\n\n` strips only one
+  of two blank lines and looks like it worked. Collapse with `\n\n+` and re-count.
+- **A bare `{fileID: N}` is ALWAYS same-file; only `{fileID: N, guid: G}` crosses assets.** A
+  sweep for "who else references this id" that ignores the guid is worthless in a Unity repo,
+  because sibling **flat-copy** prefabs (Manta/Falcon/Shrike/Termite here) share identical
+  internal fileIDs by construction — so every id appears in every sibling and the report is
+  ~100% false positives. Match `fileID: (\d+),\s*\n?\s*guid: <target-guid>` and nothing else.
+  (The guid can wrap onto the next line — allow the newline or you will miss real hits.)
+- **Pre-filter a whole-project regex sweep by GUID substring, or it hangs.** Multiline
+  `(?ms)` patterns with `.*?` over 1,500 prefabs and scenes backtrack catastrophically on the
+  large ones. A file that does not contain the target prefab's guid cannot hold a record for
+  its objects, so `if not any(g in txt for g in GUIDS): continue` turns a timeout into
+  seconds. Then replace every `.*?` with `[^\n]*` — you are matching within a line anyway.
 - **CRLF**: Windows checkouts deliver `\r\n`; `split("\n\n")` sees ONE block.
   Normalize line endings before splitting; preserve the file's own separator
   when writing.

@@ -2778,7 +2778,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   baseView: {fileID: 7033107979473629901}
-  silhouette: {fileID: 4796952059166273496}
   view: {fileID: 7033107979473629901}
   growSkimmerExecutor: {fileID: 5087576590319522259}
   rhinoCrystalExplosionEvent: {fileID: 11400000, guid: 1fbf77fcd936a8f4f840e07af36d8504,
@@ -13485,12 +13484,6 @@ RectTransform:
 --- !u!1 &4634953772157888635 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 7379408300357240204, guid: 2656b477a4af7304180e65f2848a84b3,
-    type: 3}
-  m_PrefabInstance: {fileID: 2754590152818896375}
-  m_PrefabAsset: {fileID: 0}
---- !u!224 &6074306236903073578 stripped
-RectTransform:
-  m_CorrespondingSourceObject: {fileID: 8247780251481082589, guid: 2656b477a4af7304180e65f2848a84b3,
     type: 3}
   m_PrefabInstance: {fileID: 2754590152818896375}
   m_PrefabAsset: {fileID: 0}

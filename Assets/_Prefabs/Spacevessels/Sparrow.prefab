@@ -1330,7 +1330,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   baseView: {fileID: 4159619328234506921}
-  silhouette: {fileID: 838706159439259027}
   view: {fileID: 4159619328234506921}
   fireGunExecutor: {fileID: 4658886838346608747}
   barrelRollController: {fileID: 7423918465920174631}
