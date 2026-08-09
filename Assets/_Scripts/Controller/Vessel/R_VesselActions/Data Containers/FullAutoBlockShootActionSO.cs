@@ -27,6 +27,34 @@ namespace CosmicShore.Gameplay
         menuName = "ScriptableObjects/Vessel Actions/Full Auto Block Shoot")]
     public class FullAutoBlockShootActionSO : ShipActionSO
     {
+        /// <summary>
+        /// How the flying prism is DRAWN. Both ride the GPU clock; both use the same
+        /// carried-projectile gameplay (cadence, speed, pierce, impact). Live-tunable:
+        /// the executor reads this per volley, so flipping it in the inspector during
+        /// play mode switches the next shot.
+        /// </summary>
+        public enum FlightVisualization
+        {
+            /// <summary>The prism itself flies: it scales up and translates out of the
+            /// gun into place (PrismFlightClock vertex offset + the standard grow
+            /// bloom). Mass is final at the destination from the moment of firing.</summary>
+            TranslateAndGrow = 0,
+
+            /// <summary>The fauna suction shader in reverse: the prism's faces stream
+            /// out of the MOVING shot point into the final shape at the anchor
+            /// (PrismImplosion.StartGrow with the carried projectile as the moving
+            /// emitter). The real prism is created when the shot lands, so mass
+            /// becomes tangible at arrival.</summary>
+            ReverseSuction = 1,
+        }
+
+        [Header("Flight Visualization")]
+        [Tooltip("How the flying prism is drawn. TranslateAndGrow: the prism scales and " +
+                 "translates out of the gun into place. ReverseSuction: the suction shader " +
+                 "in reverse - faces stream from the moving shot point into the anchored " +
+                 "shape. Read per volley, so it can be flipped live in play mode.")]
+        [SerializeField] private FlightVisualization flightVisualization = FlightVisualization.TranslateAndGrow;
+
         [Header("Cadence & Motion")]
         [Tooltip("The vessel's bullet action. Fire rate, muzzle speed and flight time are " +
                  "ADOPTED from it so turret prisms fly exactly like the bullets they replace. " +
@@ -40,6 +68,7 @@ namespace CosmicShore.Gameplay
         [Header("Pooling")]
         [SerializeField] private PrismType prismType = PrismType.Sparrow;
 
+        public FlightVisualization Visualization => flightVisualization;
         public Vector3 BlockScale => blockScale;
         public Vector3 RotationOffsetEuler => rotationOffsetEuler;
         public PrismType PrismType => prismType;

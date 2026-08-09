@@ -5,6 +5,7 @@ using Obvious.Soap;
 using CosmicShore.Core;
 using CosmicShore.ECS;
 using CosmicShore.Gameplay;
+using CosmicShore.ScriptableObjects;
 using Reflex.Attributes;
 using UnityEngine;
 using CosmicShore.Utility;
@@ -48,6 +49,11 @@ namespace CosmicShore.Gameplay
         [Header("Scene Refs")]
         [SerializeField] private Transform[] muzzles;
         [SerializeField] private BlockProjectileFactory blockFactory;
+
+        [Tooltip("The PrismFactory spawn channel (EventOnSpawnPrismAndReturn). The " +
+                 "ReverseSuction visualization rides it to spawn its grow effect - " +
+                 "PrismType.Grow's first producer. Fail-loud: no null guard.")]
+        [SerializeField] private PrismEventChannelWithReturnSO spawnPrismChannel;
 
         [Header("Events")]
         [SerializeField] private ScriptableEventNoParam OnMiniGameTurnEnd;
@@ -228,8 +234,7 @@ namespace CosmicShore.Gameplay
             var domainAtShot = _status.Domain;
             var velocity = muzzle.forward * shotSpeed;   // muzzle.forward is already unit
 
-            // The prism is born at the flight's END POINT: gameplay state belongs where
-            // the mass will rest, and the vertex stage draws it walking in from the barrel.
+            // The prism is pulled at the flight's END POINT — where the mass will rest.
             var anchorPoint = muzzle.position + muzzle.forward * range;
             var prism = blockFactory.GetBlock(so.PrismType, anchorPoint, muzzle.rotation * rotOffset, null);
             if (!prism) return;
@@ -240,21 +245,68 @@ namespace CosmicShore.Gameplay
 
             prism.transform.SetParent(null, true);
 
-            // Target scale BEFORE Initialize: Prism.Initialize reads the authored target
-            // off the scale animator and hands it to the creation coroutine.
+            // Read per shot so the inspector enum can be flipped LIVE in play mode —
+            // the whole point of shipping both visualizations is comparing them.
+            var viz = so.Visualization;
+            PrismImplosion suctionEffect = null;
+
+            if (viz == FullAutoBlockShootActionSO.FlightVisualization.TranslateAndGrow)
+            {
+                MakePrismLive(prism, blockScale, domainAtShot, shielded, anchorPoint);
+                StampFlight(prism, velocity, flightTime, range, blockScale);
+            }
+            else
+            {
+                // ReverseSuction: the prism is NOT initialized yet — it flies as a BLANK
+                // and the effect does the drawing; the real prism is created the moment
+                // the shot lands. A fresh instance is already a blank (Awake zeroes the
+                // scale), but a pool-recycled one may arrive at full scale with a live
+                // collider from its previous life — disarm it explicitly.
+                prism.transform.localScale = Vector3.zero;
+                foreach (var col in prism.GetComponents<Collider>())
+                    col.enabled = false;
+
+                // The grow effect at the anchor streams the prism's faces out of the
+                // MOVING shot point (the carried projectile).
+                suctionEffect = SpawnReverseSuctionEffect(prism, blockScale, domainAtShot,
+                    flightTime, anchorPoint, muzzle.rotation * rotOffset);
+            }
+
+            LaunchCarriedProjectile(prism, muzzle, velocity, flightTime, domainAtShot,
+                piercing, anchorPoint, blockScale, viz, shielded, suctionEffect);
+
+            OnBlockShot?.Invoke(_status?.PlayerName);
+        }
+
+        /// <summary>
+        /// The pooled prism becomes real, live mass: team, shield flag, and the one call
+        /// this path historically missed — <c>Prism.Initialize</c>, the documented
+        /// pool-spawn entry point. Without it IsCreationComplete stays false,
+        /// BeginGrowthAnimation early-returns on its pre-creation guard, and the prism
+        /// lives at localScale zero: invisible, with a zero-volume collider. Silently.
+        /// </summary>
+        private void MakePrismLive(Prism prism, Vector3 blockScale, Domains domain,
+            bool shielded, Vector3 restPoint)
+        {
+            // Target scale BEFORE Initialize: Initialize reads the authored target off
+            // the scale animator and hands it to the creation coroutine.
             var scaleAnimator = prism.GetComponent<PrismScaleAnimator>();
-            if (scaleAnimator) scaleAnimator.SetTargetScale(blockScale);
-            else prism.transform.localScale = blockScale;
+            if (scaleAnimator)
+            {
+                // Snappy bloom: the prefab's authored GrowthRate is tuned for trail
+                // lay; at bullet speed the shot is over in 0.3s, so take the fastest
+                // clock rate (8 pins ClockRateK at its ceiling) or the prism arrives
+                // still near-invisible.
+                scaleAnimator.GrowthRate = 8f;
+                scaleAnimator.SetTargetScale(blockScale);
+            }
+            else
+            {
+                prism.transform.localScale = blockScale;
+            }
 
-            prism.ChangeTeam(domainAtShot);
+            prism.ChangeTeam(domain);
             prism.prismProperties.IsShielded = shielded;
-
-            // THE line this whole path was missing. Without it IsCreationComplete stays
-            // false, so BeginGrowthAnimation early-returns, the prism never leaves
-            // localScale zero, its collider has no volume, and SetRenderVisible(true) is
-            // never reached — every turret shot was an invisible, intangible nothing.
-            // Initialize is the documented pool-spawn entry point every other pooled-prism
-            // spawner in the project uses.
             prism.Initialize(_status.PlayerName);
 
             // NOT RegisterProjectileCreated: it raises the same prism-created SOAP channel
@@ -262,15 +314,44 @@ namespace CosmicShore.Gameplay
             // counted as two prisms created (and double-credited its volume) in
             // StatsManager. Its other job — owner attribution — is one field.
             prism.ownerID = _status.PlayerName;
-            prism.prismProperties.position = anchorPoint;
-
-            StampFlight(prism, velocity, flightTime, range, blockScale);
-
-            LaunchCarriedProjectile(prism, muzzle, velocity, flightTime, domainAtShot,
-                piercing, anchorPoint, blockScale);
-
-            OnBlockShot?.Invoke(_status?.PlayerName);
+            prism.prismProperties.position = restPoint;
         }
+
+        /// <summary>
+        /// ReverseSuction's flight visual: the fauna consumption shader run backwards.
+        /// A pooled grow effect posed at the anchor streams the prism's faces out of the
+        /// moving shot point (<c>PrismImplosion.StartGrow</c> tracks the carried
+        /// projectile under the documented moving-target exception) over exactly one
+        /// bullet lifetime. PrismType.Grow's first producer.
+        /// </summary>
+        private PrismImplosion SpawnReverseSuctionEffect(Prism prism, Vector3 blockScale,
+            Domains domain, float flightTime, Vector3 anchorPoint, Quaternion rotation)
+        {
+            var carried = prism.GetComponentInChildren<Projectile>(true);
+            if (!carried) return null; // LaunchCarriedProjectile warns about this case
+
+            var ret = spawnPrismChannel.RaiseEvent(new PrismEventData
+            {
+                PrismType = PrismType.Grow,
+                ownDomain = domain,
+                SpawnPosition = anchorPoint,
+                Rotation = rotation,
+                Scale = blockScale,
+                TargetTransform = carried.transform,
+                // A hair longer than the flight: the real prism is created at landing
+                // and takes a frame or two to reveal — the overlap keeps the completed
+                // effect on screen across that seam instead of leaving a hole.
+                GrowDuration = flightTime + RevealOverlapSeconds,
+            });
+
+            return ret.SpawnedObject ? ret.SpawnedObject.GetComponent<PrismImplosion>() : null;
+        }
+
+        /// <summary>Seconds the reverse-suction effect outlives the flight, covering the
+        /// real prism's 1–2 frame creation window at the anchor.</summary>
+        private const float RevealOverlapSeconds = 0.2f;
+
+        private static readonly int FlightStartTimeId = Shader.PropertyToID("_FlightStartTime");
         #endregion
 
         #region Flight (GPU clock)
@@ -300,6 +381,15 @@ namespace CosmicShore.Gameplay
                     prism.DescribeRenderEntityState());
                 return;
             }
+
+            // The stamp landing on the ENTITY proves nothing about the SHADER: if the
+            // graph wiring regressed (or was never imported), the per-instance values
+            // upload into a property no shader reads and the prism silently teleports
+            // to maximum range with no flight — exactly a "the turret fires nothing"
+            // report from anyone watching the muzzle. Scream, once per material.
+            var sharedMat = prism.TryGetComponent<MeshRenderer>(out var mr) ? mr.sharedMaterial : null;
+            if (sharedMat && !sharedMat.HasProperty(FlightStartTimeId))
+                PrismClockDiagnostics.WarnUnwiredMaterial(sharedMat, "_FlightStartTime", this);
 
             // Culling envelope: the entity matrix never moves, so without this the prism
             // frustum-culls against its ANCHOR box while the visual is still out at the
@@ -334,7 +424,8 @@ namespace CosmicShore.Gameplay
         /// </summary>
         private void LaunchCarriedProjectile(Prism prism, Transform muzzle, Vector3 velocity,
             float flightTime, Domains domainAtShot, bool piercing, Vector3 anchorPoint,
-            Vector3 blockScale)
+            Vector3 blockScale, FullAutoBlockShootActionSO.FlightVisualization viz,
+            bool shielded, PrismImplosion suctionEffect)
         {
             var carried = prism.GetComponentInChildren<Projectile>(true);
             if (!carried)
@@ -385,44 +476,86 @@ namespace CosmicShore.Gameplay
             if (carried.TryGetComponent<Rigidbody>(out var rb)) rb.isKinematic = false;
 
             carried.FlightEnded += (p, stoppedByImpact) =>
-                AnchorPrism(prism, p, stoppedByImpact, anchorPoint);
+                AnchorPrism(prism, p, stoppedByImpact, anchorPoint, blockScale, domainAtShot,
+                    viz, shielded, suctionEffect);
 
             carried.LaunchProjectile(flightTime);
         }
 
         /// <summary>
-        /// Touchpoint 3: the flight is over, so the prism BE its end state. One transform
-        /// write at most (only when an impact cut the flight short — a timeout lands
-        /// exactly on the anchor point the prism was already stamped at), then the flight
-        /// stamp is settled and the carried projectile goes home.
+        /// Touchpoint 3: the flight is over, so the prism BE its end state.
+        ///
+        /// TranslateAndGrow: the prism was live the whole flight — settle the flight
+        /// stamp (one transform write only when an impact cut it short) and restore the
+        /// culling envelope.
+        ///
+        /// ReverseSuction: the prism was a scale-zero blank the whole flight and the
+        /// effect did the drawing — this is where the real prism is CREATED, exactly
+        /// where the shot died. Pre-scaling the transform to the final size before
+        /// Initialize makes the creation bloom settle instantly, so the reveal is a
+        /// straight hand-off from the effect's completed shape (which outlives the
+        /// flight by RevealOverlapSeconds to cover the 1–2 frame creation window).
         /// </summary>
         private void AnchorPrism(Prism prism, Projectile carried, bool stoppedByImpact,
-            Vector3 anchorPoint)
+            Vector3 anchorPoint, Vector3 blockScale, Domains domain,
+            FullAutoBlockShootActionSO.FlightVisualization viz, bool shielded,
+            PrismImplosion suctionEffect)
         {
+            bool translateViz = viz == FullAutoBlockShootActionSO.FlightVisualization.TranslateAndGrow;
+
             if (prism)
             {
-                if (stoppedByImpact)
+                if (translateViz)
                 {
-                    // Interruption = re-stamp: the shot died early, so the mass belongs at
-                    // the impact point, not at maximum range. NotifyPositionChanged is the
-                    // sanctioned mover contract — spatial index, shell, and the render
-                    // entity matrix in one call.
-                    prism.transform.position = carried ? carried.transform.position : anchorPoint;
-                    prism.prismProperties.position = prism.transform.position;
-                    prism.NotifyPositionChanged();
+                    if (stoppedByImpact)
+                    {
+                        // Interruption = re-stamp: the shot died early, so the mass belongs
+                        // at the impact point, not at maximum range. NotifyPositionChanged
+                        // is the sanctioned mover contract — spatial index, shell, and the
+                        // render entity matrix in one call.
+                        prism.transform.position = carried ? carried.transform.position : anchorPoint;
+                        prism.prismProperties.position = prism.transform.position;
+                        prism.NotifyPositionChanged();
+                    }
+
+                    // The visual snaps to the transform, which is exactly where the shader
+                    // had already drawn it — the stamp reaches zero offset at t = flightTime.
+                    PrismRenderService.ClearFlightStamp(in prism.RenderHandle);
+
+                    // Give the culling envelope back. StampFlight inflated RenderBounds to
+                    // cover the whole muzzle-to-anchor sweep; anchored turret prisms are
+                    // permanent mass that is never released, so without this every one of
+                    // them would be un-cullable for the rest of the session.
+                    var mesh = prism.EffectiveRenderMesh();
+                    if (mesh) PrismRenderService.ResetBoundsToMesh(in prism.RenderHandle, mesh);
                 }
+                else
+                {
+                    // ReverseSuction: the shot landed — create the mass where it died.
+                    if (stoppedByImpact && carried)
+                        prism.transform.position = carried.transform.position;
 
-                // The visual snaps to the transform, which is exactly where the shader had
-                // already drawn it — the stamp reaches zero offset at t = flightTime.
-                PrismRenderService.ClearFlightStamp(in prism.RenderHandle);
+                    // Pre-scale so the creation bloom's start fraction is ~1: the bloom
+                    // settles immediately and the reveal IS the effect's end state, not a
+                    // second from-zero grow on top of it.
+                    prism.transform.localScale = blockScale;
 
-                // Give the culling envelope back. StampFlight inflated RenderBounds to cover
-                // the whole muzzle-to-anchor sweep (~470 object units on a 5-unit prism);
-                // anchored turret prisms are permanent mass that is never released, so
-                // without this every one of them would be un-cullable for the rest of the
-                // session — a held burst is hundreds of them.
-                var mesh = prism.EffectiveRenderMesh();
-                if (mesh) PrismRenderService.ResetBoundsToMesh(in prism.RenderHandle, mesh);
+                    MakePrismLive(prism, blockScale, domain, shielded, prism.transform.position);
+
+                    // An early impact leaves the effect mid-stream at the wrong place
+                    // (its rest shape sits at maximum range) — cut it; the prism's own
+                    // creation carries the reveal. On a timeout the effect is already
+                    // drawing the completed shape at the anchor and retires itself
+                    // RevealOverlapSeconds later, bridging the creation window.
+                    if (stoppedByImpact && suctionEffect && suctionEffect.gameObject.activeSelf)
+                        suctionEffect.ReturnToPool();
+                }
+            }
+            else if (suctionEffect && suctionEffect.gameObject.activeSelf)
+            {
+                // Host prism destroyed mid-flight (viz 2's blank is intangible, but the
+                // pool can still sweep it on teardown) — nothing will land; cut the effect.
+                suctionEffect.ReturnToPool();
             }
 
             if (!carried) return;

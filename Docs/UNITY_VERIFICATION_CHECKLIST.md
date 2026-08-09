@@ -23,76 +23,51 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
-### 🔴 Sparrow Turret Stance — the stance fired nothing; flight moved to the GPU clock (`claude/sparrow-prism-attack-hg6n78`)
+### 🔴 Sparrow Turret Stance — two flight visualizations, still-nothing hardening (`claude/sparrow-prism-attack-hg6n78`)
 
-Authored without a Unity compile or play-test, and this one touches **shader graphs**
-(hand-synthesized JSON), **new ECS per-instance material properties**, two prefabs, two SO
-assets, and a rewritten hot-path executor. Full mechanics + the 12-step procedure:
-`_Scripts/Controller/Vessel/R_VesselActions/SPARROW_TURRET_STANCE.md` § "In-editor verification".
+Authored without a Unity compile or play-test. The stance STILL showed nothing after the
+Initialize fix; three surviving silent failure modes are closed or screaming, and the flight
+visual now ships in **two live-switchable forms** for A/B judgment. Full mechanics + the
+verification list: `_Scripts/Controller/Vessel/R_VesselActions/SPARROW_TURRET_STANCE.md`.
 
-**The headline.** The stopped Sparrow was firing **invisible, intangible** prisms — the path
-never called `Prism.Initialize`, so `IsCreationComplete` stayed false, `BeginGrowthAnimation`
-early-returned, and every shot lived its whole life at `localScale` zero (no visual; its child
-collider inherited `lossyScale` 0 so it could not register a hit either). Silently — the loop
-never threw. That is fixed at the root: turret prisms now spawn through the documented
-pool-spawn entry point.
+**The A/B.** `FullAutoBlockShootAction.asset` → **Flight Visualization**, read per volley (flip
+it in the inspector during play mode; the next shot switches):
 
-**What else landed.** The shot is now the bullet in every authored respect (rate 30/s, speed
-1500 × SPACE, the same eased flight, the same impact effect, and pierce on the **same SPACE-5
-gate** — not always-on as the previous commit had it). The flight itself moved to the GPU clock
-(`PRISM_ANIMATION.md` §5 C5, now SHIPPED): new `PrismFlightClock` HLSL + `_FlightStartTime` /
-`_FlightDuration` / `_FlightVelocity` Hybrid-Per-Instance properties spliced into **both**
-live-prism graphs. C4 was resolved by deleting `FireTrailBlockActionExecutor`/`SO` — unreachable
-dead code carrying two racing `Destroy` timers on a visible prism.
+- **TranslateAndGrow** — the prism scales up and translates out of the gun into place
+  (`PrismFlightClock` vertex offset + grow bloom at the fastest clock rate).
+- **ReverseSuction** — the fauna suction shader in reverse: faces stream out of the MOVING shot
+  point into the anchored shape (`PrismImplosion.StartGrow` tracking the carried projectile —
+  `PrismType.Grow`'s first producer). The real prism is created when the shot lands, so mass
+  becomes tangible at arrival (the mid-flight-collider "wart" does not exist in this mode).
 
-**Verify in editor (the five most likely to be wrong):**
+**Why nothing showed, most likely:** un-imported flight graph wiring makes viz 1's prisms
+teleport straight to ~286 u downrange (that stamp now SCREAMS via `WarnUnwiredMaterial` on
+`_FlightStartTime`), and the authored bloom rate had the prism at a few percent of its size on
+arrival (executor now pins `GrowthRate = 8`). Also confirm the editor is actually on this
+branch — none of this is on `bleeding-edge`.
 
-1. **The graphs import clean.** BlockGraph and ExplodingBlockGraph were edited out-of-editor;
-   every block is schema-exact and machine-validated, but Unity has not imported them. Open each
-   and confirm no import errors and that `FlightStartTime` / `FlightDuration` / `FlightVelocity`
-   appear on the Blackboard. Recovery if not: `git checkout` the `.shadergraph` and run
-   `FrogletTools > Ecology > Prism Animation > Auto-Wire Clock Properties`.
-2. **Something comes out of the guns at all.** This is the bug the human reported. Stop, hold
-   fire, watch prisms leave the muzzles.
-3. **The flight is smooth, with no pop-in.** A prism that simply appears at maximum range means
-   the flight stamp failed (look for `[PrismClock] flight:` in the console); one that vanishes
-   and reappears partway means the `RenderBounds` envelope is wrong.
-4. **Pierce follows SPACE 5, both modes.** Below it a shot stops at the first prism and leaves
-   its prism there; at 5+ it destroys a line and leaves its prism at the far end.
-5. **Asset re-serialize.** `FullAutoBlockShootAction.asset` YAML was hand-edited against a
-   changed field set — confirm the inspector shows **Bullet Action** = `FullAutoAction` and no
-   ghost fields. Also confirm `Sparrow Projectile Prism.prefab` shows `waitTime` **0** (at 0.5 the
-   prism was still invisible when its 0.3 s flight ended).
+**Verify in editor:**
 
-**Two things review flagged that a play-test must settle:**
+1. Asset-only gates first: `python3 Tools/Shaders/wire_prism_flight_clock.py --check`, and
+   `FrogletTools > Ecology > Prism Animation > Validate Clock Wiring` (now requires the three
+   `_Flight*` properties + `PrismFlightClock` on both graphs).
+2. Open BlockGraph + ExplodingBlockGraph — no import errors, `FlightStartTime/Duration/Velocity`
+   on the Blackboard. Recovery: `git checkout` the graphs + run Auto-Wire Clock Properties.
+3. Stop, hold fire, in **TranslateAndGrow**: prisms visibly leave the muzzles, scale up in
+   flight, anchor at ~286 u. `[PrismClock]` errors in the console mean the graph wiring — see
+   step 2. Prisms popping in at range with no flight = the same, now with an error naming it.
+4. Flip to **ReverseSuction** live: faces stream from the moving shot point into place; the
+   real prism appears as the stream completes. This mode uses only long-shipped shader wiring,
+   so it doubles as the control: viz 2 working while viz 1 doesn't isolates the new graph edits.
+5. Pierce (SPACE 5) / attribution / MASS stretch / MASS-5 shield / MPPM — as documented in
+   SPARROW_TURRET_STANCE.md's list.
+6. Judge the two visualizations and pick (or keep both). Also judge viz 1's mid-flight collider
+   at the destination vs viz 2's tangible-at-arrival.
 
-- **The prism's own collider is live at the DESTINATION for the whole flight** (its transform is
-  final there from the stamp — that is what `PRISM_ANIMATION.md` §1 prescribes and what makes the
-  flight free). A third party flying through the anchor point mid-flight hits a prism whose visual
-  has not arrived. Judge it; the local remedy is written up in `SPARROW_TURRET_STANCE.md`
-  § "The one deliberate wart".
-- **Pool pressure.** Anchored prisms are never returned, so at 60/s every shot past the buffer is a
-  fresh `Instantiate`. The Sparrow's turret prism pool was resized for it (defaultCapacity 40,
-  bufferSizeTarget 90, maxAddsPerFrame 8) — watch the profiler on a long hold.
-
-**Asset-only gates that should already pass** (run them first — they need no play mode):
-`python3 Tools/Shaders/wire_prism_flight_clock.py --check` (OK on both graphs) and
-`FrogletTools > Ecology > Prism Animation > Validate Clock Wiring`.
-
-**Budget note (deliberate, flag if it hurts).** Matching the gun cadence roughly doubles the
-permanent mass a held turret lays: **~60 anchored prisms/s**, ~600 in a ten-second hold. The
-single lever is `FullAutoAction.firingRate` — and it moves the guns too, by design. Per-frame CPU
-went *down*: the deleted `MoveAndAnchorAsync` was a per-frame write per live prism.
-
-**First-pass tuning:**
-
-| Knob | Value | Where it lives |
-|---|---|---|
-| Fire rate (both modes) | **30/s** | `FullAutoAction.asset` → `firingRate` |
-| Muzzle speed base (both modes) | **1500** | `FullAutoAction.asset` → `speedValue.Value` |
-| Flight time → range | **0.3 s** → ~286 u | `FullAutoAction.asset` → `projectileTime` |
-| Prism shape before MASS stretch | **(0.8, 0.5, 5)** | `FullAutoBlockShootAction.asset` → `blockScale` |
-| Creation delay | **0** (was 0.5) | `Sparrow Projectile Prism.prefab` → `waitTime` |
+**First-pass tuning:** fire rate 30/s + speed 1500 + flight 0.3 s on `FullAutoAction.asset`
+(shared with the guns); `blockScale (0.8, 0.5, 5)` + `flightVisualization` on
+`FullAutoBlockShootAction.asset`; reveal overlap 0.2 s (`RevealOverlapSeconds` in the executor);
+turret prism pool 40/90/8 on the Sparrow prefab.
 
 ---
 

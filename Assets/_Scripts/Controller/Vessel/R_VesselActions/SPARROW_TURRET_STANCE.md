@@ -3,6 +3,26 @@
 > **The rule, in one line:** *a turret shot **is** a bullet — you just see a prism flying,
 > and where the bullet would have been destroyed the prism stays.*
 
+## Two flight visualizations (A/B, live-switchable)
+
+`FullAutoBlockShootAction.asset` → **Flight Visualization** selects how the flying prism is
+drawn. The executor reads it **per volley**, so flipping the enum in the inspector during play
+mode switches the very next shot — that is the intended way to A/B them. Gameplay is identical
+in both: the carried projectile flies, pierces (SPACE-5), and decides where the shot ends.
+
+| | `TranslateAndGrow` (0) | `ReverseSuction` (1) |
+|---|---|---|
+| What you see | The prism itself scales up and translates out of the gun into place | The fauna suction shader **in reverse**: the prism's faces stream out of the **moving shot point** into the final shape at the anchor |
+| Mechanism | `PrismFlightClock` vertex offset (GPU) + the standard grow bloom (`GrowthRate` pinned to 8 for a visible in-flight bloom) | `PrismImplosion.StartGrow(carriedProjectile, flightTime + 0.2)` — `_SuctionDirection = −1` with `_Location` tracking the projectile under the documented moving-target exception; the real prism flies as a scale-zero blank and is **created when the shot lands** |
+| When mass is tangible | At the **destination from the moment of firing** (gameplay-final-at-start) | At **arrival** (the shot landing is the creating force) |
+| Early impact (SPACE < 5) | One re-pose to the impact point + stamp settle | Effect cut; the prism's own creation bloom at the impact point is the reveal |
+
+`ReverseSuction` is the first producer of `PrismType.Grow` — `PrismFactory.SpawnGrow` was
+authored and never reachable until now. The effect rides the `EventOnSpawnPrismAndReturn`
+channel (wired on the Sparrow's executor), takes the shooter's domain colors via
+`ConfigureForTeam`, and outlives the flight by 0.2 s so the completed shape bridges the real
+prism's 1–2-frame creation window.
+
 While the Sparrow is stopped (`IVesselStatus.IsTranslationRestricted`), its guns fire
 **prisms**. Everything about the shot is the bullet's: fire rate, muzzle speed, eased flight
 path, impact effects, and the SPACE-5 gate on whether it pierces. Exactly two things differ:
@@ -199,14 +219,36 @@ moves the guns too.
 per-frame work is the carried projectile's transform, which is exactly what a bullet already
 costs. The deleted `MoveAndAnchorAsync` was a per-frame write per live prism.
 
+## Why "still nothing" was still possible after the Initialize fix
+
+Three silent failure modes survived the first fix, all now closed or screaming:
+
+1. **The shader graphs not (re)imported.** The flight properties were spliced into the graphs
+   out-of-editor; until Unity reimports them, the per-instance stamp uploads into a property no
+   shader reads and the prism **teleports to maximum range (~286 u downrange) with no flight** —
+   invisible to anyone watching the muzzle. This now screams
+   (`PrismClockDiagnostics.WarnUnwiredMaterial` on `_FlightStartTime`), and `ReverseSuction`
+   does not depend on the new graph wiring at all — it rides the long-shipped SuctionGraph, so
+   it is also the control experiment: if viz 2 shows faces streaming and viz 1 shows nothing,
+   the flight graph wiring is the problem, run
+   `FrogletTools > Ecology > Prism Animation > Auto-Wire Clock Properties` and reimport.
+2. **The bloom was too slow to see.** The prism prefab's authored `GrowthRate` (0.01) gives the
+   slowest clock bloom (~5 s to settle) — at bullet speed the shot arrived at a few percent of
+   its 0.8×0.5×5 size. The executor now pins `GrowthRate = 8` (the ceiling) for turret prisms.
+3. **Testing a stale editor.** The branch is `claude/sparrow-prism-attack-hg6n78`; none of this
+   is on `bleeding-edge`. If the editor wasn't on the branch (or didn't recompile), the old
+   silent-zero-scale path was still what ran.
+
 ## In-editor verification
 
 Scene: any Sparrow-playable multiplayer scene (`MinigameWildlifeLiberation` or
 `MinigameFreestyleMultiplayer_Gameplay`). Stop with the stationary-mode input (input 6), then
-hold fire (input 1).
+hold fire (input 1). Test BOTH visualizations — select `FullAutoBlockShootAction.asset` and flip
+**Flight Visualization** live in play mode.
 
 1. **Something comes out at all.** This was the headline bug — the stance fired invisible
-   zero-scale prisms. Prisms must now visibly leave the muzzles.
+   zero-scale prisms. Prisms must now visibly leave the muzzles (viz 1) or stream into place
+   from the moving shot point (viz 2).
 2. **Cadence parity.** Fire on the move, then stopped. The rate must be indistinguishable —
    both 30 volleys/s from 2 muzzles.
 3. **Speed parity + smooth flight.** Prisms leave as fast as bullets and travel ~286 u. The
