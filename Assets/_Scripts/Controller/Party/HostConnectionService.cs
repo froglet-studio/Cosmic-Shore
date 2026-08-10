@@ -593,6 +593,24 @@ namespace CosmicShore.Gameplay
             // LobbyRefreshScheduler.Accumulate.
             _scheduler.Accumulate(Time.unscaledDeltaTime);
 
+            // Raise any pending roster-changed signal, on the main thread, before
+            // EVERY gate below - including the menu-scene check.
+            //
+            // The raise is deferred rather than issued at the mutation site because
+            // this event's listeners touch UnityEngine.Object (FriendsListPanel
+            // Instantiates rows; FriendsInitializer does an op_Equality null check
+            // on a persistent GameObject) while its raise sites are NOT all
+            // main-thread - PartyMemberService.SeedLocalPlayer runs from
+            // ApplyPostLobbyJoinState, immediately after an await of
+            // JoinOrCreateAsync whose fallback path gives no thread guarantee.
+            // Raising inline there threw EnsureRunningOnMainThread. See
+            // SoapPartyEventBus.RequestPartyRosterChanged.
+            //
+            // Unconditional and first: a roster change must never be stranded
+            // unraised by a gate, and draining here means the publish request it
+            // produces is still picked up later in this same frame.
+            _eventBus?.FlushPartyRosterChanged();
+
             if (!IsOnMenuScene()) return;
 
             // ── Party-session push drain ─────────────────────────────────────
@@ -2214,7 +2232,7 @@ namespace CosmicShore.Gameplay
             // so the raise has to happen here or a presence-detected join would
             // be the one roster change that never updated a count.
             if (joinedPlayerIds.Count > 0)
-                _eventBus.RaisePartyRosterChanged();
+                _eventBus.RequestPartyRosterChanged();
 
             // Already inside RefreshAsync (mutex held) → fire-and-forget.
             foreach (var joinedId in joinedPlayerIds)

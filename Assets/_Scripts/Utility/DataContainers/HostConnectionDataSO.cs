@@ -66,8 +66,15 @@ namespace CosmicShore.Utility
         /// </para>
         ///
         /// <para>
-        /// Raised only by <c>SoapPartyEventBus.RaisePartyRosterChanged</c>, which
-        /// is the sole permitted raiser of every event on this container.
+        /// <b>Requested</b> via <c>SoapPartyEventBus.RequestPartyRosterChanged</c>
+        /// (safe from any thread) and actually raised by
+        /// <c>SoapPartyEventBus.FlushPartyRosterChanged</c>, drained once per frame
+        /// from <c>HostConnectionService.Update</c>. The deferral is required, not
+        /// stylistic: this event's listeners touch <c>UnityEngine.Object</c>, and
+        /// its request sites are not all main-thread - raising inline threw
+        /// <c>EnsureRunningOnMainThread</c>. Do not add a direct <c>.Raise()</c>
+        /// for this event without proving the call site's thread context; see the
+        /// block comment in <c>SoapPartyEventBus</c>.
         /// </para>
         /// </summary>
         [Tooltip("Raised ONCE per party-roster mutation, after the roster has settled. " +
@@ -209,6 +216,17 @@ namespace CosmicShore.Utility
         /// scan in <c>HostConnectionService</c>), which is why it raises
         /// <see cref="OnPartyRosterChanged"/> itself. Leaving it out would make
         /// the kick path the one roster change that never repainted a count.
+        /// </para>
+        ///
+        /// <para>
+        /// <b>MAIN THREAD ONLY.</b> This is the one direct raise of
+        /// <see cref="OnPartyRosterChanged"/> left in the codebase - every other
+        /// path defers through <c>SoapPartyEventBus.RequestPartyRosterChanged</c>
+        /// because its listeners touch <c>UnityEngine.Object</c>. It is safe here
+        /// only because the sole caller, <c>HostConnectionService.KickPartyMemberAsync</c>,
+        /// invokes it BEFORE its first <c>await</c>, and is itself only ever
+        /// reached from a UI button handler. If a future caller can reach this
+        /// off-thread, route it through the bus instead.
         /// </para>
         /// </summary>
         public bool RemovePartyMember(string playerId)

@@ -43,8 +43,25 @@ namespace CosmicShore.Tests
         SoapPartyEventBus _bus;
         PartyMemberService _service;
 
-        int _rosterRaises;
+        int _rosterRaisesRaw;
         int _leftRaises;
+
+        /// <summary>
+        /// Roster raises observed, after draining the bus.
+        ///
+        /// <para>
+        /// The raise is DEFERRED - <c>RequestPartyRosterChanged</c> only sets an
+        /// Interlocked flag, and <c>HostConnectionService.Update</c> drains it on
+        /// the main thread. That indirection exists because this event's listeners
+        /// touch <c>UnityEngine.Object</c> while its request sites are not all
+        /// main-thread. Reading through this property is the test's stand-in for
+        /// the Update drain; flushing is idempotent, so reading twice is safe.
+        /// </para>
+        /// </summary>
+        int RosterRaises
+        {
+            get { _bus.FlushPartyRosterChanged(); return _rosterRaisesRaw; }
+        }
 
         [SetUp]
         public void SetUp()
@@ -67,7 +84,7 @@ namespace CosmicShore.Tests
             _bus = new SoapPartyEventBus(_data);
             _service = new PartyMemberService(_data, _bus);
 
-            _rosterRaises = 0;
+            _rosterRaisesRaw = 0;
             _leftRaises = 0;
             _rosterChanged.OnRaised += CountRoster;
             _memberLeft.OnRaised += CountLeft;
@@ -87,7 +104,7 @@ namespace CosmicShore.Tests
             Object.DestroyImmediate(_data);
         }
 
-        void CountRoster() => _rosterRaises++;
+        void CountRoster() => _rosterRaisesRaw++;
         void CountLeft(PartyPlayerData _) => _leftRaises++;
 
         // ─────────────────────────────────────────────────────────────────────
@@ -109,7 +126,7 @@ namespace CosmicShore.Tests
             Assert.AreEqual(3, _leftRaises,
                 "Per-member events still fire once per member - consumers that need " +
                 "to know WHO moved depend on them.");
-            Assert.AreEqual(1, _rosterRaises,
+            Assert.AreEqual(1, RosterRaises,
                 "The repaint signal must fire ONCE for the whole operation. This is the " +
                 "entire point of the channel: three members moving used to cost every " +
                 "panel three full rebuilds.");
@@ -129,6 +146,7 @@ namespace CosmicShore.Tests
             try
             {
                 _service.ClearWithEvents("local");
+                _bus.FlushPartyRosterChanged();   // stands in for the Update drain
             }
             finally
             {
@@ -137,7 +155,71 @@ namespace CosmicShore.Tests
 
             Assert.AreEqual(1, countObservedByListener,
                 "A listener must observe the FINAL roster, never a half-applied one - " +
-                "that is why the raise sits after the loop rather than inside it.");
+                "that is why the request is made after the loop rather than inside it.");
+        }
+
+        /// <summary>
+        /// Pins the DEFERRAL itself, which is a threading requirement rather than a
+        /// style choice.
+        ///
+        /// <para>
+        /// This event's listeners touch <c>UnityEngine.Object</c> - FriendsListPanel
+        /// Instantiates rows, and FriendsInitializer (on a persistent GameObject, so
+        /// always attached) does an <c>op_Equality</c> null check. Its request sites
+        /// are NOT all main-thread: <c>SeedLocalPlayer</c> runs from
+        /// <c>ApplyPostLobbyJoinState</c>, immediately after an await of
+        /// <c>JoinOrCreateAsync</c> whose fallback path ends in
+        /// <c>UniTask.Delay</c> + <c>ConvergeToCanonicalAsync</c> and carries no
+        /// main-thread guarantee (Docs/THREADING.md).
+        ///
+        /// Raising inline there threw <c>EnsureRunningOnMainThread</c> in a live
+        /// build. If someone "simplifies" the bus by raising directly again, this
+        /// test is what says no.
+        /// </para>
+        /// </summary>
+        [Test]
+        public void RosterChanged_IsNotRaisedUntilFlushed()
+        {
+            _partyMembers.Add(new PartyPlayerData("local", "LocalPilot", 1));
+            _partyMembers.Add(new PartyPlayerData("r1", "Remote1", 2));
+
+            _service.ClearWithEvents("local");
+
+            Assert.AreEqual(0, _rosterRaisesRaw,
+                "The request must NOT raise inline - the request site may be off the " +
+                "main thread, and SOAP invokes listeners inline on the calling thread.");
+
+            _bus.FlushPartyRosterChanged();
+
+            Assert.AreEqual(1, _rosterRaisesRaw,
+                "Flushing on the main thread is what actually raises it.");
+        }
+
+        [Test]
+        public void Flush_WithNothingPending_DoesNotRaise()
+        {
+            _bus.FlushPartyRosterChanged();
+            _bus.FlushPartyRosterChanged();
+
+            Assert.AreEqual(0, _rosterRaisesRaw,
+                "Flush runs every frame from Update, so an empty flush must be free.");
+        }
+
+        [Test]
+        public void MultipleRequestsBeforeFlush_CollapseToOneRaise()
+        {
+            _partyMembers.Add(new PartyPlayerData("local", "LocalPilot", 1));
+            _partyMembers.Add(new PartyPlayerData("r1", "Remote1", 2));
+
+            _service.ClearWithEvents("local");          // request 1
+            _service.SeedLocalPlayer(clearFirst: true); // request 2 (clear + re-add)
+
+            _bus.FlushPartyRosterChanged();
+
+            Assert.AreEqual(1, _rosterRaisesRaw,
+                "Several roster changes landing in one frame must cost ONE repaint. " +
+                "Deferring to the Update drain makes the coalescing strictly better " +
+                "than raising at each mutation site.");
         }
 
         [Test]
@@ -167,7 +249,7 @@ namespace CosmicShore.Tests
 
             _service.ClearWithEvents("local");
 
-            Assert.AreEqual(0, _rosterRaises,
+            Assert.AreEqual(0, RosterRaises,
                 "Nothing moved, so nothing should repaint.");
         }
 
@@ -176,7 +258,7 @@ namespace CosmicShore.Tests
         {
             _service.ClearSilent();
 
-            Assert.AreEqual(0, _rosterRaises);
+            Assert.AreEqual(0, RosterRaises);
         }
 
         [Test]
@@ -187,7 +269,7 @@ namespace CosmicShore.Tests
 
             _service.ClearSilent();
 
-            Assert.AreEqual(1, _rosterRaises,
+            Assert.AreEqual(1, RosterRaises,
                 "\"Silent\" suppresses the per-member Left events, which carry side " +
                 "effects - it does not mean the UI can keep rendering a stale count.");
             Assert.AreEqual(0, _leftRaises);
@@ -199,20 +281,24 @@ namespace CosmicShore.Tests
             _service.SeedLocalPlayer(clearFirst: true);
 
             Assert.AreEqual(1, _partyMembers.Count);
-            Assert.AreEqual(1, _rosterRaises);
+            Assert.AreEqual(1, RosterRaises);
         }
 
         [Test]
         public void SeedLocalPlayer_AlreadySeeded_NoClear_DoesNotRaise()
         {
             _service.SeedLocalPlayer(clearFirst: true);
-            _rosterRaises = 0;
+            // Drain the FIRST seed's request before zeroing the counter. Without
+            // this the pending flag survives, and the flush inside RosterRaises
+            // below would attribute the first seed's raise to the second.
+            _bus.FlushPartyRosterChanged();
+            _rosterRaisesRaw = 0;
 
             _service.SeedLocalPlayer(clearFirst: false);
 
             Assert.AreEqual(1, _partyMembers.Count,
                 "Seeding is idempotent - a second pass must not duplicate the local row.");
-            Assert.AreEqual(0, _rosterRaises,
+            Assert.AreEqual(0, RosterRaises,
                 "The idempotent re-seed changed nothing, so it must not repaint. This is " +
                 "the presence-reconnect path, which runs on every lobby rejoin.");
         }
@@ -224,7 +310,7 @@ namespace CosmicShore.Tests
 
             _service.SeedLocalPlayer(clearFirst: true);
 
-            Assert.AreEqual(0, _rosterRaises,
+            Assert.AreEqual(0, RosterRaises,
                 "No id to seed and nothing to clear - the early return must not raise.");
         }
 
@@ -237,7 +323,7 @@ namespace CosmicShore.Tests
             _service.SeedLocalPlayer(clearFirst: true);
 
             Assert.AreEqual(0, _partyMembers.Count);
-            Assert.AreEqual(1, _rosterRaises,
+            Assert.AreEqual(1, RosterRaises,
                 "The early-return path still wiped the roster, so it still has to repaint.");
         }
 
@@ -256,7 +342,7 @@ namespace CosmicShore.Tests
             _partyMembers.Add(new PartyPlayerData("victim", "Victim", 2));
 
             Assert.IsTrue(_data.RemovePartyMember("victim"));
-            Assert.AreEqual(1, _rosterRaises,
+            Assert.AreEqual(1, RosterRaises,
                 "The kick path bypasses PartyMemberService entirely, so it has to raise " +
                 "the signal itself or a kick would be the one roster change that never " +
                 "updated a count.");
@@ -268,7 +354,7 @@ namespace CosmicShore.Tests
             _partyMembers.Add(new PartyPlayerData("local", "LocalPilot", 1));
 
             Assert.IsFalse(_data.RemovePartyMember("ghost"));
-            Assert.AreEqual(0, _rosterRaises);
+            Assert.AreEqual(0, RosterRaises);
         }
 
         #endregion

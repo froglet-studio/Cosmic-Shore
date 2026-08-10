@@ -136,7 +136,7 @@ namespace CosmicShore.Gameplay
             if (string.IsNullOrEmpty(_connectionData.LocalPlayerData.PlayerId))
             {
                 Debug.Log("[PartyMemberService] Seeded PartyMembers with local player.");
-                if (changed) _eventBus.RaisePartyRosterChanged();
+                if (changed) _eventBus.RequestPartyRosterChanged();
                 return;
             }
 
@@ -154,7 +154,7 @@ namespace CosmicShore.Gameplay
             }
 
             Debug.Log("[PartyMemberService] Seeded PartyMembers with local player.");
-            if (changed) _eventBus.RaisePartyRosterChanged();
+            if (changed) _eventBus.RequestPartyRosterChanged();
         }
 
         /// <inheritdoc/>
@@ -258,7 +258,7 @@ namespace CosmicShore.Gameplay
             // that adds three members costs one repaint here, where the
             // per-member events above cost three. Raising inside the loops would
             // also let a listener observe a half-applied roster.
-            if (rosterChanged) _eventBus.RaisePartyRosterChanged();
+            if (rosterChanged) _eventBus.RequestPartyRosterChanged();
 
             return joinedPlayerIds;
         }
@@ -276,7 +276,7 @@ namespace CosmicShore.Gameplay
             bool changed = _connectionData.PartyMembers is { Count: > 0 };
             _connectionData.PartyMembers?.Clear();
             Debug.Log("[PartyMemberService] Party members cleared (silent).");
-            if (changed) _eventBus.RaisePartyRosterChanged();
+            if (changed) _eventBus.RequestPartyRosterChanged();
         }
 
         /// <inheritdoc/>
@@ -295,7 +295,7 @@ namespace CosmicShore.Gameplay
             }
 
             Debug.Log("[PartyMemberService] Party members cleared with Left events.");
-            if (changed) _eventBus.RaisePartyRosterChanged();
+            if (changed) _eventBus.RequestPartyRosterChanged();
         }
 
         /// <inheritdoc/>
