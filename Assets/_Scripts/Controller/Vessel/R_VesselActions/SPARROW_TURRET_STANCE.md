@@ -25,6 +25,24 @@
   flip `flightVisualization` to 1 to compare again. Its danger/domain palette seam note from
   round 2 still stands if `Danger` is re-enabled.
 
+## Round-3 follow-up: the spread rendered at full distance the whole flight
+
+Playtest report: positions were right but the prisms drew as if at maximum range from their
+first frame — the distance-driven spread looked maxed the whole way out of the barrel.
+
+Root cause: the flight moves VERTICES (the entity transform is final at the anchor by design),
+but the spread chain's distance came from `SqrDistanceSubGraph` = `dot(pivot − camera, ·)` —
+the **pivot**, which sits at the anchor for the entire flight. Any look derived from the object
+position, not the displaced geometry, reads the destination.
+
+Fix, GPU-side and law-conforming: `PrismFlightSqrDistance` (in `PrismClockAnimation.hlsl`)
+computes the same squared camera distance from the pivot **displaced by the flight offset** —
+the identical easing formula as `PrismFlightClock` (keep the two in lockstep). It replaces the
+subgraph feed into `Prism Sub Graph.SqrDistance` on BlockGraph (wired by
+`wire_prism_flight_clock.py` stage 2, which also retires the now-unused `SqrDistanceSubGraph`
+node; ExplodingBlockGraph has no distance chain). Unstamped prisms (`Duration 0`) reduce to
+exactly the old expression, so nothing else in the game renders differently.
+
 ## Two flight visualizations (A/B, live-switchable)
 
 `FullAutoBlockShootAction.asset` → **Flight Visualization** selects how the flying prism is

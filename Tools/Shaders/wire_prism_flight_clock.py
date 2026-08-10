@@ -85,6 +85,27 @@ CF_SLOTS = [
 
 VERTEX_POSITION_BLOCK = "VertexDescription.Position"
 
+# ---- stage 2: flight-corrected camera distance (BlockGraph only) ------------
+# The distance-driven look (Prism Sub Graph's spread chain) read
+# SqrDistanceSubGraph = dot(pivot - camera, .), and a flying prism's pivot is
+# parked at the flight END POINT - so a turret shot rendered its full-range
+# spread from frame one. PrismFlightSqrDistance re-measures from the DISPLACED
+# pivot; unstamped (Duration 0) it reduces to the old value exactly, so every
+# other prism renders identically and the retired subgraph node is removed.
+SQRDIST_FUNCTION = "PrismFlightSqrDistance"
+SQRDIST_SUBGRAPH_GUID = "9a1c93633fd560847bde596dbf7353ab"  # SqrDistanceSubGraph.shadersubgraph
+NODE_DONOR_FILE = "Assets/_Graphics/Materials/Graphs/SqrDistanceSubGraph.shadersubgraph"
+
+SQRDIST_CF_SLOTS = [
+    (0, "Clock", "Vector1", False),
+    (1, "StartTime", "Vector1", False),
+    (2, "Duration", "Vector1", False),
+    (3, "Velocity", "Vector3", False),
+    (4, "ObjectPosition", "Vector3", False),
+    (5, "CameraPosition", "Vector3", False),
+    (6, "SqrDistance", "Vector1", True),
+]
+
 
 # ---------------------------------------------------------------------------
 # parse / serialize
@@ -343,6 +364,38 @@ def validate(docs, expect_wired):
         "Add.B is not fed by PrismFlightClock.ObjectOffset"
 
 
+def find_subgraph_node(docs, guid):
+    for d in docs:
+        if "SubGraphNode" in d.get("m_Type", "") and guid in json.dumps(d.get("m_SubGraph", "")) + d.get("m_SerializedSubGraph", ""):
+            return d
+    return None
+
+
+def validate_sqrdist(docs):
+    """Stage-2 invariants for a graph that carries the distance-spread chain."""
+    idx = index(docs)
+    graph = find_graph(docs)
+
+    old = find_subgraph_node(docs, SQRDIST_SUBGRAPH_GUID)
+    assert old is None, "the retired SqrDistanceSubGraph node is still present"
+
+    cf = find_cf(docs, SQRDIST_FUNCTION)
+    assert cf is not None, f"{SQRDIST_FUNCTION} custom function node missing"
+    assert cf["m_FunctionSource"] == HLSL_GUID, f"{SQRDIST_FUNCTION} points at the wrong HLSL asset"
+    cf_slots = {idx[s["m_Id"]]["m_Id"]: idx[s["m_Id"]] for s in cf["m_Slots"]}
+    assert set(cf_slots) == {s[0] for s in SQRDIST_CF_SLOTS}, \
+        f"{SQRDIST_FUNCTION} slot ids do not match the HLSL signature"
+
+    fed = {(e["m_InputSlot"]["m_Node"]["m_Id"], e["m_InputSlot"]["m_SlotId"]) for e in graph["m_Edges"]}
+    for slot_id, name, _kind, is_output in SQRDIST_CF_SLOTS:
+        if not is_output:
+            assert (cf["m_ObjectId"], slot_id) in fed, f"{SQRDIST_FUNCTION} input '{name}' is unconnected"
+
+    # Its output must actually carry the distance into the prism subgraph.
+    assert any(e["m_OutputSlot"]["m_Node"]["m_Id"] == cf["m_ObjectId"] and e["m_OutputSlot"]["m_SlotId"] == 6
+               for e in graph["m_Edges"]), f"{SQRDIST_FUNCTION}.SqrDistance feeds nothing"
+
+
 # ---------------------------------------------------------------------------
 # the edit
 # ---------------------------------------------------------------------------
@@ -467,6 +520,116 @@ def wire(path, add_donor_docs):
     return True
 
 
+def wire_sqrdistance(path):
+    """Stage 2, applied only to graphs that carry the distance-spread chain:
+    replace the pivot-based SqrDistanceSubGraph feed with PrismFlightSqrDistance
+    (the same distance, measured from the flight-displaced pivot)."""
+    docs = load_docs(os.path.join(REPO, path))
+    validate(docs, expect_wired=False)
+
+    if find_cf(docs, SQRDIST_FUNCTION) is not None:
+        validate_sqrdist(docs)
+        print(f"  {os.path.basename(path)}: distance stage already wired")
+        return False
+
+    old = find_subgraph_node(docs, SQRDIST_SUBGRAPH_GUID)
+    if old is None:
+        print(f"  {os.path.basename(path)}: no distance-spread chain — stage 2 not applicable")
+        return False
+
+    graph = find_graph(docs)
+    idx = index(docs)
+
+    flight_cf = find_cf(docs, FUNCTION_NAME)
+    assert flight_cf, "stage 1 (PrismFlightClock) must be wired first"
+
+    # The property nodes feeding the flight CF's four inputs are reused verbatim —
+    # a property node's output legally fans out to any number of inputs.
+    feeders = {}
+    for e in graph["m_Edges"]:
+        i = e["m_InputSlot"]
+        if i["m_Node"]["m_Id"] == flight_cf["m_ObjectId"]:
+            feeders[i["m_SlotId"]] = e["m_OutputSlot"]
+    for slot in (0, 1, 2, 3):
+        assert slot in feeders, f"flight CF input {slot} has no feeder"
+
+    # The one edge the old subgraph drives — capture its destination, then retarget.
+    out_edges = [e for e in graph["m_Edges"]
+                 if e["m_OutputSlot"]["m_Node"]["m_Id"] == old["m_ObjectId"]]
+    assert len(out_edges) == 1, f"expected the SqrDistance subgraph to feed exactly 1 input, found {len(out_edges)}"
+    dest = out_edges[0]["m_InputSlot"]
+
+    # Cross-file donors for Object/Camera nodes (BlockGraph has neither; the
+    # retired subgraph itself does, same serialization version by construction).
+    donor_docs = load_docs(os.path.join(REPO, NODE_DONOR_FILE))
+    donor_idx = index(donor_docs)
+
+    def clone_node_with_slots(type_fragment, x, y):
+        donor = find_node_by_type(donor_docs, type_fragment)
+        assert donor, f"no {type_fragment} donor in {NODE_DONOR_FILE}"
+        node = json.loads(json.dumps(donor))
+        node["m_ObjectId"] = new_oid()
+        node["m_DrawState"]["m_Position"].update({"x": x, "y": y, "width": 208.0, "height": 302.0})
+        slots = []
+        old_to_new = {}
+        for ref in donor["m_Slots"]:
+            s = json.loads(json.dumps(donor_idx[ref["m_Id"]]))
+            old_to_new[s["m_ObjectId"]] = s["m_ObjectId"] = new_oid()
+            slots.append(s)
+        node["m_Slots"] = [{"m_Id": s["m_ObjectId"]} for s in slots]
+        return node, slots
+
+    new_docs = []
+    base_x, base_y = -2600.0, 2400.0
+
+    object_node, object_slots = clone_node_with_slots("ShaderGraph.ObjectNode", base_x, base_y)
+    camera_node, camera_slots = clone_node_with_slots("ShaderGraph.CameraNode", base_x, base_y + 160.0)
+    for node, slots in ((object_node, object_slots), (camera_node, camera_slots)):
+        new_docs.append(node)
+        new_docs.extend(slots)
+        graph["m_Nodes"].append({"m_Id": node["m_ObjectId"]})
+
+    # The CF, donor-cloned from the flight CF in this same graph.
+    flight_slot_docs = [idx[s["m_Id"]] for s in flight_cf["m_Slots"]]
+    donor_slot_v1 = next(s for s in flight_slot_docs if "Vector1MaterialSlot" in s["m_Type"])
+    donor_slot_v3 = next(s for s in flight_slot_docs if "Vector3MaterialSlot" in s["m_Type"])
+    cf = json.loads(json.dumps(flight_cf))
+    cf["m_ObjectId"] = new_oid()
+    cf["m_Name"] = f"{SQRDIST_FUNCTION} (Custom Function)"
+    cf["m_FunctionName"] = SQRDIST_FUNCTION
+    cf["m_DrawState"]["m_Position"].update({"x": base_x + 320.0, "y": base_y, "width": 232.0, "height": 350.0})
+    cf_slots = []
+    for slot_id, name, kind, is_output in SQRDIST_CF_SLOTS:
+        donor = donor_slot_v3 if kind == "Vector3" else donor_slot_v1
+        cf_slots.append(make_slot(donor, slot_id, name, is_output))
+    cf["m_Slots"] = [{"m_Id": s["m_ObjectId"]} for s in cf_slots]
+    new_docs.append(cf)
+    new_docs.extend(cf_slots)
+    graph["m_Nodes"].append({"m_Id": cf["m_ObjectId"]})
+
+    # Retarget the subgraph's one edge onto the CF output, feed the CF's inputs.
+    out_edges[0]["m_OutputSlot"] = {"m_Node": {"m_Id": cf["m_ObjectId"]}, "m_SlotId": 6}
+    for slot in (0, 1, 2, 3):
+        graph["m_Edges"].append({"m_OutputSlot": dict(feeders[slot]),
+                                 "m_InputSlot": {"m_Node": {"m_Id": cf["m_ObjectId"]}, "m_SlotId": slot}})
+    graph["m_Edges"].append(edge(object_node["m_ObjectId"], 0, cf["m_ObjectId"], 4))
+    graph["m_Edges"].append(edge(camera_node["m_ObjectId"], 0, cf["m_ObjectId"], 5))
+
+    # Retire the subgraph node: drop it from m_Nodes and delete its documents.
+    graph["m_Nodes"] = [r for r in graph["m_Nodes"] if r["m_Id"] != old["m_ObjectId"]]
+    dead = {old["m_ObjectId"]} | {s["m_Id"] for s in old.get("m_Slots", [])}
+    docs = [d for d in docs if d.get("m_ObjectId") not in dead]
+
+    docs.extend(new_docs)
+    validate(docs, expect_wired=True)
+    validate_sqrdist(docs)
+
+    open(os.path.join(REPO, path), "w", encoding="utf-8").write(dump_docs(docs))
+    print(f"  {os.path.basename(path)}: distance stage wired (+{len(new_docs)} objects, "
+          f"SqrDistanceSubGraph node retired)")
+    return True
+
+
 def main():
     check_only = "--check" in sys.argv
     add_donor_docs = load_docs(os.path.join(REPO, ADD_DONOR))
@@ -477,6 +640,11 @@ def main():
             docs = load_docs(os.path.join(REPO, path))
             try:
                 validate(docs, expect_wired=True)
+                # Stage 2 is only applicable where the distance-spread chain exists:
+                # a leftover retired subgraph OR a wired CF both trigger validation.
+                if find_cf(docs, SQRDIST_FUNCTION) is not None or \
+                   find_subgraph_node(docs, SQRDIST_SUBGRAPH_GUID) is not None:
+                    validate_sqrdist(docs)
                 print(f"  {os.path.basename(path)}: OK")
             except AssertionError as exc:
                 print(f"  {os.path.basename(path)}: NOT WIRED — {exc}")
@@ -486,6 +654,8 @@ def main():
     changed = False
     for path in GRAPHS:
         changed |= wire(path, add_donor_docs)
+    for path in GRAPHS:
+        changed |= wire_sqrdistance(path)
     print("done" if changed else "nothing to do")
     return 0
 

@@ -135,8 +135,12 @@ namespace CosmicShore.Editor
                 // Secondary CF nodes: BlockGraph carries the color lerp;
                 // ExplodingBlockGraph carries the grow + color clusters too
                 // (transparent live prisms bloom and fade colors on this graph).
+                // BlockGraph also carries PrismFlightSqrDistance — the flight-corrected
+                // camera distance that replaced the pivot-based SqrDistanceSubGraph feed
+                // (a flying prism's pivot is parked at the flight end point, so the
+                // distance-driven spread read full-range for the whole flight).
                 string[] extraFunctions = spec.GraphName == "BlockGraph"
-                    ? new[] { "PrismColorLerp", "PrismFlightClock" }
+                    ? new[] { "PrismColorLerp", "PrismFlightClock", "PrismFlightSqrDistance" }
                     : spec.GraphName == "ExplodingBlockGraph"
                         ? new[] { "PrismGrowScale", "PrismColorLerp", "PrismFlightClock" }
                         : new string[0];

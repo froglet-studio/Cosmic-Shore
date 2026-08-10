@@ -200,4 +200,33 @@ void PrismFlightClock_float(float Clock, float StartTime, float Duration, float3
 #endif
 }
 
+// -----------------------------------------------------------------------------
+// Camera distance for a prism IN FLIGHT (BlockGraph fragment stage).
+// Docs/PRISM_ANIMATION.md §5 C5, follow-up: the distance-driven look (the spread
+// chain in Prism Sub Graph) used SqrDistanceSubGraph = dot(pivot - camera, ·),
+// and a flying prism's PIVOT is parked at the flight's END POINT — so a turret
+// shot rendered with its full-range spread from its first frame, visibly wrong
+// the whole way out of the barrel.
+//
+// This replaces that feed: the same squared distance, measured from the pivot
+// DISPLACED by the flight offset — i.e. from where the prism is visibly drawn.
+// The offset formula is PrismFlightClock's, verbatim (keep the two in lockstep:
+// same easing, same constants), and Duration <= 0 reduces exactly to the old
+// subgraph's dot(pivot - camera, ·), so every prism not in flight renders
+// byte-identically.
+// -----------------------------------------------------------------------------
+void PrismFlightSqrDistance_float(float Clock, float StartTime, float Duration, float3 Velocity,
+    float3 ObjectPosition, float3 CameraPosition, out float SqrDistance)
+{
+    float3 pos = ObjectPosition;
+    if (Duration > 0.0)
+    {
+        float t = clamp(Clock - StartTime, 0.0, Duration);
+        float covered = sin(t * 1.5707963 / Duration);
+        pos += Velocity * (0.63661977 * Duration) * (covered - 1.0);
+    }
+    float3 d = pos - CameraPosition;
+    SqrDistance = dot(d, d);
+}
+
 #endif // PRISM_CLOCK_ANIMATION_INCLUDED

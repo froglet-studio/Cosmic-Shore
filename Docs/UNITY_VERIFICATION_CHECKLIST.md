@@ -93,6 +93,15 @@ quartered from the original:
 - Verify the shield birth-snap renders ON THE FLIGHT: the flying shot must be the octahedron,
   not a plain box that armors on arrival — if it flies plain, the birth rule regressed.
 
+**Round-3 follow-up (spread-at-distance):** the flight moved vertices but the spread chain's
+distance read the PIVOT (parked at the anchor), so shots rendered with max-range spread from
+frame one. `PrismFlightSqrDistance` now feeds `Prism Sub Graph.SqrDistance` on BlockGraph from
+the displaced pivot, and the `SqrDistanceSubGraph` node is retired. Verify: a fired prism's
+spread/near-look must now be identical to a trail prism laid at the same visible distance,
+tightening as it flies; ordinary prisms (trail/environment) must render unchanged. Re-run
+`wire_prism_flight_clock.py --check` + Validate Clock Wiring (BlockGraph now requires
+`PrismFlightSqrDistance`).
+
 **First-pass tuning:** fire rate 30/s + speed 375 (SPACE ×9 at full) + flight 0.3 s on `FullAutoAction.asset`
 (shared with the guns); `blockScale (0.8, 0.5, 5)` + `flightVisualization` on
 `FullAutoBlockShootAction.asset`; reveal overlap 0.2 s (`RevealOverlapSeconds` in the executor);
