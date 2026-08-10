@@ -57,9 +57,9 @@ namespace CosmicShore.Editor
         const string PreviewShader = "Hidden/CosmicShore/PrismOcclusionDitherPreview";
 
         // ── The kernels, mirrored from the HLSL's #defines ────────────────────────
-        static readonly string[] KernelNames = { "IGN (dissolve)", "Spiral (iris)", "Worley (round flecks)", "Shard (triangles)", "Shatter (cracked lattice)" };
-        static readonly string[] KernelTokens = { "PRISM_OCCLUSION_KERNEL_IGN", "PRISM_OCCLUSION_KERNEL_SPIRAL", "PRISM_OCCLUSION_KERNEL_WORLEY", "PRISM_OCCLUSION_KERNEL_SHARD", "PRISM_OCCLUSION_KERNEL_SHATTER" };
-        const int KernelIgn = 0, KernelSpiral = 1, KernelWorley = 2, KernelShard = 3, KernelShatter = 4;
+        static readonly string[] KernelNames = { "IGN (dissolve)", "Spiral (iris)", "Worley (round flecks)", "Shard (triangles)", "Shatter (cracked lattice)", "Shatter3D (volumetric lattice)" };
+        static readonly string[] KernelTokens = { "PRISM_OCCLUSION_KERNEL_IGN", "PRISM_OCCLUSION_KERNEL_SPIRAL", "PRISM_OCCLUSION_KERNEL_WORLEY", "PRISM_OCCLUSION_KERNEL_SHARD", "PRISM_OCCLUSION_KERNEL_SHATTER", "PRISM_OCCLUSION_KERNEL_SHATTER3D" };
+        const int KernelIgn = 0, KernelSpiral = 1, KernelWorley = 2, KernelShard = 3, KernelShatter = 4, KernelShatter3D = 5;
 
         static readonly string[] OrientNames = { "Fixed (one heading)", "Flip (up + down)", "Spin (free rotation)" };
         static readonly string[] OrientTokens = { "PRISM_OCCLUSION_SHARD_FIXED", "PRISM_OCCLUSION_SHARD_FLIP", "PRISM_OCCLUSION_SHARD_SPIN" };
@@ -89,12 +89,14 @@ namespace CosmicShore.Editor
         const float ParallaxMax = 30f;
 
         // ── Live dial state (EditorWindow fields survive domain reloads) ──────────
-        [SerializeField] int _kernel = KernelShard;
+        [SerializeField] int _kernel = KernelShatter3D;
         [SerializeField] float _cellSize = 6f;
         [SerializeField] int _shardOrient = 0;
         [SerializeField] float _morphRate = 0.12f;
         [SerializeField] float _shatterCell = 12f;
         [SerializeField] float _shatterWall = 9f;
+        [SerializeField] float _shatter3dCell = 12f;
+        [SerializeField] float _shatter3dWall = 1.2f;
         [SerializeField] float _spiralRings = 9f;
         [SerializeField] int _spiralArms = 3;
         [SerializeField] float _parallax = 8f;
@@ -199,7 +201,7 @@ namespace CosmicShore.Editor
         // ─────────────────────────────────────────────────────────────────────────
         Vector4 PackA() => new Vector4(_kernel + 1, _cellSize, _shardOrient, _morphRate);
         Vector4 PackB() => new Vector4(_shatterCell, _shatterWall, _spiralRings, _spiralArms);
-        Vector4 PackC() => new Vector4(_parallax, 0f, 0f, 0f);
+        Vector4 PackC() => new Vector4(_parallax, _shatter3dCell, _shatter3dWall, 0f);
 
         void Publish()
         {
@@ -388,6 +390,28 @@ namespace CosmicShore.Editor
                         EditorStyles.miniLabel);
                     break;
 
+                case KernelShatter3D:
+                    DialSlider("Cell size (angular)", ref _shatter3dCell, ShatterCellMin, ShatterCellMax,
+                        ShatterCellGoodLo, ShatterCellGoodHi, "px", null,
+                        "The IDEAL on-screen size of a volumetric cell. The lattice lives on a power-of-two " +
+                        "ladder of WORLD sizes and each fragment picks the rung nearest this angular target, " +
+                        "so rendered cells sweep roughly 0.7-1.4x this value across depth. Coverage is exact " +
+                        "by construction at any scale; the window is about legibility, same as 2D Shatter.");
+                    _shatter3dWall = EditorGUILayout.Slider(new GUIContent("Wall period (x cell)",
+                        "The band repeat as a RATIO of the cell — the same relative window as 2D Shatter: " +
+                        "past ~1.25x there is no lattice left to crack."),
+                        _shatter3dWall, 0.3f, 1.6f);
+                    EditorGUILayout.LabelField(" ",
+                        _shatter3dWall > ShatterWallRatioMax
+                            ? $"past {ShatterWallRatioMax:0.00}x — measure before trusting it"
+                            : "in window",
+                        Warn(_shatter3dWall > ShatterWallRatioMax));
+                    EditorGUILayout.LabelField(" ",
+                        "world-anchored: no strobe at speed, true parallax between stacked layers; " +
+                        "the preview shows its z = 0 slice",
+                        EditorStyles.miniLabel);
+                    break;
+
                 case KernelSpiral:
                     _spiralRings = EditorGUILayout.Slider(new GUIContent("Bands across radius"), _spiralRings, 2f, 24f);
                     _spiralArms = EditorGUILayout.IntSlider(new GUIContent("Arms (turns/rev)",
@@ -439,6 +463,11 @@ namespace CosmicShore.Editor
                 EditorGUILayout.HelpBox("The spiral is corridor-anchored and ignores depth parallax — " +
                                         "it still beats on stacked layers (its polar frame is constant " +
                                         "along a camera ray).", MessageType.None);
+            if (_kernel == KernelShatter3D && _parallax > 0f)
+                EditorGUILayout.HelpBox("Shatter3D ignores depth parallax — it is world-anchored, so " +
+                                        "stacked layers decorrelate through genuine parallax with no shear " +
+                                        "needed. The dial still applies to the screen-anchored kernels.",
+                                        MessageType.None);
         }
 
         void DialSlider(string label, ref float value, float min, float max, float goodLo, float goodHi,
@@ -728,6 +757,8 @@ namespace CosmicShore.Editor
             sb.AppendLine($"static const float PRISM_OCCLUSION_SPIRAL_RINGS = {F(_spiralRings)};");
             sb.AppendLine($"static const float PRISM_OCCLUSION_SPIRAL_ARMS = {F(_spiralArms)};");
             sb.AppendLine($"static const float PRISM_OCCLUSION_PARALLAX = {F(_parallax)};");
+            sb.AppendLine($"static const float PRISM_OCCLUSION_SHATTER3D_CELL = {F(_shatter3dCell)};");
+            sb.AppendLine($"static const float PRISM_OCCLUSION_SHATTER3D_WALL = {F(_shatter3dWall)};");
             return sb.ToString();
         }
 
@@ -770,6 +801,8 @@ namespace CosmicShore.Editor
             // The ' = ' in the anchor keeps it off PRISM_OCCLUSION_PARALLAX_DIR (a float2,
             // and not a dial — the direction is a look constant, not something to bake).
             new Anchor("parallax",    @"(?m)^(static const float PRISM_OCCLUSION_PARALLAX = )([^;]+)(;)", true),
+            new Anchor("s3dCell",     @"(?m)^(static const float PRISM_OCCLUSION_SHATTER3D_CELL = )([^;]+)(;)", true),
+            new Anchor("s3dWall",     @"(?m)^(static const float PRISM_OCCLUSION_SHATTER3D_WALL = )([^;]+)(;)", true),
         };
 
         static FrogletToolValidation ValidateSource()
@@ -837,6 +870,8 @@ namespace CosmicShore.Editor
                 { "spiralRings", F(_spiralRings) },
                 { "spiralArms", F(_spiralArms) },
                 { "parallax", F(_parallax) },
+                { "s3dCell", F(_shatter3dCell) },
+                { "s3dWall", F(_shatter3dWall) },
                 { "tuning", disableTuning ? "0" : "1" },
             };
 

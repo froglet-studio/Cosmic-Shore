@@ -91,13 +91,14 @@
 // crosshatch rather than as facets, and with the per-facet stagger removed it measures
 // 0.16 and is the literal wallpaper the Bayer grid was dropped for.
 // -----------------------------------------------------------------------------
-#define PRISM_OCCLUSION_KERNEL_IGN 0     // screen-space noise — reads as a DISSOLVE
-#define PRISM_OCCLUSION_KERNEL_SPIRAL 1  // corridor-relative — reads as an IRIS
-#define PRISM_OCCLUSION_KERNEL_WORLEY 2  // screen-space cells — reads as ROUND flecking
-#define PRISM_OCCLUSION_KERNEL_SHARD 3   // screen-space cells — reads as TRIANGULAR flecking
-#define PRISM_OCCLUSION_KERNEL_SHATTER 4 // screen-space cells — reads as a CRACKED LATTICE
+#define PRISM_OCCLUSION_KERNEL_IGN 0       // screen-space noise — reads as a DISSOLVE
+#define PRISM_OCCLUSION_KERNEL_SPIRAL 1    // corridor-relative — reads as an IRIS
+#define PRISM_OCCLUSION_KERNEL_WORLEY 2    // screen-space cells — reads as ROUND flecking
+#define PRISM_OCCLUSION_KERNEL_SHARD 3     // screen-space cells — reads as TRIANGULAR flecking
+#define PRISM_OCCLUSION_KERNEL_SHATTER 4   // screen-space cells — reads as a CRACKED LATTICE
+#define PRISM_OCCLUSION_KERNEL_SHATTER3D 5 // WORLD-space cells — a VOLUMETRIC cracked lattice
 
-#define PRISM_OCCLUSION_KERNEL PRISM_OCCLUSION_KERNEL_SHATTER
+#define PRISM_OCCLUSION_KERNEL PRISM_OCCLUSION_KERNEL_SHATTER3D
 
 // -----------------------------------------------------------------------------
 // LIVE TUNING — the design-mode gate (FrogletTools > Ecology > Prism Animation >
@@ -130,7 +131,7 @@
 #if PRISM_OCCLUSION_LIVE_TUNING
 float4 _PrismOcclusionDitherA;  // (kernel + 1, cellSize, shardOrient, morphRate)
 float4 _PrismOcclusionDitherB;  // (shatterCell, shatterWall, spiralRings, spiralArms)
-float4 _PrismOcclusionDitherC;  // (parallaxGain, unused, unused, unused)
+float4 _PrismOcclusionDitherC;  // (parallaxGain, shatter3dCell, shatter3dWall, unused)
 
 #define PRISM_OCCLUSION_TUNING_ON (_PrismOcclusionDitherA.x > 0.5)
 #define PRISM_OCCLUSION_DIAL(live, fallback) (PRISM_OCCLUSION_TUNING_ON ? (live) : (fallback))
@@ -416,6 +417,23 @@ float2 PrismOcclusionHash2(float2 cell)
     return frac((p3.xx + p3.yz) * p3.zy);
 }
 
+// 3D-input variants of the same float-only Hoskins family, for the volumetric kernel
+// and the object-space erosion. Same rationale as Hash2: no integer ops, so identical
+// behaviour on GLES/mobile targets.
+float3 PrismOcclusionHash3(float3 p3)
+{
+    p3 = frac(p3 * float3(0.1031, 0.1030, 0.0973));
+    p3 += dot(p3, p3.yxz + 33.33);
+    return frac((p3.xxy + p3.yxx) * p3.zyx);
+}
+
+float PrismOcclusionHash1(float3 p3)
+{
+    p3 = frac(p3 * 0.1031);
+    p3 += dot(p3, p3.zyx + 31.32);
+    return frac((p3.x + p3.y) * p3.z);
+}
+
 float PrismOcclusionWorley(float2 pixel, float time)
 {
     float2 p = pixel / PrismOcclusionCellSize();
@@ -678,15 +696,156 @@ float PrismOcclusionShatter(float2 pixel, float time)
 }
 
 // -----------------------------------------------------------------------------
+// Kernel F — WORLD-SPACE SHATTER3D (a volumetric cracked lattice). CURRENT.
+//
+// The same design proposition as SHATTER — Voronoi cells filled between parallel
+// straight cuts so the negative space is the motif — lifted from the screen into the
+// WORLD: the cells become polyhedra, the walls become crack planes, and the pattern
+// BELONGS TO THE WORLD instead of to the screen. Three problems fall out at once:
+//
+//   * TRUE PARALLAX. Surfaces stacked along one camera ray occupy different world
+//     positions, so they sample decorrelated regions of the field by construction —
+//     the layered moiré-beat cannot form, and the depth-parallax shear (which only
+//     screen-anchored kernels need) is irrelevant here.
+//   * NO STROBE AT SPEED. A screen-anchored pattern slides over fast-moving geometry,
+//     flashing the bright prism face against its dark interior at the slide rate. A
+//     world-anchored pattern MOVES WITH the geometry: its optical flow is the scene's
+//     own optical flow, so high speed reads as motion, not flicker.
+//   * VOLUMETRIC READ. The corridor visibly carves a hole through a standing crystal
+//     lattice — the "less 2D" feel, delivered literally.
+//
+// THE OCTAVE LADDER — how a world-anchored pattern holds the SCREEN-pixel fidelity
+// window. A fixed world cell size only holds the measured 8–20 px window over a ~2.4×
+// depth range, and the corridor spans more. Scaling the lattice continuously with
+// distance is NOT an option — a lattice anchored at the world origin that rescales
+// per frame sweeps hundreds of cells past any distant fragment per frame (full-screen
+// shimmer), and anchoring the scale at the camera collapses the field to angular
+// coordinates, which is exactly the screen anchoring we are escaping. So the cell
+// size is snapped to a POWER-OF-TWO ladder of world sizes: within one rung the
+// lattice is a fixed world lattice (zero swim, perfect parallax), and a fragment
+// picks the rung nearest its ideal angular size, so cells render at cellPx × [0.7,
+// 1.4] — inside the window. The rung boundary is a camera-centred shell; it is
+// JITTERED per fixed 8-unit world chunk (one extra hash) so it reads as a ragged
+// chunk-scale mix instead of a legible sphere, and a world point only crosses it
+// once per halving of its distance — a chunk re-seeds its cracks once or twice
+// during an entire high-speed approach, against the screen kernels' continuous
+// slide.
+//
+// COVERAGE IS EXACT BY CONSTRUCTION, like 2D SHATTER's: the threshold is
+// frac(h.x + ramp(...)) with h.x uniform and INDEPENDENT of everything in the ramp —
+// the band phase comes from h.x while the cut-plane normal is built from h.y/h.z
+// alone (uniform on the sphere via azimuth + cos-latitude). Do not "simplify" the
+// normal to normalize(h - 0.5): that correlates the plane with the phase through
+// h.x, and frac(X + g(X)) is not uniform. Octave choice is a per-chunk MIXTURE of
+// uniform thresholds, and a mixture of uniforms is uniform — the ladder cannot bend
+// coverage either. No CDF, nothing to refit; what bounds the dials is sampling, same
+// as 2D (cell 8–20 px equivalent, wall ≤ ~1.25× the cell) — re-measured in the Lab,
+// not derived.
+//
+// COST. One jitter hash + an 8-cell octant search (2×2×2: the eight cells whose
+// centres are nearest the fragment) + one band hash ≈ the 2D kernel's ten hashes,
+// plus a log2/exp2 and a sphere-direction sincos. The octant search CAN misattribute
+// an owner near an equidistant boundary (the exhaustive answer is 3×3×3 = 27); for
+// SHATTER that displaces a crack by a sliver and cannot touch coverage — every
+// cell's phase is uniform — which is why the 3.4× search cost buys nothing a dither
+// can show.
+//
+// MORPH: identical to the 2D cellular kernels — sites orbit inside their own cells
+// (bounded, so the octant search stays valid), and the band phase advances at the
+// morph rate; both sit inside frac() of a uniform, so the motion is coverage-free.
+// -----------------------------------------------------------------------------
+static const float PRISM_OCCLUSION_SHATTER3D_CELL = 12.0;  // ideal cell size on screen, px (8-20)
+static const float PRISM_OCCLUSION_SHATTER3D_WALL = 1.2;   // wall period as a RATIO of the cell (<= ~1.25)
+
+float PrismOcclusionShatter3DCell()
+{
+    return PRISM_OCCLUSION_DIAL(_PrismOcclusionDitherC.y, PRISM_OCCLUSION_SHATTER3D_CELL);
+}
+
+float PrismOcclusionShatter3DWall()
+{
+    return PRISM_OCCLUSION_DIAL(_PrismOcclusionDitherC.z, PRISM_OCCLUSION_SHATTER3D_WALL);
+}
+
+// The 2×2×2 octant search: base = floor(q - 0.5) makes base + {0,1}³ exactly the
+// eight cells whose centres are nearest q. Shared by the erosion below (which runs
+// it with a frozen orbit).
+void PrismOcclusionOwner3D(float3 q, float phase, out float3 owner, out float bestSq)
+{
+    float3 base = floor(q - 0.5);
+    bestSq = 1e9;
+    owner = base;
+    [unroll]
+    for (int z = 0; z <= 1; ++z)
+    {
+        [unroll]
+        for (int y = 0; y <= 1; ++y)
+        {
+            [unroll]
+            for (int x = 0; x <= 1; ++x)
+            {
+                float3 cell = base + float3(x, y, z);
+                float3 orbit = 0.5 + 0.5 * sin(6.28318530718 * PrismOcclusionHash3(cell) + phase);
+                float3 offset = (cell + orbit) - q;
+                float dd = dot(offset, offset);
+                if (dd < bestSq)
+                {
+                    bestSq = dd;
+                    owner = cell;
+                }
+            }
+        }
+    }
+}
+
+// angularScale = world units per screen pixel at the fragment's distance
+// (radial distance / focal length in px) — computed by the caller, which owns the
+// camera; the preview shader passes 1 so preview pixels ARE world units.
+float PrismOcclusionShatter3D(float3 positionWS, float angularScale, float time)
+{
+    float phase = time * PrismOcclusionMorphRate() * 6.28318530718;
+
+    // The octave ladder: nearest power-of-two world cell size to the ideal angular
+    // size, with the rounding boundary jittered per fixed 8-world-unit chunk.
+    float targetWorld = max(PrismOcclusionShatter3DCell() * angularScale, 1e-5);
+    float jitter = PrismOcclusionHash1(floor(positionWS * 0.125)) - 0.5;
+    float rung = floor(log2(targetWorld) + 0.5 + 0.35 * jitter);
+    float cellWorld = exp2(rung);
+
+    float3 q = positionWS / cellWorld;
+    float3 owner;
+    float bestSq;
+    PrismOcclusionOwner3D(q, phase, owner, bestSq);
+
+    // Band phase from h.x; cut-plane normal from h.y/h.z ONLY (uniform on the sphere:
+    // uniform azimuth + uniform cos-latitude). Independence of phase and normal is
+    // what keeps frac() uniform — see the header note.
+    float3 h = PrismOcclusionHash3(owner + 61.0);
+    float az = 6.28318530718 * h.y;
+    float cz = 2.0 * h.z - 1.0;
+    float sz = sqrt(max(1.0 - cz * cz, 0.0));
+    float3 dir = float3(sz * cos(az), sz * sin(az), cz);
+
+    // Wall period is authored RELATIVE to the cell (q is already in cell units).
+    float ramp = dot(q - owner, dir) / max(PrismOcclusionShatter3DWall(), 1e-3);
+
+    return PrismOcclusionSafeThreshold(
+        frac(h.x + ramp + time * PrismOcclusionMorphRate()));
+}
+
+// -----------------------------------------------------------------------------
 // THE DISPATCH — the single point at which a kernel is chosen.
 //
-// It takes BOTH parameterisations because the kernels do not share one: the four
-// screen-anchored kernels want pixel coordinates, and the spiral wants the corridor's own
-// polar frame. Passing both keeps the selection in one function instead of duplicating it
-// at every call site, which matters because there are now two call sites — the corridor
-// itself, and the Occlusion Dither Lab's preview shader. The preview is therefore not a
-// reimplementation of the look: it is literally this function, so a preview cannot drift
-// from what the game draws.
+// It takes EVERY parameterisation because the kernels do not share one: the screen-
+// anchored kernels want pixel coordinates, the spiral wants the corridor's own polar
+// frame, and SHATTER3D wants the world position plus the angular scale (world units per
+// screen pixel at the fragment's distance). Passing all of them keeps the selection in
+// one function instead of duplicating it at every call site, which matters because there
+// are two call sites — the corridor itself, and the Occlusion Dither Lab's preview
+// shader. The preview is therefore not a reimplementation of the look: it is literally
+// this function, so a preview cannot drift from what the game draws (it passes
+// positionWS = (pixel, 0) and angularScale = 1, so preview pixels ARE world units and
+// the volumetric kernel shows its z = 0 slice at 1:1).
 //
 // PolarValid says whether (radialRatio, angleTurns) describe a real corridor frame. Since
 // the dither became THE prism transparency mechanism (fade-outs, cloak, authored sub-1
@@ -699,23 +858,27 @@ float PrismOcclusionShatter(float2 pixel, float time)
 // Under PRISM_OCCLUSION_LIVE_TUNING 0 the #if chain leaves exactly one call and the other
 // kernels are dead-stripped, so the shipped shader is what it always was.
 // -----------------------------------------------------------------------------
-float PrismOcclusionDitherThreshold(float2 pixel, float radialRatio, float angleTurns, bool polarValid, float time)
+float PrismOcclusionDitherThreshold(float2 pixel, float radialRatio, float angleTurns, bool polarValid,
+    float3 positionWS, float angularScale, float time)
 {
 #if PRISM_OCCLUSION_LIVE_TUNING
     // The branch is on a GLOBAL, so it is uniform across the entire frame — fully
-    // coherent, never divergent. The cost of design mode is the four unused kernels
+    // coherent, never divergent. The cost of design mode is the five unused kernels
     // sitting in the shader, not this compare.
     int kernel = PRISM_OCCLUSION_TUNING_ON
         ? (int)(_PrismOcclusionDitherA.x - 1.0)
         : PRISM_OCCLUSION_KERNEL;
 
-    if (kernel == PRISM_OCCLUSION_KERNEL_SHARD)   return PrismOcclusionShard(pixel, time);
-    if (kernel == PRISM_OCCLUSION_KERNEL_SHATTER) return PrismOcclusionShatter(pixel, time);
-    if (kernel == PRISM_OCCLUSION_KERNEL_WORLEY)  return PrismOcclusionWorley(pixel, time);
+    if (kernel == PRISM_OCCLUSION_KERNEL_SHATTER3D) return PrismOcclusionShatter3D(positionWS, angularScale, time);
+    if (kernel == PRISM_OCCLUSION_KERNEL_SHARD)     return PrismOcclusionShard(pixel, time);
+    if (kernel == PRISM_OCCLUSION_KERNEL_SHATTER)   return PrismOcclusionShatter(pixel, time);
+    if (kernel == PRISM_OCCLUSION_KERNEL_WORLEY)    return PrismOcclusionWorley(pixel, time);
     if (kernel == PRISM_OCCLUSION_KERNEL_SPIRAL)
         return polarValid ? PrismOcclusionSpiral(radialRatio, angleTurns, time)
                           : PrismOcclusionMotley(pixel);
     return PrismOcclusionMotley(pixel);
+#elif PRISM_OCCLUSION_KERNEL == PRISM_OCCLUSION_KERNEL_SHATTER3D
+    return PrismOcclusionShatter3D(positionWS, angularScale, time);
 #elif PRISM_OCCLUSION_KERNEL == PRISM_OCCLUSION_KERNEL_SHARD
     return PrismOcclusionShard(pixel, time);
 #elif PRISM_OCCLUSION_KERNEL == PRISM_OCCLUSION_KERNEL_SHATTER
@@ -787,6 +950,17 @@ void PrismOcclusionFade_float(float3 PositionWS, float3 Target, float3 Params, f
 {
     Alpha = BaseAlpha;
     ClipThreshold = 0.0;
+
+    // Fast out for fully-dead fragments (an eroded debris chunk, a cloak-invisible
+    // prism): nothing survives a threshold of 1 against an alpha of 0, and no kernel
+    // needs evaluating to know it. (`clip(0 - 1)` discards on every URP variant; the
+    // strictly-inside-(0,1) rule below is for computed thresholds against LIVE alphas.)
+    if (BaseAlpha <= 0.0)
+    {
+        Alpha = 0.0;
+        ClipThreshold = 1.0;
+        return;
+    }
 
     // ---- Stage 1: the corridor's contribution to alpha. Structured as nested tests
     // rather than the early returns this function used to have, because a fragment
@@ -952,11 +1126,145 @@ void PrismOcclusionFade_float(float3 PositionWS, float3 Target, float3 Params, f
     // perspective projection (and 1 under an orthographic one, where this degenerates to
     // a harmless constant offset). Applied HERE rather than inside the kernels so the
     // dispatch — and the Lab's preview, which is a flat slice with no depth to shear —
-    // stays untouched.
+    // stays untouched. SCREEN-ANCHORED KERNELS ONLY: SHATTER3D never reads the pixel —
+    // it decorrelates layers through genuine world anchoring, which is also why it does
+    // not strobe over fast-moving geometry the way a sheared screen pattern does.
     pixel += abs(positionCS.w) * PrismOcclusionParallaxGain() * PRISM_OCCLUSION_PARALLAX_DIR;
 
-    ClipThreshold = PrismOcclusionDitherThreshold(pixel, radialRatio, angleTurns, insideCorridor, time);
+    // The volumetric kernel's frame: world units per screen pixel at the fragment's
+    // RADIAL distance (radial, not view-depth, so the mapping is invariant under
+    // camera roll/turn — turning the camera cannot re-scale the lattice). The focal
+    // length in pixels comes off the live projection matrix, so FOV changes (the speed
+    // tunnel) re-pick octaves instead of silently shrinking cells out of the fidelity
+    // window.
+    float focalPx = 0.5 * _ScreenParams.y * max(UNITY_MATRIX_P._m11, 1e-3);
+    float angularScale = length(PositionWS - cameraWS) / focalPx;
+
+    ClipThreshold = PrismOcclusionDitherThreshold(pixel, radialRatio, angleTurns, insideCorridor,
+                                                  PositionWS, angularScale, time);
 #endif
+}
+
+// -----------------------------------------------------------------------------
+// THE EROSION — the exploding prism's OWN dither, anchored to the prism itself
+// (2026-08-10).
+//
+// The fade-out of exploding debris must not be a function of the VIEW: a screen- or
+// world-anchored pattern crawls across a flying, tumbling chunk as the camera and the
+// chunk move, so the dissolve reads as something happening TO the image rather than
+// to the prism. This kernel is evaluated in OBJECT SPACE: the pattern rides the
+// debris through every tumble — rotate the camera, rotate the prism, nothing about
+// the erosion changes. It is also deliberately a DIFFERENT effect from the corridor's
+// crack lattice: the prism CRUMBLES — its volume is carved into Voronoi chunks, each
+// chunk assigned its own death phase, and as the clock Opacity runs 1 -> 0 each chunk
+// SHRINKS toward its own centre and vanishes, late chunks outliving early ones. Hard
+// polyhedral edges (the house shape rule), object-anchored, reads as the prism
+// breaking apart rather than dissolving.
+//
+// WHERE IT SITS. ExplodingBlockGraph splices this between the explosion clock and the
+// corridor node: Opacity -> EROSION -> Survival (1 or 0) -> PrismOcclusionFade.
+// BaseAlpha. So the erosion owns the FADE (angle-free, object-anchored) while the
+// corridor keeps owning OCCLUSION (a view effect by definition), and when a fading
+// chunk is also inside the corridor the two screen doors compose in coverage —
+// decorrelated patterns, product alpha, no moiré. A dead fragment takes the corridor
+// function's alpha<=0 fast out, so eroded-away debris costs two hashes and an early
+// return, not a kernel.
+//
+// LIVE PRISMS ON THIS GRAPH ARE EXACT PASS-THROUGHS. With no explosion stamped, the
+// clock's legacy fallback hands _Opacity through: MazeDangerBlockMateral rests at 1
+// (Survival 1 everywhere — fully solid, no pattern, no cost beyond one compare) and
+// TransparentPrismMaterial rests at 0 (Survival 0 — cloak-invisible). The early outs
+// make both cases exact, not approximate.
+//
+// PER-PRISM VARIETY IS FREE. Every debris prism already carries a unique stamped
+// _Velocity (the flight vector), so hashing it into a domain offset decorrelates the
+// chunk layout across the whole burst with no new property and no CPU change. Sites
+// are FROZEN (no orbit): the debris is already flying and tumbling — the pattern's
+// job is to hold still on the body.
+//
+// COVERAGE. The raw threshold is phase*(1-BAND) + BAND*dNorm — phase uniform per
+// chunk, dNorm the normalised distance to the chunk's site — which is NOT uniform (the
+// dNorm term skews it), so it is pushed through a smoothstep fitted to its measured
+// CDF, the same rescue that took Worley from 0.140 to 0.0048. The constants below
+// were fitted by Monte-Carlo over the shipped lattice (Tools/Shaders/
+// fit_prism_erosion_cdf.py — rerun it if CELL, BAND, or REACH move) and the fade is
+// time-domain anyway: coverage error shows up as a fade-curve bend, not a spatial
+// edge, so the tolerance is looser than the corridor's.
+// -----------------------------------------------------------------------------
+static const float PRISM_EROSION_CELL = 0.22;   // object-space units per chunk (~4-5 across a unit prism)
+static const float PRISM_EROSION_BAND = 0.35;   // fraction of each chunk's life spent shrinking
+static const float PRISM_EROSION_REACH = 0.90;  // dNorm normaliser: typical max site distance, cell units
+static const float PRISM_EROSION_CDF_LO = 0.07;  // fitted to the measured raw-threshold CDF
+static const float PRISM_EROSION_CDF_HI = 0.985; // (Monte-Carlo over the shipped lattice, 2026-08-10:
+                                                 // raw 0.038 -> remapped 0.008 mean |coverage-alpha|)
+
+// PositionOS is the FRAGMENT-stage object position, which is POST-vertex-animation —
+// it carries the debris flight offset, and left uncorrected the pattern would slide
+// through the body at the flight speed (tens of cells per second: the exact crawl this
+// kernel exists to remove). So the flight translation is UNDONE here with the same
+// formula the clock applied (offset = worldToObject x Velocity*t; the fragment reads
+// the same per-instance matrix the vertex used, so the subtraction is exact). The
+// per-face shatter spin is NOT undone — reconstructing it would duplicate the whole
+// rotation subgraph — and does not need to be: it accumulates ~20 degrees across an
+// entire flight (ExplosiveRotation 0.0169 x Amount), a slow drift orders of magnitude
+// under the translation it rides on, invisible inside a crumble.
+void PrismErosionFade_float(float3 PositionOS, float3 Velocity, float Clock, float StartTime,
+    float Duration, float BaseOpacity, out float Survival)
+{
+    // Exact ends — these are what make the live-material pass-throughs exact and the
+    // debris fade's first/last frames clean.
+    if (BaseOpacity >= 1.0) { Survival = 1.0; return; }
+    if (BaseOpacity <= 0.0) { Survival = 0.0; return; }
+
+    float3 bodyPos = PositionOS;
+#if !defined(SHADERGRAPH_PREVIEW)
+    if (Duration > 0.0)
+    {
+        float t = max(Clock - StartTime, 0.0);
+        // Raw (float3x3) multiply, NOT a Direction-mode transform — same reasoning as
+        // PrismExplosionClock: TransformWorldToObjectDir normalizes, destroying the
+        // magnitude and re-skewing under the prism's non-uniform scale.
+        bodyPos -= mul((float3x3)GetWorldToObjectMatrix(), Velocity * t);
+    }
+#endif
+
+    // Velocity doubles as the per-prism entropy: every debris chunk carries a unique
+    // stamped flight vector, so hashing it decorrelates the chunk layout across the
+    // burst with no new property.
+    float3 q = bodyPos / PRISM_EROSION_CELL + PrismOcclusionHash3(Velocity) * 64.0;
+
+    // Frozen-orbit octant search: sites at cell + hash (no time term).
+    float3 base = floor(q - 0.5);
+    float bestSq = 1e9;
+    float3 owner = base;
+    [unroll]
+    for (int z = 0; z <= 1; ++z)
+    {
+        [unroll]
+        for (int y = 0; y <= 1; ++y)
+        {
+            [unroll]
+            for (int x = 0; x <= 1; ++x)
+            {
+                float3 cell = base + float3(x, y, z);
+                float3 offset = (cell + PrismOcclusionHash3(cell)) - q;
+                float dd = dot(offset, offset);
+                if (dd < bestSq)
+                {
+                    bestSq = dd;
+                    owner = cell;
+                }
+            }
+        }
+    }
+
+    float dNorm = saturate(sqrt(bestSq) / PRISM_EROSION_REACH);
+    float phase = PrismOcclusionHash1(owner + 17.0);
+    float raw = phase * (1.0 - PRISM_EROSION_BAND) + PRISM_EROSION_BAND * dNorm;
+    float threshold = PrismOcclusionSafeThreshold(
+        smoothstep(PRISM_EROSION_CDF_LO, PRISM_EROSION_CDF_HI, raw));
+
+    Survival = BaseOpacity >= threshold ? 1.0 : 0.0;
 }
 
 #endif // PRISM_OCCLUSION_CORRIDOR_INCLUDED

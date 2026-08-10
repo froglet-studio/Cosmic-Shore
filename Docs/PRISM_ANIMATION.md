@@ -1027,7 +1027,9 @@ view-dependent prism effect in §3.7 (`SkimFxRunner`'s live ship end, the retire
 | GPU test + dither | `_Graphics/Materials/Graphs/PrismOcclusionCorridor.hlsl` |
 | Live design surface (dials · preview · measure · bake) | FrogletTools > Ecology > Prism Animation > **Occlusion Dither Lab** — `Editor/PrismOcclusionDitherLab.cs` + `_Graphics/Materials/Graphs/PrismOcclusionDitherPreview.shader` |
 | Graph wiring (idempotent, validate-before-write) | `Tools/Shaders/wire_prism_occlusion_corridor.py` |
-| Material alpha-test opt-in (idempotent) | `Tools/Shaders/enable_prism_alpha_clip.py` |
+| Material opaque+clip contract (idempotent fixer) | `Tools/Shaders/enable_prism_alpha_clip.py` |
+| Debris erosion splice (idempotent) | `Tools/Shaders/wire_prism_explosion_erosion.py` |
+| Erosion CDF re-fit (after lattice retune) | `Tools/Shaders/fit_prism_erosion_cdf.py` |
 | Interactive gate | FrogletTools > Ecology > Prism Animation > **Validate Occlusion Corridor** |
 
 The two globals are `_PrismOcclusionTarget` (the vessel's world position) and
@@ -1230,8 +1232,41 @@ short band from reading as an edge are both continuity choices:
     0.164 and is the literal wallpaper the Bayer grid was dropped for. **Passing the number
     is necessary, not sufficient.**
 
-  - **4 — screen-space SHATTER (CURRENT — shipped 2026-08-06 at polygon 16.26 px /
-    wall 20 px).** The other way to get a hard-edged unit shape: instead of growing a polygon around a point, take the **Voronoi
+  - **5 — WORLD-SPACE SHATTER3D (CURRENT — shipped 2026-08-10 at cell 12 px / wall
+    1.2× the cell).** SHATTER lifted from the screen into the world: the Voronoi cells
+    become POLYHEDRA, the walls become crack planes, and the pattern belongs to the
+    world instead of to the screen. Three problems die at once: **true parallax**
+    (stacked layers occupy different world positions → decorrelated by construction —
+    the depth-parallax shear is unnecessary and unused here), **no strobe at speed**
+    (a screen-anchored pattern slides over fast geometry, flashing the bright prism
+    face against its dark interior at the slide rate; a world-anchored pattern's
+    optical flow IS the scene's, so speed reads as motion, not flicker), and the
+    corridor visibly **carves a volumetric lattice** rather than stamping a decal.
+    Screen-pixel fidelity across depth comes from the **octave ladder**: cell sizes
+    live on a power-of-two ladder of world sizes; within a rung the lattice is a fixed
+    world lattice (zero swim — continuous distance-compensation was measured and
+    rejected: a rescaling lattice anchored at the origin sweeps hundreds of cells past
+    distant fragments per frame, and anchoring at the camera collapses to angular =
+    screen coordinates again), each fragment picks the rung nearest its ideal angular
+    size (rendered cells sweep ~0.7–1.4× the dial), and the rung boundary is jittered
+    per 8-world-unit chunk so it reads as ragged chunk mix, crossed roughly once per
+    halving of a point's distance. **Coverage is exact by construction** like 2D
+    SHATTER's — with one structural care: the band phase is `h.x` while the cut-plane
+    normal is built from `h.y`/`h.z` ONLY (uniform on the sphere), because
+    `frac(X + g(X))` is not uniform — do not "simplify" the normal to
+    `normalize(h-0.5)`. Measured through a clang-compiled build of the shipped file
+    (2026-08-10): **0.0006 uniform / 0.0031 in-situ across a 30× depth range** —
+    better than 2D SHATTER's shipped 0.0102 — with the octant search, octaves, and
+    boundary jitter all in play. Cost ≈ the 2D kernel: one jitter hash + an 8-cell
+    2×2×2 octant search (owner misattribution near equidistant boundaries shifts a
+    crack by a sliver and cannot touch coverage, so exhaustive 3×3×3 buys nothing) +
+    one band hash, plus log2/exp2 and a sphere sincos. Dials:
+    `PRISM_OCCLUSION_SHATTER3D_CELL` (ideal angular size, px, window 8–20) and
+    `..._WALL` (a RATIO of the cell, ≤ ~1.25 — relative, like 2D's corrected window).
+
+  - **4 — screen-space SHATTER (carried — shipped 2026-08-06 at polygon 16.26 px /
+    wall 20 px, superseded by SHATTER3D on 2026-08-10 for the layered-beat and
+    speed-strobe reasons above).** The other way to get a hard-edged unit shape: instead of growing a polygon around a point, take the **Voronoi
     cell itself** — an irregular convex polygon, nothing but straight edges — and fill it
     between two parallel straight lines from a hashed phase and a hashed band direction.
     Neighbouring cells are independent, so their boundaries are always visible and the
@@ -1408,6 +1443,30 @@ Four properties of the design worth preserving if it is ever touched:
   screen-anchored kernels work anywhere; the SPIRAL is corridor-anchored (no polar frame
   exists outside the cone), so the dispatch takes a `polarValid` flag and swaps it for IGN
   on out-of-corridor fades rather than letting a whole prism vanish at one alpha.
+- **The exploding prism's FADE is its own dither — object-anchored, never a function of
+  the view (2026-08-10).** A screen- or world-anchored pattern crawls across flying,
+  tumbling debris, so the fade read as an image effect. `PrismErosionFade` (same HLSL
+  file) carves the prism into OBJECT-SPACE Voronoi chunks; as the clock Opacity runs
+  1 → 0 each chunk shrinks toward its own centre and vanishes at its own hashed phase —
+  the prism CRUMBLES, and no camera angle or motion can slide the pattern
+  (the flight translation is undone inside the function with the clock's own formula;
+  the slow per-face shatter spin — ~20° across a whole flight — is deliberately not).
+  Per-prism variety is free: the stamped `_Velocity` doubles as the chunk-layout
+  entropy. Spliced by `Tools/Shaders/wire_prism_explosion_erosion.py` between the
+  explosion clock and the corridor node (`Opacity → erosion → Survival(1|0) →
+  BaseAlpha`), so the erosion owns the FADE while the corridor keeps owning OCCLUSION —
+  a view effect by definition — and a fading chunk inside the corridor composes the two
+  decorrelated screen doors in coverage. Live prisms on ExplodingBlockGraph are exact
+  pass-throughs via the ≥1/≤0 early-outs (MazeDanger solid at `_Opacity 1`,
+  TransparentPrismMaterial invisible at 0), and an eroded-away fragment takes the
+  corridor's alpha≤0 fast out (threshold 1, no kernel). Its raw threshold is not
+  uniform, so it carries a CDF remap like Worley's — fitted by
+  `Tools/Shaders/fit_prism_erosion_cdf.py` (Monte-Carlo over the shipped lattice,
+  validated against a clang build of the file itself: raw 0.038 → **0.0068** mean
+  |coverage−alpha|); re-run the fitter if `PRISM_EROSION_CELL/BAND/REACH` move. The
+  guard is `PrismOcclusionCoverageTests.ExplodingGraph_CarriesTheObjectAnchoredErosion`
+  — a graph revert would otherwise silently return the debris fade to the view-anchored
+  kernel.
 
 **Cost, stated:** per fragment, for solid mass outside the corridor — one compare against
 the off sentinel, ~10 ALU of segment-distance, two compares, done (no dither, no texture).

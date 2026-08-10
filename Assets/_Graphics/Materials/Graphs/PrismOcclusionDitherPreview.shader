@@ -99,7 +99,11 @@ Shader "Hidden/CosmicShore/PrismOcclusionDitherPreview"
 
                 // polarValid = true: the preview synthesizes a valid corridor frame in
                 // every mode, so the spiral never takes its out-of-corridor IGN fallback here.
-                float threshold = PrismOcclusionDitherThreshold(pixel, radialRatio, angleTurns, true, time);
+                // The volumetric kernel gets positionWS = (pixel, 0) at angularScale 1, so
+                // preview pixels ARE world units and it renders its z = 0 slice at 1:1 —
+                // the honest scale, same as every screen kernel.
+                float threshold = PrismOcclusionDitherThreshold(pixel, radialRatio, angleTurns, true,
+                                                               float3(pixel, 0.0), 1.0, time);
 
                 if (mode == 2)
                     return float4(threshold, alpha, 0.0, 1.0);
