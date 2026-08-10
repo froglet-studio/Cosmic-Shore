@@ -89,7 +89,7 @@ namespace CosmicShore.Editor
         const float ParallaxMax = 30f;
 
         // ── Live dial state (EditorWindow fields survive domain reloads) ──────────
-        [SerializeField] int _kernel = KernelShatter3D;
+        [SerializeField] int _kernel = KernelShatter;
         [SerializeField] float _cellSize = 6f;
         [SerializeField] int _shardOrient = 0;
         [SerializeField] float _morphRate = 0.12f;
@@ -391,6 +391,10 @@ namespace CosmicShore.Editor
                     break;
 
                 case KernelShatter3D:
+                    EditorGUILayout.HelpBox("REJECTED ON LOOK (2026-08-10, the day it shipped): a volumetric " +
+                        "crack plane lying near-parallel to a viewed surface makes a face-sized plate share one " +
+                        "threshold — plate-flashes that read as glitchy clipping around the vessel. Carried for " +
+                        "a possible 3D-SHARD successor; do not re-ship as-is.", MessageType.Warning);
                     DialSlider("Cell size (angular)", ref _shatter3dCell, ShatterCellMin, ShatterCellMax,
                         ShatterCellGoodLo, ShatterCellGoodHi, "px", null,
                         "The IDEAL on-screen size of a volumetric cell. The lattice lives on a power-of-two " +

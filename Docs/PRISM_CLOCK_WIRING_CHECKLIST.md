@@ -300,38 +300,35 @@ no play mode):
 3. Watch the boundary. Sides and base grade at the same rate; there should be **no seam**
    anywhere on the cone, and in particular no crisp semicircular edge on a large plate
    level with the ship.
-4. Hold still ~10s and watch the stipple. It should read as a **volumetric cracked
-   lattice** (the shipped SHATTER3D kernel), and the pattern should **evolve** — polyhedra
-   drifting, crack planes re-drawing — reading as flow, never as flicker. Then MOVE: the
-   lattice must stay **glued to the world** — strafe and the near layers parallax past the
-   far ones; a pattern that slides across the geometry as one sheet means the kernel is
-   back on a screen-anchored variant (`..._SHATTER` flat lattice, `..._WORLEY` round
-   flecks, `..._SHARD` triangles).
-4b. Fly FAST through a trail wall while watching the corridor's gradient shell. The
-   bright-face/dark-interior contrast must not strobe — the dither features stream with
-   the prisms. (This strobe at speed is the artifact that retired the screen-anchored
-   kernel from the corridor, 2026-08-10.) Watch also for a subtle chunk-scale re-seed
-   front as distances halve — that is the octave ladder's rung boundary and should read
-   as ragged and rare, roughly once per halving of a surface's distance, never as
-   continuous crackle.
+4. Hold still ~10s and watch the stipple. It should read as a **cracked lattice of walls**
+   (the shipped SHATTER kernel), and the pattern should **evolve** — polygons drifting,
+   walls re-drawing — reading as flow, never as flicker. Round flecks mean the kernel is
+   back on `..._WORLEY`; triangles mean `..._SHARD`; **face-sized plates flashing in and
+   out around the vessel mean `..._SHATTER3D`, which is carried but REJECTED ON LOOK —
+   restore `..._SHATTER`.** (Known open issue, 2026-08-10: at high speed the
+   screen-anchored pattern's slide over fast geometry can strobe the bright-face/
+   dark-interior contrast; the 3D kernel fixed that and introduced worse — the Lab's
+   morph-rate and depth-parallax dials are the current levers while a successor is
+   designed.)
 5. Swap vessels (the freestyle vessel-changer toy). The corridor should re-scale to the
    new hull automatically — a bigger ship clears a proportionally bigger cone.
 6. Check the console: zero `[PrismOcclusion]` errors. Any that appear name the vessel and
    the number, and mean either an unmeasurable hull or an implausible radius (or, since
    2026-08-10, a transparent prism material — those are off-contract now, see step 7).
 7. Shoot a prism wall and watch the debris (2026-08-10 — dither IS prism transparency).
-   Exploding prisms should **CRUMBLE** — object-space chunks shrinking toward their own
-   centres and vanishing, each at its own phase, the pattern riding the tumbling body —
-   with no smooth blend and no sorting pop against other debris. **Orbit the camera
-   around a fading chunk: the erosion must not change with the view** — a pattern that
-   crawls across the debris as you move means the erosion node is unwired (run
-   `python3 Tools/Shaders/wire_prism_explosion_erosion.py`) and the fade has fallen back
-   to the view-anchored corridor kernel. A fading chunk inside the corridor shows both
-   effects composed in coverage. Cloaked prisms (the cloak-wall ability) should read as
-   a sparse ~1% stipple, not a translucent ghost. If any prism blends smoothly, a
-   transparent prism material has crept back in — run
-   `python3 Tools/Shaders/enable_prism_alpha_clip.py` (it converts strays and preserves
-   their authored alpha as coverage).
+   Each face of an exploding prism should show **ONE jagged erosion front wiping
+   across it** — faces starting at staggered moments, every prism peeling in its own
+   directions — never many holes being eaten from multiple points across a face, and
+   no smooth blend or sorting pop against other debris. **Orbit the camera around a
+   fading chunk: the wipe must not change with the view** — a front that crawls
+   across the debris as you move means the erosion node is unwired (run
+   `python3 Tools/Shaders/wire_prism_explosion_erosion.py`) and the fade has fallen
+   back to the view-anchored corridor kernel. A fading chunk inside the corridor
+   shows both effects composed in coverage. Cloaked prisms (the cloak-wall ability)
+   should read as a sparse ~1% stipple, not a translucent ghost. If any prism blends
+   smoothly, a transparent prism material has crept back in — run
+   `python3 Tools/Shaders/enable_prism_alpha_clip.py` (it converts strays and
+   preserves their authored alpha as coverage).
 
 **Do not hand-edit these to explore.** `FrogletTools > Ecology > Prism Animation >
 **Occlusion Dither Lab**` drives every knob below as a shader global — **live, including in
@@ -344,9 +341,9 @@ against the shipped baseline, and bakes the result back into the constants. Edit
 
 | Knob | Default | What it does |
 |---|---|---|
-| `PRISM_OCCLUSION_KERNEL` | `..._SHATTER3D` | The dither look. `..._SHATTER3D` a **volumetric world-anchored** cracked lattice (**shipped 2026-08-10** — true parallax between stacked layers, no strobe at speed) · `..._SHATTER` the screen-anchored cracked lattice (carried) · `..._SHARD` triangular flecking · `..._WORLEY` round flecks · `..._SPIRAL` a corridor-anchored iris · `..._IGN` an even screen-space dissolve. |
-| `PRISM_OCCLUSION_SHATTER3D_CELL` / `..._WALL` | `12.0` / `1.2` | Shatter3D only. CELL is the **ideal angular size** in px — the lattice lives on a power-of-two ladder of WORLD sizes and each fragment picks the nearest rung, so rendered cells sweep ~0.7–1.4× this value across depth (window 8–20, same legibility bounds as 2D). WALL is a **ratio of the cell** (≤ ~1.25 — the relative window, like 2D's corrected one). Coverage is exact by construction at any scale — measured 0.0006 uniform / 0.0031 in-situ across a 30× depth range via a clang build of the shipped file. |
-| `PRISM_EROSION_CELL` / `..._BAND` / `..._REACH` / `..._CDF_LO` / `..._CDF_HI` | `0.22` / `0.35` / `0.9` / `0.07` / `0.985` | The exploding prism's OBJECT-anchored crumble (not Lab-driven — constants only). CELL is object-space chunk size, BAND the fraction of each chunk's life spent shrinking toward its centre, REACH the distance normaliser. **The CDF pair is fitted to the lattice** — re-run `python3 Tools/Shaders/fit_prism_erosion_cdf.py` after moving any of the first three, or the debris fade-curve bends (raw 0.038 vs fitted 0.0068 coverage error). |
+| `PRISM_OCCLUSION_KERNEL` | `..._SHATTER` | The dither look. `..._SHATTER` a cracked lattice of walls (**shipped** — restored 2026-08-10 after the 3D kernel's same-day rejection) · `..._SHATTER3D` the volumetric world-anchored variant (**carried, REJECTED ON LOOK**: crack planes lying near-parallel to a viewed surface flash face-sized plates — reads as glitchy clipping around the vessel; every fidelity number passed, the look failed) · `..._SHARD` triangular flecking · `..._WORLEY` round flecks · `..._SPIRAL` a corridor-anchored iris · `..._IGN` an even screen-space dissolve. |
+| `PRISM_OCCLUSION_SHATTER3D_CELL` / `..._WALL` | `12.0` / `1.2` | Shatter3D only (carried, rejected — see the kernel row). CELL is the ideal angular size in px on the power-of-two world-size ladder; WALL a ratio of the cell. Kept live in the Lab for a possible 3D-SHARD successor. |
+| `PRISM_EROSION_STAGGER` / `..._WIGGLE` / `..._WIGGLE_FREQ` / `..._CDF_LO` / `..._CDF_HI` | `0.3` / `0.12` / `2.5` / `0.11` / `0.89` | The exploding prism's body-anchored fade: **one jagged WIPE per face**, faces staggered by hashed phases (STAGGER spreads the starts; 0 = all faces in sync), WIGGLE the jagged-front amplitude, FREQ the jags per face width. **The CDF pair is fitted to the wipe over CUBE FACES** — re-run `python3 Tools/Shaders/fit_prism_erosion_cdf.py` after moving any of the first three, or the debris fade-curve bends (fitted: 0.0034 end-to-end via a clang build of the shipped file). |
 | `PRISM_OCCLUSION_SHARD_ORIENT` | `..._FIXED` | Shard only. `..._FIXED` all triangles one heading (most legible as a triangle) · `..._FLIP` up/down · `..._SPIN` free per-cell rotation (reads as splinters). |
 | `PRISM_OCCLUSION_MORPH_RATE` | `0.3256` | Pattern evolution, cycles/sec. `0` freezes it. Shipped ABOVE the ~`0.25` guideline by deliberate choice after viewing it in motion (1.75% of band pixels flip per frame vs the 1.45% guideline) — a look call, and it cannot affect the fade: coverage is flat across the range. |
 | `PRISM_OCCLUSION_PARALLAX` | `8.0` | Depth parallax, px of pattern slide per world unit of VIEW DEPTH. Shears the dither domain so surfaces stacked along one camera ray — a prism's own interior showing through its clipped front face, parallel trail walls — sample decorrelated copies of the pattern instead of moiré-beating a pixel or two apart, and so the dither parallaxes like a volumetric field instead of a screen decal. `0` = off (the flat pre-2026-08-10 behavior, and the beat with it). Coverage-neutral — a domain shift cannot move a translation-invariant threshold distribution — so it cannot break the fade. Direction is the non-dial `..._PARALLAX_DIR` (any fixed unit vector; irrational-ish diagonal). Invisible in the Lab's flat preview by construction — judge it on real stacked mass in play mode. |
