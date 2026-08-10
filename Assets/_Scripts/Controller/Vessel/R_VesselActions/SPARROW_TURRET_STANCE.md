@@ -43,6 +43,26 @@
   trigger + non-kinematic rigidbody + transform mover as the bullets: one collision approach,
   one authored number per shot class.
 
+## Round 5 (2026-08-10): friendly fire is always on; CHARGE 5 spares only the skyburst
+
+- **Turret prisms now friendly-fire, exactly like the bullets.** The carried projectile on
+  `Sparrow Projectile Prism.prefab` shipped with `friendlyFire: 0`, so
+  `Projectile.DisallowImpactOnPrism` silently dropped every own-domain prism contact — the
+  shot flew straight through friendly mass with no effect and no pierce-stop. It is now
+  `friendlyFire: 1`, matching `SparrowProjectile.prefab` (the bullets, which already had it).
+  The shared damage effect (`ProjectileDamagePrismEffect`) has no domain gate, so bullets and
+  turret prisms damage ALL prisms, own domain included, at every element level.
+- **CHARGE-5 'Domain-Safe Skybursts' is the only friendly-fire exemption, and it now covers
+  the whole missile.** The direct-hit damage already gated on the per-shot
+  `Projectile.SpareOwnDomain` snapshot, but the AOE prefabs' authored `affectSelf: 0` made
+  every skyburst BLAST spare own domain at every Charge level — the upgrade was half
+  pre-unlocked. `ProjectileDetonatorSO` now passes
+  `AffectSelfOverride = !proj.SpareOwnDomain` on every detonation (hit, timeout, mine,
+  vessel-strike — all four callers route through the one detonator), so below CHARGE 5 the
+  blast friendly-fires like every other Sparrow shot and at 5+ the whole missile goes
+  domain-safe. The shared `AOEExplosion.prefab` is untouched — the Manta crystal path keeps
+  its own authored/overridden behavior.
+
 ## Round-3 follow-up: the spread rendered at full distance the whole flight
 
 Playtest report: positions were right but the prisms drew as if at maximum range from their

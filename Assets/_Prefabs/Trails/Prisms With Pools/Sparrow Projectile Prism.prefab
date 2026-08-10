@@ -72,7 +72,7 @@ MonoBehaviour:
   projectileImpactor: {fileID: 1370619217961541921}
   spike: 0
   growthRate: 1
-  friendlyFire: 0
+  friendlyFire: 1
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
 --- !u!114 &1370619217961541921
 MonoBehaviour:

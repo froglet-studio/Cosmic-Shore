@@ -117,6 +117,18 @@ tightening as it flies; ordinary prisms (trail/environment) must render unchange
   to land. Prefab was hand-edited (BoxCollider → SphereCollider, same fileID) — confirm the
   prefab opens clean with the sphere on the child.
 
+**Playtest round 5 (2026-08-10):** friendly fire always on; CHARGE 5 spares only the skyburst:
+
+- Turret prism carried projectile `friendlyFire: 0 → 1` on `Sparrow Projectile Prism.prefab`.
+  Verify a turret shot fired into YOUR OWN domain's prisms now damages them (and stops there
+  below SPACE 5) — previously it flew straight through friendly mass. Bullets already had
+  `friendlyFire: 1`; confirm they still damage own-domain prisms unchanged.
+- `ProjectileDetonatorSO` now stamps `AffectSelfOverride = !SpareOwnDomain` on every skyburst
+  detonation. Verify: below CHARGE 5 a skyburst blast destroys your own domain's prisms;
+  at CHARGE 5+ the blast (and the direct hit) spares them — hit, timeout, and mine
+  detonations all flip together. The shared `AOEExplosion.prefab` was NOT edited — confirm
+  the Manta crystal explosion still spares own domain as before.
+
 **First-pass tuning:** fire rate 30/s + speed 375 (SPACE ×9 at full) + flight 0.3 s on `FullAutoAction.asset`
 (shared with the guns); `blockScale (0.8, 0.5, 5)` + `flightVisualization` on
 `FullAutoBlockShootAction.asset`; reveal overlap 0.2 s (`RevealOverlapSeconds` in the executor);
