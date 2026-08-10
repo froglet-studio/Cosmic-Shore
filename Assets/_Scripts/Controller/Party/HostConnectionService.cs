@@ -497,7 +497,26 @@ namespace CosmicShore.Gameplay
             // by the SDK stale-index defect, so peers could render a stale party
             // size for many seconds after the party had actually changed.
             if (connectionData.OnPartyRosterChanged != null)
+            {
                 connectionData.OnPartyRosterChanged.OnRaised += HandleRosterChangedPublish;
+            }
+            else
+            {
+                // Loud, per the locked "every null guard logs Debug.LogError with
+                // field name and suspected cause" rule - and this one earns it.
+                // OnPartyRosterChanged is the ONLY repaint signal FriendsListPanel
+                // and ArcadeLobbyList still listen to for party changes; the
+                // per-member subscriptions they used to repaint from were removed
+                // when this channel replaced them. So an unwired asset does not
+                // degrade the party UI, it freezes it - and silently, because a
+                // SOAP raise on a null reference is a no-op.
+                Debug.LogError(
+                    "[HostConnectionService] connectionData.OnPartyRosterChanged is NOT WIRED on " +
+                    $"'{connectionData.name}'. Party slot counts and the friends-list party rows " +
+                    "will never repaint, and this player's partyCount will never be republished " +
+                    "on a roster change. Assign Event_PartyRosterChanged.asset to the " +
+                    "OnPartyRosterChanged field on the HostConnectionData asset.");
+            }
 
             HandleSignedInEvent();
         }
