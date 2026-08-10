@@ -97,7 +97,9 @@ Shader "Hidden/CosmicShore/PrismOcclusionDitherPreview"
                     angleTurns = atan2(centred.y, centred.x) * (1.0 / 6.28318530718);
                 }
 
-                float threshold = PrismOcclusionDitherThreshold(pixel, radialRatio, angleTurns, time);
+                // polarValid = true: the preview synthesizes a valid corridor frame in
+                // every mode, so the spiral never takes its out-of-corridor IGN fallback here.
+                float threshold = PrismOcclusionDitherThreshold(pixel, radialRatio, angleTurns, true, time);
 
                 if (mode == 2)
                     return float4(threshold, alpha, 0.0, 1.0);

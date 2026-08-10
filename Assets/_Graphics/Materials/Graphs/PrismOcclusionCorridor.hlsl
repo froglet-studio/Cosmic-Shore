@@ -42,21 +42,28 @@
 // clearAxial below), so the corridor closes toward the vessel as softly as it feathers
 // outward.
 //
-// COST CONTRACT. A fragment outside the corridor executes: one compare (radius > 0),
-// one segment-distance evaluation (~10 ALU), one compare, then returns the alpha it
-// was given and a clip threshold of 0 — no dither, no texture, no extra varying beyond
-// world position, and `clip(alpha - 0)` with alpha >= 1 never discards. Both branches
-// are uniform across a prism and near-uniform across a screen tile, so they are
-// coherent. Nothing here changes the render queue, the batch, or the draw call count:
-// corridor prisms stay in the same instanced batch as every other prism.
+// COST CONTRACT. A fully opaque fragment outside the corridor executes: one compare
+// (radius > 0), one segment-distance evaluation (~10 ALU), two compares, then returns
+// the alpha it was given and a clip threshold of 0 — no dither, no texture, no extra
+// varying beyond world position, and `clip(alpha - 0)` with alpha >= 1 never discards.
+// The kernel is paid only by fragments whose FINAL alpha is fractional — inside the
+// corridor's gradient shell, or carrying a sub-1 alpha of their own (a fading debris
+// prism, a cloaked prism). Both branches are uniform across a prism and near-uniform
+// across a screen tile, so they are coherent. Nothing here changes the render queue,
+// the batch, or the draw call count: every prism stays in the same instanced batch.
 //
-// WHY DITHER AND NOT BLENDING. The environment must stay CHEAP OPAQUE prisms — moving
-// them into the transparent queue (sorting + blend + no depth write) for a corridor
-// that changes every frame is exactly the cost this feature exists to avoid, and doing
-// it per-prism would mean a per-prism material swap. Screen-door alpha-to-clip keeps
-// every prism in the opaque queue, needs no sorting, and is order-independent by
-// construction. The trade is stated in the doc: it makes the prism materials
-// alpha-tested.
+// WHY DITHER AND NOT BLENDING — and why, since 2026-08-10, this is THE prism
+// transparency mechanism, not just the corridor's. The environment must stay CHEAP
+// OPAQUE prisms — the transparent queue (sorting + blend + no depth write) is exactly
+// the cost this feature exists to avoid. Screen-door alpha-to-clip keeps every prism
+// in the opaque queue, needs no sorting, and is order-independent by construction.
+// Originally the exploding debris and the cloak family still blended in the transparent
+// queue for their fades; now the threshold engages for ANY fractional final alpha, so
+// those fades ride the same screen door (with the same depth parallax), every prism
+// material is opaque + _ALPHATEST_ON, and NO prism renders in the transparent queue at
+// all. The effects compose in coverage — a debris prism fading inside the corridor is
+// one pattern at the product alpha, not two stacked transparencies. The trade is
+// stated in the doc: it makes the prism materials alpha-tested.
 
 #ifndef PRISM_OCCLUSION_CORRIDOR_INCLUDED
 #define PRISM_OCCLUSION_CORRIDOR_INCLUDED
@@ -681,10 +688,18 @@ float PrismOcclusionShatter(float2 pixel, float time)
 // reimplementation of the look: it is literally this function, so a preview cannot drift
 // from what the game draws.
 //
+// PolarValid says whether (radialRatio, angleTurns) describe a real corridor frame. Since
+// the dither became THE prism transparency mechanism (fade-outs, cloak, authored sub-1
+// alpha — see the corridor test below), a fragment can need a threshold OUTSIDE the
+// corridor, where no polar frame exists. The four screen-anchored kernels don't care; the
+// SPIRAL is corridor-anchored and would read frozen zeros there — the whole prism popping
+// at one alpha — so it falls back to IGN for out-of-corridor fades. The preview always
+// passes true (it synthesizes a valid frame in every mode).
+//
 // Under PRISM_OCCLUSION_LIVE_TUNING 0 the #if chain leaves exactly one call and the other
 // kernels are dead-stripped, so the shipped shader is what it always was.
 // -----------------------------------------------------------------------------
-float PrismOcclusionDitherThreshold(float2 pixel, float radialRatio, float angleTurns, float time)
+float PrismOcclusionDitherThreshold(float2 pixel, float radialRatio, float angleTurns, bool polarValid, float time)
 {
 #if PRISM_OCCLUSION_LIVE_TUNING
     // The branch is on a GLOBAL, so it is uniform across the entire frame — fully
@@ -697,7 +712,9 @@ float PrismOcclusionDitherThreshold(float2 pixel, float radialRatio, float angle
     if (kernel == PRISM_OCCLUSION_KERNEL_SHARD)   return PrismOcclusionShard(pixel, time);
     if (kernel == PRISM_OCCLUSION_KERNEL_SHATTER) return PrismOcclusionShatter(pixel, time);
     if (kernel == PRISM_OCCLUSION_KERNEL_WORLEY)  return PrismOcclusionWorley(pixel, time);
-    if (kernel == PRISM_OCCLUSION_KERNEL_SPIRAL)  return PrismOcclusionSpiral(radialRatio, angleTurns, time);
+    if (kernel == PRISM_OCCLUSION_KERNEL_SPIRAL)
+        return polarValid ? PrismOcclusionSpiral(radialRatio, angleTurns, time)
+                          : PrismOcclusionMotley(pixel);
     return PrismOcclusionMotley(pixel);
 #elif PRISM_OCCLUSION_KERNEL == PRISM_OCCLUSION_KERNEL_SHARD
     return PrismOcclusionShard(pixel, time);
@@ -706,7 +723,8 @@ float PrismOcclusionDitherThreshold(float2 pixel, float radialRatio, float angle
 #elif PRISM_OCCLUSION_KERNEL == PRISM_OCCLUSION_KERNEL_WORLEY
     return PrismOcclusionWorley(pixel, time);
 #elif PRISM_OCCLUSION_KERNEL == PRISM_OCCLUSION_KERNEL_SPIRAL
-    return PrismOcclusionSpiral(radialRatio, angleTurns, time);
+    return polarValid ? PrismOcclusionSpiral(radialRatio, angleTurns, time)
+                      : PrismOcclusionMotley(pixel);
 #else
     return PrismOcclusionMotley(pixel);
 #endif
@@ -714,16 +732,15 @@ float PrismOcclusionDitherThreshold(float2 pixel, float radialRatio, float angle
 
 // Does the selected kernel need the corridor's polar frame? Only the spiral does, and
 // working it out costs an atan2 — so in shipped mode this folds to a compile-time
-// constant and the atan2 disappears entirely for the other four.
+// constant and the atan2 disappears entirely for the other four. (There is no NEEDS_PIXEL
+// counterpart any more: every kernel selection needs the pixel now, because even a spiral
+// build dithers out-of-corridor fades through IGN, which reads pixels.)
 #if PRISM_OCCLUSION_LIVE_TUNING
 #define PRISM_OCCLUSION_NEEDS_POLAR 1
-#define PRISM_OCCLUSION_NEEDS_PIXEL 1
 #elif PRISM_OCCLUSION_KERNEL == PRISM_OCCLUSION_KERNEL_SPIRAL
 #define PRISM_OCCLUSION_NEEDS_POLAR 1
-#define PRISM_OCCLUSION_NEEDS_PIXEL 0
 #else
 #define PRISM_OCCLUSION_NEEDS_POLAR 0
-#define PRISM_OCCLUSION_NEEDS_PIXEL 1
 #endif
 
 // Quintic smootherstep — C2 continuous: value, FIRST and SECOND derivatives are all
@@ -737,23 +754,33 @@ float PrismOcclusionSmootherStep(float t)
 }
 
 // -----------------------------------------------------------------------------
-// The corridor test.
+// The corridor test — and, since 2026-08-10, THE prism transparency mechanism.
+//
+// The dither is no longer corridor-only: the threshold engages for ANY fragment whose
+// final alpha lands below 1, wherever it is. That one rule is what lets every prism
+// transparency effect ride the same screen door — the corridor's fade, the exploding
+// debris fade-out (PrismExplosionClock's Opacity), the cloak family's authored
+// near-zero alpha — composing in COVERAGE (alphas multiply before one threshold
+// compare), so a fading prism inside the corridor shows one consistent pattern, not
+// two stacked effects. It is also what abolished the transparent queue for prisms:
+// every prism material is OPAQUE + _ALPHATEST_ON now (enable_prism_alpha_clip.py
+// enforces it; PrismOcclusionDiagnostics screams at a transparent one), so no prism
+// pays sorting or blend overdraw, and depth writes stay on everywhere.
 //
 // PositionWS  — the fragment's world position (Shader Graph Position node, World).
 //               It is the POST-vertex-animation position, so a prism still blooming
 //               on the grow clock is tested where it actually rasterizes.
 // Target      — _PrismOcclusionTarget (vessel world position).
 // Params      — _PrismOcclusionParams = (outerRadius, innerRadius, coreAlpha).
-// BaseAlpha   — whatever fed SurfaceDescription.Alpha before this node (_Alpha).
-//               Multiplying rather than replacing keeps the graph's transparent
-//               materials (cloak / transparent shielded / transparent danger) honest:
-//               their authored alpha still applies, the corridor only scales it.
+// BaseAlpha   — whatever fed SurfaceDescription.Alpha before this node (BlockGraph's
+//               _Alpha, ExplodingBlockGraph's clock Opacity). Multiplying rather than
+//               replacing is what makes the graph's own alpha a first-class dither
+//               input: authored sub-1 alpha and clock fades render as coverage.
 //
 // Alpha         — BaseAlpha scaled by the corridor fade.
-// ClipThreshold — 0 outside the corridor (never discards); the kernel's threshold inside
-//                 it, so an opaque alpha-tested material dissolves smoothly instead of
-//                 popping. Transparent materials ignore this output entirely (they do
-//                 not enable _ALPHATEST_ON) and simply blend the reduced alpha.
+// ClipThreshold — 0 when the final alpha is >= 1 (never discards); the kernel's
+//                 threshold otherwise, so the material dissolves as a screen door
+//                 instead of popping — in the corridor, mid-explosion, or cloaked.
 // -----------------------------------------------------------------------------
 void PrismOcclusionFade_float(float3 PositionWS, float3 Target, float3 Params, float BaseAlpha,
     out float Alpha, out float ClipThreshold)
@@ -761,9 +788,15 @@ void PrismOcclusionFade_float(float3 PositionWS, float3 Target, float3 Params, f
     Alpha = BaseAlpha;
     ClipThreshold = 0.0;
 
+    // ---- Stage 1: the corridor's contribution to alpha. Structured as nested tests
+    // rather than the early returns this function used to have, because a fragment
+    // OUTSIDE the corridor can still need the dither (any BaseAlpha < 1). The cheap-exit
+    // shape survives where it matters: a fully opaque fragment outside the cone runs the
+    // same handful of compares it always did and falls through to the alpha gate below.
     float outerRadius = Params.x;
-    if (outerRadius <= 0.0)
-        return; // corridor off: no local vessel, or disabled in config
+    bool insideCorridor = false;
+    float radialRatio = 0.0;
+    float3 perp = float3(0.0, 0.0, 0.0);
 
     // _WorldSpaceCameraPos (UnityInput.hlsl, included by every URP pass) rather than a
     // published uniform: the near end of the corridor is then ALWAYS exactly the camera
@@ -775,113 +808,143 @@ void PrismOcclusionFade_float(float3 PositionWS, float3 Target, float3 Params, f
     float3 cameraWS = _WorldSpaceCameraPos.xyz;
 #endif
 
-    float3 axis = Target - cameraWS;
-    float3 rel = PositionWS - cameraWS;
-    float axisLenSq = dot(axis, axis);
-    if (axisLenSq <= 1e-6)
-        return; // camera sitting on the vessel: no axis, no cone
+    // outerRadius <= 0 means "corridor off" (no local vessel, or disabled in config) —
+    // the corridor contributes nothing, but a fading prism still dithers below.
+    if (outerRadius > 0.0)
+    {
+        float3 axis = Target - cameraWS;
+        float3 rel = PositionWS - cameraWS;
+        float axisLenSq = dot(axis, axis);
 
-    // t is UNCLAMPED, and the cone is bounded by rejecting t outside (0,1). This makes it
-    // a BARE cone: it ends flat at the vessel's plane, with no spherical cap past the base
-    // and none behind the camera. Mass level with or behind the ship cannot be in front of
-    // it, so clearing any of it would be more than the corridor needs. (Saturating t
-    // instead would pin the closest point to the vessel past t = 1, and the metric there
-    // becomes distance-to-the-ship-point — that is exactly the hemispherical cap this
-    // rejection removes.)
-    float t = dot(rel, axis) / axisLenSq;
-    if (t <= 0.0 || t >= 1.0)
-        return; // behind the camera, or at/past the vessel — outside the cone entirely
+        // axisLenSq ~ 0: camera sitting on the vessel — no axis, no cone.
+        if (axisLenSq > 1e-6)
+        {
+            // t is UNCLAMPED, and the cone is bounded by rejecting t outside (0,1). This
+            // makes it a BARE cone: it ends flat at the vessel's plane, with no spherical
+            // cap past the base and none behind the camera. Mass level with or behind the
+            // ship cannot be in front of it, so clearing any of it would be more than the
+            // corridor needs. (Saturating t instead would pin the closest point to the
+            // vessel past t = 1, and the metric there becomes distance-to-the-ship-point —
+            // that is exactly the hemispherical cap this rejection removes.)
+            float t = dot(rel, axis) / axisLenSq;
+            if (t > 0.0 && t < 1.0)
+            {
+                // Within (0,1) the closest point on the segment IS the perpendicular foot,
+                // so this is the perpendicular distance to the axis. The VECTOR is kept,
+                // not just its length — the spiral kernel needs its direction for the
+                // corridor-relative angle, and taking it here means the kernel adds no
+                // geometry work of its own.
+                perp = rel - axis * t;
+                float distanceToAxis = length(perp);
 
-    // Within (0,1) the closest point on the segment IS the perpendicular foot, so this is
-    // the perpendicular distance to the axis. The VECTOR is kept, not just its length —
-    // the spiral kernel needs its direction for the corridor-relative angle, and taking
-    // it here means the kernel adds no geometry work of its own.
-    float3 perp = rel - axis * t;
-    float distanceToAxis = length(perp);
+                // THE RADIUS TAPERS WITH t — this one multiply is what makes the corridor
+                // a CONE rather than a capsule, and it is the whole shape argument. The
+                // volume that can actually hide the ship is the eye->silhouette cone: it
+                // is a point at the lens and only reaches the hull's radius at the hull.
+                // A constant radius (the capsule the retired ClearPrisms CapsuleCollider
+                // imposed, carried over into the first shader version) massively
+                // over-clears near the camera, where a fixed world radius subtends a huge
+                // solid angle. Tapering makes the cleared region a CONSTANT ANGULAR SIZE —
+                // exactly the ship's own silhouette, at every depth — so the corridor
+                // never dissolves a single prism more than it must.
+                float outerAtT = outerRadius * t;
+                if (distanceToAxis < outerAtT)
+                {
+                    insideCorridor = true;
 
-    // THE RADIUS TAPERS WITH t — this one multiply is what makes the corridor a CONE
-    // rather than a capsule, and it is the whole shape argument. The volume that can
-    // actually hide the ship is the eye->silhouette cone: it is a point at the lens and
-    // only reaches the hull's radius at the hull. A constant radius (the capsule the
-    // retired ClearPrisms CapsuleCollider imposed, carried over into the first shader
-    // version) massively over-clears near the camera, where a fixed world radius
-    // subtends a huge solid angle. Tapering makes the cleared region a CONSTANT ANGULAR
-    // SIZE — exactly the ship's own silhouette, at every depth — so the corridor never
-    // dissolves a single prism more than it must.
-    float outerAtT = outerRadius * t;
+                    // The profile: EXACTLY coreAlpha (0 by default — fully tapered to
+                    // nothing, no residual ghost anywhere the ship can be) inside the
+                    // inner cone, EXACTLY 1 at and beyond the outer cone, C2-smooth in
+                    // between.
+                    //
+                    // The band is deliberately SHORT so the world snaps back to opaque as
+                    // soon as you move off — only a thin shell is ever in transition.
+                    // Short and smooth are in tension, which is why the easing is quintic
+                    // and the dither is low-discrepancy: both exist to keep a narrow band
+                    // from reading as an edge.
+                    float innerRadius = min(Params.y, outerRadius);
+                    float innerAtT = innerRadius * t;
 
-    if (distanceToAxis >= outerAtT)
-        return; // outside the cone: costs nothing beyond the tests above
+                    // Radial clearance: 1 inside the inner cone, 0 at the outer surface.
+                    float clearRadial = 1.0 - PrismOcclusionSmootherStep(
+                        (distanceToAxis - innerAtT) / max(outerAtT - innerAtT, 1e-4));
 
-    // The profile: EXACTLY coreAlpha (0 by default — fully tapered to nothing, no
-    // residual ghost anywhere the ship can be) inside the inner cone, EXACTLY 1 at and
-    // beyond the outer cone, C2-smooth in between.
-    //
-    // The band is deliberately SHORT so the world snaps back to opaque as soon as you
-    // move off — only a thin shell is ever in transition. Short and smooth are in
-    // tension, which is why the easing is quintic and the dither is low-discrepancy:
-    // both exist to keep a narrow band from reading as an edge.
-    float innerRadius = min(Params.y, outerRadius);
-    float innerAtT = innerRadius * t;
+                    // Axial clearance: 1 up to the base band, 0 at the vessel's plane.
+                    // This grades the BASE. Without it the cone ended in a hard cut — a
+                    // prism spanning the vessel's plane was faded on the camera side and
+                    // solid on the far side, which reads as a crisp semicircular edge on
+                    // any large plate at that depth.
+                    //
+                    // The band's thickness is DERIVED, not authored: it is the radial
+                    // shell's own world thickness (outerRadius - innerRadius) expressed in
+                    // units of t. That makes the gradient shell ISOTROPIC — the same
+                    // thickness across the base as around the sides — so the corridor's
+                    // whole boundary fades at one rate and there is no seam anywhere on
+                    // it. It also self-scales: a long corridor gets a proportionally short
+                    // axial band, a short one a longer band, with nothing to tune. Clamped
+                    // to 1 for the degenerate case where the camera is closer to the ship
+                    // than the shell is thick.
+                    float baseBand = clamp((outerRadius - innerRadius) / sqrt(axisLenSq), 1e-4, 1.0);
+                    float clearAxial = 1.0 - PrismOcclusionSmootherStep((t - (1.0 - baseBand)) / baseBand);
 
-    // Radial clearance: 1 inside the inner cone, 0 at the outer cone's surface.
-    float clearRadial = 1.0 - PrismOcclusionSmootherStep(
-        (distanceToAxis - innerAtT) / max(outerAtT - innerAtT, 1e-4));
+                    // PRODUCT, not min(): a fragment is cleared only where it is inside
+                    // the cone AND before the base, and multiplying two C2 curves stays
+                    // C2 — min() would crease wherever the two cross, which is exactly the
+                    // artefact this pass exists to remove.
+                    float fade = lerp(1.0, Params.z, clearRadial * clearAxial);
 
-    // Axial clearance: 1 up to the base band, 0 at the vessel's plane. This grades the
-    // BASE. Without it the cone ended in a hard cut — a prism spanning the vessel's plane
-    // was faded on the camera side and solid on the far side, which reads as a crisp
-    // semicircular edge on any large plate at that depth.
-    //
-    // The band's thickness is DERIVED, not authored: it is the radial shell's own world
-    // thickness (outerRadius - innerRadius) expressed in units of t. That makes the
-    // gradient shell ISOTROPIC — the same thickness across the base as around the sides —
-    // so the corridor's whole boundary fades at one rate and there is no seam anywhere on
-    // it. It also self-scales: a long corridor gets a proportionally short axial band, a
-    // short one a longer band, with nothing to tune. Clamped to 1 for the degenerate case
-    // where the camera is closer to the ship than the shell is thick.
-    float baseBand = clamp((outerRadius - innerRadius) / sqrt(axisLenSq), 1e-4, 1.0);
-    float clearAxial = 1.0 - PrismOcclusionSmootherStep((t - (1.0 - baseBand)) / baseBand);
+                    Alpha = BaseAlpha * fade;
 
-    // PRODUCT, not min(): a fragment is cleared only where it is inside the cone AND
-    // before the base, and multiplying two C2 curves stays C2 — min() would crease
-    // wherever the two cross, which is exactly the artefact this pass exists to remove.
-    float fade = lerp(1.0, Params.z, clearRadial * clearAxial);
+                    // Corridor-relative radial ratio: 0 on the axis, 1 at the cone wall —
+                    // it tracks the taper, so the spiral's bands are nested CONES and hold
+                    // a constant angular width at every depth, exactly like the profile
+                    // they dither.
+                    radialRatio = distanceToAxis / max(outerAtT, 1e-4);
+                }
+            }
+        }
+    }
 
-    Alpha = BaseAlpha * fade;
+    // ---- Stage 2: the dither. One gate for every transparency source: a fragment whose
+    // final alpha is fractional dissolves through the screen door; a fully opaque one
+    // exits here with threshold 0 (`clip(alpha - 0)` with alpha >= 1 never discards), so
+    // solid mass outside the corridor pays no kernel — the same cost contract as ever.
+    if (Alpha >= 1.0)
+        return;
 
 #if !defined(SHADERGRAPH_PREVIEW)
-    // `_Time.y` (UnityInput.hlsl) — seconds since level load. Drives the morph for the two
+    // `_Time.y` (UnityInput.hlsl) — seconds since level load. Drives the morph for the
     // continuous kernels; IGN ignores it (see the morph-rate note at the top of the file).
     float time = _Time.y;
 
-    float radialRatio = 0.0;
     float angleTurns = 0.0;
 #if PRISM_OCCLUSION_NEEDS_POLAR
-    // Corridor-relative polar coordinates. The radial ratio is 0 on the axis and 1 at the
-    // cone wall — it tracks the taper, so the spiral's bands are nested CONES and hold a
-    // constant angular width at every depth, exactly like the profile they dither.
-    radialRatio = distanceToAxis / max(outerAtT, 1e-4);
-
+    // The corridor-relative angle exists only INSIDE the corridor (radialRatio was
+    // computed with it above); an out-of-corridor fade passes polarValid = false and the
+    // dispatch swaps the spiral for IGN there.
+    //
     // The angle is measured in the CAMERA's right/up frame rather than in a basis derived
     // from the axis. Any basis built from the axis alone has to pick a reference vector,
     // and it flips — with the whole spiral visibly snapping around — the moment the axis
     // swings past it. The camera's frame has no such degeneracy here (the corridor points
     // away from the lens by construction), and it makes the spiral roll with the camera,
     // which reads as the pattern belonging to the view rather than to the world.
-    float3 cameraRight = UNITY_MATRIX_V[0].xyz;
-    float3 cameraUp = UNITY_MATRIX_V[1].xyz;
-    angleTurns = atan2(dot(perp, cameraUp), dot(perp, cameraRight)) * (1.0 / 6.28318530718);
+    if (insideCorridor)
+    {
+        float3 cameraRight = UNITY_MATRIX_V[0].xyz;
+        float3 cameraUp = UNITY_MATRIX_V[1].xyz;
+        angleTurns = atan2(dot(perp, cameraUp), dot(perp, cameraRight)) * (1.0 / 6.28318530718);
+    }
 #endif
 
-    float2 pixel = 0.0;
-#if PRISM_OCCLUSION_NEEDS_PIXEL
     // Screen pixel coordinates, reconstructed from the same world position the
     // rasterizer used. Avoids a Screen Position node (and its varying) entirely.
-    // Shared by every screen-anchored kernel.
+    // Needed by every kernel selection now (even a spiral build falls back to IGN for
+    // out-of-corridor fades), and only ever computed for fragments already past the
+    // alpha gate — solid mass never reaches this.
     float4 positionCS = TransformWorldToHClip(PositionWS);
     float2 ndc = positionCS.xy / max(abs(positionCS.w), 1e-6);
-    pixel = (ndc * 0.5 + 0.5) * _ScreenParams.xy;
+    float2 pixel = (ndc * 0.5 + 0.5) * _ScreenParams.xy;
 
     // THE DEPTH-PARALLAX SHEAR (see its section above): slide the dither domain with
     // view depth so stacked layers sample decorrelated copies of the pattern instead of
@@ -891,9 +954,8 @@ void PrismOcclusionFade_float(float3 PositionWS, float3 Target, float3 Params, f
     // dispatch — and the Lab's preview, which is a flat slice with no depth to shear —
     // stays untouched.
     pixel += abs(positionCS.w) * PrismOcclusionParallaxGain() * PRISM_OCCLUSION_PARALLAX_DIR;
-#endif
 
-    ClipThreshold = PrismOcclusionDitherThreshold(pixel, radialRatio, angleTurns, time);
+    ClipThreshold = PrismOcclusionDitherThreshold(pixel, radialRatio, angleTurns, insideCorridor, time);
 #endif
 }
 

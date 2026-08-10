@@ -7,10 +7,14 @@ Coverage is the whole point (see Docs/PRISM_ANIMATION.md 4.6 "the corridor is a 
 law"): a prism material that cannot fade is an invisible hole in the corridor, and holes
 are exactly what per-vessel / per-mode opt-in used to produce. The census:
 
-  BlockGraph           PrismMaterial, Shielded, SuperShielded, Danger + their transparent
+  BlockGraph           PrismMaterial, Shielded, SuperShielded, Danger + their cloak-state
                        variants + the cloak material  -> every trail and environment prism
-  ExplodingBlockGraph  TransparentPrismMaterial (LIVE transparent prisms), MazeDangerBlockMateral
+  ExplodingBlockGraph  TransparentPrismMaterial (cloak-invisible LIVE prisms), MazeDangerBlockMateral
                        (live maze/overheat prisms) and the explosion debris material
+
+(Since 2026-08-10 every one of those materials is OPAQUE + alpha clip — the "transparent"
+names survive as the cloak-state bind targets, but their transparency is dither coverage,
+not blending; enable_prism_alpha_clip.py enforces that and converts strays.)
 
 SuctionGraph is deliberately excluded: it renders a prism DURING consumption (a sub-second
 implode of mass that is being removed), never standing mass the player can be occluded by.

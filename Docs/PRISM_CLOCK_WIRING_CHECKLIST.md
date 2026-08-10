@@ -307,7 +307,16 @@ no play mode):
 5. Swap vessels (the freestyle vessel-changer toy). The corridor should re-scale to the
    new hull automatically — a bigger ship clears a proportionally bigger cone.
 6. Check the console: zero `[PrismOcclusion]` errors. Any that appear name the vessel and
-   the number, and mean either an unmeasurable hull or an implausible radius.
+   the number, and mean either an unmeasurable hull or an implausible radius (or, since
+   2026-08-10, a transparent prism material — those are off-contract now, see step 7).
+7. Shoot a prism wall and watch the debris (2026-08-10 — dither IS prism transparency).
+   Exploding prisms should **dissolve through the same screen-door pattern** as the
+   corridor — no smooth blend, no sorting pop against other debris, one consistent look
+   when a fading prism is also inside the corridor. Cloaked prisms (the cloak-wall
+   ability) should read as a sparse ~1% stipple, not a translucent ghost. If any prism
+   blends smoothly, a transparent prism material has crept back in — run
+   `python3 Tools/Shaders/enable_prism_alpha_clip.py` (it converts strays and preserves
+   their authored alpha as coverage).
 
 **Do not hand-edit these to explore.** `FrogletTools > Ecology > Prism Animation >
 **Occlusion Dither Lab**` drives every knob below as a shader global — **live, including in

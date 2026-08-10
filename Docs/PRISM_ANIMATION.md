@@ -1377,31 +1377,52 @@ Four properties of the design worth preserving if it is ever touched:
   corridor — no error, no visual tell, nothing to notice until someone says they can't see
   their ship. That is how the old system stayed broken; every gate above exists to make that
   state impossible to reach silently.
-- **Prisms stay in the opaque queue.** The fade is screen-door (a dither threshold fed into
-  `SurfaceDescription.AlphaClipThreshold`), not blending. Moving corridor prisms into the
-  transparent queue would need a per-prism material swap AND would pay sorting + blend
-  overdraw for a set that changes every frame — precisely the cost this feature exists to
-  avoid. The trade is that the opaque prism materials are now **alpha-tested**
-  (`_AlphaClip: 1` + `_ALPHATEST_ON`), which is the change's one real cost (§4.7 note below).
+- **Prisms stay in the opaque queue — ALL of them, for every transparency effect
+  (2026-08-10).** The fade is screen-door (a dither threshold fed into
+  `SurfaceDescription.AlphaClipThreshold`), not blending, and the threshold now engages for
+  ANY fragment whose final alpha lands below 1 — not only inside the corridor. That one
+  rule made the dither **THE prism transparency mechanism**: the corridor fade, the
+  exploding-debris fade-out (`PrismExplosionClock`'s Opacity ramp), and the cloak family's
+  authored near-zero alpha all ride the same screen door, with the same depth parallax,
+  composing in COVERAGE (alphas multiply before one threshold compare — a debris prism
+  fading inside the corridor is one consistent pattern, not two stacked transparencies).
+  Consequently there are **no transparent prism materials any more**: the seven that
+  blended (ExplodingBlockMaterial, CloakedPrismMaterial, TransparentPrismMaterial, the
+  Transparent Shielded/SuperShielded/Danger/Jade variants) were converted to opaque +
+  `_ALPHATEST_ON` with their authored `_Alpha`/`_Opacity` preserved as dither coverage —
+  the "Transparent*" names survive as the cloak-state bind targets, but nothing blends.
+  `enable_prism_alpha_clip.py` enforces and converts; `PrismOcclusionDiagnostics` faults a
+  transparent prism material at runtime; the coverage test fails on one in CI. (One stale
+  value surfaced by the conversion: `MazeDangerBlockMateral` — live prisms on
+  ExplodingBlockGraph — carried a dead `_Opacity 0` that would have become "invisible";
+  it is now 1. The tool prints every material's authored coverage so the next stale value
+  is visible at conversion time.)
 - **The corridor test is per-fragment**, from the Position(World) node — the same
   post-vertex-animation position the rasterizer used. A per-object test would make a large
   environment plate flip wholesale between solid and dissolved.
-- **`_Alpha` is multiplied, not replaced.** BlockGraph hosts transparent materials too
-  (cloak, transparent shielded/danger/super-shielded); their authored alpha still applies
-  and they need no clip, so the alpha-test opt-in is opaque-materials-only.
+- **`_Alpha` is multiplied, not replaced.** The graph's own alpha source (BlockGraph's
+  `_Alpha`, ExplodingBlockGraph's clock Opacity) feeds the corridor node's BaseAlpha, so
+  authored and clock-driven alpha are first-class dither inputs: the corridor only scales
+  them, and whatever the product is renders as coverage.
+- **A fading prism outside the corridor never pops, on any kernel.** The four
+  screen-anchored kernels work anywhere; the SPIRAL is corridor-anchored (no polar frame
+  exists outside the cone), so the dispatch takes a `polarValid` flag and swaps it for IGN
+  on out-of-corridor fades rather than letting a whole prism vanish at one alpha.
 
-**Cost, stated:** per fragment, outside the corridor — one compare against the off
-sentinel, ~10 ALU of segment-distance, one compare, done (no dither, no texture). Draw
-calls, batches, render queue and collider count are unchanged; corridor prisms stay in the
-same instanced batch as everything else. The one non-zero cost is structural: enabling
-`_ALPHATEST_ON` on the seven opaque BlockGraph materials makes prism fragments
-alpha-tested, which forfeits early-Z rejection for those draws on tile-based GPUs. Prisms
-are unlit boxes with a trivial fragment shader, and the alternative (per-prism transparent
-material swaps) is strictly worse, but it is a real trade and it is the thing to measure if
-prism fill cost regresses. Reverting it is one command
-(`Tools/Shaders/enable_prism_alpha_clip.py` inverted, or clear `_AlphaClip`/`_ALPHATEST_ON`),
-after which prisms render exactly as they did before and the corridor silently does nothing
-to them.
+**Cost, stated:** per fragment, for solid mass outside the corridor — one compare against
+the off sentinel, ~10 ALU of segment-distance, two compares, done (no dither, no texture).
+The kernel is paid only by fragments whose final alpha is fractional: the corridor's
+gradient shell, mid-fade debris, cloaked prisms. Draw calls, batches, render queue and
+collider count are unchanged; every prism stays in the same instanced batch (and the
+ex-transparent materials now WRITE DEPTH and skip sorting, which is a small win, not a
+cost). The one non-zero structural cost is unchanged: `_ALPHATEST_ON` on every prism
+material makes prism fragments alpha-tested, which forfeits early-Z rejection for those
+draws on tile-based GPUs. Prisms are unlit boxes with a trivial fragment shader, and the
+alternative (per-prism transparent material swaps) is strictly worse, but it is a real
+trade and it is the thing to measure if prism fill cost regresses. Reverting the corridor
+alone is no longer one command — the fade-out and cloak paths now DEPEND on the clip
+(their materials no longer blend), so a revert means re-converting those seven materials
+to transparent as well.
 
 **What it replaced.** `ClearPrisms` (deleted, with its prefab and the dead
 `IVessel.AllowClearPrismInitialization()` opt-out gate): a per-vessel kinematic
