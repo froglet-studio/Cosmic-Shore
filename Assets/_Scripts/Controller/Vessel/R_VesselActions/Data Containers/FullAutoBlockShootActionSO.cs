@@ -61,12 +61,29 @@ namespace CosmicShore.Gameplay
                  "real prism reveals as the stream completes.")]
         [SerializeField, Min(1f)] private float suctionDurationMultiplier = 5f;
 
-        [Tooltip("Fired prisms arrive DANGEROUS - the per-domain danger material, so they " +
-                 "stand out from ordinary mass. Per the locked law, danger bites every " +
-                 "vessel that touches it, the shooter included, and is mutually exclusive " +
-                 "with shields - while this is on, the MASS-5 'Shielded Prisms' upgrade is " +
-                 "suppressed (danger wins).")]
-        [SerializeField] private bool fireDangerPrisms = true;
+        /// <summary>The state a fired prism is born in — playtest dial.</summary>
+        public enum FiredPrismState
+        {
+            /// <summary>Ordinary prism; MASS-5 'Shielded Prisms' gates the shield as usual.</summary>
+            Plain = 0,
+            /// <summary>Every prism arrives SHIELDED (one-hit ablative octahedron) — the
+            /// MASS-5 gate is moot while this is authored on. Fauna still eat shielded
+            /// mass via devastate, so the food-web sink survives.</summary>
+            Shielded = 1,
+            /// <summary>Every prism arrives DANGEROUS. Locked law: danger bites everyone
+            /// including the shooter, and suppresses shields (mutual exclusion).</summary>
+            Danger = 2,
+        }
+
+        [Tooltip("The state fired prisms are born in. Plain leaves the shield to the MASS-5 " +
+                 "upgrade; Shielded makes every shot an octahedron-armored prism; Danger " +
+                 "makes every shot bite (everyone, shooter included, per locked law).")]
+        [SerializeField] private FiredPrismState firedPrismState = FiredPrismState.Shielded;
+
+        [Tooltip("Fired prisms are FULL SIZE from their first visible frame - no grow-in " +
+                 "bloom. The flight out of the gun is itself the continuity transition, so " +
+                 "the bloom on top of it only made the shot harder to see.")]
+        [SerializeField] private bool spawnFullSize = true;
 
         [Header("Cadence & Motion")]
         [Tooltip("The vessel's bullet action. Fire rate, muzzle speed and flight time are " +
@@ -83,7 +100,8 @@ namespace CosmicShore.Gameplay
 
         public FlightVisualization Visualization => flightVisualization;
         public float SuctionDurationMultiplier => Mathf.Max(1f, suctionDurationMultiplier);
-        public bool FireDangerPrisms => fireDangerPrisms;
+        public FiredPrismState FiredState => firedPrismState;
+        public bool SpawnFullSize => spawnFullSize;
         public Vector3 BlockScale => blockScale;
         public Vector3 RotationOffsetEuler => rotationOffsetEuler;
         public PrismType PrismType => prismType;

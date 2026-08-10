@@ -3,26 +3,27 @@
 > **The rule, in one line:** *a turret shot **is** a bullet — you just see a prism flying,
 > and where the bullet would have been destroyed the prism stays.*
 
-## The shipped look (2026-08 playtest round)
+## The shipped look (2026-08-10, playtest round 3)
 
-Three playtest-driven changes, all authored data + one curve retune:
-
-- **`ReverseSuction` is the live default** (`flightVisualization: 1`), with the assembly
-  stream slowed to **5× the flight time** (`suctionDurationMultiplier`). The shot still lands
-  and pierces on the bullet clock (~0.3 s); the faces keep streaming into place for ~1.5 s
-  after it, and the real prism is created `RevealOverlapSeconds` (0.2 s) before the stream
-  completes so the hand-off has no hole. Mass is therefore tangible at **assembly
-  completion**, not at firing.
-- **Turret prisms are DANGER prisms** (`fireDangerPrisms`, default on) — the per-domain danger
-  material, so anchored shots stand out from ordinary mass. Two consequences of locked law:
-  danger bites **everyone**, the shooter included (fly into your own turret wall and it slams
-  you); and danger is mutually exclusive with shields, so the MASS-5 *Shielded Prisms* upgrade
-  is **suppressed while this is on** (the executor skips the shield flag outright).
-- **Gun range re-anchored** (bullets AND turret, shared by design): base speed halved
-  (`FullAutoAction.speedValue.Value` 1500 → **750**) with the SPACE curve steepened
-  (`MultiplierAtFullLevel` 2.5 → **4.667**) so **SPACE 0 range is half** (~143 u) while
-  **SPACE 15 is unchanged** (4875 u/s ≈ 931 u). Level 10 lands at 3500 u/s (was 3750) — only
-  the endpoints were pinned.
+- **Shielded, full-size shots on the plain flight** — `flightVisualization: 0`
+  (TranslateAndGrow), `firedPrismState: Shielded`, `spawnFullSize: 1`. Every fired prism is
+  the octahedron-armored shield prism at its FULL size from its first visible frame — the
+  flight out of the gun is itself the continuity transition, so the grow-in bloom is skipped
+  (the transform is pre-scaled before `Initialize`, making the creation stamp's start
+  fraction ~1). The shield engages at birth, which SNAPS per the §4.5 birth rule — that snap
+  is load-bearing here: it settles straight to the shared octahedron mesh on the ENTITY path,
+  which is the path the flight offset rides.
+- **`firedPrismState` is the playtest dial**: `Plain` (MASS-5 gates the shield as originally
+  designed), `Shielded` (every shot armored — current), `Danger` (round 2's look; bites
+  everyone incl. the shooter, suppresses shields — locked law). Read per volley, flip live.
+- **Range quartered from the original** (round 2 halved it, round 3 halves it again — bullets
+  AND turret, shared by design): base speed `FullAutoAction.speedValue.Value` → **375** with
+  the SPACE curve at `MultiplierAtFullLevel` **9**, so **SPACE 0 ≈ 72 u** while **SPACE 15 is
+  still the original 4875 u/s (≈ 931 u)**. Level 10 lands at 3375 u/s. Progression on SPACE is
+  now dramatic: full overcharge reaches 13× the resting range.
+- **ReverseSuction survives as the alternate visual** (`suctionDurationMultiplier: 5` kept):
+  flip `flightVisualization` to 1 to compare again. Its danger/domain palette seam note from
+  round 2 still stands if `Danger` is re-enabled.
 
 ## Two flight visualizations (A/B, live-switchable)
 

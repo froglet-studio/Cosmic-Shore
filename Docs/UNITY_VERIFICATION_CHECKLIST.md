@@ -81,7 +81,19 @@ top, all data + one curve retune:
   (`Sparrow.asset` MultiplierAtFullLevel) — SPACE 0 range halves (~143 u), SPACE 15 unchanged.
   Verify with a Space crystal binge that range visibly stretches toward the old reach.
 
-**First-pass tuning:** fire rate 30/s + speed 750 (SPACE ×4.667 at full) + flight 0.3 s on `FullAutoAction.asset`
+**Playtest round 3 (2026-08-10):** now SHIELDED full-size shots on the plain flight, range
+quartered from the original:
+
+- `firedPrismState: Shielded` (enum replaces the round-2 `fireDangerPrisms` bool — Plain
+  restores the MASS-5 gate, Danger restores round 2), `spawnFullSize: 1` (no grow-in; the
+  flight is the transition), `flightVisualization: 0` (suction off but kept as the alternate).
+- Range: base speed 750 → **375**, SPACE curve 4.667 → **9** — SPACE 0 ≈ 72 u, SPACE 15
+  unchanged (~931 u). Verify shots are close-in, LARGE, and octahedron-armored from the
+  muzzle; verify a Space binge stretches the reach ~13×.
+- Verify the shield birth-snap renders ON THE FLIGHT: the flying shot must be the octahedron,
+  not a plain box that armors on arrival — if it flies plain, the birth rule regressed.
+
+**First-pass tuning:** fire rate 30/s + speed 375 (SPACE ×9 at full) + flight 0.3 s on `FullAutoAction.asset`
 (shared with the guns); `blockScale (0.8, 0.5, 5)` + `flightVisualization` on
 `FullAutoBlockShootAction.asset`; reveal overlap 0.2 s (`RevealOverlapSeconds` in the executor);
 turret prism pool 40/90/8 on the Sparrow prefab.

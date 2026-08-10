@@ -166,17 +166,18 @@ namespace CosmicShore.Gameplay
                     // its prism there; at 5+ it pierces on to the end of its path.
                     var piercing = abilities && abilities.IsUpgradeActive(Element.Space);
 
-                    // MASS level-5 'Shielded Prisms': snapshot at fire time and applied as
-                    // a pre-Initialize flag, so the shield is part of the prism's BIRTH and
-                    // snaps (Docs/PRISM_ANIMATION.md §4.5) instead of morphing on arrival.
-                    // Regular shield only — one-hit ablative armor fauna can still eat via
-                    // devastate, which is what keeps the food-web sink intact. While the
-                    // action fires DANGER prisms the shield is suppressed outright: danger
-                    // and shields are mutually exclusive by locked law (MakeDangerous
-                    // clears both tiers), so setting both flags just churns the state
-                    // manager for the same outcome.
-                    var shielded = !so.FireDangerPrisms &&
-                                   abilities && abilities.IsUpgradeActive(Element.Mass);
+                    // The born-in state is an authored playtest dial. Shielded/Danger are
+                    // unconditional; Plain restores the MASS-5 'Shielded Prisms' gate.
+                    // Both land as pre-Initialize flags, so the state is part of the
+                    // prism's BIRTH and snaps (Docs/PRISM_ANIMATION.md §4.5) instead of
+                    // morphing on arrival. Regular shield only — one-hit ablative armor
+                    // fauna can still eat via devastate, keeping the food-web sink. Danger
+                    // suppresses the shield outright: mutually exclusive by locked law.
+                    var state = so.FiredState;
+                    var dangerous = state == FullAutoBlockShootActionSO.FiredPrismState.Danger;
+                    var shielded = state == FullAutoBlockShootActionSO.FiredPrismState.Shielded ||
+                                   (state == FullAutoBlockShootActionSO.FiredPrismState.Plain &&
+                                    abilities && abilities.IsUpgradeActive(Element.Mass));
 
                     // MASS → turret prism stretch: the long z-axis scales with the vessel's
                     // live Mass level. Volume = x·y·z of lossyScale, so the stretch feeds
@@ -193,7 +194,7 @@ namespace CosmicShore.Gameplay
                     {
                         if (!m) continue;
                         FireOne(so, m, rotOffset, blockScale, shotSpeed, flightTime, range,
-                            piercing, shielded);
+                            piercing, shielded, dangerous);
                     }
 
                     await UniTask.Delay(
@@ -234,7 +235,7 @@ namespace CosmicShore.Gameplay
 
         private void FireOne(FullAutoBlockShootActionSO so, Transform muzzle, Quaternion rotOffset,
             Vector3 blockScale, float shotSpeed, float flightTime, float range,
-            bool piercing, bool shielded)
+            bool piercing, bool shielded, bool dangerous)
         {
             var domainAtShot = _status.Domain;
             var velocity = muzzle.forward * shotSpeed;   // muzzle.forward is already unit
@@ -257,8 +258,8 @@ namespace CosmicShore.Gameplay
 
             if (viz == FullAutoBlockShootActionSO.FlightVisualization.TranslateAndGrow)
             {
-                MakePrismLive(prism, blockScale, domainAtShot, shielded, so.FireDangerPrisms,
-                    anchorPoint);
+                MakePrismLive(prism, blockScale, domainAtShot, shielded, dangerous,
+                    so.SpawnFullSize, anchorPoint);
                 StampFlight(prism, velocity, flightTime, range, blockScale);
             }
             else
@@ -283,7 +284,7 @@ namespace CosmicShore.Gameplay
                     BlockScale = blockScale,
                     Domain = domainAtShot,
                     Shielded = shielded,
-                    Dangerous = so.FireDangerPrisms,
+                    Dangerous = dangerous,
                     LandingPoint = anchorPoint,
                     EffectDuration = effectDuration,
                     FlightTime = flightTime,
@@ -294,7 +295,7 @@ namespace CosmicShore.Gameplay
             }
 
             LaunchCarriedProjectile(prism, muzzle, velocity, flightTime, domainAtShot,
-                piercing, anchorPoint, blockScale, viz, shielded, so.FireDangerPrisms,
+                piercing, anchorPoint, blockScale, viz, shielded, dangerous,
                 suctionShot);
 
             OnBlockShot?.Invoke(_status?.PlayerName);
@@ -335,7 +336,7 @@ namespace CosmicShore.Gameplay
             prism.transform.position = shot.LandingPoint;
             prism.transform.localScale = shot.BlockScale;
             MakePrismLive(prism, shot.BlockScale, shot.Domain, shot.Shielded, shot.Dangerous,
-                shot.LandingPoint);
+                true, shot.LandingPoint);
         }
 
         /// <summary>
@@ -346,7 +347,7 @@ namespace CosmicShore.Gameplay
         /// lives at localScale zero: invisible, with a zero-volume collider. Silently.
         /// </summary>
         private void MakePrismLive(Prism prism, Vector3 blockScale, Domains domain,
-            bool shielded, bool dangerous, Vector3 restPoint)
+            bool shielded, bool dangerous, bool fullSize, Vector3 restPoint)
         {
             // Target scale BEFORE Initialize: Initialize reads the authored target off
             // the scale animator and hands it to the creation coroutine.
@@ -364,6 +365,13 @@ namespace CosmicShore.Gameplay
             {
                 prism.transform.localScale = blockScale;
             }
+
+            // Full size from the first visible frame: pre-scaling the transform makes the
+            // creation stamp's start fraction ~1, so the bloom settles instantly instead
+            // of growing in from zero. The flight out of the gun is itself the continuity
+            // transition — the shot needs no second one on top.
+            if (fullSize)
+                prism.transform.localScale = blockScale;
 
             prism.ChangeTeam(domain);
             // Both flags assigned every shot — ResetState deliberately does not clear
