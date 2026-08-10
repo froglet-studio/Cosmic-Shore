@@ -16,10 +16,11 @@ MonoBehaviour:
   entries:
   - Element: 3
     AbilityLabel: Pulsefire Cannons
-    AbilityDescription: Full-auto cannons. Space extends their range; at level 5
-      the bullets pierce through prisms instead of stopping at first impact.
+    AbilityDescription: Full-auto cannons. Space extends their range dramatically
+      - short at rest, unchanged at full overcharge; at level 5 the bullets pierce
+      through prisms instead of stopping at first impact.
     Input: 1
-    MultiplierAtFullLevel: 2.5
+    MultiplierAtFullLevel: 4.666667
     MinMultiplier: 0.4
     UnlockLevel: 5
     RelockBelowLevel: 4

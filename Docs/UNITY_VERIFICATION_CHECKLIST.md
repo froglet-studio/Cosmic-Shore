@@ -64,7 +64,24 @@ branch — none of this is on `bleeding-edge`.
 6. Judge the two visualizations and pick (or keep both). Also judge viz 1's mid-flight collider
    at the destination vs viz 2's tangible-at-arrival.
 
-**First-pass tuning:** fire rate 30/s + speed 1500 + flight 0.3 s on `FullAutoAction.asset`
+**Playtest round 2 (2026-08-10, same branch):** shots were very hard to see — three changes on
+top, all data + one curve retune:
+
+- **ReverseSuction is now the default** (`flightVisualization: 1`), slowed to **5× the flight
+  time** (`suctionDurationMultiplier: 5`): the shot lands and pierces on the bullet clock, the
+  faces keep streaming into place for ~1.5 s after it, and the real prism is created 0.2 s
+  before the stream completes (tangible at assembly completion — the mid-flight-collider wart
+  is gone in this mode).
+- **Turret prisms are DANGER prisms** (`fireDangerPrisms: 1`) — danger material, so they stand
+  out. Locked-law consequences to verify: they bite the shooter too, and MASS-5 Shielded
+  Prisms is suppressed while danger is on. Known cosmetic seam: the stream renders domain
+  colors, the revealed prism wears the danger material.
+- **Gun range re-anchored, both modes**: base speed 1500 → **750**
+  (`FullAutoAction.speedValue.Value`), SPACE curve 2.5 → **4.667**
+  (`Sparrow.asset` MultiplierAtFullLevel) — SPACE 0 range halves (~143 u), SPACE 15 unchanged.
+  Verify with a Space crystal binge that range visibly stretches toward the old reach.
+
+**First-pass tuning:** fire rate 30/s + speed 750 (SPACE ×4.667 at full) + flight 0.3 s on `FullAutoAction.asset`
 (shared with the guns); `blockScale (0.8, 0.5, 5)` + `flightVisualization` on
 `FullAutoBlockShootAction.asset`; reveal overlap 0.2 s (`RevealOverlapSeconds` in the executor);
 turret prism pool 40/90/8 on the Sparrow prefab.

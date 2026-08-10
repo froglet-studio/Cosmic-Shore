@@ -3,6 +3,27 @@
 > **The rule, in one line:** *a turret shot **is** a bullet — you just see a prism flying,
 > and where the bullet would have been destroyed the prism stays.*
 
+## The shipped look (2026-08 playtest round)
+
+Three playtest-driven changes, all authored data + one curve retune:
+
+- **`ReverseSuction` is the live default** (`flightVisualization: 1`), with the assembly
+  stream slowed to **5× the flight time** (`suctionDurationMultiplier`). The shot still lands
+  and pierces on the bullet clock (~0.3 s); the faces keep streaming into place for ~1.5 s
+  after it, and the real prism is created `RevealOverlapSeconds` (0.2 s) before the stream
+  completes so the hand-off has no hole. Mass is therefore tangible at **assembly
+  completion**, not at firing.
+- **Turret prisms are DANGER prisms** (`fireDangerPrisms`, default on) — the per-domain danger
+  material, so anchored shots stand out from ordinary mass. Two consequences of locked law:
+  danger bites **everyone**, the shooter included (fly into your own turret wall and it slams
+  you); and danger is mutually exclusive with shields, so the MASS-5 *Shielded Prisms* upgrade
+  is **suppressed while this is on** (the executor skips the shield flag outright).
+- **Gun range re-anchored** (bullets AND turret, shared by design): base speed halved
+  (`FullAutoAction.speedValue.Value` 1500 → **750**) with the SPACE curve steepened
+  (`MultiplierAtFullLevel` 2.5 → **4.667**) so **SPACE 0 range is half** (~143 u) while
+  **SPACE 15 is unchanged** (4875 u/s ≈ 931 u). Level 10 lands at 3500 u/s (was 3750) — only
+  the endpoints were pinned.
+
 ## Two flight visualizations (A/B, live-switchable)
 
 `FullAutoBlockShootAction.asset` → **Flight Visualization** selects how the flying prism is
@@ -10,18 +31,19 @@ drawn. The executor reads it **per volley**, so flipping the enum in the inspect
 mode switches the very next shot — that is the intended way to A/B them. Gameplay is identical
 in both: the carried projectile flies, pierces (SPACE-5), and decides where the shot ends.
 
-| | `TranslateAndGrow` (0) | `ReverseSuction` (1) |
+| | `TranslateAndGrow` (0) | `ReverseSuction` (1, DEFAULT) |
 |---|---|---|
-| What you see | The prism itself scales up and translates out of the gun into place | The fauna suction shader **in reverse**: the prism's faces stream out of the **moving shot point** into the final shape at the anchor |
-| Mechanism | `PrismFlightClock` vertex offset (GPU) + the standard grow bloom (`GrowthRate` pinned to 8 for a visible in-flight bloom) | `PrismImplosion.StartGrow(carriedProjectile, flightTime + 0.2)` — `_SuctionDirection = −1` with `_Location` tracking the projectile under the documented moving-target exception; the real prism flies as a scale-zero blank and is **created when the shot lands** |
-| When mass is tangible | At the **destination from the moment of firing** (gameplay-final-at-start) | At **arrival** (the shot landing is the creating force) |
-| Early impact (SPACE < 5) | One re-pose to the impact point + stamp settle | Effect cut; the prism's own creation bloom at the impact point is the reveal |
+| What you see | The prism itself scales up and translates out of the gun into place | The fauna suction shader **in reverse**: the prism's faces stream out of the **moving shot point** into the final shape at the anchor, over `suctionDurationMultiplier`× the flight time |
+| Mechanism | `PrismFlightClock` vertex offset (GPU) + the standard grow bloom (`GrowthRate` pinned to 8 for a visible in-flight bloom) | `PrismImplosion.StartGrow(carriedProjectile, flightTime × mult)` — `_SuctionDirection = −1` with `_Location` tracking the projectile under the documented moving-target exception; the real prism flies as a scale-zero blank and is **created as the stream completes** (scheduled 0.2 s early so the reveal overlaps; the effect's completion is the exactly-once backstop) |
+| When mass is tangible | At the **destination from the moment of firing** (gameplay-final-at-start) | At **assembly completion** (the finished stream is the creating force) |
+| Early impact (SPACE < 5) | One re-pose to the impact point + stamp settle | Stream cut; the prism is created at the impact point, its own creation bloom carrying the reveal |
 
 `ReverseSuction` is the first producer of `PrismType.Grow` — `PrismFactory.SpawnGrow` was
 authored and never reachable until now. The effect rides the `EventOnSpawnPrismAndReturn`
-channel (wired on the Sparrow's executor), takes the shooter's domain colors via
-`ConfigureForTeam`, and outlives the flight by 0.2 s so the completed shape bridges the real
-prism's 1–2-frame creation window.
+channel (wired on the Sparrow's executor) and takes the shooter's domain colors via
+`ConfigureForTeam`. Known cosmetic seam: the stream renders in domain colors and the revealed
+prism then wears the danger material — if that flip reads badly in play, the fix is teaching
+`ConfigureForTeam`/`SpawnGrow` a danger palette, not disabling danger.
 
 While the Sparrow is stopped (`IVesselStatus.IsTranslationRestricted`), its guns fire
 **prisms**. Everything about the shot is the bullet's: fire rate, muzzle speed, eased flight

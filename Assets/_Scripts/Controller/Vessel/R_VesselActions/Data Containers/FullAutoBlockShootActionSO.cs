@@ -53,7 +53,20 @@ namespace CosmicShore.Gameplay
                  "translates out of the gun into place. ReverseSuction: the suction shader " +
                  "in reverse - faces stream from the moving shot point into the anchored " +
                  "shape. Read per volley, so it can be flipped live in play mode.")]
-        [SerializeField] private FlightVisualization flightVisualization = FlightVisualization.TranslateAndGrow;
+        [SerializeField] private FlightVisualization flightVisualization = FlightVisualization.ReverseSuction;
+
+        [Tooltip("ReverseSuction only: the assembly animation runs this many times longer " +
+                 "than the shot's flight. The shot still lands (and its mass is created) on " +
+                 "the bullet clock; the faces keep streaming into place after it, and the " +
+                 "real prism reveals as the stream completes.")]
+        [SerializeField, Min(1f)] private float suctionDurationMultiplier = 5f;
+
+        [Tooltip("Fired prisms arrive DANGEROUS - the per-domain danger material, so they " +
+                 "stand out from ordinary mass. Per the locked law, danger bites every " +
+                 "vessel that touches it, the shooter included, and is mutually exclusive " +
+                 "with shields - while this is on, the MASS-5 'Shielded Prisms' upgrade is " +
+                 "suppressed (danger wins).")]
+        [SerializeField] private bool fireDangerPrisms = true;
 
         [Header("Cadence & Motion")]
         [Tooltip("The vessel's bullet action. Fire rate, muzzle speed and flight time are " +
@@ -69,6 +82,8 @@ namespace CosmicShore.Gameplay
         [SerializeField] private PrismType prismType = PrismType.Sparrow;
 
         public FlightVisualization Visualization => flightVisualization;
+        public float SuctionDurationMultiplier => Mathf.Max(1f, suctionDurationMultiplier);
+        public bool FireDangerPrisms => fireDangerPrisms;
         public Vector3 BlockScale => blockScale;
         public Vector3 RotationOffsetEuler => rotationOffsetEuler;
         public PrismType PrismType => prismType;
