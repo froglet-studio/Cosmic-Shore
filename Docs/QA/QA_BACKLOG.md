@@ -139,7 +139,9 @@ PASS: no magenta; the ship stays visible through corridor prisms; the SHATTER la
 
 ## Priority 1 — merged features that have never been played
 
-### QA-ECOLOGY-WORM-KAIJU ⬜ — the worm colony boss
+### QA-ECOLOGY-WORM-KAIJU 🟡 — the worm colony boss
+> **Last result:** 🟡 PARTIAL — Almost every PASS condition is true; the outstanding one is "devours creatures at the jaws and pursues pilots" — not observed yet.  _(build bleeding-edge @ 9e8cf3f · Unity 6000.4.11f1.x · Windows, Unity Editor, 2026-08-10, andrew)_
+
 Source: PR #667. Reference: `Docs/ECOSYSTEM.md` §23.6 (spawn steps + dials).
 
 1. Freestyle → Lifeform Matrix toy → "Worm Colony" → any element station.
@@ -361,7 +363,9 @@ Source: PR #658. Every frame-cost claim on that branch is structural, never meas
 
 PASS: benchmark numbers recorded (this item's deliverable is data, not a verdict); suctions converge on the moving creature, animate for their full duration, and no prism is left frozen mid-suction. FAIL: a marker regressing sharply vs. the reference run · GC per frame appearing · suctions converging on a stale point or freezing. (The old ~0.43 ms self/death figure is stale — do not compare against it.)
 
-### QA-SPARROW-PROJECTILE-POOL ⬜ — async-refilled pooled projectiles are injected
+### QA-SPARROW-PROJECTILE-POOL 🔴 — async-refilled pooled projectiles are injected
+> **Last result:** 🔴 FAIL — Launch SFX play and there are no NREs, but normal shots sometimes pass straight through prisms, and the Console throws "Projectile already released! Should not call twice!".  _(build bleeding-edge @ 9e8cf3f · Unity 6000.4.11f1.x · Windows, Unity Editor, 2026-08-10, andrew)_
+
 Source: PR #606. The failure mode is silent duds seconds after spawn.
 
 1. Spawn a Sparrow (any mode or freestyle) and fire full-auto for ~30 s.
@@ -457,7 +461,9 @@ Source: PR #663 (buttons never pressed in a running editor). Do this on a throwa
 
 PASS: the dialog lists exactly the selected path; the commit contains only that path; a protected branch is refused; the pre-staged file stays staged and out of the commit. FAIL: anything else riding along in the commit, a protected-branch push succeeding, or the pre-staged file being swept in.
 
-### QA-FLORA-LEAFSIZE ⬜ — garden flora still grow leaves at the authored size
+### QA-FLORA-LEAFSIZE 🔴 — garden flora still grow leaves at the authored size
+> **Last result:** 🔴 FAIL — No reference for what the leaf size should be, and nothing that looked like a leaf to analyze in the first place.  _(build bleeding-edge @ 9e8cf3f · Unity 6000.4.11f1.x · Windows, Unity Editor, 2026-08-10, andrew)_
+
 Source: PR #656 (a duplicate declaration removed after a semantic merge conflict).
 
 1. Confirm zero compile errors.

@@ -15,3 +15,17 @@ of duplicating it.
 - **Symptom:** None of the required tests were even there for me to test.
 - **Definition of done:** QA item `QA-EDITMODE-TESTS` passes.
 <!-- /devtask:QA-EDITMODE-TESTS -->
+
+<!-- devtask:QA-SPARROW-PROJECTILE-POOL -->
+### QA-SPARROW-PROJECTILE-POOL — async-refilled pooled projectiles are injected
+- **Failed on:** bleeding-edge @ 9e8cf3f · Unity 6000.4.11f1.x · Windows, Unity Editor (2026-08-10, andrew)
+- **Symptom:** Launch SFX play and there are no NREs, but normal shots sometimes pass straight through prisms, and the Console throws "Projectile already released! Should not call twice!".
+- **Definition of done:** QA item `QA-SPARROW-PROJECTILE-POOL` passes.
+<!-- /devtask:QA-SPARROW-PROJECTILE-POOL -->
+
+<!-- devtask:QA-FLORA-LEAFSIZE -->
+### QA-FLORA-LEAFSIZE — garden flora still grow leaves at the authored size
+- **Failed on:** bleeding-edge @ 9e8cf3f · Unity 6000.4.11f1.x · Windows, Unity Editor (2026-08-10, andrew)
+- **Symptom:** No reference for what the leaf size should be, and nothing that looked like a leaf to analyze in the first place.
+- **Definition of done:** QA item `QA-FLORA-LEAFSIZE` passes.
+<!-- /devtask:QA-FLORA-LEAFSIZE -->
