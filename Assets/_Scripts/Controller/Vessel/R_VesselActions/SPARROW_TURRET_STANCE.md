@@ -32,7 +32,7 @@ drawn. The executor reads it **per volley**, so flipping the enum in the inspect
 mode switches the very next shot — that is the intended way to A/B them. Gameplay is identical
 in both: the carried projectile flies, pierces (SPACE-5), and decides where the shot ends.
 
-| | `TranslateAndGrow` (0) | `ReverseSuction` (1, DEFAULT) |
+| | `TranslateAndGrow` (0, DEFAULT since round 3) | `ReverseSuction` (1) |
 |---|---|---|
 | What you see | The prism itself scales up and translates out of the gun into place | The fauna suction shader **in reverse**: the prism's faces stream out of the **moving shot point** into the final shape at the anchor, over `suctionDurationMultiplier`× the flight time |
 | Mechanism | `PrismFlightClock` vertex offset (GPU) + the standard grow bloom (`GrowthRate` pinned to 8 for a visible in-flight bloom) | `PrismImplosion.StartGrow(carriedProjectile, flightTime × mult)` — `_SuctionDirection = −1` with `_Location` tracking the projectile under the documented moving-target exception; the real prism flies as a scale-zero blank and is **created as the stream completes** (scheduled 0.2 s early so the reveal overlaps; the effect's completion is the exactly-once backstop) |
