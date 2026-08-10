@@ -1,6 +1,7 @@
 #if UNITY_EDITOR
 using NUnit.Framework;
 using UnityEngine;
+using Obvious.Soap;          // ScriptableEventNoParam
 using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
