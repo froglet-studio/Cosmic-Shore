@@ -1317,6 +1317,38 @@ short band from reading as an edge are both continuity choices:
   to be **indistinguishable** from Worley's (0.17% vs 0.19% of pixels flipping per frame at
   matched rates), so it offers nothing the admitted kernels do not already provide.
 
+  **The depth-parallax axis** (2026-08-10 — the layered-beat fix). Every screen-anchored
+  kernel is a pure function of the screen pixel, so two surfaces stacked along one camera
+  ray — a prism's own back face showing through its clipped front face, or two parallel
+  walls of trail mass — read the IDENTICAL threshold at every pixel while their alphas
+  differ only slightly (two nearby depths on the same profile). The front layer's hole
+  boundary `{threshold = alphaFront}` and the back layer's survival boundary
+  `{threshold = alphaBack}` are therefore near-identical contours offset by
+  `Δalpha/|∇threshold|` — a pixel or two — which is the textbook moiré condition, and
+  because the alpha field rides the geometry while the threshold rides the screen, camera
+  motion slides the pair at slightly different rates: the interference BEATS. SHATTER
+  shows it worst (parallel straight walls, the shallowest threshold gradient in the file).
+  `PRISM_OCCLUSION_PARALLAX` (px of pattern slide per world unit of view depth, shipped
+  8.0; 0 = off, restoring the flat behavior exactly) **shears the dither domain by view
+  depth** before the kernel reads it, so each depth samples a shifted copy of the same
+  pattern: layers a prism-thickness apart are decorrelated by construction — perfect
+  alignment and full decorrelation are both beat-free, and the shear jumps layers clean
+  over the 1–2 px near-alignment window between them — and the dither gains real
+  parallax, reading as a volumetric field the corridor carves rather than a screen decal.
+  One MAD off `positionCS.w` (already computed for the pixel reconstruction), applied in
+  `PrismOcclusionFade_float` **before the dispatch**, so the kernels and the Lab's
+  preview shader are untouched — which also means the flat preview cannot show it: judge
+  it on real stacked mass in play mode (the Lab's Depth dial drives it live). Coverage is
+  untouched by the same argument as the morph phase — a domain translation cannot move a
+  translation-invariant threshold distribution. The marginal effect is at grazing
+  incidence, where the steep depth gradient across the screen stretches the pattern
+  toward finer, IGN-like grain — benign and bounded by the gain. The direction
+  (`PRISM_OCCLUSION_PARALLAX_DIR`) is a non-dial look constant — any fixed unit vector;
+  an irrational-ish diagonal avoids sliding the lattice along its own axes. The spiral
+  ignores the axis (corridor-anchored, no pixel input) but beats on stacked layers for
+  its own reason — its polar coordinates are constant along a camera ray — so a revival
+  owes it a depth term of its own rather than an exemption.
+
   - **1 — corridor-relative spiral.** An Archimedean spiral in the corridor's own
     polar frame (9 bands across the cone radius, sheared 3 turns per revolution), so the
     pattern is anchored to the *corridor*: it stands still and the world travels through it,

@@ -82,6 +82,12 @@ namespace CosmicShore.Editor
         const float ShatterWallRatioMax = 1.25f;
         const float MorphMax = 0.35f, MorphCeiling = 0.25f;
 
+        // Depth parallax: px of pattern slide per world unit of view depth. Decorrelation
+        // wants roughly one cell (~16 px shipped) across one layer separation (~2 units for
+        // a standard prism), hence the 8 default; past ~30 the shear visibly shreds oblique
+        // surfaces into per-pixel grain long before it buys any more decorrelation.
+        const float ParallaxMax = 30f;
+
         // ── Live dial state (EditorWindow fields survive domain reloads) ──────────
         [SerializeField] int _kernel = KernelShard;
         [SerializeField] float _cellSize = 6f;
@@ -91,6 +97,7 @@ namespace CosmicShore.Editor
         [SerializeField] float _shatterWall = 9f;
         [SerializeField] float _spiralRings = 9f;
         [SerializeField] int _spiralArms = 3;
+        [SerializeField] float _parallax = 8f;
         [SerializeField] bool _driveGame = true;
         [SerializeField] bool _animatePreview = true;
 
@@ -110,6 +117,7 @@ namespace CosmicShore.Editor
 
         static readonly int DitherA = Shader.PropertyToID("_PrismOcclusionDitherA");
         static readonly int DitherB = Shader.PropertyToID("_PrismOcclusionDitherB");
+        static readonly int DitherC = Shader.PropertyToID("_PrismOcclusionDitherC");
 
         static readonly FrogletToolShipContext Ship = new FrogletToolShipContext(ToolName)
         {
@@ -191,6 +199,7 @@ namespace CosmicShore.Editor
         // ─────────────────────────────────────────────────────────────────────────
         Vector4 PackA() => new Vector4(_kernel + 1, _cellSize, _shardOrient, _morphRate);
         Vector4 PackB() => new Vector4(_shatterCell, _shatterWall, _spiralRings, _spiralArms);
+        Vector4 PackC() => new Vector4(_parallax, 0f, 0f, 0f);
 
         void Publish()
         {
@@ -198,6 +207,7 @@ namespace CosmicShore.Editor
             // is driving" and every dial in the shader falls back to its constant.
             Shader.SetGlobalVector(DitherA, PackA());
             Shader.SetGlobalVector(DitherB, PackB());
+            Shader.SetGlobalVector(DitherC, PackC());
         }
 
         static void Unpublish() => Shader.SetGlobalVector(DitherA, Vector4.zero);
@@ -407,6 +417,28 @@ namespace CosmicShore.Editor
             }
             if (_kernel == KernelIgn && _morphRate > 0f)
                 EditorGUILayout.HelpBox("IGN ignores the morph rate by design.", MessageType.None);
+
+            EditorGUILayout.Space(4f);
+            EditorGUILayout.LabelField("Depth", FrogletEditorPalette.SectionHeader);
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                _parallax = EditorGUILayout.Slider(new GUIContent("Depth parallax",
+                    "Pixels of pattern slide per world unit of view depth. Shears the dither domain " +
+                    "so stacked layers (a prism's own interior, parallel trail walls) sample " +
+                    "decorrelated copies of the pattern instead of moiré-beating a pixel apart — and " +
+                    "gives the dither real parallax under camera motion. 0 restores the flat " +
+                    "screen-decal behavior. Coverage-neutral (a domain shift), so it cannot break the fade."),
+                    _parallax, 0f, ParallaxMax);
+                GUILayout.Label(_parallax <= 0f ? "off (flat)" : $"{_parallax:0.#} px / world unit",
+                    Warn(false), GUILayout.Width(120f));
+            }
+            EditorGUILayout.LabelField(" ",
+                "the preview below is a flat slice — depth parallax only shows on real mass in play mode",
+                EditorStyles.miniLabel);
+            if (_kernel == KernelSpiral && _parallax > 0f)
+                EditorGUILayout.HelpBox("The spiral is corridor-anchored and ignores depth parallax — " +
+                                        "it still beats on stacked layers (its polar frame is constant " +
+                                        "along a camera ray).", MessageType.None);
         }
 
         void DialSlider(string label, ref float value, float min, float max, float goodLo, float goodHi,
@@ -695,6 +727,7 @@ namespace CosmicShore.Editor
             sb.AppendLine($"static const float PRISM_OCCLUSION_SHATTER_WALL = {F(_shatterWall)};");
             sb.AppendLine($"static const float PRISM_OCCLUSION_SPIRAL_RINGS = {F(_spiralRings)};");
             sb.AppendLine($"static const float PRISM_OCCLUSION_SPIRAL_ARMS = {F(_spiralArms)};");
+            sb.AppendLine($"static const float PRISM_OCCLUSION_PARALLAX = {F(_parallax)};");
             return sb.ToString();
         }
 
@@ -734,6 +767,9 @@ namespace CosmicShore.Editor
             new Anchor("shatterWall", @"(?m)^(static const float PRISM_OCCLUSION_SHATTER_WALL = )([^;]+)(;)", true),
             new Anchor("spiralRings", @"(?m)^(static const float PRISM_OCCLUSION_SPIRAL_RINGS = )([^;]+)(;)", true),
             new Anchor("spiralArms",  @"(?m)^(static const float PRISM_OCCLUSION_SPIRAL_ARMS = )([^;]+)(;)", true),
+            // The ' = ' in the anchor keeps it off PRISM_OCCLUSION_PARALLAX_DIR (a float2,
+            // and not a dial — the direction is a look constant, not something to bake).
+            new Anchor("parallax",    @"(?m)^(static const float PRISM_OCCLUSION_PARALLAX = )([^;]+)(;)", true),
         };
 
         static FrogletToolValidation ValidateSource()
@@ -800,6 +836,7 @@ namespace CosmicShore.Editor
                 { "shatterWall", F(_shatterWall) },
                 { "spiralRings", F(_spiralRings) },
                 { "spiralArms", F(_spiralArms) },
+                { "parallax", F(_parallax) },
                 { "tuning", disableTuning ? "0" : "1" },
             };
 

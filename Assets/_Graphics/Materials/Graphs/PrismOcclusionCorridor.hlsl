@@ -123,6 +123,7 @@
 #if PRISM_OCCLUSION_LIVE_TUNING
 float4 _PrismOcclusionDitherA;  // (kernel + 1, cellSize, shardOrient, morphRate)
 float4 _PrismOcclusionDitherB;  // (shatterCell, shatterWall, spiralRings, spiralArms)
+float4 _PrismOcclusionDitherC;  // (parallaxGain, unused, unused, unused)
 
 #define PRISM_OCCLUSION_TUNING_ON (_PrismOcclusionDitherA.x > 0.5)
 #define PRISM_OCCLUSION_DIAL(live, fallback) (PRISM_OCCLUSION_TUNING_ON ? (live) : (fallback))
@@ -193,6 +194,58 @@ static const float PRISM_OCCLUSION_MORPH_RATE = 0.3256;   // cycles/sec; 0 = fro
 float PrismOcclusionMorphRate()
 {
     return PRISM_OCCLUSION_DIAL(_PrismOcclusionDitherA.w, PRISM_OCCLUSION_MORPH_RATE);
+}
+
+// -----------------------------------------------------------------------------
+// THE DEPTH PARALLAX — why stacked layers do not beat (2026-08-10).
+//
+// Every screen-anchored kernel is a pure function of the screen pixel, so two surfaces
+// stacked along one camera ray — a prism's own back face showing through its clipped
+// front face, or two parallel walls of trail mass — read the IDENTICAL threshold at
+// every pixel. Their alphas differ only slightly (two nearby depths on the same
+// profile), so the front layer's hole boundary {threshold = alphaFront} and the back
+// layer's survival boundary {threshold = alphaBack} are near-identical contours offset
+// by Δalpha/|∇threshold| — a pixel or two. Two copies of the same line set offset by a
+// hair is the textbook moiré condition, and because the alpha field rides the GEOMETRY
+// while the threshold rides the SCREEN, camera motion slides the pair at slightly
+// different rates: the interference beats, and it beats worst on SHATTER, whose level
+// sets are parallel straight walls with the shallowest gradient in the file.
+//
+// The fix SHEARS THE DITHER DOMAIN BY VIEW DEPTH before the kernel reads it: each depth
+// samples a shifted copy of the same pattern, so layers a prism-thickness apart are
+// decorrelated by construction — perfect alignment (invisible) and full decorrelation
+// (independent lattices) are both fine, and the shear jumps the layers clean over the
+// 1–2 px near-alignment window between them, which is the only place a beat can live.
+// It also stops the pattern reading as a screen decal: under camera translation, near
+// and far mass slide at different rates — the dither gains real parallax and reads as a
+// volumetric field the corridor is carving. One MAD, zero CPU, no new varying.
+//
+// COVERAGE IS UNTOUCHED — the same argument as the morph phase: per fragment this is a
+// translation of the kernel's domain, and every kernel's threshold DISTRIBUTION is
+// translation-invariant, so |coverage − alpha| cannot move. The one marginal effect is
+// at grazing incidence, where the depth gradient across the screen is steep and the
+// shear locally stretches the pattern toward finer grain — it degrades toward an
+// IGN-like dissolve exactly where a surface is most oblique, which is benign, bounded
+// by the gain, and invisible at the shipped value.
+//
+// THE GAIN is pixels of pattern slide per world unit of view depth; 0 disables the
+// shear and restores the pre-2026-08-10 behavior exactly. Decorrelation wants the shift
+// across one layer separation to reach about one cell (~16 px for the shipped SHATTER):
+// a standard prism is ~2 units thick, so 8 px/unit lands a full cell across a single
+// prism and several cells between separate walls. The DIRECTION is any fixed unit
+// vector — an irrational-ish diagonal avoids sliding the lattice along its own axes.
+//
+// The SPIRAL ignores all of this — it is corridor-anchored, not screen-anchored. Note
+// it has the SAME layered-beat failure for its own reason (its polar coordinates are
+// constant along a camera ray, so stacked layers read identical thresholds there too);
+// if it is ever revived, give it a depth term of its own rather than exempting it.
+// -----------------------------------------------------------------------------
+static const float PRISM_OCCLUSION_PARALLAX = 8.0;  // px of slide per world unit of view depth; 0 = off
+static const float2 PRISM_OCCLUSION_PARALLAX_DIR = float2(0.85749293, 0.51449576);  // normalize(5, 3)
+
+float PrismOcclusionParallaxGain()
+{
+    return PRISM_OCCLUSION_DIAL(_PrismOcclusionDitherC.x, PRISM_OCCLUSION_PARALLAX);
 }
 
 // The clip threshold must land STRICTLY inside (0,1). frac() can return exactly 0, and a
@@ -829,6 +882,15 @@ void PrismOcclusionFade_float(float3 PositionWS, float3 Target, float3 Params, f
     float4 positionCS = TransformWorldToHClip(PositionWS);
     float2 ndc = positionCS.xy / max(abs(positionCS.w), 1e-6);
     pixel = (ndc * 0.5 + 0.5) * _ScreenParams.xy;
+
+    // THE DEPTH-PARALLAX SHEAR (see its section above): slide the dither domain with
+    // view depth so stacked layers sample decorrelated copies of the pattern instead of
+    // moiré-beating against each other. positionCS.w IS linear view depth under a
+    // perspective projection (and 1 under an orthographic one, where this degenerates to
+    // a harmless constant offset). Applied HERE rather than inside the kernels so the
+    // dispatch — and the Lab's preview, which is a flat slice with no depth to shear —
+    // stays untouched.
+    pixel += abs(positionCS.w) * PrismOcclusionParallaxGain() * PRISM_OCCLUSION_PARALLAX_DIR;
 #endif
 
     ClipThreshold = PrismOcclusionDitherThreshold(pixel, radialRatio, angleTurns, time);
