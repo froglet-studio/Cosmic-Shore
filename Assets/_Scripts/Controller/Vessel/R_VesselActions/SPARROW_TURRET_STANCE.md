@@ -25,6 +25,24 @@
   flip `flightVisualization` to 1 to compare again. Its danger/domain palette seam note from
   round 2 still stands if `Danger` is re-enabled.
 
+## Round 4 (2026-08-10): shield moves to SPACE 5; the hit sphere is the bullets'
+
+- **Shield is now the SPACE-5 upgrade** (`firedPrismState: ShieldedAtSpace5`, the new default):
+  regular prisms below SPACE 5, shielded at 5+ — the SAME gate and the same moment as the
+  bullets' pierce, so the one level-5 SPACE upgrade transforms both fire modes at once
+  (bullets pierce; turret shots pierce, arrive armored, and hit wider). The MASS-5 map slot is
+  therefore **open again** — its `UpgradeLabel` records the move; per the design-approval gate,
+  no replacement was invented. `Plain`/`Shielded`/`Danger` remain as unconditional overrides.
+- **Prism shots hit like bullets now.** The report was "same feel as the projectiles… but I was
+  missing lots", and the geometry agreed: a bullet flies a sphere trigger of **world diameter
+  12** (radius 0.3 × the tracer's ×20 z-scale) while the prism's carried collider was a thin
+  0.8×0.5×5 box — ~1/24th the cross-section. The carried collider is now a **unit sphere**
+  (radius 0.5) on the prism prefab, sized in code to an authored world diameter:
+  `collisionDiameter` (**12**, = the bullets') for regular shots, `shieldedCollisionDiameter`
+  (**18**) for shielded ones — the armored octahedron reads bigger, so it hits bigger. Same
+  trigger + non-kinematic rigidbody + transform mover as the bullets: one collision approach,
+  one authored number per shot class.
+
 ## Round-3 follow-up: the spread rendered at full distance the whole flight
 
 Playtest report: positions were right but the prisms drew as if at maximum range from their

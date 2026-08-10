@@ -166,18 +166,21 @@ namespace CosmicShore.Gameplay
                     // its prism there; at 5+ it pierces on to the end of its path.
                     var piercing = abilities && abilities.IsUpgradeActive(Element.Space);
 
-                    // The born-in state is an authored playtest dial. Shielded/Danger are
-                    // unconditional; Plain restores the MASS-5 'Shielded Prisms' gate.
-                    // Both land as pre-Initialize flags, so the state is part of the
-                    // prism's BIRTH and snaps (Docs/PRISM_ANIMATION.md §4.5) instead of
-                    // morphing on arrival. Regular shield only — one-hit ablative armor
-                    // fauna can still eat via devastate, keeping the food-web sink. Danger
-                    // suppresses the shield outright: mutually exclusive by locked law.
+                    // The born-in state. THE DESIGN is ShieldedAtSpace5: regular prisms
+                    // below SPACE 5, shielded at 5+ — the SAME gate (and the same
+                    // moment) as the bullets' pierce, so one upgrade transforms both
+                    // fire modes. Plain/Shielded/Danger are unconditional playtest
+                    // overrides. The state lands as a pre-Initialize flag, so it is part
+                    // of the prism's BIRTH and snaps (Docs/PRISM_ANIMATION.md §4.5)
+                    // instead of morphing on arrival. Regular shield only — one-hit
+                    // ablative armor fauna can still eat via devastate, keeping the
+                    // food-web sink. Danger suppresses shields: mutually exclusive by
+                    // locked law.
                     var state = so.FiredState;
                     var dangerous = state == FullAutoBlockShootActionSO.FiredPrismState.Danger;
                     var shielded = state == FullAutoBlockShootActionSO.FiredPrismState.Shielded ||
-                                   (state == FullAutoBlockShootActionSO.FiredPrismState.Plain &&
-                                    abilities && abilities.IsUpgradeActive(Element.Mass));
+                                   (state == FullAutoBlockShootActionSO.FiredPrismState.ShieldedAtSpace5 &&
+                                    piercing);
 
                     // MASS → turret prism stretch: the long z-axis scales with the vessel's
                     // live Mass level. Volume = x·y·z of lossyScale, so the stretch feeds
@@ -295,8 +298,9 @@ namespace CosmicShore.Gameplay
             }
 
             LaunchCarriedProjectile(prism, muzzle, velocity, flightTime, domainAtShot,
-                piercing, anchorPoint, blockScale, viz, shielded, dangerous,
-                suctionShot);
+                piercing, anchorPoint,
+                shielded ? so.ShieldedCollisionDiameter : so.CollisionDiameter,
+                viz, shielded, dangerous, suctionShot);
 
             OnBlockShot?.Invoke(_status?.PlayerName);
         }
@@ -498,7 +502,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         private void LaunchCarriedProjectile(Prism prism, Transform muzzle, Vector3 velocity,
             float flightTime, Domains domainAtShot, bool piercing, Vector3 anchorPoint,
-            Vector3 blockScale, FullAutoBlockShootActionSO.FlightVisualization viz,
+            float hitDiameter, FullAutoBlockShootActionSO.FlightVisualization viz,
             bool shielded, bool dangerous, ReverseSuctionShot suctionShot)
         {
             var carried = prism.GetComponentInChildren<Projectile>(true);
@@ -535,14 +539,18 @@ namespace CosmicShore.Gameplay
 
             carriedTransform.SetParent(null, true);
 
-            // Size it EXPLICITLY. The prism it just detached from is still at localScale
-            // ZERO — its creation coroutine has not run yet — and SetParent(worldPositionStays)
-            // preserves world scale, so the projectile would inherit a zero-volume trigger and
-            // the shot would collide with nothing. Parented under a grown prism its world
-            // scale is the prism's, so that is what it takes here. (This is the same class of
-            // failure as the zero-scale prism itself: a degenerate collider that fails
-            // silently.)
-            carriedTransform.localScale = blockScale;
+            // Size it EXPLICITLY, and UNIFORMLY. Two reasons. (1) The prism it detached
+            // from may still be at localScale ZERO (its creation coroutine has not run),
+            // and SetParent(worldPositionStays) preserves world scale — an unsized
+            // collider is degenerate and the shot silently hits nothing. (2) The hit
+            // volume is the BULLETS' collision approach, verbatim: a sphere trigger
+            // whose world diameter is authored (the bullets fly diameter 12 = radius
+            // 0.3 × the tracer's 20 z-scale; the prism's carried collider is a unit
+            // sphere, radius 0.5, so world diameter == this scale). Shielded shots take
+            // the larger authored diameter — the armored octahedron reads bigger, so it
+            // hits bigger. The thin authored box this replaces had ~1/24th the bullet's
+            // cross-section, which is why prism shots were missing what bullets hit.
+            carriedTransform.localScale = Vector3.one * hitDiameter;
             carriedTransform.SetPositionAndRotation(muzzle.position, muzzle.rotation);
             carried.Velocity = velocity;
 

@@ -64,21 +64,39 @@ namespace CosmicShore.Gameplay
         /// <summary>The state a fired prism is born in — playtest dial.</summary>
         public enum FiredPrismState
         {
-            /// <summary>Ordinary prism; MASS-5 'Shielded Prisms' gates the shield as usual.</summary>
+            /// <summary>Ordinary prism, always — no shield at any level.</summary>
             Plain = 0,
-            /// <summary>Every prism arrives SHIELDED (one-hit ablative octahedron) — the
-            /// MASS-5 gate is moot while this is authored on. Fauna still eat shielded
+            /// <summary>Every prism arrives SHIELDED (one-hit ablative octahedron),
+            /// regardless of level — a playtest override. Fauna still eat shielded
             /// mass via devastate, so the food-web sink survives.</summary>
             Shielded = 1,
             /// <summary>Every prism arrives DANGEROUS. Locked law: danger bites everyone
             /// including the shooter, and suppresses shields (mutual exclusion).</summary>
             Danger = 2,
+            /// <summary>THE DESIGN: regular prisms below SPACE 5; at SPACE 5+ they
+            /// arrive shielded — the same gate (and the same moment) as the bullets'
+            /// pierce, so the level-5 SPACE upgrade transforms both fire modes at
+            /// once.</summary>
+            ShieldedAtSpace5 = 3,
         }
 
-        [Tooltip("The state fired prisms are born in. Plain leaves the shield to the MASS-5 " +
-                 "upgrade; Shielded makes every shot an octahedron-armored prism; Danger " +
-                 "makes every shot bite (everyone, shooter included, per locked law).")]
-        [SerializeField] private FiredPrismState firedPrismState = FiredPrismState.Shielded;
+        [Tooltip("The state fired prisms are born in. ShieldedAtSpace5 is the design: regular " +
+                 "prisms below SPACE 5, shielded at 5+ (the same gate as the bullets' pierce). " +
+                 "Plain/Shielded/Danger are unconditional playtest overrides; Danger bites " +
+                 "everyone, shooter included, per locked law.")]
+        [SerializeField] private FiredPrismState firedPrismState = FiredPrismState.ShieldedAtSpace5;
+
+        [Header("Shot Collision")]
+        [Tooltip("World-space DIAMETER of the shot's spherical hit volume. The bullets fly a " +
+                 "sphere trigger of world diameter 12 (radius 0.3 x the tracer's 20 z-scale), " +
+                 "and this defaults to exactly that so a prism shot hits whatever a bullet " +
+                 "would have hit. The carried collider is a unit sphere (radius 0.5), so the " +
+                 "world diameter IS this number.")]
+        [SerializeField, Min(0.1f)] private float collisionDiameter = 12f;
+
+        [Tooltip("World-space hit diameter for a SHIELDED shot - deliberately larger than the " +
+                 "base diameter: the armored octahedron reads bigger, so it should hit bigger.")]
+        [SerializeField, Min(0.1f)] private float shieldedCollisionDiameter = 18f;
 
         [Tooltip("Fired prisms are FULL SIZE from their first visible frame - no grow-in " +
                  "bloom. The flight out of the gun is itself the continuity transition, so " +
@@ -102,6 +120,8 @@ namespace CosmicShore.Gameplay
         public float SuctionDurationMultiplier => Mathf.Max(1f, suctionDurationMultiplier);
         public FiredPrismState FiredState => firedPrismState;
         public bool SpawnFullSize => spawnFullSize;
+        public float CollisionDiameter => collisionDiameter;
+        public float ShieldedCollisionDiameter => Mathf.Max(shieldedCollisionDiameter, collisionDiameter);
         public Vector3 BlockScale => blockScale;
         public Vector3 RotationOffsetEuler => rotationOffsetEuler;
         public PrismType PrismType => prismType;

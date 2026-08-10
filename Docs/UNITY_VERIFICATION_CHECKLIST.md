@@ -102,6 +102,21 @@ tightening as it flies; ordinary prisms (trail/environment) must render unchange
 `wire_prism_flight_clock.py --check` + Validate Clock Wiring (BlockGraph now requires
 `PrismFlightSqrDistance`).
 
+**Playtest round 4 (2026-08-10):** shield onto SPACE 5, bullet-sized hit spheres:
+
+- `firedPrismState: ShieldedAtSpace5` — regular prisms below SPACE 5, shielded at 5+, same
+  gate as pierce. Verify the flip at the SPACE-5 unlock: below, plain prisms that stop at
+  first impact; at 5+, armored octahedra that pierce. MASS-5's map slot is now open (label
+  records the move) — the HUD's Mass icon should no longer show an upgrade state change
+  affecting the turret.
+- The carried hit volume is now the BULLETS' sphere: unit SphereCollider on
+  `Sparrow Projectile Prism.prefab`'s ProjectileCollider child (was a thin box, ~1/24th the
+  bullet's cross-section — the round-3 "missing lots" report), scaled in code to
+  `collisionDiameter: 12` / `shieldedCollisionDiameter: 18`. Verify prism shots now connect
+  on the same aims that bullets connect on, and that shielded shots feel distinctly easier
+  to land. Prefab was hand-edited (BoxCollider → SphereCollider, same fileID) — confirm the
+  prefab opens clean with the sphere on the child.
+
 **First-pass tuning:** fire rate 30/s + speed 375 (SPACE ×9 at full) + flight 0.3 s on `FullAutoAction.asset`
 (shared with the guns); `blockScale (0.8, 0.5, 5)` + `flightVisualization` on
 `FullAutoBlockShootAction.asset`; reveal overlap 0.2 s (`RevealOverlapSeconds` in the executor);
