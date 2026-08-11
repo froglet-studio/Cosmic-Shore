@@ -55,7 +55,7 @@ namespace CosmicShore.Gameplay
                 // creature) and then this SPECIES' own band (an annulus, authored per config -
                 // see BandInner/BandOuter). Both are no-ops when unauthored, which is every
                 // biome that is not a mode's pen, so the common path is still two compares.
-                var clamped = cell ? cell.ClampToFaunaContainment(value) : value;
+                var clamped = cell ? cell.ClampToFaunaContainment(value, transform.position) : value;
                 _goal = ClampToBand(clamped);
             }
         }

@@ -310,6 +310,22 @@ namespace CosmicShore.Gameplay
                     goal + UnityEngine.Random.insideUnitSphere * BandSpawnJitter);
             }
 
+            // The CELL's own pen (outer containment + inner exclusion) applies to the birth
+            // POSITION too. Fauna.Goal clamps itself in its setter, but a creature born inside a
+            // closed pen would already be standing where it is not allowed to be - which reads as
+            // the pen leaking. Applied here, at the one spawn call both spawners share, for the
+            // same reason banded placement lives here (see the warning above). No-op for every
+            // biome that authors no pen.
+            if (host.FaunaExclusionRadius > 0f || host.FaunaContainmentRadius > 0f)
+            {
+                // No explicit position means "the cell centre", which is the one point a closed
+                // inner pen definitely forbids - so resolve it here rather than letting the
+                // default put the whole brood in the middle of the excluded zone.
+                Vector3 birth = position ?? (host.transform.position
+                    + UnityEngine.Random.onUnitSphere * Mathf.Max(1f, host.FaunaExclusionRadius));
+                position = host.ClampToFaunaContainment(birth, birth);
+            }
+
             var fauna = SpawnFaunaWithDomain(host, cfg.FaunaPrefab, goal, color, position);
             if (fauna) fauna.AssignLineage(host, cfg);
             return fauna;
