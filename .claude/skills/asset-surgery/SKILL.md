@@ -383,6 +383,44 @@ per task; it is cheap.
   *fallback / fall back / legacy path / degrades to* and re-read each hit
   against what the code now does.
 
+### Technique: resolve a `.shadergraph` MERGE by re-running the wirers, never by hand
+
+Origin: the dither branch vs the Sparrow turret branch (2026-08-11). Both wired nodes
+into `BlockGraph`/`ExplodingBlockGraph` — one moved the prism flight to the GPU clock,
+the other added a debris erosion wipe and a back-face fade. Git produced **40 conflict
+hunks of ShaderGraph JSON**. Resolving those by editing conflict markers is not a real
+option: the format is concatenated documents with object-id cross-references, so a
+plausible-looking textual merge silently yields duplicate ids, orphaned slots, or two
+feeders on one input.
+
+The move — and the reason to make every graph wirer idempotent in the first place:
+
+1. **Take ONE side whole** (`git checkout --theirs <graph>`), normally the base branch's,
+   so you keep whatever they did and owe only your own re-application.
+2. **Re-run YOUR wirers.** An idempotent wirer that prints "already wired" on a no-op is
+   also a merge-conflict resolver — it re-splices onto whatever it finds. This is the
+   payoff for §1.2, and it is worth writing them that way even when you expect no merge.
+3. **Re-run THEIR wirers too**, and confirm each reports "already wired". That proves your
+   re-application did not retarget an edge they own.
+4. **Verify by DUMPING THE RESOLVED EDGE LIST** (§2a), not by trusting the per-tool
+   validators — each one only checks its own splice, and the defect a merge creates lives
+   *between* them. Print the chain into `SurfaceDescription.Alpha` and read it:
+   ```
+   BlockGraph:          Alpha -> OcclusionFade -> BackFaceFade -> Alpha
+   ExplodingBlockGraph: ErosionFade -> OcclusionFade -> BackFaceFade -> Alpha
+   ```
+   Then dump every node's INPUT slots and confirm each resolves — the cross-branch join
+   (`ErosionFade.BaseOpacity <- PrismExplosionClock.Opacity`, one branch's node feeding
+   the other's) is exactly the edge no single validator covers.
+5. **Count-check against BOTH parents.** Merged node/edge counts must be a superset of
+   each parent by exactly what your wirers reported adding, and **property counts should
+   match the side you took** — a property count above it means both branches added the
+   same property and you now have two.
+
+Assert the JSON analog of `CS0102` while you are there: duplicate `m_ObjectId`, duplicate
+property reference names, registry entries that do not resolve, dangling edge endpoints,
+and any input slot with more than one feeder. All five are ~20 lines over the parsed model.
+
 ### Trap: a clean merge can still be a semantic conflict (duplicate members)
 
 Origin: `Flora.LeafSize` (2026-08). Two branches each added the SAME member to
@@ -610,6 +648,19 @@ read**. The lesson generalizes:
   stops the rewrite from silently converting line endings into diff noise. (Reading
   only? `\r?$` is enough. This repo's own `PrismOcclusionCoverageTests` carries the
   same warning for `.shadergraph` — heed it BEFORE writing the regex.)
+  **Knowing the trap is not enough — SWEEP for it, because one outlier call site is
+  the normal shape of this bug.** `PrismOcclusionDitherLab` got it right in its Anchor
+  table and wrong in one method 50 lines away (`SetTuningFlag`), so its "enable design
+  mode" button had never once worked on a Windows checkout and nothing said so. The
+  detector is four lines over the file — pull every `@"..."` verbatim regex literal and
+  flag any containing `$` without a preceding `\r?`:
+  ```python
+  for m in re.finditer(r'@"((?:\(\?m\))?\^[^"]*)"', src):
+      if '$' in m.group(1) and not re.search(r'\\r\?\)?\$', m.group(1)): print(m.group(1))
+  ```
+  Then PROVE the fix rather than asserting it: under .NET's `$` semantics (matches
+  before `\n`, after `\r`) the old pattern must measure 1 match on LF and **0 on CRLF**,
+  the new one 1 on both. On Linux you cannot observe the failure any other way.
 - **.NET does not throw on a replacement naming a group the pattern lacks — it emits
   the literal text.** `Regex.Replace(s, @"(a)(b)", "${1}x${3}")` writes `${3}` into
   your file. A rewriter that varies its patterns must carry the group count
