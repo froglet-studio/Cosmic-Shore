@@ -264,6 +264,11 @@ namespace CosmicShore.Gameplay
                 MakePrismLive(prism, blockScale, domainAtShot, shielded, dangerous,
                     so.SpawnFullSize, anchorPoint);
                 StampFlight(prism, velocity, flightTime, range, blockScale);
+                // Placement immunity: the prism is parked live at the anchor for the whole
+                // flight, so the window must span flight + settle — from-fire-time only
+                // would lapse mid-flight and earlier shots' projectiles (arriving at their
+                // own anchors nearby) would erase it before it ever "placed".
+                prism.ProjectileImmuneUntil = Time.time + flightTime + so.PlacementImmunitySeconds;
             }
             else
             {
@@ -291,6 +296,7 @@ namespace CosmicShore.Gameplay
                     LandingPoint = anchorPoint,
                     EffectDuration = effectDuration,
                     FlightTime = flightTime,
+                    PlacementImmunitySeconds = so.PlacementImmunitySeconds,
                 };
 
                 suctionShot.Effect = SpawnReverseSuctionEffect(prism, blockScale, domainAtShot,
@@ -321,6 +327,7 @@ namespace CosmicShore.Gameplay
             public Vector3 LandingPoint;
             public float EffectDuration;
             public float FlightTime;
+            public float PlacementImmunitySeconds;
             public bool Created;
         }
 
@@ -341,6 +348,9 @@ namespace CosmicShore.Gameplay
             prism.transform.localScale = shot.BlockScale;
             MakePrismLive(prism, shot.BlockScale, shot.Domain, shot.Shielded, shot.Dangerous,
                 true, shot.LandingPoint);
+            // Placement immunity from the moment this prism becomes live mass (the suction
+            // path creates it AT landing, so no flight span is needed here).
+            prism.ProjectileImmuneUntil = Time.time + shot.PlacementImmunitySeconds;
         }
 
         /// <summary>
@@ -536,12 +546,6 @@ namespace CosmicShore.Gameplay
                 stopOnFirstPrismImpact: !piercing,
                 spareOwnDomain: false,
                 carriedByHost: true);
-
-            // After Initialize (which clears it per flight): the shot must never impact
-            // the ONE prism it is delivering — the flight ends AT that prism, so without
-            // this every shot destroys its own output on arrival. Other fired prisms are
-            // ordinary friendly-fire targets; only self-delivery is excluded.
-            carried.SetHostPrism(prism);
 
             carriedTransform.SetParent(null, true);
 

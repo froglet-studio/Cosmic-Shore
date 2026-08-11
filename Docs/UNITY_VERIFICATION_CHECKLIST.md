@@ -128,14 +128,15 @@ tightening as it flies; ordinary prisms (trail/environment) must render unchange
   at CHARGE 5+ the blast (and the direct hit) spares them — hit, timeout, and mine
   detonations all flip together. The shared `AOEExplosion.prefab` was NOT edited — confirm
   the Manta crystal explosion still spares own domain as before.
-- Host guard (round-5 follow-up: every shot was destroying its own prism on arrival):
-  `Projectile.HostPrism` excluded in `DisallowImpactOnPrism` — the ONE prism a carried
-  shot delivers is the only prism the shooter's fire ignores. Verify a single shot lands
-  and STAYS (no self-destruct at the anchor). Friendly fire is otherwise fully consistent
-  by design: verify a later shot into a previously fired prism DOES damage/destroy it
-  (same as trail prisms), and judge in play whether a steady-aim stream churning its own
-  output is acceptable — the broader own-output immunity was tried and rolled back; it
-  can be restored if this feels wrong.
+- Placement immunity (round-5 follow-up: shots destroyed their own output — first their
+  own delivery, then, with a 12-u hit sphere, the previous prism even at full spin):
+  `Prism.ProjectileImmuneUntil` window checked in `DisallowImpactOnPrism`; turret stamps
+  flight + `placementImmunitySeconds` (0.2, on `FullAutoBlockShootAction.asset`). Verify:
+  a single shot lands and STAYS; a full-speed spin leaves a RING of prisms (not one);
+  holding fire on one spot still churns (each prism outlives its window between shots
+  arriving >0.2 s later — expected); a deliberate later shot into an old fired prism
+  destroys it (friendly fire intact); enemy fire during the brief window is ignored but
+  lands normally after (~0.5 s from fire). Tune `placementImmunitySeconds` to taste.
 
 **First-pass tuning:** fire rate 30/s + speed 375 (SPACE ×9 at full) + flight 0.3 s on `FullAutoAction.asset`
 (shared with the guns); `blockScale (0.8, 0.5, 5)` + `flightVisualization` on

@@ -103,6 +103,14 @@ namespace CosmicShore.Gameplay
                  "the bloom on top of it only made the shot harder to see.")]
         [SerializeField] private bool spawnFullSize = true;
 
+        [Tooltip("A fired prism keeps its projectile immunity for this long AFTER placement " +
+                 "(flight end). During the flight it is immune anyway - it is parked live at " +
+                 "the anchor from fire time. Without the settle window, the hit sphere is wide " +
+                 "enough that even a full-speed spin's next shots destroy the previous prism, " +
+                 "so only one prism ever survives. Immunity is vs ALL projectiles (window is " +
+                 "sub-second); after it closes the prism is ordinary friendly-fire mass.")]
+        [SerializeField, Min(0f)] private float placementImmunitySeconds = 0.2f;
+
         [Header("Cadence & Motion")]
         [Tooltip("The vessel's bullet action. Fire rate, muzzle speed and flight time are " +
                  "ADOPTED from it so turret prisms fly exactly like the bullets they replace. " +
@@ -122,6 +130,7 @@ namespace CosmicShore.Gameplay
         public bool SpawnFullSize => spawnFullSize;
         public float CollisionDiameter => collisionDiameter;
         public float ShieldedCollisionDiameter => Mathf.Max(shieldedCollisionDiameter, collisionDiameter);
+        public float PlacementImmunitySeconds => placementImmunitySeconds;
         public Vector3 BlockScale => blockScale;
         public Vector3 RotationOffsetEuler => rotationOffsetEuler;
         public PrismType PrismType => prismType;

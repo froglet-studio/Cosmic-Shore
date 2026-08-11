@@ -62,19 +62,20 @@
   blast friendly-fires like every other Sparrow shot and at 5+ the whole missile goes
   domain-safe. The shared `AOEExplosion.prefab` is untouched — the Manta crystal path keeps
   its own authored/overridden behavior.
-- **The host guard (follow-up in the same round; simplified by request).** Friendly fire
-  exposed a self-interaction: the carried projectile flies TO its own host prism (viz 1
-  parks the prism at the anchor with a live collider — the documented wart), so with the
-  domain gate open every shot destroyed its own prism the moment the projectile arrived.
-  The guard is the MINIMAL one: `Projectile.HostPrism` (set by the executor after the
-  carried `Initialize`, cleared per flight) and `DisallowImpactOnPrism` skips exactly that
-  one prism — a shot cannot destroy itself on arrival, which is a flight-architecture
-  artifact, not gameplay. **Everything else follows plain friendly fire, deliberately** —
-  including your own previously fired prisms: a later shot into the same spot damages and
-  can destroy them, same as it would your trail. (A broader "a pilot's shots never destroy
-  their own fired prisms" marker was tried and rolled back in favor of this consistency —
-  if steady-aim streams churning their own output feels wrong in play, that experiment is
-  the recorded alternative.)
+- **Placement immunity (iterated to in the same round).** Friendly fire exposed a
+  self-interaction: viz 1 parks the prism live at the anchor for its whole flight, so the
+  carried projectile arrived AT its own prism and destroyed it every shot — and after an
+  identity-based host guard fixed that, the 12-u hit sphere meant even a full-speed spin's
+  next shots erased the previous prism, leaving exactly one alive. The shipped rule is ONE
+  time window instead of identity/owner special cases: each fired prism carries
+  `Prism.ProjectileImmuneUntil` (a `Time.time` deadline; 0 = none, cleared on pool reuse),
+  and `Projectile.DisallowImpactOnPrism` skips any prism whose window is open. The turret
+  stamps `flightTime + placementImmunitySeconds` at fire (viz 1 — the prism is live from
+  fire time) or `placementImmunitySeconds` at landing (viz 2 — created at landing), with
+  `placementImmunitySeconds` (0.2) authored on the action SO. The window is vs ALL
+  projectiles — sub-second, so the gameplay cost is nil — and once it closes the prism is
+  ordinary friendly-fire mass: your own later shots, teammates, and enemies all destroy it
+  normally.
 
 ## Round-3 follow-up: the spread rendered at full distance the whole flight
 

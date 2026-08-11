@@ -52,14 +52,6 @@ namespace CosmicShore.Gameplay
         /// Destroy the host's child on the first stopping impact.
         public bool IsCarriedByHost { get; private set; }
 
-        /// Per-shot: the ONE prism this carried shot is delivering, excluded from its own
-        /// impact checks (<see cref="DisallowImpactOnPrism"/>) because the flight ends AT
-        /// that prism by construction. Set by the turret executor after Initialize;
-        /// cleared per flight so a pooled bullet can never inherit one.
-        public Prism HostPrism { get; private set; }
-
-        /// <summary>Bind the prism this carried shot delivers (see <see cref="HostPrism"/>).</summary>
-        public void SetHostPrism(Prism prism) => HostPrism = prism;
 
         /// <summary>
         /// Raised the instant this flight ends — at BOTH death points: the lifetime
@@ -164,7 +156,6 @@ namespace CosmicShore.Gameplay
             // end-of-flight handler, and the once-only latch must re-arm.
             FlightEnded = null;
             _flightEndRaised = false;
-            HostPrism = null;
         }
 
         public void SetType(ProjectileType type) => Type = type;
@@ -174,15 +165,15 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Two independent reasons a projectile ignores a prism:
         /// (1) authored friendly-fire off for this projectile family (domain gate);
-        /// (2) the HOST guard — a carried shot never impacts the one prism it is
-        ///     delivering (<see cref="HostPrism"/>). The Sparrow turret parks the prism
-        ///     at the flight's END with a live collider, so without this the projectile
-        ///     arrives AT its own prism and destroys it on every single shot. That is a
-        ///     flight-architecture artifact, not gameplay. Everything else — including
-        ///     the shooter's own previously fired prisms — follows plain friendly fire.
+        /// (2) the prism's PLACEMENT-IMMUNITY window (<see cref="Prism.ProjectileImmuneUntil"/>)
+        ///     is still open. The Sparrow turret stamps a window on each fired prism spanning
+        ///     its flight (it is parked live at the anchor from fire time) plus a short settle
+        ///     after placement — a shot cannot destroy its own delivery, and a spray cannot
+        ///     erase its own freshest output. One TIME rule instead of identity/owner special
+        ///     cases; once the window closes the prism is ordinary friendly-fire mass.
         /// </summary>
         public bool DisallowImpactOnPrism(Prism prism) =>
-            (!friendlyFire && prism.Domain == OwnDomain) || (HostPrism && prism == HostPrism);
+            (!friendlyFire && prism.Domain == OwnDomain) || Time.time < prism.ProjectileImmuneUntil;
         public bool DisallowImpactOnVessel(Domains vesselDomain) => vesselDomain == OwnDomain;
         #endregion
 
