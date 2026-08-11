@@ -452,7 +452,7 @@ namespace CosmicShore.Gameplay
             };
             obj.OnReturnToPool += growCallback;
 
-            obj.StartGrow(data.TargetTransform);
+            obj.StartGrow(data.TargetTransform, data.GrowDuration);
 
             return obj.gameObject;
         }

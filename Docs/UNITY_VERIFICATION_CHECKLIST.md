@@ -23,6 +23,145 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Sparrow Turret Stance — two flight visualizations, still-nothing hardening (`claude/sparrow-prism-attack-hg6n78`)
+
+Authored without a Unity compile or play-test. The stance STILL showed nothing after the
+Initialize fix; three surviving silent failure modes are closed or screaming, and the flight
+visual now ships in **two live-switchable forms** for A/B judgment. Full mechanics + the
+verification list: `_Scripts/Controller/Vessel/R_VesselActions/SPARROW_TURRET_STANCE.md`.
+
+**The A/B.** `FullAutoBlockShootAction.asset` → **Flight Visualization**, read per volley (flip
+it in the inspector during play mode; the next shot switches):
+
+- **TranslateAndGrow** — the prism scales up and translates out of the gun into place
+  (`PrismFlightClock` vertex offset + grow bloom at the fastest clock rate).
+- **ReverseSuction** — the fauna suction shader in reverse: faces stream out of the MOVING shot
+  point into the anchored shape (`PrismImplosion.StartGrow` tracking the carried projectile —
+  `PrismType.Grow`'s first producer). The real prism is created when the shot lands, so mass
+  becomes tangible at arrival (the mid-flight-collider "wart" does not exist in this mode).
+
+**Why nothing showed, most likely:** un-imported flight graph wiring makes viz 1's prisms
+teleport straight to ~286 u downrange (that stamp now SCREAMS via `WarnUnwiredMaterial` on
+`_FlightStartTime`), and the authored bloom rate had the prism at a few percent of its size on
+arrival (executor now pins `GrowthRate = 8`). Also confirm the editor is actually on this
+branch — none of this is on `bleeding-edge`.
+
+**Verify in editor:**
+
+1. Asset-only gates first: `python3 Tools/Shaders/wire_prism_flight_clock.py --check`, and
+   `FrogletTools > Ecology > Prism Animation > Validate Clock Wiring` (now requires the three
+   `_Flight*` properties + `PrismFlightClock` on both graphs).
+2. Open BlockGraph + ExplodingBlockGraph — no import errors, `FlightStartTime/Duration/Velocity`
+   on the Blackboard. Recovery: `git checkout` the graphs + run Auto-Wire Clock Properties.
+3. Stop, hold fire, in **TranslateAndGrow**: prisms visibly leave the muzzles, scale up in
+   flight, anchor at ~286 u. `[PrismClock]` errors in the console mean the graph wiring — see
+   step 2. Prisms popping in at range with no flight = the same, now with an error naming it.
+4. Flip to **ReverseSuction** live: faces stream from the moving shot point into place; the
+   real prism appears as the stream completes. This mode uses only long-shipped shader wiring,
+   so it doubles as the control: viz 2 working while viz 1 doesn't isolates the new graph edits.
+5. Pierce (SPACE 5) / attribution / MASS stretch / MASS-5 shield / MPPM — as documented in
+   SPARROW_TURRET_STANCE.md's list.
+6. Judge the two visualizations and pick (or keep both). Also judge viz 1's mid-flight collider
+   at the destination vs viz 2's tangible-at-arrival.
+
+**Playtest round 2 (2026-08-10, same branch):** shots were very hard to see — three changes on
+top, all data + one curve retune:
+
+- **ReverseSuction is now the default** (`flightVisualization: 1`), slowed to **5× the flight
+  time** (`suctionDurationMultiplier: 5`): the shot lands and pierces on the bullet clock, the
+  faces keep streaming into place for ~1.5 s after it, and the real prism is created 0.2 s
+  before the stream completes (tangible at assembly completion — the mid-flight-collider wart
+  is gone in this mode).
+- **Turret prisms are DANGER prisms** (`fireDangerPrisms: 1`) — danger material, so they stand
+  out. Locked-law consequences to verify: they bite the shooter too, and MASS-5 Shielded
+  Prisms is suppressed while danger is on. Known cosmetic seam: the stream renders domain
+  colors, the revealed prism wears the danger material.
+- **Gun range re-anchored, both modes**: base speed 1500 → **750**
+  (`FullAutoAction.speedValue.Value`), SPACE curve 2.5 → **4.667**
+  (`Sparrow.asset` MultiplierAtFullLevel) — SPACE 0 range halves (~143 u), SPACE 15 unchanged.
+  Verify with a Space crystal binge that range visibly stretches toward the old reach.
+
+**Playtest round 3 (2026-08-10):** now SHIELDED full-size shots on the plain flight, range
+quartered from the original:
+
+- `firedPrismState: Shielded` (enum replaces the round-2 `fireDangerPrisms` bool — Plain
+  restores the MASS-5 gate, Danger restores round 2), `spawnFullSize: 1` (no grow-in; the
+  flight is the transition), `flightVisualization: 0` (suction off but kept as the alternate).
+- Range: base speed 750 → **375**, SPACE curve 4.667 → **9** — SPACE 0 ≈ 72 u, SPACE 15
+  unchanged (~931 u). Verify shots are close-in, LARGE, and octahedron-armored from the
+  muzzle; verify a Space binge stretches the reach ~13×.
+- Verify the shield birth-snap renders ON THE FLIGHT: the flying shot must be the octahedron,
+  not a plain box that armors on arrival — if it flies plain, the birth rule regressed.
+
+**Round-3 follow-up (spread-at-distance):** the flight moved vertices but the spread chain's
+distance read the PIVOT (parked at the anchor), so shots rendered with max-range spread from
+frame one. `PrismFlightSqrDistance` now feeds `Prism Sub Graph.SqrDistance` on BlockGraph from
+the displaced pivot, and the `SqrDistanceSubGraph` node is retired. Verify: a fired prism's
+spread/near-look must now be identical to a trail prism laid at the same visible distance,
+tightening as it flies; ordinary prisms (trail/environment) must render unchanged. Re-run
+`wire_prism_flight_clock.py --check` + Validate Clock Wiring (BlockGraph now requires
+`PrismFlightSqrDistance`).
+
+**Playtest round 4 (2026-08-10):** shield onto SPACE 5, bullet-sized hit spheres:
+
+- `firedPrismState: ShieldedAtSpace5` — regular prisms below SPACE 5, shielded at 5+, same
+  gate as pierce. Verify the flip at the SPACE-5 unlock: below, plain prisms that stop at
+  first impact; at 5+, armored octahedra that pierce. MASS-5's map slot is now open (label
+  records the move) — the HUD's Mass icon should no longer show an upgrade state change
+  affecting the turret.
+- The carried hit volume is now the BULLETS' sphere: unit SphereCollider on
+  `Sparrow Projectile Prism.prefab`'s ProjectileCollider child (was a thin box, ~1/24th the
+  bullet's cross-section — the round-3 "missing lots" report), scaled in code to
+  `collisionDiameter: 12` / `shieldedCollisionDiameter: 18`. Verify prism shots now connect
+  on the same aims that bullets connect on, and that shielded shots feel distinctly easier
+  to land. Prefab was hand-edited (BoxCollider → SphereCollider, same fileID) — confirm the
+  prefab opens clean with the sphere on the child.
+
+**Playtest round 5 (2026-08-10):** friendly fire always on; CHARGE 5 spares only the skyburst:
+
+- Turret prism carried projectile `friendlyFire: 0 → 1` on `Sparrow Projectile Prism.prefab`.
+  Verify a turret shot fired into YOUR OWN domain's prisms now damages them (and stops there
+  below SPACE 5) — previously it flew straight through friendly mass. Bullets already had
+  `friendlyFire: 1`; confirm they still damage own-domain prisms unchanged.
+- `ProjectileDetonatorSO` now stamps `AffectSelfOverride = !SpareOwnDomain` on every skyburst
+  detonation. Verify: below CHARGE 5 a skyburst blast destroys your own domain's prisms;
+  at CHARGE 5+ the blast (and the direct hit) spares them — hit, timeout, and mine
+  detonations all flip together. The shared `AOEExplosion.prefab` was NOT edited — confirm
+  the Manta crystal explosion still spares own domain as before.
+- Placement immunity (round-5 follow-up: shots destroyed their own output — first their
+  own delivery, then, with a 12-u hit sphere, the previous prism even at full spin):
+  `Prism.ProjectileImmuneUntil` window checked in `DisallowImpactOnPrism`; turret stamps
+  flight + `placementImmunitySeconds` (0.2, on `FullAutoBlockShootAction.asset`). Verify:
+  a single shot lands and STAYS; a full-speed spin leaves a RING of prisms (not one);
+  holding fire on one spot still churns (each prism outlives its window between shots
+  arriving >0.2 s later — expected); a deliberate later shot into an old fired prism
+  destroys it (friendly fire intact); enemy fire during the brief window is ignored but
+  lands normally after (~0.5 s from fire). Tune `placementImmunitySeconds` to taste.
+
+**Playtest round 6 (2026-08-11):** hit spheres shrink to the projectile they draw:
+
+- `SparrowProjectile.prefab` `SphereCollider.m_Radius` **0.3 → 0.04125**. The collider
+  scales by the LARGEST lossy-scale component, and the tracer is scaled `(1.5, 1.5, 20)`,
+  so the old radius gave a 6.0-world-radius (12-diameter) ball around a dart whose visible
+  cross-section radius is 0.75. Now `0.04125 × 20 = 0.825` world radius = 1.65 diameter =
+  the visible projectile +10%. Verify in the Scene view during play that the bullet's
+  gizmo sphere now hugs the tracer instead of dwarfing it.
+- `collisionDiameter` **12 → 1.65**, `shieldedCollisionDiameter` **18 → 2.475** on
+  `FullAutoBlockShootAction.asset` (the ×1.5 shielded ratio is preserved).
+- **Feel check, the point of the round:** both fire modes lose a lot of aim forgiveness
+  (~53× smaller frontal cross-section). Verify bullets and prism shots still connect on a
+  deliberate aim and that they now MISS on a sloppy one — that is the intended result. Also
+  verify a spray still leaves multiple prisms (placement immunity is doing less work at
+  this size, so `placementImmunitySeconds` 0.2 may now be reducible — tune only after
+  flying it).
+
+**First-pass tuning:** fire rate 30/s + speed 375 (SPACE ×9 at full) + flight 0.3 s on `FullAutoAction.asset`
+(shared with the guns); `blockScale (0.8, 0.5, 5)` + `flightVisualization` on
+`FullAutoBlockShootAction.asset`; reveal overlap 0.2 s (`RevealOverlapSeconds` in the executor);
+turret prism pool 40/90/8 on the Sparrow prefab.
+
+---
+
 ### 🔴 Dolphin speed + charged-boost retune (`claude/dolphin-speed-boost-tuning-qgnojw`)
 
 Authored without a Unity compile or play-test. **Two authored numbers changed in

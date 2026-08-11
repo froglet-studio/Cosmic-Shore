@@ -213,9 +213,56 @@ jobs:
           # Library/ on every run and forces a full asset reimport - 18 minutes
           # of the last compile run, and far worse for an IL2CPP build. A warm
           # Library is the entire reason this tier runs on an owned machine.
-          # Tracked files are still force-reset by the checkout itself, so the
-          # working tree is faithful to the commit regardless.
+          # Tracked files are force-reset by the checkout itself; UNTRACKED ones
+          # are not, which is what the next step exists to handle.
           clean: false
+
+      # A file that is tracked at commit A and gone at commit B is deleted by the
+      # checkout - but a file that became UNTRACKED in the runner's workspace is
+      # invisible to it, and `clean: false` then preserves it forever.
+      #
+      # That is not hypothetical. Assets/_Scripts/Tests/EditMode/ was renamed to
+      # Tests/Editor/ to stop NUnit shipping into the player, and a ghost copy of
+      # the old folder survived here. Unity compiled it into Assembly-CSharp and
+      # the IL2CPP linker died on exactly the error the rename had fixed
+      # (IL1005 -> "Failed to resolve assembly: 'nunit.framework'") - against a
+      # commit whose tree provably contains no such file. The repo was green, the
+      # local build was green, and the runner failed anyway.
+      #
+      # So sweep untracked files out of the Unity source tree, and only there.
+      # Library/, Builds/ and Temp/ live at the repo root and are untouched, so
+      # the warm-import win is kept. No -x: the handful of .gitignore'd assets
+      # (FMOD cache, a couple of .meta) stay put.
+      - name: Purge stale untracked files from the source tree
+        shell: bash
+        run: |
+          set -euo pipefail
+          # `git -c safe.directory='*'` is REQUIRED, not belt-and-braces.
+          # actions/checkout grants itself the safe.directory exception in a
+          # TEMPORARY global config (it overrides HOME for the duration of its
+          # own steps) and revokes it in post-job, so every later step runs
+          # under the real HOME with no exception at all. The workspace is owned
+          # by BUILTIN\Administrators while the runner service is
+          # NT AUTHORITY\NETWORK SERVICE, so bare git dies with
+          # "detected dubious ownership" and exit 128 - which is exactly how
+          # this step failed the first time it ran. Same trap that once killed
+          # `git rev-parse HEAD` here; the fix there was to stop calling git,
+          # and this step cannot. Scoped to the invocation, so nothing is
+          # written to the machine's global git config.
+          GIT=(git -c safe.directory='*')
+          "${GIT[@]}" clean -ffd --dry-run -- Assets Packages ProjectSettings | sed 's/^/::warning::stale file removed: /'
+          "${GIT[@]}" clean -ffd -- Assets Packages ProjectSettings
+
+          # This job's own outputs are untracked and live outside the swept
+          # paths, so `clean: false` preserves them across runs too - and both
+          # are uploaded with `if: always()`. A run that dies before Unity
+          # starts therefore publishes the PREVIOUS run's log under the current
+          # run's artifact name, which is not a cosmetic problem: it is a log
+          # that describes a different commit and a different failure. It has
+          # already happened once (two runs uploaded byte-identical logs, same
+          # SHA256, same 127385 bytes). Delete them so an artifact is either
+          # this run's or absent.
+          rm -f "$UNITY_BUILD_LOG" "$TEST_RESULTS"
 
       - name: Resolve Unity
         shell: bash

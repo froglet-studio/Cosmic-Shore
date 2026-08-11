@@ -16,17 +16,19 @@ MonoBehaviour:
   entries:
   - Element: 3
     AbilityLabel: Pulsefire Cannons
-    AbilityDescription: Full-auto cannons. Space extends their range; at level 5
-      the bullets pierce through prisms instead of stopping at first impact.
+    AbilityDescription: Full-auto cannons. Space extends their range dramatically
+      - short at rest, unchanged at full overcharge. At level 5 shots pierce through
+      prisms, and turret-stance prisms arrive shielded.
     Input: 1
-    MultiplierAtFullLevel: 2.5
+    MultiplierAtFullLevel: 9
     MinMultiplier: 0.4
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
     UpgradeLabel: Piercing Bullets
-    UpgradeDescription: Bullets pierce through prisms instead of being destroyed
-      on first impact.
+    UpgradeDescription: Shots pierce through prisms instead of being destroyed on
+      first impact, and prisms fired in the turret stance arrive shielded (one-hit
+      ablative armor) with a wider hit sphere.
   - Element: 4
     AbilityLabel: Afterburner
     AbilityDescription: Hold to boost indefinitely - there is no heat and no meter.
@@ -44,17 +46,19 @@ MonoBehaviour:
       and skimmer overtakes leave your levels untouched. Buffs still apply.
   - Element: 2
     AbilityLabel: Turret Stance
-    AbilityDescription: Stop and fire prisms instead of bullets. Mass stretches
-      the fired prisms; at level 5 they arrive shielded.
+    AbilityDescription: Stop and fire prisms instead of bullets - the same shot in
+      every way, except you watch a prism fly and it stays wherever the bullet would
+      have died. Mass stretches the fired prisms.
     Input: 6
     MultiplierAtFullLevel: 2.5
     MinMultiplier: 0.4
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: Shielded Prisms
-    UpgradeDescription: Turret-fired prisms arrive shielded (one-hit ablative
-      armor).
+    UpgradeLabel: (open design slot)
+    UpgradeDescription: The former Shielded Prisms upgrade moved to Space 5 (2026-08,
+      playtest round 4) so one gate transforms both fire modes. This slot is open for
+      a new Mass 5 design.
   - Element: 1
     AbilityLabel: Skyburst Rockets
     AbilityDescription: Crystal-stocked rockets that detonate on impact. Charge
