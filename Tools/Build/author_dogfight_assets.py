@@ -39,6 +39,9 @@ def guid(name: str) -> str:
 
 
 INTENSITIES = [1, 2, 3, 4]
+# The intensities the Boneyard itself builds. Intensity 4 flies Atlantis instead, so it gets no
+# Boneyard prefab variant - an unreferenced one would just be clutter that reads as live content.
+BONEYARD_INTENSITIES = [1, 2, 3]
 
 # ── New script GUIDs (the .cs.meta files this script also writes) ─────────────
 # Only scripts an ASSET points at need a deterministic GUID authored here; the rest of the
@@ -65,7 +68,8 @@ G_ASSET = {
     "SkyBurstExplosionContainer":    guid("asset/SkyBurstExplosionImpactorDataContainer"),
 }
 for _i in INTENSITIES:
-    G_ASSET[f"SpawnableBoneyard{_i}.prefab"] = guid(f"asset/SpawnableBoneyard{_i}.prefab")
+    if _i in BONEYARD_INTENSITIES:
+        G_ASSET[f"SpawnableBoneyard{_i}.prefab"] = guid(f"asset/SpawnableBoneyard{_i}.prefab")
     G_ASSET[f"BoneyardCellConfig{_i}"] = guid(f"asset/BoneyardCellConfig{_i}")
     G_ASSET[f"BoneyardSpawnProfile{_i}"] = guid(f"asset/BoneyardSpawnProfile{_i}")
     G_ASSET[f"BoneyardScavenger{_i}"] = guid(f"asset/BoneyardScavenger{_i}")
@@ -98,7 +102,20 @@ EXISTING = {
     "QuadFishPrefab":     "19615ed0c903b1041973d70593d4b0a3",
     # the cell's CellRuntimeDataSO - the spawn ring resolves its Cell through this
     "RuntimeCellData":    "8d4e8398eedc76c4dadb8604f89b9e1b",
+    # Scurry's intensity-4 world, reused verbatim as Dog Fight's intensity 4 (see below)
+    "SpawnableAtlantis":  "022b1ce17e20488aa81fb9badb462563",
 }
+
+# Dog Fight's intensity 4 IS Scurry's intensity 4 - the same SpawnableAtlantis prefab the
+# Crystal Capture scene spawns from its SegmentSpawner's spawnableByIntensity[3]. Requested
+# directly after playtest ("make dog fight intensity 4 have the same environment as scurry 4"),
+# so intensities 1-3 fly the Boneyard and 4 flies Atlantis.
+#
+# Atlantis is REFERENCED, never modified: it is a shipped Scurry environment and editing it
+# would change that mode. Its authored spawnClearRadius and Crystal Capture pads come along
+# harmlessly - they clear a few 14-unit spheres nothing else cares about.
+ATLANTIS_FILEID = 4711172930391493203        # the SpawnableAtlantis component inside the prefab
+ATLANTIS_INTENSITY = 4
 
 QUADFISH_FILEID = 4652232322436628206      # the LightFauna component inside the prefab
 # Per-element sibling configs, reused verbatim (read-only species identity assets) so the
@@ -111,10 +128,10 @@ MEMBRANE_FILEID = 346633111830028674
 CYTOPLASM_FILEID = 639495419069806261
 PREVIEW_FILEID = 241334157148977051
 
-# The point target - the race metric. The 25%/50% milestone rungs are fractions of this (so 125
-# and 250), and moving it moves the whole progress ladder. Kept in sync with
+# The point target - the race metric. The 25%/50% milestone rungs are fractions of this (so 30
+# and 60), and moving it moves the whole progress ladder. Kept in sync with
 # EndConditionOverridesSO.DefaultDogFightPointTarget.
-DOGFIGHT_POINT_TARGET = 500
+DOGFIGHT_POINT_TARGET = 120
 
 # Players spawn on a shell OUTSIDE the wreck field (radius 520) and inside the membrane (1200),
 # so every pilot's opening move is to fly in. The cell has no nucleus, so the ring has nothing
@@ -124,6 +141,10 @@ SPAWN_RING_RADIUS = 700
 # The cell must SENSE mass out to the whole arena so the scavengers can find a player's trail
 # anywhere in it; the membrane visual is 1200, so sensing that far costs no visual change.
 SENSE_RADIUS = 1200
+
+# The scene's NetworkCrystalManager spawns the OMNI crystal, and Dog Fight wants none of them -
+# see the scene patch. Its ELEMENTAL pickups are scattered by DogFightController instead.
+OMNI_CRYSTAL_COUNT = 0
 
 # The scavenger population. DELIBERATELY LIGHT - see DOGFIGHT.md: this arena already carries
 # 12.7k-24k prisms of cover and four Sparrows' worth of projectile and AOE traffic, and every
@@ -342,7 +363,7 @@ emit(CONIC_PATH, conic)
 # players spawn on a shell at r=700, well outside the wreck field, so there is nothing to
 # clear - and Emit's clearance rejection is the one term that would stop boneyard_budget.py
 # from being an exact mirror of the C#.
-for i in INTENSITIES:
+for i in BONEYARD_INTENSITIES:
     density, hulks, spires, frames, overpasses = budget.INTENSITIES[i - 1]
     emit(f"Assets/_Prefabs/Spawnables/SpawnableBoneyard{i}.prefab", f"""%YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
@@ -542,29 +563,38 @@ for i in INTENSITIES:
     emit(f"{FOLDER}/Boneyard Spawn Profile {i}.asset.meta",
          asset_meta(G_ASSET[f"BoneyardSpawnProfile{i}"]))
 
-    th = budget.phase_thresholds(row["total"], row["volume"])
+    is_atlantis = i == ATLANTIS_INTENSITY
     density, hulks, spires, frames, overpasses = budget.INTENSITIES[i - 1]
-    emit(f"{FOLDER}/Boneyard Cell Config {i}.asset",
-         HEADER_FOR(EXISTING["CellConfigDataSO"], f"Boneyard Cell Config {i}") +
-         f"""  CellName: Boneyard
-  Description: The Dog Fight arena at intensity {i} - {row['total']} prisms of wreckage
-    inside r={budget.ARENA_RADIUS:.0f}: {hulks} hollow hulks to hide in, {spires} leaning spires,
-    {frames} girder cages, {overpasses} broken overpasses, and {row['danger']} danger traps on the torn
-    ends and around the reactor. Cover, never an objective - shooting it scores nothing.
-    NO NUCLEUS by design. PhaseThresholds ride THIS intensity's own baseline; regenerate with
-    Tools/Build/author_dogfight_assets.py after any change rather than hand-editing.
-  Icon: {{fileID: 21300000, guid: {EXISTING['CellIcon']}, type: 3}}
-  Difficulty: {i}
-  CellEndGameScore: 0
-  MembranePrefab: {{fileID: {MEMBRANE_FILEID}, guid: {EXISTING['Membrane_prefab']}, type: 3}}
-  NucleusPrefab: {{fileID: 0}}
-  CytoplasmPrefab: {{fileID: {CYTOPLASM_FILEID}, guid: {EXISTING['Cytoplasm_prefab']}, type: 3}}
-  CellModifiers: []
-  SpawnProfile: {{fileID: 11400000, guid: {G_ASSET[f'BoneyardSpawnProfile{i}']}, type: 2}}
-  EnvironmentPrefab: {{fileID: 5260000000000503, guid: {G_ASSET[f'SpawnableBoneyard{i}.prefab']}, type: 3}}
-  EnvironmentIntensity: {i}
-  SenseRadiusOverride: {SENSE_RADIUS}
-  PhaseThresholds:
+
+    if is_atlantis:
+        # Scurry's own intensity-4 world, referenced verbatim.
+        env_ref = f"{{fileID: {ATLANTIS_FILEID}, guid: {EXISTING['SpawnableAtlantis']}, type: 3}}"
+        description = (
+            f"The Dog Fight arena at intensity {i} - SCURRY'S INTENSITY-4 WORLD (SpawnableAtlantis,\n"
+            "    ~69,000 prisms), referenced verbatim rather than copied so Scurry and Dog Fight can\n"
+            "    never drift. Intensities 1-3 fly the Boneyard; this one flies Atlantis.\n"
+            "    PhaseThresholds are deliberately ABSENT here, exactly as on Scurry Cell Config - a\n"
+            "    cell running Atlantis uses CellPhaseThresholds.Default, and matching Scurry means\n"
+            "    matching its ecology behaviour too. Regenerate with\n"
+            "    Tools/Build/author_dogfight_assets.py rather than hand-editing.")
+        # No PhaseThresholds block: omitting the key leaves CellPhaseThresholds.Default, which is
+        # what Scurry Cell Config does. Authoring the Boneyard's ladder here would size the fauna
+        # phase transitions against 24k prisms in a world that carries ~69k.
+        thresholds = ""
+    else:
+        env_ref = (f"{{fileID: 5260000000000503, "
+                   f"guid: {G_ASSET[f'SpawnableBoneyard{i}.prefab']}, type: 3}}")
+        row = budget.all_intensities()[i - 1]
+        description = (
+            f"The Dog Fight arena at intensity {i} - {row['total']} prisms of wreckage\n"
+            f"    inside r={budget.ARENA_RADIUS:.0f}: {hulks} hollow hulks to hide in, {spires} leaning spires,\n"
+            f"    {frames} girder cages, {overpasses} broken overpasses, and {row['danger']} danger traps on the torn\n"
+            "    ends and around the reactor, scattered into debris fields with an open centre.\n"
+            "    Cover, never an objective - shooting it scores nothing. NO NUCLEUS by design.\n"
+            "    PhaseThresholds ride THIS intensity's own baseline; regenerate with\n"
+            "    Tools/Build/author_dogfight_assets.py after any change rather than hand-editing.")
+        th = budget.phase_thresholds(row["total"], row["volume"])
+        thresholds = f"""  PhaseThresholds:
     RestlessEnter: {th['RestlessEnter']}
     RestlessExit: {th['RestlessExit']}
     FrenzyEnter: {th['FrenzyEnter']}
@@ -573,7 +603,24 @@ for i in INTENSITIES:
     RestlessExitVolume: {th['RestlessExitVolume']}
     FrenzyEnterVolume: {th['FrenzyEnterVolume']}
     FrenzyExitVolume: {th['FrenzyExitVolume']}
-""")
+"""
+
+    emit(f"{FOLDER}/Boneyard Cell Config {i}.asset",
+         HEADER_FOR(EXISTING["CellConfigDataSO"], f"Boneyard Cell Config {i}") +
+         f"""  CellName: {'Atlantis' if is_atlantis else 'Boneyard'}
+  Description: {description}
+  Icon: {{fileID: 21300000, guid: {EXISTING['CellIcon']}, type: 3}}
+  Difficulty: {i}
+  CellEndGameScore: 0
+  MembranePrefab: {{fileID: {MEMBRANE_FILEID}, guid: {EXISTING['Membrane_prefab']}, type: 3}}
+  NucleusPrefab: {{fileID: 0}}
+  CytoplasmPrefab: {{fileID: {CYTOPLASM_FILEID}, guid: {EXISTING['Cytoplasm_prefab']}, type: 3}}
+  CellModifiers: []
+  SpawnProfile: {{fileID: 11400000, guid: {G_ASSET[f'BoneyardSpawnProfile{i}']}, type: 2}}
+  EnvironmentPrefab: {env_ref}
+  EnvironmentIntensity: {i}
+  SenseRadiusOverride: {SENSE_RADIUS}
+""" + thresholds)
     emit(f"{FOLDER}/Boneyard Cell Config {i}.asset.meta",
          asset_meta(G_ASSET[f"BoneyardCellConfig{i}"]))
 
@@ -598,6 +645,9 @@ NEW_FIELDS = f"""  rule: {{fileID: 11400000, guid: {G_ASSET['DogFightScoringRule
   firstMilestoneFraction: 0.25
   secondMilestoneFraction: 0.5
   progressSampleSeconds: 0.5
+  elementalCrystalCount: 14
+  crystalScatterRadius: 400
+  crystalScatterSeed: 41
   aiRetargetSeconds: 1.5
   aiLeadSeconds: 0.6
   aiBreakOffDistance: 120
@@ -648,18 +698,21 @@ NEW_SPAWN = f"""  playerSpawnPoints:
 assert OLD_SPAWN in scene, "donor spawn-point block not found"
 scene = scene.replace(OLD_SPAWN, NEW_SPAWN)
 
-# 9e. NO CELL CRYSTAL. The donor spawns one crystal on client-ready, and in a mode that scores
-# ONLY gunnery a big respawning pickup parked in the arena is a false objective - it reads as the
-# thing to go get, and it looked enough like Astro League's ball to be reported as one. Dog
-# Fight's only objective is another pilot.
+# 9e. NO OMNI CRYSTAL. The donor spawns one Crystal.prefab - the big faceted sphere - and it
+# landed on the arena's exact centre for a precise reason: CrystalManager.GetAnchorlessSpawnRadius
+# defaults to the cell's NUCLEUS radius, and this cell has no nucleus, so it fell through to the
+# crystal's own SphereRadius, a few units. A large omni crystal parked in the middle of a
+# gunnery arena reads as THE objective and is not one.
 #
-# fixedCrystalCount 0 rather than deleting the manager: CrystalManager.ResolveCrystalCount returns
-# this verbatim under crystalCountMode 0 (FixedCount), so the component stays wired for its
-# replay/reset bookkeeping and simply spawns nothing. The one consumer of a missing crystal,
-# Cell.GetCrystalTransform, is called only by a Rhino skimmer effect that cannot run in a
-# Sparrow-only mode; fauna and AI fall back to the cell transform.
+# Dog Fight still wants pickups, just not that one: DogFightController scatters ELEMENTAL
+# crystals instead (deterministic placement, all four elements, and it covers intensity 4's
+# Atlantis too, which is Scurry's environment and not ours to modify).
+#
+# Zeroing the count rather than deleting the manager keeps its replay/reset bookkeeping wired.
+# The one consumer of a missing crystal, Cell.GetCrystalTransform, is called only by a Rhino
+# skimmer effect that cannot run in a Sparrow-only mode.
 OLD_CRYSTALS = "  crystalCountMode: 0\n  fixedCrystalCount: 1\n"
-NEW_CRYSTALS = "  crystalCountMode: 0\n  fixedCrystalCount: 0\n"
+NEW_CRYSTALS = f"  crystalCountMode: 0\n  fixedCrystalCount: {OMNI_CRYSTAL_COUNT}\n"
 assert OLD_CRYSTALS in scene, "donor crystal-count block not found"
 scene = scene.replace(OLD_CRYSTALS, NEW_CRYSTALS, 1)
 
@@ -779,9 +832,9 @@ if "  cellTypeChoiceOptions: 1\n" not in sc:
                   "the per-intensity configs would never be selected")
 if "vesselClass: 3" in sc:
     errors.append("scene still authors a non-Sparrow AI vessel class")
-if "  fixedCrystalCount: 0\n" not in sc:
-    errors.append("scene still spawns a cell crystal - in a gunnery-only mode that is a false "
-                  "objective parked in the arena")
+if f"  fixedCrystalCount: {OMNI_CRYSTAL_COUNT}\n" not in sc:
+    errors.append("scene still spawns an omni crystal - it reads as an objective this mode "
+                  "does not have")
 if sc.count("vesselClass: 11") != 4:
     errors.append("scene does not author 4 Sparrow AI templates")
 
@@ -910,14 +963,26 @@ for asset_path, cs_path in CHECKS:
         errors.append(f"{os.path.basename(asset_path)}: keys not found on "
                       f"{os.path.basename(cs_path)}: {sorted(unknown)}")
 
+# intensity 4 must be Scurry's world, and must NOT carry the Boneyard's phase ladder
+_cfg4 = files[f"{FOLDER}/Boneyard Cell Config {ATLANTIS_INTENSITY}.asset"]
+if EXISTING["SpawnableAtlantis"] not in _cfg4:
+    errors.append(f"intensity {ATLANTIS_INTENSITY} does not reference SpawnableAtlantis")
+if "PhaseThresholds:" in _cfg4:
+    errors.append(f"intensity {ATLANTIS_INTENSITY} authors PhaseThresholds - a cell running "
+                  "Atlantis (~69k prisms) must use the default ladder like Scurry does, not the "
+                  "Boneyard's ladder sized against 24k")
+for _i in BONEYARD_INTENSITIES:
+    if EXISTING["SpawnableAtlantis"] in files[f"{FOLDER}/Boneyard Cell Config {_i}.asset"]:
+        errors.append(f"intensity {_i} should fly the Boneyard, not Atlantis")
+
 # the prefab variants must actually differ, or "intensity" is a lie
-prefab_bodies = [files[f"Assets/_Prefabs/Spawnables/SpawnableBoneyard{i}.prefab"] for i in INTENSITIES]
+prefab_bodies = [files[f"Assets/_Prefabs/Spawnables/SpawnableBoneyard{i}.prefab"] for i in BONEYARD_INTENSITIES]
 if len(set(prefab_bodies)) != len(prefab_bodies):
     errors.append("two Boneyard prefab variants are byte-identical - intensity would do nothing")
 
 # thresholds must rise with the baseline, or a denser arena would sit in a lower phase
 prev = -1
-for i in INTENSITIES:
+for i in BONEYARD_INTENSITIES:
     body = files[f"{FOLDER}/Boneyard Cell Config {i}.asset"]
     enter = int(re.search(r"^    RestlessEnter: (\d+)", body, re.M).group(1))
     if enter <= prev:

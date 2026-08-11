@@ -16,8 +16,9 @@ MonoBehaviour:
   Description: The Dog Fight arena at intensity 3 - 19460 prisms of wreckage
     inside r=520: 10 hollow hulks to hide in, 15 leaning spires,
     6 girder cages, 5 broken overpasses, and 104 danger traps on the torn
-    ends and around the reactor. Cover, never an objective - shooting it scores nothing.
-    NO NUCLEUS by design. PhaseThresholds ride THIS intensity's own baseline; regenerate with
+    ends and around the reactor, scattered into debris fields with an open centre.
+    Cover, never an objective - shooting it scores nothing. NO NUCLEUS by design.
+    PhaseThresholds ride THIS intensity's own baseline; regenerate with
     Tools/Build/author_dogfight_assets.py after any change rather than hand-editing.
   Icon: {fileID: 21300000, guid: 6aa1c06e11b265744a5f9fa8858ac72a, type: 3}
   Difficulty: 3

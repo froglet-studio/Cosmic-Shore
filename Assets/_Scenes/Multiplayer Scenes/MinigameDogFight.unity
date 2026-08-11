@@ -985,6 +985,9 @@ MonoBehaviour:
   firstMilestoneFraction: 0.25
   secondMilestoneFraction: 0.5
   progressSampleSeconds: 0.5
+  elementalCrystalCount: 14
+  crystalScatterRadius: 400
+  crystalScatterSeed: 41
   aiRetargetSeconds: 1.5
   aiLeadSeconds: 0.6
   aiBreakOffDistance: 120
