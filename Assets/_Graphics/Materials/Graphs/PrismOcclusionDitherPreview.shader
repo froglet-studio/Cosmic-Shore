@@ -97,7 +97,16 @@ Shader "Hidden/CosmicShore/PrismOcclusionDitherPreview"
                     angleTurns = atan2(centred.y, centred.x) * (1.0 / 6.28318530718);
                 }
 
-                float threshold = PrismOcclusionDitherThreshold(pixel, radialRatio, angleTurns, time);
+                // polarValid = true: the preview synthesizes a valid corridor frame in
+                // every mode, so the spiral never takes its out-of-corridor IGN fallback here.
+                // The volumetric kernel gets positionWS = (pixel, 0) at angularScale 1, so
+                // preview pixels ARE world units and it renders its z = 0 slice at 1:1 —
+                // the honest scale, same as every screen kernel.
+                // viewDepth = 0: the preview is a flat slice with no depth, so SHATTER's
+                // depth band-phase contributes nothing here. Like the depth parallax before
+                // it, that dial can only be judged on real stacked mass in play mode.
+                float threshold = PrismOcclusionDitherThreshold(pixel, radialRatio, angleTurns, true,
+                                                               float3(pixel, 0.0), 1.0, 0.0, time);
 
                 if (mode == 2)
                     return float4(threshold, alpha, 0.0, 1.0);
