@@ -6,21 +6,18 @@ using Unity.Netcode;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Turn monitor for Wildlife Liberation. The KILL TARGET - how many creatures one hunter
-    /// must kill to win (default 500) - is resolved at <see cref="StartMonitor"/> from
+    /// Turn monitor for Wildlife Liberation. The KILL TARGET - how many creatures a DOMAIN
+    /// must kill between them to win (default 250) - is resolved at <see cref="StartMonitor"/> from
     /// <see cref="EndConditionOverridesSO"/> (FrogletTools ▸ Game Modes ▸ End Game Conditions;
     /// never a per-scene field, per the /EndGameConditions skill), synced to every client via
     /// NetworkVariable, and published to <see cref="GameDataSO.LifeformTargetCount"/>.
     ///
     /// The turn ends (server-side) when the mode's
-    /// <see cref="WildlifeLiberationScoringRuleSO.IsObjectiveReached"/> reports that a PLAYER
-    /// has reached it. This is the one turn monitor in the game whose end condition is an
-    /// individual rather than a domain sum - the rule owns that distinction, so this class does
-    /// not need to know about it beyond calling through.
+    /// <see cref="ScoringRuleSO.IsObjectiveReached"/> reports that an active DOMAIN's summed
+    /// kills have reached it - the same shape every other race in this family uses.
     ///
-    /// The display channel shows the LOCAL PLAYER's own remaining kills (via
-    /// <see cref="ScoringRuleSO.RemainingForPlayer"/>), not their domain's - in a free-for-all
-    /// a teammate's kills do not shorten your hunt.
+    /// The display channel shows the LOCAL player's DOMAIN deficit ("creatures remaining"), so
+    /// a teammate's kills shorten your readout too.
     /// </summary>
     public class WildlifeKillTurnMonitor : TurnMonitor
     {
@@ -71,8 +68,8 @@ namespace CosmicShore.Gameplay
         {
             if (!IsServer) return false;
 
-            // Delegated to the mode's ScoringRule: the first PLAYER whose kill count reaches the
-            // target ends the hunt.
+            // Delegated to the mode's ScoringRule: the first DOMAIN whose summed kill count
+            // reaches the target ends the hunt.
             return gameData.ScoringRule.IsObjectiveReached(gameData, out _);
         }
 
@@ -88,7 +85,8 @@ namespace CosmicShore.Gameplay
         {
             if (!onUpdateTurnMonitorDisplay || gameData.ScoringRule == null) return;
 
-            int remaining = gameData.ScoringRule.RemainingForPlayer(gameData, gameData.LocalRoundStats);
+            int remaining = gameData.ScoringRule.Remaining(
+                gameData, gameData.LocalPlayer?.Domain ?? Domains.Blue);
             onUpdateTurnMonitorDisplay.Raise(remaining.ToString());
         }
     }

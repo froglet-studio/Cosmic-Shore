@@ -2779,8 +2779,16 @@ physics sees a client's ram) would mean only the host could ever score. `StatsMa
 grew its only client branch: a client forwards its own kill through its own `Player` object
 (`Player.ReportFaunaKill_ServerRpc`), the same owner-detects → server-records round-trip
 `NetworkVesselImpactor` uses for jousts, with identity taken from RPC ownership rather than a
-name string. Server-authoritative fauna would retire it; until then, **any mode that scores on
-the ecology needs this shape.**
+name string.
+
+**Fauna network sync is in flight on a separate branch**, and when it lands the divergence
+retires - but this RPC does not become wrong, it becomes redundant-but-harmless: it is an
+owner-reports-to-server round-trip keyed on ownership, which stays correct whether or not the
+creature also exists on the server. Until then, any mode that scores on the ecology needs this
+shape, and needs to understand that a DOMAIN sum over client-local fauna is two independent
+hunts added together rather than one swarm hunted twice - so a shared domain converges on a
+target faster than a solo one, and per-domain targets tuned before the merge will need
+re-measuring after it.
 
 ### 24.2 A pen becomes a band
 
