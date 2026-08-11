@@ -10,6 +10,101 @@ or a bug. Each entry has enough context that it can be picked up cold.
 > `../MultiplayerArchitecture/ROADMAP.md`. This file is the granular
 > party-side parking lot beneath it.
 
+## Invite-system cleanup — audited 2026-08-06, NOT executed
+
+Recorded during the status-cleanup pass. The invite flow is **working**
+(4-VP MPPM: invite + accept green), so none of this is urgent, and none of
+it should be bundled with unrelated work — the last time a "safe cleanup"
+rode along with a structural change it shipped a threading regression
+(`../PresenceSystem/BUGS.md` B15).
+
+Each entry states the evidence AND what breaks if the evidence is wrong.
+
+### TODO-10. Prove the PENDING sentinel is dead, then delete it — ⬆ best first pick
+
+**Evidence it is dead.** Every reference to `PartyLobbyKeys.PendingSessionId`
+either *patches an existing* PENDING entry
+(`InviteService.cs:176-177`, `UpdatePayloadsWithRealSessionId`) or *checks a
+value is not* PENDING (`AcceptanceSignalService.cs:294`). A grep found **no
+site that writes PENDING into a payload**. That is exactly what the locked
+EAGER per-user Relay design predicts: every player hosts a session from menu
+entry, so `SendInviteAsync` always has a real `ActiveSession.Id` before it
+publishes. This is `REFACTOR.md` **D1**, now with code evidence behind it.
+
+**What would become dead:** `InviteService.UpdatePayloadsWithRealSessionId`,
+`AcceptanceSignalService.WaitForRealSessionIdAsync` (a 400 ms poll with a 7 s
+timeout) and `RepublishWithRealIdAsync`, plus the unused
+`HostConnectionService.PENDING_SESSION_ID` constant and
+`PartyLobbyKeys.PendingSessionId` itself. That collapses the acceptance
+handshake from three phases to two.
+
+**Do NOT delete on the grep alone.** It rests on reading, not on a run, and
+it sits inside the accept path that only just became reliable.
+
+**Method — instrument first, delete second.** Ship one commit that logs
+`Debug.LogError` if a PENDING payload is ever constructed, and adds a
+`WaitForRealSessionIdAsync` entry log. Play a few multi-VP sessions
+including the races that motivated the sentinel (two clients accepting the
+same invite near-simultaneously; an invite sent during
+`EnsurePartySessionAsync`). Only if neither log ever fires, delete the
+machinery in a second commit. Cheap, and it converts a code-reading argument
+into evidence.
+
+**If the evidence is wrong:** an invite published before the Relay session
+exists would carry a literal `"PENDING"` as its session id, and the accepting
+client would try to join a session by that name and fail. Symptom would be an
+accept that bounces to solo.
+
+### TODO-11. Map the four join-detection paths, retire only what is provably redundant
+
+A party join is currently detected four different ways:
+
+| | Path | Reads |
+|---|---|---|
+| a | `TryFindIncomingInvite` | `invite_payloads` (presence lobby) |
+| b | `AcceptanceSignalService.ScanForSignals` | `accepted_invite` (presence lobby) |
+| c | `ScanPresenceForJoinedPartyMembers` (host only) | `joined_party` (presence lobby) |
+| d | `PartyMemberService.SyncFromSession` | the party **session** roster |
+
+They look redundant. **At least one pairing is not**: (c) cross-checks
+`joined_party` against (d)'s session roster, and that cross-check *is* the
+B8 fix for the host-side phantom-rejoin loop
+(`BUGS.md` B8 — `RaisePartyMemberLeft`/`Joined` oscillating forever at ~3 s).
+Removing (c) or its cross-check reintroduces a shipped bug.
+
+(d) also gained a push channel in `090f61a6`, so it is now the fastest path
+and the others are increasingly backstops rather than mechanisms. That is an
+argument for *documenting* the hierarchy, not for cutting yet.
+
+**Method.** Add a one-line `CSDebug` to each path naming which one first
+observed a given join, run multi-VP sessions, and count. A path that never
+wins in any session over several runs is a deletion candidate — with (c)'s
+cross-check explicitly excluded from consideration.
+
+### TODO-12. Consolidate the invite-clearing paths
+
+`ClearOutgoingInviteIfPresentAsync` is called with at least four distinct
+reasons (`"presence-join"`, `"presence-leave"`, `"party-join"`,
+`"party-leave"`), alongside `CancelInviteAsync` and the
+`OUTGOING_INVITE_TIMEOUT_SECONDS` expiry sweep in `ExpireOutgoingInvites`.
+Several of these can fire for the same invite in quick succession.
+
+It is not known to be *buggy* — the operations are idempotent — but it is
+more mechanisms than the problem needs, and the reason strings suggest the
+call sites were added one bug at a time. Worth a read-through to see whether
+"the target is no longer invitable" can be expressed once rather than at each
+discovery point. **Low priority; no known symptom.**
+
+### TODO-13. `IsHostConflictException` is far too broad
+
+`PartySessionService.cs` matches any exception whose message contains
+`"host"` (case-insensitive), which will swallow unrelated failures — any
+message mentioning a hostname, "host unreachable", etc. — into the
+host-conflict retry. Noted while auditing; not observed causing a problem,
+but it is the kind of over-broad classifier that produced the
+rate-limit-vs-benign ordering bug (`../PresenceSystem/BUGS.md` B15 RC2).
+Tighten to the specific NetworkManager-still-shutting-down signature.
+
 ## Code health
 
 ### TODO-1. Remove `HostConnectionService.Instance` static accessor

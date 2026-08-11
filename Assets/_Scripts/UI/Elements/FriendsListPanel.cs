@@ -460,13 +460,15 @@ namespace CosmicShore.UI
             if (!string.IsNullOrEmpty(matchName))
                 return OnlineInfoEntry.Status.InMatch;
 
-            // Lobby-full: remote advertises >= max members. The IsInSameParty
-            // re-check the old code carried here is dead - the branch above
-            // already returned for every party member.
-            if (maxSlots > 0 && memberCount >= maxSlots)
-                return OnlineInfoEntry.Status.LobbyFull;
-
             // Advertised party with other members (count > 1 means they're not alone).
+            //
+            // This deliberately covers a party at CAPACITY too - there is no longer a
+            // separate LobbyFull status rendering "PARTY FULL", because "IN PARTY 4/4"
+            // already states it. A full party always satisfies count > 1 (max is 4), so
+            // nothing falls through to Online. The "their party is full, so you cannot
+            // invite them" rule did not live in this status - it lived in the status
+            // being absent from OnlineInfoEntry's invitable list - and is now derived
+            // from these same two numbers in OnlineInfoEntry.Populate.
             if (memberCount > 1)
                 return OnlineInfoEntry.Status.InLobby;
 
@@ -538,7 +540,7 @@ namespace CosmicShore.UI
 
         /// <summary>
         /// The roster settled - re-render the online section so every row's
-        /// party size, "LOBBY FULL" state and invitability update together.
+        /// party size and invitability update together.
         ///
         /// <para>
         /// Raised once per mutation and always after the per-member events, so

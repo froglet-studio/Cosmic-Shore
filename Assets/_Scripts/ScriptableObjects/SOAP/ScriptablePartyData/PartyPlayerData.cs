@@ -41,8 +41,12 @@ namespace CosmicShore.ScriptableObjects
         /// </para>
         ///
         /// <para>
-        /// Legitimate readers: the "IN PARTY n/4" and "PARTY FULL" states for
-        /// players you are NOT partied with, where no local answer exists.
+        /// Legitimate readers: the "IN PARTY n/4" label for players you are NOT
+        /// partied with, where no local answer exists, and the derived "their
+        /// party is full, so they are not invitable" rule in
+        /// <c>OnlineInfoEntry.Populate</c> - which reads this together with
+        /// <see cref="AdvertisedPartyMaxSlots"/>, so the label and the rule can
+        /// never disagree.
         /// </para>
         /// </summary>
         public int AdvertisedPartyMemberCount => partyMemberCount;

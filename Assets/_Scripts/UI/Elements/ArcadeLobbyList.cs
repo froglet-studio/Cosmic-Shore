@@ -332,7 +332,7 @@ namespace CosmicShore.UI
             // the counter reflects the total player population, which is
             // what players intuitively expect when they read "N Players Online".
             // The Arcade header intentionally shows only the raw count here -
-            // "IN LOBBY X/N" / "LOBBY FULL" / "IN A MATCH" badges belong on the
+            // "IN PARTY X/N" / "IN A MATCH" badges belong on the
             // per-remote-player rows in FriendsListPanel (OnlineInfoEntry), not
             // on the local player's count of everyone online.
             int remoteCount = connectionData.OnlinePlayers != null
