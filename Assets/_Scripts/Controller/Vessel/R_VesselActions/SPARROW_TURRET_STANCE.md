@@ -440,6 +440,18 @@ present on BlockGraph and ExplodingBlockGraph.
   z-stretch bug round 6 fixed on `SparrowProjectile`. Both are currently referenced by
   NOTHING (verified by GUID sweep), so they are harmless today; if either is revived,
   re-derive its radius as `desiredWorldRadius / maxScaleComponent` first.
+- **The drawn prism and its collider integrate the same easing two different ways.** The
+  shader evaluates the CLOSED FORM (`v·(2T/π)·(sin(πt/2T) − 1)`, exact, frame-rate
+  independent, reaching the anchor precisely at `t = flightTime`), while the carried
+  projectile is moved by `Projectile.MoveProjectileAsync`'s forward-Euler sum of the same
+  `cos(πt/2T)` curve. A left-Riemann sum of a decreasing function overestimates, so the
+  COLLIDER runs ahead of the prism you see — measured: **+2.2% of range at 120 fps, +4.3%
+  at 60, +8.5% at 30**. Both agree exactly at the muzzle and the divergence peaks at the
+  end of the flight, where the projectile dies a few percent past where the prism settles.
+  This is not a clock-law issue (the prism side is the exact one) and it is not new — it is
+  the bullets' existing mover, shared by design. Fixing it means giving
+  `MoveProjectileAsync` the closed form, which changes EVERY projectile in the game and so
+  belongs in its own branch with its own retune, exactly like the tunneling item above.
 - **Placement immunity is local, unreplicated state.** `Prism.ProjectileImmuneUntil` is
   computed from each peer's own `Time.time`, so in a networked match two clients could
   disagree by a frame or two about whether a marginal impact landed inside the window.
