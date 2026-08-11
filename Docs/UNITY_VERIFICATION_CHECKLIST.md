@@ -128,6 +128,13 @@ tightening as it flies; ordinary prisms (trail/environment) must render unchange
   at CHARGE 5+ the blast (and the direct hit) spares them — hit, timeout, and mine
   detonations all flip together. The shared `AOEExplosion.prefab` was NOT edited — confirm
   the Manta crystal explosion still spares own domain as before.
+- Self-output guard (round-5 follow-up: fired prisms were exploding as they were shot):
+  `Prism.IsProjectileLaid` + owner match in `Projectile.DisallowImpactOnPrism`. Verify a
+  turret volley ACCUMULATES prisms — no shot destroys its own prism at the anchor, and a
+  steady-aim burst stacks instead of replacing one prism at 30/s. Verify your bullets fly
+  through your own fired prisms without destroying them, while still damaging your own
+  TRAIL prisms (friendly fire intact), and that a second player's shots DO destroy your
+  fired prisms.
 
 **First-pass tuning:** fire rate 30/s + speed 375 (SPACE ×9 at full) + flight 0.3 s on `FullAutoAction.asset`
 (shared with the guns); `blockScale (0.8, 0.5, 5)` + `flightVisualization` on

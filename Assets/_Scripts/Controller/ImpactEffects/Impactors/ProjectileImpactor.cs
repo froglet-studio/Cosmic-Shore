@@ -42,7 +42,7 @@ namespace CosmicShore.Gameplay
                     break;
                 
                 case PrismImpactor prismImpactee:
-                    if (Projectile.DisallowImpactOnPrism(prismImpactee.Prism.Domain))
+                    if (Projectile.DisallowImpactOnPrism(prismImpactee.Prism))
                         break;
                     if(!DoesEffectExist(projectileImpactorDataContainer.ProjectilePrismEffects)) return;
                     foreach (var effect in projectileImpactorDataContainer.ProjectilePrismEffects)

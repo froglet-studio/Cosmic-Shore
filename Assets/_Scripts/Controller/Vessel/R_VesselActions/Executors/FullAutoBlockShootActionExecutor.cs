@@ -390,6 +390,11 @@ namespace CosmicShore.Gameplay
             // counted as two prisms created (and double-credited its volume) in
             // StatsManager. Its other job — owner attribution — is one field.
             prism.ownerID = _status.PlayerName;
+            // Self-output guard marker: this pilot's projectiles must never impact this
+            // prism (Projectile.DisallowImpactOnPrism) — the carried shot arrives AT its
+            // host, and the next shots in a volley fly to the same range. After
+            // Initialize, like ownerID (ResetState clears it).
+            prism.IsProjectileLaid = true;
             prism.prismProperties.position = restPoint;
         }
 

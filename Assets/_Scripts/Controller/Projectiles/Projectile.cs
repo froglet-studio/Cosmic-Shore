@@ -161,7 +161,19 @@ namespace CosmicShore.Gameplay
         #endregion
 
         #region Impact Checks
-        public bool DisallowImpactOnPrism(Domains trailBlockDomain) => !friendlyFire && trailBlockDomain == OwnDomain;
+        /// <summary>
+        /// Two independent reasons a projectile ignores a prism:
+        /// (1) authored friendly-fire off for this projectile family (domain gate);
+        /// (2) the SELF-OUTPUT GUARD — a pilot's shots never impact prisms that pilot's
+        ///     own shots created (<see cref="Prism.IsProjectileLaid"/> + owner match).
+        ///     Without it every Sparrow turret shot destroys its own host prism the
+        ///     moment the carried projectile reaches the anchor, and each volley erases
+        ///     the previous shots' prisms parked at the same range. Friendly fire on
+        ///     everything else (own trail, teammates' mass) is untouched.
+        /// </summary>
+        public bool DisallowImpactOnPrism(Prism prism) =>
+            (!friendlyFire && prism.Domain == OwnDomain)
+            || (prism.IsProjectileLaid && VesselStatus != null && prism.ownerID == VesselStatus.PlayerName);
         public bool DisallowImpactOnVessel(Domains vesselDomain) => vesselDomain == OwnDomain;
         #endregion
 
