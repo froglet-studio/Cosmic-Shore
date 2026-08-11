@@ -51,10 +51,11 @@ namespace CosmicShore.Gameplay
         [Header("Intensity Scale (arena + ball + team spawns)")]
         [Tooltip("Arena, ball, goal and team-spawn scale PER INTENSITY (index 0 = intensity 1). " +
                  "Overrides the legacy even ramp whenever non-empty; falls back to the last entry " +
-                 "above its length. Multiplies the base dimensions above, so intensity 1 is already " +
-                 "a big court (3x) and 4 is enormous - Astro League's early problem was a pitch you " +
-                 "crossed in two seconds. Vessels stay normal size.")]
-        public float[] arenaScaleByIntensity = { 3f, 3.5f, 4f, 4.5f };
+                 "above its length. Multiplies the base dimensions above. History worth keeping: the " +
+                 "court shipped far too SMALL (a pitch you crossed in two seconds), was taken to " +
+                 "3-4.5x, and that overshot - a frictionless ball in a huge box read as pong. These " +
+                 "are that pass cut by 40%. Vessels stay normal size.")]
+        public float[] arenaScaleByIntensity = { 1.8f, 2.1f, 2.4f, 2.7f };
 
         [Tooltip("LEGACY fallback ramp (used only when arenaScaleByIntensity is empty): scale steps " +
                  "evenly from 1x at intensity 1 up to this factor at maxIntensityLevel.")]
@@ -340,11 +341,26 @@ namespace CosmicShore.Gameplay
         [Header("Ball - Physics (zero friction)")]
         public float maxSpeed = 380f;
         public float ballMass = 3f;
-        [Tooltip("Restitution for the ball's ELASTIC bounces off walls and vessels (1 = perfectly " +
-                 "elastic). The ball has ZERO passive friction/drag - it coasts at constant speed " +
-                 "between collisions. It NEVER bounces off prisms (it passes through them); the only " +
-                 "thing that slows it is plowing through opposing-color prism mass (see below).")]
+        [Tooltip("Restitution for a VESSEL strike (1 = perfectly elastic). Keep this high - it is what " +
+                 "lets a swung sword fire the payload. Wall caroms use wallRestitution instead.")]
         [Range(0f, 1f)] public float ballBounciness = 1f;
+
+        [Tooltip("Restitution for a WALL carom. Below 1 every bounce takes energy out, which is what " +
+                 "stops the ball ricocheting around the court forever (the original 1.0 + zero drag " +
+                 "made the mode read as pong). Lower = the ball dies against the boards faster; " +
+                 "1 restores the old perfectly-elastic pinball.")]
+        [Range(0f, 1f)] public float wallRestitution = 0.72f;
+
+        [Tooltip("Exponential speed decay per second on the ball's coast (0 = the original " +
+                 "frictionless coast). This is what makes an untouched ball SETTLE, so it becomes a " +
+                 "thing players go and contest rather than something ricocheting past them. Composes " +
+                 "with the opposing-prism-mass drag below rather than replacing it.")]
+        [Min(0f)] public float ballDrag = 0.35f;
+
+        [Tooltip("Speed below which the remaining coast is snapped to zero. Exponential decay is " +
+                 "asymptotic, so without this the ball creeps forever at an invisible speed and never " +
+                 "actually comes to rest.")]
+        [Min(0f)] public float ballRestSpeed = 6f;
 
         [Tooltip("How hard opposing-color prism MASS slows the ball as it plows through (it keeps its " +
                  "direction, only its speed drops). Per eaten prism: speed ×= ballMass / (ballMass + " +

@@ -464,11 +464,22 @@ namespace CosmicShore.Gameplay
 
             if (!n_Frozen.Value)
             {
-                // ZERO friction: the ball coasts at constant speed between collisions. The ONLY thing
-                // that slows it is plowing through opposing-color prism mass (ProcessPrismInteractions);
-                // walls and vessels are elastic. Cap the top speed so strikes can't make it run away.
+                // Cap the top speed so strikes can't make the ball run away.
                 if (rb.linearVelocity.sqrMagnitude > settings.maxSpeed * settings.maxSpeed)
                     rb.linearVelocity = rb.linearVelocity.normalized * settings.maxSpeed;
+
+                // The ball SETTLES. It used to be perfectly frictionless with perfectly elastic
+                // walls, so an untouched ball ricocheted around the court forever - the game read as
+                // pong. Two dials do it, both authored on the settings asset: wallRestitution takes
+                // energy out of every carom (below), and this exponential drag bleeds the coast so a
+                // ball nobody strikes comes to rest and becomes a thing players contest rather than
+                // dodge. Frame-rate independent, and it composes with the prism-mass drag rather than
+                // replacing it. Below restSpeed the remainder is snapped out, or the asymptote leaves
+                // the ball creeping forever at an invisible speed.
+                if (settings.ballDrag > 0f)
+                    rb.linearVelocity *= Mathf.Exp(-settings.ballDrag * Time.fixedDeltaTime);
+                if (rb.linearVelocity.sqrMagnitude < settings.ballRestSpeed * settings.ballRestSpeed)
+                    rb.linearVelocity = Vector3.zero;
 
                 // First-class per-tick prism resolution - shield own / eat+slow opposing / unshield
                 // shielded. The server applies the eaten-mass speed drag here, before replication.
@@ -727,7 +738,9 @@ namespace CosmicShore.Gameplay
 
             Vector3 pos = rb.position;
             Vector3 vel = rb.linearVelocity;
-            if (!_boundary.Contain(ref pos, ref vel, BallWorldRadius(), settings.ballBounciness,
+            // wallRestitution, not ballBounciness: a carom LOSES energy (that is what stops the ball
+            // pinballing forever), while a vessel strike stays fully elastic so the sword still fires it.
+            if (!_boundary.Contain(ref pos, ref vel, BallWorldRadius(), settings.wallRestitution,
                     out Vector3 contactPoint, out Vector3 contactNormal))
                 return;
 

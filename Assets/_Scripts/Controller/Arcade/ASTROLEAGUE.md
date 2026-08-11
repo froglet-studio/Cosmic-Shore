@@ -157,9 +157,14 @@ back to, and own-goaling is a matter of pass DIRECTION, already handled by aimin
 > the legacy center-focusing baseline) and the **vessels** — and everything else is about the ball's DOMAIN (the team
 > color of whoever struck it last) interacting with the colored mass of the prismscape:
 > it glides through friendly trail (shielding it), eats enemy trail (slowing as it plows),
-> and pops enemy shields. There is no friction and no scripted strike — speed is gained
-> from vessel hits and lost only by plowing enemy mass, so a well-placed shot screams
-> across the arena and a defender can wall it off with their own trail. Fauna are spawned for
+> and pops enemy shields. There is no scripted strike — speed is gained from vessel hits, so a
+> well-placed shot screams across the arena and a defender can wall it off with their own trail.
+> The ball **settles**: it bleeds speed on a slow exponential drag (`ballDrag`), loses energy on
+> every wall carom (`wallRestitution` < 1) and snaps to rest below `ballRestSpeed`, on top of the
+> mass drag from plowing enemy trail. It was originally frictionless with perfectly elastic walls,
+> and in a large court that read as **pong** — the ball ricocheted forever and nobody could settle
+> a possession. A resting payload is something players contest; a permanently moving one is
+> something they dodge. Vessel strikes stay fully elastic, so the sword still fires it. Fauna are spawned for
 > the **controlling domain** — the cell-ecosystem food web layered onto the arena so the
 > dominant team's mass grows a living (ambient) defense (see "Cell ecosystem" below).
 >
@@ -254,12 +259,14 @@ back to, and own-goaling is a matter of pass DIRECTION, already handled by aimin
   authored fields). `AstroLeagueArena`'s serialized dimensions and `AstroLeagueGoal.mouthRadius`
   survive only as fallbacks for a scene with no settings asset wired. The court is also much
   BIGGER than it shipped: height went 100 → 240 (it was a pizza box in a 3D flight game) and
-  the scale table starts at 3×, so an intensity-1 court is 1200 × 960 × 720 against the old
-  600 × 400 × 200 — roughly 17× the volume. `shakeFalloffRadius` (180 → 700) and
-  `maxSpeed` (220 → 380) were raised with it; at the old falloff nearly every event was
-  silent for nearly everybody.
+  the scale table starts at 1.8×, so an intensity-1 court is 720 × 576 × 432 against the
+  shipped 600 × 400 × 200. **Sizing history — do not re-derive it:** the original court was far
+  too small to fly in, a first pass took the table to 3-4.5× and overshot (a big box plus a
+  frictionless ball is pong), and the table is that pass cut by **40%**. `shakeFalloffRadius`
+  (180 → 450) and `maxSpeed` (220 → 300) moved with it; at the old falloff nearly every event
+  was silent for nearly everybody.
 - **Intensity scales the whole playfield AND picks the court shape.** The controller reads a
-  **per-intensity scale table** (`settings.arenaScaleByIntensity`, default **3× / 3.5× / 4× / 4.5×**
+  **per-intensity scale table** (`settings.arenaScaleByIntensity`, default **1.8× / 2.1× / 2.4× / 2.7×**
   for intensities 1-4; the legacy even
   `lerp(1, intensityScaleAtMax=2, (i-1)/(maxIntensityLevel-1))` ramp remains the fallback when the
   table is empty) — and a **court shape** + **central-goal flag** per intensity
@@ -308,8 +315,9 @@ back to, and own-goaling is a matter of pass DIRECTION, already handled by aimin
     destroy via the canonical animated `Prism.Damage`, and **slow the ball by the prism's
     MASS** — `speed ×= ballMass / (ballMass + prismDragMassScale · prismVolume)`, direction
     preserved, never reversed. Plowing a thick enemy wall brakes hard; a thin one barely.
-    **This is the ONLY thing that slows the ball** (no friction; walls + same-color +
-    shielded passes are all lossless; vessel hits re-energize; `maxSpeed` caps the top).
+    This is the only thing that slows the ball **by domain interaction**; a wall carom also costs
+    `wallRestitution` and the coast bleeds on `ballDrag` (see "the ball settles" above). Same-color
+    and shielded passes remain free; vessel hits re-energize; `maxSpeed` caps the top.
   - **Opposing + shielded** → **unshield** it (`prism.DeactivateShields()`) and **LEAVE it
     standing this visit** — the shield absorbs the pass. The prism is held in a
     `_shieldPoppedThisVisit` set so it isn't eaten the same overlap; once it leaves scan range
@@ -360,10 +368,20 @@ the wall the ball hits.
 | `HexagonalPrism` | Tighter 6-wall arena | Elongated hexagon cross-section extruded along the goal axis, flat caps. **(default i2)** |
 | `Cylinder` | Banks lengthwise, focuses across | Flat goal caps + curved barrel. **(default i3)** |
 | `Sphere` | Center-focusing — pairs with the central goal | Legacy radial reflect; the focusing that's bad for banking is GOOD for the central shared goal (it funnels the ball back through the center). **(default i4, central goal)** |
+
 | `NotchedRing` | Center choke point, lots of bounces | A central **torus ring obstacle** (axis = goal axis) inside an outer court (default Cylinder). The ball bounces off the ring's OUTSIDE; the central hole + an angular **notch** stay open as shooting lanes. |
 | `Box` | Pool / air-hockey — sharpest banks | 6 flat walls, 90° corners (can trap). Flat goal caps backboard missed shots. |
 | `OctagonalPrism` | "Cage" arena, varied bank angles | Box with its 4 goal-axis edges chamfered → octagon cross-section, 135° corners, flat caps. |
 | `Octahedron` | Diamond, every wall banks | 8 angled faces; very different, more chaotic. |
+
+**Every shape wears the arena cover.** The glowing faceted "cover" over the court is the
+boundary's own `BuildVisualMesh()` rendered as the cell nucleus through its `CageMaterial` — the
+surface you see IS the surface the ball reflects off. The **Sphere** shape used to be the one
+exception: it contributed no hull mesh and was merely resized (`Cell.SetNucleusWorldRadius`),
+keeping the nucleus prefab's plain sphere, which is why intensity 4 looked bare next to intensity
+1. `AppendSphereMesh` now builds a flat-shaded icosphere hull (`IcosphereMeshGenerator`, 3
+subdivisions) at the court radius, and the controller feeds the generated mesh to the nucleus for
+**every** shape, falling back to a radius only for a degenerate boundary that yields no mesh.
 
 **Central shared goal** (`centralGoalByIntensity[]`, default ON only for intensity 4). Instead of two
 end goals, the two `AstroLeagueGoal` detectors move to the **arena center**, facing OPPOSITE ways along

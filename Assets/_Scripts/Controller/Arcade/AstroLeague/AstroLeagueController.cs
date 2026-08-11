@@ -263,25 +263,23 @@ namespace CosmicShore.Gameplay
             // nucleus spawns).
             if (cell != null && arena != null && arena.Boundary != null)
             {
-                if (shape == AstroLeagueBoundaryShape.Sphere)
+                // EVERY court shape gets the generated cage mesh, including the Sphere. It used to be
+                // the exception - resized via SetNucleusWorldRadius, keeping the prefab's plain sphere -
+                // which is why the faceted glowing arena cover the other intensities wear was missing
+                // on the sphere court. The cover IS this mesh rendered through the nucleus'
+                // CageMaterial. Only a degenerate shape that yields no mesh falls back to a radius.
+                Mesh cage = arena.Boundary.BuildVisualMesh();
+                if (cage != null)
                 {
-                    cell.SetNucleusWorldRadius(arena.BoundaryRadius);
+                    if (_generatedNucleusMesh != null) Destroy(_generatedNucleusMesh); // free a prior rebuild
+                    _generatedNucleusMesh = cage;
+                    cell.SetNucleusMesh(cage);
                 }
                 else
                 {
-                    // Polytope + cylinder courts get a generated cage mesh that matches their walls; a
-                    // degenerate shape with no mesh falls back to a sphere sized to the boundary.
-                    Mesh cage = arena.Boundary.BuildVisualMesh();
-                    if (cage != null)
-                    {
-                        if (_generatedNucleusMesh != null) Destroy(_generatedNucleusMesh); // free a prior rebuild
-                        _generatedNucleusMesh = cage;
-                        cell.SetNucleusMesh(cage);
-                    }
-                    else
-                    {
-                        cell.SetNucleusWorldRadius(arena.Boundary.MaxExtent);
-                    }
+                    cell.SetNucleusWorldRadius(shape == AstroLeagueBoundaryShape.Sphere
+                        ? arena.BoundaryRadius
+                        : arena.Boundary.MaxExtent);
                 }
             }
 

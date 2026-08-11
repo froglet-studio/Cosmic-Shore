@@ -17,10 +17,10 @@ MonoBehaviour:
   arenaHeight: 240
   goalMouthRadius: 62
   arenaScaleByIntensity:
-  - 3
-  - 3.5
-  - 4
-  - 4.5
+  - 1.8
+  - 2.1
+  - 2.4
+  - 2.7
   edgePrismsEnabled: 1
   edgePrismCount: 480
   edgePrismScale: {x: 2.5, y: 2.5, z: 10}
@@ -88,9 +88,12 @@ MonoBehaviour:
   minimumHitSpeed: 5
   vesselStrikeCooldown: 0.12
   vesselClearRadius: 12
-  maxSpeed: 380
+  maxSpeed: 300
   ballMass: 3
   ballBounciness: 1
+  wallRestitution: 0.72
+  ballDrag: 0.35
+  ballRestSpeed: 6
   prismDragMassScale: 0.05
   ballAngularDamping: 0.3
   maxAngularSpeed: 40
@@ -100,12 +103,12 @@ MonoBehaviour:
   clientSnapDistance: 30
   hitstopDuration: 0.045
   hitstopTimeScale: 0.1
-  hitstopSpeedThreshold: 130
+  hitstopSpeedThreshold: 110
   strikeShakeIntensity: 1
   strikeShakeDuration: 0.18
   goalShakeIntensity: 2.5
   goalShakeDuration: 0.5
-  shakeFalloffRadius: 700
+  shakeFalloffRadius: 450
   wallJuiceMinIntensity: 0.12
   wallJuiceCooldown: 0.2
   impactFlashDuration: 0.12
@@ -118,7 +121,7 @@ MonoBehaviour:
   maxEmissionIntensity: 11
   minLightRange: 25
   maxLightRange: 90
-  speedForMaxVisuals: 260
+  speedForMaxVisuals: 210
   strikerApproachLead: 40
   strikerRecoverDistance: 120
   jadeGoalColor: {r: 0.18695846, g: 0.8200566, b: 0.8616352, a: 0.5}
