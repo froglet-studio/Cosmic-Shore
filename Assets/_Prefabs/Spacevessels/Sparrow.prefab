@@ -375,7 +375,7 @@ MonoBehaviour:
   - {fileID: 73056290272686649}
   - {fileID: 5078300575574787067}
   blockFactory: {fileID: 5112862195692938605}
-  spawnVisibilityDelay: 0.1
+  spawnPrismChannel: {fileID: 11400000, guid: 765004a68c88ffb439febbdf47d892db, type: 2}
   OnMiniGameTurnEnd: {fileID: 11400000, guid: 498a06d44bde9184f985c938c803b2a1, type: 2}
 --- !u!1 &3140989280476861951
 GameObject:
@@ -1663,13 +1663,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   prefab: {fileID: 4563009547826722997, guid: 2de9e3b14a5518041ad99111194d0591, type: 3}
-  defaultCapacity: 10
-  maxSize: 100
+  defaultCapacity: 40
+  maxSize: 200
   enableBufferMaintenance: 1
-  bufferSizeTarget: 20
-  maxInstantiateRate: 20
-  baseInstantiateRate: 5
-  maxAddsPerFrame: 4
+  bufferSizeTarget: 90
+  maxInstantiateRate: 90
+  baseInstantiateRate: 30
+  maxAddsPerFrame: 8
 --- !u!114 &5511220033445566778
 MonoBehaviour:
   m_ObjectHideFlags: 0

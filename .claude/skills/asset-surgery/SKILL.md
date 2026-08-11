@@ -864,6 +864,26 @@ read**. The lesson generalizes:
   the live path end to end and check `git log` on the file FIRST; report
   "already fixed in <sha>, here's the proof" rather than re-fixing correct code
   or, worse, inventing a change to look responsive.
+- **A collider's authored number is not its world size — and for a SphereCollider the
+  scale component that wins may be one nobody was thinking about.** Unity scales a
+  `SphereCollider` by the **largest absolute lossy-scale component**, a `CapsuleCollider`
+  by the max of the two axes perpendicular to its direction, and only a `BoxCollider`
+  component-wise. So on a "dart" prefab — a unit sphere mesh at `m_LocalScale (1.5, 1.5,
+  20)`, stretched on z for the tracer look — `m_Radius: 0.3` is not a 0.3 or even a 0.45
+  world radius: it is `0.3 × 20 = 6.0`, thirteen times the projectile's visible 0.75
+  cross-section and about as wide as the dart is long. Reading `m_Radius` out of the YAML
+  and reporting it as the hit size is wrong every time the transform is non-uniform.
+  Always compute `worldRadius = m_Radius × max(|sx|,|sy|,|sz|)`, and when writing one,
+  invert it: `m_Radius = desiredWorldRadius / maxScaleComponent`. Sweep siblings while you
+  are there — the same authored `0.3` sat in two more projectile prefabs in this repo.
+- **An EFFECTIVE number that everything agrees on may never have been AUTHORED at all.**
+  The mirror of "the authored number is not the effective one" (`/vessel` §2.4a): here the
+  effective number was 12, three assets had been tuned to match it, a config default and a
+  design doc both recorded it as intentional — and it was an accident, the arithmetic
+  product of a mesh stretch leaking into a collider (trap above). Before you propagate a
+  measured constant to a second system "for parity", find the line that CHOSE it. If no
+  line did, you are about to enshrine an artifact, and every asset you align to it makes
+  the eventual correction bigger.
 
 ### Bundled tool: `field_parity.py`
 

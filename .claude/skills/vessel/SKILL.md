@@ -73,6 +73,18 @@ asset, the prefab, and the code are the record.** Before changing a vessel:
    the bug** — but do NOT correct the code inside a tuning branch. Halving a vessel's boost is
    its own change with its own retune; document the discrepancy, log it as a follow-up, and tune
    against shipped behaviour.
+4b. **…and the EFFECTIVE number may never have been AUTHORED by anyone — find the line that
+   CHOSE it before you match a second system to it.** The Sparrow's bullets flew a hit sphere of
+   world diameter 12. Three assets were tuned to that number "for parity", a config default and
+   a design doc both recorded it as deliberate — and nothing had chosen it: a `SphereCollider`
+   takes the **largest** lossy-scale component, so the tracer's `(1.5, 1.5, 20)` stretch turned
+   `m_Radius 0.3` into a 6.0-world-radius ball, 8× the projectile's visible 0.75 cross-section.
+   The accident then propagated for two playtest rounds and produced its own downstream bugs (a
+   spray in which every shot destroyed the previous prism). Before adopting a measured constant
+   as a target, grep for the line that assigns it; if the number only ever emerges from
+   arithmetic — a scale product, a clamp ceiling, a default — treat it as a bug candidate, not a
+   spec. Collider sizes specifically: `worldRadius = m_Radius × max(|sx|,|sy|,|sz|)`, and sweep
+   sibling prefabs for the same authored value.
 5. Grep by **class name**, not file name — the vessel layer renamed Ship→Vessel in file names
    only: `VesselActionSO.cs` declares `ShipActionSO`, `VesselHelper.cs` declares `ShipHelper`,
    `R_VesselElementStatsHandler.cs` declares `R_ShipElementStatsHandler`, `VesselActions.cs`

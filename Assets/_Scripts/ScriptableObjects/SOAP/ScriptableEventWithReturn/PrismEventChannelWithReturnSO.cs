@@ -49,6 +49,14 @@ namespace CosmicShore.ScriptableObjects
         public PrismType PrismType;
         public Transform TargetTransform;
         public System.Action OnGrowCompleted;
+
+        /// <summary>
+        /// PrismType.Grow only: seconds the reverse-suction build-up runs. 0 (the
+        /// default) keeps the pool prefab's authored duration. Exists because the
+        /// Sparrow's turret rides the grow effect as its FLIGHT visual, so the effect
+        /// must last exactly one bullet lifetime, not the fauna-consumption 2s.
+        /// </summary>
+        public float GrowDuration;
     }
 
     [CreateAssetMenu(fileName = "EventChannel_Prism", menuName = "ScriptableObjects/Event Channels/PrismEventChannel")]

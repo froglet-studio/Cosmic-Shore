@@ -2082,7 +2082,7 @@ scale bump** with a one-shot unlock punch.
   | vessel | map | icons | order | uniform | hints |
   |---|---|---|---|---|---|
   | Squirrel | complete | 4/4 | ✅ | ✅ | ✅ bound |
-  | Sparrow | complete (Time re-scoped 2026-08: indefinite boost, base roll, Elemental Ward) | 4/4 | ✅ | ✅ | ⚠ no switcher on its HUD |
+  | Sparrow | 4/4 named, **3/4 upgrades** (Time re-scoped 2026-08: indefinite boost, base roll, Elemental Ward. **Mass L5 is an OPEN DESIGN SLOT** since 2026-08: its Shielded Prisms upgrade moved to Space 5 so one gate transforms both fire modes — bullets pierce, turret prisms arrive shielded. Do not refill it without sign-off) | 4/4 | ✅ | ✅ | ⚠ no switcher on its HUD |
   | Dolphin | complete | 4/4 | ✅ | ✅ | ⚠ no switcher on its HUD |
   | Manta | 3/4 named, 0/4 upgrades | 0/4 | — | — | n/a |
   | Rhino | 1/4 named, 0/4 upgrades | 0/4 | — | — | n/a |

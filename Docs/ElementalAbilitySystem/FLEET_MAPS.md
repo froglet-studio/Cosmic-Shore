@@ -48,13 +48,14 @@ timers/decay, gate strictly in the acting system's layer.
 
 The Sparrow's map has been live since the system landed; only its **TIME** row changed in the
 boost redesign (2026-08). Mechanics detail, tuning knobs and the in-editor verification table live
-beside the code: `_Scripts/Controller/Vessel/R_VesselActions/SPARROW_AFTERBURNER.md`.
+beside the code: `_Scripts/Controller/Vessel/R_VesselActions/SPARROW_AFTERBURNER.md` (TIME) and
+`SPARROW_TURRET_STANCE.md` (MASS).
 
 | Element | Quantitative (LIVE) | L5 upgrade (LIVE) |
 |---|---|---|
 | Charge | skyburst blast radius (authored on the skyburst effect assets, 100→170) | **Domain-Safe Skybursts** — explosions spare your own domain's prisms |
-| Mass | turret-fired prism stretch (2.5) | **Shielded Prisms** — turret prisms arrive shielded |
-| Space | gun range (2.5) | **Piercing Bullets** — bullets pierce prisms instead of stopping at first impact |
+| Mass | turret-fired prism stretch (2.5) | *(open again — Shielded Prisms moved to Space 5, 2026-08 round 4)* |
+| Space | gun range (steepened: base halved twice, atFull 9 — SPACE 15 unchanged) | **Piercing Bullets** — shots pierce, and turret prisms arrive SHIELDED with a wider hit sphere (moved from Mass 5, 2026-08 round 4) |
 | Time | boost SPEED (1.5), consumed by `VesselTransformer.CurrentBoostAmount()` | **Elemental Ward** — while boosting, negative `ApplyElementalEffect` calls are dropped (`ResourceSystem.IsElementallyImmune`) |
 
 **TIME row, changed 2026-08 — do not restore the old design:**
@@ -79,6 +80,29 @@ beside the code: `_Scripts/Controller/Vessel/R_VesselActions/SPARROW_AFTERBURNER
 - **The danger-trail machinery survives.** `VesselPrismController.EnableDangerMode` /
   `DisableDangerMode` lost their only caller with the overheat executor. Keep them — the Serpent's
   proposed "Venom Wake" below is exactly that machinery reused.
+
+**MASS row, clarified 2026-08 — the element map is unchanged, the stance beneath it is not:**
+
+The turret stance is now defined as *"a turret shot IS a bullet — you just see a prism flying, and
+where the bullet would have been destroyed the prism stays"*. That parity is structural:
+`FullAutoBlockShootActionSO` holds a reference to `FullAutoActionSO` and **adopts** its fire rate,
+muzzle speed (SPACE-scaled, via the shared `FullAutoActionSO.ResolveSpeed`) and flight time rather
+than authoring its own. It had drifted to 14 shots/s at 150 u/s against guns at 30 shots/s at
+1500 u/s. **Pierce is the bullets' SPACE-5 gate, on both modes** — below it the shot stops at the
+first prism it hits and anchors there, at 5+ it pierces to the end of its path and anchors there;
+piercing is not a turret perk. Turret shots also run the bullets' own `ProjectileDamagePrismEffect`;
+the self-destroying `DomainCheckProjectilePrismHitEffectSO` that used to sit on that path is deleted.
+
+Two things worth knowing beyond the element map. First, the stance had been firing **invisible**
+prisms: the path never called `Prism.Initialize`, so `IsCreationComplete` stayed false,
+`BeginGrowthAnimation` early-returned, and every shot lived at `localScale` zero — no visual, and a
+zero-volume collider that could not register a hit. Second, the flight is now GPU-side
+(`Docs/PRISM_ANIMATION.md` §5 C5 — SHIPPED): the prism is stamped at its end point and the vertex
+stage walks it in from the muzzle, while the prism's *carried* `Projectile` does the travelling and
+the colliding. MASS itself is untouched: quantitative stretch on the prism's long axis, L5
+*Shielded Prisms* — now applied as a pre-`Initialize` flag so the shield is part of the prism's
+birth rather than a morph on arrival. Budget note: the cadence fix roughly doubles anchored mass to
+~60 prisms/s while held. Detail: `R_VesselActions/SPARROW_TURRET_STANCE.md`.
 
 ### Manta — "Reaper Ray" (skim + harvest)
 
@@ -134,7 +158,7 @@ Time→charge fill rate / "Instant Draw".
 | Element | Quantitative (live) | Proposed L5 upgrade |
 |---|---|---|
 | Charge | *(open)* → propose: forcefield shrink rate (the authored-but-dead `GrowSkimmerAction.shrinkRate` Charge mapping, 6→2) | **Unyielding Field** — forcefield no longer shrinks on prism hits, only on crystal timeout |
-| Mass | trail slab max size | **Armored Slabs** — grown slabs arrive shielded (Sparrow MASS-5 shape) |
+| Mass | trail slab max size | **Armored Slabs** — grown slabs arrive shielded (the "arrive shielded" shape; note it lives on the Sparrow's **SPACE** 5, not Mass, since 2026-08) |
 | Space | *(open)* → propose: forcefield max size | **Breaker** — ramming destroys shielded prisms in one hit (devastate on ram) |
 | Time | *(open)* → propose: slab growth rate | **Fast Pour** — slab growth continues while boosting |
 
