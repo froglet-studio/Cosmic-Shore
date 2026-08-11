@@ -466,6 +466,28 @@ namespace CosmicShore.Gameplay
         public float FaunaContainmentRadius { get; set; }
 
         /// <summary>
+        /// The INNER wall of the same pen, or 0 for none (the default, and every biome that is
+        /// not a mode's pen). While set, the sphere of this radius around the cell centre is
+        /// OUT of bounds: mass inside it is not prey and every fauna goal is pushed back out to
+        /// it - the exact mirror of <see cref="FaunaContainmentRadius"/>, on the exact same two
+        /// rules (diet + steering), so together they express an annulus at the CELL level the way
+        /// <c>FaunaConfigurationSO.BandInner/BandOuterRadius</c> expresses one per SPECIES.
+        ///
+        /// The band already proved the annulus; the cell pen already proved runtime control. This
+        /// is the missing quadrant - the annulus a MODE can open and close while the match runs -
+        /// and it exists because Astro League wanted its creatures waiting outside the court and
+        /// invading it only once the pitch silts up. The mode drives it off the cell's OWN volume
+        /// phase ladder (Calm = closed, Restless+ = open), so "the arena is getting crowded" is
+        /// read from the spine rather than from a new signal invented for the mode.
+        ///
+        /// Same contract as every other pen (Docs/ECOSYSTEM.md §22.2b): a spatial DIET + STEERING
+        /// rule, never a wall. Nothing is teleported, no collider is added, nothing is culled for
+        /// crossing it - a creature can still drift in on its own momentum, it just has no reason
+        /// to and nothing to eat there.
+        /// </summary>
+        public float FaunaExclusionRadius { get; set; }
+
+        /// <summary>
         /// While the brood is penned, does a creature that DETECTS prey inside the pen go to full
         /// aggression? Off by default. Ribcage turns it on: the cage is meant to be intimidating,
         /// so flying in does not merely put your trail on the menu - it sends the whole penned
@@ -521,24 +543,61 @@ namespace CosmicShore.Gameplay
         float _nextContainmentProbeAt = float.NegativeInfinity;
         bool _containmentHasPrey;
 
-        /// <summary>True when <paramref name="position"/> is inside the fauna pen (always true when there is none).</summary>
-        public bool IsInsideFaunaContainment(Vector3 position) =>
-            FaunaContainmentRadius <= 0f ||
-            (position - transform.position).sqrMagnitude <= FaunaContainmentRadius * FaunaContainmentRadius;
+        /// <summary>
+        /// True when <paramref name="position"/> is inside the cell's fauna pen - i.e. within
+        /// <see cref="FaunaContainmentRadius"/> AND outside <see cref="FaunaExclusionRadius"/>.
+        /// Always true for the biomes that author neither, which is all of them except a mode's
+        /// pen, so the common path is two compares against zero.
+        /// </summary>
+        public bool IsInsideFaunaContainment(Vector3 position)
+        {
+            float sqr = (position - transform.position).sqrMagnitude;
+            if (FaunaContainmentRadius > 0f && sqr > FaunaContainmentRadius * FaunaContainmentRadius)
+                return false;
+            if (FaunaExclusionRadius > 0f && sqr < FaunaExclusionRadius * FaunaExclusionRadius)
+                return false;
+            return true;
+        }
 
         /// <summary>
-        /// Pulls a fauna goal back inside the pen. Returns the point unchanged when there is no
-        /// containment or the goal is already inside, so the common path costs one compare.
+        /// Pulls a fauna goal back into the pen: in past the outer wall
+        /// (<see cref="FaunaContainmentRadius"/>) and out past the inner one
+        /// (<see cref="FaunaExclusionRadius"/>). Returns the point unchanged when there is no pen
+        /// or the goal already sits in it, so the common path costs one compare.
+        ///
+        /// <paramref name="selfPosition"/> resolves the one degenerate case: a goal AT the centre
+        /// is the ecology's "nothing sensed" answer, not a destination, and it has no outward
+        /// radial to push along. Pass the creature's own position (every steering caller has it)
+        /// and it mills where it already is instead of the whole population collapsing onto one
+        /// point on the inner wall - the same reasoning as <c>Fauna.ClampToBand</c>.
         /// </summary>
-        public Vector3 ClampToFaunaContainment(Vector3 goal)
+        public Vector3 ClampToFaunaContainment(Vector3 goal, Vector3? selfPosition = null)
         {
-            if (FaunaContainmentRadius <= 0f) return goal;
+            bool hasOuter = FaunaContainmentRadius > 0f;
+            bool hasInner = FaunaExclusionRadius > 0f;
+            if (!hasOuter && !hasInner) return goal;
 
-            Vector3 offset = goal - transform.position;
-            float sqr = offset.sqrMagnitude;
-            if (sqr <= FaunaContainmentRadius * FaunaContainmentRadius) return goal;
+            Vector3 centre = transform.position;
+            Vector3 offset = goal - centre;
+            float d = offset.magnitude;
 
-            return transform.position + offset / Mathf.Sqrt(sqr) * FaunaContainmentRadius;
+            if ((!hasOuter || d <= FaunaContainmentRadius) && (!hasInner || d >= FaunaExclusionRadius))
+                return goal;
+
+            if (d <= 0.0001f)
+            {
+                // Only reachable with an INNER wall (a centre goal is already legal under an outer
+                // wall alone): fall back to the creature's own outward radial so an unfed population
+                // mills where it is instead of every member collapsing onto one point on the wall.
+                offset = (selfPosition ?? centre) - centre;
+                d = offset.magnitude;
+                if (d <= 0.0001f) return centre + Vector3.up * FaunaExclusionRadius;
+            }
+
+            float lo = hasInner ? FaunaExclusionRadius : 0f;
+            float hi = hasOuter ? FaunaContainmentRadius : float.PositiveInfinity;
+            if (lo > hi) lo = hi; // a pen squeezed shut collapses onto the outer wall, never inverts
+            return centre + offset / d * Mathf.Clamp(d, lo, hi);
         }
 
         /// <summary>
@@ -597,6 +656,40 @@ namespace CosmicShore.Gameplay
                 if (f) f.SetTeam(domain.Value);
             }
         }
+
+        /// <summary>
+        /// Is this cell's nucleus a NODE-CONTROL ZONE (the default, true), or is it merely
+        /// PLAY GEOMETRY a mode has repurposed?
+        ///
+        /// The invariant "node control is the nucleus" makes the nucleus interior a territorial
+        /// claim and a fauna SANCTUARY - <see cref="IsPreyForHerbivore"/> refuses to feed anything
+        /// inside it, and <see cref="DominantDomain"/> reads only the volume laid in there. That is
+        /// exactly right for a cell whose nucleus is a core somebody contests.
+        ///
+        /// It is exactly WRONG for a mode that borrowed the nucleus as its playfield boundary.
+        /// Astro League morphs the nucleus into its whole ricochet court
+        /// (<see cref="SetNucleusMesh"/>), which made the control radius the court's circumscribing
+        /// radius - so every prism in the match was "inside the nucleus", nothing on the pitch was
+        /// ever food, and the mode's trail-grazing food web could not remove a single prism no
+        /// matter how it was tuned. The arena silted up and the fauna starved beside it.
+        ///
+        /// Setting this false says "this nucleus is a wall, not a claim": the control zone
+        /// collapses to nothing and the cell falls back to its whole-cell semantics exactly as if
+        /// no NucleusPrefab were authored - herbivores eat opposing-domain mass anywhere,
+        /// DominantDomain reads the whole cell. It does not relitigate the invariant; it declares
+        /// that this cell has no control zone, which is a state the ecology already supports.
+        /// </summary>
+        public bool NucleusIsControlZone
+        {
+            get => _nucleusIsControlZone;
+            set
+            {
+                if (_nucleusIsControlZone == value) return;
+                _nucleusIsControlZone = value;
+                RefreshNucleusControlRadius();
+            }
+        }
+        bool _nucleusIsControlZone = true;
 
         /// <summary>
         /// Minimum phase this cell may sit at, or null for "no floor" (the default -
@@ -1924,6 +2017,10 @@ namespace CosmicShore.Gameplay
         void RefreshNucleusControlRadius()
         {
             _nucleusControlRadiusSqr = 0f;
+            // A nucleus a mode borrowed as play geometry is a wall, not a claim - no control
+            // zone, so the cell keeps its whole-cell control + diet semantics. See
+            // NucleusIsControlZone.
+            if (!_nucleusIsControlZone) return;
             if (nucleus == null) return;
 
             var r = nucleus.GetComponentInChildren<Renderer>();
