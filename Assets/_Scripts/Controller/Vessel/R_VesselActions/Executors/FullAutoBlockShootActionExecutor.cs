@@ -553,13 +553,12 @@ namespace CosmicShore.Gameplay
             // from may still be at localScale ZERO (its creation coroutine has not run),
             // and SetParent(worldPositionStays) preserves world scale — an unsized
             // collider is degenerate and the shot silently hits nothing. (2) The hit
-            // volume is the BULLETS' collision approach, verbatim: a sphere trigger
-            // whose world diameter is authored (the bullets fly diameter 12 = radius
-            // 0.3 × the tracer's 20 z-scale; the prism's carried collider is a unit
-            // sphere, radius 0.5, so world diameter == this scale). Shielded shots take
-            // the larger authored diameter — the armored octahedron reads bigger, so it
-            // hits bigger. The thin authored box this replaces had ~1/24th the bullet's
-            // cross-section, which is why prism shots were missing what bullets hit.
+            // volume is the BULLETS' collision approach, verbatim: a sphere trigger whose
+            // world diameter is authored to match the bullet's own (1.65 = the tracer's
+            // visible 0.75 cross-section radius +10%, doubled; the prism's carried
+            // collider is a unit sphere, radius 0.5, so world diameter == this scale).
+            // Shielded shots take the larger authored diameter — the armored octahedron
+            // reads bigger, so it hits bigger.
             carriedTransform.localScale = Vector3.one * hitDiameter;
             carriedTransform.SetPositionAndRotation(muzzle.position, muzzle.rotation);
             carried.Velocity = velocity;

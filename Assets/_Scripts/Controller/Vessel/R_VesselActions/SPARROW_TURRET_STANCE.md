@@ -38,10 +38,12 @@
   12** (radius 0.3 × the tracer's ×20 z-scale) while the prism's carried collider was a thin
   0.8×0.5×5 box — ~1/24th the cross-section. The carried collider is now a **unit sphere**
   (radius 0.5) on the prism prefab, sized in code to an authored world diameter:
-  `collisionDiameter` (**12**, = the bullets') for regular shots, `shieldedCollisionDiameter`
-  (**18**) for shielded ones — the armored octahedron reads bigger, so it hits bigger. Same
+  `collisionDiameter` (12, = the bullets') for regular shots, `shieldedCollisionDiameter`
+  (18) for shielded ones — the armored octahedron reads bigger, so it hits bigger. Same
   trigger + non-kinematic rigidbody + transform mover as the bullets: one collision approach,
-  one authored number per shot class.
+  one authored number per shot class. **(Both numbers superseded in round 6 — the bullet
+  they were matched to turned out to be 8× oversized. The RULE survives; the values are now
+  1.65 / 2.475.)**
 
 ## Round 5 (2026-08-10): friendly fire is always on; CHARGE 5 spares only the skyburst
 
@@ -76,6 +78,38 @@
   projectiles — sub-second, so the gameplay cost is nil — and once it closes the prism is
   ordinary friendly-fire mass: your own later shots, teammates, and enemies all destroy it
   normally.
+
+## Round 6 (2026-08-11): the hit sphere shrinks to the projectile it draws
+
+Round 4 matched the prism's hit volume to the BULLET's. This round fixes the bullet: its
+collider was never sized to the projectile at all.
+
+- **The bullet's hit sphere was 8× its visible radius.** `SparrowProjectile.prefab` draws a
+  unit sphere mesh (radius 0.5) at scale `(1.5, 1.5, 20)` — a dart whose visible
+  cross-section radius is **0.75** and whose half-length is 10. Its `SphereCollider` was
+  `m_Radius 0.3`, and a SphereCollider scales by the **largest** lossy-scale component
+  (the z-stretch, 20) — so the hit sphere was **6.0 world radius / 12 diameter**, a ball
+  eight times wider than the tracer and comparable to the dart's own length. The z-scale
+  leaking into the radius is the whole bug: nothing authored 12, it fell out of the mesh
+  stretch.
+- **Now the collider is the projectile +10%.** `m_Radius: 0.04125` → `0.04125 × 20 = 0.825`
+  world radius = **1.65 diameter**. Author it that way: pick the world radius you want and
+  divide by the max scale component; changing the tracer's z-stretch silently rescales the
+  hit sphere unless you re-derive.
+- **The prism shots follow it, as they must** (round 4's rule stands — one collision
+  approach for both fire modes): `collisionDiameter` **12 → 1.65**, and
+  `shieldedCollisionDiameter` **18 → 2.475**, preserving the authored ×1.5 so the armored
+  octahedron still hits bigger than a plain prism.
+- **Placement immunity stays load-bearing** even though the overlap that motivated it is
+  mostly gone. The self-delivery case is geometric, not size-dependent: viz 1 parks the
+  prism at the anchor and the carried projectile arrives at its centre, so *any* nonzero
+  collider hits its own prism on arrival. The window also still separates shots in a spray;
+  at this diameter it has far less work to do, so `placementImmunitySeconds` could likely
+  come down — judge it in play before touching it.
+- **Expect a real drop in aim forgiveness on both fire modes.** A 53× smaller frontal
+  cross-section is the point of the change (the collider now matches what the player sees),
+  but "the guns feel tighter" is the intended outcome, not a regression to fix by inflating
+  the sphere again.
 
 ## Round-3 follow-up: the spread rendered at full distance the whole flight
 

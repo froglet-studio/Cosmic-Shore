@@ -87,16 +87,20 @@ namespace CosmicShore.Gameplay
         [SerializeField] private FiredPrismState firedPrismState = FiredPrismState.ShieldedAtSpace5;
 
         [Header("Shot Collision")]
-        [Tooltip("World-space DIAMETER of the shot's spherical hit volume. The bullets fly a " +
-                 "sphere trigger of world diameter 12 (radius 0.3 x the tracer's 20 z-scale), " +
-                 "and this defaults to exactly that so a prism shot hits whatever a bullet " +
-                 "would have hit. The carried collider is a unit sphere (radius 0.5), so the " +
-                 "world diameter IS this number.")]
-        [SerializeField, Min(0.1f)] private float collisionDiameter = 12f;
+        [Tooltip("World-space DIAMETER of the shot's spherical hit volume, matched to the " +
+                 "BULLETS' hit sphere so a prism shot hits whatever a bullet would have hit. " +
+                 "The bullet's collider is sized to its own VISIBLE radius +10% - the tracer " +
+                 "mesh is a unit sphere at scale (1.5, 1.5, 20), so its cross-section radius " +
+                 "is 0.75 and its hit sphere is 0.825 world radius = 1.65 diameter. Keep the " +
+                 "two in step: if SparrowProjectile.prefab's SphereCollider changes, change " +
+                 "this. The carried collider is a unit sphere (radius 0.5), so the world " +
+                 "diameter IS this number.")]
+        [SerializeField, Min(0.1f)] private float collisionDiameter = 1.65f;
 
         [Tooltip("World-space hit diameter for a SHIELDED shot - deliberately larger than the " +
-                 "base diameter: the armored octahedron reads bigger, so it should hit bigger.")]
-        [SerializeField, Min(0.1f)] private float shieldedCollisionDiameter = 18f;
+                 "base diameter (x1.5): the armored octahedron reads bigger, so it should hit " +
+                 "bigger.")]
+        [SerializeField, Min(0.1f)] private float shieldedCollisionDiameter = 2.475f;
 
         [Tooltip("Fired prisms are FULL SIZE from their first visible frame - no grow-in " +
                  "bloom. The flight out of the gun is itself the continuity transition, so " +

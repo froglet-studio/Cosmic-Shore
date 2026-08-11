@@ -138,6 +138,23 @@ tightening as it flies; ordinary prisms (trail/environment) must render unchange
   destroys it (friendly fire intact); enemy fire during the brief window is ignored but
   lands normally after (~0.5 s from fire). Tune `placementImmunitySeconds` to taste.
 
+**Playtest round 6 (2026-08-11):** hit spheres shrink to the projectile they draw:
+
+- `SparrowProjectile.prefab` `SphereCollider.m_Radius` **0.3 → 0.04125**. The collider
+  scales by the LARGEST lossy-scale component, and the tracer is scaled `(1.5, 1.5, 20)`,
+  so the old radius gave a 6.0-world-radius (12-diameter) ball around a dart whose visible
+  cross-section radius is 0.75. Now `0.04125 × 20 = 0.825` world radius = 1.65 diameter =
+  the visible projectile +10%. Verify in the Scene view during play that the bullet's
+  gizmo sphere now hugs the tracer instead of dwarfing it.
+- `collisionDiameter` **12 → 1.65**, `shieldedCollisionDiameter` **18 → 2.475** on
+  `FullAutoBlockShootAction.asset` (the ×1.5 shielded ratio is preserved).
+- **Feel check, the point of the round:** both fire modes lose a lot of aim forgiveness
+  (~53× smaller frontal cross-section). Verify bullets and prism shots still connect on a
+  deliberate aim and that they now MISS on a sloppy one — that is the intended result. Also
+  verify a spray still leaves multiple prisms (placement immunity is doing less work at
+  this size, so `placementImmunitySeconds` 0.2 may now be reducible — tune only after
+  flying it).
+
 **First-pass tuning:** fire rate 30/s + speed 375 (SPACE ×9 at full) + flight 0.3 s on `FullAutoAction.asset`
 (shared with the guns); `blockScale (0.8, 0.5, 5)` + `flightVisualization` on
 `FullAutoBlockShootAction.asset`; reveal overlap 0.2 s (`RevealOverlapSeconds` in the executor);
