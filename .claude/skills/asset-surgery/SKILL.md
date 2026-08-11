@@ -904,27 +904,6 @@ read**. The lesson generalizes:
   measured constant to a second system "for parity", find the line that CHOSE it. If no
   line did, you are about to enshrine an artifact, and every asset you align to it makes
   the eventual correction bigger.
-
-### Bundled tool: `field_parity.py`
-
-Beside this skill. `serialized_fields(cs_path)` returns what Unity would serialize
-from a C# file (the attribute-stripping trap above is already handled);
-`asset_docs(asset_path)` yields `(script_guid, [top-level keys])` per MonoBehaviour
-document. ~20 lines of glue maps guid → `.cs` and asserts `keys` are a subset of
-`fields` for every doc in every asset you authored. Run it before committing any
-hand-written YAML — it is what turns "looks right" into "provably resolves".
-
-## 6. When the editor genuinely IS required
-
-Device soak tests, profiling, visual judgment, play-mode-state measurements,
-and final import verification of hand-authored assets. Even then: build the
-measuring tool + validator so the human runs ONE menu item and pastes ONE
-output back — then YOU act on the numbers.
-
-**Narrowed 2026-08:** "play-mode measurement" no longer covers a *deterministic*
-generator's baseline — see §4.5, which measures it offline and uses the in-editor
-measurer as a CONFIRMATION step rather than the source. Keep asking which half of
-a measurement is actually play-mode-dependent; often it is neither.
 - **HDR colour fields are LINEAR, and scaling them is not tuning**: in a Linear
   project (`ProjectSettings: m_ActiveColorSpace: 1`) a `[ColorUsage(true, true)]`
   field serialises **linear intensity** — Rec.709 luminance and CIELAB apply
@@ -949,13 +928,28 @@ a measurement is actually play-mode-dependent; often it is neither.
   Then dedupe by BLOB: `git rev-parse "$ref:$path"` per ref and group — N branches
   usually collapse to a handful of distinct file versions worth reading.
 
+### Bundled tool: `field_parity.py`
+
+Beside this skill. `serialized_fields(cs_path)` returns what Unity would serialize
+from a C# file (the attribute-stripping trap above is already handled);
+`asset_docs(asset_path)` yields `(script_guid, [top-level keys])` per MonoBehaviour
+document. ~20 lines of glue maps guid → `.cs` and asserts `keys` are a subset of
+`fields` for every doc in every asset you authored. Run it before committing any
+hand-written YAML — it is what turns "looks right" into "provably resolves".
+
 ## 6. When the editor genuinely IS required
 
-Play-mode measurements (baselines, profiling), device soak tests, visual
-judgment. Even then: build the measuring tool + validator so the human runs ONE
-menu item and pastes ONE output back — then YOU act on the numbers
-(the PhaseThresholds re-baseline pattern: they ran the measurer, the session
-authored the six configs from the pasted output).
+Device soak tests, profiling, visual judgment, play-mode-state measurements,
+and final import verification of hand-authored assets. Even then: build the
+measuring tool + validator so the human runs ONE menu item and pastes ONE
+output back — then YOU act on the numbers (the PhaseThresholds re-baseline
+pattern: they ran the measurer, the session authored the six configs from the
+pasted output).
+
+**Narrowed 2026-08:** "play-mode measurement" no longer covers a *deterministic*
+generator's baseline — see §4.5, which measures it offline and uses the in-editor
+measurer as a CONFIRMATION step rather than the source. Keep asking which half of
+a measurement is actually play-mode-dependent; often it is neither.
 
 **Visual judgment is the softest of these — simulate it rather than punting it.**
 Once §2a has told you what the shader does with a value, you can reimplement that
