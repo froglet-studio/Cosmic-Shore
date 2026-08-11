@@ -1,6 +1,8 @@
 # QA Backlog — untested development on `bleeding-edge`
 
-Generated: 2026-08-07 · Scan covers: merges up to `9e8cf3f3` (PRs #583–#679) · **Owner of this file: the `/qa-backlog` skill — do not hand-edit.**
+Generated: 2026-08-11 · Scan covers: merges up to `b0cf4f0f` (PRs #583–#696) · **Owner of this file: the `/qa-backlog` skill — do not hand-edit.**
+
+> Note (2026-08-11): `bleeding-edge` was briefly force-pushed back to `0e855b24` (dropping PRs #674–#679) and then restored — the current tip `b0cf4f0f` re-includes all of that work plus PRs #680/#681/#695/#696. No items were pruned. The `windows-build-failures` build-fix branch is validated by QA-BUILD-COMPILE on Windows and has no separate item.
 
 Every item below landed on a shared branch without ever being opened in Unity by its author (or was play-tested only in part). Work top-down: P0 first.
 
@@ -554,6 +556,48 @@ Source: `wildlifeliberation-game-mode` (merged and re-tuned through `9b9d9b60`, 
 
 PASS: launches clean; three cages at the stated radii with the three tiers; every creature killable by body-prism destruction, withering to one crystal; creatures stay in their bands; the winner is a player at 500 kills with domain sums as secondary; frame time acceptable on target hardware. FAIL: missing scripts · a creature that can't be killed or that vanishes instead of withering · a body segment dropping a crystal or a capital dropping none · creatures escaping their band or being led to inedible mass · the mode resolving a winning domain instead of a player · a hard frame-time cliff.
 
+### QA-SPARROW-PRISM-ATTACK ⬜ — Turret Stance fires real prisms (two flight visualizations)
+Source: PR #696 (`sparrow-prism-attack`). Large (4,405 insertions): the Sparrow's turret stance now fires real prisms "on the bullets' terms", with a live-switchable A/B flight visual, a new prism-flight clock wired into both prism graphs, a new asset-writing editor tool (`Tools/Shaders/wire_prism_flight_clock.py`, 664 lines), and `PrismImplosion` changes. Space-5 now gates a shield. Reference: `_Scripts/Controller/Vessel/R_VesselActions/SPARROW_TURRET_STANCE.md`.
+
+1. **Asset gates first:** run `python3 Tools/Shaders/wire_prism_flight_clock.py --check`, then FrogletTools ▸ Ecology ▸ Prism Animation ▸ Validate Clock Wiring (now requires the three `_Flight*` properties + `PrismFlightClock` on BlockGraph and ExplodingBlockGraph). Open both graphs — no import errors, `FlightStartTime/Duration/Velocity` on the Blackboard. If any prism is magenta on load, the graph failed to compile — FAIL.
+2. Sparrow, stopped, hold fire in **TranslateAndGrow** (`FullAutoBlockShootAction.asset` ▸ Flight Visualization): prisms visibly leave the muzzles, scale up in flight, and anchor at ~286 u. Prisms teleporting to range with no flight, or `[PrismClock]` console errors, = wiring failure.
+3. Flip to **ReverseSuction** live (next volley switches): faces stream from the moving shot point into the anchored shape; the real prism appears as the stream completes.
+4. Confirm fired prisms behave as bullets: friendly-fire on, a pilot's own shots never destroy their own fired prisms, the 0.2 s placement-immunity window holds, and the hit sphere is sized to the projectile (not its z-stretch).
+5. Raise Space to 5 → the shield gate engages; raise Charge to 5 → friendly fire still on, only the skyburst spared.
+
+PASS: both asset gates pass and both graphs import clean (no magenta, no `[PrismClock]` errors); both flight visualizations render as described; fired prisms hit like bullets with the immunity window and correct hit size; Space-5 shield and Charge-5 sparing behave. FAIL: a failed wire/validate gate · magenta prisms · prisms teleporting to range · a visualization that shows nothing · a pilot destroying their own fired prisms · wrong hit size · the Space-5/Charge-5 gates not behaving.
+
+### QA-DOLPHIN-CAPSULE-BLAST ⬜ — crystal blast sweeps a capsule aligned with the jaw gape
+Source: PR #680 (`dolphin-echobliteration-capsule`). The Dolphin crystal blast's cross-section becomes a **capsule** (fixed width across the beam; skim energy buys length along the jaw-open axis). **Hand-authored asset YAML** — a `SphereCollider` rewritten into a `CapsuleCollider` in place (class id 135→136) — so step 1 is a genuine import check. Touches `PrismSpatialIndex`, `AOEConicExplosion`, `AOEExplosion`. Related: QA-VESSEL-AOE-IMPULSE.
+
+1. **The hand-authored collider imported.** Open `_Prefabs/Projectile/AOEConicExplosion.prefab`: the root shows a **Capsule Collider** (Is Trigger ✓, Radius 0.0667, Height 1, Direction Z-Axis, Center 0/-0.5/0) — not a missing component, not a Sphere Collider, not a second collider alongside.
+2. Project compiles (nothing here is `#if`-guarded, but no compiler ran author-side).
+3. Empty-energy blast: fly to a crystal with no banked energy — the blast looks and destroys about as before, slightly lozenge-shaped, not a sphere.
+4. Charged blast: bank skim energy, then detonate — the blast is a fan, **wide in the jaw plane, narrow across it**, and grows in **length** (not radius) with energy. The vessel-impact volume and the destruction volume are the same shape.
+5. Regression: fire a spherical AOE (e.g. Rhino) — unchanged (CoreScale 0 collapses to the plain circular cone).
+
+PASS: the capsule collider imported exactly as specified; compiles clean; empty blast reads unchanged; the charged blast is a length-growing jaw-plane fan with matching impact/destruction shapes; other vessels' blasts unchanged. FAIL: a missing/Sphere/duplicate collider on the prefab · compile error · the blast still a growing circular cone · impact and destruction shapes disagreeing · a spherical AOE that changed.
+
+### QA-DOLPHIN-SKIM-ENERGY-CTA ⬜ — 15× skim-energy nerf, lime jaw CTA at full, dead silhouette removed
+Source: PR #695 (`dolphin-prism-energy`). Skim banks 15× less energy per prism; the HUD jaw gauge arms **lime** at full energy; and the dead vessel-silhouette HUD element is deleted **fleet-wide** (YAML surgery removing content from 6 HUD prefabs — missing-script risk). Related: QA-DOLPHIN-SKIM, QA-UI-TRAIL-DISPLAY-REMOVAL.
+
+1. Open the six touched HUD prefabs (`MantaHUDVariant`, `RhinoHUDVariant`, `SerpentHUDVariant`, `SparrowHUDVariant`, `SquirrelHUDVariant`, `VesselHUDPrefab`): no `Missing (Mono Script)` where the silhouette element was removed.
+2. Dolphin freestyle: skim a run of prisms — energy now fills **much** more slowly (~15× more prisms to fill than before).
+3. Fill the jaw energy gauge to full — it arms **lime** as a call-to-action; below full it does not.
+4. Play a round on two other vessels and confirm their HUDs still build and animate (petal bars etc.) with the silhouette gone.
+
+PASS: no missing scripts on the six prefabs; skim energy fills ~15× slower; the jaw gauge arms lime only at full; other vessels' HUDs intact. FAIL: any missing script · energy filling at the old rate · the lime CTA never arming or arming below full · a broken HUD on any vessel after the silhouette removal.
+
+### QA-PROFILE-ADS-REMOVAL ⬜ — Unity Ads removed entirely + profile double-submit closed
+Source: `profile-save-and-ads-removal`. Removes Unity Ads (package manifest + `RewardedAdsButton` deleted, `UnityConnectSettings`/`ProjectSettings` changed) and closes the display-name double-submit window. Package/manifest change = compile/build + package-resolution risk.
+
+1. Project compiles and the package manifest resolves with no Unity Ads / Advertisement package errors in the Console.
+2. Nothing in the menu references a missing `RewardedAdsButton` (no missing-script slots on the daily-reward card or anywhere ads UI lived).
+3. The daily-reward flow works without the rewarded-ad path.
+4. In the profile/username UI, submit a display name and rapidly tap submit again — the double-submit window is closed (no duplicate request / no error).
+
+PASS: compiles and resolves packages cleanly; no missing ads-UI scripts; daily reward works ad-free; the name double-submit is prevented. FAIL: a package-resolution/compile error · a missing `RewardedAdsButton` reference · a broken daily-reward flow · a display name that still double-submits.
+
 ## Priority 2 — lower risk, cosmetic, or data-gathering
 
 ### QA-P2-SERPENT-SKIMMER ⬜ — Serpent's dead skimmer (known, unfixed)
@@ -583,6 +627,16 @@ Source: `game-data-json-schema`. `FlightClock`, `VesselUnlockSystem`, `UGSDataSe
 4. Watch the Console for any Cloud Save serialization error.
 
 PASS: menu-freestyle flight time is recorded; starter + selected vessel persist in `HANGAR_DATA` across a relaunch; no Cloud Save exceptions. FAIL: freestyle flight not counted · vessel fields missing or not persisting · a Cloud Save serialization throw. (Deliverable here is partly data — note the observed values.)
+
+### QA-DOLPHIN-SPEED-TUNE ⬜ — cruise +30%, charged boost +70%, faster fill / slower drain
+Source: PR #681 (`dolphin-speed-boost-tuning`). Two authored numbers changed in existing serialized assets (`Dolphin.prefab` `DefaultThrottleScaler 50→68`; `ChargeBoostAction.asset` `maxBoostMultiplier 2→2.259`, `chargeTimeToFull 4→3.636`, `dischargeTimeToEmpty 2→2.5`). Data-only, low import risk, but never flown. Reference: `DOLPHIN_ENERGY_ECONOMY.md` §2.
+
+1. Menu_Main freestyle, Dolphin. Full throttle, no boost → `VesselStatus.Speed` settles at **78** (was 60).
+2. Hold drift from an empty meter → the boost ring fills in **~3.6 s** (was 4).
+3. Full charged-boost discharge → peak speed reaches **~357** (was 210), draining over ~2.5 s.
+4. Sanity: no other vessel's speed/boost changed (the asset is Dolphin-only).
+
+PASS: cruise ~78, fill ~3.6 s, charged peak ~357, drain ~2.5 s; no other vessel affected. FAIL: values materially off from those targets · another vessel's boost/speed changed · the drift/idle floor moved (it should stay at 10). (Feel is a judgement call — note whether the new boost peak plays too strong.)
 
 ## Not covered by this list
 
