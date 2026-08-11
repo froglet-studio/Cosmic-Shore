@@ -11,7 +11,7 @@
 Wildlife Liberation is the **Sparrow-only hunt**. Three concentric cages at **1050 / 600 /
 200** pen three tiers of wildlife, with a very wide empty room between each pair — and a fourth
 tier loose in the **open water outside the outer cage**, where the players spawn. Break in and
-shoot; the **first DOMAIN** to the summed kill target (default **120**) wins.
+shoot; the **first DOMAIN** to the summed kill target (default **250**) wins.
 
 **One axis, and it is the ecology.** The scored stat is `IRoundStats.LifeformsKilled` — an
 *attributed creature death*. Nothing else scores: not cage prisms, not rival trails, not
@@ -45,7 +45,7 @@ kills sum to the target first.
   golf-timed) — the winning **domain's** players `Score` = finish time, everyone else the
   `GolfScoreSentinels` sentinel encoding their team's deficit (displayed "N Kills Left")
 - **Turn monitor**: `WildlifeKillTurnMonitor` — resolves the **per-domain** target from
-  `EndConditionOverridesSO.GetWildlifeKillTarget()` (default **120**, FrogletTools ▸ Game Modes
+  `EndConditionOverridesSO.GetWildlifeKillTarget()` (default **250**, FrogletTools ▸ Game Modes
   ▸ End Game Conditions — never a per-scene field), syncs it via NetworkVariable →
   `GameDataSO.LifeformTargetCount`
 - **Players**: **1–4** with AI backfill. `MinDomainsAllowed = 2` (a domain race needs two
@@ -107,20 +107,21 @@ jousts. **Identity comes from RPC ownership, not from the name string**: `Requir
 the default and the server credits the RoundStats of the `Player` object the RPC arrived on, so
 a client can only ever credit itself.
 
-> **Known limitation (inherited, not introduced).** Because fauna diverge per peer, each hunter
-> is shooting their *own* copy of the swarm. Populations are statistically identical (same
-> configs, same seed floors, same rooms) but not the same creatures, so two players cannot race
-> for the same kill. That is `Docs/ECOSYSTEM.md` §7 caveat 4 — "not yet fair for competitive
-> play" — and the honest fix is server-authoritative fauna, which is a platform project, not a
-> mode feature.
+> **Transitional limitation — fauna network sync is in flight on a separate branch.** Until it
+> lands, fauna diverge per peer: each hunter shoots their *own* copy of the swarm. Populations
+> are statistically identical (same configs, same seed floors, same rooms) but not the same
+> creatures, so two players cannot race for the same kill (`Docs/ECOSYSTEM.md` §7 caveat 4).
 >
-> Note this cuts BOTH ways and is worth understanding before tuning the target: because
-> teammates on one domain are shooting two different local swarms, a two-player domain's summed
-> total is not "the same swarm hunted twice" — it is two independent hunts added together, and
-> so a shared domain converges on the target roughly twice as fast as a solo one. In a 4-player
-> lobby (one domain of two, two of one) that is a real asymmetry. It is inherited from the
-> client-local fauna caveat, not introduced by the scoring, and it disappears the day fauna
-> become server-authoritative.
+> That has one consequence worth knowing while it lasts: teammates on one domain are shooting
+> two different local swarms, so a two-player domain's total is **two independent hunts added
+> together**, not one swarm hunted twice — it converges on the target roughly twice as fast as a
+> solo domain. In a 4-player lobby (one domain of two, two of one) that is a real asymmetry.
+>
+> **Both go away when the sync branch merges**, and nothing here needs to change for that: this
+> mode reads `IRoundStats.LifeformsKilled` through the ordinary scoring path, and the RPC below
+> is an owner-reports-to-server round-trip that stays correct whether or not the creature also
+> exists on the server. Re-measure the kill target after the merge, though — the doubled-up
+> domain stops getting its head start, so matches will run longer.
 
 > A client can spam the RPC to inflate its own count. So can it spam the joust RPC. Anti-cheat
 > is out of scope for the party-game layer; noted so nobody assumes otherwise.
@@ -438,18 +439,19 @@ feedback** (same state as Ribcage).
 ## End condition
 
 Authored ONLY through **FrogletTools ▸ Game Modes ▸ End Game Conditions**
-(`EndConditionOverridesSO.wildlifeKillTarget`, 0 = default **120**) — the number of creatures a
+(`EndConditionOverridesSO.wildlifeKillTarget`, 0 = default **250**) — the number of creatures a
 **domain** must kill between them. Live/Build split + build auto-restore work like every other mode. The
 milestone rungs are fractions of it (0.25 / 0.5).
 
-> **⚠ Pacing flag — 120 has not been playtested, and it changed meaning.** It was chosen while
-> the mode was briefly a free-for-all, so it was a PER-PLAYER figure; it is now a **per-domain
-> sum**, which makes it reach faster — and faster still for the two-player domain in a
-> four-player lobby (see the multiplayer caveat above). Every intensity holds ~610 creatures at
-> seed and breeds toward ~1,409, so 120 is a small fraction of the standing population either
-> way and should be a short, punchy match. Milestones land at **30** and **60**. It is one
-> editor field and the milestones follow it automatically, so this is the first thing to move
-> after a playtest.
+> **⚠ Pacing flag — 250 has not been playtested.** Every intensity holds ~610 creatures at seed
+> and breeds toward ~1,409, so a 250 per-domain total is a meaningful share of the standing
+> population without ever requiring the arena to be cleared. Milestones land at **63** and
+> **125**.
+>
+> Two things will move it. (1) While fauna are still client-local, a two-player domain reaches
+> it faster than a solo one (see the multiplayer note above) — so time a **4-player** match, not
+> a solo one. (2) When the fauna-sync branch merges that head start disappears and matches get
+> longer. It is one editor field and the milestones follow it automatically.
 
 ## Assets
 

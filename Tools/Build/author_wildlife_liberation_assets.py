@@ -140,8 +140,8 @@ PREVIEW_FILEID = 241334157148977051
 ROOM_NAMES = ("Outer", "Middle", "Core", "OpenWater")
 
 # The kill target - the race metric, summed PER DOMAIN. The 25%/50% milestone rungs are
-# fractions of this (so 30 and 60), and moving it moves the whole progress ladder.
-WILDLIFE_KILL_TARGET = 120
+# fractions of this (so 63 and 125), and moving it moves the whole progress ladder.
+WILDLIFE_KILL_TARGET = 250
 
 SPAWN_RING_RADIUS = budget.SPAWN_RING_RADIUS
 # The cell must SENSE mass out to the outer room (~990) so penned creatures can find a player's
