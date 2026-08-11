@@ -52,6 +52,9 @@ namespace CosmicShore.Tests
             public event Action<IRoundStats> OnJoustCollisionChanged;
             public event Action<IRoundStats> OnGoalsScoredChanged;
             public event Action<IRoundStats> OnLifeformsKilledChanged;
+            public event Action<IRoundStats> OnBulletHitsLandedChanged;
+            public event Action<IRoundStats> OnMissileHitsLandedChanged;
+            public event Action<IRoundStats> OnCombatPointsChanged;
             public event Action<IRoundStats> OnFullSpeedStraightAbilityActiveTimeChanged;
             public event Action<IRoundStats> OnRightStickAbilityActiveTimeChanged;
             public event Action<IRoundStats> OnLeftStickAbilityActiveTimeChanged;
@@ -89,6 +92,9 @@ namespace CosmicShore.Tests
             public int JoustCollisions { get; set; }
             public int GoalsScored { get; set; }
             public int LifeformsKilled { get; set; }
+            public int BulletHitsLanded { get; set; }
+            public int MissileHitsLanded { get; set; }
+            public int CombatPoints { get; set; }
             public float FullSpeedStraightAbilityActiveTime { get; set; }
             public float RightStickAbilityActiveTime { get; set; }
             public float LeftStickAbilityActiveTime { get; set; }
@@ -133,6 +139,9 @@ namespace CosmicShore.Tests
                 JoustCollisions = 8,
                 GoalsScored = 3,
                 LifeformsKilled = 42,
+                BulletHitsLanded = 64,
+                MissileHitsLanded = 9,
+                CombatPoints = 514,
                 FullSpeedStraightAbilityActiveTime = 10f,
                 RightStickAbilityActiveTime = 20f,
                 LeftStickAbilityActiveTime = 15f,
@@ -205,6 +214,13 @@ namespace CosmicShore.Tests
             // next one - which is exactly how Ribcage shipped players starting on a non-zero
             // score. Anything added to IRoundStats must be zeroed here and asserted here.
             Assert.AreEqual(0, _stats.LifeformsKilled);
+
+            // The Dog Fight race metric and its two-part breakdown. Same reasoning as
+            // LifeformsKilled above - a combat stat that survives a scene load hands the
+            // next match's pilots a head start.
+            Assert.AreEqual(0, _stats.BulletHitsLanded);
+            Assert.AreEqual(0, _stats.MissileHitsLanded);
+            Assert.AreEqual(0, _stats.CombatPoints);
         }
 
         [Test]

@@ -20,6 +20,16 @@ namespace CosmicShore.Gameplay
         public override Domains OwnDomain => explosion.Domain;
 
         /// <summary>
+        /// The vessel that fired this blast, or null for an anonymous one (a detonation with no
+        /// attributable shooter - see <see cref="AOEExplosion.AnonymousExplosion"/>, which is
+        /// also why prism damage from those blasts is credited to "GuyFawkes" rather than a
+        /// player). Exposed so a scoring effect can attribute a blast back to its pilot without
+        /// reaching for the private explosion reference.
+        /// </summary>
+        public IVessel SourceVessel =>
+            explosion == null || explosion.AnonymousExplosion ? null : explosion.Vessel;
+
+        /// <summary>
         /// Per-instance friendly fire. False spares the blast's own domain (allied prisms are
         /// shielded rather than damaged, allied vessels are skipped entirely); true lets the blast
         /// hit everyone. Set by <see cref="AOEExplosion.InitializeStruct.AffectSelfOverride"/> so an

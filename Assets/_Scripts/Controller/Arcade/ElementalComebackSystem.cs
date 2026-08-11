@@ -47,6 +47,13 @@ namespace CosmicShore.Gameplay
             /// <see cref="GetPlayerValue"/>.
             /// </summary>
             LifeformsKilled,
+
+            /// <summary>
+            /// Dog Fight's weighted gunnery score. A team source like every entry above
+            /// LifeformsKilled - Dog Fight pools points per domain - so the trailing SIDE gets
+            /// the buff, not the trailing individual.
+            /// </summary>
+            CombatPoints,
         }
 
         [Header("Config")]
@@ -88,6 +95,9 @@ namespace CosmicShore.Gameplay
                     break;
                 case GameModes.WildlifeLiberation: // free-for-all: kills, read per PLAYER
                     system.differenceSource = ScoreDifferenceSource.LifeformsKilled;
+                    break;
+                case GameModes.DogFight: // Score lands only at game end - gunnery is the live stat
+                    system.differenceSource = ScoreDifferenceSource.CombatPoints;
                     break;
                 default:
                     system.differenceSource = ScoreDifferenceSource.Score;
@@ -381,6 +391,8 @@ namespace CosmicShore.Gameplay
                     return ScoringMetrics.SumByDomain(gameData, ScoringMetric.PrismsRemaining, domain);
                 case ScoreDifferenceSource.PrismsDestroyed:
                     return ScoringMetrics.SumByDomain(gameData, ScoringMetric.PrismsDestroyed, domain);
+                case ScoreDifferenceSource.CombatPoints:
+                    return ScoringMetrics.SumByDomain(gameData, ScoringMetric.CombatPoints, domain);
                 case ScoreDifferenceSource.LifeformsKilled:
                     // Only reached if something asks for a DOMAIN value under this source (the
                     // HUD's colour readout); the comeback maths itself goes per-player above.
@@ -408,6 +420,7 @@ namespace CosmicShore.Gameplay
                 ScoreDifferenceSource.PrismsDestroyed => true,
                 ScoreDifferenceSource.PrismsRemaining => true,
                 ScoreDifferenceSource.LifeformsKilled => true,
+                ScoreDifferenceSource.CombatPoints => true,
                 ScoreDifferenceSource.Score => !useGolfRules,
                 _ => !useGolfRules
             };

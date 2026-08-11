@@ -79,7 +79,10 @@ namespace CosmicShore.Editor
                 EndConditionOverridesSO.DefaultRibcagePrismTarget +
                 ". The 25%/50% fauna-release rungs are fractions of this.\n" +
                 "  • Wildlife Liberation: creatures ONE PLAYER must kill to win (free-for-all, " +
-                "not a domain sum), default " + EndConditionOverridesSO.DefaultWildlifeKillTarget + ".",
+                "not a domain sum), default " + EndConditionOverridesSO.DefaultWildlifeKillTarget + ".\n" +
+                "  • Dog Fight: gunnery points a DOMAIN needs to win - a bullet hit scores 1 and " +
+                "a missile hit scores 50, so the default " + EndConditionOverridesSO.DefaultDogFightPointTarget +
+                " is 500 bullets or 10 rockets, or any mix.",
                 MessageType.Info);
 
             // ---- Live input fields (used at runtime) ----
@@ -94,6 +97,7 @@ namespace CosmicShore.Editor
             int ra  = Mathf.Max(0, EditorGUILayout.IntField("Rampage - Prism Target", _config.rampagePrismTarget));
             int rc  = Mathf.Max(0, EditorGUILayout.IntField("Ribcage - Prism Target", _config.ribcagePrismTarget));
             int wl  = Mathf.Max(0, EditorGUILayout.IntField("Wildlife Liberation - Kill Target", _config.wildlifeKillTarget));
+            int df  = Mathf.Max(0, EditorGUILayout.IntField("Dog Fight - Point Target", _config.dogFightPointTarget));
             if (EditorGUI.EndChangeCheck())
                 Persist("Edit End Game Conditions", () =>
                 {
@@ -105,6 +109,7 @@ namespace CosmicShore.Editor
                     _config.rampagePrismTarget = ra;
                     _config.ribcagePrismTarget = rc;
                     _config.wildlifeKillTarget = wl;
+                    _config.dogFightPointTarget = df;
                 });
 
             EditorGUILayout.Space();
@@ -118,6 +123,7 @@ namespace CosmicShore.Editor
             EditorGUILayout.LabelField("Rampage", ra > 0 ? ra.ToString() : EndConditionOverridesSO.DefaultRampagePrismTarget + " (default)");
             EditorGUILayout.LabelField("Ribcage", rc > 0 ? rc.ToString() : EndConditionOverridesSO.DefaultRibcagePrismTarget + " (default)");
             EditorGUILayout.LabelField("Wildlife Liberation", wl > 0 ? wl.ToString() : EndConditionOverridesSO.DefaultWildlifeKillTarget + " (default)");
+            EditorGUILayout.LabelField("Dog Fight", df > 0 ? df.ToString() : EndConditionOverridesSO.DefaultDogFightPointTarget + " (default)");
             EditorGUI.indentLevel--;
 
             // ---- Build baseline (read-only display + capture button) ----
@@ -154,7 +160,8 @@ namespace CosmicShore.Editor
                    "Brood Rush: " + Fmt(_config.nucleusRushWaveTargetBuild, "default " + EndConditionOverridesSO.DefaultNucleusRushWaveTarget) + "\n" +
                    "Rampage: " + Fmt(_config.rampagePrismTargetBuild, "default " + EndConditionOverridesSO.DefaultRampagePrismTarget) + "\n" +
                    "Ribcage: " + Fmt(_config.ribcagePrismTargetBuild, "default " + EndConditionOverridesSO.DefaultRibcagePrismTarget) + "\n" +
-                   "Wildlife Liberation: " + Fmt(_config.wildlifeKillTargetBuild, "default " + EndConditionOverridesSO.DefaultWildlifeKillTarget);
+                   "Wildlife Liberation: " + Fmt(_config.wildlifeKillTargetBuild, "default " + EndConditionOverridesSO.DefaultWildlifeKillTarget) + "\n" +
+                   "Dog Fight: " + Fmt(_config.dogFightPointTargetBuild, "default " + EndConditionOverridesSO.DefaultDogFightPointTarget);
 
             static string Fmt(int value, string zeroMeaning) => value > 0 ? value.ToString() : "0 (" + zeroMeaning + ")";
         }
