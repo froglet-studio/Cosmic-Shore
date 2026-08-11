@@ -82,7 +82,7 @@ namespace CosmicShore.Editor
                 "default " + EndConditionOverridesSO.DefaultWildlifeKillTarget + ".\n" +
                 "  • Dog Fight: gunnery points a DOMAIN needs to win - a bullet hit scores 1 and " +
                 "a missile hit scores 50, so the default " + EndConditionOverridesSO.DefaultDogFightPointTarget +
-                " is 500 bullets or 10 rockets, or any mix.",
+                " is 120 bullets or 3 rockets, or any mix.",
                 MessageType.Info);
 
             // ---- Live input fields (used at runtime) ----

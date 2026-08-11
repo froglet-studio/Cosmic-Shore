@@ -5,6 +5,7 @@ using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
 using CosmicShore.Data;
+using CosmicShore.ScriptableObjects;
 using CosmicShore.UI;
 using CosmicShore.Utility;
 
@@ -69,6 +70,21 @@ namespace CosmicShore.Gameplay
                  "machine, so this does not need to be per-frame.")]
         [SerializeField, Min(0.1f)] float progressSampleSeconds = 0.5f;
 
+        [Header("Crystal pickups")]
+        [Tooltip("How many ELEMENTAL crystals are scattered through the arena. Dog Fight scores " +
+                 "gunnery and nothing else, so these are pure progression - a reason to fly the " +
+                 "wreckage between engagements. 0 disables them.")]
+        [SerializeField, Min(0)] int elementalCrystalCount = 14;
+
+        [Tooltip("Radius of the shell the crystals scatter through. Keep it inside the arena " +
+                 "(the Boneyard is 520, Atlantis 430) so they land among the cover.")]
+        [SerializeField, Min(1f)] float crystalScatterRadius = 400f;
+
+        [Tooltip("Seed for the crystal scatter. Placement is DETERMINISTIC from this plus the " +
+                 "count, so every peer lays the same crystals in the same places without a " +
+                 "network message - see SpawnElementalCrystals.")]
+        [SerializeField] int crystalScatterSeed = 41;
+
         [Header("AI")]
         [Tooltip("Seconds between AI quarry re-selections. Between samples the AI keeps flying " +
                  "lead pursuit on the pilot it already picked, so this is 'how long before it " +
@@ -90,6 +106,8 @@ namespace CosmicShore.Gameplay
         const int MilestoneNone = 0;
         const int MilestoneFirst = 1;
         const int MilestoneSecond = 2;
+
+        readonly List<Crystal> _spawnedCrystals = new();
 
         bool _finalResultsSent;
         Coroutine _progressRoutine;
@@ -134,6 +152,7 @@ namespace CosmicShore.Gameplay
         public override void OnNetworkDespawn()
         {
             StopProgressSampler();
+            ClearElementalCrystals();
             base.OnNetworkDespawn();
         }
 
@@ -160,6 +179,12 @@ namespace CosmicShore.Gameplay
 
         protected override void OnCountdownTimerEnded()
         {
+            // Crystals are LOCAL objects laid identically on every peer from a fixed seed, so
+            // this runs BEFORE the server gate - a client that never reached the lines below
+            // would otherwise fly an arena with no pickups in it.
+            ClearElementalCrystals();
+            SpawnElementalCrystals();
+
             if (!IsServer) return;
 
             // The last moment before anyone can score. A player who joined late, or whose
@@ -256,6 +281,89 @@ namespace CosmicShore.Gameplay
         {
             GameToastAPI.Post(GameToastSituation.DogFightLeadChanged, (Domains)domain,
                 ((Domains)domain).ToString(), points.ToString(), target.ToString());
+        }
+
+        // ── Crystal pickups ──────────────────────────────────────────────────
+
+        /// <summary>
+        /// Scatters ELEMENTAL crystals through the arena.
+        ///
+        /// <b>Why not the scene's <c>NetworkCrystalManager</c>:</b> it spawns the OMNI crystal
+        /// (<c>Crystal.prefab</c>), which is the large faceted sphere that reads as an objective
+        /// - and in a mode that scores only gunnery, a thing that looks like the objective and
+        /// is not one is worse than no pickup at all. Its count is authored to 0. What it also
+        /// got wrong here is placement: <c>CrystalManager.GetAnchorlessSpawnRadius</c> falls back
+        /// to the cell's NUCLEUS radius, and this cell has no nucleus, so its one crystal landed
+        /// on the exact centre of the arena.
+        ///
+        /// <b>Why the runtime provisioning:</b> the four standalone elemental prefabs
+        /// (<see cref="ElementalCrystalSetSO"/>) deliberately carry no collection components -
+        /// lifeform prefabs author them as overrides - so they are scenery until something wires
+        /// an <c>ElementalCrystalImpactor</c> + <c>ImpactCollider</c> onto them. That recipe is
+        /// the platform's, not this mode's: it is exactly what the Wanderway's
+        /// <c>Microscene.MintElementalCrystal</c> does, down to the collection effects coming off
+        /// the set itself.
+        ///
+        /// <b>Why here rather than in the environment:</b> intensity 4 flies Atlantis, which is
+        /// Scurry's environment and not ours to modify. Spawning from the controller covers every
+        /// intensity with one path.
+        ///
+        /// <b>Determinism instead of replication.</b> Placement runs from a fixed seed and a
+        /// fixed count, so every peer lays the same crystals in the same places with no network
+        /// message. Collection is still LOCAL - each peer collects its own copy, the same
+        /// standing caveat the Wanderway's crystals and the whole fauna simulation carry
+        /// (<c>Docs/ECOSYSTEM.md</c> §7 caveat 4). That is tolerable here only because crystals
+        /// score NOTHING in this mode; if they ever do, this has to become server-authoritative.
+        /// </summary>
+        void SpawnElementalCrystals()
+        {
+            if (elementalCrystalCount <= 0) return;
+
+            var set = ElementalCrystalSetSO.Load();
+            // No elemental set in this project state - the arena still works, just without
+            // pickups. Same non-fatal stance Microscene takes.
+            if (set == null) return;
+
+            Vector3 centre = arenaCell ? arenaCell.transform.position : Vector3.zero;
+            var rng = new System.Random(crystalScatterSeed);
+
+            for (int i = 0; i < elementalCrystalCount; i++)
+            {
+                var element = ElementalCrystalSetSO.RandomElementFrom(rng);
+                var prefab = set.GetPrefab(element);
+                if (prefab == null) continue;
+
+                // Equal-volume scatter through the shell, so they are not bunched at the middle -
+                // the same mistake the omni crystal made, for the same reason.
+                double u = rng.NextDouble();
+                float r = crystalScatterRadius * Mathf.Pow((float)u, 1f / 3f);
+                float theta = (float)(rng.NextDouble() * Mathf.PI * 2f);
+                float y = (float)(rng.NextDouble() * 2.0 - 1.0);
+                float ring = Mathf.Sqrt(Mathf.Max(0f, 1f - y * y));
+                var pos = centre + new Vector3(ring * Mathf.Cos(theta), y, ring * Mathf.Sin(theta)) * r;
+
+                var crystal = Instantiate(prefab, pos, Quaternion.identity);
+                // Sized BEFORE Start(): Crystal stamps crystalValue from lossyScale, and the
+                // element-level gain reads it too.
+                crystal.transform.localScale *= (float)(rng.NextDouble() * 0.7 + 0.5);
+                crystal.enabled = true;
+                crystal.gameObject.SetActive(true);
+
+                var impactor = crystal.gameObject.AddComponent<ElementalCrystalImpactor>();
+                impactor.Crystal = crystal;
+                if (set.CollectionEffects is { Length: > 0 })
+                    impactor.SetCollectionEffects(set.CollectionEffects);
+                crystal.gameObject.AddComponent<ImpactCollider>().SetImpactor(impactor);
+
+                _spawnedCrystals.Add(crystal);
+            }
+        }
+
+        void ClearElementalCrystals()
+        {
+            for (int i = 0; i < _spawnedCrystals.Count; i++)
+                if (_spawnedCrystals[i]) Destroy(_spawnedCrystals[i].gameObject);
+            _spawnedCrystals.Clear();
         }
 
         // ── AI dogfighters (server) ──────────────────────────────────────────
@@ -497,6 +605,7 @@ namespace CosmicShore.Gameplay
 
             StopProgressSampler();
             VesselCombatHitLatch.Clear();
+            ClearElementalCrystals();
 
             foreach (var s in gameData.RoundStatsList)
             {

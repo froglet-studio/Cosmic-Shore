@@ -399,7 +399,7 @@ All in `Assets/_Scenes/Multiplayer Scenes/`.
 encounters and hiding places (inspired by Scurry's intensity-4 Atlantis, and its opposite: a
 world that fell rather than grew). A **bullet hit scores 1**, a **missile hit scores 50** (direct
 strike OR caught in the blast, latched so one rocket can only pay once), and the first **DOMAIN**
-to the point target (default 500) wins. Its metric, `ScoringMetric.CombatPoints`, is the
+to the point target (default 120) wins. Its metric, `ScoringMetric.CombatPoints`, is the
 platform's first whose source is **vessel-vs-vessel gunnery** rather than prisms, crystals or the
 ecology — and the weighting lives in the mode's own `ScoringRuleSO.PointsForCombatHit` (0
 everywhere else), so hits are COUNTED platform-wide and SCORED only here. It is a TEAM race and
