@@ -3,6 +3,17 @@
 **Generated:** 2026-08-06 · **Scan covers:** merges up to `2e2d3aaf` (PRs #583–#669)
 · **Owner of this file:** the `/qa-backlog` skill — do not hand-edit.
 
+> ⚠️ **This list is behind the trunk — re-run `/qa-backlog` before handing it to QA.**
+> As of 2026-08-11 `bleeding-edge` is **148 commits / 70 feat-fix commits / PRs #674–#702**
+> past the scan above. Not covered here: the two new game modes (**Wildlife Liberation**
+> `GameModes 40`, **Dog Fight** `GameModes 41`), the Astro League sword-soccer rework, the
+> Sparrow ability redesign + turret-stance flight visuals, the Dolphin speed/boost and
+> capsule-blast retunes, the prism occlusion-dither (SHATTER) and debris-erosion work, the
+> CI guard/build pipeline, the PostHog/UGS analytics layer, the consent dialog, the display-name
+> validation path, and the Cinemachine-free menu camera rig. Five of these also still sit as 🔴
+> sections in `../UNITY_VERIFICATION_CHECKLIST.md`, which stays load-bearing until absorbed.
+> **The 47 items below remain valid** — they are incomplete, not wrong.
+
 Every item below landed on a shared branch **without ever being opened in Unity**
 by its author (or was play-tested only in part). Work top-down: P0 first.
 
