@@ -870,8 +870,14 @@ namespace CosmicShore.Editor
         {
             if (!File.Exists(HlslPath)) { Say("Corridor shader not found.", true); return; }
             string text = File.ReadAllText(HlslPath);
-            string updated = Regex.Replace(text, @"(?m)^(#define PRISM_OCCLUSION_LIVE_TUNING )(\d+)$",
-                                           "${1}" + (live ? "1" : "0"));
+            // `(\r?)$` and the ${3} tail, exactly like the Anchor table above — NOT a bare `$`.
+            // In .NET multiline mode `$` matches before the `\n` but AFTER any `\r`, so on a
+            // Windows checkout a bare `$` here matches ZERO times: the replace is a no-op,
+            // `updated == text`, and this method reports "could not find the line" and refuses
+            // to toggle design mode. Capturing and re-emitting the ending also keeps the write
+            // from silently converting the file's line endings into diff noise.
+            string updated = Regex.Replace(text, @"(?m)^(#define PRISM_OCCLUSION_LIVE_TUNING )(\d+)(\r?)$",
+                                           "${1}" + (live ? "1" : "0") + "${3}");
             if (updated == text) { Say("Could not find the PRISM_OCCLUSION_LIVE_TUNING line.", true); return; }
             WriteHlsl(updated);
             Say(live ? "Design mode enabled — the shader is recompiling." : "Design mode off.", false);
