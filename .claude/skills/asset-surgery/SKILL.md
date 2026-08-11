@@ -165,9 +165,21 @@ its GameObject lists it in `m_Component`.
   how a new MonoBehaviour gets onto N vessel/prop prefabs without the editor):
   (1) write the script's `.meta` yourself with a fresh `uuid4().hex` guid and
   **assert that guid appears in exactly one `.meta` repo-wide**; (2) pick a
-  fileID and assert the literal does not already occur in the target file —
-  any int64 works, but keep a readable family (e.g. `…778`, `…779`) so a human
-  reading the diff can see they are yours; (3) insert
+  fileID, assert the literal does not already occur in the target file, and
+  **assert it is ≤ `9223372036854775807` — a fileID is a SIGNED int64 and a
+  random 19-digit decimal overflows it about 16% of the time.** Unity does not
+  recover: `SerializedFile::IndexTextFile` fails the *whole file* with
+  `Could not extract 'FileID' … This number overflows internal type`, every
+  reference inside it turns into `Broken text PPtr`, and nothing is reported
+  until someone loads that prefab — two vessel prefabs in this repo carried one
+  for weeks (`9678703874602163012`, `9900976137657699045`) and only surfaced
+  when a new tool tried to open them. Keep a readable family (e.g. `…778`,
+  `…779`) so a human reading the diff can see they are yours. Sweep for the
+  whole class with one regex over `&(\d+)` / `fileID: (\d+)` filtered to
+  `> INT64_MAX`; fixing one is a whole-word rewrite of the anchor plus every
+  reference, then re-assert the file's dangling-reference set is unchanged
+  (that last check is what proves you renumbered the references too, not just
+  the anchor); (3) insert
   `  - component: {fileID: X}` after the LAST existing entry of the owning
   GameObject's `m_Component` list — anchor the regex on that document
   (`^--- !u!1 &<goID>\nGameObject:\n.*?\n  m_Layer:`, DOTALL) rather than on a
@@ -668,6 +680,14 @@ read**. The lesson generalizes:
   leaving a sparse confetti of survivors in a region that is supposed to be
   completely gone. Nudge any computed clip threshold strictly inside (0,1)
   (`n * 0.998 + 0.001`).
+- **A READ-ONLY editor tool must use `AssetDatabase.LoadAssetAtPath<GameObject>`, not
+  `PrefabUtility.LoadPrefabContents`.** The asset representation already carries the
+  merged hierarchy (nested prefabs included), so `GetComponentsInChildren` and every
+  serialized field read the same as at runtime — while `LoadPrefabContents` opens a
+  preview SCENE per prefab, which is far heavier AND a second failure surface: on a
+  prefab with malformed data it spills native parse errors and callstacks before your
+  code runs. An auditor that dies on the bad data it exists to find is worse than no
+  auditor. Reserve `LoadPrefabContents` for tools that WRITE.
 - **A "dangling GUID on this prefab" is usually project-wide.** Before treating
   a missing asset reference as a local bug, grep the WHOLE Assets tree for that
   guid: a reference broken on four flora prefabs turned out to be broken on

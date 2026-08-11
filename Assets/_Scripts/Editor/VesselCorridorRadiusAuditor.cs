@@ -48,16 +48,24 @@ namespace CosmicShore.Editor
             foreach (var guid in guids)
             {
                 string path = AssetDatabase.GUIDToAssetPath(guid);
-                var root = PrefabUtility.LoadPrefabContents(path);
-                try
+
+                // LoadAssetAtPath, NOT LoadPrefabContents: the asset representation already
+                // carries the merged hierarchy (nested prefabs included — the same traversal
+                // PrismOcclusionCoverageTests relies on), and reading it needs no preview
+                // SCENE. LoadPrefabContents opens one per prefab, which is both far heavier
+                // and a second failure surface — it spilled native parse errors and callstacks
+                // for every vessel when two prefabs carried malformed fileIDs. A reader tool
+                // must not be the thing that breaks on bad data; it should report on it.
+                var root = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+                if (root == null)
                 {
-                    float radius = PrismOcclusionCorridor.MeasureCircumscribedRadius(root.transform);
-                    radii.Add((root.name, radius, TopContributors(root.transform)));
+                    radii.Add((System.IO.Path.GetFileNameWithoutExtension(path), 0f,
+                               "top: (prefab failed to load — check the console for parse errors)"));
+                    continue;
                 }
-                finally
-                {
-                    PrefabUtility.UnloadPrefabContents(root);
-                }
+
+                float radius = PrismOcclusionCorridor.MeasureCircumscribedRadius(root.transform);
+                radii.Add((root.name, radius, TopContributors(root.transform)));
             }
 
             radii.Sort((a, b) => a.radius.CompareTo(b.radius));
