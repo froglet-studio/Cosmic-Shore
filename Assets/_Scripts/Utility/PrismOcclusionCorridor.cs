@@ -121,10 +121,22 @@ namespace CosmicShore.Utility
         /// Hull only, and that exclusion is load-bearing:
         /// - MeshFilter + SkinnedMeshRenderer only, so particle/trail/UI renderers (which are
         ///   <c>Renderer</c>s but carry no mesh here) cannot inflate it.
+        /// - DISABLED renderers are skipped: an invisible mesh is not hull, and vessels carry
+        ///   hidden placeholder geometry (rig-swap leftovers, dummy volumes) that would
+        ///   silently size the corridor to something the player cannot see.
         /// - Anything under a <see cref="Skimmer"/> is skipped. A skimmer is a FIELD volume,
         ///   deliberately far larger than the ship — the shared Skimmer prefab is scaled 15×
         ///   around a 0.5 sphere, a 7.5-unit world radius — so including its forcefield
         ///   overlay would peg every vessel's corridor to the skimmer instead of the hull.
+        /// - A SKINNED mesh measures its <c>localBounds</c> in ROOT-BONE space — the culling
+        ///   bounds the renderer actually draws with — never <c>sharedMesh.bounds</c>. The
+        ///   bind-pose mesh bounds live in MESH space, and on a rig whose scale is carried by
+        ///   the ARMATURE (the Sparrow's armature scales 0.2, with vertex data authored 5×
+        ///   larger to match) transforming them by the renderer node alone overstates the
+        ///   hull by the full armature factor — a ~5× oversized corridor that made the
+        ///   Sparrow's dither read as wrong while the (compact-mesh) Squirrel looked right.
+        ///   localBounds + rootBone matches what renders BY CONSTRUCTION: if culling is
+        ///   right on screen, this number is right.
         /// </summary>
         public static float MeasureCircumscribedRadius(Transform vessel)
         {
@@ -136,7 +148,8 @@ namespace CosmicShore.Utility
             foreach (var filter in vessel.GetComponentsInChildren<MeshFilter>())
             {
                 if (filter.sharedMesh == null) continue;
-                if (!filter.TryGetComponent<MeshRenderer>(out _)) continue; // collider-only mesh
+                if (!filter.TryGetComponent<MeshRenderer>(out var renderer)) continue; // collider-only mesh
+                if (!renderer.enabled) continue;
                 if (filter.GetComponentInParent<Skimmer>() != null) continue;
                 Accumulate(filter.sharedMesh.bounds, filter.transform, origin, ref maxSqr);
             }
@@ -144,8 +157,10 @@ namespace CosmicShore.Utility
             foreach (var skinned in vessel.GetComponentsInChildren<SkinnedMeshRenderer>())
             {
                 if (skinned.sharedMesh == null) continue;
+                if (!skinned.enabled) continue;
                 if (skinned.GetComponentInParent<Skimmer>() != null) continue;
-                Accumulate(skinned.sharedMesh.bounds, skinned.transform, origin, ref maxSqr);
+                var space = skinned.rootBone != null ? skinned.rootBone : skinned.transform;
+                Accumulate(skinned.localBounds, space, origin, ref maxSqr);
             }
 
             return Mathf.Sqrt(maxSqr);

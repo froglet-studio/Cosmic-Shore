@@ -3,30 +3,27 @@
 Re-fit the prism erosion's CDF remap (PRISM_EROSION_CDF_LO / _HI in
 PrismOcclusionCorridor.hlsl).
 
-The erosion is a per-face WIPE: each face of the debris cube gets one jagged front
-(hashed direction + phase) that sweeps across as the clock Opacity falls. Its raw
-threshold — face stagger + the wipe coordinate — is NOT uniform over rendered
-fragments (the projection of a square onto a hashed direction is trapezoidal), so it
-is pushed through a smoothstep fitted to its measured CDF, the same rescue that took
-Worley from 0.140 to 0.0048 (Docs/PRISM_ANIMATION.md §4.7). THE FIT IS TIED TO THE
-FIELD'S PARAMETERS: re-run this after moving PRISM_EROSION_STAGGER, _WIGGLE, or
-_WIGGLE_FREQ, or the coverage error silently returns and the debris fade-curve bends.
+The erosion is a per-face WIPE anchored to UV0 (spin-proof — 2026-08-11): each face
+gets one jagged front (per-prism hashed direction) sweeping across as the clock
+Opacity falls. Its raw wipe coordinate — the projection of the UV square onto a
+hashed direction, plus the value-noise jag — is not exactly uniform, so it is pushed
+through a smoothstep fitted to its measured CDF before the END_MARGIN compression
+(Docs/PRISM_ANIMATION.md §4.7). THE FIT IS TIED TO THE FIELD'S PARAMETERS: re-run
+this after moving PRISM_EROSION_WIGGLE or _WIGGLE_FREQ, or the debris fade-curve
+bends. (END_MARGIN and FRINGE sit OUTSIDE the fitted quantity and can be tuned
+freely.)
 
-Two things keep this honest:
-  * It mirrors the shipped HLSL exactly — the Hoskins hashes, the face pick, the
-    normalized projection, the value-noise jag — and reads every constant out of the
-    HLSL, so it cannot drift from the file it tunes.
-  * It samples CUBE FACES, not the cube volume — only face fragments ever render, and
-    the two distributions differ enough to matter (a volume-sampled fit measured
-    0.0067 on itself and 0.040 on the real face population; the face-sampled fit
-    measures 0.0034 end-to-end).
+It mirrors the shipped HLSL exactly — the Hoskins hashes, the normalized projection,
+the value-noise jag — and reads every constant out of the HLSL, so it cannot drift
+from the file it tunes. Samples the uniform UV square, which is exactly what renders:
+every cube face maps to UV [0,1].
 
 Pure Python, no numpy. Prints the fitted LO/HI and both errors; pass --bake to write
 them into the HLSL (anchored, count-asserted).
 
-Validated 2026-08-10 against a clang-compiled build of the shipped HLSL itself
-(/asset-surgery §4.5c): identical raw distribution, and the fitted constants measure
-0.0034 mean / 0.016 worst |coverage - alpha| through the real compiled function.
+Validated 2026-08-11 against a clang-compiled build of the shipped HLSL itself
+(/asset-surgery §4.5c): identical raw distribution; end-to-end coverage through the
+real compiled function tracks the margin-compressed ramp within the fringe smear.
 """
 
 import math
@@ -63,27 +60,14 @@ def hash13(p):
     return frac((p[0] + p[1]) * p[2])
 
 
-def raw_samples(half_extent, stagger, wiggle, wiggle_freq, n):
-    rng = random.Random(20260810)
+def raw_samples(wiggle, wiggle_freq, n):
+    rng = random.Random(20260811)
     out = []
     for _ in range(n):
-        # FACE fragments — the only ones that render on a closed box
-        pos = [rng.uniform(-0.5, 0.5) for _ in range(3)]
-        axis = rng.randrange(3)
-        pos[axis] = half_extent if pos[axis] >= 0.0 else -half_extent
+        uv = (rng.random() * 2.0 - 1.0, rng.random() * 2.0 - 1.0)
         ent = [rng.uniform(-20.0, 20.0) for _ in range(3)]
-
-        mag = [abs(v) for v in pos]
-        if mag[0] >= mag[1] and mag[0] >= mag[2]:
-            uv, face = (pos[1], pos[2]), (1.0 if pos[0] >= 0 else 2.0)
-        elif mag[1] >= mag[2]:
-            uv, face = (pos[0], pos[2]), (3.0 if pos[1] >= 0 else 4.0)
-        else:
-            uv, face = (pos[0], pos[1]), (5.0 if pos[2] >= 0 else 6.0)
-        uv = (uv[0] / half_extent, uv[1] / half_extent)
-
         e = hash33(ent)
-        h = hash33([face, e[0] * 64.0, e[1] * 64.0])
+        h = hash33([e[0] * 64.0 + 17.0, e[1] * 64.0 + 17.0, e[2] * 64.0 + 17.0])
         ang = 6.28318530718 * h[0]
         dx, dy = math.cos(ang), math.sin(ang)
         w01 = (uv[0] * dx + uv[1] * dy) / (abs(dx) + abs(dy)) * 0.5 + 0.5
@@ -91,9 +75,8 @@ def raw_samples(half_extent, stagger, wiggle, wiggle_freq, n):
         ci = math.floor(c)
         cf = c - ci
         cf = cf * cf * (3.0 - 2.0 * cf)
-        jag = (1 - cf) * hash13([ci, face, e[2] * 64.0]) + cf * hash13([ci + 1.0, face, e[2] * 64.0])
-        w01 = max(0.0, min(1.0, w01 + (jag - 0.5) * wiggle))
-        out.append(h[1] * stagger + w01 * (1.0 - stagger))
+        jag = (1 - cf) * hash13([ci, h[1] * 64.0, e[2] * 64.0]) + cf * hash13([ci + 1.0, h[1] * 64.0, e[2] * 64.0])
+        out.append(max(0.0, min(1.0, w01 + (jag - 0.5) * wiggle)))
     out.sort()
     return out
 
@@ -110,16 +93,13 @@ def coverage_error(raws, lo, hi):
 
 def main():
     text = open(HLSL, encoding="utf-8").read()
-    half_extent = read_const(text, "PRISM_EROSION_HALF_EXTENT")
-    stagger = read_const(text, "PRISM_EROSION_STAGGER")
     wiggle = read_const(text, "PRISM_EROSION_WIGGLE")
     wiggle_freq = read_const(text, "PRISM_EROSION_WIGGLE_FREQ")
     cur_lo = read_const(text, "PRISM_EROSION_CDF_LO")
     cur_hi = read_const(text, "PRISM_EROSION_CDF_HI")
 
-    print(f"wipe: HALF_EXTENT={half_extent} STAGGER={stagger} WIGGLE={wiggle} "
-          f"FREQ={wiggle_freq}; current fit LO={cur_lo} HI={cur_hi}")
-    raws = raw_samples(half_extent, stagger, wiggle, wiggle_freq, 200_000)
+    print(f"wipe: WIGGLE={wiggle} FREQ={wiggle_freq}; current fit LO={cur_lo} HI={cur_hi}")
+    raws = raw_samples(wiggle, wiggle_freq, 200_000)
 
     best = None
     lo = -0.30

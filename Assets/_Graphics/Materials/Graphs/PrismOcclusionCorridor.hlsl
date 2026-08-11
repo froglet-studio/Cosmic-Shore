@@ -1166,26 +1166,27 @@ void PrismOcclusionFade_float(float3 PositionWS, float3 Target, float3 Params, f
 
 // -----------------------------------------------------------------------------
 // THE EROSION — the exploding prism's OWN dither, anchored to the prism itself:
-// ONE WIPE PER FACE (2026-08-10; reshaped same day — the first version carved the
-// body into dozens of Voronoi chunks and read as the prism being EATEN from many
-// points across each face at once; the ask is a single front).
+// ONE WIPE PER FACE (2026-08-10; reshaped 2026-08-11 onto UV anchoring — the first
+// version carved the body into Voronoi chunks and read as the prism being EATEN from
+// many points per face; the second anchored to body POSITION and its face
+// classification broke under the shatter spin).
 //
 // The fade-out of exploding debris must not be a function of the VIEW: a screen- or
 // world-anchored pattern crawls across a flying, tumbling chunk as the camera and the
 // chunk move, so the dissolve reads as something happening TO the image rather than
-// to the prism. This kernel is evaluated on the prism's own BODY: each of the box's
-// six faces gets ONE erosion front — a straight wipe in a hashed direction with a
-// gently jagged edge — that sweeps across the face as the clock Opacity runs 1 -> 0,
-// the faces staggered by hashed phases so the prism peels face by face rather than
-// vanishing in sync. Rotate the camera, tumble the prism: nothing about the wipe
-// changes. One front per face, hard jagged edge — soft-hard-soft, not confetti.
+// to the prism. Each of the box's six faces gets ONE erosion front — a wipe in a
+// hashed direction with a gently jagged edge — that sweeps across the face as the
+// clock Opacity runs 1 -> 0. Rotate the camera, tumble the prism: nothing about the
+// wipe changes. One front per face, a hard jagged line with a dithered dissolve
+// fringe ahead of it — soft-hard-soft, not confetti and not a bare cut.
 //
 // WHERE IT SITS. ExplodingBlockGraph splices this between the explosion clock and the
-// corridor node: Opacity -> EROSION -> Survival (1 or 0) -> PrismOcclusionFade.
-// BaseAlpha. So the erosion owns the FADE (angle-free, body-anchored) while the
-// corridor keeps owning OCCLUSION (a view effect by definition), and when a fading
-// prism is also inside the corridor the two screen doors compose in coverage. A dead
-// fragment takes the corridor function's alpha<=0 fast out (threshold 1, no kernel).
+// corridor node: Opacity -> EROSION -> Survival (0..1; fractional only in the narrow
+// front fringe) -> PrismOcclusionFade.BaseAlpha. So the erosion owns the FADE
+// (angle-free, body-anchored) while the corridor keeps owning OCCLUSION (a view
+// effect by definition), and when a fading prism is also inside the corridor the two
+// screen doors compose in coverage. A dead fragment takes the corridor function's
+// alpha<=0 fast out (threshold 1, no kernel).
 //
 // LIVE PRISMS ON THIS GRAPH ARE EXACT PASS-THROUGHS. With no explosion stamped, the
 // clock's legacy fallback hands _Opacity through: MazeDangerBlockMateral rests at 1
@@ -1193,83 +1194,58 @@ void PrismOcclusionFade_float(float3 PositionWS, float3 Target, float3 Params, f
 // TransparentPrismMaterial rests at 0 (Survival 0 — cloak-invisible). The early outs
 // make both cases exact, not approximate.
 //
-// THE FACE IS THE DOMINANT AXIS of the body position — the prism renders the built-in
-// Cube (object space ±0.5), so except in a hairline band along each edge the largest
-// |component| names the face without needing a normal input or more graph wiring; an
-// edge-band misattribution hands a sliver to the neighbouring face's wipe, invisible
-// in a fade. PER-PRISM VARIETY IS FREE: the stamped _Velocity seeds every face's wipe
-// direction and phase, so no two debris chunks peel alike, with no new property.
+// THE ANCHOR IS UV0, and that choice is what makes the wipe spin-proof. The first cut
+// anchored to the body POSITION and classified faces by dominant axis — but the
+// per-face shatter spin migrates fragments across dominance boundaries as pieces
+// rotate, so wipes jumped between face frames mid-tumble (reported as "the normals
+// stop updating as the pieces spin"). UVs are MESH ATTRIBUTES: no vertex animation —
+// flight, spin, scale — can move them, so the front is glued to the face under any
+// motion, and the whole flight-undo matrix ride is deleted with the problem. The
+// built-in Cube maps every face to UV [0,1]; faces share the wipe's UV-space
+// direction and phase, but each face's UV frame is ORIENTED differently on the box,
+// so in world space the fronts still run in different directions per face.
+//
+// SOFT-HARD-SOFT. Survival is not a binary step: a narrow FRINGE band leads the
+// front, returning fractional alpha that the corridor stage renders as screen-door
+// speckle. So the face reads solid (soft: unbroken surface) → a hard jagged front
+// line → a sparkling dissolve fringe (soft) — the house motif, not a bare cut.
+//
+// THE WIPE FINISHES EARLY BY DESIGN. Thresholds are compressed above END_MARGIN, so
+// every fragment is gone by alpha = END_MARGIN — 15% of the fade before the entity
+// retires (and the fade itself was extended 1.5×, PrismExplosion.DefaultDuration).
+// Without the margin the last slivers ride alpha all the way to ~0.001 and the batch
+// retirement beats the wipe to them — the "pieces vanish before the wipe finishes"
+// bug, structurally closed instead of tuned around.
 //
 // COVERAGE. The wipe coordinate's distribution over a square face is trapezoidal, not
 // uniform, so the raw threshold is pushed through a smoothstep fitted to its measured
-// CDF (Tools/Shaders/fit_prism_erosion_cdf.py — rerun it if STAGGER, WIGGLE, or the
-// wiggle frequency move). Coverage error here is TIME-domain — a slight bend in the
-// fade curve, never a spatial artefact — because within one face one front position
-// maps to one alpha; the remap just keeps area-vs-time honest.
+// CDF over CUBE FACES (Tools/Shaders/fit_prism_erosion_cdf.py — rerun it if WIGGLE or
+// the wiggle frequency move). Coverage error here is TIME-domain — a slight bend in
+// the fade curve, never a spatial artefact.
 // -----------------------------------------------------------------------------
-static const float PRISM_EROSION_HALF_EXTENT = 0.5;  // built-in Cube: object space spans ±0.5
-static const float PRISM_EROSION_STAGGER = 0.30;     // spread of per-face start phases (0 = all faces in sync)
 static const float PRISM_EROSION_WIGGLE = 0.12;      // jagged-front amplitude, in wipe units
 static const float PRISM_EROSION_WIGGLE_FREQ = 2.5;  // jags across one face width
-static const float PRISM_EROSION_CDF_LO = 0.11;      // fitted to the measured raw-threshold CDF
-static const float PRISM_EROSION_CDF_HI = 0.89;      // (Monte-Carlo over cube FACES — the fragments
-                                                     // that actually render — 2026-08-10); see
+static const float PRISM_EROSION_END_MARGIN = 0.15;  // wipe completes by alpha = this (15% early)
+static const float PRISM_EROSION_FRINGE = 0.06;      // dithered dissolve band leading the front, alpha units
+static const float PRISM_EROSION_CDF_LO = -0.02;     // fitted to the measured raw-threshold CDF
+static const float PRISM_EROSION_CDF_HI = 1.02;      // (Monte-Carlo over the UV square) — see
                                                      // fit_prism_erosion_cdf.py
 
-// PositionOS is the FRAGMENT-stage object position, which is POST-vertex-animation —
-// it carries the debris flight offset, and left uncorrected the wipe would slide
-// through the body at the flight speed. So the flight translation is UNDONE here with
-// the same formula the clock applied (offset = worldToObject x Velocity*t; the
-// fragment reads the same per-instance matrix the vertex used, so the subtraction is
-// exact). The per-face shatter spin is NOT undone — it accumulates ~20 degrees across
-// an entire flight (ExplosiveRotation 0.0169 x Amount), a slow drift invisible under
-// a moving front.
-void PrismErosionFade_float(float3 PositionOS, float3 Velocity, float Clock, float StartTime,
-    float Duration, float BaseOpacity, out float Survival)
+void PrismErosionFade_float(float3 UV, float3 Velocity, float BaseOpacity,
+    out float Survival)
 {
     // Exact ends — these are what make the live-material pass-throughs exact and the
-    // debris fade's first/last frames clean.
+    // debris fade's first frame clean.
     if (BaseOpacity >= 1.0) { Survival = 1.0; return; }
     if (BaseOpacity <= 0.0) { Survival = 0.0; return; }
 
-    float3 bodyPos = PositionOS;
-#if !defined(SHADERGRAPH_PREVIEW)
-    if (Duration > 0.0)
-    {
-        float t = max(Clock - StartTime, 0.0);
-        // Raw (float3x3) multiply, NOT a Direction-mode transform — same reasoning as
-        // PrismExplosionClock: TransformWorldToObjectDir normalizes, destroying the
-        // magnitude and re-skewing under the prism's non-uniform scale.
-        bodyPos -= mul((float3x3)GetWorldToObjectMatrix(), Velocity * t);
-    }
-#endif
+    // Face-local frame from UV0, centred: [-1, 1] across the face.
+    float2 uv = UV.xy * 2.0 - 1.0;
 
-    // Which face: dominant axis + its sign; the in-face 2D frame is the other two
-    // axes, normalized to [-1, 1] across the face.
-    float3 mag = abs(bodyPos);
-    float2 uv;
-    float faceKey;
-    if (mag.x >= mag.y && mag.x >= mag.z)
-    {
-        uv = bodyPos.yz;
-        faceKey = bodyPos.x >= 0.0 ? 1.0 : 2.0;
-    }
-    else if (mag.y >= mag.z)
-    {
-        uv = bodyPos.xz;
-        faceKey = bodyPos.y >= 0.0 ? 3.0 : 4.0;
-    }
-    else
-    {
-        uv = bodyPos.xy;
-        faceKey = bodyPos.z >= 0.0 ? 5.0 : 6.0;
-    }
-    uv /= PRISM_EROSION_HALF_EXTENT;
-
-    // Per-prism, per-face identity: wipe direction (h.x), start phase (h.y), and the
-    // jag seed (h.z), all seeded off the stamped flight vector.
+    // Per-prism identity off the stamped flight vector: wipe direction (h.x) and jag
+    // seed (h.z) — every debris chunk peels its own way, no new property, no CPU.
     float3 e = PrismOcclusionHash3(Velocity);
-    float3 h = PrismOcclusionHash3(float3(faceKey, e.x * 64.0, e.y * 64.0));
+    float3 h = PrismOcclusionHash3(e * 64.0 + 17.0);
     float ang = 6.28318530718 * h.x;
     float2 dir = float2(cos(ang), sin(ang));
 
@@ -1283,17 +1259,21 @@ void PrismErosionFade_float(float3 PositionOS, float3 Velocity, float Clock, flo
     float ci = floor(c);
     float cf = c - ci;
     cf = cf * cf * (3.0 - 2.0 * cf);
-    float jag = lerp(PrismOcclusionHash1(float3(ci, faceKey, e.z * 64.0)),
-                     PrismOcclusionHash1(float3(ci + 1.0, faceKey, e.z * 64.0)), cf);
+    float jag = lerp(PrismOcclusionHash1(float3(ci, h.y * 64.0, e.z * 64.0)),
+                     PrismOcclusionHash1(float3(ci + 1.0, h.y * 64.0, e.z * 64.0)), cf);
     w01 = saturate(w01 + (jag - 0.5) * PRISM_EROSION_WIGGLE);
 
-    // Face stagger + the front's own sweep: as Opacity falls, the highest thresholds
-    // die first, so the wipe enters from one edge and crosses to the other.
-    float raw = h.y * PRISM_EROSION_STAGGER + w01 * (1.0 - PRISM_EROSION_STAGGER);
+    // CDF-linearised, then compressed above END_MARGIN so the whole wipe lands inside
+    // the fade with room to spare. As Opacity falls, the highest thresholds die
+    // first — the front enters from one edge and crosses to the other.
     float threshold = PrismOcclusionSafeThreshold(
-        smoothstep(PRISM_EROSION_CDF_LO, PRISM_EROSION_CDF_HI, raw));
+        PRISM_EROSION_END_MARGIN +
+        smoothstep(PRISM_EROSION_CDF_LO, PRISM_EROSION_CDF_HI, w01) * (1.0 - PRISM_EROSION_END_MARGIN));
 
-    Survival = BaseOpacity >= threshold ? 1.0 : 0.0;
+    // The fringe: fractional survival in a narrow band ahead of the front. The
+    // corridor stage renders any fractional alpha as screen-door coverage, so this
+    // costs nothing extra and reads as the face dissolving at the front line.
+    Survival = saturate((BaseOpacity - threshold) / PRISM_EROSION_FRINGE);
 }
 
 #endif // PRISM_OCCLUSION_CORRIDOR_INCLUDED

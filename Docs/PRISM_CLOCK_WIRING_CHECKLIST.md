@@ -315,20 +315,31 @@ no play mode):
 6. Check the console: zero `[PrismOcclusion]` errors. Any that appear name the vessel and
    the number, and mean either an unmeasurable hull or an implausible radius (or, since
    2026-08-10, a transparent prism material — those are off-contract now, see step 7).
-7. Shoot a prism wall and watch the debris (2026-08-10 — dither IS prism transparency).
-   Each face of an exploding prism should show **ONE jagged erosion front wiping
-   across it** — faces starting at staggered moments, every prism peeling in its own
-   directions — never many holes being eaten from multiple points across a face, and
-   no smooth blend or sorting pop against other debris. **Orbit the camera around a
-   fading chunk: the wipe must not change with the view** — a front that crawls
-   across the debris as you move means the erosion node is unwired (run
-   `python3 Tools/Shaders/wire_prism_explosion_erosion.py`) and the fade has fallen
-   back to the view-anchored corridor kernel. A fading chunk inside the corridor
-   shows both effects composed in coverage. Cloaked prisms (the cloak-wall ability)
-   should read as a sparse ~1% stipple, not a translucent ghost. If any prism blends
-   smoothly, a transparent prism material has crept back in — run
+7. Shoot a prism wall and watch the debris (2026-08-10/11 — dither IS prism
+   transparency). Each face of an exploding prism should show **ONE jagged erosion
+   front wiping across it, led by a narrow sparkling dissolve fringe** (soft-hard-
+   soft: solid face → hard jagged line → dithered fringe → gone) — never many holes
+   eaten from multiple points across a face, and no smooth blend or sorting pop.
+   **The wipe must visibly COMPLETE before the piece disappears** — it finishes 15%
+   of the fade early by construction (`PRISM_EROSION_END_MARGIN`), on the extended
+   7.5s duration. **Watch a SPINNING piece: the front must ride the face through the
+   whole tumble** — a wipe that jumps or flickers as pieces rotate is the retired
+   position-anchored bug; **orbit the camera around a fading chunk: nothing about the
+   wipe may change with the view** — either failure means stale wiring, run
+   `python3 Tools/Shaders/wire_prism_explosion_erosion.py` (it migrates old shapes in
+   place). A fading chunk inside the corridor shows both effects composed in
+   coverage. Cloaked prisms (the cloak-wall ability) should read as a sparse ~1%
+   stipple, not a translucent ghost. If any prism blends smoothly, a transparent
+   prism material has crept back in — run
    `python3 Tools/Shaders/enable_prism_alpha_clip.py` (it converts strays and
    preserves their authored alpha as coverage).
+8. Per-vessel corridor sizing: run **FrogletTools > Vessels > Audit Corridor Vessel
+   Radii** (asset-only). Every vessel's hull radius should track its visual bulk, and
+   the report names the top contributing renderers — a radius far off the fleet
+   median comes with its offender attached. Skinned hulls measure `localBounds` in
+   root-bone space (the culling bounds — what actually renders); the old
+   `sharedMesh.bounds` read overstated armature-scaled rigs ~5× (the Sparrow's
+   oversized corridor).
 
 **Do not hand-edit these to explore.** `FrogletTools > Ecology > Prism Animation >
 **Occlusion Dither Lab**` drives every knob below as a shader global — **live, including in
@@ -343,7 +354,7 @@ against the shipped baseline, and bakes the result back into the constants. Edit
 |---|---|---|
 | `PRISM_OCCLUSION_KERNEL` | `..._SHATTER` | The dither look. `..._SHATTER` a cracked lattice of walls (**shipped** — restored 2026-08-10 after the 3D kernel's same-day rejection) · `..._SHATTER3D` the volumetric world-anchored variant (**carried, REJECTED ON LOOK**: crack planes lying near-parallel to a viewed surface flash face-sized plates — reads as glitchy clipping around the vessel; every fidelity number passed, the look failed) · `..._SHARD` triangular flecking · `..._WORLEY` round flecks · `..._SPIRAL` a corridor-anchored iris · `..._IGN` an even screen-space dissolve. |
 | `PRISM_OCCLUSION_SHATTER3D_CELL` / `..._WALL` | `12.0` / `1.2` | Shatter3D only (carried, rejected — see the kernel row). CELL is the ideal angular size in px on the power-of-two world-size ladder; WALL a ratio of the cell. Kept live in the Lab for a possible 3D-SHARD successor. |
-| `PRISM_EROSION_STAGGER` / `..._WIGGLE` / `..._WIGGLE_FREQ` / `..._CDF_LO` / `..._CDF_HI` | `0.3` / `0.12` / `2.5` / `0.11` / `0.89` | The exploding prism's body-anchored fade: **one jagged WIPE per face**, faces staggered by hashed phases (STAGGER spreads the starts; 0 = all faces in sync), WIGGLE the jagged-front amplitude, FREQ the jags per face width. **The CDF pair is fitted to the wipe over CUBE FACES** — re-run `python3 Tools/Shaders/fit_prism_erosion_cdf.py` after moving any of the first three, or the debris fade-curve bends (fitted: 0.0034 end-to-end via a clang build of the shipped file). |
+| `PRISM_EROSION_WIGGLE` / `..._WIGGLE_FREQ` / `..._END_MARGIN` / `..._FRINGE` / `..._CDF_LO` / `..._CDF_HI` | `0.12` / `2.5` / `0.15` / `0.06` / `-0.02` / `1.02` | The exploding prism's body-anchored fade: **one jagged WIPE per face, anchored to UV0** (spin-proof — mesh attributes can't be moved by vertex animation; the position-anchored version broke under the shatter spin). WIGGLE is the jagged-front amplitude, FREQ the jags per face width, END_MARGIN makes the wipe complete that fraction of the fade EARLY (closes the retirement race; pairs with `PrismExplosion.DefaultDuration` 7.5s = the old 5s × 1.5), FRINGE the dithered dissolve band leading the front (the soft in soft-hard-soft). **The CDF pair is fitted to the wipe coordinate over the UV square** — re-run `python3 Tools/Shaders/fit_prism_erosion_cdf.py` after moving WIGGLE or FREQ (MARGIN and FRINGE sit outside the fit and tune freely). |
 | `PRISM_OCCLUSION_SHARD_ORIENT` | `..._FIXED` | Shard only. `..._FIXED` all triangles one heading (most legible as a triangle) · `..._FLIP` up/down · `..._SPIN` free per-cell rotation (reads as splinters). |
 | `PRISM_OCCLUSION_MORPH_RATE` | `0.3256` | Pattern evolution, cycles/sec. `0` freezes it. Shipped ABOVE the ~`0.25` guideline by deliberate choice after viewing it in motion (1.75% of band pixels flip per frame vs the 1.45% guideline) — a look call, and it cannot affect the fade: coverage is flat across the range. |
 | `PRISM_OCCLUSION_PARALLAX` | `8.0` | Depth parallax, px of pattern slide per world unit of VIEW DEPTH. Shears the dither domain so surfaces stacked along one camera ray — a prism's own interior showing through its clipped front face, parallel trail walls — sample decorrelated copies of the pattern instead of moiré-beating a pixel or two apart, and so the dither parallaxes like a volumetric field instead of a screen decal. `0` = off (the flat pre-2026-08-10 behavior, and the beat with it). Coverage-neutral — a domain shift cannot move a translation-invariant threshold distribution — so it cannot break the fade. Direction is the non-dial `..._PARALLAX_DIR` (any fixed unit vector; irrational-ish diagonal). Invisible in the Lab's flat preview by construction — judge it on real stacked mass in play mode. |

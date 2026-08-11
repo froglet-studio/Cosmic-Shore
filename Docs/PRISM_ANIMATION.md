@@ -1435,38 +1435,40 @@ Four properties of the design worth preserving if it is ever touched:
   exists outside the cone), so the dispatch takes a `polarValid` flag and swaps it for IGN
   on out-of-corridor fades rather than letting a whole prism vanish at one alpha.
 - **The exploding prism's FADE is its own dither — body-anchored, never a function of
-  the view: ONE WIPE PER FACE (2026-08-10; reshaped the same day — the first cut
-  carved the body into dozens of Voronoi chunks and read as the prism being EATEN
-  from many points across each face; the ask is a single front).** A screen- or
-  world-anchored pattern crawls across flying, tumbling debris, so the fade read as
-  an image effect. `PrismErosionFade` (same HLSL file) gives each of the box's six
-  faces ONE erosion front — a wipe in a hashed direction with a value-noise jagged
-  edge — that sweeps across the face as the clock Opacity runs 1 → 0, the faces
-  staggered by hashed phases so the prism peels face by face. No camera angle or
-  motion can slide it (the flight translation is undone inside the function with the
-  clock's own formula; the slow per-face shatter spin — ~20° across a whole flight —
-  is deliberately not). The face is the DOMINANT AXIS of the body position (the
-  prism renders the built-in Cube, ±0.5), so no normal input and no extra graph
-  wiring is needed; the stamped `_Velocity` seeds every face's direction and phase,
-  so no two debris chunks peel alike, for free. Spliced by
-  `Tools/Shaders/wire_prism_explosion_erosion.py` between the explosion clock and
-  the corridor node (`Opacity → erosion → Survival(1|0) → BaseAlpha`), so the
-  erosion owns the FADE while the corridor keeps owning OCCLUSION — a view effect by
-  definition — composing in coverage when both apply. Live prisms on
-  ExplodingBlockGraph are exact pass-throughs via the ≥1/≤0 early-outs (MazeDanger
-  solid at `_Opacity 1`, TransparentPrismMaterial invisible at 0), and a wiped-away
-  fragment takes the corridor's alpha≤0 fast out (threshold 1, no kernel). The wipe
-  coordinate's distribution over a face is trapezoidal, not uniform, so it carries a
-  CDF remap like Worley's — fitted by `Tools/Shaders/fit_prism_erosion_cdf.py`
-  **over CUBE FACES, the only fragments that ever render** (a volume-sampled fit
-  measured 0.0067 on itself and 0.040 on the real face population — sample what
-  rasterizes, not the solid), validated against a clang build of the file itself:
-  **0.0034 mean / 0.016 worst** |coverage−alpha| end-to-end, and the ASCII render of
-  the compiled function shows one connected front per face at every alpha. Re-run
-  the fitter if `PRISM_EROSION_STAGGER/WIGGLE/WIGGLE_FREQ` move. The guard is
-  `PrismOcclusionCoverageTests.ExplodingGraph_CarriesTheObjectAnchoredErosion` — a
-  graph revert would otherwise silently return the debris fade to the view-anchored
-  kernel.
+  the view: ONE WIPE PER FACE, anchored to UV0 (2026-08-10; re-anchored 2026-08-11 —
+  the first cut carved the body into Voronoi chunks and read as the prism being
+  EATEN from many points per face; the second anchored to body POSITION with
+  dominant-axis face classification, which the per-face shatter SPIN breaks:
+  fragments migrate across dominance boundaries as pieces rotate, so wipes jumped
+  face frames mid-tumble — reported as "the normals stop updating as the pieces
+  spin").** `PrismErosionFade` (same HLSL file) sweeps ONE jagged erosion front
+  across each face as the clock Opacity runs 1 → 0. **UVs are mesh attributes — no
+  vertex animation (flight, spin, scale) can move them** — so the front is glued to
+  the face under any motion and any camera, and the whole flight-undo matrix ride
+  was deleted with the problem (the function is three hashes, a projection, and a
+  1D value noise — simpler AND cheaper). Faces share the wipe's UV-space direction,
+  but each face's UV frame is oriented differently on the box, so world-space
+  fronts still differ per face; the stamped `_Velocity` seeds each prism's
+  direction and jag so no two chunks peel alike. **Soft-hard-soft**: Survival is
+  not a step — a narrow fringe (`PRISM_EROSION_FRINGE`) leads the front with
+  fractional alpha that the corridor stage renders as screen-door speckle, so the
+  face reads solid → hard jagged line → sparkling dissolve → gone. **The wipe
+  finishes early by design**: thresholds are compressed above
+  `PRISM_EROSION_END_MARGIN` (0.15), so every fragment is gone 15% of the fade
+  before the batch retires — closing the "pieces vanish before the wipe finishes"
+  race structurally — and the fade itself was extended 1.5×
+  (`PrismExplosion.DefaultDuration` 5 → 7.5, `MinPressuredDuration` 0.22 → 0.33).
+  Spliced by `Tools/Shaders/wire_prism_explosion_erosion.py` (which MIGRATES the
+  old position-anchored wiring in place) between the explosion clock and the
+  corridor node; live prisms stay exact pass-throughs via the ≥1/≤0 early-outs,
+  and a wiped-away fragment takes the corridor's alpha≤0 fast out. The wipe
+  coordinate carries a CDF remap fitted over the uniform UV square
+  (`Tools/Shaders/fit_prism_erosion_cdf.py`; re-run if `WIGGLE`/`WIGGLE_FREQ`
+  move — `END_MARGIN`/`FRINGE` sit outside the fitted quantity and tune freely),
+  validated against a clang build of the file itself; the ASCII render of the
+  compiled function shows one connected front per face with its fringe at every
+  alpha. The guard is
+  `PrismOcclusionCoverageTests.ExplodingGraph_CarriesTheObjectAnchoredErosion`.
 
 **Cost, stated:** per fragment, for solid mass outside the corridor — one compare against
 the off sentinel, ~10 ALU of segment-distance, two compares, done (no dither, no texture).
