@@ -1,6 +1,6 @@
 # QA Backlog — untested development on `bleeding-edge`
 
-Generated: 2026-08-11 · Scan covers: merges up to `b0cf4f0f` (PRs #583–#696) · **Owner of this file: the `/qa-backlog` skill — do not hand-edit.**
+Generated: 2026-08-11 · Scan covers: up to `b08a35d7` (PRs #583–#696 + 2 direct fixes) · **Owner of this file: the `/qa-backlog` skill — do not hand-edit.**
 
 > Note (2026-08-11): `bleeding-edge` was briefly force-pushed back to `0e855b24` (dropping PRs #674–#679) and then restored — the current tip `b0cf4f0f` re-includes all of that work plus PRs #680/#681/#695/#696. No items were pruned. The `windows-build-failures` build-fix branch is validated by QA-BUILD-COMPILE on Windows and has no separate item.
 
@@ -112,7 +112,9 @@ Source: PRs #659, #639, #627, #641, #668, #651. These are NUnit suites authored 
 
 PASS: all EditMode tests green and all nine suites present. FAIL: any red test (record the name + assertion message) or a suite that does not appear at all (means it did not compile into the test assembly).
 
-### QA-AUDIT-TOOLS ⬜ — run every FrogletTools auditor and record its verdict
+### QA-AUDIT-TOOLS 🔴 — run every FrogletTools auditor and record its verdict
+> **Last result:** 🔴 FAIL — Three problems beyond the known exceptions; everything else (skimmers, ability rows, hull morphs, speed-tunnel law, occlusion corridor, baselines) ran fine. (1) **Audit Cell-Owned Visuals** logged errors: "'CosmicShore.Core.NetworkMonitor' is missing the class attribute 'ExtensionOfNativeClass'!" (x2) and warning "GameObject (named 'NetworkMonitor') references runtime script in scene file. Fixing!", then "[CellOwnedVisualAudit] 26 scenes scanned." (2) **Validate Lifeform Crystals** — the menu item does not exist on this build (could not run it). (3) **Game Mode Prefab Kit ▸ Validate** — 1 error + ~40 warnings; logged "[PrefabKit] Created kit config at Assets/Resources/GameModePrefabKit.asset with 9 seeded entries." For reference the baseline line read: "SpawnableAtlantis 67,722 prisms / 950,437 volume", and the occlusion-corridor check reported the hlsl GUID pinned (OK).  _(build bleeding-edge @ b0cf4f0f · Unity 6000.4.11f1.x · Windows, Unity Editor, 2026-08-11, andrew)_
+
 Source: PRs #637, #641, #653, #659, #661, #668, #646, #650. Each auditor is a cheap, asset-only check that encodes a contract; several have never been run. Run each and paste its report into your results file:
 
 1. Vessels ▸ Audit Vessel Skimmers
@@ -138,6 +140,16 @@ Source: PR #677 (`prisms-occlusion-shapes`). 467 lines of new `PrismOcclusionCor
 5. Console: zero `[PrismOcclusion]` errors.
 
 PASS: no magenta; the ship stays visible through corridor prisms; the SHATTER lattice reads as hard-edged cracked polygons and evolves smoothly; the Dither Lab opens, drives the effect live and reports coverage without throwing; no console errors. FAIL: magenta prisms · any HLSL/`[PrismOcclusion]` error · the Lab throwing or not affecting the corridor · a strobing/twinkling dither · the ship occluded.
+
+### QA-MENU-CRASH-PAUSE-PANEL ⬜ — Menu_Main no longer crashes the Windows player (type-punned pause panel)
+Source: direct commit `b08a35d7` (`fix(ui): the Menu_Main crash is a type-punned pause-panel reference`). `PauseMenu.pauseMenuPanel` was a `GameObject` field still holding a `CanvasGroup`-typed pointer in `Pause_Menu_Panel.prefab`; the Editor coerced the mismatch to null (silent) but the **IL2CPP player** handed the punned pointer to native `GameObject` calls — an access violation (not a catchable exception) that took the Windows build down on **every** entry to Menu_Main. Fix repoints the prefab at the panel root and routes the reference through a validated `Panel` property. Also touches `SquadMemberCard.cs`. This is a **player-build** crash, so the Editor alone can't fully clear it.
+
+1. Open `_Prefabs/UI Elements/Panels/Pause_Menu_Panel.prefab`: no `Missing (Mono Script)`; `PauseMenu.pauseMenuPanel` points at the panel **GameObject** (its own root), not a CanvasGroup.
+2. Editor: launch to Menu_Main, open the pause panel (first tap warms it), close it — no null-ref, panel appears.
+3. **The real gate — Windows player build.** Make a Windows (IL2CPP) build, launch it, and enter Menu_Main. Do it several times (and back-and-forth from a game) — it must not crash.
+4. Sanity-check anything using `SquadMemberCard` still displays.
+
+PASS: prefab repointed with no missing script; the pause panel warms and opens in the Editor; the **Windows player build reaches Menu_Main repeatedly with no crash**; squad cards still render. FAIL: a missing script or a CanvasGroup-typed reference remaining · the pause panel not opening/warming · **any crash entering Menu_Main in the Windows player** · broken squad cards.
 
 ## Priority 1 — merged features that have never been played
 
