@@ -165,7 +165,8 @@ Machine validation covers structure and colorimetry; only a playtest covers *loo
      `IsShielded`, so the whole course is this tier.
    - **Astro League** (`AstroLeagueBall` shields prisms it touches), AOE block
      creation, and the skimmer overcharge effect.
-2b. Get **danger** prisms on screen (§4.1). Verified producers, easiest first:
+2b. Get **danger** prisms on screen (§4 "The danger tier borrows the shielded base").
+   Verified producers, easiest first:
    - **Ribcage** ("Peel the Cage") — its sparse cage traps are `PrismKind.Danger`,
      and the mode ships the same prism in all three domains.
    - **The worm colony** (Lifeform Matrix toy, Menu_Main freestyle) — its head/tail
@@ -173,7 +174,8 @@ Machine validation covers structure and colorimetry; only a playtest covers *loo
    - **Dangerous flora** (`AssembledFlora`, `growthInfo.IsDangerous`) and the AOE danger
      hemisphere (`AOEDangerHemisphereBlocks`).
    Confirm the base→rim separation reads as **hue/chroma**, not brightness — that is the
-   §4.1 trade-off, and it is what a flat-looking danger prism would be failing at.
+   danger tier's stated trade-off, and it is what a flat-looking danger prism would be
+   failing at.
 3. For **Ruby** and **Gold**, confirm: the prism's facets and silhouette read clearly
    (the base→rim separation is visible), and the shielded prism is obviously distinct
    from an unshielded prism of the same domain.
