@@ -317,9 +317,13 @@ no play mode):
    out around the vessel mean `..._SHATTER3D`, which is carried but REJECTED ON LOOK —
    restore `..._SHATTER`.** (Known open issue, 2026-08-10: at high speed the
    screen-anchored pattern's slide over fast geometry can strobe the bright-face/
-   dark-interior contrast; the 3D kernel fixed that and introduced worse — the Lab's
-   morph-rate and depth-parallax dials are the current levers while a successor is
-   designed.)
+   dark-interior contrast; the 3D kernel fixed that and introduced worse. The shipped
+   answer is `PRISM_BACKFACE_POWER` (3.0) — it takes the prism's own interior out of
+   the gradient band while the exterior is still dissolving, removing the interference
+   rather than scrambling it. `PRISM_OCCLUSION_SHATTER_DEPTH_PHASE` ships at **0**: it
+   was measured and useful decorrelation needs ~50x the rate the speed budget allows,
+   so it is a dead dial, not a lever. Morph-rate and back-face power are the levers
+   while a successor kernel is designed.)
 5. Swap vessels (the freestyle vessel-changer toy). The corridor should re-scale to the
    new hull automatically — a bigger ship clears a proportionally bigger cone.
 6. Check the console: zero `[PrismOcclusion]` errors. Any that appear name the vessel and

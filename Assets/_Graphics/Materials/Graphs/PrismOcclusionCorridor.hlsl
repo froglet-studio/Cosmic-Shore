@@ -59,7 +59,7 @@
 // in the opaque queue, needs no sorting, and is order-independent by construction.
 // Originally the exploding debris and the cloak family still blended in the transparent
 // queue for their fades; now the threshold engages for ANY fractional final alpha, so
-// those fades ride the same screen door (with the same depth parallax), every prism
+// those fades ride the same screen door (and the same back-face separation), every prism
 // material is opaque + _ALPHATEST_ON, and NO prism renders in the transparent queue at
 // all. The effects compose in coverage — a debris prism fading inside the corridor is
 // one pattern at the product alpha, not two stacked transparencies. The trade is
@@ -1080,12 +1080,13 @@ void PrismOcclusionFade_float(float3 PositionWS, float3 Target, float3 Params, f
         if (axisLenSq > 1e-6)
         {
             // t is UNCLAMPED, and the cone is bounded by rejecting t outside (0, tSolid). This
-            // makes it a BARE cone: it ends flat at the vessel's plane, with no spherical
-            // cap past the base and none behind the camera. Mass level with or behind the
-            // ship cannot be in front of it, so clearing any of it would be more than the
-            // corridor needs. (Saturating t instead would pin the closest point to the
-            // vessel past t = 1, and the metric there becomes distance-to-the-ship-point —
-            // that is exactly the hemispherical cap this rejection removes.)
+            // makes it a BARE cone: it ends flat at the NOSE CLEARANCE plane — one hull
+            // radius short of the vessel's own plane, see the constant above — with no
+            // spherical cap past the base and none behind the camera. Mass level with or
+            // behind the ship cannot be in front of it, so clearing any of it would be more
+            // than the corridor needs. (Saturating t instead would pin the closest point to
+            // the vessel past t = 1, and the metric there becomes distance-to-the-ship-point
+            // — that is exactly the hemispherical cap this rejection removes.)
             float t = dot(rel, axis) / axisLenSq;
 
             // Where the fade must be finished — short of the vessel plane by the nose
