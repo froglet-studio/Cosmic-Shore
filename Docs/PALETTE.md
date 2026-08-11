@@ -91,6 +91,39 @@ Two defects were fixed: **contrast collapse** (Ruby and Gold at ~⅓ of Jade's �
 **chroma runaway on Ruby** (>3× Jade's — a near-zero-green violet that blooms harshly).
 SuperShielded was measured and left alone: it is already healthy on all three domains.
 
+### The danger tier borrows the shielded base
+
+A danger prism is painted from a **fourth** pair that has no fields of its own — it is
+composed in `ThemeManager` out of two existing colours:
+
+| | |
+|---|---|
+| base face (`_DarkColor`) | the domain's `ShieldedOutsideBlockColor` |
+| fresnel rim (`_BrightColor`) | the shared `EnvironmentColors.Danger` (one colour, all domains) |
+
+The rim is what says *dangerous* (it is domain-independent by design, since danger is not
+safe to its own domain — see CLAUDE.md); the base is what says *whose*. It takes the
+**shielded** base rather than the plain one so a danger prism reads as its own frostier
+tier of the domain at a glance, instead of as ordinary mass wearing a hot rim.
+
+Measured (linear HDR → CIELAB, §3). Danger rim is `L* = 50.51, C* = 77.85`:
+
+| domain | plain base L\* | shielded base L\* | ΔL\* base→rim with plain *(before)* | with shielded *(as shipped)* |
+|---|---|---|---|---|
+| Jade | 44.08 | 54.31 | 6.42 | **−3.80** |
+| Ruby | 27.41 | 54.31 | 23.09 | **−3.81** |
+| Gold | 44.25 | 54.31 | 6.26 | **−3.81** |
+
+**Known trade-off — this pair separates on chroma, not lightness.** The rim now sits
+marginally *darker* than the base (sign flip: a frosty body with a dark red rim, where it
+used to be a dark body with a hot rim), and |ΔL\*| ≈ 3.8 is far under the 29.34 the
+shielded tier holds. Form still reads because the two are miles apart in **hue and
+chroma** (a C\* 77.85 red against a C\* 32–43 domain hue), which §3's ΔL\* criterion does
+not capture. Jade and Gold barely changed (they were at ~6.3 already); **Ruby gave up a
+real 23-point ΔL\***. If a danger prism ever reads flat, the fix is to re-place the danger
+rim's `L*` against the 54.31 shielded base — raise it well above, or drop it well below —
+**not** to send the base back to the plain colour, which only restored contrast on Ruby.
+
 ### Why chroma is Jade × 1.35 and not Jade exactly
 
 Matching Jade's chroma outright is the cleaner rule and was tried first. It fails on the
@@ -132,6 +165,15 @@ Machine validation covers structure and colorimetry; only a playtest covers *loo
      `IsShielded`, so the whole course is this tier.
    - **Astro League** (`AstroLeagueBall` shields prisms it touches), AOE block
      creation, and the skimmer overcharge effect.
+2b. Get **danger** prisms on screen (§4.1). Verified producers, easiest first:
+   - **Ribcage** ("Peel the Cage") — its sparse cage traps are `PrismKind.Danger`,
+     and the mode ships the same prism in all three domains.
+   - **The worm colony** (Lifeform Matrix toy, Menu_Main freestyle) — its head/tail
+     capital segments carry danger prisms (`WormSegmentFauna`).
+   - **Dangerous flora** (`AssembledFlora`, `growthInfo.IsDangerous`) and the AOE danger
+     hemisphere (`AOEDangerHemisphereBlocks`).
+   Confirm the base→rim separation reads as **hue/chroma**, not brightness — that is the
+   §4.1 trade-off, and it is what a flat-looking danger prism would be failing at.
 3. For **Ruby** and **Gold**, confirm: the prism's facets and silhouette read clearly
    (the base→rim separation is visible), and the shielded prism is obviously distinct
    from an unshielded prism of the same domain.
