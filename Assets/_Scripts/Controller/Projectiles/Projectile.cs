@@ -45,6 +45,36 @@ namespace CosmicShore.Gameplay
         /// damage spares prisms of the shooter's own domain. Snapshot at fire time.
         public bool SpareOwnDomain { get; private set; }
 
+        /// Per-shot: this projectile is a PART of a pooled host object (the Sparrow's
+        /// turret prism carries one), not an instance of the projectile pool. Its
+        /// lifetime belongs to the host, so <see cref="ReturnToFactory"/> stops the
+        /// flight and returns nothing — without this the null-factory branch would
+        /// Destroy the host's child on the first stopping impact.
+        public bool IsCarriedByHost { get; private set; }
+
+
+        /// <summary>
+        /// Raised the instant this flight ends — at BOTH death points: the lifetime
+        /// expiring in <see cref="MoveProjectileAsync"/>, and a stopping prism impact
+        /// in <c>ProjectileImpactor</c>. The bool is true when a prism stopped it.
+        ///
+        /// This is "wherever the bullet would be destroyed" made addressable: the
+        /// Sparrow's Turret Stance anchors its prism here instead of the shot simply
+        /// vanishing. Per-FLIGHT — cleared by <see cref="Initialize"/>, so a pooled
+        /// reissue never carries the previous shooter's handler.
+        /// </summary>
+        public event Action<Projectile, bool> FlightEnded;
+
+        /// <summary>Raises <see cref="FlightEnded"/> exactly once per flight.</summary>
+        internal void RaiseFlightEnded(bool stoppedByImpact)
+        {
+            if (_flightEndRaised) return;
+            _flightEndRaised = true;
+            FlightEnded?.Invoke(this, stoppedByImpact);
+        }
+
+        bool _flightEndRaised;
+
         private MeshRenderer meshRenderer;
         private Collider _rootCollider;
 
@@ -111,7 +141,7 @@ namespace CosmicShore.Gameplay
 
         #region Initialization
         public virtual void Initialize(ProjectileFactory factory, Domains ownDomain, IVesselStatus vesselStatus, float charge, bool detachOnLaunch = false,
-            bool stopOnFirstPrismImpact = false, bool spareOwnDomain = false)
+            bool stopOnFirstPrismImpact = false, bool spareOwnDomain = false, bool carriedByHost = false)
         {
             _factory = factory;
             OwnDomain = ownDomain;
@@ -120,25 +150,46 @@ namespace CosmicShore.Gameplay
             _detachOnLaunch = detachOnLaunch;
             StopOnFirstPrismImpact = stopOnFirstPrismImpact;
             SpareOwnDomain = spareOwnDomain;
+            IsCarriedByHost = carriedByHost;
+
+            // Per-flight: a pooled reissue must not inherit the previous shooter's
+            // end-of-flight handler, and the once-only latch must re-arm.
+            FlightEnded = null;
+            _flightEndRaised = false;
         }
 
         public void SetType(ProjectileType type) => Type = type;
         #endregion
 
         #region Impact Checks
-        public bool DisallowImpactOnPrism(Domains trailBlockDomain) => !friendlyFire && trailBlockDomain == OwnDomain;
+        /// <summary>
+        /// Two independent reasons a projectile ignores a prism:
+        /// (1) authored friendly-fire off for this projectile family (domain gate);
+        /// (2) the prism's PLACEMENT-IMMUNITY window (<see cref="Prism.ProjectileImmuneUntil"/>)
+        ///     is still open. The Sparrow turret stamps a window on each fired prism spanning
+        ///     its flight (it is parked live at the anchor from fire time) plus a short settle
+        ///     after placement — a shot cannot destroy its own delivery, and a spray cannot
+        ///     erase its own freshest output. One TIME rule instead of identity/owner special
+        ///     cases; once the window closes the prism is ordinary friendly-fire mass.
+        /// </summary>
+        public bool DisallowImpactOnPrism(Prism prism) =>
+            (!friendlyFire && prism.Domain == OwnDomain) || Time.time < prism.ProjectileImmuneUntil;
         public bool DisallowImpactOnVessel(Domains vesselDomain) => vesselDomain == OwnDomain;
         #endregion
 
         public void LaunchProjectile(float projectileTime)
         {
-            if (!_factory)
+            // A carried projectile has no factory BY DESIGN — its lifetime belongs to the
+            // pooled host it is part of — so only shout about a missing one when there
+            // should have been one.
+            if (!_factory && !IsCarriedByHost)
             {
                 CSDebug.LogError("No factory for this projectile found. Can't return to pool!");
             }
 
             FlightGeneration++;
-            audioSystem.PlayGameplaySFX(GameplaySFXCategory.ProjectileLaunch, transform.position);
+            if (audioSystem)
+                audioSystem.PlayGameplaySFX(GameplaySFXCategory.ProjectileLaunch, transform.position);
             ProjectileTime = projectileTime;
 
             if (_detachOnLaunch && transform.parent)
@@ -174,6 +225,11 @@ namespace CosmicShore.Gameplay
         public void ReturnToFactory()
         {
             Stop();
+
+            // Carried by a pooled HOST (the turret prism): the host owns the lifetime
+            // and its own end-of-flight handler does the reattach. Returning here would
+            // fall through to the null-factory branch and Destroy the host's child.
+            if (IsCarriedByHost) return;
 
             // Only reattach if we had detached for this flight
             if (_detachedThisFlight && _pooledParent != null && transform.parent == null)
@@ -218,6 +274,12 @@ namespace CosmicShore.Gameplay
                     elapsedTime += deltaTime;
                     await UniTask.Yield(PlayerLoopTiming.PreLateUpdate, token);
                 }
+
+                // Death point #1: the lifetime expired. Signal before the end effects,
+                // so a host that leaves something behind (the turret prism's anchor)
+                // acts on the position the shot actually reached rather than a pooled
+                // instance that has already been reset.
+                RaiseFlightEnded(stoppedByImpact: false);
 
                 projectileImpactor.ExecuteEndEffects();
                 // ReturnToFactory(); // handled by end effects (delayed)
