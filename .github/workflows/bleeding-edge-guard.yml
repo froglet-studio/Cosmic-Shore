@@ -172,9 +172,21 @@ jobs:
           # Library/ every run and forces a full asset reimport - that is what
           # made the first compile take 18 minutes, and it would have taken 18
           # minutes on every push forever. A warm Library is the whole reason
-          # this job runs on an owned machine. Tracked files are still
-          # force-reset by the checkout, so the tree still matches the commit.
+          # this job runs on an owned machine. Tracked files are force-reset by
+          # the checkout; UNTRACKED ones are not - see the next step.
           clean: false
+
+      # `clean: false` preserves Library/ (the point) and also preserves any file
+      # that became untracked in this workspace (not the point). A ghost copy of
+      # the renamed Assets/_Scripts/Tests/EditMode/ folder survived that way and
+      # broke the IL2CPP build against a commit that does not contain it. Sweep
+      # the Unity source tree only, so Library/ at the repo root is untouched.
+      - name: Purge stale untracked files from the source tree
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clean -ffd --dry-run -- Assets Packages ProjectSettings | sed 's/^/::warning::stale file removed: /'
+          git clean -ffd -- Assets Packages ProjectSettings
 
       - name: Compile check
         id: compile

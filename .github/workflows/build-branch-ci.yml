@@ -58,8 +58,16 @@ jobs:
           fetch-depth: 1
           # Do NOT clean: the default `git clean -ffdx` deletes Library/ and
           # forces a full asset reimport on every run. Same reasoning as
-          # unity-ci.yml and bleeding-edge-guard.yml.
+          # unity-ci.yml and bleeding-edge-guard.yml - including the untracked
+          # -file sweep those two carry, for the same reason.
           clean: false
+
+      - name: Purge stale untracked files from the source tree
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clean -ffd --dry-run -- Assets Packages ProjectSettings | sed 's/^/::warning::stale file removed: /'
+          git clean -ffd -- Assets Packages ProjectSettings
 
       - name: Compile check
         shell: bash

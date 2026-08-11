@@ -213,9 +213,32 @@ jobs:
           # Library/ on every run and forces a full asset reimport - 18 minutes
           # of the last compile run, and far worse for an IL2CPP build. A warm
           # Library is the entire reason this tier runs on an owned machine.
-          # Tracked files are still force-reset by the checkout itself, so the
-          # working tree is faithful to the commit regardless.
+          # Tracked files are force-reset by the checkout itself; UNTRACKED ones
+          # are not, which is what the next step exists to handle.
           clean: false
+
+      # A file that is tracked at commit A and gone at commit B is deleted by the
+      # checkout - but a file that became UNTRACKED in the runner's workspace is
+      # invisible to it, and `clean: false` then preserves it forever.
+      #
+      # That is not hypothetical. Assets/_Scripts/Tests/EditMode/ was renamed to
+      # Tests/Editor/ to stop NUnit shipping into the player, and a ghost copy of
+      # the old folder survived here. Unity compiled it into Assembly-CSharp and
+      # the IL2CPP linker died on exactly the error the rename had fixed
+      # (IL1005 -> "Failed to resolve assembly: 'nunit.framework'") - against a
+      # commit whose tree provably contains no such file. The repo was green, the
+      # local build was green, and the runner failed anyway.
+      #
+      # So sweep untracked files out of the Unity source tree, and only there.
+      # Library/, Builds/ and Temp/ live at the repo root and are untouched, so
+      # the warm-import win is kept. No -x: the handful of .gitignore'd assets
+      # (FMOD cache, a couple of .meta) stay put.
+      - name: Purge stale untracked files from the source tree
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clean -ffd --dry-run -- Assets Packages ProjectSettings | sed 's/^/::warning::stale file removed: /'
+          git clean -ffd -- Assets Packages ProjectSettings
 
       - name: Resolve Unity
         shell: bash
