@@ -11,18 +11,25 @@
 Wildlife Liberation is the **Sparrow-only hunt**. Three concentric cages at **1050 / 600 /
 200** pen three tiers of wildlife, with a very wide empty room between each pair — and a fourth
 tier loose in the **open water outside the outer cage**, where the players spawn. Break in and
-shoot; the **first PLAYER** to the kill target (default **120**) wins.
+shoot; the **first DOMAIN** to the summed kill target (default **120**) wins.
 
 **One axis, and it is the ecology.** The scored stat is `IRoundStats.LifeformsKilled` — an
 *attributed creature death*. Nothing else scores: not cage prisms, not rival trails, not
 crystals. A creature that starves, or that a shark eats, credits **nobody**.
 
-**This is the platform's first free-for-all race.** Every other multiplayer mode here (Skim
-Race, Joust, Scurry, Rampage, Ribcage, Brood Rush, Astro League) resolves a winning **domain**
-from a per-domain sum. This one resolves a winning **player**, because with four hunters in one
-cage, pooling two of them would let somebody win off a teammate's kills. The domain sums are
-still computed, synced and shown on the in-game HUD — they are a secondary "how is my colour
-doing" readout, not the win condition. See "Per-player scoring" below.
+**It is a domain race, like every other multiplayer mode here** (Skim Race, Joust, Scurry,
+Rampage, Ribcage, Brood Rush, Astro League): the winning domain is the one whose players'
+kills sum to the target first.
+
+> **A FREE-FOR-ALL variant (first player to the target) shipped here briefly and was reverted.
+> Do not re-derive it.** The mode seats up to **four** players but the platform has only
+> **three** playable domains (`GameDataSO.ActiveDomains` = Jade / Ruby / Gold; Blue is the "no
+> team" sentinel), so a four-player lobby *always* has two players sharing a colour. A
+> per-individual winner therefore bypasses the domain machinery every other mode runs on — the
+> winner banner, the domain HUD panels, the scoreboard's team ordering and
+> `ResolvePlacementOrder` all speak in domains, and a mode that answers "a player won" leaves
+> every one of them describing something that is not the result. Teammates sharing a total is
+> the intended shape here, not a defect to design around.
 
 **Key architectural facts:**
 
@@ -35,13 +42,14 @@ doing" readout, not the win condition. See "Per-player scoring" below.
   `HasEndGame=false`, server winner detection in `OnTurnEndedCustom`, snapshot
   `SyncFinalScores_ClientRpc`), plus progress milestones and the AI hunters
 - **Scoring**: `WildlifeLiberationScoringRuleSO` (`metric = ScoringMetric.LifeformsKilled`;
-  golf-timed) — the winning hunter's `Score` is their finish time, everyone else the
-  `GolfScoreSentinels` sentinel (displayed "N Kills Left")
-- **Turn monitor**: `WildlifeKillTurnMonitor` — resolves the target from
+  golf-timed) — the winning **domain's** players `Score` = finish time, everyone else the
+  `GolfScoreSentinels` sentinel encoding their team's deficit (displayed "N Kills Left")
+- **Turn monitor**: `WildlifeKillTurnMonitor` — resolves the **per-domain** target from
   `EndConditionOverridesSO.GetWildlifeKillTarget()` (default **120**, FrogletTools ▸ Game Modes
   ▸ End Game Conditions — never a per-scene field), syncs it via NetworkVariable →
   `GameDataSO.LifeformTargetCount`
-- **Players**: **1–4** with AI backfill. `MinDomainsAllowed = 1`, `MaxDomainsAllowed = 3`
+- **Players**: **1–4** with AI backfill. `MinDomainsAllowed = 2` (a domain race needs two
+  colours), `MaxDomainsAllowed = 3` — so a full lobby always has one domain of two
 - **Vessels**: **Sparrow only** — see "Sparrow-only" below, which is enforced in three places
 - **Config**: `_SO_Assets/Games/ArcadeGameWildlifeLiberation.asset` (registered in
   `GameLists/OrganicRematchGames.asset`, `ProgressionConfig.alwaysUnlockedModes`)
@@ -63,10 +71,10 @@ StatsManager.LifeformKilled
 IRoundStats.LifeformsKilled++                                                 [server]
               ▼
 ScoringMetrics.Read(stats, LifeformsKilled)
-  ├─ MultiplayerDomainGamesController.SyncDomainSumsRoutine → HUD domain panels (secondary)
+  ├─ SumByDomain → MultiplayerDomainGamesController.SyncDomainSumsRoutine → HUD domain panels
   ├─ WildlifeKillTurnMonitor.CheckForEndOfTurn → rule.IsObjectiveReached       [server]
-  ├─ WildlifeLiberationController.SampleProgress → leading hunter + milestones [server]
-  └─ ElementalComebackSystem (source LifeformsKilled, PER-PLAYER) → trailing-hunter buff
+  ├─ WildlifeLiberationController.SampleProgress → leading domain + milestones [server]
+  └─ ElementalComebackSystem (source LifeformsKilled) → trailing-domain buff
               │  turn end
               ▼
 WildlifeLiberationController.OnTurnEndedCustom → AssignScores → SyncFinalScores_ClientRpc
@@ -104,9 +112,15 @@ a client can only ever credit itself.
 > configs, same seed floors, same rooms) but not the same creatures, so two players cannot race
 > for the same kill. That is `Docs/ECOSYSTEM.md` §7 caveat 4 — "not yet fair for competitive
 > play" — and the honest fix is server-authoritative fauna, which is a platform project, not a
-> mode feature. It is also why the win condition being **per-player** rather than per-domain is
-> more than a design preference here: a shared team total across diverging simulations would be
-> harder to reason about than four independent hunts.
+> mode feature.
+>
+> Note this cuts BOTH ways and is worth understanding before tuning the target: because
+> teammates on one domain are shooting two different local swarms, a two-player domain's summed
+> total is not "the same swarm hunted twice" — it is two independent hunts added together, and
+> so a shared domain converges on the target roughly twice as fast as a solo one. In a 4-player
+> lobby (one domain of two, two of one) that is a real asymmetry. It is inherited from the
+> client-local fauna caveat, not introduced by the scoring, and it disappears the day fauna
+> become server-authoritative.
 
 > A client can spam the RPC to inflate its own count. So can it spam the joust RPC. Anti-cheat
 > is out of scope for the party-game layer; noted so nobody assumes otherwise.
@@ -333,23 +347,26 @@ expensive per collider than the cage half**, and that is this branch's headline 
 `ROSTER` caps in `wildlife_cage_budget.py` (the creature count — start here), then the cage's
 `SHELL_PLANS` frequencies, then `BAR_STEP`. Re-run **both** Python tools after any change.
 
-## Per-player scoring
+## Scoring
 
-`WildlifeLiberationScoringRuleSO` overrides exactly what the free-for-all needs and nothing
-else:
+`WildlifeLiberationScoringRuleSO` is deliberately **thin**. It picks the metric
+(`LifeformsKilled`) and the target (`GameDataSO.LifeformTargetCount`) and inherits the rest of
+`ScoringRuleSO`'s domain behaviour — `ResolveWinner` (highest domain sum, ties by
+`ActiveDomains` order so every machine agrees), `Remaining` (the domain's deficit) and
+`ResolvePlacementOrder` are all used unchanged. Only `IsObjectiveReached`, `AssignScores` and
+the two presentation methods are its own, and each has the same shape as
+`RibcageScoringRuleSO`'s.
 
 | member | behaviour |
 |---|---|
-| `IsObjectiveReached` | scans **players**, not domains |
-| `ResolveWinningHunter` | the leading individual; ties break by name (ordinal), so every peer agrees |
-| `ResolveWinner` | the winning player's **domain** — only used to colour the banner |
-| `RemainingForPlayer` | **your own** deficit (new virtual on `ScoringRuleSO`; defaults to the domain deficit everywhere else) |
-| `Remaining(domain)` | a domain's **best** hunter's deficit, not the sum — summing would make a two-player domain look further from winning than a one-player domain level with it |
-| `AssignScores` | finish time to the winning **player**; everyone else a sentinel encoding their own remaining kills |
+| `IsObjectiveReached` | first active domain whose summed kills reach the target |
+| `ResolveWinner` | inherited — highest domain sum |
+| `Remaining(domain)` | inherited — `target − SumByDomain` |
+| `AssignScores` | winning domain's players get the finish time; everyone else a sentinel encoding *their team's* deficit, so losing teammates tie |
+| `BuildResults` | golf order is team-major by construction; individual kills order teammates, name is the final tiebreak |
 
-`ElementalComebackSystem` gains `ScoreDifferenceSource.LifeformsKilled`, the one **per-player**
-source: the leader is the leading individual and a player's value is their own kills, so a
-hunter trailing the top hunter gets the buff even when their colour is ahead.
+`ElementalComebackSystem` uses `ScoreDifferenceSource.LifeformsKilled`, domain-aggregated like
+every other source — a player's deficit is their team's deficit against the leading colour.
 
 ## Sparrow-only
 
@@ -406,10 +423,13 @@ same density query the ecology already runs.
 
 ## Progress milestones
 
-At a quarter and a half of the kill target, the **leading hunter** crosses a rung:
+At a quarter and a half of the kill target, the **leading domain** crosses a rung:
 `SampleProgress` (server, every 0.5 s) → `AnnounceMilestone_ClientRpc` → a `GameToastSituation`
 post plus `HapticController.PlayAlert()` on every peer. A lead change after the first milestone
 posts `WildlifeLeadChanged`.
+
+Rungs ride the leader's *own* progress rather than a cross-domain total, so they land at a fixed
+point in the race rather than at a point a busy lobby reaches several times faster.
 
 These are **pure feedback — they change no game state**, so a missed or late sample costs a
 toast, never a rule. Toast copy is unauthored today, so **right now the shake IS the milestone
@@ -418,15 +438,18 @@ feedback** (same state as Ribcage).
 ## End condition
 
 Authored ONLY through **FrogletTools ▸ Game Modes ▸ End Game Conditions**
-(`EndConditionOverridesSO.wildlifeKillTarget`, 0 = default **120**) — the number of creatures
-**one player** must kill. Live/Build split + build auto-restore work like every other mode. The
+(`EndConditionOverridesSO.wildlifeKillTarget`, 0 = default **120**) — the number of creatures a
+**domain** must kill between them. Live/Build split + build auto-restore work like every other mode. The
 milestone rungs are fractions of it (0.25 / 0.5).
 
-> **⚠ Pacing flag — 120 has not been playtested.** It is the number that was asked for, not a
-> measured one. Every intensity holds ~610 creatures at seed and breeds toward ~1,409, so 120
-> kills for a single hunter is a small fraction of the standing population and should be a short,
-> punchy match. Milestones land at **30** and **60**. It is one editor field, and the milestones
-> follow it automatically.
+> **⚠ Pacing flag — 120 has not been playtested, and it changed meaning.** It was chosen while
+> the mode was briefly a free-for-all, so it was a PER-PLAYER figure; it is now a **per-domain
+> sum**, which makes it reach faster — and faster still for the two-player domain in a
+> four-player lobby (see the multiplayer caveat above). Every intensity holds ~610 creatures at
+> seed and breeds toward ~1,409, so 120 is a small fraction of the standing population either
+> way and should be a short, punchy match. Milestones land at **30** and **60**. It is one
+> editor field and the milestones follow it automatically, so this is the first thing to move
+> after a playtest.
 
 ## Assets
 
@@ -465,9 +488,8 @@ and the PhaseThresholds cannot drift apart.
 | `Player` | `ReportFaunaKill_ServerRpc()` — owner-side kill report; identity comes from RPC ownership |
 | `IRoundStats` / `RoundStats` | `LifeformsKilled` (+ event, + server-write NetworkVariable, + `Cleanup`) |
 | `ScoringMetric` / `ScoringMetrics.Read` | `LifeformsKilled = 7` |
-| `ScoringRuleSO` | `RemainingForPlayer` virtual — a per-player readout for a free-for-all |
 | `GameDataSO` | `LifeformTargetCount` |
-| `ElementalComebackSystem` | `ScoreDifferenceSource.LifeformsKilled` — the one per-PLAYER source |
+| `ElementalComebackSystem` | `ScoreDifferenceSource.LifeformsKilled`, domain-aggregated like every other source |
 | `EndConditionOverridesSO` (+ window + asset) | `wildlifeKillTarget` live/build/getter, default 500 |
 | `GameToastSituation` | `WildlifeHuntQuarter = 53`, `WildlifeHuntHalf = 54`, `WildlifeLeadChanged = 55`, `WildlifeCoreBreached = 56` |
 | `ServerPlayerVesselInitializerWithAI` | clamps the AI's vessel class into the mode's allowed set |
@@ -519,9 +541,9 @@ and the PhaseThresholds cannot drift apart.
     must be a Sparrow too. Then return to the menu and confirm the client can pick a Dolphin
     again — the restriction must not leak out of the game scene.
 12. **A CLIENT'S KILLS SCORE.** In a real lobby (host + at least one client), have the CLIENT
-    do all the killing for 30 s. Their counter must rise on **both** machines. If it rises only
-    on the client, the `ReportFaunaKill_ServerRpc` path is broken — and note the reverse test is
-    not equivalent, because the host records directly.
+    do all the killing for 30 s. Their counter — and their DOMAIN's panel — must rise on **both**
+    machines. If it rises only on the client, the `ReportFaunaKill_ServerRpc` path is broken —
+    and note the reverse test is not equivalent, because the host records directly.
 13. **Everyone starts at 0 (the other Ribcage regression).** In a real multiplayer lobby (host +
     at least one client), check every score panel reads 0 at the countdown — **including after a
     rematch and after playing a previous game in the same session.**

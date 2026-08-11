@@ -2780,7 +2780,9 @@ grew its only client branch: a client forwards its own kill through its own `Pla
 (`Player.ReportFaunaKill_ServerRpc`), the same owner-detects → server-records round-trip
 `NetworkVesselImpactor` uses for jousts, with identity taken from RPC ownership rather than a
 name string. Server-authoritative fauna would retire it; until then, **any mode that scores on
-the ecology needs this shape.**
+the ecology needs this shape** - and needs to understand that a DOMAIN sum over client-local
+fauna is two independent hunts added together, not one swarm hunted twice, so a shared domain
+converges on a target faster than a solo one.
 
 ### 24.2 A pen becomes a band
 

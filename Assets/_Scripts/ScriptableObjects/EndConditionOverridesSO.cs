@@ -80,10 +80,9 @@ namespace CosmicShore.ScriptableObjects
                  "escalation ladder with it. 0 = default (2000).")]
         [Min(0)] public int ribcagePrismTarget = 2000;
 
-        [Tooltip("Wildlife Liberation: creatures ONE PLAYER must kill to win. Unlike every " +
-                 "other target here this is compared against an INDIVIDUAL's stat, not a domain " +
-                 "sum - the hunt is a free-for-all, so a teammate's kills do not count toward " +
-                 "yours. 0 = default (120).")]
+        [Tooltip("Wildlife Liberation: creatures a domain must kill between them to win " +
+                 "(race to N), summed across that domain's players like every other target " +
+                 "here. 0 = default (120).")]
         [Min(0)] public int wildlifeKillTarget = 120;
 
         [Header("Build baseline - what a shipping build uses. Set via the tool's \"Set Build Values\" button.")]
@@ -158,9 +157,9 @@ namespace CosmicShore.ScriptableObjects
         public int GetRibcagePrismTarget() => ribcagePrismTarget > 0 ? ribcagePrismTarget : DefaultRibcagePrismTarget;
 
         /// <summary>
-        /// Wildlife Liberation kill target ("first hunter to N creatures"): the configured value
-        /// when &gt; 0, otherwise <see cref="DefaultWildlifeKillTarget"/>. Compared against ONE
-        /// PLAYER's kill count, not a domain sum.
+        /// Wildlife Liberation kill target ("race to N creatures killed"): the configured value
+        /// when &gt; 0, otherwise <see cref="DefaultWildlifeKillTarget"/>. Compared against a
+        /// DOMAIN's summed kill count.
         /// </summary>
         public int GetWildlifeKillTarget() => wildlifeKillTarget > 0 ? wildlifeKillTarget : DefaultWildlifeKillTarget;
 

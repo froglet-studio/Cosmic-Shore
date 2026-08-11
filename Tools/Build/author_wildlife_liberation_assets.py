@@ -139,8 +139,8 @@ PREVIEW_FILEID = 241334157148977051
 
 ROOM_NAMES = ("Outer", "Middle", "Core", "OpenWater")
 
-# The kill target - the race metric. The 25%/50% milestone rungs are fractions of this (so 30
-# and 60), and moving it moves the whole progress ladder.
+# The kill target - the race metric, summed PER DOMAIN. The 25%/50% milestone rungs are
+# fractions of this (so 30 and 60), and moving it moves the whole progress ladder.
 WILDLIFE_KILL_TARGET = 120
 
 SPAWN_RING_RADIUS = budget.SPAWN_RING_RADIUS
@@ -322,14 +322,19 @@ emit("Assets/_SO_Assets/Scoring Rules/WildlifeLiberationScoringRule.asset.meta",
 # SPARROW ONLY: a single entry in Vessels is what drives all three enforcement layers
 # (GameDataSO.SyncFromArcadeGame's launcher clamp, ServerPlayerVesselInitializer's server-side
 # spawn clamp, and the AI clamp in ServerPlayerVesselInitializerWithAI). 1-4 players.
+#
+# MinDomainsAllowed 2, like Ribcage: this is a DOMAIN race, and a one-domain lobby has no race
+# in it - the single colour would cross the target unopposed. Note 4 players over 3 domains
+# always means teammates; that is the intended shape, not a defect (see
+# WildlifeLiberationScoringRuleSO for why a free-for-all was tried here and reverted).
 emit("Assets/_SO_Assets/Games/ArcadeGameWildlifeLiberation.asset",
      HEADER_FOR(EXISTING["SO_ArcadeGame"], "ArcadeGameWildlifeLiberation") + f"""  Mode: 40
   IsMultiplayer: 1
   DisplayName: Wildlife Liberation
-  Description: Three cages, three kinds of prisoner. Shoot your way through the bars
-    and thin the swarm - the outer ring teems, the middle room is bigger and meaner,
-    and whatever is in the core did not get there by being easy. First hunter to the
-    kill count walks away with it.
+  Description: Three cages, three kinds of prisoner, and open water full of the big
+    ones before you even reach the bars. Shoot your way in and thin the swarm - the
+    outer ring teems, the middle room is bigger and meaner, and whatever is in the
+    core did not get there by being easy. First domain to the kill count takes it.
   IconActive: {{fileID: 21300000, guid: {EXISTING['IconActive']}, type: 3}}
   IconInactive: {{fileID: 21300000, guid: {EXISTING['IconInactive']}, type: 3}}
   CardBackground: {{fileID: 21300000, guid: {EXISTING['CardBackground']}, type: 3}}
@@ -340,7 +345,7 @@ emit("Assets/_SO_Assets/Games/ArcadeGameWildlifeLiberation.asset",
   - {{fileID: 11400000, guid: {EXISTING['Vessel_Sparrow']}, type: 2}}
   MinPlayersAllowed: 1
   MaxPlayersAllowed: 4
-  MinDomainsAllowed: 1
+  MinDomainsAllowed: 2
   MaxDomainsAllowed: 3
   MinIntensity: 1
   MaxIntensity: 4
