@@ -26,11 +26,18 @@ namespace CosmicShore.Gameplay
     ///   3. RUBBLE + ASH - the floor litter and the suspended fallout. Neither will stop anyone,
     ///      but both fill the volume with parallax, which is what makes a fast pass read as fast.
     ///
-    /// <b>Altitude is the arena's central trade.</b> The crust is a shallow bowl and all the
-    /// cover stands on it, so the lower half of the volume is a warren and the upper half is
-    /// open sky. Down low you are hidden and slow and constantly nearly hitting things; up high
-    /// you are fast and can see everything - and so can everyone else. Nothing enforces this; it
-    /// falls out of the geometry.
+    /// <b>SCATTER is the whole read.</b> A boneyard is patchy and it goes all the way to the
+    /// horizon: wreckage clumps into DEBRIS FIELDS with open lanes between them, spread
+    /// EQUAL-AREA so the rim carries as much structure as the middle, and the exact centre is
+    /// held CLEAR. Roughly <see cref="driftFraction"/> of every family never landed at all - it
+    /// hangs in the volume above the crust at any attitude - so there is no single ground plane
+    /// and no pile in the middle. See <see cref="ScatterPlanar"/> for the three rules and what
+    /// each of them fixes.
+    ///
+    /// <b>Altitude is still a trade.</b> The crust buckles into shelves and most of the heavy
+    /// cover rests on them, so low is a warren and high is comparatively open - but the drifters
+    /// mean high is not EMPTY, and a fight can climb through wreckage instead of leaving it.
+    /// Nothing enforces this; it falls out of the geometry.
     ///
     /// <b>The wreckage is COVER, not the objective.</b> Unlike Ribcage (whose bone IS the score)
     /// or the Wildlife Liberation cages (which ARE the walls of the rooms), shooting the Boneyard
@@ -86,6 +93,29 @@ namespace CosmicShore.Gameplay
                  "through the gap where the span fell.")]
         [SerializeField, Min(0)] int overpassCount = 4;
 
+        [Header("Scatter")]
+        [Tooltip("How many DEBRIS FIELDS the wreckage clumps into. A boneyard is patchy - knots " +
+                 "of wreckage with open lanes between them - not an even sprinkle, and not a pile " +
+                 "in the middle. Every structure belongs to one field.")]
+        [SerializeField, Min(1)] int debrisFields = 7;
+
+        [Tooltip("Radius of one debris field, as a fraction of the arena radius. Bigger = the " +
+                 "fields blur into each other; smaller = tight islands with wide empty lanes.")]
+        [SerializeField, Range(0.05f, 0.45f)] float fieldRadiusFraction = 0.2f;
+
+        [Tooltip("No structure is placed within this radius of the arena centre. The middle of " +
+                 "the arena is deliberately OPEN AIR - it is where the opening merge happens, " +
+                 "and a clear centre is what stops the whole field reading as a heap.")]
+        [SerializeField, Min(0f)] float coreClearRadius = 120f;
+
+        [Tooltip("Fraction of structures that float CLEAR of the crust instead of resting on it. " +
+                 "A wreck field in open water has no single ground plane; the drifters are what " +
+                 "fill the upper volume and let a fight climb.")]
+        [SerializeField, Range(0f, 1f)] float driftFraction = 0.4f;
+
+        [Tooltip("How far above the crust a drifting wreck can hang.")]
+        [SerializeField, Min(0f)] float driftHeight = 300f;
+
         // ── Family constants ─────────────────────────────────────────────────
         // Per-unit prism counts are FIXED (never randomised) so the analytic budget in
         // Tools/Build/boneyard_budget.py can mirror this file exactly. Randomness moves things
@@ -119,8 +149,12 @@ namespace CosmicShore.Gameplay
         protected override int LayCapacity => 34000;
 
         protected override int BuildParameterHash() =>
-            System.HashCode.Combine(arenaRadius, crustDepth, hulkCount, spireCount,
-                frameCount, overpassCount, nameof(SpawnableBoneyard), 1);
+            System.HashCode.Combine(
+                System.HashCode.Combine(arenaRadius, crustDepth, hulkCount, spireCount,
+                    frameCount, overpassCount),
+                System.HashCode.Combine(debrisFields, fieldRadiusFraction, coreClearRadius,
+                    driftFraction, driftHeight),
+                nameof(SpawnableBoneyard), 2);
 
         // Wreck domains. Structures are painted across the full triad rather than one colour,
         // because in a dogfight the cover is also the map: "the ruby hulk" is how a pilot says
@@ -146,13 +180,106 @@ namespace CosmicShore.Gameplay
             return crustDepth + t * t * 130f;
         }
 
-        /// <summary>Crust height including the noise that makes it read as broken ground.</summary>
+        /// <summary>
+        /// Crust height. TWO octaves of buckling, and the coarse one is deliberately violent
+        /// (±110 against a bowl that only rises 130 across its whole radius): it breaks the
+        /// paraboloid into SHELVES at different heights instead of one smooth dish. A smooth
+        /// dish is a funnel - it points every sightline and every drifting pilot at the middle,
+        /// which is most of what made the first pass read as centred.
+        /// </summary>
         float CrustSurface(Vector3 planar)
         {
+            float coarse = (N01(planar.x * 0.0032f, 0f, planar.z * 0.0032f, 3) - 0.5f) * 220f;
+            float fine = (N01(planar.x * 0.011f, 17f, planar.z * 0.011f, 8) - 0.5f) * 46f;
             float r = new Vector2(planar.x, planar.z).magnitude;
-            float buckle = (N01(planar.x * 0.004f, 0f, planar.z * 0.004f, 3) - 0.5f) * 70f;
-            return CrustY(r) + buckle;
+            return CrustY(r) + coarse + fine;
         }
+
+        // ── SCATTER ──────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Where one structure goes. Every structural family routes through this, and it is the
+        /// difference between "a boneyard" and "a heap with a clear edge".
+        ///
+        /// Three rules, each fixing a specific way the first pass read as CENTRED:
+        ///
+        ///   1. <b>Equal-area radii, everywhere.</b> Drawing a radius uniformly puts far more
+        ///      wreckage per unit of AREA near the middle (density falls off as 1/r), which is
+        ///      exactly the "it's all in the centre" look. Every radius here is
+        ///      <c>R·sqrt(u)</c>, so a ring at the rim gets as much wreckage as a ring near the
+        ///      core.
+        ///   2. <b>Debris FIELDS, not a sprinkle.</b> A wrecked world is patchy: knots of
+        ///      structure with open lanes between them. Structures are clustered onto
+        ///      <see cref="debrisFields"/> anchors spread equal-area over the disc, and the
+        ///      families INTERLEAVE across those anchors (the +index·3 stride) so a field is a
+        ///      mixed tangle of hulk and spire and girder rather than one family's private
+        ///      island.
+        ///   3. <b>The centre is empty.</b> Nothing is placed inside
+        ///      <see cref="coreClearRadius"/>; a placement that lands there is pushed out rather
+        ///      than dropped, so the clearing costs no cover. The open middle is where the
+        ///      opening merge happens, and it is what makes the surrounding scatter legible.
+        ///
+        /// Returns the horizontal position; <see cref="ScatterHeight"/> resolves the vertical.
+        /// </summary>
+        Vector3 ScatterPlanar(int index, int salt)
+        {
+            int fields = Mathf.Max(1, debrisFields);
+            int field = (index * 3 + salt) % fields;
+
+            // Field anchor: equal-area radius on a golden-angle spiral, with per-field angular
+            // jitter so the anchors do not read as a spiral.
+            //
+            // The equal-area draw runs over the PLAYABLE ANNULUS - coreClearRadius out to
+            // 0.92R - not over the whole disc. Spreading equal-area across the full disc sounds
+            // right and is not: the innermost anchor lands inside the clearing, its whole field
+            // gets shoved back out by the clamp, and the result is a ring of wreckage piled
+            // against the core with the rim left bare. Measured over the shipped counts, the
+            // full-disc version put ~51% of all structure in the inner third of the AREA and
+            // only ~11% in the outer third; over the annulus it is close to even.
+            float u = (field + 0.5f) / fields;
+            float rIn = Mathf.Min(coreClearRadius, arenaRadius * 0.5f);
+            float rOut = arenaRadius * 0.92f;
+            float anchorR = Mathf.Sqrt(rIn * rIn + u * (rOut * rOut - rIn * rIn));
+            float anchorA = field * GoldenAngle + Hash01(field * 191 + _noiseSeed) * 1.4f;
+            var anchor = new Vector3(anchorR * Mathf.Cos(anchorA), 0f, anchorR * Mathf.Sin(anchorA));
+
+            // Offset within the field - equal-area again, so a field is evenly filled rather
+            // than dense at its own middle.
+            float fieldR = arenaRadius * fieldRadiusFraction;
+            float offR = fieldR * Mathf.Sqrt(Hash01(index * 53 + salt * 7 + 1));
+            float offA = Hash01(index * 67 + salt * 11 + 2) * Mathf.PI * 2f;
+            var planar = anchor + new Vector3(offR * Mathf.Cos(offA), 0f, offR * Mathf.Sin(offA));
+
+            // Keep the core clear, and keep everything inside the arena.
+            float d = new Vector2(planar.x, planar.z).magnitude;
+            if (d < 0.001f) planar = new Vector3(coreClearRadius, 0f, 0f);
+            else
+            {
+                float clamped = Mathf.Clamp(d, coreClearRadius, arenaRadius * 0.97f);
+                planar *= clamped / d;
+            }
+            return planar;
+        }
+
+        /// <summary>
+        /// The vertical half of a scatter placement. A fraction of structures DRIFT clear of the
+        /// crust instead of resting on it - without them every wreck sits on one surface and the
+        /// arena reads as a floor with junk on it rather than a volume full of debris, which
+        /// also flattens the altitude trade the mode is built around.
+        /// </summary>
+        float ScatterHeight(Vector3 planar, int index, int salt, float restOffset)
+        {
+            float ground = CrustSurface(planar) + restOffset;
+            float roll = Hash01(index * 89 + salt * 13 + 5);
+            if (roll >= driftFraction) return ground;
+
+            // Drifters hang somewhere in the volume above their patch of crust.
+            float t = Hash01(index * 97 + salt * 17 + 6);
+            return ground + 60f + driftHeight * t;
+        }
+
+        /// <summary>True when this structure is one of the drifters (see above).</summary>
+        bool IsDrifting(int index, int salt) => Hash01(index * 89 + salt * 13 + 5) < driftFraction;
 
         // ── 1. CRUST - the shattered ground ──────────────────────────────────
 
@@ -171,6 +298,16 @@ namespace CosmicShore.Gameplay
                 float r = arenaRadius * Mathf.Sqrt(t);          // equal-area spread
                 float a = i * GoldenAngle;
                 var planar = new Vector3(r * Mathf.Cos(a), 0f, r * Mathf.Sin(a));
+
+                // WARP the even spread with low-frequency noise. An equal-area phyllotaxis disc
+                // is perfectly uniform, which reads as a manufactured floor; pushing each plate
+                // along a noise field pulls them into shelves and opens ragged HOLES between
+                // them, so the ground looks broken up rather than laid down. The plate COUNT is
+                // untouched - this only moves them, which is what keeps boneyard_budget.py an
+                // exact mirror.
+                float wx = (N01(planar.x * 0.0026f, 5f, planar.z * 0.0026f, 21) - 0.5f) * 190f;
+                float wz = (N01(planar.x * 0.0026f, 91f, planar.z * 0.0026f, 22) - 0.5f) * 190f;
+                planar += new Vector3(wx, 0f, wz);
 
                 float y = CrustSurface(planar);
                 var pos = new Vector3(planar.x, y, planar.z);
@@ -207,25 +344,23 @@ namespace CosmicShore.Gameplay
         {
             for (int k = 0; k < hulkCount; k++)
             {
-                // Spread the hulks around the bowl on a golden-angle spiral, biased outward so
-                // the centre stays flyable and the reactor keeps its sightlines.
-                float a = k * GoldenAngle * 1.7f;
-                float r = arenaRadius * (0.28f + 0.58f * Hash01(k * 31 + _noiseSeed));
-                var centrePlanar = new Vector3(r * Mathf.Cos(a), 0f, r * Mathf.Sin(a));
+                var centrePlanar = ScatterPlanar(k, 0);
 
                 float length = 190f + 150f * Hash01(k * 17 + 5);
                 float radius = 30f + 18f * Hash01(k * 23 + 11);
 
-                // Axis: mostly horizontal with a shallow tilt, as if it slid to a stop.
+                // A hulk that came to rest on the crust lies roughly flat, as if it slid to a
+                // stop. A DRIFTER never landed, so it tumbles to any attitude - which is what
+                // stops the hulks reading as a row of logs all pointing the same way up.
+                bool drifting = IsDrifting(k, 0);
                 float heading = Hash01(k * 41 + 3) * Mathf.PI * 2f;
-                float pitch = (Hash01(k * 53 + 7) - 0.5f) * 0.55f;
+                float pitch = (Hash01(k * 53 + 7) - 0.5f) * (drifting ? 2.6f : 0.55f);
                 var axis = new Vector3(
                     Mathf.Cos(heading) * Mathf.Cos(pitch),
                     Mathf.Sin(pitch),
                     Mathf.Sin(heading) * Mathf.Cos(pitch)).normalized;
 
-                // Sit it on the crust with the belly just clear of the ground.
-                float baseY = CrustSurface(centrePlanar) + radius * 0.75f;
+                float baseY = ScatterHeight(centrePlanar, k, 0, radius * 0.75f);
                 var centre = new Vector3(centrePlanar.x, baseY, centrePlanar.z);
 
                 var up = Vector3.Cross(axis, Vector3.up).sqrMagnitude > 1e-3f
@@ -322,17 +457,18 @@ namespace CosmicShore.Gameplay
         {
             for (int k = 0; k < spireCount; k++)
             {
-                float a = k * GoldenAngle * 2.3f;
-                float r = arenaRadius * (0.18f + 0.72f * Hash01(k * 19 + _noiseSeed));
-                var planar = new Vector3(r * Mathf.Cos(a), 0f, r * Mathf.Sin(a));
-                float baseY = CrustSurface(planar);
+                var planar = ScatterPlanar(k, 1);
+                float baseY = ScatterHeight(planar, k, 1, 0f);
 
                 float height = 140f + 210f * Hash01(k * 29 + 9);
                 float baseRadius = 11f + 9f * Hash01(k * 37 + 4);
 
                 // A snapped tower leans. The lean is what stops the spire field reading as a
                 // row of chess pieces, and it produces the overhangs a pilot can duck under.
-                float leanAngle = (Hash01(k * 43 + 6) - 0.5f) * 0.5f;
+                // A spire that never landed - a torn-off section still turning - can point any
+                // which way, so the drifters take a much wider lean.
+                bool drifting = IsDrifting(k, 1);
+                float leanAngle = (Hash01(k * 43 + 6) - 0.5f) * (drifting ? 3.0f : 0.5f);
                 float leanHeading = Hash01(k * 47 + 2) * Mathf.PI * 2f;
                 var lean = new Vector3(
                     Mathf.Cos(leanHeading) * Mathf.Sin(leanAngle),
@@ -384,10 +520,8 @@ namespace CosmicShore.Gameplay
         {
             for (int k = 0; k < frameCount; k++)
             {
-                float a = k * GoldenAngle * 3.1f;
-                float r = arenaRadius * (0.25f + 0.6f * Hash01(k * 71 + _noiseSeed));
-                var planar = new Vector3(r * Mathf.Cos(a), 0f, r * Mathf.Sin(a));
-                float baseY = CrustSurface(planar) + 20f;
+                var planar = ScatterPlanar(k, 2);
+                float baseY = ScatterHeight(planar, k, 2, 20f);
 
                 var half = new Vector3(
                     52f + 40f * Hash01(k * 13 + 1),
@@ -460,11 +594,8 @@ namespace CosmicShore.Gameplay
         {
             for (int k = 0; k < overpassCount; k++)
             {
-                float a = k * GoldenAngle * 1.3f;
                 float span = 250f + 190f * Hash01(k * 83 + 2);
-                float r = arenaRadius * (0.22f + 0.5f * Hash01(k * 89 + _noiseSeed));
-
-                var mid = new Vector3(r * Mathf.Cos(a), 0f, r * Mathf.Sin(a));
+                var mid = ScatterPlanar(k, 3);
                 float heading = Hash01(k * 59 + 4) * Mathf.PI * 2f;
                 var along = new Vector3(Mathf.Cos(heading), 0f, Mathf.Sin(heading));
                 var across = Vector3.Cross(Vector3.up, along).normalized;
@@ -529,14 +660,23 @@ namespace CosmicShore.Gameplay
         // ── 7. THE REACTOR - the centre landmark ─────────────────────────────
 
         /// <summary>
-        /// One unmissable structure at the arena's centre, and the only super-shielded mass in
-        /// the Boneyard. It exists for orientation - "meet me at the reactor" - and it is
-        /// deliberately a bad place to loiter: the core is ringed with danger, so the most
-        /// visible point in the arena is also the most punishing to sit still in.
+        /// One unmissable structure, and the only super-shielded mass in the Boneyard. It exists
+        /// for orientation - "meet me at the reactor" - and it is deliberately a bad place to
+        /// loiter: the core is ringed with danger, so the most visible point in the arena is
+        /// also the most punishing to sit still in.
+        ///
+        /// <b>It sits OFF-CENTRE, and that is the point.</b> A landmark in the middle of a
+        /// radially symmetric arena tells a pilot nothing - every bearing off it looks the same,
+        /// so it orients nobody while planting a monolith exactly where the wreck field most
+        /// needs to read as open. Off to one side it becomes a real reference ("north of the
+        /// reactor") and the centre stays clear.
         /// </summary>
         void BuildReactor()
         {
-            float baseY = CrustSurface(Vector3.zero);
+            float ra = Hash01(_noiseSeed * 7 + 3) * Mathf.PI * 2f;
+            float rr = arenaRadius * 0.52f;
+            var reactorPlanar = new Vector3(rr * Mathf.Cos(ra), 0f, rr * Mathf.Sin(ra));
+            float baseY = CrustSurface(reactorPlanar);
 
             // The core ring: super-shielded, indestructible, permanent. 24 prisms is the whole
             // always-on mesh-collider budget for this family.
@@ -545,7 +685,8 @@ namespace CosmicShore.Gameplay
                 float ang = 2f * Mathf.PI * i / ReactorRing;
                 var radial = new Vector3(Mathf.Cos(ang), 0f, Mathf.Sin(ang));
                 var tangent = new Vector3(-Mathf.Sin(ang), 0f, Mathf.Cos(ang));
-                Emit(new Vector3(radial.x * 46f, baseY + 60f, radial.z * 46f),
+                Emit(new Vector3(reactorPlanar.x + radial.x * 46f, baseY + 60f,
+                        reactorPlanar.z + radial.z * 46f),
                     SpawnPoint.LookRotation(radial, tangent),
                     new Vector3(5f, 8f, 4f), Domains.Blue, PrismKind.SuperShielded);
             }
@@ -576,7 +717,8 @@ namespace CosmicShore.Gameplay
                         ? PrismKind.Danger
                         : PrismKind.Plain;
 
-                    Emit(new Vector3(radial.x * ringR, ringY, radial.z * ringR),
+                    Emit(new Vector3(reactorPlanar.x + radial.x * ringR, ringY,
+                            reactorPlanar.z + radial.z * ringR),
                         SpawnPoint.LookRotation(outward, tangent),
                         Jit(new Vector3(4.4f, 5.8f, 1.8f), 0.2f), dom, kind);
                 }

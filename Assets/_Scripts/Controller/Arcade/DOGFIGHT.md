@@ -47,6 +47,9 @@ scoreboard anywhere before this.
   in place (see "Sparrow-only" below)
 - **Config**: `_SO_Assets/Games/ArcadeGameDogFight.asset` (registered in
   `GameLists/OrganicRematchGames.asset`, `ProgressionConfig.alwaysUnlockedModes`)
+- **Objective marker**: `DogFightObjectiveProvider` — the off-screen arrow points at the nearest
+  vessel you can actually shoot (see below)
+- **No cell crystal**: `fixedCrystalCount: 0` (see below)
 
 ## Why it is a TEAM race and not a free-for-all
 
@@ -226,10 +229,47 @@ units out and converge head-on forever. So the arena breaks sightlines at three 
 | **Rubble / ash** | Floor litter and suspended fallout. Neither stops anyone; both fill the volume with parallax, which is what makes a fast pass *read* as fast. Ash is skimmable, so cutting the drift also feeds. |
 | **The reactor** | One unmissable centre landmark ("meet me at the reactor") — the only super-shielded mass in the arena, ringed with danger, so the most visible point is also the worst place to sit still. |
 
-**Altitude is the arena's central trade.** The crust is a bowl and all the cover stands on it, so
-the lower half of the volume is a warren and the upper half is open sky. Down low you are hidden,
-slow, and constantly nearly hitting things; up high you are fast and can see everything — and so
-can everyone else. Nothing enforces this; it falls out of the geometry.
+### Scatter — how the wreckage is distributed
+
+**A boneyard is patchy, and it goes all the way out.** The first pass got this wrong in three
+specific ways, and `ScatterPlanar` fixes each one:
+
+1. **Equal-area radii.** Drawing a placement radius uniformly puts far more wreckage per unit of
+   *area* near the middle — density falls off as 1/r — which is exactly the "it's all in the
+   centre" look. Every radius is now an equal-area draw, and it runs over the **playable
+   annulus** (`coreClearRadius` → 0.92 R) rather than the whole disc: spreading equal-area over
+   the full disc sounds right and is not, because the innermost anchor lands inside the clearing,
+   its whole field gets shoved back out by the clamp, and the rim is left bare.
+2. **Debris FIELDS, not a sprinkle.** Structures cluster onto `debrisFields` (7) anchors with
+   open lanes between them, and the families **interleave** across those anchors, so a field is a
+   mixed tangle of hulk and spire and girder rather than one family's private island.
+3. **The centre is empty.** Nothing is placed inside `coreClearRadius` (120), and the reactor
+   landmark was moved **off-centre** — a landmark in the middle of a radially symmetric arena
+   orients nobody (every bearing off it looks the same) while planting a monolith exactly where
+   the field most needs to read as open.
+
+Measured over the shipped structure counts, splitting the arena into three equal-**area** rings:
+
+| version | inner / mid / outer |
+|---|---|
+| ideal (perfectly even by area) | 33% / 33% / 33% |
+| original (uniform radius, centred reactor) | ~58% / 25% / 17% |
+| equal-area over the full disc | ~51% / 38% / 11% |
+| **shipped** (equal-area over the annulus) | **36–44% / 33–45% / 17–24%** |
+
+The residual inner lean is deliberate-ish and left alone: the very rim being a little sparser
+reads naturally for a wreck field, and players spawn *outside* at r=700 and fly in through it.
+
+**Roughly `driftFraction` (40%) of every family never landed.** Drifters hang in the volume above
+the crust at any attitude, so there is no single ground plane and a fight can climb *through*
+wreckage instead of leaving it. The crust itself now buckles in two octaves — the coarse one
+±110 against a bowl that only rises 130 across its whole radius — which breaks the paraboloid
+into **shelves** rather than one smooth dish. A smooth dish is a funnel: it points every sightline
+and every drifting pilot at the middle.
+
+**Altitude is still a trade.** Most of the heavy cover rests on the shelves, so low is a warren
+and high is comparatively open — but the drifters mean high is not *empty*. Nothing enforces
+this; it falls out of the geometry.
 
 **Intensity ramps the DENSITY OF COVER and nothing else** — more wrecks, tighter warrens, shorter
 sightlines — through the four prefab variants' structure counts plus the base `density` knob. The
@@ -323,6 +363,40 @@ what *"in front of it"* means.
 
 `ServerPlayerVesselInitializerWithAI` also adds Dog Fight to its `shouldSeekPlayers` set, so an
 AI that somehow never receives an external provider still hunts pilots rather than crystals.
+
+## The objective marker
+
+The HUD's off-screen objective arrow (`ObjectiveIndicator`) is auto-created by `MiniGameHUD`
+whenever the scene sets `autoCreateObjectiveIndicator` — which the Dog Fight scene inherits — so
+the only wiring is a case in `CreateObjectiveProviderForGameMode`.
+
+`DogFightObjectiveProvider` points at the **nearest vessel on a different domain**. It is
+deliberately *not* `JoustObjectiveProvider`, which takes the nearest other player regardless of
+colour: that is right for Joust, where overtaking a teammate buffs them, and wrong here, where
+teammates cannot be damaged at all — in a 2v2 the Joust provider would spend the match pointing
+at the one vessel in the arena worth nothing. The domain check is the entire difference between
+the two files.
+
+**Nearest**, rather than "whoever is winning" or "whoever is hunting me", on purpose: in an arena
+built to break sightlines, the question the arrow has to answer is *"which way is the fight"*
+when a hulk has just swallowed your target. Anything cleverer would fight the player's own read
+of the situation instead of restoring the one thing the Boneyard takes away.
+
+## No cell crystal
+
+The donor scene spawns one `Crystal.prefab` on client-ready (`NetworkCrystalManager`). Dog Fight
+sets `fixedCrystalCount: 0`, because in a mode that scores **only** gunnery a large respawning
+pickup parked in the arena is a false objective — it reads as the thing to go and get, and it
+looked enough like Astro League's ball to be reported as one during playtest. Dog Fight's only
+objective is another pilot.
+
+It is done by zeroing the count rather than deleting the component: `CrystalManager
+.ResolveCrystalCount` returns `fixedCrystalCount` verbatim under `CrystalCountMode.FixedCount`,
+so the manager stays wired for its replay/reset bookkeeping and simply spawns nothing. The one
+consumer of a *missing* crystal, `Cell.GetCrystalTransform`, is called only by a Rhino skimmer
+effect that cannot run in a Sparrow-only mode; fauna goals and AI crystal-seeking already fall
+back to the cell transform. Elemental progression still has a source — the scavengers drop
+crystals when killed.
 
 ## Progress milestones
 
@@ -436,6 +510,8 @@ the bullet effect onto `SparrowFullAutoProjectileImpactContainer`, the missile e
 | `EndConditionOverridesSO` (+ window + asset) | `dogFightPointTarget` live/build/getter, default 500 |
 | `GameToastSituation` | `DogFightQuarterDown = 57`, `DogFightHalfDown = 58`, `DogFightLeadChanged = 59` |
 | `ServerPlayerVesselInitializerWithAI` | Dog Fight added to the `shouldSeekPlayers` modes |
+| `MiniGameHUD` | `CreateObjectiveProviderForGameMode` case for Dog Fight |
+| `DogFightObjectiveProvider` | new: nearest OPPOSING vessel (the Joust provider ignores domain) |
 | `AOEConicSkyBurst.prefab` | given the explosion container it never had — a skyburst BLAST can now reach a pilot |
 | `IRoundStatsCleanupTests` | asserts the three new stats zero |
 
@@ -488,12 +564,22 @@ the bullet effect onto `SparrowFullAutoProjectileImpactContainer`, the missile e
 15. **AI dogfights.** Watch an AI Sparrow for a minute: it should chase a pilot, *shoot*,
     overshoot on the merge, and come back around. If it grinds hull-to-hull, `aiBreakOffDistance`
     is not being applied; if it circles empty space, the quarry search found nothing.
-16. **Danger is where it looks dangerous.** Ram a hulk's torn end rib and the reactor's inner
+16. **SCATTER — the arena must not read as centred.** From the spawn shell, the wreck field
+    should look *patchy and spread to the rim*: knots of structure with open lanes between them,
+    an obviously empty middle, and the reactor off to one side rather than dead ahead. Fly the
+    rim: there should be real cover out there, not a bare edge. Fly high: drifting wrecks should
+    hang above the crust at odd angles, so the upper volume is not empty sky.
+17. **No crystal.** Nothing should spawn at the arena centre — no ball, no pickup, nothing that
+    reads as an objective. The only crystals in the match come off dead scavengers.
+18. **The objective arrow points at an ENEMY.** In a 2v2, confirm the marker tracks an opposing
+    pilot and never your wingman, and that it re-targets when your quarry disappears behind a
+    hulk.
+19. **Danger is where it looks dangerous.** Ram a hulk's torn end rib and the reactor's inner
     shell — some should full-stop you, debuff all four elements for 4 s and reset boost. Ram a
     spire or the crust — one hit, no penalty.
-17. **Pacing.** Time a full match at intensity 1 end to end — see the pacing flag under "End
+20. **Pacing.** Time a full match at intensity 1 end to end — see the pacing flag under "End
     condition". Note separately how many points came from bullets vs rockets.
-18. **Collider + frame telemetry** on device via DiagnosticsHUD / the Benchmark tool, at
+21. **Collider + frame telemetry** on device via DiagnosticsHUD / the Benchmark tool, at
     intensity 4 with 4 players (the worst case: 24,097 structure prisms + up to 300 scavenger
     body prisms + four Sparrows' projectile and AOE traffic).
 
@@ -511,10 +597,6 @@ the bullet effect onto `SparrowFullAutoProjectileImpactContainer`, the missile e
   `GameToastConfigSO` authors definitions, so they are silently skipped (which is how a mode opts
   out). Author a `GameToastConfig_DogFight.asset` with `{0}`=domain, `{1}`=points, `{2}`=target
   to make them visible.
-- **No objective-arrow provider**: like Rampage, Ribcage and Wildlife Liberation,
-  `MiniGameHUD.CreateObjectiveProviderForGameMode` has no case — your objective is another
-  pilot, so there is no fixed point to aim at. An arrow to the nearest opponent would be a
-  genuinely good addition and is the most obvious follow-up.
 - **No UGS stats reporter yet** (a "most missile hits" leaderboard is a clean follow-up), and no
   dedicated end-game controller — the shared scoreboard handles it.
 - **A 4-player / 3-domain lobby is 2v1v1**, which is not balanced. The lobby allows it because

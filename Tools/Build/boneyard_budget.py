@@ -34,6 +34,17 @@ import math
 ARENA_RADIUS = 520.0
 CRUST_DEPTH = -200.0
 
+# ── Scatter ─────────────────────────────────────────────────────────────────
+# These do NOT affect the prism count - they only move structures around - so they play no part
+# in the budget below. They live here anyway because the generator authors them onto the prefab
+# variants, and a tuning value that exists in two files drifts. Same reasoning as the geometry
+# constants above: one place, imported by whoever needs it.
+DEBRIS_FIELDS = 7
+FIELD_RADIUS_FRACTION = 0.2
+CORE_CLEAR_RADIUS = 120.0
+DRIFT_FRACTION = 0.4
+DRIFT_HEIGHT = 300.0
+
 CRUST_PLATES = 3000       # before density
 RUBBLE_CHUNKS = 2400      # before density
 ASH_MOTES = 1700          # before density

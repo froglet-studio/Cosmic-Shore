@@ -61,3 +61,8 @@ MonoBehaviour:
   spireCount: 19
   frameCount: 8
   overpassCount: 7
+  debrisFields: 7
+  fieldRadiusFraction: 0.2
+  coreClearRadius: 120.0
+  driftFraction: 0.4
+  driftHeight: 300.0

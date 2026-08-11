@@ -407,6 +407,11 @@ MonoBehaviour:
   spireCount: {spires}
   frameCount: {frames}
   overpassCount: {overpasses}
+  debrisFields: {budget.DEBRIS_FIELDS}
+  fieldRadiusFraction: {budget.FIELD_RADIUS_FRACTION}
+  coreClearRadius: {budget.CORE_CLEAR_RADIUS}
+  driftFraction: {budget.DRIFT_FRACTION}
+  driftHeight: {budget.DRIFT_HEIGHT}
 """)
     emit(f"Assets/_Prefabs/Spawnables/SpawnableBoneyard{i}.prefab.meta",
          prefab_meta(G_ASSET[f"SpawnableBoneyard{i}.prefab"]))
@@ -643,7 +648,22 @@ NEW_SPAWN = f"""  playerSpawnPoints:
 assert OLD_SPAWN in scene, "donor spawn-point block not found"
 scene = scene.replace(OLD_SPAWN, NEW_SPAWN)
 
-# 9e. SPARROW-ONLY, third layer: the AI templates. ServerPlayerVesselInitializerWithAI clamps
+# 9e. NO CELL CRYSTAL. The donor spawns one crystal on client-ready, and in a mode that scores
+# ONLY gunnery a big respawning pickup parked in the arena is a false objective - it reads as the
+# thing to go get, and it looked enough like Astro League's ball to be reported as one. Dog
+# Fight's only objective is another pilot.
+#
+# fixedCrystalCount 0 rather than deleting the manager: CrystalManager.ResolveCrystalCount returns
+# this verbatim under crystalCountMode 0 (FixedCount), so the component stays wired for its
+# replay/reset bookkeeping and simply spawns nothing. The one consumer of a missing crystal,
+# Cell.GetCrystalTransform, is called only by a Rhino skimmer effect that cannot run in a
+# Sparrow-only mode; fauna and AI fall back to the cell transform.
+OLD_CRYSTALS = "  crystalCountMode: 0\n  fixedCrystalCount: 1\n"
+NEW_CRYSTALS = "  crystalCountMode: 0\n  fixedCrystalCount: 0\n"
+assert OLD_CRYSTALS in scene, "donor crystal-count block not found"
+scene = scene.replace(OLD_CRYSTALS, NEW_CRYSTALS, 1)
+
+# 9f. SPARROW-ONLY, third layer: the AI templates. ServerPlayerVesselInitializerWithAI clamps
 # these through GameDataSO.ClampVesselToGame anyway, but authoring the right class here means
 # the scene is honest on its own and the clamp never has to fire. 3 = Rhino (Rampage's donor
 # value), 11 = Sparrow.
@@ -759,6 +779,9 @@ if "  cellTypeChoiceOptions: 1\n" not in sc:
                   "the per-intensity configs would never be selected")
 if "vesselClass: 3" in sc:
     errors.append("scene still authors a non-Sparrow AI vessel class")
+if "  fixedCrystalCount: 0\n" not in sc:
+    errors.append("scene still spawns a cell crystal - in a gunnery-only mode that is a false "
+                  "objective parked in the arena")
 if sc.count("vesselClass: 11") != 4:
     errors.append("scene does not author 4 Sparrow AI templates")
 

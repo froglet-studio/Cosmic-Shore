@@ -1008,7 +1008,7 @@ MonoBehaviour:
   intensityLevelData: {fileID: 11400000, guid: 490485287c38a2f4e9178566394efd69, type: 2}
   listOfCrystalPositions: []
   crystalCountMode: 0
-  fixedCrystalCount: 1
+  fixedCrystalCount: 0
   extraCrystalsToSpawnBeyondPlayerCount: 0
   spawnCrystalWithPlayerDomain: 0
   spawnOnClientReady: 1
