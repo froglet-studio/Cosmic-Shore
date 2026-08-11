@@ -46,6 +46,23 @@ namespace CosmicShore.Utility
                  "Gating PRODUCTION is allowed by the conserved-mass law; culling is not.")]
         [Min(0)] public int ReleaseTier = 0;
 
+        [Header("Spatial band - this species' own pen (0 = unpenned, every shipped biome)")]
+        [Tooltip("INNER radius (world units from the cell centre) of the annulus this species " +
+                 "is penned to. 0 = no inner wall. See BandOuterRadius.")]
+        [Min(0f)] public float BandInnerRadius = 0f;
+        [Tooltip("OUTER radius of this species' band. 0 (the default, and what every shipped " +
+                 "biome authors) means NO BAND - the species roams the whole cell exactly as " +
+                 "before. Set both to pen a species to a shell: Wildlife Liberation stacks three " +
+                 "nested cages and gives each tier of creature the band of its own cage, so the " +
+                 "tadpole swarm rides the outer shell and the kaiju stays in the core.\n\n" +
+                 "This GENERALIZES Cell.FaunaContainmentRadius (one radius, whole cell) to an " +
+                 "annulus authored PER SPECIES, and carries the same contract: a spatial DIET + " +
+                 "STEERING rule, never a wall. Nothing is teleported, no collider is added and " +
+                 "nothing is culled for crossing it - mass outside the band is simply not food " +
+                 "and every goal is clamped back in. The two compose (cell pen first, then band), " +
+                 "and offspring inherit their parent's band because they bind the same config.")]
+        [Min(0f)] public float BandOuterRadius = 0f;
+
         [Tooltip("0-1: pulls this species' roaming goal toward the cell centre so it spends " +
                  "more time on the central canopy (the gyroids around the nucleus). Herbivores " +
                  "only — predators hunt prey, not places. Leave 0 (default) for deployments " +

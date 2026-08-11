@@ -161,7 +161,7 @@ Material:
     - _METALNESS: 0
     - _Metallic: 0
     - _OcclusionStrength: 1
-    - _Opacity: 0
+    - _Opacity: 1
     - _Parallax: 0.005
     - _Proximity: 0
     - _QueueControl: 0

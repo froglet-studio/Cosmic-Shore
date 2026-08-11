@@ -154,6 +154,7 @@ namespace CosmicShore.UI
             EnsureReadyButtonWiring();
             EnsureObjectiveIndicator();
             EnsureVolumeIndicator();
+            PrewarmPauseMenu();
 
             // If OnClientReady already fired before we subscribed (client race condition:
             // RPCs can resolve in the same frame as scene load, before Start() runs),
@@ -228,6 +229,21 @@ namespace CosmicShore.UI
 
             Transform canvasRoot = transform.parent != null ? transform.parent : transform;
             _autoCreatedIndicator = ObjectiveIndicator.CreateRuntime(canvasRoot, provider);
+        }
+
+        /// <summary>
+        /// Warms the (inactive) pause menu panel under this HUD's canvas at scene start,
+        /// so the first pause tap doesn't pay the panel's whole activation cost (child
+        /// Awake/OnEnable, layout, TMP mesh generation) as a mid-gameplay hitch. The
+        /// panel starts inactive in every scene and therefore cannot warm itself.
+        /// </summary>
+        void PrewarmPauseMenu()
+        {
+            var canvas = GetComponentInParent<Canvas>();
+            Transform root = canvas ? canvas.transform : transform.root;
+            var pauseMenu = root.GetComponentInChildren<PauseMenu>(true);
+            if (pauseMenu != null)
+                pauseMenu.Prewarm();
         }
 
         /// <summary>

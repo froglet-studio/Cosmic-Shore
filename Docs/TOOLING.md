@@ -228,6 +228,7 @@ their paths do not start with `FrogletTools/`.
 | Game Modes | End Game Conditions | The one place win conditions are authored for the domain modes. |
 | Build | Windows x64 (Release / Development), Reveal Build Folder | Player builds. |
 | Ecology | Prism Animation ▸ Validate Clock Wiring / Auto-Wire Clock Properties | The clock-material law gate. |
+| Ecology | Prism Animation ▸ **Occlusion Dither Lab** | The occlusion corridor's unit shape, live — kernel + scale dials driven as shader globals **while the game runs**, a preview that IS the shipped GPU code, a Measure button that runs the corridor's own |coverage − alpha| admission rule against the shipped baseline, and Bake to write the result back into `PrismOcclusionCorridor.hlsl`. Keeper (re-runnable), but it writes source, so it draws the ship panel. See `Docs/PRISM_ANIMATION.md` §4.7. |
 | Ecology | Measure Cell Environment Baselines | Per-cell prism baselines the phase thresholds ride on. |
 | Validation | Validate Lifeform Crystals | Every lifeform drops exactly one elemental crystal. |
 | Vessels | Audit Vessel Ability Rows / Elemental Morphs, Wire & Bake Petal Bars, Plan Rig Swap | Vessel HUD + model wiring. |

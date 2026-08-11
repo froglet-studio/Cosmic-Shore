@@ -41,6 +41,20 @@ namespace CosmicShore.Utility
         public ScriptableEventUlong OnPlayerNetworkSpawnedUlong;
         public ScriptableEventNoParam OnVesselNetworkSpawned;
         public ScriptableEventUlong OnPlayerPairInitialized;
+
+        /// <summary>
+        /// A vessel landed a shot on an opposing vessel. Raised by the combat-hit impact
+        /// effects on whichever machine simulated the shot (projectiles are local objects, so
+        /// that is the shooter's machine) and consumed by the single-writer
+        /// <c>StatsManager.CombatHitLanded</c>, which arbitrates server-vs-client attribution.
+        ///
+        /// It lives HERE rather than on the effect assets' own serialized field alone, or on a
+        /// field of StatsManager, because StatsManager already carries this object in every
+        /// scene - so gunnery records everywhere with nothing per-scene to wire, the same
+        /// reasoning that moved the fauna-kill channel onto CellRuntimeDataSO.
+        /// </summary>
+        public ScriptableEventCombatHitStats OnCombatHitLanded;
+
         public event Action<string, Domains> OnPlayerAdded;
 
         /// <summary>
@@ -256,6 +270,31 @@ namespace CosmicShore.Utility
         /// <see cref="ResetRuntimeDataForReplay"/>.
         /// </summary>
         [NonSerialized] public int PrismTargetCount;
+
+        /// <summary>
+        /// The resolved fauna-kill target for the current Wildlife Liberation session - the
+        /// per-domain <see cref="IRoundStats.LifeformsKilled"/> SUM that ends the turn.
+        /// Published by <c>WildlifeKillTurnMonitor</c> in StartMonitor (server), synced to
+        /// clients via NetworkVariable.OnValueChanged. Read by
+        /// <see cref="CosmicShore.Gameplay.WildlifeLiberationScoringRuleSO"/> for the end
+        /// condition and the "remaining" readout. Reset in <see cref="ResetRuntimeData"/> and
+        /// <see cref="ResetRuntimeDataForReplay"/>.
+        /// </summary>
+        [NonSerialized] public int LifeformTargetCount;
+
+        /// <summary>
+        /// The resolved gunnery point target for the current Dog Fight session - the per-domain
+        /// <see cref="IRoundStats.CombatPoints"/> sum that ends the turn. Published by
+        /// <c>DogFightPointTurnMonitor</c> in StartMonitor (server), synced to clients via
+        /// NetworkVariable.OnValueChanged. Read by
+        /// <see cref="CosmicShore.Gameplay.DogFightScoringRuleSO"/> for the end condition and
+        /// the "remaining" readout. Reset in <see cref="ResetRuntimeData"/> and
+        /// <see cref="ResetRuntimeDataForReplay"/>.
+        ///
+        /// Unlike <see cref="LifeformTargetCount"/> this is a DOMAIN sum: Dog Fight is a team
+        /// race, so a wingman's rockets shorten your match.
+        /// </summary>
+        [NonSerialized] public int CombatPointTargetCount;
 
         /// <summary>
         /// The active scoring strategy for the current mode, published by the mode's controller
@@ -532,6 +571,8 @@ namespace CosmicShore.Utility
             JoustTargetCount = 0;
             GoalTargetCount = 0;
             PrismTargetCount = 0;
+            LifeformTargetCount = 0;
+            CombatPointTargetCount = 0;
             System.Array.Clear(_domainMetricSums, 0, _domainMetricSums.Length);
             // Note: RequestedAIBackfillCount and RequestedDomainCount are intentionally
             // NOT reset here. They are pre-launch config values set by
@@ -578,6 +619,8 @@ namespace CosmicShore.Utility
             JoustTargetCount = 0;
             GoalTargetCount = 0;
             PrismTargetCount = 0;
+            LifeformTargetCount = 0;
+            CombatPointTargetCount = 0;
             System.Array.Clear(_domainMetricSums, 0, _domainMetricSums.Length);
         }
 

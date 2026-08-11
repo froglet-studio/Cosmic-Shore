@@ -23,8 +23,19 @@ namespace CosmicShore.Gameplay
 
         [Header("Explosion Settings")]
         [SerializeField] private AOEExplosion[] _aoePrefabs;
+        [Tooltip("Blast size at EMPTY resource. On a CONIC blast this is its capsule LENGTH when " +
+                 "the resource is empty, not its width — see Core Explosion Scale.")]
         [SerializeField] private float _minExplosionScale;
+        [Tooltip("Blast size at FULL resource. On a CONIC blast this is its capsule LENGTH at full " +
+                 "charge, and also the rendered cone's base diameter, so the capsule's tips ride " +
+                 "the visible base circle.")]
         [SerializeField] private float _maxExplosionScale;
+        [Tooltip("CONIC blasts only. The capsule's DIAMETER — the width the blast keeps across the " +
+                 "beam at EVERY charge, while charge buys length along the vessel's gape axis. " +
+                 "Independent of Min Explosion Scale so an uncharged blast can already be a short " +
+                 "capsule instead of a sphere; leave 0 to fall back to Min (a sphere at rest). " +
+                 "Ignored by the spherical blast.")]
+        [SerializeField] private float _coreExplosionScale;
         [SerializeField] private int _resourceIndex;
         [SerializeField] private Material _aoeExplosionMaterial;
         [SerializeField] private Vector3 _spawnOffset = new Vector3(0, 0, -5f);
@@ -108,7 +119,8 @@ namespace CosmicShore.Gameplay
                 _resourceIndex,
                 _spawnOffset,
                 sizeMultiplier,
-                affectSelfOverride);
+                affectSelfOverride,
+                _coreExplosionScale);
 
             switch (vesselImpactor.Vessel.VesselStatus.VesselType)
             {

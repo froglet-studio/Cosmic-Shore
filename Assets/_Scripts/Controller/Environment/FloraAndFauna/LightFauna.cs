@@ -393,7 +393,7 @@ namespace CosmicShore.Gameplay
             // despawns, so the live population self-bounds to available prey (Docs/ECOSYSTEM.md §6).
             if (IsStarving)
             {
-                Die("starvation");
+                Die(StarvationKiller);
                 return;
             }
 
@@ -706,11 +706,11 @@ namespace CosmicShore.Gameplay
             {
                 if (!hp.LifeForm) return false;
                 return cell != null
-                    ? cell.IsPreyForHerbivore(prism.transform.position, domain, hp.LifeForm.domain)
+                    ? IsPreyForMe(prism.transform.position, hp.LifeForm.domain)
                     : hp.LifeForm.domain != domain;
             }
             return cell != null
-                ? cell.IsPreyForHerbivore(prism.transform.position, domain, prism.Domain)
+                ? IsPreyForMe(prism.transform.position, prism.Domain)
                 : prism.Domain != domain;
         }
 

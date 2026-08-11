@@ -19,6 +19,24 @@
 
 ---
 
+## 0.1 Companion documents
+
+| Doc | What it is |
+|---|---|
+| `DATA_INVENTORY.md` | What we persisted before this rework |
+| `EVENT_SCHEMA.json` | Machine-readable event contract — the source for UGS Event Manager + PostHog config |
+| `POSTHOG_SETUP.md` | The out-of-repo checklist: create the project, paste the key, verify, insights, deletion runbook, free-tier guardrails |
+| `viability-report.md` | Why PostHog over the alternatives; the three attribution-bridging options |
+| `event-taxonomy.md` | Target event schema from the analysis pass |
+| `utm-conventions.md` | Campaign/UTM naming conventions |
+| `implementation-plan.md` | The original phased plan behind the sink layer |
+| `../../Tools/Analytics/README.md` | Bulk Cloud Save export + PostHog backfill scripts |
+
+The bottom five were written on the attribution/viability branch (PR #592) and salvaged here; each
+carries a provenance banner. **This document is the authority on implemented shape.**
+
+---
+
 ## 0. Why this document exists
 
 Two asks landed together and they turn out to be the same problem:
@@ -241,9 +259,24 @@ correlation across two payloads.
   one record. Previously answering *"how much has this player flown the vessel they've unlocked?"*
   required correlating two Cloud Save payloads client-side on a bare string key, with no guarantee the
   two agreed on the vessel-name spelling.
-- **`SelectedVessel` gets a writer.** It has **none today** — the only reference outside the model is
-  a read in `LogControlWindow.cs:1130`. That is why the dump shows `""`. Written on vessel swap
-  confirm, so it is genuinely "last selected by the user".
+- **`SelectedVessel` gets a writer.** It had **none** — the only reference outside the model was a
+  read in `LogControlWindow.cs:1130`, which is why the dump showed `""`. Now written on vessel-swap
+  confirm (`UGSStatsManager.ReportVesselSelected`), so it is genuinely "last selected by the user"
+  — **plus a default**, because a deliberate pick is the only writer and a player who never opens
+  the vessel panel would still read `null`. `UGSDataService.SyncHangarToVessels` falls it back to the
+  starter vessel (below) on every load, and also repairs it if it names a vessel the player does not
+  own.
+- **The starter vessel is seeded into the record.** Ownership was only ever written by
+  `VesselUnlockSystem.UnlockVessel`, which early-returns on a vessel that is already unlocked — so
+  the one vessel the player owns from first launch (the Squirrel, authored `isLocked: 0`) was never
+  persisted and `HANGAR_DATA` reported an empty hangar for a player who could fly. The authored
+  truth now lives in a new **`SO_Vessel.OwnedFromStart`** flag rather than `isLocked`, because
+  `Unlock()` rewrites `isLocked` at runtime and the editor persists that mutation back into the
+  asset — so `isLocked` cannot answer "what did we author?" after the first play session.
+  `SyncHangarToVessels` seeds every `OwnedFromStart` vessel on load, and `ResetAllUnlocks` re-grants
+  them: a reset returns the player to a *fresh account*, not a locked-out one.
+  (Falcon and Shrike had no serialized `isLocked` at all, so they defaulted to **unlocked** —
+  both are `Planned` vessels and are now explicitly locked.)
 - **`VesselPreferences` (plural) → `PreferredVessel` (singular)**, exactly as asked, and it is now
   *derived, not chosen*: `argmax(FlightTimeSeconds)`, recomputed whenever a vessel's flight time is
   written. "Most hours played" needs hours played, which is why `FlightTimeSeconds` is new here — the
@@ -390,6 +423,43 @@ free churn signal we would otherwise have to instrument separately.
 The same clock feeds `PLAYER_PROFILE.Lifecycle.TotalFlightTimeSeconds`,
 `HANGAR_DATA.Vessels[v].FlightTimeSeconds` (which is what makes `PreferredVessel` computable) and
 `MODE_STATS[m:i].FlightTimeSeconds`. One clock, four consumers.
+
+### 5.5 Menu freestyle counts too
+
+The lava lamp **is** freestyle (one system, two names — see CLAUDE.md § "Lava-Lamp Mode"), so the
+vessel drifting behind the menu is the gameplay vessel and time spent flying it is time at the
+stick. But freestyle has no countdown, no turn and no end: `MenuCrystalClickHandler` never raises
+`GameDataSO.StartTurn`, so §5.1's gate can never open there and every minute of it was invisible.
+
+`FlightClock` therefore runs a **second segment** with the same integrator minus the turn gate:
+
+```
+accumulate Time.unscaledTime  while  freestyleActive
+                                &&  !PauseSystem.Paused
+                                &&  !appBackgrounded
+```
+
+- Driven by `MenuCrystalClickHandler` at exactly the two lines that grant and revoke control
+  (`InputController.SetPause(false/true)`), so the camera blend is not counted as flight.
+- Accumulated **separately** from the game segment, so a freestyle segment can never contaminate
+  `LastGameSeconds` — which `game_completed` reads.
+- Published per closed segment via `FlightClock.OnFreestyleSegmentCompleted`, rather than held to a
+  "last visit" total: freestyle has no end event to read one at. A segment closes on leaving
+  freestyle, on pause, **and on backgrounding** — the last one deliberately, so a mobile app killed
+  while suspended has already banked what it earned.
+- `MenuCrystalClickHandler.OnDisable` closes the segment, so launching a game from freestyle banks
+  the time instead of dropping it.
+
+Landed by `UGSStatsManager.ReportFreestyleFlight` into `PLAYER_PROFILE.Lifecycle.TotalFlightTimeSeconds`
+and `HANGAR_DATA.Vessels[v].FlightTimeSeconds` — the second one matters because "most hours played on
+a vessel" (`PreferredVessel`) is otherwise blind to the vessel the player spends the most time in.
+It deliberately does **not** touch `GamesCompleted` or `GamesPlayed`: no game was played.
+
+**No new event and no new parameter.** Menu flight reaches PostHog through the person properties
+`total_flight_time_seconds` / `preferred_vessel`, which `ReportFreestyleFlight` re-publishes via
+`AnalyticsServiceFacade.IdentifyPlayer()`. Nothing has to be added to the UGS Event Manager. If a
+discrete `freestyle_session_ended` event is wanted later for segmentation, it costs one event name
+and zero parameters (`flight_time_seconds` and `vessel_class` already exist and are reusable).
 
 ---
 
@@ -627,14 +697,31 @@ the payload personal data rather than pseudonymous, which raises almost every it
 - PostHog's **sub-processor list** must be reviewed and the categories disclosed in our policy. Any
   future sub-processor change is our problem to track, not theirs.
 
-### 8.3 International transfer — BLOCKING, and needs a fact from you
+### 8.3 International transfer — RESOLVED: EU Cloud
 
-- **Which region is the PostHog project in — US Cloud or EU Cloud?** This materially changes the
-  work. EU Cloud keeps EEA/UK player data in-region and removes the transfer question almost
-  entirely. US Cloud means a restricted transfer requiring **Standard Contractual Clauses** plus a
-  transfer impact assessment, or reliance on the EU–US Data Privacy Framework.
-- The cheap answer is to host the project in EU Cloud if there is any EEA/UK audience. Retrofitting
-  a region change after data exists means a project migration.
+**Decision: the PostHog project is EU Cloud (Frankfurt), and it stays there.** The client host is
+`https://eu.i.posthog.com` (`PostHogConfig.asset`). PostHog's region cannot be changed after the
+project is created, so this is effectively permanent.
+
+The question that prompted a re-think — *"should it be US, since Froglet is a Delaware C-corp?"* —
+rests on a premise worth correcting explicitly, because it will come up again:
+
+- **GDPR applies based on where the *players* are, not where the company is incorporated.** Art. 3(2)
+  gives it extraterritorial scope: a US entity offering a service to people in the EU is in scope.
+  A game on Steam and mobile stores will have EEA/UK players from day one, so incorporation in
+  Delaware changes nothing about the obligation.
+- **No US law requires US residency for consumer game analytics.** Data-residency mandates of that
+  kind attach to government/defense work, not to a game studio's telemetry. So US Cloud buys nothing
+  legally.
+- **US Cloud would cost real work.** Every EEA/UK player's events become a restricted transfer out
+  of the EEA, requiring Standard Contractual Clauses plus a transfer impact assessment, or reliance
+  on the EU–US Data Privacy Framework — whose two predecessors (Safe Harbour, Privacy Shield) were
+  both struck down, so it is a foundation that has failed twice before.
+- **EU Cloud costs nothing.** Same price, same features, and for batched analytics the latency
+  difference is irrelevant — events are queued and uploaded on an interval, not per-frame.
+
+So EU Cloud is strictly the cheaper option: it removes the transfer question for the strictest
+regime we are subject to, and gives up nothing for US players. Keeping it.
 
 ### 8.4 Children — BLOCKING if the game is rated for under-13s
 
@@ -769,7 +856,7 @@ path removes it.
 
 | Item | Owner | Blocking release? |
 |---|---|---|
-| **PostHog project region — US Cloud or EU Cloud?** Decides whether SCCs are needed (§8.3) | instrumentation → legal | **Yes** |
+| ~~PostHog project region~~ — **RESOLVED: EU Cloud**, client host set to `eu.i.posthog.com` (§8.3) | — | Done |
 | Privacy policy + consent copy must name PostHog and list categories sent (§8.1) | legal/product | **Yes** |
 | Execute the PostHog DPA, review sub-processors (§8.2) | legal | **Yes** |
 | Apple Nutrition Labels + Play Data Safety updated in the shipping release (§8.8) | product | **Yes** |
@@ -778,7 +865,7 @@ path removes it.
 | Define retention for PostHog and Cloud Save (§8.7) | instrumentation | No |
 | **Fill in the PostHog project API key** in `Assets/Resources/PostHogConfig.asset` (write-only project key, never a personal key) — the sink stays inert until then | instrumentation | **Yes** |
 | **Server-side PostHog person deletion** to complete right-to-erasure; the client can only flag it (§7.3, §8.6) | instrumentation | **Yes** |
-| Set the PostHog `host` to the EU endpoint if the project is EU Cloud | instrumentation | Yes, if EU |
+| Run `Tools/Analytics/export_cloud_save.py` + `import_snapshot_to_posthog.py` once to backfill existing players into PostHog People (needs a read-only UGS service account) | instrumentation | No |
 | One `SO_Vessel` asset has a blank `Name` — fix the asset (§3.2 stops it persisting, it does not fix the asset) | gameplay | No |
 | Publish `SO_Game.GolfScoring` onto `GameDataSO` so scoring direction has one source (§3.3) | gameplay | No |
 | Retire `IPlayer.PlayerUUID` (display name) in favour of `UgsPlayerId`, once AOE ownership strings are decoupled (§6.3) | gameplay | No |

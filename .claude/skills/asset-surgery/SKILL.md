@@ -161,6 +161,76 @@ its GameObject lists it in `m_Component`.
 - **Delete a script safely**: get its GUID from the `.meta`, sweep ALL of
   Assets (`.unity`/`.prefab`/`.asset`/`.cs`) for the GUID and the class name
   BEFORE deleting; excise components first, delete `.cs` + `.meta` together.
+- **ADD a component to an existing GameObject** (the inverse of excise; this is
+  how a new MonoBehaviour gets onto N vessel/prop prefabs without the editor):
+  (1) write the script's `.meta` yourself with a fresh `uuid4().hex` guid and
+  **assert that guid appears in exactly one `.meta` repo-wide**; (2) pick a
+  fileID, assert the literal does not already occur in the target file, and
+  **assert it is ≤ `9223372036854775807` — a fileID is a SIGNED int64 and a
+  random 19-digit decimal overflows it about 16% of the time.** Unity does not
+  recover: `SerializedFile::IndexTextFile` fails the *whole file* with
+  `Could not extract 'FileID' … This number overflows internal type`, every
+  reference inside it turns into `Broken text PPtr`, and nothing is reported
+  until someone loads that prefab — two vessel prefabs in this repo carried one
+  for weeks (`9678703874602163012`, `9900976137657699045`) and only surfaced
+  when a new tool tried to open them. Keep a readable family (e.g. `…778`,
+  `…779`) so a human reading the diff can see they are yours. Sweep for the
+  whole class with one regex over `&(\d+)` / `fileID: (\d+)` filtered to
+  `> INT64_MAX`; fixing one is a whole-word rewrite of the anchor plus every
+  reference, then re-assert the file's dangling-reference set is unchanged
+  (that last check is what proves you renumbered the references too, not just
+  the anchor); (3) insert
+  `  - component: {fileID: X}` after the LAST existing entry of the owning
+  GameObject's `m_Component` list — anchor the regex on that document
+  (`^--- !u!1 &<goID>\nGameObject:\n.*?\n  m_Layer:`, DOTALL) rather than on a
+  line number; (4) append the `--- !u!114 &X` document with `m_GameObject`
+  pointing back, `m_Script` naming your guid, and one key per serialized field
+  you want non-default. Insert it **before the trailing `--- !u!1001`
+  PrefabInstance blocks**, not at EOF — a `!u!114` after them still loads, but
+  every human diffing the file reads it as misplaced. Serialize enum fields as
+  their INTEGER value (`condition: 1`), and get the integer from the C# —
+  an enum with explicit values is not its declaration order.
+- **CHANGE a component's TYPE in place, by rewriting its class id and KEEPING its
+  fileID.** Swapping `SphereCollider` → `CapsuleCollider` reads like an excise+add,
+  and doing it that way is strictly worse: a new fileID means editing the owning
+  `m_Component` list and re-sweeping every external reference. Instead rewrite the
+  document header and body only — `--- !u!135 &<id>` / `SphereCollider:` becomes
+  `--- !u!136 &<id>` / `CapsuleCollider:` at the SAME `&<id>`, so the component-list
+  entry, and any `{fileID: <id>}` pointing at it, resolve unchanged. Get the class
+  id and the exact field set from a REAL instance of the target type already in the
+  repo (`grep -rn -A20 "^CapsuleCollider:" --include=*.prefab`), and copy its
+  `serializedVersion:` line verbatim — that key is per-class and per-Unity-version,
+  and it is the one thing you cannot infer from the type you are replacing.
+  Afterwards assert the fileID still appears in exactly one `m_Component` list and
+  the document count is unchanged. **This is an import check the human must run**
+  (open the prefab, confirm the new component type renders and is not "Missing") —
+  a rejected class id shows up nowhere else.
+- **Self-check the surgery by resolving every local fileID.** After any add or
+  excise, parse the file: collect `^--- !u!\d+ &(\d+)` as definitions and
+  `fileID: (\d+)\}` as references, then report references with no definition —
+  filtering the ones followed by `guid:` (those are cross-asset and legitimate).
+  A survivor is either a dangling ref you just created or, just as usefully, a
+  **pre-existing** one you must not be blamed for: run the same check against
+  `git show HEAD:<file>` to tell the two apart before reporting anything.
+- **Deleting a source object means purging FIVE record shapes, not one.** When you remove a
+  GameObject from a prefab, every consumer that instantiates that prefab may hold a record
+  naming it, and they do not all look alike. Sweep for all five or the leftovers are dangling
+  references: (1) `m_AddedGameObjects` entries whose `addedObject` is the doomed transform;
+  (2) `m_RemovedGameObjects` entries `- {fileID: N, guid: G, type: 3}` (a *removal* record for
+  an object that no longer exists — harmless to Unity, pure noise to a reader); (3)
+  `m_Modifications` whose **`target`** is the doomed object (transform overrides, `m_IsActive`);
+  (4) `m_Modifications` whose **`objectReference`** POINTS AT it — this is the one that gets
+  missed, because the entry's `target` is a completely different component and only the
+  reference is doomed; and (5) `stripped` documents whose `m_CorrespondingSourceObject` names
+  it. A validate-before-write assertion (`no doomed id survives as a whole word`) finds each
+  missed shape in one run instead of one Unity import per shape.
+- **A stale serialized KEY inside a component body is a sixth shape, and it needs the
+  two-part test.** A retired field (`silhouetteContainer:`) survives in YAML until something
+  re-saves the prefab, so it can still name an object you are deleting. Do NOT strip such a
+  line on sight: resolve the doc's `m_Script` guid → its `.cs` → its serialized-field set, and
+  drop the key only if the class no longer declares it. Note the degenerate case — a guid that
+  resolves to NO script is an existing *Missing (Mono Script)* component, so the key cannot be
+  live and dropping it is safe. Say which case each hit was.
 - **Excise a whole PREFAB INSTANCE from a scene** (a hand-placed object that
   should not be there). It is more than one document, so drive it by PARSING,
   never by the line numbers a report handed you — the first deletion invalidates
@@ -217,6 +287,14 @@ its GameObject lists it in `m_Component`.
   EXACTLY (case-sensitive, no `m_` prefix on your own fields); a typo'd key is
   silently ignored and the field reads its default forever — assert the key
   count after writing, and grep the C# declaration to confirm spelling.
+  **The corollary is a free retune, and a trap**: because the key is absent,
+  changing the C# INITIALIZER retroactively changes every instance that never
+  serialized it — re-tuning `MaxJawAngle` on the Dolphin needed no asset edit at
+  all, because neither `Dolphin.prefab` nor `DolphinHUDVariant.prefab` had ever
+  written the key. So **grep the prefabs for the key before deciding where to make
+  the change**: absent everywhere → edit the C# default and you are done; present
+  on some instances → the default reaches only the others, and editing it alone
+  produces a silent split. The grep is the decision, not a formality.
 - **Read authored MESH geometry without opening Unity** (which end is the apex?
   where's the pivot? is +Y up?): a `.asset` mesh carries `m_LocalAABB` for
   extents and the vertex buffer as hex in `m_VertexData`/`_typelessData`.
@@ -304,6 +382,44 @@ per task; it is cheap.
   After adopting a strict mode, grep the retired tier's name for the words
   *fallback / fall back / legacy path / degrades to* and re-read each hit
   against what the code now does.
+
+### Technique: resolve a `.shadergraph` MERGE by re-running the wirers, never by hand
+
+Origin: the dither branch vs the Sparrow turret branch (2026-08-11). Both wired nodes
+into `BlockGraph`/`ExplodingBlockGraph` — one moved the prism flight to the GPU clock,
+the other added a debris erosion wipe and a back-face fade. Git produced **40 conflict
+hunks of ShaderGraph JSON**. Resolving those by editing conflict markers is not a real
+option: the format is concatenated documents with object-id cross-references, so a
+plausible-looking textual merge silently yields duplicate ids, orphaned slots, or two
+feeders on one input.
+
+The move — and the reason to make every graph wirer idempotent in the first place:
+
+1. **Take ONE side whole** (`git checkout --theirs <graph>`), normally the base branch's,
+   so you keep whatever they did and owe only your own re-application.
+2. **Re-run YOUR wirers.** An idempotent wirer that prints "already wired" on a no-op is
+   also a merge-conflict resolver — it re-splices onto whatever it finds. This is the
+   payoff for §1.2, and it is worth writing them that way even when you expect no merge.
+3. **Re-run THEIR wirers too**, and confirm each reports "already wired". That proves your
+   re-application did not retarget an edge they own.
+4. **Verify by DUMPING THE RESOLVED EDGE LIST** (§2a), not by trusting the per-tool
+   validators — each one only checks its own splice, and the defect a merge creates lives
+   *between* them. Print the chain into `SurfaceDescription.Alpha` and read it:
+   ```
+   BlockGraph:          Alpha -> OcclusionFade -> BackFaceFade -> Alpha
+   ExplodingBlockGraph: ErosionFade -> OcclusionFade -> BackFaceFade -> Alpha
+   ```
+   Then dump every node's INPUT slots and confirm each resolves — the cross-branch join
+   (`ErosionFade.BaseOpacity <- PrismExplosionClock.Opacity`, one branch's node feeding
+   the other's) is exactly the edge no single validator covers.
+5. **Count-check against BOTH parents.** Merged node/edge counts must be a superset of
+   each parent by exactly what your wirers reported adding, and **property counts should
+   match the side you took** — a property count above it means both branches added the
+   same property and you now have two.
+
+Assert the JSON analog of `CS0102` while you are there: duplicate `m_ObjectId`, duplicate
+property reference names, registry entries that do not resolve, dangling edge endpoints,
+and any input slot with more than one feeder. All five are ~20 lines over the parsed model.
 
 ### Trap: a clean merge can still be a semantic conflict (duplicate members)
 
@@ -420,6 +536,46 @@ the cell size, the jitter, or add animation, and the constants must be re-fitted
 the error silently returns. Verify the fit across the whole range you intend to use
 (here: rate 0 through t=400s).
 
+## 4.5c Technique: COMPILE the shipped HLSL with clang (stronger than porting it)
+
+Origin: the occlusion corridor's triangle/shatter kernels (2026-08-06). §4.5b ports a
+shader to numpy to judge its LOOK. This compiles the **actual file from the repo** and
+runs it, which answers a different and harder question: *does the source I am about to
+commit compile, and does it do what my measurements say?*
+
+A numpy port validates the design. Only compiling the real file validates the FILE — a
+port cannot catch a typo, an unbalanced brace, a wrong swizzle, or a `#if` that excludes
+the wrong block.
+
+```python
+# Read the shader from the repo, apply a SHORT, LISTED set of mechanical substitutions,
+# #include it from a C++ shim, compile with -Wall, run it, diff against the numpy port.
+SUBS = [(r"\[unroll\]", ""),          # HLSL loop attribute
+        (r"\bout float\b", "float&"), # HLSL out-param -> C++ reference
+        (r"\bfloat2\(", "mk2(")]      # vector constructor spelling
+```
+
+- **`__attribute__((ext_vector_type(N)))` is the whole trick.** clang's vector types give
+  you elementwise arithmetic and *arbitrary swizzles* (`.xyx`, `.yzx`, `.zy`) for free, so
+  hash functions written for HLSL compile unmodified. Only the `floatN(a,b)` constructor
+  spelling needs substituting.
+- **Keep the substitution list short, listed, and auditable.** Every constant and every
+  expression must pass through untouched — those are what you are verifying. If the list
+  starts growing, you are rewriting the shader, not testing it.
+- **Stub the URP built-ins** (`_WorldSpaceCameraPos`, `_ScreenParams`, `_Time`,
+  `UNITY_MATRIX_V`, `TransformWorldToHClip`) as file-scope globals in the shim. Then the
+  entry point compiles too, not just the leaf functions.
+- **Compile EVERY `#if` branch.** A gate like `#define X_LIVE_TUNING 1|0` has two shapes;
+  build both and diff their output. That is how you prove a "design mode" is genuinely
+  free when it is off, instead of asserting it.
+- **Then assert the dials actually DRIVE.** Set the globals from the shim and check the
+  output changes — over a POPULATION of pixels, not one. A single sample matching proves
+  nothing (a flip that affects half the cells legitimately leaves any given pixel alone).
+
+This also verifies a source-rewriting tool end to end: bake values with the tool's own
+regexes, compile the result, and confirm the round-trip back to the original values is
+byte-identical.
+
 ## 4.6 Technique: hand-authoring a new asset trio
 
 Adding a new SO-configured, prefab-backed thing (here: a cell) means four
@@ -483,6 +639,58 @@ read**. The lesson generalizes:
 
 ## 5. Traps learned the hard way (check these BEFORE debugging for an hour)
 
+- **`$` in a .NET regex does NOT match before `\r`, so every line-anchored pattern
+  fails on a Windows checkout.** In multiline mode `$` matches before the `\n` but
+  *after* any `\r`, so `^#define FOO (\w+)$` matches 0 times in a CRLF file. This is
+  invisible on Linux and total on Windows: a source-rewriting tool shipped this way
+  reported the file's state wrongly AND refused to write. Capture the ending and
+  re-emit it — `(\r?)$` as a group, `${1}value${3}` in the replacement — which also
+  stops the rewrite from silently converting line endings into diff noise. (Reading
+  only? `\r?$` is enough. This repo's own `PrismOcclusionCoverageTests` carries the
+  same warning for `.shadergraph` — heed it BEFORE writing the regex.)
+  **Knowing the trap is not enough — SWEEP for it, because one outlier call site is
+  the normal shape of this bug.** `PrismOcclusionDitherLab` got it right in its Anchor
+  table and wrong in one method 50 lines away (`SetTuningFlag`), so its "enable design
+  mode" button had never once worked on a Windows checkout and nothing said so. The
+  detector is four lines over the file — pull every `@"..."` verbatim regex literal and
+  flag any containing `$` without a preceding `\r?`:
+  ```python
+  for m in re.finditer(r'@"((?:\(\?m\))?\^[^"]*)"', src):
+      if '$' in m.group(1) and not re.search(r'\\r\?\)?\$', m.group(1)): print(m.group(1))
+  ```
+  Then PROVE the fix rather than asserting it: under .NET's `$` semantics (matches
+  before `\n`, after `\r`) the old pattern must measure 1 match on LF and **0 on CRLF**,
+  the new one 1 on both. On Linux you cannot observe the failure any other way.
+- **.NET does not throw on a replacement naming a group the pattern lacks — it emits
+  the literal text.** `Regex.Replace(s, @"(a)(b)", "${1}x${3}")` writes `${3}` into
+  your file. A rewriter that varies its patterns must carry the group count
+  EXPLICITLY per pattern rather than inferring it. (Python is the opposite and throws
+  — so a Python prototype will not warn you.) Related: prefer `${1}` over `$1`; `$1`
+  followed by a digit (`$1` + `4.5`) parses as group 14.
+- **A `CapsuleCollider` is scaled ANISOTROPICALLY, so its two dimensions need two
+  different divisors.** Unity scales the `height` by the lossy scale along
+  `direction`, and the `radius` by the LARGER of the other two axes. Under a uniform
+  scale nobody notices; under a non-uniform parent — the Dolphin blast's container
+  runs `(base, base, reach)` — dividing both by one factor puts the capsule visibly
+  wrong in one dimension. Write each in local units as
+  `world / (its own lossy factor)`, and remember `direction` is an INDEX (0/1/2), so
+  the radial factor is `max(lossy[(d+1)%3], lossy[(d+2)%3])`. Two more edges on the
+  same component: (a) the internal `height >= 2*radius` clamp is applied in LOCAL
+  space, so with two different divisors it can bite at a world size where you'd
+  expect no clamp — check `localHeight >= 2*localRadius`, not the world numbers;
+  (b) a 90° child rotation under a non-uniform parent is an exact axis PERMUTATION,
+  so `lossyScale` is exact there (no skew) — but do not hand-derive which axis is
+  which. Resolve `direction` at runtime by dotting the world-space
+  `transform.TransformDirection` of each local axis against the direction you want;
+  it costs three dots once and survives someone changing the authored rotation.
+- **A window measured with the other variable held fixed does not transfer.** A sweep
+  of parameter B at one value of A yields a band for B that looks absolute and is not.
+  Shipping it as a validation rule then flags perfectly good settings as failures —
+  here a "wall 4–11 px" band, swept at a fixed 11 px polygon, condemned a 20 px wall
+  in a 16 px polygon that actually measured BETTER than the shipped baseline. Sweep
+  the RATIO (or the second variable at several values of the first) before publishing
+  a window, and when a tool enforces one, have it say *"outside the measured range —
+  measure it"* rather than *"wrong"*.
 - **Stripping `[...]` attributes globally also eats `float[]`.** A C#-field
   scraper that does `re.sub(r'\[[^\]]*\]\s*', '', line)` turns
   `[SerializeField] float[] foo = …` into `floatfoo = …`, so the declaration
@@ -523,6 +731,14 @@ read**. The lesson generalizes:
   leaving a sparse confetti of survivors in a region that is supposed to be
   completely gone. Nudge any computed clip threshold strictly inside (0,1)
   (`n * 0.998 + 0.001`).
+- **A READ-ONLY editor tool must use `AssetDatabase.LoadAssetAtPath<GameObject>`, not
+  `PrefabUtility.LoadPrefabContents`.** The asset representation already carries the
+  merged hierarchy (nested prefabs included), so `GetComponentsInChildren` and every
+  serialized field read the same as at runtime — while `LoadPrefabContents` opens a
+  preview SCENE per prefab, which is far heavier AND a second failure surface: on a
+  prefab with malformed data it spills native parse errors and callstacks before your
+  code runs. An auditor that dies on the bad data it exists to find is worse than no
+  auditor. Reserve `LoadPrefabContents` for tools that WRITE.
 - **A "dangling GUID on this prefab" is usually project-wide.** Before treating
   a missing asset reference as a local bug, grep the WHOLE Assets tree for that
   guid: a reference broken on four flora prefabs turned out to be broken on
@@ -535,6 +751,24 @@ read**. The lesson generalizes:
   containing a key for a field that is no longer serialized (e.g. a
   `[Inject] protected` field) is harmless residue — not evidence the field is
   still serialized.
+- **`[FormerlySerializedAs]` also resurrects stale prefab-instance OVERRIDES —
+  and an override BEATS the value you just authored.** The attribute is
+  described as "keep the asset's old value through a rename", which sounds
+  purely helpful. But a nested prefab instance stores overrides as
+  `propertyPath: <fieldName>` strings, and those get remapped by the same
+  attribute. So renaming `boostFullColor` → `rollArmedColor` silently carries a
+  *parent prefab's* year-old override onto the new field, and because an
+  override wins over the source prefab, the new default you carefully authored
+  never renders. Live case: the Sparrow's HUD instance overrode both retired
+  boost-gauge colours to white; inherited through `FormerlySerializedAs`, the
+  new "armed" and "spent" ring colours would both have been white — a state
+  indicator that indicates nothing, with correct-looking code and a
+  correct-looking source prefab. **Before renaming any serialized field, grep
+  the whole repo for `propertyPath: <oldName>`**, then decide per field: keep
+  the attribute where the old value is still the right one (object references,
+  durations), and DROP it — deleting the override blocks outright — where the
+  rename changed what the value MEANS. Say which you did, in a comment, next to
+  the field.
 - **A serialized field's C# initializer is NOT its runtime value — never reason
   from it.** The corollary of the rule above, and the one that actually bites:
   when the asset DOES author the key, the initializer in the `.cs` is dead text
@@ -573,6 +807,31 @@ read**. The lesson generalizes:
   `git checkout HEAD -- <file>` when the file was already committed — which is
   another reason to commit before scripted edits.
 
+- **Splitting Unity YAML on `--- !u!` and rejoining DOUBLES the newline — silently, in every
+  document.** `^--- !u!(\d+) &(\d+)( stripped)?$` is line-anchored, so `$` matches BEFORE the
+  `\n` and `match.end()` points AT it: the body slice `txt[m.end():end]` already STARTS with
+  that newline. Rejoining as `header + '\n' + body` therefore inserts a blank line after every
+  single header. It parses, it reimports, and it turns a pure-deletion change into a diff with
+  thousands of phantom insertions — which is how you lose the ability to review your own work.
+  Rejoin as `header + body`, and **verify by counting NON-BLANK insertions**, not by reading
+  `git diff --stat`:
+  ```sh
+  git diff <base> -- "$f" | grep '^+' | grep -v '^+++' | sed 's/^+//' | grep -c '[^[:space:]]'
+  ```
+  For a deletion-only change that number must be **0**. Corollary: if two scripts each rewrote
+  the same file, the artifact COMPOUNDS — a repair regex matching `header\n\n` strips only one
+  of two blank lines and looks like it worked. Collapse with `\n\n+` and re-count.
+- **A bare `{fileID: N}` is ALWAYS same-file; only `{fileID: N, guid: G}` crosses assets.** A
+  sweep for "who else references this id" that ignores the guid is worthless in a Unity repo,
+  because sibling **flat-copy** prefabs (Manta/Falcon/Shrike/Termite here) share identical
+  internal fileIDs by construction — so every id appears in every sibling and the report is
+  ~100% false positives. Match `fileID: (\d+),\s*\n?\s*guid: <target-guid>` and nothing else.
+  (The guid can wrap onto the next line — allow the newline or you will miss real hits.)
+- **Pre-filter a whole-project regex sweep by GUID substring, or it hangs.** Multiline
+  `(?ms)` patterns with `.*?` over 1,500 prefabs and scenes backtrack catastrophically on the
+  large ones. A file that does not contain the target prefab's guid cannot hold a record for
+  its objects, so `if not any(g in txt for g in GUIDS): continue` turns a timeout into
+  seconds. Then replace every `.*?` with `[^\n]*` — you are matching within a line anyway.
 - **CRLF**: Windows checkouts deliver `\r\n`; `split("\n\n")` sees ONE block.
   Normalize line endings before splitting; preserve the file's own separator
   when writing.
@@ -676,27 +935,26 @@ read**. The lesson generalizes:
   the live path end to end and check `git log` on the file FIRST; report
   "already fixed in <sha>, here's the proof" rather than re-fixing correct code
   or, worse, inventing a change to look responsive.
-
-### Bundled tool: `field_parity.py`
-
-Beside this skill. `serialized_fields(cs_path)` returns what Unity would serialize
-from a C# file (the attribute-stripping trap above is already handled);
-`asset_docs(asset_path)` yields `(script_guid, [top-level keys])` per MonoBehaviour
-document. ~20 lines of glue maps guid → `.cs` and asserts `keys` are a subset of
-`fields` for every doc in every asset you authored. Run it before committing any
-hand-written YAML — it is what turns "looks right" into "provably resolves".
-
-## 6. When the editor genuinely IS required
-
-Device soak tests, profiling, visual judgment, play-mode-state measurements,
-and final import verification of hand-authored assets. Even then: build the
-measuring tool + validator so the human runs ONE menu item and pastes ONE
-output back — then YOU act on the numbers.
-
-**Narrowed 2026-08:** "play-mode measurement" no longer covers a *deterministic*
-generator's baseline — see §4.5, which measures it offline and uses the in-editor
-measurer as a CONFIRMATION step rather than the source. Keep asking which half of
-a measurement is actually play-mode-dependent; often it is neither.
+- **A collider's authored number is not its world size — and for a SphereCollider the
+  scale component that wins may be one nobody was thinking about.** Unity scales a
+  `SphereCollider` by the **largest absolute lossy-scale component**, a `CapsuleCollider`
+  by the max of the two axes perpendicular to its direction, and only a `BoxCollider`
+  component-wise. So on a "dart" prefab — a unit sphere mesh at `m_LocalScale (1.5, 1.5,
+  20)`, stretched on z for the tracer look — `m_Radius: 0.3` is not a 0.3 or even a 0.45
+  world radius: it is `0.3 × 20 = 6.0`, thirteen times the projectile's visible 0.75
+  cross-section and about as wide as the dart is long. Reading `m_Radius` out of the YAML
+  and reporting it as the hit size is wrong every time the transform is non-uniform.
+  Always compute `worldRadius = m_Radius × max(|sx|,|sy|,|sz|)`, and when writing one,
+  invert it: `m_Radius = desiredWorldRadius / maxScaleComponent`. Sweep siblings while you
+  are there — the same authored `0.3` sat in two more projectile prefabs in this repo.
+- **An EFFECTIVE number that everything agrees on may never have been AUTHORED at all.**
+  The mirror of "the authored number is not the effective one" (`/vessel` §2.4a): here the
+  effective number was 12, three assets had been tuned to match it, a config default and a
+  design doc both recorded it as intentional — and it was an accident, the arithmetic
+  product of a mesh stretch leaking into a collider (trap above). Before you propagate a
+  measured constant to a second system "for parity", find the line that CHOSE it. If no
+  line did, you are about to enshrine an artifact, and every asset you align to it makes
+  the eventual correction bigger.
 - **HDR colour fields are LINEAR, and scaling them is not tuning**: in a Linear
   project (`ProjectSettings: m_ActiveColorSpace: 1`) a `[ColorUsage(true, true)]`
   field serialises **linear intensity** — Rec.709 luminance and CIELAB apply
@@ -721,13 +979,28 @@ a measurement is actually play-mode-dependent; often it is neither.
   Then dedupe by BLOB: `git rev-parse "$ref:$path"` per ref and group — N branches
   usually collapse to a handful of distinct file versions worth reading.
 
+### Bundled tool: `field_parity.py`
+
+Beside this skill. `serialized_fields(cs_path)` returns what Unity would serialize
+from a C# file (the attribute-stripping trap above is already handled);
+`asset_docs(asset_path)` yields `(script_guid, [top-level keys])` per MonoBehaviour
+document. ~20 lines of glue maps guid → `.cs` and asserts `keys` are a subset of
+`fields` for every doc in every asset you authored. Run it before committing any
+hand-written YAML — it is what turns "looks right" into "provably resolves".
+
 ## 6. When the editor genuinely IS required
 
-Play-mode measurements (baselines, profiling), device soak tests, visual
-judgment. Even then: build the measuring tool + validator so the human runs ONE
-menu item and pastes ONE output back — then YOU act on the numbers
-(the PhaseThresholds re-baseline pattern: they ran the measurer, the session
-authored the six configs from the pasted output).
+Device soak tests, profiling, visual judgment, play-mode-state measurements,
+and final import verification of hand-authored assets. Even then: build the
+measuring tool + validator so the human runs ONE menu item and pastes ONE
+output back — then YOU act on the numbers (the PhaseThresholds re-baseline
+pattern: they ran the measurer, the session authored the six configs from the
+pasted output).
+
+**Narrowed 2026-08:** "play-mode measurement" no longer covers a *deterministic*
+generator's baseline — see §4.5, which measures it offline and uses the in-editor
+measurer as a CONFIRMATION step rather than the source. Keep asking which half of
+a measurement is actually play-mode-dependent; often it is neither.
 
 **Visual judgment is the softest of these — simulate it rather than punting it.**
 Once §2a has told you what the shader does with a value, you can reimplement that

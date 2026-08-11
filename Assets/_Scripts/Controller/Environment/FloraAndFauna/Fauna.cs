@@ -49,8 +49,97 @@ namespace CosmicShore.Gameplay
         public Vector3 Goal
         {
             get => _goal;
-            set => _goal = cell ? cell.ClampToFaunaContainment(value) : value;
+            set
+            {
+                // Two pens compose here, outermost first: the CELL's pen (one radius, every
+                // creature) and then this SPECIES' own band (an annulus, authored per config -
+                // see BandInner/BandOuter). Both are no-ops when unauthored, which is every
+                // biome that is not a mode's pen, so the common path is still two compares.
+                var clamped = cell ? cell.ClampToFaunaContainment(value, transform.position) : value;
+                _goal = ClampToBand(clamped);
+            }
         }
+
+        // ── Per-species band (the layered pen) ────────────────────────────────
+        //
+        // A mode that stacks CONCENTRIC pens needs more than the cell's single containment
+        // radius: Wildlife Liberation stocks three nested cages with three different tiers of
+        // creature, and a lone radius can only express "inside R". The band generalizes it to
+        // an ANNULUS (inner..outer) authored per species on FaunaConfigurationSO, so the
+        // outer swarm rides the outer shell, the mid tier the mid shell, and the kaiju the
+        // core - each unable to reach the others' feeding ground.
+        //
+        // Same contract as the cell pen and for the same reason (Docs/ECOSYSTEM.md §22): it is
+        // a spatial DIET + STEERING rule, never a wall. Nothing is teleported, no collider is
+        // added, no creature is culled for leaving. A creature can still drift across a
+        // boundary on its own momentum - it simply has no reason to and nothing to eat there.
+        float _bandInner;
+        float _bandOuter;
+
+        /// <summary>True when this creature is penned to an annulus of its own (see the band notes).</summary>
+        protected bool HasBand => _bandOuter > 0f;
+
+        /// <summary>
+        /// The centre both pens measure from. The host cell when there is one (which is every
+        /// spawner-born creature); this creature's own spawn point otherwise, so a manager-spawned
+        /// or drone fauna with no cell simply has no band rather than one centred on the origin.
+        /// </summary>
+        Vector3 BandCentre => cell ? cell.transform.position : transform.position;
+
+        /// <summary>True when <paramref name="position"/> lies in this creature's band (always true with no band).</summary>
+        public bool IsInsideBand(Vector3 position)
+        {
+            if (!HasBand) return true;
+            float d = (position - BandCentre).magnitude;
+            return d >= _bandInner && d <= _bandOuter;
+        }
+
+        /// <summary>
+        /// Pulls a goal back into this creature's band. Returns the point unchanged when there is
+        /// no band or the goal is already inside, so the common path costs one compare. A goal
+        /// beyond the outer wall is pulled in to it; a goal inside the inner wall is pushed out to
+        /// it (a goal exactly at the centre picks the creature's own outward radial, so the push
+        /// is well-defined rather than arbitrary).
+        /// </summary>
+        public Vector3 ClampToBand(Vector3 goal)
+        {
+            if (!HasBand) return goal;
+
+            Vector3 centre = BandCentre;
+            Vector3 offset = goal - centre;
+            float d = offset.magnitude;
+
+            if (d >= _bandInner && d <= _bandOuter) return goal;
+
+            // A goal AT THE CENTRE is the ecology's "nothing sensed" answer
+            // (Cell.GetDensestRegionAnyDomain falls back to the cell anchor on an empty grid),
+            // not a destination. Clamping it radially would send every creature in the room to
+            // exactly _bandInner - the whole population collapsing onto the inner wall as a
+            // shell, which is the same clumping the spawner's per-creature spread exists to
+            // avoid. Project the creature's OWN position instead, so an unfed creature mills
+            // about where it already is inside its room.
+            if (d <= 0.0001f)
+            {
+                Vector3 own = transform.position - centre;
+                float ownD = own.magnitude;
+                if (ownD <= 0.0001f) return centre + Vector3.up * _bandInner;
+                return centre + own / ownD * Mathf.Clamp(ownD, _bandInner, _bandOuter);
+            }
+
+            return centre + offset / d * Mathf.Clamp(d, _bandInner, _bandOuter);
+        }
+
+        /// <summary>
+        /// The herbivore diet rule as THIS creature sees it: the cell's spatialized rule
+        /// (<see cref="Cell.IsPreyForHerbivore"/>) AND the creature's own band. Every grazer
+        /// routes its edibility test through here rather than calling the cell directly, for the
+        /// same reason <see cref="IsShieldedMass"/> exists - "a creature must never be led to
+        /// mass it cannot reach or eat" is ONE rule, and a per-subclass copy is a rule you can
+        /// forget to apply in the next grazer.
+        /// </summary>
+        protected bool IsPreyForMe(Vector3 position, Domains preyDomain) =>
+            cell != null && IsInsideBand(position) &&
+            cell.IsPreyForHerbivore(position, domain, preyDomain);
 
         // Stable per-instance offset so each fauna orbits its resolved goal at a
         // different point. Seeded once at Start so the spread is deterministic per
@@ -179,6 +268,19 @@ namespace CosmicShore.Gameplay
             // the level curve grows from the variant's base scale.
             if (config)
             {
+                // The species' own pen (see the band notes above). Authored on the config so a
+                // mode pens a TIER rather than a cell, and so an offspring inherits its parent's
+                // band for free - it binds the same config.
+                _bandInner = Mathf.Max(0f, config.BandInnerRadius);
+                _bandOuter = Mathf.Max(0f, config.BandOuterRadius);
+                if (_bandOuter > 0f && _bandInner > _bandOuter)
+                    (_bandInner, _bandOuter) = (_bandOuter, _bandInner);
+
+                // The spawner sets Goal before Initialize (cell still null, so the setter's
+                // clamp was a no-op) - re-run it now that the band exists, or the creature's
+                // first few seconds are spent swimming to a point outside its own pen.
+                if (HasBand) Goal = _goal;
+
                 var pick = config.RollVariant(inherit);
                 _variantPick = pick;
 
@@ -574,16 +676,53 @@ namespace CosmicShore.Gameplay
         /// <summary>The cached body prisms (see <see cref="CacheBodyPrisms"/>). May contain destroyed entries.</summary>
         protected HealthPrism[] BodyPrisms => _bodyPrisms;
 
+        /// <summary>True while any body prism is alive — the creature's health read.</summary>
+        public bool HasLiveBodyPrisms
+        {
+            get
+            {
+                var prisms = _bodyPrisms;
+                if (prisms == null) return false;
+                for (int i = 0; i < prisms.Length; i++)
+                {
+                    var hp = prisms[i];
+                    if (hp && !hp.destroyed) return true;
+                }
+                return false;
+            }
+        }
+
+        // One-shot guard: a burst (a missile's AOE, a shotgun frame) can strip the last
+        // several body prisms inside one frame, and every one of them calls back here.
+        bool _diedFromBodyLoss;
+
         /// <summary>
         /// A prism of this creature's BODY was destroyed by an active force (vessel,
         /// projectile, AOE). Raised by <see cref="HealthPrism.Explode"/> through the
-        /// stamped owner, so a creature can react to being shot — the worm colony's
-        /// segments die when their body is stripped (Docs/ECOSYSTEM.md §23).
-        /// <paramref name="killerName"/> is the attribution the destruction pipeline
-        /// carried. Default is empty: most fauna (LightFauna, Boid) keep their
-        /// historical behavior of swimming on with a thinner body.
+        /// stamped owner. <paramref name="killerName"/> is the attribution the destruction
+        /// pipeline carried.
+        ///
+        /// THE PLAYER KILL PATH (platform-wide since Wildlife Liberation, 2026-08): when the
+        /// LAST body prism is gone the creature dies through the sealed <see cref="Die"/> —
+        /// it withers / is suctioned out (continuity of existence) and drops its elemental
+        /// crystal (mass conserved), exactly like a starvation or predation death. Before
+        /// this only <c>WormSegmentFauna</c> implemented it, so shooting any other creature
+        /// stripped its body and left an immortal husk swimming; a whole class of vessel
+        /// (the Sparrow, whose verbs ARE guns and missiles) could not kill wildlife at all.
+        ///
+        /// This is an ACTIVE force removing mass, so it is squarely inside the conserved-mass
+        /// law — there is no timer, no lifespan and no cull here; a creature nobody shoots
+        /// still only ever dies to starvation or predation. Subclasses may override to add
+        /// topology bookkeeping (the worm colony re-links its chain first), but a creature
+        /// that survives losing its whole body would violate the rule, so overrides must end
+        /// in a death.
         /// </summary>
-        public virtual void OnBodyPrismExploded(HealthPrism prism, string killerName) { }
+        public virtual void OnBodyPrismExploded(HealthPrism prism, string killerName)
+        {
+            if (_diedFromBodyLoss || HasLiveBodyPrisms) return;
+            _diedFromBodyLoss = true;
+            Die(killerName);
+        }
 
         /// <summary>
         /// Pushes the body prisms' current positions into the spatial index. Call
@@ -671,8 +810,33 @@ namespace CosmicShore.Gameplay
             // The heart just left the living pool - poke the domain fauna buff so the
             // domain's power drops with the death, not on the next reconcile sweep.
             RaiseFaunaHeartsChanged();
+            ReportKill(killerName);
             OnDeath(killerName);
         }
+
+        /// <summary>
+        /// Publishes an ATTRIBUTED death on the cell's SOAP channel - the fauna half of the
+        /// stat <see cref="LifeForm.OnLifeFormDeath"/> already reports for flora, routed through
+        /// a ScriptableEvent rather than a static event per the SOAP policy. StatsManager
+        /// (server only) turns it into <see cref="IRoundStats.LifeformsKilled"/>.
+        ///
+        /// Only PLAYER-attributed deaths are published. The ecology's own deaths carry engine
+        /// attribution ("starvation", a predator's name, a colony wither reason) and must not
+        /// score for anyone - a mode whose objective is killing wildlife cannot have the wildlife
+        /// killing itself onto the scoreboard. StatsManager resolves the name against the player
+        /// roster anyway, so this is belt-and-braces on a hot-ish path.
+        /// </summary>
+        void ReportKill(string killerName)
+        {
+            if (string.IsNullOrEmpty(killerName)) return;
+            if (killerName == StarvationKiller) return;
+
+            var runtimeData = hostCell ? hostCell.RuntimeData : cellData;
+            if (runtimeData) runtimeData.OnFaunaKilled.Raise(killerName);
+        }
+
+        /// <summary>Attribution string every starvation death uses - never a scoring kill.</summary>
+        public const string StarvationKiller = "starvation";
 
         /// <summary>
         /// Subclass death behavior (manager removal / destroy / worm-splitting). Override

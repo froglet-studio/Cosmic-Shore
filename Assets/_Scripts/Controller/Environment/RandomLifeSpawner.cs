@@ -279,13 +279,24 @@ namespace CosmicShore.Gameplay
                 : usePredatorRing ? NextPredatorSpawnPoint(host, spawnProfile)
                 : host.GetDensestRegionAnyDomain();
 
+            // A BANDED species is SCATTERED THROUGH ITS ROOM, one point per creature.
+            //
+            // The wave-goal machinery above is right for an ordinary biome: one feeding ground
+            // per wave, everyone jittered around it by FaunaSpawnJitter, so a group arrives
+            // together and works the same buildup. Applied to a penned species it is exactly
+            // wrong - it drops a whole wave inside a 150u ball, which in a 330u-thick room
+            // reads as "they all spawned in one spot" (and while the density grid is still
+            // empty that spot is the CELL CENTRE). The placement itself lives on
+            // CellLifeSpawnerBase.SpawnFaunaBanded so BOTH spawners share it - see the warning
+            // there about which spawner a cell actually runs.
+            bool banded = IsBanded(faunaCfg);
+
             for (int i = 0; i < count; i++)
             {
                 if (!host) yield break;   // cell torn down mid-seed (scene change)
 
-                Vector3 spawnPos = goal + UnityEngine.Random.insideUnitSphere * FaunaSpawnJitter;
-                var fauna = SpawnFaunaWithDomain(host, faunaCfg.FaunaPrefab, goal, color, spawnPos);
-                if (fauna) fauna.AssignLineage(host, faunaCfg);
+                SpawnFaunaBanded(host, faunaCfg, color, goal,
+                    banded ? null : goal + UnityEngine.Random.insideUnitSphere * FaunaSpawnJitter);
 
                 if (i + 1 < count && (i + 1) % FaunaSpawnBatchPerFrame == 0)
                     yield return null;
