@@ -24,11 +24,13 @@ namespace CosmicShore.Gameplay
     /// the HUD, feeds the comeback system, and orders the scoreboard through exactly the same
     /// shared machinery as crystals or prisms, with no per-metric weighting table anywhere.
     ///
-    /// <b>A TEAM race, unlike Wildlife Liberation.</b> Points pool per domain - 2 players is a
+    /// <b>A TEAM race, like every other mode here.</b> Points pool per domain - 2 players is a
     /// 1v1, 4 players on two domains is a 2v2 - which is also the only shape the impact layer
     /// can express: <c>Projectile.DisallowImpactOnVessel</c> refuses own-domain contact, so
-    /// teammates cannot shoot each other and a same-domain pair in a "free-for-all" would simply
-    /// be unable to fight. Domains ARE the sides here, not a scoring convenience.
+    /// teammates cannot shoot each other and a same-domain pair with an individual win condition
+    /// would simply be unable to fight. Domains ARE the sides here, not a scoring convenience -
+    /// and Wildlife Liberation already tried and reverted the individual winner on the weaker
+    /// version of this same argument (four seats, three domains).
     ///
     /// Golf-timed like every race in this family: the winning domain's pilots carry their finish
     /// time, everyone else a <see cref="GolfScoreSentinels"/> sentinel encoding their team's

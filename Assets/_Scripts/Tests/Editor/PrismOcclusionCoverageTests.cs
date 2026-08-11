@@ -97,6 +97,25 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void ExplodingGraph_CarriesTheObjectAnchoredErosion()
+        {
+            // The exploding prism's fade is the object-anchored EROSION dither (chunks of
+            // the prism body crumbling), spliced between the explosion clock and the
+            // corridor node by Tools/Shaders/wire_prism_explosion_erosion.py. Without it a
+            // graph revert silently returns the debris fade to the view-anchored corridor
+            // kernel — the pattern crawls over tumbling debris again, with nothing else
+            // failing. Full edge-level validation lives in the wirer (--check); this gate
+            // catches the wholesale revert from assets alone.
+            string graphPath = "Assets/_Graphics/Materials/Graphs/ExplodingBlockGraph.shadergraph";
+            Assert.IsTrue(File.Exists(graphPath), $"{graphPath} is missing.");
+            string text = File.ReadAllText(graphPath).Replace("\r\n", "\n");
+            Assert.IsTrue(text.Contains("\"m_FunctionName\": \"PrismErosionFade\""),
+                $"{graphPath} has no PrismErosionFade Custom Function node — the debris fade has " +
+                "fallen back to the view-anchored corridor dither. " +
+                "Fix: python3 Tools/Shaders/wire_prism_explosion_erosion.py");
+        }
+
+        [Test]
         public void EveryMaterialOnAWiredGraph_CanBeDissolvedByTheCorridor()
         {
             var failures = new List<string>();

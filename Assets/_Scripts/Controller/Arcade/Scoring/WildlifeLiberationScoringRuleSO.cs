@@ -7,36 +7,35 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Wildlife Liberation: the hunt is a FREE-FOR-ALL. The turn ends
-    /// (<c>WildlifeKillTurnMonitor</c>) when ONE PLAYER's
+    /// Wildlife Liberation: the hunt is a DOMAIN RACE, like every other multiplayer mode here.
+    /// The turn ends (<c>WildlifeKillTurnMonitor</c>) when an active domain's summed
     /// <see cref="IRoundStats.LifeformsKilled"/> reaches
-    /// <see cref="GameDataSO.LifeformTargetCount"/> - not when a domain's sum does.
+    /// <see cref="GameDataSO.LifeformTargetCount"/>, and that domain wins.
     ///
-    /// That makes this the platform's first per-individual race, and every override below exists
-    /// for that one reason. The shared machinery aggregates by domain (three scores at most,
-    /// teammates pooled), which is right for Skim Race / Joust / Scurry / Rampage / Ribcage and
-    /// wrong here: with four hunters in one cage, pooling two of them would mean a player wins
-    /// off a teammate's kills. So:
+    /// > **This shipped once as a FREE-FOR-ALL (first player to the target) and was reverted.**
+    /// > Do not re-derive it. The mode seats up to FOUR players but the platform has only THREE
+    /// > playable domains (`GameDataSO.ActiveDomains` = Jade / Ruby / Gold - Blue is the "no
+    /// > team" sentinel), so a four-player lobby ALWAYS has two players sharing a colour. A
+    /// > per-individual winner therefore bypasses the domain machinery every other mode runs on:
+    /// > the winner banner, the domain HUD panels, the scoreboard's team ordering and the
+    /// > placement-order fold all speak in domains, and a mode that answers "a player won" leaves
+    /// > every one of them describing something that is not the result. Teammates sharing a total
+    /// > is the intended shape, not a defect to work around.
     ///
-    ///   • <see cref="IsObjectiveReached"/> scans PLAYERS, not domains.
-    ///   • <see cref="RemainingForPlayer"/> reads the individual, so your HUD counts down YOUR
-    ///     hunt.
-    ///   • <see cref="AssignScores"/> gives the finish time to the one hunter who got there.
+    /// So this rule is deliberately THIN - it picks the metric and the target and inherits the
+    /// rest of <see cref="ScoringRuleSO"/>'s domain behaviour (winner = highest domain sum, ties
+    /// by <c>ActiveDomains</c> order so every machine agrees; remaining = the domain's deficit).
+    /// Only the presentation is its own.
     ///
-    /// The DOMAIN sums are still published and still shown - the in-game HUD's domain panels are
-    /// driven by <c>MultiplayerDomainGamesController.SyncDomainSumsRoutine</c> off this rule's
-    /// <see cref="ScoringRuleSO.Metric"/> and keep working untouched - they are simply a
-    /// secondary readout ("how is my colour doing") rather than the win condition.
-    ///
-    /// Golf-timed like every other race here: the winner carries their finish time, everyone
-    /// else the shared <see cref="GolfScoreSentinels"/> encoding of how many kills they still
-    /// needed, so lower is better and the winner always sorts first.
+    /// Golf-timed like HexRace / Scurry / Rampage / Ribcage: the winning DOMAIN's players carry
+    /// their finish time, everyone else the shared <see cref="GolfScoreSentinels"/> encoding of
+    /// their team's deficit, so lower is better and the winners always sort first.
     ///
     /// A note on what does and does not score, because the ecology is a live system and not a
     /// pile of targets: only PLAYER-ATTRIBUTED kills count. A creature that starves, or that a
     /// shark eats, credits nobody - <c>Fauna.Die</c> filters engine attribution before it
     /// publishes, and <c>StatsManager.LifeformKilled</c> only credits a name on the player
-    /// roster. So the swarm dying of its own accord can never move a scoreboard, and a hunter
+    /// roster. So the swarm dying of its own accord can never move a scoreboard, and a team
     /// cannot farm the food web instead of hunting.
     /// </summary>
     [CreateAssetMenu(menuName = "ScriptableObjects/Scoring Rules/Wildlife Liberation",
@@ -46,101 +45,57 @@ namespace CosmicShore.Gameplay
         protected override int TargetCount(GameDataSO gameData) => gameData.LifeformTargetCount;
 
         /// <summary>
-        /// The hunter currently closest to the target - and, once the turn has ended, THE winner.
-        /// Ties break by name (ordinal) so every peer resolves the same player from the same
-        /// data, the same way the domain rules tie-break on enum order.
+        /// Identical in shape to <see cref="RibcageScoringRuleSO"/> and
+        /// <see cref="RampageScoringRuleSO"/>: the first active domain whose summed kills reach
+        /// the target wins. <see cref="ScoringRuleSO.ResolveWinner"/> and
+        /// <see cref="ScoringRuleSO.Remaining"/> are inherited unchanged - both already read
+        /// <c>ScoringMetrics.SumByDomain</c> over this rule's metric.
         /// </summary>
-        public IRoundStats ResolveWinningHunter(GameDataSO gameData)
-        {
-            var list = gameData != null ? gameData.RoundStatsList : null;
-            if (list == null || list.Count == 0) return null;
-
-            IRoundStats best = null;
-            foreach (var s in list)
-            {
-                if (s == null) continue;
-                if (best == null ||
-                    s.LifeformsKilled > best.LifeformsKilled ||
-                    (s.LifeformsKilled == best.LifeformsKilled &&
-                     string.CompareOrdinal(s.Name, best.Name) < 0))
-                    best = s;
-            }
-            return best;
-        }
-
         public override bool IsObjectiveReached(GameDataSO gameData, out Domains winner)
         {
+            int target = TargetCount(gameData);
+            if (target <= 0)
+            {
+                // Target not resolved yet (monitor hasn't started / synced) - never end on 0,
+                // or the turn would finish the instant the first creature dies.
+                winner = Domains.Blue;
+                return false;
+            }
+
+            int dc = Mathf.Clamp(gameData.RequestedDomainCount, 1, GameDataSO.ActiveDomains.Length);
+            for (int i = 0; i < dc; i++)
+            {
+                var d = GameDataSO.ActiveDomains[i];
+                if (ScoringMetrics.SumByDomain(gameData, metric, d) >= target)
+                {
+                    winner = d;
+                    return true;
+                }
+            }
             winner = Domains.Blue;
-
-            int target = TargetCount(gameData);
-            // Never end on a target of 0 - the monitor may not have resolved/synced it yet, and
-            // "0 kills wins" would end the turn on the countdown.
-            if (target <= 0) return false;
-
-            var leader = ResolveWinningHunter(gameData);
-            if (leader == null || leader.LifeformsKilled < target) return false;
-
-            winner = leader.Domain;
-            return true;
+            return false;
         }
 
         /// <summary>
-        /// The winning player's DOMAIN - what colours the end-game banner. The winner is still an
-        /// individual; this only answers "what colour did they fly".
-        /// </summary>
-        public override Domains ResolveWinner(GameDataSO gameData) =>
-            ResolveWinningHunter(gameData)?.Domain ?? Domains.Blue;
-
-        /// <summary>Your OWN hunt's deficit, not your team's - see the class summary.</summary>
-        public override int RemainingForPlayer(GameDataSO gameData, IRoundStats stats) =>
-            stats == null ? 0 : Mathf.Max(0, TargetCount(gameData) - stats.LifeformsKilled);
-
-        /// <summary>
-        /// A domain's deficit = its BEST hunter's deficit (how close that colour is to putting
-        /// someone over the line), not the sum of its players' shortfalls. Summing would make a
-        /// two-player domain look further from winning than a one-player domain that is level
-        /// with it, which is the opposite of true in a free-for-all.
-        /// </summary>
-        public override int Remaining(GameDataSO gameData, Domains domain)
-        {
-            int target = TargetCount(gameData);
-            if (target <= 0) return 0;
-
-            int bestKills = 0;
-            var list = gameData != null ? gameData.RoundStatsList : null;
-            if (list != null)
-                foreach (var s in list)
-                    if (s != null && s.Domain == domain && s.LifeformsKilled > bestKills)
-                        bestKills = s.LifeformsKilled;
-
-            return Mathf.Max(0, target - bestKills);
-        }
-
-        /// <summary>
-        /// Winner (the individual) carries the finish time; everyone else the golf sentinel
-        /// encoding THEIR OWN remaining kills. The <paramref name="winner"/> domain is ignored
-        /// deliberately - in a free-for-all a teammate of the winner has not won, and scoring
-        /// them as if they had is exactly the bug this mode has to avoid.
+        /// The winning DOMAIN's players carry the finish time; everyone else the sentinel
+        /// encoding their own team's remaining kills, so teammates on a losing domain tie.
         /// </summary>
         public override void AssignScores(GameDataSO gameData, Domains winner, float finishTime)
         {
-            var champion = ResolveWinningHunter(gameData);
-
             foreach (var stats in gameData.RoundStatsList)
             {
                 if (stats == null) continue;
-                stats.Score = ReferenceEquals(stats, champion)
+                stats.Score = stats.Domain == winner
                     ? finishTime
-                    : GolfScoreSentinels.EncodeHexRaceLoserScore(RemainingForPlayer(gameData, stats));
+                    : GolfScoreSentinels.EncodeHexRaceLoserScore(Remaining(gameData, stats.Domain));
             }
         }
 
         public override List<ScoreResult> BuildResults(GameDataSO gameData)
         {
-            // Golf order: the single finish time sorts below every loser sentinel, and the
-            // sentinels order losers by their own deficit - so the board reads as one hunt
-            // leaderboard rather than a team table. Kills then name break remaining ties, so
-            // every peer builds an identical list.
+            // Golf order = TEAM-major by construction: finish times (winners) below every loser
+            // sentinel, loser sentinels ordered by team deficit. Individual kills order
+            // teammates; name is the final tiebreak so every peer builds an identical list.
             var ordered = gameData.RoundStatsList
                 .OrderBy(s => s.Score)
                 .ThenByDescending(s => s.LifeformsKilled)
@@ -152,7 +107,7 @@ namespace CosmicShore.Gameplay
                 s.Score,
                 GolfScoreSentinels.IsFinishTime(s.Score)
                     ? ScoreResultBuilder.FormatTime(s.Score)
-                    : $"{RemainingForPlayer(gameData, s)} Kills Left",
+                    : $"{Remaining(gameData, s.Domain)} Kills Left",
                 $"{LiveMetric(s)} Kills")).ToList();
 
             return ScoreResultBuilder.BuildRanked(rows);
@@ -161,6 +116,6 @@ namespace CosmicShore.Gameplay
         public override ScoreReveal BuildReveal(GameDataSO gameData, IRoundStats localStats, bool didWin) =>
             didWin
                 ? new ScoreReveal("VICTORY", "HUNT TIME", (int)localStats.Score, true)
-                : new ScoreReveal("DEFEAT", "KILLS LEFT", RemainingForPlayer(gameData, localStats), false);
+                : new ScoreReveal("DEFEAT", "KILLS LEFT", Remaining(gameData, localStats.Domain), false);
     }
 }

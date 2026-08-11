@@ -78,8 +78,8 @@ namespace CosmicShore.Editor
                 "  • Ribcage: hostile prisms destroyed to win (race to N), default " +
                 EndConditionOverridesSO.DefaultRibcagePrismTarget +
                 ". The 25%/50% fauna-release rungs are fractions of this.\n" +
-                "  • Wildlife Liberation: creatures ONE PLAYER must kill to win (free-for-all, " +
-                "not a domain sum), default " + EndConditionOverridesSO.DefaultWildlifeKillTarget + ".\n" +
+                "  • Wildlife Liberation: creatures a domain must kill to win (race to N), " +
+                "default " + EndConditionOverridesSO.DefaultWildlifeKillTarget + ".\n" +
                 "  • Dog Fight: gunnery points a DOMAIN needs to win - a bullet hit scores 1 and " +
                 "a missile hit scores 50, so the default " + EndConditionOverridesSO.DefaultDogFightPointTarget +
                 " is 500 bullets or 10 rockets, or any mix.",

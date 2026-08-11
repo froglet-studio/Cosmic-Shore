@@ -273,16 +273,12 @@ namespace CosmicShore.Utility
 
         /// <summary>
         /// The resolved fauna-kill target for the current Wildlife Liberation session - the
-        /// PER-PLAYER <see cref="IRoundStats.LifeformsKilled"/> count that ends the turn.
+        /// per-domain <see cref="IRoundStats.LifeformsKilled"/> SUM that ends the turn.
         /// Published by <c>WildlifeKillTurnMonitor</c> in StartMonitor (server), synced to
         /// clients via NetworkVariable.OnValueChanged. Read by
         /// <see cref="CosmicShore.Gameplay.WildlifeLiberationScoringRuleSO"/> for the end
         /// condition and the "remaining" readout. Reset in <see cref="ResetRuntimeData"/> and
         /// <see cref="ResetRuntimeDataForReplay"/>.
-        ///
-        /// Note this is the one target on this object that is compared against an INDIVIDUAL's
-        /// stat rather than a domain sum - Wildlife Liberation is a free-for-all hunt whose
-        /// domain sums are a secondary readout, not the win condition.
         /// </summary>
         [NonSerialized] public int LifeformTargetCount;
 

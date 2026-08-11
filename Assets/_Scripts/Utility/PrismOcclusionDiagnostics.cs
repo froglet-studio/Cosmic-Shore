@@ -4,23 +4,33 @@ using UnityEngine;
 namespace CosmicShore.Utility
 {
     /// <summary>
-    /// Fail-loud enforcement for the prism occlusion corridor
-    /// (Docs/PRISM_ANIMATION.md §4.7 — a platform law, not a per-vessel or per-mode feature).
+    /// Fail-loud enforcement for the prism occlusion corridor — and, since the dither
+    /// became THE prism transparency mechanism (2026-08-10), for the prism material
+    /// contract as a whole (Docs/PRISM_ANIMATION.md §4.7 — a platform law, not a
+    /// per-vessel or per-mode feature).
     ///
     /// The corridor's failure modes are SILENT: a prism whose material cannot fade simply
     /// stays solid, leaving an invisible hole in the corridor that nothing reports. That is
     /// exactly the opt-in-by-omission this system was rebuilt to abolish, so — per the
     /// project's fail-loud policy, and mirroring <see cref="PrismClockDiagnostics"/> — a
-    /// prism that binds a corridor-incapable material screams ONCE, naming the material and
+    /// prism that binds an off-contract material screams ONCE, naming the material and
     /// which of the two requirements it misses:
     ///
     ///   1. The material's shader must be one of the corridor-wired prism graphs
     ///      (<see cref="WiredPrismShaderNames"/>). A prism on any other shader — the legacy
     ///      SpreadFresnel/TriangleFresnel family, or a newly authored graph — can never fade.
-    ///   2. An OPAQUE material must additionally enable alpha test. URP compiles the Alpha
+    ///   2. The material must be OPAQUE with alpha test enabled. URP compiles the Alpha
     ///      output away entirely on an opaque surface without <c>_ALPHATEST_ON</c>, so the
-    ///      corridor's fade would be computed and then discarded. Transparent materials
-    ///      blend and need nothing extra.
+    ///      fade would be computed and then discarded. A TRANSPARENT prism material is now
+    ///      equally a fault: every prism transparency effect — the corridor fade, the
+    ///      exploding-debris fade-out, the cloak family's authored near-zero alpha — rides
+    ///      the screen-door dither (PrismOcclusionFade engages its threshold for ANY
+    ///      fractional final alpha), so a blending prism pays the transparent queue for an
+    ///      effect the opaque clip already provides and renders a second, inconsistent
+    ///      kind of transparency next to the dither. Authored sub-1 <c>_Alpha</c> /
+    ///      <c>_Opacity</c> values are LEGAL on any prism material — they are the dither
+    ///      coverage (the cloak ships 0.01 on purpose). Fix either fault with
+    ///      <c>python3 Tools/Shaders/enable_prism_alpha_clip.py</c>.
     ///
     /// Note on (1): the corridor's two uniforms are UNEXPOSED globals (that is what lets
     /// <c>Shader.SetGlobalVector</c> drive them), and an unexposed ShaderGraph property is
@@ -51,7 +61,6 @@ namespace CosmicShore.Utility
 
         static readonly int SurfaceId = Shader.PropertyToID("_Surface");
         static readonly int AlphaClipId = Shader.PropertyToID("_AlphaClip");
-        static readonly int AlphaId = Shader.PropertyToID("_Alpha");
         const string AlphaTestKeyword = "_ALPHATEST_ON";
 
         /// <summary>True if <paramref name="shaderName"/> is one of the corridor-wired prism graphs.</summary>
@@ -91,11 +100,25 @@ namespace CosmicShore.Utility
                 return false;
             }
 
-            // Transparent materials blend, so the corridor's alpha multiply is enough.
+            // Transparent prism materials are off-contract: the screen-door dither IS prism
+            // transparency now (fade-outs, cloak, corridor — one mechanism, composing in
+            // coverage), so a blending prism pays sorting + blend overdraw for an effect the
+            // opaque clip already provides, renders an inconsistent second kind of
+            // transparency next to the dither, and stops writing depth.
             bool transparent = material.HasProperty(SurfaceId) && material.GetFloat(SurfaceId) > 0.5f;
-            if (transparent) return true;
+            if (transparent)
+            {
+                fault = "is TRANSPARENT — prism transparency rides the opaque screen-door dither " +
+                        "(PrismOcclusionFade clips any fractional alpha), so no prism material may use the " +
+                        "transparent queue. Fix: `python3 Tools/Shaders/enable_prism_alpha_clip.py` (converts it " +
+                        "to opaque + alpha clip, preserving its authored alpha as dither coverage)";
+                return false;
+            }
 
             // Opaque surfaces need alpha test or URP discards the Alpha output entirely.
+            // Note authored sub-1 _Alpha / _Opacity is NOT checked here: those values are the
+            // material's dither coverage (the cloak family ships near-zero on purpose), not
+            // stale data — the old "_Alpha must be 1" rule predates fade-anywhere dithering.
             bool clipOn = material.HasProperty(AlphaClipId) && material.GetFloat(AlphaClipId) > 0.5f;
             bool keywordOn = material.IsKeywordEnabled(AlphaTestKeyword);
             if (!clipOn || !keywordOn)
@@ -105,13 +128,6 @@ namespace CosmicShore.Utility
                         "opaque surface, so the corridor's fade is computed and then thrown away and this prism stays " +
                         "solid in front of the ship (an invisible hole in the corridor). Fix: " +
                         "`python3 Tools/Shaders/enable_prism_alpha_clip.py`, or tick Alpha Clip on the material";
-                return false;
-            }
-
-            float alpha = material.HasProperty(AlphaId) ? material.GetFloat(AlphaId) : 1f;
-            if (alpha < 0.999f)
-            {
-                fault = $"has _Alpha {alpha}, not 1 — with alpha test on, this prism is clipped away ENTIRELY";
                 return false;
             }
             return true;

@@ -21,8 +21,9 @@ shooting people**, and that is the whole design.
 
 **It is the platform's first mode whose score comes from vessel-vs-vessel combat.** Every other
 multiplayer mode races prisms (Rampage, Ribcage), crystals (Skim Race, Scurry), goals (Astro
-League), fauna waves (Brood Rush) or fauna kills (Wildlife Liberation). Landing a shot on
-another *pilot* had no scoreboard anywhere before this.
+League), fauna waves (Brood Rush) or fauna kills (Wildlife Liberation) — every one of them a
+per-DOMAIN sum, and this mode is no exception. Landing a shot on another *pilot* had no
+scoreboard anywhere before this.
 
 **Key architectural facts:**
 
@@ -73,8 +74,13 @@ blast paths — was considered and rejected: it would make friendly fire a *mode
 system that currently has exactly one rule, which is the kind of carve-out CLAUDE.md's
 Universality section warns about.
 
-> Contrast Wildlife Liberation, the platform's free-for-all: its prey is **fauna**, so
-> teammates sharing a domain costs nothing. A dogfight cannot borrow that shape.
+> **This is now settled platform doctrine, not a Dog Fight opinion.** Wildlife Liberation
+> shipped a per-PLAYER winner and it was **reverted** for the same arithmetic: four seats against
+> three domains means a full lobby always has teammates, and an individual winner bypasses every
+> domain surface (winner banner, HUD panels, scoreboard ordering, `ResolvePlacementOrder`). Dog
+> Fight has that constraint *and* an impact layer that refuses own-domain contact, so it is the
+> stronger case of the two. See CLAUDE.md's `WildlifeLiberation(40)` entry — "Do not re-derive
+> it".
 
 ## The pipeline (zero bespoke tracking)
 
@@ -475,8 +481,8 @@ the bullet effect onto `SparrowFullAutoProjectileImpactContainer`, the missile e
     session.**
 13. **Win + scoreboard.** First domain to the target ends the turn; the winning side shows a
     time, everyone else "N Points Left", and the secondary line reads `N pts · X×● Y×◆`. Confirm
-    a *teammate* of the winner DOES get the winner's time (this is a team race — the opposite of
-    the Wildlife Liberation check). Replay (scene reload) resets the milestones and the counters.
+    a *teammate* of the winner DOES get the winner's time — teammates pool, so they share the
+    win. Replay (scene reload) resets the milestones and the counters.
 14. **Milestones.** When the leading domain reaches **125** points the device should shake hard
     for ~1.2 s; again at **250**. Nothing else should change.
 15. **AI dogfights.** Watch an AI Sparrow for a minute: it should chase a pilot, *shoot*,

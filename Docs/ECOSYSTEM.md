@@ -2779,8 +2779,16 @@ physics sees a client's ram) would mean only the host could ever score. `StatsMa
 grew its only client branch: a client forwards its own kill through its own `Player` object
 (`Player.ReportFaunaKill_ServerRpc`), the same owner-detects → server-records round-trip
 `NetworkVesselImpactor` uses for jousts, with identity taken from RPC ownership rather than a
-name string. Server-authoritative fauna would retire it; until then, **any mode that scores on
-the ecology needs this shape.**
+name string.
+
+**Fauna network sync is in flight on a separate branch**, and when it lands the divergence
+retires - but this RPC does not become wrong, it becomes redundant-but-harmless: it is an
+owner-reports-to-server round-trip keyed on ownership, which stays correct whether or not the
+creature also exists on the server. Until then, any mode that scores on the ecology needs this
+shape, and needs to understand that a DOMAIN sum over client-local fauna is two independent
+hunts added together rather than one swarm hunted twice - so a shared domain converges on a
+target faster than a solo one, and per-domain targets tuned before the merge will need
+re-measuring after it.
 
 ### 24.2 A pen becomes a band
 
@@ -2835,3 +2843,149 @@ the branch's headline performance risk — every fauna body prism is a MOVER tha
 product decision ("very heavy", requested 2026-08), not an accident of the roster. Full table,
 the tuning dials in order of bluntness, and the on-device measurement step:
 `WILDLIFE_LIBERATION.md` § "Collider-budget impact".
+
+---
+
+## 25. Astro League — a nucleus that is a WALL, and a pen with an inner wall (Aug 2026)
+
+Astro League's cell shipped with a trail-grazing food web (§14) that could not remove a single
+prism. The mode is soccer: fauna are there to eat the trail mass that accumulates until the pitch
+is unflyable. In play the arena silted up regardless of how the biome was tuned, and the creatures
+starved beside a court packed with food. This section records the root cause, the mechanism that
+fixes it, and the one new capability the mode needed.
+
+### 25.1 The nucleus was eating the food web
+
+**Node control is the nucleus** (CLAUDE.md ▸ locked invariants): in a cell with a nucleus,
+`Cell.IsPreyForHerbivore` returns `!IsInsideNucleus(position)` — the interior is the territorial
+claim and a fauna **sanctuary**, which is exactly right for a cell whose nucleus is a core players
+contest.
+
+Astro League has **no node control at all**. It scores goals, and it borrowed the nucleus as its
+ricochet **court boundary** (`AstroLeagueArena` morphs it with `Cell.SetNucleusMesh` /
+`SetNucleusWorldRadius` so the cage you see is the wall the ball banks off — §14). But
+`RefreshNucleusControlRadius` measures the nucleus renderer's bounds, so the control radius became
+the **court's circumscribing radius**. Every prism in the match was "inside the nucleus":
+
+- `Cell.IsPreyForHerbivore` → `!IsInsideNucleus` → **false everywhere on the pitch**.
+- `Boid.IsEdibleForForager` ends on the same test → **false everywhere on the pitch**.
+
+So no herbivore, forager or otherwise, could eat anything in the arena. The only edible mass was
+outside the court, where nobody flies. Tuning phase thresholds, food floors or populations could
+never have fixed it — the diet predicate was returning false before any of them were consulted.
+
+**The fix is a declaration, not an exception.** `Cell.NucleusIsControlZone` (default **true**, so
+every shipped biome is untouched) lets a mode say *this nucleus is play geometry, not a claim*.
+False collapses the control radius to zero and the cell falls back to its whole-cell semantics —
+exactly the state a cell with no `NucleusPrefab` is already in: herbivores eat opposing-domain
+mass anywhere, `DominantDomain` reads whole-cell volume. `AstroLeagueController.ApplyIntensityScale`
+sets it false after morphing the nucleus (the setter re-measures, so order matters and the flag
+wins on every later refresh).
+
+This does not relitigate "node control is the nucleus". It says this cell **has no control zone**,
+which the ecology already supports. A mode that genuinely contests a core (Brood Rush) leaves the
+flag alone. Note the practical delta to control is nil here: with the nucleus spanning the whole
+court, `nucleusEnvVolumeByDomain` and `liveVolumeByDomain` were already almost the same set.
+
+**Watch for this whenever a mode repurposes a Cell-owned visual.** The Cell's visuals carry
+*semantics*, not just geometry — borrowing the nucleus silently borrowed the sanctuary rule with it.
+
+### 25.2 A pen gains an inner wall
+
+The design ask was "aggressive little creatures that stay OUT of the arena until it starts to get
+crowded, then come in and eat it clean". Three existing pieces cover almost all of it:
+
+| Need | Existing fundamental |
+|---|---|
+| Voracious any-domain grazing | `FaunaVariantTuning.Forager` (the Skim Race trail-cleanup template) |
+| "Keep out of a region" | a pen — but `Cell.FaunaContainmentRadius` is an OUTER wall only |
+| "The arena is getting crowded" | the **volume phase ladder** — Calm below `RestlessEnterVolume`, Restless above it |
+
+The missing quadrant is the inner wall. `FaunaConfigurationSO.BandInner/BandOuterRadius` (§24.2)
+already proves an ANNULUS, but it is authored per-species data and cannot open mid-match;
+`Cell.FaunaContainmentRadius` already proves runtime control, but it is one-sided. So
+**`Cell.FaunaExclusionRadius`** is the mirror of the containment radius, applied to the same two
+rules and carrying the same contract:
+
+- **Diet** — `IsInsideFaunaContainment` now means "inside the outer wall AND outside the inner
+  one", and `IsPreyForHerbivore` already routes through it, as does `Boid.IsEdibleForForager`.
+- **Steering** — `ClampToFaunaContainment` pushes a goal OUT past the inner wall as well as IN past
+  the outer one, from the one setter (`Fauna.Goal`) that no grazer can bypass. It takes the
+  creature's own position for the degenerate centre-goal case, for the same reason
+  `Fauna.ClampToBand` does: otherwise a whole unfed population collapses onto one point on the wall.
+- **Birth** — `CellLifeSpawnerBase.SpawnFaunaBanded` clamps the spawn POSITION through the same
+  method, at the one call both spawners share (§24.2's lesson). A creature born inside a closed pen
+  would read as the pen leaking.
+
+It is **not a wall**: nothing is teleported, no collider is added, nothing is culled for crossing
+it. A creature can drift in on its own momentum — it just has nothing to eat there and every goal
+pulls it back out. Both walls default to 0, so every biome that is not a mode's pen is unchanged
+(the common path is two compares against zero).
+
+**The mode drives it off the spine, not off a new signal.** `AstroLeagueController.UpdateFaunaExclusion`
+sets the radius to the court's `MaxExtent` while `Cell.Phase == Calm` and to 0 at Restless or above.
+"The pitch is silting up" IS `LiveVolume` crossing `RestlessEnterVolume`; the ladder's own
+Enter/Exit hysteresis debounces the edge for free, so the wall cannot flutter. The wall SWEEPS over
+`faunaExclusionSweepSeconds` rather than snapping — continuity of existence applies to the pen's
+boundary too. It runs on every peer because fauna and trail prisms are per-peer local objects, the
+same as the goal-reset prism sweep — no RPC.
+
+The species itself is `Astro League Piranha Fauna Config Data`: the tadpole prefab at
+`BaseBodyScale 0.22`, `Forager` on (any-domain diet), `MinSpeed/MaxSpeed 45/70`, a 60-unit graze
+radius, a 0.6 s behaviour tick and `StarvationSeconds 40` — small, fast, and always hungry, which
+is what makes it aggressive without a single bespoke behaviour. `CenterFocusBias 0.35` pulls the
+released swarm toward midfield, where the play is. Population `8` seed floor / `22` cap, alongside
+the existing tadpole (8) and brittlestar (4).
+
+### 25.3 Invariant review
+
+- **Continuity of existence** — unaffected: the pen removes nothing. Creatures still bloom in,
+  wither to crystal on death. The wall itself sweeps rather than snapping.
+- **No imposed death** — unaffected. Nothing culls a creature for being on the wrong side; an
+  excluded creature that cannot feed starves on the ordinary clock, and the release is what feeds it.
+- **No domain asymmetry** — unaffected. Fauna still spawn in the cell's one controlling colour. The
+  piranha's any-domain DIET is the existing forager rule, and the forager path deliberately does not
+  go through the domain leg (§24.2, `Boid.IsEdibleForForager`).
+- **Mass conserved** — unaffected. Fauna consumption is an ACTIVE force and the only new sink here
+  is that the pitch's mass is now reachable at all. No decay, no timer, no cull was added: §25.1 is
+  a bug fix that *restores* an active sink, which is the opposite of the rejected timed culler.
+- **Volume is the spine** — reinforced. The release gate reads `Cell.Phase`, which is the volume
+  ladder; no count, no bespoke "crowdedness" metric.
+- **Territorial permanence** — this cell has no nucleus claim by declaration (§25.1), so the rule's
+  nucleus-cell branch does not apply; the nucleus-less branch (fauna eat opposing mass) is what it
+  now runs, exactly as the Skim Race biome it was cloned from.
+- **Every lifeform drops a crystal** — untouched (the piranha binds the standard tadpole prefab).
+- **Collider budget** — see below.
+
+### 25.4 Collider budget
+
+| Item | Before | After |
+|---|---|---|
+| Super-shielded edge lining (always-on convex MeshColliders) | 240 | **480** |
+| Live fauna cap (bodies) | 12 (tadpole 8 + brittlestar 4) | **34** (+ piranha 22) |
+| New physics queries | — | **none** |
+
+The lining doubles because the court is ~2.4× larger in each axis and 240 prisms would read as a
+dotted rim; it stays a fixed, deterministic count and its volume budget (`480 × 62.5 = 30000`) is
+carried straight into the cell config's phase-volume thresholds — **change either and retune the
+other**. The piranha is a small Boid, and every fauna sense already rides
+`PrismSpatialIndex.QuerySphere`, never `Physics.OverlapSphere`. The exclusion pen adds one squared
+compare to paths that already ran the containment compare. The ball still excludes the
+`TrailBlocks` layer, so it never collides with what the fauna graze.
+
+### 25.5 Phase thresholds (retuned for the lining budget and for Rhino trail)
+
+| Field | Value | Why |
+|---|---|---|
+| `RestlessEnterVolume` | 30600 | 30000 structural floor + **600** of trail |
+| `RestlessExitVolume` | 30450 | floor + 450 |
+| `FrenzyEnterVolume` | 32000 | floor + **2000** of trail |
+| `FrenzyExitVolume` | 31600 | floor + 1600 |
+| `RestlessEnter` / `FrenzyEnter` (count) | 900 / 3000 | perf backstop only — the lining is volume-only and never enters `LiveBlockCount` |
+| `SenseRadiusOverride` | 2000 | covers the intensity-4 court (max extent ≈ 1280) with margin |
+
+The headroom is authored in Rhino trail: a Rhino prism is **≈ 0.75 volume** (`BaseScale (3,3,0.5)`,
+`Gap 2` → a `(0.5, 3, 0.5)` sliver) and it lays two per spawn, so +600 volume ≈ **800 prisms** on
+the pitch before the crew is released and +2000 ≈ 2700 before Frenzy. This is the mode's primary
+pacing dial and the first thing to move after a playtest. **It is vessel-specific**: the previous
+values were authored for Squirrel's ≈3.1-volume prisms, and the mode is now Rhino-only.

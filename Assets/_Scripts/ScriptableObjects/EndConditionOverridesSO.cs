@@ -50,7 +50,7 @@ namespace CosmicShore.ScriptableObjects
         public const int DefaultRibcagePrismTarget = 2000;
 
         /// <summary>Wildlife Liberation kill target used when <see cref="wildlifeKillTarget"/> is 0 (auto/default).</summary>
-        public const int DefaultWildlifeKillTarget = 120;
+        public const int DefaultWildlifeKillTarget = 250;
 
         /// <summary>Dog Fight point target used when <see cref="dogFightPointTarget"/> is 0 (auto/default).</summary>
         public const int DefaultDogFightPointTarget = 500;
@@ -83,11 +83,10 @@ namespace CosmicShore.ScriptableObjects
                  "escalation ladder with it. 0 = default (2000).")]
         [Min(0)] public int ribcagePrismTarget = 2000;
 
-        [Tooltip("Wildlife Liberation: creatures ONE PLAYER must kill to win. Unlike every " +
-                 "other target here this is compared against an INDIVIDUAL's stat, not a domain " +
-                 "sum - the hunt is a free-for-all, so a teammate's kills do not count toward " +
-                 "yours. 0 = default (120).")]
-        [Min(0)] public int wildlifeKillTarget = 120;
+        [Tooltip("Wildlife Liberation: creatures a domain must kill between them to win " +
+                 "(race to N), summed across that domain's players like every other target " +
+                 "here. 0 = default (250).")]
+        [Min(0)] public int wildlifeKillTarget = 250;
 
         [Tooltip("Dog Fight points a DOMAIN needs to win. Points come from landed gunnery: a " +
                  "bullet hit scores 1 and a missile hit (direct strike or caught in the blast) " +
@@ -104,7 +103,7 @@ namespace CosmicShore.ScriptableObjects
         [Min(0)] public int nucleusRushWaveTargetBuild = 3;
         [Min(0)] public int rampagePrismTargetBuild = 2000;
         [Min(0)] public int ribcagePrismTargetBuild = 2000;
-        [Min(0)] public int wildlifeKillTargetBuild = 120;
+        [Min(0)] public int wildlifeKillTargetBuild = 250;
         [Min(0)] public int dogFightPointTargetBuild = 500;
 
         [Tooltip("When on, a build first copies the Build baseline onto the Live counts, so test values are never shipped.")]
@@ -169,9 +168,9 @@ namespace CosmicShore.ScriptableObjects
         public int GetRibcagePrismTarget() => ribcagePrismTarget > 0 ? ribcagePrismTarget : DefaultRibcagePrismTarget;
 
         /// <summary>
-        /// Wildlife Liberation kill target ("first hunter to N creatures"): the configured value
-        /// when &gt; 0, otherwise <see cref="DefaultWildlifeKillTarget"/>. Compared against ONE
-        /// PLAYER's kill count, not a domain sum.
+        /// Wildlife Liberation kill target ("race to N creatures killed"): the configured value
+        /// when &gt; 0, otherwise <see cref="DefaultWildlifeKillTarget"/>. Compared against a
+        /// DOMAIN's summed kill count.
         /// </summary>
         public int GetWildlifeKillTarget() => wildlifeKillTarget > 0 ? wildlifeKillTarget : DefaultWildlifeKillTarget;
 
