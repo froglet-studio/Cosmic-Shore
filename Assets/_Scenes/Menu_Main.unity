@@ -30286,6 +30286,11 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: 61.676643
       objectReference: {fileID: 0}
+    - target: {fileID: 8880519059763811029, guid: 0b36fa278f9a30d4c8f44e846674c904,
+        type: 3}
+      propertyPath: quitGameButton
+      value: 
+      objectReference: {fileID: 680554985412321638}
     - target: {fileID: 8883172770853209374, guid: 0b36fa278f9a30d4c8f44e846674c904,
         type: 3}
       propertyPath: m_SizeDelta.x
@@ -30579,11 +30584,7 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 8646006358540626369, guid: 0b36fa278f9a30d4c8f44e846674c904,
-        type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 680554985412321639}
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 0b36fa278f9a30d4c8f44e846674c904, type: 3}
 --- !u!114 &680554985412321636 stripped
 MonoBehaviour:
@@ -30603,25 +30604,18 @@ RectTransform:
     type: 3}
   m_PrefabInstance: {fileID: 680554985412321635}
   m_PrefabAsset: {fileID: 0}
---- !u!1 &680554985412321638 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 8646006358540626369, guid: 0b36fa278f9a30d4c8f44e846674c904,
+--- !u!114 &680554985412321638 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 2126158085729231474, guid: 0b36fa278f9a30d4c8f44e846674c904,
     type: 3}
   m_PrefabInstance: {fileID: 680554985412321635}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &680554985412321639
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 680554985412321638}
+  m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4895ccf63ef14054908fc22a3d2e722d, type: 3}
+  m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.UI.QuitGameButton
-  desktopOnly: 1
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Button
 --- !u!1 &682024415980713642
 GameObject:
   m_ObjectHideFlags: 0
