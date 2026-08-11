@@ -962,6 +962,36 @@ float PrismOcclusionDitherThreshold(float2 pixel, float radialRatio, float angle
 #define PRISM_OCCLUSION_NEEDS_POLAR 0
 #endif
 
+// -----------------------------------------------------------------------------
+// THE NOSE CLEARANCE — where the corridor STOPS, in multiples of the vessel's own
+// circumscribing hull radius (2026-08-11).
+//
+// The cone used to run all the way to the vessel's ORIGIN plane, with the axial
+// gradient still in progress when it got there. A prism the ship is flying into is
+// therefore still PARTLY DEMATERIALISED at the moment of contact, and an impact you
+// cannot see land does not read as an impact — the collision is with something the
+// corridor already half-erased.
+//
+// So the fade now has to be COMPLETE this far short of the vessel plane, leaving a
+// fully solid buffer that the ship's whole nose sits inside. Measured in hull radii
+// because that is the one length the corridor already knows and the one that scales
+// across the fleet with nothing authored: the hull radius bounds every part of the
+// ship about its origin, so a clearance of 1 means "solid from a ship's-length out,
+// all the way through the nose and past it".
+//
+// THE TRADE, STATED. This is the corridor giving ground on its own job: mass inside
+// the buffer is solid, so a prism nearly touching the ship CAN occlude it there. That
+// is the point — you are trading a sliver of see-through for the impact reading — but
+// it is a real trade, and it is why this is a dial. Lower it toward 0.5 if prisms
+// start hiding the ship at contact range; 0 restores the old flush-to-the-plane
+// behaviour exactly.
+//
+// DEGENERATE CASE: a camera closer to the ship than the clearance leaves no corridor
+// at all (tSolid <= 0 below). That is correct rather than dangerous — inside one hull
+// radius there is no room for occluding mass to hide behind anyway.
+// -----------------------------------------------------------------------------
+static const float PRISM_OCCLUSION_NOSE_CLEARANCE = 1.0;
+
 // Quintic smootherstep — C2 continuous: value, FIRST and SECOND derivatives are all
 // zero at both ends. smoothstep (cubic) only zeroes the first, which leaves a faint
 // crease where the band begins and ends. That crease is what you notice when the band
@@ -1049,7 +1079,7 @@ void PrismOcclusionFade_float(float3 PositionWS, float3 Target, float3 Params, f
         // axisLenSq ~ 0: camera sitting on the vessel — no axis, no cone.
         if (axisLenSq > 1e-6)
         {
-            // t is UNCLAMPED, and the cone is bounded by rejecting t outside (0,1). This
+            // t is UNCLAMPED, and the cone is bounded by rejecting t outside (0, tSolid). This
             // makes it a BARE cone: it ends flat at the vessel's plane, with no spherical
             // cap past the base and none behind the camera. Mass level with or behind the
             // ship cannot be in front of it, so clearing any of it would be more than the
@@ -1057,7 +1087,15 @@ void PrismOcclusionFade_float(float3 PositionWS, float3 Target, float3 Params, f
             // vessel past t = 1, and the metric there becomes distance-to-the-ship-point —
             // that is exactly the hemispherical cap this rejection removes.)
             float t = dot(rel, axis) / axisLenSq;
-            if (t > 0.0 && t < 1.0)
+
+            // Where the fade must be finished — short of the vessel plane by the nose
+            // clearance, so the ship and the mass it is about to hit sit in solid air.
+            // saturate: a camera inside the clearance yields 0 and switches the corridor
+            // off, which is the correct degenerate behaviour (see the constant's note).
+            float axisLen = sqrt(axisLenSq);
+            float tSolid = saturate(1.0 - (outerRadius * PRISM_OCCLUSION_NOSE_CLEARANCE) / axisLen);
+
+            if (t > 0.0 && t < tSolid)
             {
                 // Within (0,1) the closest point on the segment IS the perpendicular foot,
                 // so this is the perpendicular distance to the axis. The VECTOR is kept,
@@ -1099,11 +1137,11 @@ void PrismOcclusionFade_float(float3 PositionWS, float3 Target, float3 Params, f
                     float clearRadial = 1.0 - PrismOcclusionSmootherStep(
                         (distanceToAxis - innerAtT) / max(outerAtT - innerAtT, 1e-4));
 
-                    // Axial clearance: 1 up to the base band, 0 at the vessel's plane.
-                    // This grades the BASE. Without it the cone ended in a hard cut — a
-                    // prism spanning the vessel's plane was faded on the camera side and
-                    // solid on the far side, which reads as a crisp semicircular edge on
-                    // any large plate at that depth.
+                    // Axial clearance: 1 up to the base band, 0 at tSolid — the nose
+                    // clearance plane, NOT the vessel plane. This grades the BASE.
+                    // Without it the cone ended in a hard cut — a prism spanning that
+                    // plane was faded on the camera side and solid on the far side, which
+                    // reads as a crisp semicircular edge on any large plate at that depth.
                     //
                     // The band's thickness is DERIVED, not authored: it is the radial
                     // shell's own world thickness (outerRadius - innerRadius) expressed in
@@ -1114,8 +1152,8 @@ void PrismOcclusionFade_float(float3 PositionWS, float3 Target, float3 Params, f
                     // axial band, a short one a longer band, with nothing to tune. Clamped
                     // to 1 for the degenerate case where the camera is closer to the ship
                     // than the shell is thick.
-                    float baseBand = clamp((outerRadius - innerRadius) / sqrt(axisLenSq), 1e-4, 1.0);
-                    float clearAxial = 1.0 - PrismOcclusionSmootherStep((t - (1.0 - baseBand)) / baseBand);
+                    float baseBand = clamp((outerRadius - innerRadius) / axisLen, 1e-4, 1.0);
+                    float clearAxial = 1.0 - PrismOcclusionSmootherStep((t - (tSolid - baseBand)) / baseBand);
 
                     // PRODUCT, not min(): a fragment is cleared only where it is inside
                     // the cone AND before the base, and multiplying two C2 curves stays

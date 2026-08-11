@@ -1441,6 +1441,22 @@ Four properties of the design worth preserving if it is ever touched:
   ExplodingBlockGraph — carried a dead `_Opacity 0` that would have become "invisible";
   it is now 1. The tool prints every material's authored coverage so the next stale value
   is visible at conversion time.)
+- **The corridor STOPS SHORT of the ship — `PRISM_OCCLUSION_NOSE_CLEARANCE`
+  (2026-08-11).** The cone used to run all the way to the vessel's ORIGIN plane with the
+  axial gradient still in progress when it arrived, so a prism the ship was flying into
+  was still partly dematerialised at the moment of contact — and an impact you cannot see
+  land does not read as an impact. The fade must now be COMPLETE one hull radius short of
+  the vessel plane, measured in hull radii because that is the length the corridor already
+  knows and the one that scales fleetwide with nothing authored (the hull radius bounds
+  every part of the ship about its origin, so a clearance of 1 means "solid from a
+  ship's-length out, through the nose and past it"). Measured on-axis through a clang
+  build at the Sparrow's 12.32 hull radius with a 30 u camera: cleared 22–28 u out,
+  fading 20→14 u, and **fully solid from 12.3 u all the way through the vessel plane**.
+  The trade is stated and is the point: mass inside that buffer is solid and CAN occlude
+  the ship at contact range — dial toward 0.5 if that starts to bite, 0 restores the old
+  flush-to-the-plane behaviour. A camera closer than the clearance switches the corridor
+  off entirely, which is correct rather than dangerous: inside one hull radius there is no
+  room for occluding mass to hide behind.
 - **The corridor test is per-fragment**, from the Position(World) node — the same
   post-vertex-animation position the rasterizer used. A per-object test would make a large
   environment plate flip wholesale between solid and dissolved.
