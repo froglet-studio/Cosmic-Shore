@@ -429,3 +429,20 @@ present on BlockGraph and ExplodingBlockGraph.
 - **The spawn window.** A prism is invisible for the 1–2 frames between the pool pull and
   creation completion (~25–50 u of a 286 u flight). `Docs/PRISM_ANIMATION.md` §4.2 already
   plans to retire that window entirely; it is not turret-specific.
+- **`placementImmunitySeconds` is probably now too long.** It was sized (0.2) against a
+  12-diameter hit sphere; round 6 shrank that to 1.65, so the shot-vs-shot overlap it was
+  compensating for is largely gone and only the geometric self-delivery case still needs
+  it. Re-tune after flying round 6 — a value just long enough to cover flight-end settle
+  is the target.
+- **The same collider trap is latent in two dead prefabs.** `ProjectileFX.prefab` and
+  `SparrowExhaustProjectile.prefab` both carry `m_Radius 0.3` at scale `(3, 3, 20)` — a
+  6.0-world-radius hit sphere around a projectile of visible radius 1.5, the identical
+  z-stretch bug round 6 fixed on `SparrowProjectile`. Both are currently referenced by
+  NOTHING (verified by GUID sweep), so they are harmless today; if either is revived,
+  re-derive its radius as `desiredWorldRadius / maxScaleComponent` first.
+- **Placement immunity is local, unreplicated state.** `Prism.ProjectileImmuneUntil` is
+  computed from each peer's own `Time.time`, so in a networked match two clients could
+  disagree by a frame or two about whether a marginal impact landed inside the window.
+  The turret's prism spawning is not networked at all today (local `blockFactory` pull),
+  so this is not a new divergence — but it is one more thing to settle when the stance is
+  made server-authoritative.

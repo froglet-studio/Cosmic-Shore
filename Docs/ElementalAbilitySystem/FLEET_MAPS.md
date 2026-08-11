@@ -158,7 +158,7 @@ Time→charge fill rate / "Instant Draw".
 | Element | Quantitative (live) | Proposed L5 upgrade |
 |---|---|---|
 | Charge | *(open)* → propose: forcefield shrink rate (the authored-but-dead `GrowSkimmerAction.shrinkRate` Charge mapping, 6→2) | **Unyielding Field** — forcefield no longer shrinks on prism hits, only on crystal timeout |
-| Mass | trail slab max size | **Armored Slabs** — grown slabs arrive shielded (Sparrow MASS-5 shape) |
+| Mass | trail slab max size | **Armored Slabs** — grown slabs arrive shielded (the "arrive shielded" shape; note it lives on the Sparrow's **SPACE** 5, not Mass, since 2026-08) |
 | Space | *(open)* → propose: forcefield max size | **Breaker** — ramming destroys shielded prisms in one hit (devastate on ram) |
 | Time | *(open)* → propose: slab growth rate | **Fast Pour** — slab growth continues while boosting |
 
