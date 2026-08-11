@@ -64,6 +64,14 @@ namespace CosmicShore.Editor
                     continue;
                 }
 
+                // The folder also holds sub-prefabs a vessel is BUILT from (Skimmer,
+                // TrailEmpty, PipCamera, jet, GyroidAssemblerPrefab...). They are not
+                // vessels, they have no corridor of their own, and reporting them as
+                // "UNMEASURABLE" is noise that buries the real rows. VesselController is
+                // the discriminator because it is the exact component whose Initialize
+                // binds the corridor — if it is absent, nothing ever measures this prefab.
+                if (root.GetComponent<CosmicShore.Gameplay.VesselController>() == null) continue;
+
                 float radius = PrismOcclusionCorridor.MeasureCircumscribedRadius(root.transform);
                 radii.Add((root.name, radius, TopContributors(root.transform)));
             }
@@ -81,10 +89,19 @@ namespace CosmicShore.Editor
                 report.AppendLine($"      {detail}");
             }
 
-            report.AppendLine($"— Fleet median hull radius: {median:F2}. The corridor law wants these to track");
-            report.AppendLine("  each hull's SIZE — a radius far off its vessel's visual bulk means a stray");
-            report.AppendLine("  renderer (named above) or a rig whose bounds lie (see MeasureCircumscribedRadius's");
-            report.AppendLine("  doc comment for the skinned-bounds rule).");
+            if (radii.Count == 0)
+            {
+                report.AppendLine("   (no vessel prefabs found — does the folder still hold them?)");
+                Debug.Log(report.ToString());
+                return;
+            }
+
+            report.AppendLine($"— Fleet median hull radius: {median:F2}, spread {radii[0].radius:F2}..{radii[radii.Count - 1].radius:F2}.");
+            report.AppendLine("  The corridor law wants these to track each hull's SIZE, so a wide spread is a");
+            report.AppendLine("  fleet-consistency problem, not a corridor one: a radius far off its vessel's");
+            report.AppendLine("  visual bulk means a stray renderer (named above), a placeholder/test mesh, or a");
+            report.AppendLine("  mis-scaled model instance. Fix the ART; do not compensate in the corridor config,");
+            report.AppendLine("  which is fleet-wide and would just move the error onto the correct vessels.");
 
             Debug.Log(report.ToString());
         }
@@ -101,7 +118,7 @@ namespace CosmicShore.Editor
                 if (filter.sharedMesh == null) continue;
                 if (!filter.TryGetComponent<MeshRenderer>(out var renderer)) continue;
                 if (!renderer.enabled) continue;
-                if (filter.GetComponentInParent<CosmicShore.Gameplay.Skimmer>() != null) continue;
+                if (filter.GetComponentInParent<CosmicShore.Gameplay.Skimmer>(true) != null) continue;
                 entries.Add((CornerDistance(filter.sharedMesh.bounds, filter.transform, origin),
                              $"{filter.name} (mesh '{filter.sharedMesh.name}')"));
             }
@@ -109,7 +126,7 @@ namespace CosmicShore.Editor
             {
                 if (skinned.sharedMesh == null) continue;
                 if (!skinned.enabled) continue;
-                if (skinned.GetComponentInParent<CosmicShore.Gameplay.Skimmer>() != null) continue;
+                if (skinned.GetComponentInParent<CosmicShore.Gameplay.Skimmer>(true) != null) continue;
                 var space = skinned.rootBone != null ? skinned.rootBone : skinned.transform;
                 entries.Add((CornerDistance(skinned.localBounds, space, origin),
                              $"{skinned.name} (skinned '{skinned.sharedMesh.name}', root bone " +
@@ -117,10 +134,37 @@ namespace CosmicShore.Editor
             }
 
             entries.Sort((a, b) => b.dist.CompareTo(a.dist));
+
+            // What the skimmer exclusion removed, and how big it was. A vessel whose
+            // largest EXCLUDED volume dwarfs its hull is the normal, healthy case (a
+            // skimmer field is meant to be bigger than the ship); a vessel reporting
+            // none, while visibly carrying a forcefield, means the exclusion did not
+            // fire and the "hull" number above is really the skimmer.
+            float excludedMax = 0f;
+            int excludedCount = 0;
+            foreach (var filter in vessel.GetComponentsInChildren<MeshFilter>(true))
+            {
+                if (filter.sharedMesh == null) continue;
+                if (!filter.TryGetComponent<MeshRenderer>(out _)) continue;
+                if (filter.GetComponentInParent<CosmicShore.Gameplay.Skimmer>(true) == null) continue;
+                excludedCount++;
+                excludedMax = Mathf.Max(excludedMax, CornerDistance(filter.sharedMesh.bounds, filter.transform, origin));
+            }
+            foreach (var skinned in vessel.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+            {
+                if (skinned.sharedMesh == null) continue;
+                if (skinned.GetComponentInParent<CosmicShore.Gameplay.Skimmer>(true) == null) continue;
+                excludedCount++;
+                var sp = skinned.rootBone != null ? skinned.rootBone : skinned.transform;
+                excludedMax = Mathf.Max(excludedMax, CornerDistance(skinned.localBounds, sp, origin));
+            }
             var sb = new StringBuilder("top: ");
             for (int i = 0; i < Mathf.Min(3, entries.Count); i++)
                 sb.Append($"{entries[i].label} @ {entries[i].dist:F2}{(i < Mathf.Min(3, entries.Count) - 1 ? " · " : string.Empty)}");
-            return entries.Count == 0 ? "top: (no hull renderers found)" : sb.ToString();
+            sb.Append(excludedCount > 0
+                ? $"  [skimmer exclusion removed {excludedCount} renderer(s), largest @ {excludedMax:F2}]"
+                : "  [skimmer exclusion removed nothing]");
+            return entries.Count == 0 ? "top: (no hull renderers found)" + sb.ToString().Substring("top: ".Length) : sb.ToString();
         }
 
         static float CornerDistance(Bounds localBounds, Transform space, Vector3 origin)

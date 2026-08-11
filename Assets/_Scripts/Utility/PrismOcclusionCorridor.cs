@@ -124,10 +124,18 @@ namespace CosmicShore.Utility
         /// - DISABLED renderers are skipped: an invisible mesh is not hull, and vessels carry
         ///   hidden placeholder geometry (rig-swap leftovers, dummy volumes) that would
         ///   silently size the corridor to something the player cannot see.
-        /// - Anything under a <see cref="Skimmer"/> is skipped. A skimmer is a FIELD volume,
-        ///   deliberately far larger than the ship — the shared Skimmer prefab is scaled 15×
-        ///   around a 0.5 sphere, a 7.5-unit world radius — so including its forcefield
-        ///   overlay would peg every vessel's corridor to the skimmer instead of the hull.
+        /// - Anything under a <see cref="Skimmer"/> is skipped, INCLUDING INACTIVE ONES.
+        ///   A skimmer is a FIELD volume, deliberately far larger than the ship — the shared
+        ///   Skimmer prefab is scaled 15× around a 0.5 sphere, and its child
+        ///   <c>ForcefieldCrackleOverlay</c> therefore reaches 12.99 units (0.5·√3·15) — so
+        ///   counting it would peg a vessel's corridor to the skimmer instead of the hull.
+        ///   The <c>includeInactive: true</c> argument is load-bearing and easy to lose:
+        ///   <c>GetComponentInParent&lt;T&gt;()</c> defaults to skipping components on
+        ///   inactive GameObjects, and a PREFAB ASSET reports <c>activeInHierarchy == false</c>
+        ///   for every object in it (it is in no scene) — so the default overload finds
+        ///   nothing at all when this runs over assets, and the skimmer silently becomes the
+        ///   "hull" for most of the fleet. It also matters in play: a vessel whose skimmer
+        ///   object is deactivated would otherwise have its field volume measured as hull.
         /// - A SKINNED mesh measures its <c>localBounds</c> in ROOT-BONE space — the culling
         ///   bounds the renderer actually draws with — never <c>sharedMesh.bounds</c>. The
         ///   bind-pose mesh bounds live in MESH space, and on a rig whose scale is carried by
@@ -150,7 +158,7 @@ namespace CosmicShore.Utility
                 if (filter.sharedMesh == null) continue;
                 if (!filter.TryGetComponent<MeshRenderer>(out var renderer)) continue; // collider-only mesh
                 if (!renderer.enabled) continue;
-                if (filter.GetComponentInParent<Skimmer>() != null) continue;
+                if (filter.GetComponentInParent<Skimmer>(true) != null) continue;
                 Accumulate(filter.sharedMesh.bounds, filter.transform, origin, ref maxSqr);
             }
 
@@ -158,7 +166,7 @@ namespace CosmicShore.Utility
             {
                 if (skinned.sharedMesh == null) continue;
                 if (!skinned.enabled) continue;
-                if (skinned.GetComponentInParent<Skimmer>() != null) continue;
+                if (skinned.GetComponentInParent<Skimmer>(true) != null) continue;
                 var space = skinned.rootBone != null ? skinned.rootBone : skinned.transform;
                 Accumulate(skinned.localBounds, space, origin, ref maxSqr);
             }
