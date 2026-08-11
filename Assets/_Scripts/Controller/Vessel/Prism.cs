@@ -49,14 +49,6 @@ namespace CosmicShore.Gameplay
         [Header("Team Ownership")]
         public string ownerID;
 
-        // Set by a gun executor (after Initialize, next to ownerID) on prisms that were
-        // FIRED as shots — the Sparrow turret stance. The self-output guard reads it:
-        // a pilot's projectiles never impact prisms that pilot's own shots created
-        // (Projectile.DisallowImpactOnPrism), or every turret shot would destroy its
-        // own host at the anchor and the previous shots' prisms sitting at the same
-        // range. Non-serialized; cleared on pool reuse in ResetState.
-        public bool IsProjectileLaid { get; set; }
-
         [Header("Event Channels")]
         [SerializeField] ScriptableEventPrismStats _onTrailBlockCreatedEventChannel;
         [SerializeField] ScriptableEventPrismStats _onTrailBlockDestroyedEventChannel;
@@ -709,7 +701,6 @@ namespace CosmicShore.Gameplay
             destroyed = false;
             devastated = false;
             _destroyedByCreature = false; // pool reuse: clear stale creature-kill flag
-            IsProjectileLaid = false;     // pool reuse: only a gun executor may mark this life
 
             // Pool-reuse safety: no spawner requests super-shield via prismProperties
             // before Initialize (it's engaged post-spawn via ActivateSuperShield /

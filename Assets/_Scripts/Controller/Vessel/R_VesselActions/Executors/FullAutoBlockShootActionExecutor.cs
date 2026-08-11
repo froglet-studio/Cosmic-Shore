@@ -390,11 +390,6 @@ namespace CosmicShore.Gameplay
             // counted as two prisms created (and double-credited its volume) in
             // StatsManager. Its other job — owner attribution — is one field.
             prism.ownerID = _status.PlayerName;
-            // Self-output guard marker: this pilot's projectiles must never impact this
-            // prism (Projectile.DisallowImpactOnPrism) — the carried shot arrives AT its
-            // host, and the next shots in a volley fly to the same range. After
-            // Initialize, like ownerID (ResetState clears it).
-            prism.IsProjectileLaid = true;
             prism.prismProperties.position = restPoint;
         }
 
@@ -541,6 +536,12 @@ namespace CosmicShore.Gameplay
                 stopOnFirstPrismImpact: !piercing,
                 spareOwnDomain: false,
                 carriedByHost: true);
+
+            // After Initialize (which clears it per flight): the shot must never impact
+            // the ONE prism it is delivering — the flight ends AT that prism, so without
+            // this every shot destroys its own output on arrival. Other fired prisms are
+            // ordinary friendly-fire targets; only self-delivery is excluded.
+            carried.SetHostPrism(prism);
 
             carriedTransform.SetParent(null, true);
 

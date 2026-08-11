@@ -52,6 +52,15 @@ namespace CosmicShore.Gameplay
         /// Destroy the host's child on the first stopping impact.
         public bool IsCarriedByHost { get; private set; }
 
+        /// Per-shot: the ONE prism this carried shot is delivering, excluded from its own
+        /// impact checks (<see cref="DisallowImpactOnPrism"/>) because the flight ends AT
+        /// that prism by construction. Set by the turret executor after Initialize;
+        /// cleared per flight so a pooled bullet can never inherit one.
+        public Prism HostPrism { get; private set; }
+
+        /// <summary>Bind the prism this carried shot delivers (see <see cref="HostPrism"/>).</summary>
+        public void SetHostPrism(Prism prism) => HostPrism = prism;
+
         /// <summary>
         /// Raised the instant this flight ends — at BOTH death points: the lifetime
         /// expiring in <see cref="MoveProjectileAsync"/>, and a stopping prism impact
@@ -155,6 +164,7 @@ namespace CosmicShore.Gameplay
             // end-of-flight handler, and the once-only latch must re-arm.
             FlightEnded = null;
             _flightEndRaised = false;
+            HostPrism = null;
         }
 
         public void SetType(ProjectileType type) => Type = type;
@@ -164,16 +174,15 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Two independent reasons a projectile ignores a prism:
         /// (1) authored friendly-fire off for this projectile family (domain gate);
-        /// (2) the SELF-OUTPUT GUARD — a pilot's shots never impact prisms that pilot's
-        ///     own shots created (<see cref="Prism.IsProjectileLaid"/> + owner match).
-        ///     Without it every Sparrow turret shot destroys its own host prism the
-        ///     moment the carried projectile reaches the anchor, and each volley erases
-        ///     the previous shots' prisms parked at the same range. Friendly fire on
-        ///     everything else (own trail, teammates' mass) is untouched.
+        /// (2) the HOST guard — a carried shot never impacts the one prism it is
+        ///     delivering (<see cref="HostPrism"/>). The Sparrow turret parks the prism
+        ///     at the flight's END with a live collider, so without this the projectile
+        ///     arrives AT its own prism and destroys it on every single shot. That is a
+        ///     flight-architecture artifact, not gameplay. Everything else — including
+        ///     the shooter's own previously fired prisms — follows plain friendly fire.
         /// </summary>
         public bool DisallowImpactOnPrism(Prism prism) =>
-            (!friendlyFire && prism.Domain == OwnDomain)
-            || (prism.IsProjectileLaid && VesselStatus != null && prism.ownerID == VesselStatus.PlayerName);
+            (!friendlyFire && prism.Domain == OwnDomain) || (HostPrism && prism == HostPrism);
         public bool DisallowImpactOnVessel(Domains vesselDomain) => vesselDomain == OwnDomain;
         #endregion
 

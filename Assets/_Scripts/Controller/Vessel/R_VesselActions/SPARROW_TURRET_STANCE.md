@@ -62,18 +62,19 @@
   blast friendly-fires like every other Sparrow shot and at 5+ the whole missile goes
   domain-safe. The shared `AOEExplosion.prefab` is untouched — the Manta crystal path keeps
   its own authored/overridden behavior.
-- **The self-output guard (follow-up in the same round).** Friendly fire exposed a
-  self-interaction: the carried projectile flies TO its own host prism (viz 1 parks the prism
-  at the anchor with a live collider — the documented wart), so with the domain gate open
-  every shot destroyed its own prism the moment the projectile arrived, and each volley
-  erased the previous shots' prisms parked at the same range. The rule, same family as the
-  vessel↔own-skimmer self-guard: **a pilot's projectiles never impact prisms that pilot's
-  own shots created.** Fired prisms are marked `Prism.IsProjectileLaid` (set in
-  `MakePrismLive` next to `ownerID`, cleared on pool reuse in `ResetState`);
-  `Projectile.DisallowImpactOnPrism` now takes the `Prism` and skips on marker + owner
-  match. Scope is exactly the shooter's own fired prisms: your bullets still damage your own
-  trail and teammates' mass (friendly fire stays on), teammates and enemies interact with
-  your fired prisms normally, and fauna/AOE/skimmer paths are untouched.
+- **The host guard (follow-up in the same round; simplified by request).** Friendly fire
+  exposed a self-interaction: the carried projectile flies TO its own host prism (viz 1
+  parks the prism at the anchor with a live collider — the documented wart), so with the
+  domain gate open every shot destroyed its own prism the moment the projectile arrived.
+  The guard is the MINIMAL one: `Projectile.HostPrism` (set by the executor after the
+  carried `Initialize`, cleared per flight) and `DisallowImpactOnPrism` skips exactly that
+  one prism — a shot cannot destroy itself on arrival, which is a flight-architecture
+  artifact, not gameplay. **Everything else follows plain friendly fire, deliberately** —
+  including your own previously fired prisms: a later shot into the same spot damages and
+  can destroy them, same as it would your trail. (A broader "a pilot's shots never destroy
+  their own fired prisms" marker was tried and rolled back in favor of this consistency —
+  if steady-aim streams churning their own output feels wrong in play, that experiment is
+  the recorded alternative.)
 
 ## Round-3 follow-up: the spread rendered at full distance the whole flight
 
