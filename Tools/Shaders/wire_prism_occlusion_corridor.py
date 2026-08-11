@@ -315,8 +315,23 @@ def validate(docs, expect_wired):
     for e in graph["m_Edges"]:
         sources[(e["m_InputSlot"]["m_Node"]["m_Id"], e["m_InputSlot"]["m_SlotId"])] = (
             e["m_OutputSlot"]["m_Node"]["m_Id"], e["m_OutputSlot"]["m_SlotId"])
-    assert sources.get((alpha_block["m_ObjectId"], 0)) == (cf["m_ObjectId"], 4), \
-        "SurfaceDescription.Alpha is not fed by PrismOcclusionFade.Alpha"
+    # SurfaceDescription.Alpha must TRACE BACK to the corridor's Alpha — not necessarily
+    # by a direct edge. Post-corridor stages may legitimately sit in between: the
+    # back-face separation (wire_prism_backface_fade.py) sharpens the corridor's alpha on
+    # far-facing surfaces and MUST be downstream of it, because in the gradient band the
+    # graph's own alpha is 1 and only the corridor's fade is fractional. So walk the
+    # chain rather than demanding adjacency; anything that consumes the corridor's alpha
+    # and forwards one alpha onward is a valid link.
+    chain, guard = sources.get((alpha_block["m_ObjectId"], 0)), 0
+    while chain is not None and chain[0] != cf["m_ObjectId"] and guard < 8:
+        node_id = chain[0]
+        feeders_in = [src for (dst_node, _dst_slot), src in sources.items() if dst_node == node_id]
+        # Follow the unique feeder that leads back toward the corridor.
+        chain = next((s for s in feeders_in if s[0] == cf["m_ObjectId"]),
+                     feeders_in[0] if len(feeders_in) == 1 else None)
+        guard += 1
+    assert chain == (cf["m_ObjectId"], 4), \
+        "SurfaceDescription.Alpha does not trace back to PrismOcclusionFade.Alpha"
     assert sources.get((clip_block["m_ObjectId"], 0)) == (cf["m_ObjectId"], 5), \
         "SurfaceDescription.AlphaClipThreshold is not fed by PrismOcclusionFade.ClipThreshold"
 

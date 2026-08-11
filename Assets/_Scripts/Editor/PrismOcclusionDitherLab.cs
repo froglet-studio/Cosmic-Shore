@@ -82,11 +82,13 @@ namespace CosmicShore.Editor
         const float ShatterWallRatioMax = 1.25f;
         const float MorphMax = 0.35f, MorphCeiling = 0.25f;
 
-        // Depth parallax: px of pattern slide per world unit of view depth. Decorrelation
-        // wants roughly one cell (~16 px shipped) across one layer separation (~2 units for
-        // a standard prism), hence the 8 default; past ~30 the shear visibly shreds oblique
-        // surfaces into per-pixel grain long before it buys any more decorrelation.
-        const float ParallaxMax = 30f;
+        // The two layered-beat dials. Depth phase is capped low on purpose: the measured
+        // conflict (see PrismOcclusionCorridor.hlsl) puts useful decorrelation ~50x above
+        // the speed budget, so the slider's job is to let you SEE that, not to invite a
+        // shipped value. Back-face power runs to 6, past which interiors are gone before
+        // the exterior fade has really started.
+        const float DepthPhaseMax = 0.05f, DepthPhaseCeiling = 0.002f;
+        const float BackFacePowerMin = 1f, BackFacePowerMax = 6f;
 
         // ── Live dial state (EditorWindow fields survive domain reloads) ──────────
         [SerializeField] int _kernel = KernelShatter;
@@ -99,7 +101,8 @@ namespace CosmicShore.Editor
         [SerializeField] float _shatter3dWall = 1.2f;
         [SerializeField] float _spiralRings = 9f;
         [SerializeField] int _spiralArms = 3;
-        [SerializeField] float _parallax = 8f;
+        [SerializeField] float _depthPhase = 0f;
+        [SerializeField] float _backFacePower = 3f;
         [SerializeField] bool _driveGame = true;
         [SerializeField] bool _animatePreview = true;
 
@@ -201,7 +204,7 @@ namespace CosmicShore.Editor
         // ─────────────────────────────────────────────────────────────────────────
         Vector4 PackA() => new Vector4(_kernel + 1, _cellSize, _shardOrient, _morphRate);
         Vector4 PackB() => new Vector4(_shatterCell, _shatterWall, _spiralRings, _spiralArms);
-        Vector4 PackC() => new Vector4(_parallax, _shatter3dCell, _shatter3dWall, 0f);
+        Vector4 PackC() => new Vector4(_depthPhase, _backFacePower, _shatter3dCell, _shatter3dWall);
 
         void Publish()
         {
@@ -447,32 +450,53 @@ namespace CosmicShore.Editor
                 EditorGUILayout.HelpBox("IGN ignores the morph rate by design.", MessageType.None);
 
             EditorGUILayout.Space(4f);
-            EditorGUILayout.LabelField("Depth", FrogletEditorPalette.SectionHeader);
+            EditorGUILayout.LabelField("Layered beat", FrogletEditorPalette.SectionHeader);
+            EditorGUILayout.LabelField(
+                "Two surfaces stacked along one camera ray read the SAME screen-anchored threshold, so " +
+                "their clip contours sit a pixel apart and moire-beat. These two dials attack the two " +
+                "preconditions: decorrelate the pattern between layers, or stop both layers being " +
+                "mid-fade at once.", EditorStyles.wordWrappedMiniLabel);
+
             using (new EditorGUILayout.HorizontalScope())
             {
-                _parallax = EditorGUILayout.Slider(new GUIContent("Depth parallax",
-                    "Pixels of pattern slide per world unit of view depth. Shears the dither domain " +
-                    "so stacked layers (a prism's own interior, parallel trail walls) sample " +
-                    "decorrelated copies of the pattern instead of moiré-beating a pixel apart — and " +
-                    "gives the dither real parallax under camera motion. 0 restores the flat " +
-                    "screen-decal behavior. Coverage-neutral (a domain shift), so it cannot break the fade."),
-                    _parallax, 0f, ParallaxMax);
-                GUILayout.Label(_parallax <= 0f ? "off (flat)" : $"{_parallax:0.#} px / world unit",
-                    Warn(false), GUILayout.Width(120f));
+                _depthPhase = EditorGUILayout.Slider(new GUIContent("Depth band phase",
+                    "Shatter only. Shifts each cell's WALL by view depth (the lattice itself stays put). " +
+                    "Coverage-neutral. Measured dead end: separating a prism's own two faces needs ~50x " +
+                    "the rate the speed budget allows, so it ships at 0 — the slider is here to show you " +
+                    "that, not to be turned up."),
+                    _depthPhase, 0f, DepthPhaseMax);
+                GUILayout.Label(_depthPhase <= 0f ? "off" :
+                                _depthPhase > DepthPhaseCeiling ? "flickers at speed" : "within budget",
+                    Warn(_depthPhase > DepthPhaseCeiling), GUILayout.Width(130f));
+            }
+            if (_depthPhase > DepthPhaseCeiling)
+                EditorGUILayout.LabelField(" ",
+                    $"~{_depthPhase * 5f / 0.02f * 17.9f:0.#}% of band pixels flip per frame at 300 u/s " +
+                    "(ceiling ~1.45%)", Warn(true));
+            if (_kernel != KernelShatter && _depthPhase > 0f)
+                EditorGUILayout.HelpBox("Only the Shatter kernel reads the depth band phase.", MessageType.None);
+
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                _backFacePower = EditorGUILayout.Slider(new GUIContent("Back-face sharpen",
+                    "alpha^power on surfaces facing AWAY from the camera — prisms render two-sided, so " +
+                    "the beat's usual second layer is a prism's own interior. Sharpening it drops the " +
+                    "interior out of the gradient band while the exterior is still dissolving, which " +
+                    "removes the interference rather than scrambling it. No temporal cost. 1 = off. " +
+                    "The trade is a look change: interiors vanish earlier, so a mid-fade prism reads as " +
+                    "a thinner shell."),
+                    _backFacePower, BackFacePowerMin, BackFacePowerMax);
+                GUILayout.Label(_backFacePower <= 1.001f ? "off" : $"interior gone by a={ApproxInteriorGone(_backFacePower):0.00}",
+                    Warn(false), GUILayout.Width(160f));
             }
             EditorGUILayout.LabelField(" ",
-                "the preview below is a flat slice — depth parallax only shows on real mass in play mode",
+                "both dials only show on real stacked mass in play mode — the preview is a single flat layer",
                 EditorStyles.miniLabel);
-            if (_kernel == KernelSpiral && _parallax > 0f)
-                EditorGUILayout.HelpBox("The spiral is corridor-anchored and ignores depth parallax — " +
-                                        "it still beats on stacked layers (its polar frame is constant " +
-                                        "along a camera ray).", MessageType.None);
-            if (_kernel == KernelShatter3D && _parallax > 0f)
-                EditorGUILayout.HelpBox("Shatter3D ignores depth parallax — it is world-anchored, so " +
-                                        "stacked layers decorrelate through genuine parallax with no shear " +
-                                        "needed. The dial still applies to the screen-anchored kernels.",
-                                        MessageType.None);
         }
+
+        /// <summary>Alpha at which a back face has fully left the gradient band (alpha^p &lt;= 0.08),
+        /// the readout that makes the look trade concrete while dragging.</summary>
+        static float ApproxInteriorGone(float power) => Mathf.Pow(0.08f, 1f / Mathf.Max(power, 1e-3f));
 
         void DialSlider(string label, ref float value, float min, float max, float goodLo, float goodHi,
                         string unit, string readout, string tooltip)
@@ -760,7 +784,8 @@ namespace CosmicShore.Editor
             sb.AppendLine($"static const float PRISM_OCCLUSION_SHATTER_WALL = {F(_shatterWall)};");
             sb.AppendLine($"static const float PRISM_OCCLUSION_SPIRAL_RINGS = {F(_spiralRings)};");
             sb.AppendLine($"static const float PRISM_OCCLUSION_SPIRAL_ARMS = {F(_spiralArms)};");
-            sb.AppendLine($"static const float PRISM_OCCLUSION_PARALLAX = {F(_parallax)};");
+            sb.AppendLine($"static const float PRISM_OCCLUSION_SHATTER_DEPTH_PHASE = {F(_depthPhase)};");
+            sb.AppendLine($"static const float PRISM_BACKFACE_POWER = {F(_backFacePower)};");
             sb.AppendLine($"static const float PRISM_OCCLUSION_SHATTER3D_CELL = {F(_shatter3dCell)};");
             sb.AppendLine($"static const float PRISM_OCCLUSION_SHATTER3D_WALL = {F(_shatter3dWall)};");
             return sb.ToString();
@@ -802,9 +827,8 @@ namespace CosmicShore.Editor
             new Anchor("shatterWall", @"(?m)^(static const float PRISM_OCCLUSION_SHATTER_WALL = )([^;]+)(;)", true),
             new Anchor("spiralRings", @"(?m)^(static const float PRISM_OCCLUSION_SPIRAL_RINGS = )([^;]+)(;)", true),
             new Anchor("spiralArms",  @"(?m)^(static const float PRISM_OCCLUSION_SPIRAL_ARMS = )([^;]+)(;)", true),
-            // The ' = ' in the anchor keeps it off PRISM_OCCLUSION_PARALLAX_DIR (a float2,
-            // and not a dial — the direction is a look constant, not something to bake).
-            new Anchor("parallax",    @"(?m)^(static const float PRISM_OCCLUSION_PARALLAX = )([^;]+)(;)", true),
+            new Anchor("depthPhase",  @"(?m)^(static const float PRISM_OCCLUSION_SHATTER_DEPTH_PHASE = )([^;]+)(;)", true),
+            new Anchor("backFace",    @"(?m)^(static const float PRISM_BACKFACE_POWER = )([^;]+)(;)", true),
             new Anchor("s3dCell",     @"(?m)^(static const float PRISM_OCCLUSION_SHATTER3D_CELL = )([^;]+)(;)", true),
             new Anchor("s3dWall",     @"(?m)^(static const float PRISM_OCCLUSION_SHATTER3D_WALL = )([^;]+)(;)", true),
         };
@@ -873,7 +897,8 @@ namespace CosmicShore.Editor
                 { "shatterWall", F(_shatterWall) },
                 { "spiralRings", F(_spiralRings) },
                 { "spiralArms", F(_spiralArms) },
-                { "parallax", F(_parallax) },
+                { "depthPhase", F(_depthPhase) },
+                { "backFace", F(_backFacePower) },
                 { "s3dCell", F(_shatter3dCell) },
                 { "s3dWall", F(_shatter3dWall) },
                 { "tuning", disableTuning ? "0" : "1" },

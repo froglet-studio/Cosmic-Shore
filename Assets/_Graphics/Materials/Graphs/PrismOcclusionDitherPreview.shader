@@ -102,8 +102,11 @@ Shader "Hidden/CosmicShore/PrismOcclusionDitherPreview"
                 // The volumetric kernel gets positionWS = (pixel, 0) at angularScale 1, so
                 // preview pixels ARE world units and it renders its z = 0 slice at 1:1 —
                 // the honest scale, same as every screen kernel.
+                // viewDepth = 0: the preview is a flat slice with no depth, so SHATTER's
+                // depth band-phase contributes nothing here. Like the depth parallax before
+                // it, that dial can only be judged on real stacked mass in play mode.
                 float threshold = PrismOcclusionDitherThreshold(pixel, radialRatio, angleTurns, true,
-                                                               float3(pixel, 0.0), 1.0, time);
+                                                               float3(pixel, 0.0), 1.0, 0.0, time);
 
                 if (mode == 2)
                     return float4(threshold, alpha, 0.0, 1.0);

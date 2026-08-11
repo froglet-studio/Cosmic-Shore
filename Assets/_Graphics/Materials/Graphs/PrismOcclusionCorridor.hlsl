@@ -131,7 +131,7 @@
 #if PRISM_OCCLUSION_LIVE_TUNING
 float4 _PrismOcclusionDitherA;  // (kernel + 1, cellSize, shardOrient, morphRate)
 float4 _PrismOcclusionDitherB;  // (shatterCell, shatterWall, spiralRings, spiralArms)
-float4 _PrismOcclusionDitherC;  // (parallaxGain, shatter3dCell, shatter3dWall, unused)
+float4 _PrismOcclusionDitherC;  // (shatterDepthPhase, backFacePower, shatter3dCell, shatter3dWall)
 
 #define PRISM_OCCLUSION_TUNING_ON (_PrismOcclusionDitherA.x > 0.5)
 #define PRISM_OCCLUSION_DIAL(live, fallback) (PRISM_OCCLUSION_TUNING_ON ? (live) : (fallback))
@@ -205,7 +205,7 @@ float PrismOcclusionMorphRate()
 }
 
 // -----------------------------------------------------------------------------
-// THE DEPTH PARALLAX — why stacked layers do not beat (2026-08-10).
+// THE LAYERED BEAT — the problem, and the two dials that answer it (2026-08-11).
 //
 // Every screen-anchored kernel is a pure function of the screen pixel, so two surfaces
 // stacked along one camera ray — a prism's own back face showing through its clipped
@@ -219,42 +219,39 @@ float PrismOcclusionMorphRate()
 // different rates: the interference beats, and it beats worst on SHATTER, whose level
 // sets are parallel straight walls with the shallowest gradient in the file.
 //
-// The fix SHEARS THE DITHER DOMAIN BY VIEW DEPTH before the kernel reads it: each depth
-// samples a shifted copy of the same pattern, so layers a prism-thickness apart are
-// decorrelated by construction — perfect alignment (invisible) and full decorrelation
-// (independent lattices) are both fine, and the shear jumps the layers clean over the
-// 1–2 px near-alignment window between them, which is the only place a beat can live.
-// It also stops the pattern reading as a screen decal: under camera translation, near
-// and far mass slide at different rates — the dither gains real parallax and reads as a
-// volumetric field the corridor is carving. One MAD, zero CPU, no new varying.
+// REJECTED (2026-08-10, reverted 2026-08-11): SHEARING THE WHOLE DITHER DOMAIN by view
+// depth (`pixel += depth * gain * dir`). It decorrelated the layers as designed, but it
+// translates the ENTIRE lattice, so the pattern's screen velocity is gain × (depth
+// change per frame) — at flight speed that is tens of pixels per frame of coherent
+// crawl, and coherent motion is the most salient thing the eye can be shown. It read as
+// a LARGER flicker than the beat it fixed. The lesson generalises: a fix that moves the
+// pattern globally cannot win against speed, because the eye tracks global motion.
 //
-// COVERAGE IS UNTOUCHED — the same argument as the morph phase: per fragment this is a
-// translation of the kernel's domain, and every kernel's threshold DISTRIBUTION is
-// translation-invariant, so |coverage − alpha| cannot move. The one marginal effect is
-// at grazing incidence, where the depth gradient across the screen is steep and the
-// shear locally stretches the pattern toward finer grain — it degrades toward an
-// IGN-like dissolve exactly where a surface is most oblique, which is benign, bounded
-// by the gain, and invisible at the shipped value.
+// What is carried instead are two LOCAL answers, both independently switchable:
 //
-// THE GAIN is pixels of pattern slide per world unit of view depth; 0 disables the
-// shear and restores the pre-2026-08-10 behavior exactly. Decorrelation wants the shift
-// across one layer separation to reach about one cell (~16 px for the shipped SHATTER):
-// a standard prism is ~2 units thick, so 8 px/unit lands a full cell across a single
-// prism and several cells between separate walls. The DIRECTION is any fixed unit
-// vector — an irrational-ish diagonal avoids sliding the lattice along its own axes.
+//   1. DEPTH BAND PHASE (SHATTER only; `PRISM_OCCLUSION_SHATTER_DEPTH_PHASE`). Add the
+//      depth term inside the kernel's final frac() instead of to its domain. The
+//      Voronoi lattice stays exactly where it is — cells do not move at all, so there
+//      is no global crawl to track — and only each cell's WALL slides within its own
+//      cell. Layers land at uncorrelated wall phases, so the parallel-line coincidence
+//      is broken while the crack lattice stays put and reads as one shattered medium.
+//      Coverage-neutral for the frac-of-uniform reason: the phase is added inside a
+//      frac() of an already-uniform quantity and is independent of the cell hash.
 //
-// The SPIRAL ignores all of this — it is corridor-anchored, not screen-anchored. Note
-// it has the SAME layered-beat failure for its own reason (its polar coordinates are
-// constant along a camera ray, so stacked layers read identical thresholds there too);
-// if it is ever revived, give it a depth term of its own rather than exempting it.
+//   2. BACK-FACE ALPHA SEPARATION (`PrismBackFaceFade`, at the bottom of this file).
+//      Attack the OTHER precondition instead of the pattern: a beat needs both layers
+//      simultaneously in the gradient band. Sharpening the far surface's alpha pushes
+//      the interior out of the band while the exterior is still mid-fade, so only one
+//      dithered layer is live at a time and there is nothing to interfere with.
+//
+// The two compose and are orthogonal — (1) decorrelates what remains overlapping,
+// (2) reduces how much overlaps — so tune them independently in the Lab.
+//
+// The SPIRAL ignores both — it is corridor-anchored, not screen-anchored. Note it has
+// the SAME layered-beat failure for its own reason (its polar coordinates are constant
+// along a camera ray, so stacked layers read identical thresholds there too); if it is
+// ever revived, give it a depth term of its own rather than exempting it.
 // -----------------------------------------------------------------------------
-static const float PRISM_OCCLUSION_PARALLAX = 8.0;  // px of slide per world unit of view depth; 0 = off
-static const float2 PRISM_OCCLUSION_PARALLAX_DIR = float2(0.85749293, 0.51449576);  // normalize(5, 3)
-
-float PrismOcclusionParallaxGain()
-{
-    return PRISM_OCCLUSION_DIAL(_PrismOcclusionDitherC.x, PRISM_OCCLUSION_PARALLAX);
-}
 
 // The clip threshold must land STRICTLY inside (0,1). frac() can return exactly 0, and a
 // 0 threshold against a 0 alpha is `clip(0)` — which KEEPS the fragment on the URP
@@ -655,7 +652,44 @@ float PrismOcclusionShard(float2 pixel, float time)
 static const float PRISM_OCCLUSION_SHATTER_CELL = 16.26;  // polygon size, px  (8-20)
 static const float PRISM_OCCLUSION_SHATTER_WALL = 20.0;   // band repeat, px   (<= 1.25x cell)
 
-float PrismOcclusionShatter(float2 pixel, float time)
+// DEPTH BAND PHASE — wall-period cycles per world unit of view depth.
+// SHIPPED AT 0 (off). Implemented, measured, and defaulted off because the measurement
+// says it cannot do the job; kept as a Lab dial because it is one MAD and provably
+// coverage-neutral, so exploring it costs nothing.
+//
+// It is added HERE, inside the kernel's final frac() alongside the morph phase, rather
+// than to the sampling domain — the lattice must not move (see THE LAYERED BEAT). That
+// fixes the "global crawl" half of the rejected shear. What it does NOT fix is the
+// underlying conflict, which is arithmetic and applies to ANY depth-driven term:
+//
+//   * DECORRELATION needs the phase to change a LOT across a small depth step. Two faces
+//     of one prism are ~2 units apart, so meaningful separation there needs ~0.075+.
+//   * SPEED needs the phase to change LITTLE across a frame. At 300 u/s a surface's depth
+//     moves 5 units per 60fps frame — 2.5x a whole prism thickness — so the same term
+//     that separates the two faces necessarily churns that pixel every frame.
+//
+// Measured through a clang build of this file (rate | delta at 2u | delta at 12u |
+// band pixels flipping per frame at 300 u/s; 0.25 delta = fully decorrelated, and the
+// morph note above puts the flicker ceiling near 1.45%):
+//
+//     0.002 | 0.004 | 0.024 |  2.0%      negligible help, already at the ceiling
+//     0.005 | 0.010 | 0.060 |  4.9%
+//     0.010 | 0.020 | 0.120 |  9.5%
+//     0.020 | 0.040 | 0.240 | 17.9%      12x the ceiling, still only 16% decorrelated at 2u
+//     0.050 | 0.100 | 0.400 | 37.2%
+//
+// The two requirements are ~50x apart: there is no rate that helps the near case without
+// reintroducing exactly the flicker that got the domain shear rejected. Hence 0, and
+// hence the back-face separation below — which attacks the beat's other precondition and
+// has NO temporal cost at all, because it does not depend on depth.
+static const float PRISM_OCCLUSION_SHATTER_DEPTH_PHASE = 0.0;
+
+float PrismOcclusionShatterDepthPhase()
+{
+    return PRISM_OCCLUSION_DIAL(_PrismOcclusionDitherC.x, PRISM_OCCLUSION_SHATTER_DEPTH_PHASE);
+}
+
+float PrismOcclusionShatter(float2 pixel, float viewDepth, float time)
 {
     float shatterCell = PRISM_OCCLUSION_DIAL(_PrismOcclusionDitherB.x, PRISM_OCCLUSION_SHATTER_CELL);
     float shatterWall = PRISM_OCCLUSION_DIAL(_PrismOcclusionDitherB.y, PRISM_OCCLUSION_SHATTER_WALL);
@@ -691,8 +725,11 @@ float PrismOcclusionShatter(float2 pixel, float time)
     float ramp = dot(p - owner, float2(cos(ang), sin(ang)))
                * (shatterCell / shatterWall);
 
+    // The depth term rides HERE — inside the frac, alongside the morph phase, both of
+    // them independent of h.x — so the cells hold still and only their walls shift.
     return PrismOcclusionSafeThreshold(
-        frac(h.x + ramp + time * PrismOcclusionMorphRate()));
+        frac(h.x + ramp + time * PrismOcclusionMorphRate()
+             + viewDepth * PrismOcclusionShatterDepthPhase()));
 }
 
 // -----------------------------------------------------------------------------
@@ -778,12 +815,12 @@ static const float PRISM_OCCLUSION_SHATTER3D_WALL = 1.2;   // wall period as a R
 
 float PrismOcclusionShatter3DCell()
 {
-    return PRISM_OCCLUSION_DIAL(_PrismOcclusionDitherC.y, PRISM_OCCLUSION_SHATTER3D_CELL);
+    return PRISM_OCCLUSION_DIAL(_PrismOcclusionDitherC.z, PRISM_OCCLUSION_SHATTER3D_CELL);
 }
 
 float PrismOcclusionShatter3DWall()
 {
-    return PRISM_OCCLUSION_DIAL(_PrismOcclusionDitherC.z, PRISM_OCCLUSION_SHATTER3D_WALL);
+    return PRISM_OCCLUSION_DIAL(_PrismOcclusionDitherC.w, PRISM_OCCLUSION_SHATTER3D_WALL);
 }
 
 // The 2×2×2 octant search: base = floor(q - 0.5) makes base + {0,1}³ exactly the
@@ -878,7 +915,7 @@ float PrismOcclusionShatter3D(float3 positionWS, float angularScale, float time)
 // kernels are dead-stripped, so the shipped shader is what it always was.
 // -----------------------------------------------------------------------------
 float PrismOcclusionDitherThreshold(float2 pixel, float radialRatio, float angleTurns, bool polarValid,
-    float3 positionWS, float angularScale, float time)
+    float3 positionWS, float angularScale, float viewDepth, float time)
 {
 #if PRISM_OCCLUSION_LIVE_TUNING
     // The branch is on a GLOBAL, so it is uniform across the entire frame — fully
@@ -890,7 +927,7 @@ float PrismOcclusionDitherThreshold(float2 pixel, float radialRatio, float angle
 
     if (kernel == PRISM_OCCLUSION_KERNEL_SHATTER3D) return PrismOcclusionShatter3D(positionWS, angularScale, time);
     if (kernel == PRISM_OCCLUSION_KERNEL_SHARD)     return PrismOcclusionShard(pixel, time);
-    if (kernel == PRISM_OCCLUSION_KERNEL_SHATTER)   return PrismOcclusionShatter(pixel, time);
+    if (kernel == PRISM_OCCLUSION_KERNEL_SHATTER)   return PrismOcclusionShatter(pixel, viewDepth, time);
     if (kernel == PRISM_OCCLUSION_KERNEL_WORLEY)    return PrismOcclusionWorley(pixel, time);
     if (kernel == PRISM_OCCLUSION_KERNEL_SPIRAL)
         return polarValid ? PrismOcclusionSpiral(radialRatio, angleTurns, time)
@@ -901,7 +938,7 @@ float PrismOcclusionDitherThreshold(float2 pixel, float radialRatio, float angle
 #elif PRISM_OCCLUSION_KERNEL == PRISM_OCCLUSION_KERNEL_SHARD
     return PrismOcclusionShard(pixel, time);
 #elif PRISM_OCCLUSION_KERNEL == PRISM_OCCLUSION_KERNEL_SHATTER
-    return PrismOcclusionShatter(pixel, time);
+    return PrismOcclusionShatter(pixel, viewDepth, time);
 #elif PRISM_OCCLUSION_KERNEL == PRISM_OCCLUSION_KERNEL_WORLEY
     return PrismOcclusionWorley(pixel, time);
 #elif PRISM_OCCLUSION_KERNEL == PRISM_OCCLUSION_KERNEL_SPIRAL
@@ -1139,16 +1176,11 @@ void PrismOcclusionFade_float(float3 PositionWS, float3 Target, float3 Params, f
     float2 ndc = positionCS.xy / max(abs(positionCS.w), 1e-6);
     float2 pixel = (ndc * 0.5 + 0.5) * _ScreenParams.xy;
 
-    // THE DEPTH-PARALLAX SHEAR (see its section above): slide the dither domain with
-    // view depth so stacked layers sample decorrelated copies of the pattern instead of
-    // moiré-beating against each other. positionCS.w IS linear view depth under a
-    // perspective projection (and 1 under an orthographic one, where this degenerates to
-    // a harmless constant offset). Applied HERE rather than inside the kernels so the
-    // dispatch — and the Lab's preview, which is a flat slice with no depth to shear —
-    // stays untouched. SCREEN-ANCHORED KERNELS ONLY: SHATTER3D never reads the pixel —
-    // it decorrelates layers through genuine world anchoring, which is also why it does
-    // not strobe over fast-moving geometry the way a sheared screen pattern does.
-    pixel += abs(positionCS.w) * PrismOcclusionParallaxGain() * PRISM_OCCLUSION_PARALLAX_DIR;
+    // Linear view depth, handed to the kernels rather than applied to the pixel: the
+    // rejected shear moved the whole domain and crawled at speed (see THE LAYERED BEAT).
+    // positionCS.w IS linear view depth under a perspective projection, and 1 under an
+    // orthographic one — where a constant depth simply disables the term, correctly.
+    float viewDepth = abs(positionCS.w);
 
     // The volumetric kernel's frame: world units per screen pixel at the fragment's
     // RADIAL distance (radial, not view-depth, so the mapping is invariant under
@@ -1160,7 +1192,7 @@ void PrismOcclusionFade_float(float3 PositionWS, float3 Target, float3 Params, f
     float angularScale = length(PositionWS - cameraWS) / focalPx;
 
     ClipThreshold = PrismOcclusionDitherThreshold(pixel, radialRatio, angleTurns, insideCorridor,
-                                                  PositionWS, angularScale, time);
+                                                  PositionWS, angularScale, viewDepth, time);
 #endif
 }
 
@@ -1274,6 +1306,88 @@ void PrismErosionFade_float(float3 UV, float3 Velocity, float BaseOpacity,
     // corridor stage renders any fractional alpha as screen-door coverage, so this
     // costs nothing extra and reads as the face dissolving at the front line.
     Survival = saturate((BaseOpacity - threshold) / PRISM_EROSION_FRINGE);
+}
+
+// -----------------------------------------------------------------------------
+// THE BACK-FACE SEPARATION — attack the beat's OTHER precondition (2026-08-11).
+//
+// A layered beat needs TWO things: two surfaces sharing a screen pixel, AND both of
+// them sitting at similar mid-band alpha at the same moment. Every pattern-side fix
+// (shear, depth phase, world anchoring) attacks the first. This attacks the second,
+// and it is the only one that removes the interference rather than scrambling it: if
+// the far surface is already fully clipped while the near one is mid-fade, there is
+// nothing left to interfere with, whatever the pattern does.
+//
+// Prisms render TWO-SIDED (`_Cull: 0`, RenderFace Both), which is why the beat's usual
+// second layer is the prism's OWN interior — seen through the holes the front face's
+// dither just punched, one prism-thickness away and therefore at nearly the same
+// corridor alpha. Sharpening the BACK face's alpha (alpha^power, power > 1) drops the
+// interior out of the band early while the exterior is still dissolving.
+//
+// FACING WITHOUT A NEW SEMANTIC. Shader Graph can only expose SV_IsFrontFace through an
+// Is Front Face node, and this project has no such node to donor-clone. It has 36
+// NormalVector nodes, so the test is done from geometry instead: the interpolated
+// normal is the geometric OUTWARD normal on both sides of a two-sided draw (nothing
+// here flips it), so `dot(N, camera - position) < 0` means we are looking at the far
+// side of that surface. Same answer, ordinary data, no new varying.
+//
+// WHAT IT COSTS, STATED. This is a LOOK change, not a free win: interiors vanish
+// earlier, so a mid-fade prism reads as a thinner shell than it used to. That is the
+// trade the dial buys, and POWER = 1 disables it exactly (alpha^1), so it can be
+// switched off without touching the graph.
+//
+// COVERAGE. Untouched as a mechanism — this scales the ALPHA, not the threshold
+// distribution, so the screen door still reproduces whatever alpha it is handed. What
+// changes is which alpha a back face is handed, which is the entire intent.
+//
+// WHERE IT SITS. Spliced AFTER PrismOcclusionFade's Alpha output, before
+// SurfaceDescription.Alpha — it has to be after, because in the corridor's gradient
+// band the graph's own alpha is 1 and only the corridor's fade is fractional, so
+// sharpening earlier would square a 1 and do nothing. The clip threshold computed by
+// the corridor is unaffected and still compares against this sharpened alpha, which is
+// exactly the desired "the interior clips out sooner".
+// -----------------------------------------------------------------------------
+// alpha^power on far-facing surfaces; 1 = off (exact no-op).
+//
+// The beat needs BOTH layers in the gradient band at once, so what this dial buys is
+// measured as how much of the alpha range still has both in band. Measured through a
+// clang build of this file (band taken as alpha in [0.08, 0.92]):
+//
+//     power | both-in-band over | interior fully gone by alpha
+//       1.0 |  0.09 - 0.92      |  0.08      (off: the whole band overlaps)
+//       2.0 |  0.28 - 0.92      |  0.28
+//       3.0 |  0.44 - 0.92      |  0.43      SHIPPED — removes the lower half
+//       4.0 |  0.54 - 0.92      |  0.53
+//       6.0 |  0.66 - 0.92      |  0.65
+//
+// 3.0 ships because it removes half the overlapping range, which is a large enough
+// change to be judged in one playtest — a subtler default would leave "did it help?"
+// and "is it under-dialled?" indistinguishable. The upper end stays 0.92 by nature:
+// near alpha 1 both layers are almost solid and the pattern is sparse holes, which is
+// where a beat is least visible anyway. Drop toward 2.0 if interiors read too thin;
+// 1.0 disables it without touching the graph.
+static const float PRISM_BACKFACE_POWER = 3.0;
+
+float PrismBackFacePower()
+{
+    return PRISM_OCCLUSION_DIAL(_PrismOcclusionDitherC.y, PRISM_BACKFACE_POWER);
+}
+
+void PrismBackFaceFade_float(float3 PositionWS, float3 NormalWS, float BaseAlpha,
+    out float Alpha)
+{
+    Alpha = BaseAlpha;
+
+    // Solid and fully-dead fragments are already unambiguous; only the band can beat.
+    if (BaseAlpha >= 1.0 || BaseAlpha <= 0.0) return;
+
+#if !defined(SHADERGRAPH_PREVIEW)
+    // Facing test in world space. A degenerate normal (zero-length, un-authored) dots to
+    // 0 and takes the front-face branch — the no-op — so bad data can only ever leave
+    // the look unchanged, never clip a surface away.
+    if (dot(NormalWS, _WorldSpaceCameraPos.xyz - PositionWS) < 0.0)
+        Alpha = pow(BaseAlpha, PrismBackFacePower());
+#endif
 }
 
 #endif // PRISM_OCCLUSION_CORRIDOR_INCLUDED
