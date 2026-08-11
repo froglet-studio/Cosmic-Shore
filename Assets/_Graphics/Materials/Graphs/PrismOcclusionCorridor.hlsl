@@ -1237,10 +1237,15 @@ void PrismOcclusionFade_float(float3 PositionWS, float3 Target, float3 Params, f
 // direction and phase, but each face's UV frame is ORIENTED differently on the box,
 // so in world space the fronts still run in different directions per face.
 //
-// SOFT-HARD-SOFT. Survival is not a binary step: a narrow FRINGE band leads the
-// front, returning fractional alpha that the corridor stage renders as screen-door
-// speckle. So the face reads solid (soft: unbroken surface) → a hard jagged front
-// line → a sparkling dissolve fringe (soft) — the house motif, not a bare cut.
+// THE EDGE IS HARD (2026-08-11). It briefly carried a dithered FRINGE — fractional
+// survival just ahead of the front, rendered by the corridor stage as screen-door
+// speckle — on the reading that soft-hard-soft wanted a soft trailing component. In
+// motion that was wrong: the debris edge then dissolved in the SAME visual language as
+// the corridor it flies through, and the two effects read as one confused surface
+// rather than as "a prism breaking up" inside "the world going see-through". The
+// motif's soft component here is the unbroken face the front eats into and the
+// irregular JAG of the front itself; the front line stays hard so the event stays
+// legible as its own. See PRISM_EROSION_FRINGE.
 //
 // THE WIPE FINISHES EARLY BY DESIGN. Thresholds are compressed above END_MARGIN, so
 // every fragment is gone by alpha = END_MARGIN — 15% of the fade before the entity
@@ -1258,7 +1263,23 @@ void PrismOcclusionFade_float(float3 PositionWS, float3 Target, float3 Params, f
 static const float PRISM_EROSION_WIGGLE = 0.12;      // jagged-front amplitude, in wipe units
 static const float PRISM_EROSION_WIGGLE_FREQ = 2.5;  // jags across one face width
 static const float PRISM_EROSION_END_MARGIN = 0.15;  // wipe completes by alpha = this (15% early)
-static const float PRISM_EROSION_FRINGE = 0.06;      // dithered dissolve band leading the front, alpha units
+// Dithered dissolve band leading the front, in alpha units. SHIPPED AT 0 = HARD EDGE.
+//
+// A fringe returns FRACTIONAL survival just ahead of the wipe, which the corridor stage
+// then renders as screen-door speckle — and that is precisely the problem: the debris
+// edge dissolved in the same visual language as the tunnel it flies through, so the two
+// effects read as one confused surface instead of "a prism breaking up" plus "the world
+// going see-through". The erosion's job is to be legible as its own event, and the
+// motif's hard component is what carries that: a hard jagged front, whose organic
+// quality comes from the value-noise JAG rather than from a gradient.
+//
+// So the fade now reads solid face -> hard irregular front -> gone, with the only dither
+// on debris being the corridor's own when a chunk flies through the cone — which is
+// correct, because there it IS the tunnel acting on it.
+//
+// Non-zero re-enables the graded edge; the branch below is on a compile-time constant,
+// so the unused side folds away and the hard path costs one compare.
+static const float PRISM_EROSION_FRINGE = 0.0;
 static const float PRISM_EROSION_CDF_LO = -0.02;     // fitted to the measured raw-threshold CDF
 static const float PRISM_EROSION_CDF_HI = 1.02;      // (Monte-Carlo over the UV square) — see
                                                      // fit_prism_erosion_cdf.py
@@ -1305,7 +1326,13 @@ void PrismErosionFade_float(float3 UV, float3 Velocity, float BaseOpacity,
     // The fringe: fractional survival in a narrow band ahead of the front. The
     // corridor stage renders any fractional alpha as screen-door coverage, so this
     // costs nothing extra and reads as the face dissolving at the front line.
-    Survival = saturate((BaseOpacity - threshold) / PRISM_EROSION_FRINGE);
+    // Hard edge by default. The guard is not decoration: a zero fringe in the divide
+    // would be inf for a survivor, -inf for a dead fragment and NaN exactly ON the
+    // front — and saturate(NaN) is undefined, so the front line itself would be the
+    // one place with unspecified behaviour.
+    Survival = PRISM_EROSION_FRINGE > 0.0
+        ? saturate((BaseOpacity - threshold) / PRISM_EROSION_FRINGE)
+        : (BaseOpacity >= threshold ? 1.0 : 0.0);
 }
 
 // -----------------------------------------------------------------------------

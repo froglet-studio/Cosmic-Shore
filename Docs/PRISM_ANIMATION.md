@@ -1468,9 +1468,15 @@ Four properties of the design worth preserving if it is ever touched:
   but each face's UV frame is oriented differently on the box, so world-space
   fronts still differ per face; the stamped `_Velocity` seeds each prism's
   direction and jag so no two chunks peel alike. **Soft-hard-soft**: Survival is
-  not a step — a narrow fringe (`PRISM_EROSION_FRINGE`) leads the front with
-  fractional alpha that the corridor stage renders as screen-door speckle, so the
-  face reads solid → hard jagged line → sparkling dissolve → gone. **The wipe
+  a HARD edge (`PRISM_EROSION_FRINGE` 0, 2026-08-11). It briefly led the front with
+  a dithered fringe, on the reading that soft-hard-soft wanted a soft trailing
+  component; in motion that was wrong, because the debris edge then dissolved in the
+  SAME visual language as the corridor it flies through and the two read as one
+  confused surface instead of "a prism breaking up" inside "the world going
+  see-through". The motif's soft component here is the unbroken face the front eats
+  into and the irregular JAG of the front itself. Removing the fringe also made the
+  fade curve essentially exact — the smear WAS the coverage error, 0.0296 → **0.00068**
+  mean against the margin-compressed ramp. **The wipe
   finishes early by design**: thresholds are compressed above
   `PRISM_EROSION_END_MARGIN` (0.15), so every fragment is gone 15% of the fade
   before the batch retires — closing the "pieces vanish before the wipe finishes"
@@ -1484,8 +1490,7 @@ Four properties of the design worth preserving if it is ever touched:
   (`Tools/Shaders/fit_prism_erosion_cdf.py`; re-run if `WIGGLE`/`WIGGLE_FREQ`
   move — `END_MARGIN`/`FRINGE` sit outside the fitted quantity and tune freely),
   validated against a clang build of the file itself; the ASCII render of the
-  compiled function shows one connected front per face with its fringe at every
-  alpha. The guard is
+  compiled function shows one connected hard front per face at every alpha. The guard is
   `PrismOcclusionCoverageTests.ExplodingGraph_CarriesTheObjectAnchoredErosion`.
 
 **Cost, stated:** per fragment, for solid mass outside the corridor — one compare against
