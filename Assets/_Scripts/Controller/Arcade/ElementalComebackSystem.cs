@@ -40,13 +40,19 @@ namespace CosmicShore.Gameplay
             PrismsDestroyed,
             PrismsRemaining,
             /// <summary>
-            /// Wildlife Liberation's fauna kills - and the ONE per-PLAYER source. Every other
-            /// entry here reads a domain aggregate because every other mode is a team race; this
-            /// mode is a free-for-all, so a hunter's deficit is against the leading HUNTER, not
-            /// the leading colour. Handled explicitly in <see cref="GetLeaderValue"/> /
-            /// <see cref="GetPlayerValue"/>.
+            /// Wildlife Liberation's fauna kills. Domain-aggregated like every other source
+            /// here - the mode is a domain race, so a player's deficit is their TEAM's deficit
+            /// against the leading colour. (A per-player variant of this source existed while
+            /// the mode was briefly a free-for-all and was removed with it.)
             /// </summary>
             LifeformsKilled,
+
+            /// <summary>
+            /// Dog Fight's weighted gunnery score. A team source like every entry above
+            /// LifeformsKilled - Dog Fight pools points per domain - so the trailing SIDE gets
+            /// the buff, not the trailing individual.
+            /// </summary>
+            CombatPoints,
         }
 
         [Header("Config")]
@@ -86,8 +92,11 @@ namespace CosmicShore.Gameplay
                 case GameModes.Ribcage: // same: the race metric is hostile prisms destroyed
                     system.differenceSource = ScoreDifferenceSource.PrismsDestroyed;
                     break;
-                case GameModes.WildlifeLiberation: // free-for-all: kills, read per PLAYER
+                case GameModes.WildlifeLiberation: // Score lands only at game end - kills are the live stat
                     system.differenceSource = ScoreDifferenceSource.LifeformsKilled;
+                    break;
+                case GameModes.DogFight: // Score lands only at game end - gunnery is the live stat
+                    system.differenceSource = ScoreDifferenceSource.CombatPoints;
                     break;
                 default:
                     system.differenceSource = ScoreDifferenceSource.Score;
@@ -331,16 +340,6 @@ namespace CosmicShore.Gameplay
             var list = gameData.RoundStatsList;
             if (list == null || list.Count == 0) return 0f;
 
-            // Free-for-all source: the leader is the leading INDIVIDUAL, so a player trailing
-            // the top hunter gets the buff even when their own colour happens to be ahead.
-            if (differenceSource == ScoreDifferenceSource.LifeformsKilled)
-            {
-                int best = 0;
-                for (int i = 0; i < list.Count; i++)
-                    if (list[i] != null && list[i].LifeformsKilled > best) best = list[i].LifeformsKilled;
-                return best;
-            }
-
             float leader = 0f;
             bool first = true;
             int dc = Mathf.Clamp(gameData.RequestedDomainCount, 1, GameDataSO.ActiveDomains.Length);
@@ -359,14 +358,8 @@ namespace CosmicShore.Gameplay
 
         float GetPlayerValue(IPlayer player)
         {
-            if (player == null) return 0f;
-
-            // Free-for-all source: this player's OWN kills (see ScoreDifferenceSource.LifeformsKilled).
-            if (differenceSource == ScoreDifferenceSource.LifeformsKilled)
-                return gameData.TryGetRoundStats(player.Name, out var own) ? own.LifeformsKilled : 0f;
-
-            // Every other source: a player's "value" is their domain's aggregate.
-            return ReadDomainValue(player.Domain);
+            // A player's "value" for comeback purposes is their domain's aggregate.
+            return player != null ? ReadDomainValue(player.Domain) : 0f;
         }
 
         float ReadDomainValue(Domains domain)
@@ -381,9 +374,9 @@ namespace CosmicShore.Gameplay
                     return ScoringMetrics.SumByDomain(gameData, ScoringMetric.PrismsRemaining, domain);
                 case ScoreDifferenceSource.PrismsDestroyed:
                     return ScoringMetrics.SumByDomain(gameData, ScoringMetric.PrismsDestroyed, domain);
+                case ScoreDifferenceSource.CombatPoints:
+                    return ScoringMetrics.SumByDomain(gameData, ScoringMetric.CombatPoints, domain);
                 case ScoreDifferenceSource.LifeformsKilled:
-                    // Only reached if something asks for a DOMAIN value under this source (the
-                    // HUD's colour readout); the comeback maths itself goes per-player above.
                     return ScoringMetrics.SumByDomain(gameData, ScoringMetric.LifeformsKilled, domain);
                 case ScoreDifferenceSource.Score:
                     float sum = 0f;
@@ -408,6 +401,7 @@ namespace CosmicShore.Gameplay
                 ScoreDifferenceSource.PrismsDestroyed => true,
                 ScoreDifferenceSource.PrismsRemaining => true,
                 ScoreDifferenceSource.LifeformsKilled => true,
+                ScoreDifferenceSource.CombatPoints => true,
                 ScoreDifferenceSource.Score => !useGolfRules,
                 _ => !useGolfRules
             };

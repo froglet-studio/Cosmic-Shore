@@ -19,11 +19,12 @@ namespace CosmicShore.Gameplay
     /// (1 round / 1 turn, HasEndGame=false, server winner detection in OnTurnEndedCustom,
     /// snapshot SyncFinalScores_ClientRpc), with three deliberate differences:
     ///
-    ///   1. THE WINNER IS A PLAYER, NOT A DOMAIN. Everything else in this family races domain
-    ///      sums; this one is a free-for-all, and <see cref="WildlifeLiberationScoringRuleSO"/>
-    ///      owns that distinction. The domain sums are still synced and still shown on the HUD
-    ///      (the base class's SyncDomainSumsRoutine, untouched) as a secondary "how is my colour
-    ///      doing" readout. See WILDLIFE_LIBERATION.md.
+    ///   1. NOTHING, on the winner. It is a DOMAIN RACE like the rest of the family - first
+    ///      domain to the summed kill target wins - and that is deliberate: this mode seats up
+    ///      to four players while the platform has only three playable domains, so a lobby
+    ///      always has teammates. A free-for-all variant shipped here briefly and was reverted;
+    ///      <see cref="WildlifeLiberationScoringRuleSO"/> carries the reasoning. Do not
+    ///      re-derive it.
     ///   2. THE SCORE COMES FROM THE ECOLOGY. The stat is
     ///      <see cref="IRoundStats.LifeformsKilled"/>, fed by the platform kill path
     ///      (<c>Fauna.OnBodyPrismExploded</c> → sealed <c>Die</c> → <c>CellRuntimeDataSO.OnFaunaKilled</c>
@@ -58,12 +59,12 @@ namespace CosmicShore.Gameplay
                  "the selected intensity (CellTypeChoiceOptions.IntensityWise).")]
         [SerializeField] Cell arenaCell;
 
-        [Tooltip("Fraction of the kill target at which the LEADING HUNTER crosses the first " +
+        [Tooltip("Fraction of the kill target at which the LEADING DOMAIN crosses the first " +
                  "milestone (toast + alert haptic). A FRACTION, so moving the target moves the " +
                  "milestones with it. Feedback only - no game state changes here.")]
         [SerializeField, Range(0.05f, 0.9f)] float firstMilestoneFraction = 0.25f;
 
-        [Tooltip("Fraction of the kill target at which the leading hunter crosses the second " +
+        [Tooltip("Fraction of the kill target at which the leading domain crosses the second " +
                  "milestone. Feedback only.")]
         [SerializeField, Range(0.1f, 0.95f)] float secondMilestoneFraction = 0.5f;
 
@@ -86,7 +87,7 @@ namespace CosmicShore.Gameplay
         // makes an AI Sparrow visibly go FOR the wildlife instead of sweeping empty space.
         const int AiHuntEveryNthWaypoint = 2;
 
-        // Milestone rungs the leading hunter crosses. Feedback only - nothing here changes game
+        // Milestone rungs the leading domain crosses. Feedback only - nothing here changes game
         // state, so a missed or late sample costs a toast, never a rule.
         const int MilestoneNone = 0;
         const int MilestoneFirst = 1;
@@ -95,9 +96,9 @@ namespace CosmicShore.Gameplay
         bool _finalResultsSent;
         Coroutine _progressRoutine;
         int _milestone = MilestoneNone;
-        string _leaderName = string.Empty;
+        Domains _leader = Domains.Blue;
 
-        // Golf: the winning hunter carries their finish time, everyone else a
+        // Golf: the winning DOMAIN's players carry their finish time, everyone else a
         // DnfThreshold+remaining sentinel - lower is better, like every race here.
         protected override bool UseGolfRules => true;
         protected override bool UseSceneReloadForReplay => true;
@@ -115,7 +116,7 @@ namespace CosmicShore.Gameplay
             numberOfTurnsPerRound = 1;
             _finalResultsSent = false;
             _milestone = MilestoneNone;
-            _leaderName = string.Empty;
+            _leader = Domains.Blue;
 
             // Belt-and-braces against the Ribcage regression where players started a match on a
             // non-zero score. The authoritative reset is
@@ -185,55 +186,70 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Server-side sampler: who is leading the hunt and how far along they are. Both are
-        /// coarse states, so a half-second cadence is ample and costs one roster scan.
+        /// Server-side sampler: which DOMAIN is leading the hunt and how far along it is. Both
+        /// are coarse states, so a half-second cadence is ample and costs one SumByDomain per
+        /// active domain per sample.
         /// </summary>
         void SampleProgress()
         {
-            if (!IsServer || rule is not WildlifeLiberationScoringRuleSO hunt) return;
+            if (!IsServer || rule == null) return;
 
             int target = gameData.LifeformTargetCount;
             if (target <= 0) return; // monitor hasn't resolved the target yet
 
-            var leader = hunt.ResolveWinningHunter(gameData);
-            // Nobody has killed anything yet - no leader to announce rather than handing the
-            // lead to whoever sorts first on a 0-0 tie-break.
-            if (leader == null || leader.LifeformsKilled <= 0) return;
+            // Leading domain by the scoring metric (creatures killed), Jade→Ruby→Gold on ties
+            // (fixed order, so every machine would agree - though only the server computes it).
+            var leader = Domains.Blue;
+            int best = 0;
+            int dc = Mathf.Clamp(gameData.RequestedDomainCount, 1, GameDataSO.ActiveDomains.Length);
+            for (int i = 0; i < dc; i++)
+            {
+                var d = GameDataSO.ActiveDomains[i];
+                int sum = ScoringMetrics.SumByDomain(gameData, rule.Metric, d);
+                if (sum > best)
+                {
+                    best = sum;
+                    leader = d;
+                }
+            }
 
-            float progress = leader.LifeformsKilled / (float)target;
+            // Nobody has killed anything yet - no leader to announce rather than handing the
+            // lead to Jade for winning a 0-0 tie-break.
+            if (leader == Domains.Blue || best <= 0) return;
+
+            float progress = best / (float)target;
             int milestone = progress >= secondMilestoneFraction ? MilestoneSecond
                 : progress >= firstMilestoneFraction ? MilestoneFirst
                 : MilestoneNone;
 
-            bool leaderChanged = leader.Name != _leaderName;
+            bool leaderChanged = leader != _leader;
             bool milestoneChanged = milestone != _milestone;
             if (!leaderChanged && !milestoneChanged) return;
 
-            _leaderName = leader.Name;
+            _leader = leader;
 
             if (milestoneChanged)
             {
                 _milestone = milestone;
                 if (milestone > MilestoneNone)
-                    AnnounceMilestone_ClientRpc(milestone, (int)leader.Domain,
-                        new FixedString64Bytes(leader.Name), leader.LifeformsKilled, target);
+                    AnnounceMilestone_ClientRpc(milestone, (int)leader, best, target);
             }
             else if (leaderChanged && milestone > MilestoneNone)
             {
                 // The lead changes hands late in the hunt - worth calling out.
-                AnnounceLeadChanged_ClientRpc((int)leader.Domain,
-                    new FixedString64Bytes(leader.Name), leader.LifeformsKilled, target);
+                AnnounceLeadChanged_ClientRpc((int)leader, best, target);
             }
         }
 
         [ClientRpc]
-        void AnnounceMilestone_ClientRpc(int milestone, int domain, FixedString64Bytes hunter, int kills, int target)
+        void AnnounceMilestone_ClientRpc(int milestone, int domain, int kills, int target)
         {
+            var d = (Domains)domain;
             GameToastAPI.Post(
                 milestone == MilestoneSecond
                     ? GameToastSituation.WildlifeHuntHalf
                     : GameToastSituation.WildlifeHuntQuarter,
-                (Domains)domain, hunter.ToString(), kills.ToString(), target.ToString());
+                d, d.ToString(), kills.ToString(), target.ToString());
 
             // Milestone reached: the alert haptic (the game's third feel, fenced to
             // match-changing events - see Docs/HAPTICS.md). Safe on every peer: HapticController
@@ -242,10 +258,11 @@ namespace CosmicShore.Gameplay
         }
 
         [ClientRpc]
-        void AnnounceLeadChanged_ClientRpc(int domain, FixedString64Bytes hunter, int kills, int target)
+        void AnnounceLeadChanged_ClientRpc(int domain, int kills, int target)
         {
-            GameToastAPI.Post(GameToastSituation.WildlifeLeadChanged, (Domains)domain,
-                hunter.ToString(), kills.ToString(), target.ToString());
+            var d = (Domains)domain;
+            GameToastAPI.Post(GameToastSituation.WildlifeLeadChanged, d,
+                d.ToString(), kills.ToString(), target.ToString());
         }
 
         // ── AI hunters (server) ──────────────────────────────────────────────
@@ -342,22 +359,27 @@ namespace CosmicShore.Gameplay
             base.OnTurnEndedCustom();
             if (!IsServer || _finalResultsSent) return;
             if (gameData.RoundStatsList == null || gameData.RoundStatsList.Count == 0) return;
-            if (rule is not WildlifeLiberationScoringRuleSO hunt) return;
 
-            var champion = hunt.ResolveWinningHunter(gameData);
-            if (champion == null) return;
+            var winningDomain = rule.ResolveWinner(gameData);
+            if (winningDomain == Domains.Blue) return;
+
+            // The winner is the DOMAIN; this only picks whose name the banner carries - the
+            // biggest contributor on the winning team, same as Ribcage.
+            var winnerRep = gameData.RoundStatsList
+                .Where(s => s != null && s.Domain == winningDomain)
+                .OrderByDescending(s => s.LifeformsKilled)
+                .FirstOrDefault();
+            if (winnerRep == null) return;
 
             float finishTime = Mathf.Max(0f, Time.time - gameData.TurnStartTime);
-            // The rule gives the finish time to the winning PLAYER; the domain argument only
-            // colours the banner.
-            hunt.AssignScores(gameData, champion.Domain, finishTime);
+            rule.AssignScores(gameData, winningDomain, finishTime);
 
             gameData.SortRoundStats(UseGolfRules);
             gameData.CalculateDomainStats(UseGolfRules);
 
             _finalResultsSent = true;
             StopProgressSampler();
-            SyncFinalScoresSnapshot(champion.Name, champion.Domain);
+            SyncFinalScoresSnapshot(winnerRep.Name, winningDomain);
         }
 
         /// <summary>
@@ -436,7 +458,7 @@ namespace CosmicShore.Gameplay
             base.OnResetForReplayCustom();
             _finalResultsSent = false;
             _milestone = MilestoneNone;
-            _leaderName = string.Empty;
+            _leader = Domains.Blue;
 
             StopProgressSampler();
 

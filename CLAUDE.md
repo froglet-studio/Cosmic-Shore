@@ -42,7 +42,11 @@ outcome is optimization, not life). Use the `/ecology` skill for any change here
   survives as the platform capability) — but the spawn colour is still
   exactly ONE colour, the controller's, and that setter also re-colours the LIVE swarm so a
   cell can never hold two fauna colours at once. A mode may also PEN a cell's fauna
-  (`Cell.FaunaContainmentRadius`, one radius for the whole cell) or pen a single SPECIES to an
+  (`Cell.FaunaContainmentRadius` = the OUTER wall, `Cell.FaunaExclusionRadius` = the INNER one —
+  together a cell-level annulus a mode can open and close while the match runs; Astro League holds
+  its cleanup crew outside the court and drops the inner wall when the cell's own volume ladder
+  leaves Calm, so "the pitch is crowded" is read from the spine rather than a bespoke signal) or
+  pen a single SPECIES to an
   ANNULUS (`FaunaConfigurationSO.BandInner/BandOuterRadius` — Wildlife Liberation stacks three
   nested cages and gives each tier of creature its own room): outside the pen nothing is prey
   and every goal is clamped back in — a spatial diet + steering rule, never a wall, and never a
@@ -73,6 +77,16 @@ outcome is optimization, not life). Use the `/ecology` skill for any change here
   **30s** wave clock (`BaseFaunaSpawnTime`), spawning each wave in the controlling color and
   raising `CellRuntimeDataSO.OnFaunaWaveSpawned` — the heartbeat Brood Rush scores on. See
   `Docs/ECOSYSTEM.md §13` + `_Scripts/Controller/Arcade/NUCLEUSRUSH.md`.
+  **A nucleus a mode borrowed as PLAY GEOMETRY is a wall, not a claim** — set
+  `Cell.NucleusIsControlZone = false` (default true; collapses the control zone so the cell keeps
+  its whole-cell control + diet semantics, exactly as if no `NucleusPrefab` were authored). This is
+  not an exception to the rule, it is a declaration that the cell HAS no control zone — a state the
+  ecology already supports. It is **load-bearing**: Astro League morphs the nucleus into its whole
+  ricochet court, so the control radius became the court's circumscribing radius, every prism in the
+  match read as "inside the nucleus", and the sanctuary rule made the entire pitch inedible — the
+  trail-grazing food web could not remove one prism and no amount of threshold/food-floor tuning
+  could reach it, because the diet predicate returned false first. **Whenever a mode repurposes a
+  Cell-owned visual, check what SEMANTICS it borrowed with the geometry.** (`Docs/ECOSYSTEM.md §25.1`.)
 - **Every lifeform drops one elemental crystal** (Charge/Mass/Space/Time) as a powerup on death,
   enforced by `LifeFormCrystal`. It must not be possible to make a lifeform that violates this.
   **Composite creatures** (the worm colony) satisfy this at the CREATURE level, not per part:
@@ -365,6 +379,7 @@ All in `Assets/_Scenes/Singleplayer Scenes/`.
 | `MinigameRampage` | `Rampage (2)` | `RampageController` |
 | `MinigameRibcage` | `Ribcage (39)` | `RibcageController` |
 | `MinigameWildlifeLiberation` | `WildlifeLiberation (40)` | `WildlifeLiberationController` |
+| `MinigameDogFight` | `DogFight (41)` | `DogFightController` |
 | `ArcadeGameMultiplayer2v2CoOpVsAI` | `Multiplayer2v2CoOpVsAI (30)` | Domain games variant |
 
 All in `Assets/_Scenes/Multiplayer Scenes/`.
@@ -377,9 +392,24 @@ All in `Assets/_Scenes/Multiplayer Scenes/`.
 
 #### GameModes Enum (`Assets/_Scripts/Data/Enums/GameModes.cs`)
 
-39 game modes with explicit numeric IDs (highest is `Ribcage(39)`; IDs 7 and 31 are skipped). Single-player: `Elimination(1)` through `ProtectMission(27)` — except `Rampage(2)`, repurposed as a multiplayer party game (the destruction race, Scurry's destructive analog; see `_Scripts/Controller/Arcade/RAMPAGE.md`). Multiplayer: `Rampage(2)`, `MultiplayerFreestyle(28)`, `MultiplayerCellularDuel(29)`, `Multiplayer2v2CoOpVsAI(30)`, `MultiplayerWildlifeBlitzGame(32)`, `HexRace(33)`, `MultiplayerJoust(34)`, `MultiplayerCrystalCapture(35)`, `AstroLeague(37)`, `NucleusRush(38)`, `Ribcage(39)`. Meta-mode: `Tournament(36)` — the session-level meta that chains HexRace → Joust → Crystal Capture back-to-back via sequential `Single` loads (see `Docs/TournamentSystem/ARCHITECTURE.md`). `AstroLeague(37)` is hypersea soccer (a standalone domain minigame, see `_Scripts/Controller/Arcade/ASTROLEAGUE.md`). `NucleusRush(38)` (display name "Brood Rush") is the nucleus-control fauna-wave race (see `_Scripts/Controller/Arcade/NUCLEUSRUSH.md`). `Ribcage(39)` (display name "Peel the Cage") is the Rhino-only cage race — first domain to DESTROY 2000 hostile prisms wins (`ScoringMetric.PrismsDestroyed`, the same metric and target as Rampage). The arena IS the objective: a **layered orange** of hollow prism-bone shells added INWARD from a fixed 360u outer radius, woven OPEN at the surface (~94u x 98u cells) and progressively TIGHTER inward (~22u at the core), with every rib x hoop cell split by a diagonal so the openings are TRIANGLES and every rind inside the outermost TILTED onto its own axis (`SpawnableRibcage.ShellTilts`, min 34 deg apart) so the dense polar caps never stack radially. **Intensity is how many rinds you peel** — 2..5 shells (10,620 / 14,731 / 17,992 / 20,153 prisms) selected the platform way, one `CellConfigDataSO` per intensity via `CellTypeChoiceOptions.IntensityWise`, each pointing at a `SpawnableRibcage` prefab variant whose `shellCount` differs and carrying ITS OWN PhaseThresholds. Every bar is a one-hit PLAIN prism except the sparse danger traps; nothing is shielded or super-shielded. No fauna — the mode's former leader-pinned brood ladder was removed, though every platform capability it used is kept (see `_Scripts/Controller/Arcade/RIBCAGE.md`). Meta sentinel: `Random(0)`. Note: IDs 7 and 31 are skipped — 7 was the retired standalone arcade Freestyle game (freestyle now lives in Menu_Main as the lava lamp; see "Lava-Lamp Mode"), 31 was never assigned. Do not reuse either ID.
+41 game modes with explicit numeric IDs (highest is `DogFight(41)`; IDs 7 and 31 are skipped). Single-player: `Elimination(1)` through `ProtectMission(27)` — except `Rampage(2)`, repurposed as a multiplayer party game (the destruction race, Scurry's destructive analog; see `_Scripts/Controller/Arcade/RAMPAGE.md`). Multiplayer: `Rampage(2)`, `MultiplayerFreestyle(28)`, `MultiplayerCellularDuel(29)`, `Multiplayer2v2CoOpVsAI(30)`, `MultiplayerWildlifeBlitzGame(32)`, `HexRace(33)`, `MultiplayerJoust(34)`, `MultiplayerCrystalCapture(35)`, `AstroLeague(37)`, `NucleusRush(38)`, `Ribcage(39)`, `WildlifeLiberation(40)`, `DogFight(41)`. Meta-mode: `Tournament(36)` — the session-level meta that chains HexRace → Joust → Crystal Capture back-to-back via sequential `Single` loads (see `Docs/TournamentSystem/ARCHITECTURE.md`). `AstroLeague(37)` is hypersea soccer **played with a sword** — a **Rhino-only** standalone domain minigame in which the ball resolves a contact ON THE BLADE (`SkimmerSwingKinematics`: the bounce normal comes off the point of the sword that touched and the strike speed is that point's true velocity, so a swung tip fires the payload far harder than the hull, with an extra tip bonus on top). Its cell is also the reference case for **`Cell.NucleusIsControlZone = false`** — a mode that repurposes the nucleus as PLAY GEOMETRY must declare it is not a claim, or the nucleus' fauna-sanctuary rule makes every prism in the arena inedible and the food web silently does nothing (see `Docs/ECOSYSTEM.md §25`) — and for **`Cell.FaunaExclusionRadius`**, the inner-wall mirror of the cell fauna pen, which holds the cleanup crew outside the court until the volume phase ladder says the pitch is crowded. See `_Scripts/Controller/Arcade/ASTROLEAGUE.md`. `NucleusRush(38)` (display name "Brood Rush") is the nucleus-control fauna-wave race (see `_Scripts/Controller/Arcade/NUCLEUSRUSH.md`). `Ribcage(39)` (display name "Peel the Cage") is the Rhino-only cage race — first domain to DESTROY 2000 hostile prisms wins (`ScoringMetric.PrismsDestroyed`, the same metric and target as Rampage). The arena IS the objective: a **layered orange** of hollow prism-bone shells added INWARD from a fixed 360u outer radius, woven OPEN at the surface (~94u x 98u cells) and progressively TIGHTER inward (~22u at the core), with every rib x hoop cell split by a diagonal so the openings are TRIANGLES and every rind inside the outermost TILTED onto its own axis (`SpawnableRibcage.ShellTilts`, min 34 deg apart) so the dense polar caps never stack radially. **Intensity is how many rinds you peel** — 2..5 shells (10,620 / 14,731 / 17,992 / 20,153 prisms) selected the platform way, one `CellConfigDataSO` per intensity via `CellTypeChoiceOptions.IntensityWise`, each pointing at a `SpawnableRibcage` prefab variant whose `shellCount` differs and carrying ITS OWN PhaseThresholds. Every bar is a one-hit PLAIN prism except the sparse danger traps; nothing is shielded or super-shielded. No fauna — the mode's former leader-pinned brood ladder was removed, though every platform capability it used is kept (see `_Scripts/Controller/Arcade/RIBCAGE.md`). Meta sentinel: `Random(0)`. Note: IDs 7 and 31 are skipped — 7 was the retired standalone arcade Freestyle game (freestyle now lives in Menu_Main as the lava lamp; see "Lava-Lamp Mode"), 31 was never assigned. Do not reuse either ID.
 
-`WildlifeLiberation(40)` is the **Sparrow-only hunt** — three concentric cages at 1050 / 600 / 200 pen three tiers of wildlife (a very heavy swarm of small creatures outside, much bigger ones in the middle room, the biggest and toughest in the core), and the first **PLAYER** to kill 500 creatures wins. It is the platform's **first free-for-all race**: every other multiplayer mode resolves a winning DOMAIN from a per-domain sum, and pooling teammates here would let somebody win off a teammate's kills — so `WildlifeLiberationScoringRuleSO` resolves a winning PLAYER and the domain sums stay as a secondary HUD readout. Its metric, `ScoringMetric.LifeformsKilled`, is also the first whose source is the ECOLOGY rather than prisms or crystals. Shipping it made **every creature in the game killable by shooting its body prisms** (previously only the worm colony was — see `Docs/ECOSYSTEM.md §24`) and generalized the cell's single fauna pen into a per-species BAND. See `_Scripts/Controller/Arcade/WILDLIFE_LIBERATION.md`.
+`DogFight(41)` is the **Sparrow-only gun duel** — 2-4 pilots hunt each other through the
+**Boneyard**, an apocalyptic wreck-field of hollow hulks and rubble canyons built for close
+encounters and hiding places (inspired by Scurry's intensity-4 Atlantis, and its opposite: a
+world that fell rather than grew). A **bullet hit scores 1**, a **missile hit scores 50** (direct
+strike OR caught in the blast, latched so one rocket can only pay once), and the first **DOMAIN**
+to the point target (default 500) wins. Its metric, `ScoringMetric.CombatPoints`, is the
+platform's first whose source is **vessel-vs-vessel gunnery** rather than prisms, crystals or the
+ecology — and the weighting lives in the mode's own `ScoringRuleSO.PointsForCombatHit` (0
+everywhere else), so hits are COUNTED platform-wide and SCORED only here. It is a TEAM race and
+not a free-for-all for a structural reason: `Projectile.DisallowImpactOnVessel` refuses own-domain
+contact, so two players sharing a domain could not fight at all — domains ARE the sides. Shipping
+it also gave `AOEConicSkyBurst.prefab` the explosion container it never had, so a skyburst's
+BLAST can now reach a pilot instead of only its direct hit. See
+`_Scripts/Controller/Arcade/DOGFIGHT.md`.
+
+`WildlifeLiberation(40)` is the **Sparrow-only hunt** — three concentric cages at 1050 / 600 / 200 pen three tiers of wildlife (a very heavy swarm of small creatures outside, much bigger ones in the middle room, the biggest and toughest in the core), plus a fourth tier loose in the open water outside the outer cage where players spawn; the first **DOMAIN** to 250 summed kills wins. It is an ordinary domain race and that is deliberate: a per-PLAYER (free-for-all) winner shipped here briefly and was **reverted**, because the mode seats up to four players while the platform has only three playable domains, so a full lobby always has teammates and a per-individual winner bypasses every domain surface (winner banner, HUD panels, scoreboard ordering, `ResolvePlacementOrder`). Do not re-derive it. Its metric, `ScoringMetric.LifeformsKilled`, is the first whose source is the ECOLOGY rather than prisms or crystals — and the first that needs an RPC, because fauna are client-local so a client's kill is invisible to the server (`Player.ReportFaunaKill_ServerRpc`; the round-trip stays correct once fauna network sync lands). Shipping it made **every creature in the game killable by shooting its body prisms** (previously only the worm colony was — see `Docs/ECOSYSTEM.md §24`) and generalized the cell's single fauna pen into a per-species BAND. See `_Scripts/Controller/Arcade/WILDLIFE_LIBERATION.md`.
 
 Many single-player modes (1, 3-6, 9-25, 27) reference scenes that no longer exist on disk — their `SO_ArcadeGame` assets still exist and appear in the Arcade UI, but launching them would fail. (`Rampage(2)` used to be in this set; it now has a real scene as a multiplayer mode.)
 
@@ -406,11 +436,12 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
         ├── MultiplayerJoustController      — collision tracking, golf scoring
         ├── MultiplayerCellularDuelController — vessel ownership swap between rounds
         ├── MultiplayerCrystalCaptureController — minimal (1 round, 1 turn)
-        ├── AstroLeagueController             — hypersea soccer, server-simulated ball, golden goal
+        ├── AstroLeagueController             — hypersea soccer (Rhino-only, sword strikes), server-simulated ball, golden goal
         ├── NucleusRushController             — nucleus-control fauna-wave race, brood scoring
         ├── RibcageController                 — Rhino-only layered-cage race ("Peel the Cage")
         └── RampageController                 — destruction race (Scurry's destructive analog), prisms-destroyed scoring
-        └── WildlifeLiberationController       — Sparrow-only three-cage hunt; FREE-FOR-ALL (first PLAYER to the kill target)
+        └── WildlifeLiberationController       — Sparrow-only three-cage hunt, ecology-scored (creatures killed)
+        └── DogFightController                  — Sparrow-only gun duel in the Boneyard; first DOMAIN to the gunnery-point target
 ```
 
 #### Game Launch Pipeline
@@ -451,7 +482,8 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
 | `ASTROLEAGUE.md` | `_Scripts/Controller/Arcade/` | Astro League game mode technical reference |
 | `RAMPAGE.md` | `_Scripts/Controller/Arcade/` | Rampage game mode technical reference (multiplayer destruction race) |
 | `RIBCAGE.md` | `_Scripts/Controller/Arcade/` | Ribcage / "Peel the Cage" technical reference (Rhino-only cage-breaking race; the layered-orange intensity model, the open-weave generator, the shielded-mass targeting-grid rule, and the record of the removed fauna ladder) |
-| `WILDLIFE_LIBERATION.md` | `_Scripts/Controller/Arcade/` | Wildlife Liberation technical reference (Sparrow-only three-cage hunt). **Read before touching the fauna kill path or the per-species containment bands** — this mode made every creature in the game shootable, and generalized the cell's single fauna pen into a per-species annulus. Also documents the platform's first FREE-FOR-ALL race (winner is a PLAYER, not a domain) and the very-heavy collider budget. |
+| `DOGFIGHT.md` | `_Scripts/Controller/Arcade/` | Dog Fight technical reference (Sparrow-only gun duel). **Read before touching the combat-hit path, the Sparrow's weapon effect containers, or the skyburst's AOE prefabs** — this mode added the platform's first vessel-vs-vessel scoring metric and gave the skyburst's conic blast the explosion container it never had (so a rocket's blast can now reach a pilot at all). Also documents why the mode is a TEAM race rather than a free-for-all: teammates cannot damage each other, so domains ARE the sides. |
+| `WILDLIFE_LIBERATION.md` | `_Scripts/Controller/Arcade/` | Wildlife Liberation technical reference (Sparrow-only three-cage hunt). **Read before touching the fauna kill path or the per-species containment bands** — this mode made every creature in the game shootable, and generalized the cell's single fauna pen into a per-species annulus. Also documents why a per-player (free-for-all) winner was tried here and reverted, the client-local-fauna kill RPC, and the very-heavy collider budget. |
 | `PRISM_PERFORMANCE_AUDIT.md` | `_Scripts/Game/Prisms/` | Prism system performance analysis (vestigial location) |
 | `UNIT_TESTING_GUIDE.md` | `_Scripts/Tests/` | Unit testing guidelines and inventory |
 | `BENCHMARK_TOOL.md` | `_Scripts/Utility/PerformanceBenchmark/` | Performance Benchmark tool guide (tabs, score/hints, sweep, Load Time Insights, customization) |

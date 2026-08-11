@@ -33,6 +33,19 @@ namespace CosmicShore.Gameplay
         public string AttackerName;
     }
 
+    /// <summary>
+    /// One landed vessel-vs-vessel hit: who fired it, who wore it, and with what.
+    /// <see cref="VictimName"/> is carried for diagnostics and for the toast feed - the score
+    /// only ever moves for the SHOOTER, and only <see cref="StatsManager"/> decides that.
+    /// </summary>
+    [Serializable]
+    public struct CombatHitStats
+    {
+        public string ShooterName;
+        public string VictimName;
+        public CombatHitClass HitClass;
+    }
+
     [Serializable]
     public struct AbilityStats
     {
@@ -64,6 +77,14 @@ namespace CosmicShore.Gameplay
             // SO that owns the channel, so there is nothing per-scene to forget.
             if (cellData != null)
                 cellData.OnFaunaKilled.OnRaised += LifeformKilled;
+
+            // Same reasoning, one level up: the combat-hit channel hangs off GameDataSO (the
+            // one asset every scene's StatsManager already carries) rather than a serialized
+            // field here, so gunnery records in EVERY scene with nothing per-scene to wire.
+            // No null guard on the CHANNEL itself, per the SOAP fail-loud policy: an unwired
+            // Event_CombatHitStats must throw here rather than silently un-score every mode.
+            if (gameData != null)
+                gameData.OnCombatHitLanded.OnRaised += CombatHitLanded;
         }
 
         void OnDisable()
@@ -73,6 +94,9 @@ namespace CosmicShore.Gameplay
 
             if (cellData != null)
                 cellData.OnFaunaKilled.OnRaised -= LifeformKilled;
+
+            if (gameData != null)
+                gameData.OnCombatHitLanded.OnRaised -= CombatHitLanded;
         }
 
         void OnNetworkSpawn()
@@ -153,6 +177,44 @@ namespace CosmicShore.Gameplay
             var local = gameData.LocalPlayer;
             if (local is Player netPlayer && local.IsLocalUser && local.Name == killerName)
                 netPlayer.ReportFaunaKill_ServerRpc();
+        }
+
+        /// <summary>
+        /// A vessel landed a shot on an opposing vessel - credit the SHOOTER. Raised on
+        /// <see cref="GameDataSO.OnCombatHitLanded"/> by the two combat-hit impact effects,
+        /// already deduplicated per (shooter, victim, class) by <c>VesselCombatHitLatch</c>.
+        ///
+        /// LIKE the fauna path and UNLIKE every prism stat, this one has a CLIENT branch, and
+        /// for the same underlying reason: <b>projectiles are not networked</b>. A bullet or a
+        /// skyburst is a pooled local object spawned by whichever machine's gun fired it - it
+        /// has no NetworkObject and no RPCs - so a shot a client just landed does not exist on
+        /// the server at all. Recorded server-only, only the host could ever score in a
+        /// dogfight.
+        ///
+        /// So the machine that SIMULATED the shot reports it. Ownership decides who that is:
+        /// the server records directly (covering the host's own guns and every AI's, since AI
+        /// players are server-owned), and a client forwards ONLY its own shot through the
+        /// Player object it owns. If an AI's gun happens to fire on a client too, that client
+        /// sees the name mismatch and drops it - the server's copy is the one that counts.
+        ///
+        /// IDENTITY COMES FROM RPC OWNERSHIP, NOT FROM THE NAME STRING: the server credits the
+        /// RoundStats of the Player object <see cref="Player.ReportCombatHit_ServerRpc"/>
+        /// arrived on, so a client can only ever credit itself.
+        /// </summary>
+        public void CombatHitLanded(CombatHitStats hit)
+        {
+            if (string.IsNullOrEmpty(hit.ShooterName)) return;
+
+            if (_allowRecord)
+            {
+                if (gameData.TryGetRoundStats(hit.ShooterName, out IRoundStats shooterStats))
+                    CombatHitScoring.Credit(shooterStats, hit.HitClass, gameData.ScoringRule);
+                return;
+            }
+
+            var local = gameData.LocalPlayer;
+            if (local is Player netPlayer && local.IsLocalUser && local.Name == hit.ShooterName)
+                netPlayer.ReportCombatHit_ServerRpc((int)hit.HitClass);
         }
 
         public void CrystalCollected(CrystalStats crystalStats)

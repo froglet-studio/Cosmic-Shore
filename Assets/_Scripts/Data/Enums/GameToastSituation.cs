@@ -46,5 +46,10 @@ namespace CosmicShore.Data
         WildlifeHuntHalf = 54,       // the leading hunter is halfway
         WildlifeLeadChanged = 55,    // the lead changes hands after a milestone
         WildlifeCoreBreached = 56,   // a hunter has reached the innermost room ({0} = player name)
+
+        // Dog Fight. {0} = leading domain, {1} = that domain's points, {2} = point target.
+        DogFightQuarterDown = 57,    // the leading domain is a quarter of the way to the target
+        DogFightHalfDown = 58,       // the leading domain is halfway
+        DogFightLeadChanged = 59,    // the lead changes hands after a milestone
     }
 }

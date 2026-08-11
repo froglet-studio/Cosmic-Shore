@@ -36,15 +36,16 @@ namespace CosmicShore.Gameplay
             Mathf.Max(0, TargetCount(gameData) - ScoringMetrics.SumByDomain(gameData, metric, domain));
 
         /// <summary>
-        /// Remaining metric for ONE PLAYER - what a per-player HUD readout should show. Defaults
-        /// to that player's DOMAIN deficit, which is correct for every team-race mode (a
-        /// teammate's crystal shortens your race too). A FREE-FOR-ALL mode overrides it to read
-        /// the individual: Wildlife Liberation's win condition is one hunter reaching the kill
-        /// target, so showing them their team's deficit would be showing them someone else's
-        /// race.
+        /// What this mode pays for one landed vessel-vs-vessel hit. 0 - the default, and the
+        /// answer in every mode but Dog Fight - means this mode does not score gunnery; the raw
+        /// hit COUNTS still accumulate on <see cref="IRoundStats"/> either way, since they are
+        /// a platform fact rather than a scoring opinion.
+        ///
+        /// Read once per hit on the server (<c>CombatHitScoring.Credit</c>), so the weighting
+        /// lives in the mode's own asset instead of being baked into the metric reader - which
+        /// is what lets <c>ScoringMetric.CombatPoints</c> stay a plain cumulative int.
         /// </summary>
-        public virtual int RemainingForPlayer(GameDataSO gameData, IRoundStats stats) =>
-            stats == null ? 0 : Remaining(gameData, stats.Domain);
+        public virtual int PointsForCombatHit(CombatHitClass hitClass) => 0;
 
         /// <summary>
         /// Server-side END condition for the current turn. HexRace/Joust/CrystalCapture all end
