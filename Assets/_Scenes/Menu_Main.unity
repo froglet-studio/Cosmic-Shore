@@ -4913,6 +4913,11 @@ MonoBehaviour:
   - {fileID: 673228694}
   - {fileID: 1419570605}
   - {fileID: 1867942830}
+  arrangeSpawnPointsAroundCell: 0
+  spawnDistanceOutsideNucleus: 40
+  spawnRingRadiusFloor: 0
+  spawnFormation: 0
+  cellData: {fileID: 0}
   preSpawnDelayMs: 200
   postSpawnDelayMs: 200
   menuVesselDomain: 1
@@ -4978,6 +4983,8 @@ MonoBehaviour:
   scaleCrystalPositionWithIntensity: 0
   intensityLevelData: {fileID: 11400000, guid: 490485287c38a2f4e9178566394efd69, type: 2}
   listOfCrystalPositions: []
+  anchorJitterRadius: 35
+  anchorlessSpawnRadius: 0
   crystalCountMode: 0
   fixedCrystalCount: 1
   extraCrystalsToSpawnBeyondPlayerCount: 0
@@ -22662,7 +22669,7 @@ PrefabInstance:
     - target: {fileID: 434470711675463148, guid: 0b36fa278f9a30d4c8f44e846674c904,
         type: 3}
       propertyPath: m_SizeDelta.x
-      value: 0
+      value: -59.9187
       objectReference: {fileID: 0}
     - target: {fileID: 434470711675463148, guid: 0b36fa278f9a30d4c8f44e846674c904,
         type: 3}
@@ -22672,7 +22679,7 @@ PrefabInstance:
     - target: {fileID: 434470711675463148, guid: 0b36fa278f9a30d4c8f44e846674c904,
         type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: 0
+      value: -254.18845
       objectReference: {fileID: 0}
     - target: {fileID: 434470711675463148, guid: 0b36fa278f9a30d4c8f44e846674c904,
         type: 3}
@@ -26352,7 +26359,7 @@ PrefabInstance:
     - target: {fileID: 4761935921297856879, guid: 0b36fa278f9a30d4c8f44e846674c904,
         type: 3}
       propertyPath: m_SizeDelta.x
-      value: 0
+      value: -59.9186
       objectReference: {fileID: 0}
     - target: {fileID: 4761935921297856879, guid: 0b36fa278f9a30d4c8f44e846674c904,
         type: 3}
@@ -26362,7 +26369,7 @@ PrefabInstance:
     - target: {fileID: 4761935921297856879, guid: 0b36fa278f9a30d4c8f44e846674c904,
         type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: 0
+      value: -187.9523
       objectReference: {fileID: 0}
     - target: {fileID: 4761935921297856879, guid: 0b36fa278f9a30d4c8f44e846674c904,
         type: 3}
@@ -28752,7 +28759,7 @@ PrefabInstance:
     - target: {fileID: 7502409578437592786, guid: 0b36fa278f9a30d4c8f44e846674c904,
         type: 3}
       propertyPath: m_SizeDelta.x
-      value: 0.000030517578
+      value: -59.9186
       objectReference: {fileID: 0}
     - target: {fileID: 7502409578437592786, guid: 0b36fa278f9a30d4c8f44e846674c904,
         type: 3}
@@ -28762,7 +28769,7 @@ PrefabInstance:
     - target: {fileID: 7502409578437592786, guid: 0b36fa278f9a30d4c8f44e846674c904,
         type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: 0
+      value: -121
       objectReference: {fileID: 0}
     - target: {fileID: 7502409578437592786, guid: 0b36fa278f9a30d4c8f44e846674c904,
         type: 3}
@@ -30572,7 +30579,11 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 8646006358540626369, guid: 0b36fa278f9a30d4c8f44e846674c904,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 680554985412321639}
   m_SourcePrefab: {fileID: 100100000, guid: 0b36fa278f9a30d4c8f44e846674c904, type: 3}
 --- !u!114 &680554985412321636 stripped
 MonoBehaviour:
@@ -30592,6 +30603,25 @@ RectTransform:
     type: 3}
   m_PrefabInstance: {fileID: 680554985412321635}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &680554985412321638 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 8646006358540626369, guid: 0b36fa278f9a30d4c8f44e846674c904,
+    type: 3}
+  m_PrefabInstance: {fileID: 680554985412321635}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &680554985412321639
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 680554985412321638}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4895ccf63ef14054908fc22a3d2e722d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.UI.QuitGameButton
+  desktopOnly: 1
 --- !u!1 &682024415980713642
 GameObject:
   m_ObjectHideFlags: 0
@@ -65940,12 +65970,9 @@ MonoBehaviour:
   IconEmitter: {fileID: 2104391206882412974}
   FreeButtonBackgroundSprite: {fileID: 21300000, guid: 6985e27142cd638409cf41fe7a5abe72,
     type: 3}
-  AdButtonBackgroundSprite: {fileID: 21300000, guid: ca4b6978517e0a14f807e8d22ab49248,
-    type: 3}
   ClockButtonBackgroundSprite: {fileID: 21300000, guid: 216b9611f3c0ebb4490a9f224ddb4953,
     type: 3}
   TimeRemaining: {fileID: 9098559969126680807}
-  adsManager: {fileID: 0}
   duration: 0.5
 --- !u!224 &3418730500816901411
 RectTransform:
