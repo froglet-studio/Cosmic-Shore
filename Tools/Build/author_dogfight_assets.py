@@ -120,7 +120,7 @@ PREVIEW_FILEID = 241334157148977051
 # The point target - the race metric. The 25%/50% milestone rungs are fractions of this (so 30
 # and 60), and moving it moves the whole progress ladder. Kept in sync with
 # EndConditionOverridesSO.DefaultDogFightPointTarget.
-DOGFIGHT_POINT_TARGET = 120
+DOGFIGHT_POINT_TARGET = 90
 
 # The comeback strength, and it is a FUNCTION OF THE TARGET - `bonusLevels = deficit x rate`, so
 # a rate is only meaningful next to the scale of the deficits the mode produces. This one shipped
@@ -154,7 +154,12 @@ SENSE_RADIUS = 1200
 # It was briefly zeroed here after a playtest read the big faceted sphere as a bouncable
 # objective; that was reverted on request. What was actually wrong is the SPAWN RADIUS, fixed
 # properly below rather than by deleting the crystal.
-OMNI_CRYSTAL_COUNT = 1
+# FOUR of them, Scurry-style. One crystal in a 520-unit arena is a needle nobody detours for;
+# four means there is usually one worth breaking off toward, which is the point of having them at
+# all in a mode where crystals score nothing. Kept on FixedCount rather than Scurry's
+# PlayerCountPlusExtra (which would put NINE in a full lobby) - the arena wants a handful, not a
+# field. Every one of them still needs OMNI_SPAWN_RADIUS below to not stack on the origin.
+OMNI_CRYSTAL_COUNT = 4
 
 # The ball the omni crystal is drawn from, in place of the nucleus radius this cell hasn't got.
 # Inside the wreck field (r=520) so it is genuinely hidden among the hulks rather than floating
@@ -343,6 +348,41 @@ if bullet_ref not in prismshot:
     assert m, "projectileShipEffects block not found on the prism-projectile container"
     prismshot = prismshot.replace(m.group(0), m.group(0) + bullet_ref, 1)
 emit(PRISMSHOT_PATH, prismshot)
+
+# ── 4b. THE TURRET'S MUZZLES — the reason turret shots did nothing ──────────
+#
+# The Sparrow carries TWO pairs of gun transforms, one per fire mode, and they had drifted 13.8
+# units apart:
+#
+#     FullAutoActionExecutor/Guns       (bullets)        LeftGun/RightGun at z =  1.30
+#     FullAutoBlockActionExecutor/Guns  (turret prisms)  LeftGun/RightGun at z = 15.13
+#
+# A shot is BORN at its muzzle, so every turret round spawned 15 units ahead of the nose and the
+# first 15 units of its path simply did not exist. In a wreck-field dogfight — a mode built
+# specifically for close passes — the enemy is routinely inside that gap, so the round appeared
+# already past them and hit nothing. No damage, and therefore no points, no matter how correctly
+# the scoring was wired. (Playtest: "shooting with the turrets does not do any damage. Maybe
+# because the point of origin of bullets for the sparrow is too far away from the model" —
+# exactly right.)
+#
+# Both pairs are bare Transforms (no renderer, no VFX, no children), so this is purely where the
+# shot starts. They are moved onto the bullets' position, which is also the documented rule for
+# this weapon: SPARROW_TURRET_STANCE.md — "a turret shot IS a bullet — you just see a prism
+# flying". Range is unaffected: the executor computes `anchor = muzzle + forward * range`, so
+# moving the muzzle back moves the anchor back with it and the path length is identical.
+SPARROW_PREFAB = "Assets/_Prefabs/Spacevessels/Sparrow.prefab"
+sparrow = read(SPARROW_PREFAB)
+TURRET_MUZZLES = (
+    ("  m_LocalPosition: {x: 3, y: 0.4, z: 15.13}\n",
+     "  m_LocalPosition: {x: 3.2, y: 0.4, z: 1.3}\n"),
+    ("  m_LocalPosition: {x: -3, y: 0.4, z: 15.13}\n",
+     "  m_LocalPosition: {x: -3.2, y: 0.4, z: 1.3}\n"),
+)
+for old_pos, new_pos in TURRET_MUZZLES:
+    if old_pos in sparrow:
+        assert sparrow.count(old_pos) == 1, f"turret muzzle position {old_pos!r} is not unique"
+        sparrow = sparrow.replace(old_pos, new_pos, 1)
+emit(SPARROW_PREFAB, sparrow)
 
 # MISSILES, direct strike: same, on the skyburst container.
 SKYBURST_PATH = ("Assets/_SO_Assets/Effects/Effect Containers/Projectile Containers/"
@@ -669,6 +709,8 @@ NEW_FIELDS = f"""  rule: {{fileID: 11400000, guid: {G_ASSET['DogFightScoringRule
   aiRetargetSeconds: 1.5
   aiLeadSeconds: 0.6
   aiBreakOffDistance: 120
+  aiExtendDistanceMultiplier: 3
+  aiMaxExtendSeconds: 4
 """
 assert OLD_FIELDS in scene, "controller field block not found in donor scene"
 scene = scene.replace(OLD_FIELDS, NEW_FIELDS)
@@ -788,7 +830,13 @@ END_PATH = "Assets/Resources/EndConditionOverrides.asset"
 endcond = read(END_PATH)
 for live_key, new_key in (("wildlifeKillTarget", "dogFightPointTarget"),
                           ("wildlifeKillTargetBuild", "dogFightPointTargetBuild")):
-    if f"\n  {new_key}: " in endcond:
+    # SET, don't just add. An earlier version only inserted the key when it was absent, so
+    # re-running after a target change left the asset on the OLD number while the C# default and
+    # every doc said the new one - and the asset is what the game actually reads.
+    existing = re.search(rf"^  {new_key}: \d+\n", endcond, re.M)
+    if existing:
+        endcond = endcond.replace(existing.group(0),
+                                  f"  {new_key}: {DOGFIGHT_POINT_TARGET}\n", 1)
         continue
     m = re.search(rf"^  {live_key}: (\d+)\n", endcond, re.M)
     assert m, f"{live_key} not found in {END_PATH} - run author_wildlife_liberation_assets.py first"
@@ -873,6 +921,20 @@ if G_ASSET["VesselCombatHitByBullet"] not in files[FULLAUTO_PATH]:
 if G_ASSET["VesselCombatHitByBullet"] not in files[PRISMSHOT_PATH]:
     errors.append("the prism-projectile container does not carry the bullet scoring effect - "
                   "the Sparrow's turret stance would be worth nothing")
+
+# The turret's muzzles must sit where the BULLETS' do. Wiring the scoring effect is worthless if
+# the shot is born past the target, which is exactly what shipped once (see section 4b).
+_sparrow = files[SPARROW_PREFAB]
+_bullet_muzzles = _sparrow.count("  m_LocalPosition: {x: 3.2, y: 0.4, z: 1.3}\n") + \
+                  _sparrow.count("  m_LocalPosition: {x: -3.2, y: 0.4, z: 1.3}\n")
+if _bullet_muzzles != 4:
+    errors.append(f"the Sparrow should carry FOUR gun transforms on the bullets' position "
+                  f"(two bullet + two turret); found {_bullet_muzzles}. The turret's muzzles "
+                  "have drifted forward again - a turret shot is born past its target and "
+                  "hits nothing at close range")
+if "z: 15.13}" in _sparrow:
+    errors.append("a Sparrow gun transform is still at z=15.13 - the far-forward turret muzzle "
+                  "that made close-range turret fire do nothing")
 if G_ASSET["VesselCombatHitByMissile"] not in files[SKYBURST_PATH]:
     errors.append("the skyburst container does not carry the missile scoring effect - "
                   "direct rocket hits would never score")
