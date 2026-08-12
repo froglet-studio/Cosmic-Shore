@@ -31,10 +31,23 @@ knob table, and the numbered verification list:
 `_Scripts/Controller/Vessel/R_VesselActions/RHINO_ENERGY_SWORD.md` § "In-editor verification".
 The load-bearing checks, in risk order:
 
-1. **The FresnelGraph fix renders** (carried from v2, still never seen): the blade must read
-   TEAL with the animated Voronoi pattern, not grayscale — and heat toward cyan as energy banks.
+1. **The FresnelGraph fix renders** (carried from v2, still never seen): the blade must read as
+   a solid WHITE-hot capsule with the animated Voronoi pattern, brightening as energy banks.
    Magenta or grayscale = the graph edit didn't import; `git checkout` the graph and re-wire
    in-editor.
+1a. **It reads as a SWORD at every length** — hilt pinned at the mount, growth going out the
+   tip only. Bank energy from empty to full (30 → 120) and watch the near end stay put. If the
+   blade still grows out of both ends, the hilt anchor isn't applying (check
+   `ShieldSwipeActionExecutor.bladeHalfExtentLocal` = 1 and that the blade mesh really is the
+   built-in capsule).
+1b. **Colour states are unmistakable**: resting/charging = white-hot (never a domain tint —
+   the sword friendly-fires), ENERGIZED = danger red. If white→red doesn't read at a glance in
+   the heat of play, deepen `energizedColor` or raise `visibilityMultiplier`; don't reintroduce
+   a team hue.
+1c. **Tip debris got faster** — `lengthScale` 2 + hilt anchoring roughly double the modelled
+   lever arm, so more tip strikes saturate `debrisSpeedLimit` (200). Judge a tip strike vs a
+   hilt graze on a trail wall; if tip hits read too hot, lower `swingVelocityScale` on
+   `RhinoSkimmerDamagePrismEffect.asset` (do NOT put `lengthScale` back).
 2. **The energize ritual**: hold both triggers centered ~1 s → anticipation arcs → white-hot
    ignition + whole-blade crackle burst; ~5 s lit tail after release; ~5 s cooldown. Energized
    contact pops Stella-Octangula prisms; non-energized contact bounces with a dim spark.
@@ -44,17 +57,20 @@ The load-bearing checks, in risk order:
 4. **The capsule crackle looks right**: arcs ride the blade through swings, ripples proportioned
    along the stretched capsule (not squashed at the tips). Tune on
    `RhinoBladeCrackleMaterial.mat` live (`[ExecuteAlways]`).
-5. **Tracers**: two authored streaks at the blade tips (`Rhino.prefab` →
-   `RhinoSwordTipTracer`/`RhinoSwordHiltTracer`), tinted with the blade; width does NOT grow
-   with the blade.
+5. **Tracer**: ONE authored ribbon (`Rhino.prefab` → `RhinoSwordBladeTracer`) that spans the
+   sword hilt-to-tip through a swing and keeps spanning it as the blade grows, tinted with the
+   live blade colour. Dials: `tracerBladeAnchor01` (where it rides) and
+   `tracerWidthLengthFraction` (how much of the blade it covers) on the scale config; taper
+   curve, persistence and material on the TrailRenderer itself.
 6. **Base-skimmer non-regression**: any other vessel's skimmer crackle still shows the red
    sphere look (surface mode + material overrides live on the Rhino variant only).
 
 **First-pass tuning** (all on `ShieldSkimmerScaleConfig.asset` unless noted — expect a balance
 pass): energize hold 1 s / tail 5 s / cooldown 5 s / cost 0.1 · stance thresholds 1.5 & 0.4
 (`RhinoShieldSwipeConfig.asset`) · ignition intensity 2.5 × 5 sites · spark 1.6 @ 14 wu ·
-denied spark 0.7 · `fullEnergyColor` hot cyan (0.11, 1.51, 1.42) vs `energizedColor` white —
-the two must read as DIFFERENT states at a glance; if they don't, deepen the cyan.
+denied spark 0.7 · `restingBladeColor`/`fullEnergyColor` white (energy reads as BRIGHTNESS)
+vs `energizedColor` = `SO_ColorSet.Danger` red (state reads as HUE) · `tracerBladeAnchor01`
+0.5 / `tracerWidthLengthFraction` 1.
 
 ### 🔴 Sparrow Turret Stance — two flight visualizations, still-nothing hardening (`claude/sparrow-prism-attack-hg6n78`)
 

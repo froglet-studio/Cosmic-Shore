@@ -36,8 +36,8 @@ Material:
     - _RingThickness: 0.4
     - _RippleSpeed: 1.2
     m_Colors:
-    - _CrackleColorA: {r: 0.85, g: 1, b: 1, a: 1}
-    - _CrackleColorB: {r: 0.055, g: 0.755, b: 0.712, a: 1}
-    - _FresnelRimColor: {r: 0.03, g: 0.4, b: 0.38, a: 1}
+    - _CrackleColorA: {r: 1, g: 0.95, b: 0.9, a: 1}
+    - _CrackleColorB: {r: 1, g: 0.18, b: 0.06, a: 1}
+    - _FresnelRimColor: {r: 0.45, g: 0.06, b: 0.03, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

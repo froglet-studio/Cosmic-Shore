@@ -30,6 +30,13 @@ namespace CosmicShore.Gameplay
         [Header("Events")]
         [SerializeField] ScriptableEventNoParam OnMiniGameTurnEnd;
 
+        [Header("Blade Geometry")]
+        [Tooltip("Half the blade mesh's extent along its length axis, in the blade's OWN local units. " +
+                 "Unity's built-in Capsule spans local y in [-1, 1], so 1. This is what anchors the HILT: " +
+                 "the blade grows from its mount outward like a sword instead of extending equally both " +
+                 "ways like a staff, at every size the energy meter produces.")]
+        [SerializeField] float bladeHalfExtentLocal = 1f;
+
         // Same deadzone the gamepad strategy uses for its press/release edges.
         const float TriggerDeadzone = 0.05f;
 
@@ -42,6 +49,7 @@ namespace CosmicShore.Gameplay
 
         float _diff;       // smoothed swipe control: -1 (left stance) .. +1 (right stance)
         float _sum;        // smoothed chop control: 0 (raised rest) .. 2 (full chop)
+        float _appliedAnchor = float.NaN; // blade half-extent the last applied pose was anchored for
         float _activeSign; // event-driven stance (+1/-1/0) for non-analog inputs
         bool _rightHeld;   // event-side per-direction held state (cross-swipe handoff)
         bool _leftHeld;
@@ -121,7 +129,11 @@ namespace CosmicShore.Gameplay
 
             FeedSwordStance();
 
-            if (_diff == 0f && _sum == 0f && diffTarget == 0f && sumTarget == 0f) return;
+            // A resting pose still has to be re-applied when the blade's LENGTH moved: the hilt
+            // anchor is a function of that length, so skipping the write would leave the sword
+            // growing out of both ends of its mount again (the staff read this fix removes).
+            bool poseAtRest = _diff == 0f && _sum == 0f && diffTarget == 0f && sumTarget == 0f;
+            if (poseAtRest && Mathf.Approximately(AnchorOffsetLocal(), _appliedAnchor)) return;
 
             _diff = Drive(_diff, diffTarget, analog);
             _sum = Drive(_sum, sumTarget, analog);
@@ -258,9 +270,29 @@ namespace CosmicShore.Gameplay
             var sweep = Quaternion.AngleAxis(yaw, Vector3.up)
                       * Quaternion.AngleAxis(roll, Vector3.forward)
                       * Quaternion.AngleAxis(pitch, Vector3.right);
-            shieldRoot.localRotation = sweep * _baseLocalRot;
-            shieldRoot.localPosition = sweep * _baseLocalPos;
+            var pose = sweep * _baseLocalRot;
+            shieldRoot.localRotation = pose;
+
+            // HILT ANCHOR — what makes it a sword instead of a staff. The blade mesh is
+            // centred on its transform, so growing it extends the capsule equally in BOTH
+            // directions from the mount: at 30 the sword ran 30 units past the grip in each
+            // direction, at 120 it ran 120 — a quarterstaff the vessel wears through its
+            // middle. Offsetting the centre by the blade's own half-extent pins the HILT to
+            // the authored mount and sends every unit of growth out the tip, so the sword
+            // reads as a sword at every length the energy meter produces.
+            float anchor = AnchorOffsetLocal();
+            shieldRoot.localPosition = sweep * _baseLocalPos + pose * Vector3.up * anchor;
+            _appliedAnchor = anchor;
         }
+
+        /// <summary>
+        /// Distance from the blade's mount to the centre of its mesh, in PARENT units: the
+        /// capsule's local half-extent scaled by the length the shield driver is currently
+        /// running. Local +Y is the tip direction (the blade elongates on Y —
+        /// <c>Skimmer.elongateYOnly</c>).
+        /// </summary>
+        float AnchorOffsetLocal() =>
+            shieldRoot ? shieldRoot.localScale.y * bladeHalfExtentLocal : 0f;
 
         void ClearStance()
         {
@@ -297,8 +329,12 @@ namespace CosmicShore.Gameplay
 
             if (_baseCaptured && shieldRoot)
             {
+                // Rest pose, hilt still anchored — the blade keeps whatever length the energy
+                // meter is holding, so snapping back to the raw mount would re-centre it.
+                float anchor = AnchorOffsetLocal();
                 shieldRoot.localRotation = _baseLocalRot;
-                shieldRoot.localPosition = _baseLocalPos;
+                shieldRoot.localPosition = _baseLocalPos + _baseLocalRot * Vector3.up * anchor;
+                _appliedAnchor = anchor;
             }
         }
     }

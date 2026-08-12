@@ -9,23 +9,29 @@ namespace CosmicShore.Gameplay
     /// and tuned entirely through <see cref="ShieldSkimmerScaleConfigSO"/> plus the
     /// authored sibling assets. Four layers:
     ///
-    ///  1. HEAT RAMP — the blade blends from its authored teal toward the full-energy
-    ///     cyan and brightens as stored energy fills. The blade uses the SHARED
-    ///     FresnelMaterial, so this never touches <c>renderer.material</c> — it drives
-    ///     <c>_Color</c> through a MaterialPropertyBlock (RGB above 1 feeds gameplay
+    ///  1. HEAT RAMP — the blade sits at the config's RESTING colour (white-hot, never the
+    ///     pilot's domain colour: the sword friendly-fires, so a team-tinted blade would
+    ///     read as safe to allies) and brightens as stored energy fills. The blade uses the
+    ///     SHARED FresnelMaterial, so this never touches <c>renderer.material</c> — it
+    ///     drives <c>_Color</c> through a MaterialPropertyBlock (RGB above 1 feeds gameplay
     ///     bloom; the AstroLeagueBall impact-flash precedent).
-    ///  2. ENERGIZE — the centerpiece. While CHARGING the blade leans toward white with
-    ///     escalating anticipation arcs; the IGNITION instant blends it white-hot over
-    ///     <c>ColorTransitionSeconds</c> and detonates a crackle burst along the whole
-    ///     blade through the authored <see cref="ForcefieldCrackleController"/> (the
-    ///     capsule-adapted forcefield-crackle overlay).
+    ///  2. ENERGIZE — the centerpiece, and the only thing that moves the blade's HUE:
+    ///     while CHARGING it leans toward the danger colour with escalating anticipation
+    ///     arcs; the IGNITION instant blends it fully to <c>EnergizedColor</c> — the shared
+    ///     <c>SO_ColorSet.Danger</c> red — over <c>ColorTransitionSeconds</c> and detonates
+    ///     a crackle burst along the whole blade through the authored
+    ///     <see cref="ForcefieldCrackleController"/> (the capsule-adapted overlay). Energy
+    ///     is brightness, state is hue; the two signals can never be confused.
     ///  3. IMPACT FEEDBACK — a decaying white-out flash per prism destroyed plus a
     ///     crackle spark at the exact blade point that made contact
     ///     (<see cref="SkimmerSwingKinematics.ClosestBladePoint"/>); a dim DENIED spark
     ///     when a non-energized blade bounces off a super-shielded prism.
-    ///  4. TIP TRACERS — two authored TrailRenderers seated at the blade tips each frame
-    ///     (parented to the fuselage in the prefab so their width doesn't scale with the
-    ///     growing blade), tinted with the live blade colour via MaterialPropertyBlock.
+    ///  4. BLADE TRACER — ONE authored TrailRenderer (fuselage-parented in the prefab so
+    ///     the ribbon's shape never inherits the blade's scale) riding the blade at
+    ///     <c>TracerBladeAnchor01</c>, with its width driven each frame to the blade's LIVE
+    ///     world length: a swing lays a ribbon that spans hilt-to-tip rather than a thread
+    ///     off one end, at every size the energy meter produces. Tinted with the live blade
+    ///     colour via MaterialPropertyBlock.
     ///
     /// Camera shake (super-shield pop, crystal burst) fires for the LOCAL human pilot
     /// only. See <c>RHINO_ENERGY_SWORD.md</c>.
@@ -45,10 +51,10 @@ namespace CosmicShore.Gameplay
         [SerializeField] private MeshRenderer bodyRenderer;
         [Tooltip("The crackle overlay driver on the blade (capsule surface mode). Falls back to this GameObject's controller.")]
         [SerializeField] private ForcefieldCrackleController crackle;
-        [Tooltip("Authored tracer streak seated at the blade's TIP each frame (a fuselage child, so width ignores blade growth).")]
-        [SerializeField] private TrailRenderer tipTracer;
-        [Tooltip("Authored tracer streak seated at the blade's HILT-side tip each frame.")]
-        [SerializeField] private TrailRenderer hiltTracer;
+        [Tooltip("Authored swing ribbon. A fuselage child (so the blade's scale never distorts it), " +
+                 "re-seated on the blade each frame at ShieldSkimmerScaleConfig.TracerBladeAnchor01 " +
+                 "with its width driven to the blade's live length.")]
+        [SerializeField] private TrailRenderer bladeTracer;
 
         Skimmer _skimmer;
         SkimmerSwingKinematics _swing;
@@ -56,11 +62,11 @@ namespace CosmicShore.Gameplay
         MaterialPropertyBlock _bodyMpb;
         MaterialPropertyBlock _tracerMpb;
         bool _hasColorProp;
-        Color _authored;          // FresnelMaterial's authored teal, read once from sharedMaterial
         Color _appliedBodyColor;
         bool _bodyColorApplied;
         Color _appliedTracerColor;
         bool _tracerColorApplied;
+        float _appliedTracerWidth = float.NaN;
 
         float _flash;             // 0 = none, 1 = full white-out; decays each Tick
         float _energizedBlend;    // 0 = heat ramp, 1 = white-hot; eased by ColorTransitionSeconds
@@ -77,23 +83,19 @@ namespace CosmicShore.Gameplay
             if (!bodyRenderer) TryGetComponent(out bodyRenderer);
             if (!crackle) TryGetComponent(out crackle);
 
-            _authored = new Color(0.055f, 0.755f, 0.712f, 1f); // FresnelMaterial teal fallback
-            _hasColorProp = false;
-            if (bodyRenderer && bodyRenderer.sharedMaterial)
-            {
-                var mat = bodyRenderer.sharedMaterial;
-                _hasColorProp = mat.HasProperty(ColorId);
-                if (_hasColorProp) _authored = mat.GetColor(ColorId);
-            }
+            // The blade's colour is AUTHORED IN THE CONFIG, never read off the shared
+            // FresnelMaterial: the sword friendly-fires, so its colour must never drift toward
+            // a domain/team read. All we ask the material is whether it can be tinted at all.
+            _hasColorProp = bodyRenderer && bodyRenderer.sharedMaterial &&
+                            bodyRenderer.sharedMaterial.HasProperty(ColorId);
 
             _flash = 0f;
             _energizedBlend = 0f;
             _bodyColorApplied = false;
             _tracerColorApplied = false;
 
-            SeatTracers();
-            if (tipTracer) tipTracer.Clear();
-            if (hiltTracer) hiltTracer.Clear();
+            SeatTracer();
+            if (bladeTracer) bladeTracer.Clear();
 
             WarnOnceIfUnwired();
         }
@@ -102,8 +104,7 @@ namespace CosmicShore.Gameplay
         {
             // Drop the per-renderer overrides so the shared materials show through again.
             if (bodyRenderer) bodyRenderer.SetPropertyBlock(null);
-            if (tipTracer) tipTracer.SetPropertyBlock(null);
-            if (hiltTracer) hiltTracer.SetPropertyBlock(null);
+            if (bladeTracer) bladeTracer.SetPropertyBlock(null);
             _bodyColorApplied = false;
             _tracerColorApplied = false;
             _flash = 0f;
@@ -130,22 +131,24 @@ namespace CosmicShore.Gameplay
             _energizedBlend = Mathf.MoveTowards(_energizedBlend, blendTarget, dt / config.ColorTransitionSeconds);
 
             float vis = config.VisibilityMultiplier;
-            Color baseVisible = ScaleRgb(_authored, vis);
+            Color restVisible = ScaleRgb(config.RestingBladeColor, vis);
             Color fullVisible = ScaleRgb(config.FullEnergyColor, vis);
             Color energizedVisible = ScaleRgb(config.EnergizedColor, vis);
 
-            // Heat ramp: colour AND brightness climb with stored energy…
-            Color ramp = Color.Lerp(baseVisible, fullVisible, energy01);
+            // Heat ramp: stored energy reads as BRIGHTNESS (the resting and full-energy colours
+            // share a hue on purpose — see the config).
+            Color ramp = Color.Lerp(restVisible, fullVisible, energy01);
             float brightness = Mathf.Lerp(1f, config.FullEnergyBrightness, energy01);
             Color color = ScaleRgb(ramp, brightness);
 
-            // …the energize blend rides above the ramp, and the impact flash above both.
+            // …the energize blend rides above it and is the only thing that shifts HUE (to the
+            // danger colour), and the impact flash rides above both.
             color = Color.Lerp(color, energizedVisible, _energizedBlend);
             if (_flash > 0f)
                 color = Color.Lerp(color, config.FlashColor, _flash);
 
             ApplyBodyColor(color);
-            SeatTracers();
+            SeatTracer();
             ApplyTracerColor(color);
 
             // Anticipation arcs while charging: small, quickening in weight with charge.
@@ -244,6 +247,11 @@ namespace CosmicShore.Gameplay
             return transform.position + transform.up * Mathf.Lerp(-half, half, Mathf.Clamp01(t01));
         }
 
+        /// <summary>The blade's live world length, hilt to tip.</summary>
+        float BladeWorldLength => 2f * (_swing && _swing.IsReady
+            ? _swing.HalfLength
+            : Mathf.Abs(transform.lossyScale.y));
+
         Vector3 BladePointNear(Vector3 worldPoint)
         {
             if (_swing && _swing.IsReady) return _swing.ClosestBladePoint(worldPoint);
@@ -263,19 +271,31 @@ namespace CosmicShore.Gameplay
             bodyRenderer.SetPropertyBlock(_bodyMpb);
         }
 
-        void SeatTracers()
+        /// <summary>
+        /// Ride the blade and size the ribbon to it. A TrailRenderer lays its width
+        /// PERPENDICULAR to the path it travels — during a swipe that is across the blade's
+        /// length — so anchoring the emitter mid-blade and driving the width to the blade's
+        /// live length makes the streak stretch from hilt to tip instead of trailing off one
+        /// end as a thread. Driving it every frame is what keeps that true "at all sizes":
+        /// the ribbon grows with the energy meter and with the crystal burst.
+        /// </summary>
+        void SeatTracer()
         {
-            // Unit capsule spans local y ∈ [-1, 1]; world tip offset = up * lossyScale.y.
-            Vector3 center = transform.position;
-            Vector3 up = transform.up;
-            float half = transform.lossyScale.y * 0.95f;
-            if (tipTracer) tipTracer.transform.position = center + up * half;
-            if (hiltTracer) hiltTracer.transform.position = center - up * half;
+            if (!bladeTracer || config == null) return;
+            bladeTracer.transform.position = PointAlongBlade(config.TracerBladeAnchor01);
+
+            float width = BladeWorldLength * config.TracerWidthLengthFraction;
+            if (!Mathf.Approximately(width, _appliedTracerWidth))
+            {
+                _appliedTracerWidth = width;
+                // widthMultiplier scales the authored width CURVE, so the taper stays designed.
+                bladeTracer.widthMultiplier = width;
+            }
         }
 
         void ApplyTracerColor(Color color)
         {
-            if (!tipTracer && !hiltTracer) return;
+            if (!bladeTracer) return;
             // Steady state holds one colour for long stretches — only rebuild the gradient
             // and property block when the colour actually moved (no per-frame allocation).
             if (_tracerColorApplied && ColorsClose(color, _appliedTracerColor)) return;
@@ -296,16 +316,8 @@ namespace CosmicShore.Gameplay
                 new[] { new GradientColorKey(color, 0f), new GradientColorKey(color, 1f) },
                 new[] { new GradientAlphaKey(1f, 0f), new GradientAlphaKey(0f, 1f) });
 
-            if (tipTracer)
-            {
-                tipTracer.SetPropertyBlock(_tracerMpb);
-                tipTracer.colorGradient = grad;
-            }
-            if (hiltTracer)
-            {
-                hiltTracer.SetPropertyBlock(_tracerMpb);
-                hiltTracer.colorGradient = grad;
-            }
+            bladeTracer.SetPropertyBlock(_tracerMpb);
+            bladeTracer.colorGradient = grad;
         }
 
         // Local human pilot only (and not while autopiloting, e.g. the Menu_Main lava lamp) —
@@ -325,12 +337,12 @@ namespace CosmicShore.Gameplay
         void WarnOnceIfUnwired()
         {
             if (_warned) return;
-            if (config != null && bodyRenderer && crackle && tipTracer && hiltTracer) return;
+            if (config != null && bodyRenderer && crackle && bladeTracer) return;
             _warned = true;
             CSDebug.LogWarning($"[{nameof(RhinoSwordFXController)}] '{name}' is missing authored FX wiring — " +
                                $"config: {(config ? "ok" : "MISSING")}, bodyRenderer: {(bodyRenderer ? "ok" : "MISSING")}, " +
-                               $"crackle: {(crackle ? "ok" : "MISSING")}, tracers: {(tipTracer ? "ok" : "MISSING")}/" +
-                               $"{(hiltTracer ? "ok" : "MISSING")}. The sword runs, but that layer of its look is dark — " +
+                               $"crackle: {(crackle ? "ok" : "MISSING")}, bladeTracer: {(bladeTracer ? "ok" : "MISSING")}. " +
+                               "The sword runs, but that layer of its look is dark — " +
                                "author the reference on the Rhino prefab.");
         }
 

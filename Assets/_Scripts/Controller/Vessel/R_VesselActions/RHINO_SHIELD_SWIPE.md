@@ -26,7 +26,12 @@ The raised rest pose is authored on the ForceFieldSkimmer instance transform in
 `Rhino.prefab` (currently ~20° pitch; it was 41.8° pre-feature — raised so the chop
 axis has meaningful travel). The executor captures whatever local pose is authored
 as its zero point, and pivots rotation **and mount position** about the Fusilage
-origin so the blade carves a real arc instead of spinning in place.
+origin so the blade carves a real arc instead of spinning in place. On top of that
+arc it applies the **hilt anchor**: the blade mesh is centred on its transform, so the
+pose offsets that centre by the blade's own half-extent along its local +Y, keeping the
+HILT at the authored mount and sending every unit of the energy meter's growth out the
+tip. Without it a growing blade extends equally in both directions and reads as a
+quarterstaff (see `RHINO_ENERGY_SWORD.md` § "The blade is HILT-ANCHORED").
 
 Sign conventions (Unity, verified): positive about up = yaw right; positive about
 +forward = **counterclockwise** roll from the pilot's seat (`AngleAxis(+90, forward)`
@@ -82,6 +87,10 @@ in `Rhino.prefab` — (1.5, 30, 4.8). Resting-length scaling elongates local Y o
 skimmers on other vessels keep the legacy uniform XYZ path). The one exception is the
 transient elemental-crystal **burst** (`RHINO_ENERGY_SWORD.md`), which deliberately
 scales all three dimensions for a few seconds before easing back to the authored X/Z.
+Because the blade is hilt-anchored, every unit of that scale extends the sword from its
+grip rather than through it — and `SkimmerSwingKinematics.lengthScale` is **2** on the
+variant, because Unity's capsule spans local ±1 and the model would otherwise describe
+only the middle half of the blade you can see.
 
 Exactly one component writes the sword's scale at runtime:
 
@@ -132,7 +141,7 @@ v_rel(P) = v_bladeOrigin/vessel  +  omega_blade/vessel x (P - bladeOrigin)  +  (
 |---|---|---|
 | `v_vessel` | `Speed * Course + VesselTransformer.VelocityShift` | the hull's own translation — the canonical value the transformer integrates each frame |
 | `omega_vessel x r` | vessel rotation, differentiated | a hard turn genuinely sweeps a 35-unit sword. Optional (`includeVesselRotation`) |
-| `v_bladeOrigin/vessel` | `ShieldSwipeActionExecutor` writes `localPosition = sweep * basePos` | the mount arcs about the Fusilage origin |
+| `v_bladeOrigin/vessel` | `ShieldSwipeActionExecutor` writes `localPosition = sweep * basePos + bladeUp * halfExtent` | the mount arcs about the Fusilage origin; the second term is the hilt anchor, whose growth component `SkimmerSwingKinematics.RemoveGrowthTranslation` strips back out so lengthening is not read as a swing |
 | `omega_blade/vessel x r` | `localRotation = sweep * baseRot`, differentiated | the blade's own spin — the dominant term at the tip |
 | `(dL/dt)*f*axis` | `ShieldSkimmerScaleDriver` growing local Y | a lengthening blade drives its points outward. Optional (`includeElongation`) |
 

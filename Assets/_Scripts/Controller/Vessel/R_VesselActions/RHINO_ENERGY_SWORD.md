@@ -79,6 +79,37 @@ tail elapsed ──► Cooldown (energizeCooldownSeconds, 5 s) ──► Idle
   through the same `AcceptImpacteeFromShellContact` chain their entry used). The pop the player
   just paid for lands the same frame.
 
+## The blade is HILT-ANCHORED (a sword, not a staff)
+
+The blade mesh is a capsule centred on its transform, so growing it used to extend the sword
+equally in BOTH directions from its mount: at length 30 it ran 30 units past the grip each way,
+at 120 it ran 120 — a quarterstaff the vessel wears through its middle, and worse the further
+the energy meter filled. `ShieldSwipeActionExecutor.ApplyShieldPose` now offsets the blade's
+centre by its own half-extent (`bladeHalfExtentLocal` × `localScale.y`) along the pose's local
++Y, which pins the **hilt** to the authored mount and sends every unit of growth out the tip. It
+reads as a sword at every size, and the rest pose (raised, 20° from vertical) becomes a
+swordsman's guard with the chop bringing it down.
+
+Two consequences the geometry forces, both handled:
+
+- **`lengthScale` is 2, not 1** (`ForceFieldSkimmer Variant.prefab`). `SkimmerSwingKinematics.
+  HalfLength` is `0.5 × lossyScale × lengthScale`, which assumes a primitive spanning local
+  ±0.5 — but Unity's **capsule spans ±1**, so at 1 the model described the middle HALF of the
+  visible blade: a contact out at the real tip clamped to mid-blade and reported a fraction of
+  the lever arm it actually rode, and FX anchored to `ClosestBladePoint` landed in the wrong
+  place. **This changes tip debris speed** (the correct lever arm is ~2× the modelled one, and
+  hilt-anchoring puts the tip further from the pivot again) — more tip strikes will saturate
+  `debrisSpeedLimit` (200). If they read too hot, `swingVelocityScale` on
+  `RhinoSkimmerDamagePrismEffect.asset` is the dial; do not "fix" it by putting `lengthScale`
+  back, which would re-break the geometry.
+- **Growth must not read as a swing.** A hilt-anchored blade's CENTRE — the point the velocity
+  sampler differentiates — slides along the axis as the blade lengthens, at up to the crystal
+  burst's 600 u/s. That is real motion of the transform but it is not a strike, and counting it
+  would resurrect exactly what `includeElongation: false` exists to prevent.
+  `SkimmerSwingKinematics.RemoveGrowthTranslation` (pure, unit-tested for both signs) strips the
+  along-axis growth component before smoothing, gated by `compensateGrowthTranslation` (default
+  on). Net effect: the same swipe reports the same velocity it did before the blade moved.
+
 ### Contact velocity (composes with the swing model)
 
 Both destruction paths — the normal explode and the super-shield pop — throw debris at the
@@ -156,33 +187,52 @@ ForceFieldSkimmer instance in `Rhino.prefab`), with every knob on
 `ShieldSkimmerScaleConfig.asset` and the visual assets authored in the project — this replaces
 v2's code-built `RhinoSwordVisualizer` (deleted). Four layers:
 
-1. **Heat ramp** — authored teal → `fullEnergyColor` (hot cyan) + brightness by stored energy.
-   The blade body uses the **shared** `FresnelMaterial` (sole exposed property `_Color`), so the
-   FX controller never touches `renderer.material` — everything goes through a per-renderer
-   **MaterialPropertyBlock** (the `AstroLeagueBall` impact-flash precedent; RGB > 1 feeds
-   gameplay bloom — active in game scenes, off in Menu_Main where the blade still brightens in
+1. **Heat ramp — energy is BRIGHTNESS, never hue.** The blade rests at `restingBladeColor`
+   (white-hot) and brightens toward `fullEnergyBrightness` as energy fills; `fullEnergyColor`
+   shares the resting hue on purpose. **The blade is never the pilot's domain colour** — it
+   friendly-fires (no domain gate, `affectSelf` true), so a team-tinted blade would read as safe
+   to allies, which is the one thing it is not. That is also why the resting colour is AUTHORED
+   IN THE CONFIG rather than read off `FresnelMaterial`'s `_Color` as v2 did: the blade's meaning
+   must not be able to drift with a shared material's tint. The blade body uses the **shared**
+   `FresnelMaterial` (sole exposed property `_Color`), so the FX controller never touches
+   `renderer.material` — everything goes through a per-renderer **MaterialPropertyBlock** (the
+   `AstroLeagueBall` impact-flash precedent; RGB > 1 feeds gameplay bloom — active in game
+   scenes, off in Menu_Main where the blade still brightens in
    LDR). **`FresnelGraph.shadergraph` carries the v2 fix**: `_Color` used to feed a Blend node
    whose output connected to NOTHING (every colour write invisible); the graph now renders
    `BaseColor = _Color × Voronoi` (Multiply blend, opacity 1 — structurally re-verified this
    branch by edge-list dump), alpha unchanged (fresnel-driven). The shader has exactly one
    material (`FresnelMaterial.mat`) rendered by exactly one prefab (the Rhino's
    ForceFieldSkimmer) — no other look changed.
-2. **Energize** — the centerpiece. CHARGING leans the blade toward white (35% × charge) with
-   escalating anticipation arcs every `chargeCrackleInterval`; IGNITION blends it white-hot
-   (`energizedColor` × `visibilityMultiplier` over `colorTransitionSeconds`) and detonates
-   `igniteCrackleSites` (5) crackle bursts spread hilt→tip (`igniteCrackleIntensity` /
-   `igniteCrackleSeconds`). The crackle is the adapted **forcefield-crackle** system (below).
+2. **Energize — the only thing that moves the blade's HUE.** CHARGING leans it 35% × charge
+   toward the energized colour with escalating anticipation arcs every `chargeCrackleInterval`;
+   IGNITION blends it fully (`energizedColor` × `visibilityMultiplier` over
+   `colorTransitionSeconds`) and detonates `igniteCrackleSites` (5) crackle bursts spread
+   hilt→tip (`igniteCrackleIntensity` / `igniteCrackleSeconds`). `energizedColor` is the shared
+   **danger colour** — `SO_ColorSet.Danger` from the live `OriginalColorSetSO`, the same
+   domain-independent red a danger prism wears on its rim. An energized blade tears apart
+   hardened mass and still friendly-fires, so it speaks the platform's existing "this hurts"
+   language instead of inventing a private one, and white→red is legible at a glance where
+   white→brighter-white was not. The blade crackle material follows it (white core, danger-red
+   glow and rim). The crackle is the adapted **forcefield-crackle** system (below).
 3. **Impact feedback** — a decaying white-out flash per prism destroyed (`hitFlashAmount` /
    `popFlashAmount`, stronger pulses override weaker mid-decay) plus a **contact spark** at the
    exact blade point that made contact (`SkimmerSwingKinematics.ClosestBladePoint`;
    `sparkIntensity` / `sparkSeconds` / `sparkWorldRadius`); a dim **denied spark**
    (`deniedSparkIntensity`) when a non-energized blade bounces off a super-shield. The crystal
    burst fires a whole-blade crackle scaled by the energy consumed.
-4. **Tip tracers** — two **authored** `TrailRenderer` children of the fuselage
-   (`RhinoSwordTipTracer` / `RhinoSwordHiltTracer` in `Rhino.prefab`, wearing
-   `RhinoSwordTracerMaterial.mat` — no runtime construction, no `Shader.Find` fallback), seated
-   at the blade tips each frame (fuselage-parented so width ignores blade growth) and tinted
-   with the live blade colour via MaterialPropertyBlock.
+4. **The blade tracer — ONE ribbon that spans the sword.** A single **authored**
+   `TrailRenderer` child of the fuselage (`RhinoSwordBladeTracer` in `Rhino.prefab`, wearing
+   `RhinoSwordTracerMaterial.mat` — no runtime construction, no `Shader.Find` fallback),
+   fuselage-parented so the blade's scale can never distort the ribbon's shape. Each frame it is
+   re-seated on the blade at `tracerBladeAnchor01` (0.5 = mid-blade) and its `widthMultiplier` is
+   driven to the blade's **live world length** × `tracerWidthLengthFraction`. A TrailRenderer
+   lays its width PERPENDICULAR to the path it travels — during a swipe, across the blade — so a
+   mid-blade emitter at full-length width draws a streak that stretches hilt-to-tip instead of a
+   thread off one end, and it keeps doing so as the energy meter (and the crystal burst) change
+   the blade's size. The authored width CURVE still owns the taper; only its scale is driven.
+   Tinted with the live blade colour via MaterialPropertyBlock. (v2 shipped two tracers seated at
+   the two tips; the hilt-side one is gone with the staff geometry that justified it.)
 
 **Camera shake (local pilot only, never autopilot/remote/AI):** `popShakeIntensity` (1.2) on a
 super-shield pop; up to `burstShakeMaxIntensity` (2.5, scaled by energy consumed) on a crystal
@@ -259,6 +309,8 @@ same-GameObject pieces (`Skimmer`, `SkimmerSwingKinematics`, crackle, body rende
 | Capsule crackle math | `_Graphics/Materials/Graphs/ForcefieldCrackle.hlsl` (`ForcefieldCrackleCapsule_float`) |
 | Capsule crackle shader / material | `_Graphics/Materials/Graphs/ForcefieldCrackleCapsule.shader` / `_Graphics/Materials/RhinoBladeCrackleMaterial.mat` |
 | Authored tracer material | `_Graphics/Materials/RhinoSwordTracerMaterial.mat` (TrailViewer family) |
+| Hilt anchoring (sword, not staff) | `Executors/ShieldSwipeActionExecutor.cs` (`AnchorOffsetLocal`, `ApplyShieldPose`) |
+| Growth-translation compensation | `Vessel/SkimmerSwingKinematics.cs` (`RemoveGrowthTranslation`) + `SkimmerSwingKinematicsConfigSO.compensateGrowthTranslation` |
 | Skimmer hook | `Vessel/Skimmer.cs` (`SwordState`) |
 | Embedded-heart guard on skimmer crystal effects | `ImpactEffects/Impactors/SkimmerImpactor.cs` (ElementalCrystalImpactor case) |
 | Blade shader fix (`_Color` now rendered) | `Assets/_Graphics/Materials/Graphs/FresnelGraph.shadergraph` |
@@ -283,17 +335,19 @@ On `ShieldSkimmerScaleConfig.asset`: `baseScale` 30 (fallback; live base is the 
 scale) · `maxScale` 120 · `prismGrowSpeed` 30 · `shrinkSpeed` 10 · `energizeCostFraction` 0.1 ·
 `energizeHoldSeconds` 1 · `energizedTailSeconds` 5 · `energizeCooldownSeconds` 5 ·
 `crystalBurstFactorAtFullEnergy` 4 · `crystalBurstHoldSeconds` 2.5 · `crystalBurstGrowSpeed`
-600 · `crystalBurstReturnSpeed` 150 · `visibilityMultiplier` 2 · `fullEnergyColor`
-(0.11, 1.51, 1.42) hot cyan · `fullEnergyBrightness` 2.5 · `energizedColor` white ·
-`colorTransitionSeconds` 0.25 · `igniteCrackleIntensity` 2.5 / `igniteCrackleSeconds` 0.9 /
+600 · `crystalBurstReturnSpeed` 150 · `visibilityMultiplier` 2 · `restingBladeColor` white ·
+`fullEnergyColor` white (same hue — energy is brightness) · `fullEnergyBrightness` 2.5 ·
+`energizedColor` (1.498, 0.006, 0.007) = `SO_ColorSet.Danger` · `colorTransitionSeconds` 0.25 · `igniteCrackleIntensity` 2.5 / `igniteCrackleSeconds` 0.9 /
 `igniteCrackleSites` 5 · `chargeCrackleInterval` 0.18 / `chargeCrackleIntensity` 1.1 ·
 `sparkIntensity` 1.6 / `sparkSeconds` 0.45 / `sparkWorldRadius` 14 · `deniedSparkIntensity`
-0.7 · `hitFlashAmount` 0.35 · `popFlashAmount` 1 · `flashDecaySeconds` 0.35 · `flashColor`
+0.7 · `tracerBladeAnchor01` 0.5 / `tracerWidthLengthFraction` 1 · `hitFlashAmount` 0.35 · `popFlashAmount` 1 · `flashDecaySeconds` 0.35 · `flashColor`
 (3,3,3) · `popShakeIntensity` 1.2 / `popShakeDuration` 0.25 · `burstShakeMaxIntensity` 2.5 /
 `burstShakeDuration` 0.4. (`prismMaxScale` remains only so the Sparrow full-auto
 `ApplyMaxSizeDebuff` keeps its historical meaning. The v2 tracer keys — `tracersEnabled`,
-`tracerMaterial`, `tracerWidth`, `tracerTimeSeconds` — are retired: tracers are authored
-TrailRenderers in `Rhino.prefab` now; tune width/time/curve on the components.)
+`tracerMaterial`, `tracerWidth`, `tracerTimeSeconds` — are retired: the tracer is an authored
+TrailRenderer in `Rhino.prefab` now; tune its persistence, taper curve and material on the
+component, and its overall width through `tracerWidthLengthFraction` above — the width
+MULTIPLIER is driven from the blade's live length and cannot be authored.)
 
 On `RhinoBladeCrackleMaterial.mat`: arc density/sharpness, ring thickness (fraction of reach),
 ripple speed, core/glow/rim colors — live-tunable in the inspector, edit or play mode

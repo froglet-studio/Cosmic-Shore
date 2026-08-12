@@ -55,18 +55,26 @@ namespace CosmicShore.Gameplay
         [SerializeField] private float crystalBurstReturnSpeed = 150f;
 
         [Header("Blade Look — heat ramp")]
-        [Tooltip("Brightness multiplier always applied to the blade's authored colour so the sword reads clearly.")]
+        [Tooltip("Brightness multiplier always applied to the blade's colour so the sword reads clearly.")]
         [SerializeField] private float visibilityMultiplier = 2f;
-        [Tooltip("Colour the blade blends toward as stored energy fills (teal at empty → this at full). " +
-                 "Keep it in the teal/cyan family — the WHITE-hot look is reserved for the ENERGIZED blade.")]
-        [ColorUsage(true, true)] [SerializeField] private Color fullEnergyColor = new Color(0.11f, 1.51f, 1.42f, 1f);
+        [Tooltip("The blade's RESTING colour — deliberately NOT the pilot's domain colour: the sword " +
+                 "friendly-fires, so a team-coloured blade would read as safe to allies. White-hot says " +
+                 "'this cuts anything'. (Authored here, not read off FresnelMaterial, so the blade's " +
+                 "meaning can never drift with a shared material's tint.)")]
+        [ColorUsage(true, true)] [SerializeField] private Color restingBladeColor = Color.white;
+        [Tooltip("Colour the blade blends toward as stored energy fills. Keep it the SAME HUE as the " +
+                 "resting colour — energy is read as BRIGHTNESS (fullEnergyBrightness); HUE is reserved " +
+                 "for the energized state below, so the two signals can never be confused.")]
+        [ColorUsage(true, true)] [SerializeField] private Color fullEnergyColor = Color.white;
         [Tooltip("Extra brightness multiplier at FULL energy (lerped from 1 at empty). Keep ≤4 — bloom clamps beyond that.")]
         [SerializeField] private float fullEnergyBrightness = 2.5f;
 
-        [Header("Blade Look — energized (white-hot)")]
-        [Tooltip("Blade colour while ENERGIZED (blends from the heat-ramp colour to this; multiplied by " +
-                 "visibilityMultiplier at runtime). Bright so bloom sells the hot blade in game scenes.")]
-        [ColorUsage(true, true)] [SerializeField] private Color energizedColor = Color.white;
+        [Header("Blade Look — energized (the danger colour)")]
+        [Tooltip("Blade colour while ENERGIZED — the shared DANGER colour (SO_ColorSet.Danger, the same " +
+                 "domain-independent red a danger prism's rim wears). An energized blade destroys hardened " +
+                 "mass and still friendly-fires, so it speaks the platform's existing 'this hurts' language " +
+                 "rather than inventing one. Multiplied by visibilityMultiplier at runtime.")]
+        [ColorUsage(true, true)] [SerializeField] private Color energizedColor = new Color(1.4979111f, 0.0058463f, 0.0068495f, 1f);
         [Tooltip("Seconds to blend the blade + tracers between the heat ramp and white-hot on energize/de-energize.")]
         [SerializeField] private float colorTransitionSeconds = 0.25f;
 
@@ -100,6 +108,16 @@ namespace CosmicShore.Gameplay
         [SerializeField] private float flashDecaySeconds = 0.35f;
         [Tooltip("Colour the blade flashes toward on impacts (bright so bloom sells the hit).")]
         [ColorUsage(true, true)] [SerializeField] private Color flashColor = new Color(3f, 3f, 3f, 1f);
+
+        [Header("Blade Tracer (the swing ribbon)")]
+        [Tooltip("Where along the blade the tracer emitter rides: 0 = hilt, 0.5 = mid-blade, 1 = tip. " +
+                 "Mid-blade centres the ribbon on the sword so its WIDTH spans hilt-to-tip.")]
+        [SerializeField, Range(0f, 1f)] private float tracerBladeAnchor01 = 0.5f;
+        [Tooltip("Tracer ribbon width as a fraction of the blade's LIVE world length — 1 = the ribbon is " +
+                 "exactly as wide as the sword is long, so the streak stretches down the blade at every " +
+                 "size instead of being a point-streak at one end. (The width CURVE — the taper along the " +
+                 "streak — stays authored on the TrailRenderer; this only scales it.)")]
+        [SerializeField] private float tracerWidthLengthFraction = 1f;
 
         [Header("Camera Shake (local pilot only)")]
         [Tooltip("Shake intensity when the sword pops a super-shielded prism.")]
@@ -139,8 +157,12 @@ namespace CosmicShore.Gameplay
         public float EnergizeCooldownSeconds => Mathf.Max(0f, energizeCooldownSeconds);
 
         public float VisibilityMultiplier => Mathf.Max(0f, visibilityMultiplier);
+        public Color RestingBladeColor    => restingBladeColor;
         public Color FullEnergyColor      => fullEnergyColor;
         public float FullEnergyBrightness => Mathf.Max(1f, fullEnergyBrightness);
+
+        public float TracerBladeAnchor01       => Mathf.Clamp01(tracerBladeAnchor01);
+        public float TracerWidthLengthFraction => Mathf.Max(0f, tracerWidthLengthFraction);
 
         public Color EnergizedColor         => energizedColor;
         public float ColorTransitionSeconds => Mathf.Max(0.0001f, colorTransitionSeconds);

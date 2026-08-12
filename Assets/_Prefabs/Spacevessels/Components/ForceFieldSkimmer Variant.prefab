@@ -294,4 +294,4 @@ MonoBehaviour:
   blade: {fileID: 0}
   bladeAxis: 1
   pivot: {fileID: 0}
-  lengthScale: 1
+  lengthScale: 2

@@ -26,9 +26,10 @@ MonoBehaviour:
   energizedTailSeconds: 5
   energizeCooldownSeconds: 5
   visibilityMultiplier: 2
-  fullEnergyColor: {r: 0.11, g: 1.51, b: 1.42, a: 1}
+  restingBladeColor: {r: 1, g: 1, b: 1, a: 1}
+  fullEnergyColor: {r: 1, g: 1, b: 1, a: 1}
   fullEnergyBrightness: 2.5
-  energizedColor: {r: 1, g: 1, b: 1, a: 1}
+  energizedColor: {r: 1.4979111, g: 0.0058463, b: 0.0068495, a: 1}
   colorTransitionSeconds: 0.25
   igniteCrackleIntensity: 2.5
   igniteCrackleSeconds: 0.9
@@ -43,6 +44,8 @@ MonoBehaviour:
   popFlashAmount: 1
   flashDecaySeconds: 0.35
   flashColor: {r: 3, g: 3, b: 3, a: 1}
+  tracerBladeAnchor01: 0.5
+  tracerWidthLengthFraction: 1
   popShakeIntensity: 1.2
   popShakeDuration: 0.25
   burstShakeMaxIntensity: 2.5
