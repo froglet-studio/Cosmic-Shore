@@ -397,16 +397,27 @@ All in `Assets/_Scenes/Multiplayer Scenes/`.
 `DogFight(41)` is the **Sparrow-only gun duel** — 2-4 pilots hunt each other through the
 **Boneyard**, an apocalyptic wreck-field of hollow hulks and rubble canyons built for close
 encounters and hiding places (inspired by Scurry's intensity-4 Atlantis, and its opposite: a
-world that fell rather than grew). A **bullet hit scores 1**, a **missile hit scores 50** (direct
-strike OR caught in the blast, latched so one rocket can only pay once), and the first **DOMAIN**
-to the point target (default 120) wins. Its metric, `ScoringMetric.CombatPoints`, is the
-platform's first whose source is **vessel-vs-vessel gunnery** rather than prisms, crystals or the
-ecology — and the weighting lives in the mode's own `ScoringRuleSO.PointsForCombatHit` (0
-everywhere else), so hits are COUNTED platform-wide and SCORED only here. It is a TEAM race and
-not a free-for-all for a structural reason: `Projectile.DisallowImpactOnVessel` refuses own-domain
-contact, so two players sharing a domain could not fight at all — domains ARE the sides. Shipping
-it also gave `AOEConicSkyBurst.prefab` the explosion container it never had, so a skyburst's
-BLAST can now reach a pilot instead of only its direct hit. See
+world that fell rather than grew). A **bullet hit scores 1** — BOTH of the Sparrow's direct-fire
+modes, full-auto rounds and turret-stance prism rounds, since they are one weapon class — a
+**missile hit scores 50** (direct strike OR caught in the blast, latched so one rocket can only
+pay once), and the first **DOMAIN** to the point target (default 120) wins. Its metric,
+`ScoringMetric.CombatPoints`, is the platform's first whose source is **vessel-vs-vessel gunnery**
+rather than prisms, crystals or the ecology — and the weighting lives in the mode's own
+`ScoringRuleSO.PointsForCombatHit` (0 everywhere else), so hits are COUNTED platform-wide and
+SCORED only here. It is a TEAM race and not a free-for-all for a structural reason:
+`Projectile.DisallowImpactOnVessel` refuses own-domain contact, so two players sharing a domain
+could not fight at all — domains ARE the sides. Shipping it also gave `AOEConicSkyBurst.prefab`
+the explosion container it never had, so a skyburst's BLAST can now reach a pilot instead of only
+its direct hit. Two tuning lessons are recorded there and generalize: (1) **a comeback rate is a
+function of the target** — `bonusLevels = deficit x rate`, so `ComebackRatePerScoreDeficit`
+survived a 500 → 120 target change and quietly became worth 0.2 of a level, and the generator now
+FAILS if a quarter-of-target deficit buys under one whole element level (the mode leans on this:
+Mass stretches the Sparrow's fired prisms, so the trailing side's rounds visibly grow — the other
+three rise with it, because equal-elements is the law); (2) **a cell with NO NUCLEUS must author
+`CrystalManager.anchorlessSpawnRadius`** — that field falls back to the nucleus radius, so without
+it the omni crystal falls through to its own `SphereRadius` and spawns on the arena's exact
+centre, where a big faceted sphere reads as the objective (it was mistaken for an Astro League
+ball). The fix is the radius, never switching the crystal off. See
 `_Scripts/Controller/Arcade/DOGFIGHT.md`.
 
 `WildlifeLiberation(40)` is the **Sparrow-only hunt** — three concentric cages at 1050 / 600 / 200 pen three tiers of wildlife (a very heavy swarm of small creatures outside, much bigger ones in the middle room, the biggest and toughest in the core), plus a fourth tier loose in the open water outside the outer cage where players spawn; the first **DOMAIN** to 250 summed kills wins. It is an ordinary domain race and that is deliberate: a per-PLAYER (free-for-all) winner shipped here briefly and was **reverted**, because the mode seats up to four players while the platform has only three playable domains, so a full lobby always has teammates and a per-individual winner bypasses every domain surface (winner banner, HUD panels, scoreboard ordering, `ResolvePlacementOrder`). Do not re-derive it. Its metric, `ScoringMetric.LifeformsKilled`, is the first whose source is the ECOLOGY rather than prisms or crystals — and the first that needs an RPC, because fauna are client-local so a client's kill is invisible to the server (`Player.ReportFaunaKill_ServerRpc`; the round-trip stays correct once fauna network sync lands). Shipping it made **every creature in the game killable by shooting its body prisms** (previously only the worm colony was — see `Docs/ECOSYSTEM.md §24`) and generalized the cell's single fauna pen into a per-species BAND. See `_Scripts/Controller/Arcade/WILDLIFE_LIBERATION.md`.

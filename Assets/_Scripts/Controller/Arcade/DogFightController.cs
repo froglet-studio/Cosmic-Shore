@@ -71,13 +71,14 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(0.1f)] float progressSampleSeconds = 0.5f;
 
         [Header("Crystal pickups")]
-        [Tooltip("How many ELEMENTAL crystals are scattered through the arena. Dog Fight scores " +
-                 "gunnery and nothing else, so these are pure progression - a reason to fly the " +
-                 "wreckage between engagements. 0 disables them.")]
+        [Tooltip("How many ELEMENTAL crystals are scattered through the arena, on TOP of the " +
+                 "scene's own omni crystal. Dog Fight scores gunnery and nothing else, so these " +
+                 "are pure progression - and specifically Mass, which stretches the Sparrow's " +
+                 "fired prisms. A reason to fly the wreckage between engagements. 0 disables.")]
         [SerializeField, Min(0)] int elementalCrystalCount = 14;
 
         [Tooltip("Radius of the shell the crystals scatter through. Keep it inside the arena " +
-                 "(the Boneyard is 520, Atlantis 430) so they land among the cover.")]
+                 "(the Boneyard is 520 at every intensity) so they land among the cover.")]
         [SerializeField, Min(1f)] float crystalScatterRadius = 400f;
 
         [Tooltip("Seed for the crystal scatter. Placement is DETERMINISTIC from this plus the " +
@@ -286,15 +287,22 @@ namespace CosmicShore.Gameplay
         // ── Crystal pickups ──────────────────────────────────────────────────
 
         /// <summary>
-        /// Scatters ELEMENTAL crystals through the arena.
+        /// Scatters ELEMENTAL crystals through the arena, ALONGSIDE the scene's
+        /// <c>NetworkCrystalManager</c> - they are two different pickups, not alternatives.
         ///
-        /// <b>Why not the scene's <c>NetworkCrystalManager</c>:</b> it spawns the OMNI crystal
-        /// (<c>Crystal.prefab</c>), which is the large faceted sphere that reads as an objective
-        /// - and in a mode that scores only gunnery, a thing that looks like the objective and
-        /// is not one is worse than no pickup at all. Its count is authored to 0. What it also
-        /// got wrong here is placement: <c>CrystalManager.GetAnchorlessSpawnRadius</c> falls back
-        /// to the cell's NUCLEUS radius, and this cell has no nucleus, so its one crystal landed
-        /// on the exact centre of the arena.
+        /// <b>The manager still runs and still spawns the OMNI crystal</b>, on the same
+        /// platform-normal settings every other mode uses (one crystal, <c>spawnOnClientReady</c>).
+        /// The scene does author one thing the donor did not: <c>anchorlessSpawnRadius</c> 420.
+        /// <c>CrystalManager.GetAnchorlessSpawnRadius</c> falls back to the cell's NUCLEUS radius
+        /// and this cell has no nucleus by design, so without that override it fell through to the
+        /// crystal's own <c>SphereRadius</c> and every spawn landed on the exact centre of the
+        /// arena - which is how a pickup came to read as a bouncable objective.
+        ///
+        /// <b>Why elementals on top:</b> they are the mode's comeback loop made physical. A
+        /// trailing pilot is already being buffed by <c>ElementalComebackSystem</c>; Mass stretches
+        /// the Sparrow's fired prisms, so crystals scattered through the wreckage are a way to buy
+        /// the same thing by flying for it. Scattered rather than central for the same reason the
+        /// omni crystal needed a radius.
         ///
         /// <b>Why the runtime provisioning:</b> the four standalone elemental prefabs
         /// (<see cref="ElementalCrystalSetSO"/>) deliberately carry no collection components -
@@ -304,9 +312,10 @@ namespace CosmicShore.Gameplay
         /// <c>Microscene.MintElementalCrystal</c> does, down to the collection effects coming off
         /// the set itself.
         ///
-        /// <b>Why here rather than in the environment:</b> intensity 4 flies Atlantis, which is
-        /// Scurry's environment and not ours to modify. Spawning from the controller covers every
-        /// intensity with one path.
+        /// <b>Why here rather than in the environment:</b> the arena is authored per intensity
+        /// (four <c>SpawnableBoneyard</c> variants), and pickups have nothing to do with how much
+        /// wreckage there is. Spawning from the controller covers every intensity with one path
+        /// and one seed.
         ///
         /// <b>Determinism instead of replication.</b> Placement runs from a fixed seed and a
         /// fixed count, so every peer lays the same crystals in the same places with no network
@@ -333,8 +342,9 @@ namespace CosmicShore.Gameplay
                 var prefab = set.GetPrefab(element);
                 if (prefab == null) continue;
 
-                // Equal-volume scatter through the shell, so they are not bunched at the middle -
-                // the same mistake the omni crystal made, for the same reason.
+                // Equal-volume scatter through the shell (cube root of a uniform draw), so they
+                // are spread evenly through the arena rather than bunched at the middle - a
+                // uniform radius draw gives density proportional to 1/r^2.
                 double u = rng.NextDouble();
                 float r = crystalScatterRadius * Mathf.Pow((float)u, 1f / 3f);
                 float theta = (float)(rng.NextDouble() * Mathf.PI * 2f);
