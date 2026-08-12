@@ -230,9 +230,26 @@ namespace CosmicShore.Utility
                 newSubTriangles[s] = outTris;
             }
 
+            // A mesh with no creases means the discharge would never draw. The likeliest cause
+            // is a re-export whose normals are SMOOTH rather than per-face: the importer then
+            // welds neighbouring faces onto shared vertices, the same-imported-face test sees
+            // every edge as internal, and the crystal silently loses its plasma.
+            int creaseSlots = 0;
+            for (int v = 0; v < vertexCount; v += 3)
+                for (int e = 0; e < 3; e++)
+                    if (edgeH[v][e] > 0f) creaseSlots++;
+            if (creaseSlots == 0)
+                Debug.LogError(
+                    $"[CrystalEdgeArcMeshBaker] '{source.name}' baked ZERO crease edges, so the " +
+                    "charge crystal will render with no discharge. Check that the model imports " +
+                    "with hard (per-face) normals — smooth normals weld the faces together and " +
+                    "every edge reads as a triangulation diagonal.");
+
             var mesh = new Mesh
             {
                 name = source.name + " (EdgeArcs)",
+                // Runtime-only: never let a generated mesh get serialized into a scene.
+                hideFlags = HideFlags.DontSave,
                 indexFormat = vertexCount > 65535
                     ? UnityEngine.Rendering.IndexFormat.UInt32
                     : UnityEngine.Rendering.IndexFormat.UInt16,

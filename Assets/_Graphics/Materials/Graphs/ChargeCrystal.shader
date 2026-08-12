@@ -24,6 +24,7 @@ Shader "Shader Graphs/ChargeCrystal"
         _RimStrength       ("Rim Strength", Range(0, 2))        = 0.5
         _EmissionStrength  ("Emission Strength", Range(0, 2))   = 0.25
         _KeyDir            ("Key Direction (World)", Vector)    = (0.4, 0.8, -0.45, 0)
+        _opacity           ("Opacity (driven by FadeIn)", Range(0, 1)) = 1
 
         [Header(Edge Discharge)]
         [HDR] _ArcCoreColor ("Arc Core Color", Color)           = (0.85, 0.95, 1.0, 1)
@@ -61,6 +62,7 @@ Shader "Shader Graphs/ChargeCrystal"
             float  _RimStrength;
             float  _EmissionStrength;
             float4 _KeyDir;
+            float  _opacity;
             float4 _ArcCoreColor;
             float  _ArcIntensity;
             float  _ArcWidth;
@@ -134,11 +136,14 @@ Shader "Shader Graphs/ChargeCrystal"
                 return output;
             }
 
-            half4 frag(Varyings input, half facing : VFACE) : SV_Target
+            half4 frag(Varyings input) : SV_Target
             {
                 UNITY_SETUP_INSTANCE_ID(input);
 
-                float3 normalWS = input.normalWS * (facing > 0 ? 1.0 : -1.0);
+                // Emergence coverage: FadeIn.cs blooms the crystal in via _opacity.
+                clip(ChargeCoverageClip(_opacity, input.positionCS.xy));
+
+                float3 normalWS = input.normalWS;
 
                 float3 color;
                 ChargeCrystalSurface(
@@ -188,6 +193,8 @@ Shader "Shader Graphs/ChargeCrystal"
             #pragma multi_compile_instancing
             #pragma target 3.0
 
+            #include "Assets/_Graphics/Materials/Graphs/ChargeCrystal.hlsl"
+
             struct DepthAttributes
             {
                 float4 positionOS : POSITION;
@@ -214,6 +221,7 @@ Shader "Shader Graphs/ChargeCrystal"
             half4 depthFrag(DepthVaryings input) : SV_Target
             {
                 UNITY_SETUP_INSTANCE_ID(input);
+                clip(ChargeCoverageClip(_opacity, input.positionCS.xy));
                 return 0;
             }
             ENDHLSL

@@ -36,6 +36,7 @@ Material:
     - _FacetAmbient: 0.22
     - _NodeIntensity: 3.5
     - _NodeRadius: 0.011
+    - _opacity: 1
     - _RimPower: 3.5
     - _RimStrength: 0.5
     m_Colors:

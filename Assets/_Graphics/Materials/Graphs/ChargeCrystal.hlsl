@@ -34,6 +34,31 @@
 #ifndef CHARGE_CRYSTAL_INCLUDED
 #define CHARGE_CRYSTAL_INCLUDED
 
+// ─── Emergence coverage ─────────────────────────────────────────────────────
+//
+// FadeIn.cs blooms every crystal in by driving `_opacity` 0 -> 1 through a
+// MaterialPropertyBlock, which is what keeps a spawning crystal inside the platform-wide
+// CONTINUITY OF EXISTENCE law (nothing pops into being). This shader is OPAQUE, so it
+// spends that opacity as screen-door COVERAGE rather than as blending — the same answer
+// Docs/PRISM_ANIMATION.md 4.7 reaches for prisms, and it keeps 60 mutually-overlapping
+// prisms sorting by depth instead of by draw order.
+//
+// Interleaved gradient noise: cheap, stable per pixel, and its coverage tracks the
+// threshold closely enough over a fade this short.
+float ChargeDitherThreshold(float2 positionSS)
+{
+    float n = frac(52.9829189 * frac(dot(positionSS, float2(0.06711056, 0.00583715))));
+    // Strictly inside (0,1): clip(0) KEEPS a fragment, so a threshold that can reach 0
+    // leaves a confetti of survivors at _opacity == 0.
+    return n * 0.998 + 0.001;
+}
+
+// Returns < 0 for fragments this frame's coverage should drop.
+float ChargeCoverageClip(float opacity, float2 positionSS)
+{
+    return opacity >= 1.0 ? 1.0 : opacity - ChargeDitherThreshold(positionSS);
+}
+
 // ─── Noise helpers (same family as ForcefieldCrackle.hlsl) ──────────────────
 
 float ChargeHash11(float p)
