@@ -55,6 +55,18 @@ namespace CosmicShore.Gameplay
         [SerializeField] bool permanentWither = true;
         bool isPermanentlyWithered = false;
 
+        // ── Ordered death wither ─────────────────────────────────────────────
+        // A dying lifeform spends its spindles ONE AT A TIME, in an order the death
+        // itself dictates (Docs/ECOSYSTEM.md §26): outside-in for starvation, from the
+        // heart outward for a joust. Two couplings in the ordinary spindle lifecycle
+        // fight that, and both are structural rather than cosmetic:
+        //   • ForceWither RECURSES into child spindles, so withering an inner spindle
+        //     first would collapse the whole creature in a single step.
+        //   • Destroying a spindle GameObject destroys its child spindles with it.
+        // Isolation breaks both up front - and suspends CheckForLife, so handing this
+        // spindle's prisms to the skeleton cannot wither it out of turn.
+        bool isolatedForOrderedWither;
+
         void CleanupDeadRefs()
         {
             healthBlocks.RemoveWhere(h => !h);
@@ -156,9 +168,37 @@ namespace CosmicShore.Gameplay
             CheckForLife();
         }
 
+        /// <summary>
+        /// Sets this spindle aside for an ORDERED death wither (see the isolation notes):
+        /// detaches it from its parent and children - logically AND in the hierarchy, so it
+        /// can be destroyed without taking anything else with it - and suspends
+        /// <see cref="CheckForLife"/> so losing its prisms to the skeleton doesn't evaporate
+        /// it before its turn. The caller then walks the isolated spindles in whatever order
+        /// the death dictates, calling <see cref="ForceWither"/> on each. Idempotent; a
+        /// spindle already dying or withered is left alone.
+        /// </summary>
+        public void IsolateForOrderedWither(Transform detachedParent)
+        {
+            if (dying || isPermanentlyWithered || isolatedForOrderedWither) return;
+            isolatedForOrderedWither = true;
+
+            if (parentSpindle)
+            {
+                parentSpindle.spindles.Remove(this);
+                parentSpindle = null;
+            }
+
+            foreach (var child in spindles)
+                if (child) child.parentSpindle = null;
+            spindles.Clear();
+
+            if (transform.parent != detachedParent)
+                transform.SetParent(detachedParent, true);
+        }
+
         public void CheckForLife()
         {
-            if (dying || isPermanentlyWithered) return;
+            if (dying || isPermanentlyWithered || isolatedForOrderedWither) return;
 
             CleanupDeadRefs();
 

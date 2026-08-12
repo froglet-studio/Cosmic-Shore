@@ -23,6 +23,57 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Sparrow Skyburst Missile Bay — bay-open animation + bay-anchored missile launch (`claude/sparrow-missile-bay-78fxi4`)
+
+Authored without a Unity compile or play-test. The Sparrow's skyburst now fires the model's
+own bay missiles: press → bay-open clip on a new additive animator layer, 0.2 s later the
+projectile (now the extracted `Sparrow Missile.fbx` model, not the wedge polyhedron) spawns at
+the live `b_Missile.R`/`.L` bone pose. Right bay fires first (`Missile Launch 1`), left bay
+last. Full mechanics + files + tuning:
+`_Scripts/Controller/Vessel/R_VesselActions/SPARROW_SKYBURST_BAY.md`.
+
+**Verify in editor (any Sparrow scene — DogFight or Wildlife Liberation; also fine in Menu
+freestyle after swapping to the Sparrow):**
+
+1. **Import sanity.** `Assets/_Models/Sparrow Missile.fbx` and
+   `Assets/_Models/Vessel Models/SparrowModel4.fbx` import clean (no console errors).
+   `SparrowAnimatorController` shows a second layer **Missile Launching** whose two states
+   reference model4's `Missile Launch 1/2` clips (not `None (Motion)`).
+2. **Donor clip binds to model1's rig.** Enter play mode as Sparrow, fire the skyburst
+   (right trigger ability), and watch the hull: the bay doors under the fuselage open and a
+   bay missile visibly ejects, then the bay closes. If nothing moves, the cross-FBX path
+   binding failed — open the two Missile Launch clips in the Animation window on the
+   SparrowModel1 hierarchy and check for yellow (missing) bindings. That is the one piece of
+   this change that only the editor can prove.
+3. **Seam.** The live projectile should appear just as the animated missile clears the hull
+   (launchDelaySeconds 0.2 on `SkyBurstGunAction.asset`). If the projectile pops before the
+   doors part, raise toward 0.26; if the animated missile visibly retracts before the
+   projectile exists, lower toward 0.16.
+4. **Sides alternate.** With full ammo (2 missiles): first shot ejects the RIGHT bay missile
+   and the projectile emerges from the right bay; second shot the LEFT. Console must show no
+   `could not find missile bay bone` warning (that warning = name lookup failed, spawn fell
+   back to the old Gun Point).
+5. **Projectile look.** The skyburst in flight is the missile model, nose along velocity
+   (not broadside, not the wedge). Its exhaust particle sizing may need a pass — it was
+   tuned against the ~15 u wedge.
+6. **No flight-feel drift.** Normal flying, boosting, pitch/yaw/roll animation identical to
+   before (the component swapped `MantaAnimationContoller` → `SparrowAnimationController`
+   with the same driving math; `hasBoost` stays 1).
+7. **No puppetry fights.** While the bay clip plays during hard maneuvers, wings/tail must
+   not snap (the layer is additive and the takes hold rest values on every other bone).
+8. **Turn end / vessel swap mid-delay.** Fire and immediately end the turn (or swap vessels
+   in menu freestyle): no projectile appears afterward, no NRE (pending launch is cancelled;
+   ammo stays spent — the missile was committed at the press).
+9. **Gameplay hitbox unchanged.** SkyBurstProjectile root scale is still 1 and the
+   SphereCollider still 0.85 — only the visual moved to the `MissileVisual` child.
+
+**First-pass tuning:** `launchDelaySeconds` 0.2 · `MissileVisual.localScale` 2 (≈1.7 u world
+missile at ProjectileScale 10 — sized to the bay missile) · animator state speed 2.5.
+
+**Flagged, deliberately NOT changed:** the skyburst direct-hit sphere (world radius 8.5) now
+visibly dwarfs its ~1.7 u visual; the old 15 u wedge masked it. `0.85 × ProjectileScale 10`
+looks emergent rather than authored — DogFight balance call for Garrett.
+
 ### 🔴 Editor-tool output discharged by asset surgery (`claude/ship-safeguards-tool-cleanup-fn6lk6`)
 
 Three editor tools' output was authored **programmatically** (per `/asset-surgery`) instead of
@@ -33,8 +84,10 @@ only then write), but a clean import is still the gate.
 **Verify in editor (one pass covers all of it):**
 
 1. **Open the project, watch the console.** Zero errors, and no "Missing (Mono Script)" rows in
-   any of: the 10 crystal prefabs under `_Prefabs/Environment` (incl. `Spawners/SpawnedSegments`),
-   `_Prefabs/Spacevessels/Sparrow.prefab`.
+   any of: the **11** crystal prefabs under `_Prefabs/Environment` (incl.
+   `Spawners/SpawnedSegments` and `BigCrystalVariant`), `_Prefabs/Spacevessels/Sparrow.prefab`.
+   *(Eleven prefabs carry the `Crystal` guid; ten needed stripping — `BigCrystalVariant.prefab`
+   is a VARIANT of `Crystal.prefab` with no AudioSource doc of its own, so it inherits the strip.)*
 2. **Crystal AudioSource strip** — all 1,017 `AudioSource` components removed from the 10
    `Crystal`-carrying prefabs (1,008 of them inlined in `SpawnedSegments.prefab`). The premise:
    `Crystal.PlayExplosionAudio` routes through `AudioSystem.PlayGameplaySFX`, not a per-prefab
@@ -46,11 +99,13 @@ only then write), but a clean import is still the gate.
    `Sparrow.prefab`, confirm four 5-petal flowers render grey at the wirer's default row
    (x = −156/−52/52/156). **Repositioning them per Sparrow's HUD layout is expected** — the
    defaults are the tool's, not a design.
-4. **`Toy_Conveyor.omniCrystalPrefab`** — restored to the reference `a0b32006` set before
-   `c8e0dae6` ("pushing automatic unity changes") byte-reverted it. **Verify:** fly the Wanderway
-   toy; ~16% of scenes should carry the big body-collected omni crystal
-   (`MicroscenePalette.OmniCrystalChance` = 0.16). This is the *run-then-clobber* failure mode —
-   a real tool run that a later blanket commit silently undid.
+4. **`Toy_Conveyor.omniCrystalPrefab`** — wired to the `Crystal` component on `Crystal.prefab`'s
+   root GameObject. **Verify:** fly the Wanderway toy; ~16% of scenes should carry the big
+   body-collected omni crystal (`MicroscenePalette.OmniCrystalChance` = 0.16).
+   *(History, corrected: `a0b32006` did set this and `c8e0dae6` ("pushing automatic unity changes")
+   byte-reverted it — but NEITHER commit is an ancestor of `bleeding-edge`. On the mainline the
+   field has been `{fileID: 0}` since it was introduced at `bac3d4b7`, so this is a never-wired
+   field rather than a run-then-clobber regression the mainline lost.)*
 
 **Also fixed in that branch, code-only (no editor step, but worth a look on review):**
 
@@ -63,12 +118,20 @@ only then write), but a clean import is still the gate.
   `EndGameStatsPanel`) before applying.
 - `LifeFormCrystalValidator` filtered on `LifeForm || LightFauna`, but `LightFauna` and `Boid`
   are **siblings** under `Fauna` — so every `Boid` prefab was skipped and the tool reported a
-  clean bill it never verified. Now filters on `ILifeFormEntity`. **A composition-aware static
-  run finds 8 prefabs with no elemental crystal, direct or nested:** `TermiteDrone.prefab` and
-  `worm.prefab` (live spawn path) plus 6 under `Populations/` (the dead path per
-  `Docs/ECOSYSTEM.md` §7). **Which element each creature drops is a design decision** — pick,
-  then the crystals can be authored programmatically. Until then the runtime `LifeFormCrystal`
-  guard provisions at play time with a warning.
+  clean bill it never verified. Now filters on `ILifeFormEntity`. **A composition-aware static run
+  finds 13 prefabs flagged — and NO live-path gap, so there is no element to pick:**
+  the 4 worm prefabs (`WormColony`, `WormHead/Body/TailSegment`) are **exempt by the locked ruling**
+  in `Docs/ECOSYSTEM.md` §23.3 — the `Worm Colony Charge/Mass/Space/Time` configs carry the element
+  and `Fauna.ProvisionHeart` provisions the capitals at runtime, and CLAUDE.md explicitly says not
+  to give a heartless body segment a crystal; the 7 under `Populations/` are the **dead path**
+  (0 references from any spawn/cell config — `Docs/ECOSYSTEM.md` §7, the `Cell.fauna2` field no
+  longer exists); `Termite.prefab` is a **vessel**, false-positived because
+  `BoidController : BoidManager : Fauna`; and `TermiteDrone.prefab` is spawned only by
+  `BoidController.SpawnDrone` on the unimplemented Termite vessel (raw `Instantiate`, never
+  `Fauna.Initialize`, so no config element). **There is no `worm.prefab`.** The element for real
+  fauna is authored on the `FaunaConfigurationSO`, never on the prefab. The remaining option is
+  cosmetic: teach the validator to skip vessel-borne `Fauna` and composite body-parts so a clean
+  run means something.
 - `ToastNotificationSetup` wrote its settings asset to `Assets/_SO_Assets/` while
   `AddManagerToScene` read from `Assets/Resources/`. Since `ToastNotificationAPI` uses
   `Resources.Load`, the write path was invisible to the shipping game. Both now share one
@@ -78,6 +141,7 @@ only then write), but a clean import is still the gate.
 Audit (`Docs/PERFORMANCE_OPTIMIZATION.md` Task 2 — the scene half landed at `9c5dd537`), and a
 decision on whether `BenchmarkResults/PrismExplosion/*.json` exists locally with both
 `legacy-cpu` and `gpu-clock` runs (if not, PR #642's A/B numbers were never measured).
+`BenchmarkResults/` is gitignored, so only a human at the machine can answer that.
 
 ### 🔴 Sparrow Turret Stance — two flight visualizations, still-nothing hardening (`claude/sparrow-prism-attack-hg6n78`)
 

@@ -22,6 +22,13 @@ namespace CosmicShore.Gameplay
     ///    (<see cref="WormFauna"/>).
     /// Head/Tail deaths drop the heart (mass conserved); the husk withers — prisms
     /// suction inward and spindles evaporate — never pops out (continuity law).
+    ///
+    /// The colony is DELIBERATELY excluded from the platform's skeleton death
+    /// (Docs/ECOSYSTEM.md §26), where an ordinary creature's wither leaves its body prisms
+    /// standing as ordinary cell mass. Two reasons, both specific to a kaiju: a skeleton at
+    /// this scale is a wall, and the capital segments carry DANGER prisms — leaving those
+    /// standing would strew permanent hazards through the cell on every colony death. Keep
+    /// the suction exit here unless that danger-prism question gets a decision.
     /// </summary>
     public class WormSegmentFauna : Fauna
     {

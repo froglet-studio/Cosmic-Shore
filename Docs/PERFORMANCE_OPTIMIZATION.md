@@ -322,8 +322,9 @@ BEFORE editor testing; every blocker found was fixed in a follow-up commit
    typical clean ms; (c) whether `GC.Collect` ever fires mid-gameplay now.
 4. **Task 2 (user action, HALF DONE)**: the **scene** pass landed at `9c5dd537`
    (177 scene-native flips + 45 prefab-instance overrides in Menu_Main). The
-   **prefab** pass has not: `GameCanvas.prefab` still carries 71
-   `m_RaycastTarget: 1`, `GameCanvas-HexRace.prefab` 114,
+   **prefab** pass has not: `_Prefabs/CORE/GameCanvas.prefab` still carries 67
+   `m_RaycastTarget: 1` (was 71 when first counted; `1a53b2abe`, the XP removal,
+   dropped 4), `_Prefabs/GameCanvas-HexRace.prefab` 114,
    `ArcadeGameConfigureModal.prefab` 107, `R_GameOverPanel.prefab` 57. Run
    `FrogletTools > Interface > Raycast Target Audit` with those prefabs +
    `_Prefabs/UI Elements` + `_Prefabs/Spacevessels` selected (scene edits
