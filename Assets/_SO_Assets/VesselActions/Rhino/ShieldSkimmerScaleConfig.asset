@@ -21,17 +21,28 @@ MonoBehaviour:
   crystalBurstHoldSeconds: 2.5
   crystalBurstGrowSpeed: 600
   crystalBurstReturnSpeed: 150
+  energizeCostFraction: 0.1
+  energizeHoldSeconds: 1
+  energizedTailSeconds: 5
+  energizeCooldownSeconds: 5
   visibilityMultiplier: 2
-  fullEnergyColor: {r: 1, g: 1, b: 1, a: 1}
+  fullEnergyColor: {r: 0.11, g: 1.51, b: 1.42, a: 1}
   fullEnergyBrightness: 2.5
+  energizedColor: {r: 1, g: 1, b: 1, a: 1}
+  colorTransitionSeconds: 0.25
+  igniteCrackleIntensity: 2.5
+  igniteCrackleSeconds: 0.9
+  igniteCrackleSites: 5
+  chargeCrackleInterval: 0.18
+  chargeCrackleIntensity: 1.1
+  sparkIntensity: 1.6
+  sparkSeconds: 0.45
+  sparkWorldRadius: 14
+  deniedSparkIntensity: 0.7
   hitFlashAmount: 0.35
   popFlashAmount: 1
   flashDecaySeconds: 0.35
   flashColor: {r: 3, g: 3, b: 3, a: 1}
-  tracersEnabled: 1
-  tracerMaterial: {fileID: 2100000, guid: d9c5732e6a43fbd40b2c9fe615ed746e, type: 2}
-  tracerWidth: 2
-  tracerTimeSeconds: 0.3
   popShakeIntensity: 1.2
   popShakeDuration: 0.25
   burstShakeMaxIntensity: 2.5

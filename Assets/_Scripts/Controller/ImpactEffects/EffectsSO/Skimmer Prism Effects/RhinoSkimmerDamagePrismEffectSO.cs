@@ -3,19 +3,24 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Rhino energy-sword skimmer vs prism effect (RHINO_ENERGY_SWORD.md). The sword is UNGATED —
-    /// no stance, no cooldown, no energize requirement:
+    /// Rhino energy-sword skimmer vs prism effect (RHINO_ENERGY_SWORD.md). Ordinary cutting is
+    /// UNGATED — no stance, no cooldown; the ONE gated act is the super-shield pop:
     /// <list type="bullet">
     /// <item>Normal / shielded prism — standard damage on contact (a shielded prism loses its
     /// shield, a normal prism explodes), exactly like the generic skimmer damage effect.</item>
-    /// <item>Super-shielded prism — POPPED on contact via the sanctioned mass-conserving teardown
-    /// (DeactivateShields → devastating Damage, the AstroLeagueArena.ClearEdgeLining precedent).
-    /// Set <see cref="destroySuperShielded"/> false to restore the legacy bounce instead.</item>
+    /// <item>Super-shielded prism — POPPED only while the blade is ENERGIZED
+    /// (<see cref="IRhinoSwordState.IsEnergized"/>, the hold-the-chop-stance ritual), via the
+    /// sanctioned mass-conserving teardown (DeactivateShields → devastating Damage, the
+    /// AstroLeagueArena.ClearEdgeLining precedent). A non-energized blade recoils
+    /// (<see cref="BounceBack"/>) with a dim denied-spark. Set
+    /// <see cref="popRequiresEnergizedBlade"/> false to pop ungated (the v2 debug behavior).</item>
     /// </list>
     /// Every prism the sword actually destroys banks energy on the per-vessel
     /// <see cref="IRhinoSwordState"/> (read via <c>impactor.Skimmer.SwordState</c>) and kicks its
-    /// impact-flash feedback. With no sword state present (a non-Rhino skimmer reusing this asset)
-    /// the damage/pop behavior is identical — only the energy/FX bookkeeping is skipped.
+    /// impact feedback (blade flash + contact spark). With no sword state present (a non-Rhino
+    /// skimmer reusing this asset) the blade is never energized, so super-shielded prisms always
+    /// bounce; the ordinary damage behavior is identical — only the energy/FX bookkeeping is
+    /// skipped.
     /// </summary>
     [CreateAssetMenu(
         fileName = "RhinoSkimmerDamagePrismEffect",
@@ -41,9 +46,11 @@ namespace CosmicShore.Gameplay
         [SerializeField] private float debrisSpeedLimit = 200f;
 
         [Header("Super-shielded prisms")]
-        [Tooltip("True (the sword's whole point): pop super-shielded prisms on contact — stellation " +
-                 "shatter + devastating explode-out. False: legacy bounce-off behavior.")]
-        [SerializeField] private bool destroySuperShielded = true;
+        [Tooltip("True (v3, the energize ritual): popping a super-shielded prism requires the blade " +
+                 "to be ENERGIZED — hold the both-triggers chop stance to charge it. A non-energized " +
+                 "blade bounces off. False: the blade pops super-shields ungated (the v2 behavior, " +
+                 "kept as a designer A/B switch).")]
+        [SerializeField] private bool popRequiresEnergizedBlade = true;
 
         [Header("Energy banked per prism destroyed (normalized 0..1)")]
         [Tooltip("Energy the sword banks per prism it destroys. ~1/energyPerPrism kills fill the " +
@@ -91,15 +98,20 @@ namespace CosmicShore.Gameplay
 
             if (IsSuperShield(prismImpactee))
             {
-                if (!destroySuperShielded)
+                // The supershield key: only an ENERGIZED blade pops hardened mass. With no
+                // sword state (non-Rhino skimmer reusing the asset) the blade can never be
+                // energized, so the contact recoils — the pre-sword baseline behavior.
+                bool energized = sword is { IsEnergized: true };
+                if (popRequiresEnergizedBlade && !energized)
                 {
+                    sword?.NotifyPopDenied(prism.transform.position);
                     BounceBack(status, prismImpactee);
                     return;
                 }
 
                 PopSuperShield(status, prism, velocity);
                 sword?.AddEnergy(energyPerSuperShieldedPrism);
-                sword?.NotifyPrismDestroyed(superShielded: true);
+                sword?.NotifyPrismDestroyed(superShielded: true, prism.transform.position);
                 return;
             }
 
@@ -113,7 +125,7 @@ namespace CosmicShore.Gameplay
             if (prism.destroyed && sword != null)
             {
                 sword.AddEnergy(energyPerPrism);
-                sword.NotifyPrismDestroyed(superShielded: false);
+                sword.NotifyPrismDestroyed(superShielded: false, prism.transform.position);
             }
         }
 

@@ -1,28 +1,41 @@
 using System;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// The Rhino energy sword's brain. Owns the sword transform's SCALE and the sword's
-    /// energy/FX state, and implements <see cref="IRhinoSwordState"/> so the shared
+    /// energy/energize state, and implements <see cref="IRhinoSwordState"/> so the shared
     /// impact-effect SOs can read/drive it via <c>Skimmer.SwordState</c>.
     ///
-    /// The sword itself is UNGATED — it always damages prisms on contact and always pops
-    /// super-shields (that logic lives in <c>RhinoSkimmerDamagePrismEffectSO</c>). This class
-    /// only tracks ENERGY — the Rhino's Shield resource (<see cref="shieldIndex"/>, normalized
-    /// 0..1, no passive decay: a meter you fill and spend):
+    /// The sword's ORDINARY cutting is UNGATED — it always damages prisms on contact
+    /// (that logic lives in <c>RhinoSkimmerDamagePrismEffectSO</c>). Two things live here:
+    ///
+    /// ENERGY — the Rhino's Shield resource (<see cref="shieldIndex"/>, normalized 0..1,
+    /// no passive decay: a meter you fill and spend):
     ///  • GAIN: the prism effect banks energy per prism the sword destroys (an omni-crystal
     ///    pickup also sets it to full via the Rhino's vessel crystal effect).
-    ///  • SPEND: an elemental-crystal hit (<see cref="TriggerCrystalBurst"/>) bursts the blade
-    ///    in all three dimensions scaled by the energy at that instant, then drains it all.
+    ///  • SPEND: energizing costs <see cref="ShieldSkimmerScaleConfigSO.EnergizeCostFraction"/>;
+    ///    an elemental-crystal hit (<see cref="TriggerCrystalBurst"/>) bursts the blade in all
+    ///    three dimensions scaled by the energy at that instant, then drains it all.
+    ///
+    /// ENERGIZE — the supershield key. Holding the both-triggers lower/chop stance
+    /// (<see cref="SetInStance"/>, fed by <see cref="ShieldSwipeActionExecutor"/>) for
+    /// <c>EnergizeHoldSeconds</c> spends the cost and ignites the blade: while
+    /// <see cref="IsEnergized"/> the damage effect POPS super-shielded prisms instead of
+    /// bouncing. Leaving the stance starts the <c>EnergizedTailSeconds</c> countdown, then
+    /// <c>EnergizeCooldownSeconds</c> locks re-charging. On the ignition edge the standing
+    /// blade contacts are RE-DISPATCHED (both the box-trigger overlaps and the shell-tier
+    /// pairs) so a super-shielded prism already resting against the blade pops without
+    /// needing a fresh OnTriggerEnter.
     ///
     /// The resting length reflects stored energy (Y-only elongation from the Space-driven
-    /// elemental base — the same meter the Rhino HUD draws through <see cref="OnScaleChanged"/>),
-    /// and the blade's look heats with energy (<see cref="RhinoSwordVisualizer"/>). Sets
-    /// <c>Skimmer.HasExternalScaleDriver</c> so the Skimmer's own elemental scale write stands
-    /// down. The swipe pose (rotation/position) is owned by <see cref="ShieldSwipeActionExecutor"/>
-    /// — only scale is ours. See <c>RHINO_ENERGY_SWORD.md</c>.
+    /// elemental base — the same meter the Rhino HUD draws through <see cref="OnScaleChanged"/>).
+    /// All LOOK is delegated to the prefab-authored <see cref="RhinoSwordFXController"/> on the
+    /// blade root. Sets <c>Skimmer.HasExternalScaleDriver</c> so the Skimmer's own elemental
+    /// scale write stands down. The swipe pose (rotation/position) is owned by
+    /// <see cref="ShieldSwipeActionExecutor"/> — only scale is ours. See <c>RHINO_ENERGY_SWORD.md</c>.
     /// </summary>
     public class ShieldSkimmerScaleDriver : MonoBehaviour, IRhinoSwordState
     {
@@ -41,7 +54,9 @@ namespace CosmicShore.Gameplay
         public event Action<float, float, float> OnScaleChanged;
 
         Skimmer _skimmer;
-        readonly RhinoSwordVisualizer _visual = new();
+        SkimmerImpactor _skimmerImpactor;
+        RhinoSwordFXController _fx;
+        bool _fxWarned;
 
         Vector3 _authoredShape; // local X/Y/Z silhouette captured from the Skimmer
 
@@ -50,6 +65,12 @@ namespace CosmicShore.Gameplay
         BurstPhase _burst = BurstPhase.None;
         Vector3 _burstTargetLocal;
         float _burstHoldEnd;
+
+        // ── energize (the supershield key) ──
+        RhinoSwordEnergizePhase _energize = RhinoSwordEnergizePhase.Idle;
+        float _chargeStart, _tailEnd, _cooldownEnd;
+        bool _tailCounting;
+        bool _inStance;
 
         // Sword capsules (Skimmer.ElongateYOnly): the resting length grows only local Y and
         // preserves the authored X/Z silhouette; the crystal burst overrides all three dims.
@@ -68,7 +89,16 @@ namespace CosmicShore.Gameplay
             ? (YOnly ? skimmerRoot.lossyScale.y : skimmerRoot.lossyScale.x)
             : BaseScale;
 
+        /// <summary>Current energize phase (for FX and any future HUD readout).</summary>
+        public RhinoSwordEnergizePhase EnergizePhase => _energize;
+
+        /// <summary>Charge progress 0..1 while Charging (0 otherwise).</summary>
+        public float Charge01 => _energize == RhinoSwordEnergizePhase.Charging && config != null
+            ? Mathf.Clamp01((Time.time - _chargeStart) / config.EnergizeHoldSeconds)
+            : 0f;
+
         // ── IRhinoSwordState ──
+        public bool IsEnergized => _energize == RhinoSwordEnergizePhase.Energized;
         public float Energy01 => GetShield01();
 
         public void AddEnergy(float amount01)
@@ -77,12 +107,16 @@ namespace CosmicShore.Gameplay
             SetShield01(GetShield01() + amount01);
         }
 
-        public void NotifyPrismDestroyed(bool superShielded)
+        public void SetInStance(bool inStance) => _inStance = inStance;
+
+        public void NotifyPrismDestroyed(bool superShielded, Vector3 prismWorldPosition)
         {
-            if (config == null) return;
-            _visual.Flash(superShielded ? config.PopFlashAmount : config.HitFlashAmount);
-            if (superShielded)
-                TryShakeCamera(config.PopShakeIntensity, config.PopShakeDuration);
+            Fx?.NotifyKill(superShielded, prismWorldPosition);
+        }
+
+        public void NotifyPopDenied(Vector3 prismWorldPosition)
+        {
+            Fx?.NotifyPopDenied(prismWorldPosition);
         }
 
         public void TriggerCrystalBurst()
@@ -106,16 +140,33 @@ namespace CosmicShore.Gameplay
                 _authoredShape.z * factor);
             _burst = BurstPhase.Growing;
 
-            _visual.Flash(config.PopFlashAmount);
-            TryShakeCamera(config.BurstShakeMaxIntensity * energy, config.BurstShakeDuration);
+            Fx?.NotifyCrystalBurst(energy);
 
             SetShield01(0f); // hitting a crystal consumes ALL energy
+        }
+
+        RhinoSwordFXController Fx
+        {
+            get
+            {
+                if (_fx) return _fx;
+                if (skimmerRoot) skimmerRoot.TryGetComponent(out _fx);
+                if (!_fx && !_fxWarned)
+                {
+                    _fxWarned = true;
+                    CSDebug.LogWarning($"[{nameof(ShieldSkimmerScaleDriver)}] No {nameof(RhinoSwordFXController)} " +
+                                       $"on '{(skimmerRoot ? skimmerRoot.name : "<null>")}' — the sword runs with no " +
+                                       "blade FX (heat ramp, ignition, sparks). Author one on the blade root prefab.");
+                }
+                return _fx;
+            }
         }
 
         void Awake()
         {
             if (!skimmerRoot) skimmerRoot = transform;
             skimmerRoot.TryGetComponent(out _skimmer);
+            skimmerRoot.TryGetComponent(out _skimmerImpactor);
             if (_skimmer) _skimmer.SwordState = this;
             _authoredShape = skimmerRoot.localScale;
         }
@@ -131,15 +182,17 @@ namespace CosmicShore.Gameplay
                 _authoredShape = _skimmer.AuthoredShape;
             }
 
-            _burst = BurstPhase.None; // pooled/re-enabled vessels start clean
-
-            _visual.Setup(skimmerRoot, config);
+            // Pooled/re-enabled vessels start clean.
+            _burst = BurstPhase.None;
+            _energize = RhinoSwordEnergizePhase.Idle;
+            _inStance = false;
+            _tailCounting = false;
+            _cooldownEnd = 0f;
         }
 
         void OnDisable()
         {
             if (_skimmer) _skimmer.HasExternalScaleDriver = false;
-            _visual.Teardown();
         }
 
         void Update()
@@ -147,8 +200,86 @@ namespace CosmicShore.Gameplay
             if (!skimmerRoot || config == null) return;
             float dt = Time.deltaTime;
 
+            UpdateEnergize();
             UpdateScale(dt);
-            _visual.Tick(Mathf.Clamp01(GetShield01()), dt);
+            Fx?.Tick(Mathf.Clamp01(GetShield01()), _energize, Charge01, dt);
+        }
+
+        // ── energize ──────────────────────────────────────────────────────────
+        void UpdateEnergize()
+        {
+            float now = Time.time;
+            float cost = config.EnergizeCostFraction;
+
+            switch (_energize)
+            {
+                case RhinoSwordEnergizePhase.Idle:
+                    if (_inStance && now >= _cooldownEnd && GetShield01() >= cost)
+                        SetEnergizePhase(RhinoSwordEnergizePhase.Charging, now);
+                    break;
+
+                case RhinoSwordEnergizePhase.Charging:
+                    if (!_inStance || GetShield01() < cost)
+                        SetEnergizePhase(RhinoSwordEnergizePhase.Idle, now);
+                    else if (now - _chargeStart >= config.EnergizeHoldSeconds)
+                    {
+                        SetShield01(GetShield01() - cost); // ignition spends the fraction
+                        SetEnergizePhase(RhinoSwordEnergizePhase.Energized, now);
+                    }
+                    break;
+
+                case RhinoSwordEnergizePhase.Energized:
+                    if (_inStance)
+                    {
+                        _tailCounting = false; // holding the stance keeps it lit
+                    }
+                    else if (!_tailCounting)
+                    {
+                        _tailCounting = true;
+                        _tailEnd = now + config.EnergizedTailSeconds;
+                    }
+                    else if (now >= _tailEnd)
+                    {
+                        _cooldownEnd = now + config.EnergizeCooldownSeconds;
+                        SetEnergizePhase(RhinoSwordEnergizePhase.Cooldown, now);
+                    }
+                    break;
+
+                case RhinoSwordEnergizePhase.Cooldown:
+                    if (now >= _cooldownEnd)
+                        SetEnergizePhase(RhinoSwordEnergizePhase.Idle, now);
+                    break;
+            }
+        }
+
+        void SetEnergizePhase(RhinoSwordEnergizePhase phase, float now)
+        {
+            if (_energize == phase) return;
+            _energize = phase;
+
+            switch (phase)
+            {
+                case RhinoSwordEnergizePhase.Charging:
+                    _chargeStart = now;
+                    break;
+                case RhinoSwordEnergizePhase.Energized:
+                    _tailCounting = false;
+                    // A super-shielded prism already RESTING against the blade gets no fresh
+                    // OnTriggerEnter (and its shell-tier pair was dispatched once on entry),
+                    // so the ignition edge re-runs the standing contacts through the same
+                    // effect chains — the pop the player just paid for lands immediately.
+                    RedispatchStandingBladeContacts();
+                    break;
+            }
+
+            Fx?.NotifyEnergizePhaseChanged(phase);
+        }
+
+        void RedispatchStandingBladeContacts()
+        {
+            if (!_skimmerImpactor) return;
+            _skimmerImpactor.ReapplyPrismEffectsToOverlapping();
+            PrismShellContactManager.RedispatchPairsForOwner(_skimmerImpactor);
         }
 
         // ── scale ─────────────────────────────────────────────────────────────
@@ -233,21 +364,6 @@ namespace CosmicShore.Gameplay
             float parent = skimmerRoot.parent ? skimmerRoot.parent.lossyScale.x : 1f;
             float local = worldY / Mathf.Max(0.0001f, parent);
             skimmerRoot.localScale = new Vector3(local, local, local);
-        }
-
-        // ── juice ─────────────────────────────────────────────────────────────
-        // Local human pilot only (and not while autopiloting, e.g. the Menu_Main lava lamp) —
-        // remote/AI Rhinos must not rattle this client's camera.
-        void TryShakeCamera(float intensity, float duration)
-        {
-            if (intensity <= 0f || duration <= 0f) return;
-
-            var status = _skimmer ? _skimmer.VesselStatus : null;
-            if (status == null || !status.IsLocalUser || status.AutoPilotEnabled) return;
-
-            if (CameraManager.Instance != null &&
-                CameraManager.Instance.GetActiveController() is CustomCameraController cam)
-                cam.Shake(intensity, duration);
         }
 
         // ── energy resource ───────────────────────────────────────────────────

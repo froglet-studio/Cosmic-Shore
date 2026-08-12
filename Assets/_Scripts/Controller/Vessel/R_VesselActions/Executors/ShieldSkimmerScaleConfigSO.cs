@@ -6,11 +6,12 @@ namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// Tuning for the Rhino energy sword (RHINO_ENERGY_SWORD.md): the scale mapping the
-    /// blade's resting length follows from stored energy, the elemental-crystal burst, and
-    /// every blade-look/juice knob (heat ramp, impact flashes, tip tracers, camera shake).
+    /// blade's resting length follows from stored energy, the energize ritual (the
+    /// supershield key), the elemental-crystal burst, and every blade-look/juice knob
+    /// (heat ramp, energized white-hot, impact flashes, crackle, camera shake).
     /// One shared asset (`_SO_Assets/VesselActions/Rhino/ShieldSkimmerScaleConfig.asset`)
     /// drives every Rhino, read by <see cref="ShieldSkimmerScaleDriver"/> and
-    /// <see cref="RhinoSwordVisualizer"/>.
+    /// <see cref="RhinoSwordFXController"/>.
     /// </summary>
     [CreateAssetMenu(
         fileName = "ShieldSkimmerScaleConfig",
@@ -31,6 +32,16 @@ namespace CosmicShore.Gameplay
         [Tooltip("How fast the resting length eases back down (crystal drain, debuffs).")]
         [SerializeField] private float shrinkSpeed = 10f;
 
+        [Header("Energize (hold the both-triggers chop stance — the supershield key)")]
+        [Tooltip("Fraction of max energy consumed each time the blade energizes.")]
+        [SerializeField, Range(0f, 1f)] private float energizeCostFraction = 0.1f;
+        [Tooltip("Seconds the lower/chop stance must be held to energize.")]
+        [SerializeField] private float energizeHoldSeconds = 1f;
+        [Tooltip("Seconds the blade stays energized AFTER leaving the stance (holding the stance keeps it lit).")]
+        [SerializeField] private float energizedTailSeconds = 5f;
+        [Tooltip("Seconds of cooldown after the energized tail before the blade can charge again.")]
+        [SerializeField] private float energizeCooldownSeconds = 5f;
+
         [Header("Crystal Burst (all three dimensions)")]
         [Tooltip("Uniform size factor the blade bursts to on a FULL-energy elemental-crystal hit, " +
                  "applied to the authored X/Y/Z silhouette (not just length). Less energy scales " +
@@ -46,10 +57,39 @@ namespace CosmicShore.Gameplay
         [Header("Blade Look — heat ramp")]
         [Tooltip("Brightness multiplier always applied to the blade's authored colour so the sword reads clearly.")]
         [SerializeField] private float visibilityMultiplier = 2f;
-        [Tooltip("Colour the blade blends toward as stored energy fills (teal at empty → this at full).")]
-        [ColorUsage(true, true)] [SerializeField] private Color fullEnergyColor = Color.white;
+        [Tooltip("Colour the blade blends toward as stored energy fills (teal at empty → this at full). " +
+                 "Keep it in the teal/cyan family — the WHITE-hot look is reserved for the ENERGIZED blade.")]
+        [ColorUsage(true, true)] [SerializeField] private Color fullEnergyColor = new Color(0.11f, 1.51f, 1.42f, 1f);
         [Tooltip("Extra brightness multiplier at FULL energy (lerped from 1 at empty). Keep ≤4 — bloom clamps beyond that.")]
         [SerializeField] private float fullEnergyBrightness = 2.5f;
+
+        [Header("Blade Look — energized (white-hot)")]
+        [Tooltip("Blade colour while ENERGIZED (blends from the heat-ramp colour to this; multiplied by " +
+                 "visibilityMultiplier at runtime). Bright so bloom sells the hot blade in game scenes.")]
+        [ColorUsage(true, true)] [SerializeField] private Color energizedColor = Color.white;
+        [Tooltip("Seconds to blend the blade + tracers between the heat ramp and white-hot on energize/de-energize.")]
+        [SerializeField] private float colorTransitionSeconds = 0.25f;
+
+        [Header("Blade Look — crackle (ForcefieldCrackleController on the blade)")]
+        [Tooltip("Arc intensity of the IGNITION burst the instant the blade energizes.")]
+        [SerializeField] private float igniteCrackleIntensity = 2.5f;
+        [Tooltip("Seconds the ignition arcs persist.")]
+        [SerializeField] private float igniteCrackleSeconds = 0.9f;
+        [Tooltip("How many arc sites the ignition seeds along the blade (spread hilt→tip).")]
+        [SerializeField, Range(1, 8)] private int igniteCrackleSites = 5;
+        [Tooltip("Seconds between the small anticipation arcs while CHARGING (holding the stance).")]
+        [SerializeField] private float chargeCrackleInterval = 0.18f;
+        [Tooltip("Arc intensity of the charging arcs at full charge (ramps up from a third of this).")]
+        [SerializeField] private float chargeCrackleIntensity = 1.1f;
+        [Tooltip("Arc intensity of the contact spark when the sword destroys a prism.")]
+        [SerializeField] private float sparkIntensity = 1.6f;
+        [Tooltip("Seconds a contact spark persists.")]
+        [SerializeField] private float sparkSeconds = 0.45f;
+        [Tooltip("World-unit ripple reach of a contact spark on the blade surface.")]
+        [SerializeField] private float sparkWorldRadius = 14f;
+        [Tooltip("Arc intensity of the DENIED spark — a non-energized blade touching a super-shielded " +
+                 "prism (the bounce). Dim on purpose: it teaches, it doesn't reward.")]
+        [SerializeField] private float deniedSparkIntensity = 0.7f;
 
         [Header("Blade Look — impact flashes")]
         [Tooltip("Flash strength (0..1) when the sword destroys a normal prism.")]
@@ -60,17 +100,6 @@ namespace CosmicShore.Gameplay
         [SerializeField] private float flashDecaySeconds = 0.35f;
         [Tooltip("Colour the blade flashes toward on impacts (bright so bloom sells the hit).")]
         [ColorUsage(true, true)] [SerializeField] private Color flashColor = new Color(3f, 3f, 3f, 1f);
-
-        [Header("Tip Tracers")]
-        [Tooltip("Draw motion tracers streaking from the blade's two tips (recolour with the blade heat).")]
-        [SerializeField] private bool tracersEnabled = true;
-        [Tooltip("Authored tracer material (instanced per sword at runtime so tinting never touches the shared asset). " +
-                 "When empty a runtime unlit fallback is created instead.")]
-        [SerializeField] private Material tracerMaterial;
-        [Tooltip("Tracer streak width in world units.")]
-        [SerializeField] private float tracerWidth = 2f;
-        [Tooltip("Tracer streak persistence in seconds.")]
-        [SerializeField] private float tracerTimeSeconds = 0.3f;
 
         [Header("Camera Shake (local pilot only)")]
         [Tooltip("Shake intensity when the sword pops a super-shielded prism.")]
@@ -104,19 +133,32 @@ namespace CosmicShore.Gameplay
         public float CrystalBurstGrowSpeed          => Mathf.Max(0.01f, crystalBurstGrowSpeed);
         public float CrystalBurstReturnSpeed        => Mathf.Max(0.01f, crystalBurstReturnSpeed);
 
+        public float EnergizeCostFraction    => Mathf.Clamp01(energizeCostFraction);
+        public float EnergizeHoldSeconds     => Mathf.Max(0.01f, energizeHoldSeconds);
+        public float EnergizedTailSeconds    => Mathf.Max(0f, energizedTailSeconds);
+        public float EnergizeCooldownSeconds => Mathf.Max(0f, energizeCooldownSeconds);
+
         public float VisibilityMultiplier => Mathf.Max(0f, visibilityMultiplier);
         public Color FullEnergyColor      => fullEnergyColor;
         public float FullEnergyBrightness => Mathf.Max(1f, fullEnergyBrightness);
+
+        public Color EnergizedColor         => energizedColor;
+        public float ColorTransitionSeconds => Mathf.Max(0.0001f, colorTransitionSeconds);
+
+        public float IgniteCrackleIntensity => Mathf.Max(0f, igniteCrackleIntensity);
+        public float IgniteCrackleSeconds   => Mathf.Max(0.05f, igniteCrackleSeconds);
+        public int   IgniteCrackleSites     => Mathf.Clamp(igniteCrackleSites, 1, 8);
+        public float ChargeCrackleInterval  => Mathf.Max(0.05f, chargeCrackleInterval);
+        public float ChargeCrackleIntensity => Mathf.Max(0f, chargeCrackleIntensity);
+        public float SparkIntensity         => Mathf.Max(0f, sparkIntensity);
+        public float SparkSeconds           => Mathf.Max(0.05f, sparkSeconds);
+        public float SparkWorldRadius       => Mathf.Max(0.5f, sparkWorldRadius);
+        public float DeniedSparkIntensity   => Mathf.Max(0f, deniedSparkIntensity);
 
         public float HitFlashAmount    => hitFlashAmount;
         public float PopFlashAmount    => popFlashAmount;
         public float FlashDecaySeconds => Mathf.Max(0.0001f, flashDecaySeconds);
         public Color FlashColor        => flashColor;
-
-        public bool     TracersEnabled    => tracersEnabled;
-        public Material TracerMaterial    => tracerMaterial;
-        public float    TracerWidth       => Mathf.Max(0f, tracerWidth);
-        public float    TracerTimeSeconds => Mathf.Max(0.01f, tracerTimeSeconds);
 
         public float PopShakeIntensity      => Mathf.Max(0f, popShakeIntensity);
         public float PopShakeDuration       => Mathf.Max(0f, popShakeDuration);

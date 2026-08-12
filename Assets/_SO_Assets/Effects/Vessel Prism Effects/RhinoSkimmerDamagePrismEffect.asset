@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: RhinoSkimmerDamagePrismEffect
   m_EditorClassIdentifier: 
   inertia: 70
-  destroySuperShielded: 1
+  popRequiresEnergizedBlade: 1
   energyPerPrism: 0.04
   energyPerSuperShieldedPrism: 0.12
   bounceSpeedMultiplier: 0.85

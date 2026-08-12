@@ -34,6 +34,7 @@ namespace CosmicShore.Gameplay
         const float TriggerDeadzone = 0.05f;
 
         IVesselStatus _status;
+        Skimmer _swordSkimmer; // resolved from shieldRoot; carries SwordState when this is a Rhino
 
         Vector3 _baseLocalPos;
         Quaternion _baseLocalRot;
@@ -99,19 +100,64 @@ namespace CosmicShore.Gameplay
             {
                 // Event-driven stance: remote peers replaying the owner's press/release,
                 // and binary local devices. A press mirrors a full single-trigger pull -
-                // full difference, half chop. If autopilot took over mid-hold (menu
-                // freestyle exit) the release edge never arrives, so drop the stance.
+                // full difference, half chop; BOTH holds down mirror the both-triggers
+                // centered chop (the energize stance), so binary devices can energize and
+                // remote peers replay the owner's stance pose instead of a one-sided swipe.
+                // If autopilot took over mid-hold (menu freestyle exit) the release edge
+                // never arrives, so drop the stance.
                 if (_activeSign != 0f && _status.IsLocalUser && _status.AutoPilotEnabled)
                     ClearStance();
-                diffTarget = _activeSign;
-                sumTarget = _activeSign != 0f ? 1f : 0f;
+                if (_rightHeld && _leftHeld)
+                {
+                    diffTarget = 0f;
+                    sumTarget = 2f;
+                }
+                else
+                {
+                    diffTarget = _activeSign;
+                    sumTarget = _activeSign != 0f ? 1f : 0f;
+                }
             }
+
+            FeedSwordStance(diffTarget, sumTarget);
 
             if (_diff == 0f && _sum == 0f && diffTarget == 0f && sumTarget == 0f) return;
 
             _diff = Drive(_diff, diffTarget, analog);
             _sum = Drive(_sum, sumTarget, analog);
             ApplyShieldPose();
+        }
+
+        /// <summary>
+        /// The Rhino energy sword's per-vessel state (null on any vessel whose shield
+        /// root carries no sword brain). The swipe executor is the gesture SOURCE: it
+        /// feeds the both-triggers stance each frame so the driver's energize state
+        /// machine (the supershield key) runs off the same reparameterized trigger
+        /// signals that pose the blade. See RHINO_ENERGY_SWORD.md.
+        /// </summary>
+        IRhinoSwordState Sword
+        {
+            get
+            {
+                if (!shieldRoot) return null;
+                if (_swordSkimmer == null) shieldRoot.TryGetComponent(out _swordSkimmer);
+                return _swordSkimmer ? _swordSkimmer.SwordState : null;
+            }
+        }
+
+        /// <summary>
+        /// The energize gesture: both triggers pulled (sum high) and even (difference
+        /// near zero) — the lower/chop stance. Fed from the RAW targets, not the
+        /// smoothed pose, so the stance clock starts the frame the fingers commit.
+        /// </summary>
+        void FeedSwordStance(float diffTarget, float sumTarget)
+        {
+            var sword = Sword;
+            if (sword == null) return;
+
+            bool inStance = sumTarget >= config.StanceSumThreshold
+                            && Mathf.Abs(diffTarget) <= config.StanceCenterEpsilon;
+            sword.SetInStance(inStance);
         }
 
         /// <summary>
@@ -226,6 +272,10 @@ namespace CosmicShore.Gameplay
             _diff = 0f;
             _sum = 0f;
             ClearStance();
+
+            // Drop the energize gesture too, so a turn-end/despawn mid-hold can't leave
+            // the sword charging forever off a stance edge that will never release.
+            Sword?.SetInStance(false);
 
             if (_baseCaptured && shieldRoot)
             {

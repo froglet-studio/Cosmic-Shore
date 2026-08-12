@@ -33,11 +33,22 @@ namespace CosmicShore.Gameplay
         [Tooltip("Return time after an event-driven release.")]
         [SerializeField] float returnSeconds = 0.3f;
 
+        [Header("Energize Stance — gesture thresholds (RHINO_ENERGY_SWORD.md)")]
+        [Tooltip("Sum (left + right trigger, 0..2) above which the blade is in the lower/chop stance — " +
+                 "the ENERGIZE gesture (the supershield key). ~1.5 requires both triggers meaningfully " +
+                 "pulled. Binary inputs (touch, remote replay) reach 2 only with both swipe holds down.")]
+        [SerializeField, Range(0f, 2f)] float stanceSumThreshold = 1.5f;
+        [Tooltip("Difference magnitude below which the stance counts as centered (both triggers even). " +
+                 "Keeps a lopsided pull from reading as the energize stance.")]
+        [SerializeField, Range(0f, 1f)] float stanceCenterEpsilon = 0.4f;
+
         public float SwipeYawDegrees => swipeYawDegrees;
         public float SwipeRollDegrees => swipeRollDegrees;
         public float ChopPitchDegrees => chopPitchDegrees;
         public float AnalogSmoothingSeconds => analogSmoothingSeconds;
         public float SwipeOutSeconds => swipeOutSeconds;
         public float ReturnSeconds => returnSeconds;
+        public float StanceSumThreshold => stanceSumThreshold;
+        public float StanceCenterEpsilon => stanceCenterEpsilon;
     }
 }
