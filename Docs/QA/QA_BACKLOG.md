@@ -1,6 +1,6 @@
 # QA Backlog — untested development on `bleeding-edge`
 
-Generated: 2026-08-11 · Scan covers: up to `b08a35d7` (PRs #583–#696 + 2 direct fixes) · **Owner of this file: the `/qa-backlog` skill — do not hand-edit.**
+Generated: 2026-08-12 · Scan covers: up to `d32f2683` (PRs #583–#710) · **Owner of this file: the `/qa-backlog` skill — do not hand-edit.**
 
 > Note (2026-08-11): `bleeding-edge` was briefly force-pushed back to `0e855b24` (dropping PRs #674–#679) and then restored — the current tip `b0cf4f0f` re-includes all of that work plus PRs #680/#681/#695/#696. No items were pruned. The `windows-build-failures` build-fix branch is validated by QA-BUILD-COMPILE on Windows and has no separate item.
 
@@ -150,6 +150,17 @@ Source: direct commit `b08a35d7` (`fix(ui): the Menu_Main crash is a type-punned
 4. Sanity-check anything using `SquadMemberCard` still displays.
 
 PASS: prefab repointed with no missing script; the pause panel warms and opens in the Editor; the **Windows player build reaches Menu_Main repeatedly with no crash**; squad cards still render. FAIL: a missing script or a CanvasGroup-typed reference remaining · the pause panel not opening/warming · **any crash entering Menu_Main in the Windows player** · broken squad cards.
+
+### QA-DOGFIGHT-MODE ⬜ — "Dog Fight": the Sparrow-only gun duel in the Boneyard
+Source: `dog-fight-game-mode` (feat `3324b951`). A whole new game mode — 96 files, 15,626 insertions, authored headless — with new asset-writing tools (`Tools/Build/author_dogfight_assets.py`, `boneyard_budget.py`), a new scene (EditorBuildSettings changed), a `ScriptableEventCombatHitStats` SOAP type, and `GameDataSO` additions. Reference: `_Scripts/Controller/Arcade/DOGFIGHT.md`.
+
+1. Open the Dog Fight scene: no `Missing (Mono Script)`; the controller and its scoring rule are wired; the arena ("Boneyard") builds.
+2. Launch the mode (any player count — AI backfill for solo). It reaches gameplay without an exception.
+3. Confirm it is Sparrow-only and gun-combat focused (the Boneyard as the arena, the enemy marker, crystal drops).
+4. Play a full round to the win condition and watch the scoreboard resolve (combat-hit / kill scoring).
+5. Return to menu and relaunch once — no leaked state, no crash.
+
+PASS: scene opens clean; the mode launches, plays a full round to a resolved scoreboard, and returns/relaunches without error; combat scoring behaves; the Boneyard arena builds as intended. FAIL: missing scripts · a scene/controller that throws on load or launch · the round never resolving · a scoreboard that doesn't tally combat hits/kills · a crash on return/relaunch.
 
 ## Priority 1 — merged features that have never been played
 
@@ -430,7 +441,9 @@ Source: PR #634 (prefab YAML surgery across 6 vessel prefabs + 3 HUD prefabs).
 
 PASS: no missing-script warnings anywhere; petal bars build, colour and animate correctly on both vessels. FAIL: any missing script · petal bars absent, mis-coloured or static.
 
-### QA-FTUE-QUEST-ROWS ⬜ — quest graphs lay out in venue rows
+### QA-FTUE-QUEST-ROWS ⛔ — quest graphs lay out in venue rows
+> **Last result:** ⛔ BLOCKED — Could not run — the Quest Graph Editor does not exist on this build. There is no `FrogletTools ▸ Quest Graph Editor` menu, and no `Quest Graph ▸ Layout All Phases (Rows)` menu item; the only FrogletTools graph/layout entry is the unrelated Prism "Auto-Wire Clock Properties". The absence itself is the finding — PR #633's editor tooling appears not to be present on bleeding-edge (same class of gap as the missing "Validate Lifeform Crystals" tool). Nothing about node layout could be judged.  _(build bleeding-edge @ b0cf4f0f · Unity 6000.4.11f1.x · Windows, Unity Editor, 2026-08-11, andrew)_
+
 Source: PR #633 (six graph assets rewritten by script).
 
 1. FrogletTools ▸ Quest Graph Editor → MainQuest → click through Phases 0–5.
@@ -610,6 +623,48 @@ Source: `profile-save-and-ads-removal`. Removes Unity Ads (package manifest + `R
 
 PASS: compiles and resolves packages cleanly; no missing ads-UI scripts; daily reward works ad-free; the name double-submit is prevented. FAIL: a package-resolution/compile error · a missing `RewardedAdsButton` reference · a broken daily-reward flow · a display name that still double-submits.
 
+### QA-ASTROLEAGUE-REWORK ⬜ — Astro League as Rhino-only sword soccer (bigger court, strike feedback, food web)
+Source: `astro-league-improvements` (feat `769eeb61`, + `17e9116f` court-shrink follow-up). Significant rework of the existing Astro League: bigger court then a 40% shrink, ball settling, strike feedback, smarter AI, and a "working food web" (touches `Cell.cs`, `CellLifeSpawnerBase`, `Fauna`, `ECOSYSTEM.md`). Reference: `_Scripts/Controller/Arcade/ASTROLEAGUE.md`, `Docs/ECOSYSTEM.md`.
+
+1. Launch Astro League: no missing scripts; the court builds with its cage cover.
+2. Play — the ball settles rather than drifting forever; striking it gives clear feedback; goals score and golden-goal resolves.
+3. Confirm it plays as Rhino-only sword soccer and the AI is a credible opponent (not passive/stuck).
+4. Watch the cell's food web over a couple of minutes — fauna spawn, feed and behave (no frozen creatures, no runaway population).
+5. Score to the win condition and confirm the scoreboard resolves; return to menu cleanly.
+
+PASS: court + cage build clean; ball settles, strikes give feedback, goals/golden-goal resolve; AI competes; the food web runs without frozen/runaway fauna; the round resolves and returns cleanly. FAIL: missing scripts · a ball that never settles or a strike with no feedback · passive/stuck AI · frozen or exploding fauna · a round that won't resolve.
+
+### QA-CHARGE-CRYSTAL-SHADER ⬜ — dedicated charge-crystal shader (edge-only plasma, blooms in)
+Source: PR #710 (`charge-crystal-shader`). New `ChargeCrystal.shader` + `CrystalEdgeArcs` + `CrystalEdgeArcMeshBaker` + a re-imported crystal FBX; a follow-up (`5b5ca689`) makes it honour `_opacity` so the crystal still **blooms in** rather than popping. Shader work → magenta risk on charge crystals.
+
+1. Load a scene with charge crystals (freestyle in a cell with lifeforms, or any mode that drops elemental crystals). If a charge crystal renders **magenta**, the shader failed to compile — stop, FAIL, attach the error.
+2. Watch a charge crystal spawn — it should **bloom in** (continuity of existence), not pop.
+3. Look at the effect: edge-only plasma discharge / arcs along the crystal edges, reading as a charge crystal (distinct from the other three elements).
+4. Skim/collect one — it behaves as a normal charge crystal (energy/level applied), and withers/leaves on death per the usual rules.
+
+PASS: no magenta; charge crystals bloom in; the edge-arc plasma renders and reads as "charge"; collection and death behave normally. FAIL: a magenta/failed shader · a crystal that pops instead of blooming · no edge-arc effect or a broken look · collection/death misbehaving.
+
+### QA-SPARROW-MISSILE-BAY ⬜ — bay-animated skyburst launch with the real missile model
+Source: PR #708 (`sparrow-missile-bay`). The Sparrow's skyburst now launches from a bay animation using the real missile model (`Sparrow.prefab`, `SparrowAnimationController`, `FireGunActionExecutor`, `SkyBurstGunAction.asset`). Reference: `_Scripts/Controller/Vessel/R_VesselActions/SPARROW_SKYBURST_BAY.md` + `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+
+1. Project compiles; open `Sparrow.prefab` — no missing scripts; the bay/missile wiring resolves.
+2. Sparrow in freestyle: fire a skyburst missile — a bay animation plays and the **real missile model** launches (not a placeholder/instant spawn).
+3. Fire several in succession — the bay animates each time and never jams/desyncs; the missile still flies and detonates as before.
+4. Confirm normal full-auto fire is unaffected.
+
+PASS: compiles, prefab intact; the skyburst launches from an animated bay with the real model; repeated fire animates cleanly; missiles fly/detonate normally; full-auto unaffected. FAIL: missing scripts · no bay animation or a placeholder model · a jam/desync on repeated fire · a missile that no longer flies/detonates · full-auto broken.
+
+### QA-ECOLOGY-JOUST-WITHER ⬜ — joust takes the heart, starvation exposes it; both leave a skeleton
+Source: PR #709 (`squirrel-joust-starvation-wither`). New `LifeformDeathStyle` enum + `HealthPrism`, `ElementalCrystalImpactor`, `VesselWitherLifeformByCrystalEffectSO`, `PrismSpatialIndex`, `FloraConfigurationSO` changes; wither cadence moved onto the variant config. A **LOCKED ecology** surface (continuity of existence / wither-to-crystal / mass conservation) — verify against those invariants. Reference: `Docs/ECOSYSTEM.md`.
+
+1. Project compiles; a cell with lifeforms builds with no missing scripts.
+2. **Starvation:** let a creature starve — it withers from its extremities inward, **exposes/leaves a skeleton**, and drops its elemental crystal. It does not vanish.
+3. **Joust kill:** joust a creature to death (Squirrel) — the joust **takes the heart** (crystal), and the death still leaves a skeleton and withers rather than popping out of existence.
+4. Confirm mass behaves: no creature pops in/out, and an interrupted wither still resolves (the deferred heart survives per `f12f9822`).
+5. Watch a few waves — the wither cadence reads right (not instant, not stuck).
+
+PASS: compiles; starvation withers-to-crystal and leaves a skeleton; a joust kill takes the heart and still withers/skeletons; nothing pops in or out; interrupted withers still finish. FAIL: a creature vanishing instead of withering · no skeleton left · a joust kill dropping no heart or a starved creature dropping none · an interrupted wither leaving a stuck/immortal husk · any missing script.
+
 ## Priority 2 — lower risk, cosmetic, or data-gathering
 
 ### QA-P2-SERPENT-SKIMMER ⬜ — Serpent's dead skimmer (known, unfixed)
@@ -649,6 +704,25 @@ Source: PR #681 (`dolphin-speed-boost-tuning`). Two authored numbers changed in 
 4. Sanity: no other vessel's speed/boost changed (the asset is Dolphin-only).
 
 PASS: cruise ~78, fill ~3.6 s, charged peak ~357, drain ~2.5 s; no other vessel affected. FAIL: values materially off from those targets · another vessel's boost/speed changed · the drift/idle floor moved (it should stay at 10). (Feel is a judgement call — note whether the new boost peak plays too strong.)
+
+### QA-PALETTE-DANGER-GOLD ⬜ — danger tier un-inverted + gold shielded brought into the pastel family
+Source: PRs #705 (`danger-prisms-shielded-color`, `ThemeManager`) + #707 (`gold-shielded-prism-contrast`, `OriginalColorSetSO.asset`). Palette-only fixes: the danger tier was un-inverted, gold's unshielded rim corrected, and gold's shielded prism brought into the pastel family. Colour verification. Related: QA-PALETTE-SHIELDED. Reference: `Docs/PALETTE.md`.
+
+1. Pull and let the colour-set asset reimport (a stale Library masks palette changes).
+2. Get shielded + unshielded prisms of all three domains on screen (a cell with lifeforms in freestyle, a HexRace/Skim track, or Astro League).
+3. Get danger prisms on screen (lay a danger trail) and compare against the shielded/unshielded tiers.
+4. Focus on **Gold**: its shielded prism should read in the same pastel family as Ruby/Jade shielded, and its unshielded rim should look right (not inverted/over-bright).
+
+PASS: the danger tier reads correctly (not inverted); gold shielded sits in the pastel family alongside the other domains; gold unshielded rim looks right; no domain blows out under bloom. FAIL: a danger tier that still reads inverted · gold shielded reading flat/muddy or out of family · an over-bright/blown-out gold rim.
+
+### QA-UI-QUIT-BUTTON ⬜ — quit-game control moved into the settings panel
+Source: `quit-game-button` (`fabe7074`). The standalone `QuitGameButton.cs` was removed and its behaviour folded into `GameSettingsPanelController`.
+
+1. Open the in-game settings panel: a Quit control is present with no missing-script slot where the old button was.
+2. Trigger quit from the settings panel — it does what it should (returns to menu / quits per design) with no exception.
+3. Confirm nothing else in the settings panel regressed.
+
+PASS: the quit control is present in the settings panel and works with no missing scripts or exceptions; the rest of the panel is intact. FAIL: a missing button/script · a quit control that throws or does nothing · another settings control broken by the move.
 
 ## Not covered by this list
 
