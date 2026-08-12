@@ -19,7 +19,8 @@ Statuses: 🔴 open · 🟡 investigating · 🟢 fixed (commit) · ⚪ deferred
 | B12 | Explicit leave took ~30 s to remove the player | Confirmed | 🟡 `a510bd51` — graceful path **untested**; see retest note below |
 | B13 | Relay 500 on boot bricks the loading splash (no retry, no recovery) | Confirmed | ✅ `c3dbf682` **VERIFIED 2026-08-04** (4 instances; wider run pending) |
 | B14 | `presenceState` change never repainted the row - "CONNECTING…" forever | Confirmed | ✅ `c49c8c91` **VERIFIED 2026-08-04** |
-| B15 | Three players in ONE party render three different party sizes | Confirmed (root-caused) | 🟡 fixed, **MPPM retest required** |
+| B15 | Three players in ONE party render three different party sizes | Confirmed | ✅ **VERIFIED 2026-08-06** (4-VP) |
+| B16 | Coalesced roster raise ran off the main thread — `EnsureRunningOnMainThread` | Confirmed | ✅ `4aece925` **VERIFIED 2026-08-06** |
 
 > **Working order.** Diagnostics-first. The presence-lobby cluster (B4,
 > B6) is the locked-design area — read `ARCHITECTURE.md` and
@@ -127,7 +128,94 @@ priority.
 
 ---
 
-## B15. Three players in ONE party render three different party sizes — 🟡 fixed 2026-08-06, MPPM retest required
+## B16. A new SOAP event raised off the main thread — `EnsureRunningOnMainThread` returned — ✅ `4aece925` VERIFIED 2026-08-06
+
+**Self-inflicted, during the B15 fix.** Recorded in full because the lesson
+generalises to every SOAP event anyone adds to this system, and because the
+process failure that let it reach a build matters more than the code.
+
+**Symptom.** After the B15 branch, a live build threw the old
+`EnsureRunningOnMainThread` cascade in a system that had been working.
+
+### Mechanism
+
+`Docs/THREADING.md`: SOAP `Raise()` invokes listeners **inline on the calling
+thread**, and any `UnityEngine.Object` access off the main thread throws —
+**including a `== null` check**, which routes through `op_Equality`.
+
+`OnPartyRosterChanged` (added in `f6aecb6a`) has three listeners:
+
+| Listener | Touches | Always live? |
+|---|---|---|
+| `FriendsInitializer.HandlePartyRosterChanged` | `hostConnectionData == null` → `op_Equality`, then an `async void` UGS call | **YES — persistent GameObject** |
+| `FriendsListPanel.HandlePartyRosterChanged` | `PopulateOnlineSection()` → Instantiate/Destroy | only when open |
+| `ArcadeLobbyList.HandlePartyRosterChanged` | `PopulateSlots()` | only when open |
+
+Its request sites are **not** all main-thread. `PartyMemberService.SeedLocalPlayer`
+is called by `HostConnectionService.ApplyPostLobbyJoinState` at four sites, each
+immediately after `await _lobbyService.JoinOrCreateAsync(...)` — whose fallback
+path ends:
+
+```csharp
+await CreateAsync(maxPlayers);              // ends .AsMainThread()  ✓
+await UniTask.Delay(LOBBY_RACE_SETTLE_MS);  // ← no affinity guarantee
+await ConvergeToCanonicalAsync(maxPlayers); // may return with NO await at all
+```
+
+Awaiting a `UniTask` does not restore the caller's thread
+(`ConfigureAwait(false)` semantics), and UniTask's own primitives do not
+reliably marshal to main on this version — both stated in `THREADING.md`. So
+the continuation can land on the ThreadPool.
+
+**Why it was new.** Before the branch, `SeedLocalPlayer` raised no SOAP event —
+it only mutated the `PartyMembers` ScriptableList, and `FriendsListPanel`
+subscribes solely to `OnlinePlayers` list events. That path could not reach any
+Unity-touching listener. The coalesced channel connected it, including one that
+is **always attached**.
+
+### Fix
+
+`RaisePartyRosterChanged` → `RequestPartyRosterChanged` (an `Interlocked` flag,
+safe from any thread) + `FlushPartyRosterChanged` (the actual raise), drained at
+the **top of `HostConnectionService.Update()`** before every gate. One deferral
+covers all six request sites; making each *listener* thread-safe would have been
+three fixes, and the next listener anyone added would have reintroduced it.
+
+This is the same `Interlocked`-flag-drained-from-`Update` pattern
+`PresenceLobbyService` already uses for every UGS push. **The correct shape was
+already in the codebase and was not followed.**
+
+Coalescing improved as a side effect: several roster changes in one frame now
+collapse to one repaint.
+
+### The rule this establishes
+
+> **A SOAP event whose listeners touch Unity state may only be raised from a
+> guaranteed main-thread context.** Where the raise site cannot prove that, defer
+> it to a drain in `Update()`. Do not require every future call site to prove its
+> thread — that is a contract nobody can keep.
+
+Pinned by `PartyRosterEventTests.RosterChanged_IsNotRaisedUntilFlushed`.
+`HostConnectionDataSO.RemovePartyMember` keeps a direct raise and is documented
+**MAIN THREAD ONLY** — its sole caller runs before its first `await`, from a UI
+button.
+
+### Process failure — the more important half
+
+`REFACTOR.md` requires a 3-VP MPPM smoke **per commit** and "push only after
+explicit risk discussion". Seven commits were landed with **zero runtime
+verification between them**, in the area the docs call the fragile locked-design
+area, while the author could not compile. The plan was ordered by *value* when it
+should have been ordered by *blast radius* with a hard stop after each step.
+
+**The cheapest gate would have caught it**: single editor, enter play mode in
+Menu_Main, watch for `EnsureRunningOnMainThread` and the
+`SceneTransitionManager` canary. No MPPM, no party, no second player. That is now
+step 3 of the standing verification order in `../PartySystem/TESTS.md`.
+
+---
+
+## B15. Three players in ONE party render three different party sizes — ✅ VERIFIED FIXED 2026-08-06
 
 **Symptom** (reported from a live 3-player session; A hosts, B joins, then C joins):
 

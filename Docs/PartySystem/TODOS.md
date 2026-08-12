@@ -10,6 +10,30 @@ or a bug. Each entry has enough context that it can be picked up cold.
 > `../MultiplayerArchitecture/ROADMAP.md`. This file is the granular
 > party-side parking lot beneath it.
 
+## Priority as of 2026-08-06 (post roster-truth branch)
+
+The party system is **working and owner-verified** at 4 VPs: invite, accept,
+party formation, panel agreement. Nothing below is urgent. Ordered by
+value-per-risk, and every one of them is a *separate branch* — the roster-truth
+branch's lesson (`REFACTOR.md` § "Read this before the next branch here") is that
+bundling is what hurts here.
+
+| | Item | Why now | Risk |
+|---|---|---|---|
+| 1 | **TODO-P2** — coalesce startup property writes (`../PresenceSystem/TODOS.md`) | The single highest-value lever on the B1/B6 stale-index defect, backed by two measurements. Partly paid down by `4129b932`; the startup burst itself is still unbatched. Unblocks the safety-poll relaxation. | medium |
+| 2 | **TODO-10** — prove the PENDING sentinel dead, then delete | Removes a whole phase of the accept handshake. Instrument-first, so the risky half is gated on evidence. | low if instrumented first, high if not |
+| 3 | **R1 (`PartyInviteController`)** — the long-standing top refactor | Still the most complex orchestrator in the system; NetDiag data now exists to plan against. | medium |
+| 4 | **TODO-13** — tighten `IsHostConflictException` | One-line class of bug that already bit us once as the rate-limit-vs-benign ordering error. | low |
+| 5 | **B12 graceful-leave retest** (`../PresenceSystem/BUGS.md`) | The named-id eviction path has never been exercised by a test; needs TODO-P10's editor hook. | low |
+| 6 | **TODO-11 / TODO-12** — join-detection and invite-clearing consolidation | Cosmetic until measured; TODO-11 needs instrumentation to be safe at all. | medium |
+| — | Safety poll 1.5 s → 10 s | ⛔ still **BLOCKED** on TODO-P2. Re-measure the skip counters first. | — |
+| — | Presence heartbeat | ⛔ **CLOSED**, costed and rejected (TODO-P8). | — |
+
+**Standing rule for all of the above:** follow the verification order at the top
+of `TESTS.md`, cheapest gate first, and stop on the first failure. Step 2 —
+single-editor play mode watching for `EnsureRunningOnMainThread` — is mandatory
+on any commit that adds or moves a SOAP raise.
+
 ## Invite-system cleanup — audited 2026-08-06, NOT executed
 
 Recorded during the status-cleanup pass. The invite flow is **working**

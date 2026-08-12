@@ -25,6 +25,30 @@ Read B15 for the root-cause analysis; this is the change record.
 | C4 | `791c6d04` | Read and publish get separate `try`s; benign branches become exception filters carrying the rate-limit precedence explicitly. |
 | C5 | `090f61a6` | Party-session push channel; push path syncs from the SDK's in-memory roster with **zero UGS reads**. **Fixes the latency.** |
 | C6 | `4129b932` | `PartyLobbyKeys` single owner; drop 6 write-only Relay-session keys (partial TODO-P2). |
+| — | `bae55ce0` | Docs: B15, the locked two-tier rule, stale `LeavePartyKeepHostAsync` refs. |
+| — | `9ee67e5f` | Fail loud if `OnPartyRosterChanged` is unwired (it is now the only party repaint signal). |
+| — | `5745ec0f` | Compile fix: missing `using Obvious.Soap` in the new tests. |
+| **R1** | `4aece925` | **Defer the roster raise to the main thread** — fixes the B16 regression the above introduced. |
+| — | `5b36156e` | Retire the `PARTY FULL` status; derive the invitability rule it was carrying. |
+
+**Verified 2026-08-06** by the owner across multiple 4-VP MPPM configurations:
+invite, accept, party formation and panel agreement all green.
+
+### Read this before the next branch here
+
+Two things went wrong, and the second one is the one to internalise:
+
+1. **B16** (`../PresenceSystem/BUGS.md`) — a new SOAP event was raised from a
+   path with no main-thread guarantee, reintroducing `EnsureRunningOnMainThread`.
+   The rule it establishes: *a SOAP event whose listeners touch Unity state may
+   only be raised from a guaranteed main-thread context; otherwise defer it to an
+   `Update()` drain.*
+2. **The process.** Seven commits were pushed with zero runtime verification
+   between them, in this fragile area, by an author who could not compile. The
+   plan was sequenced by **value** when it should have been sequenced by **blast
+   radius with a hard stop after each step**. `TESTS.md` now opens with a
+   cheapest-gate-first verification order; step 2 of it (single-editor play mode)
+   would have caught B16 in under a minute.
 
 **Two extractions were planned and deliberately NOT done.** Both were scoped as
 "extract a service", and in both cases the dependency count made the extracted
