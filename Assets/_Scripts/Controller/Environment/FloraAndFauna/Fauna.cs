@@ -375,19 +375,15 @@ namespace CosmicShore.Gameplay
                 hostCell.UnregisterLiveFauna(this);
             lineageRegistered = false;
 
-            // Backstop for the deferred heart (see DefersHeartRelease): a subclass that
-            // opts into a progressive wither owns the release, and every one of its exits
-            // must reach it BEFORE the husk is destroyed - reparenting a child out of a
-            // hierarchy that is already being torn down cannot be relied on to save it.
-            // So this is a fail-loud alarm, not a working recovery: if it ever fires, that
-            // subclass has a death path that skips ReleaseHeart and is losing crystals.
-            if (_diedThisLife && !_heartReleased)
-            {
-                CSDebug.LogError($"[Fauna] {GetType().Name} on {name} was destroyed with its heart " +
-                    $"unreleased - a death path is skipping {nameof(ReleaseHeart)} and the elemental " +
-                    $"crystal invariant is being lost. Release it before the husk is removed.");
+            // Last line of defence for a DEFERRED heart (see DefersHeartRelease): an interrupted
+            // wither - a cell drain, a manager pulling the husk, a turn ending - never reaches
+            // the release inside the wither. This is a genuine recovery rather than a hopeful
+            // one only because StashHeart already re-homed the crystal onto the cell at the top
+            // of Die, so it is not a child of this husk and releasing it here still works.
+            // Skipped during scene unload, where the cascade must not run at all (the same rule
+            // Spindle.OnDisable follows) and where nothing survives to collect anyway.
+            if (_diedThisLife && !_heartReleased && gameObject.scene.isLoaded)
                 ReleaseHeart();
-            }
         }
 
         // --- ILifeFormEntity ---
@@ -559,25 +555,27 @@ namespace CosmicShore.Gameplay
             float flareTime = Mathf.Max(0.05f, seconds * 0.25f);
             float settleTime = Mathf.Max(0.05f, seconds - flareTime);
 
-            // Stop the moment the heart is no longer embedded in this fauna: a death mid-grow
-            // reparents the crystal to the cell (ActivateCrystal), where localTarget - computed
-            // to divide out the fauna body's scale - would land as the wrong WORLD scale. The
-            // drop keeps the world scale it had at death, which is exactly the value the domain
-            // buff was granting at that moment.
+            // Stop the moment the heart stops riding this body: ANY death reparents the crystal
+            // to the cell (ActivateCrystal, or StashHeart for a deferred release), where
+            // localTarget - computed to divide out the fauna body's scale - would land as the
+            // wrong WORLD scale. The drop keeps the world scale it had at death, which is exactly
+            // the value the domain buff was granting at that moment. The test is `_diedThisLife`
+            // rather than the embedded state, because a stashed heart is still embedded (that is
+            // what keeps it uncollectable) and would sail past an EmbeddedIn check.
             for (float e = 0f; e < flareTime; e += Time.deltaTime)
             {
-                if (!crystal || !ReferenceEquals(crystal.EmbeddedIn, this)) yield break;
+                if (!crystal || _diedThisLife || !ReferenceEquals(crystal.EmbeddedIn, this)) yield break;
                 t.localScale = Vector3.one * Mathf.Lerp(start, flare, e / flareTime);
                 yield return null;
             }
             for (float e = 0f; e < settleTime; e += Time.deltaTime)
             {
-                if (!crystal || !ReferenceEquals(crystal.EmbeddedIn, this)) yield break;
+                if (!crystal || _diedThisLife || !ReferenceEquals(crystal.EmbeddedIn, this)) yield break;
                 float u = e / settleTime;
                 t.localScale = Vector3.one * Mathf.Lerp(flare, localTarget, u * u * (3f - 2f * u));
                 yield return null;
             }
-            if (crystal && ReferenceEquals(crystal.EmbeddedIn, this))
+            if (crystal && !_diedThisLife && ReferenceEquals(crystal.EmbeddedIn, this))
                 t.localScale = Vector3.one * localTarget;
         }
 
@@ -870,9 +868,26 @@ namespace CosmicShore.Gameplay
 
             if (_deathStyle != LifeformDeathStyle.Withered || !DefersHeartRelease)
                 ReleaseHeart();
+            else
+                StashHeart();
 
             ReportKill(killerName);
             OnDeath(killerName);
+        }
+
+        /// <summary>
+        /// Re-homes the heart onto the cell but leaves it EMBEDDED - still uncollectable, still
+        /// wearing the neutral heart tint - for a wither that will release it when it reaches the
+        /// core. Doing this at the START of the death is what makes the deferral SAFE rather than
+        /// merely late: a crystal still parented to the husk dies with it, so an interrupted
+        /// wither (a cell drain, a manager removing the husk, a scene unload) would silently lose
+        /// the crystal. With it re-homed, <see cref="ReleaseHeart"/> works from anywhere,
+        /// including the <see cref="OnDestroy"/> backstop.
+        /// </summary>
+        void StashHeart()
+        {
+            if (crystal && crystal.gameObject && crystal.gameObject.activeInHierarchy)
+                crystal.DetachHeartToCell();
         }
 
         /// <summary>

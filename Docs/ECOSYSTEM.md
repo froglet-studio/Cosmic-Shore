@@ -3064,15 +3064,30 @@ it destroys leaves first; nothing about it was general.
 "Every lifeform drops one elemental crystal on death" is unchanged; **when** it drops became part of
 how the creature died. `Fauna.Die` releases the heart outright for `Jousted` and `Consumed`. Only a
 subclass that opts in via `DefersHeartRelease` (today `LightFauna`) holds it through an outside-in
-wither, and it owes the release back:
+wither.
 
-- the wither releases it when it reaches the core (the ask's *"until the crystal becomes collectable
-  by all vessels"*),
-- `RemoveHusk` — the terminal every LightFauna death path funnels through — releases it
-  unconditionally, so an interrupted wither cannot swallow it,
-- `Fauna.OnDestroy` is a **fail-loud alarm, not a recovery**: reparenting a child out of a hierarchy
-  that is already being torn down cannot be relied on to save it, so if that error ever fires, a
-  death path is skipping `ReleaseHeart` and is losing crystals.
+**A deferral is only safe if the thing being deferred can survive being interrupted**, and a crystal
+parented to the husk cannot: destroy the husk and the child goes with it, and reparenting a child
+out of a hierarchy that is already being torn down cannot be relied on to rescue it. So the deferral
+is two-stage, and the first stage runs at the *top* of the death:
+
+1. **`StashHeart`** (`Crystal.DetachHeartToCell`) re-homes the crystal onto the cell immediately, but
+   leaves it **`IsEmbedded`** — so it stays uncollectable and keeps the neutral heart tint, and the
+   wither still has a heart to unravel around. Reparenting preserves world pose and a withering
+   creature holds still, so nothing appears to move.
+2. **`ReleaseHeart`** frees it for real (`ActivateCrystal`) when the wither reaches the core — the
+   ask's *"until the crystal becomes collectable by all vessels"*.
+
+With stage 1 done, every later exit is a genuine recovery rather than a hopeful one: `RemoveHusk`
+(the terminal every LightFauna death path funnels through) releases unconditionally, and
+`Fauna.OnDestroy` releases anything an interrupted wither left — a cell drain, a manager pulling the
+husk, a turn ending. `OnDestroy` skips the release during **scene unload**, where the cascade must
+not run at all (the rule `Spindle.OnDisable` already follows) and nothing survives to collect anyway.
+
+One consequence worth knowing: a stashed heart is *still embedded*, so any guard written as "has the
+crystal stopped being embedded in me?" no longer fires at death. `GrowCrystalWithPop` — the level-up
+flare, whose local scale divides out the body's scale and would land at the wrong WORLD scale on a
+reparented crystal — was exactly such a guard, and now tests the death itself.
 
 One live consequence, and it is the right one: `Fauna.LiveHeart` (which the domain fauna buff keys
 off) now stays non-null through a starvation wither. The heart is the last thing standing, so a

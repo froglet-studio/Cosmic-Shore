@@ -81,8 +81,11 @@ outcome is optimization, not life). Use the `/ecology` skill for any change here
   `ForceWither` recurse and make destroying a spindle destroy its children. It **does not vanish**
   (the continuity law above). **Mass is conserved** (the "self-sustaining economy" that makes the
   system NASA-credible). Sealed into `Fauna.Die`, which releases the heart outright unless a
-  subclass opts into a progressive wither (`DefersHeartRelease`) and owes the release back — with a
-  fail-loud `OnDestroy` alarm if one ever doesn't. The worm colony is deliberately excluded from the
+  subclass opts into a progressive wither (`DefersHeartRelease`) — and that deferral is safe only
+  because it is TWO-stage: `Crystal.DetachHeartToCell` re-homes the crystal onto the cell at the
+  *top* of the death while leaving it `IsEmbedded` (still uncollectable, still the heart the wither
+  unravels around), so an interrupted wither can never destroy it with the husk and every later exit
+  (`RemoveHusk`, `OnDestroy`) is a real recovery. The worm colony is deliberately excluded from the
   skeleton (its capitals carry danger prisms). Full record: `Docs/ECOSYSTEM.md §26`.
 - **Volume is the spine.** Phase, dominant domain, prey, HUD all key off per-domain **VOLUME**
   (`Cell.LiveVolume`), not prism count. Count is a rare frenzy/perf backstop only.
