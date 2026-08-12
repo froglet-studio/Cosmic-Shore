@@ -2989,3 +2989,160 @@ The headroom is authored in Rhino trail: a Rhino prism is **≈ 0.75 volume** (`
 the pitch before the crew is released and +2000 ≈ 2700 before Frenzy. This is the mode's primary
 pacing dial and the first thing to move after a playtest. **It is vessel-specific**: the previous
 values were authored for Squirrel's ≈3.1-volume prisms, and the mode is now Rhino-only.
+
+---
+
+## 26. The two withers — a joust takes the heart, starvation exposes it (Aug 2026)
+
+**Prompter's ask, verbatim in shape:** *"when a squirrel jousts a life form it shouldn't explode. it
+should wither. the squirrel should auto collect the crystal. its spindles should wither from the
+crystal outward, leaving the prisms behind as a fossil or skeleton. when fauna starve they also
+wither but this should be loosing spindles from the outside in until the crystal becomes collectable
+by all vessels. so starvation moves in the opposite direction to the squirrel joust, but should also
+leave behind prisms."*
+
+Two deaths, one geometry, opposite directions — and the direction is not a style knob. It is the
+force that did the killing, read back at the moment the body comes apart.
+
+### 26.1 The two directions
+
+|  | **Joust** (a vessel took the heart) | **Starvation** (nobody took it) |
+|---|---|---|
+| Heart | freed **first**, at the strike, and **auto-collected** by the jouster | freed **last**, when the wither reaches the core — then collectable by **any** vessel |
+| Spindles | wither **nearest-the-heart first**, unravelling **outward** around the hole | wither **farthest-from-the-heart first**, spending the extremities **inward** |
+| Body prisms | left standing as a **skeleton** | left standing as a **skeleton** |
+| Detonation | none | none |
+
+They are the same operation sorted the other way: order the spindles by distance from the heart,
+ascending for a joust, descending for starvation. A shark's fins and a brittlestar's arms still go
+before the core body on the starvation death — emergent from geometry, with nothing authored per
+prefab — and on a joust the same geometry runs backwards.
+
+Predation is deliberately **neither**: a devoured creature breaks apart and suctions into the
+predator's mouth, because there the mass genuinely *transfers to the eater* rather than being left
+in place. `LifeformDeathStyle` (`Withered` / `Jousted` / `Consumed`) is the one enum that carries
+this, stamped by the killing force and read by the death animation.
+
+### 26.2 The skeleton — mass conservation taken at its word
+
+Before this, a creature's whole frame left the world when it died: the husk was destroyed and its
+body prisms went with it, so the *only* thing conserved was the heart. That was a passive removal of
+mass hiding inside a death animation. Now the body prisms **stay exactly where the creature died**,
+as ordinary cell mass:
+
+- `HealthPrism.LeaveAsSkeleton` drops the body-part links (spindle, `LifeForm`, `OwnerFauna`),
+  re-homes the prism to the host cell, and re-files it with `PrismSpatialIndex.NotifyOwnershipChanged`.
+- That re-file is what **promotes** it: `ComputeEnvironmentMass` reads `OwnerFauna` to keep a LIVE
+  swarm out of the targeting grids (a forager must not read as its own mass concentration). With the
+  owner cleared, the skeleton graduates from volume-only body mass to full environment mass —
+  grazeable, steerable, counted, contested.
+- So the sink is the food web, exactly as `§0` demands: a skeleton is removed only by an **active**
+  force (a grazer eating it, a vessel destroying it), never by a clock. A skeleton nothing eats is a
+  valid equilibrium, not a defect.
+
+**Ordering is load-bearing.** A body prism is parented to a *spindle*, so the skeleton must be
+detached **before** any spindle withers — evaporating a spindle first destroys the very mass the
+skeleton is conserving.
+
+### 26.3 Why the spindles had to be isolated first
+
+Two couplings in the ordinary spindle lifecycle make an ordered wither impossible, and both are
+structural rather than cosmetic:
+
+1. `Spindle.ForceWither` **recurses into child spindles**. Withering an inner spindle first —
+   which is the whole point of the joust direction — would collapse the entire creature in one step.
+2. Destroying a spindle GameObject **destroys its child spindles with it**, for the same reason.
+
+`Spindle.IsolateForOrderedWither` breaks both up front: every spindle is detached from its parent
+and children, logically *and* in the hierarchy, so the caller can spend them in any order. It also
+suspends `CheckForLife`, because handing a spindle's prisms to the skeleton empties it and would
+otherwise evaporate it out of turn. The outside-in death happened to work before this only because
+it destroys leaves first; nothing about it was general.
+
+### 26.4 The crystal invariant is still sealed — it just moved
+
+"Every lifeform drops one elemental crystal on death" is unchanged; **when** it drops became part of
+how the creature died. `Fauna.Die` releases the heart outright for `Jousted` and `Consumed`. Only a
+subclass that opts in via `DefersHeartRelease` (today `LightFauna`) holds it through an outside-in
+wither, and it owes the release back:
+
+- the wither releases it when it reaches the core (the ask's *"until the crystal becomes collectable
+  by all vessels"*),
+- `RemoveHusk` — the terminal every LightFauna death path funnels through — releases it
+  unconditionally, so an interrupted wither cannot swallow it,
+- `Fauna.OnDestroy` is a **fail-loud alarm, not a recovery**: reparenting a child out of a hierarchy
+  that is already being torn down cannot be relied on to save it, so if that error ever fires, a
+  death path is skipping `ReleaseHeart` and is losing crystals.
+
+One live consequence, and it is the right one: `Fauna.LiveHeart` (which the domain fauna buff keys
+off) now stays non-null through a starvation wither. The heart is the last thing standing, so a
+starving creature keeps powering its domain until the wither reaches its core.
+
+### 26.5 Auto-collect
+
+`ElementalCrystalImpactor.CollectBy(SkimmerImpactor)` is the auto-collect entry point — the identical
+chain a skim runs (collection effects, flight to the vessel, spend), reachable without a skim
+contact. `AcceptImpactee` now delegates to it, so there is one collection path, not two. Its sole
+caller is the joust: `VesselWitherLifeformByCrystalEffectSO.TakeHeart` resolves the jousting
+vessel's near-field skimmer (far-field as fallback) and awards the crystal the kill just freed. With
+no usable skimmer it degrades to the ordinary drop — the crystal simply sits there as a collectible,
+which is the starvation behaviour and therefore never a lost crystal.
+
+### 26.6 Scope, honestly stated
+
+- **Fauna**: `LightFauna` (the spindled creatures — shark, brittlestar, clawfish) gets both
+  directions plus the deferred heart. `Boid` (the tadpole) has no spindle rings to order, so it
+  leaves its skeleton and fades the empty husk out.
+- **Flora**: `LifeForm.Jousted` withers heart-outward and leaves a skeleton. **Every other flora
+  death keeps the existing destruction** (`DamageAll` + `ForceWitherAll`) — a plant grazed down to
+  its lethal threshold has been actively eaten, and the prompter's ask was specifically about the
+  joust.
+- **The worm colony is deliberately excluded.** Its segments keep the authored suction death
+  (`WormSegmentFauna.WitherHuskCoroutine`). A kaiju-scale skeleton would be a wall, and its capital
+  segments carry **danger prisms** — leaving those standing would strew permanent hazards through
+  the cell on every colony death. Revisit only with a decision about what happens to danger prisms
+  in a skeleton.
+
+### 26.7 Collider budget — the real cost, stated
+
+This is the one invariant that **pays** for the change: nothing is added at the moment of death (a
+live creature's body prisms already carry colliders), but they now **persist** instead of being
+destroyed with the husk. A cell running a 30 s fauna wave clock therefore accumulates skeleton mass
+over a match at roughly *(deaths × body prisms per creature)*.
+
+The mitigation is the canon's own answer and needs no new mechanism: a skeleton is ordinary
+environment mass, so it enters the targeting grids and **herbivores graze it** — dead creatures
+become food. It also inherits the standard collider-LOD-by-phase treatment that every cell prism
+gets, and it feeds `Cell.LiveVolume`, so a cell that fills with skeletons climbs its own phase
+ladder and its fauna get hungrier and faster. **No new physics queries were added.**
+
+Two things to watch in a playtest, in this order:
+1. **Prism count in a long round.** If skeletons outpace grazing, the lever is the diet/spawn tuning
+   that already exists (`SpawnProfile.FaunaFoodFloor`, per-species populations) — *never* a timer.
+2. **Legacy (nucleus-less) cells.** There, herbivores eat only *opposing* mass, so a skeleton of the
+   dominant domain has no predator — the same standing condition as the dominant canopy
+   (`§0` territorial permanence), now with one more contributor.
+
+### 26.8 In-editor verification (the human is the gate)
+
+Scene: **Menu_Main** freestyle (Squirrel is the menu vessel, so the joust is one flight away), and
+**MinigameWildlifeBlitz** for a populated cell.
+
+1. **Joust a fauna.** Fly the Squirrel faster than a brittlestar/shark and clip its heart. Expect:
+   no explosion; the crystal flies to *your* vessel and grants its element; the arms/fins evaporate
+   **from the body outward**; a skeleton of prisms is left hanging in space.
+2. **Joust a flora.** Same, on any planted flora. Expect the same — specifically **no detonation**,
+   which is the visible before/after.
+3. **Starve a fauna.** Let a creature run past `starvationSeconds` with no prey (or lower it on the
+   `LightFaunaDataSO`). Expect the mirror: extremities first, inward; the crystal becomes collectable
+   only when the wither reaches the core; skeleton left behind.
+4. **Devour.** Let a predator catch prey. Expect the *unchanged* behaviour — body suctions into the
+   mouth, **no** skeleton.
+5. **The skeleton is food.** Watch a herbivore approach and eat skeleton prisms. If it ignores them,
+   the re-file did not land — check `PrismSpatialIndex.NotifyOwnershipChanged`.
+6. **Watch the console for the heart alarm** (`was destroyed with its heart unreleased`). It must
+   never fire.
+
+Tuning knobs: `LightFaunaDataSO.witherRingInterval` (fauna ring cadence) and the new
+`LifeForm.witherRingInterval` (flora). Both are seconds per ring; keep them above zero or the body
+collapses in a single frame, which reads as a pop.

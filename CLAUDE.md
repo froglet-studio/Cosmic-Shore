@@ -63,11 +63,27 @@ outcome is optimization, not life). Use the `/ecology` skill for any change here
   predation. It routes through the same sealed `Fauna.Die`, so the crystal drop and the wither
   are not bypassable. A subclass may override to add bookkeeping first (the worm colony re-links
   its chain), but an override that lets a creature survive losing its whole body breaks the rule.
-- **Starvation = wither-to-crystal.** A starving (or predated) creature withers from its extremity
-  spindles inward — a shark's fins / a brittlestar's arms evaporate *before* the core body
-  (farthest-from-centre first, emergent from geometry) — and leaves a collectible elemental crystal.
-  It **does not vanish** (the continuity law above). **Mass is conserved** (the "self-sustaining
-  economy" that makes the system NASA-credible). Sealed into `Fauna.Die` so no fauna can bypass it.
+- **Starvation = wither-to-crystal, and a joust is that wither RUN BACKWARDS.** A starving creature
+  withers from its extremity spindles inward — a shark's fins / a brittlestar's arms evaporate
+  *before* the core body (farthest-from-the-heart first, emergent from geometry) — and the heart is
+  the LAST thing standing, so its crystal becomes collectable by any vessel only when the wither
+  reaches the core. A **jousted** lifeform (the Squirrel's Crystal Joust, flora and fauna alike)
+  runs the identical geometry in the opposite direction: it never detonates, the heart is freed at
+  the strike and **auto-collected by the jouster**
+  (`ElementalCrystalImpactor.CollectBy`), and the spindles unravel *from the heart outward* around
+  the hole it left. Both leave the body prisms standing as a **skeleton** — ordinary cell mass the
+  food web then grazes, so a creature's frame is conserved instead of dying with its husk (before
+  this only the heart survived a death, which was passive mass removal hiding inside a death
+  animation). Predation is neither: a devoured body suctions into the mouth, because there the mass
+  transfers to the eater. The carrier is `LifeformDeathStyle` (`Withered`/`Jousted`/`Consumed`),
+  stamped by the killing force and read by the death animation; the ordered wither is only possible
+  because `Spindle.IsolateForOrderedWither` first breaks the parent/child couplings that make
+  `ForceWither` recurse and make destroying a spindle destroy its children. It **does not vanish**
+  (the continuity law above). **Mass is conserved** (the "self-sustaining economy" that makes the
+  system NASA-credible). Sealed into `Fauna.Die`, which releases the heart outright unless a
+  subclass opts into a progressive wither (`DefersHeartRelease`) and owes the release back — with a
+  fail-loud `OnDestroy` alarm if one ever doesn't. The worm colony is deliberately excluded from the
+  skeleton (its capitals carry danger prisms). Full record: `Docs/ECOSYSTEM.md §26`.
 - **Volume is the spine.** Phase, dominant domain, prey, HUD all key off per-domain **VOLUME**
   (`Cell.LiveVolume`), not prism count. Count is a rare frenzy/perf backstop only.
   **Node control is the NUCLEUS**: in a cell with a nucleus, `DominantDomain` reads only the
