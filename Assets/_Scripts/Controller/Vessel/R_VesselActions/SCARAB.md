@@ -191,12 +191,22 @@ Modelled on the Sparrow's `BarrelRollController`
    camera reads the root); real root bank `rootRollDegrees 15`; `BlockRotationOverride` set each
    rolling frame so bridging trail prisms lay travel-aligned, cleared when done. What is new is
    what the juke **hits**:
-   - **Enemy vessels** — juking into an opponent shoves them (the Rocket League bump). The
-     platform already routes vessel-on-vessel contact through `VesselImpactor`; the shove is an
-     effect SO in the Scarab's container, domain-gated so you cannot bump a teammate.
+   - **Enemy vessels** — juking into an opponent shoves them (the Rocket League bump). ⚠ **There
+     is no hull-vs-hull contact event in the platform at all** — `VesselImpactor.AcceptImpactee`
+     handles prisms, crystals and skimmers, and has no vessel case. *All* vessel-on-vessel
+     interaction is **skimmer-mediated**: one vessel's hull sweeping the other's skimmer volume
+     runs that skimmer's `VesselSkimmerEffects` (the joust, the same-domain overtake buff, spin,
+     shrink…), gated on **relative speed** and **opposing domain**, owner-authoritative. So the
+     shove is a new `VesselSkimmerEffectsSO` in the Scarab's *skimmer* container, not its vessel
+     container — and it must be a **new effect, not the joust**, for a reason that is easy to
+     miss: `ModifyVelocity` displaces the vessel without touching `VesselStatus.Speed`, so a
+     juking Scarab reads as *no faster than usual* and would fail the joust's
+     faster-vessel-wins gate every time. The shove's own gate must read the juke state, not speed.
    - **Balls** — a ball caught by the juking hull is struck with the juke's true velocity, which
-     is larger and more lateral than the vessel's flight velocity. This is how you hit a ball
-     sideways without turning.
+     is larger and more lateral than the vessel's flight velocity. Same caveat, different
+     consumer: the ball samples striker velocity from **per-tick transform deltas** (not
+     `Course * Speed`), so it sees the juke's real motion correctly with nothing to fix. This is
+     how you hit a ball sideways without turning.
 
 **Open decision (§15):** the original brief asked for the juke to fire a *short-range lateral cone
 of destruction* — a real `AOEConicExplosion` that also shreds prisms. The revised notes describe
@@ -221,10 +231,14 @@ Free with `SingleStickVesselTransformer`. First-pass scalers *(proposal)*: Pitch
 ### 3.6 Time 5 — the double-tap dash
 
 The Time level-5 upgrade (§7) is a **double-tap of the throttle** producing a burst/dash gap
-closer. The detector is already in the pipeline: RT crossing `TriggerDeadzone 0.05` raises
+closer. The *signal* is already in the pipeline: RT crossing `TriggerDeadzone 0.05` raises
 `RightStickAction (1)` **press and release** edges, so two press edges inside
-`doubleTapWindowSeconds 0.3` *(proposal)* is the gesture, with no new input plumbing at all — the
-one event the Scarab was otherwise going to leave unbound. The dash itself reuses
+`doubleTapWindowSeconds 0.3` *(proposal)* is the gesture — using the one event the Scarab was
+otherwise going to leave unbound. The *detector* is net-new: nothing in the codebase does
+double-tap, multi-tap or press-timing today (verified — zero hits fleet-wide). It is a timestamp
+comparison, so it is small; the only decision is where it lives. Keep it local to the Scarab's
+transformer unless a second vessel wants one, in which case it belongs on the shared input
+layer so every strategy inherits it. The dash itself reuses
 `ModifyVelocity` along `Course` (the same impulse channel as the juke, so the 100-unit clamp and
 the eased envelope are shared and already tested), gated on `IsUpgradeActive(Element.Time)` at
 the moment of the second tap.
@@ -255,10 +269,21 @@ the ball's opening velocity. Second, it works entirely **through the crystal fun
 new spawner, no mode-local pickup, and every crystal source the platform already has (the mode's
 respawning anchor crystal, fauna-dropped elemental hearts, freestyle crystals) feeds it.
 
-Wiring: a new `VesselCrystalEffectSO` on the Scarab's impactor container that checks the meter
-and branches — below threshold, add energy; at threshold, spawn the ball at the crystal's
-position with the vessel's velocity and spend. The vessel-side crystal path already carries both
-an omni list and four per-element lists, so the effect goes in all five and any crystal works.
+**Wiring — crystal-side, not vessel-side.** The Astro League anchor crystal carries an
+`OmniCrystalImpactor`, and its `AcceptImpactee` is already server-gated, already latched against
+multi-collider double-fire, and already holds the striking `VesselImpactor` — so it can see the
+Scarab's energy meter, domain, position and velocity in one place. The recommended shape is a
+subclass, `BallForgeCrystalImpactor : OmniCrystalImpactor`, swapped onto a Scarab-facing crystal
+prefab (`IsDomainMatching` is already a `protected virtual` seam and `TeamCrystalImpactor` is the
+existing precedent for subclassing it): below threshold fall through to today's collect; at
+threshold, materialise the ball and skip the collect so no fuel or score is granted, then
+`Crystal.Respawn()` exactly as today.
+
+The tempting alternative — a `VesselCrystalEffectSO` in the Scarab's own container — is worse for
+a specific reason worth recording: the vessel-side and crystal-side chains run **independently**,
+so the crystal would still run its own collect/explode/respawn regardless of what the vessel-side
+effect decided, and the vessel-side path is not guaranteed to be on the server. Choose the
+crystal side.
 
 **The no-generation zone.** Balls may not be generated in the **last quarter of the arena nearest
 the opponent's goal** — otherwise you would simply carry energy to their doorstep and materialise
@@ -269,11 +294,23 @@ distinct failure cue. Outside a mode with goals (freestyle), the gate is inert.
 ### 4.2 Permanent team colour
 
 **A ball is its maker's colour forever.** No striker recolouring: an opponent can bat your ball
-around, but it never becomes theirs. Today the ball recolours on every deliberate strike
-(`n_LastHitDomain`), which also drives what it eats — so permanence is not just cosmetic, it
-makes the ball's interaction with the world **stable and readable**: your ball always eats the
-enemy's trail and always shields yours, from birth to death. In a multi-ball arena, that
-readability is what keeps the chaos legible (the esport constraint from §1 doing real work).
+around, but it never becomes theirs. Today the ball recolours on *every* vessel contact
+(`n_LastHitDomain` — deliberate or not), and that same value drives what the ball eats — so
+permanence is not just cosmetic, it makes the ball's interaction with the world **stable and
+readable**: your ball always eats the enemy's trail and always shields yours, from birth to
+death. In a multi-ball arena, that readability is what keeps the chaos legible (the esport
+constraint from §1 doing real work).
+
+Cheap to build, as it turns out: the domain is written in exactly two places (on contact, and
+back to neutral on kickoff re-centre) and read in three (the prism diet, the material tint, and a
+public accessor with no callers today). Dropping the contact write and seeding the value at
+creation is nearly the whole change — it must stay a replicated variable, because the prism-diet
+scan runs on **every peer**.
+
+⚠ **Colour does not currently drive scoring.** Goal credit comes from the striker list, not from
+the ball — so a permanently-Ruby ball put through a net by a Jade last-toucher credits *Jade*
+today. That is either exactly right (Rocket League's own-goal rule) or exactly wrong (your ball,
+your point), and it is a decision, not an accident: §15.12.
 
 ### 4.3 Death at the boundary
 
@@ -284,7 +321,15 @@ the balance target in §6 exists precisely to keep that from feeling punishing.
 
 Continuity of existence applies — a ball must **dissipate visibly** (fade/collapse/evaporate),
 never blink out. It is not prism mass, so mass conservation is not implicated; the continuity law
-is platform-wide regardless.
+is platform-wide regardless. The mode's existing detonate path (which already hides the ball and
+plays a client-side burst on a goal) is the animation to reuse.
+
+Two implementation notes from the shipped boundary: `Contain` reports only *"it bounced"* and
+**clamps the ball's position unconditionally**, discarding the penetration depth — a destroy
+variant needs that depth, so the branch belongs at the call site with a pre-clamp read. And a
+ball whose boundary reference is never set is **completely unbounded** (the containment call
+early-outs), so runtime-created balls must be handed the boundary at creation or they coast out
+of the world forever.
 
 ### 4.4 Multiple balls
 
@@ -295,15 +340,39 @@ match clock.
 
 ### 4.5 What this costs on the mode side (honest accounting)
 
-The shipped ball is a single server-simulated `NetworkBehaviour` whose lifecycle is
-freeze/hide/re-centre. Turning it into a population requires, at minimum: a ball **registry**
-(spawn/despawn instead of freeze/hide), **per-ball** goal-crossing state in the goal detector,
-**per-ball** strike attribution (`_lastStrikers` is currently one small buffer for one ball),
-kickoff/celebration/reset paths that no longer assume one object to re-centre, and the HUD
-objective marker choosing which ball to point at. None of this is exotic, but it is real mode
-work and should be scoped as such rather than discovered mid-implementation. A verification agent
-enumerated the single-ball assumptions in the shipped controller; that list is the implementation
-checklist (§14).
+The mode is **architecturally one-ball**, more so than it looks. Verified against the shipped
+code, in rough order of cost:
+
+1. **There is no ball prefab.** The ball is a *scene-placed* NetworkObject spawned by Netcode's
+   scene sync — no prefab asset exists, and nothing registers it in the network prefab list. There
+   is also **no spawn/despawn API**: the entire match-control surface is freeze / hide /
+   re-centre. Step one of a multi-ball model is extracting the prefab and registering it. (Its
+   `Awake` is self-sufficient — it builds its own rigidbody, physics material, layer exclusions
+   and visuals — so a runtime instance comes up correctly once it is handed its settings, its
+   boundary, its size scale and its spawn position, and once every goal is re-configured to see
+   it.)
+2. **Four hard-wired single references**: the controller's, the arena's (portal anticipation
+   glow + boundary handoff), the goal's, and the goal-replay recorder's.
+3. **The goal detector holds per-ball crossing state as plain fields** (last position + a
+   has-sampled flag) — meaningless with N balls; it must become per-ball state or move onto the
+   ball.
+4. **Strike attribution is global and cannot express a ball.** The controller keeps one
+   two-element striker list, and the strike handler's signature takes *(vessel, intensity)* with
+   **no ball parameter at all** — so with N balls, whoever last hit *any* ball is credited for
+   *every* goal. This is the single most misleading break, because it produces plausible-looking
+   wrong scores rather than an error.
+5. **A goal stops the whole match** — celebrate, pause the clock, global slow-mo, park every
+   vessel, sweep every field prism, re-centre, kickoff-freeze. With other balls still in flight
+   that is wrong by construction, and it is a *design* question (§15), not just plumbing.
+6. **The HUD objective marker** finds a ball once with `FindAnyObjectByType` and caches it
+   forever — it would latch onto an arbitrary ball for the match.
+7. **The AI striker** reads the one ball directly for role assignment and intercept; nearest-ball
+   selection does not exist.
+8. **Cost scales**: each ball samples every vessel's velocity every physics tick, so N balls
+   means N× redundant sampling — a real reason to cap the population (§13).
+
+None of this is exotic, but it is substantial mode work and should be scoped up front rather than
+discovered mid-implementation. Whether it belongs in the vessel branch at all is §15.11.
 
 ---
 
@@ -340,6 +409,18 @@ shape: a mode-side `Switch` object owning (a) a curved reflector the ball resolv
 switch is a **player-placed goal that pays energy instead of points**. That reuse is the answer
 to "work through the fundamentals" here; the alternative (teaching the ball to bounce off a new
 prism class) is a much larger platform change for one consumer.
+
+The goal detector is genuinely close to reusable — it disables its own collider and detects by
+polling, its mouth is just its transform position, and `Configure` **already** accepts an
+explicit inward normal, a per-instance mouth radius, and a `passThrough` mode that scores on
+centre-crossing rather than against a back wall (all three were added for the central-goal
+layout). Four couplings have to be broken for a player-placed instance: the controller
+**overwrites goal positions and re-configures them** on every match-config change (so a placed
+ring would be stomped); registration is a fixed serialized list indexed by domain with no
+register/unregister API; the controller back-reference is serialized; and the ring's *visual* is
+drawn separately by the arena, so a placed switch needs its own body (which is the prism pane
+anyway). Its report hook detonates the ball and triggers the whole celebration — a switch wants a
+different outcome.
 
 Placement: on the **course**, not the nose (mid-drift you throw the switch where you are
 *going*), at a base distance ahead *(proposal: 150u — the mode's own kickoff-line distance)*.
@@ -505,10 +586,11 @@ tool in any mode with opponents. Nothing in the kit requires an arena to functio
   bespoke arena edge — the switch reuses the goal detector and the boundary's reflection math.
 - **Collider budget.** Per switch: its brick bodies (pooled, phase-LOD-managed) plus one analytic
   reflector (no collider) and one mouth detector (no collider — plane-crossing math, as the
-  shipped goal already is). Balls carry one SphereCollider each, so the population size is the
-  budget question — state a cap in the mode config and measure it *(first pass: 3 live balls per
-  player)*. Juke: zero. If the cone is adopted: one capsule trigger for a fraction of a second,
-  prism damage via Burst sweep.
+  shipped goal already is). Balls carry one SphereCollider each — but the real per-ball cost is
+  **CPU, not colliders**: every ball runs a prism spatial-index sweep and samples every vessel's
+  velocity each physics tick, both of which scale linearly with the population. State a cap in
+  the mode config and measure it *(first pass: 3 live balls per player)*. Juke: zero. If the cone
+  is adopted: one capsule trigger for a fraction of a second, prism damage via Burst sweep.
 - **Nothing to author** for the speed tunnel or the occlusion corridor (both platform laws bound
   automatically on `IsLocalPilot`); the corridor's hull measurement should be checked for the
   skinned-mesh armature-scale trap that once oversized the Sparrow's by ~5×.
@@ -522,19 +604,22 @@ tool in any mode with opponents. Nothing in the kit requires an arena to functio
 | `_Scripts/Controller/Vessel/ScarabVesselTransformer.cs` | `SingleStickVesselTransformer` subclass: the throttle **integrator** + Time-scaled ceiling + double-tap dash (§3.2, §3.6) |
 | `_Scripts/Controller/Vessel/ScarabJukeController.cs` | NetworkBehaviour: right-stick poll, cooldown, displacement + visual roll, vessel shove + ball strike, fire RPCs (§3.4) |
 | `_Scripts/.../Data Containers/PlaceSwitchActionSO.cs` + `Executors/PlaceSwitchActionExecutor.cs` | Charge gate, placement, occupancy claim, pooled spawn, spend (§5) |
-| `_Scripts/.../Vessel Crystal Effects/ScarabBallByCrystalEffectSO.cs` | The threshold branch: add energy, or materialise a ball with inherited velocity (§4.1) |
-| Mode-side: ball registry, per-ball goal state, per-ball attribution, `Switch` object (reflector + mouth detector), boundary-death path, no-generation zone | §4.5, §5 — scoped as mode work, not vessel work |
+| `_Scripts/.../Impactors/BallForgeCrystalImpactor.cs` | `OmniCrystalImpactor` subclass: the threshold branch — collect as usual, or materialise a ball with inherited velocity and skip the collect (§4.1) |
+| Mode-side: **a ball prefab + network registration** (neither exists), ball registry with spawn/despawn, per-ball goal state, per-ball attribution, `Switch` object (reflector + mouth detector), boundary-death path, no-generation zone, and a goal-outcome decision (§15.13) | §4.5, §5 — scoped as mode work, not vessel work |
 
 New assets: `Scarab.prefab` (clone Sparrow for the single-stick + juke skeleton — **never** the
 five placeholder vessels, all of which serialize `vesselType: 0`; root carries the Netcode trio
 and the full `[RequireComponent]` set, with `_shipInstance` / `vesselHUDController` /
 `_nearFieldSkimmer` / `gameData` wired) · `Resources/ElementalAbilityMaps/Scarab.asset` ·
-`_SO_Assets/VesselActions/Scarab/` · `ScarabImpactorDataContainer.asset` (baseline prism trio +
-the ball-generation crystal effect in the omni list **and** all four elemental lists + the
-anti-vessel shove) · `ScarabSkimmerImpactorDataContainer.asset` (then **run Audit Vessel
-Skimmers** — the container-null and pointer-at-disabled-twin failures are silent by design) ·
+`_SO_Assets/VesselActions/Scarab/` · `ScarabImpactorDataContainer.asset` (the baseline prism trio
++ the crystal-collection effects that fill the energy meter) ·
+`ScarabSkimmerImpactorDataContainer.asset` (**the anti-vessel shove lives here**, not in the
+vessel container — all vessel-on-vessel interaction is skimmer-mediated, §3.4; then **run Audit
+Vessel Skimmers**, whose container-null and pointer-at-disabled-twin failures are silent by
+design) · a crystal prefab variant carrying `BallForgeCrystalImpactor` (§4.1) ·
 `ScarabCameraSettingsSO.asset` · `SO_Class_Scarab.asset` (correct name + location) ·
-`ScarabHUDVariant.prefab` · a switch prefab/definition.
+`ScarabHUDVariant.prefab` · a switch prefab/definition · **a ball prefab** (§4.5 — the shipped
+ball is a scene object, so this does not exist yet).
 
 Edits: `VesselClassType.cs` (+`Scarab = 12`) · `EnumIntegrityTests.cs` (count 13→14 +
 `[TestCase]`, **same commit** or the suite fails) · `Vessel Prefab Container.asset` (+prefab —
@@ -622,9 +707,11 @@ Vessel Elemental Morphs**, **Audit Corridor Vessel Radii**, **Validate Speed Tun
 7. **Colour permanence**: have an opponent strike your ball repeatedly → it stays your colour, and
    keeps eating their trail and shielding yours.
 8. **Boundary death**: shoot a ball at the wall → it dissipates visibly (no pop, no carom).
-9. **Multi-ball**: three balls live simultaneously → goals detect correctly for each, attribution
-   credits the right striker per ball, celebration/kickoff handles the population, the HUD
-   objective marker picks a sensible target.
+9. **Multi-ball**: three balls live simultaneously → goals detect correctly for each; the HUD
+   objective marker picks a sensible target; whatever §15.13 decides a goal does, it does.
+   ⚠ **Test attribution deliberately**: have player A strike ball 1 and player B then score
+   ball 2 in the same window. Global attribution produces a *plausible-looking wrong score*, not
+   an error, so it will not surface by itself.
 10. **Switch**: A with a charge → curved ring blooms ahead on the course; a ball threading the
     mouth pays energy and the switch breaks; **an enemy ball threading it pays you too**; a ball
     striking the panel off-mouth **deflects** (this is the §5 crux — if it merely slows, the
@@ -671,6 +758,15 @@ implementation time.
     placement blindly. v1 recommendation: AI keeps flying Rhinos in Astro League (free, via the
     `Vessels` list order) until throttle/juke synthesis lands.
 11. **Mode scope** (§4.5): the multi-ball, player-generated, boundary-death ball model is a
-    substantial change to Astro League's shipped single-ball mode. Is this an evolution of Astro
-    League, or a second mode that shares its arena? The answer changes how much of §4.5 is in
-    scope for the vessel branch.
+    substantial change to Astro League's shipped single-ball mode — starting with the fact that
+    **no ball prefab exists** (it is a scene object with no spawn API). Is this an evolution of
+    Astro League, or a second mode that shares its arena? The answer changes how much of §4.5 is
+    in scope for the vessel branch.
+12. **Who gets the point?** (§4.2) Goal credit today comes from the last striker, not the ball's
+    colour, and the two are independent systems. With permanently-owned balls: last-toucher
+    (Rocket League own-goals, keeps the shipped code) or ball-owner (your ball, your point)?
+13. **What does a goal DO when other balls are live?** (§4.5) Today a goal stops the world —
+    celebration, global slow-mo, every vessel parked, every field prism swept, kickoff freeze.
+    With a population in flight, "score and reset" is incoherent. Candidates: goals stop
+    nothing (the ball detonates, play continues — the party-game answer), or a short local
+    celebration with no freeze. This is the biggest unresolved *design* question in the document.
