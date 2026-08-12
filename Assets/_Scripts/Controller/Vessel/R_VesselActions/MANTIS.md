@@ -56,9 +56,14 @@ sticks — the names come from the touch scheme (`Assets/_Scripts/Controller/IO/
 The analog values publish continuously as `InputStatus.LeftTriggerAnalog` / `RightTriggerAnalog`
 (owner-write NetworkVariables — readable on remote peers). The A button (`buttonSouth`) raises
 `InputEvents.Button1Action (6)` (GamepadInputStrategy.cs:57-61; `InputHintBindingMap` agrees:
-`PadButtonSouth → Button1Action`. The enum-file comments saying Button1 = X are stale — code wins).
-**No InputEvent is ever raised from right-stick deflection** — stick direction is polled state
-only, which is exactly how the Sparrow's `BarrelRollController` consumes it.
+`PadButtonSouth → Button1Action`. The enum-file comments saying Button1 = X are stale — code wins.
+On desktop the raise site is the live `KeyboardInputStrategy` — the stray file at `Assets/`
+root, Space key; `Controller/IO/KeyboardMouseInputStrategy.cs` is dead code no strategy selector
+instantiates, a known audit trap). **No dedicated InputEvent exists for right-stick deflection**
+— stick direction is polled state only, which is exactly how the Sparrow's `BarrelRollController`
+consumes it. (The derived straight-line gestures `FullSpeedStraightAction (0)` /
+`MinimumSpeedStraightAction (5)` do fold right-stick components into their `XDiff`/`XSum` math —
+the Mantis leaves both unbound, so a stick pinned at the perimeter for a nudge perturbs nothing.)
 
 | Physical control | Plumbing | Mantis binding |
 |---|---|---|
@@ -116,8 +121,9 @@ full-trigger 100, full-trigger at Time L10 ×1.5 = 145. Context: Rhino on the sa
 10–60 and ramp-boosts to 310 in a straight line; ball top speed 300. The Mantis is faster than a
 cruising Rhino everywhere, slower than a committed Rhino ramp — its edge is that full speed is
 always available, in any direction, without a straight-line gesture. Speed-tunnel law: nothing to
-author (absolute fleet-wide mapping); the Mantis crosses the `minEffectSpeed 70` threshold near
-full trigger, so the tunnel reads as throttle feedback for free.
+author (absolute fleet-wide mapping); the Mantis crosses the `minEffectSpeed 70` threshold at
+about two-thirds pull (RT ≈ 0.67 base, ≈ 0.44 at Time L10), so the tunnel reads as throttle
+feedback for free.
 
 ### 2.3 Carve — analog drift on LT
 
@@ -246,10 +252,13 @@ New pair: **`PlaceWallActionSO : ShipActionSO`** (stateless config) + **`PlaceWa
 : ShipActionExecutorBase`** (state, registered in the prefab's `ActionExecutorRegistry`), bound
 to `Button1Action (6)`:
 
-1. **Gate on charges**: `ResourceSystem.Resources[wallChargeIndex].CurrentAmount >= 1/3f`
-   (resources are normalized 0..1 meters, `Mathf.Clamp01`ed — **3 charges = a full meter, cost
-   1/3 each**; the `SeedWallActionSO.enhancementsPerFullAmmo` / Sparrow `ammoCost 0.5` idiom).
-   Insufficient → refusal SFX, nothing spawns.
+1. **Gate on charges**: `ResourceSystem.Resources[wallChargeIndex].CurrentAmount >=
+   wallChargeCost` (resources are normalized 0..1 meters, clamped to `MaxAmount` — **3 charges =
+   a full meter, cost ~1/3 each**; the `SeedWallActionSO.enhancementsPerFullAmmo` / Sparrow
+   `ammoCost 0.5` idiom). ⚠ Author `wallChargeCost = 0.333`, a hair **under** 1/3: the meter
+   clamps at exactly 1.0, and `1.0f − 1/3f − 1/3f` lands a float ulp *below* `1/3f` — an
+   exact-1/3 cost lets a full meter place only two walls while the pips still show three. Stated
+   here so the epsilon doesn't get "simplified" away. Insufficient → refusal SFX, nothing spawns.
 2. **Place**: `center = vessel.position + VesselStatus.Course × placementDistance` — on the
    **course**, not the nose (mid-drift you throw the wall where you're *going*; a deliberate,
    drift-composable choice). `placementDistance` is the Space-scaled parameter (§4.3), base 150
@@ -257,7 +266,7 @@ to `Button1Action (6)`:
    intensities)*.
 3. **Layout**: a 5×3 pane of bricks ⊥ to Course (grid axes = arbitrary-up basis around Course),
    brick `TargetScale (10, 10, 1)`, near-flush spacing → a ~52u × 32u braking pane one brick
-   thin *(proposal — see §6.2 for why thin-and-wide is the right shape against this ball)*.
+   thin *(proposal — see §5.3 for why thin-and-wide is the right shape against this ball)*.
 4. **Occupancy**: `PrismSpatialIndex.TryReserve(brickPos, clearRadius)` per brick **before**
    spawning (claim-before-spawn; physics queries are blind to fresh prisms for 0.6s). A brick
    whose claim fails is skipped — partial walls are legal, overlap-spawns are not.
@@ -267,7 +276,7 @@ to `Button1Action (6)`:
    **blooms in** on the clock (continuity of existence; never tween scales, never a bare
    growthRate write). Bricks grouped into a `Trail` for bookkeeping (the `AOERadialBlocks`
    pattern).
-6. **Spend**: `ChangeResourceAmount(wallChargeIndex, -1/3f)`.
+6. **Spend**: `ChangeResourceAmount(wallChargeIndex, -wallChargeCost)`.
 7. Bricks are **plain** — unshielded, undangerous. Why not shielded: against the ball a shield is
    a *free pass* — the ball pops it and keeps 100% speed, only an *eaten* prism drags (§6.2) — so
    shielding a goalkeeper wall would defeat it. Why never super-shielded: the ball ignores
@@ -284,8 +293,10 @@ executor derives the grid purely from them).
 maxAmount 1, initialAmount 0.34, resourceGainRate 0 }` — **no passive regen** (the Sparrow
 missile-meter pattern); you start each match with one wall banked and earn the rest by collecting
 crystals. Grant path: a new `MantisWallChargeByCrystalEffect.asset`
-(`VesselChangeResourceByCrystalEffectSO`: `_resourceIndex 0, _resourceAmount 0.334,
-_overrideAmount 0` — **+1 charge, additive**, unlike the Sparrow's set-to-full) authored into
+(`VesselChangeResourceByCrystalEffectSO` — its fields sit on the SO's nested `_change`
+`ResourceChangeSpec`, so the asset authors them under `_change:` exactly as the Sparrow's does:
+`_resourceIndex 0, _resourceAmount 0.334, _overrideAmount 0` — **+1 charge, additive**, unlike
+the Sparrow's set-to-full) authored into
 `MantisImpactorDataContainer.asset`'s `vesselCrystalEffects` (omni list) **and** all four
 per-element elemental-crystal lists (`VesselMassCrystalEffects` / `Charge` / `Space` / `Time`) —
 any crystal is a wall charge, whatever else it also does (elemental crystals still seed element
@@ -310,29 +321,48 @@ Map asset: `Assets/Resources/ElementalAbilityMaps/Mantis.asset` (exact folder + 
 |---|---|---|---|---|
 | **Charge (1)** | Mantis Strike | — (right-stick polled; see §8 hints) | Ball-launch impulse: `ballLaunchSpeedMultiplierAtFullCharge` on the strike SO, ×1 → ×2 at L10 (base 140 u/s → 280, under the ball's 300 cap) | **Surgical Strike** — the cone spares your own domain (per-fire `AffectSelfOverride`, snapshotted at fire; the Dolphin "Clean Blast" primitive) |
 | **Mass (2)** | Carve (drift trail) | `LeftStickAction (2)` | Trail prism VOLUME: `trailVolume` ElementalFloat 1 → 2.5 on `VesselPrismController`, cube-root per axis (the Squirrel/Dolphin field, verbatim) | **Ablative Wake** — trail prisms arrive shielded ONLY while drifting (`massUpgradeShieldsTrail` + `IsDrifting` — the shipped Squirrel mechanism, zero new code). ⚠ vs the ball this is a *free pass*, not armor (§6.2) — it defends your interception net against swords and fauna, not against the ball itself; the doc says so, the toast should too |
-| **Space (3)** | Bulwark | `Button1Action (6)` | Placement DISTANCE: `placementDistanceElemental` ElementalFloat 150 → 300 on the wall SO — reach: at L10 you goal-keep from midfield | **Deep Wall** — the Bulwark arrives two panes deep (a second layer one brick behind the first; double the braking transit — §6.2 — for the same one charge) |
-| **Time (4)** | Overdrive | `RightStickAction (1)` (map/hint binding only; no SO bound to the event) | Throttle ceiling: `ThrottleScalerMultiplier` ElementalFloat 1 → 1.5 (the existing dormant `VesselTransformer` field, enabled) | **Hair Trigger** — throttle response becomes immediate: speed tracks the trigger via `SetSpeedTrackingRate` (the Rhino ramp's constant-rate primitive, ~600 u/s²) instead of the 1.5/s exponential lerp — stop-and-go play, instant feints |
+| **Space (3)** | Bulwark | `Button1Action (6)` | Placement DISTANCE: `placementDistanceElemental` ElementalFloat 150 → 300 on the wall SO — reach: at L10 you goal-keep from midfield | **Deep Wall** — the Bulwark arrives two panes deep (a second layer one brick behind the first; double the braking transit — §5.3 — for the same one charge) |
+| **Time (4)** | Overdrive | `RightStickAction (1)` (map/hint binding only; no SO bound to the event) | Throttle ceiling: `ThrottleScalerMultiplier` ElementalFloat 1 → 1.5 (the existing dormant `VesselTransformer` field, enabled) | **Hair Trigger** — throttle response becomes immediate: speed tracks the trigger via `SetSpeedTrackingRate` (the Rhino ramp's constant-rate primitive; the rate itself is the Mantis's own knob, first-pass 600 u/s² — §9) instead of the 1.5/s exponential lerp — stop-and-go play, instant feints |
 
 Upgrade-name collision check (shipped + reserved + retired-on-record): Surgical Strike, Ablative
 Wake, Deep Wall, Hair Trigger are all free.
 
-Notes per row:
+### 4.1 Charge — Mantis Strike
 
-- **Charge / Strike**: threat/energy owns the punch, the Sparrow-skyburst/Manta-detonation
-  pattern. The scaled parameter is the **ball impulse**, not the cone's geometry — one parameter
-  per element, and reach is Space's word (the cone's 60u height stays fixed). The snapshot
-  travels in the fire RPC (§3.1). `IsUpgradeActive(Element.Charge)` is read at fire and stamped
-  onto the spawned cone (`AffectSelfOverride`), never re-read mid-blast.
-- **Mass / Carve**: the fleet's both drift vessels put Mass on the drift-laid trail
-  (Squirrel "Trail Volume", Dolphin "Drift Trail" — both `trailVolume` 1→2.5); the Mantis is the
-  third. "Arrive shielded" upgrades pair with Mass everywhere but the Sparrow.
-- **Space / Bulwark**: reach/presence — placing farther IS the element. Distance, not span:
-  span changes the ecology budget per placement (§6.3), distance doesn't.
-- **Time / Overdrive**: rate/mobility — the throttle is the mobility ability. The generic map
-  multiplier must be pinned even here: `CurrentBoostAmount()` multiplies by the generic Time
-  multiplier whenever `IsBoosting`, and although the Mantis ships no boost action, a shared
-  effect (comeback, fauna buff) or future kit change could set `IsBoosting` — pin it and the
-  double-dip is impossible by construction.
+Threat/energy owns the punch, the Sparrow-skyburst/Manta-detonation pattern. The scaled
+parameter is the **ball impulse**, not the cone's geometry — one parameter per element, and
+reach is Space's word (the cone's 60u height stays fixed). The snapshot travels in the fire RPC
+(§3.1). `IsUpgradeActive(Element.Charge)` is read at fire and stamped onto the spawned cone
+(`AffectSelfOverride`), never re-read mid-blast.
+
+### 4.2 Mass — Carve
+
+The fleet's both drift vessels put Mass on the drift-laid trail (Squirrel "Trail Volume",
+Dolphin "Drift Trail" — both `trailVolume` 1→2.5); the Mantis is the third. "Arrive shielded"
+upgrades pair with Mass everywhere but the Sparrow.
+
+### 4.3 Space — Bulwark
+
+Reach/presence — placing farther IS the element. Distance, not span: span changes the ecology
+budget per placement (§6.3), distance doesn't.
+
+### 4.4 Time — Overdrive
+
+Rate/mobility — the throttle is the mobility ability. The generic map multiplier must be pinned
+even here: `CurrentBoostAmount()` multiplies by the generic Time multiplier whenever
+`IsBoosting`, and although the Mantis ships no boost action, a shared effect (comeback, fauna
+buff) or future kit change could set `IsBoosting` — pin it and the double-dip is impossible by
+construction.
+
+### 4.5 Contract-shape note (deliberate deviation, flagged for approval)
+
+Only Carve and Bulwark are `InputEvents → ShipActionSO` bindings — the contract's stated ability
+shape. The Strike is a polled NetworkBehaviour (the `BarrelRollController` precedent; the
+InputEvents pipe cannot carry a direction vector) and Overdrive is transformer-internal (its map
+`Input` exists for hint routing only). The contract reserves unbound map rows for
+passive/impact-driven abilities, and the Strike is an active stick ability — which is exactly why
+§8 asks for the hint-only `RightStickFlick` member. Named here so the deviation is a decision on
+the record, not an accident the auditors trip over later.
 
 Maintained-mechanism law: nothing here holds an element above 10 — wall charges are a
 `ResourceSystem` meter (a normalized ammo fraction), not element levels; the elemental layer is
@@ -396,7 +426,8 @@ of its own contact model, exactly as it is for hulls and blades):
    - striker: `exp.SourceVessel` — the DogFight attribution field, stamped at spawn.
 3. Apply: `rb.linearVelocity = dir × LaunchSpeed` (clamped to `maxSpeed 300`), then feed the
    **existing** strike bookkeeping: `n_LastHitDomain` recolor to the striker's domain,
-   `OnStruckServer(vessel, speed)` → `AstroLeagueController.HandleBallStruckServer` →
+   `OnStruckServer(vessel, intensity)` (the float payload is hit intensity 0..1 =
+   finalSpeed / maxSpeed, not a raw speed) → `AstroLeagueController.HandleBallStruckServer` →
    `_lastStrikers` — **without this, a goal off a Strike is unattributed** (kickoff, no score) —
    plus `Strike_ClientRpc` juice (flash, pop, shake, audio) and the per-vessel
    `vesselStrikeCooldown` latch so one cone can't re-launch the ball every trigger-stay frame.
@@ -425,11 +456,15 @@ Verified ball–prism model, which the whole defensive design must respect:
   - **same color** → prism gets **shielded** (the ball armors friendly mass);
   - **opposing + shielded** → shield popped, prism survives, **no drag that visit**;
   - **super-shielded** → untouched, zero cost.
-- So a Bulwark is a **brake pad on the ball's path**: each brick eaten multiplies speed by
-  `3/(3 + 0.05×100) = 0.375` (brick volume 100 at the proposed 10×10×1). One pane transit
-  (~1–2 bricks on the path) cuts ball speed to ~14–38%; a Deep Wall (§4.3) transit ~2–4 bricks →
-  ~2–14%. That is the goalkeeping verb: not a save, a **smother** — the shot dies in front of
-  the mouth and becomes a loose ball.
+- So a Bulwark is a **brake pad on the ball's path**. The drag applies **once per physics tick
+  over the SUMMED volume eaten that tick** (`velocity ×= mass/(mass + 0.05 × ΣV)`,
+  `AstroLeagueBall.ProcessPrismInteractions`) — not per-brick compounding, and at shot speeds
+  (140–300 u/s ≈ 3–6u per 0.02s tick) a one-brick-thin pane resolves in a single tick. One pane
+  transit (1–2 bricks on the path, same tick) cuts ball speed to `3/(3+5) = 37.5%` or
+  `3/(3+10) ≈ 23%` (brick volume 100 at the proposed 10×10×1); a Deep Wall (§4.3) transit lands
+  ~13–23% same-tick, down to ~5% when its two panes resolve in separate ticks. That is the
+  goalkeeping verb: not a save, a **smother** — the shot arrives at the mouth as a crawl and
+  becomes a loose ball.
 - A Bulwark **matching the ball's last-hit color is shielded by the ball, not eaten** — your own
   wall only brakes an *opposing-colored* ball. Walls are goalkeeping against the enemy's shots,
   by construction.
@@ -471,9 +506,13 @@ verification item: whether the anchor `Crystal.prefab` dispatches as omni (hull)
 
 ### 5.6 AI backfill — v1 posture
 
-`AIPilot` has no throttle or stick-ability API (`SetExternalTargetProvider` is the mode's only
-lever; the Sparrow's roll is already inert for AI; trigger synthesis is the standing
-Phase 2.5 backlog item). An AI-driven Mantis would idle at `MinimumSpeed` with dead nudge/wall.
+`AIPilot` has no throttle setter and no stick synthesis (`SetExternalTargetProvider` is the
+mode's steering lever; the Sparrow's roll is already inert for AI; trigger synthesis is the
+standing Phase 2.5 backlog item) — an AI-driven Mantis would idle at `MinimumSpeed` with a dead
+nudge. It **does** have a prefab-authored ability loop (`AIPilot.abilities`: a list of
+`{ShipActionSO, Duration, Cooldown}` fired forever on a blind cooldown), so the Bulwark — a
+bound `ShipActionSO` — could fire under AI with zero new code, just with nothing aiming the
+placement. Not enough to field a competent AI Mantis.
 **v1: AI never flies the Mantis** — free, because the scene's `aiInitializeDatas` clamp to
 `AllowedVesselClasses[0]` = Rhino (§5.1). The Mantis is human-only until the AI pass:
 
@@ -482,8 +521,9 @@ Phase 2.5 backlog item). An AI-driven Mantis would idle at `MinimumSpeed` with d
 - nudge synthesis: fire when the ball is inside a cone-shaped window off the vessel's side and
   the launch direction scores toward the enemy goal (the executor-side AI-trigger-synthesis shape
   CONTRACT §2 prescribes for stick abilities);
-- wall synthesis: optional; defender-role AI drops a wall on the predicted shot line when
-  charges ≥ 1.
+- wall synthesis: optional; the blind `AIPilot.abilities` cooldown loop works day one (fires
+  wherever the AI happens to be pointing), but the real version is defender-role placement on
+  the predicted shot line when charges ≥ 1.
 
 Tracked as a follow-up (§12), not a ship-blocker: the mode is 2–6 players with AI backfill, and
 backfill stays all-Rhino, which is today's shipped behavior.
@@ -572,7 +612,7 @@ New assets:
 
 | Asset | Notes |
 |---|---|
-| `_Prefabs/Spacevessels/Mantis.prefab` | Built fresh (clone Sparrow for the single-stick + nudge skeleton — **never** clone the five placeholders, all of which serialize `vesselType: 0`); `VesselStatus.vesselType = 12` |
+| `_Prefabs/Spacevessels/Mantis.prefab` | Built fresh (clone Sparrow for the single-stick + nudge skeleton — **never** clone the five placeholders, all of which serialize `vesselType: 0`); `VesselStatus.vesselType = 12`; root carries the Netcode trio (`NetworkObject` / `ClientNetworkTransform` / `NetcodeHooks`) and the full `[RequireComponent]` ten (incl. `ElementalBarsController` + `R_ShipElementStatsHandler`); wire `VesselStatus._shipInstance`, `vesselHUDController`, `_nearFieldSkimmer`, and `VesselController.gameData` → `Runtime GameData.asset` — the clone carries all of this, itemized so none of it is assumed |
 | `Resources/ElementalAbilityMaps/Mantis.asset` | §4 map, all multipliers pinned 1 |
 | `_SO_Assets/VesselActions/Mantis/` | `MantisDriftAction`, `MantisSharpDriftAction`, `PlaceWallAction`, strike-cone config |
 | `_Prefabs/Projectile/MantisStrikeCone.prefab` | `AOEConicExplosion` per §3.2 + `MantisStrikeExplosionImpactorDataContainer.asset` (never null) |
@@ -609,11 +649,17 @@ hosts own visibility, symmetric Rebind/Unbind gated on `IsInitializedAsAI || !Is
   variant prefab. Upgrade signal = the standard three layers; any icon doubling as a live gauge
   sets `tintIconOnUpgrade = false` and overrides `SetAbilityUpgraded` re-anchoring rest scales to
   `AbilityIconRestScale(element)` (the Squirrel reference).
+- **Element flowers**: fleet-required (`ElementalBarsController` is in the `[RequireComponent]`
+  set) — author them, don't rely on the loud runtime fallback: **FrogletTools > Vessels > Wire
+  Elemental Petal Bars** on the HUD variant, then assign `ElementalBarsController.elementBars`
+  on the vessel prefab.
 - **Wall charge pips**: 3 discrete pips as **sibling** images of the Bulwark icon (never the
   ability icon itself — it belongs to the upgrade tint/badge system), driven event-only off
   `ResourceSystem.OnResourceChanged(index, current, max)` → `state = Round(current × 3)` — the
-  Sparrow `missileIcons` sprite-state pattern. Pips bloom/wither on change (continuity applies
-  to UI).
+  Sparrow `missileIcons` sprite-state display. Subscribe the HUD controller to `ResourceSystem`
+  directly (the Serpent HUD's pattern; the Sparrow reaches the same event transitively, through
+  its gun executor's index-filtered `OnAmmoChanged` forward). Pips bloom/wither on change
+  (continuity applies to UI).
 - **Nudge pip**: one binary ring on/near the Strike icon — armed color ↔ spent-and-recharging,
   `DOFillAmount` wipe + spend punch, the Sparrow `rollChargeIndicator` pattern exactly (binary
   stays visibly binary; a partial fill would read as a meter).
@@ -685,9 +731,9 @@ Elemental Morphs** (reports no-shapes until art lands, expected), **Audit Corrid
    `OnStruckServer` isn't fed). Ball outside the 60u height → untouched.
 6. **Bulwark**: A with 1+ charge → pane blooms ⊥ course at 150u (300 at Space L10 — measure);
    A at 0 charges → refusal, nothing spawns; bricks respect occupancy (place into own trail —
-   no overlaps). Opposing ball through the pane → visible speed kill (~0.375 per brick eaten);
-   own-colored ball through it → bricks get shielded, no drag. Goal → sweep clears walls,
-   crystals survive.
+   no overlaps). Opposing ball through the pane → visible speed kill (summed-volume drag, one
+   pane ≈ 23–38% of incoming speed — §5.3); own-colored ball through it → bricks get shielded,
+   no drag. Goal → sweep clears walls, crystals survive.
 7. **Deep Wall** (Space 5 seeded): one charge → two panes, deeper speed kill.
 8. **Charges from crystals**: collect the midfield anchor crystal → +1 pip; collect a fauna-drop
    elemental crystal → +1 pip AND normal element-level seed. ⚠ If the elemental path doesn't
@@ -706,7 +752,7 @@ implementation time.
 ## 12. Open questions & follow-ups (for markup)
 
 1. **Name + ID**: Mantis = 12 (mantis shrimp). Sign off, mindful of the Manta `mantis_*` FBX
-   naming hazard (§0).
+   naming hazard (the preamble's naming-trap note).
 2. **Element map + upgrade names** (§4): Surgical Strike / Ablative Wake / Deep Wall /
    Hair Trigger — the FLEET_MAPS §2 row awaits markup; per the gate, nothing is authored until
    then.
