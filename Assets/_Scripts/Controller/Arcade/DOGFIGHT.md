@@ -191,6 +191,17 @@ second apart, not a shotgun of simultaneous detonations.
 The generator **asserts** the two missile effects carry the same non-zero cooldown, because
 splitting them silently reinstates the double-count.
 
+## The skyburst launches from the missile bay (2026-08)
+
+The rocket no longer materializes at a floating gun point: the press opens the Sparrow's
+animated missile bay (right bay first, left bay second) and the projectile — now the model's
+own missile, not the wedge polyhedron — spawns **0.2 s later at the live bay bone's pose**
+(`SkyBurstGunAction.launchDelaySeconds`; `FireGunActionExecutor` cancels a pending launch on
+turn end or vessel teardown, with ammo staying spent). For this mode that means ~0.2 s of
+fire-to-impact latency on the 50-point weapon; the scoring path, cooldown latch, hit sphere,
+and blast are untouched. Mechanics + tuning:
+`_Scripts/Controller/Vessel/R_VesselActions/SPARROW_SKYBURST_BAY.md`.
+
 ## The platform change: the skyburst's blast can now touch a pilot
 
 `AOEConicSkyBurst.prefab`'s `ExplosionImpactor` shipped with `explosionImpactorDataContainer:
