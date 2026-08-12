@@ -6,6 +6,7 @@ using System.Linq;
 using CosmicShore.Utility; // GameDataSO
 using UnityEditor;
 using UnityEngine;
+using CosmicShore.Editor.Froglet;
 
 namespace CosmicShore.Utility.PerformanceBenchmark.Editor
 {
@@ -82,6 +83,8 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
         string comparisonText;
 
         [MenuItem("FrogletTools/Performance Benchmark", false, 20)]
+        [FrogletTool(FrogletToolCategory.Performance, Importance = 5,
+            Description = "Frame-cost benchmark: score, hints, sweeps, load-time insights.")]
         public static void Open()
         {
             var window = GetWindow<PerformanceBenchmarkWindow>("Performance Benchmark");

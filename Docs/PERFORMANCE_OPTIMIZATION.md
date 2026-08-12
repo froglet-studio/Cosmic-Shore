@@ -12,6 +12,14 @@ post PR #573 merge).
 are ordered by value-for-cost. After every fix, run the §5 verification
 protocol and update this doc (status + measured numbers).
 
+**Prism animation work has its own locked law:** `Docs/PRISM_ANIMATION.md` — no
+prism may need multiframe CPU updates to animate (one stamp → GPU clock → one
+scheduled end swap; gameplay state final at start). The CPU animation managers
+(`PrismScaleManager` / `MaterialStateManager` / `AdaptiveAnimationManager` and
+`PrismEffectsManager`'s animation passes) were DELETED in the D2 pass
+(2026-08-02) — historical task entries below that reference them describe a
+retired architecture; do not resurrect a per-frame pass to "optimize" anything.
+
 ---
 
 ## 0. SESSION HANDOFF (2026-07-15) — next session starts here
@@ -154,6 +162,114 @@ per-capture analyses; `Docs/SPATIAL_INDEX.md` documents the summation view
 - DiagnosticsHUD "Frame Time" is wall clock (CPU + GPU/present wait +
   editor loop) — the profiler's CPU number will always read lower; use the
   HUD's busy-CPU/GPU split + bound verdict to pick the next lever.
+- `List.Remove(this)` on a static enabled-instance registry is an O(n)
+  UnityEngine.Object-equality scan, and a pool MISS pays it too: the
+  create-then-deactivate cycle runs `OnDisable` for an instance that was never
+  added, scanning the WHOLE registry for nothing. Under a mass burst this was
+  1,863 ms of one frame (2,408 misses × ~50k live effects, 2026-08-02).
+  Registries with no order contract use stored-index swap-remove, O(1).
+- When the GPU owns an animation, the GameObject CARRIER becomes the cost:
+  a pooled effect object whose only jobs are one stamp and holding a pool
+  slot charges Instantiate + registry churn + a timer entry per death,
+  orders of magnitude above the entity work it wraps. Batch-instantiate
+  entities from the prototype instead (`PrismDebris` pattern: queue → one
+  `em.Instantiate(prototype, N)` per frame → sweep-based batch destroy) and
+  keep the pooled object only as the no-ECS fallback.
+
+---
+
+## 0.2 PLATFORM NOTE — macOS / Metal (2026-08-03)
+
+Branch `claude/mac-game-unity-performance-p35x60`. Triggered by a report of
+**~3 fps in the editor on an Apple Silicon Mac** (native ARM editor, not
+Rosetta) against ~26–40 ms frames on the Windows dev machines.
+
+### Read this before blaming the Mac
+
+A sustained ~10× deficit is **not** a platform-cost profile. Retina costs at
+most ~4× and only when GPU-bound; shader compilation is transient. A flat 10×
+across every frame is the signature of an **editor diagnostic toggle**, and
+§0's standing rule already caught this exact class once on Windows (Burst
+compilation was off the whole session, running every job managed at ~20×).
+Check these **before** taking any Mac capture seriously — all are per-machine
+editor state, none are committed, so a new machine starts with none of the
+project's history:
+
+| Check | Where | Cost when wrong |
+|---|---|---|
+| **Deep Profile** off | Profiler window toggle | ~10× whole frame — the single most likely cause of 3 fps |
+| **Burst ▸ Enable Compilation** ON | `Jobs ▸ Burst` | ~20× on every job (§0's rule) |
+| **Burst ▸ Safety Checks** off | `Jobs ▸ Burst` | large on job-heavy frames |
+| **Jobs Debugger** off | `Jobs` menu | large on job-heavy frames |
+| **Leak Detection** off / not "with stack trace" | `Jobs` menu | large, allocation-proportional |
+| Burst cache warm | first play-mode entry on a new machine compiles from cold | one-off stall, not sustained |
+
+The Hierarchy-view tell for managed jobs is unchanged: a row showing
+`ExecuteJobFunction.Invoke() [Invoke]` is executing managed; Burst-compiled
+rows show the job type name.
+
+### Shipped this session
+
+1. **`metalAPIValidation: 0`** (`ProjectSettings/ProjectSettings.asset`) — was
+   **1**. Metal's API validation layer runs per-draw in the editor on macOS;
+   on a frame with this project's draw count it is pure overhead and it
+   surfaces as errors things D3D12 silently tolerates. Off by default; turn it
+   back on deliberately when debugging a Metal-specific rendering bug.
+2. **Mac graphics API pinned to Metal** (same file, `m_BuildTargetGraphicsAPIs`
+   gained a `MacStandaloneSupport` entry, `m_APIs: 10000000`,
+   `m_Automatic: 0`). There was **no Mac entry at all** — only
+   `WindowsStandaloneSupport` pinned to D3D12. Automatic resolves to Metal in
+   practice, but pinning removes any chance of an OpenGLCore fallback (a
+   deprecated, dramatically slower path) on an older Mac.
+3. **`SettingsAutoDetector` is pixel-aware**
+   (`Assets/_Scripts/Controller/Settings/SettingsAutoDetector.cs`). The
+   heuristic scored cores/RAM/VRAM and **never asked how many pixels it had to
+   fill**, then handed `MSAA4x` to anything scoring High or above. A Retina
+   MacBook and a 1080p desktop score identically while the Mac renders ~4× the
+   pixels — and per capture #4 the frontier here is transparent-prism
+   overdraw, so pixel count is a first-order term. Now: a per-tier pixel budget
+   drives `RenderScalePercent` (square-rooted, since render scale is linear per
+   axis; clamped 50–100, never supersamples), FSR is selected when scaling
+   down, and the AA choice reads the **effective** post-render-scale pixel
+   count instead of the tier. Helps 4K Windows monitors identically — it is not
+   a Mac special case. 13 edit-mode tests in `SettingsAutoDetectorTests`.
+4. **`ExclusiveFullScreen` no longer requested on macOS**
+   (`GraphicsSettingsApplier.ToFullScreenMode`). Unity only implements it on
+   Windows; asking for it on a Mac alongside a Retina `SetResolution` is the
+   standard recipe for a black window / wrong backbuffer / offset mouse.
+   Runtime platform check, not a compile guard (`Docs/CONDITIONAL_COMPILATION.md`).
+
+**Scope honesty:** items 1–4 are real Mac costs but they do **not** add up to
+10×. If 3 fps survives the editor-toggle checklist above, the next step is a
+capture on the Mac, not more speculative settings work.
+
+### Known-open macOS gaps (not addressed here)
+
+- **Graphics Jobs are off for Mac only** (`m_BuildTargetGraphicsJobs`:
+  `MacStandaloneSupport: 0`, while Windows and Linux are `1`). Left alone
+  deliberately — Metal graphics-jobs support in 6000.3 was not verified in this
+  session, and flipping it blind risks instability for an unmeasured win. Test
+  it explicitly before changing.
+- **The shader warmup collection is empty AND would be Windows-recorded**
+  (Task 3). `GameplayShaderWarmup.shadervariants` holds 0 variants, so warmup
+  is a no-op everywhere. Worth knowing when it does get recorded: a
+  ShaderVariantCollection is per-graphics-API, so a collection recorded on
+  D3D12 does nothing for Metal. macOS needs its own recording pass.
+- **No macOS build target exists.** `CosmicShoreBuildPipeline` builds
+  `StandaloneWindows64` only (`ExecutableName = "CosmicShore.exe"`),
+  `Tools/Build/build_windows.sh` is the only wrapper, and there is no
+  `BurstAotSettings_StandaloneOSX.json`. Editor-on-Mac works; shipping a Mac
+  player is unscoped work.
+- **Standalone defaults to the lowest quality tier**
+  (`QualitySettings.asset` → `m_PerPlatformDefaultQuality: Standalone: 0` =
+  Very Low). Affects how a fresh machine *looks* before auto-detect seeds, not
+  its framerate. Flagged, untouched.
+- **Dual-mouse input does not exist on Mac.** `Win32RawInputMultiMouseProvider`
+  is 11 `user32.dll` P/Invokes behind `#if UNITY_STANDALONE_WIN || UNITY_EDITOR_WIN`,
+  and `MultiMouseService` is guarded the same way, so `dualMouseEngaged` is
+  permanently false there. The Escape→fullscreen toggle and the
+  `!Application.isFocused` input guard are inside the same block
+  (`InputController.cs:72-78`). Correctness, not performance.
 
 ---
 
@@ -204,7 +320,7 @@ BEFORE editor testing; every blocker found was fixed in a follow-up commit
 3. **Collect the three open datums**: (a) `PoolActivate.<prefab>` — who owns
    the 0.27 ms activations, first-Awake or heavy OnEnable? (b) `PoolRefill.*`
    typical clean ms; (c) whether `GC.Collect` ever fires mid-gameplay now.
-4. **Task 2 (user action)**: run `Tools > Cosmic Shore > UI > Raycast Target
+4. **Task 2 (user action)**: run `FrogletTools > Interface > Raycast Target
    Audit` on Menu_Main + vessel/UI prefabs (scene edits Undo-able; PREFAB
    edits are NOT — rely on git). Expect `EventSystem.Update` 0.5 → ~0.1 ms.
 5. **Task 3 (user action)**: record the shader-variant collection over
@@ -778,6 +894,7 @@ fix spreads or de-allocates the same work.
 | `481a7ad8` | Domain-volume gauge: colors on sample cadence, push gated on real change (was 1.02 ms/frame flat) |
 | `fb5e6643` | Cell volume recompute is one Burst `CellVolumeSumJob` over the index's new packed summation view (`PrismCellData`); managed 8000-prism slice deleted (was a ~10 ms reader-attributed spike billed to `DomainVolumeIndicator.Update`); `Cell.VolumeSum` + `DomainVolumeIndicator.Sample`/`.Push` markers (closes TODO C2) |
 | `71b51a28` | Collider-LOD hysteresis band (`lodExitRadiusMultiplier`, kills moving-focus boundary flapping); drain budget charged per re-validated entry (was unbounded transform reads on churny queues); `LOD.Sweep`/`LOD.Drain` markers; LOD tick de-phased half an interval from the volume recompute |
+| `f0ddfc21` | Batched pure-entity debris: prism-death explosion VFX spawn as ONE `em.Instantiate(prototype, N)` batch per frame (`PrismDebris` + `PrismRenderService.SpawnExplosionDebrisBatch`), retire via time-ordered sweep into ONE batched destroy — no GameObject/pool/per-effect timer per death, full 5s duration always. Root cause it kills: a lifted-throttle 30³ blast put 2,408 deaths in one frame, all pool misses, `PrismExplosion.OnDisable` alone 1,863 ms (its `EnabledInstances` `List.Remove` O(n) scan — now O(1) swap-remove on both effect classes for the surviving pooled uses). `PrismDebris.Drain`/`.Sweep` markers. Remainder (implosion port, `AOE.ResolveDamage` 0.43 ms/kill self + per-kill `PrismEventData` alloc): `Docs/PRISM_CLOCK_FOLLOWUP_PROMPTS.md` Prompt 9 |
 
 ---
 
@@ -844,7 +961,7 @@ fix spreads or de-allocates the same work.
   view).
 - **Benchmark tool**: `Assets/_Scripts/Utility/PerformanceBenchmark/`
   (`BENCHMARK_TOOL.md` — tabs, score/hints, sweep).
-- **Raycast audit tool**: `Tools > Cosmic Shore > UI > Raycast Target Audit`
+- **Raycast audit tool**: `FrogletTools > Interface > Raycast Target Audit`
   (`Assets/_Scripts/Editor/RaycastTargetAuditTool.cs`).
 
 ---
@@ -979,7 +1096,7 @@ display. Real Selectables are interleaved (the Squirrel HUD holds 5), so a
 blind batch edit was rejected.
 
 **Tool behavior (verified,** `Assets/_Scripts/Editor/RaycastTargetAuditTool.cs`**):**
-menu `Tools/Cosmic Shore/UI/Raycast Target Audit` (line 33). Classifier
+menu `FrogletTools/Interface/Raycast Target Audit` (line 33). Classifier
 (`NeedsRaycast`, lines 163-178) keeps any Graphic with a `Selectable`
 (`GetComponentInParent`, inactive included) or an `IEventSystemHandler` on
 self-or-ancestor; everything else is a disable candidate. Scan scope: Project
@@ -1200,3 +1317,4 @@ not compiler, at the time of the merge).
 | 2026-07-09 (flora round, re-verified) | Adversarial pass over the four commits. Markers + gauge gating: SOUND. Two real bugs fixed in `fc9c53f3`: (1) the flora drain outlived `LifeForm.Die` (`StopAllCoroutines` killed the old GrowCoroutine spawn site but not `Update`) — a dying flora kept spawning through its wither window (zombie flora / child pop-out); `Die` override clears the queue. (2) Spindle's evaporate renderer-gone early-out could bail before `DisableSpindle`, hanging `DieCoroutine`'s empty-tracker wait — removed. Hardening: grow orders carry `decidedAt` and drop past `ReservationTtlSeconds − 1` (Frenzy holds could outlive the 5 s claim → overlap risk); drain freezes at `timeScale 0` (parity with the old `WaitForSeconds` loop). **Correction of record:** a material clone stays SRP-batchable; an MPB excludes the renderer for the fade duration — the spindle win is zero material create/destroy churn, at the cost of unbatched draws *during* fades. Re-measure in the next capture; fallback is quantized shared fade materials (phase-variant pattern). Accepted nuances: gauge ring can lag ≤1 rebuild-epsilon (~1.4°, under segment granularity); theme-swap colors up to 0.25 s latent; per-tick flora throughput can under-fill only when a parent dies or an assembler fails mid-window (rare, disclosed). |
 | 2026-07-09 | 6-agent adversarial re-verification of the five commits (pre-editor-test). **3 blockers found in the fresh Task 1 commits, fixed in `d80e7ee5`:** `dtNominal` 0.02 → 0.04 (project Fixed Timestep is 0.04 — growth was ~1.9× too fast as committed; two agents converged on it independently); fixed 0.5 s dt cap → rotation-scaled cap (fixed cap slowed tempo up to 7× under the target frenzy load); cursor drift on removal bursts corrected. GC coverage gaps (clients + Play Again reloads never took the scheduled collect) fixed in `4443df83` via the two all-peers post-load fade-back handlers. WaitForSeconds cache, pool marker verdicts: SOUND (notes: cache misses on the variable-`waitTime` `waitTillOutsideSkimmer` path — acceptable; prewarm burst unmarked — intentional). Final compile-sanity pass over all six edited files: PASS (arithmetic invariants proven, `MaterialStateManager` independent, no external readers of the sliced behavior). Lesson recorded: never assume Unity's 0.02 default fixed timestep — check `TimeManager.asset`. |
 | 2026-07-17 (Sparrow regression) | The `75828ff0` async refill broke Sparrow guns/missiles once merged to bleeding-edge: `InstantiateAsync` bypasses the virtual `CreateFunc`, the only place `ProjectilePoolManager` ran Reflex injection, so async-refilled projectiles carried a null `AudioSystem` and NRE'd in `LaunchProjectile` (stack pool = un-injected instances hand out FIRST; Sparrow missile pool prewarms 5 toward a 20 target, so the pool top went dud within seconds). Fixed in `e146b882`: new `GenericPoolManager.OnInstanceCreated(T)` hook fires on both creation paths; subclass instance-prep (DI injection) must live there, never in a `CreateFunc` override. §1 item 3 updated with the contract. |
+| 2026-08-06 (pause + menu-return round) | Two reported UX stalls fixed. **Pause tap hitch:** the pause panel (`R_Pause_Menu_Panel`) starts inactive in every scene, so the FIRST tap paid the whole hierarchy's Awake/OnEnable + layout + TMP mesh generation mid-gameplay. Shipped `PauseMenu.Prewarm()` — the panel is activated invisible (root CanvasGroup alpha 0) for two frames at scene start and deactivated again; called from `MiniGameHUD.Start` (gameplay scenes) and `MenuMiniGameHUD.InstantiatePauseMenu` (menu freestyle). **Game→menu return:** (1) `SceneLoader.ReturnToMainMenu` now unpauses first (mirrors `LaunchGame`) — the pause-menu Main Menu button previously ran the whole transition at `timeScale 0`; (2) connected clients are covered BEFORE the teardown via `MultiplayerMiniGameControllerBase.BroadcastReturnToMenuVeil` → `ShowReturnToMenuVeil_ClientRpc` (mirror of the replay path's `PrepareForSceneReload_ClientRpc`; RPC + despawn messages share the reliable channel, so the veil always lands before vessels pop out — clients previously watched the whole despawn + scene switch uncovered); (3) on a game→menu arrival (previous loaded scene was a gameplay scene — tracked per-peer in `SceneLoader`), the opaque splash is HELD for `menuReturnSettleSeconds` (1.5 s, serialized) after `OnClientReady` so end-of-session cleanup finishes behind the veil instead of visibly clearing after the fade; the all-peers covered `GC.Collect` moved after the settle window so settle churn is collected too. First boot, auth→menu, party join, game launches, and replay reloads are not delayed (flag armed only on game→menu, cleared by `LaunchGame`). Remaining known stall: Menu_Main's synchronous scene-activation Awake/Start cost still freezes the splash spinner for its duration — structural, not addressed this round. |

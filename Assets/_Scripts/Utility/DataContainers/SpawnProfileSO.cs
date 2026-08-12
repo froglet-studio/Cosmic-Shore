@@ -31,6 +31,16 @@ namespace CosmicShore.Utility
                  "assets deserialize; remove with the next SpawnProfile asset migration.")]
         public bool FaunaExcludeLocalDomain = false;
         [Min(0f)] public float InitialFaunaSpawnWaitTime = 10f;
+
+        [Tooltip("Fauna release tier this biome STARTS at - seeds Cell.FaunaReleaseTier when the " +
+                 "config is assigned, before any spawner can tick. A species seeds only while its " +
+                 "FaunaConfigurationSO.ReleaseTier is at or below the cell's tier. int.MaxValue " +
+                 "(the default, and what every shipped biome uses) means 'everything released from " +
+                 "the first tick'. Ribcage authors -1: its cage starts SEALED, and the mode raises " +
+                 "the tier at 25% / 50%. Authoring it here rather than having the mode set it at " +
+                 "runtime is deliberate - the spawner starts on the cell's own bootstrap clock, so " +
+                 "a runtime-only seal races it and loses whenever the cell wins.")]
+        public int InitialFaunaReleaseTier = int.MaxValue;
         [Min(0f)] public float FaunaSpawnVolumeThreshold = 1f;
         [Tooltip("Fixed period (seconds) between fauna spawn-cycle ticks - the ecosystem heartbeat. " +
                  "Platform default is 30s; scoring modes that ride the wave clock (Brood Rush) depend on it.")]

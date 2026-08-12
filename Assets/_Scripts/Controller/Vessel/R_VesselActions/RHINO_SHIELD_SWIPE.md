@@ -301,6 +301,18 @@ the two stay locked: a gentle graze now crumbles over ~1.8s while a tip strike b
 frames. That coupling is deliberate — shatter violence tracks impact force for free — but it does
 mean a velocity retune is also a shatter-timing retune.
 
+**Debris SPIN rides the same number too.** `RotateFacesAlongAxis` (the subgraph
+`ExplodingBlockGraph` feeds) turns each face by `_ExplosionAmount x _ExplosiveRotation` about
+`cross(velocity, normal)` — so the stamped velocity sets the tumble AXIS while its magnitude, via
+`_ExplosionAmount`, sets the tumble RATE. `_ExplosiveRotation` (a material constant on
+`ExplodingBlockMaterial`, **not** per-instance) is therefore the gain on how much impact velocity
+becomes spin, and it is the knob to reach for when debris flies right but tumbles too little or too
+much — it moves spin ALONE, unlike `restitution`, which drags speed and shatter timing with it.
+Shipped at **0.0169** (raised from the historical 0.01 in two +30% passes). Both debris paths read
+it from the one material: `PrismDebris` copies the `PrismExplosion.prefab` renderer's
+`sharedMaterial` for its batched entity draw, and the pooled GameObject fallback uses the same
+asset, so there is exactly one place to tune.
+
 The ceiling sits at `600 x restitution` = **200**: at the physical read 600 was where the shatter
 stopped being perceivable (`_ExplosionAmount` reaches its "fully exploded" ~20.7 at `20.7 / speed`
 seconds, so 600 u/s finishes inside ~2 frames), and scaling it with `restitution` keeps that

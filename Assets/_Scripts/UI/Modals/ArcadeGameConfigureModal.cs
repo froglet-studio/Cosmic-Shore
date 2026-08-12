@@ -227,8 +227,10 @@ namespace CosmicShore.UI
             }
         }
 
-        void OnDisable()
+        protected override void OnDisable()
         {
+            base.OnDisable();
+
             foreach (var intensityButton in intensityButtons)
             {
                 intensityButton.OnSelect -= HandleIntensitySelected;

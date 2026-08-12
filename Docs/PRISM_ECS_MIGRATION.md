@@ -5,7 +5,11 @@
 Target: sustained 60 fps. This doc evaluates the ECS exploration on
 `claude/ecs-migration-guide-Db42i` and lays out the migration plan.
 **Companion docs:** `Assets/_Scripts/Game/Prisms/PRISM_PERFORMANCE_AUDIT.md` (original audit),
-`Docs/SPATIAL_INDEX.md`, `Docs/ECOSYSTEM_MASTERPLAN.md` (scale ambitions this must serve).
+`Docs/SPATIAL_INDEX.md`, `Docs/ECOSYSTEM_MASTERPLAN.md` (scale ambitions this must serve),
+`Docs/PRISM_ANIMATION.md` (**the clock-material law, LOCKED** — prism animation is one
+initial-conditions stamp + GPU clock + one scheduled end swap; the per-instance
+override components in §7 are the stamp's carrier, and the CPU animation managers this
+doc Burst-batched are scheduled for retirement under that law).
 
 ---
 

@@ -1,0 +1,43 @@
+parameter_name,parameter_type,parameter_description,used_by_events
+action_label,STRING,Human-readable label of the UI element the player acted on.,1
+action_type,STRING,Category of the UI action that was performed.,1
+action_value,STRING,Optional value carried by the UI action.,1
+ai_count,INT,Requested AI backfill count for the session.,2
+amount,INT,Number of crystals moved by this transaction.,3
+app_state,STRING,Application state machine phase at the moment the session ended.,1
+balance,INT,The player's crystal balance after this event.,5
+cost,INT,Crystal cost paid to unlock the vessel.,1
+duration_seconds,INT,"Wall-clock seconds from game start to game end, pause included. The gap against flight_time_seconds is pause plus idle time.",1
+fail_count,INT,How many games have now been lost consecutively.,1
+favorited,BOOL,"True when the minigame was favorited, false when it was unfavorited.",1
+flight_time_seconds,FLOAT,"Seconds the player actually spent at the controls: countdown end to game end, excluding pause and time in the background.",1
+friend_id,STRING,UGS player id of the player who became a friend.,1
+from_id,STRING,UGS player id of the person the friend request came from.,1
+game_mode,STRING,"The game mode, as its GameModes enum name.",7
+host_id,STRING,UGS player id of the party host who sent the invite.,1
+intensity,INT,Selected intensity tier for the game mode.,3
+invite_triggered,BOOL,"True when the party formed through a formal invite, false when players met through the presence lobby. Separates organic rematches from re-invited ones.",1
+is_first,BOOL,True when this was the first occurrence in the current session.,2
+is_multiplayer,BOOL,True when the session ran as a multiplayer game mode.,2
+item,STRING,What the player attempted to buy when the spend was blocked.,1
+key,STRING,The Cloud Save key whose write failed.,1
+last_ui_action,STRING,Label of the last UI action before the session ended. Churn forensics.,1
+match_id,STRING,Unique id for one game instance. Groups every player who was in the same match.,2
+party_id,STRING,"Relay party session id. Stable across consecutive matches by the same party, so a rematch is a different match_id but the same party_id.",2
+player_count,INT,"Total configured player count for the session, humans plus AI.",2
+player_count_ai,INT,Number of AI players backfilled into the match.,1
+player_count_human,INT,Number of human players in the match.,1
+player_ids,STRING,"Comma-joined, sorted UGS player ids of the humans in the match. AI is excluded.",1
+player_won,BOOL,True when the local player was on the winning side.,1
+quest,STRING,Title of the quest that was completed.,1
+reason,STRING,Why the session ended: pause or quit.,1
+seconds_since_launch,INT,Seconds elapsed since the app launched. Time-to-first-action analysis.,3
+setting,STRING,"Which setting was changed, by key name.",1
+shard_value,INT,Reward value granted for completing the quest.,1
+source,STRING,"What caused the crystal transaction, such as a game reward or a vessel purchase.",2
+target_id,STRING,UGS player id of the person the request or invite was sent to.,2
+timestamp_utc_iso,STRING,"Client clock at game completion, ISO-8601 UTC, for day, week and month bucketing.",1
+timestamp_utc_ms,LONG,"Client clock at game completion, Unix epoch milliseconds UTC.",1
+value,STRING,"The setting's new value, as a string.",1
+vessel,STRING,"The vessel involved, as its VesselClassType enum name.",1
+vessel_class,STRING,"The vessel the local player flew, as its VesselClassType enum name.",2

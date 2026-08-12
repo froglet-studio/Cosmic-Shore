@@ -112,7 +112,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         private void DisableConicExplosion()
         {
-            if (TryGetComponent<SphereCollider>(out var triggerCollider))
+            if (TryGetComponent<Collider>(out var triggerCollider))
                 triggerCollider.enabled = false;
             if (TryGetComponent<ExplosionImpactor>(out var impactor))
                 impactor.enabled = false;
@@ -203,15 +203,14 @@ namespace CosmicShore.Gameplay
             if (shielded)
                 prism.prismProperties.IsShielded = true;
 
-            // Start at zero scale
-            prism.transform.localScale = Vector3.zero;
-
-            // built-in growth (if Prism supports it)
+            // The one growth engine (Docs/PRISM_ANIMATION.md): TargetScale is the
+            // initial condition; SetGrowthRate pushes the rate through to the
+            // animator (a bare growthRate field write is dead on pooled prisms —
+            // the field is only read in Prism.Awake). The former bespoke
+            // GrowToScale fallback raced the real engine with per-frame
+            // localScale writes that never reached the instanced render path.
             prism.TargetScale = targetScale;
-            prism.growthRate  = growthRate;
-
-            // fallback grower in case Prism doesn't auto grow
-            GrowToScale(prism.transform, targetScale, growthRate).Forget();
+            prism.SetGrowthRate(growthRate);
 
             prism.Initialize(Vessel?.VesselStatus?.PlayerName ?? "UnknownPlayer");
 
@@ -221,22 +220,5 @@ namespace CosmicShore.Gameplay
             return prism;
         }
 
-        // ----------------------------------------------------------------------
-        // Block growth without coroutine
-        // ----------------------------------------------------------------------
-
-        private static async UniTaskVoid GrowToScale(Transform tr, Vector3 target, float rate)
-        {
-            rate = Mathf.Max(1e-5f, rate);
-
-            while (tr && (tr.localScale - target).sqrMagnitude > 0.0001f)
-            {
-                tr.localScale = Vector3.MoveTowards(tr.localScale, target, rate);
-                await UniTask.Yield();
-            }
-
-            if (tr)
-                tr.localScale = target;
-        }
     }
 }

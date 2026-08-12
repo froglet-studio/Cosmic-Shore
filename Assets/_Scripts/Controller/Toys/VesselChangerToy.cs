@@ -45,6 +45,90 @@ namespace CosmicShore.Gameplay
 
         public void Configure(VesselChangerToyDefinitionSO definition) => _def = definition;
 
+        // ── The toy's own emblem: your hull, ringed by the hulls you could fly ──
+
+        protected override void OnInitialized() => AttachEmblem(new EmblemSource(this), 10f);
+
+        /// <summary>
+        /// The hangar in one glyph: the CORE is the ship you are flying right now, the SATELLITES
+        /// are the first three you'd be offered - the same "you are this, these are the others"
+        /// reading the domain changer already ships, on a root that doesn't unfold.
+        /// </summary>
+        sealed class EmblemSource : ToyEmblem.IEmblemSource
+        {
+            readonly VesselChangerToy _toy;
+            public EmblemSource(VesselChangerToy toy) => _toy = toy;
+
+            public int SatelliteCount => 3;
+
+            // The hulls are painted with the emblem's one material, so a domain change is a
+            // three-write re-tint rather than a rebuild.
+            public bool UsesSharedMaterial => true;
+
+            public bool TryBuildSlot(int slot, Transform holder, float radius, Material shared, out bool heavy)
+            {
+                heavy = false;
+                if (!_toy.TryGetEmblemVessel(slot, out var vessel)) return false;
+
+                var container = _toy.Context?.VesselPrefabContainer;
+                if (!container || !container.TryGetShipPrefab(vessel, out Transform prefab)) return false;
+
+                // Built UNPARENTED first: the model builder fits by world bounds and assumes an
+                // origin-anchored, unrotated, unit-scale root.
+                if (!VesselModelBuilder.TryBuild(prefab, radius, shared, out var model)) return false;
+                model.transform.SetParent(holder, false);
+                return true;
+            }
+
+            public bool TryGetLiveKey(out object key)
+            {
+                key = null;
+                // False while mid-swap (the vessel status is destroyed), so the emblem holds its
+                // current hulls until the swap settles rather than rebuilding against nothing.
+                if (!_toy.TryGetCurrentVessel(out var current)) return false;
+                key = current;
+                return true;
+            }
+
+            public bool TryGetLiveTint(out Color tint)
+            {
+                tint = _toy.PreviewColor();
+                return true;
+            }
+        }
+
+        /// <summary>
+        /// Slot 0 is the vessel you're flying; slots 1..N walk the offer list (the collection minus
+        /// what you fly). Recomputed per slot - it is an array walk, and it must not depend on
+        /// <c>_offered</c>, which only exists while the matrix is open.
+        /// </summary>
+        bool TryGetEmblemVessel(int slot, out VesselClassType vessel)
+        {
+            vessel = VesselClassType.Any;
+            var collection = _def && _def.VesselCollection is { Length: > 0 }
+                ? _def.VesselCollection
+                : DefaultCollection;
+
+            bool hasCurrent = TryGetCurrentVessel(out var current);
+            if (slot == 0)
+            {
+                if (!hasCurrent) return false;
+                vessel = current;
+                return true;
+            }
+
+            int wanted = slot - 1, seen = 0;
+            foreach (var candidate in collection)
+            {
+                if (candidate == VesselClassType.Any || candidate == VesselClassType.Random) continue;
+                if (hasCurrent && candidate == current) continue;
+                if (seen++ != wanted) continue;
+                vessel = candidate;
+                return true;
+            }
+            return false;
+        }
+
         // ── Layout ───────────────────────────────────────────────────────────
 
         protected override int StationCount => _offered.Count;
@@ -185,7 +269,7 @@ namespace CosmicShore.Gameplay
 
         // Re-tint in place (no rebuild) so the recolour is instant and pop-free. Each mini model /
         // fallback sphere owns its own preview material, so tinting its renderers only affects that
-        // station; mirrors the property writes in VesselModelBuilder.BuildPreviewMaterial.
+        // station; mirrors the property writes in ToyModelBuilder.BuildPreviewMaterial.
         static void Recolor(Transform body, Color color)
         {
             if (!body) return;
