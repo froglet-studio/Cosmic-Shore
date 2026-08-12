@@ -86,17 +86,41 @@ Measured state (linear HDR → CIELAB; **sat** = screen saturation, §4.1):
 
 | tier | domain | ΔL\* base→rim | C\* base / rim | sat base / rim |
 |---|---|---|---|---|
-| unshielded *(untouched)* | Jade / Ruby / Gold | 32.2 / 27.1 / 47.6 | 33.6-48.1 / 77.2-138.8 / 51.9-76.5 | 100-100 / 98-100 / 100-91 |
+| unshielded — original | Jade / Ruby / Gold | 32.2 / 27.1 / **47.6** | 33.6-48.1 / 77.2-138.8 / 51.9-76.5 | 100-100 / 98-100 / 100-**91** |
+| **unshielded — current** | Jade / Ruby / Gold | 32.2 / 27.1 / **32.0** | 33.6-48.1 / 77.2-138.8 / 51.9-76.5 | 100-100 / 98-100 / 100-**98** |
 | shielded — original | Jade / Ruby / Gold | 29.3 / **10.1** / **9.8** | 32.1-37.3 / **105.8-111.4** / 45.9-43.3 | — |
 | shielded — after the ΔL\* pass | Jade / Ruby / Gold | 29.3 / 29.3 / 29.3 | 32.1-37.3 / 43.3-50.3 / **43.3-50.3** | 82-59 / 65-50 / **90-82** |
 | **shielded — current** | Jade / Ruby / Gold | 29.3 / 29.3 / 29.3 | 32.1-37.3 / 43.3-50.3 / **28.5-23.6** | 82-59 / 65-50 / **74-55** |
 | supershielded *(untouched)* | Jade / Ruby / Gold | 55.2 / 42.2 / 41.5 | 29.0-18.5 / 70.9-43.0 / 68.2-40.1 | — |
+| danger — original | *(all domains)* | **−3.8** | base 32.1 / 43.3 / 28.5, rim **77.9** | rim 97 |
+| **danger — current** | *(all domains)* | **+9.3** | base 32.1 / 43.3 / 28.5, rim **116.5** | rim 99 |
 
-Three defects have been fixed across two passes. The first pass fixed **contrast
+Four defects have been fixed across three passes. The first pass fixed **contrast
 collapse** (Ruby and Gold at ~⅓ of Jade's ΔL\*) and **chroma runaway on Ruby** (>3×
-Jade's — a near-zero-green violet that blooms harshly). The second pass fixed **Gold
-failing to shift to pastel** (§4.1). SuperShielded was measured and left alone: it is
-already healthy on all three domains.
+Jade's — a near-zero-green violet that blooms harshly). The second fixed **Gold failing to
+shift to pastel** (§4.1). The third fixed the two structural inconsistencies §4.2 names:
+Gold's **anomalous unshielded rim** and the danger tier's **inverted rim**. SuperShielded
+was measured and left alone: it is already healthy on all three domains.
+
+### 4.0 The invariant that outranks every per-tier contract
+
+> **In every tier, on every domain, the rim is brighter than the base.**
+
+This is what makes a prism read as a solid object rather than a flat slab (§2), and it
+held on nine of the twelve tier×domain pairs by accident rather than by rule — so the
+three that broke it were each rationalised individually instead of being recognised as one
+defect. Check it first, before any per-tier numbers:
+
+| tier | Jade | Ruby | Gold |
+|---|---|---|---|
+| unshielded | +32.16 | +27.13 | +31.99 |
+| shielded | +29.34 | +29.34 | +29.34 |
+| supershielded | +55.16 | +42.19 | +41.47 |
+| danger | +9.30 | +9.30 | +9.30 |
+
+A second, weaker corollary: **a shielded prism out-brightens its own plain prism** on both
+base and rim, so "shielded" always reads as the brighter state (Jade +10.23/+7.41, Ruby
++26.90/+29.11, Gold +10.06/+7.41).
 
 ### 4.1 Absolute C\* is NOT comparable across hues — measure screen saturation
 
@@ -132,7 +156,7 @@ Measured plain → shielded journey, which is the thing a player actually percei
 | Jade | 11.5 / 16.1 | +18% / +41% |
 | Ruby | 25.6 / 28.3 | +32% / +50% |
 | Gold *(before)* | 10.4 / **8.6** | **+10% / +9%** |
-| **Gold *(current)*** | **13.0 / 17.1** | **+26% / +36%** |
+| **Gold *(current)*** | **13.0 / 17.0** | **+26% / +43%** |
 
 Gold's chroma is therefore `28.54 / 23.64` — *below* Jade's, not 1.35× above it — chosen
 to land its screen saturation on the **midpoint of Jade and Ruby** (base 74%, rim 55%).
@@ -160,29 +184,42 @@ safe to its own domain — see CLAUDE.md); the base is what says *whose*. It tak
 **shielded** base rather than the plain one so a danger prism reads as its own frostier
 tier of the domain at a glance, instead of as ordinary mass wearing a hot rim.
 
-Measured (linear HDR → CIELAB, §3). Danger rim is `L* = 50.51, C* = 77.85`:
+The danger rim is `L* = 63.61, C* = 116.45, h = 38.8` — linear `(1.4979, 0.0058, 0.0069)`.
+Because every shielded base sits at `L* 54.31`, one shared rim gives **identical ΔL\* on
+all three domains**, the same property the shielded tier has:
 
-| domain | plain base L\* | shielded base L\* | ΔL\* base→rim with plain *(before)* | with shielded *(as shipped)* |
+| domain | shielded base L\* | ΔL\* base→rim *(original)* | ΔL\* *(current)* | ΔE00 *(orig → current)* |
 |---|---|---|---|---|
-| Jade | 44.08 | 54.31 | 6.42 | **−3.80** |
-| Ruby | 27.41 | 54.31 | 23.09 | **−3.81** |
-| Gold | 44.25 | 54.31 | 6.26 | **−3.81** |
+| Jade | 54.31 | **−3.80** | **+9.30** | 45.7 → 49.8 |
+| Ruby | 54.31 | **−3.81** | **+9.30** | 36.1 → 40.3 |
+| Gold | 54.31 | **−3.80** | **+9.30** | 28.2 → 34.2 |
 
-**Known trade-off — this pair separates on chroma, not lightness.** The rim now sits
-marginally *darker* than the base (sign flip: a frosty body with a dark red rim, where it
-used to be a dark body with a hot rim), and |ΔL\*| ≈ 3.8 is far under the 29.34 the
-shielded tier holds. Form still reads because the two are miles apart in **hue and
-chroma** (a C\* 77.85 red against a C\* 29–43 domain hue), which §3's ΔL\* criterion does
-not capture. Jade and Gold barely changed (they were at ~6.3 already); **Ruby gave up a
-real 23-point ΔL\***. If a danger prism ever reads flat, the fix is to re-place the danger
-rim's `L*` against the 54.31 shielded base — raise it well above, or drop it well below —
-**not** to send the base back to the plain colour, which only restored contrast on Ruby.
+**This tier used to be the only inverted one in the palette** (§4.0) — a dark rim on a
+lighter base, and with a peak channel of 0.72 it also had the *dimmest* rim of any tier
+(everything else runs 0.84–1.50). It was rationalised as "separates on hue and chroma
+instead of lightness", which was true, and which quietly made the tier's legibility depend
+entirely on how far a domain's hue sits from red. That is fine for Jade (132° away) and
+workable for Ruby (84°), and it fails on **Gold, only 44° away** — the domain that
+therefore had nothing much to separate on in *either* dimension.
 
-**Gold is the weakest of the three here and always was** — its hue sits only 44° from the
-danger red, against Jade's 132° and Ruby's 84°, so it has the least hue separation to
-trade on. The §4.1 desaturation left that essentially unchanged (ΔE00 29.81 → 28.15) while
-*widening* the chroma gap this pair actually separates on (34.5 → 49.3). If gold danger
-prisms ever read flat, that hue proximity is the cause — not the shielded chroma.
+The fix is the one this section already prescribed: re-place the rim's `L*` against the
+54.31 base, upward. **Raising `L*` alone would have made it salmon** — a bright red must
+add green and blue, and it stops reading as danger. The way out is that this is an *HDR*
+colour: pushing chroma to the positive-channel limit lets the red climb in luminance by
+driving `R` above 1.0 while `G`/`B` stay near zero, so it gets brighter *and* more
+saturated at once (screen saturation 97% → **99%**, `#DD3D27` → `#FF1214`). The rim now
+lands exactly on the palette's authored HDR ceiling of **1.4980**, the value already used
+by the Ruby unshielded rim and all three supershielded rims — so danger is as hot as
+anything in the game and no hotter.
+
+**Gold still has the least separation of the three (ΔE00 34.2 against Jade's 49.8), and
+that part is irreducible.** With one shared danger rim, hue distance is fixed by where
+each domain sits on the wheel. What changed is that hue distance is no longer *load
+bearing*: every domain now gets the same +9.30 lightness separation and a chroma gap of
+73–88, so form reads on Gold without depending on its hue. If Gold's danger prisms ever
+read flat again, the remaining lever is to give the danger tier **its own base fields per
+domain** (it has none today — see the table above) rather than to push the shared rim
+further, which would start distorting Jade and Ruby to solve a Gold problem.
 
 ### Why gold's chroma is below Jade's, not 1.35× above it
 
@@ -202,32 +239,53 @@ The current rule has no free taste knob: chroma is solved from the screen-satura
 target in §4.1. To make the whole family more or less frosted, move that **band** for all
 three domains, rather than reintroducing a per-domain multiplier.
 
-### Known trade-off
+### 4.2 Gold's unshielded rim (resolved)
 
-Gold's *unshielded* rim is anomalously hot (L\* 91.8, vs Jade 76.2), so equalising the
-shielded tier across domains puts Gold's shielded rim (83.65) slightly **below** its own
-unshielded rim. Its base still rises sharply (44.3 → 54.3) and both now desaturate hard,
-so a shielded Gold prism reads frostier overall. If it ever reads as "dimmer when
-shielded", the fix is to rebalance Gold's *unshielded* pair — not to re-break the shielded
-tier. That rebalance is **deliberately not bundled here**: plain gold is the most-seen
-prism of the domain and retuning it is a wider change than the shielded tier warranted.
+Gold's *unshielded* rim used to sit at `L* 91.80` against Jade's 76.24 and Ruby's 54.54 —
+above every other rim in the palette, and above Gold's own **shielded** rim at 83.65. That
+inverted the §4.0 corollary: a shielded Gold prism was *dimmer* at the rim than the plain
+prism it was supposed to read as a brighter, frostier version of.
+
+The cause was authoring to a peak channel of ~1.5 without checking the resulting `L*`. At
+a *blue* hue 1.5 buys little luminance (Ruby's rim lands at `L* 54.54`); at a **warm** hue
+it buys a lot, because red and green carry almost all of it — so the same authored peak
+put Gold 37 points of lightness above Ruby. This is the same warm-hue asymmetry as §4.1,
+reached from the other direction.
+
+Gold's unshielded rim is now `L* 76.24` — Jade's exact rim lightness — with **chroma and
+hue untouched** (`C* 76.54`, `h 73.8`), giving linear `(0.9964, 0.4049, 0.0186)`, `#FFAB25`.
+That lands ΔL\* at 31.99 against Jade's 32.16, restores 7.41 points of headroom under the
+shielded rim (again matching Jade exactly), and drops the peak from 1.50 to 1.00, in family
+with Jade's 1.14. Plain Gold prisms are correspondingly less blazing at the rim — the
+intended change, since that heat was the defect.
 
 ## 5. Re-deriving after a change
 
 The contract is reproducible from the asset alone; no play mode needed:
 
-1. Parse the four `Shielded*BlockColor` values per domain out of the `.asset`.
+1. Parse **all** the `*BlockColor` values per domain plus `EnvironmentColors.Danger` out of
+   the `.asset` — not just the tier you touched. Two of the three defects in §4 were only
+   visible by comparing tiers against each other.
 2. Convert linear RGB → CIELAB (§3 — no de-gamma).
-3. Check `ΔL*` base→rim per domain (must be 29.34), and **screen saturation** per colour
-   (§4.1 — clip to [0,1] first), against the §4 table. Checking `C*` alone will pass a
-   colour that fails on screen; that is how the Gold defect survived a whole pass.
-4. To re-place a domain: take Jade's shielded `L*` pair and the domain's own unshielded
+3. **Check §4.0 first**: every tier×domain pair must have `ΔL*` base→rim **> 0**, and each
+   domain's shielded pair must out-brighten its own plain pair. This is the cheapest check
+   and it catches the whole class of defect that survived two passes.
+4. Then check `ΔL*` base→rim per domain (shielded must be 29.34) and **screen saturation**
+   per colour (§4.1 — clip to [0,1] first) against the §4 table. Checking `C*` alone will
+   pass a colour that fails on screen; that is how the Gold defect survived a whole pass.
+5. To re-place a domain: take Jade's shielded `L*` pair and the domain's own unshielded
    Lab **hue** for base and rim, then solve `C*` so screen saturation hits the §4.1 target
    (monotonic in `C*` — a bisection converges in a few dozen steps); convert LCh → Lab →
    linear RGB.
-5. Assert no channel is negative before writing.
-6. Re-check the **danger** tier for that domain (it borrows the shielded base) and the
+6. Assert no channel is negative before writing, and no peak exceeds the palette's HDR
+   ceiling of **1.4980** without a stated reason.
+7. Re-check the **danger** tier for that domain (it borrows the shielded base) and the
    plain → shielded `ΔE00` journey, so a chroma move can't quietly flatten either.
+
+**Author lightness, never a peak channel.** Both §4.2 and the original danger rim were
+authored by picking channel values that looked right in isolation; at a warm hue that
+silently overshoots `L*`, and at a red hue it silently undershoots it. Set `L*` against the
+other tiers first, then solve the channels.
 
 ## 6. In-editor verification (the human gate)
 
@@ -251,9 +309,12 @@ Machine validation covers structure and colorimetry; only a playtest covers *loo
      capital segments carry danger prisms (`WormSegmentFauna`).
    - **Dangerous flora** (`AssembledFlora`, `growthInfo.IsDangerous`) and the AOE danger
      hemisphere (`AOEDangerHemisphereBlocks`).
-   Confirm the base→rim separation reads as **hue/chroma**, not brightness — that is the
-   danger tier's stated trade-off, and it is what a flat-looking danger prism would be
-   failing at.
+   Confirm the rim now reads as a **bright incandescent red glowing off a frostier body**
+   (it was a *dark* red rim before — the only inverted tier in the palette, §4.0). Check
+   **Gold** hardest: it has the least hue separation from the danger red, so it is the
+   domain where a regression would surface first. Also confirm a gold danger prism is not
+   confusable with a gold *plain* prism at speed — both now carry a hot rim, but they sit
+   35° apart in hue and 40 apart in chroma (`#FF1214` against `#FFAB25`).
 3. For **Ruby** and **Gold**, confirm: the prism's facets and silhouette read clearly
    (the base→rim separation is visible), and the shielded prism is obviously distinct
    from an unshielded prism of the same domain.
@@ -262,19 +323,41 @@ Machine validation covers structure and colorimetry; only a playtest covers *loo
    reads as **sand/cream**, the warm counterpart of Jade's mint and Ruby's pink. If it
    still reads as "gold, slightly lighter", the screen-saturation target needs to come
    down further; if it reads **chalky or dead**, it has come down too far.
-4. Check bloom: Jade's rim peaks at 1.22, Ruby's at 1.19, Gold's at **0.84**. Bloom
-   threshold is **0.2** (`GamePlay PostProcessing Profile`, 0.24 in the menu), so all
-   three are well clear of it and none should blow out. Gold's peak is lowest because a
-   warm hue reaches a given `L*` with smaller channel values than a blue one — expect it
-   to glow a little more softly than the other two, which is inherent, not a defect.
+4. Check bloom. Threshold is **0.2** (`GamePlay PostProcessing Profile`, 0.24 in the
+   menu), so every rim in the palette clears it comfortably; the peaks are what set how
+   hard each one glows:
+
+   | tier | Jade | Ruby | Gold |
+   |---|---|---|---|
+   | unshielded | 1.14 | 1.50 | 1.00 |
+   | shielded | 1.22 | 1.19 | 0.84 |
+   | supershielded | 1.50 | 1.50 | 1.50 |
+   | danger | 1.50 | 1.50 | 1.50 |
+
+   Nothing exceeds the palette's authored ceiling of 1.4980. Gold's shielded peak is the
+   lowest in the table because a warm hue reaches a given `L*` with smaller channel values
+   than a blue one — expect it to glow a little more softly, which is inherent, not a
+   defect. Danger should now be **among the hottest things on screen**; if it still looks
+   dull, suspect a stale Library rather than the values.
 5. Compare all three domains side by side — no domain should read hotter or flatter
-   than the others.
+   than the others. Then compare all four *tiers* within one domain, which is the check
+   §4.0 exists for: plain → shielded → supershielded should step visibly brighter, and
+   danger should be unmistakably its own thing rather than a dim variant of any of them.
 
 ## 7. Follow-ups
 
 - The inactive palettes (`CosmicWaveColorSetSO`, `PastelColorSetSO`) still carry the old
-  flat shielded values. They are dead assets today; if either is ever wired up, run §5
-  against it first.
+  flat shielded values **and the old inverted danger rim**. They are dead assets today; if
+  either is ever wired up, run §5 against it first.
+- **The danger tier has no base fields of its own** — it borrows each domain's shielded
+  base. That coupling is why Gold's danger separation (ΔE00 34.2) cannot be raised to
+  Jade's (49.8) without moving the shared rim and distorting the other two domains. If the
+  tier ever needs per-domain control, adding `DangerOutsideBlockColor` to `SO_ColorSet` +
+  `ThemeManager` is the clean way, and it is a structural change, not a tune.
+- **The unshielded tier is still not equalised across domains** (ΔL\* 32.2 / 27.1 / 32.0;
+  rim `L*` 76.2 / 54.5 / 76.2). §4.2 brought Gold into the band rather than imposing a
+  contract, because Ruby's dark rim is load-bearing for its look. If that tier is ever
+  given a contract like the shielded one, Ruby is the domain that will move.
 - `Domains.Blue` (the neutral sentinel) was not measured or tuned; it is not a playable
   domain and its prisms are rarely seen.
 - The `Outside`/`Inside` field names are misleading (§2). Renaming them is a broad,
