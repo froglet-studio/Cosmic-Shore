@@ -234,7 +234,7 @@ namespace CosmicShore.Utility
             if (config == null)
             {
                 Debug.LogError("[PrismGridExplosionHarness] No PrismGridTestConfigSO assigned or found " +
-                               "in Resources. Run Tools > Cosmic Shore > Setup Prism Grid Explosion Scene.");
+                               "in Resources. Run FrogletTools > Scene Setup > Setup Prism Grid Explosion Scene.");
                 enabled = false;
                 return;
             }
@@ -275,7 +275,7 @@ namespace CosmicShore.Utility
             // Without it, the FIRST laid prism NREs and Spawn appears to do nothing.
             if (FindFirstObjectByType<ThemeManager>() == null)
                 Warn("No ThemeManager in scene — Spawn will fail on the first prism. " +
-                     "Re-run Tools > Cosmic Shore > Setup Prism Grid Explosion Scene.");
+                     "Re-run FrogletTools > Scene Setup > Setup Prism Grid Explosion Scene.");
 
             DiagnosticsHUD.RegisterCommand(CommandName, HandleGridCommand);
             // Alias: operators consistently type `prisms 50000` — meet them there.
@@ -740,8 +740,12 @@ namespace CosmicShore.Utility
                 $"r {EffectiveBlastRadius:F0} in {EffectiveExplosionDuration:F1}s");
             DiagnosticsHUD.SetStat(StatsSection, "throttles",
                 _throttlesLifted ? "LIFTED (unweakened)" : "gameplay defaults");
-            // Pure-entity debris in flight (the batched mass-death VFX path).
-            DiagnosticsHUD.SetStat(StatsSection, "debris", PrismDebris.LiveDebrisCount.ToString("N0"));
+            // Pure-entity debris in flight (the batched mass-death VFX path). Both
+            // families are reported: a blast is all explosions, but a scene with fauna
+            // feeding runs suctions through the same carrier, and a stuck implosion
+            // count is the first sign the moving-target refresh has wedged.
+            DiagnosticsHUD.SetStat(StatsSection, "debris",
+                $"{PrismDebris.LiveDebrisCount:N0} exp / {PrismDebris.LiveImplosionDebrisCount:N0} imp");
 
             UpdateReadout();
         }

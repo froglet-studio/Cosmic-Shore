@@ -810,11 +810,11 @@ namespace CosmicShore.Gameplay.Audio
                     break;
             }
 
-            RuntimeManager.AttachInstanceToGameObject(_instance, attachTarget, (Rigidbody)null);
+            RuntimeManager.AttachInstanceToGameObject(_instance, attachTarget.gameObject, (Rigidbody)null);
             for (int i = 0; i < _layers.Count; i++)
             {
                 if (_layers[i].instance.isValid())
-                    RuntimeManager.AttachInstanceToGameObject(_layers[i].instance, attachTarget, (Rigidbody)null);
+                    RuntimeManager.AttachInstanceToGameObject(_layers[i].instance, attachTarget.gameObject, (Rigidbody)null);
             }
 
             if (debugLog)

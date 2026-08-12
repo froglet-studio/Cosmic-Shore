@@ -18,3 +18,9 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 0
   cooldown: 30
+  minCooldown: 4
+  upgradedCharges: 2
+  cooldownMultiplierAtFullCharge: 0.5
+  minCooldownMultiplier: 0.35
+  previewBloomDuration: 0.25
+  previewWitherDuration: 0.18

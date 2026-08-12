@@ -3,6 +3,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using CosmicShore.UI;
+using CosmicShore.Editor.Froglet;
 
 namespace CosmicShore.Editor
 {
@@ -20,7 +21,9 @@ namespace CosmicShore.Editor
         private const string SettingsFolder = "Assets/Resources";
         private const string SettingsPath = SettingsFolder + "/ToastNotificationSettings.asset";
 
-        [MenuItem("Cosmic Shore/Toast Notification/Create All Assets", priority = 0)]
+        [MenuItem("FrogletTools/Interface/Toast Notification/Create All Assets", priority = 0)]
+        [FrogletTool(FrogletToolCategory.Interface, Importance = 3,
+            Description = "Scaffold the whole toast notification asset set.")]
         public static void CreateAllAssets()
         {
             CreateSettingsAsset();
@@ -32,7 +35,7 @@ namespace CosmicShore.Editor
                       PrefabFolder + "/ToastNotificationItem.prefab");
         }
 
-        [MenuItem("Cosmic Shore/Toast Notification/Create Settings Asset")]
+        [MenuItem("FrogletTools/Interface/Toast Notification/Create Settings Asset")]
         public static void CreateSettingsAsset()
         {
             var path = SettingsPath;
@@ -49,7 +52,7 @@ namespace CosmicShore.Editor
             Debug.Log("[ToastNotification] Created settings at " + path);
         }
 
-        [MenuItem("Cosmic Shore/Toast Notification/Create Channel Asset")]
+        [MenuItem("FrogletTools/Interface/Toast Notification/Create Channel Asset")]
         public static void CreateChannelAsset()
         {
             var path = ChannelFolder + "/ToastNotificationChannel.asset";
@@ -66,7 +69,7 @@ namespace CosmicShore.Editor
             Debug.Log("[ToastNotification] Created channel at " + path);
         }
 
-        [MenuItem("Cosmic Shore/Toast Notification/Create Prefab")]
+        [MenuItem("FrogletTools/Interface/Toast Notification/Create Prefab")]
         public static void CreatePrefab()
         {
             var path = PrefabFolder + "/ToastNotificationItem.prefab";
@@ -109,7 +112,7 @@ namespace CosmicShore.Editor
             tmp.fontSize = 22;
             tmp.color = Color.white;
             tmp.alignment = TextAlignmentOptions.MidlineLeft;
-            tmp.enableWordWrapping = true;
+            tmp.textWrappingMode = TextWrappingModes.Normal;
             tmp.overflowMode = TextOverflowModes.Ellipsis;
             tmp.raycastTarget = false;
 
@@ -130,7 +133,7 @@ namespace CosmicShore.Editor
                       " - customize visuals here (background, font, size, etc.)");
         }
 
-        [MenuItem("Cosmic Shore/Toast Notification/Add Manager To Scene")]
+        [MenuItem("FrogletTools/Interface/Toast Notification/Add Manager To Scene")]
         public static void CreateManagerInScene()
         {
             if (Object.FindFirstObjectByType<ToastNotificationManager>() != null)

@@ -68,9 +68,16 @@ namespace CosmicShore.Gameplay
         const float PunishMinIntervalSec = 0.250f; // ≥250 ms between thuds
         const float PunishDurationSec = 0.200f;    // ~200 ms clip — skim is suppressed for this long
 
+        // The alert is the loudest event the game has: a long, rattling shake that says
+        // "something just changed". It outranks BOTH other feels for its whole duration.
+        const float AlertMinIntervalSec = 1.500f;  // can't stack or retrigger into a drone
+        const float AlertDurationSec = 1.200f;     // ~1.2 s of shaking
+
         static float s_lastSkimTime = -999f;
         static float s_lastPunishTime = -999f;
         static float s_punishBusyUntil = -999f;    // skim is suppressed until here (punish owns the motor)
+        static float s_lastAlertTime = -999f;
+        static float s_alertBusyUntil = -999f;     // skim AND punish are suppressed until here
 
         /// <summary>
         /// The reward pulse. <paramref name="strength01"/> (0..1) is how close the prism passed to
@@ -82,6 +89,7 @@ namespace CosmicShore.Gameplay
             if (!TryBeginPlayback(out var level)) return;
 
             float now = Time.unscaledTime;
+            if (now < s_alertBusyUntil) return;                  // alert outranks everything
             if (now < s_punishBusyUntil) return;                 // punish outranks skim — don't interrupt it
             if (now - s_lastSkimTime < SkimMinIntervalSec) return;
             s_lastSkimTime = now;
@@ -102,12 +110,41 @@ namespace CosmicShore.Gameplay
             if (!TryBeginPlayback(out var level)) return;
 
             float now = Time.unscaledTime;
+            if (now < s_alertBusyUntil) return;                  // alert outranks the thud too
             if (now - s_lastPunishTime < PunishMinIntervalSec) return;
             s_lastPunishTime = now;
             s_punishBusyUntil = now + PunishDurationSec;
 
             EnsureClips();
             LofeltHaptics.Load(s_punishJson, s_punishRumble); // evicts any skim clip mid-train
+            LofeltHaptics.outputLevel = level;
+            LofeltHaptics.clipLevel = 1f;
+            LofeltHaptics.Play();
+        }
+
+        /// <summary>
+        /// The ALERT shake — the third feel, added deliberately (see Docs/HAPTICS.md ▸ "Adding /
+        /// changing a feel", which requires a dedicated method and an extended gate rather than
+        /// the silenced legacy API). ~1.2 s of hard, rattling alternation between the heavy and
+        /// bright characters: unmistakably not a skim and not a thud, and long enough to read as
+        /// "something just happened" rather than "you hit something".
+        ///
+        /// Reserved for RARE, match-changing state changes — currently only Ribcage's fauna
+        /// release rungs. It outranks both other feels for its whole duration and is rate-limited
+        /// so it can never stack into a drone. Do NOT hang it on anything frequent; the two-feel
+        /// policy exists because haptics stop meaning anything once they are common.
+        /// </summary>
+        public static void PlayAlert()
+        {
+            if (!TryBeginPlayback(out var level)) return;
+
+            float now = Time.unscaledTime;
+            if (now - s_lastAlertTime < AlertMinIntervalSec) return;
+            s_lastAlertTime = now;
+            s_alertBusyUntil = now + AlertDurationSec;
+
+            EnsureClips();
+            LofeltHaptics.Load(s_alertJson, s_alertRumble);  // evicts whatever was playing
             LofeltHaptics.outputLevel = level;
             LofeltHaptics.clipLevel = 1f;
             LofeltHaptics.Play();
@@ -132,8 +169,10 @@ namespace CosmicShore.Gameplay
         // are locale-independent.
         static byte[] s_skimJson;
         static byte[] s_punishJson;
+        static byte[] s_alertJson;
         static GamepadRumble s_skimRumble;
         static GamepadRumble s_punishRumble;
+        static GamepadRumble s_alertRumble;
         static bool s_clipsBuilt;
 
         static void EnsureClips()
@@ -165,6 +204,27 @@ namespace CosmicShore.Gameplay
                 new[] { 120, 80 },
                 low: new[] { 1.0f, 0.6f },   // low-frequency motor = the heavy rumble
                 high: new[] { 0.15f, 0.1f });
+
+            // Alert — a long RATTLE: full-amplitude sawtooth so the motors slam on and off
+            // repeatedly instead of holding, plus a mid frequency so it reads as neither the
+            // bright skim nor the dull thud. Both gamepad motors run hot and out of phase, which
+            // is what makes a controller genuinely shake rather than hum.
+            s_alertJson = ClipJson(
+                "{\"time\":0.0,\"amplitude\":1.0,\"emphasis\":{\"amplitude\":1.0,\"frequency\":0.8}}," +
+                "{\"time\":0.10,\"amplitude\":0.25}," +
+                "{\"time\":0.20,\"amplitude\":1.0,\"emphasis\":{\"amplitude\":1.0,\"frequency\":0.5}}," +
+                "{\"time\":0.32,\"amplitude\":0.25}," +
+                "{\"time\":0.44,\"amplitude\":1.0,\"emphasis\":{\"amplitude\":1.0,\"frequency\":0.8}}," +
+                "{\"time\":0.58,\"amplitude\":0.3}," +
+                "{\"time\":0.72,\"amplitude\":1.0,\"emphasis\":{\"amplitude\":1.0,\"frequency\":0.5}}," +
+                "{\"time\":0.90,\"amplitude\":0.35}," +
+                "{\"time\":1.05,\"amplitude\":0.8}," +
+                "{\"time\":1.20,\"amplitude\":0.0}",
+                frequency: "0.55", durationSec: "1.20");
+            s_alertRumble = Rumble(
+                new[] { 90, 70, 90, 70, 90, 70, 90, 70, 100, 90, 80, 60, 60, 30 },
+                low:  new[] { 1.0f, 0.2f, 1.0f, 0.25f, 1.0f, 0.3f, 1.0f, 0.3f, 0.9f, 0.35f, 0.8f, 0.3f, 0.6f, 0.0f },
+                high: new[] { 0.9f, 0.3f, 1.0f, 0.2f,  0.9f, 0.35f, 1.0f, 0.25f, 0.8f, 0.3f, 0.7f, 0.25f, 0.5f, 0.0f });
         }
 
         // Builds a continuous .haptic clip: the caller supplies the amplitude breakpoints; frequency

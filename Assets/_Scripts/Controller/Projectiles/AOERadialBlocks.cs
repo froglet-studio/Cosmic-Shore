@@ -112,7 +112,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         private void DisableConicExplosion()
         {
-            if (TryGetComponent<SphereCollider>(out var triggerCollider))
+            if (TryGetComponent<Collider>(out var triggerCollider))
                 triggerCollider.enabled = false;
             if (TryGetComponent<ExplosionImpactor>(out var impactor))
                 impactor.enabled = false;

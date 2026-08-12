@@ -6,6 +6,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using UnityEditor;
 using UnityEngine;
+using CosmicShore.Editor.Froglet;
 
 namespace CosmicShore.Editor
 {
@@ -26,7 +27,7 @@ namespace CosmicShore.Editor
     /// idempotent PROPERTY repair path (e.g. after a graph revert); a reverted
     /// node graph is restored from git, not re-drawn by hand.
     ///
-    /// Tools > Cosmic Shore > Prism Animation > Auto-Wire Clock Properties.
+    /// FrogletTools > Ecology > Prism Animation> Auto-Wire Clock Properties.
     /// </summary>
     public static class PrismClockGraphWirer
     {
@@ -94,6 +95,11 @@ namespace CosmicShore.Editor
                     F("_ColorStartTime", 0f), F("_ColorDuration", 0f),
                     C4("_StartBrightColor", 1f, 1f, 1f, 1f), C4("_StartDarkColor", 1f, 1f, 1f, 1f),
                     V3("_StartSpread", 0f, 0f, 0f),
+                    // Ballistic flight (Docs/PRISM_ANIMATION.md §5 C5): a prism FIRED as
+                    // a projectile. Duration 0 = unstamped = render at the transform,
+                    // which is every prism that is not in flight.
+                    F("_FlightStartTime", 0f), F("_FlightDuration", 0f),
+                    V3("_FlightVelocity", 0f, 0f, 0f),
                 },
             },
             new GraphJob
@@ -113,6 +119,11 @@ namespace CosmicShore.Editor
                     F("_ColorStartTime", 0f), F("_ColorDuration", 0f),
                     C4("_StartBrightColor", 1f, 1f, 1f, 1f), C4("_StartDarkColor", 1f, 1f, 1f, 1f),
                     V3("_StartSpread", 0f, 0f, 0f),
+                    // Ballistic flight (Docs/PRISM_ANIMATION.md §5 C5): a prism FIRED as
+                    // a projectile. Duration 0 = unstamped = render at the transform,
+                    // which is every prism that is not in flight.
+                    F("_FlightStartTime", 0f), F("_FlightDuration", 0f),
+                    V3("_FlightVelocity", 0f, 0f, 0f),
                 },
             },
             new GraphJob
@@ -127,7 +138,9 @@ namespace CosmicShore.Editor
             },
         };
 
-        [MenuItem("Tools/Cosmic Shore/Prism Animation/Auto-Wire Clock Properties (All Graphs)")]
+        [MenuItem("FrogletTools/Ecology/Prism Animation/Auto-Wire Clock Properties (All Graphs)")]
+        [FrogletTool(FrogletToolCategory.Ecology, Importance = 4,
+            Description = "Stamp clock properties across every prism shader graph.")]
         public static void AutoWireAll()
         {
             var report = new StringBuilder();

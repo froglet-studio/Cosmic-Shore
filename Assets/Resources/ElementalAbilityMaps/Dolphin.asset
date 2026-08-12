@@ -15,46 +15,61 @@ MonoBehaviour:
   vesselClass: 2
   entries:
   - Element: 1
-    AbilityLabel: Charge Boost Peak
-    AbilityDescription: Charge raises the charge-boost peak multiplier.
-    Input: 0
-    MultiplierAtFullLevel: 1.5
-    MinMultiplier: 0.25
+    AbilityLabel: Crystal Seeding
+    AbilityDescription: Charge shortens the recharge between team crystals (authored
+      on DeployTeamCrystalActionSO.cooldownMultiplierAtFullCharge, x0.5 at level 10;
+      the generic map multiplier stays 1.0 so it does not also move the charge-boost
+      peak); at level 5 the Dolphin carries a SECOND crystal and can plant two back
+      to back.
+    Input: 1
+    MultiplierAtFullLevel: 1
+    MinMultiplier: 1
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: 
-    UpgradeDescription: 
+    UpgradeLabel: Twin Seed
+    UpgradeDescription: Carry two team crystals at once instead of one.
   - Element: 2
-    AbilityLabel: (open design slot)
-    AbilityDescription: Mass mapping not yet designed for the Dolphin.
-    Input: 0
+    AbilityLabel: Drift Trail
+    AbilityDescription: Mass raises the VOLUME of each drift prism (authored as the
+      trailVolume ElementalFloat on the vessel's VesselPrismController, 1 -> 2.5 at
+      level 10, cube root per axis; the generic map multiplier stays 1.0 to avoid
+      double-dipping); at level 5 drift prisms arrive shielded - massUpgradeShieldsTrail
+      gated on IsDrifting, the same machinery behind the Squirrel's Heavy Trail.
+    Input: 2
     MultiplierAtFullLevel: 1
     MinMultiplier: 1
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: 
-    UpgradeDescription: 
+    UpgradeLabel: Hard Wake
+    UpgradeDescription: Drift prisms arrive shielded (one-hit ablative armour).
   - Element: 3
-    AbilityLabel: (open design slot)
-    AbilityDescription: Space mapping not yet designed for the Dolphin.
+    AbilityLabel: Cone Blast
+    AbilityDescription: Space carries the crystal-impact cone further down-range
+      (authored on VesselExplosionByCrystalEffectSO._heightMultiplierAtFullSpace, x2
+      at level 10; the cone's ANGLE is set by skim energy, not by Space, so the two
+      shape the blast independently); at level 5 the blast stops eating the pilot's
+      own domain.
     Input: 0
     MultiplierAtFullLevel: 1
     MinMultiplier: 1
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: 
-    UpgradeDescription: 
+    UpgradeLabel: Clean Blast
+    UpgradeDescription: The cone spares your own domain - no more friendly fire.
   - Element: 4
     AbilityLabel: Charge Fill Rate
-    AbilityDescription: Time raises the boost charge fill rate.
-    Input: 0
-    MultiplierAtFullLevel: 1.5
-    MinMultiplier: 0.25
+    AbilityDescription: Time raises the rate the boost meter charges while drifting
+      (authored on ChargeBoostActionSO.chargeRateMultiplierAtFullTime, x1.5 at level
+      10; the generic map multiplier stays 1.0 because VesselTransformer consumes it
+      for boost SPEED); at level 5 danger prisms pay triple skim energy.
+    Input: 2
+    MultiplierAtFullLevel: 1
+    MinMultiplier: 1
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: 
-    UpgradeDescription: 
+    UpgradeLabel: Live Current
+    UpgradeDescription: Skimming a danger prism grants 3x energy.

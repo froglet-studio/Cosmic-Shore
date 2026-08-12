@@ -384,7 +384,6 @@ MonoBehaviour:
   mainMenuCamera: {fileID: 838949995}
   endCameraFollowTarget: {fileID: 1323972083}
   endCameraLookAtTarget: {fileID: 1341340454}
-  startTransitionDistance: 40
 --- !u!114 &176951646
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -888,7 +887,6 @@ GameObject:
   - component: {fileID: 483927157}
   - component: {fileID: 483927158}
   - component: {fileID: 483927159}
-  - component: {fileID: 483927160}
   m_Layer: 0
   m_Name: PlayerDataService
   m_TagString: Untagged
@@ -937,21 +935,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 583638035e4a15c42b2fa9de5d6213fa, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!114 &483927160
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 483927156}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5b7acae2397c4afca48f21f877a5b277, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
-  progressionConfig: {fileID: 0}
-  xpPerGame: 25
 --- !u!224 &552943724 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 2655510455506565660, guid: 96d427922847afd4ca2fcdffed2c2b3b,
@@ -3137,22 +3120,22 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1452114705, guid: 9426870f37f271d4daf180ef32c4d10f, type: 3}
       propertyPath: so_songs.Array.size
-      value: 8
+      value: 9
       objectReference: {fileID: 0}
     - target: {fileID: 1452114705, guid: 9426870f37f271d4daf180ef32c4d10f, type: 3}
       propertyPath: 'so_songs.Array.data[0]'
       value: 
-      objectReference: {fileID: 11400000, guid: e560f1237279e4ad2834f8d1f4aeb895,
+      objectReference: {fileID: 11400000, guid: 3b99c31612d7143abaed3cf459ca1b51,
         type: 2}
     - target: {fileID: 1452114705, guid: 9426870f37f271d4daf180ef32c4d10f, type: 3}
       propertyPath: 'so_songs.Array.data[1]'
       value: 
-      objectReference: {fileID: 11400000, guid: 949584b5ee18049e3a7333eeed4eb40a,
+      objectReference: {fileID: 11400000, guid: e560f1237279e4ad2834f8d1f4aeb895,
         type: 2}
     - target: {fileID: 1452114705, guid: 9426870f37f271d4daf180ef32c4d10f, type: 3}
       propertyPath: 'so_songs.Array.data[2]'
       value: 
-      objectReference: {fileID: 11400000, guid: 4e08bd425a0357a4cb2913dcb1c22370,
+      objectReference: {fileID: 11400000, guid: 949584b5ee18049e3a7333eeed4eb40a,
         type: 2}
     - target: {fileID: 1452114705, guid: 9426870f37f271d4daf180ef32c4d10f, type: 3}
       propertyPath: 'so_songs.Array.data[3]'
@@ -3162,20 +3145,25 @@ PrefabInstance:
     - target: {fileID: 1452114705, guid: 9426870f37f271d4daf180ef32c4d10f, type: 3}
       propertyPath: 'so_songs.Array.data[4]'
       value: 
-      objectReference: {fileID: 11400000, guid: 23e5ea5c5d2b9cb4699185ebd9ea651b,
+      objectReference: {fileID: 11400000, guid: 4e08bd425a0357a4cb2913dcb1c22370,
         type: 2}
     - target: {fileID: 1452114705, guid: 9426870f37f271d4daf180ef32c4d10f, type: 3}
       propertyPath: 'so_songs.Array.data[5]'
       value: 
-      objectReference: {fileID: 11400000, guid: bb2c516f233054b479a5327beb6427b0,
+      objectReference: {fileID: 11400000, guid: 23e5ea5c5d2b9cb4699185ebd9ea651b,
         type: 2}
     - target: {fileID: 1452114705, guid: 9426870f37f271d4daf180ef32c4d10f, type: 3}
       propertyPath: 'so_songs.Array.data[6]'
       value: 
-      objectReference: {fileID: 11400000, guid: bd7cffa3846cdd047b46c58cef6eb164,
+      objectReference: {fileID: 11400000, guid: bb2c516f233054b479a5327beb6427b0,
         type: 2}
     - target: {fileID: 1452114705, guid: 9426870f37f271d4daf180ef32c4d10f, type: 3}
       propertyPath: 'so_songs.Array.data[7]'
+      value: 
+      objectReference: {fileID: 11400000, guid: bd7cffa3846cdd047b46c58cef6eb164,
+        type: 2}
+    - target: {fileID: 1452114705, guid: 9426870f37f271d4daf180ef32c4d10f, type: 3}
+      propertyPath: 'so_songs.Array.data[8]'
       value: 
       objectReference: {fileID: 11400000, guid: 1f7ebca9281b9244ba31143be2de7799,
         type: 2}

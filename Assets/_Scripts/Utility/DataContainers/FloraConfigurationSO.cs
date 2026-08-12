@@ -19,6 +19,14 @@ namespace CosmicShore.Utility
         public bool OverrideDefaultPlantPeriod;
         public int NewPlantPeriod = int.MaxValue;
 
+        [Tooltip("Ground this species prefers when the cell's authored environment prepared " +
+                 "planting sites (a garden's beds, trellis feet, hanging baskets, pool rim). " +
+                 "A preference, not a requirement: a garden with none of the preferred kinds " +
+                 "falls back to any prepared site, and a cell with no prepared ground at all " +
+                 "disperses the flora across the membrane exactly as before. Leave as Any " +
+                 "for a species with no opinion.")]
+        public FloraSiteKind PreferredSites = FloraSiteKind.Any;
+
         [Header("Elemental contract (element as data - one base prefab, variants from config)")]
         [Tooltip("The element this flora config spawns as. None = keep the prefab-authored " +
                  "crystal element (the legacy per-element prefab-variant path, e.g. the four " +

@@ -24,8 +24,25 @@ namespace CosmicShore.Gameplay
         [SerializeField] protected float ExplosionDelay = 0.2f;
         [FormerlySerializedAs("renderer")] [SerializeField] protected MeshRenderer meshRenderer;
 
+        [Header("Impact")]
+        [Tooltip("Gain on the blast-wave speed handed to the mass this blast destroys. 1 = debris leaves at the wavefront's own speed. NOTE: this dial only reaches the screen with Proportional Debris ON - see below.")]
+        [SerializeField] protected float Inertia = 1f;
+
+        [Tooltip("ON: the impact vector is a TRUE debris velocity and the blast supplies its own speed ceiling, so Inertia scales what the player actually sees. OFF (legacy): debris is clamped to the explosion prefab's authored max (33.33 u/s), which every AOE blast already exceeds several times over - the Dolphin cone hands over ~222 u/s - so every blast saturates to the same speed and Inertia does nothing.")]
+        [SerializeField] protected bool proportionalDebris;
+
+        [Tooltip("Debris speed as a fraction of the blast wave that threw it, before Inertia. 1/3 matches the physical read the vessel and skimmer damage paths ship at, so all three stay one tuning group. Only used when Proportional Debris is ON.")]
+        [Range(0.05f, 3f)]
+        [SerializeField] protected float debrisRestitution = 1f / 3f;
+
+        // Debris speed and SHATTER RATE are one number on the proportional contract
+        // (PrismExplosion.TriggerExplosion re-reads Speed off the clamped velocity when
+        // an override is supplied, deliberately - otherwise raising the ceiling finishes
+        // the shatter in a frame while the debris crawls). So Inertia scales BOTH, and
+        // restitution x Inertia = 1 reproduces today's shatter rate exactly while
+        // unclipping the throw. Tune with the single Inertia dial; do not split them.
+
         protected Vector3 MaxScaleVector;
-        protected float Inertia = 1;
         protected float speed;
 
         protected CancellationTokenSource explosionCts;
@@ -40,10 +57,37 @@ namespace CosmicShore.Gameplay
         /// or the per-instance <see cref="InitializeStruct.DurationOverride"/>).</summary>
         public float Duration => ExplosionDuration;
 
+        /// <summary>
+        /// What this blast hands the mass it destroys. On the proportional contract the
+        /// vector IS the debris velocity, so the blast supplies a ceiling in the same
+        /// units and <see cref="Inertia"/> scales the result linearly. On the legacy
+        /// contract there is no ceiling of our own, the explosion prefab's clamp applies,
+        /// and - since every AOE magnitude sits several times above it - the speed reads
+        /// the same no matter what <see cref="Inertia"/> says.
+        /// </summary>
+        public ExplosionImpulse Impulse
+        {
+            get
+            {
+                if (!proportionalDebris) return new ExplosionImpulse(speed, Inertia);
+
+                float debrisSpeed = speed * debrisRestitution;
+                return new ExplosionImpulse(debrisSpeed, Inertia, debrisSpeed * Inertia);
+            }
+        }
+
         protected ExplosionImpactor _explosionImpactor;
         private float _colliderRadius = 0.5f; // Default sphere collider radius
         private MaterialPropertyBlock _mpb;
-        protected SphereCollider _sphereCollider;
+
+        /// <summary>
+        /// The blast's trigger volume: vessel impacts and the Physics fallback resolve through
+        /// it (the prism layer is excluded while the Burst batch path owns prism damage).
+        /// Typed as <see cref="Collider"/> rather than <see cref="SphereCollider"/> because the
+        /// shape is the SUBCLASS's business - the spherical blast authors a sphere, the conic
+        /// blast a capsule whose axis is the vessel's jaw gape.
+        /// </summary>
+        protected Collider _triggerCollider;
         private LayerMask _originalExcludeLayers;
         private bool _prismExclusionApplied;
 
@@ -61,15 +105,17 @@ namespace CosmicShore.Gameplay
         {
             if (!meshRenderer) meshRenderer = GetComponent<MeshRenderer>();
             _explosionImpactor = GetComponent<ExplosionImpactor>();
-            _sphereCollider = GetComponent<SphereCollider>();
-            if (_sphereCollider) _colliderRadius = _sphereCollider.radius;
+            _triggerCollider = GetComponent<Collider>();
+            // Only the SPHERICAL blast derives its batch radius from the authored collider;
+            // the conic blast computes its own geometry from MaxScale/height every frame.
+            if (_triggerCollider is SphereCollider sphere) _colliderRadius = sphere.radius;
             if (s_trailBlocksMask < 0) s_trailBlocksMask = LayerMask.GetMask("TrailBlocks");
             _mpb = new MaterialPropertyBlock();
         }
 
         /// <summary>
         /// While batch processing is active, exclude the prism layer from the
-        /// SphereCollider so PhysX never generates the thousands of trigger pairs
+        /// trigger collider so PhysX never generates the thousands of trigger pairs
         /// that OnTriggerEnter would discard (they're handled by ProcessBatchFrame).
         /// Only TrailBlocks is excluded - vessel pairs must stay live because
         /// explosion→vessel effects (e.g. VesselChangeSpeedByExplosionEffect) are
@@ -77,16 +123,16 @@ namespace CosmicShore.Gameplay
         /// </summary>
         protected void ApplyPrismExclusion()
         {
-            if (_prismExclusionApplied || !_sphereCollider) return;
-            _originalExcludeLayers = _sphereCollider.excludeLayers;
-            _sphereCollider.excludeLayers = _originalExcludeLayers | s_trailBlocksMask;
+            if (_prismExclusionApplied || !_triggerCollider) return;
+            _originalExcludeLayers = _triggerCollider.excludeLayers;
+            _triggerCollider.excludeLayers = _originalExcludeLayers | s_trailBlocksMask;
             _prismExclusionApplied = true;
         }
 
         protected void RestorePrismExclusion()
         {
-            if (!_prismExclusionApplied || !_sphereCollider) return;
-            _sphereCollider.excludeLayers = _originalExcludeLayers;
+            if (!_prismExclusionApplied || !_triggerCollider) return;
+            _triggerCollider.excludeLayers = _originalExcludeLayers;
             _prismExclusionApplied = false;
         }
 
@@ -133,13 +179,15 @@ namespace CosmicShore.Gameplay
             if (initStruct.DurationOverride > 0f)
                 ExplosionDuration = initStruct.DurationOverride;
 
+            ApplyAffectSelfOverride(initStruct);
+
             MaxScaleVector = new Vector3(MaxScale, MaxScale, MaxScale);
             speed = MaxScale / ExplosionDuration;
 
             Material = initStruct.OverrideMaterial;
 
             _visualComplete = false;
-            if (_sphereCollider) _sphereCollider.enabled = true;
+            if (_triggerCollider) _triggerCollider.enabled = true;
 
             explosionCts = new CancellationTokenSource();
 
@@ -152,6 +200,18 @@ namespace CosmicShore.Gameplay
             // Subscribe to game events - OnEnable fires before DI injection
             // for runtime-spawned objects, so retry here after injection.
             SubscribeToGameEvents();
+        }
+
+        /// <summary>
+        /// Pushes a per-instance friendly-fire decision onto this explosion's impactor. Each
+        /// explosion is instantiated fresh from its prefab, so writing the instance's flag cannot
+        /// leak into the next blast. No override leaves the authored prefab value alone.
+        /// </summary>
+        protected void ApplyAffectSelfOverride(InitializeStruct initStruct)
+        {
+            if (!initStruct.AffectSelfOverride.HasValue) return;
+            if (!_explosionImpactor) _explosionImpactor = GetComponent<ExplosionImpactor>();
+            if (_explosionImpactor) _explosionImpactor.SetAffectSelf(initStruct.AffectSelfOverride.Value);
         }
 
         private void SubscribeToGameEvents()
@@ -189,7 +249,7 @@ namespace CosmicShore.Gameplay
         public virtual Vector3 CalculateImpactVector(Vector3 impacteePosition)
         {
             Vector3 direction = (impacteePosition - transform.position).normalized;
-            return direction * speed * Inertia;
+            return Impulse.Along(direction);
         }
 
         protected virtual async UniTaskVoid ExplodeAsync(CancellationToken ct)
@@ -203,7 +263,7 @@ namespace CosmicShore.Gameplay
                 // Start batch AOE processing - skips Physics OnTriggerEnter for prisms
                 impactor?.BeginBatchProcessing();
 
-                if (impactor != null && impactor.IsBatchProcessing && _sphereCollider != null)
+                if (impactor != null && impactor.IsBatchProcessing && _triggerCollider != null)
                 {
                     // Batch processing is active: stop PhysX from generating
                     // prism trigger pairs - the Burst job handles spatial queries.
@@ -259,7 +319,7 @@ namespace CosmicShore.Gameplay
                         // Spherical explosion: wavefront and blast origin share the
                         // stationary center - impacts radiate from the spawn point.
                         bool shouldContinue = impactor?.ProcessBatchFrame(
-                            cachedTransform.position, currentRadius, cachedTransform.position, speed, Inertia) ?? true;
+                            cachedTransform.position, currentRadius, cachedTransform.position, Impulse) ?? true;
 
                         if (!shouldContinue)
                         {
@@ -295,11 +355,11 @@ namespace CosmicShore.Gameplay
                 // hitbox here for the whole drain.
                 _visualComplete = true;
                 if (meshRenderer) meshRenderer.enabled = false;
-                if (_sphereCollider) _sphereCollider.enabled = false;
+                if (_triggerCollider) _triggerCollider.enabled = false;
                 while (impactor != null && impactor.HasPendingBatchWork)
                 {
                     ct.ThrowIfCancellationRequested();
-                    impactor.DrainPendingBatchFrame(speed, Inertia);
+                    impactor.DrainPendingBatchFrame(Impulse);
                     await UniTask.Yield(PlayerLoopTiming.Update, ct);
                 }
 
@@ -347,6 +407,36 @@ namespace CosmicShore.Gameplay
             /// <summary>Replaces the prefab's authored ExplosionDuration for this
             /// instance; 0 (the default) keeps the authored value.</summary>
             public float DurationOverride;
+
+            /// <summary>
+            /// Replaces the CONIC explosion's authored axial length (how far down-range the
+            /// blast reaches) for this instance; 0 (the default) keeps the authored value.
+            /// MaxScale is the cone's BASE DIAMETER, so the two together set the half-angle -
+            /// which is why a caller that wants to widen the cone without lengthening it
+            /// (the Dolphin's energy-driven blast) must control them independently.
+            /// Ignored by the spherical base explosion.
+            /// </summary>
+            public float HeightOverride;
+
+            /// <summary>
+            /// The CONIC explosion's CLOSED-JAW base diameter — the width the blast has when the
+            /// driving resource is empty, in the same units and already carrying the same Space
+            /// size multiplier as <see cref="MaxScale"/>. It is the capsule's DIAMETER: the blast
+            /// stays exactly this wide across the jaw gape at every charge, and everything
+            /// <see cref="MaxScale"/> adds beyond it becomes capsule LENGTH along the gape axis
+            /// (see <c>AOEConicExplosion</c>). 0 (the default) means "no separate core" — the
+            /// capsule collapses to the plain circular cone, which is what the projectile
+            /// overload and the spherical base explosion want.
+            /// </summary>
+            public float CoreScale;
+
+            /// <summary>
+            /// Per-instance friendly-fire override for the spawned <see cref="ExplosionImpactor"/>:
+            /// false spares the blast's own domain, true lets it damage allies. null (the default)
+            /// keeps whatever the prefab authored. Used by elemental upgrades that turn
+            /// friendly fire off as a reward.
+            /// </summary>
+            public bool? AffectSelfOverride;
         }
     }
 }

@@ -1,6 +1,6 @@
 ---
 name: EndGameConditions
-description: Use when setting, changing, or asking where the end-game / win-condition COUNTS live for the domain modes — HexRace crystal count, Joust joust count, Crystal Capture crystal count (how many crystals/jousts end a turn), and Maelstrom/Tournament win target (placement points to win the whole shuffle, "race to N"). These are now authored ONLY through the Tools > Cosmic Shore > End Game Conditions editor window (backed by Resources/EndConditionOverrides.asset), never via per-scene inspector fields. Trigger when editing CrystalCollisionTurnMonitor / JoustCollisionTurnMonitor / NetworkCrystalCollisionTurnMonitor / NetworkJoustCollisionTurnMonitor, TournamentDataSO / TournamentController, EndConditionOverridesSO, or when someone wants to make a mode end sooner/later.
+description: Use when setting, changing, or asking where the end-game / win-condition COUNTS live for the domain modes — HexRace crystal count, Joust joust count, Crystal Capture crystal count (how many crystals/jousts end a turn), and Maelstrom/Tournament win target (placement points to win the whole shuffle, "race to N"). These are now authored ONLY through the FrogletTools > Game Modes > End Game Conditions editor window (backed by Resources/EndConditionOverrides.asset), never via per-scene inspector fields. Trigger when editing CrystalCollisionTurnMonitor / JoustCollisionTurnMonitor / NetworkCrystalCollisionTurnMonitor / NetworkJoustCollisionTurnMonitor, TournamentDataSO / TournamentController, EndConditionOverridesSO, or when someone wants to make a mode end sooner/later.
 ---
 
 # End Game Conditions — how the modes' win counts are set
@@ -9,7 +9,7 @@ The per-mode end-game **count** — how many crystals (HexRace, Crystal Capture)
 (Joust) end a turn, and how many placement points a domain needs to win a whole **Maelstrom /
 Tournament** ("race to N") — is set in **one place** and one place only:
 
-> **Tools ▸ Cosmic Shore ▸ End Game Conditions**
+> **FrogletTools ▸ Game Modes ▸ End Game Conditions**
 
 That window edits the single config asset **`Assets/Resources/EndConditionOverrides.asset`**
 (`EndConditionOverridesSO`). The turn monitors (and `TournamentController` for Maelstrom) load it
@@ -73,7 +73,7 @@ networking.
 
 ## To change a count
 
-1. Unity → **Tools ▸ Cosmic Shore ▸ End Game Conditions** (auto-creates the asset on first open).
+1. Unity → **FrogletTools ▸ Game Modes ▸ End Game Conditions** (auto-creates the asset on first open).
 2. Set **HexRace — Crystal Count**, **Crystal Capture — Crystal Count**, **Joust — Joust Count**,
    **Maelstrom — Win Target (points)**, **Rampage — Prism Target** (hostile prisms a domain must
    destroy to win), and/or **Brood Rush — Wave Target** (fauna waves a domain

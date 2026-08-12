@@ -44,7 +44,7 @@ play-style summary. Plus diagnostic events (e.g., failed cloud saves). These car
 anonymous player ID and gameplay parameters — **no real-world identifiers**.
 
 **c. Saved game data (Cloud Save)**
-Your profile (display name, avatar, in-game currency balance, XP, unlocked rewards,
+Your profile (display name, avatar, in-game currency balance, unlocked rewards,
 first-seen timestamp), per-mode and per-vessel statistics, mode/intensity progression,
 unlocked vessels and preferences, audio/control settings, and (where applicable) daily
 challenge, training, squad, and loadout progress.
@@ -70,6 +70,24 @@ section if ads are not shipped.]
 
 > We do **not** intentionally collect precise geolocation, contacts, microphone/camera
 > data, or special-category personal data. [Adjust if any of this changes.]
+
+### 3.x Purchases and entitlements
+
+> **Add this section before selling anything.** It is not needed while the game takes no money.
+
+| Data | Why we hold it | Where it lives |
+|---|---|---|
+| Platform order id | To credit what you paid for, and to avoid crediting the same order twice | Your Cosmic Shore account (UGS Cloud Save) |
+| Episode token balance | So your unspent tokens follow you across devices | Your Cosmic Shore account |
+| Episodes you own | So your unlocks are permanent and follow you across devices | Your Cosmic Shore account |
+| Lifetime tokens bought and spent | Support and refund questions | Your Cosmic Shore account |
+
+We do **not** receive or store your card number, billing address, or any payment credential. Payment
+is handled entirely by the platform you bought through (Steam), and we only ever see an order
+identifier confirming that a purchase completed.
+
+Retention: purchase records are kept for `[RETENTION PERIOD - counsel to set; tax and chargeback
+windows usually drive this]`.
 
 ## 4. Why we use it (purposes)
 

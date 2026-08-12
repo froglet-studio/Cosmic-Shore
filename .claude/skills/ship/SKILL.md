@@ -1,6 +1,6 @@
 ---
 name: ship
-description: End-of-branch shipping protocol - review everything on the branch, complete the documentation so the work is ready to build from, make an honest go/no-go call (pushing back with a concrete iteration list when the branch needs another pass), and only then open the pull request. Use when a feature branch feels done ("wrap this up", "open the PR", "ship it"), before ANY pull request is created, or at the end of a long working session. Pairs with /reorient (run it first when the session has run long or bleeding-edge may have moved).
+description: End-of-branch shipping protocol - review everything on the branch, prove any editor tool's ASSET OUTPUT actually landed (§2.5, never skipped), complete the documentation so the work is ready to build from, make an honest go/no-go call (pushing back with a concrete iteration list when the branch needs another pass), and only then open the pull request. Use when a feature branch feels done ("wrap this up", "open the PR", "ship it"), before ANY pull request is created, or at the end of a long working session. Depth variants: /ship-quick (fast), /ship-deep (thorough), /ship-tools (tool output + retirement only). Pairs with /reorient (run it first when the session has run long or bleeding-edge may have moved).
 ---
 
 # Ship Protocol — review, document, decide, then PR
@@ -9,20 +9,42 @@ You are closing out a feature branch. The goal is a pull request another develop
 review, build on, and trust — or an honest "not yet" with a concrete list of what one or
 two more iterations should fix. **Opening the PR is the last step, never the first.**
 
-## 0. Reorient first (when in doubt)
+## 0. Pick the depth
+
+| You want | Use | What changes |
+|---|---|---|
+| The default, full protocol | `/ship` | Everything below. |
+| A small, already-reviewed branch out the door | `/ship-quick` | Trims the §2 review and §3 doc passes. **Never** trims §2.5. |
+| A big branch, a LOCKED system, or a long session | `/ship-deep` | Adds an adversarial re-read, a blast-radius sweep, and a doc-drift sweep. |
+| Only to land an editor tool's OUTPUT (no PR) | `/ship-tools` | Runs §2.5 alone, then retires the tool and pushes. |
+
+`/ship <mode>` works too (`/ship quick`, `/ship deep`, `/ship tools`).
+
+**§2.5 is in every mode. Speed comes out of review depth, never out of the gate** — a
+fast path that can silently drop a tool's output is the exact failure this protocol
+exists to prevent.
+
+## 0.1 Reorient first (when in doubt)
 
 If the session has run long, or bleeding-edge may have moved since the branch was cut,
 run the `/reorient` skill first and act on its verdict before shipping.
 
 ## 1. Survey the branch
 
-- `git log --oneline <base>..HEAD` and `git diff --stat <base>..HEAD` (base is
-  `bleeding-edge` unless told otherwise). Read the full commit list; re-read any diff
-  hunk you can't summarize from memory.
+- `git log --oneline <base>..HEAD` and `git diff --stat <base>..HEAD`. **`<base>` is the
+  MERGE BASE, not the base branch's tip** — `git merge-base origin/bleeding-edge HEAD`.
+  Diffing against the tip of a branch that moved while you worked reports every commit
+  THEY landed as deletions in YOUR diff, which reads as a catastrophic branch and is
+  entirely an artefact. Read the full commit list; re-read any diff hunk you can't
+  summarize from memory.
+- **Merge the base branch in before reviewing**, so you resolve conflicts rather than
+  leaving them for a reviewer, and so §2 reviews the tree that will actually land.
+  Watch for conflicts a text merge CANNOT see: two branches independently claiming the
+  same new **doc section number** (both took `§4.6`) merges clean per-hunk and produces a
+  document with two of them. When you renumber, renumber every inbound reference — and
+  only YOURS: grep the whole repo, then split the hits by which section they mean.
 - Restate, in a few sentences, WHAT the branch delivers and WHY. If you can't, you are
   not ready to ship — go re-read the diff.
-- Read `Docs/EDITOR_TOOL_LEDGER.md`. Any `⏳ PENDING` row this branch's work should have
-  discharged is in scope for this ship, not someone else's problem.
 
 ## 2. Review pass (the branch, not just the last commit)
 
@@ -37,73 +59,61 @@ Walk every changed file against these gates:
 - **Verification honesty**: list what was actually verified (in-editor play, tests) vs.
   what only compiles-by-inspection. Unverified risk goes in the PR body, not under the rug.
 
-## 2.5 Editor-tool discharge gate (the un-run tool trap)
+## 2.5 Tool-output gate — NEVER SKIPPED, IN EVERY MODE
 
-**You cannot run Unity.** An editor tool you wrote is *inert* until a human clicks its menu
-item and commits the resulting asset diff. Merging the tool without its output ships a
-half-landed feature: bleeding-edge gets code that expects wired assets nobody wired, plus a
-tool that clutters the menu forever. This gate exists because that has happened repeatedly.
+**An editor tool's deliverable is the DATA it writes, not the tool.** The tool lands in
+the branch because you committed it; its output lands in the human's *working tree*,
+where nothing forces anyone to notice it. Merge the PR and you have shipped code that
+expects a scene / prefab / SO nobody pushed — broken on every other machine, with
+nothing in the diff to explain it. This gate is the only thing standing between that
+and a green PR, so it runs even in `/ship-quick`.
 
-Run `.claude/skills/ship/tool-discharge-check.sh <base>` — it lists the branch's
-`[MenuItem]` tools, the asset files the branch changed, and each tool's ledger row. Then
-work its output:
+**1. Classify every tool the branch adds or changes.** Find them:
 
-**1. Classify every tool the branch adds, changes, or depends on.**
+```sh
+git diff --name-only <merge-base>..HEAD -- '*.cs' | xargs -r grep -l 'MenuItem("FrogletTools/'
+```
 
-| Kind | Definition | Fate |
+For each hit, read it and decide from the CODE, not the name:
+
+| Kind | Evidence in the source | What the branch must contain |
 |---|---|---|
-| **Standing** | Validator, auditor, report, or generator meant to be re-run on demand (`Validate Clock Wiring`, `Audit Vessel Ability Rows`, `Measure Cell Environment Baselines`). | Keep. Ledger row = `standing`. |
-| **One-shot** | Authors/migrates/wires assets once, then is dead weight (e.g. the retired `Strip Crystal AudioSources` — discharged via `/asset-surgery`, then deleted). | Must be **discharged**, then **retired**. |
+| **READER** | only logs / `Debug.Log` / builds a report; no `AssetDatabase.Save*`, `PrefabUtility.*`, `EditorSceneManager.Mark*`, `ApplyModifiedProperties`, `CreateAsset`, `File.Write*` | nothing — say so explicitly in the report |
+| **WRITER** | any of the above | its output, committed |
 
-**2. Prefer eliminating the obligation over documenting it.** Before writing a menu-item
-tool at all, check whether `/asset-surgery` can author the asset directly — a programmatic
-edit has no pending human step and cannot rot. Only write a tool when the edit genuinely
-needs the running editor (importer, mesh/lightmap bake, scene instantiation from runtime
-state). Say in the PR which case applies.
+**2. Prove a WRITER's output is on the branch.** Two independent checks, both required:
 
-**3. A one-shot tool is DISCHARGED only when its output is in this branch's diff.**
-`git diff --stat <base>..HEAD -- '*.prefab' '*.asset' '*.unity' '*.shadergraph' '*.mat'`
-— a one-shot tool with zero corresponding asset changes is **undischarged**. Do not
-rationalize it ("the runtime self-wires", "it's optional") without reading the runtime
-consumer and proving the fallback exists; if it does, the tool is a convenience, not a
-requirement — say that explicitly in the ledger.
-
-**4. Hand the human ONE copy-pasteable discharge block** (in the ship report *and* the PR
-body), per tool, in run order:
-
-```
-1. Unity ▸ Tools > Cosmic Shore > <exact menu path>
-   expect: <the console/result line that means it worked>
-   writes: <exact asset paths or globs>
-2. git add <paths> && git commit -m "chore(assets): <tool> output" \
-     && git push -u origin <branch>
+```sh
+git status --porcelain -- Assets ProjectSettings          # nothing tool-shaped may be dirty
+git diff --stat <merge-base>..HEAD -- '*.unity' '*.prefab' '*.asset'
 ```
 
-Anything you cannot state precisely (which paths change, what success looks like) is a
-sign you don't know what your own tool does — go read it.
+- Dirty `Assets/**` in the first command is the smoking gun. Do not commit it blind —
+  read it, confirm it is that tool's output, then commit it *as its own commit*.
+- A WRITER in the diff with **zero** asset changes in the second is the silent failure.
+  It means one of: the human has not run it yet, they ran it and never saved, or they
+  saved and never committed. You cannot tell from here — **ask** (step 3).
+- Also check `Library/FrogletToolChangeLedger.json` when it exists (machine-local, and
+  absent in a remote container): it names the exact paths each tool wrote.
 
-**5. Retire the tool once its output is committed.** Delete a discharged one-shot tool in
-the same PR (or the immediate follow-up commit), and **rewrite every doc that told the
-reader to run it** — past tense, pointing at where the tool now lives, e.g.
+**3. Prompt the human — this is a blocking question, not a note.** Use
+`AskUserQuestion`, name each WRITER tool and the asset paths it targets, and ask which
+is true: *ran it and it is saved* / *ran it, not sure it saved* / *have not run it yet* /
+*it is read-only, no output expected*. Anything but the first or last means **NO-GO**
+until it is resolved. In-editor, `FrogletTools ▸ Build ▸ Pending Tool Changes` answers
+this in one click and can push the output itself.
 
-> Ran once on branch `claude/foo-abc` (PR #123, `a1b2c3d`). Recover with
-> `git show a1b2c3d -- Assets/_Scripts/Editor/FooTool.cs`.
+**4. Verify what came back**, then re-run step 2 — the human saving in Unity changes the
+working tree under you. Check the recovered output the way §2 checks anything else:
+every new asset has its `.meta`, no orphan `.meta`, no `Missing (Mono Script)` rows, GUID
+references resolve.
 
-Docs must never point at a menu item that no longer exists, and a retired tool must always
-be recoverable by commit reference. Standing tools keep their menu path in the docs.
-
-**5.5 Same failure class, one step earlier: missing `.meta` files.** A session that authors
-a file without ever opening Unity commits the `.cs`/`.asset` **without its `.meta`**, so every
-teammate's editor mints a different GUID and any prefab/scene reference binds differently per
-checkout. Section 4 of the script lists these; committing them is part of the discharge, and
-it goes **before** any tool-output commit so those diffs stay clean.
-
-**6. Record it in `Docs/EDITOR_TOOL_LEDGER.md`.** Every tool the branch adds, runs, or
-retires gets its row updated. A one-shot tool that genuinely cannot be discharged before
-merge stays as a `⏳ PENDING` row carrying the owner and the full discharge block from
-step 4 — that is the **only** acceptable way to merge an undischarged tool, and the PR
-body must call it out under Verification. While you're in the ledger, sweep it: any
-`✅ RUN` one-shot whose file still exists is cleanup this branch can do now.
+**5. Retire the one-offs.** A tool written to perform one migration is scaffolding, not
+surface area: once its output is verified and pushed, delete the tool and its scratch
+assets in their own commit (`chore(tools): retire <name> after verification`). Keep it
+only if it is idempotent and re-runnable — an auditor, a validator, a wirer someone will
+need again — and if you keep it, say why in the PR body. `/ship-tools` automates this
+whole section.
 
 ## 3. Documentation pass ("ready to build from")
 
@@ -147,15 +157,13 @@ Then act on it — this step produces edits, not intentions:
 Say **NO** — and list the concrete iterations needed — when any of these hold:
 
 - A review gate in §2 failed and the fix isn't a quick one.
+- **§2.5 is unresolved** — a WRITER tool is on the branch and its output is not, or the
+  human has not confirmed they ran it. This one is not a judgment call: no amount of
+  otherwise-good work makes a half-landed migration shippable.
 - The branch mixes an unfinished experiment with finished work (split it instead).
 - A change is known-broken or known-untested in a way that would block another dev
   building on it (compile risk on hand-authored assets counts).
 - Docs for a touched LOCKED system (ecology, party, threading, scoring) lag the code.
-- **§2.5 failed**: a one-shot editor tool on the branch is undischarged AND not registered
-  as a `⏳ PENDING` ledger row with a complete discharge block. Shipping the tool without
-  the output — or without a written obligation to produce it — is a blocker, not a
-  follow-up. (Discharging is usually minutes of the prompter's time: say GO-AFTER-RUN,
-  hand them the block, and wait for the push rather than merging half the feature.)
 
 Say **GO** when the work is coherent, documented, and honestly labeled. Loose ends that
 don't block building on the branch become a **Follow-ups** section in the PR body — named,
@@ -166,23 +174,16 @@ scoped, and assigned a doc home — not reasons to sit on finished work.
 - Check for a PR template (`.github/pull_request_template.md` and variants); mirror its
   structure if present.
 - PR body: what & why, per-system summary, **verification status** (what a human must
-  still verify in-editor, with steps), **Follow-ups** list, collider/perf impact where
-  the ecology gate applies.
-- **Tool runs required before merge** section whenever §2.5 produced a discharge block —
-  reproduce it verbatim, name the ledger rows it clears, and state plainly that merging
-  ahead of the run lands the tool without its output. Omit the section entirely when the
-  branch adds no one-shot tool; never leave it as an empty heading.
+  still verify in-editor, with steps), **Tool output** (every tool the branch touched,
+  reader vs writer, which commit carries its output, which tools were retired and which
+  were kept and why — §2.5), **Follow-ups** list, collider/perf impact where the ecology
+  gate applies.
 - Base is `bleeding-edge` unless told otherwise. After creating, subscribe to PR
   activity and keep watch (CI, reviews) until merged or told to stop.
 
 ## 6. Report
 
 Tell the prompter: the go/no-go call and why, the PR link (or the iteration list), the
-follow-ups you recorded, and the §3.5 skill-capture outcome (skills created/extended, or
-the explicit "nothing reusable this session").
-
-Lead with the **§2.5 discharge block** if there is one — that is the prompter's next
-physical action and it must not be buried under the summary. Then say which tools this
-branch retired, and which ledger rows it opened or closed. If the branch added no editor
-tool, say "no tool discharge required" explicitly — silence reads as "nothing pending",
-which is exactly the failure this gate exists to prevent.
+**§2.5 tool-output verdict** (every tool classified, whose output landed in which commit,
+what was retired), the follow-ups you recorded, and the §3.5 skill-capture outcome
+(skills created/extended, or the explicit "nothing reusable this session").

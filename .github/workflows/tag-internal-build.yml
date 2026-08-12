@@ -1,0 +1,104 @@
+name: Tag internal build
+
+# The weekly internal build comes off bleeding-edge every Friday, and UGS
+# watches that branch directly rather than a snapshot branch. So there is no ref
+# to promote here and this workflow moves nothing.
+#
+# What it does do is put a dated tag on whatever bleeding-edge points at when
+# the build slot opens, which is the one thing watching a live branch cannot
+# give you: a stable name for "last Friday's internal build". Without it,
+# bleeding-edge has moved on by the time anyone reports a problem and there is
+# no way back to the commit that was actually built.
+#
+# Release model in full: Docs/BRANCHING_AND_RELEASE.md.
+
+on:
+  schedule:
+    # Every Friday. Two entries because GitHub's scheduler runs on UTC and never
+    # observes daylight saving: 13:00 UTC is 06:00 PDT, 14:00 UTC is 06:00 PST.
+    # The guard drops whichever is an hour off today.
+    - cron: '0 13,14 * * 5'
+  workflow_dispatch:
+
+permissions:
+  contents: write   # write the tag
+
+concurrency:
+  group: tag-internal-build
+  cancel-in-progress: false
+
+env:
+  INTERNAL_BRANCH: bleeding-edge
+
+jobs:
+  tag:
+    name: Tag bleeding-edge
+    runs-on: ubuntu-latest
+    steps:
+      - name: Is this run due?
+        id: gate
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          if [ "${{ github.event_name }}" != "schedule" ]; then
+            echo "Triggered manually; running regardless of day and hour."
+            echo "proceed=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          today=$(TZ=America/Los_Angeles date +%Y-%m-%d)
+          dow=$(TZ=America/Los_Angeles date +%u)                  # 5 = Friday
+          hour=$((10#$(TZ=America/Los_Angeles date +%H)))         # 10# so "08" is not read as octal
+
+          skip () { echo "$1 Skipping."; echo "proceed=false" >> "$GITHUB_OUTPUT"; exit 0; }
+
+          # Same shape as the promotion gate: the dated tag is the idempotency
+          # record, which is what lets the hour test be a window rather than an
+          # exact match. GitHub's scheduler is routinely more than an hour late.
+          if gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/internal/$today" >/dev/null 2>&1; then
+            skip "Already tagged $today (tag internal/$today exists)."
+          fi
+
+          [ "$dow" = "5" ] || skip "$today is not a Friday in America/Los_Angeles."
+          [ "$hour" -ge 6 ] || skip "It is ${hour}:00 in America/Los_Angeles; the 06:00 slot has not opened."
+
+          echo "$today is a Friday and the 06:00 slot has opened. Proceeding."
+          echo "proceed=true" >> "$GITHUB_OUTPUT"
+
+      - name: Tag it
+        if: steps.gate.outputs.proceed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          sha=$(gh api "repos/$GITHUB_REPOSITORY/commits/$INTERNAL_BRANCH" --jq .sha)
+          subject=$(gh api "repos/$GITHUB_REPOSITORY/commits/$sha" --jq '.commit.message' | head -1)
+          tag="internal/$(TZ=America/Los_Angeles date +%Y-%m-%d)"
+
+          if gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$tag" >/dev/null 2>&1; then
+            gh api -X PATCH "repos/$GITHUB_REPOSITORY/git/refs/tags/$tag" \
+              -f "sha=$sha" -F force=true >/dev/null
+            echo "Re-pointed $tag at ${sha:0:8}"
+          else
+            gh api -X POST "repos/$GITHUB_REPOSITORY/git/refs" \
+              -f "ref=refs/tags/$tag" -f "sha=$sha" >/dev/null
+            echo "Tagged ${sha:0:8} as $tag"
+          fi
+
+          {
+            echo "### Internal build tagged"
+            echo
+            echo "\`$INTERNAL_BRANCH\` at \`${sha:0:8}\` — $subject"
+            echo
+            echo "Tagged \`$tag\`. UGS builds this branch on its own schedule;"
+            echo "this workflow only records which commit the slot opened on."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Report skipped run
+        if: steps.gate.outputs.proceed != 'true'
+        run: |
+          echo "Daylight-saving twin run; the real slot fires an hour away." \
+            >> "$GITHUB_STEP_SUMMARY"

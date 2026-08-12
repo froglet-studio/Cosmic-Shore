@@ -237,7 +237,7 @@ namespace CosmicShore.Gameplay
                 // on `forager` so drone/mound boids (BoidController) never starve.
                 if (forager && IsStarving)
                 {
-                    Die("starvation");
+                    Die(StarvationKiller);
                     yield break;
                 }
 
@@ -659,7 +659,13 @@ namespace CosmicShore.Gameplay
             if (blockCollider && prism.gameObject == blockCollider.gameObject) return false;
             if (IsShieldedMass(prism)) return false;
             if (prism is HealthPrism && prism.GetComponentInParent<Fauna>() != null) return false;
-            return cell == null || !cell.IsInsideNucleus(prism.transform.position);
+            if (cell == null) return true;
+            // Band + cell pen: mass outside this creature's own annulus is unreachable, so it
+            // is not food (Fauna.IsInsideBand). A forager's diet is otherwise any-domain, so
+            // it does not go through IsPreyForMe's domain leg.
+            if (!IsInsideBand(prism.transform.position)) return false;
+            if (!cell.IsInsideFaunaContainment(prism.transform.position)) return false;
+            return !cell.IsInsideNucleus(prism.transform.position);
         }
 
         /// <summary>

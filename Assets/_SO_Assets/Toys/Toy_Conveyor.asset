@@ -23,7 +23,7 @@ MonoBehaviour:
   crystalCollectionEffects:
   - {fileID: 11400000, guid: 0ac04a748b4c4ad8825e811431df45f4, type: 2}
   omniCrystalPrefab: {fileID: 5535990081244205891, guid: 54802b89e00a0ed4281025fa5e770811, type: 3}
-  maxCrystalsPerScene: 1
+  maxCrystalsPerScene: 6
   palette:
     MonoWeight: 2.5
     BandedWeight: 2.5
@@ -42,9 +42,9 @@ MonoBehaviour:
     ShieldAccentWeight: 1.2
     ShieldFrameWeight: 1.2
     LandmarkWeight: 0.9
-    MaxDanger: 16
-    MaxShielded: 3
-    MaxSuperShielded: 1
+    MaxDanger: 90
+    MaxShielded: 12
+    MaxSuperShielded: 4
     ScaleMoodChance: 0.6
     ScaleMoodMin: 0.6
     ScaleMoodMax: 1.8
@@ -56,14 +56,20 @@ MonoBehaviour:
     TaperTipMax: 1.35
     OmniCrystalChance: 0.16
   lifeformScenes: 1
-  poolSize: 8
-  prismBudgetPerScene: 100
-  sceneRadius: 80
-  sceneSpacing: 170
-  firstSceneDistance: 170
-  aheadTargetScenes: 4
+  poolSize: 20
+  prismBudgetPerScene: 1500
+  sceneRadius: 180
+  sceneSpacing: 520
+  firstSceneDistance: 460
+  aheadTargetScenes: 5
   minSceneIntervalSeconds: 2
-  recycleBehindDistance: 170
+  recycleBehindDistance: 520
   transitionSeconds: 1.2
   turnBreakDegrees: 55
   seed: 0
+  minPlacementDistance: 380
+  offscreenMargin: 80
+  revertCellOnStart: 1
+  tetherPrisms: 100
+  returnStationRadius: 22
+  returnStationColor: {r: 1, g: 0.78, b: 0.25, a: 1}

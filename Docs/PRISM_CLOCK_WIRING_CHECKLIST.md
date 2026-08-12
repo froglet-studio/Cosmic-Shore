@@ -18,13 +18,13 @@ one `[PrismClock]` error per unwired material.
 
 **Your tools:**
 
-- `Tools > Cosmic Shore > Prism Animation > Validate Clock Wiring` — run after every
+- `FrogletTools > Ecology > Prism Animation> Validate Clock Wiring` — run after every
   phase. Out of the box it should show every property row ✅ and the Custom Function
   node rows ❌ — the node wiring is exactly what's left.
-- `Tools > Cosmic Shore > Prism Animation > Auto-Wire Clock Properties` — idempotent
+- `FrogletTools > Ecology > Prism Animation> Auto-Wire Clock Properties` — idempotent
   repair tool: re-adds any clock property that's missing (e.g. after a graph revert).
   Normally reports "already present".
-- `Tools > Cosmic Shore > Prism Animation > Smoke Test - Re-Bloom Nearby Prisms`
+- `FrogletTools > Ecology > Prism Animation> Smoke Test - Re-Bloom Nearby Prisms`
   (play mode) — stamps a from-zero regrow on nearby prisms: wired = smooth GPU
   bloom with 0 active CPU animators; unwired = snap + errors.
 
@@ -119,10 +119,36 @@ steal/repaint instead of snapping, and the last expected one-time
 
 **Test: steal a TRANSPARENT prism with your skimmer** (or watch a danger/shield
 repaint on one) — the recolor fades over ~0.8s like the opaque prisms do, with
-zero `[PrismClock]` errors. **DEFERRED**: the transparent-prism occlusion system
-(camera↔vessel corridor transparency) is currently down, so this test waits for
-its restoration branch — `Docs/PRISM_CLOCK_FOLLOWUP_PROMPTS.md` Prompt 1, which
-carries this test as its closing verification.
+zero `[PrismClock]` errors.
+
+**UN-DEFERRED 2026-08-04, and re-pointed.** This test used to wait on the
+camera↔vessel occlusion system. That system is restored (C1, `Docs/PRISM_ANIMATION.md`
+§4.7) — but it is now a **shader-side fade off global uniforms** and deliberately
+never sets `prismProperties.IsTransparent`, so it is no longer a source of transparent
+prisms to steal. The surviving producer is the **Serpent's cloak**:
+
+1. Fly the **Serpent** (its `CloakSeedWallAction` is bound to
+   `InputEvents.RightStickAction` — the right trigger; 15s cooldown).
+2. Trigger it to lay a cloaked seed wall. Those prisms take
+   `GetTeamTransparentBlockMaterial` (the domain clone of `TransparentPrismMaterial`,
+   which rests on ExplodingBlockGraph) and carry `IsTransparent = true`.
+3. **Skim one to steal it** (or let a danger/shield repaint land on one).
+4. Expect: the recolor **fades over ~0.8s** exactly like an opaque prism, and **zero
+   `[PrismClock]` errors** in the console.
+
+Machine-verified already (so a failure here means the graph reverted, not that the
+plumbing is wrong): ExplodingBlockGraph declares all five color properties
+(`_ColorStartTime`, `_ColorDuration`, `_StartBrightColor`, `_StartDarkColor`,
+`_StartSpread`) as Hybrid Per Instance, `TransparentPrismMaterial` compiles against that
+graph, and `MaterialPropertyAnimator.ClockColorTransition` binds the transparent material
+whenever `IsTransparent` is set — so `bindMaterial.HasProperty("_ColorStartTime")` is true
+and `WarnUnwiredMaterial` cannot fire. Re-confirm any time with
+**FrogletTools > Ecology > Prism Animation > Validate Clock Wiring**.
+
+If it SNAPS instead of fading, the one live variable is the entity sink:
+`Prism.UsesEntityColorSink` is false while an exotic visual (a shield morph) owns the
+renderer, and a bind-only transition is the documented behaviour there — steal a plain
+cloaked prism, not a cloaked-and-shielded one.
 
 <details><summary>Manual steps (reference only — already done)</summary>
 
@@ -188,11 +214,14 @@ suction), staying visible across the whole collapse.
 
 ## Phase 5 — Full verification (§4.4 protocol)
 
-**Known open issue (expected during verification):** `[PrismClock] STRICT MODE:
-no companion render entity to stamp (grow:SpawnablePrism (Clone))` — the
-SegmentSpawner/environment raw-Instantiate path declines entity creation before
-the grow stamp. Tracked with a live repro + branch prompt:
-`Docs/PRISM_CLOCK_FOLLOWUP_PROMPTS.md` Prompt 2 (C13). Not a wiring regression.
+**~~Known open issue~~ — ✅ FIXED 2026-08-02 (C13a).** `[PrismClock] STRICT MODE:
+no companion render entity to stamp (grow:SpawnablePrism (Clone))` was never a
+wiring regression, and it was not the raw-`Instantiate` lay either: a shield
+engage-morph held the exotic-visual window across the prism's creation reveal, so
+`EnsureRenderEntity` was skipped at the exact instant the one-shot grow stamp
+fired. Anatomy: `Docs/PRISM_ANIMATION.md` §3.8 #10; the two rules that close it:
+§4.5. Expect **zero** such errors now — if one reappears, the message names the
+exact broken gate (`Prism.DescribeRenderEntityState`), so paste it verbatim.
 
 - [ ] **Validate Clock Wiring** → `RESULT: ✅ ALL REQUIRED WIRING PRESENT`
 - [ ] Full play session (menu freestyle + one HexRace) with **zero `[PrismClock]`
@@ -237,11 +266,136 @@ must show no compile errors and no `[PrismClock]` errors.
 ## Phase 7 — Follow-up branches (post-wiring, own PRs)
 
 Tracker items (`Docs/PRISM_ANIMATION.md` §5 C-phase) landing per-path on the wired
-graphs, each following the shipped B1/B3 templates: C1 `ClearPrisms` shader-side
-occlusion fade · C4 `FireTrailBlock` pool/Destroy fix · C5 turret anchor flight ·
+graphs, each following the shipped B1/B3 templates: ~~C1 `ClearPrisms` shader-side
+occlusion fade~~ (✅ shipped 2026-08-04 — `PrismOcclusionCorridor`, now a PLATFORM LAW wired into every
+live-prism graph and bound at `VesselController.Initialize`, §4.7; gates: the `PrismOcclusionCoverageTests`
+edit-mode test + FrogletTools > Ecology > Prism Animation > **Validate Occlusion Corridor**) ·
+~~C4 `FireTrailBlock` pool/Destroy fix~~ (✅ 2026-08-07 — resolved by deletion; the
+scripts were unreachable dead code, see §5 C4) ·
+~~C5 turret anchor flight~~ (✅ shipped 2026-08-07 — `PrismFlightClock` +
+`_FlightStartTime`/`_FlightDuration`/`_FlightVelocity` on both live-prism graphs, wired by
+`Tools/Shaders/wire_prism_flight_clock.py`; gate: **Validate Clock Wiring** now requires
+them) ·
 C6 fauna wither/devour/level-up · C7 flora growth · C8 microscene conveyor ·
-C9 cell-swap suction · C10 worm shift · C11 spindle fade · C13 environment-lay
-pooling · B4 GPU shield morphs.
+C9 cell-swap suction · C11 spindle fade · C13 environment-lay
+pooling · B4 GPU shield morphs. (C10 worm shift is resolved by deletion — the
+worm-colony rebuild removed the legacy shift; see Docs/ECOSYSTEM.md §23.)
+
+## Phase 8 — Occlusion corridor (C1) — WIRED PROGRAMMATICALLY, **PLAYTEST OUTSTANDING**
+
+Everything machine-checkable is verified and gated (see below). What no tool here can
+answer is whether it *feels* right — that needs a human at the editor.
+
+**Gates that already pass** (re-run them if anything looks wrong; both are asset-only,
+no play mode):
+
+- `FrogletTools > Ecology > Prism Animation > **Validate Occlusion Corridor**` — checks
+  the HLSL GUID, both graphs' unexposed globals + custom-function node + compile state,
+  every material on those graphs, and every prefab carrying a `Prism`.
+- `PrismOcclusionCoverageTests` (edit-mode) — the same rules as an automated test, so new
+  content authored outside the corridor fails CI-style rather than silently going opaque.
+
+**The playtest.** Load any scene with a local vessel and a dense prism environment
+(Menu_Main freestyle is the fastest — fly into the cell wall):
+
+1. Fly so a prism wall sits between the camera and your ship. A cone of prisms centred on
+   the ship dissolves; the ship stays visible through it.
+2. Move off. The wall returns to fully opaque **immediately** — the gradient band is
+   deliberately short, so there should be no lingering half-dissolved mass.
+3. Watch the boundary. Sides and base grade at the same rate; there should be **no seam**
+   anywhere on the cone, and in particular no crisp semicircular edge on a large plate
+   level with the ship.
+3b. **Fly into a prism wall and watch the moment of contact.** The prism you hit must be
+   FULLY SOLID as it arrives — the fade completes a hull radius short of the ship
+   (`PRISM_OCCLUSION_NOSE_CLEARANCE`), so there is a solid buffer the nose sits inside.
+   A prism that is still dithering when you strike it means the clearance is too small
+   (or 0); conversely, if mass now hides the ship at contact range, it is too large.
+4. Hold still ~10s and watch the stipple. It should read as a **cracked lattice of walls**
+   (the shipped SHATTER kernel), and the pattern should **evolve** — polygons drifting,
+   walls re-drawing — reading as flow, never as flicker. Round flecks mean the kernel is
+   back on `..._WORLEY`; triangles mean `..._SHARD`; **face-sized plates flashing in and
+   out around the vessel mean `..._SHATTER3D`, which is carried but REJECTED ON LOOK —
+   restore `..._SHATTER`.** (Known open issue, 2026-08-10: at high speed the
+   screen-anchored pattern's slide over fast geometry can strobe the bright-face/
+   dark-interior contrast; the 3D kernel fixed that and introduced worse. The shipped
+   answer is `PRISM_BACKFACE_POWER` (3.0) — it takes the prism's own interior out of
+   the gradient band while the exterior is still dissolving, removing the interference
+   rather than scrambling it. `PRISM_OCCLUSION_SHATTER_DEPTH_PHASE` ships at **0**: it
+   was measured and useful decorrelation needs ~50x the rate the speed budget allows,
+   so it is a dead dial, not a lever. Morph-rate and back-face power are the levers
+   while a successor kernel is designed.)
+5. Swap vessels (the freestyle vessel-changer toy). The corridor should re-scale to the
+   new hull automatically — a bigger ship clears a proportionally bigger cone.
+6. Check the console: zero `[PrismOcclusion]` errors. Any that appear name the vessel and
+   the number, and mean either an unmeasurable hull or an implausible radius (or, since
+   2026-08-10, a transparent prism material — those are off-contract now, see step 7).
+7. Shoot a prism wall and watch the debris (2026-08-10/11 — dither IS prism
+   transparency). Each face of an exploding prism should show **ONE jagged erosion
+   front wiping across it** (solid face → hard irregular line → gone) — never many
+   holes eaten from multiple points across a face, no smooth blend, and no dither on
+   the edge ITSELF: the only speckle on debris should be the corridor's own, when a
+   chunk flies through the cone. A graded debris edge is the retired fringe and reads
+   as visual confusion with the tunnel.
+   **The wipe must visibly COMPLETE before the piece disappears** — it finishes 15%
+   of the fade early by construction (`PRISM_EROSION_END_MARGIN`), on the extended
+   7.5s duration. **Watch a SPINNING piece: the front must ride the face through the
+   whole tumble** — a wipe that jumps or flickers as pieces rotate is the retired
+   position-anchored bug; **orbit the camera around a fading chunk: nothing about the
+   wipe may change with the view** — either failure means stale wiring, run
+   `python3 Tools/Shaders/wire_prism_explosion_erosion.py` (it migrates old shapes in
+   place). A fading chunk inside the corridor shows both effects composed in
+   coverage. Cloaked prisms (the cloak-wall ability) should read as a sparse ~1%
+   stipple, not a translucent ghost. If any prism blends smoothly, a transparent
+   prism material has crept back in — run
+   `python3 Tools/Shaders/enable_prism_alpha_clip.py` (it converts strays and
+   preserves their authored alpha as coverage).
+8. Per-vessel corridor sizing: run **FrogletTools > Vessels > Audit Corridor Vessel
+   Radii** (asset-only). Every vessel's hull radius should track its visual bulk, and
+   the report names the top contributing renderers — a radius far off the fleet
+   median comes with its offender attached. Skinned hulls measure `localBounds` in
+   root-bone space (the culling bounds — what actually renders); the old
+   `sharedMesh.bounds` read overstated armature-scaled rigs ~5× (the Sparrow's
+   oversized corridor).
+
+**Do not hand-edit these to explore.** `FrogletTools > Ecology > Prism Animation >
+**Occlusion Dither Lab**` drives every knob below as a shader global — **live, including in
+play mode** — previews them through the shipped GPU code, measures the coverage fidelity
+against the shipped baseline, and bakes the result back into the constants. Editing the
+`#define`s by hand is for when you already know the number.
+
+**The knobs**, if it needs tuning (all in
+`Assets/_Graphics/Materials/Graphs/PrismOcclusionCorridor.hlsl` unless noted):
+
+| Knob | Default | What it does |
+|---|---|---|
+| `PRISM_OCCLUSION_KERNEL` | `..._SHATTER` | The dither look. `..._SHATTER` a cracked lattice of walls (**shipped** — restored 2026-08-10 after the 3D kernel's same-day rejection) · `..._SHATTER3D` the volumetric world-anchored variant (**carried, REJECTED ON LOOK**: crack planes lying near-parallel to a viewed surface flash face-sized plates — reads as glitchy clipping around the vessel; every fidelity number passed, the look failed) · `..._SHARD` triangular flecking · `..._WORLEY` round flecks · `..._SPIRAL` a corridor-anchored iris · `..._IGN` an even screen-space dissolve. |
+| `PRISM_OCCLUSION_SHATTER3D_CELL` / `..._WALL` | `12.0` / `1.2` | Shatter3D only (carried, rejected — see the kernel row). CELL is the ideal angular size in px on the power-of-two world-size ladder; WALL a ratio of the cell. Kept live in the Lab for a possible 3D-SHARD successor. |
+| `PRISM_EROSION_WIGGLE` / `..._WIGGLE_FREQ` / `..._END_MARGIN` / `..._FRINGE` / `..._CDF_LO` / `..._CDF_HI` | `0.12` / `2.5` / `0.15` / `0.0` / `-0.02` / `1.02` | The exploding prism's body-anchored fade: **one jagged WIPE per face, anchored to UV0** (spin-proof — mesh attributes can't be moved by vertex animation; the position-anchored version broke under the shatter spin). WIGGLE is the jagged-front amplitude, FREQ the jags per face width, END_MARGIN makes the wipe complete that fraction of the fade EARLY (closes the retirement race; pairs with `PrismExplosion.DefaultDuration` 7.5s = the old 5s × 1.5), FRINGE the dithered dissolve band leading the front — **shipped at 0 (hard edge)**: a graded edge dissolves in the same visual language as the corridor and the two read as one confused surface, and removing it also took the fade-curve error from 0.0296 to 0.00068. Non-zero restores the graded edge. **The CDF pair is fitted to the wipe coordinate over the UV square** — re-run `python3 Tools/Shaders/fit_prism_erosion_cdf.py` after moving WIGGLE or FREQ (MARGIN and FRINGE sit outside the fit and tune freely). |
+| `PRISM_OCCLUSION_SHARD_ORIENT` | `..._FIXED` | Shard only. `..._FIXED` all triangles one heading (most legible as a triangle) · `..._FLIP` up/down · `..._SPIN` free per-cell rotation (reads as splinters). |
+| `PRISM_OCCLUSION_MORPH_RATE` | `0.3256` | Pattern evolution, cycles/sec. `0` freezes it. Shipped ABOVE the ~`0.25` guideline by deliberate choice after viewing it in motion (1.75% of band pixels flip per frame vs the 1.45% guideline) — a look call, and it cannot affect the fade: coverage is flat across the range. |
+| `PRISM_OCCLUSION_NOSE_CLEARANCE` | `1.0` | Where the corridor STOPS, in multiples of the vessel's own hull radius. The fade completes this far SHORT of the vessel plane, leaving a fully solid buffer the ship's whole nose sits inside — without it a prism is still half-dematerialised when the ship hits it and the impact does not read. Measured on-axis (Sparrow, hull 12.32, camera 30 u): cleared 22–28 u out, fading 20→14 u, **solid from 12.3 u through the vessel plane**. The trade: mass inside the buffer is solid and can occlude the ship at contact range — lower toward `0.5` if that bites, `0` restores the old flush-to-the-plane cone. |
+| `PRISM_OCCLUSION_SHATTER_DEPTH_PHASE` | `0.0` (**off**) | Shatter only. Shifts each cell's WALL by view depth, leaving the lattice itself still. Coverage-neutral. **Implemented, measured, shipped OFF**: separating a prism's own two faces (~2u apart) needs ~50x the rate the speed budget allows — at 0.02 it is only 16% decorrelated at 2u while flipping 17.9% of band pixels per frame at 300 u/s (ceiling ~1.45%). The dial exists so the conflict is visible, not so it gets turned up. Replaces the retired `PRISM_OCCLUSION_PARALLAX` domain shear, which had the same conflict and moved the WHOLE lattice (coherent crawl the eye tracks — rejected on look 2026-08-11). |
+| `PRISM_BACKFACE_POWER` | `3.0` | `alpha^power` on surfaces facing AWAY from the camera. Prisms render two-sided, so the beat's usual second layer is a prism's own interior; sharpening it drops the interior out of the gradient band while the exterior is still dissolving — the only fix that REMOVES the interference rather than scrambling it, and the only one with no temporal cost. Measured both-in-band range: `1.0` (off) 0.09–0.92 · `2.0` 0.28–0.92 · **`3.0` 0.44–0.92** · `4.0` 0.54–0.92. The trade is a look change — interiors vanish earlier, so a mid-fade prism reads as a thinner shell. `1.0` disables it without touching the graph. |
+| `PRISM_OCCLUSION_CELL_SIZE` | `6.0` | Fleck size in pixels, shared by SHARD and WORLEY. **Free dial inside 4.5–11 px** (sweet spot 6–8); the CDF fit is scale-invariant, so it does NOT need re-fitting — see the size window below. |
+| `PRISM_OCCLUSION_SHARD_AREA` | `1.28607` | Shard only. Normalises the triangle gauge to the same AREA as the circle it replaces — which is also what lets it share the CDF fit. **Changing this one DOES mean re-fitting `..._CDF_*`.** |
+| `PRISM_OCCLUSION_SHATTER_CELL` / `..._WALL` | `16.26` / `20.0` | Shatter only, and independent: polygon size and wall repeat, both in pixels. At alpha `a` the dark wall is `(1-a) × WALL` wide. Windows: polygon **8–20 px**, wall up to **~1.25× the polygon** — the wall window is RELATIVE, not absolute (corrected 2026-08-06). No CDF — `frac` of a hash is uniform by construction. |
+| `PRISM_OCCLUSION_LIVE_TUNING` | `0` (shipped) | **Design mode.** 1 promotes every knob above to two shader globals and makes the kernel a runtime branch, so the Lab can drive them live. 0 compiles the file exactly as if none of this existed — one kernel, no branch, no uniforms. Design mode costs GPU occupancy (all five kernels in every prism shader), so **bake and set it to 0 before shipping**; the Lab's "Bake to source + ship mode" button does both. Fail-safe: with nothing published, every dial falls back to its constant, so design mode with the Lab closed looks exactly like shipped mode. |
+
+**The size window (measured 2026-08-06).** `CELL_SIZE` used to carry a "re-fit the CDF or
+the fade degrades ~19×" warning. That was wrong: the distance is measured in *cell* units,
+so the distribution does not move with the pitch — re-fitting anywhere from 3 to 15 px lands
+within noise of the shipped constants and buys nothing. (The 19× figure is what dropping the
+remap *entirely* costs.) What actually bounds the dial is **sampling**, at both ends, and
+neither end is fittable: below ~4.5 px the shape falls under the pixel floor, and past ~11 px
+too few cells span the gradient band, so corridor error climbs (0.019 at 11 px, 0.025 at
+15 px — that last one reads as a chunky edge, not a fade). Same failure shape on SHATTER: a
+polygon or a wall as large as the gradient band cannot resolve the gradient.
+| `PRISM_OCCLUSION_SPIRAL_ARMS` | `3.0` | Spiral only. **Must stay an integer** or a radial scar appears down one side. |
+| `OuterRadiusScale` / `InnerRadiusScale` / `CoreAlpha` | `1` / `0.25` / `0` | `Resources/PrismOcclusionConfig` — corridor width and how solid the clear centre is. Multiples of the vessel's own circumscribing radius, so they are vessel-independent. |
+
+**If the corridor does nothing at all**, check in this order: the config asset's `Enabled`;
+that the vessel spawned through `VesselController.Initialize` with `IPlayer.IsLocalPilot`
+true; then run the validator above.
 
 ## Troubleshooting
 

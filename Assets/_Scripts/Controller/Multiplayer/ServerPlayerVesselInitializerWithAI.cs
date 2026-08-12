@@ -59,8 +59,12 @@ namespace CosmicShore.Gameplay
             // Set scene-specific spawn positions before AI spawning.
             // base.OnNetworkSpawn() also sets them, but AI spawns happen first
             // (before base runs), so positions must be configured here.
-            if (playerSpawnPoints != null && playerSpawnPoints.Length > 0)
+            // The cell-relative ring is built on first vessel spawn instead (it needs the cell's
+            // nucleus), so skip the authored transforms entirely when it is enabled.
+            if (!arrangeSpawnPointsAroundCell && playerSpawnPoints != null && playerSpawnPoints.Length > 0)
                 gameData.SetSpawnPositions(playerSpawnPoints);
+            else
+                EnsureSpawnPosesReady(); // AI draw poses during SpawnAIs below - the ring must exist first
 
             // Active set is the contiguous slice ActiveDomains[0..DC-1]. Strictly
             // deterministic - no humans-picks-influence-the-set logic. DC < 3 means
@@ -178,6 +182,14 @@ namespace CosmicShore.Gameplay
                 var aiVesselType = hasTemplate ? aiInitializeDatas[i].vesselClass : VesselClassType.Random;
                 if (aiVesselType is VesselClassType.Any or VesselClassType.Random)
                     aiVesselType = PickAIVesselType();
+
+                // A restricted-vessel mode restricts the AI too. The AI's class comes from the
+                // scene's aiInitializeDatas (or the captain roll), neither of which knows the
+                // mode's rules - so a scene authored with the wrong template, or a captain roll
+                // in a single-vessel mode, would field opponents in an illegal hull. Same clamp
+                // and same authority as the human path (ResolveSpawnVesselType); no-op when the
+                // game authors no Vessels list.
+                aiVesselType = gameData.ClampVesselToGame(aiVesselType);
 
                 var aiName = tournament && i < tournamentData.TournamentAINames.Count
                     ? tournamentData.TournamentAINames[i]
@@ -374,7 +386,15 @@ namespace CosmicShore.Gameplay
             var aiPilot = aiVesselNO.GetComponentInChildren<AIPilot>();
             if (aiPilot == null) return;
 
-            bool shouldSeekPlayers = gameData.GameMode == GameModes.MultiplayerJoust;
+            // Player-seek is for the modes whose OBJECTIVE is another pilot. Joust wants to
+            // sweep its skimmer past you; Dog Fight wants you in its gunsight - the steering
+            // need is identical (chase the live position of a chosen opponent), so the mode
+            // reuses AIPilot's existing opponent lock rather than growing a bespoke one. Dog
+            // Fight then layers a stand-off distance on top via its own external target
+            // provider, because a gun duel is not a ramming contest.
+            bool shouldSeekPlayers =
+                gameData.GameMode == GameModes.MultiplayerJoust ||
+                gameData.GameMode == GameModes.DogFight;
             float skill = Mathf.Clamp01(gameData.SelectedIntensity.Value * 0.25f);
             aiPilot.ConfigureForGameMode(gameData, shouldSeekPlayers, skill);
         }

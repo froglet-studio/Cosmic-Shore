@@ -48,6 +48,54 @@ coverage work (`claude/dolphin-explosion-prism-coverage-qtbstp`).
   orders of magnitude more than the effect itself. The lifted burst therefore
   measures entity + GPU cost, not pool churn. Legacy keeps its authored effect
   path — that architectural difference is exactly what the A/B measures.
+- **Suction debris on the same carrier (2026-08-04)**: implosions now batch too
+  (`SpawnImplosionDebrisBatch`). **This does not change the blast numbers** — an
+  AOE lattice detonation produces zero implosions, because every AOE/projectile/
+  skimmer/ram death routes `Prism.Damage → Explode`, and the only producer of an
+  implosion anywhere in the project is `Prism.Consume` (fauna feeding). Judge the
+  implosion half in a scene with fauna, not on the grid rig; the grid's `debris`
+  HUD row reports both families (`N exp / N imp`) so a stuck suction count is
+  visible if one ever appears there.
+
+## Re-profiling the death path (2026-08-04)
+
+The lifted-throttle profile that motivated the entity carrier attributed
+**~0.43 ms of SELF time per death** to `AOE.ResolveDamage` (≈1,047 ms for 2,408
+deaths). That marker wraps a whole drain and nothing inside it was instrumented,
+so the figure is an upper bound on "everything a death does" — and the single
+largest thing it contained, `PrismExplosion.OnDisable` at 1,863 ms, has since
+been removed by `f0ddfc21`. **Treat the 0.43 ms as stale until re-measured.**
+
+`Prism` now emits five markers so the re-measurement is attributable rather than
+a single bucket:
+
+| marker | what it covers |
+|---|---|
+| `Prism.Destroy.Setup` | `SetupDestruction` total (pose capture, collider/animator stand-down, volume, flags) |
+| `Prism.Destroy.SpatialIndex` | `PrismSpatialIndex.MarkDestroyed` → `UnbindCell` → `Cell.RemoveBlock` → the three density grids |
+| `Prism.Destroy.StatRaise` | the `PrismStats` SOAP raise → `StatsManager.PrismDestroyed` and everything it fans out to |
+| `Prism.Destroy.SFX` | `AudioSystem.PlayGameplaySFX` (throttled, so mostly an early-out) |
+| `Prism.Destroy.EffectRequest` | the prism event-channel raise → `PrismFactory` → `PrismDebris` queue |
+
+`Prism.Destroy.Setup` NESTS the SpatialIndex and StatRaise scopes, so its *self*
+time is the prism-local work and its children are the two fan-outs. Expect
+`StatRaise` to dominate: `StatsManager.PrismDestroyed` looks up the attacker and
+the victim and then writes six `RoundStats` properties, each of which raises its
+own change event into the HUD.
+
+**What to record.** Run the standard 5-run `bench`, throttles lifted, and capture
+alongside the FPS envelope: the five markers' total + self ms for the detonation
+frame, and the GC allocated-per-frame figure. Compare against a run at
+`f0ddfc21` for the delta attributable to this pass, whose measurable claims are:
+
+- zero managed allocation on a plain trail-prism death (was: one `PrismEventData`
+  class, one `Domains[3]`, and two LINQ lookups' worth of closure + delegate +
+  boxed enumerator per death);
+- one `transform` pose read per death instead of four, and one
+  `transform.position` read per death inside `Cell.RemoveBlock` instead of three.
+
+These are structural claims about allocation and interop counts, not predictions
+about frame time — the benchmark is what says whether they matter.
 
 ## What one run records
 
@@ -71,13 +119,13 @@ else `gpu-clock`) along with the git branch.
 ### NEW — gpu-clock (this branch)
 
 1. Check out `claude/prism-animation-audit-95mlpu`, open the project.
-2. `Tools > Cosmic Shore > Setup Prism Grid Explosion Scene` (idempotent —
+2. `FrogletTools > Scene Setup > Setup Prism Grid Explosion Scene` (idempotent —
    authors the config, scene, managers, harness + benchmark component; it is
    also SELF-HEALING: a scene that somehow carries duplicate PrismManagers
    instances — the Singleton<T> managers must exist exactly once — gets the
    extras deleted, with inactive instances counted too).
 3. Disable Bootstrap auto-load
-   (`Tools > Cosmic Shore > Testing Multiplayer > Do not load Bootstrap Scene on Play`),
+   (`FrogletTools > Scene Setup > Testing Multiplayer> Do not load Bootstrap Scene on Play`),
    press Play.
 4. The setup tool authors the spec'd 47³ grid — leave the X/Y/Z/gap fields
    alone so both experiments run the identical workload. Press **Bench** (or
@@ -138,7 +186,7 @@ branch-specific API.)
 
 ### Report
 
-On either branch: `Tools > Cosmic Shore > Prism Grid Benchmark >
+On either branch: `FrogletTools > Performance > Prism Grid Benchmark>
 Generate Comparison Report`. Reads every run JSON in the folder and writes:
 
 - **`report.md`** — per-variant summary (mean / p50 / 1% low / min FPS +

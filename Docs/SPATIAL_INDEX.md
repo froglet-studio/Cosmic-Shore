@@ -180,9 +180,9 @@ blocked for up to 5s). `AssembledFlora` orders its random-skip *before*
 | `UpdateShellTransform(index)` | `Prism.RefreshVolumeCache` (growers) + `Prism.NotifyPositionChanged` (movers) | Re-capture a shielded slot's world shell pose; O(1) single-byte no-op for the unshielded majority |
 | `CollectShellContacts(probes, count, hits)` | `PrismShellContactManager` **only** | Shell-contact tier: one synchronous Burst pass testing every shield-flagged slot's analytic shell (octahedron / stella two-tet union, exact) against the frame's probe set |
 | `GetRegisteredPrism(index)` | `PrismShellContactManager` (same-frame resolve) | Managed back-reference for a query-result slot — same parallel-array resolve the explosion path uses |
-| `ProcessExplosionFrame(center, radius, blastOrigin, …, alreadyHit, pending)` | `ExplosionImpactor` **only** | Batch AOE damage for the **spherical** explosion (Burst). `center` is stationary and `radius` grows, so each frame's query volume strictly CONTAINS the previous frame's. `blastOrigin` is the emission point every impact vector radiates from; the job emits `AOEHit {index, unit direction}` pairs, normalizing in-job via `math.rsqrt` so the main-thread damage pass never pays a per-hit managed sqrt |
-| `ProcessExplosionConeFrame(apex, axis, sliceMin, sliceMax, tanHalfAngle, …)` | `ExplosionImpactor` **only** | Batch AOE damage for the **conic** explosion (Burst, `AOEConicSweepQueryJob`). An EXACT test against the rendered cone over the axial slab `[sliceMin, sliceMax]` it newly covers this frame; successive slabs tile the swept cone, so coverage is frame-rate independent and never reaches past the visible tip. `tanHalfAngle` = baseRadius/height, invariant as the self-similar cone grows. The apex is both cone origin and blast origin |
-| `DrainPendingExplosionDamage(pending, …)` | `ExplosionImpactor` **only** | Resolves budget-deferred damage without a new query. Called after the visual ends so a blast dense enough to exceed the per-frame budget still damages everything it enclosed |
+| `ProcessExplosionFrame(center, radius, blastOrigin, impulse, …, alreadyHit, pending)` | `ExplosionImpactor` **only** | Batch AOE damage for the **spherical** explosion (Burst). `center` is stationary and `radius` grows, so each frame's query volume strictly CONTAINS the previous frame's. `blastOrigin` is the emission point every impact vector radiates from; the job emits `AOEHit {index, unit direction}` pairs, normalizing in-job via `math.rsqrt` so the main-thread damage pass never pays a per-hit managed sqrt. `impulse` (`ExplosionImpulse`) carries speed x inertia AND the debris speed ceiling as one value — see "Impulse" below |
+| `ProcessExplosionConeFrame(apex, axis, gapeAxis, sliceMin, sliceMax, tanCoreHalfAngle, tanGapePerUnit, …)` | `ExplosionImpactor` **only** | Batch AOE damage for the **conic** explosion (Burst, `AOEConicSweepQueryJob`). An EXACT test against the swept blast over the axial slab `[sliceMin, sliceMax]` it newly covers this frame; successive slabs tile the sweep, so coverage is frame-rate independent and never reaches past the visible tip. The cross-section is a **capsule** (a 2D stadium), not a disc: radius `tanCoreHalfAngle * s`, half-length `tanGapePerUnit * s` along `gapeAxis` (the axis the emitting vessel's jaws open across). Both tangents are invariant as the self-similar blast grows, and their SUM is the rendered cone's base radius — so the capsule is inscribed in the visible cone, touching it exactly along the gape. `tanGapePerUnit == 0` collapses the test to the original circular cone term for term. The apex is both sweep origin and blast origin |
+| `DrainPendingExplosionDamage(pending, impulse, …)` | `ExplosionImpactor` **only** | Resolves budget-deferred damage without a new query. Called after the visual ends so a blast dense enough to exceed the per-frame budget still damages everything it enclosed |
 | `SetCellBinding(index, cellId, envMass, domain)` | `Cell.AddBlock` **only** | Bind a slot into a cell's summation view |
 | `ClearCellBinding(index, cellId)` | `Cell.RemoveBlock` **only** | Release a slot from the owning cell's summation view (no-op for non-owners) |
 | `ClearAllCellBindings(cellId)` | `Cell.Initialize` / `Cell.ResetCell` **only** | Bulk-release a cell's summation-view bindings (packed counterpart of the old massTracked.Clear) |
@@ -210,6 +210,37 @@ pulling (`WallAssembler`), and swimming fauna bodies
 (`Fauna.NotifyBodyPrismsMoved`, called per-frame by `LightFauna`/`Boid`
 `Update`). Before fauna upheld this contract, batch AOE hit creatures at
 their spawn point instead of where they actually were.
+
+## Impulse — what a blast hands the mass it destroys
+
+Every explosion entry point takes one `ExplosionImpulse`
+(`_Scripts/Controller/Projectiles/ExplosionImpulse.cs`) rather than a loose
+`(speed, inertia)` pair, because the two are meaningless without the third
+number that used to travel separately: the **debris speed ceiling**.
+
+Debris speed is `min(Speed * Inertia, ceiling)`. When an explosion supplies no
+ceiling of its own, the ceiling is `PrismExplosion.prefab`'s authored
+`maxSpeed` (**33.33 u/s**) — a guard sized for the legacy
+`impactVector / volume` gain, not a physical bound. Every AOE magnitude sits
+far above it (the Dolphin cone's wavefront is `height / (duration * 4)` ≈
+**222 u/s**, 6.7x over), so on that contract *every* blast saturates to the
+same 33.33 and `Inertia` is dead tuning — turning it up moves nothing on
+screen. This is the same trap documented for the hull-ram path in
+`VesselDamagePrismEffectSO`.
+
+`AOEExplosion.proportionalDebris` opts a blast onto the true-velocity contract
+that `PrismEffectHelper.DamageProportional` already defines: the impact vector
+IS the debris velocity (`speed * debrisRestitution * Inertia`) and the blast
+passes a matching ceiling, so `Inertia` scales what the player sees, linearly.
+`debrisRestitution` defaults to **1/3**, matching the physical read the vessel
+and skimmer damage paths ship at — so the AOE, hull, and sword paths stay one
+tuning group. Off by default; **on** for `AOEConicExplosion.prefab` (the
+Dolphin crystal blast).
+
+Both prism paths carry the ceiling — the Burst resolve
+(`ResolveExplosionHit`) and the Physics-trigger fallback
+(`ExplosionImpactor.ExecuteCommonPrismCommands`) — so a blast throws mass at
+the same speed whether or not the index is available.
 
 ## Mass-conservation alignment
 
@@ -417,6 +448,20 @@ lost coverage. The lever for shortening it is the per-prism destruction cost
   use it for"). Routing mound blocks through the real `Initialize` lifecycle
   would retire that probe, but changes their layer/collider/grow behavior and
   must be its own tested change.
+- The conic explosion's **vessel** hit volume is still a single leading
+  cross-section, not the whole swept solid. Prisms go through the exact
+  `ProcessExplosionConeFrame` slab, but explosion->vessel effects resolve through
+  `AOEConicExplosion`'s trigger collider, which rides the leading BASE PLANE with
+  the cross-section the Burst query is using there — since the capsule change, a
+  `CapsuleCollider` of the core radius extended along the gape axis
+  (`UpdateCapsuleTrigger`), so its SHAPE now matches the sweep instead of
+  contradicting it. What it still does not cover is the volume BEHIND that plane:
+  a vessel the wavefront already passed is only hit on the frame the plane
+  reached it. The impact VECTOR is already apex-radial
+  (`CalculateImpactVector` overrides to the cone container), so only WHO gets hit
+  is affected. Fixing it means a full sweep containment test on the vessel path —
+  a gameplay change to the blast's reach, so it wants its own branch and a play
+  test, not a drive-by.
 
 ## Roadmap
 

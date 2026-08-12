@@ -41,7 +41,7 @@ Simple destructive fun — fly hard, smash mass, watch the counter fall.
   individual prisms smashed on the secondary line); TEAM-major by construction
 - **Turn monitor**: `RampagePrismTurnMonitor` — resolves the prism target from
   `EndConditionOverridesSO.GetRampagePrismTarget()` at StartMonitor (default **2000**,
-  Tools ▸ Cosmic Shore ▸ End Game Conditions — never a per-scene field), syncs it via
+  FrogletTools ▸ Game Modes ▸ End Game Conditions— never a per-scene field), syncs it via
   NetworkVariable → `GameDataSO.PrismTargetCount`, ends the turn via
   `rule.IsObjectiveReached`
 - **Domains**: free-for-all like Scurry (`MinDomainsAllowed`/`MaxDomainsAllowed`
@@ -117,7 +117,7 @@ RampageController.OnTurnEndedCustom                [server]
 
 ## End condition
 
-Authored ONLY through **Tools ▸ Cosmic Shore ▸ End Game Conditions**
+Authored ONLY through **FrogletTools ▸ Game Modes ▸ End Game Conditions**
 (`EndConditionOverridesSO.rampagePrismTarget`, 0 = default 2000). Applies wherever
 the mode runs. Live/Build split + build auto-restore work like every other mode.
 

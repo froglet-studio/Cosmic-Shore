@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using CosmicShore.Utility;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -540,11 +541,12 @@ namespace CosmicShore.Gameplay
             var tris = new List<int>();
             var normals = new List<Vector3>();
 
-            if (_outerShape == AstroLeagueBoundaryShape.Cylinder)
+            if (_outerShape == AstroLeagueBoundaryShape.Sphere)
+                AppendSphereMesh(meshVerts, tris, normals);
+            else if (_outerShape == AstroLeagueBoundaryShape.Cylinder)
                 AppendCylinderMesh(meshVerts, tris, normals);
             else if (_planes.Count >= 4)
                 AppendPolytopeMesh(meshVerts, tris, normals);
-            // Sphere outer contributes no hull mesh (it is resized via Cell.SetNucleusWorldRadius).
 
             if (_hasRing)
                 AppendTorusMesh(meshVerts, tris, normals);
@@ -700,6 +702,44 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>Barrel (N segments) + flat ±Z caps, matching <see cref="ContainCylinder"/>'s walls.</summary>
+        /// <summary>
+        /// Flat-shaded icosphere hull at the sphere court's radius.
+        ///
+        /// The Sphere shape used to contribute NO hull mesh - the nucleus was merely resized
+        /// (<c>Cell.SetNucleusWorldRadius</c>) and kept the prefab's plain sphere. That is why the
+        /// faceted glowing "arena cover" every other court wears was missing at intensity 4: it is
+        /// the generated cage mesh rendered through the nucleus' CageMaterial, and the sphere never
+        /// generated one. Building it here means every shape gets the cover from ONE source, and -
+        /// as with the polytopes - the surface you see is the surface the ball reflects off.
+        ///
+        /// Reuses <see cref="IcosphereMeshGenerator"/> (the ball's mesh source) flat-shaded, so the
+        /// facets catch the cage material's fresnel exactly like the polytope faces do.
+        /// </summary>
+        void AppendSphereMesh(List<Vector3> meshVerts, List<int> tris, List<Vector3> normals)
+        {
+            // 3 subdivisions = 1280 tris - dense enough to read as a dome at arena scale, coarse
+            // enough that the facets stay legible (the whole point of the look). FinalizeMesh
+            // doubles it for the inside faces, as it does for every other shape.
+            var sphere = IcosphereMeshGenerator.Generate(3, _sphereRadius, flatShaded: true);
+            if (sphere == null) return;
+
+            var sv = sphere.vertices;
+            var st = sphere.triangles;
+            var sn = sphere.normals;
+            int baseIndex = meshVerts.Count;
+            for (int i = 0; i < sv.Length; i++)
+            {
+                meshVerts.Add(sv[i]);
+                normals.Add(sn != null && sn.Length == sv.Length ? sn[i] : sv[i].normalized);
+            }
+            for (int i = 0; i < st.Length; i++) tris.Add(baseIndex + st[i]);
+
+            // The generator hands back a fresh Mesh each call; this one only ever existed to be
+            // copied into the shared cage mesh. (Play-mode guard: Destroy is an error in edit mode,
+            // and a boundary is only ever built at runtime.)
+            if (Application.isPlaying) UnityEngine.Object.Destroy(sphere);
+        }
+
         void AppendCylinderMesh(List<Vector3> meshVerts, List<int> tris, List<Vector3> normals)
         {
             const int seg = 32;

@@ -132,7 +132,7 @@ namespace CosmicShore.Utility
         public List<int> PointsByPlace = new() { 2, 1, 0 };
 
         [Tooltip("FALLBACK race target only - used when the End Game Conditions tool asset is missing. " +
-                 "The authority is Tools > Cosmic Shore > End Game Conditions (Maelstrom - Win Target); " +
+                 "The authority is FrogletTools > Game Modes > End Game Conditions (Maelstrom - Win Target); " +
                  "read EffectiveWinTarget, not this field. First DOMAIN whose cumulative placement " +
                  "crystals reach the target wins the shuffle (with {2,1,0} per game, 6 ≈ three dominant finishes).")]
         public int WinTarget = 6;

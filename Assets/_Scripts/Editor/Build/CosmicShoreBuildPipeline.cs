@@ -5,6 +5,7 @@ using UnityEditor;
 using UnityEditor.Build;
 using UnityEditor.Build.Reporting;
 using UnityEngine;
+using CosmicShore.Editor.Froglet;
 
 namespace CosmicShore.Editor
 {
@@ -42,13 +43,19 @@ namespace CosmicShore.Editor
         //  Entry points
         // ──────────────────────────────────────────────
 
-        [MenuItem("Tools/Cosmic Shore/Build/Windows x64 (Release)", false, 100)]
+        [MenuItem("FrogletTools/Build/Windows x64 (Release)", false, 100)]
+        [FrogletTool(FrogletToolCategory.Build, Importance = 5,
+            Description = "Release player build - the artifact that ships.")]
         public static void BuildWindowsRelease() => Run(development: false);
 
-        [MenuItem("Tools/Cosmic Shore/Build/Windows x64 (Development)", false, 101)]
+        [MenuItem("FrogletTools/Build/Windows x64 (Development)", false, 101)]
+        [FrogletTool(FrogletToolCategory.Build, Importance = 4,
+            Description = "Development player build with the profiler attached.")]
         public static void BuildWindowsDevelopment() => Run(development: true);
 
-        [MenuItem("Tools/Cosmic Shore/Build/Reveal Build Folder", false, 120)]
+        [MenuItem("FrogletTools/Build/Reveal Build Folder", false, 120)]
+        [FrogletTool(FrogletToolCategory.Build, Importance = 2,
+            Description = "Open the last build output in the file browser.")]
         public static void RevealBuildFolder()
         {
             string path = Path.GetFullPath(DefaultOutputFolder);
