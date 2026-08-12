@@ -224,6 +224,14 @@ namespace CosmicShore.Gameplay
                     break;
 
                 case ElementalCrystalImpactor elementalCrystalImpactor:
+                    // Mirror the crystal side's collectability guards (ElementalCrystalImpactor.
+                    // AcceptImpactee): a living lifeform's embedded heart enters the trigger but is
+                    // never skim-collectable — without this gate the skimmer's crystal effects
+                    // (e.g. the Rhino sword's crystal burst) would fire on it, repeatedly, since
+                    // the heart's collider never gets disabled by a collection.
+                    var crystal = elementalCrystalImpactor.Crystal;
+                    if (crystal == null || crystal.IsEmbedded || crystal.IsExploding) return;
+
                     var esc = skimmerImpactorDataContainer.SkimmerCrystalEffects;
                     if (!DoesEffectExist(esc)) return;
                     foreach (var effect in esc)

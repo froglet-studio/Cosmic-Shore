@@ -1,5 +1,11 @@
 # Rhino Shield Swipe — analog trigger swordsmanship
 
+> The blade's **cutting behavior and energy meter** — ungated prism damage, super-shield
+> popping on contact, energy banked per kill (blade length + heat), and the elemental-crystal
+> 3D burst — live in **`RHINO_ENERGY_SWORD.md`**. This file covers only the pose/analog-swipe
+> control model. The `ShieldSkimmerScaleDriver` "Sword dimensions & scale ownership" section
+> below is now driven by that energy meter (no tick decay).
+
 The Rhino's ForceFieldSkimmer capsule (the only CapsuleCollider on the vessel — its
 "sword") is puppeteered by the analog triggers. The vessel plays like a swordsman:
 the triggers are reparameterized Manta-style into a difference axis and a sum axis,
@@ -63,10 +69,11 @@ Config knobs (`RhinoShieldSwipeConfig.asset`): `swipeYawDegrees` 90, `swipeRollD
 ## Sword dimensions & scale ownership
 
 The sword's silhouette is the authored local scale on the ForceFieldSkimmer instance
-in `Rhino.prefab` — (1.5, 30, 4.8) — and X/Z are **never** scaled at runtime. All
-runtime scaling elongates local Y only (`Skimmer.elongateYOnly`, set on
-`ForceFieldSkimmer Variant.prefab`; spherical skimmers on other vessels keep the
-legacy uniform XYZ path).
+in `Rhino.prefab` — (1.5, 30, 4.8). Resting-length scaling elongates local Y only
+(`Skimmer.elongateYOnly`, set on `ForceFieldSkimmer Variant.prefab`; spherical
+skimmers on other vessels keep the legacy uniform XYZ path). The one exception is the
+transient elemental-crystal **burst** (`RHINO_ENERGY_SWORD.md`), which deliberately
+scales all three dimensions for a few seconds before easing back to the authored X/Z.
 
 Exactly one component writes the sword's scale at runtime:
 
@@ -141,9 +148,11 @@ authored, so re-posing or re-parenting the sword cannot invert them.
 ### Impact wiring
 
 `PrismEffectHelper.ContactVelocity` composes it, and both
-`SkimmerDamagePrismEffectSO` (the generic effect that the Rhino sword's
-`RhinoForceFieldSkimmerImpactorDataContainer` actually wires — `RhinoSkimmerDamagePrismEffect`
-exists but is **not** in that container) and `RhinoSkimmerDamagePrismEffectSO` call it before
+`SkimmerDamagePrismEffectSO` (the generic effect, wired on every other skimmer) and
+`RhinoSkimmerDamagePrismEffectSO` (wired on the sword itself — the energy-sword branch swapped
+`RhinoForceFieldSkimmerImpactorDataContainer`'s prism slot from the generic effect to this one,
+see `RHINO_ENERGY_SWORD.md`; both assets carry identical swing-model values, so the velocity
+model is unchanged by that swap) call it before
 `PrismEffectHelper.Damage(..., Vector3 velocity)` → `Prism.Damage` → `Prism.Explode`
 (`Velocity = impactVector / volume` on the debris VFX).
 
@@ -224,10 +233,12 @@ Three things otherwise leave the sword permanently "hotter" than the hull while 
 which is not swordsmanship and reads as a bug:
 
 - **Blade elongation is ambient, not a strike.** `ShieldSkimmerScaleDriver` grows the blade at 30
-  and shrinks it at 10 world-units/sec, and its tick loop decays the shield every second — the
-  blade is almost never static. At the tip that is a standing **+15 / −5 u/s** on a ~35 u/s
-  cruise. The term is physically real and stays in the model, but `includeElongation` now
-  defaults **off**; turn it on only if a shield extension should genuinely shove.
+  and shrinks it at 10 world-units/sec — driven by the energy meter, which rises on every prism
+  the sword kills and empties into the crystal burst (`RHINO_ENERGY_SWORD.md`; the old tick-decay
+  loop is gone), so the blade is almost never static. At the tip that is a standing **+15 / −5
+  u/s** on a ~35 u/s cruise, and the burst's 600 u/s expansion would read far hotter still. The
+  term is physically real and stays in the model, but `includeElongation` now defaults **off**;
+  turn it on only if a shield extension should genuinely shove.
 - **Sampling residue rectifies upward.** Whatever residue survives per-frame differentiation adds
   roughly *perpendicular* to the vessel's velocity, and `|v + n| > |v|` always — residue can only
   bias the magnitude up, never down. `restDeadbandSpeed` (1.5) zeroes sub-threshold relative

@@ -1,21 +1,28 @@
 using UnityEngine;
-using CosmicShore.Gameplay;
-using CosmicShore.Data;
-using CosmicShore.Utility;
-using System.Linq;
+
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Rhino-specific skimmer vs prism effect:
-    /// - If the impacted prism is "Super Shield", the Rhino bounces back (no damage).
-    /// - Otherwise, applies standard damage: inertia * speed * course.
+    /// Rhino energy-sword skimmer vs prism effect (RHINO_ENERGY_SWORD.md). The sword is UNGATED —
+    /// no stance, no cooldown, no energize requirement:
+    /// <list type="bullet">
+    /// <item>Normal / shielded prism — standard damage on contact (a shielded prism loses its
+    /// shield, a normal prism explodes), exactly like the generic skimmer damage effect.</item>
+    /// <item>Super-shielded prism — POPPED on contact via the sanctioned mass-conserving teardown
+    /// (DeactivateShields → devastating Damage, the AstroLeagueArena.ClearEdgeLining precedent).
+    /// Set <see cref="destroySuperShielded"/> false to restore the legacy bounce instead.</item>
+    /// </list>
+    /// Every prism the sword actually destroys banks energy on the per-vessel
+    /// <see cref="IRhinoSwordState"/> (read via <c>impactor.Skimmer.SwordState</c>) and kicks its
+    /// impact-flash feedback. With no sword state present (a non-Rhino skimmer reusing this asset)
+    /// the damage/pop behavior is identical — only the energy/FX bookkeeping is skipped.
     /// </summary>
     [CreateAssetMenu(
         fileName = "RhinoSkimmerDamagePrismEffect",
         menuName = "ScriptableObjects/Impact Effects/Skimmer - Prism/RhinoSkimmerDamagePrismEffectSO")]
     public sealed class RhinoSkimmerDamagePrismEffectSO : SkimmerPrismEffectSO
     {
-        [Header("Damage (when NOT super-shield)")]
+        [Header("Damage")]
         [SerializeField] private float inertia = 70f;
 
         [Tooltip("How much of the sword's own velocity at the contact point reaches the prism. 1 = the physical model: a tip strike mid-swipe drives debris many times harder than a hilt graze, and along the swing tangent. 0 = vessel velocity only (pre-model behaviour). Requires a SkimmerSwingKinematics on the skimmer.")]
@@ -33,7 +40,20 @@ namespace CosmicShore.Gameplay
         [Tooltip("Ceiling on debris speed, in real speed units, replacing the explosion prefab's clamp.")]
         [SerializeField] private float debrisSpeedLimit = 200f;
 
-        [Header("Bounce (when super-shield)")]
+        [Header("Super-shielded prisms")]
+        [Tooltip("True (the sword's whole point): pop super-shielded prisms on contact — stellation " +
+                 "shatter + devastating explode-out. False: legacy bounce-off behavior.")]
+        [SerializeField] private bool destroySuperShielded = true;
+
+        [Header("Energy banked per prism destroyed (normalized 0..1)")]
+        [Tooltip("Energy the sword banks per prism it destroys. ~1/energyPerPrism kills fill the " +
+                 "meter, powering a full-size crystal burst.")]
+        [SerializeField] private float energyPerPrism = 0.04f;
+        [Tooltip("Energy banked for popping a super-shielded prism (worth more — they are the " +
+                 "hardened targets the sword exists to cut).")]
+        [SerializeField] private float energyPerSuperShieldedPrism = 0.12f;
+
+        [Header("Bounce (super-shield, only when destroySuperShielded is off)")]
         [Tooltip("Multiplier applied to current speed to compute bounce target speed.")]
         [SerializeField] private float bounceSpeedMultiplier = 0.85f;
 
@@ -56,22 +76,65 @@ namespace CosmicShore.Gameplay
             var status = impactor.Skimmer.VesselStatus;
             if (status == null || status.ShipTransform == null) return;
 
-            // Branch: Super-shield => bounce & exit
+            var prism = prismImpactee.Prism;
+            if (prism == null || prism.destroyed) return;
+
+            var sword = impactor.Skimmer.SwordState; // null on any non-energy-sword skimmer
+
+            // The velocity of the part of the sword that actually made contact (see
+            // SkimmerSwingKinematics) rather than the hull's — a tip strike mid-swipe throws mass
+            // far harder than a hilt graze, along the swing tangent. Collapses to Course * Speed
+            // on any skimmer with no swing model. Computed once: the super-shield pop below
+            // scatters its shell with the same velocity the normal path uses.
+            var velocity = PrismEffectHelper.ContactVelocity(
+                impactor, status, prism.transform.position, swingVelocityScale, maxImpactSpeed);
+
             if (IsSuperShield(prismImpactee))
             {
-                BounceBack(status, prismImpactee);
+                if (!destroySuperShielded)
+                {
+                    BounceBack(status, prismImpactee);
+                    return;
+                }
+
+                PopSuperShield(status, prism, velocity);
+                sword?.AddEnergy(energyPerSuperShieldedPrism);
+                sword?.NotifyPrismDestroyed(superShielded: true);
                 return;
             }
-
-            // Otherwise: normal damage flow, carrying the velocity of the part of the sword
-            // that actually made contact (see SkimmerSwingKinematics) rather than the hull's.
-            var velocity = PrismEffectHelper.ContactVelocity(
-                impactor, status, prismImpactee.Prism.transform.position, swingVelocityScale, maxImpactSpeed);
 
             if (proportionalDebris)
                 PrismEffectHelper.DamageProportional(status, prismImpactee, velocity, restitution, debrisSpeedLimit);
             else
                 PrismEffectHelper.Damage(status, prismImpactee, inertia, velocity);
+
+            // A shielded prism survives the hit (its shield pops instead) — bank energy and flash
+            // only when this hit actually destroyed the prism.
+            if (prism.destroyed && sword != null)
+            {
+                sword.AddEnergy(energyPerPrism);
+                sword.NotifyPrismDestroyed(superShielded: false);
+            }
+        }
+
+        // Sanctioned mass-conserving super-shield teardown (the AstroLeagueArena.ClearEdgeLining
+        // precedent): drop the shields first — Damage() hard-ignores super-shielded prisms — so the
+        // stellation shatter plays and the canonical animated Damage explode-out can run, then
+        // devastate so the prism cannot restore. Debris carries the contact velocity on the same
+        // terms as the normal path (PrismEffectHelper.DamageProportional can't devastate, so the
+        // proportional branch reproduces its two lines here rather than forking the helper).
+        void PopSuperShield(IVesselStatus status, Prism prism, Vector3 contactVelocity)
+        {
+            prism.DeactivateShields(); // synchronously clears IsSuperShielded; plays shatter + SFX
+
+            if (proportionalDebris)
+            {
+                prism.Damage(contactVelocity * restitution, status.Domain, status.PlayerName,
+                             devastate: true, debrisSpeedLimit: debrisSpeedLimit);
+                return;
+            }
+
+            prism.Damage(contactVelocity * inertia, status.Domain, status.PlayerName, devastate: true);
         }
 
         private void BounceBack(IVesselStatus status, PrismImpactor prismImpactee)
@@ -117,10 +180,7 @@ namespace CosmicShore.Gameplay
             status.VesselTransformer.GentleSpinShip(bounceDir, correctedUp, Mathf.Clamp01(spinStrength01));
         }
 
-        /// <summary>
-        /// Determines whether the impacted prism is a "Super Shield" prism.
-        /// Convention: add a SuperShieldPrismTag component on the prism root (or the object referenced by prismProperties.prism).
-        /// </summary>
+        /// <summary>Super-shield detection: the prism's current block state.</summary>
         private static bool IsSuperShield(PrismImpactor prismImpactee)
         {
             if (prismImpactee?.Prism == null || prismImpactee.Prism.prismProperties == null)
