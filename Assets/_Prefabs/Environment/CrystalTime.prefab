@@ -96,9 +96,9 @@ MonoBehaviour:
     type: 3}
   crystalModels:
   - model: {fileID: 3792360532212070197}
-    defaultMaterial: {fileID: 2100000, guid: bc67b03dfd422ad4fb508754690fe75d, type: 2}
-    explodingMaterial: {fileID: 2100000, guid: bc67b03dfd422ad4fb508754690fe75d, type: 2}
-    inactiveMaterial: {fileID: 2100000, guid: bc67b03dfd422ad4fb508754690fe75d, type: 2}
+    defaultMaterial: {fileID: 2100000, guid: b8e9d1fc96f44278aaf71b7704980800, type: 2}
+    explodingMaterial: {fileID: 2100000, guid: b8e9d1fc96f44278aaf71b7704980800, type: 2}
+    inactiveMaterial: {fileID: 2100000, guid: b8e9d1fc96f44278aaf71b7704980800, type: 2}
     spaceCrystalAnimator: {fileID: 0}
   allowVesselImpactEffect: 1
   allowRespawnOnImpact: 0
@@ -360,12 +360,12 @@ PrefabInstance:
         type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: 12e1837538975dc4eb371bb8ba9a2ccd, type: 2}
+      objectReference: {fileID: 2100000, guid: b8e9d1fc96f44278aaf71b7704980800, type: 2}
     - target: {fileID: -61668413891335124, guid: 2ba95de60da486749bc7cb7a7a421a4e,
         type: 3}
       propertyPath: 'm_Materials.Array.data[1]'
       value: 
-      objectReference: {fileID: 2100000, guid: bc67b03dfd422ad4fb508754690fe75d, type: 2}
+      objectReference: {fileID: 2100000, guid: b8e9d1fc96f44278aaf71b7704980800, type: 2}
     - target: {fileID: 919132149155446097, guid: 2ba95de60da486749bc7cb7a7a421a4e,
         type: 3}
       propertyPath: m_Name
