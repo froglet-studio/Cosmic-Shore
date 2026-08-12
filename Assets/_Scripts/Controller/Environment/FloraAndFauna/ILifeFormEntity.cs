@@ -34,6 +34,12 @@ namespace CosmicShore.Gameplay
         /// A vessel jousted this lifeform's embedded crystal (its heart) while moving faster than
         /// it - the creature withers and dies through its normal death path (crystal drop, mass
         /// conserved, continuity honored). Returns true only if it actually died to this joust.
+        ///
+        /// A joust never detonates its target (Docs/ECOSYSTEM.md §26): the heart is freed at the
+        /// strike so the joust chain can award it to the pilot who took it, the soft tissue
+        /// withers FROM THE HEART OUTWARD around the hole it left, and the body prisms are left
+        /// standing as a skeleton. That is the mirror of the outside-in starvation wither, where
+        /// nobody takes the heart and it becomes an ordinary pickup once the wither exposes it.
         /// </summary>
         bool Jousted(string killerName);
 

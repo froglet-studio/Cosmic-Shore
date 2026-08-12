@@ -330,10 +330,24 @@ of which compiled clean and shipped):
    `.cs` files building a `type → namespace` map — and, once the harness is
    fixed, prove it by deleting the `using` again and watching it fail.
 2. **Desugar what mcs 6.8 (C# 7.x) cannot parse but Unity (C# 9) can** — in a
-   THROWAWAY COPY, never the real file: target-typed `new(...)` → `new T(...)`,
-   `x is A or B` → `(x == A || x == B)`. Assert zero bare `new(` remain, or the
-   parse dies at the first one and every later error is cascade noise that will
-   waste your time.
+   THROWAWAY COPY, never the real file. The full list this project has needed
+   (2026-08, ecology death-path branch — every one of them showed up in ordinary
+   gameplay files, so budget for all of them up front):
+
+   | C# 8/9 form | Desugar to | Note |
+   |---|---|---|
+   | `T x = new(...)` | `T x = new T(...)` | regex on the *declaration* line |
+   | `f.field = new() { … }` | `f.field = new T { … }` | no declared type on the line — the declaration regex MISSES it, so grep for surviving bare `new(` separately |
+   | `x ??= expr;` | `if ((object)x == null) x = expr;` | anchor the regex to statement form; a **trailing `// comment`** or a **multi-line lambda RHS** defeats a naive `(.+);$` and both occur in this repo |
+   | `x is { A: true }` | `(x != null)` | property pattern |
+   | `if (x is not T y) return;` | `var y = x as T; if (y == null) return;` | a blanket `is not` → `!=` replace **corrupts** this into a syntax error — handle the declaration form FIRST |
+   | `v = k switch { A => a, _ => b };` | `if`/`else if` chain | switch *expression*; grep `` switch$ `` to find them |
+
+   Assert zero bare `new(` remain, and re-grep after desugaring — the parse dies at
+   the first one and every later error is cascade noise that will waste your time.
+   **Cascade discipline generally**: one unparsed construct produces a dozen
+   "Unexpected symbol `?`" and "cannot be used before it is declared" errors far
+   from the real cause. Fix the FIRST error and recompile; never triage the list.
 3. `mcs -target:library -langversion:latest -out:/dev/null Stubs.cs <files>`.
 4. Ignore a `CS0436` warning about a type you stubbed that Mono's BCL also has
    (e.g. `System.HashCode`) — harness artifact, not a finding.
