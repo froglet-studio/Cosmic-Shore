@@ -10,8 +10,10 @@ WHY A GENERATOR AND NOT A HAND-AUTHORED FBX
 -------------------------------------------
 The source is a deltoidal hexecontahedron: 60 kite ("dart") faces, each exported as
 an INDEPENDENT 4-vertex island, plus three blend shapes that shuffle those 60 darts
-into a second closed solid and back. Measured from the source, every shape moves each
-dart as a RIGID motion — a uniform 25.9 deg rotation, faces staying perfectly planar.
+into a second closed solid and back. Measured from the source, every animated shape
+moves every dart as an EXACT rigid rotation about an axis through the origin —
+uniformly 72 deg for '5pin' and 120 deg for 'pin' (residual < 1e-4 model units) —
+while 'Key 3' is a small in-plane shrink with zero rotation.
 
 That rigidity is what makes this mechanical: each flat kite is replaced by a small
 faceted PRISM built in its face's own frame (crown cap, four crown bevels, four side
@@ -20,6 +22,20 @@ and each blend shape is rebuilt by constructing the same prism in THAT POSE's fr
 and taking the difference. The thickness therefore rotates with its dart instead of
 being frozen in the rest orientation, so the solid darts stay correctly oriented all
 the way through the shuffle.
+
+WHY THE ANIMATED SHAPES CARRY IN-BETWEEN FRAMES
+-----------------------------------------------
+Unity interpolates a single-frame blend shape LINEARLY in vertex space, so between
+rest and a rotated pose every vertex cuts the straight chord. At the midpoint of a
+120 deg rotation the chord passes through HALF the radius — the darts dive toward
+the centre and the gaps between them yawn open, reading as the crystal blowing
+apart instead of darts sliding around on the sphere. The fix is data, not code:
+each animated channel is authored as a PROGRESSIVE morph (FBX in-between targets,
+which Unity imports as blend shape frames) sampled along each dart's true rotation
+arc via Rodrigues at equal angle steps. Between adjacent frames the residual chord
+is under 1 percent of the radius, so the darts stay on the sphere at constant
+spread for the whole sweep. SetBlendShapeWeight(i, 0..100) walks the frames
+automatically — SpaceCrystalAnimator needs no change.
 
 The whole FBX node tree is CLONED from the source and only the data arrays are
 replaced. Every node name and every FBX object id is preserved, so Unity's name-based
@@ -84,6 +100,72 @@ def face_frame(pts):
     if dot(n, c) < 0:
         n = mul(n, -1.0)
     return c, n
+
+
+# ---------------------------------------------------------------- rigid motion
+def dart_frame(pts):
+    """Orthonormal frame (u, v, n) + centroid of a kite, built from corner 0."""
+    c, n = face_frame(pts)
+    u = sub(pts[0], c)
+    u = normalize(sub(u, mul(n, dot(u, n))))
+    v = cross(n, u)
+    return c, (u, v, n)
+
+
+def rotation_between(F0, F1):
+    """R = F1 * F0^T where the frames' vectors are columns."""
+    return [[sum(F1[k][i] * F0[k][j] for k in range(3)) for j in range(3)]
+            for i in range(3)]
+
+
+def rot_apply(R, v):
+    return tuple(sum(R[i][j] * v[j] for j in range(3)) for i in range(3))
+
+
+def axis_angle(R):
+    tr = R[0][0] + R[1][1] + R[2][2]
+    ang = math.acos(max(-1.0, min(1.0, (tr - 1.0) / 2.0)))
+    ax = normalize((R[2][1] - R[1][2], R[0][2] - R[2][0], R[1][0] - R[0][1]))
+    return ax, ang
+
+
+def rodrigues(axis, ang, v):
+    c, s = math.cos(ang), math.sin(ang)
+    return add(add(mul(v, c), mul(cross(axis, v), s)),
+               mul(axis, dot(axis, v) * (1.0 - c)))
+
+
+def dart_rotations(verts, polys, deltas):
+    """Per dart: (axis, angle) of the pure origin rotation this shape applies to it.
+
+    Asserts the motion really is that rotation (both the corner residual and the
+    'axis passes through the origin' condition R*c0 == c1), so a future re-export
+    that breaks the assumption fails loudly instead of producing bent arcs.
+    """
+    dv = [add(v, deltas.get(i, (0.0, 0.0, 0.0))) for i, v in enumerate(verts)]
+    rots = []
+    for p in polys:
+        P = [verts[i] for i in p]
+        Q = [dv[i] for i in p]
+        c0, F0 = dart_frame(P)
+        c1, F1 = dart_frame(Q)
+        R = rotation_between(F0, F1)
+        for pi, qi in zip(P, Q):
+            r = sub(add(c1, rot_apply(R, sub(pi, c0))), qi)
+            assert math.sqrt(dot(r, r)) < 1e-2, 'dart motion is not rigid'
+        drift = sub(rot_apply(R, c0), c1)
+        assert math.sqrt(dot(drift, drift)) < 1e-2, \
+            'dart rotation axis does not pass through the origin'
+        axis, ang = axis_angle(R)
+        # Guard the axis-angle extraction itself: at ang ~ 180 deg the skew part of R
+        # vanishes and the axis degenerates, which would emit garbage arcs while every
+        # assert above still passes. Round-tripping through Rodrigues catches it.
+        for pi, qi in zip(P, Q):
+            r = sub(rodrigues(axis, ang, pi), qi)
+            assert math.sqrt(dot(r, r)) < 1e-2, \
+                'axis-angle decomposition does not reproduce the dart motion'
+        rots.append((axis, ang))
+    return rots
 
 
 # ---------------------------------------------------------------- source parsing
@@ -183,6 +265,22 @@ def build(verts, polys, shapes, profile):
     return rest, faces, out_shapes
 
 
+# How many segments each animated channel's rotation is split into. 7 in-between
+# frames + the full pose = 8 segments: 'pin' rotates 120 deg total, so 15 deg per
+# segment — the residual linear chord dips the darts under 0.9% of the radius,
+# versus 50% with no in-betweens.
+IB_SEGMENTS = 8
+
+
+def inbetween_deltas(prism_rest, rots, t):
+    """Deltas from the rest prisms with every dart rigidly rotated t of the way."""
+    out = []
+    for di, (axis, ang) in enumerate(rots):
+        for v in prism_rest[di * 12:(di + 1) * 12]:
+            out.append(sub(rodrigues(axis, ang * t, v), v))
+    return out
+
+
 def flat_normals(verts, faces):
     """One normal per polygon-vertex, matching the source's faceted shading."""
     out = []
@@ -221,6 +319,13 @@ def set_array(node, name, values, prop_type):
     child.prop_types[0] = prop_type
 
 
+def clone_node(n):
+    return fbx.Node(n.name,
+                    [list(p) if isinstance(p, list) else p for p in n.props],
+                    list(n.prop_types),
+                    [clone_node(k) for k in n.children])
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--force', action='store_true',
@@ -229,6 +334,15 @@ def main():
 
     ver, root, base, verts, polys, shapes = load_source(SRC)
     check_source(verts, polys, shapes)
+
+    src_names = [s.props[1].split(b'\x00')[0].decode() for s, _ in shapes]
+    assert src_names == ['5pin', 'pin', 'Key 3'], src_names
+
+    # The two shuffle shapes rotate every dart rigidly about the origin (72 and 120
+    # deg); 'Key 3' is a small in-plane shrink and interpolates fine with one frame.
+    animated = {name: dart_rotations(verts, polys, deltas)
+                for (node, deltas), name in zip(shapes, src_names)
+                if name in ('5pin', 'pin')}
 
     new_verts, faces, new_shapes = build(verts, polys, shapes, PROFILE)
     normals = flat_normals(new_verts, faces)
@@ -256,12 +370,68 @@ def main():
         set_array(node, b'Vertices', [c for d in deltas for c in d], b'd')
         set_array(node, b'Normals', [0.0] * (len(new_verts) * 3), b'd')
 
-    # BlendShapeChannel FullWeights: Blender writes one 100.0 per affected index
-    channels = [c for c in root.find(b'Objects').children
+    # ---- in-between frames along each dart's true rotation arc (progressive morph)
+    objects = root.find(b'Objects')
+    conns = root.find(b'Connections')
+    used_ids = {c.props[0] for c in objects.children if isinstance(c.props[0], int)}
+    next_id = 910000001
+    channel_of = {}                      # shape object id -> channel object id
+    for cn in conns.children:
+        if len(cn.props) == 3 and cn.props[0] == b'OO':
+            src, dst = cn.props[1], cn.props[2]
+            if any(s.props[0] == src for s, _ in shapes):
+                channel_of[src] = dst
+
+    frame_weights = {}                   # channel id -> FullWeights list
+    for (node, _), name in zip(shapes, src_names):
+        ch_id = channel_of[node.props[0]]
+        if name not in animated:
+            frame_weights[ch_id] = [100.0]
+            continue
+        rots = animated[name]
+        conn_pos = next(i for i, cn in enumerate(conns.children)
+                        if len(cn.props) == 3 and cn.props[0] == b'OO'
+                        and cn.props[1] == node.props[0] and cn.props[2] == ch_id)
+        obj_pos = objects.children.index(node)
+        weights = []
+        for k in range(1, IB_SEGMENTS):
+            t = k / IB_SEGMENTS
+            while next_id in used_ids:
+                next_id += 1
+            sid = next_id
+            used_ids.add(sid)
+            ib = clone_node(node)
+            ib.props[0] = sid
+            ib.props[1] = f'{name} ib{k}'.encode() + b'\x00\x01Geometry'
+            deltas = inbetween_deltas(new_verts, rots, t)
+            set_array(ib, b'Indexes', list(range(len(new_verts))), b'i')
+            set_array(ib, b'Vertices', [c for d in deltas for c in d], b'd')
+            set_array(ib, b'Normals', [0.0] * (len(new_verts) * 3), b'd')
+            objects.children.insert(obj_pos, ib)      # keep shapes grouped in file
+            obj_pos += 1
+            cc = clone_node(conns.children[conn_pos])
+            cc.props[1] = sid
+            conns.children.insert(conn_pos, cc)       # before the full shape => ordered
+            conn_pos += 1
+            weights.append(100.0 * t)
+        weights.append(100.0)
+        frame_weights[ch_id] = weights
+
+    channels = [c for c in objects.children
                 if c.name == b'Deformer' and c.props[2] == b'BlendShapeChannel']
     assert len(channels) == len(new_shapes)
     for ch in channels:
-        set_array(ch, b'FullWeights', [100.0] * len(new_verts), b'd')
+        set_array(ch, b'FullWeights', frame_weights[ch.props[0]], b'd')
+
+    # Definitions counts are advisory (preallocation hints), but keep them honest so
+    # third-party FBX tools don't flag the file: 14 new Geometry objects were added.
+    added = 2 * (IB_SEGMENTS - 1)
+    defs = root.find(b'Definitions')
+    total = defs.find(b'Count')
+    total.props[0] += added
+    geo_def = next(c for c in defs.children
+                   if c.name == b'ObjectType' and c.props[0] == b'Geometry')
+    geo_def.find(b'Count').props[0] += added
 
     fbx.write(DST, ver, root)
 
@@ -274,7 +444,25 @@ def main():
     names = [c.props[1].split(b'\x00')[0].decode()
              for c in r2.find(b'Objects').children
              if c.name == b'Geometry' and c.props[2] == b'Shape']
-    assert names == ['5pin', 'pin', 'Key 3'], names
+    assert [n for n in names if ' ib' not in n] == ['5pin', 'pin', 'Key 3'], names
+    assert len(names) == 3 + 2 * (IB_SEGMENTS - 1), names
+
+    # every channel's shape connections must be ordered to match its FullWeights
+    conns2 = r2.find(b'Connections')
+    shape_ids = {c.props[0]: c.props[1].split(b'\x00')[0].decode()
+                 for c in r2.find(b'Objects').children
+                 if c.name == b'Geometry' and c.props[2] == b'Shape'}
+    chans2 = {c.props[0]: c for c in r2.find(b'Objects').children
+              if c.name == b'Deformer' and c.props[2] == b'BlendShapeChannel'}
+    per_chan = {}
+    for cn in conns2.children:
+        if len(cn.props) == 3 and cn.props[0] == b'OO' and cn.props[1] in shape_ids \
+                and cn.props[2] in chans2:
+            per_chan.setdefault(cn.props[2], []).append(cn.props[1])
+    for ch_id, sids in per_chan.items():
+        fw = chans2[ch_id].find(b'FullWeights').props[0]
+        assert len(fw) == len(sids), 'FullWeights count != connected shape count'
+        assert fw == sorted(fw) and fw[-1] == 100.0, f'frame weights not ascending: {fw}'
 
     meta = DST + '.meta'
     if not os.path.exists(meta) or args.force:
@@ -285,8 +473,9 @@ def main():
 
     rs = [math.sqrt(dot(v, v)) for v in new_verts]
     print(f'wrote {os.path.relpath(DST, ROOT)}')
-    print(f'  {len(new_verts)} vertices, {len(faces)} faces, {len(new_shapes)} blend shapes '
-          f'({", ".join(n for n in names)})')
+    print(f'  {len(new_verts)} vertices, {len(faces)} faces, {len(new_shapes)} blend shape '
+          f'channels ({", ".join(src_names)}); the two shuffle channels carry '
+          f'{IB_SEGMENTS - 1} in-between frames each')
     print(f'  radius {min(rs):.2f}..{max(rs):.2f} (source 71.21..74.40)')
     print(f'  mesh fileID preserved: -5993354799466719267   guid: {GUID}')
 
