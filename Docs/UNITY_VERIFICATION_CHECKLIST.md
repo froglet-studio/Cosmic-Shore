@@ -57,11 +57,12 @@ The load-bearing checks, in risk order:
 4. **The capsule crackle looks right**: arcs ride the blade through swings, ripples proportioned
    along the stretched capsule (not squashed at the tips). Tune on
    `RhinoBladeCrackleMaterial.mat` live (`[ExecuteAlways]`).
-5. **Tracer**: ONE authored ribbon (`Rhino.prefab` → `RhinoSwordBladeTracer`) that spans the
-   sword hilt-to-tip through a swing and keeps spanning it as the blade grows, tinted with the
-   live blade colour. Dials: `tracerBladeAnchor01` (where it rides) and
-   `tracerWidthLengthFraction` (how much of the blade it covers) on the scale config; taper
-   curve, persistence and material on the TrailRenderer itself.
+5. **Tracer**: ONE slim streak off the TIP (`Rhino.prefab` → `RhinoSwordTipTracer`) reaching
+   about a quarter of the way back down the blade and grading to nothing, tinted with the live
+   blade colour so it changes state with the sword. It must NOT read as a slab or a sheet — if
+   it does, drop `tracerWidthBladeFraction` (0.05) further. Length dial:
+   `tracerLengthBladeFraction` (0.25) with `tracerReferenceSpeed` (180) as its calibration
+   speed; taper curve, min-vertex-distance and material stay on the TrailRenderer itself.
 6. **Base-skimmer non-regression**: any other vessel's skimmer crackle still shows the red
    sphere look (surface mode + material overrides live on the Rhino variant only).
 
@@ -69,8 +70,9 @@ The load-bearing checks, in risk order:
 pass): energize hold 1 s / tail 5 s / cooldown 5 s / cost 0.1 · stance thresholds 1.5 & 0.4
 (`RhinoShieldSwipeConfig.asset`) · ignition intensity 2.5 × 5 sites · spark 1.6 @ 14 wu ·
 denied spark 0.7 · `restingBladeColor`/`fullEnergyColor` white (energy reads as BRIGHTNESS)
-vs `energizedColor` = `SO_ColorSet.Danger` red (state reads as HUE) · `tracerBladeAnchor01`
-0.5 / `tracerWidthLengthFraction` 1.
+vs `energizedColor` = `SO_ColorSet.Danger` red (state reads as HUE) · `visibilityMultiplier`
+1.2 × `fullEnergyBrightness` 1.8 (was 2×2.5 = a 5× HDR white that bloomed into a blob —
+raise cautiously) · tracer: tip anchor, length 0.25 blade, width 0.05 blade.
 
 ### 🔴 Sparrow Turret Stance — two flight visualizations, still-nothing hardening (`claude/sparrow-prism-attack-hg6n78`)
 

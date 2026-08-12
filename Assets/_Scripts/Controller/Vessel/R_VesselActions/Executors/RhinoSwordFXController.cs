@@ -26,12 +26,13 @@ namespace CosmicShore.Gameplay
     ///     crackle spark at the exact blade point that made contact
     ///     (<see cref="SkimmerSwingKinematics.ClosestBladePoint"/>); a dim DENIED spark
     ///     when a non-energized blade bounces off a super-shielded prism.
-    ///  4. BLADE TRACER — ONE authored TrailRenderer (fuselage-parented in the prefab so
-    ///     the ribbon's shape never inherits the blade's scale) riding the blade at
-    ///     <c>TracerBladeAnchor01</c>, with its width driven each frame to the blade's LIVE
-    ///     world length: a swing lays a ribbon that spans hilt-to-tip rather than a thread
-    ///     off one end, at every size the energy meter produces. Tinted with the live blade
-    ///     colour via MaterialPropertyBlock.
+    ///  4. TIP TRACER — ONE authored TrailRenderer (fuselage-parented in the prefab so the
+    ///     streak's shape never inherits the blade's scale) riding the sword's tip, slim, and
+    ///     reaching about a quarter of the way back down the blade before the authored width
+    ///     curve and alpha gradient grade it to nothing. Width and lifetime are both driven
+    ///     from the blade's live length so that proportion survives the energy meter. Tinted
+    ///     with the live blade colour via MaterialPropertyBlock, so the streak changes with
+    ///     the sword through every state.
     ///
     /// Camera shake (super-shield pop, crystal burst) fires for the LOCAL human pilot
     /// only. See <c>RHINO_ENERGY_SWORD.md</c>.
@@ -67,6 +68,7 @@ namespace CosmicShore.Gameplay
         Color _appliedTracerColor;
         bool _tracerColorApplied;
         float _appliedTracerWidth = float.NaN;
+        float _appliedTracerSeconds = float.NaN;
 
         float _flash;             // 0 = none, 1 = full white-out; decays each Tick
         float _energizedBlend;    // 0 = heat ramp, 1 = white-hot; eased by ColorTransitionSeconds
@@ -272,24 +274,35 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Ride the blade and size the ribbon to it. A TrailRenderer lays its width
-        /// PERPENDICULAR to the path it travels — during a swipe that is across the blade's
-        /// length — so anchoring the emitter mid-blade and driving the width to the blade's
-        /// live length makes the streak stretch from hilt to tip instead of trailing off one
-        /// end as a thread. Driving it every frame is what keeps that true "at all sizes":
-        /// the ribbon grows with the energy meter and with the crystal burst.
+        /// Ride the sword's TIP and keep the streak proportioned to the blade: a slim trace
+        /// reaching about <see cref="ShieldSkimmerScaleConfigSO.TracerLengthBladeFraction"/> of
+        /// the way back down the blade, graded to nothing by the TrailRenderer's authored width
+        /// curve and alpha gradient. Both dimensions are driven from the blade's LIVE length so
+        /// the proportion holds as the energy meter grows the sword — width as a small fraction
+        /// of it, length by solving the trail's lifetime against a calibration speed (driving
+        /// lifetime from live speed instead would retroactively expire points and pop the streak
+        /// at the start of every swing).
         /// </summary>
         void SeatTracer()
         {
             if (!bladeTracer || config == null) return;
             bladeTracer.transform.position = PointAlongBlade(config.TracerBladeAnchor01);
 
-            float width = BladeWorldLength * config.TracerWidthLengthFraction;
+            float length = BladeWorldLength;
+
+            float width = length * config.TracerWidthBladeFraction;
             if (!Mathf.Approximately(width, _appliedTracerWidth))
             {
                 _appliedTracerWidth = width;
                 // widthMultiplier scales the authored width CURVE, so the taper stays designed.
                 bladeTracer.widthMultiplier = width;
+            }
+
+            float seconds = config.TracerSecondsFor(length);
+            if (!Mathf.Approximately(seconds, _appliedTracerSeconds))
+            {
+                _appliedTracerSeconds = seconds;
+                bladeTracer.time = seconds;
             }
         }
 

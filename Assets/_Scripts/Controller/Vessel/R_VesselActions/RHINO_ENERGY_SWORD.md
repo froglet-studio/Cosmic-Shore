@@ -221,18 +221,23 @@ v2's code-built `RhinoSwordVisualizer` (deleted). Four layers:
    `sparkIntensity` / `sparkSeconds` / `sparkWorldRadius`); a dim **denied spark**
    (`deniedSparkIntensity`) when a non-energized blade bounces off a super-shield. The crystal
    burst fires a whole-blade crackle scaled by the energy consumed.
-4. **The blade tracer — ONE ribbon that spans the sword.** A single **authored**
-   `TrailRenderer` child of the fuselage (`RhinoSwordBladeTracer` in `Rhino.prefab`, wearing
-   `RhinoSwordTracerMaterial.mat` — no runtime construction, no `Shader.Find` fallback),
-   fuselage-parented so the blade's scale can never distort the ribbon's shape. Each frame it is
-   re-seated on the blade at `tracerBladeAnchor01` (0.5 = mid-blade) and its `widthMultiplier` is
-   driven to the blade's **live world length** × `tracerWidthLengthFraction`. A TrailRenderer
-   lays its width PERPENDICULAR to the path it travels — during a swipe, across the blade — so a
-   mid-blade emitter at full-length width draws a streak that stretches hilt-to-tip instead of a
-   thread off one end, and it keeps doing so as the energy meter (and the crystal burst) change
-   the blade's size. The authored width CURVE still owns the taper; only its scale is driven.
-   Tinted with the live blade colour via MaterialPropertyBlock. (v2 shipped two tracers seated at
-   the two tips; the hilt-side one is gone with the staff geometry that justified it.)
+4. **The tip tracer — a slim streak, not a ribbon.** ONE **authored** `TrailRenderer` child of
+   the fuselage (`RhinoSwordTipTracer` in `Rhino.prefab`, wearing `RhinoSwordTracerMaterial.mat`
+   — no runtime construction, no `Shader.Find` fallback), fuselage-parented so the blade's scale
+   can never distort the streak's shape. It rides the sword's **tip** (`tracerBladeAnchor01` 1)
+   and reaches about `tracerLengthBladeFraction` (0.25) of the way back down the blade before the
+   TrailRenderer's authored width curve and alpha gradient **grade it to nothing**. Width is a
+   small fraction of the blade (`tracerWidthBladeFraction` 0.05), and the trail's LIFETIME is
+   solved from the blade's live length against `tracerReferenceSpeed` — not from live speed,
+   because shrinking a TrailRenderer's `time` retroactively expires points and would pop the
+   streak at the start of every swing; a faster swing therefore draws a longer streak, as a
+   motion trail should. Tinted from the same live blade colour as the body, so **the streak
+   changes with the sword through every state** (white-hot → danger red on energize).
+
+   *Do not size it to the whole blade.* An earlier pass anchored it mid-blade with width = the
+   full blade length, reasoning that a TrailRenderer lays width across its path so the ribbon
+   would span hilt-to-tip. It does — and at a 240-unit blade that is a 240-unit-wide white sheet
+   swallowing the vessel. The blade is ~10 units thick; the tracer belongs on that order.
 
 **Camera shake (local pilot only, never autopilot/remote/AI):** `popShakeIntensity` (1.2) on a
 super-shield pop; up to `burstShakeMaxIntensity` (2.5, scaled by energy consumed) on a crystal
@@ -315,7 +320,7 @@ same-GameObject pieces (`Skimmer`, `SkimmerSwingKinematics`, crackle, body rende
 | Embedded-heart guard on skimmer crystal effects | `ImpactEffects/Impactors/SkimmerImpactor.cs` (ElementalCrystalImpactor case) |
 | Blade shader fix (`_Color` now rendered) | `Assets/_Graphics/Materials/Graphs/FresnelGraph.shadergraph` |
 | Effect wiring | `_SO_Assets/Effects/Effect Containers/SkimmerContainers/RhinoForceFieldSkimmerImpactorDataContainer.asset` (prism[0] → Rhino variant; crystal list → burst effect) |
-| Prefab wiring | `Rhino.prefab` (FX controller on the blade root + `RhinoSwordTipTracer`/`RhinoSwordHiltTracer` under the fuselage) · `ForceFieldSkimmer Variant.prefab` (overlay material → blade crackle, `surface: Capsule`) |
+| Prefab wiring | `Rhino.prefab` (FX controller on the blade root + `RhinoSwordTipTracer` under the fuselage) · `ForceFieldSkimmer Variant.prefab` (overlay material → blade crackle, `surface: Capsule`, `lengthScale: 2`) |
 
 ## Tuning knobs
 
@@ -335,13 +340,14 @@ On `ShieldSkimmerScaleConfig.asset`: `baseScale` 30 (fallback; live base is the 
 scale) · `maxScale` 120 · `prismGrowSpeed` 30 · `shrinkSpeed` 10 · `energizeCostFraction` 0.1 ·
 `energizeHoldSeconds` 1 · `energizedTailSeconds` 5 · `energizeCooldownSeconds` 5 ·
 `crystalBurstFactorAtFullEnergy` 4 · `crystalBurstHoldSeconds` 2.5 · `crystalBurstGrowSpeed`
-600 · `crystalBurstReturnSpeed` 150 · `visibilityMultiplier` 2 · `restingBladeColor` white ·
-`fullEnergyColor` white (same hue — energy is brightness) · `fullEnergyBrightness` 2.5 ·
+600 · `crystalBurstReturnSpeed` 150 · `visibilityMultiplier` 1.2 · `restingBladeColor` white ·
+`fullEnergyColor` white (same hue — energy is brightness) · `fullEnergyBrightness` 1.8 ·
 `energizedColor` (1.498, 0.006, 0.007) = `SO_ColorSet.Danger` · `colorTransitionSeconds` 0.25 · `igniteCrackleIntensity` 2.5 / `igniteCrackleSeconds` 0.9 /
 `igniteCrackleSites` 5 · `chargeCrackleInterval` 0.18 / `chargeCrackleIntensity` 1.1 ·
 `sparkIntensity` 1.6 / `sparkSeconds` 0.45 / `sparkWorldRadius` 14 · `deniedSparkIntensity`
-0.7 · `tracerBladeAnchor01` 0.5 / `tracerWidthLengthFraction` 1 · `hitFlashAmount` 0.35 · `popFlashAmount` 1 · `flashDecaySeconds` 0.35 · `flashColor`
-(3,3,3) · `popShakeIntensity` 1.2 / `popShakeDuration` 0.25 · `burstShakeMaxIntensity` 2.5 /
+0.7 · `tracerBladeAnchor01` 1 (tip) / `tracerLengthBladeFraction` 0.25 / `tracerWidthBladeFraction`
+0.05 / `tracerReferenceSpeed` 180 / `tracerSecondsRange` (0.06, 0.35) · `hitFlashAmount` 0.35 · `popFlashAmount` 1 · `flashDecaySeconds` 0.35 · `flashColor`
+(2,2,2) · `popShakeIntensity` 1.2 / `popShakeDuration` 0.25 · `burstShakeMaxIntensity` 2.5 /
 `burstShakeDuration` 0.4. (`prismMaxScale` remains only so the Sparrow full-auto
 `ApplyMaxSizeDebuff` keeps its historical meaning. The v2 tracer keys — `tracersEnabled`,
 `tracerMaterial`, `tracerWidth`, `tracerTimeSeconds` — are retired: the tracer is an authored
