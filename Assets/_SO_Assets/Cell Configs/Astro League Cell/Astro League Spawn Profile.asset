@@ -27,3 +27,4 @@ MonoBehaviour:
   SupportedFaunas:
   - {fileID: 11400000, guid: 8c1ead101dc84a9eb4c3e33e9611ffc2, type: 2}
   - {fileID: 11400000, guid: f36f897ae32945e983b22ccacea5b86b, type: 2}
+  - {fileID: 11400000, guid: b8f6ead6f21447acb7ac74b9e8ccf1a3, type: 2}

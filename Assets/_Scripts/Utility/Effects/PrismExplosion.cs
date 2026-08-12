@@ -37,14 +37,18 @@ namespace CosmicShore.Utility
         private static readonly int ExplodeStartTimeId = Shader.PropertyToID("_ExplodeStartTime");
 
         /// <summary>The unpressured animation length - what a death looks like when the
-        /// scene is not saturated with them.</summary>
-        internal const float DefaultDuration = 5f;
+        /// scene is not saturated with them. Extended 1.5x (5 -> 7.5, 2026-08-11) so the
+        /// per-face erosion wipe visibly completes well before the debris retires — the
+        /// wipe itself also finishes with margin (PRISM_EROSION_END_MARGIN in
+        /// PrismOcclusionCorridor.hlsl), so the two tunings compose rather than race.</summary>
+        internal const float DefaultDuration = 7.5f;
 
         // Shortest an explosion is squeezed to under full pressure. Still long enough
-        // to read as a death (~13 frames at 60fps) while raising the sustainable
+        // to read as a death (~20 frames at 60fps) while raising the sustainable
         // effect throughput ~20x — the headroom a dense blast needs for every prism
-        // to animate out rather than pop (continuity law).
-        const float MinPressuredDuration = 0.22f;
+        // to animate out rather than pop (continuity law). Scaled with DefaultDuration
+        // (x1.5, 2026-08-11) so the pressure ramp keeps its shape.
+        const float MinPressuredDuration = 0.33f;
 
         // Live-effect count at which pressure shortening starts (full length below
         // half of this, eased to MinPressuredDuration at/above it). On the clock

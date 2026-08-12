@@ -172,9 +172,34 @@ jobs:
           # Library/ every run and forces a full asset reimport - that is what
           # made the first compile take 18 minutes, and it would have taken 18
           # minutes on every push forever. A warm Library is the whole reason
-          # this job runs on an owned machine. Tracked files are still
-          # force-reset by the checkout, so the tree still matches the commit.
+          # this job runs on an owned machine. Tracked files are force-reset by
+          # the checkout; UNTRACKED ones are not - see the next step.
           clean: false
+
+      # `clean: false` preserves Library/ (the point) and also preserves any file
+      # that became untracked in this workspace (not the point). A ghost copy of
+      # the renamed Assets/_Scripts/Tests/EditMode/ folder survived that way and
+      # broke the IL2CPP build against a commit that does not contain it. Sweep
+      # the Unity source tree only, so Library/ at the repo root is untouched.
+      - name: Purge stale untracked files from the source tree
+        shell: bash
+        run: |
+          set -euo pipefail
+          # `git -c safe.directory='*'` is REQUIRED, not belt-and-braces.
+          # actions/checkout grants itself the safe.directory exception in a
+          # TEMPORARY global config (it overrides HOME for the duration of its
+          # own steps) and revokes it in post-job, so every later step runs
+          # under the real HOME with no exception at all. The workspace is owned
+          # by BUILTIN\Administrators while the runner service is
+          # NT AUTHORITY\NETWORK SERVICE, so bare git dies with
+          # "detected dubious ownership" and exit 128 - which is exactly how
+          # this step failed the first time it ran. Same trap that once killed
+          # `git rev-parse HEAD` here; the fix there was to stop calling git,
+          # and this step cannot. Scoped to the invocation, so nothing is
+          # written to the machine's global git config.
+          GIT=(git -c safe.directory='*')
+          "${GIT[@]}" clean -ffd --dry-run -- Assets Packages ProjectSettings | sed 's/^/::warning::stale file removed: /'
+          "${GIT[@]}" clean -ffd -- Assets Packages ProjectSettings
 
       - name: Compile check
         id: compile

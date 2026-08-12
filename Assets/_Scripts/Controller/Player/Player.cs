@@ -128,6 +128,40 @@ namespace CosmicShore.Gameplay
             RoundStats.LifeformsKilled++;
         }
 
+        /// <summary>
+        /// Owner-side report that THIS player landed a shot on an opposing vessel - the
+        /// gunnery counterpart of <see cref="ReportFaunaKill_ServerRpc"/>, and the only way a
+        /// client's hit can ever score.
+        ///
+        /// Projectiles are NOT networked: a bullet or a skyburst is a pooled local object
+        /// spawned by whichever machine's gun fired it, with no NetworkObject and no RPCs of
+        /// its own. So unlike a prism ram - which the server's own physics observes, because
+        /// the prism sits at the same place on every peer - a shot a client just landed does
+        /// not exist on the server at all. Without this RPC a client's hits would silently
+        /// never register and only the host could win a dogfight.
+        ///
+        /// IDENTITY COMES FROM OWNERSHIP, NOT FROM A STRING. <c>RequireOwnership = true</c> is
+        /// the default, so the server credits the RoundStats of the Player object the RPC
+        /// arrived on - a client can only ever credit itself, whatever it sends. The hit class
+        /// travels as an int because that is all the wire needs; it is re-validated here rather
+        /// than trusted, since an out-of-range value would otherwise pick a scoring branch by
+        /// accident.
+        /// </summary>
+        [ServerRpc]
+        public void ReportCombatHit_ServerRpc(int hitClass)
+        {
+            using var _ = CosmicShore.Utility.PerformanceBenchmark.NetMarkers.RpcDispatch.Auto();
+            CosmicShore.Utility.PerformanceBenchmark.NetMarkers.CountRpc();
+
+            if (RoundStats == null) return;
+
+            var resolved = hitClass == (int)CombatHitClass.Missile
+                ? CombatHitClass.Missile
+                : CombatHitClass.Bullet;
+
+            CombatHitScoring.Credit(RoundStats, resolved, gameData != null ? gameData.ScoringRule : null);
+        }
+
         public string Name { get; private set; }
         public int AvatarId { get; private set; }
         // NOTE: PlayerUUID is the DISPLAY NAME, not a unique id - two players can choose the

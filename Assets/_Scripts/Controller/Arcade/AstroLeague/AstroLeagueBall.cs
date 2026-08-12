@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Threading;
+using CosmicShore.Core;
 using CosmicShore.Data;
 using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
+using Reflex.Attributes;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -34,6 +36,11 @@ namespace CosmicShore.Gameplay
         [Header("Config")]
         [SerializeField] AstroLeagueSettingsSO settings;
         [SerializeField] GameDataSO gameData;
+
+        // Strike audio - the mode had NO sound on a vessel hit at all, which is most of why
+        // connecting with the ball read as nothing happening. Injected like the controller's;
+        // null-guarded because this is a service reference, not a SOAP event channel.
+        [Inject] AudioSystem audioSystem;
 
         [Header("Visuals")]
         [Tooltip("The prism fresnel material (PrismMaterial.mat) - cloned at runtime so the ball " +
@@ -106,6 +113,15 @@ namespace CosmicShore.Gameplay
         // Per-vessel-root time of last strike - dedups the hull+trigger double-fire and paces dribble
         // taps (see VesselContact). Gated by settings.vesselStrikeCooldown.
         readonly Dictionary<Transform, float> _lastStrikeTime = new();
+
+        // Strike POP (every peer): a fast scale pulse driven in Update. It rides a VISUAL CHILD
+        // (see SetupVisuals) and never the root, because the root's lossyScale is the ball's
+        // physical size - the SphereCollider, the goal-line threshold, the prism scan radius and
+        // the depenetration clearance all read it, and a deforming hitbox would be a physics bug
+        // wearing a juice costume. This is the impact read that survives the far end of a huge
+        // court, where a particle burst is a couple of pixels.
+        Transform _visual;
+        float _popTimer;
 
         // Per-tick prism scan state (ProcessPrismInteractions, every peer): reusable query buffer, the
         // set of prisms seen this tick (for pruning), the opposing prisms whose shield we popped this
@@ -268,8 +284,20 @@ namespace CosmicShore.Gameplay
             // differently, making the spin readable instead of a uniform glowing ring. Mesh radius
             // matches the SphereCollider, so the visual hull tracks the physics hull at every
             // intensity scale (BallWorldRadius reads lossyScale).
-            meshFilter = GetComponent<MeshFilter>();
-            if (meshFilter != null)
+            // The mesh lives on a VISUAL CHILD so the impact pop has something to deform that is
+            // not the physics body. The authored root renderer (if any) is stood down rather than
+            // removed, so a scene that still carries one can't double-draw the ball.
+            var rootRenderer = GetComponent<MeshRenderer>();
+            if (rootRenderer != null) rootRenderer.enabled = false;
+
+            var visualGo = new GameObject("BallVisual");
+            _visual = visualGo.transform;
+            _visual.SetParent(transform, false);
+            meshFilter = visualGo.AddComponent<MeshFilter>();
+            var visualRenderer = visualGo.AddComponent<MeshRenderer>();
+            visualRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            visualRenderer.receiveShadows = false;
+
             {
                 int subdiv = settings != null ? settings.ballMeshSubdivisions : IcosphereMeshGenerator.DefaultSubdivisions;
                 float meshRadius = sphereCol != null ? sphereCol.radius : 0.5f;
@@ -277,7 +305,7 @@ namespace CosmicShore.Gameplay
                 meshFilter.sharedMesh = _ballMesh;
             }
 
-            ballRenderer = GetComponent<Renderer>();
+            ballRenderer = visualRenderer;
             if (ballRenderer != null)
             {
                 // Clone the prism fresnel material so the ball reads as 3D with a bright
@@ -436,11 +464,22 @@ namespace CosmicShore.Gameplay
 
             if (!n_Frozen.Value)
             {
-                // ZERO friction: the ball coasts at constant speed between collisions. The ONLY thing
-                // that slows it is plowing through opposing-color prism mass (ProcessPrismInteractions);
-                // walls and vessels are elastic. Cap the top speed so strikes can't make it run away.
+                // Cap the top speed so strikes can't make the ball run away.
                 if (rb.linearVelocity.sqrMagnitude > settings.maxSpeed * settings.maxSpeed)
                     rb.linearVelocity = rb.linearVelocity.normalized * settings.maxSpeed;
+
+                // The ball SETTLES. It used to be perfectly frictionless with perfectly elastic
+                // walls, so an untouched ball ricocheted around the court forever - the game read as
+                // pong. Two dials do it, both authored on the settings asset: wallRestitution takes
+                // energy out of every carom (below), and this exponential drag bleeds the coast so a
+                // ball nobody strikes comes to rest and becomes a thing players contest rather than
+                // dodge. Frame-rate independent, and it composes with the prism-mass drag rather than
+                // replacing it. Below restSpeed the remainder is snapped out, or the asymptote leaves
+                // the ball creeping forever at an invisible speed.
+                if (settings.ballDrag > 0f)
+                    rb.linearVelocity *= Mathf.Exp(-settings.ballDrag * Time.fixedDeltaTime);
+                if (rb.linearVelocity.sqrMagnitude < settings.ballRestSpeed * settings.ballRestSpeed)
+                    rb.linearVelocity = Vector3.zero;
 
                 // First-class per-tick prism resolution - shield own / eat+slow opposing / unshield
                 // shielded. The server applies the eaten-mass speed drag here, before replication.
@@ -520,7 +559,7 @@ namespace CosmicShore.Gameplay
             var vessel = collision.collider.GetComponentInParent<IVessel>();
             if (vessel != null)
             {
-                VesselContact(vessel, contactPoint);
+                VesselContact(vessel, contactPoint, collision.collider);
                 return;
             }
 
@@ -545,7 +584,7 @@ namespace CosmicShore.Gameplay
 
             var vessel = collision.collider.GetComponentInParent<IVessel>();
             if (vessel != null)
-                VesselContact(vessel, collision.contacts[0].point);
+                VesselContact(vessel, collision.contacts[0].point, collision.collider);
         }
 
         /// <summary>
@@ -699,7 +738,9 @@ namespace CosmicShore.Gameplay
 
             Vector3 pos = rb.position;
             Vector3 vel = rb.linearVelocity;
-            if (!_boundary.Contain(ref pos, ref vel, BallWorldRadius(), settings.ballBounciness,
+            // wallRestitution, not ballBounciness: a carom LOSES energy (that is what stops the ball
+            // pinballing forever), while a vessel strike stays fully elastic so the sword still fires it.
+            if (!_boundary.Contain(ref pos, ref vel, BallWorldRadius(), settings.wallRestitution,
                     out Vector3 contactPoint, out Vector3 contactNormal))
                 return;
 
@@ -731,14 +772,30 @@ namespace CosmicShore.Gameplay
             var vessel = other.GetComponentInParent<IVessel>();
             if (vessel == null || vessel.Transform == null) return;
 
-            // Approximate the contact as the point on the ball surface facing the vessel.
+            // Approximate the contact as the point on the ball surface facing the vessel. A blade
+            // contact overrides this inside VesselContact (the sword's trigger is a capsule tens of
+            // units long, so "the direction of the vessel root" is nowhere near where it touched).
             Vector3 ballCenter = transform.position;
             Vector3 toVessel = vessel.Transform.position - ballCenter;
             Vector3 contactPoint = toVessel.sqrMagnitude > 0.0001f
                 ? ballCenter + toVessel.normalized * BallWorldRadius()
                 : ballCenter;
 
-            VesselContact(vessel, contactPoint);
+            VesselContact(vessel, contactPoint, other);
+        }
+
+        /// <summary>
+        /// The swing model for a SKIMMER THAT MOVES relative to its vessel, if this contact came
+        /// through one - the Rhino's sword. Returns null for a fixed skimmer, a hull collider, or a
+        /// blade whose model has not sampled a frame yet, in which case the caller keeps the
+        /// vessel-root behaviour unchanged.
+        /// </summary>
+        SkimmerSwingKinematics ResolveBlade(Collider hitCollider)
+        {
+            if (hitCollider == null || settings == null || !settings.bladeAwareStrikes) return null;
+            var skimmer = hitCollider.GetComponentInParent<Skimmer>();
+            var swing = skimmer != null ? skimmer.SwingKinematics : null;
+            return swing != null && swing.IsReady ? swing : null;
         }
 
         /// <summary>
@@ -756,14 +813,45 @@ namespace CosmicShore.Gameplay
         ///      hitstop are rate-limited per vessel by vesselStrikeCooldown (and gated on minimumHitSpeed)
         ///      so a fast committed hit pops + recoils while continuous dribble contact doesn't spam RPCs.
         /// </summary>
-        void VesselContact(IVessel vessel, Vector3 contactPoint)
+        void VesselContact(IVessel vessel, Vector3 contactPoint, Collider hitCollider = null)
         {
             var root = vessel.Transform;
             if (root == null) return;
 
-            EjectBallFromVessel(root); // anti-clip every frame - independent of the bounce/strike gating
+            // ── Blade contact (the Rhino's sword) ───────────────────────────────────────────
+            // A swinging skimmer is a rigid SEGMENT, so neither "the vessel's position" nor "the
+            // vessel's speed" describes the hit: the tip can be 60 units from the hull and moving
+            // many times faster. Resolve the contact ON the blade and take that point's true
+            // velocity from the same model the prism impact path uses (SkimmerSwingKinematics /
+            // PrismEffectHelper.ContactVelocity). Everything downstream - the bounce normal, the
+            // arcade pop's aim, the recoil, the feedback intensity - then describes the swing.
+            var blade = ResolveBlade(hitCollider);
+            float bladeT = 0f;
+            Vector3 strikerVelocity;
 
-            Vector3 strikerVelocity = ResolveStrikerVelocity(vessel);
+            if (blade != null)
+            {
+                Vector3 ballCenter = transform.position;
+                contactPoint = blade.ClosestBladePoint(ballCenter);
+
+                // A swinging skimmer carries TWO volumes: the sword's own thin CapsuleCollider and
+                // the much larger SPHERE trigger that is its skim field (radius = half the blade's
+                // length, so 15-60 units). Both reach this method. Only the blade may strike the
+                // ball - otherwise the Rhino bats the payload from meters away with an invisible
+                // aura, which is worse than the vessel-root behaviour it replaced. Reach is measured
+                // off the blade's CENTRELINE, so it is the same test at the hilt and at the tip.
+                float reach = BallWorldRadius() + settings.bladeClearRadius;
+                if ((ballCenter - contactPoint).sqrMagnitude > reach * reach) return;
+
+                bladeT = blade.NormalizedAlongBlade(ballCenter);
+                strikerVelocity = Vector3.ClampMagnitude(blade.VelocityAt(contactPoint), settings.maxSpeed);
+                EjectBallFromPoint(contactPoint, settings.bladeClearRadius);
+            }
+            else
+            {
+                EjectBallFromVessel(root); // anti-clip every frame - independent of the bounce/strike gating
+                strikerVelocity = ResolveStrikerVelocity(vessel);
+            }
 
             // Only respond when the ball is actually moving INTO the vessel - avoids re-launching a ball
             // that has already bounced away (self-limiting) and double-bouncing on the second collider path.
@@ -776,7 +864,8 @@ namespace CosmicShore.Gameplay
                 && (!_lastStrikeTime.TryGetValue(root, out var last) || now - last >= settings.vesselStrikeCooldown);
             if (deliberate) _lastStrikeTime[root] = now;
 
-            VesselStrike(vessel, contactPoint, strikerVelocity, strikerSpeed, n, deliberate);
+            VesselStrike(vessel, contactPoint, strikerVelocity, strikerSpeed, n, deliberate,
+                blade != null, bladeT);
         }
 
         /// <summary>The ball's world-space radius (collider radius × max lossy scale) - tracks intensity scaling.</summary>
@@ -797,14 +886,24 @@ namespace CosmicShore.Gameplay
         /// no physical depenetration barrier. Server position is republished immediately so peers
         /// see the ejected position without waiting for the next tick.
         /// </summary>
-        void EjectBallFromVessel(Transform vesselRoot)
+        void EjectBallFromVessel(Transform vesselRoot) =>
+            EjectBallFromPoint(vesselRoot.position, settings.vesselClearRadius);
+
+        /// <summary>
+        /// The depenetration above, generalized to any contact origin. A BLADE hit passes the point
+        /// on the sword's centreline nearest the ball with the blade's own (much smaller) clearance:
+        /// pushing off the vessel ROOT cannot protect a 30-120 unit sword, because at a tip strike
+        /// the ball is already far outside the hull's clear radius and the check would no-op while
+        /// the blade sweeps straight through it.
+        /// </summary>
+        void EjectBallFromPoint(Vector3 origin, float clearRadius)
         {
-            float minClear = BallWorldRadius() + settings.vesselClearRadius;
-            Vector3 away = transform.position - vesselRoot.position;
+            float minClear = BallWorldRadius() + clearRadius;
+            Vector3 away = transform.position - origin;
             float dist = away.magnitude;
             if (dist <= 0.001f || dist >= minClear) return;
 
-            Vector3 cleared = vesselRoot.position + away * (minClear / dist);
+            Vector3 cleared = origin + away * (minClear / dist);
             rb.position = cleared;          // physics-authoritative (server ball is non-kinematic)
             transform.position = cleared;   // immediate visual + the n_Position read below
             if (IsSpawned) n_Position.Value = cleared;
@@ -821,7 +920,8 @@ namespace CosmicShore.Gameplay
         /// caller guarantees that). When <paramref name="deliberate"/> (fast hit, off cooldown) it also
         /// adds the arcade pop (hitBoostMultiplier, aim-biased), recoils the vessel, and may hitstop.
         /// </summary>
-        void VesselStrike(IVessel vessel, Vector3 contactPoint, Vector3 strikerVelocity, float strikerSpeed, Vector3 n, bool deliberate)
+        void VesselStrike(IVessel vessel, Vector3 contactPoint, Vector3 strikerVelocity, float strikerSpeed,
+            Vector3 n, bool deliberate, bool bladeHit = false, float bladeT = 0f)
         {
             // Re-color the ball to the striker's domain - every bounce counts as the last hit. The
             // per-tick prism scan picks up the new same/opposing relationship automatically next tick.
@@ -846,7 +946,12 @@ namespace CosmicShore.Gameplay
                 Vector3 aimDir = strikerSpeed > 0.0001f
                     ? Vector3.Slerp(n, strikerVelocity / strikerSpeed, settings.directionalBias).normalized
                     : n;
-                desiredVelocity += aimDir * (strikerSpeed * Mathf.Max(0f, settings.hitBoostMultiplier - 1f));
+                // Sweet spot: a TIP strike pops harder than a hilt one. The swing model already
+                // makes the tip physically faster; this is the arcade reward on top for timing it.
+                float pop = Mathf.Max(0f, settings.hitBoostMultiplier - 1f);
+                if (bladeHit)
+                    pop *= Mathf.Lerp(1f, Mathf.Max(1f, settings.bladeTipStrikeBonus), Mathf.Clamp01(bladeT));
+                desiredVelocity += aimDir * (strikerSpeed * pop);
             }
 
             if (desiredVelocity.sqrMagnitude > settings.maxSpeed * settings.maxSpeed)
@@ -869,6 +974,20 @@ namespace CosmicShore.Gameplay
 
             if (finalSpeed > settings.hitstopSpeedThreshold && IsSoloSession())
                 RunHitstopAsync().Forget();
+
+            // THE feedback beat. Before this existed a vessel connecting with the ball produced
+            // nothing at all - no flash, no burst, no shake, no sound - which is the single largest
+            // reason the mode read as unresponsive: the only evidence you had hit the payload was
+            // that it changed direction. Broadcast so every peer sees the hit, and carry the
+            // striking vessel so the pilot who actually connected gets the emphasised shake.
+            if (settings.strikeFeedbackEnabled)
+            {
+                var strikerNo = vessel.Transform != null
+                    ? vessel.Transform.GetComponentInParent<NetworkObject>()
+                    : null;
+                ulong strikerNetId = strikerNo != null ? strikerNo.NetworkObjectId : 0UL;
+                Strike_ClientRpc(contactPoint, n, intensity, strikerNetId, bladeHit && bladeT > 0.66f);
+            }
 
             OnStruckServer?.Invoke(vessel, intensity); // controller recoils the vessel (it bounces off too)
         }
@@ -916,6 +1035,22 @@ namespace CosmicShore.Gameplay
                 float wMag = w.magnitude;
                 if (wMag > 1e-4f)
                     transform.rotation = Quaternion.AngleAxis(wMag * Mathf.Rad2Deg * Time.deltaTime, w / wMag) * transform.rotation;
+            }
+
+            // Impact pop: a fast swell that eases back over strikePopSeconds. Visual child only -
+            // the root's scale is the ball's physical size and must not move (see _visual).
+            if (_visual != null)
+            {
+                if (_popTimer > 0f)
+                {
+                    _popTimer -= Time.deltaTime;
+                    float t = Mathf.Clamp01(_popTimer / Mathf.Max(0.0001f, settings.strikePopSeconds));
+                    _visual.localScale = Vector3.one * (1f + settings.strikePopAmount * t * t);
+                }
+                else if (_visual.localScale != Vector3.one)
+                {
+                    _visual.localScale = Vector3.one;
+                }
             }
 
             float speedRatio = Mathf.Clamp01(Velocity.magnitude / settings.speedForMaxVisuals);
@@ -1015,6 +1150,50 @@ namespace CosmicShore.Gameplay
             EmitBurst(position, Vector3.up, settings.goalParticleBurst);
             ShakeCamera(settings.goalShakeIntensity, settings.goalShakeDuration, position);
             HapticController.PlayHaptic(HapticType.MineCollision);
+        }
+
+        /// <summary>
+        /// Every peer: the VESSEL STRIKE beat - the mode's primary act, and until now the only one
+        /// with no feedback at all. Four layers, each covering a different distance:
+        ///   • ball emission FLASH + a scale POP on the ball's visual child (never the root, whose
+        ///     lossyScale is the ball's physical size) - readable from across the arena, where a
+        ///     particle burst is a few pixels;
+        ///   • particle BURST off the contact point - the close-up read;
+        ///   • camera SHAKE, distance-scaled as usual, and multiplied for the pilot who actually
+        ///     connected so striking feels different from watching somebody strike;
+        ///   • an audio CUE, heavier above bigHitSpeedFraction (and heavier again on a sword TIP),
+        ///     so power is audible even when the ball leaves frame instantly.
+        /// Haptics are deliberately absent: Docs/HAPTICS.md ships two feels (skim reward / prism
+        /// punish) plus one rare alert, and a ball strike is none of them.
+        /// </summary>
+        [ClientRpc]
+        void Strike_ClientRpc(Vector3 position, Vector3 normal, float intensity, ulong strikerVesselNetId, bool tipHit)
+        {
+            if (settings == null) return;
+
+            bool bigHit = intensity >= settings.bigHitSpeedFraction;
+            float weight = Mathf.Lerp(0.55f, 1f, Mathf.Clamp01(intensity));
+
+            TriggerFlash(bigHit ? 1f : weight);
+            EmitBurst(position, normal, Mathf.RoundToInt(settings.impactParticleBurst * weight));
+
+            if (settings.strikePopSeconds > 0f)
+                _popTimer = settings.strikePopSeconds;
+
+            // The striking pilot gets the emphasised shake. Resolved by NetworkObjectId against the
+            // LOCAL player's vessel rather than by ownership, because AI vessels are server-owned -
+            // an ownership test would hand the host every AI's emphasis.
+            float emphasis = 1f;
+            if (strikerVesselNetId != 0 && gameData != null && gameData.LocalPlayer?.Vessel != null
+                && gameData.TryGetVesselByNetworkObjectId(strikerVesselNetId, out var struck)
+                && ReferenceEquals(struck, gameData.LocalPlayer.Vessel))
+                emphasis = Mathf.Max(1f, settings.strikerShakeEmphasis);
+
+            ShakeCamera(settings.strikeShakeIntensity * weight * emphasis, settings.strikeShakeDuration, position);
+
+            audioSystem?.PlayGameplaySFX(bigHit || tipHit
+                ? GameplaySFXCategory.Explosion
+                : GameplaySFXCategory.VesselImpact);
         }
 
         /// <summary>

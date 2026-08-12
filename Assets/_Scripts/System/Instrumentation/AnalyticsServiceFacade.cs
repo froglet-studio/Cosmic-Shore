@@ -357,7 +357,7 @@ namespace CosmicShore.Core
                 $"is resolved. First dropped event: '{eventName}'. " +
                 (NeedsPrivacyFlow
                     ? "No privacy consent UI is reachable in this scene; in the editor use " +
-                      "FrogletTools > Analytics > Consent (Dev) to grant it."
+                      "FrogletTools > Services > Analytics Consent (Dev) to grant it."
                     : "Check AnalyticsServiceFacade.StartCollectionIfReady."));
         }
 

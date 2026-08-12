@@ -1027,7 +1027,9 @@ view-dependent prism effect in §3.7 (`SkimFxRunner`'s live ship end, the retire
 | GPU test + dither | `_Graphics/Materials/Graphs/PrismOcclusionCorridor.hlsl` |
 | Live design surface (dials · preview · measure · bake) | FrogletTools > Ecology > Prism Animation > **Occlusion Dither Lab** — `Editor/PrismOcclusionDitherLab.cs` + `_Graphics/Materials/Graphs/PrismOcclusionDitherPreview.shader` |
 | Graph wiring (idempotent, validate-before-write) | `Tools/Shaders/wire_prism_occlusion_corridor.py` |
-| Material alpha-test opt-in (idempotent) | `Tools/Shaders/enable_prism_alpha_clip.py` |
+| Material opaque+clip contract (idempotent fixer) | `Tools/Shaders/enable_prism_alpha_clip.py` |
+| Debris erosion splice (idempotent) | `Tools/Shaders/wire_prism_explosion_erosion.py` |
+| Erosion CDF re-fit (after lattice retune) | `Tools/Shaders/fit_prism_erosion_cdf.py` |
 | Interactive gate | FrogletTools > Ecology > Prism Animation > **Validate Occlusion Corridor** |
 
 The two globals are `_PrismOcclusionTarget` (the vessel's world position) and
@@ -1230,8 +1232,32 @@ short band from reading as an edge are both continuity choices:
     0.164 and is the literal wallpaper the Bayer grid was dropped for. **Passing the number
     is necessary, not sufficient.**
 
+  - **5 — WORLD-SPACE SHATTER3D (carried — REJECTED ON LOOK 2026-08-10, the day it
+    shipped).** SHATTER lifted into the world: Voronoi POLYHEDRA cut by crack planes,
+    world-anchored — true parallax between stacked layers, no strobe at speed (a
+    world-anchored pattern's optical flow IS the scene's), screen-pixel fidelity held
+    by a power-of-two octave ladder of world cell sizes with a jittered rung boundary.
+    Every number passed: **0.0006 uniform / 0.0031 in-situ across a 30× depth range**
+    through a clang-compiled build of the shipped file, at cost parity with 2D. On
+    real trail mass it read as **glitchy clipping in a ring around the vessel**, and
+    the failure is geometric: a volumetric crack PLANE lying near-parallel to a
+    viewed SURFACE intersects it in a region whose ramp is nearly constant, so a
+    face-sized plate shares one threshold and flips at one alpha — a plate-flash, not
+    a dither. The 2D kernel cannot produce this (its band direction always lies in
+    the screen plane), and the uniform sweep, the in-situ bin, and the flat preview
+    slice are all structurally blind to it — none samples the field off
+    surface-glancing geometry. **Passing the number is necessary, not sufficient —
+    the tessellation candidate's lesson, paid a second time, this time from a kernel
+    that SHIPPED for hours.** Carried (not deleted) because the anchoring insight
+    stays right if the glancing-plane failure is solved — e.g. filling polyhedra by
+    distance-to-owner (a 3D SHARD: level sets are closed surfaces, never
+    near-parallel to a face across a whole plate) instead of parallel planar cuts.
+    Do not re-ship as-is. Dials: `PRISM_OCCLUSION_SHATTER3D_CELL` / `..._WALL`
+    (ratio), live in the Lab, which shows the same warning.
+
   - **4 — screen-space SHATTER (CURRENT — shipped 2026-08-06 at polygon 16.26 px /
-    wall 20 px).** The other way to get a hard-edged unit shape: instead of growing a polygon around a point, take the **Voronoi
+    wall 20 px; briefly displaced by SHATTER3D on 2026-08-10 and restored the same
+    day when the 3D kernel was rejected on look).** The other way to get a hard-edged unit shape: instead of growing a polygon around a point, take the **Voronoi
     cell itself** — an irregular convex polygon, nothing but straight edges — and fill it
     between two parallel straight lines from a hashed phase and a hashed band direction.
     Neighbouring cells are independent, so their boundaries are always visible and the
@@ -1317,6 +1343,56 @@ short band from reading as an edge are both continuity choices:
   to be **indistinguishable** from Worley's (0.17% vs 0.19% of pixels flipping per frame at
   matched rates), so it offers nothing the admitted kernels do not already provide.
 
+  **The layered beat, and the two dials that answer it** (2026-08-10, resolved
+  2026-08-11). Every screen-anchored kernel is a pure function of the screen pixel, so
+  two surfaces stacked along one camera ray — a prism's own back face showing through
+  its clipped front face, or two parallel walls of trail mass — read the IDENTICAL
+  threshold at every pixel while their alphas differ only slightly. Their clip contours
+  are then near-identical line sets a pixel or two apart, which is the textbook moiré
+  condition; and because the alpha field rides the GEOMETRY while the threshold rides the
+  SCREEN, camera motion slides the pair at slightly different rates and the interference
+  beats. SHATTER shows it worst (parallel straight walls, the shallowest gradient here).
+
+  **REJECTED — the depth-parallax domain shear** (`pixel += depth · gain · dir`, shipped
+  2026-08-10, reverted 2026-08-11). It decorrelated the layers as designed and read as a
+  LARGER flicker than the beat it fixed: translating the domain moves the ENTIRE lattice,
+  so the pattern's screen velocity is `gain × depth-change-per-frame` — tens of pixels
+  per frame of *coherent* crawl at flight speed, and coherent motion is the most salient
+  thing the eye can be shown. **The lesson generalises: a fix that moves the pattern
+  globally cannot win against speed.**
+
+  What replaced it is two LOCAL dials, independently switchable, attacking the beat's two
+  separate preconditions:
+
+  - **`PRISM_OCCLUSION_SHATTER_DEPTH_PHASE`** (SHATTER only) — adds the depth term inside
+    the kernel's final `frac()` rather than to its domain, so the Voronoi lattice does not
+    move at all and only each cell's WALL slides within its own cell. Coverage-neutral by
+    the frac-of-uniform argument. **Shipped at 0**, because the measurement (clang build of
+    the shipped file: rate | delta at 2u | delta at 12u | band pixels flipping per frame at
+    300 u/s) says it cannot do the job — `0.002` → 0.004 / 0.024 / **2.0%**; `0.020` →
+    0.040 / 0.240 / **17.9%**; `0.050` → 0.100 / 0.400 / **37.2%**. Useful separation of a
+    prism's own two faces (~2u apart) needs ~0.075+, while the flicker ceiling (~1.45%,
+    the morph note's own number) allows ~0.0015 — the two requirements are **~50× apart**,
+    the same conflict that killed the shear, because both are depth-driven. Carried as a
+    Lab dial because it is one MAD and provably coverage-neutral, so seeing the conflict
+    costs nothing.
+  - **`PRISM_BACKFACE_POWER`** (`PrismBackFaceFade`, spliced after the corridor by
+    `Tools/Shaders/wire_prism_backface_fade.py`) — attacks the OTHER precondition, and is
+    the only fix that REMOVES the interference rather than scrambling it: a beat needs both
+    layers at similar mid-band alpha *simultaneously*, so sharpening the far surface
+    (`alpha^power`) drops the interior out of the band while the exterior is still
+    dissolving. **No temporal cost at all** — it does not depend on depth or time. Prisms
+    render two-sided (`_Cull: 0`), which is why the usual second layer is the prism's own
+    interior. Facing comes from the world NORMAL (`dot(N, camera − position) < 0`) rather
+    than `SV_IsFrontFace`, because Shader Graph only exposes that semantic through an Is
+    Front Face node and this project has none to donor-clone, while it has 36 NormalVector
+    nodes. Measured both-in-band range: `1.0` (off) 0.09–0.92 · `2.0` 0.28–0.92 ·
+    **`3.0` (shipped) 0.44–0.92** · `4.0` 0.54–0.92. It **must** sit after the corridor —
+    in the gradient band the graph's own alpha is 1 and only the corridor's fade is
+    fractional, so sharpening earlier would square a 1 and do nothing. The stated trade is
+    a look change: interiors vanish earlier, so a mid-fade prism reads as a thinner shell;
+    `1.0` disables it without touching the graph.
+
   - **1 — corridor-relative spiral.** An Archimedean spiral in the corridor's own
     polar frame (9 bands across the cone radius, sheared 3 turns per revolution), so the
     pattern is anchored to the *corridor*: it stands still and the world travels through it,
@@ -1345,31 +1421,108 @@ Four properties of the design worth preserving if it is ever touched:
   corridor — no error, no visual tell, nothing to notice until someone says they can't see
   their ship. That is how the old system stayed broken; every gate above exists to make that
   state impossible to reach silently.
-- **Prisms stay in the opaque queue.** The fade is screen-door (a dither threshold fed into
-  `SurfaceDescription.AlphaClipThreshold`), not blending. Moving corridor prisms into the
-  transparent queue would need a per-prism material swap AND would pay sorting + blend
-  overdraw for a set that changes every frame — precisely the cost this feature exists to
-  avoid. The trade is that the opaque prism materials are now **alpha-tested**
-  (`_AlphaClip: 1` + `_ALPHATEST_ON`), which is the change's one real cost (§4.7 note below).
+- **Prisms stay in the opaque queue — ALL of them, for every transparency effect
+  (2026-08-10).** The fade is screen-door (a dither threshold fed into
+  `SurfaceDescription.AlphaClipThreshold`), not blending, and the threshold now engages for
+  ANY fragment whose final alpha lands below 1 — not only inside the corridor. That one
+  rule made the dither **THE prism transparency mechanism**: the corridor fade, the
+  exploding-debris fade-out (`PrismExplosionClock`'s Opacity ramp), and the cloak family's
+  authored near-zero alpha all ride the same screen door, with the same depth parallax,
+  composing in COVERAGE (alphas multiply before one threshold compare — a debris prism
+  fading inside the corridor is one consistent pattern, not two stacked transparencies).
+  Consequently there are **no transparent prism materials any more**: the seven that
+  blended (ExplodingBlockMaterial, CloakedPrismMaterial, TransparentPrismMaterial, the
+  Transparent Shielded/SuperShielded/Danger/Jade variants) were converted to opaque +
+  `_ALPHATEST_ON` with their authored `_Alpha`/`_Opacity` preserved as dither coverage —
+  the "Transparent*" names survive as the cloak-state bind targets, but nothing blends.
+  `enable_prism_alpha_clip.py` enforces and converts; `PrismOcclusionDiagnostics` faults a
+  transparent prism material at runtime; the coverage test fails on one in CI. (One stale
+  value surfaced by the conversion: `MazeDangerBlockMateral` — live prisms on
+  ExplodingBlockGraph — carried a dead `_Opacity 0` that would have become "invisible";
+  it is now 1. The tool prints every material's authored coverage so the next stale value
+  is visible at conversion time.)
+- **The corridor STOPS SHORT of the ship — `PRISM_OCCLUSION_NOSE_CLEARANCE`
+  (2026-08-11).** The cone used to run all the way to the vessel's ORIGIN plane with the
+  axial gradient still in progress when it arrived, so a prism the ship was flying into
+  was still partly dematerialised at the moment of contact — and an impact you cannot see
+  land does not read as an impact. The fade must now be COMPLETE one hull radius short of
+  the vessel plane, measured in hull radii because that is the length the corridor already
+  knows and the one that scales fleetwide with nothing authored (the hull radius bounds
+  every part of the ship about its origin, so a clearance of 1 means "solid from a
+  ship's-length out, through the nose and past it"). Measured on-axis through a clang
+  build at the Sparrow's 12.32 hull radius with a 30 u camera: cleared 22–28 u out,
+  fading 20→14 u, and **fully solid from 12.3 u all the way through the vessel plane**.
+  The trade is stated and is the point: mass inside that buffer is solid and CAN occlude
+  the ship at contact range — dial toward 0.5 if that starts to bite, 0 restores the old
+  flush-to-the-plane behaviour. A camera closer than the clearance switches the corridor
+  off entirely, which is correct rather than dangerous: inside one hull radius there is no
+  room for occluding mass to hide behind.
 - **The corridor test is per-fragment**, from the Position(World) node — the same
   post-vertex-animation position the rasterizer used. A per-object test would make a large
   environment plate flip wholesale between solid and dissolved.
-- **`_Alpha` is multiplied, not replaced.** BlockGraph hosts transparent materials too
-  (cloak, transparent shielded/danger/super-shielded); their authored alpha still applies
-  and they need no clip, so the alpha-test opt-in is opaque-materials-only.
+- **`_Alpha` is multiplied, not replaced.** The graph's own alpha source (BlockGraph's
+  `_Alpha`, ExplodingBlockGraph's clock Opacity) feeds the corridor node's BaseAlpha, so
+  authored and clock-driven alpha are first-class dither inputs: the corridor only scales
+  them, and whatever the product is renders as coverage.
+- **A fading prism outside the corridor never pops, on any kernel.** The four
+  screen-anchored kernels work anywhere; the SPIRAL is corridor-anchored (no polar frame
+  exists outside the cone), so the dispatch takes a `polarValid` flag and swaps it for IGN
+  on out-of-corridor fades rather than letting a whole prism vanish at one alpha.
+- **The exploding prism's FADE is its own dither — body-anchored, never a function of
+  the view: ONE WIPE PER FACE, anchored to UV0 (2026-08-10; re-anchored 2026-08-11 —
+  the first cut carved the body into Voronoi chunks and read as the prism being
+  EATEN from many points per face; the second anchored to body POSITION with
+  dominant-axis face classification, which the per-face shatter SPIN breaks:
+  fragments migrate across dominance boundaries as pieces rotate, so wipes jumped
+  face frames mid-tumble — reported as "the normals stop updating as the pieces
+  spin").** `PrismErosionFade` (same HLSL file) sweeps ONE jagged erosion front
+  across each face as the clock Opacity runs 1 → 0. **UVs are mesh attributes — no
+  vertex animation (flight, spin, scale) can move them** — so the front is glued to
+  the face under any motion and any camera, and the whole flight-undo matrix ride
+  was deleted with the problem (the function is three hashes, a projection, and a
+  1D value noise — simpler AND cheaper). Faces share the wipe's UV-space direction,
+  but each face's UV frame is oriented differently on the box, so world-space
+  fronts still differ per face; the stamped `_Velocity` seeds each prism's
+  direction and jag so no two chunks peel alike. **Soft-hard-soft**: Survival is
+  a HARD edge (`PRISM_EROSION_FRINGE` 0, 2026-08-11). It briefly led the front with
+  a dithered fringe, on the reading that soft-hard-soft wanted a soft trailing
+  component; in motion that was wrong, because the debris edge then dissolved in the
+  SAME visual language as the corridor it flies through and the two read as one
+  confused surface instead of "a prism breaking up" inside "the world going
+  see-through". The motif's soft component here is the unbroken face the front eats
+  into and the irregular JAG of the front itself. Removing the fringe also made the
+  fade curve essentially exact — the smear WAS the coverage error, 0.0296 → **0.00068**
+  mean against the margin-compressed ramp. **The wipe
+  finishes early by design**: thresholds are compressed above
+  `PRISM_EROSION_END_MARGIN` (0.15), so every fragment is gone 15% of the fade
+  before the batch retires — closing the "pieces vanish before the wipe finishes"
+  race structurally — and the fade itself was extended 1.5×
+  (`PrismExplosion.DefaultDuration` 5 → 7.5, `MinPressuredDuration` 0.22 → 0.33).
+  Spliced by `Tools/Shaders/wire_prism_explosion_erosion.py` (which MIGRATES the
+  old position-anchored wiring in place) between the explosion clock and the
+  corridor node; live prisms stay exact pass-throughs via the ≥1/≤0 early-outs,
+  and a wiped-away fragment takes the corridor's alpha≤0 fast out. The wipe
+  coordinate carries a CDF remap fitted over the uniform UV square
+  (`Tools/Shaders/fit_prism_erosion_cdf.py`; re-run if `WIGGLE`/`WIGGLE_FREQ`
+  move — `END_MARGIN`/`FRINGE` sit outside the fitted quantity and tune freely),
+  validated against a clang build of the file itself; the ASCII render of the
+  compiled function shows one connected hard front per face at every alpha. The guard is
+  `PrismOcclusionCoverageTests.ExplodingGraph_CarriesTheObjectAnchoredErosion`.
 
-**Cost, stated:** per fragment, outside the corridor — one compare against the off
-sentinel, ~10 ALU of segment-distance, one compare, done (no dither, no texture). Draw
-calls, batches, render queue and collider count are unchanged; corridor prisms stay in the
-same instanced batch as everything else. The one non-zero cost is structural: enabling
-`_ALPHATEST_ON` on the seven opaque BlockGraph materials makes prism fragments
-alpha-tested, which forfeits early-Z rejection for those draws on tile-based GPUs. Prisms
-are unlit boxes with a trivial fragment shader, and the alternative (per-prism transparent
-material swaps) is strictly worse, but it is a real trade and it is the thing to measure if
-prism fill cost regresses. Reverting it is one command
-(`Tools/Shaders/enable_prism_alpha_clip.py` inverted, or clear `_AlphaClip`/`_ALPHATEST_ON`),
-after which prisms render exactly as they did before and the corridor silently does nothing
-to them.
+**Cost, stated:** per fragment, for solid mass outside the corridor — one compare against
+the off sentinel, ~10 ALU of segment-distance, two compares, done (no dither, no texture).
+The kernel is paid only by fragments whose final alpha is fractional: the corridor's
+gradient shell, mid-fade debris, cloaked prisms. Draw calls, batches, render queue and
+collider count are unchanged; every prism stays in the same instanced batch (and the
+ex-transparent materials now WRITE DEPTH and skip sorting, which is a small win, not a
+cost). The one non-zero structural cost is unchanged: `_ALPHATEST_ON` on every prism
+material makes prism fragments alpha-tested, which forfeits early-Z rejection for those
+draws on tile-based GPUs. Prisms are unlit boxes with a trivial fragment shader, and the
+alternative (per-prism transparent material swaps) is strictly worse, but it is a real
+trade and it is the thing to measure if prism fill cost regresses. Reverting the corridor
+alone is no longer one command — the fade-out and cloak paths now DEPEND on the clip
+(their materials no longer blend), so a revert means re-converting those seven materials
+to transparent as well.
 
 **What it replaced.** `ClearPrisms` (deleted, with its prefab and the dead
 `IVessel.AllowClearPrismInitialization()` opt-out gate): a per-vessel kinematic

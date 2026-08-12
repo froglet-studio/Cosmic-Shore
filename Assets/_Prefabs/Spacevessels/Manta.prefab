@@ -1689,7 +1689,7 @@ GameObject:
   - component: {fileID: 6733957700513663958}
   - component: {fileID: 7965853245772039612}
   - component: {fileID: 3064061082551029771}
-  - component: {fileID: 9678703874602163012}
+  - component: {fileID: 8678703874602163012}
   - component: {fileID: 8100000000000000081}
   - component: {fileID: 8100000000000000083}
   m_Layer: 0
@@ -4367,7 +4367,7 @@ Camera:
     type: 3}
   m_PrefabInstance: {fileID: 8546359282292252367}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &9678703874602163012
+--- !u!114 &8678703874602163012
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}

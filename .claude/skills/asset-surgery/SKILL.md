@@ -165,9 +165,21 @@ its GameObject lists it in `m_Component`.
   how a new MonoBehaviour gets onto N vessel/prop prefabs without the editor):
   (1) write the script's `.meta` yourself with a fresh `uuid4().hex` guid and
   **assert that guid appears in exactly one `.meta` repo-wide**; (2) pick a
-  fileID and assert the literal does not already occur in the target file —
-  any int64 works, but keep a readable family (e.g. `…778`, `…779`) so a human
-  reading the diff can see they are yours; (3) insert
+  fileID, assert the literal does not already occur in the target file, and
+  **assert it is ≤ `9223372036854775807` — a fileID is a SIGNED int64 and a
+  random 19-digit decimal overflows it about 16% of the time.** Unity does not
+  recover: `SerializedFile::IndexTextFile` fails the *whole file* with
+  `Could not extract 'FileID' … This number overflows internal type`, every
+  reference inside it turns into `Broken text PPtr`, and nothing is reported
+  until someone loads that prefab — two vessel prefabs in this repo carried one
+  for weeks (`9678703874602163012`, `9900976137657699045`) and only surfaced
+  when a new tool tried to open them. Keep a readable family (e.g. `…778`,
+  `…779`) so a human reading the diff can see they are yours. Sweep for the
+  whole class with one regex over `&(\d+)` / `fileID: (\d+)` filtered to
+  `> INT64_MAX`; fixing one is a whole-word rewrite of the anchor plus every
+  reference, then re-assert the file's dangling-reference set is unchanged
+  (that last check is what proves you renumbered the references too, not just
+  the anchor); (3) insert
   `  - component: {fileID: X}` after the LAST existing entry of the owning
   GameObject's `m_Component` list — anchor the regex on that document
   (`^--- !u!1 &<goID>\nGameObject:\n.*?\n  m_Layer:`, DOTALL) rather than on a
@@ -370,6 +382,44 @@ per task; it is cheap.
   After adopting a strict mode, grep the retired tier's name for the words
   *fallback / fall back / legacy path / degrades to* and re-read each hit
   against what the code now does.
+
+### Technique: resolve a `.shadergraph` MERGE by re-running the wirers, never by hand
+
+Origin: the dither branch vs the Sparrow turret branch (2026-08-11). Both wired nodes
+into `BlockGraph`/`ExplodingBlockGraph` — one moved the prism flight to the GPU clock,
+the other added a debris erosion wipe and a back-face fade. Git produced **40 conflict
+hunks of ShaderGraph JSON**. Resolving those by editing conflict markers is not a real
+option: the format is concatenated documents with object-id cross-references, so a
+plausible-looking textual merge silently yields duplicate ids, orphaned slots, or two
+feeders on one input.
+
+The move — and the reason to make every graph wirer idempotent in the first place:
+
+1. **Take ONE side whole** (`git checkout --theirs <graph>`), normally the base branch's,
+   so you keep whatever they did and owe only your own re-application.
+2. **Re-run YOUR wirers.** An idempotent wirer that prints "already wired" on a no-op is
+   also a merge-conflict resolver — it re-splices onto whatever it finds. This is the
+   payoff for §1.2, and it is worth writing them that way even when you expect no merge.
+3. **Re-run THEIR wirers too**, and confirm each reports "already wired". That proves your
+   re-application did not retarget an edge they own.
+4. **Verify by DUMPING THE RESOLVED EDGE LIST** (§2a), not by trusting the per-tool
+   validators — each one only checks its own splice, and the defect a merge creates lives
+   *between* them. Print the chain into `SurfaceDescription.Alpha` and read it:
+   ```
+   BlockGraph:          Alpha -> OcclusionFade -> BackFaceFade -> Alpha
+   ExplodingBlockGraph: ErosionFade -> OcclusionFade -> BackFaceFade -> Alpha
+   ```
+   Then dump every node's INPUT slots and confirm each resolves — the cross-branch join
+   (`ErosionFade.BaseOpacity <- PrismExplosionClock.Opacity`, one branch's node feeding
+   the other's) is exactly the edge no single validator covers.
+5. **Count-check against BOTH parents.** Merged node/edge counts must be a superset of
+   each parent by exactly what your wirers reported adding, and **property counts should
+   match the side you took** — a property count above it means both branches added the
+   same property and you now have two.
+
+Assert the JSON analog of `CS0102` while you are there: duplicate `m_ObjectId`, duplicate
+property reference names, registry entries that do not resolve, dangling edge endpoints,
+and any input slot with more than one feeder. All five are ~20 lines over the parsed model.
 
 ### Trap: a clean merge can still be a semantic conflict (duplicate members)
 
@@ -598,6 +648,19 @@ read**. The lesson generalizes:
   stops the rewrite from silently converting line endings into diff noise. (Reading
   only? `\r?$` is enough. This repo's own `PrismOcclusionCoverageTests` carries the
   same warning for `.shadergraph` — heed it BEFORE writing the regex.)
+  **Knowing the trap is not enough — SWEEP for it, because one outlier call site is
+  the normal shape of this bug.** `PrismOcclusionDitherLab` got it right in its Anchor
+  table and wrong in one method 50 lines away (`SetTuningFlag`), so its "enable design
+  mode" button had never once worked on a Windows checkout and nothing said so. The
+  detector is four lines over the file — pull every `@"..."` verbatim regex literal and
+  flag any containing `$` without a preceding `\r?`:
+  ```python
+  for m in re.finditer(r'@"((?:\(\?m\))?\^[^"]*)"', src):
+      if '$' in m.group(1) and not re.search(r'\\r\?\)?\$', m.group(1)): print(m.group(1))
+  ```
+  Then PROVE the fix rather than asserting it: under .NET's `$` semantics (matches
+  before `\n`, after `\r`) the old pattern must measure 1 match on LF and **0 on CRLF**,
+  the new one 1 on both. On Linux you cannot observe the failure any other way.
 - **.NET does not throw on a replacement naming a group the pattern lacks — it emits
   the literal text.** `Regex.Replace(s, @"(a)(b)", "${1}x${3}")` writes `${3}` into
   your file. A rewriter that varies its patterns must carry the group count
@@ -668,6 +731,14 @@ read**. The lesson generalizes:
   leaving a sparse confetti of survivors in a region that is supposed to be
   completely gone. Nudge any computed clip threshold strictly inside (0,1)
   (`n * 0.998 + 0.001`).
+- **A READ-ONLY editor tool must use `AssetDatabase.LoadAssetAtPath<GameObject>`, not
+  `PrefabUtility.LoadPrefabContents`.** The asset representation already carries the
+  merged hierarchy (nested prefabs included), so `GetComponentsInChildren` and every
+  serialized field read the same as at runtime — while `LoadPrefabContents` opens a
+  preview SCENE per prefab, which is far heavier AND a second failure surface: on a
+  prefab with malformed data it spills native parse errors and callstacks before your
+  code runs. An auditor that dies on the bad data it exists to find is worse than no
+  auditor. Reserve `LoadPrefabContents` for tools that WRITE.
 - **A "dangling GUID on this prefab" is usually project-wide.** Before treating
   a missing asset reference as a local bug, grep the WHOLE Assets tree for that
   guid: a reference broken on four flora prefabs turned out to be broken on
@@ -884,27 +955,6 @@ read**. The lesson generalizes:
   measured constant to a second system "for parity", find the line that CHOSE it. If no
   line did, you are about to enshrine an artifact, and every asset you align to it makes
   the eventual correction bigger.
-
-### Bundled tool: `field_parity.py`
-
-Beside this skill. `serialized_fields(cs_path)` returns what Unity would serialize
-from a C# file (the attribute-stripping trap above is already handled);
-`asset_docs(asset_path)` yields `(script_guid, [top-level keys])` per MonoBehaviour
-document. ~20 lines of glue maps guid → `.cs` and asserts `keys` are a subset of
-`fields` for every doc in every asset you authored. Run it before committing any
-hand-written YAML — it is what turns "looks right" into "provably resolves".
-
-## 6. When the editor genuinely IS required
-
-Device soak tests, profiling, visual judgment, play-mode-state measurements,
-and final import verification of hand-authored assets. Even then: build the
-measuring tool + validator so the human runs ONE menu item and pastes ONE
-output back — then YOU act on the numbers.
-
-**Narrowed 2026-08:** "play-mode measurement" no longer covers a *deterministic*
-generator's baseline — see §4.5, which measures it offline and uses the in-editor
-measurer as a CONFIRMATION step rather than the source. Keep asking which half of
-a measurement is actually play-mode-dependent; often it is neither.
 - **HDR colour fields are LINEAR, and scaling them is not tuning**: in a Linear
   project (`ProjectSettings: m_ActiveColorSpace: 1`) a `[ColorUsage(true, true)]`
   field serialises **linear intensity** — Rec.709 luminance and CIELAB apply
@@ -929,13 +979,28 @@ a measurement is actually play-mode-dependent; often it is neither.
   Then dedupe by BLOB: `git rev-parse "$ref:$path"` per ref and group — N branches
   usually collapse to a handful of distinct file versions worth reading.
 
+### Bundled tool: `field_parity.py`
+
+Beside this skill. `serialized_fields(cs_path)` returns what Unity would serialize
+from a C# file (the attribute-stripping trap above is already handled);
+`asset_docs(asset_path)` yields `(script_guid, [top-level keys])` per MonoBehaviour
+document. ~20 lines of glue maps guid → `.cs` and asserts `keys` are a subset of
+`fields` for every doc in every asset you authored. Run it before committing any
+hand-written YAML — it is what turns "looks right" into "provably resolves".
+
 ## 6. When the editor genuinely IS required
 
-Play-mode measurements (baselines, profiling), device soak tests, visual
-judgment. Even then: build the measuring tool + validator so the human runs ONE
-menu item and pastes ONE output back — then YOU act on the numbers
-(the PhaseThresholds re-baseline pattern: they ran the measurer, the session
-authored the six configs from the pasted output).
+Device soak tests, profiling, visual judgment, play-mode-state measurements,
+and final import verification of hand-authored assets. Even then: build the
+measuring tool + validator so the human runs ONE menu item and pastes ONE
+output back — then YOU act on the numbers (the PhaseThresholds re-baseline
+pattern: they ran the measurer, the session authored the six configs from the
+pasted output).
+
+**Narrowed 2026-08:** "play-mode measurement" no longer covers a *deterministic*
+generator's baseline — see §4.5, which measures it offline and uses the in-editor
+measurer as a CONFIRMATION step rather than the source. Keep asking which half of
+a measurement is actually play-mode-dependent; often it is neither.
 
 **Visual judgment is the softest of these — simulate it rather than punting it.**
 Once §2a has told you what the shader does with a value, you can reimplement that

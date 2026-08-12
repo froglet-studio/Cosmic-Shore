@@ -37,13 +37,22 @@ namespace CosmicShore.Gameplay
         [Header("Config")]
         [SerializeField] AstroLeagueSettingsSO settings;
 
-        [Header("Base Dimensions (intensity 1 - scaled up by Build)")]
-        [Tooltip("Used only to place the end goals (Z = ±arenaLength/2) and size the midfield ring; " +
-                 "the play boundary itself is the spherical nucleus (settings.boundaryRadius).")]
-        [SerializeField] float arenaLength = 300f;
-        [SerializeField] float arenaWidth = 200f;
-        [SerializeField] float arenaHeight = 100f;
-        [SerializeField] float goalRingRadius = 26f;
+        [Header("Base Dimensions (LEGACY fallback only)")]
+        [Tooltip("Base (intensity-1) court dimensions. These are a FALLBACK for a scene with no " +
+                 "settings asset wired - the shipping source is AstroLeagueSettingsSO " +
+                 "(arenaLength/Width/Height/goalMouthRadius), so resizing the playfield is a " +
+                 "one-asset edit and can never disagree with the goal detectors, which read the " +
+                 "same numbers. Do not tune these.")]
+        [SerializeField] float arenaLength = 400f;
+        [SerializeField] float arenaWidth = 320f;
+        [SerializeField] float arenaHeight = 240f;
+        [SerializeField] float goalRingRadius = 62f;
+
+        // Config-first dimension reads (see the header above): the settings asset owns the court.
+        float BaseLength => settings != null ? settings.arenaLength : arenaLength;
+        float BaseWidth => settings != null ? settings.arenaWidth : arenaWidth;
+        float BaseHeight => settings != null ? settings.arenaHeight : arenaHeight;
+        float BaseGoalRadius => settings != null ? settings.goalMouthRadius : goalRingRadius;
 
         [Header("References")]
         [SerializeField] AstroLeagueBall ball;
@@ -53,7 +62,10 @@ namespace CosmicShore.Gameplay
         [SerializeField] PrismEventChannelWithReturnSO prismSpawnChannel;
 
         public Vector3 Center => transform.position;
-        public float GoalRingRadius => goalRingRadius * _scale;
+        public float GoalRingRadius => BaseGoalRadius * _scale;
+
+        /// <summary>Court length along the goal axis at the current intensity - the goal lines sit at ±half of it.</summary>
+        public float ArenaLength => _L;
 
         /// <summary>World-space radius of the SPHERE boundary at the current intensity scale (sphere shape only).</summary>
         public float BoundaryRadius => _boundaryRadius;
@@ -91,10 +103,10 @@ namespace CosmicShore.Gameplay
         {
             _scale = Mathf.Max(0.01f, scale);
             _centralGoal = centralGoal;
-            _L = arenaLength * _scale;
-            _W = arenaWidth * _scale;
-            _H = arenaHeight * _scale;
-            _goalR = goalRingRadius * _scale;
+            _L = BaseLength * _scale;
+            _W = BaseWidth * _scale;
+            _H = BaseHeight * _scale;
+            _goalR = BaseGoalRadius * _scale;
             _boundaryRadius = (settings != null ? settings.boundaryRadius : 190f) * _scale;
 
             // Clear anything from a prior Build (defensive - normally built once per scene).
@@ -350,11 +362,11 @@ namespace CosmicShore.Gameplay
         {
             float s = Application.isPlaying ? _scale : 1f;
             Gizmos.color = new Color(0.2f, 0.8f, 1f, 0.2f);
-            Gizmos.DrawWireCube(Center, new Vector3(arenaWidth, arenaHeight, arenaLength) * s);
+            Gizmos.DrawWireCube(Center, new Vector3(BaseWidth, BaseHeight, BaseLength) * s);
             Gizmos.color = new Color(0.15f, 1f, 0.55f, 0.4f);
-            Gizmos.DrawWireSphere(Center + Vector3.back * (arenaLength * s / 2f), goalRingRadius * s);
+            Gizmos.DrawWireSphere(Center + Vector3.back * (BaseLength * s / 2f), BaseGoalRadius * s);
             Gizmos.color = new Color(1f, 0.22f, 0.35f, 0.4f);
-            Gizmos.DrawWireSphere(Center + Vector3.forward * (arenaLength * s / 2f), goalRingRadius * s);
+            Gizmos.DrawWireSphere(Center + Vector3.forward * (BaseLength * s / 2f), BaseGoalRadius * s);
         }
     }
 }

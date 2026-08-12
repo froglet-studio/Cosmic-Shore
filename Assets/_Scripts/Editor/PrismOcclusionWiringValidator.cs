@@ -23,9 +23,12 @@ namespace CosmicShore.Editor
     ///      (Checked against the graph TEXT — an unexposed ShaderGraph property is declared
     ///      outside UnityPerMaterial, so Material.HasProperty can never see it. Same trap
     ///      the clock validator documents for _PrismClock.)
-    ///   2. Every material on those graphs is corridor-capable — opaque ones alpha-tested
-    ///      with _Alpha 1. A material that misses this is an INVISIBLE HOLE: that prism
-    ///      silently stays solid in front of the ship.
+    ///   2. Every material on those graphs is corridor-capable — OPAQUE + alpha-tested, no
+    ///      transparent prism materials at all (the screen-door dither is THE prism
+    ///      transparency mechanism; authored sub-1 alpha is its coverage). A material that
+    ///      misses this is an INVISIBLE HOLE: that prism silently stays solid in front of
+    ///      the ship — or renders a second, inconsistent kind of transparency beside the
+    ///      dither.
     ///   3. Every PREFAB carrying a Prism renders with a wired prism shader. This is the
     ///      check that makes the law enforceable at authoring time: a new prism prefab on a
     ///      new or legacy shader is caught here, not by someone noticing their ship is hidden.
@@ -173,7 +176,7 @@ namespace CosmicShore.Editor
                 }
             }
             report.AppendLine(matFailed == 0
-                ? $"   ✅ {opaque} opaque material(s) alpha-test enabled, {transparent} transparent material(s) blend as-is"
+                ? $"   ✅ {opaque} material(s) opaque + alpha-test enabled (transparent prism materials: {transparent}, must be 0)"
                 : $"   ❌ {matFailed} material(s) misconfigured — run `python3 Tools/Shaders/enable_prism_alpha_clip.py`");
             pass &= matFailed == 0;
 
