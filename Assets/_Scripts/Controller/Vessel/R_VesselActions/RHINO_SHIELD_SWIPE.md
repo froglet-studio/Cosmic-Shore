@@ -1,10 +1,14 @@
 # Rhino Shield Swipe — analog trigger swordsmanship
 
-> The blade's **cutting behavior and energy meter** — ungated prism damage, super-shield
-> popping on contact, energy banked per kill (blade length + heat), and the elemental-crystal
-> 3D burst — live in **`RHINO_ENERGY_SWORD.md`**. This file covers only the pose/analog-swipe
-> control model. The `ShieldSkimmerScaleDriver` "Sword dimensions & scale ownership" section
-> below is now driven by that energy meter (no tick decay).
+> The blade's **cutting behavior, energy meter, and the energize ritual** — ungated prism
+> damage, the ENERGIZED-only super-shield pop (hold the both-triggers chop stance to charge),
+> energy banked per kill (blade length + heat), the elemental-crystal 3D burst, and the full
+> blade FX pass — live in **`RHINO_ENERGY_SWORD.md`**. This file covers only the
+> pose/analog-swipe control model, though the two now share the triggers: the same
+> reparameterized sum/difference that poses the blade also feeds the energize stance
+> (`FeedSwordStance` → `IRhinoSwordState.SetInStance`). The `ShieldSkimmerScaleDriver`
+> "Sword dimensions & scale ownership" section below is driven by that energy meter (no
+> tick decay).
 
 The Rhino's ForceFieldSkimmer capsule (the only CapsuleCollider on the vessel — its
 "sword") is puppeteered by the analog triggers. The vessel plays like a swordsman:
@@ -45,7 +49,10 @@ do not copy it (follow-up below).
   replicate through `R_VesselActionHandler`'s RPC chain, so **remote peers animate an
   event-driven approximation**: press = full stance + half chop (rate-limited by
   `swipeOutSeconds` so it reads as a swing), release = return (`returnSeconds`),
-  cross-press hands the stance to the still-held side. Touch and keyboard resolve no
+  cross-press hands the stance to the still-held side, and **both held = centered full
+  chop** (`diff 0, sum 2` — added with the energize ritual so binary inputs can charge
+  the blade AND remote peers replay the owner's two-trigger stance pose instead of a
+  one-sided swipe; see `RHINO_ENERGY_SWORD.md`). Touch and keyboard resolve no
   action for these events (shared mapping has no entry), so they are unaffected; a
   future mobile binding gets the event path for free.
 

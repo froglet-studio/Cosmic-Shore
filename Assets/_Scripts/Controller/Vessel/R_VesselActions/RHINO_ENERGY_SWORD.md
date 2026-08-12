@@ -1,26 +1,71 @@
-# Rhino Energy Sword — ungated blade, super-shield popping, energy meter, crystal burst
+# Rhino Energy Sword — ungated blade, the energize ritual, energy meter, crystal burst
 
-Layers an **energy meter** and a **super-shield-popping edge** onto the Rhino's swordsmanship
-(the pose/analog-swipe rig is in `RHINO_SHIELD_SWIPE.md` — read it first). The blade is
-**ungated**: no stance, no cooldown, no energize requirement. It always damages prisms on
-contact and always destroys super-shielded prisms. A first iteration gated damage behind an
-"energize" stance + a slash cooldown; that shipped a sword that mostly didn't cut and was
-**rejected — do not reintroduce damage gates on the sword.**
+Layers an **energy meter**, the **energize ritual** (the supershield key), and a full authored
+**FX pass** onto the Rhino's swordsmanship (the pose/analog-swipe rig is in
+`RHINO_SHIELD_SWIPE.md` — read it first). Ordinary cutting is **ungated**: no stance, no
+cooldown — the sword always damages prisms on contact. The ONE gated act is popping a
+SUPER-shielded prism, which requires the blade to be **ENERGIZED**.
+
+**Design history (do not relitigate):** a first iteration gated ALL damage behind an energize
+stance + a slash cooldown; that shipped a sword that mostly didn't cut and was **rejected — never
+reintroduce a slash cooldown or stance gate on ordinary cutting.** A second iteration removed the
+ritual entirely (always-pops, ungated supershield). The user's ruling for v3: the base sword
+stays ungated for normal and shielded prisms, and **energize returns as the supershield key
+only** — the rejection covers NORMAL damage gating, not the hardened-target ritual.
 
 ## What the sword does on contact
 
-| Target | Result |
-|---|---|
-| Normal prism | Explodes, debris thrown at the **contact velocity** (below) |
-| Shielded prism | Shield pops, prism survives (standard `Prism.Damage` semantics) |
-| **Super-shielded prism** | **POPPED**: `DeactivateShields()` (stellation shatter + SFX) then `Damage(devastate: true)` (animated explode-out, unrestorable) — the sanctioned mass-conserving teardown, same sequence as `AstroLeagueArena.ClearEdgeLining`. `Prism.Damage` alone hard-ignores super-shielded prisms, which is why the shields must drop first. |
+| Target | Blade state | Result |
+|---|---|---|
+| Normal prism | any | Explodes, debris thrown at the **contact velocity** (below) |
+| Shielded prism | any | Shield pops, prism survives (standard `Prism.Damage` semantics) |
+| **Super-shielded prism** | **ENERGIZED** | **POPPED**: `DeactivateShields()` (stellation shatter + SFX) then `Damage(devastate: true)` (animated explode-out, unrestorable) — the sanctioned mass-conserving teardown, same sequence as `AstroLeagueArena.ClearEdgeLining`. `Prism.Damage` alone hard-ignores super-shielded prisms, which is why the shields must drop first. |
+| **Super-shielded prism** | not energized | **BounceBack** recoil + a dim **denied spark** at the contact point (teaches the ritual without rewarding the hit) |
 
-`destroySuperShielded` (default **on** — popping IS the feature) preserves the legacy
-bounce-off as a config fallback: flip it off on the asset to restore the old recoil.
+`popRequiresEnergizedBlade` (default **on** — the ritual IS the design) replaces v2's
+`destroySuperShielded`: flip it off on the asset to restore the v2 ungated pop as a designer
+A/B. With no sword state present (a non-Rhino skimmer reusing the asset) the blade can never be
+energized, so super-shielded prisms always bounce — the pre-sword baseline.
+
 Consequence to be aware of: super-shielded prisms are used as track/arena lining (Skim Race,
-Astro League edge). A Rhino can now carve those. That is the intended universality — one rule
-set — but if a mode must protect its lining, that's a follow-up (per-mode effect container or
-a prism-level carve-out decided then, not a silent re-gate of the sword).
+Astro League edge). An energized Rhino can carve those — deliberately a *paid, windowed* act now
+rather than free on contact. If a mode must protect its lining outright, that's a follow-up
+(per-mode effect container or a prism-level carve-out decided then, not a silent re-gate of
+ordinary cutting).
+
+## The energize ritual (the supershield key)
+
+Hold the **lower/chop stance** — both triggers pulled (sum ≥ `stanceSumThreshold`, 1.5) and even
+(|difference| ≤ `stanceCenterEpsilon`, 0.4) — for `energizeHoldSeconds` (1 s):
+
+```
+Idle ── stance held, energy ≥ cost, off cooldown ──► Charging (anticipation arcs, blade leans white)
+Charging ── stance broken or energy dips ──► Idle (no cost)
+Charging ── hold met ──► ENERGIZED (spends energizeCostFraction = 0.1; IGNITION burst)
+Energized ── stance held ──► stays lit indefinitely
+Energized ── stance left ──► tail: stays lit energizedTailSeconds (5 s)
+tail elapsed ──► Cooldown (energizeCooldownSeconds, 5 s) ──► Idle
+```
+
+- **Gesture source:** `ShieldSwipeActionExecutor.FeedSwordStance` feeds the RAW trigger targets
+  (not the smoothed pose) into `IRhinoSwordState.SetInStance` every frame — the same
+  reparameterized signals that pose the blade, so the energize gesture IS the chop pose the
+  player already knows. Thresholds live on `RhinoShieldSwipeConfig.asset`.
+- **Binary inputs energize too:** the event-driven path (touch bindings, remote replay)
+  synthesizes the stance when BOTH swipe holds are down (`diff 0, sum 2`) — which also fixes the
+  remote pose: peers now see the owner's centered chop instead of a one-sided swipe. AI never
+  pulls triggers, so AI Rhinos never energize (same limitation class as the analog swipe pose).
+- **A turn end / despawn / autopilot takeover mid-hold** drops the stance
+  (`ResetImmediate` → `SetInStance(false)`), so the sword can't be left charging forever.
+- **The resting-prism edge (v1's lesson, solved for BOTH contact tiers):** a super-shielded
+  prism already resting against the blade when ignition lands gets no fresh `OnTriggerEnter` —
+  and since the shell tier owns shielded contact, its pair was dispatched once on ENTRY and
+  would never re-fire. The ignition edge therefore re-dispatches standing contacts through both
+  tiers: `SkimmerImpactor.ReapplyPrismEffectsToOverlapping()` (box-trigger overlaps, which also
+  covers `ForceLegacyBoxInteraction` mode) and the new
+  `PrismShellContactManager.RedispatchPairsForOwner(impactor)` (live shell-owned pairs re-run
+  through the same `AcceptImpacteeFromShellContact` chain their entry used). The pop the player
+  just paid for lands the same frame.
 
 ### Contact velocity (composes with the swing model)
 
@@ -60,13 +105,15 @@ not an oscillator (the old driver's tick-decay loop is gone).
   merely de-shields a prism banks nothing (the prism survived). The pre-existing
   `RhinoVesselChangeResourceByCrystalEffect` (vessel body collects an **omni** crystal) still
   sets the resource straight to 1 — an instant full charge.
+- **Spend:** each ENERGIZE costs `energizeCostFraction` (0.1) at the ignition instant; collecting
+  an **elemental** crystal with the sword (skimmers are what collect elemental crystals) triggers
+  the crystal burst below and drains ALL energy to 0.
 - **Readout:** the blade's **resting length** reflects stored energy (Y-only elongation from the
   Space-driven elemental base `Skimmer.LiveElementalScale` toward `MaxScale`), and the blade
-  **heats** — colour ramps authored-teal → `fullEnergyColor` and brightens toward
-  `fullEnergyBrightness`. The Rhino HUD keeps reading the same meter through
-  `ShieldSkimmerScaleDriver.OnScaleChanged(current, base, max)`.
-- **Spend:** collecting an **elemental** crystal with the sword (skimmers are what collect
-  elemental crystals) triggers the crystal burst below and drains ALL energy to 0.
+  **heats** — colour ramps authored-teal → `fullEnergyColor` (a hot cyan — the WHITE-hot look is
+  reserved for the energized blade) and brightens toward `fullEnergyBrightness`. The Rhino HUD
+  keeps reading the same meter through `ShieldSkimmerScaleDriver.OnScaleChanged(current, base,
+  max)`.
 
 ## Crystal burst (all three dimensions + explosion)
 
@@ -83,81 +130,134 @@ container's only crystal effect) reads the energy at that instant and:
    contract) and capped at the debuff-aware `MaxScale` (so the Sparrow shrink debuff still
    bites during a burst) unless the blade is already longer.
 
-At full energy: max-size burst + max explosion + max camera shake. At zero energy: a small
-60-unit pop and no burst. Banked kills literally convert into the boom. During the burst the
-HUD meter reports the energy-based resting length (i.e. it honestly drops to empty at the
-drain), not the transient ballooned size. Living lifeforms' **embedded** heart crystals never
-trigger the burst — `SkimmerImpactor` gates its crystal effects on collectable crystals
+At full energy: max-size burst + max explosion + whole-blade crackle + max camera shake. At zero
+energy: a small 60-unit pop and no burst. Banked kills literally convert into the boom. During
+the burst the HUD meter reports the energy-based resting length (i.e. it honestly drops to empty
+at the drain), not the transient ballooned size. Living lifeforms' **embedded** heart crystals
+never trigger the burst — `SkimmerImpactor` gates its crystal effects on collectable crystals
 (`IsEmbedded`/`IsExploding`), mirroring `ElementalCrystalImpactor`'s own guards.
 
-## Blade FX (`RhinoSwordVisualizer`)
+## Blade FX (`RhinoSwordFXController` — prefab-authored, editor-tunable)
 
-The blade body uses the **shared** `FresnelMaterial` (sole exposed property `_Color`, non-HDR
-but unclamped), so the visualizer never touches `renderer.material` — everything goes through a
-per-renderer **MaterialPropertyBlock** (the `AstroLeagueBall` impact-flash precedent; RGB > 1
-feeds gameplay bloom, which is active in game scenes — menu has bloom off, where the blade still
-brightens in LDR). **`FresnelGraph.shadergraph` was fixed with this feature**: its `_Color`
-property fed a Blend node whose output connected to nothing (BaseColor came straight from the
-Voronoi — every `_Color` write was invisible). The graph now multiplies `_Color` into the
-animated Voronoi (`BaseColor = _Color × Voronoi`, alpha unchanged: fresnel-driven), so the base
-blade reads teal instead of grayscale and the MPB drive below actually renders. The shader has
-exactly one material (`FresnelMaterial.mat`) rendered by exactly one prefab (the Rhino's
-ForceFieldSkimmer) — no other look changed.
+All look lives on a **prefab-authored component on the blade root** (added to the
+ForceFieldSkimmer instance in `Rhino.prefab`), with every knob on
+`ShieldSkimmerScaleConfig.asset` and the visual assets authored in the project — this replaces
+v2's code-built `RhinoSwordVisualizer` (deleted). Four layers:
 
-- **Always visible:** authored teal × `visibilityMultiplier` (2).
-- **Heat ramp:** colour lerps teal → `fullEnergyColor` and brightness lerps 1 →
-  `fullEnergyBrightness` (2.5) by stored energy — power readable at a glance.
-- **Impact flash:** a decaying white-out pulse per prism destroyed — `hitFlashAmount` (0.35) for
-  a normal pop, `popFlashAmount` (1.0) for a super-shield pop or crystal burst, decaying over
-  `flashDecaySeconds`; stronger pulses override weaker mid-decay.
-- **Tip tracers:** two runtime `TrailRenderer` streaks seated at the blade tips (parented to the
-  fuselage so width doesn't scale with the growing blade), tinted with the live blade colour.
-  The material is an **instance of the config-authored `tracerMaterial`**
-  (`TrailViewerMaterial.mat` — instanced so tinting never mutates the shared asset); a runtime
-  unlit fallback covers a missing reference.
-- **Camera shake (local pilot only, never autopilot/remote/AI):** `popShakeIntensity` (1.2) on a
-  super-shield pop; up to `burstShakeMaxIntensity` (2.5, scaled by energy consumed) on a crystal
-  burst. Routed through `CameraManager.Instance.GetActiveController()` →
-  `CustomCameraController.Shake` (the `AstroLeagueBall.ShakeCamera` pattern).
-- **No new haptics** — the two-feel policy stands (`Docs/HAPTICS.md`); the sword already carries
-  the skim pulse via `SkimmerHapticsByPrismEffect`.
+1. **Heat ramp** — authored teal → `fullEnergyColor` (hot cyan) + brightness by stored energy.
+   The blade body uses the **shared** `FresnelMaterial` (sole exposed property `_Color`), so the
+   FX controller never touches `renderer.material` — everything goes through a per-renderer
+   **MaterialPropertyBlock** (the `AstroLeagueBall` impact-flash precedent; RGB > 1 feeds
+   gameplay bloom — active in game scenes, off in Menu_Main where the blade still brightens in
+   LDR). **`FresnelGraph.shadergraph` carries the v2 fix**: `_Color` used to feed a Blend node
+   whose output connected to NOTHING (every colour write invisible); the graph now renders
+   `BaseColor = _Color × Voronoi` (Multiply blend, opacity 1 — structurally re-verified this
+   branch by edge-list dump), alpha unchanged (fresnel-driven). The shader has exactly one
+   material (`FresnelMaterial.mat`) rendered by exactly one prefab (the Rhino's
+   ForceFieldSkimmer) — no other look changed.
+2. **Energize** — the centerpiece. CHARGING leans the blade toward white (35% × charge) with
+   escalating anticipation arcs every `chargeCrackleInterval`; IGNITION blends it white-hot
+   (`energizedColor` × `visibilityMultiplier` over `colorTransitionSeconds`) and detonates
+   `igniteCrackleSites` (5) crackle bursts spread hilt→tip (`igniteCrackleIntensity` /
+   `igniteCrackleSeconds`). The crackle is the adapted **forcefield-crackle** system (below).
+3. **Impact feedback** — a decaying white-out flash per prism destroyed (`hitFlashAmount` /
+   `popFlashAmount`, stronger pulses override weaker mid-decay) plus a **contact spark** at the
+   exact blade point that made contact (`SkimmerSwingKinematics.ClosestBladePoint`;
+   `sparkIntensity` / `sparkSeconds` / `sparkWorldRadius`); a dim **denied spark**
+   (`deniedSparkIntensity`) when a non-energized blade bounces off a super-shield. The crystal
+   burst fires a whole-blade crackle scaled by the energy consumed.
+4. **Tip tracers** — two **authored** `TrailRenderer` children of the fuselage
+   (`RhinoSwordTipTracer` / `RhinoSwordHiltTracer` in `Rhino.prefab`, wearing
+   `RhinoSwordTracerMaterial.mat` — no runtime construction, no `Shader.Find` fallback), seated
+   at the blade tips each frame (fuselage-parented so width ignores blade growth) and tinted
+   with the live blade colour via MaterialPropertyBlock.
 
-Audio is all free-riding on sanctioned paths: `DeactivateShields` plays `ShieldDeactivate`,
-`Damage` plays `BlockDestroy`, `AOEExplosion.Detonate` plays `Explosion`.
+**Camera shake (local pilot only, never autopilot/remote/AI):** `popShakeIntensity` (1.2) on a
+super-shield pop; up to `burstShakeMaxIntensity` (2.5, scaled by energy consumed) on a crystal
+burst. Routed through `CameraManager.Instance.GetActiveController()` →
+`CustomCameraController.Shake` (the `AstroLeagueBall.ShakeCamera` pattern).
+
+**No new haptics** — the two-feel policy stands (`Docs/HAPTICS.md`); the sword already carries
+the skim pulse via `SkimmerHapticsByPrismEffect`. Audio is all free-riding on sanctioned paths:
+`DeactivateShields` plays `ShieldDeactivate`, `Damage` plays `BlockDestroy`,
+`AOEExplosion.Detonate` plays `Explosion`. (A dedicated energize SFX would follow the
+`SkimmerSFXByCrystalEffectSO` template — follow-up, not wired.)
+
+### The capsule crackle (adapting the forcefield-crackle system to the blade)
+
+`ForcefieldCrackleController` + `ForcefieldCrackle.hlsl` were purpose-built for the base
+skimmer's SPHERE: impacts stored as unit directions, ripples measured as great-circle angles.
+On the blade's stretched capsule (built-in capsule mesh under the ~`(1.5, 30, 4.8)` blade
+scale) that collapses the whole blade length into the two poles. The adaptation:
+
+- **`ForcefieldCrackleCapsule_float`** (new entry in the same HLSL) measures in **world units**:
+  impacts are object-space POSITIONS, the vertex shader supplies the object→world scale per
+  axis, and distances are computed on scale-multiplied positions — so a ripple travels the same
+  world distance along the blade as around it, arcs stay glued to the blade through swings, and
+  they stretch with it as energy grows it. `_ImpactParams.y` becomes the ripple's world-unit
+  reach. All visual params (`_ArcDensity`, `_RingThickness` as a fraction of reach, colors,
+  fresnel rim) keep their sphere-version meaning.
+- **`ForcefieldCrackleCapsule.shader`** (donor-clone of the sphere shader) renders it;
+  **`RhinoBladeCrackleMaterial.mat`** (teal/white family) is authored on the blade's
+  `ForcefieldCrackleOverlay` child via a variant override — the base `Skimmer.prefab` keeps its
+  sphere shader + red material untouched.
+- **`ForcefieldCrackleController.surface = Capsule`** (new enum, default Sphere) stores local
+  positions instead of normalized directions; authored as a variant override on
+  `ForceFieldSkimmer Variant.prefab`. The controller and overlay child already existed on the
+  blade (the variant kept them; the Rhino's mesh swap already made the overlay a capsule) —
+  what was missing was the parameterization and any caller: the generic
+  `SkimmerForcefieldCracklePrismEffectSO` requires a SphereCollider the Rhino removed, and is
+  deliberately NOT wired — the sword's sparks are kill/pop/ignition events from the FX
+  controller, not every-contact events.
+
+Verified out-of-editor: the capsule HLSL compiles under clang `-Wall` and localizes correctly
+(sampled 2048 surface fragments against two impacts: ~5% lit, rim-only elsewhere, alpha 0 with
+no impacts). The LOOK still needs the in-editor pass below.
 
 ## Architecture — how shared effect SOs reach per-vessel state
 
 Effect SOs are singletons and can't hold per-vessel state. The per-Rhino state lives on
 `ShieldSkimmerScaleDriver` (the sword's brain, one per Rhino, on `ScaleSkimmerObject` in
-`Rhino.prefab`), which implements the slim `IRhinoSwordState` (`Energy01`, `AddEnergy`,
-`NotifyPrismDestroyed`, `TriggerCrystalBurst`) and registers itself on `Skimmer.SwordState`.
-Effects read it via `impactor.Skimmer.SwordState`, null-safe so any non-Rhino skimmer reusing
-the assets just runs the damage/pop behavior without the energy/FX bookkeeping. The whole
-feature is **code + flat asset edits — no new prefab components**.
+`Rhino.prefab`), which implements the slim `IRhinoSwordState` (`IsEnergized`, `Energy01`,
+`AddEnergy`, `NotifyPrismDestroyed`, `NotifyPopDenied`, `TriggerCrystalBurst`, `SetInStance`)
+and registers itself on `Skimmer.SwordState`. Effects read it via `impactor.Skimmer.SwordState`,
+null-safe so any non-Rhino skimmer reusing the assets just runs the damage behavior (and the
+bounce, since it can never be energized) without the energy/FX bookkeeping. The driver owns
+STATE (energy, energize machine, scale, burst phases) and delegates all LOOK to the
+prefab-authored `RhinoSwordFXController` on the blade root; the gesture arrives from
+`ShieldSwipeActionExecutor` (the trigger reparameterization's owner). The FX controller resolves
+same-GameObject pieces (`Skimmer`, `SkimmerSwingKinematics`, crackle, body renderer) via
+`TryGetComponent` and warns once, naming the missing wire, if an authored reference is absent.
 
 ## Files
 
 | Role | File |
 |---|---|
-| Per-vessel state contract | `Executors/IRhinoSwordState.cs` |
-| Sword brain (energy meter, scale, burst phases, flash/shake dispatch) | `Executors/ShieldSkimmerScaleDriver.cs` |
-| Blade look (heat ramp, impact flash, tracers) | `Executors/RhinoSwordVisualizer.cs` |
-| Tuning (scale mapping, burst, all FX knobs) | `Executors/ShieldSkimmerScaleConfigSO.cs` → `_SO_Assets/VesselActions/Rhino/ShieldSkimmerScaleConfig.asset` |
-| Prism effect (damage, super-shield pop, energy bank) | `ImpactEffects/EffectsSO/Skimmer Prism Effects/RhinoSkimmerDamagePrismEffectSO.cs` → `_SO_Assets/Effects/Vessel Prism Effects/RhinoSkimmerDamagePrismEffect.asset` |
+| Per-vessel state contract + energize phases | `Executors/IRhinoSwordState.cs` (`RhinoSwordEnergizePhase`) |
+| Sword brain (energy, energize state machine, scale, burst phases, contact re-dispatch) | `Executors/ShieldSkimmerScaleDriver.cs` |
+| Blade look (heat ramp, energize blend, ignition/spark crackle, flashes, tracers, shake) | `Executors/RhinoSwordFXController.cs` (prefab-authored on the blade root) |
+| Gesture source (stance feed from the reparameterized triggers) | `Executors/ShieldSwipeActionExecutor.cs` (`FeedSwordStance`) |
+| Gesture thresholds | `Data Containers/RhinoShieldSwipeConfigSO.cs` → `_SO_Assets/VesselActions/Rhino/RhinoShieldSwipeConfig.asset` |
+| Tuning (scale mapping, energize, burst, all FX knobs) | `Executors/ShieldSkimmerScaleConfigSO.cs` → `_SO_Assets/VesselActions/Rhino/ShieldSkimmerScaleConfig.asset` |
+| Prism effect (damage, energize-gated super-shield pop, energy bank) | `ImpactEffects/EffectsSO/Skimmer Prism Effects/RhinoSkimmerDamagePrismEffectSO.cs` → `_SO_Assets/Effects/Vessel Prism Effects/RhinoSkimmerDamagePrismEffect.asset` |
 | Crystal effect (explosion + burst kick) | `ImpactEffects/EffectsSO/Skimmer Prism Effects/RhinoSwordCrystalBurstEffectSO.cs` → `_SO_Assets/Effects/Skimmer Crystal Effects/RhinoSwordCrystalBurstEffect.asset` |
-| Arbitrary-position explosion overload | `ImpactEffects/EffectsSO/Helpers/ExplosionHelper.cs` (`CreateExplosion(prefabs, init, container)`) |
+| Box-overlap re-apply (energize rising edge) | `ImpactEffects/Impactors/SkimmerImpactor.cs` (`ReapplyPrismEffectsToOverlapping`) |
+| Shell-pair re-dispatch (energize rising edge) | `Controller/Managers/PrismShellContactManager.cs` (`RedispatchPairsForOwner`) |
+| Capsule crackle surface mode | `Controller/Vessel/ForcefieldCrackleController.cs` (`CrackleSurface`) |
+| Capsule crackle math | `_Graphics/Materials/Graphs/ForcefieldCrackle.hlsl` (`ForcefieldCrackleCapsule_float`) |
+| Capsule crackle shader / material | `_Graphics/Materials/Graphs/ForcefieldCrackleCapsule.shader` / `_Graphics/Materials/RhinoBladeCrackleMaterial.mat` |
+| Authored tracer material | `_Graphics/Materials/RhinoSwordTracerMaterial.mat` (TrailViewer family) |
 | Skimmer hook | `Vessel/Skimmer.cs` (`SwordState`) |
 | Embedded-heart guard on skimmer crystal effects | `ImpactEffects/Impactors/SkimmerImpactor.cs` (ElementalCrystalImpactor case) |
 | Blade shader fix (`_Color` now rendered) | `Assets/_Graphics/Materials/Graphs/FresnelGraph.shadergraph` |
 | Effect wiring | `_SO_Assets/Effects/Effect Containers/SkimmerContainers/RhinoForceFieldSkimmerImpactorDataContainer.asset` (prism[0] → Rhino variant; crystal list → burst effect) |
-
-Unchanged from bleeding-edge (the failed first pass touched these; the retry does not):
-`ShieldSwipeActionExecutor`, `RhinoShieldSwipeConfigSO` + asset, `SkimmerImpactor` (no gesture
-feed, no overlap re-apply — with no damage gate, `OnTriggerEnter` always bites).
+| Prefab wiring | `Rhino.prefab` (FX controller on the blade root + `RhinoSwordTipTracer`/`RhinoSwordHiltTracer` under the fuselage) · `ForceFieldSkimmer Variant.prefab` (overlay material → blade crackle, `surface: Capsule`) |
 
 ## Tuning knobs
 
-On `RhinoSkimmerDamagePrismEffect.asset`: `inertia` 70 · `destroySuperShielded` 1 ·
+On `RhinoShieldSwipeConfig.asset`: `stanceSumThreshold` 1.5 · `stanceCenterEpsilon` 0.4.
+
+On `RhinoSkimmerDamagePrismEffect.asset`: `inertia` 70 · `popRequiresEnergizedBlade` 1 ·
 `energyPerPrism` 0.04 · `energyPerSuperShieldedPrism` 0.12 · legacy bounce params · plus the
 swing-model group `swingVelocityScale` 1 / `maxImpactSpeed` 0 / `proportionalDebris` 1 /
 `restitution` 0.333 / `debrisSpeedLimit` 200 (the last two move **together** with the other
@@ -165,14 +265,24 @@ damage SOs and `PrismExplosion.prefab`'s speed band — see the swing-kinematics
 `CLAUDE.md`; `inertia` is not the lever on the proportional path).
 
 On `ShieldSkimmerScaleConfig.asset`: `baseScale` 30 (fallback; live base is the Space elemental
-scale) · `maxScale` 120 · `prismGrowSpeed` 30 · `shrinkSpeed` 10 ·
+scale) · `maxScale` 120 · `prismGrowSpeed` 30 · `shrinkSpeed` 10 · `energizeCostFraction` 0.1 ·
+`energizeHoldSeconds` 1 · `energizedTailSeconds` 5 · `energizeCooldownSeconds` 5 ·
 `crystalBurstFactorAtFullEnergy` 4 · `crystalBurstHoldSeconds` 2.5 · `crystalBurstGrowSpeed`
-600 · `crystalBurstReturnSpeed` 150 · `visibilityMultiplier` 2 · `fullEnergyColor` white ·
-`fullEnergyBrightness` 2.5 · `hitFlashAmount` 0.35 · `popFlashAmount` 1 · `flashDecaySeconds`
-0.35 · `flashColor` (3,3,3) · `tracersEnabled` · `tracerMaterial` (TrailViewerMaterial) ·
-`tracerWidth` 2 · `tracerTimeSeconds` 0.3 · `popShakeIntensity` 1.2 / `popShakeDuration` 0.25 ·
-`burstShakeMaxIntensity` 2.5 / `burstShakeDuration` 0.4. (`prismMaxScale` remains only so the
-Sparrow full-auto `ApplyMaxSizeDebuff` keeps its historical meaning.)
+600 · `crystalBurstReturnSpeed` 150 · `visibilityMultiplier` 2 · `fullEnergyColor`
+(0.11, 1.51, 1.42) hot cyan · `fullEnergyBrightness` 2.5 · `energizedColor` white ·
+`colorTransitionSeconds` 0.25 · `igniteCrackleIntensity` 2.5 / `igniteCrackleSeconds` 0.9 /
+`igniteCrackleSites` 5 · `chargeCrackleInterval` 0.18 / `chargeCrackleIntensity` 1.1 ·
+`sparkIntensity` 1.6 / `sparkSeconds` 0.45 / `sparkWorldRadius` 14 · `deniedSparkIntensity`
+0.7 · `hitFlashAmount` 0.35 · `popFlashAmount` 1 · `flashDecaySeconds` 0.35 · `flashColor`
+(3,3,3) · `popShakeIntensity` 1.2 / `popShakeDuration` 0.25 · `burstShakeMaxIntensity` 2.5 /
+`burstShakeDuration` 0.4. (`prismMaxScale` remains only so the Sparrow full-auto
+`ApplyMaxSizeDebuff` keeps its historical meaning. The v2 tracer keys — `tracersEnabled`,
+`tracerMaterial`, `tracerWidth`, `tracerTimeSeconds` — are retired: tracers are authored
+TrailRenderers in `Rhino.prefab` now; tune width/time/curve on the components.)
+
+On `RhinoBladeCrackleMaterial.mat`: arc density/sharpness, ring thickness (fraction of reach),
+ripple speed, core/glow/rim colors — live-tunable in the inspector, edit or play mode
+(`ForcefieldCrackleController` is `[ExecuteAlways]`).
 
 On `RhinoSwordCrystalBurstEffect.asset`: `minExplosionScale` 60 · `maxExplosionScale` 400 ·
 `aoePrefabs` = AOESlowExplosion.
@@ -181,32 +291,50 @@ On `RhinoSwordCrystalBurstEffect.asset`: `minExplosionScale` 60 · `maxExplosion
 
 1. Rhino in any playable mode (or Menu_Main freestyle, swap to Rhino) with a gamepad.
 2. **Cutting (regression):** fly through trail/opposing prisms — every prism the blade touches
-   pops immediately, with a small blade flash per kill. No timing, no stance required.
+   pops immediately, with a small blade flash + a spark at the blade point that hit. No timing,
+   no stance required.
 3. **Energy + length + heat:** as kills accumulate the blade lengthens (HUD skimmer meter
-   tracks) and shifts teal → bright white. No decay while idle.
-4. **Super-shield:** slash a super-shielded (Stella-Octangula) prism — it pops on contact
-   (24-face shatter + explode-out), big blade flash + a short camera shake. No bounce.
-5. **Crystal:** with partial vs full energy, sword-collect an elemental crystal — blade bursts
-   in all three dimensions, an explosion fires at the crystal, both bigger at higher energy;
-   energy drops to 0 and the blade eases back to base length.
-6. **Non-regression:** other vessels' skimmers unaffected (SwordState null); Sparrow full-auto
-   still shrinks the Rhino sword's max (`ApplyMaxSizeDebuff`); the omni-crystal pickup still
-   snaps the meter full.
+   tracks) and shifts teal → hot cyan. No decay while idle.
+4. **Energize ritual:** bank some energy, pull BOTH triggers fully and hold the centered chop —
+   after ~1 s of rising anticipation arcs the blade IGNITES: white-hot + a crackle burst along
+   the whole blade, energy dips by 0.1. Release the stance — the blade stays lit ~5 s, cools,
+   and can't re-charge for ~5 s more. Holding the stance keeps it lit indefinitely.
+5. **Super-shield, not energized:** slash a super-shielded (Stella-Octangula) prism — the Rhino
+   recoils (bounce) with a dim spark; the prism survives.
+6. **Super-shield, energized:** same prism with the blade lit — it pops on contact (24-face
+   shatter + explode-out), big blade flash + short camera shake, energy banks 0.12.
+7. **The resting-prism edge:** park the blade against a super-shielded prism (bounce), then
+   energize while still touching — the prism must pop the instant ignition lands, no re-approach
+   needed.
+8. **Crystal:** with partial vs full energy, sword-collect an elemental crystal — blade bursts
+   in all three dimensions, whole-blade crackle + explosion at the crystal, both bigger at
+   higher energy; energy drops to 0 and the blade eases back to base length.
+9. **Tracers:** two streaks ride the blade tips through swipes, tinted with the live blade
+   colour (teal → cyan → white-hot when energized).
+10. **Non-regression:** other vessels' skimmers unaffected (SwordState null; base skimmer
+    crackle still the red sphere look); Sparrow full-auto still shrinks the Rhino sword's max
+    (`ApplyMaxSizeDebuff`); the omni-crystal pickup still snaps the meter full; touch/binary
+    input can energize by holding both swipe controls.
 
 ## Follow-ups
 
-- **Replication:** energy and the blade's heat/flash state are local-authoritative (same
-  precedent as the analog swipe pose — remote peers see the base blade at whatever scale their
-  local effects produced). If the heat/flash look should replicate, add an owner-write
-  NetworkVariable for energy on the driver, mirroring the analog-replication follow-up in
-  `RHINO_SHIELD_SWIPE.md`.
+- **Replication:** energy, energize state, and the blade's heat/flash look are
+  local-authoritative (same precedent as the analog swipe pose — remote peers now at least
+  replay the both-held stance pose, and their own driver runs its own energize machine off it,
+  but energy differs per peer so ignition timing can differ). If the lit blade should replicate
+  exactly, add an owner-write NetworkVariable for energy + energize phase on the driver,
+  mirroring the analog-replication follow-up in `RHINO_SHIELD_SWIPE.md`.
+- **HUD:** the energize phase is exposed (`ShieldSkimmerScaleDriver.EnergizePhase`, `Charge01`)
+  but not yet drawn — the blade itself is the readout. If playtests want a HUD echo, feed the
+  Rhino HUD from those properties.
 - **Mode lining:** if a mode's super-shielded lining (Skim Race track, Astro League edge) must
-  survive Rhino contact, decide a per-mode carve-out then — do not re-gate the sword globally.
+  survive an energized Rhino, decide a per-mode carve-out then — do not re-gate ordinary cutting.
 - **Friendly fire + self-farming (design sign-off):** the effect has no domain gate — identical
   to the generic damage effect it replaced (`affectSelf` is true on the Rhino) and consistent
-  with the danger-prism friendly-fire philosophy — but the NEW energy bank makes it rewarding:
-  cutting your own trail banks 0.04/prism, and popping an **ally's** super-shielded prism banks
-  0.12 while permanently devastating friendly hardened structure. If that reads as an exploit in
-  play, add a same-domain skip on the energy bank (not on the damage) or gate the pop by domain.
-- **Tracer look:** `TrailViewerMaterial` was chosen as the authored, serialized-reference-proven
-  ribbon material; swap the config's `tracerMaterial` to taste.
+  with the danger-prism friendly-fire philosophy — but the energy bank makes it rewarding:
+  cutting your own trail banks 0.04/prism, and an energized blade popping an **ally's**
+  super-shielded prism banks 0.12 while permanently devastating friendly hardened structure. If
+  that reads as an exploit in play, add a same-domain skip on the energy bank (not on the
+  damage) or gate the pop by domain.
+- **Energize SFX:** a dedicated ignition sound via the `SkimmerSFXByCrystalEffectSO` template if
+  the free-riding audio isn't enough.
