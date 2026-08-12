@@ -3160,4 +3160,22 @@ Scene: **Menu_Main** freestyle (Squirrel is the menu vessel, so the joust is one
 
 Tuning knobs: `LightFaunaDataSO.witherRingInterval` (fauna ring cadence) and the new
 `LifeForm.witherRingInterval` (flora). Both are seconds per ring; keep them above zero or the body
-collapses in a single frame, which reads as a pop.
+collapses in a single frame, which reads as a pop. The flora knob is also overridable per
+element from `FloraVariantTuning.WitherRingInterval` (`-1` = keep the prefab's), the same shape
+`ShieldPeriod` uses — a denser plant wants a shorter ring so the whole wither still reads at flight
+speed.
+
+### 26.9 Follow-ups (open, recorded rather than done)
+
+1. **The worm colony's danger prisms vs. the skeleton.** The colony is excluded from §26.2 because
+   its capital segments carry danger prisms and a kaiju skeleton is a wall. If the colony should
+   leave *something* behind, the question to answer first is what a danger prism does in a skeleton
+   — stay dangerous forever, shed its danger state on detach, or be the one prism kind the skeleton
+   drops. Do not "just enable it".
+2. **Flora deaths other than the joust still detonate** (`DamageAll` + `ForceWitherAll`). That is
+   deliberate for now — a plant grazed to its lethal threshold has been actively eaten — but if the
+   skeleton reads well in play, making it universal for flora is a one-line change to the branch in
+   `LifeForm.Die` and worth a deliberate decision rather than drift.
+3. **Skeleton accumulation over a long round** is the §26.7 budget risk and can only be answered by
+   a playtest. If skeletons outpace grazing, the levers are the existing diet/spawn dials
+   (`SpawnProfile.FaunaFoodFloor`, per-species populations) — never a timer, never a cap.

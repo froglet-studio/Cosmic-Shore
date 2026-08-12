@@ -137,6 +137,7 @@ namespace CosmicShore.Gameplay
         {
             if (tuning == null) return;
             if (tuning.ShieldPeriod >= 0f) shieldPeriod = tuning.ShieldPeriod;
+            if (tuning.WitherRingInterval > 0f) witherRingInterval = tuning.WitherRingInterval;
         }
 
         public static event Action<string, int> OnLifeFormDeath;
