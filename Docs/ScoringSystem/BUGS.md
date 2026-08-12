@@ -414,3 +414,53 @@ T15. B5 remains scheduled into **R10** (the unified ranked `ScoreResult` list
 dissolves it). B16 (ghost joust toasts / unrecorded client-observed jousts) fixed
 2026-07-16 — code-complete, engine verification pending (see B16's verification
 steps). No other open read-through findings remain.
+
+### B17 — 🟢 Non-host players started every match with the PREVIOUS game's score (unhealable mirror drift)
+
+**Symptom (reported repeatedly, reproduced by the reporter every time).** Start a multiplayer
+game, play another one, then launch a third — *"every other person except the host had different
+scores from the beginning"*. The host always read 0. Not dependent on exiting a game mid-way (the
+reporter confirmed it happens without that).
+
+**Root cause — the "except the host" is the whole clue.** Every `RoundStats` stat setter writes
+BOTH halves, but the network half only on the server:
+
+```csharp
+set {
+    _hostilePrismsDestroyedLocal = value;                          // always
+    if (IsSpawned && IsServer) n_HostilePrismsDestroyed.Value = value;   // server only
+}
+```
+
+So on a client, anything that assigns a stat locally moves the mirror **without** moving the
+authoritative value. The common case is every mode's end-of-game snapshot
+(`SyncFinalScores_ClientRpc` assigns `stat.Score` / `stat.HostilePrismsDestroyed` / … on clients);
+`ResetStatsDataForReplay` inside `ResetForReplay_ClientRpc` and `StatsManager` running on a client
+before its `OnNetworkSpawn` clears `_allowRecord` do the same.
+
+The drift is then **unhealable by replication**: a `NetworkVariable` raises `OnValueChanged` only
+when the value actually CHANGES, so once the server's value and the client's mirror have both
+settled — server 0, client 842 — the server writing 0 again is a no-op and the stale mirror
+survives into the next game, and the next. The host is immune because its setters write the mirror
+and the NetworkVariable together.
+
+This is why the two earlier fixes were not enough: making the per-scene reset unconditional
+(`ServerPlayerVesselInitializer`, see the branch) and zeroing at game start
+(`MiniGameControllerBase.ZeroStatsForGameStartOnce`) both do the right thing on the SERVER — but
+neither can reach a client mirror that the server's own writes cannot move.
+
+**Fix.** `RoundStats.SyncLocalMirrorsFromNetwork()` — the initial-pull block from `OnNetworkSpawn`,
+extracted and made callable — re-derives every local mirror from the replicated values.
+`Player.InitializeForMultiplayerMode` calls it at every scene entry (it runs once per player per
+scene on EVERY peer), so a client can never carry a diverged mirror across a game boundary.
+`OnNetworkSpawn` now calls the same method, so there is one definition of "pull the truth".
+
+**Rule for anyone writing a mode.** Assigning a stat inside a `ClientRpc` sets that peer's mirror
+only. It is fine as a display convenience at game end, but it makes the client authoritative-looking
+and wrong; anything that must survive into the next game has to come from the server's
+`NetworkVariable`, and the mirror has to be re-based on scene entry.
+
+**Verification.** The setter, the NetworkVariable change-only semantics and both peers were modelled
+and compiled: the model reproduces the bug (client stuck at 842 while the host reads 0), shows
+server re-writes failing to heal it, and shows `SyncLocalMirrorsFromNetwork` fixing it without
+clobbering a live mid-game value. Engine verification pending.
