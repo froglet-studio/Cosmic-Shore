@@ -254,7 +254,18 @@ namespace CosmicShore.Gameplay
             // subscribers attach (HUD / monitors / scoring all subscribe at turn
             // start, and AddPlayer raises OnPlayerAdded after this method).
             if (RoundStats is RoundStats statsComponent)
+            {
                 statsComponent.ClearEventSubscriptions();
+
+                // Re-base this peer's local stat mirrors on the SERVER's values. A client's
+                // mirrors drift whenever something assigns a stat locally - a mode's end-of-game
+                // snapshot ClientRpc is the common case - and the drift is unhealable, because a
+                // later server write of the same value raises no OnValueChanged. Without this a
+                // match started with every NON-HOST player still showing the previous game's
+                // score; the host was fine because its setters write the mirror and the
+                // NetworkVariable together. See RoundStats.SyncLocalMirrorsFromNetwork.
+                statsComponent.SyncLocalMirrorsFromNetwork();
+            }
 
             IsInitializedAsAI = NetIsAI.Value;
             Domain = NetDomain.Value;
