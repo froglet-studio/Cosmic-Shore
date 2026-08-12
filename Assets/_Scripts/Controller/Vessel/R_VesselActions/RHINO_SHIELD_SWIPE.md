@@ -50,11 +50,12 @@ do not copy it (follow-up below).
   event-driven approximation**: press = full stance + half chop (rate-limited by
   `swipeOutSeconds` so it reads as a swing), release = return (`returnSeconds`),
   cross-press hands the stance to the still-held side, and **both held = centered full
-  chop** (`diff 0, sum 2` — added with the energize ritual so binary inputs can charge
-  the blade AND remote peers replay the owner's two-trigger stance pose instead of a
-  one-sided swipe; see `RHINO_ENERGY_SWORD.md`). Touch and keyboard resolve no
-  action for these events (shared mapping has no entry), so they are unaffected; a
-  future mobile binding gets the event path for free.
+  chop** (`diff 0, sum 2` — added with the energize ritual so remote peers replay the
+  owner's two-trigger stance POSE instead of a one-sided swipe; the energize STANCE
+  itself is evaluated from the replicated trigger mirrors, not from these events, so
+  every peer reaches the same verdict — see `RHINO_ENERGY_SWORD.md`). Touch and
+  keyboard resolve no action for these events (shared mapping has no entry), so they
+  are unaffected; a future mobile binding gets the event path for free.
 
 ## Files
 

@@ -119,7 +119,7 @@ namespace CosmicShore.Gameplay
                 }
             }
 
-            FeedSwordStance(diffTarget, sumTarget);
+            FeedSwordStance();
 
             if (_diff == 0f && _sum == 0f && diffTarget == 0f && sumTarget == 0f) return;
 
@@ -147,16 +147,34 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// The energize gesture: both triggers pulled (sum high) and even (difference
-        /// near zero) — the lower/chop stance. Fed from the RAW targets, not the
-        /// smoothed pose, so the stance clock starts the frame the fingers commit.
+        /// near zero) — the lower/chop stance. Evaluated from the replicated trigger
+        /// MIRRORS (`InputStatus` n_lTrig/n_rTrig — Owner-write, Everyone-read), NOT the
+        /// local pose signals: the stance gates the supershield pop, which every client
+        /// executes in its own local prism sim, so the verdict must be computable
+        /// identically on every machine or one peer's energized blade pops a prism the
+        /// owner's world keeps (a divergent conserved prismscape). The owner writes the
+        /// mirrors from the same fingers that drive the pose; every peer runs the same
+        /// thresholds on the same values. Autopilot drops the stance on the owner's
+        /// machine (a paused InputController freezes the mirrors rather than zeroing
+        /// them; the remote-side residual of that freeze is the replication follow-up
+        /// in RHINO_ENERGY_SWORD.md).
         /// </summary>
-        void FeedSwordStance(float diffTarget, float sumTarget)
+        void FeedSwordStance()
         {
             var sword = Sword;
             if (sword == null) return;
 
-            bool inStance = sumTarget >= config.StanceSumThreshold
-                            && Mathf.Abs(diffTarget) <= config.StanceCenterEpsilon;
+            var input = _status?.InputStatus;
+            if (input == null || (_status.IsLocalUser && _status.AutoPilotEnabled))
+            {
+                sword.SetInStance(false);
+                return;
+            }
+
+            float lt = ApplyDeadzone(input.LeftTriggerAnalog);
+            float rt = ApplyDeadzone(input.RightTriggerAnalog);
+            bool inStance = lt + rt >= config.StanceSumThreshold
+                            && Mathf.Abs(rt - lt) <= config.StanceCenterEpsilon;
             sword.SetInStance(inStance);
         }
 

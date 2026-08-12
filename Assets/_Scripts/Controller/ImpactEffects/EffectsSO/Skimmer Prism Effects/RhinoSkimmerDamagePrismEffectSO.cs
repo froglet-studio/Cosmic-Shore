@@ -60,15 +60,17 @@ namespace CosmicShore.Gameplay
                  "hardened targets the sword exists to cut).")]
         [SerializeField] private float energyPerSuperShieldedPrism = 0.12f;
 
-        [Header("Bounce (super-shield, only when destroySuperShielded is off)")]
+        [Header("Bounce (super-shield contact while the blade is NOT energized)")]
         [Tooltip("Multiplier applied to current speed to compute bounce target speed.")]
         [SerializeField] private float bounceSpeedMultiplier = 0.85f;
 
         [Tooltip("Minimum absolute speed after bounce to ensure a visible recoil.")]
         [SerializeField] private float minBounceSpeed = 10f;
 
-        [Tooltip("How quickly we push the velocity towards the bounce vector (deltaV * dt * accelScale).")]
-        [SerializeField] private float accelScale = 20f;
+        [Tooltip("Seconds the recoil delta-V is applied over — a FIXED window, so the shove is " +
+                 "frame-rate independent (the old deltaV * dt * accelScale form handed ModifyVelocity " +
+                 "a frame-time-scaled DURATION: a 30 fps player got ~4x the recoil of a 120 fps one).")]
+        [SerializeField] private float bounceDurationSeconds = 0.35f;
 
         [Tooltip("If true, reflect against the prism's orientation; if false, just reverse the incoming course.")]
         [SerializeField] private bool usePrismNormalReflection = false;
@@ -181,8 +183,9 @@ namespace CosmicShore.Gameplay
             Vector3 desiredVel = bounceDir * targetSpeed;
             Vector3 deltaV     = desiredVel - currentVel;
 
-            // Nudge velocity towards the bounce target
-            status.VesselTransformer.ModifyVelocity(deltaV, Time.deltaTime * accelScale);
+            // Apply the recoil over a fixed window (frame-rate independent — this dispatch
+            // fires ONCE per contact entry, so nothing accumulates across frames).
+            status.VesselTransformer.ModifyVelocity(deltaV, bounceDurationSeconds);
 
             // Give the ship a quick, gentle spin towards the new heading (keeps roll natural)
             var up         = status.ShipTransform.up;
@@ -192,16 +195,19 @@ namespace CosmicShore.Gameplay
             status.VesselTransformer.GentleSpinShip(bounceDir, correctedUp, Mathf.Clamp01(spinStrength01));
         }
 
-        /// <summary>Super-shield detection: the prism's current block state.</summary>
+        /// <summary>Super-shield detection: the CANONICAL invulnerability flag — the same one
+        /// Prism.Damage/Consume early-return on and the shell tier gates contact ownership with
+        /// (PrismShellContactManager.ShellOwnsContact). NOT PrismStateManager.CurrentState:
+        /// SegmentSpawner's track super-shielding deliberately sets the flag while leaving the
+        /// legacy state machine at Normal (so state-keying missed every Skim-Race/HexRace track
+        /// prism — no pop, no bounce, no denied feedback), and Prism.ResetState clears the flag
+        /// on pool reuse without resetting CurrentState (so state-keying bounced ordinary reborn
+        /// mass, violating the ungated-cutting contract, and over-banked its kills).</summary>
         private static bool IsSuperShield(PrismImpactor prismImpactee)
         {
-            if (prismImpactee?.Prism == null || prismImpactee.Prism.prismProperties == null)
-                return false;
-
-            var prismRoot = prismImpactee.Prism.prismProperties.prism;
-            if (prismRoot == null) return false;
-
-            return prismRoot.CurrentState == BlockState.SuperShielded;
+            var prism = prismImpactee?.Prism;
+            if (prism == null) return false;
+            return prism.prismProperties is { IsSuperShielded: true };
         }
     }
 }

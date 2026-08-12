@@ -47,16 +47,28 @@ Energized ── stance left ──► tail: stays lit energizedTailSeconds (5 s
 tail elapsed ──► Cooldown (energizeCooldownSeconds, 5 s) ──► Idle
 ```
 
-- **Gesture source:** `ShieldSwipeActionExecutor.FeedSwordStance` feeds the RAW trigger targets
-  (not the smoothed pose) into `IRhinoSwordState.SetInStance` every frame — the same
-  reparameterized signals that pose the blade, so the energize gesture IS the chop pose the
-  player already knows. Thresholds live on `RhinoShieldSwipeConfig.asset`.
-- **Binary inputs energize too:** the event-driven path (touch bindings, remote replay)
-  synthesizes the stance when BOTH swipe holds are down (`diff 0, sum 2`) — which also fixes the
-  remote pose: peers now see the owner's centered chop instead of a one-sided swipe. AI never
-  pulls triggers, so AI Rhinos never energize (same limitation class as the analog swipe pose).
-- **A turn end / despawn / autopilot takeover mid-hold** drops the stance
-  (`ResetImmediate` → `SetInStance(false)`), so the sword can't be left charging forever.
+- **Gesture source — the replicated trigger MIRRORS, on every machine:**
+  `ShieldSwipeActionExecutor.FeedSwordStance` evaluates the stance from
+  `InputStatus.LeftTriggerAnalog`/`RightTriggerAnalog` (the `n_lTrig`/`n_rTrig`
+  NetworkVariables — Owner-write, Everyone-read) rather than the local pose signals. This is
+  load-bearing for the conserved prismscape: the stance gates the supershield pop, every client
+  executes that pop in its own local prism sim, and the owner's analog thresholds vs a remote's
+  binary event replay would give DIFFERENT verdicts (owner at half-pull: sum ~0.95, below 1.5;
+  remote both-held synthesis: sum 2) — one machine pops a prism the other keeps. The mirrors
+  make every peer run the identical thresholds on the identical values (deadzone-renormalized
+  the same way). The gesture is still the chop pose the player already knows; thresholds live
+  on `RhinoShieldSwipeConfig.asset`.
+- **Binary inputs energize too:** DualMouse writes 0/1 mirrors, so both held = sum 2. (Touch has
+  no swipe bindings today; a future touch binding should write the trigger mirrors to join in.)
+  The event path's both-held synthesis (`diff 0, sum 2`) remains for the POSE only — remote
+  peers see the owner's centered chop instead of a one-sided swipe. AI never pulls triggers, so
+  AI Rhinos never energize (same limitation class as the analog swipe pose).
+- **A turn end / despawn / autopilot takeover mid-hold** drops the stance (`ResetImmediate` →
+  `SetInStance(false)`, plus `FeedSwordStance`'s own owner-side autopilot guard — a paused
+  `InputController` FREEZES the mirrors rather than zeroing them), so the local sword can't be
+  left charging forever. The frozen mirrors' remote-side residual (a peer's replica reading
+  stale held values after the owner entered the lava lamp mid-hold) is the same acknowledged
+  class as the remote pose latch and is owned by the replication follow-up below.
 - **The resting-prism edge (v1's lesson, solved for BOTH contact tiers):** a super-shielded
   prism already resting against the blade when ignition lands gets no fresh `OnTriggerEnter` —
   and since the shell tier owns shielded contact, its pair was dispatched once on ENTRY and
@@ -258,7 +270,10 @@ same-GameObject pieces (`Skimmer`, `SkimmerSwingKinematics`, crackle, body rende
 On `RhinoShieldSwipeConfig.asset`: `stanceSumThreshold` 1.5 · `stanceCenterEpsilon` 0.4.
 
 On `RhinoSkimmerDamagePrismEffect.asset`: `inertia` 70 · `popRequiresEnergizedBlade` 1 ·
-`energyPerPrism` 0.04 · `energyPerSuperShieldedPrism` 0.12 · legacy bounce params · plus the
+`energyPerPrism` 0.04 · `energyPerSuperShieldedPrism` 0.12 · bounce params
+(`bounceSpeedMultiplier` 0.85 / `minBounceSpeed` 10 / `bounceDurationSeconds` 0.35 — a FIXED
+recoil window; the old `accelScale` passed `Time.deltaTime` into the modifier's duration, making
+the shove ~4× stronger at 30 fps than 120 fps) · plus the
 swing-model group `swingVelocityScale` 1 / `maxImpactSpeed` 0 / `proportionalDebris` 1 /
 `restitution` 0.333 / `debrisSpeedLimit` 200 (the last two move **together** with the other
 damage SOs and `PrismExplosion.prefab`'s speed band — see the swing-kinematics row in
@@ -319,11 +334,16 @@ On `RhinoSwordCrystalBurstEffect.asset`: `minExplosionScale` 60 · `maxExplosion
 ## Follow-ups
 
 - **Replication:** energy, energize state, and the blade's heat/flash look are
-  local-authoritative (same precedent as the analog swipe pose — remote peers now at least
-  replay the both-held stance pose, and their own driver runs its own energize machine off it,
-  but energy differs per peer so ignition timing can differ). If the lit blade should replicate
-  exactly, add an owner-write NetworkVariable for energy + energize phase on the driver,
-  mirroring the analog-replication follow-up in `RHINO_SHIELD_SWIPE.md`.
+  local-authoritative. The STANCE now converges across peers (evaluated from the replicated
+  trigger mirrors), but each machine still runs its own energize machine against its own
+  locally-banked energy, so ignition timing can differ when peers' energy tallies differ — and
+  a paused owner's frozen mirrors can hold a remote replica in-stance (the lava-lamp mid-hold
+  edge). The complete fix is an owner-write NetworkVariable for energy + energize phase on the
+  driver, mirroring the analog-replication follow-up in `RHINO_SHIELD_SWIPE.md`.
+- **Sibling dt-as-duration pattern:** `VesselDeviationByPrismEffectSO` and
+  `VesselSpinBySkimmerEffectSO` pass `Time.deltaTime * accelScale` into `ModifyVelocity`'s
+  DURATION exactly the way the sword's bounce used to — the same frame-rate dependence, on
+  paths this branch does not touch. Worth its own pass; not changed here.
 - **HUD:** the energize phase is exposed (`ShieldSkimmerScaleDriver.EnergizePhase`, `Charge01`)
   but not yet drawn — the blade itself is the readout. If playtests want a HUD echo, feed the
   Rhino HUD from those properties.
