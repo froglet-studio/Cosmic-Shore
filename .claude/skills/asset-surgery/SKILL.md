@@ -637,7 +637,58 @@ read**. The lesson generalizes:
   "Shielded…" whose `IsShielded` flag was actually `0`. Recover the geometry,
   fix the defects, and say which was which in the commit.
 
+## 4.8 Technique: headless FBX interrogation (takes, bones, curves, scale, mesh bounds)
+
+An FBX is a parseable binary, not a black box you must open Unity to ask about. The format
+(`Kaydara FBX Binary`, version at byte 23; ≥7500 uses u64 record headers, below u32) is a tree
+of named records with typed properties; arrays (`f d i l b`) carry an `(alen, encoding, clen)`
+header and are zlib-per-array when `encoding=1`. A ~60-line recursive parser answers questions
+that would otherwise cost a round-trip to a human at the editor:
+
+- **Which bones does each animation take actually move?** Walk `Objects` for typed ids
+  (`AnimationStack`/`AnimationLayer`/`AnimationCurveNode`/`AnimationCurve`/`Model`), walk
+  `Connections` (`C` records: OO/OP src→dst), then per stack: layer → curve nodes → `OP` edges
+  to `Model` names. Decompress each curve's `KeyValueFloat`/`KeyTime` and report ranges —
+  constant curves are baked filler; the moving bone is the animation. This is how "Missile
+  Launch 1 = RIGHT bay (`b_Missile.R`), departs 0.4s, peaks 0.64s of 0.88s" was established
+  as fact instead of assumption. `KeyTime` is in KTime ticks: divide by 46,186,158,000/s.
+- **Will a donor clip retarget onto another model's rig?** Provable statically: (1) bone NAME
+  sets equal (`strings -n 3 file.fbx | grep '^b_'` is the quick first pass; the parser for
+  rigor); (2) same armature/root object name, since Unity binds clip curves by transform PATH
+  relative to the animator root; (3) the **numeric scale product matches** — read
+  `GlobalSettings.UnitScaleFactor` from the FBX AND `globalScale`/`useFileScale` from the
+  `.meta`, then compare products (SparrowModel1: FBX-unit 100 × meta 1; SparrowModel4:
+  FBX-unit 1 × meta 100 — equal, so translation curves land 1:1). Curves targeting nodes the
+  target model lacks simply never bind — harmless.
+- **Rest poses / pivot positions** without a scene: `Model` records' `Properties70 → P` entries
+  for `Lcl Translation/Rotation/Scaling` give every bone's authored rest TRS (how the bay-bone
+  positions and the 0.2034 armature scale were read).
+- **Mesh size and orientation**: decompress `Geometry → Vertices`, take bounds; identify a
+  mesh's "nose" by comparing cross-section extents near each end of its long axis (the
+  radially-symmetric end is the nose, the asymmetric one is the fins).
+
 ## 5. Traps learned the hard way (check these BEFORE debugging for an hour)
+
+- **Unity's FBX importer derives subasset fileIDs from OBJECT NAMES, so two different FBX
+  files that share object names mint the SAME local fileIDs.** Two consequences, one good,
+  one a false-alarm generator. Good: a prefab's `m_Modifications` against model A's instance
+  survive re-pointing the instance to model B when the node names match (the branch swap of
+  SparrowModel1→SparrowModel4 worked this way), and a mesh reference like
+  `{fileID: -3416553540687559647, guid: <fbx>}` is reproducible by committing the same FBX +
+  `.meta` — no editor import needed to know the id. False alarm: grepping the repo for a bare
+  local fileID to find "external references" hits every sibling asset that shares lineage
+  (seven projectile prefabs all declare their own `&6972185831030386429`) — a REAL cross-asset
+  reference must carry the target's `guid:` on the same line, so grep for the guid, not the id.
+- **The deliverable you were asked to integrate may exist only on an abandoned remote branch.**
+  Local clones here are shallow and single-branch: `git log --all --grep` + `git ls-remote origin`
+  to find the branch, `git fetch origin <branch>`, then extract exact assets with
+  `git show '<branch>:<path>' > file` and byte-verify (`md5sum` vs `git show | md5sum`).
+  Keep the original `.meta` GUIDs so every reference authored against the asset on that branch
+  (animator states by clip internalID, prefab mesh refs) resolves without rewiring — and diff
+  the branch's version of any SHARED file against trunk's before adopting it wholesale: adopt
+  only when the base is byte-identical and the diff is purely additive (the Sparrow animator
+  controller was; the Sparrow prefab was NOT — it had swapped the visible model, which trunk
+  must not).
 
 - **`$` in a .NET regex does NOT match before `\r`, so every line-anchored pattern
   fails on a Windows checkout.** In multiline mode `$` matches before the `\n` but
