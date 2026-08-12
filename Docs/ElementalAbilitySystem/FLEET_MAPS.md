@@ -188,6 +188,21 @@ HUD: the shared upgrade-highlight system (`VesselHUDView.abilityIcons` + base
 icons (boost gauge / drift / impact / tube); other vessels adopt by filling their view's
 `abilityIcons` bindings — no code.
 
+### Mantis — "the striker" (Astro-League-only: drift + throttle + nudge-strike + wall) — PROPOSED, NOT A VESSEL YET
+
+The vessel itself is a proposal (`VesselClassType.Mantis = 12` does not exist). Full design —
+controls, the ball-launch platform change, wall/crystal economy, ecology retune, registration
+checklist — lives in `_Scripts/Controller/Vessel/R_VesselActions/MANTIS.md`; this table is the
+map row awaiting markup. All map multipliers pinned to 1, scaling on authored
+fields/ElementalFloats (the Dolphin no-double-dip pattern).
+
+| Element | Quantitative (proposed) | Proposed L5 upgrade |
+|---|---|---|
+| Charge | Mantis Strike ball-launch impulse (`ballLaunchSpeedMultiplierAtFullCharge`, 140→280 u/s, ball cap 300) | **Surgical Strike** — the strike cone spares your own domain (per-fire `AffectSelfOverride`, the Dolphin "Clean Blast" primitive; base kit shreds friendly mass) |
+| Mass | drift-trail prism VOLUME (`trailVolume` ElementalFloat 1→2.5 — the Squirrel/Dolphin field) | **Ablative Wake** — trail prisms arrive shielded ONLY while drifting (`massUpgradeShieldsTrail` + `IsDrifting`, zero new code; note vs the Astro League ball a shield is a free pass, not armor) |
+| Space | Bulwark wall placement DISTANCE (`placementDistanceElemental` ElementalFloat 150→300) | **Deep Wall** — the Bulwark arrives two panes deep for the same one charge (double the ball-braking transit) |
+| Time | throttle ceiling (`ThrottleScalerMultiplier` ElementalFloat 1→1.5 — the existing dormant `VesselTransformer` field, enabled) | **Hair Trigger** — throttle response becomes immediate (`SetSpeedTrackingRate`, the Rhino ramp primitive, replacing the 1.5/s exponential lerp) |
+
 ## 3. Implementation notes for approved rows
 
 - Executor-side gate on `IsUpgradeActive(element)` at use time; per-use snapshot; AI gets it
