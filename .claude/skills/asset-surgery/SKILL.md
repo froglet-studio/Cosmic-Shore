@@ -331,9 +331,14 @@ of which compiled clean and shipped):
    fixed, prove it by deleting the `using` again and watching it fail.
 2. **Desugar what mcs 6.8 (C# 7.x) cannot parse but Unity (C# 9) can** — in a
    THROWAWAY COPY, never the real file: target-typed `new(...)` → `new T(...)`,
-   `x is A or B` → `(x == A || x == B)`. Assert zero bare `new(` remain, or the
-   parse dies at the first one and every later error is cascade noise that will
-   waste your time.
+   `x is A or B` → `(x == A || x == B)`, `x ??= y` → `x = x ?? y`, property
+   patterns `x is { Y: true }` → `x != null && x.Y`, switch EXPRESSIONS → ternary
+   chains, `async UniTaskVoid` → `async void` (mcs lacks the AsyncMethodBuilder
+   plumbing), and — the one that says "Internal compiler error … type pattern
+   matching" instead of a sane message — **type-pattern `switch` STATEMENTS**
+   (`case VesselImpactor shipImpactor:`) → an `as`-cast if/else chain (mcs never
+   implemented them at all). Assert zero bare `new(` remain, or the parse dies at
+   the first one and every later error is cascade noise that will waste your time.
 3. `mcs -target:library -langversion:latest -out:/dev/null Stubs.cs <files>`.
 4. Ignore a `CS0436` warning about a type you stubbed that Mono's BCL also has
    (e.g. `System.HashCode`) — harness artifact, not a finding.
