@@ -9,11 +9,18 @@ namespace CosmicShore.Gameplay
     /// Menu_Main camera driver - a plain-transform camera rig with NO Cinemachine.
     ///
     /// While the menu is in autopilot (lava-lamp) state this component drives the scene's
-    /// main camera directly, framing the LOCAL VESSEL through one of a set of
-    /// <see cref="MenuCameraConfigSO"/> configurations (orbit, cinematic trail, tight chase,
-    /// top-down pan). The vessel target is structural: configs carry framing only and the
-    /// controller resolves <c>GameDataSO.LocalPlayer.Vessel</c> every frame - there is no way
-    /// to author a menu camera that points at anything else.
+    /// main camera directly through one of a set of <see cref="MenuCameraConfigSO"/>
+    /// configurations. What each one frames is structural - it follows from the config's
+    /// <see cref="MenuCameraRigKind"/>, resolved here every frame, and a config carries no target
+    /// field with which to point a menu camera at anything else:
+    ///
+    ///   • orbit / cinematic trail / tight chase / top-down pan frame the LOCAL VESSEL
+    ///     (<c>GameDataSO.LocalPlayer.Vessel</c>).
+    ///
+    ///   • <see cref="MenuCameraRigKind.LavaLamp"/> frames the CELL - a distant, very slow orbit
+    ///     of the cell centre aimed at its crystal, with the vessel merely one of the things
+    ///     drifting through the shot. Being vessel-free, it is the one rig that runs from scene
+    ///     load rather than waiting on the spawn chain.
     ///
     /// Transitions to/from the gameplay camera ("CM PlayerCam" / <see cref="CustomCameraController"/>,
     /// which this class never modifies) blend between two LIVE, vessel-anchored endpoints:
@@ -79,14 +86,21 @@ namespace CosmicShore.Gameplay
         }
 
         [Header("Camera Configurations")]
-        [SerializeField, Tooltip("The set of menu camera configurations. Every configuration frames " +
-                                 "the LOCAL VESSEL - the target is structural and cannot be changed " +
-                                 "per config. Index 0 (or Initial Config Index) is the boot framing. " +
-                                 "Leave empty to fall back to built-in defaults of all four rig kinds.")]
+        [SerializeField, Tooltip("The set of menu camera configurations. What a configuration frames " +
+                                 "is structural - it comes from the rig kind (the local vessel, or the " +
+                                 "cell for the lava lamp) and cannot be retargeted per config. Index 0 " +
+                                 "(or Initial Config Index) is the boot framing. Leave empty to fall " +
+                                 "back to built-in defaults of every rig kind.")]
         MenuCameraConfigSO[] _configs;
 
         [SerializeField, Tooltip("Which configuration to start with.")]
         int _initialConfigIndex = 0;
+
+        [Header("Cell Framing (LavaLamp)")]
+        [SerializeField, Tooltip("Cell runtime data, used by the LavaLamp rig for the cell centre it " +
+                                 "orbits and the crystal it aims at. Optional: with none wired the rig " +
+                                 "finds the nearest active cell instead, and aims at the cell centre.")]
+        CellRuntimeDataSO _cellData;
 
         [Header("Config Switching")]
         [SerializeField, Tooltip("If enabled, the active configuration rotates randomly while in menu " +
@@ -133,15 +147,16 @@ namespace CosmicShore.Gameplay
         MenuCameraState _state = MenuCameraState.Idle;
         int _activeConfigIndex;
 
-        // Rig simulation state.
+        // Rig simulation state. _lastFramingCenter tracks whatever the ACTIVE config is anchored
+        // to (vessel or cell), which is what the teleport guard must watch.
         Vector3 _rigPos;
         Vector3 _rigVel;
         Quaternion _rigRot = Quaternion.identity;
         float _rigFov = 60f;
         float _orbitPhaseDeg;
         Quaternion _trailYawAnchor = Quaternion.identity;
-        Vector3 _lastTargetPos;
-        bool _hasLastTargetPos;
+        Vector3 _lastFramingCenter;
+        bool _hasLastFramingCenter;
         float _switchGlide;      // 1 → 0 after a config switch; scales the smoothing boost
         float _switchTimer;
 
@@ -153,11 +168,24 @@ namespace CosmicShore.Gameplay
         float _exitFov = 60f;
         Vector3 _lastGameplayOffset = DefaultGameplayOffset;
 
-        /// <summary>The configuration currently framing the vessel.</summary>
+        /// <summary>The configuration currently driving the rig (vessel- or cell-framing).</summary>
         public MenuCameraConfigSO ActiveConfig =>
             _configs is { Length: > 0 }
                 ? _configs[Mathf.Clamp(_activeConfigIndex, 0, _configs.Length - 1)]
                 : null;
+
+        /// <summary>
+        /// Whether the active configuration cannot frame anything until a vessel exists. False
+        /// only for the lava lamp, which frames the cell and therefore runs from scene load.
+        /// </summary>
+        bool ActiveConfigRequiresVessel
+        {
+            get
+            {
+                var config = ActiveConfig;
+                return !config || config.RequiresVessel;
+            }
+        }
 
         /// <summary>
         /// How long the menu↔freestyle blend lasts for the active configuration. Read by
@@ -182,10 +210,11 @@ namespace CosmicShore.Gameplay
             DeactivateLegacyMenuVCam();
             SubscribeEvents();
 
-            // If the local pair was already initialized before this scene object subscribed
-            // (OnClientReady raced the scene load), take over now instead of waiting for a
-            // re-raise that may never come.
-            if (ResolveTarget())
+            // Take over now if the local pair was already initialized before this scene object
+            // subscribed (OnClientReady raced the scene load) - or if the boot config frames the
+            // cell rather than a vessel, in which case there is nothing to wait for and the lava
+            // lamp should already be running while the vessel spawns.
+            if (ResolveTarget() || !ActiveConfigRequiresVessel)
                 ActivateMenuCameraImmediate();
         }
 
@@ -320,6 +349,15 @@ namespace CosmicShore.Gameplay
                     c.positionSmoothTime = 1.5f;
                     c.rotationSharpness = 2f;
                     c.blendDuration = 1.8f;
+                }),
+                // Mirrors MenuCam_LavaLamp1.asset - see that asset for the derivation of these
+                // numbers from the legacy Cinemachine rig.
+                Make("MenuCam_LavaLamp1 (default)", c =>
+                {
+                    c.rigKind = MenuCameraRigKind.LavaLamp;
+                    c.positionSmoothTime = 0.3f;
+                    c.rotationSharpness = 0.45f;
+                    c.blendDuration = 2f;
                 }),
             };
         }
@@ -485,9 +523,9 @@ namespace CosmicShore.Gameplay
             _rigRot = rot;
             _rigVel = Vector3.zero;
             _rigFov = fov;
-            _hasLastTargetPos = false;
+            _hasLastFramingCenter = false;
             _switchGlide = 1f;
-            SeedOrbitPhase(target.position);
+            SeedOrbitPhase(ResolveFramingCenter(ActiveConfig, target));
             if (MenuCameraConfigSO.TryGetYawAnchor(target.rotation, out var yawAnchor))
                 _trailYawAnchor = yawAnchor;
 
@@ -500,7 +538,9 @@ namespace CosmicShore.Gameplay
 
         void UpdateMenuState(Transform target, float dt)
         {
-            if (!target) return; // hold the current framing until the vessel exists
+            // Hold the current framing until the vessel exists - unless the active config frames
+            // the cell (lava lamp), which needs no vessel and so runs from scene load.
+            if (!target && ActiveConfigRequiresVessel) return;
 
             TickRandomSwitch(dt);
             ApplyPose(SimulateRig(target, dt));
@@ -565,21 +605,24 @@ namespace CosmicShore.Gameplay
         CameraPose SimulateRig(Transform target, float dt)
         {
             var config = ActiveConfig;
-            Vector3 targetPos = target.position;
-            Quaternion targetRot = target.rotation;
+            Quaternion targetRot = target ? target.rotation : Quaternion.identity;
 
-            HandleTargetDiscontinuity(targetPos);
+            // What the rig is anchored to, and what it aims at, are both decided by the rig kind -
+            // the vessel for every vessel kind, the cell (and its crystal) for the lava lamp.
+            Vector3 framingCenter = ResolveFramingCenter(config, target);
+            Vector3 lookPoint = ResolveLookPoint(config, target, framingCenter);
+
+            HandleAnchorDiscontinuity(framingCenter);
 
             // Track the vessel's heading for yaw-only offsets; hold the last good anchor while
             // the vessel points straight up/down so the framing never flips.
-            if (MenuCameraConfigSO.TryGetYawAnchor(targetRot, out var yawAnchor))
+            if (target && MenuCameraConfigSO.TryGetYawAnchor(targetRot, out var yawAnchor))
                 _trailYawAnchor = yawAnchor;
             Quaternion offsetAnchor = config.yawOnlyOffset ? _trailYawAnchor : targetRot;
 
-            if (config.rigKind == MenuCameraRigKind.OrbitVessel)
-                _orbitPhaseDeg = Mathf.Repeat(_orbitPhaseDeg + config.orbitDegreesPerSecond * dt, 360f);
+            _orbitPhaseDeg = Mathf.Repeat(_orbitPhaseDeg + config.OrbitDegreesPerSecond * dt, 360f);
 
-            Vector3 desired = config.ComputeDesiredPosition(targetPos, offsetAnchor, _orbitPhaseDeg);
+            Vector3 desired = config.ComputeDesiredPosition(framingCenter, offsetAnchor, _orbitPhaseDeg);
 
             float glide = SmootherStep01(_switchGlide);
             float positionSmoothTime = Mathf.Max(
@@ -594,8 +637,8 @@ namespace CosmicShore.Gameplay
                 : Vector3.SmoothDamp(_rigPos, desired, ref _rigVel, positionSmoothTime,
                                      float.PositiveInfinity, dt);
 
-            Vector3 lookDirection = targetPos - _rigPos;
-            Vector3 upHint = config.ComputeLookUpHint(targetRot);
+            Vector3 lookDirection = lookPoint - _rigPos;
+            Vector3 upHint = config.ComputeLookUpHint(targetRot, lookDirection);
             if (SafeLookRotation.TryGet(lookDirection, upHint, out var lookRotation, this, logError: false))
             {
                 _rigRot = rotationSharpness <= 0f
@@ -612,15 +655,19 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// A follow-target jump far beyond flight speed is a teleport (spawn park, SetPose
+        /// A framing-anchor jump far beyond flight speed is a teleport (spawn park, SetPose
         /// home, vessel swap) - translate the rig along with it so relative framing is
         /// preserved, instead of swooping across the arena to "catch" the vessel.
+        ///
+        /// Config switches clear the history rather than relying on this: swapping between a
+        /// vessel rig and the cell-anchored lava lamp legitimately moves the anchor, and that is
+        /// a re-anchor to glide into, not a teleport to carry the rig along with.
         /// </summary>
-        void HandleTargetDiscontinuity(Vector3 targetPos)
+        void HandleAnchorDiscontinuity(Vector3 framingCenter)
         {
-            if (_hasLastTargetPos)
+            if (_hasLastFramingCenter)
             {
-                Vector3 delta = targetPos - _lastTargetPos;
+                Vector3 delta = framingCenter - _lastFramingCenter;
                 if (delta.sqrMagnitude > TeleportStep * TeleportStep)
                 {
                     _rigPos += delta;
@@ -628,8 +675,50 @@ namespace CosmicShore.Gameplay
                 }
             }
 
-            _lastTargetPos = targetPos;
-            _hasLastTargetPos = true;
+            _lastFramingCenter = framingCenter;
+            _hasLastFramingCenter = true;
+        }
+
+        // ── Framing Resolution ──────────────────────────────────────────
+
+        /// <summary>
+        /// What the active configuration orbits/offsets from: the vessel for every vessel rig,
+        /// the CELL CENTRE for the lava lamp. The cell resolves from the wired runtime data, and
+        /// falls back to the nearest active cell so the rig works with nothing wired.
+        /// </summary>
+        Vector3 ResolveFramingCenter(MenuCameraConfigSO config, Transform target)
+        {
+            if (config != null && config.rigKind == MenuCameraRigKind.LavaLamp)
+                return ResolveCellCenter();
+
+            return target ? target.position : _rigPos;
+        }
+
+        /// <summary>
+        /// The point the camera aims at: the vessel for every vessel rig; for the lava lamp the
+        /// cell's crystal (the original behaviour - the respawning crystal is what gives the shot
+        /// its slow drift), falling back to the cell centre whenever no crystal exists.
+        /// </summary>
+        Vector3 ResolveLookPoint(MenuCameraConfigSO config, Transform target, Vector3 framingCenter)
+        {
+            if (config == null || config.rigKind != MenuCameraRigKind.LavaLamp)
+                return target ? target.position : _rigPos + _rigRot * Vector3.forward;
+
+            // TryGetLocalCrystal (not the CrystalTransform property) - the property logs a warning
+            // when the cell has no crystal, which at one call per frame would be a log flood.
+            if (config.lavaLampAimAtCrystal && _cellData && _cellData.TryGetLocalCrystal(out var crystal) && crystal)
+                return crystal.transform.position;
+
+            return framingCenter;
+        }
+
+        Vector3 ResolveCellCenter()
+        {
+            var cellTransform = _cellData ? _cellData.CellTransform : null;
+            if (cellTransform) return cellTransform.position;
+
+            var nearest = Cell.FindNearestActiveCell(Vector3.zero);
+            return nearest ? nearest.transform.position : Vector3.zero;
         }
 
         // ── Gameplay Pose (freestyle endpoint) ──────────────────────────
@@ -679,8 +768,13 @@ namespace CosmicShore.Gameplay
 
             _activeConfigIndex = index;
             _switchGlide = 1f;
-            if (_hasLastTargetPos)
-                SeedOrbitPhase(_lastTargetPos);
+
+            // The framing anchor can change with the config (a vessel rig anchors on the vessel,
+            // the lava lamp on the cell), so drop the discontinuity history - the anchor swap must
+            // not be read as a teleport - and re-seed the orbit phase at the camera's current
+            // bearing around the NEW anchor so the switch glides instead of dragging the rig round.
+            _hasLastFramingCenter = false;
+            SeedOrbitPhase(ResolveFramingCenter(ActiveConfig, ResolveTarget()));
         }
 
         void TickRandomSwitch(float dt)
@@ -716,28 +810,23 @@ namespace CosmicShore.Gameplay
             _rigRot = _cam.transform.rotation;
             _rigVel = Vector3.zero;
             _rigFov = _cam.fieldOfView;
-            _hasLastTargetPos = false;
+            _hasLastFramingCenter = false;
             _switchGlide = 1f;
 
             var target = ResolveTarget();
-            if (target)
-            {
-                SeedOrbitPhase(target.position);
-                if (MenuCameraConfigSO.TryGetYawAnchor(target.rotation, out var yawAnchor))
-                    _trailYawAnchor = yawAnchor;
-            }
+            SeedOrbitPhase(ResolveFramingCenter(ActiveConfig, target));
+            if (target && MenuCameraConfigSO.TryGetYawAnchor(target.rotation, out var yawAnchor))
+                _trailYawAnchor = yawAnchor;
         }
 
         /// <summary>
-        /// Starts the orbit at the camera's current bearing around the vessel so an orbit
+        /// Starts the orbit at the camera's current bearing around the framing anchor so an orbit
         /// config picks up from where the camera already is instead of dragging it around.
         /// </summary>
-        void SeedOrbitPhase(Vector3 targetPos)
+        void SeedOrbitPhase(Vector3 framingCenter)
         {
-            Vector3 flat = Vector3.ProjectOnPlane(_rigPos - targetPos, Vector3.up);
-            _orbitPhaseDeg = flat.sqrMagnitude < 1e-4f
-                ? 0f
-                : Vector3.SignedAngle(Vector3.back, flat, Vector3.up);
+            var config = ActiveConfig;
+            _orbitPhaseDeg = config ? config.ComputeOrbitPhaseDegrees(_rigPos - framingCenter) : 0f;
         }
 
         void ApplyPose(in CameraPose pose)
