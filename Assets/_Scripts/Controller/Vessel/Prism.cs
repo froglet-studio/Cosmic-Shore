@@ -46,8 +46,17 @@ namespace CosmicShore.Gameplay
         public bool IsSmallest;
         public bool IsLargest;
         
-        [Header("Team Ownership")] 
+        [Header("Team Ownership")]
         public string ownerID;
+
+        // Projectile-immunity window (Time.time deadline): while it is in the future,
+        // NO projectile impacts this prism (Projectile.DisallowImpactOnPrism). The
+        // Sparrow turret stamps it on each fired prism — covering the flight (the prism
+        // is parked live at the anchor the whole way) plus a short settle after
+        // placement — so a shot cannot destroy its own delivery and a spray does not
+        // erase its own freshest output. 0 = no immunity. Non-serialized; cleared on
+        // pool reuse in ResetState.
+        public float ProjectileImmuneUntil { get; set; }
 
         [Header("Event Channels")]
         [SerializeField] ScriptableEventPrismStats _onTrailBlockCreatedEventChannel;
@@ -465,8 +474,12 @@ namespace CosmicShore.Gameplay
         /// otherwise the live prism mesh — except while an exotic visual owns rendering,
         /// where <c>meshFilter.sharedMesh</c> is transient per-prism morph geometry that
         /// must never reach Entities Graphics (see <see cref="_authoredMesh"/>).
+        ///
+        /// Internal rather than private because it is also the right answer for anything
+        /// sizing a clock animation's <c>RenderBounds</c> envelope: a shielded prism must
+        /// be measured against its octahedron, not the box it would otherwise report.
         /// </summary>
-        Mesh EffectiveRenderMesh()
+        internal Mesh EffectiveRenderMesh()
         {
             if (_renderMeshOverride != null) return _renderMeshOverride;
             if (_exoticVisualActive) return _authoredMesh;
@@ -697,6 +710,7 @@ namespace CosmicShore.Gameplay
             destroyed = false;
             devastated = false;
             _destroyedByCreature = false; // pool reuse: clear stale creature-kill flag
+            ProjectileImmuneUntil = 0f;   // pool reuse: immunity never survives into a new life
 
             // Pool-reuse safety: no spawner requests super-shield via prismProperties
             // before Initialize (it's engaged post-spawn via ActivateSuperShield /

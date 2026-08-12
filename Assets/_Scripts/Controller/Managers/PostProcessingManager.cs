@@ -31,10 +31,15 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Drive the speed-tunnel Panini projection as a SIGNED offset on top of the
-        /// profile's own Panini state (the Rhino's tunnel pulls it negative, below the
-        /// shared baseline). Pairs with a camera FOV narrow (see
-        /// <see cref="SpeedTunnelEffectController"/>) to produce a quasi dolly zoom
-        /// without moving the camera. 0 restores exactly the pre-effect home state.
+        /// profile's own Panini state (the tunnel pulls it negative, below the shared
+        /// baseline). Pairs with a camera FOV narrow to produce a quasi dolly zoom without
+        /// moving the camera. 0 restores exactly the pre-effect home state.
+        ///
+        /// SINGLE WRITER: this is one global override with no ref-counting, so the last
+        /// caller wins and any caller passing 0 releases everyone else's effect. The only
+        /// sanctioned driver is the <c>VesselSpeedTunnel</c> platform law
+        /// (Docs/SPEED_TUNNEL.md) — do not add a second caller, and in particular do not
+        /// drive this from a per-vessel component, which races itself across a vessel swap.
         /// </summary>
         public void SetSpeedTunnelPanini(float offset)
         {

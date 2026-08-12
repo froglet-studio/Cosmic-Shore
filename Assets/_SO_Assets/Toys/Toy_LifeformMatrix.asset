@@ -50,6 +50,12 @@ MonoBehaviour:
     - {fileID: 11400000, guid: d6d14731fd184959b837ab47e378f813, type: 2}
     - {fileID: 11400000, guid: 0e87f3117e7141a7b5bce66b0385a2d0, type: 2}
     - {fileID: 11400000, guid: c7ff7791587d4467ba9fbe88358b2119, type: 2}
+  - Name: Worm Colony
+    ElementConfigs:
+    - {fileID: 11400000, guid: c1a7e2b45f0d4c1e8a6b9d3f2e7c5a10, type: 2}
+    - {fileID: 11400000, guid: a3d59c8e71b24f6a9c0e4d8b5f172c33, type: 2}
+    - {fileID: 11400000, guid: e7f1b3a2c9d84e5fb6a08c7d4e392b55, type: 2}
+    - {fileID: 11400000, guid: b9c4d7e2a1f34b8cd5e6f0a39b8d1c77, type: 2}
   floraSpecies:
   - Name: Gyroid
     ElementConfigs:

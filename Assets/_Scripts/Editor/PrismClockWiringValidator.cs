@@ -37,9 +37,10 @@ namespace CosmicShore.Editor
                     "_GrowStartTime", "_GrowRate", "_GrowStartFrac",
                     "_ColorStartTime", "_ColorDuration",
                     "_StartBrightColor", "_StartDarkColor", "_StartSpread",
+                    "_FlightStartTime", "_FlightDuration", "_FlightVelocity",
                 },
                 OptionalProps = new string[0],
-                Purpose = "grow-in bloom (PrismGrowScale, vertex) + color/state transitions (PrismColorLerp, fragment)",
+                Purpose = "grow-in bloom (PrismGrowScale, vertex) + color/state transitions (PrismColorLerp, fragment) + ballistic flight (PrismFlightClock, vertex)",
             },
             new GraphSpec
             {
@@ -53,9 +54,10 @@ namespace CosmicShore.Editor
                     "_GrowStartTime", "_GrowRate", "_GrowStartFrac",
                     "_ColorStartTime", "_ColorDuration",
                     "_StartBrightColor", "_StartDarkColor", "_StartSpread",
+                    "_FlightStartTime", "_FlightDuration", "_FlightVelocity",
                 },
                 OptionalProps = new string[0],
-                Purpose = "explosion debris flight/shatter/fade (PrismExplosionClock) + transparent live prism bloom/color",
+                Purpose = "explosion debris flight/shatter/fade (PrismExplosionClock) + transparent live prism bloom/color/flight",
             },
             new GraphSpec
             {
@@ -133,10 +135,14 @@ namespace CosmicShore.Editor
                 // Secondary CF nodes: BlockGraph carries the color lerp;
                 // ExplodingBlockGraph carries the grow + color clusters too
                 // (transparent live prisms bloom and fade colors on this graph).
+                // BlockGraph also carries PrismFlightSqrDistance — the flight-corrected
+                // camera distance that replaced the pivot-based SqrDistanceSubGraph feed
+                // (a flying prism's pivot is parked at the flight end point, so the
+                // distance-driven spread read full-range for the whole flight).
                 string[] extraFunctions = spec.GraphName == "BlockGraph"
-                    ? new[] { "PrismColorLerp" }
+                    ? new[] { "PrismColorLerp", "PrismFlightClock", "PrismFlightSqrDistance" }
                     : spec.GraphName == "ExplodingBlockGraph"
-                        ? new[] { "PrismGrowScale", "PrismColorLerp" }
+                        ? new[] { "PrismGrowScale", "PrismColorLerp", "PrismFlightClock" }
                         : new string[0];
                 foreach (var fn in extraFunctions)
                 {

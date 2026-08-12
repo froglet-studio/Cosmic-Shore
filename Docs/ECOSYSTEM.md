@@ -1345,8 +1345,11 @@ as a petal surge that settles back to 10.
 - **Manager-spawned fauna** (`LightFaunaManager.SpawnGroup`, `BoidManager.SpawnBoids` — the
   dead scene-population paths wired through the removed `Cell.fauna2` field, §7) never enter
   `Cell.LiveFauna`, so they would drop collectibles without having granted a buff — acceptable
-  while those paths stay dead; fold them into `AssignLineage` if they ever revive. Segment
-  fauna (worms) carry no per-segment crystal → no buff, no drop → consistent.
+  while those paths stay dead; fold them into `AssignLineage` if they ever revive. Worm colony
+  segments (§21): body segments carry no crystal (body parts, not lifeforms — no buff, no
+  drop); head/tail capital segments DO carry and drop hearts but are not lineage-registered,
+  so they grant no buff either — drop-without-buff is a deliberate §21 ruling (a kaiju must
+  not destabilize the elemental economy), not the manager-fauna accident described above.
 - **Client-local divergence:** fauna have no NetworkObject and element levels don't replicate,
   so peers can disagree on exact buff values — the same accepted divergence the fauna sim
   itself has (§7 caveat 4). Each client is self-consistent. Server-authoritative pools are the
@@ -2460,3 +2463,719 @@ food. Ribcage sidesteps it (`FaunaFoodFloor 0` — the release tier is the real 
 the honest fix is to net shielded volume out of that signal. It is the population bound
 for every biome, so it deserves its own change and its own verification rather than
 riding along here.
+
+## 23. The worm colony kaiju — a connected population as a boss fight (Aug 2026)
+
+The worm returns as what it was always meant to be: a **colony fauna** — head, body
+segment, and tail are three fauna types forming one connected population — rebuilt from
+scratch on the modern `Fauna` substrate as a cooperative **kaiju boss**. The 2024 trio
+(`Worm`/`WormManager`/`BodySegmentFauna`) and its ten orphaned prefabs were audited across
+every prior attempt (shipped shell, ancient commits, the `Sharks-and-worms` branch) and
+**deleted**: movement had been commented out since Aug 2024, growth ran on a wall clock,
+segments died crystal-less into immortal zombies, and the parent-chained transforms made
+slither structurally impossible. What survived is the *design*: the three-type colony
+decomposition, split-on-mid-death, regrow-the-missing-end, danger-armed extremities (the
+danger-block system was literally born for this worm in 2024), and the follow-the-leader
+movement model — plus the `Sharks-and-worms` branch's telegraph→burst attack grammar.
+
+### 23.1 The creature
+
+- **`WormFauna`** (colony brain, `FloraAndFauna/WormFauna.cs`) — the lineage-registered
+  Fauna the spawner sees (`WormColonyFaunaConfig.asset` → `WormColony.prefab`). One
+  behavior tick and one movement pass drive the whole chain. Classified **Predator** so
+  the food web never targets it (nothing eats a kaiju); `Predated` is sealed to false —
+  the segments are the killable surface. Its `ResolveGoal` inheritance means the boss
+  hunts the same density targets every fauna does, phase-escalated by the cell.
+- **`WormSegmentFauna`** (`WormSegmentRole` Head/Body/Tail, three prefabs:
+  `WormHeadSegment`/`WormBodySegment`/`WormTailSegment.prefab`) — each segment is a
+  genuine fauna: body `HealthPrism`s under a `Spindle` (LifeForm deliberately null — a
+  creature body, not consumable cell mass), registered in `PrismSpatialIndex` and synced
+  per frame (movers contract). Head and tail author **danger prisms** (`DangerBlock`
+  instances — the standard domain-blind danger effect chain does all contact damage) and
+  carry an elemental **heart** provisioned to the authored element
+  (`LifeFormCrystal.EnsureElementalCrystal(this, heartElement)` — the element-as-data
+  channel). Body segments carry one high-volume core prism (volume is the spine — big
+  volume, ONE collider).
+
+### 23.2 The fight (all of it emergent from the rules)
+
+- **Kill a BODY segment** (its core prism) → the worm **splits in two**; both halves
+  begin regrowing their missing ends. Mid-body kills multiply the problem.
+- **Kill an END** (strip its danger prisms, or joust its heart — hearts are joustable,
+  and `CurrentSpeed` is the live head speed, so out-race the kaiju to joust it) → the
+  heart drops as a collectible (mass conserved), and the wound's neighbor
+  **differentiates** into the missing role after `EndRegrowSeconds` — danger prisms
+  engage through `MakeDangerous` (a state change of existing mass, the same legal class
+  as shield regen; the worm still net-shrank by one segment).
+- **The optimal strategy emerges**: chain end-kills faster than the differentiation
+  window and you always face soft tissue; slower, and every kill is armored. This is
+  the "best killed tail-to-head or head-to-tail, and fast" rule — never scripted,
+  purely a consequence of split + differentiation timing.
+- **An APEX OMNIVORE that also hunts pilots.** The head is the colony's mouth and it
+  works three ways at once: it **grazes prism mass** by the canonical herbivore rule
+  (`Cell.IsPreyForHerbivore` + `Fauna.IsShieldedMass` — shielded mass is never food);
+  it **devours creatures** whose root comes within `FaunaBiteRange` of the jaws (the
+  head's fang centroid) — the shark's own break-apart-and-suction kill via
+  `Predated(name, mouth)`, and unlike the shark it is not limited to herbivores: an
+  apex kaiju eats sharks too (it skips its own segments, other worm colonies, and
+  predation-immune newborns); and it **hunts players** (below). All three feed the same
+  clock, so hunting and grazing alike fund growth. Nothing in the food web preys on it
+  in return: the colony root is classified Predator and its `Predated` is sealed false,
+  and segments are Predator too so no shark can pick one as dinner. A headless worm
+  cannot feed at all — regrow the head or starve.
+- **Growth is feeding-funded ONLY**: every `FeedsPerSegment` feeds (prisms grazed or
+  creatures eaten), one body segment **blooms in** behind the head. Length is a
+  readable record of consumption.
+- **Starvation digests the colony tail-first** (one segment per
+  `StarvationShedIntervalSeconds`): deny the kaiju food and it shrinks; keep denying and
+  it dies. Population bounded by consumption, never a lifespan. A starving worm also
+  cannot differentiate its wounds — denial is a real co-op strategy.
+- **The pilot hunt**: inside a hunt window, a vessel within `AggroRadius` (220) is
+  **pursued** — the head goes nose-on, faster (`PursuitSpeedMultiplier`) and turning
+  harder (`PursuitTurnMultiplier`) so it tracks a juking pilot. Closing inside
+  `StrikeRange` (90) triggers the wind-up. Lose it, or let the window close, and the
+  kaiju drops back to grazing.
+- **Souls-like attack grammar** (hunt pulses, rest-first, same clock math as the
+  shark): telegraph (head rears back, coiling, near-stopped — `TelegraphSeconds` of
+  readable wind-up) → lunge (point locked at telegraph end, so dodging works) →
+  recovery (slow, straightened — the punish window). A vessel loitering at the rear
+  provokes a **tail whip** (rear follow-points swing laterally; the danger stinger does
+  the rest). All contact damage is the existing danger-prism impact pipeline.
+
+### 23.3 Invariant review (the rulings, recorded)
+
+- **Continuity**: segments bloom in (prism growth stamps + root scale bloom), husks
+  wither out (prisms suction inward, spindles evaporate, bounded-wait husk removal).
+  Nothing pops, either direction.
+- **No imposed death**: the only clocks are differentiation (state change of existing
+  mass, gated on being fed) and starvation shedding (the standard
+  consumption-bounded-population channel). Growth has NO clock — feeds only.
+- **Crystal contract**: the colony's hearts live on its capital segments (head + tail,
+  one each; a split provisions the new worm's ends as they differentiate). Body
+  segments are connective tissue — body parts, not lifeforms — per the §15 stance,
+  which this section supersedes in part: worm capital segments now DO carry and drop
+  hearts. Colony hearts deliberately do not join the §15 domain buff pool in v1
+  (segments are not lineage-registered), so a kaiju can't destabilize the elemental
+  economy — revisit deliberately if wanted.
+- **No domain asymmetry**: the colony spawns through the standard controlling-color
+  pipeline (`RandomLifeSpawner` → `SpawnFaunaWithDomain`); nothing special-cases color.
+- **Fauna senses**: prism sensing via `PrismSpatialIndex.QuerySphere`; vessel sensing
+  via the shared `OverlapScratch` + `NonPrismOverlapMask` physics path on the behavior
+  tick; colony-vs-colony sensing via the cell's fauna registry — never a physics query
+  against prisms.
+
+### 23.3.1 Boid separation + mass-seeking (Aug 2026, playtest round 3)
+
+Two things the first passes left out, both found in play:
+
+- **Worms didn't repel each other.** Colonies are boids like everything else in the
+  cell: `TickSeparation` walks the cell's fauna registry for other `WormFauna` and
+  pushes this worm's HEAD away from each neighbour's **nearest segment** (a worm is
+  long — head-to-head distance is the wrong read), inverse-square weighted, summed
+  into the steering alongside the goal pull (`ColonySeparationRadius` /
+  `ColonySeparationWeight`). Separation applies while free-steering (Cruise, Pursue,
+  Recover) but **not** during Telegraph or Lunge: a committed strike must stay
+  readable and dodgeable-by-moving, not get deflected by a neighbour. The per-instance
+  `GoalOrbitOffset` is kept in the goal (below) so two colonies never seek the
+  identical point — separation and anti-convergence are complementary, not redundant.
+- **The kaiju idled at the crystal instead of hunting mass.** The base fauna goal
+  parks a Calm creature at the cell crystal; an apex forager should hunt food.
+  `WormFauna.ResolveGoal` now returns the **densest sensed region at every phase**
+  (`Cell.GetDensestRegionAnyDomain`, which falls back to the cell anchor in an empty
+  cell) plus the orbit offset — so a worm is drawn to the cell's mass, and one
+  dropped outside the membrane comes home instead of drifting in empty space.
+- **The Lifeform Matrix hatched creatures into the void.** The bench's variant
+  stations are layered outward and can sit hundreds of units BEYOND the membrane, and
+  `SpawnFaunaVariant` hatched the population AT the station — in empty space, with
+  nothing to graze, which defeats the bench's purpose. Fauna now hatch on the cell's
+  densest sensed mass (the same target every forager seeks), jittered like a spawner
+  wave. Flora still plant at their station: a rooted structure is placed deliberately,
+  a creature roams anyway.
+
+### 23.4 Collider budget (the hard gate, stated)
+
+Per segment: body = 1 BoxCollider (one high-volume core prism); head = 11 (the 8
+recovered armor plates + 3 danger fangs); tail = 8 (the recovered two-tier stinger:
+4 blades + 4 tip spikes); + 1 heart SphereCollider on each capital segment. A
+spawn-size-8 worm = 12+6×1+9 = **27 active colliders**; at the
+`MaxSegmentsPerWorm=16` growth cap = **35**. Splits conserve segment totals (never
+exceed the cap) and add at most one heart per differentiated end. Against the
+~1,500/cell target this is negligible — the deleted 2024 worm cost 28 colliders per
+worm *and grew unboundedly on a timer*.
+
+### 23.4.1 The recovered 2024 geometry (Aug 2026 second pass)
+
+The first rebuild carried the design but invented its geometry; the prompter called
+it: the ORIGINAL authoring had the good bones. Recovered verbatim from git history
+(`f065c8f76^`) into the new prefabs:
+
+- **Head armor cage**: the 8 mirrored plates of `WormHeadSpindle` (4 z-stations,
+  ±y pairs, angled quaternions, 4.7→6.2 widths) wrap the head's rear — now authored
+  as GENUINELY shielded prisms (`prismProperties.IsShielded=1` + the segment's
+  `shieldArmor` engage — the old asset only had the *naming*): each plate takes one
+  hit to shed its shield and a second to destroy. The 3 danger fangs sit at the
+  mouth. The **heart nests inside the cage** at the authored (0,0,−13.14), scale 2.5
+  (`WormSegmentFauna.heartLocalPosition/Scale`).
+- **Chain proportions, measured off the model** (Aug 2026 correction — the first pass
+  authored `SegmentSpacing = 14` and the worm read as beads on a string). The
+  invariant is **gap ÷ model scale**: the 2024 chain rendered its body model at
+  localScale 1 with authored gaps of 8.05 / 8.39 / 8.63 / 8.71, so `SegmentSpacing`
+  is **8.4 model units** (× `KaijuScale` × taper) and the segments nearly touch.
+  Head-gap = 2.56× the body gap (`HeadGapMultiplier`, from the authored 21.5 ÷ 8.4),
+  into-tail gap = 1.79× (`TailGapMultiplier`, 15 ÷ 8.4), and the authored
+  **0.9-per-segment taper**
+  (`TaperPerSegment`) — segment scale AND link spacing shrink down the chain, so the
+  head is the biggest thing on the worm and the tail trails away. Segments GLIDE to
+  their taper targets when topology changes (growth, splits) — the worm visibly
+  re-proportions, never snaps; a grown segment blooms from zero through the same
+  glide (which replaced the bloom coroutine).
+- **Tail stinger**: `ParentTailSpindle`'s four giant X-blades (20×2×3.75 at ±7.6
+  x/y) plus `ChildTailSpindle`'s four tip spikes as a nested spindle tier at
+  (0,0,−2.15) — the tip withers before the blades (extremity-inward). The old asset
+  authored the child tier at scale ZERO (invisible — a bug); recovered at scale 1.
+- **Natural-scale visuals**: the worm meshes render at their authored natural size
+  (the first pass over-scaled them 4×); `KaijuScale` remains the one size dial.
+
+### 23.5 Deployment + tuning
+
+Species entries in `_SO_Assets/Lifeforms/`: `WormColonyFaunaConfig.asset`
+(Element=None — keeps the prefab-authored Mass hearts) plus the menagerie-convention
+four `Worm Colony Charge/Mass/Space/Time.asset` (Element authored; the colony root
+forwards the pick to its capital segments' hearts via the `Fauna.ProvisionHeart`
+override — the root itself stays heartless, and wounds differentiate into the picked
+element). All are `PopulationSize=1` (a lone kaiju; the seed floor sees split-children
+via lineage registration, so it never re-seeds while any worm lives).
+
+**Spawnable NOW from the Lifeform Matrix toy** (freestyle): the four element configs
+are wired as the "Worm Colony" species in `Toy_LifeformMatrix.asset` — fly the toy →
+fly "Worm Colony" → fly an element/level station and the kaiju spawns live into the
+cell in your domain. (Level is inert for the colony in v1 — `SetLevel` scales only the
+empty root anchor, so L1/L3/L5 stations spawn the same-size worm; size lives on
+`KaijuScale`.)
+
+**Deliberately wired into no SpawnProfile** — a boss is opt-in. To deploy ambiently:
+add a worm config to a cell's `SpawnProfileSO.SupportedFaunas`. Natural host for the
+co-op fight: `MinigameWildlifeBlitzMultuplayerCoOp` (note §10.3: that scene uses
+`IntensityWiseLifeSpawner`, which spawns 1/tick — fine for a PopulationSize-1 boss).
+All feel/fight tuning lives on `WormColonyConfig.asset` (`WormColonyConfigSO`).
+
+### 23.6 In-editor verification (the human is the gate)
+
+Nothing here has run in Unity — the whole branch is machine-validated only (see §23.7).
+First pass, in Menu_Main freestyle:
+
+1. **Import clean.** Pull, let Unity reimport, confirm zero compile errors and that the
+   four new prefabs open without "Missing (Mono Script)" rows. Run
+   **FrogletTools > Validation > Validate Lifeform Crystals** — head/tail hearts are
+   runtime-provisioned by design, so it should stay quiet about the worm.
+2. **Spawn**: freestyle → Lifeform Matrix toy → "Worm Colony" → any element station.
+   Expect 8 segments hatching **on the cell's densest mass** in your domain: a plated
+   head, 6 tapering bodies, a bladed tail — segments nearly touching, tapering to the
+   tail, with a wide head gap.
+3. **Swim**: head seeks mass and slithers; the body follows the wave. It should GRAZE
+   (prisms suction into the head) and DEVOUR creatures that stray into its jaws.
+4. **Fight**: fly near it during a hunt window → it pursues nose-on, rears back and
+   coils (~1.2s), lunges at the locked point (dodgeable by moving), then drifts slow
+   through recovery. Loiter at the tail for the whip.
+5. **Kill**: shoot a mid-body core prism → the worm splits in two. Strip a head plate
+   twice (shield sheds, then the plate dies) — kill all 11 head prisms, or joust the
+   caged heart, and the head drops its crystal; ~18s later the next segment hardens
+   into a new danger head.
+6. **Two worms**: spawn a second — they should visibly repel and orbit the same
+   buildup from different sides rather than interpenetrating.
+
+Dials if it reads wrong, all on `WormColonyConfig.asset`: size `KaijuScale`;
+spacing `SegmentSpacing`/`TaperPerSegment`; aggression `AggroRadius`/`StrikeRange`/
+`HuntIntervalSeconds`; appetite `MouthRadius`/`FaunaBiteRange`/`FeedsPerSegment`;
+crowding `ColonySeparationRadius`/`ColonySeparationWeight`.
+
+### 23.7 Known gaps + follow-ups (scoped, not blockers)
+
+- **Not play-verified.** No Unity in the authoring environment: everything is
+  compile-reviewed and machine-validated (YAML structure, every GUID resolves, every
+  serialized key matches a real C# field, brace/token balance, the conditional-
+  compilation CI gate). First in-editor pass is §23.6.
+- **Client-local.** Fauna have no NetworkObject (§7 caveat 4), so in multiplayer each
+  client fights its own worm until fauna sync lands. A co-op kaiju eventually needs
+  server-authoritative colony state (NucleusRush's SOAP-over-NetworkVariable pattern).
+- **Segment kills raise no scoring event.** Fauna deaths are invisible to the
+  `LifeForm.OnLifeFormDeath`-based WildlifeBlitz scoring; a boss-hunt mode needs its own
+  SOAP channel (model: `CellRuntimeDataSO.OnFaunaWaveSpawned`).
+- **Level is inert for the colony.** `SetLevel` scales the empty root anchor, so the
+  matrix's L1/L3/L5 stations all spawn the same-size worm; size lives on `KaijuScale`.
+  Wiring level → `KaijuScale`/segment count is a clean follow-up.
+- **A differentiated end keeps its body-segment mesh** (a battle-scarred stump head —
+  the danger prisms and behavior carry the read; a mesh swap would be the polish).
+- **Wither/bloom ride per-frame CPU** like all fauna today (C6 in the clock-material
+  tracker covers that migration; the worm added no new CPU animation tier).
+- **The Lifeform Matrix station for the colony is an anonymous labeled sphere** — the
+  root prefab carries no renderer for `ToyModelBuilder` to sample. A mini-worm station
+  model is cosmetic follow-up.
+
+---
+
+## 24. Wildlife Liberation — the creatures become killable, and a pen becomes a band (Aug 2026)
+
+`GameModes.WildlifeLiberation = 40` is the Sparrow-only hunt: three concentric cages at
+1050 / 600 / 200 pen three tiers of wildlife, and the first PLAYER to kill 500 creatures wins.
+Full mode reference: `_Scripts/Controller/Arcade/WILDLIFE_LIBERATION.md`. Two of its changes are
+**platform ecology** and belong here.
+
+### 24.1 A creature dies when its last body prism is destroyed
+
+**Before this branch, no creature in the game could be killed by shooting it.** Destroying a
+fauna's body prisms removed prisms and left the creature swimming with a thinner body. The only
+kill paths were starvation, predation, and the crystal joust
+(`VesselWitherLifeformByCrystalEffectSO` → `Fauna.Predated`). `WormSegmentFauna` was the sole
+exception — §23 gave it `OnBodyPrismExploded`, and that stayed a worm-only rule.
+
+The consequence was invisible until a mode needed it: the **Sparrow**, whose entire verb set is
+guns and missiles, could not kill wildlife at all. A "hunt the wildlife" mode was therefore
+impossible to build without either a bespoke damage path (a cheat) or this fix.
+
+`Fauna.OnBodyPrismExploded` is now the base behaviour: when the last body prism is gone the
+creature dies through the sealed `Fauna.Die`. Guarded once per creature (`_diedFromBodyLoss`),
+because a missile's AOE can strip the last several prisms inside one frame and every one of them
+calls back.
+
+**Why this is not a new sink in the §0 sense.** The conserved-mass law says a prism is only ever
+removed by an ACTIVE force — a vessel using an ability, or fauna eating it. A player shooting a
+creature is the first of those. Nothing here is a timer, a lifespan, or a cull: a creature nobody
+shoots still only ever dies to starvation or predation, and the population is still bounded by
+the food web. What changed is that an active force can now finish what it started.
+
+Invariants, checked one by one:
+
+| invariant | status |
+|---|---|
+| Continuity of existence | **Held** — `Boid.OnDeath` / `LightFauna.OnDeath` wither or suction the remains; both skip already-destroyed prisms, so a shot creature's surviving structure still leaves visibly rather than popping. |
+| No imposed death | **Held** — no clock added anywhere. |
+| Starvation = wither-to-crystal | **Held** — the kill path is the same sealed `Die`, so it withers from the extremities inward exactly like starvation. |
+| Every lifeform drops one elemental crystal | **Held** — `Die` drops it before `OnDeath` runs. Sealed, so no subclass can bypass it. |
+| No domain asymmetry | **Held** — nothing in the path reads domain. |
+| Mass is conserved | **Held** — the prisms were destroyed by the player through the ordinary destruction pipeline and accounted there; the creature's heart becomes a collectible. |
+
+**It affects every mode**, and in every case as an improvement: wildlife in Skim Race, Brood
+Rush, freestyle and the Wanderway are now killable by any vessel that can destroy a prism.
+Verify rather than assume (`WILDLIFE_LIBERATION.md` checklist item 17).
+
+**Attribution and scoring.** `Die` publishes PLAYER-attributed deaths only, on
+`CellRuntimeDataSO.OnFaunaKilled` (a `ScriptableEventString` carrying the killer's name — a SOAP
+channel, not a static event, and on the runtime SO rather than each fauna prefab so no creature
+prefab needed a new wire). Engine attribution (`Fauna.StarvationKiller`, a predator's name, a
+colony wither reason) is filtered there, and `StatsManager.LifeformKilled` filters again against
+the player roster. So **the ecology dying of its own accord can never move a scoreboard** — which
+is what keeps a hunt mode from being farmable by waiting.
+
+This is the fauna twin of `LifeForm.OnLifeFormDeath`, which has fed the flora side of
+WildlifeBlitz's scoring all along and answers §23's "segment kills raise no scoring event"
+follow-up.
+
+**One consequence of §7 caveat 4 lands here and is worth flagging for any future fauna-scored
+mode.** Because fauna have no `NetworkObject` and every peer simulates its own swarm, a creature
+a CLIENT just killed may not exist on the server at all — so recording server-side (the way every
+other stat here works, because a prism exists identically on every peer and the server's own
+physics sees a client's ram) would mean only the host could ever score. `StatsManager` therefore
+grew its only client branch: a client forwards its own kill through its own `Player` object
+(`Player.ReportFaunaKill_ServerRpc`), the same owner-detects → server-records round-trip
+`NetworkVesselImpactor` uses for jousts, with identity taken from RPC ownership rather than a
+name string.
+
+**Fauna network sync is in flight on a separate branch**, and when it lands the divergence
+retires - but this RPC does not become wrong, it becomes redundant-but-harmless: it is an
+owner-reports-to-server round-trip keyed on ownership, which stays correct whether or not the
+creature also exists on the server. Until then, any mode that scores on the ecology needs this
+shape, and needs to understand that a DOMAIN sum over client-local fauna is two independent
+hunts added together rather than one swarm hunted twice - so a shared domain converges on a
+target faster than a solo one, and per-domain targets tuned before the merge will need
+re-measuring after it.
+
+### 24.2 A pen becomes a band
+
+§22 gave a mode one pen: `Cell.FaunaContainmentRadius`, a single radius for the whole cell.
+Three nested cages need three pens, so the capability is generalized to an **annulus authored per
+species** — `FaunaConfigurationSO.BandInnerRadius` / `BandOuterRadius`.
+
+Same contract as the cell pen, for the same reason: **a spatial DIET + STEERING rule, never a
+wall.** Nothing is teleported, no collider is added, nothing is culled for crossing a boundary. A
+creature can drift out on its own momentum — it simply has no reason to and nothing to eat there.
+`0 = no band` is the default and what every shipped biome authors.
+
+Applied at three points, all of them existing chokepoints rather than new ones:
+
+- **`Fauna.Goal`'s setter** — the single point every goal writer already passes through (§22's
+  reason for making `Goal` a property). The cell pen clamps first, then the band.
+- **`Fauna.IsPreyForMe`** — a new shared edibility predicate the three grazers now route through
+  (`LightFauna.IsEdibleForHerbivore`, `WormFauna.IsEdiblePrism`, `Boid.IsEdibleForForager`),
+  composing the band with `Cell.IsPreyForHerbivore`. Same reasoning as `Fauna.IsShieldedMass`
+  (§16.2): *"a creature must never be led to mass it cannot reach or eat"* is ONE rule, and a
+  per-subclass copy is a rule you can forget to apply in the next grazer.
+- **`CellLifeSpawnerBase.SpawnFaunaBanded`** — a banded species HATCHES inside its room,
+  SCATTERED across it (independent direction + radius per creature, for spawn position and
+  initial goal). Unbanded species are untouched.
+
+  **It is on the BASE for a reason worth remembering.** `Cell.StartSpawnerForMode` picks
+  `IntensityWiseLifeSpawner` whenever the cell is on `CellTypeChoiceOptions.IntensityWise` —
+  which is also the only way to vary a cell by intensity. So a mode that wants per-intensity
+  cells AND penned fauna gets the intensity spawner whether or not it asked for it, and
+  placement written into the *other* spawner is dead code. That shipped: Wildlife Liberation's
+  entire population spawned at the cell centre, because `IntensityWiseLifeSpawner` passed no
+  spawn position (so `SpawnFaunaWithDomain` defaulted to `host.transform.position`) and used the
+  crystal as the goal. Two smaller centre-collapses went with it — `Fauna.ClampToBand` clamped a
+  degenerate goal radially and pinned every creature in a room to its inner wall, and
+  `IntensityWiseLifeSpawner` never honoured `MaxLivePopulation` at all.
+
+**The band is also a collider-budget device, and that is worth stating.** Wildlife Liberation's
+bands stop 60u short of every wall, so a creature's own cage is outside its band and therefore
+not food. Without that the grazers would eat two thirds of their own jail (the bars are painted
+across the domain triad and the legacy diet eats opposing-domain mass), and the alternative —
+shielding the bars — would swap ~9,000 LOD-cullable BoxColliders for always-on convex
+MeshColliders (`PrismKinds`). A steering rule bought what a shield would have cost.
+
+Offspring inherit their parent's band for free: they bind the same config.
+
+### 24.3 Collider budget
+
+The mode's arena is 9,206–12,870 cage prisms plus **349–593 live creatures** (up to 868 at the
+population caps, 1,436–2,426 body prisms). That creature count is ~6× any shipped biome and is
+the branch's headline performance risk — every fauna body prism is a MOVER that re-buckets in
+`PrismSpatialIndex` each frame, and every creature runs a behaviour coroutine. It is an explicit
+product decision ("very heavy", requested 2026-08), not an accident of the roster. Full table,
+the tuning dials in order of bluntness, and the on-device measurement step:
+`WILDLIFE_LIBERATION.md` § "Collider-budget impact".
+
+---
+
+## 25. Astro League — a nucleus that is a WALL, and a pen with an inner wall (Aug 2026)
+
+Astro League's cell shipped with a trail-grazing food web (§14) that could not remove a single
+prism. The mode is soccer: fauna are there to eat the trail mass that accumulates until the pitch
+is unflyable. In play the arena silted up regardless of how the biome was tuned, and the creatures
+starved beside a court packed with food. This section records the root cause, the mechanism that
+fixes it, and the one new capability the mode needed.
+
+### 25.1 The nucleus was eating the food web
+
+**Node control is the nucleus** (CLAUDE.md ▸ locked invariants): in a cell with a nucleus,
+`Cell.IsPreyForHerbivore` returns `!IsInsideNucleus(position)` — the interior is the territorial
+claim and a fauna **sanctuary**, which is exactly right for a cell whose nucleus is a core players
+contest.
+
+Astro League has **no node control at all**. It scores goals, and it borrowed the nucleus as its
+ricochet **court boundary** (`AstroLeagueArena` morphs it with `Cell.SetNucleusMesh` /
+`SetNucleusWorldRadius` so the cage you see is the wall the ball banks off — §14). But
+`RefreshNucleusControlRadius` measures the nucleus renderer's bounds, so the control radius became
+the **court's circumscribing radius**. Every prism in the match was "inside the nucleus":
+
+- `Cell.IsPreyForHerbivore` → `!IsInsideNucleus` → **false everywhere on the pitch**.
+- `Boid.IsEdibleForForager` ends on the same test → **false everywhere on the pitch**.
+
+So no herbivore, forager or otherwise, could eat anything in the arena. The only edible mass was
+outside the court, where nobody flies. Tuning phase thresholds, food floors or populations could
+never have fixed it — the diet predicate was returning false before any of them were consulted.
+
+**The fix is a declaration, not an exception.** `Cell.NucleusIsControlZone` (default **true**, so
+every shipped biome is untouched) lets a mode say *this nucleus is play geometry, not a claim*.
+False collapses the control radius to zero and the cell falls back to its whole-cell semantics —
+exactly the state a cell with no `NucleusPrefab` is already in: herbivores eat opposing-domain
+mass anywhere, `DominantDomain` reads whole-cell volume. `AstroLeagueController.ApplyIntensityScale`
+sets it false after morphing the nucleus (the setter re-measures, so order matters and the flag
+wins on every later refresh).
+
+This does not relitigate "node control is the nucleus". It says this cell **has no control zone**,
+which the ecology already supports. A mode that genuinely contests a core (Brood Rush) leaves the
+flag alone. Note the practical delta to control is nil here: with the nucleus spanning the whole
+court, `nucleusEnvVolumeByDomain` and `liveVolumeByDomain` were already almost the same set.
+
+**Watch for this whenever a mode repurposes a Cell-owned visual.** The Cell's visuals carry
+*semantics*, not just geometry — borrowing the nucleus silently borrowed the sanctuary rule with it.
+
+### 25.2 A pen gains an inner wall
+
+The design ask was "aggressive little creatures that stay OUT of the arena until it starts to get
+crowded, then come in and eat it clean". Three existing pieces cover almost all of it:
+
+| Need | Existing fundamental |
+|---|---|
+| Voracious any-domain grazing | `FaunaVariantTuning.Forager` (the Skim Race trail-cleanup template) |
+| "Keep out of a region" | a pen — but `Cell.FaunaContainmentRadius` is an OUTER wall only |
+| "The arena is getting crowded" | the **volume phase ladder** — Calm below `RestlessEnterVolume`, Restless above it |
+
+The missing quadrant is the inner wall. `FaunaConfigurationSO.BandInner/BandOuterRadius` (§24.2)
+already proves an ANNULUS, but it is authored per-species data and cannot open mid-match;
+`Cell.FaunaContainmentRadius` already proves runtime control, but it is one-sided. So
+**`Cell.FaunaExclusionRadius`** is the mirror of the containment radius, applied to the same two
+rules and carrying the same contract:
+
+- **Diet** — `IsInsideFaunaContainment` now means "inside the outer wall AND outside the inner
+  one", and `IsPreyForHerbivore` already routes through it, as does `Boid.IsEdibleForForager`.
+- **Steering** — `ClampToFaunaContainment` pushes a goal OUT past the inner wall as well as IN past
+  the outer one, from the one setter (`Fauna.Goal`) that no grazer can bypass. It takes the
+  creature's own position for the degenerate centre-goal case, for the same reason
+  `Fauna.ClampToBand` does: otherwise a whole unfed population collapses onto one point on the wall.
+- **Birth** — `CellLifeSpawnerBase.SpawnFaunaBanded` clamps the spawn POSITION through the same
+  method, at the one call both spawners share (§24.2's lesson). A creature born inside a closed pen
+  would read as the pen leaking.
+
+It is **not a wall**: nothing is teleported, no collider is added, nothing is culled for crossing
+it. A creature can drift in on its own momentum — it just has nothing to eat there and every goal
+pulls it back out. Both walls default to 0, so every biome that is not a mode's pen is unchanged
+(the common path is two compares against zero).
+
+**The mode drives it off the spine, not off a new signal.** `AstroLeagueController.UpdateFaunaExclusion`
+sets the radius to the court's `MaxExtent` while `Cell.Phase == Calm` and to 0 at Restless or above.
+"The pitch is silting up" IS `LiveVolume` crossing `RestlessEnterVolume`; the ladder's own
+Enter/Exit hysteresis debounces the edge for free, so the wall cannot flutter. The wall SWEEPS over
+`faunaExclusionSweepSeconds` rather than snapping — continuity of existence applies to the pen's
+boundary too. It runs on every peer because fauna and trail prisms are per-peer local objects, the
+same as the goal-reset prism sweep — no RPC.
+
+The species itself is `Astro League Piranha Fauna Config Data`: the tadpole prefab at
+`BaseBodyScale 0.22`, `Forager` on (any-domain diet), `MinSpeed/MaxSpeed 45/70`, a 60-unit graze
+radius, a 0.6 s behaviour tick and `StarvationSeconds 40` — small, fast, and always hungry, which
+is what makes it aggressive without a single bespoke behaviour. `CenterFocusBias 0.35` pulls the
+released swarm toward midfield, where the play is. Population `8` seed floor / `22` cap, alongside
+the existing tadpole (8) and brittlestar (4).
+
+### 25.3 Invariant review
+
+- **Continuity of existence** — unaffected: the pen removes nothing. Creatures still bloom in,
+  wither to crystal on death. The wall itself sweeps rather than snapping.
+- **No imposed death** — unaffected. Nothing culls a creature for being on the wrong side; an
+  excluded creature that cannot feed starves on the ordinary clock, and the release is what feeds it.
+- **No domain asymmetry** — unaffected. Fauna still spawn in the cell's one controlling colour. The
+  piranha's any-domain DIET is the existing forager rule, and the forager path deliberately does not
+  go through the domain leg (§24.2, `Boid.IsEdibleForForager`).
+- **Mass conserved** — unaffected. Fauna consumption is an ACTIVE force and the only new sink here
+  is that the pitch's mass is now reachable at all. No decay, no timer, no cull was added: §25.1 is
+  a bug fix that *restores* an active sink, which is the opposite of the rejected timed culler.
+- **Volume is the spine** — reinforced. The release gate reads `Cell.Phase`, which is the volume
+  ladder; no count, no bespoke "crowdedness" metric.
+- **Territorial permanence** — this cell has no nucleus claim by declaration (§25.1), so the rule's
+  nucleus-cell branch does not apply; the nucleus-less branch (fauna eat opposing mass) is what it
+  now runs, exactly as the Skim Race biome it was cloned from.
+- **Every lifeform drops a crystal** — untouched (the piranha binds the standard tadpole prefab).
+- **Collider budget** — see below.
+
+### 25.4 Collider budget
+
+| Item | Before | After |
+|---|---|---|
+| Super-shielded edge lining (always-on convex MeshColliders) | 240 | **480** |
+| Live fauna cap (bodies) | 12 (tadpole 8 + brittlestar 4) | **34** (+ piranha 22) |
+| New physics queries | — | **none** |
+
+The lining doubles because the court is ~2.4× larger in each axis and 240 prisms would read as a
+dotted rim; it stays a fixed, deterministic count and its volume budget (`480 × 62.5 = 30000`) is
+carried straight into the cell config's phase-volume thresholds — **change either and retune the
+other**. The piranha is a small Boid, and every fauna sense already rides
+`PrismSpatialIndex.QuerySphere`, never `Physics.OverlapSphere`. The exclusion pen adds one squared
+compare to paths that already ran the containment compare. The ball still excludes the
+`TrailBlocks` layer, so it never collides with what the fauna graze.
+
+### 25.5 Phase thresholds (retuned for the lining budget and for Rhino trail)
+
+| Field | Value | Why |
+|---|---|---|
+| `RestlessEnterVolume` | 30600 | 30000 structural floor + **600** of trail |
+| `RestlessExitVolume` | 30450 | floor + 450 |
+| `FrenzyEnterVolume` | 32000 | floor + **2000** of trail |
+| `FrenzyExitVolume` | 31600 | floor + 1600 |
+| `RestlessEnter` / `FrenzyEnter` (count) | 900 / 3000 | perf backstop only — the lining is volume-only and never enters `LiveBlockCount` |
+| `SenseRadiusOverride` | 2000 | covers the intensity-4 court (max extent ≈ 1280) with margin |
+
+The headroom is authored in Rhino trail: a Rhino prism is **≈ 0.75 volume** (`BaseScale (3,3,0.5)`,
+`Gap 2` → a `(0.5, 3, 0.5)` sliver) and it lays two per spawn, so +600 volume ≈ **800 prisms** on
+the pitch before the crew is released and +2000 ≈ 2700 before Frenzy. This is the mode's primary
+pacing dial and the first thing to move after a playtest. **It is vessel-specific**: the previous
+values were authored for Squirrel's ≈3.1-volume prisms, and the mode is now Rhino-only.
+
+---
+
+## 26. The two withers — a joust takes the heart, starvation exposes it (Aug 2026)
+
+**Prompter's ask, verbatim in shape:** *"when a squirrel jousts a life form it shouldn't explode. it
+should wither. the squirrel should auto collect the crystal. its spindles should wither from the
+crystal outward, leaving the prisms behind as a fossil or skeleton. when fauna starve they also
+wither but this should be loosing spindles from the outside in until the crystal becomes collectable
+by all vessels. so starvation moves in the opposite direction to the squirrel joust, but should also
+leave behind prisms."*
+
+Two deaths, one geometry, opposite directions — and the direction is not a style knob. It is the
+force that did the killing, read back at the moment the body comes apart.
+
+### 26.1 The two directions
+
+|  | **Joust** (a vessel took the heart) | **Starvation** (nobody took it) |
+|---|---|---|
+| Heart | freed **first**, at the strike, and **auto-collected** by the jouster | freed **last**, when the wither reaches the core — then collectable by **any** vessel |
+| Spindles | wither **nearest-the-heart first**, unravelling **outward** around the hole | wither **farthest-from-the-heart first**, spending the extremities **inward** |
+| Body prisms | left standing as a **skeleton** | left standing as a **skeleton** |
+| Detonation | none | none |
+
+They are the same operation sorted the other way: order the spindles by distance from the heart,
+ascending for a joust, descending for starvation. A shark's fins and a brittlestar's arms still go
+before the core body on the starvation death — emergent from geometry, with nothing authored per
+prefab — and on a joust the same geometry runs backwards.
+
+Predation is deliberately **neither**: a devoured creature breaks apart and suctions into the
+predator's mouth, because there the mass genuinely *transfers to the eater* rather than being left
+in place. `LifeformDeathStyle` (`Withered` / `Jousted` / `Consumed`) is the one enum that carries
+this, stamped by the killing force and read by the death animation.
+
+### 26.2 The skeleton — mass conservation taken at its word
+
+Before this, a creature's whole frame left the world when it died: the husk was destroyed and its
+body prisms went with it, so the *only* thing conserved was the heart. That was a passive removal of
+mass hiding inside a death animation. Now the body prisms **stay exactly where the creature died**,
+as ordinary cell mass:
+
+- `HealthPrism.LeaveAsSkeleton` drops the body-part links (spindle, `LifeForm`, `OwnerFauna`),
+  re-homes the prism to the host cell, and re-files it with `PrismSpatialIndex.NotifyOwnershipChanged`.
+- That re-file is what **promotes** it: `ComputeEnvironmentMass` reads `OwnerFauna` to keep a LIVE
+  swarm out of the targeting grids (a forager must not read as its own mass concentration). With the
+  owner cleared, the skeleton graduates from volume-only body mass to full environment mass —
+  grazeable, steerable, counted, contested.
+- So the sink is the food web, exactly as `§0` demands: a skeleton is removed only by an **active**
+  force (a grazer eating it, a vessel destroying it), never by a clock. A skeleton nothing eats is a
+  valid equilibrium, not a defect.
+
+**Ordering is load-bearing.** A body prism is parented to a *spindle*, so the skeleton must be
+detached **before** any spindle withers — evaporating a spindle first destroys the very mass the
+skeleton is conserving.
+
+### 26.3 Why the spindles had to be isolated first
+
+Two couplings in the ordinary spindle lifecycle make an ordered wither impossible, and both are
+structural rather than cosmetic:
+
+1. `Spindle.ForceWither` **recurses into child spindles**. Withering an inner spindle first —
+   which is the whole point of the joust direction — would collapse the entire creature in one step.
+2. Destroying a spindle GameObject **destroys its child spindles with it**, for the same reason.
+
+`Spindle.IsolateForOrderedWither` breaks both up front: every spindle is detached from its parent
+and children, logically *and* in the hierarchy, so the caller can spend them in any order. It also
+suspends `CheckForLife`, because handing a spindle's prisms to the skeleton empties it and would
+otherwise evaporate it out of turn. The outside-in death happened to work before this only because
+it destroys leaves first; nothing about it was general.
+
+### 26.4 The crystal invariant is still sealed — it just moved
+
+"Every lifeform drops one elemental crystal on death" is unchanged; **when** it drops became part of
+how the creature died. `Fauna.Die` releases the heart outright for `Jousted` and `Consumed`. Only a
+subclass that opts in via `DefersHeartRelease` (today `LightFauna`) holds it through an outside-in
+wither.
+
+**A deferral is only safe if the thing being deferred can survive being interrupted**, and a crystal
+parented to the husk cannot: destroy the husk and the child goes with it, and reparenting a child
+out of a hierarchy that is already being torn down cannot be relied on to rescue it. So the deferral
+is two-stage, and the first stage runs at the *top* of the death:
+
+1. **`StashHeart`** (`Crystal.DetachHeartToCell`) re-homes the crystal onto the cell immediately, but
+   leaves it **`IsEmbedded`** — so it stays uncollectable and keeps the neutral heart tint, and the
+   wither still has a heart to unravel around. Reparenting preserves world pose and a withering
+   creature holds still, so nothing appears to move.
+2. **`ReleaseHeart`** frees it for real (`ActivateCrystal`) when the wither reaches the core — the
+   ask's *"until the crystal becomes collectable by all vessels"*.
+
+With stage 1 done, every later exit is a genuine recovery rather than a hopeful one: `RemoveHusk`
+(the terminal every LightFauna death path funnels through) releases unconditionally, and
+`Fauna.OnDestroy` releases anything an interrupted wither left — a cell drain, a manager pulling the
+husk, a turn ending. `OnDestroy` skips the release during **scene unload**, where the cascade must
+not run at all (the rule `Spindle.OnDisable` already follows) and nothing survives to collect anyway.
+
+One consequence worth knowing: a stashed heart is *still embedded*, so any guard written as "has the
+crystal stopped being embedded in me?" no longer fires at death. `GrowCrystalWithPop` — the level-up
+flare, whose local scale divides out the body's scale and would land at the wrong WORLD scale on a
+reparented crystal — was exactly such a guard, and now tests the death itself.
+
+One live consequence, and it is the right one: `Fauna.LiveHeart` (which the domain fauna buff keys
+off) now stays non-null through a starvation wither. The heart is the last thing standing, so a
+starving creature keeps powering its domain until the wither reaches its core.
+
+### 26.5 Auto-collect
+
+`ElementalCrystalImpactor.CollectBy(SkimmerImpactor)` is the auto-collect entry point — the identical
+chain a skim runs (collection effects, flight to the vessel, spend), reachable without a skim
+contact. `AcceptImpactee` now delegates to it, so there is one collection path, not two. Its sole
+caller is the joust: `VesselWitherLifeformByCrystalEffectSO.TakeHeart` resolves the jousting
+vessel's near-field skimmer (far-field as fallback) and awards the crystal the kill just freed. With
+no usable skimmer it degrades to the ordinary drop — the crystal simply sits there as a collectible,
+which is the starvation behaviour and therefore never a lost crystal.
+
+### 26.6 Scope, honestly stated
+
+- **Fauna**: `LightFauna` (the spindled creatures — shark, brittlestar, clawfish) gets both
+  directions plus the deferred heart. `Boid` (the tadpole) has no spindle rings to order, so it
+  leaves its skeleton and fades the empty husk out.
+- **Flora**: `LifeForm.Jousted` withers heart-outward and leaves a skeleton. **Every other flora
+  death keeps the existing destruction** (`DamageAll` + `ForceWitherAll`) — a plant grazed down to
+  its lethal threshold has been actively eaten, and the prompter's ask was specifically about the
+  joust.
+- **The worm colony is deliberately excluded.** Its segments keep the authored suction death
+  (`WormSegmentFauna.WitherHuskCoroutine`). A kaiju-scale skeleton would be a wall, and its capital
+  segments carry **danger prisms** — leaving those standing would strew permanent hazards through
+  the cell on every colony death. Revisit only with a decision about what happens to danger prisms
+  in a skeleton.
+
+### 26.7 Collider budget — the real cost, stated
+
+This is the one invariant that **pays** for the change: nothing is added at the moment of death (a
+live creature's body prisms already carry colliders), but they now **persist** instead of being
+destroyed with the husk. A cell running a 30 s fauna wave clock therefore accumulates skeleton mass
+over a match at roughly *(deaths × body prisms per creature)*.
+
+The mitigation is the canon's own answer and needs no new mechanism: a skeleton is ordinary
+environment mass, so it enters the targeting grids and **herbivores graze it** — dead creatures
+become food. It also inherits the standard collider-LOD-by-phase treatment that every cell prism
+gets, and it feeds `Cell.LiveVolume`, so a cell that fills with skeletons climbs its own phase
+ladder and its fauna get hungrier and faster. **No new physics queries were added.**
+
+Two things to watch in a playtest, in this order:
+1. **Prism count in a long round.** If skeletons outpace grazing, the lever is the diet/spawn tuning
+   that already exists (`SpawnProfile.FaunaFoodFloor`, per-species populations) — *never* a timer.
+2. **Legacy (nucleus-less) cells.** There, herbivores eat only *opposing* mass, so a skeleton of the
+   dominant domain has no predator — the same standing condition as the dominant canopy
+   (`§0` territorial permanence), now with one more contributor.
+
+### 26.8 In-editor verification (the human is the gate)
+
+Scene: **Menu_Main** freestyle (Squirrel is the menu vessel, so the joust is one flight away), and
+**MinigameWildlifeBlitz** for a populated cell.
+
+1. **Joust a fauna.** Fly the Squirrel faster than a brittlestar/shark and clip its heart. Expect:
+   no explosion; the crystal flies to *your* vessel and grants its element; the arms/fins evaporate
+   **from the body outward**; a skeleton of prisms is left hanging in space.
+2. **Joust a flora.** Same, on any planted flora. Expect the same — specifically **no detonation**,
+   which is the visible before/after.
+3. **Starve a fauna.** Let a creature run past `starvationSeconds` with no prey (or lower it on the
+   `LightFaunaDataSO`). Expect the mirror: extremities first, inward; the crystal becomes collectable
+   only when the wither reaches the core; skeleton left behind.
+4. **Devour.** Let a predator catch prey. Expect the *unchanged* behaviour — body suctions into the
+   mouth, **no** skeleton.
+5. **The skeleton is food.** Watch a herbivore approach and eat skeleton prisms. If it ignores them,
+   the re-file did not land — check `PrismSpatialIndex.NotifyOwnershipChanged`.
+6. **Watch the console for the heart alarm** (`was destroyed with its heart unreleased`). It must
+   never fire.
+
+Tuning knobs: `LightFaunaDataSO.witherRingInterval` (fauna ring cadence) and the new
+`LifeForm.witherRingInterval` (flora). Both are seconds per ring; keep them above zero or the body
+collapses in a single frame, which reads as a pop. The flora knob is also overridable per
+element from `FloraVariantTuning.WitherRingInterval` (`-1` = keep the prefab's), the same shape
+`ShieldPeriod` uses — a denser plant wants a shorter ring so the whole wither still reads at flight
+speed.
+
+### 26.9 Follow-ups (open, recorded rather than done)
+
+1. **The worm colony's danger prisms vs. the skeleton.** The colony is excluded from §26.2 because
+   its capital segments carry danger prisms and a kaiju skeleton is a wall. If the colony should
+   leave *something* behind, the question to answer first is what a danger prism does in a skeleton
+   — stay dangerous forever, shed its danger state on detach, or be the one prism kind the skeleton
+   drops. Do not "just enable it".
+2. **Flora deaths other than the joust still detonate** (`DamageAll` + `ForceWitherAll`). That is
+   deliberate for now — a plant grazed to its lethal threshold has been actively eaten — but if the
+   skeleton reads well in play, making it universal for flora is a one-line change to the branch in
+   `LifeForm.Die` and worth a deliberate decision rather than drift.
+3. **Skeleton accumulation over a long round** is the §26.7 budget risk and can only be answered by
+   a playtest. If skeletons outpace grazing, the levers are the existing diet/spawn dials
+   (`SpawnProfile.FaunaFoodFloor`, per-species populations) — never a timer, never a cap.

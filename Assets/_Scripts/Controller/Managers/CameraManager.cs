@@ -13,9 +13,6 @@ namespace CosmicShore.Gameplay
     public class CameraManager : Singleton<CameraManager>
     {
         [SerializeField]
-        CellRuntimeDataSO cellData;
-
-        [SerializeField]
         SceneNameListSO _sceneNameList;
 
         [SerializeField] ThemeManagerDataContainerSO _themeManagerData;
@@ -36,7 +33,6 @@ namespace CosmicShore.Gameplay
         [SerializeField] private Transform endCameraLookAtTarget;
 
         private Transform _playerFollowTarget;
-        private const int ActivePriority = 10;
 
         public Transform PlayerFollowTarget
         {
@@ -209,6 +205,11 @@ namespace CosmicShore.Gameplay
             // cut a hole through unrelated mass. This is a narrow, symmetric hold — NOT an
             // opt-out: the binding on the vessel stays, and RestoreGameplayCamera lifts it.
             PrismOcclusionCorridor.SetSuppressed(true);
+            // Same shape, same reason, for the speed-tunnel law (Docs/SPEED_TUNNEL.md): the
+            // replay camera is posed by hand and AstroLeagueGoalReplay reads its field of view
+            // to fit the shot, so a live FOV write would fight the pose AND silently mis-frame
+            // the replay. A hold, not an opt-out — the vessel binding survives it.
+            VesselSpeedTunnel.SetSuppressed(true);
             SetEndCameraActive();
             ApplyCameraGraphicsSettings();
             return endCamera.transform;
@@ -224,23 +225,31 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public void RestoreGameplayCamera()
         {
-            if (_playerFollowTarget == null) return;
+            // Lifting the holds is UNCONDITIONAL and comes FIRST. A replay can finish after its
+            // scene has torn down — AstroLeagueGoalReplay.OnDestroy cancels playback, but the
+            // pending untokened UniTask.Yield resumes a frame later and runs its finally — and by
+            // then _playerFollowTarget is a destroyed Transform. Returning before the lifts would
+            // latch BOTH platform laws off for the rest of the session: these statics are
+            // otherwise only reset by their RuntimeInitializeOnLoadMethod installers, which run
+            // once per app launch, not per scene load. Lifting with no vessel bound is a no-op
+            // (both drivers gate on a live target), so there is nothing to protect here.
             PrismOcclusionCorridor.SetSuppressed(false);
+            VesselSpeedTunnel.SetSuppressed(false);
+
+            if (_playerFollowTarget == null) return;
             SetCloseCameraActive();
             SnapPlayerCameraToTarget();
         }
 
         public void SetMainMenuCameraActive()
         {
+            // The menu view is the Menu_Main scene camera, driven directly by
+            // MainMenuCameraController (a plain-transform rig - no Cinemachine). The legacy
+            // "CM Main Menu" vCam is explicitly kept OFF so no CinemachineBrain anywhere has
+            // a live camera to grab; this method's job is simply to clear every gameplay
+            // camera off the top of the scene camera.
             if (mainMenuCamera != null)
-            {
-                mainMenuCamera.Priority = ActivePriority;
-                mainMenuCamera.gameObject.SetActive(true);
-            }
-            else
-            {
-                CSDebug.LogWarning("[CameraManager] Main menu camera is not assigned!");
-            }
+                mainMenuCamera.gameObject.SetActive(false);
 
             if (_playerCamera is CustomCameraController pcc)
                 pcc.Deactivate();
@@ -250,13 +259,6 @@ namespace CosmicShore.Gameplay
                 endCamera.Deactivate();
 
             _activeController = null;
-            Invoke("LookAtCrystal", 1f);
-        }
-
-        void LookAtCrystal()
-        {
-            if (mainMenuCamera && cellData != null)
-                mainMenuCamera.LookAt = cellData.CrystalTransform;
         }
 
         public void SetCloseCameraActive() => SetActiveCamera(_playerCamera);
@@ -281,7 +283,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Deactivates all managed cameras (player, death, end) without activating a replacement.
-        /// Used by the menu to hand control to the Cinemachine-driven main menu camera.
+        /// Used by the menu to hand control to the scene camera driven by MainMenuCameraController.
         /// </summary>
         public void DeactivateAllCameras()
         {

@@ -333,7 +333,7 @@ conveyor recycle — all inventoried in §3.7 lenses A, F, G, J, K.)*
 | Batched lay + bloom-in (microscene first population, cell environment build) | per-frame CPU | ❌ | `Controller/Toys/Microscene.cs:84-102` | Keep the per-frame instantiation budget only until prisms are pool-pulled; then a lay is N stamps with staggered start times (t₀ᵢ = now + i·Δ) issued in one or few frames — the veil/load-gate fast-grow special case disappears (stamp t₀ in the past = already settled). |
 | Cell swap — retiring-world suction (single root scale) | per-frame CPU | ❌ | `Controller/Environment/Cell.cs:1237-1273` | Per-prism suction stamp at retire time: the same walk that re-parents (or the GetComponentsInChildren the drain already does) writes each prism's _SuctionStartTime/_SuctionDuration/_Location=cell centre once — GPU runs the collapse; fixes the instanced-path gap by construction (the stamp IS the enti… |
 | Cell swap — hidden drain (500 destroys/frame) + pooled returns | one-shot | ✅ | `Controller/Environment/Cell.cs:1345-1361` | Keep the slicing. Improvement aligned with 'pull from the right pool': environment prisms are Instantiated/Destroyed today — making them pool-resident turns the drain into pool returns and the rebuild into pool pulls + stamps, removing the 35k Instantiate on every swap. |
-| Worm segment make-room shift + dormant worm locomotion | per-frame CPU | ❌ | `Controller/Environment/FloraAndFauna/Worm.cs:163-192` | Two options: (a) if worms revive as live creatures, give BodySegmentFauna the standard per-frame NotifyBodyPrismsMoved locomotion contract and treat the shift as gameplay motion; (b) as a transition, stamp the segment's prisms with a 0.5s translate clock animation (linear p₀→p₀+middleSpacing), index… |
+| Worm colony locomotion (kaiju rebuild — the legacy make-room shift is DELETED) | per-frame CPU | ✅ | `Controller/Environment/FloraAndFauna/WormFauna.cs` (Update → SyncBodyPrismsToIndex) | RESOLVED as option (a), Aug 2026: the legacy `Worm.cs` (its `LerpUtilities` make-room shift and dormant `MoveWorm`) was deleted with the worm-colony rebuild. The new `WormFauna` drives follow-the-leader gameplay motion under the standard `NotifyBodyPrismsMoved` movers contract — same class as fauna locomotion; segment insertion is absorbed by the follow springs (no bespoke shift animation exists to migrate). | |
 | Prism.NotifyPositionChanged sink (the movers contract itself) | one-shot | ✅ | `Controller/Vessel/Prism.cs:1142-1160` | None — this is the sanctioned mechanism. Post-migration it remains the gameplay-mover contract (fauna locomotion, bonding steering); visual-transition callers (Microscene suction) stop calling it per-frame because their gameplay state goes final at stamp. |
 
 #### H. Timers / coroutines / tweens
@@ -979,7 +979,7 @@ last two make a violation loud):
 | Layer | Mechanism | What it forecloses |
 |---|---|---|
 | The **shader** half lives in the prism graphs | `PrismOcclusionFade` is spliced into `SurfaceDescription.Alpha` on **every graph a live prism can render with** (BlockGraph, ExplodingBlockGraph) | A new prism, trail, or environment lay inherits the corridor by construction. There is no per-prism, per-material or per-instance switch to forget. |
-| The **target** binds at the universal vessel entry point | `VesselController.Initialize` under `IPlayer.IsLocalPilot` — the one method every vessel must call to become a player's vessel (single-player spawn, multiplayer spawn, menu autopilot, runtime swap) | A new vessel needs no component and no prefab wiring. A new minigame needs no scene wiring, and cannot dodge it by using the non-networked spawn path (that is what `IsLocalPilot` covers over `IsLocalUser`). |
+| The **target** binds at the universal vessel entry point | `VesselController.Initialize` under `IPlayer.IsLocalPilot` — the one method every vessel must call to become a player's vessel (single-player spawn, multiplayer spawn, menu autopilot, runtime swap) — **plus `ChangePlayer`**, which hands a LIVE vessel to a different player and never reaches `Initialize` | A new vessel needs no component and no prefab wiring. A new minigame needs no scene wiring, and cannot dodge it by using the non-networked spawn path (that is what `IsLocalPilot` covers over `IsLocalUser`). The `ChangePlayer` arm closed a real seam found 2026-08-05: the Cellular Duel round-boundary ownership swap (`GameDataSO.SwapVessels`) left the corridor bound to the hull the AI inherited, so for the whole next round the cone cut its hole around the AI's ship while the local pilot's own ship could sit hidden behind prism mass — the exact condition the law exists to prevent. |
 | **Runtime** fail-loud | `PrismOcclusionDiagnostics.VerifyCorridorCapable`, called from `Prism.SyncRenderMaterial` — every material a prism ever binds passes through it. One error per offending material, naming it | A prism on an unwired shader, or an opaque material without alpha test, screams instead of silently staying solid. |
 | **Asset** gate | Edit-mode test `PrismOcclusionCoverageTests` (graphs wired · every material on them dissolvable · **every prefab carrying a `Prism` renders on a wired graph**) + FrogletTools > Ecology > Prism Animation > **Validate Occlusion Corridor** | New prism content authored outside the corridor fails a test, not a playtest. All three gates share ONE rule (`PrismOcclusionDiagnostics.IsCorridorCapable`) so they cannot drift. |
 
@@ -987,7 +987,12 @@ The **one** sanctioned hold is `PrismOcclusionCorridor.SetSuppressed`, used by e
 caller — `CameraManager`'s manual replay camera, a broadcast vantage that is not looking at
 the local ship, where a camera→ship capsule would cut a hole through unrelated mass. It is
 symmetric (`RestoreGameplayCamera` lifts it) and it is a HOLD, not an opt-out: the vessel
-binding survives it, so nothing has to remember to re-point the corridor afterwards.
+binding survives it, so nothing has to remember to re-point the corridor afterwards. That lift
+is **unconditional and first**, above `RestoreGameplayCamera`'s own follow-target early return
+(fixed 2026-08-05): a replay can finish a frame after its scene tore down, when the follow
+target is a destroyed Transform, and returning before the lift latched the hold on for the rest
+of the session — `_suppressed` is otherwise reset only by the `RuntimeInitializeOnLoadMethod`
+installer, once per app launch, so every subsequent match ran with the corridor off.
 
 **Deliberate exclusions, named rather than hidden.** `SuctionGraph` renders a prism DURING
 consumption (a sub-second implode of mass being removed), never standing mass that can
@@ -1020,8 +1025,11 @@ view-dependent prism effect in §3.7 (`SkimFxRunner`'s live ship end, the retire
 | Automated asset gate | `Tests/EditMode/PrismOcclusionCoverageTests.cs` |
 | Tuning (radius SCALES / core alpha / sanity band) | `ScriptableObjects/PrismOcclusionConfigSO.cs` → `Resources/PrismOcclusionConfig.asset` |
 | GPU test + dither | `_Graphics/Materials/Graphs/PrismOcclusionCorridor.hlsl` |
+| Live design surface (dials · preview · measure · bake) | FrogletTools > Ecology > Prism Animation > **Occlusion Dither Lab** — `Editor/PrismOcclusionDitherLab.cs` + `_Graphics/Materials/Graphs/PrismOcclusionDitherPreview.shader` |
 | Graph wiring (idempotent, validate-before-write) | `Tools/Shaders/wire_prism_occlusion_corridor.py` |
-| Material alpha-test opt-in (idempotent) | `Tools/Shaders/enable_prism_alpha_clip.py` |
+| Material opaque+clip contract (idempotent fixer) | `Tools/Shaders/enable_prism_alpha_clip.py` |
+| Debris erosion splice (idempotent) | `Tools/Shaders/wire_prism_explosion_erosion.py` |
+| Erosion CDF re-fit (after lattice retune) | `Tools/Shaders/fit_prism_erosion_cdf.py` |
 | Interactive gate | FrogletTools > Ecology > Prism Animation > **Validate Occlusion Corridor** |
 
 The two globals are `_PrismOcclusionTarget` (the vessel's world position) and
@@ -1115,11 +1123,173 @@ short band from reading as an edge are both continuity choices:
   purpose — it is the one candidate a cheap monotonic remap moves from one side of the
   admission line to the other.
 
+  That list is the **2026-08-04 in-situ pass**, and every number in it is on that harness.
+  The 2026-08-06 hard-edge pass (SHARD, below) re-measured on a rebuilt harness that reads
+  the same shipped Worley at 0.0073/0.0117 — ~1.55× stricter — so its numbers are quoted
+  with the kernel they belong to and are **not** merged into this list. Compare within a
+  harness, never across one.
+
   `PRISM_OCCLUSION_KERNEL` in `PrismOcclusionCorridor.hlsl` selects between the survivors.
   All are procedural — no texture, no sampler, no asset — and all cost less than the
-  corridor test itself:
+  corridor test itself.
 
-  - **2 — screen-space Worley (current).** Distance to the nearest jittered lattice point
+  **Choose the look in the Lab, not by editing `#define`s.** FrogletTools > Ecology >
+  Prism Animation > **Occlusion Dither Lab** drives the kernel and every scale dial as
+  shader globals **live, including in play mode** — which is the only place a dither can
+  actually be judged, because it has to be read in motion against real trail mass. Three
+  things make it more than a slider panel:
+
+  - **The preview is the shipped GPU code.** `PrismOcclusionDitherPreview.shader` includes
+    the corridor's own HLSL and calls the same `PrismOcclusionDitherThreshold` dispatch,
+    reading the same globals. A C# re-implementation could drift from the game; this
+    cannot, and a kernel added to the corridor shows up in the Lab for free.
+  - **Measure runs the admission rule**, not a proxy: it renders threshold+alpha to a float
+    target, reads it back and computes |coverage − alpha| over real rendered output — the
+    same methodology as the in-situ numbers above — and measures the **shipped Worley
+    baseline in the same pass**, so the verdict is a ratio and cannot be flattered by
+    anything about the harness. Sliders that let someone silently break a platform law
+    would be a worse tool than no sliders.
+  - **Bake writes the values back** into the constants and flips design mode off, so nobody
+    hand-transcribes numbers out of a screenshot. Every rewrite is anchored and must match
+    exactly once, or the bake refuses; the trailing comments (which carry the measured
+    windows) survive it.
+
+  Design mode is the `PRISM_OCCLUSION_LIVE_TUNING` gate, and it is **not free** — it
+  compiles all five kernels into every prism shader and allocates registers for the
+  largest, which costs occupancy on exactly the draw class this game has most of. At 0 the
+  file compiles as though none of it existed: one kernel, no branch, no uniforms. It is
+  fail-safe in both directions — with nothing published every dial falls back to its
+  constant, so design mode with the Lab closed renders identically to shipped mode
+  (verified by compiling both modes and diffing the output).
+
+  - **3 — screen-space SHARD (carried, 2026-08-06).** Worley with the METRIC changed and
+    nothing else: same lattice, same Hoskins hash, same orbiting feature points, same 3×3
+    search, same CDF remap, but distance is measured with the **gauge of an equilateral
+    triangle** (`g(q) = max(q.y, 0.866·|q.x| − 0.5·q.y)`) instead of the Euclidean length.
+    Level sets of a gauge are its own polygon, so the flecks become **triangles with hard
+    straight edges** while the arrangement the eye reads as organic flecking is untouched.
+
+    **Why the shape is a design surface, not a dither detail.** The unit shape is the
+    smallest piece of the game the player sees, repeated thousands of times right beside
+    their ship. The house motif is **soft-hard-soft** — bloom (soft) around low-poly
+    prisms (hard) along a smooth flight curve (soft), and the UI borders doing the same
+    thing, graded at both ends but taking hard turns in their pathing: rigid geometry
+    sandwiched between the ambiguous. A circle is the one shape that cannot participate —
+    it is soft, with a soft gradient either side of it (soft-SOFT-soft), so Worley's round
+    flecks read as foam against everything else in frame. Triangles restore the sandwich:
+    hard unit shape, ambiguous placement, soft corridor profile around it.
+
+    **The area normalisation is load-bearing, twice.** The gauge is scaled by **1.28607**
+    so the triangle at a given threshold has the same AREA as the circle it replaces
+    (`r = d·√(π/3√3)`). That is what makes it "triangles of the same size" — the dissolve's
+    ink density at every alpha is unchanged — *and* it lands the distance distribution on
+    Worley's own measured CDF, so **one fitted remap serves both cellular kernels**
+    (the constants are `PRISM_OCCLUSION_CELL_CDF_*`, renamed from `..._WORLEY_CDF_*` to say
+    so). Independently re-fitting under the triangle metric lands at 0.0118/0.8775 — within
+    noise of the shipped 0.011/0.873. Change the area constant and both must be re-fitted.
+
+    **It is very slightly CHEAPER than Worley**: a gauge is homogeneous of degree 1, so the
+    `min` is taken on it directly and the final `sqrt` disappears; per cell it trades a
+    `mul/add` for an `abs/mul/max`.
+
+    **Fidelity: 0.0074 uniform / 0.0145 corridor**, against the shipped Worley's 0.0073 /
+    0.0117 measured in the same harness — so about **24% more corridor error** for the
+    shape, comfortably inside the admission rule, and phase-stable (0.0073–0.0074 across
+    t = 0…400s). Note the harness is ~1.55× stricter than the original in-situ pass that
+    produced the numbers in this section, so compare **within a harness, not across**.
+    Temporal coherence 0.64% of band pixels per 60fps frame (Worley 0.50%, ceiling ~1.45%).
+
+    **`PRISM_OCCLUSION_SHARD_ORIENT`** picks how the triangles are turned: `FIXED` (default
+    — all one heading, 0.0074/0.0145), `FLIP` (up/down for one free negation,
+    0.0066/0.0126), `SPIN` (per-cell rotation off the orbit phase, one extra `cos`,
+    0.0070/0.0129). The scattered ones measure marginally *better* — a uniformly oriented
+    gauge is more spatially correlated — so the default is a **look** call: FIXED is the
+    one whose shape is nameable at a glance, which is the entire point of the change.
+
+    **The 3×3 search is measured, not argued, under this metric.** Because an equilateral
+    triangle's circumradius is twice its inradius, a feature point outside the neighbourhood
+    can in principle beat one inside it (Euclidean distance forbids that). Against an
+    exhaustive 5×5: 0.216% of pixels differ at all, mean threshold delta **1.5e-5**. A 5×5
+    triples the hash count to buy back one part in 10⁵ — not taken.
+
+    **The lattice pitch is a free dial inside a measured window, and the old "re-fit the
+    CDF" warning was wrong.** The distance is measured in *cell* units, so its distribution
+    does not move with the pitch: re-fitting anywhere from 3 to 15 px lands within noise of
+    the shipped constants and buys nothing measurable (at 15 px a bespoke re-fit takes the
+    sweep from 0.0062 to 0.0059 and leaves the corridor error at 0.026 untouched). The "~19×
+    degradation" the file used to threaten is what dropping the remap **entirely** costs
+    (raw F1 = 0.140), not what moving the pitch costs. What actually bounds it is **sampling
+    at both ends, and neither end is fittable**: 3 px puts the shape under the pixel floor
+    (0.013 either way), and past 11 px too few cells span the gradient band, so corridor
+    error climbs — 0.0193 at 11 px, **0.0248 at 15 px, which reads as a chunky edge rather
+    than a fade**. Usable window **4.5–11 px, sweet spot 6–8** (8 px measures identically to
+    the shipped 6 and is the most legible *as a triangle*).
+
+    A triangular **tessellation** (simplex grid, per-facet phase, facets filling as nested
+    triangles) was measured in the same pass, passed the number at 0.0009/0.0056 and is
+    **not carried**: it dissolves into thin strokes at mid alpha and reads as scratchy
+    crosshatch rather than as facets, and with the per-facet stagger removed it measures
+    0.164 and is the literal wallpaper the Bayer grid was dropped for. **Passing the number
+    is necessary, not sufficient.**
+
+  - **5 — WORLD-SPACE SHATTER3D (carried — REJECTED ON LOOK 2026-08-10, the day it
+    shipped).** SHATTER lifted into the world: Voronoi POLYHEDRA cut by crack planes,
+    world-anchored — true parallax between stacked layers, no strobe at speed (a
+    world-anchored pattern's optical flow IS the scene's), screen-pixel fidelity held
+    by a power-of-two octave ladder of world cell sizes with a jittered rung boundary.
+    Every number passed: **0.0006 uniform / 0.0031 in-situ across a 30× depth range**
+    through a clang-compiled build of the shipped file, at cost parity with 2D. On
+    real trail mass it read as **glitchy clipping in a ring around the vessel**, and
+    the failure is geometric: a volumetric crack PLANE lying near-parallel to a
+    viewed SURFACE intersects it in a region whose ramp is nearly constant, so a
+    face-sized plate shares one threshold and flips at one alpha — a plate-flash, not
+    a dither. The 2D kernel cannot produce this (its band direction always lies in
+    the screen plane), and the uniform sweep, the in-situ bin, and the flat preview
+    slice are all structurally blind to it — none samples the field off
+    surface-glancing geometry. **Passing the number is necessary, not sufficient —
+    the tessellation candidate's lesson, paid a second time, this time from a kernel
+    that SHIPPED for hours.** Carried (not deleted) because the anchoring insight
+    stays right if the glancing-plane failure is solved — e.g. filling polyhedra by
+    distance-to-owner (a 3D SHARD: level sets are closed surfaces, never
+    near-parallel to a face across a whole plate) instead of parallel planar cuts.
+    Do not re-ship as-is. Dials: `PRISM_OCCLUSION_SHATTER3D_CELL` / `..._WALL`
+    (ratio), live in the Lab, which shows the same warning.
+
+  - **4 — screen-space SHATTER (CURRENT — shipped 2026-08-06 at polygon 16.26 px /
+    wall 20 px; briefly displaced by SHATTER3D on 2026-08-10 and restored the same
+    day when the 3D kernel was rejected on look).** The other way to get a hard-edged unit shape: instead of growing a polygon around a point, take the **Voronoi
+    cell itself** — an irregular convex polygon, nothing but straight edges — and fill it
+    between two parallel straight lines from a hashed phase and a hashed band direction.
+    Neighbouring cells are independent, so their boundaries are always visible and the
+    pattern reads as a **cracked lattice of walls** rather than as scattered flecks. It is a
+    different proposition from SHARD, not a variant: SHARD hardens the fleck, SHATTER makes
+    the *negative space* the motif. Both are legitimately soft-hard-soft, so which belongs
+    next to the ship is a look call that can only be made in motion — hence carried rather
+    than described.
+
+    **Two independent dials**, the only kernel here where wall thickness is authorable
+    separately from cell size: `PRISM_OCCLUSION_SHATTER_CELL` (polygon px) and `..._WALL`
+    (band repeat px — at alpha `a` the dark wall is `(1−a)·WALL` wide, so it is literally
+    "how thick the walls get as the corridor closes").
+
+    **The wall window is RELATIVE, not absolute — corrected 2026-08-06**, and the
+    correction came from a setting chosen by eye in the Lab that the first window wrongly
+    flagged as a failure. The original sweep held the polygon at a fixed 11 px, which made
+    a flat "wall 4–11 px" look like the rule. It is not: what fails is a wall wide relative
+    to *its own* polygon, because there is no lattice left to crack. Measured by ratio —
+    0.75× → 0.0063, 1.00× → 0.0094, **1.23× → 0.0102 (shipped)**, 1.30× → 0.0162,
+    1.64× → 0.0173. Read it as **polygon 8–20 px, wall up to ~1.25× the polygon**, and
+    measure past that rather than assuming in either direction.
+
+    The shipped 16.26 / 20 holds **0.0102–0.0128 across t = 0…400s** — at or inside the
+    Worley baseline's 0.0117, and better than SHARD's 0.0145.
+
+    **No CDF fit and none needed** — `frac` of a hash is uniform by construction, so
+    fidelity is exact in the large and there is no remap to keep in sync. Most expensive
+    kernel in the file: Worley's nine hashes and sines, plus a tenth hash for the owning
+    cell and one sin/cos for the band direction.
+
+  - **2 — screen-space Worley (the calibration reference).** Distance to the nearest jittered lattice point
     over the 3×3 neighbourhood that can contain it. Reads as **organic flecking** — irregular
     blobs with visible cell structure — rather than IGN's even stipple or the spiral's
     standing bands; screen-anchored, so prisms dissolve through it. The most expensive kernel
@@ -1130,8 +1300,11 @@ short band from reading as an edge are both continuity choices:
     0.1401 — outside the admission rule. A `smoothstep` fitted to the measured F1 CDF
     (`0.02 → 0.83`) takes it to 0.0048, a 19× improvement for one instruction, and because
     the remap is monotonic the cell boundaries and the whole look are unchanged — only the
-    rate at which cells fill in as alpha sweeps, which is the part that was wrong. Retuning
-    `WORLEY_CELL` without re-fitting the two CDF constants silently reintroduces the error.
+    rate at which cells fill in as alpha sweeps, which is the part that was wrong. Note the
+    remap is what is load-bearing, **not** its coupling to `PRISM_OCCLUSION_CELL_SIZE`: that
+    coupling was re-measured on 2026-08-06 and does not exist (see the size window under
+    kernel 3). Dropping the remap costs 19×; moving the pitch inside its window costs
+    nothing.
   **The morph axis.** `PRISM_OCCLUSION_MORPH_RATE` (cycles/sec, default 0.12 — one cycle
   per ~8s; 0 freezes it) evolves whichever kernel is selected, so the stipple is never the
   same twice. It is an axis rather than a fourth kernel because each kernel interprets it
@@ -1170,6 +1343,56 @@ short band from reading as an edge are both continuity choices:
   to be **indistinguishable** from Worley's (0.17% vs 0.19% of pixels flipping per frame at
   matched rates), so it offers nothing the admitted kernels do not already provide.
 
+  **The layered beat, and the two dials that answer it** (2026-08-10, resolved
+  2026-08-11). Every screen-anchored kernel is a pure function of the screen pixel, so
+  two surfaces stacked along one camera ray — a prism's own back face showing through
+  its clipped front face, or two parallel walls of trail mass — read the IDENTICAL
+  threshold at every pixel while their alphas differ only slightly. Their clip contours
+  are then near-identical line sets a pixel or two apart, which is the textbook moiré
+  condition; and because the alpha field rides the GEOMETRY while the threshold rides the
+  SCREEN, camera motion slides the pair at slightly different rates and the interference
+  beats. SHATTER shows it worst (parallel straight walls, the shallowest gradient here).
+
+  **REJECTED — the depth-parallax domain shear** (`pixel += depth · gain · dir`, shipped
+  2026-08-10, reverted 2026-08-11). It decorrelated the layers as designed and read as a
+  LARGER flicker than the beat it fixed: translating the domain moves the ENTIRE lattice,
+  so the pattern's screen velocity is `gain × depth-change-per-frame` — tens of pixels
+  per frame of *coherent* crawl at flight speed, and coherent motion is the most salient
+  thing the eye can be shown. **The lesson generalises: a fix that moves the pattern
+  globally cannot win against speed.**
+
+  What replaced it is two LOCAL dials, independently switchable, attacking the beat's two
+  separate preconditions:
+
+  - **`PRISM_OCCLUSION_SHATTER_DEPTH_PHASE`** (SHATTER only) — adds the depth term inside
+    the kernel's final `frac()` rather than to its domain, so the Voronoi lattice does not
+    move at all and only each cell's WALL slides within its own cell. Coverage-neutral by
+    the frac-of-uniform argument. **Shipped at 0**, because the measurement (clang build of
+    the shipped file: rate | delta at 2u | delta at 12u | band pixels flipping per frame at
+    300 u/s) says it cannot do the job — `0.002` → 0.004 / 0.024 / **2.0%**; `0.020` →
+    0.040 / 0.240 / **17.9%**; `0.050` → 0.100 / 0.400 / **37.2%**. Useful separation of a
+    prism's own two faces (~2u apart) needs ~0.075+, while the flicker ceiling (~1.45%,
+    the morph note's own number) allows ~0.0015 — the two requirements are **~50× apart**,
+    the same conflict that killed the shear, because both are depth-driven. Carried as a
+    Lab dial because it is one MAD and provably coverage-neutral, so seeing the conflict
+    costs nothing.
+  - **`PRISM_BACKFACE_POWER`** (`PrismBackFaceFade`, spliced after the corridor by
+    `Tools/Shaders/wire_prism_backface_fade.py`) — attacks the OTHER precondition, and is
+    the only fix that REMOVES the interference rather than scrambling it: a beat needs both
+    layers at similar mid-band alpha *simultaneously*, so sharpening the far surface
+    (`alpha^power`) drops the interior out of the band while the exterior is still
+    dissolving. **No temporal cost at all** — it does not depend on depth or time. Prisms
+    render two-sided (`_Cull: 0`), which is why the usual second layer is the prism's own
+    interior. Facing comes from the world NORMAL (`dot(N, camera − position) < 0`) rather
+    than `SV_IsFrontFace`, because Shader Graph only exposes that semantic through an Is
+    Front Face node and this project has none to donor-clone, while it has 36 NormalVector
+    nodes. Measured both-in-band range: `1.0` (off) 0.09–0.92 · `2.0` 0.28–0.92 ·
+    **`3.0` (shipped) 0.44–0.92** · `4.0` 0.54–0.92. It **must** sit after the corridor —
+    in the gradient band the graph's own alpha is 1 and only the corridor's fade is
+    fractional, so sharpening earlier would square a 1 and do nothing. The stated trade is
+    a look change: interiors vanish earlier, so a mid-fade prism reads as a thinner shell;
+    `1.0` disables it without touching the graph.
+
   - **1 — corridor-relative spiral.** An Archimedean spiral in the corridor's own
     polar frame (9 bands across the cone radius, sheared 3 turns per revolution), so the
     pattern is anchored to the *corridor*: it stands still and the world travels through it,
@@ -1198,31 +1421,108 @@ Four properties of the design worth preserving if it is ever touched:
   corridor — no error, no visual tell, nothing to notice until someone says they can't see
   their ship. That is how the old system stayed broken; every gate above exists to make that
   state impossible to reach silently.
-- **Prisms stay in the opaque queue.** The fade is screen-door (a dither threshold fed into
-  `SurfaceDescription.AlphaClipThreshold`), not blending. Moving corridor prisms into the
-  transparent queue would need a per-prism material swap AND would pay sorting + blend
-  overdraw for a set that changes every frame — precisely the cost this feature exists to
-  avoid. The trade is that the opaque prism materials are now **alpha-tested**
-  (`_AlphaClip: 1` + `_ALPHATEST_ON`), which is the change's one real cost (§4.7 note below).
+- **Prisms stay in the opaque queue — ALL of them, for every transparency effect
+  (2026-08-10).** The fade is screen-door (a dither threshold fed into
+  `SurfaceDescription.AlphaClipThreshold`), not blending, and the threshold now engages for
+  ANY fragment whose final alpha lands below 1 — not only inside the corridor. That one
+  rule made the dither **THE prism transparency mechanism**: the corridor fade, the
+  exploding-debris fade-out (`PrismExplosionClock`'s Opacity ramp), and the cloak family's
+  authored near-zero alpha all ride the same screen door, with the same depth parallax,
+  composing in COVERAGE (alphas multiply before one threshold compare — a debris prism
+  fading inside the corridor is one consistent pattern, not two stacked transparencies).
+  Consequently there are **no transparent prism materials any more**: the seven that
+  blended (ExplodingBlockMaterial, CloakedPrismMaterial, TransparentPrismMaterial, the
+  Transparent Shielded/SuperShielded/Danger/Jade variants) were converted to opaque +
+  `_ALPHATEST_ON` with their authored `_Alpha`/`_Opacity` preserved as dither coverage —
+  the "Transparent*" names survive as the cloak-state bind targets, but nothing blends.
+  `enable_prism_alpha_clip.py` enforces and converts; `PrismOcclusionDiagnostics` faults a
+  transparent prism material at runtime; the coverage test fails on one in CI. (One stale
+  value surfaced by the conversion: `MazeDangerBlockMateral` — live prisms on
+  ExplodingBlockGraph — carried a dead `_Opacity 0` that would have become "invisible";
+  it is now 1. The tool prints every material's authored coverage so the next stale value
+  is visible at conversion time.)
+- **The corridor STOPS SHORT of the ship — `PRISM_OCCLUSION_NOSE_CLEARANCE`
+  (2026-08-11).** The cone used to run all the way to the vessel's ORIGIN plane with the
+  axial gradient still in progress when it arrived, so a prism the ship was flying into
+  was still partly dematerialised at the moment of contact — and an impact you cannot see
+  land does not read as an impact. The fade must now be COMPLETE one hull radius short of
+  the vessel plane, measured in hull radii because that is the length the corridor already
+  knows and the one that scales fleetwide with nothing authored (the hull radius bounds
+  every part of the ship about its origin, so a clearance of 1 means "solid from a
+  ship's-length out, through the nose and past it"). Measured on-axis through a clang
+  build at the Sparrow's 12.32 hull radius with a 30 u camera: cleared 22–28 u out,
+  fading 20→14 u, and **fully solid from 12.3 u all the way through the vessel plane**.
+  The trade is stated and is the point: mass inside that buffer is solid and CAN occlude
+  the ship at contact range — dial toward 0.5 if that starts to bite, 0 restores the old
+  flush-to-the-plane behaviour. A camera closer than the clearance switches the corridor
+  off entirely, which is correct rather than dangerous: inside one hull radius there is no
+  room for occluding mass to hide behind.
 - **The corridor test is per-fragment**, from the Position(World) node — the same
   post-vertex-animation position the rasterizer used. A per-object test would make a large
   environment plate flip wholesale between solid and dissolved.
-- **`_Alpha` is multiplied, not replaced.** BlockGraph hosts transparent materials too
-  (cloak, transparent shielded/danger/super-shielded); their authored alpha still applies
-  and they need no clip, so the alpha-test opt-in is opaque-materials-only.
+- **`_Alpha` is multiplied, not replaced.** The graph's own alpha source (BlockGraph's
+  `_Alpha`, ExplodingBlockGraph's clock Opacity) feeds the corridor node's BaseAlpha, so
+  authored and clock-driven alpha are first-class dither inputs: the corridor only scales
+  them, and whatever the product is renders as coverage.
+- **A fading prism outside the corridor never pops, on any kernel.** The four
+  screen-anchored kernels work anywhere; the SPIRAL is corridor-anchored (no polar frame
+  exists outside the cone), so the dispatch takes a `polarValid` flag and swaps it for IGN
+  on out-of-corridor fades rather than letting a whole prism vanish at one alpha.
+- **The exploding prism's FADE is its own dither — body-anchored, never a function of
+  the view: ONE WIPE PER FACE, anchored to UV0 (2026-08-10; re-anchored 2026-08-11 —
+  the first cut carved the body into Voronoi chunks and read as the prism being
+  EATEN from many points per face; the second anchored to body POSITION with
+  dominant-axis face classification, which the per-face shatter SPIN breaks:
+  fragments migrate across dominance boundaries as pieces rotate, so wipes jumped
+  face frames mid-tumble — reported as "the normals stop updating as the pieces
+  spin").** `PrismErosionFade` (same HLSL file) sweeps ONE jagged erosion front
+  across each face as the clock Opacity runs 1 → 0. **UVs are mesh attributes — no
+  vertex animation (flight, spin, scale) can move them** — so the front is glued to
+  the face under any motion and any camera, and the whole flight-undo matrix ride
+  was deleted with the problem (the function is three hashes, a projection, and a
+  1D value noise — simpler AND cheaper). Faces share the wipe's UV-space direction,
+  but each face's UV frame is oriented differently on the box, so world-space
+  fronts still differ per face; the stamped `_Velocity` seeds each prism's
+  direction and jag so no two chunks peel alike. **Soft-hard-soft**: Survival is
+  a HARD edge (`PRISM_EROSION_FRINGE` 0, 2026-08-11). It briefly led the front with
+  a dithered fringe, on the reading that soft-hard-soft wanted a soft trailing
+  component; in motion that was wrong, because the debris edge then dissolved in the
+  SAME visual language as the corridor it flies through and the two read as one
+  confused surface instead of "a prism breaking up" inside "the world going
+  see-through". The motif's soft component here is the unbroken face the front eats
+  into and the irregular JAG of the front itself. Removing the fringe also made the
+  fade curve essentially exact — the smear WAS the coverage error, 0.0296 → **0.00068**
+  mean against the margin-compressed ramp. **The wipe
+  finishes early by design**: thresholds are compressed above
+  `PRISM_EROSION_END_MARGIN` (0.15), so every fragment is gone 15% of the fade
+  before the batch retires — closing the "pieces vanish before the wipe finishes"
+  race structurally — and the fade itself was extended 1.5×
+  (`PrismExplosion.DefaultDuration` 5 → 7.5, `MinPressuredDuration` 0.22 → 0.33).
+  Spliced by `Tools/Shaders/wire_prism_explosion_erosion.py` (which MIGRATES the
+  old position-anchored wiring in place) between the explosion clock and the
+  corridor node; live prisms stay exact pass-throughs via the ≥1/≤0 early-outs,
+  and a wiped-away fragment takes the corridor's alpha≤0 fast out. The wipe
+  coordinate carries a CDF remap fitted over the uniform UV square
+  (`Tools/Shaders/fit_prism_erosion_cdf.py`; re-run if `WIGGLE`/`WIGGLE_FREQ`
+  move — `END_MARGIN`/`FRINGE` sit outside the fitted quantity and tune freely),
+  validated against a clang build of the file itself; the ASCII render of the
+  compiled function shows one connected hard front per face at every alpha. The guard is
+  `PrismOcclusionCoverageTests.ExplodingGraph_CarriesTheObjectAnchoredErosion`.
 
-**Cost, stated:** per fragment, outside the corridor — one compare against the off
-sentinel, ~10 ALU of segment-distance, one compare, done (no dither, no texture). Draw
-calls, batches, render queue and collider count are unchanged; corridor prisms stay in the
-same instanced batch as everything else. The one non-zero cost is structural: enabling
-`_ALPHATEST_ON` on the seven opaque BlockGraph materials makes prism fragments
-alpha-tested, which forfeits early-Z rejection for those draws on tile-based GPUs. Prisms
-are unlit boxes with a trivial fragment shader, and the alternative (per-prism transparent
-material swaps) is strictly worse, but it is a real trade and it is the thing to measure if
-prism fill cost regresses. Reverting it is one command
-(`Tools/Shaders/enable_prism_alpha_clip.py` inverted, or clear `_AlphaClip`/`_ALPHATEST_ON`),
-after which prisms render exactly as they did before and the corridor silently does nothing
-to them.
+**Cost, stated:** per fragment, for solid mass outside the corridor — one compare against
+the off sentinel, ~10 ALU of segment-distance, two compares, done (no dither, no texture).
+The kernel is paid only by fragments whose final alpha is fractional: the corridor's
+gradient shell, mid-fade debris, cloaked prisms. Draw calls, batches, render queue and
+collider count are unchanged; every prism stays in the same instanced batch (and the
+ex-transparent materials now WRITE DEPTH and skip sorting, which is a small win, not a
+cost). The one non-zero structural cost is unchanged: `_ALPHATEST_ON` on every prism
+material makes prism fragments alpha-tested, which forfeits early-Z rejection for those
+draws on tile-based GPUs. Prisms are unlit boxes with a trivial fragment shader, and the
+alternative (per-prism transparent material swaps) is strictly worse, but it is a real
+trade and it is the thing to measure if prism fill cost regresses. Reverting the corridor
+alone is no longer one command — the fade-out and cloak paths now DEPEND on the clip
+(their materials no longer blend), so a revert means re-converting those seven materials
+to transparent as well.
 
 **What it replaced.** `ClearPrisms` (deleted, with its prefab and the dead
 `IVessel.AllowClearPrismInitialization()` opt-out gate): a per-vessel kinematic
@@ -1262,13 +1562,13 @@ Phase C — rogue paths & ecosystem visuals (each is standalone):
 | C1 | `ClearPrisms` `_Alpha` fade → GLOBAL-uniform shader corridor, **promoted to a platform law** | ✅ SHIPPED 2026-08-04 — `ClearPrisms.cs` + its prefab DELETED and excised from Rhino/Dolphin/Serpent (−3 trigger colliders, −3 kinematic Rigidbodies), along with the dead `IVessel.AllowClearPrismInitialization()` opt-out. Replaced by `PrismOcclusionCorridor` (2 globals/frame) + `PrismOcclusionCorridor.hlsl` wired into **every graph a live prism can render with** (BlockGraph + ExplodingBlockGraph), bound at `VesselController.Initialize` so no vessel or mode can omit it, with runtime fail-loud (`PrismOcclusionDiagnostics`) and an edit-mode coverage test. Full design, the four enforcement layers, and the stated cost: §4.7 |
 | C2 | `MaterialBlendUtility` (overheat danger trail + skim overcharge) → the one color pipeline | ✅ shipped 2026-08-01: utility DELETED. Overheat danger trail: the redundant direct blend removed — `IsDangerous` pre-`Initialize` already runs `MakeDangerous()` through the pipeline (per-domain danger material, clock or legacy transition); `EnableDangerMode`'s material param is legacy-ignored. Skim overcharge: rides `MaterialPropertyAnimator.UpdateMaterial(overchargedMaterial, …)` — visible on both render paths; the multi-material append semantic retired |
 | C3 | AOE double-growers (`AOERadialBlocks`, `AOEDangerHemisphereBlocks`) → single engine stamp; fix dead `growthRate` field writes + `renderer.material` clone | ✅ shipped 2026-08-01: both bespoke `GrowToScale` loops deleted (growth = the one engine via `TargetScale` + `SetGrowthRate`); `MakeDangerousAsync` deleted — danger/shield now ride the pre-`Initialize` flag contract so `PrismStateManager` applies the proper per-domain theme materials (the `renderer.material` clone and the instanced-path-blind restyle are gone); hemisphere prisms now get the firing vessel's Domain like the radial sibling |
-| C4 | `FireTrailBlockActionExecutor` → pooled + mover-contract or stamped ballistic clock; remove `Destroy()` timer (ecosystem law) | ☐ not started |
-| C5 | `FullAutoBlockShoot.MoveAndAnchorAsync` turret anchor flight → stamped clock translation + one anchor callback | ☐ not started |
+| C4 | `FireTrailBlockActionExecutor` → pooled + mover-contract or stamped ballistic clock; remove `Destroy()` timer (ecosystem law) | ✅ 2026-08-07: **resolved by deletion**, the C10 outcome. `FireTrailBlockActionExecutor` + `FireTrailBlockActionSO` (and their metas) are gone. They were unreachable — a repo-wide GUID sweep found neither script on any prefab, scene or `.asset`, no `FireTrailBlockAction` asset was ever created from the `[CreateAssetMenu]`, and no C# referenced them outside their own pair. Migrating a path nothing can execute would have shipped an untested one; deleting removes four latent bugs instead: the raw `Instantiate` (line 65, commented `// ADDED TO REMOVE POOL`), **two** racing `Destroy` timers on a visible prism (the deferred `Destroy(go, ProjectileTime)` and `MoveBlockForward`'s tail — the imposed death `Docs/ECOSYSTEM.md` §0 forbids), a per-frame `tf.position +=` with no `NotifyPositionChanged`, so a wired-up version would have drawn at the muzzle for its whole flight and been invisible to `PrismSpatialIndex`, and authored defaults where `friendlyFire = true` → `MakeDangerous` silently clears its own `shielded = true`. The turret path below is the pattern to author from if the ability is ever wanted |
+| C5 | `FullAutoBlockShoot.MoveAndAnchorAsync` turret anchor flight → stamped clock translation + one anchor callback | ✅ SHIPPED 2026-08-07 — `MoveAndAnchorAsync` DELETED. New `PrismFlightClock` (HLSL) + `_FlightStartTime`/`_FlightDuration`/`_FlightVelocity` (Hybrid Per Instance, wired into **both** live-prism graphs by `Tools/Shaders/wire_prism_flight_clock.py`) + `PrismRenderService.StampFlight`/`ClearFlightStamp`. The prism is spawned at the flight's **END POINT** with everything final and the vertex stage walks the visual in from the muzzle; zero CPU writes between the stamp and the anchor. **The open question in the prompt is answered: gameplay DOES collide mid-flight**, and it is the prism's *carried `Projectile`* that does it — detached at the muzzle, flown by the bullets' own `LaunchProjectile`, which is a projectile and keeps the ordinary gameplay-transform contract. That split is what lets the prism's transform be final at the destination. A stopping impact (SPACE < 5) re-stamps: one `NotifyPositionChanged` to the impact point, then `ClearFlightStamp`. The easing is the BULLETS' `cos(t·π/2T)`, so a turret prism and a bullet released together stay abreast. Also fixed here: the path never called `Prism.Initialize`, so every turret prism lived at `localScale` zero — invisible, with a zero-volume collider. Detail: `_Scripts/Controller/Vessel/R_VesselActions/SPARROW_TURRET_STANCE.md` |
 | C6 | Fauna visual transitions → clock: level-up bloom, wither-from-extremities (staggered t₀ ring stamps — pacing already analytic), devour/graze suction, boid starvation fade | ☐ not started |
 | C7 | Flora growth tick / paced instantiation → stamped blooms (spawn scheduling stays CPU; visuals ride clock) | ☐ not started |
 | C8 | Microscene conveyor recycle + first-population bloom → suction/bloom stamps (kills the per-frame notify storm) | ✅ shipped 2026-08-02 with the Wanderway grand-scale upgrade. `Microscene.AnimateScaleAsync` DELETED: the recycle is now (1) one grow-clock re-stamp per prism toward the animator min scale (budgeted, GPU runs the shrink), (2) `Prism.HideForTransport` + ONE container transform write, (3) a budgeted re-pose whose blooms are the standard creation stamps. The per-frame `NotifyPrismPositions` sweep is gone — it existed only because a container scale is invisible on the instanced path unless every child entity is re-synced every frame (§3.8 #1's failure, paid for rather than fixed). First population moved from `LayBatched` to `LayBudgetedAsync` so it rides the arena gate behind an `EnvironmentLoadVeil`. New: `Prism.BeginBulkTransport`/`EndBulkTransport` raises the creation-completion budget while transported mass re-enters |
 | C9 | Cell swap retiring-world suction → per-prism suction stamps (fixes instanced-path invisibility, §3.8.1) | ☐ not started |
-| C10 | Worm segment make-room shift → stamped slide (locomotion stays mover-contract) | ☐ not started |
+| C10 | Worm segment make-room shift → stamped slide (locomotion stays mover-contract) | ✅ 2026-08-02: resolved by deletion — legacy `Worm.cs` removed in the worm-colony kaiju rebuild; `WormFauna` locomotion rides the mover contract (Docs/ECOSYSTEM.md §23) |
 | C11 | Spindle `_DeathAnimation` fade (prism-adjacent) → clock inputs on spindle material | ☐ not started |
 | C12 | `PrismImplosion` watchdog → scheduler; orphan cleanup; `SkimFxRunner` stretch beam review; `CloakSeedWall` dead code removal | ◐ 2026-08-01: `TrailBlockBufferManager` deleted; `TrailViewer` removed from Urchin.prefab + deleted (D2, 2026-08-02); watchdog / SkimFxRunner / CloakSeedWall pending |
 | C13a | Environment-laid prisms miss the clock path (the live repro: `grow:SpawnablePrism (Clone)`) | ✅ FIXED 2026-08-02 — root cause was NOT the raw-`Instantiate` lay: the shield engage-morph held `_exoticVisualActive` across the creation reveal, so `EnsureRenderEntity` was skipped at the exact instant the one-shot grow stamp fired. Fixed by §4.5 (a) entity existence ⊥ visibility + stamp-site self-heal + fact-based diagnosis, and (b) the birth rule (spawn-time shields snap). §3.8 #10 has the full anatomy. Pooling is orthogonal — a pooled prism with a `Shielded` kind failed identically; `BoostRingBuilder` only escaped because it defers shield kinds to `onGrown` |

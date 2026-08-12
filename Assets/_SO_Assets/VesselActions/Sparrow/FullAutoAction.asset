@@ -22,7 +22,7 @@ MonoBehaviour:
   energy: 0
   speedValue:
     Enabled: 1
-    Value: 1500
-    Min: 1500
-    Max: 4000
+    Value: 375
+    Min: 375
+    Max: 4875
     element: 3

@@ -4,6 +4,7 @@ using System.Linq;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.UI;
 using CosmicShore.Utility;
+using Cysharp.Threading.Tasks;
 using Reflex.Attributes;
 using Reflex.Core;
 using Reflex.Injectors;
@@ -281,22 +282,36 @@ namespace CosmicShore.UI
 
         private void SaveDisplayName()
         {
+            if (!displayNameInput)
+                return;
+
+            SaveDisplayNameAsync(displayNameInput.text).Forget();
+        }
+
+        private async UniTaskVoid SaveDisplayNameAsync(string newName)
+        {
             try
             {
-                if (!displayNameInput)
-                    return;
-
-                string newName = displayNameInput.text?.Trim();
-
-                if (string.IsNullOrEmpty(newName) || newName.Length < 3 || newName.Length > 25)
+                // Full rule set (length, characters, profanity, duplicates) lives in
+                // PlayerDataService.TrySetDisplayNameAsync. On rejection the modal stays
+                // open so the user can correct the name.
+                var localCheck = DisplayNameValidator.Validate(newName);
+                if (!localCheck.IsValid)
                 {
-                    CSDebug.LogWarning("[ProfileIconSelectView] Display name must be between 3 and 25 characters.");
+                    CSDebug.LogWarning($"[ProfileIconSelectView] Display name rejected: {localCheck.Message}");
                     return;
                 }
 
+                if (displayNameSaveButton) displayNameSaveButton.interactable = false;
+
                 if (dataService != null)
                 {
-                    dataService.SetDisplayName(newName);
+                    var result = await dataService.TrySetDisplayNameAsync(newName);
+                    if (!result.IsValid)
+                    {
+                        CSDebug.LogWarning($"[ProfileIconSelectView] Display name rejected: {result.Message}");
+                        return;
+                    }
                 }
 
                 ModalWindowOut();
@@ -304,6 +319,10 @@ namespace CosmicShore.UI
             catch (Exception e)
             {
                 CSDebug.LogWarning($"[ProfileIconSelectView] SaveDisplayName failed: {e.Message}");
+            }
+            finally
+            {
+                if (displayNameSaveButton) displayNameSaveButton.interactable = true;
             }
         }
 

@@ -20,7 +20,9 @@ In one or two lines, state which invariants the change touches and confirm it vi
 **continuity of existence** (nothing pops in/out — everything grows/fades/suctions/withers; PLATFORM-WIDE) ·
 no imposed death/decay/lifespan · no domain asymmetry (controlling-color spawn only) ·
 wither-to-crystal + mass conservation · volume is the spine (not count) · the lifeform→elemental-
-crystal invariant · territorial permanence (don't cull the dominant canopy) · endogenous
+crystal invariant (COMPOSITE creatures satisfy it at the CREATURE level — the worm
+colony's capital segments carry the hearts, its body segments are body-parts and carry
+none; `Docs/ECOSYSTEM.md` §23.3) · territorial permanence (don't cull the dominant canopy) · endogenous
 selection only (survival = fitness, never a scripted fitness function) · the collider budget.
 **If a change might violate one, STOP and ask (AskUserQuestion). Do not guess the design.**
 
@@ -88,6 +90,31 @@ what the carve-out silently broke — see the traps below.
   `Cell.ExpectedNucleusWorldRadius` (measures the config's prefab asset, no instantiate) —
   `cellData.Cell` is null then and `NucleusWorldRadius` returns 0, and a fallback built on
   either silently placed every player *inside* the nucleus.
+- **Deferring a lifeform's crystal drop? REPARENT IT FIRST.** Ecology work keeps wanting to move
+  *when* something happens in a death — the heart drops at the end of the wither rather than the
+  start, a body part leaves later than it used to. A Unity child cannot be rescued once its parent
+  is being destroyed, so a deferral that leaves the object parented to the husk loses it on every
+  interrupted death (cell drain, turn end, a manager pulling the husk) — and an `OnDestroy`
+  backstop cannot fix it after the fact, it can only *report* the loss. Split it: re-home the
+  object at the TOP of the death (`Crystal.DetachHeartToCell` — onto the cell, but still
+  `IsEmbedded` so it is uncollectable), and let the deferred step only change its *state*. Then
+  every later exit is a real recovery instead of a hopeful one. **Corollary, and the part that
+  bites twice:** any guard phrased *"is it still attached to / embedded in me?"* silently stops
+  firing once you move the detach earlier — grep every reader of that state before you change its
+  timing (`GrowCrystalWithPop` was exactly such a guard). `Docs/ECOSYSTEM.md §26.4`.
+- **An ORDERED wither needs the spindles isolated first.** `Spindle.ForceWither` recurses into
+  child spindles AND destroying a spindle GameObject destroys its children, so any death that
+  spends spindles one at a time collapses the creature in one step — *except* outside-in, which
+  works by accident because it destroys leaves first. `Spindle.IsolateForOrderedWither` breaks both
+  couplings (and suspends `CheckForLife`, so handing a spindle's prisms away doesn't evaporate it
+  out of turn). Detach body prisms BEFORE withering spindles — a body prism is parented to a
+  spindle, so the wither would destroy the mass you meant to conserve. `Docs/ECOSYSTEM.md §26.3`.
+- **A prism that stops being body tissue must be RE-FILED, not just reparented.**
+  `PrismSpatialIndex.ComputeEnvironmentMass` reads `HealthPrism.OwnerFauna` to keep a live swarm
+  out of the targeting grids. Clear the owner without calling `NotifyOwnershipChanged` and the
+  prism stays classified as volume-only body mass forever: it feeds `LiveVolume` but the food web
+  can neither see nor eat it, which looks exactly like "fauna are ignoring it" with no error
+  anywhere.
 - **A visual state applied before `Prism.IsCreationComplete` is part of BIRTH and must snap.**
   Engaging a morph there holds the exotic-visual window across the creation reveal and eats the
   one-shot grow stamp, so the prism snaps in instead of blooming (`Docs/PRISM_ANIMATION.md` §4).

@@ -244,8 +244,9 @@ namespace CosmicShore.Gameplay
             player.Vessel.ToggleAIPilot(true);
             player.InputController.SetPause(true);
 
-            // Camera setup is handled by MainMenuController.HandleMenuReady()
-            // which activates the CM Main Menu Cinemachine camera for menu state.
+            // Camera setup is handled by MainMenuCameraController on OnClientReady -
+            // it drives the Menu_Main scene camera directly (vessel-framing rig, no
+            // Cinemachine) once the pair is ready.
         }
     }
 }
