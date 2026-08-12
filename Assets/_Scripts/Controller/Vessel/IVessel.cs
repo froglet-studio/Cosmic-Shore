@@ -52,7 +52,6 @@ namespace CosmicShore.Gameplay
         // void PerformButtonActions(int buttonNumber);
         void ToggleAIPilot(bool toggle);
         void StartVessel();
-        bool AllowClearPrismInitialization();
         void DestroyVessel();
         void ResetForPlay();
         void SetPose(Pose pose);

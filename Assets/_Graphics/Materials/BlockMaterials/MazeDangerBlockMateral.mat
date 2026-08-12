@@ -12,7 +12,8 @@ Material:
     type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
-  m_ValidKeywords: []
+  m_ValidKeywords:
+  - _ALPHATEST_ON
   m_InvalidKeywords:
   - _EMISSION
   m_LightmapFlags: 3
@@ -127,8 +128,8 @@ Material:
     m_Ints: []
     m_Floats:
     - Normal_Blend: 0.5
-    - _Alpha: 0
-    - _AlphaClip: 0
+    - _Alpha: 1
+    - _AlphaClip: 1
     - _AlphaToMask: 0
     - _BASE_COLOR_WEIGHT: 1
     - _BUMP_MAP_STRENGTH: 0.3
@@ -160,7 +161,7 @@ Material:
     - _METALNESS: 0
     - _Metallic: 0
     - _OcclusionStrength: 1
-    - _Opacity: 0
+    - _Opacity: 1
     - _Parallax: 0.005
     - _Proximity: 0
     - _QueueControl: 0

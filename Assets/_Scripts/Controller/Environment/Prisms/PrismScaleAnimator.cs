@@ -157,9 +157,19 @@ namespace CosmicShore.Gameplay
             // STRICT MODE (no legacy fallback): stamp, and scream if the visual
             // cannot ride the clock — gameplay state goes final regardless.
             bool stamped = PrismRenderService.StampGrow(in prism.RenderHandle, now, k, in startFrac);
+
+            // One self-heal before screaming: the stamp is a ONE-SHOT initial-conditions
+            // write, so a prism that reaches this instant without a companion entity
+            // loses its bloom for good. Creation is idempotent and no-ops when an entity
+            // already exists, so this costs nothing on the happy path.
+            if (!stamped && prism != null && prism.TryEnsureRenderEntityForStamp())
+                stamped = PrismRenderService.StampGrow(in prism.RenderHandle, now, k, in startFrac);
+
             if (!stamped)
                 PrismClockDiagnostics.WarnNoRenderEntity($"grow:{name}", this,
-                    PrismRenderService.DescribeGrowStampTarget(in prism.RenderHandle));
+                    prism != null
+                        ? $"{prism.DescribeRenderEntityState()} — {PrismRenderService.DescribeGrowStampTarget(in prism.RenderHandle)}"
+                        : "the scale animator has no Prism");
             else if (meshRenderer != null && meshRenderer.sharedMaterial != null &&
                      !meshRenderer.sharedMaterial.HasProperty(GrowStartTimeId))
                 PrismClockDiagnostics.WarnUnwiredMaterial(meshRenderer.sharedMaterial, "_GrowStartTime", this);

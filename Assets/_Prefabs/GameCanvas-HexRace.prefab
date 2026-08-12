@@ -5053,7 +5053,6 @@ MonoBehaviour:
   countdownDisplay: {fileID: 5622763037030145070}
   readyButton: {fileID: 3870071580335586427}
   pip: {fileID: 7521555056725676851}
-  silhouette: {fileID: 5445837678751353653}
   trailDisplay: {fileID: 5903772158179007925}
   connectingPanelCanvasGroup: {fileID: 0}
   canvasGroup: {fileID: 1030159137653047952}

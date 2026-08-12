@@ -41,6 +41,20 @@ namespace CosmicShore.Utility
         public ScriptableEventUlong OnPlayerNetworkSpawnedUlong;
         public ScriptableEventNoParam OnVesselNetworkSpawned;
         public ScriptableEventUlong OnPlayerPairInitialized;
+
+        /// <summary>
+        /// A vessel landed a shot on an opposing vessel. Raised by the combat-hit impact
+        /// effects on whichever machine simulated the shot (projectiles are local objects, so
+        /// that is the shooter's machine) and consumed by the single-writer
+        /// <c>StatsManager.CombatHitLanded</c>, which arbitrates server-vs-client attribution.
+        ///
+        /// It lives HERE rather than on the effect assets' own serialized field alone, or on a
+        /// field of StatsManager, because StatsManager already carries this object in every
+        /// scene - so gunnery records everywhere with nothing per-scene to wire, the same
+        /// reasoning that moved the fauna-kill channel onto CellRuntimeDataSO.
+        /// </summary>
+        public ScriptableEventCombatHitStats OnCombatHitLanded;
+
         public event Action<string, Domains> OnPlayerAdded;
 
         /// <summary>
@@ -258,6 +272,31 @@ namespace CosmicShore.Utility
         [NonSerialized] public int PrismTargetCount;
 
         /// <summary>
+        /// The resolved fauna-kill target for the current Wildlife Liberation session - the
+        /// per-domain <see cref="IRoundStats.LifeformsKilled"/> SUM that ends the turn.
+        /// Published by <c>WildlifeKillTurnMonitor</c> in StartMonitor (server), synced to
+        /// clients via NetworkVariable.OnValueChanged. Read by
+        /// <see cref="CosmicShore.Gameplay.WildlifeLiberationScoringRuleSO"/> for the end
+        /// condition and the "remaining" readout. Reset in <see cref="ResetRuntimeData"/> and
+        /// <see cref="ResetRuntimeDataForReplay"/>.
+        /// </summary>
+        [NonSerialized] public int LifeformTargetCount;
+
+        /// <summary>
+        /// The resolved gunnery point target for the current Dog Fight session - the per-domain
+        /// <see cref="IRoundStats.CombatPoints"/> sum that ends the turn. Published by
+        /// <c>DogFightPointTurnMonitor</c> in StartMonitor (server), synced to clients via
+        /// NetworkVariable.OnValueChanged. Read by
+        /// <see cref="CosmicShore.Gameplay.DogFightScoringRuleSO"/> for the end condition and
+        /// the "remaining" readout. Reset in <see cref="ResetRuntimeData"/> and
+        /// <see cref="ResetRuntimeDataForReplay"/>.
+        ///
+        /// Unlike <see cref="LifeformTargetCount"/> this is a DOMAIN sum: Dog Fight is a team
+        /// race, so a wingman's rockets shorten your match.
+        /// </summary>
+        [NonSerialized] public int CombatPointTargetCount;
+
+        /// <summary>
         /// The active scoring strategy for the current mode, published by the mode's controller
         /// in OnNetworkSpawn (drag the matching <see cref="CosmicShore.Gameplay.ScoringRuleSO"/>
         /// asset onto the controller). Read by the network turn monitors for the end condition
@@ -284,6 +323,77 @@ namespace CosmicShore.Utility
             GameMode = game.Mode;
             IsMultiplayerMode = game.IsMultiplayer;
             ComebackRatePerScoreDeficit = game.ComebackRatePerScoreDeficit;
+
+            // Publish the mode's legal hulls BEFORE clamping, so the clamp and every later
+            // server-side check read the same list. Deliberately NOT cleared by
+            // ResetRuntimeData(): like RequestedAIBackfillCount this is pre-launch config that
+            // must survive SceneLoader.LoadSceneAsync() into the game scene, where the vessel
+            // spawner reads it.
+            AllowedVesselClasses.Clear();
+            if (game.Vessels != null)
+                for (int i = 0; i < game.Vessels.Count; i++)
+                    if (game.Vessels[i] != null)
+                        AllowedVesselClasses.Add(game.Vessels[i].Class);
+
+            ClampSelectedVesselToGame(game);
+        }
+
+        /// <summary>
+        /// The vessel classes the CURRENT game permits (<see cref="SO_ArcadeGame.Vessels"/>),
+        /// published by <see cref="SyncFromArcadeGame"/>. Empty means "no restriction" - which is
+        /// also the state in Menu_Main before any game has been launched.
+        /// </summary>
+        public readonly List<VesselClassType> AllowedVesselClasses = new();
+
+        /// <summary>
+        /// Returns <paramref name="requested"/> when this game permits it, otherwise the game's
+        /// first authored vessel (for a single-vessel mode, THE mode's vessel). An empty
+        /// <see cref="AllowedVesselClasses"/> means no restriction and returns the input
+        /// unchanged, so this is safe to call from a shared spawn path.
+        ///
+        /// Exists because <see cref="selectedVesselClass"/> is NOT the whole story in
+        /// multiplayer: <c>Player.NetDefaultVesselType</c> is an OWNER-write NetworkVariable that
+        /// each client sets from its OWN local config (and from the menu's vessel-changer toy), so
+        /// a client walks into a restricted mode still wearing the hull it last flew. Clamping
+        /// only the launcher's selectedVesselClass fixed the host and left every client wrong -
+        /// which is why the SERVER re-clamps at spawn.
+        /// </summary>
+        public VesselClassType ClampVesselToGame(VesselClassType requested)
+        {
+            if (AllowedVesselClasses.Count == 0) return requested;
+            for (int i = 0; i < AllowedVesselClasses.Count; i++)
+                if (AllowedVesselClasses[i] == requested)
+                    return requested;
+            return AllowedVesselClasses[0];
+        }
+
+        /// <summary>
+        /// Forces <see cref="selectedVesselClass"/> into the set this game actually allows
+        /// (<see cref="SO_ArcadeGame.Vessels"/>). `Vessels` was previously only the UI's list of
+        /// CHOICES: nothing validated the selection at launch, so a vessel picked in an earlier
+        /// game persisted into a mode that does not permit it - a Dolphin flew Ribcage, which is
+        /// Rhino-only, while its AI opponents correctly spawned Rhinos (their class comes from
+        /// the scene's own aiInitializeDatas).
+        ///
+        /// Enforced HERE, at the one call every launch path funnels through, rather than in the
+        /// configure modal: the modal's ship picker is only one entry point (rematch, the
+        /// Tournament chain, and a launch whose vessel screen was never opened all bypass it),
+        /// and a per-mode fork would have to be repeated for every restricted-vessel game.
+        /// A single-vessel game therefore cannot be entered in the wrong hull by any route.
+        /// </summary>
+        void ClampSelectedVesselToGame(SO_ArcadeGame game)
+        {
+            if (selectedVesselClass == null || AllowedVesselClasses.Count == 0) return;
+
+            var current = selectedVesselClass.Value;
+            var clamped = ClampVesselToGame(current);
+            if (clamped == current) return;
+
+            Debug.Log($"<color=#FFD700>[GameDataSO] {game.Mode} does not allow {current}; " +
+                      $"clamping selected vessel to {clamped}.</color>");
+            selectedVesselClass.Value = clamped;
+            if (VesselClassSelectedIndex != null)
+                VesselClassSelectedIndex.Value = (int)clamped;
         }
 
         /// <summary>
@@ -461,6 +571,8 @@ namespace CosmicShore.Utility
             JoustTargetCount = 0;
             GoalTargetCount = 0;
             PrismTargetCount = 0;
+            LifeformTargetCount = 0;
+            CombatPointTargetCount = 0;
             System.Array.Clear(_domainMetricSums, 0, _domainMetricSums.Length);
             // Note: RequestedAIBackfillCount and RequestedDomainCount are intentionally
             // NOT reset here. They are pre-launch config values set by
@@ -507,6 +619,8 @@ namespace CosmicShore.Utility
             JoustTargetCount = 0;
             GoalTargetCount = 0;
             PrismTargetCount = 0;
+            LifeformTargetCount = 0;
+            CombatPointTargetCount = 0;
             System.Array.Clear(_domainMetricSums, 0, _domainMetricSums.Length);
         }
 
@@ -827,6 +941,25 @@ namespace CosmicShore.Utility
             return true;
         }
         
+        /// <summary>
+        /// Set the spawn poses directly, for callers that COMPUTE the arrangement instead of reading
+        /// authored scene transforms (see <see cref="Utility.CellSpawnFormation"/>, which places
+        /// players symmetrically around the cell nucleus). Resets the draw pool, exactly like
+        /// <see cref="SetSpawnPositions"/>.
+        /// </summary>
+        public void SetSpawnPoses(Pose[] poses)
+        {
+            if (poses == null || poses.Length == 0)
+            {
+                CSDebug.LogError("[GameDataSO] SetSpawnPoses called with no poses.");
+                return;
+            }
+
+            SpawnPoses = poses;
+            _playerSpawnPoseList?.Clear();
+            _playerSpawnPoseList = new List<Pose>(poses);
+        }
+
         public void SetSpawnPositions(Transform[] spawnTransforms)
         {
             if (spawnTransforms == null)
@@ -975,11 +1108,33 @@ namespace CosmicShore.Utility
         // -----------------------------------------------------------------------------------------
         // Helpers (private)
 
-        IRoundStats FindByTeam(Domains domain) =>
-            RoundStatsList.FirstOrDefault(rs => rs.Domain == domain);
+        // Index loops, not LINQ, deliberately. `RoundStatsList.FirstOrDefault(rs => ...)`
+        // allocates THREE objects per call on a List<T> reached through IEnumerable<T>:
+        // a display class capturing the parameter, the Func<> delegate, and a boxed
+        // List<T>.Enumerator. That is fine once a frame and not fine here —
+        // FindByName is on the per-prism-DEATH path (StatsManager.PrismDestroyed looks
+        // up BOTH the attacker and the victim for every prism destroyed), so a
+        // 2,400-death AOE frame paid ~4,800 of these lookups and their garbage. The
+        // list is a handful of entries; a linear scan was always the right shape.
+        IRoundStats FindByTeam(Domains domain)
+        {
+            for (int i = 0, n = RoundStatsList.Count; i < n; i++)
+            {
+                var rs = RoundStatsList[i];
+                if (rs != null && rs.Domain == domain) return rs;
+            }
+            return null;
+        }
 
-        IRoundStats FindByName(string name) =>
-            RoundStatsList.FirstOrDefault(rs => rs.Name == name);
+        IRoundStats FindByName(string name)
+        {
+            for (int i = 0, n = RoundStatsList.Count; i < n; i++)
+            {
+                var rs = RoundStatsList[i];
+                if (rs != null && rs.Name == name) return rs;
+            }
+            return null;
+        }
 
         float VolumeOf(Domains domain) =>
             FindByTeam(domain)?.VolumeRemaining ?? 0f;

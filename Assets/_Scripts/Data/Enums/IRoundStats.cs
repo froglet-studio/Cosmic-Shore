@@ -43,6 +43,10 @@ namespace CosmicShore.Data
         event Action<IRoundStats> OnSkimmerShipCollisionsChanged;
         event Action<IRoundStats> OnJoustCollisionChanged;
         event Action<IRoundStats> OnGoalsScoredChanged;
+        event Action<IRoundStats> OnLifeformsKilledChanged;
+        event Action<IRoundStats> OnBulletHitsLandedChanged;
+        event Action<IRoundStats> OnMissileHitsLandedChanged;
+        event Action<IRoundStats> OnCombatPointsChanged;
 
         // Ability time events
         event Action<IRoundStats> OnFullSpeedStraightAbilityActiveTimeChanged;
@@ -95,6 +99,38 @@ namespace CosmicShore.Data
         int JoustCollisions { get; set; }
         int GoalsScored { get; set; }
 
+        /// <summary>
+        /// Fauna this player has KILLED - an attributed creature death (body prisms shot out,
+        /// or a crystal joust), never a starvation or predation death. The scoring metric of
+        /// Wildlife Liberation; fed by CellRuntimeDataSO.OnFaunaKilled -> StatsManager.
+        /// </summary>
+        int LifeformsKilled { get; set; }
+
+        /// <summary>
+        /// Direct projectile hits this player has LANDED on an opposing vessel - the bullet
+        /// half of vessel-vs-vessel gunnery. Counted once per contact by
+        /// <c>VesselCombatHitByProjectileEffectSO</c>, arbitrated by <c>StatsManager</c>.
+        /// A raw count, deliberately unweighted: what a hit is WORTH is a mode's business
+        /// (see <see cref="CombatPoints"/>), so this stays comparable across modes.
+        /// </summary>
+        int BulletHitsLanded { get; set; }
+
+        /// <summary>
+        /// Missile hits this player has LANDED on an opposing vessel - a direct strike OR
+        /// being caught in the blast, counted ONCE per missile per victim (a skyburst
+        /// detonates on a direct hit, so both would otherwise fire for one rocket).
+        /// </summary>
+        int MissileHitsLanded { get; set; }
+
+        /// <summary>
+        /// Weighted combat score - the sum of what this mode paid for each landed hit
+        /// (<c>ScoringRuleSO.PointsForCombatHit</c>). Accumulated server-side at the moment of
+        /// the hit rather than derived, so it is a monotonic cumulative int like every other
+        /// race metric and needs no weighting table at read time. Zero in every mode whose
+        /// rule pays nothing for combat, which is all of them except Dog Fight.
+        /// </summary>
+        int CombatPoints { get; set; }
+
         // Ability active times
         float FullSpeedStraightAbilityActiveTime { get; set; }
         float RightStickAbilityActiveTime { get; set; }
@@ -140,6 +176,10 @@ namespace CosmicShore.Data
             SkimmerShipCollisions = 0;
             JoustCollisions = 0;
             GoalsScored = 0;
+            LifeformsKilled = 0;
+            BulletHitsLanded = 0;
+            MissileHitsLanded = 0;
+            CombatPoints = 0;
 
             FullSpeedStraightAbilityActiveTime = 0f;
             RightStickAbilityActiveTime = 0f;

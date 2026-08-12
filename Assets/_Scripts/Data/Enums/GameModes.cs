@@ -57,5 +57,25 @@ namespace CosmicShore.Data
         // scores a point; first domain to the wave target (default 3) wins. See
         // _Scripts/Controller/Arcade/NUCLEUSRUSH.md.
         NucleusRush = 38,
+        // Ribcage (39): Rhino-only cage-breaking race. A hollow SHIELDED prism sphere
+        // pens the cell's brood; domains race to smash the destruction target, and the
+        // leader IS the cell's controlling domain - so the fauna wave hatches in the
+        // leader's colour and the legacy herbivore diet (eat opposing-domain mass) turns
+        // the swarm loose on every trailing team's trails. See
+        // _Scripts/Controller/Arcade/RIBCAGE.md.
+        Ribcage = 39,
+        // WildlifeLiberation (40): the Sparrow-only hunt. Three concentric cages at 1050 / 600
+        // / 200 pen three tiers of wildlife - a huge swarm of small creatures in the outer
+        // room, much bigger ones in the middle, the biggest and toughest in the core. Break in
+        // and shoot; first PLAYER (not domain - this one is a free-for-all) to the kill target
+        // wins. See _Scripts/Controller/Arcade/WILDLIFE_LIBERATION.md.
+        WildlifeLiberation = 40,
+        // DogFight (41): the Sparrow-only gun duel. Two to four pilots hunt each other through
+        // the Boneyard - a wrecked world of hollow hulks and rubble canyons built for close
+        // encounters and hiding places. A bullet hit scores 1, a missile hit (direct strike or
+        // caught in the blast) scores 50, and the first DOMAIN to the point target wins. The
+        // only mode whose score comes from vessel-vs-vessel gunnery. See
+        // _Scripts/Controller/Arcade/DOGFIGHT.md.
+        DogFight = 41,
     }
 }

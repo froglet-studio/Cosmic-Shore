@@ -33,8 +33,11 @@ namespace CosmicShore.UI
         // Polled each frame to drive the tube cooldown icon in the freed HUD slot.
         private SquirrelTubeActionExecutor _tubeExecutor;
 
-        // Polled each frame for the heat gauge; evented for the overheat flash/throb.
-        private OverheatingActionExecutor _overheatExecutor;
+        // NOTE: this controller used to look up the Sparrow's OverheatingActionExecutor to drive
+        // SquirrelVesselHUDView's heat gauge/throb. That component only ever existed on
+        // Sparrow.prefab, so the lookup returned null on every Squirrel and the gauge never moved.
+        // It was removed with the Sparrow's overheat mechanic; the view's SetOverheatHeat /
+        // JuiceOverheat* remain, currently undriven, for a future Squirrel meter.
 
         // Single source of truth - the same ColorSet the vessels and prisms use (R5).
         private Color ResolveDomainColor(Domains domain) =>
@@ -70,17 +73,6 @@ namespace CosmicShore.UI
             _tubeExecutor = vesselStatus.Vessel?.Transform
                 ? vesselStatus.Vessel.Transform.GetComponentInChildren<SquirrelTubeActionExecutor>(true)
                 : null;
-
-            // Same pattern for overheat: Heat01 polled for the gauge, C# events for the
-            // one-shot flash/throb juice (executor-local events, not cross-system - no SOAP).
-            _overheatExecutor = vesselStatus.Vessel?.Transform
-                ? vesselStatus.Vessel.Transform.GetComponentInChildren<OverheatingActionExecutor>(true)
-                : null;
-            if (_overheatExecutor != null)
-            {
-                _overheatExecutor.OnOverheated += HandleOverheated;
-                _overheatExecutor.OnHeatDecayCompleted += HandleOverheatRecovered;
-            }
         }
 
         private void Update()
@@ -89,8 +81,6 @@ namespace CosmicShore.UI
             if (_tubeExecutor != null)
                 // Fill grows 0 -> 1 as the ability recharges (ready = full + bright).
                 view.SetTubeCooldownReady(1f - _tubeExecutor.CooldownRemaining01);
-            if (_overheatExecutor != null)
-                view.SetOverheatHeat(_overheatExecutor.Heat01);
         }
 
         private void Subscribe()
@@ -126,12 +116,6 @@ namespace CosmicShore.UI
                 squirrelCrystalExplosionEvent.OnRaised -= HandleSquirrelCrystalExplosion;
             if (driftEnded != null)
                 driftEnded.OnRaised -= OnDriftEnded;
-
-            if (_overheatExecutor != null)
-            {
-                _overheatExecutor.OnOverheated -= HandleOverheated;
-                _overheatExecutor.OnHeatDecayCompleted -= HandleOverheatRecovered;
-            }
         }
 
         private void HandleBoostChanged(BoostChangedPayload payload)
@@ -240,16 +224,6 @@ namespace CosmicShore.UI
             if (fwd2.sqrMagnitude < 1e-6f || course2.sqrMagnitude < 1e-6f) return false;
 
             return Vector3.SignedAngle(course2, fwd2, Vector3.up) < 0f;
-        }
-
-        private void HandleOverheated()
-        {
-            if (view) view.JuiceOverheatEngaged();
-        }
-
-        private void HandleOverheatRecovered()
-        {
-            if (view) view.JuiceOverheatRecovered();
         }
 
         private void HandleSquirrelCrystalExplosion(VesselImpactor vesselImpactor)

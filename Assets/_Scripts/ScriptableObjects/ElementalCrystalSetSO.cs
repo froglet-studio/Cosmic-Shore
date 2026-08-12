@@ -35,6 +35,15 @@ namespace CosmicShore.ScriptableObjects
 
         public static Element RandomElement() => Elemental[Random.Range(0, Elemental.Length)];
 
+        /// <summary>
+        /// A random droppable element from a CALLER-SUPPLIED stream. Same four elements as
+        /// <see cref="RandomElement"/>, but seeded by the caller so a layout can be reproduced
+        /// exactly - which is what lets a mode scatter pickups identically on every peer without
+        /// replicating them (Dog Fight's arena crystals).
+        /// </summary>
+        public static Element RandomElementFrom(System.Random rng) =>
+            Elemental[rng.Next(Elemental.Length)];
+
         public Crystal GetPrefab(Element element) => element switch
         {
             Element.Charge => charge,

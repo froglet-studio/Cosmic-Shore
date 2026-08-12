@@ -193,8 +193,11 @@ cell with all canonical gates; no bare-`Destroy` of visible prisms/crystals on t
 teardown). Everything below is remaining polish / not-yet-play-verified.
 
 - **In-editor verification (second pass — post play-test rework).** Enter freestyle in
-  Menu_Main, fly through the Wanderway toy. Confirm: (1) the toy flips bright + relabels
-  "flowing — fly through to stop", and a second pass turns the flow off (label flips back);
+  Menu_Main, fly through the Wanderway toy. Confirm: (1) the toy's emblem **spins up** to flowing
+  speed over ~0.8s and it relabels "flowing — fly through to stop", a second pass stops the orbit
+  (label flips back), and leaving freestyle with the belt running drops the orbit to a dormant
+  crawl rather than to a stop — and no OTHER toy's body changes colour (the old shared-material
+  write that did exactly that has been deleted);
   (2) a field of ~7 scenes builds ahead and holds at ANY speed — cruise, full throttle, boost —
   with spacing visibly stretching as you speed up; (3) the belt follows you OUT of the cell and
   keeps streaming in open space (prisms + crystals; no flora/fauna out there), and living
@@ -259,9 +262,11 @@ teardown). Everything below is remaining polish / not-yet-play-verified.
   `OnToyboxChanged` are the hooks; implement persistence (the `FavoriteSystem` JSON pattern:
   load on sign-in → `SetToyUnlocked`, subscribe to `OnToyboxChanged` → save) and real unlock
   conditions when the unlock order is decided.
-- **Authored art.** Replace the procedural sphere bodies (domain/painting) with authored art
-  prefabs — `ToyDefinitionSO` could reference an optional body prefab that `ToyFactory` uses
-  instead of a sphere.
+- ~~**Authored art.** Replace the procedural sphere bodies with authored art prefabs.~~
+  **Answered procedurally instead** (and better): every toy root is now a `ToyEmblem` built from
+  the toy's own real content — mini hulls, real painting strokes, real species, real microscenes,
+  the live world. An authored art prefab would be a decorative stand-in, which is the thing the
+  station-icon rule forbids. See `ARCHITECTURE.md` § "Toy-root emblems".
 - **Audio / haptics** on activation (`AudioSystem` gameplay SFX; NiceVibrations).
 - **Tests.** Extract the `SwapToySetCoordinator` reconcile/flip logic into a pure, unit-testable
   helper and add EditMode tests (the "used toy flips to previous; set = universe\{current}"
@@ -285,9 +290,11 @@ teardown). Everything below is remaining polish / not-yet-play-verified.
 
 - **Charge tadpole is NEW and untuned** (authored from the Space baseline with a Charge
   crystal) — tune via the matrix, then bake into `Tadpole Fauna Charge.asset`.
-- **Not in the elemental contract yet**: Seaweed (`SpawnableCord`, not a `Flora`), worms
-  (`Worm` is not a `Fauna`), drone populations (BoidManager path — now all spawn the base
-  tadpole; needs its own config pass for per-element identity).
+- **Not in the elemental contract yet**: Seaweed (`SpawnableCord`, not a `Flora`), drone
+  populations (BoidManager path — now all spawn the base tadpole; needs its own config pass
+  for per-element identity). (Worms: the legacy trio was deleted; the rebuilt worm colony's
+  capital segments carry authored elemental hearts — Docs/ECOSYSTEM.md §23 — though the
+  colony doesn't yet roll the element × level spread.)
 - **Sparrow (and other vessels') HUD ability-icon bindings** for the shared upgrade-highlight
   system are unwired (Squirrel only); fill each view's `abilityIcons` in its prefab.
 - **Squirrel HUD tube/energy icons repaint colours per-frame**, so the upgrade highlight
@@ -353,7 +360,11 @@ Shipped on `claude/freestyle-cell-selector-toy-*`. Design + invariant analysis:
   activation, clients following. Needs a design call on who owns the menu world.
 - **The player flies blind under the veil.** They opted in, and it matches a scene load, but a
   danger prism from a Caldera build could land on them. Options if it bites: park/autopilot the
-  vessel for the hold, or re-pose it to the cell centre before the build.
+  vessel for the hold, or re-pose it to the cell centre before the build. **Got worse, twice:**
+  Caldera's danger count went 858 → 1,503 in the de-gravitized rework and its total mass 25k →
+  41.4k prisms in the 2× pass, so it is now both the spiciest and the longest-to-build world in
+  the rotation (`Docs/ECOSYSTEM.md` §18.1). Ourobor (§18.2, 37.9k) is the second-longest but
+  carries zero danger.
 - **Toy placement does not re-derive after a swap.** `ToyboxController` rings the membrane once
   at `OnClientReady`. Every freestyle config shares one membrane prefab so the radius does not
   change today; a config with a different membrane would leave the toys mis-ringed.
@@ -418,3 +429,72 @@ station, its options unfold out ahead; fly it again, they fold away. Architectur
   field behind it; `Toy_Painting` never serialized `clusterSpacingBodies`, so that knob read 0
   and was masked by the `max()`). `Toy_Painting` still carries a stale `shape:` key — harmless,
   Unity drops unknown keys on the next save.
+
+---
+
+## Wanderway — the run (bare canvas · rolling tether · way home)
+
+**In-editor verification (a human at the editor is the gate — none of this was play-tested):**
+
+1. **Enter Menu_Main, take freestyle, fly the Wanderway toy.** The cell should suction away and come
+   back as the bare Blob behind ONE load veil (not two covers back to back) — the run requests the
+   cell swap before the belt's stock build so they share the hold. The toy relabels
+   "wandering — fly through to come home".
+2. **Fly out and watch the trail.** It should stabilise at ~100 prisms of length and stay there:
+   the tail withers (shrinks away, never pops) and the head keeps laying. Confirm the total does
+   NOT keep climbing — if it does, one of the two ribbons is not being rolled.
+3. **Turn around.** Your trail is behind you and the RETURN station sits at its far end, gliding
+   (not snapping) as the tail advances. Fly through it: belt stops, toy relabels, vessel returns to
+   where the wander started with its speed intact.
+4. **Repeat the wander.** The belt must RESUME, not re-prime — watch for a second veiled build or a
+   doubled prism count, which would mean the stock was minted twice.
+5. **Exit via the overview button and via gamepad Start** (instead of the station). Both should end
+   the run and bring the vessel home, since both drop freestyle.
+6. **Squirrel specifically:** ride your own tether (tube-riding attaches a `TrailFollower`). The
+   rider must stay on the prism it attached to as the tail recycles — if it races forward along the
+   ribbon, the `Trail.OnOldestRemoved` compensation is not firing.
+7. **Tuning knob:** `Toy_Conveyor.asset ▸ tetherPrisms` (100). It is a per-ribbon LENGTH — a
+   double-trail vessel holds 2× the prisms for the same visible tether.
+
+**Collider-budget impact:** *negative* (an improvement). The rolling tether bounds the local
+vessel's live trail at ~100 prisms/ribbon for the duration of a run, where it was previously
+unbounded; recycled prisms return to the pool with their colliders. The belt's 30k stock is
+unchanged by this work.
+
+**Known limitations / follow-up work:**
+
+- **Ending a wander leaves you in the Blob cell.** Restoring the world you had before is
+  deliberately the Cell Selector's job, not the wander's. If "put my world back" is wanted, it needs
+  a remembered-config hook on `WanderwayRun` and a second veiled swap on exit.
+- **The belt's scenes stay in the world after a run ends.** Conserved mass and released citizens are
+  not toy props to vanish; they are strewn along wherever the player wandered. Harmless today, but a
+  long session accumulates them far from the cell.
+- **Pen-up is untouched by the run now** (the rolling tether replaced the pen-up tether), so the
+  cross-toy last-writer-wins note above applies only to the cell swap vs. the painting runner.
+- **`WanderwayRun` ticks at 0.2s.** At very high speed a burst of lays drains over a few ticks
+  (bounded to 64 removals/tick/ribbon). If a boosted Squirrel visibly overshoots the tether length
+  before it settles, lower `TickSeconds` or raise the per-tick guard.
+- **Only the LOCAL player's trail is tethered.** Wanderway is a solo freestyle mode today; if a
+  party ever wanders together, each client tethers its own vessel and remote trails are untouched.
+
+## Toy-root emblems — known-remaining follow-ups
+
+- **Ring-distance legibility pass (gate for removing the labels).** Fly the full membrane ring and
+  record which toys are NOT identifiable without reading their label. Expect the Lifeform bench and
+  the Cell Selector to be the first to fail. The only levers are the const block at the top of
+  `ToyEmblem` — raise `SatelliteRadiusBodies` first, then `OrbitRadiusBodies`, but the outer extent
+  (`OrbitRadiusBodies + SatelliteRadiusBodies`) × R must stay under the 42u trigger radius.
+- **Two pre-existing material leaks, deliberately left in scope-free.** `VesselChangerToy.BuildStation`
+  and `LifeformMatrixToy.AddSpeciesModel` still call the COLOUR overload of `ToyModelBuilder.TryBuild`
+  on the matrix-station path, orphaning one `Material` per model per matrix open (UnityEngine.Objects
+  are never GC'd). The new `Material` overload — which the emblems use, and which lets one owner
+  share and destroy a single material — makes adopting the same pattern there a small follow-up. Not
+  done here so this change doesn't also alter matrix-station behaviour.
+- **Flora icons are previews, not a second growth implementation.** Each `TryPreviewGrowth` mirrors
+  its species' own rule and shares code with it where the rule is static (the Schwarz P surface math,
+  the gyroid bond table). The two places they can drift are `BranchingFlora`'s branch step/scale
+  falloff and `WallAssembler`'s bond offsets, which are re-expressed rather than shared. If either
+  changes, re-check the icon.
+- **Emblem legibility vs. the label position.** The emblem's outer extent (33.4u) and the label
+  height (41.8u) are independent numbers that happen to clear each other at R=22. If the toybox's
+  `toyBodyRadius` is ever retuned, re-check both against the trigger radius.

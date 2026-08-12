@@ -48,6 +48,11 @@ namespace CosmicShore.Gameplay
         public override void OnDestroy()
         {
             Debug.Log($"<color=#FFFF00>[VESSEL] OnDestroy '{gameObject.name}' - IsSpawned={IsSpawned}, IsServer={IsServer}, IsOwner={IsOwner}, NetObjId={NetworkObjectId}</color>");
+            // Both clear only if THIS vessel is still the one in force, so a vessel swap whose
+            // outgoing hull is destroyed after the incoming one initializes cannot cancel the
+            // new binding.
+            PrismOcclusionCorridor.ClearTarget(transform);
+            VesselSpeedTunnel.ClearTarget(transform);
             OnBeforeDestroyed?.Invoke();
         }
 
@@ -135,6 +140,20 @@ namespace CosmicShore.Gameplay
                 hudController?.SubscribeToEvents();
             }
 
+            // PLATFORM LAWS — bound HERE, not per vessel and not per game mode: the prism
+            // occlusion corridor (Docs/PRISM_ANIMATION.md §4.7) and the speed tunnel
+            // (Docs/SPEED_TUNNEL.md). Initialize is the one method every vessel must call to
+            // become a player's vessel: single-player spawn, multiplayer spawn, the menu
+            // autopilot, and every runtime vessel swap all route through it. Binding here is
+            // what makes it impossible to author a vessel or a minigame in which either is
+            // off. IsLocalPilot (not IsLocalUser) so the non-networked single-player spawn
+            // path is covered too. Do not move these onto a prefab, a camera, or a mode.
+            if (player.IsLocalPilot)
+            {
+                PrismOcclusionCorridor.SetTarget(transform);
+                VesselSpeedTunnel.SetTarget(VesselStatus, transform);
+            }
+
             if (gameData != null)
                 ShipHelper.SetShipProperties(gameData.ThemeManagerData, this);
             else
@@ -201,8 +220,6 @@ namespace CosmicShore.Gameplay
                 VesselStatus.AIPilot.StopAIPilot();
         }
 
-        public bool AllowClearPrismInitialization() => (IsSpawned && IsOwner) || VesselStatus.IsInitializedAsAI;
-
         public void DestroyVessel()
         {
             if (IsSpawned)
@@ -242,6 +259,25 @@ namespace CosmicShore.Gameplay
         public void ChangePlayer(IPlayer player)
         {
             VesselStatus.Player = player;
+
+            // Re-evaluate BOTH platform laws: ChangePlayer hands a LIVE vessel to a different
+            // player (the Cellular Duel round-boundary ownership swap), which Initialize never
+            // sees. Without this the tunnel would keep driving the local camera from a vessel
+            // the local player no longer flies, and the occlusion corridor would keep cutting
+            // its hole around the hull the AI inherited — leaving the local pilot's own ship
+            // hidden behind prism mass for the whole next round, the exact condition the
+            // corridor exists to prevent. Both clears are identity-guarded, so the losing
+            // vessel's release cannot cancel the winning vessel's bind whatever the call order.
+            if (player.IsLocalPilot)
+            {
+                PrismOcclusionCorridor.SetTarget(transform);
+                VesselSpeedTunnel.SetTarget(VesselStatus, transform);
+            }
+            else
+            {
+                PrismOcclusionCorridor.ClearTarget(transform);
+                VesselSpeedTunnel.ClearTarget(transform);
+            }
 
             // If the player is AI in general, or if it is a network client
             if (player.IsInitializedAsAI || player.IsNetworkClient)

@@ -178,8 +178,23 @@ namespace CosmicShore.Gameplay
         }
 
         public void InjectDependencies(CrystalManager cm) => CrystalManager = cm;
-        
+
         public bool CanBeCollected(Domains shipDomain) => ownDomain == Domains.Blue || ownDomain == shipDomain;
+
+        /// <summary>
+        /// Paints this crystal in <paramref name="domain"/>'s crystal colours immediately, with
+        /// none of the material lerp <see cref="ChangeDomain"/> plays. Used by the deploy PREVIEW
+        /// (the Dolphin's ghost crystal) so it announces whose it will be the moment it blooms,
+        /// instead of reading as the lime free-for-all pickup it is not going to be.
+        ///
+        /// Safe while the component is disabled: the tint rides a MaterialPropertyBlock over the
+        /// shared material, so it needs no coroutine and clones nothing.
+        /// </summary>
+        public void ApplyDomainPreview(Domains domain)
+        {
+            ownDomain = domain;
+            ApplyColorSetTint();
+        }
 
         public struct ExplodeParams
         {
@@ -301,6 +316,24 @@ namespace CosmicShore.Gameplay
                 audioSystem.PlayGameplaySFX(GameplaySFXCategory.CrystalCollect, transform.position);
         }
 
+        /// <summary>
+        /// Moves this heart out of its dying owner and onto the cell WITHOUT freeing it: it stays
+        /// <see cref="IsEmbedded"/>, so it remains uncollectable and keeps the neutral heart tint.
+        ///
+        /// Used by a progressive wither, where the heart is the LAST thing standing and only
+        /// becomes collectable when the wither reaches the core (Docs/ECOSYSTEM.md §26). Re-homing
+        /// it at the START of the death is what makes that deferral safe: a crystal still parented
+        /// to the husk cannot be rescued once the husk is destroyed, so an interrupted wither
+        /// (a cell drain, a manager removing the husk) would silently lose it and break the
+        /// every-lifeform-drops-a-crystal invariant. Reparenting preserves world pose, and a
+        /// withering creature holds still, so the heart does not appear to move.
+        /// </summary>
+        public void DetachHeartToCell()
+        {
+            if (cellData && cellData.Cell)
+                transform.parent = cellData.Cell.transform;
+        }
+
         public void ActivateCrystal()
         {
             EmbeddedIn = null; // no longer a living heart - it's a free collectible now
@@ -316,8 +349,26 @@ namespace CosmicShore.Gameplay
                 var model = modelData.model;
 
                 model.GetComponent<Renderer>().material = modelData.inactiveMaterial;
-                StartCoroutine(LerpCrystalMaterialCoroutine(model, modelData.defaultMaterial));
+                StartCoroutine(LerpCrystalMaterialCoroutine(model, ResolveActivationMaterial(modelData, i)));
             }
+        }
+
+        /// <summary>
+        /// The material a crystal settles into as it activates. A DOMAIN-OWNED crystal settles into
+        /// that domain's crystal material - the same look Skim Race's track crystals wear (they
+        /// reach it via <see cref="SpawnableCrystal"/> → <see cref="ChangeDomain"/>) - because
+        /// crystal colour is what tells a pilot who may collect it. An unowned crystal keeps its
+        /// authored neutral material and stays free for anyone.
+        /// </summary>
+        Material ResolveActivationMaterial(CrystalModelData modelData, int index)
+        {
+            bool domainOwned = ownDomain is Domains.Jade or Domains.Ruby or Domains.Gold;
+            if (!domainOwned || !_themeManagerData) return modelData.defaultMaterial;
+
+            // Unity's implicit bool, not ?? - a destroyed material is FAKE-null, which ?? happily
+            // passes through, and the lerp would then bail and strand the crystal on inactiveMaterial.
+            var teamMaterial = _themeManagerData.GetTeamCrystalMaterial(ownDomain, index);
+            return teamMaterial ? teamMaterial : modelData.defaultMaterial;
         }
 
         public void ChangeDomain(Domains newDomain, float duration = -1)
@@ -351,6 +402,12 @@ namespace CosmicShore.Gameplay
         {
             Renderer renderer = model.GetComponent<Renderer>();
             if (renderer == null)
+                yield break;
+
+            // The theme's per-domain material sets are populated at runtime by ThemeManager; a
+            // crystal minted before that (or in a scene with no theme) has nothing to lerp TO.
+            // Keep the authored material rather than nulling the renderer out.
+            if (targetMaterial == null)
                 yield break;
 
             // The property-block tint would override the animated material colors - drop it for

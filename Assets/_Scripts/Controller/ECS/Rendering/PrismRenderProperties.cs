@@ -189,4 +189,32 @@ namespace CosmicShore.ECS
     {
         public float Value;
     }
+
+    // -- Prism set: ballistic flight (Docs/PRISM_ANIMATION.md §5 C5) --
+    // A prism FIRED as a projectile (the Sparrow's Turret Stance). The entity
+    // transform is final at the flight's END POINT from the stamp; the vertex
+    // stage walks the visual in from the muzzle off these three, on the bullets'
+    // own cosine easing. Duration 0 = unstamped = "render where the transform is",
+    // which is every other prism in the game.
+
+    [MaterialProperty("_FlightStartTime")]
+    public struct PrismFlightStartTimeOverride : IComponentData
+    {
+        public float Value;
+    }
+
+    [MaterialProperty("_FlightDuration")]
+    public struct PrismFlightDurationOverride : IComponentData
+    {
+        public float Value;
+    }
+
+    /// WORLD-space muzzle velocity in units/second. Velocity * 2*Duration/pi is the
+    /// full flight vector; the shader does the world->object conversion with a raw
+    /// inverse-model multiply (never a normalizing Transform node).
+    [MaterialProperty("_FlightVelocity")]
+    public struct PrismFlightVelocityOverride : IComponentData
+    {
+        public float3 Value;
+    }
 }

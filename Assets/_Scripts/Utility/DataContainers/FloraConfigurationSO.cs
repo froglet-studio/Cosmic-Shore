@@ -19,6 +19,14 @@ namespace CosmicShore.Utility
         public bool OverrideDefaultPlantPeriod;
         public int NewPlantPeriod = int.MaxValue;
 
+        [Tooltip("Ground this species prefers when the cell's authored environment prepared " +
+                 "planting sites (a garden's beds, trellis feet, hanging baskets, pool rim). " +
+                 "A preference, not a requirement: a garden with none of the preferred kinds " +
+                 "falls back to any prepared site, and a cell with no prepared ground at all " +
+                 "disperses the flora across the membrane exactly as before. Leave as Any " +
+                 "for a species with no opinion.")]
+        public FloraSiteKind PreferredSites = FloraSiteKind.Any;
+
         [Header("Elemental contract (element as data - one base prefab, variants from config)")]
         [Tooltip("The element this flora config spawns as. None = keep the prefab-authored " +
                  "crystal element (the legacy per-element prefab-variant path, e.g. the four " +
@@ -132,6 +140,12 @@ namespace CosmicShore.Utility
         [Tooltip("Seconds between shield refreshes on the health prisms (the Charge gyroid " +
                  "ships shielded leaves at 1). -1 = keep prefab.")]
         public float ShieldPeriod = -1f;
+
+        [Tooltip("Seconds between spindle rings on a JOUSTED death, where the structure unravels " +
+                 "from the heart outward instead of detonating (Docs/ECOSYSTEM.md §26). A denser " +
+                 "plant wants a shorter ring so the whole wither still reads at flight speed. " +
+                 "-1 = keep prefab.")]
+        public float WitherRingInterval = -1f;
 
         [Tooltip("Live-prism budget for assembled flora (Mass gyroid 1500, Space 800). " +
                  "-1 = keep prefab.")]
