@@ -27,7 +27,9 @@ namespace CosmicShore.Tests
             float minRetriggerSeconds = 0.04f,
             float burstVolumeFalloff = 1f,
             float minBurstVolume = 0f,
-            int maxPendingVoices = 0) => new()
+            int maxPendingVoices = 0,
+            float burstMagnitudeGain = 0.3f,
+            float maxBurstMagnitude = 2f) => new()
         {
             category = category,
             volumeScale = volumeScale,
@@ -37,6 +39,8 @@ namespace CosmicShore.Tests
             burstVolumeFalloff = burstVolumeFalloff,
             minBurstVolume = minBurstVolume,
             maxPendingVoices = maxPendingVoices,
+            burstMagnitudeGain = burstMagnitudeGain,
+            maxBurstMagnitude = maxBurstMagnitude,
         };
 
         // A limiter fed a policy asset carrying exactly `policy`. Built through the real SO so
@@ -226,6 +230,119 @@ namespace CosmicShore.Tests
                 "reinforcements, not 200 stacked copies.");
         }
 
+        // ── The Dolphin case: a SUSTAINED burst ──────────────────────────────────────────────
+        // An AOE blast damages at PrismSpatialIndex.MAX_NEW_HITS_PER_FRAME (48) per frame and
+        // backlogs the rest, so events keep arriving every frame for the whole blast. Both tests
+        // below cover ordering flaws that a simultaneous-burst test cannot see.
+
+        [Test]
+        public void SustainedBurst_DrainsTheBacklogInsteadOfStarvingIt()
+        {
+            // Fresh arrivals must NOT keep taking the voice slot ahead of the queue. If they do,
+            // every voice speaks for exactly one prism, no voice ever carries the crowd, and the
+            // aggregates just grow until the blast ends and release as a late thump.
+            var limiter = LimiterFor(Policy(
+                minRetriggerSeconds: 0.02f, maxVoicesPerWindow: 4, windowSeconds: 0.1f,
+                maxPendingVoices: 2, burstVolumeFalloff: 1f));
+
+            var drained = new List<GameplaySFXBurstLimiter.Emission>();
+            int immediate = 0;
+            const float dt = 1f / 60f;
+
+            for (int frame = 0; frame < 20; frame++)
+            {
+                float t = frame * dt;
+                for (int i = 0; i < 48; i++)
+                    if (limiter.TryAdmit(Cat, t, true, Vector3.zero, out _)) immediate++;
+                limiter.Drain(t, drained);
+            }
+
+            Assert.AreEqual(1, immediate,
+                "Only the very first event may play immediately; after that a backlog exists and " +
+                "must outrank fresh arrivals.");
+            Assert.Greater(drained.Count, 0,
+                "The backlog must actually drain DURING the burst, not only after it ends.");
+            foreach (var emission in drained)
+                Assert.Greater(emission.Represents, 1,
+                    "Every voice released during a sustained burst should stand for many events - " +
+                    "that is what carries the blast's magnitude.");
+        }
+
+        [Test]
+        public void OverflowFolding_BalancesAcrossAggregates()
+        {
+            // Drain pops FIFO, so appending overflow to the LAST aggregate parks the whole crowd
+            // behind a single-event aggregate and the first replay carries no magnitude.
+            var limiter = LimiterFor(Policy(
+                minRetriggerSeconds: 0.05f, maxVoicesPerWindow: 4, windowSeconds: 10f,
+                maxPendingVoices: 2));
+
+            limiter.TryAdmit(Cat, 0f, true, Vector3.zero, out _);           // plays immediately
+            for (int i = 0; i < 100; i++)                                    // 100 suppressed
+                limiter.TryAdmit(Cat, 0f, true, Vector3.zero, out _);
+
+            var drained = new List<GameplaySFXBurstLimiter.Emission>();
+            limiter.Drain(0.05f, drained);
+            limiter.Drain(0.10f, drained);
+
+            Assert.AreEqual(2, drained.Count);
+            foreach (var emission in drained)
+                Assert.Greater(emission.Represents, 10,
+                    "Both aggregates must carry a fair share of the 100 suppressed events; a " +
+                    "near-empty one means overflow piled onto a single aggregate.");
+            Assert.AreEqual(100, drained[0].Represents + drained[1].Represents,
+                "No suppressed event may be lost while the aggregates have room.");
+        }
+
+        // ── Magnitude ────────────────────────────────────────────────────────────────────────
+
+        [Test]
+        public void MagnitudeGain_MakesACrowdVoiceLouderThanASingleEvent()
+        {
+            var limiter = LimiterFor(Policy(
+                volumeScale: 0.35f, minRetriggerSeconds: 0.05f, maxVoicesPerWindow: 4,
+                windowSeconds: 10f, burstVolumeFalloff: 1f, maxPendingVoices: 1));
+
+            limiter.TryAdmit(Cat, 0f, true, Vector3.zero, out float singleVolume);
+            for (int i = 0; i < 64; i++) limiter.TryAdmit(Cat, 0f, true, Vector3.zero, out _);
+
+            var drained = new List<GameplaySFXBurstLimiter.Emission>();
+            limiter.Drain(0.05f, drained);
+
+            Assert.AreEqual(1, drained.Count);
+            Assert.AreEqual(64, drained[0].Represents);
+            Assert.Greater(drained[0].VolumeMultiplier, singleVolume,
+                "A voice standing for 64 prisms must be louder than one standing for 1 - this is " +
+                "what replaces the loudness a big burst used to get from stacking.");
+        }
+
+        [Test]
+        public void MagnitudeGain_IsClamped()
+        {
+            var limiter = LimiterFor(Policy(
+                volumeScale: 0.35f, minRetriggerSeconds: 0.05f, maxVoicesPerWindow: 4,
+                windowSeconds: 10f, burstVolumeFalloff: 1f, maxPendingVoices: 1));
+
+            for (int i = 0; i < 5000; i++) limiter.TryAdmit(Cat, 0f, true, Vector3.zero, out _);
+
+            var drained = new List<GameplaySFXBurstLimiter.Emission>();
+            limiter.Drain(0.05f, drained);
+
+            Assert.AreEqual(1, drained.Count);
+            Assert.LessOrEqual(drained[0].VolumeMultiplier, 0.35f * 2f + 1e-4f,
+                "A huge burst must not run away into clipping - maxBurstMagnitude bounds it.");
+        }
+
+        [Test]
+        public void ImmediateVoice_GetsNoMagnitudeBonus()
+        {
+            var limiter = LimiterFor(Policy(volumeScale: 0.5f, maxPendingVoices: 2));
+            Assert.IsTrue(limiter.TryAdmit(Cat, 0f, true, Vector3.zero, out float volume));
+            Assert.AreEqual(0.5f, volume, 1e-4f,
+                "An immediate voice represents exactly one event, so log2(1)=0 and it plays at " +
+                "the plain category volume.");
+        }
+
         [Test]
         public void PendingAggregate_EmitsAtTheCentroidOfWhatItRepresents()
         {
@@ -245,8 +362,13 @@ namespace CosmicShore.Tests
             Assert.IsTrue(drained[0].Spatial);
             Assert.AreEqual(3, drained[0].Represents,
                 "The replayed voice stands for all three suppressed events.");
-            Assert.AreEqual(new Vector3(0f, 10f, 10f), drained[0].Position,
-                "The voice plays at the acoustic centre of the burst, not at an arbitrary member.");
+
+            var centroid = drained[0].Position;
+            const string why =
+                "The voice plays at the acoustic centre of the burst, not at an arbitrary member.";
+            Assert.AreEqual(0f, centroid.x, 1e-4f, why);
+            Assert.AreEqual(10f, centroid.y, 1e-4f, why);
+            Assert.AreEqual(10f, centroid.z, 1e-4f, why);
         }
 
         [Test]

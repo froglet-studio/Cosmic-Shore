@@ -20,6 +20,8 @@ MonoBehaviour:
     minRetriggerSeconds: 0
     burstVolumeFalloff: 1
     minBurstVolume: 1
+    burstMagnitudeGain: 0
+    maxBurstMagnitude: 1
     maxPendingVoices: 0
   categoryPolicies:
   - category: 6
@@ -29,6 +31,8 @@ MonoBehaviour:
     minRetriggerSeconds: 0.045
     burstVolumeFalloff: 0.6
     minBurstVolume: 0.3
+    burstMagnitudeGain: 0.15
+    maxBurstMagnitude: 1.6
     maxPendingVoices: 2
   - category: 20
     volumeScale: 0.8
@@ -37,6 +41,8 @@ MonoBehaviour:
     minRetriggerSeconds: 0.04
     burstVolumeFalloff: 0.65
     minBurstVolume: 0.3
+    burstMagnitudeGain: 0.15
+    maxBurstMagnitude: 1.6
     maxPendingVoices: 1
   - category: 23
     volumeScale: 1.0
@@ -45,6 +51,8 @@ MonoBehaviour:
     minRetriggerSeconds: 0.07
     burstVolumeFalloff: 0.5
     minBurstVolume: 0.35
+    burstMagnitudeGain: 0.0
+    maxBurstMagnitude: 1.0
     maxPendingVoices: 1
   - category: 24
     volumeScale: 1.0
@@ -53,6 +61,8 @@ MonoBehaviour:
     minRetriggerSeconds: 0.07
     burstVolumeFalloff: 0.5
     minBurstVolume: 0.35
+    burstMagnitudeGain: 0.0
+    maxBurstMagnitude: 1.0
     maxPendingVoices: 1
   - category: 25
     volumeScale: 1.0
@@ -61,6 +71,8 @@ MonoBehaviour:
     minRetriggerSeconds: 0.07
     burstVolumeFalloff: 0.5
     minBurstVolume: 0.35
+    burstMagnitudeGain: 0.0
+    maxBurstMagnitude: 1.0
     maxPendingVoices: 1
   - category: 26
     volumeScale: 1.0
@@ -69,6 +81,8 @@ MonoBehaviour:
     minRetriggerSeconds: 0.07
     burstVolumeFalloff: 0.5
     minBurstVolume: 0.35
+    burstMagnitudeGain: 0.0
+    maxBurstMagnitude: 1.0
     maxPendingVoices: 1
   - category: 1
     volumeScale: 0.35
@@ -77,6 +91,8 @@ MonoBehaviour:
     minRetriggerSeconds: 0.02
     burstVolumeFalloff: 0.8
     minBurstVolume: 0.4
+    burstMagnitudeGain: 0.3
+    maxBurstMagnitude: 2.4
     maxPendingVoices: 2
   - category: 36
     volumeScale: 0.5
@@ -85,6 +101,8 @@ MonoBehaviour:
     minRetriggerSeconds: 0.03
     burstVolumeFalloff: 0.7
     minBurstVolume: 0.35
+    burstMagnitudeGain: 0.3
+    maxBurstMagnitude: 2.4
     maxPendingVoices: 1
   - category: 37
     volumeScale: 0.5
@@ -93,6 +111,8 @@ MonoBehaviour:
     minRetriggerSeconds: 0.03
     burstVolumeFalloff: 0.7
     minBurstVolume: 0.35
+    burstMagnitudeGain: 0.3
+    maxBurstMagnitude: 2.4
     maxPendingVoices: 1
   - category: 14
     volumeScale: 0.6
@@ -101,6 +121,8 @@ MonoBehaviour:
     minRetriggerSeconds: 0.03
     burstVolumeFalloff: 0.7
     minBurstVolume: 0.35
+    burstMagnitudeGain: 0.25
+    maxBurstMagnitude: 2.0
     maxPendingVoices: 1
   - category: 4
     volumeScale: 0.7
@@ -109,6 +131,8 @@ MonoBehaviour:
     minRetriggerSeconds: 0.035
     burstVolumeFalloff: 0.7
     minBurstVolume: 0.35
+    burstMagnitudeGain: 0.25
+    maxBurstMagnitude: 2.0
     maxPendingVoices: 1
   - category: 15
     volumeScale: 0.8
@@ -117,6 +141,8 @@ MonoBehaviour:
     minRetriggerSeconds: 0.05
     burstVolumeFalloff: 0.65
     minBurstVolume: 0.35
+    burstMagnitudeGain: 0.25
+    maxBurstMagnitude: 2.0
     maxPendingVoices: 2
   - category: 2
     volumeScale: 0.6
@@ -125,6 +151,8 @@ MonoBehaviour:
     minRetriggerSeconds: 0.06
     burstVolumeFalloff: 0.55
     minBurstVolume: 0.35
+    burstMagnitudeGain: 0.2
+    maxBurstMagnitude: 1.8
     maxPendingVoices: 1
   - category: 3
     volumeScale: 0.6
@@ -133,6 +161,8 @@ MonoBehaviour:
     minRetriggerSeconds: 0.06
     burstVolumeFalloff: 0.55
     minBurstVolume: 0.35
+    burstMagnitudeGain: 0.2
+    maxBurstMagnitude: 1.8
     maxPendingVoices: 1
   - category: 7
     volumeScale: 1.0
@@ -141,6 +171,8 @@ MonoBehaviour:
     minRetriggerSeconds: 0.04
     burstVolumeFalloff: 0.7
     minBurstVolume: 0.4
+    burstMagnitudeGain: 0.15
+    maxBurstMagnitude: 1.6
     maxPendingVoices: 1
   - category: 35
     volumeScale: 1.0
@@ -149,4 +181,6 @@ MonoBehaviour:
     minRetriggerSeconds: 0.04
     burstVolumeFalloff: 0.7
     minBurstVolume: 0.4
+    burstMagnitudeGain: 0.15
+    maxBurstMagnitude: 1.6
     maxPendingVoices: 1

@@ -70,24 +70,60 @@ CLAUDE.md config separation, none of it belongs on `AudioSystem` as serialized f
 |---|---|---|
 | **decoherence** | `minRetriggerSeconds` | Minimum gap between two voices of a category. **This is the one that fixes the sound.** Identical one-shots only comb-filter when they start within a few ms; spacing them turns a burst into a legible rattle of distinct hits. |
 | **budget** | `maxVoicesPerWindow` + `windowSeconds` | Hard ceiling on voices started per window. The CPU / FMOD-voice half. |
-| **magnitude** | `maxPendingVoices` | Blocked events are *folded into pending aggregates* and replayed later — spaced out, quieter, at the centroid of the events they stand for — so a big burst still **sounds** big. `0` = drop outright (the older pure-throttle behaviour). |
+| **magnitude** | `maxPendingVoices` + `burstMagnitudeGain` | Blocked events are *folded into pending aggregates* and replayed later — spaced out, at the centroid of the events they stand for, and **scaled up by how many that is** (`1 + gain·log2(represents)`, clamped). `maxPendingVoices = 0` = drop outright (the older pure-throttle behaviour). |
 
 Plus `volumeScale` (category baseline) and `burstVolumeFalloff` / `minBurstVolume`
 (successive voices in a window decay toward a floor, so a sustained burst does not pile
 up but also never fades to inaudible).
 
+**The magnitude lever is not garnish — it replaces something the fix removes.** Before the
+limiter, a big burst was loud *precisely because its voices stacked*, which is the defect. That is
+why `BlockDestroy` was attenuated to `0.35` in the first place ("dozens of prisms can break in a
+single frame"). Kill the stacking and leave the attenuation alone and you have simply made the
+Dolphin's blast quiet. So loudness is put back deliberately and logarithmically, on the one voice
+that speaks for the crowd, instead of accidentally and coherently across N voices.
+
 ### What a burst actually resolves to
 
-30 crystals destroyed on one frame, under the shipped `CrystalCollect` policy
-(`minRetrigger 0.045`, `max 3 per 0.12s`, `pending 2`):
+The reference case is a **Dolphin AOE blast**. `PrismSpatialIndex.MAX_NEW_HITS_PER_FRAME = 48`, so
+a blast destroys up to 48 prisms *per frame* and backlogs the rest to later frames — every one
+calling `Prism.PlayDestructionSFX` → `BlockDestroy`. Simulated against the shipped policy:
 
-```
-t=0.000   voice 1  (immediate — the leading edge is NEVER delayed)
-t=0.046   voice 2  at the centroid of the suppressed crystals, ×0.6
-t=0.092   voice 3  at the centroid of the rest,                ×0.36
-          ————————————————————————————————————————
-          3 voices, none within 45 ms of another  (was: 30 voices, all at t=0)
-```
+| prisms | voices | worst same-frame | loudest voice | total energy |
+|---|---|---|---|---|
+| **ungoverned** 48 | 48 | **48 (+33.6 dB)** | 1.00 | 48.00 |
+| **old throttle** 48 | 4 | **4 (+12.0 dB)** | 0.35 | 1.40 |
+| **old throttle** 300 | 4 | 4 (+12.0 dB) | 0.35 | 1.40 |
+| shipped 48 | 3 | **1 (+0.0 dB)** | 0.67 | 1.54 |
+| shipped 300 | 5 | 1 (+0.0 dB) | 0.84 | 2.83 |
+| shipped 2000 | 21 | 1 (+0.0 dB) | 0.84 | 13.51 |
+
+Three things to read off it:
+
+1. **The old throttle capped the count and did nothing about simultaneity.** Its 4 admitted voices
+   could all start on the same frame, so it still stacked at +12 dB and still combed. A voice
+   budget alone is not a fix — this is why the Dolphin still sounded wrong.
+2. **Worst same-frame is now 1, always.** Coherent summation is not reduced, it is *eliminated*:
+   there is no frame on which two voices of one category can start.
+3. **The old throttle made a 48-prism blast and a 300-prism blast sound identical** (1.40 energy
+   for both). Now they scale — that is the magnitude lever doing its job.
+
+Suppressed events are never charged an FMOD instance, so frame cost falls with the voice count:
+**93.8 % / 98.3 % / 99.0 %** of `CreateInstance`/`start`/`release` calls avoided at 48 / 300 / 2000
+prisms.
+
+### Two ordering rules inside the limiter that look like details and are not
+
+Both were found by simulating a sustained blast, and both are silent when wrong:
+
+- **A pending backlog outranks a fresh arrival.** A sustained burst delivers new events before
+  every `Drain`, so letting the newest one take the voice slot starves the queue for the whole
+  blast: every voice then speaks for exactly one prism, none ever carries the crowd, and the
+  aggregates grow until the blast ends and release as a late thump. An isolated event still plays
+  instantly, because nothing is pending in that case.
+- **Overflow folds into the *lightest* aggregate, not the last.** `Drain` pops FIFO, so appending
+  to the last aggregate parks the whole crowd behind a single-event aggregate and the first replay
+  carries no magnitude at all.
 
 ## 3. The four layers that make it un-authorable to skip
 

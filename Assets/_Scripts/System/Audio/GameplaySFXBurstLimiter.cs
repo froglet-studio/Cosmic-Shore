@@ -151,9 +151,19 @@ namespace CosmicShore.Core
 
             RollWindow(state, now, policy);
 
-            if (Admits(state, now, policy))
+            // A pending backlog OUTRANKS a fresh arrival. This ordering is load-bearing: a
+            // sustained burst (an AOE blast destroying 48 prisms every frame for many frames)
+            // delivers new events before every Drain, so letting the newest one take the slot
+            // starves the backlog for as long as the burst lasts — every voice then speaks for
+            // exactly one prism, gets no magnitude bonus, and the aggregates just grow until the
+            // blast ends and release as a late thump. Deferring to the queue instead means the
+            // voices that do play are the ones representing the crowd.
+            //
+            // An isolated event still plays instantly, because nothing is pending in that case.
+            if (state.Pending.Count == 0 && Admits(state, now, policy))
             {
-                volumeMultiplier = VolumeFor(state, policy);
+                // An immediate voice speaks for exactly one event, so it gets no magnitude bonus.
+                volumeMultiplier = VolumeFor(state, policy, represents: 1);
                 Commit(state, now);
                 return true;
             }
@@ -191,12 +201,13 @@ namespace CosmicShore.Core
                 var aggregate = state.Pending[0];
                 state.Pending.RemoveAt(0);
 
+                int represents = Mathf.Max(1, aggregate.Count);
                 into.Add(new Emission(
                     category,
                     aggregate.Spatial,
                     aggregate.Centroid,
-                    VolumeFor(state, policy),
-                    Mathf.Max(1, aggregate.Count)));
+                    VolumeFor(state, policy, represents),
+                    represents));
 
                 Commit(state, now);
 
@@ -244,13 +255,29 @@ namespace CosmicShore.Core
         }
 
         /// <summary>
-        /// Volume for the next voice: the category baseline decayed once per voice already played
-        /// in this window, floored so a long burst never fades to inaudible.
+        /// Volume for the next voice: the category baseline, decayed once per voice already played
+        /// in this window (floored so a long burst never fades to inaudible), then scaled up by how
+        /// many events this one voice stands for.
+        ///
+        /// <para>That last term is what carries MAGNITUDE. Before the limiter, a big burst was loud
+        /// because its voices stacked — which is exactly the defect, and why categories like
+        /// BlockDestroy were attenuated to compensate. With stacking gone, that attenuation would
+        /// simply make a 300-prism blast quiet. So loudness is restored deliberately and
+        /// logarithmically (per doubling, clamped) on the voice that represents the crowd, instead
+        /// of accidentally and coherently across N voices.</para>
         /// </summary>
-        static float VolumeFor(CategoryState state, GameplaySFXCategoryPolicy policy)
+        static float VolumeFor(CategoryState state, GameplaySFXCategoryPolicy policy, int represents)
         {
             float falloff = Mathf.Pow(Mathf.Clamp(policy.burstVolumeFalloff, 0.05f, 1f), state.WindowCount);
-            return policy.volumeScale * Mathf.Max(Mathf.Clamp01(policy.minBurstVolume), falloff);
+            float volume = policy.volumeScale * Mathf.Max(Mathf.Clamp01(policy.minBurstVolume), falloff);
+
+            if (policy.burstMagnitudeGain > 0f && represents > 1)
+            {
+                float magnitude = 1f + policy.burstMagnitudeGain * Mathf.Log(represents, 2f);
+                volume *= Mathf.Min(magnitude, Mathf.Max(1f, policy.maxBurstMagnitude));
+            }
+
+            return volume;
         }
 
         static void Commit(CategoryState state, float now)
@@ -262,9 +289,17 @@ namespace CosmicShore.Core
 
         /// <summary>
         /// Folds a suppressed event into the pending aggregates so the burst keeps its magnitude.
-        /// Past <c>maxPendingVoices</c> aggregates the event merges into the LAST one (its position
-        /// still moves the centroid) rather than allocating; with <c>maxPendingVoices == 0</c> it
-        /// is dropped outright, which is the older pure-throttle behaviour.
+        /// With <c>maxPendingVoices == 0</c> it is dropped outright — the older pure-throttle
+        /// behaviour.
+        ///
+        /// <para>Once the aggregates are full, the event merges into the one holding the FEWEST
+        /// events so far, which keeps them balanced. That is load-bearing, not tidiness:
+        /// <see cref="Drain"/> pops FIFO, so appending overflow to the LAST aggregate (the obvious
+        /// implementation, and the one this replaced) put the whole crowd behind a single-event
+        /// aggregate. The first replay then spoke for 1 event and got no magnitude bonus, and on a
+        /// sustained burst — a 2000-prism blast draining at 48/frame — the loud voice was
+        /// perpetually the one still queued. Balancing makes every replay carry a fair share of
+        /// the burst, so the bonus actually lands.</para>
         /// </summary>
         void Fold(
             GameplaySFXCategory category, CategoryState state, GameplaySFXCategoryPolicy policy,
@@ -286,7 +321,11 @@ namespace CosmicShore.Core
                 return;
             }
 
-            state.Pending[^1].Add(spatial, position);
+            var lightest = state.Pending[0];
+            for (int i = 1; i < state.Pending.Count; i++)
+                if (state.Pending[i].Count < lightest.Count) lightest = state.Pending[i];
+
+            lightest.Add(spatial, position);
         }
     }
 }

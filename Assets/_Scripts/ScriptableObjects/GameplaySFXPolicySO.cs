@@ -27,11 +27,21 @@ namespace CosmicShore.ScriptableObjects
     ///     distinct hits instead of one phased blast.
     ///   • <see cref="GameplaySFXCategoryPolicy.maxVoicesPerWindow"/> — the BUDGET lever (CPU and
     ///     FMOD voices). Hard ceiling on how many voices a category may start per window.
-    ///   • <see cref="GameplaySFXCategoryPolicy.maxPendingVoices"/> — the MAGNITUDE lever. Events
-    ///     blocked by the two above are not simply thrown away: up to this many are folded into
-    ///     pending aggregates and replayed, spaced out and progressively quieter, at the centroid
-    ///     of the events they stand for. A 30-crystal burst still SOUNDS like many crystals; it
-    ///     just arrives as a short spaced rattle rather than a wall.
+    ///   • <see cref="GameplaySFXCategoryPolicy.maxPendingVoices"/> +
+    ///     <see cref="GameplaySFXCategoryPolicy.burstMagnitudeGain"/> — the MAGNITUDE levers.
+    ///     Events blocked by the two above are not thrown away: up to <c>maxPendingVoices</c> of
+    ///     them are folded into pending aggregates and replayed, spaced out, at the centroid of
+    ///     the events they stand for — and scaled UP by how many that is
+    ///     (<c>1 + gain · log2(represents)</c>, clamped). A 300-prism Dolphin blast still SOUNDS
+    ///     like 300 prisms; it just arrives as a short spaced crunch rather than a wall.
+    ///
+    /// <para><b>The magnitude lever is not optional garnish — it replaces something the fix
+    /// removes.</b> Before the limiter, a big burst was loud precisely BECAUSE its voices stacked,
+    /// which is the defect; that is why <c>BlockDestroy</c> was attenuated to 0.35 in the first
+    /// place ("dozens of prisms can break in a single frame"). Kill the stacking and that
+    /// attenuation, left alone, would just make the blast quiet. So loudness is restored
+    /// deliberately and logarithmically on the ONE voice that speaks for the crowd, instead of
+    /// accidentally and coherently across N voices.</para>
     ///
     /// Set <c>maxPendingVoices = 0</c> for the older pure-drop behaviour.
     ///
@@ -74,6 +84,8 @@ namespace CosmicShore.ScriptableObjects
                 minRetriggerSeconds = 0.045f,
                 burstVolumeFalloff  = 0.6f,
                 minBurstVolume      = 0.3f,
+                burstMagnitudeGain  = 0.15f,
+                maxBurstMagnitude   = 1.6f,
                 maxPendingVoices    = 2,
             },
             new()
@@ -85,6 +97,8 @@ namespace CosmicShore.ScriptableObjects
                 minRetriggerSeconds = 0.04f,
                 burstVolumeFalloff  = 0.65f,
                 minBurstVolume      = 0.3f,
+                burstMagnitudeGain  = 0.15f,
+                maxBurstMagnitude   = 1.6f,
                 maxPendingVoices    = 1,
             },
 
@@ -105,6 +119,8 @@ namespace CosmicShore.ScriptableObjects
                 minRetriggerSeconds = 0.07f,
                 burstVolumeFalloff  = 0.5f,
                 minBurstVolume      = 0.35f,
+                burstMagnitudeGain  = 0.0f,
+                maxBurstMagnitude   = 1.0f,
                 maxPendingVoices    = 1,
             },
             new()
@@ -116,6 +132,8 @@ namespace CosmicShore.ScriptableObjects
                 minRetriggerSeconds = 0.07f,
                 burstVolumeFalloff  = 0.5f,
                 minBurstVolume      = 0.35f,
+                burstMagnitudeGain  = 0.0f,
+                maxBurstMagnitude   = 1.0f,
                 maxPendingVoices    = 1,
             },
             new()
@@ -127,6 +145,8 @@ namespace CosmicShore.ScriptableObjects
                 minRetriggerSeconds = 0.07f,
                 burstVolumeFalloff  = 0.5f,
                 minBurstVolume      = 0.35f,
+                burstMagnitudeGain  = 0.0f,
+                maxBurstMagnitude   = 1.0f,
                 maxPendingVoices    = 1,
             },
             new()
@@ -138,6 +158,8 @@ namespace CosmicShore.ScriptableObjects
                 minRetriggerSeconds = 0.07f,
                 burstVolumeFalloff  = 0.5f,
                 minBurstVolume      = 0.35f,
+                burstMagnitudeGain  = 0.0f,
+                maxBurstMagnitude   = 1.0f,
                 maxPendingVoices    = 1,
             },
 
@@ -154,6 +176,8 @@ namespace CosmicShore.ScriptableObjects
                 minRetriggerSeconds = 0.02f,
                 burstVolumeFalloff  = 0.8f,
                 minBurstVolume      = 0.4f,
+                burstMagnitudeGain  = 0.3f,
+                maxBurstMagnitude   = 2.4f,
                 maxPendingVoices    = 2,
             },
             new()
@@ -165,6 +189,8 @@ namespace CosmicShore.ScriptableObjects
                 minRetriggerSeconds = 0.03f,
                 burstVolumeFalloff  = 0.7f,
                 minBurstVolume      = 0.35f,
+                burstMagnitudeGain  = 0.3f,
+                maxBurstMagnitude   = 2.4f,
                 maxPendingVoices    = 1,
             },
             new()
@@ -176,6 +202,8 @@ namespace CosmicShore.ScriptableObjects
                 minRetriggerSeconds = 0.03f,
                 burstVolumeFalloff  = 0.7f,
                 minBurstVolume      = 0.35f,
+                burstMagnitudeGain  = 0.3f,
+                maxBurstMagnitude   = 2.4f,
                 maxPendingVoices    = 1,
             },
 
@@ -189,6 +217,8 @@ namespace CosmicShore.ScriptableObjects
                 minRetriggerSeconds = 0.03f,
                 burstVolumeFalloff  = 0.7f,
                 minBurstVolume      = 0.35f,
+                burstMagnitudeGain  = 0.25f,
+                maxBurstMagnitude   = 2.0f,
                 maxPendingVoices    = 1,
             },
             new()
@@ -200,6 +230,8 @@ namespace CosmicShore.ScriptableObjects
                 minRetriggerSeconds = 0.035f,
                 burstVolumeFalloff  = 0.7f,
                 minBurstVolume      = 0.35f,
+                burstMagnitudeGain  = 0.25f,
+                maxBurstMagnitude   = 2.0f,
                 maxPendingVoices    = 1,
             },
             new()
@@ -212,6 +244,8 @@ namespace CosmicShore.ScriptableObjects
                 minRetriggerSeconds = 0.05f,
                 burstVolumeFalloff  = 0.65f,
                 minBurstVolume      = 0.35f,
+                burstMagnitudeGain  = 0.25f,
+                maxBurstMagnitude   = 2.0f,
                 maxPendingVoices    = 2,
             },
 
@@ -232,6 +266,8 @@ namespace CosmicShore.ScriptableObjects
                 minRetriggerSeconds = 0.06f,
                 burstVolumeFalloff  = 0.55f,
                 minBurstVolume      = 0.35f,
+                burstMagnitudeGain  = 0.2f,
+                maxBurstMagnitude   = 1.8f,
                 maxPendingVoices    = 1,
             },
             new()
@@ -243,6 +279,8 @@ namespace CosmicShore.ScriptableObjects
                 minRetriggerSeconds = 0.06f,
                 burstVolumeFalloff  = 0.55f,
                 minBurstVolume      = 0.35f,
+                burstMagnitudeGain  = 0.2f,
+                maxBurstMagnitude   = 1.8f,
                 maxPendingVoices    = 1,
             },
 
@@ -257,6 +295,8 @@ namespace CosmicShore.ScriptableObjects
                 minRetriggerSeconds = 0.04f,
                 burstVolumeFalloff  = 0.7f,
                 minBurstVolume      = 0.4f,
+                burstMagnitudeGain  = 0.15f,
+                maxBurstMagnitude   = 1.6f,
                 maxPendingVoices    = 1,
             },
             new()
@@ -268,6 +308,8 @@ namespace CosmicShore.ScriptableObjects
                 minRetriggerSeconds = 0.04f,
                 burstVolumeFalloff  = 0.7f,
                 minBurstVolume      = 0.4f,
+                burstMagnitudeGain  = 0.15f,
+                maxBurstMagnitude   = 1.6f,
                 maxPendingVoices    = 1,
             },
         };
@@ -395,9 +437,22 @@ namespace CosmicShore.ScriptableObjects
         [Min(0)]
         [Tooltip(
             "How many blocked events may be held as pending aggregates and replayed later, spaced " +
-            "out and quieter, at the centroid of the events they represent. This is what keeps a " +
-            "big burst SOUNDING big without stacking it. 0 = drop blocked events outright.")]
+            "out, at the centroid of the events they represent. This is what keeps a big burst " +
+            "SOUNDING big without stacking it. 0 = drop blocked events outright.")]
         public int maxPendingVoices;
+
+        [Min(0f)]
+        [Tooltip(
+            "Loudness bonus for a replayed voice, per DOUBLING of the events it stands for: " +
+            "volume *= 1 + gain * log2(represents). A voice speaking for 47 prisms should be " +
+            "louder than one speaking for 1 - this is what carries blast magnitude once the " +
+            "voices can no longer stack. 0 disables it (every replay at the falloff volume). " +
+            "Immediate voices represent 1 event, so log2(1)=0 and they are never affected.")]
+        public float burstMagnitudeGain;
+
+        [Min(1f)]
+        [Tooltip("Ceiling on the Burst Magnitude Gain multiplier, so a huge burst cannot clip.")]
+        public float maxBurstMagnitude = 2f;
 
         /// <summary>
         /// A permissive policy: no spacing, no coalescing, effectively no cap. The default for
