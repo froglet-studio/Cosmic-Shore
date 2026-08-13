@@ -159,6 +159,7 @@ namespace CosmicShore.Gameplay
         bool _hasLastFramingCenter;
         float _switchGlide;      // 1 → 0 after a config switch; scales the smoothing boost
         float _switchTimer;
+        bool _holdingSpeedTunnel; // true only while THIS controller holds the speed-tunnel law
 
         // Freestyle transition state.
         float _blendElapsed;
@@ -220,8 +221,27 @@ namespace CosmicShore.Gameplay
 
         void OnDestroy() => UnsubscribeEvents();
 
+        /// <summary>
+        /// Never leave a platform law latched off. <c>VesselSpeedTunnel</c>'s suppression flag is
+        /// a static reset only by its <c>RuntimeInitializeOnLoadMethod</c> installer - once per
+        /// app launch, not per scene load - so a hold that outlived this controller would
+        /// silently kill the speed tunnel for the rest of the session. Same reasoning as
+        /// <c>CameraManager.RestoreGameplayCamera</c> lifting its hold unconditionally and first.
+        ///
+        /// OnDisable rather than OnDestroy because it covers BOTH exits: Unity raises it before
+        /// OnDestroy on teardown, and it also catches a merely-disabled controller, whose
+        /// LateUpdate would otherwise stop running with the hold still raised. Re-enabling needs
+        /// no counterpart - LateUpdate re-derives the hold from live state every frame.
+        /// </summary>
+        void OnDisable() => SetSpeedTunnelHold(false);
+
         void LateUpdate()
         {
+            // BEFORE the early returns: the hold has to be re-evaluated on the very frame the
+            // state leaves menu ownership, and those states are exactly the ones that return
+            // here. Evaluating it after would latch the hold on the moment freestyle begins.
+            UpdateSpeedTunnelHold();
+
             if (_state is MenuCameraState.Idle or MenuCameraState.Freestyle) return;
             if (!_cam) return;
 
@@ -677,6 +697,52 @@ namespace CosmicShore.Gameplay
 
             _lastFramingCenter = framingCenter;
             _hasLastFramingCenter = true;
+        }
+
+        // ── Speed Tunnel Hold ───────────────────────────────────────────
+
+        /// <summary>
+        /// The speed tunnel (`Docs/SPEED_TUNNEL.md`) sells the LOCAL PILOT'S speed to the local
+        /// pilot by narrowing the camera's FOV and relaxing the global URP Panini projection as
+        /// the vessel goes faster. In the menu the FOV half is already inert - the menu owns the
+        /// scene camera and <c>CameraManager.GetActiveController()</c> is null, so
+        /// <c>VesselSpeedTunnel.ResolveGameplayCamera</c> returns null - but the **Panini half is
+        /// a single GLOBAL override that does not care which camera renders**, so the autopilot
+        /// vessel's fluctuating speed keeps warping whatever is on screen.
+        ///
+        /// While a vessel-framing config is active that is a designed state: the camera is riding
+        /// the ship, so the warp tracks the motion being watched. The LAVA LAMP is the case it
+        /// breaks on - a detached orbital shot of the cell, aimed at the crystal, that is not
+        /// following the vessel at all. There is no speed being sold to anyone, so the pumping
+        /// Panini distance reads as exactly what it is: an unexplained rhythmic lens warp.
+        ///
+        /// Hence a hold, in the shape the law prescribes and for the same reason the one existing
+        /// caller (`CameraManager.BeginManualReplayCamera`) uses it: a vantage that is posed
+        /// independently of the pilot's vessel. It is a HOLD, not an opt-out - the vessel binding
+        /// survives it, the law comes back the instant a vessel-framing config or freestyle takes
+        /// over, and nothing has to remember to re-point the tunnel.
+        /// </summary>
+        void UpdateSpeedTunnelHold()
+        {
+            bool menuOwnsTheView = _state is MenuCameraState.Menu
+                                          or MenuCameraState.EnteringFreestyle
+                                          or MenuCameraState.ExitingFreestyle;
+
+            SetSpeedTunnelHold(menuOwnsTheView && !ActiveConfigRequiresVessel);
+        }
+
+        /// <summary>
+        /// Raise/lift the hold, and only ever write the global flag on an actual edge. The flag
+        /// has no ref-counting (the same property that makes the Panini override single-writer),
+        /// so an unconditional lift here could stomp the replay camera's hold. Tracking our own
+        /// edge keeps this caller symmetric: it can only ever release what it took.
+        /// </summary>
+        void SetSpeedTunnelHold(bool hold)
+        {
+            if (hold == _holdingSpeedTunnel) return;
+
+            _holdingSpeedTunnel = hold;
+            VesselSpeedTunnel.SetSuppressed(hold);
         }
 
         // ── Framing Resolution ──────────────────────────────────────────
