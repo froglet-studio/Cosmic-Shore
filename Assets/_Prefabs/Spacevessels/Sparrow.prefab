@@ -650,13 +650,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   prefab: {fileID: 7632677803272750685, guid: 1bdcea9e9329dd141af7ab874a4d31a2, type: 3}
-  defaultCapacity: 60
-  maxSize: 240
+  defaultCapacity: 90
+  maxSize: 320
   enableBufferMaintenance: 1
-  bufferSizeTarget: 60
-  maxInstantiateRate: 60
-  baseInstantiateRate: 20
-  maxAddsPerFrame: 20
+  bufferSizeTarget: 90
+  maxInstantiateRate: 90
+  baseInstantiateRate: 30
+  maxAddsPerFrame: 24
 --- !u!1 &6015654187000967467
 GameObject:
   m_ObjectHideFlags: 0
@@ -1710,13 +1710,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   prefab: {fileID: 4563009547826722997, guid: 2de9e3b14a5518041ad99111194d0591, type: 3}
-  defaultCapacity: 80
-  maxSize: 400
+  defaultCapacity: 120
+  maxSize: 600
   enableBufferMaintenance: 1
-  bufferSizeTarget: 180
-  maxInstantiateRate: 180
-  baseInstantiateRate: 60
-  maxAddsPerFrame: 12
+  bufferSizeTarget: 260
+  maxInstantiateRate: 260
+  baseInstantiateRate: 90
+  maxAddsPerFrame: 16
 --- !u!114 &5511220033445566778
 MonoBehaviour:
   m_ObjectHideFlags: 0

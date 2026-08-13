@@ -16,7 +16,7 @@ MonoBehaviour:
   ammoCost: 0
   inherit: 0
   projectileScale: 1
-  firingRate: 60
+  firingRate: 90
   projectileTime: 0.3
   firingPattern: 0
   energy: 0
@@ -28,8 +28,8 @@ MonoBehaviour:
     element: 3
   spread:
     onsetSeconds: 0.12
-    growthDegreesPerSecond: 3.2
-    maxHalfAngleDegrees: 4
+    growthDegreesPerSecond: 1
+    maxHalfAngleDegrees: 1.5
     distributionBias: 0.5
     hapticFloor01: 0.15
     hapticIntervalAtRest: 0.1

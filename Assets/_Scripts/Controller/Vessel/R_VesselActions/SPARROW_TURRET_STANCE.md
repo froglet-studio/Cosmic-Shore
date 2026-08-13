@@ -137,8 +137,8 @@ a held trigger exactly like one and the prism stays wherever that deflected roun
 of its own**, same as cadence and speed. Full mechanic, tuning and verification:
 **`SPARROW_SPRAY_ACCURACY.md`**. What changes here:
 
-- **`firingRate` 30 → 60.** Anchored prisms/s therefore **60 → 120** and volume/s ~120 → ~240 at
-  base scale (MASS ×1). This is the documented consequence of "the same rate as its bullets" and
+- **`firingRate` 30 → 90** (60 in the first pass, raised again after playtest). Anchored prisms/s
+  therefore **60 → 180** and volume/s ~120 → ~360 at base scale (MASS ×1). This is the documented consequence of "the same rate as its bullets" and
   `firingRate` is still the single lever — a turret-only divisor would re-open the drift the
   shared-cadence pass closed. The prism pool was resized for it (see the table below).
 - **The cadence is now frame-rate independent.** Both loops replaced `UniTask.Delay(1/rate)` with a
@@ -341,7 +341,7 @@ Everything that moves both fire modes lives on **`FullAutoAction.asset`**:
 
 | Knob | Value | Effect |
 |---|---|---|
-| `firingRate` | **60** (was 30 before round 7) | Volleys/s for guns **and** turret. |
+| `firingRate` | **90** (was 30 before round 7) | Volleys/s for guns **and** turret. |
 | `speedValue.Value` | **375** (was 1500 before round 3's quartering) | Muzzle speed base for both, before the SPACE multiplier (0.4× at rest → 9× at full overcharge). |
 | `projectileTime` | **0.3** | Flight time; with the easing curve → ~**72 u** of range at SPACE 0, ~645 u at SPACE 10. |
 | `spread.*` | see `SPARROW_SPRAY_ACCURACY.md` | The accuracy-decay cone, shared by both modes (round 7). |
@@ -357,17 +357,17 @@ ended.
 
 | | Original | Cadence parity | **Round 7** |
 |---|---|---|---|
-| Volleys/s | 14 | 30 | **60** |
+| Volleys/s | 14 | 30 | **90** |
 | Muzzles | 2 | 2 | 2 |
-| **Anchored prisms/s** | 28 | 60 | **120** |
-| Volume/s (base scale, MASS ×1) | ~56 | ~120 | **~240** |
+| **Anchored prisms/s** | 28 | 60 | **180** |
+| Volume/s (base scale, MASS ×1) | ~56 | ~120 | **~360** |
 
-A held burst lays permanent mass at **~4.3× the original rate** — ~1,200 prisms in ten seconds,
+A held burst lays permanent mass at **~6.4× the original rate** — ~1,800 prisms in ten seconds,
 each a spatial-index registration plus a collider under the usual collider-LOD. That is what
 "the same rate as its bullets" costs; the single lever is `FullAutoAction.firingRate`, and it
 moves the guns too. Pool sizing on `Sparrow.prefab` follows it: the turret's
-`BlockProjectilePoolManager` went to `defaultCapacity 80 / maxSize 400 / bufferSizeTarget 180 /
-maxAddsPerFrame 12`, because anchored prisms are **never returned** and every shot past the
+`BlockProjectilePoolManager` went to `defaultCapacity 120 / maxSize 600 / bufferSizeTarget 260 /
+maxAddsPerFrame 16`, because anchored prisms are **never returned** and every shot past the
 buffer is a fresh `Instantiate`.
 
 **Per-frame CPU went down, not up.** The prism costs one stamp and one anchor; the only
@@ -446,11 +446,14 @@ present on BlockGraph and ExplodingBlockGraph.
 
 ## Follow-ups
 
-- **Tunneling.** Bullets and turret shots alike are discrete triggers moved by transform
-  writes (`m_CollisionDetection: 0`), so at 1500 u/s they advance ~25 u/frame and can pass
-  through a thin prism unregistered. The right fix is a swept segment query on
-  `PrismSpatialIndex` (`Docs/SPATIAL_INDEX.md`), not CCD — a transform teleport bypasses CCD.
-  Not done here: it would change bullet behaviour too, and parity is the point.
+- **Tunneling — RESOLVED (2026-08-13), and it was worse than this entry estimated.** Shipped as
+  `PrismSpatialIndex.QuerySegment` + `Projectile.sweptPrismDetection`, exactly the swept segment
+  query named here. The measured hole was ~74% of the path at the shipped 375 u/s base speed and
+  ~97% at high SPACE — it was the actual reason the guns could not clear a small area, and the
+  reason the round-6 collider correction (12 → 1.65 diameter) removed so much felt lethality: the
+  oversized ball had been closing the per-frame gap. Changing bullet behaviour was the POINT this
+  time, and parity holds because both fire modes opt in. See
+  `SPARROW_SPRAY_ACCURACY.md` ▸ "Round 2".
 - **Anchored-mass rate.** If 60 prisms/s is too much for a cell's phase ladder in practice,
   move `FullAutoAction.firingRate` — not a turret-only divisor, which would re-open the drift
   this pass closed.

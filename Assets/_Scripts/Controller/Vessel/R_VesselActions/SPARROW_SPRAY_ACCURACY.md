@@ -3,34 +3,106 @@
 > **The rule, in one line:** *hold the trigger and the cone opens — the danger zone grows and
 > your hands feel it; let go for an instant and you are pin-accurate again.*
 
-The Sparrow's cannons are a **saturation** weapon, not a marksman's rifle. The design that makes
-that legible is a two-mode gun with one control:
+The Sparrow's cannons are a **saturation** weapon, not a marksman's rifle.
 
 | you do | you get |
 |---|---|
-| tap the trigger (≤ 0.12 s) | a perfectly accurate burst — a scalpel, at a quarter of the volume |
-| hold it down | a cone that opens over ~1.4 s to a 4° cap, filled at **120 rounds/s** — nothing in it survives, and the buzz in your hands climbs the whole way |
+| tap the trigger (≤ 0.12 s) | a perfectly accurate burst — a scalpel, at a fraction of the volume |
+| hold it down | a cone that opens over ~1.6 s to a 1.5° cap, filled at **180 rounds/s** — nothing along the path survives, and the buzz in your hands climbs the whole way |
 | release and re-pull | full accuracy back, instantly. This is the "3-shot burst" the design asks for |
 
-The cone is the *point*, not a penalty. At 120 rounds/s a widening group means a **growing
-volume you are saturating**, so a held burst is easier to land on something moving than a
-pin-accurate line is — right up to the cap, which sits just past where the spread would start
-costing you the target you actually wanted.
+---
+
+## Round 2 (2026-08-13): the guns could not clear a small area, and spread was not why
+
+Playtest report: *"far too difficult to destroy all the prisms in a small area. When I increase
+the projectile radius I get the desired results, except that giant bullets from a small vessel is
+silly. The hope was that increasing the fire rate and the spread would be a reasonable substitute,
+but it was still inadequate."*
+
+That report contains its own diagnosis. **A bigger radius worked because the bullet was missing
+most of its own flight path**, and no amount of fire rate or spread can compensate for a weapon
+that is structurally blind to the ground between its samples.
+
+### The bug: a projectile is a TELEPORT, not a sweep
+
+`Projectile.MoveProjectileAsync` advances the transform by `Velocity · Δt` each frame, and PhysX
+samples that discrete trigger once per physics step. So collisions are only ever tested at the
+handful of points the round *lands on* — never along the line between them:
+
+| | muzzle speed | step / frame @60 fps | hit sphere Ø | **path actually tested** |
+|---|---|---|---|---|
+| SPACE 0 | 375 u/s | 6.25 u | 1.65 | **26%** |
+| SPACE 5 | 1875 u/s | 31.25 u | 1.65 | **5%** |
+| SPACE 10 | 3375 u/s | 56.25 u | 1.65 | **3%** |
+
+Three-quarters of every shot's path was never tested for collision, and at range it was
+97%. Prisms in the gaps were passed straight through — silently, with no miss to see. Halve the
+frame rate and it halves again.
+
+**This also explains the pre-existing collider history.** Round 6 of the turret pass shrank the
+bullet's hit sphere from a 12 diameter to 1.65 after finding nothing had *authored* the 12 — it
+fell out of the tracer mesh's ×20 z-stretch leaking into a `SphereCollider` radius. That was
+geometrically correct and it silently removed the thing that had been papering over the tunneling:
+a 12-diameter ball closes a 6.25 u step completely. The accident was load-bearing. (Even it was
+not enough at range — at SPACE 10 the old ball still only covered 21% of the path.)
+
+### The fix: test the segment, not the landing point
+
+`PrismSpatialIndex.QuerySegment(a, b, radius, results)` — the swept counterpart of `QuerySphere`,
+gathering every live prism within `radius` of the segment the round crossed this frame. This is
+the fix `SPARROW_TURRET_STANCE.md` named in its follow-ups ("a swept segment query on
+`PrismSpatialIndex`, not CCD — a transform teleport bypasses CCD") and the one CLAUDE.md's
+anti-pattern list demands (never `Physics.OverlapSphere` against prisms; new query shapes go on
+the index).
+
+It is **exactly the effect of a huge bullet with none of the appearance** — which is what the
+playtest asked for.
+
+- **`Projectile.sweptPrismDetection`** (opt-in, on for `SparrowProjectile.prefab` and
+  `Sparrow Projectile Prism.prefab`) makes the swept query the **sole** owner of prism contact;
+  `ProjectileImpactor` suppresses the trigger's prism case so nothing double-dispatches. The
+  trigger was never a second chance — it is the thing that was missing 74%.
+- **Hits dispatch nearest-first**, which is what makes the sub-SPACE-5 "destroyed on its first
+  prism impact" rule mean the *first prism along the path* rather than an arbitrary one.
+- **The round is moved to each contact point before its impact fires**, so effects — and the
+  Turret Stance's anchor, which places its prism "wherever the bullet would be destroyed" — see
+  where the shot actually met the prism, not where the frame's step happened to end.
+- **Contact is bounding-sphere**, not an exact capsule-vs-OBB narrowphase: a few instructions
+  instead of a narrowphase, erring slightly generous at corners — the right direction for a
+  saturation weapon, and still far tighter than the oversized collider it replaces.
+- Dispatch reuses `ImpactorBase.AcceptImpacteeFromSweep`, the exact analogue of the shell tier's
+  `AcceptImpacteeFromShellContact`: same init gate, same profiler marker, same effect chain.
+
+**Vessels and mines still use the trigger.** The same tunneling applies to them and is a real
+follow-up, but a vessel hull is a much bigger target than a trail prism and widening this pass to
+the whole impact system is its own change.
+
+### And the tuning the report asked for
+
+With the path actually being tested, spread does what it was supposed to do, so the cone gets
+tighter and the volume goes up:
+
+| | round 1 | **round 2** |
+|---|---|---|
+| `firingRate` | 60 volleys/s | **90** (180 rounds/s) |
+| `spread.growthDegreesPerSecond` | 3.2 | **1.0** |
+| `spread.maxHalfAngleDegrees` | 4 | **1.5** |
+
+The cone now reaches only 0.88° after a full second of holding and caps at 1.5° (a 1.9 u radius
+at the SPACE-0 range of ~72 u). It is a *texture* on the stream rather than a scatter — which is
+what it should have been once the rounds started actually connecting.
 
 ---
 
 ## The three moving parts
 
-### 1. Rate of fire — 30 → **60 volleys/s** (120 rounds/s across two muzzles)
+### 1. Rate of fire — 30 → 60 → **90 volleys/s** (180 rounds/s across two muzzles)
 
-Round 6 of the turret pass shrank the bullet's hit sphere 8× (world diameter 12 → 1.65) after
-discovering nothing had ever *authored* the 12 — it fell out of the tracer mesh's ×20 z-stretch
-leaking into a `SphereCollider` radius. That was the right fix, and it deliberately made the guns
-tighter. `SPARROW_TURRET_STANCE.md` round 6 says so explicitly: *"the guns feel tighter is the
-intended outcome, not a regression to fix by inflating the sphere again."*
-
-This pass is the sanctioned other half of that trade: the aim forgiveness comes back as **volume
-of fire × cone coverage**, not as a bigger invisible ball around each round.
+Round 6 of the turret pass shrank the bullet's hit sphere 8× and deliberately made the guns
+tighter: *"the guns feel tighter is the intended outcome, not a regression to fix by inflating the
+sphere again."* That still stands — the forgiveness came back as **path coverage plus volume of
+fire**, never as a bigger invisible ball.
 
 ### 2. The fire loops are now frame-rate independent — and this was load-bearing
 
@@ -48,8 +120,8 @@ the fire rate (and, in Dog Fight, double the scoring rate) of 30 fps players.
 Both loops now **owe fire in seconds and pay it off in whole volleys** (`owed += Time.deltaTime`,
 fire `floor(owed / interval)`), capped at `MaxVolleysPerTick = 4` with the excess *dropped* rather
 than carried — after a hitch the gun resumes firing, it does not discharge the stall as a burst.
-At 60 volleys/s a 60 fps client fires 1 volley per frame and a 30 fps client fires 2; both put the
-same rounds downrange. The cap sustains the full rate down to 15 fps.
+At 90 volleys/s a 60 fps client fires 1–2 volleys per frame and a 30 fps client fires 3; both put
+the same rounds downrange. The cap sustains the full rate down to ~23 fps.
 
 ### 3. The cone
 
@@ -145,10 +217,16 @@ dogfighters and the Menu_Main autopilot all fire and none of them may buzz your 
 | `R_VesselActions/Executors/FullAutoActionExecutor.cs` | Accumulator cadence + per-round deflection for the bullets. |
 | `R_VesselActions/Executors/FullAutoBlockShootActionExecutor.cs` | Same for the turret, plus the roll-preserving shot rotation. |
 | `Controller/Projectiles/Gun.cs` | `FireGun(..., aimDirection)` — the gun is *handed* a direction; it owns no spread policy and rolls no dice. |
+| `Controller/Managers/PrismSpatialIndex.cs` | `QuerySegment` — the swept counterpart of `QuerySphere`, plus the public `DistanceToSegmentSq` metric. |
+| `Controller/Projectiles/Projectile.cs` | `sweptPrismDetection`, `SweepPrismsAlong` (nearest-first dispatch, contact-point repositioning), `CacheSweepRadius`. |
+| `Controller/ImpactEffects/Impactors/ImpactorBase.cs` | `AcceptImpacteeFromSweep` + `IsSweepDispatch` — the swept analogue of the shell tier's entry point. |
+| `Controller/ImpactEffects/Impactors/ProjectileImpactor.cs` | Suppresses the trigger's prism case when the sweep owns it. |
 | `Controller/IO/HapticController.cs` | `PlaySpray(strength01)` + the extended gate + the buzz clip. |
 | `_Scripts/Tests/Editor/GunSpreadMathTests.cs` | Ramp, cap, cone containment, pole safety, determinism, distribution, roll preservation. |
+| `_Scripts/Tests/Editor/PrismSweptQueryTests.cs` | The point-to-segment metric: endpoint clamping, degenerate steps, and the shipped mid-step geometry PhysX was missing. |
 | `_SO_Assets/VesselActions/Sparrow/FullAutoAction.asset` | The shipped numbers. |
 | `_Prefabs/Spacevessels/Sparrow.prefab` | `GunSprayAccuracy` executor + resized pools. |
+| `_Prefabs/Projectile/SparrowProjectile.prefab`, `_Prefabs/Trails/Prisms With Pools/Sparrow Projectile Prism.prefab` | `sweptPrismDetection: 1`. |
 
 ## Tuning knobs
 
@@ -156,10 +234,10 @@ Everything that moves **both** fire modes lives on `FullAutoAction.asset`:
 
 | Knob | Shipped | Effect |
 |---|---|---|
-| `firingRate` | **60** | Volleys/s for guns **and** turret. The single lever for volume of fire — and for the turret's permanent-mass rate. |
-| `spread.onsetSeconds` | **0.12** | Grace window of perfect accuracy at the start of every pull (~7 volleys / 14 rounds). Size it to the burst length that should stay surgical. |
-| `spread.growthDegreesPerSecond` | **3.2** | How fast the cone opens. Full at `onset + max/growth` ≈ **1.37 s**. |
-| `spread.maxHalfAngleDegrees` | **4** | The cap. Raise it and held fire starts missing what you aimed at; drop it to 0 to disable spread entirely (sanctioned opt-out). |
+| `firingRate` | **90** | Volleys/s for guns **and** turret. The single lever for volume of fire — and for the turret's permanent-mass rate. |
+| `spread.onsetSeconds` | **0.12** | Grace window of perfect accuracy at the start of every pull (~11 volleys / 22 rounds). Size it to the burst length that should stay surgical. |
+| `spread.growthDegreesPerSecond` | **1.0** | How fast the cone opens. Full at `onset + max/growth` ≈ **1.62 s**; only 0.88° after a full second. |
+| `spread.maxHalfAngleDegrees` | **1.5** | The cap (≈1.9 u radius at the SPACE-0 range of 72 u). Raise it and held fire starts missing what you aimed at; drop it to 0 to disable spread entirely (sanctioned opt-out). |
 | `spread.distributionBias` | **0.5** | 0.5 = uniform over the disc (even saturation). 1.0 = dense core + thin halo. |
 | `spread.hapticFloor01` | **0.15** | Buzz strength before any accuracy is lost — above zero so the gun is felt from round one. |
 | `spread.hapticIntervalAtRest` / `AtMaxSpread` | **0.10 / 0.045** | Pulse cadence at each end of the ramp. Keep the max-spread value above ~0.04 s: NiceVibrations holds one clip at a time, so pulses closer than the clip just cut each other off. |
@@ -169,21 +247,24 @@ they are what they are):
 
 | Pool | was | now | why |
 |---|---|---|---|
-| bullets (`ProjectilePoolManager`) | 25 / 100 / 25 | **60 / 240 / 60** | 120 rounds/s × 0.3 s lifetime ≈ 36 live at once. |
-| turret prisms (`BlockProjectilePoolManager`) | 40 / 200 / 90 | **80 / 400 / 180** | Anchored prisms are **never returned**, so every shot past the buffer is a fresh `Instantiate`. |
+| bullets (`ProjectilePoolManager`) | 25 / 100 / 25 | **90 / 320 / 90** | 180 rounds/s × 0.3 s lifetime ≈ 54 live at once. |
+| turret prisms (`BlockProjectilePoolManager`) | 40 / 200 / 90 | **120 / 600 / 260** | Anchored prisms are **never returned**, so every shot past the buffer is a fresh `Instantiate`. |
 
 ## Costs this pass takes on, deliberately
 
-- **Turret stance now lays ~120 prisms/s** of permanent world mass (was 60), at ~240 volume/s at
+- **Turret stance now lays ~180 prisms/s** of permanent world mass (was 60), at ~360 volume/s at
   base scale before the MASS stretch. That is the documented price of "the same rate as its
   bullets", and `firingRate` remains the single lever — **do not** add a turret-only divisor,
   which is exactly the drift the shared-cadence pass closed. Judge it against the host cell's
   phase ladder in play.
-- **Dog Fight pace roughly doubles.** A bullet hit scores 1 against a 120-point target, so
-  doubling rounds downrange roughly halves time-to-target for a pilot who is landing shots — and
-  spread cuts the other way, so the net is genuinely a play-test question. The target is authored
-  (FrogletTools ▸ Game Modes ▸ End Game Conditions, `GetDogFightPointTarget`), so retuning it is
-  one field and does **not** need a code change.
+- **Dog Fight pace changes a LOT, and by more than the rate alone.** A bullet hit scores 1 against
+  a 120-point target; rounds downrange are 3× the pre-branch figure AND each one now actually
+  tests its whole path, so landed hits per second rise by considerably more than 3×. Expect the
+  point target to need raising. It is authored (FrogletTools ▸ Game Modes ▸ End Game Conditions,
+  `GetDogFightPointTarget`), so retuning it is one field and needs **no** code change.
+- **Swept queries cost one `QuerySegment` per live bullet per frame** (~54 concurrent at the
+  shipped rate). The segment's AABB is thin, so each walks only a handful of 8 m buckets — but it
+  is new per-frame work in the projectile path and worth a profiler glance under a sustained hold.
 
 ## In-editor verification
 
@@ -208,11 +289,11 @@ Sparrow, fire on input 1.
 5. **Turret prisms scatter.** Stopped, hold fire: prisms must anchor in a scattered volume, not a
    line — and each one must still point along its own flight (no visible twist/roll on the long
    axis).
-6. **Rate.** 120 rounds/s should read as a solid stream. Then **cap the editor to 30 fps**
+6. **Rate.** 180 rounds/s should read as a solid stream. Then **cap the editor to 30 fps**
    (Game view ▸ or `Application.targetFrameRate = 30`) and confirm the stream looks the same
    density — that is the accumulator working. Before this pass it would have halved.
 7. **Haptic ramp** (gamepad/device). Hold the trigger: a light buzz from the first round that
-   climbs in strength *and* rate for ~1.4 s, then holds steady at the cap. Release → silence.
+   climbs in strength *and* rate for ~1.6 s, then holds steady at the cap. Release → silence.
 8. **Haptics stay legible.** While spraying, ram a prism with the hull — the punish **thud** must
    cut cleanly through the buzz. Confirm the buzz never plays for a remote player's Sparrow, an
    AI dogfighter, or the Menu_Main autopilot.
@@ -241,9 +322,14 @@ Sparrow, fire on input 1.
   (Pulsefire Cannons) — which makes it a live-gauge icon and pulls in the rule-9 obligations
   (`tintIconOnUpgrade = false` + a `SetAbilityUpgraded` override re-anchoring rest scales).
   Deliberately out of scope here.
+- **Vessels and mines still tunnel.** Swept detection covers prisms only. A hull is a much bigger
+  target so it matters far less, but a Sparrow round crossing 6.25 u per frame can still slip past
+  a vessel at a glancing angle — and in Dog Fight that is a missed point. Generalizing the sweep to
+  the whole impact system (and to every other fast projectile in the game, not just the Sparrow's)
+  is the natural next step; it is opt-in per prefab precisely so that can be done deliberately.
 - **`placementImmunitySeconds` is now doing more work again.** Round 6 noted 0.2 s was probably too
   long once the hit sphere shrank; at 120 shots/s the shot-vs-shot spacing it guards is tighter
   again. Re-judge it in play rather than assuming either direction.
 - **`MaxVolleysPerTick = 4` is a code constant, not an authored field.** It only binds below
-  15 fps at the shipped rate. If a rate above ~240 volleys/s is ever wanted it must move with it —
+  ~23 fps at the shipped rate. If a rate above ~240 volleys/s is ever wanted it must move with it —
   hoist it onto `GunSpreadProfile` at that point rather than raising it blind.
