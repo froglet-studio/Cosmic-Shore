@@ -285,9 +285,15 @@ namespace CosmicShore.Utility
         static PostProcessingManager PostProcessing => PostProcessingManager.Instance;
 
         /// <summary>
-        /// The live gameplay follow camera, or null when Cinemachine is driving the view (the
-        /// menu). There the FOV half simply does not apply and the Panini half carries the
-        /// effect alone — a designed state, not a fault, so it is deliberately NOT warned about.
+        /// The live gameplay follow camera, or null when the menu owns the view. There the FOV
+        /// half simply does not apply and the Panini half carries the effect alone — a designed
+        /// state, not a fault, so it is deliberately NOT warned about.
+        ///
+        /// That is only defensible while the menu camera is RIDING the vessel, which the four
+        /// vessel-framing menu rigs do. A menu rig that frames something else — the lava lamp
+        /// orbits the cell and never follows the ship — has no speed to sell, and the global
+        /// Panini half would warp its frame to a rhythm nothing on screen explains. Those rigs
+        /// therefore take a hold via <see cref="SetSuppressed"/>; see Docs/SPEED_TUNNEL.md §2.
         /// </summary>
         static Camera ResolveGameplayCamera()
         {
