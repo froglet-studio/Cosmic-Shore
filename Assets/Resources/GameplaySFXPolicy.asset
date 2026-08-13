@@ -1,0 +1,136 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d4cc3c8cf61a4b7fb04ad30db9eca338, type: 3}
+  m_Name: GameplaySFXPolicy
+  m_EditorClassIdentifier:
+  defaultPolicy:
+    category: 1
+    volumeScale: 1
+    maxVoicesPerWindow: 2147483647
+    windowSeconds: 0.1
+    minRetriggerSeconds: 0
+    burstVolumeFalloff: 1
+    minBurstVolume: 1
+    maxPendingVoices: 0
+  categoryPolicies:
+  - category: 6
+    volumeScale: 0.8
+    maxVoicesPerWindow: 3
+    windowSeconds: 0.12
+    minRetriggerSeconds: 0.045
+    burstVolumeFalloff: 0.6
+    minBurstVolume: 0.3
+    maxPendingVoices: 2
+  - category: 20
+    volumeScale: 0.8
+    maxVoicesPerWindow: 3
+    windowSeconds: 0.1
+    minRetriggerSeconds: 0.04
+    burstVolumeFalloff: 0.65
+    minBurstVolume: 0.3
+    maxPendingVoices: 1
+  - category: 23
+    volumeScale: 1.0
+    maxVoicesPerWindow: 2
+    windowSeconds: 0.15
+    minRetriggerSeconds: 0.07
+    burstVolumeFalloff: 0.5
+    minBurstVolume: 0.35
+    maxPendingVoices: 1
+  - category: 24
+    volumeScale: 1.0
+    maxVoicesPerWindow: 2
+    windowSeconds: 0.15
+    minRetriggerSeconds: 0.07
+    burstVolumeFalloff: 0.5
+    minBurstVolume: 0.35
+    maxPendingVoices: 1
+  - category: 25
+    volumeScale: 1.0
+    maxVoicesPerWindow: 2
+    windowSeconds: 0.15
+    minRetriggerSeconds: 0.07
+    burstVolumeFalloff: 0.5
+    minBurstVolume: 0.35
+    maxPendingVoices: 1
+  - category: 26
+    volumeScale: 1.0
+    maxVoicesPerWindow: 2
+    windowSeconds: 0.15
+    minRetriggerSeconds: 0.07
+    burstVolumeFalloff: 0.5
+    minBurstVolume: 0.35
+    maxPendingVoices: 1
+  - category: 1
+    volumeScale: 0.35
+    maxVoicesPerWindow: 4
+    windowSeconds: 0.1
+    minRetriggerSeconds: 0.02
+    burstVolumeFalloff: 0.8
+    minBurstVolume: 0.4
+    maxPendingVoices: 2
+  - category: 36
+    volumeScale: 0.5
+    maxVoicesPerWindow: 3
+    windowSeconds: 0.1
+    minRetriggerSeconds: 0.03
+    burstVolumeFalloff: 0.7
+    minBurstVolume: 0.35
+    maxPendingVoices: 1
+  - category: 37
+    volumeScale: 0.5
+    maxVoicesPerWindow: 3
+    windowSeconds: 0.1
+    minRetriggerSeconds: 0.03
+    burstVolumeFalloff: 0.7
+    minBurstVolume: 0.35
+    maxPendingVoices: 1
+  - category: 14
+    volumeScale: 0.6
+    maxVoicesPerWindow: 3
+    windowSeconds: 0.1
+    minRetriggerSeconds: 0.03
+    burstVolumeFalloff: 0.7
+    minBurstVolume: 0.35
+    maxPendingVoices: 1
+  - category: 4
+    volumeScale: 0.7
+    maxVoicesPerWindow: 3
+    windowSeconds: 0.1
+    minRetriggerSeconds: 0.035
+    burstVolumeFalloff: 0.7
+    minBurstVolume: 0.35
+    maxPendingVoices: 1
+  - category: 15
+    volumeScale: 0.8
+    maxVoicesPerWindow: 3
+    windowSeconds: 0.12
+    minRetriggerSeconds: 0.05
+    burstVolumeFalloff: 0.65
+    minBurstVolume: 0.35
+    maxPendingVoices: 2
+  - category: 7
+    volumeScale: 1.0
+    maxVoicesPerWindow: 3
+    windowSeconds: 0.1
+    minRetriggerSeconds: 0.04
+    burstVolumeFalloff: 0.7
+    minBurstVolume: 0.4
+    maxPendingVoices: 1
+  - category: 35
+    volumeScale: 1.0
+    maxVoicesPerWindow: 3
+    windowSeconds: 0.1
+    minRetriggerSeconds: 0.04
+    burstVolumeFalloff: 0.7
+    minBurstVolume: 0.4
+    maxPendingVoices: 1

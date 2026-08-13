@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using CosmicShore.Gameplay;
 using CosmicShore.Gameplay.Audio;
+using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using FMODUnity;
 using Reflex.Attributes;
@@ -290,32 +291,13 @@ namespace CosmicShore.Core
         [SerializeField, Tooltip("Played for GameplaySFXCategory.CreatureBlockHit - a creature (fauna) destroyed/consumed a non-flora block. Replaces the generic BlockDestroy one-shot for creature kills; flora blocks still play their own FloraCollision sound. Spatialized at the prism position.")]
         EventReference creatureBlockHitEvent;
 
-        [Header("Gameplay SFX Tuning")]
-        [SerializeField, Range(0f, 1f), Tooltip(
-            "Extra volume multiplier applied to BlockDestroy one-shots on top " +
-            "of the SFX slider. Dozens of prisms can break in a single frame " +
-            "(mode entry, trail collapse, fauna swarms); attenuating the " +
-            "per-block volume keeps the stacked result from phasing into a " +
-            "harsh wall of noise.")]
-        float blockDestroyVolumeScale = 0.35f;
-
-        [SerializeField, Range(0f, 1f), Tooltip(
-            "Extra volume multiplier applied to Explosion one-shots on top of " +
-            "the SFX slider.")]
-        float explosionVolumeScale = 0.6f;
-
-        [SerializeField, Min(1), Tooltip(
-            "Max BlockDestroy one-shots allowed to start within " +
-            "blockDestroyThrottleWindow seconds. Breaks beyond this cap in the " +
-            "same window are dropped - the sound is already saturated, so the " +
-            "extra voices are inaudible individually but would otherwise stack " +
-            "into harsh noise and waste FMOD voices.")]
-        int blockDestroyMaxPerWindow = 4;
-
-        [SerializeField, Min(0.01f), Tooltip(
-            "Sliding window (seconds) over which blockDestroyMaxPerWindow is " +
-            "counted.")]
-        float blockDestroyThrottleWindow = 0.1f;
+        [Header("Gameplay SFX Burst Policy")]
+        [SerializeField, Tooltip(
+            "Per-category burst limits (voice budget, retrigger spacing, volume " +
+            "falloff, burst coalescing) for gameplay SFX one-shots. Leave empty " +
+            "to load the shared asset from Resources/GameplaySFXPolicy. This is " +
+            "the ONLY tuning surface - see GameplaySFXPolicySO.")]
+        GameplaySFXPolicySO gameplaySFXPolicy;
 
         [Header("Logging")]
         [SerializeField, Tooltip(
@@ -347,11 +329,17 @@ namespace CosmicShore.Core
         readonly HashSet<MenuAudioCategory> _warnedMenuCategories = new();
         readonly HashSet<GameplaySFXCategory> _warnedGameplayCategories = new();
 
-        // Sliding-window throttle for BlockDestroy. When many prisms break in
-        // the same instant, only the first blockDestroyMaxPerWindow voices per
-        // blockDestroyThrottleWindow are allowed to start; the rest are dropped.
-        float _blockDestroyWindowStart;
-        int _blockDestroyWindowCount;
+        // Per-category burst gate. Every gameplay one-shot passes through it, so
+        // a frame that destroys dozens of crystals (or prisms, or creatures)
+        // cannot start dozens of copies of one FMOD event on the same frame -
+        // which is both a voice-count problem and, because identical one-shots
+        // started together sum coherently and comb-filter, an ugly-sound problem.
+        // See GameplaySFXBurstLimiter / GameplaySFXPolicySO.
+        GameplaySFXBurstLimiter _burstLimiter;
+
+        // Scratch buffer for the per-frame pending drain. Reused so the pump
+        // allocates nothing on a quiet frame.
+        readonly List<GameplaySFXBurstLimiter.Emission> _drainedEmissions = new();
 
         public bool MusicEnabled { get { return musicEnabled; } }
         public bool SFXEnabled { get { return sfxEnabled; } }
@@ -371,6 +359,7 @@ namespace CosmicShore.Core
         {
             InitializeMenuAudioEvents();
             InitializeGameplaySFXEvents();
+            EnsureBurstLimiter();
 
             // Fallback: when auto-created by AppManager.EnsureService before the
             // Reflex container is built, [Inject] will not have resolved yet.
@@ -573,11 +562,15 @@ namespace CosmicShore.Core
             => PlayGameplaySFXInternal(category, spatial: true, worldPosition);
 
         /// <summary>
-        /// Shared implementation for the gameplay SFX overloads. Applies the
-        /// per-category volume scale (see <see cref="GetCategoryVolumeScale"/>)
-        /// on top of the SFX slider and gates throttled categories
-        /// (see <see cref="PassesGameplaySFXThrottle"/>) so a burst of
-        /// simultaneous prism breaks can't stack into harsh noise.
+        /// Shared implementation for the gameplay SFX overloads. Every one-shot
+        /// passes through <see cref="_burstLimiter"/>, which applies the
+        /// category's volume scale and decides whether this event may start a
+        /// voice NOW, must wait to be spaced out (<see cref="Update"/> replays
+        /// it), or is dropped. That gate is what stops a frame full of crystal
+        /// (or prism, or creature) deaths from starting dozens of copies of one
+        /// FMOD event together - which both burns voices and, because identical
+        /// one-shots started on the same frame sum coherently and comb-filter,
+        /// sounds awful. See <see cref="GameplaySFXPolicySO"/>.
         /// </summary>
         void PlayGameplaySFXInternal(GameplaySFXCategory category, bool spatial, Vector3 worldPosition)
         {
@@ -585,10 +578,13 @@ namespace CosmicShore.Core
 
             if (GameplaySFXEvents.TryGetValue(category, out var reference) && !reference.IsNull)
             {
-                if (!PassesGameplaySFXThrottle(category)) return;
+                EnsureBurstLimiter();
 
-                float volume = ResolveFMODSFXVolume() * GetCategoryVolumeScale(category);
-                FMODOneShotVolumeHelper.PlaySFXOneShot(reference, spatial ? worldPosition : Vector3.zero, volume);
+                if (!_burstLimiter.TryAdmit(
+                        category, Time.unscaledTime, spatial, worldPosition, out float categoryVolume))
+                    return;
+
+                EmitGameplaySFX(reference, spatial, worldPosition, categoryVolume);
                 return;
             }
 
@@ -598,6 +594,51 @@ namespace CosmicShore.Core
                     $"[AudioSystem] No FMOD EventReference wired for GameplaySFXCategory.{category}. " +
                     $"Wire it on the AudioSystem GameObject. (This warning fires once per category.)");
             }
+        }
+
+        /// <summary>
+        /// Releases burst voices the limiter has been holding back. Deliberately
+        /// one per category per frame: the SPACING between voices is what stops
+        /// them summing coherently, so flushing them together would recreate the
+        /// exact problem the limiter exists to fix. No-ops (and allocates
+        /// nothing) on a frame with nothing pending.
+        /// </summary>
+        void Update()
+        {
+            if (_burstLimiter == null) return;
+
+            _drainedEmissions.Clear();
+            _burstLimiter.Drain(Time.unscaledTime, _drainedEmissions);
+            if (_drainedEmissions.Count == 0) return;
+
+            for (int i = 0; i < _drainedEmissions.Count; i++)
+            {
+                var emission = _drainedEmissions[i];
+                if (!GameplaySFXEvents.TryGetValue(emission.Category, out var reference) || reference.IsNull)
+                    continue;
+
+                EmitGameplaySFX(
+                    reference, emission.Spatial, emission.Position, emission.VolumeMultiplier);
+            }
+        }
+
+        /// <summary>
+        /// Starts one FMOD one-shot with the SFX-slider volume and the
+        /// limiter-resolved category volume folded together.
+        /// </summary>
+        void EmitGameplaySFX(
+            EventReference reference, bool spatial, Vector3 worldPosition, float categoryVolume)
+        {
+            float volume = ResolveFMODSFXVolume() * categoryVolume;
+            FMODOneShotVolumeHelper.PlaySFXOneShot(
+                reference, spatial ? worldPosition : Vector3.zero, volume);
+        }
+
+        void EnsureBurstLimiter()
+        {
+            if (_burstLimiter != null) return;
+            _burstLimiter = new GameplaySFXBurstLimiter(
+                gameplaySFXPolicy != null ? gameplaySFXPolicy : GameplaySFXPolicySO.LoadDefault());
         }
 
         /// <summary>
@@ -741,43 +782,6 @@ namespace CosmicShore.Core
                 $"SFX one-shots fall back to per-instance slider volume, but " +
                 $"continuous emitters won't follow the slider. Check the bus " +
                 $"path and that the Master (strings) bank is loaded.");
-        }
-
-        /// <summary>
-        /// Per-category volume multiplier applied on top of the SFX slider.
-        /// Categories that tend to fire en masse in a single frame (block
-        /// destruction, explosions) are attenuated so the stacked result
-        /// doesn't clip into harsh noise. Everything else passes through at 1.
-        /// </summary>
-        float GetCategoryVolumeScale(GameplaySFXCategory category) => category switch
-        {
-            GameplaySFXCategory.BlockDestroy => blockDestroyVolumeScale,
-            GameplaySFXCategory.Explosion => explosionVolumeScale,
-            _ => 1f,
-        };
-
-        /// <summary>
-        /// Sliding-window concurrency gate for categories that can fire in
-        /// large bursts. Currently only BlockDestroy is throttled: at most
-        /// <see cref="blockDestroyMaxPerWindow"/> voices may start per
-        /// <see cref="blockDestroyThrottleWindow"/> seconds. Returns false to
-        /// drop the one-shot. Non-throttled categories always pass.
-        /// </summary>
-        bool PassesGameplaySFXThrottle(GameplaySFXCategory category)
-        {
-            if (category != GameplaySFXCategory.BlockDestroy) return true;
-
-            float now = Time.unscaledTime;
-            if (now - _blockDestroyWindowStart > blockDestroyThrottleWindow)
-            {
-                _blockDestroyWindowStart = now;
-                _blockDestroyWindowCount = 0;
-            }
-
-            if (_blockDestroyWindowCount >= blockDestroyMaxPerWindow) return false;
-
-            _blockDestroyWindowCount++;
-            return true;
         }
 
         void InitializeMenuAudioEvents()
