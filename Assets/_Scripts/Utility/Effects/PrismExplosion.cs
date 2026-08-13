@@ -29,7 +29,11 @@ namespace CosmicShore.Utility
                  "number, because on this contract debris speed and shatter rate are one quantity " +
                  "(see CLAUDE.md > AOE blast impulse); splitting them makes a blast that finishes " +
                  "shattering while the debris crawls, or the reverse. 1 = a danger prism dies " +
-                 "exactly like a plain one and only its palette differs.")]
+                 "exactly like a plain one and only its palette differs. TUNING NOTE: the batched " +
+                 "debris path caches this off the prefab in PrismDebris.Configure and only " +
+                 "re-reads it when the prefab reference itself changes (same as minSpeed/maxSpeed), " +
+                 "so edit it in edit mode - a play-mode edit will not take effect until the next " +
+                 "domain reload.")]
         [SerializeField]
         private float dangerDetonationMultiplier = 1.6f;
 
@@ -120,6 +124,13 @@ namespace CosmicShore.Utility
         /// ordinary mass coming apart. Shielded/super-shielded mass gets its own PALETTE
         /// (which is the part that was wrong) but plain dynamics; a shielded prism only
         /// ever explodes to a devastating hit, whose own force already carries that read.
+        ///
+        /// It applies on BOTH impulse paths — the legacy inertia gain and the true-velocity
+        /// one (<c>proportionalDebris</c>, where "the vector IS the debris velocity"). That
+        /// is a deliberate, narrow deviation from that contract: a danger prism carries its
+        /// own stored energy, so what leaves it is not only the impactor's momentum, and the
+        /// alternative — scaling only the legacy path — would make danger detonate harder
+        /// when a hull rams it but not when a Dolphin cone does, which reads as a bug.
         /// </summary>
         public static float DetonationGain(PrismKind kind, float dangerMultiplier) =>
             kind == PrismKind.Danger ? Mathf.Max(0.01f, dangerMultiplier) : 1f;

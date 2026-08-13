@@ -209,7 +209,8 @@ other two domains, whose bases are likewise muted mid-tones (`#5386B9`, `#9C71B7
 ### The danger tier borrows the shielded base
 
 A danger prism is painted from a **fourth** pair that has no fields of its own — it is
-composed in `ThemeManager` out of two existing colours:
+composed in `SO_ColorSet.GetPrismKindColors` (§2.1) out of two existing colours, and both
+the live material and the death debris read it from there:
 
 | | |
 |---|---|
@@ -389,8 +390,9 @@ Machine validation covers structure and colorimetry; only a playtest covers *loo
 - **The danger tier has no base fields of its own** — it borrows each domain's shielded
   base. That coupling is why Gold's danger separation (ΔE00 34.2) cannot be raised to
   Jade's (49.8) without moving the shared rim and distorting the other two domains. If the
-  tier ever needs per-domain control, adding `DangerOutsideBlockColor` to `SO_ColorSet` +
-  `ThemeManager` is the clean way, and it is a structural change, not a tune.
+  tier ever needs per-domain control, adding `DangerOutsideBlockColor` to `SO_ColorSet`
+  and reading it in `GetPrismKindColors` (§2.1) is the clean way — one edit, and the live
+  material and the death debris both follow. It is a structural change, not a tune.
 - **The unshielded tier is still not equalised across domains** (ΔL\* 32.2 / 27.1 / 32.0;
   rim `L*` 76.2 / 54.5 / 76.2). §4.2 brought Gold into the band rather than imposing a
   contract, because Ruby's dark rim is load-bearing for its look. If that tier is ever
