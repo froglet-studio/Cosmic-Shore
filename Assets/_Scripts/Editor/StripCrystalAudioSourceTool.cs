@@ -9,10 +9,11 @@ namespace CosmicShore.Editor
     /// One-shot editor tool: removes AudioSource components from all crystal
     /// prefabs in Assets/_Prefabs/Environment/.
     ///
-    /// Crystal.PlayExplosionAudio() no longer uses per-prefab AudioSources -
-    /// it fires an FMOD one-shot via AudioSystem.PlayGameplaySFX(category, position)
-    /// instead. Run this tool once after pulling this change to clean up the
-    /// dead components from all prefabs.
+    /// Crystals no longer use per-prefab AudioSources: the collect one-shot is an FMOD
+    /// event fired by VesselImpactor via AudioSystem.PlayGameplaySFX(category, position).
+    /// (Crystal.PlayExplosionAudio, named here previously, was itself removed — it was a
+    /// duplicate of that same VesselImpactor call; see the note in Crystal.Explode.)
+    /// Run this tool once after pulling to clean the dead components off the prefabs.
     ///
     /// Menu: FrogletTools > Ecology > Strip Crystal AudioSources
     /// </summary>

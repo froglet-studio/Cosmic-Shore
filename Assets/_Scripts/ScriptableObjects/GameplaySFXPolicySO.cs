@@ -215,6 +215,37 @@ namespace CosmicShore.ScriptableObjects
                 maxPendingVoices    = 2,
             },
 
+            // ── Shields ─────────────────────────────────────────────────────────────────────
+            // Both are 2D (PrismStateManager plays them with no position), so like the
+            // elemental stingers they get no spatial decorrelation at all. ShieldActivate is
+            // one voice PER PRISM — an AOE blast shields a whole neighbourhood in one frame.
+            // ShieldDeactivate is worse, and worse BY CONSTRUCTION: PrismTimerManager drains
+            // every expired shield timer in a single Update, so the prisms shielded together
+            // at t all expire together at t + duration. That is a perfectly synchronised burst
+            // of an identical 2D one-shot — the theoretical worst case for coherent summation.
+            new()
+            {
+                category            = GameplaySFXCategory.ShieldActivate,
+                volumeScale         = 0.6f,
+                maxVoicesPerWindow  = 2,
+                windowSeconds       = 0.12f,
+                minRetriggerSeconds = 0.06f,
+                burstVolumeFalloff  = 0.55f,
+                minBurstVolume      = 0.35f,
+                maxPendingVoices    = 1,
+            },
+            new()
+            {
+                category            = GameplaySFXCategory.ShieldDeactivate,
+                volumeScale         = 0.6f,
+                maxVoicesPerWindow  = 2,
+                windowSeconds       = 0.12f,
+                minRetriggerSeconds = 0.06f,
+                burstVolumeFalloff  = 0.55f,
+                minBurstVolume      = 0.35f,
+                maxPendingVoices    = 1,
+            },
+
             // ── Vessel contact ──────────────────────────────────────────────────────────────
             // A vessel grazing a trail generates one of these per prism contact per frame.
             new()

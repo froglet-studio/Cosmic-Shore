@@ -4,7 +4,6 @@ using System.Collections;
 using System.Collections.Generic;
 using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
-using Reflex.Attributes;
 using Unity.Collections;
 using UnityEngine;
 using CosmicShore.Data;
@@ -22,7 +21,9 @@ namespace CosmicShore.Gameplay
 
     public class Crystal : CellItem
     {
-        [Inject] AudioSystem audioSystem;
+        // No [Inject] AudioSystem here: the crystal itself plays no audio. Its collect
+        // one-shot is owned by VesselImpactor (see the note in Explode), and injecting an
+        // unused service back in would invite a second emitter to grow on this class again.
 
         #region Inspector Fields
         [SerializeField]
@@ -307,14 +308,28 @@ namespace CosmicShore.Gameplay
                     explodeParams.Course * explodeParams.Speed, modelData.explodingMaterial, playerName);
             }
 
-            PlayExplosionAudio();
         }
 
-        void PlayExplosionAudio()
-        {
-            if (audioSystem != null)
-                audioSystem.PlayGameplaySFX(GameplaySFXCategory.CrystalCollect, transform.position);
-        }
+        // NOTE: this used to end with a PlayExplosionAudio() that fired
+        // GameplaySFXCategory.CrystalCollect at transform.position — a DUPLICATE of the one
+        // VesselImpactor already fires for the same pickup. Unity raises OnTriggerEnter on both
+        // colliders of a contact pair, so a single vessel↔crystal touch runs two independent
+        // accept paths with two independent latches: VesselImpactor.AcceptImpactee (the
+        // `case OmniCrystalImpactor` branch) AND OmniCrystalImpactor.AcceptImpactee →
+        // ExecuteEffect → here. Neither latch can see the other, so every pickup played the
+        // same one-shot twice, at the same position, in the same frame.
+        //
+        // VesselImpactor is the one that survives: it has no owner/network gate and no vessel-
+        // type exclusion, so it fires on every peer for every vessel. This path is a strict
+        // subset — OmniCrystalImpactor.AcceptImpactee early-returns on network clients, and
+        // ExecuteEffect skips Explode entirely for the Manta — so it could only ever add a
+        // duplicate, never the only voice.
+        //
+        // This matters more than "one redundant voice": two identical one-shots in one frame
+        // is the exact pathology Docs/AUDIO.md exists to prevent, and under the burst limiter
+        // the second one would be held back and replayed as a soft echo ~45 ms later on EVERY
+        // single pickup. Do not reinstate it — if a crystal needs its own destruction sound,
+        // give it its own category rather than a second CrystalCollect.
 
         /// <summary>
         /// Moves this heart out of its dying owner and onto the cell WITHOUT freeing it: it stays

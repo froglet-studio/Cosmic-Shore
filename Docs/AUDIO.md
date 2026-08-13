@@ -21,8 +21,23 @@ Gameplay SFX are fired **per event**, and several event classes are inherently b
 | a vessel sweeping a crystal shower | one `CrystalCollect` + one `Element*Received` **per crystal** |
 | an AOE blast over a crystal field | `CrystalCollect` per crystal |
 | a fauna die-off / mass-kill mode (Wildlife Liberation, Rampage) | every lifeform drops a heart, and every heart collected is another pair |
-| a trail collapsing, mode entry, cell drain | `BlockDestroy` per prism |
+| a trail collapsing, mode entry, cell drain | `BlockDestroy` per prism — rewritten to `CreatureBlockHit` when a creature caused the kill (`Prism.PlayDestructionSFX`) and to `FloraCollision` for flora prisms (`HealthPrism`), so the burst arrives under *three* category names |
 | a swarm starving | `CreatureDeath` per creature |
+| an AOE blast shielding a neighbourhood | `ShieldActivate` per prism, **2D** |
+| those shields expiring | `ShieldDeactivate` per prism, 2D — and **synchronized by construction**: `PrismTimerManager` drains every expired shield timer in one `Update`, so prisms shielded together expire together |
+
+Worst case measured: **Wildlife Liberation**, ~1,409 concurrently live creatures, each carrying
+an embedded elemental heart. Death is silent, but `Fauna.ReleaseHeart` → `Crystal.ActivateCrystal`
+re-enables each heart's collider and leaves it as a free collectible; mass is conserved and
+nothing culls them, so a cleared cage becomes a dense field of loose crystals for a vessel to
+sweep. The Wanderway belt is second at ~120 live crystals.
+
+**Cleared as non-sources** (checked, so nobody re-checks them): AOE/explosion paths do not touch
+crystals at all (`ExplosionImpactor` / `AOEExplosion` / `PrismSpatialIndex` contain no crystal
+handling, and neither `CrystalImpactor` subclass accepts a projectile or explosion impactor);
+lifeform death itself (`ActivateCrystal` is silent); cell drain and `RequestCellSwap` (destroy
+crystals with the root, silently); turn-end and shape-drawing teardown (`DestroyCrystal`, silent);
+the spent-crystal husk pool (no audio).
 
 Each one-shot is its own FMOD instance — `FMODOneShotVolumeHelper.PlaySFXOneShot` runs
 `CreateInstance` → `setVolume` → `set3DAttributes` → `start` → `release`. So:
@@ -93,6 +108,26 @@ t=0.092   voice 3  at the centroid of the rest,                ×0.36
 4. **Duplicates fail loud.** A category listed twice in the asset logs a warning on first
    lookup (the later entry would silently never apply), and a test asserts the shipped
    table has none.
+
+## 3a. One event, one emitter — the limiter is not a licence to double-fire
+
+**Unity raises `OnTriggerEnter` on *both* colliders of a contact pair.** If both sides own an
+impactor with its own accept path and its own latch, neither latch can see the other and a single
+physical event fires the same one-shot **twice**, in the same frame, at the same position.
+
+That is exactly what an omni-crystal pickup did: `VesselImpactor.AcceptImpactee` (the
+`case OmniCrystalImpactor` branch) fired `CrystalCollect`, and `OmniCrystalImpactor.AcceptImpactee`
+→ `ExecuteEffect` → `Crystal.Explode` → `PlayExplosionAudio` fired it again. `Crystal`'s copy was
+removed: `VesselImpactor` has no owner/network gate and no vessel-type exclusion, so it fires on
+every peer for every vessel, whereas the crystal-side path early-returns on network clients and
+skips `Explode` entirely for the Manta — it could only ever add a duplicate, never be the only
+voice.
+
+**Why the limiter does not excuse this.** A duplicate is not "one extra voice it will throttle
+away" — the limiter *holds it back and replays it ~45 ms later as a soft echo*, on every single
+pickup, turning a constant redundancy into a permanent audible artifact in the common one-at-a-time
+case. Before adding a `PlayGameplaySFX` call to an impactor, check whether the other side of the
+contact already plays it.
 
 ## 4. Call-site rules
 

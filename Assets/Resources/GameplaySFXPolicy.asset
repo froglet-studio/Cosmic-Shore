@@ -118,6 +118,22 @@ MonoBehaviour:
     burstVolumeFalloff: 0.65
     minBurstVolume: 0.35
     maxPendingVoices: 2
+  - category: 2
+    volumeScale: 0.6
+    maxVoicesPerWindow: 2
+    windowSeconds: 0.12
+    minRetriggerSeconds: 0.06
+    burstVolumeFalloff: 0.55
+    minBurstVolume: 0.35
+    maxPendingVoices: 1
+  - category: 3
+    volumeScale: 0.6
+    maxVoicesPerWindow: 2
+    windowSeconds: 0.12
+    minRetriggerSeconds: 0.06
+    burstVolumeFalloff: 0.55
+    minBurstVolume: 0.35
+    maxPendingVoices: 1
   - category: 7
     volumeScale: 1.0
     maxVoicesPerWindow: 3

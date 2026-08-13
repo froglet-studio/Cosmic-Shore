@@ -320,27 +320,70 @@ namespace CosmicShore.Tests
 
         // ── Policy asset ─────────────────────────────────────────────────────────────────────
 
+        // Every category a burst source is known to drive. Each entry is a real, traced burst
+        // path - see Docs/AUDIO.md §1 for the sources.
+        static readonly GameplaySFXCategory[] KnownBurstCategories =
+        {
+            GameplaySFXCategory.CrystalCollect,
+            GameplaySFXCategory.CrystalSkim,
+            GameplaySFXCategory.ElementChargeReceived,
+            GameplaySFXCategory.ElementMassReceived,
+            GameplaySFXCategory.ElementSpaceReceived,
+            GameplaySFXCategory.ElementTimeReceived,
+            GameplaySFXCategory.BlockDestroy,
+            GameplaySFXCategory.FloraCollision,
+            GameplaySFXCategory.CreatureBlockHit,
+            GameplaySFXCategory.CreatureDeath,
+            GameplaySFXCategory.Explosion,
+            GameplaySFXCategory.MineExplode,
+            GameplaySFXCategory.ShieldActivate,
+            GameplaySFXCategory.ShieldDeactivate,
+            GameplaySFXCategory.VesselImpact,
+            GameplaySFXCategory.TrackImpact,
+        };
+
         [Test]
-        public void ShippedPolicy_ThrottlesEveryCrystalCategory()
+        public void ShippedPolicy_GovernsEveryKnownBurstCategory()
         {
             var policy = ScriptableObject.CreateInstance<GameplaySFXPolicySO>();
 
-            foreach (var category in new[]
-                     {
-                         GameplaySFXCategory.CrystalCollect,
-                         GameplaySFXCategory.CrystalSkim,
-                         GameplaySFXCategory.ElementChargeReceived,
-                         GameplaySFXCategory.ElementMassReceived,
-                         GameplaySFXCategory.ElementSpaceReceived,
-                         GameplaySFXCategory.ElementTimeReceived,
-                     })
+            foreach (var category in KnownBurstCategories)
             {
                 var entry = policy.For(category);
                 Assert.Greater(entry.minRetriggerSeconds, 0f,
                     $"{category} must carry retrigger spacing - it is the decoherence lever and " +
-                    $"the whole reason a crystal shower stopped phasing.");
+                    $"the only one that actually stops identical one-shots comb-filtering.");
                 Assert.Less(entry.maxVoicesPerWindow, 100,
                     $"{category} must carry a voice budget.");
+            }
+        }
+
+        [Test]
+        public void ShippedPolicy_HoldsTheUnspatializedCategoriesTightest()
+        {
+            // These are played 2D (no world position), so they get ZERO spatial decorrelation -
+            // every copy lands dead centre on the listener and sums perfectly. They must be held
+            // at least as tightly as the spatialized crystal collect.
+            //
+            // ShieldDeactivate is the worst of the set and is synchronized BY CONSTRUCTION:
+            // PrismTimerManager drains every expired shield timer in one Update, so prisms
+            // shielded together expire together.
+            var policy = ScriptableObject.CreateInstance<GameplaySFXPolicySO>();
+            float spatialReference = policy.For(GameplaySFXCategory.CrystalCollect).minRetriggerSeconds;
+
+            foreach (var category in new[]
+                     {
+                         GameplaySFXCategory.ElementChargeReceived,
+                         GameplaySFXCategory.ElementMassReceived,
+                         GameplaySFXCategory.ElementSpaceReceived,
+                         GameplaySFXCategory.ElementTimeReceived,
+                         GameplaySFXCategory.ShieldActivate,
+                         GameplaySFXCategory.ShieldDeactivate,
+                     })
+            {
+                Assert.GreaterOrEqual(policy.For(category).minRetriggerSeconds, spatialReference,
+                    $"{category} is a 2D one-shot with no spatial decorrelation, so it must be " +
+                    $"spaced at least as far apart as the spatialized CrystalCollect.");
             }
         }
 
