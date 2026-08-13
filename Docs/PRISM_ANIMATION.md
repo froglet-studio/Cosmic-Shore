@@ -892,6 +892,21 @@ Rules for anything added to this carrier:
   carries no completion-callback machinery: fire-and-forget is not a limitation here, it
   is the whole live contract. The stamp still carries `GrowDelay` so the shader contract
   stays complete if a grow producer ever lands.
+- **A death visual wears the palette of the TIER the prism was wearing, not just its
+  domain** (2026-08-13). The dying prism's `PrismKind` rides `PrismEventData.Kind`
+  (stamped in `Prism.Explode` / `Implode` from `PrismKinds.Of` *before* the destruction
+  pass, so no later step can rewrite the flags out from under it) and both
+  `PrismFactory.TryGetTeamColors` and `ConfigureForTeam` resolve their pair from
+  `SO_ColorSet.GetPrismKindColors` — the same composition `ThemeManager` paints the live
+  prism with. Before this, debris was always tinted at the PLAIN tier, so a danger prism
+  shattered into ordinary domain-coloured debris (`Docs/PALETTE.md §2.1`). **This is free
+  on the batch**: colour is already a per-entity override, so a mixed-tier burst stays one
+  `em.Instantiate` and one draw — the tier must never become a reason to split a batch or
+  to swap the material, which would cost a prototype per tier. Danger also carries a
+  DYNAMICS difference, `PrismExplosion.DetonationGain` (authored on the pool prefab as
+  `dangerDetonationMultiplier`), applied identically on both routes; it scales the debris
+  speed, the shatter rate and the clamp band together, because those are one quantity on
+  this contract.
 
 **The death path is now split by markers.** `AOE.ResolveDamage` wraps a whole drain, so
 everything a death did landed in one unattributable self-time bucket. `Prism` now emits

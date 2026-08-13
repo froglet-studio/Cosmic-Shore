@@ -1162,6 +1162,11 @@ namespace CosmicShore.Gameplay
         protected virtual void Explode(Vector3 impactVector, Domains domain, string playerName, bool devastate = false,
                                        float debrisSpeedLimit = 0f)
         {
+            // Read the tier BEFORE the destruction pass so the debris is guaranteed to carry the
+            // state the prism was actually wearing on screen, whatever a subclass override or a
+            // future SetupDestruction step does to the flags.
+            var kind = PrismKinds.Of(this);
+
             SetupDestruction(domain, playerName, devastate);
             PlayDestructionSFX();
 
@@ -1185,6 +1190,7 @@ namespace CosmicShore.Gameplay
                 Scale = _lastDestructionScale,
                 Velocity = debrisSpeedLimit > 0f ? impactVector : impactVector / prismProperties.volume,
                 DebrisSpeedLimit = debrisSpeedLimit,
+                Kind = kind,
                 PrismType = PrismType.Explosion
             });
         }
@@ -1192,6 +1198,9 @@ namespace CosmicShore.Gameplay
         // Implosion Methods
         protected virtual void Implode(Transform targetTransform, Domains domain, string playerName, bool devastate = false)
         {
+            // See Explode: captured pre-destruction so the suction wears the prism's own tier.
+            var kind = PrismKinds.Of(this);
+
             SetupDestruction(domain, playerName, devastate);
             PlayDestructionSFX();
 
@@ -1204,6 +1213,7 @@ namespace CosmicShore.Gameplay
                 Scale = _lastDestructionScale,
                 TargetTransform = targetTransform,
                 Volume = prismProperties.volume,
+                Kind = kind,
                 PrismType = PrismType.Implosion
             });
         }

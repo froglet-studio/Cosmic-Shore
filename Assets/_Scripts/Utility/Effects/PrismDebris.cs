@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using CosmicShore.Data;
 using CosmicShore.ECS;
 using Unity.Entities;
 using Unity.Mathematics;
@@ -60,6 +61,7 @@ namespace CosmicShore.Utility
         static int s_layer;
         static float s_minSpeed = 10f;
         static float s_maxSpeed = 33.33f;
+        static float s_dangerDetonation = 1.6f;
         static bool s_configured;
         static PrismExplosion s_sourcePrefab;
 
@@ -161,6 +163,7 @@ namespace CosmicShore.Utility
             s_configured = false;
             s_mesh = null;
             s_material = null;
+            s_dangerDetonation = 1.6f;
             s_sourcePrefab = null;
             s_host = null;
             s_suspendedUntil = 0f;
@@ -201,6 +204,7 @@ namespace CosmicShore.Utility
             s_layer = prefab.gameObject.layer;
             s_minSpeed = prefab.MinDebrisSpeed;
             s_maxSpeed = prefab.MaxDebrisSpeed;
+            s_dangerDetonation = prefab.DangerDetonationMultiplier;
             s_sourcePrefab = prefab;
             s_configured = true;
             return true;
@@ -243,14 +247,18 @@ namespace CosmicShore.Utility
 
         /// <summary>
         /// Queues one death's debris for this frame's batch. Velocity semantics are
-        /// EXACTLY PrismExplosion.TriggerExplosion's: clamp to [min, ceiling] where a
-        /// positive <paramref name="speedLimitOverride"/> replaces the authored max
-        /// (true-velocity impacts), and the shatter-rate channel keeps the pre-clamp
-        /// magnitude on the legacy gain (load-bearing tuning). Returns false when
-        /// unconfigured or the render service is off — caller uses the pooled path.
+        /// EXACTLY PrismExplosion.TriggerExplosion's: apply the tier detonation gain, clamp
+        /// to the (likewise scaled) [min, ceiling] where a positive
+        /// <paramref name="speedLimitOverride"/> replaces the authored max (true-velocity
+        /// impacts), and the shatter-rate channel keeps the pre-clamp magnitude on the legacy
+        /// gain (load-bearing tuning). <paramref name="kind"/> is the tier the dying prism was
+        /// wearing — the caller has already resolved its PALETTE from the same tier, this only
+        /// drives the dynamics. Returns false when unconfigured or the render service is off —
+        /// caller uses the pooled path.
         /// </summary>
         public static bool TryRequestExplosion(Vector3 position, Quaternion rotation, Vector3 scale,
-            Color bright, Color dark, Vector3 velocity, float speedLimitOverride)
+            Color bright, Color dark, Vector3 velocity, float speedLimitOverride,
+            PrismKind kind = PrismKind.Plain)
         {
             if (!s_configured || !PrismRenderService.Enabled) return false;
             if (Time.unscaledTime < s_suspendedUntil) return false;
@@ -258,9 +266,12 @@ namespace CosmicShore.Utility
             if (float.IsNaN(velocity.x) || float.IsNaN(velocity.y) || float.IsNaN(velocity.z))
                 velocity = Vector3.up * s_minSpeed;
 
+            float gain = PrismExplosion.DetonationGain(kind, s_dangerDetonation);
+            velocity *= gain;
+
             bool hasOverride = speedLimitOverride > 0f;
-            float ceiling = hasOverride ? speedLimitOverride : s_maxSpeed;
-            velocity = GeometryUtils.ClampMagnitude(velocity, s_minSpeed, ceiling, out float speed);
+            float ceiling = (hasOverride ? speedLimitOverride : s_maxSpeed) * gain;
+            velocity = GeometryUtils.ClampMagnitude(velocity, s_minSpeed * gain, ceiling, out float speed);
             if (hasOverride) speed = velocity.magnitude;
 
             // Full length, always: on the entity path a live effect costs zero
