@@ -47,6 +47,15 @@ namespace CosmicShore.ScriptableObjects
 
         public float Volume;
         public PrismType PrismType;
+
+        /// <summary>
+        /// Which prism TIER this event is about - the state the prism was wearing, orthogonal to
+        /// <see cref="ownDomain"/>. Death visuals (Explosion / Implosion) key their palette off it
+        /// so debris carries the colours of the mass it came from, and danger additionally gets a
+        /// harder detonation. Default <see cref="PrismKind.Plain"/>, so producers that do not set
+        /// it behave exactly as before.
+        /// </summary>
+        public PrismKind Kind;
         public Transform TargetTransform;
         public System.Action OnGrowCompleted;
 

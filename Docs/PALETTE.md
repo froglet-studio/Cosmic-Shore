@@ -45,6 +45,43 @@ slab is a legibility bug with teeth, not a cosmetic nit. Changing this tier is a
 visual change only — no collider, spawn, or consumption behaviour is involved — so it
 does not touch the ecology invariants or the collider budget.
 
+### 2.1 One composition, two consumers — a prism and its debris (2026-08-13)
+
+**`SO_ColorSet.GetPrismKindColors(colorSet, PrismKind, out rim, out base)` is the single
+definition of what a prism of a given tier is painted with.** Two consumers read it and
+must keep reading it:
+
+| consumer | what it paints |
+|---|---|
+| `ThemeManager.GenerateDomainMaterialSet` → `PaintPrismTier` | the LIVE block materials (opaque + transparent) for all four tiers |
+| `PrismFactory.TryGetTeamColors` / `ConfigureForTeam` | the DEATH visuals — explosion debris and consumption suction |
+
+It exists because the two disagreed. The debris palette was resolved from the dying
+prism's **domain alone, at the plain tier**, so a danger prism — a frosty shielded base
+under the hot domain-independent danger rim — shattered into ordinary domain-coloured
+debris and read as a plain prism dying. Shielded and super-shielded mass had the same
+defect (visible whenever a devastating hit explodes shielded mass rather than shedding
+its shield). The dying prism's tier now travels on the event
+(`PrismEventData.Kind`, stamped in `Prism.Explode` / `Prism.Implode` from
+`PrismKinds.Of` **before** the destruction pass), and both routes — the batched
+pure-entity debris and the pooled fallback — tint from it.
+
+This costs nothing at runtime: debris colour is already a **per-entity** override
+(`PrismBrightColorOverride` / `PrismDarkColorOverride`) inside the one
+prototype-instantiate batch, so a mixed-tier burst is still one batch and one draw.
+The per-domain `SO_MaterialSet.ExplodingBlockMaterial` copies are **not** what debris
+draws with (`PrismDebris` reads mesh + material off the pool prefab and overrides the
+colours per entity) — do not "fix" a debris colour there.
+
+**Do not re-inline a tier's colour pair** at either consumer. A prism and its own debris
+disagreeing is the exact failure this centralisation removes.
+
+Danger additionally detonates **harder** than plain mass — `PrismExplosion.DetonationGain`,
+authored as `dangerDetonationMultiplier` on `PrismExplosion.prefab` (1.6). That is a
+DYNAMICS knob, not a palette one: it scales the debris speed, the shatter rate and the
+clamp band as one quantity (they are one quantity on this contract — see CLAUDE.md ▸ "AOE
+blast impulse"). Set it to 1 for palette-only behaviour.
+
 ## 3. The colour-space rule (this is the trap)
 
 The project is **Linear** (`ProjectSettings/ProjectSettings.asset: m_ActiveColorSpace: 1`)
