@@ -163,8 +163,10 @@ public sealed class FullAutoActionExecutor : ShipActionExecutorBase
                     // per volley through the vessel's ElementalAbilityMapSO. Never cache across
                     // the hold and never bind ElementalFloats on the shared SO asset — per-vessel
                     // state lives in the handler (multiplayer: last-initializer-wins otherwise).
+                    // The resolve lives on the SO so the Turret Stance can adopt the SAME number
+                    // instead of authoring a second copy of it.
                     var abilities  = _status?.ElementalAbilityHandler;
-                    var speedValue = so.SpeedValue.Value * (abilities?.Multiplier(Element.Space) ?? 1f);
+                    var speedValue = so.ResolveSpeed(_status);
 
                     // SPACE level-5 'Piercing Bullets': below the threshold, bullets are
                     // destroyed on their first prism impact; at 5+ they pierce through.

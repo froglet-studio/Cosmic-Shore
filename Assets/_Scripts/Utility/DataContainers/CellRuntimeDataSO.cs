@@ -29,6 +29,13 @@ namespace CosmicShore.Utility
                  "lineage heart, or died and dropped it). The domain fauna buff system listens " +
                  "here to re-sum domain elemental power without waiting for its reconcile sweep.")]
         [SerializeField] public ScriptableEventNoParam OnFaunaHeartsChanged;
+        [Tooltip("Raised with the KILLER'S NAME when a fauna dies to an attributed force - a " +
+                 "player shooting its body prisms out, or a crystal joust. Ecology-internal " +
+                 "deaths (starvation, predation) are deliberately NOT published: a mode scored " +
+                 "on wildlife kills must not have the wildlife scoring for itself. StatsManager " +
+                 "(server only) turns it into IRoundStats.LifeformsKilled, the fauna twin of the " +
+                 "flora stat LifeForm.OnLifeFormDeath already feeds.")]
+        [SerializeField] public ScriptableEventString OnFaunaKilled;
         
         [Header("Run Time References")]
         public CellConfigDataSO Config; // <- your "CellConfigData"

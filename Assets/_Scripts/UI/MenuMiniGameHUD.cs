@@ -238,6 +238,13 @@ namespace CosmicShore.UI
             var go = Instantiate(pauseMenuPrefab, transform.parent);
             GameObjectInjector.InjectRecursive(go, _container);
             go.SetActive(false);
+
+            // Pay the panel's first-activation cost now, at menu boot, instead of as a
+            // hitch on the player's first pause tap in freestyle (mirrors
+            // MiniGameHUD.PrewarmPauseMenu for the gameplay scenes).
+            var pauseMenu = go.GetComponentInChildren<PauseMenu>(true);
+            if (pauseMenu != null)
+                pauseMenu.Prewarm();
         }
     }
 }

@@ -74,11 +74,17 @@ namespace CosmicShore.Gameplay
             materialSet.ExplodingBlockMaterial.SetColor("_BrightColor", colorSet.InsideBlockColor);
             materialSet.ExplodingBlockMaterial.SetColor("_DarkColor", colorSet.OutsideBlockColor);
 
+            // Danger prisms take the domain's SHIELDED base face (_DarkColor) rather than its
+            // plain one, so a danger prism reads as a distinct, frostier tier of that domain at
+            // a glance instead of as ordinary mass wearing a hot rim. The rim (_BrightColor)
+            // stays the shared EnvironmentColors.Danger, which is what marks it as dangerous.
+            // Note "Outside/Inside" are legacy misnomers for base face / fresnel rim - see
+            // Docs/PALETTE.md section 2.
             materialSet.DangerousBlockMaterial.SetColor("_BrightColor", _dataContainer.ColorSet.EnvironmentColors.Danger);
-            materialSet.DangerousBlockMaterial.SetColor("_DarkColor", colorSet.OutsideBlockColor);
+            materialSet.DangerousBlockMaterial.SetColor("_DarkColor", colorSet.ShieldedOutsideBlockColor);
 
             materialSet.TransparentDangerousBlockMaterial.SetColor("_BrightColor", _dataContainer.ColorSet.EnvironmentColors.Danger);
-            materialSet.TransparentDangerousBlockMaterial.SetColor("_DarkColor", colorSet.OutsideBlockColor);
+            materialSet.TransparentDangerousBlockMaterial.SetColor("_DarkColor", colorSet.ShieldedOutsideBlockColor);
 
             materialSet.ShieldedBlockMaterial.SetColor("_BrightColor", colorSet.ShieldedInsideBlockColor);
             materialSet.ShieldedBlockMaterial.SetColor("_DarkColor", colorSet.ShieldedOutsideBlockColor);

@@ -20,6 +20,14 @@ namespace CosmicShore.Gameplay
         /// cone's angle pass it here; whatever set the ANGLE (the resource) stays in charge of the
         /// angle. <paramref name="affectSelfOverride"/> replaces the impactor's authored friendly
         /// fire (null keeps it).
+        ///
+        /// <paramref name="coreExplosionScale"/> is the CONIC blast's capsule DIAMETER — the width
+        /// it keeps across the beam at every charge, with charge buying capsule LENGTH along the
+        /// vessel's gape instead of radius. It is independent of
+        /// <paramref name="minExplosionScale"/> (which is the blast's length when the resource is
+        /// empty) precisely so a blast can start as a short capsule rather than a sphere. 0 means
+        /// "no separate core": the capsule collapses to the plain circular cone, which is what the
+        /// spherical blast and every non-conic caller want.
         /// </summary>
         public static void CreateExplosion(
             AOEExplosion[] aoePrefabs,
@@ -30,7 +38,8 @@ namespace CosmicShore.Gameplay
             int resourceIndex,
             Vector3 localOffset,
             float sizeMultiplier = 1f,
-            bool? affectSelfOverride = null)
+            bool? affectSelfOverride = null,
+            float coreExplosionScale = 0f)
         {
             if (impactor?.Vessel?.VesselStatus == null) return;
 
@@ -42,6 +51,15 @@ namespace CosmicShore.Gameplay
                 OwnDomain            = ss.Domain,
                 Vessel               = ss.Vessel,
                 MaxScale             = ComputeScaleForShip(ss, minExplosionScale, maxExplosionScale, resourceIndex)
+                                       * Mathf.Max(0.01f, sizeMultiplier),
+                // The width a conic blast keeps across the beam at every charge, with charge buying
+                // capsule length along the vessel's gape instead of radius. Authored SEPARATELY
+                // from the empty-resource length, so an uncharged blast can already be a short
+                // capsule rather than a sphere. Carries the same Space multiplier as MaxScale, so
+                // the two stay one self-similar family and Space still cannot steal the angle the
+                // resource set. Falls back to the empty length (= a sphere at rest) when the
+                // caller authors no core.
+                CoreScale            = (coreExplosionScale > 0f ? coreExplosionScale : minExplosionScale)
                                        * Mathf.Max(0.01f, sizeMultiplier),
                 OverrideMaterial     = overrideMaterial ? overrideMaterial : ss.AOEExplosionMaterial,
                 AnnonymousExplosion  = false,

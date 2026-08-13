@@ -433,6 +433,9 @@ namespace CosmicShore.ECS
                         em.AddComponentData(prototype, new PrismStartBrightColorOverride { Value = new float4(1f) });
                         em.AddComponentData(prototype, new PrismStartDarkColorOverride { Value = new float4(1f) });
                         em.AddComponentData(prototype, new PrismStartSpreadOverride { Value = float3.zero });
+                        em.AddComponentData(prototype, new PrismFlightStartTimeOverride { Value = 0f });
+                        em.AddComponentData(prototype, new PrismFlightDurationOverride { Value = 0f });
+                        em.AddComponentData(prototype, new PrismFlightVelocityOverride { Value = float3.zero });
                         break;
                     case PrismRenderOverrideSet.Explosion:
                         em.AddComponentData(prototype, new PrismExplodeStartTimeOverride { Value = 0f });
@@ -729,12 +732,54 @@ namespace CosmicShore.ECS
             return true;
         }
 
+        /// <summary>
+        /// Stamps a ballistic FLIGHT on a live prism (Docs/PRISM_ANIMATION.md §5 C5 —
+        /// the Sparrow's turret-fired prisms). The entity transform must already hold
+        /// the flight's END POINT: the shader walks the visual in from the muzzle and
+        /// reaches the transform exactly at <paramref name="duration"/>, so collider,
+        /// volume and spatial registration are free to be final from the stamp.
+        ///
+        /// <paramref name="velocity"/> is the WORLD-space muzzle velocity (units/s);
+        /// velocity·2·duration/π is the full flight vector. The world→object conversion
+        /// happens on the GPU inside PrismFlightClock (raw inverse-model multiply, NOT
+        /// the normalizing Direction-mode Transform node).
+        ///
+        /// Expand RenderBounds by the object-space MUZZLE offset after stamping, or the
+        /// prism frustum-culls against its anchor-point box while the visual is still
+        /// out at the barrel.
+        /// </summary>
+        public static bool StampFlight(in PrismRenderHandle handle, float startTime, float duration,
+            in float3 velocity)
+        {
+            if (!ClockAnimationEnabled || !IsUsable(in handle)) return false;
+            var em = _world.EntityManager;
+            if (!em.HasComponent<PrismFlightStartTimeOverride>(handle.Entity)) return false;
+            em.SetComponentData(handle.Entity, new PrismFlightStartTimeOverride { Value = startTime });
+            em.SetComponentData(handle.Entity, new PrismFlightDurationOverride { Value = duration });
+            em.SetComponentData(handle.Entity, new PrismFlightVelocityOverride { Value = velocity });
+            return true;
+        }
+
+        /// <summary>Settles the flight stamp — the visual snaps to the entity transform,
+        /// which is the anchor point. Call at the scheduled arrival, or early when a hit
+        /// cuts the flight short (after re-posing the transform to the impact point).</summary>
+        public static void ClearFlightStamp(in PrismRenderHandle handle)
+        {
+            if (!IsUsable(in handle)) return;
+            var em = _world.EntityManager;
+            if (!em.HasComponent<PrismFlightStartTimeOverride>(handle.Entity)) return;
+            em.SetComponentData(handle.Entity, new PrismFlightStartTimeOverride { Value = 0f });
+            em.SetComponentData(handle.Entity, new PrismFlightDurationOverride { Value = 0f });
+            em.SetComponentData(handle.Entity, new PrismFlightVelocityOverride { Value = float3.zero });
+        }
+
         /// <summary>Clears a prism's animation stamps back to the settled state (pool
         /// reuse). Safe no-op when the clock components are absent.</summary>
         public static void ClearPrismStamps(in PrismRenderHandle handle)
         {
             ClearGrowStamp(in handle);
             ClearColorTransitionStamp(in handle);
+            ClearFlightStamp(in handle);
         }
 
         /// <summary>Stamps an explosion's flight: offset/amount/opacity become pure

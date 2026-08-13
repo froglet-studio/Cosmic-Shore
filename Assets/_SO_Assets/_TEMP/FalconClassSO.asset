@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: FalconClassSO
   m_EditorClassIdentifier: 
   Class: 9
-  Name: 
+  Name: Falcon
   Description: 
   IconActive: {fileID: 0}
   IconInactive: {fileID: 0}
@@ -37,3 +37,6 @@ MonoBehaviour:
     LeftHandLabel: Solo
     RightHandLabel: Social
     Value: 0.5
+  isLocked: 1
+  ownedFromStart: 0
+  UnlockCost: 4000

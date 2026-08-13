@@ -31,6 +31,8 @@ namespace CosmicShore.Gameplay
         {
             base.OnNetworkSpawn();
 
+            RearmGameStartStatsReset();   // fresh scene = fresh game
+
             LoadInsights.Mark($"Game controller spawned ({GetType().Name}, IsServer={IsServer})");
 
             if (IsServer)
@@ -207,6 +209,20 @@ namespace CosmicShore.Gameplay
         [ClientRpc]
         void OnCountdownTimerEnded_ClientRpc()
         {
+            // THE GAME STARTS HERE, so the score starts here. Zero every player's stats before
+            // the first turn begins: StatsManager has no turn gate, so it has been recording
+            // since the scene's network spawn - through the arena build, the vessel spawns and
+            // the countdown. Without this a match could start with players already above zero.
+            //
+            // Once per GAME, not per turn: modes with several turns per round accumulate across
+            // them deliberately, and wiping at every countdown would erase earlier turns.
+            //
+            // Runs on every peer (this is the ClientRpc, not the server-only branch above) so a
+            // client's local mirror is cleared too - the server's replicated zero only fires
+            // OnValueChanged when the value actually changes, so it cannot fix a client that
+            // drifted on its own.
+            ZeroStatsForGameStartOnce();
+
             gameData.SetPlayersActive();
             gameData.StartTurn();
             EnsureLocalHumanCanMove();
@@ -345,6 +361,9 @@ namespace CosmicShore.Gameplay
 
         protected override void OnResetForReplay()
         {
+            // A replay is a new GAME: re-arm the game-start zeroing so the next countdown
+            // clears whatever the finished match left behind.
+            RearmGameStartStatsReset();
         }
 
         /// <summary>
@@ -441,6 +460,28 @@ namespace CosmicShore.Gameplay
         {
             _isResetting = false;
             gameData.IsReplayReload = true;
+            _sceneTransitionManager?.SetFadeImmediate(1f);
+        }
+
+        /// <summary>
+        /// Covers every peer's screen with the opaque scene-transition splash before the
+        /// host tears the session down for a return to Menu_Main. Called by
+        /// SceneLoader.ReturnToMainMenu ahead of the vessel/AI despawns and the Netcode
+        /// scene switch - RPCs and despawn messages share the reliable channel, so every
+        /// client is covered before anything visibly disappears. The host's screen is
+        /// already covered by SceneLoader directly (the RPC also lands on the host, where
+        /// the repeat SetFadeImmediate is a no-op). The replay path's equivalent is
+        /// PrepareForSceneReload_ClientRpc.
+        /// </summary>
+        public void BroadcastReturnToMenuVeil()
+        {
+            if (!IsServer || !IsSpawned) return;
+            ShowReturnToMenuVeil_ClientRpc();
+        }
+
+        [ClientRpc]
+        void ShowReturnToMenuVeil_ClientRpc()
+        {
             _sceneTransitionManager?.SetFadeImmediate(1f);
         }
 

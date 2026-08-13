@@ -91,10 +91,11 @@ namespace CosmicShore.Gameplay
                 ? vesselStatus.Vessel.Transform.GetComponentInChildren<DeployTeamCrystalActionExecutor>(true)
                 : null;
 
-            // One source for the gape: the HULL's authored max angle. The cockpit jaws and the ship's
-            // own jaws are showing the same thing - the half-angle of the next blast - so they must
-            // not drift apart through two separately-authored numbers.
-            if (hull) view.SetMaxJawAngle(hull.MaxJawAngleDegrees);
+            // One source for the gape: the HULL's authored angle RANGE. The cockpit jaws and the
+            // ship's own jaws are showing the same thing - the gape half-angle of the next blast -
+            // so they must not drift apart through separately-authored numbers. The minimum is not
+            // zero: the blast is a short capsule even at rest.
+            if (hull) view.SetJawAngleRange(hull.MinJawAngleDegrees, hull.MaxJawAngleDegrees);
 
             SeedFromResources();
         }

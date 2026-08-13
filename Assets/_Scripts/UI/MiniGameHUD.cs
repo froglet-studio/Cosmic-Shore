@@ -154,6 +154,7 @@ namespace CosmicShore.UI
             EnsureReadyButtonWiring();
             EnsureObjectiveIndicator();
             EnsureVolumeIndicator();
+            PrewarmPauseMenu();
 
             // If OnClientReady already fired before we subscribed (client race condition:
             // RPCs can resolve in the same frame as scene load, before Start() runs),
@@ -231,6 +232,21 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
+        /// Warms the (inactive) pause menu panel under this HUD's canvas at scene start,
+        /// so the first pause tap doesn't pay the panel's whole activation cost (child
+        /// Awake/OnEnable, layout, TMP mesh generation) as a mid-gameplay hitch. The
+        /// panel starts inactive in every scene and therefore cannot warm itself.
+        /// </summary>
+        void PrewarmPauseMenu()
+        {
+            var canvas = GetComponentInParent<Canvas>();
+            Transform root = canvas ? canvas.transform : transform.root;
+            var pauseMenu = root.GetComponentInChildren<PauseMenu>(true);
+            if (pauseMenu != null)
+                pauseMenu.Prewarm();
+        }
+
+        /// <summary>
         /// Attaches the universal domain-volume hex gauge to this scene's "Volume /
         /// Pause Button" so the same gauge trains players as the in-game pause button
         /// everywhere (it mirrors MenuMiniGameHUD.EnsureDomainVolumeIndicator for the
@@ -283,6 +299,8 @@ namespace CosmicShore.UI
                     return CreateProviderComponent<JoustObjectiveProvider>("ObjectiveProvider_Joust");
                 case GameModes.AstroLeague:
                     return CreateProviderComponent<AstroLeagueObjectiveProvider>("ObjectiveProvider_AstroLeague");
+                case GameModes.DogFight:
+                    return CreateProviderComponent<DogFightObjectiveProvider>("ObjectiveProvider_DogFight");
                 default:
                     return null;
             }

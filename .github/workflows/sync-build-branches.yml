@@ -62,42 +62,49 @@ jobs:
     name: Promote to build branches
     runs-on: ubuntu-latest
     steps:
-      - name: Is this run on schedule and on cycle?
+      - name: Is this run due?
         id: gate
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
 
           if [ "${{ github.event_name }}" != "schedule" ]; then
-            echo "Triggered manually; skipping both the clock and cycle guards."
+            echo "Triggered manually; running regardless of day, hour and cycle."
             echo "proceed=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
-          hour=$(TZ=America/Los_Angeles date +%H)
-          if [ "$hour" != "06" ]; then
-            echo "It is ${hour}:00 in America/Los_Angeles, not 06:00."
-            echo "This is the daylight-saving twin of today's real slot. Skipping."
-            echo "proceed=false" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
           today=$(TZ=America/Los_Angeles date +%Y-%m-%d)
+          dow=$(TZ=America/Los_Angeles date +%u)                  # 3 = Wednesday
+          hour=$((10#$(TZ=America/Los_Angeles date +%H)))         # 10# so "08" is not read as octal
+
+          skip () { echo "$1 Skipping."; echo "proceed=false" >> "$GITHUB_OUTPUT"; exit 0; }
+
+          # Idempotency first, because it is what makes everything below safe to
+          # relax. The dated tag is the record that today's promotion already
+          # happened, so the daylight-saving twin, a retry, and any duplicate
+          # firing all land here and stop.
+          if gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/testbuild/$today" >/dev/null 2>&1; then
+            skip "Already promoted on $today (tag testbuild/$today exists)."
+          fi
+
+          [ "$dow" = "3" ] || skip "$today is not a Wednesday in America/Los_Angeles."
+
+          # >= 06, deliberately not == 06. GitHub's scheduler runs late under
+          # load, routinely by more than an hour: the first scheduled run of this
+          # workflow fired at 15:52 UTC against a 13:00 cron. An exact-hour test
+          # silently dropped it, and would drop a real promotion the same way.
+          # The tag check above is what stops the wider window running twice.
+          [ "$hour" -ge 6 ] || skip "It is ${hour}:00 in America/Los_Angeles; the 06:00 slot has not opened."
+
           days=$(( ( $(date -u -d "$today" +%s) - $(date -u -d "$CYCLE_ANCHOR" +%s) ) / 86400 ))
-
-          if [ "$days" -lt 0 ]; then
-            echo "$today is before the cycle anchor $CYCLE_ANCHOR. Skipping."
-            echo "proceed=false" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
+          [ "$days" -ge 0 ] || skip "$today is before the cycle anchor $CYCLE_ANCHOR."
           if [ $(( days % CYCLE_DAYS )) -ne 0 ]; then
-            next=$(( CYCLE_DAYS - (days % CYCLE_DAYS) ))
-            echo "$today is day $days of the cycle, not a multiple of $CYCLE_DAYS."
-            echo "Next promotion is in $next day(s). Skipping."
-            echo "proceed=false" >> "$GITHUB_OUTPUT"
-            exit 0
+            skip "$today is day $days of the cycle; next promotion in $(( CYCLE_DAYS - (days % CYCLE_DAYS) )) day(s)."
           fi
 
-          echo "$today is on cycle (day $days). Proceeding."
+          echo "$today is on cycle (day $days) and the 06:00 slot has opened. Proceeding."
           echo "proceed=true" >> "$GITHUB_OUTPUT"
 
       - name: Resolve source commit

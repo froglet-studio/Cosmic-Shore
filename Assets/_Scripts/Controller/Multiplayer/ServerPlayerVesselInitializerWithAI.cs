@@ -183,6 +183,14 @@ namespace CosmicShore.Gameplay
                 if (aiVesselType is VesselClassType.Any or VesselClassType.Random)
                     aiVesselType = PickAIVesselType();
 
+                // A restricted-vessel mode restricts the AI too. The AI's class comes from the
+                // scene's aiInitializeDatas (or the captain roll), neither of which knows the
+                // mode's rules - so a scene authored with the wrong template, or a captain roll
+                // in a single-vessel mode, would field opponents in an illegal hull. Same clamp
+                // and same authority as the human path (ResolveSpawnVesselType); no-op when the
+                // game authors no Vessels list.
+                aiVesselType = gameData.ClampVesselToGame(aiVesselType);
+
                 var aiName = tournament && i < tournamentData.TournamentAINames.Count
                     ? tournamentData.TournamentAINames[i]
                     : profiles != null && i < profiles.Count
@@ -378,7 +386,15 @@ namespace CosmicShore.Gameplay
             var aiPilot = aiVesselNO.GetComponentInChildren<AIPilot>();
             if (aiPilot == null) return;
 
-            bool shouldSeekPlayers = gameData.GameMode == GameModes.MultiplayerJoust;
+            // Player-seek is for the modes whose OBJECTIVE is another pilot. Joust wants to
+            // sweep its skimmer past you; Dog Fight wants you in its gunsight - the steering
+            // need is identical (chase the live position of a chosen opponent), so the mode
+            // reuses AIPilot's existing opponent lock rather than growing a bespoke one. Dog
+            // Fight then layers a stand-off distance on top via its own external target
+            // provider, because a gun duel is not a ramming contest.
+            bool shouldSeekPlayers =
+                gameData.GameMode == GameModes.MultiplayerJoust ||
+                gameData.GameMode == GameModes.DogFight;
             float skill = Mathf.Clamp01(gameData.SelectedIntensity.Value * 0.25f);
             aiPilot.ConfigureForGameMode(gameData, shouldSeekPlayers, skill);
         }
