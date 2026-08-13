@@ -23,6 +23,67 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Sparrow spray accuracy — doubled fire rate, decaying-accuracy cone, escalating haptic (`claude/sparrow-spread-haptics-qizbwf`)
+
+Authored without a Unity compile or play-test. The Sparrow's full-auto guns now fire at **60
+volleys/s (120 rounds/s)** and lose accuracy while the trigger is held: a cone opens from 0° to a
+**4° half-angle cap** over ~1.4 s after a **0.12 s** grace window, each round deflected to a
+hash-sampled point inside it, and a **new fourth haptic feel** buzzes with rising strength and
+cadence as it opens. Releasing the trigger resets accuracy completely. Both fire loops were also
+converted from a frame-quantized `UniTask.Delay` to a time accumulator, without which the authored
+rate would silently have been `min(rate, framerate)`. The Turret Stance inherits all of it through
+the existing `bulletAction` parity. Full mechanics + files + tuning:
+`_Scripts/Controller/Vessel/R_VesselActions/SPARROW_SPRAY_ACCURACY.md` (which also carries the
+full 13-step verification list); `Docs/HAPTICS.md` records the policy exception.
+
+**Hand-authored asset YAML — check these import clean first:**
+
+- `_SO_Assets/VesselActions/Sparrow/FullAutoAction.asset` — new **Accuracy** foldout with 7 fields;
+  `Firing Rate` reads **60**.
+- `_Prefabs/Spacevessels/Sparrow.prefab` — a **GunSprayAccuracy** child under `VesselActions` with
+  the script resolved (not "missing"), listed as the **5th** entry in
+  `ActionExecutorRegistry._executors`; the two pool managers show the resized capacities.
+- Three new `.cs.meta` + one `.md.meta` were hand-written with generated GUIDs — Unity must not
+  report duplicate-GUID or re-import them as new assets.
+
+**Verify in editor (headline items — the full list is in the design doc):**
+
+1. **Tap vs hold.** Tapped bursts are a tight line; a held burst visibly fans out and then
+   **stops** widening. Release and re-pull → dead-on again immediately.
+2. **Stance flip is not a free reset.** Open the cone fully while flying, then toggle Turret Stance
+   (input 6) **without releasing fire** — prisms must start laying at the *open* cone. This is the
+   one-frame deferred reset in `GunSprayAccuracy.LateUpdate`; if it regressed, the prisms come out
+   in a tight line.
+3. **Frame-rate independence.** Cap the editor to 30 fps and confirm the stream density is
+   unchanged. Before this pass it would have halved.
+4. **Haptic ramp — needs a gamepad or a device.** A bare desktop editor has no motors, so "I feel
+   nothing" there is *not* evidence about the wiring. With a pad: light buzz from round one,
+   climbing in strength and rate for ~1.4 s. Ramming a prism mid-spray must still produce a clean
+   punish thud through it.
+5. **No hitching on a 10 s hold**, either fire mode, profiler open.
+
+**First-pass tuning (starting points — expect a balancing pass):**
+
+| Knob | Asset | Value |
+|---|---|---|
+| `firingRate` | `FullAutoAction.asset` | 60 volleys/s (was 30) |
+| `spread.onsetSeconds` | `FullAutoAction.asset` | 0.12 |
+| `spread.growthDegreesPerSecond` | `FullAutoAction.asset` | 3.2 |
+| `spread.maxHalfAngleDegrees` | `FullAutoAction.asset` | 4 |
+| `spread.distributionBias` | `FullAutoAction.asset` | 0.5 (uniform disc; 1.0 = dense core) |
+| `spread.hapticFloor01` | `FullAutoAction.asset` | 0.15 |
+| `spread.hapticIntervalAtRest / AtMaxSpread` | `FullAutoAction.asset` | 0.10 / 0.045 s |
+
+**Two knock-on effects to judge, not bugs:**
+
+- **Turret stance now lays ~120 prisms/s** of permanent mass (was 60). `firingRate` is the single
+  lever and it moves the guns too — do **not** add a turret-only divisor.
+- **Dog Fight pace roughly doubles** (a bullet hit scores 1 against a 120-point target). The target
+  is authored in FrogletTools ▸ Game Modes ▸ End Game Conditions, so retuning it needs no code
+  change.
+
+---
+
 ### 🔴 Sparrow Skyburst Missile Bay — bay-open animation + bay-anchored missile launch (`claude/sparrow-missile-bay-78fxi4`)
 
 Authored without a Unity compile or play-test. The Sparrow's skyburst now fires the model's

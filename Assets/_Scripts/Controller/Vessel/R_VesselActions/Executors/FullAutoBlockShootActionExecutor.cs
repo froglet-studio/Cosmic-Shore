@@ -58,7 +58,12 @@ namespace CosmicShore.Gameplay
         [Header("Events")]
         [SerializeField] private ScriptableEventNoParam OnMiniGameTurnEnd;
 
+        /// <summary>Per-frame catch-up cap — see <see cref="FullAutoActionExecutor"/>. Same
+        /// number on purpose: the two modes must not drift in cadence under load either.</summary>
+        private const int MaxVolleysPerTick = 4;
+
         private IVesselStatus _status;
+        private GunSprayAccuracy _spray;
         private CancellationTokenSource _cts;
 
         #region Unity Lifecycle
@@ -86,7 +91,7 @@ namespace CosmicShore.Gameplay
         #endregion
 
         #region Public API
-        public void Begin(FullAutoBlockShootActionSO so)
+        public void Begin(FullAutoBlockShootActionSO so, GunSprayAccuracy spray = null)
         {
             // Always stop any previous loop first, exactly like the flying-mode guns
             // (FullAutoActionExecutor.Begin). A bare `if (_cts != null) return;` is a
@@ -94,7 +99,13 @@ namespace CosmicShore.Gameplay
             // the turret off for the rest of the session, silently.
             End();
 
+            if (spray) _spray = spray;
+
             if (!isActiveAndEnabled) return;
+
+            // Idempotent — taking the hold over from the flying-mode guns mid-press keeps the
+            // cone that was already open, so toggling the stance is not a free accuracy reset.
+            if (_spray) _spray.BeginHold(so.Spread);
 
             var cts = CancellationTokenSource.CreateLinkedTokenSource(
                 this.GetCancellationTokenOnDestroy());
@@ -105,6 +116,8 @@ namespace CosmicShore.Gameplay
 
         public void End()
         {
+            if (_spray) _spray.ReleaseHold();
+
             if (_cts == null) return;
 
             try
@@ -151,60 +164,74 @@ namespace CosmicShore.Gameplay
             var flightTime = Mathf.Max(0.01f, so.FlightTime);
             var rotOffset = Quaternion.Euler(so.RotationOffsetEuler);
 
+            // Time-accumulator cadence, identical to the bullets' (see FullAutoActionExecutor):
+            // a whole-frame Delay caps the rate at the frame rate, which at these cadences means
+            // the turret would lay mass at a rate that depended on the device.
+            float owed = interval;
+
             try
             {
                 while (!token.IsCancellationRequested)
                 {
-                    var abilities = _status?.ElementalAbilityHandler;
+                    float maxOwed = interval * MaxVolleysPerTick;
+                    if (owed > maxOwed) owed = maxOwed;
 
-                    // Muzzle speed is resolved per volley, not per hold: the SPACE level
-                    // that scales the guns can move mid-press (crystals, comeback buffs).
-                    var shotSpeed = so.ResolveSpeed(_status);
+                    int volleys = (int)(owed / interval);
+                    owed -= volleys * interval;
 
-                    // SPACE level-5 'Piercing Bullets' — the SAME gate the cannons use.
-                    // Below it the shot is stopped by the first prism it hits and leaves
-                    // its prism there; at 5+ it pierces on to the end of its path.
-                    var piercing = abilities && abilities.IsUpgradeActive(Element.Space);
-
-                    // The born-in state. THE DESIGN is ShieldedAtSpace5: regular prisms
-                    // below SPACE 5, shielded at 5+ — the SAME gate (and the same
-                    // moment) as the bullets' pierce, so one upgrade transforms both
-                    // fire modes. Plain/Shielded/Danger are unconditional playtest
-                    // overrides. The state lands as a pre-Initialize flag, so it is part
-                    // of the prism's BIRTH and snaps (Docs/PRISM_ANIMATION.md §4.5)
-                    // instead of morphing on arrival. Regular shield only — one-hit
-                    // ablative armor fauna can still eat via devastate, keeping the
-                    // food-web sink. Danger suppresses shields: mutually exclusive by
-                    // locked law.
-                    var state = so.FiredState;
-                    var dangerous = state == FullAutoBlockShootActionSO.FiredPrismState.Danger;
-                    var shielded = state == FullAutoBlockShootActionSO.FiredPrismState.Shielded ||
-                                   (state == FullAutoBlockShootActionSO.FiredPrismState.ShieldedAtSpace5 &&
-                                    piercing);
-
-                    // MASS → turret prism stretch: the long z-axis scales with the vessel's
-                    // live Mass level. Volume = x·y·z of lossyScale, so the stretch feeds
-                    // Cell.LiveVolume — "volume is the spine".
-                    var blockScale = so.BlockScale;
-                    blockScale.z *= abilities ? abilities.Multiplier(Element.Mass) : 1f;
-
-                    // Distance the shot covers before its lifetime ends. The bullets' mover
-                    // eases each step by cos(t·π/2T), so the range is that integral —
-                    // speed · 2T/π, not speed · T.
-                    var range = shotSpeed * flightTime * (2f / Mathf.PI);
-
-                    foreach (var m in muzzles)
+                    if (volleys > 0)
                     {
-                        if (!m) continue;
-                        FireOne(so, m, rotOffset, blockScale, shotSpeed, flightTime, range,
-                            piercing, shielded, dangerous);
+                        var abilities = _status?.ElementalAbilityHandler;
+
+                        // Muzzle speed is resolved per volley, not per hold: the SPACE level
+                        // that scales the guns can move mid-press (crystals, comeback buffs).
+                        var shotSpeed = so.ResolveSpeed(_status);
+
+                        // SPACE level-5 'Piercing Bullets' — the SAME gate the cannons use.
+                        // Below it the shot is stopped by the first prism it hits and leaves
+                        // its prism there; at 5+ it pierces on to the end of its path.
+                        var piercing = abilities && abilities.IsUpgradeActive(Element.Space);
+
+                        // The born-in state. THE DESIGN is ShieldedAtSpace5: regular prisms
+                        // below SPACE 5, shielded at 5+ — the SAME gate (and the same
+                        // moment) as the bullets' pierce, so one upgrade transforms both
+                        // fire modes. Plain/Shielded/Danger are unconditional playtest
+                        // overrides. The state lands as a pre-Initialize flag, so it is part
+                        // of the prism's BIRTH and snaps (Docs/PRISM_ANIMATION.md §4.5)
+                        // instead of morphing on arrival. Regular shield only — one-hit
+                        // ablative armor fauna can still eat via devastate, keeping the
+                        // food-web sink. Danger suppresses shields: mutually exclusive by
+                        // locked law.
+                        var state = so.FiredState;
+                        var dangerous = state == FullAutoBlockShootActionSO.FiredPrismState.Danger;
+                        var shielded = state == FullAutoBlockShootActionSO.FiredPrismState.Shielded ||
+                                       (state == FullAutoBlockShootActionSO.FiredPrismState.ShieldedAtSpace5 &&
+                                        piercing);
+
+                        // MASS → turret prism stretch: the long z-axis scales with the vessel's
+                        // live Mass level. Volume = x·y·z of lossyScale, so the stretch feeds
+                        // Cell.LiveVolume — "volume is the spine".
+                        var blockScale = so.BlockScale;
+                        blockScale.z *= abilities ? abilities.Multiplier(Element.Mass) : 1f;
+
+                        // Distance the shot covers before its lifetime ends. The bullets' mover
+                        // eases each step by cos(t·π/2T), so the range is that integral —
+                        // speed · 2T/π, not speed · T.
+                        var range = shotSpeed * flightTime * (2f / Mathf.PI);
+
+                        for (int v = 0; v < volleys && !token.IsCancellationRequested; v++)
+                        {
+                            foreach (var m in muzzles)
+                            {
+                                if (!m) continue;
+                                FireOne(so, m, rotOffset, blockScale, shotSpeed, flightTime, range,
+                                    piercing, shielded, dangerous);
+                            }
+                        }
                     }
 
-                    await UniTask.Delay(
-                        TimeSpan.FromSeconds(interval),
-                        DelayType.DeltaTime,
-                        PlayerLoopTiming.PreLateUpdate,
-                        token);
+                    await UniTask.Yield(PlayerLoopTiming.PreLateUpdate, token);
+                    owed += Time.deltaTime;
                 }
             }
             catch (OperationCanceledException)
@@ -241,11 +268,20 @@ namespace CosmicShore.Gameplay
             bool piercing, bool shielded, bool dangerous)
         {
             var domainAtShot = _status.Domain;
-            var velocity = muzzle.forward * shotSpeed;   // muzzle.forward is already unit
+
+            // Accuracy decay applies to a turret shot exactly as it does to a bullet: the round
+            // walks off aim on a held trigger and the prism stays wherever that deflected round
+            // would have died. The deflection is composed onto the muzzle's POSE rather than
+            // rebuilt with LookRotation, which preserves the muzzle's roll — and the prism's long
+            // axis IS the shot, so re-referencing roll to world up would visibly twist it.
+            var aim = _spray ? _spray.PerturbAim(muzzle.forward) : muzzle.forward;
+            var shotRotation = GunSpreadMath.DeflectionOf(muzzle.forward, aim) * muzzle.rotation;
+
+            var velocity = aim * shotSpeed;              // aim is already unit
 
             // The prism is pulled at the flight's END POINT — where the mass will rest.
-            var anchorPoint = muzzle.position + muzzle.forward * range;
-            var prism = blockFactory.GetBlock(so.PrismType, anchorPoint, muzzle.rotation * rotOffset, null);
+            var anchorPoint = muzzle.position + aim * range;
+            var prism = blockFactory.GetBlock(so.PrismType, anchorPoint, shotRotation * rotOffset, null);
             if (!prism) return;
 
             // No launch SFX here: the carried projectile's LaunchProjectile plays it, exactly
@@ -300,10 +336,10 @@ namespace CosmicShore.Gameplay
                 };
 
                 suctionShot.Effect = SpawnReverseSuctionEffect(prism, blockScale, domainAtShot,
-                    effectDuration, anchorPoint, muzzle.rotation * rotOffset, suctionShot);
+                    effectDuration, anchorPoint, shotRotation * rotOffset, suctionShot);
             }
 
-            LaunchCarriedProjectile(prism, muzzle, velocity, flightTime, domainAtShot,
+            LaunchCarriedProjectile(prism, muzzle, shotRotation, velocity, flightTime, domainAtShot,
                 piercing, anchorPoint,
                 shielded ? so.ShieldedCollisionDiameter : so.CollisionDiameter,
                 viz, shielded, dangerous, suctionShot);
@@ -510,7 +546,8 @@ namespace CosmicShore.Gameplay
         /// the two modes cannot drift. It is what pierces, what destroys prisms along the
         /// path, and what decides where the flight ends.
         /// </summary>
-        private void LaunchCarriedProjectile(Prism prism, Transform muzzle, Vector3 velocity,
+        private void LaunchCarriedProjectile(Prism prism, Transform muzzle, Quaternion shotRotation,
+            Vector3 velocity,
             float flightTime, Domains domainAtShot, bool piercing, Vector3 anchorPoint,
             float hitDiameter, FullAutoBlockShootActionSO.FlightVisualization viz,
             bool shielded, bool dangerous, ReverseSuctionShot suctionShot)
@@ -560,7 +597,9 @@ namespace CosmicShore.Gameplay
             // Shielded shots take the larger authored diameter — the armored octahedron
             // reads bigger, so it hits bigger.
             carriedTransform.localScale = Vector3.one * hitDiameter;
-            carriedTransform.SetPositionAndRotation(muzzle.position, muzzle.rotation);
+            // The SHOT's rotation, not the muzzle's — the round travels down the spread-deflected
+            // aim, so its collider must be posed on that line too.
+            carriedTransform.SetPositionAndRotation(muzzle.position, shotRotation);
             carried.Velocity = velocity;
 
             if (carried.TryGetComponent<Collider>(out var col)) col.enabled = true;

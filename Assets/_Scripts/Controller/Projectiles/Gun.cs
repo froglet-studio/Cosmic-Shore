@@ -43,7 +43,8 @@ namespace CosmicShore.Gameplay
             float charge = 0,
             FiringPatterns firingPattern = FiringPatterns.Default,
             int energy = 0, bool detachAfterSpawn = false,
-            bool stopOnFirstPrismImpact = false, bool spareOwnDomain = false)
+            bool stopOnFirstPrismImpact = false, bool spareOwnDomain = false,
+            Vector3? aimDirection = null)
         {
             if (_onCooldown && !ignoreCooldown) return;
 
@@ -55,8 +56,11 @@ namespace CosmicShore.Gameplay
                     break;
 
                 default:
+                    // aimDirection lets a caller deflect the shot off the muzzle's forward —
+                    // the accuracy-decay cone (GunSprayAccuracy) is the only user today. The gun
+                    // itself owns no spread policy and rolls no dice: it is handed a direction.
                     FireSingle(containerTransform, speed, inheritedVelocity,
-                        projectileScale, Vector3.zero, projectileTime, charge, energy, null, detachAfterSpawn,
+                        projectileScale, Vector3.zero, projectileTime, charge, energy, aimDirection, detachAfterSpawn,
                         stopOnFirstPrismImpact, spareOwnDomain);
                     break;
             }

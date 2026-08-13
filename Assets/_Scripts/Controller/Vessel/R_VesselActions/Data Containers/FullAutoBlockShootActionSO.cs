@@ -152,17 +152,27 @@ namespace CosmicShore.Gameplay
         public float ResolveSpeed(IVesselStatus status)
             => bulletAction ? bulletAction.ResolveSpeed(status) : 0f;
 
+        /// <summary>
+        /// The accuracy-decay cone — the bullets' profile, verbatim. A turret shot IS a bullet,
+        /// so it walks off aim on a held trigger exactly like one; the prism simply stays where
+        /// the deflected bullet would have died. Authoring a second cone here is the same class
+        /// of drift the shared cadence closed.
+        /// </summary>
+        public GunSpreadProfile Spread => bulletAction ? bulletAction.Spread : null;
+
         public override void StartAction(ActionExecutorRegistry execs, IVesselStatus vesselStatus)
         {
             if (!bulletAction)
             {
                 CSDebug.LogError(
                     $"[{name}] No bulletAction assigned — the Turret Stance takes its fire rate, " +
-                    "speed and flight time from the vessel's Full Auto action. Wire it on the asset.");
+                    "speed, flight time and spread from the vessel's Full Auto action. Wire it on " +
+                    "the asset.");
                 return;
             }
 
-            execs?.Get<FullAutoBlockShootActionExecutor>()?.Begin(this);
+            if (!execs) return;
+            execs.Get<FullAutoBlockShootActionExecutor>()?.Begin(this, execs.Get<GunSprayAccuracy>());
         }
 
         public override void StopAction(ActionExecutorRegistry execs, IVesselStatus vesselStatus)

@@ -6,10 +6,11 @@ namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// The Sparrow's full-auto cannons. This asset is also the single authored home of the
-    /// vessel's gun cadence, muzzle speed and flight time: the Turret Stance
+    /// vessel's gun cadence, muzzle speed, flight time and ACCURACY: the Turret Stance
     /// (<see cref="FullAutoBlockShootActionSO"/>) fires prisms at the SAME rate, the SAME
-    /// speed and along the SAME flight path, and it gets those numbers by pointing at this
-    /// asset rather than copying them. Retune here and both fire modes move together.
+    /// speed, along the SAME flight path and through the SAME spread cone, and it gets those
+    /// numbers by pointing at this asset rather than copying them. Retune here and both fire
+    /// modes move together.
     /// </summary>
     [CreateAssetMenu(fileName="FullAutoAction", menuName="ScriptableObjects/Vessel Actions/Full Auto")]
     public class FullAutoActionSO : ShipActionSO
@@ -25,6 +26,12 @@ namespace CosmicShore.Gameplay
         [SerializeField] int   energy = 0;
         [SerializeField] ElementalFloat speedValue;
 
+        [Header("Accuracy")]
+        [Tooltip("How the cone opens while the trigger is held, and the haptic ramp that " +
+                 "reports it. Shared with the Turret Stance through bulletAction, exactly like " +
+                 "cadence and speed — a turret shot IS a bullet, spread included.")]
+        [SerializeField] GunSpreadProfile spread = new();
+
         public int AmmoIndex => ammoIndex;
         public float AmmoCost => ammoCost;
         public bool Inherit => inherit;
@@ -34,6 +41,10 @@ namespace CosmicShore.Gameplay
         public FiringPatterns FiringPattern => firingPattern;
         public int Energy => energy;
         public ElementalFloat SpeedValue => speedValue;
+
+        /// <summary>The accuracy-decay cone, shared by both fire modes. Never null — an
+        /// all-zero profile is the sanctioned "no spread" opt-out.</summary>
+        public GunSpreadProfile Spread => spread ??= new GunSpreadProfile();
 
         /// <summary>
         /// The live muzzle speed of one shot: the authored base scaled by the vessel's SPACE
@@ -48,7 +59,12 @@ namespace CosmicShore.Gameplay
         }
 
         public override void StartAction(ActionExecutorRegistry execs, IVesselStatus vesselStatus)
-            => execs?.Get<FullAutoActionExecutor>()?.Begin(this);
+        {
+            if (!execs) return;
+            // The accuracy state is a per-vessel component, resolved here and handed down:
+            // the SO is shared by every Sparrow in the match and must stay stateless.
+            execs.Get<FullAutoActionExecutor>()?.Begin(this, execs.Get<GunSprayAccuracy>());
+        }
 
         public override void StopAction(ActionExecutorRegistry execs, IVesselStatus vesselStatus)
             => execs?.Get<FullAutoActionExecutor>()?.End();
