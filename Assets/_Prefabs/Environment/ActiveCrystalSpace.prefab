@@ -56,7 +56,7 @@ SkinnedMeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 18c297a89c0d43e46bd4ea5bd6143ffb, type: 2}
+  - {fileID: 2100000, guid: b4387bb80465e9748a9fb1a58d328ad8, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -225,9 +225,9 @@ MonoBehaviour:
     type: 3}
   crystalModels:
   - model: {fileID: 4392772427238215531}
-    defaultMaterial: {fileID: 2100000, guid: 18c297a89c0d43e46bd4ea5bd6143ffb, type: 2}
-    explodingMaterial: {fileID: 2100000, guid: 18c297a89c0d43e46bd4ea5bd6143ffb, type: 2}
-    inactiveMaterial: {fileID: 2100000, guid: 6eea31b551b13184cb148646f27388e8, type: 2}
+    defaultMaterial: {fileID: 2100000, guid: b4387bb80465e9748a9fb1a58d328ad8, type: 2}
+    explodingMaterial: {fileID: 2100000, guid: b4387bb80465e9748a9fb1a58d328ad8, type: 2}
+    inactiveMaterial: {fileID: 2100000, guid: b4387bb80465e9748a9fb1a58d328ad8, type: 2}
     spaceCrystalAnimator: {fileID: 1117890586458808163}
   allowVesselImpactEffect: 1
   allowRespawnOnImpact: 0
