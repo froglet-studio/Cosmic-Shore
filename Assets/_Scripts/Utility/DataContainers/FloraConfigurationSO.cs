@@ -69,15 +69,21 @@ namespace CosmicShore.Utility
         public LifeformLevelSpread Levels = new();
 
         [Header("Cell-level overrides - applied AFTER the rolled variant, so they survive SpreadElements")]
-        [Tooltip("WHERE this cell plants this species, as a fraction of the membrane radius, " +
-                 "overriding whatever the rolled variant carries. -1 = off.\n\n" +
+        [Tooltip("OUTER edge of the planting band this cell wants for this species, as a fraction " +
+                 "of the membrane radius, overriding whatever the rolled variant carries. -1 = off.\n\n" +
                  "This exists because planting radius is a CELL fact, not an element fact - " +
-                 "'Space coral grows 20x1x1 needles' is an identity, 'coral grows on the belt at " +
-                 "0.76 R in THIS arena' is a layout decision - yet both live in the same Variant " +
-                 "block, and with SpreadElements on, the palette sibling's whole Variant replaces " +
-                 "this config's. Without this field a cell cannot use the canonical per-element " +
-                 "assets AND choose its own planting shell.")]
-        [Min(-1f)] public float PlantRadiusCellFractionOverride = -1f;
+                 "'Space coral grows 20x1x1 needles' is an identity, 'coral fills this arena from " +
+                 "the nucleus out to 0.95 R' is a layout decision - yet both live in the same " +
+                 "Variant block, and with SpreadElements on the palette sibling's whole Variant " +
+                 "replaces this config's. Without these fields a cell cannot use the canonical " +
+                 "per-element assets AND choose where they grow.")]
+        [Min(-1f)] public float PlantRadiusCellFractionMaxOverride = -1f;
+
+        [Tooltip("INNER edge of the planting band, as a fraction of the membrane radius. 0 " +
+                 "collapses the band to a single shell at the outer fraction. -1 = off. The " +
+                 "runtime clamps it outside the cell's nucleus regardless, so authoring 0 here " +
+                 "means 'from the nucleus outward', not 'from the cell centre'.")]
+        [Min(-1f)] public float PlantRadiusCellFractionMinOverride = -1f;
 
         [Tooltip("HOW BIG one plant of this species may get in this cell (live-prism budget), " +
                  "overriding the rolled variant. -1 = off. The cell-level half of the same split: " +
@@ -95,7 +101,9 @@ namespace CosmicShore.Utility
         public bool TryBuildCellOverrideTuning(out FloraVariantTuning tuning)
         {
             tuning = null;
-            if (PlantRadiusCellFractionOverride < 0f && MaxTotalSpawnedObjectsOverride < 0)
+            if (PlantRadiusCellFractionMaxOverride < 0f &&
+                PlantRadiusCellFractionMinOverride < 0f &&
+                MaxTotalSpawnedObjectsOverride < 0)
                 return false;
 
             tuning = new FloraVariantTuning
@@ -106,7 +114,8 @@ namespace CosmicShore.Utility
                 ShieldPeriod = -1f,               // sentinel: keep
                 WitherRingInterval = -1f,         // sentinel: keep
                 MaxTotalSpawnedObjects = MaxTotalSpawnedObjectsOverride,
-                PlantRadiusCellFraction = PlantRadiusCellFractionOverride,
+                PlantRadiusCellFraction = PlantRadiusCellFractionMaxOverride,
+                PlantRadiusCellFractionMin = PlantRadiusCellFractionMinOverride,
             };
             return true;
         }
@@ -196,7 +205,13 @@ namespace CosmicShore.Utility
                  "branching and phyllotactic. -1 = keep prefab.")]
         public int MaxTotalSpawnedObjects = -1;
 
-        [Tooltip("Planting radius as a fraction of the cell membrane radius. -1 = keep prefab.")]
+        [Tooltip("OUTER edge of the planting band, as a fraction of the cell membrane radius. " +
+                 "-1 = keep prefab.")]
         public float PlantRadiusCellFraction = -1f;
+
+        [Tooltip("INNER edge of the planting band, as a fraction of the cell membrane radius. " +
+                 "0 collapses the band to a single shell at the outer fraction (legacy). " +
+                 "-1 = keep prefab.")]
+        public float PlantRadiusCellFractionMin = -1f;
     }
 }

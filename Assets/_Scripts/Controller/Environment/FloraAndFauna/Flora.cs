@@ -20,11 +20,24 @@ namespace CosmicShore.Gameplay
         [SerializeField] float stunDuration = 1f;
 
         [Header("Planting")]
-        [Tooltip("Flora plant within this fraction of the cell's membrane radius, dispersing them " +
-                 "across the cell so domain clusters form in distinct locations - fauna schools of " +
-                 "different domains then get directed at different clusters instead of comingling " +
-                 "around the centre. 0 = use the flora's legacy fixed planting radius.")]
+        [Tooltip("OUTER edge of this species' planting band, as a fraction of the cell's membrane " +
+                 "radius. Flora disperse inside the band so domain clusters form in distinct " +
+                 "locations - fauna schools of different domains then get directed at different " +
+                 "clusters instead of comingling around the centre. 0 = use the flora's legacy " +
+                 "fixed planting radius.")]
         [Range(0f, 1f)] [SerializeField] protected float plantRadiusCellFraction = 0.6f;
+
+        [Tooltip("INNER edge of the planting band, as a fraction of the membrane radius. 0 (the " +
+                 "default) collapses the band to a single SHELL at the outer fraction - the legacy " +
+                 "behaviour every cell had before bands existed. Set it below the outer fraction " +
+                 "and this species fills the whole shell of space between the two, which is what a " +
+                 "cell needs when its plants are meant to read as a forest with depth rather than " +
+                 "a soap bubble at one radius.\n\n" +
+                 "The inner edge is always clamped OUTSIDE the cell's nucleus: nucleus-interior " +
+                 "mass is the territorial claim, is excluded from the fauna targeting grids, and " +
+                 "is where a standard crystal respawns - so a plant rooted in there is mass the " +
+                 "food web can never reach and clutter in the one volume that has to stay legible.")]
+        [Range(0f, 1f)] [SerializeField] protected float plantRadiusCellFractionMin = 0f;
 
         protected bool isGrowing = true;
 
@@ -112,16 +125,41 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Planting radius for <see cref="Plant"/>: a fraction of the owning cell's
-        /// membrane radius when configured (disperses flora across the whole cell),
-        /// falling back to the flora's legacy fixed radius when the fraction is 0 or
-        /// the cell/membrane is unavailable.
+        /// Planting radius for <see cref="Plant"/>: a fraction of the owning cell's membrane
+        /// radius when configured (disperses flora across the whole cell), falling back to the
+        /// flora's legacy fixed radius when the outer fraction is 0 or the cell/membrane is
+        /// unavailable.
+        ///
+        /// <para>With <see cref="plantRadiusCellFractionMin"/> set, this draws a radius from the
+        /// BAND between the two fractions instead of returning the single outer shell. The draw is
+        /// uniform by VOLUME (<c>r = cbrt(lerp(min³, max³, u))</c>), not by radius: a shell's
+        /// available space grows as r², so a uniform-in-radius draw crowds plants onto the inner
+        /// edge and leaves the outer band — most of the cell — looking empty. Volume-uniform gives
+        /// an even spatial density through the whole band, which naturally puts most plants in the
+        /// outer reaches (that is where the space is) while still landing some in close.</para>
+        ///
+        /// <para>The inner edge is clamped outside the nucleus — see the field tooltip.</para>
         /// </summary>
         protected float ResolvePlantRadius(float legacyRadius)
         {
-            if (plantRadiusCellFraction > 0f && cell && cell.MembraneRadius > 0f)
-                return cell.MembraneRadius * plantRadiusCellFraction;
-            return legacyRadius;
+            if (plantRadiusCellFraction <= 0f || !cell || cell.MembraneRadius <= 0f)
+                return legacyRadius;
+
+            float membrane = cell.MembraneRadius;
+            float outer = membrane * plantRadiusCellFraction;
+
+            // Never inside the nucleus: that mass is the territorial claim, is kept out of the
+            // fauna targeting grids, and shares its volume with the standard crystal respawn.
+            // ExpectedNucleusWorldRadius (not NucleusWorldRadius) so the clamp is correct even if
+            // a caller plants before the cell has instantiated its nucleus.
+            float inner = Mathf.Max(membrane * plantRadiusCellFractionMin,
+                                    cell.ExpectedNucleusWorldRadius);
+            if (inner >= outer) return outer;
+
+            float t = Random.value;
+            float innerCubed = inner * inner * inner;
+            float outerCubed = outer * outer * outer;
+            return Mathf.Pow(Mathf.Lerp(innerCubed, outerCubed, t), 1f / 3f);
         }
 
         /// <summary>
@@ -163,6 +201,8 @@ namespace CosmicShore.Gameplay
             if (tuning.GrowPeriod >= 0f) growPeriod = tuning.GrowPeriod;
             if (tuning.PlantRadiusCellFraction >= 0f)
                 plantRadiusCellFraction = Mathf.Clamp01(tuning.PlantRadiusCellFraction);
+            if (tuning.PlantRadiusCellFractionMin >= 0f)
+                plantRadiusCellFractionMin = Mathf.Clamp01(tuning.PlantRadiusCellFractionMin);
         }
 
         /// <summary>Flora level: leaf prisms grow with the level (crystal handled by base).</summary>

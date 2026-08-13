@@ -50,7 +50,7 @@ scoreboard anywhere before this.
 - **Objective marker**: `DogFightObjectiveProvider` — the off-screen arrow points at the nearest
   vessel you can actually shoot (see below)
 - **Crystals**: the scene's omni crystal on platform-normal settings (with an authored
-  `anchorlessSpawnRadius`, see below) **plus** elemental pickups scattered by `DogFightController`
+  `noNucleusSpawnRadius`, see below) **plus** elemental pickups scattered by `DogFightController`
 - **Comeback**: `ScoreDifferenceSource.CombatPoints`, rate **0.12** (see below)
 - **Environment**: `SpawnableBoneyard` at all four intensities, 9,043 → 34,654 prisms
 
@@ -432,7 +432,7 @@ section below for why Mass in particular pays here.
 Crystals are a platform fundamental; a mode that switches one off is a mode where a whole
 economy silently does nothing.
 
-The scene authors **one** thing the donor did not: **`anchorlessSpawnRadius: 420`**. This is the
+The scene authors **one** thing the donor did not: **`noNucleusSpawnRadius: 420`**. This is the
 whole fix for the bug that made the omni crystal read as an Astro League ball —
 `CrystalManager.GetAnchorlessSpawnRadius` falls back to the cell's **nucleus** radius, the
 Boneyard has no nucleus *by design*, so it fell through to the crystal's own `SphereRadius` (a few
@@ -681,7 +681,7 @@ the bullet effect onto `SparrowFullAutoProjectileImpactContainer` **and**
 17. **Crystals: the omni is BACK, and it moves.** One big faceted sphere, and it must **not** be
     at the arena centre — it should be somewhere out among the wreckage inside r≈420. Collect it
     and confirm the respawn lands somewhere *else*. If it spawns dead centre, the scene has lost
-    its `anchorlessSpawnRadius`. Alongside it, ~14 small elemental crystals spread through the
+    its `noNucleusSpawnRadius`. Alongside it, ~14 small elemental crystals spread through the
     arena in all four colours, each skimmable for an element level; confirm they appear at
     **every** intensity and that two peers see them in the SAME places.
 17b. **COMEBACK — Mass in particular.** Let one domain get ~50 points ahead, then check the

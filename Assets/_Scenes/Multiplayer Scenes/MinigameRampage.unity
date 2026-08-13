@@ -981,8 +981,6 @@ MonoBehaviour:
   countdownTimer: {fileID: 778382903}
   _onToggleReadyButton: {fileID: 11400000, guid: 49189b231ecf3ab4ea602699f3401cf2, type: 2}
   rule: {fileID: 11400000, guid: 7d1bfbd4091c4a12a12c730553bf293a, type: 2}
-  arenaCell: {fileID: 1700000065}
-  aiRetargetSeconds: 1.5
 --- !u!114 &1628508400
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1002,7 +1000,6 @@ MonoBehaviour:
   scaleCrystalPositionWithIntensity: 0
   intensityLevelData: {fileID: 11400000, guid: 490485287c38a2f4e9178566394efd69, type: 2}
   listOfCrystalPositions: []
-  anchorlessSpawnRadius: 900
   crystalCountMode: 0
   fixedCrystalCount: 1
   extraCrystalsToSpawnBeyondPlayerCount: 0

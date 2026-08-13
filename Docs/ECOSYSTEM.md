@@ -3310,3 +3310,83 @@ the rest of the budget for player trails. No new physics queries: scoring rides 
 - **Volume is the spine** — reinforced: §27.4 is the whole point of the threshold rework.
 - **The Cell owns the environment** — the mode builds no parallel spawner, culler or arena
   edge. Everything above is `CellConfigDataSO` + `SpawnProfileSO` + flora configs.
+
+### 27.5 A planting SHELL is not a forest — the band (Aug 2026)
+
+`plantRadiusCellFraction` gave a species exactly one radius, and `Plant` picked a random
+direction on that sphere. Stacking several species at staggered fractions approximates depth,
+but each species still reads as a soap bubble, and no cell could put plants *near its core*
+without moving the whole species in.
+
+`Flora.plantRadiusCellFractionMin` makes it a **band**, and the draw is uniform by
+**VOLUME**, not by radius:
+
+```csharp
+r = cbrt( lerp(inner³, outer³, Random.value) )
+```
+
+A shell's available space grows as r², so a uniform-in-radius draw crowds plants onto the
+inner edge and leaves the outer band — most of the cell — looking empty. Volume-uniform gives
+even spatial density through the whole band, which naturally puts most plants in the outer
+reaches (that is where the space is) while still landing some in close.
+
+**The inner edge is clamped outside the nucleus**, in code, so an author can write `0` and
+get "from the nucleus outward" rather than plants in the core. Three separate reasons make
+that a rule and not a nicety: nucleus-interior mass is the territorial CLAIM, it is excluded
+from the fauna targeting grids (so a plant there is food the web can never be steered to),
+and §27.6 puts the standard crystal respawn in exactly that volume.
+
+Default `min = 0` collapses the band to the legacy single shell, so no existing cell changes.
+
+### 27.6 The crystal volume IS the nucleus — platform coupling (Aug 2026)
+
+`CrystalManager.GetAnchorlessSpawnRadius()` used to resolve **serialized override → nucleus →
+crystal SphereRadius**, i.e. any scene could decouple its crystals from its core with one
+field. Rampage did exactly that (a 900-unit roam radius, to make the crystal a chase) and it
+was wrong for a reason that generalises:
+
+> **The nucleus is the visible marker of the cell's core** — the thing a player reads as "the
+> middle". A crystal that respawns anywhere else makes that marker a lie, and every mode that
+> contests a crystal then has to teach its own answer to "where do I look".
+
+The precedence is now **nucleus → `noNucleusSpawnRadius` → crystal SphereRadius** (the field
+renamed to say what it is). A cell WITH a nucleus always spawns its crystals inside it and no
+per-scene field can override that. The fallback exists only for a cell with genuinely no core
+(Dog Fight's Boneyard, 420 — and note CLAUDE.md's existing warning that a nucleus-less cell
+MUST author it, or the crystal falls through to its own `SphereRadius` and lands on the exact
+centre).
+
+**A mode that wants a different crystal volume resizes its NUCLEUS** — author a
+`CellConfigDataSO` pointing at a resized `NucleusPrefab`, exactly as Scurry does with
+`HalfNucleus.prefab`. That moves both together and keeps them coupled, which is the whole
+point. Do not reintroduce a per-scene override.
+
+Note the coupling composes with §27.5: crystals inside the nucleus, flora strictly outside it,
+so the two never fight for the same volume and the core stays legible.
+
+### 27.7 The AI's drift look-direction is a mass cluster, not a 180° flip (Aug 2026)
+
+`AIPilot` has a genuinely good idea in it: once the AI has its objective lined up, it DRIFTS —
+`VesselStatus.Course` stays locked on the target while the nose swings elsewhere, which is how
+a drifting vessel lays trail, skims and fires along an axis that is not its heading. What it
+pointed at was `desiredDirection *= -1`: a flat 180° flip away from the objective. That aims
+at nothing in particular and reads as the AI spinning on the spot.
+
+It now aims at a **cluster of hostile mass** via `Cell.GetExplosionTarget(myDomain)` — the
+exact Burst density-grid query aggression-1 fauna hunt prey with. Two things make that the
+right call rather than a new behaviour:
+
+- It is **one system**. "Go where the mass is" already exists on this platform, is already
+  Burst, already excludes nucleus-interior and shielded mass (so it can only point at mass the
+  AI may attack), and is already sampled on a cadence rather than per frame. A mode-local
+  re-derivation of it is the mistake §0 warns about.
+- It makes the drift **productive in every mode**, not just the one that prompted it.
+
+Sampled on `massClusterRetargetInterval` (1.5 s), cached in between. Falls back to the legacy
+flip when there is no cell, no mass, or the cluster lies within 0.9 dot of the objective (where
+the drift would not turn the vessel at all).
+
+**Corollary for mode authors:** do NOT install an `AIPilot.SetExternalTargetProvider` hook in a
+mode whose objective is a crystal. The hook overrides crystal seeking outright — Rampage shipped
+a two-phase "graze until charged, then break for the crystal" provider and it was removed,
+because the platform default (seek the crystal + drift onto mass) already IS that loop.

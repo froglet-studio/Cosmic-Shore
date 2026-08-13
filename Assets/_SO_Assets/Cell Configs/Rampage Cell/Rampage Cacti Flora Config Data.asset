@@ -14,9 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   FloraPrefab: {fileID: 7514956980722975813, guid: 82e04cfd7f5b93f478b5fbfe40c2a2d7, type: 3}
   SpawnProbability: 1
-  InitialSpawnCount: 50
+  InitialSpawnCount: 26
   OverrideDefaultPlantPeriod: 1
-  NewPlantPeriod: 20
+  NewPlantPeriod: 18
   PreferredSites: 31
   Element: 0
   Variant:
@@ -27,8 +27,9 @@ MonoBehaviour:
     WitherRingInterval: -1
     MaxTotalSpawnedObjects: -1
     PlantRadiusCellFraction: -1
+    PlantRadiusCellFractionMin: -1
   InitialLevel: 1
-  LeafScalePerLevel: 1.15
+  LeafScalePerLevel: 1.3
   CrystalScalePerLevel: 1.2
   SpreadElements: 1
   ElementPalette:
@@ -40,6 +41,7 @@ MonoBehaviour:
     Enabled: 1
     MinLevel: 1
     MaxLevel: 5
-    RarityFalloff: 2
-  PlantRadiusCellFractionOverride: 0.9
-  MaxTotalSpawnedObjectsOverride: 55
+    RarityFalloff: 1.6
+  PlantRadiusCellFractionMaxOverride: 0.95
+  PlantRadiusCellFractionMinOverride: 0.17
+  MaxTotalSpawnedObjectsOverride: 160
