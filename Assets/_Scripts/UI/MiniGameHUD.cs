@@ -301,6 +301,8 @@ namespace CosmicShore.UI
                     return CreateProviderComponent<AstroLeagueObjectiveProvider>("ObjectiveProvider_AstroLeague");
                 case GameModes.DogFight:
                     return CreateProviderComponent<DogFightObjectiveProvider>("ObjectiveProvider_DogFight");
+                case GameModes.Rampage:
+                    return CreateProviderComponent<RampageObjectiveProvider>("ObjectiveProvider_Rampage");
                 default:
                     return null;
             }

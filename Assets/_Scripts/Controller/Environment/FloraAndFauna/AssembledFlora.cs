@@ -361,8 +361,10 @@ namespace CosmicShore.Gameplay
             }
             else
             {
+                // Shell measured from the CELL CENTRE (Flora.ResolvePlantCenter), not the
+                // crystal - see BranchingFlora.Plant.
                 float radius = ResolvePlantRadius(legacyRadius: 200f);
-                transform.position = cellData.CrystalTransform.position + radius * Random.onUnitSphere;
+                transform.position = ResolvePlantCenter() + radius * Random.onUnitSphere;
             }
         }
 

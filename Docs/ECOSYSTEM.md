@@ -3179,3 +3179,134 @@ speed.
 3. **Skeleton accumulation over a long round** is the §26.7 budget risk and can only be answered by
    a playtest. If skeletons outpace grazing, the levers are the existing diet/spawn dials
    (`SpawnProfile.FaunaFoodFloor`, per-species populations) — never a timer, never a cap.
+
+---
+
+## 27. Rampage — a planting shell belongs to the CELL, not to the crystal (Aug 2026)
+
+The Dolphin rework of Rampage (`_Scripts/Controller/Arcade/RAMPAGE.md`) needed one thing
+from the ecology: **a belt of breakable flora ringing the membrane, with the core left
+open** for a single roaming contested crystal. Three latent defects stood between the
+config and that arrangement, and all three are general — none is a Rampage special case.
+
+### 27.1 The planting shell was measured from the CRYSTAL
+
+All three `Flora.Plant` implementations dispersed a new plant about
+`cellData.CrystalTransform.position`:
+
+```csharp
+float radius = ResolvePlantRadius(legacyRadius: plantRadius);   // "fraction of the cell's membrane radius"
+transform.position = cellData.CrystalTransform.position + radius * Random.onUnitSphere;
+```
+
+`ResolvePlantRadius` is documented — and named — as *a fraction of the **cell's** membrane
+radius*, and every one of those three call sites carried a comment saying "disperse across
+the cell". The two only agree while a mode's crystals sit in the cell core, which was true
+of every cell that had shipped, so nothing surfaced it.
+
+Rampage's crystal roams to radius 900 in a cell whose membrane is 1200. A plant on the
+0.90 shell would therefore have landed at up to `900 + 1080 = 1980` — **outside the
+membrane**, where `Cell.ContainsPosition` rejects its prisms: not in `LiveVolume`, invisible
+to the phase ladder, and untargetable by the fauna density grids. A belt of food the food
+web cannot see is worse than no belt.
+
+**Fixed:** `Flora.ResolvePlantCenter()` — cell centre, falling back to the crystal (legacy)
+and then to the plant's own position. That last fallback also removes a real crash: the
+`CrystalTransform` property logs and returns **null** in a cell with no crystal at all, so
+`.position` on it threw. `BranchingFlora.Initialize` had the same unguarded dereference for
+its look-rotation and now resolves once, falling back to the plant's growth axis.
+
+**Rule:** *a planting radius is a fraction of the CELL, so it is measured from the cell.*
+Anything a mode moves at runtime — crystals above all — must not be able to drag the
+ecology's geometry with it.
+
+### 27.2 A live-prism budget only worked on one flora family
+
+`FloraVariantTuning.MaxTotalSpawnedObjects` was read **only** by `AssembledFlora`.
+`BranchingFlora` and `PhyllotacticFlora` declared their own `maxTotalSpawnedObjects` and
+ignored the config's, so a cell could author a per-plant budget, save, see nothing change,
+and silently get the prefab's — **5000** for both CactiFlora and PineFlora. A handful of
+plants can eat a whole arena's phase ladder at that budget.
+
+45 authored assets were already writing into this field expecting it to work: the canonical
+`_SO_Assets/Lifeforms/<Species> Flora <Element>` set carries a deliberate per-element density
+identity (Charge ×0.85, Mass ×1.2, Space ×0.7, Time ×1.0 of the prefab), and Hesperides'
+per-cell configs mirror it. Every one of them was inert.
+
+**Fixed:** `BranchingFlora` and `PhyllotacticFlora` now override `ApplyVariantTuning` and
+read it, matching `AssembledFlora`. **This changes existing cells** — Hesperides and the
+Wildlife Blitz cells now get the per-element budgets they always authored. The average
+effect is ≈ −6% prisms per plant (the four element multipliers average 0.9375), well inside
+every phase-hysteresis band, and the *variety* it restores is the point. Re-check Hesperides'
+`LiveVolume` against its thresholds on the next pass through that cell.
+
+**Rule:** *a tuning field that appears on every flora config must mean the same thing on
+every flora.* A field that silently does nothing on 2 of 3 families is worse than an absent
+one, because the author gets no signal.
+
+### 27.3 SpreadElements ate the cell's own layout decisions
+
+`FloraConfigurationSO.RollVariant` replaces this config's whole `Variant` with the palette
+sibling's when `SpreadElements` is on — while the field's tooltip claims "planting counts,
+periods and probability stay on THIS config, so the cell keeps its own density tuning". Both
+`PlantRadiusCellFraction` and `MaxTotalSpawnedObjects` live in that block, so with spread on
+a cell could not use the canonical per-element assets **and** choose its own planting shell:
+Rampage's belt would have collapsed back onto each species' authored 0.5–0.6, i.e. the middle
+of the arena.
+
+Composing the two blocks (cell wins on non-sentinel fields) was considered and **rejected**:
+Blob's gyroid configs carry a full duplicate of the Mass element's Variant alongside their
+palette, so cell-wins composition would flatten all four gyroid elements into Mass and
+destroy exactly the per-element identity §17 exists to express.
+
+**Fixed:** two explicitly-named cell-level overrides on `FloraConfigurationSO` —
+`PlantRadiusCellFractionOverride` and `MaxTotalSpawnedObjectsOverride`, both default −1 (off,
+so no existing cell changes) — applied **after** the roll via
+`TryBuildCellOverrideTuning` → the existing `Flora.ApplyVariantTuning` path, reusing its
+"sentinel = keep" semantics rather than inventing a second application mechanism.
+
+**Rule, and the split worth remembering:** *the ELEMENT owns identity* (leaf prism shape,
+growth tempo, shield cadence, per-element density) *and the CELL owns layout* (where a
+species plants, how big one plant may get in THIS arena). They were in one block because
+they were authored together, not because they are the same kind of fact.
+
+### 27.4 A cell whose prisms are not nominal must author its volume ladder
+
+Rampage's hero species is the cactus, whose leaf prism is 5×5×3 = **75 volume — 4.7×
+`NominalPrismVolume` (16)**. The cell inherited volume thresholds derived the standard way
+(`count × 16`), so its Frenzy ceiling was ~3× too low for the belt it now grows: the cell
+would have pinned at Frenzy within seconds, frozen planting, and held a sparse arena that
+never regrew — the failure looking exactly like "flora don't spawn", with nothing in the
+config pointing at the cause.
+
+Authored explicitly against the belt's estimated volume (~471k at full growth):
+`RestlessEnter/Exit 34000/24000`, `FrenzyEnter/Exit 480000/370000`, count backstop unchanged
+at 10000/8000.
+
+**Rule (already stated in `ECOSYSTEM_MASTERPLAN.md §5.1` for the low-volume direction, now
+with a high-volume instance):** the `×16` derivation is a migration convenience, not a
+default. Any cell whose prisms are meaningfully off nominal — a Squirrel trail at ⅕, a
+cactus leaf at 4.7× — must author `*EnterVolume` / `*ExitVolume` itself. Verify against
+`Cell.LiveVolume` on the DiagnosticsHUD; the estimate cannot be trusted for phyllotactic
+species, whose prisms are sized per role and have no single authored volume to read.
+
+### Collider budget
+
+Unchanged from the previous Rampage: the count backstop holds the arena at **10,000
+prisms** (~2.8× the Blob envelope, deliberate demolition-arena headroom). The belt seeds
+136 plants at ~9,550 prisms, one instantiation per frame (~2.3 s spread, no hitch), leaving
+the rest of the budget for player trails. No new physics queries: scoring rides the
+`StatsManager` SOAP channel and the AI rides `Cell.GetExplosionTarget`'s Burst density grid.
+
+### Invariants checked
+
+- **Continuity of existence** — untouched; plants still bloom in and wither out.
+- **No imposed death** — no decay, lifespan or despawn timer added. The Frenzy ceiling is a
+  *growth* gate (planting/growth pause), never a culler; mass stays conserved.
+- **No domain asymmetry** — the belt rolls its domain uniformly across all three via
+  `CellLifeSpawnerBase.SpawnFlora`; fauna remain controlling-colour only.
+- **Every lifeform drops one elemental crystal** — untouched; the belt uses the canonical
+  element palettes, so each plant carries its element's heart.
+- **Volume is the spine** — reinforced: §27.4 is the whole point of the threshold rework.
+- **The Cell owns the environment** — the mode builds no parallel spawner, culler or arena
+  edge. Everything above is `CellConfigDataSO` + `SpawnProfileSO` + flora configs.

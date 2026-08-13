@@ -166,6 +166,14 @@ namespace CosmicShore.Gameplay
                 flora.ApplyElement(pick.Element);
                 if (pick.Tuning is { Enabled: true })
                     flora.ApplyVariantTuning(pick.Tuning);
+
+                // Cell-level overrides LAST, so they survive SpreadElements: the roll above may
+                // have replaced this config's whole Variant with a palette sibling's (the
+                // element's identity), but WHERE this cell plants the species and HOW BIG one
+                // plant may get are the cell's decisions, not the element's.
+                if (config.TryBuildCellOverrideTuning(out var cellOverrides))
+                    flora.ApplyVariantTuning(cellOverrides);
+
                 flora.ApplyLevel(pick.Level, config.LeafScalePerLevel, config.CrystalScalePerLevel);
             }
 

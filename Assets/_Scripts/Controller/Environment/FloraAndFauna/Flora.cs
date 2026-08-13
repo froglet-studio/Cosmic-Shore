@@ -125,6 +125,31 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// The point <see cref="ResolvePlantRadius"/>'s shell is measured FROM: the owning
+        /// cell's centre, which is what "a fraction of the cell's membrane radius" has always
+        /// meant. Every <see cref="Plant"/> implementation used to measure from
+        /// <c>cellData.CrystalTransform.position</c> instead - harmless while a mode's crystals
+        /// sit in the cell core, and wrong the moment a mode lets its crystal roam: the whole
+        /// planting shell then rides the crystal and a plant lands at
+        /// <c>crystalRadius + fraction x membraneRadius</c>, i.e. OUTSIDE the membrane, where
+        /// <c>Cell.ContainsPosition</c> rejects its prisms and neither the volume ladder nor
+        /// the fauna density grids can see them. Rampage's contested crystal is the mode that
+        /// exposed it.
+        ///
+        /// Falls back to the crystal (legacy) and then to this flora's own position, so a cell
+        /// that never resolved is still a planting anchor rather than a
+        /// <see cref="System.NullReferenceException"/> (<c>CrystalTransform</c> returns null
+        /// when a cell holds no crystal at all).
+        /// </summary>
+        protected Vector3 ResolvePlantCenter()
+        {
+            if (cell) return cell.transform.position;
+
+            var crystalTransform = cellData ? cellData.CrystalTransform : null;
+            return crystalTransform ? crystalTransform.position : transform.position;
+        }
+
+        /// <summary>
         /// Flora layer of the variant expression: the per-element leaf PRISM shape, growth
         /// tempo, and planting radius (the fields that differ between the four GyroidFlora
         /// prefabs). Runs before Initialize, so every leaf grows to the variant's size.

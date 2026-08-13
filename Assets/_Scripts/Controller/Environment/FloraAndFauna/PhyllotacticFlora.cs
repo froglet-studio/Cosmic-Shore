@@ -166,6 +166,19 @@ namespace CosmicShore.Gameplay
             SeedTips();
         }
 
+        /// <summary>
+        /// Phyllotactic layer of the variant expression: the live-prism budget - the same field
+        /// <see cref="AssembledFlora"/> and <see cref="BranchingFlora"/> read, so a cell that
+        /// authors a per-plant budget gets it on every flora family rather than silently only on
+        /// the assembled one.
+        /// </summary>
+        public override void ApplyVariantTuning(FloraVariantTuning tuning)
+        {
+            base.ApplyVariantTuning(tuning);
+            if (tuning == null) return;
+            if (tuning.MaxTotalSpawnedObjects >= 0) maxTotalSpawnedObjects = tuning.MaxTotalSpawnedObjects;
+        }
+
         public override void Plant()
         {
             // A pinned site (a garden bed, or the Lifeform Matrix toy's spawn-here station) wins;
@@ -175,8 +188,10 @@ namespace CosmicShore.Gameplay
                 transform.position = pinned;
                 return;
             }
+            // Shell measured from the CELL CENTRE (Flora.ResolvePlantCenter), not the crystal -
+            // a roaming crystal must not carry the planting shell outside the membrane.
             float radius = ResolvePlantRadius(legacyRadius: 150f);
-            transform.position = cellData.CrystalTransform.position + radius * Random.onUnitSphere;
+            transform.position = ResolvePlantCenter() + radius * Random.onUnitSphere;
         }
 
         // ── Growth ────────────────────────────────────────────────────────────
