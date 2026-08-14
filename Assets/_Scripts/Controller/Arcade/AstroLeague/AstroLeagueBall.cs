@@ -42,6 +42,26 @@ namespace CosmicShore.Gameplay
         // null-guarded because this is a service reference, not a SOAP event channel.
         [Inject] AudioSystem audioSystem;
 
+        [Header("Shield interaction")]
+        [Tooltip("Bounce off an OPPOSING shielded prism (and still pop its shield) instead of " +
+                 "passing through it. OFF for the Astro League match ball, which keeps the " +
+                 "shipped pop-and-continue behaviour; ON for the Scarab's forged balls.")]
+        [SerializeField] bool bounceOffShieldedPrisms;
+
+        [Tooltip("Die on contact with a SUPER-shielded prism, popping its super-shield on the way " +
+                 "out. MUST stay OFF for the Astro League match ball: the arena's 480-prism edge " +
+                 "lining is super-shielded and is inset INSIDE the analytic boundary, so the ball " +
+                 "reaches it before it reaches the wall — a lethal super-shield would kill the " +
+                 "match ball on its first approach to any edge.")]
+        [SerializeField] bool destroyedBySuperShielded;
+
+        /// <summary>Every live ball, for systems that must find them without a per-frame
+        /// FindObjectsByType (the Scarab's switch rings). Registered on enable, removed on
+        /// disable, so it is exact and costs nothing to maintain.</summary>
+        public static readonly List<AstroLeagueBall> Live = new();
+
+        bool _dieAfterScan;
+
         [Header("Visuals")]
         [Tooltip("The prism fresnel material (PrismMaterial.mat) - cloned at runtime so the ball " +
                  "renders with the same 3D fresnel-rim look as trail prisms. Falls back to the " +
@@ -154,6 +174,16 @@ namespace CosmicShore.Gameplay
         public bool IsHidden => n_Hidden.Value;
         /// <summary>Domain whose color the ball currently carries (Blue = neutral). Set by the last striker.</summary>
         public Domains LastHitDomain => n_LastHitDomain.Value;
+
+        void OnEnable()
+        {
+            if (!Live.Contains(this)) Live.Add(this);
+        }
+
+        void OnDisable()
+        {
+            Live.Remove(this);
+        }
 
         void Awake()
         {
@@ -645,7 +675,16 @@ namespace CosmicShore.Gameplay
                     // SUPER-shielded prisms are fully invulnerable structure (Prism.Damage/Consume
                     // no-op on them - e.g. the arena's edge lining): the ball passes through
                     // untouched regardless of domain - never unshielded, never eaten, no speed cost.
-                    if (prism.prismProperties.IsSuperShielded) continue;
+                    // UNLESS this ball is authored to die on them (the Scarab's forged balls): then
+                    // the super-shield is popped and the ball is spent. Both happen - the structure
+                    // is downgraded, and the ball paid for it.
+                    if (prism.prismProperties.IsSuperShielded)
+                    {
+                        if (!destroyedBySuperShielded) continue;
+                        prism.DeactivateShields();
+                        _dieAfterScan = true;   // never despawn mid-scan; drained below
+                        continue;
+                    }
 
                     _scanInRange.Add(prism);
 
@@ -661,6 +700,13 @@ namespace CosmicShore.Gameplay
                         // Opposing + shielded: pop the shield and LEAVE the prism this visit.
                         prism.DeactivateShields();
                         if (!_shieldPoppedThisVisit.Contains(prism)) _shieldPoppedThisVisit.Add(prism);
+
+                        // ...and, for balls authored to do so, CAROM off it. The shield is spent
+                        // either way; the difference is whether the armour also turned the shot.
+                        // Server-only: the reflection is a velocity write, and clients mirror it
+                        // through n_Velocity like every other ball impulse.
+                        if (bounceOffShieldedPrisms && isServer)
+                            ReflectOffPrism(prism);
                     }
                     else
                     {
@@ -684,6 +730,15 @@ namespace CosmicShore.Gameplay
                 }
             }
 
+            // A ball spent on super-shielded structure. Drained AFTER the scan so nothing is
+            // despawned while the query buffer is still being walked.
+            if (_dieAfterScan)
+            {
+                _dieAfterScan = false;
+                if (isServer) ExpireServer();
+                return;
+            }
+
             if (eatenMass <= 0f) return;
 
             // Server slows the ball by the eaten mass (direction preserved); clients mirror via velocity.
@@ -693,6 +748,43 @@ namespace CosmicShore.Gameplay
                 rb.linearVelocity *= rb.mass / Mathf.Max(0.0001f, rb.mass + prismMass);
             }
             TriggerFlash(0.6f); // local "chomp" feedback on every peer that ate mass
+        }
+
+        /// <summary>
+        /// Server: carom off a prism. The ball has no physics contact with prisms at all (their
+        /// layer is excluded from its collider — see Awake), so the normal is derived
+        /// geometrically: prism centre → ball centre, which for a sphere-vs-box at contact range
+        /// is the face normal to within the box's corner rounding. Reflects only the INTO-prism
+        /// component, so a glancing pass keeps its speed and a head-on one turns around, and
+        /// reuses the wall restitution so a prism carom and a wall carom read alike.
+        /// </summary>
+        void ReflectOffPrism(Prism prism)
+        {
+            Vector3 n = transform.position - prism.transform.position;
+            if (n.sqrMagnitude < 1e-6f) return;
+            n.Normalize();
+
+            Vector3 v = rb.linearVelocity;
+            float into = Vector3.Dot(v, n);
+            if (into >= 0f) return;   // already leaving — never "bounce" a ball outward twice
+
+            float e = settings != null ? settings.wallRestitution : 0.72f;
+            rb.linearVelocity = v - (1f + e) * into * n;
+
+            // Nudge clear so the next tick's scan doesn't re-reflect on the same prism.
+            transform.position += n * (BallWorldRadius() * 0.5f);
+            HandleWallBounce(prism.transform.position, n);
+        }
+
+        /// <summary>Server: this ball is spent — detonate for the visual and remove it. Used by
+        /// balls that die on super-shielded structure; a scene-placed match ball is only ever
+        /// hidden, never despawned, so the NetworkObject despawn is guarded on being spawned.</summary>
+        void ExpireServer()
+        {
+            if (!IsServer) return;
+            DetonateServer();                       // burst + hide (continuity: it does not pop out)
+            if (IsSpawned && NetworkObject != null && !NetworkObject.IsSceneObject.GetValueOrDefault(false))
+                NetworkObject.Despawn(true);
         }
 
         /// <summary>

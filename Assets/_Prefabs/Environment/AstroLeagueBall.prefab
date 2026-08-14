@@ -178,6 +178,8 @@ MonoBehaviour:
   m_Name:
   m_EditorClassIdentifier:
   ShowTopMostFoldoutHeaderGroup: 1
+  bounceOffShieldedPrisms: 1
+  destroyedBySuperShielded: 1
   settings: {fileID: 11400000, guid: 39fd42ebeb444f91abc2efa1bddbc2c6, type: 2}
   gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   prismMaterial: {fileID: 2100000, guid: 5140ec1c42866e849927f442d5965f7f, type: 2}

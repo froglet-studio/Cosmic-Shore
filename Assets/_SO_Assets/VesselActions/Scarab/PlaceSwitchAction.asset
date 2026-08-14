@@ -27,6 +27,8 @@ MonoBehaviour:
     Min: 1
     Max: 2.5
     element: 2
-  brickCount: 12
+  interiorPrismCount: 28
+  burstPrismCount: 44
+  burstRadiusMultiplier: 2.2
   brickScale: {x: 2.5, y: 1.5, z: 8}
   growthRate: 1

@@ -43,8 +43,17 @@ namespace CosmicShore.Gameplay
         public ElementalFloat switchScale = new(1f);
 
         [Header("Ring body")]
-        [Tooltip("Prism bricks around the ring.")]
-        [SerializeField, Range(4, 32)] int brickCount = 12;
+        [Tooltip("Prisms filling the DISC inside the ring at placement (a Vogel spiral, so the " +
+                 "area fills evenly).")]
+        [SerializeField, Range(4, 96)] int interiorPrismCount = 28;
+
+        [Tooltip("Prisms laid when a ball threads the switch — the same spiral CONTINUED outward " +
+                 "past the ring's edge, so the payout is the pattern growing rather than a second " +
+                 "effect.")]
+        [SerializeField, Range(0, 160)] int burstPrismCount = 44;
+
+        [Tooltip("How far past the ring radius the burst reaches, as a multiple of it.")]
+        [SerializeField, Min(1f)] float burstRadiusMultiplier = 2.2f;
         [Tooltip("Per-brick target scale. z runs along the ring tangent (prism forward), " +
                  "y points radially (thin), x is the ring's depth along the course axis.")]
         [SerializeField] Vector3 brickScale = new(2.5f, 1.5f, 8f);
@@ -53,7 +62,9 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(0.01f)] float growthRate = 1f;
 
         public int ResourceIndex => resourceIndex;
-        public int BrickCount => brickCount;
+        public int InteriorPrismCount => interiorPrismCount;
+        public int BurstPrismCount => burstPrismCount;
+        public float BurstRadiusMultiplier => burstRadiusMultiplier;
         public Vector3 BrickScale => brickScale;
         public float GrowthRate => growthRate;
         public float RingRadius => ringRadius;
