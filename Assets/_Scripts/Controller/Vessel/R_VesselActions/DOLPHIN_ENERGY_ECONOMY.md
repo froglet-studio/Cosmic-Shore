@@ -191,6 +191,13 @@ place would ratchet that authored number toward 1 a little further on every ram,
 with nothing in the game to restore it — a creeping nerf disguised as a punish. The meter is
 the only durable thing a ram may touch.
 
+**Ramming while still DRIFTING is repaid, and that is intended.** The charge loop is running, so
+it refills the halved meter from where the ram left it and re-derives `ChargedBoostCharge` along
+the way — a ram taken mid-drift costs the pilot drift-*seconds*, not a bank. The pilot is still
+doing the thing that banks boost; there is no reason for the meter to stay punched while they do
+it. The punish is durable in the two states that matter: mid-discharge (below) and between
+boosts, where nothing refills it.
+
 Concretely, ramming at the peak of a full discharge: meter 1 → 0.5, `ChargedBoostCharge`
 2.259 → 1.630 immediately, `BoostMultiplier` 2.259 → 1.630 within one 0.1 s tick — speed factor
 5.10 → 2.66, and the discharge runs out in half the time it had left. The HUD's boost ring
@@ -415,6 +422,7 @@ Play Menu_Main, enter freestyle on the Dolphin.
 | bank a full boost ring, then ram a prism before releasing | ring drops to half a step-for-step; the following release peaks near cruise+half, not 357 |
 | ram a prism at the PEAK of a discharge | speed drops within a tick, and the boost runs out in half the time it had left |
 | ram a prism with an empty boost ring | nothing happens to speed — half of zero is zero |
+| ram a prism WHILE holding the drift | ring drops, then climbs again from there — the ram cost drift-seconds, not the bank |
 | ram prisms repeatedly, then trigger any OTHER boost source | it is as strong as it ever was — a ram scales the meter, never the vessel's authored `boostMultiplier` |
 | hit a crystal | blast fires, gape snaps back to the 4.76° rest, Space icon flashes with a prism count |
 | blast at full energy | destruction is a FAN — wide across the jaw plane, narrow across the beam |

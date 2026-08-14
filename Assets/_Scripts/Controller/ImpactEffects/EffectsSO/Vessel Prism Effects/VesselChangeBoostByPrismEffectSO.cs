@@ -39,7 +39,11 @@ namespace CosmicShore.Gameplay
 
         public override void Execute(VesselImpactor vesselImpactor, PrismImpactor prismImpactee)
         {
-            var status = vesselImpactor?.Vessel?.VesselStatus;
+            // Unity's fake-null operator, not C# ?. — a destroyed impactor is not C# null and
+            // would walk straight through a null-propagating chain.
+            if (!vesselImpactor) return;
+
+            var status = vesselImpactor.Vessel?.VesselStatus;
             var rs = status?.ResourceSystem;
             if (rs == null) return;
 
@@ -50,6 +54,11 @@ namespace CosmicShore.Gameplay
 
             // Only meaningful mid-discharge — that is the one state CurrentBoostAmount reads it in,
             // and outside it the value is stale bookkeeping the next BeginCharge overwrites.
+            //
+            // Ramming while STILL DRIFTING is a third case and is deliberately left alone: the
+            // charge loop is running, so it refills the halved meter and re-derives this from it.
+            // The ram costs drift-seconds rather than a permanent bank — the pilot is, after all,
+            // still doing the thing that banks boost.
             if (status.IsChargedBoostDischarging)
                 status.ChargedBoostCharge = 1f + (status.ChargedBoostCharge - 1f) * retainedFraction;
         }
