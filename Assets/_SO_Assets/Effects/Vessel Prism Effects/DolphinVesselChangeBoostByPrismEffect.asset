@@ -9,8 +9,8 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c45dacf9a4754b3bb3e7409f31f5ea44, type: 3}
-  m_Name: DolphinVesselChangeResourceByPrismEffect
+  m_Script: {fileID: 11500000, guid: 2b49b0fe97f34e48b641261582852f9c, type: 3}
+  m_Name: DolphinVesselChangeBoostByPrismEffect
   m_EditorClassIdentifier: 
-  energyResourceIndex: 0
+  boostResourceIndex: 1
   retainedFraction: 0.5

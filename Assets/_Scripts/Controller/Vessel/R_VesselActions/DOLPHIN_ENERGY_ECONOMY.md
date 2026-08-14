@@ -15,7 +15,14 @@ The Dolphin has **two** resources and they are not the same thing:
 | slot | name | who writes it | passive gain |
 |---|---|---|---|
 | 0 | **Energy** | skim / prism ram / crystal impact | none |
-| 1 | **Boost** | `ChargeBoostActionExecutor` only | none |
+| 1 | **Boost** | `ChargeBoostActionExecutor` + the prism ram | none |
+
+**A prism ram costs HALF of BOTH meters.** Energy and Boost are separate resources with separate
+sinks, but they share one punish: fly into mass and you lose half of everything you banked. The
+two halves are authored as two effects in `DolphinImpactorDataContainer.vesselPrismEffects`
+(`DolphinVesselChangeResourceByPrismEffect` on slot 0, `DolphinVesselChangeBoostByPrismEffect`
+on slot 1), each with its own `retainedFraction` (0.5) so they can be tuned apart if the ram
+turns out to bite harder on one than the other.
 
 **Energy** is banked by skimming and spent in ONE shot on a crystal:
 
@@ -154,6 +161,42 @@ They have to be reasoned about together. Both are now `0`.
 discharge, and cancelling that task only throws *inside* the loop — it never reaches the tail
 that restores the speed. Without the clear, anyone who drifted twice in a row kept a partial
 boost multiplier permanently.
+
+### A ram halves the boost — and the meter is only half of "the boost"
+
+`DolphinVesselChangeBoostByPrismEffect` scales resource slot 1 by `retainedFraction`, and that
+alone would barely be felt mid-boost, because the meter is not the only thing driving the speed.
+`CurrentBoostAmount()` above multiplies **two** terms during a discharge and only one of them
+re-reads the meter:
+
+| term | who writes it | re-reads the meter? |
+|---|---|---|
+| `BoostMultiplier` | the discharge loop, every 0.1 s tick | **yes** — self-corrects |
+| `ChargedBoostCharge` | pinned at the value the CHARGE ended on | **no** — never read again |
+
+`BoostMultiplier` therefore needs nothing: halving the meter halves it on the next tick, for
+free. The **pinned snapshot does** — left alone it keeps paying full price on half the product,
+and nothing ever re-reads it, so a ram mid-boost would barely be felt. The effect scales it by
+the same fraction, which is exact without any reference to `ChargeBoostActionSO`: the term is
+`1 + (maxBoostMultiplier − 1) × meter`, so scaling the meter by `f` is scaling its distance
+above 1 by `f`. It is scaled **only while `IsChargedBoostDischarging`** — the one state
+`CurrentBoostAmount` reads it in; outside a discharge it is stale bookkeeping that the next
+`BeginCharge` overwrites anyway.
+
+**`BoostMultiplier` is deliberately never written by this effect**, and that is not an
+optimization — it is a serialized, *authored* field on `VesselStatus` (4 on the Dolphin) that
+boost sources fall back to when they don't write it themselves (`BoostActionSO` only flips
+`IsBoosting`; `VesselResetBoostPrismEffectSO` restores it to an authored base). Scaling it in
+place would ratchet that authored number toward 1 a little further on every ram, permanently,
+with nothing in the game to restore it — a creeping nerf disguised as a punish. The meter is
+the only durable thing a ram may touch.
+
+Concretely, ramming at the peak of a full discharge: meter 1 → 0.5, `ChargedBoostCharge`
+2.259 → 1.630 immediately, `BoostMultiplier` 2.259 → 1.630 within one 0.1 s tick — speed factor
+5.10 → 2.66, and the discharge runs out in half the time it had left. The HUD's boost ring
+follows for free: `Resource.CurrentAmount`'s setter always raises `OnResourceChange`, which is
+what `DolphinVesselHUDController.PushDriftBoost` binds to, so the ring drops on the ram whether
+the executor or an impact effect wrote the meter.
 
 ### The drift is a momentum-preserving slide — the whole velocity is frozen, not just its direction
 
@@ -369,6 +412,10 @@ Play Menu_Main, enter freestyle on the Dolphin.
 | cross ~85% energy | Time icon's jaws start blending white → lime; solid lime at full |
 | ram a prism at full | gape halves AND the jaws drop back to white |
 | ram a prism | gape halves |
+| bank a full boost ring, then ram a prism before releasing | ring drops to half a step-for-step; the following release peaks near cruise+half, not 357 |
+| ram a prism at the PEAK of a discharge | speed drops within a tick, and the boost runs out in half the time it had left |
+| ram a prism with an empty boost ring | nothing happens to speed — half of zero is zero |
+| ram prisms repeatedly, then trigger any OTHER boost source | it is as strong as it ever was — a ram scales the meter, never the vessel's authored `boostMultiplier` |
 | hit a crystal | blast fires, gape snaps back to the 4.76° rest, Space icon flashes with a prism count |
 | blast at full energy | destruction is a FAN — wide across the jaw plane, narrow across the beam |
 | full throttle, no boost | `VesselStatus.Speed` settles at **78** (was 60) |
@@ -392,7 +439,9 @@ family (`GameCanvas.prefab`, `Panels/MiniGameHUD.prefab`, `Panels/VesselHUD.pref
 place: they hold no renderers, and `GameCanvas` is the shared prefab of `Docs/GAMECANVAS.md`.
 
 Knobs, in order of likely tuning: `DolphinSkimmerChangeResourceByPrismEffect._resourceAmount`
-(skim gain), `ChargeBoostAction.chargeTimeToFull` / `dischargeTimeToEmpty` /
+(skim gain), `DolphinVesselChangeResourceByPrismEffect.retainedFraction` /
+`DolphinVesselChangeBoostByPrismEffect.retainedFraction` (how hard a ram bites each meter),
+`ChargeBoostAction.chargeTimeToFull` / `dischargeTimeToEmpty` /
 `maxBoostMultiplier`, `DeployTeamCrystalAction.cooldown` / `minCooldown`,
 `DolphinVesselExplosionByCrystalEffect._min/_max/_coreExplosionScale` (**then `MinJawAngle` /
 `MaxJawAngle`** — `_coreExplosionScale` is the only one of the three that does NOT move a jaw
