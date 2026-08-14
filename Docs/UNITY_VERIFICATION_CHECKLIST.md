@@ -45,8 +45,14 @@ C# stub-compiled under mcs. None of it has been imported.
    A / Space = a 12-brick prism ring blooms ~150u ahead on the COURSE (drift then place — the ring
    should appear where you're going, not where you're pointing), second+third presses spend the
    remaining charges, fourth refuses.
-4. Crystals: collect any crystal → switch-charge meter +1/3 (place again to confirm), energy meter
-   +0.25 (watch `Resources[0]` in the inspector — no HUD gauge yet).
+4. **Crystals → a ball** (added after the first playtest reported no ball ever appearing — nothing
+   forged one; the energy meter was filling correctly but had no consumer and no gauge). Collect
+   **five** omni crystals: the first four fill `Resources[0] "Ball Energy"` (+0.25 each, watch the
+   inspector — still no HUD gauge), the **fifth spawns a ball** ahead of your nose carrying your
+   speed and domain colour, and zeroes the meter. Console prints `[ScarabBallForge] … forged a
+   {domain} ball … @ N u/s`. Each crystal also grants +1/3 switch charge. ⚠ If a ball spawns but
+   sits still, the freeze/velocity ordering in `LaunchServer` regressed; if TWO balls appear per
+   crystal in MPPM, the server gate regressed.
 5. Astro League: the configure modal's carousel now offers Rhino + Scarab; pick Scarab, 2 players
    + AI → AI must all spawn as RHINOS (list order — if an AI spawns as a Scarab, `Vessels[0]`
    got reordered); play a rally, hull-strike the ball, place a ring in front of your goal.
@@ -62,8 +68,11 @@ charges, crystal grants +0.334 charge / +0.25 energy.
 
 **Known gaps (deliberate, tracked in SCARAB.md):** HUD is the cloned Sparrow variant (icons
 cosmetically wrong, structurally compliant; gun/roll bindings nulled so those gauges are dark);
-no switch-charge pips or energy gauge yet; the switch ring is body-only (no ball deflection or
-energy trigger — mode work); no ball generation (mode work); Space map row deliberately open;
+**no energy gauge or charge pips — the biggest remaining observability gap, and the reason the
+first playtest could not tell a working system from a broken one**; the switch ring is body-only
+(no ball deflection or energy trigger — mode work); a forged ball has no boundary in freestyle so
+it coasts away forever (the documented §15.6 candidate, not a bug) and keeps the mode's
+last-striker recolouring until permanent ownership lands (§4.2); Space map row deliberately open;
 AI never flies the Scarab (list order); touch cannot place switches (no Button1 raise site).
 
 ---
