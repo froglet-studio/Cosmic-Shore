@@ -322,6 +322,42 @@ namespace CosmicShore.Gameplay
                 crystal.Explode(explodeParams.ToExplodeParams());
         }
 
+        /// <summary>
+        /// Server → the owning client only: run that crystal's vessel-side effects on the machine
+        /// flying the vessel. See <see cref="CrystalManager.ReplayVesselCrystalEffects"/> for why.
+        /// Targeted rather than broadcast because these effects mutate ONE vessel's state (its
+        /// resource meter, its elemental levels) and spawn its blast - every other peer would be
+        /// applying them to a vessel it does not own.
+        /// </summary>
+        public override void ReplayVesselCrystalEffects(int crystalId, ulong vesselNetworkObjectId, ulong ownerClientId)
+        {
+            if (!IsServer) return;
+
+            ReplayVesselCrystalEffects_ClientRpc(crystalId, vesselNetworkObjectId, new ClientRpcParams
+            {
+                Send = new ClientRpcSendParams { TargetClientIds = new[] { ownerClientId } }
+            });
+        }
+
+        [ClientRpc]
+        private void ReplayVesselCrystalEffects_ClientRpc(int crystalId, ulong vesselNetworkObjectId,
+                                                          ClientRpcParams _ = default)
+        {
+            if (!cellData.TryGetCrystalById(crystalId, out var crystal) || crystal == null) return;
+
+            var impactor = crystal.GetComponentInChildren<OmniCrystalImpactor>(true);
+            if (impactor == null) return;
+
+            if (!NetworkManager.Singleton.SpawnManager.SpawnedObjects
+                    .TryGetValue(vesselNetworkObjectId, out var vesselObject) || vesselObject == null)
+                return;
+
+            var vesselImpactor = vesselObject.GetComponentInChildren<VesselImpactor>(true);
+            if (vesselImpactor == null) return;
+
+            impactor.RunVesselEffects(vesselImpactor);
+        }
+
         private void OnDrawGizmosSelected()
         {
             if (n_Slots == null) return;

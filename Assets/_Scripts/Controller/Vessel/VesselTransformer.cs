@@ -25,6 +25,15 @@ public class VesselTransformer : MonoBehaviour
              "for the default two-trigger drift where both triggers sum (e.g. Manta).")]
     [SerializeField] bool singleTriggerDrift = false;
 
+    [Tooltip("Hold the cruise speed the vessel carried INTO a drift for the drift's whole " +
+             "duration: the throttle stops feeding speed the moment the drift starts, and the " +
+             "latched value is flown until it ends. Combined with the course lock (drift damping " +
+             "0) that makes a drift a pure change of HEADING — velocity direction and magnitude " +
+             "both frozen, i.e. a momentum-preserving slide (the Dolphin). Leave off for the " +
+             "legacy drift, where the throttle keeps driving speed while drifting (the Squirrel, " +
+             "whose racing drift is throttle-modulated).")]
+    [SerializeField] bool holdSpeedWhileDrifting = false;
+
     [HideInInspector] public float DriftDamping = 0f;
 
     [Header("Events")]
@@ -109,6 +118,15 @@ public class VesselTransformer : MonoBehaviour
         private bool _driftEaseOutPending;
         private const float DRIFT_EASE_SPEED = 12f; // ~83ms for 0→1 ramp
         public bool IsDriftActive => _singleDriftActive || _sharpDriftActive || _driftEaseOutPending;
+
+        private bool _driftSpeedHeld;
+        private float _heldDriftSpeed;
+
+        /// <summary>True while <see cref="holdSpeedWhileDrifting"/> is pinning the cruise speed
+        /// to the value the vessel carried into the current drift. Read by the MoveShip
+        /// overrides so the manual-throttle channel is disabled alongside the throttle target
+        /// (see <see cref="RefreshDriftSpeedHold"/>).</summary>
+        public bool IsDriftSpeedHeld => _driftSpeedHeld;
 
         // ----------------------------- Update Loop -----------------------------
         protected virtual void Update()
@@ -225,6 +243,8 @@ public class VesselTransformer : MonoBehaviour
             _singleDriftParamsSet = false;
             _sharpDriftParamsSet = false;
             _driftEaseOutPending = false;
+            _driftSpeedHeld = false;
+            _heldDriftSpeed = 0f;
             RestoreDriftBase();
             _singleDriftRotMult = 1f;
             _singleDriftDamp = 0f;
@@ -326,6 +346,8 @@ public class VesselTransformer : MonoBehaviour
                 _singleDriftActive = true;
                 _singleDriftParamsSet = true;
             }
+
+            RefreshDriftSpeedHold();
         }
 
         /// <summary>
@@ -340,6 +362,12 @@ public class VesselTransformer : MonoBehaviour
             else
                 _singleDriftActive = false;
 
+            // Release the speed hold on the RELEASE, not at the end of the non-gamepad course
+            // ease-out: letting go of the drift is what hands the throttle back, and on the
+            // Dolphin that same instant starts the boost discharge, which needs to be able to
+            // accelerate the vessel immediately.
+            RefreshDriftSpeedHold();
+
             if (!_singleDriftActive && !_sharpDriftActive)
             {
                 bool needsEasing = InputStatus != null
@@ -349,6 +377,32 @@ public class VesselTransformer : MonoBehaviour
                 else
                     RestoreDriftBase();
             }
+        }
+
+        /// <summary>
+        /// Latch or release the drift speed hold from the live drift-tier flags. The capture
+        /// happens on the RISING edge only, so a second tier engaging mid-drift (the Squirrel's
+        /// sharp tier stacking onto single) can never re-latch a speed the pilot has already
+        /// drifted into, and one tier ending while another still runs leaves the original
+        /// captured value in place.
+        /// </summary>
+        private void RefreshDriftSpeedHold()
+        {
+            bool shouldHold = holdSpeedWhileDrifting && (_singleDriftActive || _sharpDriftActive);
+            if (shouldHold == _driftSpeedHeld) return;
+
+            _driftSpeedHeld = shouldHold;
+            if (!shouldHold) return;
+
+            // The throttle is disabled from here, so the captured value has to reproduce the
+            // vessel's ACTUAL cruise output - including the manual-throttle scaling MoveShip is
+            // about to stop applying (no shipped vessel enables toggleManualThrottle today; this
+            // keeps the hold honest if one ever does). `throttleMultiplier` is deliberately NOT
+            // folded in: impact throttle modifiers stay live through the drift, so a danger prism
+            // still slows a drifting vessel exactly as it slows a flying one.
+            _heldDriftSpeed = toggleManualThrottle && InputStatus != null
+                ? speed * Mathf.Clamp01(InputStatus.Throttle)
+                : speed;
         }
 
         private void RestoreDriftBase()
@@ -495,6 +549,20 @@ public class VesselTransformer : MonoBehaviour
         /// (see <see cref="SetSpeedTrackingRate"/>), exponential lerp otherwise.</summary>
         protected void AdvanceSpeed(float target)
         {
+            // A held drift pins the smoothed cruise speed at the value the vessel carried in:
+            // the caller still computes a throttle target, it simply never reaches `speed` -
+            // which IS what "the throttle is disabled during the drift" means mechanically.
+            // This lives here rather than in ComputeThrottleTarget because AdvanceSpeed is the
+            // one path every transformer's MoveShip runs through, so a subclass that overrides
+            // the target (SingleStickVesselTransformer) is covered without knowing about drift.
+            // _speedTrackingRate is deliberately left alone: a ramp boost that was mid-ramp
+            // resumes on release instead of being silently consumed by the pinned value.
+            if (_driftSpeedHeld)
+            {
+                speed = _heldDriftSpeed;
+                return;
+            }
+
             if (_speedTrackingRate > 0f)
             {
                 speed = Mathf.MoveTowards(speed, target, _speedTrackingRate * Time.deltaTime);
@@ -521,7 +589,9 @@ public class VesselTransformer : MonoBehaviour
             // both collapse to ~zero).
             float effectiveSpeed = speed * throttleMultiplier;
 
-            if (toggleManualThrottle)
+            // The manual-throttle channel is a throttle too, so a held drift silences it as well;
+            // its contribution at the moment of capture is already folded into the held value.
+            if (toggleManualThrottle && !_driftSpeedHeld)
                 effectiveSpeed = Mathf.Lerp(0, effectiveSpeed, InputStatus.Throttle);
 
             VesselStatus.Speed = effectiveSpeed;

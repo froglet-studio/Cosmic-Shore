@@ -166,6 +166,25 @@ namespace CosmicShore.Gameplay
             SeedTips();
         }
 
+        /// <summary>
+        /// Phyllotactic layer of the variant expression: the live-prism budget - the same field
+        /// <see cref="AssembledFlora"/> and <see cref="BranchingFlora"/> read, so a cell that
+        /// authors a per-plant budget gets it on every flora family rather than silently only on
+        /// the assembled one.
+        /// </summary>
+        public override void ApplyVariantTuning(FloraVariantTuning tuning)
+        {
+            base.ApplyVariantTuning(tuning);
+            if (tuning == null) return;
+            if (tuning.MaxTotalSpawnedObjects >= 0) maxTotalSpawnedObjects = tuning.MaxTotalSpawnedObjects;
+            // Cell density scalar, applied AFTER the absolute so it scales whatever budget won.
+            // Round half UP explicitly: Mathf.RoundToInt is banker's rounding, which would turn
+            // an authored 150 x 0.9 into 134 on one species and 135 on the next.
+            if (tuning.MaxTotalSpawnedObjectsScale > 0f)
+                maxTotalSpawnedObjects = Mathf.Max(1, Mathf.FloorToInt(
+                    maxTotalSpawnedObjects * tuning.MaxTotalSpawnedObjectsScale + 0.5f));
+        }
+
         public override void Plant()
         {
             // A pinned site (a garden bed, or the Lifeform Matrix toy's spawn-here station) wins;
@@ -175,8 +194,10 @@ namespace CosmicShore.Gameplay
                 transform.position = pinned;
                 return;
             }
+            // Shell measured from the CELL CENTRE (Flora.ResolvePlantCenter), not the crystal -
+            // a roaming crystal must not carry the planting shell outside the membrane.
             float radius = ResolvePlantRadius(legacyRadius: 150f);
-            transform.position = cellData.CrystalTransform.position + radius * Random.onUnitSphere;
+            transform.position = ResolvePlantCenter() + radius * Random.onUnitSphere;
         }
 
         // ── Growth ────────────────────────────────────────────────────────────

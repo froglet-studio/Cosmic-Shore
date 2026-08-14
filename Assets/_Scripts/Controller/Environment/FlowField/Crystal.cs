@@ -316,6 +316,24 @@ namespace CosmicShore.Gameplay
                 audioSystem.PlayGameplaySFX(GameplaySFXCategory.CrystalCollect, transform.position);
         }
 
+        /// <summary>
+        /// Moves this heart out of its dying owner and onto the cell WITHOUT freeing it: it stays
+        /// <see cref="IsEmbedded"/>, so it remains uncollectable and keeps the neutral heart tint.
+        ///
+        /// Used by a progressive wither, where the heart is the LAST thing standing and only
+        /// becomes collectable when the wither reaches the core (Docs/ECOSYSTEM.md §26). Re-homing
+        /// it at the START of the death is what makes that deferral safe: a crystal still parented
+        /// to the husk cannot be rescued once the husk is destroyed, so an interrupted wither
+        /// (a cell drain, a manager removing the husk) would silently lose it and break the
+        /// every-lifeform-drops-a-crystal invariant. Reparenting preserves world pose, and a
+        /// withering creature holds still, so the heart does not appear to move.
+        /// </summary>
+        public void DetachHeartToCell()
+        {
+            if (cellData && cellData.Cell)
+                transform.parent = cellData.Cell.transform;
+        }
+
         public void ActivateCrystal()
         {
             EmbeddedIn = null; // no longer a living heart - it's a free collectible now

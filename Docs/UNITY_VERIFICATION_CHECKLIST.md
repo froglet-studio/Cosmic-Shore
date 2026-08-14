@@ -23,6 +23,97 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Dolphin drift holds its velocity — throttle disabled for the drift (`claude/dolphin-drift-velocity-e62z2c`)
+
+Authored without a Unity compile or play-test. The Dolphin's drift already locked the velocity's
+DIRECTION (`DolphinDriftAction.driftDamping: 0`); its magnitude kept tracking the throttle. New
+`VesselTransformer.holdSpeedWhileDrifting` (authored **on** in `Dolphin.prefab`, off everywhere
+else) latches the cruise speed at drift start and pins it in `AdvanceSpeed` until the drift is
+released, so the throttle is inert for the drift's duration. Mechanics + what is deliberately
+left outside the hold: `_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_ENERGY_ECONOMY.md` §2.
+
+**Verify in editor (Menu_Main freestyle on the Dolphin, or any Dolphin scene):**
+
+1. **The field is there and on.** Dolphin prefab → `VesselTransformer` → **Hold Speed While
+   Drifting** is ticked. Squirrel / Rhino / Manta prefabs show it **unticked** (the field is new,
+   so their drift must be unchanged).
+2. **Magnitude locks.** Fly at part throttle, start the drift, then sweep the throttle stick end
+   to end: `VesselStatus.Speed` (DiagnosticsHUD, or a debug watch on the transformer) must not
+   move. Heading still swings with the stick.
+3. **It holds what you had, not a constant.** Repeat from a crawl and from full throttle — the
+   held value differs each time and equals the speed at the moment the drift engaged.
+4. **Release restores authority.** Let go: speed resumes tracking immediately, and the boost
+   discharge accelerates as before (~357 peak off a full meter, ~2.5 s decay).
+5. **Danger prisms still bite.** Ram a danger prism mid-drift — the vessel must still slam to the
+   danger slow. `throttleMultiplier` is outside the hold by design; if a drifting Dolphin shrugs
+   it off, the hold has been applied one layer too late.
+6. **No stuck lock.** Drift → end the turn / replay / swap vessels mid-drift → fly again: the
+   throttle works. (`ResetTransformer` clears the latch; this is the "cancelled UniTask never
+   runs its tail" failure class, so it wants an explicit check.)
+7. **Squirrel regression.** Swap to the Squirrel and drift: its racing drift must still be
+   throttle-modulated exactly as before.
+8. **MPPM two-client.** Host + one client, both flying Dolphins: a remote peer's drift must look
+   the same on both machines (the action replays on every peer, so the hold runs on the replica
+   too — a divergence here shows as the remote ship's speed visibly disagreeing during a drift).
+
+**First-pass tuning:** none — the hold has no numbers. The one open balance question is the
+boost carry recorded in `DOLPHIN_ENERGY_ECONOMY.md` §2: re-drifting at the peak of a discharge
+now pins the vessel near 357 while it banks the next boost. If that ratchets in play, clamp the
+captured value to the unboosted cruise target (78) in `RefreshDriftSpeedHold`.
+
+---
+
+### 🔴 Sparrow Skyburst Missile Bay — bay-open animation + bay-anchored missile launch (`claude/sparrow-missile-bay-78fxi4`)
+
+Authored without a Unity compile or play-test. The Sparrow's skyburst now fires the model's
+own bay missiles: press → bay-open clip on a new additive animator layer, 0.2 s later the
+projectile (now the extracted `Sparrow Missile.fbx` model, not the wedge polyhedron) spawns at
+the live `b_Missile.R`/`.L` bone pose. Right bay fires first (`Missile Launch 1`), left bay
+last. Full mechanics + files + tuning:
+`_Scripts/Controller/Vessel/R_VesselActions/SPARROW_SKYBURST_BAY.md`.
+
+**Verify in editor (any Sparrow scene — DogFight or Wildlife Liberation; also fine in Menu
+freestyle after swapping to the Sparrow):**
+
+1. **Import sanity.** `Assets/_Models/Sparrow Missile.fbx` and
+   `Assets/_Models/Vessel Models/SparrowModel4.fbx` import clean (no console errors).
+   `SparrowAnimatorController` shows a second layer **Missile Launching** whose two states
+   reference model4's `Missile Launch 1/2` clips (not `None (Motion)`).
+2. **Donor clip binds to model1's rig.** Enter play mode as Sparrow, fire the skyburst
+   (right trigger ability), and watch the hull: the bay doors under the fuselage open and a
+   bay missile visibly ejects, then the bay closes. If nothing moves, the cross-FBX path
+   binding failed — open the two Missile Launch clips in the Animation window on the
+   SparrowModel1 hierarchy and check for yellow (missing) bindings. That is the one piece of
+   this change that only the editor can prove.
+3. **Seam.** The live projectile should appear just as the animated missile clears the hull
+   (launchDelaySeconds 0.2 on `SkyBurstGunAction.asset`). If the projectile pops before the
+   doors part, raise toward 0.26; if the animated missile visibly retracts before the
+   projectile exists, lower toward 0.16.
+4. **Sides alternate.** With full ammo (2 missiles): first shot ejects the RIGHT bay missile
+   and the projectile emerges from the right bay; second shot the LEFT. Console must show no
+   `could not find missile bay bone` warning (that warning = name lookup failed, spawn fell
+   back to the old Gun Point).
+5. **Projectile look.** The skyburst in flight is the missile model, nose along velocity
+   (not broadside, not the wedge). Its exhaust particle sizing may need a pass — it was
+   tuned against the ~15 u wedge.
+6. **No flight-feel drift.** Normal flying, boosting, pitch/yaw/roll animation identical to
+   before (the component swapped `MantaAnimationContoller` → `SparrowAnimationController`
+   with the same driving math; `hasBoost` stays 1).
+7. **No puppetry fights.** While the bay clip plays during hard maneuvers, wings/tail must
+   not snap (the layer is additive and the takes hold rest values on every other bone).
+8. **Turn end / vessel swap mid-delay.** Fire and immediately end the turn (or swap vessels
+   in menu freestyle): no projectile appears afterward, no NRE (pending launch is cancelled;
+   ammo stays spent — the missile was committed at the press).
+9. **Gameplay hitbox unchanged.** SkyBurstProjectile root scale is still 1 and the
+   SphereCollider still 0.85 — only the visual moved to the `MissileVisual` child.
+
+**First-pass tuning:** `launchDelaySeconds` 0.2 · `MissileVisual.localScale` 2 (≈1.7 u world
+missile at ProjectileScale 10 — sized to the bay missile) · animator state speed 2.5.
+
+**Flagged, deliberately NOT changed:** the skyburst direct-hit sphere (world radius 8.5) now
+visibly dwarfs its ~1.7 u visual; the old 15 u wedge masked it. `0.85 × ProjectileScale 10`
+looks emergent rather than authored — DogFight balance call for Garrett.
+
 ### 🔴 Sparrow Turret Stance — two flight visualizations, still-nothing hardening (`claude/sparrow-prism-attack-hg6n78`)
 
 Authored without a Unity compile or play-test. The stance STILL showed nothing after the

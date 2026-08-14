@@ -47,17 +47,37 @@ namespace CosmicShore.Gameplay
         
         protected override void AcceptImpactee(IImpactor impactee)
         {
-            if (_hasBeenCollected) return;
-            if (isImpacting) return;
-            if (Crystal.IsExploding) return;
             // A living lifeform's embedded heart is joustable (vessel-side chain) but never
             // skim-collectable - it only becomes a pickup once death drops it (ActivateCrystal).
-            if (Crystal.IsEmbedded) return;
+            if (Crystal && Crystal.IsEmbedded) return;
             if (impactee is not SkimmerImpactor skimmerImpactor) return;
+
+            CollectBy(skimmerImpactor);
+        }
+
+        /// <summary>
+        /// Awards this crystal to <paramref name="skimmerImpactor"/>'s vessel WITHOUT a skim
+        /// contact - the auto-collect entry point, and the same chain a skim runs (collection
+        /// effects, flight to the vessel, spend).
+        ///
+        /// Its one caller is the Squirrel's Crystal Joust: the jouster reached into a lifeform
+        /// and took its heart, so the crystal the kill just freed leaves with that pilot rather
+        /// than sitting in the water for whoever passes next. The starvation death is the
+        /// deliberate contrast - there nobody took it, so it drops as an ordinary pickup any
+        /// vessel can collect (Docs/ECOSYSTEM.md §26).
+        ///
+        /// Idempotent; returns false when the crystal is already collected, mid-impact, or
+        /// exploding.
+        /// </summary>
+        public bool CollectBy(SkimmerImpactor skimmerImpactor)
+        {
+            if (!skimmerImpactor) return false;
+            if (_hasBeenCollected || isImpacting) return false;
+            if (Crystal == null || Crystal.IsExploding) return false;
 
             isImpacting = true;
             _hasBeenCollected = true;
-            
+
             var col = Crystal.GetComponent<Collider>();
             if (col) col.enabled = false;
 
@@ -70,6 +90,7 @@ namespace CosmicShore.Gameplay
             }
 
             HandleCrystalVisualAndLifetime(skimmerImpactor);
+            return true;
         }
 
         void HandleCrystalVisualAndLifetime(SkimmerImpactor skimmerImpactor)

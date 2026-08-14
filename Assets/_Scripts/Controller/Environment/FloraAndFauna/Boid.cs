@@ -526,13 +526,29 @@ namespace CosmicShore.Gameplay
             _pendingMeals.Clear();
             StopAllCoroutines();
             // Continuity rule — nothing pops out of existence. The sealed Fauna.Die already
-            // dropped this boid's elemental crystal (mass conserved). Starvation shrinks the
-            // body out (suction-like); a predation death with a devour target instead breaks
-            // the body prisms off and suctions them into the predator's mouth.
+            // dropped this boid's elemental crystal (mass conserved). A predation death with
+            // a devour target breaks the body prisms off and suctions them into the
+            // predator's mouth; every other death leaves the body prism standing as this
+            // creature's skeleton (Docs/ECOSYSTEM.md §26) and only the husk fades out — so
+            // the detach must happen BEFORE the fade, or the shrink would take the frame
+            // with it.
             if (isActiveAndEnabled && gameObject.activeInHierarchy)
-                StartCoroutine(DevourTarget ? DevouredCoroutine(DevourTarget, killerName) : FadeOutAndRemove());
+            {
+                if (DevourTarget)
+                {
+                    StartCoroutine(DevouredCoroutine(DevourTarget, killerName));
+                }
+                else
+                {
+                    currentVelocity = Vector3.zero; // wither in place, beside the frame it leaves
+                    LeaveSkeleton();
+                    StartCoroutine(FadeOutAndRemove());
+                }
+            }
             else
+            {
                 Destroy(gameObject);
+            }
         }
 
         /// <summary>

@@ -62,5 +62,30 @@ namespace CosmicShore.Gameplay
             Clear(prism);
             Apply(prism, kind);
         }
+
+        /// <summary>
+        /// The kind a LIVE prism is currently wearing - the read half of <see cref="Apply"/>.
+        /// Read off <c>prismProperties</c> rather than <c>PrismStateManager.CurrentState</c>
+        /// because the flags are the authoritative record: spawners set them pre-Initialize and
+        /// <c>Prism.Initialize</c> re-engages the state machine from them on every pool reuse.
+        ///
+        /// The three flags are mutually exclusive by construction (<c>MakeDangerous</c> clears
+        /// both shields; <c>ActivateSuperShield</c> clears danger and shield), so the ordering
+        /// only decides what a CORRUPT prism reports. It matches gameplay precedence:
+        /// super-shield first, because that is the flag that makes a prism invulnerable and
+        /// stops an AOE dead regardless of anything else set alongside it.
+        /// </summary>
+        public static PrismKind Of(Prism prism) => Of(prism ? prism.prismProperties : null);
+
+        /// <summary>Kind of a bare property bag - the pure, testable half of
+        /// <see cref="Of(Prism)"/>. Null (a prism that has not run Awake) reads Plain.</summary>
+        public static PrismKind Of(PrismProperties props)
+        {
+            if (props == null) return PrismKind.Plain;
+            if (props.IsSuperShielded) return PrismKind.SuperShielded;
+            if (props.IsDangerous) return PrismKind.Danger;
+            if (props.IsShielded) return PrismKind.Shielded;
+            return PrismKind.Plain;
+        }
     }
 }

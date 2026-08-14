@@ -64,8 +64,50 @@ namespace CosmicShore.Gameplay
 
             // Opposing domain: BASE ability - wither and die (idempotent; fauna spawn
             // immunity respected inside Predated).
-            if (lifeform.Jousted(status.PlayerName))
-                onLifeformJousted?.Raise(status.PlayerName);
+            if (!lifeform.Jousted(status.PlayerName)) return;
+
+            onLifeformJousted?.Raise(status.PlayerName);
+            TakeHeart(vesselImpactor, embeddedCrystal);
+        }
+
+        /// <summary>
+        /// The jouster TAKES the heart. The kill has already freed the crystal (a jousted death
+        /// releases it at the strike, precisely so this can happen), and here it is awarded
+        /// straight to the pilot who earned it instead of being left in the water. That is the
+        /// whole shape of the joust: the heart leaves with the vessel and the creature's frame
+        /// stays behind as a skeleton - the mirror of a starvation death, where nobody takes
+        /// the heart and it becomes an ordinary pickup any vessel can collect once the wither
+        /// exposes it (Docs/ECOSYSTEM.md §26).
+        ///
+        /// Degrades to the ordinary drop - the crystal simply sits there as a collectible -
+        /// when the vessel carries no usable skimmer to award it through.
+        /// </summary>
+        static void TakeHeart(VesselImpactor vesselImpactor, Crystal crystal)
+        {
+            if (!crystal) return;
+
+            var crystalImpactor = crystal.GetComponentInChildren<ElementalCrystalImpactor>(true);
+            if (!crystalImpactor) return;
+
+            var status = vesselImpactor?.Vessel?.VesselStatus;
+            if (status == null) return;
+
+            var skimmerImpactor = FindSkimmerImpactor(status.NearFieldSkimmer)
+                                  ?? FindSkimmerImpactor(status.FarFieldSkimmer);
+            if (!skimmerImpactor) return;
+
+            crystalImpactor.CollectBy(skimmerImpactor);
+        }
+
+        /// <summary>The impactor a skimmer collects through, or null. Unity-null aware, so a
+        /// destroyed/absent skimmer falls through to the next candidate rather than throwing.</summary>
+        static SkimmerImpactor FindSkimmerImpactor(Skimmer skimmer)
+        {
+            if (!skimmer) return null;
+            var impactor = skimmer.GetComponent<SkimmerImpactor>();
+            if (impactor) return impactor;
+            impactor = skimmer.GetComponentInChildren<SkimmerImpactor>(true);
+            return impactor ? impactor : null;
         }
     }
 }

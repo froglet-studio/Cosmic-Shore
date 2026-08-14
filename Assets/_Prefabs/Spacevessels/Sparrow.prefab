@@ -25,7 +25,7 @@ Transform:
   m_GameObject: {fileID: 291093895247090278}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 3, y: 0.4, z: 15.13}
+  m_LocalPosition: {x: 3.2, y: 0.4, z: 1.3}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -583,7 +583,7 @@ Transform:
   m_GameObject: {fileID: 4896015700365488556}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -3, y: 0.4, z: 15.13}
+  m_LocalPosition: {x: -3.2, y: 0.4, z: 1.3}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1197,7 +1197,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 8279817603024118164}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2116872444dccfd43a29513c3af008b7, type: 3}
+  m_Script: {fileID: 11500000, guid: 2f949662b0a749b409c5d7d5d89e0913, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   SkinnedMeshRenderer: {fileID: 1017892468313529819}
@@ -1207,6 +1207,7 @@ MonoBehaviour:
   smallLerpAmount: 0.7
   animator: {fileID: 8796843700321160693}
   hasBoost: 1
+  missileExecutor: {fileID: 4658886838346608747}
 --- !u!114 &838706159439259027
 MonoBehaviour:
   m_ObjectHideFlags: 0

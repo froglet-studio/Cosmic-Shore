@@ -19,6 +19,28 @@ namespace CosmicShore.Utility
         [Min(0f)] public float FloraInitialDelaySeconds;
         [Tooltip("Seconds between each flora spawn (within the initial flora batch). 0 = spawn all instantly.")]
         [Min(0f)] public float FloraSpawnIntervalSeconds;
+
+        [Header("Density - the CELL's half of the flora split")]
+        [Tooltip("HOW MANY plants this cell seeds, as a multiplier on every species' " +
+                 "FloraConfigurationSO.InitialSpawnCount. 1 = exactly as authored.\n\n" +
+                 "This exists so a cell can scale its whole forest WITHOUT forking the per-species " +
+                 "assets. A SpawnProfile is referenced from CellConfigDataSO, so it already forks " +
+                 "per intensity for free under CellTypeChoiceOptions.IntensityWise - which makes " +
+                 "one profile per intensity the natural home for 'how much arena is there', while " +
+                 "the species assets keep owning what each plant IS. Rampage authors four.\n\n" +
+                 "Pairs with PhaseThresholds and does NOT replace them: this scales the seed batch " +
+                 "(the fill RATE and opening density), while the cell's Frenzy volume gate is what " +
+                 "actually bounds the standing population. Move one without the other and the " +
+                 "forest either tops out at the wrong size or takes the whole match to get there.")]
+        [Min(0f)] public float FloraPopulationScale = 1f;
+
+        [Tooltip("HOW BIG each plant may get, as a multiplier on the live-prism budget that " +
+                 "survives the variant roll and any cell override. 1 = exactly as authored.\n\n" +
+                 "A MULTIPLIER rather than an absolute because the three flora families ship very " +
+                 "different budgets (assembled 400, branching/phyllotactic 1000+), so no single " +
+                 "number could serve them all. Seeded prisms scale as the PRODUCT of this and " +
+                 "FloraPopulationScale.")]
+        [Min(0f)] public float FloraPlantBudgetScale = 1f;
         // The flora regrowth pulse (FloraRegrowthPulsePeriod / FloraRegrowthPulseDuration)
         // was removed: it was a hard-coded growth oscillator faking the "breathing" the
         // food web is meant to produce. Mass is conserved - growth resumes only when an

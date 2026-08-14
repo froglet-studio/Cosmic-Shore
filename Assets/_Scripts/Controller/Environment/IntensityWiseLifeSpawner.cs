@@ -56,7 +56,13 @@ namespace CosmicShore.Gameplay
             FloraConfigurationSO floraCfg,
             Domains? excluded)
         {
+            // Cell density scalar: the SpawnProfile is the per-intensity asset, so scaling the
+            // seed batch here is how one cell config makes a bigger or smaller forest out of the
+            // same species assets. Round half UP - see the budget scalar in the flora families.
             int initialCount = Mathf.Max(0, floraCfg.InitialSpawnCount);
+            float populationScale = spawnProfile.FloraPopulationScale;
+            if (populationScale > 0f && !Mathf.Approximately(populationScale, 1f))
+                initialCount = Mathf.Max(1, Mathf.FloorToInt(initialCount * populationScale + 0.5f));
             float initialInterval = Mathf.Max(0f, spawnProfile.FloraSpawnIntervalSeconds);
 
             // Initial batch - gated on FloraPlantingEnabled and per-attempt probability.

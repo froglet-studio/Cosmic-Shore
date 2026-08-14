@@ -66,6 +66,12 @@ namespace CosmicShore.Gameplay
         [Tooltip("Faster re-scan cadence (seconds) used while the AI has NO opponent locked, so it re-acquires promptly (e.g. a 1v1 opponent mid-respawn).")]
         [SerializeField] float playerReacquireInterval = 0.1f;
 
+        [Tooltip("Seconds between refreshes of the mass cluster the AI looks at while drifting " +
+                 "away from a lined-up crystal. The query is the cell's Burst density grid " +
+                 "(Cell.GetExplosionTarget - the same one aggression-1 fauna hunt with), so it is " +
+                 "sampled on this cadence and the cached point is flown at in between.")]
+        [SerializeField, Min(0.25f)] float massClusterRetargetInterval = 1.5f;
+
         /// <summary>
         /// Configure AI behavior at runtime (called after spawning for solo-play AI opponents).
         /// </summary>
@@ -109,6 +115,11 @@ namespace CosmicShore.Gameplay
         Transform _targetVesselTransform;
         Vector3 _distance;
         bool LookingAtCrystal;
+
+        // Cached mass-cluster goal for the drift look-direction (see ResolveDriftLookDirection),
+        // refreshed on massClusterRetargetInterval so the Burst grid query is never per-frame.
+        Vector3 _massClusterPosition;
+        float _nextMassClusterSample;
 
         // Optional external steering hook. When set, the provider is sampled every
         // frame and overrides crystal/player seeking entirely. Used by game modes
@@ -202,6 +213,57 @@ namespace CosmicShore.Gameplay
                 _targetPosition = closestItem.transform.position;
             else if (cellData.Cell != null)
                 _targetPosition = cellData.Cell.transform.position;
+        }
+
+        /// <summary>
+        /// Where the AI POINTS while it drifts away from a crystal it has already lined up.
+        ///
+        /// <para>The drift is the interesting half of AI flight: <c>VesselStatus.Course</c> stays
+        /// locked on the crystal (so the vessel keeps travelling toward it) while the nose swings
+        /// somewhere else, which is how a drifting vessel lays trail, skims, and fires along an
+        /// axis that is not its heading. What it points AT is therefore a real decision, and it
+        /// used to be <c>-desiredDirection</c> — a flat 180° flip away from the objective, which
+        /// aims at nothing in particular and reads as the AI spinning on the spot.</para>
+        ///
+        /// <para>It now aims at a CLUSTER OF MASS, resolved through the cell's Burst density grid
+        /// (<see cref="Cell.GetExplosionTarget"/>) — the exact query aggression-1 fauna use to hunt
+        /// prey, so "go where the mass is" is one system on this platform rather than a per-mode
+        /// re-derivation. The grid is keyed so <c>GetExplosionTarget(myDomain)</c> returns the
+        /// densest region of mass HOSTILE to this pilot, and it already excludes nucleus-interior
+        /// and shielded mass — i.e. it can only ever point at mass the AI is allowed to attack.</para>
+        ///
+        /// <para>Falls back to the legacy flip when there is no cell, no mass to find, or the
+        /// cluster happens to lie in the same direction as the crystal (in which case the drift
+        /// would not turn the vessel at all).</para>
+        /// </summary>
+        Vector3 ResolveDriftLookDirection(Vector3 towardTarget)
+        {
+            return TryGetMassClusterDirection(towardTarget, out var towardMass)
+                ? towardMass
+                : -towardTarget;
+        }
+
+        bool TryGetMassClusterDirection(Vector3 towardTarget, out Vector3 direction)
+        {
+            direction = default;
+
+            var cell = cellData != null ? cellData.Cell : null;
+            if (cell == null) return false;
+
+            // Burst density query on a cadence; the cached point is flown at in between.
+            if (Time.time >= _nextMassClusterSample)
+            {
+                _nextMassClusterSample = Time.time + massClusterRetargetInterval;
+                _massClusterPosition = cell.GetExplosionTarget(VesselStatus.Domain);
+            }
+
+            var offset = _massClusterPosition - transform.position;
+            if (offset.sqrMagnitude < 1f) return false;
+
+            direction = offset.normalized;
+
+            // Same bearing as the objective ⇒ the drift would be a no-op; take the flip instead.
+            return Vector3.Dot(direction, towardTarget) < 0.9f;
         }
 
         // Joust targeting. The coroutine only RE-SELECTS which opponent to chase; Update()
@@ -338,9 +400,10 @@ namespace CosmicShore.Gameplay
             {
                 VesselStatus.Course = desiredDirection;
                 vessel.PerformShipControllerActions(InputEvents.LeftStickAction);
-                desiredDirection *= -1;
+                desiredDirection = ResolveDriftLookDirection(desiredDirection);
             }
-            else if (LookingAtCrystal && VesselStatus.IsDrifting) desiredDirection *= -1;
+            else if (LookingAtCrystal && VesselStatus.IsDrifting)
+                desiredDirection = ResolveDriftLookDirection(desiredDirection);
             else if (VesselStatus.IsDrifting) vessel.StopShipControllerActions(InputEvents.LeftStickAction);
 
 

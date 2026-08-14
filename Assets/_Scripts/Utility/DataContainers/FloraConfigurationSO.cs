@@ -68,6 +68,91 @@ namespace CosmicShore.Utility
                  "scale curve (leaves + dropped crystal), so this costs no extra colliders.")]
         public LifeformLevelSpread Levels = new();
 
+        [Header("Cell-level overrides - applied AFTER the rolled variant, so they survive SpreadElements")]
+        [Tooltip("OUTER edge of the planting band this cell wants for this species, as a fraction " +
+                 "of the membrane radius, overriding whatever the rolled variant carries. -1 = off.\n\n" +
+                 "This exists because planting radius is a CELL fact, not an element fact - " +
+                 "'Space coral grows 20x1x1 needles' is an identity, 'coral fills this arena from " +
+                 "the nucleus out to 0.95 R' is a layout decision - yet both live in the same " +
+                 "Variant block, and with SpreadElements on the palette sibling's whole Variant " +
+                 "replaces this config's. Without these fields a cell cannot use the canonical " +
+                 "per-element assets AND choose where they grow.")]
+        [Min(-1f)] public float PlantRadiusCellFractionMaxOverride = -1f;
+
+        [Tooltip("INNER edge of the planting band, as a fraction of the membrane radius. 0 " +
+                 "collapses the band to a single shell at the outer fraction. -1 = off. The " +
+                 "runtime clamps it outside the cell's nucleus regardless, so authoring 0 here " +
+                 "means 'from the nucleus outward', not 'from the cell centre'.")]
+        [Min(-1f)] public float PlantRadiusCellFractionMinOverride = -1f;
+
+        [Tooltip("HOW BIG one plant of this species may get in this cell (live-prism budget), " +
+                 "overriding the rolled variant. -1 = off. The cell-level half of the same split: " +
+                 "an arena sizes its plants to its own phase ladder and collider budget, and it " +
+                 "must be able to do that without forking the species' element assets.")]
+        [Min(-1)] public int MaxTotalSpawnedObjectsOverride = -1;
+
+        /// <summary>
+        /// The cell-level override block, expressed as an ordinary <see cref="FloraVariantTuning"/>
+        /// so it applies through the one existing path (<see cref="Flora.ApplyVariantTuning"/>) with
+        /// its established "sentinel = keep what you have" semantics - no second application
+        /// mechanism, and it reaches every flora family for free. Applied AFTER the rolled variant,
+        /// so it wins over both the palette sibling and the prefab.
+        /// </summary>
+        public bool TryBuildCellOverrideTuning(out FloraVariantTuning tuning)
+        {
+            tuning = null;
+            if (PlantRadiusCellFractionMaxOverride < 0f &&
+                PlantRadiusCellFractionMinOverride < 0f &&
+                MaxTotalSpawnedObjectsOverride < 0)
+                return false;
+
+            tuning = new FloraVariantTuning
+            {
+                Enabled = true,
+                LeafSize = Vector3.zero,          // sentinel: keep
+                GrowPeriod = -1f,                 // sentinel: keep
+                ShieldPeriod = -1f,               // sentinel: keep
+                WitherRingInterval = -1f,         // sentinel: keep
+                MaxTotalSpawnedObjects = MaxTotalSpawnedObjectsOverride,
+                MaxTotalSpawnedObjectsScale = -1f,   // sentinel: keep (the SpawnProfile writes it)
+                PlantRadiusCellFraction = PlantRadiusCellFractionMaxOverride,
+                PlantRadiusCellFractionMin = PlantRadiusCellFractionMinOverride,
+            };
+            return true;
+        }
+
+        /// <summary>
+        /// The cell-level override block a plant should be spawned with, with the owning cell's
+        /// <see cref="SpawnProfileSO.FloraPlantBudgetScale"/> folded in. Returns false when there
+        /// is nothing to apply.
+        ///
+        /// The density scalar rides the SAME application path as the per-species overrides
+        /// (<see cref="Flora.ApplyVariantTuning"/>, sentinel = keep) rather than getting a second
+        /// mechanism of its own - so it reaches every flora family for free and cannot drift from
+        /// the overrides it composes with.
+        /// </summary>
+        public bool TryBuildCellOverrideTuning(float plantBudgetScale, out FloraVariantTuning tuning)
+        {
+            bool scales = plantBudgetScale > 0f && !Mathf.Approximately(plantBudgetScale, 1f);
+            bool hasOverrides = TryBuildCellOverrideTuning(out tuning);
+
+            if (!scales) return hasOverrides;
+
+            tuning ??= new FloraVariantTuning
+            {
+                Enabled = true,
+                LeafSize = Vector3.zero,
+                GrowPeriod = -1f,
+                ShieldPeriod = -1f,
+                WitherRingInterval = -1f,
+                MaxTotalSpawnedObjects = -1,
+                PlantRadiusCellFraction = -1f,
+                PlantRadiusCellFractionMin = -1f,
+            };
+            tuning.MaxTotalSpawnedObjectsScale = plantBudgetScale;
+            return true;
+        }
+
         /// <summary>
         /// What a single plant of this species is: element + the variant block expressing it +
         /// the level it seeds at. Pass <paramref name="inherit"/> to keep an existing lineage's
@@ -141,11 +226,33 @@ namespace CosmicShore.Utility
                  "ships shielded leaves at 1). -1 = keep prefab.")]
         public float ShieldPeriod = -1f;
 
-        [Tooltip("Live-prism budget for assembled flora (Mass gyroid 1500, Space 800). " +
+        [Tooltip("Seconds between spindle rings on a JOUSTED death, where the structure unravels " +
+                 "from the heart outward instead of detonating (Docs/ECOSYSTEM.md §26). A denser " +
+                 "plant wants a shorter ring so the whole wither still reads at flight speed. " +
                  "-1 = keep prefab.")]
+        public float WitherRingInterval = -1f;
+
+        [Tooltip("Live-prism budget - the cap on how many prisms ONE plant of this species may " +
+                 "hold at once (consumption frees budget, so a grazed plant regrows toward it). " +
+                 "Honoured by every flora family: assembled (Mass gyroid 1500, Space 800), " +
+                 "branching and phyllotactic. -1 = keep prefab.")]
         public int MaxTotalSpawnedObjects = -1;
 
-        [Tooltip("Planting radius as a fraction of the cell membrane radius. -1 = keep prefab.")]
+        [Tooltip("Multiplier applied to the live-prism budget AFTER MaxTotalSpawnedObjects, so it " +
+                 "scales whatever budget survived - the prefab's, the element's, or the cell's " +
+                 "absolute override. Written by the cell's SpawnProfileSO.FloraPlantBudgetScale, " +
+                 "never authored per species. -1 (the sentinel) = keep; 0 is treated as keep too, " +
+                 "because a nested serialized class can zero-initialize and 'budget 0' must never " +
+                 "be something an absent key can mean.")]
+        public float MaxTotalSpawnedObjectsScale = -1f;
+
+        [Tooltip("OUTER edge of the planting band, as a fraction of the cell membrane radius. " +
+                 "-1 = keep prefab.")]
         public float PlantRadiusCellFraction = -1f;
+
+        [Tooltip("INNER edge of the planting band, as a fraction of the cell membrane radius. " +
+                 "0 collapses the band to a single shell at the outer fraction (legacy). " +
+                 "-1 = keep prefab.")]
+        public float PlantRadiusCellFractionMin = -1f;
     }
 }

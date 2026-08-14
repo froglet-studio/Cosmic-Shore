@@ -111,6 +111,37 @@ collider was never sized to the projectile at all.
   but "the guns feel tighter" is the intended outcome, not a regression to fix by inflating
   the sphere again.
 
+## Round 7 (2026-08-12): the muzzle was 15 units in front of the ship
+
+Rounds 4 and 6 tuned the hit sphere. This round found that the sphere's size never mattered at
+close range, because the shot was not being born anywhere near the fight.
+
+**The Sparrow carries TWO pairs of gun transforms — one per fire mode — and they had drifted:**
+
+| executor | fire mode | `LeftGun` / `RightGun` local position |
+|---|---|---|
+| `FullAutoActionExecutor` | bullets | `(±3.2, 0.4, `**`1.30`**`)` |
+| `FullAutoBlockActionExecutor` | turret prism rounds | `(±3.0, 0.4, `**`15.13`**`)` |
+
+A shot is born at its muzzle, so **every turret round spawned 15 units ahead of the nose** and the
+first 15 units of its path did not exist. Anything closer than that was un-hittable by turret fire
+— it appeared already past them. Surfaced by Dog Fight (a mode built entirely around close passes
+in a wreck field: *"shooting with the turrets does not do any damage… maybe because the point of
+origin of bullets for the sparrow is too far away from the model"* — exactly right), but the bug
+was never mode-specific: it was the turret stance, everywhere, for its whole life.
+
+The turret pair is moved onto the bullets' position, which is what this document's own rule
+already said it should be — *a turret shot **is** a bullet*. Both pairs are bare `Transform`s
+(no renderer, no VFX, no children), so this only changes where the shot starts.
+
+**Range is unaffected.** `FireOne` computes `anchor = muzzle + forward × range`, so moving the
+muzzle back moves the anchor back with it — identical path length, nothing to retune. The prism
+now visibly emerges from the gun barrels instead of materialising ahead of the ship.
+
+Guarded by `Tools/Build/author_dogfight_assets.py`, which asserts four gun transforms on the
+bullets' position and no transform left at `z = 15.13`. **This is a shared vessel prefab** — a
+silent drift here breaks the Sparrow in every mode.
+
 ## Round-3 follow-up: the spread rendered at full distance the whole flight
 
 Playtest report: positions were right but the prisms drew as if at maximum range from their
@@ -286,6 +317,13 @@ instance clears the stamp. It is a cull-efficiency loss on a torn-down scene, no
 - **MASS quantitative** stretches the fired prism's long axis (`blockScale.z ×
   Multiplier(Mass)`), read live per volley. Volume is `x·y·z`, so the stretch feeds
   `Cell.LiveVolume` — *volume is the spine*.
+- **…and since 2026-08-12 it grows the HIT VOLUME too** (`hitDiameter × √Multiplier(Mass)`).
+  Before that the flying collider was a fixed `collisionDiameter` / `shieldedCollisionDiameter`,
+  so Mass made the rounds *look* bigger while they connected exactly as often — a cosmetic buff on
+  the one element this vessel's guns are wired to. The **square root** is deliberate: the prism
+  grows on one axis and the hit volume is a sphere, so scaling the sphere by the full multiplier
+  would outrun the silhouette it stands in for. At Mass 10 (multiplier 2.5) the prism is 2.5×
+  longer and the sphere 1.58× wider.
 - **MASS level-5 "Shielded Prisms"** is now a **pre-`Initialize` flag**
   (`prismProperties.IsShielded`), so the shield is part of the prism's **birth** and snaps
   (`Docs/PRISM_ANIMATION.md` §4.5) instead of morphing on arrival — one less exotic-visual

@@ -53,7 +53,7 @@ namespace CosmicShore.ScriptableObjects
         public const int DefaultWildlifeKillTarget = 250;
 
         /// <summary>Dog Fight point target used when <see cref="dogFightPointTarget"/> is 0 (auto/default).</summary>
-        public const int DefaultDogFightPointTarget = 120;
+        public const int DefaultDogFightPointTarget = 90;
 
         [Header("Live counts - used at runtime. 0 = auto/default (edit via FrogletTools > Game Modes > End Game Conditions)")]
         [Tooltip("HexRace crystals to end the race. 0 = auto-calc from the track waypoints.")]
@@ -93,7 +93,7 @@ namespace CosmicShore.ScriptableObjects
                  "scores 50, so this target reads as 'either 120 bullets or 3 rockets, or any " +
                  "mix'. Teammates pool - Dog Fight is a team race, not a free-for-all. " +
                  "0 = default (120).")]
-        [Min(0)] public int dogFightPointTarget = 120;
+        [Min(0)] public int dogFightPointTarget = 90;
 
         [Header("Build baseline - what a shipping build uses. Set via the tool's \"Set Build Values\" button.")]
         [Min(0)] public int hexRaceCrystalCountBuild = 0;
@@ -104,7 +104,7 @@ namespace CosmicShore.ScriptableObjects
         [Min(0)] public int rampagePrismTargetBuild = 2000;
         [Min(0)] public int ribcagePrismTargetBuild = 2000;
         [Min(0)] public int wildlifeKillTargetBuild = 250;
-        [Min(0)] public int dogFightPointTargetBuild = 120;
+        [Min(0)] public int dogFightPointTargetBuild = 90;
 
         [Tooltip("When on, a build first copies the Build baseline onto the Live counts, so test values are never shipped.")]
         public bool autoRestoreBuildValuesBeforeBuild = true;

@@ -1631,6 +1631,21 @@ namespace CosmicShore.Gameplay
                 RefileCellClassification(index);
         }
 
+        /// <summary>
+        /// Re-files a prism whose OWNERSHIP changed. The one caller today is
+        /// <see cref="HealthPrism.LeaveAsSkeleton"/>: a fauna body prism left behind as a
+        /// dead creature's skeleton stops being body tissue, so it must graduate from
+        /// volume-only mass to full environment mass (targeting grids, per-domain counts,
+        /// prey) - otherwise the food web can neither see nor eat what the creature left.
+        /// Same shape and same tolerance as the super-shield re-file in
+        /// <see cref="UpdateShieldState"/>.
+        /// </summary>
+        public void NotifyOwnershipChanged(int index)
+        {
+            if (index < 0 || index >= _highWaterMark) return;
+            RefileCellClassification(index);
+        }
+
         public void UpdateDomain(int index, int domain)
         {
             if (!_damage.IsCreated) return;

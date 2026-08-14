@@ -51,6 +51,63 @@ namespace CosmicShore.ScriptableObjects
             TryGetColorSetByDomain(domain, out var colorSet) && colorSet.UIAccentColor.a > 0f
                 ? colorSet.UIAccentColor
                 : GetDomainUIColor(domain);
+
+        /// <summary>
+        /// THE definition of what a prism of a given <see cref="PrismKind"/> is painted with:
+        /// its fresnel rim (<c>_BrightColor</c>) and base face (<c>_DarkColor</c>). Note
+        /// "Inside/Outside" in the field names are legacy misnomers for rim / base face -
+        /// see Docs/PALETTE.md section 2.
+        ///
+        /// This is the SINGLE source of the tier composition. <c>ThemeManager</c> paints the
+        /// live block materials from it and <c>PrismFactory</c> tints the death debris from
+        /// it, so debris can never drift from the mass it came from. The danger tier in
+        /// particular has no colour fields of its own - it is composed here out of the
+        /// domain's SHIELDED base and the shared, domain-independent
+        /// <see cref="EnvironmentColorSet.Danger"/> rim (Docs/PALETTE.md section 4.3).
+        /// </summary>
+        public void GetPrismKindColors(DomainColorSet colorSet, PrismKind kind,
+                                       out Color bright, out Color dark)
+        {
+            switch (kind)
+            {
+                case PrismKind.Danger:
+                    // Domain-independent hot rim (what says "dangerous") over the domain's
+                    // shielded base (what says "whose"). Deliberately NOT the plain base.
+                    bright = EnvironmentColors.Danger;
+                    dark = colorSet.ShieldedOutsideBlockColor;
+                    break;
+                case PrismKind.Shielded:
+                    bright = colorSet.ShieldedInsideBlockColor;
+                    dark = colorSet.ShieldedOutsideBlockColor;
+                    break;
+                case PrismKind.SuperShielded:
+                    bright = colorSet.SuperShieldedInsideBlockColor;
+                    dark = colorSet.SuperShieldedOutsideBlockColor;
+                    break;
+                default:
+                    bright = colorSet.InsideBlockColor;
+                    dark = colorSet.OutsideBlockColor;
+                    break;
+            }
+        }
+
+        /// <summary>
+        /// Domain-keyed convenience wrapper over <see cref="GetPrismKindColors"/>. False when
+        /// the domain has no colour set authored (the caller keeps whatever it already had).
+        /// </summary>
+        public bool TryGetPrismKindColors(Domains domain, PrismKind kind,
+                                          out Color bright, out Color dark)
+        {
+            if (!TryGetColorSetByDomain(domain, out var colorSet))
+            {
+                bright = Color.white;
+                dark = Color.black;
+                return false;
+            }
+
+            GetPrismKindColors(colorSet, kind, out bright, out dark);
+            return true;
+        }
     }
 
     [System.Serializable]

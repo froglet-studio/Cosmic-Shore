@@ -226,6 +226,7 @@ GameObject:
   - component: {fileID: 2842750437815966003}
   - component: {fileID: 2842750437815966004}
   - component: {fileID: 2842750437815966005}
+  - component: {fileID: 971372749}
   m_Layer: 0
   m_Name: chargeShell
   m_TagString: Untagged
@@ -315,3 +316,15 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   fadeInRate: 0
+--- !u!114 &971372749
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2842750437815966001}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ed80837ca1fd4d9ebeb185fec643a226, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
