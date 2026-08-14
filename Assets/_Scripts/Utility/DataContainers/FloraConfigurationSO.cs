@@ -114,9 +114,42 @@ namespace CosmicShore.Utility
                 ShieldPeriod = -1f,               // sentinel: keep
                 WitherRingInterval = -1f,         // sentinel: keep
                 MaxTotalSpawnedObjects = MaxTotalSpawnedObjectsOverride,
+                MaxTotalSpawnedObjectsScale = -1f,   // sentinel: keep (the SpawnProfile writes it)
                 PlantRadiusCellFraction = PlantRadiusCellFractionMaxOverride,
                 PlantRadiusCellFractionMin = PlantRadiusCellFractionMinOverride,
             };
+            return true;
+        }
+
+        /// <summary>
+        /// The cell-level override block a plant should be spawned with, with the owning cell's
+        /// <see cref="SpawnProfileSO.FloraPlantBudgetScale"/> folded in. Returns false when there
+        /// is nothing to apply.
+        ///
+        /// The density scalar rides the SAME application path as the per-species overrides
+        /// (<see cref="Flora.ApplyVariantTuning"/>, sentinel = keep) rather than getting a second
+        /// mechanism of its own - so it reaches every flora family for free and cannot drift from
+        /// the overrides it composes with.
+        /// </summary>
+        public bool TryBuildCellOverrideTuning(float plantBudgetScale, out FloraVariantTuning tuning)
+        {
+            bool scales = plantBudgetScale > 0f && !Mathf.Approximately(plantBudgetScale, 1f);
+            bool hasOverrides = TryBuildCellOverrideTuning(out tuning);
+
+            if (!scales) return hasOverrides;
+
+            tuning ??= new FloraVariantTuning
+            {
+                Enabled = true,
+                LeafSize = Vector3.zero,
+                GrowPeriod = -1f,
+                ShieldPeriod = -1f,
+                WitherRingInterval = -1f,
+                MaxTotalSpawnedObjects = -1,
+                PlantRadiusCellFraction = -1f,
+                PlantRadiusCellFractionMin = -1f,
+            };
+            tuning.MaxTotalSpawnedObjectsScale = plantBudgetScale;
             return true;
         }
 
@@ -204,6 +237,14 @@ namespace CosmicShore.Utility
                  "Honoured by every flora family: assembled (Mass gyroid 1500, Space 800), " +
                  "branching and phyllotactic. -1 = keep prefab.")]
         public int MaxTotalSpawnedObjects = -1;
+
+        [Tooltip("Multiplier applied to the live-prism budget AFTER MaxTotalSpawnedObjects, so it " +
+                 "scales whatever budget survived - the prefab's, the element's, or the cell's " +
+                 "absolute override. Written by the cell's SpawnProfileSO.FloraPlantBudgetScale, " +
+                 "never authored per species. -1 (the sentinel) = keep; 0 is treated as keep too, " +
+                 "because a nested serialized class can zero-initialize and 'budget 0' must never " +
+                 "be something an absent key can mean.")]
+        public float MaxTotalSpawnedObjectsScale = -1f;
 
         [Tooltip("OUTER edge of the planting band, as a fraction of the cell membrane radius. " +
                  "-1 = keep prefab.")]

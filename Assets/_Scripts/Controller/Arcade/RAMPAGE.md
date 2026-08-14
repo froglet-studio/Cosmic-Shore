@@ -63,6 +63,8 @@ economy itself; this file only arranges around it.
   `rule.IsObjectiveReached`
 - **Domains**: free-for-all like Scurry (`MinDomainsAllowed`/`MaxDomainsAllowed`
   defaults 1/3); players 1–4 with AI backfill
+- **Intensity**: **4 levels**, `CellTypeChoiceOptions.IntensityWise` over four cell configs —
+  the forest thickens from 3,500 to 9,830 seeded prisms. See "Four intensities" below.
 - **Vessels**: **Dolphin only** — see "Why Dolphin-only" below
 - **Objective arrow**: `RampageObjectiveProvider` — points at the contested omni crystal and
   **nothing else, ever**. The filter is the point: `Crystal.Active` also holds every
@@ -156,10 +158,77 @@ is now credited by whichever machine simulates the attacker, and the collecting 
 their own crystal effects so the blast exists on their machine at all. Full record:
 `Docs/ECOSYSTEM.md §27.8`–`§27.9`.
 
+## Four intensities — the forest thickens inside a fixed shell
+
+Ribcage's intensity adds rinds inward from a fixed outer radius; Rampage's **thickens the
+forest inside a fixed shell**. Intensity moves forest mass and nothing else — every number
+that defines the arena's silhouette and its rules is one constant at all four levels:
+
+| held constant at every intensity | value |
+|---|---|
+| `MembranePrefab` | `CapsuleMembrane`, r **1200** |
+| `NucleusPrefab` | `HalfNucleus`, world r **100** — and therefore the crystal respawn volume, the flora band's inner clamp, and the 600 spawn ring |
+| crystal | `fixedCrystalCount: 1`, neutral |
+| prism target | 2000 — vary the arena, not the finish line |
+| fauna | Blob tadpole + shark, unforked |
+| the five flora species assets | unforked |
+
+| | I1 | I2 | I3 | I4 |
+|---|---|---|---|---|
+| seeded plants | 30 | 41 | 51 | **59** |
+| seeded prisms | 3,500 | 5,464 | 7,650 | **9,830** |
+| full-grown volume | ~569k | ~896k | ~1.24M | **~1.62M** |
+| `FrenzyEnterVolume` | 570,000 | 900,000 | 1,250,000 | 1,630,000 |
+| `FrenzyExitVolume` | 440,000 | 700,000 | 970,000 | 1,260,000 |
+| `RestlessEnterVolume` | 40,000 | 62,000 | 87,000 | 113,000 |
+| `RestlessExitVolume` | 29,000 | 44,000 | 62,000 | 81,000 |
+| `FrenzyEnter` (count backstop) | 3,750 | 5,750 | 8,000 | 10,000 |
+| vs Blob's 3,600 envelope | 0.97× | 1.5× | 2.1× | 2.8× |
+
+**Intensity 4 IS today's shipped, play-tested arena, prism for prism** — the ladder runs
+*down* from it, not up. Rampage already sits at 2.8× the Blob collider envelope as documented
+headroom, so scaling upward would put the top intensity somewhere nobody has measured. Net
+collider impact: zero at the top, strictly negative below it. Since `ProgressionConfig` caps a
+fresh account at intensity 2, the arena most players actually meet drops from 9,830 to 5,464
+seeded prisms.
+
+### How it is authored
+
+`Cell.CellConfigs` holds four `CellConfigDataSO`s with `cellTypeChoiceOptions: 1`
+(`IntensityWise`) — **list order is semantics**: index = intensity − 1. Each config carries its
+own `PhaseThresholds` and points at its own `SpawnProfileSO`, which differ in exactly two
+fields:
+
+| profile | `FloraPopulationScale` | `FloraPlantBudgetScale` |
+|---|---|---|
+| 1 | 0.50 | 0.70 |
+| 2 | 0.70 | 0.80 |
+| 3 | 0.85 | 0.90 |
+| 4 | 1.00 | 1.00 |
+
+Those two scalars are a **platform** capability (`SpawnProfileSO`), not a Rampage one: a
+SpawnProfile is referenced *from* a CellConfig, so it already forks per intensity for free, and
+scaling there means the per-species assets keep owning what each plant IS while the cell owns
+how much arena there is. Forking the five flora configs four ways would have been 20 assets
+whose only deltas are two integers each, with no model behind them.
+
+**The scalar and the thresholds are one change, not two.** The scalar scales the SEED batch —
+the fill rate and the opening density — while the Frenzy volume gate is what actually bounds
+the standing population. Move one without the other and the forest either tops out at the
+wrong size or takes the whole match to get there.
+
+**The model lives in `Tools/Build/rampage_intensity.py`**, not in the assets. It computes each
+intensity's prism count and full-grown volume from the same numbers the game reads, derives the
+eight thresholds, emits all eight assets, and **self-tests by reproducing intensity 4's shipped
+ladder to the digit**. Regenerate with `--write`; `--check` fails if an asset was hand-edited.
+The one soft input is the three phyllotactic prism volumes (those species size prisms by role,
+so there is no single authored field to read) — `CALIBRATION` in that script is where one
+in-editor measurement corrects all four ladders together.
+
 ## The arena — a forest filling the cell, a clear nucleus
 
 `_SO_Assets/Cell Configs/Rampage Cell/`. Membrane radius **1200** (`CapsuleMembrane`),
-nucleus world radius **200** (`Nucleus.prefab` at scale 400).
+nucleus world radius **100** (`HalfNucleus.prefab` at scale 200).
 
 ### The forest
 
@@ -252,7 +321,7 @@ above the masterplan's ≤1500 active-collider target — deliberate design head
 demolition arena, unchanged from the previous Rampage. Mitigations: collider-LOD by
 phase, Burst density-grid queries (no new physics queries — scoring rides the
 StatsManager SOAP channel and AI targeting rides the density grid), and the mode's whole
-verb actively removes mass. The 136 seeded flora instantiate one-per-frame
+verb actively removes mass. The seeded flora instantiate one-per-frame
 (`FloraSpawnIntervalSeconds: 0`), so the opening batch costs ~2.3 s of spread-out spawn
 rather than one hitch.
 
@@ -448,9 +517,9 @@ of fact.
 Authored headless; every item below needs a play-mode pass.
 
 1. **Open `MinigameRampage.unity`** — no missing script refs on the Game or Cell objects;
-   `RampageController.arenaCell` still resolves.
+   the Cell shows **4** CellConfigs and `Cell Type Choice = Intensity Wise`.
 2. **Solo launch with AI backfill** (1 human + 3 AI). Confirm every hull is a **Dolphin**,
-   including the AI, and that pilots start spread on a ~700-radius sphere facing the cell
+   including the AI, and that pilots start spread on a 600-radius sphere facing the cell
    rather than clustered at the centre.
 3. **The forest** — after ~60 s, flora fill the cell in all directions from just outside
    the nucleus (~200 u) out to the membrane, in mixed colours, elements and visibly
@@ -470,7 +539,16 @@ Authored headless; every item below needs a play-mode pass.
    drifts with its nose swung onto a stand of trees rather than spinning 180°.
 9. **End + replay** — reaching the target ends the turn, the scoreboard ranks by finish
    time with "N Prisms Left" for the losing domains, and replay reloads the scene clean.
-10. **Regression: other cells' flora density.** Honouring `MaxTotalSpawnedObjects` on
+10. **Every intensity.** Launch 1 and 4 back to back. `Cell.LiveVolume` / prism count on the
+    DiagnosticsHUD should settle near **569k / 3,500** and **1.62M / 9,830** — they must look and
+    profile obviously different. If intensity 1 settles far from 569k, put the measured
+    per-species ratio into `CALIBRATION` in `Tools/Build/rampage_intensity.py` and re-run it;
+    all four ladders move together.
+11. **MPPM, 1 host + 1 client, intensity 4 — the race regression test, do not skip.** Both peers
+    must show the same forest and the same prism count. A client that ends up at ~3,500 prisms
+    while the host has ~9,830 is the `AssignConfig` race (below) having regressed. Console may
+    log `IntensityWise config choice DEFERRED` once on the client — that is the gate working.
+12. **Regression: other cells' flora density.** Honouring `MaxTotalSpawnedObjects` on
     branching/phyllotactic flora switches on 45 previously-inert authored budgets. Take a
     pass through **Hesperides** (the densest flora cell) and Wildlife Blitz cells 1–3 and
     confirm `Cell.LiveVolume` still sits inside its thresholds. Expected effect is ≈ −6%

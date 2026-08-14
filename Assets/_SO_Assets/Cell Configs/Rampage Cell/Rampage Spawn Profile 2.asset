@@ -10,12 +10,14 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e8d8aa5d835249798a256e18f2f7d912, type: 3}
-  m_Name: Rampage Spawn Profile
+  m_Name: Rampage Spawn Profile 2
   m_EditorClassIdentifier:
   FloraExcludeLocalDomain: 0
   FloraSpawnVolumeCeiling: 12000
   FloraInitialDelaySeconds: 0
   FloraSpawnIntervalSeconds: 0
+  FloraPopulationScale: 0.7
+  FloraPlantBudgetScale: 0.8
   SupportedFloras:
   - {fileID: 11400000, guid: f9232fe099904e69b63d12f1b0e28717, type: 2}
   - {fileID: 11400000, guid: 5b18cd2b2ac647e48b78dd3e8e155f02, type: 2}

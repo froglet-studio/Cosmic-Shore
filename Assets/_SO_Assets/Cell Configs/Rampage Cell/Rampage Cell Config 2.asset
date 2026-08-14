@@ -10,16 +10,16 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 01f934d50526431a9392a6ceca1dc33d, type: 3}
-  m_Name: Rampage Cell Config
+  m_Name: Rampage Cell Config 2
   m_EditorClassIdentifier:
   CellName: Rampage
-  Description: Demolition arena cell - a forest of big cacti, spires, rosettes, pines
-    and coral filling the whole volume from just outside the nucleus out to the
-    membrane (planting bands 0.17-0.97 of the membrane radius, volume-uniform), seeded
-    across all three domains at levels 1-5 so every pilot always has hostile mass to
-    smash and the sizes read as a real range. The nucleus itself stays clear - it is
-    the crystal's contested ground. Destruction is the active sink; flora regrowth
-    below Frenzy keeps the forest stocked.
+  Description: Demolition arena cell, intensity 2 of 4 - a stocked wood: 41 seeded plants totalling
+    ~5464 prisms of cacti, spires, pines, rosettes and coral, filling the volume from just
+    outside the nucleus out to the membrane, across all three domains at levels 1-5. Every
+    intensity shares one membrane, one nucleus and one crystal - only the forest changes.
+    The nucleus stays clear; it is the crystal's contested ground. PhaseThresholds ride THIS
+    intensity's own forest volume (~896,360 at full growth) - regenerate with
+    Tools/Build/rampage_intensity.py rather than hand-editing.
   Icon: {fileID: 21300000, guid: 6aa1c06e11b265744a5f9fa8858ac72a, type: 3}
   Difficulty: 2
   CellEndGameScore: 0
@@ -30,13 +30,13 @@ MonoBehaviour:
   CytoplasmPrefab: {fileID: 639495419069806261, guid: 9cacd903fcf4643459f5f14ac811bb20,
     type: 3}
   CellModifiers: []
-  SpawnProfile: {fileID: 11400000, guid: 99aeb55c27514418a22722ba477c0a82, type: 2}
+  SpawnProfile: {fileID: 11400000, guid: 24608d019659e510a69b1e7f9c4cbe98, type: 2}
   PhaseThresholds:
     RestlessEnter: 700
     RestlessExit: 500
-    FrenzyEnter: 10000
-    FrenzyExit: 8000
-    RestlessEnterVolume: 113000
-    RestlessExitVolume: 81000
-    FrenzyEnterVolume: 1630000
-    FrenzyExitVolume: 1260000
+    FrenzyEnter: 5750
+    FrenzyExit: 4600
+    RestlessEnterVolume: 62000
+    RestlessExitVolume: 44000
+    FrenzyEnterVolume: 900000
+    FrenzyExitVolume: 700000

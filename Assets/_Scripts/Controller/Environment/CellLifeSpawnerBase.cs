@@ -170,8 +170,13 @@ namespace CosmicShore.Gameplay
                 // Cell-level overrides LAST, so they survive SpreadElements: the roll above may
                 // have replaced this config's whole Variant with a palette sibling's (the
                 // element's identity), but WHERE this cell plants the species and HOW BIG one
-                // plant may get are the cell's decisions, not the element's.
-                if (config.TryBuildCellOverrideTuning(out var cellOverrides))
+                // plant may get are the cell's decisions, not the element's. The owning
+                // SpawnProfile's density scalar folds into the same block - one application
+                // path, so a scaled budget can never diverge from an overridden one.
+                var spawnProfile = host.Config ? host.Config.SpawnProfile : null;
+                float plantBudgetScale = spawnProfile ? spawnProfile.FloraPlantBudgetScale : 1f;
+
+                if (config.TryBuildCellOverrideTuning(plantBudgetScale, out var cellOverrides))
                     flora.ApplyVariantTuning(cellOverrides);
 
                 flora.ApplyLevel(pick.Level, config.LeafScalePerLevel, config.CrystalScalePerLevel);

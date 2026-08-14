@@ -66,6 +66,12 @@ namespace CosmicShore.Gameplay
             base.ApplyVariantTuning(tuning);
             if (tuning == null) return;
             if (tuning.MaxTotalSpawnedObjects >= 0) maxTotalSpawnedObjects = tuning.MaxTotalSpawnedObjects;
+            // Cell density scalar, applied AFTER the absolute so it scales whatever budget won.
+            // Round half UP explicitly: Mathf.RoundToInt is banker's rounding, which would turn
+            // an authored 150 x 0.9 into 134 on one species and 135 on the next.
+            if (tuning.MaxTotalSpawnedObjectsScale > 0f)
+                maxTotalSpawnedObjects = Mathf.Max(1, Mathf.FloorToInt(
+                    maxTotalSpawnedObjects * tuning.MaxTotalSpawnedObjectsScale + 0.5f));
         }
 
         // A growth decision made at the grow tick, executed by the per-frame drain.

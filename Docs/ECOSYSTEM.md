@@ -3478,3 +3478,85 @@ stays true for 0.5 s *after* the respawn has already repositioned the crystal, s
 hides the arrow for half a second while the crystal sits at exactly the place it was pointing
 to. A collection does not invalidate the target at all - the manager MOVES the same Crystal
 object (`UpdateCrystalPos`), so the cached transform follows it to its new home.
+
+---
+
+## 28. Per-intensity forests, and the sticky config choice a client makes too early (Aug 2026)
+
+Rampage gained four intensity levels. Two general capabilities and one platform BUG came out of
+it; the mode-specific numbers live in `_Scripts/Controller/Arcade/RAMPAGE.md`.
+
+### 28.1 A cell scales its forest with two scalars, not twenty forked assets
+
+`SpawnProfileSO.FloraPopulationScale` (how many plants — multiplies each species'
+`InitialSpawnCount`) and `FloraPlantBudgetScale` (how big each gets — multiplies the live-prism
+budget that survives the variant roll and the cell override). Both default 1, so every existing
+profile is unchanged and no asset needed migrating.
+
+A SpawnProfile is referenced **from** `CellConfigDataSO`, so it already forks per intensity for
+free under `CellTypeChoiceOptions.IntensityWise`. That makes it the natural home for "how much
+arena is there", and it keeps the split §27.3 established: **the element owns identity, the cell
+owns layout** — now also *quantity*. Forking Rampage's five species four ways would have been 20
+assets whose only deltas are two integers each.
+
+Three implementation rules, each learned the hard way:
+
+- **BOTH spawners, or it is dead code.** `Cell.StartSpawnerForMode` picks
+  `IntensityWiseLifeSpawner` for exactly the cells that use IntensityWise, and
+  `RandomLifeSpawner` for everyone else. A population scalar implemented in only one of them
+  does nothing in the very modes that need it. (`CellLifeSpawnerBase`'s own class doc already
+  warned about this split; Wildlife Liberation hit it once.)
+- **The budget scalar rides `Flora.ApplyVariantTuning`**, as a new
+  `FloraVariantTuning.MaxTotalSpawnedObjectsScale` applied AFTER the absolute — one application
+  path, so it reaches all three flora families and cannot drift from the overrides it composes
+  with. It is a MULTIPLIER because the families ship budgets an order of magnitude apart (400 /
+  1000 / 5000); no single absolute could serve them. Sentinel is **-1**, and 0 also means keep:
+  a nested serialized class can zero-initialize, and "budget 0" must never be something an
+  absent key can mean.
+- **Round half UP explicitly** (`Mathf.FloorToInt(x + 0.5f)`). `Mathf.RoundToInt` is banker's
+  rounding, which sends an authored 10 × 0.85 to 8 on one species and 9 on the next.
+
+**The scalar and the phase thresholds are ONE change.** The scalar scales the SEED batch — the
+fill rate and the opening density — while the Frenzy volume gate is what actually bounds the
+standing population. Move one without the other and the forest either tops out at the wrong size
+or takes the whole match to get there. Rampage's four ladders are therefore generated, not
+hand-authored: `Tools/Build/rampage_intensity.py` computes each intensity's volume from the same
+numbers the game reads and self-tests by reproducing the shipped intensity-4 ladder to the digit.
+
+### 28.2 A client could pick a DIFFERENT intensity's cell than the host — silently, permanently
+
+`Cell.AssignConfig` is **sticky** by design (`if (runtime && runtime.Config) return;` — a re-roll
+could swap the config out from under a streaming environment). Its IntensityWise arm reads
+`gameData.SelectedIntensity`, which on a client arrives **only** in
+`MultiplayerMiniGameControllerBase.SyncGameConfigToClients_ClientRpc`. And a client's cell does
+not wait for that: it bootstraps off its FIRST CRYSTAL —
+`OnCellItemsUpdated` → `InitilizePostFirstCellItem` → lazy `Initialize()` → `AssignConfig()` —
+roughly 400 ms after scene load, versus `OnInitializeGame` at `InitDelayMs` 1000 ms.
+
+Lose that race and the SOAP variable still reads its default **0**, `Clamp(0 - 1, 0, n)` yields
+index 0, and the client builds intensity 1's arena while the host builds the chosen one. For the
+whole match. With no error — the clamp is silent and the default is legal.
+
+This was **already live in every IntensityWise scene** (Dog Fight, Ribcage, Wildlife Liberation,
+both Wildlife Blitz cells) before Rampage went near it.
+
+Fixed with three pieces that only work together:
+
+1. **`GameDataSO.GameConfigSynced`** — true immediately on the server, and set as the LAST line
+   of the config ClientRpc on a client.
+2. **`Cell.IntensityChoiceReady`** gates `AssignConfig`, which now returns **without latching**
+   when a connected client cannot yet know its intensity, and warns.
+3. **The deferral must be retryable.** `InitilizePostFirstCellItem` used to set
+   `postInitilized = true` on its FIRST line, so a deferred bootstrap was permanent — the cell
+   would have ended up with no cytoplasm and no spawner at all. The latch moved below the config
+   check, `Initialize()` bails before `SpawnVisuals` when the config is still unassigned, and its
+   tail finishes any deferred bootstrap. `OnInitializeGame` fires on EVERY peer (the
+   `if (!IsServer) return` in `InitializeAfterDelay` comes after it), so the retry always lands.
+
+Fail-safe by construction: if the broadcast never arrives, the cell warns on every attempt and
+never silently starts a spawner on the wrong arena.
+
+**Rule for any future per-intensity cell:** a choice that is sticky AND derived from replicated
+state must be gated on that state having replicated. `Cell.IntensityIndex` also floors at 1 and
+warns when the selected intensity exceeds the authored config count — a mode offering four
+intensities over two configs would otherwise serve the same arena for 3 and 4 in silence.
