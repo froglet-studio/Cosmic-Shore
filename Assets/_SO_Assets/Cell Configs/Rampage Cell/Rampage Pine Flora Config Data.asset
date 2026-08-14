@@ -43,5 +43,5 @@ MonoBehaviour:
     MaxLevel: 5
     RarityFalloff: 1.6
   PlantRadiusCellFractionMaxOverride: 0.9
-  PlantRadiusCellFractionMinOverride: 0.2
+  PlantRadiusCellFractionMinOverride: 0.14
   MaxTotalSpawnedObjectsOverride: 150

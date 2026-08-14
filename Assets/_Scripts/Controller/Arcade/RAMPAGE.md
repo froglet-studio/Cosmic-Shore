@@ -23,14 +23,16 @@ So a round reads: **graze the forest to charge → dive to the crystal in the nu
 aim back out at the thickest stand → fire.** See `DOLPHIN_ENERGY_ECONOMY.md` §1 for the
 economy itself; this file only arranges around it.
 
-- **Only hostile mass scores.** The metric is `IRoundStats.HostilePrismsDestroyed`.
-  "Hostile" means everything except your own team's **player-laid** mass: ALL
-  environment mass scores regardless of colour (flora and fauna carry non-roster
-  owner names — `DefaultPlayer`/`FaunaPrefab`/`flora` — so `StatsManager` classifies
-  their destruction hostile), and opponents' trails score; your own and your
-  teammates' trails never do (trails ARE rostered, so the domain check filters them).
-  Shattering your own trail is worthless *by construction*, so there is no
-  lay-and-smash farming loop — but every wild prism in the arena is fair game.
+- **Only hostile mass scores, and hostile means COLOUR.** The metric is
+  `IRoundStats.HostilePrismsDestroyed`. Anything wearing one of the two domains that
+  are not yours scores — **flora, fauna bodies, rival trails, laid structure, no
+  distinction** — and anything wearing your own colour scores nothing, whether it is
+  your teammate's trail or a cactus that happens to have grown Jade. Neutral
+  (`Domains.Blue`) mass is hostile to everyone and always scores. Since the forest
+  seeds uniformly across all three domains, roughly a third of it is worthless to you
+  at any moment, which makes reading colour part of choosing a target rather than
+  decoration. Shattering your own trail is worthless *by construction*, so there is
+  still no lay-and-smash farming loop.
 - **Destruction is the sanctioned mass sink.** The conserved-mass law says prisms are
   removed only by an *active* force — vessel abilities or fauna consumption. Rampage
   is that law played as a sport: every scoring act is a vessel ability consuming mass.
@@ -109,10 +111,15 @@ Dolphin blast / ram destroys a prism
       └─ SetupDestruction → onTrailBlockDestroyed.Raise(PrismStats{OwnName, Volume, AttackerName})
               │  (SOAP channel — StatsManager.prefab listener)
               ▼
-StatsManager.PrismDestroyed                        [server-only via _allowRecord]
-  ├─ attacker.BlocksDestroyed++ / TotalVolumeDestroyed += v
-  ├─ victim rostered + same domain? → Friendly… stats (NEVER scores: own/teammate trails)
-  └─ else (other domain OR environment) → HostilePrismsDestroyed++  (NetworkVariable → peers)
+StatsManager.PrismDestroyed
+  ├─ victim ROSTERED (a trail — exists on every peer) → server records, as always
+  │    same domain? → Friendly… stats (never scores)   else → HostilePrismsDestroyed++
+  └─ victim UNROSTERED (environment — flora/fauna/structure, per-peer positions)
+       ├─ credited by whoever SIMULATES the attacker (StatsManager.OwnsAttacker):
+       │    server for its own player + every AI; the owning client via
+       │    Player.ReportEnvironmentPrismDestroyed_ServerRpc for its own kills
+       └─ hostile iff the prism's colour is not the attacker's
+            (StatsManager.IsFriendlyEnvironmentPrism; Blue is hostile to all)
               │
               ▼
 ScoringMetrics.Read(stats, PrismsDestroyed) → SumByDomain
@@ -135,6 +142,14 @@ pilot's `HostilePrismsDestroyed`. (A blast constructed with a null vessel is *an
 and credits `🔥GuyFawkes🔥` instead — that is the failure mode to check first if a mode
 ever reports blasts scoring nothing.)
 
+**A client's kills count on the client's own screen.** Flora and fauna are spawned per-peer
+from local `Random` rolls, so the server's copy of a cactus is somewhere else entirely —
+recorded server-only, a client scored nothing for the entire living world and could only ever
+score off the other pilot's trail (which IS laid identically on both peers). Environment mass
+is now credited by whichever machine simulates the attacker, and the collecting pilot runs
+their own crystal effects so the blast exists on their machine at all. Full record:
+`Docs/ECOSYSTEM.md §27.8`–`§27.9`.
+
 ## The arena — a forest filling the cell, a clear nucleus
 
 `_SO_Assets/Cell Configs/Rampage Cell/`. Membrane radius **1200** (`CapsuleMembrane`),
@@ -148,11 +163,11 @@ is even through the whole volume rather than crowded onto one radius:
 
 | species | script | band | world radii | plants seeded | prisms/plant | leaf prism vol | scale/level |
 |---|---|---|---|---|---|---|---|
-| **Cacti** (hero) | `BranchingFlora` | 0.17–0.95 | 204–1140 | 26 | 160 | 5×5×3 = **75** | **1.30** |
+| **Cacti** (hero) | `BranchingFlora` | 0.10–0.95 | 120–1140 | 26 | 160 | 5×5×3 = **75** | **1.30** |
 | Spire | `PhyllotacticFlora` | 0.30–0.97 | 360–1164 | 10 | 190 | ~15 | 1.25 |
-| Pine | `BranchingFlora` | 0.20–0.90 | 240–1080 | 10 | 150 | 4×4×1 = 16 | 1.25 |
+| Pine | `BranchingFlora` | 0.14–0.90 | 168–1080 | 10 | 150 | 4×4×1 = 16 | 1.25 |
 | Rosette | `PhyllotacticFlora` | 0.40–0.96 | 480–1152 | 7 | 170 | ~17 | 1.25 |
-| Coral | `PhyllotacticFlora` | 0.17–0.80 | 204–960 | 6 | 180 | ~10.6 | 1.25 |
+| Coral | `PhyllotacticFlora` | 0.10–0.80 | 120–960 | 6 | 180 | ~10.6 | 1.25 |
 
 Seeded total ≈ **9,830 prisms** across 59 plants, and planting continues past the seed
 batch until the cell tops out (below).
@@ -165,7 +180,7 @@ real handful sit in close.
 
 **The nucleus stays clear, and that is enforced in code, not by authoring.**
 `Flora.ResolvePlantRadius` clamps every band's inner edge to `Cell.ExpectedNucleusWorldRadius`
-(200 here), so an author can write `0.17` — or `0` — and get "from the nucleus outward"
+(100 here), so an author can write `0.10` — or `0` — and get "from the nucleus outward"
 rather than plants inside the core. Nucleus-interior mass is excluded from the fauna
 targeting grids and shares its volume with the crystal respawn, so a plant in there would
 be food the web can never reach *and* clutter in the one volume that has to stay legible.
@@ -250,8 +265,12 @@ mid-rampage, and one more thing worth shooting.
   `Crystal.CanBeCollected` lets **any** pilot take it. That is the contest.
 - **The spawn volume is the NUCLEUS**, and the scene authors nothing for it. That coupling
   is platform-wide and locked (see below), so the crystal respawns somewhere inside the
-  200-unit core every time it is collected — the nucleus is the visible marker of where to
-  look, and it does not lie.
+  **100-unit** core every time it is collected — the nucleus is the visible marker of where
+  to look, and it does not lie.
+- The cell points at **`HalfNucleus.prefab`** (world radius 100) rather than `Nucleus.prefab`
+  (200), which is the platform's one sanctioned way to resize a Cell-owned visual — the same
+  move Scurry makes. Because the two are coupled, halving the nucleus halves the crystal's
+  respawn volume with it: the prize is pinned to a tighter, more contested point.
 
 ### The crystal volume IS the nucleus — platform-wide, not a Rampage choice
 
@@ -279,8 +298,8 @@ a rival who is fully charged. That falls out of the existing rules; nothing impl
 ### Spawn ring
 
 `arrangeSpawnPointsAroundCell: 1`, `spawnFormation: Symmetric`,
-`spawnDistanceOutsideNucleus: 500` → pilots start on a sphere of radius **700**
-(`ExpectedNucleusWorldRadius` 200 + 500), symmetric by count, all facing the cell —
+`spawnDistanceOutsideNucleus: 500` → pilots start on a sphere of radius **600**
+(`ExpectedNucleusWorldRadius` 100 + 500 = 600), symmetric by count, all facing the cell —
 i.e. out in the forest, looking back at the crystal. Previously the four authored
 transforms put everyone inside a ±50 box at the arena centre: four Dolphins nose to
 nose, sitting on the crystal with an empty meter. The authored transforms remain as the

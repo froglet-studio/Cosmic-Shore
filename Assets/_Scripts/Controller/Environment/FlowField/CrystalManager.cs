@@ -100,6 +100,20 @@ namespace CosmicShore.Gameplay
             cellData.Crystals ??= new List<Crystal>();
         }
 
+        /// <summary>
+        /// Asks the machine that OWNS a collecting vessel to run that crystal's vessel-side
+        /// effects locally. No-op in a non-networked session (single player, the freestyle
+        /// conveyor's manager-less mints), where the collecting machine is the only machine;
+        /// <see cref="NetworkCrystalManager"/> overrides it with a targeted ClientRpc.
+        ///
+        /// Collection is resolved server-only, which is right - one machine must decide who got
+        /// the crystal and where it goes next. But the EFFECTS of a pickup are what the pilot
+        /// sees and feels, and they were landing only on the server: a remote client's Dolphin
+        /// collected the crystal, and the jaw blast, the spent energy meter and the elemental
+        /// level all happened on a machine that pilot was not looking at.
+        /// </summary>
+        public virtual void ReplayVesselCrystalEffects(int crystalId, ulong vesselNetworkObjectId, ulong ownerClientId) { }
+
         // ------------------------------------------------------------
         // CellItem management (unchanged conceptually)
         // ------------------------------------------------------------

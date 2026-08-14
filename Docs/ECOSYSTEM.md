@@ -3390,3 +3390,70 @@ the drift would not turn the vessel at all).
 mode whose objective is a crystal. The hook overrides crystal seeking outright — Rampage shipped
 a two-phase "graze until charged, then break for the crystal" provider and it was removed,
 because the platform default (seek the crystal + drift onto mass) already IS that loop.
+
+### 27.8 A client scored nothing for the living world — environment mass is per-peer (Aug 2026)
+
+A 2-player Rampage test: the host scored off everything, the client could only ever score
+off the **other pilot's trail** — never off a single cactus it flew through and shattered.
+
+`StatsManager` records prism destruction **server-only** (`_allowRecord`), and two of its own
+doc comments state the assumption that justifies it:
+
+> "a prism sits at the same place on the server, so the server's own physics sees a client's
+> ram and records it"
+
+That is true of a TRAIL prism — laid from replicated vessel motion, so both peers have one in
+the same place — which is exactly why trail kills were the only thing that worked. **It is
+false of flora and fauna**, and `CellNetworkSync`'s own class doc has said so all along:
+
+> "Flora and fauna spawning is non-deterministic per-side (each client runs its own
+> IntensityWiseLifeSpawner with local Random.value rolls)"
+
+So the server's copy of the cactus a client just shredded is somewhere else entirely. The
+client destroys a tree on its screen and nothing is recorded anywhere; whatever the server's
+own physics happened to knock over in the same cone is credited instead, uncorrelated with
+what that pilot did. In a mode whose entire score is destroyed environment mass, a client is
+playing a slot machine.
+
+**Fixed the way the platform already fixes this class**, for the third time:
+`Player.ReportEnvironmentPrismDestroyed_ServerRpc`, joining `ReportFaunaKill_ServerRpc`
+(fauna have no NetworkObject) and `ReportCombatHit_ServerRpc` (projectiles are not networked).
+Same owner-detects → server-records round-trip, same rule that identity comes from RPC
+ownership rather than a name string.
+
+**The other half is who must NOT credit.** A client forwarding its own environment kills
+would double-count against the server's own simulation, so crediting is split by who
+simulates the attacker: `StatsManager.OwnsAttacker` lets the server credit only players it
+owns (the host's own, and every AI — both server-owned NetworkObjects) and drop environment
+kills it observed a *remote* player make. Rostered victims are untouched: a trail exists
+identically on every peer, so it stays server-recorded exactly as before. Each kill lands
+exactly once on both paths.
+
+**The rule that surfaced with it:** environment mass was hostile to EVERY domain, because the
+only hostility test was the owner-name/roster comparison and a cactus has no roster entry.
+`PrismStats` now carries the prism's `OwnDomain` and `StatsManager.IsFriendlyEnvironmentPrism`
+applies to the world the same rule trails always had — **your own colour is worth nothing** —
+with `Domains.Blue` (the "no team" sentinel) staying hostile to everyone so neutral structure
+still scores. A third of a mixed-domain forest is now yours and worthless, which makes domain
+a real targeting decision instead of decoration. Ribcage rides the same metric and is
+unaffected in practice: its cage is painted across the full triad plus Blue joints, so a team
+can still reach a 2,000 target out of ~10,620 prisms.
+
+### 27.9 Corollary — the collecting pilot must run their own crystal effects
+
+Chasing §27.8 turned up why the client's blast was missing entirely:
+`OmniCrystalImpactor.AcceptImpactee` opens with `if (IsNetworkClient()) return;`, so a crystal
+collection resolves **server-only** — for every vessel, including one a remote client is
+flying. Collection *should* be server-authoritative (one machine must decide who got it and
+where it goes next), but the **effects** of a pickup are what the pilot sees and feels, and
+they were landing only on the server: a client's Dolphin collected the crystal and the jaw
+blast, the spent energy meter and the elemental level all happened on a machine that pilot was
+not looking at. Their meter never emptied, no cone ever appeared, and — being the mode's only
+damage verb — they had almost nothing to report under §27.8 either.
+
+`CrystalManager.ReplayVesselCrystalEffects` (no-op) → `NetworkCrystalManager`'s targeted
+ClientRpc now replays the same effect list on the vessel's OWNER. Targeted rather than
+broadcast because these effects mutate ONE vessel's state and spawn its blast; every other peer
+would be applying them to a vessel it does not own. The server keeps sole authority over
+collection, respawn and every stat — this is additive, and the effect list is shared
+(`OmniCrystalImpactor.RunVesselEffects`) so the two sides cannot drift.

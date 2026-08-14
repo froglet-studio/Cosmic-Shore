@@ -1126,6 +1126,7 @@ namespace CosmicShore.Gameplay
                     OwnName = PlayerName,
                     Volume = prismProperties.volume,
                     AttackerName = attackerPlayerName,
+                    OwnDomain = Domain,
                 });
             }
 

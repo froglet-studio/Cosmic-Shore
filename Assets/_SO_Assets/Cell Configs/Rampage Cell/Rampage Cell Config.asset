@@ -25,7 +25,7 @@ MonoBehaviour:
   CellEndGameScore: 0
   MembranePrefab: {fileID: 346633111830028674, guid: 6e330f85972faf843b8a128e7166f7b5,
     type: 3}
-  NucleusPrefab: {fileID: 7555898194514117247, guid: b9cf1833fa2493d4b8724ccb6740fb3a,
+  NucleusPrefab: {fileID: 7555898194514117247, guid: 1d3d15a174cc41388679c1487f53bced,
     type: 3}
   CytoplasmPrefab: {fileID: 639495419069806261, guid: 9cacd903fcf4643459f5f14ac811bb20,
     type: 3}
