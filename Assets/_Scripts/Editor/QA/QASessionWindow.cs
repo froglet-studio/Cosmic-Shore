@@ -83,6 +83,8 @@ namespace CosmicShore.Editor.QA
 
         SessionState _state;
         string _python;
+        string _pythonPrefix;
+        string _pythonVersion;
         string _lastError;
         string _newTester = "";
         Vector2 _scroll;
@@ -127,20 +129,41 @@ namespace CosmicShore.Editor.QA
             }
         }
 
-        /// <summary>First interpreter on PATH that answers, or null. Windows ships `py`.</summary>
-        static string FindPython()
+        /// <summary>
+        /// First interpreter on PATH that is REALLY Python 3, or null.
+        ///
+        /// "Did the process start" is not good enough on Windows: it ships stub
+        /// python.exe / python3.exe App Execution Aliases in WindowsApps that launch
+        /// happily and only print "Python was not found; run without arguments to
+        /// install from the Microsoft Store". So a candidate must exit 0 AND identify
+        /// itself as Python 3 before we believe it.
+        /// </summary>
+        static bool FindPython(out string exe, out string prefix, out string version)
         {
-            foreach (var candidate in new[] { "python3", "python", "py" })
+            exe = prefix = version = null;
+            foreach (var candidate in new[] { "python3|", "python|", "py|-3" })
             {
-                if (TryRun(candidate, "--version", out _, out _))
-                    return candidate;
+                var parts = candidate.Split('|');
+                var args = (parts[1] + " --version").Trim();
+                if (!TryRun(parts[0], args, out var so, out var se, out var code)) continue;
+                if (code != 0) continue;
+
+                var reported = (so + " " + se).Trim();
+                if (!reported.StartsWith("Python 3.")) continue;
+
+                exe = parts[0];
+                prefix = parts[1];
+                version = reported.Split('\n')[0].Trim();
+                return true;
             }
-            return null;
+            return false;
         }
 
-        static bool TryRun(string exe, string args, out string stdout, out string stderr)
+        static bool TryRun(string exe, string args, out string stdout, out string stderr,
+                           out int exitCode)
         {
             stdout = stderr = "";
+            exitCode = -1;
             try
             {
                 // Fully qualified: `using System.Diagnostics` would make `Debug` ambiguous
@@ -156,9 +179,21 @@ namespace CosmicShore.Editor.QA
                 using (var p = System.Diagnostics.Process.Start(psi))
                 {
                     if (p == null) return false;
+
+                    // Drain stderr on its own thread. Reading both streams to end in
+                    // sequence deadlocks if the one you are NOT reading fills its pipe
+                    // buffer (4 KB on Windows) — a Python traceback can do that.
+                    var err = new StringBuilder();
+                    p.ErrorDataReceived += (_, e) =>
+                    {
+                        if (e.Data != null) lock (err) err.AppendLine(e.Data);
+                    };
+                    p.BeginErrorReadLine();
+
                     stdout = p.StandardOutput.ReadToEnd();
-                    stderr = p.StandardError.ReadToEnd();
                     p.WaitForExit(60000);
+                    lock (err) stderr = err.ToString();
+                    exitCode = p.HasExited ? p.ExitCode : -1;
                     return true;
                 }
             }
@@ -176,11 +211,13 @@ namespace CosmicShore.Editor.QA
             _busy = true;
             try
             {
-                var sb = new StringBuilder("Tools/QA/session.py");
+var sb = new StringBuilder();
+                if (!string.IsNullOrEmpty(_pythonPrefix)) sb.Append(_pythonPrefix).Append(' ');
+                sb.Append("Tools/QA/session.py");
                 foreach (var a in args) sb.Append(' ').Append(Quote(a));
                 sb.Append(" --json");
 
-                if (!TryRun(_python, sb.ToString(), out var stdout, out var stderr))
+                if (!TryRun(_python, sb.ToString(), out var stdout, out var stderr, out _))
                 {
                     _lastError = "Could not run " + _python + ": " + stderr;
                     return;
@@ -224,8 +261,12 @@ namespace CosmicShore.Editor.QA
 
         void Refresh()
         {
-            _python = FindPython();
-            if (!string.IsNullOrEmpty(_python)) Run("state");
+            if (!FindPython(out _python, out _pythonPrefix, out _pythonVersion))
+            {
+                _python = null;
+                return;
+            }
+            Run("state");
         }
 
         // ── Drawing ───────────────────────────────────────────────────────────────
@@ -254,13 +295,30 @@ namespace CosmicShore.Editor.QA
 
         void DrawNoPython()
         {
+            var windows = Application.platform == RuntimePlatform.WindowsEditor;
             EditorGUILayout.Space(6);
             EditorGUILayout.HelpBox(
-                "This window needs Python 3, and none was found on PATH.\n\n" +
-                "The project already uses Python for its build checks, so this is the same " +
-                "dependency — it just is not installed on this machine yet. Install it " +
-                "(tick \"Add Python to PATH\"), then reopen this window.",
+                "This window needs Python 3, and no real one was found on PATH.\n\n" +
+                "The project already uses Python for its build checks, so this is the " +
+                "same dependency — it just is not installed on this machine yet.",
                 MessageType.Error);
+
+            if (windows)
+            {
+                EditorGUILayout.HelpBox(
+                    "On Windows there is a second trap. Windows ships stub python.exe / " +
+                    "python3.exe \"App Execution Aliases\" that only advertise the " +
+                    "Microsoft Store — if you saw \"Python was not found; run without " +
+                    "arguments to install from the Microsoft Store\", that was the stub, " +
+                    "not Python.\n\n" +
+                    "1. Install Python 3 (tick \"Add python.exe to PATH\" in the installer).\n" +
+                    "2. Settings ▸ Apps ▸ Advanced app settings ▸ App execution aliases — " +
+                    "turn OFF python.exe and python3.exe.\n" +
+                    "3. RESTART UNITY. A running process keeps the PATH it started with, " +
+                    "so Unity cannot see a newly installed Python until it restarts.",
+                    MessageType.Info);
+            }
+
             using (new EditorGUILayout.HorizontalScope())
             {
                 if (FrogletEditorPalette.ColorButton("Open python.org downloads",
@@ -268,13 +326,16 @@ namespace CosmicShore.Editor.QA
                     Application.OpenURL(DownloadUrl);
                 if (FrogletEditorPalette.ColorButton("Copy install command",
                         FrogletEditorPalette.Muted, 170f))
-                    EditorGUIUtility.systemCopyBuffer =
-                        Application.platform == RuntimePlatform.WindowsEditor
-                            ? "winget install Python.Python.3.12"
-                            : "brew install python";
+                    EditorGUIUtility.systemCopyBuffer = windows
+                        ? "winget install Python.Python.3.12"
+                        : "brew install python";
+                if (windows && FrogletEditorPalette.ColorButton("Open alias settings",
+                        FrogletEditorPalette.Muted, 150f))
+                    Application.OpenURL("ms-settings:advanced-apps");
                 if (FrogletEditorPalette.ColorButton("Recheck", FrogletEditorPalette.Ok, 90f))
                     Refresh();
             }
+
             EditorGUILayout.Space(4);
             EditorGUILayout.LabelField(
                 "You can always fall back to editing the results markdown by hand — see " +
@@ -287,6 +348,9 @@ namespace CosmicShore.Editor.QA
             {
                 var build = _state == null ? "?" : _state.branch + " @ " + _state.head;
                 EditorGUILayout.LabelField("Build", build, EditorStyles.miniLabel);
+                GUILayout.FlexibleSpace();
+                EditorGUILayout.LabelField(_pythonVersion ?? "", EditorStyles.miniLabel,
+                    GUILayout.Width(150f));
                 GUILayout.FlexibleSpace();
                 if (FrogletEditorPalette.ColorButton("Refresh", FrogletEditorPalette.Info, 80f))
                     Refresh();
