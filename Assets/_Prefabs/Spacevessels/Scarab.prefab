@@ -404,9 +404,9 @@ MonoBehaviour:
   BoostDecayRate: 0.1
   DriftDamping: 0
   boostChanged: {fileID: 0}
-  MinimumSpeed: 10
+  MinimumSpeed: 0
   ThrottleScaler: 50
-  DefaultMinimumSpeed: 10
+  DefaultMinimumSpeed: 0
   DefaultThrottleScaler: 25
   ThrottleScalerMultiplier:
     Enabled: 1

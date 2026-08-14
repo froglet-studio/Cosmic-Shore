@@ -6,9 +6,21 @@ namespace CosmicShore.Gameplay
     /// <summary>
     /// The Scarab's movement model (design: R_VesselActions/SCARAB.md §3.2) — the fleet's first
     /// true analog throttle. Every other transformer computes a TARGET speed and eases toward it;
-    /// the Scarab INTEGRATES: hold the right trigger and speed climbs at a constant rate toward a
-    /// Time-scaled ceiling, release it and the vessel coasts down slowly toward MinimumSpeed. The
-    /// trigger's depth is how hard you push, not how fast you end up — momentum is the feel.
+    /// the Scarab INTEGRATES a real world-space VELOCITY VECTOR: the trigger's depth is how hard
+    /// you push, not how fast you end up.
+    ///
+    /// Thrust is applied along the NOSE, always — never along the current course. That single
+    /// choice is what makes the drift read as driving rather than as ice: your momentum keeps
+    /// carrying you down the old line while the engine pushes where you are POINTING, so a drift
+    /// is something you steer out of by aiming and squeezing, not a direction lock that the
+    /// throttle only makes worse. (The first pass accelerated along `Course`, which meant
+    /// throttling mid-drift dug you deeper into the slide.)
+    ///
+    /// A scalar cannot express that, because during a drift the travel direction and the thrust
+    /// direction are different vectors — hence the vector state. The inherited `speed` field is
+    /// kept in sync every frame because the fleet's rotation math reads it
+    /// (`speed * RotationThrottleScaler`), and an external write to it (a vessel swap's
+    /// `SetInitialSpeed`, `ResetTransformer`) is detected and re-seeds the vector.
     ///
     /// Steering is single-stick (left stick pitch/yaw, Sparrow-style) but this class deliberately
     /// extends VesselTransformer rather than SingleStickVesselTransformer: that subclass's
@@ -32,14 +44,19 @@ namespace CosmicShore.Gameplay
         const float TriggerDeadzone = 0.05f; // matches GamepadInputStrategy's edge threshold
 
         [Header("Scarab Throttle (integrator)")]
-        [Tooltip("Speed gained per second at full trigger pull (world units/s²). The trigger's " +
-                 "analog depth scales this linearly — half pull accelerates at half rate.")]
-        [SerializeField, Min(0f)] float accelerationPerSecond = 70f;
+        [Tooltip("Speed gained per second at full trigger pull (world units/s²), applied along " +
+                 "the NOSE. The trigger's analog depth scales this linearly — half pull " +
+                 "accelerates at half rate. Sized against coastDragPerSecond: the brake is " +
+                 "stronger than the engine, so the vessel is quicker to stop than to start.")]
+        [SerializeField, Min(0f)] float accelerationPerSecond = 90f;
 
-        [Tooltip("Speed shed per second while coasting (world units/s²). Deliberately low — the " +
-                 "long coast is what makes the vessel read as a thing with mass. Speed never " +
-                 "decays below MinimumSpeed.")]
-        [SerializeField, Min(0f)] float coastDragPerSecond = 12f;
+        [Tooltip("Speed shed per second when the trigger is released (world units/s²). The Scarab " +
+                 "has no brake — releasing the throttle IS the brake, so this is deliberately " +
+                 "strong: at 120 a full-speed vessel is stopped in about a second and a half. " +
+                 "Linear rather than proportional so it actually reaches zero instead of " +
+                 "asymptotically crawling. Speed never decays below MinimumSpeed (authored 0 on " +
+                 "the Scarab, so releasing brings you to a genuine stop).")]
+        [SerializeField, Min(0f)] float coastDragPerSecond = 120f;
 
         [Tooltip("The throttle ceiling at element level 0. The EFFECTIVE ceiling is this × " +
                  "ThrottleScalerMultiplier.EvaluateLive — author that ElementalFloat on the " +
@@ -57,6 +74,16 @@ namespace CosmicShore.Gameplay
 
         bool _triggerHeld;
         float _lastTapTime = float.NegativeInfinity;
+
+        /// <summary>World-space momentum. The Scarab's authoritative movement state — see the
+        /// class summary for why a scalar cannot express thrust-along-nose during a drift.</summary>
+        Vector3 _velocity;
+
+        /// <summary>Last value this class wrote into the inherited <c>speed</c> field. If they
+        /// disagree at the top of a frame, something OUTSIDE wrote it (a menu vessel swap's
+        /// <c>SetInitialSpeed</c>, a spawn's <c>ResetTransformer</c>) and the vector re-seeds from
+        /// it — otherwise an inherited-speed swap would silently drop to a dead stop.</summary>
+        float _lastPublishedSpeed;
 
         public override void Initialize(IVessel vessel)
         {
@@ -108,14 +135,14 @@ namespace CosmicShore.Gameplay
         float ThrottleCeiling()
             => baseTopSpeed * ThrottleScalerMultiplier.EvaluateLive(VesselStatus);
 
-        void IntegrateThrottle()
+        /// <summary>Re-seed the velocity vector if an external caller wrote the inherited
+        /// <c>speed</c> field since our last publish (vessel swap / reset).</summary>
+        void SyncExternalSpeedWrites()
         {
-            float throttle01 = ReadThrottle01();
-            speed += throttle01 * accelerationPerSecond * Time.deltaTime;
-            speed -= coastDragPerSecond * Time.deltaTime;
-            speed = Mathf.Clamp(speed, MinimumSpeed, ThrottleCeiling());
-
-            DetectSnapDash(throttle01);
+            if (Mathf.Approximately(speed, _lastPublishedSpeed)) return;
+            Vector3 dir = _velocity.sqrMagnitude > 1e-6f ? _velocity.normalized : transform.forward;
+            _velocity = dir * speed;
+            _lastPublishedSpeed = speed;
         }
 
         /// <summary>Double-tap detector for the TIME-5 dash. A rising edge is the analog value
@@ -158,39 +185,62 @@ namespace CosmicShore.Gameplay
             return VesselStatus.IsDrifting ? 1f : 0f;
         }
 
-        // Not used by this class's MoveShip (the integrator owns `speed` directly), but the
-        // base contract expects a sane answer: the target IS the current integrated speed.
+        // Not used by this class's MoveShip (the integrator owns the velocity directly), but the
+        // base contract expects a sane answer: the target IS the current speed.
         protected override float ComputeThrottleTarget() => speed;
 
         protected override void MoveShip()
         {
             if (VesselStatus == null || InputStatus == null) return;
 
-            IntegrateThrottle();
+            float dt = Time.deltaTime;
+            SyncExternalSpeedWrites();
 
-            // Modifier channel semantics unchanged from the base: scale this frame's OUTPUT
-            // only — multiplying into the persistent `speed` would compound per frame.
-            float effectiveSpeed = speed * throttleMultiplier;
-            VesselStatus.Speed = effectiveSpeed;
+            float throttle01 = ReadThrottle01();
+            DetectSnapDash(throttle01);
 
-            // The base transformer's drift-course blend, re-stated here because this override
-            // replaces base.MoveShip: while drifting, the course decouples from the nose by the
-            // analog drift intensity; DriftDamping (written by the base ApplyAnalogDrift, which
-            // still runs in the base Update) is the convergence rate — higher = less drift.
-            if (VesselStatus.IsDrifting)
+            // 1) THRUST ALONG THE NOSE — never along the current course. This is the whole
+            //    handling model: mid-drift the engine pushes where you point, so aiming out of
+            //    a slide and squeezing is how you recover.
+            _velocity += transform.forward * (throttle01 * accelerationPerSecond * dt);
+
+            // 2) COURSE. Not drifting, travel IS the nose (the fleet's normal behaviour, and it
+            //    keeps the trail aligned). Drifting, momentum is preserved and converges toward
+            //    the nose at DriftDamping — the base ApplyAnalogDrift still writes that value, so
+            //    LT's analog depth controls how loose the back end feels.
+            float speedNow = _velocity.magnitude;
+            if (speedNow > 1e-4f)
             {
-                float driftAmount = DriftIntensity01();
-                Vector3 driftedCourse = DriftDamping > 0.001f
-                    ? Vector3.Slerp(VesselStatus.Course, transform.forward, DriftDamping * Time.deltaTime).normalized
-                    : VesselStatus.Course;
-                VesselStatus.Course = Vector3.Slerp(transform.forward, driftedCourse, driftAmount);
+                float driftAmount = VesselStatus.IsDrifting ? DriftIntensity01() : 0f;
+                // driftAmount 0 → snap to the nose outright; 1 → converge only as fast as
+                // DriftDamping allows (0 damping = the course never converges at all).
+                float convergence = Mathf.Clamp01(Mathf.Lerp(1f, DriftDamping * dt, driftAmount));
+                _velocity = Vector3.Slerp(_velocity / speedNow, transform.forward, convergence) * speedNow;
             }
             else
             {
-                VesselStatus.Course = transform.forward;
+                _velocity = transform.forward * speedNow;
             }
 
-            transform.position += (effectiveSpeed * VesselStatus.Course + velocityShift) * Time.deltaTime;
+            // 3) COAST. Releasing the trigger is the only brake, so the decay is linear and
+            //    strong — linear so it genuinely reaches MinimumSpeed instead of crawling
+            //    asymptotically toward it.
+            speedNow = Mathf.Max(speedNow - coastDragPerSecond * dt, 0f);
+            speedNow = Mathf.Clamp(speedNow, MinimumSpeed, ThrottleCeiling());
+            _velocity = speedNow > 1e-4f ? _velocity.normalized * speedNow : Vector3.zero;
+
+            // Publish. `speed` is the fleet's API (the rotation scalers read it), so it stays in
+            // lockstep with the vector's magnitude.
+            speed = speedNow;
+            _lastPublishedSpeed = speedNow;
+
+            // Modifier channel semantics unchanged from the base: scale this frame's OUTPUT only
+            // — multiplying into the persistent state would compound per frame.
+            float effectiveSpeed = speedNow * throttleMultiplier;
+            VesselStatus.Speed = effectiveSpeed;
+            VesselStatus.Course = speedNow > 1e-4f ? _velocity / speedNow : transform.forward;
+
+            transform.position += (effectiveSpeed * VesselStatus.Course + velocityShift) * dt;
         }
     }
 }
