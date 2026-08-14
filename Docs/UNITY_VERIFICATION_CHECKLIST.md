@@ -332,7 +332,9 @@ tightening as it flies; ordinary prisms (trail/environment) must render unchange
 `wire_prism_flight_clock.py --check` + Validate Clock Wiring (BlockGraph now requires
 `PrismFlightSqrDistance`).
 
-**Playtest round 4 (2026-08-10):** shield onto SPACE 5, bullet-sized hit spheres:
+**Playtest round 4 (2026-08-10):** shield onto SPACE 5, bullet-sized hit spheres.
+**⚠ The shield half of this entry is SUPERSEDED** — it returned to MASS 5 on 2026-08-13
+(`ShieldedAtMass5`); verify against the newest entry at the top of this file, not this one:
 
 - `firedPrismState: ShieldedAtSpace5` — regular prisms below SPACE 5, shielded at 5+, same
   gate as pierce. Verify the flip at the SPACE-5 unlock: below, plain prisms that stop at
