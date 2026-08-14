@@ -190,15 +190,17 @@ namespace CosmicShore.Gameplay
                 // PopulationSize in the controlling color, clamped by the hard cap -
                 // wave-scored modes (Brood Rush) ride this so each 30s cycle visibly
                 // hatches a brood. Population stays starvation-bounded either way.
+                // Seed floor AND cap come from the CELL, so a profile's FaunaPopulationScale moves
+                // both together - scaling the floor alone would be clamped away by the authored
+                // cap and read as doing nothing. See Cell.ResolveFaunaPopulation.
+                int seedFloor = Mathf.Max(1, host.ResolveFaunaPopulation(faunaCfg.PopulationSize));
+                int cap = host.ResolveFaunaCap(faunaCfg);
+
                 int toSpawn = spawnProfile.SeedFullWaveEveryTick
                     ? FaunaReproductionRules.WaveSpawnCount(
-                        host.GetLiveFaunaCount(faunaCfg),
-                        Mathf.Max(1, faunaCfg.PopulationSize),
-                        faunaCfg.MaxLivePopulation)
+                        host.GetLiveFaunaCount(faunaCfg), seedFloor, cap)
                     : FaunaReproductionRules.SeedSpawnCount(
-                        host.GetLiveFaunaCount(faunaCfg),
-                        Mathf.Max(1, faunaCfg.PopulationSize),
-                        faunaCfg.MaxLivePopulation);
+                        host.GetLiveFaunaCount(faunaCfg), seedFloor, cap);
 
                 // Solitary predators: while the predator spawn ring is active, at most
                 // ONE predator hatches per spawn interval (successive spawns alternate

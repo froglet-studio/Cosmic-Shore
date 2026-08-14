@@ -5,8 +5,9 @@
 Rampage is the **Dolphin-only demolition race**, and the destructive analog of Crystal
 Capture ("Scurry"): every domain races to be the first to DESTROY **2,000 hostile
 prisms**. A forest of big cacti and other breakable flora fills the cell from just
-outside the nucleus out to the membrane, and a **single contested crystal** respawns
-inside the nucleus at the centre of it all.
+outside the nucleus out to the membrane, and the arena's **contested crystals** respawn
+inside the nucleus at the centre of it all — **how many is what intensity means here**,
+falling from twice the roster at intensity 1 to a single one at intensity 4.
 
 **The loop is the Dolphin's own economy, made into a sport.** Nothing here is scripted —
 the mode simply arranges the arena so the vessel's existing spine becomes the game:
@@ -14,7 +15,7 @@ the mode simply arranges the arena so the vessel's existing spine becomes the ga
 | the vessel already does this | Rampage makes it the game |
 |---|---|
 | Energy is banked **only by skimming** (+0.006667/skim, 150 skims fills it) | a cactus forest is the charging ground — and every prism you clip on the way through scores |
-| Touching a **crystal** spends the whole meter as one conic jaw blast | the arena carries exactly **one** crystal, so cashing out is contested |
+| Touching a **crystal** spends the whole meter as one conic jaw blast | the arena carries **fewer crystals than pilots** at the top intensities, so cashing out is contested |
 | Energy owns the blast's **GAPE** (4.76° empty → 23.43° full) | arriving charged is worth ~5× the swath of arriving empty |
 | The cone reaches **2,400 units** down-range | taking the crystal at the nucleus and turning outward sweeps a full radius of forest |
 | Ramming a prism **halves** the meter | flying *through* the thicket instead of *into* it is the skill |
@@ -63,11 +64,12 @@ economy itself; this file only arranges around it.
   `rule.IsObjectiveReached`
 - **Domains**: free-for-all like Scurry (`MinDomainsAllowed`/`MaxDomainsAllowed`
   defaults 1/3); players 1–4 with AI backfill
-- **Intensity**: **4 levels**, `CellTypeChoiceOptions.IntensityWise` over four cell configs —
-  the forest thickens from 3,500 to 9,830 seeded prisms. See "Four intensities" below.
+- **Intensity**: **4 levels** — **fewer crystals, more wildlife**, over a forest that is
+  identical at every level. `CellTypeChoiceOptions.IntensityWise` over four cell configs.
+  See "Four intensities" below.
 - **Vessels**: **Dolphin only** — see "Why Dolphin-only" below
-- **Objective arrow**: `RampageObjectiveProvider` — points at the contested omni crystal and
-  **nothing else, ever**. The filter is the point: `Crystal.Active` also holds every
+- **Objective arrow**: `RampageObjectiveProvider` — points at the **nearest** contested omni
+  crystal and **nothing else, ever**. The filter is the point: `Crystal.Active` also holds every
   lifeform heart the food web is constantly dropping (this mode's whole verb is killing
   flora) and every team crystal a Dolphin seeds, so a nearest-live-crystal scan would
   spend the match swinging onto whichever cactus just died. Only a MANAGER-SPAWNED
@@ -95,10 +97,11 @@ The scene's four AI backfill templates are `vesselClass: 2` (Dolphin) so the AI 
 the same ship — an AI class comes from `aiInitializeDatas`, not from the clamp.
 
 **The mode is Dolphin-only because a mixed roster would break the premise, not to be
-exclusive.** The single crystal is only a contested object if it is the only way to
+exclusive.** A scarce crystal is only a contested object if it is the only way to
 discharge a blast. A Rhino or Sparrow in the arena would ignore it entirely and shoot
 the forest down on its own clock, so the crystal would stop being worth fighting over
-for anyone.
+for anyone — and the whole intensity ladder, which is *made of* that scarcity, would
+stop meaning anything.
 
 **The Dolphin can still make its own crystals, and that is deliberate.** Crystal
 Seeding (its Charge ability) plants a TEAM crystal only the pilot's domain can collect,
@@ -158,72 +161,102 @@ is now credited by whichever machine simulates the attacker, and the collecting 
 their own crystal effects so the blast exists on their machine at all. Full record:
 `Docs/ECOSYSTEM.md §27.8`–`§27.9`.
 
-## Four intensities — the forest thickens inside a fixed shell
+## Four intensities — fewer crystals, more wildlife, one forest
 
-Ribcage's intensity adds rinds inward from a fixed outer radius; Rampage's **thickens the
-forest inside a fixed shell**. Intensity moves forest mass and nothing else — every number
-that defines the arena's silhouette and its rules is one constant at all four levels:
+Ribcage's intensity adds rinds inward from a fixed outer radius. Rampage's used to thicken the
+forest; **it no longer touches the forest at all.** Every intensity grows intensity 4's arena,
+prism for prism — the one that was play-tested — and intensity instead moves the two things the
+mode's loop is actually made of, in opposite directions:
+
+| | I1 | I2 | I3 | I4 |
+|---|---|---|---|---|
+| **omni crystals** | 2 × players | players | players − 1 (min 1) | **1** |
+| …for a 4-player lobby | 8 | 4 | 3 | **1** |
+| **wildlife** (`FaunaPopulationScale`) | 1× | 2× | 3× | **4×** |
+| …tadpoles / sharks at cap | 6 / 2 | 12 / 4 | 18 / 6 | **24 / 8** |
+| seeded forest | 9,830 prisms | 9,830 | 9,830 | 9,830 |
+| phase ladder | identical at all four (frenzy 1,630,000 / 1,260,000 vol) | | | |
+
+**Why crystals are the difficulty axis.** The crystal is not a pickup in this mode, it is the
+Dolphin's **only** blast trigger (`DOLPHIN_ENERGY_ECONOMY.md` §1) — the meter fills by skimming
+and discharges only on contact with one. So the crystal count *is* how often a charged pilot
+gets to cash out, and how much of that is a race against the other pilots. Two crystals per
+player and you fire whenever you are full; one crystal for the whole lobby and every discharge
+is a contest, with denial plays (taking it empty to move it away from a charged rival) worth
+making. Nothing implements that escalation — it falls out of the count.
+
+Everything defining the arena's silhouette and rules is still one constant at all four levels:
 
 | held constant at every intensity | value |
 |---|---|
 | `MembranePrefab` | `CapsuleMembrane`, r **1200** |
 | `NucleusPrefab` | `HalfNucleus`, world r **100** — and therefore the crystal respawn volume, the flora band's inner clamp, and the 600 spawn ring |
-| crystal | `fixedCrystalCount: 1`, neutral |
+| the forest | 59 plants / 9,830 seeded prisms / ~1.62M volume at full growth |
+| `PhaseThresholds` | one ladder, shared |
 | prism target | 2000 — vary the arena, not the finish line |
-| fauna | Blob tadpole + shark, unforked |
-| the five flora species assets | unforked |
+| fauna + flora species assets | unforked (the fauna are the SHARED Blob assets) |
 
-| | I1 | I2 | I3 | I4 |
-|---|---|---|---|---|
-| seeded plants | 30 | 41 | 51 | **59** |
-| seeded prisms | 3,500 | 5,464 | 7,650 | **9,830** |
-| full-grown volume | ~569k | ~896k | ~1.24M | **~1.62M** |
-| `FrenzyEnterVolume` | 570,000 | 900,000 | 1,250,000 | 1,630,000 |
-| `FrenzyExitVolume` | 440,000 | 700,000 | 970,000 | 1,260,000 |
-| `RestlessEnterVolume` | 40,000 | 62,000 | 87,000 | 113,000 |
-| `RestlessExitVolume` | 29,000 | 44,000 | 62,000 | 81,000 |
-| `FrenzyEnter` (count backstop) | 3,750 | 5,750 | 8,000 | 10,000 |
-| vs Blob's 3,600 envelope | 0.97× | 1.5× | 2.1× | 2.8× |
-
-**Intensity 4 IS today's shipped, play-tested arena, prism for prism** — the ladder runs
-*down* from it, not up. Rampage already sits at 2.8× the Blob collider envelope as documented
-headroom, so scaling upward would put the top intensity somewhere nobody has measured. Net
-collider impact: zero at the top, strictly negative below it. Since `ProgressionConfig` caps a
-fresh account at intensity 2, the arena most players actually meet drops from 9,830 to 5,464
-seeded prisms.
+**Collider impact.** The worst case is unchanged: intensity 4's forest was already the shipped
+one, at 2.8× the Blob envelope as documented headroom. Intensities 1–3 rise *to* it rather than
+the top rising past it, and the `FrenzyEnter` 10,000 count backstop is the same at all four.
+The fauna ladder is the cheap dimension — a tadpole is one body prism plus its heart, a shark a
+small spindled body, so 8 → 32 creatures is tens of prisms against 9,830, and creature sensing
+rides the Burst density grid, not physics. At most 8 crystals (one trigger each) at intensity 1.
 
 ### How it is authored
 
-`Cell.CellConfigs` holds four `CellConfigDataSO`s with `cellTypeChoiceOptions: 1`
-(`IntensityWise`) — **list order is semantics**: index = intensity − 1. Each config carries its
-own `PhaseThresholds` and points at its own `SpawnProfileSO`, which differ in exactly two
-fields:
+**The cell half** — `Cell.CellConfigs` holds four `CellConfigDataSO`s with
+`cellTypeChoiceOptions: 1` (`IntensityWise`), **list order is semantics**: index = intensity − 1.
+Each points at its own `SpawnProfileSO`. The four configs are now identical apart from
+`Difficulty`, their description, and which profile they name; the four profiles differ in exactly
+one field:
 
-| profile | `FloraPopulationScale` | `FloraPlantBudgetScale` |
-|---|---|---|
-| 1 | 0.50 | 0.70 |
-| 2 | 0.70 | 0.80 |
-| 3 | 0.85 | 0.90 |
-| 4 | 1.00 | 1.00 |
+| profile | `FloraPopulationScale` | `FloraPlantBudgetScale` | `FaunaPopulationScale` |
+|---|---|---|---|
+| 1 | 1.00 | 1.00 | **1.0** |
+| 2 | 1.00 | 1.00 | **2.0** |
+| 3 | 1.00 | 1.00 | **3.0** |
+| 4 | 1.00 | 1.00 | **4.0** |
 
-Those two scalars are a **platform** capability (`SpawnProfileSO`), not a Rampage one: a
-SpawnProfile is referenced *from* a CellConfig, so it already forks per intensity for free, and
-scaling there means the per-species assets keep owning what each plant IS while the cell owns
-how much arena there is. Forking the five flora configs four ways would have been 20 assets
-whose only deltas are two integers each, with no model behind them.
+`FaunaPopulationScale` is a **platform** capability, the twin of the flora scalars: it multiplies
+every species' `InitialSpawnCount`, `PopulationSize` **and `MaxLivePopulation`**. Rampage is why
+it has to exist rather than being nice to have — its two species are the shared Blob assets, so
+editing them to stock this arena would restock Menu_Main's lava lamp with it. It scales the CAP
+as well as the floors on purpose: the cap is what bounds a standing population, so a scalar that
+moved only the floor would be clamped away above ~1.5× and read as doing nothing. Full record,
+including why every producer resolves it through `Cell` rather than the config:
+`Docs/ECOSYSTEM.md §29`.
 
-**The scalar and the thresholds are one change, not two.** The scalar scales the SEED batch —
-the fill rate and the opening density — while the Frenzy volume gate is what actually bounds
-the standing population. Move one without the other and the forest either tops out at the
-wrong size or takes the whole match to get there.
+**The scene half** — the crystal ladder is authored on the scene's `NetworkCrystalManager`, not
+in a cell config, because it is a function of the ROSTER as well as the intensity:
+`crystalCountMode: IntensityScaled` (2) plus four `crystalCountByIntensity` entries of
+`max(1, round(players × CrystalsPerPlayer) + ExtraCrystals)`:
 
-**The model lives in `Tools/Build/rampage_intensity.py`**, not in the assets. It computes each
-intensity's prism count and full-grown volume from the same numbers the game reads, derives the
+| intensity | `CrystalsPerPlayer` | `ExtraCrystals` | reads as |
+|---|---|---|---|
+| 1 | 2 | 0 | twice as many crystals as players |
+| 2 | 1 | 0 | one each |
+| 3 | 1 | −1 | one fewer than players (floored at 1, so a solo pilot still has one) |
+| 4 | 0 | 1 | exactly one, whatever the roster |
+
+The count is resolved **server-side only** and reaches clients as the replicated slot-list
+length, so — unlike the sticky cell-config choice (`Docs/ECOSYSTEM.md §28.2`) — it needs no
+`GameConfigSynced` gate. The roster may be incomplete when the first crystals spawn
+(`spawnOnClientReady: 1`); `NetworkCrystalManager` re-asks on every `OnPlayerAdded` and again at
+turn start, growing the list as players arrive. AI backfill counts.
+
+**The model lives in `Tools/Build/rampage_intensity.py`**, not in the assets. It computes the
+forest's prism count and full-grown volume from the same numbers the game reads, derives the
 eight thresholds, emits all eight assets, and **self-tests by reproducing intensity 4's shipped
-ladder to the digit**. Regenerate with `--write`; `--check` fails if an asset was hand-edited.
-The one soft input is the three phyllotactic prism volumes (those species size prisms by role,
-so there is no single authored field to read) — `CALIBRATION` in that script is where one
-in-editor measurement corrects all four ladders together.
+ladder to the digit** — plus, now that the forest is flat, that all four intensities land on that
+same ladder. Regenerate with `--write`; `--check` fails if an asset was hand-edited. The one soft
+input is the three phyllotactic prism volumes (those species size prisms by role, so there is no
+single authored field to read) — `CALIBRATION` in that script is where one in-editor measurement
+corrects the ladder.
+
+**`RampageIntensityLadderTests`** (edit-mode) guards the other end: the two pure formulas, and the
+authored data in the scene and the four profiles. The generator's `--check` cannot see the scene,
+and an inverted sign there is silent — the mode still runs, it just stops meaning what it says.
 
 ## The arena — a forest filling the cell, a clear nucleus
 
@@ -325,23 +358,52 @@ verb actively removes mass. The seeded flora instantiate one-per-frame
 (`FloraSpawnIntervalSeconds: 0`), so the opening batch costs ~2.3 s of spread-out spawn
 rather than one hitch.
 
-### Fauna
+### Fauna — the second half of the intensity ladder
 
-Unchanged: tadpole (grazer) + shark (predator), referenced from the Blob folder. They
+Tadpole (grazer) + shark (predator), referenced from the Blob folder and **unforked**. They
 are the food web, and both drop elemental crystals on death — skimmable powerups
 mid-rampage, and one more thing worth shooting.
 
-## The contested crystal
+**Intensity is how many of them there are**: `FaunaPopulationScale` 1× / 2× / 3× / 4× on the
+per-intensity SpawnProfile, so the cell holds 8 creatures at cap at intensity 1 and 32 at
+intensity 4. Because the scalar lifts the seed floors *and* `MaxLivePopulation` together, a
+high-intensity arena is genuinely busier rather than just refilling faster: more grazers
+working the forest, more sharks hunting them, more hearts dropping mid-match.
+
+It is a **production** knob, not a cull — a lowered scale stops the seeder topping up and stops
+reproduction filling, and every creature already alive lives until starvation or predation takes
+it (`Docs/ECOSYSTEM.md §0`, §29.1).
+
+**The tuning risk to watch, and it is the interesting one.** This cell has a nucleus, so
+herbivores graze **any** domain's mass outside it (the voracious-exterior rule,
+`Docs/ECOSYSTEM.md §13`) — which is the same forest the pilots are racing to destroy for points.
+At intensity 4 that is 24 grazers working an arena of 9,830 prisms. The homeostasis is designed
+for it: grazing pushes volume below `FrenzyExitVolume` (1,260,000) and planting plus growth
+resume, so the arena restocks rather than emptying. But whether it restocks *fast enough to keep
+the arena reading dense* at 4× population is a play-test question, not an arithmetic one. If
+intensity 4 looks visibly thinned mid-match, the knob is `FaunaPopulationScale` on
+`Rampage Spawn Profile 4` (via `FAUNA_SCALES` in `Tools/Build/rampage_intensity.py`, then
+`--write`) — **not** the phase thresholds, which are pinned to the forest's real volume.
+Watch `Cell.LiveVolume` on the DiagnosticsHUD at intensity 1 and 4 for the comparison.
+
+## The contested crystals
 
 `NetworkCrystalManager` on the scene's Game object:
 
-- `crystalCountMode: FixedCount`, `fixedCrystalCount: 1` — **one** crystal, always.
-- `spawnCrystalWithPlayerDomain: 0` — it is neutral (`Domains.Blue`), so
-  `Crystal.CanBeCollected` lets **any** pilot take it. That is the contest.
+- `crystalCountMode: IntensityScaled`, four `crystalCountByIntensity` entries — **2 × players /
+  players / players − 1 / 1**, by intensity. See "Four intensities" above for the table and why
+  the count is the mode's difficulty axis.
+- `spawnCrystalWithPlayerDomain: 0` — they are neutral (`Domains.Blue`), so
+  `Crystal.CanBeCollected` lets **any** pilot take one. That is the contest.
 - **The spawn volume is the NUCLEUS**, and the scene authors nothing for it. That coupling
-  is platform-wide and locked (see below), so the crystal respawns somewhere inside the
+  is platform-wide and locked (see below), so a crystal respawns somewhere inside the
   **100-unit** core every time it is collected — the nucleus is the visible marker of where
-  to look, and it does not lie.
+  to look, and it does not lie. More crystals means more of them sharing that core, not one
+  roaming to make room; each respawn still draws its own point and keeps its distance from
+  where that crystal last sat (`PickSpawnPointAwayFromLast`).
+- The objective arrow names the **nearest** collectable managed crystal
+  (`RampageObjectiveProvider`), so at low intensity it points at your closest opportunity and
+  at intensity 4 there is only ever one answer.
 - The cell points at **`HalfNucleus.prefab`** (world radius 100) rather than `Nucleus.prefab`
   (200), which is the platform's one sanctioned way to resize a Cell-owned visual — the same
   move Scurry makes. Because the two are coupled, halving the nucleus halves the crystal's
@@ -362,13 +424,14 @@ that wants a different crystal volume **resizes its nucleus** (author a `CellCon
 pointing at a resized `NucleusPrefab`, per CLAUDE.md) so the two move together and stay
 coupled.
 
-That also gives the arena its shape: the crystal is at the centre, the forest is
-everywhere else, and the cone is 2,400 units long — so a charged pilot who takes the
+That also gives the arena its shape: the crystals are at the centre, the forest is
+everywhere else, and the cone is 2,400 units long — so a charged pilot who takes a
 crystal and turns outward sweeps a full radius of trees.
 
-Because the meter is spent on contact regardless of how full it was, taking the crystal
+Because the meter is spent on contact regardless of how full it was, taking a crystal
 empty is a legitimate **denial** play: it costs you nothing and moves the prize away from
-a rival who is fully charged. That falls out of the existing rules; nothing implements it.
+a rival who is fully charged. That falls out of the existing rules; nothing implements it —
+and it is exactly the play that gets sharper as intensity removes crystals from the core.
 
 ### Spawn ring
 

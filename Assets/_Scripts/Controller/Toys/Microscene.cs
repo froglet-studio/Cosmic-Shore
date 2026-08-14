@@ -439,8 +439,9 @@ namespace CosmicShore.Gameplay
                     var cfg = profile.SupportedFaunas[rng.Next(profile.SupportedFaunas.Count)];
                     if (!cfg || !cfg.FaunaPrefab) continue;
                     // Respect the species' per-cell performance cap - the conveyor adds citizens,
-                    // never a parallel population.
-                    if (cfg.MaxLivePopulation > 0 && cell.GetLiveFaunaCount(cfg) >= cfg.MaxLivePopulation) continue;
+                    // never a parallel population. Asked of the CELL so the host biome's own
+                    // FaunaPopulationScale applies here too (Cell.ResolveFaunaPopulation).
+                    if (cell.IsFaunaAtCap(cfg)) continue;
                     // …and the canonical prey-linked production gate (the ONE shared copy): no
                     // herbivore without enough opposing mass, no predator without enough prey - a
                     // fauna spawned into famine just withers in ~30s.

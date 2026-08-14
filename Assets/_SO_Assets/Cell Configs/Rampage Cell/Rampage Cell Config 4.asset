@@ -13,13 +13,14 @@ MonoBehaviour:
   m_Name: Rampage Cell Config 4
   m_EditorClassIdentifier:
   CellName: Rampage
-  Description: Demolition arena cell, intensity 4 of 4 - a dense thicket: 59 seeded plants totalling
+  Description: Demolition arena cell, intensity 4 of 4 - a teeming arena: 59 seeded plants totalling
     ~9830 prisms of cacti, spires, pines, rosettes and coral, filling the volume from just
-    outside the nucleus out to the membrane, across all three domains at levels 1-5. Every
-    intensity shares one membrane, one nucleus and one crystal - only the forest changes.
-    The nucleus stays clear; it is the crystal's contested ground. PhaseThresholds ride THIS
-    intensity's own forest volume (~1,615,853 at full growth) - regenerate with
-    Tools/Build/rampage_intensity.py rather than hand-editing.
+    outside the nucleus out to the membrane, across all three domains at levels 1-5. The
+    FOREST IS THE SAME AT EVERY INTENSITY (this is the shipped, play-tested arena);
+    intensity carries 4x the authored wildlife and - authored in the scene, not here - a
+    single contested crystal. The nucleus stays clear; it is the crystals' contested ground.
+    PhaseThresholds ride the forest's real volume (~1,615,853 at full growth) - regenerate
+    with Tools/Build/rampage_intensity.py rather than hand-editing.
   Icon: {fileID: 21300000, guid: 6aa1c06e11b265744a5f9fa8858ac72a, type: 3}
   Difficulty: 4
   CellEndGameScore: 0

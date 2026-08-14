@@ -13,13 +13,15 @@ MonoBehaviour:
   m_Name: Rampage Cell Config 1
   m_EditorClassIdentifier:
   CellName: Rampage
-  Description: Demolition arena cell, intensity 1 of 4 - a sparse grove you can cross at speed: 30
-    seeded plants totalling ~3500 prisms of cacti, spires, pines, rosettes and coral,
+  Description: Demolition arena cell, intensity 1 of 4 - a quiet arena you have mostly to yourself: 59
+    seeded plants totalling ~9830 prisms of cacti, spires, pines, rosettes and coral,
     filling the volume from just outside the nucleus out to the membrane, across all three
-    domains at levels 1-5. Every intensity shares one membrane, one nucleus and one crystal
-    - only the forest changes. The nucleus stays clear; it is the crystal's contested
-    ground. PhaseThresholds ride THIS intensity's own forest volume (~568,798 at full
-    growth) - regenerate with Tools/Build/rampage_intensity.py rather than hand-editing.
+    domains at levels 1-5. The FOREST IS THE SAME AT EVERY INTENSITY (this is the shipped,
+    play-tested arena); intensity carries 1x the authored wildlife and - authored in the
+    scene, not here - twice as many crystals as players. The nucleus stays clear; it is the
+    crystals' contested ground. PhaseThresholds ride the forest's real volume (~1,615,853 at
+    full growth) - regenerate with Tools/Build/rampage_intensity.py rather than
+    hand-editing.
   Icon: {fileID: 21300000, guid: 6aa1c06e11b265744a5f9fa8858ac72a, type: 3}
   Difficulty: 1
   CellEndGameScore: 0
@@ -34,9 +36,9 @@ MonoBehaviour:
   PhaseThresholds:
     RestlessEnter: 700
     RestlessExit: 500
-    FrenzyEnter: 3750
-    FrenzyExit: 3000
-    RestlessEnterVolume: 40000
-    RestlessExitVolume: 29000
-    FrenzyEnterVolume: 570000
-    FrenzyExitVolume: 440000
+    FrenzyEnter: 10000
+    FrenzyExit: 8000
+    RestlessEnterVolume: 113000
+    RestlessExitVolume: 81000
+    FrenzyEnterVolume: 1630000
+    FrenzyExitVolume: 1260000
