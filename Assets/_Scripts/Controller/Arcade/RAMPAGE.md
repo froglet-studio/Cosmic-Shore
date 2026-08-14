@@ -64,7 +64,13 @@ economy itself; this file only arranges around it.
 - **Domains**: free-for-all like Scurry (`MinDomainsAllowed`/`MaxDomainsAllowed`
   defaults 1/3); players 1–4 with AI backfill
 - **Vessels**: **Dolphin only** — see "Why Dolphin-only" below
-- **Objective arrow**: `RampageObjectiveProvider` — points at the contested crystal
+- **Objective arrow**: `RampageObjectiveProvider` — points at the contested omni crystal and
+  **nothing else, ever**. The filter is the point: `Crystal.Active` also holds every
+  lifeform heart the food web is constantly dropping (this mode's whole verb is killing
+  flora) and every team crystal a Dolphin seeds, so a nearest-live-crystal scan would
+  spend the match swinging onto whichever cactus just died. Only a MANAGER-SPAWNED
+  crystal (`Crystal.CrystalManager != null`, set solely by `CrystalManager.SpawnWithDomain`)
+  is the arena's; hearts and seeded crystals are plain `Instantiate`s and carry no manager.
 - **Config**: `_SO_Assets/Games/ArcadeGameRampage.asset` (registered in
   `GameLists/OrganicRematchGames.asset` + the pre-existing arcade lists)
 

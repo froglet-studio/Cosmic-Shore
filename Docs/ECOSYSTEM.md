@@ -3457,3 +3457,24 @@ broadcast because these effects mutate ONE vessel's state and spawn its blast; e
 would be applying them to a vessel it does not own. The server keeps sole authority over
 collection, respawn and every stat — this is additive, and the effect list is shared
 (`OmniCrystalImpactor.RunVesselEffects`) so the two sides cannot drift.
+
+### 27.10 An objective arrow in a living cell must filter to MANAGED crystals
+
+`Crystal.Active` is every live crystal on the machine, and in a cell with a food web that is
+mostly *not* the objective: every flora and fauna carries a heart and drops it on death (the
+every-lifeform-drops-a-crystal invariant), and a Dolphin seeds a team crystal every 30 s. In a
+mode whose verb is killing flora, the arena rains elemental crystals continuously.
+
+So a nearest-live-crystal objective provider points at the objective almost never. The
+discriminator is **`Crystal.CrystalManager`** - non-null only for a crystal spawned by the
+cell's `CrystalManager` (`SpawnWithDomain` → `InjectDependencies`, the single writer). Hearts
+and seeded crystals are plain `Instantiate`s and carry none, so one test separates them all,
+and it is the same test that means "this is the crystal that respawns inside the nucleus
+forever" (§27.6). Follow it with `Crystal.CanBeCollected` so a mode that spawns per-domain
+managed crystals still only names one the reading pilot may take.
+
+Corollary for any crystal-tracking UI: do **not** blank out on `Crystal.IsExploding`. The flag
+stays true for 0.5 s *after* the respawn has already repositioned the crystal, so honouring it
+hides the arrow for half a second while the crystal sits at exactly the place it was pointing
+to. A collection does not invalidate the target at all - the manager MOVES the same Crystal
+object (`UpdateCrystalPos`), so the cached transform follows it to its new home.
