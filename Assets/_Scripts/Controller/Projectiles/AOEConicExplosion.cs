@@ -27,6 +27,13 @@ namespace CosmicShore.Gameplay
         public float AuthoredHeight => height;
 
         /// <summary>
+        /// The container-local axis the capsule extends along, as authored on the prefab. Exposed
+        /// so a PREVIEW of this blast (the Dolphin's Echo Sight) can describe the same volume the
+        /// detonation will actually sweep instead of assuming ship-up.
+        /// </summary>
+        public Vector3 AuthoredGapeAxis => gapeAxis;
+
+        /// <summary>
         /// The CLOSED-JAW base diameter (see <see cref="InitializeStruct.CoreScale"/>), clamped
         /// into (0, MaxScale]. Defaults to MaxScale when the caller supplies none, which collapses
         /// the capsule to a point and reproduces the plain circular cone exactly.

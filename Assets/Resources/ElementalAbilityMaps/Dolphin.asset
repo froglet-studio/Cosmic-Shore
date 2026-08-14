@@ -47,13 +47,17 @@ MonoBehaviour:
     UpgradeLabel: Hard Wake
     UpgradeDescription: Drift prisms arrive shielded (one-hit ablative armour).
   - Element: 3
-    AbilityLabel: Cone Blast
-    AbilityDescription: Space carries the crystal-impact cone further down-range
-      (authored on VesselExplosionByCrystalEffectSO._heightMultiplierAtFullSpace, x2
-      at level 10; the cone's ANGLE is set by skim energy, not by Space, so the two
-      shape the blast independently); at level 5 the blast stops eating the pilot's
+    AbilityLabel: Echo Obliteration
+    AbilityDescription: The crystal-impact cone, plus the ECHO SIGHT that aims it -
+      hold the right trigger to drop into a zoomed first-person view in which every
+      prism inside the blast's current destruction volume lights up. Space carries
+      that cone further down-range (authored on
+      VesselExplosionByCrystalEffectSO._heightMultiplierAtFullSpace, x2 at level 10;
+      the cone's ANGLE is set by skim energy, not by Space, so the two shape the
+      blast independently) - and the sight is how that reach becomes legible, which
+      is why the two share this slot. At level 5 the blast stops eating the pilot's
       own domain.
-    Input: 0
+    Input: 1
     MultiplierAtFullLevel: 1
     MinMultiplier: 1
     UnlockLevel: 5
