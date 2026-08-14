@@ -64,6 +64,26 @@ what the carve-out silently broke — see the traps below.
   `RandomLifeSpawner` for everyone else. Any spawn-loop feature (a density scalar, a gate, a
   new roll) implemented in only one of them is **dead code in exactly the modes that asked for
   it**. Implement in both, or state why one is deliberately excluded.
+- **"Both spawners" is not enough for FAUNA — there are FOUR producers.** `RandomLifeSpawner`,
+  `IntensityWiseLifeSpawner`, **`Fauna.TryReproduce`** (reproduction is the actual population
+  driver, not the spawner) and the freestyle **`Microscene`** conveyor all read the per-species
+  population numbers. Splitting a modifier across them is not merely incomplete, it is
+  *incoherent*: a seeder filling to 24 while reproduction stops at 6 is two ceilings for one
+  number. So a per-cell modifier of a per-species number resolves on the **`Cell`** — the one
+  object all four already hold (`Cell.ResolveFaunaPopulation` / `ResolveFaunaCap` /
+  `IsFaunaAtCap`) — and the raw config field then has **no direct reader** outside the config
+  and the profile. Write the comparison once too (`IsFaunaAtCap`), or a caller will test the
+  unscaled number correctly-looking-ly. Generalizes to any future per-cell modifier.
+- **A population scalar that moves the FLOOR but not the CAP is inert.** `MaxLivePopulation` is
+  documented as "a performance backstop, not the primary control", which makes it easy to leave
+  alone — but it is what actually bounds a standing population. The Blob tadpole floors at 4 and
+  caps at 6, so a floor-only scalar is clamped away above ~1.5× and reads as *doing nothing*.
+  Move floor and cap together. (Scaling either is production gating, which §0 permits; culling
+  to meet a lowered scale is not.)
+- **A shared species asset is the reason the scalar belongs on the PROFILE.** Rampage's two
+  species are referenced straight out of `Blob Cell/`, so stocking its arena by editing them
+  would have restocked Menu_Main's lava lamp too. Before tuning any lifeform config, grep who
+  else references it — a per-mode number on a shared asset is a cross-mode bug.
 - **A tuning field on `FloraVariantTuning` reaches only the flora families that READ it.**
   `MaxTotalSpawnedObjects` was honoured by `AssembledFlora` alone for a long time, so 45
   authored assets were writing a per-plant budget that did nothing on branching and
@@ -78,6 +98,12 @@ what the carve-out silently broke — see the traps below.
   default 0 clamps to a legal index). Gate on `GameDataSO.GameConfigSynced`, and make the
   deferral RETRYABLE — the bootstrap used to latch its "done" flag on its first line, which
   would have left a deferred cell with no cytoplasm and no spawner at all.
+- **…but do NOT over-apply that gate: a value the client RECEIVES needs none.** The test is not
+  "does this depend on intensity", it is "does a CLIENT derive it?". `CrystalManager`'s
+  per-intensity crystal count reads the same late-arriving `SelectedIntensity`, yet needs no
+  `GameConfigSynced` gate — it is resolved only inside `NetworkCrystalManager`'s `IsServer`
+  paths and reaches clients as the replicated slot-list LENGTH. Gating it would add a race for
+  nothing. Ask which machine computes the value before reaching for the gate.
 - **`Mathf.RoundToInt` is banker's rounding.** For any authoring-facing scalar (a density
   multiplier, a per-intensity count), use explicit `Mathf.FloorToInt(x + 0.5f)` — otherwise
   `10 x 0.85` lands on 8 for one species and 9 for the next and nobody can explain why.
