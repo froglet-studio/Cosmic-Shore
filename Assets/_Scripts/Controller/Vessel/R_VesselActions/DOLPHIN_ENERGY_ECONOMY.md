@@ -380,7 +380,7 @@ Play Menu_Main, enter freestyle on the Dolphin.
 | hold drift from empty to full | ring fills in **~3.6 s** (was 4) |
 | release a full meter | speed peaks near **357** and takes **~2.5 s** to fall back (was 210 / 2 s) |
 | fly straight without drifting | ring does **not** climb |
-| drift, release, drift again | speed returns to normal — no stuck multiplier |
+| drift, release, drift again, then release and fly straight | speed settles back to the ordinary 78 cruise — no stuck boost multiplier. (Note the second drift now HOLDS whatever the discharge had reached; the thing under test is that nothing is stuck once you stop drifting.) |
 | Charge to level 5 | second crystal pip appears; two crystals plantable back to back |
 
 The **vessel silhouette** that used to sit in this HUD is gone — it had been dead since its driver
