@@ -7,10 +7,18 @@ people get wrong by hand. Full instructions: `Docs/QA/README.md` § "For QA — 
 run a session".
 
 Use this blank form only if Claude is unavailable. Copy it to
-`Docs/QA/RESULTS/YYYY-MM-DD-<yourname>.md.draft`, fill it in, then rename it to `.md`
-when the Result column is complete — the `.draft` suffix stops `apply_results.py`
-from consuming a half-finished file (which would burn it: it gets marked applied and
-is then never applied again).
+`Docs/QA/RESULTS/YYYY-MM-DD-<yourname>.md` and fill it in. **There is nothing to
+rename.** Nothing is published until you press Submit:
+
+```
+python3 Tools/QA/submit.py
+```
+
+Submit checks the required fields, refuses while any are missing, tells you exactly
+what to fix, and only then publishes. Add rows across as many days as you like and
+run it again each time — only the new verdicts are published.
+
+**A published verdict is frozen: a retest is a NEW session file, never an edit.**
 
 Do not edit `QA_BACKLOG.md`, `ARCHIVE.md` or `DEV_TASKS.md`. They are generated.
 
@@ -24,14 +32,15 @@ Do not edit `QA_BACKLOG.md`, `ARCHIVE.md` or `DEV_TASKS.md`. They are generated.
 | Commit | `git rev-parse --short HEAD` output |
 | Unity version | 6000.3.17f1 |
 | Platform(s) | Editor (Windows/macOS) · Android device · iOS device · MPPM Nx |
+| Submitted | *written by submit.py — leave alone* |
 
 ## Results
 
 One row per item you ran. Omit items you did not run.
 
 **`Result` must be spelled exactly** `PASS` · `FAIL` · `PARTIAL` · `BLOCKED` · `SKIP`
-(case does not matter). Anything else — `PASSED`, `OK`, `✓` — is **silently dropped**
-and the item quietly stays untested.
+(case does not matter). Anything else — `PASSED`, `OK`, `✓` — would be dropped
+silently when the results are applied, which is why Submit refuses it first.
 
 **Never delete the two `qa-results-table` markers.** They confine parsing to this
 table. Without them the whole file is scanned and stray example rows get applied as
@@ -49,9 +58,7 @@ real verdicts.
 
 <!-- /qa-results-table -->
 
-Before submitting, run `python3 Tools/QA/apply_results.py --dry-run` (writes nothing)
-and check that every row you filled in appears in its output. A missing row means a
-misspelled verdict.
+`python3 Tools/QA/submit.py --check` validates without publishing — safe any time.
 
 ## Evidence
 

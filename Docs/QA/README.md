@@ -13,6 +13,7 @@ the loop that keeps it honest.
 |---|---|---|
 | `QA_BACKLOG.md` | **THE list.** Every open, untested item, prioritised, with step-by-step instructions and pass/fail criteria. | The `/qa-backlog` skill |
 | `RESULTS/TEMPLATE.md` | The blank form. You normally get a pre-filled copy instead — see below. | — |
+| `Tools/QA/submit.py` | **The Submit button.** Checks the required fields, refuses while any are missing, then publishes. | — |
 | `RESULTS/YYYY-MM-DD-<tester>.md` | One submitted test session. | You |
 | `DEV_TASKS.md` | Failures, converted into handoff-ready development tasks. | The `/qa-backlog` skill |
 | `ARCHIVE.md` | Items that passed. Kept so a re-scan never resurrects them. | The `/qa-backlog` skill |
@@ -36,7 +37,8 @@ this idea. It is now a **pointer** — new unverified work goes here.
   QA_BACKLOG.md (prioritised, self-contained instructions)
             │
             ▼
-  QA runs items, fills in a results file, hands it back
+  QA runs items, fills in a results file, presses Submit
+            │       (Tools/QA/submit.py — validates, then publishes)
             │
             ▼
   /qa-backlog  ──►  passes leave the list forever (ARCHIVE.md)
@@ -70,26 +72,19 @@ In Claude Code, say:
 
 Claude will:
 - tell you **which branch to test** and the exact commands to get it,
-- create `Docs/QA/RESULTS/<today>-<yourname>.md.draft` — a pre-filled form with the
-  session metadata (branch, commit, Unity version) already correct and one scratch
-  section per item you're running,
+- create `Docs/QA/RESULTS/<today>-<yourname>.md` — a pre-filled form with the session
+  metadata (branch, commit, Unity version) already correct and one scratch section per
+  item you're running,
 - push it so it exists on your machine after you pull.
 
-You *can* work from `RESULTS/TEMPLATE.md` by hand instead, but don't — the draft has
-the commit SHA, the known-exception lists and per-step scratch space already in it,
-and those are the parts people get wrong.
+You *can* work from `RESULTS/TEMPLATE.md` by hand instead, but don't — the pre-filled
+form has the commit SHA, the known-exception lists and per-step scratch space already
+in it, and those are the parts people get wrong.
 
-### Why the file ends in `.draft`
-
-`apply_results.py` reads every `RESULTS/*.md` file **and records it as applied, even
-if it contains no verdicts.** A half-filled `.md` sitting in that folder gets burned:
-the script marks it done, and when you finish filling it in later it is never applied.
-The `.draft` suffix makes the script ignore the file until you are finished with it.
-
-**Rename it to `.md` only when the Result column is filled in.** That rename *is* the
-act of submitting.
-
----
+**There is nothing to rename, ever.** The file keeps one name from creation until it
+merges. Nothing in it is published until you press Submit (step 6), so you can leave
+it half-finished for as long as you like — including across several days — without
+anyone else picking up your unfinished work.
 
 ## Step 2 — get the build
 
@@ -103,9 +98,11 @@ git pull origin <branch-name>
 git rev-parse --short HEAD      # note this — it must match the Commit row in your file
 ```
 
-If the SHA does not match the `Commit` row in your draft, **say so and get a fresh
-draft.** A result recorded against the wrong build is worse than no result: it sends
-engineering hunting through the wrong diff.
+If the SHA does not match the `Commit` row in your form, Submit will stop you in
+step 6 and offer `--accept-head`. Use that **only if the checked-out build really is
+the one you tested** — otherwise check out the build you tested. A result recorded
+against the wrong build is worse than no result: it sends engineering hunting through
+the wrong diff.
 
 Then open the project in Unity **6000.3.17f1** and:
 
@@ -141,6 +138,18 @@ write it down and move on. Fixing it destroys the evidence and means the fix its
 lands untested, which is how things got here. The exception is where an item
 explicitly asks you to change something (a test-harness slider, a tuning field); put
 it back afterwards.
+
+### Multi-day sessions
+
+Working through a long list across several days is expected, not a special case.
+Add rows as you finish items and press Submit whenever you want what you have so far
+to reach engineering — a failed P0 gate on day one should not wait until day three.
+Each Submit publishes only what is new; finished rows stay in the file untouched.
+
+**One rule, and it is the whole reason this stays clean: a retest is a NEW session
+file, never an edit.** Once a verdict is published it is frozen. If an item you
+failed gets fixed and you retest it, that is a new session on a new build — start a
+new file. Editing a published row is refused by name, so you cannot do it by accident.
 
 ### Recording as you go
 
@@ -192,7 +201,7 @@ section.
 
 ## Step 5 — fill the table
 
-At the top of your draft is the results table, fenced by two HTML comments:
+At the top of your form is the results table, fenced by two HTML comments:
 
 ```
 <!-- qa-results-table -->
@@ -205,17 +214,17 @@ At the top of your draft is the results table, fenced by two HTML comments:
 <!-- /qa-results-table -->
 ```
 
-Three rules, each of which has silently eaten a result before:
+Three rules. Submit checks all three, so getting one wrong costs you a re-run, not a
+lost result — but knowing them saves the round trip:
 
-1. **Never delete the `<!-- qa-results-table -->` markers.** They are what confines
-   parsing to this table. Without them the script scans the *whole file*, and example
-   rows in your scratch notes get applied as real verdicts.
+1. **Never delete the `<!-- qa-results-table -->` markers.** They confine parsing to
+   this table. Without them the *whole file* is scanned and example rows in your
+   scratch notes become real verdicts.
 2. **Spell the verdict exactly** — `PASS`, `FAIL`, `PARTIAL`, `BLOCKED`, `SKIP`.
    Case does not matter (`pass` is fine). Anything else — `PASSED`, `OK`, `✓`, `n/a` —
-   is **silently dropped with no warning**, and the item quietly stays untested.
-3. **Copy item IDs exactly** from the backlog, e.g. `QA-BUILD-COMPILE`. A typo'd ID is
-   reported as unknown rather than dropped, so it is the recoverable mistake — but
-   copy-paste anyway.
+   would be dropped silently by the applier, which is exactly why Submit refuses it
+   first.
+3. **Copy item IDs exactly** from the backlog, e.g. `QA-BUILD-COMPILE`.
 
 Leave out any item you did not run. There is no need to write `SKIP` rows.
 
@@ -234,35 +243,46 @@ reproducible.
 
 ---
 
-## Step 6 — check your own file
-
-Rename the draft (drop `.draft`), then run:
+## Step 6 — press Submit
 
 ```bash
-mv Docs/QA/RESULTS/<date>-<yourname>.md.draft Docs/QA/RESULTS/<date>-<yourname>.md
-python3 Tools/QA/apply_results.py --dry-run
+python3 Tools/QA/submit.py
 ```
 
-`--dry-run` writes nothing and is safe to run as often as you like. It prints what it
-found:
+This is the Submit button. It checks the form, and **refuses while anything required
+is missing**, naming the row and what to do:
 
 ```
-Sessions applied : 2026-08-14-caleb.md
-PASS  (archived) : 1  ['QA-BUILD-COMPILE']
-FAIL  (dev tasks): 1  ['QA-PRISM-OCCLUSION']
-PARTIAL/BLOCKED  : 0  []
+Checking Docs/QA/RESULTS/2026-08-14-caleb.md
+  ✗ QA-MENU-CAMERA-RIG    has no verdict
+      → fill it in, or delete the row if you did not run this item
+  ✗ QA-BUILD-WINDOWS-PLAYER  is FAIL but Notes is empty
+      → say which step number failed and what you saw — this text becomes the
+        dev task an engineer picks up cold
+  ⚠ QA-BUILD-WINDOWS-PLAYER  is a FAIL with no evidence file referenced
+
+NOT SUBMITTED — 2 problem(s) to fix.
 ```
 
-**Count the IDs against the rows you filled in.** If a row you wrote is missing from
-this output, you have a misspelled verdict (rule 2 above) — fix it and re-run. This
-30-second check is the only thing standing between a typo and a result nobody ever
-sees. Do not skip it.
+`✗` blocks; `⚠` is advice you can ignore. Fix and re-run until it says:
 
-If it prints `UNKNOWN ids`, you have a typo'd or already-archived item ID. Tell
-Claude rather than guessing — an item that already passed once means something
-different from an item that never existed.
+```
+SUBMITTED — 3 new verdict(s) ready to apply.
+```
 
----
+**What it checks:** every row has a verdict spelled exactly right (a misspelled one
+would otherwise be dropped without a word); anything that is not `PASS` carries a
+note; no row is left blank; the commit you recorded matches the build you have
+checked out; the table markers are intact; every ID is a real open backlog item; no
+published verdict has been edited.
+
+Two flags worth knowing:
+
+- `--check` validates and reports without publishing. Safe any time.
+- `--accept-head` records the currently checked-out commit as the build you tested.
+  Use it **only if that is true** — if you tested an older build, check that build
+  out instead. A result filed against the wrong build sends engineering into the
+  wrong diff.
 
 ## Step 7 — submit
 
@@ -270,40 +290,38 @@ Say to Claude:
 
 > **"My QA results are in `Docs/QA/RESULTS/<date>-<yourname>.md` — apply them."**
 
-Claude runs the script, enriches each new dev task with the source PR and the likely
-files, commits everything on a branch and pushes. That enrichment is the part that
-makes a failure pickup-able by an engineer who has no context, so let Claude do it.
+Claude runs `apply_results.py`, enriches each new dev task with the source PR and the
+likely files, commits everything on a branch and pushes. That enrichment is what makes
+a failure pickup-able by an engineer with no context, so let Claude do it.
 
-**If Claude is not available**, you can land the file yourself and it will be picked
-up on the next `/qa-backlog` run:
+**If Claude is not available**, land the file yourself and it will be picked up on the
+next `/qa-backlog` run:
 
 ```bash
 git checkout -b qa/results-<date>-<yourname>
-git add Docs/QA/RESULTS/
+git add Docs/QA/RESULTS/ Docs/QA/.applied.json
 git commit -m "docs(qa): <yourname> session results, <date>"
 git push -u origin qa/results-<date>-<yourname>
 ```
 
-Then open a pull request against `bleeding-edge`. **Do not run
-`apply_results.py` without `--dry-run` yourself** — the generated backlog, archive
-and dev-task edits belong in the same commit as the enrichment, and running it early
-burns the file in the ledger with the dev tasks left half-written.
+Then open a pull request against `bleeding-edge`. Commit `.applied.json` along with
+the file — it is what records that your session was submitted.
 
 **Never hand-edit `QA_BACKLOG.md`, `ARCHIVE.md` or `DEV_TASKS.md`.** They are
 generated. Hand edits are silently overwritten on the next run.
-
----
 
 ## Troubleshooting
 
 | Symptom | What it means | Do this |
 |---|---|---|
-| `No new results files to apply.` | The filename still ends in `.draft`, the file is not in `RESULTS/`, or it was already applied. | Check the extension and the folder. If it was already applied, check `.applied.json`. |
-| A row you filled in is missing from `--dry-run` output | Misspelled verdict — silently dropped. | Use exactly `PASS`/`FAIL`/`PARTIAL`/`BLOCKED`/`SKIP`. |
+| `not submitted yet` | You have not pressed Submit. | `python3 Tools/QA/submit.py` |
+| `edited since it was submitted` | You changed the file after submitting. Nothing new publishes until you re-submit. | `python3 Tools/QA/submit.py` again. |
+| `FROZEN … a retest is a NEW session file` | You edited a verdict that was already published. | Restore that row. Put the retest in a new session file. |
+| A row you filled in is missing after applying | Misspelled verdict. Submit catches this, so it means Submit was skipped. | Always publish via `submit.py`, never by hand. |
 | `UNKNOWN ids (ignored, check for typos)` | The ID is not in the current backlog. | Copy-paste it from `QA_BACKLOG.md`. If it looks right, it may already be in `ARCHIVE.md` — tell Claude. |
 | Rows from your scratch notes got applied | The `<!-- qa-results-table -->` markers were deleted. | Restore both markers around the real table. |
 | Assets look wrong / shaders magenta / prefabs empty | Very often a stale `Library/`. | *Assets ▸ Reimport All*, wait, look again. Only then record it. |
-| The commit SHA doesn't match your draft | You are testing a different build than the form claims. | Get a fresh draft before recording anything. |
+| `says <sha> but you have <sha> checked out` | The form names a different build than you have. | If you tested the checked-out build, `submit.py --accept-head`. Otherwise check out the build you tested. |
 | Half the backlog is unrunnable | A P0 gate is failing. | Record the P0 failure with full console text, mark the rest `BLOCKED`, and stop. That is a complete, useful session. |
 
 ---
