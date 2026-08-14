@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Rampage's four intensities: the forest model, and the assets it authors.
+"""Rampage's four intensities: the arena model, and the assets it authors.
 
 Rampage is a demolition race in a cell whose prisms are nowhere near nominal size (a cactus
 leaf is 5x5x3 = 75 volume, 4.7x the 16 the platform's `count x 16` threshold derivation
@@ -7,10 +7,25 @@ assumes), and the level spread multiplies that again. So its phase ladder CANNOT
 - every intensity has to author `*EnterVolume` / `*ExitVolume` from its own arithmetic
 (Docs/ECOSYSTEM.md 27.4). Doing that by hand four times is how the four ladders drift apart.
 
-This script is the model. It computes each intensity's seeded prism count and full-grown
-volume from the same numbers the game reads, derives the thresholds from those, and emits the
-cell configs and spawn profiles. Re-run it after any tuning change; do not hand-edit the
-generated assets.
+WHAT INTENSITY MEANS HERE (changed 2026-08-14). It used to thin the FOREST: intensity 1 grew
+half the plants of intensity 4. It no longer does - every intensity now grows intensity 4's
+arena, prism for prism, so the ladder is:
+
+    intensity  ->  FEWER CRYSTALS  +  MORE WILDLIFE
+
+  * Crystals: 2x players / 1x players / players-1 / exactly 1. The crystal is the Dolphin's
+    only blast trigger, so this scales how CONTESTED the discharge is, which is the mode's
+    actual difficulty axis. Authored in the SCENE (CrystalManager.IntensityScaled), not here.
+  * Wildlife: 1x / 2x / 3x / 4x the authored population, via this script's FAUNA_SCALES ->
+    SpawnProfileSO.FaunaPopulationScale.
+
+The forest model below is therefore still the whole reason this script exists - the phase
+ladder still has to be derived from real prism volume - it just produces ONE ladder that all
+four configs share, and the self-test still pins it to the shipped intensity-4 arena.
+
+This script is the model. It computes the seeded prism count and full-grown volume from the
+same numbers the game reads, derives the thresholds from those, and emits the cell configs and
+spawn profiles. Re-run it after any tuning change; do not hand-edit the generated assets.
 
     python3 Tools/Build/rampage_intensity.py            # print the table, self-test
     python3 Tools/Build/rampage_intensity.py --write    # (re)generate the 8 assets
@@ -53,11 +68,35 @@ RARITY_FALLOFF = 1.6   # Levels {1..5} on every Rampage flora config
 MIN_LEVEL, MAX_LEVEL = 1, 5
 
 # (FloraPopulationScale, FloraPlantBudgetScale) per intensity, 1-indexed.
-# Intensity 4 is 1.0/1.0 BY DESIGN: it is the arena that already ships and has been played,
-# so the ladder runs DOWN from it. Rampage is already documented at 2.8x the Blob collider
-# envelope as deliberate headroom - scaling UP from there would land the top intensity
-# somewhere nobody has measured.
-SCALES = [(0.50, 0.70), (0.70, 0.80), (0.85, 0.90), (1.00, 1.00)]
+#
+# FLAT at 1.0/1.0 across all four: the forest is no longer what intensity varies (see the
+# module docstring). 1.0 is intensity 4's shipped, play-tested arena, so every intensity is
+# now that arena and the collider envelope is the one that was already measured - the ladder
+# does not run up from it in this dimension at all. Kept as a per-intensity table rather than
+# a constant because it is the natural place for a future forest ladder to come back, and
+# because the emitter and the self-test both read it.
+SCALES = [(1.00, 1.00), (1.00, 1.00), (1.00, 1.00), (1.00, 1.00)]
+
+# SpawnProfileSO.FaunaPopulationScale per intensity, 1-indexed: intensity N carries N times
+# the authored wildlife. Intensity 1 is 1.0 - the exact Blob-authored population Rampage has
+# always run at every level - so the ladder is anchored on a shipped point and climbs from
+# there, in the CHEAP dimension: a tadpole is one body prism plus its heart and a shark is a
+# small spindled body, so 4x the population is tens of prisms against a 9,830-prism forest
+# (the flora ladder had to be anchored at its TOP for the opposite reason).
+#
+# The scalar scales the seed floors AND MaxLivePopulation together, because the cap is what
+# actually bounds a standing population - see SpawnProfileSO.FaunaPopulationScale. It gates
+# PRODUCTION only; nothing is ever culled to meet it (Docs/ECOSYSTEM.md 0).
+FAUNA_SCALES = [1.0, 2.0, 3.0, 4.0]
+
+# The two species Rampage's profiles reference, as authored in the SHARED Blob assets
+# (_SO_Assets/Cell Configs/Blob Cell/*). Reproduced here ONLY so the printed report can show
+# what each intensity's population works out to - the game reads the assets, not this table.
+# They are shared, which is exactly why the ladder is a profile-level scalar and not an edit
+# to them: forking two species four ways would be eight assets differing by three ints.
+#                 name        initial  floor  cap
+FAUNA_SPECIES = [("Tadpole",  4,       4,     6),
+                 ("Shark",    1,       1,     2)]
 
 # Corrections to the phyllotactic leaf_vol estimates, filled in from an in-editor
 # Cell.LiveVolume measurement. All four ladders move together, so one measurement
@@ -102,6 +141,24 @@ def forest(intensity: int):
         volume_total += volume
 
     return rows, plants_total, prisms_total, volume_total
+
+
+def fauna(intensity: int):
+    """[(name, initial, floor, cap)] for a 1-indexed intensity, after FaunaPopulationScale.
+
+    Mirrors SpawnProfileSO.ScaleFaunaPopulation exactly: 0 passes through (uncapped stays
+    uncapped), everything else rounds half UP and floors at 1.
+    """
+    scale = FAUNA_SCALES[intensity - 1]
+
+    def s(authored: int) -> int:
+        if authored <= 0:
+            return authored
+        if scale <= 0 or abs(scale - 1.0) < 1e-6:
+            return authored
+        return max(1, round_half_up(authored * scale))
+
+    return [(name, s(i), s(f), s(c)) for name, i, f, c in FAUNA_SPECIES]
 
 
 def thresholds(prisms: int, volume: float) -> dict[str, int]:
@@ -177,24 +234,30 @@ NativeFormatImporter:
   assetBundleVariant:
 """
 
-DENSITY_WORDS = ["a sparse grove you can cross at speed",
-                 "a stocked wood",
-                 "a thick forest",
-                 "a dense thicket"]
+CROWD_WORDS = ["a quiet arena you have mostly to yourself",
+               "a stirring arena",
+               "a busy arena",
+               "a teeming arena"]
+
+CRYSTAL_WORDS = ["twice as many crystals as players",
+                 "one crystal per player",
+                 "one crystal fewer than players",
+                 "a single contested crystal"]
 
 
 def cell_config_yaml(i: int) -> str:
     rows, plants, prisms, volume = forest(i)
     t = thresholds(prisms, volume)
+    fauna_scale = FAUNA_SCALES[i - 1]
     desc = (
-        f"Demolition arena cell, intensity {i} of 4 - {DENSITY_WORDS[i - 1]}: {plants} seeded "
-        f"plants totalling ~{prisms} prisms of cacti, spires, pines, rosettes and coral, filling "
-        "the volume from just outside the nucleus out to the membrane, across all three domains "
-        "at levels 1-5. Every intensity shares one membrane, one nucleus and one crystal - only "
-        "the forest changes. The nucleus stays clear; it is the crystal's contested ground. "
-        "PhaseThresholds ride THIS intensity's own forest volume "
-        f"(~{int(volume):,} at full growth) - regenerate with Tools/Build/rampage_intensity.py "
-        "rather than hand-editing."
+        f"Demolition arena cell, intensity {i} of 4 - {CROWD_WORDS[i - 1]}: {plants} seeded plants "
+        f"totalling ~{prisms} prisms of cacti, spires, pines, rosettes and coral, filling the "
+        "volume from just outside the nucleus out to the membrane, across all three domains at "
+        "levels 1-5. The FOREST IS THE SAME AT EVERY INTENSITY (this is the shipped, play-tested "
+        f"arena); intensity carries {fauna_scale:g}x the authored wildlife and - authored in the "
+        f"scene, not here - {CRYSTAL_WORDS[i - 1]}. The nucleus stays clear; it is the crystals' "
+        f"contested ground. PhaseThresholds ride the forest's real volume (~{int(volume):,} at "
+        "full growth) - regenerate with Tools/Build/rampage_intensity.py rather than hand-editing."
     )
     wrapped = _wrap_yaml_scalar(desc)
     return f"""%YAML 1.1
@@ -238,6 +301,7 @@ MonoBehaviour:
 
 def spawn_profile_yaml(i: int) -> str:
     pop, budget = SCALES[i - 1]
+    fauna_pop = FAUNA_SCALES[i - 1]
     floras = "\n".join(f"  - {{fileID: 11400000, guid: {g}, type: 2}}" for g in FLORA_GUIDS)
     faunas = "\n".join(f"  - {{fileID: 11400000, guid: {g}, type: 2}}" for g in FAUNA_GUIDS)
     return f"""%YAML 1.1
@@ -265,6 +329,7 @@ MonoBehaviour:
   FaunaExcludeLocalDomain: 0
   InitialFaunaSpawnWaitTime: 10
   FaunaSpawnVolumeThreshold: 1
+  FaunaPopulationScale: {fauna_pop}
   BaseFaunaSpawnTime: 30
   FaunaFoodFloor: 5
   FaunaInitialDelaySeconds: 0
@@ -314,16 +379,29 @@ def main() -> int:
     ap.add_argument("--check", action="store_true", help="exit 1 if any asset is stale")
     args = ap.parse_args()
 
-    print(f"{'':10}{'plants':>7}{'prisms':>8}{'volume':>12}   thresholds (frenzy enter/exit volume, count)")
-    for i in range(1, 5):
-        rows, plants, prisms, volume = forest(i)
-        t = thresholds(prisms, volume)
-        print(f"intensity {i}{plants:>7}{prisms:>8}{int(volume):>12,}   "
-              f"{t['FrenzyEnterVolume']:,} / {t['FrenzyExitVolume']:,} / {t['FrenzyEnter']:,}")
-        for name, n, b, p, v in rows:
-            print(f"    {name:<9}{n:>3} plants x {b:>3} budget = {p:>5} prisms  {int(v):>10,} vol")
+    # The forest is shared by all four intensities, so print it ONCE - printing four
+    # identical tables would hide the fact that they are meant to be identical.
+    rows, plants, prisms, volume = forest(4)
+    t = thresholds(prisms, volume)
+    print(f"THE FOREST (identical at every intensity): {plants} plants, {prisms} prisms, "
+          f"{int(volume):,} volume at full growth")
+    for name, n, b, p, v in rows:
+        print(f"    {name:<9}{n:>3} plants x {b:>3} budget = {p:>5} prisms  {int(v):>10,} vol")
+    print(f"    ladder    frenzy {t['FrenzyEnterVolume']:,} / {t['FrenzyExitVolume']:,} vol, "
+          f"restless {t['RestlessEnterVolume']:,} / {t['RestlessExitVolume']:,} vol, "
+          f"{t['FrenzyEnter']:,} count backstop")
 
-    # Regression: the model must reproduce the SHIPPED intensity-4 ladder exactly. If this
+    print("\nWHAT INTENSITY ACTUALLY CHANGES")
+    print(f"{'':10}{'fauna':>7}   wildlife (seed batch / floor / cap)"
+          f"{'':17}crystals [authored in the scene]")
+    for i in range(1, 5):
+        pops = fauna(i)
+        cap_total = sum(c for _, _, _, c in pops)
+        detail = "  ".join(f"{name} {ini}/{flr}/{cap}" for name, ini, flr, cap in pops)
+        print(f"intensity {i}{FAUNA_SCALES[i - 1]:>6.1f}x   {detail:<38} -> {cap_total:>2} at cap"
+              f"   {CRYSTAL_WORDS[i - 1]}")
+
+    # Regression 1: the model must reproduce the SHIPPED intensity-4 ladder exactly. If this
     # ever fails, the model drifted from the arena that was actually play-tested.
     _, _, prisms4, volume4 = forest(4)
     t4 = thresholds(prisms4, volume4)
@@ -332,7 +410,24 @@ def main() -> int:
                  "FrenzyEnterVolume": 1630000, "FrenzyExitVolume": 1260000}
     assert prisms4 == 9830, f"intensity 4 prism count drifted: {prisms4} != 9830"
     assert t4 == expected4, f"intensity 4 ladder drifted:\n  {t4}\n  {expected4}"
-    print("\nself-test OK: intensity 4 reproduces the shipped, play-tested ladder exactly")
+
+    # Regression 2: the forest is now FLAT, so all four intensities must land on that same
+    # play-tested ladder. This is the assert that catches a half-finished edit - one that
+    # changes SCALES for some intensities and not others, leaving a cell whose thresholds no
+    # longer match the forest it actually grows.
+    for i in range(1, 4):
+        _, _, prisms_i, volume_i = forest(i)
+        assert prisms_i == prisms4, f"intensity {i} forest drifted from 4: {prisms_i} != {prisms4}"
+        assert thresholds(prisms_i, volume_i) == t4, f"intensity {i} ladder drifted from 4"
+
+    # Regression 3: the fauna ladder must be monotonically increasing and start at the
+    # authored population - "increasing intensity increases the wildlife" is the spec.
+    assert FAUNA_SCALES[0] == 1.0, "intensity 1 must be the authored population (scale 1.0)"
+    assert all(b > a for a, b in zip(FAUNA_SCALES, FAUNA_SCALES[1:])), \
+        f"fauna ladder is not strictly increasing: {FAUNA_SCALES}"
+
+    print("\nself-test OK: all four intensities reproduce the shipped, play-tested intensity-4 "
+          "ladder, and the fauna ladder climbs from the authored population")
 
     stale = emit(write=args.write)
     if args.write:

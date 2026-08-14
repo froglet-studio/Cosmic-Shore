@@ -331,10 +331,13 @@ namespace CosmicShore.Gameplay
             if (!cfg || !host || cfg.FeedsPerOffspring <= 0 || !cfg.FaunaPrefab) return;
 
             _feedsSinceBirth++;
+            // The cap is the CELL's, not the config's: a biome that scales its population
+            // (SpawnProfileSO.FaunaPopulationScale) has to scale what reproduction may fill to,
+            // or the seeder and the food web would be working to two different ceilings.
             if (!FaunaReproductionRules.ShouldBirth(
                     _feedsSinceBirth, cfg.FeedsPerOffspring,
                     Time.time - _lastBirthTime, cfg.ReproductionCooldownSeconds,
-                    host.GetLiveFaunaCount(cfg), cfg.MaxLivePopulation))
+                    host.GetLiveFaunaCount(cfg), host.ResolveFaunaCap(cfg)))
                 return;
 
             _lastBirthTime = Time.time;
@@ -345,7 +348,7 @@ namespace CosmicShore.Gameplay
             {
                 // Re-check the cap per birth so a multi-offspring birth can't
                 // overshoot the performance backstop.
-                if (cfg.MaxLivePopulation > 0 && host.GetLiveFaunaCount(cfg) >= cfg.MaxLivePopulation)
+                if (host.IsFaunaAtCap(cfg))
                     break;
                 SpawnOffspring(host, cfg);
             }

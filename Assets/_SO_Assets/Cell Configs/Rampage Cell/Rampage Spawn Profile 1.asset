@@ -16,8 +16,8 @@ MonoBehaviour:
   FloraSpawnVolumeCeiling: 12000
   FloraInitialDelaySeconds: 0
   FloraSpawnIntervalSeconds: 0
-  FloraPopulationScale: 0.5
-  FloraPlantBudgetScale: 0.7
+  FloraPopulationScale: 1.0
+  FloraPlantBudgetScale: 1.0
   SupportedFloras:
   - {fileID: 11400000, guid: f9232fe099904e69b63d12f1b0e28717, type: 2}
   - {fileID: 11400000, guid: 5b18cd2b2ac647e48b78dd3e8e155f02, type: 2}
@@ -27,6 +27,7 @@ MonoBehaviour:
   FaunaExcludeLocalDomain: 0
   InitialFaunaSpawnWaitTime: 10
   FaunaSpawnVolumeThreshold: 1
+  FaunaPopulationScale: 1.0
   BaseFaunaSpawnTime: 30
   FaunaFoodFloor: 5
   FaunaInitialDelaySeconds: 0

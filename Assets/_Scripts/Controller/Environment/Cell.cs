@@ -1274,6 +1274,47 @@ namespace CosmicShore.Gameplay
         public IReadOnlyList<Fauna> LiveFauna => liveFauna;
 
         /// <summary>
+        /// THIS CELL's take on an authored fauna population number - a seed count
+        /// (<c>InitialSpawnCount</c> / <c>PopulationSize</c>) or the hard cap
+        /// (<c>MaxLivePopulation</c>) - after its SpawnProfile's
+        /// <see cref="SpawnProfileSO.FaunaPopulationScale"/>. A cell with no profile, or the
+        /// default scale of 1, returns the authored number untouched, so every biome that
+        /// authors nothing is bit-for-bit unchanged.
+        ///
+        /// <para><b>Every producer must ask the CELL, never the config.</b> There are four
+        /// (<c>RandomLifeSpawner</c>, <c>IntensityWiseLifeSpawner</c>, <c>Fauna.TryReproduce</c>
+        /// and the freestyle <c>Microscene</c> conveyor), and which SPAWNER a biome runs is
+        /// decided by an unrelated field - <c>CellTypeChoiceOptions.IntensityWise</c> silently
+        /// swaps the class - so a density rule implemented in one spawner is dead code in
+        /// exactly the modes that asked for it. The cell is the one thing all four already
+        /// hold. A fifth producer that asks here gets the scalar for free; one that reads
+        /// <c>cfg.MaxLivePopulation</c> directly silently opts a species out of it.</para>
+        /// </summary>
+        public int ResolveFaunaPopulation(int authored)
+        {
+            var profile = cellConfigData ? cellConfigData.SpawnProfile : null;
+            return profile ? profile.ScaleFaunaPopulation(authored) : authored;
+        }
+
+        /// <summary>
+        /// This cell's live cap for a species: <see cref="FaunaConfigurationSO.MaxLivePopulation"/>
+        /// through <see cref="ResolveFaunaPopulation"/>. 0 stays 0 (uncapped).
+        /// </summary>
+        public int ResolveFaunaCap(FaunaConfigurationSO config) =>
+            config ? ResolveFaunaPopulation(config.MaxLivePopulation) : 0;
+
+        /// <summary>
+        /// True when this species is already at or over this cell's live cap - the one place
+        /// the "cap" comparison is written, so a producer cannot accidentally test the
+        /// unscaled authored number. An uncapped species (0) is never full.
+        /// </summary>
+        public bool IsFaunaAtCap(FaunaConfigurationSO config)
+        {
+            int cap = ResolveFaunaCap(config);
+            return cap > 0 && GetLiveFaunaCount(config) >= cap;
+        }
+
+        /// <summary>
         /// Live herbivores still eligible as prey - the prey signal for predator
         /// seeding (a real herbivore count, not the prism-mass proxy).
         /// </summary>
