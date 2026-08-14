@@ -23,6 +23,10 @@ So the two swapped places:
 | **Charge** | Crystal Seeding — hold RT to preview, release to plant | Crystal Seeding — **passive**, seeds into the cytoplasm on a loop |
 | **Space** | Cone Blast — passive, fires on crystal impact | Echo Obliteration — the same blast, **plus the sight on RT** |
 
+The Echo Sight originally also pushed the camera into a zoomed first-person view. **That half was
+cut** (2026-08-14, same day) — the highlight alone carries the ability, and dropping the zoom also
+dropped the only reason to touch the speed tunnel's FOV at all. See §2.
+
 Charge still owns the recharge; Space still owns the reach. Neither element→ability binding moved —
 only which of them carries an input.
 
@@ -72,46 +76,30 @@ The upgrade used to raise a **carry** limit — meaningless once nothing is carr
 
 ## 2. Space: Echo Obliteration, and the Echo Sight
 
-Hold the right trigger and the view eases into a zoomed first-person shot down the blast axis, with
-every prism standing inside the destruction volume lit up. Release and it eases back. **It fires
-nothing** — the blast still goes off when the Dolphin strikes a crystal. The sight only makes the
-shape legible so the pilot can choose which way to be pointing when they take the crystal.
+Hold the right trigger and every prism standing inside the blast's destruction volume lights up.
+Release and the highlight fades away. **It fires nothing and it moves nothing** — the blast still
+goes off when the Dolphin strikes a crystal, and the camera is left entirely alone. The sight only
+makes the shape legible so the pilot can choose which way to be pointing when they take the
+crystal.
 
-### Three view surfaces, three owners — and the split is load-bearing
+### It touches nothing but photons
 
-| surface | owner | why |
-|---|---|---|
-| Camera **pose** | `EchoSightActionExecutor` | It lerps `CustomCameraController`'s follow offset. Ordinary, no law involved — the speed tunnel is explicitly a no-camera-distance-change effect. |
-| Camera **FOV** | **`VesselSpeedTunnel`**, never the executor | See below. |
-| Prism **highlight** | `PrismDestructionSight` | Global uniforms, zero per-prism work. |
+The whole ability is `PrismDestructionSight`'s global uniforms, published while the trigger is
+held. No camera write of any kind, no speed change, no input mute, nothing replicated.
 
-**Why the sight must not write `Camera.fieldOfView`.** It is broken two ways and both are silent:
+That is a deliberate narrowing. The first cut of this ability also eased the camera into a zoomed
+first-person shot down the blast axis, which meant moving the field of view — and FOV is owned
+fleet-wide by the speed tunnel (`Docs/SPEED_TUNNEL.md`), a LOCKED law with exactly one sanctioned
+hold. Composing with it cleanly was possible (the ability declared a *home* and the tunnel stayed
+the single writer), but it cost the law a new public surface for one vessel's view effect. **The
+zoom was cut instead**, and the tunnel is untouched.
 
-1. While the tunnel is engaged it overwrites the ability every frame — the zoom simply does nothing
-   above walking pace.
-2. When the tunnel *engages*, it captures whatever FOV it finds as the home to restore later
-   (`Apply`: `if (cam != _appliedCamera) _homeFov = cam.fieldOfView`). A zoom active at that instant
-   is **baked in permanently** and the player never gets their FOV back.
-
-So the sight pushes a **home** through `VesselSpeedTunnel.SetHomeFovOverride` and the tunnel stays
-the single writer. **This does not weaken the law** (`Docs/SPEED_TUNNEL.md` §1): the speed→effect
-mapping is untouched and still absolute — the drop is still `fovDrop × effect01`, fleet-wide, with
-no per-vessel number anywhere. What moves is the home it measures down from, and home was always a
-live value rather than a constant: the player's own FOV slider moves it mid-effect through the same
-path (`OnHomeFieldOfViewChanged`). A sighting zoom is that same class of thing. A zoomed-in Dolphin
-at speed sits exactly as deep in the tunnel as an un-zoomed one.
-
-Two consequences worth knowing:
-
-- The tunnel now keeps **applying** at zero speed effect while an override is in force
-  (`_effect01 > 0.001f || HasHomeFovOverride`). Releasing would restore the true home and cancel the
-  sight.
-- `_capturedHomeFov` is captured **once at engage, from `VesselSpeedTunnel.HomeFov` — not from the
-  live camera**. While the tunnel is engaged the camera is already narrowed by the speed effect, so
-  reading it would anchor the zoom to whatever speed the pilot happened to be doing when they raised
-  the sight, and restore to that value on release. It is not re-read live either: once the override
-  is in force the tunnel is writing the camera *from* that override, so reading it back would feed
-  the zoom into its own input and run away.
+Worth keeping if a zoom is ever revisited, because the failure modes are silent: an ability that
+writes `Camera.fieldOfView` directly is overwritten every frame while the tunnel is engaged, and
+when the tunnel *engages* it captures whatever FOV it finds as the home to restore later
+(`Apply`: `if (cam != _appliedCamera) _homeFov = cam.fieldOfView`) — so a zoom live at that instant
+is baked in permanently and the player never gets their FOV back. A zoom must therefore move the
+tunnel's *home*, never the camera.
 
 ### The highlighted volume is not re-derived
 
@@ -176,7 +164,6 @@ placement from the binding, so nothing is hand-positioned.
 | Highlight shader | `_Graphics/Materials/Graphs/PrismDestructionSight.hlsl` |
 | Graph splice tool | `Tools/Shaders/wire_prism_destruction_sight.py` |
 | Shared blast geometry | `ImpactEffects/EffectsSO/Helpers/ExplosionHelper.cs` (`BlastVolume`, `TryResolveConicVolume`) |
-| FOV home override | `_Scripts/Utility/VesselSpeedTunnel.cs` (`SetHomeFovOverride`) |
 | HUD | `UI/View/DolphinVesselHUDView.cs`, `Data Containers/DolphinVesselHUDController.cs` |
 | Assets | `_SO_Assets/VesselActions/Dolphin/DeployTeamCrystalAction.asset`, `EchoSightAction.asset` |
 
@@ -189,9 +176,7 @@ placement from the binding, so nothing is hand-positioned.
 | `maxLiveSeeded` | " | How many of this Dolphin's crystals may stand at once (0 = uncapped) |
 | `upgradedSeedsPerCycle` | " | Twin Seed's yield |
 | `cooldownMultiplierAtFullCharge` | " | Charge's grip on the recharge |
-| `sightFollowOffset` | `EchoSightAction` | How far forward the first-person view sits |
-| `sightFieldOfView` | " | Zoom depth (pushed as the tunnel's home) |
-| `transitionSeconds` | " | Ease in/out of the sight |
+| `transitionSeconds` | `EchoSightAction` | Highlight fade in/out |
 | `highlightStrength` | " | Peak highlight |
 | `PRISM_SIGHT_COLOR` / `_GAIN` / `_EDGE_POWER` / `_CORE_FILL` | `PrismDestructionSight.hlsl` | The highlight's look |
 
@@ -214,20 +199,19 @@ complete, 4/4 icons, order ✅. Then play Menu_Main and enter freestyle on the D
 | let `maxLiveSeeded` fill | seeding stops, the recharge fill sits at 0, and **no crystal disappears** |
 | collect one | seeding resumes |
 | Charge to level 5 | the mini crystal pip appears; each cycle now plants two |
-| **hold RT** | the view eases forward and zooms; prisms inside the blast volume light up warm |
-| release RT | it eases back; the highlight fades out; FOV returns to what it was |
-| hold RT, then accelerate hard | the tunnel still narrows on top of the zoom (they compose, no fight, no snap) |
-| release RT while at speed | FOV lands back on the tunnel's normal curve, not on a baked-in zoom |
+| **hold RT** | prisms inside the blast volume light up warm; the camera does **not** move and the FOV does **not** change |
+| release RT | the highlight fades out over ~0.3 s (it must not snap off) |
+| hold RT while accelerating hard | the speed tunnel behaves exactly as it always has — the sight is not involved in it at all |
 | skim to fill energy, hold RT | the highlighted volume opens as a **fan** — wide across the jaw plane, narrow across the beam |
 | ram a prism (halves energy), hold RT | the fan narrows to match |
 | take a crystal while sighting | the blast destroys what the sight was showing |
 | MPPM, two clients | a remote Dolphin holding RT shows nothing unusual — the sight is local-only |
-| swap vessel while sighting | camera and FOV return to normal; no stuck zoom, no stuck highlight |
+| swap vessel while sighting | no stuck highlight (the globals are cleared on re-init) |
 
 **Two things I would check first if something looks wrong**, because they are the likeliest failures
 and both are silent: whether the graphs recompiled at all (an unimported graph shows no highlight and
 no error), and whether `blastEffect` is actually assigned on the Dolphin's `EchoSightActionExecutor`
-(unassigned = the sight zooms but highlights nothing).
+(unassigned = holding RT does nothing whatsoever).
 
 ## 7. Follow-ups
 
@@ -241,6 +225,9 @@ no error), and whether `blastEffect` is actually assigned on the Dolphin's `Echo
   expose as a uniform.
 - **`Crystal.ApplyDomainPreview` is now unreferenced** — it existed for the retired ghost preview.
   Left in place as a public `Crystal` API rather than deleted in a vessel branch.
-- **`CameraManager.SetNormalizedCloseCameraDistance` is a no-op** (its whole body is commented out).
-  The sight drives `CustomCameraController.SetFollowOffset` directly instead. Worth deciding whether
-  that method should be repaired or removed.
+- **`CameraManager.SetNormalizedCloseCameraDistance` is a no-op** — its whole body is commented
+  out. Nothing here depends on it any more (the zoom was cut), but it was found while wiring the
+  first cut and is worth deciding on: repair or remove.
+- **A zoomed sight view is still an open idea, not a rejected one.** It was cut to keep the speed
+  tunnel untouched, not because it played badly — nobody has played it. If it comes back, §2 records
+  the one way it can be built safely.

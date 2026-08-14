@@ -55,11 +55,6 @@ namespace CosmicShore.Utility
         static Camera _appliedCamera;
         static float _homeFov;
 
-        // A sighting/zoom ability's requested HOME field of view, and the object that asked for
-        // it. <= 0 means "no override". See SetHomeFovOverride.
-        static float _homeFovOverride;
-        static Object _homeFovOverrideKey;
-
         static SpeedTunnelConfigSO _config;
         static bool _configResolved;
 
@@ -78,66 +73,6 @@ namespace CosmicShore.Utility
 
         /// <summary>True while <see cref="SetSuppressed"/> is holding the tunnel closed.</summary>
         public static bool IsSuppressed => _suppressed;
-
-        /// <summary>True while a sighting ability is holding the home FOV somewhere else.</summary>
-        public static bool HasHomeFovOverride => _homeFovOverride > 0f;
-
-        /// <summary>
-        /// The TRUE home field of view — what the camera would be running at with the tunnel idle.
-        /// 0 before the driver has ever taken a camera over.
-        ///
-        /// A sighting ability must zoom from THIS, never from <c>Camera.fieldOfView</c>: while the
-        /// tunnel is engaged the live camera is already narrowed by the speed effect, so capturing
-        /// it would anchor the zoom to whatever speed the pilot happened to be doing at the moment
-        /// they raised the sight — and would then restore to that value on release.
-        /// </summary>
-        public static float HomeFov => _homeFov;
-
-        /// <summary>
-        /// The FOV the effect currently measures DOWN from: an ability's override when one is in
-        /// force, otherwise the true home captured off the live camera.
-        /// </summary>
-        static float EffectiveHomeFov => _homeFovOverride > 0f ? _homeFovOverride : _homeFov;
-
-        /// <summary>
-        /// Point a sighting ability's zoom at the tunnel instead of at the camera. The Dolphin's
-        /// Echo Sight is the first caller.
-        ///
-        /// <para><b>Why this exists rather than a second FOV writer.</b> An ability that writes
-        /// <c>Camera.fieldOfView</c> itself is broken two ways and both are silent: while the
-        /// tunnel is engaged it simply overwrites the ability every frame, and when the tunnel
-        /// ENGAGES it captures whatever FOV it finds as the home to restore later — so a zoom that
-        /// happened to be active at that moment gets baked in permanently and the player never
-        /// gets their FOV back. Keeping one writer is what makes the law's home-capture
-        /// trustworthy.</para>
-        ///
-        /// <para><b>This does not weaken the law.</b> §1's guarantee is about the MAPPING from
-        /// speed to effect, which is untouched — the drop is still <c>fovDrop × effect01</c>, an
-        /// absolute function of speed shared by the whole fleet. What moves is the home it
-        /// measures down from, and home has always been a live value rather than a constant: the
-        /// player's own FOV slider moves it mid-effect through the same path
-        /// (<see cref="OnHomeFieldOfViewChanged"/>). A sight is that same class of thing. There is
-        /// still no per-vessel number in the speed response, so there is still nothing a vessel
-        /// can author to escape the tunnel — a zoomed-in Dolphin at speed sits exactly as deep in
-        /// the tunnel as an un-zoomed one.</para>
-        ///
-        /// Identity-keyed like <see cref="SetTarget"/>, so a stale teardown from a swapped-out
-        /// vessel cannot cancel a newer sight's override.
-        /// </summary>
-        public static void SetHomeFovOverride(float fov, Object key)
-        {
-            if (fov <= 0f) { ClearHomeFovOverride(key); return; }
-            _homeFovOverride = fov;
-            _homeFovOverrideKey = key;
-        }
-
-        /// <summary>Release the override, but only if <paramref name="key"/> still owns it.</summary>
-        public static void ClearHomeFovOverride(Object key)
-        {
-            if (_homeFovOverrideKey != key && _homeFovOverrideKey != null) return;
-            _homeFovOverride = 0f;
-            _homeFovOverrideKey = null;
-        }
 
         /// <summary>
         /// Tuning. Falls back to the SO's own defaults when no <c>Resources/SpeedTunnelConfig</c>
@@ -221,8 +156,6 @@ namespace CosmicShore.Utility
             _target = null;
             _targetKey = null;
             _suppressed = false;
-            _homeFovOverride = 0f;
-            _homeFovOverrideKey = null;
             _effect01 = 0f;
             _applied = false;
             _appliedCamera = null;
@@ -262,11 +195,7 @@ namespace CosmicShore.Utility
             // suppresses also CUTS to the replay camera, so those writes would land on the
             // hand-posed broadcast camera whose field of view the replay just read to fit its
             // shot — precisely the outcome the hold exists to prevent.
-            // A home override has to keep the driver APPLYING even at zero speed effect, because
-            // the override is expressed through this one writer. Releasing would restore the true
-            // home and cancel the sight; letting the ability write the camera itself instead is
-            // the broken alternative SetHomeFovOverride documents.
-            if (!_suppressed && (_effect01 > 0.001f || HasHomeFovOverride))
+            if (!_suppressed && _effect01 > 0.001f)
                 Apply(config, _effect01);
             else if (_applied)
                 Release();
@@ -299,13 +228,10 @@ namespace CosmicShore.Utility
                 // Home = whatever FOV the camera is ACTUALLY running with the moment the effect
                 // takes over. Never a constant and never a settings default — anchoring to
                 // either reads as a snap onto foreign values the instant the tunnel engages.
-                // Safe to capture even while a sight is zooming: this driver is the ONLY thing that
-                // ever writes fieldOfView, so whatever is on the camera the first frame we take it
-                // over is the genuine home and never our own (or an ability's) previous write.
                 if (cam != _appliedCamera)
                     _homeFov = cam.fieldOfView;
 
-                cam.fieldOfView = config.FovFor(EffectiveHomeFov, t);
+                cam.fieldOfView = config.FovFor(_homeFov, t);
                 _appliedCamera = cam;
             }
             else
@@ -352,10 +278,8 @@ namespace CosmicShore.Utility
         {
             _homeFov = fov;
             // Re-apply immediately so the frame the slider moves shows the new home, not the old.
-            // A sight's override outranks the slider while it is engaged, but the new setting is
-            // still recorded above so releasing the sight restores the value the player just chose.
             if (_applied && _appliedCamera != null && !_appliedCamera.orthographic)
-                _appliedCamera.fieldOfView = Config.FovFor(EffectiveHomeFov, _effect01);
+                _appliedCamera.fieldOfView = Config.FovFor(_homeFov, _effect01);
         }
 
         static PostProcessingManager PostProcessing => PostProcessingManager.Instance;

@@ -684,8 +684,10 @@ available in the authoring session. Full detail + tuning table:
 `Assets/_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_CRYSTAL_SEEDING.md` §6.
 
 **What landed.** Charge's crystal seeding became PASSIVE (a cooldown loop seeding team crystals
-into the cell's cytoplasm), freeing the right trigger for Space's new **Echo Sight** — a zoomed
-first-person view that highlights every prism inside the crystal blast's live destruction volume.
+into the cell's cytoplasm), freeing the right trigger for Space's new **Echo Sight** — hold it and
+every prism inside the crystal blast's live destruction volume lights up. The sight touches nothing
+but photons: no camera write, no FOV change, nothing replicated. (A zoomed first-person view was
+built alongside it and cut; the speed tunnel is untouched by this branch.)
 
 **Import first.** Two shader graphs were edited out-of-editor
 (`Tools/Shaders/wire_prism_destruction_sight.py` → BlockGraph, ExplodingBlockGraph). They need a
@@ -700,19 +702,16 @@ error**, so check this before concluding the sight is broken.
 3. Let `maxLiveSeeded` (8) fill → seeding stops and **no crystal disappears**. Collect one →
    seeding resumes. (A crystal vanishing here is a conserved-mass violation, not a tuning issue.)
 4. Charge to L5 → the mini crystal pip appears and each cycle plants two.
-5. **Hold RT** → view eases forward + zooms, prisms in the blast volume light warm. Release →
-   eases back, highlight fades, FOV returns.
-6. **The FOV interaction is the risky part.** Hold RT *and accelerate hard*: the speed tunnel must
-   still narrow on top of the zoom with no fight and no snap. Release at speed: FOV must land back
-   on the tunnel's normal curve, **not** on a baked-in zoom. Then swap vessel mid-sight — no stuck
-   zoom, no stuck highlight.
+5. **Hold RT** → prisms in the blast volume light warm, and the camera does **not** move and the
+   FOV does **not** change. Release → the highlight fades over ~0.3 s rather than snapping off.
+   Swap vessel mid-sight → no stuck highlight.
 7. Skim to full, hold RT → the highlighted volume is a **fan** (wide across the jaw plane, narrow
    across the beam), matching the hull's jaws. Ram a prism → it narrows to match.
 8. Take a crystal while sighting → the blast destroys what the sight was showing.
 9. MPPM ×2 → a remote Dolphin holding RT looks normal; the sight is local-only.
 
-**If the sight zooms but highlights nothing**, check `blastEffect` is assigned on the Dolphin
-prefab's `EchoSightActionExecutor` — unassigned is silent.
+**If holding RT does nothing at all**, check `blastEffect` is assigned on the Dolphin prefab's
+`EchoSightActionExecutor` — unassigned is silent.
 
 **Known limitations shipped deliberately** (see the doc's §7): seeded crystals are local-only
 (`TeamCrystal.prefab` has no NetworkObject, matching the previous hold-to-plant scope), and the

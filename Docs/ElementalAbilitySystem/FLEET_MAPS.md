@@ -126,8 +126,9 @@ and the Echo Sight, added 2026-08-14 when the right trigger was freed).
 
 **2026-08-14 — the two abilities swapped which one carries an input.** Charge's crystal seeding
 became PASSIVE (a cooldown loop that seeds team crystals into the cell's cytoplasm), which freed
-the right trigger for Space's **Echo Sight**: hold it to drop into a zoomed first-person view in
-which every prism inside the blast's current destruction volume lights up. Neither element→ability
+the right trigger for Space's **Echo Sight**: hold it and every prism inside the blast's current
+destruction volume lights up (a zoomed first-person view shipped alongside it and was cut the same
+day — the highlight alone carries the ability and it leaves the speed tunnel untouched). Neither element→ability
 binding moved — Charge still owns the recharge, Space still owns the reach — only which of them
 has an input. Rationale, placement rules and the FOV-vs-speed-tunnel resolution:
 `DOLPHIN_CRYSTAL_SEEDING.md`.
@@ -147,7 +148,7 @@ exact jaw-angle curve: `DOLPHIN_ENERGY_ECONOMY.md` §1 and §3.
 |---|---|---|
 | Charge | team-crystal recharge ×0.5 at level 10 (`DeployTeamCrystalActionSO.cooldownMultiplierAtFullCharge`, floored by `minCooldown`). The ability is **PASSIVE** since 2026-08-14 — no input; it seeds into the cell's cytoplasm on a loop, so this multiplier sets the seeding tempo and therefore the blast's tempo | **Twin Seed** — each seeding plants TWO team crystals instead of one (`upgradedSeedsPerCycle`). Was a CARRY limit until the ability went passive; nothing is carried now |
 | Mass | drift prism VOLUME (`trailVolume` ElementalFloat 1→2.5 on `VesselPrismController`, cube-root per axis) | **Hard Wake** — drift prisms arrive shielded, gated on `IsDrifting` (`massUpgradeShieldsTrail`, the Squirrel's Heavy Trail machinery) |
-| Space | crystal-impact blast SIZE ×2 at level 10 (`VesselExplosionByCrystalEffectSO._heightMultiplierAtFullSpace`). Scales the blast **self-similarly** — reach, capsule length AND capsule diameter together — because the angles ARE those over height, and energy owns the gape. Since 2026-08-14 this slot also carries the **Echo Sight** on the right trigger (`EchoSightActionSO`) — the zoomed first-person view that highlights the blast's live destruction volume, which is how Space's reach becomes legible | **Clean Blast** — the blast spares the pilot's own domain (`_spaceUpgradeSparesAllies` → `InitializeStruct.AffectSelfOverride`). Below the unlock the cone is indiscriminate, which is what makes sparing allies worth earning |
+| Space | crystal-impact blast SIZE ×2 at level 10 (`VesselExplosionByCrystalEffectSO._heightMultiplierAtFullSpace`). Scales the blast **self-similarly** — reach, capsule length AND capsule diameter together — because the angles ARE those over height, and energy owns the gape. Since 2026-08-14 this slot also carries the **Echo Sight** on the right trigger (`EchoSightActionSO`) — hold it and the blast's live destruction volume lights up on the mass standing in it, which is how Space's reach becomes legible | **Clean Blast** — the blast spares the pilot's own domain (`_spaceUpgradeSparesAllies` → `InitializeStruct.AffectSelfOverride`). Below the unlock the cone is indiscriminate, which is what makes sparing allies worth earning |
 | Time | boost charge RATE while drifting ×1.5 at level 10 (`ChargeBoostActionSO.chargeRateMultiplierAtFullTime`) | **Live Current** — skimming a DANGER prism grants 3× energy (`SkimmerChangeResourceByPrismEffectSO._dangerBonusElement/_dangerBonusMultiplier`; the Squirrel's Live Wire shape — the risk was always there, the reward is now earned) |
 
 All four map `MultiplierAtFullLevel` are pinned to **1** — every scaling above is authored on its
