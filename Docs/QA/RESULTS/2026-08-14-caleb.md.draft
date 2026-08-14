@@ -1,0 +1,95 @@
+# QA session results
+
+> **This is a draft.** The `.draft` suffix keeps `apply_results.py` from seeing it —
+> the script globs `RESULTS/*.md`, and a half-filled file it picks up gets recorded
+> as *applied* even when it contains no verdicts, which would mean it is never
+> applied again once you do fill it in. Rename to `2026-08-14-caleb.md` **only when
+> the Result column is filled**, then run `/qa-backlog results`.
+
+## Session
+
+| Field | Value |
+|---|---|
+| Tester | Caleb |
+| Date | 2026-08-14 |
+| Branch | claude/qa-backlog-7mvlsr |
+| Commit | `7635844e` |
+| Unity version | 6000.3.17f1 |
+| Platform(s) | Editor (macOS) |
+
+## Results
+
+<!-- qa-results-table -->
+
+| ID | Result | Notes |
+|---|---|---|
+| QA-BUILD-COMPILE |  |  |
+
+<!-- /qa-results-table -->
+
+---
+
+## Working notes for QA-BUILD-COMPILE
+
+*(Scratch space — the script ignores everything outside the table above. Fill this in
+as you go; it becomes the dev task's "Observed" text if the item fails.)*
+
+**The item:** the project compiles, imports and boots. ~30 branches of hand-authored
+C#, prefab, scene and ScriptableObject YAML have never been through Unity's importer
+or compiler.
+
+### Step 1 — open the project on this branch, let import + compile settle
+
+- Time to settle: ______
+- Did the importer run a full reimport, or a warm `Library/`? ______
+
+### Step 2 — read the whole Console
+
+Paste **verbatim**. The first compile error is the one that matters; everything else
+on the backlog is blocked behind it.
+
+```
+(compile errors here — full text, including file:line)
+```
+
+```
+(Missing (Mono Script) rows — which object, which prefab/scene)
+```
+
+```
+(broken/dangling reference + meta regeneration warnings)
+```
+
+**Known, do NOT record as failures** (pre-existing, already logged):
+- `SerpentHUDVariant.prefab` and `VesselHUDPrefab.prefab` carry a missing script,
+  guid `57dc27a3f7264d548b51007c0615f701`.
+- Manta and Serpent carry dangling package `m_Script` guids (unresolvable without
+  `Library/PackageCache`).
+
+### Step 3 — boot path
+
+| Stage | Reached? | Exception (verbatim) |
+|---|---|---|
+| `Menu_Main` |  |  |
+| Enter freestyle |  |  |
+| Return to menu |  |  |
+| Launch one arcade game (which: ______) |  |  |
+| Return home |  |  |
+
+### Verdict
+
+- **PASS** — zero compile errors, no new missing scripts, and all five boot stages
+  clean.
+- **FAIL** — any compile error, any new missing script, or an exception that stops
+  the boot or the round.
+- **BLOCKED** — you could not get far enough to judge (say what stopped you).
+
+## Evidence
+
+*(Screenshots, console dumps, clips — reference them by item ID.)*
+
+## Anything else
+
+*(Feel, tuning opinions, and anything that looked wrong but is not on the list. These
+change no item's status, but they are read when the backlog is regenerated and can
+become new items.)*
