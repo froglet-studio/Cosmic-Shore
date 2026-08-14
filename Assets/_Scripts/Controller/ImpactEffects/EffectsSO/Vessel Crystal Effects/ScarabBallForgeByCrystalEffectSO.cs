@@ -31,7 +31,16 @@ namespace CosmicShore.Gameplay
     public class ScarabBallForgeByCrystalEffectSO : VesselCrystalEffectSO
     {
         [Header("Energy")]
-        [Tooltip("Which resource meter holds ball energy (the Scarab authors index 0).")]
+        [Tooltip("Gate ball creation on the energy meter — the design's economy (SCARAB.md §4.1: " +
+                 "crystals fill a meter, and only once it is FULL does the next crystal forge). " +
+                 "OFF by request for now: EVERY omni crystal forges a ball outright and no energy " +
+                 "is spent. The meter still fills from its sibling effect, so while this is off " +
+                 "the HUD's energy ring is a readout with nothing gated behind it. Turning this " +
+                 "back on restores the economy with no other change.")]
+        [SerializeField] bool _requireEnergy = false;
+
+        [Tooltip("Which resource meter holds ball energy (the Scarab authors index 0). " +
+                 "Only read when _requireEnergy is on.")]
         [SerializeField] int _energyResourceIndex = 0;
 
         [Tooltip("Fraction of the meter's max that counts as 'full'. At or above this, the next " +
@@ -73,15 +82,20 @@ namespace CosmicShore.Gameplay
             if (!isServer) return;
 
             var resources = status.ResourceSystem;
-            if (resources == null) return;
-            if (_energyResourceIndex < 0 || _energyResourceIndex >= resources.Resources.Count) return;
+            Resource meter = null;
 
-            var meter = resources.Resources[_energyResourceIndex];
-            if (meter == null || meter.MaxAmount <= 0f) return;
+            if (_requireEnergy)
+            {
+                if (resources == null) return;
+                if (_energyResourceIndex < 0 || _energyResourceIndex >= resources.Resources.Count) return;
 
-            // Tested BEFORE the sibling energy-add effect runs (container order) — the meter must
-            // already have been full when this crystal was touched.
-            if (meter.CurrentAmount < meter.MaxAmount * _forgeThreshold) return;
+                meter = resources.Resources[_energyResourceIndex];
+                if (meter == null || meter.MaxAmount <= 0f) return;
+
+                // Tested BEFORE the sibling energy-add effect runs (container order) — the meter
+                // must already have been full when this crystal was touched.
+                if (meter.CurrentAmount < meter.MaxAmount * _forgeThreshold) return;
+            }
 
             if (_ballPrefab == null)
             {
@@ -111,7 +125,8 @@ namespace CosmicShore.Gameplay
 
             ball.LaunchServer(spawnAt, course * launchSpeed, status.Domain);
 
-            resources.ChangeResourceAmount(_energyResourceIndex, -meter.MaxAmount * _energyCostPerBall);
+            if (_requireEnergy && meter != null)
+                resources.ChangeResourceAmount(_energyResourceIndex, -meter.MaxAmount * _energyCostPerBall);
 
             CSDebug.Log($"[ScarabBallForge] {status.PlayerName} forged a {status.Domain} ball at " +
                         $"{spawnAt} @ {launchSpeed:F0} u/s.");

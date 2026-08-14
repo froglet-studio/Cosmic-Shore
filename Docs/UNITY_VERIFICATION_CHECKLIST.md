@@ -45,15 +45,19 @@ C# stub-compiled under mcs. None of it has been imported.
    A / Space = a 12-brick prism ring blooms ~150u ahead on the COURSE (drift then place — the ring
    should appear where you're going, not where you're pointing), second+third presses spend the
    remaining charges, fourth refuses.
-4. **Crystals → a ball** (added after the first playtest reported no ball ever appearing — nothing
-   forged one; the energy meter was filling correctly but had no consumer and no gauge). Collect
-   **five** omni crystals: the first four fill the **energy ring** (+0.25 each — the ring fills and
-   flips to the amber READY colour with a punch on the fourth), the **fifth spawns a ball** ahead
-   of your nose carrying your speed and domain colour and empties the ring. Console prints
-   `[ScarabBallForge] … forged a {domain} ball … @ N u/s`. Each crystal also brightens the
-   **Switch icon** one step (0→3 charges). ⚠ If a ball spawns but sits still, the freeze/velocity
-   ordering in `LaunchServer` regressed; if TWO balls appear per crystal in MPPM, the server gate
-   regressed.
+4. **Crystals → a ball.** **EVERY omni crystal forges a ball** — the energy gate is authored OFF
+   (`_requireEnergy: 0`) by request. Fly through one: a ball appears ahead of your nose carrying
+   your speed and domain colour, and the console prints `[ScarabBallForge] … forged a {domain}
+   ball … @ N u/s`. Each crystal also brightens the **Switch icon** one step (0→3 charges).
+   ⚠ If a ball spawns but sits still, the freeze/velocity ordering in `LaunchServer` regressed; if
+   TWO balls appear per crystal in MPPM, the server gate regressed.
+   ⚠ **Balls accumulate without bound** while the gate is off and freestyle has no arena boundary
+   — nothing despawns them, and each live ball costs a per-tick prism scan plus a sweep over every
+   vessel. Fine for a short session; if a long one degrades, that is the population cap (§15.5),
+   not a new bug.
+   *(The energy economy still exists behind that one flag: turn `_requireEnergy` on and the meter
+   gates forging again — four crystals fill the ring, the fifth forges. While it is off the HUD's
+   energy ring fills but gates nothing.)*
 4a. **Gauges**: the Juke icon is bright when armed and dims for ~1.2s after a juke; the Switch icon
    dims one step per placement and refuses (staying dim) at zero.
 5. Astro League: the configure modal's carousel now offers Rhino + Scarab; pick Scarab, 2 players
