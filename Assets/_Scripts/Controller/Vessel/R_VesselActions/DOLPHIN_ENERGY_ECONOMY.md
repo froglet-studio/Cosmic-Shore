@@ -155,6 +155,57 @@ discharge, and cancelling that task only throws *inside* the loop — it never r
 that restores the speed. Without the clear, anyone who drifted twice in a row kept a partial
 boost multiplier permanently.
 
+### The drift is a momentum-preserving slide — the whole velocity is frozen, not just its direction
+
+The Dolphin authors `driftDamping: 0` (`DolphinDriftAction.asset`), so its drift already froze the
+velocity's **direction**: `MoveShip` stops re-pointing `Course` at `transform.forward` and flies the
+heading the vessel carried in while the hull rotates freely on top of it. Its **magnitude** kept
+moving, though — `AdvanceSpeed` went on tracking `ComputeThrottleTarget()` every frame, so the
+throttle stick (and any boost state change) still stretched and shrank the slide underneath the
+locked heading. Half a lock reads as a bug, not a mechanic.
+
+`VesselTransformer.holdSpeedWhileDrifting` (authored **on** for the Dolphin, off for every other
+vessel) closes the other half:
+
+| | before | now |
+|---|---|---|
+| velocity direction | locked at drift start (`driftDamping: 0`) | unchanged |
+| velocity magnitude | throttle-driven, live | **latched at drift start, held for the drift** |
+| throttle during drift | drives speed | **inert** — the target is still computed, it just never reaches `speed` |
+
+Mechanically: `BeginDrift` → `RefreshDriftSpeedHold()` latches the current smoothed cruise `speed`
+on the **rising edge** of the hold, and `AdvanceSpeed` pins `speed` to that value until `EndDrift`
+releases it. The pin sits in `AdvanceSpeed` rather than in `ComputeThrottleTarget` because
+`AdvanceSpeed` is the one path *every* transformer's `MoveShip` runs through — a subclass that
+overrides the target (`SingleStickVesselTransformer`) is covered without knowing drift exists.
+
+Four things are deliberately **outside** the hold:
+
+- **`throttleMultiplier`** (the `ModifyThrottle` channel) stays live, so a danger prism's full-stop
+  slow bites a drifting Dolphin exactly as hard as a flying one. Danger prisms are not safe to
+  anybody (locked design) and a drift is not a shield.
+- **`velocityShift`** (the `ModifyVelocity` channel) stays live — knockback, dodges and AOE impulses
+  still displace a drifting vessel.
+- **`_speedTrackingRate`** is untouched, so a ramp boost mid-ramp resumes on release instead of
+  being silently swallowed by the pinned value.
+- **The release**, not the ease-out. `EndDrift` hands the throttle back the instant the pilot lets
+  go — the same instant `BeginDischarge` starts, which has to be able to accelerate immediately.
+  (The non-gamepad course ease-out keeps easing after that; only the speed unlocks early.)
+
+The hold is **binary**, while the course lock is analog (`driftAmount = clamp01(triggerSum)`): on a
+gamepad the speed latches the moment the left trigger crosses the deadzone, at which point the
+course is only fractionally locked. That is the deliberate simple reading of "lock the magnitude";
+if a feathered trigger ends up wanting a feathered lock, the blend point is
+`RefreshDriftSpeedHold` → `AdvanceSpeed` (`Lerp(target, held, driftAmount)`), not a new field.
+
+**Known consequence — the drift now carries boost speed.** `BeginCharge` kills `BoostMultiplier` /
+`IsBoosting` at the top of every drift, so before this change re-drifting during a discharge bled
+the boost speed away over the next second. Now that speed is what gets latched: drift → release →
+re-drift *at the peak of the discharge* pins the vessel near **357** for as long as the drift is
+held, while banking the next boost. If that reads as a ratchet in play, the fix is a ceiling on the
+captured value (clamp `_heldDriftSpeed` to the unboosted cruise target, 78), not the removal of the
+hold — but it is a real balance change and wants a play-test before it is decided.
+
 ---
 
 ## 3. The hull reads out the blast
@@ -321,6 +372,10 @@ Play Menu_Main, enter freestyle on the Dolphin.
 | hit a crystal | blast fires, gape snaps back to the 4.76° rest, Space icon flashes with a prism count |
 | blast at full energy | destruction is a FAN — wide across the jaw plane, narrow across the beam |
 | full throttle, no boost | `VesselStatus.Speed` settles at **78** (was 60) |
+| drift at cruise, then work the throttle stick | speed does **not** move — heading swings, magnitude is pinned at the value it had when the drift began |
+| drift from a slow crawl | it stays a slow crawl for the whole drift (the lock is "hold what you had", not "hold top speed") |
+| release the drift | throttle authority returns immediately and speed resumes tracking (into the boost discharge) |
+| ram a danger prism mid-drift | the vessel still slows — `throttleMultiplier` is outside the hold |
 | hold drift | boost ring steps up; release → speed rises then decays; ring empties |
 | hold drift from empty to full | ring fills in **~3.6 s** (was 4) |
 | release a full meter | speed peaks near **357** and takes **~2.5 s** to fall back (was 210 / 2 s) |

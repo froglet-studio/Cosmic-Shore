@@ -2208,6 +2208,8 @@ MonoBehaviour:
   decayBoost: 0
   MaxBoostMultiplier: 5
   BoostDecayRate: 0.1
+  singleTriggerDrift: 0
+  holdSpeedWhileDrifting: 1
   DriftDamping: 0
   boostChanged: {fileID: 0}
   MinimumSpeed: 0
