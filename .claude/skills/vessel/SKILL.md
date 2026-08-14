@@ -103,7 +103,7 @@ un-implemented until Garrett marks them up. If your task requires a mapping that
 STOP and ask (AskUserQuestion), presenting the FLEET_MAPS proposal for that row. The same gate
 applies to new abilities, new resources on the meter list, and anything that adds a fundamental.
 
-## 4. Implement — the fifteen rules that keep getting relearned
+## 4. Implement — the sixteen rules that keep getting relearned
 
 1. **Ability SOs are shared and stateless.** Per-vessel state lives in executors / vessel-root
    MonoBehaviours; SOs receive `(registry, status)` per call. Never bind state to an SO asset.
@@ -153,7 +153,13 @@ applies to new abilities, new resources on the meter list, and anything that add
     an executor's own cooldown can block its path entirely — so deleting the passive trickle
     "because gain should come from the ability" left the Dolphin's boost with no working fill
     path at all. The trickle and `rechargeCooldownSeconds` had to move together. Grep every
-    writer, then change the set.
+    writer, then change the set. **The same enumeration is required to FREEZE a quantity**, and
+    there the answer is per-writer rather than all-or-nothing: the Dolphin's drift speed hold
+    pins the throttle-derived cruise `speed` but deliberately leaves `throttleMultiplier`
+    (impact slows) and `velocityShift` (knockback/AOE) live — freezing those too would have
+    quietly made a drifting vessel immune to danger prisms, which is a LOCKED-design violation
+    hiding inside a feel change. List every writer, then say per writer whether the freeze
+    covers it, and record that list in the doc.
 13. **A cancelled UniTask never runs its tail.** `catch (OperationCanceledException) { }` means
     any status the routine set *before* its loop stays set forever. Interrupting a discharge left
     `BoostMultiplier`/`IsBoosting` frozen — a permanent free speed bonus. Restore that state in
@@ -176,6 +182,19 @@ applies to new abilities, new resources on the meter list, and anything that add
     plus a transition); a partial fill on a pip reads as a meter and reopens the question you just
     closed. Drive it from a sibling image, never the ability icon itself, or you collide with the
     four-icon upgrade tint/badge (rule 9).
+16. **Intervene in the flight model at `VesselTransformer.AdvanceSpeed`, not at
+    `ComputeThrottleTarget`.** Four transformers exist (`VesselTransformer`,
+    `SingleStickVesselTransformer` — what the Sparrow and Serpent actually run —
+    `GunVesselTransformer`, `CommandVesselTransformer`) and the first two carry their own
+    `MoveShip` AND their own `ComputeThrottleTarget`, so a change written into the target reaches
+    only the vessels running the class you edited (the single-stick override ignores `XDiff` and
+    the throttle-scaler multiplier entirely). `AdvanceSpeed` is the one line both `MoveShip`s call
+    — the choke point where anything that must hold for EVERY vessel belongs, and where the
+    Dolphin's drift speed hold sits. Two companions of `speed` need the same treatment when you
+    touch it: the `toggleManualThrottle` lerp is a SECOND throttle channel living in each
+    `MoveShip` (no shipped prefab enables it — check before assuming your change covered it), and
+    `_speedTrackingRate` is a latched ramp state (the Rhino's ramp boost) that a naive early-return
+    can silently consume.
 
 ## 5. Audit, then hand back verification (you cannot run Unity; the human is the gate)
 
