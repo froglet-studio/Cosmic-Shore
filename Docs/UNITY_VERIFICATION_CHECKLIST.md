@@ -674,3 +674,47 @@ reimported any of it yet.
 - `Dolphin.prefab`'s `ElementalBarsController` has **no `elementBars` key**, so the element
   flowers are created at runtime via `CreateDefaultElementBars()` (which logs a warning).
   Fix with FrogletTools > Vessels > *Bake Elemental Petal Bars Into All Vessel HUDs*.
+
+---
+
+## 🔴 Dolphin — passive crystal seeding + Echo Sight (2026-08-14, UNVERIFIED)
+
+Branch `claude/dolphin-crystal-spawn-rework-feqrxc`. **Nothing below has been run** — no Unity
+available in the authoring session. Full detail + tuning table:
+`Assets/_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_CRYSTAL_SEEDING.md` §6.
+
+**What landed.** Charge's crystal seeding became PASSIVE (a cooldown loop seeding team crystals
+into the cell's cytoplasm), freeing the right trigger for Space's new **Echo Sight** — a zoomed
+first-person view that highlights every prism inside the crystal blast's live destruction volume.
+
+**Import first.** Two shader graphs were edited out-of-editor
+(`Tools/Shaders/wire_prism_destruction_sight.py` → BlockGraph, ExplodingBlockGraph). They need a
+Unity import pass to regenerate their shaders. An unimported graph shows **no highlight and no
+error**, so check this before concluding the sight is broken.
+
+1. **Compile clean**, then FrogletTools > Vessels > **Audit Vessel Ability Rows** → Dolphin still
+   map complete, 4/4 icons, order ✅.
+2. Freestyle on the Dolphin, idle one cooldown → a team crystal blooms in somewhere in the
+   cytoplasm and the Charge slot punches. Over several cycles they should spread through the
+   shell, **not** cluster near the nucleus, and **never** land inside it.
+3. Let `maxLiveSeeded` (8) fill → seeding stops and **no crystal disappears**. Collect one →
+   seeding resumes. (A crystal vanishing here is a conserved-mass violation, not a tuning issue.)
+4. Charge to L5 → the mini crystal pip appears and each cycle plants two.
+5. **Hold RT** → view eases forward + zooms, prisms in the blast volume light warm. Release →
+   eases back, highlight fades, FOV returns.
+6. **The FOV interaction is the risky part.** Hold RT *and accelerate hard*: the speed tunnel must
+   still narrow on top of the zoom with no fight and no snap. Release at speed: FOV must land back
+   on the tunnel's normal curve, **not** on a baked-in zoom. Then swap vessel mid-sight — no stuck
+   zoom, no stuck highlight.
+7. Skim to full, hold RT → the highlighted volume is a **fan** (wide across the jaw plane, narrow
+   across the beam), matching the hull's jaws. Ram a prism → it narrows to match.
+8. Take a crystal while sighting → the blast destroys what the sight was showing.
+9. MPPM ×2 → a remote Dolphin holding RT looks normal; the sight is local-only.
+
+**If the sight zooms but highlights nothing**, check `blastEffect` is assigned on the Dolphin
+prefab's `EchoSightActionExecutor` — unassigned is silent.
+
+**Known limitations shipped deliberately** (see the doc's §7): seeded crystals are local-only
+(`TeamCrystal.prefab` has no NetworkObject, matching the previous hold-to-plant scope), and the
+sight ignores Space L5 "Clean Blast" friendly fire — it highlights everything geometrically inside
+the volume.

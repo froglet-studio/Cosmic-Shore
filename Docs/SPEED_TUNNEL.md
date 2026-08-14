@@ -64,6 +64,44 @@ early return: a replay can finish a frame after its scene tore down, and returni
 lift would latch both platform laws off for the rest of the session (these statics are otherwise
 reset only by their `RuntimeInitializeOnLoadMethod` installers, once per app launch).
 
+### §2.1 The HOME override — how a sighting zoom composes instead of fighting
+
+`VesselSpeedTunnel.SetHomeFovOverride(fov, key)` lets an ability move the FOV the effect measures
+DOWN from. The Dolphin's Echo Sight is the first caller
+(`_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_CRYSTAL_SEEDING.md` §2).
+
+**This is not a second writer and not a second hold.** The driver stays the only thing that ever
+writes `Camera.fieldOfView`; the ability declares a *home* and the tunnel keeps applying its own
+curve on top.
+
+**Why an ability must never write the camera directly.** Two failures, both silent:
+
+1. While the tunnel is engaged it overwrites the ability every frame — the zoom does nothing above
+   walking pace.
+2. When the tunnel *engages* it captures whatever FOV it finds as the home to restore later
+   (`Apply`: `if (cam != _appliedCamera) _homeFov = cam.fieldOfView`). A zoom active at that instant
+   is **baked in permanently** and the player never gets their FOV back.
+
+The second is why keeping one writer is what makes the home capture trustworthy at all.
+
+**Why this does not weaken §1.** The guarantee is about the MAPPING from speed to effect, which is
+untouched: the drop is still `fovDrop × effect01`, one absolute function of speed shared by the
+whole fleet, with no per-vessel number anywhere. Only the home moves — and home was never a
+constant. The player's own FOV slider already moves it mid-effect through the same mechanism
+(`OnHomeFieldOfViewChanged`), and §1 requires exactly that ("Home values are whatever the game is
+actually running with"). A zoomed-in vessel at a given speed sits exactly as deep in the tunnel as
+an un-zoomed one, so there is still nothing a vessel can author to escape it.
+
+Two mechanics worth knowing before touching this:
+
+- The driver keeps **applying** at zero speed effect while an override is in force
+  (`_effect01 > 0.001f || HasHomeFovOverride`). Releasing would restore the true home and cancel
+  the ability's zoom.
+- The override is **identity-keyed** like `SetTarget`, so a late teardown from a swapped-out vessel
+  cannot cancel a newer sight's zoom. Callers must capture their own base FOV **once** and not
+  re-read the camera while their override is live — the tunnel is writing the camera *from* that
+  override, so reading it back feeds the zoom into its own input and runs away.
+
 ## §3 Tuning
 
 `Assets/Resources/SpeedTunnelConfig.asset` (`SpeedTunnelConfigSO`) is the **only** tuning

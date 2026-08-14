@@ -33,7 +33,7 @@ executor, replicated unlock bits, no new fundamentals).
 |---|---|
 | Sparrow | Space→gun range (2.5) · Time→boost speed (1.5, now on an **indefinite** boost — see §2 Sparrow) · Mass→turret prism stretch (2.5) · Charge→skyburst blast (asset range 100→170) |
 | Manta | Charge→overcharge detonation blast (1.75) · Mass→overcharge harvest capacity (1.75) · Space→Yawstery turn rate (1.6) |
-| Dolphin | Charge→charge-boost peak (1.5) · Time→charge fill rate (1.5) |
+| Dolphin | Charge→charge-boost peak (1.5) · Time→charge fill rate (1.5) · Space→blast size + the Echo Sight on RT |
 | Rhino | Mass→trail slab max size (1.5) |
 | Serpent | Time→boost duration (1.6) |
 | Squirrel | **All four LIVE (approved + shipped, see §2 Squirrel)**: Charge→skim energy per prism hit (map 2.0, read in `SkimmerBoostPrismEffectSO`) · Mass→trail prism VOLUME (authored `trailVolume` ElementalFloat 1→2.5 on `VesselPrismController`, cube-root per axis) · Space→skimmer reach (authored skimmer `Scale` ElementalFloat 15→30) · Time→boost-ring cooldown (authored `cooldownMultiplierAtFullTime` 0.5 on `SquirrelTubeActionSO`; the generic map Time multiplier stays 1.0 because `VesselTransformer` consumes it for boost speed). The former Time→top speed mapping was REMOVED (prefab `ThrottleScalerMultiplier` disabled) — one parameter per element. |
@@ -119,9 +119,18 @@ The proposal table below was superseded by Garrett's design; the shipped map is
 `Assets/Resources/ElementalAbilityMaps/Dolphin.asset`. **The asset is the record — do not
 re-litigate from the superseded proposal.**
 
-Mechanics detail (energy economy, drift boost, the four gauges, the skimmer traps, and the
-in-editor verification table) lives beside the code:
-`_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_ENERGY_ECONOMY.md`.
+Mechanics detail lives beside the code, in two files:
+`_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_ENERGY_ECONOMY.md` (energy economy, drift
+boost, the four gauges, the skimmer traps) and `DOLPHIN_CRYSTAL_SEEDING.md` (the passive seeding
+and the Echo Sight, added 2026-08-14 when the right trigger was freed).
+
+**2026-08-14 — the two abilities swapped which one carries an input.** Charge's crystal seeding
+became PASSIVE (a cooldown loop that seeds team crystals into the cell's cytoplasm), which freed
+the right trigger for Space's **Echo Sight**: hold it to drop into a zoomed first-person view in
+which every prism inside the blast's current destruction volume lights up. Neither element→ability
+binding moved — Charge still owns the recharge, Space still owns the reach — only which of them
+has an input. Rationale, placement rules and the FOV-vs-speed-tunnel resolution:
+`DOLPHIN_CRYSTAL_SEEDING.md`.
 
 The Dolphin's spine is an ENERGY economy: skimming banks energy, hitting a prism halves it,
 and hitting a crystal spends it ALL at once to release a blast. Energy sets the blast's GAPE,
@@ -136,9 +145,9 @@ exact jaw-angle curve: `DOLPHIN_ENERGY_ECONOMY.md` §1 and §3.
 
 | Element | Quantitative (LIVE) | L5 upgrade (LIVE) |
 |---|---|---|
-| Charge | team-crystal recharge ×0.5 at level 10 (`DeployTeamCrystalActionSO.cooldownMultiplierAtFullCharge`, floored by `minCooldown`) | **Twin Seed** — carry TWO team crystals instead of one (`upgradedCharges`), so two can be planted back to back |
+| Charge | team-crystal recharge ×0.5 at level 10 (`DeployTeamCrystalActionSO.cooldownMultiplierAtFullCharge`, floored by `minCooldown`). The ability is **PASSIVE** since 2026-08-14 — no input; it seeds into the cell's cytoplasm on a loop, so this multiplier sets the seeding tempo and therefore the blast's tempo | **Twin Seed** — each seeding plants TWO team crystals instead of one (`upgradedSeedsPerCycle`). Was a CARRY limit until the ability went passive; nothing is carried now |
 | Mass | drift prism VOLUME (`trailVolume` ElementalFloat 1→2.5 on `VesselPrismController`, cube-root per axis) | **Hard Wake** — drift prisms arrive shielded, gated on `IsDrifting` (`massUpgradeShieldsTrail`, the Squirrel's Heavy Trail machinery) |
-| Space | crystal-impact blast SIZE ×2 at level 10 (`VesselExplosionByCrystalEffectSO._heightMultiplierAtFullSpace`). Scales the blast **self-similarly** — reach, capsule length AND capsule diameter together — because the angles ARE those over height, and energy owns the gape | **Clean Blast** — the blast spares the pilot's own domain (`_spaceUpgradeSparesAllies` → `InitializeStruct.AffectSelfOverride`). Below the unlock the cone is indiscriminate, which is what makes sparing allies worth earning |
+| Space | crystal-impact blast SIZE ×2 at level 10 (`VesselExplosionByCrystalEffectSO._heightMultiplierAtFullSpace`). Scales the blast **self-similarly** — reach, capsule length AND capsule diameter together — because the angles ARE those over height, and energy owns the gape. Since 2026-08-14 this slot also carries the **Echo Sight** on the right trigger (`EchoSightActionSO`) — the zoomed first-person view that highlights the blast's live destruction volume, which is how Space's reach becomes legible | **Clean Blast** — the blast spares the pilot's own domain (`_spaceUpgradeSparesAllies` → `InitializeStruct.AffectSelfOverride`). Below the unlock the cone is indiscriminate, which is what makes sparing allies worth earning |
 | Time | boost charge RATE while drifting ×1.5 at level 10 (`ChargeBoostActionSO.chargeRateMultiplierAtFullTime`) | **Live Current** — skimming a DANGER prism grants 3× energy (`SkimmerChangeResourceByPrismEffectSO._dangerBonusElement/_dangerBonusMultiplier`; the Squirrel's Live Wire shape — the risk was always there, the reward is now earned) |
 
 All four map `MultiplierAtFullLevel` are pinned to **1** — every scaling above is authored on its
