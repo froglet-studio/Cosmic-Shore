@@ -344,6 +344,17 @@ namespace CosmicShore.Gameplay
                     effectDuration, anchorPoint, shotRotation * rotOffset, suctionShot);
             }
 
+            // The hit sphere launches at its AUTHORED diameter and is grown by MASS over the
+            // flight (growthFactor, below) rather than being pre-multiplied here.
+            //
+            // bleeding-edge reached the same conclusion independently and landed a static
+            // `diameter × sqrt(Multiplier(Mass))` bump in this exact spot (merged 2026-08-13).
+            // It is deliberately NOT kept: the two are the same idea at different magnitudes,
+            // and stacking them would apply MASS to one quantity twice — at Mass 10 that is
+            // 1.58 × 6 = 9.5× on a 2.475 base, ~2× the visible prism's own bounding size,
+            // which breaks the honesty rule the growth exists to satisfy. Its intent survives
+            // in full: growth covers BOTH fire modes (that bump was turret-only) and reaches
+            // 6× at Mass 10 instead of 1.58×.
             LaunchCarriedProjectile(prism, muzzle, shotRotation, velocity, flightTime, domainAtShot,
                 piercing, anchorPoint,
                 shielded ? so.ShieldedCollisionDiameter : so.CollisionDiameter,

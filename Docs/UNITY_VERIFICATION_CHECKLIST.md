@@ -162,6 +162,43 @@ full 13-step verification list); `Docs/HAPTICS.md` records the policy exception.
   path, so landed hits/s rise by considerably more than 3×. Expect the 120-point target to need
   raising; it is authored in FrogletTools ▸ Game Modes ▸ End Game Conditions, so that needs no
   code change.
+### 🔴 Dolphin drift holds its velocity — throttle disabled for the drift (`claude/dolphin-drift-velocity-e62z2c`)
+
+Authored without a Unity compile or play-test. The Dolphin's drift already locked the velocity's
+DIRECTION (`DolphinDriftAction.driftDamping: 0`); its magnitude kept tracking the throttle. New
+`VesselTransformer.holdSpeedWhileDrifting` (authored **on** in `Dolphin.prefab`, off everywhere
+else) latches the cruise speed at drift start and pins it in `AdvanceSpeed` until the drift is
+released, so the throttle is inert for the drift's duration. Mechanics + what is deliberately
+left outside the hold: `_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_ENERGY_ECONOMY.md` §2.
+
+**Verify in editor (Menu_Main freestyle on the Dolphin, or any Dolphin scene):**
+
+1. **The field is there and on.** Dolphin prefab → `VesselTransformer` → **Hold Speed While
+   Drifting** is ticked. Squirrel / Rhino / Manta prefabs show it **unticked** (the field is new,
+   so their drift must be unchanged).
+2. **Magnitude locks.** Fly at part throttle, start the drift, then sweep the throttle stick end
+   to end: `VesselStatus.Speed` (DiagnosticsHUD, or a debug watch on the transformer) must not
+   move. Heading still swings with the stick.
+3. **It holds what you had, not a constant.** Repeat from a crawl and from full throttle — the
+   held value differs each time and equals the speed at the moment the drift engaged.
+4. **Release restores authority.** Let go: speed resumes tracking immediately, and the boost
+   discharge accelerates as before (~357 peak off a full meter, ~2.5 s decay).
+5. **Danger prisms still bite.** Ram a danger prism mid-drift — the vessel must still slam to the
+   danger slow. `throttleMultiplier` is outside the hold by design; if a drifting Dolphin shrugs
+   it off, the hold has been applied one layer too late.
+6. **No stuck lock.** Drift → end the turn / replay / swap vessels mid-drift → fly again: the
+   throttle works. (`ResetTransformer` clears the latch; this is the "cancelled UniTask never
+   runs its tail" failure class, so it wants an explicit check.)
+7. **Squirrel regression.** Swap to the Squirrel and drift: its racing drift must still be
+   throttle-modulated exactly as before.
+8. **MPPM two-client.** Host + one client, both flying Dolphins: a remote peer's drift must look
+   the same on both machines (the action replays on every peer, so the hold runs on the replica
+   too — a divergence here shows as the remote ship's speed visibly disagreeing during a drift).
+
+**First-pass tuning:** none — the hold has no numbers. The one open balance question is the
+boost carry recorded in `DOLPHIN_ENERGY_ECONOMY.md` §2: re-drifting at the peak of a discharge
+now pins the vessel near 357 while it banks the next boost. If that ratchets in play, clamp the
+captured value to the unboosted cruise target (78) in `RefreshDriftSpeedHold`.
 
 ---
 

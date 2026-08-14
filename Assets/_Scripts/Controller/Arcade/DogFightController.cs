@@ -97,10 +97,20 @@ namespace CosmicShore.Gameplay
                  "pursuit (tail-chasing, and easy to shake).")]
         [SerializeField, Min(0f)] float aiLeadSeconds = 0.6f;
 
-        [Tooltip("Inside this distance the AI stops aiming AT its quarry and aims THROUGH it, " +
-                 "so it overshoots and comes back around instead of grinding hull-to-hull. This " +
-                 "is what makes an AI read as a dogfighter rather than a battering ram.")]
+        [Tooltip("Inside this distance the AI COMMITS to a break-off: it stops chasing and flies " +
+                 "a fixed escape vector until it is clear. This is what makes an AI read as a " +
+                 "dogfighter rather than a battering ram.")]
         [SerializeField, Min(1f)] float aiBreakOffDistance = 120f;
+
+        [Tooltip("How far out the AI extends before turning back in, as a MULTIPLE of the " +
+                 "break-off distance. This is the 'run away a bit' half of the loop - the AI " +
+                 "buys separation so its next pass is a firing pass instead of a wrestle.")]
+        [SerializeField, Min(1f)] float aiExtendDistanceMultiplier = 3f;
+
+        [Tooltip("Hard ceiling on one extend, in seconds, so an AI that loses its quarry mid-" +
+                 "extend cannot fly to the membrane. It re-engages when EITHER the distance or " +
+                 "this timer is satisfied, whichever comes first.")]
+        [SerializeField, Min(0.5f)] float aiMaxExtendSeconds = 4f;
 
         // Milestone rungs the leading domain crosses. Feedback only - nothing here changes game
         // state, so a missed or late sample costs a toast, never a rule.
@@ -292,7 +302,7 @@ namespace CosmicShore.Gameplay
         ///
         /// <b>The manager still runs and still spawns the OMNI crystal</b>, on the same
         /// platform-normal settings every other mode uses (one crystal, <c>spawnOnClientReady</c>).
-        /// The scene does author one thing the donor did not: <c>anchorlessSpawnRadius</c> 420.
+        /// The scene does author one thing the donor did not: <c>noNucleusSpawnRadius</c> 420.
         /// <c>CrystalManager.GetAnchorlessSpawnRadius</c> falls back to the cell's NUCLEUS radius
         /// and this cell has no nucleus by design, so without that override it fell through to the
         /// crystal's own <c>SphereRadius</c> and every spawn landed on the exact centre of the
@@ -406,9 +416,44 @@ namespace CosmicShore.Gameplay
         /// sampled every frame, so the aim point tracks a live position even though the CHOICE
         /// is re-made on a slow cadence.
         /// </summary>
+        /// <summary>
+        /// One AI's dogfight state. A pilot is either closing on someone or deliberately getting
+        /// away from them; there is no third thing, and mixing the two is what produced the
+        /// wrestling match this replaces.
+        /// </summary>
+        enum DogfightPhase { Pursue, Extend }
+
+        /// <summary>
+        /// Gives every AI a committed PURSUE → EXTEND → PURSUE loop.
+        ///
+        /// <b>Why a state machine and not a distance test.</b> The first version had no state: it
+        /// aimed at the quarry, and inside the break-off radius aimed at a point derived from the
+        /// CURRENT geometry instead. That point is recomputed every frame, so the moment the AI
+        /// slipped past its target the vector to it flipped and the "escape" point landed back
+        /// behind the AI — it turned straight round. The result was two ships welded together
+        /// grinding in a circle, which is exactly the complaint. A break-off has to be a
+        /// DECISION the pilot commits to, not a function of where the enemy is this instant.
+        ///
+        /// So the escape vector is <b>latched once</b> at the merge and flown until the AI is
+        /// genuinely clear (<see cref="aiExtendDistanceMultiplier"/> × the break-off distance) or
+        /// the extend times out. Only then does it look for a quarry again.
+        ///
+        /// <b>What this buys beyond not-ramming.</b> The Sparrow's AI already carries a skyburst
+        /// on its ability list and always did; it fires on its own timer whether or not anyone is
+        /// in front of it. Welded to a target at zero range, a rocket has no room to arm, fly, or
+        /// put its blast anywhere useful, so the missiles were invisible. Separation is what makes
+        /// them read: the AI comes back in from a few hundred units with the target ahead of it,
+        /// which is the geometry a skyburst is for. The turret stance
+        /// (<c>ModeSwitchingFire</c>, 2 s every 12 s) gets the same benefit.
+        ///
+        /// The whole loop is steering only — it drives <c>AIPilot.SetExternalTargetProvider</c>
+        /// and nothing else. No weapon, ability, throttle or platform AI behaviour is touched
+        /// from here, so this cannot leak into another mode.
+        /// </summary>
         void ArmDogfighters()
         {
             Vector3 centre = arenaCell ? arenaCell.transform.position : Vector3.zero;
+            float extendDistance = aiBreakOffDistance * aiExtendDistanceMultiplier;
 
             foreach (var p in gameData.Players)
             {
@@ -420,41 +465,67 @@ namespace CosmicShore.Gameplay
                 IPlayer quarry = null;
                 float nextSample = 0f;
 
+                var phase = DogfightPhase.Pursue;
+                Vector3 extendTarget = Vector3.zero;   // latched at the merge, then flown
+                float extendUntil = 0f;
+
                 pilot.SetExternalTargetProvider(() =>
                 {
-                    var self = captured.Vessel?.Transform;
-                    if (self == null) return centre;
+                    var selfTf = captured.Vessel?.Transform;
+                    if (selfTf == null) return centre;
+                    Vector3 selfPos = selfTf.position;
 
+                    // ── EXTEND ──────────────────────────────────────────────────────────
+                    // Fly the latched vector. Nothing about the quarry is read here, which is
+                    // the entire point: a break-off the target can steer is not a break-off.
+                    if (phase == DogfightPhase.Extend)
+                    {
+                        bool arrived = (extendTarget - selfPos).sqrMagnitude
+                                       <= aiBreakOffDistance * aiBreakOffDistance;
+                        if (!arrived && Time.time < extendUntil)
+                            return extendTarget;
+
+                        phase = DogfightPhase.Pursue;
+                        nextSample = 0f;   // pick a quarry fresh on the turn-in
+                    }
+
+                    // ── PURSUE ──────────────────────────────────────────────────────────
                     if (Time.time >= nextSample || !IsLiveOpponent(quarry, captured))
                     {
                         nextSample = Time.time + aiRetargetSeconds;
-                        quarry = FindNearestOpponent(captured, self.position);
+                        quarry = FindNearestOpponent(captured, selfPos);
                     }
 
-                    var quarryStatus = quarry?.Vessel?.VesselStatus;
                     var quarryTf = quarry?.Vessel?.Transform;
                     // No live opponent (a 1v1 mid-respawn, everyone on our own domain) - loiter
                     // toward the arena centre rather than holding a stale or zero target.
                     if (quarryTf == null) return centre;
 
                     Vector3 quarryPos = quarryTf.position;
+                    Vector3 toQuarry = quarryPos - selfPos;
+
+                    // Merged. Commit to the break-off NOW and latch where it goes: straight on
+                    // through the target and out the far side, so the pass keeps its energy
+                    // instead of bleeding it in a turn.
+                    if (toQuarry.sqrMagnitude <= aiBreakOffDistance * aiBreakOffDistance)
+                    {
+                        Vector3 through = toQuarry.sqrMagnitude > 1e-4f
+                            ? toQuarry.normalized
+                            : selfTf.forward;
+
+                        phase = DogfightPhase.Extend;
+                        extendTarget = quarryPos + through * extendDistance;
+                        extendUntil = Time.time + aiMaxExtendSeconds;
+                        quarry = null;   // re-acquire on the turn-in; it may not be the same pilot
+                        return extendTarget;
+                    }
+
+                    // Closing: lead pursuit — aim where the target is GOING, not where it is.
+                    var quarryStatus = quarry.Vessel?.VesselStatus;
                     Vector3 lead = quarryStatus != null
                         ? quarryStatus.Course * (quarryStatus.Speed * aiLeadSeconds)
                         : Vector3.zero;
-                    Vector3 aimPoint = quarryPos + lead;
-
-                    Vector3 toQuarry = quarryPos - self.position;
-                    if (toQuarry.sqrMagnitude <= aiBreakOffDistance * aiBreakOffDistance)
-                    {
-                        // Merged: aim THROUGH them and out the far side. Direction of travel is
-                        // preserved, so the AI keeps its energy through the pass.
-                        Vector3 through = toQuarry.sqrMagnitude > 1e-4f
-                            ? toQuarry.normalized
-                            : self.forward;
-                        aimPoint = quarryPos + through * aiBreakOffDistance;
-                    }
-
-                    return aimPoint;
+                    return quarryPos + lead;
                 });
             }
         }

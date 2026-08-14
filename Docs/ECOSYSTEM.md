@@ -3179,3 +3179,384 @@ speed.
 3. **Skeleton accumulation over a long round** is the §26.7 budget risk and can only be answered by
    a playtest. If skeletons outpace grazing, the levers are the existing diet/spawn dials
    (`SpawnProfile.FaunaFoodFloor`, per-species populations) — never a timer, never a cap.
+
+---
+
+## 27. Rampage — a planting shell belongs to the CELL, not to the crystal (Aug 2026)
+
+The Dolphin rework of Rampage (`_Scripts/Controller/Arcade/RAMPAGE.md`) needed one thing
+from the ecology: **a belt of breakable flora ringing the membrane, with the core left
+open** for a single roaming contested crystal. Three latent defects stood between the
+config and that arrangement, and all three are general — none is a Rampage special case.
+
+### 27.1 The planting shell was measured from the CRYSTAL
+
+All three `Flora.Plant` implementations dispersed a new plant about
+`cellData.CrystalTransform.position`:
+
+```csharp
+float radius = ResolvePlantRadius(legacyRadius: plantRadius);   // "fraction of the cell's membrane radius"
+transform.position = cellData.CrystalTransform.position + radius * Random.onUnitSphere;
+```
+
+`ResolvePlantRadius` is documented — and named — as *a fraction of the **cell's** membrane
+radius*, and every one of those three call sites carried a comment saying "disperse across
+the cell". The two only agree while a mode's crystals sit in the cell core, which was true
+of every cell that had shipped, so nothing surfaced it.
+
+Rampage's crystal roams to radius 900 in a cell whose membrane is 1200. A plant on the
+0.90 shell would therefore have landed at up to `900 + 1080 = 1980` — **outside the
+membrane**, where `Cell.ContainsPosition` rejects its prisms: not in `LiveVolume`, invisible
+to the phase ladder, and untargetable by the fauna density grids. A belt of food the food
+web cannot see is worse than no belt.
+
+**Fixed:** `Flora.ResolvePlantCenter()` — cell centre, falling back to the crystal (legacy)
+and then to the plant's own position. That last fallback also removes a real crash: the
+`CrystalTransform` property logs and returns **null** in a cell with no crystal at all, so
+`.position` on it threw. `BranchingFlora.Initialize` had the same unguarded dereference for
+its look-rotation and now resolves once, falling back to the plant's growth axis.
+
+**Rule:** *a planting radius is a fraction of the CELL, so it is measured from the cell.*
+Anything a mode moves at runtime — crystals above all — must not be able to drag the
+ecology's geometry with it.
+
+### 27.2 A live-prism budget only worked on one flora family
+
+`FloraVariantTuning.MaxTotalSpawnedObjects` was read **only** by `AssembledFlora`.
+`BranchingFlora` and `PhyllotacticFlora` declared their own `maxTotalSpawnedObjects` and
+ignored the config's, so a cell could author a per-plant budget, save, see nothing change,
+and silently get the prefab's — **5000** for both CactiFlora and PineFlora. A handful of
+plants can eat a whole arena's phase ladder at that budget.
+
+45 authored assets were already writing into this field expecting it to work: the canonical
+`_SO_Assets/Lifeforms/<Species> Flora <Element>` set carries a deliberate per-element density
+identity (Charge ×0.85, Mass ×1.2, Space ×0.7, Time ×1.0 of the prefab), and Hesperides'
+per-cell configs mirror it. Every one of them was inert.
+
+**Fixed:** `BranchingFlora` and `PhyllotacticFlora` now override `ApplyVariantTuning` and
+read it, matching `AssembledFlora`. **This changes existing cells** — Hesperides and the
+Wildlife Blitz cells now get the per-element budgets they always authored. The average
+effect is ≈ −6% prisms per plant (the four element multipliers average 0.9375), well inside
+every phase-hysteresis band, and the *variety* it restores is the point. Re-check Hesperides'
+`LiveVolume` against its thresholds on the next pass through that cell.
+
+**Rule:** *a tuning field that appears on every flora config must mean the same thing on
+every flora.* A field that silently does nothing on 2 of 3 families is worse than an absent
+one, because the author gets no signal.
+
+### 27.3 SpreadElements ate the cell's own layout decisions
+
+`FloraConfigurationSO.RollVariant` replaces this config's whole `Variant` with the palette
+sibling's when `SpreadElements` is on — while the field's tooltip claims "planting counts,
+periods and probability stay on THIS config, so the cell keeps its own density tuning". Both
+`PlantRadiusCellFraction` and `MaxTotalSpawnedObjects` live in that block, so with spread on
+a cell could not use the canonical per-element assets **and** choose its own planting shell:
+Rampage's belt would have collapsed back onto each species' authored 0.5–0.6, i.e. the middle
+of the arena.
+
+Composing the two blocks (cell wins on non-sentinel fields) was considered and **rejected**:
+Blob's gyroid configs carry a full duplicate of the Mass element's Variant alongside their
+palette, so cell-wins composition would flatten all four gyroid elements into Mass and
+destroy exactly the per-element identity §17 exists to express.
+
+**Fixed:** two explicitly-named cell-level overrides on `FloraConfigurationSO` —
+`PlantRadiusCellFractionOverride` and `MaxTotalSpawnedObjectsOverride`, both default −1 (off,
+so no existing cell changes) — applied **after** the roll via
+`TryBuildCellOverrideTuning` → the existing `Flora.ApplyVariantTuning` path, reusing its
+"sentinel = keep" semantics rather than inventing a second application mechanism.
+
+**Rule, and the split worth remembering:** *the ELEMENT owns identity* (leaf prism shape,
+growth tempo, shield cadence, per-element density) *and the CELL owns layout* (where a
+species plants, how big one plant may get in THIS arena). They were in one block because
+they were authored together, not because they are the same kind of fact.
+
+### 27.4 A cell whose prisms are not nominal must author its volume ladder
+
+Rampage's hero species is the cactus, whose leaf prism is 5×5×3 = **75 volume — 4.7×
+`NominalPrismVolume` (16)**. The cell inherited volume thresholds derived the standard way
+(`count × 16`), so its Frenzy ceiling was ~3× too low for the belt it now grows: the cell
+would have pinned at Frenzy within seconds, frozen planting, and held a sparse arena that
+never regrew — the failure looking exactly like "flora don't spawn", with nothing in the
+config pointing at the cause.
+
+Authored explicitly against the belt's estimated volume (~471k at full growth):
+`RestlessEnter/Exit 34000/24000`, `FrenzyEnter/Exit 480000/370000`, count backstop unchanged
+at 10000/8000.
+
+**Rule (already stated in `ECOSYSTEM_MASTERPLAN.md §5.1` for the low-volume direction, now
+with a high-volume instance):** the `×16` derivation is a migration convenience, not a
+default. Any cell whose prisms are meaningfully off nominal — a Squirrel trail at ⅕, a
+cactus leaf at 4.7× — must author `*EnterVolume` / `*ExitVolume` itself. Verify against
+`Cell.LiveVolume` on the DiagnosticsHUD; the estimate cannot be trusted for phyllotactic
+species, whose prisms are sized per role and have no single authored volume to read.
+
+### Collider budget
+
+Unchanged from the previous Rampage: the count backstop holds the arena at **10,000
+prisms** (~2.8× the Blob envelope, deliberate demolition-arena headroom). The belt seeds
+136 plants at ~9,550 prisms, one instantiation per frame (~2.3 s spread, no hitch), leaving
+the rest of the budget for player trails. No new physics queries: scoring rides the
+`StatsManager` SOAP channel and the AI rides `Cell.GetExplosionTarget`'s Burst density grid.
+
+### Invariants checked
+
+- **Continuity of existence** — untouched; plants still bloom in and wither out.
+- **No imposed death** — no decay, lifespan or despawn timer added. The Frenzy ceiling is a
+  *growth* gate (planting/growth pause), never a culler; mass stays conserved.
+- **No domain asymmetry** — the belt rolls its domain uniformly across all three via
+  `CellLifeSpawnerBase.SpawnFlora`; fauna remain controlling-colour only.
+- **Every lifeform drops one elemental crystal** — untouched; the belt uses the canonical
+  element palettes, so each plant carries its element's heart.
+- **Volume is the spine** — reinforced: §27.4 is the whole point of the threshold rework.
+- **The Cell owns the environment** — the mode builds no parallel spawner, culler or arena
+  edge. Everything above is `CellConfigDataSO` + `SpawnProfileSO` + flora configs.
+
+### 27.5 A planting SHELL is not a forest — the band (Aug 2026)
+
+`plantRadiusCellFraction` gave a species exactly one radius, and `Plant` picked a random
+direction on that sphere. Stacking several species at staggered fractions approximates depth,
+but each species still reads as a soap bubble, and no cell could put plants *near its core*
+without moving the whole species in.
+
+`Flora.plantRadiusCellFractionMin` makes it a **band**, and the draw is uniform by
+**VOLUME**, not by radius:
+
+```csharp
+r = cbrt( lerp(inner³, outer³, Random.value) )
+```
+
+A shell's available space grows as r², so a uniform-in-radius draw crowds plants onto the
+inner edge and leaves the outer band — most of the cell — looking empty. Volume-uniform gives
+even spatial density through the whole band, which naturally puts most plants in the outer
+reaches (that is where the space is) while still landing some in close.
+
+**The inner edge is clamped outside the nucleus**, in code, so an author can write `0` and
+get "from the nucleus outward" rather than plants in the core. Three separate reasons make
+that a rule and not a nicety: nucleus-interior mass is the territorial CLAIM, it is excluded
+from the fauna targeting grids (so a plant there is food the web can never be steered to),
+and §27.6 puts the standard crystal respawn in exactly that volume.
+
+Default `min = 0` collapses the band to the legacy single shell, so no existing cell changes.
+
+### 27.6 The crystal volume IS the nucleus — platform coupling (Aug 2026)
+
+`CrystalManager.GetAnchorlessSpawnRadius()` used to resolve **serialized override → nucleus →
+crystal SphereRadius**, i.e. any scene could decouple its crystals from its core with one
+field. Rampage did exactly that (a 900-unit roam radius, to make the crystal a chase) and it
+was wrong for a reason that generalises:
+
+> **The nucleus is the visible marker of the cell's core** — the thing a player reads as "the
+> middle". A crystal that respawns anywhere else makes that marker a lie, and every mode that
+> contests a crystal then has to teach its own answer to "where do I look".
+
+The precedence is now **nucleus → `noNucleusSpawnRadius` → crystal SphereRadius** (the field
+renamed to say what it is). A cell WITH a nucleus always spawns its crystals inside it and no
+per-scene field can override that. The fallback exists only for a cell with genuinely no core
+(Dog Fight's Boneyard, 420 — and note CLAUDE.md's existing warning that a nucleus-less cell
+MUST author it, or the crystal falls through to its own `SphereRadius` and lands on the exact
+centre).
+
+**A mode that wants a different crystal volume resizes its NUCLEUS** — author a
+`CellConfigDataSO` pointing at a resized `NucleusPrefab`, exactly as Scurry does with
+`HalfNucleus.prefab`. That moves both together and keeps them coupled, which is the whole
+point. Do not reintroduce a per-scene override.
+
+Note the coupling composes with §27.5: crystals inside the nucleus, flora strictly outside it,
+so the two never fight for the same volume and the core stays legible.
+
+### 27.7 The AI's drift look-direction is a mass cluster, not a 180° flip (Aug 2026)
+
+`AIPilot` has a genuinely good idea in it: once the AI has its objective lined up, it DRIFTS —
+`VesselStatus.Course` stays locked on the target while the nose swings elsewhere, which is how
+a drifting vessel lays trail, skims and fires along an axis that is not its heading. What it
+pointed at was `desiredDirection *= -1`: a flat 180° flip away from the objective. That aims
+at nothing in particular and reads as the AI spinning on the spot.
+
+It now aims at a **cluster of hostile mass** via `Cell.GetExplosionTarget(myDomain)` — the
+exact Burst density-grid query aggression-1 fauna hunt prey with. Two things make that the
+right call rather than a new behaviour:
+
+- It is **one system**. "Go where the mass is" already exists on this platform, is already
+  Burst, already excludes nucleus-interior and shielded mass (so it can only point at mass the
+  AI may attack), and is already sampled on a cadence rather than per frame. A mode-local
+  re-derivation of it is the mistake §0 warns about.
+- It makes the drift **productive in every mode**, not just the one that prompted it.
+
+Sampled on `massClusterRetargetInterval` (1.5 s), cached in between. Falls back to the legacy
+flip when there is no cell, no mass, or the cluster lies within 0.9 dot of the objective (where
+the drift would not turn the vessel at all).
+
+**Corollary for mode authors:** do NOT install an `AIPilot.SetExternalTargetProvider` hook in a
+mode whose objective is a crystal. The hook overrides crystal seeking outright — Rampage shipped
+a two-phase "graze until charged, then break for the crystal" provider and it was removed,
+because the platform default (seek the crystal + drift onto mass) already IS that loop.
+
+### 27.8 A client scored nothing for the living world — environment mass is per-peer (Aug 2026)
+
+A 2-player Rampage test: the host scored off everything, the client could only ever score
+off the **other pilot's trail** — never off a single cactus it flew through and shattered.
+
+`StatsManager` records prism destruction **server-only** (`_allowRecord`), and two of its own
+doc comments state the assumption that justifies it:
+
+> "a prism sits at the same place on the server, so the server's own physics sees a client's
+> ram and records it"
+
+That is true of a TRAIL prism — laid from replicated vessel motion, so both peers have one in
+the same place — which is exactly why trail kills were the only thing that worked. **It is
+false of flora and fauna**, and `CellNetworkSync`'s own class doc has said so all along:
+
+> "Flora and fauna spawning is non-deterministic per-side (each client runs its own
+> IntensityWiseLifeSpawner with local Random.value rolls)"
+
+So the server's copy of the cactus a client just shredded is somewhere else entirely. The
+client destroys a tree on its screen and nothing is recorded anywhere; whatever the server's
+own physics happened to knock over in the same cone is credited instead, uncorrelated with
+what that pilot did. In a mode whose entire score is destroyed environment mass, a client is
+playing a slot machine.
+
+**Fixed the way the platform already fixes this class**, for the third time:
+`Player.ReportEnvironmentPrismDestroyed_ServerRpc`, joining `ReportFaunaKill_ServerRpc`
+(fauna have no NetworkObject) and `ReportCombatHit_ServerRpc` (projectiles are not networked).
+Same owner-detects → server-records round-trip, same rule that identity comes from RPC
+ownership rather than a name string.
+
+**The other half is who must NOT credit.** A client forwarding its own environment kills
+would double-count against the server's own simulation, so crediting is split by who
+simulates the attacker: `StatsManager.OwnsAttacker` lets the server credit only players it
+owns (the host's own, and every AI — both server-owned NetworkObjects) and drop environment
+kills it observed a *remote* player make. Rostered victims are untouched: a trail exists
+identically on every peer, so it stays server-recorded exactly as before. Each kill lands
+exactly once on both paths.
+
+**The rule that surfaced with it:** environment mass was hostile to EVERY domain, because the
+only hostility test was the owner-name/roster comparison and a cactus has no roster entry.
+`PrismStats` now carries the prism's `OwnDomain` and `StatsManager.IsFriendlyEnvironmentPrism`
+applies to the world the same rule trails always had — **your own colour is worth nothing** —
+with `Domains.Blue` (the "no team" sentinel) staying hostile to everyone so neutral structure
+still scores. A third of a mixed-domain forest is now yours and worthless, which makes domain
+a real targeting decision instead of decoration. Ribcage rides the same metric and is
+unaffected in practice: its cage is painted across the full triad plus Blue joints, so a team
+can still reach a 2,000 target out of ~10,620 prisms.
+
+### 27.9 Corollary — the collecting pilot must run their own crystal effects
+
+Chasing §27.8 turned up why the client's blast was missing entirely:
+`OmniCrystalImpactor.AcceptImpactee` opens with `if (IsNetworkClient()) return;`, so a crystal
+collection resolves **server-only** — for every vessel, including one a remote client is
+flying. Collection *should* be server-authoritative (one machine must decide who got it and
+where it goes next), but the **effects** of a pickup are what the pilot sees and feels, and
+they were landing only on the server: a client's Dolphin collected the crystal and the jaw
+blast, the spent energy meter and the elemental level all happened on a machine that pilot was
+not looking at. Their meter never emptied, no cone ever appeared, and — being the mode's only
+damage verb — they had almost nothing to report under §27.8 either.
+
+`CrystalManager.ReplayVesselCrystalEffects` (no-op) → `NetworkCrystalManager`'s targeted
+ClientRpc now replays the same effect list on the vessel's OWNER. Targeted rather than
+broadcast because these effects mutate ONE vessel's state and spawn its blast; every other peer
+would be applying them to a vessel it does not own. The server keeps sole authority over
+collection, respawn and every stat — this is additive, and the effect list is shared
+(`OmniCrystalImpactor.RunVesselEffects`) so the two sides cannot drift.
+
+### 27.10 An objective arrow in a living cell must filter to MANAGED crystals
+
+`Crystal.Active` is every live crystal on the machine, and in a cell with a food web that is
+mostly *not* the objective: every flora and fauna carries a heart and drops it on death (the
+every-lifeform-drops-a-crystal invariant), and a Dolphin seeds a team crystal every 30 s. In a
+mode whose verb is killing flora, the arena rains elemental crystals continuously.
+
+So a nearest-live-crystal objective provider points at the objective almost never. The
+discriminator is **`Crystal.CrystalManager`** - non-null only for a crystal spawned by the
+cell's `CrystalManager` (`SpawnWithDomain` → `InjectDependencies`, the single writer). Hearts
+and seeded crystals are plain `Instantiate`s and carry none, so one test separates them all,
+and it is the same test that means "this is the crystal that respawns inside the nucleus
+forever" (§27.6). Follow it with `Crystal.CanBeCollected` so a mode that spawns per-domain
+managed crystals still only names one the reading pilot may take.
+
+Corollary for any crystal-tracking UI: do **not** blank out on `Crystal.IsExploding`. The flag
+stays true for 0.5 s *after* the respawn has already repositioned the crystal, so honouring it
+hides the arrow for half a second while the crystal sits at exactly the place it was pointing
+to. A collection does not invalidate the target at all - the manager MOVES the same Crystal
+object (`UpdateCrystalPos`), so the cached transform follows it to its new home.
+
+---
+
+## 28. Per-intensity forests, and the sticky config choice a client makes too early (Aug 2026)
+
+Rampage gained four intensity levels. Two general capabilities and one platform BUG came out of
+it; the mode-specific numbers live in `_Scripts/Controller/Arcade/RAMPAGE.md`.
+
+### 28.1 A cell scales its forest with two scalars, not twenty forked assets
+
+`SpawnProfileSO.FloraPopulationScale` (how many plants — multiplies each species'
+`InitialSpawnCount`) and `FloraPlantBudgetScale` (how big each gets — multiplies the live-prism
+budget that survives the variant roll and the cell override). Both default 1, so every existing
+profile is unchanged and no asset needed migrating.
+
+A SpawnProfile is referenced **from** `CellConfigDataSO`, so it already forks per intensity for
+free under `CellTypeChoiceOptions.IntensityWise`. That makes it the natural home for "how much
+arena is there", and it keeps the split §27.3 established: **the element owns identity, the cell
+owns layout** — now also *quantity*. Forking Rampage's five species four ways would have been 20
+assets whose only deltas are two integers each.
+
+Three implementation rules, each learned the hard way:
+
+- **BOTH spawners, or it is dead code.** `Cell.StartSpawnerForMode` picks
+  `IntensityWiseLifeSpawner` for exactly the cells that use IntensityWise, and
+  `RandomLifeSpawner` for everyone else. A population scalar implemented in only one of them
+  does nothing in the very modes that need it. (`CellLifeSpawnerBase`'s own class doc already
+  warned about this split; Wildlife Liberation hit it once.)
+- **The budget scalar rides `Flora.ApplyVariantTuning`**, as a new
+  `FloraVariantTuning.MaxTotalSpawnedObjectsScale` applied AFTER the absolute — one application
+  path, so it reaches all three flora families and cannot drift from the overrides it composes
+  with. It is a MULTIPLIER because the families ship budgets an order of magnitude apart (400 /
+  1000 / 5000); no single absolute could serve them. Sentinel is **-1**, and 0 also means keep:
+  a nested serialized class can zero-initialize, and "budget 0" must never be something an
+  absent key can mean.
+- **Round half UP explicitly** (`Mathf.FloorToInt(x + 0.5f)`). `Mathf.RoundToInt` is banker's
+  rounding, which sends an authored 10 × 0.85 to 8 on one species and 9 on the next.
+
+**The scalar and the phase thresholds are ONE change.** The scalar scales the SEED batch — the
+fill rate and the opening density — while the Frenzy volume gate is what actually bounds the
+standing population. Move one without the other and the forest either tops out at the wrong size
+or takes the whole match to get there. Rampage's four ladders are therefore generated, not
+hand-authored: `Tools/Build/rampage_intensity.py` computes each intensity's volume from the same
+numbers the game reads and self-tests by reproducing the shipped intensity-4 ladder to the digit.
+
+### 28.2 A client could pick a DIFFERENT intensity's cell than the host — silently, permanently
+
+`Cell.AssignConfig` is **sticky** by design (`if (runtime && runtime.Config) return;` — a re-roll
+could swap the config out from under a streaming environment). Its IntensityWise arm reads
+`gameData.SelectedIntensity`, which on a client arrives **only** in
+`MultiplayerMiniGameControllerBase.SyncGameConfigToClients_ClientRpc`. And a client's cell does
+not wait for that: it bootstraps off its FIRST CRYSTAL —
+`OnCellItemsUpdated` → `InitilizePostFirstCellItem` → lazy `Initialize()` → `AssignConfig()` —
+roughly 400 ms after scene load, versus `OnInitializeGame` at `InitDelayMs` 1000 ms.
+
+Lose that race and the SOAP variable still reads its default **0**, `Clamp(0 - 1, 0, n)` yields
+index 0, and the client builds intensity 1's arena while the host builds the chosen one. For the
+whole match. With no error — the clamp is silent and the default is legal.
+
+This was **already live in every IntensityWise scene** (Dog Fight, Ribcage, Wildlife Liberation,
+both Wildlife Blitz cells) before Rampage went near it.
+
+Fixed with three pieces that only work together:
+
+1. **`GameDataSO.GameConfigSynced`** — true immediately on the server, and set as the LAST line
+   of the config ClientRpc on a client.
+2. **`Cell.IntensityChoiceReady`** gates `AssignConfig`, which now returns **without latching**
+   when a connected client cannot yet know its intensity, and warns.
+3. **The deferral must be retryable.** `InitilizePostFirstCellItem` used to set
+   `postInitilized = true` on its FIRST line, so a deferred bootstrap was permanent — the cell
+   would have ended up with no cytoplasm and no spawner at all. The latch moved below the config
+   check, `Initialize()` bails before `SpawnVisuals` when the config is still unassigned, and its
+   tail finishes any deferred bootstrap. `OnInitializeGame` fires on EVERY peer (the
+   `if (!IsServer) return` in `InitializeAfterDelay` comes after it), so the retry always lands.
+
+Fail-safe by construction: if the broadcast never arrives, the cell warns on every attempt and
+never silently starts a spawner on the wrong arena.
+
+**Rule for any future per-intensity cell:** a choice that is sticky AND derived from replicated
+state must be gated on that state having replicated. `Cell.IntensityIndex` also floors at 1 and
+warns when the selected intensity exceeds the authored config count — a mode offering four
+intensities over two configs would otherwise serve the same arena for 3 and 4 in silence.

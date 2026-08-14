@@ -991,6 +991,8 @@ MonoBehaviour:
   aiRetargetSeconds: 1.5
   aiLeadSeconds: 0.6
   aiBreakOffDistance: 120
+  aiExtendDistanceMultiplier: 3
+  aiMaxExtendSeconds: 4
 --- !u!114 &1628508400
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1010,9 +1012,9 @@ MonoBehaviour:
   scaleCrystalPositionWithIntensity: 0
   intensityLevelData: {fileID: 11400000, guid: 490485287c38a2f4e9178566394efd69, type: 2}
   listOfCrystalPositions: []
-  anchorlessSpawnRadius: 420
+  noNucleusSpawnRadius: 420
   crystalCountMode: 0
-  fixedCrystalCount: 1
+  fixedCrystalCount: 4
   extraCrystalsToSpawnBeyondPlayerCount: 0
   spawnCrystalWithPlayerDomain: 0
   spawnOnClientReady: 1

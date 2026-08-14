@@ -59,6 +59,29 @@ what the carve-out silently broke — see the traps below.
 
 ## 2.6 Prism / trail traps (each of these cost real time)
 
+- **`CellTypeChoiceOptions.IntensityWise` silently swaps the SPAWNER class.**
+  `Cell.StartSpawnerForMode` picks `IntensityWiseLifeSpawner` for every IntensityWise cell and
+  `RandomLifeSpawner` for everyone else. Any spawn-loop feature (a density scalar, a gate, a
+  new roll) implemented in only one of them is **dead code in exactly the modes that asked for
+  it**. Implement in both, or state why one is deliberately excluded.
+- **A tuning field on `FloraVariantTuning` reaches only the flora families that READ it.**
+  `MaxTotalSpawnedObjects` was honoured by `AssembledFlora` alone for a long time, so 45
+  authored assets were writing a per-plant budget that did nothing on branching and
+  phyllotactic species — and the silent fallback was the prefab's own 5000. A field that
+  appears on every flora config has to mean the same thing on every flora; check all three
+  `ApplyVariantTuning` overrides when you add one.
+- **A cell choice that is STICKY and derived from REPLICATED state must be gated on
+  replication.** `Cell.AssignConfig` latches `runtime.Config` on its first pass and reads
+  `SelectedIntensity`, which reaches a client only in the game-config ClientRpc — while a
+  client's cell bootstraps off its FIRST CRYSTAL, ~600 ms earlier. The client then builds a
+  different intensity's arena than the host, for the whole match, with no error (the SOAP
+  default 0 clamps to a legal index). Gate on `GameDataSO.GameConfigSynced`, and make the
+  deferral RETRYABLE — the bootstrap used to latch its "done" flag on its first line, which
+  would have left a deferred cell with no cytoplasm and no spawner at all.
+- **`Mathf.RoundToInt` is banker's rounding.** For any authoring-facing scalar (a density
+  multiplier, a per-intensity count), use explicit `Mathf.FloorToInt(x + 0.5f)` — otherwise
+  `10 x 0.85` lands on 8 for one species and 9 for the next and nobody can explain why.
+
 - **A vessel lays TWO ribbons.** `VesselPrismController.Trail` is only half the trail; the
   double-trail spawn pattern puts every other prism in `SecondaryTrail` (`Trail2`). Anything
   reasoning about "the vessel's whole trail" — length, mass, cleanup, recycling — must walk both,
@@ -190,3 +213,27 @@ and put Restless somewhere the fauna start hunting a partly-grown cell.
 
 Always hand the numbers back as ESTIMATES with the measurer step attached — analytic
 counts are exact, but only the editor proves the generator runs at all.
+
+### 7.1 A ladder of intensities: put the MODEL in a script, and self-test it
+
+A cell with per-intensity configs needs one `PhaseThresholds` block per intensity, each riding
+its own forest volume. Authoring four by hand is how four ladders drift apart. Write the model
+as a Python script under `Tools/Build/` that:
+
+- holds the species table (plants, budget, leaf prism volume, `LeafScalePerLevel`) and the
+  per-intensity scalars, and computes prisms + volume from them;
+- derives all eight thresholds from ONE set of ratios (Frenzy just above full growth, exit
+  ~77%, Restless ~7%), so every intensity is the same shape;
+- **emits the assets** and supports `--check` so CI can catch a hand-edit;
+- **self-tests by reproducing an already-shipped, play-tested ladder to the digit.** That
+  assert is the whole difference between a model and a fresh guess: if the formula cannot
+  reproduce the arena a human already approved, it is wrong, and you find out at authoring
+  time instead of in a play test.
+
+Also: the level spread's expected VOLUME multiplier is
+`Σ s^(3(L-1))·f^-(L-1) / Σ f^-(L-1)` for scale-per-level `s` and rarity falloff `f` — it is
+often the biggest single factor (4.3x at `s=1.30, f=1.6`) and is very easy to forget.
+
+Keep one honest soft spot visible: phyllotactic flora size prisms BY ROLE, so there is no
+single authored field to read for their volume. Put those estimates in a named `CALIBRATION`
+dict so one in-editor measurement corrects every intensity at once.

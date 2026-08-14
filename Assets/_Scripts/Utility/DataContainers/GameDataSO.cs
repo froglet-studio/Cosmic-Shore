@@ -89,6 +89,25 @@ namespace CosmicShore.Utility
         public bool IsMultiplayerMode;
 
         /// <summary>
+        /// True once the AUTHORITATIVE game config exists on THIS peer: immediately on the server,
+        /// and on arrival of <c>MultiplayerMiniGameControllerBase.SyncGameConfigToClients_ClientRpc</c>
+        /// on a client.
+        ///
+        /// <para><see cref="Cell.AssignConfig"/> gates its IntensityWise choice on this, and must.
+        /// That choice reads <see cref="SelectedIntensity"/> - a value only the server can send a
+        /// client - and it is STICKY: the first pass latches <c>runtime.Config</c> and no later
+        /// correction can re-roll it. A client's cell bootstraps off its FIRST CRYSTAL
+        /// (<c>OnCellItemsUpdated</c> → lazy Initialize, ~400 ms after scene load), which can beat
+        /// the config broadcast; the SOAP variable's default is 0, so the clamp silently yields
+        /// index 0 and that client plays intensity 1's arena for the whole match while the host
+        /// plays the one that was chosen. Silent, not an error.</para>
+        ///
+        /// <c>[NonSerialized]</c> because it is per-session truth about replication, never
+        /// authored; cleared on every runtime reset so a replay or a new scene re-arms the gate.
+        /// </summary>
+        [NonSerialized] public bool GameConfigSynced;
+
+        /// <summary>
         /// True while a Tournament session is in progress (set by
         /// <see cref="CosmicShore.Gameplay.TournamentController"/> at tournament start,
         /// cleared on tournament end / exit). A peer of the other game-context flags
@@ -549,6 +568,7 @@ namespace CosmicShore.Utility
         public void ResetRuntimeData()
         {
             IsTurnRunning = false;
+            GameConfigSynced = false;
 
             // Scene teardown / mid-game exit: abandon the flight clock without publishing a
             // time, so an abandoned game cannot leak its seconds into the next one.
@@ -607,6 +627,7 @@ namespace CosmicShore.Utility
         void ResetRuntimeDataForReplay()
         {
             IsTurnRunning = false;
+            GameConfigSynced = false;
             FlightClock.AbortGame();
             TurnStartTime = 0f;
             RoundsPlayed = 0;
