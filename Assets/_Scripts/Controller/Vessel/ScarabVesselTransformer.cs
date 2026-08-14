@@ -46,8 +46,10 @@ namespace CosmicShore.Gameplay
         [Header("Scarab Throttle (integrator)")]
         [Tooltip("Speed gained per second at full trigger pull (world units/s²), applied along " +
                  "the NOSE. The trigger's analog depth scales this linearly — half pull " +
-                 "accelerates at half rate. Sized against coastDragPerSecond: the brake is " +
-                 "stronger than the engine, so the vessel is quicker to stop than to start.")]
+                 "accelerates at half rate, so depth controls how HARD you push, and the ceiling " +
+                 "controls where you end up. Independent of coastDragPerSecond: the two never " +
+                 "apply on the same frame (drag is release-only), so the brake being stronger " +
+                 "than the engine is a feel choice, not a tug of war.")]
         [SerializeField, Min(0f)] float accelerationPerSecond = 90f;
 
         [Tooltip("Speed shed per second when the trigger is released (world units/s²). The Scarab " +
@@ -222,10 +224,16 @@ namespace CosmicShore.Gameplay
                 _velocity = transform.forward * speedNow;
             }
 
-            // 3) COAST. Releasing the trigger is the only brake, so the decay is linear and
-            //    strong — linear so it genuinely reaches MinimumSpeed instead of crawling
-            //    asymptotically toward it.
-            speedNow = Mathf.Max(speedNow - coastDragPerSecond * dt, 0f);
+            // 3) COAST — ONLY while the trigger is released. Holding the throttle must never be
+            //    fought by the brake: the drag is deliberately STRONGER than the engine (it has
+            //    to be, to stop you faster than it starts you), so applying it unconditionally
+            //    made net acceleration NEGATIVE at full throttle and the vessel decelerated to a
+            //    standstill while the trigger was buried — movement was only possible by tapping.
+            //    Gating on the same deadzone the input strategy uses makes that whole class of
+            //    bug impossible by construction rather than a balance to maintain between two
+            //    numbers.
+            if (throttle01 <= TriggerDeadzone)
+                speedNow = Mathf.Max(speedNow - coastDragPerSecond * dt, 0f);
             speedNow = Mathf.Clamp(speedNow, MinimumSpeed, ThrottleCeiling());
             _velocity = speedNow > 1e-4f ? _velocity.normalized * speedNow : Vector3.zero;
 
