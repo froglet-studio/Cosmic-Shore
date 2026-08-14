@@ -1,6 +1,15 @@
 # Scarab — the Rocket League vessel (design proposal)
 
-> **STATUS: DESIGN PROPOSAL — nothing in this document is implemented.** Written for Garrett to
+> **STATUS UPDATE (2026-08-14): the FOUNDATION is implemented on this branch** — enum 12,
+> `Scarab.prefab` (Sparrow clone, weapons excised), `ScarabVesselTransformer` (integrator
+> throttle + Snap Dash), `ScarabJukeController`, `PlaceSwitchActionSO`/executor (ring body v1),
+> crystal→energy/charge effects, ability map (Space row + all L5 labels left open per the gate),
+> containers, camera SO, class card, and all registrations (arcade card, prefab container,
+> network prefabs, vessel-changer toy). In-editor verification steps + first-pass tuning:
+> `Docs/UNITY_VERIFICATION_CHECKLIST.md` § Scarab. Everything below the next paragraph is the
+> DESIGN record; §4–§5's ball/switch-trigger mode work and the HUD pass are NOT yet built.
+
+> **Original design gate note — nothing beyond the foundation is implemented.** Written for Garrett to
 > mark up before any code or asset lands (the `/vessel` design-approval gate). The element map is
 > mirrored as a proposal row in `Docs/ElementalAbilitySystem/FLEET_MAPS.md` §2. Every file/line
 > citation was verified against branch HEAD (2026-08-12); values marked *(proposal)* are

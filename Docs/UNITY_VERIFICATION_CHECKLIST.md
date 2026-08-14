@@ -23,6 +23,51 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Scarab vessel foundation — new VesselClassType 12, out-of-editor prefab clone (`claude/astro-league-vessel-design-r5q2a8`)
+
+Authored entirely without Unity: `Scarab.prefab` is a programmatic clone of `Sparrow.prefab`
+(Sparrow weaponry excised, transformer/juke/telemetry retyped in place, switch executor added),
+plus 10 new SO assets and three registrations (`Vessel Prefab Container`, `DefaultNetworkPrefabs`,
+`ArcadeGameAstroLeague.Vessels` — Rhino deliberately kept at index 0). Design: `SCARAB.md`.
+All YAML machine-validated (field parity vs live classes, zero dangling fileIDs, guid uniqueness);
+C# stub-compiled under mcs. None of it has been imported.
+
+**Verify in editor (in order):**
+1. **Open `Assets/_Prefabs/Spacevessels/Scarab.prefab` and SAVE it** — this is load-bearing, not
+   a smoke test: the clone carries Sparrow's `NetworkObject.GlobalObjectIdHash` until the editor
+   re-serializes it, and two registered network prefabs sharing a hash collide. Open, confirm no
+   missing-script rows, save.
+2. Console clean on import (no `Broken text PPtr`, no unresolvable guids).
+3. Menu_Main → freestyle → vessel-changer toy now shows a 7th model → swap to Scarab. Fly:
+   RT = accelerating analog throttle with a long coast (never a dead stop below MinimumSpeed 10);
+   LT = analog drift, course visibly decoupling from the nose, speed retained; right stick to the
+   perimeter = lateral juke + 360° visual roll (camera must NOT roll), binary re-arm ~1.2s;
+   A / Space = a 12-brick prism ring blooms ~150u ahead on the COURSE (drift then place — the ring
+   should appear where you're going, not where you're pointing), second+third presses spend the
+   remaining charges, fourth refuses.
+4. Crystals: collect any crystal → switch-charge meter +1/3 (place again to confirm), energy meter
+   +0.25 (watch `Resources[0]` in the inspector — no HUD gauge yet).
+5. Astro League: the configure modal's carousel now offers Rhino + Scarab; pick Scarab, 2 players
+   + AI → AI must all spawn as RHINOS (list order — if an AI spawns as a Scarab, `Vessels[0]`
+   got reordered); play a rally, hull-strike the ball, place a ring in front of your goal.
+6. MPPM two-client: remote peer sees the Scarab hull, its trail, and placed rings (both peers lay
+   the ring via the replicated A-press; positions may differ slightly under latency — expected).
+7. Elemental seeding (debug): Time L10 → higher throttle ceiling (~270); Time L5 → double-tap RT
+   dashes; Mass L10 → bigger rings; Space L10 → rings at ~300u.
+
+**First-pass tuning (expect a balancing pass):** accel 70 u/s², coast drag 12, top speed 180
+(×1.5 at Time 10), juke 80 u/s / 0.5s / 1.2s cooldown, dash 100 u/s / 0.4s / 0.3s window,
+ring radius 20 (×2.5 at Mass 10), 12 bricks (2.5, 1.5, 8), place distance 150→300, 3 switch
+charges, crystal grants +0.334 charge / +0.25 energy.
+
+**Known gaps (deliberate, tracked in SCARAB.md):** HUD is the cloned Sparrow variant (icons
+cosmetically wrong, structurally compliant; gun/roll bindings nulled so those gauges are dark);
+no switch-charge pips or energy gauge yet; the switch ring is body-only (no ball deflection or
+energy trigger — mode work); no ball generation (mode work); Space map row deliberately open;
+AI never flies the Scarab (list order); touch cannot place switches (no Button1 raise site).
+
+---
+
 ### 🔴 Sparrow Turret Stance — two flight visualizations, still-nothing hardening (`claude/sparrow-prism-attack-hg6n78`)
 
 Authored without a Unity compile or play-test. The stance STILL showed nothing after the

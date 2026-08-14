@@ -1,0 +1,74 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4b3f2a8c8f344355b16a4d4296ae3f98, type: 3}
+  m_Name: Scarab
+  m_EditorClassIdentifier: 
+  vesselClass: 12
+  entries:
+  - Element: 1
+    AbilityLabel: Ball Generation
+    AbilityDescription: Charge lowers the crystal energy required to materialise a
+      ball (authored on the ball-forge effect when the Astro League mode pass lands;
+      generic map multiplier stays 1.0). Collect crystals to fill the energy meter;
+      at the threshold the next crystal contact becomes a ball carrying your
+      velocity. L5 upgrade awaits markup (SCARAB.md section 7).
+    Input: 0
+    MultiplierAtFullLevel: 1
+    MinMultiplier: 1
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel:
+    UpgradeDescription:
+  - Element: 2
+    AbilityLabel: Switch
+    AbilityDescription: Mass grows the switch structure - ring aperture and panel
+      span (authored on PlaceSwitchActionSO.switchScale ElementalFloat, x1 -> x2.5
+      at level 10; generic map multiplier stays 1.0 to avoid double-dipping). L5
+      upgrade awaits markup.
+    Input: 6
+    MultiplierAtFullLevel: 1
+    MinMultiplier: 1
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel:
+    UpgradeDescription:
+  - Element: 3
+    AbilityLabel: (open design slot)
+    AbilityDescription: 'Space is deliberately unassigned - the design notes name
+      Charge/Mass/Time only. Proposed: juke displacement + hit reach, leaving drift
+      as unmapped base kit (the Sparrow-roll precedent). Do not fill without
+      markup (SCARAB.md section 7).'
+    Input: 0
+    MultiplierAtFullLevel: 1
+    MinMultiplier: 1
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel:
+    UpgradeDescription:
+  - Element: 4
+    AbilityLabel: Throttle
+    AbilityDescription: Time raises the top speed of the throttle ramp (authored on
+      the transformer's ThrottleScalerMultiplier ElementalFloat, x1 -> x1.5 at
+      level 10; the generic map Time multiplier stays 1.0 - the no-double-dip pin).
+      The L5 Snap Dash double-tap is wired in ScarabVesselTransformer and gates on
+      IsUpgradeActive(Time); its label awaits markup.
+    Input: 1
+    MultiplierAtFullLevel: 1
+    MinMultiplier: 1
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel:
+    UpgradeDescription:
