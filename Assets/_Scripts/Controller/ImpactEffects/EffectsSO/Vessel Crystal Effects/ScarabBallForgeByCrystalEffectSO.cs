@@ -1,0 +1,120 @@
+using CosmicShore.Data;
+using CosmicShore.Utility;
+using Unity.Netcode;
+using UnityEngine;
+
+namespace CosmicShore.Gameplay
+{
+    /// <summary>
+    /// The Scarab's ball forge (design: R_VesselActions/SCARAB.md §4.1). Crystals fill an energy
+    /// meter; once it is FULL, the next crystal contact materialises a ball at the crystal,
+    /// carrying the vessel's velocity, and spends the meter.
+    ///
+    /// Ordering inside the container is the mechanic: this effect must sit BEFORE the
+    /// energy-adding effect in `vesselCrystalEffects`, so it tests the meter as it stood on
+    /// arrival. That is what makes it "the NEXT crystal after you fill up" rather than "the
+    /// crystal that fills you up" — the beat the design notes ask for.
+    ///
+    /// Why the ball is aimed rather than spawned by a button: you have to fly THROUGH a crystal at
+    /// the speed and heading you want the ball to leave with, so making a ball is a piece of
+    /// driving. Velocity comes from the vessel's own Course × Speed (its transform-driven motion),
+    /// scaled by <see cref="_inheritedVelocityFraction"/>.
+    ///
+    /// SERVER-ONLY, and that is not incidental: the omni-crystal chain reaches this effect through
+    /// NetworkVesselImpactor's ServerRpc → **ClientRpc**, so `Execute` runs on EVERY peer. An
+    /// ungated spawn would mint one ball per connected client. The ball is a NetworkObject: the
+    /// server spawns it once and Netcode replicates it to everyone.
+    /// </summary>
+    [CreateAssetMenu(
+        fileName = "ScarabBallForgeByCrystalEffect",
+        menuName = "ScriptableObjects/Impact Effects/Vessel - Crystal/ScarabBallForgeByCrystalEffectSO")]
+    public class ScarabBallForgeByCrystalEffectSO : VesselCrystalEffectSO
+    {
+        [Header("Energy")]
+        [Tooltip("Which resource meter holds ball energy (the Scarab authors index 0).")]
+        [SerializeField] int _energyResourceIndex = 0;
+
+        [Tooltip("Fraction of the meter's max that counts as 'full'. At or above this, the next " +
+                 "crystal contact forges a ball instead of just topping up.")]
+        [SerializeField, Range(0.1f, 1f)] float _forgeThreshold = 1f;
+
+        [Tooltip("Energy spent per ball, as a fraction of the meter's max. CHARGE lowers this " +
+                 "once the elemental hook lands (SCARAB.md §7).")]
+        [SerializeField, Range(0.1f, 1f)] float _energyCostPerBall = 1f;
+
+        [Header("Ball")]
+        [Tooltip("The networked ball prefab (AstroLeagueBall). Must also be registered in " +
+                 "DefaultNetworkPrefabs or Spawn() throws.")]
+        [SerializeField] AstroLeagueBall _ballPrefab;
+
+        [Tooltip("How much of the vessel's velocity the fresh ball inherits. 1 = the ball leaves " +
+                 "exactly as fast as you were flying.")]
+        [SerializeField, Min(0f)] float _inheritedVelocityFraction = 1f;
+
+        [Tooltip("Minimum launch speed, so forging while nearly stopped still produces a ball that " +
+                 "moves instead of one that sits on your nose.")]
+        [SerializeField, Min(0f)] float _minimumLaunchSpeed = 40f;
+
+        [Tooltip("Spawn offset ahead of the vessel along the launch direction, so the new ball " +
+                 "does not materialise inside the hull that made it. The vessel is touching the " +
+                 "crystal at this instant, so this is the crystal's position plus clearance — " +
+                 "CrystalImpactData carries no position, and widening that networked struct for " +
+                 "one vessel would change the wire format for the whole fleet.")]
+        [SerializeField, Min(0f)] float _forwardClearance = 25f;
+
+        public override void Execute(VesselImpactor vesselImpactor, CrystalImpactData data)
+        {
+            var status = vesselImpactor != null ? vesselImpactor.Vessel?.VesselStatus : null;
+            if (status == null) return;
+
+            // Runs on every peer (ClientRpc fan-out) — only the server may spawn.
+            var nm = NetworkManager.Singleton;
+            bool isServer = nm == null || !nm.IsListening || nm.IsServer;
+            if (!isServer) return;
+
+            var resources = status.ResourceSystem;
+            if (resources == null) return;
+            if (_energyResourceIndex < 0 || _energyResourceIndex >= resources.Resources.Count) return;
+
+            var meter = resources.Resources[_energyResourceIndex];
+            if (meter == null || meter.MaxAmount <= 0f) return;
+
+            // Tested BEFORE the sibling energy-add effect runs (container order) — the meter must
+            // already have been full when this crystal was touched.
+            if (meter.CurrentAmount < meter.MaxAmount * _forgeThreshold) return;
+
+            if (_ballPrefab == null)
+            {
+                CSDebug.LogError("[ScarabBallForge] No ball prefab assigned — cannot forge. " +
+                                 "Wire ScarabBallForgeByCrystalEffect._ballPrefab.");
+                return;
+            }
+
+            var ship = status.ShipTransform ? status.ShipTransform : vesselImpactor.transform;
+            Vector3 course = status.Course.sqrMagnitude > 1e-4f
+                ? status.Course.normalized
+                : ship.forward;
+            float launchSpeed = Mathf.Max(status.Speed * _inheritedVelocityFraction, _minimumLaunchSpeed);
+            Vector3 spawnAt = ship.position + course * _forwardClearance;
+
+            var ball = Object.Instantiate(_ballPrefab, spawnAt, Quaternion.identity);
+            var netObj = ball.GetComponent<NetworkObject>();
+            if (netObj == null)
+            {
+                CSDebug.LogError("[ScarabBallForge] Ball prefab has no NetworkObject — destroying.");
+                Object.Destroy(ball.gameObject);
+                return;
+            }
+
+            if (nm != null && nm.IsListening)
+                netObj.Spawn(destroyWithScene: true);
+
+            ball.LaunchServer(spawnAt, course * launchSpeed, status.Domain);
+
+            resources.ChangeResourceAmount(_energyResourceIndex, -meter.MaxAmount * _energyCostPerBall);
+
+            CSDebug.Log($"[ScarabBallForge] {status.PlayerName} forged a {status.Domain} ball at " +
+                        $"{spawnAt} @ {launchSpeed:F0} u/s.");
+        }
+    }
+}

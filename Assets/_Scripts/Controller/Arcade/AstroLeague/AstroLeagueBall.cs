@@ -1356,6 +1356,46 @@ namespace CosmicShore.Gameplay
             if (trail != null) trail.Clear();
         }
 
+        /// <summary>
+        /// Server: bring a freshly-spawned ball into play at <paramref name="position"/> carrying
+        /// <paramref name="velocity"/>, owned by <paramref name="ownerDomain"/>. This is the entry
+        /// point for a ball that is CREATED mid-match rather than reset to the arena centre — the
+        /// Scarab's crystal forge (R_VesselActions/SCARAB.md §4.1) is the first caller; the Astro
+        /// League controller never uses it, so the mode's single-ball flow is unchanged.
+        ///
+        /// Order is load-bearing: a fresh ball's n_Frozen defaults to TRUE (kinematic, snapped to
+        /// spawnPosition), and un-freezing deliberately ZEROES the rigidbody's velocity, so the
+        /// launch velocity has to be written after the unfreeze or it is silently discarded.
+        ///
+        /// The domain written here is the ball's OWNER. It replicates through the same variable a
+        /// strike would rewrite, so until per-ball permanent ownership lands (SCARAB.md §4.2) an
+        /// opposing strike still re-colours it — the forge sets the STARTING allegiance, which is
+        /// what makes it eat the enemy's trail and shield yours from birth.
+        /// </summary>
+        public void LaunchServer(Vector3 position, Vector3 velocity, Domains ownerDomain)
+        {
+            if (!IsServer) return;
+
+            SetSpawnPosition(position);
+            transform.position = position;
+            transform.rotation = Quaternion.identity;
+
+            SetHiddenServer(false);
+            SetFrozenServer(false);   // zeroes rb velocity — everything below must follow it
+
+            rb.linearVelocity = velocity;
+            rb.angularVelocity = Vector3.zero;
+
+            n_Position.Value = position;
+            n_Velocity.Value = velocity;
+            n_AngularVelocity.Value = Vector3.zero;
+            n_LastHitDomain.Value = ownerDomain;
+
+            _shieldPoppedThisVisit.Clear();
+            _lastPrismScanPos = position;   // or the first scan sweeps from the origin
+            if (trail != null) trail.Clear();
+        }
+
         #endregion
 
         public override void OnDestroy()
