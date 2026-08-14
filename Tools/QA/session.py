@@ -199,13 +199,25 @@ def attach(path, item, src):
 # ---------------------------------------------------------------- state
 
 def state(path):
-    """One JSON blob describing everything the window draws."""
+    """One JSON blob describing everything the window draws.
+
+    SHAPED FOR UnityEngine.JsonUtility, which cannot deserialise dictionaries and
+    cannot map keys that are not valid C# identifiers ("Unity version"). So the
+    metadata is flattened into named fields and each row carries its problems as
+    one pre-joined string. Shaping the payload for the consumer keeps a hand-rolled
+    JSON parser out of the C# half, which is the half that cannot be compile-tested.
+    """
     items = backlog_items()
     head = git("rev-parse", "--short", "HEAD")
-    out = {"root": ROOT, "head": head, "branch": git("rev-parse", "--abbrev-ref", "HEAD"),
-           "backlog": items, "session": None,
+    out = {"root": ROOT, "head": head,
+           "branch": git("rev-parse", "--abbrev-ref", "HEAD"),
+           "backlog": items,
            "sessions": sorted(f for f in os.listdir(RESULTS_DIR)
-                              if f.endswith(".md") and f != "TEMPLATE.md")}
+                              if f.endswith(".md") and f != "TEMPLATE.md"),
+           "hasSession": False, "sessionFile": "", "sessionPath": "",
+           "tester": "", "date": "", "commit": "", "unity": "", "platform": "",
+           "submitted": False, "canSubmit": False, "blocking": 0,
+           "rows": [], "problems": [], "verdicts": sorted(VALID)}
     if not path or not os.path.exists(path):
         return out
 
@@ -221,20 +233,29 @@ def state(path):
 
     by_item = {}
     for p in problems:
-        by_item.setdefault(p.where, []).append(
-            {"blocking": p.blocking, "what": p.what, "fix": p.fix})
-    out["session"] = {
-        "file": fname, "path": path, "meta": meta,
+        by_item.setdefault(p.where, []).append(p)
+
+    def joined(item):
+        return "\n".join(
+            (x.what + ((" — " + x.fix) if x.fix else "")) for x in by_item.get(item, []))
+
+    out.update({
+        "hasSession": True, "sessionFile": fname, "sessionPath": path,
+        "tester": meta.get("Tester", ""), "date": meta.get("Date", ""),
+        "commit": meta.get("Commit", ""), "unity": meta.get("Unity version", ""),
+        "platform": meta.get("Platform(s)", ""),
         "submitted": entry.get("submitted_hash") == file_hash(text),
+        "blocking": sum(1 for x in problems if x.blocking),
+        "canSubmit": not any(x.blocking for x in problems),
         "rows": [{"id": i, "verdict": v, "notes": n,
                   "frozen": i in applied,
-                  "problems": by_item.get(i, [])} for i, v, n in rows],
-        "problems": [{"blocking": p.blocking, "where": p.where, "what": p.what,
-                      "fix": p.fix} for p in problems],
-        "blocking": sum(1 for p in problems if p.blocking),
-        "can_submit": not any(p.blocking for p in problems),
-        "verdicts": sorted(VALID),
-    }
+                  "problem": joined(i),
+                  "problemBlocking": any(x.blocking for x in by_item.get(i, []))}
+                 for i, v, n in rows],
+        "problems": [{"blocking": x.blocking, "where": x.where, "what": x.what,
+                      "fix": x.fix} for x in problems
+                     if x.where not in {r[0] for r in rows}],
+    })
     return out
 
 
@@ -275,12 +296,47 @@ def main(argv=None):
         argv2 = [os.path.basename(path)] + (["--accept-head"] if a.accept_head else [])
         code = submit_mod.main(argv2)
         if a.json:
-            print(json.dumps(dict(state(path), submit_exit=code), indent=1))
+            print(json.dumps(dict(state(path), submitExit=code), indent=1))
         return code
 
     print(json.dumps(state(path), indent=1) if a.json else
           "ok: %s" % os.path.relpath(path, ROOT))
     return 0
+
+
+WINDOW_CS = os.path.join(ROOT, "Assets", "_Scripts", "Editor", "QA", "QASessionWindow.cs")
+
+
+def contract_matches_csharp(sample):
+    """The JSON above must match the window's [Serializable] fields exactly.
+
+    JsonUtility fails SILENTLY on a mismatch — an unknown key is ignored and a missing
+    one leaves a default — so drift between these two halves would show up as blank
+    fields in the UI rather than an error. This is the gate against that. Skipped if
+    the C# is absent (nothing to drift from).
+    """
+    if not os.path.exists(WINDOW_CS):
+        return True
+    cs = open(WINDOW_CS).read()
+
+    def fields(cls):
+        m = re.search(r"public class %s\s*\{(.*?)\n        \}" % cls, cs, re.S)
+        return set(re.findall(r"public [\w\[\]<>, ]+? (\w+)\s*[;=]", m.group(1))) if m else None
+
+    top = fields("SessionState")
+    if top is None or top != set(sample):
+        return False
+    for cls, key, blank in (("BacklogItem", "backlog", {"id", "priority", "status", "title"}),
+                            ("Row", "rows", {"id", "verdict", "notes", "frozen",
+                                             "problem", "problemBlocking"}),
+                            ("Problem", "problems", {"blocking", "where", "what", "fix"})):
+        f = fields(cls)
+        if f is None or f != blank:
+            return False
+        for row in sample.get(key) or []:
+            if set(row) != f:
+                return False
+    return True
 
 
 # ---------------------------------------------------------------- selftest
@@ -319,37 +375,39 @@ def selftest():
         assert "QA-NOPE" not in txt, "unknown ids must not be written into the form"
         assert txt.count(TABLE_OPEN) == 1 and txt.count(TABLE_CLOSE) == 1
 
-        st = state(p)["session"]
+        st = state(p)
         assert [r["id"] for r in st["rows"]] == ["QA-ONE", "QA-TWO"], st["rows"]
-        assert st["can_submit"] is False, "blank verdicts must block"
-        assert any("no verdict" in x["what"] for x in st["rows"][0]["problems"])
+        assert st["canSubmit"] is False, "blank verdicts must block"
+        assert "no verdict" in st["rows"][0]["problem"]
+        assert st["tester"] == "Ada Lovelace" and st["unity"] == "6000.3.17f1"
 
         upsert(p, "QA-ONE", "PASS", "")
         upsert(p, "QA-TWO", "FAIL", "Step 3: NRE in Prism.Explode with a long note")
-        st = state(p)["session"]
-        assert st["can_submit"] is True, st["problems"]
+        st = state(p)
+        assert st["canSubmit"] is True, st["problems"]
         assert st["rows"][0]["verdict"] == "PASS"
-        assert not st["submitted"]
+        assert not st["submitted"] and st["hasSession"]
 
         # editing one row must not disturb the other
         upsert(p, "QA-TWO", notes="edited note that is quite long indeed yes")
-        st = state(p)["session"]
+        st = state(p)
         assert st["rows"][0] == {"id": "QA-ONE", "verdict": "PASS", "notes": "",
-                                 "frozen": False, "problems": []}, st["rows"][0]
+                                 "frozen": False, "problem": "",
+                                 "problemBlocking": False}, st["rows"][0]
         assert "edited note" in st["rows"][1]["notes"]
 
         drop(p, "QA-ONE")
-        assert [r["id"] for r in state(p)["session"]["rows"]] == ["QA-TWO"]
+        assert [r["id"] for r in state(p)["rows"]] == ["QA-TWO"]
 
         # adding a row the tester did not start with
         upsert(p, "QA-THREE", "BLOCKED", "no second machine available today")
-        assert len(state(p)["session"]["rows"]) == 2
+        assert len(state(p)["rows"]) == 2
 
         # attach copies the file in and references it from that row only
         src = os.path.join(tmp, "shot.png")
         open(src, "w").write("x")
         ref = attach(p, "QA-TWO", src)
-        st = state(p)["session"]
+        st = state(p)
         assert ref in st["rows"][0]["notes"] and ref not in st["rows"][1]["notes"]
         assert os.path.exists(os.path.join(res, "evidence",
                                            os.path.basename(p)[:-3],
@@ -357,9 +415,12 @@ def selftest():
 
         # state() on a missing/none session still describes the backlog
         empty = state(None)
-        assert empty["session"] is None and len(empty["backlog"]) == 3
+        assert empty["hasSession"] is False and len(empty["backlog"]) == 3
+        assert empty["rows"] == [] and empty["canSubmit"] is False
 
-        print("session selftest: 18/18 checks passed")
+        assert contract_matches_csharp(state(p)), "JSON shape drifted from the C# window"
+
+        print("session selftest: 19/19 checks passed")
         return 0
     finally:
         ar.BACKLOG, ar.ARCHIVE, ar.RESULTS_DIR, ar.LEDGER = saved

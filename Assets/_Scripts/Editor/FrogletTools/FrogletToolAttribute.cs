@@ -29,6 +29,8 @@ namespace CosmicShore.Editor.Froglet
         Services = 8,
         /// <summary>Everything else / uncategorised.</summary>
         Misc = 9,
+        /// <summary>QA sessions, test results, the untested-development backlog.</summary>
+        Qa = 10,
     }
 
     /// <summary>

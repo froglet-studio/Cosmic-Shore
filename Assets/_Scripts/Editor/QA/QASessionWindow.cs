@@ -1,0 +1,547 @@
+using System.Collections.Generic;
+using System.IO;
+using System.Text;
+using CosmicShore.Editor.Froglet;
+using UnityEditor;
+using UnityEngine;
+
+namespace CosmicShore.Editor.QA
+{
+    /// <summary>
+    /// The QA session form — fill in verdicts for backlog items and press Submit.
+    ///
+    /// This window owns PIXELS ONLY. It never parses or writes a results file and never
+    /// re-implements a validation rule; every read and every write goes through
+    /// <c>Tools/QA/session.py</c>, which self-tests. Two reasons that split is deliberate:
+    /// the rules would silently drift if they existed twice, and a duplicate in here would
+    /// be the copy nobody can prove correct. Anything this window gets wrong is a layout
+    /// bug you can see, not a lost result.
+    ///
+    /// Requires python3 on PATH. If it is missing the window says so and offers the
+    /// download page rather than half-working.
+    /// </summary>
+    public class QASessionWindow : EditorWindow
+    {
+        // ── Payload from `session.py state --json` ────────────────────────────────
+        // Field names and shape are fixed by JsonUtility: no dictionaries, and every
+        // key must be a valid C# identifier. session.py emits exactly this.
+
+        [System.Serializable]
+        public class BacklogItem
+        {
+            public string id;
+            public string priority;
+            public string status;
+            public string title;
+        }
+
+        [System.Serializable]
+        public class Row
+        {
+            public string id;
+            public string verdict;
+            public string notes;
+            public bool frozen;
+            public string problem;
+            public bool problemBlocking;
+        }
+
+        [System.Serializable]
+        public class Problem
+        {
+            public bool blocking;
+            public string where;
+            public string what;
+            public string fix;
+        }
+
+        [System.Serializable]
+        public class SessionState
+        {
+            public string root;
+            public string head;
+            public string branch;
+            public bool hasSession;
+            public string sessionFile;
+            public string sessionPath;
+            public string tester;
+            public string date;
+            public string commit;
+            public string unity;
+            public string platform;
+            public bool submitted;
+            public bool canSubmit;
+            public int blocking;
+            public BacklogItem[] backlog = new BacklogItem[0];
+            public Row[] rows = new Row[0];
+            public Problem[] problems = new Problem[0];
+            public string[] sessions = new string[0];
+            public string[] verdicts = new string[0];
+        }
+
+        const string DownloadUrl = "https://www.python.org/downloads/";
+
+        SessionState _state;
+        string _python;
+        string _lastError;
+        string _newTester = "";
+        Vector2 _scroll;
+        int _addIndex;
+        bool _busy;
+        readonly Dictionary<string, string> _noteEdits = new Dictionary<string, string>();
+
+        bool HasUnsavedNotes
+        {
+            get
+            {
+                if (_state == null) return false;
+                foreach (var row in _state.rows)
+                {
+                    if (_noteEdits.TryGetValue(row.id, out var pending) &&
+                        pending != (row.notes ?? "")) return true;
+                }
+                return false;
+            }
+        }
+
+        [MenuItem("FrogletTools/QA/QA Session", false, 10)]
+        [FrogletTool(FrogletToolCategory.Qa, Importance = 5,
+            DisplayName = "QA Session",
+            Description = "Record verdicts for backlog items and submit a QA session.")]
+        public static void Open()
+        {
+            var w = GetWindow<QASessionWindow>("QA Session");
+            w.minSize = new Vector2(620f, 420f);
+            w.Refresh();
+            w.Show();
+        }
+
+        // ── Talking to Python ─────────────────────────────────────────────────────
+
+        static string RepoRoot
+        {
+            get
+            {
+                var parent = Directory.GetParent(Application.dataPath);
+                return parent != null ? parent.FullName : Application.dataPath;
+            }
+        }
+
+        /// <summary>First interpreter on PATH that answers, or null. Windows ships `py`.</summary>
+        static string FindPython()
+        {
+            foreach (var candidate in new[] { "python3", "python", "py" })
+            {
+                if (TryRun(candidate, "--version", out _, out _))
+                    return candidate;
+            }
+            return null;
+        }
+
+        static bool TryRun(string exe, string args, out string stdout, out string stderr)
+        {
+            stdout = stderr = "";
+            try
+            {
+                // Fully qualified: `using System.Diagnostics` would make `Debug` ambiguous
+                // against UnityEngine.Debug in this file.
+                var psi = new System.Diagnostics.ProcessStartInfo(exe, args)
+                {
+                    WorkingDirectory = RepoRoot,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                };
+                using (var p = System.Diagnostics.Process.Start(psi))
+                {
+                    if (p == null) return false;
+                    stdout = p.StandardOutput.ReadToEnd();
+                    stderr = p.StandardError.ReadToEnd();
+                    p.WaitForExit(60000);
+                    return true;
+                }
+            }
+            catch (System.Exception e)
+            {
+                stderr = e.Message;
+                return false;
+            }
+        }
+
+        /// <summary>Run a session.py command and re-read state from its JSON.</summary>
+        void Run(params string[] args)
+        {
+            if (string.IsNullOrEmpty(_python)) return;
+            _busy = true;
+            try
+            {
+                var sb = new StringBuilder("Tools/QA/session.py");
+                foreach (var a in args) sb.Append(' ').Append(Quote(a));
+                sb.Append(" --json");
+
+                if (!TryRun(_python, sb.ToString(), out var stdout, out var stderr))
+                {
+                    _lastError = "Could not run " + _python + ": " + stderr;
+                    return;
+                }
+
+                var brace = stdout.IndexOf('{');
+                if (brace < 0)
+                {
+                    _lastError = string.IsNullOrWhiteSpace(stderr) ? stdout : stderr;
+                    return;
+                }
+
+                _lastError = null;
+                var parsed = JsonUtility.FromJson<SessionState>(stdout.Substring(brace));
+                if (parsed != null)
+                {
+                    _state = parsed;
+                    PruneNoteEdits();
+                }
+            }
+            finally
+            {
+                _busy = false;
+                Repaint();
+            }
+        }
+
+        /// <summary>Drop pending edits that the file now agrees with.</summary>
+        void PruneNoteEdits()
+        {
+            var stale = new List<string>();
+            foreach (var pair in _noteEdits)
+            {
+                var row = System.Array.Find(_state.rows, r => r.id == pair.Key);
+                if (row == null || (row.notes ?? "") == pair.Value) stale.Add(pair.Key);
+            }
+            foreach (var key in stale) _noteEdits.Remove(key);
+        }
+
+        static string Quote(string s) => "\"" + (s ?? "").Replace("\"", "\\\"") + "\"";
+
+        void Refresh()
+        {
+            _python = FindPython();
+            if (!string.IsNullOrEmpty(_python)) Run("state");
+        }
+
+        // ── Drawing ───────────────────────────────────────────────────────────────
+
+        void OnGUI()
+        {
+            FrogletEditorPalette.Banner(
+                "QA Session",
+                "Record verdicts, then Submit. Nothing is published until you do.",
+                FrogletEditorPalette.ColorFor(FrogletToolCategory.Qa));
+
+            if (string.IsNullOrEmpty(_python)) { DrawNoPython(); return; }
+
+            using (new EditorGUI.DisabledScope(_busy))
+            {
+                _scroll = EditorGUILayout.BeginScrollView(_scroll);
+                DrawHeader();
+                if (_state == null)
+                    EditorGUILayout.HelpBox("No state yet — press Refresh.", MessageType.Info);
+                else if (!_state.hasSession) DrawNoSession();
+                else DrawSession();
+                EditorGUILayout.EndScrollView();
+                if (_state != null && _state.hasSession) DrawFooter();
+            }
+        }
+
+        void DrawNoPython()
+        {
+            EditorGUILayout.Space(6);
+            EditorGUILayout.HelpBox(
+                "This window needs Python 3, and none was found on PATH.\n\n" +
+                "The project already uses Python for its build checks, so this is the same " +
+                "dependency — it just is not installed on this machine yet. Install it " +
+                "(tick \"Add Python to PATH\"), then reopen this window.",
+                MessageType.Error);
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                if (FrogletEditorPalette.ColorButton("Open python.org downloads",
+                        FrogletEditorPalette.Info, 210f))
+                    Application.OpenURL(DownloadUrl);
+                if (FrogletEditorPalette.ColorButton("Copy install command",
+                        FrogletEditorPalette.Muted, 170f))
+                    EditorGUIUtility.systemCopyBuffer =
+                        Application.platform == RuntimePlatform.WindowsEditor
+                            ? "winget install Python.Python.3.12"
+                            : "brew install python";
+                if (FrogletEditorPalette.ColorButton("Recheck", FrogletEditorPalette.Ok, 90f))
+                    Refresh();
+            }
+            EditorGUILayout.Space(4);
+            EditorGUILayout.LabelField(
+                "You can always fall back to editing the results markdown by hand — see " +
+                "Docs/QA/README.md.", EditorStyles.wordWrappedMiniLabel);
+        }
+
+        void DrawHeader()
+        {
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                var build = _state == null ? "?" : _state.branch + " @ " + _state.head;
+                EditorGUILayout.LabelField("Build", build, EditorStyles.miniLabel);
+                GUILayout.FlexibleSpace();
+                if (FrogletEditorPalette.ColorButton("Refresh", FrogletEditorPalette.Info, 80f))
+                    Refresh();
+            }
+            if (!string.IsNullOrEmpty(_lastError))
+                EditorGUILayout.HelpBox(_lastError, MessageType.Error);
+            EditorGUILayout.Space(4);
+        }
+
+        void DrawNoSession()
+        {
+            EditorGUILayout.LabelField("Start a session", FrogletEditorPalette.SectionHeader);
+            _newTester = EditorGUILayout.TextField("Your name", _newTester);
+            EditorGUILayout.LabelField(
+                "Creates Docs/QA/RESULTS/<today>-<yourname>.md with the build and Unity " +
+                "version filled in. Add items to it below once it exists.",
+                EditorStyles.wordWrappedMiniLabel);
+            using (new EditorGUI.DisabledScope(string.IsNullOrWhiteSpace(_newTester)))
+            {
+                if (FrogletEditorPalette.ColorButton("Create session",
+                        FrogletEditorPalette.Ok, 140f))
+                    Run("new", "--tester", _newTester,
+                        "--unity", Application.unityVersion,
+                        "--platform", "Editor (" + Application.platform + ")");
+            }
+        }
+
+        void DrawSession()
+        {
+            EditorGUILayout.LabelField(_state.sessionFile, FrogletEditorPalette.SectionHeader);
+            EditorGUILayout.LabelField(
+                "Tester " + _state.tester + "   ·   " + _state.date + "   ·   Unity " +
+                _state.unity + "   ·   " + _state.platform, EditorStyles.miniLabel);
+            EditorGUILayout.Space(6);
+
+            if (_state.rows.Length == 0)
+                EditorGUILayout.HelpBox("No items yet — add one below.", MessageType.Info);
+
+            foreach (var row in _state.rows) DrawRow(row);
+
+            EditorGUILayout.Space(8);
+            DrawAddItem();
+
+            foreach (var p in _state.problems)
+            {
+                EditorGUILayout.HelpBox(
+                    p.where + ": " + p.what + (string.IsNullOrEmpty(p.fix) ? "" : "\n" + p.fix),
+                    p.blocking ? MessageType.Error : MessageType.Warning);
+            }
+        }
+
+        void DrawRow(Row row)
+        {
+            using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+            {
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    EditorGUILayout.LabelField(new GUIContent(row.id, TitleFor(row.id)),
+                        EditorStyles.boldLabel, GUILayout.Width(230f));
+
+                    if (row.frozen)
+                    {
+                        EditorGUILayout.LabelField(
+                            row.verdict + "  (published — frozen)",
+                            EditorStyles.miniLabel);
+                    }
+                    else
+                    {
+                        var options = BuildVerdictOptions();
+                        var current = Mathf.Max(0, System.Array.IndexOf(options, row.verdict));
+                        var picked = EditorGUILayout.Popup(current, options, GUILayout.Width(110f));
+                        if (picked != current)
+                            Run("set", "--item", row.id, "--verdict", options[picked]);
+
+                        if (FrogletEditorPalette.ColorButton("Attach",
+                                FrogletEditorPalette.Info, 70f, 18f))
+                            Attach(row.id);
+                        if (FrogletEditorPalette.ColorButton("Console",
+                                FrogletEditorPalette.Muted, 74f, 18f,
+                                "Save the current Editor log as evidence for this item"))
+                            AttachEditorLog(row.id);
+                        if (FrogletEditorPalette.ColorButton("×",
+                                FrogletEditorPalette.Error, 24f, 18f, "Remove this row"))
+                            Run("remove", "--item", row.id);
+                    }
+                }
+
+                if (!row.frozen)
+                {
+                    // Notes commit on an explicit press rather than on focus loss. Focus
+                    // tracking in IMGUI is subtle, and this window is the half that cannot
+                    // be compile-tested — a visible button cannot silently drop a note.
+                    var saved = row.notes ?? "";
+                    var edited = _noteEdits.TryGetValue(row.id, out var pending) ? pending : saved;
+                    var typed = EditorGUILayout.TextArea(edited, EditorStyles.textArea,
+                        GUILayout.MinHeight(34f));
+                    if (typed != edited) _noteEdits[row.id] = typed;
+
+                    if (typed != saved)
+                    {
+                        using (new EditorGUILayout.HorizontalScope())
+                        {
+                            EditorGUILayout.LabelField("Unsaved note",
+                                EditorStyles.miniBoldLabel, GUILayout.Width(90f));
+                            if (FrogletEditorPalette.ColorButton("Save note",
+                                    FrogletEditorPalette.Ok, 90f, 18f))
+                            {
+                                _noteEdits.Remove(row.id);
+                                Run("set", "--item", row.id, "--notes", typed);
+                            }
+                            if (FrogletEditorPalette.ColorButton("Revert",
+                                    FrogletEditorPalette.Muted, 70f, 18f))
+                            {
+                                _noteEdits.Remove(row.id);
+                                GUI.FocusControl(null);
+                            }
+                        }
+                    }
+                }
+
+                if (!string.IsNullOrEmpty(row.problem))
+                {
+                    EditorGUILayout.HelpBox(row.problem,
+                        row.problemBlocking ? MessageType.Error : MessageType.Warning);
+                }
+            }
+        }
+
+        string[] BuildVerdictOptions()
+        {
+            var list = new List<string> { "" };
+            if (_state != null && _state.verdicts != null) list.AddRange(_state.verdicts);
+            return list.ToArray();
+        }
+
+        string TitleFor(string id)
+        {
+            if (_state?.backlog == null) return id;
+            foreach (var b in _state.backlog)
+                if (b.id == id) return b.priority + " — " + b.title;
+            return id;
+        }
+
+        void DrawAddItem()
+        {
+            var open = new List<string> { "Add an item…" };
+            var ids = new List<string> { null };
+            var present = new HashSet<string>();
+            foreach (var r in _state.rows) present.Add(r.id);
+            foreach (var b in _state.backlog)
+            {
+                if (present.Contains(b.id)) continue;
+                open.Add(b.priority + "  " + b.id + " — " + b.title);
+                ids.Add(b.id);
+            }
+
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                _addIndex = EditorGUILayout.Popup(_addIndex, open.ToArray());
+                if (FrogletEditorPalette.ColorButton("Add", FrogletEditorPalette.Ok, 60f) &&
+                    _addIndex > 0 && _addIndex < ids.Count)
+                {
+                    Run("set", "--item", ids[_addIndex], "--verdict", "");
+                    _addIndex = 0;
+                }
+            }
+        }
+
+        void Attach(string itemId)
+        {
+            var picked = EditorUtility.OpenFilePanel("Attach evidence for " + itemId, "", "");
+            if (!string.IsNullOrEmpty(picked)) Run("attach", "--item", itemId, "--src", picked);
+        }
+
+        /// <summary>Copy the Editor log next to the session so a FAIL carries its console.</summary>
+        void AttachEditorLog(string itemId)
+        {
+            var log = EditorLogPath();
+            if (string.IsNullOrEmpty(log) || !File.Exists(log))
+            {
+                _lastError = "Could not find the Editor log at " + (log ?? "(unknown path)") +
+                             ". Attach a screenshot instead.";
+                return;
+            }
+            var tmp = Path.Combine(Path.GetTempPath(), itemId + "-Editor.log");
+            try
+            {
+                // The live log is held open by the Editor — copy through a shared read.
+                using (var src = new FileStream(log, FileMode.Open, FileAccess.Read,
+                                                FileShare.ReadWrite))
+                using (var dst = new FileStream(tmp, FileMode.Create, FileAccess.Write))
+                    src.CopyTo(dst);
+                Run("attach", "--item", itemId, "--src", tmp);
+            }
+            catch (System.Exception e)
+            {
+                _lastError = "Could not copy the Editor log: " + e.Message;
+            }
+        }
+
+        static string EditorLogPath()
+        {
+            var home = System.Environment.GetFolderPath(
+                System.Environment.SpecialFolder.UserProfile);
+            switch (Application.platform)
+            {
+                case RuntimePlatform.WindowsEditor:
+                    var local = System.Environment.GetFolderPath(
+                        System.Environment.SpecialFolder.LocalApplicationData);
+                    return Path.Combine(local, "Unity", "Editor", "Editor.log");
+                case RuntimePlatform.OSXEditor:
+                    return Path.Combine(home, "Library", "Logs", "Unity", "Editor.log");
+                default:
+                    return Path.Combine(home, ".config", "unity3d", "Editor.log");
+            }
+        }
+
+        void DrawFooter()
+        {
+            EditorGUILayout.Space(4);
+            using (new EditorGUILayout.HorizontalScope(EditorStyles.helpBox))
+            {
+                if (_state.submitted)
+                    EditorGUILayout.LabelField("Submitted — nothing new to publish.",
+                        EditorStyles.miniLabel);
+                else if (_state.canSubmit)
+                    EditorGUILayout.LabelField("Ready to submit.", EditorStyles.miniLabel);
+                else
+                    EditorGUILayout.LabelField(
+                        _state.blocking + " problem(s) to fix before you can submit.",
+                        EditorStyles.miniLabel);
+                if (HasUnsavedNotes)
+                    EditorGUILayout.LabelField("Unsaved notes.", EditorStyles.miniBoldLabel,
+                        GUILayout.Width(90f));
+
+                GUILayout.FlexibleSpace();
+
+                if (!string.IsNullOrEmpty(_state.commit) &&
+                    !string.IsNullOrEmpty(_state.head) &&
+                    _state.commit != _state.head)
+                {
+                    if (FrogletEditorPalette.ColorButton("Use checked-out build",
+                            FrogletEditorPalette.Warn, 170f, 24f,
+                            "Record " + _state.head + " as the build you tested. Only if true."))
+                        Run("submit", "--accept-head");
+                }
+
+                using (new EditorGUI.DisabledScope(!_state.canSubmit || HasUnsavedNotes))
+                {
+                    if (FrogletEditorPalette.ColorButton("Submit session",
+                            FrogletEditorPalette.Ok, 150f, 24f,
+                            HasUnsavedNotes ? "Save your edited notes first" : null))
+                        Run("submit");
+                }
+            }
+        }
+    }
+}
