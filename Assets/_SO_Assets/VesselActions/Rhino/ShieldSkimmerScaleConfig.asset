@@ -44,11 +44,6 @@ MonoBehaviour:
   popFlashAmount: 1
   flashDecaySeconds: 0.35
   flashColor: {r: 2, g: 2, b: 2, a: 1}
-  tracerBladeAnchor01: 1
-  tracerLengthBladeFraction: 0.25
-  tracerWidthBladeFraction: 0.05
-  tracerReferenceSpeed: 180
-  tracerSecondsRange: {x: 0.06, y: 0.35}
   popShakeIntensity: 1.2
   popShakeDuration: 0.25
   burstShakeMaxIntensity: 2.5

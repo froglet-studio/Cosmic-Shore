@@ -27,12 +27,12 @@ namespace CosmicShore.Gameplay
     ///     (<see cref="SkimmerSwingKinematics.ClosestBladePoint"/>); a dim DENIED spark
     ///     when a non-energized blade bounces off a super-shielded prism.
     ///  4. TIP TRACER — ONE authored TrailRenderer (fuselage-parented in the prefab so the
-    ///     streak's shape never inherits the blade's scale) riding the sword's tip, slim, and
-    ///     reaching about a quarter of the way back down the blade before the authored width
-    ///     curve and alpha gradient grade it to nothing. Width and lifetime are both driven
-    ///     from the blade's live length so that proportion survives the energy meter. Tinted
-    ///     with the live blade colour via MaterialPropertyBlock, so the streak changes with
-    ///     the sword through every state.
+    ///     streak's shape never inherits the blade's scale). Its whole SHAPE is authored on the
+    ///     component — width, time, taper curve, gradient, material — and this controller never
+    ///     writes any of it; all it does is PLACE the emitter half a head-width back down the
+    ///     blade so the band's top edge lands on the sword's tip at whatever width is dialled
+    ///     in. Tinted with the live blade colour via MaterialPropertyBlock, so the streak
+    ///     changes with the sword through every state.
     ///
     /// Camera shake (super-shield pop, crystal burst) fires for the LOCAL human pilot
     /// only. See <c>RHINO_ENERGY_SWORD.md</c>.
@@ -52,9 +52,10 @@ namespace CosmicShore.Gameplay
         [SerializeField] private MeshRenderer bodyRenderer;
         [Tooltip("The crackle overlay driver on the blade (capsule surface mode). Falls back to this GameObject's controller.")]
         [SerializeField] private ForcefieldCrackleController crackle;
-        [Tooltip("Authored swing ribbon. A fuselage child (so the blade's scale never distorts it), " +
-                 "re-seated on the blade each frame at ShieldSkimmerScaleConfig.TracerBladeAnchor01 " +
-                 "with its width driven to the blade's live length.")]
+        [Tooltip("The sword's tip streak. A fuselage child (so the blade's scale never distorts it). " +
+                 "TUNE IT ON THE COMPONENT — width, time, taper curve, gradient and material are all " +
+                 "yours and nothing here overwrites them; this only re-seats the emitter each frame so " +
+                 "the top edge of the band stays on the blade's tip at whatever width you set.")]
         [SerializeField] private TrailRenderer bladeTracer;
 
         Skimmer _skimmer;
@@ -67,8 +68,8 @@ namespace CosmicShore.Gameplay
         bool _bodyColorApplied;
         Color _appliedTracerColor;
         bool _tracerColorApplied;
-        float _appliedTracerWidth = float.NaN;
-        float _appliedTracerSeconds = float.NaN;
+        float _appliedTracerWidth = float.NaN;   // last widthMultiplier seen, for the curve re-read
+        float _tracerHeadWidthFactor = 1f;       // authored width curve evaluated at the emitting end
 
         float _flash;             // 0 = none, 1 = full white-out; decays each Tick
         float _energizedBlend;    // 0 = heat ramp, 1 = white-hot; eased by ColorTransitionSeconds
@@ -249,11 +250,6 @@ namespace CosmicShore.Gameplay
             return transform.position + transform.up * Mathf.Lerp(-half, half, Mathf.Clamp01(t01));
         }
 
-        /// <summary>The blade's live world length, hilt to tip.</summary>
-        float BladeWorldLength => 2f * (_swing && _swing.IsReady
-            ? _swing.HalfLength
-            : Mathf.Abs(transform.lossyScale.y));
-
         Vector3 BladePointNear(Vector3 worldPoint)
         {
             if (_swing && _swing.IsReady) return _swing.ClosestBladePoint(worldPoint);
@@ -274,36 +270,42 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Ride the sword's TIP and keep the streak proportioned to the blade: a slim trace
-        /// reaching about <see cref="ShieldSkimmerScaleConfigSO.TracerLengthBladeFraction"/> of
-        /// the way back down the blade, graded to nothing by the TrailRenderer's authored width
-        /// curve and alpha gradient. Both dimensions are driven from the blade's LIVE length so
-        /// the proportion holds as the energy meter grows the sword — width as a small fraction
-        /// of it, length by solving the trail's lifetime against a calibration speed (driving
-        /// lifetime from live speed instead would retroactively expire points and pop the streak
-        /// at the start of every swing).
+        /// Seat the streak so its top edge sits on the sword's TIP, whatever width is authored.
+        ///
+        /// The streak's SHAPE is yours: width, time, taper curve, gradient and material are all
+        /// authored on the TrailRenderer and this never writes them. All it owns is placement —
+        /// and because a TrailRenderer lays its width symmetrically about the emitter's path, an
+        /// emitter parked on the tip would hang half the band out past the point of the sword.
+        /// So it sits half a head-width back down the blade, which puts the band's top edge on
+        /// the tip and the rest of it running down the blade, at any width you dial in.
+        ///
+        /// (Exact while the sword is swinging across its own axis — a swipe or a chop — which is
+        /// when the ribbon is visible at all. The width direction is perpendicular to the path
+        /// travelled, so on a thrust straight along the blade there is no "top edge" to align.)
         /// </summary>
         void SeatTracer()
         {
-            if (!bladeTracer || config == null) return;
-            bladeTracer.transform.position = PointAlongBlade(config.TracerBladeAnchor01);
+            if (!bladeTracer) return;
 
-            float length = BladeWorldLength;
+            Vector3 tip = PointAlongBlade(1f);
+            Vector3 hilt = PointAlongBlade(0f);
+            Vector3 towardTip = tip - hilt;
+            towardTip = towardTip.sqrMagnitude > 1e-6f ? towardTip.normalized : transform.up;
 
-            float width = length * config.TracerWidthBladeFraction;
-            if (!Mathf.Approximately(width, _appliedTracerWidth))
+            // Width at the EMITTING end of the streak: the multiplier scales the authored curve,
+            // and the curve's value at t=0 is the end being laid down right now. Re-read the
+            // curve only when the multiplier moves (its getter allocates, and a designer tuning
+            // one is almost always tuning the other) — otherwise this is a float read per frame.
+            float multiplier = bladeTracer.widthMultiplier;
+            if (!Mathf.Approximately(multiplier, _appliedTracerWidth))
             {
-                _appliedTracerWidth = width;
-                // widthMultiplier scales the authored width CURVE, so the taper stays designed.
-                bladeTracer.widthMultiplier = width;
+                _appliedTracerWidth = multiplier;
+                var curve = bladeTracer.widthCurve;
+                _tracerHeadWidthFactor = curve != null && curve.length > 0 ? curve.Evaluate(0f) : 1f;
             }
 
-            float seconds = config.TracerSecondsFor(length);
-            if (!Mathf.Approximately(seconds, _appliedTracerSeconds))
-            {
-                _appliedTracerSeconds = seconds;
-                bladeTracer.time = seconds;
-            }
+            float headWidth = multiplier * _tracerHeadWidthFactor;
+            bladeTracer.transform.position = tip - towardTip * (headWidth * 0.5f);
         }
 
         void ApplyTracerColor(Color color)

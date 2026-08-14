@@ -113,31 +113,6 @@ namespace CosmicShore.Gameplay
         [Tooltip("Colour the blade flashes toward on impacts (bright so bloom sells the hit).")]
         [ColorUsage(true, true)] [SerializeField] private Color flashColor = new Color(2f, 2f, 2f, 1f);
 
-        [Header("Blade Tracer (the tip streak)")]
-        [Tooltip("Where along the blade the tracer emitter rides: 0 = hilt, 0.5 = mid-blade, 1 = TIP. " +
-                 "The streak is a tip trace — it should read as the point of the sword cutting the air, " +
-                 "not as a slab hung off the whole blade.")]
-        [SerializeField, Range(0f, 1f)] private float tracerBladeAnchor01 = 1f;
-        [Tooltip("How far the streak reaches back from the tip, as a fraction of the blade's LIVE length. " +
-                 "0.25 = a quarter of the way down the blade, then graded to nothing by the TrailRenderer's " +
-                 "authored width curve and alpha gradient. Held roughly constant across blade sizes by " +
-                 "solving the trail's lifetime against tracerReferenceSpeed.")]
-        [SerializeField, Range(0f, 1f)] private float tracerLengthBladeFraction = 0.25f;
-        [Tooltip("Streak WIDTH as a fraction of the blade's live length. Keep it small — this is a " +
-                 "tracer, and at 1 the ribbon is as wide as the sword is long (which reads as a white " +
-                 "blob swallowing the vessel). The taper along the streak stays authored on the " +
-                 "TrailRenderer; this only scales it.")]
-        [SerializeField, Range(0f, 0.5f)] private float tracerWidthBladeFraction = 0.05f;
-        [Tooltip("Swing speed (world units/sec) the streak's length is calibrated at — a mid-swipe tip " +
-                 "runs ~180. The trail's LIFETIME is solved from this and the blade's length rather than " +
-                 "from live speed, because shrinking a TrailRenderer's time retroactively expires points " +
-                 "and pops the streak mid-swing. A faster swing therefore draws a longer streak, as a " +
-                 "motion trail should.")]
-        [SerializeField] private float tracerReferenceSpeed = 180f;
-        [Tooltip("Clamp on the solved trail lifetime, seconds (min, max). Bounds the streak when the " +
-                 "blade is tiny or mid crystal-burst.")]
-        [SerializeField] private Vector2 tracerSecondsRange = new Vector2(0.06f, 0.35f);
-
         [Header("Camera Shake (local pilot only)")]
         [Tooltip("Shake intensity when the sword pops a super-shielded prism.")]
         [SerializeField] private float popShakeIntensity = 1.2f;
@@ -179,19 +154,6 @@ namespace CosmicShore.Gameplay
         public Color RestingBladeColor    => restingBladeColor;
         public Color FullEnergyColor      => fullEnergyColor;
         public float FullEnergyBrightness => Mathf.Max(1f, fullEnergyBrightness);
-
-        public float TracerBladeAnchor01        => Mathf.Clamp01(tracerBladeAnchor01);
-        public float TracerLengthBladeFraction => Mathf.Clamp01(tracerLengthBladeFraction);
-        public float TracerWidthBladeFraction  => Mathf.Max(0f, tracerWidthBladeFraction);
-        public float TracerReferenceSpeed      => Mathf.Max(1f, tracerReferenceSpeed);
-
-        /// <summary>Trail lifetime that draws a streak <see cref="TracerLengthBladeFraction"/> of
-        /// <paramref name="bladeWorldLength"/> long at the calibration speed, clamped to the
-        /// authored range.</summary>
-        public float TracerSecondsFor(float bladeWorldLength) => Mathf.Clamp(
-            TracerLengthBladeFraction * Mathf.Max(0f, bladeWorldLength) / TracerReferenceSpeed,
-            Mathf.Max(0.01f, Mathf.Min(tracerSecondsRange.x, tracerSecondsRange.y)),
-            Mathf.Max(0.02f, Mathf.Max(tracerSecondsRange.x, tracerSecondsRange.y)));
 
         public Color EnergizedColor         => energizedColor;
         public float ColorTransitionSeconds => Mathf.Max(0.0001f, colorTransitionSeconds);

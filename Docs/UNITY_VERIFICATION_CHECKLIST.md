@@ -57,12 +57,13 @@ The load-bearing checks, in risk order:
 4. **The capsule crackle looks right**: arcs ride the blade through swings, ripples proportioned
    along the stretched capsule (not squashed at the tips). Tune on
    `RhinoBladeCrackleMaterial.mat` live (`[ExecuteAlways]`).
-5. **Tracer**: ONE slim streak off the TIP (`Rhino.prefab` → `RhinoSwordTipTracer`) reaching
-   about a quarter of the way back down the blade and grading to nothing, tinted with the live
-   blade colour so it changes state with the sword. It must NOT read as a slab or a sheet — if
-   it does, drop `tracerWidthBladeFraction` (0.05) further. Length dial:
-   `tracerLengthBladeFraction` (0.25) with `tracerReferenceSpeed` (180) as its calibration
-   speed; taper curve, min-vertex-distance and material stay on the TrailRenderer itself.
+5. **Tracer — this one is yours to tune, in the inspector.** ONE streak off the TIP
+   (`Rhino.prefab` → `RhinoSwordTipTracer`). Nothing in code writes its size any more: set
+   `widthMultiplier` and `time` (plus the width curve / gradient) on the TrailRenderer and the
+   controller only re-seats the emitter half a head-width back down the blade, so the band's
+   **top edge stays on the tip** at whatever width you pick — widen it and it grows down the
+   blade, never past the point. Starting point authored: `widthMultiplier` 6, `time` 0.12.
+   Tinted from the live blade colour, so it should change state with the sword.
 6. **Base-skimmer non-regression**: any other vessel's skimmer crackle still shows the red
    sphere look (surface mode + material overrides live on the Rhino variant only).
 
@@ -72,7 +73,8 @@ pass): energize hold 1 s / tail 5 s / cooldown 5 s / cost 0.1 · stance threshol
 denied spark 0.7 · `restingBladeColor`/`fullEnergyColor` white (energy reads as BRIGHTNESS)
 vs `energizedColor` = `SO_ColorSet.Danger` red (state reads as HUE) · `visibilityMultiplier`
 1.2 × `fullEnergyBrightness` 1.8 (was 2×2.5 = a 5× HDR white that bloomed into a blob —
-raise cautiously) · tracer: tip anchor, length 0.25 blade, width 0.05 blade.
+raise cautiously) · tracer size is NOT in the config: tune `widthMultiplier` / `time` on the
+`RhinoSwordTipTracer` TrailRenderer (authored at 6 / 0.12).
 
 ### 🔴 Sparrow Turret Stance — two flight visualizations, still-nothing hardening (`claude/sparrow-prism-attack-hg6n78`)
 

@@ -221,21 +221,28 @@ v2's code-built `RhinoSwordVisualizer` (deleted). Four layers:
    `sparkIntensity` / `sparkSeconds` / `sparkWorldRadius`); a dim **denied spark**
    (`deniedSparkIntensity`) when a non-energized blade bounces off a super-shield. The crystal
    burst fires a whole-blade crackle scaled by the energy consumed.
-4. **The tip tracer — a slim streak, not a ribbon.** ONE **authored** `TrailRenderer` child of
-   the fuselage (`RhinoSwordTipTracer` in `Rhino.prefab`, wearing `RhinoSwordTracerMaterial.mat`
-   — no runtime construction, no `Shader.Find` fallback), fuselage-parented so the blade's scale
-   can never distort the streak's shape. It rides the sword's **tip** (`tracerBladeAnchor01` 1)
-   and reaches about `tracerLengthBladeFraction` (0.25) of the way back down the blade before the
-   TrailRenderer's authored width curve and alpha gradient **grade it to nothing**. Width is a
-   small fraction of the blade (`tracerWidthBladeFraction` 0.05), and the trail's LIFETIME is
-   solved from the blade's live length against `tracerReferenceSpeed` — not from live speed,
-   because shrinking a TrailRenderer's `time` retroactively expires points and would pop the
-   streak at the start of every swing; a faster swing therefore draws a longer streak, as a
-   motion trail should. Tinted from the same live blade colour as the body, so **the streak
-   changes with the sword through every state** (white-hot → danger red on energize).
+4. **The tip tracer — authored on the component, placed by the code.** ONE **authored**
+   `TrailRenderer` child of the fuselage (`RhinoSwordTipTracer` in `Rhino.prefab`, wearing
+   `RhinoSwordTracerMaterial.mat` — no runtime construction, no `Shader.Find` fallback),
+   fuselage-parented so the blade's scale can never distort the streak's shape.
 
-   *Do not size it to the whole blade.* An earlier pass anchored it mid-blade with width = the
-   full blade length, reasoning that a TrailRenderer lays width across its path so the ribbon
+   **Its whole look is yours on the component** — `widthMultiplier`, `time`, the width curve,
+   the colour gradient, min vertex distance, material. Nothing in code writes any of them.
+   `RhinoSwordFXController.SeatTracer` owns exactly one thing: **placement**. Because a
+   TrailRenderer lays its width symmetrically about the emitter's path, an emitter parked on the
+   tip hangs half the band out past the point of the sword — so it is seated half a *head-width*
+   back down the blade (head width = `widthMultiplier` × the width curve at t=0, the end being
+   laid down right now), which puts the band's **top edge on the tip** and the rest running down
+   the blade at any width you dial in. Widen it and it grows downward from the tip, not through
+   it. (Exact while the sword swings across its own axis — a swipe or chop, which is when the
+   ribbon is visible at all; on a thrust straight along the blade there is no "top edge" to
+   align.) The curve and gradient are what **grade it to nothing** as it runs down.
+
+   Tinted from the same live blade colour as the body, so **the streak changes with the sword
+   through every state** (white-hot → danger red on energize).
+
+   *Do not drive its size from code again.* An earlier pass anchored it mid-blade with width =
+   the full blade length, reasoning that a TrailRenderer lays width across its path so the ribbon
    would span hilt-to-tip. It does — and at a 240-unit blade that is a 240-unit-wide white sheet
    swallowing the vessel. The blade is ~10 units thick; the tracer belongs on that order.
 
@@ -345,8 +352,8 @@ scale) · `maxScale` 120 · `prismGrowSpeed` 30 · `shrinkSpeed` 10 · `energize
 `energizedColor` (1.498, 0.006, 0.007) = `SO_ColorSet.Danger` · `colorTransitionSeconds` 0.25 · `igniteCrackleIntensity` 2.5 / `igniteCrackleSeconds` 0.9 /
 `igniteCrackleSites` 5 · `chargeCrackleInterval` 0.18 / `chargeCrackleIntensity` 1.1 ·
 `sparkIntensity` 1.6 / `sparkSeconds` 0.45 / `sparkWorldRadius` 14 · `deniedSparkIntensity`
-0.7 · `tracerBladeAnchor01` 1 (tip) / `tracerLengthBladeFraction` 0.25 / `tracerWidthBladeFraction`
-0.05 / `tracerReferenceSpeed` 180 / `tracerSecondsRange` (0.06, 0.35) · `hitFlashAmount` 0.35 · `popFlashAmount` 1 · `flashDecaySeconds` 0.35 · `flashColor`
+0.7 · tracer size is NOT here — it is authored on the `RhinoSwordTipTracer` TrailRenderer
+(starting point: `widthMultiplier` 6, `time` 0.12) · `hitFlashAmount` 0.35 · `popFlashAmount` 1 · `flashDecaySeconds` 0.35 · `flashColor`
 (2,2,2) · `popShakeIntensity` 1.2 / `popShakeDuration` 0.25 · `burstShakeMaxIntensity` 2.5 /
 `burstShakeDuration` 0.4. (`prismMaxScale` remains only so the Sparrow full-auto
 `ApplyMaxSizeDebuff` keeps its historical meaning. The v2 tracer keys — `tracersEnabled`,
