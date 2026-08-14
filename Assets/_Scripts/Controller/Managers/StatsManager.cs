@@ -31,6 +31,15 @@ namespace CosmicShore.Gameplay
         public string OwnName;
         public float Volume;
         public string AttackerName;
+
+        /// <summary>
+        /// The DOMAIN the destroyed prism was wearing. Needed because ENVIRONMENT mass (flora,
+        /// fauna bodies, laid cell structure) has no roster entry, so the owner-name comparison
+        /// that classifies a trail says nothing about it - without this, every prism in the world
+        /// counted as hostile to every player including the one whose own colour it wore.
+        /// <see cref="Domains.Blue"/> is the neutral sentinel and stays hostile to everyone.
+        /// </summary>
+        public Domains OwnDomain;
     }
 
     /// <summary>
@@ -310,40 +319,123 @@ namespace CosmicShore.Gameplay
             roundStats.VolumeRemaining += prismStats.Volume;
         }
 
+        /// <summary>
+        /// Is a destroyed ENVIRONMENT prism (one with no roster entry - flora, fauna bodies, laid
+        /// cell structure) friendly to the player who destroyed it?
+        ///
+        /// Friendly iff it wore that player's own colour. <see cref="Domains.Blue"/> is the
+        /// platform's "no team" sentinel, so neutral mass is hostile to everyone and always
+        /// scores. This is the same rule trails already followed ("your own team's mass is worth
+        /// nothing"), applied to the rest of the world: before it, every prism in the arena
+        /// counted as hostile to every player, including the third of a forest wearing their own
+        /// colour, which made domain irrelevant to target choice.
+        /// </summary>
+        public static bool IsFriendlyEnvironmentPrism(Domains attackerDomain, Domains prismDomain) =>
+            prismDomain != Domains.Blue && prismDomain == attackerDomain;
+
         public void PrismDestroyed(PrismStats prismStats)
         {
-            if (!_allowRecord) return;
-
             var attackingPlayerName = prismStats.AttackerName;
             var victimPlayerName = prismStats.OwnName;
 
-            var hasAttacker = gameData.TryGetRoundStats(attackingPlayerName, out IRoundStats attackerPlayerStats);
             var hasVictim = gameData.TryGetRoundStats(victimPlayerName, out IRoundStats victimPlayerStats);
 
-            if (hasAttacker)
+            if (!_allowRecord)
             {
-                attackerPlayerStats.BlocksDestroyed++;
-                attackerPlayerStats.TotalVolumeDestroyed += prismStats.Volume;
+                // CLIENT. Only ENVIRONMENT mass is forwarded - see ForwardEnvironmentKill.
+                if (!hasVictim) ForwardEnvironmentKill(prismStats);
+                return;
+            }
 
-                var isFriendly =
-                    attackingPlayerName == victimPlayerName ||
-                    (hasVictim && attackerPlayerStats.Domain == victimPlayerStats.Domain);
+            var hasAttacker = gameData.TryGetRoundStats(attackingPlayerName, out IRoundStats attackerPlayerStats);
 
-                if (isFriendly)
-                {
-                    attackerPlayerStats.FriendlyPrismsDestroyed++;
-                    attackerPlayerStats.FriendlyVolumeDestroyed += prismStats.Volume;
-                }
-                else
-                {
-                    attackerPlayerStats.HostilePrismsDestroyed++;
-                    attackerPlayerStats.HostileVolumeDestroyed += prismStats.Volume;
-                }
+            if (hasAttacker && (hasVictim || OwnsAttacker(attackingPlayerName)))
+            {
+                CreditPrismDestruction(
+                    attackerPlayerStats, prismStats.Volume,
+                    isFriendly: attackingPlayerName == victimPlayerName
+                                || (hasVictim && attackerPlayerStats.Domain == victimPlayerStats.Domain)
+                                || (!hasVictim && IsFriendlyEnvironmentPrism(
+                                        attackerPlayerStats.Domain, prismStats.OwnDomain)));
             }
 
             if (!hasVictim) return;
             victimPlayerStats.PrismsRemaining--;
             victimPlayerStats.VolumeRemaining -= prismStats.Volume;
+        }
+
+        /// <summary>
+        /// The one place a prism kill moves an attacker's counters, shared by the server's direct
+        /// path and the client round-trip (<see cref="Player.ReportEnvironmentPrismDestroyed_ServerRpc"/>)
+        /// so the two can never drift apart.
+        /// </summary>
+        internal static void CreditPrismDestruction(IRoundStats attacker, float volume, bool isFriendly)
+        {
+            attacker.BlocksDestroyed++;
+            attacker.TotalVolumeDestroyed += volume;
+
+            if (isFriendly)
+            {
+                attacker.FriendlyPrismsDestroyed++;
+                attacker.FriendlyVolumeDestroyed += volume;
+            }
+            else
+            {
+                attacker.HostilePrismsDestroyed++;
+                attacker.HostileVolumeDestroyed += volume;
+            }
+        }
+
+        /// <summary>
+        /// Does THIS machine simulate the named player? On the server that is the host's own
+        /// player plus every AI (both server-owned NetworkObjects); a remote client's player is
+        /// simulated on that client.
+        ///
+        /// Used to decide who credits ENVIRONMENT mass. A rostered prism (a trail) exists at the
+        /// same place on every peer, so the server's own physics observes a client's ram and
+        /// records it - that path is unchanged. Environment mass does NOT: flora and fauna are
+        /// spawned per-peer from local Random rolls and the populations diverge (see
+        /// <c>CellNetworkSync</c>'s class doc, Docs/ECOSYSTEM.md §7 caveat 4), so the server's
+        /// copy of a cactus is somewhere else entirely. If the server credited environment kills
+        /// it saw a remote player make, a client would score for destroying trees it never flew
+        /// near while the ones it actually shredded scored nothing - and it would double-count
+        /// against the client's own report. So each machine credits only the players it simulates.
+        /// </summary>
+        bool OwnsAttacker(string attackerName)
+        {
+            var players = gameData.Players;
+            if (players == null) return true;
+
+            for (int i = 0; i < players.Count; i++)
+            {
+                var p = players[i];
+                if (p == null || p.Name != attackerName) continue;
+                return p is not Player netPlayer || !netPlayer.IsSpawned || netPlayer.IsOwner;
+            }
+
+            // Unknown attacker (environment-on-environment, a lifeform husk): nobody else will
+            // report it, so the server is the right place to account for it.
+            return true;
+        }
+
+        /// <summary>
+        /// CLIENT: forward this machine's OWN environment-mass kill to the server, the same
+        /// owner-detects → server-records round-trip <see cref="LifeformKilled"/> and
+        /// <see cref="CombatHitLanded"/> use, and for the same underlying reason - the thing that
+        /// was destroyed does not exist on the server at the position it was destroyed at.
+        ///
+        /// Only the local player's own kills are forwarded: every peer simulates every vessel, so
+        /// without the name check each client would report the same kill for everyone it can see.
+        /// Identity still comes from RPC ownership, not the name - the server credits the Player
+        /// object the RPC arrived on.
+        /// </summary>
+        void ForwardEnvironmentKill(PrismStats prismStats)
+        {
+            if (string.IsNullOrEmpty(prismStats.AttackerName)) return;
+
+            var local = gameData.LocalPlayer;
+            if (local is Player netPlayer && local.IsLocalUser && local.Name == prismStats.AttackerName)
+                netPlayer.ReportEnvironmentPrismDestroyed_ServerRpc(prismStats.Volume, (int)prismStats.OwnDomain);
         }
 
         public void PrismRestored(PrismStats prismStats)

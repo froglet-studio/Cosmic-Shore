@@ -302,7 +302,7 @@ namespace CosmicShore.Gameplay
         ///
         /// <b>The manager still runs and still spawns the OMNI crystal</b>, on the same
         /// platform-normal settings every other mode uses (one crystal, <c>spawnOnClientReady</c>).
-        /// The scene does author one thing the donor did not: <c>anchorlessSpawnRadius</c> 420.
+        /// The scene does author one thing the donor did not: <c>noNucleusSpawnRadius</c> 420.
         /// <c>CrystalManager.GetAnchorlessSpawnRadius</c> falls back to the cell's NUCLEUS radius
         /// and this cell has no nucleus by design, so without that override it fell through to the
         /// crystal's own <c>SphereRadius</c> and every spawn landed on the exact centre of the

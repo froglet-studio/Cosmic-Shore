@@ -42,6 +42,11 @@ namespace CosmicShore.Gameplay
 
                 StampMatchEnvelope();
 
+                // The server IS the authority, so its config is synced by definition. Set before
+                // the broadcast: Cell.AssignConfig gates its (sticky) IntensityWise choice on this
+                // flag, and on the host that choice can happen at any point after this frame.
+                gameData.GameConfigSynced = true;
+
                 // Sync game config to all clients now that we're in the game scene.
                 // Previously this was done by SceneLoader via ClientRpc before scene load,
                 // but SceneLoader is now a plain MonoBehaviour (no RPCs).
@@ -572,6 +577,12 @@ namespace CosmicShore.Gameplay
             LoadInsights.SetGameContext(
                 sceneName, ((GameModes)gameMode).ToString(), intensity, playerCount,
                 Mathf.Max(0, playerCount - aiBackfillCount), aiBackfillCount, isMultiplayer);
+
+            // LAST: everything above is now authoritative on this client. Cell.AssignConfig
+            // refuses to make its sticky IntensityWise choice until this is true, because the
+            // intensity it reads arrives in this very RPC and a cell that latched before it would
+            // build a different arena than the host for the whole match.
+            gameData.GameConfigSynced = true;
         }
     }
 }

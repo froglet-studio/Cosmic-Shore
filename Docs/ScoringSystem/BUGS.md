@@ -464,3 +464,56 @@ and wrong; anything that must survive into the next game has to come from the se
 and compiled: the model reproduces the bug (client stuck at 842 while the host reads 0), shows
 server re-writes failing to heal it, and shows `SyncLocalMirrorsFromNetwork` fixing it without
 clobbering a live mid-game value. Engine verification pending.
+
+---
+
+## B17 — a client scored nothing for ENVIRONMENT mass (flora, fauna, laid structure)
+
+**Symptom.** 2-player Rampage: the host scored off everything; the client could only ever score
+off the **other pilot's trail**, never off a cactus it flew through and shattered. In a mode whose
+entire score is destroyed environment mass, the client was effectively playing a slot machine —
+whatever the *server's* own physics happened to knock over got credited to them instead.
+
+**Root cause, and it is platform-wide.** `StatsManager` records prism destruction **server-only**
+(`_allowRecord`), and its own doc comments state the justification twice:
+
+> "a prism sits at the same place on the server, so the server's own physics sees a client's ram
+> and records it"
+
+That is true of a TRAIL prism — laid from replicated vessel motion, so both peers have one in the
+same place, which is exactly why trail kills were the one thing that worked. It is **false** of
+flora and fauna, and `CellNetworkSync`'s class doc has always said so: *"Flora and fauna spawning
+is non-deterministic per-side (each client runs its own IntensityWiseLifeSpawner with local
+Random.value rolls)."* The server's copy of the cactus the client just shredded is somewhere else
+entirely, so nothing was recorded anywhere.
+
+**Fix.** `Player.ReportEnvironmentPrismDestroyed_ServerRpc` — the third instance of the same
+owner-detects → server-records round-trip as `ReportFaunaKill_ServerRpc` (fauna have no
+NetworkObject) and `ReportCombatHit_ServerRpc` (projectiles are not networked). Identity comes from
+RPC ownership, never a name string.
+
+The other half is **who must NOT credit**: `StatsManager.OwnsAttacker` lets the server credit only
+players it simulates (its own + every AI, both server-owned NetworkObjects) and DROP environment
+kills it observed a remote player make. Rostered victims are untouched and stay server-recorded.
+Each kill lands exactly once on both paths.
+
+**Rule.** Server-only stat recording is correct only for things that exist identically on every
+peer. Before adding one, ask what the stat's SOURCE is: a trail (replicated motion — fine), or a
+per-peer simulation (flora, fauna, projectiles — needs the owner round-trip).
+
+## B18 — environment mass was hostile to EVERY domain, including its own colour
+
+**Symptom / cause.** The only hostility test in `StatsManager.PrismDestroyed` was the owner-name /
+roster comparison. Flora, fauna bodies and laid cell structure carry non-roster owner names, so
+they fell to the `else` branch and counted as hostile to everyone — including the third of a
+mixed-domain forest wearing the destroying pilot's own colour. Domain was decoration.
+
+**Fix.** `PrismStats` carries the destroyed prism's `OwnDomain`, and
+`StatsManager.IsFriendlyEnvironmentPrism` applies to the world the rule trails always had — **your
+own colour is worth nothing** — with `Domains.Blue` (the "no team" sentinel) staying hostile to
+everyone so neutral structure still scores. Ribcage rides the same metric and is unaffected in
+practice: its cage is painted across the full triad plus Blue joints, so a team still reaches a
+2,000 target out of ~10,620 prisms.
+
+**Verification.** Both are compile-by-inspection + traced call paths; engine verification pending
+(MPPM, 1 host + 1 client — see RAMPAGE.md's checklist).

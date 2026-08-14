@@ -684,6 +684,14 @@ for i in INTENSITIES:
 
 
 # ── 9. Scene: clone MinigameRampage, swap the mode-specific wiring ───────────
+#
+# ONE-SHOT, AND THE DONOR HAS MOVED ON. This script cloned the Rampage scene once; Dog Fight's
+# scene exists and is committed, so its output is landed and nothing here needs to run again.
+# It can no longer run: the Rampage rework deleted RampageController.arenaCell /
+# aiRetargetSeconds and replaced the donor's single Cell config with four per-intensity ones,
+# so the asserts below fire on a donor that is simply a different scene now. That is the
+# expected end state of a migration generator, not a break to repair - if Dog Fight ever needs
+# re-authoring, re-point it at a current donor rather than trying to satisfy these asserts.
 scene = read("Assets/_Scenes/Multiplayer Scenes/MinigameRampage.unity")
 
 # 9a. turn monitor script swap (field set is identical - base TurnMonitor fields only)
@@ -762,17 +770,19 @@ scene = scene.replace(OLD_SPAWN, NEW_SPAWN)
 #
 # The donor's settings are already the platform-normal ones (crystalCountMode 0, one crystal,
 # spawnOnClientReady), identical to Ribcage, and they are kept verbatim. What the donor does NOT
-# author is `anchorlessSpawnRadius`, and in THIS cell that is the whole problem:
-# CrystalManager.GetAnchorlessSpawnRadius falls back to the cell's NUCLEUS radius, the Boneyard
-# has no nucleus by design, so it fell through to the crystal's own SphereRadius - a few units -
-# and every spawn landed on the arena's exact centre. A large faceted sphere pinned to the middle
+# author is `noNucleusSpawnRadius`, and in THIS cell that is the whole problem:
+# CrystalManager.GetAnchorlessSpawnRadius resolves the cell's NUCLEUS radius FIRST (the crystal
+# volume and the nucleus are coupled platform-wide and no scene may override that - see
+# Docs/ECOSYSTEM.md 27.6), the Boneyard has no nucleus by design, so it fell through to the
+# crystal's own SphereRadius - a few units - and every spawn landed on the arena's exact centre.
+# `noNucleusSpawnRadius` is the FALLBACK that exists for exactly this case: a cell with no core. A large faceted sphere pinned to the middle
 # of a gunnery arena reads as THE objective, which is how it got mistaken for a ball.
 #
 # Authoring the radius is the fix the field exists for: the crystal now draws from a ball that
 # covers the wreck field, so it hides among the hulks and moves somewhere new on every respawn -
 # a thing you go and find, not a monument in the middle of the map.
 OLD_CRYSTALS = "  crystalCountMode: 0\n  fixedCrystalCount: 1\n"
-NEW_CRYSTALS = (f"  anchorlessSpawnRadius: {OMNI_SPAWN_RADIUS}\n"
+NEW_CRYSTALS = (f"  noNucleusSpawnRadius: {OMNI_SPAWN_RADIUS}\n"
                 f"  crystalCountMode: 0\n  fixedCrystalCount: {OMNI_CRYSTAL_COUNT}\n")
 assert OLD_CRYSTALS in scene, "donor crystal-count block not found"
 scene = scene.replace(OLD_CRYSTALS, NEW_CRYSTALS, 1)
@@ -902,8 +912,8 @@ if "vesselClass: 3" in sc:
 if f"  fixedCrystalCount: {OMNI_CRYSTAL_COUNT}\n" not in sc:
     errors.append("scene does not spawn the omni crystal - crystals are a platform fundamental, "
                   "not mode furniture")
-if f"  anchorlessSpawnRadius: {OMNI_SPAWN_RADIUS}\n" not in sc:
-    errors.append("scene does not author anchorlessSpawnRadius - this cell has no nucleus, so "
+if f"  noNucleusSpawnRadius: {OMNI_SPAWN_RADIUS}\n" not in sc:
+    errors.append("scene does not author noNucleusSpawnRadius - this cell has no nucleus, so "
                   "the omni crystal would fall back to its own SphereRadius and spawn on the "
                   "arena's exact centre")
 if sc.count("vesselClass: 11") != 4:
