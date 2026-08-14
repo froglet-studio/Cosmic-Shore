@@ -7,7 +7,7 @@ namespace CosmicShore.Utility
     /// The CPU half of the Dolphin's Echo Sight: while the pilot holds the sight, every prism
     /// standing inside the volume the next crystal blast would sweep lights up.
     ///
-    /// It publishes exactly THREE global shader uniforms once per frame and does nothing else.
+    /// It publishes exactly FIVE global shader uniforms once per frame and does nothing else.
     /// There is no per-prism work of any kind — no trigger volumes, no spatial query, no material
     /// swaps, no per-instance overrides, no tracking list. The containment test runs per fragment
     /// in <c>PrismDestructionSight.hlsl</c>, wired into the prism graphs.
@@ -36,6 +36,7 @@ namespace CosmicShore.Utility
         static readonly int ApexId = Shader.PropertyToID("_PrismSightApex");
         static readonly int AxisId = Shader.PropertyToID("_PrismSightAxis");
         static readonly int GapeId = Shader.PropertyToID("_PrismSightGape");
+        static readonly int ParamsId = Shader.PropertyToID("_PrismSightParams");
         static readonly int StrengthId = Shader.PropertyToID("_PrismSightStrength");
 
         static bool _publishedActive;
@@ -59,20 +60,20 @@ namespace CosmicShore.Utility
                 return;
             }
 
-            // w channels carry the scalars so the whole volume costs three vectors:
-            //   Apex.w = height        (<= 0 is the shader's "sight off" sentinel)
-            //   Axis.w = core radius per unit depth
-            //   Gape.w = capsule half-length per unit depth
-            Shader.SetGlobalVector(ApexId,
-                new Vector4(volume.Apex.x, volume.Apex.y, volume.Apex.z, volume.Height));
-            Shader.SetGlobalVector(AxisId,
-                new Vector4(volume.Axis.x, volume.Axis.y, volume.Axis.z, volume.TanCorePerUnit));
-            Shader.SetGlobalVector(GapeId,
-                new Vector4(volume.GapeAxis.x, volume.GapeAxis.y, volume.GapeAxis.z, volume.TanGapePerUnit));
+            // Three direction/point vectors plus one params vector. The scalars ride their own
+            // vector rather than the others' w channels because the prism graphs carry Vector3
+            // property donors and no Vector4 one — synthesising a property type neither graph
+            // contains is exactly the hand-authored schema the asset-surgery protocol forbids.
+            //   Params = (height, core radius per unit depth, capsule half-length per unit depth)
+            //   height <= 0 is the shader's "sight off" sentinel.
+            Shader.SetGlobalVector(ApexId, volume.Apex);
+            Shader.SetGlobalVector(AxisId, volume.Axis);
+            Shader.SetGlobalVector(GapeId, volume.GapeAxis);
+            Shader.SetGlobalVector(ParamsId,
+                new Vector4(volume.Height, volume.TanCorePerUnit, volume.TanGapePerUnit, 0f));
 
-            // Kept as its own scalar rather than squeezed into a spare w: all three w channels are
-            // already carrying geometry, and a fade that shares a slot with a tangent is the kind
-            // of packing that reads fine today and is misinterpreted six months from now.
+            // Its own scalar rather than Params' spare slot: a fade sharing a vector with the
+            // blast's geometry reads fine today and gets misinterpreted six months from now.
             Shader.SetGlobalFloat(StrengthId, strength01);
 
             _publishedActive = true;
@@ -87,11 +88,12 @@ namespace CosmicShore.Utility
 
         static void PublishOff()
         {
-            // Apex.w <= 0 is the shader's "off" sentinel; the rest are zeroed so nothing stale
-            // survives into a later frame.
+            // Everything is zeroed so nothing stale survives into a later frame; Params.x <= 0 is
+            // the sentinel the shader actually branches on.
             Shader.SetGlobalVector(ApexId, Vector4.zero);
             Shader.SetGlobalVector(AxisId, Vector4.zero);
             Shader.SetGlobalVector(GapeId, Vector4.zero);
+            Shader.SetGlobalVector(ParamsId, Vector4.zero); // x <= 0 is the shader's "off" sentinel
             Shader.SetGlobalFloat(StrengthId, 0f);
             _publishedActive = false;
         }

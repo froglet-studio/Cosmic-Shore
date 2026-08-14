@@ -14,25 +14,29 @@
 // per-instance overrides. Same contract as PrismOcclusionCorridor.hlsl, which is its sibling.
 //
 // THE UNIFORMS (published by PrismDestructionSight.cs once per frame):
-//   float4 _PrismSightApex   — xyz = the blast's apex in world space,
-//                              w   = the cone's axial reach. w <= 0 means "sight off", which the
-//                                    very first branch below returns untouched.
-//   float4 _PrismSightAxis   — xyz = the sweep axis (unit),
-//                              w   = the capsule's RADIUS per unit depth.
-//   float4 _PrismSightGape   — xyz = the gape axis (unit, perpendicular to the sweep axis),
-//                              w   = the capsule's HALF-LENGTH per unit depth.
+//   float3 _PrismSightApex     — the blast's apex in world space.
+//   float3 _PrismSightAxis     — the sweep axis (unit).
+//   float3 _PrismSightGape     — the gape axis (unit, perpendicular to the sweep axis).
+//   float3 _PrismSightParams   — (height, coreRadiusPerUnitDepth, halfLengthPerUnitDepth).
+//                                height <= 0 means "sight off", which the very first branch
+//                                below returns untouched.
 //   float  _PrismSightStrength — highlight fade, 0-1, so the sight never pops on or off.
 //
+// All four vectors are Vector3 rather than Vector4 because that is what the prism graphs can
+// clone a donor for exactly — packing the scalars into w channels would have meant synthesising
+// a property type neither graph contains, which is precisely the kind of hand-authored schema the
+// asset-surgery protocol says not to invent.
+//
 // THE VOLUME. Not a circular cone: the blast opens the way the jaws open. At axial depth s the
-// cross-section is a 2D STADIUM — a disc of radius (_PrismSightAxis.w · s) dragged along the gape
-// axis for ±(_PrismSightGape.w · s). So the shape is narrow across the beam at every charge and
+// cross-section is a 2D STADIUM — a disc of radius (_PrismSightParams.y · s) dragged along the
+// gape axis for ±(_PrismSightParams.z · s). So it is narrow across the beam at every charge and
 // wide across the gape in proportion to the energy banked. This is a literal transcription of
 // AOEConicSweepQueryJob.Execute (PrismSpatialIndex.cs): clamp onto the cross-section's segment
 // first, then measure distance to that point, which is what makes the ends round and is the same
 // point-to-segment distance the CapsuleCollider trigger uses. The preview and the damage volume
 // are the same shape BY CONSTRUCTION rather than by two authors agreeing.
 //
-// COST CONTRACT. A fragment with the sight off executes one compare (_PrismSightApex.w > 0) and
+// COST CONTRACT. A fragment with the sight off executes one compare (_PrismSightParams.x > 0) and
 // returns. With the sight on it costs one dot for the axial band, one reject, then ~12 ALU for the
 // segment distance — no texture, no extra varying beyond world position, no branch that diverges
 // across a prism (the whole prism is on one side of the test at typical prism sizes, and near the
@@ -82,9 +86,10 @@
 
 void PrismDestructionSight_float(
     float3 PositionWS,
-    float4 Apex,        // xyz apex, w height
-    float4 Axis,        // xyz sweep axis, w core radius per unit depth
-    float4 Gape,        // xyz gape axis, w half-length per unit depth
+    float3 Apex,        // blast apex, world space
+    float3 Axis,        // sweep axis (unit)
+    float3 Gape,        // gape axis (unit, perpendicular to Axis)
+    float3 Params,      // (height, core radius per unit depth, half-length per unit depth)
     float  Strength,
     float3 BaseColor,
     out float3 Color)
@@ -97,27 +102,27 @@ void PrismDestructionSight_float(
 
     // Sentinel: the publisher zeroes every uniform when the sight is released, so an unheld
     // trigger costs exactly this compare.
-    float height = Apex.w;
+    float height = Params.x;
     if (height <= 0.0 || Strength <= 0.0)
         return;
 
-    float3 rel = PositionWS - Apex.xyz;
+    float3 rel = PositionWS - Apex;
 
     // Axial band. Outside [0, height] there is no blast at all - note the near clip is at the
     // apex, so mass BEHIND the vessel is never highlighted even though the cone's axis extends
     // backwards mathematically.
-    float s = dot(rel, Axis.xyz);
+    float s = dot(rel, Axis);
     if (s <= 0.0 || s > height)
         return;
 
     // Distance from the cross-section's SEGMENT, not from the axis: clamp onto the segment first
     // so the ends are round. Mirrors AOEConicSweepQueryJob exactly.
-    float3 radial = rel - Axis.xyz * s;
-    float halfLength = Gape.w * s;
-    float along = dot(radial, Gape.xyz);
-    float3 offAxis = radial - Gape.xyz * clamp(along, -halfLength, halfLength);
+    float3 radial = rel - Axis * s;
+    float halfLength = Params.z * s;
+    float along = dot(radial, Gape);
+    float3 offAxis = radial - Gape * clamp(along, -halfLength, halfLength);
 
-    float coreRadius = Axis.w * s;
+    float coreRadius = Params.y * s;
     if (coreRadius <= 0.0)
         return;
 
