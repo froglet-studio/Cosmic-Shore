@@ -47,12 +47,15 @@ C# stub-compiled under mcs. None of it has been imported.
    remaining charges, fourth refuses.
 4. **Crystals → a ball** (added after the first playtest reported no ball ever appearing — nothing
    forged one; the energy meter was filling correctly but had no consumer and no gauge). Collect
-   **five** omni crystals: the first four fill `Resources[0] "Ball Energy"` (+0.25 each, watch the
-   inspector — still no HUD gauge), the **fifth spawns a ball** ahead of your nose carrying your
-   speed and domain colour, and zeroes the meter. Console prints `[ScarabBallForge] … forged a
-   {domain} ball … @ N u/s`. Each crystal also grants +1/3 switch charge. ⚠ If a ball spawns but
-   sits still, the freeze/velocity ordering in `LaunchServer` regressed; if TWO balls appear per
-   crystal in MPPM, the server gate regressed.
+   **five** omni crystals: the first four fill the **energy ring** (+0.25 each — the ring fills and
+   flips to the amber READY colour with a punch on the fourth), the **fifth spawns a ball** ahead
+   of your nose carrying your speed and domain colour and empties the ring. Console prints
+   `[ScarabBallForge] … forged a {domain} ball … @ N u/s`. Each crystal also brightens the
+   **Switch icon** one step (0→3 charges). ⚠ If a ball spawns but sits still, the freeze/velocity
+   ordering in `LaunchServer` regressed; if TWO balls appear per crystal in MPPM, the server gate
+   regressed.
+4a. **Gauges**: the Juke icon is bright when armed and dims for ~1.2s after a juke; the Switch icon
+   dims one step per placement and refuses (staying dim) at zero.
 5. Astro League: the configure modal's carousel now offers Rhino + Scarab; pick Scarab, 2 players
    + AI → AI must all spawn as RHINOS (list order — if an AI spawns as a Scarab, `Vessels[0]`
    got reordered); play a rally, hull-strike the ball, place a ring in front of your goal.
@@ -66,14 +69,14 @@ C# stub-compiled under mcs. None of it has been imported.
 ring radius 20 (×2.5 at Mass 10), 12 bricks (2.5, 1.5, 8), place distance 150→300, 3 switch
 charges, crystal grants +0.334 charge / +0.25 energy.
 
-**Known gaps (deliberate, tracked in SCARAB.md):** HUD is the cloned Sparrow variant (icons
-cosmetically wrong, structurally compliant; gun/roll bindings nulled so those gauges are dark);
-**no energy gauge or charge pips — the biggest remaining observability gap, and the reason the
-first playtest could not tell a working system from a broken one**; the switch ring is body-only
-(no ball deflection or energy trigger — mode work); a forged ball has no boundary in freestyle so
-it coasts away forever (the documented §15.6 candidate, not a bug) and keeps the mode's
-last-striker recolouring until permanent ownership lands (§4.2); Space map row deliberately open;
-AI never flies the Scarab (list order); touch cannot place switches (no Button1 raise site).
+**Known gaps (deliberate, tracked in SCARAB.md):** the HUD gauges are live but ride the cloned
+Sparrow variant's ART — the four icons still draw Sparrow weapon glyphs, so the row reads wrong
+even though every binding is correct (art pass, not wiring); the switch ring is body-only (no ball
+deflection or energy trigger — mode work, and the ball cannot bounce off prisms at all, SCARAB.md
+§5); a forged ball has no boundary in freestyle so it coasts away forever (the documented §15.6
+candidate, not a bug) and keeps the mode's last-striker recolouring until permanent ownership
+lands (§4.2); Space map row and all four L5 labels deliberately open pending markup; AI never
+flies the Scarab (list order); touch cannot place switches (no Button1 raise site).
 
 ---
 
