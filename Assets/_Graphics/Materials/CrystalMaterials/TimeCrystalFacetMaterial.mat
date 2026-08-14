@@ -20,7 +20,7 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: TimeCrystalNoEdgeMaterial
+  m_Name: TimeCrystalFacetMaterial
   m_Shader: {fileID: -6465566751694194690, guid: 3ecd65ae58f94c16a9f90c8a98f568c6,
     type: 3}
   m_Parent: {fileID: 0}
@@ -113,6 +113,7 @@ Material:
     - _DstBlend: 10
     - _DstBlendAlpha: 10
     - _EnvironmentReflections: 1
+    - _FacetPower: 0.32
     - _GlossMapScale: 0
     - _Glossiness: 0
     - _GlossyReflections: 0
