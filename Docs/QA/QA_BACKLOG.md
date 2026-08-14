@@ -1,6 +1,6 @@
 # QA Backlog — untested development on `bleeding-edge`
 
-Generated: 2026-08-12 · Scan covers: up to `d32f2683` (PRs #583–#710) · **Owner of this file: the `/qa-backlog` skill — do not hand-edit.**
+Generated: 2026-08-14 · Scan covers: up to `26fcc090` (PRs #583–#717) · **Owner of this file: the `/qa-backlog` skill — do not hand-edit.**
 
 > Note (2026-08-11): `bleeding-edge` was briefly force-pushed back to `0e855b24` (dropping PRs #674–#679) and then restored — the current tip `b0cf4f0f` re-includes all of that work plus PRs #680/#681/#695/#696. No items were pruned. The `windows-build-failures` build-fix branch is validated by QA-BUILD-COMPILE on Windows and has no separate item.
 
@@ -108,7 +108,7 @@ Source: PRs #659, #639, #627, #641, #668, #651. These are NUnit suites authored 
 
 1. Window ▸ General ▸ Test Runner ▸ EditMode ▸ Run All.
 2. Record every failing test by name, plus the total pass/fail count.
-3. Specifically confirm these suites are present and green: `CellSpawnFormationTests`, `SkimmerSwingKinematicsTests`, `ShieldShellMathTests`, `VesselElementalMorphTests`, `VesselRigPartResolutionTests`, `SpeedTunnelLawTests`, `SettingsAutoDetectorTests`, `GeometryUtilsTests`, `PrismOcclusionCoverageTests`, `ShipModifierTests` (PR #679), `DisplayNameValidatorTests` (PR #674/display-name-validation).
+3. Specifically confirm these suites are present and green: `CellSpawnFormationTests`, `SkimmerSwingKinematicsTests`, `ShieldShellMathTests`, `VesselElementalMorphTests`, `VesselRigPartResolutionTests`, `SpeedTunnelLawTests`, `SettingsAutoDetectorTests`, `GeometryUtilsTests`, `PrismOcclusionCoverageTests`, `ShipModifierTests` (PR #679), `DisplayNameValidatorTests` (PR #674/display-name-validation), `PrismDeathVisualTierTests` (PR #715).
 
 PASS: all EditMode tests green and all nine suites present. FAIL: any red test (record the name + assertion message) or a suite that does not appear at all (means it did not compile into the test assembly).
 
@@ -664,6 +664,37 @@ Source: PR #709 (`squirrel-joust-starvation-wither`). New `LifeformDeathStyle` e
 5. Watch a few waves — the wither cadence reads right (not instant, not stuck).
 
 PASS: compiles; starvation withers-to-crystal and leaves a skeleton; a joust kill takes the heart and still withers/skeletons; nothing pops in or out; interrupted withers still finish. FAIL: a creature vanishing instead of withering · no skeleton left · a joust kill dropping no heart or a starved creature dropping none · an interrupted wither leaving a stuck/immortal husk · any missing script.
+
+### QA-RAMPAGE-REBUILD ⬜ — Rampage rebuilt as the Dolphin's demolition race (four intensities)
+Source: PR #717 (`dolphin-rampage-minigame`). A rebuild of the Rampage mode as the Dolphin's demolition race — 64 files, four intensities via a new `Tools/Build/rampage_intensity.py`, `SpawnProfileSO`/`GameDataSO` additions, crystals coupled to the nucleus, banded flora, AI-drift fix, and a fixed sticky cell-config race. Reference: `_Scripts/Controller/Arcade/RAMPAGE.md`, `Docs/ECOSYSTEM.md`.
+
+1. Open the Rampage scene / launch the mode: no `Missing (Mono Script)`; the controller + scoring rule wired; the cell builds.
+2. Launch at intensity 1, then at intensity 4 — the intensity ladder visibly differs (arena/population scale), not identical.
+3. Confirm it plays as a Dolphin demolition race: the objective (omni) crystal is coupled to the nucleus and the objective arrow tracks only that managed crystal; flora is banded; AI drifts/plays sensibly.
+4. Play a full round to the destruction target and watch the scoreboard resolve (environment-mass kills credited per-simulator and by domain).
+5. Return to menu and relaunch once — clean, no leaked score/state.
+
+PASS: scene clean; the four intensities differ; the demolition race plays with the nucleus-coupled objective crystal and correct arrow tracking; the round resolves on the destruction target with a sane scoreboard; return/relaunch clean. FAIL: missing scripts · identical intensities (config race not fixed) · the objective arrow tracking the wrong crystal · AI stuck/not drifting · a round that won't resolve · leaked score on relaunch.
+
+### QA-DOLPHIN-DRIFT-VELOCITY ⬜ — drift holds velocity magnitude for its whole duration
+Source: PR #716 (`dolphin-drift-velocity`). The Dolphin now **holds its velocity magnitude for the duration of a drift** (`VesselTransformer` + `SingleStickVesselTransformer` + `Dolphin.prefab`). Touches the **shared** transformer, so re-check other single-stick vessels don't regress. Reference: `DOLPHIN_ENERGY_ECONOMY.md`, `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+
+1. Project compiles. Dolphin in freestyle: enter a drift — speed **holds** at its magnitude through the whole drift rather than bleeding off.
+2. Release the drift, then re-drift — the speed hold re-arms cleanly each time (watch the re-drift verification row in the checklist).
+3. Confirm it doesn't leak into non-drift flight (normal accel/decel unchanged when not drifting).
+4. Sanity-check another single-stick vessel (e.g. Serpent/Sparrow that share `SingleStickVesselTransformer`) — its drift/turn behaviour is unchanged.
+
+PASS: compiles; drift holds velocity for its full duration and re-arms on re-drift; non-drift flight unchanged; other single-stick vessels unaffected. FAIL: compile error · speed bleeding off during a drift · the hold not re-arming on re-drift · non-drift flight altered · another single-stick vessel regressing.
+
+### QA-PRISM-DEATH-TIER ⬜ — death visuals wear the dying prism's tier + danger-prism detonations
+Source: PR #715 (`danger-prisms-explosions`). Prism **death visuals now wear the dying prism's TIER** (plain/danger/shielded/super-shielded), not just its domain; danger prisms carry a detonation gain with extended reach. `PrismDebris` + `PrismExplosion` changes, new EditMode suite `PrismDeathVisualTierTests`. Related: QA-VESSEL-AOE-IMPULSE, QA-PALETTE-*.
+
+1. Project compiles; run `PrismDeathVisualTierTests` in EditMode (also under QA-EDITMODE-TESTS) — green.
+2. Destroy prisms of different tiers (plain, danger, shielded, super-shielded) and watch the death debris/explosion — each reads as its **tier**, not a generic domain-coloured burst.
+3. Detonate near danger prisms — the danger detonation gain visibly reaches farther than a plain destruction.
+4. Regression: a normal (plain) prism death still looks/behaves as before; no magenta or missing VFX.
+
+PASS: compiles + `PrismDeathVisualTierTests` green; death visuals differ by tier; danger detonations reach farther; plain deaths unchanged. FAIL: compile/test failure · all deaths looking identical regardless of tier · danger detonation with no extra reach · missing/broken death VFX on any tier.
 
 ## Priority 2 — lower risk, cosmetic, or data-gathering
 
