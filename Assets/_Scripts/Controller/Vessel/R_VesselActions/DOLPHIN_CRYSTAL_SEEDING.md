@@ -106,9 +106,12 @@ Two consequences worth knowing:
 - The tunnel now keeps **applying** at zero speed effect while an override is in force
   (`_effect01 > 0.001f || HasHomeFovOverride`). Releasing would restore the true home and cancel the
   sight.
-- `_capturedHomeFov` is captured **once at engage** and never re-read. Once the override is in force
-  the tunnel is writing the camera *from* that override, so reading the camera back each frame would
-  feed the zoom into its own input and run away.
+- `_capturedHomeFov` is captured **once at engage, from `VesselSpeedTunnel.HomeFov` — not from the
+  live camera**. While the tunnel is engaged the camera is already narrowed by the speed effect, so
+  reading it would anchor the zoom to whatever speed the pilot happened to be doing when they raised
+  the sight, and restore to that value on release. It is not re-read live either: once the override
+  is in force the tunnel is writing the camera *from* that override, so reading it back would feed
+  the zoom into its own input and run away.
 
 ### The highlighted volume is not re-derived
 

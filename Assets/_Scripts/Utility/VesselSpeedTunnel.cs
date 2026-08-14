@@ -83,6 +83,17 @@ namespace CosmicShore.Utility
         public static bool HasHomeFovOverride => _homeFovOverride > 0f;
 
         /// <summary>
+        /// The TRUE home field of view — what the camera would be running at with the tunnel idle.
+        /// 0 before the driver has ever taken a camera over.
+        ///
+        /// A sighting ability must zoom from THIS, never from <c>Camera.fieldOfView</c>: while the
+        /// tunnel is engaged the live camera is already narrowed by the speed effect, so capturing
+        /// it would anchor the zoom to whatever speed the pilot happened to be doing at the moment
+        /// they raised the sight — and would then restore to that value on release.
+        /// </summary>
+        public static float HomeFov => _homeFov;
+
+        /// <summary>
         /// The FOV the effect currently measures DOWN from: an ability's override when one is in
         /// force, otherwise the true home captured off the live camera.
         /// </summary>

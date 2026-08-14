@@ -44,9 +44,10 @@ namespace CosmicShore.Gameplay
         Vector3 _neutralFollowOffset;
         CustomCameraController _camera;
 
-        // The FOV the zoom measures DOWN from, captured at engage. It must NOT be re-read live:
-        // once the override is in force the tunnel is writing the camera from that override, so
-        // reading the camera back would feed the zoom into its own input and run away.
+        // The FOV the zoom measures DOWN from, captured at engage from the TUNNEL's home rather
+        // than the live camera (see CaptureView). It must NOT be re-read live either: once the
+        // override is in force the tunnel is writing the camera from that override, so reading the
+        // camera back would feed the zoom into its own input and run away.
         float _capturedHomeFov;
 
         public override void Initialize(IVesselStatus shipStatus)
@@ -140,7 +141,15 @@ namespace CosmicShore.Gameplay
             if (_camera)
             {
                 _neutralFollowOffset = _camera.GetFollowOffset();
-                _capturedHomeFov = _camera.Camera != null ? _camera.Camera.fieldOfView : 0f;
+
+                // The TUNNEL's home, not the live camera. While the tunnel is engaged the camera is
+                // already narrowed by the speed effect, so reading it here would anchor the zoom to
+                // whatever speed the pilot happened to be doing when they raised the sight - and
+                // restore to that value on release. Falls back to the live camera only when the
+                // driver has never taken a camera over (nothing has narrowed it yet, so they agree).
+                float home = VesselSpeedTunnel.HomeFov;
+                if (home <= 0f && _camera.Camera != null) home = _camera.Camera.fieldOfView;
+                _capturedHomeFov = home;
             }
 
             _cameraCaptured = true;
