@@ -229,7 +229,7 @@ Do not snapshot domain at component-creation time. Either subscribe to `Player.N
 - **Camera**: Custom plain-transform rigs — `CustomCameraController` (gameplay) + `MainMenuCameraController`/`MenuCameraConfigSO` (menu) — with per-vessel `CameraSettingsSO` assets. Cinemachine 3.1.2 remains installed for tool scenes only (Recording Studio); the menu and gameplay cameras do not use it
 - **VFX**: VFX Graph 17.0.4, custom HLSL shaders, Shader Graph
 - **Input**: Unity Input System 1.14.2 with strategy pattern (`IInputStrategy` → platform-specific implementations)
-- **Audio**: Wwise integration
+- **Audio**: FMOD Studio (`Assets/Plugins/FMOD`, `FMODUnity`) — every sound is an inspector-exposed `EventReference`, never a hardcoded/temp event. See "Audio (FMOD)" under Architecture Patterns. (An `Assets/Wwise/` folder survives from an earlier middleware evaluation and is **inert** — no first-party code references `AkSoundEngine`; do not author new audio against it.)
 - **Haptics**: NiceVibrations for mobile/gamepad haptics. **Two everyday feels**, both local-human-pilot-only (skim-pulse reward + prism-punish thud), plus **one rare alert shake** fenced to match-changing events (only Ribcage's two progress-milestone rungs today); everything else is silent. See `Docs/HAPTICS.md`.
 - **Animation**: Timeline 1.8.9, DOTween for procedural animation
 - **DI**: Reflex (`com.gustavopsantos.reflex` 14.1.0) for dependency injection
@@ -269,7 +269,7 @@ Assets/
 │   │   ├── Instrumentation/   # AnalyticsServiceFacade (UGS Analytics, single writer)
 │   │   ├── Runtime/           # Dialogue runtime (DialogueManager, models, views, helpers)
 │   │   ├── RewindSystem/      # Rewind/replay functionality
-│   │   ├── Audio/             # Wwise audio management
+│   │   ├── Audio/             # AudioSystem (FMOD events + legacy music AudioSources)
 │   │   ├── LoadOut/           # Vessel loadout configuration
 │   │   ├── CallToAction/      # Promotional/CTA system
 │   │   ├── Squads/            # Squad management
@@ -310,7 +310,7 @@ Assets/
 ├── _Graphics/, _Models/, _Audio/, _Animations/
 ├── FTUE/                      # First-Time User Experience / Tutorial system
 ├── Plugins/                   # Obvious.Soap, Demigiant (DOTween), NativeShare, etc.
-├── Wwise/                     # Audio middleware
+├── Wwise/                     # Legacy middleware evaluation — INERT, no first-party refs (audio is FMOD, at Plugins/FMOD)
 ├── PlayFabSDK/                # Backend SDK (legacy)
 ├── NiceVibrations/            # Haptic feedback
 └── SerializeInterface/        # Custom [RequireInterface] attribute support
@@ -419,7 +419,7 @@ encounters and hiding places (inspired by Scurry's intensity-4 Atlantis, and its
 world that fell rather than grew). A **bullet hit scores 1** — BOTH of the Sparrow's direct-fire
 modes, full-auto rounds and turret-stance prism rounds, since they are one weapon class — a
 **missile hit scores 50** (direct strike OR caught in the blast, latched so one rocket can only
-pay once), and the first **DOMAIN** to the point target (default 120) wins. Its metric,
+pay once), and the first **DOMAIN** to the point target (default 90) wins. Its metric,
 `ScoringMetric.CombatPoints`, is the platform's first whose source is **vessel-vs-vessel gunnery**
 rather than prisms, crystals or the ecology — and the weighting lives in the mode's own
 `ScoringRuleSO.PointsForCombatHit` (0 everywhere else), so hits are COUNTED platform-wide and
@@ -429,15 +429,23 @@ could not fight at all — domains ARE the sides. Shipping it also gave `AOEConi
 the explosion container it never had, so a skyburst's BLAST can now reach a pilot instead of only
 its direct hit. Two tuning lessons are recorded there and generalize: (1) **a comeback rate is a
 function of the target** — `bonusLevels = deficit x rate`, so `ComebackRatePerScoreDeficit`
-survived a 500 → 120 target change and quietly became worth 0.2 of a level, and the generator now
-FAILS if a quarter-of-target deficit buys under one whole element level (the mode leans on this:
-Mass stretches the Sparrow's fired prisms, so the trailing side's rounds visibly grow — the other
-three rise with it, because equal-elements is the law); (2) **a cell with NO NUCLEUS must author
-`CrystalManager.anchorlessSpawnRadius`** — that field falls back to the nucleus radius, so without
-it the omni crystal falls through to its own `SphereRadius` and spawns on the arena's exact
-centre, where a big faceted sphere reads as the objective (it was mistaken for an Astro League
-ball). The fix is the radius, never switching the crystal off. See
-`_Scripts/Controller/Arcade/DOGFIGHT.md`.
+survived a 500 → 120 → 90 target change and quietly became worth 0.2 of a level, and the generator
+now FAILS if a quarter-of-target deficit buys under one whole element level (the mode leans on
+this: Mass stretches the Sparrow's fired prisms **and now their hit sphere too**, so the trailing
+side's rounds both look and land bigger — the other three rise with it, because equal-elements is
+the law, and Mass is simply the only one wired to that vessel's gun output); (2) **a cell with NO
+NUCLEUS must author `CrystalManager.anchorlessSpawnRadius`** — that field falls back to the
+nucleus radius, so without it every omni crystal falls through to its own `SphereRadius` and
+spawns on the arena's exact centre, where a big faceted sphere reads as the objective (it was
+mistaken for an Astro League ball). The fix is the radius, never switching the crystal off.
+Two further lessons came out of its first playtest and are recorded there: (3) **a weapon is born
+at its MUZZLE, so a muzzle transform is gameplay, not decoration** — the Sparrow carries a
+separate gun pair per fire mode and the turret's had drifted to `z = 15.13` against the bullets'
+`1.30`, so every turret round spawned 15 units past a close-range target and the whole fire mode
+did nothing, with correctly-wired scoring; and (4) **an AI break-off must be a LATCHED decision,
+not a function of the enemy's current position** — recomputing the escape point each frame makes
+it flip the instant the AI passes its target, which welds the two ships into a grinding circle
+and hides every standoff weapon the AI owns. See `_Scripts/Controller/Arcade/DOGFIGHT.md`.
 
 `WildlifeLiberation(40)` is the **Sparrow-only hunt** — three concentric cages at 1050 / 600 / 200 pen three tiers of wildlife (a very heavy swarm of small creatures outside, much bigger ones in the middle room, the biggest and toughest in the core), plus a fourth tier loose in the open water outside the outer cage where players spawn; the first **DOMAIN** to 250 summed kills wins. It is an ordinary domain race and that is deliberate: a per-PLAYER (free-for-all) winner shipped here briefly and was **reverted**, because the mode seats up to four players while the platform has only three playable domains, so a full lobby always has teammates and a per-individual winner bypasses every domain surface (winner banner, HUD panels, scoreboard ordering, `ResolvePlacementOrder`). Do not re-derive it. Its metric, `ScoringMetric.LifeformsKilled`, is the first whose source is the ECOLOGY rather than prisms or crystals — and the first that needs an RPC, because fauna are client-local so a client's kill is invisible to the server (`Player.ReportFaunaKill_ServerRpc`; the round-trip stays correct once fauna network sync lands). Shipping it made **every creature in the game killable by shooting its body prisms** (previously only the worm colony was — see `Docs/ECOSYSTEM.md §24`) and generalized the cell's single fauna pen into a per-species BAND. See `_Scripts/Controller/Arcade/WILDLIFE_LIBERATION.md`.
 
@@ -964,6 +972,8 @@ standalone skimmer objects do not). Detail:
 
 **Danger prisms are not safe to their own domain (locked design).** `IsDangerous` effects apply to every vessel that touches the prism, regardless of domain — friendly fire included (the fire-trail action literally sets `IsDangerous` from a `FriendlyFire` flag). Danger-prism effect SOs must not gate on domain. **Danger is mutually exclusive with BOTH shield tiers**: `PrismStateManager.MakeDangerous` clears `IsShielded` AND `IsSuperShielded` (and disengages the shield visuals), just as `ActivateSuperShield` clears `IsDangerous` — a danger prism carrying a stale super-shield flag is invulnerable and kills any AOE explosion that touches it. `Prism.ResetState` also clears `IsSuperShielded` on pool reuse (no spawner requests super-shield pre-`Initialize`; it is always engaged post-spawn). This is what makes danger trails a risk/reward surface: a danger trail grants 10x skim energy (`SkimmerBoostPrismEffect.dangerEnergyMultiplier`, gated behind the skimming vessel's Charge level-5 "Live Wire" upgrade — below it danger skims pay base energy) but slams its owner on contact — volume-independent full-stop slow at the danger max (`VesselChangeSpeedByPrismEffectSO`: `maxSlowStrength * dangerSlowMultiplier`), all-element decaying debuff for 4s (`VesselElementalDebuffByDangerPrismEffectSO`), and boost reset. (The Sparrow's own overheat danger trail was retired with its overheat mechanic; the `EnableDangerMode` machinery survives for a future caller. The one thing that can deny a danger prism's bite is the general **elemental-debuff immunity** state — `ResourceSystem.IsElementallyImmune`, held by the Sparrow while boosting at Time 5 and by the Serpent while stopped — and it denies ONLY the elemental drain: the slow, the input mute and the boost reset still land. It is a gate inside `ApplyElementalEffect`, not a domain exception, so the locked law is intact.)
 
+**A prism's DEATH VISUAL wears the palette of the TIER it was wearing, never just its domain.** The dying prism's `PrismKind` rides `PrismEventData.Kind` — stamped by `Prism.Explode`/`Implode` from `PrismKinds.Of` *before* the destruction pass — and both the batched debris path and the pooled fallback tint from `SO_ColorSet.GetPrismKindColors`, the ONE composition `ThemeManager` also paints the live block materials with (`ThemeManager.PaintPrismTier`). Before this, debris was tinted from the domain alone at the PLAIN tier, so a danger prism — a frosty shielded base under the hot domain-independent danger rim — shattered into ordinary domain-coloured debris and read as a plain prism dying; shielded/super-shielded mass had the same defect on a devastating hit. **Never re-inline a tier's colour pair** at either consumer, and never fix a debris colour on the per-domain `SO_MaterialSet.ExplodingBlockMaterial` copies — nothing draws with those (`PrismDebris` reads mesh+material off the pool prefab and overrides colour PER ENTITY, which is also why a mixed-tier burst is still ONE batch and one draw: the tier must never become a reason to split a batch or swap a material). Danger alone also detonates HARDER — `PrismExplosion.DetonationGain`, authored as `dangerDetonationMultiplier` on `PrismExplosion.prefab` (1.6, set 1 for palette-only) — and that gain scales debris speed, shatter rate and the clamp band as ONE quantity, per the AOE-impulse contract above. Detail: `Docs/PALETTE.md §2.1`, `Docs/PRISM_ANIMATION.md §4.6`.
+
 **AOE blast impulse — `Inertia` only reaches the screen with a ceiling of its own.** Every
 explosion entry point (`ExplosionImpactor.ProcessBatchFrame` / `ProcessBatchConeFrame` /
 `DrainPendingBatchFrame` → `PrismSpatialIndex.ProcessExplosionFrame` / `ProcessExplosionConeFrame`
@@ -986,6 +996,85 @@ the Burst resolve and the Physics-trigger fallback (`ExecuteCommonPrismCommands`
 mass at the same speed with or without the spatial index. Detail: `Docs/SPATIAL_INDEX.md` § "Impulse".
 
 **Forcefield Crackle (Skimmer)**: `SkimmerForcefieldCracklePrismEffectSO` (at `_Scripts/Controller/ImpactEffects/EffectsSO/Skimmer Prism Effects/`) is a shader-driven alternative to `SkimmerFXPrismEffectSO` that visualizes the Skimmer's invisible sphere collider on prism impacts. It computes the impact point via `Collider.ClosestPoint` between the prism box and skimmer sphere, projects it onto the sphere surface, and forwards the event (position + duration + intensity + radius) to a `ForcefieldCrackleController` MonoBehaviour on the vessel (`_Scripts/Controller/Vessel/ForcefieldCrackleController.cs`). The controller owns all visual parameters (colors, arc density/sharpness, ring thickness, ripple speed, fresnel) as serialized fields and feeds a ring buffer of up to 16 simultaneous impacts to the shader via MaterialPropertyBlock arrays each frame. `[ExecuteAlways]` allows edit-mode preview via `ForcefieldCrackleControllerEditor` (at `_Scripts/Editor/`). The shader's custom-function HLSL file `ForcefieldCrackle.hlsl` (at `Assets/Materials/Graphs/`) uses FBM-based electrical arcs with expanding wavefronts on a geodesic distance metric so arcs follow the sphere's curvature. All three code files use the `CosmicShore.Gameplay` namespace.
+
+### Audio (FMOD) — every sound is an exposed, editable field (LOCKED convention)
+
+FMOD Studio is the audio middleware (`FMODUnity`, `Assets/Plugins/FMOD`). The rule below is not a
+style preference — it is what makes the game's audio *authorable by whoever owns audio*, without a
+programmer, a recompile, or a merge.
+
+> **Every noise anything makes must be an inspector-exposed `EventReference` on the prefab/component
+> (or SO) that makes it.** If a sound exists, an audio designer must be able to find it in the
+> component view of the thing that produces it, and swap it — without touching code, and without
+> hunting for which shared category it borrowed.
+
+**Corollaries — all three are load-bearing:**
+
+1. **Never plug in a "temp" event.** Do not point a new sound at a borrowed/placeholder FMOD event
+   just to hear something. Ship the `[SerializeField] EventReference` **empty** and let it be
+   silent — an empty slot is a visible, greppable TODO in the inspector; a temp event is an
+   invisible one that survives to release and gets mistaken for an intentional sound. FMOD's
+   `EventReference.IsNull` makes an empty slot a clean no-op, and `AudioSystem` already warns once
+   per unwired category (`warnOnUnwiredCategory`) rather than failing. Follow that pattern: check
+   `IsNull`, return, optionally warn once — never substitute another event.
+2. **Every ship ability gets its own dedicated FMOD event field** — boost, gun fire, drift, shield,
+   turret, missile, ability start/stop, whatever. One field per ability per distinct sound (a
+   start/stop or charge/release ability gets a field for each). Do **not** route a new ability
+   through an existing `GameplaySFXCategory` because it is "close enough" — sharing a category means
+   two abilities can never be tuned independently, which is exactly what the audio owner needs.
+3. **The sound is a trigger's payload, not an implicit side effect.** When something should sound on
+   contact, the collider/trigger that detects the contact is where the `EventReference` lives and is
+   played from. Same for a state change: the component that owns the state plays its own field.
+
+**How to add a sound (the shape to copy):**
+
+```csharp
+[Header("Audio")]
+[SerializeField, Tooltip("FMOD event played when this ability fires. Leave empty for silence.")]
+EventReference fireEvent;
+
+// at the trigger / state change:
+if (!fireEvent.IsNull)
+    audioSystem.PlaySFXEvent(fireEvent, transform.position);   // spatialized
+```
+
+Play through `AudioSystem` (`PlaySFXEvent` / `PlaySFXEventAttached`) or
+`FMODOneShotVolumeHelper` — **never** `RuntimeManager.PlayOneShot` directly, which has no
+per-instance volume and therefore ignores the SFX slider when the bus fails to resolve
+(`_Scripts/Controller/FX/FMODOneShotVolumeHelper.cs` documents why). For a **looping/continuous**
+sound (engine, drift, ambient, creature loop) use a `StudioEventEmitter` on the prefab — again with
+the event exposed — or a small controller that owns its own `EventReference` field, like
+`ShipAudioController`, `DriftAudioController`, `ProximityBoostAudioController`,
+`FloraAmbientAudioController`.
+
+**The two tiers, and which to use:**
+
+| Tier | What it is | Use when |
+|---|---|---|
+| **Per-prefab field** (preferred) | `[SerializeField] EventReference` on the component that makes the noise; edited in that prefab's component view | The sound belongs to a *specific thing* — a vessel ability, a projectile, a trigger volume, a creature, a toy, a UI widget with its own voice |
+| **Central category** | `AudioSystem.PlayGameplaySFX(GameplaySFXCategory.X)` / `PlayMenuAudio(MenuAudioCategory.X)`, wired once on the AudioSystem GameObject | The sound is genuinely *shared platform-wide* and must stay identical everywhere — prism destruction, crystal collect, generic vessel impact, menu clicks |
+
+Both tiers keep the event in an inspector slot; they differ only in *where* the slot lives. If you
+find yourself adding a `GameplaySFXCategory` member for one vessel's one ability, that is the signal
+you wanted a per-prefab field instead. **Existing ability call sites that pass a shared category
+(`BoostActionSO` → `BoostActivate`, `DriftActionSO` → `DriftStart`/`DriftEnd`) are the legacy shape**
+— when you touch one, give it its own `EventReference` field (falling back to the category only when
+the field is empty) rather than adding another category consumer.
+
+Data-driven variants override the same way — a config SO carries the `EventReference` and stamps it
+onto the emitter at spawn (`FaunaConfigurationSO.OverrideAudio` + `AudioLoopEvent` →
+`Fauna`'s `StudioEventEmitter`), so a species can be re-voiced or silenced from its asset.
+
+**Anti-patterns:**
+
+- A hardcoded `RuntimeManager.PlayOneShot("event:/some path")` or any string event path in code
+  (first-party code is currently clean of this — keep it that way)
+- A new sound wired to an unrelated existing event "for now"
+- A sound that can only be changed by editing C# or by finding one shared enum member
+- An `AudioClip` + `AudioSource` for a *new* gameplay sound — the Unity AudioSource path is legacy
+  (music, plus stragglers like `IconEmitter` and `AudioSystem.PlaySFXClip`) and is being retired;
+  new SFX is FMOD
+- Adding an if-null-guard *fallback to another event*. Guard for silence, never for substitution
 
 ### Multiplayer / Netcode
 
@@ -2237,7 +2326,7 @@ All game code lives under `CosmicShore.*` with 8 primary namespaces:
 | Party / Invite | `HostConnectionService` (presence lobby + party sessions, single-writer to `HostConnectionDataSO`), `PartyInviteController` (Netcode host↔client transitions), `FriendsInitializer` (Friends service bridge) | `_Scripts/Controller/Party/` |
 | Party UI | `ArcadeLobbyList` (4-slot party panel; per-slot kick ✕ for host) + `FriendInfoSlot` (single slot), `FriendsListPanel` (Online + Requests), `OnlineInfoEntry` (online row = invite button; "IN YOUR PARTY" + cancel-✕/kick states), `RequestInfoEntry` (accept/decline), `PartyInviteNotificationPanel` (bottom-left global invite popup) | `_Scripts/UI/Elements/` (`PartyInviteNotificationPanel` in `_Scripts/UI/Screens/`) |
 | Menu scene controller | `MainMenuController` (sub-state machine: None→Initializing→Ready→LaunchingGame), `MainMenuState` enum | `_Scripts/System/`, `_Scripts/Data/Enums/` |
-| Audio | `AudioSystem` (DI singleton), `ScriptableEventGameplaySFX` / `EventListenerGameplaySFX` (decoupled gameplay SFX via SOAP) | `_Scripts/System/Audio/`, `_Scripts/ScriptableObjects/SOAP/ScriptableGameplaySFX/` |
+| Audio (FMOD) | `AudioSystem` (DI singleton; inspector-wired `EventReference` per `MenuAudioCategory` / `GameplaySFXCategory`, SFX-bus volume, per-category throttle), `FMODOneShotVolumeHelper` (slider-respecting one-shots — use instead of `RuntimeManager.PlayOneShot`), continuous emitters `ShipAudioController` / `DriftAudioController` / `ProximityBoostAudioController` / `FloraAmbientAudioController`, `ScriptableEventGameplaySFX` / `EventListenerGameplaySFX` (decoupled gameplay SFX via SOAP). **Every sound is an exposed `EventReference` field — never a temp/borrowed event; every ship ability gets its own field.** See "Audio (FMOD)" under Architecture Patterns | `_Scripts/System/Audio/`, `_Scripts/Controller/FX/`, `_Scripts/Controller/Vessel/Audio/`, `_Scripts/ScriptableObjects/SOAP/ScriptableGameplaySFX/` |
 | App systems | Favorites, LoadOut, Quest, Rewind, Squads, UserAction, UserJourney, Xp, Ads, IAP, DailyChallenge, TrainingGameProgress | `_Scripts/System/` |
 | ScriptableObjects | `SO_Vessel`, `SO_Captain`, `SO_Game`, `SO_ArcadeGame`, `SO_Element`, `SO_Mission`, etc. | `_Scripts/ScriptableObjects/` |
 
@@ -2262,6 +2351,8 @@ All game code lives under `CosmicShore.*` with 8 primary namespaces:
 - Swapping a prism's `MeshFilter` mesh (or its `MeshRenderer` materials) directly to restyle it — **prisms draw through the instanced companion entity (`PrismRenderService`), so a GameObject-local swap renders NOTHING**: the companion keeps drawing the plain box while your new mesh sits on a renderer that isn't drawing (exactly how the stellated super-shield first shipped invisible). Any per-prism visual override must hand rendering across explicitly: `Prism.SetExoticVisualActive(true)` while showing per-prism-unique geometry (engage morphs, shatter overlays), then `Prism.SetRenderMeshOverride(sharedMesh)` + `SetExoticVisualActive(false)` once the geometry settles to something shareable (fetch it from the quantized-geometry caches — `OctahedronMeshGenerator.GetSharedShieldMesh` / `StellatedOctahedronMeshGenerator.GetSharedShieldMesh` — so same-size prisms batch as ONE mesh instead of a per-prism draw-call storm), and `ClearRenderMeshOverride()` + `SetExoticVisualActive(false)` on the way back (including pool-return `OnDisable`). `PrismOctahedronShield` and `PrismStellatedOctahedronShield` are the reference implementations. **Two corollaries an exotic visual must respect** (`Docs/PRISM_ANIMATION.md` §4.5, learned the hard way from §3.8 #10): (1) taking over *rendering* must never suppress companion-entity *creation* — clock stamps are one-shot, so a prism with no entity at the instant it is stamped loses that animation permanently; entity existence and entity visibility are separate concerns, and the transient morph mesh must never be registered with Entities Graphics (it mints a `BatchMeshID` per prism) — read the batchable geometry from `Prism.EffectiveRenderMesh()`/`SyncRenderMesh()`; (2) a visual state applied while `!Prism.IsCreationComplete` is part of the prism's BIRTH, not a transition on live mass — it snaps (`PrismStateManager.IsBirthTransition`), because the grow-in bloom already carries continuity of existence and a morph there is invisible by construction while costing draw calls, per-frame mesh rebuilds, and one SFX per prism laid
 - **Any multiframe CPU update that animates a prism** — per-frame/per-tick writes of a prism's transform scale, colors, shader parameters, positions, or morph meshes to play out a visual transition (coroutines, DOTween, UniTask loops, manager passes, per-frame `SetPropertyBlock`/`SetComponentData`). **The clock-material law (`Docs/PRISM_ANIMATION.md`, LOCKED)**: prism animation is a pool-pull whose material accepts initial conditions, ONE stamp of those conditions (start time, rate/duration, endpoints — per-instance Hybrid-Per-Instance properties), the GPU runs the course off the shader clock with zero further CPU writes, and ONE scheduled swap to the end-state prism at the analytically-known end frame (`PrismTimerManager`-class scheduler, never per-frame progress polling). Colliders and gameplay state (spatial index, volume, state flags) go to their FINAL values at the START of the animation — only photons animate. Interruptions re-stamp (current value is analytic). **STRICT: there is no legacy fallback tier** — never reintroduce a CPU animation path "just until the shader is wired"; an unwired graph fails loud (`PrismClockDiagnostics`) and snaps, which is the intended forcing function. If a visual seems impossible to express as `f(clock, initial conditions)`, that's a design discussion (live gameplay data vs. animation — see the doc), not a license for a per-frame loop
 - Per-object coroutines at scale — use centralized timer/manager systems (see Prism Performance Audit)
+- **A sound that isn't an inspector-exposed `EventReference` on the thing that makes it** — a hardcoded FMOD event path in code, a "temp" event plugged in so something is audible, a new ability routed through an existing `GameplaySFXCategory` because it's close enough, or a new gameplay sound built on `AudioClip` + `AudioSource`. Every noise must be findable and swappable in the component view of its own prefab, and every ship ability needs its own dedicated event field. Guard an empty reference for **silence**, never for substitution. See "Audio (FMOD)" under Architecture Patterns
+- `RuntimeManager.PlayOneShot` / `PlayOneShotAttached` directly — they take no per-instance volume, so the sound ignores the in-game SFX slider whenever the FMOD bus fails to resolve. Go through `AudioSystem.PlaySFXEvent` / `PlaySFXEventAttached` or `FMODOneShotVolumeHelper`
 - **Guarding `using UnityEngine;` (or any using an unguarded declaration needs) behind `#if UNITY_EDITOR` / `#if DEVELOPMENT_BUILD`.** A guard must cover a self-consistent unit: if the class declaration is outside the guard, everything it depends on must be too. `#if UNITY_EDITOR\nusing UnityEngine;\n#endif` above an unguarded `class Foo : MonoBehaviour` compiles fine in the Editor and in Development builds, then fails the **Release** player build with `CS0246: 'MonoBehaviour' could not be found` — which is the automated build, not yours. Likewise, never touch the `UnityEditor` namespace outside `#if UNITY_EDITOR` in a file that isn't under an `Editor/` folder. Run `python3 Tools/Build/check_conditional_compilation.py` (~1s, no Unity needed) before committing any guarded script. Full rules + the two safe patterns: `Docs/CONDITIONAL_COMPILATION.md`
 - A per-vessel component that drives the gameplay camera's FOV or the Panini override — the speed tunnel is a PLATFORM LAW driven by the single static `VesselSpeedTunnel` (`Docs/SPEED_TUNNEL.md`). `PostProcessingManager.SetSpeedTunnelPanini` is one global override with no ref-counting, so a second writer silently stomps the first and an outgoing vessel's teardown releases the incoming vessel's effect mid-swap. Bind platform-wide vessel behaviour in `VesselController.Initialize` under `IsLocalPilot`, never on a prefab
 - New spatial queries against prisms via `Physics.OverlapSphere` / `Physics.CheckBox`, or building a new grid/registry/octree over prisms — `PrismSpatialIndex` is THE canonical spatial index of prism mass (occupancy, AOE, proximity). Physics queries are also structurally blind to fresh prisms (colliders disabled for the first 0.6s after spawn). Add new query shapes to `PrismSpatialIndex` instead — see `Docs/SPATIAL_INDEX.md`
@@ -2433,6 +2524,7 @@ Do not guess at performance problems. Profile first.
 - Leave TODO comments as a substitute for completing the work
 - Generate code that compiles but ignores the established architecture patterns above
 - Add if-null guards on SOAP ScriptableEvent serialized fields — fail loud
+- Plug a placeholder/temp FMOD event into a new sound, or hardcode an event path in code. Add the `[SerializeField] EventReference` (per ability, per trigger, per emitter), ship it **empty**, and say so — an unwired slot is a visible TODO; a temp event is one nobody ever finds
 - Use `renderer.material` when `renderer.sharedMaterial` + MaterialPropertyBlock works
 
 ## Design Philosophy: Favor Emergent Systems Over Bespoke Solutions

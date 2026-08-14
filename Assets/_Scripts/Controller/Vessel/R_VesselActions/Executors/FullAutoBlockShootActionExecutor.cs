@@ -185,8 +185,9 @@ namespace CosmicShore.Gameplay
                     // MASS → turret prism stretch: the long z-axis scales with the vessel's
                     // live Mass level. Volume = x·y·z of lossyScale, so the stretch feeds
                     // Cell.LiveVolume — "volume is the spine".
+                    var massMultiplier = abilities ? abilities.Multiplier(Element.Mass) : 1f;
                     var blockScale = so.BlockScale;
-                    blockScale.z *= abilities ? abilities.Multiplier(Element.Mass) : 1f;
+                    blockScale.z *= massMultiplier;
 
                     // Distance the shot covers before its lifetime ends. The bullets' mover
                     // eases each step by cos(t·π/2T), so the range is that integral —
@@ -197,7 +198,7 @@ namespace CosmicShore.Gameplay
                     {
                         if (!m) continue;
                         FireOne(so, m, rotOffset, blockScale, shotSpeed, flightTime, range,
-                            piercing, shielded, dangerous);
+                            piercing, shielded, dangerous, massMultiplier);
                     }
 
                     await UniTask.Delay(
@@ -238,7 +239,7 @@ namespace CosmicShore.Gameplay
 
         private void FireOne(FullAutoBlockShootActionSO so, Transform muzzle, Quaternion rotOffset,
             Vector3 blockScale, float shotSpeed, float flightTime, float range,
-            bool piercing, bool shielded, bool dangerous)
+            bool piercing, bool shielded, bool dangerous, float massMultiplier)
         {
             var domainAtShot = _status.Domain;
             var velocity = muzzle.forward * shotSpeed;   // muzzle.forward is already unit
@@ -303,9 +304,22 @@ namespace CosmicShore.Gameplay
                     effectDuration, anchorPoint, muzzle.rotation * rotOffset, suctionShot);
             }
 
+            // MASS also grows what the shot HITS WITH, not just what it leaves behind. The prism
+            // stretches on z with Mass (above); if the hit sphere stayed at its authored
+            // diameter, a Mass-buffed pilot would fire visibly bigger rounds that connected
+            // exactly as often as before — the buff would be a cosmetic. Riding the same
+            // multiplier is what makes "more Mass" read as "easier to hit with", which is the
+            // whole reason the comeback layer is worth anything to a Sparrow.
+            //
+            // The prism grows on ONE axis and the hit volume is a sphere, so scaling the sphere
+            // by the full multiplier would outrun the visual. sqrt keeps the hit volume inside
+            // the silhouette it is standing in for: at Mass 10 (multiplier 2.5) the prism is
+            // 2.5x longer and the sphere 1.58x wider.
+            float hitDiameter = (shielded ? so.ShieldedCollisionDiameter : so.CollisionDiameter)
+                                * Mathf.Sqrt(Mathf.Max(0.01f, massMultiplier));
+
             LaunchCarriedProjectile(prism, muzzle, velocity, flightTime, domainAtShot,
-                piercing, anchorPoint,
-                shielded ? so.ShieldedCollisionDiameter : so.CollisionDiameter,
+                piercing, anchorPoint, hitDiameter,
                 viz, shielded, dangerous, suctionShot);
 
             OnBlockShot?.Invoke(_status?.PlayerName);
