@@ -10,6 +10,7 @@ The Sparrow's cannons are a **saturation** weapon, not a marksman's rifle.
 | tap the trigger (≤ 0.12 s) | a perfectly accurate burst — a scalpel, at a fraction of the volume |
 | hold it down | a cone that opens over ~1.6 s to a 1.5° cap, filled at **180 rounds/s** — nothing along the path survives, and the buzz in your hands climbs the whole way |
 | release and re-pull | full accuracy back, instantly. This is the "3-shot burst" the design asks for |
+| collect Mass crystals | rounds swell **harder** as they fly — 3× over a flight at rest, **6× at Mass 10**. Huge projectiles, earned |
 
 ---
 
@@ -92,6 +93,73 @@ tighter and the volume goes up:
 The cone now reaches only 0.88° after a full second of holding and caps at 1.5° (a 1.9 u radius
 at the SPACE-0 range of ~72 u). It is a *texture* on the stream rather than a scatter — which is
 what it should have been once the rounds started actually connecting.
+
+---
+
+## Round 3 (2026-08-13): rounds GROW as they fly — huge projectiles, earned
+
+Playtest: *"we need to get creative to get these guns to feel fun because right now the only
+thing that has felt fun was huge projectiles."*
+
+Round 2 gave every round its whole path back, but it did not change the shape of what a round
+deletes: **a thread**. A huge projectile deletes a **tunnel**, and that — not the hit rate — is
+what was fun. The answer is to keep huge projectiles and take away the thing that made them
+silly: a small vessel firing cannonballs. So rounds now **leave the muzzle small and swell as
+they travel**, and MASS decides how much.
+
+> **The split this settles: MASS owns the SUBSTANCE of what you fire. SPACE owns its REACH.**
+
+| | |
+|---|---|
+| **MASS** quantitative | turret prism stretch (unchanged) **+ in-flight round growth** |
+| **MASS 5** | **Shielded Prisms** — returned here from Space 5 by design sign-off |
+| **SPACE** quantitative | range (unchanged) |
+| **SPACE 5** | **pierce**, on both fire modes — and nothing else now |
+
+### The growth curve
+
+`FullAutoActionSO.ResolveGrowthFactor` → `GrowthFactorForLevel(massLevel, 3, 6)`: linear in
+LEVEL with the authored pair anchored at 0 and 10, **extrapolated** (not clamped) across the
+element system's full [-5, 15] band.
+
+| Mass level | grows to | end-of-flight hit radius | swath vs. a non-growing round |
+|---|---|---|---|
+| −5 | 1.5× | 1.24 | 2.2× |
+| 0 | **3.0×** | 2.47 | **9×** |
+| 5 | 4.5× | 3.71 | 20× |
+| 10 | **6.0×** | 4.95 | **36×** |
+| 15 | 7.5× | 6.19 | 56× |
+
+Destruction footprint goes as the **square** of the radius, which is why this is worth so much
+more than any affordable fire-rate increase — and it is the number the "huge projectiles" report
+was really reacting to. For scale: the accidental oversized collider that felt good was 6.0
+world radius. Resting Mass now ends its flight at 2.47 and **Mass 10 reaches 4.95** — the fun
+size is back, as something you earn rather than something the gun always had.
+
+### Sized honestly, the whole way
+
+The visual and the hit volume are scaled by the **same factor every frame**, so the ratio the
+round-6 collider fix established (hit radius = visible cross-section +10%) is invariant through
+the flight. What you see is what you hit, at every instant, at every Mass level.
+
+**Cross-section only.** The tracer mesh is a unit sphere at (1.5, 1.5, 20) — a 20-long dart — so
+scaling it uniformly at 6× would draw a 120-unit needle across a ~72-unit range. Width is what a
+hit volume is made of; length is just the streak. The swept hit radius is therefore scaled
+*explicitly* rather than re-derived from `lossyScale`, because a SphereCollider takes the largest
+lossy component and that stays the untouched z-stretch.
+
+One deliberate scope line falls out of that: the **swept prism** radius grows, while the PhysX
+radius the **vessel/mine** path uses does not (for the dart — the turret's uniformly-scaled
+carried sphere does grow on both). Growing bullets against vessels is a Dog Fight balance change,
+not a prism-clearing one, so it is not in this pass.
+
+### What was deliberately NOT done
+
+The alternatives considered and declined, so they are not re-derived: **impact shatter** (a kill
+cracking its neighbours) and **pierce depth** (rounds boring through N prisms before stopping).
+Both break the one-round-one-prism ceiling too, and both were rejected in favour of growth —
+"keep everything else the same, we will get this feel through the mass scaling effect." SPACE 5
+remains the only thing that lets a round pass through a prism.
 
 ---
 
@@ -212,7 +280,7 @@ dogfighters and the Menu_Main autopilot all fire and none of them may buzz your 
 | `_Scripts/Utility/GunSpreadMath.cs` | The pure cone math — ramp, hash-sampled deflection, roll-preserving `DeflectionOf`. No Unity state, no global RNG. |
 | `R_VesselActions/Data Containers/GunSpreadProfile.cs` | The authored profile (cone + haptic ramp). Serialized on the bullet action. |
 | `R_VesselActions/Executors/GunSprayAccuracy.cs` | Per-vessel hold state, the spread clock, the haptic ramp, and the deferred reset. |
-| `R_VesselActions/Data Containers/FullAutoActionSO.cs` | Owns `Spread`; hands the accuracy component to its executor. |
+| `R_VesselActions/Data Containers/FullAutoActionSO.cs` | Owns `Spread` and `ResolveGrowthFactor`/`GrowthFactorForLevel`; hands the accuracy component to its executor. |
 | `R_VesselActions/Data Containers/FullAutoBlockShootActionSO.cs` | Adopts `bulletAction.Spread` — the turret authors no cone. |
 | `R_VesselActions/Executors/FullAutoActionExecutor.cs` | Accumulator cadence + per-round deflection for the bullets. |
 | `R_VesselActions/Executors/FullAutoBlockShootActionExecutor.cs` | Same for the turret, plus the roll-preserving shot rotation. |
@@ -223,6 +291,7 @@ dogfighters and the Menu_Main autopilot all fire and none of them may buzz your 
 | `Controller/ImpactEffects/Impactors/ProjectileImpactor.cs` | Suppresses the trigger's prism case when the sweep owns it. |
 | `Controller/IO/HapticController.cs` | `PlaySpray(strength01)` + the extended gate + the buzz clip. |
 | `_Scripts/Tests/Editor/GunSpreadMathTests.cs` | Ramp, cap, cone containment, pole safety, determinism, distribution, roll preservation. |
+| `_Scripts/Tests/Editor/SparrowRoundGrowthTests.cs` | The MASS growth curve: anchors, extrapolation, linearity, and that the hit radius tracks the visible cross-section. |
 | `_Scripts/Tests/Editor/PrismSweptQueryTests.cs` | The point-to-segment metric: endpoint clamping, degenerate steps, and the shipped mid-step geometry PhysX was missing. |
 | `_SO_Assets/VesselActions/Sparrow/FullAutoAction.asset` | The shipped numbers. |
 | `_Prefabs/Spacevessels/Sparrow.prefab` | `GunSprayAccuracy` executor + resized pools. |
@@ -235,6 +304,8 @@ Everything that moves **both** fire modes lives on `FullAutoAction.asset`:
 | Knob | Shipped | Effect |
 |---|---|---|
 | `firingRate` | **90** | Volleys/s for guns **and** turret. The single lever for volume of fire — and for the turret's permanent-mass rate. |
+| `growthFactorAtRestingMass` | **3** | How many times its launch cross-section a round swells to by the end of its flight at resting Mass. |
+| `growthFactorAtFullMass` | **6** | The same at Mass 10; the curve is linear in level and extrapolated to [-5, 15]. |
 | `spread.onsetSeconds` | **0.12** | Grace window of perfect accuracy at the start of every pull (~11 volleys / 22 rounds). Size it to the burst length that should stay surgical. |
 | `spread.growthDegreesPerSecond` | **1.0** | How fast the cone opens. Full at `onset + max/growth` ≈ **1.62 s**; only 0.88° after a full second. |
 | `spread.maxHalfAngleDegrees` | **1.5** | The cap (≈1.9 u radius at the SPACE-0 range of 72 u). Raise it and held fire starts missing what you aimed at; drop it to 0 to disable spread entirely (sanctioned opt-out). |

@@ -27,7 +27,7 @@
 
 ## Round 4 (2026-08-10): shield moves to SPACE 5; the hit sphere is the bullets'
 
-- **Shield is now the SPACE-5 upgrade** (`firedPrismState: ShieldedAtSpace5`, the new default):
+- **Shield is now the SPACE-5 upgrade** (`firedPrismState: ShieldedAtSpace5`, the new default) — **superseded in round 8, which returned it to MASS 5 as `ShieldedAtMass5`; read that section first**:
   regular prisms below SPACE 5, shielded at 5+ — the SAME gate and the same moment as the
   bullets' pierce, so the one level-5 SPACE upgrade transforms both fire modes at once
   (bullets pierce; turret shots pierce, arrive armored, and hit wider). The MASS-5 map slot is
@@ -151,6 +151,27 @@ of its own**, same as cadence and speed. Full mechanic, tuning and verification:
 - **`placementImmunitySeconds` matters again.** Round 6 noted 0.2 s was probably too long once the
   hit sphere shrank; at 120 shots/s the shot-vs-shot spacing it guards is tighter again. Re-judge in
   play rather than assuming either direction.
+
+## Round 8 (2026-08-13): the shield comes back to MASS, and rounds grow as they fly
+
+Playtest: *"the only thing that has felt fun was huge projectiles."* The answer was to make
+huge projectiles **earned** rather than authored, which settled where the two elements divide:
+
+> **MASS owns the SUBSTANCE of what you fire. SPACE owns its REACH.**
+
+- **`ShieldedAtSpace5` → `ShieldedAtMass5`** (same enum value `3`, so the asset is unchanged).
+  Fired prisms arrive armored at **MASS 5**, gated on `IsUpgradeActive(Element.Mass)`. Round 4
+  had moved it to Space 5 to make one gate transform both fire modes; with round 8's growth
+  also on Mass, the substance/reach split is the cleaner line and this came back by sign-off.
+  The Sparrow's map is 4/4 upgrades again and the MASS-5 slot is no longer open.
+- **SPACE 5 is now purely pierce**, on both fire modes — unchanged in code, narrowed in the map
+  text.
+- **Rounds swell as they travel**, bullets and turret shots alike: `ResolveGrowthFactor` on the
+  shared bullet action, **3× over the flight at resting Mass, 6× at Mass 10**, linear in level
+  across the full [-5, 15] band (1.5× starved, 7.5× at full overcharge). The turret adopts it
+  through `bulletAction` like everything else. Its carried hit sphere therefore ends the flight
+  at 4.95 diameter at Mass 0 — much closer to the size of the prism the player actually watches
+  flying (bounding ≈5.1) than the 1.65 it launches at.
 
 ## Two flight visualizations (A/B, live-switchable)
 

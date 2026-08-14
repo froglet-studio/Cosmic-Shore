@@ -177,6 +177,10 @@ namespace CosmicShore.Gameplay
             // end-of-flight handler, and the once-only latch must re-arm.
             FlightEnded = null;
             _flightEndRaised = false;
+
+            // Likewise the previous shot's MASS growth — a caller that does not set it gets
+            // the un-grown default rather than whoever fired this instance last.
+            _flightGrowthFactor = 1f;
         }
 
         public void SetType(ProjectileType type) => Type = type;
@@ -242,6 +246,12 @@ namespace CosmicShore.Gameplay
             // per shot, so this cannot be cached at Awake.
             if (sweptPrismDetection) CacheSweepRadius();
 
+            // The growth baseline is whatever this shot actually launched at (the gun applies
+            // projectileScale, the turret sizes its carried collider per shot), never the
+            // prefab's InitialScale.
+            _launchScale = transform.localScale;
+            _launchSweepRadius = _sweepRadius;
+
             _moveCts = CancellationTokenSource.CreateLinkedTokenSource(
                 this.GetCancellationTokenOnDestroy());
             MoveProjectileAsync(projectileTime, _moveCts.Token).Forget();
@@ -287,6 +297,11 @@ namespace CosmicShore.Gameplay
                 {
                     float deltaTime = Time.deltaTime;
                     float factor = Mathf.Cos(elapsedTime * Mathf.PI / (2f * projectileTime));
+
+                    // Grow BEFORE the step is swept, so this frame's hit volume is the size the
+                    // round has actually reached rather than the one it left the muzzle at.
+                    if (_flightGrowthFactor != 1f)
+                        ApplyFlightGrowth(elapsedTime / projectileTime);
 
                     Vector3 sweepFrom = t.position;
                     t.position += Velocity * (deltaTime * factor);
@@ -357,6 +372,40 @@ namespace CosmicShore.Gameplay
         static readonly Comparison<SweepHit> s_nearestFirst = (x, y) => x.T.CompareTo(y.T);
 
         float _sweepRadius = 0.5f;
+
+        // ---- in-flight growth (MASS) ----
+        float _flightGrowthFactor = 1f;
+        Vector3 _launchScale = Vector3.one;
+        float _launchSweepRadius = 0.5f;
+
+        /// <summary>
+        /// How many times its launch cross-section this round swells to by the end of its
+        /// flight. Set per shot from the vessel's live MASS level; 1 = no growth (every
+        /// projectile that does not opt in).
+        /// </summary>
+        public void SetFlightGrowth(float factor) => _flightGrowthFactor = Mathf.Max(0.01f, factor);
+
+        /// <summary>
+        /// Grows the round toward its full factor across the flight, and grows the swept hit
+        /// radius by the SAME factor — the size you see is the size that hits.
+        ///
+        /// **Cross-section only.** The tracer mesh is a unit sphere at (1.5, 1.5, 20) — a
+        /// 20-long dart — so scaling it uniformly at 6× would draw a 120-unit needle across a
+        /// ~72-unit range. Width is what a hit volume is made of; length is just the streak.
+        ///
+        /// The hit radius is scaled EXPLICITLY rather than re-derived from lossyScale, because
+        /// a SphereCollider takes the largest lossy component: with the length left alone, that
+        /// stays the z-stretch and the derived radius would never move. (Consequence, and a
+        /// deliberate scope line: the swept PRISM radius grows, while the PhysX radius the
+        /// vessel/mine path uses is unchanged for the dart. Growing bullets against vessels is
+        /// a Dog Fight balance change, not a prism-clearing one.)
+        /// </summary>
+        void ApplyFlightGrowth(float progress01)
+        {
+            float g = Mathf.LerpUnclamped(1f, _flightGrowthFactor, Mathf.Clamp01(progress01));
+            transform.localScale = new Vector3(_launchScale.x * g, _launchScale.y * g, _launchScale.z);
+            _sweepRadius = _launchSweepRadius * g;
+        }
 
         /// <summary>
         /// The projectile's hit radius in world units, cached per launch (the Sparrow's

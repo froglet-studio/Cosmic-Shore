@@ -31,7 +31,7 @@ executor, replicated unlock bits, no new fundamentals).
 
 | Vessel | Live quantitative entries (map value) |
 |---|---|
-| Sparrow | Space→gun range (2.5) · Time→boost speed (1.5, now on an **indefinite** boost — see §2 Sparrow) · Mass→turret prism stretch (2.5) · Charge→skyburst blast (asset range 100→170) |
+| Sparrow | Space→gun range (9.0) · Time→boost speed (1.5, now on an **indefinite** boost — see §2 Sparrow) · Mass→turret prism stretch (2.5) **+ in-flight round growth (3× at rest → 6× at Mass 10, authored on `FullAutoAction.asset`)** · Charge→skyburst blast (asset range 100→170) |
 | Manta | Charge→overcharge detonation blast (1.75) · Mass→overcharge harvest capacity (1.75) · Space→Yawstery turn rate (1.6) |
 | Dolphin | Charge→charge-boost peak (1.5) · Time→charge fill rate (1.5) |
 | Rhino | Mass→trail slab max size (1.5) |
@@ -158,7 +158,7 @@ Time→charge fill rate / "Instant Draw".
 | Element | Quantitative (live) | Proposed L5 upgrade |
 |---|---|---|
 | Charge | *(open)* → propose: forcefield shrink rate (the authored-but-dead `GrowSkimmerAction.shrinkRate` Charge mapping, 6→2) | **Unyielding Field** — forcefield no longer shrinks on prism hits, only on crystal timeout |
-| Mass | trail slab max size | **Armored Slabs** — grown slabs arrive shielded (the "arrive shielded" shape; note it lives on the Sparrow's **SPACE** 5, not Mass, since 2026-08) |
+| Mass | trail slab max size | **Armored Slabs** — grown slabs arrive shielded (the "arrive shielded" shape; on the Sparrow this lives on **MASS** 5 — it spent 2026-08 rounds 4–6 on Space 5 and was returned by sign-off on 2026-08-13) |
 | Space | *(open)* → propose: forcefield max size | **Breaker** — ramming destroys shielded prisms in one hit (devastate on ram) |
 | Time | *(open)* → propose: slab growth rate | **Fast Pour** — slab growth continues while boosting |
 

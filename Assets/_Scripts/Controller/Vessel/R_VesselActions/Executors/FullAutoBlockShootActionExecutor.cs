@@ -192,11 +192,11 @@ namespace CosmicShore.Gameplay
                         // its prism there; at 5+ it pierces on to the end of its path.
                         var piercing = abilities && abilities.IsUpgradeActive(Element.Space);
 
-                        // The born-in state. THE DESIGN is ShieldedAtSpace5: regular prisms
-                        // below SPACE 5, shielded at 5+ — the SAME gate (and the same
-                        // moment) as the bullets' pierce, so one upgrade transforms both
-                        // fire modes. Plain/Shielded/Danger are unconditional playtest
-                        // overrides. The state lands as a pre-Initialize flag, so it is part
+                        // The born-in state. THE DESIGN is ShieldedAtMass5: regular prisms
+                        // below MASS 5, shielded at 5+. MASS owns the SUBSTANCE of what you
+                        // fire — prism length, round growth, and armour — while SPACE 5 owns
+                        // REACH (pierce, on both fire modes). Plain/Shielded/Danger are
+                        // unconditional playtest overrides. The state lands as a pre-Initialize flag, so it is part
                         // of the prism's BIRTH and snaps (Docs/PRISM_ANIMATION.md §4.5)
                         // instead of morphing on arrival. Regular shield only — one-hit
                         // ablative armor fauna can still eat via devastate, keeping the
@@ -205,8 +205,8 @@ namespace CosmicShore.Gameplay
                         var state = so.FiredState;
                         var dangerous = state == FullAutoBlockShootActionSO.FiredPrismState.Danger;
                         var shielded = state == FullAutoBlockShootActionSO.FiredPrismState.Shielded ||
-                                       (state == FullAutoBlockShootActionSO.FiredPrismState.ShieldedAtSpace5 &&
-                                        piercing);
+                                       (state == FullAutoBlockShootActionSO.FiredPrismState.ShieldedAtMass5 &&
+                                        abilities && abilities.IsUpgradeActive(Element.Mass));
 
                         // MASS → turret prism stretch: the long z-axis scales with the vessel's
                         // live Mass level. Volume = x·y·z of lossyScale, so the stretch feeds
@@ -219,13 +219,18 @@ namespace CosmicShore.Gameplay
                         // speed · 2T/π, not speed · T.
                         var range = shotSpeed * flightTime * (2f / Mathf.PI);
 
+                        // MASS → in-flight growth, the bullets' factor verbatim. The carried
+                        // hit sphere swells as the shot travels, which also brings it much
+                        // closer to the size of the prism the player watches flying.
+                        var growth = so.ResolveGrowthFactor(_status);
+
                         for (int v = 0; v < volleys && !token.IsCancellationRequested; v++)
                         {
                             foreach (var m in muzzles)
                             {
                                 if (!m) continue;
                                 FireOne(so, m, rotOffset, blockScale, shotSpeed, flightTime, range,
-                                    piercing, shielded, dangerous);
+                                    piercing, shielded, dangerous, growth);
                             }
                         }
                     }
@@ -265,7 +270,7 @@ namespace CosmicShore.Gameplay
 
         private void FireOne(FullAutoBlockShootActionSO so, Transform muzzle, Quaternion rotOffset,
             Vector3 blockScale, float shotSpeed, float flightTime, float range,
-            bool piercing, bool shielded, bool dangerous)
+            bool piercing, bool shielded, bool dangerous, float growthFactor)
         {
             var domainAtShot = _status.Domain;
 
@@ -342,7 +347,7 @@ namespace CosmicShore.Gameplay
             LaunchCarriedProjectile(prism, muzzle, shotRotation, velocity, flightTime, domainAtShot,
                 piercing, anchorPoint,
                 shielded ? so.ShieldedCollisionDiameter : so.CollisionDiameter,
-                viz, shielded, dangerous, suctionShot);
+                viz, shielded, dangerous, suctionShot, growthFactor);
 
             OnBlockShot?.Invoke(_status?.PlayerName);
         }
@@ -550,7 +555,7 @@ namespace CosmicShore.Gameplay
             Vector3 velocity,
             float flightTime, Domains domainAtShot, bool piercing, Vector3 anchorPoint,
             float hitDiameter, FullAutoBlockShootActionSO.FlightVisualization viz,
-            bool shielded, bool dangerous, ReverseSuctionShot suctionShot)
+            bool shielded, bool dangerous, ReverseSuctionShot suctionShot, float growthFactor)
         {
             var carried = prism.GetComponentInChildren<Projectile>(true);
             if (!carried)
@@ -604,6 +609,10 @@ namespace CosmicShore.Gameplay
 
             if (carried.TryGetComponent<Collider>(out var col)) col.enabled = true;
             if (carried.TryGetComponent<Rigidbody>(out var rb)) rb.isKinematic = false;
+
+            // MASS growth — set BEFORE launch, which is where the round captures the scale it
+            // grows from (so the explicit per-shot sizing above must come first).
+            carried.SetFlightGrowth(growthFactor);
 
             carried.FlightEnded += (p, stoppedByImpact) =>
                 AnchorPrism(prism, p, stoppedByImpact, anchorPoint, viz, suctionShot);

@@ -206,6 +206,11 @@ public sealed class FullAutoActionExecutor : ShipActionExecutorBase
                     // destroyed on their first prism impact; at 5+ they pierce through.
                     var piercing = abilities != null && abilities.IsUpgradeActive(Element.Space);
 
+                    // MASS → in-flight growth. Rounds leave the muzzle small and swell as they
+                    // travel; the swept hit radius grows with them, so the size you see is the
+                    // size that hits. Resolved per tick off the LIVE Mass level.
+                    var growth = so.ResolveGrowthFactor(_status);
+
                     for (int v = 0; v < volleys && !token.IsCancellationRequested; v++)
                     {
                         // Re-read per volley — several can be paid off in one tick and each one
@@ -255,7 +260,8 @@ public sealed class FullAutoActionExecutor : ShipActionExecutorBase
                                 energy,
                                 detachAfterSpawn: true,
                                 stopOnFirstPrismImpact: !piercing,
-                                aimDirection: aim
+                                aimDirection: aim,
+                                flightGrowthFactor: growth
                             );
                         }
 

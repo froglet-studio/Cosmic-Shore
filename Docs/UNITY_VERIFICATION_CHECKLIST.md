@@ -23,6 +23,49 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Sparrow rounds grow as they fly + MASS-5 shield restore (`claude/sparrow-spread-haptics-qizbwf`)
+
+Authored without a Unity compile or play-test. Answers *"the only thing that has felt fun was
+huge projectiles"* by making huge projectiles **earned**: rounds now leave the muzzle at their
+authored size and **swell across the flight** — 3× at resting Mass, 6× at Mass 10, linear in
+level and extrapolated to 1.5× / 7.5× at the ends of the [-5, 15] band. Bullets and turret shots
+alike (the turret adopts it through `bulletAction`). The visual and the swept hit radius are
+scaled by the same factor every frame, so the round-6 honesty rule (hit radius = visible
+cross-section +10%) holds at every instant.
+
+**Also an element re-split, by design sign-off:** the Shielded Prisms upgrade returns from
+SPACE 5 to **MASS 5** (`FiredPrismState.ShieldedAtSpace5` → `ShieldedAtMass5`, same enum value 3
+so the asset is unchanged), leaving SPACE 5 as **pierce only, on both fire modes**. MASS owns the
+substance of what you fire; SPACE owns its reach. The Sparrow's map is 4/4 upgrades again.
+Full record: `_Scripts/Controller/Vessel/R_VesselActions/SPARROW_SPRAY_ACCURACY.md` ▸ "Round 3".
+
+**Verify in editor:**
+
+1. **Rounds visibly fatten in flight.** Fire at an empty stretch and watch a tracer from muzzle
+   to end of life — it should leave thin and arrive noticeably fat. This is the headline.
+2. **Length does NOT grow.** Only the cross-section scales; if tracers turn into enormous
+   needles, the growth is being applied uniformly.
+3. **What you see is what you hit.** A round should destroy prisms at about its *visible* width
+   at that moment in flight — not a swath wider than the tracer, and not a thread through the
+   middle of a fat bolt.
+4. **Mass changes it.** Collect Mass crystals and re-fire: the swell should get dramatically
+   stronger (6× at Mass 10 ≈ the old oversized-collider feel). Drain Mass and it should get
+   punier.
+5. **MASS 5 now shields turret prisms.** Below Mass 5 fired prisms are plain; at 5+ they arrive
+   with the octahedron armour and the wider hit sphere. **Space 5 must no longer shield them** —
+   it should only make shots pierce.
+6. **Pierce is still SPACE 5**, on both fire modes.
+7. **No other projectile changed.** Manta rounds, skyburst missiles: `SetFlightGrowth` defaults
+   to 1 and only the Sparrow's two fire paths pass anything else.
+8. **Asset import.** `FullAutoAction.asset` shows **Round Growth (MASS)** with 3 / 6;
+   `FullAutoBlockShootAction.asset`'s *Fired Prism State* still reads the 4th enum entry, now
+   labelled **Shielded At Mass 5**.
+
+**First-pass tuning:** `growthFactorAtRestingMass` **3**, `growthFactorAtFullMass` **6** — both on
+`FullAutoAction.asset`. Author both to 1 to disable growth entirely.
+
+---
+
 ### 🔴 Projectile tunneling — swept prism collision (`claude/sparrow-spread-haptics-qizbwf`)
 
 Authored without a Unity compile or play-test, and the headline change of the branch's second
