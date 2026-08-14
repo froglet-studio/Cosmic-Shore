@@ -196,6 +196,24 @@ applies to new abilities, new resources on the meter list, and anything that add
     `_speedTrackingRate` is a latched ramp state (the Rhino's ramp boost) that a naive early-return
     can silently consume.
 
+16. **A `UniTask.Delay(1/rate)` fire loop quantizes to WHOLE FRAMES**, so an authored rate is
+    silently `min(rate, framerate)` — a 60 fps client fires twice as fast as a 30 fps one, and
+    the rate simply cannot exceed the frame rate. It looks correct at any rate whose interval
+    happens to straddle two frames (30/s at 60 fps was right by luck for a year). Owe fire in
+    SECONDS and pay it off in whole volleys (`owed += Time.deltaTime`; fire `floor(owed/interval)`),
+    capping the per-tick catch-up and DROPPING the excess so a hitch never discharges as a burst.
+17. **Never draw from `UnityEngine.Random` in a per-shot hot path.** It is global state that
+    deterministic systems seed (`Random.InitState` for the HexRace track), so a gun rolling it
+    120×/s makes their output depend on how long someone held a trigger. Use a pure integer hash
+    of a per-shot serial: no global state, and peers that agree on the shot count agree on the
+    result — which matters wherever the spawned object is local and unreplicated.
+18. **Weapon "feel" complaints are usually a CEILING, not a tuning value.** Before re-tuning,
+    find what caps output per unit of input: prisms have no HP (one hit = one kill) and a
+    sub-upgrade round dies on its first impact, so a Sparrow's ceiling is exactly *rounds/s*.
+    Rate, spread and accuracy all multiply a 1:1 relationship and cannot break it — only pierce
+    depth, chain effects, or **size** can, and size wins because destruction footprint goes as the
+    SQUARE of the radius. Say which ceiling you found before proposing numbers.
+
 ## 5. Audit, then hand back verification (you cannot run Unity; the human is the gate)
 
 - State which auditors to run and the expected result: **Audit Vessel Ability Rows**,

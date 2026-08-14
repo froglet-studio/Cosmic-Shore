@@ -23,6 +23,145 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Sparrow rounds grow as they fly + MASS-5 shield restore (`claude/sparrow-spread-haptics-qizbwf`)
+
+Authored without a Unity compile or play-test. Answers *"the only thing that has felt fun was
+huge projectiles"* by making huge projectiles **earned**: rounds now leave the muzzle at their
+authored size and **swell across the flight** — 3× at resting Mass, 6× at Mass 10, linear in
+level and extrapolated to 1.5× / 7.5× at the ends of the [-5, 15] band. Bullets and turret shots
+alike (the turret adopts it through `bulletAction`). The visual and the swept hit radius are
+scaled by the same factor every frame, so the round-6 honesty rule (hit radius = visible
+cross-section +10%) holds at every instant.
+
+**Also an element re-split, by design sign-off:** the Shielded Prisms upgrade returns from
+SPACE 5 to **MASS 5** (`FiredPrismState.ShieldedAtSpace5` → `ShieldedAtMass5`, same enum value 3
+so the asset is unchanged), leaving SPACE 5 as **pierce only, on both fire modes**. MASS owns the
+substance of what you fire; SPACE owns its reach. The Sparrow's map is 4/4 upgrades again.
+Full record: `_Scripts/Controller/Vessel/R_VesselActions/SPARROW_SPRAY_ACCURACY.md` ▸ "Round 3".
+
+**Verify in editor:**
+
+1. **Rounds visibly fatten in flight.** Fire at an empty stretch and watch a tracer from muzzle
+   to end of life — it should leave thin and arrive noticeably fat. This is the headline.
+2. **Length does NOT grow.** Only the cross-section scales; if tracers turn into enormous
+   needles, the growth is being applied uniformly.
+3. **What you see is what you hit.** A round should destroy prisms at about its *visible* width
+   at that moment in flight — not a swath wider than the tracer, and not a thread through the
+   middle of a fat bolt.
+4. **Mass changes it.** Collect Mass crystals and re-fire: the swell should get dramatically
+   stronger (6× at Mass 10 ≈ the old oversized-collider feel). Drain Mass and it should get
+   punier.
+5. **MASS 5 now shields turret prisms.** Below Mass 5 fired prisms are plain; at 5+ they arrive
+   with the octahedron armour and the wider hit sphere. **Space 5 must no longer shield them** —
+   it should only make shots pierce.
+6. **Pierce is still SPACE 5**, on both fire modes.
+7. **No other projectile changed.** Manta rounds, skyburst missiles: `SetFlightGrowth` defaults
+   to 1 and only the Sparrow's two fire paths pass anything else.
+8. **Asset import.** `FullAutoAction.asset` shows **Round Growth (MASS)** with 3 / 6;
+   `FullAutoBlockShootAction.asset`'s *Fired Prism State* still reads the 4th enum entry, now
+   labelled **Shielded At Mass 5**.
+
+**First-pass tuning:** `growthFactorAtRestingMass` **3**, `growthFactorAtFullMass` **6** — both on
+`FullAutoAction.asset`. Author both to 1 to disable growth entirely.
+
+---
+
+### 🔴 Projectile tunneling — swept prism collision (`claude/sparrow-spread-haptics-qizbwf`)
+
+Authored without a Unity compile or play-test, and the headline change of the branch's second
+pass. **A projectile is a teleport, not a sweep**: `Projectile.MoveProjectileAsync` writes
+`position += Velocity·Δt` and PhysX samples the discrete trigger once per physics step, so a
+Sparrow round at its base 375 u/s tested only **~26% of its own flight path** (~3% at high SPACE,
+and it halves again at 30 fps). Prisms in the gaps were passed straight through, silently. That is
+why the guns could not clear a small area, and why oversizing the collider "fixed" it — a
+12-diameter ball closes a 6.25 u per-frame step.
+
+Fixed with `PrismSpatialIndex.QuerySegment` (the swept counterpart of `QuerySphere`) driving
+`Projectile.sweptPrismDetection`, which takes **sole** ownership of prism contact — the trigger's
+prism case is suppressed so nothing double-dispatches. Hits dispatch nearest-first, and the round
+is moved to each contact point before its impact fires. Opt-in per prefab, enabled on
+`SparrowProjectile.prefab` and `Sparrow Projectile Prism.prefab` only. Full record:
+`_Scripts/Controller/Vessel/R_VesselActions/SPARROW_SPRAY_ACCURACY.md` ▸ "Round 2".
+
+**Verify in editor — this is the item that matters most:**
+
+1. **A held burst now clears a small area.** Point at a dense patch of prisms and hold fire:
+   everything in the beam's path should die, not a scattered subset. This was the whole report.
+2. **No double damage.** Prisms must not die at ~2× the expected rate or show doubled hit VFX —
+   that would mean the trigger suppression missed and both paths are dispatching.
+3. **Pierce still gates on SPACE.** Below SPACE 5 a round must stop at the **first** prism along
+   its path (not one further down the line) and, in Turret Stance, leave its prism right there.
+   At SPACE 5+ it must cut through several in a line.
+4. **Range is unchanged.** The sweep must not make shots die early — a round that hits nothing
+   still travels its full ~72 u at SPACE 0.
+5. **Turret prisms anchor at the impact point**, not at max range, when a shot is stopped early.
+6. **Profiler.** ~54 concurrent bullets each run one `QuerySegment` per frame. Watch for a new
+   cost in the projectile path under a sustained hold; the segment AABB is thin so it should be
+   small, but it is new per-frame work.
+7. **Nothing else changed.** Manta / missile / other projectiles have `sweptPrismDetection` off
+   and must behave exactly as before.
+
+---
+
+### 🔴 Sparrow spray accuracy — fire rate, decaying-accuracy cone, escalating haptic (`claude/sparrow-spread-haptics-qizbwf`)
+
+Authored without a Unity compile or play-test. The Sparrow's full-auto guns now fire at **90
+volleys/s (180 rounds/s)** and lose accuracy while the trigger is held: a cone opens from 0° to a
+**1.5° half-angle cap** over ~1.6 s after a **0.12 s** grace window, each round deflected to a
+hash-sampled point inside it, and a **new fourth haptic feel** buzzes with rising strength and
+cadence as it opens. Releasing the trigger resets accuracy completely. Both fire loops were also
+converted from a frame-quantized `UniTask.Delay` to a time accumulator, without which the authored
+rate would silently have been `min(rate, framerate)`. The Turret Stance inherits all of it through
+the existing `bulletAction` parity. Full mechanics + files + tuning:
+`_Scripts/Controller/Vessel/R_VesselActions/SPARROW_SPRAY_ACCURACY.md` (which also carries the
+full 13-step verification list); `Docs/HAPTICS.md` records the policy exception.
+
+**Hand-authored asset YAML — check these import clean first:**
+
+- `_SO_Assets/VesselActions/Sparrow/FullAutoAction.asset` — new **Accuracy** foldout with 7 fields;
+  `Firing Rate` reads **90**.
+- `_Prefabs/Spacevessels/Sparrow.prefab` — a **GunSprayAccuracy** child under `VesselActions` with
+  the script resolved (not "missing"), listed as the **5th** entry in
+  `ActionExecutorRegistry._executors`; the two pool managers show the resized capacities.
+- Three new `.cs.meta` + one `.md.meta` were hand-written with generated GUIDs — Unity must not
+  report duplicate-GUID or re-import them as new assets.
+
+**Verify in editor (headline items — the full list is in the design doc):**
+
+1. **Tap vs hold.** Tapped bursts are a tight line; a held burst visibly fans into a narrow cone
+   (1.5° is subtle by design now) and then **stops** widening. Release and re-pull → dead-on again immediately.
+2. **Stance flip is not a free reset.** Open the cone fully while flying, then toggle Turret Stance
+   (input 6) **without releasing fire** — prisms must start laying at the *open* cone. This is the
+   one-frame deferred reset in `GunSprayAccuracy.LateUpdate`; if it regressed, the prisms come out
+   in a tight line.
+3. **Frame-rate independence.** Cap the editor to 30 fps and confirm both the stream density AND
+   the destruction rate are unchanged. Before this pass both would have halved.
+4. **Haptic ramp — needs a gamepad or a device.** A bare desktop editor has no motors, so "I feel
+   nothing" there is *not* evidence about the wiring. With a pad: light buzz from round one,
+   climbing in strength and rate for ~1.6 s. Ramming a prism mid-spray must still produce a clean
+   punish thud through it.
+5. **No hitching on a 10 s hold**, either fire mode, profiler open.
+
+**First-pass tuning (starting points — expect a balancing pass):**
+
+| Knob | Asset | Value |
+|---|---|---|
+| `firingRate` | `FullAutoAction.asset` | 90 volleys/s (was 30) |
+| `spread.onsetSeconds` | `FullAutoAction.asset` | 0.12 |
+| `spread.growthDegreesPerSecond` | `FullAutoAction.asset` | 1.0 |
+| `spread.maxHalfAngleDegrees` | `FullAutoAction.asset` | 1.5 |
+| `spread.distributionBias` | `FullAutoAction.asset` | 0.5 (uniform disc; 1.0 = dense core) |
+| `spread.hapticFloor01` | `FullAutoAction.asset` | 0.15 |
+| `spread.hapticIntervalAtRest / AtMaxSpread` | `FullAutoAction.asset` | 0.10 / 0.045 s |
+
+**Two knock-on effects to judge, not bugs:**
+
+- **Turret stance now lays ~180 prisms/s** of permanent mass (was 60). `firingRate` is the single
+  lever and it moves the guns too — do **not** add a turret-only divisor.
+- **Dog Fight pace changes a lot** — 3× the rounds downrange *and* each one now tests its whole
+  path, so landed hits/s rise by considerably more than 3×. Expect the 120-point target to need
+  raising; it is authored in FrogletTools ▸ Game Modes ▸ End Game Conditions, so that needs no
+  code change.
 ### 🔴 Dolphin drift holds its velocity — throttle disabled for the drift (`claude/dolphin-drift-velocity-e62z2c`)
 
 Authored without a Unity compile or play-test. The Dolphin's drift already locked the velocity's
@@ -193,7 +332,9 @@ tightening as it flies; ordinary prisms (trail/environment) must render unchange
 `wire_prism_flight_clock.py --check` + Validate Clock Wiring (BlockGraph now requires
 `PrismFlightSqrDistance`).
 
-**Playtest round 4 (2026-08-10):** shield onto SPACE 5, bullet-sized hit spheres:
+**Playtest round 4 (2026-08-10):** shield onto SPACE 5, bullet-sized hit spheres.
+**⚠ The shield half of this entry is SUPERSEDED** — it returned to MASS 5 on 2026-08-13
+(`ShieldedAtMass5`); verify against the newest entry at the top of this file, not this one:
 
 - `firedPrismState: ShieldedAtSpace5` — regular prisms below SPACE 5, shielded at 5+, same
   gate as pierce. Verify the flip at the SPACE-5 unlock: below, plain prisms that stop at

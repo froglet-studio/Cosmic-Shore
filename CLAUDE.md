@@ -230,7 +230,7 @@ Do not snapshot domain at component-creation time. Either subscribe to `Player.N
 - **VFX**: VFX Graph 17.0.4, custom HLSL shaders, Shader Graph
 - **Input**: Unity Input System 1.14.2 with strategy pattern (`IInputStrategy` → platform-specific implementations)
 - **Audio**: FMOD Studio (`Assets/Plugins/FMOD`, `FMODUnity`) — every sound is an inspector-exposed `EventReference`, never a hardcoded/temp event. See "Audio (FMOD)" under Architecture Patterns. (An `Assets/Wwise/` folder survives from an earlier middleware evaluation and is **inert** — no first-party code references `AkSoundEngine`; do not author new audio against it.)
-- **Haptics**: NiceVibrations for mobile/gamepad haptics. **Two everyday feels**, both local-human-pilot-only (skim-pulse reward + prism-punish thud), plus **one rare alert shake** fenced to match-changing events (only Ribcage's two progress-milestone rungs today); everything else is silent. See `Docs/HAPTICS.md`.
+- **Haptics**: NiceVibrations for mobile/gamepad haptics. **Two everyday feels**, both local-human-pilot-only (skim-pulse reward + prism-punish thud), plus **one rare alert shake** fenced to match-changing events (only Ribcage's two progress-milestone rungs today) and **one continuous spray buzz** fenced to a held full-auto trigger (only the Sparrow's guns today), which climbs in strength and cadence as accuracy decays and sits at the BOTTOM of the priority order (`alert > punish > skim > spray`) so a texture can never cut off an event; everything else is silent. See `Docs/HAPTICS.md`.
 - **Animation**: Timeline 1.8.9, DOTween for procedural animation
 - **DI**: Reflex (`com.gustavopsantos.reflex` 14.1.0) for dependency injection
 - **Performance**: Unity Jobs + Burst Compiler, Adaptive Performance 5.1.6, DOTS Entities 1.4.2 (installed, incremental adoption)
@@ -2233,7 +2233,7 @@ scale bump** with a one-shot unlock punch.
   | vessel | map | icons | order | uniform | hints |
   |---|---|---|---|---|---|
   | Squirrel | complete | 4/4 | ✅ | ✅ | ✅ bound |
-  | Sparrow | 4/4 named, **3/4 upgrades** (Time re-scoped 2026-08: indefinite boost, base roll, Elemental Ward. **Mass L5 is an OPEN DESIGN SLOT** since 2026-08: its Shielded Prisms upgrade moved to Space 5 so one gate transforms both fire modes — bullets pierce, turret prisms arrive shielded. Do not refill it without sign-off) | 4/4 | ✅ | ✅ | ⚠ no switcher on its HUD |
+  | Sparrow | 4/4 named, **4/4 upgrades** (Time re-scoped 2026-08: indefinite boost, base roll, Elemental Ward. **Mass L5 = Shielded Prisms again** — it briefly moved to Space 5 in 2026-08 round 4 and was returned by design sign-off on 2026-08-13, settling the split: **MASS owns the SUBSTANCE of what you fire** (turret prism stretch, in-flight round growth, armour) and **SPACE owns its REACH** (range, and pierce on both fire modes)) | 4/4 | ✅ | ✅ | ⚠ no switcher on its HUD |
   | Dolphin | complete | 4/4 | ✅ | ✅ | ⚠ no switcher on its HUD |
   | Manta | 3/4 named, 0/4 upgrades | 0/4 | — | — | n/a |
   | Rhino | 1/4 named, 0/4 upgrades | 0/4 | — | — | n/a |
