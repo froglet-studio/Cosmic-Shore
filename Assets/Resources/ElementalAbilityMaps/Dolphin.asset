@@ -16,19 +16,21 @@ MonoBehaviour:
   entries:
   - Element: 1
     AbilityLabel: Crystal Seeding
-    AbilityDescription: Charge shortens the recharge between team crystals (authored
-      on DeployTeamCrystalActionSO.cooldownMultiplierAtFullCharge, x0.5 at level 10;
-      the generic map multiplier stays 1.0 so it does not also move the charge-boost
-      peak); at level 5 the Dolphin carries a SECOND crystal and can plant two back
-      to back.
-    Input: 1
+    AbilityDescription: PASSIVE - no input. A cooldown runs continuously and each time
+      it completes the Dolphin seeds a team crystal at a random point in the cell's
+      CYTOPLASM (the shell between nucleus and membrane), then restarts immediately.
+      Charge shortens that recharge (authored on
+      DeployTeamCrystalActionSO.cooldownMultiplierAtFullCharge, x0.5 at level 10; the
+      generic map multiplier stays 1.0 so it does not also move the charge-boost
+      peak); at level 5 each cycle seeds TWO crystals instead of one.
+    Input: 0
     MultiplierAtFullLevel: 1
     MinMultiplier: 1
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
     UpgradeLabel: Twin Seed
-    UpgradeDescription: Carry two team crystals at once instead of one.
+    UpgradeDescription: Every seeding plants two team crystals instead of one.
   - Element: 2
     AbilityLabel: Drift Trail
     AbilityDescription: Mass raises the VOLUME of each drift prism (authored as the
