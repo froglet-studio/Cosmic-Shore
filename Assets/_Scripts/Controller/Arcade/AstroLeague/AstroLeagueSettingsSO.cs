@@ -390,6 +390,19 @@ namespace CosmicShore.Gameplay
                  "with the opposing-prism-mass drag below rather than replacing it.")]
         [Min(0f)] public float ballDrag = 0.35f;
 
+        [Tooltip("Multiplier on ballDrag once the ball is fully OUTSIDE the cell's nucleus — the " +
+                 "hypersea getting thicker off the pitch. 1 disables the ramp. This is a soft " +
+                 "boundary, not a wall: a ball that gets out is not teleported, culled or " +
+                 "reflected, it simply bleeds speed fast enough to stop being gone. In a mode " +
+                 "whose court IS the nucleus (Astro League) the ball is reflected at that radius " +
+                 "anyway, so the ramp never engages and the mode is unaffected.")]
+        [Min(1f)] public float outsideNucleusDragMultiplier = 6f;
+
+        [Tooltip("How far past the nucleus surface the drag ramp takes to reach full strength, in " +
+                 "world units. The ramp is linear across this band so leaving the pitch is a " +
+                 "gradient rather than a cliff.")]
+        [Min(1f)] public float outsideNucleusDragFalloff = 250f;
+
         [Tooltip("Speed below which the remaining coast is snapped to zero. Exponential decay is " +
                  "asymptotic, so without this the ball creeps forever at an invisible speed and never " +
                  "actually comes to rest.")]

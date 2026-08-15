@@ -98,6 +98,8 @@ MonoBehaviour:
   wallRestitution: 0.72
   prismCaromRestitution: 1
   ballDrag: 0.35
+  outsideNucleusDragMultiplier: 6
+  outsideNucleusDragFalloff: 250
   ballRestSpeed: 6
   prismDragMassScale: 0.0167
   ballAngularDamping: 0.3

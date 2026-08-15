@@ -578,6 +578,40 @@ If an exact 3× on the *felt* loss at nominal volume is wanted rather than a 3×
 value is `0.0142` — but the dial is the authored quantity and compounds correctly through a thick
 wall, which a per-prism target does not.
 
+### 4.1c Leaving the pitch — a soft boundary, never a wall
+
+A ball outside the nucleus bleeds speed increasingly fast: `ballDrag` is scaled by a linear ramp
+from ×1 at the nucleus surface to **×`outsideNucleusDragMultiplier`** (6) once the ball is a full
+`outsideNucleusDragFalloff` (250 u) beyond it.
+
+| where | drag | speed half-life |
+|---|---|---|
+| inside the nucleus | 0.35 /s | 1.98 s |
+| 125 u outside | 1.22 /s | 0.57 s |
+| 250 u+ outside | 2.10 /s | 0.33 s |
+
+This is deliberately the **only** kind of boundary the payload gets off the pitch. A ball that
+gets out is never teleported back, culled, or reflected off an invisible wall — the hypersea just
+gets thicker and it settles, which keeps it a thing players can go and fetch rather than something
+that vanished. It also composes with, rather than replaces, the arena's real reflection: in a mode
+whose court IS the nucleus (Astro League) the ball is bounced at that same radius, so the ramp
+never engages and the mode's feel is untouched. It exists for a ball that got out anyway, and for
+the Scarab's forged balls in a cell that has no court at all.
+
+**Nucleus size is read from `Cell.NucleusVisualWorldRadius`, and that property had to be added.**
+`Cell.NucleusWorldRadius` is the CONTROL radius, and Astro League sets
+`Cell.NucleusIsControlZone = false` because it borrowed the nucleus as play geometry —
+`RefreshNucleusControlRadius` returns early on that flag, leaving the control radius at **0**. So
+the obvious read reports zero for the exact mode this feature is about, and every position in the
+world would have counted as "outside the nucleus". The new property is the same renderer-bounds
+measurement taken *before* the control-zone branch, so it answers "how big is the core, in metres"
+while the old one keeps answering "who owns this cell".
+
+That is `Docs/ECOSYSTEM.md §25` running in reverse. The recorded trap is that a mode repurposing a
+Cell-owned visual **inherits semantics it did not want** with the geometry; this is the mirror —
+ask a semantic accessor a geometric question and you **lose the geometry along with the
+semantics**, silently, because zero is a perfectly plausible-looking radius.
+
 ### 4.2 Permanent team colour
 
 **A ball is its maker's colour forever.** No striker recolouring: an opponent can bat your ball

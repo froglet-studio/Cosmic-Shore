@@ -508,7 +508,7 @@ namespace CosmicShore.Gameplay
                 // replacing it. Below restSpeed the remainder is snapped out, or the asymptote leaves
                 // the ball creeping forever at an invisible speed.
                 if (settings.ballDrag > 0f)
-                    rb.linearVelocity *= Mathf.Exp(-settings.ballDrag * Time.fixedDeltaTime);
+                    rb.linearVelocity *= Mathf.Exp(-EffectiveDrag() * Time.fixedDeltaTime);
                 if (rb.linearVelocity.sqrMagnitude < settings.ballRestSpeed * settings.ballRestSpeed)
                     rb.linearVelocity = Vector3.zero;
 
@@ -530,6 +530,55 @@ namespace CosmicShore.Gameplay
                 n_Velocity.Value = n_Frozen.Value ? Vector3.zero : rb.linearVelocity;
                 n_AngularVelocity.Value = n_Frozen.Value ? Vector3.zero : rb.angularVelocity;
             }
+        }
+
+        /// <summary>
+        /// The coast drag for where the ball currently IS: authored `ballDrag` inside the cell's
+        /// nucleus, ramping linearly up to `ballDrag × outsideNucleusDragMultiplier` once it is a
+        /// full `outsideNucleusDragFalloff` beyond the nucleus surface.
+        ///
+        /// This is a SOFT boundary and is deliberately the only kind the payload gets: a ball that
+        /// leaves the pitch is never teleported back, culled, or bounced off an invisible wall —
+        /// the hypersea simply gets thicker, and the ball settles instead of sailing away forever.
+        /// A mode whose court IS the nucleus (Astro League) reflects the ball at that same radius,
+        /// so the ramp never engages there and the mode's feel is untouched; it exists for a ball
+        /// that got out, and for the Scarab's forged balls in a cell that has no court at all.
+        ///
+        /// NUCLEUS SIZE COMES FROM `NucleusVisualWorldRadius`, NOT `NucleusWorldRadius`. Astro
+        /// League sets `Cell.NucleusIsControlZone = false` because it borrowed the nucleus as play
+        /// geometry, and that collapses the CONTROL radius to zero — so the obvious read reports 0
+        /// for the very mode this is about and the whole world would count as "outside".
+        /// </summary>
+        float EffectiveDrag()
+        {
+            float baseDrag = settings.ballDrag;
+            if (settings.outsideNucleusDragMultiplier <= 1f) return baseDrag;
+
+            var cell = ResolveCell();
+            if (cell == null) return baseDrag;
+
+            float nucleus = cell.NucleusVisualWorldRadius;
+            if (nucleus <= 0f) return baseDrag;      // no nucleus: nothing to be outside of
+
+            float distance = Vector3.Distance(transform.position, cell.transform.position);
+            float outside01 = Mathf.Clamp01(
+                (distance - nucleus) / Mathf.Max(1f, settings.outsideNucleusDragFalloff));
+
+            return baseDrag * Mathf.Lerp(1f, settings.outsideNucleusDragMultiplier, outside01);
+        }
+
+        // Cached because Cell's finders are O(cells-in-scene) and documented as lifecycle-time
+        // calls, not per-tick ones. Re-resolved only when the reference goes null - which covers
+        // both "the ball spawned before the cell finished initializing" and a Cell Selector swap
+        // destroying the old one.
+        Cell _cell;
+
+        Cell ResolveCell()
+        {
+            if (_cell != null) return _cell;
+            _cell = Cell.FindCellContaining(transform.position)
+                    ?? Cell.FindNearestActiveCell(transform.position);
+            return _cell;
         }
 
         void ClientFixedUpdate()
