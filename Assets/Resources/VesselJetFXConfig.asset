@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3b7f1c92a4d84e5fb0c6a1d7e93f2c48, type: 3}
+  m_Name: VesselJetFXConfig
+  m_EditorClassIdentifier:
+  enginePlumePrefab: {fileID: 1007919433217068806, guid: 55ceca573be662744948afc745f8840b, type: 3}
+  beaconRibbonPrefab: {fileID: 961892902783783222, guid: ef25530d9073ecc48a31d7bc0700e2c2, type: 3}
+  mountNameTokens:
+  - jet
+  - engine
+  - thruster
+  - exhaust
+  mountExcludeTokens:
+  - case
+  - shroud
+  - hold
+  - trim
+  - frame
+  - gun
+  - fx
+  - particle
+  - test
+  plumeScalePerMountSize: 1
+  plumeScalePerHullRadius: 0.11
+  plumeLengthAspect: 0.22
+  beaconOffsetPerHullRadius: -0.55
+  maxEnginePlumes: 6
+  derivedMountCount: 2
+  derivedMountSpreadPerHullRadius: 0.28

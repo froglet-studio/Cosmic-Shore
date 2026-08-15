@@ -24,6 +24,12 @@ namespace CosmicShore.Gameplay
     [RequireComponent(typeof(VesselAnimation))]
     [RequireComponent(typeof(R_VesselActionHandler))]
     [RequireComponent(typeof(VesselCustomization))]
+    // The two halves of the fleet-wide jet FX law (Docs/VESSEL_JET_FX.md): the FX itself and
+    // the domain tint that makes it wear the vessel's colour. Required here, alongside
+    // VesselCustomization, because "every vessel has jets that show its domain" is a fleet
+    // contract - not a per-vessel decision a prefab may quietly opt out of.
+    [RequireComponent(typeof(VesselTrailCustomization))]
+    [RequireComponent(typeof(VesselJetFX))]
     [RequireComponent(typeof(R_ShipElementStatsHandler))]
 
     public class VesselStatus : MonoBehaviour, IVesselStatus
@@ -126,6 +132,33 @@ namespace CosmicShore.Gameplay
             {
                 customization = customization != null ? customization : gameObject.GetOrAdd<VesselCustomization>();
                 return customization;
+            }
+        }
+
+        VesselJetFX jetFX;
+        public VesselJetFX JetFX
+        {
+            get
+            {
+                jetFX = jetFX != null ? jetFX : gameObject.GetOrAdd<VesselJetFX>();
+                return jetFX;
+            }
+        }
+
+        VesselTrailCustomization trailCustomization;
+        public VesselTrailCustomization TrailCustomization
+        {
+            get
+            {
+                // GetComponentInChildren first: a vessel may legitimately host the tint on a
+                // child alongside its trails. GetOrAdd on the root is the fallback that makes
+                // the domain tint impossible to author around - without it, a prefab missing
+                // the component simply never repaints its jets and nothing says so.
+                if (trailCustomization == null)
+                    trailCustomization = GetComponentInChildren<VesselTrailCustomization>(true);
+                if (trailCustomization == null)
+                    trailCustomization = gameObject.GetOrAdd<VesselTrailCustomization>();
+                return trailCustomization;
             }
         }
 

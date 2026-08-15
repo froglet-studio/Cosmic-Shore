@@ -865,3 +865,56 @@ error**, so check this before concluding the sight is broken.
 (`TeamCrystal.prefab` has no NetworkObject, matching the previous hold-to-plant scope), and the
 sight ignores Space L5 "Clean Blast" friendly fire — it highlights everything geometrically inside
 the volume.
+
+---
+
+## 🔴 Vessel Jet FX — two-layer law, fleet-wide (2026-08-15)
+
+**What landed.** Every vessel now gets the Squirrel's two jet FX layers, both domain-tinted: a long
+**beacon ribbon** (`TrailEmpty`, so other players can find the vessel) and short **engine plumes**
+(`jet.prefab`, pilot feedback). Full record: `Docs/VESSEL_JET_FX.md`.
+
+Before this, `VesselTrailCustomization` — the component that repaints trails per domain — existed on
+**exactly one prefab in the project** (Squirrel). The Dolphin and Sparrow had a ribbon that never
+took their domain colour; seven vessels had no jet FX at all; the Rhino's only jet FX were three
+separate disabled experiments.
+
+New: `VesselJetFX` + `VesselJetFXConfigSO` (`Resources/VesselJetFXConfig`), bound in
+`VesselController.Initialize` before the first domain paint. Mounts resolve **by name + structure**
+(bone or active renderer), never hand-authored — the vessel FBX metas ship an empty
+`internalIDToNameTable`, so bones have no stable fileID to author against.
+
+**Nothing here was verified in a running editor.** Verify in this order:
+
+1. **FrogletTools ▸ Vessels ▸ Audit Vessel Jet FX** — asset-only. Mount lists must match
+   `Docs/VESSEL_JET_FX.md` §2: Dolphin 6, Urchin 4, Grizzly 4, Rhino 2, Serpent 1, Sparrow/Manta
+   family derived. Urchin/Grizzly/Falcon/Shrike/Termite report `!! NO VesselController` — pre-existing,
+   see §7.
+2. Edit-mode tests `VesselJetFXMountResolutionTests` — all green.
+3. **THE CRITICAL ONE — Squirrel must be unchanged.** Menu_Main freestyle: 4 engine jets, 2 ribbons,
+   **no doubling**. This proves the authored-FX detection fires. If the Squirrel grew extra jets,
+   stop and check `VesselJetFXConfigSO.IsMountNameLoose`.
+4. Dolphin (`MinigameRampage`): 6 plumes + its existing ribbon, both domain-coloured, **no second
+   ribbon**.
+5. Sparrow (`MinigameDogFight`): existing ribbon now tinted + 2 **derived** rear plumes — judge
+   whether the derived placement needs an art pass.
+6. Rhino (`MinigameRibcage`) 2 plumes; Manta 2 derived. Ribbons tinted.
+7. **Live domain change** via the Domain Changer toy — ribbon and plumes repaint on the same frame.
+   Plume *particles* staying blue is expected and deliberate (matches the Squirrel).
+8. MPPM ×2 — each peer sees the other's domain on both layers; a Cellular Duel ownership swap
+   (`ChangePlayer`) repaints the inherited vessel.
+9. Clean console. Any `[VesselJetFX]` warning names its own fix.
+
+**First-pass tuning** (all in `Resources/VesselJetFXConfig`, tune against the Squirrel):
+
+| Knob | Default | Raise if… |
+|---|---|---|
+| `plumeScalePerMountSize` | 1.0 | plumes look thin on vessels with visible nozzles |
+| `plumeScalePerHullRadius` | 0.11 | derived/bone-mounted plumes (Sparrow, Manta) look wrong-sized |
+| `plumeLengthAspect` | 0.22 | plumes should read longer/conical rather than as a flare |
+| `beaconOffsetPerHullRadius` | −0.55 | the ribbon starts too close to / far from the hull |
+| `maxEnginePlumes` | 6 | (LOWER this if the Dolphin's 18 particle systems cost too much on mobile) |
+| `derivedMountCount` | 2 | the Manta family should read as 4-engined |
+
+**Perf note.** Worst case is the Dolphin: 6 plumes × 3 ParticleSystems = 18, vs the Squirrel's
+shipped 12. `VesselJetFX` itself has no `Update`/`LateUpdate` — its whole cost is instantiation.

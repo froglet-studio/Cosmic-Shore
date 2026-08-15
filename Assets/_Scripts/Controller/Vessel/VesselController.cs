@@ -154,6 +154,18 @@ namespace CosmicShore.Gameplay
                 VesselSpeedTunnel.SetTarget(VesselStatus, transform);
             }
 
+            // Jet FX (Docs/VESSEL_JET_FX.md) — the beacon ribbon that lets other players find
+            // this vessel and the engine plumes that give its pilot throttle feedback. Bound
+            // here for the same reason the laws above are: Initialize is the one method every
+            // vessel calls on every spawn path, so no vessel and no mode can be authored
+            // without them. NOT gated on IsLocalPilot — the beacon exists precisely to be seen
+            // by OTHER players, so a local-only binding would invert the feature.
+            //
+            // Ordering is load-bearing: this must run BEFORE SetShipProperties below, because
+            // that call is the vessel's FIRST domain paint. Spawn the trails after it and they
+            // keep their prefab colour until the player happens to change domain.
+            VesselStatus.JetFX.Initialize(VesselStatus);
+
             if (gameData != null)
                 ShipHelper.SetShipProperties(gameData.ThemeManagerData, this);
             else
@@ -195,13 +207,16 @@ namespace CosmicShore.Gameplay
         public virtual void SetSkimmerMaterial(Material material) =>
                 VesselStatus.SkimmerMaterial = material;
 
-        VesselTrailCustomization _trailCustomization;
-        public virtual void SetTrailColors(Color highlightColor, Color coreColor)
-        {
-            if (_trailCustomization == null)
-                _trailCustomization = GetComponentInChildren<VesselTrailCustomization>(includeInactive: true);
-            _trailCustomization?.SetTrailColors(highlightColor, coreColor);
-        }
+        /// <summary>
+        /// Repaints EVERY trail the vessel draws for its current domain — the long beacon
+        /// ribbon and the engine plumes alike (Docs/VESSEL_JET_FX.md). Resolved through
+        /// VesselStatus so the component is created if a prefab is missing it: the previous
+        /// null-conditional lookup meant a vessel without the component silently kept its
+        /// prefab-coloured jets forever, which is the one failure this law cannot tolerate —
+        /// a jet wearing the wrong domain actively misinforms other players.
+        /// </summary>
+        public virtual void SetTrailColors(Color highlightColor, Color coreColor) =>
+            VesselStatus.TrailCustomization.SetTrailColors(highlightColor, coreColor);
 
         public virtual void BindElementalFloat(string name, Element element) =>
             VesselStatus.ElementalStatsHandler.BindElementalFloat(name, element);
@@ -259,6 +274,13 @@ namespace CosmicShore.Gameplay
         public void ChangePlayer(IPlayer player)
         {
             VesselStatus.Player = player;
+
+            // Jet FX is idempotent, so this is insurance rather than a second spawn: it covers a
+            // vessel that reached ChangePlayer without ever having run Initialize. The domain
+            // repaint that follows an ownership swap is handled by the caller's
+            // ShipHelper.SetShipProperties, and VesselTrailCustomization discovers trails live,
+            // so the inherited jets take the new owner's colour with no extra call here.
+            VesselStatus.JetFX.Initialize(VesselStatus);
 
             // Re-evaluate BOTH platform laws: ChangePlayer hands a LIVE vessel to a different
             // player (the Cellular Duel round-boundary ownership swap), which Initialize never

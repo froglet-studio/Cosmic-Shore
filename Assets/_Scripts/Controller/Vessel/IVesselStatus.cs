@@ -130,6 +130,13 @@ namespace CosmicShore.Gameplay
         IVesselHUDController VesselHUDController { get; }
 
         VesselCustomization Customization { get; }
+
+        /// <summary>Fleet-wide jet FX (beacon ribbon + engine plumes). See Docs/VESSEL_JET_FX.md.</summary>
+        VesselJetFX JetFX { get; }
+
+        /// <summary>Domain tint for every TrailRenderer under the vessel, jet FX included.</summary>
+        VesselTrailCustomization TrailCustomization { get; }
+
         R_VesselActionHandler ActionHandler { get; }
 
         R_ShipElementStatsHandler ElementalStatsHandler { get; }
