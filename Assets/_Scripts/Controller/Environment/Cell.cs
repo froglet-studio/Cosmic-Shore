@@ -99,6 +99,22 @@ namespace CosmicShore.Gameplay
             _nucleusControlRadiusSqr > 0f ? Mathf.Sqrt(_nucleusControlRadiusSqr) : 0f;
 
         /// <summary>
+        /// The nucleus marker's GEOMETRIC world radius — renderer-bounds derived like
+        /// <see cref="NucleusWorldRadius"/>, but INDEPENDENT of whether the nucleus is a control
+        /// zone. 0 only when the cell genuinely has no nucleus.
+        ///
+        /// The two differ exactly where <see cref="NucleusIsControlZone"/> is false: a mode that
+        /// borrowed the nucleus as PLAY GEOMETRY (Astro League's court) collapses the control
+        /// radius to 0 on purpose, so <see cref="NucleusWorldRadius"/> reports 0 while the marker
+        /// is still very much there and still very much the size of the arena. Anything asking
+        /// "how big is the core, in metres" — a soft boundary, a placement ring, a camera frame —
+        /// wants THIS; anything asking "who owns this cell" wants the other one. Reading the
+        /// control radius for a geometric question is the §25 mistake in reverse: instead of
+        /// inheriting semantics with the geometry, you lose the geometry with the semantics.
+        /// </summary>
+        public float NucleusVisualWorldRadius { get; private set; }
+
+        /// <summary>
         /// The world radius the nucleus HAS, or WILL have once <see cref="SpawnVisuals"/> runs —
         /// measured off the config's <c>NucleusPrefab</c> asset without instantiating anything.
         ///
@@ -2209,20 +2225,26 @@ namespace CosmicShore.Gameplay
         void RefreshNucleusControlRadius()
         {
             _nucleusControlRadiusSqr = 0f;
+            NucleusVisualWorldRadius = MeasureNucleusWorldRadius();   // geometry, always
+
             // A nucleus a mode borrowed as play geometry is a wall, not a claim - no control
             // zone, so the cell keeps its whole-cell control + diet semantics. See
             // NucleusIsControlZone.
             if (!_nucleusIsControlZone) return;
-            if (nucleus == null) return;
+            if (NucleusVisualWorldRadius <= 1e-3f) return;
+
+            _nucleusControlRadiusSqr = NucleusVisualWorldRadius * NucleusVisualWorldRadius;
+        }
+
+        float MeasureNucleusWorldRadius()
+        {
+            if (nucleus == null) return 0f;
 
             var r = nucleus.GetComponentInChildren<Renderer>();
-            if (r == null) return;
+            if (r == null) return 0f;
 
             Vector3 ext = r.bounds.extents;
-            float radius = Mathf.Max(ext.x, Mathf.Max(ext.y, ext.z));
-            if (radius <= 1e-3f) return;
-
-            _nucleusControlRadiusSqr = radius * radius;
+            return Mathf.Max(ext.x, Mathf.Max(ext.y, ext.z));
         }
 
         /// <summary>

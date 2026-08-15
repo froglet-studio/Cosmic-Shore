@@ -1,6 +1,6 @@
 ---
 name: asset-surgery
-description: Do "editor-only" Unity work programmatically instead of handing the human an in-editor checklist - ShaderGraph node wiring via JSON synthesis, prefab/scene YAML component surgery, SO asset re-authoring, and REAL compilation of the C#/HLSL you are about to commit (mcs + clang are installable here - see 4 and 4.5c; do not settle for inspection). Use whenever the plan is drifting toward "I'll prepare instructions and you do it in the editor", whenever a task touches .shadergraph/.prefab/.unity/.asset files directly, or when the human says some flavor of "you can do this" / "write a tool for it". The human's editor time is for PLAY TESTING and things that genuinely need the running editor - not for mechanical asset edits you can machine-validate.
+description: Do "editor-only" Unity work programmatically instead of handing the human an in-editor checklist - ShaderGraph node wiring via JSON synthesis, prefab/scene YAML component surgery, SO asset re-authoring, and REAL compilation of the C#/HLSL you are about to commit (dotnet-sdk/Roslyn + clang are installable here - see 4 and 4.5c; do not settle for inspection). Use whenever the plan is drifting toward "I'll prepare instructions and you do it in the editor", whenever a task touches .shadergraph/.prefab/.unity/.asset files directly, or when the human says some flavor of "you can do this" / "write a tool for it". The human's editor time is for PLAY TESTING and things that genuinely need the running editor - not for mechanical asset edits you can machine-validate.
 ---
 
 # Asset Surgery — do it programmatically, prove it before writing
@@ -337,11 +337,77 @@ its GameObject lists it in `m_Component`.
   — intra-face deviation (5.21°) against the shallowest genuine dihedral (57.5°) leaves a
   50° window, and picking from inside a measured gap is not the same act as guessing 1°.
 
+### Technique: REMOVING a component (or a whole GameObject) from a prefab
+
+Deleting the `MonoBehaviour` document is the part everyone remembers and the smallest
+part of the job. A component removal is **five** edits, and missing any one leaves Unity
+importing a prefab with a hole in it:
+
+1. the `--- !u!114 &<id>` document itself;
+2. its entry in the owning GameObject's `m_Component:` list;
+3. if the GameObject existed *only* to host it (check `m_Component` has nothing left but
+   the `Transform`), its `--- !u!1 &<go>` and `--- !u!4 &<xform>` documents too;
+4. that Transform's link in the **parent's** `m_Children:` list — grep the parent by the
+   child's `m_Father:` id;
+5. **every serialized LIST that referenced the component by fileID.** This is the one that
+   bites: `ActionExecutorRegistry._executors`, effect-container arrays, HUD wiring. A
+   component can be referenced from anywhere in the file, so sweep for the bare id rather
+   than reasoning about who "should" hold it.
+
+Then prove it, and **prove it against the BASE revision, not against zero**:
+
+```python
+# anchors = {a for '--- !u!N &a'};  refs = {n for '{fileID: n}' with no guid on the ref}
+# report: len(anchors), duplicate anchors, sorted(refs - anchors), and
+#         GameObjects whose m_Component names an id not in anchors
+```
+
+Run it on `git show <base>:<path>` as well as on the working file and **diff the two
+reports**. Unity prefabs carry pre-existing dangling references — `Dolphin.prefab` has had
+a `view: {fileID: 257326519381942953}` pointing at nothing since before this session — and
+a checker run only on your output reports that as damage you caused. The signal you want is
+"document count fell by exactly the N I removed, and the dangling set is **unchanged**".
+
 ## 4. Technique: C# verification — get a real compiler first
 
-**Try to actually compile before falling back to inspection.** `apt-get install
-mono-mcs` gives you `mcs`, and a Unity gameplay file usually touches a small,
-stubbable surface. Recipe (validated 2026-08 on two ~400-line generators, both
+**Reach for ROSLYN, not `mcs`.** `mcs` is a C# 7.x compiler and this codebase is
+C# 9: it rejects ordinary, already-shipped gameplay code (`effects is { Length: > 0 }`,
+`readonly Dictionary<int,float> x = new();`, `effect is not FooSO`) and dies on the
+last one with `error CS0589: Internal compiler error during parsing … type pattern
+matching`, which names nothing useful. Every line of the desugaring table below exists
+only to work around that. Skip it:
+
+```sh
+apt-get update && apt-get install -y dotnet-sdk-8.0    # the update is REQUIRED — a stale
+                                                       # index 404s on the .deb (seen 2026-08)
+CSC=$(ls /usr/lib/dotnet/sdk/*/Roslyn/bincore/csc.dll | head -1)
+dotnet "$CSC" -langversion:9.0 -target:library -out:/tmp/x.dll Stubs.cs <files>
+```
+
+Roslyn parses the real files, so **the throwaway desugared copy disappears entirely** —
+and with the same `Stubs.cs` harness you still get the full type check. Cost is one
+install (~1 min) against a desugaring pass that has to be redone per file and can itself
+introduce errors.
+
+**The 30-second version, when a stub harness isn't worth building** (a small edit to a
+file that touches a huge API surface): compile the real files with **no stubs at all**
+and read only the error classes that stubs cannot cause —
+
+```sh
+dotnet "$CSC" -langversion:9.0 -target:library -out:/tmp/x.dll <files> 2>&1 \
+  | grep -E "error CS(1[0-9]{3}|8[0-9]{3}|0102|0106|0128|0136)"
+```
+
+The flood of `CS0246`/`CS0234` (missing Unity types) is expected noise; a hit in that
+filter is real. It catches every syntax error, duplicate/conflicting declaration, and
+scope collision — including the ones an edit inside a `switch` section or a nested loop
+creates (`CS0128`/`CS0136`), which is exactly where mechanical edits go wrong. It cannot
+catch a wrong member name or arity; when that matters, build the stubs.
+
+### Fallback: `mcs` (only when dotnet can't be installed)
+
+`apt-get install mono-mcs` gives you `mcs`, and a Unity gameplay file usually touches a
+small, stubbable surface. Recipe (validated 2026-08 on two ~400-line generators, both
 of which compiled clean and shipped):
 
 1. Write `Stubs.cs` covering ONLY the API the target files touch — the
@@ -830,6 +896,69 @@ never prunes an unresolvable modification, so the inspector keeps showing a valu
   whitespace-only byte change on 15 prefabs is indistinguishable from a real edit in review.
 
 ## 5. Traps learned the hard way (check these BEFORE debugging for an hour)
+
+- **A Unity NullReferenceException names an exact LINE — mine it before theorising, and
+  calibrate the trace's fidelity from the log itself.** Two steps, both cheap. (1) Confirm
+  the reported line maps to the file on disk (`sed -n '113p' <file>`, and check the running
+  revision matches — another frame in the same log usually pins it), then enumerate **every
+  dereference on that line**. `effect.Execute(this, prismImpactee)` derefs exactly one thing:
+  `this` is never null and `prismImpactee` was non-null by pattern match, so `effect` — an
+  empty slot in a serialized array — was the only candidate, and no amount of guessing about
+  the callee was needed. (2) Before trusting the deepest frame, check whether Mono is
+  **inlining frames away**: find a known one-line delegating method in the *same log*
+  (`ShardToggleActionSO.StartAction`, an expression-bodied `=> exec?.Toggle(...)`). If its
+  frame is present, small calls are not being elided, so the deepest frame really is where
+  the throw happened and the callee is exonerated. Skip this and you will go read six effect
+  implementations looking for a null that was in the array all along.
+- **Four different things make a serialized `UnityEngine.Object` array element null at
+  runtime while the YAML looks healthy.** When chasing one, check all four, in this order —
+  each is one grep: (1) the slot is literally `{fileID: 0}`; (2) the referenced **GUID
+  resolves to no `.meta`** (deleted asset); (3) the asset exists but its own `m_Script` guid
+  resolves to no `.cs` (missing script — Unity hands you null); (4) the asset's class does
+  **not derive from the array's element type**, which Unity silently nulls on load. All four
+  are verifiable from the repo in about a minute, and ruling them out is itself a finding:
+  if the branch's data is clean, the hole is in the reporter's *working tree*, which is a
+  different conversation than a code bug.
+- **A feature can be dead in several places at once, and fixing the first one makes the
+  SYMPTOM stop while the feature stays dead.** The Dolphin's shard toggle had an unwired SO
+  reference (the error you could see), a bus whose two broadcast bodies were commented out,
+  and a listener that neither registered with the bus nor still declared the methods those
+  broadcasts call — three independent breaks. Wiring the reference would have silenced the
+  console and shipped an ability that had never once moved a shard. **Before declaring a
+  wiring fix complete, walk the chain to the CONSUMER** and confirm something at the far end
+  actually acts on it. The `/ship` "find the PRODUCER" rule, run in the other direction.
+- **A re-implemented validator can diverge from the shipped code and "pass" a model the
+  engine rejects.** A Python port of a C# generator's profile functions silently applied a
+  `max(0, …)` the C# did not, so the offline check reported clean geometry while Unity was
+  refusing `localPosition` assignments (`{0, NaN, 2.616}`) and reporting `abnormal mesh
+  bounds … -nan(ind)` on three meshes. §4.5's simulation technique is only sound when the
+  simulation IS the shipped source: compile the actual `.cs` with `mcs` against a FAITHFUL
+  stub (real `Mathf` over `System.Math`, real `Vector3` operators) and RUN it, reading the
+  private state back by reflection. A hand-ported formula is a hypothesis about the code,
+  not a test of it — and it fails in the one direction you cannot see, by being kinder than
+  production.
+- **`Mathf.Sin(Mathf.PI)` is NEGATIVE in float32** (≈ `-8.74e-8`), so `Mathf.Pow(that,
+  fractional)` is `NaN`. Any profile of the shape `pow(sin(...), k)` with `0 < k < 1` NaNs at
+  its endpoint. One NaN vertex poisons a whole mesh's bounds, and an invalid-bounds renderer
+  stops updating — so the symptom is "my animation does nothing", not "my maths is wrong".
+  Clamp before `Pow`, every time. (A sibling function escaped only because its `Max` clamp
+  happened to sit in the right place — the presence of one clamp is not evidence of the other.)
+- **A physics-layer pair can be DISABLED, so a correct-looking impactor case never fires.**
+  Adding `case FooImpactor` to an `AcceptImpactee` switch compiles, reads correctly, passes
+  review, and dispatches nothing if the two GameObjects' layers are off in
+  `ProjectSettings/DynamicsManager.asset`. Check the matrix before trusting a trigger path:
+  decode `m_LayerCollisionMatrix` (32 little-endian 8-hex words, bit `b` of word `a` = layer
+  `a` × layer `b`) and read layer names from `TagManager.asset`. Live case: Crystals(9) ×
+  Explosions(10) is **disabled**, so a blast could never reach a crystal through triggers —
+  while Ball(0) × Explosions(10) is enabled and the identical shape worked.
+- **A round-trip RPC placed behind an earlier server-only gate is unreachable plumbing.**
+  Trace the GATE ORDER, not the intent: a client→server hop written so "a client's blast can
+  still forge" was never called, because the crystal-consumption check (`!IsNetworkClient()`)
+  ran first and returned. It read as a solved problem in three places — the RPC's own doc
+  comment, the helper's class note, and the design doc — while delivering nothing, which is
+  strictly worse than an honest gap. Before writing the fallback, follow every early-out
+  between the entry point and the call site and confirm one of them is not the thing you are
+  trying to work around.
 
 - **A SERIALIZED value is not its C# field initializer — and the initializer's output is
   not what you remember it being.** Retiring a `[SerializeField]` whose default comes from

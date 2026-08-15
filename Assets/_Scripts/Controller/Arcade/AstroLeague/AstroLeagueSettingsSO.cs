@@ -285,6 +285,31 @@ namespace CosmicShore.Gameplay
                  "physical depenetration. Roughly the vessel's visual hull reach.")]
         public float vesselClearRadius = 12f;
 
+        [Header("Ball - Explosions")]
+        [Tooltip("Let AOE blasts shove the ball, the way they shove prisms. The blast hands over " +
+                 "the SAME impact vector a prism receives (ExplosionImpulse.Along, no distance " +
+                 "falloff - prisms do not get one either), so a weapon that throws mass hard " +
+                 "throws the payload hard. Off restores the previous behaviour, where a blast " +
+                 "passed through the ball with no effect at all.")]
+        public bool explosionsAffectBall = true;
+
+        [Tooltip("Gain on the blast's impact vector before it is added to the ball's velocity. " +
+                 "1 = the ball takes the blast's TRUE impulse, exactly as prism debris does — " +
+                 "which is the default, because the blast's own Inertia is already the dial for " +
+                 "how hard that blast throws. Below 1 the ball is a heavier payload than the mass " +
+                 "around it; this shipped at 0.5 and, against a 300 u/s ball, made a blast worth " +
+                 "~11% of top speed — a shove nobody could see.")]
+        [Min(0f)] public float explosionKickMultiplier = 1f;
+
+        [Tooltip("Fraction of the blast kick that also arrives as SPIN, applied off-centre at the " +
+                 "blast-facing surface. 0 = a pure shove.")]
+        [Range(0f, 1f)] public float explosionSpinFraction = 0.6f;
+
+        [Tooltip("A blast RE-COLOURS the ball to the blasting domain, exactly as a vessel strike " +
+                 "does - blowing the payload is a way to claim it. Off leaves ownership alone and " +
+                 "makes the blast a pure shove.")]
+        public bool explosionClaimsBall = true;
+
         [Header("Ball - Vessel Strike (sword / blade contact)")]
         [Tooltip("Resolve a strike at the point on a SKIMMER BLADE that actually touched the ball " +
                  "(SkimmerSwingKinematics - the Rhino's sword) instead of at the vessel root. Two " +
@@ -351,11 +376,32 @@ namespace CosmicShore.Gameplay
                  "1 restores the old perfectly-elastic pinball.")]
         [Range(0f, 1f)] public float wallRestitution = 0.72f;
 
+        [Tooltip("Restitution for a carom off a SHIELDED PRISM. 1 (the default) is a pure " +
+                 "REDIRECT: the into-prism component mirrors exactly, so the ball's SPEED is " +
+                 "unchanged and only its heading turns. That is the whole point of armour here — " +
+                 "a shielded prism costs the shield and the ball's line, never its momentum. " +
+                 "Deliberately separate from wallRestitution: a wall is meant to bleed energy " +
+                 "(0.72), and a prism is not.")]
+        [Range(0f, 1f)] public float prismCaromRestitution = 1f;
+
         [Tooltip("Exponential speed decay per second on the ball's coast (0 = the original " +
                  "frictionless coast). This is what makes an untouched ball SETTLE, so it becomes a " +
                  "thing players go and contest rather than something ricocheting past them. Composes " +
                  "with the opposing-prism-mass drag below rather than replacing it.")]
         [Min(0f)] public float ballDrag = 0.35f;
+
+        [Tooltip("Multiplier on ballDrag once the ball is fully OUTSIDE the cell's nucleus — the " +
+                 "hypersea getting thicker off the pitch. 1 disables the ramp. This is a soft " +
+                 "boundary, not a wall: a ball that gets out is not teleported, culled or " +
+                 "reflected, it simply bleeds speed fast enough to stop being gone. In a mode " +
+                 "whose court IS the nucleus (Astro League) the ball is reflected at that radius " +
+                 "anyway, so the ramp never engages and the mode is unaffected.")]
+        [Min(1f)] public float outsideNucleusDragMultiplier = 6f;
+
+        [Tooltip("How far past the nucleus surface the drag ramp takes to reach full strength, in " +
+                 "world units. The ramp is linear across this band so leaving the pitch is a " +
+                 "gradient rather than a cliff.")]
+        [Min(1f)] public float outsideNucleusDragFalloff = 250f;
 
         [Tooltip("Speed below which the remaining coast is snapped to zero. Exponential decay is " +
                  "asymptotic, so without this the ball creeps forever at an invisible speed and never " +
@@ -365,8 +411,11 @@ namespace CosmicShore.Gameplay
         [Tooltip("How hard opposing-color prism MASS slows the ball as it plows through (it keeps its " +
                  "direction, only its speed drops). Per eaten prism: speed ×= ballMass / (ballMass + " +
                  "this × prismVolume). 0 = no drag (ball never slows); higher = a thick enemy wall " +
-                 "brakes the ball hard. Same-color and shielded prisms cost no speed.")]
-        public float prismDragMassScale = 0.25f;
+                 "brakes the ball hard. Same-color and shielded prisms cost no speed.\n\n" +
+                 "The slow depends on VOLUME and nothing else, so a DANGER prism and a plain one of " +
+                 "the same size cost the ball exactly the same — see the tier note in " +
+                 "AstroLeagueBall.ProcessPrismInteractions. Do not add a per-tier multiplier here.")]
+        public float prismDragMassScale = 0.0167f;
 
         [Header("Ball - Angular Dynamics (rotational inertia)")]
         [Tooltip("Angular damping on the ball rigidbody. A small amount so spin imparted by off-center " +

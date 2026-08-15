@@ -60,6 +60,17 @@ run the `/reorient` skill first and act on its verdict before shipping.
   of one bug. Reference theirs rather than restating it, and keep only the part they do
   not cover. Expect this whenever the base branch touched the same files — check with
   `git log --oneline <merge-base>..origin/<base> -- <your changed files>`.
+- **If the branch ships a doc that cites `file:line`, the merge just rotted it.** Line
+  references are the one kind of prose that goes stale from a commit that never touched
+  your branch. After merging the base, re-resolve EVERY reference mechanically — extract
+  them, confirm the file exists, confirm the line is in range, and then **confirm the
+  content at that line still says what you claimed**. The third check is the one that
+  matters: in-range passes happily while pointing at the wrong line. One session shipped
+  a follow-up doc whose six `Cell.cs` refs all slid 22 lines because an unrelated upstream
+  commit added 28, and the same sweep caught an off-by-one that had been wrong since it
+  was written. Where the reference has to survive, **anchor on the symbol and demote the
+  number to a hint** ("`RetireWorldIntoSuctionRoot` (`:2058`) — re-grep before trusting
+  the number"), because the next drift is not preventable, only survivable.
 - Restate, in a few sentences, WHAT the branch delivers and WHY. If you can't, you are
   not ready to ship — go re-read the diff.
 
@@ -86,6 +97,16 @@ Walk every changed file against these gates:
   `vesselSlowedByRhinoDangerPrismEvent` under a `"Slow Viewer Integration"` header belonged to
   an effect that only muted an input. Treat "the docs say so" and "the identifier says so" as
   hypotheses to check, never as the check.
+- **The mirror of that rule: a "dead surface" claim decays into a live path, and nothing
+  announces it.** "Unreferenced", "no producer anywhere", "provably dead" are true *as of a
+  date* — the next feature branch is free to wire the thing up, and it will not think to go
+  correct a deadness claim it never read. So a doc, comment, or prompt that licenses a
+  DELETION must have its emptiness re-proved at ship time, not inherited: grep for the
+  producer/caller again, now. `PrismType.Grow` was documented dead in three doc sites and two
+  code comments, acquired a producer two days later, and the stale instruction to delete it
+  survived in a follow-up prompt that a fresh session would have executed. Deadness claims
+  are the most dangerous kind of stale doc, because acting on one is irreversible and the
+  code that proves them wrong is somewhere you were told not to look.
 
 ## 2.5 Tool-output gate — NEVER SKIPPED, IN EVERY MODE
 

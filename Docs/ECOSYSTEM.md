@@ -2890,6 +2890,29 @@ court, `nucleusEnvVolumeByDomain` and `liveVolumeByDomain` were already almost t
 **Watch for this whenever a mode repurposes a Cell-owned visual.** The Cell's visuals carry
 *semantics*, not just geometry — borrowing the nucleus silently borrowed the sanctuary rule with it.
 
+### 25.1a The mirror trap — losing the GEOMETRY with the semantics (Aug 2026)
+
+§25.1 is about a mode INHERITING semantics it did not want along with a Cell-owned visual. The
+mirror bit later, on the same declaration: `RefreshNucleusControlRadius` returns early when
+`NucleusIsControlZone` is false, so in Astro League `Cell.NucleusWorldRadius` reports **0** — the
+arena is right there, hundreds of units across, and the canonical "how big is the nucleus" accessor
+says zero. Anything asking a GEOMETRIC question through that property gets a plausible-looking
+wrong answer with no error: a soft play boundary keyed off it would have treated every position in
+the world as outside the nucleus.
+
+`Cell.NucleusVisualWorldRadius` is the fix: the same renderer-bounds measurement, taken BEFORE the
+control-zone branch. The control radius is now *derived* from it, so existing behaviour is
+bit-identical.
+
+**The rule to carry forward:** `NucleusWorldRadius` answers *who owns this cell*;
+`NucleusVisualWorldRadius` answers *how big is the core, in metres*. Placement, boundaries, camera
+framing and anything else spatial want the second. During the SPAWN CHAIN both are still empty —
+use `ExpectedNucleusWorldRadius` there (§18's rule is unchanged).
+
+First consumer: the Astro League ball's off-pitch drag ramp (`AstroLeagueBall.EffectiveDrag`),
+which bleeds a ball's speed increasingly fast once it leaves the nucleus — a soft boundary, never
+a wall, so nothing is teleported, culled or reflected.
+
 ### 25.2 A pen gains an inner wall
 
 The design ask was "aggressive little creatures that stay OUT of the arena until it starts to get

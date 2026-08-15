@@ -365,6 +365,239 @@ missile at ProjectileScale 10 — sized to the bay missile) · animator state sp
 **Flagged, deliberately NOT changed:** the skyburst direct-hit sphere (world radius 8.5) now
 visibly dwarfs its ~1.7 u visual; the old 15 u wedge masked it. `0.85 × ProjectileScale 10`
 looks emergent rather than authored — DogFight balance call for Garrett.
+
+---
+
+### 🔴 Vector flight model — Squirrel drift fix, Dolphin migration, Scarab refactor (`claude/astro-league-vessel-design-r5q2a8`)
+
+`VesselTransformer` now carries TWO movement models, selected per vessel by `vectorFlightModel`
+(default **off**). The scalar model integrated a speed SCALAR along `Course`, so mid-drift the
+engine pushed along the SLIDE — squeezing the throttle dug you deeper into it, which is why the
+drift read as ice rather than as driving. The vector model integrates a world-space velocity and
+applies thrust along the **NOSE**. Design + proof: `R_VesselActions/SQUIRREL_DRIFT.md`.
+
+**Outside a drift the two models are the same computation**, verified numerically over 4000 frames
+at 60 Hz with a wandering scissor throttle, periodic slow modifiers and turn rates 0→8°/frame:
+max |Δspeed| **5.7e-14**, max |ΔCourse| **2.2e-16**, max |Δposition| **1.7e-13**. That is the whole
+safety argument for not retuning the fleet — but it is arithmetic, not an editor observation, so
+step 2 below is the one that must actually be seen.
+
+| Vessel | flag | policy | what changed |
+|---|---|---|---|
+| **Squirrel** | on | Live | Thrust direction only. Throttle semantics UNCHANGED (`XDiff` scissor, `ThrottleScaler 60`, AI `XDiff`) |
+| **Scarab** | on | Live (own policy) | Refactor only — same feel, its `MoveShip` copy deleted |
+| **Dolphin** | on | **Locked** | Entering a drift no longer costs speed — the velocity vector freezes (grip 0 + zero thrust). This is a **deliberate behaviour change**; the pre-existing slowdown was the boost being cancelled on drift entry |
+| everyone else | off | — | untouched |
+
+**Rounds 2–3 (2026-08-15) — fixes after play-testing:**
+
+- **The drift overshoot ceiling was braking, not bounding.** It clamped `|v|` to
+  `ComputeThrottleTarget() × 1.25` outright, so a vessel that ENTERED a drift fast was slammed to
+  its current cruise target on the first drift frame. On the Dolphin that meant a boosted 357 u/s
+  meeting a ~55 u/s ceiling (`ChargeBoostAction.BeginCharge` clears the boost on drift entry, so the
+  target collapses), and because the ceiling tracks `XDiff` the scissor throttle read as a speed
+  dial mid-drift. **Both reported symptoms, one cause.** The ceiling now takes the pre-thrust speed
+  as a floor: it bounds GAIN and never brakes. **This also affected the Squirrel** — 180 → 75 on the
+  first frame of any drift entered above cruise; now 177 and decaying naturally.
+- **`MissingReferenceException` from `AstroLeagueBall.SampleVesselVelocities`.** `GameDataSO.Vessels`
+  is a `List<IVessel>`, and `==` on an **interface** reference is a plain C# comparison that never
+  reaches `UnityEngine.Object`'s overload — so a destroyed `VesselController` sailed through
+  `vessel == null` and threw on `vessel.Transform`. Fixed at both ends: `VesselController.OnDestroy`
+  now leaves the roster (only the despawn path removed before, so the freestyle vessel-changer swap
+  leaked destroyed hulls), and the ball routes every roster walk through a `LiveTransform` helper
+  that tests the Unity object behind the interface. Sample dictionaries are pruned of dead keys.
+
+⚠ **Correction to the brief this was built from:** `holdSpeedWhileDrifting` (and
+`RefreshDriftSpeedHold` / `_driftSpeedHeld` / `_heldDriftSpeed`) **has never existed in this
+repository** — absent from `VesselTransformer.cs`, from that file's git history, and from
+`Dolphin.prefab`. The Dolphin's throttle was LIVE during drift, i.e. it had the same raw defect as
+the Squirrel.
+
+⚠ **The Dolphin's drift-entry slowdown is PRE-EXISTING and is not fixable on the scalar path.**
+Its drift calls `ChargeBoostActionExecutor.BeginCharge`, which clears `BoostMultiplier` /
+`IsBoosting` / `IsChargedBoostDischarging` (it must — a cancelled discharge would otherwise leave a
+permanent free multiplier). That collapses `ComputeThrottleTarget()` from the boosted 357 to plain
+cruise 78 the instant you drift, and on the scalar model `speed` is a value that CHASES the target,
+so it is dragged down with it (357 → 350 on frame 1, ~139 within a second). No tuning reaches it.
+Under the vector model speed is STATE, so `Locked` freezes it at 357 for the drift's duration. That
+is why the Dolphin is on the vector model rather than reverted — a round-2 revert to scalar
+reinstated exactly this slowdown and was undone.
+
+**Verify in editor (in order):**
+1. **Squirrel — drift recovery (the point).** HexRace or freestyle. Get to speed, hold LT into a
+   hard drift until the course visibly separates from the nose, then **aim the nose out of the
+   slide and squeeze the throttle**. The vessel must pull ONTO the nose direction. Before this
+   change it accelerated further along the slide.
+2. **Squirrel — no-drift identity (the claim).** Fly with no drift at all: accelerate, brake, turn
+   hard, take a danger-prism slow, ride the tube, boost. It must feel *exactly* as on `main`. If
+   anything reads different outside a drift, the identity broke and that is a stop-ship.
+3. **Squirrel — enter a drift at BOOST speed (the round-1 regression).** Speed must decay
+   smoothly toward the cruise target. It must NOT snap down on the first drift frame, and the
+   scissor throttle must not read as a speed dial while drifting. This is the exact failure that
+   was reported on the Dolphin; the Squirrel had it too.
+4. **Dolphin — drifting at max speed costs nothing (the reported bug).** Fly straight, build the
+   boost, and pull the drift trigger at top speed. Speed must **hold flat** for the drift's
+   duration — no dip at all, and the scissor throttle must not move it. Heading holds too (grip 0).
+   Release: the discharge resumes from the speed you kept.
+5. **Dolphin — danger prism while drifting.** Clip a danger prism mid-drift; the slow MUST land.
+   `throttleMultiplier` stays live through the lock — a drifting vessel that shrugs off danger
+   prisms is a locked-design violation, not a feel win.
+5a. **Dolphin — boost discharge on release.** Hold the drift to bank charge, release. Acceleration
+   must be immediate; you start from the speed you kept, so there should be less to make up than
+   before, never more.
+6. **AI drift still locks course on the objective.** HexRace, watch an AI approach a crystal. At
+   drift entry its trail must continue toward the crystal while the hull swings off-axis. If the
+   trail follows the nose, the `Course` re-aim in `SyncExternalWrites` regressed — this was a live
+   bug in the Scarab's first-pass transformer and is the reason that method exists.
+7. **Menu vessel swap preserves speed** on Squirrel, Dolphin and Scarab. Freestyle at speed →
+   vessel changer → swap. The new hull must inherit the speed, not drop to a stop
+   (`SetInitialSpeed` → the external-write re-seed).
+8. **Squirrel — drift overshoot plateau.** From CRUISE (not boost), hold a long clean drift at full
+   throttle: speed may rise above the straight-line cruise but must plateau at **1.25×** the
+   throttle target. Set `driftOvershootCeiling` to 1 and confirm the plateau disappears.
+10. **No `MissingReferenceException` from the ball.** Astro League or freestyle with a forged ball
+   live: swap vessels via the changer toy several times, and let an AI vessel despawn. The console
+   must stay clean — previously `AstroLeagueBall.SampleVesselVelocities` threw every physics tick
+   once any vessel in the roster had been destroyed.
+9. **MPPM two-client.** A drifting vessel's trail and heading must match on the remote peer.
+   `n_Speed`/`n_Course` are owner-write and the transformer does not run on non-owners
+   (`ToggleActive(false)` for `IsNetworkClient`), so nothing structural changed — confirm it.
+
+**Tuning:** `driftOvershootCeiling` 1.25 (Squirrel/Dolphin/Scarab) · `driftThrottlePolicy`
+Live/Locked/Live · Squirrel grip 0.5 (tier 1) / 0.25 (sharp) · Dolphin grip 0 · grip convergence is
+now frame-rate independent (`1 − e^(−k·dt)`; ~0.4% from the old `k·dt` at 60 fps).
+
+**Known gaps:** the Dolphin cannot accelerate at all while drifting now (that is what `Locked`
+means — verify it reads as a commitment rather than a stall when drifting from low speed); no
+edit-mode test guards the identity (the model lives on a MonoBehaviour needing a
+live vessel — `SQUIRREL_DRIFT.md` §9 names the factoring that would make one cheap); the Manta is
+the remaining scalar-path vessel that drifts (two-trigger, `singleTriggerDrift: 0`) and still has
+the raw defect — its flag flip is a one-line change plus a feel pass, deliberately not taken here.
+
+---
+
+### 🔴 Scarab vessel foundation — new VesselClassType 12, out-of-editor prefab clone (`claude/astro-league-vessel-design-r5q2a8`)
+
+Authored entirely without Unity: `Scarab.prefab` is a programmatic clone of `Sparrow.prefab`
+(Sparrow weaponry excised, transformer/juke/telemetry retyped in place, switch executor and
+cavitation blast added), plus 14 new SO/prefab assets and three registrations (`Vessel Prefab
+Container`, `DefaultNetworkPrefabs`, `ArcadeGameAstroLeague.Vessels` — Rhino deliberately kept at
+index 0). Design: `SCARAB.md`. All YAML machine-validated (field parity vs live classes, zero
+dangling fileIDs, guid uniqueness); C# stub-compiled under mcs. None of it has been imported.
+
+**Element map (authored 2026-08-15, no longer proposal):** Charge = cavitation blast **cooldown**
+(2.5s → 1.25s at L10) + **Cavitation Shear** at L5 (blast destroys shielded prisms) · Mass = switch
+size (×1 → ×2.5) + **Armored Switch** at L5 (switch prisms arrive shielded) · Space = forged **ball
+size** (×1 → **×4** at L10; the map's own multiplier is the carrier) + L5 open · Time = throttle top
+speed (×1 → ×1.5) + **Snap Dash** at L5 (double-tap RT). The right-stick dash is **base kit with no
+cooldown**; only the blast riding it is paced.
+
+⚠ **IF THE SCARAB SPAWNS NOTHING AND SHOWS AS A PLAIN SPHERE IN THE VESSEL CHANGER — check
+`_SO_Assets/Vessel Prefab Container.asset` slot 7 first.** Both symptoms are ONE cause:
+`VesselPrefabContainer.TryGetShipPrefab(Scarab)` returning false. `VesselChangerToy.BuildStation`
+falls back to `ToyFactory.AddSphereBody` when the lookup fails, so the "big ball" IS the
+lookup failing, not a broken model. The asset's text is correct (guid, fileID, root transform,
+VesselStatus with `vesselType: 12` — all verified), so the remaining cause is editor-side: a
+reference authored outside Unity can resolve to null, and the slot then shows
+**None (Transform)**. Open the asset and re-drag `Scarab.prefab` into the empty slot. The
+container now LOGS the empty slot by index instead of skipping it in silence, so the next
+occurrence names itself.
+
+**Verify in editor (in order):**
+0. **The hull and the camera (new 2026-08-15).** Open the prefab: a `ScarabHull` child now carries
+   `ScarabHullBuilder`; right-click the component ▸ **Rebuild Hull** to see the mesh without
+   entering play mode. In flight the Scarab must read as a BEETLE — domed shell with a seam down
+   the middle, a forward horn, six legs — and the inherited Sparrow mesh must be invisible (its
+   renderers are disabled at build time; its GameObjects stay, because the vessel's BoxCollider and
+   ImpactCollider live on them, so collisions must still work). The domain colour must land on the
+   CARAPACE and horn (submesh 1), not the underside. Camera sits directly behind with **no vertical
+   lift** — `followOffset {0, 0, -50}`; the old `y: 10` was inherited from the Sparrow, the only
+   vessel that carries one.
+0a. **Puppetry, roll and blast (new 2026-08-15).** Fly the Scarab and watch the hull: the wing
+   cases must crack open under yaw (wider on the outside of the turn), the legs tuck as you speed
+   up and splay as you slow, the horn swings against the nose. A rigid hull means
+   `ScarabAnimation` resolved no parts — check the console for its unresolved-part report.
+   Right-stick dash: the whole visible ship must spin 360° (it previously rolled the hidden FBX).
+   And the dash must now throw a **visible spherical blast** ~45u ahead — if nothing appears,
+   `Detonate()` regressed.
+1. **Open `Assets/_Prefabs/Spacevessels/Scarab.prefab` and SAVE it** — this is load-bearing, not
+   a smoke test: the clone carries Sparrow's `NetworkObject.GlobalObjectIdHash` until the editor
+   re-serializes it, and two registered network prefabs sharing a hash collide. Open, confirm no
+   missing-script rows, save.
+2. Console clean on import (no `Broken text PPtr`, no unresolvable guids).
+3. Menu_Main → freestyle → vessel-changer toy now shows a 7th model → swap to Scarab. Fly:
+   RT = accelerating analog throttle, thrust always along the NOSE, holding it must NOT decay
+   (full throttle ≈ 90 u/s after 1s, 180 ceiling by 3s; release drops 180 → 0 in ~1.5s, never a
+   dead stop below MinimumSpeed 10); LT = analog drift, course visibly decoupling from the nose,
+   speed retained; right stick to the perimeter = lateral dash + 360° visual roll (camera must NOT
+   roll) — **repeatable immediately, there is no dash cooldown**;
+   A / Space = a low-poly toy RING blooms ~150u ahead on the COURSE with its interior filled by a
+   Vogel-spiral prism disc (drift then place — the ring should appear where you're going, not where
+   you're pointing), second+third presses spend the remaining charges, fourth refuses.
+4. **Crystals → a ball.** **EVERY omni crystal forges a ball** — the energy gate is authored OFF
+   (`_requireEnergy: 0`) by request. Fly through one: a ball appears ahead of your nose carrying
+   your speed and domain colour, and the console prints `[ScarabBallForge] … forged a {domain}
+   ball … @ N u/s`. Each crystal also brightens the **Switch icon** one step (0→3 charges).
+   ⚠ If a ball spawns but sits still, the freeze/velocity ordering in `LaunchServer` regressed; if
+   TWO balls appear per crystal in MPPM, the server gate regressed.
+   ⚠ **Balls accumulate without bound** while the gate is off and freestyle has no arena boundary
+   — nothing despawns them, and each live ball costs a per-tick prism scan plus a sweep over every
+   vessel. Fine for a short session; if a long one degrades, that is the population cap (§15.5),
+   not a new bug.
+   *(The energy economy still exists behind that one flag: turn `_requireEnergy` on and the meter
+   gates forging again — four crystals fill the ring, the fifth forges. While it is off the HUD's
+   energy ring fills but gates nothing.)*
+3b. **The cavitation blast.** Every right-stick dash that finds the blast off cooldown throws a
+   small SPHERICAL explosion ~45u ahead along the dash direction (diameter 90). It must:
+   destroy prisms in that volume (fly at your own trail and dash into it); **kill fauna** caught in
+   it (a creature dies when its body prisms go — dash through a swarm in a populated cell); and
+   **debuff an opposing pilot** it engulfs — all four of their element flowers drop ~half a level
+   and recover over 4s. It must NOT hit your own domain's mass or teammates (`affectSelf 0`).
+   ⚠ Dash again immediately: the DASH must still fire even while the blast is recharging — if the
+   dodge is blocked by the cooldown, the split regressed.
+4a. **Gauges**: the CHARGE icon (leftmost) is bright orange when the blast is ready and dims for
+   the cooldown after each blast; the SWITCH icon (second) dims one step per placement and refuses
+   (staying dim) at zero; the SPACE icon (third) plus the energy ring flip to the READY colour when
+   the meter fills. Nothing reads the dash itself — it has no cooldown to show.
+5. Astro League: the configure modal's carousel now offers Rhino + Scarab; pick Scarab, 2 players
+   + AI → AI must all spawn as RHINOS (list order — if an AI spawns as a Scarab, `Vessels[0]`
+   got reordered); play a rally, hull-strike the ball, place a ring in front of your goal.
+6. MPPM two-client: remote peer sees the Scarab hull, its trail, and placed rings (both peers lay
+   the ring via the replicated A-press; positions may differ slightly under latency — expected).
+7. Elemental seeding (debug), one per row:
+   - **Charge L10** → blast cooldown halves (2.5s → 1.25s), visible on the Charge icon's dim time.
+     **Charge L5** → dash into a SHIELDED prism wall: the blast now DESTROYS it instead of only
+     shedding shields. Super-shielded mass must still survive and kill the blast.
+   - **Mass L10** → bigger rings + a wider interior disc. **Mass L5** → newly placed switches bloom
+     in already SHIELDED (shield geometry on every ring prism at birth, not popped on afterwards).
+   - **Space L10** → a forged ball is **4× the size** of one forged at rest. Balls already in flight
+     keep the size they were born with (stamped once) — that is correct, not a bug.
+   - **Time L10** → higher throttle ceiling (~270). **Time L5** → double-tap RT dashes forward.
+8. **Dash-into-crystal parity** (the trajectory check): hold a heading, dash sideways, and clip an
+   omni crystal *during* the dash. The forged ball must leave along the DASH-blended heading, not
+   the throttle line — the same trajectory a stationary ball would take if you dashed into it.
+
+**First-pass tuning (expect a balancing pass):** accel 90 u/s², coast drag 120 (release-only —
+holding the trigger must never decay), top speed 180 (×1.5 at Time 10), dash 80 u/s / 0.5s /
+**no cooldown**, Snap Dash 100 u/s / 0.4s / 0.3s double-tap window, cavitation blast scale 90 /
+offset 45 / 2.5s cooldown (×0.5 at Charge 10) / duration 0.85s / `proportionalDebris` with
+restitution 1/3 × Inertia 1.8 (the Dolphin's shipped group), blast debuff −0.5 on all four
+elements over 4s with 1s per-victim anti-spam, ring radius 20 (×2.5 at Mass 10), 28 interior +
+44 burst prisms (2.5, 1.5, 8), place distance flat 150 (Space no longer scales it), 3 switch
+charges, crystal grants +0.334 charge / +0.25 energy, ball size ×1 → ×4 at Space 10.
+
+**Known gaps (deliberate, tracked in SCARAB.md):** the HUD gauges are live but ride the cloned
+Sparrow variant's ART — the four icons still draw Sparrow weapon glyphs, so the row reads wrong
+even though every binding is correct (art pass, not wiring); the switch ring is body-only (no ball
+deflection or energy trigger — mode work, and the ball cannot bounce off prisms at all, SCARAB.md
+§5); a forged ball has no boundary in freestyle so it coasts away forever (the documented §15.6
+candidate, not a bug) and keeps the mode's last-striker recolouring until permanent ownership
+lands (§4.2); **Space's L5 upgrade is the one deliberately open slot** (the notes assign Space the
+ball's size and name no upgrade — do not invent one); the blast's optional cooldown sweep ring
+(`blastCooldownRing`) is unwired, so the Charge readout is tint-only until an art pass adds it;
+AI never flies the Scarab (list order); touch cannot place switches (no Button1 raise site).
+
+---
 ### 🔴 Sparrow Turret Stance — two flight visualizations, still-nothing hardening (`claude/sparrow-prism-attack-hg6n78`)
 
 Authored without a Unity compile or play-test. The stance STILL showed nothing after the
