@@ -38,6 +38,28 @@ executor, replicated unlock bits, no new fundamentals).
 | Serpent | Time→boost duration (1.6) |
 | Squirrel | **All four LIVE (approved + shipped, see §2 Squirrel)**: Charge→skim energy per prism hit (map 2.0, read in `SkimmerBoostPrismEffectSO`) · Mass→trail prism VOLUME (authored `trailVolume` ElementalFloat 1→2.5 on `VesselPrismController`, cube-root per axis) · Space→skimmer reach (authored skimmer `Scale` ElementalFloat 15→30) · Time→boost-ring cooldown (authored `cooldownMultiplierAtFullTime` 0.5 on `SquirrelTubeActionSO`; the generic map Time multiplier stays 1.0 because `VesselTransformer` consumes it for boost speed). The former Time→top speed mapping was REMOVED (prefab `ThrottleScalerMultiplier` disabled) — one parameter per element. |
 
+### Flight model (not an elemental mapping, but it changes what the Time rows *feel* like)
+
+`VesselTransformer` carries two movement models since 2026-08-15, selected per vessel by
+`vectorFlightModel` (default **off**). The scalar model integrates a speed **scalar** along
+`Course`, so during a drift the throttle pushes along the SLIDE — squeezing mid-drift digs you
+deeper into it. The vector model integrates a world-space velocity and applies thrust along the
+**NOSE**. Outside a drift the two are provably the same computation (proof + numeric verification:
+`_Scripts/Controller/Vessel/R_VesselActions/SQUIRREL_DRIFT.md` §3.2), so the flag changes behaviour
+only inside the drift window.
+
+| Vessel | Model | Drift throttle policy |
+|---|---|---|
+| **Squirrel** | vector | **Live** — thrust along the nose; aiming out of a slide and squeezing recovers |
+| **Dolphin** | vector | **Locked** — no acceleration while drifting; with its authored grip 0 the velocity vector is frozen outright (`DOLPHIN_ENERGY_ECONOMY.md` §2a) |
+| **Scarab** | vector | Live, own policy (integrator + hard ceiling + Snap Dash) |
+| everyone else | scalar | — (bit-identical to before the flag existed) |
+
+Relevant to this document because three Time rows are speed rows: the Squirrel's Time→top-speed
+mapping is retired (`ThrottleScalerMultiplier` disabled), the Dolphin's Time reaches speed only via
+`CurrentBoostAmount`, and the Scarab's Time IS its throttle ceiling. None of those mappings changed
+here — only the direction thrust is applied in.
+
 ## 2. Level-5 upgrade proposals (NOT implemented — mark up)
 
 Ground rules used: reuse existing primitives (regular shield, piercing/stop-on-impact,

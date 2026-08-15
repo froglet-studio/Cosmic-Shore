@@ -157,6 +157,50 @@ boost multiplier permanently.
 
 ---
 
+## 2a. The drift is a momentum LOCK (flight-model migration, 2026-08-15)
+
+The Dolphin now runs the **vector flight model** (`vectorFlightModel: 1` on the prefab) with
+`driftThrottlePolicy: Locked`. Full model, the identity proof and the constraints it had to respect
+are in **`SQUIRREL_DRIFT.md` §3–§4**; this section is the Dolphin's half.
+
+**What it does.** For the drift's duration the Dolphin's nose acceleration is **zero**. Its authored
+grip is also **0** (`DolphinDriftAction.driftDamping: 0`), and zero thrust plus zero grip means the
+velocity vector is left completely untouched — **direction and magnitude both**. Hold the drift and
+you keep exactly the momentum you entered with, aimed exactly where you entered it. Release and the
+throttle takes over again from that speed.
+
+That is a deliberate mechanic, not a limitation: the Dolphin's drift is the **charge** (§2), so
+holding it is already a commitment, and locking momentum makes the commitment concrete — you are
+spending your line to bank a boost.
+
+**Correcting the record.** Earlier notes (including the brief this migration was written from)
+described a `holdSpeedWhileDrifting` boolean that disabled the throttle for the drift's duration,
+with `RefreshDriftSpeedHold` / `_driftSpeedHeld` / `_heldDriftSpeed` machinery, rationalised as
+"half a lock reads as a bug, not a mechanic". **No such flag has ever existed in this repository** —
+it is absent from `VesselTransformer.cs`, from that file's entire git history, and from
+`Dolphin.prefab`. What actually shipped was the plain scalar defect: thrust applied along `Course`,
+so with grip 0 the Dolphin's course froze at drift entry while the throttle kept changing its speed
+*along the frozen line*. Squeezing mid-drift accelerated the slide.
+
+So this migration is **not** a no-op refactor of an existing lock, and it is not "reproducing
+current behaviour" — it is a **behaviour change on a shipped vessel, chosen deliberately**
+(Garrett, 2026-08-15) from three options: give the Dolphin the Squirrel's live-throttle fix, lock
+acceleration outright, or leave it on the scalar path. The lock was chosen. Verify it as a change,
+not as a regression check.
+
+**What did NOT change.** The drift's other three actions are untouched, including `ChargeBoostAction`
+— the boost still fills while drifting and discharges on release. The discharge path is worth
+watching specifically: the old concern was that the hold had to be released at `EndDrift` rather
+than at the end of the ease-out *because that instant starts the discharge and it must accelerate
+immediately*. Under the vector model there is nothing to release — the drift ends, nose acceleration
+resumes, and the discharge has already raised `ComputeThrottleTarget`, so the error term is large
+and thrust follows on the first frame. Equivalent or better, but it is on the verification list.
+
+`throttleMultiplier` and `velocityShift` stay live throughout — a drifting Dolphin is **not** immune
+to danger prisms or knockback. That is a locked-design requirement, and it is also on the list.
+
+---
+
 ## 3. The hull reads out the blast
 
 `RiptideAnimation` opens the model's jaws with Energy, so a pilot can see how wide their next

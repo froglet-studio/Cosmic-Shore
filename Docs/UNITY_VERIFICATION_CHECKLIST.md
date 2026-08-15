@@ -23,6 +23,76 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Vector flight model — Squirrel drift fix, Dolphin migration, Scarab refactor (`claude/astro-league-vessel-design-r5q2a8`)
+
+`VesselTransformer` now carries TWO movement models, selected per vessel by `vectorFlightModel`
+(default **off**). The scalar model integrated a speed SCALAR along `Course`, so mid-drift the
+engine pushed along the SLIDE — squeezing the throttle dug you deeper into it, which is why the
+drift read as ice rather than as driving. The vector model integrates a world-space velocity and
+applies thrust along the **NOSE**. Design + proof: `R_VesselActions/SQUIRREL_DRIFT.md`.
+
+**Outside a drift the two models are the same computation**, verified numerically over 4000 frames
+at 60 Hz with a wandering scissor throttle, periodic slow modifiers and turn rates 0→8°/frame:
+max |Δspeed| **5.7e-14**, max |ΔCourse| **2.2e-16**, max |Δposition| **1.7e-13**. That is the whole
+safety argument for not retuning the fleet — but it is arithmetic, not an editor observation, so
+step 2 below is the one that must actually be seen.
+
+| Vessel | flag | policy | what changed |
+|---|---|---|---|
+| **Squirrel** | on | Live | Thrust direction only. Throttle semantics UNCHANGED (`XDiff` scissor, `ThrottleScaler 60`, AI `XDiff`) |
+| **Dolphin** | on | **Locked** | **Deliberate behaviour change** (chosen 2026-08-15): no acceleration while drifting; with grip 0 the velocity vector is frozen outright |
+| **Scarab** | on | Live (own policy) | Refactor only — same feel, its `MoveShip` copy deleted |
+| everyone else | off | — | untouched |
+
+⚠ **Correction to the brief this was built from:** `holdSpeedWhileDrifting` (and
+`RefreshDriftSpeedHold` / `_driftSpeedHeld` / `_heldDriftSpeed`) **has never existed in this
+repository** — absent from `VesselTransformer.cs`, from that file's git history, and from
+`Dolphin.prefab`. The Dolphin's throttle was LIVE during drift, i.e. it had the same raw defect as
+the Squirrel. So the Dolphin change is a real behaviour change, not the retirement of a workaround;
+verify it as a change.
+
+**Verify in editor (in order):**
+1. **Squirrel — drift recovery (the point).** HexRace or freestyle. Get to speed, hold LT into a
+   hard drift until the course visibly separates from the nose, then **aim the nose out of the
+   slide and squeeze the throttle**. The vessel must pull ONTO the nose direction. Before this
+   change it accelerated further along the slide.
+2. **Squirrel — no-drift identity (the claim).** Fly with no drift at all: accelerate, brake, turn
+   hard, take a danger-prism slow, ride the tube, boost. It must feel *exactly* as on `main`. If
+   anything reads different outside a drift, the identity broke and that is a stop-ship.
+3. **Dolphin — the momentum lock.** Enter a drift at speed, then work the throttle. Speed AND
+   heading must both hold flat for the drift's duration. (This is the change: previously the
+   throttle still moved your speed along the frozen line.)
+4. **Dolphin — danger prism while drifting.** Clip a danger prism mid-drift. The slow MUST land —
+   `throttleMultiplier` stays live through the lock. A drifting vessel that shrugs off danger
+   prisms is a locked-design violation, not a feel win.
+5. **Dolphin — boost discharge on release.** Hold the drift to bank charge, release. Acceleration
+   must begin on the first frame after release, not after a beat. (The discharge raises the
+   throttle target, so the error term is large and thrust follows immediately — but prove it.)
+6. **AI drift still locks course on the objective.** HexRace, watch an AI approach a crystal. At
+   drift entry its trail must continue toward the crystal while the hull swings off-axis. If the
+   trail follows the nose, the `Course` re-aim in `SyncExternalWrites` regressed — this was a live
+   bug in the Scarab's first-pass transformer and is the reason that method exists.
+7. **Menu vessel swap preserves speed** on Squirrel, Dolphin and Scarab. Freestyle at speed →
+   vessel changer → swap. The new hull must inherit the speed, not drop to a stop
+   (`SetInitialSpeed` → the external-write re-seed).
+8. **Squirrel — drift overshoot plateau.** Hold a long clean drift at full throttle: speed may rise
+   above the straight-line cruise but must plateau at **1.25×** the throttle target. Set
+   `driftOvershootCeiling` to 1 and confirm the plateau disappears.
+9. **MPPM two-client.** A drifting vessel's trail and heading must match on the remote peer.
+   `n_Speed`/`n_Course` are owner-write and the transformer does not run on non-owners
+   (`ToggleActive(false)` for `IsNetworkClient`), so nothing structural changed — confirm it.
+
+**Tuning:** `driftOvershootCeiling` 1.25 (Squirrel/Dolphin/Scarab) · `driftThrottlePolicy`
+Live/Locked/Live · Squirrel grip 0.5 (tier 1) / 0.25 (sharp) · Dolphin grip 0 · grip convergence is
+now frame-rate independent (`1 − e^(−k·dt)`; ~0.4% from the old `k·dt` at 60 fps).
+
+**Known gaps:** no edit-mode test guards the identity (the model lives on a MonoBehaviour needing a
+live vessel — `SQUIRREL_DRIFT.md` §9 names the factoring that would make one cheap); the Manta is
+the remaining scalar-path vessel that drifts (two-trigger, `singleTriggerDrift: 0`) and still has
+the raw defect — its flag flip is a one-line change plus a feel pass, deliberately not taken here.
+
+---
+
 ### 🔴 Scarab vessel foundation — new VesselClassType 12, out-of-editor prefab clone (`claude/astro-league-vessel-design-r5q2a8`)
 
 Authored entirely without Unity: `Scarab.prefab` is a programmatic clone of `Sparrow.prefab`

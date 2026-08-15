@@ -10,6 +10,35 @@ using System.Linq;
 
 namespace CosmicShore.Gameplay
 {
+/// <summary>
+/// The fleet's movement base. It carries TWO flight models, selected per vessel by
+/// <c>vectorFlightModel</c>:
+///
+/// <b>SCALAR (default, historical).</b> A single smoothed <see cref="speed"/> eased toward
+/// <see cref="ComputeThrottleTarget"/>, integrated along <c>VesselStatus.Course</c>.
+///
+/// <b>VECTOR (opt-in).</b> A world-space <see cref="_velocity"/> is integrated directly: thrust
+/// is applied along the <b>NOSE</b>, momentum carries you along the old line, and
+/// <see cref="Grip"/> rotates the two back together. Course and Speed are then DERIVED from that
+/// vector rather than being the primitives.
+///
+/// <b>Why the vector model exists.</b> The scalar model's throttle is a number with no direction,
+/// so it can only push along Course. Outside a drift Course == forward and that is fine. Inside
+/// one they are different vectors, and pushing along Course means squeezing the throttle mid-drift
+/// digs you DEEPER into the slide — the drift reads as ice rather than as driving. No amount of
+/// tuning fixes that, because the thrust direction is wrong; it needs the second vector.
+///
+/// <b>THE IDENTITY (this is why the flag is cheap and needs no fleet retune).</b> Outside a drift
+/// the two models are provably the same computation. Grip forces <c>v = forward·s</c>, so
+/// <c>dot(v, forward) == |v| == speed</c>; the nose step
+/// <c>v += forward·(step(speed, target) − speed)</c> leaves <c>|v| = step(speed, target)</c>,
+/// which is exactly what <see cref="AdvanceSpeed"/> writes; <c>Course = v/|v| = forward</c>, which
+/// is exactly what the scalar branch writes; and <c>position += |v|·Course·dt</c> is the same
+/// integration. Both paths call the same <see cref="StepTowardTarget"/>, so this is one shared
+/// function, not two implementations that happen to agree. A vessel with the flag OFF is
+/// bit-identical to before the flag existed, and a vessel with it ON differs only inside the
+/// drift window.
+/// </summary>
 public class VesselTransformer : MonoBehaviour
 {
     protected const float LERP_AMOUNT = 1.5f;
@@ -25,7 +54,55 @@ public class VesselTransformer : MonoBehaviour
              "for the default two-trigger drift where both triggers sum (e.g. Manta).")]
     [SerializeField] bool singleTriggerDrift = false;
 
-    [HideInInspector] public float DriftDamping = 0f;
+    #region Flight model
+    /// <summary>What the throttle is allowed to do while the vessel is drifting. Only consulted
+    /// by the VECTOR flight model — on the scalar path the throttle is always live.</summary>
+    public enum DriftThrottlePolicy
+    {
+        /// <summary>Thrust keeps acting, along the NOSE. Aiming out of a slide and squeezing is
+        /// how you recover — the racer's answer.</summary>
+        Live = 0,
+
+        /// <summary>No acceleration for the drift's duration. With Grip 0 this freezes the
+        /// velocity vector outright — direction AND magnitude — so the drift is a hard
+        /// momentum lock rather than a steering option. The Dolphin's authored mechanic.</summary>
+        Locked = 1,
+    }
+
+    [Header("Flight model")]
+    [Tooltip("Integrate a world-space VELOCITY VECTOR instead of a scalar speed along Course.\n\n" +
+             "OFF (default) is the fleet's historical scalar model and is untouched.\n\n" +
+             "ON fixes the drift defect: the scalar model applies thrust along COURSE, so " +
+             "squeezing the throttle mid-drift digs you DEEPER into the slide instead of pulling " +
+             "you out — the drift reads as ice rather than as driving. Under the vector model " +
+             "thrust always acts along the NOSE while momentum carries you down the old line.\n\n" +
+             "OUTSIDE A DRIFT THE TWO MODELS ARE PROVABLY IDENTICAL (see the class docs), so " +
+             "this flag changes behaviour only inside the drift window and needs no retune.")]
+    [SerializeField] bool vectorFlightModel = false;
+
+    [Tooltip("VECTOR MODEL ONLY. Ceiling on |velocity| while drifting, as a multiple of the " +
+             "current throttle target. Vector addition lets momentum + nose-thrust exceed the " +
+             "target during a drift — a real speed payoff for a clean line, which the scalar " +
+             "model cannot produce — and this bounds it so drifting cannot become the dominant " +
+             "way to go fast. 1 = no overshoot at all. Ignored outside a drift, which is what " +
+             "keeps the no-drift identity exact.")]
+    [SerializeField, Min(1f)] float driftOvershootCeiling = 1.25f;
+
+    [Tooltip("VECTOR MODEL ONLY. Whether the throttle keeps acting during a drift (see the " +
+             "enum's own docs).")]
+    [SerializeField] DriftThrottlePolicy driftThrottlePolicy = DriftThrottlePolicy.Live;
+    #endregion
+
+    /// <summary>
+    /// How fast momentum rotates back onto the nose while drifting — the tyres' bite. Written
+    /// every frame by <see cref="ApplyAnalogDrift"/> from the active drift tier's authored
+    /// damping (0 = no convergence at all, a pure frozen slide), and zeroed by
+    /// <see cref="RestoreDriftBase"/>. Was named <c>DriftDamping</c>; the new name is what it has
+    /// always meant. A `[HideInInspector] public` runtime mirror — prefab-serialized values are
+    /// stale garbage, exactly like <see cref="ThrottleScaler"/>.
+    /// </summary>
+    [FormerlySerializedAs("DriftDamping")]
+    [HideInInspector] public float Grip = 0f;
 
     [Header("Events")]
     [SerializeField] private ScriptableEventBoostChanged boostChanged;
@@ -219,6 +296,14 @@ public class VesselTransformer : MonoBehaviour
             velocityShift = Vector3.zero;
             _bodyFlaring = true;   // force one rest-state material write on the next pass
 
+            // Vector flight model: drop the momentum vector and re-seed on the next frame from
+            // whatever `speed` is by then, so an inherited-speed swap (SetInitialSpeed after a
+            // reset) still works and a respawn does not carry the previous life's heading.
+            _velocity = Vector3.zero;
+            _lastPublishedSpeed = 0f;
+            _lastPublishedCourse = Vector3.zero;
+            _vectorSeeded = false;
+
             // Drift
             _singleDriftActive = false;
             _sharpDriftActive = false;
@@ -265,6 +350,12 @@ public class VesselTransformer : MonoBehaviour
         {
             transform.SetPositionAndRotation(pose.position, pose.rotation);
             accumulatedRotation = pose.rotation;
+
+            // A pose write is a teleport, so momentum must follow the new facing rather than the
+            // old one. Outside a drift grip would snap it back within a frame anyway; mid-drift
+            // (a Wanderway return, a swap while sliding) it would otherwise keep flying the old
+            // heading out of a hull that is now pointing somewhere else.
+            if (_vectorSeeded) SetCourseVelocity(pose.rotation * Vector3.forward);
         }
 
         /// <summary>
@@ -357,7 +448,7 @@ public class VesselTransformer : MonoBehaviour
             PitchScaler = _driftBaseRotations.x;
             YawScaler = _driftBaseRotations.y;
             RollScaler = _driftBaseRotations.z;
-            DriftDamping = 0f;
+            Grip = 0f;
             _hasDriftBase = false;
         }
 
@@ -429,7 +520,7 @@ public class VesselTransformer : MonoBehaviour
             PitchScaler = _driftBaseRotations.x * effectiveMult;
             YawScaler = _driftBaseRotations.y * effectiveMult;
             RollScaler = _driftBaseRotations.z * effectiveMult;
-            DriftDamping = effectiveDamp;
+            Grip = effectiveDamp;
         }
 
         // ----------------------------- Movement Logic -----------------------------
@@ -490,20 +581,151 @@ public class VesselTransformer : MonoBehaviour
         public void SetSpeedTrackingRate(float unitsPerSecond)
             => _speedTrackingRate = Mathf.Max(0f, unitsPerSecond);
 
-        /// <summary>Advance the smoothed cruise speed one frame toward
-        /// <paramref name="target"/> — constant-rate while a tracking rate is set
-        /// (see <see cref="SetSpeedTrackingRate"/>), exponential lerp otherwise.</summary>
-        protected void AdvanceSpeed(float target)
+        /// <summary>
+        /// One frame of tracking from <paramref name="current"/> toward <paramref name="target"/> —
+        /// constant-rate while a tracking rate is set (see <see cref="SetSpeedTrackingRate"/>),
+        /// exponential lerp otherwise. Returns the new value rather than writing anything, because
+        /// BOTH flight models step through here: the scalar path applies it to
+        /// <see cref="speed"/>, the vector path to the velocity's nose component. That shared call
+        /// is what makes the no-drift identity an identity instead of a coincidence.
+        ///
+        /// The tracking rate is cleared ONLY on landing, and left completely alone otherwise — the
+        /// Rhino's ramp boost latches it across frames and a mid-ramp boost must resume, so this
+        /// must never consume it speculatively.
+        /// </summary>
+        protected float StepTowardTarget(float current, float target, float dt)
         {
             if (_speedTrackingRate > 0f)
             {
-                speed = Mathf.MoveTowards(speed, target, _speedTrackingRate * Time.deltaTime);
-                if (Mathf.Approximately(speed, target))
+                float next = Mathf.MoveTowards(current, target, _speedTrackingRate * dt);
+                if (Mathf.Approximately(next, target))
                     _speedTrackingRate = 0f;
+                return next;
             }
-            else
+            return Mathf.Lerp(current, target, LERP_AMOUNT * dt);
+        }
+
+        /// <summary>Advance the smoothed cruise speed one frame toward
+        /// <paramref name="target"/>. Scalar path only.</summary>
+        protected void AdvanceSpeed(float target)
+            => speed = StepTowardTarget(speed, target, Time.deltaTime);
+
+        // ----------------------------- Vector flight model -----------------------------
+
+        /// <summary>World-space momentum. Authoritative only while <c>vectorFlightModel</c> is on;
+        /// <see cref="speed"/> and <c>VesselStatus.Course</c> are then derived from it every
+        /// frame (and <see cref="speed"/> is still published, because the fleet's rotation math
+        /// reads it as <c>speed * RotationThrottleScaler</c>).</summary>
+        Vector3 _velocity;
+        float _lastPublishedSpeed;
+        Vector3 _lastPublishedCourse;
+        bool _vectorSeeded;
+
+        /// <summary>How strongly this frame's travel is a drift: 0 outside the drift window,
+        /// rising to 1 at full analog trigger. Shared by both models so the drift blend and the
+        /// overshoot ceiling can never disagree about whether a drift is happening.</summary>
+        protected float DriftBlend01()
+            => VesselStatus != null && (VesselStatus.IsDrifting || _driftEaseOutPending) && _hasDriftBase
+                ? Mathf.Clamp01(_frameTriggerSum)
+                : 0f;
+
+        /// <summary>
+        /// Speed gained along the NOSE this frame (world units, already multiplied by dt). This is
+        /// the ONLY thing a vessel's flight policy has to supply — everything else about the
+        /// vector model (grip, publishing, the modifier channels, integration, external-write
+        /// re-seeding) is owned here.
+        ///
+        /// Base policy: track <see cref="ComputeThrottleTarget"/> proportionally, exactly as the
+        /// scalar path does, but measured along the nose instead of along the travel direction.
+        /// <see cref="DriftThrottlePolicy.Locked"/> returns 0 for the drift's duration.
+        /// </summary>
+        protected virtual float ComputeNoseAcceleration(float dt)
+        {
+            if (driftThrottlePolicy == DriftThrottlePolicy.Locked && DriftBlend01() > 0f)
+                return 0f;
+
+            float along = Vector3.Dot(_velocity, transform.forward);
+            return StepTowardTarget(along, ComputeThrottleTarget(), dt) - along;
+        }
+
+        /// <summary>
+        /// Magnitude policy, applied after thrust and grip. Base implementation is the drift
+        /// overshoot ceiling and nothing else — deliberately the IDENTITY outside a drift, which
+        /// is what keeps the no-drift equivalence exact. Vessels with a real speed model of their
+        /// own (the Scarab's release-only drag + hard ceiling) replace it wholesale.
+        /// </summary>
+        protected virtual float ShapeSpeed(float speedNow, float dt)
+        {
+            if (DriftBlend01() <= 0f) return speedNow;
+            float ceiling = Mathf.Max(MinimumSpeed, ComputeThrottleTarget() * driftOvershootCeiling);
+            return Mathf.Min(speedNow, ceiling);
+        }
+
+        /// <summary>Fraction of the remaining nose-ward angle that grip closes this frame.
+        /// Frame-rate independent (<c>1 − e^(−k·dt)</c>) rather than the scalar path's raw
+        /// <c>k·dt</c>: at 60 fps the two differ by ~0.4% at the Squirrel's authored grip, so this
+        /// does not perturb the tuning, but it stops a frame-rate drop from loosening the back
+        /// end. Applies only inside the drift window, so it cannot touch the identity claim.</summary>
+        float GripFraction(float dt) => Grip > 0.0001f ? 1f - Mathf.Exp(-Grip * dt) : 0f;
+
+        /// <summary>
+        /// Re-aim the momentum vector along <paramref name="direction"/>, preserving its
+        /// magnitude. The vector model's counterpart to <see cref="SetInitialSpeed"/>: anything
+        /// that legitimately dictates a vessel's TRAVEL direction from outside calls this instead
+        /// of writing <c>VesselStatus.Course</c>. (Writing Course still works — see
+        /// <see cref="SyncExternalWrites"/> — this is just the explicit door.)
+        /// </summary>
+        public void SetCourseVelocity(Vector3 direction)
+        {
+            if (direction.sqrMagnitude < 1e-6f) return;
+            Vector3 unit = direction.normalized;
+            _velocity = unit * _velocity.magnitude;
+            _lastPublishedCourse = unit;
+            if (VesselStatus != null) VesselStatus.Course = unit;
+        }
+
+        void SeedVectorState()
+        {
+            if (_vectorSeeded) return;
+            _velocity = transform.forward * speed;
+            _lastPublishedSpeed = speed;
+            _lastPublishedCourse = transform.forward;
+            _vectorSeeded = true;
+        }
+
+        /// <summary>
+        /// Adopt writes that came from OUTSIDE this transformer since our last publish. Two of
+        /// them exist and both are load-bearing:
+        ///
+        /// <b>speed</b> — the menu vessel swap's <see cref="SetInitialSpeed"/> and spawn's
+        /// <see cref="ResetTransformer"/> write the scalar directly. Without this a swap would
+        /// silently drop the new hull to a dead stop.
+        ///
+        /// <b>Course</b> — <c>AIPilot</c> writes <c>VesselStatus.Course = desiredDirection</c> at
+        /// drift entry, and that write IS the AI's drift: the course locks onto the objective
+        /// while the nose swings away, which is how a drifting AI lays trail, skims and fires
+        /// along an axis that is not its heading. The scalar path honours it for free by reading
+        /// Course back and slerping FROM it; a vector model that derived Course purely from its
+        /// own state would overwrite the AI every frame and the manoeuvre would silently stop
+        /// working. Detecting it here keeps AIPilot unchanged and keeps the two models' AI
+        /// behaviour matched.
+        /// </summary>
+        void SyncExternalWrites()
+        {
+            if (!Mathf.Approximately(speed, _lastPublishedSpeed))
             {
-                speed = Mathf.Lerp(speed, target, LERP_AMOUNT * Time.deltaTime);
+                Vector3 dir = _velocity.sqrMagnitude > 1e-6f ? _velocity.normalized : transform.forward;
+                _velocity = dir * speed;
+                _lastPublishedSpeed = speed;
+            }
+
+            Vector3 course = VesselStatus.Course;
+            if (course.sqrMagnitude <= 1e-6f) return;
+            Vector3 unit = course.normalized;
+            if (Vector3.Dot(unit, _lastPublishedCourse) < 0.99999f)
+            {
+                _velocity = unit * _velocity.magnitude;
+                _lastPublishedCourse = unit;
             }
         }
 
@@ -511,6 +733,74 @@ public class VesselTransformer : MonoBehaviour
         {
             if (VesselStatus == null || InputStatus == null) return;
 
+            if (vectorFlightModel) MoveShipVector();
+            else MoveShipScalar();
+        }
+
+        void MoveShipVector()
+        {
+            float dt = Time.deltaTime;
+            SeedVectorState();
+            SyncExternalWrites();
+
+            // 1) GRIP — momentum rotates back onto the nose. Outside a drift this snaps outright
+            //    (convergence 1); inside one it closes only as fast as the active drift tier's
+            //    authored grip allows (0 = never, a pure frozen slide).
+            //
+            //    GRIP RUNS BEFORE THRUST, AND THE ORDER IS LOAD-BEARING. Thrust-then-grip leaves
+            //    |v| = sqrt(s² + d² + 2sd·cosθ) for a frame in which the nose turned by θ, which
+            //    is *not* the scalar model's s + d — the no-drift equivalence would then hold only
+            //    while flying dead straight, and drift by a second-order term whenever the vessel
+            //    turned. Resolving grip first makes v exactly forward·s before thrust is measured,
+            //    so the identity is unconditional instead of approximate. It is also the more
+            //    honest physics: this frame's thrust should not itself be rotated by this frame's
+            //    grip.
+            float speedNow = _velocity.magnitude;
+            if (speedNow > 1e-4f)
+            {
+                float driftAmount = DriftBlend01();
+                float convergence = driftAmount > 0f
+                    ? Mathf.Clamp01(Mathf.Lerp(1f, GripFraction(dt), driftAmount))
+                    : 1f;
+                _velocity = Vector3.Slerp(_velocity / speedNow, transform.forward, convergence) * speedNow;
+            }
+            else
+            {
+                _velocity = Vector3.zero;
+            }
+
+            // 2) THRUST ALONG THE NOSE — never along the current course. This one line is the
+            //    whole point of the model: mid-drift the engine pushes where you POINT, so aiming
+            //    out of a slide and squeezing is how you recover.
+            _velocity += transform.forward * ComputeNoseAcceleration(dt);
+
+            // 3) Magnitude policy (drift overshoot ceiling; the Scarab replaces this entirely).
+            speedNow = ShapeSpeed(_velocity.magnitude, dt);
+            _velocity = speedNow > 1e-4f ? _velocity.normalized * speedNow : Vector3.zero;
+
+            // `speed` stays the fleet's API — the rotation scalers read it — so it tracks the
+            // vector's magnitude exactly.
+            speed = speedNow;
+            _lastPublishedSpeed = speedNow;
+
+            // Modifier channels are UNCHANGED by the flight model and must stay live during a
+            // drift: throttleMultiplier is how a danger prism slows you and velocityShift is how
+            // knockback moves you. Freezing either while drifting would make a drifting vessel
+            // immune to danger prisms — a locked-design violation wearing a feel change's costume.
+            float effectiveSpeed = speedNow * throttleMultiplier;
+
+            if (toggleManualThrottle)
+                effectiveSpeed = Mathf.Lerp(0, effectiveSpeed, InputStatus.Throttle);
+
+            VesselStatus.Speed = effectiveSpeed;
+            VesselStatus.Course = speedNow > 1e-4f ? _velocity / speedNow : transform.forward;
+            _lastPublishedCourse = VesselStatus.Course;
+
+            transform.position += (effectiveSpeed * VesselStatus.Course + velocityShift) * dt;
+        }
+
+        void MoveShipScalar()
+        {
             // Smooth throttle speed calculation
             AdvanceSpeed(ComputeThrottleTarget());
 
@@ -532,9 +822,9 @@ public class VesselTransformer : MonoBehaviour
                 float driftAmount = Mathf.Clamp01(_frameTriggerSum);
 
                 // Compute the drifted course (slow convergence toward facing direction)
-                Vector3 driftedCourse = DriftDamping > 0.001f
+                Vector3 driftedCourse = Grip > 0.001f
                     ? Vector3.Slerp(VesselStatus.Course, transform.forward,
-                        DriftDamping * Time.deltaTime).normalized
+                        Grip * Time.deltaTime).normalized
                     : VesselStatus.Course;
 
                 // Blend: at driftAmount 0, Course = forward (no drift feel);

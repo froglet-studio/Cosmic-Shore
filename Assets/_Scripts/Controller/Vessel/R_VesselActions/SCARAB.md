@@ -131,16 +131,30 @@ The notes ask for something else: *continuous analog acceleration with no hard s
 initially*. That is an **integrator**, not a dial — hold the trigger and you keep gaining speed;
 the trigger's depth is how hard you push, not how fast you end up.
 
-**`ScarabVesselTransformer : SingleStickVesselTransformer`** — inherits left-stick-only
-pitch/yaw/roll (`EasedLeftJoystickPosition`; the Sparrow/Serpent/Grizzly base) and replaces the
-target model:
+> **SHIPPED SHAPE (2026-08-15) — this section's original claim is superseded.** It said
+> `ScarabVesselTransformer : SingleStickVesselTransformer`. It does **not**: it extends
+> `VesselTransformer` directly, because the single-stick subclass writes `Course = forward` every
+> frame and drops the drift-course blend, so a vessel running it cannot drift at all. The Scarab
+> re-implements the three small single-stick rotation overrides itself and keeps the base drift
+> machinery. Further, the velocity-vector flight model this vessel introduced has since been
+> **lifted into the base transformer** (`vectorFlightModel`, `SQUIRREL_DRIFT.md` §3) and is shared
+> with the Squirrel and Dolphin; `ScarabVesselTransformer` is now a ~50-line **acceleration
+> policy** — `ComputeNoseAcceleration` + `ShapeSpeed` — and owns no flight model, no `MoveShip`,
+> and no velocity state of its own.
+
+**`ScarabVesselTransformer : VesselTransformer`** — re-implements left-stick-only pitch/yaw/roll
+(`EasedLeftJoystickPosition`; the Sparrow/Serpent/Grizzly pattern) and replaces the target model
+with an integrator:
 
 ```
-speed += RightTriggerAnalog × accelerationPerSecond × dt      // push
-speed -= coastDragPerSecond × dt                              // release → long coast, never a stop
-speed  = Clamp(speed, MinimumSpeed, TopSpeed)
-TopSpeed = baseTopSpeed × ThrottleScalerMultiplier.EvaluateLive(status)   // ← the Time element
+ComputeNoseAcceleration(dt) = RightTriggerAnalog × accelerationPerSecond × dt   // push, ALONG THE NOSE
+ShapeSpeed(s, dt)           = trigger released ? s − coastDragPerSecond × dt : s
+                              then Clamp(s, MinimumSpeed, TopSpeed)
+TopSpeed                    = baseTopSpeed × ThrottleScalerMultiplier.EvaluateLive(status)  // ← Time
 ```
+
+The base model does the rest: grip, the Course/Speed publish, the modifier channels, integration,
+and re-seeding from external `speed`/`Course` writes.
 
 Notes and consequences, all of which are design decisions worth marking up:
 
