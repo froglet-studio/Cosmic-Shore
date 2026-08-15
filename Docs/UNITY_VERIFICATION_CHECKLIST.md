@@ -57,13 +57,21 @@ The load-bearing checks, in risk order:
 4. **The capsule crackle looks right**: arcs ride the blade through swings, ripples proportioned
    along the stretched capsule (not squashed at the tips). Tune on
    `RhinoBladeCrackleMaterial.mat` live (`[ExecuteAlways]`).
-5. **Tracer — this one is yours to tune, in the inspector.** ONE streak off the TIP
-   (`Rhino.prefab` → `RhinoSwordTipTracer`). Nothing in code writes its size any more: set
-   `widthMultiplier` and `time` (plus the width curve / gradient) on the TrailRenderer and the
-   controller only re-seats the emitter half a head-width back down the blade, so the band's
-   **top edge stays on the tip** at whatever width you pick — widen it and it grows down the
-   blade, never past the point. Starting point authored: `widthMultiplier` 6, `time` 0.12.
-   Tinted from the live blade colour, so it should change state with the sword.
+5. **Tracers — five hairlines, yours to tune in the inspector.** `Rhino.prefab` →
+   `RhinoSwordBladeTracer0..4`, spread tip→hilt down the blade. Nothing in code writes their
+   size: set `widthMultiplier` / `time` (and the curve / gradient) per component; the controller
+   only re-seats each emitter, insetting the two END ones by half their own width so widening
+   one grows it into the blade, never past the point. Authored hairline: 0.5 / 0.15. Add or
+   remove array entries on `RhinoSwordFXController.bladeTracers` — the spread follows the count.
+   All five tint from the live blade colour, so they should change state with the sword.
+5a. **Home position lowered** — the sword mount is now local y **2** (was 9.38, ~3 units above
+   the hull top). Judge where the grip sits; if the sword still reads as towering, the stronger
+   lever is the rest PITCH on the same transform (~20° from vertical, was 41.8° historically),
+   not y.
+5b. **Swipe recovery**: after a swipe releases, that direction should pause ~0.35 s before it
+   can sweep again (each side independent) — and that pause should VANISH while energized. Two
+   things must stay true throughout: the blade keeps cutting everything it touches (this gates
+   the pose, never damage), and you can still chop/energize while a swipe is recovering.
 6. **Base-skimmer non-regression**: any other vessel's skimmer crackle still shows the red
    sphere look (surface mode + material overrides live on the Rhino variant only).
 
@@ -74,7 +82,8 @@ denied spark 0.7 · `restingBladeColor`/`fullEnergyColor` white (energy reads as
 vs `energizedColor` = `SO_ColorSet.Danger` red (state reads as HUE) · `visibilityMultiplier`
 1.2 × `fullEnergyBrightness` 1.8 (was 2×2.5 = a 5× HDR white that bloomed into a blob —
 raise cautiously) · tracer size is NOT in the config: tune `widthMultiplier` / `time` on the
-`RhinoSwordTipTracer` TrailRenderer (authored at 6 / 0.12).
+`RhinoSwordBladeTracer0..4` TrailRenderers (hairline 0.5 / 0.15) · swipe recovery 0.35 s @
+engage threshold 0.4 (`RhinoShieldSwipeConfig.asset`) · sword mount y 9.38 → 2.
 
 ### 🔴 Sparrow Turret Stance — two flight visualizations, still-nothing hardening (`claude/sparrow-prism-attack-hg6n78`)
 

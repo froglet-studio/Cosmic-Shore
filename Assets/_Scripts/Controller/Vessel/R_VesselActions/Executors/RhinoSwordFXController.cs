@@ -26,13 +26,14 @@ namespace CosmicShore.Gameplay
     ///     crackle spark at the exact blade point that made contact
     ///     (<see cref="SkimmerSwingKinematics.ClosestBladePoint"/>); a dim DENIED spark
     ///     when a non-energized blade bounces off a super-shielded prism.
-    ///  4. TIP TRACER — ONE authored TrailRenderer (fuselage-parented in the prefab so the
-    ///     streak's shape never inherits the blade's scale). Its whole SHAPE is authored on the
-    ///     component — width, time, taper curve, gradient, material — and this controller never
-    ///     writes any of it; all it does is PLACE the emitter half a head-width back down the
-    ///     blade so the band's top edge lands on the sword's tip at whatever width is dialled
-    ///     in. Tinted with the live blade colour via MaterialPropertyBlock, so the streak
-    ///     changes with the sword through every state.
+    ///  4. BLADE TRACERS — a comb of hairline authored TrailRenderers spread evenly down the
+    ///     blade, tip (element 0) to hilt (fuselage-parented in the prefab so their shape never
+    ///     inherits the blade's scale). Their whole SHAPE is authored on the components — width,
+    ///     time, taper curve, gradient, material — and this controller never writes any of it;
+    ///     all it does is PLACE each emitter, insetting the two end streaks by half their own
+    ///     head width so widening one grows it into the blade rather than past the point. All
+    ///     tinted with the live blade colour via MaterialPropertyBlock, so the streaks change
+    ///     with the sword through every state.
     ///
     /// Camera shake (super-shield pop, crystal burst) fires for the LOCAL human pilot
     /// only. See <c>RHINO_ENERGY_SWORD.md</c>.
@@ -52,11 +53,12 @@ namespace CosmicShore.Gameplay
         [SerializeField] private MeshRenderer bodyRenderer;
         [Tooltip("The crackle overlay driver on the blade (capsule surface mode). Falls back to this GameObject's controller.")]
         [SerializeField] private ForcefieldCrackleController crackle;
-        [Tooltip("The sword's tip streak. A fuselage child (so the blade's scale never distorts it). " +
-                 "TUNE IT ON THE COMPONENT — width, time, taper curve, gradient and material are all " +
-                 "yours and nothing here overwrites them; this only re-seats the emitter each frame so " +
-                 "the top edge of the band stays on the blade's tip at whatever width you set.")]
-        [SerializeField] private TrailRenderer bladeTracer;
+        [Tooltip("The sword's streaks — hairline TrailRenderers spread evenly down the blade, tip " +
+                 "(element 0) to hilt (last). Fuselage children, so the blade's scale never distorts " +
+                 "them. TUNE THEM ON THE COMPONENTS — width, time, taper curve, gradient and material " +
+                 "are all yours and nothing here overwrites them; this only re-seats each emitter " +
+                 "every frame. Add or remove entries freely: the spread is derived from the count.")]
+        [SerializeField] private TrailRenderer[] bladeTracers;
 
         Skimmer _skimmer;
         SkimmerSwingKinematics _swing;
@@ -68,8 +70,8 @@ namespace CosmicShore.Gameplay
         bool _bodyColorApplied;
         Color _appliedTracerColor;
         bool _tracerColorApplied;
-        float _appliedTracerWidth = float.NaN;   // last widthMultiplier seen, for the curve re-read
-        float _tracerHeadWidthFactor = 1f;       // authored width curve evaluated at the emitting end
+        float[] _appliedTracerWidths;      // last widthMultiplier seen per tracer, for the curve re-read
+        float[] _tracerHeadWidthFactors;   // authored width curve evaluated at each emitting end
 
         float _flash;             // 0 = none, 1 = full white-out; decays each Tick
         float _energizedBlend;    // 0 = heat ramp, 1 = white-hot; eased by ColorTransitionSeconds
@@ -97,8 +99,8 @@ namespace CosmicShore.Gameplay
             _bodyColorApplied = false;
             _tracerColorApplied = false;
 
-            SeatTracer();
-            if (bladeTracer) bladeTracer.Clear();
+            SeatTracers();
+            ForEachTracer(tr => tr.Clear());
 
             WarnOnceIfUnwired();
         }
@@ -107,7 +109,7 @@ namespace CosmicShore.Gameplay
         {
             // Drop the per-renderer overrides so the shared materials show through again.
             if (bodyRenderer) bodyRenderer.SetPropertyBlock(null);
-            if (bladeTracer) bladeTracer.SetPropertyBlock(null);
+            ForEachTracer(tr => tr.SetPropertyBlock(null));
             _bodyColorApplied = false;
             _tracerColorApplied = false;
             _flash = 0f;
@@ -151,7 +153,7 @@ namespace CosmicShore.Gameplay
                 color = Color.Lerp(color, config.FlashColor, _flash);
 
             ApplyBodyColor(color);
-            SeatTracer();
+            SeatTracers();
             ApplyTracerColor(color);
 
             // Anticipation arcs while charging: small, quickening in weight with charge.
@@ -270,47 +272,85 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Seat the streak so its top edge sits on the sword's TIP, whatever width is authored.
+        /// Spread the streaks evenly down the blade — element 0 on the TIP, the last on the HILT —
+        /// so the sword draws a comb of hairlines through a swing rather than one slab.
         ///
-        /// The streak's SHAPE is yours: width, time, taper curve, gradient and material are all
-        /// authored on the TrailRenderer and this never writes them. All it owns is placement —
-        /// and because a TrailRenderer lays its width symmetrically about the emitter's path, an
-        /// emitter parked on the tip would hang half the band out past the point of the sword.
-        /// So it sits half a head-width back down the blade, which puts the band's top edge on
-        /// the tip and the rest of it running down the blade, at any width you dial in.
+        /// Their SHAPE is yours: width, time, taper curve, gradient and material are authored on
+        /// each TrailRenderer and this never writes them. All it owns is placement. Because a
+        /// TrailRenderer lays its width symmetrically about the emitter's path, the two END
+        /// streaks are inset by half their own head width, so widening one grows it INTO the
+        /// blade instead of out past the point or behind the grip; everything between is
+        /// interpolated across that inset span.
         ///
-        /// (Exact while the sword is swinging across its own axis — a swipe or a chop — which is
-        /// when the ribbon is visible at all. The width direction is perpendicular to the path
-        /// travelled, so on a thrust straight along the blade there is no "top edge" to align.)
+        /// (The inset is exact while the sword swings across its own axis — a swipe or chop,
+        /// which is when the streaks are visible at all. The width direction is perpendicular to
+        /// the path travelled, so on a thrust straight along the blade there is no end to align.)
         /// </summary>
-        void SeatTracer()
+        void SeatTracers()
         {
-            if (!bladeTracer) return;
+            if (bladeTracers == null || bladeTracers.Length == 0) return;
 
             Vector3 tip = PointAlongBlade(1f);
             Vector3 hilt = PointAlongBlade(0f);
             Vector3 towardTip = tip - hilt;
             towardTip = towardTip.sqrMagnitude > 1e-6f ? towardTip.normalized : transform.up;
 
-            // Width at the EMITTING end of the streak: the multiplier scales the authored curve,
-            // and the curve's value at t=0 is the end being laid down right now. Re-read the
-            // curve only when the multiplier moves (its getter allocates, and a designer tuning
-            // one is almost always tuning the other) — otherwise this is a float read per frame.
-            float multiplier = bladeTracer.widthMultiplier;
-            if (!Mathf.Approximately(multiplier, _appliedTracerWidth))
-            {
-                _appliedTracerWidth = multiplier;
-                var curve = bladeTracer.widthCurve;
-                _tracerHeadWidthFactor = curve != null && curve.length > 0 ? curve.Evaluate(0f) : 1f;
-            }
+            int count = bladeTracers.Length;
+            EnsureTracerCaches(count);
 
-            float headWidth = multiplier * _tracerHeadWidthFactor;
-            bladeTracer.transform.position = tip - towardTip * (headWidth * 0.5f);
+            for (int i = 0; i < count; i++)
+            {
+                var tracer = bladeTracers[i];
+                if (!tracer) continue;
+
+                float half = 0.5f * HeadWidth(tracer, i);
+                // 1 at element 0 (tip) running to 0 at the last (hilt).
+                float t = count == 1 ? 1f : 1f - (float)i / (count - 1);
+                tracer.transform.position = Vector3.Lerp(hilt + towardTip * half,
+                                                         tip - towardTip * half, t);
+            }
+        }
+
+        /// <summary>
+        /// Width at the EMITTING end of a streak: the multiplier scales the authored curve, and
+        /// the curve's value at t=0 is the end being laid down right now. The curve is re-read
+        /// only when that tracer's multiplier moves — its getter allocates a fresh AnimationCurve,
+        /// and a designer tuning one is almost always tuning the other.
+        /// </summary>
+        float HeadWidth(TrailRenderer tracer, int index)
+        {
+            float multiplier = tracer.widthMultiplier;
+            if (!Mathf.Approximately(multiplier, _appliedTracerWidths[index]))
+            {
+                _appliedTracerWidths[index] = multiplier;
+                var curve = tracer.widthCurve;
+                _tracerHeadWidthFactors[index] = curve != null && curve.length > 0 ? curve.Evaluate(0f) : 1f;
+            }
+            return multiplier * _tracerHeadWidthFactors[index];
+        }
+
+        void ForEachTracer(System.Action<TrailRenderer> action)
+        {
+            if (bladeTracers == null) return;
+            for (int i = 0; i < bladeTracers.Length; i++)
+                if (bladeTracers[i]) action(bladeTracers[i]);
+        }
+
+        void EnsureTracerCaches(int count)
+        {
+            if (_appliedTracerWidths != null && _appliedTracerWidths.Length == count) return;
+            _appliedTracerWidths = new float[count];
+            _tracerHeadWidthFactors = new float[count];
+            for (int i = 0; i < count; i++)
+            {
+                _appliedTracerWidths[i] = float.NaN;   // force the first curve read
+                _tracerHeadWidthFactors[i] = 1f;
+            }
         }
 
         void ApplyTracerColor(Color color)
         {
-            if (!bladeTracer) return;
+            if (bladeTracers == null || bladeTracers.Length == 0) return;
             // Steady state holds one colour for long stretches — only rebuild the gradient
             // and property block when the colour actually moved (no per-frame allocation).
             if (_tracerColorApplied && ColorsClose(color, _appliedTracerColor)) return;
@@ -331,8 +371,13 @@ namespace CosmicShore.Gameplay
                 new[] { new GradientColorKey(color, 0f), new GradientColorKey(color, 1f) },
                 new[] { new GradientAlphaKey(1f, 0f), new GradientAlphaKey(0f, 1f) });
 
-            bladeTracer.SetPropertyBlock(_tracerMpb);
-            bladeTracer.colorGradient = grad;
+            for (int i = 0; i < bladeTracers.Length; i++)
+            {
+                var tracer = bladeTracers[i];
+                if (!tracer) continue;
+                tracer.SetPropertyBlock(_tracerMpb);
+                tracer.colorGradient = grad;
+            }
         }
 
         // Local human pilot only (and not while autopiloting, e.g. the Menu_Main lava lamp) —
@@ -352,11 +397,12 @@ namespace CosmicShore.Gameplay
         void WarnOnceIfUnwired()
         {
             if (_warned) return;
-            if (config != null && bodyRenderer && crackle && bladeTracer) return;
+            bool tracersWired = bladeTracers != null && bladeTracers.Length > 0;
+            if (config != null && bodyRenderer && crackle && tracersWired) return;
             _warned = true;
             CSDebug.LogWarning($"[{nameof(RhinoSwordFXController)}] '{name}' is missing authored FX wiring — " +
                                $"config: {(config ? "ok" : "MISSING")}, bodyRenderer: {(bodyRenderer ? "ok" : "MISSING")}, " +
-                               $"crackle: {(crackle ? "ok" : "MISSING")}, bladeTracer: {(bladeTracer ? "ok" : "MISSING")}. " +
+                               $"crackle: {(crackle ? "ok" : "MISSING")}, bladeTracers: {(tracersWired ? bladeTracers.Length + " wired" : "MISSING")}. " +
                                "The sword runs, but that layer of its look is dark — " +
                                "author the reference on the Rhino prefab.");
         }

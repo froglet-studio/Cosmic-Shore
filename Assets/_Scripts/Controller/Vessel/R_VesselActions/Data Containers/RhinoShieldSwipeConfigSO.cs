@@ -33,6 +33,18 @@ namespace CosmicShore.Gameplay
         [Tooltip("Return time after an event-driven release.")]
         [SerializeField] float returnSeconds = 0.3f;
 
+        [Header("Swipe Recovery (the LATERAL swipe only — never the chop, never damage)")]
+        [Tooltip("Seconds a swipe direction must recover after being released before it can sweep " +
+                 "again, so the sword has a swing rhythm instead of flapping. Each direction keeps " +
+                 "its own timer. ZERO while the blade is ENERGIZED (frenzy). This gates the POSE, " +
+                 "not the blade: the sword still cuts everything it touches the whole time, and the " +
+                 "chop/energize stance is never blocked — see RHINO_ENERGY_SWORD.md.")]
+        [SerializeField] float swipeCooldownSeconds = 0.35f;
+        [Tooltip("Difference magnitude a single trigger must reach for that direction to count as " +
+                 "having SWUNG (and so to owe a recovery when it releases). Below this the sword is " +
+                 "just drifting off centre and costs nothing.")]
+        [SerializeField, Range(0f, 1f)] float swipeEngageThreshold = 0.4f;
+
         [Header("Energize Stance — gesture thresholds (RHINO_ENERGY_SWORD.md)")]
         [Tooltip("Sum (left + right trigger, 0..2, from the replicated InputStatus mirrors so every " +
                  "peer computes the same verdict) above which the blade is in the lower/chop stance — " +
@@ -51,5 +63,7 @@ namespace CosmicShore.Gameplay
         public float ReturnSeconds => returnSeconds;
         public float StanceSumThreshold => stanceSumThreshold;
         public float StanceCenterEpsilon => stanceCenterEpsilon;
+        public float SwipeCooldownSeconds => Mathf.Max(0f, swipeCooldownSeconds);
+        public float SwipeEngageThreshold => Mathf.Clamp01(swipeEngageThreshold);
     }
 }

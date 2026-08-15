@@ -24,7 +24,11 @@ each mapped to an orientation axis of the sword.
 
 The raised rest pose is authored on the ForceFieldSkimmer instance transform in
 `Rhino.prefab` (currently ~20° pitch; it was 41.8° pre-feature — raised so the chop
-axis has meaningful travel). The executor captures whatever local pose is authored
+axis has meaningful travel). Its MOUNT sits at local (0, **2**, 20.7) — lowered from
+9.38, which perched the grip ~3 units above the hull's top (the hull box spans y
+≈ −8.9…+6.4, centred −1.2). Both numbers are one edit on that instance: y is how high
+the sword is *held*, the pitch is how far it is *raised*, and on a 60–240-unit blade
+the PITCH is much the stronger lever for "it towers overhead". The executor captures whatever local pose is authored
 as its zero point, and pivots rotation **and mount position** about the Fusilage
 origin so the blade carves a real arc instead of spinning in place. On top of that
 arc it applies the **hilt anchor**: the blade mesh is centred on its transform, so the
@@ -77,7 +81,15 @@ do not copy it (follow-up below).
 
 Config knobs (`RhinoShieldSwipeConfig.asset`): `swipeYawDegrees` 90, `swipeRollDegrees`
 90, `chopPitchDegrees` 65, `analogSmoothingSeconds` 0.04, `swipeOutSeconds` 0.18,
-`returnSeconds` 0.3.
+`returnSeconds` 0.3, `swipeCooldownSeconds` 0.35, `swipeEngageThreshold` 0.4,
+`stanceSumThreshold` 1.5, `stanceCenterEpsilon` 0.4.
+
+**Swipe recovery.** Each direction owes `swipeCooldownSeconds` after it releases before it
+can sweep again (zero while the blade is ENERGIZED), so the sword swings with a rhythm.
+It suppresses the DIFFERENCE axis only — the chop and the energize stance ride the sum and
+are never blocked, and the blade keeps cutting everything it touches throughout. It is not
+the rejected v1 slash cooldown, which gated DAMAGE; see `RHINO_ENERGY_SWORD.md`
+§ "Swipe recovery".
 
 ## Sword dimensions & scale ownership
 

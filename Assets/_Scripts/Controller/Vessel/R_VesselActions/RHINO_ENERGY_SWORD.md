@@ -79,6 +79,30 @@ tail elapsed ──► Cooldown (energizeCooldownSeconds, 5 s) ──► Idle
   through the same `AcceptImpacteeFromShellContact` chain their entry used). The pop the player
   just paid for lands the same frame.
 
+
+### Swipe recovery (and why it is NOT the rejected slash cooldown)
+
+Each swipe direction owes a short recovery — `swipeCooldownSeconds` (0.35) on
+`RhinoShieldSwipeConfig.asset` — after it releases, so the sword swings with a rhythm instead of
+flapping as fast as the triggers can be worked. A direction counts as having swung once its pull
+passes `swipeEngageThreshold` (0.4); the timer starts on RELEASE, so a swing always plays out in
+full and then pays for itself. **While the blade is ENERGIZED the recovery is ZERO** — the frenzy
+is part of what energizing buys, and the timers are cleared as it burns so dropping out of
+energized never inherits a recovery the player never felt themselves earn.
+
+This is **not** the slash cooldown that was rejected, and the difference is the whole point:
+
+| | rejected v1 slash cooldown | this |
+|---|---|---|
+| What it gated | prism DAMAGE — the sword refused to cut between slashes | the lateral POSE only |
+| Cutting | rate-limited: the sword "mostly didn't cut" | **unchanged — the blade cuts everything it touches, always** |
+| The chop / energize stance | also gated | never gated: recovery is applied to the DIFFERENCE axis after the stance is fed from the raw trigger mirrors, so a recovering sword can still chop and still energize |
+
+Ordinary cutting stays ungated, which is the locked rule. What is rate-limited is how often the
+pilot can *sweep the blade sideways*, which is swordsmanship, not a damage gate. Implementation:
+`ShieldSwipeActionExecutor.ApplySwipeRecovery` (edges tracked on the RAW target so a suppressed
+input cannot re-arm itself mid-hold).
+
 ## The blade is HILT-ANCHORED (a sword, not a staff)
 
 The blade mesh is a capsule centred on its transform, so growing it used to extend the sword
@@ -221,30 +245,29 @@ v2's code-built `RhinoSwordVisualizer` (deleted). Four layers:
    `sparkIntensity` / `sparkSeconds` / `sparkWorldRadius`); a dim **denied spark**
    (`deniedSparkIntensity`) when a non-energized blade bounces off a super-shield. The crystal
    burst fires a whole-blade crackle scaled by the energy consumed.
-4. **The tip tracer — authored on the component, placed by the code.** ONE **authored**
-   `TrailRenderer` child of the fuselage (`RhinoSwordTipTracer` in `Rhino.prefab`, wearing
-   `RhinoSwordTracerMaterial.mat` — no runtime construction, no `Shader.Find` fallback),
-   fuselage-parented so the blade's scale can never distort the streak's shape.
+4. **Blade tracers — a comb of hairlines, authored on the components.** FIVE **authored**
+   `TrailRenderer` children of the fuselage (`RhinoSwordBladeTracer0..4` in `Rhino.prefab`, all
+   wearing `RhinoSwordTracerMaterial.mat` — no runtime construction, no `Shader.Find` fallback),
+   fuselage-parented so the blade's scale can never distort their shape. They are spread evenly
+   down the blade, **element 0 on the tip, the last on the hilt**, so a swing draws a comb of
+   fine streaks that reads the sword's sweep instead of one slab.
 
-   **Its whole look is yours on the component** — `widthMultiplier`, `time`, the width curve,
-   the colour gradient, min vertex distance, material. Nothing in code writes any of them.
-   `RhinoSwordFXController.SeatTracer` owns exactly one thing: **placement**. Because a
-   TrailRenderer lays its width symmetrically about the emitter's path, an emitter parked on the
-   tip hangs half the band out past the point of the sword — so it is seated half a *head-width*
-   back down the blade (head width = `widthMultiplier` × the width curve at t=0, the end being
-   laid down right now), which puts the band's **top edge on the tip** and the rest running down
-   the blade at any width you dial in. Widen it and it grows downward from the tip, not through
-   it. (Exact while the sword swings across its own axis — a swipe or chop, which is when the
-   ribbon is visible at all; on a thrust straight along the blade there is no "top edge" to
-   align.) The curve and gradient are what **grade it to nothing** as it runs down.
+   **Their look is yours on the components** — `widthMultiplier`, `time`, the width curve, the
+   colour gradient, material. Nothing in code writes any of them, and the COUNT is data too:
+   `RhinoSwordFXController.bladeTracers` is an array and the spread is derived from its length,
+   so add or remove entries freely. `SeatTracers` owns placement only, insetting the two END
+   streaks by half their own head width (head width = `widthMultiplier` × the width curve at
+   t=0) so widening one grows it INTO the blade rather than out past the point or behind the
+   grip. Authored hairline: `widthMultiplier` 0.5, `time` 0.15.
 
-   Tinted from the same live blade colour as the body, so **the streak changes with the sword
-   through every state** (white-hot → danger red on energize).
+   All five are tinted from the same live blade colour as the body, so **the streaks change with
+   the sword through every state** (white-hot → danger red on energize).
 
-   *Do not drive its size from code again.* An earlier pass anchored it mid-blade with width =
-   the full blade length, reasoning that a TrailRenderer lays width across its path so the ribbon
-   would span hilt-to-tip. It does — and at a 240-unit blade that is a 240-unit-wide white sheet
-   swallowing the vessel. The blade is ~10 units thick; the tracer belongs on that order.
+   *Do not drive their size from code.* An earlier pass anchored a single tracer mid-blade with
+   width = the full blade length, reasoning that a TrailRenderer lays width across its path so
+   the ribbon would span hilt-to-tip. It does — and at a 240-unit blade that is a 240-unit-wide
+   white sheet swallowing the vessel. The blade is ~10 units thick; the tracers belong on that
+   order, which is what "hairline" means here.
 
 **Camera shake (local pilot only, never autopilot/remote/AI):** `popShakeIntensity` (1.2) on a
 super-shield pop; up to `burstShakeMaxIntensity` (2.5, scaled by energy consumed) on a crystal
@@ -327,11 +350,12 @@ same-GameObject pieces (`Skimmer`, `SkimmerSwingKinematics`, crackle, body rende
 | Embedded-heart guard on skimmer crystal effects | `ImpactEffects/Impactors/SkimmerImpactor.cs` (ElementalCrystalImpactor case) |
 | Blade shader fix (`_Color` now rendered) | `Assets/_Graphics/Materials/Graphs/FresnelGraph.shadergraph` |
 | Effect wiring | `_SO_Assets/Effects/Effect Containers/SkimmerContainers/RhinoForceFieldSkimmerImpactorDataContainer.asset` (prism[0] → Rhino variant; crystal list → burst effect) |
-| Prefab wiring | `Rhino.prefab` (FX controller on the blade root + `RhinoSwordTipTracer` under the fuselage) · `ForceFieldSkimmer Variant.prefab` (overlay material → blade crackle, `surface: Capsule`, `lengthScale: 2`) |
+| Prefab wiring | `Rhino.prefab` (FX controller on the blade root + `RhinoSwordBladeTracer0..4` under the fuselage; sword mount lowered to y 2) · `ForceFieldSkimmer Variant.prefab` (overlay material → blade crackle, `surface: Capsule`, `lengthScale: 2`) |
 
 ## Tuning knobs
 
-On `RhinoShieldSwipeConfig.asset`: `stanceSumThreshold` 1.5 · `stanceCenterEpsilon` 0.4.
+On `RhinoShieldSwipeConfig.asset`: `stanceSumThreshold` 1.5 · `stanceCenterEpsilon` 0.4 ·
+`swipeCooldownSeconds` 0.35 · `swipeEngageThreshold` 0.4.
 
 On `RhinoSkimmerDamagePrismEffect.asset`: `inertia` 70 · `popRequiresEnergizedBlade` 1 ·
 `energyPerPrism` 0.04 · `energyPerSuperShieldedPrism` 0.12 · bounce params
@@ -352,8 +376,8 @@ scale) · `maxScale` 120 · `prismGrowSpeed` 30 · `shrinkSpeed` 10 · `energize
 `energizedColor` (1.498, 0.006, 0.007) = `SO_ColorSet.Danger` · `colorTransitionSeconds` 0.25 · `igniteCrackleIntensity` 2.5 / `igniteCrackleSeconds` 0.9 /
 `igniteCrackleSites` 5 · `chargeCrackleInterval` 0.18 / `chargeCrackleIntensity` 1.1 ·
 `sparkIntensity` 1.6 / `sparkSeconds` 0.45 / `sparkWorldRadius` 14 · `deniedSparkIntensity`
-0.7 · tracer size is NOT here — it is authored on the `RhinoSwordTipTracer` TrailRenderer
-(starting point: `widthMultiplier` 6, `time` 0.12) · `hitFlashAmount` 0.35 · `popFlashAmount` 1 · `flashDecaySeconds` 0.35 · `flashColor`
+0.7 · tracer size is NOT here — it is authored on the five `RhinoSwordBladeTracer*`
+TrailRenderers (hairline: `widthMultiplier` 0.5, `time` 0.15) · `hitFlashAmount` 0.35 · `popFlashAmount` 1 · `flashDecaySeconds` 0.35 · `flashColor`
 (2,2,2) · `popShakeIntensity` 1.2 / `popShakeDuration` 0.25 · `burstShakeMaxIntensity` 2.5 /
 `burstShakeDuration` 0.4. (`prismMaxScale` remains only so the Sparrow full-auto
 `ApplyMaxSizeDebuff` keeps its historical meaning. The v2 tracer keys — `tracersEnabled`,

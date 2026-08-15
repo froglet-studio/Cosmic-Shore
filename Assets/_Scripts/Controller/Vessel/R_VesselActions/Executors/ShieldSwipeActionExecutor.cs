@@ -50,6 +50,12 @@ namespace CosmicShore.Gameplay
         float _diff;       // smoothed swipe control: -1 (left stance) .. +1 (right stance)
         float _sum;        // smoothed chop control: 0 (raised rest) .. 2 (full chop)
         float _appliedAnchor = float.NaN; // blade half-extent the last applied pose was anchored for
+
+        // Per-direction swipe recovery. Engaged tracks the RAW pull so a suppressed input can't
+        // re-arm itself, and the timer starts on RELEASE — a swing plays out in full, then owes
+        // its recovery.
+        bool _rightSwung, _leftSwung;
+        float _rightReadyAt, _leftReadyAt;
         float _activeSign; // event-driven stance (+1/-1/0) for non-analog inputs
         bool _rightHeld;   // event-side per-direction held state (cross-swipe handoff)
         bool _leftHeld;
@@ -127,7 +133,12 @@ namespace CosmicShore.Gameplay
                 }
             }
 
+            // The stance is fed from the RAW trigger mirrors, before any swipe recovery is
+            // applied — a sword recovering from a swing must still be able to chop and energize.
             FeedSwordStance();
+
+            // Lateral recovery gates the SWIPE axis only; the chop (sum) passes through untouched.
+            diffTarget = ApplySwipeRecovery(diffTarget);
 
             // A resting pose still has to be re-applied when the blade's LENGTH moved: the hilt
             // anchor is a function of that length, so skipping the write would leave the sword
@@ -188,6 +199,50 @@ namespace CosmicShore.Gameplay
             bool inStance = lt + rt >= config.StanceSumThreshold
                             && Mathf.Abs(rt - lt) <= config.StanceCenterEpsilon;
             sword.SetInStance(inStance);
+        }
+
+        /// <summary>
+        /// Give each swipe direction a short recovery after it releases, so the sword swings with
+        /// a rhythm instead of flapping side to side as fast as the triggers can be worked. While
+        /// the blade is ENERGIZED the recovery is ZERO — the frenzy is part of what energizing buys.
+        ///
+        /// This gates the lateral POSE and nothing else. The blade keeps cutting everything it
+        /// touches throughout (ordinary damage is ungated — a locked rule), the chop/energize
+        /// stance rides the sum axis and is never blocked, and a direction still recovering simply
+        /// holds centre. Returns the difference target with any recovering direction suppressed.
+        /// </summary>
+        float ApplySwipeRecovery(float diffTarget)
+        {
+            float now = Time.time;
+            float threshold = config.SwipeEngageThreshold;
+            bool energized = Sword is { IsEnergized: true };
+
+            // Track the swing/release edges off the RAW target, so suppressing a direction can
+            // never make it look released and re-arm itself mid-hold.
+            UpdateSwipeEdge(ref _rightSwung, ref _rightReadyAt, diffTarget >= threshold, now);
+            UpdateSwipeEdge(ref _leftSwung, ref _leftReadyAt, -diffTarget >= threshold, now);
+
+            if (energized)
+            {
+                // Zero cooldown: clear the timers too, so dropping out of energized never inherits
+                // a stale recovery the player never felt themselves earn.
+                _rightReadyAt = _leftReadyAt = now;
+                return diffTarget;
+            }
+
+            if (diffTarget > 0f && now < _rightReadyAt) return 0f;
+            if (diffTarget < 0f && now < _leftReadyAt) return 0f;
+            return diffTarget;
+        }
+
+        void UpdateSwipeEdge(ref bool swung, ref float readyAt, bool engaged, float now)
+        {
+            if (engaged) swung = true;
+            else if (swung)
+            {
+                swung = false;
+                readyAt = now + config.SwipeCooldownSeconds;   // recovery starts on release
+            }
         }
 
         /// <summary>
@@ -299,6 +354,9 @@ namespace CosmicShore.Gameplay
             _activeSign = 0f;
             _rightHeld = false;
             _leftHeld = false;
+            // Never hand a re-spawned / re-taken vessel a recovery it did not swing for.
+            _rightSwung = _leftSwung = false;
+            _rightReadyAt = _leftReadyAt = 0f;
         }
 
         bool EnsureShieldRoot()
