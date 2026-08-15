@@ -26,11 +26,18 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 ### 🔴 Scarab vessel foundation — new VesselClassType 12, out-of-editor prefab clone (`claude/astro-league-vessel-design-r5q2a8`)
 
 Authored entirely without Unity: `Scarab.prefab` is a programmatic clone of `Sparrow.prefab`
-(Sparrow weaponry excised, transformer/juke/telemetry retyped in place, switch executor added),
-plus 10 new SO assets and three registrations (`Vessel Prefab Container`, `DefaultNetworkPrefabs`,
-`ArcadeGameAstroLeague.Vessels` — Rhino deliberately kept at index 0). Design: `SCARAB.md`.
-All YAML machine-validated (field parity vs live classes, zero dangling fileIDs, guid uniqueness);
-C# stub-compiled under mcs. None of it has been imported.
+(Sparrow weaponry excised, transformer/juke/telemetry retyped in place, switch executor and
+cavitation blast added), plus 14 new SO/prefab assets and three registrations (`Vessel Prefab
+Container`, `DefaultNetworkPrefabs`, `ArcadeGameAstroLeague.Vessels` — Rhino deliberately kept at
+index 0). Design: `SCARAB.md`. All YAML machine-validated (field parity vs live classes, zero
+dangling fileIDs, guid uniqueness); C# stub-compiled under mcs. None of it has been imported.
+
+**Element map (authored 2026-08-15, no longer proposal):** Charge = cavitation blast **cooldown**
+(2.5s → 1.25s at L10) + **Cavitation Shear** at L5 (blast destroys shielded prisms) · Mass = switch
+size (×1 → ×2.5) + **Armored Switch** at L5 (switch prisms arrive shielded) · Space = forged **ball
+size** (×1 → **×4** at L10; the map's own multiplier is the carrier) + L5 open · Time = throttle top
+speed (×1 → ×1.5) + **Snap Dash** at L5 (double-tap RT). The right-stick dash is **base kit with no
+cooldown**; only the blast riding it is paced.
 
 **Verify in editor (in order):**
 1. **Open `Assets/_Prefabs/Spacevessels/Scarab.prefab` and SAVE it** — this is load-bearing, not
@@ -39,12 +46,14 @@ C# stub-compiled under mcs. None of it has been imported.
    missing-script rows, save.
 2. Console clean on import (no `Broken text PPtr`, no unresolvable guids).
 3. Menu_Main → freestyle → vessel-changer toy now shows a 7th model → swap to Scarab. Fly:
-   RT = accelerating analog throttle with a long coast (never a dead stop below MinimumSpeed 10);
-   LT = analog drift, course visibly decoupling from the nose, speed retained; right stick to the
-   perimeter = lateral juke + 360° visual roll (camera must NOT roll), binary re-arm ~1.2s;
-   A / Space = a 12-brick prism ring blooms ~150u ahead on the COURSE (drift then place — the ring
-   should appear where you're going, not where you're pointing), second+third presses spend the
-   remaining charges, fourth refuses.
+   RT = accelerating analog throttle, thrust always along the NOSE, holding it must NOT decay
+   (full throttle ≈ 90 u/s after 1s, 180 ceiling by 3s; release drops 180 → 0 in ~1.5s, never a
+   dead stop below MinimumSpeed 10); LT = analog drift, course visibly decoupling from the nose,
+   speed retained; right stick to the perimeter = lateral dash + 360° visual roll (camera must NOT
+   roll) — **repeatable immediately, there is no dash cooldown**;
+   A / Space = a low-poly toy RING blooms ~150u ahead on the COURSE with its interior filled by a
+   Vogel-spiral prism disc (drift then place — the ring should appear where you're going, not where
+   you're pointing), second+third presses spend the remaining charges, fourth refuses.
 4. **Crystals → a ball.** **EVERY omni crystal forges a ball** — the energy gate is authored OFF
    (`_requireEnergy: 0`) by request. Fly through one: a ball appears ahead of your nose carrying
    your speed and domain colour, and the console prints `[ScarabBallForge] … forged a {domain}
@@ -58,20 +67,44 @@ C# stub-compiled under mcs. None of it has been imported.
    *(The energy economy still exists behind that one flag: turn `_requireEnergy` on and the meter
    gates forging again — four crystals fill the ring, the fifth forges. While it is off the HUD's
    energy ring fills but gates nothing.)*
-4a. **Gauges**: the Juke icon is bright when armed and dims for ~1.2s after a juke; the Switch icon
-   dims one step per placement and refuses (staying dim) at zero.
+3b. **The cavitation blast.** Every right-stick dash that finds the blast off cooldown throws a
+   small SPHERICAL explosion ~45u ahead along the dash direction (diameter 90). It must:
+   destroy prisms in that volume (fly at your own trail and dash into it); **kill fauna** caught in
+   it (a creature dies when its body prisms go — dash through a swarm in a populated cell); and
+   **debuff an opposing pilot** it engulfs — all four of their element flowers drop ~half a level
+   and recover over 4s. It must NOT hit your own domain's mass or teammates (`affectSelf 0`).
+   ⚠ Dash again immediately: the DASH must still fire even while the blast is recharging — if the
+   dodge is blocked by the cooldown, the split regressed.
+4a. **Gauges**: the CHARGE icon (leftmost) is bright orange when the blast is ready and dims for
+   the cooldown after each blast; the SWITCH icon (second) dims one step per placement and refuses
+   (staying dim) at zero; the SPACE icon (third) plus the energy ring flip to the READY colour when
+   the meter fills. Nothing reads the dash itself — it has no cooldown to show.
 5. Astro League: the configure modal's carousel now offers Rhino + Scarab; pick Scarab, 2 players
    + AI → AI must all spawn as RHINOS (list order — if an AI spawns as a Scarab, `Vessels[0]`
    got reordered); play a rally, hull-strike the ball, place a ring in front of your goal.
 6. MPPM two-client: remote peer sees the Scarab hull, its trail, and placed rings (both peers lay
    the ring via the replicated A-press; positions may differ slightly under latency — expected).
-7. Elemental seeding (debug): Time L10 → higher throttle ceiling (~270); Time L5 → double-tap RT
-   dashes; Mass L10 → bigger rings; Space L10 → rings at ~300u.
+7. Elemental seeding (debug), one per row:
+   - **Charge L10** → blast cooldown halves (2.5s → 1.25s), visible on the Charge icon's dim time.
+     **Charge L5** → dash into a SHIELDED prism wall: the blast now DESTROYS it instead of only
+     shedding shields. Super-shielded mass must still survive and kill the blast.
+   - **Mass L10** → bigger rings + a wider interior disc. **Mass L5** → newly placed switches bloom
+     in already SHIELDED (shield geometry on every ring prism at birth, not popped on afterwards).
+   - **Space L10** → a forged ball is **4× the size** of one forged at rest. Balls already in flight
+     keep the size they were born with (stamped once) — that is correct, not a bug.
+   - **Time L10** → higher throttle ceiling (~270). **Time L5** → double-tap RT dashes forward.
+8. **Dash-into-crystal parity** (the trajectory check): hold a heading, dash sideways, and clip an
+   omni crystal *during* the dash. The forged ball must leave along the DASH-blended heading, not
+   the throttle line — the same trajectory a stationary ball would take if you dashed into it.
 
-**First-pass tuning (expect a balancing pass):** accel 70 u/s², coast drag 12, top speed 180
-(×1.5 at Time 10), juke 80 u/s / 0.5s / 1.2s cooldown, dash 100 u/s / 0.4s / 0.3s window,
-ring radius 20 (×2.5 at Mass 10), 12 bricks (2.5, 1.5, 8), place distance 150→300, 3 switch
-charges, crystal grants +0.334 charge / +0.25 energy.
+**First-pass tuning (expect a balancing pass):** accel 90 u/s², coast drag 120 (release-only —
+holding the trigger must never decay), top speed 180 (×1.5 at Time 10), dash 80 u/s / 0.5s /
+**no cooldown**, Snap Dash 100 u/s / 0.4s / 0.3s double-tap window, cavitation blast scale 90 /
+offset 45 / 2.5s cooldown (×0.5 at Charge 10) / duration 0.85s / `proportionalDebris` with
+restitution 1/3 × Inertia 1.8 (the Dolphin's shipped group), blast debuff −0.5 on all four
+elements over 4s with 1s per-victim anti-spam, ring radius 20 (×2.5 at Mass 10), 28 interior +
+44 burst prisms (2.5, 1.5, 8), place distance flat 150 (Space no longer scales it), 3 switch
+charges, crystal grants +0.334 charge / +0.25 energy, ball size ×1 → ×4 at Space 10.
 
 **Known gaps (deliberate, tracked in SCARAB.md):** the HUD gauges are live but ride the cloned
 Sparrow variant's ART — the four icons still draw Sparrow weapon glyphs, so the row reads wrong
@@ -79,8 +112,10 @@ even though every binding is correct (art pass, not wiring); the switch ring is 
 deflection or energy trigger — mode work, and the ball cannot bounce off prisms at all, SCARAB.md
 §5); a forged ball has no boundary in freestyle so it coasts away forever (the documented §15.6
 candidate, not a bug) and keeps the mode's last-striker recolouring until permanent ownership
-lands (§4.2); Space map row and all four L5 labels deliberately open pending markup; AI never
-flies the Scarab (list order); touch cannot place switches (no Button1 raise site).
+lands (§4.2); **Space's L5 upgrade is the one deliberately open slot** (the notes assign Space the
+ball's size and name no upgrade — do not invent one); the blast's optional cooldown sweep ring
+(`blastCooldownRing`) is unwired, so the Charge readout is tint-only until an art pass adds it;
+AI never flies the Scarab (list order); touch cannot place switches (no Button1 raise site).
 
 ---
 

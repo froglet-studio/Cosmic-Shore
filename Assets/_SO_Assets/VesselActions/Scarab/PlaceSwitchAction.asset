@@ -15,7 +15,7 @@ MonoBehaviour:
   resourceIndex: 1
   chargesPerFullMeter: 3
   placementDistance:
-    Enabled: 1
+    Enabled: 0
     Value: 150
     Min: 150
     Max: 300

@@ -105,10 +105,22 @@ namespace CosmicShore.Gameplay
             }
 
             var ship = status.ShipTransform ? status.ShipTransform : vesselImpactor.transform;
-            Vector3 course = status.Course.sqrMagnitude > 1e-4f
-                ? status.Course.normalized
-                : ship.forward;
-            float launchSpeed = Mathf.Max(status.Speed * _inheritedVelocityFraction, _minimumLaunchSpeed);
+
+            // TRUE velocity, not Speed × Course. A juke/dash rides the ModifyVelocity channel,
+            // which displaces the vessel WITHOUT changing Speed or Course — so reading those two
+            // alone throws the ball down the throttle line and silently discards the dash. The
+            // ball's own strike path samples real per-tick motion, so using anything less here
+            // would make "dash into a crystal" and "dash into a ball" produce different
+            // trajectories from the same input.
+            Vector3 velocity = status.Speed * status.Course;
+            var transformer = status.VesselTransformer;
+            if (transformer) velocity += transformer.VelocityShift;
+
+            Vector3 heading = velocity.sqrMagnitude > 1e-4f
+                ? velocity.normalized
+                : (status.Course.sqrMagnitude > 1e-4f ? status.Course.normalized : ship.forward);
+            float launchSpeed = Mathf.Max(velocity.magnitude * _inheritedVelocityFraction, _minimumLaunchSpeed);
+            Vector3 course = heading;
             Vector3 spawnAt = ship.position + course * _forwardClearance;
 
             var ball = Object.Instantiate(_ballPrefab, spawnAt, Quaternion.identity);
@@ -122,6 +134,15 @@ namespace CosmicShore.Gameplay
 
             if (nm != null && nm.IsListening)
                 netObj.Spawn(destroyWithScene: true);
+
+            // SPACE → ball SIZE (SCARAB.md §7): ×1 at rest, ×4 at Space 10. The map's generic
+            // multiplier IS the carrier here (atFull 4), so there is no authored field to
+            // double-dip against. Read live at forge time and stamped once — the ball keeps the
+            // size it was born with.
+            float sizeScale = status.ElementalAbilityHandler != null
+                ? Mathf.Max(0.1f, status.ElementalAbilityHandler.Multiplier(Element.Space))
+                : 1f;
+            ball.SetSizeScale(sizeScale);
 
             ball.LaunchServer(spawnAt, course * launchSpeed, status.Domain);
 

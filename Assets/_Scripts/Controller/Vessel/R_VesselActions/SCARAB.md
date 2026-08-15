@@ -1,13 +1,17 @@
 # Scarab — the Rocket League vessel (design proposal)
 
-> **STATUS UPDATE (2026-08-14): the FOUNDATION is implemented on this branch** — enum 12,
-> `Scarab.prefab` (Sparrow clone, weapons excised), `ScarabVesselTransformer` (integrator
-> throttle + Snap Dash), `ScarabJukeController`, `PlaceSwitchActionSO`/executor (ring body v1),
-> crystal→energy/charge effects, ability map (Space row + all L5 labels left open per the gate),
-> containers, camera SO, class card, and all registrations (arcade card, prefab container,
-> network prefabs, vessel-changer toy). In-editor verification steps + first-pass tuning:
-> `Docs/UNITY_VERIFICATION_CHECKLIST.md` § Scarab. Everything below the next paragraph is the
-> DESIGN record; §4–§5's ball/switch-trigger mode work and the HUD pass are NOT yet built.
+> **STATUS UPDATE (2026-08-15): the vessel is flyable and the element map is AUTHORED** — enum 12,
+> `Scarab.prefab` (Sparrow clone, weapons excised), `ScarabVesselTransformer` (velocity-integrator
+> throttle along the nose + Snap Dash), `ScarabJukeController` (free dash, `OnJukeFired`),
+> `ScarabCavitationBlast` + `AOEScarabCavitation.prefab` + its elemental-debuff container,
+> `PlaceSwitchActionSO`/executor + `ScarabSwitch` (toy ring, Vogel interior fill, plane-crossing
+> trigger, outward burst, MASS-5 shielded prisms), `ScarabBallForgeByCrystalEffectSO` (every omni
+> crystal forges a ball at the vessel's TRUE velocity, dash included; SPACE scales it to ×4),
+> the four-row ability map, containers, camera SO, class card, HUD view/controller, and all
+> registrations (arcade card, prefab container, network prefabs, vessel-changer toy). In-editor
+> verification steps + first-pass tuning: `Docs/UNITY_VERIFICATION_CHECKLIST.md` § Scarab.
+> Everything below the next paragraph is the DESIGN record; §4.2–§4.5's mode-side ball work
+> (permanent ownership, boundary death, population cap) is still open.
 
 > **Original design gate note — nothing beyond the foundation is implemented.** Written for Garrett to
 > mark up before any code or asset lands (the `/vessel` design-approval gate). The element map is
@@ -187,10 +191,13 @@ Modelled on the Sparrow's `BarrelRollController`
    vector (per-axis easing makes diagonal magnitudes direction-dependent; the Sparrow learned
    this). On the Scarab the right stick is otherwise unused (single-stick steering), so the juke
    collides with nothing.
-2. **Cooldown-armed, not boost-armed.** The Sparrow arms one roll per boost press; the Scarab has
-   no boost button, so the juke re-arms on a plain cooldown (`jukeCooldownSeconds 1.2`
-   *(proposal)*), shown as a binary pip (§12). A cooldown on a vessel ability is input pacing, not
-   world decay — nothing is removed from the world by a clock.
+2. **Uncooled (`jukeCooldownSeconds 0`).** The Sparrow arms one roll per boost press; the Scarab
+   has no boost button, and the dash is deliberately **free and always available** — dodging is
+   mobility and is never rationed. The knob survives (a mode could pace it) and the binary pip
+   (§12) still reads `IsJukeArmed`, but at 0 it is always armed. What *is* paced is the
+   cavitation blast that rides the dash, and that cooldown lives on the blast (§7, Charge). A
+   cooldown on a vessel ability is input pacing, not world decay — nothing is removed from the
+   world by a clock.
 3. **It is an attack.** Displacement is the Sparrow's construction verbatim:
    `transformer.ModifyVelocity(dir.normalized × jukeSpeed, jukeDurationSeconds,
    ignoresTranslationRestriction: true)` — the cosine-eased impulse channel clamped at
@@ -217,14 +224,31 @@ Modelled on the Sparrow's `BarrelRollController`
      `Course * Speed`), so it sees the juke's real motion correctly with nothing to fix. This is
      how you hit a ball sideways without turning.
 
-**Open decision (§15):** the original brief asked for the juke to fire a *short-range lateral cone
-of destruction* — a real `AOEConicExplosion` that also shreds prisms. The revised notes describe
-the juke as a bump. The two readings differ in exactly one respect: whether the juke destroys
-**mass** (trail, switches) as well as shoving vessels and balls. The design below assumes the
-bump; the cone is a one-prefab addition if wanted (`AOEConicExplosion`, `proportionalDebris 1`,
-`devastating 1`, spawned with `Quaternion.LookRotation(jukeDir)` — and note super-shielded mass
-both survives it and destroys the blast, so the Astro League edge lining protects itself for
-free).
+**RESOLVED (2026-08-15) — the juke fires a blast: `ScarabCavitationBlast`.** The original brief
+asked for a short-range lateral cone of destruction; the revised notes described a bump. Garrett's
+markup settled it: the dash carries a **small spherical blast**, in the shape the Dolphin's AOE had
+*before* it was reworked into the parametric capsule cone — the "cone" is the **offset**, the blast
+sitting ahead of you along the dash rather than centred on the hull.
+
+- Prefab `Assets/_Prefabs/Projectile/AOEScarabCavitation.prefab` — sphere, `ExplosionDuration 0.85`,
+  `proportionalDebris 1`, `debrisRestitution 1/3 × Inertia 1.8` (the Dolphin's shipped tuning
+  group, so debris leaves at the house 1/3-of-physical read).
+- Fired from `ScarabJukeController.OnJukeFired(direction)` at `blastScale 90`,
+  `forwardOffset 45`.
+- It **kills fauna** with no fauna-specific code: a creature dies when its body prisms are
+  destroyed (platform-wide since Wildlife Liberation), and a destructive blast destroys prisms.
+- It **debuffs pilots** through the explosion's container
+  (`ScarabCavitationExplosionImpactorDataContainer` → `ScarabCavitationDebuffByExplosionEffect`, a
+  new `VesselElementalDebuffByExplosionEffectSO`): −0.5 on **all four elements**, decaying over 4 s,
+  1 s per-victim anti-spam. Elemental, because elementals are the single system that governs all
+  buffing and debuffing — this is the danger-prism debuff lifted onto the explosion impactor, not a
+  bespoke status. Own-domain vessels are already spared upstream by
+  `ExplosionImpactor.AcceptImpactee` (`affectSelf 0`), so the effect adds no second domain gate.
+- Super-shielded mass still both survives it and destroys the blast, so the Astro League edge
+  lining protects itself for free.
+- **CHARGE owns its cooldown** (2.5 s → 1.25 s at Charge 10) and **CHARGE 5** makes it devastating
+  (§7). The **dash itself is never gated**: `IsBlastReady` false declines the punch and lets the
+  dodge through.
 
 **Replication.** The Sparrow's roll needs none (displacement rides the owner-authoritative
 NetworkTransform). The juke's *hits* are outcome-affecting, so `ScarabJukeController` is a
@@ -475,29 +499,43 @@ fundamental or a parallel system, and nothing is removed from the world by a tim
 ## 7. The four abilities × four elements
 
 Convention: **Space = reach/presence · Time = rate/mobility · Charge = threat/energy · Mass =
-size/volume.** One scaled parameter per element; every map multiplier pinned to **1** with the
-real scaling on an authored field/`ElementalFloat` (the Dolphin no-double-dip pattern).
+size/volume.** One scaled parameter per element; map multipliers pinned to **1** wherever the real
+scaling lives on an authored field/`ElementalFloat` (the Dolphin no-double-dip pattern) — Space is
+the one row where the map's generic multiplier *is* the carrier, because there is no authored ball
+scale to double-dip against.
 
 Map asset: `Assets/Resources/ElementalAbilityMaps/Scarab.asset` (exact folder + name, 4 entries,
 `UnlockLevel 5 / RelockBelowLevel 4 / LatchPolicy Relock`).
 
+> **REVISION 3 (2026-08-15) — the map below is AUTHORED, not proposed.** Garrett's markup of
+> 2026-08-15 named Charge (cavitation blast cooldown, +CHARGE-5 shielded destruction), Mass-5
+> (shielded switch prisms), and Space (ball size ×4 at Space 10). Only the Space **L5 upgrade**
+> remains an open slot. The superseded proposal rows (Charge = ball-generation energy, "Split
+> Shot", "Second Pass", Space = juke reach) are kept only in git history.
+
 | Element | Ability | Quantitative | L5 upgrade |
 |---|---|---|---|
-| **Charge (1)** | **Ball generation** | Energy required per ball (`ballEnergyCostAtFullCharge` ×0.5 at L10 — the authored-cooldown-style field the Squirrel's ring and the Dolphin's crystal seed both use) — *from the notes* | **Split Shot** *(proposal)* — a threshold hit yields **two** balls on slightly diverging headings (the Twin Seed / Twin Rings shape) |
-| **Mass (2)** | **Switch** | Switch structure size — ring aperture + panel span (`switchScaleElemental` 1 → 2.5) — *from the notes* | **Second Pass** *(proposal)* — the switch survives its first trigger, paying twice before it breaks |
-| **Space (3)** | **Juke** *(recommended)* | **(open design slot)** → propose: juke displacement + hit reach | **(open design slot)** |
-| **Time (4)** | **Throttle** | Top speed of the throttle ramp (`ThrottleScalerMultiplier` ElementalFloat 1 → 1.5, the existing dormant `VesselTransformer` field, enabled) — *from the notes* | **Snap Dash** — double-tap the throttle for a burst/dash gap closer (§3.6) — *from the notes* |
+| **Charge (1)** | **Cavitation blast** | Blast **cooldown** — `ScarabCavitationBlast.cooldownSeconds 2.5` × `cooldownMultiplierAtFullCharge 0.5` at Charge 10 (authored-cooldown idiom; map multiplier pinned to 1) | **Cavitation Shear** — the blast destroys **shielded** prisms outright instead of only shedding their shields (`DevastatingOverride`, per-use snapshot). Super-shielded mass is still untouchable |
+| **Mass (2)** | **Switch** | Switch structure size — ring aperture + fill span (`switchScale` ElementalFloat 1 → 2.5; map multiplier pinned to 1) | **Armored Switch** — the switch is built from **shielded** prisms (snapshotted at placement), so an opposing ball caroms off it and sheds one shield per prism instead of eating through |
+| **Space (3)** | **Ball forge** | Forged **ball size** — ×1 at rest, **×4 at Space 10** (`MultiplierAtFullLevel 4` on the map itself; stamped once at forge time, a ball keeps the size it was born with) | **(open design slot)** |
+| **Time (4)** | **Throttle** | Top speed of the throttle ramp (`ThrottleScalerMultiplier` ElementalFloat 1 → 1.5, the existing dormant `VesselTransformer` field, enabled; map multiplier pinned to 1) | **Snap Dash** — double-tap the **throttle** (RT) for a burst gap-closer along the nose (§3.6) |
 
-Three rows come straight from the design notes. **Space is genuinely open** and is not filled here
-— per the design-approval gate, an unapproved mapping is never invented to complete a map. The
-recommendation is Space → the juke (reach/presence is exactly what a bump's distance and hit
-radius are), which leaves drift as **unmapped base kit** — legitimate, and precedented by the
-Sparrow's strafing roll. The notes name five verbs for four slots, so *something* must ride
-unmapped; drift is the natural one because it has no reach/size/rate parameter that is not
-already the throttle's.
+**Snap Dash is the throttle's upgrade, not the dash's.** The right-stick juke (§3.4) is base kit,
+always available, and has **no cooldown at all** (`jukeCooldownSeconds 0`) — dodging is mobility and
+is never rationed. What is paced is the *cavitation blast* that rides it, and that pacing is the
+Charge row. The two are separate on purpose: a recharging blast never costs you the dodge.
 
-Upgrade-name collision check (shipped + reserved + retired-on-record): **Split Shot**, **Second
-Pass**, **Snap Dash** are all free.
+**Space's L5 is deliberately unfilled.** Per the design-approval gate an unapproved upgrade is
+never invented to complete a map; the notes assign Space the ball's size and name no qualitative
+upgrade for it. The Sparrow ships 3/4 upgrades under the same rule.
+
+**One parameter per element — the placement-distance retirement.** The first pass had Space scaling
+`PlaceSwitchActionSO.placementDistance` (150 → 300). With Space now owning ball size, that
+`ElementalFloat` ships **disabled** and the distance is a flat authored number. Leaving both live
+would put two unrelated meanings on one flower.
+
+Upgrade-name collision check (shipped + reserved + retired-on-record): **Cavitation Shear**,
+**Armored Switch**, **Snap Dash** are all free.
 
 **Contract-shape note (deliberate deviation, flagged).** Only the switch is a plain
 `InputEvents → ShipActionSO` binding. Ball generation is impact-driven (a crystal effect — the
@@ -611,7 +649,10 @@ tool in any mode with opponents. Nothing in the kit requires an arena to functio
 | File | Contents |
 |---|---|
 | `_Scripts/Controller/Vessel/ScarabVesselTransformer.cs` | `SingleStickVesselTransformer` subclass: the throttle **integrator** + Time-scaled ceiling + double-tap dash (§3.2, §3.6) |
-| `_Scripts/Controller/Vessel/ScarabJukeController.cs` | NetworkBehaviour: right-stick poll, cooldown, displacement + visual roll, vessel shove + ball strike, fire RPCs (§3.4) |
+| `_Scripts/Controller/Vessel/ScarabJukeController.cs` | Right-stick poll (uncooled), displacement + visual roll, `OnJukeFired(direction)`; vessel shove + ball strike + fire RPCs still to come (§3.4) |
+| `_Scripts/.../R_VesselActions/ScarabCavitationBlast.cs` | Rides `OnJukeFired`: spawns the spherical blast down-range along the dash, CHARGE-scaled cooldown, CHARGE-5 `DevastatingOverride` (§3.4, §7) |
+| `_Scripts/.../Vessel Explosion Effects/VesselElementalDebuffByExplosionEffectSO.cs` | Platform addition: the danger-prism elemental debuff lifted onto the **explosion** impactor (all four elements, decaying, per-victim anti-spam) |
+| `_Scripts/Controller/Projectiles/AOEExplosion.cs` + `Impactors/ExplosionImpactor.cs` | Platform additions: `InitializeStruct.DevastatingOverride` + `ApplyDevastatingOverride` + `ExplosionImpactor.SetDevastating`, mirroring the existing `AffectSelfOverride` pair |
 | `_Scripts/.../Data Containers/PlaceSwitchActionSO.cs` + `Executors/PlaceSwitchActionExecutor.cs` | Charge gate, placement, occupancy claim, pooled spawn, spend (§5) |
 | `_Scripts/.../Impactors/BallForgeCrystalImpactor.cs` | `OmniCrystalImpactor` subclass: the threshold branch — collect as usual, or materialise a ball with inherited velocity and skip the collect (§4.1) |
 | Mode-side: **a ball prefab + network registration** (neither exists), ball registry with spawn/despawn, per-ball goal state, per-ball attribution, `Switch` object (reflector + mouth detector), boundary-death path, no-generation zone, and a goal-outcome decision (§15.13) | §4.5, §5 — scoped as mode work, not vessel work |
@@ -645,8 +686,8 @@ populated, ≥2 material slots per hull MeshRenderer.
 
 ## 12. HUD
 
-- **Four-icon row** (LOCKED order charge → mass → space → time): **Ball · Switch · Juke ·
-  Throttle**, authored at the shared row geometry. Standard three-layer upgrade signal; any icon
+- **Four-icon row** (LOCKED order charge → mass → space → time): **Cavitation Blast · Switch ·
+  Ball Forge · Throttle**, authored at the shared row geometry. Standard three-layer upgrade signal; any icon
   doubling as a live gauge sets `tintIconOnUpgrade = false` and overrides `SetAbilityUpgraded`
   re-anchoring rest scales (the Squirrel reference).
 - **Element flowers**: fleet-required — author them (FrogletTools > Vessels > **Wire Elemental

@@ -1042,6 +1042,7 @@ MonoBehaviour:
   badgeAnchor: {x: 1, y: 1}
   badgeTransitionDuration: 0.3
   energyRing: {fileID: 6877628874251343197}
+  ballIcon: {fileID: 4990196459091587280}
   energyFillingColor: {r: 0.35, g: 0.55, b: 0.75, a: 0.85}
   energyReadyColor: {r: 1, g: 0.75, b: 0.2, a: 1}
   energyTweenDuration: 0.2
@@ -1052,11 +1053,12 @@ MonoBehaviour:
   - {r: 0.6, g: 0.75, b: 0.85, a: 0.85}
   - {r: 0.8, g: 0.9, b: 1, a: 0.95}
   - {r: 1, g: 1, b: 1, a: 1}
-  jukeIcon: {fileID: 4990196459091587280}
-  jukeArmedColor: {r: 0.55, g: 0.9, b: 1, a: 1}
-  jukeSpentColor: {r: 0.35, g: 0.4, b: 0.45, a: 0.5}
-  jukeTweenDuration: 0.15
-  jukeSpendPunchScale: 0.3
+  blastIcon: {fileID: 3855639277037614910}
+  blastCooldownRing: {fileID: 0}
+  blastReadyColor: {r: 1, g: 0.55, b: 0.35, a: 1}
+  blastSpentColor: {r: 0.35, g: 0.4, b: 0.45, a: 0.5}
+  blastTweenDuration: 0.15
+  blastSpendPunchScale: 0.3
 
 --- !u!1 &2785019855397802838
 GameObject:

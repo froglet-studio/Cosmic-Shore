@@ -7,15 +7,21 @@ namespace CosmicShore.UI
     /// Binds the Scarab's live state to <see cref="ScarabHUDView"/> (design:
     /// R_VesselActions/SCARAB.md §12).
     ///
-    /// Two signals, both event-driven — no per-frame polling:
-    /// - <c>ResourceSystem.OnResourceChanged</c> → ball energy (index 0) and switch charges
-    ///   (index 1). Subscribed on the vessel's OWN ResourceSystem, never reached for by type
-    ///   through the hierarchy — a HUD controller that hunts another vessel's component compiles,
-    ///   returns null on every vessel that isn't carrying it, and leaves a dead gauge with no
-    ///   error (the Squirrel polled a Sparrow-only executor for its heat gauge for the
-    ///   component's entire life that way).
-    /// - <c>ScarabJukeController.OnJukeChargeChanged</c> → the binary juke pip, from a serialized
-    ///   reference on this vessel's prefab so a missing wire is visible in the inspector.
+    /// Two signals, both event-driven — no per-frame polling in this class:
+    /// - <c>ResourceSystem.OnResourceChanged</c> → ball energy (index 0, the SPACE row's Ball
+    ///   Forge) and switch charges (index 1, the MASS row). Subscribed on the vessel's OWN
+    ///   ResourceSystem, never reached for by type through the hierarchy — a HUD controller that
+    ///   hunts another vessel's component compiles, returns null on every vessel that isn't
+    ///   carrying it, and leaves a dead gauge with no error (the Squirrel polled a Sparrow-only
+    ///   executor for its heat gauge for the component's entire life that way).
+    /// - <c>ScarabCavitationBlast.OnBlastReadyChanged</c> → the CHARGE row's ready/recharging
+    ///   readout, from a serialized reference on this vessel's prefab so a missing wire is
+    ///   visible in the inspector. The edge carries the live cooldown length, so the optional
+    ///   sweep ring is one tween per use.
+    ///
+    /// The right-stick DASH has no readout because it has no cooldown — it is always available
+    /// (SCARAB.md §3.4). Only the blast that rides it is paced, and that is what the Charge row
+    /// shows.
     ///
     /// Bindings are ONE symmetric attach/detach pair. The detach in <see cref="Initialize"/> runs
     /// ABOVE the pilot gate and <see cref="OnDisable"/> is unconditional and idempotent, so a
@@ -27,9 +33,9 @@ namespace CosmicShore.UI
         [Header("Scarab")]
         [SerializeField] ScarabHUDView view;
 
-        [Tooltip("This vessel's juke controller (root component). Serialized rather than " +
+        [Tooltip("This vessel's cavitation blast (root component). Serialized rather than " +
                  "type-searched so an unwired HUD is visible in the inspector.")]
-        [SerializeField] ScarabJukeController jukeController;
+        [SerializeField] ScarabCavitationBlast cavitationBlast;
 
         [Header("Resource indices")]
         [Tooltip("Meter that fills toward a ball (the Scarab authors index 0, 'Ball Energy').")]
@@ -41,7 +47,7 @@ namespace CosmicShore.UI
         [SerializeField, Min(1)] int switchChargesPerFullMeter = 3;
 
         ResourceSystem _resources;
-        ScarabJukeController _boundJuke;
+        ScarabCavitationBlast _boundBlast;
 
         public override void Initialize(IVesselStatus vesselStatus)
         {
@@ -56,11 +62,11 @@ namespace CosmicShore.UI
             if (vesselStatus.IsInitializedAsAI || !vesselStatus.IsLocalUser) return;
 
             _resources = vesselStatus.ResourceSystem;
-            if (!jukeController)
-                jukeController = vesselStatus.ShipTransform
-                    ? vesselStatus.ShipTransform.GetComponent<ScarabJukeController>()
-                    : GetComponent<ScarabJukeController>();
-            _boundJuke = jukeController;
+            if (!cavitationBlast)
+                cavitationBlast = vesselStatus.ShipTransform
+                    ? vesselStatus.ShipTransform.GetComponent<ScarabCavitationBlast>()
+                    : GetComponent<ScarabCavitationBlast>();
+            _boundBlast = cavitationBlast;
 
             if (_resources)
             {
@@ -68,10 +74,10 @@ namespace CosmicShore.UI
                 SeedFromResources();
             }
 
-            if (_boundJuke)
+            if (_boundBlast)
             {
-                _boundJuke.OnJukeChargeChanged += HandleJukeChargeChanged;
-                view?.SetJukeArmed(_boundJuke.IsJukeArmed);   // seed, don't wait for the first edge
+                _boundBlast.OnBlastReadyChanged += HandleBlastReadyChanged;
+                view?.SetBlastReady(_boundBlast.IsBlastReady, 0f);   // seed, don't wait for an edge
             }
         }
 
@@ -112,14 +118,15 @@ namespace CosmicShore.UI
             }
         }
 
-        void HandleJukeChargeChanged(bool armed) => view?.SetJukeArmed(armed);
+        void HandleBlastReadyChanged(bool ready, float cooldownSeconds)
+            => view?.SetBlastReady(ready, cooldownSeconds);
 
         void Unbind()
         {
             if (_resources) _resources.OnResourceChanged -= HandleResourceChanged;
-            if (_boundJuke) _boundJuke.OnJukeChargeChanged -= HandleJukeChargeChanged;
+            if (_boundBlast) _boundBlast.OnBlastReadyChanged -= HandleBlastReadyChanged;
             _resources = null;
-            _boundJuke = null;
+            _boundBlast = null;
         }
 
         void OnDisable() => Unbind();

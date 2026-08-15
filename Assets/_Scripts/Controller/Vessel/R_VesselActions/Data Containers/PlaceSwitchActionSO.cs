@@ -13,10 +13,15 @@ namespace CosmicShore.Gameplay
     /// are Astro League mode work (the ball never bounces off prisms — SCARAB.md §5's crux) and
     /// land with the multi-ball pass.
     ///
-    /// Element scaling (SCARAB.md §7, map multipliers pinned to 1):
-    /// - SPACE → placement distance (`placementDistance` ElementalFloat, 150 → 300 at L10).
-    /// - MASS  → structure size (`switchScale` ElementalFloat, ×1 → ×2.5 on the ring radius).
-    /// Both read live at use time, never cached (per-use snapshot).
+    /// Element scaling (SCARAB.md §7):
+    /// - MASS → structure size (`switchScale` ElementalFloat, ×1 → ×2.5 on the ring radius; the
+    ///   map's generic Mass multiplier stays pinned to 1 so the two can't double-dip). Read live
+    ///   at use time, never cached (per-use snapshot). MASS 5 additionally builds the switch from
+    ///   SHIELDED prisms — see <see cref="ScarabSwitch"/>.
+    /// - SPACE does NOT scale placement distance. It owns the forged BALL's size instead
+    ///   (×1 → ×4 at Space 10), so `placementDistance` ships with its ElementalFloat DISABLED and
+    ///   is a flat authored number. One parameter per element is the contract; leaving both live
+    ///   would put two unrelated meanings on one flower.
     /// </summary>
     [CreateAssetMenu(fileName = "PlaceSwitchAction", menuName = "ScriptableObjects/Vessel Actions/Place Switch")]
     public class PlaceSwitchActionSO : ShipActionSO
@@ -32,8 +37,9 @@ namespace CosmicShore.Gameplay
         [SerializeField] float chargesPerFullMeter = 3f;
 
         [Header("Placement")]
-        [Tooltip("How far ahead of the vessel, along its COURSE, the switch ring appears. " +
-                 "SPACE element: enable with Min 150 / Max 300.")]
+        [Tooltip("How far ahead of the vessel, along its COURSE, the switch ring appears. FLAT: " +
+                 "the ElementalFloat is authored disabled because SPACE now owns the forged " +
+                 "ball's size. Do not re-enable it without moving ball size off Space.")]
         public ElementalFloat placementDistance = new(150f);
 
         [Tooltip("Ring radius at scale 1 (world units, centre to brick centres).")]

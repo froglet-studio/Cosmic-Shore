@@ -188,27 +188,33 @@ HUD: the shared upgrade-highlight system (`VesselHUDView.abilityIcons` + base
 icons (boost gauge / drift / impact / tube); other vessels adopt by filling their view's
 `abilityIcons` bindings — no code.
 
-### Scarab — the Rocket League vessel (throttle + drift + juke + ball/switch economy) — PROPOSED, NOT A VESSEL YET
+### Scarab — the Rocket League vessel (throttle + drift + dash + ball/switch economy) — AUTHORED (2026-08-15)
 
-The vessel itself is a proposal (`VesselClassType.Scarab = 12` does not exist). Full design —
-controls, the player-generated multi-ball model, the switch (deflector + energy gate), the
-crystal→ball economy, the four-lane "quadrality" rationale, ecology retune and registration
-checklist — lives in `_Scripts/Controller/Vessel/R_VesselActions/SCARAB.md`; this table is the
-map row awaiting markup. Charge/Mass/Time come from Garrett's design notes (2026-08-12); **Space
-is deliberately left open** rather than invented. All map multipliers pinned to 1, scaling on
-authored fields/ElementalFloats (the Dolphin no-double-dip pattern).
+`VesselClassType.Scarab = 12` exists and `Assets/Resources/ElementalAbilityMaps/Scarab.asset` is
+**authored** — this table is the shipped map, not a proposal. Full design — controls, the
+player-generated multi-ball model, the switch, the crystal→ball economy, the four-lane
+"quadrality" rationale, ecology retune and registration checklist — lives in
+`_Scripts/Controller/Vessel/R_VesselActions/SCARAB.md`. Rows come from Garrett's markup of
+2026-08-15. Map multipliers pinned to 1 wherever an authored field carries the scaling (the
+Dolphin no-double-dip pattern); **Space is the exception** — there is no authored ball scale, so
+the map's own `MultiplierAtFullLevel` is the carrier.
 
-| Element | Quantitative (proposed) | Proposed L5 upgrade |
+| Element | Quantitative | L5 upgrade |
 |---|---|---|
-| Charge | ball-generation energy requirement (`ballEnergyCostAtFullCharge` ×0.5 at L10 — the authored-cooldown-style field shape) — *from the notes* | **Split Shot** — a threshold crystal hit yields TWO balls on diverging headings (the Twin Seed / Twin Rings shape) |
-| Mass | switch structure size — ring aperture + curved panel span (`switchScaleElemental` 1→2.5) — *from the notes* | **Second Pass** — the switch survives its first trigger, paying twice before it breaks |
-| Space | *(open)* → propose: juke displacement + hit reach (leaves drift as unmapped base kit, the Sparrow-roll precedent) | *(open)* |
-| Time | top speed of the throttle ramp (`ThrottleScalerMultiplier` ElementalFloat 1→1.5 — the existing dormant `VesselTransformer` field, enabled) — *from the notes* | **Snap Dash** — double-tap the throttle for a burst/dash gap closer (detected off the RT `RightStickAction` edges, no new input plumbing) — *from the notes* |
+| Charge | cavitation-blast **cooldown** (`ScarabCavitationBlast.cooldownSeconds 2.5` × `cooldownMultiplierAtFullCharge 0.5` at L10 — the authored-cooldown idiom) | **Cavitation Shear** — the blast destroys SHIELDED prisms outright instead of only shedding shields (`AOEExplosion.InitializeStruct.DevastatingOverride`, per-use snapshot) |
+| Mass | switch structure size — ring aperture + interior fill span (`switchScale` ElementalFloat 1→2.5) | **Armored Switch** — the switch is built from SHIELDED prisms, snapshotted at placement, so an opposing ball caroms off and sheds one shield per prism |
+| Space | forged **ball size**, ×1 → **×4 at L10** (`MultiplierAtFullLevel: 4` on the map itself; stamped once at forge time) | *(open — the notes name no Space upgrade; do not invent one)* |
+| Time | top speed of the throttle ramp (`ThrottleScalerMultiplier` ElementalFloat 1→1.5 — the existing dormant `VesselTransformer` field, enabled) | **Snap Dash** — double-tap the THROTTLE (RT) for a burst gap closer (detected off the RT `RightStickAction` edges, no new input plumbing) |
 
-Superseded first pass (kept for the record): the vessel was "Mantis", Astro-League-only, with a
-single mode ball launched by a cavitation cone and a braking wall on the A button — Surgical
-Strike / Ablative Wake / Deep Wall / Hair Trigger. **The notes are the record; do not
-re-litigate from the superseded pass.**
+**The right-stick dash is base kit and has no cooldown** — it is not a map row. Only the
+cavitation blast riding it is paced, which is the Charge row. Snap Dash is the *throttle's*
+upgrade, not the dash's; do not conflate them.
+
+Superseded passes (kept for the record): the vessel was "Mantis", Astro-League-only, with a single
+mode ball launched by a cavitation cone and a braking wall on the A button — Surgical Strike /
+Ablative Wake / Deep Wall / Hair Trigger. A second pass proposed Charge = ball-generation energy
+with **Split Shot**, Mass with **Second Pass**, and Space = juke reach. **The 2026-08-15 markup is
+the record; do not re-litigate from a superseded pass.**
 
 ## 3. Implementation notes for approved rows
 

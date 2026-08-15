@@ -38,6 +38,11 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public void SetAffectSelf(bool value) => affectSelf = value;
 
+        /// <summary>Per-instance override of the authored `devastating` flag — a devastating
+        /// blast destroys SHIELDED prisms outright instead of only shedding their shields. Mirrors
+        /// <see cref="SetAffectSelf"/>; used by the Scarab's CHARGE-5 "Cavitation Shear".</summary>
+        public void SetDevastating(bool value) => devastating = value;
+
         // Batch AOE processing - bypasses Physics for prisms entirely
         private bool _useBatchProcessing;
         private static int _trailBlockLayer = -1;

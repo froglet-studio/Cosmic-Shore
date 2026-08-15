@@ -42,6 +42,7 @@ namespace CosmicShore.Gameplay
         float _burstRadiusMultiplier;
         float _clearRadius;
 
+        bool _shieldPrisms;
         GameObject _ring;
         readonly List<Prism> _interior = new();
         readonly Dictionary<AstroLeagueBall, Vector3> _lastBallPos = new();
@@ -56,6 +57,13 @@ namespace CosmicShore.Gameplay
             _spawnChannel = spawnChannel;
             _domain = status.Domain;
             _playerName = status.PlayerName;
+            // MASS 5 — "Armored Switch": the switch's prisms arrive SHIELDED (regular shield, the
+            // sanctioned primitive; never SuperShield). Snapshotted at placement, so a switch
+            // keeps the armour it was built with even if the level drops later. Note the
+            // interplay it creates with the ball rules: an OPPOSING ball now caroms off this
+            // switch and sheds one shield per prism instead of eating straight through it.
+            _shieldPrisms = status.ElementalAbilityHandler != null
+                            && status.ElementalAbilityHandler.IsUpgradeActive(Element.Mass);
             _ringRadius = Mathf.Max(1f, ringRadius);
             _brickScale = brickScale;
             _growthRate = growthRate;
@@ -131,6 +139,9 @@ namespace CosmicShore.Gameplay
 
             prism.ownerID = $"{_playerName}::Switch::{GetInstanceID()}";
             prism.Domain = _domain;
+            // Flag BEFORE Initialize so the prism blooms in already armoured, rather than
+            // popping a shield on after it has settled (Docs/ECOSYSTEM.md's birth-transition rule).
+            if (_shieldPrisms) prism.prismProperties.IsShielded = true;
             // The one growth engine (Docs/PRISM_ANIMATION.md) — bloom in on the clock.
             prism.TargetScale = _brickScale;
             prism.SetGrowthRate(_growthRate);

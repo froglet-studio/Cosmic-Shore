@@ -183,6 +183,7 @@ GameObject:
   - component: {fileID: 8100000000000000081}
   - component: {fileID: 8100000000000000083}
   - component: {fileID: 7423918465920174631}
+  - component: {fileID: 2645891037714460318}
   m_Layer: 0
   m_Name: Scarab
   m_TagString: Player_Ship
@@ -644,7 +645,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   baseView: {fileID: 4159619328234506921}
   view: {fileID: 4159619328234506921}
-  jukeController: {fileID: 7423918465920174631}
+  cavitationBlast: {fileID: 2645891037714460318}
   energyResourceIndex: 0
   switchResourceIndex: 1
   switchChargesPerFullMeter: 3
@@ -2262,8 +2263,25 @@ MonoBehaviour:
   m_EditorClassIdentifier:
   perimeterThreshold: 1
   invertRollDirection: 0
-  jukeCooldownSeconds: 1.2
+  jukeCooldownSeconds: 0
   jukeDurationSeconds: 0.5
   rootRollDegrees: 15
   jukeSpeed: 80
   rollVisualTarget: {fileID: 0}
+--- !u!114 &2645891037714460318
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8279817603024118164}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2c0a6c5730c644a0b32ec8e27e7134ca, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  blastPrefab: {fileID: 7412093556301884212, guid: dd8d6149fdb64a5d869d0b0d041dd659, type: 3}
+  blastScale: 90
+  forwardOffset: 45
+  cooldownSeconds: 2.5
+  cooldownMultiplierAtFullCharge: 0.5

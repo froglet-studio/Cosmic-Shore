@@ -37,9 +37,11 @@ namespace CosmicShore.Gameplay
         [SerializeField, Range(0.5f, 1f)] float perimeterThreshold = 1f;
         [Tooltip("Flip the CW/CCW visual-roll mapping if it reads backwards in playtest.")]
         [SerializeField] bool invertRollDirection;
-        [Tooltip("Seconds between jukes. Input pacing, not world decay — the pip re-arms on " +
-                 "this clock and the HUD shows armed/recharging as a binary state.")]
-        [SerializeField, Min(0.1f)] float jukeCooldownSeconds = 1.2f;
+        [Tooltip("Seconds between jukes. ZERO by design: the dash itself is free and always " +
+                 "available — only the cavitation blast that rides it is cooldown-gated (that " +
+                 "cooldown lives on the blast, scaled by CHARGE). Left as a knob rather than " +
+                 "deleted so a mode could pace the dash if it ever needed to.")]
+        [SerializeField, Min(0f)] float jukeCooldownSeconds = 0f;
 
         [Header("Juke")]
         [SerializeField, Min(0.1f)] float jukeDurationSeconds = 0.5f;
@@ -67,6 +69,12 @@ namespace CosmicShore.Gameplay
 
         /// <summary>True while a juke is available.</summary>
         public bool IsJukeArmed => _jukeArmed;
+
+        /// <summary>Raised the instant a juke fires, carrying the world-space dash DIRECTION.
+        /// <see cref="ScarabCavitationBlast"/> rides this so the blast leaves along the dash —
+        /// the dash itself stays free and the blast keeps its own (CHARGE-scaled) cooldown, so
+        /// declining to fire the punch never blocks the dodge.</summary>
+        public event Action<Vector3> OnJukeFired;
 
         void Awake()
         {
@@ -117,6 +125,7 @@ namespace CosmicShore.Gameplay
             SetJukeArmed(false);
             transformer.ModifyVelocity(shove.normalized * jukeSpeed, jukeDurationSeconds,
                                        ignoresTranslationRestriction: true);
+            OnJukeFired?.Invoke(shove.normalized);
             StartCoroutine(RollRoutine(rollSign, transformer));
         }
 
