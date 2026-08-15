@@ -971,6 +971,24 @@ standalone skimmer objects do not). Detail:
 `_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_ENERGY_ECONOMY.md` §5.
 
 **Danger prisms are not safe to their own domain (locked design).** `IsDangerous` effects apply to every vessel that touches the prism, regardless of domain — friendly fire included (the fire-trail action literally sets `IsDangerous` from a `FriendlyFire` flag). Danger-prism effect SOs must not gate on domain. **Danger is mutually exclusive with BOTH shield tiers**: `PrismStateManager.MakeDangerous` clears `IsShielded` AND `IsSuperShielded` (and disengages the shield visuals), just as `ActivateSuperShield` clears `IsDangerous` — a danger prism carrying a stale super-shield flag is invulnerable and kills any AOE explosion that touches it. `Prism.ResetState` also clears `IsSuperShielded` on pool reuse (no spawner requests super-shield pre-`Initialize`; it is always engaged post-spawn). This is what makes danger trails a risk/reward surface: a danger trail grants 10x skim energy (`SkimmerBoostPrismEffect.dangerEnergyMultiplier`, gated behind the skimming vessel's Charge level-5 "Live Wire" upgrade — below it danger skims pay base energy) but slams its owner on contact — volume-independent full-stop slow at the danger max (`VesselChangeSpeedByPrismEffectSO`: `maxSlowStrength * dangerSlowMultiplier`), all-element decaying debuff for 4s (`VesselElementalDebuffByDangerPrismEffectSO`), and boost reset. (The Sparrow's own overheat danger trail was retired with its overheat mechanic; the `EnableDangerMode` machinery survives for a future caller. The one thing that can deny a danger prism's bite is the general **elemental-debuff immunity** state — `ResourceSystem.IsElementallyImmune`, held by the Sparrow while boosting at Time 5 and by the Serpent while stopped — and it denies ONLY the elemental drain: the slow, the input mute and the boost reset still land. It is a gate inside `ApplyElementalEffect`, not a domain exception, so the locked law is intact.)
+**The slow half of that punishment is PER-VESSEL WIRING, not a platform given** — it only happens
+if the vessel's `VesselImpactorDataContainerSO.vesselPrismEffects` actually contains a
+`VesselChangeSpeedByPrismEffectSO`, and for most of the fleet's life most vessels did not. The
+Dolphin had an authored `DolphinVesselChangeSpeedByPrism` asset referenced by **no** container, and
+the Sparrow — the only vessel Dog Fight flies — had neither asset nor entry, so neither took a speed
+penalty from any prism, danger ribs included. Three shipped docs asserted the slow anyway
+(`DOLPHIN_ENERGY_ECONOMY.md`'s drift-hold clause, `SPARROW_AFTERBURNER.md`'s ward step, and
+`DOGFIGHT.md`'s danger-rib paragraph) because a vessel that simply never slows reads as a vessel
+that is fast, and because a correctly-designed passthrough — the immunity gate really does leave
+`ModifyThrottle` alone — looks verified even when nothing is being pushed through it. **Wiring
+status is therefore a thing to CHECK, never to assume**: Squirrel / Dolphin / Sparrow / Manta carry
+it and are pinned to one shared tuning (`speedModifierDuration 1`, `massScaling 0.1`,
+`maxSlowStrength 0.5`, `dangerSlowMultiplier 3`, `dangerSlowDurationMultiplier 3` — a prism should
+read the same whichever hull hits it, so moving one asset off these numbers un-shares the fleet's
+collision read); **Rhino and Serpent still have no speed effect at all** and are the open item.
+Note also that a *name* is not evidence of a slow: `SparrowDebuffByRhinoDangerPrismEffectSO` carries
+a `vesselSlowedByRhinoDangerPrismEvent` field and a "Slow Viewer Integration" header, and only ever
+muted an input.
 
 **A prism's DEATH VISUAL wears the palette of the TIER it was wearing, never just its domain.** The dying prism's `PrismKind` rides `PrismEventData.Kind` — stamped by `Prism.Explode`/`Implode` from `PrismKinds.Of` *before* the destruction pass — and both the batched debris path and the pooled fallback tint from `SO_ColorSet.GetPrismKindColors`, the ONE composition `ThemeManager` also paints the live block materials with (`ThemeManager.PaintPrismTier`). Before this, debris was tinted from the domain alone at the PLAIN tier, so a danger prism — a frosty shielded base under the hot domain-independent danger rim — shattered into ordinary domain-coloured debris and read as a plain prism dying; shielded/super-shielded mass had the same defect on a devastating hit. **Never re-inline a tier's colour pair** at either consumer, and never fix a debris colour on the per-domain `SO_MaterialSet.ExplodingBlockMaterial` copies — nothing draws with those (`PrismDebris` reads mesh+material off the pool prefab and overrides colour PER ENTITY, which is also why a mixed-tier burst is still ONE batch and one draw: the tier must never become a reason to split a batch or swap a material). Danger alone also detonates HARDER — `PrismExplosion.DetonationGain`, authored as `dangerDetonationMultiplier` on `PrismExplosion.prefab` (1.6, set 1 for palette-only) — and that gain scales debris speed, shatter rate and the clamp band as ONE quantity, per the AOE-impulse contract above. Detail: `Docs/PALETTE.md §2.1`, `Docs/PRISM_ANIMATION.md §4.6`.
 
@@ -2247,6 +2265,24 @@ scale bump** with a one-shot unlock punch.
   lands on the jaw halves, not on the row's (fully transparent) Time icon, so it never collides
   with the upgrade path. Reading it as an upgrade tint is the mistake to avoid.
   Mechanics: `_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_ENERGY_ECONOMY.md`.
+  **Since 2026-08-14 its Charge ability is PASSIVE and its Space ability owns the right
+  trigger** — crystal seeding runs on a cooldown loop that plants team crystals in the cell's
+  CYTOPLASM (volume-uniform across the band, never inside the nucleus, and at the live cap the
+  clock PAUSES rather than culling — not creating mass is allowed, aging it out is not), which
+  freed RT for the **Echo Sight**: hold it and every prism inside the crystal blast's live
+  destruction volume lights up. It touches nothing but photons — no camera write, no speed
+  change, nothing replicated. (A zoomed first-person view was built alongside it and **cut**:
+  it would have needed the speed tunnel to grow a public FOV-home surface for one vessel's view
+  effect, and the highlight carries the ability on its own. If it is ever revisited, the one
+  safe shape — move the tunnel's HOME, never `Camera.fieldOfView`, which a live tunnel
+  overwrites every frame and then bakes in permanently as the home it restores to — is recorded
+  in `DOLPHIN_CRYSTAL_SEEDING.md` §2.) One general lesson: **a passive ability is bound to no
+  input event, so `CollectBoundActions` can never resolve its SO** — wire the config directly on
+  the executor; the binding sweep is a fallback, not the path.
+  The prism highlight is the second citizen of the §4.7 global-uniform shape
+  (`Docs/PRISM_ANIMATION.md` §4.7.1) — five globals per frame, zero per-prism CPU, and the
+  previewed volume is built by the same helper the detonation uses so the two cannot drift.
+  Detail: `_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_CRYSTAL_SEEDING.md`.
 
   Manta / Rhino / Serpent are blocked on **design, not wiring**: their
   `ElementalAbilityMapSO` entries are still `(open design slot)` with `Input = 0` and no

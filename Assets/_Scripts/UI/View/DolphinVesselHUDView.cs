@@ -15,7 +15,7 @@ namespace CosmicShore.UI
     /// time (the same order as the element flowers above them), each bound to the element that
     /// upgrades it:
     ///
-    ///   Charge → crystal seeding (crystalIcon + the carry pips)   → "Twin Seed"
+    ///   Charge → crystal seeding (crystalIcon + the yield pips)   → "Twin Seed"
     ///   Mass   → drift trail     (the authored boost ring)         → "Hard Wake"
     ///   Space  → cone blast      (blastIcon)                      → "Clean Blast"
     ///   Time   → skim energy     (the jaw pair)                   → "Live Current"
@@ -41,10 +41,10 @@ namespace CosmicShore.UI
         [Header("Charge — crystal seeding")]
         [Tooltip("The ability icon. If its Image type is Filled it doubles as the recharge wipe.")]
         [SerializeField] private Image crystalIcon;
-        [Tooltip("One pip per SAVED crystal - a crystal carried beyond the first, which the main " +
-                 "icon already stands for. So an un-upgraded Dolphin shows none, and the mini " +
-                 "crystal appearing IS Twin Seed becoming visible. Pips past the carry limit are " +
-                 "hidden outright, so the slot reads capacity as well as stock.")]
+        [Tooltip("One pip per EXTRA crystal in a seeding cycle - a crystal beyond the first, which " +
+                 "the main icon already stands for. So an un-upgraded Dolphin shows none, and the " +
+                 "mini crystal appearing IS Twin Seed becoming visible. Pips past the current yield " +
+                 "are hidden outright, so the slot reads the cycle's whole output.")]
         [SerializeField] private List<Image> crystalPips = new();
         [Tooltip("Pip sprite for a crystal that is LOADED - the omni crystal's active art.")]
         [SerializeField] private Sprite crystalPipFilled;
@@ -185,7 +185,7 @@ namespace CosmicShore.UI
             {
                 case Element.Charge:
                     _crystalIconRestScale = rest;
-                    _lastChargesShown = -1; // the carry limit just moved - repaint the pip row
+                    _lastChargesShown = -1; // the seed yield just moved - repaint the pip row
                     break;
                 // Mass needs no re-anchor: nothing in this view writes the boost ring's scale, so
                 // the base class's bump is never contested.
@@ -198,58 +198,61 @@ namespace CosmicShore.UI
         }
 
         // ---------------------------------------------------------------
-        // Charge: crystal seeding. charges = crystals in hand, maxCharges =
-        // the carry limit (2 once Charge's level-5 upgrade is active), and
-        // ready01 fills 0 -> 1 as the next slot recharges.
+        // Charge: crystal seeding — a PASSIVE ability. Nothing is ever carried,
+        // so the icon is a pure recharge fill (0 -> 1 as the next seeding arms)
+        // and the pips show the YIELD: how many crystals the next cycle plants.
+        //
+        // seedsPerCycle is 1 normally and 2 once Twin Seed (Charge L5) lands.
         // ---------------------------------------------------------------
-        public void SetCrystalState(int charges, int maxCharges, float ready01)
+        public void SetCrystalSeedState(int seedsPerCycle, float ready01)
         {
             ready01 = Mathf.Clamp01(ready01);
 
+            // The ability plants itself, so "how full is the clock" is the only thing the main
+            // icon can honestly say. It is never pinned to 1 by a held charge any more.
             if (crystalIcon && crystalIcon.type == Image.Type.Filled)
-                crystalIcon.fillAmount = charges > 0 ? 1f : ready01;
+                crystalIcon.fillAmount = ready01;
 
             for (int i = 0; i < crystalPips.Count; i++)
             {
                 var pip = crystalPips[i];
                 if (!pip) continue;
 
-                // A pip stands for a SAVED crystal - one carried beyond the first, which the main
-                // icon already represents. So pip[i] is charge i+2, and an un-upgraded Dolphin
-                // (limit 1) shows no pips at all: the mini crystal IS the Twin Seed upgrade made
+                // A pip stands for an EXTRA crystal in the cycle - one beyond the first, which the
+                // main icon already represents. So pip[i] is seed i+2, and an un-upgraded Dolphin
+                // (yield 1) shows no pips at all: the mini crystal appearing IS Twin Seed becoming
                 // visible, not a second copy of the ability icon.
-                int chargeShown = i + 2;
-                bool withinLimit = chargeShown <= maxCharges;
-                if (pip.gameObject.activeSelf != withinLimit) pip.gameObject.SetActive(withinLimit);
-                if (!withinLimit) continue;
+                int seedShown = i + 2;
+                bool withinYield = seedShown <= seedsPerCycle;
+                if (pip.gameObject.activeSelf != withinYield) pip.gameObject.SetActive(withinYield);
+                if (!withinYield) continue;
 
-                bool loaded = chargeShown <= charges;
-
-                // The omni crystal ships its own loaded/empty art, so swap the sprite when both are
-                // authored and only fall back to tinting a single sprite when they are not.
+                // Every shown pip is part of the coming cycle, so it rides the same recharge fill
+                // as the main icon rather than a per-slot one - there are no per-slot clocks now.
                 if (crystalPipFilled && crystalPipEmpty)
                 {
-                    pip.sprite = loaded ? crystalPipFilled : crystalPipEmpty;
+                    pip.sprite = crystalPipFilled;
                     pip.color = Color.white;
                 }
                 else
                 {
-                    pip.color = loaded ? crystalReadyColor : crystalChargingColor;
+                    pip.color = crystalReadyColor;
                 }
 
-                // The slot currently recharging shows its progress when it can.
-                if (!loaded && chargeShown == charges + 1 && pip.type == Image.Type.Filled)
-                    pip.fillAmount = ready01;
-                else if (pip.type == Image.Type.Filled)
-                    pip.fillAmount = loaded ? 1f : 0f;
+                if (pip.type == Image.Type.Filled) pip.fillAmount = ready01;
             }
 
-            if (_lastChargesShown >= 0 && charges > _lastChargesShown)
-                JuiceCrystalArmed();
-            _lastChargesShown = charges;
+            _lastChargesShown = seedsPerCycle;
         }
 
-        /// <summary>A crystal finished recharging: punch and flash the slot armed.</summary>
+        /// <summary>
+        /// A cycle just fired and crystals were planted out in the cytoplasm. The pilot gave no
+        /// input and may be looking anywhere, so the slot punches to say it happened — this is the
+        /// only notification the passive ability has.
+        /// </summary>
+        public void PulseCrystalSeeded() => JuiceCrystalArmed();
+
+        /// <summary>A seeding fired: punch and flash the slot.</summary>
         void JuiceCrystalArmed()
         {
             if (!crystalIcon) return;
