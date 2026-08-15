@@ -363,8 +363,13 @@ namespace CosmicShore.Gameplay
                 if (!crystal.CanBlastConsume(explosion.Domain)) continue;
                 if (!_crystalsHit.Add(crystal.GetInstanceID())) continue;
 
-                foreach (var effect in effects)
-                    effect.Execute(this, crystal);
+                for (int e = 0; e < effects.Length; e++)
+                {
+                    if (IsEffectSlotEmpty(effects[e], explosionImpactorDataContainer,
+                            nameof(ExplosionImpactorDataContainerSO.explosionCrystalEffects), e))
+                        continue;
+                    effects[e].Execute(this, crystal);
+                }
 
                 // Spend the crystal exactly as a collect does: it blooms out and respawns rather
                 // than vanishing (continuity of existence), and cannot be forged twice.

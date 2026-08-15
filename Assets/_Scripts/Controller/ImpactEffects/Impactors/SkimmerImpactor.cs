@@ -137,8 +137,13 @@ namespace CosmicShore.Gameplay
                 }
                 if (PrismShellContactManager.ShellOwnsContact(prismImpactor.Prism))
                     continue;
-                foreach (var effect in esp)
-                    effect.Execute(this, prismImpactor);
+                for (int e = 0; e < esp.Length; e++)
+                {
+                    if (IsEffectSlotEmpty(esp[e], skimmerImpactorDataContainer,
+                            nameof(SkimmerImpactorDataContainerSO.SkimmerPrismEffects), e))
+                        continue;
+                    esp[e].Execute(this, prismImpactor);
+                }
             }
         }
 
@@ -240,9 +245,12 @@ namespace CosmicShore.Gameplay
                     if (ReferenceEquals(shipImpactor.Vessel?.VesselStatus, skimmer.VesselStatus)) return;
                     var evs = skimmerImpactorDataContainer.VesselSkimmerEffects;
                     if (!DoesEffectExist(evs)) return;
-                    foreach (var effect in evs)
+                    for (int i = 0; i < evs.Length; i++)
                     {
-                        effect.Execute(shipImpactor, this);
+                        if (IsEffectSlotEmpty(evs[i], skimmerImpactorDataContainer,
+                                nameof(SkimmerImpactorDataContainerSO.VesselSkimmerEffects), i))
+                            continue;
+                        evs[i].Execute(shipImpactor, this);
                     }
 
                     skimmer.ExecuteImpactOnShip(shipImpactor.Vessel); // secondary call
@@ -264,9 +272,12 @@ namespace CosmicShore.Gameplay
                     skimmer.ExecuteImpactOnPrism(prism); // secondary call (booster viz, etc.)
                     if (!DoesEffectExist(esp)) return;
 
-                    foreach (var effect in esp)
+                    for (int i = 0; i < esp.Length; i++)
                     {
-                        effect.Execute(this, prismImpactor);
+                        if (IsEffectSlotEmpty(esp[i], skimmerImpactorDataContainer,
+                                nameof(SkimmerImpactorDataContainerSO.SkimmerPrismEffects), i))
+                            continue;
+                        esp[i].Execute(this, prismImpactor);
                     }
 
 
@@ -287,9 +298,12 @@ namespace CosmicShore.Gameplay
 
                     var esc = skimmerImpactorDataContainer.SkimmerCrystalEffects;
                     if (!DoesEffectExist(esc)) return;
-                    foreach (var effect in esc)
+                    for (int i = 0; i < esc.Length; i++)
                     {
-                        effect.Execute(this, elementalCrystalImpactor);
+                        if (IsEffectSlotEmpty(esc[i], skimmerImpactorDataContainer,
+                                nameof(SkimmerImpactorDataContainerSO.SkimmerCrystalEffects), i))
+                            continue;
+                        esc[i].Execute(this, elementalCrystalImpactor);
                     }
 
                     break;

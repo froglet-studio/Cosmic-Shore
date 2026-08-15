@@ -237,3 +237,23 @@ Mechanics reference: `_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_ENERGY_
     (dead field, inactive GameObject, `_nearFieldSkimmer` points at `EnergySkimmer`) — but it is
     a false positive for the next person who greps. Sweep it with the dead-override tooling
     rather than by hand-editing prefab YAML.
+
+## Dolphin prefab rot (observed while shipping `claude/cell-data-not-found-p62gm9`)
+
+23. **The Dolphin's `ElementalBarsController` is unwired and carries stale YAML keys.** Its
+    component on `Dolphin.prefab` serializes `vesselPrismController` / `driftTrailAction` /
+    `config` / `energyResourceIndex` / `view` — field names **no script in the project
+    declares any more** (`ElementalBarsController` declares only `elementBars`, which is
+    therefore unassigned, so the Dolphin shows **no elemental petal bars**). `view:` also
+    points at fileID `257326519381942953`, which exists nowhere in the prefab — the one
+    dangling local reference in the file, present since before this branch. Same
+    never-pruned-override rot CLAUDE.md documents for `Cell`: Unity retains modifications
+    whose `propertyPath` no longer resolves. Fix by running
+    **FrogletTools > Vessels > Wire Elemental Petal Bars** on the Dolphin and re-saving the
+    prefab, then re-check with the ability-row audit. Pre-existing; NOT caused by the shard
+    toggle removal (verified: the base revision has the same dangling reference).
+24. **`ActionExecutorRegistry._executors` on the Dolphin holds an empty slot** (`{fileID: 0}`
+    as its first entry). Benign today — `InitializeAll` filters with `.Where(e => e)` — but it
+    is the same authoring hole that produced this branch's `NullReferenceException` in the
+    impact-effect dispatch, in a list that happens to filter. Clear the slot when the prefab is
+    next opened.
