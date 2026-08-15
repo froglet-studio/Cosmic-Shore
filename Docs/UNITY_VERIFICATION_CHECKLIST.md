@@ -31,6 +31,38 @@ prefabs never received the modern impact-effect wiring at all. Several of the st
 *authoring*, not verification — nothing in this feature runs until they are done, and none of it
 fails loudly when they are not.
 
+**ROUND 2 (same day, after the first live repro).** Playtest report: the Urchin showed in the
+vessel changer toy, selecting it did not load the vessel. Root cause found and fixed, plus the
+two structural gaps closed:
+
+- **The swap crash.** `VesselCameraCustomizer` on the Urchin had BOTH fields null.
+  `OnInitializePlayerCamera` is a SOAP event raised unguarded in `Initialize` (fail-loud policy),
+  and that line runs only for the LOCAL USER — exactly the swap path. The NRE killed
+  `vessel.Initialize` after the old vessel was already despawned, and `SwapVesselAsync` had no
+  try/finally, so `_isSwapping` latched true and every later swap of ANY vessel was silently
+  refused until scene reload. Fixed at the source per fail-loud: wired
+  `OnInitializePlayerCamera` (the shared event asset) and `settings` →
+  `UrchinCameraSettingsSO.asset` (salvaged byte-exact from the abandoned restore branch;
+  `Configure()` dereferences `settings.mode` unguarded, so this was the second crash in line).
+  `SwapVesselAsync` now runs in try/catch/finally — a failed swap costs one console error naming
+  the vessel class, never a bricked changer. Same failure shape as upstream's Scarab fix
+  (`5be5121cd`), different root: the Scarab's was the prefab lookup + duplicate network hash; the
+  Urchin's lookup was fine (the mini model rendered, which proves it).
+- **No trail.** `VesselPrismController._onPrismSpawnedEventChannel` was null — guarded in code,
+  but a null channel means the vessel lays NO trail, fatal to a trail rider in a quieter way than
+  a crash. Wired to the shared prism channel.
+- **The attach Rigidbody fix landed** (the round-1 blocker below). Dolphin pattern: the 13
+  per-part kinematic Rigidbodies are deleted and ONE kinematic root Rigidbody (Sparrow-exact
+  values) added, so every hull collider's `attachedRigidbody` is the root and trigger events
+  reach `VesselImpactor` — the trail ATTACH and the shell contact tier are now routable.
+  12 hull BoxColliders (all solid) compound onto the root body; re-fit by eye if the editor shows
+  a bad compound. **Verify: fly into a trail → the vessel latches and rides.**
+- Found by a two-direction sweep of every component the Urchin shares with a working donor:
+  fields the donor wires that the Urchin nulls, AND donor fields absent from the Urchin's
+  documents (an absent key deserializes to the C# initializer — null for references). The
+  remaining absences are benign (stale donor keys, warn-and-degrade petal bars, tuning
+  defaults).
+
 Full mechanics, historical record and follow-ups:
 `_Scripts/Controller/Vessel/R_VesselActions/URCHIN_CHAIN_SPIKES.md` and `URCHIN_TRAIL_RIDER.md`.
 Element map: `Docs/ElementalAbilitySystem/FLEET_MAPS.md` §2 Urchin.
