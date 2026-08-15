@@ -2555,7 +2555,7 @@ MonoBehaviour:
   vesselHUDController: {fileID: 0}
   boostMultiplier: 4
   _name: 
-  vesselType: 0
+  vesselType: 4
   _nearFieldSkimmer: {fileID: 0}
   _farFieldSkimmer: {fileID: 0}
   orientationHandle: {fileID: 0}

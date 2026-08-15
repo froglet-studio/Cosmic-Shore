@@ -203,6 +203,38 @@ namespace CosmicShore.Gameplay
                 StatsManager.IsFriendlyEnvironmentPrism(RoundStats.Domain, resolved));
         }
 
+        /// <summary>
+        /// CLIENT -> SERVER: this machine's owner STOLE a prism (changed its domain rather than
+        /// destroying it). The fourth member of the same owner-detects / server-records family
+        /// as <see cref="ReportFaunaKill_ServerRpc"/>,
+        /// <see cref="ReportCombatHit_ServerRpc"/> and
+        /// <see cref="ReportEnvironmentPrismDestroyed_ServerRpc"/>.
+        ///
+        /// This closes a gap that predates the Urchin and affects every steal source in the
+        /// game (the vessel, skimmer and projectile steal effects, the assemblers, the nudge
+        /// shard): <c>StatsManager.PrismStolen</c> opens with <c>if (!_allowRecord) return;</c>
+        /// and <c>_allowRecord</c> is false on clients, so a client's steals scored exactly
+        /// nothing.
+        ///
+        /// IDENTITY COMES FROM OWNERSHIP: the server credits the RoundStats of the Player
+        /// object the RPC arrived on. **Only the stealer's half travels.** The victim's
+        /// PrismsRemaining/VolumeRemaining cannot be debited here without trusting a
+        /// client-supplied name, so on a client-side steal the victim's remaining-mass tally
+        /// drifts. That is a deliberate trade (an untrusted name is worse than a soft tally)
+        /// and is recorded in Docs/ScoringSystem/BUGS.md.
+        /// </summary>
+        [ServerRpc]
+        public void ReportPrismStolen_ServerRpc(float volume)
+        {
+            using var _ = CosmicShore.Utility.PerformanceBenchmark.NetMarkers.RpcDispatch.Auto();
+            CosmicShore.Utility.PerformanceBenchmark.NetMarkers.CountRpc();
+
+            if (RoundStats == null) return;
+            if (volume < 0f) return;
+
+            StatsManager.CreditPrismSteal(RoundStats, volume);
+        }
+
         public string Name { get; private set; }
         public int AvatarId { get; private set; }
         // NOTE: PlayerUUID is the DISPLAY NAME, not a unique id - two players can choose the

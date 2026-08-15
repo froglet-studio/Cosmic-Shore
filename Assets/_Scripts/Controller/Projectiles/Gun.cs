@@ -147,7 +147,19 @@ namespace CosmicShore.Gameplay
             {
                 int points = 2 * (energy + 3);
                 float phi = Mathf.PI * (3 - Mathf.Sqrt(5)); // golden angle
-                var randomRotation = Random.rotation;
+
+                // DETERMINISTIC, not Random.rotation. Every peer runs this volley (button
+                // presses round-trip through R_VesselActionHandler, and a chain spike fires on
+                // each machine independently), so a global RNG draw would orient the spiral
+                // differently per peer and the prismscape would diverge on the very first
+                // cascade. It would also perturb UnityEngine.Random's shared stream, which
+                // deterministic systems seed - a gun firing dozens of times a second must not
+                // be able to change what the HexRace track looks like.
+                //
+                // Seeded from the volley's ORIGIN and depth: two peers whose spike reached the
+                // same prism fire the same pattern, so the cascade re-converges rather than
+                // drifting further apart with every generation.
+                var randomRotation = DeterministicOrientation(containerTransform.position, energy);
                 energy--;
 
                 for (int i = 0; i < points; i++)
@@ -230,6 +242,50 @@ namespace CosmicShore.Gameplay
         #endregion
 
         #region Helpers
+
+        /// <summary>
+        /// A repeatable orientation for a spherical volley, derived from where it was fired and
+        /// how deep into a chain it is — never from <c>UnityEngine.Random</c>.
+        ///
+        /// The position is quantized before hashing so two peers that agree about the volley to
+        /// within a fraction of a unit agree exactly about its pattern. <see cref="QuantumSize"/>
+        /// is the tolerance: large enough to absorb the small positional disagreement between
+        /// peers simulating the same spike, small enough that two genuinely different volleys
+        /// do not collide onto one pattern.
+        /// </summary>
+        internal static Quaternion DeterministicOrientation(Vector3 origin, int depth)
+        {
+            const float QuantumSize = 0.5f;
+
+            unchecked
+            {
+                int h = 17;
+                h = h * 31 + Mathf.RoundToInt(origin.x / QuantumSize);
+                h = h * 31 + Mathf.RoundToInt(origin.y / QuantumSize);
+                h = h * 31 + Mathf.RoundToInt(origin.z / QuantumSize);
+                h = h * 31 + depth;
+
+                // Three decorrelated angles out of one hash, via a cheap integer scramble.
+                float yaw   = Scramble(h, 0) * 360f;
+                float pitch = Scramble(h, 1) * 360f;
+                float roll  = Scramble(h, 2) * 360f;
+                return Quaternion.Euler(pitch, yaw, roll);
+            }
+        }
+
+        /// <summary>Hash -> [0,1). Integer-only, so it is identical on every platform.</summary>
+        static float Scramble(int hash, int salt)
+        {
+            unchecked
+            {
+                uint x = (uint)(hash + salt * 0x9E3779B9);
+                x ^= x >> 16; x *= 0x7FEB352D;
+                x ^= x >> 15; x *= 0x846CA68B;
+                x ^= x >> 16;
+                return (x & 0x00FFFFFF) / (float)0x01000000;
+            }
+        }
+
         private IEnumerator CooldownCoroutine()
         {
             yield return new WaitForSeconds(firePeriod);
