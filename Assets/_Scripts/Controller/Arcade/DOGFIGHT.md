@@ -335,6 +335,20 @@ to pull before the structure counts.
 - **Danger** (43–203) rides only the **torn end ribs** of hulks and the reactor's hot inner ribs
   — telegraphed by the geometry rather than hidden in it. Contact costs the standard danger
   punishment (volume-independent full-stop slow, 4 s all-element debuff, boost reset).
+
+  > **The full-stop slow did not exist here until 2026-08-15.** The Sparrow's
+  > `SparrowImpactorDataContainer` carried no `VesselChangeSpeedByPrismEffectSO`, so the *only*
+  > vessel this mode flies took no speed penalty from any prism — danger ribs included. The
+  > danger punishment was really only the debuff and the input mute. `SparrowVesselChangeSpeedByPrism`
+  > is now wired on the Squirrel's numbers, which makes this paragraph true and has a second
+  > consequence the mode wants: **the wreckage is now terrain.** A normal Boneyard prism is
+  > environment-owned (`Domains.Blue`, hostile to everyone, so the own-domain skip never applies)
+  > and at `massScaling 0.1` against `maxSlowStrength 0.5` anything of volume ≥ 5 saturates — so
+  > clipping a hulk halves your throttle for a second and recovers linearly. Flying the canyons
+  > cleanly is now a skill the arena rewards rather than a line you can ignore. Worth a look in
+  > the first playtest: it makes cover genuinely costly to hug, which is the point, but it also
+  > slows disengages through debris — if it over-punishes, `maxSlowStrength` on that asset is the
+  > dial, and moving it un-shares the fleet's collision read.
 - **Shielded / super-shielded** is the reactor core ring (24) plus one beacon per spire — **30–51
   always-on convex mesh colliders, 0.15–0.33 % of the structure**. Beacons are shielded rather
   than plain so they *survive* a match: a landmark a stray rocket can delete is not a landmark.

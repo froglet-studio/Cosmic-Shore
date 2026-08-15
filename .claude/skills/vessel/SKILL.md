@@ -103,7 +103,7 @@ un-implemented until Garrett marks them up. If your task requires a mapping that
 STOP and ask (AskUserQuestion), presenting the FLEET_MAPS proposal for that row. The same gate
 applies to new abilities, new resources on the meter list, and anything that adds a fundamental.
 
-## 4. Implement — the twenty-one rules that keep getting relearned
+## 4. Implement — the twenty-three rules that keep getting relearned
 
 1. **Ability SOs are shared and stateless.** Per-vessel state lives in executors / vessel-root
    MonoBehaviours; SOs receive `(registry, status)` per call. Never bind state to an SO asset.
@@ -230,14 +230,41 @@ applies to new abilities, new resources on the meter list, and anything that add
     Camera POSE is free (the law is explicitly a no-camera-distance-change effect); FOV is not.
     And before adding a public FOV surface to that law for one vessel, check the ability still
     earns it without the zoom — the Dolphin's Echo Sight did, and the surface was reverted.
+22. **A shared impact effect is PER-VESSEL WIRING. Audit which containers list it — never infer
+    it from the class existing, from an asset existing, or from a doc saying it happens.** An
+    effect only runs for a vessel whose `VesselImpactorDataContainerSO` array actually contains
+    it, and a missing entry is *totally silent*: no null, no warning, just a consequence that
+    never occurs. `VesselChangeSpeedByPrismEffectSO` shipped absent from the Dolphin (whose
+    `DolphinVesselChangeSpeedByPrism` asset existed and was referenced by **no** container) and
+    from the Sparrow (no asset at all, in the one vessel Dog Fight flies) — so neither slowed on
+    any prism, danger included, for the fleet's whole life. **An orphaned effect asset is the
+    tell**, and it is one sweep: map every `*.asset.meta` GUID to its name, then check which
+    GUIDs appear inside the six `VesselContainers/*.asset` arrays. Anything of that script type
+    that appears in none is authored-but-dead. Do the same sweep for TUNING once wired —
+    per-vessel instances drift apart silently, and a prism should read the same whichever hull
+    hits it. (Dolphin/Sparrow/Manta prism slow, 2026-08-15.)
+23. **An impact effect must not scale a SERIALIZED authored field on `VesselStatus` in place.**
+    Check whether the property is runtime bookkeeping or a serialized value with an authored
+    default before writing it. `BoostMultiplier` is `[SerializeField] boostMultiplier = 4` and is
+    what boost sources that don't write it fall back to (`BoostActionSO` only flips `IsBoosting`;
+    `VesselResetBoostPrismEffectSO` restores it to an authored base) — so "halve the boost on a
+    ram" applied to it ratchets the vessel's authored number toward 1 a little further on every
+    collision, permanently, with nothing in the game to restore it. Scale the RESOURCE METER
+    instead and let the executor re-derive; a creeping, unrecoverable nerf is indistinguishable
+    from a tuning problem for as long as anyone will look. (Dolphin boost ram, 2026-08-14.)
 
 ## 5. Audit, then hand back verification (you cannot run Unity; the human is the gate)
 
 - State which auditors to run and the expected result: **Audit Vessel Ability Rows**,
   **Audit Vessel Skimmers**, **Audit Vessel Elemental Morphs**, plus **Wire Elemental Petal
   Bars** (or **Bake Elemental Petal Bars Into All Vessel HUDs**) and **Plan Vessel Rig Swap**
-  where relevant. Vessel-impactor container wiring still has no auditor — hand back explicit
-  play-mode checks for that half (prism hit, crystal collect ×1, no NREs).
+  where relevant. Vessel-impactor container wiring still has no in-editor auditor, but do NOT
+  hand that half back as play-mode-only: run the rule-22 sweep yourself first (GUID → name over
+  `*.asset.meta`, then cross-reference the six `VesselContainers/*.asset` arrays) and print the
+  per-vessel table — which vessels carry the effect, which are missing it, and whether the wired
+  ones share tuning. That is a static, seconds-long check that catches the entire "authored but
+  never wired" class before a human ever opens Unity; play-mode checks (prism hit, crystal
+  collect ×1, no NREs) then confirm the wiring you already proved exists.
 - **Check that the feedback you are asking a human to judge is OBSERVABLE before you ask.** A
   skim's three signals are each individually invisible on a desktop editor: the haptic is a
   NO-OP (NiceVibrations does nothing there), the beam VFX only draws if the skimmed prism
