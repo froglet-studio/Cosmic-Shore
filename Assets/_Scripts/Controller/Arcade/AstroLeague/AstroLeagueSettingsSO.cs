@@ -376,6 +376,14 @@ namespace CosmicShore.Gameplay
                  "1 restores the old perfectly-elastic pinball.")]
         [Range(0f, 1f)] public float wallRestitution = 0.72f;
 
+        [Tooltip("Restitution for a carom off a SHIELDED PRISM. 1 (the default) is a pure " +
+                 "REDIRECT: the into-prism component mirrors exactly, so the ball's SPEED is " +
+                 "unchanged and only its heading turns. That is the whole point of armour here — " +
+                 "a shielded prism costs the shield and the ball's line, never its momentum. " +
+                 "Deliberately separate from wallRestitution: a wall is meant to bleed energy " +
+                 "(0.72), and a prism is not.")]
+        [Range(0f, 1f)] public float prismCaromRestitution = 1f;
+
         [Tooltip("Exponential speed decay per second on the ball's coast (0 = the original " +
                  "frictionless coast). This is what makes an untouched ball SETTLE, so it becomes a " +
                  "thing players go and contest rather than something ricocheting past them. Composes " +
@@ -390,8 +398,11 @@ namespace CosmicShore.Gameplay
         [Tooltip("How hard opposing-color prism MASS slows the ball as it plows through (it keeps its " +
                  "direction, only its speed drops). Per eaten prism: speed ×= ballMass / (ballMass + " +
                  "this × prismVolume). 0 = no drag (ball never slows); higher = a thick enemy wall " +
-                 "brakes the ball hard. Same-color and shielded prisms cost no speed.")]
-        public float prismDragMassScale = 0.25f;
+                 "brakes the ball hard. Same-color and shielded prisms cost no speed.\n\n" +
+                 "The slow depends on VOLUME and nothing else, so a DANGER prism and a plain one of " +
+                 "the same size cost the ball exactly the same — see the tier note in " +
+                 "AstroLeagueBall.ProcessPrismInteractions. Do not add a per-tier multiplier here.")]
+        public float prismDragMassScale = 0.0167f;
 
         [Header("Ball - Angular Dynamics (rotational inertia)")]
         [Tooltip("Angular damping on the ball rigidbody. A small amount so spin imparted by off-center " +

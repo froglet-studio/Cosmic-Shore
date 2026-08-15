@@ -535,6 +535,49 @@ point-blank shots, which is trivial and unfun. The gate is a spatial test at gen
 against the arena's own geometry (goal plane distance vs `Boundary.MaxExtent`), refused with a
 distinct failure cue. Outside a mode with goals (freestyle), the gate is inert.
 
+### 4.1b What prisms cost the ball
+
+The payload's whole relationship with mass is three rules, and the tier a prism is wearing is
+deliberately absent from all three:
+
+| what the ball meets | what happens | speed cost |
+|---|---|---|
+| Same-colour, unshielded | **Shielded** (the ball armours its own side's mass as it passes) | none |
+| Opposing / neutral, unshielded — **plain OR danger** | **Eaten**: destroyed, mass credited | `× ballMass / (ballMass + prismDragMassScale × volume)` |
+| Opposing, **shielded** | Shield **popped**, prism **left standing**, ball **redirected** | **none** |
+| **Super-shielded**, any colour | Untouched (or, for a forged ball, pops it and is spent) | none |
+
+**Danger and plain cost exactly the same.** Danger is mutually exclusive with both shield tiers
+(`PrismStateManager.MakeDangerous` clears them), so a danger prism can only ever arrive at the
+"unshielded" branch, and nothing in that branch reads the tier — the slow is a function of
+**volume** and nothing else. That is the intent, not an accident of the code: danger is a
+punishment for a **pilot** (the slow, the elemental debuff, the boost reset), not for the payload.
+A ball that braked harder on danger mass would hand the defending side a wall it could build out
+of a hazard. There is a comment saying so at the branch and another on the dial; do not add a
+per-tier multiplier to either.
+
+**A shielded prism costs the ball its LINE, never its momentum.** The carom used to reuse
+`wallRestitution` (0.72), which bled 28% of the approach speed out of every deflection and made a
+shielded wall a brake as well as a bumper. It now runs its own `prismCaromRestitution`, which
+defaults to **1** — an exact mirror reflection, so `|v|` is unchanged and only the heading turns.
+The prism itself is left standing and is protected from being eaten on the way past
+(`_shieldPoppedThisVisit`), so armour buys exactly one thing: it turns the shot and spends itself.
+A wall still bleeds energy at 0.72, because a wall is supposed to.
+
+**The plow-through drag is 3× lighter** — `prismDragMassScale` 0.05 → **0.0167**. The formula
+saturates, so the *felt* loss falls by less than the dial does, and by different amounts depending
+on how big the prism was:
+
+| prism | loss before | loss after | reduction |
+|---|---|---|---|
+| nominal trail prism (vol 16) | 21.1% | 8.2% | 2.6× |
+| Squirrel-class sliver (vol 3.1) | 4.9% | 1.7% | 2.9× |
+| cactus leaf (vol 75) | 55.6% | 29.5% | 1.9× |
+
+If an exact 3× on the *felt* loss at nominal volume is wanted rather than a 3× on the dial, the
+value is `0.0142` — but the dial is the authored quantity and compounds correctly through a thick
+wall, which a per-prism target does not.
+
 ### 4.2 Permanent team colour
 
 **A ball is its maker's colour forever.** No striker recolouring: an opponent can bat your ball

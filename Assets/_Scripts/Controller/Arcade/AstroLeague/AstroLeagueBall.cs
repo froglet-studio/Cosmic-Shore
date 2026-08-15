@@ -740,6 +740,16 @@ namespace CosmicShore.Gameplay
                     else
                     {
                         // Opposing + unshielded: eat it - unless we just popped its shield THIS visit.
+                        //
+                        // A DANGER prism arrives here too, and that is deliberate: danger is
+                        // mutually exclusive with BOTH shield tiers (PrismStateManager.MakeDangerous
+                        // clears them), so it can only ever be "unshielded", and nothing below
+                        // reads the tier. A danger prism and a plain prism of the same volume
+                        // therefore cost the ball exactly the same speed. Danger is a punishment
+                        // for a PILOT (the slow, the debuff, the boost reset), not for the
+                        // payload - a ball that braked harder on danger mass would hand the
+                        // defending side a wall it could build out of a hazard. Do not add a
+                        // per-tier multiplier to the drag.
                         if (_shieldPoppedThisVisit.Contains(prism)) continue;
                         eatenMass += Mathf.Max(0f, prism.CurrentVolume);
                         prism.Damage(ballVel, ballDomain, BallAttackerName);
@@ -784,8 +794,15 @@ namespace CosmicShore.Gameplay
         /// layer is excluded from its collider — see Awake), so the normal is derived
         /// geometrically: prism centre → ball centre, which for a sphere-vs-box at contact range
         /// is the face normal to within the box's corner rounding. Reflects only the INTO-prism
-        /// component, so a glancing pass keeps its speed and a head-on one turns around, and
-        /// reuses the wall restitution so a prism carom and a wall carom read alike.
+        /// component, so a glancing pass is barely turned and a head-on one comes straight back.
+        ///
+        /// This is a pure REDIRECT: at `prismCaromRestitution` 1 the reflection is an exact
+        /// mirror, so |v| is unchanged and only the heading turns. That is what armour is
+        /// supposed to buy — a shielded prism costs the SHIELD and the ball's line, never its
+        /// momentum, and the prism itself is left standing (the caller pops the shield and adds
+        /// the prism to `_shieldPoppedThisVisit`, so it is not eaten on the way past either). It
+        /// used to reuse `wallRestitution` (0.72), which quietly bled 28% of the approach speed
+        /// out of every deflection and made a shielded wall a brake as well as a bumper.
         /// </summary>
         void ReflectOffPrism(Prism prism)
         {
@@ -797,7 +814,7 @@ namespace CosmicShore.Gameplay
             float into = Vector3.Dot(v, n);
             if (into >= 0f) return;   // already leaving — never "bounce" a ball outward twice
 
-            float e = settings != null ? settings.wallRestitution : 0.72f;
+            float e = settings != null ? settings.prismCaromRestitution : 1f;
             rb.linearVelocity = v - (1f + e) * into * n;
 
             // Nudge clear so the next tick's scan doesn't re-reflect on the same prism.
