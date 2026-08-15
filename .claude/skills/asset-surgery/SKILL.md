@@ -721,6 +721,47 @@ that would otherwise cost a round-trip to a human at the editor:
   mesh's "nose" by comparing cross-section extents near each end of its long axis (the
   radially-symmetric end is the nose, the asymmetric one is the fins).
 
+## 4.9 Technique: answering "does every X actually carry Y?" THROUGH prefab nesting
+
+Origin: the crystal-capture rework (2026-08). The branch's whole payoff was routed through
+`Crystal.Explode`, which does nothing useful unless the crystal carries a `SpentCrystalPrefab`
+and a non-null `explodingMaterial`. The doc asserted it did. Checking that claim by grepping
+one prefab proves nothing, because **the crystal the lifeform actually drops is a NESTED
+PREFAB INSTANCE** — the value lives in the *source* prefab and can be overridden, or not, at
+each nesting site. This is the general shape of the ship protocol's "find the PRODUCER" gate
+whenever the producer is a serialized reference, and it is three greps, not a judgment call:
+
+1. **Find every direct owner** — grep for the component's script GUID (from its `.cs.meta`),
+   then walk `--- !u!114` MonoBehaviour blocks and read the field out of the block whose
+   `m_Script` matches. Do *not* regex the field name across the whole file: several components
+   can carry a same-named key, and you will attribute the wrong one.
+2. **Resolve the nesting** — a prefab whose component block is *absent* holds the thing as a
+   `--- !u!1001 PrefabInstance`; its `m_SourcePrefab: {fileID: …, guid: G}` names the source.
+   Map `G` back to a path via `grep -rl "guid: G" Assets --include=*.meta`, and you have
+   reduced "16 lifeforms" to "4 crystal prefabs I can check exhaustively".
+3. **Check for a nesting site that STRIPS it** — `grep -rn "propertyPath: <Field>" Assets`.
+   An override to `{fileID: 0}` at one site is precisely the case that makes a
+   verified-at-the-source claim false in the field, and it is invisible from the source prefab.
+
+Report the resulting table (owner → source → field state) in the ship report. An exhaustive
+"all 16 resolve to 4 prefabs, all 4 SET, no site overrides it" is evidence; "I checked one" is not.
+
+## 4.9b Technique: stripping a dead serialized key from many prefabs
+
+Deleting a `[SerializeField]` in C# leaves its key in every prefab that authored it. Unity
+never prunes an unresolvable modification, so the inspector keeps showing a value nothing reads
+— worse than no field at all. Removing them mechanically is safe under three conditions:
+
+- **Scope by the enclosing `m_Script`.** Track the last `  m_Script:` line as you stream the
+  file and only drop the key while that GUID is the component you retired. A bare
+  `sed '/moveToVesselDuration/d'` will happily strip a same-named key from another component.
+- **Assert the scoping found everything.** Collect the rejects (key matched, wrong component)
+  and print them; an empty reject list is the proof the pass was total.
+- **Round-trip the bytes.** `'\n'.join(text.split('\n'))` preserves a trailing newline; verify
+  against `git show <base>:<path>` that `endswith(b'\n')` is unchanged for every file, and
+  confirm `git diff` contains *only* the removed key lines and no `\ No newline` marker. A
+  whitespace-only byte change on 15 prefabs is indistinguishable from a real edit in review.
+
 ## 5. Traps learned the hard way (check these BEFORE debugging for an hour)
 
 - **Renaming a Unity SERIALIZED FIELD must sweep `Tools/**.py` too, not just C# + scenes +
