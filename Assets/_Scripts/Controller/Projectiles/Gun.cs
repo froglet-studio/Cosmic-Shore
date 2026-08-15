@@ -253,7 +253,10 @@ namespace CosmicShore.Gameplay
         /// peers simulating the same spike, small enough that two genuinely different volleys
         /// do not collide onto one pattern.
         /// </summary>
-        internal static Quaternion DeterministicOrientation(Vector3 origin, int depth)
+        /// <remarks>Public rather than internal so the edit-mode suite can bind it: tests
+        /// compile into Assembly-CSharp-Editor, which is a different assembly and cannot see
+        /// Assembly-CSharp's internals.</remarks>
+        public static Quaternion DeterministicOrientation(Vector3 origin, int depth)
         {
             const float QuantumSize = 0.5f;
 
