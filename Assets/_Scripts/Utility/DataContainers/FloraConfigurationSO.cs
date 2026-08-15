@@ -296,6 +296,22 @@ namespace CosmicShore.Utility
                  "be something an absent key can mean.")]
         public float MaxTotalSpawnedObjectsScale = -1f;
 
+        [Tooltip("Growth decisions per grow tick (AssembledFlora.itemsPerGrow) - how many " +
+                 "children a plant may decide in one tick. A pacing guard on the prefab; " +
+                 "exposed here so a cell that WANTS speed (the Gyroid Lab) can author it " +
+                 "without re-pacing every other biome's plants. -1 = keep prefab.")]
+        public int ItemsPerGrow = -1;
+
+        [Tooltip("Random skips per grow tick (AssembledFlora.randomItems) - stochastic " +
+                 "raggedness in the growth front. 0 = deterministic, every branch advances " +
+                 "every tick. -1 = keep prefab.")]
+        public int RandomItems = -1;
+
+        [Tooltip("Grow-order instantiations executed per frame (AssembledFlora." +
+                 "maxSpawnsPerFrame) - the frame-cost throttle on the decided-order drain. " +
+                 "-1 = keep prefab.")]
+        public int MaxSpawnsPerFrame = -1;
+
         [Tooltip("OUTER edge of the planting band, as a fraction of the cell membrane radius. " +
                  "-1 = keep prefab.")]
         public float PlantRadiusCellFraction = -1f;

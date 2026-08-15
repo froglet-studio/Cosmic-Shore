@@ -76,6 +76,12 @@ namespace CosmicShore.Gameplay
             if (tuning.MaxTotalSpawnedObjectsScale > 0f)
                 maxTotalSpawnedObjects = Mathf.Max(1, Mathf.FloorToInt(
                     maxTotalSpawnedObjects * tuning.MaxTotalSpawnedObjectsScale + 0.5f));
+
+            // Pacing overrides - the prefab's throttles are shared by every biome's plants,
+            // so a cell that wants speed (the Gyroid Lab) authors it in config instead.
+            if (tuning.ItemsPerGrow >= 1) itemsPerGrow = tuning.ItemsPerGrow;
+            if (tuning.RandomItems >= 0) randomItems = tuning.RandomItems;
+            if (tuning.MaxSpawnsPerFrame >= 1) maxSpawnsPerFrame = tuning.MaxSpawnsPerFrame;
         }
 
         // A growth decision made at the grow tick, executed by the per-frame drain.
@@ -742,7 +748,18 @@ namespace CosmicShore.Gameplay
 
             HealthPrism newHealthPrism = Instantiate(healthPrism, newSpindle.transform.position, newSpindle.transform.rotation);
             AddHealthBlock(newHealthPrism);
+            // Zero the locals AFTER SetParent - worldPositionStays:false KEEPS the local
+            // values, which at this point are the world coordinates Instantiate assigned, so
+            // without the reset the prism lands at spindle.pos + spindle.rot * worldPos. The
+            // legacy code only worked because a spawner flora ran this while still parked at
+            // the cell centre (world ~zero, stale local ~zero); any plant created at a real
+            // position - an octagon daughter at her centre, a Lifeform Matrix station - had
+            // its seed prism thrown ~2x its own distance from the origin, where the octagon
+            // ownership gate then declined every site and the plant never grew.
+            // (ExecuteGrowOrder always did this correctly; this path just never copied it.)
             newHealthPrism.transform.SetParent(newSpindle.transform, false);
+            newHealthPrism.transform.localPosition = Vector3.zero;
+            newHealthPrism.transform.localRotation = Quaternion.identity;
             newHealthPrism.LifeForm = this;
 
             // Seeded from a parent's donated bond site: the site's own block type decides what

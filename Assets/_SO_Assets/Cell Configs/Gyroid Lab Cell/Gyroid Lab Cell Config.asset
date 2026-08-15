@@ -13,13 +13,13 @@ MonoBehaviour:
   m_Name: Gyroid Lab Cell Config
   m_EditorClassIdentifier: 
   CellName: Gyroid Lab
-  Description: One gyroid colony, growing forever. A test chamber for the octagon
-    population - fly it and watch the surface tile itself.
+  Description: One Time gyroid colony seeded at the cell centre, every throttle open.
+    A test chamber - watch a single monster colony tile the whole cell.
   Icon: {fileID: 21300000, guid: 6aa1c06e11b265744a5f9fa8858ac72a, type: 3}
   Difficulty: 1
   CellEndGameScore: 0
   MembranePrefab: {fileID: 346633111830028674, guid: 6e330f85972faf843b8a128e7166f7b5, type: 3}
-  NucleusPrefab: {fileID: 7555898194514117247, guid: b9cf1833fa2493d4b8724ccb6740fb3a, type: 3}
+  NucleusPrefab: {fileID: 0}
   CytoplasmPrefab: {fileID: 639495419069806261, guid: 9cacd903fcf4643459f5f14ac811bb20, type: 3}
   CellModifiers: []
   SpawnProfile: {fileID: 11400000, guid: 77fa963b5cb3759f49d1a30713167ac2, type: 2}

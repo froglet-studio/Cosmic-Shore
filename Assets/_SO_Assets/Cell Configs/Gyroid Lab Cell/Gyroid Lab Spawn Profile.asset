@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   FloraExcludeLocalDomain: 0
   FloraSpawnVolumeCeiling: 12000
-  FloraInitialDelaySeconds: 2
+  FloraInitialDelaySeconds: 0
   FloraSpawnIntervalSeconds: 0
   FloraPopulationScale: 1
   FloraPlantBudgetScale: 1

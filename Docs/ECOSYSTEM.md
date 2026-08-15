@@ -4109,6 +4109,33 @@ fires). No fauna, so nothing grazes the specimen. **Collider budget: deliberatel
 crystals per 1,000 prisms; the cell exists to observe the colony, and the dial back to a
 bounded biome is `MaxLivePopulation`.
 
+**First playtest (2026-08-15) found the daughter-stall bug.** Daughters planted (crystal +
+seed prism visible) but never grew. Root cause: `CreateNewAssembler` ran
+`SetParent(spindle, worldPositionStays: false)` on the seed prism WITHOUT zeroing the locals —
+`worldPositionStays: false` keeps the local values, which at that point are the world
+coordinates `Instantiate` assigned, so the prism landed at `spindle.pos + spindle.rot × worldPos`
+(~2x its own distance from the origin, in empty space). The legacy code only ever worked
+because a spawner flora ran this while still parked at the cell centre (world ≈ 0, stale local
+≈ 0); an octagon daughter is created AT her centre, so her seed prism was thrown into space,
+the ownership gate declined every garbage site, and the plant reseed-looped forever.
+`ExecuteGrowOrder` always zeroed the locals; the fix copies it. The same fix repairs the
+Lifeform Matrix toy's pinned-station assembled flora, broken the same way for as long as the
+toy has existed. `Docs/PRISM_ANIMATION.md`-style lesson: a parenting call's semantics
+(`worldPositionStays`) are load-bearing — audit both spawn paths whenever one changes.
+
+**The Lab is tuned as a speed chamber** (same playtest's request): ONE **Time** gyroid
+(the fastest authored tempo, pushed further: GrowPeriod 0.1) seeded at the **cell centre** —
+the config removes its `NucleusPrefab`, because "never plant inside the nucleus" is exactly
+the clamp that keeps a plant off the centre, and a cell with no nucleus HAS no such zone (a
+supported state, §25.1's declaration, not a rule exception). Every pacing guard is opened in
+CONFIG, not on the shared prefab: `FloraVariantTuning` grew `ItemsPerGrow` / `RandomItems` /
+`MaxSpawnsPerFrame` overrides (sentinel -1 = keep prefab) so the Lab authors 8 / 0 / 3 while
+every other biome's plants keep the shipped pacing. Reproduction: quota 12 (plants colonise
+while half-grown, so the frontier expands ahead of completion), cooldown 0.25s, maturity 0,
+seeder delay 0. The Frenzy gate was already unreachable. Expansion is frontier-limited by
+design: interior plants complete and stop, so the active grower count tracks the colony's
+surface, not its volume.
+
 In-editor verification (the human is the gate): enter freestyle in Menu_Main, fly the Cell
 Selector toy, pick **Gyroid Lab**. Watch: (1) the founder's first danger prism moves the
 crystal to the ring centre; (2) the surface grows as ONE continuous gyroid with no doubled

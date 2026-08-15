@@ -17,26 +17,29 @@ MonoBehaviour:
   SpawnProbability: 1
   InitialSpawnCount: 1
   OverrideDefaultPlantPeriod: 1
-  NewPlantPeriod: 30
+  NewPlantPeriod: 5
   PopulationSize: 1
   MaxLivePopulation: 0
-  GrowthPerOffspring: 22
+  GrowthPerOffspring: 12
   OffspringPerBirth: 8
-  ReproductionCooldownSeconds: 2
-  MaturityFraction: 0.5
+  ReproductionCooldownSeconds: 0.25
+  MaturityFraction: 0
   OffspringSpread: 40
   PreferredSites: 0
-  Element: 2
+  Element: 4
   Variant:
     Enabled: 1
-    LeafSize: {x: 7, y: 4.5, z: 3.5}
-    GrowPeriod: 0.3
+    LeafSize: {x: 9, y: 3.4, z: 1.5}
+    GrowPeriod: 0.1
     ShieldPeriod: 0
     WitherRingInterval: -1
     MaxTotalSpawnedObjects: 30
     MaxTotalSpawnedObjectsScale: -1
-    PlantRadiusCellFraction: 0.4
-    PlantRadiusCellFractionMin: -1
+    ItemsPerGrow: 8
+    RandomItems: 0
+    MaxSpawnsPerFrame: 3
+    PlantRadiusCellFraction: 0.02
+    PlantRadiusCellFractionMin: 0
   InitialLevel: 1
   LeafScalePerLevel: 1.15
   CrystalScalePerLevel: 1.2
