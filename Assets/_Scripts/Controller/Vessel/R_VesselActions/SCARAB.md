@@ -120,6 +120,30 @@ stays with its colliders and rig wiring intact and only its **renderers** are sw
 measurement, so the corridor re-sizes to the new hull with nothing authored. When real Scarab art
 lands it replaces the builder, not the scaffolding.
 
+**The hull is PUPPETEERED, not a single mesh.** A vessel that does not move its own parts reads as
+a prop being slid around, however good the flight model under it is. The builder therefore emits
+**10 parts** — `Core` (on the builder's own renderer, because that is what
+`VesselCustomization._shipGeometries` paints), `elytron.l` / `elytron.r`, `horn`, and `leg.{l,r}{1..3}`
+— each pivoted where it should hinge: the wing cases at the centreline, the horn at the head, each
+leg at its socket. `ScarabAnimation` resolves them BY NAME and drives them: the elytra crack open
+under yaw (outside of the turn opens further, so the ship banks visually), the legs tuck with SPEED
+and splay when slow, the horn leads the turn. Real art can replace the procedural hull without
+touching the animation, as long as it names its pieces the same way.
+
+The Scarab shipped carrying `MantaAnimationContoller` from its Sparrow clone — resolving
+Manta/Sparrow bone names, i.e. puppeteering the inherited FBX whose renderers this component
+disables. It was animating an invisible ship while the visible one sat rigid.
+
+Runtime parts cannot be in the serialized `_shipGeometries` list, so they mirror the core's
+materials instead (`PropagateMaterials`, one reference compare per frame) — which also means they
+share its material instance rather than minting one each. That watch is a poll on purpose: the
+domain material is swapped at spawn AND on any later domain change, and neither raises an event
+this component could bind to.
+
+**The dash's 360° roll spins the visible hull.** `ScarabJukeController.rollVisualTarget` is wired
+to `ScarabHull`. Left unwired it resolves to the first `Animator` among the children — the
+inherited FBX model — so the roll played on geometry that is no longer drawn.
+
 **Camera.** `ScarabCameraSettingsSO.followOffset` is `{0, 0, -50}` — directly behind the vessel,
 like every other vessel in the fleet. It was cloned from the Sparrow, which is the *only* vessel
 carrying a vertical offset (`y: 10`); that lift was never intended here.
@@ -285,7 +309,12 @@ sitting ahead of you along the dash rather than centred on the hull.
   `proportionalDebris 1`, `debrisRestitution 1/3 × Inertia 1.8` (the Dolphin's shipped tuning
   group, so debris leaves at the house 1/3-of-physical read).
 - Fired from `ScarabJukeController.OnJukeFired(direction)` at `blastScale 90`,
-  `forwardOffset 45`.
+  `forwardOffset 45`, domain-tinted from `IVesselStatus.AOEExplosionMaterial`.
+- **`Initialize` only ARMS a blast — `Detonate()` is what runs it.** `AOEExplosion.Initialize`
+  deliberately leaves the explosion at zero scale with its renderer off; `Detonate` starts
+  `ExplodeAsync`. Missing that call is why the blast never worked from the day it shipped: every
+  dash spawned a correctly-configured explosion that then sat inert and invisible forever, leaking
+  a GameObject with it. Every other AOE call site in the codebase pairs the two.
 - It **kills fauna** with no fauna-specific code: a creature dies when its body prisms are
   destroyed (platform-wide since Wildlife Liberation), and a destructive blast destroys prisms.
 - It **debuffs pilots** through the explosion's container

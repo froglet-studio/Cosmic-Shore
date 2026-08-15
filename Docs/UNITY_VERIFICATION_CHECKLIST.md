@@ -168,6 +168,13 @@ occurrence names itself.
    CARAPACE and horn (submesh 1), not the underside. Camera sits directly behind with **no vertical
    lift** — `followOffset {0, 0, -50}`; the old `y: 10` was inherited from the Sparrow, the only
    vessel that carries one.
+0a. **Puppetry, roll and blast (new 2026-08-15).** Fly the Scarab and watch the hull: the wing
+   cases must crack open under yaw (wider on the outside of the turn), the legs tuck as you speed
+   up and splay as you slow, the horn swings against the nose. A rigid hull means
+   `ScarabAnimation` resolved no parts — check the console for its unresolved-part report.
+   Right-stick dash: the whole visible ship must spin 360° (it previously rolled the hidden FBX).
+   And the dash must now throw a **visible spherical blast** ~45u ahead — if nothing appears,
+   `Detonate()` regressed.
 1. **Open `Assets/_Prefabs/Spacevessels/Scarab.prefab` and SAVE it** — this is load-bearing, not
    a smoke test: the clone carries Sparrow's `NetworkObject.GlobalObjectIdHash` until the editor
    re-serializes it, and two registered network prefabs sharing a hash collide. Open, confirm no

@@ -69,13 +69,34 @@ namespace CosmicShore.Gameplay
         static readonly int ChassisSubmesh = 0;
         static readonly int ShellSubmesh = 1;
 
-        readonly List<Vector3> _verts = new();
-        readonly List<Vector3> _normals = new();
-        readonly List<Vector2> _uvs = new();
-        readonly List<int> _chassisTris = new();
-        readonly List<int> _shellTris = new();
+        /// <summary>
+        /// One movable piece of the ship. The hull is emitted as SEVERAL of these rather than one
+        /// mesh so <see cref="ScarabAnimation"/> has something to puppet: a static ship reads as
+        /// a prop no matter how good the flight model is. Each part carries its own PIVOT, because
+        /// a wing case that hinges about the seam and a leg that swings from its socket cannot
+        /// share one origin.
+        /// </summary>
+        sealed class Part
+        {
+            public string Name;
+            public Vector3 Pivot;            // pre-fit; becomes the child's localPosition
+            public readonly List<Vector3> Verts = new();
+            public readonly List<Vector2> Uvs = new();
+            public readonly List<int> Chassis = new();
+            public readonly List<int> Shell = new();
+            public Mesh Mesh;
+        }
 
-        Mesh _mesh;
+        readonly List<Part> _parts = new();
+        Part _part;                          // the one currently being emitted into
+
+        // Convenience aliases so the geometry code below reads unchanged.
+        List<Vector3> _verts => _part.Verts;
+        List<Vector2> _uvs => _part.Uvs;
+        List<int> _chassisTris => _part.Chassis;
+        List<int> _shellTris => _part.Shell;
+
+        Material _lastDomainMaterial;
 
         void Awake() => Rebuild();
 
@@ -85,49 +106,112 @@ namespace CosmicShore.Gameplay
         [ContextMenu("Rebuild Hull")]
         public void Rebuild()
         {
-            _verts.Clear(); _normals.Clear(); _uvs.Clear();
-            _chassisTris.Clear(); _shellTris.Clear();
+            _parts.Clear();
 
             float halfWidth = width * 0.5f;
             float seamHalf = halfWidth * seamFraction;
 
-            // Carapace: one wing case per side, mirrored. Split so the seam is a real groove
-            // rather than a texture line — it survives any material.
-            BuildShell(+1f, seamHalf, halfWidth);
-            BuildShell(-1f, seamHalf, halfWidth);
+            // CORE stays on this GameObject's own renderer, because that is the object
+            // VesselCustomization paints (`_shipGeometries`). The movable pieces become children
+            // and inherit its materials — see PropagateMaterials.
+            Begin("Core", Vector3.zero);
             BuildBelly(halfWidth);
             BuildHeadShield(halfWidth);
-            if (hornLength > 0.001f) BuildHorn();
+
+            // The wing cases hinge about the seam, so their pivot is the centreline.
+            Begin("elytron.r", Vector3.zero); BuildShell(+1f, seamHalf, halfWidth);
+            Begin("elytron.l", Vector3.zero); BuildShell(-1f, seamHalf, halfWidth);
+
+            if (hornLength > 0.001f) { Begin("horn", Vector3.zero); BuildHorn(); }
             if (legLength > 0.001f) BuildLegs(halfWidth);
 
-            // The parts are built from RATIOS and then fitted, so `length` and `width` are the
-            // finished hull's real extents rather than the shell's. Without this the head shield
-            // and horn are purely additive and the vessel ends up ~40% longer than authored —
-            // which is not just cosmetic: the occlusion corridor and the speed-tunnel camera both
-            // size themselves off the hull's circumscribing radius.
+            // Built from RATIOS, then fitted, so `length` and `width` are the finished hull's real
+            // extents rather than the shell's. Without this the head shield and horn are purely
+            // additive and the vessel ends up ~40% longer than authored — not just cosmetic: the
+            // occlusion corridor and the speed-tunnel camera both size themselves off the hull's
+            // circumscribing radius.
             FitToAuthoredExtents();
-
-            if (_mesh == null)
-            {
-                _mesh = new Mesh { name = "ScarabHull" };
-                _mesh.MarkDynamic();
-            }
-            _mesh.Clear();
-            _mesh.indexFormat = _verts.Count > 65000
-                ? UnityEngine.Rendering.IndexFormat.UInt32
-                : UnityEngine.Rendering.IndexFormat.UInt16;
-            _mesh.SetVertices(_verts);
-            _mesh.SetUVs(0, _uvs);
-            _mesh.subMeshCount = 2;
-            _mesh.SetTriangles(_chassisTris, ChassisSubmesh);
-            _mesh.SetTriangles(_shellTris, ShellSubmesh);
-            _mesh.RecalculateNormals();
-            _mesh.RecalculateBounds();
-
-            GetComponent<MeshFilter>().sharedMesh = _mesh;
-
+            EmitParts();
             HideLegacyModel();
         }
+
+        /// <summary>Start emitting into a new part. Geometry is written in hull space; the pivot is
+        /// subtracted at emit time and becomes the child's localPosition.</summary>
+        void Begin(string name, Vector3 pivot)
+        {
+            _part = new Part { Name = name, Pivot = pivot };
+            _parts.Add(_part);
+        }
+
+        void EmitParts()
+        {
+            for (int i = 0; i < _parts.Count; i++)
+            {
+                var part = _parts[i];
+                for (int v = 0; v < part.Verts.Count; v++) part.Verts[v] -= part.Pivot;
+
+                var mesh = new Mesh { name = "Scarab_" + part.Name };
+                mesh.SetVertices(part.Verts);
+                mesh.SetUVs(0, part.Uvs);
+                mesh.subMeshCount = 2;
+                mesh.SetTriangles(part.Chassis, ChassisSubmesh);
+                mesh.SetTriangles(part.Shell, ShellSubmesh);
+                mesh.RecalculateNormals();
+                mesh.RecalculateBounds();
+                part.Mesh = mesh;
+
+                if (i == 0)
+                {
+                    GetComponent<MeshFilter>().sharedMesh = mesh;   // Core, on our own renderer
+                    continue;
+                }
+
+                var child = transform.Find(part.Name);
+                if (!child)
+                {
+                    var go = new GameObject(part.Name) { layer = gameObject.layer };
+                    child = go.transform;
+                    child.SetParent(transform, false);
+                    go.AddComponent<MeshFilter>();
+                    go.AddComponent<MeshRenderer>();
+                }
+                child.localPosition = part.Pivot;
+                child.localRotation = Quaternion.identity;
+                child.GetComponent<MeshFilter>().sharedMesh = mesh;
+            }
+
+            PropagateMaterials(force: true);
+        }
+
+        /// <summary>
+        /// Keep the movable parts wearing the same materials as the core. The fleet paints the
+        /// DOMAIN colour onto slot 1 of the object listed in `VesselCustomization._shipGeometries`
+        /// — which is this GameObject — and that list is serialized, so parts created at runtime
+        /// can never be in it. Rather than fight that, the parts simply mirror the core, which also
+        /// means they share its material instance instead of minting one each.
+        /// </summary>
+        void PropagateMaterials(bool force = false)
+        {
+            var source = GetComponent<MeshRenderer>();
+            if (!source) return;
+            var mats = source.sharedMaterials;
+            if (mats == null || mats.Length == 0) return;
+
+            Material domain = mats.Length > 1 ? mats[1] : mats[0];
+            if (!force && domain == _lastDomainMaterial) return;
+            _lastDomainMaterial = domain;
+
+            for (int i = 0; i < transform.childCount; i++)
+            {
+                var r = transform.GetChild(i).GetComponent<MeshRenderer>();
+                if (r) r.sharedMaterials = mats;
+            }
+        }
+
+        // One reference compare per frame. The domain material is swapped by ShipHelper at spawn
+        // AND on any later domain change (the domain-changer toy), and neither raises an event this
+        // component could bind to, so it is watched rather than pushed.
+        void LateUpdate() => PropagateMaterials();
 
         /// <summary>
         /// Switch off the inherited model's renderers — never its GameObjects. The vessel's
@@ -187,8 +271,7 @@ namespace CosmicShore.Gameplay
                     float y = h * Mathf.Cos(v * Mathf.PI * 0.5f);
                     _verts.Add(new Vector3(x, y, z));
                     _uvs.Add(new Vector2(v, t));
-                    _normals.Add(Vector3.up);
-                }
+                        }
             }
 
             // Winding flips with the mirror so both wing cases face outward.
@@ -224,7 +307,6 @@ namespace CosmicShore.Gameplay
                     float y = -bellyDepth * HeightAt(t) * Mathf.Cos(s * Mathf.PI * 0.5f);
                     _verts.Add(new Vector3(x, y, z));
                     _uvs.Add(new Vector2((s + 1f) * 0.5f, t));
-                    _normals.Add(Vector3.down);
                 }
             }
 
@@ -267,6 +349,7 @@ namespace CosmicShore.Gameplay
             float rootRadius = width * 0.085f;
             float zRoot = ZAt(1f) + length * 0.1f;
             float yRoot = HeightAt(1f) * domeHeight * 0.35f;
+            _part.Pivot = new Vector3(0f, yRoot, zRoot);   // hinges at the head, not the hull centre
 
             const int rings = 7;
             int firstRing = _verts.Count;
@@ -285,8 +368,7 @@ namespace CosmicShore.Gameplay
                     float a = s / (float)hornSides * Mathf.PI * 2f;
                     _verts.Add(new Vector3(Mathf.Cos(a) * radius, y + Mathf.Sin(a) * radius, z));
                     _uvs.Add(new Vector2(s / (float)hornSides, u));
-                    _normals.Add(Vector3.up);
-                }
+                        }
             }
 
             for (int r = 0; r < rings; r++)
@@ -315,6 +397,8 @@ namespace CosmicShore.Gameplay
                 float w = WidthAt(t) * halfWidth;
                 Vector3 root = new(w * side * 0.92f, -bellyDepth * 0.35f, ZAt(t));
                 Vector3 tip = root + new Vector3(side * reach, -reach * 0.75f, sweeps[i] * reach);
+                // Its own part, pivoted at the socket, so it swings from the body like a leg.
+                Begin($"leg.{(side < 0 ? "l" : "r")}{i + 1}", root);
                 AddStrut(root, tip, halfWidth * 0.055f);
             }
         }
@@ -352,25 +436,34 @@ namespace CosmicShore.Gameplay
         /// </summary>
         void FitToAuthoredExtents()
         {
-            if (_verts.Count == 0) return;
-
-            Vector3 min = _verts[0], max = _verts[0];
-            for (int i = 1; i < _verts.Count; i++)
-            {
-                min = Vector3.Min(min, _verts[i]);
-                max = Vector3.Max(max, _verts[i]);
-            }
+            bool any = false;
+            Vector3 min = Vector3.zero, max = Vector3.zero;
+            foreach (var part in _parts)
+                foreach (var v in part.Verts)
+                {
+                    if (!any) { min = max = v; any = true; continue; }
+                    min = Vector3.Min(min, v);
+                    max = Vector3.Max(max, v);
+                }
+            if (!any) return;
 
             Vector3 size = max - min;
             Vector3 centre = (min + max) * 0.5f;
             float sx = size.x > 1e-4f ? width / size.x : 1f;
             float sz = size.z > 1e-4f ? length / size.z : 1f;
 
-            for (int i = 0; i < _verts.Count; i++)
+            foreach (var part in _parts)
             {
-                var p = _verts[i] - centre;
-                _verts[i] = new Vector3(p.x * sx, p.y, p.z * sz);
+                for (int i = 0; i < part.Verts.Count; i++)
+                    part.Verts[i] = Fit(part.Verts[i], centre, sx, sz);
+                part.Pivot = Fit(part.Pivot, centre, sx, sz);
             }
+        }
+
+        static Vector3 Fit(Vector3 p, Vector3 centre, float sx, float sz)
+        {
+            var q = p - centre;
+            return new Vector3(q.x * sx, q.y, q.z * sz);
         }
 
         // ---------------------------------------------------------------- primitives
@@ -379,7 +472,6 @@ namespace CosmicShore.Gameplay
         {
             _verts.Add(position);
             _uvs.Add(uv);
-            _normals.Add(Vector3.up);
             return _verts.Count - 1;
         }
 

@@ -129,11 +129,21 @@ namespace CosmicShore.Gameplay
                 MaxScale = blastScale,
                 SpawnPosition = at,
                 SpawnRotation = Quaternion.LookRotation(dir, ship.up),
+                // Domain-tinted like every other blast in the fleet. Without it the explosion
+                // renders with whatever the prefab shipped and reads as nobody's.
+                OverrideMaterial = _status.AOEExplosionMaterial,
                 // CHARGE 5 — "Cavitation Shear": devastate destroys SHIELDED prisms outright
                 // instead of only shedding the shield. Per-use snapshot at fire time.
                 DevastatingOverride = _status.ElementalAbilityHandler != null
                                       && _status.ElementalAbilityHandler.IsUpgradeActive(Element.Charge)
             });
+
+            // INITIALIZE ONLY ARMS IT. `Initialize` sets the blast up and deliberately leaves it
+            // at zero scale with its renderer OFF; `Detonate` is what starts ExplodeAsync. Missing
+            // this call is why the blast never worked — every dash spawned a correctly-configured
+            // explosion that then sat inert and invisible forever (and leaked a GameObject with
+            // it). Every other AOE call site in the codebase pairs the two.
+            blast.Detonate();
 
             CSDebug.Log($"[ScarabCavitation] Blast along {dir} (cooldown {CurrentCooldown():F2}s).");
         }
