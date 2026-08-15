@@ -196,6 +196,49 @@ namespace CosmicShore.Tests
             finally { UnityEngine.Object.DestroyImmediate(config); }
         }
 
+        // Peak displacement as a multiple of (radius x tilt), measured against the SHIPPED
+        // PrismJiggleClock_float by compiling it with clang and sweeping the whole animation
+        // window over the stella's 24 face normals (/asset-surgery §4.5c). The first cut of the
+        // envelope was sized off the uniform row alone and under-covered a (1,1,20) trail slab
+        // by 16x — the prism frustum-culls away mid-wobble. These are the numbers the padding
+        // has to beat, so they are pinned here rather than left in a comment.
+        static readonly (Vector3 scale, float measured)[] MeasuredDisplacement =
+        {
+            (new Vector3(1f, 1f, 1f), 0.982f),
+            (new Vector3(3f, 3f, 10f), 2.728f),
+            (new Vector3(12f, 2f, 2f), 4.643f),
+            (new Vector3(1f, 1f, 20f), 15.972f),
+        };
+
+        [Test]
+        public void CullingPadding_CoversTheMeasuredDisplacement_IncludingAnisotropicPrisms()
+        {
+            const float radius = 1.5f;   // a stella tip, in object units
+            const float tilt = 0.0785f;  // ~4.5 degrees
+
+            foreach (var (scale, measured) in MeasuredDisplacement)
+            {
+                float padding = PrismSuperShieldJiggle.CullingPadding(radius, tilt, scale);
+                float required = radius * tilt * measured;
+                Assert.GreaterOrEqual(padding, required,
+                    $"Culling envelope under-covers the wobble at lossyScale {scale}: padding " +
+                    $"{padding} < measured displacement {required}. A prism whose bounds do not " +
+                    "contain its own animation frustum-culls away mid-wobble at the screen edge. " +
+                    "The shader rotates in the world-proportioned frame and maps back through " +
+                    "1/scale, so the padding MUST carry the scale ratio.");
+            }
+        }
+
+        [Test]
+        public void CullingPadding_SurvivesADegenerateScale()
+        {
+            // A prism mid-birth sits at localScale zero; the padding must not divide by it.
+            float padding = PrismSuperShieldJiggle.CullingPadding(1.5f, 0.0785f, Vector3.zero);
+            Assert.IsTrue(float.IsFinite(padding) && padding >= 0f,
+                $"CullingPadding returned {padding} at zero scale — a NaN or infinite extent " +
+                "poisons the entity's RenderBounds and can drop the prism from culling entirely.");
+        }
+
         [Test]
         public void PackedParams_CarryTiltAndBothRatesInRadians()
         {

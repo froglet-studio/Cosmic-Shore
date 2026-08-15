@@ -181,6 +181,13 @@ namespace CosmicShore.Gameplay
         internal bool UsesEntityColorSink =>
             !_exoticVisualActive && PrismRenderService.IsHandleUsable(in RenderHandle);
 
+        /// <summary>True while per-prism-unique geometry (a shield engage morph, a shatter
+        /// overlay) is drawn by this GameObject's MeshRenderer instead of the companion
+        /// entity. A one-shot clock stamp made in this window is spent invisibly, so stamp
+        /// sites that can defer should check this ALONE — <see cref="UsesEntityColorSink"/>
+        /// bundles it with handle usability and is the wrong test for that question.</summary>
+        internal bool ExoticVisualActive => _exoticVisualActive;
+
         public Vector3 TargetScale
         {
             get => scaleAnimator?.TargetScale ?? transform.localScale;
@@ -720,6 +727,11 @@ namespace CosmicShore.Gameplay
             // IsShielded/IsDangerous are NOT cleared: spawners set those pre-Initialize
             // as the requested state for this life.
             if (prismProperties != null) prismProperties.IsSuperShielded = false;
+            // Pool reuse: this is also what INVALIDATES any super-shield deflection settle
+            // still scheduled from the previous life. That callback compares its captured
+            // stamp time against LastSuperShieldJiggleTime and no-ops on a mismatch, so
+            // resetting here is what stops it resetting THIS life's culling envelope.
+            _lastSuperShieldJiggleTime = float.NegativeInfinity;
             _lodCulled = false; // pool reuse: Initialize owns the collider again
             CachedVolume = 0f;  // stale from the previous life; reseeded at CreateBlock
             IsSmallest = false;
@@ -1270,6 +1282,12 @@ namespace CosmicShore.Gameplay
         // keyed by instance id. Absolute clock time; a pooled reuse inherits a value far in
         // the past, which correctly reads as "no recent deflection".
         float _lastSuperShieldJiggleTime = float.NegativeInfinity;
+
+        /// <summary>Clock time of this prism's most recent deflection stamp, or
+        /// <see cref="float.NegativeInfinity"/> if it has none in this life. A scheduled
+        /// settle carries the value it stamped and compares it here, so a re-stamp or a pool
+        /// reuse invalidates the older callback without an O(n) scan of the timer list.</summary>
+        internal float LastSuperShieldJiggleTime => _lastSuperShieldJiggleTime;
 
         /// <summary>
         /// THE super-shield invulnerability gate. Returns true when this prism absorbs the hit

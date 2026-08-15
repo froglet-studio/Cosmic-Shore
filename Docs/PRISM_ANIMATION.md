@@ -1658,9 +1658,26 @@ Astro League lining, the dial is `minTiltDegrees`, not a new exception.
 piercing projectile re-dispatches the same prism every frame it overlaps, a drone swarm re-queues
 its meal every behaviour tick, and N concurrent blasts each resolve independently, so without the
 gate a prism under fire would restart its envelope before it could visibly move and read as
-*frozen*), one scheduled clear, and one `RenderBounds` reset+expand. The envelope padding is
-`radius × maxTilt × 1.25`; the 1.25 is measured, not guessed — a clang harness over the shipped
-HLSL puts peak displacement at **0.991 × radius × amplitude**.
+*frozen*), one scheduled clear, and one `RenderBounds` reset+expand.
+
+**The culling envelope carries the prism's SCALE RATIO, and that is not a detail.** Padding is
+`radius × maxTilt × (max(lossyScale)/min(lossyScale)) × 1.25` (`PrismSuperShieldJiggle.CullingPadding`).
+Sizing it off `radius × maxTilt` alone — the obvious formula, and what the first cut shipped —
+under-covers every anisotropic prism, because the rotation happens in the world-proportioned
+frame and is mapped back through `1/scale`. Measured against the shipped HLSL with a clang
+harness, peak displacement as a multiple of `radius × tilt`: **0.98× at uniform scale, 2.73× at
+(3,3,10), 4.64× at (12,2,2), 15.97× at (1,1,20)** — bounded by the scale ratio in every case.
+The under-covered prism frustum-culls away mid-wobble at the screen edge, which reads as the
+mass blinking out. The four rows are pinned by `PrismSuperShieldJiggleTests` so the formula
+cannot quietly regress to the uniform one.
+
+**The settle is guarded, not cancelled.** `PrismTimerManager.CancelScheduledActions` is a linear
+scan of the shared list, so cancelling per stamp would make one blast over N super-shielded
+prisms O(N²) — exactly the case that stamps N prisms in a frame. Instead the callback carries the
+stamp time it was scheduled for and no-ops unless `Prism.LastSuperShieldJiggleTime` still matches,
+which is O(1) and also invalidates a settle left over from a previous life (a pooled prism is
+deactivated, not destroyed, so the scheduler's own null-owner sweep never drops it —
+`Prism.ResetState` clears the stamp time).
 
 **Tuning** is `PrismSuperShieldJiggleConfigSO` (`Resources/PrismSuperShieldJiggleConfig`): duration,
 the tilt floor/ceiling and the impact speed that reaches the ceiling, both wobble rates, and the
