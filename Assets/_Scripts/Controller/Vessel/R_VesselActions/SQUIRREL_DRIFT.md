@@ -183,7 +183,7 @@ serialized values are stale garbage, exactly like `ThrottleScaler`.
 |---|---|---|---|
 | **Squirrel** | vector | Live | This document. Throttle semantics unchanged — only the direction of thrust |
 | **Scarab** | vector | Live (own policy) | Integrator throttle; overrides `ComputeNoseAcceleration` + `ShapeSpeed` |
-| **Dolphin** | **scalar** | — | Migrated, then **reverted**: no vector configuration reproduces its shipped feel, because that feel *is* the defect. `DOLPHIN_ENERGY_ECONOMY.md` §2a |
+| **Dolphin** | vector | **Locked** | Drift freezes the velocity vector outright (grip 0 + zero thrust), so entering a drift at speed costs nothing. `DOLPHIN_ENERGY_ECONOMY.md` §2a |
 | Everyone else | scalar | — | Bit-identical to before the flag existed |
 
 ---
@@ -193,7 +193,7 @@ serialized values are stale garbage, exactly like `ThrottleScaler`.
 | Knob | Where | Value | Effect |
 |---|---|---|---|
 | `driftOvershootCeiling` | Squirrel.prefab | 1.25 | Max \|v\| during a drift, × the throttle target. 1 = no overshoot |
-| `driftThrottlePolicy` | Squirrel.prefab | Live (0) | Whether thrust acts during a drift. `Locked` = no acceleration for the drift's duration (no vessel ships it today) |
+| `driftThrottlePolicy` | Squirrel.prefab | Live (0) | Whether thrust acts during a drift. `Locked` (the Dolphin) = no acceleration for the drift's duration |
 | `Mult` / `driftDamping` | drift action SOs | 1.4/0.5, 1.8/0.25 | Rotation multiplier and grip per tier |
 | `DefaultThrottleScaler` | Squirrel.prefab | 60 | Scissor throttle's speed scale |
 | `RotationThrottleScaler` | Squirrel.prefab | 0 | Turn rate vs speed — **deliberately 0** |

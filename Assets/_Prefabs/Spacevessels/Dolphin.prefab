@@ -2208,9 +2208,9 @@ MonoBehaviour:
   decayBoost: 0
   MaxBoostMultiplier: 5
   BoostDecayRate: 0.1
-  vectorFlightModel: 0
+  vectorFlightModel: 1
   driftOvershootCeiling: 1.25
-  driftThrottlePolicy: 0
+  driftThrottlePolicy: 1
   DriftDamping: 0
   boostChanged: {fileID: 0}
   MinimumSpeed: 0

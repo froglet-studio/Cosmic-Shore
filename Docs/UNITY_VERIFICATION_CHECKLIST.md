@@ -41,10 +41,10 @@ step 2 below is the one that must actually be seen.
 |---|---|---|---|
 | **Squirrel** | on | Live | Thrust direction only. Throttle semantics UNCHANGED (`XDiff` scissor, `ThrottleScaler 60`, AI `XDiff`) |
 | **Scarab** | on | Live (own policy) | Refactor only — same feel, its `MoveShip` copy deleted |
-| **Dolphin** | **off** | — | Migrated to `Locked`, play-tested, **REVERTED**. Back on the scalar path and bit-identical to before this branch |
+| **Dolphin** | on | **Locked** | Entering a drift no longer costs speed — the velocity vector freezes (grip 0 + zero thrust). This is a **deliberate behaviour change**; the pre-existing slowdown was the boost being cancelled on drift entry |
 | everyone else | off | — | untouched |
 
-**Round 2 (2026-08-15) — two fixes after the first play-test:**
+**Rounds 2–3 (2026-08-15) — fixes after play-testing:**
 
 - **The drift overshoot ceiling was braking, not bounding.** It clamped `|v|` to
   `ComputeThrottleTarget() × 1.25` outright, so a vessel that ENTERED a drift fast was slammed to
@@ -66,9 +66,17 @@ step 2 below is the one that must actually be seen.
 `RefreshDriftSpeedHold` / `_driftSpeedHeld` / `_heldDriftSpeed`) **has never existed in this
 repository** — absent from `VesselTransformer.cs`, from that file's git history, and from
 `Dolphin.prefab`. The Dolphin's throttle was LIVE during drift, i.e. it had the same raw defect as
-the Squirrel — which is also why **no vector configuration reproduces its shipped feel**: that feel
-IS the defect. `Live` fixes it (a change), `Locked` freezes speed (a different change). The Dolphin
-is therefore back on the scalar path, where "unchanged" is provable rather than approximated.
+the Squirrel.
+
+⚠ **The Dolphin's drift-entry slowdown is PRE-EXISTING and is not fixable on the scalar path.**
+Its drift calls `ChargeBoostActionExecutor.BeginCharge`, which clears `BoostMultiplier` /
+`IsBoosting` / `IsChargedBoostDischarging` (it must — a cancelled discharge would otherwise leave a
+permanent free multiplier). That collapses `ComputeThrottleTarget()` from the boosted 357 to plain
+cruise 78 the instant you drift, and on the scalar model `speed` is a value that CHASES the target,
+so it is dragged down with it (357 → 350 on frame 1, ~139 within a second). No tuning reaches it.
+Under the vector model speed is STATE, so `Locked` freezes it at 357 for the drift's duration. That
+is why the Dolphin is on the vector model rather than reverted — a round-2 revert to scalar
+reinstated exactly this slowdown and was undone.
 
 **Verify in editor (in order):**
 1. **Squirrel — drift recovery (the point).** HexRace or freestyle. Get to speed, hold LT into a
@@ -82,12 +90,16 @@ is therefore back on the scalar path, where "unchanged" is provable rather than 
    smoothly toward the cruise target. It must NOT snap down on the first drift frame, and the
    scissor throttle must not read as a speed dial while drifting. This is the exact failure that
    was reported on the Dolphin; the Squirrel had it too.
-4. **Dolphin — unchanged, in full.** It is back on the scalar path, so this is a REGRESSION check,
-   not a feature check: enter a drift at speed and confirm it maintains speed on entry (no loss),
-   that the drift feels exactly as it did before this branch, and that the boost charge/discharge
-   cycle is untouched.
-5. **Dolphin — danger prism while drifting.** Clip a danger prism mid-drift; the slow must land.
-   (Unchanged behaviour, but it is the locked-design guard and costs one pass.)
+4. **Dolphin — drifting at max speed costs nothing (the reported bug).** Fly straight, build the
+   boost, and pull the drift trigger at top speed. Speed must **hold flat** for the drift's
+   duration — no dip at all, and the scissor throttle must not move it. Heading holds too (grip 0).
+   Release: the discharge resumes from the speed you kept.
+5. **Dolphin — danger prism while drifting.** Clip a danger prism mid-drift; the slow MUST land.
+   `throttleMultiplier` stays live through the lock — a drifting vessel that shrugs off danger
+   prisms is a locked-design violation, not a feel win.
+5a. **Dolphin — boost discharge on release.** Hold the drift to bank charge, release. Acceleration
+   must be immediate; you start from the speed you kept, so there should be less to make up than
+   before, never more.
 6. **AI drift still locks course on the objective.** HexRace, watch an AI approach a crystal. At
    drift entry its trail must continue toward the crystal while the hull swings off-axis. If the
    trail follows the nose, the `Course` re-aim in `SyncExternalWrites` regressed — this was a live
@@ -110,9 +122,8 @@ is therefore back on the scalar path, where "unchanged" is provable rather than 
 Live/Locked/Live · Squirrel grip 0.5 (tier 1) / 0.25 (sharp) · Dolphin grip 0 · grip convergence is
 now frame-rate independent (`1 − e^(−k·dt)`; ~0.4% from the old `k·dt` at 60 fps).
 
-**Known gaps:** the Dolphin's drift defect is now UNFIXED again (deliberately — it is the same
-thrust-along-Course problem the Squirrel had, and closing it means picking a mechanic and
-play-testing it as a change; `DOLPHIN_ENERGY_ECONOMY.md` §2a has the two options ready); no
+**Known gaps:** the Dolphin cannot accelerate at all while drifting now (that is what `Locked`
+means — verify it reads as a commitment rather than a stall when drifting from low speed); no
 edit-mode test guards the identity (the model lives on a MonoBehaviour needing a
 live vessel — `SQUIRREL_DRIFT.md` §9 names the factoring that would make one cheap); the Manta is
 the remaining scalar-path vessel that drifts (two-trigger, `singleTriggerDrift: 0`) and still has
