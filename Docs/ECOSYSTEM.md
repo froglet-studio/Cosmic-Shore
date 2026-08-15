@@ -3665,3 +3665,56 @@ rides the Burst density grid rather than physics. No new colliders, no new queri
 
 **Crystals:** at most `2 × players` = 8 at intensity 1, each a single trigger collider.
 
+
+## 30. A living heart is BLUE, and the crossing to lime TRAVELS (Aug 2026)
+
+**The rule (it was never in doubt): a crystal's ELEMENT is its shape, its COLOUR is who may
+collect it.** `Crystal.ApplyColorSetTint` resolves one of three pairs from the live `SO_ColorSet`
+and writes them per renderer through a `MaterialPropertyBlock`:
+
+| State | Pair | Reads as |
+|---|---|---|
+| domain-owned (Jade/Ruby/Gold) | that domain's `BrightCrystalColor` / `DullCrystalColor` | only that domain collects |
+| **embedded lifeform heart** (`Crystal.IsEmbedded`) | `BlueColors.BrightCrystalColor` / `DullCrystalColor` | **blue** — it is alive, nobody collects it |
+| free pickup (drop / omni / cell) | `EnvironmentColors.BrightCTA` / `DarkCTA`, elementals dimmed | **lime** — anyone collects it |
+
+**None of it reached the screen until 2026-08-15**, because `FadeIn` — which every crystal model
+carries, and which is what blooms a crystal into existence per the continuity law — drove
+`_opacity` through the *same* per-renderer block and ended the bloom by clearing it. That is
+diagnosed and fixed in `Docs/PALETTE.md §2.2` (a palette-wide defect: no crystal in the game ever
+showed its resolved colour). What it cost the ECOLOGY specifically is worth recording, because the
+symptom was asymmetric and therefore invisible: the fallback was each prefab's authored material,
+and of the four elemental crystals Mass and Space author the *Blue* material and looked correct
+**by accident**, while `ChargeCrystalMaterial` is literally the CTA pair and Time's Fringe
+materials carry a lime dull face. Species assets are split evenly across the four elements — 21
+each — so **half the ecosystem's living hearts advertised themselves as free pickups**, and the
+half that worked gave no signal anything was wrong.
+
+### 30.1 The crossing is a state change, so it travels
+
+The blue→lime crossing at `ActivateCrystal` is the pickup affordance: it is the moment the §26
+wither reaches the core, or the moment a joust frees the heart, and it says *you can take this
+now*. It runs the same clock-stamped shape as a prism domain change
+(`MaterialPropertyAnimator.ClockColorTransition`, `Docs/PRISM_ANIMATION.md`) — the state goes
+final at the start (the crystal is collectable the instant it drops; colour is only how it reads),
+the start pair is stamped once against `PrismClock`, the pairs between are computed analytically
+from that stamp, and `PrismTimerManager` fires ONE settle at the analytically-known end, which is
+what makes the final colour independent of the driver. Duration is
+`Crystal.colorTransitionSeconds`, 0.8 s to match the prism transition.
+
+Three rules it depends on, each a bug first — full contract in `Docs/PALETTE.md §2.3`:
+
+- **Paint the flip explicitly.** `ActivateCrystal` repaints itself rather than leaving it to
+  `Start` (which fires only because a heart's `Crystal` component is authored **disabled**) or to
+  the material lerp's tail (skipped outright when a model has no target material). Rely on either
+  and a collectable crystal keeps wearing heart blue.
+- **Read the start pair BEFORE anything disturbs it** — before `EmbeddedIn` is cleared and before
+  any material lerp drops the block.
+- **A cleared block no longer describes the screen**, so `ClearColorSetTint` forgets the resting
+  pair.
+
+### 30.2 Collider budget
+
+**Zero.** Colours only — no colliders, no spatial queries, no spawn or consumption behaviour, no
+change to what is edible or steerable. The per-frame cost is one property-block write per model
+for the 0.8 s a crystal is actually crossing, and only crystals cross.

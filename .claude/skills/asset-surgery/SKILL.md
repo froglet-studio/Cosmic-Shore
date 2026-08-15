@@ -723,6 +723,37 @@ that would otherwise cost a round-trip to a human at the editor:
   mesh's "nose" by comparing cross-section extents near each end of its long axis (the
   radially-symmetric end is the nose, the asymmetric one is the fins).
 
+## 4.8 Technique: prove a runtime VISUAL claim offline, by walking to the authored value
+
+"Why is this the wrong colour?" is answerable without Unity, because every step of what a
+renderer shows is a serialized reference. Walk the chain and print it:
+
+1. **Who owns the visual** — for a nested prefab (a lifeform's crystal, a vessel's part), the
+   host prefab holds a `PrefabInstance` whose `m_SourcePrefab` guid names the real source
+   asset. The host's own YAML shows only `stripped` stubs, so a naive grep for the component's
+   script guid finds a block with no fields and reads as "unwired" when it is simply inherited.
+2. **Which material the RENDERER actually uses** — read `m_Materials` off the `MeshRenderer`
+   (and any `m_Modifications` entry whose `propertyPath` is `m_Materials.Array.data[N]`, which
+   overrides it). This is frequently NOT the material named in the component's own fields: a
+   `Crystal` lists `defaultMaterial`/`inactiveMaterial` for its *transitions* while the renderer
+   is authored with one of them, and only the renderer's is on screen at rest.
+3. **The authored values** — `.mat` files carry the properties under `m_SavedProperties`; resolve
+   the guid via the `.meta` sweep. Compare those numbers against the live SO the code says it
+   reads (`ThemeManagerDataContainer.asset` → `ColorSet`).
+
+That chain proved, with no editor, that `ChargeCrystalMaterial._BrightCrystalColor` is *exactly*
+`EnvironmentColors.BrightCTA` — i.e. the fallback colour and the intended colour were the same
+value, which is why one of the four elements looked correct while the mechanism producing it was
+entirely dead.
+
+- **A symptom that is asymmetric across variants is the tell, and it hides the bug.** The same
+  broken mechanism produced a correct-looking result on two of four crystal prefabs (Mass and
+  Space author the *Blue* material on their renderer; Charge and Time author the lime one), so
+  half the ecosystem looked right by accident. Before concluding "it works for X so the system
+  works", check whether X's authored fallback happens to equal the intended output. Count the
+  affected content too — 21 species assets per element turned "two crystals look odd" into "half
+  the ecosystem", which is what set the priority.
+
 ## 5. Traps learned the hard way (check these BEFORE debugging for an hour)
 
 - **Renaming a Unity SERIALIZED FIELD must sweep `Tools/**.py` too, not just C# + scenes +
