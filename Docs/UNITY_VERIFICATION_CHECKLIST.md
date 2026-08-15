@@ -63,6 +63,44 @@ two structural gaps closed:
   remaining absences are benign (stale donor keys, warn-and-degrade petal bars, tuning
   defaults).
 
+**ROUND 3 (2026-08-15, after the second live repro).** Playtest report: "I was getting attached,
+but I was not able to slide" — plus the design directive that prismscapes span dimensions 0-3
+(singleton / trail / surface / volume), trails are what players lay, and the Urchin should also
+ROLL across the 2D prismscapes that gyroid and Schwarz flora make. What landed:
+
+- **The freeze root cause was in `Trail.IndexSafetyCheck`**: on a NON-LOOP trail, an index
+  stepping past the head ran `index %= maxRange` → index 0, the far tail — so `Project()` saw a
+  phantom segment spanning the whole trail as the crow flies and advanced `finalLerp` by
+  `1/chordLength` per frame. Attaching near the head (the common case — you attach where the
+  trail is being laid) froze the ride. The non-loop branch now REFLECTS (bounce to `count-2`,
+  incrementor flipped), mirroring the existing below-zero bounce. Loops keep the modulo.
+- **Signed throttle around XDiff's ACTUAL rest.** XDiff rests at **0.5** on the current input
+  scale (`GamepadInputStrategy`), not the 0.2 the 2023 formula assumed — hands-off read as 37%
+  creep. `ReadThrottle` is now signed around `throttleRestPosition` (0.5): push slides the way
+  the nose points along the ribbon, pull slides back. The look-over-the-shoulder reverse gesture
+  is retired; direction = `sign(throttle × dot(forward, Course))`.
+- **`PrismscapeDimension` (0-3, values = the dimension) + `PrismscapeTopology.DimensionOf`** —
+  authored evidence first: `Trail.Dimension`, declared by the LAYER (default 1D = the vessel
+  wake; the gyroid/Schwarz spawnables declare `Surface` — `Trail` is the general lay container
+  that `PrismTrailBuilder` stamps on everything, so its presence is membership evidence, never
+  shape evidence). Container-less prisms (flora growth) get a `PrismSpatialIndex.QuerySphere`
+  census (shell fills a ball like r², solid like r³). Never physics, never per-frame. Enum
+  values pinned by `EnumIntegrityTests`.
+- **`BlockscapeFollower` finished as the 2D kernel**: face crawl (pilot keeps full steering —
+  `Slide()` runs the protected `Roll()`/`Yaw()`/`Pitch()` passes), edge fold, and **prism hop**
+  via QuerySphere with an `OnPrismCrossed` event. Its box math moved to local unit space — the
+  old code compared `InverseTransformPoint` output (±0.5 space) against `localScale/2` (world
+  half extents), so on a 4×4×1 block the fold fired 4× late and the snap parked the rider off
+  the surface.
+- **`GunVesselTransformer` routes by topology**: `prism.Trail != null` → TrailFollower slide,
+  else BlockscapeFollower roll; ONE `ApplyPrismscapePayoff` (restore/grow+L5-shield/steal) serves
+  both, fed by `FinalBlockSlideEffects` (1D callback) and `OnPrismCrossed` (2D event).
+
+Round-3 verify (detail in `URCHIN_TRAIL_RIDER.md` §In-editor verification, steps 7/8/8b):
+attach near the trail HEAD and slide — no freeze; hands-off holds still; push/pull slides
+forward/backward; fly into a gyroid/Schwarz flora prism → console logs `Riding a Surface
+prismscape`, steering stays live, edges fold, hops convert prisms one-by-one.
+
 Full mechanics, historical record and follow-ups:
 `_Scripts/Controller/Vessel/R_VesselActions/URCHIN_CHAIN_SPIKES.md` and `URCHIN_TRAIL_RIDER.md`.
 Element map: `Docs/ElementalAbilitySystem/FLEET_MAPS.md` §2 Urchin.

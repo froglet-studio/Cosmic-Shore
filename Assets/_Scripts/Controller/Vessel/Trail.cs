@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using CosmicShore.Utility;
+using CosmicShore.Data;
 using System;
 
 namespace CosmicShore.Gameplay
@@ -10,6 +11,19 @@ namespace CosmicShore.Gameplay
     {
         // [Fix] Added this field so Prism.cs can access/clear the visual line
         public TrailRenderer TrailRenderer;
+
+        /// <summary>
+        /// The DIMENSION of the prismscape this container holds, declared by whoever laid it.
+        /// Defaults to <see cref="PrismscapeDimension.Trail"/> - the vessel wake, the class's
+        /// namesake 1D ribbon. But `Trail` is also the general lay container
+        /// (`PrismTrailBuilder` stamps `block.Trail` on every builder-laid prism), so a
+        /// spawnable that borrows it for a 2D shell MUST declare that here
+        /// (`SpawnableGyroid` / `SpawnableSchwarzPSurface` set `Surface`) - "has a Trail" is
+        /// membership evidence, never shape evidence. Read through
+        /// <c>PrismscapeTopology.DimensionOf</c>, which is what routes the Urchin's ride
+        /// between sliding ALONG a ribbon and rolling ACROSS a shell.
+        /// </summary>
+        public PrismscapeDimension Dimension { get; set; } = PrismscapeDimension.Trail;
 
         bool isLoop;
         public List<Prism> TrailList { get; }
@@ -192,8 +206,23 @@ namespace CosmicShore.Gameplay
         {
             if (index >= maxRange)
             {
-                index %= maxRange;
-                if (!isLoop) incrementor *= -1;
+                if (isLoop)
+                {
+                    index %= maxRange;
+                }
+                else
+                {
+                    // REFLECT off the head, never wrap. The old `index %= maxRange` sent an
+                    // overstep at the head back to index 0 - THE FAR TAIL - so a rider walking
+                    // past the newest prism was handed a phantom segment spanning the whole
+                    // trail as the crow flies. Project() then advanced finalLerp by
+                    // 1/thatDistance per frame: the vessel inched along an invisible chord at
+                    // a few hundredths of its speed, which plays as "attached but frozen".
+                    // The bounce partner of stepping past count-1 is count-2, exactly as
+                    // stepping below 0 bounces to the start.
+                    incrementor *= -1;
+                    index = Mathf.Max(0, maxRange - 2);
+                }
             }
 
             if (index < 0)

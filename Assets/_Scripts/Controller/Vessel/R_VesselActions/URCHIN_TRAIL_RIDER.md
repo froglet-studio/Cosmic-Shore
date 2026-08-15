@@ -1,15 +1,38 @@
-# Urchin Trail Rider — flying into a trail and riding it
+# Urchin Trail Rider — riding prismscapes
 
 > The Urchin's other half — the spike cascade the ride carries you into range to fire — lives in
-> **`URCHIN_CHAIN_SPIKES.md`**. The ride is the delivery system: it turns someone else's trail
-> into your road, and the road pays as you travel it.
+> **`URCHIN_CHAIN_SPIKES.md`**. The ride is the delivery system: it turns someone else's
+> prismscape into your road, and the road pays as you travel it.
 
-The Urchin flies normally until it touches a prism that belongs to a trail. Then it **latches
-on**, and steering stops being the pilot's stick and becomes the ribbon's geometry — the only
-input still consumed is throttle magnitude, plus a look-over-your-shoulder gesture that reverses
-direction along the trail. Crossing from one prism to the next pays: your own trail **grows**
-under you, an enemy's is **stolen** as you pass over it, a destroyed prism is **restored**, and
-riding recharges spike ammo (doubled over shielded prisms).
+## Prismscapes have a DIMENSION, and the ride's form follows it
+
+`PrismscapeDimension` (`_Scripts/Data/Enums/`) names the ladder the Prisms/Prismscapes
+fundamental always implied — "trails are the 1-dimensional case" is in CLAUDE.md's fundamentals
+list; this pins the whole family, values = the dimension:
+
+| Value | Name | What it is | How the Urchin rides it |
+|---|---|---|---|
+| 0 | **Singleton** | a lone prism | (payoff on contact, nothing to traverse) |
+| 1 | **Trail** | a ribbon — the player wake, any `Trail`-backed lay | **SLIDE along it** — `TrailFollower` |
+| 2 | **Surface** | a shell — gyroid / Schwarz-P flora, walls | **ROLL across it** — `BlockscapeFollower` |
+| 3 | **Volume** | a solid — dense lattices | ridden on its **boundary**, locally a Surface |
+
+`PrismscapeTopology.DimensionOf(prism)` classifies on demand: authored evidence first — a prism
+carrying a `Trail` takes the dimension the LAYER declared on the container (`Trail.Dimension`,
+default 1D for the vessel wake; `SpawnableGyroid`/`SpawnableSchwarzPSurface` declare `Surface`,
+because `Trail` is the general lay container and `PrismTrailBuilder` stamps it on everything it
+lays — membership evidence, never shape evidence). Container-less prisms (flora growth) get a
+neighbourhood census through `PrismSpatialIndex.QuerySphere` — a shell fills a census ball like
+an r² patch, a solid like an r³ ball, so the count separates them. Never physics, never
+per-frame.
+
+The Urchin flies normally until it touches a prism. Then it **latches on** and
+`GunVesselTransformer` routes the ride by the prismscape's dimension: on a **trail**, steering
+becomes the ribbon's geometry and the pilot keeps only a signed throttle (push to slide the way
+the nose points along the ribbon, pull to slide back); on a **surface**, the pilot keeps full
+steering and rolls across the faces, folding around edges and hopping prism-to-prism. Either
+way, every prism visited pays the same rule: your own **grows**, an enemy's is **stolen**, a
+destroyed one is **restored**, and riding recharges spike ammo (doubled over shielded prisms).
 
 Attaching is **two flags and no reparenting**:
 
@@ -19,16 +42,22 @@ contact  →  VesselAttachPrismEffectSO      sets IVesselStatus.IsAttached + .At
               │
               ▼
          GunVesselTransformer.MoveShip     edge-detects the flag
-              │   true  when !attached  →  trailFollower.Attach(prism)
-              │   false when  attached  →  trailFollower.Detach()
+              │   true  when !attached  →  TryBeginRide() routes by topology:
+              │       prism.Trail != null →  trailFollower.Attach(prism)   [RideMode.Trail]
+              │       else                →  surfaceFollower.Attach(prism) [RideMode.Surface]
+              │   false when  attached  →  EndRide() detaches both
               ▼
          Slide()  replaces base.MoveShip() entirely while attached
               │
+              ├─ Trail:   TrailFollower.RideTheTrail()      writes Speed + Course;
+              │           on a prism boundary calls back FinalBlockSlideEffects()
+              │
+              └─ Surface: Roll(); Yaw(); Pitch();  ← pilot keeps steering
+                          BlockscapeFollower.RideTheTrail() writes Speed;
+                          on a prism hop raises OnPrismCrossed
+              │
               ▼
-         TrailFollower.RideTheTrail()      writes VesselStatus.Speed + .Course,
-              │                             and on a prism boundary calls back:
-              ▼
-         GunVesselTransformer.FinalBlockSlideEffects()   ← the payoff
+         GunVesselTransformer.ApplyPrismscapePayoff(prism)   ← the ONE payoff, both dimensions
 ```
 
 Nothing about that is Urchin-specific in the plumbing. Any vessel whose impactor container lists
@@ -105,10 +134,11 @@ var throttle = 0;
 `TrailFollower.RideTheTrail` computes `timeToNextBlock = distanceToNextBlock / (Throttle *
 terrainSpeed * SpeedMultiplier)`, so a literal zero is an **infinite** time to the next block:
 the advance loop never runs, `distanceToTravel` stays 0, and the vessel attaches and then sits
-motionless on the ribbon forever with no error. `ReadThrottle()` restores the commented-out
-formula (`throttleZeroPosition` 0.2, so a resting stick reads as zero rather than as a permanent
-crawl) and `throttleDeadband` (0.05) treats sub-threshold throttle as stationary explicitly,
-writing `VesselStatus.Speed = 0` instead of dividing by something near zero.
+motionless on the ribbon forever with no error. `ReadThrottle()` initially restored the
+commented-out 2023 formula (`throttleZeroPosition` 0.2) — **superseded in round 3**, which found
+that XDiff's rest moved to 0.5 on the current input scale and replaced the remap with a signed
+throttle (see "The frozen slide" below). The deadband survives: sub-threshold throttle is treated
+as stationary explicitly, writing `VesselStatus.Speed = 0` instead of dividing by near-zero.
 
 **3. The ride never fed the smoothed cruise speed.** `RideTheTrail` writes `VesselStatus.Speed`
 directly, but `VesselTransformer`'s own smoothed `speed` field — the one free flight integrates —
@@ -129,6 +159,62 @@ Two smaller corrections came with them:
 - **The camera pull-in was inverted.** It read `if (AutoPilotEnabled)` — so the close camera was
   applied only for AI, which nobody is watching, and never for the pilot. The ride is
   close-quarters and the trail is the thing to read.
+
+## The frozen slide (round 3): "attached but not able to slide"
+
+Live testing reproduced an attach that stuck: the vessel latched, the camera pulled in, and then
+nothing moved at any throttle. Three independent causes stacked, and all three are fixed:
+
+**1. `Trail.IndexSafetyCheck` wrapped the HEAD of a non-loop trail to the TAIL.** Both overstep
+branches ran `index %= maxRange` before the loop test — so on the open ribbon every player lays,
+stepping past the newest prism handed the rider **index 0, the far tail**, and `Project()`
+measured its next segment as the straight-line chord across the WHOLE trail. `finalLerp` then
+advanced by `1/chordLength` per frame: the vessel inched along an invisible line at a few
+hundredths of its speed, which plays as "attached but frozen". A rider at the head is the
+*common* case — you attach near where the trail is being laid. The non-loop branch now
+**reflects**: overstep past `count-1` bounces to `count-2` with the incrementor flipped, exactly
+mirroring how stepping below 0 already bounced to the start. (Loop trails keep the modulo — there
+the wrap IS the topology.)
+
+**2. The throttle was remapped around the wrong rest value.** `XDiff` is the dual-stick SPEED
+axis and **rests at 0.5** (`GamepadInputStrategy`: `(right.x − left.x + 2) / 4`), not at the 0.2
+the 2023 formula assumed — so a hands-off stick read as 37% throttle *creep* while an actual
+stop required holding the sticks apart. `ReadThrottle` is now **signed** around
+`throttleRestPosition` (0.5): result in [−1, 1], zero at rest.
+
+**3. Reverse was a separate gesture that fought the ping-pong.** The look-over-your-shoulder
+reverse (`reverseLookThreshold`) is retired. The signed throttle IS the direction: push slides
+the way the nose points along the ribbon, pull slides backward. Facing is resolved per frame as
+`sign(dot(forward, Course))` — `Course` is the ribbon heading while riding (the follower writes
+it) and at the attach instant it is still the flight course, which points the way the vessel was
+moving, the right seed.
+
+## The 2D roll: BlockscapeFollower is now the surface kernel, not an experiment
+
+`BlockscapeFollower` — previously an unfinished face-crawl experiment sitting unused on the
+prefab — is now the finished **2D ride kernel**. Three behaviours compose the roll:
+
+- **Face crawl.** Movement is the vessel's forward projected onto the current face's plane, so
+  the pilot keeps full steering (`Slide()` runs the same protected `Roll()`/`Yaw()`/`Pitch()`
+  passes free flight runs) and the surface constrains position, not attitude.
+- **Edge fold.** Stepping off a face wraps around the box edge onto the adjacent face of the
+  same prism.
+- **Prism hop.** Before folding, the exit point is checked against neighbouring prisms via
+  `PrismSpatialIndex.QuerySphere` (the canonical spatial store — never physics, and physics
+  would be blind to fresh prisms anyway); a near-enough neighbour becomes the new floor and
+  **`OnPrismCrossed`** fires — the surface analogue of the trail's block crossing, and the event
+  `ApplyPrismscapePayoff` subscribes to. This is what makes a gyroid or Schwarz-P shell **one
+  continuous floor** instead of one prism with invisible walls at its edges.
+
+The rewrite also fixed the kernel's box math: a prism's mesh is a **unit cube scaled by its
+transform**, so `InverseTransformPoint` lands in a space where the block spans ±0.5 — but the old
+code compared those coordinates against `localScale/2` (WORLD half extents). On a 4×4×1 block the
+edge fold fired **four times too late** and the post-fold snap parked the rider several units off
+the surface. All box math now runs in local unit space, with the hover offset converted per axis.
+
+The subscription is detach-first in `Initialize` (`-=` then `+=`) because `Initialize` re-runs on
+a live component at a vessel swap or Cellular Duel ownership change, and a stale subscription
+would pay the previous pilot; `OnDisable` unsubscribes.
 
 ## The rider's domain is read live
 
@@ -196,42 +282,50 @@ restore the previous pilot's colliders onto the new one at an arbitrary moment.
 |---|---|
 | Attach effect (the two flags + guns) | `ImpactEffects/EffectsSO/Vessel Prism Effects/VesselAttachPrismEffectSO.cs` |
 | The attach guard (**platform**) | `ImpactEffects/EffectsSO/Vessel Prism Effects/VesselDamagePrismEffectSO.cs` — `skipWhileAttached` |
-| Flight model / edge detection / payoff | `Controller/Vessel/GunVesselTransformer.cs` — `MoveShip`, `Slide`, `ReadThrottle`, `SlideActions`, `FinalBlockSlideEffects` |
-| The ride kernel | `Controller/Vessel/TrailFollower.cs` — `Attach` (now `bool`), `SetDirection`, `RideTheTrail`, `GetTerrainAwareBlockSpeed`, live `Domain` |
-| The surface-crawl experiment (**not** the ride) | `Controller/Vessel/BlockscapeFollower.cs` |
+| Flight model / topology routing / payoff | `Controller/Vessel/GunVesselTransformer.cs` — `MoveShip`, `TryBeginRide`, `Slide`, `ReadThrottle`, `SlideActions`, `ApplyPrismscapePayoff` |
+| The 1D ride kernel (slide ALONG) | `Controller/Vessel/TrailFollower.cs` — `Attach` (now `bool`), `SetDirection`, `RideTheTrail`, `GetTerrainAwareBlockSpeed`, live `Domain` |
+| The 2D ride kernel (roll ACROSS) | `Controller/Vessel/BlockscapeFollower.cs` — face crawl + edge fold + prism hop, `OnPrismCrossed` |
+| The dimension ladder | `Data/Enums/PrismscapeDimension.cs` — Singleton 0 / Trail 1 / Surface 2 / Volume 3 |
+| The topology classifier | `Controller/Vessel/PrismscapeTopology.cs` — `DimensionOf`, QuerySphere census |
+| The head-reflection fix | `Controller/Vessel/Trail.cs` — `IndexSafetyCheck` non-loop branch |
 | Slip config | `R_VesselActions/Data Containers/UrchinSlipActionSO.cs` → `_SO_Assets/VesselActions/Urchin/UrchinSlipAction.asset` |
 | Slip executor (hull colliders, ghost window) | `R_VesselActions/Executors/UrchinSlipActionExecutor.cs` |
 | Vessel impact container | `_SO_Assets/Effects/Effect Containers/VesselContainers/UrchinImpactorDataContainer.asset` — `[Haptics, Attach, Damage, ElementalDebuffByDanger]` |
 | Element map | `Assets/Resources/ElementalAbilityMaps/Urchin.asset` |
-| Prefab wiring | `_Prefabs/Spacevessels/Urchin.prefab`: `GunVesselTransformer` + `TrailFollower` (+ a vestigial `BlockscapeFollower`) |
+| Prefab wiring | `_Prefabs/Spacevessels/Urchin.prefab`: `GunVesselTransformer` + `TrailFollower` (1D) + `BlockscapeFollower` (2D) |
 
 ## Tuning knobs
 
 | Knob | Where | Value |
 |---|---|---|
-| `FriendlyTerrainSpeed` / `HostileTerrainSpeed` / `DestroyedTerrainSpeed` | `Urchin.prefab` `TrailFollower` | **150 / 10 / 10.** The 15× gap is what Slipstream buys. `BlockscapeFollower` on the same GameObject serializes an identical trio and is now read by nothing — edit the `TrailFollower` one. |
+| `FriendlyTerrainSpeed` / `HostileTerrainSpeed` / `DestroyedTerrainSpeed` | `Urchin.prefab` — `TrailFollower` AND `BlockscapeFollower` | **150 / 10 / 10** on both. The 15× gap is what Slipstream buys. Both trios are now LIVE — the `TrailFollower` one prices the 1D slide, the `BlockscapeFollower` one the 2D roll. Keep them matched unless the roll should price differently. |
 | `growthAmount` | `Urchin.prefab` `GunVesselTransformer` | `ElementalFloat`, element **Mass**, Min 0.6 → Max 1.2, `Value` 1 |
 | `rechargeRate` | `Urchin.prefab` `GunVesselTransformer` | 0.1 ammo/s, **×2** on a shielded prism |
 | `ammoIndex` | `Urchin.prefab` `GunVesselTransformer` | 0 — the same slot the spike volley spends |
-| `throttleDeadband` | `GunVesselTransformer` (C# default **0.05**) | Below this the rider is stationary. Never let it reach 0: `RideTheTrail` divides by `Throttle × speed`. |
-| `throttleZeroPosition` | `GunVesselTransformer` (C# default **0.2**) | Stick centre; throttle is remapped from here to 1 |
-| `reverseLookThreshold` | `GunVesselTransformer` (C# default **−0.6**) | `dot(forward, Course)` past which, on the throttle, the ride reverses |
+| `throttleDeadband` | `GunVesselTransformer` (C# default **0.1**) | Signed throttle below this magnitude parks the rider. Never let it reach 0: `RideTheTrail` divides by `Throttle × speed`, and XDiff idles NEAR its rest, never exactly on it. |
+| `throttleRestPosition` | `GunVesselTransformer` (C# default **0.5**) | The XDiff value that reads as neutral — XDiff RESTS AT 0.5 (`GamepadInputStrategy`). Push above to slide the way the nose points, pull below to slide back. |
 | `ghostSecondsAtRestingTime` / `AtFullTime` | `UrchinSlipAction.asset` | 0.6 → 1.6. `GhostSecondsForLevel` is linear in level, anchored at 0 and 10, **extrapolated** across `[-5, 15]`, floored at 0. |
 | `detachImpulse` | `UrchinSlipAction.asset` | **0** — off. Raise if a detach should visibly leave the ribbon rather than sliding off it. |
 | `armGunsOnAttach` | `VesselAttachPrismEffect.asset` | on |
 | `skipWhileAttached` | `VesselDamagePrismEffect.asset` | **on** — the platform guard. Turning it off restores the 2023 bug for every attaching vessel. |
 
-The three `GunVesselTransformer` fields marked "C# default" are **not serialized on
+The two `GunVesselTransformer` fields marked "C# default" are **not serialized on
 `Urchin.prefab`** — the prefab predates them, so they deserialize to their initializers until it
-is next saved. That is correct behaviour, but it means the inspector will show them only after a
-re-save.
+is next saved. That is correct behaviour (and it is how the round-3 rest-position change reached
+the prefab without a YAML edit), but it means the inspector will show them only after a re-save.
 
 ## Collider budget
 
-**Zero.** The ride adds no colliders and no spatial queries: attaching is two flags, the ride is
-one `Trail.LookAhead` + `Trail.Project` per frame against the trail's own block list, and the
-payoff is direct calls on the prism the rider is standing on. Slip **removes** colliders for the
+**Zero colliders.** The ride adds no colliders: attaching is two flags, the 1D slide is one
+`Trail.LookAhead` + `Trail.Project` per frame against the trail's own block list, and the payoff
+is direct calls on the prism the rider is standing on. Slip **removes** colliders for the
 duration of the ghost (the hull's, temporarily) and adds none.
+
+The 2D roll adds **bounded, event-driven spatial-index reads, never physics**: one
+`PrismSpatialIndex.QuerySphere` census at a non-trail attach (`PrismscapeTopology.DimensionOf`)
+and one per **edge crossing** while rolling (the hop probe). Both are bucket-grid lookups over a
+few blocks' radius against an already-maintained index, allocation-free via shared scratch lists,
+and neither runs on a frame where the rider stays on its face.
 
 The one budget-adjacent effect is indirect and belongs to the ecology rather than to physics:
 `FinalBlockSlideEffects` calls `Prism.Restore()` on a destroyed prism and `Prism.Grow()` on a
@@ -251,21 +345,29 @@ Nothing below can be checked without play mode.
    carry `Collider`s, because `UrchinSlipActionExecutor` collects only the ones that do. With none,
    it warns `found no ShipGeometries` and the slip detaches without phasing out, meaning the vessel
    re-latches on the next prism: exactly the failure the ghost exists to prevent.
-4. **Give the Urchin an ammo resource — STILL OPEN.** `ResourceSystem.Resources` is `[]` and
-   `ammoIndex` is 0, so `SlideActions` throws an `ArgumentOutOfRangeException` **every frame of a
-   ride** (`ResourceSystem.ChangeResourceAmount` indexes without a bounds check). Nothing else
-   about the ride will be observable until this is fixed.
+4. **The ammo resource is authored** (round 2): `ResourceSystem.Resources[0]` on `Urchin.prefab`
+   is the spike/ride meter (gain 0.05, max 1, initial 1). `SlideActions` additionally
+   bounds-guards `ammoIndex` before `ChangeResourceAmount` (which indexes uncheckedly), so a
+   future prefab with the meter removed degrades to "no recharge" rather than a per-frame throw.
 5. **`vesselImpactorDataContainerSO` now points at `UrchinImpactorDataContainer`** — confirm that
    is the container the `VesselImpactor` on the hull actually reads.
 6. **Attach.** Menu_Main freestyle or any Urchin-playable mode. Fly into your own trail: the
    vessel should snap onto the ribbon, the camera should pull in, and the stick should stop
    steering — you follow the trail's curve. **The prism you touched must still be there**; a prism
    that explodes on contact means `skipWhileAttached` is not taking effect.
-7. **Move.** On the throttle, the vessel travels the ribbon. Off the throttle, it holds still.
-   If it attaches and never moves at any throttle, `ReadThrottle` is returning zero — check
-   `throttleZeroPosition` against the stick's actual rest value.
-8. **Reverse.** While riding, look back past ~126° from your course and hold throttle: direction
-   flips and you travel back the way you came.
+7. **Move.** Push the speed axis: the vessel slides the way the nose points along the ribbon.
+   Hands off, it holds still (XDiff rests at 0.5 = zero signed throttle). If it attaches and
+   never moves at any input, first suspect the trail HEAD: ride toward the newest prism — a
+   vessel that freezes exactly there means the `IndexSafetyCheck` reflection regressed to the
+   wrap.
+8. **Reverse.** While riding, pull the speed axis below rest: the vessel slides back the way it
+   came. Push again: forward. No look gesture is involved.
+8b. **Roll a surface.** Fly into a gyroid or Schwarz-P flora prism (or any non-trail shell): the
+   vessel should latch and the console should log `Riding a Surface prismscape`. Steering stays
+   live — you can yaw/pitch/roll while crawling the face. Crossing a box edge folds around it;
+   crossing to an adjacent block hops onto it and pays the payoff (watch the domain convert /
+   grow prism-by-prism as you roll). Rolling off the shell's rim with no neighbour folds around
+   the edge rather than flying free — detach is Slip's job, same as on a trail.
 9. **The payoff runs.** Riding **your own** trail, the prisms you cross should visibly **grow**.
    Riding an **enemy's**, they should change to your domain as you pass. If neither happens but
    you are moving, the transformer resolved `BlockscapeFollower` instead of `TrailFollower`.
@@ -314,19 +416,18 @@ Nothing below can be checked without play mode.
 
 ## Follow-ups
 
-- **The AMMO RESOURCE is the blocking item.** `ResourceSystem.Resources` on `Urchin.prefab` is
-  still `[]` while `ammoIndex` is 0, so `SlideActions` throws an `ArgumentOutOfRangeException`
-  every frame of a ride. Executors, containers, ship geometries and pools all landed on
-  `b3bc963bc`; this did not, and nothing about the ride is observable until it does.
 - **Netcode components are not wired** — no `NetcodeHooks`, `NetworkVesselClientCache`,
   `NetworkVesselImpactor` or `ClientNetworkTransform` on `Urchin.prefab`, so the MPPM steps above
   are blocked on a separate multiplayer-spawn pass rather than failing.
-- **`BlockscapeFollower` is still on `Urchin.prefab` and does nothing.** It is a surface-crawl
-  experiment with no caller now, and it sits on the same GameObject as the `TrailFollower`
-  carrying an identical `FriendlyTerrainSpeed 150 / HostileTerrainSpeed 10 /
-  DestroyedTerrainSpeed 10` trio — so the prefab shows the ride's tuning **twice**, and only one
-  copy is live. That is exactly how the transformer's field got re-pointed in the first place.
-  Either finish the experiment as its own thing or remove the component.
+- **The roll does not orient the hull to the surface.** `BlockscapeFollower` constrains position
+  only; the vessel's up axis is whatever the pilot steers, so rolling the underside of a shell
+  can read as flying upside-down along a floor. A gentle DOTween-style alignment of the hull's up
+  toward the face normal (photons only — never fight the steering inputs) would sell the roll.
+- **`PrismscapeTopology`'s census thresholds are heuristics** (`< 3` neighbours = Singleton,
+  `> 55` = Volume, between = Surface, census radius 3× the prism's largest extent). They were
+  sized from geometry (an r² patch ≈ 28 same-size blocks, an r³ ball ≈ 113), not measured against
+  real gyroid/Schwarz lays. If a flora shell ever classifies as Volume, tune the constants there —
+  do not fork a per-caller classifier.
 - **`percentTowardNextBlock` is not computed on attach** and `direction` always starts `Forward`
   (both carry TODOs in `TrailFollower.Attach`). So latching mid-prism snaps to that prism's start,
   and latching while flying backwards along a ribbon starts you going the wrong way until you use

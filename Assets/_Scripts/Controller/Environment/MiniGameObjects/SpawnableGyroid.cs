@@ -67,7 +67,11 @@ namespace CosmicShore.Gameplay
         {
             if (prism == null || _cachedNodes == null) return;
 
-            var trail = new Trail();
+            // A gyroid is a 2D prismscape - a SHELL, not a ribbon. The Trail here is the
+            // general lay container, and the layer declares the shape it laid so topology
+            // consumers (the Urchin's ride routing) roll ACROSS it rather than sliding along
+            // the lay order.
+            var trail = new Trail { Dimension = PrismscapeDimension.Surface };
             var nodes = _cachedNodes;
 
             // Per-block domain (dangerous blocks recolour), so this routes through the PrismLay
