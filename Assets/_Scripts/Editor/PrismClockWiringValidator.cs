@@ -38,9 +38,11 @@ namespace CosmicShore.Editor
                     "_ColorStartTime", "_ColorDuration",
                     "_StartBrightColor", "_StartDarkColor", "_StartSpread",
                     "_FlightStartTime", "_FlightDuration", "_FlightVelocity",
+                    "_ShieldMorphStartTime", "_ShieldMorphDuration",
+                    "_ShieldMorphDirection", "_ShieldMorphOffset",
                 },
                 OptionalProps = new string[0],
-                Purpose = "grow-in bloom (PrismGrowScale, vertex) + color/state transitions (PrismColorLerp, fragment) + ballistic flight (PrismFlightClock, vertex)",
+                Purpose = "grow-in bloom (PrismGrowScale, vertex) + color/state transitions (PrismColorLerp, fragment) + ballistic flight (PrismFlightClock, vertex) + shield engage/shatter morph (PrismShieldMorph, vertex)",
             },
             new GraphSpec
             {
@@ -55,9 +57,11 @@ namespace CosmicShore.Editor
                     "_ColorStartTime", "_ColorDuration",
                     "_StartBrightColor", "_StartDarkColor", "_StartSpread",
                     "_FlightStartTime", "_FlightDuration", "_FlightVelocity",
+                    "_ShieldMorphStartTime", "_ShieldMorphDuration",
+                    "_ShieldMorphDirection", "_ShieldMorphOffset",
                 },
                 OptionalProps = new string[0],
-                Purpose = "explosion debris flight/shatter/fade (PrismExplosionClock) + transparent live prism bloom/color/flight",
+                Purpose = "explosion debris flight/shatter/fade (PrismExplosionClock) + transparent live prism bloom/color/flight/shield morph",
             },
             new GraphSpec
             {
@@ -140,9 +144,9 @@ namespace CosmicShore.Editor
                 // (a flying prism's pivot is parked at the flight end point, so the
                 // distance-driven spread read full-range for the whole flight).
                 string[] extraFunctions = spec.GraphName == "BlockGraph"
-                    ? new[] { "PrismColorLerp", "PrismFlightClock", "PrismFlightSqrDistance" }
+                    ? new[] { "PrismColorLerp", "PrismFlightClock", "PrismFlightSqrDistance", "PrismShieldMorph" }
                     : spec.GraphName == "ExplodingBlockGraph"
-                        ? new[] { "PrismGrowScale", "PrismColorLerp", "PrismFlightClock" }
+                        ? new[] { "PrismGrowScale", "PrismColorLerp", "PrismFlightClock", "PrismShieldMorph" }
                         : new string[0];
                 foreach (var fn in extraFunctions)
                 {

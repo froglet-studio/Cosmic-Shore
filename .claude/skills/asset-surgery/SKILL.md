@@ -1,6 +1,6 @@
 ---
 name: asset-surgery
-description: Do "editor-only" Unity work programmatically instead of handing the human an in-editor checklist - ShaderGraph node wiring via JSON synthesis, prefab/scene YAML component surgery, SO asset re-authoring, C# verification without a compiler. Use whenever the plan is drifting toward "I'll prepare instructions and you do it in the editor", whenever a task touches .shadergraph/.prefab/.unity/.asset files directly, or when the human says some flavor of "you can do this" / "write a tool for it". The human's editor time is for PLAY TESTING and things that genuinely need the running editor - not for mechanical asset edits you can machine-validate.
+description: Do "editor-only" Unity work programmatically instead of handing the human an in-editor checklist - ShaderGraph node wiring via JSON synthesis, prefab/scene YAML component surgery, SO asset re-authoring, and REAL compilation of the C#/HLSL you are about to commit (mcs + clang are installable here - see 4 and 4.5c; do not settle for inspection). Use whenever the plan is drifting toward "I'll prepare instructions and you do it in the editor", whenever a task touches .shadergraph/.prefab/.unity/.asset files directly, or when the human says some flavor of "you can do this" / "write a tool for it". The human's editor time is for PLAY TESTING and things that genuinely need the running editor - not for mechanical asset edits you can machine-validate.
 ---
 
 # Asset Surgery — do it programmatically, prove it before writing
@@ -595,6 +595,13 @@ SUBS = [(r"\[unroll\]", ""),          # HLSL loop attribute
         (r"\bfloat2\(", "mk2(")]      # vector constructor spelling
 ```
 
+- **Rewrite `out` params to C++ references in the EXTRACT, never with a `#define out`.**
+  An empty `#define out` compiles clean and silently makes every out-param pass by VALUE,
+  so the harness runs, prints, and reports `0.000` for every result — which reads as a
+  logic bug in the shader and sends you debugging correct code. `out float3 X` →
+  `float3 &X` as a substitution on the extracted text (the SUBS list above already has the
+  scalar form; the vector forms need the same). A harness whose output is uniformly the
+  zero value is a harness bug until proven otherwise.
 - **`__attribute__((ext_vector_type(N)))` is the whole trick.** clang's vector types give
   you elementwise arithmetic and *arbitrary swizzles* (`.xyx`, `.yzx`, `.zy`) for free, so
   hash functions written for HLSL compile unmodified. Only the `floatN(a,b)` constructor
@@ -756,6 +763,24 @@ entirely dead.
 
 ## 5. Traps learned the hard way (check these BEFORE debugging for an hour)
 
+- **A SERIALIZED value is not its C# field initializer — and the initializer's output is
+  not what you remember it being.** Retiring a `[SerializeField]` whose default comes from
+  a non-trivial expression (`AnimationCurve.EaseInOut(0,0,1,1)`, `new Gradient{…}`, a
+  computed `Vector3`) means claiming an equivalence, and that claim has TWO halves, both
+  checkable offline and both easy to get wrong:
+  (1) **What does the constructor actually produce?** Do not recall it — find another asset
+  in the repo whose field carries the *same* initializer and read the tangents/keys Unity
+  wrote. (`AnimationCurve.EaseInOut` really is zero-tangent Hermite = `smoothstep`;
+  `SpaceCrystalAnimator.shrinkCurve` on two fauna prefabs proved it in about a minute.)
+  (2) **Which assets serialize the field at all, and are they at that default?** Only
+  objects that were touched in the inspector carry a value; the rest take the initializer
+  at runtime. Here, exactly two of the shield prefabs serialized the curves and *neither*
+  was at the default — someone had dragged the tangents to 2, a fast-slow-fast shape 0.192
+  away from `smoothstep` at its worst, on a prefab live in three multiplayer scenes.
+  Sweep it mechanically: `grep -rl <scriptGuid> Assets --include=*.prefab --include=*.unity`
+  then parse the field block out of each hit. The failure mode is silent and permanent —
+  once the C# field is deleted, Unity drops the orphaned YAML keys on the next save, so the
+  authored deviation disappears with no diff that mentions it.
 - **Renaming a Unity SERIALIZED FIELD must sweep `Tools/**.py` too, not just C# + scenes +
   prefabs.** This repo authors scene/prefab YAML from Python generators
   (`Tools/Build/author_*_assets.py`), and several of them both WRITE and VALIDATE a field by
