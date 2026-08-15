@@ -79,6 +79,42 @@ namespace CosmicShore.Gameplay
         /// </summary>
         internal virtual void NotifyShellContactExit(PrismImpactor prismImpactor) { }
 
+        /// <summary>
+        /// True while <see cref="AcceptImpactee"/> is running for a SWEPT contact — one
+        /// found by querying the segment an object crossed this frame rather than by a
+        /// PhysX trigger overlap at its landing point. Lets a subclass suppress the
+        /// trigger path for a contact class the sweep has taken ownership of, without
+        /// suppressing the sweep's own dispatch of it.
+        /// </summary>
+        protected bool IsSweepDispatch { get; private set; }
+
+        /// <summary>
+        /// Swept-tier entry point, the exact analogue of
+        /// <see cref="AcceptImpacteeFromShellContact"/>: same isInitialized gate, same
+        /// profiler marker, same AcceptImpactee chain, with <see cref="IsSweepDispatch"/>
+        /// raised. A discrete trigger moved by transform writes only ever tests the points
+        /// it lands on; this is how the path BETWEEN them gets to land impacts too.
+        /// </summary>
+        internal void AcceptImpacteeFromSweep(IImpactor impactee)
+        {
+            if (!isInitialized)
+                return;
+
+            EnsureAcceptMarker();
+            using (_acceptMarker.Auto())
+            {
+                IsSweepDispatch = true;
+                try
+                {
+                    AcceptImpactee(impactee);
+                }
+                finally
+                {
+                    IsSweepDispatch = false;
+                }
+            }
+        }
+
         void EnsureAcceptMarker()
         {
             if (_acceptMarkerInit)

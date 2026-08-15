@@ -4,22 +4,47 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Manages a forcefield crackle overlay on the Skimmer's sphere collider.
-    /// Receives impact points from <see cref="SkimmerForcefieldCracklePrismEffectSO"/>
-    /// and feeds them to the crackle shader via MaterialPropertyBlock each frame.
+    /// Manages a forcefield crackle overlay on a skimmer surface. Receives impact
+    /// points (from <see cref="SkimmerForcefieldCracklePrismEffectSO"/> on the sphere
+    /// skimmers, or from <see cref="RhinoSwordFXController"/> on the sword blade) and
+    /// feeds them to the crackle shader via MaterialPropertyBlock each frame.
+    ///
+    /// Two surface parameterizations, matching the two overlay shaders:
+    ///  • SPHERE ("Shader Graphs/ForcefieldCrackle") — impacts stored as unit-sphere
+    ///    DIRECTIONS, the ripple metric is angular (radius 0..1 ≈ point..hemisphere).
+    ///  • CAPSULE ("Shader Graphs/ForcefieldCrackleCapsule", the Rhino blade) — impacts
+    ///    stored as object-space POSITIONS, the ripple metric is WORLD UNITS (radius is
+    ///    the ripple's world-space reach), so arcs ride the blade through swings and
+    ///    stay proportioned on its stretched, growing capsule.
     ///
     /// All visual params live here as serialized fields - tweak them in the
     /// Inspector (edit mode or play mode) and they update live in Scene view.
-    /// The SO only sends impact events (position, duration, intensity, radius).
+    /// The caller only sends impact events (position, duration, intensity, radius).
     /// </summary>
     [ExecuteAlways]
     public class ForcefieldCrackleController : MonoBehaviour
     {
         const int MaxImpacts = 16;
 
+        /// <summary>How impact points map onto the overlay surface — must match the
+        /// overlay material's shader (sphere ↔ ForcefieldCrackle, capsule ↔
+        /// ForcefieldCrackleCapsule).</summary>
+        public enum CrackleSurface
+        {
+            Sphere = 0,
+            Capsule = 1
+        }
+
         [Header("Refs")]
-        [SerializeField, Tooltip("MeshRenderer on the child sphere overlay mesh.")]
+        [SerializeField, Tooltip("MeshRenderer on the child overlay mesh (sphere or capsule).")]
         private MeshRenderer overlayRenderer;
+
+        [Header("Surface")]
+        [SerializeField, Tooltip("Sphere: impacts are unit directions, angular ripple metric. " +
+                                 "Capsule: impacts are object-space positions, world-unit ripple " +
+                                 "metric (the Rhino sword blade — pair with the " +
+                                 "ForcefieldCrackleCapsule shader on the overlay material).")]
+        private CrackleSurface surface = CrackleSurface.Sphere;
 
         [Header("Colors")]
         [SerializeField, Tooltip("Core arc color (hot center of each lightning bolt).")]
@@ -139,17 +164,21 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Register a new impact on the forcefield surface.
+        /// Register a new impact on the forcefield surface. <paramref name="radius"/> is
+        /// angular (0..1) on a Sphere surface, world units (the ripple's reach) on a Capsule.
         /// </summary>
         public void AddImpact(Vector3 worldPoint, float duration, float intensity, float radius)
         {
             _propBlock ??= new MaterialPropertyBlock();
 
             Vector3 localPoint = transform.InverseTransformPoint(worldPoint);
-            Vector3 dir = localPoint.normalized;
+            // Sphere shader parameterizes by unit direction; the capsule shader wants the
+            // object-space POSITION itself (it measures world-unit distances after scaling),
+            // so the point stays glued to the blade through swings and growth.
+            Vector3 stored = surface == CrackleSurface.Sphere ? localPoint.normalized : localPoint;
 
             int slot = _nextSlot;
-            _positions[slot] = new Vector4(dir.x, dir.y, dir.z, 0f);
+            _positions[slot] = new Vector4(stored.x, stored.y, stored.z, 0f);
             _params[slot]    = new Vector4(intensity, radius, duration, 0f);
 
             _nextSlot = (_nextSlot + 1) % MaxImpacts;

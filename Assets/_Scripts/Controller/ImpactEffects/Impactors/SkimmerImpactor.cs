@@ -36,6 +36,15 @@ namespace CosmicShore.Gameplay
 
         // runtime state (moved from Skimmer)
         readonly Dictionary<string, float> _skimStartTimes = new();
+
+        // Prisms currently inside this skimmer's BOX trigger (shell-owned contacts are
+        // tracked by PrismShellContactManager instead). Maintained on enter/exit so the
+        // Rhino energy sword can, on its energize rising edge, re-run its prism effects
+        // against a prism that was already overlapping the blade before it ignited (no
+        // fresh OnTriggerEnter fires for it). Generic + cheap; only the Rhino path calls
+        // ReapplyPrismEffectsToOverlapping.
+        readonly HashSet<PrismImpactor> _overlappingPrisms = new();
+        readonly List<PrismImpactor> _reapplyBuffer = new();
         //private int ActivelySkimmingBlockCount;
         //[HideInInspector]
         public float CombinedWeight; // exposed for effects that need it
@@ -97,6 +106,40 @@ namespace CosmicShore.Gameplay
         void OnDisable()
         {
             PrismShellContactManager.UnregisterProbeOwner(this);
+            // Disabled colliders fire no OnTriggerExit, so the overlap set would go stale.
+            _overlappingPrisms.Clear();
+        }
+
+        /// <summary>
+        /// Re-runs this skimmer's prism effects against every prism currently inside its
+        /// box trigger. The Rhino energy sword calls this on its ENERGIZE rising edge: a
+        /// prism resting against the blade when it ignites sees no fresh OnTriggerEnter,
+        /// so the standing overlap is re-dispatched through the same effect chain (its
+        /// shell-tier counterpart is PrismShellContactManager.RedispatchPairsForOwner).
+        /// Shell-owned prisms are skipped here for exact parity with AcceptImpactee's
+        /// suppression — the shell tier owns those pairs.
+        /// </summary>
+        public void ReapplyPrismEffectsToOverlapping()
+        {
+            if (!isInitialized || _overlappingPrisms.Count == 0) return;
+            var esp = skimmerImpactorDataContainer.SkimmerPrismEffects;
+            if (!DoesEffectExist(esp)) return;
+
+            _reapplyBuffer.Clear();
+            _reapplyBuffer.AddRange(_overlappingPrisms);
+            for (int i = 0; i < _reapplyBuffer.Count; i++)
+            {
+                var prismImpactor = _reapplyBuffer[i];
+                if (!prismImpactor || prismImpactor.Prism == null || prismImpactor.Prism.destroyed)
+                {
+                    _overlappingPrisms.Remove(prismImpactor);
+                    continue;
+                }
+                if (PrismShellContactManager.ShellOwnsContact(prismImpactor.Prism))
+                    continue;
+                foreach (var effect in esp)
+                    effect.Execute(this, prismImpactor);
+            }
         }
 
         void OnTriggerStay(Collider other)
@@ -158,6 +201,12 @@ namespace CosmicShore.Gameplay
 
             if (!other.TryGetComponent<PrismImpactor>(out var prismImpactor)) return;
             var prism = prismImpactor.Prism;
+
+            // The box-overlap set tracks BOX residency only, so a box exit always drops
+            // the entry — even when the shell tier owns the prism's contact semantics
+            // (e.g. a prism shielded mid-overlap), or the record leaks forever.
+            _overlappingPrisms.Remove(prismImpactor);
+
             // Symmetric with the enter-side suppression: while the shell tier owns
             // this prism's contact, exiting the (smaller) box must not tear down
             // the skim bookkeeping the shell contact added - the shell tier's own
@@ -207,6 +256,10 @@ namespace CosmicShore.Gameplay
                     // bare-prism reach, or every shielded hit would double-fire.
                     if (!IsShellDispatch && PrismShellContactManager.ShellOwnsContact(prism))
                         return;
+                    // Track genuine BOX overlaps only (a shell dispatch is not box
+                    // residency; its lifecycle belongs to the shell tier's pair map).
+                    if (!IsShellDispatch)
+                        _overlappingPrisms.Add(prismImpactor);
                     var esp = skimmerImpactorDataContainer.SkimmerPrismEffects;
                     skimmer.ExecuteImpactOnPrism(prism); // secondary call (booster viz, etc.)
                     if (!DoesEffectExist(esp)) return;
@@ -224,6 +277,14 @@ namespace CosmicShore.Gameplay
                     break;
 
                 case ElementalCrystalImpactor elementalCrystalImpactor:
+                    // Mirror the crystal side's collectability guards (ElementalCrystalImpactor.
+                    // AcceptImpactee): a living lifeform's embedded heart enters the trigger but is
+                    // never skim-collectable — without this gate the skimmer's crystal effects
+                    // (e.g. the Rhino sword's crystal burst) would fire on it, repeatedly, since
+                    // the heart's collider never gets disabled by a collection.
+                    var crystal = elementalCrystalImpactor.Crystal;
+                    if (crystal == null || crystal.IsEmbedded || crystal.IsExploding) return;
+
                     var esc = skimmerImpactorDataContainer.SkimmerCrystalEffects;
                     if (!DoesEffectExist(esc)) return;
                     foreach (var effect in esc)

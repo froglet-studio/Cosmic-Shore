@@ -52,18 +52,49 @@ namespace CosmicShore.Gameplay
                     WaitForImpact().Forget();
                     
                     ExecuteEffect(shipImpactee);
+                    RunVesselEffects(shipImpactee);
 
-                    if (DoesEffectExist(omniCrystalShipEffects))
-                    {
-                        CrystalImpactData data = CrystalImpactData.FromCrystal(Crystal);
-                        foreach (var effect in omniCrystalShipEffects)
-                            effect.Execute(shipImpactee, data);
-                    }
-                    
+                    // The collecting pilot must FEEL the pickup on their own machine. Collection
+                    // resolves server-only (above), so for a remote client's vessel every vessel
+                    // effect - the Dolphin's jaw blast, the resource spend, the elemental level -
+                    // ran on the server and nowhere else: that pilot saw the crystal vanish, no
+                    // cone, and a meter that never emptied. Replay them on the owner. The server
+                    // stays the sole authority for collection, respawn and every stat.
+                    ReplayOnRemoteOwner(shipImpactee);
+
                     Crystal.Respawn();
                     break;
                 }
             }
+        }
+
+        /// <summary>
+        /// Runs this crystal's vessel-side effects against one vessel, locally. Split out so the
+        /// owning client can run the identical list on its own machine (see
+        /// <see cref="ReplayOnRemoteOwner"/>) instead of a second, drifting implementation.
+        /// </summary>
+        public void RunVesselEffects(VesselImpactor shipImpactee)
+        {
+            if (!DoesEffectExist(omniCrystalShipEffects)) return;
+
+            CrystalImpactData data = CrystalImpactData.FromCrystal(Crystal);
+            foreach (var effect in omniCrystalShipEffects)
+                effect.Execute(shipImpactee, data);
+        }
+
+        void ReplayOnRemoteOwner(VesselImpactor shipImpactee)
+        {
+            var manager = Crystal.CrystalManager;
+            if (manager == null || !manager.IsSpawned) return;
+
+            var vesselObject = shipImpactee.GetComponentInParent<NetworkObject>();
+            if (vesselObject == null || !vesselObject.IsSpawned) return;
+
+            // Server-owned vessels (the host's own, and every AI) already ran the effects here.
+            if (vesselObject.IsOwner) return;
+
+            manager.ReplayVesselCrystalEffects(Crystal.Id, vesselObject.NetworkObjectId,
+                                               vesselObject.OwnerClientId);
         }
         
         /// <summary>

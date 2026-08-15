@@ -31,6 +31,8 @@ namespace CosmicShore.Gameplay
         {
             base.OnNetworkSpawn();
 
+            RearmGameStartStatsReset();   // fresh scene = fresh game
+
             LoadInsights.Mark($"Game controller spawned ({GetType().Name}, IsServer={IsServer})");
 
             if (IsServer)
@@ -39,6 +41,11 @@ namespace CosmicShore.Gameplay
                 gameData.OnSessionStarted.OnRaised += SubscribeToSessionEvents;
 
                 StampMatchEnvelope();
+
+                // The server IS the authority, so its config is synced by definition. Set before
+                // the broadcast: Cell.AssignConfig gates its (sticky) IntensityWise choice on this
+                // flag, and on the host that choice can happen at any point after this frame.
+                gameData.GameConfigSynced = true;
 
                 // Sync game config to all clients now that we're in the game scene.
                 // Previously this was done by SceneLoader via ClientRpc before scene load,
@@ -207,6 +214,20 @@ namespace CosmicShore.Gameplay
         [ClientRpc]
         void OnCountdownTimerEnded_ClientRpc()
         {
+            // THE GAME STARTS HERE, so the score starts here. Zero every player's stats before
+            // the first turn begins: StatsManager has no turn gate, so it has been recording
+            // since the scene's network spawn - through the arena build, the vessel spawns and
+            // the countdown. Without this a match could start with players already above zero.
+            //
+            // Once per GAME, not per turn: modes with several turns per round accumulate across
+            // them deliberately, and wiping at every countdown would erase earlier turns.
+            //
+            // Runs on every peer (this is the ClientRpc, not the server-only branch above) so a
+            // client's local mirror is cleared too - the server's replicated zero only fires
+            // OnValueChanged when the value actually changes, so it cannot fix a client that
+            // drifted on its own.
+            ZeroStatsForGameStartOnce();
+
             gameData.SetPlayersActive();
             gameData.StartTurn();
             EnsureLocalHumanCanMove();
@@ -345,6 +366,9 @@ namespace CosmicShore.Gameplay
 
         protected override void OnResetForReplay()
         {
+            // A replay is a new GAME: re-arm the game-start zeroing so the next countdown
+            // clears whatever the finished match left behind.
+            RearmGameStartStatsReset();
         }
 
         /// <summary>
@@ -553,6 +577,12 @@ namespace CosmicShore.Gameplay
             LoadInsights.SetGameContext(
                 sceneName, ((GameModes)gameMode).ToString(), intensity, playerCount,
                 Mathf.Max(0, playerCount - aiBackfillCount), aiBackfillCount, isMultiplayer);
+
+            // LAST: everything above is now authoritative on this client. Cell.AssignConfig
+            // refuses to make its sticky IntensityWise choice until this is true, because the
+            // intensity it reads arrives in this very RPC and a cell that latched before it would
+            // build a different arena than the host for the whole match.
+            gameData.GameConfigSynced = true;
         }
     }
 }

@@ -77,11 +77,22 @@ REACTOR_GAP_HI = 1.92
 # The four shipped intensities. Structure counts are the intensity dial; the arena RADIUS
 # deliberately never changes (see the C# summary for why).
 #   (density, hulks, spires, frames, overpasses)
+#
+# SPREAD, not shape. All four fly the same Boneyard - the playtest read was that the ARENA is
+# right and the LEVELS were too close together (intensity 1 -> 4 spanned only 1.9x, so picking a
+# level barely changed the match). The ladder below spans 3.1x on the same recipe: intensity 1 is
+# a genuinely open field where a fleeing Sparrow has few places to break line of sight, and
+# intensity 4 is a dense wreck maze. Intensity 2 is left EXACTLY where it was, so the level the
+# arena was tuned at is untouched and the others move around it.
+#
+# The top end stays well inside what this mode can afford: ~34k prisms is the same order as the
+# freestyle cell environments (34-41k), not the ~69k of Scurry's Atlantis, and Dog Fight adds
+# four Sparrows' projectile + AOE traffic on top of whatever the arena costs.
 INTENSITIES = [
-    (0.75, 6, 9, 4, 3),
-    (0.90, 8, 12, 5, 4),
-    (1.05, 10, 15, 6, 5),
-    (1.20, 13, 19, 8, 7),
+    (0.55,  4,  6,  3,  2),
+    (0.90,  8, 12,  5,  4),
+    (1.30, 13, 19,  8,  7),
+    (1.75, 19, 27, 11, 10),
 ]
 
 SEED = 41  # SpawnableBoneyard.DefaultSeed

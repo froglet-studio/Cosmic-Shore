@@ -43,6 +43,23 @@ run the `/reorient` skill first and act on its verdict before shipping.
   same new **doc section number** (both took `§4.6`) merges clean per-hunk and produces a
   document with two of them. When you renumber, renumber every inbound reference — and
   only YOURS: grep the whole repo, then split the hits by which section they mean.
+  **The same collision happens WITHOUT a second branch, against the document's own past** —
+  a migration-tracker row id (`C6`), a bug id (`B10`), a test id. You pick the "next" id by
+  reading the last row, and the last row is not the highest: `PRISM_ANIMATION.md`'s tracker
+  runs C1…C13b with C6 sitting mid-table. Grep for the id you intend to claim BEFORE writing
+  it into code comments, doc prose, tool docstrings and commit messages — by the time you
+  notice, it is spread across a dozen files and the fix is a sweep, not an edit.
+- **A parallel branch may have fixed the SAME root cause while you worked.** Read the base
+  branch's new commits by subject before you resolve anything — this is not a merge
+  conflict, it is a design collision, and git will happily interleave two fixes for one
+  bug into a tree that carries both. When it happens: pick ONE implementation on merit and
+  take it **wholesale** (`git checkout --theirs <file>`), then delete the machinery yours
+  needed and theirs does not — a half-merged pair of fixes is worse than either. Then
+  **re-scope your docs to what is still genuinely yours**: your section was written when
+  you owned the whole story, and left as-is the repo ends up with two competing narratives
+  of one bug. Reference theirs rather than restating it, and keep only the part they do
+  not cover. Expect this whenever the base branch touched the same files — check with
+  `git log --oneline <merge-base>..origin/<base> -- <your changed files>`.
 - Restate, in a few sentences, WHAT the branch delivers and WHY. If you can't, you are
   not ready to ship — go re-read the diff.
 
@@ -58,6 +75,17 @@ Walk every changed file against these gates:
   migrated? Renamed/deleted assets - every GUID reference updated?
 - **Verification honesty**: list what was actually verified (in-editor play, tests) vs.
   what only compiles-by-inspection. Unverified risk goes in the PR body, not under the rug.
+- **A doc that asserts a consequence is not evidence the consequence happens — find the
+  PRODUCER.** When a doc (or a verification step, or CLAUDE.md) says "X still lands", "contact
+  costs Y", or "the gate leaves Z alone", grep for who actually *calls* the thing that produces
+  X/Y/Z for that vessel/mode/path. A passthrough that is genuinely correct — the gate really
+  does leave the channel alone — reads as verified even when nothing upstream is pushing
+  anything through it, so the claim survives review indefinitely. Four such claims shipped
+  across three docs plus CLAUDE.md describing a prism-collision slow on vessels that had no
+  slow effect wired at all. The same shape hides behind NAMES: a serialized field called
+  `vesselSlowedByRhinoDangerPrismEvent` under a `"Slow Viewer Integration"` header belonged to
+  an effect that only muted an input. Treat "the docs say so" and "the identifier says so" as
+  hypotheses to check, never as the check.
 
 ## 2.5 Tool-output gate — NEVER SKIPPED, IN EVERY MODE
 
