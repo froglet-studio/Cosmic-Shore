@@ -450,6 +450,72 @@ Astro League track for super-shields (`SegmentSpawner.SuperShieldSpawnedPrisms`)
    note that Unity will drop those now-orphaned YAML keys the next time either prefab is
    saved.
 
+## Phase 10 — Super-shield deflection jiggle (C14) — WIRED PROGRAMMATICALLY, **FIRST PLAYTEST PASSED**
+
+> **2026-08-15:** confirmed in-editor — both graphs import clean (nothing magenta), and the
+> deflection reads on vessel impact. Skimmer impact correctly produces none (step 6). The
+> steps below stay as the regression checklist; steps 2, 3 and 5 have not been
+> specifically exercised yet.
+
+A super-shielded prism that is HIT but not destroyed now wobbles and settles instead of
+absorbing the hit in total silence. Design + rationale: `Docs/PRISM_ANIMATION.md §4.9`.
+
+**Nothing here needs hand-wiring in the editor.** The graph surgery is
+`Tools/Shaders/wire_prism_jiggle_clock.py` (idempotent — re-running prints "already wired"),
+and the properties alone can be repaired from
+`FrogletTools > Ecology > Prism Animation > Auto-Wire Clock Properties`.
+
+**Gates that already pass** (all asset-only, no play mode):
+
+- `python3 Tools/Shaders/wire_prism_jiggle_clock.py --check` — re-validates the whole graph
+  model plus the splice topology on both graphs.
+- `FrogletTools > Ecology > Prism Animation > **Validate Clock Wiring**` — the three
+  `_Jiggle*` properties (exposed + Hybrid Per Instance) and the `PrismJiggleClock` node are
+  in its required set for BlockGraph and ExplodingBlockGraph.
+- `PrismSuperShieldJiggleTests` (edit-mode) — the CPU↔GPU count-match (graph property ⟷
+  `[MaterialProperty]` component ⟷ prototype registration), pool hygiene via
+  `ClearPrismStamps`, and the config's amplitude clamp/monotonicity.
+
+**What only a human can answer — the playtest.** Any scene with super-shielded mass; the
+fastest is the Skim Race / Astro League track lining, or `SegmentSpawner`'s super-shielded
+segments. Shoot or ram a super-shielded prism and watch:
+
+1. **It visibly wobbles and settles** — roughly two oscillations over ~0.55 s, spike tips
+   moving much further than the core, and each face going its own way rather than the whole
+   prism tipping as one rigid block.
+2. **It does not drift, grow, or end up rotated.** The wobble must return to *exactly* the
+   resting pose. Any permanent offset means the envelope is not reaching zero.
+3. **Sustained fire still reads as wobbling, not frozen.** Hold full-auto on one prism: the
+   spam gate (`minSecondsBetweenStamps`, default 0.12 s) is what stops each new hit
+   restarting the envelope before it can move. If it looks locked mid-tilt, raise it.
+4. **Nothing else changed.** The prism is still invulnerable, still skims, still blocks the
+   blast. Ordinary (non-super-shielded) prisms must be visually identical to before.
+5. **Neighbours are not in lockstep.** A blast that touches several super-shielded prisms
+   should make them wobble out of phase with each other.
+6. **Skimming never deflects, on any vessel.** Confirmed by playtest 2026-08-15 (jiggle on
+   vessel impact, none on skimmer impact — both as desired), and still true after the energy
+   sword merge. Four of five skimmer containers carry no prism-damage effect at all; the fifth
+   (Rhino forcefield) carries `RhinoSkimmerDamagePrismEffectSO`, which pops or bounces
+   super-shielded mass in its own branch and returns before `Damage`. If you ever want a skim
+   to deflect, that is a container/effect change on that vessel — not a change here.
+
+**Tuning** — `Resources/PrismSuperShieldJiggleConfig`:
+
+| Field | Default | What it does |
+|---|---|---|
+| `duration` | `0.55` | Length of one deflection. The envelope hits exactly zero here. |
+| `minTiltDegrees` / `maxTiltDegrees` | `2.5` / `6.5` | Peak face tilt for the weakest / hardest hit. Small numbers — the pivot is the prism origin, so a few degrees is a lot of motion at a stella tip. |
+| `referenceImpactSpeed` | `120` | Impact speed (u/s) at which the tilt reaches its ceiling. |
+| `precessionDegreesPerSecond` | `1260` | How fast the tip direction revolves. |
+| `nutationDegreesPerSecond` | `1776` | How fast the tilt magnitude breathes. Keep it non-commensurate with the precession rate or the wobble repeats and reads as a mechanical buzz. |
+| `minSecondsBetweenStamps` | `0.12` | Per-prism spam gate (see playtest step 3). |
+| `enabled` | `on` | Off costs exactly what the feature cost before it existed. |
+
+**If nothing wobbles at all**, check in this order: the config asset's `enabled`; that the
+prism really is super-shielded (`PrismStateManager.CurrentState == SuperShielded`, not merely
+`Shielded`); then `--check` above. A `[PrismClock] STRICT MODE` error in the console naming
+`_JiggleStartTime` means the graph wiring is gone — re-run the wiring tool.
+
 ## Troubleshooting
 
 | Symptom | Cause | Fix |

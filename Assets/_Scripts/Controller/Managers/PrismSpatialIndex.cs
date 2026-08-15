@@ -2233,8 +2233,16 @@ namespace CosmicShore.Gameplay
             // stops the explosion expanding past this layer) but cause no
             // damage and no state change. Ways to break super-shields will
             // be added later as targeted opt-in mechanics.
+            //
+            // The blast is not silent, though: the shared gate stamps the
+            // deflection wobble (Prism.AbsorbSuperShieldHit), so the shield
+            // visibly rocks instead of the explosion stopping dead against
+            // nothing. Magnitude is Speed x Inertia — the impact vector's
+            // length, without building the vector or taking its root.
+            // Photons only; every gameplay consequence below is still skipped.
             if ((flags & PrismFlags.IsSuperShielded) != 0)
             {
+                prism.AbsorbSuperShieldHit(impulse.Speed * impulse.Inertia);
                 shouldContinue = false;
                 return false;
             }

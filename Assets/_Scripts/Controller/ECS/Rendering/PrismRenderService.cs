@@ -443,6 +443,9 @@ namespace CosmicShore.ECS
                         em.AddComponentData(prototype, new PrismShieldMorphDurationOverride { Value = 0f });
                         em.AddComponentData(prototype, new PrismShieldMorphDirectionOverride { Value = ShieldMorphBloom });
                         em.AddComponentData(prototype, new PrismShieldMorphOffsetOverride { Value = 0f });
+                        em.AddComponentData(prototype, new PrismJiggleStartTimeOverride { Value = 0f });
+                        em.AddComponentData(prototype, new PrismJiggleDurationOverride { Value = 0f });
+                        em.AddComponentData(prototype, new PrismJiggleParamsOverride { Value = float3.zero });
                         break;
                     case PrismRenderOverrideSet.Explosion:
                         em.AddComponentData(prototype, new PrismExplodeStartTimeOverride { Value = 0f });
@@ -824,6 +827,46 @@ namespace CosmicShore.ECS
             em.SetComponentData(handle.Entity, new PrismShieldMorphOffsetOverride { Value = 0f });
         }
 
+        /// <summary>
+        /// Stamps a super-shield DEFLECTION: a super-shielded prism absorbed a hit without
+        /// being destroyed, and every face wobbles about the prism's object origin on a
+        /// precessing, nutating axis before settling (Docs/PRISM_ANIMATION.md §5 C14).
+        ///
+        /// params_ is (peak tilt RADIANS, precession rad/s, nutation rad/s). Nothing about
+        /// gameplay changes — super-shielded mass stays invulnerable; this is photons only.
+        ///
+        /// Re-stamping supersedes an in-flight wobble (interruption = re-stamp, §1): the
+        /// visual is analytic, so a second hit simply restarts the envelope.
+        ///
+        /// Expand RenderBounds by the rotation's envelope after stamping, or a wobbling
+        /// prism frustum-culls against its resting box.
+        /// </summary>
+        public static bool StampJiggle(in PrismRenderHandle handle, float startTime, float duration,
+            in float3 params_)
+        {
+            if (!ClockAnimationEnabled || !IsUsable(in handle)) return false;
+            var em = _world.EntityManager;
+            if (!em.HasComponent<PrismJiggleStartTimeOverride>(handle.Entity)) return false;
+            em.SetComponentData(handle.Entity, new PrismJiggleStartTimeOverride { Value = startTime });
+            em.SetComponentData(handle.Entity, new PrismJiggleDurationOverride { Value = duration });
+            em.SetComponentData(handle.Entity, new PrismJiggleParamsOverride { Value = params_ });
+            return true;
+        }
+
+        /// <summary>Settles the jiggle stamp. Invisible when called at the scheduled end —
+        /// the shader's envelope is already exactly zero there (verified against the shipped
+        /// HLSL), so this only stops the GPU evaluating a finished wobble and keeps a pooled
+        /// reuse from inheriting one.</summary>
+        public static void ClearJiggleStamp(in PrismRenderHandle handle)
+        {
+            if (!IsUsable(in handle)) return;
+            var em = _world.EntityManager;
+            if (!em.HasComponent<PrismJiggleStartTimeOverride>(handle.Entity)) return;
+            em.SetComponentData(handle.Entity, new PrismJiggleStartTimeOverride { Value = 0f });
+            em.SetComponentData(handle.Entity, new PrismJiggleDurationOverride { Value = 0f });
+            em.SetComponentData(handle.Entity, new PrismJiggleParamsOverride { Value = float3.zero });
+        }
+
         /// <summary>Clears a prism's animation stamps back to the settled state (pool
         /// reuse). Safe no-op when the clock components are absent.</summary>
         public static void ClearPrismStamps(in PrismRenderHandle handle)
@@ -832,6 +875,7 @@ namespace CosmicShore.ECS
             ClearColorTransitionStamp(in handle);
             ClearFlightStamp(in handle);
             ClearShieldMorphStamp(in handle);
+            ClearJiggleStamp(in handle);
         }
 
         /// <summary>Stamps an explosion's flight: offset/amount/opacity become pure
