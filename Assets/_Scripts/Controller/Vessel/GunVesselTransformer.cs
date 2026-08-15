@@ -183,6 +183,14 @@ namespace CosmicShore.Gameplay
             var rs = VesselStatus.ResourceSystem;
             if (rs == null || !trailFollower.AttachedPrism) return;
 
+            // ResourceSystem.ChangeResourceAmount indexes its list WITHOUT a bounds check, and
+            // this runs every frame of a ride - so a vessel whose Resources list is short (or,
+            // as the Urchin's prefab shipped for years, empty) throws an
+            // ArgumentOutOfRangeException on every single frame the pilot is attached. Guard
+            // here rather than in ResourceSystem: the meter being absent is an authoring gap
+            // on one prefab, not a condition the shared resource layer should start tolerating.
+            if (rs.Resources == null || ammoIndex < 0 || ammoIndex >= rs.Resources.Count) return;
+
             // Riding recharges ammo, and a SHIELDED prism pays double - the reward for having
             // reinforced your own trail before riding it.
             float rate = trailFollower.AttachedPrism.prismProperties.IsShielded

@@ -2659,7 +2659,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 737294a573670f74389a7af68df314d5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Resources: []
+  Resources:
+  - Name: Ammo
+    initialResourceGainRate: 0.05
+    resourceGainRate: 0.05
+    maxAmount: 1
+    initialAmount: 1
   ChargeTestHarness: 0
   MassTestHarness: 0
   SpaceTestHarness: 0

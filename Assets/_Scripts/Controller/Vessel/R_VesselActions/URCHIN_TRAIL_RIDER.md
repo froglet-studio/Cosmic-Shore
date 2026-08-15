@@ -209,7 +209,7 @@ restore the previous pilot's colliders onto the new one at an arbitrary moment.
 
 | Knob | Where | Value |
 |---|---|---|
-| `FriendlyTerrainSpeed` / `HostileTerrainSpeed` / `DestroyedTerrainSpeed` | `Urchin.prefab` `TrailFollower` | **150 / 10 / 10.** The 15× gap is what Slipstream buys. Note two `TrailFollower`-shaped component blocks on the prefab carry these values; confirm which one `GetComponent` resolves. |
+| `FriendlyTerrainSpeed` / `HostileTerrainSpeed` / `DestroyedTerrainSpeed` | `Urchin.prefab` `TrailFollower` | **150 / 10 / 10.** The 15× gap is what Slipstream buys. `BlockscapeFollower` on the same GameObject serializes an identical trio and is now read by nothing — edit the `TrailFollower` one. |
 | `growthAmount` | `Urchin.prefab` `GunVesselTransformer` | `ElementalFloat`, element **Mass**, Min 0.6 → Max 1.2, `Value` 1 |
 | `rechargeRate` | `Urchin.prefab` `GunVesselTransformer` | 0.1 ammo/s, **×2** on a shielded prism |
 | `ammoIndex` | `Urchin.prefab` `GunVesselTransformer` | 0 — the same slot the spike volley spends |
@@ -243,20 +243,20 @@ total. Mass is conserved by both — nothing is created from nothing and nothing
 Nothing below can be checked without play mode.
 
 1. **Project compiles with zero errors.**
-2. **Wire the vessel.** `Urchin.prefab` currently has
-   `R_VesselActionHandler._executors: {fileID: 0}` and `_inputEventShipActions: []`. Add an
-   `ActionExecutorRegistry` carrying `UrchinSlipActionExecutor` and bind
-   `Button2Action(7)` → `UrchinSlipAction.asset`. Trail Rider needs **no** binding (it is
-   passive) — but it does need step 3.
-3. **Populate `VesselCustomization._shipGeometries`.** It is `[]` on `Urchin.prefab`, so
-   `UrchinSlipActionExecutor.Initialize` will warn `found no ShipGeometries` and the slip will
-   detach without phasing out — meaning the vessel re-latches on the next prism, which is exactly
-   the failure the ghost exists to prevent.
-4. **Give the Urchin an ammo resource.** `ResourceSystem.Resources` is `[]` and `ammoIndex` is 0,
-   so `SlideActions` will throw an `ArgumentOutOfRangeException` **every frame of a ride**
-   (`ResourceSystem.ChangeResourceAmount` indexes without a bounds check).
-5. **Point the vessel's impactor at `UrchinImpactorDataContainer`** and confirm the container is
-   the one the `VesselImpactor` on the hull actually reads.
+2. **Confirm the vessel wiring imported.** `Urchin.prefab` now carries an
+   `ActionExecutorRegistry` on `R_VesselActionHandler._executors` and binds `Button2Action(7)` →
+   `UrchinSlipAction.asset`. Trail Rider is correctly **unbound** — it is passive. The prefab was
+   edited as YAML outside the editor, so check for missing scripts and unassigned references.
+3. **`VesselCustomization._shipGeometries` now has 13 entries** — confirm those objects actually
+   carry `Collider`s, because `UrchinSlipActionExecutor` collects only the ones that do. With none,
+   it warns `found no ShipGeometries` and the slip detaches without phasing out, meaning the vessel
+   re-latches on the next prism: exactly the failure the ghost exists to prevent.
+4. **Give the Urchin an ammo resource — STILL OPEN.** `ResourceSystem.Resources` is `[]` and
+   `ammoIndex` is 0, so `SlideActions` throws an `ArgumentOutOfRangeException` **every frame of a
+   ride** (`ResourceSystem.ChangeResourceAmount` indexes without a bounds check). Nothing else
+   about the ride will be observable until this is fixed.
+5. **`vesselImpactorDataContainerSO` now points at `UrchinImpactorDataContainer`** — confirm that
+   is the container the `VesselImpactor` on the hull actually reads.
 6. **Attach.** Menu_Main freestyle or any Urchin-playable mode. Fly into your own trail: the
    vessel should snap onto the ribbon, the camera should pull in, and the stick should stop
    steering — you follow the trail's curve. **The prism you touched must still be there**; a prism
@@ -314,13 +314,19 @@ Nothing below can be checked without play mode.
 
 ## Follow-ups
 
+- **The AMMO RESOURCE is the blocking item.** `ResourceSystem.Resources` on `Urchin.prefab` is
+  still `[]` while `ammoIndex` is 0, so `SlideActions` throws an `ArgumentOutOfRangeException`
+  every frame of a ride. Executors, containers, ship geometries and pools all landed on
+  `b3bc963bc`; this did not, and nothing about the ride is observable until it does.
+- **Netcode components are not wired** — no `NetcodeHooks`, `NetworkVesselClientCache`,
+  `NetworkVesselImpactor` or `ClientNetworkTransform` on `Urchin.prefab`, so the MPPM steps above
+  are blocked on a separate multiplayer-spawn pass rather than failing.
 - **`BlockscapeFollower` is still on `Urchin.prefab` and does nothing.** It is a surface-crawl
-  experiment with no caller now. Either finish it as its own thing or remove the component from
-  the prefab — a live component that looks like the ride kernel is exactly how the field got
-  re-pointed in the first place.
-- **Two `TrailFollower` component blocks appear on `Urchin.prefab`** with identical serialized
-  speeds. `GetComponent<TrailFollower>()` returns whichever Unity orders first. Delete the
-  duplicate.
+  experiment with no caller now, and it sits on the same GameObject as the `TrailFollower`
+  carrying an identical `FriendlyTerrainSpeed 150 / HostileTerrainSpeed 10 /
+  DestroyedTerrainSpeed 10` trio — so the prefab shows the ride's tuning **twice**, and only one
+  copy is live. That is exactly how the transformer's field got re-pointed in the first place.
+  Either finish the experiment as its own thing or remove the component.
 - **`percentTowardNextBlock` is not computed on attach** and `direction` always starts `Forward`
   (both carry TODOs in `TrailFollower.Attach`). So latching mid-prism snaps to that prism's start,
   and latching while flying backwards along a ribbon starts you going the wrong way until you use
@@ -331,9 +337,11 @@ Nothing below can be checked without play mode.
   shared collision read (`speedModifierDuration 1`, `massScaling 0.1`, `maxSlowStrength 0.5`,
   `dangerSlowMultiplier 3`, `dangerSlowDurationMultiplier 3`). Adding it must be checked against
   the ride: a slow applied while attached is meaningless, since `Slide` owns the speed.
-- **Ghost duration has no edit-mode test.** `UrchinSlipActionSO.GhostSecondsForLevel` was pulled
-  out as a pure static function to be testable and nothing tests it. Test files live under an
-  `Editor/` folder (see `CLAUDE.md`).
+- **Edit-mode coverage is narrow.** `_Scripts/Tests/Editor/UrchinChainReactionTests.cs` pins
+  `UrchinSlipActionSO.GhostSecondsForLevel`'s non-negativity (a negative window would skip the
+  intangibility and re-latch the vessel onto the trail it just left — the ability doing the
+  opposite of its purpose). Nothing covers the attach guard, the ride kernel or
+  `FinalBlockSlideEffects`.
 - **No audio.** The attach, the ride loop, the steal-as-you-pass and the slip each want their own
   inspector-exposed `EventReference` on the component that makes the noise, shipped **empty**.
   The ride in particular is a continuous sound and wants a `StudioEventEmitter` or a small

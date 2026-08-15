@@ -189,7 +189,7 @@ ability a private copy of the other's dial.
 | Repeat | while held, `firingRate` 3/s | one-shot per press, `firingRate` 1/s |
 | Ammo | 0.15 per volley | **free** (0) |
 | Muzzle speed | 60 × SPACE multiplier | 40 × SPACE multiplier |
-| Depth at Charge 0 → 10 | 1 → 3 | 0 → 1 |
+| Depth at Charge 0 → 10 | **1 → 2** | 0 → 1 |
 | L5 | SPACE "Deep Cascade" — `ChainRangeFalloff` becomes 1 | CHARGE "Overcharge" — `chainsOnChargeUpgrade` floors depth at 1 |
 
 The barrage is free and is paid for by its **shallower cascade**; Overcharge is what turns it from
@@ -219,6 +219,13 @@ The fire loop pays off **seconds owed** in whole volleys rather than running a
 `MaxVolleysPerTick` (4) is dropped rather than carried, for the same reason brake 3 drops rather
 than queues.
 
+**Running dry does not end the hold.** `FireOnce` returning false breaks the volley and leaves the
+loop running, so fire resumes on its own as the ammo meter recovers. Ending the loop there (which
+it did briefly) forces the pilot to release and re-press to resume — a gun that reads as *jammed*
+rather than *empty*, which is exactly wrong for a vessel whose ammo refills while it flies and
+refills twice as fast while it rides a trail. A **destroyed gun** is fatal to the hold and is
+checked once per tick, so the two cases are not conflated into one early return.
+
 ## Files
 
 | Role | File |
@@ -234,7 +241,9 @@ than queues.
 | Ability config (both abilities) | `R_VesselActions/Data Containers/UrchinSpikeActionSO.cs` → `_SO_Assets/VesselActions/Urchin/UrchinSpikeVolleyAction.asset`, `UrchinSpikeBarrageAction.asset` |
 | Executor (all per-vessel state) | `R_VesselActions/Executors/UrchinSpikeActionExecutor.cs` |
 | Element map | `Assets/Resources/ElementalAbilityMaps/Urchin.asset` |
-| Spike prefabs (pool tiers) | `_Prefabs/Environment/SpikeProjectile.prefab` (`energy 0`, speed 40) · `EnergizedSpikeProjectile.prefab` (1, 60) · `SuperEnergizedSpikeProjectile.prefab` (2, 80) · `RecursiveSpikeProjectile.prefab` (0, 40) |
+| Spike prefabs (pool tiers) — **the live ones** | `_Prefabs/Projectile/UrchinSpikeProjectile.prefab` (`energy 0`, speed 40) · `UrchinSpikeProjectileEnergized.prefab` (1) · `UrchinSpikeProjectileSuperEnergized.prefab` (2). Fully wired: trigger SphereCollider (r 0.25) + `Rigidbody` + `Projectile` + `ProjectileImpactor` → `UrchinSpikeProjectileImpactContainer` + `ImpactCollider` + `LoadedGun`. |
+| Spike prefabs — **the 2023 originals, historical only** | `_Prefabs/Environment/SpikeProjectile.prefab` (`energy 0`, speed 40) · `EnergizedSpikeProjectile.prefab` (1, 60) · `SuperEnergizedSpikeProjectile.prefab` (2, 80) · `RecursiveSpikeProjectile.prefab` (0, 40). No collider, no impactor; three still carry the orphaned `[Stop, Steal, Fire]` YAML. Nothing points at them. |
+| Spike pools (per-vessel) | `_Prefabs/Spacevessels/Urchin.prefab` — a `ProjectileFactory` + three `ProjectilePoolManager`s, `maxSize` 400 / 160 / 48 |
 | Asset generator (idempotent, key-validating) | `Tools/Build/author_urchin_assets.py` |
 
 ## Tuning knobs
@@ -243,8 +252,8 @@ than queues.
 |---|---|---|
 | `dwellSeconds` / `fadeSeconds` | `ProjectileEmbedPrismEffect.asset` | 1.25 / 0.35 — pure look; the steal and the volley have both already happened. `fadeSeconds` must stay above 0 (continuity of existence). |
 | `requireDomainChange` | `ProjectileChainFirePrismEffect.asset` | 1 — off makes shielded mass cost the cascade a generation for no territory |
-| `VolleysPerFrame` | `ChainReactionBudget` (static, code) | **6**, global across all cascades. Raise for reach, lower for frame cost. |
-| `generationsAtRestingCharge` / `generationsAtFullCharge` | the two spike action assets | volley 1 → 3 · barrage 0 → 1. `GenerationsForLevel` is linear in level, anchored at 0 and 10, extrapolated across the element system's `[-5, 15]` band, then clamped to **[0, 4]** — the range the pool tiers and the frame budget are sized for. |
+| `VolleysPerFrame` | `ChainReactionBudget` (static, code) | **4**, global across all cascades. At the shipped depth of 2 a volley is 10 spikes, so one frame's chain contribution is bounded at **40** live trigger colliders. Raise for reach, lower for frame cost. |
+| `generationsAtRestingCharge` / `generationsAtFullCharge` | the two spike action assets | volley **1 → 2** · barrage 0 → 1. Depths 3 and 4 are fully supported by the SO and deliberately **unshipped** — see the collider budget below. `GenerationsForLevel` is linear in level, anchored at 0 and 10, extrapolated across the element system's `[-5, 15]` band, then clamped to **[0, 4]** — the range the pool tiers and the frame budget are sized for. |
 | `generationRangeFalloff` | both spike action assets | 0.75. Clamped `[0.05, 1]` by `SetChainRangeFalloff`. 1 = the SPACE-5 upgrade. |
 | `chainsOnChargeUpgrade` | barrage asset only | 1 — the CHARGE-5 floor of one generation |
 | `ammoCost` / `firingRate` | the two spike action assets | 0.15 @ 3/s · 0 @ 1/s |
@@ -269,26 +278,34 @@ The cascade's fan-out is the whole of the budget question. A spike at depth `g` 
 | 1 | 8 | — | — | 8 |
 | 2 | 10 | 8 each | — | 90 |
 | 3 | 12 | 10 each | 8 each | 1,092 |
-| 4 (clamp ceiling) | 14 | 12 each | 10 each → 8 each | 13,455 |
+| 4 (clamp ceiling) | 14 | 12 each | 10 each → 8 each | 15,302 |
 
 Those are **worst cases in the sense of "every child lands on hostile mass"**, which brake 1
 makes nearly unreachable: each generation converts what it hits, so the next generation is fired
-into ground that already wears its own domain. The shipped ceiling is depth 3 (volley at Charge
-10), and depth 4 is only reachable by the `[0, 4]` clamp, not by any authored pair.
+into ground that already wears its own domain.
+
+**The shipped ceiling is depth 2** (the volley at Charge 10). Depth 3 was authored first and is
+indefensible against a per-cell collider budget already sitting at 3–4k against a 1,500 target:
+one seeded hit is 1,092 spikes in the worst case. Depths 3 and 4 remain supported by the SO and
+deliberately unshipped. Real counts run far below the worst case, because a converted prism stops
+accepting spikes — but a budget has to survive the worst case, not the average one.
 
 The real bound on *concurrent* colliders is the product of three independent limits, and it is
 worth knowing which one is doing the work when the cascade feels wrong:
 
-- **Brake 3** caps volleys at 6/frame globally. At depth 3 that is at most 72 spikes spawned in
-  one frame across every Urchin in the match.
+- **Brake 3** caps volleys at **4/frame** globally. At the shipped depth of 2 a volley is 10
+  spikes, so one frame's chain contribution is bounded at **40** colliders across every Urchin in
+  the match.
 - **Pool depth** caps live spikes outright (`GenericPoolManager.maxSize` on each tier's
   `ProjectilePoolManager`). A cascade that exhausts a tier stops on a factory miss, which is a
   *hard* stop and not a graceful one.
 - **`projectileTime` 2 s** is how long each collider lives.
 
-The Urchin's spike pools are **not yet authored** (see Follow-ups) — pool sizing is the first
-number to establish once the cascade is observable, and it should be sized against the depth-3
-row above rather than against the depth-1 case a first playtest will produce.
+The Urchin's spike pools are authored **on the vessel prefab**, not on the scene: a
+`ProjectileFactory` with `maxSize` **400 / 160 / 48** across the Normal / Energized /
+SuperEnergized tiers. That is the hard ceiling on live spike colliders — per vessel, so a
+four-Urchin match multiplies it. Sizing should be checked against the depth-2 row above once the
+cascade is observable, rather than against the depth-1 case a first playtest produces.
 
 ## In-editor verification
 
@@ -299,19 +316,22 @@ Nothing below can be checked without play mode; the depth curve is a pure functi
    passes (it validates every YAML key against the serialized fields of the class each asset's
    `m_Script` points at — a key Unity does not recognise is silently dropped and the field reads
    its initializer forever).
-2. **Wire the spike prefabs.** All four `*SpikeProjectile.prefab` currently have **no collider,
-   no `Rigidbody`, no `ProjectileImpactor` and no `ImpactCollider`** — copy the arrangement from
-   `_Prefabs/Projectile/SparrowProjectile.prefab` (SphereCollider `m_IsTrigger: 1` + kinematic
-   `Rigidbody` + `ProjectileImpactor`) and point each impactor's
-   `projectileImpactorDataContainer` at `UrchinSpikeProjectileImpactContainer`. Until this is
-   done a spike passes through everything and nothing in this document runs.
-   While you are in there, three of the four still carry the 2023 orphan keys
-   (`trailBlockImpactEffects: 0c000000070000000d000000` = `[Stop, Steal, Fire]`, plus `Team`,
-   `Ship`, `Velocity`, `ProjectileTime`); re-saving each prefab drops them, which is how
-   `EnergizedSpikeProjectile.prefab` already lost its copy.
-3. **Wire the pools.** Give the scene's `ProjectileFactory` a `ProjectilePoolManager` entry per
-   `ProjectileType` pointing at the matching spike prefab, or every volley logs
-   `No pool registered for ProjectileType: …`.
+2. **Open the three spike prefabs and confirm they import clean.** They were authored as YAML
+   outside the editor: `_Prefabs/Projectile/UrchinSpikeProjectile{,Energized,SuperEnergized}.prefab`,
+   each a trigger `SphereCollider` (r 0.25) + `Rigidbody` + `Projectile` + `ProjectileImpactor`
+   (container pre-wired) + `ImpactCollider` + `LoadedGun`. A missing script or an unassigned
+   container is what a hand-written prefab gets wrong, and a spike with no impactor passes
+   through everything silently.
+   The four **2023** prefabs under `_Prefabs/Environment/` are superseded and unreferenced; three
+   still carry the orphan keys (`trailBlockImpactEffects: 0c000000070000000d000000` =
+   `[Stop, Steal, Fire]`, plus `Team`, `Ship`, `Velocity`, `ProjectileTime`) that the script no
+   longer declares. Leave or delete them, but do not wire them.
+3. **Sanity-check the pool ceilings.** `Urchin.prefab` carries its own `ProjectileFactory` with
+   three `ProjectilePoolManager`s — Normal → `UrchinSpikeProjectile` (capacity 120, **max 400**),
+   Energized (40 / **160**), SuperEnergized (12 / **48**). `maxSize` is the real ceiling on live
+   spike colliders. It is a **per-vessel** factory, so four Urchins multiply those numbers by
+   four; a drained pool is a hard stop (a factory miss), which is the deliberate trade against an
+   unbounded collider leak.
 4. **Wire the vessel.** `Urchin.prefab` has `R_VesselActionHandler._executors: {fileID: 0}` and
    `_inputEventShipActions: []` — add an `ActionExecutorRegistry` with
    `UrchinSpikeActionExecutor` (assign its `gun`, `muzzles`, `barrageOrigin`) and bind
@@ -329,7 +349,7 @@ Nothing below can be checked without play mode; the depth curve is a pure functi
    *already yours*: nothing should happen at all beyond the spike stopping — no steal, no
    children. Then fire into open space: the spike expires at 2 s and returns to its pool.
 8. **Depth scales with CHARGE.** Collect Charge crystals to level 10 and repeat step 6 — the
-   first landing should spray **12**, and each of those should spray again. If it still sprays 8,
+   first landing should spray **10**, and each of those should spray again. If it still sprays 8,
    the level read is not reaching `ResolveGenerations`.
 9. **Reach scales with SPACE, and decays.** At Space 0 the spikes should visibly cover less
    ground than at Space 10 (muzzle speed × 0.4 vs × 2.5), and within one cascade each generation
@@ -343,7 +363,7 @@ Nothing below can be checked without play mode; the depth curve is a pure functi
     been drained: check that a spike which HIT something returned (step 6's fade) and that a
     spike which MISSED returned (`projectileEndEffects` on the container).
 12. **Frame brake reports itself.** Drive a deep cascade into a wall of enemy trail and watch the
-    console for `[ChainReactionBudget] Shed a chain volley - ceiling is 6/frame`. Seeing it is
+    console for `[ChainReactionBudget] Shed a chain volley - ceiling is 4/frame`. Seeing it is
     correct behaviour, not a bug — it is the message that tells you whether a short cascade was
     the design (brake 1) or the budget (brake 3).
 13. **Domain paint.** Fire as Jade, die/respawn or swap domain at the domain-changer toy, fire
@@ -371,16 +391,24 @@ Nothing below can be checked without play mode; the depth curve is a pure functi
 
 ## Follow-ups
 
-- **Spike prefab wiring is the blocking item** (verification steps 2–5). Everything in this
-  document is code and SO assets; the four spike prefabs, the factory pools, the Urchin's action
-  registry and its ammo resource are editor work that has not happened.
-- **`RecursiveSpikeProjectile.prefab` has no role in the modern design.** It serializes `energy: 0`
-  and `speed: 40`, identical to `SpikeProjectile.prefab`, and `ProjectileFactory` has no tier for
-  it. It is a 2023 artefact of the same-tier recursion loop. Either delete it or give it a reason.
-- **The depth curve has no edit-mode test.** `UrchinSpikeActionSO.GenerationsForLevel` and
-  `UrchinSlipActionSO.GhostSecondsForLevel` were both pulled out as pure static functions
-  explicitly so they could be tested, and nothing tests them yet. A test file must live under an
-  `Editor/` folder (see `CLAUDE.md` § "Tests live under an `Editor/` folder").
+- **The AMMO RESOURCE is the blocking item** (verification step 5). `ResourceSystem.Resources` on
+  `Urchin.prefab` is still `[]` while every `ammoIndex` is 0, so the aimed volley refuses to fire
+  and a ride throws once per frame. Spike prefabs, pools, executors and containers all landed on
+  `b3bc963bc`; this did not.
+- **Netcode components are not wired.** `Urchin.prefab` has no `NetcodeHooks`,
+  `NetworkVesselClientCache`, `NetworkVesselImpactor` or `ClientNetworkTransform`, so multiplayer
+  spawn is a separate pass and none of the MPPM verification below can run yet.
+- **The four 2023 spike prefabs under `_Prefabs/Environment/` are superseded** by the three under
+  `_Prefabs/Projectile/` and referenced by nothing. `RecursiveSpikeProjectile.prefab` in particular
+  is an artefact of the same-tier recursion loop with no tier in `ProjectileFactory`. Delete them,
+  or keep them explicitly as the historical record this document cites.
+- **Edit-mode coverage exists and is narrow.** `_Scripts/Tests/Editor/UrchinChainReactionTests.cs`
+  pins the depth curve (`GenerationsForLevel` — extrapolation across `[-5, 15]`, the `[0, 4]`
+  clamp, and zero staying REACHABLE because zero is what terminates a cascade), the Slip ghost
+  window's non-negativity, and `Gun.DeterministicOrientation`'s repeatability / sub-quantum
+  tolerance / variation with origin and depth. `DeterministicOrientation` was widened from
+  `internal` to `public` for it, because tests compile into `Assembly-CSharp-Editor` and cannot
+  see `Assembly-CSharp` internals. Nothing yet covers the effect trio or the budget.
 - **`ChainReactionBudget.VolleysPerFrame` is a public static field, not a config SO.** That is a
   deliberate shortcut for a number nobody has tuned yet; if it survives a balance pass it belongs
   in a ScriptableObject like every other tuning value.

@@ -23,6 +23,271 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Urchin revival — chain-reaction spikes + trail rider (`claude/restore-urchin-vessel-9qacdk`, 2026-08-15)
+
+Authored without a Unity compile or play-test. This one is **unusually editor-heavy**: the code
+and the SO assets are complete, but the Urchin has been unplayable for long enough that its
+prefabs never received the modern impact-effect wiring at all. Several of the steps below are
+*authoring*, not verification — nothing in this feature runs until they are done, and none of it
+fails loudly when they are not.
+
+Full mechanics, historical record and follow-ups:
+`_Scripts/Controller/Vessel/R_VesselActions/URCHIN_CHAIN_SPIKES.md` and `URCHIN_TRAIL_RIDER.md`.
+Element map: `Docs/ElementalAbilitySystem/FLEET_MAPS.md` §2 Urchin.
+
+**What landed**
+
+- **Chain-reaction spikes.** A spike lands on a prism, **embeds**, **steals** it (domain flip —
+  mass conserved, nothing destroyed), then fires its own `LoadedGun` to spray the next generation
+  out of the converted mass. Three effect SOs run in list order —
+  `ProjectileEmbedPrismEffectSO`, `ProjectileStealPrismEffectSO` (pre-existing),
+  `ProjectileChainFirePrismEffectSO` — which is the modern form of the 2023 enum list
+  `[Stop(12), Steal(7), Fire(13)]` still sitting as orphaned YAML on three of the four spike
+  prefabs. **Order is load-bearing**: steal before fire, or every child re-converts ground the
+  parent already took.
+- **Three brakes, in order of authority.** (1) *Territory conversion*, emergent and **PRIMARY** —
+  `Projectile.DisallowImpactOnPrism` refuses a prism already wearing the firing domain, so the
+  wavefront extinguishes as it eats its own frontier. This was the only brake in 2023 and is
+  deliberately kept primary. (2) *Depth* — `Projectile.ChainGeneration`, zero terminal, scaled by
+  CHARGE, **shipping at 2** (3 and 4 supported and deliberately unshipped, on collider budget).
+  (3) *Load shedding* — `ChainReactionBudget.VolleysPerFrame` = **4**, which **drops** excess
+  volleys (never queues) and warns on a 5 s throttle. At depth 2 a volley is 10 spikes, so one
+  frame's chain contribution is bounded at **40** live trigger colliders.
+- **Two 2023 defects fixed rather than reproduced.** The original had **no depth cap** (its base
+  tier fired children of the same tier, so only territory ever stopped it) and **leaked its pool
+  permanently on success** (`Stop` killed the coroutine whose terminal statement was the only
+  cleanup call, so every spike that actually hit something was immortal — after the pool port that
+  drains the pool). `Projectile.EmbedAndRetire` now owns the retirement explicitly and **fades**
+  the spike rather than popping it.
+- **Determinism.** `Gun.FireSpherical` uses `Gun.DeterministicOrientation(origin, depth)` — a
+  quantized position hash — instead of `UnityEngine.Random.rotation`, so every peer's cascade
+  agrees, **and** so a gun firing dozens of times a second cannot perturb the global RNG stream
+  that deterministic systems seed (the HexRace track calls `Random.InitState`).
+- **Spike domain paint** moved out of `Start()` (which ran before `Initialize` on a fresh instance
+  and never again on pool reuse) into `LaunchProjectile`, via `sharedMaterial` + a
+  `MaterialPropertyBlock`.
+- **Trail rider.** Attach is two flags (`IVesselStatus.IsAttached` + `.AttachedPrism`) set by
+  `VesselAttachPrismEffectSO`; `GunVesselTransformer` edge-detects them and `Slide()` replaces
+  `base.MoveShip()`. Crossing a prism boundary fires `FinalBlockSlideEffects()` — restore if
+  destroyed, **grow** if friendly, **steal** if hostile. Riding recharges ammo (doubled on
+  shielded prisms).
+- **Three ways it was broken, all fixed.** The transformer resolved `BlockscapeFollower` (a
+  surface-crawl experiment) instead of `TrailFollower` (the maintained along-the-trail kernel) —
+  identical member names, so it compiled, but only `TrailFollower` calls back into
+  `FinalBlockSlideEffects`, so the entire payoff never ran. The throttle was hardcoded
+  `var throttle = 0;`, so a vessel could attach and then sit motionless forever. And the ride never
+  fed `AdvanceSpeed`, so detaching snapped the pilot back to a stale cruise speed.
+- **PLATFORM: `VesselDamagePrismEffectSO` declines while `IsAttached`** (new `skipWhileAttached`,
+  default **on**). Riding and ramming are the same collision through one flat effect list with no
+  ordering guarantee, so **any** attaching vessel would destroy the prism it latched onto — the
+  2023 "urchin destroying first block when attaching to a trail" bug, whose fix lived in a
+  collision path that no longer exists. Guarded once, for the fleet. This is the change most
+  likely to have unintended reach: it touches an effect asset every vessel lists.
+- **Element map (APPROVED this session).** SPACE → Spike Volley (`RightStickAction`), CHARGE →
+  Spike Barrage (`LeftStickAction`), MASS → Trail Rider (**passive**, `Input 0`), TIME → Slip
+  (`Button2Action`). All four L5 upgrades gate on
+  `R_VesselElementalAbilityHandler.IsUpgradeActive(element)` — the replicated unlock bit — never a
+  raw local level read.
+- **Scoring.** `Player.ReportPrismStolen_ServerRpc(float volume)` + `StatsManager.CreditPrismSteal`.
+  `StatsManager.PrismStolen` opened with `if (!_allowRecord) return;` and `_allowRecord` is false
+  on clients, so **a client's steals scored nothing** — a gap that predates the Urchin and affects
+  every steal source in the game. Only the stealer's half travels (identity comes from RPC
+  ownership); the victim's remaining-mass tally drifts on a client-side steal, a deliberate trade
+  (an untrusted client-supplied name is worse than a soft tally).
+- **Registration.** `Urchin.prefab`'s `VesselStatus.vesselType` was `Random(0)`, so
+  `TryGetShipPrefab` could never match it even once listed. Now `Urchin(4)`, and added to
+  `SO_Classlist_Classes.asset` and `Vessel Prefab Container.asset`.
+
+**Wiring — confirm it landed, and close the one that has not**
+
+*State below is as of commit `b3bc963bc`. The branch was still moving while this was written, so
+re-check each line against the prefab rather than trusting the tick.*
+
+1. **Spike prefabs — authored, needs an import check.** Three new fully-wired prefabs exist:
+   `_Prefabs/Projectile/UrchinSpikeProjectile{,Energized,SuperEnergized}.prefab`, each a trigger
+   `SphereCollider` (r 0.25) + `Rigidbody` + `Projectile` + `ProjectileImpactor` (container
+   pre-wired to `UrchinSpikeProjectileImpactContainer.asset`) + `ImpactCollider` + `LoadedGun`.
+   They were written as YAML **outside the editor**, so open all three and confirm no missing
+   scripts and no unassigned container — a spike with no impactor passes through everything,
+   silently.
+   The four **2023** prefabs under `_Prefabs/Environment/*SpikeProjectile.prefab` are superseded
+   and referenced by nothing; three still serialize the orphan keys
+   (`trailBlockImpactEffects: 0c000000070000000d000000`, plus `Team`, `Ship`, `Velocity`,
+   `ProjectileTime`) that the script no longer declares. Leave or delete, but do not wire them.
+2. **Projectile pools — landed, sanity-check the ceilings.** `Urchin.prefab` now carries its own
+   `ProjectileFactory` with three `ProjectilePoolManager`s: Normal → `UrchinSpikeProjectile`
+   (capacity 120, **max 400**), Energized → `…Energized` (40 / **160**), SuperEnergized →
+   `…SuperEnergized` (12 / **48**). `maxSize` is the real ceiling on live spike colliders — a
+   drained pool is a hard stop (`No pool registered` / a factory miss), but an unbounded pool is a
+   collider leak with no ceiling at all, so a bound is the right trade. Cross-check these against
+   the **depth-2** row in `URCHIN_CHAIN_SPIKES.md` § "Collider budget" once the cascade is
+   observable — and note this is a **per-vessel** factory, so four Urchins in a match multiply
+   these numbers by four.
+3. **Action wiring — landed.** `Urchin.prefab` now has `_executors` pointing at an
+   `ActionExecutorRegistry` and `_inputEventShipActions` binding `RightStickAction(1)` →
+   `UrchinSpikeVolleyAction`, `LeftStickAction(2)` → `UrchinSpikeBarrageAction`,
+   `Button2Action(7)` → `UrchinSlipAction`. Trail Rider is correctly **unbound** — it is passive.
+   The spike executor's `gun` and `barrageOrigin` are assigned; **confirm `muzzles` is populated**
+   (it falls back to `barrageOrigin` if empty, which turns the aimed volley into a single-origin
+   shot).
+4. **Ammo resource — STILL OPEN, and it breaks two things.** `ResourceSystem.Resources` on
+   `Urchin.prefab` is `[]` and every `ammoIndex` is 0. The volley (`ammoCost` 0.15) refuses to fire
+   with `Invalid ammo index or ResourceSystem`, and `GunVesselTransformer.SlideActions` throws an
+   **`ArgumentOutOfRangeException` every frame of a ride** (`ResourceSystem.ChangeResourceAmount`
+   indexes without a bounds check). The barrage is free, so it will fire and mask this.
+5. **`VesselCustomization._shipGeometries` — landed**, 13 entries. Without it
+   `UrchinSlipActionExecutor` warns `found no ShipGeometries` and Slip detaches **without** phasing
+   out, so the vessel re-latches on the very next prism — exactly the failure the ghost exists to
+   prevent. Confirm those 13 objects actually carry `Collider`s; the executor collects only the
+   ones that do.
+6. **Vessel impact container — landed.** `vesselImpactorDataContainerSO` points at
+   `UrchinImpactorDataContainer.asset`.
+6b. **Netcode components are deliberately NOT wired** — no `NetcodeHooks`,
+   `NetworkVesselClientCache`, `NetworkVesselImpactor` or `ClientNetworkTransform` on
+   `Urchin.prefab`. Multiplayer spawn is its own pass, so the MPPM steps below cannot run until it
+   lands. Do the single-player steps first and treat the MPPM block as blocked, not as failing.
+7. **HUD row — STILL OPEN.** `UrchinVesselHUDView` exists (ammo fill + a deliberately binary riding
+   indicator); the four `abilityIcons` bindings still have to be authored on the HUD prefab in
+   charge → mass → space → time order. Run **FrogletTools > Vessels > Audit Vessel Ability Rows**
+   afterwards — Trail Rider's `Input = 0` will look like an unset field and is **correct** (it is
+   passive; the map cannot distinguish the two).
+8. **Three `GunVesselTransformer` fields are not serialized on the prefab** — `throttleDeadband`
+   (0.05), `throttleZeroPosition` (0.2), `reverseLookThreshold` (−0.6). They deserialize to their
+   C# initializers, which is correct behaviour, but they will only appear in the inspector after a
+   re-save. Never let `throttleDeadband` reach 0: `RideTheTrail` divides by `Throttle × speed`.
+
+**Verify in editor**
+
+9. Project compiles with zero errors, the `CosmicShore.Tests.EditMode` suite passes (it gained
+   `_Scripts/Tests/Editor/UrchinChainReactionTests.cs`), and
+   `python3 Tools/Build/author_urchin_assets.py --check` passes (it validates every YAML key
+   against the serialized fields of the class each asset's `m_Script` points at — a key Unity does
+   not recognise is silently dropped and the field reads its initializer forever).
+10. **Urchin is selectable and spawns.** Menu_Main → vessel changer toy, or any mode's vessel
+   select. It flies, lays a trail, and its HUD appears. (`vesselType` was `Random(0)`; if it still
+   fails to spawn, `TryGetShipPrefab` is not matching.)
+11. **One spike, one steal.** Fire the volley (RT) at an **enemy** trail at Charge 0 (depth 1): the
+    spike stops in the prism, the prism changes to your domain, **8** children spray out of it, and
+    the original spike fades out ~1.25 s later rather than popping or standing there forever.
+12. **The cascade dies by eating its frontier.** Same volley into a trail that is *already yours*:
+    nothing beyond the spike stopping — no steal, no children. Into open space: the spike expires
+    at 2 s and returns to its pool.
+13. **Depth scales with CHARGE.** At Charge 10 the first landing should spray **10** and each of
+    those should spray again. Still 8 means the level read is not reaching `ResolveGenerations`.
+14. **Reach scales with SPACE, and decays.** Space 0 vs Space 10 should visibly differ (muzzle
+    speed × 0.4 vs × 2.5), and within one cascade each generation should reach shorter than the
+    last (falloff 0.75). At Space 5 ("Deep Cascade") the last generation reaches as far as the
+    first.
+15. **The barrage is free and shallow.** LT at Charge 0: a golden-spiral burst from the hull that
+    steals and does **not** chain, costing no ammo. At Charge 5 ("Overcharge") the same press
+    should chain one generation.
+16. **Shielded mass costs no generation.** Spike a shielded prism: the shield sheds, the prism
+    stays hostile, **no** children fire. Super-shielded: nothing happens at all.
+17. **Pool integrity — the 2023 regression.** Fire ~50 volleys into dense enemy mass, then keep
+    firing. The gun must not go quiet. A silent stop means a spike that HIT (step 10's fade) or a
+    spike that MISSED (`projectileEndEffects` on the container) failed to return.
+18. **The frame brake reports itself.** Drive a deep cascade into a wall of enemy trail; the
+    console should show `[ChainReactionBudget] Shed a chain volley - ceiling is 4/frame`. Seeing it
+    is correct — it is how you tell a short cascade caused by brake 1 from one caused by brake 3.
+19. **Domain paint.** Fire as Jade, change domain at the domain-changer toy, fire again: spikes
+    must wear the **new** colour. The previous domain's material means the paint drifted back to
+    `Start`.
+20. **Attach — and the prism survives.** Fly into your own trail: the vessel snaps onto the ribbon,
+    the camera pulls in, the stick stops steering. **The prism you touched must still be there.**
+    A prism that explodes on contact means `skipWhileAttached` is not taking effect — that is the
+    2023 bug, and it is the single most important observation in this list.
+21. **The ride moves, and the payoff runs.** On the throttle the vessel travels the ribbon; off it,
+    it holds still. Your own trail's prisms visibly **grow** as you cross them; an enemy's change
+    to your domain. Moving but no grow/steal means the transformer resolved `BlockscapeFollower`.
+22. **Reverse.** Riding, look back past ~126° from your course while on the throttle: direction
+    flips.
+23. **Destroyed prisms restore**, and the ammo meter climbs while riding — visibly faster over
+    shielded prisms.
+24. **Hostile trail is a slog, until Time 5.** Ride an enemy ribbon at Time 0 (10 vs 150 — a
+    fifteenth of the speed). At Time 5 ("Slipstream") it should run at full pace while still
+    stealing.
+25. **Reinforced Wake.** Mass 5, ride your own trail: grown prisms come up **shielded**
+    (octahedron shells), and riding back over them pays double ammo.
+26. **Slip.** Riding, press B: you let go and can fly out through the trail for ~0.6 s without
+    re-latching. Fly back in — you must re-latch, i.e. the colliders came back.
+27. **Interrupted slip (the dangerous one).** Slip, then immediately swap vessels / end the turn /
+    respawn. The hull must be **solid** afterwards. A vessel that can now fly through the whole
+    prismscape means the `finally` restore did not run.
+28. **Detach speed.** Ride at full pelt, then slip: the vessel carries a sensible speed out instead
+    of snapping back to the cruise it had when it latched on.
+29. **Refused attach.** Touch a prism with **no trail** (an environment/flora prism, a fauna body
+    prism). The vessel must keep flying normally. Freezing in place means `IsAttached` stayed set
+    on a refusal.
+30. **A domain change mid-ride.** Ride your own trail, change domain at the toy, ride the *same*
+    trail: it must now read as **hostile** (slow, and it steals). Still growing means the live
+    `Domain` property got snapshotted again.
+31. **REGRESSION — the rest of the fleet still rams.** `skipWhileAttached` lives on an effect asset
+    every vessel lists, so spot-check a Squirrel and a Rhino destroying prisms by hull contact, and
+    a Rhino sword swipe. They never set `IsAttached`, so the guard must be a no-op for them.
+32. **REGRESSION — the HexRace track is unchanged.** Load `MinigameHexRace` twice at the same
+    intensity and confirm the track is identical, then do it again after an Urchin has fired
+    several hundred spikes in a prior match in the same session. This is the
+    `Random.rotation` → `DeterministicOrientation` fix; a track that differs means something still
+    perturbs the global stream.
+
+**MPPM — two clients** (the replicated unlock bits and the steal RPC)
+
+33. **Same cascade on both screens.** Client A's Urchin fires a depth-2+ volley into a trail; host
+    and client must see the same fan and the same set of converted prisms. A visibly different
+    spray is `Random.rotation` creeping back into `FireSpherical`.
+34. **Space 5 on the CLIENT.** Take the client's Urchin to Space 5 and fire a deep cascade — the
+    **host** must see the same non-decaying reach and the same converted prisms.
+35. **Charge 5 on the CLIENT.** Fire the barrage — both peers must see it chain.
+36. **Mass 5 on the CLIENT.** Ride the client's own trail — the **host** must see the grown prisms
+    arrive **shielded**. Unshielded on the host means the gate is reading a local level instead of
+    `IsUpgradeActive`.
+37. **Time 5 on the CLIENT.** Ride a hostile ribbon — the host must see it move at the fast speed.
+38. **Steal RPC — the client scores.** With the client's Urchin, convert ~20 prisms by spike and
+    ~20 by riding, then read the client's own `PrismStolen` / `VolumeStolen` on the scoreboard.
+    Both must be non-zero; before `ReportPrismStolen_ServerRpc` they were zero. Then check the
+    **victim's** `PrismsRemaining` / `VolumeRemaining`: it will **not** have been debited for the
+    client-side steals. That is the deliberate trade, not a bug — but confirm it does not put a
+    scoreboard into a nonsensical state (negatives, a total that exceeds the cell's mass) in the
+    modes that display remaining mass.
+39. **Do the same from the HOST's Urchin** and confirm the server does not **double-credit** —
+    `StatsManager.OwnsAttacker` is what stops the server also recording a steal a remote player
+    already reported for itself.
+
+**First-pass tuning** (starting points, not settled)
+
+| Knob | Where | Value |
+|---|---|---|
+| Cascade depth | `UrchinSpikeVolleyAction.asset` `generationsAtRestingCharge` / `generationsAtFullCharge` | **1 → 2.** Linear in level, anchored at 0 and 10, extrapolated across `[-5, 15]`, clamped `[0, 4]`. Worst case per seeded hit: depth 1 → 8 spikes, **depth 2 → 90 (what ships)**, depth 3 → 1,092, depth 4 → 15,302. Depth 3 was authored first and pulled: it is indefensible against a per-cell collider budget already at 3–4k against a 1,500 target. 3 and 4 stay supported by the SO and deliberately unshipped. |
+| Barrage depth | `UrchinSpikeBarrageAction.asset` same pair | **0 → 1**, plus `chainsOnChargeUpgrade: 1` (the L5 floor). The barrage is free and pays for it with shallowness. |
+| Per-generation reach decay | both spike assets `generationRangeFalloff` | **0.75**, clamped `[0.05, 1]`. 1 is the SPACE-5 upgrade. Lower makes a deep cascade read as a *wave*; 1 makes it read as an expanding sphere. |
+| Frame ceiling | `ChainReactionBudget.VolleysPerFrame` (public static, **code**) | **4**, global across every Urchin in the match. If cascades feel truncated, check the console warning first — this drops, it does not queue. |
+| Volley cost / rate | `UrchinSpikeVolleyAction.asset` | 0.15 ammo @ 3/s, muzzle speed 60 × SPACE (0.4 … 2.5), flight 2 s |
+| Barrage cost / rate | `UrchinSpikeBarrageAction.asset` | **free** @ 1/s, muzzle speed 40 × SPACE, flight 2 s |
+| Spike dwell / fade | `ProjectileEmbedPrismEffect.asset` | 1.25 s / 0.35 s — pure look; the steal and the volley already happened. `fadeSeconds` must stay > 0 (continuity of existence). |
+| Ride speeds | `Urchin.prefab` `TrailFollower` | Friendly **150** / Hostile **10** / Destroyed **10**. The 15× gap is what Slipstream buys, and it is the biggest single number in the vessel. Note `BlockscapeFollower` on the same GameObject serializes an identical trio that nothing reads. |
+| Growth per ridden prism | `Urchin.prefab` `GunVesselTransformer.growthAmount` | `ElementalFloat`, element Mass, 0.6 → 1.2 (`Value` 1) |
+| Ride ammo recharge | `Urchin.prefab` `GunVesselTransformer.rechargeRate` | 0.1/s, **×2** on a shielded prism |
+| Throttle shaping | `GunVesselTransformer` (C# defaults, **not yet serialized on the prefab**) | `throttleDeadband` 0.05 · `throttleZeroPosition` 0.2 · `reverseLookThreshold` −0.6. The deadband must never reach 0 — `RideTheTrail` divides by `Throttle × speed`. |
+| Slip ghost | `UrchinSlipAction.asset` | 0.6 s → 1.6 s, `detachImpulse` **0** (off) |
+| Steal→score weight | mode `ScoringRuleSO` | unchanged; the RPC only makes a client's steals *count*, it does not weight them |
+
+**Known gaps at time of writing** — no audio is authored on any Urchin surface (per the FMOD
+convention the spike embed/steal/chain-fire and the attach/ride/slip each want their own
+`EventReference`, shipped **empty**); `AIPilot` has no notion of either ability, so an AI Urchin
+neither fires nor rides and will sit at zero throttle if it attaches by accident; edit-mode
+coverage is narrow — `UrchinChainReactionTests` pins the depth curve, the ghost window and volley
+determinism, but nothing covers the effect trio or the budget; the Urchin lists no
+`VesselChangeSpeedByPrismEffectSO`, so it takes **no speed penalty from any prism** (danger prisms
+included), joining Rhino and Serpent in that gap; `StatsManager.CreditPrismSteal` is called only
+by the RPC while `PrismStolen`'s server branch still hand-rolls the same four lines its docstring
+says it was extracted to share; the steal-scoring trade is **not** recorded in
+`Docs/ScoringSystem/BUGS.md` despite `Player.cs` saying it is; and the four 2023
+`_Prefabs/Environment/*SpikeProjectile.prefab` are now superseded by the three under
+`_Prefabs/Projectile/` — `RecursiveSpikeProjectile.prefab` in particular is an artefact of the
+same-tier recursion loop with no tier in `ProjectileFactory`.
+
+---
+
 ### 🔴 Shield morphs → GPU; the last CPU prism ticker deleted (`claude/octahedron-shield-gpu-morph-4nnw1s`)
 
 Authored without a Unity compile or play-test. The octahedron shield's engage bloom and its
