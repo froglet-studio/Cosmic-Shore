@@ -1121,6 +1121,22 @@ that would otherwise cost a round-trip to a human at the editor:
   first (blob-filtered, so hundreds of branches of a Unity repo land in ~a minute).
   Then dedupe by BLOB: `git rev-parse "$ref:$path"` per ref and group — N branches
   usually collapse to a handful of distinct file versions worth reading.
+- **A leftover GUID hit after you remove a reference is usually a DEAD prefab-instance
+  override, and proving it dead takes three checks, not one.** Unity never prunes an
+  `m_Modification` whose `propertyPath` no longer resolves, so a prefab keeps writing a field
+  that was commented out years ago — and a `grep -rl "guid: <x>"` sweep reports the vessel
+  prefab as a live consumer of an asset you just unwired. Do not conclude "there is a second
+  wiring path" (nor "it's fine, it's just an override") until you have checked all three, since
+  any ONE of them being alive makes it real: (1) **does the field still exist?** — grep the
+  target script for the `propertyPath`'s root; a `// [SerializeField]` line means the override
+  can never deserialize; (2) **is the instance active?** — find the `PrefabInstance` block
+  carrying that guid and read its `m_IsActive` override; (3) **does anything point at it?** —
+  for a component the engine reaches through a reference (skimmers via
+  `VesselStatus.NearFieldSkimmer`), resolve that fileID and check it is this instance. Cost
+  here: `SkimmerFXPrismEffect` kept showing up in `Dolphin.prefab` after its container was
+  cleaned; all three answers were dead (commented-out `skimmerPrismEffectsSO`, `m_IsActive: 0`,
+  `_nearFieldSkimmer` → the *other* skimmer). Record the finding in a backlog rather than
+  hand-editing prefab YAML to remove override entries — the sweep is what tooling is for.
 
 ### Bundled tool: `field_parity.py`
 
