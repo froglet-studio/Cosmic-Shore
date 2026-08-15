@@ -1,0 +1,93 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4b3f2a8c8f344355b16a4d4296ae3f98, type: 3}
+  m_Name: Scarab
+  m_EditorClassIdentifier:
+  vesselClass: 12
+  entries:
+  - Element: 1
+    AbilityLabel: Cavitation Blast
+    AbilityDescription: 'The mantis-shrimp punch that rides the dash: every right-stick
+      dash throws a compact spherical blast down-range along the dash direction,
+      shredding prisms, killing fauna (a creature dies when its body prisms are
+      destroyed) and elementally debuffing any opposing pilot it engulfs. Charge
+      shortens its cooldown - authored on ScarabCavitationBlast, x1 at rest ->
+      x0.5 at level 10, so the generic map multiplier stays 1.0 (no double-dip).
+      THE DASH ITSELF IS FREE AND NEVER PACED: only the punch waits, so a
+      recharging blast never costs you the dodge.'
+    Input: 11
+    MultiplierAtFullLevel: 1
+    MinMultiplier: 1
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: Cavitation Shear
+    UpgradeDescription: The blast destroys SHIELDED prisms outright instead of only
+      shedding their shields (per-use snapshot at fire time, via the explosion's
+      devastating flag). Super-shielded mass is still untouchable - that tier has
+      no sanctioned breaker.
+  - Element: 2
+    AbilityLabel: Switch
+    AbilityDescription: Mass grows the switch structure - ring aperture and the span
+      of the prism fill across its mouth (authored on
+      PlaceSwitchActionSO.switchScale ElementalFloat, x1 -> x2.5 at level 10; the
+      generic map multiplier stays 1.0 to avoid double-dipping).
+    Input: 6
+    MultiplierAtFullLevel: 1
+    MinMultiplier: 1
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: Armored Switch
+    UpgradeDescription: The switch is built from SHIELDED prisms (the sanctioned
+      shield tier - never SuperShield), snapshotted at placement so a switch keeps
+      the armour it was born with. An opposing ball now caroms off it and sheds one
+      shield per prism instead of eating straight through, which is what turns a
+      switch placed in front of someone else's shot into real defence.
+  - Element: 3
+    AbilityLabel: Ball Forge
+    AbilityDescription: 'Space scales the ball you mint: x1 at rest, x4 at level 10.
+      Unlike the other three rows the map''s generic multiplier IS the carrier here
+      (MultiplierAtFullLevel 4), read live at forge time and stamped once - a ball
+      keeps the size it was born with. No input binding: you forge by flying THROUGH
+      an omni crystal at the speed and heading you want the ball to leave with, so
+      making a ball is a piece of driving. The launch velocity is the vessel''s TRUE
+      motion including the dash channel, so dashing into a crystal and dashing into
+      a resting ball produce the same trajectory.'
+    Input: 0
+    MultiplierAtFullLevel: 4
+    MinMultiplier: 0.5
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel:
+    UpgradeDescription: '(open design slot) Space 5 is deliberately unfilled - the
+      design notes assign Space the ball''s size and name no qualitative upgrade for
+      it. Do not invent one without sign-off (SCARAB.md section 7).'
+  - Element: 4
+    AbilityLabel: Throttle
+    AbilityDescription: Time raises the top speed of the throttle ramp (authored on
+      the transformer's ThrottleScalerMultiplier ElementalFloat, x1 -> x1.5 at level
+      10; the generic map Time multiplier stays 1.0 - the no-double-dip pin). The
+      throttle is analog on the right trigger, thrust always along the nose, and
+      releasing it is the only brake.
+    Input: 1
+    MultiplierAtFullLevel: 1
+    MinMultiplier: 1
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: Snap Dash
+    UpgradeDescription: 'Double-tap the THROTTLE (right trigger) for a short forward
+      burst - a gap-closer along the nose. Distinct from the right-stick dash, which
+      is base kit and always available: Snap Dash is the throttle''s upgrade, not the
+      dash''s.'

@@ -21,5 +21,6 @@ namespace CosmicShore.Data
         Falcon = 9,
         Shrike = 10,
         Sparrow = 11,
+        Scarab = 12,
     }
 }

@@ -103,7 +103,7 @@ un-implemented until Garrett marks them up. If your task requires a mapping that
 STOP and ask (AskUserQuestion), presenting the FLEET_MAPS proposal for that row. The same gate
 applies to new abilities, new resources on the meter list, and anything that adds a fundamental.
 
-## 4. Implement — the twenty-three rules that keep getting relearned
+## 4. Implement — the twenty-four rules that keep getting relearned
 
 1. **Ability SOs are shared and stateless.** Per-vessel state lives in executors / vessel-root
    MonoBehaviours; SOs receive `(registry, status)` per call. Never bind state to an SO asset.
@@ -252,6 +252,20 @@ applies to new abilities, new resources on the meter list, and anything that add
     collision, permanently, with nothing in the game to restore it. Scale the RESOURCE METER
     instead and let the executor re-derive; a creeping, unrecoverable nerf is indistinguishable
     from a tuning problem for as long as anyone will look. (Dolphin boost ram, 2026-08-14.)
+
+24. **Puppetry amplitudes are FLEET-SCALE — 14-26 degrees is invisible.** A new vessel whose
+    animation swings its parts through "a believable" 15-25 deg reads at chase-camera distance
+    as *no puppeteering at all*, and the report you get back is "the ship feels dead", not "the
+    numbers are small". `RhinoAnimation` is the calibration: wings and engines swing through
+    `yawAnimationScaler = 80` deg, the fuselage through 25. Match that order of magnitude, and
+    drive the parts that should answer to FLIGHT rather than to the stick off
+    `VesselStatus.Speed`, so they keep moving under a boost or a danger-prism slow the stick
+    knows nothing about.
+    **Corollary — a part's arc must be SIGNED through its rest pose** when its two ends mean two
+    states. Rotating "toward rest" as speed rises can only reach the pose the mesh was authored
+    in, which is usually neither state you wanted: legs meant to read gear-down-when-slow /
+    tucked-at-speed need `Lerp(+hang, -tuck, speed01)`, not `splay * (1 - speed01)`.
+    (Scarab hull, 2026-08-15.)
 
 ## 5. Audit, then hand back verification (you cannot run Unity; the human is the gate)
 

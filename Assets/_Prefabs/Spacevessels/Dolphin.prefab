@@ -1130,7 +1130,6 @@ Transform:
   - {fileID: 1652470095801812404}
   - {fileID: 2053099346465173604}
   - {fileID: 8733703129211920491}
-  - {fileID: 1843551402662252762}
   - {fileID: 7734120558419063312}
   m_Father: {fileID: 2209447707423869789}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -1151,7 +1150,6 @@ MonoBehaviour:
   - {fileID: 8363998993469153081}
   - {fileID: 1396157652283013214}
   - {fileID: 3572016475912017619}
-  - {fileID: 2939051450022613431}
   - {fileID: 7734120558419063313}
 --- !u!1 &5673849402713387567
 GameObject:
@@ -1551,52 +1549,6 @@ MonoBehaviour:
   crystalPrefab: {fileID: 2116889879390265659, guid: 922e4ca81ec32e9468c23c3a12a3c65c,
     type: 3}
   config: {fileID: 11400000, guid: 205c7e57ccef34f4f858f04857f7c542, type: 2}
-  OnMiniGameTurnEnd: {fileID: 11400000, guid: 91ea9101389ea884babdf61e446ced27, type: 2}
---- !u!1 &6636369852405642565
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1843551402662252762}
-  - component: {fileID: 2939051450022613431}
-  m_Layer: 0
-  m_Name: ToggleShardActionExecutor
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &1843551402662252762
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6636369852405642565}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 1252869930824874955}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &2939051450022613431
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6636369852405642565}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4eb9f73e42824c678ee068be55686a7d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  shardFieldBus: {fileID: 11400000, guid: 3aa19b61104697c44a06b8d97816f741, type: 2}
   OnMiniGameTurnEnd: {fileID: 11400000, guid: 91ea9101389ea884babdf61e446ced27, type: 2}
 --- !u!1 &6776402933378899515
 GameObject:
@@ -2213,6 +2165,9 @@ MonoBehaviour:
   BoostDecayRate: 0.1
   singleTriggerDrift: 0
   holdSpeedWhileDrifting: 1
+  vectorFlightModel: 0
+  driftOvershootCeiling: 1.25
+  driftThrottlePolicy: 1
   DriftDamping: 0
   boostChanged: {fileID: 0}
   MinimumSpeed: 0
@@ -2424,7 +2379,6 @@ MonoBehaviour:
     - {fileID: 11400000, guid: 51198b110e790e047b4fe6979db3f47c, type: 2}
     - {fileID: 11400000, guid: ab7bab2c9e3d95e478b95f459e44b5c2, type: 2}
     - {fileID: 11400000, guid: ca0139e36e14b1c4ba0b9fb12808d8cb, type: 2}
-    - {fileID: 11400000, guid: a8d01c9d7c3bfb245ba8e3303bdecfc6, type: 2}
   - InputEvent: 1
     ShipActions:
     - {fileID: 11400000, guid: b58d21e7f3a94c60ae7d3b19c8054f2a, type: 2}

@@ -205,9 +205,8 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// CLIENT -> SERVER: this machine's owner STOLE a prism (changed its domain rather than
-        /// destroying it). The fourth member of the same owner-detects / server-records family
-        /// as <see cref="ReportFaunaKill_ServerRpc"/>,
-        /// <see cref="ReportCombatHit_ServerRpc"/> and
+        /// destroying it). One of the same owner-detects / server-records family as
+        /// <see cref="ReportFaunaKill_ServerRpc"/>, <see cref="ReportCombatHit_ServerRpc"/> and
         /// <see cref="ReportEnvironmentPrismDestroyed_ServerRpc"/>.
         ///
         /// This closes a gap that predates the Urchin and affects every steal source in the
@@ -233,6 +232,36 @@ namespace CosmicShore.Gameplay
             if (volume < 0f) return;
 
             StatsManager.CreditPrismSteal(RoundStats, volume);
+        }
+
+        /// <summary>
+        /// Owner-side request to let one of THIS player's blasts shove the Astro League ball —
+        /// the same round-trip family as <see cref="ReportFaunaKill_ServerRpc"/> /
+        /// <see cref="ReportCombatHit_ServerRpc"/> /
+        /// <see cref="ReportEnvironmentPrismDestroyed_ServerRpc"/>, and for the same structural
+        /// reason: explosions are local to the machine that fired them, the ball is
+        /// server-simulated, so without this hop "explosions move the ball" would silently mean
+        /// "the host's explosions move the ball".
+        ///
+        /// The DOMAIN is re-derived here from the server's own copy of this player's vessel, so
+        /// the claim a blast makes on the ball can never be spoofed; only the geometry rides the
+        /// wire, and the ball re-clamps it against its own speed ceiling.
+        /// </summary>
+        [ServerRpc]
+        public void RequestBlastBall_ServerRpc(ulong ballNetId, Vector3 blastOrigin, Vector3 impactVector)
+        {
+            using var _ = CosmicShore.Utility.PerformanceBenchmark.NetMarkers.RpcDispatch.Auto();
+            CosmicShore.Utility.PerformanceBenchmark.NetMarkers.CountRpc();
+
+            var status = Vessel?.VesselStatus;
+            if (status == null) return;
+
+            var nm = NetworkManager.Singleton;
+            if (nm == null || !nm.SpawnManager.SpawnedObjects.TryGetValue(ballNetId, out var netObj)) return;
+            if (netObj == null || !netObj.TryGetComponent(out AstroLeagueBall ball)) return;
+
+            ball.ApplyBlastServer(blastOrigin, impactVector, status.Domain);
+        }
         }
 
         public string Name { get; private set; }
