@@ -383,10 +383,19 @@ namespace CosmicShore.Gameplay
             PlayExplosionAudio();
         }
 
+        /// <summary>
+        /// The pickup sound. Falls back to <see cref="AudioSystem.Instance"/> because the injected
+        /// field is null on every crystal that was NOT part of a loaded scene: a lifeform's heart
+        /// is `Instantiate`d by the cell's spawners, and nothing under Controller/Environment calls
+        /// `GameObjectInjector.InjectRecursive`. So this was a silent no-op for the entire ecology's
+        /// crystal drops - which is most of the crystals in the game - while reading as wired.
+        /// Same accessor the elemental powerup effect already uses one frame earlier.
+        /// </summary>
         void PlayExplosionAudio()
         {
-            if (audioSystem != null)
-                audioSystem.PlayGameplaySFX(GameplaySFXCategory.CrystalCollect, transform.position);
+            var audio = audioSystem != null ? audioSystem : AudioSystem.Instance;
+            if (audio != null)
+                audio.PlayGameplaySFX(GameplaySFXCategory.CrystalCollect, transform.position);
         }
 
         /// <summary>

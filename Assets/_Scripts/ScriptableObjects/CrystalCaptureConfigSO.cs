@@ -1,3 +1,4 @@
+using CosmicShore.Utility;
 using UnityEngine;
 
 namespace CosmicShore.ScriptableObjects
@@ -185,8 +186,18 @@ namespace CosmicShore.ScriptableObjects
         public static CrystalCaptureConfigSO Load()
         {
             if (_cached) return _cached;
+
             _cached = Resources.Load<CrystalCaptureConfigSO>(ResourcePath);
-            if (!_cached) _cached = CreateInstance<CrystalCaptureConfigSO>();
+            if (!_cached)
+            {
+                // Loud, but once - the defaults ARE the shipped values, so a missing asset changes
+                // nothing about how a capture looks. What it does mean is that nobody can TUNE it,
+                // which is invisible until someone edits the asset and sees no effect.
+                CSDebug.LogWarning($"[CrystalCapture] Resources/{ResourcePath} is missing - captures " +
+                    "will run on built-in defaults and the asset's values will not apply. Restore it, " +
+                    $"or create one via Assets > Create > ScriptableObjects > {nameof(CrystalCaptureConfigSO)}.");
+                _cached = CreateInstance<CrystalCaptureConfigSO>();
+            }
             return _cached;
         }
     }

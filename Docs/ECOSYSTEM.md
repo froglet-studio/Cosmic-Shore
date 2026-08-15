@@ -3732,6 +3732,18 @@ a colour is a rate in linear HDR, so a gain brightens without shifting hue, and 
 would read as a *different* crystal (`Docs/PALETTE.md`). No new FMOD event was added — the pickup now
 reaches the shared `CrystalCollect` category it always should have.
 
+**And that reach was itself broken, on far more than this branch's path.** `Crystal.PlayExplosionAudio`
+guarded on its `[Inject] AudioSystem` field, which is null on **every crystal that was not part of a
+loaded scene**: a lifeform's heart is `Instantiate`d by the cell's spawners, and *nothing* under
+`Controller/Environment` calls `GameObjectInjector.InjectRecursive`. So the pickup sound was a silent
+no-op for the entire ecology's crystal drops — and for the conveyor toy's local mints — while reading
+as correctly wired, because the guard is exactly what a correct guard looks like. It now falls back
+to `AudioSystem.Instance`, the same accessor `SkimmerAdjustElementLevelByCrystalEffectSO` already uses
+one frame earlier on the very same pickup. **The general lesson: `[Inject]` on a prefab that some
+system spawns at runtime is a REQUEST, not a guarantee** — before relying on an injected field in
+anything spawned outside a scene load or a `GameObjectInjector` call site, find the injector. There
+may not be one.
+
 `Crystal.Explode` grew one optional argument, `huskScale`: the burst fires at the end of a flight
 that has already shrunk the crystal into the hull, and the payoff must be sized by the crystal the
 pilot *picked up*, not by the flourish that preceded it. The networked path takes the default and is
@@ -3754,7 +3766,8 @@ crystal is a handful of objects, not the 2,000-instance surface that law exists 
 
 1. Any scene with fauna — Wildlife Blitz is the fastest. Kill a creature and skim its dropped heart.
    The capture must complete in **under half a second**, ending in a husk burst at your hull with the
-   `CrystalCollect` sound. Nothing should linger on the ship.
+   `CrystalCollect` sound. Nothing should linger on the ship. (That sound is a **regression test** as
+   much as a feature — it never played for a lifeform drop before this branch; see §30.2.)
 2. Do it at **top speed** (Squirrel, boosting). The crystal must land *on* the ship, not trail behind
    it — that is the test the old 3-second lerp failed.
 3. Do it on a **Space** crystal specifically: its blendshape pulse now runs *alongside* the flight,
