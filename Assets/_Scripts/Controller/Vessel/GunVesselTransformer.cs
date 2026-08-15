@@ -11,12 +11,15 @@ namespace CosmicShore.Gameplay
     /// (<see cref="PrismscapeDimension"/>):
     ///
     ///  * 1D trail  → SLIDE along the ribbon (<see cref="TrailFollower"/>). Steering is the
-    ///    trail's geometry; the pilot owns only a signed throttle - push to ride the way the
-    ///    nose points along the ribbon, pull to ride the other way.
+    ///    trail's geometry; the pilot owns only a signed throttle - push to keep riding the
+    ///    direction latched at attach, pull to back up - while the hull eases into line with
+    ///    the ribbon (trail prisms are authored with Z parallel to the trail).
     ///  * 2D surface (and the boundary of a 3D volume, which is locally the same thing) →
-    ///    ROLL across the faces (<see cref="BlockscapeFollower"/>). Gyroid and Schwarz-P
-    ///    flora are the canonical case. The pilot keeps full steering; throttle magnitude is
-    ///    the crawl speed.
+    ///    ROLL across the aggregate surface (<see cref="BlockscapeFollower"/>). Gyroid and
+    ///    Schwarz-P flora are the canonical case: their prisms are authored with Z orthogonal
+    ///    to the surface, so the ride follows a smoothed plane over those normals and the
+    ///    pilot keeps full steering while the belly eases onto the surface. The rider must
+    ///    never feel a prism's edges or the gaps between prisms.
     ///
     /// Attaching is two flags and no reparenting - <c>VesselAttachPrismEffectSO</c> sets
     /// <see cref="IVesselStatus.IsAttached"/> and <c>.AttachedPrism</c> on contact, this
@@ -60,9 +63,19 @@ namespace CosmicShore.Gameplay
         [Tooltip("The XDiff value that reads as neutral. XDiff is the dual-stick SPEED axis " +
                  "and RESTS AT 0.5 (GamepadInputStrategy: (right.x - left.x + 2) / 4), not at " +
                  "0 - the 2023 slide was authored against an older input scale and porting its " +
-                 "0.2 made a hands-off vessel creep at 37% throttle. Push above this to slide " +
-                 "the way the nose points along the ribbon, pull below it to slide back.")]
+                 "0.2 made a hands-off vessel creep at 37% throttle. Push above this to ride " +
+                 "the direction latched at attach, pull below it to back up.")]
         [SerializeField] float throttleRestPosition = 0.5f;
+
+        [Tooltip("How quickly the hull turns to lie along the ribbon while sliding a trail " +
+                 "(1/s, exponential). Trail prisms are authored with Z parallel to the trail; " +
+                 "this eases the vessel's forward onto the travel heading.")]
+        [SerializeField] float trailAlignRate = 4f;
+
+        [Tooltip("How quickly the hull's belly eases onto the surface normal while rolling a " +
+                 "2D prismscape (1/s, exponential). A minimal-twist correction on top of the " +
+                 "pilot's steering, never a replacement for it.")]
+        [SerializeField] float surfaceAlignRate = 3f;
 
         bool attached = false;
         CameraManager cameraManager;
@@ -106,11 +119,19 @@ namespace CosmicShore.Gameplay
                     VesselStatus.IsAttached = false;
                     VesselStatus.AttachedPrism = null;
                 }
-                else if (!VesselStatus.AutoPilotEnabled && cameraManager != null)
+                else
                 {
-                    // Pull the camera in while riding: the prismscape is the thing to read,
-                    // and the ride is close-quarters.
-                    cameraManager.SetNormalizedCloseCameraDistance(1);
+                    // The ride owns attitude from here: start it from the hull's ACTUAL pose so
+                    // any rotation input accumulated this frame doesn't fire as a turn the
+                    // pilot never saw.
+                    accumulatedRotation = transform.rotation;
+
+                    if (!VesselStatus.AutoPilotEnabled && cameraManager != null)
+                    {
+                        // Pull the camera in while riding: the prismscape is the thing to
+                        // read, and the ride is close-quarters.
+                        cameraManager.SetNormalizedCloseCameraDistance(1);
+                    }
                 }
             }
             else if (!VesselStatus.IsAttached && attached)
@@ -164,43 +185,73 @@ namespace CosmicShore.Gameplay
             if (trailFollower) trailFollower.Detach();
             if (surfaceFollower) surfaceFollower.Detach();
             _rideMode = RideMode.None;
+
+            // Hand free flight the attitude the ride actually left the hull in - during a ride
+            // the slerp application keeps accumulatedRotation and the transform close, but a
+            // residual gap on detach would fire as an uncommanded turn.
+            accumulatedRotation = transform.rotation;
         }
 
         void Slide()
         {
             float throttle = ReadThrottle();
             bool moving = Mathf.Abs(throttle) > throttleDeadband;
+            float dt = Time.deltaTime;
 
             if (_rideMode == RideMode.Trail)
             {
-                // Signed throttle picks the direction RELATIVE TO THE NOSE: push slides the
-                // way you are facing along the ribbon, pull slides backward. Facing is the
-                // sign of forward-vs-course; Course is the ribbon heading while riding (the
-                // follower writes it), and at the attach instant it is still the flight
-                // course, which points the way the vessel was moving - the right seed.
-                float facing = Vector3.Dot(transform.forward, VesselStatus.Course) >= 0f ? 1f : -1f;
-                float along = throttle * facing;
-
-                trailFollower.SetDirection(along >= 0f
-                    ? TrailFollowerDirection.Forward
-                    : TrailFollowerDirection.Backward);
+                // Signed throttle maps onto the direction LATCHED at attach (the way the vessel
+                // was flying when it touched the ribbon): push keeps going, pull backs up.
+                // SetRideSign is idempotent, so stating it every frame can never flap the ride
+                // - unlike deriving direction from dot(forward, Course), which oscillated the
+                // moment the ribbon curved 90 degrees away from the (un-rotated) hull and
+                // teleported the rider a block per flip.
+                if (moving) trailFollower.SetRideSign(throttle > 0f ? 1 : -1);
                 trailFollower.Throttle = Mathf.Abs(throttle);
 
                 if (moving) trailFollower.RideTheTrail();   // writes Speed + Course
                 else VesselStatus.Speed = 0f;
+
+                // Lie along the ribbon: trail prisms are authored with Z parallel to the
+                // trail, and Course is the live travel heading - ease the hull's forward onto
+                // it (minimal twist, current up preserved).
+                var course = VesselStatus.Course;
+                if (course.sqrMagnitude > 1e-4f &&
+                    SafeLookRotation.TryGet(course, transform.up, out var alongRibbon, this, logError: false))
+                {
+                    accumulatedRotation = Quaternion.Slerp(
+                        accumulatedRotation, alongRibbon, 1f - Mathf.Exp(-trailAlignRate * dt));
+                }
             }
             else
             {
                 // Rolling: the pilot keeps full steering - the surface constrains position,
-                // not attitude. These are the same protected rotation passes free flight runs.
+                // not attitude. These are the same protected rotation passes free flight runs;
+                // they accumulate into accumulatedRotation, which the ride applies below
+                // exactly the way RotateShip applies it in free flight.
                 Roll();
                 Yaw();
                 Pitch();
 
-                surfaceFollower.Throttle = Mathf.Abs(throttle);
+                // Ease the belly onto the ridden surface: the minimal rotation taking the
+                // steered attitude's up onto the smoothed normal, blended in gently ON TOP of
+                // the pilot's steering so it reads as the surface holding the vessel, never as
+                // the stick fighting back.
+                var steeredUp = accumulatedRotation * Vector3.up;
+                var belly = Quaternion.FromToRotation(steeredUp, surfaceFollower.SurfaceNormal);
+                accumulatedRotation = Quaternion.Slerp(
+                    Quaternion.identity, belly, 1f - Mathf.Exp(-surfaceAlignRate * dt)) * accumulatedRotation;
+
+                surfaceFollower.Throttle = throttle;        // SIGNED: pull backs up along the surface
                 if (moving) surfaceFollower.RideTheTrail(); // writes Speed
                 else VesselStatus.Speed = 0f;
             }
+
+            // Apply the ride attitude the same way free flight's RotateShip applies input
+            // attitude. Slide() replaces base.MoveShip entirely, so without this the
+            // accumulated rotation is a backlog nothing consumes - the hull never turns during
+            // the ride, and detaching slams the whole backlog at once.
+            transform.rotation = Quaternion.Slerp(transform.rotation, accumulatedRotation, LERP_AMOUNT * dt);
 
             // Keep the fleet's smoothed cruise field tracking the ride, so DETACHING hands
             // back a speed that matches what the pilot was doing rather than snapping to a

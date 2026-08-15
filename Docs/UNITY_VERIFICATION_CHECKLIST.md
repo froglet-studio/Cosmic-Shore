@@ -96,10 +96,45 @@ ROLL across the 2D prismscapes that gyroid and Schwarz flora make. What landed:
   else BlockscapeFollower roll; ONE `ApplyPrismscapePayoff` (restore/grow+L5-shield/steal) serves
   both, fed by `FinalBlockSlideEffects` (1D callback) and `OnPrismCrossed` (2D event).
 
-Round-3 verify (detail in `URCHIN_TRAIL_RIDER.md` §In-editor verification, steps 7/8/8b):
-attach near the trail HEAD and slide — no freeze; hands-off holds still; push/pull slides
-forward/backward; fly into a gyroid/Schwarz flora prism → console logs `Riding a Surface
-prismscape`, steering stays live, edges fold, hops convert prisms one-by-one.
+**ROUND 4 (2026-08-15, after the third live repro).** Playtest of round 3: "horribly unsmooth
+... horribly jittery" on a trail — and the design spec stated plainly: a 1D ride is seamless
+movement along the ribbon (trail prisms are authored with **Z parallel to the trail**), and a 2D
+ride is smooth rolling on a continuous curved surface (gyroid/Schwarz prisms are authored with
+**Z orthogonal to the surface**) — the rider must NEVER feel prism edges or gaps. What landed:
+
+- **The jitter's root: direction recomputed per frame from a facing dot, against a hull that
+  never rotates.** `Slide()` replaces `base.MoveShip()`, and `RotateShip` lives inside
+  `MoveShip` — so during a ride nothing wrote `transform.rotation`, and round 3's
+  `sign(dot(frozen forward, curving Course))` FLAPPED as the ribbon curved. Every flap ran
+  `SetDirection`, which shifts the block index ±1 — a teleport per flap, up to every frame.
+  The AI break-off lesson again: directional decisions are LATCHED, never per-frame geometry.
+  Now `TrailFollower.Attach` latches `attachDirection` from the vessel's own motion and the
+  signed throttle maps onto the latch (`SetRideSign`, idempotent).
+- **Attach snap killed**: the 2023 `percentTowardNextBlock = 0` TODO is implemented — the lerp
+  seeds from the actual touch point projected onto the segment ahead.
+- **The head parks instead of bouncing**: round 3's reflection stopped the freeze but bounced
+  the rider at an open ribbon's end, and the throttle mapping flipped it back — oscillation at
+  the exact place players attach. `RideTheTrail` now discards the bounced frame entirely (no
+  snap, bookkeeping untouched) and resumes when the trail grows or the pilot reverses.
+  `SetDirection` range-clamps the terminal-block flip that used to index off the list.
+- **Ride attitude applied the free-flight way**: rides write `accumulatedRotation` (trail:
+  forward eased onto the travel heading; surface: pilot steering + belly eased onto the
+  smoothed normal) and apply it with `RotateShip`'s own `LERP_AMOUNT` slerp; ride boundaries
+  sync `accumulatedRotation = transform.rotation` both directions so no backlog fires as an
+  uncommanded turn.
+- **The 2D roll is a NEW model**: round 3's face-crawl/edge-fold/hop kernel (per-prism boxes —
+  structurally incapable of hiding edges) is deleted. `BlockscapeFollower` now rides a
+  smoothed plane over the prisms' AUTHORED normals (`transform.forward`, sign resolved toward
+  the ridden side): normal slerps at `normalTrackingRate`, hover is a soft spring at
+  `hoverHeight`, ground is the nearest live prism (`QuerySphere`, one bounded query per frame
+  per rolling vessel — replaced, never dropped, so gaps and shot-out ground are coasted).
+  `OnPrismCrossed` still pays the shared payoff per prism visited.
+
+Round-4 verify (detail in `URCHIN_TRAIL_RIDER.md` steps 7/8/8b): the slide is SMOOTH — hull
+lies along the ribbon, no jitter, reverse turns the vessel around, the head parks and resumes;
+the roll is CONTINUOUS — belly on the surface, steering live, no facets/bumps/edge feel, holes
+coasted. Feel dials: `trailAlignRate`/`surfaceAlignRate` (transformer),
+`normalTrackingRate`/`hoverTrackingRate`/`hoverHeight` (BlockscapeFollower).
 
 Full mechanics, historical record and follow-ups:
 `_Scripts/Controller/Vessel/R_VesselActions/URCHIN_CHAIN_SPIKES.md` and `URCHIN_TRAIL_RIDER.md`.
