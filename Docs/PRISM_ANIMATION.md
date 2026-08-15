@@ -174,10 +174,10 @@ per-tick `smoothstep` color lerp → `PrismRenderService.SetColors` or MPB write
 
 | Path | Trigger | Mechanism today | Verdict |
 |---|---|---|---|
-| Octahedron engage bloom | `PrismStateManager.ApplyShieldState` → `PrismOctahedronShield.Engage` | Per-frame CPU morph-mesh rebuild (8 faces grow from centroids, 0.35 s) on the GameObject renderer via `SetExoticVisualActive(true)` | ❌ |
-| Shatter overlay (disengage) | `Disengage` | Per-frame CPU shatter-mesh rebuild (faces fly outward, 0.6 s) | ❌ |
-| Stella engage/disengage | `ActivateSuperShield` → `PrismStellatedOctahedronShield` | Same pattern | ❌ |
-| Settled shield state | Morph completes | Swap to cache-shared mesh (`GetSharedShieldMesh`) + return to instanced path | ✅ — the reference end-swap |
+| Octahedron engage bloom | `PrismStateManager.ApplyShieldState` → `PrismOctahedronShield.Engage` | ONE stamp (`StampShieldMorph`); the vertex stage blooms the 8 faces out of their centroids off the shader clock, on the cache-shared settled mesh | ✅ shipped 2026-08-15 (was: per-frame CPU morph-mesh rebuild on the un-batched GameObject renderer) |
+| Shatter overlay (disengage) | `Disengage` | ONE batched pure-entity spawn per frame (`PrismShieldShatter` → `SpawnShieldShatterBatch`) carrying one stamp each; retired by a flat time sweep | ✅ shipped 2026-08-15 (was: a per-prism child GameObject rebuilding a shatter mesh every frame) |
+| Stella engage/disengage | `ActivateSuperShield` → `PrismStellatedOctahedronShield` | Same two paths, same shader function — 24 faces instead of 8 | ✅ shipped 2026-08-15 |
+| Settled shield state | Engage (t = 0, not morph completion) | Swap to cache-shared mesh (`GetSharedShieldMesh`) + return to instanced path — now applied at the START, since the morph runs on that same shared mesh | ✅ — the reference end-swap, retimed to the stamp |
 
 ### 3.5 Spawn / pool / trail paths
 
@@ -263,6 +263,13 @@ conveyor recycle — all inventoried in §3.7 lenses A, F, G, J, K.)*
 | Stress harness churn (PrismRenderStressTest) | per-frame CPU | ❌ | `Controller/ECS/Rendering/PrismRenderStressTest.cs:238-283` | Keep as the measurement tool, and ADD a third mode: stamp-once GPU-clock animation over the new clock components with zero Update writes — the A/B (per-frame churn vs stamped clock at equal visual motion) is the acceptance benchmark proving the infrastructure and validating the Hybrid-Per-Instance c… |
 
 #### D. Shields (exotic geometry)
+
+> **All four ❌ rows below SHIPPED 2026-08-15** — see §4.8 for the design as built and
+> §5 B4 for the record. The table is left as the 2026-07-31 audit found it, including the
+> migration sketches, because two of them were superseded in a way worth keeping visible:
+> no separate "anim variant" mesh was needed (the settled shared mesh carries the
+> centroids, so it IS the morph mesh), and no scheduled end-callback was needed (the
+> shader clamps at t = 1, which is the settled shield).
 
 | Path | Cadence | Verdict | Where | Migration |
 |---|---|---|---|---|
@@ -1585,7 +1592,86 @@ Three properties worth carrying to the next one:
 
 Mechanic and tuning: `_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_CRYSTAL_SEEDING.md`.
 
-### 4.8 The super-shield deflection jiggle (shipped 2026-08-15, C14)
+### 4.8 The shield morph — the last CPU ticker (shipped 2026-08-15, B4)
+
+Both shield tiers animated their per-face **engage bloom** and **disengage shatter** by
+rebuilding a mesh on the CPU every frame, driven by `PrismOctahedronShieldManager` — the
+one remaining sanctioned per-frame prism ticker, and the last ❌ in Phase B. Both are now
+`f(clock, stamp)`; the manager is **deleted**.
+
+**The one thing a vertex shader cannot derive is which face a vertex belongs to.** That is
+the whole problem, and the whole fix: `OctahedronMeshGenerator` / `StellatedOctahedronMeshGenerator`
+now bake each vertex's own **face centroid** into **TEXCOORD1** (`FaceCentroidUVChannel`,
+one constant shared by both tiers). With it, both animations are the same two-term
+expression the CPU used, evaluated per vertex:
+
+```
+engage  (Direction >= 0):  p = centroid +      t  * (v - centroid)
+shatter (Direction <  0):  p = centroid + (1 - t) * (v - centroid) + t * Offset * n
+t = smoothstep(0, 1, saturate((clock - StartTime) / Duration))
+```
+
+Four properties carry it, all Hybrid Per Instance: `_ShieldMorphStartTime`,
+`_ShieldMorphDuration` (0 = unstamped = render the mesh as authored),
+`_ShieldMorphDirection`, `_ShieldMorphOffset`. `PrismShieldMorph_float` lives in
+`PrismClockAnimation.hlsl`; `Tools/Shaders/wire_prism_shield_morph.py` wires **both**
+live-prism graphs (BlockGraph + ExplodingBlockGraph — the same census as the corridor and
+the flight clock, because `TransparentPrismMaterial` rests on the latter).
+
+Five properties of the result are worth carrying to the next migration:
+
+- **The settled mesh IS the morph mesh, so the shield never leaves the instanced path.**
+  The audit sketched a second "anim variant" mesh per quantized geometry; none is needed,
+  because at `faceScale = 1` the expression is the identity. That collapses the whole
+  exotic-visual window: `SetRenderMeshOverride(sharedMesh)` at engage is now the *only*
+  render call, `SetExoticVisualActive` is driven to **false** and never to true, and a
+  batch of same-size shields stays ONE draw through the entire animation instead of each
+  prism minting a unique mesh (and therefore a unique draw call) for 0.35–0.7 s. The
+  handoff contract itself is unchanged and still load-bearing — a bare `MeshFilter` swap
+  still renders nothing.
+- **Everything is final at t = 0.** `Engage` applies the whole shielded pose — collider,
+  mass, material, shared mesh, render handoff — and only then stamps. There is no
+  scheduled completion callback at all: the shader clamps at `t = 1`, which is exactly the
+  settled shield, so a finished bloom needs nothing done to it. The stamp is only ever
+  *cleared*, and only where it must be — at disengage (the entity has gone back to the
+  prism's own box mesh, which carries no centroids, so a live stamp would collapse that box
+  toward the object origin) and on pool reuse (`ClearPrismStamps`).
+- **The shatter is batched pure-entity debris, not a child GameObject.** The prism itself
+  is back on its box the instant the shield drops, so the shards are necessarily a separate
+  visual — and a separate visual with one pose, one stamp and one retirement is the §4.6
+  carrier's exact shape. `PrismShieldShatter` queues a frame's disengages and spawns them
+  through `SpawnShieldShatterBatch`, grouped by `(mesh, material, layer)` because — unlike
+  the death debris — shields vary in size and domain. Shards ride the **Prism** override
+  set on the prism's own material, so they share a batch with every settled shield like
+  them.
+- **A shatter is never cancelled.** The old `StopShatter()` deleted visible, mass-shaped
+  geometry mid-flight on a re-engage — the thing "nothing pops out of existence" forbids.
+  Re-engaging now lets the old shards finish while the new shield blooms.
+- **`AnimationCurve` retired — exact for the fleet, a deliberate change on two prefabs.**
+  `AnimationCurve.EaseInOut(0,0,1,1)` is a Hermite with **zero** end tangents, which IS
+  `3t² − 2t³` = `smoothstep`. That is not an assumption: Unity's own serialization of the
+  same constructor writes `inSlope/outSlope: 0` (cross-checked against
+  `SpaceCrystalAnimator.shrinkCurve` on `MassSharkFauna` / `MassBrittlestarFauna`). Every
+  shield whose component is added at runtime by `PrismStateManager.Awake` — i.e. every
+  prism in the game except the two below — is therefore reproduced **exactly**.
+  **The exception, stated rather than glossed:** `BlueBlock.prefab` (live in three
+  multiplayer scenes + both Recording Studios) and `OctahedronShieldTest.prefab` serialize
+  a HAND-ALTERED curve with end tangents **2** — `2t³ − 3t² + 2t`, fast-slow-fast, the
+  opposite shape, deviating from `smoothstep` by up to **0.192** at t ≈ 0.2/0.8. Those two
+  now ease like the rest of the fleet. Keeping them would have meant a per-instance curve
+  parameter for one prefab's drift; and since the C# fields are deleted, the authored
+  deviation would not have survived the next save of either prefab anyway. `smoothstep`
+  is also what every other clock transition already uses (`PrismColorLerp`).
+
+Gate: `PrismShieldMorphTests` (edit-mode, assets only) checks the baked centroids against
+the retired CPU formula, the Hybrid-Per-Instance wiring and UV channel on both graphs, that
+the ticker file is gone, and that neither shield has grown an `Update` / coroutine / tween
+or a CPU mesh rebuilder. `FrogletTools > Ecology > Prism Animation > Validate Clock Wiring`
+covers the same properties from the compiled-material side.
+
+---
+
+### 4.9 The super-shield deflection jiggle (shipped 2026-08-15, C14)
 
 Super-shielded mass is **fully invulnerable** — `Prism.Damage`, `Prism.Consume`, the Burst AOE
 resolve and the physics-fallback AOE all bail on it, and `devastate: true` does not override that
@@ -1720,7 +1806,7 @@ Phase B — migrate the engines (each retires a per-frame pass):
 | B1 | Grow-in → clock (all ~12 feeder paths ride the one engine); gameplay-final-at-start (volume/spatial stamps, clock predicates, `ExecuteOnScaleComplete` → start) | ✅ LIVE (strict, the only path) 2026-08-01 — `PrismScaleManager` DELETED (D2, 2026-08-02). Graph wiring ✅ (playtest-confirmed smooth). Pending: `HoldColliderAtFullSize` deletion, `CreateBlockCoroutine` window simplification, arena-gate simplification, PhaseThresholds re-baseline |
 | B2 | Color/state transitions → clock lerp (start colors + t₀; target = material authored; end-state material bound at START, settle scheduled) | ✅ LIVE (strict, the only path) 2026-08-01 — `MaterialStateManager` DELETED (D2, 2026-08-02). Graph wiring ✅ (playtest-confirmed smooth on BlockGraph; the transparent-prism color cluster on ExplodingBlockGraph is wired too — 2026-08-02 — so transparent steals/repaints fade instead of snapping) |
 | B3 | Explosion/implosion → clock (stamp `{t₀, velocity, speed, duration}` / `{t₀, duration, direction, delay, location}`) | ✅ LIVE (strict, the only path) 2026-08-01 — moving-target DECIDED as the §1 exception (a snapshot would suck prisms toward where the fauna WAS): progress rides the clock, `PrismEffectsManager` refreshes `_Location` only (one float3/frame) while the target lives. Animation passes + Burst jobs DELETED (D2, 2026-08-02 — the manager keeps only convergence refresh + zombie audit). Graph wiring ✅ both graphs, PLAYTEST-CONFIRMED 2026-08-02: explosions ✅ (GPU-side world→object conversion inside `PrismExplosionClock` — raw inverse-model multiply, never the normalizing Direction-mode Transform — + flight-envelope bounds) and suction ✅ (`EncapsulateBoundsPoint` envelope). **Mass-death carrier upgraded 2026-08-02**: prism-death explosions spawn as BATCHED PURE-ENTITY debris (`PrismDebris` + `PrismRenderService.SpawnExplosionDebrisBatch` — no GameObject/pool/per-effect timer; full duration always); pooled path = fallback only. **Implosion batch port shipped 2026-08-04** (`SpawnImplosionDebrisBatch` + `RefreshImplosionDebrisBatch`): suctions ride the same carrier, and the moving-target §1 exception moved onto it as a per-record `_Location` refresh with a CPU-mirrored culling envelope — see §4.6 for the carrier's rules and the death-path marker split that shipped with it |
-| B4 | Shield morphs → GPU (vertex-shader bloom/shatter from per-vertex face data + t₀; settled shared-mesh swap already conforms) | ◐ interim shipped 2026-08-01: stellated idle per-prism `Update()` KILLED — both shield tiers now ride the central `PrismOctahedronShieldManager` ticker (`IPrismShieldMorphTicker`), registered only while morphing. GPU morph itself still pending |
+| B4 | Shield morphs → GPU (vertex-shader bloom/shatter from per-vertex face data + t₀; settled shared-mesh swap already conforms) | ✅ **SHIPPED 2026-08-15 — Phase B is complete and the LAST sanctioned CPU ticker is DELETED** (`PrismOctahedronShieldManager` + `IPrismShieldMorphTicker`; its active set is empty by construction because no shield registers any more, and an edit-mode test fails if the file returns). Both tiers' engage bloom and disengage shatter are now `f(clock, stamp)` via `PrismShieldMorph_float` + four Hybrid-Per-Instance properties, wired into **both** live-prism graphs by `Tools/Shaders/wire_prism_shield_morph.py`. The mesh generators bake each vertex's FACE CENTROID into TEXCOORD1, which makes the cache-shared **settled** mesh also the morph mesh — so no "anim variant" mesh was needed (the audit's sketch), no scheduled end-callback was needed (the shader clamps at t = 1, which IS the settled shield), the exotic-visual window collapses entirely (`SetExoticVisualActive` is now only ever driven FALSE; `SetRenderMeshOverride` still carries the handoff), and same-size shields stay in ONE batch through the whole animation instead of each minting a unique mesh + draw call. The shatter overlay's per-prism child GameObject is replaced by batched pure-entity debris on the §4.6 carrier (`PrismShieldShatter` → `SpawnShieldShatterBatch`, grouped by mesh × material × layer since shields vary in size and domain) and is no longer cancellable on re-engage — deleting shards mid-flight was a continuity-law breach. `AnimationCurve.EaseInOut(0,0,1,1)` == `smoothstep` (zero end tangents — verified against Unity's own serialization of that constructor), so every runtime-added shield is reproduced EXACTLY; the two prefabs that serialize a hand-altered curve (`BlueBlock`, `OctahedronShieldTest`, end tangents 2) now ease like the fleet, a stated deviation of up to 0.192. Curve fields retired. Design + the five carryable properties: §4.8 |
 
 Phase C — rogue paths & ecosystem visuals (each is standalone):
 
@@ -1740,7 +1826,7 @@ Phase C — rogue paths & ecosystem visuals (each is standalone):
 | C12 | `PrismImplosion` watchdog → scheduler; orphan cleanup; `SkimFxRunner` stretch beam review; `CloakSeedWall` dead code removal | ◐ 2026-08-01: `TrailBlockBufferManager` deleted; `TrailViewer` removed from Urchin.prefab + deleted (D2, 2026-08-02); watchdog / SkimFxRunner / CloakSeedWall pending |
 | C13a | Environment-laid prisms miss the clock path (the live repro: `grow:SpawnablePrism (Clone)`) | ✅ FIXED 2026-08-02 — root cause was NOT the raw-`Instantiate` lay: the shield engage-morph held `_exoticVisualActive` across the creation reveal, so `EnsureRenderEntity` was skipped at the exact instant the one-shot grow stamp fired. Fixed by §4.5 (a) entity existence ⊥ visibility + stamp-site self-heal + fact-based diagnosis, and (b) the birth rule (spawn-time shields snap). §3.8 #10 has the full anatomy. Pooling is orthogonal — a pooled prism with a `Shielded` kind failed identically; `BoostRingBuilder` only escaped because it defers shield kinds to `onGrown` |
 | C13b | Environment lay pooling: `PrismTrailBuilder.LayOne` → pooled pull with final domain material (kills the `Domains.Blue` → domain spawn repaint) | ☐ not started — still worth doing on its own merits (spawn repaint, alloc churn), but it is NOT a clock-path fix. Note the pools are `maxSize`-bounded and environment mass is never released, so a naive pool-through would either destroy conserved mass on release or instantiate forever; it needs its own environment-prefab pool design |
-| C14 | Super-shielded prisms absorb hits SILENTLY — a deflection reads as a miss | ✅ SHIPPED 2026-08-15 — new `PrismJiggleClock` (HLSL) + `_JiggleStartTime`/`_JiggleDuration`/`_JiggleParams` (Hybrid Per Instance, wired into **both** live-prism graphs by `Tools/Shaders/wire_prism_jiggle_clock.py`) + `PrismRenderService.StampJiggle`/`ClearJiggleStamp` + `PrismSuperShieldJiggle` (the stamp site) + `PrismSuperShieldJiggleConfigSO` (the feel). Each FACE wobbles about the prism's object origin on an axis that PRECESSES about that face's own normal and NUTATES, decaying to exactly zero at `Duration` so the scheduled clear is invisible. Per-face and per-prism randomness is derived on the GPU from the face normal and the object-to-world translation — no seed stamped, no mesh channel authored, which matters because the super-shield stella carries neither tangents nor UVs (the tangent basis is built from the normal alone). **Not** the §4.7 global-uniform shape: this is §1 animation, not a view-dependent value. The four invulnerability gates that used to each carry their own `IsSuperShielded` early-return now route through ONE `Prism.AbsorbSuperShieldHit`. Design + the measured envelope: §4.8 |
+| C14 | Super-shielded prisms absorb hits SILENTLY — a deflection reads as a miss | ✅ SHIPPED 2026-08-15 — new `PrismJiggleClock` (HLSL) + `_JiggleStartTime`/`_JiggleDuration`/`_JiggleParams` (Hybrid Per Instance, wired into **both** live-prism graphs by `Tools/Shaders/wire_prism_jiggle_clock.py`) + `PrismRenderService.StampJiggle`/`ClearJiggleStamp` + `PrismSuperShieldJiggle` (the stamp site) + `PrismSuperShieldJiggleConfigSO` (the feel). Each FACE wobbles about the prism's object origin on an axis that PRECESSES about that face's own normal and NUTATES, decaying to exactly zero at `Duration` so the scheduled clear is invisible. Per-face and per-prism randomness is derived on the GPU from the face normal and the object-to-world translation — no seed stamped, no mesh channel authored, which matters because the super-shield stella carries neither tangents nor UVs (the tangent basis is built from the normal alone). **Not** the §4.7 global-uniform shape: this is §1 animation, not a view-dependent value. The four invulnerability gates that used to each carry their own `IsSuperShielded` early-return now route through ONE `Prism.AbsorbSuperShieldHit`. Design + the measured envelope: §4.9 |
 
 Phase D — lock-in:
 

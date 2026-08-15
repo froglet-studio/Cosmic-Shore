@@ -386,4 +386,59 @@ void PrismFlightSqrDistance_float(float Clock, float StartTime, float Duration, 
     SqrDistance = dot(d, d);
 }
 
+// -----------------------------------------------------------------------------
+// Shield morph — the per-face bloom (engage) and the shatter overlay (disengage),
+// for BOTH shield tiers (BlockGraph + ExplodingBlockGraph vertex stage).
+// Docs/PRISM_ANIMATION.md §5 B4. This replaces the last sanctioned CPU ticker
+// (PrismOctahedronShieldManager), which rebuilt a per-prism morph MESH every frame
+// for the whole 0.35-0.7 s animation.
+//
+// The one thing a vertex shader cannot derive is which face a vertex belongs to,
+// so the mesh generators bake each vertex's own FACE CENTROID into TEXCOORD1
+// (OctahedronMeshGenerator/StellatedOctahedronMeshGenerator.FaceCentroidUVChannel).
+// With that, both animations are the same two-term expression the CPU used:
+//
+//   engage  (Direction >= 0):  p = centroid + t*(v - centroid)
+//   shatter (Direction <  0):  p = centroid + (1-t)*(v - centroid) + t*Offset*n
+//
+// t is smoothstep(0,1,progress), which IS AnimationCurve.EaseInOut(0,0,1,1) — a Hermite
+// with zero end tangents is 3p^2-2p^3 (Unity's own serialization of that constructor
+// carries inSlope/outSlope 0; cross-checked on SpaceCrystalAnimator.shrinkCurve). Every
+// shield whose component is added at RUNTIME therefore animates identically to before.
+// The two prefabs that serialize the curve (BlueBlock, OctahedronShieldTest) carry a
+// hand-altered variant with end tangents 2 — 2p^3-3p^2+2p, fast-slow-fast, up to 0.19
+// away from smoothstep — and now ease like the rest of the fleet. The curve fields are
+// retired with the CPU driver: an arbitrary AnimationCurve has no GPU evaluation, and
+// smoothstep is the easing every other clock transition already uses (PrismColorLerp).
+//
+// Because the morph runs on the SETTLED shared mesh, a shielded prism never leaves
+// the instanced path: same-size shields batch into one draw through the entire
+// animation. Normal is the OBJECT-space flat face normal (the generators author one
+// normal per face), and it is deliberately NOT re-derived after displacement — a
+// per-face rigid translation cannot change a face's normal.
+//
+// Duration <= 0 -> unstamped: the position passes through untouched, which is every
+// prism in the game that is not mid-shield-morph (and every mesh with no TEXCOORD1).
+// -----------------------------------------------------------------------------
+void PrismShieldMorph_float(float Clock, float StartTime, float Duration, float Direction,
+    float ShatterOffset, float3 Position, float3 Normal, float3 FaceCentroid,
+    out float3 MorphedPosition)
+{
+    if (Duration <= 0.0)
+    {
+        MorphedPosition = Position;
+        return;
+    }
+    float p = saturate((Clock - StartTime) / Duration);
+    float t = smoothstep(0.0, 1.0, p);
+
+    // Branchless select: both tiers and both directions share one expression, so a
+    // shattering prism and a blooming prism in the same batch never diverge.
+    float shatter   = Direction < 0.0 ? 1.0 : 0.0;
+    float faceScale = lerp(t, 1.0 - t, shatter);
+    float offset    = shatter * t * ShatterOffset;
+
+    MorphedPosition = FaceCentroid + faceScale * (Position - FaceCentroid) + offset * Normal;
+}
+
 #endif // PRISM_CLOCK_ANIMATION_INCLUDED

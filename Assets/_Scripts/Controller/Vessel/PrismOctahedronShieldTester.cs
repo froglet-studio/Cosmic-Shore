@@ -14,6 +14,13 @@ namespace CosmicShore.Gameplay
     /// is preconfigured with everything this harness needs - drag it into
     /// any scene and press Space.
     ///
+    /// This doubles as the in-editor verification rig for the GPU shield morph
+    /// (Docs/PRISM_ANIMATION.md §5 B4): the host has no <c>Prism</c>, so it has no
+    /// companion render entity, and <c>PrismShieldMorph</c> stamps the bloom's initial
+    /// conditions onto the MeshRenderer's MaterialPropertyBlock instead — one write,
+    /// same shader, same course. The host's material must be a wired prism graph
+    /// (the prefab ships BlueBlockMateral, which is BlockGraph) or the morph snaps.
+    ///
     /// Uses the new Input System package (<c>UnityEngine.InputSystem</c>)
     /// because the project has legacy Input handling disabled.
     /// </summary>

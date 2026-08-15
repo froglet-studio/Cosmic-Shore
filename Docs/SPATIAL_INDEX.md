@@ -394,7 +394,7 @@ coverage limit. Two rules keep that true:
    longer starve enemy mass out of the budget. "Free" is about the damage
    BUDGET, not about doing nothing: since 2026-08-15 a super-shield block
    also routes through `Prism.AbsorbSuperShieldHit`, which stamps the
-   deflection wobble (`Docs/PRISM_ANIMATION.md` §4.8) so the blast visibly
+   deflection wobble (`Docs/PRISM_ANIMATION.md` §4.9) so the blast visibly
    rocks the shield instead of stopping dead against nothing. That stamp is
    rate-limited per prism, charges no budget, and changes no gameplay state —
    the branch still returns `false` and still sets `shouldContinue = false`.
