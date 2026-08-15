@@ -899,6 +899,14 @@ New: `VesselJetFX` + `VesselJetFXConfigSO` (`Resources/VesselJetFXConfig`), boun
 5. Sparrow (`MinigameDogFight`): existing ribbon now tinted + 2 **derived** rear plumes — judge
    whether the derived placement needs an art pass.
 6. Rhino (`MinigameRibcage`) 2 plumes; Manta 2 derived. Ribbons tinted.
+6a. **PLACEMENT — the thing to actually look at.** For every vessel that gets a *spawned* beacon
+   (i.e. not Squirrel/Dolphin/Sparrow, which keep their authored ones): the ribbon pair must start
+   **at or behind your camera** and be **off to the sides** — nothing hanging down the middle of
+   your view. It is placed at `beaconDepthPerCameraDistance × the vessel's own camera distance`,
+   which differs enormously by vessel: **Manta 30, Rhino 120, Serpent 250**. The Serpent is the
+   extreme case and the one most worth eyeballing. If the ribbon is invisible to its own pilot and
+   you want a glimpse of it, pull `beaconDepthPerCameraDistance` from 1.0 toward **0.71**, which is
+   what the Squirrel authors (12 / 17). Plumes must read as coming **out of the sides** of the hull.
 7. **Live domain change** via the Domain Changer toy — ribbon and plumes repaint on the same frame.
    Plume *particles* staying blue is expected and deliberate (matches the Squirrel).
 8. MPPM ×2 — each peer sees the other's domain on both layers; a Cellular Duel ownership swap

@@ -32,7 +32,11 @@ MonoBehaviour:
   plumeScalePerMountSize: 1
   plumeScalePerHullRadius: 0.11
   plumeLengthAspect: 0.22
-  beaconOffsetPerHullRadius: -0.55
+  beaconCount: 2
+  beaconLateralPerHullRadius: 0.45
+  beaconDepthPerCameraDistance: 1
+  beaconFallbackDepthPerHullRadius: 1.6
   maxEnginePlumes: 6
   derivedMountCount: 2
-  derivedMountSpreadPerHullRadius: 0.28
+  derivedMountSpreadPerHullRadius: 0.5
+  derivedMountDepthPerHullRadius: -0.6

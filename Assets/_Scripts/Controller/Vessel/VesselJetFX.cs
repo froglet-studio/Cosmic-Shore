@@ -129,7 +129,7 @@ namespace CosmicShore.Gameplay
             bool beaconAuthored = preexistingTrails.Length > 0;
             bool plumesAuthored = AnyTrailUnderMounts(preexistingTrails, cfg);
 
-            if (spawnBeaconRibbon && !beaconAuthored) SpawnBeacon(cfg, hullRadius);
+            if (spawnBeaconRibbon && !beaconAuthored) SpawnBeacons(cfg, hullRadius);
             if (spawnEnginePlumes && !plumesAuthored)
                 SpawnPlumes(cfg, hullRadius, ResolveMounts(cfg, hullRadius));
 
@@ -139,15 +139,41 @@ namespace CosmicShore.Gameplay
             GetComponentInChildren<VesselTrailCustomization>(includeInactive: true)?.Refresh();
         }
 
-        void SpawnBeacon(VesselJetFXConfigSO cfg, float hullRadius)
+        /// <summary>
+        /// Places the beacon ribbons the way the Squirrel authors them: a symmetric PAIR, offset
+        /// laterally, starting at (or behind) the pilot's own camera.
+        ///
+        /// Both parts of that are deliberate and were the Squirrel's design, not decoration:
+        /// - the ribbons are OFF the centreline (Squirrel: +/-4) so nothing hangs down the middle
+        ///   of the pilot's view;
+        /// - the depth is measured against THIS VESSEL'S CAMERA, not its hull, so the ribbon
+        ///   starts behind the camera and cannot obstruct the pilot. That reference matters
+        ///   enormously across this fleet: camera follow distance runs from 17 on the Squirrel to
+        ///   250 on the Serpent, so a hull-relative offset tuned on one is in the other's face.
+        /// The ribbon is for OTHER players; the pilot's engine feedback is the plume layer.
+        /// </summary>
+        void SpawnBeacons(VesselJetFXConfigSO cfg, float hullRadius)
         {
             if (cfg.BeaconRibbonPrefab == null) return;
 
-            var beacon = Instantiate(cfg.BeaconRibbonPrefab, _spawnedRoot);
-            beacon.name = "BeaconRibbon";
-            beacon.transform.localPosition = new Vector3(0f, 0f, cfg.BeaconOffsetPerHullRadius * hullRadius);
-            beacon.transform.localRotation = Quaternion.identity;
-            CollectTrails(beacon);
+            float cameraDistance = VesselJetFXConfigSO.ResolveCameraDistance(
+                GetComponent<VesselCameraCustomizer>()?.Settings);
+
+            float depth = cameraDistance > Mathf.Epsilon
+                ? cameraDistance * cfg.BeaconDepthPerCameraDistance
+                : hullRadius * cfg.BeaconFallbackDepthPerHullRadius;
+
+            float lateral = hullRadius * cfg.BeaconLateralPerHullRadius;
+
+            for (int i = 0; i < cfg.BeaconCount; i++)
+            {
+                var beacon = Instantiate(cfg.BeaconRibbonPrefab, _spawnedRoot);
+                beacon.name = $"BeaconRibbon_{i}";
+                beacon.transform.localPosition = new Vector3(
+                    VesselJetFXConfigSO.BeaconLateralOffset(i, cfg.BeaconCount, lateral), 0f, -depth);
+                beacon.transform.localRotation = Quaternion.identity;
+                CollectTrails(beacon);
+            }
         }
 
         /// <summary>
@@ -307,6 +333,13 @@ namespace CosmicShore.Gameplay
             return mounts;
         }
 
+        /// <summary>
+        /// Plumes for a model with no engine geometry. Placed OUT TO THE SIDES at the rear, not
+        /// on the centreline: the plume layer exists to read as engines from the pilot's chase
+        /// camera, and on every vessel that HAS jets they emerge from the hull's flanks. A
+        /// centreline pair would read as one exhaust and lose the vessel's sense of width.
+        /// This is a stand-in for art, not art direction — see Docs/VESSEL_JET_FX.md §7.
+        /// </summary>
         List<Transform> DeriveRearMounts(VesselJetFXConfigSO cfg, float hullRadius)
         {
             var derived = new List<Transform>();
@@ -314,15 +347,14 @@ namespace CosmicShore.Gameplay
             if (count <= 0) return derived;
 
             float spread = hullRadius * cfg.DerivedMountSpreadPerHullRadius;
-            float back = hullRadius * cfg.BeaconOffsetPerHullRadius * 0.5f;
+            float back = hullRadius * cfg.DerivedMountDepthPerHullRadius;
 
             for (int i = 0; i < count; i++)
             {
-                // -1..+1 across the span, so 2 mounts land at -1 and +1 and a single one at 0.
-                float t = count == 1 ? 0f : Mathf.Lerp(-1f, 1f, i / (float)(count - 1));
                 var mount = new GameObject($"DerivedMount_{i}").transform;
                 mount.SetParent(_spawnedRoot, worldPositionStays: false);
-                mount.localPosition = new Vector3(t * spread, 0f, back);
+                mount.localPosition = new Vector3(
+                    VesselJetFXConfigSO.BeaconLateralOffset(i, count, spread), 0f, back);
                 mount.localRotation = Quaternion.identity;
                 derived.Add(mount);
             }

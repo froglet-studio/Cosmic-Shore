@@ -1,5 +1,6 @@
 #if UNITY_EDITOR
 using NUnit.Framework;
+using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
 using UnityEngine;
 
@@ -160,6 +161,81 @@ namespace CosmicShore.Tests
                         "detection pass would then miss FX the spawn pass creates.");
             }
         }
+
+        // --- Beacon placement -------------------------------------------------------------
+        //
+        // The beacon is the layer OTHER players use to find a vessel, so it is placed against
+        // the PILOT'S CAMERA and never on the centreline: it must start at or behind the camera
+        // and leave the pilot's view clear. Camera follow distance runs 17 (Squirrel) to 250
+        // (Serpent) across the fleet, which is why a hull-relative offset cannot serve.
+
+        [Test]
+        public void BeaconLateral_PairStraddlesTheCentreline()
+        {
+            Assert.AreEqual(-4f, VesselJetFXConfigSO.BeaconLateralOffset(0, 2, 4f), 1e-4f);
+            Assert.AreEqual(+4f, VesselJetFXConfigSO.BeaconLateralOffset(1, 2, 4f), 1e-4f);
+        }
+
+        [Test]
+        public void BeaconLateral_NoRibbonSitsOnTheCentrelineForAnEvenCount()
+        {
+            for (int count = 2; count <= 8; count += 2)
+                for (int i = 0; i < count; i++)
+                    Assert.AreNotEqual(0f, VesselJetFXConfigSO.BeaconLateralOffset(i, count, 4f), 1e-4f,
+                        $"ribbon {i} of {count} landed on the centreline — it would hang down the " +
+                        "middle of the pilot's view, which is the thing this offset exists to avoid.");
+        }
+
+        [Test]
+        public void BeaconLateral_IsSymmetric()
+        {
+            for (int count = 2; count <= 6; count++)
+                for (int i = 0; i < count; i++)
+                    Assert.AreEqual(
+                        -VesselJetFXConfigSO.BeaconLateralOffset(i, count, 4f),
+                        VesselJetFXConfigSO.BeaconLateralOffset(count - 1 - i, count, 4f), 1e-4f);
+        }
+
+        [Test]
+        public void BeaconLateral_SingleRibbonDegradesToTheCentreline() =>
+            Assert.AreEqual(0f, VesselJetFXConfigSO.BeaconLateralOffset(0, 1, 4f), 1e-4f);
+
+        [Test]
+        public void CameraDistance_UsesTheFullOffsetMagnitude()
+        {
+            // The Sparrow's camera is lifted 10 above the hull as well as 50 behind it; ignoring
+            // the height would place its beacon short of the camera and back in the pilot's view.
+            var settings = ScriptableObject.CreateInstance<CameraSettingsSO>();
+            settings.mode = CameraMode.FixedCamera;
+            settings.followOffset = new Vector3(0f, 10f, -50f);
+            Assert.AreEqual(Mathf.Sqrt(100f + 2500f),
+                VesselJetFXConfigSO.ResolveCameraDistance(settings), 1e-3f);
+            Object.DestroyImmediate(settings);
+        }
+
+        [Test]
+        public void CameraDistance_UsesTheCLOSESTApproachOfADynamicCamera()
+        {
+            // Worst case for obstructing the pilot is the camera at its nearest.
+            var settings = ScriptableObject.CreateInstance<CameraSettingsSO>();
+            settings.mode = CameraMode.DynamicCamera;
+            settings.dynamicMinDistance = 10f;
+            settings.dynamicMaxDistance = 40f;
+            settings.followOffset = new Vector3(0f, 0f, -120f);
+            Assert.AreEqual(10f, VesselJetFXConfigSO.ResolveCameraDistance(settings), 1e-4f);
+            Object.DestroyImmediate(settings);
+        }
+
+        [Test]
+        public void CameraDistance_ZeroWhenThereIsNothingToMeasure() =>
+            Assert.AreEqual(0f, VesselJetFXConfigSO.ResolveCameraDistance(null), 1e-4f);
+
+        [Test]
+        public void BeaconDepth_DefaultStartsAtOrBehindTheCamera() =>
+            Assert.GreaterOrEqual(_config.BeaconDepthPerCameraDistance, 0.7f,
+                "The beacon must start at or near the pilot's camera plane. Below ~0.7 it moves " +
+                "forward into the pilot's view, which is exactly what this layer must not do " +
+                "(the Squirrel's authored pair measures 12/17 = 0.71).");
 
         // --- Config sanity ---------------------------------------------------------------
 

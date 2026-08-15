@@ -92,6 +92,21 @@ namespace CosmicShore.Editor
                               $" plumes {(plumesAuthored ? "authored" : "will be spawned")})");
             report.AppendLine($"      engine mounts   : {(mounts.Count == 0 ? "NONE — derived rear pair" : string.Join(", ", mounts.Select(m => m.name)))}");
 
+            // The beacon is placed against the PILOT'S CAMERA so it starts behind them and never
+            // obstructs the view. Print the number it is measured against, because that is the
+            // one input a vessel can silently lack.
+            var camera = root.GetComponent<VesselCameraCustomizer>();
+            float cameraDistance = VesselJetFXConfigSO.ResolveCameraDistance(camera != null ? camera.Settings : null);
+            if (cameraDistance > 0f)
+                report.AppendLine($"      beacon depth    : {cameraDistance * config.BeaconDepthPerCameraDistance:F1} " +
+                                  $"({config.BeaconCount}x, camera at {cameraDistance:F1})");
+            else if (!beaconAuthored)
+            {
+                report.AppendLine("      !! No CameraSettingsSO — beacon depth falls back to a hull-relative " +
+                                  "offset and may sit in the pilot's view.");
+                problems++;
+            }
+
             // The one thing that silently switches the whole law off for a vessel.
             if (!hasController)
             {

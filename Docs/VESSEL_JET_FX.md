@@ -9,14 +9,15 @@
 
 > **Every vessel draws TWO cooperating jet FX layers, and BOTH wear the vessel's domain.**
 >
-> 1. **BEACON RIBBON** — one long, wide `TrailRenderer` streaming behind the hull. Tuned so
->    **other players can find the vessel**: it is the vessel's signature at ranges where the hull
->    itself is a few pixels.
-> 2. **ENGINE PLUMES** — one short, bright FX per engine mount. Tuned as **feedback for the
->    pilot**, who sees their own engines from the chase camera.
+> 1. **BEACON RIBBON** — long, wide `TrailRenderer`s streaming behind the hull, for **other
+>    players**. **Placed as a laterally-offset pair starting at or behind the pilot's own
+>    camera**, so it is the vessel's signature at range without ever obstructing its own pilot.
+> 2. **ENGINE PLUMES** — short, bright FX **out to the sides, emerging from the vessel's actual
+>    engines**, for the **pilot**, who sees them from the chase camera.
 >
-> Neither substitutes for the other, because they are tuned for two different viewers. Both are
-> `TrailRenderer`-bearing, which is what makes one tint pass repaint both.
+> Neither substitutes for the other, because they are tuned for two different viewers — and the
+> *placement* is what encodes that, not just the tuning. Both are `TrailRenderer`-bearing, which
+> is what makes one tint pass repaint both.
 
 The Squirrel authored both layers by hand and is the reference the fleet was brought up to. This
 document is the record of what it actually had, what everyone else was missing, and the mechanism
@@ -37,6 +38,26 @@ The four instances sit on the Squirrel's engine bones — `bbone_BackEngine*` an
 `bbone_FrontEngine*` — in two size pairs (outboard `1.2 × 0.6 × 0.13`, inboard `0.6 × 0.6 × 0.13`),
 each on a host carrying `DriftJet`, which re-aims the plume along `VesselStatus.Course` while
 drifting.
+
+### Placement is the design, measured from the Squirrel
+
+| | Squirrel authored | Rule it encodes |
+|---|---|---|
+| Beacon ribbons | **2**, at `(±4, 0, −12)` | a laterally-offset **pair**, never one on the centreline |
+| Squirrel camera | `followOffset (0, 0, −17)` | the ribbons sit at **12/17 = 0.71 of the camera distance** — at the camera plane, not near the hull |
+| Engine plumes | 4, on the `bbone_*Engine*` bones | **out to the sides**, emerging from the vessel's obvious engines |
+
+Both halves are load-bearing:
+
+- **The beacon starts back at the camera so it does not obstruct the player.** It is measured
+  against **the vessel's own camera distance**, never its hull, because the fleet's camera
+  distances span **17 (Squirrel) → 20 (Dolphin) → 30 (Manta) → 51 (Sparrow) → 120 (Rhino) → 250
+  (Serpent)**. A hull-relative offset tuned on the Squirrel puts the Serpent's ribbon directly in
+  its pilot's face. And the ribbons are offset **laterally** so nothing hangs down the middle of
+  the view.
+- **The plumes are to the sides, out of the real engines.** That is what makes them read as
+  engines from the chase camera, and it is why mounts are resolved against the model's own
+  engine geometry rather than placed on the centreline.
 
 **The domain tint is the load-bearing part, and it was on the Squirrel alone.**
 `VesselTrailCustomization` discovers every `TrailRenderer` under the vessel and rebuilds its
@@ -224,10 +245,14 @@ All in `Resources/VesselJetFXConfig.asset`. **First-pass values — tune against
 | `plumeScalePerMountSize` | `1.0` | Plume width as a multiple of the mount's nozzle bounds. Raise for fatter jets on vessels with visible engines. |
 | `plumeScalePerHullRadius` | `0.11` | Fallback width for bone/derived mounts, as a fraction of hull radius. |
 | `plumeLengthAspect` | `0.22` | Plume length ÷ width. The reference jet is a wide shallow flare, not a long cone. |
-| `beaconOffsetPerHullRadius` | `-0.55` | How far behind the hull the ribbon sits. Squirrel authors −4.72 world units. |
+| `beaconCount` | `2` | Ribbons, spread symmetrically. Never 1 — a centreline ribbon hangs down the middle of the view. |
+| `beaconLateralPerHullRadius` | `0.45` | Lateral offset per ribbon. Squirrel authors ±4 world units. |
+| `beaconDepthPerCameraDistance` | `1.0` | Ribbon depth as a fraction of **this vessel's camera distance**. 1.0 = exactly at the camera plane. **Squirrel measures 0.71** — pull toward that if the beacon reads as invisible to its own pilot. |
+| `beaconFallbackDepthPerHullRadius` | `1.6` | Only used when a vessel has no `CameraSettingsSO`. |
 | `maxEnginePlumes` | `6` | Per-vessel FX budget. The Dolphin's 6 mounts is the fleet's widest. |
 | `derivedMountCount` | `2` | Plumes derived for a model with no jet geometry. |
-| `derivedMountSpreadPerHullRadius` | `0.28` | Lateral separation of derived mounts. |
+| `derivedMountSpreadPerHullRadius` | `0.5` | Lateral offset of derived mounts — out to the sides, not on the centreline. |
+| `derivedMountDepthPerHullRadius` | `−0.6` | How far back derived mounts sit. |
 
 Worst case per vessel is the Dolphin: 6 plumes × 3 ParticleSystems = 18, against the Squirrel's
 shipped 4 × 3 = 12. `maxEnginePlumes` is the valve if that proves too expensive on mobile.
