@@ -125,34 +125,50 @@ namespace CosmicShore.Gameplay
 
         static MaterialPropertyBlock s_tintBlock;
 
-        /// <summary>Tints all crystal models from the theme ColorSet by collectability state
-        /// (see comment above). No-op when the theme container or color set is unwired.</summary>
-        protected void ApplyColorSetTint()
+        // The property every crystal shader exposes for its dissolve - the same one FadeIn drives
+        // to bloom a crystal IN (CrystalGraph, ChargeCrystal). A capture drives it back to 0.
+        static readonly int OpacityID = Shader.PropertyToID("_opacity");
+
+        /// <summary>
+        /// The bright/dull colour pair this crystal should currently wear, per the collectability
+        /// rules above. Shared by the steady-state tint and the capture flare so the two can never
+        /// disagree about which colours a crystal is flaring FROM.
+        /// </summary>
+        bool TryResolveTintColors(out Color bright, out Color dull)
         {
-            if (!_themeManagerData || _themeManagerData.ColorSet == null) return;
+            bright = dull = default;
+            if (!_themeManagerData || _themeManagerData.ColorSet == null) return false;
             var colors = _themeManagerData.ColorSet;
 
-            Color bright, dull;
             bool domainOwned = ownDomain is Domains.Jade or Domains.Ruby or Domains.Gold;
             if (domainOwned && colors.TryGetColorSetByDomain(ownDomain, out var domainSet) && domainSet != null)
             {
                 bright = domainSet.BrightCrystalColor;
                 dull = domainSet.DullCrystalColor;
+                return true;
             }
-            else if (IsEmbedded)
+
+            if (IsEmbedded)
             {
                 // A living lifeform's heart: the blue-white neutral range - no domain can take it.
-                if (!colors.TryGetColorSetByDomain(Domains.Blue, out var neutralSet) || neutralSet == null) return;
+                if (!colors.TryGetColorSetByDomain(Domains.Blue, out var neutralSet) || neutralSet == null) return false;
                 bright = neutralSet.BrightCrystalColor;
                 dull = neutralSet.DullCrystalColor;
+                return true;
             }
-            else
-            {
-                // Free collectible: the lime CTA - any domain can collect it now.
-                if (colors.EnvironmentColors == null) return;
-                bright = colors.EnvironmentColors.BrightCTA;
-                dull = colors.EnvironmentColors.DarkCTA;
-            }
+
+            // Free collectible: the lime CTA - any domain can collect it now.
+            if (colors.EnvironmentColors == null) return false;
+            bright = colors.EnvironmentColors.BrightCTA;
+            dull = colors.EnvironmentColors.DarkCTA;
+            return true;
+        }
+
+        /// <summary>Tints all crystal models from the theme ColorSet by collectability state
+        /// (see comment above). No-op when the theme container or color set is unwired.</summary>
+        protected void ApplyColorSetTint()
+        {
+            if (!TryResolveTintColors(out var bright, out var dull)) return;
 
             s_tintBlock ??= new MaterialPropertyBlock();
             foreach (var modelData in crystalModels)
@@ -169,6 +185,53 @@ namespace CosmicShore.Gameplay
                 renderer.SetPropertyBlock(s_tintBlock);
             }
         }
+
+        /// <summary>
+        /// Paints one frame of a CAPTURE: the crystal's own colours scaled by
+        /// <paramref name="flareMultiplier"/> (a brightness flare in linear HDR - the element's hue
+        /// survives, per Docs/PALETTE.md, where washing toward white would read as a different
+        /// crystal) and its opacity driven to <paramref name="opacity01"/> for the dissolve that
+        /// ends the absorb.
+        ///
+        /// Rides a MaterialPropertyBlock over the shared material - no clone, nothing to restore,
+        /// because the crystal is destroyed at the end of the capture. The opacity is spent as
+        /// screen-door coverage by the crystal shaders, so this composes with the rest of the
+        /// project's dither-not-blend transparency.
+        /// </summary>
+        public void ApplyCaptureVisual(float flareMultiplier, float opacity01)
+        {
+            bool hasColors = TryResolveTintColors(out var bright, out var dull);
+            s_tintBlock ??= new MaterialPropertyBlock();
+
+            foreach (var modelData in crystalModels)
+            {
+                if (modelData?.model == null || !modelData.model.TryGetComponent<Renderer>(out var renderer)) continue;
+                var mat = renderer.sharedMaterial;
+                if (!mat) continue;
+
+                renderer.GetPropertyBlock(s_tintBlock);
+
+                if (hasColors)
+                {
+                    var props = FindColorPropertyNames(mat);
+                    if (props.bright != null)
+                    {
+                        s_tintBlock.SetColor(props.bright, Flare(bright, flareMultiplier));
+                        s_tintBlock.SetColor(props.dull, Flare(dull, flareMultiplier));
+                    }
+                }
+
+                s_tintBlock.SetFloat(OpacityID, opacity01);
+                renderer.SetPropertyBlock(s_tintBlock);
+            }
+        }
+
+        /// <summary>
+        /// Brightness-only gain on a crystal colour: the RGB channels scale, ALPHA is preserved.
+        /// A colour is a rate in linear HDR, so scaling it brightens without shifting hue - but
+        /// scaling its alpha along with it would quietly rewrite the material's blend weight.
+        /// </summary>
+        static Color Flare(Color c, float gain) => new(c.r * gain, c.g * gain, c.b * gain, c.a);
 
         /// <summary>Clears the tint override on one model so a material color lerp is visible.</summary>
         static void ClearColorSetTint(GameObject model)
@@ -273,14 +336,24 @@ namespace CosmicShore.Gameplay
             transform.localScale = targetScaleVector;
         }
         
-        public void Explode(ExplodeParams explodeParams)
+        /// <summary>
+        /// Sprays this crystal's spent husk along the collector's course.
+        ///
+        /// <paramref name="huskScale"/> overrides the size the husk is spawned at; the default
+        /// (zero) uses the crystal's own live scale. The override exists for the ELEMENTAL capture,
+        /// which fires this burst at the end of a flight that has already shrunk the crystal into
+        /// the hull - without it the payoff would be sized by the flourish that preceded it rather
+        /// than by the crystal the pilot actually picked up. The networked path takes the default.
+        /// </summary>
+        public void Explode(ExplodeParams explodeParams, Vector3 huskScale = default)
         {
             if (IsExploding)
-                return;           
-            
+                return;
+
             IsExploding = true;
             WaitForImpact().Forget();
 
+            if (huskScale == default) huskScale = transform.lossyScale;
             var playerName = explodeParams.PlayerName.ToString();
             foreach (var modelData in crystalModels)
             {
@@ -293,7 +366,7 @@ namespace CosmicShore.Gameplay
                     SpentCrystalPrefab, transform.position, transform.rotation);
                 if (!impact) continue;
 
-                impact.transform.localScale = transform.lossyScale;
+                impact.transform.localScale = huskScale;
 
                 if (crystalProperties.Element == Element.Space && modelData.spaceCrystalAnimator != null)
                 {

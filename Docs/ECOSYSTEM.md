@@ -3665,3 +3665,102 @@ rides the Burst density grid rather than physics. No new colliders, no new queri
 
 **Crystals:** at most `2 × players` = 8 at intensity 1, each a single trigger collider.
 
+
+## 30. The crystal capture — a pickup is a beat, not a journey (Aug 2026)
+
+**Prompter's ask, verbatim in shape:** *"when elemental crystals are captured it looks terrible, and
+takes far too long. we need a more satisfying capture effect."*
+
+Every lifeform drops exactly one elemental crystal (§0, the locked invariant), so this is the moment
+the whole food web pays out — and it was the weakest frame in the game. What shipped before:
+
+- the crystal **dragged** to the vessel over **3 seconds** (1s on two fauna prefabs, 3s on eleven
+  flora prefabs — the duration was authored per prefab, so the same pickup had two speeds);
+- it lerped from a **frozen start point** toward a **moving** vessel with a smoothstep, which reads
+  as the crystal chasing the ship rather than being pulled into it;
+- it flew at **full scale, unlit, unspinning** (the collect disabled nothing, so the idle tumble kept
+  running and there was nothing to see change);
+- it then **stopped existing** — a bare `Destroy`, except on the Space crystal, which had a 0.6 s
+  blendshape shrink bolted on the END of the flight, so that element parked a full-size crystal on
+  the hull for over half a second before vanishing;
+- **no burst and no pickup SFX.** The omni crystal has played a spent-husk burst + `CrystalCollect`
+  since forever (`Crystal.Explode`); the elemental path never called it.
+
+Total: **3.6 s** for the Space crystal, **3.0 s** for the other three, ending in a pop-out.
+
+### 30.1 The shape of a capture
+
+Three beats, and the beats are what make it read as a grab rather than a drag. All feel lives in
+**one** asset — `Resources/CrystalCaptureConfig` (`CrystalCaptureConfigSO`) — because a per-prefab
+duration is exactly how the old one drifted:
+
+| Beat | Default | What it does |
+|---|---|---|
+| **Snatch** | 0.08 s | Scale pops to 1.5× and the crystal kicks **away** from the vessel. Anticipation: the recoil is what sells the pull. |
+| **Suction** | 0.26 s | Homes on the vessel's **live** position, **accelerating** (`u^2.6`, never linear), swinging in on an arc, spinning up 2.25 revolutions, shrinking to 0.55×, flaring to 3× brightness. |
+| **Absorb** | 0.10 s | Rides the hull, collapses to zero scale and dissolves `_opacity` out, and **fires the element's spent-crystal husk into the vessel's wake** — the same burst and the same `CrystalCollect` SFX an omni pickup plays. |
+
+**0.44 s total**, versus 3.0–3.6 s. Everything is sized in **crystal radii** (recoil 0.9, arc 1.6),
+so a grown flora heart and a tiny fauna drop capture identically.
+
+Three rules came out of it and generalize:
+
+1. **A flourish must never outlast its own payoff.** The element level lands at *contact* — it is
+   applied by `SkimmerAdjustElementLevelByCrystalEffectSO` in the impact frame, and the element's
+   petal flower has already ticked over before the crystal has moved. A three-second animation over
+   an instantaneous reward does not read as a reward; it reads as lag. `OnCrystalCollected` (the
+   scoring event four modes count) now also fires at contact rather than inside the flight loop, so
+   a mode's objective can never wait on a visual.
+2. **Homing on a moving target is a function of DURATION.** The old lerp was toward
+   `vesselTransform.position` read live, which is correct — over 3 seconds a vessel travels far
+   enough that "correct" still looks like chasing. Shortening the flight fixed more of the look than
+   any easing change could, and the acceleration curve does the rest: the crystal hangs, then snaps.
+3. **Continuity of existence applies to a crystal, not just to prisms.** The platform law says
+   nothing the player can see may pop in or out. A crystal blooms in through `FadeIn`
+   (`_opacity` 0→1) and now leaves the same way — scale to zero *and* `_opacity` back to 0, spent as
+   screen-door coverage by the crystal shaders, so it composes with the project's
+   dither-not-blend transparency rather than introducing a second kind of fade.
+
+### 30.2 What it composes with, and what it does not add
+
+Nothing new was invented. The burst is `Crystal.Explode`, the existing pooled spent-husk path
+(`SpentCrystalPoolManager` → `Impact`), which the elemental crystals were already authored for —
+all four prefabs carry a per-element `SpentCrystalPrefab` that had never been reached from a skim.
+The flare rides `Crystal.ApplyCaptureVisual`, one MaterialPropertyBlock over the shared material, and
+it scales the crystal's **own** colours (RGB only, alpha preserved) rather than washing toward white:
+a colour is a rate in linear HDR, so a gain brightens without shifting hue, and washing to white
+would read as a *different* crystal (`Docs/PALETTE.md`). No new FMOD event was added — the pickup now
+reaches the shared `CrystalCollect` category it always should have.
+
+`Crystal.Explode` grew one optional argument, `huskScale`: the burst fires at the end of a flight
+that has already shrunk the crystal into the hull, and the payoff must be sized by the crystal the
+pilot *picked up*, not by the flourish that preceded it. The networked path takes the default and is
+unchanged.
+
+The `moveToVesselDuration` / `easeMoveToVessel` fields were removed from the impactor **and** their
+now-dead serialized keys stripped from the 15 prefabs that authored them — a value that is read by
+nothing but still shows in the inspector is worse than no field at all.
+
+### 30.3 Collider budget
+
+**Zero.** No collider is created; the capture *disables* the crystal's own trigger at contact (as it
+always did) and the husk burst is the pre-existing pooled `Impact` path with no colliders at all. The
+per-frame cost is one transform write + one MaterialPropertyBlock write on a single crystal for
+0.44 s, down from 3.6 s — a ~8× reduction in the live window, and captures are individually rare.
+Prisms are untouched, so the clock-material law (`Docs/PRISM_ANIMATION.md`) is not in scope: a
+crystal is a handful of objects, not the 2,000-instance surface that law exists to protect.
+
+### 30.4 In-editor verification (the human is the gate)
+
+1. Any scene with fauna — Wildlife Blitz is the fastest. Kill a creature and skim its dropped heart.
+   The capture must complete in **under half a second**, ending in a husk burst at your hull with the
+   `CrystalCollect` sound. Nothing should linger on the ship.
+2. Do it at **top speed** (Squirrel, boosting). The crystal must land *on* the ship, not trail behind
+   it — that is the test the old 3-second lerp failed.
+3. Do it on a **Space** crystal specifically: its blendshape pulse now runs *alongside* the flight,
+   not after it. There must be no full-size crystal parked on the hull.
+4. Joust a lifeform with the Squirrel (`ElementalCrystalImpactor.CollectBy`, §26) — the auto-collect
+   runs the identical capture, so it must look the same as a skim.
+5. Tune by editing `Resources/CrystalCaptureConfig` **only**. If a capture feels wrong on one
+   lifeform and right on another, that is a bug (something is sizing off world scale rather than
+   crystal radii), not a reason to re-add a per-prefab duration.

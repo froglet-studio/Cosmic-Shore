@@ -114,6 +114,15 @@ outcome is optimization, not life). Use the `/ecology` skill for any change here
   the capitals (`Fauna.ProvisionHeart`). Do not "fix" a heartless body segment by giving it a
   crystal, and do not cite one as precedent for a crystal-less standalone fauna — the ruling and
   its reasoning are `Docs/ECOSYSTEM.md §23.3`.
+  **Collecting one is a BEAT, not a journey** — snatch → suction → absorb in **0.44 s**, ending in
+  the element's spent-crystal husk bursting into the vessel's wake (`Crystal.Explode`, the same
+  payoff an omni pickup plays) and the crystal dissolving out on `_opacity` rather than being
+  `Destroy`ed (continuity of existence applies to crystals too). All feel lives in the ONE asset
+  `Resources/CrystalCaptureConfig` (`CrystalCaptureConfigSO`) — **never a per-prefab duration**,
+  which is how the old capture drifted to 1 s on two fauna and 3 s on eleven flora while reading as
+  the crystal chasing the ship. The reward (the element level) lands at CONTACT and so does
+  `OnCrystalCollected`, the scoring event: **a mode's objective must never wait on a flourish**, and
+  a flourish that outlasts its own payoff reads as lag. `Docs/ECOSYSTEM.md §30`.
 - **Territorial permanence.** Take a cell, leave, it stays yours — the claim fauna cannot touch.
   In nucleus cells the permanent claim is the **nucleus interior** (fauna never consume it);
   exterior canopy/trail is deliberately contested churn (voracious any-domain grazing). In
