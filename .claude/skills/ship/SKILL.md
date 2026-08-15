@@ -58,6 +58,17 @@ Walk every changed file against these gates:
   migrated? Renamed/deleted assets - every GUID reference updated?
 - **Verification honesty**: list what was actually verified (in-editor play, tests) vs.
   what only compiles-by-inspection. Unverified risk goes in the PR body, not under the rug.
+- **A doc that asserts a consequence is not evidence the consequence happens — find the
+  PRODUCER.** When a doc (or a verification step, or CLAUDE.md) says "X still lands", "contact
+  costs Y", or "the gate leaves Z alone", grep for who actually *calls* the thing that produces
+  X/Y/Z for that vessel/mode/path. A passthrough that is genuinely correct — the gate really
+  does leave the channel alone — reads as verified even when nothing upstream is pushing
+  anything through it, so the claim survives review indefinitely. Four such claims shipped
+  across three docs plus CLAUDE.md describing a prism-collision slow on vessels that had no
+  slow effect wired at all. The same shape hides behind NAMES: a serialized field called
+  `vesselSlowedByRhinoDangerPrismEvent` under a `"Slow Viewer Integration"` header belonged to
+  an effect that only muted an input. Treat "the docs say so" and "the identifier says so" as
+  hypotheses to check, never as the check.
 
 ## 2.5 Tool-output gate — NEVER SKIPPED, IN EVERY MODE
 
