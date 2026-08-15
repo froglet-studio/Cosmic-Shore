@@ -99,6 +99,38 @@ namespace CosmicShore.Gameplay
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         static void ResetRegistry() => s_active.Clear();
 
+        // The models' bloom (FadeIn) writes the SAME per-renderer property block the
+        // collectability tint lives on, and clears it when it finishes - a block cannot drop a
+        // single key. So claim co-ownership and re-assert the tint on the frame the bloom ends.
+        // Without this every crystal settled onto its authored MATERIAL colour a few seconds
+        // after spawning, which is why a living lifeform's heart read as the lime free-pickup
+        // (Charge and Time author lime materials) instead of the neutral blue it resolves to.
+        readonly List<FadeIn> _tintCoOwnedFades = new();
+
+        protected virtual void Awake()
+        {
+            // Only claim the block when a tint can actually be resolved - an unthemed crystal
+            // writes nothing, and co-ownership costs FadeIn a read-back per frame.
+            if (!_themeManagerData || crystalModels == null) return;
+
+            foreach (var modelData in crystalModels)
+            {
+                if (modelData?.model == null) continue;
+                if (!modelData.model.TryGetComponent<FadeIn>(out var fade)) continue;
+                fade.FadeCompleted += HandleModelFadeCompleted;
+                _tintCoOwnedFades.Add(fade);
+            }
+        }
+
+        protected virtual void OnDestroy()
+        {
+            foreach (var fade in _tintCoOwnedFades)
+                if (fade) fade.FadeCompleted -= HandleModelFadeCompleted;
+            _tintCoOwnedFades.Clear();
+        }
+
+        void HandleModelFadeCompleted() => ApplyColorSetTint();
+
         protected virtual void OnEnable()
         {
             if (!s_active.Contains(this)) s_active.Add(this);
@@ -351,6 +383,14 @@ namespace CosmicShore.Gameplay
                 model.GetComponent<Renderer>().material = modelData.inactiveMaterial;
                 StartCoroutine(LerpCrystalMaterialCoroutine(model, ResolveActivationMaterial(modelData, i)));
             }
+
+            // The state just flipped from "living heart" to "collectible", so repaint NOW - after
+            // the lerps above, which drop the block on their way in. A lifeform's heart goes blue
+            // → lime here, which is the signal that it can be picked up. Explicit rather than left
+            // to Start (which only fires because a heart's Crystal component is authored disabled)
+            // or to the material lerp's tail (which is skipped outright when a model has no target
+            // material) - either way the crystal would otherwise stay blue while collectable.
+            ApplyColorSetTint();
         }
 
         /// <summary>

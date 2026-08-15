@@ -82,6 +82,44 @@ DYNAMICS knob, not a palette one: it scales the debris speed, the shatter rate a
 clamp band as one quantity (they are one quantity on this contract — see CLAUDE.md ▸ "AOE
 blast impulse"). Set it to 1 for palette-only behaviour.
 
+### 2.2 Crystal colour means COLLECTABILITY, and it lives on a property block (2026-08-15)
+
+A crystal's **element is its shape**; its **colour is who may collect it**. One resolver,
+`Crystal.ApplyColorSetTint`, reads the live `SO_ColorSet` and paints
+`_BrightCrystalColor` / `_DullCrystalColor` per renderer through a `MaterialPropertyBlock`:
+
+| State | Source pair | Reads as |
+|---|---|---|
+| domain-owned (Jade/Ruby/Gold) | that domain's `BrightCrystalColor` / `DullCrystalColor` | only that domain collects |
+| **embedded lifeform heart** (`Crystal.IsEmbedded`) | `BlueColors.BrightCrystalColor` / `DullCrystalColor` | **blue** — nobody collects it, it is alive |
+| free pickup (drop / omni / cell) | `EnvironmentColors.BrightCTA` / `DarkCTA` | **lime** — anyone collects it |
+
+So a lifeform's heart is blue while it lives and flips to lime the moment `ActivateCrystal`
+drops it. The flip is the pickup affordance, and it is applied explicitly at the tail of
+`ActivateCrystal` rather than left to `Start` (which only fires because a heart's `Crystal`
+component is authored **disabled**) or to the material lerp's tail (skipped outright when a
+model has no target material).
+
+**The authored material is the fallback, and it does not agree with this rule.** Four of
+the crystal prefabs sit on materials whose own colours are lime — `ChargeCrystalMaterial` is
+literally `BrightCTA` `(0.59, 0.92, 0.16)`, and Time's `FringeMaterial`/`InverseFringeMaterial`
+carry a lime dull face — while Mass and Space author the *Blue* material on the renderer. So
+whenever the tint is lost, half the ecosystem's hearts (the 21 Charge and 21 Time species) read
+as the lime free-pickup while their lifeform is still alive, and the other half look correct
+**by accident of which material the prefab happened to author**. Do not "fix" a crystal's
+colour by editing its material — the material is what you see when the tint has failed.
+
+**A property block belongs to the RENDERER, not to the component that writes it.** This is the
+trap that made the above ship: `FadeIn` drives `_opacity` through the *same* block and used to
+write its own instance every frame, then end the bloom with `MaterialPropertyBlock.Clear()` —
+which cannot drop a single key, so it took the tint with it a few seconds after every crystal
+spawned. `FadeIn` now merges (`GetPropertyBlock` before each write, but only when a co-owner has
+registered, so uninvolved renderers keep the cheap path — one prefab can carry thousands of
+these blooming at once) and raises `FadeCompleted` after the clear; `Crystal` subscribes in
+`Awake` and re-asserts the tint there.
+**Any new writer to a shared renderer's block must do the same** — merge on write, and give
+co-owners a way back in after a clear.
+
 ## 3. The colour-space rule (this is the trap)
 
 The project is **Linear** (`ProjectSettings/ProjectSettings.asset: m_ActiveColorSpace: 1`)
