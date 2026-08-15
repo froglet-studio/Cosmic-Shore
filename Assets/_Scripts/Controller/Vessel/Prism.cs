@@ -1251,6 +1251,12 @@ namespace CosmicShore.Gameplay
                            float debrisSpeedLimit = 0f)
         {
             if (destroyed) return;
+            // Super-shielded prisms are invulnerable to Damage itself. A source that may
+            // break them (the Rhino energy sword, arena teardowns) must call
+            // DeactivateShields() first, then Damage(devastate: true) — the sanctioned
+            // animated sequence (see AstroLeagueArena.ClearEdgeLining / RHINO_ENERGY_SWORD.md).
+            // That sequence clears the flag before it gets here, so a BREAKING hit never
+            // reaches this gate; only an unbreaking one does, and it now deflects (below).
             if (AbsorbSuperShieldHit(impactVector.magnitude)) return;
             if (prismProperties.IsShielded && !devastate)
                 DeactivateShields();
@@ -1293,11 +1299,14 @@ namespace CosmicShore.Gameplay
         /// THE super-shield invulnerability gate. Returns true when this prism absorbs the hit
         /// — the caller must then do nothing else to it.
         ///
-        /// Super-shielded prisms are fully invulnerable. No damage source currently breaks
-        /// them; ways to break them will be added later as targeted opt-in mechanics. The
-        /// impactor's other effect SOs (sparks, sound) still fire, and since this method also
-        /// stamps the deflection wobble, the hit now reads as a DEFLECTION rather than as a
-        /// miss — with no state change of any kind (Docs/PRISM_ANIMATION.md §5 C14).
+        /// Super-shielded prisms are invulnerable to damage itself. A source that BREAKS one
+        /// (the Rhino energy sword, arena teardowns) calls <see cref="DeactivateShields"/>
+        /// first and only then <c>Damage(devastate: true)</c> — the sanctioned animated
+        /// sequence — which clears the flag, so a breaking hit never arrives here. Everything
+        /// that does arrive is by definition a hit the prism SURVIVED. The impactor's other
+        /// effect SOs (sparks, sound) still fire, and since this method also stamps the
+        /// deflection wobble, such a hit now reads as a DEFLECTION rather than as a miss —
+        /// with no state change of any kind (Docs/PRISM_ANIMATION.md §5 C14).
         ///
         /// This exists as ONE method because the check previously existed as four independent
         /// copies — <see cref="Damage"/>, <see cref="Consume"/>,

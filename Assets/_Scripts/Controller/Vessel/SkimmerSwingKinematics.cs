@@ -47,7 +47,12 @@ namespace CosmicShore.Gameplay
         [Tooltip("Pivot the blade swings about - used ONLY to decide which end is the tip (the end farther from it). Defaults to the blade's parent, which is what the swipe executor pivots around.")]
         [SerializeField] Transform pivot;
 
-        [Tooltip("Blade length as a fraction of the transform's world scale along the blade axis. The sword mesh is a unit primitive centered on its origin, so the default 1 makes the segment span the full scaled extent.")]
+        [Tooltip("Half the blade's world length as a MULTIPLE of half its world scale along the blade " +
+                 "axis - i.e. the mesh's own local half-extent. 1 suits a primitive spanning local " +
+                 "[-0.5, 0.5] (a Cube); Unity's built-in CAPSULE spans [-1, 1], so the Rhino's sword " +
+                 "authors 2. Get this wrong and the model describes a segment shorter than the blade " +
+                 "you can see: contacts out near the visible tip clamp to mid-blade, reporting a " +
+                 "fraction of the lever arm they actually rode.")]
         [SerializeField] float lengthScale = 1f;
 
         const float Epsilon = 1e-5f;
@@ -374,6 +379,9 @@ namespace CosmicShore.Gameplay
                 Vector3 vesselAngular = AngularVelocity(_vesselRot, vesselRot, invDt, cfg.MaxAngularSpeedDegrees);
                 float lengthRate = (halfLength - _halfLength) * invDt;
 
+                if (cfg.CompensateGrowthTranslation)
+                    linear = RemoveGrowthTranslation(linear, localRot * LocalAxis, TipSign, lengthRate);
+
                 float blend = SmoothingBlend(cfg.SmoothingSeconds, dt);
                 _localLinearVelocity = Vector3.Lerp(_localLinearVelocity, linear, blend);
                 _localAngularVelocity = Vector3.Lerp(_localAngularVelocity, angular, blend);
@@ -394,6 +402,32 @@ namespace CosmicShore.Gameplay
             _vesselPos = vesselTf.position;
             _vesselRot = vesselRot;
             _hasPreviousSample = true;
+        }
+
+        /// <summary>
+        /// Strip a hilt-anchored blade's GROWTH translation out of its sampled linear velocity.
+        ///
+        /// The Rhino's sword is anchored at the hilt (<see cref="ShieldSwipeActionExecutor"/>), so
+        /// the transform the sampler differentiates - the blade's CENTRE - slides out along the
+        /// blade axis by exactly one half-length as the energy meter lengthens it. That is real
+        /// motion of the transform, but it is not a SWING: counting it would hand every prism
+        /// struck during a crystal burst the blade's 600 u/s expansion as impact speed, which is
+        /// precisely what <c>includeElongation</c> is switched off to prevent. Removing the
+        /// along-axis growth component leaves the swing, and only the swing - so the model reports
+        /// what it reported before the blade was re-anchored.
+        ///
+        /// Pure and static so the sign is testable: the growth term must vanish for a blade that
+        /// only grows, and must not touch a blade that only swings.
+        /// </summary>
+        /// <param name="linear">Differentiated blade-origin velocity, vessel frame.</param>
+        /// <param name="bladeAxisLocal">Unit blade axis in the vessel's frame.</param>
+        /// <param name="tipSign">+1 when the local axis points at the tip, -1 when it points at the hilt.</param>
+        /// <param name="halfLengthRate">d(halfLength)/dt, world units/sec.</param>
+        public static Vector3 RemoveGrowthTranslation(Vector3 linear, Vector3 bladeAxisLocal,
+                                                      float tipSign, float halfLengthRate)
+        {
+            if (Mathf.Abs(halfLengthRate) <= Epsilon) return linear;
+            return linear - bladeAxisLocal * (tipSign * halfLengthRate);
         }
 
         /// <summary>

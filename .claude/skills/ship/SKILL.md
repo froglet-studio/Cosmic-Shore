@@ -49,6 +49,17 @@ run the `/reorient` skill first and act on its verdict before shipping.
   runs C1…C13b with C6 sitting mid-table. Grep for the id you intend to claim BEFORE writing
   it into code comments, doc prose, tool docstrings and commit messages — by the time you
   notice, it is spread across a dozen files and the fix is a sweep, not an edit.
+- **A parallel branch may have fixed the SAME root cause while you worked.** Read the base
+  branch's new commits by subject before you resolve anything — this is not a merge
+  conflict, it is a design collision, and git will happily interleave two fixes for one
+  bug into a tree that carries both. When it happens: pick ONE implementation on merit and
+  take it **wholesale** (`git checkout --theirs <file>`), then delete the machinery yours
+  needed and theirs does not — a half-merged pair of fixes is worse than either. Then
+  **re-scope your docs to what is still genuinely yours**: your section was written when
+  you owned the whole story, and left as-is the repo ends up with two competing narratives
+  of one bug. Reference theirs rather than restating it, and keep only the part they do
+  not cover. Expect this whenever the base branch touched the same files — check with
+  `git log --oneline <merge-base>..origin/<base> -- <your changed files>`.
 - Restate, in a few sentences, WHAT the branch delivers and WHY. If you can't, you are
   not ready to ship — go re-read the diff.
 

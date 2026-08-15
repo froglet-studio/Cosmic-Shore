@@ -1649,22 +1649,28 @@ already reaches `Prism.Damage`, so routing it too would only double-fire into th
 super-shielded mass before any hit is dispatched; those are filters, not gates, and there is no
 deflection to show.
 
-**A SKIM does NOT deflect on four of the fleet's five skimmers — verified by playtest, and the
-reason is wiring, not design.** Reaching the gate requires `SkimmerDamagePrismEffectSO` in the
-skimmer's own effect container, and that effect is authored ONCE
-(`_SO_Assets/Effects/Skimmer Prism Effects/SkimmerDamagePrismEffect.asset`) and referenced by
-exactly one container: `RhinoForceFieldSkimmerImpactorDataContainer`. Dolphin, Manta-overcharge,
-Sparrow and Squirrel skimmers never call `Prism.Damage`, so they never deflect anything. The
-Rhino's forcefield skimmer is the sole vessel that can, which is consistent — that is its
-shield-swipe surface, where damaging mass is the point. (`RhinoSkimmerDamagePrismEffectSO`, a
-different SO, branches super-shield contact into `BounceBack` before any damage call.)
+**A SKIM never deflects, on any vessel — verified by playtest and re-verified after the energy
+sword landed.** Two independent reasons, and both are wiring rather than design:
 
-This is worth stating explicitly because the opposite reads as obviously true: the effect SO does
-funnel into `Prism.Damage` with no shield check, so "a skim is a hit" is correct *about the SO*
-and wrong *about the fleet*. Whether a given vessel deflects on skim is a question about that
-vessel's container, not about this feature — the same class of claim CLAUDE.md already records
-for the prism-collision slow, which three docs asserted fleet-wide for vessels that had no speed
-effect wired at all. Check the container before repeating either claim.
+1. Four of the five skimmer containers (Dolphin, Manta-overcharge, Sparrow, Squirrel) carry **no
+   prism-damage effect at all**, so they never call `Prism.Damage` and cannot reach the gate.
+2. The fifth — `RhinoForceFieldSkimmerImpactorDataContainer` — carries
+   `RhinoSkimmerDamagePrismEffectSO`, which handles super-shielded contact in its own branch
+   (`PopSuperShield` on an energized blade, `NotifyPopDenied` + `BounceBack` otherwise) and
+   **returns before any `Damage` call** either way.
+
+Note what case 2's *denied* path is: a blade striking hardened mass it cannot break — textbook
+"hit but not destroyed". It does not currently deflect, because the sword ships its own denial
+feedback (a recoil plus a denied cue). Whether those should compose is a design question for
+whoever owns the sword, not something to wire in from this side.
+
+This is worth stating explicitly because the opposite reads as obviously true: an effect SO that
+funnels into `Prism.Damage` with no shield check does exist, so "a skim is a hit" is a plausible
+inference — and it was wrong twice, once about the fleet and once again after a merge replaced the
+generic effect asset with a branching one. **Whether a given contact deflects is a question about
+that container and that effect SO's branches, never about this feature.** It is the same shape
+CLAUDE.md already records for the prism-collision slow, which three docs asserted fleet-wide for
+vessels that had no speed effect wired. Check the producer before repeating any such claim.
 
 **Costs.** Zero per-frame CPU: one stamp per hit (rate-limited per prism, default 0.12 s — a swept
 piercing projectile re-dispatches the same prism every frame it overlaps, a drone swarm re-queues

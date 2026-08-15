@@ -439,11 +439,12 @@ segments. Shoot or ram a super-shielded prism and watch:
    blast. Ordinary (non-super-shielded) prisms must be visually identical to before.
 5. **Neighbours are not in lockstep.** A blast that touches several super-shielded prisms
    should make them wobble out of phase with each other.
-6. **Skimming does NOT deflect, on every vessel but one.** Confirmed by playtest 2026-08-15
-   (jiggle on vessel impact, none on skimmer impact — both as desired). Reaching the gate needs
-   `SkimmerDamagePrismEffectSO` in that skimmer's container, and only
-   `RhinoForceFieldSkimmerImpactorDataContainer` has it. If you ever want a skim to deflect on
-   another vessel, that is a container change on that vessel — not a change here.
+6. **Skimming never deflects, on any vessel.** Confirmed by playtest 2026-08-15 (jiggle on
+   vessel impact, none on skimmer impact — both as desired), and still true after the energy
+   sword merge. Four of five skimmer containers carry no prism-damage effect at all; the fifth
+   (Rhino forcefield) carries `RhinoSkimmerDamagePrismEffectSO`, which pops or bounces
+   super-shielded mass in its own branch and returns before `Damage`. If you ever want a skim
+   to deflect, that is a container/effect change on that vessel — not a change here.
 
 **Tuning** — `Resources/PrismSuperShieldJiggleConfig`:
 

@@ -104,5 +104,6 @@ MonoBehaviour:
     LightColor: {r: 0, g: 0, b: 0, a: 0}
     DarkColor: {r: 0, g: 0, b: 0, a: 0}
     BrightCTA: {r: 0.59, g: 0.92, b: 0.16, a: 1}
-    DarkCTA: {r: 0.18, g: 0.32, b: 0.05, a: 1}
+    DarkCTA: {r: 0.28125, g: 0.5, b: 0.078125, a: 1}
+    ElementalCrystalDimming: 0.45
     Danger: {r: 1.4979111, g: 0.0058463, b: 0.0068495, a: 0}
