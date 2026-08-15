@@ -255,10 +255,14 @@ v2's code-built `RhinoSwordVisualizer` (deleted). Four layers:
    **Their look is yours on the components** — `widthMultiplier`, `time`, the width curve, the
    colour gradient, material. Nothing in code writes any of them, and the COUNT is data too:
    `RhinoSwordFXController.bladeTracers` is an array and the spread is derived from its length,
-   so add or remove entries freely. `SeatTracers` owns placement only, insetting the two END
-   streaks by half their own head width (head width = `widthMultiplier` × the width curve at
-   t=0) so widening one grows it INTO the blade rather than out past the point or behind the
-   grip. Authored hairline: `widthMultiplier` 0.5, `time` 0.15.
+   so add or remove entries freely. `SeatTracers` owns placement only, and the spacing is EVEN
+   by construction: ONE span serves the whole set, inset at each end by half the head width of
+   the streak sitting there (head width = `widthMultiplier` × the width curve at t=0) so
+   widening an end streak grows it INTO the blade rather than out past the point. Insetting each
+   streak by its own width instead would give every streak a different span and the spacing
+   would drift apart the moment two were tuned to different widths. Authored hairline:
+   `widthMultiplier` 0.5, `time` 0.15; their prefab rest transforms are authored spread along the
+   blade too, so the set reads correctly in the editor rather than stacked at the fuselage origin.
 
    All five are tinted from the same live blade colour as the body, so **the streaks change with
    the sword through every state** (white-hot → danger red on energize).

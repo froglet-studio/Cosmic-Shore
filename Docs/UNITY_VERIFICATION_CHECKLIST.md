@@ -60,14 +60,15 @@ The load-bearing checks, in risk order:
 5. **Tracers — five hairlines, yours to tune in the inspector.** `Rhino.prefab` →
    `RhinoSwordBladeTracer0..4`, spread tip→hilt down the blade. Nothing in code writes their
    size: set `widthMultiplier` / `time` (and the curve / gradient) per component; the controller
-   only re-seats each emitter, insetting the two END ones by half their own width so widening
-   one grows it into the blade, never past the point. Authored hairline: 0.5 / 0.15. Add or
+   only re-seats each emitter across ONE evenly-divided span, inset at each end by half the
+   width of the streak sitting there so widening an end one grows it into the blade, never past
+   the point — spacing stays even even when their widths differ. Authored hairline: 0.5 / 0.15. Add or
    remove array entries on `RhinoSwordFXController.bladeTracers` — the spread follows the count.
    All five tint from the live blade colour, so they should change state with the sword.
-5a. **Home position lowered** — the sword mount is now local y **2** (was 9.38, ~3 units above
-   the hull top). Judge where the grip sits; if the sword still reads as towering, the stronger
-   lever is the rest PITCH on the same transform (~20° from vertical, was 41.8° historically),
-   not y.
+5a. **Home position lowered** — the sword mount is now local y **−1** (was 9.38, ~3 units above
+   the hull top; −1 is about the hull's own vertical centre). Judge where the grip sits; if the
+   sword still reads as towering, the stronger lever is the rest PITCH on the same transform
+   (~20° from vertical, was 41.8° historically), not y.
 5b. **Swipe recovery**: after a swipe releases, that direction should pause ~0.35 s before it
    can sweep again (each side independent) — and that pause should VANISH while energized. Two
    things must stay true throughout: the blade keeps cutting everything it touches (this gates
@@ -83,7 +84,7 @@ vs `energizedColor` = `SO_ColorSet.Danger` red (state reads as HUE) · `visibili
 1.2 × `fullEnergyBrightness` 1.8 (was 2×2.5 = a 5× HDR white that bloomed into a blob —
 raise cautiously) · tracer size is NOT in the config: tune `widthMultiplier` / `time` on the
 `RhinoSwordBladeTracer0..4` TrailRenderers (hairline 0.5 / 0.15) · swipe recovery 0.35 s @
-engage threshold 0.4 (`RhinoShieldSwipeConfig.asset`) · sword mount y 9.38 → 2.
+engage threshold 0.4 (`RhinoShieldSwipeConfig.asset`) · sword mount y 9.38 → −1.
 
 ### 🔴 Sparrow Turret Stance — two flight visualizations, still-nothing hardening (`claude/sparrow-prism-attack-hg6n78`)
 

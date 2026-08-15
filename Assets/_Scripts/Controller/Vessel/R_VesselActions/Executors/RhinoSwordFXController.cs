@@ -276,11 +276,13 @@ namespace CosmicShore.Gameplay
         /// so the sword draws a comb of hairlines through a swing rather than one slab.
         ///
         /// Their SHAPE is yours: width, time, taper curve, gradient and material are authored on
-        /// each TrailRenderer and this never writes them. All it owns is placement. Because a
-        /// TrailRenderer lays its width symmetrically about the emitter's path, the two END
-        /// streaks are inset by half their own head width, so widening one grows it INTO the
-        /// blade instead of out past the point or behind the grip; everything between is
-        /// interpolated across that inset span.
+        /// each TrailRenderer and this never writes them. All it owns is placement, and the
+        /// spacing is EVEN by construction: ONE span is computed for the whole set, inset at each
+        /// end by half the head width of the streak that sits there (a TrailRenderer lays its
+        /// width symmetrically about the emitter's path, so an end streak parked exactly on the
+        /// point would hang half its band past it). Insetting each streak by its OWN width
+        /// instead would hand every streak a different span, and the spacing would drift apart
+        /// the moment two of them were tuned to different widths.
         ///
         /// (The inset is exact while the sword swings across its own axis — a swipe or chop,
         /// which is when the streaks are visible at all. The width direction is perpendicular to
@@ -298,17 +300,25 @@ namespace CosmicShore.Gameplay
             int count = bladeTracers.Length;
             EnsureTracerCaches(count);
 
+            // One span for every streak — see above.
+            Vector3 spanTip = tip - towardTip * (0.5f * HeadWidthAt(0));
+            Vector3 spanHilt = hilt + towardTip * (0.5f * HeadWidthAt(count - 1));
+
             for (int i = 0; i < count; i++)
             {
                 var tracer = bladeTracers[i];
                 if (!tracer) continue;
 
-                float half = 0.5f * HeadWidth(tracer, i);
                 // 1 at element 0 (tip) running to 0 at the last (hilt).
                 float t = count == 1 ? 1f : 1f - (float)i / (count - 1);
-                tracer.transform.position = Vector3.Lerp(hilt + towardTip * half,
-                                                         tip - towardTip * half, t);
+                tracer.transform.position = Vector3.Lerp(spanHilt, spanTip, t);
             }
+        }
+
+        float HeadWidthAt(int index)
+        {
+            var tracer = bladeTracers[index];
+            return tracer ? HeadWidth(tracer, index) : 0f;
         }
 
         /// <summary>

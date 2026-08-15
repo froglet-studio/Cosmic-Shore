@@ -24,9 +24,9 @@ each mapped to an orientation axis of the sword.
 
 The raised rest pose is authored on the ForceFieldSkimmer instance transform in
 `Rhino.prefab` (currently ~20° pitch; it was 41.8° pre-feature — raised so the chop
-axis has meaningful travel). Its MOUNT sits at local (0, **2**, 20.7) — lowered from
-9.38, which perched the grip ~3 units above the hull's top (the hull box spans y
-≈ −8.9…+6.4, centred −1.2). Both numbers are one edit on that instance: y is how high
+axis has meaningful travel). Its MOUNT sits at local (0, **−1**, 20.7) — lowered from
+9.38, which perched the grip ~3 units above the hull's top, to about the hull's own
+vertical centre (the hull box spans y ≈ −8.9…+6.4, centred −1.2). Both numbers are one edit on that instance: y is how high
 the sword is *held*, the pitch is how far it is *raised*, and on a 60–240-unit blade
 the PITCH is much the stronger lever for "it towers overhead". The executor captures whatever local pose is authored
 as its zero point, and pivots rotation **and mount position** about the Fusilage
