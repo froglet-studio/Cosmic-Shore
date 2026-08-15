@@ -105,13 +105,30 @@ uses `1 − e^(−Grip·dt)`. At 60 fps and the Squirrel's authored grip the two
 does not perturb the tuning; it stops a frame-rate drop from loosening the back end. It applies only
 inside the drift window, so it cannot touch §3.2.
 
-### 3.4 Drift overshoot — a new speed payoff, bounded
+### 3.4 Drift overshoot — a new speed payoff, bounded (and it must never brake)
 
 Vector addition means momentum + nose-thrust can push `|v|` **above** the throttle target during a
 drift. The scalar model could not produce that, and for a racer it is desirable: a clean line
-through a drift should pay. `driftOvershootCeiling` (**1.25**, authored per vessel) caps it at
-1.25× the current throttle target so drifting cannot become the dominant way to go fast. The ceiling
-is only consulted while drifting, which is what keeps §3.2 exact.
+through a drift should pay. `driftOvershootCeiling` (**1.25**, authored per vessel) bounds it. The
+ceiling is only consulted while drifting, which is what keeps §3.2 exact.
+
+**The ceiling takes the pre-thrust speed as a floor, so it bounds GAIN and never brakes.** The first
+version clamped to `ComputeThrottleTarget() × 1.25` outright, which looks equivalent and is not: a
+vessel that *entered* the drift fast gets slammed down to its current cruise target on the first
+drift frame. That shipped for one round and produced two reported symptoms on the Dolphin — a large
+instant speed loss on drift entry, and the throttle appearing to control speed *during* the drift
+(the ceiling tracks `XDiff`, so the scissor moved the clamp). Measured on the Squirrel entering a
+drift at a boosted 180 u/s against a 60 u/s cruise target:
+
+| | frame 1 | frame 30 | frame 180 |
+|---|---|---|---|
+| clamp-to-target (broken) | **75.0** | 69.1 | 75.0 |
+| floor at pre-thrust speed (shipped) | 177.0 | 122.4 | 110.7 |
+
+Momentum carried in now bleeds off through `ComputeNoseAcceleration`, which targets the throttle
+target and therefore produces *negative* acceleration when you are above it — deceleration belongs
+to the throttle policy, not to a clamp. Entering a drift at cruise still binds exactly as intended:
+peak `1.25 × 60 = 75.0`, verified.
 
 ---
 
@@ -165,8 +182,8 @@ serialized values are stale garbage, exactly like `ThrottleScaler`.
 | Vessel | Model | Policy | Notes |
 |---|---|---|---|
 | **Squirrel** | vector | Live | This document. Throttle semantics unchanged — only the direction of thrust |
-| **Dolphin** | vector | **Locked** | Drift is a hard momentum lock — see `DOLPHIN_ENERGY_ECONOMY.md` §2a |
 | **Scarab** | vector | Live (own policy) | Integrator throttle; overrides `ComputeNoseAcceleration` + `ShapeSpeed` |
+| **Dolphin** | **scalar** | — | Migrated, then **reverted**: no vector configuration reproduces its shipped feel, because that feel *is* the defect. `DOLPHIN_ENERGY_ECONOMY.md` §2a |
 | Everyone else | scalar | — | Bit-identical to before the flag existed |
 
 ---
@@ -176,7 +193,7 @@ serialized values are stale garbage, exactly like `ThrottleScaler`.
 | Knob | Where | Value | Effect |
 |---|---|---|---|
 | `driftOvershootCeiling` | Squirrel.prefab | 1.25 | Max \|v\| during a drift, × the throttle target. 1 = no overshoot |
-| `driftThrottlePolicy` | Squirrel.prefab | Live (0) | Whether thrust acts during a drift |
+| `driftThrottlePolicy` | Squirrel.prefab | Live (0) | Whether thrust acts during a drift. `Locked` = no acceleration for the drift's duration (no vessel ships it today) |
 | `Mult` / `driftDamping` | drift action SOs | 1.4/0.5, 1.8/0.25 | Rotation multiplier and grip per tier |
 | `DefaultThrottleScaler` | Squirrel.prefab | 60 | Scissor throttle's speed scale |
 | `RotationThrottleScaler` | Squirrel.prefab | 0 | Turn rate vs speed — **deliberately 0** |
@@ -193,9 +210,12 @@ serialized values are stale garbage, exactly like `ThrottleScaler`.
    hard, take a danger-prism slow, ride the tube. It must feel *exactly* as it does on `main`. This
    is the claim the whole change rests on; §3.2 proves it in arithmetic, but it has to be seen.
 3. **Analog depth.** Feather LT: convergence should loosen continuously, not snap between tiers.
-4. **Overshoot.** Hold a long clean drift at full throttle — speed may rise above the straight-line
-   cruise but must plateau at 1.25×; drop `driftOvershootCeiling` to 1 and confirm the plateau
-   disappears.
+4. **Overshoot binds, but never brakes.** (a) From cruise, hold a long clean drift at full
+   throttle: speed may rise above the straight-line cruise and must plateau at 1.25×; drop
+   `driftOvershootCeiling` to 1 and confirm the plateau disappears. (b) **The regression that
+   shipped once:** enter a drift at BOOST speed. Speed must decay smoothly toward the cruise
+   target — it must NOT snap down on the first drift frame, and the scissor throttle must not
+   read as a speed dial while drifting.
 5. **AI drift.** HexRace, watch an AI approach a crystal. At drift entry its trail must continue
    toward the crystal while the hull swings off-axis. If the trail follows the nose instead, the
    Course re-aim in `SyncExternalWrites` regressed.

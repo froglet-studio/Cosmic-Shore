@@ -129,6 +129,7 @@ namespace CosmicShore.Gameplay
         // Server-side velocity estimates for transform-driven vessels (root → last pos + velocity)
         readonly Dictionary<Transform, Vector3> _vesselLastPos = new();
         readonly Dictionary<Transform, Vector3> _vesselVelocity = new();
+        readonly List<Transform> _deadSampleKeys = new();
 
         // Per-vessel-root time of last strike - dedups the hull+trigger double-fire and paces dribble
         // taps (see VesselContact). Gated by settings.vesselStrikeCooldown.
@@ -564,15 +565,60 @@ namespace CosmicShore.Gameplay
             float dt = Time.fixedDeltaTime;
             for (int i = 0, n = gameData.Vessels.Count; i < n; i++)
             {
-                var vessel = gameData.Vessels[i];
-                if (vessel == null) continue;
-                var root = vessel.Transform;
+                var root = LiveTransform(gameData.Vessels[i]);
                 if (root == null) continue;
 
                 if (_vesselLastPos.TryGetValue(root, out var lastPos))
                     _vesselVelocity[root] = (root.position - lastPos) / dt;
                 _vesselLastPos[root] = root.position;
             }
+
+            PruneDeadVesselSamples();
+        }
+
+        /// <summary>
+        /// A vessel's root transform, or null if that vessel has been destroyed.
+        ///
+        /// <b>`vessel == null` IS NOT ENOUGH and never was.</b> <c>GameDataSO.Vessels</c> is a
+        /// <c>List&lt;IVessel&gt;</c>, and <c>==</c> on an INTERFACE reference is a plain C#
+        /// reference comparison — it never reaches <c>UnityEngine.Object</c>'s overloaded operator,
+        /// which is the thing that reports a destroyed object as null. So a destroyed
+        /// <c>VesselController</c> sails straight through that guard and throws
+        /// MissingReferenceException on the first member access. Every roster walk goes through
+        /// here instead of hand-rolling the check.
+        ///
+        /// A stale entry is now rare (VesselController leaves the roster in OnDestroy), but a
+        /// vessel can be destroyed at any point in a frame — including between this ball's
+        /// FixedUpdate and the next — so the roster is never something to trust unguarded.
+        /// </summary>
+        static Transform LiveTransform(IVessel vessel)
+        {
+            if (vessel == null) return null;
+            // The implicit bool IS the Unity liveness test; `is UnityEngine.Object` is what gets
+            // us to it from behind the interface.
+            if (vessel is UnityEngine.Object unityObject && !unityObject) return null;
+            var root = vessel.Transform;
+            return root ? root : null;
+        }
+
+        /// <summary>Drop sample entries whose transform has been destroyed. Keyed by Transform, so
+        /// a swap-heavy session (the freestyle vessel changer) would otherwise grow these
+        /// dictionaries for the ball's whole life. Only runs when they have outgrown the roster,
+        /// so the steady state costs one integer compare.</summary>
+        void PruneDeadVesselSamples()
+        {
+            if (_vesselLastPos.Count <= gameData.Vessels.Count) return;
+
+            _deadSampleKeys.Clear();
+            foreach (var key in _vesselLastPos.Keys)
+                if (!key) _deadSampleKeys.Add(key);
+
+            for (int i = 0; i < _deadSampleKeys.Count; i++)
+            {
+                _vesselLastPos.Remove(_deadSampleKeys[i]);
+                _vesselVelocity.Remove(_deadSampleKeys[i]);
+            }
+            _deadSampleKeys.Clear();
         }
 
         void OnCollisionEnter(Collision collision)

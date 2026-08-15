@@ -187,7 +187,7 @@ namespace CosmicShore.Gameplay
         /// uses makes that whole class of bug impossible by construction rather than a balance to
         /// maintain between two numbers.
         /// </summary>
-        protected override float ShapeSpeed(float speedNow, float dt)
+        protected override float ShapeSpeed(float speedNow, float speedBeforeThrust, float dt)
         {
             if (_throttle01 <= TriggerDeadzone)
                 speedNow = Mathf.Max(speedNow - coastDragPerSecond * dt, 0f);

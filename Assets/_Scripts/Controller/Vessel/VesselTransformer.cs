@@ -649,15 +649,29 @@ public class VesselTransformer : MonoBehaviour
         }
 
         /// <summary>
-        /// Magnitude policy, applied after thrust and grip. Base implementation is the drift
+        /// Magnitude policy, applied after grip and thrust. Base implementation is the drift
         /// overshoot ceiling and nothing else — deliberately the IDENTITY outside a drift, which
         /// is what keeps the no-drift equivalence exact. Vessels with a real speed model of their
         /// own (the Scarab's release-only drag + hard ceiling) replace it wholesale.
+        ///
+        /// <b>THE CEILING BOUNDS GAIN — IT MUST NEVER BRAKE.</b> Clamping to
+        /// <c>ComputeThrottleTarget() × ceiling</c> outright looks equivalent and is not: a vessel
+        /// that ENTERED the drift fast gets slammed down to its current cruise target on the very
+        /// first drift frame. That shipped for one round and was exactly the two symptoms reported
+        /// on the Dolphin — "loses a ton of speed when the drift is initiated" (its boosted 357
+        /// u/s hitting a 55 u/s ceiling, because `ChargeBoostAction.BeginCharge` clears the boost
+        /// on drift entry so the target collapses to the unboosted cruise) and "controls its speed
+        /// during the drift" (the ceiling tracking `XDiff`, so the scissor throttle moved the
+        /// clamp). Taking <c>speedBeforeThrust</c> as a floor makes this bound this frame's
+        /// INCREASE only; a fast entry then decays toward the target through
+        /// <see cref="ComputeNoseAcceleration"/>, which is where deceleration belongs.
         /// </summary>
-        protected virtual float ShapeSpeed(float speedNow, float dt)
+        /// <param name="speedBeforeThrust">|velocity| at the top of the frame (grip preserves
+        /// magnitude, so this is also the post-grip magnitude).</param>
+        protected virtual float ShapeSpeed(float speedNow, float speedBeforeThrust, float dt)
         {
             if (DriftBlend01() <= 0f) return speedNow;
-            float ceiling = Mathf.Max(MinimumSpeed, ComputeThrottleTarget() * driftOvershootCeiling);
+            float ceiling = Mathf.Max(speedBeforeThrust, ComputeThrottleTarget() * driftOvershootCeiling);
             return Mathf.Min(speedNow, ceiling);
         }
 
@@ -775,7 +789,9 @@ public class VesselTransformer : MonoBehaviour
             _velocity += transform.forward * ComputeNoseAcceleration(dt);
 
             // 3) Magnitude policy (drift overshoot ceiling; the Scarab replaces this entirely).
-            speedNow = ShapeSpeed(_velocity.magnitude, dt);
+            //    speedNow is still the pre-thrust magnitude here — grip preserves magnitude — and
+            //    the ceiling needs it as a floor so it can only bound GAIN, never brake.
+            speedNow = ShapeSpeed(_velocity.magnitude, speedNow, dt);
             _velocity = speedNow > 1e-4f ? _velocity.normalized * speedNow : Vector3.zero;
 
             // `speed` stays the fleet's API — the rotation scalers read it — so it tracks the

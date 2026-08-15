@@ -40,16 +40,35 @@ step 2 below is the one that must actually be seen.
 | Vessel | flag | policy | what changed |
 |---|---|---|---|
 | **Squirrel** | on | Live | Thrust direction only. Throttle semantics UNCHANGED (`XDiff` scissor, `ThrottleScaler 60`, AI `XDiff`) |
-| **Dolphin** | on | **Locked** | **Deliberate behaviour change** (chosen 2026-08-15): no acceleration while drifting; with grip 0 the velocity vector is frozen outright |
 | **Scarab** | on | Live (own policy) | Refactor only — same feel, its `MoveShip` copy deleted |
+| **Dolphin** | **off** | — | Migrated to `Locked`, play-tested, **REVERTED**. Back on the scalar path and bit-identical to before this branch |
 | everyone else | off | — | untouched |
+
+**Round 2 (2026-08-15) — two fixes after the first play-test:**
+
+- **The drift overshoot ceiling was braking, not bounding.** It clamped `|v|` to
+  `ComputeThrottleTarget() × 1.25` outright, so a vessel that ENTERED a drift fast was slammed to
+  its current cruise target on the first drift frame. On the Dolphin that meant a boosted 357 u/s
+  meeting a ~55 u/s ceiling (`ChargeBoostAction.BeginCharge` clears the boost on drift entry, so the
+  target collapses), and because the ceiling tracks `XDiff` the scissor throttle read as a speed
+  dial mid-drift. **Both reported symptoms, one cause.** The ceiling now takes the pre-thrust speed
+  as a floor: it bounds GAIN and never brakes. **This also affected the Squirrel** — 180 → 75 on the
+  first frame of any drift entered above cruise; now 177 and decaying naturally.
+- **`MissingReferenceException` from `AstroLeagueBall.SampleVesselVelocities`.** `GameDataSO.Vessels`
+  is a `List<IVessel>`, and `==` on an **interface** reference is a plain C# comparison that never
+  reaches `UnityEngine.Object`'s overload — so a destroyed `VesselController` sailed through
+  `vessel == null` and threw on `vessel.Transform`. Fixed at both ends: `VesselController.OnDestroy`
+  now leaves the roster (only the despawn path removed before, so the freestyle vessel-changer swap
+  leaked destroyed hulls), and the ball routes every roster walk through a `LiveTransform` helper
+  that tests the Unity object behind the interface. Sample dictionaries are pruned of dead keys.
 
 ⚠ **Correction to the brief this was built from:** `holdSpeedWhileDrifting` (and
 `RefreshDriftSpeedHold` / `_driftSpeedHeld` / `_heldDriftSpeed`) **has never existed in this
 repository** — absent from `VesselTransformer.cs`, from that file's git history, and from
 `Dolphin.prefab`. The Dolphin's throttle was LIVE during drift, i.e. it had the same raw defect as
-the Squirrel. So the Dolphin change is a real behaviour change, not the retirement of a workaround;
-verify it as a change.
+the Squirrel — which is also why **no vector configuration reproduces its shipped feel**: that feel
+IS the defect. `Live` fixes it (a change), `Locked` freezes speed (a different change). The Dolphin
+is therefore back on the scalar path, where "unchanged" is provable rather than approximated.
 
 **Verify in editor (in order):**
 1. **Squirrel — drift recovery (the point).** HexRace or freestyle. Get to speed, hold LT into a
@@ -59,15 +78,16 @@ verify it as a change.
 2. **Squirrel — no-drift identity (the claim).** Fly with no drift at all: accelerate, brake, turn
    hard, take a danger-prism slow, ride the tube, boost. It must feel *exactly* as on `main`. If
    anything reads different outside a drift, the identity broke and that is a stop-ship.
-3. **Dolphin — the momentum lock.** Enter a drift at speed, then work the throttle. Speed AND
-   heading must both hold flat for the drift's duration. (This is the change: previously the
-   throttle still moved your speed along the frozen line.)
-4. **Dolphin — danger prism while drifting.** Clip a danger prism mid-drift. The slow MUST land —
-   `throttleMultiplier` stays live through the lock. A drifting vessel that shrugs off danger
-   prisms is a locked-design violation, not a feel win.
-5. **Dolphin — boost discharge on release.** Hold the drift to bank charge, release. Acceleration
-   must begin on the first frame after release, not after a beat. (The discharge raises the
-   throttle target, so the error term is large and thrust follows immediately — but prove it.)
+3. **Squirrel — enter a drift at BOOST speed (the round-1 regression).** Speed must decay
+   smoothly toward the cruise target. It must NOT snap down on the first drift frame, and the
+   scissor throttle must not read as a speed dial while drifting. This is the exact failure that
+   was reported on the Dolphin; the Squirrel had it too.
+4. **Dolphin — unchanged, in full.** It is back on the scalar path, so this is a REGRESSION check,
+   not a feature check: enter a drift at speed and confirm it maintains speed on entry (no loss),
+   that the drift feels exactly as it did before this branch, and that the boost charge/discharge
+   cycle is untouched.
+5. **Dolphin — danger prism while drifting.** Clip a danger prism mid-drift; the slow must land.
+   (Unchanged behaviour, but it is the locked-design guard and costs one pass.)
 6. **AI drift still locks course on the objective.** HexRace, watch an AI approach a crystal. At
    drift entry its trail must continue toward the crystal while the hull swings off-axis. If the
    trail follows the nose, the `Course` re-aim in `SyncExternalWrites` regressed — this was a live
@@ -75,9 +95,13 @@ verify it as a change.
 7. **Menu vessel swap preserves speed** on Squirrel, Dolphin and Scarab. Freestyle at speed →
    vessel changer → swap. The new hull must inherit the speed, not drop to a stop
    (`SetInitialSpeed` → the external-write re-seed).
-8. **Squirrel — drift overshoot plateau.** Hold a long clean drift at full throttle: speed may rise
-   above the straight-line cruise but must plateau at **1.25×** the throttle target. Set
-   `driftOvershootCeiling` to 1 and confirm the plateau disappears.
+8. **Squirrel — drift overshoot plateau.** From CRUISE (not boost), hold a long clean drift at full
+   throttle: speed may rise above the straight-line cruise but must plateau at **1.25×** the
+   throttle target. Set `driftOvershootCeiling` to 1 and confirm the plateau disappears.
+10. **No `MissingReferenceException` from the ball.** Astro League or freestyle with a forged ball
+   live: swap vessels via the changer toy several times, and let an AI vessel despawn. The console
+   must stay clean — previously `AstroLeagueBall.SampleVesselVelocities` threw every physics tick
+   once any vessel in the roster had been destroyed.
 9. **MPPM two-client.** A drifting vessel's trail and heading must match on the remote peer.
    `n_Speed`/`n_Course` are owner-write and the transformer does not run on non-owners
    (`ToggleActive(false)` for `IsNetworkClient`), so nothing structural changed — confirm it.
@@ -86,7 +110,10 @@ verify it as a change.
 Live/Locked/Live · Squirrel grip 0.5 (tier 1) / 0.25 (sharp) · Dolphin grip 0 · grip convergence is
 now frame-rate independent (`1 − e^(−k·dt)`; ~0.4% from the old `k·dt` at 60 fps).
 
-**Known gaps:** no edit-mode test guards the identity (the model lives on a MonoBehaviour needing a
+**Known gaps:** the Dolphin's drift defect is now UNFIXED again (deliberately — it is the same
+thrust-along-Course problem the Squirrel had, and closing it means picking a mechanic and
+play-testing it as a change; `DOLPHIN_ENERGY_ECONOMY.md` §2a has the two options ready); no
+edit-mode test guards the identity (the model lives on a MonoBehaviour needing a
 live vessel — `SQUIRREL_DRIFT.md` §9 names the factoring that would make one cheap); the Manta is
 the remaining scalar-path vessel that drifts (two-trigger, `singleTriggerDrift: 0`) and still has
 the raw defect — its flag flip is a one-line change plus a feel pass, deliberately not taken here.

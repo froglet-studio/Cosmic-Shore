@@ -51,7 +51,7 @@ only inside the drift window.
 | Vessel | Model | Drift throttle policy |
 |---|---|---|
 | **Squirrel** | vector | **Live** — thrust along the nose; aiming out of a slide and squeezing recovers |
-| **Dolphin** | vector | **Locked** — no acceleration while drifting; with its authored grip 0 the velocity vector is frozen outright (`DOLPHIN_ENERGY_ECONOMY.md` §2a) |
+| **Dolphin** | **scalar** | Migrated then **reverted** — no vector configuration reproduces its shipped feel, because that feel *is* the defect (`DOLPHIN_ENERGY_ECONOMY.md` §2a) |
 | **Scarab** | vector | Live, own policy (integrator + hard ceiling + Snap Dash) |
 | everyone else | scalar | — (bit-identical to before the flag existed) |
 
