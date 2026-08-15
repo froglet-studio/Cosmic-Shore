@@ -96,19 +96,43 @@ else in the fleet shares:
 
 | part | submesh | what it is |
 |---|---|---|
-| Carapace | **1 — domain** | Two wing cases split by a real seam groove, widest behind the middle |
-| Horn | **1 — domain** | The clypeal spike, swept up and forward. The single most identifying feature |
-| Head shield | 0 — chassis | The flat clypeus a scarab pushes with, tilted nose-down |
+| Carapace | **1 — domain** | Two wing cases split by a real seam groove, ribbed with four longitudinal striae, widest behind the middle |
+| Pronotum | **1 — domain** | The thorax shield ahead of the wing cases, standing 9% proud of the shell profile so there is a visible step where the elytra begin |
+| Horn | **1 — domain** | The clypeal spike, swept up and forward, finishing **above** the dome. The single most identifying feature |
+| Clypeus | 0 — chassis | The flat shovel a scarab pushes with — a solid wedge, tilted nose-down |
 | Belly | 0 — chassis | Shallow keel, deepest on the centreline |
-| Legs | 0 — chassis | Six tapered struts, three a side, splayed out and back |
+| Legs | 0 — chassis | Six **jointed** legs, three a side: femur out to a knee, tibia down and back to the foot |
 
-901 vertices / 1,552 triangles, built once at `Awake`. The two-submesh split is the fleet's
+1,402 vertices / 2,459 triangles, built once at `Awake`. The two-submesh split is the fleet's
 material contract, not decoration: `ShipHelper.ApplyShipMaterial` paints a MeshRenderer hull on
-**slot 1**, so the carapace and horn have to be submesh 1 or the domain colour lands on the
-underside. Proportions are authored (`length` 9 × `width` 7.2 × dome 2.6) and the mesh is FITTED
-to them after assembly — the head shield and horn are otherwise purely additive and the vessel
+**slot 1**, so the carapace, pronotum and horn have to be submesh 1 or the domain colour lands on
+the underside. Proportions are authored (`length` 9 × `width` 7.4 × dome 2.15) and the mesh is
+FITTED to them after assembly — the clypeus and horn are otherwise purely additive and the vessel
 comes out ~40% longer than authored, which is not cosmetic: the occlusion corridor and the
-speed-tunnel camera both size themselves off the hull's circumscribing radius (5.37 as shipped).
+speed-tunnel camera both size themselves off the hull's circumscribing radius (7.82 as shipped).
+
+**The fit measures the CARAPACE only.** Measuring every part instead let the legs and horn drive
+the divisor: the body was scaled to ~70% of its authored size while the appendages kept their
+reach, so the finished hull was *wider across the legs than across the shell* (12.24 vs 7.40) and
+read as a lump with a spider on it. Carapace-only measurement makes `width`/`length` mean the body
+and lets appendages extend past it, which is what those tooltips have always claimed.
+
+**Every profile function clamps before `Pow`.** In float32 `Sin(PI)` is ≈ `-8.74e-8` — *negative* —
+and `Pow(negative, fractional)` is NaN. One unclamped height profile put a NaN Y on every vertex at
+t = 1, which Unity surfaced as a rejected `localPosition` assignment on the horn
+(`{0.000000, NaN, 2.616583}`) and `abnormal mesh bounds ... -nan(ind)` on three meshes — and which
+froze the puppetry, because a renderer with invalid bounds stops updating. The sibling width
+profile escaped only because its `Max` clamp happened to sit in the same place. This is also a
+lesson about verification: a Python re-implementation of the profile *silently clamped where the
+C# did not*, so the numbers said the mesh was fine. The validator now compiles and runs the
+**shipped C# file itself** against a faithful `Mathf`/`Vector3` stub
+(`scratchpad/hull2`) and checks NaN, degenerate triangles, index ranges and finished extents.
+
+Two other defects the same pass removed: the clypeus was one quad emitted **twice with opposite
+winding on the same four vertices**, which makes `RecalculateNormals` average `+n` and `-n` to zero
+at every corner and renders the head as a black smear (anything double-sided needs its own
+vertices, or it needs thickness — this now has thickness); and the horn's rings ran to a zero
+radius, collapsing `hornSides` quads onto a single point, so the tip is now a proper apex fan.
 
 **Why procedural rather than a different FBX.** The model hangs off the vessel as a
 `PrefabInstance` of the Sparrow FBX carrying ~40 per-child modifications plus stripped references
@@ -122,13 +146,27 @@ lands it replaces the builder, not the scaffolding.
 
 **The hull is PUPPETEERED, not a single mesh.** A vessel that does not move its own parts reads as
 a prop being slid around, however good the flight model under it is. The builder therefore emits
-**10 parts** — `Core` (on the builder's own renderer, because that is what
-`VesselCustomization._shipGeometries` paints), `elytron.l` / `elytron.r`, `horn`, and `leg.{l,r}{1..3}`
-— each pivoted where it should hinge: the wing cases at the centreline, the horn at the head, each
-leg at its socket. `ScarabAnimation` resolves them BY NAME and drives them: the elytra crack open
-under yaw (outside of the turn opens further, so the ship banks visually), the legs tuck with SPEED
-and splay when slow, the horn leads the turn. Real art can replace the procedural hull without
-touching the animation, as long as it names its pieces the same way.
+**11 parts** — `Core` (on the builder's own renderer, because that is what
+`VesselCustomization._shipGeometries` paints), `elytron.l` / `elytron.r`, `pronotum`, `horn`, and
+`leg.{l,r}{1..3}` — each pivoted where it should hinge: the wing cases at the centreline, the horn
+at the head, each leg at its socket. `ScarabAnimation` resolves them BY NAME and drives them: the
+elytra crack open under yaw (outside of the turn opens further, so the ship banks visually) and
+sweep back under throttle, the legs swing through a signed arc — hanging DOWN when slow, folded UP
+against the shell at speed — while rowing fore/aft with pitch, and the horn leads the turn. Real
+art can replace the procedural hull without touching the animation, as long as it names its pieces
+the same way.
+
+**Amplitudes are fleet-scale on purpose.** The first cut swung its parts 14–26°, which is invisible
+at chase-camera distance and read as *no puppeteering at all*. `RhinoAnimation` is the calibration:
+it swings wings and engines through `yawAnimationScaler = 80` degrees and the fuselage through 25.
+Vessel puppetry in this game is a big, legible gesture — if you cannot see it from the chase camera
+it is not doing its job. The Scarab now runs elytra 40° (+14° cruise, +16° throttle sweep), legs
+42° down / 30° up, horn 34°.
+
+A related mistake worth not repeating: the legs originally rotated *toward* their rest pose as
+speed rose, and their rest pose is the one the mesh was built in — out and down. A one-sided
+"splay toward rest" can therefore only ever reach a pose that is neither gear-down nor tucked. The
+arc has to be **signed** through rest for the two ends to read as two states.
 
 The Scarab shipped carrying `MantaAnimationContoller` from its Sparrow clone — resolving
 Manta/Sparrow bone names, i.e. puppeteering the inherited FBX whose renderers this component
