@@ -504,6 +504,19 @@ Machine validation covers structure and colorimetry; only a playtest covers *loo
       drift means something is scaling the pair non-uniformly, or a channel is clipping
       past 1.0 (tonemapping is None — there is no shoulder to absorb it).
 
+2d. Check the **heart crossing** (§2.3) — note it is the one crystal that must NOT be lime:
+   a living lifeform's heart wears the blue-white neutral, and only a *free* crystal is lime.
+   - Fly a cell with wildlife (Menu\_Main freestyle, Wildlife Blitz). Confirm every living
+     lifeform's heart is **blue** — check a **Charge** and a **Time** species specifically
+     (`Arbor Flora Charge`, `Tadpole Fauna Time`): their materials are the lime ones, so
+     they are the two that fail first if the tint is lost again.
+   - Kill one and watch the heart **ease** blue → lime over ~0.8 s rather than flicking.
+     Tune on the crystal prefab's **Color Transition Seconds** (0 snaps).
+   - Kill one **during its bloom** (within the first ~3 s of the lifeform spawning) to
+     confirm the crossing and `FadeIn` coexist — both write the same block.
+   - A heart stuck part-way between blue and lime means the settle never fired: check that
+     a `PrismTimerManager` exists in the scene.
+
 3. For **Ruby** and **Gold**, confirm: the prism's facets and silhouette read clearly
    (the base→rim separation is visible), and the shielded prism is obviously distinct
    from an unshielded prism of the same domain.
