@@ -145,13 +145,19 @@ namespace CosmicShore.Gameplay
             // lifetime spawn counter that never decremented - a fully-grown flora could
             // never grow again even after fauna ate most of it, which is exactly the
             // "ungrowing gyroid fragments" failure observed in-game.)
-            if (healthTracker != null && healthTracker.Count >= maxTotalSpawnedObjects) return;
+            if (healthTracker != null && healthTracker.Count >= maxTotalSpawnedObjects)
+            {
+                _idleGrowTicks++;   // budget-full is a finished frontier (see OctagonMature)
+                return;
+            }
 
             // Frenzy gate: flora grow at a steady rate until the cell crosses into Frenzy,
             // then freeze, resuming automatically when an active force (fauna grazing /
             // vessel abilities) brings the count back below the Frenzy exit threshold.
             // Cell.FloraGrowingEnabled is the single source of truth - no early growth cap
             // (that staggered self-limit was a cheat; the food web is the only down-force).
+            // Deliberately does NOT touch the idle counter: a PAUSED plant is not a
+            // finished one, and maturity must not accrue while the cell holds growth shut.
             if (cell && !cell.FloraGrowingEnabled) return;
 
             // Reawakening: a flora whose active branches were all consumed or exhausted
@@ -162,6 +168,7 @@ namespace CosmicShore.Gameplay
             // finish their own setup.
             if (activeBranches.Count == 0)
             {
+                _idleGrowTicks++;   // decided nothing this tick either way
                 if (healthTracker != null && healthTracker.Count > 0)
                     ReseedBranches();
                 return;
@@ -224,6 +231,11 @@ namespace CosmicShore.Gameplay
             {
                 activeBranches.Remove(branch);
             }
+
+            // The maturity clock: a tick that decided at least one child is a growing plant;
+            // a run of deciding-nothing ticks is a finished one (see OctagonMature).
+            if (itemsSpawned > 0) _idleGrowTicks = 0;
+            else _idleGrowTicks++;
 
             GrowCrystal();
         }
@@ -358,6 +370,13 @@ namespace CosmicShore.Gameplay
         Vector3 _pendingOffspringCenter;
         bool _hasPendingOffspringClaim;
 
+        // Consecutive grow ticks that decided nothing with nothing pending - the plant's own
+        // frontier is exhausted (every site grown, occupied, or declined as foreign). This is
+        // the honest "fully grown" signal for a patch whose final size legitimately varies
+        // (22-28): a fixed prism-count test would stall a plant whose near ring-arc was grown
+        // by its parent under the boundary epsilon, and a ring-complete test the same.
+        int _idleGrowTicks;
+
         bool? _octagonModeCached;
 
         /// <summary>
@@ -426,6 +445,25 @@ namespace CosmicShore.Gameplay
                 _ringMembers.Count < 8)
                 _ringMembers.Add(new RingMember { Position = position, Rotation = rotation, Type = type });
         }
+
+        /// <summary>
+        /// True when this octagon plant has FULLY GROWN - it holds a real patch AND its frontier
+        /// is exhausted (a run of grow ticks decided nothing, with no orders pending). Only a
+        /// mature plant may reproduce: without this gate a colonising species runs generations
+        /// ahead of its own growth - each half-grown plant minting 8 crystal-bearing daughters
+        /// per birth - and the cell fills with an exponential cloud of hearts and seed spindles
+        /// long before the surface behind them exists (the first Gyroid Lab playtest).
+        ///
+        /// Deliberately NOT a fixed prism count or a ring-complete test: patch sizes
+        /// legitimately vary (22-28), and a plant whose near ring-arc was grown by its parent
+        /// under the boundary epsilon would never satisfy either - a permanent stall. Frontier
+        /// exhaustion is the one signal every complete plant reaches.
+        /// </summary>
+        bool OctagonMature =>
+            healthTracker != null &&
+            healthTracker.Count >= GyroidOctagonData.PatchPrisms - 6 &&
+            pendingSpawns.Count == 0 &&
+            _idleGrowTicks >= 2;
 
         /// <summary>
         /// The ownership gate - what makes many small plants TILE the surface instead of racing
@@ -552,6 +590,11 @@ namespace CosmicShore.Gameplay
             }
 
             if (!_octagonCenter.HasValue || _ringMembers.Count == 0) return false;
+
+            // A gyroid reproduces only when it has FULLY GROWN all its spindles and health
+            // prisms (see OctagonMature). The quota may have been banked long before - the
+            // armed retry simply waits here until the plant's own frontier is done.
+            if (!OctagonMature) return false;
 
             var spatialIndex = PrismSpatialIndex.EnsureInstance();
 

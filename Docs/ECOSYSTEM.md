@@ -4136,6 +4136,21 @@ seeder delay 0. The Frenzy gate was already unreachable. Expansion is frontier-l
 design: interior plants complete and stop, so the active grower count tracks the colony's
 surface, not its volume.
 
+**Second playtest (2026-08-15): the crystal cloud, and the maturity gate.** With reproduction
+armed at quota 12 ("colonise while half-grown"), each half-grown plant minted 8
+crystal-bearing daughters per birth - the population octupled per ~half-second generation
+while growth lagged behind, and the cell filled with an exponential cloud of hearts and seed
+spindles far beyond any grown surface. The rule that fixes it is the one the playtest asked
+for: **a gyroid reproduces only when it has fully grown all its spindles and health prisms.**
+`AssembledFlora.OctagonMature` = a real patch (count ≥ 18) AND an exhausted frontier (a run of
+grow ticks that decided nothing, with no orders pending; budget-full ticks count as idle).
+Deliberately NOT a fixed prism count or ring-complete test - patch sizes legitimately vary
+22-28+, and a plant whose near ring-arc was pre-grown by its parent under the boundary epsilon
+would stall forever against either. The banked quota simply waits at the gate. Re-simulated
+with the exact rule: 167 plants / 3,301 prisms, 19.8 prisms per crystal (was a seed-plant
+flood), single connected lattice, zero overlaps, immature plants = exactly the one-generation
+frontier shell.
+
 In-editor verification (the human is the gate): enter freestyle in Menu_Main, fly the Cell
 Selector toy, pick **Gyroid Lab**. Watch: (1) the founder's first danger prism moves the
 crystal to the ring centre; (2) the surface grows as ONE continuous gyroid with no doubled
