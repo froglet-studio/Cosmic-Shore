@@ -43,6 +43,12 @@ run the `/reorient` skill first and act on its verdict before shipping.
   same new **doc section number** (both took `§4.6`) merges clean per-hunk and produces a
   document with two of them. When you renumber, renumber every inbound reference — and
   only YOURS: grep the whole repo, then split the hits by which section they mean.
+  **The same collision happens WITHOUT a second branch, against the document's own past** —
+  a migration-tracker row id (`C6`), a bug id (`B10`), a test id. You pick the "next" id by
+  reading the last row, and the last row is not the highest: `PRISM_ANIMATION.md`'s tracker
+  runs C1…C13b with C6 sitting mid-table. Grep for the id you intend to claim BEFORE writing
+  it into code comments, doc prose, tool docstrings and commit messages — by the time you
+  notice, it is spread across a dozen files and the fix is a sweep, not an edit.
 - Restate, in a few sentences, WHAT the branch delivers and WHY. If you can't, you are
   not ready to ship — go re-read the diff.
 

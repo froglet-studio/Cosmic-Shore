@@ -95,6 +95,14 @@ every other block is one object keyed by 32-hex `m_ObjectId`.
   `.meta` yourself. Slot integer ids must match the HLSL parameter order.
   PropertyNodes: clone an existing one, point `m_Property.m_Id` at the target.
   Register every node in `GraphData.m_Nodes`.
+- **When a splice needs "the node's OTHER input", DERIVE it from the node's slot set —
+  never from the edge that led you to the node.** Finding the grow `Multiply` by walking
+  `PrismGrowScale.Scale`'s outgoing edge hands you the slot Scale feeds (`B`); the slot you
+  actually want to intercept is the one it does NOT feed (`A`). Returning the wrong one
+  retargets the *feature's own* feeder into your new node and quietly cuts it out of the
+  chain. Take the node's input-slot ids, subtract the one you arrived on, and `assert` exactly
+  one remains. This is cheap to get wrong and free to catch — validate-before-write flagged it
+  with `PrismGrowScale.Scale no longer feeds a Multiply` and nothing was written.
 - **Splice an edge**: edges are
   `{m_OutputSlot:{m_Node:{m_Id}, m_SlotId}, m_InputSlot:{...}}`. To intercept
   a feed, RETARGET the existing edge's end (don't add a duplicate feeder into
@@ -630,6 +638,17 @@ This also verifies a source-rewriting tool end to end: bake values with the tool
 regexes, compile the result, and confirm the round-trip back to the original values is
 byte-identical.
 
+**Use the harness to MEASURE a bound the CPU then has to encode, instead of guessing it.**
+Compiling for correctness is the obvious use; the higher-value one is deriving a number that
+must live on the other side of the CPU/GPU boundary. A vertex-displacing effect needs a
+`RenderBounds` envelope, and the padding is whatever the shader can actually displace — so
+sweep the shipped entry point over the real geometry and every t in the animation window, and
+report peak displacement as a RATIO of the quantity the CPU already has (`radius × amplitude`
+measured at 0.991, so 1.25 ships with headroom). The constant then arrives with its
+derivation attached, and re-running the harness after any shader edit re-checks it. Assert the
+ratio in the harness, so a later change to the motion that widens the envelope fails there
+rather than as prisms popping at the screen edge.
+
 ## 4.6 Technique: hand-authoring a new asset trio
 
 Adding a new SO-configured, prefab-backed thing (here: a cell) means four
@@ -859,6 +878,13 @@ that would otherwise cost a round-trip to a human at the editor:
   prefab with malformed data it spills native parse errors and callstacks before your
   code runs. An auditor that dies on the bad data it exists to find is worse than no
   auditor. Reserve `LoadPrefabContents` for tools that WRITE.
+- **A guid-uniqueness assertion must be scoped to `.meta` files.** "This new guid appears in
+  exactly one file" is the wrong invariant and produces a false failure the moment the guid is
+  *used*: a script guid legitimately appears in its own `.cs.meta` AND in every asset whose
+  `m_Script` points at it. The real invariant is **exactly one `.meta` OWNS a guid**; every
+  other hit is a reference and is evidence the wiring worked. Assert
+  `len(grep -rl <guid> Assets --include=*.meta) == 1`, and print the referencing files rather
+  than failing on them.
 - **A "dangling GUID on this prefab" is usually project-wide.** Before treating
   a missing asset reference as a local bug, grep the WHOLE Assets tree for that
   guid: a reference broken on four flora prefabs turned out to be broken on
