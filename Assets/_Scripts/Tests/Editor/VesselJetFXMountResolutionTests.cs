@@ -179,9 +179,11 @@ namespace CosmicShore.Tests
         [Test]
         public void BeaconLateral_NoRibbonSitsOnTheCentrelineForAnEvenCount()
         {
+            // Assert.Greater on the magnitude rather than Assert.AreNotEqual: AreNotEqual has no
+            // tolerance overload, so a delta passed to it binds to the message parameter.
             for (int count = 2; count <= 8; count += 2)
                 for (int i = 0; i < count; i++)
-                    Assert.AreNotEqual(0f, VesselJetFXConfigSO.BeaconLateralOffset(i, count, 4f), 1e-4f,
+                    Assert.Greater(Mathf.Abs(VesselJetFXConfigSO.BeaconLateralOffset(i, count, 4f)), 1e-4f,
                         $"ribbon {i} of {count} landed on the centreline — it would hang down the " +
                         "middle of the pilot's view, which is the thing this offset exists to avoid.");
         }

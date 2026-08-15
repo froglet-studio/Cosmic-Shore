@@ -156,8 +156,11 @@ namespace CosmicShore.Gameplay
         {
             if (cfg.BeaconRibbonPrefab == null) return;
 
+            // Implicit bool rather than `?.` — a UnityEngine.Object's null is overloaded, and a
+            // destroyed component would slip past a reference-null check (CLAUDE.md).
+            var cameraCustomizer = GetComponent<VesselCameraCustomizer>();
             float cameraDistance = VesselJetFXConfigSO.ResolveCameraDistance(
-                GetComponent<VesselCameraCustomizer>()?.Settings);
+                cameraCustomizer ? cameraCustomizer.Settings : null);
 
             float depth = cameraDistance > Mathf.Epsilon
                 ? cameraDistance * cfg.BeaconDepthPerCameraDistance
