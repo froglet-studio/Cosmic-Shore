@@ -25,10 +25,36 @@ namespace CosmicShore.Gameplay
 
         private bool _onCooldown;
 
+        /// <summary>
+        /// Reach multiplier stamped onto every projectile this gun fires, so a chain reaction
+        /// can carry the firing vessel's SPACE level all the way down its generations. Set by
+        /// the action executor at fire time (never cached from a level read at Initialize);
+        /// 1 = unscaled, which is every gun that does not chain.
+        /// </summary>
+        public float ChainRangeScale { get; set; } = 1f;
+
+        /// <summary>
+        /// Companion of <see cref="ChainRangeScale"/>: the fraction of its reach each chain
+        /// generation hands to the next. 1 = no decay (the SPACE level-5 upgrade).
+        /// </summary>
+        public float ChainRangeFalloff { get; set; } = 1f;
+
         #region Initialization
         public void Initialize(IVesselStatus vesselStatus)
         {
             _vesselStatus = vesselStatus;
+        }
+
+        /// <summary>
+        /// Supplies the pool at runtime instead of from the inspector. A gun mounted on a
+        /// VESSEL is authored with its factory, but a <see cref="LoadedGun"/> riding a POOLED
+        /// PROJECTILE cannot be — the factory is a scene object and the spike is a prefab
+        /// asset — so the host projectile hands its own factory down when it launches. Without
+        /// this every chain volley dies on a null factory, silently, one generation in.
+        /// </summary>
+        public void SetProjectileFactory(ProjectileFactory factory)
+        {
+            if (factory) projectileFactory = factory;
         }
         #endregion
 
@@ -182,6 +208,13 @@ namespace CosmicShore.Gameplay
             // (locked rule: domains re-pick at runtime).
             projectile.Initialize(projectileFactory, _vesselStatus.Domain, _vesselStatus, charge, detachAfterSpawn,
                 stopOnFirstPrismImpact, spareOwnDomain);
+
+            // `energy` is BOTH the pool tier and the chain-reaction depth — one number, so a
+            // spike's tier and how far it may still propagate can never disagree. Zero is
+            // terminal (see Projectile.ChainGeneration).
+            projectile.SetChainGeneration(energy);
+            projectile.SetChainRangeScale(ChainRangeScale);
+            projectile.SetChainRangeFalloff(ChainRangeFalloff);
 
             projectile.transform.localScale = projectileScale * projectile.InitialScale;
 

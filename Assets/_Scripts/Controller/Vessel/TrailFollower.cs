@@ -18,7 +18,6 @@ namespace CosmicShore.Gameplay
     {
         int attachedBlockIndex;
         Trail attachedTrail;
-        Domains domain;
         float percentTowardNextBlock;
         TrailFollowerDirection direction;
         public TrailFollowerDirection Direction { get { return direction; } }
@@ -38,20 +37,42 @@ namespace CosmicShore.Gameplay
 
         void Start()
         {
-            // TODO: find a better way of setting team that doesn't assume a vessel
             vesselData = GetComponent<IVesselStatus>();
-            domain = vesselData.Domain;
         }
 
-        public void Attach(Prism prism)
+        /// <summary>
+        /// The rider's domain, read LIVE rather than snapshotted at <c>Start</c>. Domains
+        /// re-pick at runtime (the menu's domain-changer toy, a modal re-pick, an AI reroll),
+        /// and a snapshot taken at spawn would leave the rider treating its own new trail as
+        /// hostile terrain - riding it at the slow speed and never growing it.
+        /// </summary>
+        Domains Domain => vesselData != null ? vesselData.Domain : Domains.Blue;
+
+        public bool Attach(Prism prism)
         {
-            CSDebug.Log($"Attaching: trail:{prism.Trail}");
+            if (!prism || prism.Trail == null)
+            {
+                CSDebug.LogWarning("TrailFollower.Attach: prism has no Trail - cannot ride it.");
+                return false;
+            }
+
+            int index = prism.Trail.GetBlockIndex(prism);
+            if (index < 0)
+            {
+                // The prism is not in the trail it names. Attaching anyway would ride index -1,
+                // which walks off the front of the ribbon rather than failing loudly.
+                CSDebug.LogWarning(
+                    $"TrailFollower.Attach: prism is not a member of its own Trail (index {index}) - refusing to attach.");
+                return false;
+            }
+
             if (attachedTrail != null) attachedTrail.OnOldestRemoved -= HandleOldestRemoved;
             attachedTrail = prism.Trail;
-            attachedBlockIndex = attachedTrail.GetBlockIndex(prism);
+            attachedBlockIndex = index;
             attachedTrail.OnOldestRemoved += HandleOldestRemoved;
             percentTowardNextBlock = 0; // TODO: calculate initial percentTowardNextBlock
             direction = TrailFollowerDirection.Forward; // TODO: use dot product to capture initial direction
+            return true;
         }
 
         public void Detach()
@@ -129,10 +150,16 @@ namespace CosmicShore.Gameplay
             // Do the movement and save the out direction
             transform.position = attachedTrail.Project(attachedBlockIndex, percentTowardNextBlock, direction, distanceToTravel, 
                                                       out var newAttachedBlockIndex, out percentTowardNextBlock, out TrailFollowerDirection outDirection, out Vector3 course);
-            if (newAttachedBlockIndex != attachedBlockIndex) 
+            if (newAttachedBlockIndex != attachedBlockIndex)
             {
                 attachedBlockIndex = newAttachedBlockIndex;
-                ((GunVesselTransformer) vesselData.VesselTransformer).FinalBlockSlideEffects(); 
+
+                // `as` rather than a hard cast: any vessel may carry a TrailFollower, but only
+                // the Urchin's transformer owns the grow/steal payoff. A hard cast turns
+                // "this vessel rides but does not convert" into an InvalidCastException on the
+                // first prism boundary.
+                if (vesselData.VesselTransformer is GunVesselTransformer gunTransformer)
+                    gunTransformer.FinalBlockSlideEffects();
             }
             vesselData.Course = course;
             
@@ -155,12 +182,23 @@ namespace CosmicShore.Gameplay
             else attachedBlockIndex++;
         }
 
-        float GetTerrainAwareBlockSpeed(Prism prism) 
+        float GetTerrainAwareBlockSpeed(Prism prism)
         {
             if (prism.destroyed)
                 return DestroyedTerrainSpeed;
 
-            if (prism.Domain == domain)
+            if (prism.Domain == Domain)
+                return FriendlyTerrainSpeed;
+
+            // TIME level-5 "Slipstream": enemy trail stops slowing you down. Hostile mass is
+            // normally ridden at HostileTerrainSpeed, which makes raiding someone else's ribbon
+            // a slog exactly when you most want to be moving; with the upgrade you cross it at
+            // your own speed while still converting it under you.
+            //
+            // IsUpgradeActive, not a raw level read - the ride writes VesselStatus.Speed, which
+            // every peer's view of this vessel depends on.
+            var abilities = vesselData?.ElementalAbilityHandler;
+            if (abilities != null && abilities.IsUpgradeActive(Element.Time))
                 return FriendlyTerrainSpeed;
 
             return HostileTerrainSpeed;
