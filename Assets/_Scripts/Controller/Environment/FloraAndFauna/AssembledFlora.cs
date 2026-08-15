@@ -59,6 +59,10 @@ namespace CosmicShore.Gameplay
                  "over a few frames of the 3s grow period — pacing only, throughput preserved.")]
         [SerializeField, Min(1)] int maxSpawnsPerFrame = 1;
 
+        /// <summary>The live-prism budget this individual resolved to - the base reads it for
+        /// the reproduction maturity gate (see <see cref="Flora.PrismBudget"/>).</summary>
+        protected override int PrismBudget => maxTotalSpawnedObjects;
+
         /// <summary>Assembled layer of the variant expression: the live-prism budget
         /// (Mass gyroid 1500 / Space 800 - the per-element density identity).</summary>
         public override void ApplyVariantTuning(FloraVariantTuning tuning)
@@ -284,10 +288,104 @@ namespace CosmicShore.Gameplay
 
             activeBranches.Add(newBranch);
 
+            // Growth is this plant's feeding - it is what funds an offspring (Flora.NotifyGrew,
+            // Docs/ECOSYSTEM.md §32). Counted where the prism actually lands, not where the
+            // order was decided, so a dropped or lapsed order funds nothing.
+            NotifyGrew();
+
             // Parent retirement, evaluated after the child exists — same ordering
             // as the old inline loop.
             if (order.parent.depth >= maxDepth - 1 || order.parent.assembler.IsFullyBonded())
                 activeBranches.Remove(order.parent);
+        }
+
+        // -------------------------------------------------------------------
+        //  Reproduction - the lattice frontier IS the reproduction frontier
+        //  (Docs/ECOSYSTEM.md §32.2)
+        // -------------------------------------------------------------------
+
+        // The growth order this plant donated to its next offspring: decided by the parent's own
+        // assembler, so the daughter's first prism lands on the exact bond site the parent would
+        // have grown into next, wearing the block type that site calls for. That - and nothing
+        // else - is what makes a population of small plants add up to ONE continuous gyroid.
+        GrowthInfo _donatedGrowth;
+
+        // The growth order THIS plant was seeded from, consumed by CreateNewAssembler.
+        GrowthInfo _seedGrowth;
+
+        /// <summary>
+        /// Seeds this plant's first prism from a parent's growth order - its position and
+        /// rotation are already the flora's (pinned by <see cref="Flora.Plant"/> and the spawn
+        /// rotation); this carries the lattice STATE that a bare position cannot: which block
+        /// type the site calls for and whether it is one of the danger types. Call before
+        /// <see cref="Initialize"/>.
+        /// </summary>
+        public void SeedFromGrowth(GrowthInfo growth) => _seedGrowth = growth;
+
+        /// <summary>
+        /// Hands the daughter a real bond site off this plant's own frontier.
+        ///
+        /// <para>A gyroid does not want its children scattered around it - it wants them exactly
+        /// where its own next prism would have gone, or the superstructure stops being a gyroid.
+        /// So an offspring is not placed near the parent, it is placed AT a growth order the
+        /// parent asks its own assembler for: the same call, against the same bond table, with
+        /// the same <c>PrismSpatialIndex.TryReserve</c> claim that stops two growers filling one
+        /// site. The parent simply hands the result to a new plant instead of growing it
+        /// itself.</para>
+        ///
+        /// <para>Returns false when the frontier is closed (every branch fully bonded or
+        /// depth-exhausted). The birth is then skipped rather than misplaced - the base keeps
+        /// the plant ARMED, so it will try again the moment anything changes.</para>
+        /// </summary>
+        protected override bool TryResolveOffspringPlacement(
+            out Vector3 position, out Quaternion rotation, out Vector3? up)
+        {
+            position = default;
+            rotation = default;
+            up = null;
+            _donatedGrowth = null;
+
+            if (activeBranches.Count == 0) return false;
+
+            GrowthInfo growth = null;
+            foreach (var branch in activeBranches)
+            {
+                if (!branch.assembler || branch.depth >= maxDepth) continue;
+
+                var info = branch.assembler.GetGrowthInfo();
+                if (!info.CanGrow) continue;
+
+                growth = info;
+                break;
+            }
+
+            if (growth == null) return false;
+
+            // The donated site is spoken for. The donor branch keeps its own bookkeeping: the
+            // site is not marked bonded here, so if this plant ever grows again it will simply
+            // re-decide that site, fail the reservation against the daughter's prism, and mark
+            // it bonded then - the same self-correction any contested site already gets.
+            _donatedGrowth = growth;
+            position = growth.Position;
+            rotation = growth.Rotation;
+
+            // Deliberately NOT clamped into the planting band: a lattice site is the whole
+            // point, and a daughter nudged off it would break the surface. The colony is still
+            // bounded - a plant outside the membrane cannot grow (Cell.ContainsPosition rejects
+            // its prisms) and the species' population cap bounds the spread.
+            return true;
+        }
+
+        /// <summary>
+        /// Programs the daughter with the donated growth order, in the window between its
+        /// variant/level being applied and <c>Initialize</c> - the only point at which a plant's
+        /// growth rule can still be seeded.
+        /// </summary>
+        protected override void ConfigureOffspring(Flora child)
+        {
+            if (_donatedGrowth != null && child is AssembledFlora assembled)
+                assembled.SeedFromGrowth(_donatedGrowth);
+            _donatedGrowth = null;
         }
 
         /// <summary>
@@ -383,12 +481,31 @@ namespace CosmicShore.Gameplay
             AddHealthBlock(newHealthPrism);
             newHealthPrism.transform.SetParent(newSpindle.transform, false);
             newHealthPrism.LifeForm = this;
+
+            // Seeded from a parent's donated bond site: the site's own block type decides what
+            // this prism IS, and whether it is one of the danger types - read off the SAME
+            // GrowthInfo the parent's assembler produced, so the daughter's first prism is
+            // indistinguishable from the one the parent would have grown there. Applied before
+            // Initialize, exactly as ExecuteGrowOrder does for an ordinary child.
+            if (_seedGrowth != null)
+            {
+                var seeded = AssemblerFactory.ProgramAssembler(newHealthPrism.gameObject, _seedGrowth);
+                if (seeded != null && _seedGrowth.IsDangerous) newHealthPrism.MakeDangerous();
+            }
+
             newHealthPrism.Initialize();
 
             Assembler newAssembler = newHealthPrism.GetComponent<Assembler>();
             newAssembler.Prism = newHealthPrism;
             newAssembler.Spindle = newSpindle;
+
+            // A fresh depth budget per plant. Depth used to be the lattice's global size bound
+            // (one flora grew the whole gyroid), but a plant is now ONE UNIT CELL bounded by its
+            // own prism budget - so inheriting the parent's remaining depth would make each
+            // generation smaller until the colony stalled. The population cap is what bounds the
+            // colony now (Docs/ECOSYSTEM.md §32.2).
             newAssembler.Depth = depth;
+            _seedGrowth = null;
 
             Branch newBranch = new Branch(newHealthPrism);
             newBranch.gameObject = newSpindle.gameObject;

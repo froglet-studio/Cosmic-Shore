@@ -123,6 +123,32 @@ outcome is optimization, not life). Use the `/ecology` skill for any change here
   the crystal chasing the ship. The reward (the element level) lands at CONTACT and so does
   `OnCrystalCollected`, the scoring event: **a mode's objective must never wait on a flourish**, and
   a flourish that outlasts its own payoff reads as lag. `Docs/ECOSYSTEM.md §31`.
+- **Flora have POPULATIONS too, and a plant's feeding is GROWTH.** Flora are not scenery that a
+  timer keeps extruding: like fauna they have a seed floor, a hard per-cell cap and **reproduction
+  as the population driver** (`FloraConfigurationSO.PopulationSize` / `MaxLivePopulation` /
+  `GrowthPerOffspring`, `Flora.TryReproduce`, `FloraReproductionRules`). The currency is the one
+  thing a plant actually earns — **prisms it grew** — which is what bounds the population with **no
+  imposed death**: a plant at its live-prism budget has stopped growing, so it has stopped funding
+  children, and it only funds another after the food web grazes it and it regrows. Both spawners are
+  demoted to **seeders** (fill the deficit below the floor; bootstrap + extinction recovery only);
+  `PopulationSize = 0` keeps the legacy unbounded planting so the model is opt-in per species. The
+  cap resolves on the **Cell** (`Cell.ResolveFloraPopulation` / `ResolveFloraCap` / `IsFloraAtCap`),
+  never off the config — flora has **five** producers (both spawners, reproduction, the freestyle
+  `Microscene` conveyor, the Lifeform Matrix toy) and a cap one producer skips is two ceilings for
+  one number. Reproduction is production, so it freezes with planting at Frenzy; a lowered cap stops
+  producing and never culls.
+  **A LATTICE species reproduces along its own growth frontier.** The gyroid is one plant no longer:
+  it is a colony of **27-prism unit cells** (the smallest patch containing all 12 block types —
+  measured off the bond table, not chosen), each carrying its own crystal, and
+  `AssembledFlora.TryResolveOffspringPlacement` hands each daughter a real `GetGrowthInfo()` bond
+  site off the parent's frontier — same table, same `TryReserve` claim — so the daughter's first
+  prism lands exactly where the parent's next one would have. **Nothing in the code describes a
+  gyroid**; the superstructure is emergent from local continuation, and a scripted superstructure
+  would be the same cheat as a scripted fitness function. Mass is preserved by construction
+  (`cap × 27 ≈ the old single-plant budget`), so no volume ladder moves; the cost is **crystals**
+  (Blob: 3 → 123 always-on heart colliders), and `MaxLivePopulation` is the dial. Numbers are
+  authored by `Tools/Build/author_flora_populations.py` (`--check`), never by hand.
+  Full record: `Docs/ECOSYSTEM.md §32`.
 - **Territorial permanence.** Take a cell, leave, it stays yours — the claim fauna cannot touch.
   In nucleus cells the permanent claim is the **nucleus interior** (fauna never consume it);
   exterior canopy/trail is deliberately contested churn (voracious any-domain grazing). In

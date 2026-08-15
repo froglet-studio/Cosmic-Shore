@@ -3840,3 +3840,176 @@ crystal is a handful of objects, not the 2,000-instance surface that law exists 
 5. Tune by editing `Resources/CrystalCaptureConfig` **only**. If a capture feels wrong on one
    lifeform and right on another, that is a bug (something is sizing off world scale rather than
    crystal radii), not a reason to re-add a per-prefab duration.
+
+---
+
+## 32. Flora get POPULATIONS — and the gyroid becomes a colony (Aug 2026)
+
+Fauna have had a population pipeline since §6.1: a seed floor, a hard cap, and **reproduction as the
+actual driver** — a creature that feeds converts prey into offspring, and the food web bounds the
+result. Flora had none of it. A flora species had `InitialSpawnCount` and a plant period, and the
+spawner planted **one more plant every period, forever**, bounded only by the cell's Frenzy gate
+(`RandomLifeSpawner.SpawnFloraTypeLoop_Random`, `IntensityWiseLifeSpawner.SpawnFloraTypeLoop`).
+There was no per-species live count anywhere in the codebase — `Cell` tracked fauna only.
+
+This section adds the plant-side half, and converts the first species to it.
+
+### 32.1 Growth is a plant's feeding
+
+The one design question is what a plant's reproduction is *funded by*. A creature is funded by prey.
+A plant is funded by **growth**: the prisms it managed to lay into the space around it. That single
+choice is what makes the model work without breaking §0:
+
+> A plant at its live-prism budget **has stopped growing**, so it has stopped funding children. It
+> only funds another one after the food web grazes it and it regrows.
+
+So the population is bounded by **grazing**, exactly as the fauna population is bounded by
+starvation — and there is no decay clock, no lifespan, no TTL and nothing culled. A lowered cap
+stops *production*; it never removes a live plant.
+
+The knobs are on `FloraConfigurationSO` and mirror the fauna block field for field:
+
+| Flora | Fauna counterpart | Meaning |
+|---|---|---|
+| `PopulationSize` | same | seed floor — **0 keeps the legacy unbounded planting**, so the model is opt-in per species |
+| `MaxLivePopulation` | same | hard per-cell plant cap (a performance backstop) |
+| `GrowthPerOffspring` | `FeedsPerOffspring` | prisms grown per birth |
+| `OffspringPerBirth`, `ReproductionCooldownSeconds` | same | burst throttles |
+| `MaturityFraction` | *(no counterpart)* | fraction of its own budget a plant must hold to seed |
+| `OffspringSpread` | `OffspringSpawnJitter` (const) | how far a child is planted |
+
+`Flora.AssignLineage` / `SourceConfig` / `NotifyGrew` / `TryReproduce` mirror `Fauna`'s, and the
+decision lives in `FloraReproductionRules` (pure, engine-free, edit-mode tested) beside
+`FaunaReproductionRules`. The spawners are **demoted to seeders** in both classes — they now fill
+only the deficit below the floor, which is bootstrap plus recovery after the food web grazes a
+species out, so extinction is never permanent.
+
+**The cap resolves on the `Cell`, never on the config** (`Cell.ResolveFloraPopulation` /
+`ResolveFloraCap` / `IsFloraAtCap`) — the §29.2 rule, and flora needs it more than fauna did: there
+are **five** flora producers (both spawners, `Flora.TryReproduce`, the freestyle `Microscene`
+conveyor, the Lifeform Matrix toy). A cap honoured by one producer is two ceilings for one number.
+The initial-batch `FloraPopulationScale` scaling that both spawners used to inline was routed
+through the same accessor for the same reason.
+
+### 32.2 The gyroid: one plant became a colony, and the frontier does the connecting
+
+The gyroid was one plant that grew forever — a single `AssembledFlora` crystallising a minimal
+surface out of 1,500 bonded prisms, carrying **one** heart. It is now a **population of unit cells**,
+each with its own crystal.
+
+The size is measured, not chosen by feel. Walking the assembler's own bond table (48 entries, 12
+block types) exactly as `AssembledFlora.PreviewGyroid` does: bonds are ~7.8u long, the smallest
+closed ring is 3 prisms (the doubled A–B strut junction) with the gyroid's characteristic 8/9/10
+rings above it, and the lattice is **BCC with a ~119.6u conventional cube ≈ 584 prisms**. Three bonds
+out from a seed is **27 prisms** and is the smallest patch containing **all twelve block types** —
+one of everything the assembler can say, ~40 × 42 × 12 world units. That is the unit cell.
+(A crystallographic primitive cell, ~292 prisms, is far too big to make a population out of.)
+
+**What makes the pieces add up to a gyroid is that reproduction reuses the growth frontier.**
+`AssembledFlora.TryResolveOffspringPlacement` does not scatter a child near its parent. It asks the
+parent's own assembler for a growth order — the same `GetGrowthInfo()` call, against the same bond
+table, with the same `PrismSpatialIndex.TryReserve` claim that stops two growers filling one site —
+and hands that exact position, rotation and `GyroidBlockType` to the daughter
+(`ConfigureOffspring` → `SeedFromGrowth` → `CreateNewAssembler`). The daughter's first prism lands
+precisely where the parent's next prism would have. **Nothing in the code describes a gyroid**; the
+superstructure is emergent from each plant continuing its parent's lattice, which is the whole
+point — a scripted superstructure would be the same class of cheat as a scripted fitness function.
+
+Two consequences worth stating:
+
+- **The daughter gets a FRESH depth budget.** `depth` used to be the lattice's global size bound;
+  now the per-plant prism budget bounds a plant and the **population cap** bounds the colony.
+  Inheriting the parent's remaining depth would make every generation smaller until the colony
+  stalled.
+- **A blocked plant stays ARMED.** A plant that has banked its quota but is blocked by the cap keeps
+  its quota (`Flora.TryReproduce` spends it only on a birth that happened). A full plant is never
+  re-armed by another growth tick, so without this it could never fill the gap left when a
+  neighbour is grazed out. With it, gap-filling is automatic.
+
+### 32.3 What the conversion preserves, and what it costs
+
+Numbers are authored by `Tools/Build/author_flora_populations.py` (`--check` verifies the assets
+still match the model), not by hand. The lattice rule is `cap = old_single_plant_budget / 27`, so
+**total prism mass is preserved to within a rounding step** — Blob's Mass gyroid goes from 1 plant ×
+1500 to 56 plants × 27 = 1,512. Leaf size and the level spread are untouched, so **per-prism volume
+is unchanged and no cell's volume phase ladder needs re-authoring.** That is the claim the arithmetic
+is there to make checkable.
+
+**The cost is crystals, and it is the collider line to watch.** Every plant is a lifeform, so it
+carries one heart whose collider is always on and is *not* phase-LOD culled (§21.6). Blob's three
+gyroid species go from **3 crystals to 123** at cap (56 + 37 + 30); Blob's profile is shared by the
+freestyle seven, so the same figure applies to Caldera / Daedala / Geode / Orrery / Ourobor / Yggdra
+/ Zephyr. Against the masterplan's ~1,500-collider per-cell target that is ~8%, and
+`MaxLivePopulation` is the dial — the authoring script clamps every species to
+`MAX_PLANTS_PER_SPECIES = 60` for exactly this reason. Prism colliders are unchanged in count.
+
+There is a real gameplay consequence, and it is the interesting one: a 27-prism plant can be grazed
+to death, where a 1,500-prism plant could only ever be dented. The gyroid becomes a **crop** — fauna
+clear a unit cell, it dies and drops its elemental crystal, and its neighbours colonise the hole.
+That is the food web finally having a visible effect on the cell's canopy rather than nibbling it.
+
+*(Watch on the first playtest: `GyroidFlora.prefab` authors `minHealthBlocks: 5`, so a plant dies with
+5 prisms still standing and `LifeForm.DestroyStructure` detonates them. At 1,500 prisms that leak was
+0.3% of a plant; at 27 it is 18%. It is pre-existing behaviour and out of scope here, but if the
+colony visibly loses mass over a long session, that is where it is going — the fix is
+`minHealthBlocks: 0`, not a change to the population model.)*
+
+### 32.4 Collider budget
+
+- **Prism colliders: unchanged.** Mass is preserved by construction (§32.3); the same prisms are
+  simply owned by more plants.
+- **Crystal colliders: +120 per gyroid cell** (3 → 123 at cap), +~1 per plant elsewhere. Bounded by
+  `MaxLivePopulation`, clamped to ≤ 60 per species by the authoring script, and scaled with the rest
+  by `SpawnProfileSO.FloraPopulationScale` (which now moves the floor **and** the cap — a scalar that
+  moved only the floor would be clamped away by the cap and read as doing nothing, §29.2).
+- **No new queries.** Reproduction reuses the growth `TryReserve` the assembler already performed;
+  no `Physics.OverlapSphere` is added anywhere. (The 2026-04 attempt on
+  `claude/gyroid-seed-danger-prism-U3MnJ` used `Physics.OverlapSphere` to find a neighbouring flora
+  by crystal proximity — banned by `Docs/SPATIAL_INDEX.md`, and structurally blind besides, since
+  prism colliders are disabled for the first 0.6 s after spawn.)
+- **Per-frame CPU:** one `TryReproduce` call per plant per grow tick, which fails on the first
+  integer compare for any species that authors no reproduction.
+
+### 32.5 Invariant review (the rulings, recorded)
+
+- **Mass is conserved / no imposed death** — nothing is removed. Reproduction only *creates*, and it
+  is gated on `Cell.FloraPlantingEnabled` so it freezes with planting at Frenzy. A cap stops
+  production; §0 explicitly permits gating production. Both retired growth-side cheats stay retired:
+  no regrowth pulse, no timed culler.
+- **Continuity of existence** — an offspring is an ordinary plant spawned through the one canonical
+  path (`CellLifeSpawnerBase.SpawnFlora`), so its prisms bloom in on the existing grow path. Nothing
+  new pops.
+- **No domain asymmetry** — the *spawner* still seeds uniformly across Jade/Ruby/Gold
+  (`PickRandomDomain`). Within a lineage a plant's children are its own colour, which is exactly the
+  fauna rule (§6.1) and not a per-domain bias.
+- **Every lifeform drops one elemental crystal** — each unit cell is a full lifeform with its own
+  heart. This is the invariant the change *leans into*: it is what the user asked for, and it is why
+  §32.3 states the crystal cost so plainly.
+- **Volume is the spine** — untouched. Prism count and per-prism volume are both preserved, so no
+  threshold moves.
+- **Endogenous selection only** — a colony survives by growing and dies by being eaten. No fitness
+  function anywhere; offspring inherit their founder's variant pick (element + hatch level), and
+  in-world level-ups are not inherited, matching §17 and the fauna rule.
+
+### 32.6 In-editor verification (the human is the gate — NOT yet run)
+
+1. **Menu_Main (the lava lamp).** Fly the freestyle vessel. The gyroids must still read as gyroids —
+   a continuous minimal surface — not as a scatter of disconnected fragments. This is the single
+   most important check: if the surface is broken, the frontier handoff is misaligned and
+   `AssembledFlora.TryResolveOffspringPlacement` is the place to look.
+2. **Count the crystals.** Expect the cell to fill toward ~123 gyroid hearts (56 Mass / 37 Time /
+   30 Space) rather than 3. If that reads as too busy, lower `MaxLivePopulation` on the three
+   `Blob * Gyroid Flora Config Data` assets — do not change the unit cell.
+3. **Watch a colony seed.** A plant should complete its 27-prism cell and then a NEW plant should
+   bloom at the next lattice site (not at a random offset). `ReproductionCooldownSeconds: 5` paces it.
+4. **Graze test.** Let the tadpoles work a patch. A grazed unit cell should die, drop its crystal,
+   and neighbours should colonise the hole within a few grow periods. Nothing should vanish without
+   being eaten.
+5. **Wildlife Blitz Cell 4** — the same three species under `IntensityWiseLifeSpawner`. This is the
+   check that the seeder change landed in *both* spawner classes; if Cell 4's gyroids behave
+   differently from Blob's, one of them is running the other code path.
+6. **Hesperides** — the gyroid topiary is now 7 small plants instead of one 190-prism specimen.
+   Confirm it still reads as topiary in the garden.
+7. Re-run `python3 Tools/Build/author_flora_populations.py --check` after any asset tuning, and
+   `FrogletTools ▸ Validation ▸ Validate Lifeform Crystals` (every unit cell is a lifeform now, so
+   the one-crystal rule is being asserted far more often than before).

@@ -57,18 +57,19 @@ namespace CosmicShore.Gameplay
             Domains? excluded)
         {
             // Cell density scalar: the SpawnProfile is the per-intensity asset, so scaling the
-            // seed batch here is how one cell config makes a bigger or smaller forest out of the
-            // same species assets. Round half UP - see the budget scalar in the flora families.
-            int initialCount = Mathf.Max(0, floraCfg.InitialSpawnCount);
-            float populationScale = spawnProfile.FloraPopulationScale;
-            if (populationScale > 0f && !Mathf.Approximately(populationScale, 1f))
-                initialCount = Mathf.Max(1, Mathf.FloorToInt(initialCount * populationScale + 0.5f));
+            // seed batch is how one cell config makes a bigger or smaller forest out of the same
+            // species assets. Through the CELL, never the profile: every flora producer must resolve its
+            // population numbers at one accessor or the density scalar ends up live in one
+            // producer and dead in the next (Cell.ResolveFloraPopulation, Docs/ECOSYSTEM.md §32).
+            // This used to be an inline copy of the scaling, duplicated verbatim in both spawners.
+            int initialCount = host.ResolveFloraPopulation(Mathf.Max(0, floraCfg.InitialSpawnCount));
             float initialInterval = Mathf.Max(0f, spawnProfile.FloraSpawnIntervalSeconds);
 
             // Initial batch - gated on FloraPlantingEnabled and per-attempt probability.
             for (int i = 0; i < initialCount; i++)
             {
-                if (host && host.FloraPlantingEnabled && AllowSpawn(floraCfg.SpawnProbability))
+                if (host && host.FloraPlantingEnabled && !host.IsFloraAtCap(floraCfg)
+                    && AllowSpawn(floraCfg.SpawnProbability))
                     SpawnFlora(host, floraCfg.FloraPrefab, excluded, floraCfg);
 
                 // Spread instantiation across frames. WaitForSeconds when an interval
@@ -99,7 +100,16 @@ namespace CosmicShore.Gameplay
                 if (!host.FloraPlantingEnabled) continue;
                 if (!AllowSpawn(floraCfg.SpawnProbability)) continue;
 
-                SpawnFlora(host, floraCfg.FloraPrefab, excluded, floraCfg);
+                // SEEDER, not population driver - the same rule RandomLifeSpawner follows, and
+                // it lives on the shared base precisely so it cannot be live in one spawner and
+                // dead in the other (CellLifeSpawnerBase.FloraSeedDeficit, Docs/ECOSYSTEM.md §32).
+                int toPlant = FloraSeedDeficit(host, floraCfg);
+                for (int i = 0; i < toPlant; i++)
+                {
+                    if (!host || !host.FloraPlantingEnabled) break;
+                    SpawnFlora(host, floraCfg.FloraPrefab, excluded, floraCfg);
+                    if (i + 1 < toPlant) yield return null;
+                }
             }
         }
 

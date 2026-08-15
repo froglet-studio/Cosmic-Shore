@@ -426,6 +426,10 @@ namespace CosmicShore.Gameplay
                 {
                     var cfg = profile.SupportedFloras[rng.Next(profile.SupportedFloras.Count)];
                     if (!cfg || !cfg.FloraPrefab) continue;
+                    // The species' live cap is the CELL's, and this conveyor is one of the flora
+                    // PRODUCERS - a producer that skips the cap gives the species two ceilings
+                    // (Docs/ECOSYSTEM.md §32). No-op for every species that authors none.
+                    if (cell.IsFloraAtCap(cfg)) continue;
                     // Canonical cell spawn: random playable domain, Initialize(cell), Register. Flora
                     // re-disperses within the membrane in its own Plant(), so cell-centre spawn is fine.
                     CellLifeSpawnerBase.SpawnFlora(cell, cfg.FloraPrefab, null, cfg);

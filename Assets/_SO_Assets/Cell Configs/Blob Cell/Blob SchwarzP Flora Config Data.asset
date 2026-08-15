@@ -18,6 +18,13 @@ MonoBehaviour:
   InitialSpawnCount: 1
   OverrideDefaultPlantPeriod: 0
   NewPlantPeriod: 9999999
+  PopulationSize: 1
+  MaxLivePopulation: 3
+  GrowthPerOffspring: 280
+  OffspringPerBirth: 1
+  ReproductionCooldownSeconds: 5
+  MaturityFraction: 0.5
+  OffspringSpread: 60
   SpreadElements: 1
   ElementPalette:
   - {fileID: 11400000, guid: b1ad2c0dd95f4987a5b9cc786aafd673, type: 2}
