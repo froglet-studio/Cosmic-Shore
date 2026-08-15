@@ -203,6 +203,17 @@ PrefabInstance:
       propertyPath: m_Radius
       value: 0.5
       objectReference: {fileID: 0}
+    - target: {fileID: 6724190831275839400, guid: 6540c78597c2dcc468123b270169fc44,
+        type: 3}
+      propertyPath: m_Materials.Array.data[0]
+      value: 
+      objectReference: {fileID: 2100000, guid: e8fcb8c477a04256becd30bb580605f1,
+        type: 2}
+    - target: {fileID: 1958240267839501300, guid: 6540c78597c2dcc468123b270169fc44,
+        type: 3}
+      propertyPath: surface
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -283,4 +294,4 @@ MonoBehaviour:
   blade: {fileID: 0}
   bladeAxis: 1
   pivot: {fileID: 0}
-  lengthScale: 1
+  lengthScale: 2

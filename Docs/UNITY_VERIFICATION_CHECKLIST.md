@@ -23,6 +23,69 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Rhino Energy Sword v3 — energize ritual as the supershield key + authored FX pass (`claude/energy-sword-v3-rework-20q3uh`)
+
+Authored without a Unity compile or play-test (mcs-compiled with stubs, capsule crackle HLSL
+clang-compiled and sanity-run, prefab YAML machine-validated — but nothing SEEN). Full mechanics,
+knob table, and the numbered verification list:
+`_Scripts/Controller/Vessel/R_VesselActions/RHINO_ENERGY_SWORD.md` § "In-editor verification".
+The load-bearing checks, in risk order:
+
+1. **The FresnelGraph fix renders** (carried from v2, still never seen): the blade must read as
+   a solid WHITE-hot capsule with the animated Voronoi pattern, brightening as energy banks.
+   Magenta or grayscale = the graph edit didn't import; `git checkout` the graph and re-wire
+   in-editor.
+1a. **It reads as a SWORD at every length** — hilt pinned at the mount, growth going out the
+   tip only. Bank energy from empty to full (30 → 120) and watch the near end stay put. If the
+   blade still grows out of both ends, the hilt anchor isn't applying (check
+   `ShieldSwipeActionExecutor.bladeHalfExtentLocal` = 1 and that the blade mesh really is the
+   built-in capsule).
+1b. **Colour states are unmistakable**: resting/charging = white-hot (never a domain tint —
+   the sword friendly-fires), ENERGIZED = danger red. If white→red doesn't read at a glance in
+   the heat of play, deepen `energizedColor` or raise `visibilityMultiplier`; don't reintroduce
+   a team hue.
+1c. **Tip debris got faster** — `lengthScale` 2 + hilt anchoring roughly double the modelled
+   lever arm, so more tip strikes saturate `debrisSpeedLimit` (200). Judge a tip strike vs a
+   hilt graze on a trail wall; if tip hits read too hot, lower `swingVelocityScale` on
+   `RhinoSkimmerDamagePrismEffect.asset` (do NOT put `lengthScale` back).
+2. **The energize ritual**: hold both triggers centered ~1 s → anticipation arcs → white-hot
+   ignition + whole-blade crackle burst; ~5 s lit tail after release; ~5 s cooldown. Energized
+   contact pops Stella-Octangula prisms; non-energized contact bounces with a dim spark.
+3. **The resting-prism edge**: bounce off a super-shielded prism, KEEP touching it, energize —
+   it must pop the instant ignition lands (exercises the new shell-tier
+   `RedispatchPairsForOwner` + box `ReapplyPrismEffectsToOverlapping`).
+4. **The capsule crackle looks right**: arcs ride the blade through swings, ripples proportioned
+   along the stretched capsule (not squashed at the tips). Tune on
+   `RhinoBladeCrackleMaterial.mat` live (`[ExecuteAlways]`).
+5. **Tracers — five hairlines, yours to tune in the inspector.** `Rhino.prefab` →
+   `RhinoSwordBladeTracer0..4`, spread tip→hilt down the blade. Nothing in code writes their
+   size: set `widthMultiplier` / `time` (and the curve / gradient) per component; the controller
+   only re-seats each emitter across ONE evenly-divided span, inset at each end by half the
+   width of the streak sitting there so widening an end one grows it into the blade, never past
+   the point — spacing stays even even when their widths differ. Authored hairline: 0.5 / 0.15. Add or
+   remove array entries on `RhinoSwordFXController.bladeTracers` — the spread follows the count.
+   All five tint from the live blade colour, so they should change state with the sword.
+5a. **Home position lowered** — the sword mount is now local y **−1** (was 9.38, ~3 units above
+   the hull top; −1 is about the hull's own vertical centre). Judge where the grip sits; if the
+   sword still reads as towering, the stronger lever is the rest PITCH on the same transform
+   (~20° from vertical, was 41.8° historically), not y.
+5b. **Swipe recovery**: after a swipe releases, that direction should pause ~0.35 s before it
+   can sweep again (each side independent) — and that pause should VANISH while energized. Two
+   things must stay true throughout: the blade keeps cutting everything it touches (this gates
+   the pose, never damage), and you can still chop/energize while a swipe is recovering.
+6. **Base-skimmer non-regression**: any other vessel's skimmer crackle still shows the red
+   sphere look (surface mode + material overrides live on the Rhino variant only).
+
+**First-pass tuning** (all on `ShieldSkimmerScaleConfig.asset` unless noted — expect a balance
+pass): energize hold 1 s / tail 5 s / cooldown 5 s / cost 0.1 · stance thresholds 1.5 & 0.4
+(`RhinoShieldSwipeConfig.asset`) · ignition intensity 2.5 × 5 sites · spark 1.6 @ 14 wu ·
+denied spark 0.7 · `restingBladeColor`/`fullEnergyColor` white (energy reads as BRIGHTNESS)
+vs `energizedColor` = `SO_ColorSet.Danger` red (state reads as HUE) · `visibilityMultiplier`
+1.2 × `fullEnergyBrightness` 1.8 (was 2×2.5 = a 5× HDR white that bloomed into a blob —
+raise cautiously) · tracer size is NOT in the config: tune `widthMultiplier` / `time` on the
+`RhinoSwordBladeTracer0..4` TrailRenderers (hairline 0.5 / 0.15) · swipe recovery 0.35 s @
+engage threshold 0.4 (`RhinoShieldSwipeConfig.asset`) · sword mount y 9.38 → −1.
+
 ### 🔴 Sparrow rounds grow as they fly + MASS-5 shield restore (`claude/sparrow-spread-haptics-qizbwf`)
 
 Authored without a Unity compile or play-test. Answers *"the only thing that has felt fun was
@@ -252,7 +315,6 @@ missile at ProjectileScale 10 — sized to the bay missile) · animator state sp
 **Flagged, deliberately NOT changed:** the skyburst direct-hit sphere (world radius 8.5) now
 visibly dwarfs its ~1.7 u visual; the old 15 u wedge masked it. `0.85 × ProjectileScale 10`
 looks emergent rather than authored — DogFight balance call for Garrett.
-
 ### 🔴 Sparrow Turret Stance — two flight visualizations, still-nothing hardening (`claude/sparrow-prism-attack-hg6n78`)
 
 Authored without a Unity compile or play-test. The stance STILL showed nothing after the

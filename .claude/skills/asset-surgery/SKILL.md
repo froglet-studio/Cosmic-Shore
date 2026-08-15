@@ -366,6 +366,8 @@ of which compiled clean and shipped):
    | `x is { A: true }` | `(x != null)` | property pattern |
    | `if (x is not T y) return;` | `var y = x as T; if (y == null) return;` | a blanket `is not` → `!=` replace **corrupts** this into a syntax error — handle the declaration form FIRST |
    | `v = k switch { A => a, _ => b };` | `if`/`else if` chain | switch *expression*; grep `` switch$ `` to find them |
+   | `async UniTaskVoid M()` | `async void M()` | mcs lacks the AsyncMethodBuilder plumbing |
+   | `switch (x) { case T y: … }` | `as`-cast `if`/`else` chain | type-pattern switch STATEMENT — mcs never implemented it and reports `error CS0589: Internal compiler error during parsing … type pattern matching`, which names nothing useful |
 
    Assert zero bare `new(` remain, and re-grep after desugaring — the parse dies at
    the first one and every later error is cascade noise that will waste your time.
