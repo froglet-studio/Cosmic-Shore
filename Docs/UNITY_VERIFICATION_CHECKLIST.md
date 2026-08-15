@@ -147,6 +147,17 @@ size** (×1 → **×4** at L10; the map's own multiplier is the carrier) + L5 op
 speed (×1 → ×1.5) + **Snap Dash** at L5 (double-tap RT). The right-stick dash is **base kit with no
 cooldown**; only the blast riding it is paced.
 
+⚠ **IF THE SCARAB SPAWNS NOTHING AND SHOWS AS A PLAIN SPHERE IN THE VESSEL CHANGER — check
+`_SO_Assets/Vessel Prefab Container.asset` slot 7 first.** Both symptoms are ONE cause:
+`VesselPrefabContainer.TryGetShipPrefab(Scarab)` returning false. `VesselChangerToy.BuildStation`
+falls back to `ToyFactory.AddSphereBody` when the lookup fails, so the "big ball" IS the
+lookup failing, not a broken model. The asset's text is correct (guid, fileID, root transform,
+VesselStatus with `vesselType: 12` — all verified), so the remaining cause is editor-side: a
+reference authored outside Unity can resolve to null, and the slot then shows
+**None (Transform)**. Open the asset and re-drag `Scarab.prefab` into the empty slot. The
+container now LOGS the empty slot by index instead of skipping it in silence, so the next
+occurrence names itself.
+
 **Verify in editor (in order):**
 0. **The hull and the camera (new 2026-08-15).** Open the prefab: a `ScarabHull` child now carries
    `ScarabHullBuilder`; right-click the component ▸ **Rebuild Hull** to see the mesh without

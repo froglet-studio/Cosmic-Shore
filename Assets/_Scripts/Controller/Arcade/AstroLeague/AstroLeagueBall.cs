@@ -576,30 +576,13 @@ namespace CosmicShore.Gameplay
             PruneDeadVesselSamples();
         }
 
-        /// <summary>
-        /// A vessel's root transform, or null if that vessel has been destroyed.
-        ///
-        /// <b>`vessel == null` IS NOT ENOUGH and never was.</b> <c>GameDataSO.Vessels</c> is a
-        /// <c>List&lt;IVessel&gt;</c>, and <c>==</c> on an INTERFACE reference is a plain C#
-        /// reference comparison — it never reaches <c>UnityEngine.Object</c>'s overloaded operator,
-        /// which is the thing that reports a destroyed object as null. So a destroyed
-        /// <c>VesselController</c> sails straight through that guard and throws
-        /// MissingReferenceException on the first member access. Every roster walk goes through
-        /// here instead of hand-rolling the check.
-        ///
-        /// A stale entry is now rare (VesselController leaves the roster in OnDestroy), but a
-        /// vessel can be destroyed at any point in a frame — including between this ball's
-        /// FixedUpdate and the next — so the roster is never something to trust unguarded.
-        /// </summary>
-        static Transform LiveTransform(IVessel vessel)
-        {
-            if (vessel == null) return null;
-            // The implicit bool IS the Unity liveness test; `is UnityEngine.Object` is what gets
-            // us to it from behind the interface.
-            if (vessel is UnityEngine.Object unityObject && !unityObject) return null;
-            var root = vessel.Transform;
-            return root ? root : null;
-        }
+        /// <summary>The roster is `List&lt;IVessel&gt;`, and `==` on an INTERFACE reference never
+        /// reaches UnityEngine.Object's overload — so a destroyed VesselController sails through a
+        /// plain null check and throws on the first member access. <see cref="VesselLiveness"/> is
+        /// the shared guard; a stale entry is rare now (VesselController leaves the roster in
+        /// OnDestroy) but a vessel can be destroyed at any point in a frame, so the roster is never
+        /// something to walk unguarded.</summary>
+        static Transform LiveTransform(IVessel vessel) => vessel.LiveTransform();
 
         /// <summary>Drop sample entries whose transform has been destroyed. Keyed by Transform, so
         /// a swap-heavy session (the freestyle vessel changer) would otherwise grow these
