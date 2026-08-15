@@ -104,12 +104,31 @@ for anyone — and the whole intensity ladder, which is *made of* that scarcity,
 stop meaning anything.
 
 **The Dolphin can still make its own crystals, and that is deliberate.** Crystal
-Seeding (its Charge ability) plants a TEAM crystal only the pilot's domain can collect,
-on a **30 s** cooldown (→ ~15 s at Charge 10; two charges at Charge 5). So the arena
-crystal is not the *only* trigger — it is the **free, immediate, uncontested-by-cooldown**
-one, which is what makes taking it a tempo play rather than a necessity. Do not nerf the
-seeding ability for this mode; the tension between "my crystal on a timer" and "the
-crystal, right now, if I can get there first" is the interesting half.
+Seeding (its Charge ability) produces a TEAM crystal only the pilot's domain can collect,
+on a **30 s** cooldown (→ ~15 s at Charge 10; **two crystals per cycle** at Charge 5). So
+the arena crystal is not the *only* trigger — it is the **free, immediate,
+uncontested-by-cooldown** one, which is what makes taking it a tempo play rather than a
+necessity. Do not nerf the seeding ability for this mode; the tension between "my crystal
+on a timer" and "the crystal, right now, if I can get there first" is the interesting half.
+
+**Since 2026-08-14 that ability is PASSIVE**, which sharpens the tension rather than
+softening it (`_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_CRYSTAL_SEEDING.md`).
+It used to be a hold-to-plant on the right trigger, so a pilot could place a crystal
+directly in front of themselves — free *and* positioned. Now the cooldown runs on its own
+and drops each crystal at a random point in the cytoplasm, so the pilot's own supply costs
+FLIGHT TIME to reach. The arena crystal keeps the one advantage that made it worth
+contesting: it is the one you can already be standing on.
+
+Two couplings to keep in mind when tuning this mode's crystal ladder:
+
+- `DeployTeamCrystalAction.maxLiveSeeded` (**8**) caps how many of a Dolphin's own crystals
+  may stand at once. At the top intensities the arena carries **one** contested crystal for
+  the whole lobby, so a large seeded stock is the thing most able to dilute that scarcity —
+  it is the first knob to look at if cashing out stops feeling like a race. Lower the cap
+  or lengthen the cooldown; do not remove the ability (see above).
+- The **objective arrow is already correct** and needs no change: `RampageObjectiveProvider`
+  filters on `crystal.CrystalManager == null`, and a seeded crystal is instantiated with no
+  manager, so the arrow keeps pointing exclusively at the contested omni crystal.
 
 ## The destruction → score pipeline (zero bespoke tracking)
 

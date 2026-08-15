@@ -350,7 +350,7 @@ re-deriving the layout.
 
 | slot | icon | shows |
 |---|---|---|
-| Charge | omni-crystal + carry pips | crystals in hand, the carry limit, and the recharge fill |
+| Charge | omni-crystal + yield pips | the seeding recharge, and how many crystals the next cycle plants |
 | Mass | the vessel's own 11-step boost ring | the boost banked by drifting |
 | Space | cone-blast icon + tally | prisms the last cone claimed |
 | Time | the vessel's own jaw silhouettes | banked energy, as a gape — **lime when full** |
@@ -364,9 +364,13 @@ Two conventions this HUD deviates on, both deliberate:
   this vessel has**, which is why `SetDriftBoost` writes nothing but the ring's sprite: any
   per-event transform write on an icon wipes the bump.
 
-A **pip stands for a SAVED crystal** — one carried beyond the first, which the main icon
-already represents. So an un-upgraded Dolphin shows no pips at all, and the mini crystal
-appearing *is* Twin Seed becoming visible.
+A **pip stands for an EXTRA crystal in the seeding cycle** — one beyond the first, which the
+main icon already represents. So an un-upgraded Dolphin shows no pips at all, and the mini
+crystal appearing *is* Twin Seed becoming visible.
+
+*(Crystal seeding went PASSIVE on 2026-08-14 — nothing is carried any more, so the pips moved
+from "crystals in hand" to "crystals per cycle" and the main icon became a pure recharge fill.
+Mechanic: `DOLPHIN_CRYSTAL_SEEDING.md`.)*
 
 ### Why the boost ring writes nothing but its sprite
 
@@ -478,7 +482,7 @@ Play Menu_Main, enter freestyle on the Dolphin.
 | release a full meter | speed peaks near **357** and takes **~2.5 s** to fall back (was 210 / 2 s) |
 | fly straight without drifting | ring does **not** climb |
 | drift, release, drift again, then release and fly straight | speed settles back to the ordinary 78 cruise — no stuck boost multiplier. (Note the second drift now HOLDS whatever the discharge had reached; the thing under test is that nothing is stuck once you stop drifting.) |
-| Charge to level 5 | second crystal pip appears; two crystals plantable back to back |
+| Charge to level 5 | second crystal pip appears; each seeding cycle now plants two crystals (`DOLPHIN_CRYSTAL_SEEDING.md`) |
 
 The **vessel silhouette** that used to sit in this HUD is gone — it had been dead since its driver
 (`SilhouetteController`) became `ElementalBarsController`, but the GameObjects survived in 13 vessel
