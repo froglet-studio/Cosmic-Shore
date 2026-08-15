@@ -831,6 +831,39 @@ never prunes an unresolvable modification, so the inspector keeps showing a valu
 
 ## 5. Traps learned the hard way (check these BEFORE debugging for an hour)
 
+- **A re-implemented validator can diverge from the shipped code and "pass" a model the
+  engine rejects.** A Python port of a C# generator's profile functions silently applied a
+  `max(0, …)` the C# did not, so the offline check reported clean geometry while Unity was
+  refusing `localPosition` assignments (`{0, NaN, 2.616}`) and reporting `abnormal mesh
+  bounds … -nan(ind)` on three meshes. §4.5's simulation technique is only sound when the
+  simulation IS the shipped source: compile the actual `.cs` with `mcs` against a FAITHFUL
+  stub (real `Mathf` over `System.Math`, real `Vector3` operators) and RUN it, reading the
+  private state back by reflection. A hand-ported formula is a hypothesis about the code,
+  not a test of it — and it fails in the one direction you cannot see, by being kinder than
+  production.
+- **`Mathf.Sin(Mathf.PI)` is NEGATIVE in float32** (≈ `-8.74e-8`), so `Mathf.Pow(that,
+  fractional)` is `NaN`. Any profile of the shape `pow(sin(...), k)` with `0 < k < 1` NaNs at
+  its endpoint. One NaN vertex poisons a whole mesh's bounds, and an invalid-bounds renderer
+  stops updating — so the symptom is "my animation does nothing", not "my maths is wrong".
+  Clamp before `Pow`, every time. (A sibling function escaped only because its `Max` clamp
+  happened to sit in the right place — the presence of one clamp is not evidence of the other.)
+- **A physics-layer pair can be DISABLED, so a correct-looking impactor case never fires.**
+  Adding `case FooImpactor` to an `AcceptImpactee` switch compiles, reads correctly, passes
+  review, and dispatches nothing if the two GameObjects' layers are off in
+  `ProjectSettings/DynamicsManager.asset`. Check the matrix before trusting a trigger path:
+  decode `m_LayerCollisionMatrix` (32 little-endian 8-hex words, bit `b` of word `a` = layer
+  `a` × layer `b`) and read layer names from `TagManager.asset`. Live case: Crystals(9) ×
+  Explosions(10) is **disabled**, so a blast could never reach a crystal through triggers —
+  while Ball(0) × Explosions(10) is enabled and the identical shape worked.
+- **A round-trip RPC placed behind an earlier server-only gate is unreachable plumbing.**
+  Trace the GATE ORDER, not the intent: a client→server hop written so "a client's blast can
+  still forge" was never called, because the crystal-consumption check (`!IsNetworkClient()`)
+  ran first and returned. It read as a solved problem in three places — the RPC's own doc
+  comment, the helper's class note, and the design doc — while delivering nothing, which is
+  strictly worse than an honest gap. Before writing the fallback, follow every early-out
+  between the entry point and the call site and confirm one of them is not the thing you are
+  trying to work around.
+
 - **A SERIALIZED value is not its C# field initializer — and the initializer's output is
   not what you remember it being.** Retiring a `[SerializeField]` whose default comes from
   a non-trivial expression (`AnimationCurve.EaseInOut(0,0,1,1)`, `new Gradient{…}`, a
