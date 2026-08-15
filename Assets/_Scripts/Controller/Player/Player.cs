@@ -262,7 +262,6 @@ namespace CosmicShore.Gameplay
 
             ball.ApplyBlastServer(blastOrigin, impactVector, status.Domain);
         }
-        }
 
         public string Name { get; private set; }
         public int AvatarId { get; private set; }
