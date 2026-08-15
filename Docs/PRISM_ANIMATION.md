@@ -1551,6 +1551,40 @@ also removes 3 trigger colliders + 3 kinematic Rigidbodies from the vessel fleet
 (Rhino/Dolphin/Serpent) and the `OnTriggerStay` traffic they generated against every prism
 they overlapped.
 
+### 4.7.1 The second citizen of §4.7 — the Dolphin's Echo Sight (shipped 2026-08-14)
+
+The corridor is a platform LAW; this is not. It is one vessel's ability, held on a trigger and off
+for everyone else. It is recorded here because it is the **second** use of §4.7's sanctioned shape,
+and it demonstrates the shape generalises: a view-dependent prism visual that is a *feature* rather
+than a law still gets exactly one global-uniform publisher and zero per-prism CPU.
+
+While the Dolphin's pilot holds the sight, every prism standing inside the volume its next crystal
+blast would sweep lights up. `PrismDestructionSight` publishes five globals per frame (apex, sweep
+axis, gape axis, `(height, coreRadiusPerUnitDepth, halfLengthPerUnitDepth)`, strength);
+`PrismDestructionSight.hlsl` runs the containment test per fragment, spliced into BlockGraph and
+ExplodingBlockGraph by `Tools/Shaders/wire_prism_destruction_sight.py` — the same census the
+corridor covers, for the same reason (a prism material that cannot light up is a hole in a
+targeting aid).
+
+Three properties worth carrying to the next one:
+
+- **The tested volume is not re-derived.** `ExplosionHelper.TryResolveConicVolume` builds it from
+  the authored scales, the live energy read and the Space multiplier the *detonation* uses, and the
+  HLSL transcribes `AOEConicSweepQueryJob.Execute` literally, capsule-segment clamp included. A
+  preview carrying its own copy of that arithmetic drifts the first time anyone retunes a scale, and
+  a targeting aid that lies is worse than none.
+- **It ADDS light, it does not tint.** Replacing colour lands in the domain palette's space and
+  reads as "this prism changed team"; adding reads as "this one is lit up", which no tier's palette
+  means. The prism graphs are Unlit and carry no Emission block, so additive-into-BaseColor is how
+  emission is expressed — which is why it splices exactly like `PrismOcclusionFade`, taking the
+  graph's own value in and handing the composed value back rather than overwriting.
+- **It composes with the corridor for free.** The corridor dissolves *coverage*, not colour, so a
+  highlighted prism standing in the corridor thins out like its neighbours instead of punching
+  through the ship. Two §4.7 consumers on the same graph do not interact, because they write
+  different channels of the same surface description.
+
+Mechanic and tuning: `_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_CRYSTAL_SEEDING.md`.
+
 ## 5. Migration tracker (the deduplicated work list)
 
 Phase A — infrastructure (everything else rides on it):

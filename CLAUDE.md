@@ -2247,6 +2247,24 @@ scale bump** with a one-shot unlock punch.
   lands on the jaw halves, not on the row's (fully transparent) Time icon, so it never collides
   with the upgrade path. Reading it as an upgrade tint is the mistake to avoid.
   Mechanics: `_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_ENERGY_ECONOMY.md`.
+  **Since 2026-08-14 its Charge ability is PASSIVE and its Space ability owns the right
+  trigger** — crystal seeding runs on a cooldown loop that plants team crystals in the cell's
+  CYTOPLASM (volume-uniform across the band, never inside the nucleus, and at the live cap the
+  clock PAUSES rather than culling — not creating mass is allowed, aging it out is not), which
+  freed RT for the **Echo Sight**: hold it and every prism inside the crystal blast's live
+  destruction volume lights up. It touches nothing but photons — no camera write, no speed
+  change, nothing replicated. (A zoomed first-person view was built alongside it and **cut**:
+  it would have needed the speed tunnel to grow a public FOV-home surface for one vessel's view
+  effect, and the highlight carries the ability on its own. If it is ever revisited, the one
+  safe shape — move the tunnel's HOME, never `Camera.fieldOfView`, which a live tunnel
+  overwrites every frame and then bakes in permanently as the home it restores to — is recorded
+  in `DOLPHIN_CRYSTAL_SEEDING.md` §2.) One general lesson: **a passive ability is bound to no
+  input event, so `CollectBoundActions` can never resolve its SO** — wire the config directly on
+  the executor; the binding sweep is a fallback, not the path.
+  The prism highlight is the second citizen of the §4.7 global-uniform shape
+  (`Docs/PRISM_ANIMATION.md` §4.7.1) — five globals per frame, zero per-prism CPU, and the
+  previewed volume is built by the same helper the detonation uses so the two cannot drift.
+  Detail: `_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_CRYSTAL_SEEDING.md`.
 
   Manta / Rhino / Serpent are blocked on **design, not wiring**: their
   `ElementalAbilityMapSO` entries are still `(open design slot)` with `Input = 0` and no
