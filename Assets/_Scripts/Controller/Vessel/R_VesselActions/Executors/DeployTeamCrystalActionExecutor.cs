@@ -248,14 +248,20 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// End of turn: stop the clock and forget the roster. The crystals themselves are left to
-        /// the scene teardown that owns them — this executor never destroys planted mass.
+        /// End of turn: stop the clock. The crystals themselves are left to the scene teardown that
+        /// owns them — this executor never destroys planted mass.
+        ///
+        /// The live roster is deliberately NOT cleared. It is cap accounting, not turn state, and
+        /// the crystals it counts are still standing: a mode that runs several turns without a
+        /// scene reload would otherwise hand the next turn a fresh budget on top of last turn's
+        /// crystals, and the cap would ratchet open a turn at a time. <see cref="CompactLive"/>
+        /// already drops entries as the crystals are collected, which is the only correct way for
+        /// the budget to free up.
         /// </summary>
         void OnTurnEndOfMiniGame()
         {
             _clockStarted = false;
             _activeCooldown = 0f;
-            _live.Clear();
         }
 
         // ---------------- Elemental ----------------

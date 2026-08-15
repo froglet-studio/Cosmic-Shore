@@ -103,7 +103,7 @@ un-implemented until Garrett marks them up. If your task requires a mapping that
 STOP and ask (AskUserQuestion), presenting the FLEET_MAPS proposal for that row. The same gate
 applies to new abilities, new resources on the meter list, and anything that adds a fundamental.
 
-## 4. Implement — the sixteen rules that keep getting relearned
+## 4. Implement — the twenty-one rules that keep getting relearned
 
 1. **Ability SOs are shared and stateless.** Per-vessel state lives in executors / vessel-root
    MonoBehaviours; SOs receive `(registry, status)` per call. Never bind state to an SO asset.
@@ -126,7 +126,9 @@ applies to new abilities, new resources on the meter list, and anything that add
    shared SOAP channels. This exact bug shipped three times on one branch.
 6. **Executor→SO resolution retries until success** — `R_VesselActionHandler.Initialize` runs
    executors *before* populating its binding maps, so a first-frame query that latches on
-   attempt (not success) pins null forever. Resolve lazily via `CollectBoundActions`.
+   attempt (not success) pins null forever. Resolve lazily via `CollectBoundActions` — **but
+   only for an ability that HAS an input.** See rule 20: a passive ability is in no binding
+   map, so that sweep can never find its SO.
 7. **One authored number per displayed quantity.** A HUD readout adopts the gameplay component's
    value (`RiptideAnimation.MaxJawAngleDegrees` pattern); never author a "keep in step" copy.
    Bind HUD gauges **by name** with index fallback, and only to resources whose writers raise
@@ -196,23 +198,38 @@ applies to new abilities, new resources on the meter list, and anything that add
     `_speedTrackingRate` is a latched ramp state (the Rhino's ramp boost) that a naive early-return
     can silently consume.
 
-16. **A `UniTask.Delay(1/rate)` fire loop quantizes to WHOLE FRAMES**, so an authored rate is
+17. **A `UniTask.Delay(1/rate)` fire loop quantizes to WHOLE FRAMES**, so an authored rate is
     silently `min(rate, framerate)` — a 60 fps client fires twice as fast as a 30 fps one, and
     the rate simply cannot exceed the frame rate. It looks correct at any rate whose interval
     happens to straddle two frames (30/s at 60 fps was right by luck for a year). Owe fire in
     SECONDS and pay it off in whole volleys (`owed += Time.deltaTime`; fire `floor(owed/interval)`),
     capping the per-tick catch-up and DROPPING the excess so a hitch never discharges as a burst.
-17. **Never draw from `UnityEngine.Random` in a per-shot hot path.** It is global state that
+18. **Never draw from `UnityEngine.Random` in a per-shot hot path.** It is global state that
     deterministic systems seed (`Random.InitState` for the HexRace track), so a gun rolling it
     120×/s makes their output depend on how long someone held a trigger. Use a pure integer hash
     of a per-shot serial: no global state, and peers that agree on the shot count agree on the
     result — which matters wherever the spawned object is local and unreplicated.
-18. **Weapon "feel" complaints are usually a CEILING, not a tuning value.** Before re-tuning,
+19. **Weapon "feel" complaints are usually a CEILING, not a tuning value.** Before re-tuning,
     find what caps output per unit of input: prisms have no HP (one hit = one kill) and a
     sub-upgrade round dies on its first impact, so a Sparrow's ceiling is exactly *rounds/s*.
     Rate, spread and accuracy all multiply a 1:1 relationship and cannot break it — only pierce
     depth, chain effects, or **size** can, and size wins because destruction footprint goes as the
     SQUARE of the radius. Say which ceiling you found before proposing numbers.
+20. **A PASSIVE ability is bound to no input event, so `CollectBoundActions` can never resolve
+    its SO.** The binding maps are keyed by `InputEvents`; an ability with no input is in none
+    of them, so the lazy sweep of rule 6 returns null forever and the executor silently runs on
+    its field initializers — an ability that looks wired, logs nothing, and is tuned by an asset
+    nobody is reading. Wire the config **directly on the executor** as a `[SerializeField]`, so a
+    missing wire is visible in the inspector, and keep the sweep only as a fallback for a vessel
+    that still lists the action against an input. (Dolphin crystal seeding, 2026-08-14.)
+21. **An ability that wants the camera's FOV must move the speed tunnel's HOME, never
+    `Camera.fieldOfView`.** `VesselSpeedTunnel` owns FOV fleet-wide and is the only writer. A
+    direct write fails two ways, both silent: while the tunnel is engaged it is overwritten every
+    frame, and when the tunnel ENGAGES it captures whatever FOV it finds as the home to restore
+    later — so a live zoom is baked in permanently and the player never gets their FOV back.
+    Camera POSE is free (the law is explicitly a no-camera-distance-change effect); FOV is not.
+    And before adding a public FOV surface to that law for one vessel, check the ability still
+    earns it without the zoom — the Dolphin's Echo Sight did, and the surface was reverted.
 
 ## 5. Audit, then hand back verification (you cannot run Unity; the human is the gate)
 

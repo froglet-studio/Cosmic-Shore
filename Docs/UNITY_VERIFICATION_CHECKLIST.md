@@ -715,9 +715,10 @@ Mechanics + full knob list: `_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_
 4. **Crystal impact.** The cone fires, energy empties, the jaws snap shut, and the Space
    icon flashes with a prism count. At Space L5 the cone must stop damaging your own
    domain's prisms.
-5. **Charge L5.** A second crystal pip appears and two team crystals can be planted back
-   to back. The deploy preview must be tinted your domain, and bloom/wither rather than
-   pop (continuity of existence).
+5. **Charge L5.** A second crystal pip appears. *(Superseded 2026-08-14: crystal seeding
+   is now PASSIVE — there is no deploy preview to tint, and Twin Seed means two crystals
+   per seeding cycle rather than two carried. Verify against the Dolphin entry at the end
+   of this file instead.)*
 6. **MPPM two-client:** the L5 upgrade effects are gated on the replicated
    `IsUpgradeActive`, so confirm both peers agree on Clean Blast and Twin Seed.
 
@@ -818,11 +819,17 @@ reimported any of it yet.
 
 ---
 
-## 🔴 Dolphin — passive crystal seeding + Echo Sight (2026-08-14, UNVERIFIED)
+## ✅ Dolphin — passive crystal seeding + Echo Sight (2026-08-14, VERIFIED IN EDITOR)
 
-Branch `claude/dolphin-crystal-spawn-rework-feqrxc`. **Nothing below has been run** — no Unity
-available in the authoring session. Full detail + tuning table:
+Branch `claude/dolphin-crystal-spawn-rework-feqrxc`. **Play-tested by Garrett on 2026-08-14 —
+seeding, the highlight and the HUD all confirmed working in the editor.** The steps below are
+retained as the regression list for anyone touching this again. Full detail + tuning table:
 `Assets/_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_CRYSTAL_SEEDING.md` §6.
+
+Still UNVERIFIED, because a single-editor play-test cannot reach them:
+**the MPPM two-client row (9)** — that a remote Dolphin's sight stays local and that Twin Seed
+agrees across peers — and **the live-cap row (3)**, which needs ~4 minutes of uninterrupted
+seeding at the shipped 30 s cooldown to reach `maxLiveSeeded: 8`.
 
 **What landed.** Charge's crystal seeding became PASSIVE (a cooldown loop seeding team crystals
 into the cell's cytoplasm), freeing the right trigger for Space's new **Echo Sight** — hold it and
@@ -830,7 +837,7 @@ every prism inside the crystal blast's live destruction volume lights up. The si
 but photons: no camera write, no FOV change, nothing replicated. (A zoomed first-person view was
 built alongside it and cut; the speed tunnel is untouched by this branch.)
 
-**Import first.** Two shader graphs were edited out-of-editor
+**Import first** (kept for anyone re-running this from a clean checkout). Two shader graphs were edited out-of-editor
 (`Tools/Shaders/wire_prism_destruction_sight.py` → BlockGraph, ExplodingBlockGraph). They need a
 Unity import pass to regenerate their shaders. An unimported graph shows **no highlight and no
 error**, so check this before concluding the sight is broken.

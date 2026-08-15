@@ -184,8 +184,11 @@ placement from the binding, so nothing is hand-positioned.
 
 ## 6. In-editor verification
 
-**None of this has been run.** I cannot open Unity; every row below is unverified and is the
-hand-back. Mirrored in `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+**Play-tested by Garrett on 2026-08-14** — seeding, the highlight and the HUD all confirmed
+working in the editor. The table is kept as the regression list for the next person to touch
+this. Two rows remain unverified because one editor cannot reach them: the **MPPM two-client**
+row, and the **live-cap** row (~4 minutes of uninterrupted seeding at the shipped 30 s cooldown).
+Mirrored in `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
 
 Run **FrogletTools > Vessels > Audit Vessel Ability Rows** first — Dolphin should still report map
 complete, 4/4 icons, order ✅. Then play Menu_Main and enter freestyle on the Dolphin.
