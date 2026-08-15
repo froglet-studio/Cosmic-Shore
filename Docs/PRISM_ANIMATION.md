@@ -1791,6 +1791,14 @@ spam gate. The *curve shape* stays in the HLSL, matching how C5 splits feel from
 
 ## 5. Migration tracker (the deduplicated work list)
 
+> **Every ☐ / ◐ row below has a ready-to-paste branch prompt in
+> `Docs/PRISM_CLOCK_FOLLOWUP_PROMPTS.md`** — scoped, priority-ordered, and
+> re-audited against the tree on 2026-08-15. Start there rather than
+> re-deriving a row's scope from this table; several rows are narrower than
+> they read (C7 is done by construction, C8 shipped, and the C6 remainder is
+> two parent-transform scale animations). When a row here changes status, that
+> doc is the other half of the update.
+
 Phase A — infrastructure (everything else rides on it):
 
 | # | Item | Status |
