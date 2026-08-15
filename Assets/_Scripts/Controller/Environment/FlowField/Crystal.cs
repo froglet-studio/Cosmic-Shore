@@ -40,6 +40,12 @@ namespace CosmicShore.Gameplay
         [SerializeField] protected bool allowVesselImpactEffect = true;
         [SerializeField] bool allowRespawnOnImpact;
 
+        [SerializeField]
+        [Tooltip("Seconds the collectability colour takes to cross-fade when this crystal's " +
+                 "state changes - a lifeform's heart going blue → lime as death drops it. " +
+                 "Matches the prism domain-change transition. 0 snaps.")]
+        float colorTransitionSeconds = 0.8f;
+
         [Header("Data Containers")]
         [SerializeField] protected ThemeManagerDataContainerSO _themeManagerData;
 
@@ -127,6 +133,7 @@ namespace CosmicShore.Gameplay
             foreach (var fade in _tintCoOwnedFades)
                 if (fade) fade.FadeCompleted -= HandleModelFadeCompleted;
             _tintCoOwnedFades.Clear();
+            PrismTimerManager.Instance?.CancelScheduledActions(this);
         }
 
         void HandleModelFadeCompleted() => ApplyColorSetTint();
@@ -139,6 +146,17 @@ namespace CosmicShore.Gameplay
         protected virtual void OnDisable()
         {
             s_active.Remove(this);
+
+            // Land the end pair rather than freezing part-way: the driver dies with the
+            // component and the scheduled settle is cancelled with it, so a crystal disabled
+            // mid-fade would otherwise keep a half-lerped colour when it comes back.
+            if (_tintTransitionActive)
+            {
+                var bright = _tintToBright;
+                var dull = _tintToDull;
+                StopTintTransition();
+                WriteTint(bright, dull);
+            }
         }
 
         protected virtual void Start()
@@ -157,34 +175,204 @@ namespace CosmicShore.Gameplay
 
         static MaterialPropertyBlock s_tintBlock;
 
-        /// <summary>Tints all crystal models from the theme ColorSet by collectability state
-        /// (see comment above). No-op when the theme container or color set is unwired.</summary>
-        protected void ApplyColorSetTint()
+        /// <summary>The (bright, dull) pair this crystal's CURRENT state resolves to. False when
+        /// the theme container or its color set is unwired - the caller keeps whatever it had.</summary>
+        bool TryResolveTintColors(out Color bright, out Color dull)
         {
-            if (!_themeManagerData || _themeManagerData.ColorSet == null) return;
+            bright = default;
+            dull = default;
+            if (!_themeManagerData || _themeManagerData.ColorSet == null) return false;
             var colors = _themeManagerData.ColorSet;
 
-            Color bright, dull;
             bool domainOwned = ownDomain is Domains.Jade or Domains.Ruby or Domains.Gold;
             if (domainOwned && colors.TryGetColorSetByDomain(ownDomain, out var domainSet) && domainSet != null)
             {
                 bright = domainSet.BrightCrystalColor;
                 dull = domainSet.DullCrystalColor;
+                return true;
             }
-            else if (IsEmbedded)
+
+            if (IsEmbedded)
             {
                 // A living lifeform's heart: the blue-white neutral range - no domain can take it.
-                if (!colors.TryGetColorSetByDomain(Domains.Blue, out var neutralSet) || neutralSet == null) return;
+                if (!colors.TryGetColorSetByDomain(Domains.Blue, out var neutralSet) || neutralSet == null) return false;
                 bright = neutralSet.BrightCrystalColor;
                 dull = neutralSet.DullCrystalColor;
+                return true;
             }
-            else
+
+            // Free collectible: the lime CTA - any domain can collect it now.
+            if (colors.EnvironmentColors == null) return false;
+            bright = colors.EnvironmentColors.BrightCTA;
+            dull = colors.EnvironmentColors.DarkCTA;
+            return true;
+        }
+
+        /// <summary>
+        /// Paints all crystal models with the current state's pair immediately. No-op when the
+        /// theme container or color set is unwired.
+        ///
+        /// This is the RE-ASSERT path - a birth, a bloom finishing, a material lerp settling -
+        /// where the pair being written is the one already showing, so there is nothing to
+        /// travel. A state change the player should SEE goes through
+        /// <see cref="TransitionColorSetTint"/> instead.
+        /// </summary>
+        protected void ApplyColorSetTint()
+        {
+            if (!TryResolveTintColors(out var bright, out var dull)) return;
+
+            // A transition already heading for this pair owns the block, so do not snap it to the
+            // end - but DO re-assert what is on screen, because the caller may be here precisely
+            // because the block was cleared out from under it (a model's bloom finishing). The
+            // other re-asserts that land mid-flight: Start, one frame after ActivateCrystal
+            // enables the component, and the material lerp reaching its tail.
+            if (_tintTransitionActive && bright == _tintToBright && dull == _tintToDull)
             {
-                // Free collectible: the lime CTA - any domain can collect it now.
-                if (colors.EnvironmentColors == null) return;
-                bright = colors.EnvironmentColors.BrightCTA;
-                dull = colors.EnvironmentColors.DarkCTA;
+                if (TryGetDisplayedTint(out var liveBright, out var liveDull))
+                    WriteTint(liveBright, liveDull);
+                return;
             }
+
+            StopTintTransition();
+            WriteTint(bright, dull);
+        }
+
+        /// <summary>
+        /// Cross-fades to the current state's pair from an EXPLICIT start pair, over
+        /// <paramref name="seconds"/>. For a caller that has to read the displayed colours before
+        /// it disturbs them - <see cref="ActivateCrystal"/> binds new materials and drops the
+        /// block before the new state is painted, the same ordering constraint
+        /// MaterialPropertyAnimator has when it reads start colours before binding the end-state
+        /// material. Snaps when there is nothing to travel.
+        /// </summary>
+        void TransitionColorSetTint(Color fromBright, Color fromDull, float seconds)
+        {
+            if (!TryResolveTintColors(out var bright, out var dull)) return;
+
+            if (seconds > 0f && isActiveAndEnabled && (fromBright != bright || fromDull != dull))
+            {
+                StartTintTransition(fromBright, fromDull, bright, dull, seconds);
+                return;
+            }
+
+            StopTintTransition();
+            WriteTint(bright, dull);
+        }
+
+        // ── Clock-timed tint transitions ─────────────────────────────────────
+        // The same shape as a prism domain change (MaterialPropertyAnimator.ClockColorTransition,
+        // Docs/PRISM_ANIMATION.md): the STATE goes final at the start - a dropped heart is
+        // collectable the instant it drops, colour is only how it READS - the start pair is
+        // stamped ONCE against PrismClock, every pair in between is computed analytically from
+        // that stamp rather than accumulated, and PrismTimerManager fires ONE settle at the
+        // analytically-known end. An interruption re-stamps from the analytic current, so a
+        // second state change mid-fade departs from what is actually on screen.
+        //
+        // It differs from the prism path in ONE respect, deliberately. A prism hands the
+        // interpolation to the GPU because thousands animate at once and its graphs carry the
+        // clock wiring; the five crystal shaders (four of them large graphs) carry none, so a
+        // crystal's pair is pushed from the CPU. That is bounded by the crystals actually
+        // TRANSITIONING - a heart changes colour once, when it dies - and is strictly cheaper
+        // than the cloned-material lerp it runs alongside. The scheduled settle is what makes
+        // the end state independent of the driver: interrupt the coroutine and the crystal still
+        // lands on its final colour.
+
+        bool _tintTransitionActive;
+        float _tintT0, _tintDuration;
+        Color _tintFromBright, _tintFromDull;
+        Color _tintToBright, _tintToDull;
+        Coroutine _tintDriver;
+
+        // The pair last written to the block - the resting displayed value, and the start state
+        // a transition departs from.
+        bool _tintWritten;
+        Color _tintBright, _tintDull;
+
+        /// <summary>Analytic displayed pair of an in-flight transition - computed on demand from
+        /// the stamp, never tracked per frame. False once the transition has run its course.</summary>
+        bool TryGetTransitionCurrent(out Color bright, out Color dull)
+        {
+            bright = default;
+            dull = default;
+            if (!_tintTransitionActive || _tintDuration <= 0f) return false;
+
+            float now = PrismClock.Now;
+            if (now >= _tintT0 + _tintDuration) return false;
+
+            float p = Mathf.Clamp01((now - _tintT0) / _tintDuration);
+            float t = p * p * (3f - 2f * p); // smoothstep - matches the prism color lerp
+            bright = Color.Lerp(_tintFromBright, _tintToBright, t);
+            dull = Color.Lerp(_tintFromDull, _tintToDull, t);
+            return true;
+        }
+
+        /// <summary>What is on screen right now: the analytic current of a live transition, else
+        /// the resting pair. False when this crystal has never been tinted.</summary>
+        bool TryGetDisplayedTint(out Color bright, out Color dull)
+        {
+            if (TryGetTransitionCurrent(out bright, out dull)) return true;
+            bright = _tintBright;
+            dull = _tintDull;
+            return _tintWritten;
+        }
+
+        void StartTintTransition(Color fromBright, Color fromDull, Color toBright, Color toDull, float duration)
+        {
+            StopTintTransition();
+
+            _tintTransitionActive = true;
+            _tintT0 = PrismClock.Now;
+            _tintDuration = duration;
+            _tintFromBright = fromBright;
+            _tintFromDull = fromDull;
+            _tintToBright = toBright;
+            _tintToDull = toDull;
+
+            WriteTint(fromBright, fromDull); // frame 0 is the start pair - never a flash of the end
+            _tintDriver = StartCoroutine(DriveTintTransition());
+            PrismTimerManager.EnsureInstance().ScheduleAction(this, duration, SettleTint);
+        }
+
+        IEnumerator DriveTintTransition()
+        {
+            while (TryGetTransitionCurrent(out var bright, out var dull))
+            {
+                WriteTint(bright, dull);
+                yield return null;
+            }
+            _tintDriver = null;
+        }
+
+        /// <summary>The ONE scheduled settle: land the end pair and drop the stamp.</summary>
+        void SettleTint()
+        {
+            if (!_tintTransitionActive) return;
+            _tintTransitionActive = false;
+            _tintDriver = null;
+            WriteTint(_tintToBright, _tintToDull);
+        }
+
+        void StopTintTransition()
+        {
+            if (_tintDriver != null)
+            {
+                StopCoroutine(_tintDriver);
+                _tintDriver = null;
+            }
+            if (!_tintTransitionActive) return;
+            _tintTransitionActive = false;
+            PrismTimerManager.Instance?.CancelScheduledActions(this);
+        }
+
+        /// <summary>Pushes one pair to every model's property block, and records it as the
+        /// resting displayed value.</summary>
+        void WriteTint(Color bright, Color dull)
+        {
+            if (crystalModels == null) return;
+
+            _tintBright = bright;
+            _tintDull = dull;
+            _tintWritten = true;
 
             s_tintBlock ??= new MaterialPropertyBlock();
             foreach (var modelData in crystalModels)
@@ -202,9 +390,13 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        /// <summary>Clears the tint override on one model so a material color lerp is visible.</summary>
-        static void ClearColorSetTint(GameObject model)
+        /// <summary>Clears the tint override on one model so a material color lerp is visible.
+        /// The block no longer describes what is on screen after this, so the resting pair is
+        /// forgotten too - a later cross-fade would otherwise depart from a colour that has not
+        /// been displayed since the clear.</summary>
+        void ClearColorSetTint(GameObject model)
         {
+            _tintWritten = false;
             if (model && model.TryGetComponent<Renderer>(out var renderer))
                 renderer.SetPropertyBlock(null);
         }
@@ -368,6 +560,12 @@ namespace CosmicShore.Gameplay
 
         public void ActivateCrystal()
         {
+            // The pair on screen RIGHT NOW is where the heart → pickup cross-fade departs from,
+            // and it has to be read before anything below disturbs it: clearing EmbeddedIn
+            // changes what the state resolves to, and each material lerp drops the block on its
+            // way in. Same ordering constraint as MaterialPropertyAnimator's start colors.
+            bool hadTint = TryGetDisplayedTint(out var fromBright, out var fromDull);
+
             EmbeddedIn = null; // no longer a living heart - it's a free collectible now
             transform.parent = cellData.Cell.transform;
             var dropCol = gameObject.GetComponent<SphereCollider>();
@@ -385,12 +583,16 @@ namespace CosmicShore.Gameplay
             }
 
             // The state just flipped from "living heart" to "collectible", so repaint NOW - after
-            // the lerps above, which drop the block on their way in. A lifeform's heart goes blue
-            // → lime here, which is the signal that it can be picked up. Explicit rather than left
-            // to Start (which only fires because a heart's Crystal component is authored disabled)
-            // or to the material lerp's tail (which is skipped outright when a model has no target
+            // the lerps above, which drop the block on their way in. A lifeform's heart crosses
+            // blue → lime here, which is the signal that it can be picked up, so it TRAVELS: one
+            // clock-stamped cross-fade rather than a snap. Explicit rather than left to Start
+            // (which only fires because a heart's Crystal component is authored disabled) or to
+            // the material lerp's tail (which is skipped outright when a model has no target
             // material) - either way the crystal would otherwise stay blue while collectable.
-            ApplyColorSetTint();
+            if (hadTint)
+                TransitionColorSetTint(fromBright, fromDull, colorTransitionSeconds);
+            else
+                ApplyColorSetTint();
         }
 
         /// <summary>

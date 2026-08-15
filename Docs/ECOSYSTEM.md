@@ -3678,8 +3678,15 @@ who may collect it.** `Crystal.ApplyColorSetTint` resolves one of three pairs fr
 | **embedded lifeform heart** (`Crystal.IsEmbedded`) | `BlueColors.BrightCrystalColor` / `DullCrystalColor` | **blue** — it is alive, nobody collects it |
 | free pickup (drop / omni / cell) | `EnvironmentColors.BrightCTA` / `DarkCTA` | **lime** — anyone collects it |
 
-The blue→lime flip at `ActivateCrystal` is the pickup affordance: it is the moment the §26 wither
-reaches the core, or the moment a joust frees the heart, and it says *you can take this now*.
+The blue→lime crossing at `ActivateCrystal` is the pickup affordance: it is the moment the §26
+wither reaches the core, or the moment a joust frees the heart, and it says *you can take this
+now*. It **travels** rather than snapping — same shape as a prism domain change
+(`MaterialPropertyAnimator.ClockColorTransition`): the state goes final at the start (the crystal
+is collectable the instant it drops; colour is only how it reads), the start pair is stamped once
+against `PrismClock`, the pairs in between are computed analytically from that stamp, and
+`PrismTimerManager` fires ONE settle at the analytically-known end, which is what makes the final
+colour independent of the driver. Duration is `Crystal.colorTransitionSeconds`, 0.8 s to match the
+prism transition. Full contract and the two ordering rules it depends on: `Docs/PALETTE.md §2.2`.
 
 **It had not been true on screen since the tint was written.** `FadeIn` — which every crystal
 model carries, and which is what blooms a crystal into existence per the continuity law — drives

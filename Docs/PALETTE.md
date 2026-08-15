@@ -94,11 +94,35 @@ A crystal's **element is its shape**; its **colour is who may collect it**. One 
 | **embedded lifeform heart** (`Crystal.IsEmbedded`) | `BlueColors.BrightCrystalColor` / `DullCrystalColor` | **blue** — nobody collects it, it is alive |
 | free pickup (drop / omni / cell) | `EnvironmentColors.BrightCTA` / `DarkCTA` | **lime** — anyone collects it |
 
-So a lifeform's heart is blue while it lives and flips to lime the moment `ActivateCrystal`
-drops it. The flip is the pickup affordance, and it is applied explicitly at the tail of
+So a lifeform's heart is blue while it lives and crosses to lime when `ActivateCrystal` drops
+it. That crossing is the pickup affordance, and it is applied explicitly at the tail of
 `ActivateCrystal` rather than left to `Start` (which only fires because a heart's `Crystal`
 component is authored **disabled**) or to the material lerp's tail (skipped outright when a
 model has no target material).
+
+**A state change TRAVELS; a re-assert does not.** The crossing runs the same shape as a prism
+domain change (`MaterialPropertyAnimator.ClockColorTransition`, `Docs/PRISM_ANIMATION.md`): the
+state goes final at the start — the crystal is collectable the instant it drops, colour is only
+how it *reads* — the start pair is stamped once against `PrismClock`, every pair in between is
+computed **analytically** from that stamp rather than accumulated, and `PrismTimerManager` fires
+**one** settle at the analytically-known end. An interruption re-stamps from the analytic
+current, so a second state change mid-fade departs from what is actually on screen. Duration is
+`Crystal.colorTransitionSeconds` (0.8 s, matching the prism transition; 0 snaps).
+
+Two ordering rules fall out and are easy to get wrong. The start pair must be read **before**
+anything disturbs it — clearing `EmbeddedIn` changes what the state resolves to and each material
+lerp drops the block on its way in — which is why `ActivateCrystal` captures it on its first
+line, exactly as `MaterialPropertyAnimator` reads its start colours before binding the end-state
+material. And `ClearColorSetTint` forgets the resting pair, because after a clear the block no
+longer describes the screen and a later cross-fade would otherwise depart from a colour that has
+not been displayed since.
+
+One deliberate difference from the prism path: a prism hands the interpolation to the GPU because
+thousands animate at once and its graphs carry the clock wiring. The five crystal shaders (four
+of them 75–270-node graphs) carry none, so a crystal's pair is pushed from the CPU — bounded by
+the crystals actually *transitioning*, and cheaper than the cloned-material lerp it runs
+alongside. The scheduled settle is what makes the end state independent of that driver: interrupt
+the coroutine and the crystal still lands on its final colour.
 
 **The authored material is the fallback, and it does not agree with this rule.** Four of
 the crystal prefabs sit on materials whose own colours are lime — `ChargeCrystalMaterial` is
