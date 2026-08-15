@@ -960,10 +960,15 @@ legacy nested `Skimmer.prefab` holding the reference. **Audit it, don't infer it
 `FrogletTools > Vessels > Audit Vessel Skimmers` checks assignment, active state up the whole
 ancestor chain, the components the trigger path needs, and whether the container holds any
 prism effects — asset-only, no play mode. *(Serpent currently fails it.)* Note that a skim's
-three feedback signals are each individually invisible — the haptic is a **no-op on desktop**,
-the beam VFX only draws when the skimmed prism authors a `ParticleEffect`, and a gauge that
-moves a tenth of its range per skim reads as nothing — so "I feel no skimming" is not evidence
-about the wiring in either direction. The forcefield crackle needs **three** pieces to be
+feedback signals are each individually invisible — the haptic is a **no-op on desktop**,
+the legacy beam VFX (`SkimmerFXPrismEffectSO`, `[Obsolete]`) is per-vessel wiring that only
+draws when the container asks for it AND the skimmed prism authors a `ParticleEffect`, and a
+gauge that moves a tenth of its range per skim reads as nothing — so "I feel no skimming" is
+not evidence about the wiring in either direction. **The crackle is meant to be a vessel's ONLY
+skim visual**: the beam is the effect it replaced, so a container holding both draws a beam to
+every prism in the sphere *on top of* the crackle. The Dolphin ran both for three hours of
+branch history and now wires the crackle alone; the Squirrel still carries both, which is the
+open item, not the reference. The forcefield crackle needs **three** pieces to be
 present or `SkimmerForcefieldCracklePrismEffectSO.Execute` returns silently: the effect in the
 container, a `ForcefieldCrackleController` on the impactor's own GameObject, and an overlay
 `MeshRenderer` assigned to it (vessels whose skimmer IS `Skimmer.prefab` get the last two free;
