@@ -906,6 +906,9 @@ MonoBehaviour:
   MaxBoostMultiplier: 5
   BoostDecayRate: 0.3
   singleTriggerDrift: 1
+  vectorFlightModel: 1
+  driftOvershootCeiling: 1.25
+  driftThrottlePolicy: 0
   DriftDamping: 0
   boostChanged: {fileID: 11400000, guid: 15e07b33eab9e2e47b84bb74fb591a3f, type: 2}
   MinimumSpeed: 0

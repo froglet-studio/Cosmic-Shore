@@ -38,6 +38,28 @@ executor, replicated unlock bits, no new fundamentals).
 | Serpent | Time→boost duration (1.6) |
 | Squirrel | **All four LIVE (approved + shipped, see §2 Squirrel)**: Charge→skim energy per prism hit (map 2.0, read in `SkimmerBoostPrismEffectSO`) · Mass→trail prism VOLUME (authored `trailVolume` ElementalFloat 1→2.5 on `VesselPrismController`, cube-root per axis) · Space→skimmer reach (authored skimmer `Scale` ElementalFloat 15→30) · Time→boost-ring cooldown (authored `cooldownMultiplierAtFullTime` 0.5 on `SquirrelTubeActionSO`; the generic map Time multiplier stays 1.0 because `VesselTransformer` consumes it for boost speed). The former Time→top speed mapping was REMOVED (prefab `ThrottleScalerMultiplier` disabled) — one parameter per element. |
 
+### Flight model (not an elemental mapping, but it changes what the Time rows *feel* like)
+
+`VesselTransformer` carries two movement models since 2026-08-15, selected per vessel by
+`vectorFlightModel` (default **off**). The scalar model integrates a speed **scalar** along
+`Course`, so during a drift the throttle pushes along the SLIDE — squeezing mid-drift digs you
+deeper into it. The vector model integrates a world-space velocity and applies thrust along the
+**NOSE**. Outside a drift the two are provably the same computation (proof + numeric verification:
+`_Scripts/Controller/Vessel/R_VesselActions/SQUIRREL_DRIFT.md` §3.2), so the flag changes behaviour
+only inside the drift window.
+
+| Vessel | Model | Drift throttle policy |
+|---|---|---|
+| **Squirrel** | vector | **Live** — thrust along the nose; aiming out of a slide and squeezing recovers |
+| **Dolphin** | vector | **Locked** — no acceleration while drifting; with its authored grip 0 the velocity vector freezes outright, so entering a drift at speed costs nothing (`DOLPHIN_ENERGY_ECONOMY.md` §2a) |
+| **Scarab** | vector | Live, own policy (integrator + hard ceiling + Snap Dash) |
+| everyone else | scalar | — (bit-identical to before the flag existed) |
+
+Relevant to this document because three Time rows are speed rows: the Squirrel's Time→top-speed
+mapping is retired (`ThrottleScalerMultiplier` disabled), the Dolphin's Time reaches speed only via
+`CurrentBoostAmount`, and the Scarab's Time IS its throttle ceiling. None of those mappings changed
+here — only the direction thrust is applied in.
+
 ## 2. Level-5 upgrade proposals (NOT implemented — mark up)
 
 Ground rules used: reuse existing primitives (regular shield, piercing/stop-on-impact,
@@ -197,6 +219,34 @@ HUD: the shared upgrade-highlight system (`VesselHUDView.abilityIcons` + base
 `VesselHUDController` subscribing `OnUpgradeStateChanged`) is wired on the Squirrel's four
 icons (boost gauge / drift / impact / tube); other vessels adopt by filling their view's
 `abilityIcons` bindings — no code.
+
+### Scarab — the Rocket League vessel (throttle + drift + dash + ball/switch economy) — AUTHORED (2026-08-15)
+
+`VesselClassType.Scarab = 12` exists and `Assets/Resources/ElementalAbilityMaps/Scarab.asset` is
+**authored** — this table is the shipped map, not a proposal. Full design — controls, the
+player-generated multi-ball model, the switch, the crystal→ball economy, the four-lane
+"quadrality" rationale, ecology retune and registration checklist — lives in
+`_Scripts/Controller/Vessel/R_VesselActions/SCARAB.md`. Rows come from Garrett's markup of
+2026-08-15. Map multipliers pinned to 1 wherever an authored field carries the scaling (the
+Dolphin no-double-dip pattern); **Space is the exception** — there is no authored ball scale, so
+the map's own `MultiplierAtFullLevel` is the carrier.
+
+| Element | Quantitative | L5 upgrade |
+|---|---|---|
+| Charge | cavitation-blast **cooldown** (`ScarabCavitationBlast.cooldownSeconds 2.5` × `cooldownMultiplierAtFullCharge 0.5` at L10 — the authored-cooldown idiom) | **Cavitation Shear** — the blast destroys SHIELDED prisms outright instead of only shedding shields (`AOEExplosion.InitializeStruct.DevastatingOverride`, per-use snapshot) |
+| Mass | switch structure size — ring aperture + interior fill span (`switchScale` ElementalFloat 1→2.5) | **Armored Switch** — the switch is built from SHIELDED prisms, snapshotted at placement, so an opposing ball caroms off and sheds one shield per prism |
+| Space | forged **ball size**, ×1 → **×4 at L10** (`MultiplierAtFullLevel: 4` on the map itself; stamped once at forge time) | *(open — the notes name no Space upgrade; do not invent one)* |
+| Time | top speed of the throttle ramp (`ThrottleScalerMultiplier` ElementalFloat 1→1.5 — the existing dormant `VesselTransformer` field, enabled) | **Snap Dash** — double-tap the THROTTLE (RT) for a burst gap closer (detected off the RT `RightStickAction` edges, no new input plumbing) |
+
+**The right-stick dash is base kit and has no cooldown** — it is not a map row. Only the
+cavitation blast riding it is paced, which is the Charge row. Snap Dash is the *throttle's*
+upgrade, not the dash's; do not conflate them.
+
+Superseded passes (kept for the record): the vessel was "Mantis", Astro-League-only, with a single
+mode ball launched by a cavitation cone and a braking wall on the A button — Surgical Strike /
+Ablative Wake / Deep Wall / Hair Trigger. A second pass proposed Charge = ball-generation energy
+with **Split Shot**, Mass with **Second Pass**, and Space = juke reach. **The 2026-08-15 markup is
+the record; do not re-litigate from a superseded pass.**
 
 ## 3. Implementation notes for approved rows
 

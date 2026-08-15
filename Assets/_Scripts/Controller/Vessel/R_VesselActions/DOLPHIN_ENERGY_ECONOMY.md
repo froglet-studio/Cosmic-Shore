@@ -297,6 +297,98 @@ hold — but it is a real balance change and wants a play-test before it is deci
 
 ---
 
+## 2a. The drift is a momentum LOCK — and why it has to be
+
+The Dolphin runs the **vector flight model** (`vectorFlightModel: 1`) with
+`driftThrottlePolicy: Locked`. Full model, the no-drift identity proof and the constraints it had
+to respect are in `SQUIRREL_DRIFT.md` §3–§4; this section is the Dolphin's half and the reasoning
+that pins it here.
+
+### The requirement
+
+**Flying straight at max speed and pulling the drift trigger must not cost you any speed.** You
+entered the drift fast; you keep it.
+
+### Why the shipped Dolphin failed that, long before any of this
+
+The drift is the boost charge (§2), so pulling the trigger calls
+`ChargeBoostActionExecutor.BeginCharge`, and that method clears `BoostMultiplier`, `IsBoosting`
+and `IsChargedBoostDischarging` outright. It has to: re-entering the charge cancels a running
+discharge, a cancelled UniTask never runs its tail, and without the clear a
+drift → release → drift left the multiplier frozen forever — a permanent free speed bonus.
+
+The side effect is a **cliff in the throttle target**. `CurrentBoostAmount()` collapses to 1 the
+instant you drift, so `ComputeThrottleTarget()` falls from the boosted peak
+(`68 × 2.259² + 10 = 357`) to plain cruise (`68 × 1 + 10 = 78`).
+
+On the **scalar** model that cliff *is* a slowdown, unavoidably: there, `speed` is a value that
+chases the target every frame, so a target drop drags the speed down with it (357 → 350 on the
+first frame, ~139 within a second). **No tuning fixes this on the scalar path** — the speed has
+nowhere else to live. It is the same class of problem as the drift's thrust direction: the model
+cannot express what the design wants.
+
+None of the drift's other three actions (`DolphinDriftAction`, `DriftTrailAction`,
+`ShardToggleAction`) touch speed, and the drift trigger does not feed `XDiff` (that is stick-derived;
+`LeftStickAction` is raised by the left **trigger**). The boost cancel is the whole of it.
+
+### What Locked does
+
+Under the vector model, speed is **state**, not a tracked target. `Locked` sets nose acceleration
+to zero for the drift's duration, and the Dolphin's authored grip is **0**
+(`DolphinDriftAction.driftDamping: 0`), so the velocity vector is left completely untouched —
+**direction and magnitude both**:
+
+| entering a drift at a boosted 357 u/s | frame 1 | frame 60 | frame 240 |
+|---|---|---|---|
+| scalar (the shipped defect) | 350.0 | **139.1** | → 78 |
+| vector + `Live` | 350.0 | 237.5 | 62.7 |
+| **vector + `Locked` (shipped)** | **357.0** | **357.0** | **357.0** |
+
+Hold the drift and you keep exactly the momentum you entered with, aimed exactly where you entered
+it. Release, the discharge raises the target again, and nose acceleration resumes from the speed
+you still have.
+
+That is not a consolation prize for the fix — it is the better mechanic. The Dolphin's drift is
+already a commitment (it is how you bank the boost), and freezing momentum makes the commitment
+concrete: you are spending your line, not your speed.
+
+Note `Live` does **not** satisfy the requirement. Its nose thrust tracks the collapsed target, which
+above that target means *negative* acceleration — a gentler version of the same slowdown.
+
+### The round-1 miss (do not re-derive this)
+
+`Locked` shipped once, was reported as "loses a ton of speed when the drift is initiated" and "seems
+to control its speed during the drift", and was reverted to the scalar path. **Both symptoms were a
+bug in the new model's drift overshoot ceiling, not in the policy**: it clamped `|v|` to
+`ComputeThrottleTarget() × 1.25` outright, so the frozen 357 was immediately crushed to ~55 (the
+collapsed target × 1.25), and because that ceiling is computed from `XDiff` the scissor throttle
+appeared to be a speed dial. The ceiling now takes the pre-thrust speed as a floor — it bounds gain
+and never brakes (`VesselTransformer.ShapeSpeed`) — and with it fixed, `Locked` does exactly what it
+says. The revert was the wrong call; this section exists so it is not made twice.
+
+### What did NOT change
+
+The drift's other three actions are untouched, and so is the charge/discharge economy — the boost
+still fills while drifting and discharges on release. `throttleMultiplier` and `velocityShift` stay
+live throughout, so a drifting Dolphin is **not** immune to danger prisms or knockback.
+
+Watch the discharge on release: the old concern was that a hold had to be released at `EndDrift`
+rather than at the end of the ease-out *because that instant starts the discharge and it must
+accelerate immediately*. Under the vector model the drift simply ends, nose acceleration resumes,
+and the discharge has already raised `ComputeThrottleTarget` — and you are starting from the speed
+you kept, not from a decayed one, so there is less to make up than there ever was.
+
+### Correcting the record
+
+Earlier notes described a `holdSpeedWhileDrifting` boolean that disabled the throttle for the
+drift's duration, with `RefreshDriftSpeedHold` / `_driftSpeedHeld` / `_heldDriftSpeed` machinery.
+**No such flag has ever existed in this repository** — absent from `VesselTransformer.cs`, from that
+file's entire git history, and from `Dolphin.prefab`. What shipped was the plain scalar model with
+the throttle live throughout the drift, and the boost-cancel cliff described above. There was never
+a workaround to retire; there was a defect to fix.
+
+---
+
 ## 3. The hull reads out the blast
 
 `RiptideAnimation` opens the model's jaws with Energy, so a pilot can see how wide their next

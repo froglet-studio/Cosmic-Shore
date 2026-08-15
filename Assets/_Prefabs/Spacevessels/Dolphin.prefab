@@ -2165,6 +2165,9 @@ MonoBehaviour:
   BoostDecayRate: 0.1
   singleTriggerDrift: 0
   holdSpeedWhileDrifting: 1
+  vectorFlightModel: 0
+  driftOvershootCeiling: 1.25
+  driftThrottlePolicy: 1
   DriftDamping: 0
   boostChanged: {fileID: 0}
   MinimumSpeed: 0
