@@ -1,0 +1,37 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e8d8aa5d835249798a256e18f2f7d912, type: 3}
+  m_Name: Gyroid Lab Spawn Profile
+  m_EditorClassIdentifier: 
+  FloraExcludeLocalDomain: 0
+  FloraSpawnVolumeCeiling: 12000
+  FloraInitialDelaySeconds: 2
+  FloraSpawnIntervalSeconds: 0
+  FloraPopulationScale: 1
+  FloraPlantBudgetScale: 1
+  SupportedFloras:
+  - {fileID: 11400000, guid: 1b3fc6fdaf6cf93fd56b09d15a238989, type: 2}
+  FaunaExcludeLocalDomain: 0
+  InitialFaunaSpawnWaitTime: 10
+  InitialFaunaReleaseTier: 2147483647
+  FaunaSpawnVolumeThreshold: 1
+  FaunaPopulationScale: 1
+  BaseFaunaSpawnTime: 30
+  SeedFullWaveEveryTick: 0
+  FaunaFoodFloor: 5
+  FaunaInitialDelaySeconds: 0
+  FaunaSpawnIntervalSeconds: 0
+  HerbivoreSpawnPointCount: 0
+  HerbivoreSpawnRadius: 400
+  PredatorSpawnPointCount: 0
+  PredatorSpawnRadius: 600
+  SupportedFaunas: []

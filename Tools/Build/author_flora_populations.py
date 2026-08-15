@@ -57,6 +57,12 @@ SO = os.path.join(REPO, "Assets", "_SO_Assets")
 # CRYSTALLOGRAPHIC sense would be ~292 prisms - far too big to make a population out of.
 UNIT_CELL = 27
 
+# The octagon patch (Docs/ECOSYSTEM.md §32.2, measured): the gyroid's four danger types close
+# into 8-prism rings, one crystal per ring, and each ring owns 24 prisms of the surface
+# (8 danger / one-third danger fraction). This replaced UNIT_CELL as the lattice conversion
+# basis when the octagon colony landed - a plant IS an octagon-owner now.
+OCTAGON_PATCH = 24
+
 # Non-lattice colonisation: reproduction gives a species room to regrow and fill gaps, but it
 # must NOT be able to multiply the cell's authored flora mass - their per-plant budget is
 # unchanged, so every extra plant is extra mass. 1.5x the authored opening density is headroom
@@ -86,8 +92,21 @@ LATTICE_MIN_FOUNDERS = 4
 # add up to one continuous minimal surface. Matched on the flora prefab.
 LATTICE_PREFABS = {"GyroidFlora.prefab"}
 
-# Per-plant budget for a lattice species after the conversion.
-LATTICE_BUDGET = UNIT_CELL
+# Per-plant budget for a lattice species: the 24-prism octagon patch plus headroom for the
+# boundary prisms the ownership epsilon lets a plant win (measured patches run 22-28; the
+# ownership gate, not this budget, is the real bound - see AssembledFlora.OwnsLatticeSite).
+LATTICE_BUDGET = 30
+
+# A full lattice plant reproduces as it completes (armed quota retries every grow tick), and
+# plants into EVERY free neighbouring octagon each birth - "check the neighbouring centres,
+# plant in all of them" (each ring prism sees 4 neighbours; 8 per birth covers the ring's
+# whole neighbourhood in one round).
+LATTICE_QUOTA = 22
+LATTICE_OFFSPRING_PER_BIRTH = 8
+
+# Hand-authored test-cell configs the model must NOT manage: the Gyroid Lab is deliberately
+# uncapped (MaxLivePopulation 0) with its own fast cooldown - a laboratory, not a biome.
+EXCLUDE = {"Gyroid Lab Flora Config Data"}
 
 # The AUTHORED single-plant budget each lattice config carried BEFORE the conversion. Recorded
 # explicitly rather than read back off the asset, because the conversion overwrites that value -
@@ -213,9 +232,10 @@ def plan(path, guids, defaults):
                 f"overwrites that field, so it cannot be recovered from the asset.")
         old_budget = LATTICE_SOURCE_BUDGET[name]
         budget = LATTICE_BUDGET
-        # Same mass, many plants: this is the conversion, stated as arithmetic.
-        cap = max(1, round(old_budget / UNIT_CELL))
-        quota = UNIT_CELL
+        # Same mass, many plants: this is the conversion, stated as arithmetic. The divisor is
+        # the PATCH (what a plant actually settles at), so cap x 24 = the old single-plant mass.
+        cap = max(1, round(old_budget / OCTAGON_PATCH))
+        quota = LATTICE_QUOTA
     else:
         budget = old_budget
         cap = max(isc + 2, round(isc * COLONISE))
@@ -237,10 +257,11 @@ FIELDS = ("PopulationSize", "MaxLivePopulation", "GrowthPerOffspring",
 
 def render(p):
     spread = 40 if p["lattice"] else 60
+    per_birth = LATTICE_OFFSPRING_PER_BIRTH if p["lattice"] else 1
     return (f"  PopulationSize: {p['floor']}\n"
             f"  MaxLivePopulation: {p['cap']}\n"
             f"  GrowthPerOffspring: {p['quota']}\n"
-            f"  OffspringPerBirth: 1\n"
+            f"  OffspringPerBirth: {per_birth}\n"
             f"  ReproductionCooldownSeconds: {COOLDOWN}\n"
             f"  MaturityFraction: {MATURITY}\n"
             f"  OffspringSpread: {spread}\n")
@@ -285,6 +306,8 @@ def main():
     print("-" * 103)
     drift, total_plants, total_prisms = [], 0, 0
     for path in targets:
+        if os.path.basename(path)[:-6] in EXCLUDE:
+            continue
         p = plan(path, guids, defaults)
         changed, err = apply(path, p, check)
         if err:

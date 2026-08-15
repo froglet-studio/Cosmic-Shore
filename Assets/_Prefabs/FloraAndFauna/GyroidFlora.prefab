@@ -68,7 +68,7 @@ MonoBehaviour:
   maxDepth: 50
   itemsPerGrow: 5
   randomItems: 2
-  crystalGrowth: 0.1
+  crystalGrowth: 0
 --- !u!1001 &7171594881959712086
 PrefabInstance:
   m_ObjectHideFlags: 0

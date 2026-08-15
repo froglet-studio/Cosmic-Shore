@@ -198,6 +198,18 @@ namespace CosmicShore.Gameplay
                     continue;
                 }
 
+                // Octagon colony: a site in a NEIGHBOURING plant's territory is not this
+                // plant's to grow - that plant lays the same world position from its own
+                // lattice. Decline marks the bond site filled so the branch moves on instead
+                // of re-offering it every tick; the site's fresh reservation lapses on its
+                // TTL, the standard skip-after-claim path.
+                if (OctagonMode && growthInfo is GyroidGrowthInfo gyroidInfo &&
+                    !OwnsLatticeSite(gyroidInfo.Position))
+                {
+                    (branch.assembler as GyroidAssembler)?.DeclineGrowthSite(gyroidInfo.Site);
+                    continue;
+                }
+
                 pendingSpawns.Enqueue(new GrowOrder { parent = branch, info = growthInfo, decidedAt = Time.time });
                 itemsSpawned++;
             }
@@ -279,7 +291,13 @@ namespace CosmicShore.Gameplay
             newHealthPrism.transform.SetParent(newSpindle.transform, false);
             newHealthPrism.transform.localPosition = Vector3.zero;
             newHealthPrism.transform.localRotation = Quaternion.identity;
-            if (growthInfo.IsDangerous) newHealthPrism.MakeDangerous();
+            if (growthInfo.IsDangerous)
+            {
+                newHealthPrism.MakeDangerous();
+                // Octagon colony: a danger prism is (or discovers) this plant's ring.
+                if (OctagonMode && growthInfo is GyroidGrowthInfo g)
+                    RegisterDangerPrism(g.BlockType, growthInfo.Position, growthInfo.Rotation);
+            }
             newHealthPrism.Initialize();
 
             newBranch.gameObject = newSpindle.gameObject;
@@ -297,6 +315,130 @@ namespace CosmicShore.Gameplay
             // as the old inline loop.
             if (order.parent.depth >= maxDepth - 1 || order.parent.assembler.IsFullyBonded())
                 activeBranches.Remove(order.parent);
+        }
+
+        // -------------------------------------------------------------------
+        //  The octagon colony (gyroid only) - a plant IS an octagon-owner
+        //  (Docs/ECOSYSTEM.md §32.2)
+        //
+        //  The gyroid's four danger block types close into rings of exactly eight
+        //  danger prisms (measured off the bond table - GyroidOctagonData). Each
+        //  ring is one lifeform: its crystal sits at the ring's centre and never
+        //  grows, its territory is the 24-prism patch around that centre, and
+        //  reproduction is planting a daughter at a NEIGHBOURING ring's centre
+        //  with a real member of that ring as her first prism - so the colony
+        //  tiles the surface, one octagon each, and the superstructure is the
+        //  gyroid with a heart in every window.
+        // -------------------------------------------------------------------
+
+        struct RingMember
+        {
+            public Vector3 Position;
+            public Quaternion Rotation;
+            public GyroidBlockType Type;
+        }
+
+        // This plant's octagon centre (world). A daughter is handed hers before Initialize;
+        // a founder discovers its own from the first danger prism it grows.
+        Vector3? _octagonCenter;
+
+        // The danger prisms of MY ring that have grown so far (max 8). Pose snapshots, not
+        // object references - a ring prism can be eaten, but the SITE it defined does not move,
+        // and reproduction needs the frame, not the mass.
+        readonly List<RingMember> _ringMembers = new(8);
+
+        // Daughter handoff, stashed by the octagon placement and consumed by ConfigureOffspring.
+        GyroidGrowthInfo _pendingOffspringSeed;
+        Vector3 _pendingOffspringCenter;
+        bool _hasPendingOffspringClaim;
+
+        bool? _octagonModeCached;
+
+        /// <summary>
+        /// True when this species is a gyroid lattice colony: its health prism carries a
+        /// <see cref="GyroidAssembler"/>, so the measured octagon tables apply. Everything the
+        /// octagon mode does is gated here - a Schwarz-P (or any future assembled species)
+        /// keeps the generic frontier behaviour untouched.
+        /// </summary>
+        bool OctagonMode => _octagonModeCached ??= healthPrism && healthPrism.GetComponent<GyroidAssembler>();
+
+        /// <summary>This plant's octagon centre, once known (founder: after its first danger prism).</summary>
+        public Vector3? OctagonCenter => _octagonCenter;
+
+        /// <summary>
+        /// Hands a daughter her octagon centre. The claim was already made by the parent (so a
+        /// sibling can't race it between placement and spawn) - the daughter adopts it here.
+        /// Call before <see cref="Flora.Initialize"/>.
+        /// </summary>
+        public void AdoptOctagonCenter(Vector3 center)
+        {
+            _octagonCenter = center;
+            GyroidOctagonRegistry.TransferClaim(center, this);
+        }
+
+        public override void Initialize(Cell cell)
+        {
+            base.Initialize(cell);
+            // A daughter knows her centre before her crystal exists; the founder's crystal is
+            // moved when its centre is discovered (RegisterDangerPrism).
+            PlaceCrystalAtCenter();
+        }
+
+        void PlaceCrystalAtCenter()
+        {
+            if (_octagonCenter.HasValue && crystal)
+                crystal.transform.position = _octagonCenter.Value;
+        }
+
+        /// <summary>
+        /// Every danger prism this plant grows passes through here. A founder discovers (and
+        /// claims) its octagon centre from the first one; after that, prisms of MY ring are
+        /// recorded as the frames reproduction will project the neighbour tables from. A danger
+        /// prism belonging to a DIFFERENT octagon (a boundary prism this plant happened to win)
+        /// is ordinary mass - it defines no frame here.
+        /// </summary>
+        void RegisterDangerPrism(GyroidBlockType type, Vector3 position, Quaternion rotation)
+        {
+            if (!GyroidOctagonData.TryGetOwnCenterOffset(type, out var localOffset)) return;
+
+            Vector3 center = position + rotation * localOffset;
+
+            if (!_octagonCenter.HasValue)
+            {
+                // Founder discovery. If the claim fails, this prism is part of an octagon some
+                // other plant already owns - keep growing; a later danger prism may land on an
+                // unclaimed ring.
+                if (!GyroidOctagonRegistry.TryClaim(center, this)) return;
+                _octagonCenter = center;
+                PlaceCrystalAtCenter();
+                _ringMembers.Add(new RingMember { Position = position, Rotation = rotation, Type = type });
+                return;
+            }
+
+            float dedupe = GyroidOctagonData.CenterDedupeRadius;
+            if ((center - _octagonCenter.Value).sqrMagnitude < dedupe * dedupe &&
+                _ringMembers.Count < 8)
+                _ringMembers.Add(new RingMember { Position = position, Rotation = rotation, Type = type });
+        }
+
+        /// <summary>
+        /// The ownership gate - what makes many small plants TILE the surface instead of racing
+        /// each other over it. A site is this plant's to grow iff it lies within its own
+        /// territory radius AND no other claimed octagon centre is meaningfully nearer. The
+        /// epsilon deliberately lets both owners contest an exactly-equidistant boundary site -
+        /// the spatial-index reservation then keeps whichever grows first, which is how the
+        /// measured 22-28 patch spread arises (GyroidOctagonData.OwnershipEpsilon).
+        /// </summary>
+        bool OwnsLatticeSite(Vector3 site)
+        {
+            if (!_octagonCenter.HasValue) return true;   // founder bootstrap: no territory yet
+
+            float dMine = Vector3.Distance(site, _octagonCenter.Value);
+            if (dMine > GyroidOctagonData.TerritoryRadius) return false;
+
+            float foreignSqr = GyroidOctagonRegistry.NearestForeignClaimSqr(site, this);
+            if (foreignSqr >= float.MaxValue) return true;
+            return dMine <= Mathf.Sqrt(foreignSqr) + GyroidOctagonData.OwnershipEpsilon;
         }
 
         // -------------------------------------------------------------------
@@ -340,6 +482,9 @@ namespace CosmicShore.Gameplay
         protected override bool TryResolveOffspringPlacement(
             out Vector3 position, out Quaternion rotation, out Vector3? up)
         {
+            if (OctagonMode)
+                return TryResolveOctagonOffspring(out position, out rotation, out up);
+
             position = default;
             rotation = default;
             up = null;
@@ -377,15 +522,116 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// The octagon colony's reproduction: project the measured neighbour table from every
+        /// ring prism this plant has grown, and take the first neighbouring octagon that is
+        /// UNCLAIMED and whose seed site is free. The daughter is planted with her root (and
+        /// crystal) at that octagon's CENTRE and her first prism at a real member of its ring -
+        /// "calculate where the neighbouring crystals belong, check if one is already there,
+        /// and plant where there is not". One candidate per call; the base's per-birth loop
+        /// (OffspringPerBirth) drains as many as this tick may plant, and the armed quota
+        /// retries the rest on later ticks.
+        /// </summary>
+        bool TryResolveOctagonOffspring(out Vector3 position, out Quaternion rotation, out Vector3? up)
+        {
+            position = default;
+            rotation = default;
+            up = null;
+
+            // A claim stranded by a failed spawn (host torn down mid-birth) would block that
+            // octagon forever - release it before claiming a new one.
+            if (_hasPendingOffspringClaim)
+            {
+                GyroidOctagonRegistry.Release(_pendingOffspringCenter, this);
+                _hasPendingOffspringClaim = false;
+            }
+
+            if (!_octagonCenter.HasValue || _ringMembers.Count == 0) return false;
+
+            var spatialIndex = PrismSpatialIndex.EnsureInstance();
+
+            for (int m = 0; m < _ringMembers.Count; m++)
+            {
+                var member = _ringMembers[m];
+                if (!GyroidOctagonData.TryGetNeighbors(member.Type, out var neighbors)) continue;
+
+                for (int n = 0; n < neighbors.Length; n++)
+                {
+                    Vector3 center = member.Position + member.Rotation * neighbors[n].Center;
+                    if (GyroidOctagonRegistry.IsClaimed(center)) continue;
+
+                    Vector3 seedPos = member.Position + member.Rotation * neighbors[n].SeedPosition;
+                    Quaternion seedRot = member.Rotation * neighbors[n].SeedRotation;
+
+                    // The seed site must be free mass-wise too (a boundary prism this plant
+                    // already grew can sit exactly there). TryReserve doubles as the check and
+                    // the claim - the daughter's first prism consumes it on register, and a
+                    // failed birth lets it lapse on TTL like any dropped grow order.
+                    if (spatialIndex != null && spatialIndex.IsAvailable &&
+                        !spatialIndex.TryReserve(seedPos, 3f)) continue;
+
+                    // Claim the centre BEFORE spawning, so a sibling resolving in the same
+                    // frame cannot plant the same octagon; the daughter adopts the claim in
+                    // ConfigureOffspring.
+                    if (!GyroidOctagonRegistry.TryClaim(center, this)) continue;
+
+                    _pendingOffspringCenter = center;
+                    _hasPendingOffspringClaim = true;
+                    _pendingOffspringSeed = new GyroidGrowthInfo
+                    {
+                        CanGrow = true,
+                        Position = seedPos,
+                        Rotation = seedRot,
+                        BlockType = neighbors[n].SeedType,
+                        IsDangerous = true,
+                        Depth = depth,
+                    };
+
+                    position = center;
+                    rotation = seedRot;
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
         /// Programs the daughter with the donated growth order, in the window between its
         /// variant/level being applied and <c>Initialize</c> - the only point at which a plant's
-        /// growth rule can still be seeded.
+        /// growth rule can still be seeded. The octagon path also hands over the claimed centre.
         /// </summary>
         protected override void ConfigureOffspring(Flora child)
         {
-            if (_donatedGrowth != null && child is AssembledFlora assembled)
-                assembled.SeedFromGrowth(_donatedGrowth);
+            if (child is AssembledFlora assembled)
+            {
+                if (_pendingOffspringSeed != null)
+                {
+                    assembled.SeedFromGrowth(_pendingOffspringSeed);
+                    if (_hasPendingOffspringClaim)
+                    {
+                        assembled.AdoptOctagonCenter(_pendingOffspringCenter);
+                        _hasPendingOffspringClaim = false;
+                    }
+                }
+                else if (_donatedGrowth != null)
+                {
+                    assembled.SeedFromGrowth(_donatedGrowth);
+                }
+            }
+            _pendingOffspringSeed = null;
             _donatedGrowth = null;
+        }
+
+        protected override void OnDestroy()
+        {
+            // The colony's claim on its octagon dies with it, so a grazed-out window becomes
+            // plantable again and neighbours recolonise the hole. A pending daughter claim that
+            // never transferred is released too.
+            if (_octagonCenter.HasValue)
+                GyroidOctagonRegistry.Release(_octagonCenter.Value, this);
+            if (_hasPendingOffspringClaim)
+                GyroidOctagonRegistry.Release(_pendingOffspringCenter, this);
+            base.OnDestroy();
         }
 
         /// <summary>
@@ -430,6 +676,11 @@ namespace CosmicShore.Gameplay
 
         void GrowCrystal()
         {
+            // The octagon colony's crystal is FIXED: it marks the ring's centre and never
+            // grows (the gyroid prefab also authors crystalGrowth 0 - belt and braces, since
+            // a growing crystal would drift out of scale with the window it sits in).
+            if (crystalGrowth <= 0f || OctagonMode) return;
+
             if (crystal)
             {
                 crystal.GrowCrystal(1, crystal.transform.localScale.x + crystalGrowth);
@@ -477,7 +728,19 @@ namespace CosmicShore.Gameplay
             CSDebug.Log("New Assembler");
             var newSpindle = AddSpindle();
 
-            HealthPrism newHealthPrism = Instantiate(healthPrism, transform.position, transform.rotation);
+            // A SEEDED plant's first prism lands at the exact pose its parent's lattice
+            // dictates - which for the octagon colony is a member of the daughter's own ring,
+            // 10-20u from her root (the root, and the crystal with it, sit at the octagon
+            // CENTRE). The spindle is posed first because SetParent(worldPositionStays: false)
+            // snaps the prism to the spindle's pose. An unseeded founder keeps the legacy
+            // shape: first prism at the flora root.
+            if (_seedGrowth != null)
+            {
+                newSpindle.transform.position = _seedGrowth.Position;
+                newSpindle.transform.rotation = _seedGrowth.Rotation;
+            }
+
+            HealthPrism newHealthPrism = Instantiate(healthPrism, newSpindle.transform.position, newSpindle.transform.rotation);
             AddHealthBlock(newHealthPrism);
             newHealthPrism.transform.SetParent(newSpindle.transform, false);
             newHealthPrism.LifeForm = this;
@@ -490,7 +753,13 @@ namespace CosmicShore.Gameplay
             if (_seedGrowth != null)
             {
                 var seeded = AssemblerFactory.ProgramAssembler(newHealthPrism.gameObject, _seedGrowth);
-                if (seeded != null && _seedGrowth.IsDangerous) newHealthPrism.MakeDangerous();
+                if (seeded != null && _seedGrowth.IsDangerous)
+                {
+                    newHealthPrism.MakeDangerous();
+                    // The octagon daughter's seed IS her first ring member.
+                    if (OctagonMode && _seedGrowth is GyroidGrowthInfo sg)
+                        RegisterDangerPrism(sg.BlockType, _seedGrowth.Position, _seedGrowth.Rotation);
+                }
             }
 
             newHealthPrism.Initialize();

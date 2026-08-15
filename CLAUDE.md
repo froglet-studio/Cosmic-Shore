@@ -137,18 +137,24 @@ outcome is optimization, not life). Use the `/ecology` skill for any change here
   `Microscene` conveyor, the Lifeform Matrix toy) and a cap one producer skips is two ceilings for
   one number. Reproduction is production, so it freezes with planting at Frenzy; a lowered cap stops
   producing and never culls.
-  **A LATTICE species reproduces along its own growth frontier.** The gyroid is one plant no longer:
-  it is a colony of **27-prism unit cells** (the smallest patch containing all 12 block types —
-  measured off the bond table, not chosen), each carrying its own crystal, and
-  `AssembledFlora.TryResolveOffspringPlacement` hands each daughter a real `GetGrowthInfo()` bond
-  site off the parent's frontier — same table, same `TryReserve` claim — so the daughter's first
-  prism lands exactly where the parent's next one would have. **Nothing in the code describes a
-  gyroid**; the superstructure is emergent from local continuation, and a scripted superstructure
-  would be the same cheat as a scripted fitness function. Mass is preserved by construction
-  (`cap × 27 ≈ the old single-plant budget`), so no volume ladder moves; the cost is **crystals**
-  (Blob: 3 → 123 always-on heart colliders), and `MaxLivePopulation` is the dial. Numbers are
-  authored by `Tools/Build/author_flora_populations.py` (`--check`), never by hand.
-  Full record: `Docs/ECOSYSTEM.md §32`.
+  **A LATTICE species is an OCTAGON COLONY.** The gyroid is one plant no longer: its four danger
+  block types close into rings of exactly **eight danger prisms** (measured off the bond table —
+  the danger-only bond subgraph contains ONLY 8-cycles), and each ring is one lifeform — its
+  **crystal at the ring's centre, never growing**, its territory the **24-prism patch** around it
+  (8 danger ÷ the ⅓ danger fraction, exact). `GyroidOctagonData` carries the measured constants
+  (own-centre offset per danger type; four neighbouring rings per type with a deterministic seed
+  pose each), `GyroidOctagonRegistry` is the claim book, `AssembledFlora.OwnsLatticeSite` is the
+  territory gate that makes plants TILE the surface instead of racing over it, and reproduction
+  plants a daughter at every unclaimed neighbouring ring centre with a real member of that ring as
+  her first prism. **Nothing in the code describes a gyroid**; the superstructure is emergent from
+  local continuation — proven by simulating the exact algorithm (273 plants from one founder: a
+  single connected gyroid, zero overlaps, bijective on the reference lattice, one crystal per
+  octagon). Mass is preserved (`cap × 24 ≈ the old single-plant budget`); the cost is **crystals**
+  (one always-on heart collider per octagon), and `MaxLivePopulation` is the dial. Numbers are
+  authored by `Tools/Build/author_flora_populations.py` (`--check`), never by hand; the tables
+  regenerate via `Tools/Build/measure_gyroid_octagons.py`. The **Gyroid Lab** cell (Menu_Main's
+  Cell Selector, index 9) grows one uncapped colony indefinitely as the tuning chamber.
+  Full record: `Docs/ECOSYSTEM.md §32` (§32.7 the octagon colony).
 - **Territorial permanence.** Take a cell, leave, it stays yours — the claim fauna cannot touch.
   In nucleus cells the permanent claim is the **nucleus interior** (fauna never consume it);
   exterior canopy/trail is deliberately contested churn (voracious any-domain grazing). In

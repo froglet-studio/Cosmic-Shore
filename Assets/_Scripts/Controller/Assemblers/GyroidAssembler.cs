@@ -12,6 +12,15 @@ namespace CosmicShore.Gameplay
     public class GyroidGrowthInfo : GrowthInfo
     {
         public GyroidBlockType BlockType;
+
+        /// <summary>
+        /// The corner site on the SUBSTRATE assembler this growth would fill. Carried so a
+        /// caller that declines the site for a non-occupancy reason (the octagon colony's
+        /// ownership gate - the site belongs to a neighbouring plant's territory) can tell the
+        /// assembler via <see cref="GyroidAssembler.DeclineGrowthSite"/>; without that, the
+        /// assembler re-offers the same site every tick and the branch stalls forever.
+        /// </summary>
+        public CornerSiteType Site = CornerSiteType.None;
     }
 
     public enum GyroidBlockType
@@ -159,7 +168,8 @@ namespace CosmicShore.Gameplay
                             bondMateData.BlockType == GyroidBlockType.DE ||
                             bondMateData.BlockType == GyroidBlockType.EG ||
                             bondMateData.BlockType == GyroidBlockType.EsD,
-                        Depth = depth - 1
+                        Depth = depth - 1,
+                        Site = growthSite
                     };
 
                 // Fill the bond site
@@ -196,6 +206,19 @@ namespace CosmicShore.Gameplay
                     BottomRightIsBonded = isBonded;
                     break;
             }
+        }
+
+        /// <summary>
+        /// Marks a growth site permanently filled WITHOUT growing it - the caller decided the
+        /// site is not this plant's to grow (the octagon colony's ownership gate: it belongs to
+        /// a neighbouring octagon's territory, and that plant will grow it from its own lattice
+        /// at the same world position). The site's spatial-index reservation, made by
+        /// <see cref="GetGrowthInfo"/>, simply lapses on its TTL - the standard
+        /// skip-after-claim path every dropped grow order already takes.
+        /// </summary>
+        public void DeclineGrowthSite(CornerSiteType site)
+        {
+            if (site != CornerSiteType.None) SetBondSiteStatus(site, true);
         }
 
         public void ClearMateList()

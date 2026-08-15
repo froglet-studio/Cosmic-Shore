@@ -3916,6 +3916,13 @@ through the same accessor for the same reason.
 
 ### 32.2 The gyroid: one plant became a colony, and the frontier does the connecting
 
+> **Superseded in part by §32.7 (same branch, second pass).** The 27-prism BFS-patch unit cell
+> and the single-donor frontier handoff described below shipped first; the octagon colony —
+> crystal at the centre of each danger-prism ring, territory ownership, table-driven
+> reproduction into every free neighbouring ring — replaced them the same week, after the
+> user supplied the tiling design. The measured bond-table geometry below is still the
+> foundation everything §32.7 does is computed from.
+
 The gyroid was one plant that grew forever — a single `AssembledFlora` crystallising a minimal
 surface out of 1,500 bonded prisms, carrying **one** heart. It is now a **population of unit cells**,
 each with its own crystal.
@@ -4036,3 +4043,77 @@ colony visibly loses mass over a long session, that is where it is going — the
 7. Re-run `python3 Tools/Build/author_flora_populations.py --check` after any asset tuning, and
    `FrogletTools ▸ Validation ▸ Validate Lifeform Crystals` (every unit cell is a lifeform now, so
    the one-crystal rule is being asserted far more often than before).
+
+### 32.7 The octagon colony — a crystal in every window (Aug 2026, second pass)
+
+The first pass (§32.2) made the gyroid a population, but its unit was arbitrary — "3 bonds out
+from a seed" — and its reproduction handed a daughter one donor site. The design that replaced
+it came from the tiling itself:
+
+**The gyroid's 12 block types are a non-Euclidean tile** — 6 prisms and their 6 mirror images
+(the conjugate structure: DE↔EsD, EG↔GEs are the danger pairs). The four danger types close
+into rings of exactly **eight danger prisms** — measured, not assumed: the danger-only bond
+subgraph contains ONLY 8-cycles (120 of 120 in a 4,000-prism walk), each ring 2×DE + 2×EG +
+2×EsD + 2×GEs, radius 10.03u. Since danger types are 4 of 12 equidistributed types, each ring
+owns **24 prisms** of the surface: 8 ring + 16 between. Adjacent ring centres sit 35.9–42.4u
+apart, and each danger type sees exactly **four** neighbouring rings at fixed local offsets
+with a deterministic seed pose each (measured purity 1.00, position std ≤ 0.25u).
+
+> **The spec said 48 prisms per lifeform (4 tiles); the lattice says 24 (2 tiles).** This is
+> forced, not chosen: with a crystal in EVERY octagon and no overlapping prisms, prisms per
+> lifeform = total ÷ octagons = 8 ÷ ⅓ = 24 exactly. A 48-prism lifeform is only possible with
+> crystals in every OTHER octagon. The build follows the stronger constraints (crystal per
+> octagon, no overlap); flag if the other trade was meant.
+
+**A gyroid plant IS an octagon-owner.** Its crystal sits at the ring's centre and **never
+grows** (`crystalGrowth 0` + a code guard); its root is the centre, so "a crystal at local
+(0,0,0)". A founder discovers its centre from the first danger prism it grows
+(`GyroidOctagonData.TryGetOwnCenterOffset` — each danger type knows its ring centre in its own
+local frame) and claims it in `GyroidOctagonRegistry`; a daughter is handed hers, pre-claimed
+by the parent so siblings cannot race.
+
+**Territory makes the tiling.** A plant grows a site only if it lies within `TerritoryRadius`
+(26.5u) of its own centre AND no other claimed centre is meaningfully nearer
+(`AssembledFlora.OwnsLatticeSite`, epsilon 0.75 — boundary prisms sit EXACTLY equidistant, so
+both owners contest and the spatial-index reservation keeps whichever grew first; patches
+measure 22–28). A declined site is marked filled on the assembler
+(`GyroidAssembler.DeclineGrowthSite`) so the branch moves on — the neighbouring plant lays the
+same world position from its own lattice.
+
+**Reproduction is the neighbour table.** A full plant projects, from each ring prism it grew,
+the four neighbouring ring centres; for each UNCLAIMED one whose seed site is free it plants a
+daughter — root at that centre, first prism a real member of that ring, block type and pose
+from the table (`OctagonNeighbor`). "Calculate where the neighbouring crystals belong, check
+if one is already there, plant where there is not." `OffspringPerBirth 8` covers the whole
+neighbourhood per birth; the armed quota retries the rest.
+
+**Proof before Unity.** The exact algorithm (bond-table growth + ownership + registry +
+neighbour-table reproduction) was simulated end-to-end in Python: from one founder, 273 plants
+/ 5,547 prisms — a **single connected component**, **zero overlaps** (min pairwise distance
+7.17u vs 6.6u lattice minimum), **bijective on the reference lattice** (max deviation 0.74u at
+radius 95, no double-filled site), and **175 of 175 complete octagons holding exactly one
+claimed crystal centre**. Float drift off the bond table accumulates ~0.3u per 100u of lattice
+— absorbed by the reservation clear radius (~3.1u) out to radius ~1,000.
+
+**The Gyroid Lab** (`Assets/_SO_Assets/Cell Configs/Gyroid Lab Cell/`) is the test chamber:
+appended to Menu_Main's `CellConfigs` (index 9), so it appears in the freestyle **Cell
+Selector** as a labelled station ("Gyroid Lab" — environment-free configs get a station with
+no miniature). Fly it and the swap suctions the old world away, restarts the spawner on the
+lab profile, and ONE founder plants and colonises indefinitely: `PopulationSize 1`,
+`MaxLivePopulation 0` (uncapped — a laboratory, not a biome; excluded from
+`author_flora_populations.py`'s model by name), `ReproductionCooldownSeconds 2`, and phase
+thresholds that can never reach Frenzy (`FrenzyEnter 0` disables the count backstop;
+volume ladder authored at 999,999,999 — non-zero, so the all-zero default substitution never
+fires). No fauna, so nothing grazes the specimen. **Collider budget: deliberately unbounded**
+— every octagon is a crystal (always-on collider) and one octagon per 24 prisms means ~40
+crystals per 1,000 prisms; the cell exists to observe the colony, and the dial back to a
+bounded biome is `MaxLivePopulation`.
+
+In-editor verification (the human is the gate): enter freestyle in Menu_Main, fly the Cell
+Selector toy, pick **Gyroid Lab**. Watch: (1) the founder's first danger prism moves the
+crystal to the ring centre; (2) the surface grows as ONE continuous gyroid with no doubled
+prisms; (3) each completed ring's window holds exactly one crystal, none of them growing;
+(4) daughters bloom at neighbouring windows and knit seamlessly; (5) it never stops. If the
+surface fragments, the seed-pose handoff is misaligned — `GyroidOctagonData` and
+`AssembledFlora.TryResolveOctagonOffspring` are the places to look. Regenerate the tables
+with `Tools/Build/measure_gyroid_octagons.py`.
