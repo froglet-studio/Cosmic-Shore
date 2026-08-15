@@ -150,6 +150,10 @@ namespace CosmicShore.Gameplay
 
         static MaterialPropertyBlock s_tintBlock;
 
+        // The property every crystal shader exposes for its dissolve - the same one FadeIn drives
+        // to bloom a crystal IN (CrystalGraph, ChargeCrystal). A capture drives it back to 0.
+        static readonly int OpacityID = Shader.PropertyToID("_opacity");
+
         /// <summary>The (bright, dull) pair this crystal's CURRENT state resolves to. False when
         /// the theme container or its color set is unwired - the caller keeps whatever it had.</summary>
         bool TryResolveTintColors(out Color bright, out Color dull)
@@ -350,8 +354,9 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>Pushes one pair to every model's property block, and records it as the
-        /// resting displayed value.</summary>
-        void WriteTint(Color bright, Color dull)
+        /// resting displayed value. <paramref name="opacity01"/> additionally drives the shader
+        /// dissolve (the capture's absorb) - omit it and the material's own opacity stands.</summary>
+        void WriteTint(Color bright, Color dull, float? opacity01 = null)
         {
             if (crystalModels == null) return;
 
@@ -366,13 +371,68 @@ namespace CosmicShore.Gameplay
                 var mat = renderer.sharedMaterial;
                 if (!mat) continue;
                 var props = FindColorPropertyNames(mat);
-                if (props.bright == null) continue;
+
+                // A shader with no colour pair still has to receive the dissolve, so the
+                // colour write is skipped rather than the whole renderer.
+                if (props.bright == null && !opacity01.HasValue) continue;
 
                 renderer.GetPropertyBlock(s_tintBlock);
-                s_tintBlock.SetColor(props.bright, bright);
-                s_tintBlock.SetColor(props.dull, dull);
+                if (props.bright != null)
+                {
+                    s_tintBlock.SetColor(props.bright, bright);
+                    s_tintBlock.SetColor(props.dull, dull);
+                }
+                if (opacity01.HasValue) s_tintBlock.SetFloat(OpacityID, opacity01.Value);
                 renderer.SetPropertyBlock(s_tintBlock);
             }
+        }
+
+        // ── Capture ──────────────────────────────────────────────────────────
+        // A capture SUPERSEDES collectability signalling. The crystal is being taken, so a
+        // blue → lime crossing still in flight has nothing left to say, and - decisively - two
+        // writers on one property block would fight frame by frame. This is not a rare overlap:
+        // the Squirrel's joust frees a heart and auto-collects it in the same beat, so the
+        // crossing is ALWAYS live when that capture starts.
+        //
+        // BeginCaptureVisual freezes the crossing where the eye last saw it and latches that pair
+        // as the flare's base, so the capture departs from what is on screen rather than snapping
+        // to the colour the crossing was heading for.
+
+        bool _captureHasColors;
+        Color _captureBaseBright, _captureBaseDull;
+
+        /// <summary>
+        /// Hands the tint block to the capture: stops any in-flight collectability cross-fade and
+        /// latches the DISPLAYED pair as the base every later
+        /// <see cref="ApplyCaptureVisual"/> frame flares from. Call once, at the moment of collection.
+        /// </summary>
+        public void BeginCaptureVisual()
+        {
+            // Read what is on screen BEFORE stopping the crossing - StopTintTransition drops the
+            // stamp the analytic current is computed from.
+            _captureHasColors = TryGetDisplayedTint(out _captureBaseBright, out _captureBaseDull)
+                             || TryResolveTintColors(out _captureBaseBright, out _captureBaseDull);
+            StopTintTransition();
+        }
+
+        /// <summary>
+        /// Paints one frame of a CAPTURE: the latched base colours scaled by
+        /// <paramref name="flareMultiplier"/> (a brightness flare in linear HDR - the element's hue
+        /// survives, per Docs/PALETTE.md, where washing toward white would read as a different
+        /// crystal) and the opacity driven to <paramref name="opacity01"/> for the dissolve that
+        /// ends the absorb.
+        ///
+        /// Goes through <see cref="WriteTint"/> like every other tint write, so the block keeps ONE
+        /// writer and the recorded resting pair stays honest. Nothing is restored afterwards
+        /// because the crystal is destroyed at the end of the capture.
+        /// </summary>
+        public void ApplyCaptureVisual(float flareMultiplier, float opacity01)
+        {
+            if (_captureHasColors)
+                WriteTint(_captureBaseBright.ScaleRGB(flareMultiplier),
+                          _captureBaseDull.ScaleRGB(flareMultiplier), opacity01);
+            else
+                WriteTint(_tintBright, _tintDull, opacity01);
         }
 
         /// <summary>Clears the tint override on one model so a material color lerp is visible.
@@ -482,14 +542,24 @@ namespace CosmicShore.Gameplay
             transform.localScale = targetScaleVector;
         }
         
-        public void Explode(ExplodeParams explodeParams)
+        /// <summary>
+        /// Sprays this crystal's spent husk along the collector's course.
+        ///
+        /// <paramref name="huskScale"/> overrides the size the husk is spawned at; the default
+        /// (zero) uses the crystal's own live scale. The override exists for the ELEMENTAL capture,
+        /// which fires this burst at the end of a flight that has already shrunk the crystal into
+        /// the hull - without it the payoff would be sized by the flourish that preceded it rather
+        /// than by the crystal the pilot actually picked up. The networked path takes the default.
+        /// </summary>
+        public void Explode(ExplodeParams explodeParams, Vector3 huskScale = default)
         {
             if (IsExploding)
-                return;           
-            
+                return;
+
             IsExploding = true;
             WaitForImpact().Forget();
 
+            if (huskScale == default) huskScale = transform.lossyScale;
             var playerName = explodeParams.PlayerName.ToString();
             foreach (var modelData in crystalModels)
             {
@@ -502,7 +572,7 @@ namespace CosmicShore.Gameplay
                     SpentCrystalPrefab, transform.position, transform.rotation);
                 if (!impact) continue;
 
-                impact.transform.localScale = transform.lossyScale;
+                impact.transform.localScale = huskScale;
 
                 if (crystalProperties.Element == Element.Space && modelData.spaceCrystalAnimator != null)
                 {
@@ -519,10 +589,19 @@ namespace CosmicShore.Gameplay
             PlayExplosionAudio();
         }
 
+        /// <summary>
+        /// The pickup sound. Falls back to <see cref="AudioSystem.Instance"/> because the injected
+        /// field is null on every crystal that was NOT part of a loaded scene: a lifeform's heart
+        /// is `Instantiate`d by the cell's spawners, and nothing under Controller/Environment calls
+        /// `GameObjectInjector.InjectRecursive`. So this was a silent no-op for the entire ecology's
+        /// crystal drops - which is most of the crystals in the game - while reading as wired.
+        /// Same accessor the elemental powerup effect already uses one frame earlier.
+        /// </summary>
         void PlayExplosionAudio()
         {
-            if (audioSystem != null)
-                audioSystem.PlayGameplaySFX(GameplaySFXCategory.CrystalCollect, transform.position);
+            var audio = audioSystem != null ? audioSystem : AudioSystem.Instance;
+            if (audio != null)
+                audio.PlayGameplaySFX(GameplaySFXCategory.CrystalCollect, transform.position);
         }
 
         /// <summary>
