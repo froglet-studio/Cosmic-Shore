@@ -24,6 +24,39 @@ two halves are authored as two effects in `DolphinImpactorDataContainer.vesselPr
 on slot 1), each with its own `retainedFraction` (0.5) so they can be tuned apart if the ram
 turns out to bite harder on one than the other.
 
+### A ram also costs SPEED — on the fleet's terms, not the Dolphin's
+
+The Dolphin shipped with **no `VesselChangeSpeedByPrismEffectSO` in its chain at all**, so a
+prism collision — danger prism included — did nothing whatsoever to its speed. The asset existed
+(`DolphinVesselChangeSpeedByPrism`, authored at `duration 0.5` / `maxSlowStrength 0.8`) and was
+referenced by no container: authored once, never wired, and invisible because a vessel that
+simply doesn't slow reads as a vessel that's fast.
+
+It now carries the **Squirrel's exact numbers**, because a prism is a prism and the collision
+read should not depend on which hull hit it:
+
+| | normal prism | danger prism |
+|---|---|---|
+| slow strength | `min(volume × 0.1, 0.5)` | `0.5 × 3` → clamps to a **full stop** |
+| recovery | **1 s**, linear back to full throttle | **3 s**, linear |
+
+`massScaling: 0.1` against `maxSlowStrength: 0.5` means anything of volume ≥ 5 saturates, so in
+practice a normal prism halves the throttle for a second and a danger prism parks you for three.
+Both recover linearly from full strength (`VesselTransformer.ApplyThrottleModifiers` lerps the
+modifier back to 1 across its duration) — the bite is instant, the climb out is not.
+
+Two properties come free with the shared effect and are the reason to use it rather than author
+a Dolphin-specific slow:
+
+- **Your own trail doesn't brake you** — `VesselChangeSpeedByPrismEffectSO` skips non-danger
+  prisms of your own domain. You skim your own mass, you don't plow through it.
+- **Danger is not safe to its own domain** (locked design), so the full stop lands on the owner
+  of the danger trail exactly as hard as on anyone else.
+
+The Dolphin does **not** take the Squirrel's `VesselResetBoostPrismEffect` (which zeroes boost
+outright). Its boost punish is the halving above — a deliberately different, gentler design for
+a vessel whose boost is bought with drift-seconds rather than picked up.
+
 **Energy** is banked by skimming and spent in ONE shot on a crystal:
 
 | event | effect on Energy | authored in |
@@ -233,7 +266,13 @@ Four things are deliberately **outside** the hold:
 
 - **`throttleMultiplier`** (the `ModifyThrottle` channel) stays live, so a danger prism's full-stop
   slow bites a drifting Dolphin exactly as hard as a flying one. Danger prisms are not safe to
-  anybody (locked design) and a drift is not a shield.
+  anybody (locked design) and a drift is not a shield. Mechanically this is `MoveShip` applying
+  `speed * throttleMultiplier` *after* `AdvanceSpeed`'s `_driftSpeedHeld` early-return, so the
+  hold pins the cruise speed and the modifier still scales the frame's output.
+  **This clause was aspirational until the speed effect was wired (§1).** The hold was built to
+  leave the channel live, but nothing on the Dolphin was calling `ModifyThrottle` on a prism
+  collision, so "the vessel still slows mid-drift" could not have been observed — a good reminder
+  that a correctly-designed passthrough proves nothing if no one is pushing anything through it.
 - **`velocityShift`** (the `ModifyVelocity` channel) stays live — knockback, dodges and AOE impulses
   still displace a drifting vessel.
 - **`_speedTrackingRate`** is untouched, so a ramp boost mid-ramp resumes on release instead of
@@ -431,6 +470,9 @@ Play Menu_Main, enter freestyle on the Dolphin.
 | drift from a slow crawl | it stays a slow crawl for the whole drift (the lock is "hold what you had", not "hold top speed") |
 | release the drift | throttle authority returns immediately and speed resumes tracking (into the boost discharge) |
 | ram a danger prism mid-drift | the vessel still slows — `throttleMultiplier` is outside the hold |
+| ram an opposing normal prism | throttle drops to ~half instantly, climbs back over **1 s** — same feel as the Squirrel |
+| ram a DANGER prism | **dead stop**, climbing back over **3 s** — same feel as the Squirrel, and it lands on the danger trail's owner too |
+| ram your OWN (non-danger) trail | no braking at all — own-domain prisms are skipped |
 | hold drift | boost ring steps up; release → speed rises then decays; ring empties |
 | hold drift from empty to full | ring fills in **~3.6 s** (was 4) |
 | release a full meter | speed peaks near **357** and takes **~2.5 s** to fall back (was 210 / 2 s) |
@@ -449,6 +491,8 @@ place: they hold no renderers, and `GameCanvas` is the shared prefab of `Docs/GA
 Knobs, in order of likely tuning: `DolphinSkimmerChangeResourceByPrismEffect._resourceAmount`
 (skim gain), `DolphinVesselChangeResourceByPrismEffect.retainedFraction` /
 `DolphinVesselChangeBoostByPrismEffect.retainedFraction` (how hard a ram bites each meter),
+`DolphinVesselChangeSpeedByPrism.maxSlowStrength` / `speedModifierDuration` (**currently pinned
+to the Squirrel's values on purpose — moving either un-shares the fleet's collision read**),
 `ChargeBoostAction.chargeTimeToFull` / `dischargeTimeToEmpty` /
 `maxBoostMultiplier`, `DeployTeamCrystalAction.cooldown` / `minCooldown`,
 `DolphinVesselExplosionByCrystalEffect._min/_max/_coreExplosionScale` (**then `MinJawAngle` /
