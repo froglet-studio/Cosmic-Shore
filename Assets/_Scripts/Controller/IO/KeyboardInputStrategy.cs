@@ -10,11 +10,16 @@ namespace CosmicShore.Gameplay
     /// No mouse. No vessel-class special cases — drift and tube bind through
     /// the existing stick/trigger events.
     ///
-    /// Left stick WASD:  W +Y, S -Y, A -X, D +X
-    /// Right stick P L ; ':  P +Y, ; -Y, L -X, ' +X
-    /// Mix: yaw = XSum, pitch = YSum (W+P stacks), speed = XDiff (A+' fast, L+D slow),
-    ///      roll = YDiff (P+S left, W+; right). Neutral horizontals → XDiff 0.5 cruise.
-    /// Left Shift hold = left trigger (drift). Right Shift press = right trigger (tube).
+    /// Key → stick → mix → Squirrel feel
+    ///   W / S     left  +Y / -Y     YSum pitch (W+P = big pitch up, S+; = big pitch down)
+    ///   A / D     left  -X / +X     XSum yaw; with ' / L → XDiff speed (A+' fast, L+D slow)
+    ///   P / ;     right +Y / -Y     YDiff roll vs left Y (P+S roll left, W+; roll right)
+    ///   L / '     right -X / +X     (same mix as A / D)
+    ///   Left Shift  left trigger analog 1, LeftStickAction / OnlyLeftStickAction
+    ///               → Squirrel drift (prefab singleTriggerDrift; gamepad binds LeftStickAction)
+    ///   Right Shift right trigger press, RightStickAction / OnlyRightStickAction
+    ///               → Squirrel tube / prism ring (Begin on press; Commit is a no-op)
+    /// Neutral A/D/L/' → XDiff 0.5 cruise. InvertY / InvertThrottle apply after mix.
     /// </summary>
     public class KeyboardInputStrategy : BaseInputStrategy
     {
@@ -176,33 +181,18 @@ namespace CosmicShore.Gameplay
 
         private void Reparameterize()
         {
-            inputStatus.EasedLeftJoystickPosition = new Vector2(
-                Ease(2 * leftStickRaw.x),
-                Ease(2 * leftStickRaw.y)
-            );
-            inputStatus.EasedRightJoystickPosition = new Vector2(
-                Ease(2 * rightStickRaw.x),
-                Ease(2 * rightStickRaw.y)
-            );
+            var mix = DualStickMix.Mix(
+                leftStickRaw, rightStickRaw,
+                inputStatus.InvertYEnabled, inputStatus.InvertThrottleEnabled);
 
+            inputStatus.EasedLeftJoystickPosition = mix.EasedLeft;
+            inputStatus.EasedRightJoystickPosition = mix.EasedRight;
             inputStatus.RightNormalizedJoystickPosition = rightStickRaw;
             inputStatus.LeftNormalizedJoystickPosition = leftStickRaw;
-
-            inputStatus.XSum = Ease(rightStickRaw.x + leftStickRaw.x);
-            inputStatus.YSum = -Ease(rightStickRaw.y + leftStickRaw.y);
-            inputStatus.XDiff = (rightStickRaw.x - leftStickRaw.x + 2) / 4;
-            inputStatus.YDiff = Ease(rightStickRaw.y - leftStickRaw.y);
-
-            if (inputStatus.InvertYEnabled)
-            {
-                inputStatus.YSum *= -1f;
-                inputStatus.YDiff *= -1f;
-            }
-
-            if (inputStatus.InvertThrottleEnabled)
-            {
-                inputStatus.XDiff = 1f - inputStatus.XDiff;
-            }
+            inputStatus.XSum = mix.XSum;
+            inputStatus.YSum = mix.YSum;
+            inputStatus.XDiff = mix.XDiff;
+            inputStatus.YDiff = mix.YDiff;
         }
 
         private void PerformSpeedAndDirectionalEffects()
