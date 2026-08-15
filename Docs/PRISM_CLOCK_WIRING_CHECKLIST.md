@@ -397,7 +397,12 @@ polygon or a wall as large as the gradient band cannot resolve the gradient.
 that the vessel spawned through `VesselController.Initialize` with `IPlayer.IsLocalPilot`
 true; then run the validator above.
 
-## Phase 9 — Super-shield deflection jiggle (C14) — WIRED PROGRAMMATICALLY, **PLAYTEST OUTSTANDING**
+## Phase 9 — Super-shield deflection jiggle (C14) — WIRED PROGRAMMATICALLY, **FIRST PLAYTEST PASSED**
+
+> **2026-08-15:** confirmed in-editor — both graphs import clean (nothing magenta), and the
+> deflection reads on vessel impact. Skimmer impact correctly produces none (step 6). The
+> steps below stay as the regression checklist; steps 2, 3 and 5 have not been
+> specifically exercised yet.
 
 A super-shielded prism that is HIT but not destroyed now wobbles and settles instead of
 absorbing the hit in total silence. Design + rationale: `Docs/PRISM_ANIMATION.md §4.8`.
@@ -434,11 +439,11 @@ segments. Shoot or ram a super-shielded prism and watch:
    blast. Ordinary (non-super-shielded) prisms must be visually identical to before.
 5. **Neighbours are not in lockstep.** A blast that touches several super-shielded prisms
    should make them wobble out of phase with each other.
-6. **Skimming a super-shielded lining.** A skim IS a hit — it funnels through
-   `SkimmerDamagePrismEffectSO` → `Prism.Damage` → the gate — so riding the Skim Race / Astro
-   League lining wobbles each prism as you pass it. Intended; judge whether it reads as the
-   shield reacting or as visual noise. If it is too busy, lower `minTiltDegrees` — do not add a
-   skim exception.
+6. **Skimming does NOT deflect, on every vessel but one.** Confirmed by playtest 2026-08-15
+   (jiggle on vessel impact, none on skimmer impact — both as desired). Reaching the gate needs
+   `SkimmerDamagePrismEffectSO` in that skimmer's container, and only
+   `RhinoForceFieldSkimmerImpactorDataContainer` has it. If you ever want a skim to deflect on
+   another vessel, that is a container change on that vessel — not a change here.
 
 **Tuning** — `Resources/PrismSuperShieldJiggleConfig`:
 

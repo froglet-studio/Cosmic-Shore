@@ -1647,12 +1647,24 @@ on every vessel whose skimmer container carries `SkimmerDamagePrismEffectSO` the
 already reaches `Prism.Damage`, so routing it too would only double-fire into the rate limit.
 (2) The AstroLeague ball/field sweeps and `Fauna.IsShieldedMass` read the flag to *skip*
 super-shielded mass before any hit is dispatched; those are filters, not gates, and there is no
-deflection to show. **A SKIM does deflect**, because a skimmer contact runs the full
-`SkimmerPrismEffectSO` chain at the stella surface and `SkimmerDamagePrismEffectSO` funnels into
-`Prism.Damage`. That is intended — the shield reacting to a skim is the same event class — but it
-means a vessel riding a super-shielded track lining wobbles each prism it passes (once per prism
-per pass, bounded by `minSecondsBetweenStamps`). If that reads as too busy on the Skim Race /
-Astro League lining, the dial is `minTiltDegrees`, not a new exception.
+deflection to show.
+
+**A SKIM does NOT deflect on four of the fleet's five skimmers — verified by playtest, and the
+reason is wiring, not design.** Reaching the gate requires `SkimmerDamagePrismEffectSO` in the
+skimmer's own effect container, and that effect is authored ONCE
+(`_SO_Assets/Effects/Skimmer Prism Effects/SkimmerDamagePrismEffect.asset`) and referenced by
+exactly one container: `RhinoForceFieldSkimmerImpactorDataContainer`. Dolphin, Manta-overcharge,
+Sparrow and Squirrel skimmers never call `Prism.Damage`, so they never deflect anything. The
+Rhino's forcefield skimmer is the sole vessel that can, which is consistent — that is its
+shield-swipe surface, where damaging mass is the point. (`RhinoSkimmerDamagePrismEffectSO`, a
+different SO, branches super-shield contact into `BounceBack` before any damage call.)
+
+This is worth stating explicitly because the opposite reads as obviously true: the effect SO does
+funnel into `Prism.Damage` with no shield check, so "a skim is a hit" is correct *about the SO*
+and wrong *about the fleet*. Whether a given vessel deflects on skim is a question about that
+vessel's container, not about this feature — the same class of claim CLAUDE.md already records
+for the prism-collision slow, which three docs asserted fleet-wide for vessels that had no speed
+effect wired at all. Check the container before repeating either claim.
 
 **Costs.** Zero per-frame CPU: one stamp per hit (rate-limited per prism, default 0.12 s — a swept
 piercing projectile re-dispatches the same prism every frame it overlaps, a drone swarm re-queues
