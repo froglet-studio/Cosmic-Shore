@@ -21,6 +21,6 @@ MonoBehaviour:
   projectileTime: 2
   projectileScale: 1
   generationsAtRestingCharge: 1
-  generationsAtFullCharge: 3
+  generationsAtFullCharge: 2
   generationRangeFalloff: 0.75
   chainsOnChargeUpgrade: 0

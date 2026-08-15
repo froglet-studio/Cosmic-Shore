@@ -166,9 +166,20 @@ add(f"{ACTIONS}/UrchinSpikeVolleyAction.asset", "UrchinSpikeVolleyAction", "Urch
     "  projectileTime: 2\n"
     "  projectileScale: 1\n"
     "  generationsAtRestingCharge: 1\n"
-    "  generationsAtFullCharge: 3\n"
+    "  generationsAtFullCharge: 2\n"
     "  generationRangeFalloff: 0.75\n"
     "  chainsOnChargeUpgrade: 0\n")
+
+# Depth ladder, worst case per SEEDED hit (every child finding fresh enemy mass), from
+# FireSpherical's own formula points = 2*(energy+3) with children at energy-1:
+#     depth 1 ->      8 spikes
+#     depth 2 ->     90 spikes      <- shipped ceiling, at Charge 10
+#     depth 3 ->  1,092 spikes
+#     depth 4 -> 15,302 spikes
+# Every spike is a live trigger collider, so the ladder is a collider-budget decision, not
+# a feel one. Depth 2 is spectacular and affordable; 3 and 4 are supported by the SO and
+# deliberately not shipped. The real-world count is far below the worst case because a
+# converted prism stops accepting spikes, but the budget has to survive the worst case.
 
 # CHARGE: the free omni barrage. "Fire free spikes in all directions that steal blocks,
 # and even other player's trails" - so ammoCost 0, and no chain until Overcharge.
