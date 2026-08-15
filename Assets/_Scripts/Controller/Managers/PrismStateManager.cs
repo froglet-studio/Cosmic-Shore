@@ -42,17 +42,17 @@ namespace CosmicShore.Gameplay
         /// renderer off until reveal), and the grow-in bloom that follows already carries
         /// its "nothing pops into existence" transition — exactly the reasoning
         /// MaterialPropertyAnimator already applies to spawn-paint ("a creation, not a
-        /// recolor"). A morph here is invisible by construction and it costs a great deal:
-        ///   • it holds _exoticVisualActive across the reveal instant, so the prism has no
-        ///     companion render entity when BeginGrowthAnimation stamps the ONE-SHOT grow
-        ///     clock — the bloom is lost and the prism SNAPS (the C13 repro:
-        ///     "[PrismClock] STRICT MODE: no companion render entity to stamp");
-        ///   • it keeps the prism on the un-batched GameObject MeshRenderer for the whole
-        ///     morph — thousands of extra draw calls during an arena build;
-        ///   • it registers every such prism with PrismOctahedronShieldManager and rebuilds
-        ///     a per-prism morph mesh EVERY FRAME for engageDuration, on the frames a mass
-        ///     environment lay can least afford it;
-        ///   • it fires one ShieldActivate SFX per prism laid.
+        /// recolor"). A morph here is invisible by construction, and it still costs:
+        ///   • one ShieldActivate SFX per prism laid — audible even though the morph is not;
+        ///   • a shield-morph stamp on a prism whose grow-in bloom is the transition that
+        ///     actually carries its continuity, so the two would animate over each other.
+        /// Two costs this rule used to carry are GONE with the GPU morph migration
+        /// (Docs/PRISM_ANIMATION.md §5 B4) and must not be cited as reasons any more: the
+        /// morph no longer holds _exoticVisualActive across the reveal instant (which was
+        /// the C13 repro — the ONE-SHOT grow stamp had no companion entity to land on and
+        /// the prism snapped), and it no longer strands the prism on the un-batched
+        /// GameObject renderer rebuilding a per-prism mesh every frame. The rule stands on
+        /// the two reasons above.
         /// A shield engaged later, on a live prism (skim/steal/ability), still blooms.
         /// </summary>
         bool IsBirthTransition => prism != null && !prism.IsCreationComplete;
