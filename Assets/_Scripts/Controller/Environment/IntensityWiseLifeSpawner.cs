@@ -145,7 +145,11 @@ namespace CosmicShore.Gameplay
             SpawnProfileSO spawnProfile,
             FaunaConfigurationSO faunaCfg)
         {
-            int initialCount = Mathf.Max(0, faunaCfg.InitialSpawnCount);
+            // Cell density scalar, the fauna twin of the flora one above: the SpawnProfile is the
+            // per-intensity asset, so scaling the seed batch here is how one cell config carries
+            // more wildlife than another out of the same species assets. Asked of the CELL, which
+            // owns the profile - see Cell.ResolveFaunaPopulation for why every producer must.
+            int initialCount = Mathf.Max(0, host.ResolveFaunaPopulation(faunaCfg.InitialSpawnCount));
             float initialInterval = Mathf.Max(0f, spawnProfile.FaunaSpawnIntervalSeconds);
 
             // Initial batch - gated on FaunaSpawningEnabled (cell holds mass) +
@@ -196,13 +200,13 @@ namespace CosmicShore.Gameplay
             // SpawnProfileSO.InitialFaunaReleaseTier) leave every shipped biome unchanged.
             if (faunaCfg.ReleaseTier > host.FaunaReleaseTier) return;
 
-            // Honour the authored performance backstop. This loop spawns ONE creature per tick
-            // forever, so without a cap a long match walks a species past MaxLivePopulation -
-            // the number the collider budget was sized against - even though reproduction
+            // Honour the performance backstop. This loop spawns ONE creature per tick forever,
+            // so without a cap a long match walks a species past MaxLivePopulation - the number
+            // the collider budget was sized against - even though reproduction
             // (Fauna.TryReproduce) respects it. The other spawner has always capped here
-            // (FaunaReproductionRules.SeedSpawnCount); 0 still means uncapped.
-            if (faunaCfg.MaxLivePopulation > 0 &&
-                host.GetLiveFaunaCount(faunaCfg) >= faunaCfg.MaxLivePopulation) return;
+            // (FaunaReproductionRules.SeedSpawnCount); 0 still means uncapped. The CELL resolves
+            // it so the cap moves with the profile's FaunaPopulationScale (Cell.IsFaunaAtCap).
+            if (host.IsFaunaAtCap(faunaCfg)) return;
 
             // Prefer the crystal as the initial goal, but fall back to the cell's own
             // position. The previous implementation silently skipped spawning when no

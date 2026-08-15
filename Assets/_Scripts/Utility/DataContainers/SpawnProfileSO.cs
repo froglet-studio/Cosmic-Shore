@@ -64,6 +64,22 @@ namespace CosmicShore.Utility
                  "a runtime-only seal races it and loses whenever the cell wins.")]
         public int InitialFaunaReleaseTier = int.MaxValue;
         [Min(0f)] public float FaunaSpawnVolumeThreshold = 1f;
+
+        [Tooltip("HOW MANY creatures this cell carries, as a multiplier on every species' " +
+                 "FaunaConfigurationSO seed counts AND its MaxLivePopulation cap. 1 = exactly as " +
+                 "authored, and every shipped biome leaves it there.\n\n" +
+                 "The fauna twin of FloraPopulationScale, and it exists for the same reason: a " +
+                 "SpawnProfile forks per intensity for free under CellTypeChoiceOptions.IntensityWise, " +
+                 "so one profile per intensity is the natural home for 'how much wildlife is there', " +
+                 "while the species assets keep owning what each creature IS. Rampage rides it 1x/2x/" +
+                 "3x/4x - and its two species are the SHARED Blob assets, which is exactly why the " +
+                 "scalar has to live here and not on them.\n\n" +
+                 "It scales the CAP as well as the floors on purpose: MaxLivePopulation is what " +
+                 "actually bounds the standing population, so a scalar that moved only the seed " +
+                 "counts would be clamped away above ~1.5x and read as doing nothing. Scaling " +
+                 "PRODUCTION is all this does - nothing is ever culled to meet a lowered scale " +
+                 "(Docs/ECOSYSTEM.md 0: no imposed death).")]
+        [Min(0f)] public float FaunaPopulationScale = 1f;
         [Tooltip("Fixed period (seconds) between fauna spawn-cycle ticks - the ecosystem heartbeat. " +
                  "Platform default is 30s; scoring modes that ride the wave clock (Brood Rush) depend on it.")]
         [Min(0f)] public float BaseFaunaSpawnTime = 30f;
@@ -109,5 +125,30 @@ namespace CosmicShore.Utility
         
         public FloraConfigurationSO GetRandomFlora() => SupportedFloras[0];
         public FaunaConfigurationSO GetRandomFauna() => SupportedFaunas[0];
+
+        /// <summary>
+        /// This cell's take on an authored fauna population number - a seed count
+        /// (<c>InitialSpawnCount</c> / <c>PopulationSize</c>) or a cap
+        /// (<c>MaxLivePopulation</c>) - scaled by <see cref="FaunaPopulationScale"/>.
+        ///
+        /// <para>Read it through <c>Cell.ResolveFaunaPopulation</c> rather than calling it
+        /// directly: every producer (both spawners, reproduction, the freestyle conveyor)
+        /// already holds the cell, and routing them all through one accessor is what stops
+        /// the scalar from being live in one producer and dead in the next.</para>
+        ///
+        /// <para><b>0 passes through unchanged</b> so "uncapped" stays uncapped, and a
+        /// non-positive scale is treated as 1 so an unauthored field can never empty a biome.
+        /// Rounds half UP explicitly - <c>Mathf.RoundToInt</c> is banker's rounding, which
+        /// would send an authored 5 x 1.5 one way and a 7 x 1.5 the other for no stated
+        /// reason (the same rule the flora scalar follows).</para>
+        /// </summary>
+        public int ScaleFaunaPopulation(int authored)
+        {
+            if (authored <= 0) return authored;
+            if (FaunaPopulationScale <= 0f || Mathf.Approximately(FaunaPopulationScale, 1f))
+                return authored;
+
+            return Mathf.Max(1, Mathf.FloorToInt(authored * FaunaPopulationScale + 0.5f));
+        }
     }
 }

@@ -3560,3 +3560,108 @@ never silently starts a spawner on the wrong arena.
 state must be gated on that state having replicated. `Cell.IntensityIndex` also floors at 1 and
 warns when the selected intensity exceeds the authored config count — a mode offering four
 intensities over two configs would otherwise serve the same arena for 3 and 4 in silence.
+
+## 29. Intensity as SCARCITY, not size — the fauna density scalar (Aug 2026, Rampage)
+
+Rampage's intensity ladder was rebuilt. It used to thin the FOREST (§28.1: intensity 1 grew half
+the plants of intensity 4). It no longer touches the forest at all — **every intensity now grows
+intensity 4's arena, prism for prism** — and instead moves two things in opposite directions:
+
+| | I1 | I2 | I3 | I4 |
+|---|---|---|---|---|
+| omni crystals | 2 × players | players | players − 1 (min 1) | **1** |
+| wildlife (`FaunaPopulationScale`) | 1× | 2× | 3× | **4×** |
+| forest | 9,830 seeded prisms — **identical at every intensity** | | | |
+
+The mode-specific reasoning is in `_Scripts/Controller/Arcade/RAMPAGE.md`; two platform
+capabilities and one general rule came out of it.
+
+### 29.1 `SpawnProfileSO.FaunaPopulationScale` — the fauna twin of §28.1
+
+One scalar, defaulting to 1, multiplying every species' `InitialSpawnCount`, `PopulationSize`
+**and `MaxLivePopulation`**. Same argument as the flora scalar: a SpawnProfile forks per
+intensity for free under `CellTypeChoiceOptions.IntensityWise`, so it is the natural home for
+"how much wildlife is there", while the species assets keep owning what each creature IS.
+
+Rampage makes that argument unavoidable rather than merely tidy: its two species are the
+**shared Blob assets**, referenced straight out of `Blob Cell/`. Editing them to stock Rampage
+would restock Menu\_Main's lava lamp with it. There was no per-mode asset to tune even if forking
+four ways had been acceptable.
+
+**It scales the CAP, and that is the load-bearing half.** `MaxLivePopulation` is documented as a
+performance backstop rather than the primary control, which makes it easy to leave alone — but it
+is what actually bounds a standing population. The tadpole floor is 4 and its cap is 6, so a
+scalar that moved only the floor would be clamped away above ~1.5× and read as doing nothing at
+all. Floor and cap move together or the lever is inert.
+
+**Nothing is culled.** Lowering a scale gates PRODUCTION — the seeder stops topping up and
+reproduction stops filling — and existing creatures live until starvation or predation takes
+them. That is the same permission `FaunaConfigurationSO.ReleaseTier` already has (§0: "gating
+production is allowed by the conserved-mass law; culling is not"). A cell that drops its scale
+mid-match does not lose a creature to the change itself.
+
+### 29.2 Route population reads through the CELL, not the config
+
+§28.1's rule was "implement it in BOTH spawners or it is dead code in exactly the modes that
+asked for it". Fauna has **four** producers, not two — `RandomLifeSpawner`,
+`IntensityWiseLifeSpawner`, `Fauna.TryReproduce` (reproduction is the actual population driver)
+and the freestyle `Microscene` conveyor — so "remember to apply it in each" is a rule that will
+be forgotten. Worse, splitting it is not merely incomplete but *incoherent*: a seeder filling to
+24 while reproduction stops at 6 is two ceilings for one number.
+
+So the resolution lives on `Cell`, which all four already hold:
+
+```
+Cell.ResolveFaunaPopulation(authored)   // seed counts and caps alike
+Cell.ResolveFaunaCap(config)            // MaxLivePopulation, 0 still means uncapped
+Cell.IsFaunaAtCap(config)               // the one place the comparison is written
+```
+
+There is now no direct read of `cfg.MaxLivePopulation` anywhere outside the config and the
+profile. A fifth producer that asks the cell gets the scalar for free; one that reads the config
+opts a species out of it silently, which is why `IsFaunaAtCap` exists rather than leaving each
+caller to write `cap > 0 && live >= cap` correctly.
+
+**Generalizes:** any future per-cell modifier of a per-species number belongs on `Cell`, for the
+same reason. The cell is the only object every producer of life in a biome has in hand.
+
+### 29.3 `CrystalManager.CrystalCountMode.IntensityScaled`
+
+`max(1, round(players × CrystalsPerPlayer) + ExtraCrystals)`, one entry per intensity, list order
+= intensity (index 0 is intensity 1) — the same convention as `Cell.CellConfigs`. Two numbers
+because the useful answers are not one shape: "twice as many as players" is a multiplier,
+"exactly one whatever the roster" is a flat count, and "one fewer than players" is both. Rounds
+half UP explicitly, for the §28.1 reason.
+
+Three notes for the next mode that reaches for it:
+
+- **No replication gate is needed, unlike §28.2's sticky cell config.** Both intensity readers on
+  `CrystalManager` are server-side: the count is resolved only inside `NetworkCrystalManager`'s
+  `IsServer` paths and reaches clients as the replicated slot-list LENGTH. A client never derives
+  it. That is the difference between a value a client *computes* and one it *receives*.
+- **The roster is `gameData.Players.Count`, and it is allowed to be incomplete.** Rampage spawns
+  crystals on client-ready, before everyone has arrived; `NetworkCrystalManager` re-asks on every
+  `OnPlayerAdded` and again at turn start, growing the slot list as the roster fills. AI backfill
+  counts — an AI is a player holding a Dolphin.
+- **The crystals still respawn in the NUCLEUS.** `GetAnchorlessSpawnRadius` is untouched and the
+  §27.6 coupling stands: N crystals means N crystals sharing the core, not a crystal roaming to
+  make room. A mode that wants them spread out resizes its nucleus.
+
+`CurrentIntensity` also unified the two intensity reads on that class — the serialized SOAP
+variable when a scene wires one, `GameDataSO.SelectedIntensity` (the same asset) otherwise. The
+anchor lookup previously fell back to intensity 1 whenever the field was unwired.
+
+### 29.4 Collider budget
+
+**Flora:** intensities 1–3 rise to intensity 4's forest — 9,830 seeded prisms, the arena that was
+already play-tested and already documented at 2.8× the Blob envelope as deliberate headroom. The
+worst case is unchanged; three intensities that used to sit below it no longer do, and the count
+backstop (`FrenzyEnter` 10,000) is the same at all four.
+
+**Fauna:** 8 → 32 creatures at cap between intensity 1 and 4 (tadpole 6→24, shark 2→8). That is
+the cheap dimension: a tadpole is one body prism plus its heart, a shark a small spindled body,
+so the top of the ladder adds tens of prisms against a forest of 9,830, and creature sensing
+rides the Burst density grid rather than physics. No new colliders, no new queries.
+
+**Crystals:** at most `2 × players` = 8 at intensity 1, each a single trigger collider.
+

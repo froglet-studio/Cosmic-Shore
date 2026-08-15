@@ -155,6 +155,7 @@ MonoBehaviour:
   spike: 0
   growthRate: 1
   friendlyFire: 1
+  sweptPrismDetection: 1
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
 --- !u!114 &4476692679679402743
 MonoBehaviour:

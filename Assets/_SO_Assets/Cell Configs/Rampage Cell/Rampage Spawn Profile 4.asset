@@ -27,6 +27,7 @@ MonoBehaviour:
   FaunaExcludeLocalDomain: 0
   InitialFaunaSpawnWaitTime: 10
   FaunaSpawnVolumeThreshold: 1
+  FaunaPopulationScale: 4.0
   BaseFaunaSpawnTime: 30
   FaunaFoodFloor: 5
   FaunaInitialDelaySeconds: 0

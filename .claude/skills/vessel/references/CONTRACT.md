@@ -305,6 +305,25 @@ warning). Be exhaustive here; this is the contract's least-guarded clause.
   — leave per-vessel `skimmerCrystalEffectsSO` empty; do not duplicate pickup logic.
 - **Crackle opt-in = two halves**: the `ForcefieldCrackleController` on the skimmer GO +
   `SkimmerForcefieldCracklePrismEffect` in the skimmer container.
+- **A fast projectile is a TELEPORT, not a sweep — it only tests the points it LANDS on.**
+  `Projectile.MoveProjectileAsync` writes `position += Velocity·Δt` and PhysX samples the
+  discrete trigger once per physics step, so the path BETWEEN samples is never tested. Measured
+  on the Sparrow: at its base 375 u/s a round covers 6.25 u per 60 fps frame behind a 1.65
+  hit sphere — **26% of its own path**, ~3% at high SPACE, and it halves again at 30 fps. The
+  symptom is a gun that cannot clear a dense patch no matter how much you shoot, with no misses
+  to see; the tell is *"making the projectile bigger fixes it"*, because a big enough ball closes
+  the per-frame gap. Fix with `PrismSpatialIndex.QuerySegment` +
+  `Projectile.sweptPrismDetection` (dispatch nearest-first, and have the sweep OWN the contact
+  class so the trigger cannot double-fire) — never by inflating the collider, and never with
+  `Physics.SphereCast` (CLAUDE.md forbids physics queries against prisms; a transform teleport
+  also bypasses CCD entirely). Rate and spread cannot compensate: they multiply a path the
+  weapon is structurally blind to.
+- **A `SphereCollider`'s world radius is `m_Radius × the LARGEST lossy-scale component`** — this
+  trap has now bitten the same vessel twice. Once as the 12-diameter hit sphere nobody authored
+  (a `0.3` radius on a tracer stretched ×20 in z), and again when growing a round's
+  cross-section only: the untouched z-stretch stays the max, so a radius re-derived from
+  `lossyScale` never moves. Author it as `desiredWorldRadius / maxScaleComponent`, and when a
+  size must track a non-uniform scale, carry the factor EXPLICITLY rather than re-deriving.
 - **Hygiene**: renaming container fields without `[FormerlySerializedAs]` silently strips
   authored effects (Sparrow lost all elemental-crystal feedback this way); an effect asset that
   exists but sits in no container executes never (several orphans exist); fork shared effect SOs
