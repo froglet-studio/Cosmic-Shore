@@ -81,6 +81,17 @@ namespace CosmicShore.Gameplay
 
         public static bool IsClaimed(Vector3 center) => Find(center).list != null;
 
+        /// <summary>Live octagon claims - the colony's plant count, for diagnostics.</summary>
+        public static int ClaimCount
+        {
+            get
+            {
+                int n = 0;
+                foreach (var list in bins.Values) n += list.Count;
+                return n;
+            }
+        }
+
         /// <summary>
         /// Squared distance from <paramref name="position"/> to the nearest claimed centre,
         /// excluding <paramref name="except"/>'s own. float.MaxValue when none is in range.

@@ -18,6 +18,41 @@ namespace CosmicShore.Gameplay
     }
 
     /// <summary>
+    /// Colony-wide event counters for the gyroid octagon population, plus a 5s heartbeat the
+    /// FOUNDER logs. Diagnostics, not gameplay: the Gyroid Lab exists to observe this system,
+    /// and its second playtest produced a symptom (a crystal/spindle flood outrunning grown
+    /// prisms) that code reading alone could not attribute - so the decisive sites now report.
+    /// Volume is naturally low (births and mints are rare events in a healthy colony; a SPAMMING
+    /// counter in the console IS the diagnosis). Always compiled - plain CSDebug, no editor-only
+    /// guards (Docs/CONDITIONAL_COMPILATION.md).
+    /// </summary>
+    public static class GyroidColonyDiagnostics
+    {
+        public static int Births;
+        public static int BirthsHeldByMaturity;
+        public static int ReseedMintsBlocked;
+        public static int DeclinedForeignSites;
+        public static int GrownPrisms;
+        public static int SeededDaughterPrisms;
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void Reset()
+        {
+            Births = 0;
+            BirthsHeldByMaturity = 0;
+            ReseedMintsBlocked = 0;
+            DeclinedForeignSites = 0;
+            GrownPrisms = 0;
+            SeededDaughterPrisms = 0;
+        }
+
+        public static string Summary =>
+            $"claims={GyroidOctagonRegistry.ClaimCount} births={Births} heldByMaturity={BirthsHeldByMaturity} " +
+            $"grown={GrownPrisms} seeded={SeededDaughterPrisms} foreignDeclines={DeclinedForeignSites} " +
+            $"mintsBlocked={ReseedMintsBlocked} prismsPerCrystal={(GyroidOctagonRegistry.ClaimCount > 0 ? (float)(GrownPrisms + SeededDaughterPrisms) / GyroidOctagonRegistry.ClaimCount : 0f):F1}";
+    }
+
+    /// <summary>
     /// A flora that uses an <c cref="Assembler">Assembler</c> to define its growth pattern
     /// </summary>
     public class AssembledFlora : Flora
@@ -220,6 +255,7 @@ namespace CosmicShore.Gameplay
                     !OwnsLatticeSite(gyroidInfo.Position))
                 {
                     (branch.assembler as GyroidAssembler)?.DeclineGrowthSite(gyroidInfo.Site);
+                    GyroidColonyDiagnostics.DeclinedForeignSites++;
                     continue;
                 }
 
@@ -328,6 +364,7 @@ namespace CosmicShore.Gameplay
             // Docs/ECOSYSTEM.md §32). Counted where the prism actually lands, not where the
             // order was decided, so a dropped or lapsed order funds nothing.
             NotifyGrew();
+            if (OctagonMode) GyroidColonyDiagnostics.GrownPrisms++;
 
             // Parent retirement, evaluated after the child exists — same ordering
             // as the old inline loop.
@@ -437,6 +474,12 @@ namespace CosmicShore.Gameplay
                 _octagonCenter = center;
                 PlaceCrystalAtCenter();
                 _ringMembers.Add(new RingMember { Position = position, Rotation = rotation, Type = type });
+                // A discovered (not inherited) centre marks a FOUNDER - it takes on the colony
+                // heartbeat. Invoke (not a coroutine) so Die's StopAllCoroutines can't silence
+                // the report while the husk lingers.
+                CSDebug.Log($"[GyroidColony] FOUNDER {name} claimed centre {center} " +
+                            $"(prism {type} at {position})");
+                InvokeRepeating(nameof(LogColonyHeartbeat), 5f, 5f);
                 return;
             }
 
@@ -464,6 +507,14 @@ namespace CosmicShore.Gameplay
             healthTracker.Count >= GyroidOctagonData.PatchPrisms - 6 &&
             pendingSpawns.Count == 0 &&
             _idleGrowTicks >= 2;
+
+        void LogColonyHeartbeat()
+        {
+            CSDebug.Log($"[GyroidColony] t={Time.time:F0}s {GyroidColonyDiagnostics.Summary} | " +
+                        $"founder: prisms={(healthTracker != null ? healthTracker.Count : -1)} " +
+                        $"ring={_ringMembers.Count} idle={_idleGrowTicks} " +
+                        $"branches={activeBranches.Count} pending={pendingSpawns.Count} mature={OctagonMature}");
+        }
 
         /// <summary>
         /// The ownership gate - what makes many small plants TILE the surface instead of racing
@@ -594,7 +645,11 @@ namespace CosmicShore.Gameplay
             // A gyroid reproduces only when it has FULLY GROWN all its spindles and health
             // prisms (see OctagonMature). The quota may have been banked long before - the
             // armed retry simply waits here until the plant's own frontier is done.
-            if (!OctagonMature) return false;
+            if (!OctagonMature)
+            {
+                GyroidColonyDiagnostics.BirthsHeldByMaturity++;
+                return false;
+            }
 
             var spatialIndex = PrismSpatialIndex.EnsureInstance();
 
@@ -625,6 +680,10 @@ namespace CosmicShore.Gameplay
 
                     _pendingOffspringCenter = center;
                     _hasPendingOffspringClaim = true;
+                    GyroidColonyDiagnostics.Births++;
+                    CSDebug.Log($"[GyroidColony] BIRTH #{GyroidColonyDiagnostics.Births} by {name}: " +
+                                $"prisms={healthTracker.Count} ring={_ringMembers.Count} " +
+                                $"idle={_idleGrowTicks} -> daughter at {center} seed {neighbors[n].SeedType}");
                     _pendingOffspringSeed = new GyroidGrowthInfo
                     {
                         CanGrow = true,
@@ -700,6 +759,20 @@ namespace CosmicShore.Gameplay
 
             if (survivors.Count == 0)
             {
+                // An octagon plant must NOT mint a fresh root here: its root sits at the ring
+                // CENTRE - the middle of the window, not a lattice site - so the minted prism
+                // would be off-lattice, its growth sites garbage, and with the plant unable to
+                // die (nothing removed a prism through the tracked path) this repeats every
+                // grow tick: a spindle-minting loop. A prismless octagon plant just waits;
+                // grazing that empties it kills it through the normal lethality path instead.
+                if (OctagonMode)
+                {
+                    GyroidColonyDiagnostics.ReseedMintsBlocked++;
+                    CSDebug.LogWarning($"[GyroidColony] {name}: ZERO surviving prisms with a live " +
+                                       $"tracker (count={(healthTracker != null ? healthTracker.Count : -1)}) - " +
+                                       $"off-lattice reseed mint BLOCKED");
+                    return;
+                }
                 CreateNewAssembler();
                 return;
             }
@@ -818,7 +891,10 @@ namespace CosmicShore.Gameplay
                     newHealthPrism.MakeDangerous();
                     // The octagon daughter's seed IS her first ring member.
                     if (OctagonMode && _seedGrowth is GyroidGrowthInfo sg)
+                    {
                         RegisterDangerPrism(sg.BlockType, _seedGrowth.Position, _seedGrowth.Rotation);
+                        GyroidColonyDiagnostics.SeededDaughterPrisms++;
+                    }
                 }
             }
 
