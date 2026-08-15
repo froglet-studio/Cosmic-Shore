@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using NUnit.Framework;
 using UnityEngine;
+using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
 
 namespace CosmicShore.Tests
