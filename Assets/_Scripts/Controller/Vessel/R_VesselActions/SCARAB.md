@@ -413,6 +413,75 @@ Balls are made from **crystal energy**, not spawned by the mode:
    it **materialises that crystal into a ball**, carrying **inherited velocity** from the impact.
 3. The meter drains by the ball's cost, and the crystal respawns as normal.
 
+**Two things forge, one place mints.** A hull flying through a crystal
+(`ScarabBallForgeByCrystalEffectSO`) and a BLAST engulfing one
+(`ScarabBallForgeByExplosionEffectSO`) both route through `ScarabBallForge`, which owns the spawn,
+the network gate, the SPACE size stamp and the client→server hop. Writing the spawn twice is how
+the two would drift apart on the one thing that must never differ — what a ball *is*.
+
+The blast variant exists because the cavitation punch is the Scarab's REACH weapon, and until it
+could forge, it was the only one of the vessel's four tools that could not make a payload: a
+crystal parked behind a wall of your own trail was simply unreachable. The forged ball is born
+**at the crystal** and leaves along the blast's own outward radial — the blast is the thing doing
+the forging, so it is the blast that aims — with the launch speed part authored and part read off
+the blast's real `ExplosionImpulse`, so a harder-throwing blast fires the payload harder for the
+same reason it throws prism debris harder.
+
+**Blast → crystal is dispatched by an explicit overlap, NOT by the trigger, and that is
+load-bearing.** Crystals sit on layer 9 and explosions on layer 10, and that pair is **disabled**
+in the project's collision matrix — so the obvious implementation (a `case OmniCrystalImpactor` in
+`ExplosionImpactor.AcceptImpactee`, next to the vessel and prism cases the crystal's own
+`ImpactCollider` already feeds) compiles, reads correctly, and never fires once. The alternative
+was enabling that layer pair project-wide, which would mint trigger pairs between every blast and
+every crystal in every mode to serve one weapon. `ExplosionImpactor.SweepCrystals` queries
+instead, and skips the query entirely unless the blast AUTHORS `explosionCrystalEffects` — so the
+other twelve AOE prefabs pay one null array check per frame. There is a comment in the switch
+saying why no case lives there; do not tidy it back in.
+
+**A blast forging is authored per blast.** `ExplosionImpactorDataContainerSO.explosionCrystalEffects`
+is empty on every explosion in the fleet except `ScarabCavitationExplosionImpactorDataContainer` —
+a Dolphin crystal cone hitting the same crystal must not start minting Astro League balls. The
+crystal is spent through `OmniCrystalImpactor.ConsumeByBlast`, which is the collect path's own
+retirement (bloom out, respawn — continuity of existence) behind the same `IsImpacting` /
+`IsExploding` / `IsNetworkClient` guards, plus `IsDomainMatching`: a blast must not be a way past
+a gate a hull cannot pass.
+
+**The client→server hop is not optional.** The ball is a NetworkObject, so only the server may
+spawn one. The vessel-impact forge reaches the server for free because it arrives through
+`NetworkVesselImpactor`'s ServerRpc → ClientRpc fan-out. A blast does not:
+`ScarabJukeController` reads local input in `Update`, so the cavitation explosion exists **only on
+the juking pilot's machine**, and a plain server gate would have silently meant "only the host can
+forge from a blast". `Player.RequestForgeBall_ServerRpc` closes it on the fauna-kill / combat-hit
+precedent: the client asks, and the server re-derives everything that decides what the ball IS —
+domain, SPACE size, and the prefab itself, read off that player's own vessel
+(`ScarabBallForge.ResolvePrefabFor`) — so only the placement rides the wire and a client can only
+ever forge its own ball.
+
+### 4.1a Explosions move the ball
+
+A blast shoves the ball the way it shoves prism mass: the ball takes the blast's **own** impact
+vector (`AOEExplosion.CalculateImpactVector`, i.e. `ExplosionImpulse.Along(radial)`), so a weapon
+tuned to throw mass hard throws the payload hard and there is no second tuning surface to drift
+from the first. There is no distance falloff, because prisms do not get one either — the blast
+either reached you or it did not.
+
+Before this, an explosion passed straight through the ball. Nothing in the mode could move the
+payload except a hull or a blade, which quietly made every AOE weapon useless on the one object
+the match is about.
+
+| property | behaviour | why |
+|---|---|---|
+| Dispatch | `ExplosionImpactor.OnTriggerEnter` recognises `AstroLeagueBall` directly | Ball (layer 0) × Explosions (layer 10) **is** enabled, unlike crystals, so the trigger already fires — and a growing trigger enters exactly once per blast, which is the semantics we want for free |
+| No `ImpactCollider` / impactor pair | The response is one fixed physics impulse with no authored variation | Same reason `ExecuteCommonPrismCommands` is hard-coded alongside the prism effect list |
+| Claim | A blast **re-colours** the ball to the blasting domain | Same rule as a strike: whoever touched it last owns it. Blowing the payload is a way to claim it |
+| Friendly fire | None — the blast's own domain is never a reason to skip | Blasting your OWN ball toward the goal is a play, not an accident |
+| Spin | The impulse is applied off-centre at the blast-facing surface | The split form of `AddForceAtPosition` the vessel strike already uses — a blast tumbles the ball instead of sliding it flat |
+| Ceiling | Re-clamped to `AstroLeagueSettingsSO.maxSpeed` | The ball's own universal bound, so a blast can never launch it past what the mode can simulate |
+| Client blasts | `AstroLeagueBall.RequestBlast` → `Player.RequestBlastBall_ServerRpc` | Blasts are local, the ball is server-simulated; without the hop "explosions move the ball" would mean "the *host's* explosions move the ball", which reads as netcode jitter rather than as a missing feature |
+
+Dials: `explosionsAffectBall`, `explosionKickMultiplier`, `explosionSpinFraction`,
+`explosionClaimsBall` on `AstroLeagueSettingsSO`.
+
 Two things make this the right shape rather than a spawn button. First, it is an **aimed act**:
 you must fly *through* a crystal at the speed and heading you want the ball to have, so making a
 ball is a piece of driving, not a menu choice — and the vessel's own throttle/drift skill sets

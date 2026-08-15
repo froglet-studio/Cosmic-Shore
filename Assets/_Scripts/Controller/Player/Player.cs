@@ -162,6 +162,66 @@ namespace CosmicShore.Gameplay
             CombatHitScoring.Credit(RoundStats, resolved, gameData != null ? gameData.ScoringRule : null);
         }
 
+        /// <summary>
+        /// Owner-side request to mint an Astro League ball — the forge counterpart of
+        /// <see cref="ReportFaunaKill_ServerRpc"/> and <see cref="ReportCombatHit_ServerRpc"/>,
+        /// and the only way a CLIENT's cavitation blast can ever forge one.
+        ///
+        /// The ball is a NetworkObject, so only the server may spawn it. The vessel-impact forge
+        /// reaches the server for free, because it arrives through NetworkVesselImpactor's
+        /// ServerRpc → ClientRpc fan-out. A blast does not: ScarabJukeController reads local
+        /// input in Update, so the explosion exists only on the juking pilot's machine, and a
+        /// plain server gate would silently mean "only the host can forge from a blast".
+        ///
+        /// IDENTITY AND AUTHORITY COME FROM OWNERSHIP, NOT FROM THE PAYLOAD.
+        /// <c>RequireOwnership = true</c> is the default, so a client can only ever ask on its
+        /// own behalf — and everything that decides what the ball IS (its domain, its SPACE size,
+        /// and the prefab itself) is re-derived here from the server's own copy of that player's
+        /// vessel. Only the placement rides the wire.
+        /// </summary>
+        [ServerRpc]
+        public void RequestForgeBall_ServerRpc(Vector3 at, Vector3 velocity)
+        {
+            using var _ = CosmicShore.Utility.PerformanceBenchmark.NetMarkers.RpcDispatch.Auto();
+            CosmicShore.Utility.PerformanceBenchmark.NetMarkers.CountRpc();
+
+            var status = Vessel?.VesselStatus;
+            if (status == null) return;
+
+            var prefab = ScarabBallForge.ResolvePrefabFor(Vessel);
+            if (prefab == null) return;   // this vessel authors no forge — nothing to mint
+
+            ScarabBallForge.Spawn(prefab, at, velocity, status.Domain,
+                                  ScarabBallForge.SizeScaleFor(status));
+        }
+
+        /// <summary>
+        /// Owner-side request to let one of THIS player's blasts shove the Astro League ball —
+        /// the sibling of <see cref="RequestForgeBall_ServerRpc"/>, and for the same structural
+        /// reason: explosions are local to the machine that fired them, the ball is
+        /// server-simulated, so without this hop "explosions move the ball" would silently mean
+        /// "the host's explosions move the ball".
+        ///
+        /// The DOMAIN is re-derived here from the server's own copy of this player's vessel, so
+        /// the claim a blast makes on the ball can never be spoofed; only the geometry rides the
+        /// wire, and the ball re-clamps it against its own speed ceiling.
+        /// </summary>
+        [ServerRpc]
+        public void RequestBlastBall_ServerRpc(ulong ballNetId, Vector3 blastOrigin, Vector3 impactVector)
+        {
+            using var _ = CosmicShore.Utility.PerformanceBenchmark.NetMarkers.RpcDispatch.Auto();
+            CosmicShore.Utility.PerformanceBenchmark.NetMarkers.CountRpc();
+
+            var status = Vessel?.VesselStatus;
+            if (status == null) return;
+
+            var nm = NetworkManager.Singleton;
+            if (nm == null || !nm.SpawnManager.SpawnedObjects.TryGetValue(ballNetId, out var netObj)) return;
+            if (netObj == null || !netObj.TryGetComponent(out AstroLeagueBall ball)) return;
+
+            ball.ApplyBlastServer(blastOrigin, impactVector, status.Domain);
+        }
+
         public string Name { get; private set; }
         public int AvatarId { get; private set; }
         // NOTE: PlayerUUID is the DISPLAY NAME, not a unique id - two players can choose the

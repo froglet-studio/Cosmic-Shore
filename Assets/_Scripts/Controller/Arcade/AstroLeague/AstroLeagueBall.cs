@@ -1114,6 +1114,103 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// SERVER: an AOE blast reached the ball. The payload is shoved the way prism mass is
+        /// shoved — with the blast's OWN impact vector (<see cref="AOEExplosion.CalculateImpactVector"/>,
+        /// i.e. <c>ExplosionImpulse.Along(radialDirection)</c>), so a weapon tuned to throw mass
+        /// hard throws the ball hard and no second tuning surface exists to drift from the first.
+        /// There is no distance falloff because prisms do not get one either: the blast either
+        /// reached you or it did not.
+        ///
+        /// Before this, an explosion passed straight through the ball. Nothing in the mode could
+        /// move the payload except a hull or a blade, which quietly made every AOE weapon useless
+        /// on the one object the match is about.
+        ///
+        /// A blast also CLAIMS the ball (<see cref="AstroLeagueSettingsSO.explosionClaimsBall"/>),
+        /// on the same rule as a strike: whoever touched it last owns it. And unlike a prism, the
+        /// ball has no friendly-fire exemption — blowing your OWN ball toward the goal is a play,
+        /// not an accident, so the blast's domain is never a reason to skip.
+        /// </summary>
+        /// <param name="blastOrigin">Centre the impact vector radiates from.</param>
+        /// <param name="impactVector">The blast's impact vector at the ball's position — already
+        /// direction × magnitude, exactly as a prism receives it.</param>
+        /// <param name="blastDomain">Domain that fired the blast; claims the ball.</param>
+        /// <summary>
+        /// Route a blast to the ball from whichever peer owns the explosion. Blasts are LOCAL —
+        /// a projectile or a juke-fired cavitation punch exists only on the machine that fired
+        /// it — while the ball is server-simulated, so a client's blast has to ask. Without this
+        /// hop, "explosions move the ball" would quietly mean "the host's explosions move the
+        /// ball", which is the kind of asymmetry that reads as netcode jitter rather than as a
+        /// missing feature.
+        /// </summary>
+        public static void RequestBlast(AstroLeagueBall ball, IVessel source, Vector3 blastOrigin,
+                                        Vector3 impactVector, Domains blastDomain)
+        {
+            if (ball == null) return;
+
+            if (!ball.IsSpawned || ball.IsServer)
+            {
+                ball.ApplyBlastServer(blastOrigin, impactVector, blastDomain);
+                return;
+            }
+
+            // Client: ask through our own Player, so ownership is the identity check and the
+            // server decides the domain from its own copy of that player's vessel.
+            var player = source?.VesselStatus?.Player as Player;
+            if (player == null || !player.IsSpawned || !player.IsOwner) return;
+            player.RequestBlastBall_ServerRpc(ball.NetworkObjectId, blastOrigin, impactVector);
+        }
+
+        public void ApplyBlastServer(Vector3 blastOrigin, Vector3 impactVector, Domains blastDomain)
+        {
+            if (settings == null || !settings.explosionsAffectBall) return;
+            if (IsSpawned && !IsServer) return;
+            if (n_Frozen.Value || n_Hidden.Value) return;
+
+            Vector3 kick = impactVector * settings.explosionKickMultiplier;
+            if (kick.sqrMagnitude < 1e-6f) return;
+
+            Vector3 desired = rb.linearVelocity + kick;
+            if (desired.sqrMagnitude > settings.maxSpeed * settings.maxSpeed)
+                desired = desired.normalized * settings.maxSpeed;
+
+            Vector3 before = rb.linearVelocity;
+            rb.linearVelocity = desired;
+
+            // Spin comes from applying the impulse off-centre, at the point on the ball's surface
+            // facing the blast — the split form of AddForceAtPosition, same as VesselStrike uses,
+            // so a blast tumbles the ball instead of sliding it flat.
+            if (settings.explosionSpinFraction > 0f)
+            {
+                Vector3 toBall = transform.position - blastOrigin;
+                Vector3 facing = toBall.sqrMagnitude > 1e-6f ? -toBall.normalized : Vector3.up;
+                Vector3 contact = transform.position + facing * BallWorldRadius();
+                Vector3 impulse = rb.mass * (desired - before) * settings.explosionSpinFraction;
+                rb.AddTorque(Vector3.Cross(contact - rb.worldCenterOfMass, impulse), ForceMode.Impulse);
+            }
+
+            if (settings.explosionClaimsBall && blastDomain != Domains.Blue
+                && n_LastHitDomain.Value != blastDomain)
+                n_LastHitDomain.Value = blastDomain;
+
+            if (IsSpawned)
+            {
+                n_Velocity.Value = rb.linearVelocity;
+                n_AngularVelocity.Value = rb.angularVelocity;
+            }
+
+            if (settings.strikeFeedbackEnabled && IsSpawned)
+            {
+                Vector3 toBall = transform.position - blastOrigin;
+                Vector3 normal = toBall.sqrMagnitude > 1e-6f ? toBall.normalized : Vector3.up;
+                float intensity = Mathf.Clamp01(rb.linearVelocity.magnitude / settings.maxSpeed);
+                // No striker vessel: a blast is credited to the blast, so the emphasised
+                // striker shake has nobody to land on and every peer gets the shared one.
+                Strike_ClientRpc(transform.position - normal * BallWorldRadius(), normal,
+                                 intensity, 0UL, tipHit: false);
+            }
+        }
+
+        /// <summary>
         /// Vessels move via transform.position (VesselTransformer), so rigidbody velocity is ~0
         /// and VesselStatus.Speed/Course only updates on the owning peer. The server's sampled
         /// transform delta is the one source that is correct for every vessel; Speed/Course is

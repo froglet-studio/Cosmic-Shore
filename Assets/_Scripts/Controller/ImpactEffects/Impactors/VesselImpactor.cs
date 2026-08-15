@@ -214,6 +214,14 @@ namespace CosmicShore.Gameplay
                 "is wired in its skimmer effect containers.");
         }
 
+        /// <summary>
+        /// This vessel's authored omni-crystal effect chain. Exposed so the server can read a
+        /// player's own forge configuration (the ball prefab) off their vessel instead of
+        /// trusting a client to send it — see <see cref="ScarabBallForge.ResolvePrefabFor"/>.
+        /// </summary>
+        public VesselCrystalEffectSO[] CrystalEffects =>
+            vesselImpactorDataContainerSO != null ? vesselImpactorDataContainerSO.VesselCrystalEffects : null;
+
         public void ExecuteOmniCrystalImpact(CrystalImpactData data)
         {
             if (!DoesEffectExist(vesselImpactorDataContainerSO.VesselCrystalEffects)) return;

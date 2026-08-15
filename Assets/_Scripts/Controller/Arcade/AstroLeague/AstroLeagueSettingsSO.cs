@@ -285,6 +285,28 @@ namespace CosmicShore.Gameplay
                  "physical depenetration. Roughly the vessel's visual hull reach.")]
         public float vesselClearRadius = 12f;
 
+        [Header("Ball - Explosions")]
+        [Tooltip("Let AOE blasts shove the ball, the way they shove prisms. The blast hands over " +
+                 "the SAME impact vector a prism receives (ExplosionImpulse.Along, no distance " +
+                 "falloff - prisms do not get one either), so a weapon that throws mass hard " +
+                 "throws the payload hard. Off restores the previous behaviour, where a blast " +
+                 "passed through the ball with no effect at all.")]
+        public bool explosionsAffectBall = true;
+
+        [Tooltip("Gain on the blast's impact vector before it is added to the ball's velocity. " +
+                 "The result is still clamped to maxSpeed, so this sets how much of a blast's " +
+                 "authored throw a much heavier payload actually keeps.")]
+        [Min(0f)] public float explosionKickMultiplier = 0.5f;
+
+        [Tooltip("Fraction of the blast kick that also arrives as SPIN, applied off-centre at the " +
+                 "blast-facing surface. 0 = a pure shove.")]
+        [Range(0f, 1f)] public float explosionSpinFraction = 0.6f;
+
+        [Tooltip("A blast RE-COLOURS the ball to the blasting domain, exactly as a vessel strike " +
+                 "does - blowing the payload is a way to claim it. Off leaves ownership alone and " +
+                 "makes the blast a pure shove.")]
+        public bool explosionClaimsBall = true;
+
         [Header("Ball - Vessel Strike (sword / blade contact)")]
         [Tooltip("Resolve a strike at the point on a SKIMMER BLADE that actually touched the ball " +
                  "(SkimmerSwingKinematics - the Rhino's sword) instead of at the vessel root. Two " +

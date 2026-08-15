@@ -71,15 +71,18 @@ namespace CosmicShore.Gameplay
                  "one vessel would change the wire format for the whole fleet.")]
         [SerializeField, Min(0f)] float _forwardClearance = 25f;
 
+        /// <summary>The ball this vessel forges. Read by the server when a CLIENT's blast asks
+        /// for a forge, so the prefab reference never has to ride the wire — see
+        /// <see cref="ScarabBallForge.ResolvePrefabFor"/>.</summary>
+        public AstroLeagueBall BallPrefab => _ballPrefab;
+
         public override void Execute(VesselImpactor vesselImpactor, CrystalImpactData data)
         {
             var status = vesselImpactor != null ? vesselImpactor.Vessel?.VesselStatus : null;
             if (status == null) return;
 
             // Runs on every peer (ClientRpc fan-out) — only the server may spawn.
-            var nm = NetworkManager.Singleton;
-            bool isServer = nm == null || !nm.IsListening || nm.IsServer;
-            if (!isServer) return;
+            if (!ScarabBallForge.CanSpawnLocally) return;
 
             var resources = status.ResourceSystem;
             Resource meter = null;
@@ -95,13 +98,6 @@ namespace CosmicShore.Gameplay
                 // Tested BEFORE the sibling energy-add effect runs (container order) — the meter
                 // must already have been full when this crystal was touched.
                 if (meter.CurrentAmount < meter.MaxAmount * _forgeThreshold) return;
-            }
-
-            if (_ballPrefab == null)
-            {
-                CSDebug.LogError("[ScarabBallForge] No ball prefab assigned — cannot forge. " +
-                                 "Wire ScarabBallForgeByCrystalEffect._ballPrefab.");
-                return;
             }
 
             var ship = status.ShipTransform ? status.ShipTransform : vesselImpactor.transform;
@@ -123,28 +119,9 @@ namespace CosmicShore.Gameplay
             Vector3 course = heading;
             Vector3 spawnAt = ship.position + course * _forwardClearance;
 
-            var ball = Object.Instantiate(_ballPrefab, spawnAt, Quaternion.identity);
-            var netObj = ball.GetComponent<NetworkObject>();
-            if (netObj == null)
-            {
-                CSDebug.LogError("[ScarabBallForge] Ball prefab has no NetworkObject — destroying.");
-                Object.Destroy(ball.gameObject);
-                return;
-            }
-
-            if (nm != null && nm.IsListening)
-                netObj.Spawn(destroyWithScene: true);
-
-            // SPACE → ball SIZE (SCARAB.md §7): ×1 at rest, ×4 at Space 10. The map's generic
-            // multiplier IS the carrier here (atFull 4), so there is no authored field to
-            // double-dip against. Read live at forge time and stamped once — the ball keeps the
-            // size it was born with.
-            float sizeScale = status.ElementalAbilityHandler != null
-                ? Mathf.Max(0.1f, status.ElementalAbilityHandler.Multiplier(Element.Space))
-                : 1f;
-            ball.SetSizeScale(sizeScale);
-
-            ball.LaunchServer(spawnAt, course * launchSpeed, status.Domain);
+            var ball = ScarabBallForge.Spawn(_ballPrefab, spawnAt, course * launchSpeed,
+                                             status.Domain, ScarabBallForge.SizeScaleFor(status));
+            if (ball == null) return;
 
             if (_requireEnergy && meter != null)
                 resources.ChangeResourceAmount(_energyResourceIndex, -meter.MaxAmount * _energyCostPerBall);

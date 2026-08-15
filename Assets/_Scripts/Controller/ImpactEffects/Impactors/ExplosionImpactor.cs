@@ -53,6 +53,13 @@ namespace CosmicShore.Gameplay
         // queue is their only resolution path. See MAX_NEW_HITS_PER_FRAME.
         private Queue<PendingExplosionHit> _batchPending;
 
+        // Blast -> crystal dispatch state (see SweepCrystals). The buffer is static because only
+        // one blast sweeps at a time on the main thread. _crystalLayerMask uses 0 for "not
+        // resolved yet" and -1 for "resolved, and this project has no Crystals layer".
+        private static readonly Collider[] s_crystalHits = new Collider[16];
+        private int _crystalLayerMask;
+        private HashSet<int> _crystalsHit;
+
         public bool IsBatchProcessing => _useBatchProcessing;
 
         /// <summary>True while budget-deferred damage is still waiting to resolve.</summary>
@@ -104,6 +111,8 @@ namespace CosmicShore.Gameplay
                 _batchPending = new Queue<PendingExplosionHit>(256);
             else
                 _batchPending.Clear();
+
+            _crystalsHit?.Clear();
         }
 
         /// <summary>
@@ -120,6 +129,10 @@ namespace CosmicShore.Gameplay
         {
             using (s_processBatch.Auto())
             {
+                // Runs whether or not the batch path is available: crystals are not prisms and
+                // are not in the spatial index, so nothing below would ever reach them.
+                SweepCrystals(center, radius);
+
                 if (!_useBatchProcessing) return true;
                 var registry = PrismSpatialIndex.Instance;
                 if (registry == null) return true;
@@ -155,6 +168,13 @@ namespace CosmicShore.Gameplay
         {
             using (s_processBatch.Auto())
             {
+                // Bounding sphere of the cone slab this frame covers. A crystal conversion is a
+                // discrete, once-per-blast event, so the sphere's slight over-reach at the cone's
+                // flanks is not worth an exact test.
+                float coneReach = Mathf.Max(sliceMax, 0f);
+                SweepCrystals(apex + axis * (coneReach * 0.5f),
+                              coneReach * (0.5f + Mathf.Max(tanCoreHalfAngle, tanGapePerUnit)));
+
                 if (!_useBatchProcessing) return true;
                 var registry = PrismSpatialIndex.Instance;
                 if (registry == null) return true;
@@ -236,6 +256,22 @@ namespace CosmicShore.Gameplay
                     return;
                 }
 
+                // The Astro League ball is shoved by a blast the same way prism mass is - see
+                // AstroLeagueBall.ApplyBlastServer. It is recognised HERE rather than through an
+                // ImpactCollider + impactor pair because the response is one fixed physics
+                // impulse with no authored variation (the same reason ExecuteCommonPrismCommands
+                // is hard-coded alongside the effect list), and because the growing trigger fires
+                // exactly once per blast per ball, which is the semantics we want for free. This
+                // lookup only runs on the non-prism trigger path, which for an explosion means
+                // vessels, crystals and mines - a handful of contacts per blast.
+                if (other.TryGetComponent(out AstroLeagueBall ball))
+                {
+                    AstroLeagueBall.RequestBlast(ball, SourceVessel, transform.position,
+                                                 explosion.CalculateImpactVector(ball.transform.position),
+                                                 explosion.Domain);
+                    return;
+                }
+
                 base.OnTriggerEnter(other);
             }
         }
@@ -269,6 +305,66 @@ namespace CosmicShore.Gameplay
                         effect.Execute(this, prismImpactee);
                     }
                     break;
+
+                // NOTE: there is deliberately NO `case OmniCrystalImpactor` here. Crystals sit on
+                // layer 9 and explosions on layer 10, and that pair is DISABLED in the project's
+                // collision matrix — a trigger case for crystals would compile, read correctly,
+                // and never once fire. Blast↔crystal is dispatched explicitly by SweepCrystals
+                // instead. Do not "tidy" it back into this switch.
+            }
+        }
+
+        /// <summary>
+        /// This blast's impulse — the (speed × inertia) magnitude and ceiling it hands the mass it
+        /// destroys. Exposed so a crystal effect can size its output off the same number the prism
+        /// debris rides, instead of authoring a second one that drifts from it.
+        /// </summary>
+        public ExplosionImpulse BlastImpulse => explosion != null ? explosion.Impulse : default;
+
+        /// <summary>
+        /// Blast → CRYSTAL, dispatched by an explicit overlap rather than through the trigger.
+        /// Layer 9 (Crystals) × layer 10 (Explosions) is off in the collision matrix, so no
+        /// trigger pair is ever generated for this contact; the alternative to querying here was
+        /// turning that pair on project-wide, which would mint trigger pairs between EVERY blast
+        /// and EVERY crystal in every mode to serve one weapon.
+        ///
+        /// The query is skipped entirely unless this blast AUTHORS crystal effects — which today
+        /// is only the Scarab's cavitation punch, so the other twelve AOE prefabs pay one array
+        /// null-check per frame and nothing else. `_crystalsHit` is the once-per-blast ledger, the
+        /// same shape as the prism batch tracker: a blast grows over many frames and would
+        /// otherwise re-convert the same crystal on each of them.
+        /// </summary>
+        void SweepCrystals(Vector3 centre, float radius)
+        {
+            if (!explosionImpactorDataContainer || radius <= 0f) return;
+            var effects = explosionImpactorDataContainer.explosionCrystalEffects;
+            if (!DoesEffectExist(effects)) return;
+
+            if (_crystalLayerMask == 0)
+            {
+                int layer = LayerMask.NameToLayer("Crystals");
+                _crystalLayerMask = layer >= 0 ? 1 << layer : -1;   // -1 = resolved-and-absent
+            }
+            if (_crystalLayerMask <= 0) return;
+
+            _crystalsHit ??= new HashSet<int>(8);
+
+            int found = Physics.OverlapSphereNonAlloc(centre, radius, s_crystalHits,
+                                                      _crystalLayerMask, QueryTriggerInteraction.Collide);
+            for (int i = 0; i < found; i++)
+            {
+                var col = s_crystalHits[i];
+                if (col == null) continue;
+                if (!col.TryGetComponent(out OmniCrystalImpactor crystal)) continue;
+                if (!crystal.CanBlastConsume(explosion.Domain)) continue;
+                if (!_crystalsHit.Add(crystal.GetInstanceID())) continue;
+
+                foreach (var effect in effects)
+                    effect.Execute(this, crystal);
+
+                // Spend the crystal exactly as a collect does: it blooms out and respawns rather
+                // than vanishing (continuity of existence), and cannot be forged twice.
+                crystal.ConsumeByBlast(explosion.Domain, transform.position);
             }
         }
         
