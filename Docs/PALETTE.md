@@ -577,3 +577,20 @@ Machine validation covers structure and colorimetry; only a playtest covers *loo
 - The `Outside`/`Inside` field names are misleading (§2). Renaming them is a broad,
   GUID-safe but wide-reaching refactor across `SO_ColorSet` + `ThemeManager` + every
   colour set asset — worth doing, not worth bundling with a palette tune.
+- **The crystal crossing (§2.3) interpolates on the CPU because the crystal shaders carry no
+  clock wiring.** The prism path hands the same job to the GPU: `_ColorStartTime` +
+  `_ColorDuration` + the start pair as per-instance properties, and the graph does
+  `lerp(from, to, smoothstep(...))` itself (`MaterialPropertyAnimator.ClockColorTransition`,
+  `Docs/PRISM_ANIMATION.md §4.1`). Wiring it into the crystal graphs would delete the CPU
+  driver outright and make the crossing free. It is real work — `ShepardGraph` (259 nodes),
+  `CrystalGraph` (270), `InverseDynamicFresnelGraph` (135), `DynamicFresnelGraph` (75), plus
+  the hand-written `ChargeCrystal.shader`, which is the easy one — and it is
+  `/asset-surgery` §2 territory (ShaderGraph JSON synthesis), not hand-editing. Worth its own
+  change with its own playtest; the CPU driver is bounded by crystals actually transitioning,
+  so there is no urgency.
+- **`ChangeDomain`'s theft-decay path still snaps.** `ChangeDomain(Domains.Blue)` lerps the
+  MATERIAL back to `defaultMaterial` over 2 s and then the tail `ApplyColorSetTint()` snaps to
+  the CTA lime, because the two do not settle on the same colour. Pre-existing, and not fixed
+  by §2.3 (which only covers `ActivateCrystal`). The fix is the same mechanism — capture the
+  displayed pair before the material lerp starts and cross-fade the tint alongside it — but it
+  needs the theft path play-tested, which nothing currently exercises often.
