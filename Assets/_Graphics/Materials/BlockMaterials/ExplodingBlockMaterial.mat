@@ -18,9 +18,9 @@ Material:
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 1
   m_DoubleSidedGI: 0
-  m_CustomRenderQueue: 2000
+  m_CustomRenderQueue: 2450
   stringTagMap:
-    RenderType: Opaque
+    RenderType: TransparentCutout
   disabledShaderPasses:
   - SHADOWCASTER
   - MOTIONVECTORS
@@ -89,12 +89,14 @@ Material:
     - _Add_sin: 0
     - _Alpha: 0
     - _AlphaClip: 1
-    - _AlphaToMask: 0
+    - _AlphaToMask: 1
     - _Blend: 0
     - _BumpScale: 1
     - _CastShadows: 0
     - _ClearCoatMask: 0
     - _ClearCoatSmoothness: 0
+    - _ColorDuration: 0
+    - _ColorStartTime: 0
     - _Cull: 0
     - _Cutoff: 0.5
     - _DetailAlbedoMapScale: 1
@@ -102,12 +104,19 @@ Material:
     - _DstBlend: 0
     - _DstBlendAlpha: 0
     - _EnvironmentReflections: 1
+    - _ExplodeDuration: 0
+    - _ExplodeSpeed: 0
+    - _ExplodeStartTime: 0
     - _ExplosionAmount: 20.7
     - _ExplosiveRotation: 0.0169
     - _ExplosiveSpead: 0.05
+    - _FlightDuration: 0
+    - _FlightStartTime: 0
     - _GlossMapScale: 0
     - _Glossiness: 0
     - _GlossyReflections: 0
+    - _GrowRate: 0
+    - _GrowStartTime: 0
     - _LerpAmount: 0
     - _Metallic: 0
     - _Move: 0
@@ -155,9 +164,14 @@ Material:
     - _Color2: {r: 0, g: 0.02352941, b: 0.05490196, a: 0}
     - _DarkColor: {r: 0, g: 0.03327561, b: 0.06655122, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
+    - _FlightVelocity: {r: 0, g: 0, b: 0, a: 0}
+    - _GrowStartFrac: {r: 1, g: 1, b: 1, a: 0}
     - _SinkLocation: {r: 0, g: 0, b: 0, a: 0}
     - _SpecColor: {r: 0.19999996, g: 0.19999996, b: 0.19999996, a: 1}
     - _Spread: {r: 0.18, g: 0.1, b: 0.1, a: 0}
+    - _StartBrightColor: {r: 1, g: 1, b: 1, a: 1}
+    - _StartDarkColor: {r: 1, g: 1, b: 1, a: 1}
+    - _StartSpread: {r: 0, g: 0, b: 0, a: 0}
     - _Velocity: {r: 1, g: 1.88, b: -1.73, a: 0}
     - _add_vector: {r: 0, g: 0, b: 9, a: 0}
     - _location: {r: 0, g: 0, b: 0, a: 0}
