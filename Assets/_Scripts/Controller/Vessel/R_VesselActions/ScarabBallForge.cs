@@ -10,19 +10,24 @@ namespace CosmicShore.Gameplay
     /// balls — a vessel flying through a crystal
     /// (<see cref="ScarabBallForgeByCrystalEffectSO"/>) and a blast engulfing one
     /// (<see cref="ScarabBallForgeByExplosionEffectSO"/>) — and they must produce the SAME object
-    /// from the same rules, so the spawn, the network gate, the SPACE size stamp and the
-    /// client→server route live here rather than being written twice and drifting.
+    /// from the same rules, so the spawn, the network gate and the SPACE size stamp live here
+    /// rather than being written twice and drifting.
     ///
-    /// THE NETWORK ROUTE IS THE WHOLE REASON THIS IS SHARED. The ball is a NetworkObject: only
-    /// the server may spawn one. The vessel-impact path gets to the server for free, because it
-    /// arrives through <c>NetworkVesselImpactor</c>'s ServerRpc → ClientRpc fan-out. A BLAST does
-    /// not: <c>ScarabJukeController</c> reads local input in <c>Update</c>, so the cavitation
-    /// explosion exists only on the pilot's own machine, and a plain server gate would silently
-    /// mean "only the host can forge from a blast". <see cref="Request"/> therefore falls back to
-    /// <see cref="Player.RequestForgeBall_ServerRpc"/>, which mirrors the fauna-kill and
-    /// combat-hit precedents: the client asks, the SERVER decides everything that matters
-    /// (domain, size, and the prefab itself, read off that player's own vessel), so a client can
-    /// only ever forge its own ball.
+    /// BOTH PATHS ARE SERVER-AUTHORITATIVE, AND THE BLAST PATH IS THEREFORE HOST-ONLY TODAY.
+    /// The ball is a NetworkObject, so only the server may spawn one. The vessel-impact path
+    /// reaches the server for free through <c>NetworkVesselImpactor</c>'s ServerRpc → ClientRpc
+    /// fan-out, so it works for every pilot. The BLAST path does not: <c>ScarabJukeController</c>
+    /// reads local input in <c>Update</c>, so a client's cavitation explosion exists only on that
+    /// client — and the crystal it engulfs cannot be spent there either, because
+    /// <c>OmniCrystalImpactor.CanBlastConsume</c> refuses on a network client exactly as every
+    /// other crystal collect does. A client's blast therefore forges nothing.
+    ///
+    /// A client→server hop was written for this and REMOVED, because it could never be reached:
+    /// the crystal-consumption gate runs first and returns before the forge effect executes, so
+    /// the RPC was plumbing that described a fix it could not deliver. Closing the gap properly
+    /// needs ONE round-trip that carries the crystal's id and lets the SERVER do both halves
+    /// (consume + forge) — the crystal is the authoritative object, not the ball. Recorded as a
+    /// follow-up in SCARAB.md §4.1; do not re-add a forge-only RPC.
     /// </summary>
     public static class ScarabBallForge
     {
@@ -47,27 +52,18 @@ namespace CosmicShore.Gameplay
                 : 1f;
 
         /// <summary>
-        /// Forge a ball if this peer may, otherwise ask the server to. Returns the ball only when
-        /// it was spawned inline.
+        /// Forge a ball for <paramref name="status"/>'s domain, on a peer that may spawn one.
+        /// Returns null (silently) on a client — see the class note on why that is the honest
+        /// shape rather than a round-trip that cannot be reached.
         /// </summary>
         public static AstroLeagueBall Request(IVesselStatus status, AstroLeagueBall prefab,
                                               Vector3 at, Vector3 velocity)
         {
-            if (status == null) return null;
-
-            if (CanSpawnLocally)
-                return Spawn(prefab, at, velocity, status.Domain, SizeScaleFor(status));
-
-            // Client: the server owns the spawn. It re-derives domain and size from its own copy
-            // of this player's vessel, so nothing authoritative rides the wire.
-            var player = status.Player as Player;
-            if (player == null || !player.IsSpawned || !player.IsOwner) return null;
-            player.RequestForgeBall_ServerRpc(at, velocity);
-            return null;
+            if (status == null || !CanSpawnLocally) return null;
+            return Spawn(prefab, at, velocity, status.Domain, SizeScaleFor(status));
         }
 
-        /// <summary>Server-side (or local-only) spawn. Public so the ServerRpc handler can reuse
-        /// it without re-entering the routing decision it has already made.</summary>
+        /// <summary>Server-side (or local-only) spawn — the one place a ball is instantiated.</summary>
         public static AstroLeagueBall Spawn(AstroLeagueBall prefab, Vector3 at, Vector3 velocity,
                                             Domains domain, float sizeScale)
         {
@@ -96,22 +92,5 @@ namespace CosmicShore.Gameplay
             return ball;
         }
 
-        /// <summary>
-        /// The ball prefab this vessel forges with, read off its OWN crystal-effect container —
-        /// the only place it is authored. This is what lets the ServerRpc handler mint a ball for
-        /// a client without the prefab reference travelling the wire.
-        /// </summary>
-        public static AstroLeagueBall ResolvePrefabFor(IVessel vessel)
-        {
-            if (vessel?.Transform == null) return null;
-            if (!vessel.Transform.TryGetComponent(out VesselImpactor impactor)) return null;
-
-            var effects = impactor.CrystalEffects;
-            if (effects == null) return null;
-            for (int i = 0; i < effects.Length; i++)
-                if (effects[i] is ScarabBallForgeByCrystalEffectSO forge && forge.BallPrefab != null)
-                    return forge.BallPrefab;
-            return null;
-        }
     }
 }

@@ -71,11 +71,6 @@ namespace CosmicShore.Gameplay
                  "one vessel would change the wire format for the whole fleet.")]
         [SerializeField, Min(0f)] float _forwardClearance = 25f;
 
-        /// <summary>The ball this vessel forges. Read by the server when a CLIENT's blast asks
-        /// for a forge, so the prefab reference never has to ride the wire — see
-        /// <see cref="ScarabBallForge.ResolvePrefabFor"/>.</summary>
-        public AstroLeagueBall BallPrefab => _ballPrefab;
-
         public override void Execute(VesselImpactor vesselImpactor, CrystalImpactData data)
         {
             var status = vesselImpactor != null ? vesselImpactor.Vessel?.VesselStatus : null;

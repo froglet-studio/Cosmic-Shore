@@ -446,16 +446,21 @@ retirement (bloom out, respawn — continuity of existence) behind the same `IsI
 `IsExploding` / `IsNetworkClient` guards, plus `IsDomainMatching`: a blast must not be a way past
 a gate a hull cannot pass.
 
-**The client→server hop is not optional.** The ball is a NetworkObject, so only the server may
-spawn one. The vessel-impact forge reaches the server for free because it arrives through
-`NetworkVesselImpactor`'s ServerRpc → ClientRpc fan-out. A blast does not:
-`ScarabJukeController` reads local input in `Update`, so the cavitation explosion exists **only on
-the juking pilot's machine**, and a plain server gate would have silently meant "only the host can
-forge from a blast". `Player.RequestForgeBall_ServerRpc` closes it on the fauna-kill / combat-hit
-precedent: the client asks, and the server re-derives everything that decides what the ball IS —
-domain, SPACE size, and the prefab itself, read off that player's own vessel
-(`ScarabBallForge.ResolvePrefabFor`) — so only the placement rides the wire and a client can only
-ever forge its own ball.
+**KNOWN LIMITATION: blast-forging is host-only in a networked session.** The ball is a
+NetworkObject, so only the server may spawn one. The vessel-impact forge reaches the server for
+free because it arrives through `NetworkVesselImpactor`'s ServerRpc → ClientRpc fan-out, so it
+works for every pilot. A blast does not: `ScarabJukeController` reads local input in `Update`, so
+a client's cavitation explosion exists **only on that client** — and the crystal it engulfs cannot
+be spent there either, because `OmniCrystalImpactor.CanBlastConsume` refuses on a network client
+exactly as every other crystal collect does. A client's blast therefore forges nothing; the
+vessel-impact forge still works for them.
+
+A forge-only client→server RPC was written for this and **removed during review**, because it
+could never be reached: the crystal-consumption gate runs BEFORE the forge effect and returns
+first, so the RPC was plumbing that described a fix it could not deliver — and plumbing that
+lies is worse than a documented gap. **Follow-up:** close it with ONE round-trip carrying the
+crystal's `Crystal.Id`, letting the server do both halves (consume + forge), because the crystal
+is the authoritative object here, not the ball. Do not re-add a forge-only RPC.
 
 ### 4.1a Explosions move the ball
 

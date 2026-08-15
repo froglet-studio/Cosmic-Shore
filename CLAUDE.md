@@ -149,8 +149,9 @@ outcome is optimization, not life). Use the `/ecology` skill for any change here
   Full table + rationale: `Docs/ECOSYSTEM_MASTERPLAN.md §5.1`.
   **Corollary — never hand-place a membrane/nucleus/cytoplasm in a scene.** The Cell instantiates
   each of them itself in `SpawnVisuals` from the config, and *only* that instance is tracked: every
-  nucleus consumer (`NucleusWorldRadius`, `RefreshNucleusControlRadius`, `IsInsideNucleus`,
-  `SetNucleusWorldRadius`) reads the Cell's private `nucleus` field, and the cleanup/swap paths read
+  nucleus consumer (`NucleusWorldRadius`, `NucleusVisualWorldRadius`,
+  `RefreshNucleusControlRadius`, `IsInsideNucleus`, `SetNucleusWorldRadius`) reads the Cell's
+  private `nucleus` field, and the cleanup/swap paths read
   `membrane`/`nucleus`/`spawnedCytoplasm`. A scene-placed copy is therefore a *pure* duplicate — it
   renders on top of the real one and no bookkeeping can see it (three scenes shipped a coincident
   `Nucleus.prefab` this way). Same rule inside `Cell` itself: every spawn in `SpawnVisuals` plus

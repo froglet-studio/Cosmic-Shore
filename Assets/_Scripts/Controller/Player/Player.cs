@@ -204,41 +204,10 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Owner-side request to mint an Astro League ball — the forge counterpart of
-        /// <see cref="ReportFaunaKill_ServerRpc"/> and <see cref="ReportCombatHit_ServerRpc"/>,
-        /// and the only way a CLIENT's cavitation blast can ever forge one.
-        ///
-        /// The ball is a NetworkObject, so only the server may spawn it. The vessel-impact forge
-        /// reaches the server for free, because it arrives through NetworkVesselImpactor's
-        /// ServerRpc → ClientRpc fan-out. A blast does not: ScarabJukeController reads local
-        /// input in Update, so the explosion exists only on the juking pilot's machine, and a
-        /// plain server gate would silently mean "only the host can forge from a blast".
-        ///
-        /// IDENTITY AND AUTHORITY COME FROM OWNERSHIP, NOT FROM THE PAYLOAD.
-        /// <c>RequireOwnership = true</c> is the default, so a client can only ever ask on its
-        /// own behalf — and everything that decides what the ball IS (its domain, its SPACE size,
-        /// and the prefab itself) is re-derived here from the server's own copy of that player's
-        /// vessel. Only the placement rides the wire.
-        /// </summary>
-        [ServerRpc]
-        public void RequestForgeBall_ServerRpc(Vector3 at, Vector3 velocity)
-        {
-            using var _ = CosmicShore.Utility.PerformanceBenchmark.NetMarkers.RpcDispatch.Auto();
-            CosmicShore.Utility.PerformanceBenchmark.NetMarkers.CountRpc();
-
-            var status = Vessel?.VesselStatus;
-            if (status == null) return;
-
-            var prefab = ScarabBallForge.ResolvePrefabFor(Vessel);
-            if (prefab == null) return;   // this vessel authors no forge — nothing to mint
-
-            ScarabBallForge.Spawn(prefab, at, velocity, status.Domain,
-                                  ScarabBallForge.SizeScaleFor(status));
-        }
-
-        /// <summary>
         /// Owner-side request to let one of THIS player's blasts shove the Astro League ball —
-        /// the sibling of <see cref="RequestForgeBall_ServerRpc"/>, and for the same structural
+        /// the fourth of the same round-trip family as <see cref="ReportFaunaKill_ServerRpc"/> /
+        /// <see cref="ReportCombatHit_ServerRpc"/> /
+        /// <see cref="ReportEnvironmentPrismDestroyed_ServerRpc"/>, and for the same structural
         /// reason: explosions are local to the machine that fired them, the ball is
         /// server-simulated, so without this hop "explosions move the ball" would silently mean
         /// "the host's explosions move the ball".
