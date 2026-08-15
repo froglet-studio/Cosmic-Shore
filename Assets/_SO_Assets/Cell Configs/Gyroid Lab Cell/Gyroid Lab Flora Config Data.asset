@@ -38,6 +38,7 @@ MonoBehaviour:
     ItemsPerGrow: 8
     RandomItems: 0
     MaxSpawnsPerFrame: 3
+    MaturationSeconds: 5
     PlantRadiusCellFraction: 0.02
     PlantRadiusCellFractionMin: 0
   InitialLevel: 1

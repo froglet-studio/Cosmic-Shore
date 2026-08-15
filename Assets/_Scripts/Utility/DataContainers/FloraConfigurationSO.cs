@@ -307,6 +307,13 @@ namespace CosmicShore.Utility
                  "every tick. -1 = keep prefab.")]
         public int RandomItems = -1;
 
+        [Tooltip("Seconds the youngest prism must have been alive before a LATTICE plant may " +
+                 "reproduce - 'fully grown' includes the grow-in BLOOM, which takes seconds, " +
+                 "while the frontier-idle test alone settles in fractions of one. This is what " +
+                 "makes a colony read as fully-formed plants begetting fully-formed plants " +
+                 "instead of generations cascading mid-bloom. -1 = the code default (4s).")]
+        public float MaturationSeconds = -1f;
+
         [Tooltip("Grow-order instantiations executed per frame (AssembledFlora." +
                  "maxSpawnsPerFrame) - the frame-cost throttle on the decided-order drain. " +
                  "-1 = keep prefab.")]

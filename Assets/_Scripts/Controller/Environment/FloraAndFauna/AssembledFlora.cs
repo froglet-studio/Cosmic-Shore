@@ -34,6 +34,7 @@ namespace CosmicShore.Gameplay
         public static int DeclinedForeignSites;
         public static int GrownPrisms;
         public static int SeededDaughterPrisms;
+        public static int UnreservedSpawns;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         static void Reset()
@@ -44,12 +45,13 @@ namespace CosmicShore.Gameplay
             DeclinedForeignSites = 0;
             GrownPrisms = 0;
             SeededDaughterPrisms = 0;
+            UnreservedSpawns = 0;
         }
 
         public static string Summary =>
             $"claims={GyroidOctagonRegistry.ClaimCount} births={Births} heldByMaturity={BirthsHeldByMaturity} " +
             $"grown={GrownPrisms} seeded={SeededDaughterPrisms} foreignDeclines={DeclinedForeignSites} " +
-            $"mintsBlocked={ReseedMintsBlocked} prismsPerCrystal={(GyroidOctagonRegistry.ClaimCount > 0 ? (float)(GrownPrisms + SeededDaughterPrisms) / GyroidOctagonRegistry.ClaimCount : 0f):F1}";
+            $"mintsBlocked={ReseedMintsBlocked} UNRESERVED={UnreservedSpawns} prismsPerCrystal={(GyroidOctagonRegistry.ClaimCount > 0 ? (float)(GrownPrisms + SeededDaughterPrisms) / GyroidOctagonRegistry.ClaimCount : 0f):F1}";
     }
 
     /// <summary>
@@ -117,6 +119,7 @@ namespace CosmicShore.Gameplay
             if (tuning.ItemsPerGrow >= 1) itemsPerGrow = tuning.ItemsPerGrow;
             if (tuning.RandomItems >= 0) randomItems = tuning.RandomItems;
             if (tuning.MaxSpawnsPerFrame >= 1) maxSpawnsPerFrame = tuning.MaxSpawnsPerFrame;
+            if (tuning.MaturationSeconds >= 0f) _maturationSeconds = tuning.MaturationSeconds;
         }
 
         // A growth decision made at the grow tick, executed by the per-frame drain.
@@ -364,6 +367,7 @@ namespace CosmicShore.Gameplay
             // Docs/ECOSYSTEM.md §32). Counted where the prism actually lands, not where the
             // order was decided, so a dropped or lapsed order funds nothing.
             NotifyGrew();
+            _lastGrowthTime = Time.time;
             if (OctagonMode) GyroidColonyDiagnostics.GrownPrisms++;
 
             // Parent retirement, evaluated after the child exists — same ordering
@@ -406,6 +410,14 @@ namespace CosmicShore.Gameplay
         GyroidGrowthInfo _pendingOffspringSeed;
         Vector3 _pendingOffspringCenter;
         bool _hasPendingOffspringClaim;
+
+        // "Fully grown" includes the BLOOM: a prism exists (and is counted) the moment it is
+        // decided, but its grow-in animation takes seconds, and a plant must not reproduce
+        // while any of its prisms is still mid-bloom - that is exactly the "generations
+        // cascading before their prisms are full size" failure of the third Lab playtest.
+        // Config: FloraVariantTuning.MaturationSeconds.
+        float _maturationSeconds = 4f;
+        float _lastGrowthTime;
 
         // Consecutive grow ticks that decided nothing with nothing pending - the plant's own
         // frontier is exhausted (every site grown, occupied, or declined as foreign). This is
@@ -506,7 +518,8 @@ namespace CosmicShore.Gameplay
             healthTracker != null &&
             healthTracker.Count >= GyroidOctagonData.PatchPrisms - 6 &&
             pendingSpawns.Count == 0 &&
-            _idleGrowTicks >= 2;
+            _idleGrowTicks >= 2 &&
+            Time.time - _lastGrowthTime >= _maturationSeconds;
 
         void LogColonyHeartbeat()
         {
@@ -666,17 +679,23 @@ namespace CosmicShore.Gameplay
                     Vector3 seedPos = member.Position + member.Rotation * neighbors[n].SeedPosition;
                     Quaternion seedRot = member.Rotation * neighbors[n].SeedRotation;
 
+                    // Claim the centre FIRST - it is released on any later failure. The seed
+                    // reservation must come second: a reservation abandoned on a lost claim
+                    // race would sit until its TTL, and every neighbouring branch that probes
+                    // the site meanwhile marks it PERMANENTLY skipped (GetGrowthInfo treats a
+                    // reserve-failure as 'occupied for real') - a transient race would punch a
+                    // lasting hole in the surface.
+                    if (!GyroidOctagonRegistry.TryClaim(center, this)) continue;
+
                     // The seed site must be free mass-wise too (a boundary prism this plant
                     // already grew can sit exactly there). TryReserve doubles as the check and
-                    // the claim - the daughter's first prism consumes it on register, and a
-                    // failed birth lets it lapse on TTL like any dropped grow order.
+                    // the claim - the daughter's first prism consumes it on register.
                     if (spatialIndex != null && spatialIndex.IsAvailable &&
-                        !spatialIndex.TryReserve(seedPos, 3f)) continue;
-
-                    // Claim the centre BEFORE spawning, so a sibling resolving in the same
-                    // frame cannot plant the same octagon; the daughter adopts the claim in
-                    // ConfigureOffspring.
-                    if (!GyroidOctagonRegistry.TryClaim(center, this)) continue;
+                        !spatialIndex.TryReserve(seedPos, 3f))
+                    {
+                        GyroidOctagonRegistry.Release(center, this);
+                        continue;
+                    }
 
                     _pendingOffspringCenter = center;
                     _hasPendingOffspringClaim = true;
@@ -843,6 +862,16 @@ namespace CosmicShore.Gameplay
                 float radius = ResolvePlantRadius(legacyRadius: 200f);
                 transform.position = ResolvePlantCenter() + radius * Random.onUnitSphere;
             }
+
+            // The move above dragged the seed prism (a child) with it, but the prism REGISTERED
+            // with the spatial index at its pre-move position inside CreateNewAssembler -
+            // occupancy and AOE read the STORED position, not the transform, so without this the
+            // seed's real location reads as empty space that another grower may fill (and its
+            // registered location blocks a site nothing occupies). Same contract as
+            // GyroidAssembler.MoveMateToSite. Pre-dates this branch for every dispersed
+            // assembled flora; it matters now because plants finally share boundaries.
+            if (assembler != null && assembler.Prism)
+                assembler.Prism.NotifyPositionChanged();
         }
 
         public Assembler CreateNewAssembler()
@@ -894,6 +923,7 @@ namespace CosmicShore.Gameplay
                     {
                         RegisterDangerPrism(sg.BlockType, _seedGrowth.Position, _seedGrowth.Rotation);
                         GyroidColonyDiagnostics.SeededDaughterPrisms++;
+                        _lastGrowthTime = Time.time;
                     }
                 }
             }

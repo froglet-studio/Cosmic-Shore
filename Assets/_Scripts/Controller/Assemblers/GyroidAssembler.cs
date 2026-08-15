@@ -155,7 +155,13 @@ namespace CosmicShore.Gameplay
                 // above any drift so a same-site duplicate always is.
                 float clearRadius = Mathf.Max(2f, 0.4f * (newPosition - transform.position).magnitude);
                 var spatialIndex = PrismSpatialIndex.EnsureInstance();
-                if (spatialIndex == null || !spatialIndex.IsAvailable ||
+                bool unreserved = spatialIndex == null || !spatialIndex.IsAvailable;
+                // An unavailable index means growth proceeds with NO occupancy dedupe at all -
+                // the one path that can double-fill a site. Counted so the colony heartbeat
+                // makes it visible: a non-zero UnreservedSpawns alongside overlapping prisms IS
+                // the diagnosis (and the fix is index availability, not growth logic).
+                if (unreserved) GyroidColonyDiagnostics.UnreservedSpawns++;
+                if (unreserved ||
                     spatialIndex.TryReserve(newPosition, clearRadius))
                     return new GyroidGrowthInfo
                     {

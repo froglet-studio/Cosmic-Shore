@@ -4151,6 +4151,27 @@ with the exact rule: 167 plants / 3,301 prisms, 19.8 prisms per crystal (was a s
 flood), single connected lattice, zero overlaps, immature plants = exactly the one-generation
 frontier shell.
 
+**Third playtest (2026-08-15): "full size" means the BLOOM, and the overlap suspects.** Two
+observations: generations still cascaded before prisms reached full size, and real overlapping
+prisms accumulated at the centre. The first is a units mismatch now fixed: the maturity gate's
+frontier-idle test settles in fractions of a second (2 grow ticks), while a prism's grow-in
+bloom takes SECONDS (`Prism.growthRate` 0.01) - so a plant read as "fully grown" while every
+prism was mid-bloom. `FloraVariantTuning.MaturationSeconds` (default 4, Lab authors 5) now
+requires the plant's YOUNGEST prism to be older than the bloom before it may reproduce -
+fully-formed plants begetting fully-formed plants, paced to the animation the player watches.
+Three overlap/hole suspects were closed or instrumented in the same pass: (1) the claim/reserve
+ORDER in reproduction - a seed reservation abandoned on a lost claim race sat until TTL while
+every neighbouring branch that probed the site marked it PERMANENTLY skipped (reserve-fail
+reads as "occupied for real"), a transient race punching a lasting hole; centres now claim
+first and release on failure. (2) The founder's seed prism registered with the spatial index at
+its pre-`Plant()` position and was then dragged to the planting point - occupancy reads the
+STORED position, so its real location read as empty space another grower could fill
+(`NotifyPositionChanged` after the move; pre-dated this branch for every dispersed assembled
+flora). (3) `GetGrowthInfo` grows UNCHECKED when the spatial index is unavailable - the one
+path that can double-fill a site at scale; now counted (`UNRESERVED` in the heartbeat), because
+a non-zero count alongside overlapping prisms is the diagnosis and the fix is index
+availability, not growth logic.
+
 In-editor verification (the human is the gate): enter freestyle in Menu_Main, fly the Cell
 Selector toy, pick **Gyroid Lab**. Watch: (1) the founder's first danger prism moves the
 crystal to the ring centre; (2) the surface grows as ONE continuous gyroid with no doubled
