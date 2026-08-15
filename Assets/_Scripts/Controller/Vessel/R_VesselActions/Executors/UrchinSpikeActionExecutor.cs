@@ -100,6 +100,11 @@ namespace CosmicShore.Gameplay
             {
                 while (!token.IsCancellationRequested)
                 {
+                    // The gun going away is fatal to the hold; running out of ammo is not
+                    // (see below). Checked here so a destroyed gun ends the loop instead of
+                    // spinning it.
+                    if (!gun || !gun.gameObject) { Stop(); return; }
+
                     // Drop debt beyond the cap rather than carrying it: after a hitch the gun
                     // resumes firing, it does not discharge the stall as a burst.
                     float maxOwed = interval * MaxVolleysPerTick;
@@ -110,7 +115,12 @@ namespace CosmicShore.Gameplay
 
                     for (int v = 0; v < volleys && !token.IsCancellationRequested; v++)
                     {
-                        if (!FireOnce(so)) { Stop(); return; }
+                        // Running dry must NOT end the hold. Ammo refills while you fly (and
+                        // fast while you ride a trail), so ending the loop here would force the
+                        // pilot to release and re-press to resume - the gun would feel jammed
+                        // rather than empty. Break the volley, keep the loop, resume when the
+                        // meter recovers.
+                        if (!FireOnce(so)) break;
                     }
 
                     owed += Time.deltaTime;
