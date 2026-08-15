@@ -256,8 +256,8 @@ namespace CosmicShore.Gameplay
         // It differs from the prism path in ONE respect, deliberately. A prism hands the
         // interpolation to the GPU because thousands animate at once and its graphs carry the
         // clock wiring; the crystal shaders carry none (Docs/PALETTE.md section 2.2 audits all
-        // of them), so a crystal's pair is pushed from the CPU. That is bounded by the crystals actually
-        // TRANSITIONING - a heart changes colour once, when it dies - and is strictly cheaper
+        // of them), so a crystal's pair is pushed from the CPU. That is bounded by the crystals
+        // actually TRANSITIONING - a heart changes colour once, when it dies - and is cheaper
         // than the cloned-material lerp it runs alongside. The scheduled settle is what makes
         // the end state independent of the driver: interrupt the coroutine and the crystal still
         // lands on its final colour.
