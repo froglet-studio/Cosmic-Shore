@@ -53,13 +53,13 @@ namespace CosmicShore.Gameplay
         // queue is their only resolution path. See MAX_NEW_HITS_PER_FRAME.
         private Queue<PendingExplosionHit> _batchPending;
 
-        // Blast -> crystal dispatch state (see SweepCrystals). The buffer is static because only
-        // one blast sweeps at a time on the main thread. _crystalLayerMask uses 0 for "not
-        // resolved yet" and -1 for "resolved, and this project has no Crystals layer".
-        // Bounded, and deliberately: a blast that engulfs more than 16 crystals at once
-        // reaches the rest on a later frame as it grows (the ledger below stops the ones
-        // already handled from repeating), and no shipped cell places 16 crystals inside
-        // one blast radius. Static because only one blast sweeps at a time on the main thread.
+        // Blast -> crystal dispatch state (see SweepCrystals). Static because only one blast
+        // sweeps at a time on the main thread. _crystalLayerMask uses 0 for "not resolved yet"
+        // and -1 for "resolved, and this project has no Crystals layer".
+        //
+        // The buffer is bounded, deliberately: a blast engulfing more than 16 crystals at once
+        // reaches the rest on a later frame as it grows (_crystalsHit stops the ones already
+        // handled from repeating), and no shipped cell places 16 crystals in one blast radius.
         private static readonly Collider[] s_crystalHits = new Collider[16];
         private int _crystalLayerMask;
         private HashSet<int> _crystalsHit;
