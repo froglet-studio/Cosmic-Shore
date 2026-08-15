@@ -1239,10 +1239,12 @@ namespace CosmicShore.Gameplay
                            float debrisSpeedLimit = 0f)
         {
             if (destroyed) return;
-            // Super-shielded prisms are fully invulnerable. No damage source
-            // currently breaks them; ways to break them will be added later.
+            // Super-shielded prisms are invulnerable to Damage itself. A source that may
+            // break them (the Rhino energy sword, arena teardowns) must call
+            // DeactivateShields() first, then Damage(devastate: true) — the sanctioned
+            // animated sequence (see AstroLeagueArena.ClearEdgeLining / RHINO_ENERGY_SWORD.md).
             // The impactor's other effect SOs (sparks, sound) still fire on
-            // OnTriggerEnter, so the hit reads visually without state change.
+            // OnTriggerEnter, so an unbreaking hit reads visually without state change.
             if (prismProperties.IsSuperShielded) return;
             if (prismProperties.IsShielded && !devastate)
                 DeactivateShields();

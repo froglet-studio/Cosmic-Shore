@@ -18,3 +18,7 @@ MonoBehaviour:
   analogSmoothingSeconds: 0.04
   swipeOutSeconds: 0.18
   returnSeconds: 0.3
+  swipeCooldownSeconds: 0.35
+  swipeEngageThreshold: 0.4
+  stanceSumThreshold: 1.5
+  stanceCenterEpsilon: 0.4

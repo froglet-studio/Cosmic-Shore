@@ -216,3 +216,24 @@ Mechanics reference: `_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_ENERGY_
 20. **The Dolphin's speed retune has not been flown.** 60 → 78 cruise and 210 → 357 boost are
     arithmetic, not feel. 357 is a large jump and the speed tunnel amplifies how it reads — expect
     a balancing pass. Steps + knob table: `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+
+## Skim-visual follow-ups (opened by `claude/dolphin-skim-effect-7sd2w1`)
+
+21. **The Squirrel still runs BOTH skim visuals.** `SquirrelSkimmerImpactorDataContainer` holds
+    `SkimmerFXPrismEffect` (the `[Obsolete]` per-prism beam) *and*
+    `SkimmerForcefieldCracklePrismEffect` (its replacement) — the same doubled state the Dolphin
+    was just cleaned out of. It was left alone deliberately: the Dolphin's removal was a
+    playtest call on one vessel, and the Squirrel's beam may be reading as intentional on a
+    vessel whose whole loop is trail-riding. Decide it explicitly — either retire the beam
+    fleet-wide and delete `SkimmerFXPrismEffectSO` with it, or state in the SO's summary that
+    the two are meant to compose and drop the `[Obsolete]`. Do not leave it as an accident.
+22. **The Dolphin prefab carries three DEAD prefab-instance overrides** on its inactive nested
+    legacy `Skimmer.prefab` instance (`m_IsActive: 0`), writing
+    `skimmerPrismEffectsSO.Array.{size,data[0..2]}` — a field that is **commented out** on
+    `SkimmerImpactor`, so Unity retains the modifications forever without ever resolving them
+    (the same never-pruned-override pattern CLAUDE.md documents for `Cell`). One of them still
+    references the beam asset, which is why a GUID sweep finds `SkimmerFXPrismEffect` in
+    `Dolphin.prefab` after the container was cleaned. Harmless on three independent counts
+    (dead field, inactive GameObject, `_nearFieldSkimmer` points at `EnergySkimmer`) — but it is
+    a false positive for the next person who greps. Sweep it with the dead-override tooling
+    rather than by hand-editing prefab YAML.

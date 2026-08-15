@@ -8,6 +8,7 @@ using Reflex.Attributes;
 using Unity.Collections;
 using UnityEngine;
 using CosmicShore.Data;
+using CosmicShore.ScriptableObjects; // EnvironmentColorSetExtensions.ScaleRGB
 namespace CosmicShore.Gameplay
 {
     [System.Serializable]
@@ -161,6 +162,17 @@ namespace CosmicShore.Gameplay
             if (colors.EnvironmentColors == null) return false;
             bright = colors.EnvironmentColors.BrightCTA;
             dull = colors.EnvironmentColors.DarkCTA;
+
+            // The OMNI is the hero pickup and wears the CTA at full strength; the four
+            // elementals ride the same lime, dimmed, so the omni is the brightest crystal
+            // on screen. Brightness is the ONLY difference - a scalar cannot move the hue,
+            // so all five stay in one lime family by construction.
+            if (crystalProperties.IsElemental)
+            {
+                float dim = colors.EnvironmentColors.ElementalCrystalDimming;
+                bright = bright.ScaleRGB(dim);
+                dull = dull.ScaleRGB(dim);
+            }
             return true;
         }
 
@@ -216,8 +228,8 @@ namespace CosmicShore.Gameplay
                     var props = FindColorPropertyNames(mat);
                     if (props.bright != null)
                     {
-                        s_tintBlock.SetColor(props.bright, Flare(bright, flareMultiplier));
-                        s_tintBlock.SetColor(props.dull, Flare(dull, flareMultiplier));
+                        s_tintBlock.SetColor(props.bright, bright.ScaleRGB(flareMultiplier));
+                        s_tintBlock.SetColor(props.dull, dull.ScaleRGB(flareMultiplier));
                     }
                 }
 
@@ -225,13 +237,6 @@ namespace CosmicShore.Gameplay
                 renderer.SetPropertyBlock(s_tintBlock);
             }
         }
-
-        /// <summary>
-        /// Brightness-only gain on a crystal colour: the RGB channels scale, ALPHA is preserved.
-        /// A colour is a rate in linear HDR, so scaling it brightens without shifting hue - but
-        /// scaling its alpha along with it would quietly rewrite the material's blend weight.
-        /// </summary>
-        static Color Flare(Color c, float gain) => new(c.r * gain, c.g * gain, c.b * gain, c.a);
 
         /// <summary>Clears the tint override on one model so a material color lerp is visible.</summary>
         static void ClearColorSetTint(GameObject model)

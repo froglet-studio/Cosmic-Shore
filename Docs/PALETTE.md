@@ -82,6 +82,85 @@ DYNAMICS knob, not a palette one: it scales the debris speed, the shatter rate a
 clamp band as one quantity (they are one quantity on this contract — see CLAUDE.md ▸ "AOE
 blast impulse"). Set it to 1 for palette-only behaviour.
 
+### 2.2 The CTA lime — the crystal tier, and why bloom is bought with AREA (2026-08-15)
+
+Crystal COLOUR signals **who may collect it**, never which element it is (element is shape):
+domain crystals wear that domain's crystal pair, a living lifeform's heart wears the blue-white
+neutral, and a **free pickup wears the lime CTA** (`EnvironmentColorSet.BrightCTA` / `DarkCTA`).
+`Crystal.ApplyColorSetTint` drives it per-renderer through a `MaterialPropertyBlock`, and
+`Crystal.FindColorPropertyNames` accepts either naming pair, so it reaches all five crystals
+across six different shaders (audited 2026-08-15: `ShepardGraph` — omni **and** Mass —,
+`ChargeCrystal.shader`, `CrystalGraph` — Space —, `InverseDynamicFresnelGraph` — Time, the one
+that actually ships, via `_BrightColor`/`_DullColor`).
+
+**Dull is the body; bright is only the rim.** Every crystal shader composes its colour as
+`Blend(Base = Dull, Blend = Bright, Opacity = fresnel)` in **Overwrite** mode — i.e. a straight
+`lerp(dull, bright, fresnel)` — and the fresnel is `(1 − N·V)⁴` (`FresnelPower4`). At that power
+the rim is **2.5% of the silhouette** and the area-weighted mean fresnel is **0.067**, so
+`DarkCTA` paints ~**93%** of the crystal. `BrightCTA` is a hairline. Tune the body, not the rim.
+(`TimeCrystalGraph`/`DynamicFresnelGraph` swap the two roles — which is exactly why the elemental
+dimming below is a **scalar** rather than a second authored colour pair: a scalar dims correctly
+whichever role each colour plays, and cannot drift the hue out of the lime family.)
+
+**Bloom is CLAMPED, so brightness above the clamp is a dead dial.** The gameplay and Commander
+profiles override URP's Bloom `clamp` to **0.5** (URP's default is 65472), with `threshold 0.2`,
+`knee 0.1`, `intensity 2.5`. URP clamps the bloom SOURCE before thresholding, so the per-pixel
+bloom contribution rises with the max channel only up to 0.5 and is **flat above it**:
+
+| max channel | 0.15 | 0.20 | 0.25 | 0.32 | 0.40 | 0.50 | 0.92 | 1.50 | 4.87 |
+|---|---|---|---|---|---|---|---|---|---|
+| % of bloom ceiling | 2% | 8% | 19% | 40% | 67% | **100%** | 100% | 100% | 100% |
+
+Two consequences, both load-bearing:
+
+1. **§3's "channels above 1.0 bloom" is FALSE in gameplay.** 56 of the 86 colours authored in
+   `OriginalColorSetSO` exceed 0.5 (danger rim 1.498, AOE 4.0, supershielded 1.498) and are all
+   flattened to the same bloom. Raising the clamp is therefore not a crystal change — it re-lights
+   the entire palette — and is deliberately **not** done here. See §7.
+2. **Within the clamp, extra bloom is bought with bright AREA, not intensity.** `DarkCTA` was
+   `(0.18, 0.32, 0.05)` — max 0.32, only 40% of the ceiling over 93% of the crystal. It is now
+   that same colour scaled by **×1.5625**, `(0.28125, 0.5, 0.078125)`, which lands the green
+   channel exactly ON the clamp. Pure scalar ⇒ identical hue (§3), and no channel reaches 1.0, so
+   nothing clips (tonemapping is **None**, `mode: 0` — channels above 1.0 clip hard and shift the
+   lime toward yellow-white, so ≤1.0 is a real constraint here, not a nicety). `BrightCTA` is
+   unchanged at `(0.59, 0.92, 0.16)`: at max 0.92 it was already saturating the clamp, so raising
+   it would have bought exactly nothing.
+
+**The omni is the hero; the four elementals are the same lime, dimmed.**
+`EnvironmentColorSet.ElementalCrystalDimming` (**0.45**) scales the CTA pair for anything
+`CrystalProperties.IsElemental`, leaving the omni at full strength. Note the omni and the Mass
+crystal wear the *same four materials*, so this scalar is the only thing that distinguishes them.
+
+The scalar is far more sensitive than it looks, because the bloom **threshold (0.2) sits inside
+the elemental body's range** — so tune it against the measured curve, not by eye:
+
+| dimming | body max | rim max | body % of ceiling | omni : elemental bloom |
+|---|---|---|---|---|
+| 0.60 | 0.300 | 0.552 | 33% | 2.6 : 1 |
+| 0.55 | 0.275 | 0.506 | 26% | 3.3 : 1 |
+| **0.45** | **0.225** | **0.414** | **13%** | **6.2 : 1** |
+| 0.40 | 0.200 | 0.368 | 8% | 9.3 : 1 |
+| 0.30 | 0.150 | 0.276 | 2% | 32.5 : 1 |
+
+0.45 is chosen so the elementals keep a *live* body glow (body just above the threshold) and a
+still-bright rim at 83% of the ceiling, while the omni reads ~6× brighter. Below ~0.40 the body
+drops under the threshold entirely and the elementals become rim-only outlines — a legitimate
+look, but a different one; decide it deliberately rather than drifting into it.
+
+Note the raise to `DarkCTA` lifts the elementals too (they are scaled *from* the same pair), so
+the two knobs are not independent — re-read this table after changing either.
+
+**The tint was invisible until 2026-08-15.** `FadeIn` owned a private `MaterialPropertyBlock`,
+pushed it wholesale (wiping the tint at the start of the fade) and `Clear()`ed it at the end
+(wiping it permanently) — and every crystal model carries a `FadeIn`, the omni included via the
+nested `TrucatedOctahedron.prefab`. So every crystal in the game settled back to its authored
+material colour and **no crystal ever showed the CTA lime**: the omni read blue-white/green, Space
+blue-white, Time HDR blue, and only Charge was lime (its shader's authored defaults happen to *be*
+the CTA pair). `FadeIn` now composes — `GetPropertyBlock` before every write, and it retires the
+fade by restoring the material's own `_opacity` instead of clearing the block. Both writers are
+now order-independent. **Never push a whole property block onto a renderer another system also
+tints**; read-modify-write it.
+
 ## 3. The colour-space rule (this is the trap)
 
 The project is **Linear** (`ProjectSettings/ProjectSettings.asset: m_ActiveColorSpace: 1`)
@@ -353,6 +432,32 @@ Machine validation covers structure and colorimetry; only a playtest covers *loo
    domain where a regression would surface first. Also confirm a gold danger prism is not
    confusable with a gold *plain* prism at speed — both now carry a hot rim, but they sit
    35° apart in hue and 40 apart in chroma (`#FF1214` against `#FFAB25`).
+2c. Get all five **crystals** on screen together (§2.2). Easiest producers:
+   - **Menu_Main freestyle** — the omni crystal plus whatever the cell's lifeforms drop.
+   - **Dog Fight / Rampage** — omni crystals respawn continuously in the nucleus, and
+     Rampage's four intensities change how many are out at once.
+   - **Wildlife Blitz / Wildlife Liberation** — elemental hearts drop as lifeforms die,
+     which is the cheapest way to see all four elementals next to each other.
+
+   Confirm, in this order — the first is the one that has never worked before:
+   a. **Every crystal is lime.** Before this change none of them were (the omni read
+      blue-white/green, Space blue-white, Time blue, only Charge lime), because `FadeIn`
+      wiped the tint. If any crystal still shows its old colour, the fade is winning
+      again — check that nothing else pushes a whole `MaterialPropertyBlock` onto that
+      renderer.
+   b. **The omni is clearly the brightest**, at distance especially — it is the only
+      crystal whose *body* sits at the bloom ceiling. Target is roughly 6:1 bloom against
+      an elemental; if they read the same, suspect `ElementalCrystalDimming` did not load
+      (it is a NEW field — an old serialized copy of the asset simply will not have it,
+      and it will silently take the 0.45 C# initializer, which is the intended value
+      anyway, so this failing means something overrode it).
+   c. **The four elementals are still legible**, not black. They sit just above the bloom
+      threshold by design; if they read as dead olive lumps, raise the dimming toward
+      0.55 (see the table in §2.2 — the knob is steep, 0.05 is a real step).
+   d. **Hue is unchanged across all five.** They must differ only in brightness. Any hue
+      drift means something is scaling the pair non-uniformly, or a channel is clipping
+      past 1.0 (tonemapping is None — there is no shoulder to absorb it).
+
 3. For **Ruby** and **Gold**, confirm: the prism's facets and silhouette read clearly
    (the base→rim separation is visible), and the shielded prism is obviously distinct
    from an unshielded prism of the same domain.
@@ -399,6 +504,17 @@ Machine validation covers structure and colorimetry; only a playtest covers *loo
   given a contract like the shielded one, Ruby is the domain that will move.
 - `Domains.Blue` (the neutral sentinel) was not measured or tuned; it is not a playable
   domain and its prisms are rarely seen.
+- **The gameplay Bloom `clamp` of 0.5 is the single biggest open question in this document
+  (§2.2).** It caps the bloom source below most of the palette, so 56 of 86 authored colours
+  bloom identically and every HDR value in this file — the danger rim at 1.498, the AOE
+  colours at up to 4.0, `SuperShieldedInsideBlockColor` at 1.498 — is doing nothing that a
+  flat 0.5 would not do. §3's rule that "channels above 1.0 are legitimate (they bloom)"
+  is, as shipped, false. It is overridden deliberately (`m_OverrideState: 1`) in both the
+  GamePlay and Commander profiles, so someone chose it; it is **not** a stray default.
+  Raising it is a whole-game relighting, not a tune — do it as its own change, with its own
+  playtest, and expect to re-derive the tiers in §4 afterwards. Measured headroom if it were
+  raised to 1.0 and the crystal body pushed to a max channel of 1.0: **~3.5×** today's omni
+  bloom, versus the **1.38×** available underneath the current clamp.
 - The `Outside`/`Inside` field names are misleading (§2). Renaming them is a broad,
   GUID-safe but wide-reaching refactor across `SO_ColorSet` + `ThemeManager` + every
   colour set asset — worth doing, not worth bundling with a palette tune.

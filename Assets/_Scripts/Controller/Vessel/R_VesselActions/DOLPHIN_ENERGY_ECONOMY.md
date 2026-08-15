@@ -400,11 +400,11 @@ Three things make this legal on a HUD whose upgrade tint is deliberately off (§
 
 ### Why a skim punches the jaws
 
-One skim moves the gape by a 150th of its range — about 0.12°, invisible. The three signals
-wired to a skim are otherwise: a haptic pulse that is a **no-op on desktop**, and a beam VFX
-that only draws if the skimmed prism authors a `ParticleEffect`. So the discrete event gets
-its own beat: `DolphinVesselHUDController` treats an energy **rise** as the skim (nothing
-else raises energy — the blast spends it all, a ram halves it) and punches the jaw pair.
+One skim moves the gape by a 150th of its range — about 0.12°, invisible. The other signals
+wired to a skim are the forcefield crackle across the skimmer sphere and a haptic pulse that
+is a **no-op on desktop**. So the discrete event gets its own beat:
+`DolphinVesselHUDController` treats an energy **rise** as the skim (nothing else raises
+energy — the blast spends it all, a ram halves it) and punches the jaw pair.
 
 ---
 
@@ -438,6 +438,17 @@ The Squirrel gets (2) and (3) free because its skimmer *is* `Skimmer.prefab`, wh
 both. The Dolphin's `EnergySkimmer` is a standalone object and needed all three added. The
 audit checks (2) and (3) whenever a container asks for (1).
 
+### The crackle is the Dolphin's ONLY skim visual
+
+The legacy `SkimmerFXPrismEffectSO` — the per-prism beam, marked `[Obsolete]` in code as
+"replaced by `SkimmerForcefieldCracklePrismEffectSO`" — was added to the Dolphin's container
+as the interim answer to "a skim produces no feedback at all", *before* the crackle was
+wired. Once the crackle landed, both ran: a beam stretching from the hull to every prism in
+the sphere **on top of** the crackle, which reads as noise on a vessel that skims ~150 prisms
+to fill its meter. The beam is now removed from `DolphinSkimmerImpactorDataContainer`; the
+container holds the resource gain, the haptic, and the crackle, and nothing else. The
+Squirrel still runs both — this is a Dolphin decision, not a platform one.
+
 ### The skimmer no longer resizes itself on init
 
 `Skimmer.ApplyScaleIfChanged` writes `localScale` from its `ElementalFloat` **even when
@@ -457,6 +468,7 @@ Play Menu_Main, enter freestyle on the Dolphin.
 | **FrogletTools > Vessels > Audit Vessel Skimmers** | Dolphin `NearFieldSkimmer: 'EnergySkimmer' OK` |
 | **FrogletTools > Vessels > Audit Vessel Ability Rows** | Dolphin: map complete, 4/4 icons, order ✅ |
 | fly through cell mass | crackle arcs across the skimmer sphere per prism; jaw icon punches; gape widens |
+| fly through cell mass | **no beam** stretches from the hull to the skimmed prisms — the crackle is the only skim visual |
 | at zero energy | jaws sit slightly open (4.76°/side), NOT shut — hull and Time icon agree |
 | keep skimming | model's jaws open toward 23.4° per side (**~150 skims** to full); Time icon matches at every step |
 | cross ~85% energy | Time icon's jaws start blending white → lime; solid lime at full |
