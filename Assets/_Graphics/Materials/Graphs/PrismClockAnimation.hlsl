@@ -244,11 +244,15 @@ void PrismFlightSqrDistance_float(float Clock, float StartTime, float Duration, 
 //   engage  (Direction >= 0):  p = centroid + t*(v - centroid)
 //   shatter (Direction <  0):  p = centroid + (1-t)*(v - centroid) + t*Offset*n
 //
-// t is smoothstep(0,1,progress) — EXACTLY the authored AnimationCurve.EaseInOut(0,0,1,1)
-// both shields shipped with (a Hermite with zero end tangents IS 3p^2-2p^3), so the
-// migration is faithful, not merely similar. The curve fields are retired with the
-// CPU driver: an arbitrary AnimationCurve has no GPU evaluation, and the whole fleet
-// authored the default.
+// t is smoothstep(0,1,progress), which IS AnimationCurve.EaseInOut(0,0,1,1) — a Hermite
+// with zero end tangents is 3p^2-2p^3 (Unity's own serialization of that constructor
+// carries inSlope/outSlope 0; cross-checked on SpaceCrystalAnimator.shrinkCurve). Every
+// shield whose component is added at RUNTIME therefore animates identically to before.
+// The two prefabs that serialize the curve (BlueBlock, OctahedronShieldTest) carry a
+// hand-altered variant with end tangents 2 — 2p^3-3p^2+2p, fast-slow-fast, up to 0.19
+// away from smoothstep — and now ease like the rest of the fleet. The curve fields are
+// retired with the CPU driver: an arbitrary AnimationCurve has no GPU evaluation, and
+// smoothstep is the easing every other clock transition already uses (PrismColorLerp).
 //
 // Because the morph runs on the SETTLED shared mesh, a shielded prism never leaves
 // the instanced path: same-size shields batch into one draw through the entire

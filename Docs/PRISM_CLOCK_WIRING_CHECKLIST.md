@@ -440,6 +440,15 @@ Astro League track for super-shields (`SegmentSpawner.SuperShieldSpawnedPrisms`)
 6. **Pool reuse**: shield a prism, destroy it, let the pool hand it back — the reused prism
    must be a plain box with no residual morph (a stale stamp would collapse it toward its
    own origin, which is the loudest possible symptom).
+7. **`BlueBlock.prefab`'s easing changed on purpose** (Duel for Cell / Freestyle MP / 2v2,
+   plus both Recording Studios). It and `OctahedronShieldTest.prefab` were the only two
+   assets that *serialized* the engage/shatter curves, and they carried a hand-altered
+   fast-slow-fast variant (end tangents 2) rather than `EaseInOut`'s zero-tangent
+   smoothstep — up to 0.192 apart mid-transition. Every other shield in the game took the
+   C# initializer and is byte-identical. If BlueBlock's bloom reads differently from a
+   trail prism's, that is this, and it is expected — say so rather than "fixing" it, and
+   note that Unity will drop those now-orphaned YAML keys the next time either prefab is
+   saved.
 
 ## Troubleshooting
 

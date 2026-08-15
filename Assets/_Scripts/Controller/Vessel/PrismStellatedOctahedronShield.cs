@@ -72,7 +72,7 @@ namespace CosmicShore.Gameplay
         [SerializeField] private float massRatioSuperShielded = StellatedOctahedronMeshGenerator.SUPER_SHIELD_TO_BOX_VOLUME_RATIO;
 
         [Header("Engage Transition")]
-        [Tooltip("Duration of the face-bloom engage morph. 0 snaps instantly. Easing is smoothstep on the GPU — the exact curve this shield shipped with (AnimationCurve.EaseInOut).")]
+        [Tooltip("Duration of the face-bloom engage morph. 0 snaps instantly. Easing is smoothstep on the GPU, which IS AnimationCurve.EaseInOut(0,0,1,1) — the curve every runtime-added shield used. The retired curve FIELD is gone: the GPU cannot evaluate an arbitrary AnimationCurve.")]
         [SerializeField] private float engageDuration = 0.45f;
 
         [Header("Shatter (Disengage)")]
