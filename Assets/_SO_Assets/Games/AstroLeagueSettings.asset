@@ -37,6 +37,10 @@ MonoBehaviour:
   bladeAwareStrikes: 1
   bladeClearRadius: 7
   bladeTipStrikeBonus: 1.35
+  explosionsAffectBall: 1
+  explosionKickMultiplier: 1
+  explosionSpinFraction: 0.6
+  explosionClaimsBall: 1
   strikeFeedbackEnabled: 1
   strikerShakeEmphasis: 1.8
   bigHitSpeedFraction: 0.45

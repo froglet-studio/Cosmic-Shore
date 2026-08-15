@@ -294,9 +294,12 @@ namespace CosmicShore.Gameplay
         public bool explosionsAffectBall = true;
 
         [Tooltip("Gain on the blast's impact vector before it is added to the ball's velocity. " +
-                 "The result is still clamped to maxSpeed, so this sets how much of a blast's " +
-                 "authored throw a much heavier payload actually keeps.")]
-        [Min(0f)] public float explosionKickMultiplier = 0.5f;
+                 "1 = the ball takes the blast's TRUE impulse, exactly as prism debris does — " +
+                 "which is the default, because the blast's own Inertia is already the dial for " +
+                 "how hard that blast throws. Below 1 the ball is a heavier payload than the mass " +
+                 "around it; this shipped at 0.5 and, against a 300 u/s ball, made a blast worth " +
+                 "~11% of top speed — a shove nobody could see.")]
+        [Min(0f)] public float explosionKickMultiplier = 1f;
 
         [Tooltip("Fraction of the blast kick that also arrives as SPIN, applied off-centre at the " +
                  "blast-facing surface. 0 = a pure shove.")]

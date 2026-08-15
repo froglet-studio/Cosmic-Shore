@@ -479,8 +479,32 @@ the match is about.
 | Ceiling | Re-clamped to `AstroLeagueSettingsSO.maxSpeed` | The ball's own universal bound, so a blast can never launch it past what the mode can simulate |
 | Client blasts | `AstroLeagueBall.RequestBlast` → `Player.RequestBlastBall_ServerRpc` | Blasts are local, the ball is server-simulated; without the hop "explosions move the ball" would mean "the *host's* explosions move the ball", which reads as netcode jitter rather than as a missing feature |
 
+**The blast's SPEED is its geometry.** `AOEExplosion.speed = MaxScale / ExplosionDuration` —
+how big the wavefront gets, over how long it takes to get there — and every impulse downstream is
+built from it. So "make the blast hit harder" is not a ball-side multiplier, it is *make the
+wavefront faster*, and the cavitation punch shipped as a slow bloom: 90 units over 0.85 s, a
+106 u/s wavefront. Against a ball whose own ceiling is 300 u/s, one blast was worth ~32 u/s —
+11% of top speed, less than the drag eats — which is why it read as doing nothing.
+
+| | wavefront | debris | `Inertia` | ball kick | as % of ball `maxSpeed` |
+|---|---|---|---|---|---|
+| before | 105.9 u/s | 35.3 | 1.8 | **31.8 u/s** | 11% |
+| after | 257.1 u/s | 85.7 | 3.0 | **257.1 u/s** | 86% |
+
+Three changes, all of them the *blast's* dials rather than the ball's:
+`ExplosionDuration` 0.85 → **0.35** (same 90-unit reach, 2.4× the wavefront speed — and a punch
+should read as a punch, not a bloom), `Inertia` 1.8 → **3.0**, and the ball's
+`explosionKickMultiplier` 0.5 → **1.0** so the payload takes the blast's true impulse exactly as
+prism debris does. Debris speed and shatter rate are ONE quantity on the proportional contract, so
+`restitution × Inertia` moved from 0.60 to **1.00** — the documented parity value — meaning the
+blast now shatters mass at the rate the contract intends instead of 40% under it. The prism side
+gets the same 4× harder throw, which is the point: this is one weapon getting more violent, not a
+ball-only exemption.
+
 Dials: `explosionsAffectBall`, `explosionKickMultiplier`, `explosionSpinFraction`,
-`explosionClaimsBall` on `AstroLeagueSettingsSO`.
+`explosionClaimsBall` on `AstroLeagueSettingsSO` (all four now authored explicitly in
+`AstroLeagueSettings.asset` — a key the asset lacks is invisible tuning that only reads as the
+C# initializer).
 
 Two things make this the right shape rather than a spawn button. First, it is an **aimed act**:
 you must fly *through* a crystal at the speed and heading you want the ball to have, so making a
