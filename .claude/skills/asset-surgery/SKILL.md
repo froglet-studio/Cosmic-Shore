@@ -1034,12 +1034,63 @@ that would otherwise cost a round-trip to a human at the editor:
   try turning X up", trace X to the value the SCREEN reads and check every
   clamp in between. If the input already exceeds the ceiling, the dial is dead
   — turning it up changes literally nothing, and you will burn a play-test
-  round proving that. Cosmic Shore has bitten twice here (AOE blast `Inertia`
-  vs `PrismExplosion.maxSpeed` 33.33 with a ~222 u/s input; the hull ram vs the
-  same clamp's FLOOR). Symptom to recognize: every instance produces the
-  IDENTICAL magnitude regardless of cause. Fix by putting the path on a
-  true-velocity contract that supplies its own ceiling — never by widening the
-  shared clamp, which retunes every other consumer of it.
+  round proving that. Cosmic Shore has bitten **three** times here (AOE blast
+  `Inertia` vs `PrismExplosion.maxSpeed` 33.33 with a ~222 u/s input; the hull
+  ram vs the same clamp's FLOOR; and **BLOOM**, below). Symptom to recognize:
+  every instance produces the IDENTICAL magnitude regardless of cause. Fix by
+  putting the path on a true-velocity contract that supplies its own ceiling —
+  never by widening the shared clamp, which retunes every other consumer of it.
+- **"Make it glow more" is a CLAMP question first, an HDR-colour question second.**
+  URP's Bloom clamps the bloom SOURCE before thresholding, so the per-pixel bloom
+  contribution is flat above `clamp` and every colour above it blooms identically.
+  This project overrides `clamp` to **0.5** (URP's default is 65472) in the GamePlay
+  and Commander profiles, which makes 56 of the 86 colours in `OriginalColorSetSO`
+  — the danger rim at 1.498, AOE at 4.0 — bloom exactly the same, and makes
+  `Docs/PALETTE.md` §3's "channels above 1.0 bloom" false as shipped. **Read the
+  volume profile's `threshold`/`knee`/`clamp` and compute the response curve BEFORE
+  authoring any HDR value**; URP's prefilter is
+  `c=min(clamp,c); B=max3(c); soft=clip(B-thr+knee,0,2knee)²/(4knee); mult=max(B-thr,soft)/B`.
+  Two consequences: raising a colour past the clamp is a no-op, and **inside** the
+  clamp extra bloom is bought with bright **AREA**, not intensity — so find which
+  property covers the most silhouette (next trap) instead of turning brightness up.
+  Also check the tonemapper: at `mode: 0` (None) there is no shoulder, so channels
+  above 1.0 clip hard and shift hue toward white — "brighter" silently means
+  "less saturated".
+- **Before tuning a colour, find out which property covers the AREA — it is usually
+  not the one named "Bright".** Dump the graph (§2a) and read the composition: these
+  crystal shaders are `lerp(dull, bright, fresnel)` with `fresnel = (1−N·V)⁴`, and at
+  that exponent the rim is **2.5%** of a silhouette (area-weighted mean fresnel 0.067).
+  So `_DullCrystalColor` is ~93% of the object and essentially all of its bloom, while
+  `_BrightCrystalColor` is a hairline. Integrating the bloom response over the
+  silhouette (`∫ bloom(lerp(dull,bright,f(r))) · 2πr dr`) turns "which knob?" into a
+  number in ten lines of numpy. Note sibling graphs can SWAP the roles
+  (`TimeCrystalGraph` does), which is a strong argument for expressing a per-variant
+  difference as a **scalar on the pair** rather than a second authored pair: a scalar
+  cannot move the hue and dims correctly whichever role each colour plays.
+- **`Renderer.SetPropertyBlock` REPLACES the block, and `MaterialPropertyBlock.Clear()`
+  discards EVERYONE's overrides, not just yours.** A component that owns a private block
+  and pushes it wholesale will silently erase any other system's per-renderer tint on the
+  same renderer — and if it `Clear()`s on completion, it erases it permanently. Live case:
+  `FadeIn` drove `_opacity` this way on every crystal model, so `Crystal.ApplyColorSetTint`'s
+  colour was wiped at the start of the fade and again at the end, and **no crystal in the
+  game had ever displayed its intended colour** — each just settled back to its authored
+  material, which looks deliberate. Always `GetPropertyBlock(block)` before `SetFloat`/
+  `SetColor` (it clears and refills the block from the renderer, so it is a true
+  read-modify-write), and retire an override by writing the material's own authored value
+  back rather than clearing. Composing also makes the writers **order-independent**, which
+  matters because `Start()` order between a parent and its child components is undefined.
+  Detection: grep for `SetPropertyBlock` and check each call site is preceded by a
+  `GetPropertyBlock` on the same renderer.
+- **A guid grep of a prefab CANNOT see components that live in its nested prefabs.**
+  `grep -c <FadeIn guid> Crystal.prefab` returned **0**, and the obvious conclusion — "the
+  omni has no FadeIn, so its tint survives, and `DeactivateModels`'s unguarded
+  `GetComponent<FadeIn>().StartFadeIn()` must be NREing" — was wrong on both counts: the
+  four models are instances of `TrucatedOctahedron.prefab`, which carries the component. A
+  `!u!1001 PrefabInstance` contributes its source prefab's whole component set at runtime
+  while contributing only its OWN guid plus override rows to the file. So: resolve
+  `m_SourcePrefab` guids and grep those files too (recursively) before concluding an object
+  lacks a component — or load it the way §5's read-only-tool bullet says and ask the merged
+  hierarchy.
 - **A reference field can point at a DISABLED TWIN of the object doing the
   work.** When a prefab was migrated from a nested component-prefab to a
   bespoke object, the old instance often survives, inactive, still holding
